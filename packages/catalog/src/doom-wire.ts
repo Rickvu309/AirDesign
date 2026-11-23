@@ -42,7 +42,7 @@ export type DoomRan = DoomResult<{
   readonly deck: DeckId
   readonly rev: number
   readonly edits: readonly unknown[]
-  readonly before: Readonly<Record<string, unknown>>
+  readonly replaced: readonly unknown[]
 }>
 
 export const picturesWantedMilliseconds = 120_000
@@ -145,12 +145,14 @@ const caught = decode((body, deck) =>
     : undefined,
 )
 
-const ran = decode((body, deck) => {
-  const before = recordOf(body.before)
-  return whole(body.rev) && Array.isArray(body.edits) && before !== undefined
-    ? { deck, rev: body.rev, edits: body.edits as unknown[], before }
-    : undefined
-})
+const ran = decode((body, deck) =>
+  whole(body.rev) &&
+  Array.isArray(body.edits) &&
+  Array.isArray(body.replaced) &&
+  body.replaced.length === body.edits.length
+    ? { deck, rev: body.rev, edits: body.edits as unknown[], replaced: body.replaced as unknown[] }
+    : undefined,
+)
 
 const pictured = decode((body, deck) =>
   Array.isArray(body.missing) && body.missing.every((each) => readNodeId(each) !== undefined)

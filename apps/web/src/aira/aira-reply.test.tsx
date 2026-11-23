@@ -142,6 +142,13 @@ describe("a request Aira's changes were undone from", () => {
     expect(markup).not.toContain(`>${productCopy.undo}<`)
   })
 
+  it("names the layers the undo kept because they were changed after Aira made them", () => {
+    const one = offered({ ...exchange(edited, "undone", ["r1"]), kept: ["“Revenue”"] })
+    expect(one).toContain(`${airaCopy.undone} “Revenue” stays, because it was changed after Aira made it.`)
+    const two = offered({ ...exchange(edited, "undone", ["r1"]), kept: ["a group", "“Revenue”"] })
+    expect(two).toContain("A group and “Revenue” stay, because they were changed after Aira made them.")
+  })
+
   it("says an undo failed and offers Undo again", () => {
     const markup = offered({ ...exchange(edited, "done", ["r1"]), undoFailed: true })
     expect(markup).toContain(airaCopy.undoFailed)

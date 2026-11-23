@@ -87,6 +87,13 @@ describe("a saved chat", () => {
     expect(read && restoredChat(read).exchanges).toEqual([exchange])
   })
 
+  it("keeps the layers an Undo left in place when the saved chat is restored", () => {
+    const chat = doneChat()
+    const exchange: AiraExchange = { ...chat.exchanges[0]!, end: "undone", kept: ["“Revenue”", "a group"] }
+    const read = readSavedChat(JSON.parse(JSON.stringify(saved({ ...chat, exchanges: [exchange] }))), deck)
+    expect(read?.exchanges).toEqual([exchange])
+  })
+
   it("keeps why a step was refused and where the request was tried again", () => {
     const chat = doneChat()
     const exchange: AiraExchange = {

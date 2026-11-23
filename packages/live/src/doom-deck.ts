@@ -28,7 +28,10 @@ export type Turned =
   | { readonly ok: false; readonly reason: "nothing" }
   | { readonly ok: false; readonly reason: "refused"; readonly refused: doom.Refusal }
 
-export type TurnedRun = Turned | { readonly ok: false; readonly reason: "offline" }
+export type TurnedRun =
+  | { readonly ok: true; readonly once: string; readonly saved: Promise<void>; readonly kept: readonly doom.NodeId[] }
+  | Exclude<Turned, { readonly ok: true }>
+  | { readonly ok: false; readonly reason: "offline" }
 
 export type Synced =
   | { readonly ok: true }
@@ -118,7 +121,7 @@ function connected(
   let redoSteps: Step[] = []
   const turned: string[] = []
   let notices: readonly Notice[] = []
-  const watched = new Map<string, { readonly before: doom.Doom; readonly edits: doom.Landed[] }>()
+  const watched = new Map<string, doom.RunEdit[]>()
   let memo: { readonly server: doom.Doom; readonly queue: readonly Queued[]; readonly view: doom.Doom } | undefined
   let saving: Promise<void> = Promise.resolve()
   let gone = false
@@ -184,11 +187,11 @@ function connected(
     if (run === undefined) return
     if (read.phase === "start") {
       watched.delete(run)
-      watched.set(run, { before, edits: [] })
+      watched.set(run, [])
       const oldest = watched.keys().next().value
       if (watched.size > watchedRuns && oldest !== undefined) watched.delete(oldest)
     }
-    watched.get(run)?.edits.push(read)
+    watched.get(run)?.push({ ...read, replaced: doom.replacedBy(before, read) })
   }
 
   function adopt(next: doom.Doom) {
@@ -375,59 +378,45 @@ function connected(
     return { ok: true, once: pushed.once, saved: pushed.saved }
   }
 
-  async function runInLog(run: string): Promise<{ before: doom.Doom; edits: doom.Landed[] } | undefined> {
+  async function runInLog(run: string): Promise<doom.RunEdit[] | undefined> {
     const answer = await remote.run?.({ deck, run })
     if (answer === undefined || !answer.ok || answer.edits.length === 0) return undefined
-    const nodes = new Map<doom.NodeId, doom.Node>()
-    for (const [name, raw] of Object.entries(answer.before)) {
-      const stored = doom.readStoredNode(name, raw, {})
-      if (stored === undefined) return undefined
-      nodes.set(stored.node.id, stored.node)
-    }
-    const before: doom.Doom = { ...doom.emptyDoom, nodes }
-    const known = new Map(nodes)
-    const edits: doom.Landed[] = []
-    for (const raw of answer.edits) {
-      const read = doom.readLanded(raw, { ...before, nodes: known })
+    const known = new Map(view().nodes)
+    const edits: doom.RunEdit[] = []
+    for (const [index, raw] of answer.edits.entries()) {
+      const read = doom.readRunEdit(raw, answer.replaced[index], { ...view(), nodes: known })
       if (doom.isRefusal(read)) return undefined
       for (const write of read.writes)
         if (write.prop === "type" && !known.has(write.node))
           known.set(write.node, { id: write.node, rev: read.rev, type: write.value } as doom.Node)
       edits.push(read)
     }
-    return { before, edits }
+    return edits
   }
 
   async function undoRun(run: string): Promise<TurnedRun> {
-    let found
+    let edits
     try {
       if (!(await catchUp()).ok) return { ok: false, reason: "offline" }
-      const seen = watched.get(run)
-      found = seen === undefined ? await runInLog(run) : { before: seen.before, edits: [...seen.edits] }
+      edits = watched.get(run) ?? (await runInLog(run))
     } catch {
       return { ok: false, reason: "offline" }
     }
-    const last = found?.edits.at(-1)
-    if (found === undefined || last === undefined) return { ok: false, reason: "nothing" }
+    if (edits === undefined || edits.length === 0) return { ok: false, reason: "nothing" }
     const now = view()
-    const owned = new Set<doom.Rev>(found.edits.map((each) => each.rev))
+    const owned = new Set<doom.Rev>()
     for (const name of turned) {
       const turnedAt = revOf(name)
       if (turnedAt !== undefined) owned.add(turnedAt)
     }
-    const writes = doom.invert(
-      found.before,
-      now,
-      { once: last.once, author, writes: found.edits.flatMap((each) => each.writes), rev: last.rev },
-      owned,
-    )
+    const { writes, kept } = doom.invertRun(now, edits, owned)
     if (writes.length === 0) return { ok: false, reason: "nothing" }
     const pushed = pushEdit(writes, author)
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
     redoSteps.push({ onces: [pushed.once], before: now, writes })
     turned.push(pushed.once)
     if (turned.length > 500) turned.shift()
-    return { ok: true, once: pushed.once, saved: pushed.saved }
+    return { ok: true, once: pushed.once, saved: pushed.saved, kept }
   }
 
   async function follow(signal: AbortSignal): Promise<Followed> {

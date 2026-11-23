@@ -179,11 +179,15 @@ function readExchange(raw: unknown): AiraExchange | undefined {
   const steps = exchange.steps.map(readStep)
   const runs = exchange.runs.filter((run): run is string => typeof run === "string")
   if (steps.some((step) => step === undefined) || runs.length !== exchange.runs.length) return undefined
+  const kept = Array.isArray(exchange.kept)
+    ? exchange.kept.filter((layer): layer is string => typeof layer === "string")
+    : []
   const read: AiraExchange = { asked: exchange.asked, steps: steps as AiraStep[], end: exchange.end as AiraEnd, runs }
   return {
     ...read,
     ...(exchange.undoRefused === true ? { undoRefused: true } : {}),
     ...(exchange.undoFailed === true ? { undoFailed: true } : {}),
+    ...(kept.length === 0 ? {} : { kept }),
   }
 }
 

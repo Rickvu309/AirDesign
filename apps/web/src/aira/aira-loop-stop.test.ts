@@ -56,7 +56,7 @@ describe("Aira's loop when Stop comes while a tool call is still waiting for the
     expect(link.toolsSent()).toEqual([edit, stop])
     const closing = link.sent.at(-1)?.body.params as { arguments: Record<string, unknown> }
     expect(closing.arguments).toEqual({ deck, runId: "run-1" })
-    expect(await undoExchange(done, 0, async () => "undone")).toMatchObject({ exchanges: [{ end: "undone" }] })
+    expect(await undoExchange(done, 0, async () => ({ kept: [] }))).toMatchObject({ exchanges: [{ end: "undone" }] })
   })
 
   it("offers no Undo and stops no run when the stop finds the cut edit had not landed", async () => {

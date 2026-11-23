@@ -17,7 +17,7 @@ type World = {
   readonly tagRev: ReadonlyMap<number, doom.Rev>
   readonly person: boolean
   readonly startA?: doom.Doom
-  readonly logA: readonly doom.Landed[]
+  readonly logA: readonly doom.RunEdit[]
   readonly wa: Wrote
   readonly wb: Wrote
   readonly ka: "none" | Key
@@ -138,8 +138,10 @@ function observe(world: World): Spec {
     wa: world.wa,
     wb: world.wb,
     ka: world.ka,
-    saT: world.startA === undefined ? 0 : valueOf(world.startA, "T"),
-    saN: world.startA === undefined ? 0 : valueOf(world.startA, "N"),
+    pa: idOf(
+      world.logA.flatMap((edit) => edit.replaced).find((cell) => cell.key === "text" || cell.key === "notes")?.value ??
+        wordsOf(0),
+    ),
     ua: world.ua,
   }
 }
@@ -167,7 +169,7 @@ function runPhase(world: World, name: RunName, phase: "start" | "stop"): Outcome
     world: {
       ...world,
       server,
-      ...(name === "a" ? { logA: [...world.logA, edit] } : {}),
+      ...(name === "a" ? { logA: [...world.logA, { ...edit, replaced: doom.replacedBy(world.server, edit) }] } : {}),
       ...(name === "a" && phase === "start" ? { startA: world.server } : {}),
     },
   }
@@ -185,7 +187,9 @@ function runWrite(world: World, name: RunName, key: Key): Outcome {
         ...keyed,
         server: result,
         tagRev: new Map([...world.tagRev, [writeTag[name], result.rev]]),
-        ...(name === "a" ? { wa: "landed" as const, logA: [...world.logA, edit] } : { wb: "landed" as const }),
+        ...(name === "a"
+          ? { wa: "landed" as const, logA: [...world.logA, { ...edit, replaced: doom.replacedBy(world.server, edit) }] }
+          : { wb: "landed" as const }),
       },
       named: [write],
       before: world.server,
@@ -197,17 +201,11 @@ function runWrite(world: World, name: RunName, key: Key): Outcome {
 }
 
 function undoWrites(world: World): readonly doom.Write[] {
-  const last = world.logA.at(-1)
-  if (world.startA === undefined || last === undefined) return []
-  const owned = new Set<doom.Rev>(world.logA.map((each) => each.rev))
+  if (world.startA === undefined || world.logA.length === 0) return []
+  const owned = new Set<doom.Rev>()
   const undo = world.tagRev.get(3)
   if (undo !== undefined) owned.add(undo)
-  return doom.invert(
-    world.startA,
-    world.server,
-    { once: last.once, author: person, writes: world.logA.flatMap((each) => each.writes), rev: last.rev },
-    owned,
-  )
+  return doom.invertRun(world.server, world.logA, owned).writes
 }
 
 function undoA(world: World): Outcome {

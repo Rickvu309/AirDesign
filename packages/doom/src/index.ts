@@ -18,6 +18,7 @@ export { foldToJson, readFold, readLanded, readRuns, readStoredNode, revsToJson,
 export type { Arrow, End, Geometry } from "./geometry.js"
 export { type NodeId, type Rev, nodeId, rev } from "./ids.js"
 export { invert } from "./invert.js"
+export { type Replaced, type RunEdit, type Undone, invertRun, readRunEdit, replacedBy } from "./invert-run.js"
 export type { Align9, Cell, Layout, Sizing, Track } from "./layout.js"
 export type { Chart } from "./chart.js"
 export type { Color, ColorVar, Effect, Hex, ImagePaint, Paint, Sides, StrokeStyle } from "./paint.js"

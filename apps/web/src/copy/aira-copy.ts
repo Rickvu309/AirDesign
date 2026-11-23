@@ -78,6 +78,18 @@ export function airaStepsSummary(said: readonly string[]): string {
   return new Intl.ListFormat("en", { type: "conjunction" }).format([first, ...lowered])
 }
 
+export function airaKeptLayerName(name: string): string {
+  return `“${name}”`
+}
+
+export function airaKeptLayers(layers: readonly string[]): string {
+  const named = new Intl.ListFormat("en", { type: "conjunction" }).format(layers)
+  const opening = `${named.charAt(0).toUpperCase()}${named.slice(1)}`
+  return layers.length === 1
+    ? `${opening} stays, because it was changed after Aira made it.`
+    : `${opening} stay, because they were changed after Aira made them.`
+}
+
 export function airaBackOn(when: string): string {
   return `Available again ${when}`
 }
@@ -119,6 +131,14 @@ export const airaCopy = {
   notOfferedBody: "You can keep editing this deck yourself.",
   undoRefused: "Couldn't undo. Something Aira changed was changed again after its edit.",
   undone: "Aira's changes from this request are undone.",
+  keptKinds: {
+    text: "a text layer",
+    shape: "a shape",
+    picture: "an image",
+    connector: "a line",
+    group: "a group",
+    frame: "a frame",
+  },
   undoFailed: "Unable to undo. Check your connection and try again.",
   unavailable: "Unavailable in your region",
   chatsTitle: "Chats on this deck",
