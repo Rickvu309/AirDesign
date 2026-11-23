@@ -30,6 +30,22 @@ same(
   [1, 4, 5, 6, 7, 8].map((line) => `packages/catalog/src/deck-routes.ts:${String(line)}`),
 )
 same(
+  "a multiline dynamic import, a vi.mock and TypeScript import forms each fail",
+  faultsOf({
+    "apps/web/src/editor/slide.test.ts": [
+      "const model = await import(",
+      '  "@airdesign/document"',
+      ")",
+      'vi.mock("@airdesign/document", () => ({}))',
+      'vi.doMock("@airdesign/document/src/link-target.js", () => ({}))',
+      'const actual = await vi.importActual("@airdesign/document")',
+      'import legacy = require("@airdesign/document")',
+      'type Legacy = import("@airdesign/document").Preset',
+    ].join("\n"),
+  }).map((fault) => fault.split(" ")[0]),
+  [2, 4, 5, 6, 7, 8].map((line) => `apps/web/src/editor/slide.test.ts:${String(line)}`),
+)
+same(
   "a package that lists document as a dependency fails",
   faultsOf({
     "packages/render/package.json": JSON.stringify({ devDependencies: { "@airdesign/document": "workspace:*" } }),
