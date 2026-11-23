@@ -10,7 +10,7 @@ import {
   strokePaintWrite,
   type ShadowName,
 } from "./design-paint-values"
-import { lineNew, lookWrite, paraWrite, sizeNew, styleWrite, type LookPatch } from "./design-text-values"
+import { lineNew, sizeNew } from "./design-text-values"
 import { cornerEmu, pointEmu, doomColorOf, wholeFraction } from "./design-values"
 import { propOf } from "@/editing/node-props"
 import type { SlideGeometry } from "./slide-geometry"
@@ -35,8 +35,8 @@ function eachText(context: ChangeContext, change: (text: doom.Text) => doom.Text
   })
 }
 
-function look(context: ChangeContext, patch: LookPatch): Writes {
-  return eachText(context, (text) => lookWrite(text, patch))
+function look(context: ChangeContext, patch: doom.TextPatch): Writes {
+  return eachText(context, (text) => doom.lookWrite(text, patch))
 }
 
 function onlyColor(value: unknown): doom.Color | undefined {
@@ -60,7 +60,9 @@ function textChange(context: ChangeContext, control: PanelControl, value: unknow
   const number = typeof value === "number" ? value : undefined
   switch (field) {
     case "style":
-      return typeof value === "string" ? eachText(context, (text) => styleWrite(text, value as doom.TextStyleName)) : []
+      return typeof value === "string"
+        ? eachText(context, (text) => doom.styleWrite(text, value as doom.TextStyleName))
+        : []
     case "font":
       return typeof value === "string" ? look(context, { font: value }) : []
     case "weight": {
@@ -72,7 +74,9 @@ function textChange(context: ChangeContext, control: PanelControl, value: unknow
     case "letterSpacing":
       return number === undefined ? [] : look(context, { tracking: Math.round(number) / 100 })
     case "lineHeight":
-      return number === undefined ? [] : eachText(context, (text) => paraWrite(text, { lineHeight: lineNew(number) }))
+      return number === undefined
+        ? []
+        : eachText(context, (text) => doom.paraWrite(text, { lineHeight: lineNew(number) }))
     case "bold":
     case "italic":
     case "underline":
@@ -80,7 +84,7 @@ function textChange(context: ChangeContext, control: PanelControl, value: unknow
       return typeof value === "boolean" ? look(context, { [field]: value }) : []
     case "align":
       return typeof value === "string"
-        ? eachText(context, (text) => paraWrite(text, { align: value as NonNullable<doom.Para["align"]> }))
+        ? eachText(context, (text) => doom.paraWrite(text, { align: value as NonNullable<doom.Para["align"]> }))
         : []
     case "list":
       return eachText(context, (text) => ({

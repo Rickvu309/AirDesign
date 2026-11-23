@@ -82,53 +82,6 @@ export function shownText(text: doom.Text, theme: doom.Theme): TextShown {
   }
 }
 
-export type LookPatch = { readonly [K in keyof TextLook]?: TextLook[K] }
-
-function withSpans(text: doom.Text, change: (span: doom.Span) => doom.Span): doom.Text {
-  const length = text.chars.length
-  if (length === 0) return text
-  const base: readonly doom.Span[] = text.spans.length === 0 ? [{ end: length }] : text.spans
-  return { ...text, spans: base.map(change) }
-}
-
-function without(span: doom.Span, keys: readonly (keyof doom.Span)[]): doom.Span {
-  const kept = { ...span }
-  for (const key of keys) delete (kept as Record<string, unknown>)[key]
-  return kept
-}
-
-export function lookWrite(text: doom.Text, patch: LookPatch): doom.Text {
-  return withSpans(text, (span) => {
-    let next: doom.Span = span
-    if (patch.size !== undefined) next = { ...next, size: patch.size }
-    if (patch.font !== undefined) next = { ...next, font: patch.font }
-    if (patch.bold !== undefined) next = { ...next, bold: patch.bold }
-    if (patch.italic !== undefined) next = { ...next, italic: patch.italic }
-    if (patch.underline !== undefined) next = { ...next, underline: patch.underline }
-    if (patch.strike !== undefined) next = { ...next, strike: patch.strike }
-    if (patch.color !== undefined) next = { ...next, color: patch.color }
-    if (patch.tracking !== undefined) next = { ...next, tracking: patch.tracking }
-    if (patch.case !== undefined) next = patch.case === "none" ? without(next, ["case"]) : { ...next, case: patch.case }
-    return next
-  })
-}
-
-export function paraWrite(text: doom.Text, patch: doom.Para): doom.Text {
-  return { ...text, paras: text.paras.map((para) => ({ ...para, ...patch })) }
-}
-
-export function styleWrite(text: doom.Text, style: doom.TextStyleName): doom.Text {
-  const reset = withSpans(text, (span) => without(span, ["size", "font", "bold", "tracking", "case"]))
-  return {
-    ...reset,
-    style,
-    paras: reset.paras.map((para) => {
-      const { lineHeight: _lineHeight, ...rest } = para
-      return rest
-    }),
-  }
-}
-
 export const sizeOld = (px: number): number => Math.round(px * hundredths)
 export const sizeNew = (old: number): number => old / hundredths
 export const lineOld = (multiple: number): number => Math.round(multiple * wholeFraction)

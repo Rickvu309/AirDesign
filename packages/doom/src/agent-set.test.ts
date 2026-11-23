@@ -32,6 +32,17 @@ describe("set by node id", () => {
     expect(get(doom.nodes.get(ids.title)!, "text")).toMatchObject({ chars: "Revenue", style: "caption" })
   })
 
+  it("makes the words the named style whole, as the panel does, so a person's size cannot cancel it", () => {
+    const sized = { ...textOf("Revenue"), spans: [{ end: 7, size: 31, font: "Inter", italic: true }] }
+    const typed = land(sampleDeck(), [
+      { node: ids.title, prop: "text", value: sized, base: revOf(sampleDeck(), ids.title, "text")! },
+    ])
+    const doom = build(started(typed), set(ids.title, { textStyle: "heading" }))
+    const text = get(doom.nodes.get(ids.title)!, "text")!
+    expect(text.style).toBe("heading")
+    expect(text.spans).toEqual([{ end: 7, italic: true }])
+  })
+
   it("writes paint, outline, radius, effect, opacity, name, hidden and box", () => {
     const doom = build(
       agentDeck(),

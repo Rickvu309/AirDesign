@@ -7,6 +7,7 @@ import type { Color, ColorVar, Hex, Paint, Sides, StrokeStyle } from "./paint.js
 import type { Box } from "./doom-walk.js"
 import { zeroBox } from "./doom-walk.js"
 import type { Text, TextStyleName } from "./text.js"
+import { styleWrite } from "./text-writes.js"
 
 export type Now = {
   readonly stroke?: StrokeStyle | undefined
@@ -112,7 +113,8 @@ export function textOfLook(look: AgentLook, now: Text | undefined, fallback: Tex
   const words = look.text
   const replacing = words !== undefined && now !== undefined
   let text: Text
-  if (words === undefined) text = { ...(now ?? textFromMarkdown("", style)), style }
+  if (words === undefined)
+    text = now === undefined ? textFromMarkdown("", style) : look.textStyle === undefined ? now : styleWrite(now, style)
   else {
     const made = textFromMarkdown(words, style)
     text =

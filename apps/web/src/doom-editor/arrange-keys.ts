@@ -1,6 +1,5 @@
 import * as doom from "@airdesign/doom"
 import type { GestureId } from "@airdesign/render"
-import { duplicateWrites, pasteWrites, type Clipboard } from "./copy-writes"
 import { deleteWrites } from "./delete-writes"
 import { flipWrites, toggleWrites } from "./flip-writes"
 import { wrapWrites, ungroupWrites } from "./group-writes"
@@ -19,7 +18,7 @@ export type ArrangeContext = {
   readonly onSelection: (next: Selection) => void
 }
 
-let held: Clipboard | null = null
+let held: doom.Clipboard | null = null
 
 export function emptyClipboard(): void {
   held = null
@@ -43,7 +42,7 @@ export function arranged(gesture: GestureId | null, context: ArrangeContext): bo
   const ids = selection.ids
   switch (gesture) {
     case "duplicate": {
-      const copies = duplicateWrites(view, ids, client.mint)
+      const copies = doom.duplicateWrites(view, ids, client.mint)
       landed(context, copies.writes, copies.roots)
       return true
     }
@@ -59,7 +58,7 @@ export function arranged(gesture: GestureId | null, context: ArrangeContext): bo
     }
     case "paste": {
       if (held === null) return false
-      const copies = pasteWrites(held, view, pasteTarget(view, selection, slide), client.mint)
+      const copies = doom.pasteWrites(held, view, pasteTarget(view, selection, slide), client.mint)
       landed(context, copies.writes, copies.roots)
       return true
     }

@@ -1,6 +1,5 @@
 import { orderKeyBetween, type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { duplicateWrites } from "./copy-writes"
 import { parentSlot, propOf, siblingsOf, slidesOf } from "@/editing/node-props"
 
 type Mint = () => doom.NodeId
@@ -61,7 +60,7 @@ export function addSlideWrites(
 }
 
 export function duplicateSlideWrites(view: doom.Doom, slide: doom.NodeId, mint: Mint): Added {
-  const copies = duplicateWrites(view, [slide], mint)
+  const copies = doom.duplicateWrites(view, [slide], mint)
   return { slide: copies.roots[0] ?? slide, writes: copies.writes }
 }
 
