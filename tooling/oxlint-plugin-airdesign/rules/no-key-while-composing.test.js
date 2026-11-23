@@ -377,3 +377,45 @@ expectAccepts(
 `,
   rule,
 )
+expectRejects(
+  "an optional chain on the event does not hide an Enter check",
+  "apps/web/src/editor/rename.tsx",
+  `export const keys = (event, commit) => {
+  if (event?.key === "Enter") commit()
+}
+`,
+  rule,
+  message,
+)
+expectRejects(
+  "an optional chain on the native event does not hide an Escape check",
+  "apps/web/src/editor/rename.tsx",
+  `export const keys = (event, cancel) => {
+  if (event.nativeEvent?.key === "Escape") cancel()
+}
+`,
+  rule,
+  message,
+)
+expectRejects(
+  "an optional computed read, alias, list and destructure do not hide a key check",
+  "apps/web/src/editor/rename.tsx",
+  `export const keys = (event, commit) => {
+  const k = event?.key
+  const { code } = event?.nativeEvent
+  if (event?.["keyCode"] === 13 || ["Enter"].includes(event?.key) || k === "Enter" || code === "Escape") commit()
+}
+`,
+  rule,
+  message,
+)
+expectAccepts(
+  "a guard on an optional chain covers an optional chain check",
+  "apps/web/src/editor/rename.tsx",
+  `${guard}export const keys = (event, commit) => {
+  if (composing(event?.nativeEvent)) return
+  if (event?.key === "Enter") commit()
+}
+`,
+  rule,
+)
