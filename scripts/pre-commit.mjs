@@ -29,7 +29,9 @@ const extensions = new Set([
   ".astro",
 ])
 
-export const formatStaged = (root) => {
+const gateNote = "The gate's format step checks it before any push."
+
+export const formatStaged = (root, say = (line) => console.error(line)) => {
   const formatter = path.join(root, "node_modules", ".bin", "oxfmt")
   if (!fs.existsSync(formatter)) return
   const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" })
@@ -41,32 +43,23 @@ export const formatStaged = (root) => {
   for (const file of files) {
     if (fs.existsSync(path.join(root, file)) && fs.lstatSync(path.join(root, file)).isSymbolicLink()) continue
     if (!unstaged.has(file)) {
-      whole.push(`./${file}`)
+      whole.push(file)
       continue
     }
     const staged = git("show", `:${file}`)
     const formatted = spawnSync(formatter, ["--stdin-filepath", file], { cwd: root, input: staged, encoding: "utf8" })
-    if (formatted.status !== 0) throw new Error(formatted.stderr || `Could not format ${file}`)
-    if (formatted.stdout !== staged) {
-      throw new Error(
-        `commit refused: ${file} is not formatted and has unstaged changes. Run pnpm exec oxfmt ${file}, stage it, and commit again.`,
-      )
-    }
+    if (formatted.status !== 0 || formatted.stdout !== staged)
+      say(`left ${file} as staged: it has unstaged changes. ${gateNote}`)
   }
-  if (whole.length > 0) {
-    execFileSync("pnpm", ["exec", "oxfmt", "--no-error-on-unmatched-pattern", ...whole], {
-      cwd: root,
-      stdio: "inherit",
-    })
-    git("add", "--", ...whole)
+  const formatted = []
+  for (const file of whole) {
+    const run = spawnSync(formatter, ["--no-error-on-unmatched-pattern", `./${file}`], { cwd: root, encoding: "utf8" })
+    if (run.status === 0) formatted.push(file)
+    else say(`left ${file} as staged: it does not parse yet. ${gateNote}`)
   }
+  if (formatted.length > 0) git("add", "--", ...formatted)
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try {
-    formatStaged(path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."))
-  } catch (error) {
-    console.error(error.message)
-    process.exitCode = 1
-  }
+  formatStaged(path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."))
 }

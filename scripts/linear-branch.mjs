@@ -31,6 +31,33 @@ export const linearFault = ({ merges, branch }) => {
   ].join("\n")
 }
 
+const workInProgress = /^\s*(?:wip\b|fixup!|squash!|amend!)/i
+
+export const wipsSince = (git, { tip = "HEAD", main = "origin/main" } = {}) =>
+  succeeds(
+    git(["log", "--no-merges", "--format=%H%x00%s", `${main}..${tip}`]),
+    `could not list the commits in ${main}..${tip}`,
+  )
+    .split("\n")
+    .filter((line) => line !== "")
+    .map((line) => {
+      const [hash, subject] = line.split("\0")
+      return { hash, subject }
+    })
+    .filter(({ subject }) => workInProgress.test(subject))
+
+export const wipFault = ({ wips, branch }) => {
+  if (wips.length === 0) return undefined
+  const shown = wips.slice(0, listed).map(({ hash, subject }) => `  ${hash.slice(0, 8)} ${subject}`)
+  return [
+    `${wips.length} work-in-progress ${wips.length === 1 ? "commit" : "commits"} in ${branch ?? "this branch"} since origin/main:`,
+    ...shown,
+    ...(wips.length > listed ? [`  and ${wips.length - listed} more`] : []),
+    "A WIP commit keeps work in your own worktree, and commits as fast as any other with no flag; it never ships.",
+    `Rebuild the branch's net change as one commit with its real title: ${rebuildCommand} --message "<title>"`,
+  ].join("\n")
+}
+
 const conflictNames = (stdout) => {
   const [, ...rest] = stdout.split("\n")
   return rest.slice(0, rest.indexOf("")).filter((name) => name !== "")
@@ -73,10 +100,12 @@ export const rebuildLine = ({ before, after, parent }) =>
 
 export const pushFaults = (root, pushed) => {
   const git = runner("git", root)
-  return pushedRefs(pushed).flatMap(({ ref, commit }) => {
-    const merges = mergesSince(git, { tip: commit })
-    return merges.length === 0 ? [] : [linearFault({ merges, branch: ref })]
-  })
+  return pushedRefs(pushed).flatMap(({ ref, commit }) =>
+    [
+      linearFault({ merges: mergesSince(git, { tip: commit }), branch: ref }),
+      wipFault({ wips: wipsSince(git, { tip: commit }), branch: ref }),
+    ].filter((fault) => fault !== undefined),
+  )
 }
 
 const eventTip = (git, event) => {
@@ -107,12 +136,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
     process.exit(result.ok ? 0 : 1)
   }
   const tip = eventTip(git, process.env.GITHUB_EVENT_NAME)
-  const merges = mergesSince(git, { tip })
-  const fault = linearFault({ merges })
-  if (fault !== undefined) {
-    console.error(fault)
+  const faults = [linearFault({ merges: mergesSince(git, { tip }) }), wipFault({ wips: wipsSince(git, { tip }) })]
+  if (faults.some((fault) => fault !== undefined)) {
+    for (const fault of faults.filter((each) => each !== undefined)) console.error(fault)
     process.exit(1)
   }
   const count = succeeds(git(["rev-list", "--count", `origin/main..${tip}`]), "could not count the commits").trim()
-  console.log(`linear-branch: ${count} commits since origin/main, none a merge commit`)
+  console.log(`linear-branch: ${count} commits since origin/main, none a merge or work-in-progress commit`)
 }

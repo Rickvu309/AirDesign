@@ -1,3 +1,3 @@
-# Formatting preserves unstaged edits
+# A commit never needs `--no-verify`: the pre-commit hook formats what it can and refuses nothing, and formatting never touches unstaged edits
 
-`scripts/pre-commit.mjs` refuses unformatted partly staged files; `scripts/install-hooks.mjs` installs it
+`scripts/pre-commit.mjs` formats each whole staged file and stages it again. It leaves as staged, with one line saying why, a file that does not parse yet and a file with unstaged changes, because the gate's `format` step checks every file before a push. `scripts/install-hooks.mjs` installs it. `scripts/pre-commit.test.mjs` commits a half-written file beside a formatted one: agents had bypassed the hook with `--no-verify` for exactly such work-in-progress commits.
