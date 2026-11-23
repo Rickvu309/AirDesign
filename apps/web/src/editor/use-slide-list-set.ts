@@ -1,12 +1,8 @@
 import { useLayoutEffect, useState, type RefObject } from "react"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import { gridMoveAt } from "@/editor/editor-grid-keys"
-import { gridGroups } from "@/editor/grid-group"
-import { gridDrop, type GridMoveSide } from "@/editor/grid-drop"
-import { gridMoveMessage } from "@/editor/grid-group-frame"
-import { gridChange } from "@/editor/grid-menu"
+import { gridDrop, gridGroups, gridMoveMessage } from "@/editor/grid-drop"
 import type { GridPick } from "@/editor/grid-selection"
-import { gridSlideActions } from "@/editor/grid-slide-actions"
+import { gridChange, gridMoveAt, gridSlideActions } from "@/editor/grid-slide-actions"
 import { heldSlides, livePick, pressedPick, type SlidePress } from "@/editor/slide-list-pick"
 import type { SlideKey } from "@/editor/slide-keys"
 import type { SlideMenuSet } from "@/editor/slide-menu"
@@ -42,21 +38,19 @@ export function useSlideListSet(
     if (next.pick !== null && how !== "menu") announce(slideListCopy.selected(next.pick.slides.size))
     strip.onSelect(next.current)
   }
-  const moveSlides = (moved: readonly number[], at: number, side: GridMoveSide) => {
-    const groupRanges = gridGroups(strip)
-    const first = gridDrop(groupRanges, moved, at, side)
+  const moveSlides = (moved: readonly number[], at: number) => {
+    const first = gridDrop(gridGroups(strip), moved, at)
     if (first === null || strip.onMoveMany === undefined) return
     following.current = true
-    strip.onMoveMany(moved, at, side)
+    strip.onMoveMany(moved, at)
     setPicked(moved.length > 1 ? { anchor: first, slides: new Set(moved.map((_, offset) => first + offset)) } : null)
-    announce(gridMoveMessage(groupRanges, moved, at, false))
+    announce(gridMoveMessage(moved, at))
   }
   const actOnSet = gridSlideActions(strip, live, {
     follow: () => {
       following.current = true
     },
     pick: setPicked,
-    open: strip.onSelect,
     moveSlides,
     announce,
   })

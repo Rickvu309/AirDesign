@@ -32,10 +32,6 @@ export function pickRange(pick: GridPick, index: number, current: number): GridP
   return heldPick(anchor, new Set(Array.from({ length: high - low + 1 }, (_, offset) => low + offset)))
 }
 
-export function pickAll(count: number, current: number): GridPick {
-  return heldPick(current, new Set(Array.from({ length: count }, (_, index) => index)))
-}
-
 export function prunedPick(pick: GridPick, count: number, ids?: readonly SlideId[]): GridPick {
   if (pick === null) return null
   const copies = pick.copies

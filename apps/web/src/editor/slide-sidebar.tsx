@@ -17,7 +17,6 @@ import { slideListCopy } from "@/copy/slide-list-copy"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { hairlineShadow, surfaceShadow } from "@/components/ui/shadows"
 import { SidebarHead } from "@/editor/editor-chrome"
-import type { GridMoveSide } from "@/editor/grid-drop"
 import { slideKey, type SlideKey } from "@/editor/slide-keys"
 import type { SelectedCopy, SlideSetChange } from "@/editing/slide-edit"
 import type { SaveStatus } from "@/editor/save-status"
@@ -58,7 +57,7 @@ export type SlideStrip = {
     indices: readonly number[],
     paint: (copies: readonly SelectedCopy[]) => void,
   ) => void
-  readonly onMoveMany?: (held: readonly number[], at: number, placement?: GridMoveSide) => void
+  readonly onMoveMany?: (held: readonly number[], at: number) => void
   readonly onMove?: (from: number, to: number) => void
   readonly say?: { current: (text: string) => void }
   readonly thumbHeight: number
@@ -207,7 +206,7 @@ function DeckStrip({
         if (!Number.isInteger(from) || from === index) return
         if (inSet(from) && strip.onMoveMany !== undefined) {
           const at = setDropPlace(held, index)
-          if (at !== null) moveSlides(held, at, "same")
+          if (at !== null) moveSlides(held, at)
           return
         }
         announce(slideListCopy.moved(from + 1, index + 1))

@@ -1,4 +1,4 @@
-import { boundedZoom, zoomRanges } from "@/editor/canvas-zoom"
+import { boundedZoom } from "@/editor/canvas-zoom"
 
 export type Size = { readonly w: number; readonly h: number }
 export type Zoom = "fit" | number
@@ -6,7 +6,7 @@ export type Zoom = "fit" | number
 const stops = [0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4] as const
 
 export function boundedScale(scale: number): number {
-  return boundedZoom(scale * 100, zoomRanges.slides) / 100
+  return boundedZoom(scale * 100) / 100
 }
 
 export function fitScale(room: Size, slide: Size): number {

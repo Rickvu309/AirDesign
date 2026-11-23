@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject }
 import { zoomCopy, zoomToOf } from "@/copy/product-copy"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuRadioGroup, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { steppedZoom, typedZoom, zoomPresets, zoomRanges, type ZoomRange, type Zoom } from "@/editor/canvas-zoom"
+import { steppedZoom, typedZoom, zoomPresets, type Zoom } from "@/editor/canvas-zoom"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { guideCopy } from "@/copy/guide-copy"
 import {
@@ -22,7 +22,7 @@ function zoomOf(value: unknown): Zoom | null {
   return zoomPresets.find((preset) => String(preset) === value) ?? null
 }
 
-function ZoomField({ percent, onZoom, range }: { percent: number; onZoom: (zoom: Zoom) => void; range: ZoomRange }) {
+function ZoomField({ percent, onZoom }: { percent: number; onZoom: (zoom: Zoom) => void }) {
   const shown = `${String(percent)}%`
   const [text, setText] = useState(shown)
   const field = useRef<HTMLInputElement>(null)
@@ -38,7 +38,7 @@ function ZoomField({ percent, onZoom, range }: { percent: number; onZoom: (zoom:
     event.stopPropagation()
     if (event.key !== "Enter") return
     event.preventDefault()
-    const next = typedZoom(text, range)
+    const next = typedZoom(text)
     if (next === null) setText(shown)
     else onZoom(next)
   }
@@ -65,11 +65,9 @@ export function ZoomMenu({
   onZoom,
   onSelection,
   canvas,
-  range = zoomRanges.slides,
   rulers,
   layoutGuides,
 }: {
-  range?: ZoomRange
   zoom: Zoom
   percent: number
   onZoom: (zoom: Zoom) => void
@@ -126,19 +124,19 @@ export function ZoomMenu({
         className="w-[220px]"
         {...(canvas === undefined ? {} : { finalFocus: restoreAfterTyping })}
       >
-        <ZoomField percent={percent} onZoom={choose} range={range} />
+        <ZoomField percent={percent} onZoom={choose} />
         <EditorMenuRule />
         <EditorMenuAction
           label={zoomCopy.zoomIn}
           shortcut={zoomCopy.inKey}
           keys="Control+= Meta+="
-          onClick={() => onZoom(steppedZoom("in", percent, range))}
+          onClick={() => onZoom(steppedZoom("in", percent))}
         />
         <EditorMenuAction
           label={zoomCopy.zoomOut}
           shortcut={zoomCopy.outKey}
           keys="Control+- Meta+-"
-          onClick={() => onZoom(steppedZoom("out", percent, range))}
+          onClick={() => onZoom(steppedZoom("out", percent))}
         />
         {onSelection === undefined ? null : (
           <EditorMenuAction

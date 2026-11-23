@@ -1,10 +1,26 @@
 import { limits } from "@airdesign/doom"
 import { toast } from "@/components/ui/toast"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import type { GridMoveSide } from "@/editor/grid-drop"
-import { gridMoveAt, type GridCommand } from "@/editor/editor-grid-keys"
 import { pickedSlides, type GridPick } from "@/editor/grid-selection"
+import type { SlideKey } from "@/editor/slide-keys"
 import type { SlideStrip } from "@/editor/slide-sidebar"
+
+export type GridCommand = "remove" | "clone" | "earlier" | "later"
+
+export function gridMoveAt(held: readonly number[], count: number, direction: "earlier" | "later"): number | null {
+  const first = held[0]
+  const last = held.at(-1)
+  if (first === undefined || last === undefined) return null
+  if (direction === "earlier") return first > 0 ? first - 1 : null
+  return last < count - 1 ? last + 2 : null
+}
+
+export const gridChange: Record<SlideKey, GridCommand> = {
+  clone: "clone",
+  remove: "remove",
+  up: "earlier",
+  down: "later",
+}
 
 export function gridSlideActions(
   strip: SlideStrip,
@@ -12,14 +28,12 @@ export function gridSlideActions(
   {
     follow,
     pick,
-    open,
     moveSlides,
     announce,
   }: {
     follow: () => void
     pick: (pick: GridPick) => void
-    open: (index: number) => void
-    moveSlides: (held: readonly number[], at: number, side: GridMoveSide) => void
+    moveSlides: (held: readonly number[], at: number) => void
     announce: (text: string) => void
   },
 ) {
@@ -35,8 +49,8 @@ export function gridSlideActions(
       const held = pickedSlides(picked, current)
       if (command === "earlier" || command === "later") {
         const at = gridMoveAt(held, count, command)
-        if (at !== null && strip.onMoveMany !== undefined) moveSlides(held, at, "same")
-      } else if (command !== "open") {
+        if (at !== null && strip.onMoveMany !== undefined) moveSlides(held, at)
+      } else {
         if (command === "remove" && held.length >= count) toast.error(slideListCopy.lastSlide)
         else if (command === "clone" && held.length + count > limits.slides)
           toast.error(slideListCopy.slideLimit(limits.slides))
@@ -60,10 +74,6 @@ export function gridSlideActions(
       }
       return
     }
-    if (command === "open") {
-      open(target)
-      return
-    }
     if (command === "remove") {
       follow()
       strip.onRemove?.(target)
@@ -78,7 +88,7 @@ export function gridSlideActions(
     }
     const at = gridMoveAt([target], count, command)
     if (at === null) return
-    if (strip.onMoveMany !== undefined) moveSlides([target], at, "same")
+    if (strip.onMoveMany !== undefined) moveSlides([target], at)
     else {
       const to = target + (command === "earlier" ? -1 : 1)
       follow()
