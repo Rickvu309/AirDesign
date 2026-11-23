@@ -236,6 +236,27 @@ describe("invert", () => {
     expect(tryLand(later.after, writes)).not.toHaveProperty("refused")
   })
 
+  it("keeps a frame the undo would delete while a layer the undo leaves in place, or someone else's, still sits in it", () => {
+    const [inner, leaf, wrap] = [nodeId("t:10"), nodeId("t:11"), nodeId("t:12")]
+    const nested = land(sampleDeck(), [...create(inner, "frame", ids.card), ...create(leaf, "shape", inner)])
+    const { before, after, edit } = step(nested, [
+      ...create(wrap, "frame", inner, { node: wrap, prop: "box", value: box(100) }),
+      { node: leaf, prop: "parent", value: place(wrap) },
+      { node: leaf, prop: "box", value: box(0) },
+    ])
+    for (const gone of [ids.card, inner]) {
+      const later = step(after, [{ node: gone, prop: "parent", value: null }])
+      expect(invert(before, later.after, edit)).toEqual([])
+    }
+    const theirs = step(after, [{ node: ids.caption, prop: "parent", value: place(wrap) }])
+    const writes = invert(before, theirs.after, edit)
+    expect(writes).toEqual([
+      { node: leaf, prop: "parent", value: place(inner), base: edit.rev },
+      { node: leaf, prop: "box", value: null, base: edit.rev },
+    ])
+    expect((tryLand(theirs.after, writes) as Doom).children.get(wrap)).toEqual([ids.caption])
+  })
+
   it("keeps the writes to a layer the undo itself puts back", () => {
     const { before, after, edit } = step(sampleDeck(), [
       { node: ids.caption, prop: "opacity", value: 0.5 },

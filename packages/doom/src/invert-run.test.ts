@@ -132,6 +132,15 @@ describe("undoing a run, edit by edit from the values each write replaced", () =
     expect(nodeOf(after, ids.card).opacity).toBeUndefined()
   })
 
+  it("keeps the frame a run made while a layer it moved in stays there because the person deleted the frame it came from", () => {
+    const wrap = nodeId("a:1")
+    let world = run(opened(), runA, create(wrap, "frame", ids.slide, { node: wrap, prop: "box", value: box(10) }))
+    world = run(world, runA, [{ node: ids.title, prop: "parent", value: place(wrap) }])
+    world = by(world, person, [{ node: ids.card, prop: "parent", value: null }])
+    expect(undoRun(world, "a").writes).toEqual([])
+    expect(nodeOf(world, ids.title).parent).toMatchObject({ id: wrap })
+  })
+
   it("takes back the whole run when nobody else touched it, and a second undo finds nothing", () => {
     const made = nodeId("a:1")
     let world = run(opened(), runA, create(made, "shape", ids.slide, { node: made, prop: "box", value: box(10) }))

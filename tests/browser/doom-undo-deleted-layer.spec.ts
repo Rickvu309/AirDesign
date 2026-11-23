@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
 import { forward, test } from "./api-stack"
-import { clickSlide, openDoomEditor, savedNode } from "./doom-deck"
+import { accent, clickSlide, landNodes, openDoomEditor, savedNode, selectedIds, spot } from "./doom-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -48,6 +48,73 @@ test("an undo of typing in a layer another tab deleted does nothing, and the nex
   expect((await savedNode(stack, opened, "s:4"))?.parent).toBeNull()
   await other.close()
 })
+
+for (const above of [true, false])
+  test(`an undo of framing a layer whose ${above ? "frame's frame" : "frame"} another tab deleted keeps the new frame, so their undo brings the layer back in it`, async ({
+    page,
+    context,
+    stack,
+  }) => {
+    const opened = await openDoomEditor(page, context, stack)
+    const card = [{ kind: "solid", color: { var: "accent4" } }]
+    const gone = above ? "t:71" : "t:72"
+    await landNodes(stack, opened, [
+      ...(above
+        ? [
+            {
+              id: "t:71",
+              type: "frame" as const,
+              parent: opened.slide,
+              props: { box: spot(200, 200, 900, 600), fills: accent },
+            },
+          ]
+        : []),
+      {
+        id: "t:72",
+        type: "frame" as const,
+        parent: above ? "t:71" : opened.slide,
+        props: { box: above ? spot(100, 100, 600, 400) : spot(300, 300, 600, 400), fills: accent },
+      },
+      {
+        id: "t:73",
+        type: "shape",
+        parent: "t:72",
+        props: { box: spot(100, 100, 200, 100), geometry: { kind: "rect" }, fills: card },
+      },
+    ])
+    const parentId = async (id: string) =>
+      ((await savedNode(stack, opened, id))?.parent as { id: string } | null | undefined)?.id ?? null
+    const shownCard = (tab: typeof page) => tab.locator('[data-slide-box] [data-node="t:73"]')
+    await expect(shownCard(page)).toHaveCount(1)
+    await page.keyboard.down("Control")
+    await clickSlide(page, 500, 450)
+    await page.keyboard.up("Control")
+    await expect.poll(() => selectedIds(page)).toEqual(["t:73"])
+    await page.keyboard.press("Control+Alt+g")
+    await expect.poll(() => parentId("t:73")).not.toBe("t:72")
+    const frame = (await parentId("t:73"))!
+    const framed = (await savedNode(stack, opened, "t:73"))?.box
+    expect(await parentId(frame)).toBe("t:72")
+
+    const other = await context.newPage()
+    await forward(other, stack)
+    await other.goto(`/s/${opened.deck}`)
+    await other.locator("[data-doom-ready]").waitFor()
+    await clickSlide(other, 330, 330)
+    await expect.poll(() => selectedIds(other)).toEqual([gone])
+    await other.keyboard.press("Delete")
+    await expect.poll(async () => (await savedNode(stack, opened, gone))?.parent).toBeNull()
+    await expect(shownCard(page)).toHaveCount(0)
+
+    await page.keyboard.press("ControlOrMeta+z")
+    await other.keyboard.press("ControlOrMeta+z")
+    await expect.poll(() => parentId(gone)).toBe(opened.slide)
+    await expect(shownCard(page)).toHaveCount(1)
+    await expect(shownCard(other)).toHaveCount(1)
+    expect([await parentId("t:73"), await parentId(frame)]).toEqual([frame, "t:72"])
+    expect((await savedNode(stack, opened, "t:73"))?.box).toEqual(framed)
+    await other.close()
+  })
 
 test("a text box emptied and left goes in one step with its typing, and redo deletes it again after an undo", async ({
   page,

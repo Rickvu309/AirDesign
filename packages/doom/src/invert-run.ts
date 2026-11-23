@@ -98,7 +98,7 @@ function settle(now: Doom, edits: readonly Landed[], mine: ReadonlySet<Rev>, res
     .filter(({ cell }) => cell.key === "parent" || !gone(cell.node))
     .map(({ cell, value, base }) => ({ node: cell.node, prop: cell.key, value, base }))
   const roots = [...kept].filter((node) => !kept.has(parentIn(now, node) as NodeId))
-  return { writes: ordered(now, onStandingLayers(now, writes)), kept: roots }
+  return { writes: ordered(now, onStandingLayers(now, writes, edits.at(-1)?.rev ?? now.rev)), kept: roots }
 }
 
 function writerOf(now: Doom, edits: readonly Landed[], mine: ReadonlySet<Rev>, cell: Cell): Rev | undefined {

@@ -1,5 +1,5 @@
 import type { Doom, Write } from "./doom.js"
-import type { NodeId } from "./ids.js"
+import type { NodeId, Rev } from "./ids.js"
 
 const parentIn = (doom: Doom, node: NodeId) =>
   (doom.nodes.get(node) as { parent?: { readonly id: NodeId } | null } | undefined)?.parent
@@ -40,11 +40,38 @@ function landingMoves(now: Doom, moves: ReadonlyMap<NodeId, NodeId>): ReadonlySe
   return lands
 }
 
-export function onStandingLayers(now: Doom, writes: readonly Write[]): readonly Write[] {
-  const lands = landingMoves(now, movesIn(writes))
+function heldFrames(
+  now: Doom,
+  writes: readonly Write[],
+  moves: ReadonlyMap<NodeId, NodeId>,
+  lands: ReadonlySet<NodeId>,
+  since: Rev,
+): ReadonlySet<NodeId> {
+  const written = new Set(writes.flatMap((each) => (each.prop === "parent" ? [each.node] : [])))
+  const staying = [
+    ...[...moves.keys()].filter((node) => !lands.has(node)),
+    ...[...now.nodes.keys()].filter((node) => !written.has(node) && (now.revs.get(node)?.get("parent") ?? 0) > since),
+  ]
+  const held = new Set<NodeId>()
+  for (const node of staying) {
+    let at = parentIn(now, node)
+    for (let hops = 0; at != null && hops <= now.nodes.size; hops += 1) {
+      held.add(at.id)
+      at = lands.has(at.id) ? { id: moves.get(at.id)! } : parentIn(now, at.id)
+    }
+  }
+  return held
+}
+
+export function onStandingLayers(now: Doom, writes: readonly Write[], since: Rev): readonly Write[] {
+  const moves = movesIn(writes)
+  const lands = landingMoves(now, moves)
+  const held = heldFrames(now, writes, moves, lands, since)
   return writes.filter((each) =>
     each.prop === "parent"
-      ? each.value === null || lands.has(each.node)
-      : lands.has(each.node) || parentIn(now, each.node) !== null,
+      ? each.value === null
+        ? !held.has(each.node)
+        : lands.has(each.node)
+      : lands.has(each.node) || (!moves.has(each.node) && parentIn(now, each.node) !== null),
   )
 }

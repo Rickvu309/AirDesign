@@ -11,7 +11,7 @@
       "file": "packages/doom/src/invert-run.ts",
       "names": ["invertRun", "replacedBy"],
       "digest": "56a9274216f8",
-      "blob": "d5de28fe55ce3109494973136c1a6a4f0cc1bc7b"
+      "blob": "a135935b8069e6b365092cd1df537e49b468ec25"
     },
     {
       "file": "packages/live/src/doom-deck.ts",
