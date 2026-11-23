@@ -91,3 +91,58 @@ test("several slides picked in the list move, duplicate and delete together, eac
   expect(await saved()).toEqual([three, one, two, four])
   expect(faults).toEqual([])
 })
+
+test("an undo or another tab's edit later on never puts an old pick back", async ({ page, context, stack }) => {
+  covers("slide-duplicate", "slide-down", "undo")
+  const opened = await openDoomEditor(page, context, stack)
+  const saved = () => savedSlides(stack, opened)
+  for (const count of [2, 3, 4, 5, 6, 7, 8]) {
+    await page.getByRole("button", { name: slideListCopy.addSlide }).click()
+    await expect(entries(page)).toHaveCount(count)
+  }
+  await expect.poll(async () => (await saved()).length).toBe(8)
+  const before = await saved()
+
+  await entry(page, 2).click()
+  await entry(page, 3).click({ modifiers: [shift] })
+  await page.keyboard.press("ControlOrMeta+d")
+  await expect(entries(page)).toHaveCount(10)
+  await expect.poll(async () => (await saved()).length).toBe(10)
+  expect(await picked(page)).toHaveLength(2)
+
+  await entry(page, 1).click()
+  await entry(page, 1).focus()
+  await page.keyboard.press("Alt+ArrowDown")
+  await expect.poll(async () => (await saved())[0]).toBe(before[1])
+  await entry(page, 8).click()
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await saved())[0]).toBe(before[0])
+  expect(await picked(page)).toEqual([])
+  await expect(entry(page, 8)).toHaveAttribute("aria-current", "true")
+
+  const base = await saved()
+  await entry(page, 2).click()
+  await entry(page, 3).click({ modifiers: [shift] })
+  await page.keyboard.press("ControlOrMeta+d")
+  await expect(entries(page)).toHaveCount(12)
+  await expect.poll(async () => (await saved()).length).toBe(12)
+  const copies = (await saved()).filter((id) => !base.includes(id))
+  expect(copies).toHaveLength(2)
+  expect(await picked(page)).toHaveLength(2)
+
+  const removeFromOtherTab = async (slide: string) => {
+    const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+    const edit = {
+      once: `gone-${slide}`,
+      author: { kind: "person", id: "other-tab" },
+      writes: [{ node: slide, prop: "parent", value: null }],
+    }
+    const landed = await stack.post(doomRoutes.edit.path, { deck: opened.deck, edit }, opened.cookie)
+    if (landed.json.ok !== true) throw new Error(JSON.stringify(landed.json))
+  }
+  await removeFromOtherTab(copies[0] ?? "")
+  await expect(entries(page)).toHaveCount(11)
+  await removeFromOtherTab(copies[1] ?? "")
+  await expect(entries(page)).toHaveCount(10)
+  expect(await picked(page)).toEqual([])
+})

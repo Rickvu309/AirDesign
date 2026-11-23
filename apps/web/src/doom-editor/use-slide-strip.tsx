@@ -3,6 +3,7 @@ import { gestureFor } from "@airdesign/render"
 import { useRef, type KeyboardEvent } from "react"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { slideListCopy } from "@/copy/slide-list-copy"
+import { slidesOf } from "@/editing/node-props"
 import { slideThumbWidth, type SlideStrip } from "@/editor/slide-sidebar"
 import { TypedThumb, type TypingPreview } from "./typing-preview"
 import {
@@ -88,12 +89,15 @@ export function useSlideStrip(props: {
       if (writes.length > 0) client.push(writes)
     },
     onChangeSet: (change, held) => {
-      if (change === "remove") return remove(pick(held)) ? [] : null
+      if (change === "remove") {
+        if (!remove(pick(held))) return null
+        return { picked: [], order: slidesOf(client.view()) }
+      }
       const made = duplicateSlideWrites(view, pick(held), mint)
       const copy = made.slides[0]
       if (copy === undefined || !client.push(made.writes).ok) return null
       onCurrent(copy)
-      return made.slides
+      return { picked: made.slides, order: slidesOf(client.view()) }
     },
   }
 }

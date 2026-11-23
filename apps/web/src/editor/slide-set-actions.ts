@@ -22,7 +22,7 @@ export function slideSetAction(
     announce,
   }: {
     follow: () => void
-    pick: (slides: readonly string[]) => void
+    pick: (slides: readonly string[], order: readonly string[]) => void
     moveSlides: (held: readonly number[], at: number) => void
     announce: (text: string) => void
   },
@@ -41,10 +41,11 @@ export function slideSetAction(
       toast.error(slideListCopy.slideLimit(limits.slides))
       return
     }
-    const picked = strip.onChangeSet?.(change, held)
-    if (picked === undefined || picked === null) return
+    const result = strip.onChangeSet?.(change, held)
+    if (result === undefined || result === null) return
+    const picked = result.picked
     follow()
-    pick(picked)
+    pick(picked, result.order)
     announce(change === "clone" ? slideListCopy.duplicatedSet(picked.length) : slideListCopy.deletedSet(held.length))
   }
 }

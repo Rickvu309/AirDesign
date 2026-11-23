@@ -38,6 +38,8 @@ export type StripGroup = { readonly name: string | null; readonly start: number;
 
 const noGroups: readonly StripGroup[] = []
 
+export type SetChange = { readonly picked: readonly string[]; readonly order: readonly string[] }
+
 export type SlideStrip = {
   readonly count: number
   readonly slideIds: readonly NodeId[]
@@ -51,7 +53,7 @@ export type SlideStrip = {
   readonly layouts?: readonly LayoutChoice[]
   readonly onClone?: (index: number) => void
   readonly onRemove?: (index: number) => void
-  readonly onChangeSet?: (change: "clone" | "remove", indices: readonly number[]) => readonly string[] | null
+  readonly onChangeSet?: (change: "clone" | "remove", indices: readonly number[]) => SetChange | null
   readonly onMoveMany?: (held: readonly number[], at: number) => void
   readonly onMove?: (from: number, to: number) => void
   readonly say?: { current: (text: string) => void }
