@@ -24,7 +24,7 @@ Preconditions:
 - `$V doctor <run>` is ok.
 
 - **Specs.** `pnpm test:browser tests/browser/doom-editor.spec.ts tests/browser/doom-editor-text.spec.ts tests/browser/doom-text-format.spec.ts` opens a new deck, edits and formats its text, and reads each saved node from `doomRoutes.open`.
-- **In a scratch journey.** `signIn()`, then on `/` click `button "New deck"` and wait for `[data-doom-ready]` (`newDoomDeck` in `bin/new-deck.mjs`). Read the deck id from `page.url()` (`/s/<id>`).
+- **In a scratch journey.** `signIn()`, then on `/` click `button "New deck"` and wait for `[data-doom-ready]` (`newDoomDeck` in `../bin/new-deck.mjs`). Read the deck id from `page.url()` (`/s/<id>`).
 - **Type.** Double-click the title, press Ctrl/Cmd+A, type `Saved on the server` with `pressSequentially`, press Escape. Evidence `NN-typed`.
 - **Server copy.** Poll `post(doomRoutes.open, { deck }, cookie)` until the title node in `json.fold.nodes` has `text.chars` `Saved on the server`. Evidence `NN-api-doom-open.json`.
 - **Listed.** `post(deckRoutes.list, {}, cookie)` lists the deck with its `doom` revision and the name `Saved on the server`, which followed the title.

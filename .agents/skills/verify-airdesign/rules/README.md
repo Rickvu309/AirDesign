@@ -1,6 +1,6 @@
 # Holds: check a rule in any order
 
-Each folder in `specs/<topic>` holds a TLA+ model (`<Module>.tla`), its bounds and checked properties (`<Module>.cfg`), and a reader view (`view.mjs`) that turns a model state and step into words. TLC checks every reachable state of the model. A replay then drives the model's edges through the real functions, so a model that drifts from the code fails a test. A pass covers the model under its bounds and the code the replay drives. It does not cover code outside them.
+Each folder in `specs/<topic>` holds a TLA+ model (`<Module>.tla`), its bounds and checked properties (`<Module>.cfg`), and a reader view (`specs/<topic>/view.mjs`) that turns a model state and step into words. TLC checks every reachable state of the model. A replay then drives the model's edges through the real functions, so a model that drifts from the code fails a test. A pass covers the model under its bounds and the code the replay drives. It does not cover code outside them.
 
 The coverage record has one entry per check: the properties, the code it covers, the bounds, the command, the replay, the gaps and the known bugs. Each spec's `specs/<topic>/covers.json` names the declarations its model describes, file by file, with a digest of their source at the last sync. [checks-server.md](checks-server.md) holds agents, turn, stop, aira-loop, usage, oauth and owner. [checks-doom.md](checks-doom.md) holds doom, doom-runs and the structure of layers on Doom. [checks-credits.md](checks-credits.md) holds paid usage resets and credit history. Read the entry for every check your change touches before you trust a pass.
 
@@ -33,7 +33,7 @@ For a full pass, run every distinct test file the command prints. One file can r
 
 ## 3. Read a result
 
-On a failure, `check:specs` prints TLC's trace and then the counterexample step by step: each step in the words of `view.mjs`, the action name in brackets, and the variables that changed. Read every result with the pstack `/statechart` skill too. It shows an invariant violation as its shortest path in plain words, and on a pass it draws how the system moves between states.
+On a failure, `check:specs` prints TLC's trace and then the counterexample step by step: each step in the words of `specs/<topic>/view.mjs`, the action name in brackets, and the variables that changed. Read every result with the pstack `/statechart` skill too. It shows an invariant violation as its shortest path in plain words, and on a pass it draws how the system moves between states.
 
 A replay failure names the edge that the code took differently, as `Group: state -Action-> Group: state` in the view's words.
 

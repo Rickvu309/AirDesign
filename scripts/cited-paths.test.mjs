@@ -138,13 +138,44 @@ try {
 }
 
 same(
-  "a path from the skill's folder, a path from a package's src and a file name anywhere in the repo resolve",
+  "a path from the repo root, a path from the citing file's folder, a name beside it and a name one file has resolve",
   markdownFaults(
     ".agents/skills/verify-airdesign/features/aira-turn.md",
-    "`bin/verify-airdesign.mjs`, `doom-editor/doom-editor.tsx` and `filmstrip.test.ts`",
+    "`apps/web/src/doom-editor/doom-editor.tsx`, `../bin/verify-airdesign.mjs`, `deck-names.md` and `filmstrip.test.ts`",
     index,
   ),
   [],
+)
+
+same(
+  "replaying scripts/design-shards.rule.md, which named the look states test from the skill's folder, needs the path from the root: an end of some path no longer passes",
+  cited(markdownFaults("scripts/design-shards.rule.md", "`look/states.test.mjs` holds the split", index)),
+  ["look/states.test.mjs"],
+)
+
+same(
+  "after PR 1409 moved airdesign-mark-art.ts into components/ui, its bare name names two files and passes only with its folder",
+  markdownFaults("apps/web/src/decks/airdesign-mark.rule.md", "`airdesign-mark-art.ts` holds the mark's paths", index),
+  [
+    "apps/web/src/decks/airdesign-mark.rule.md:1: `airdesign-mark-art.ts` names 2 files and none beside this one. Write it with its folder from the repo root.",
+  ],
+)
+
+same(
+  "a moved file named by its old path from the root fails, as apps/web/src/editor/shape-grid.tsx did after PR 1409",
+  cited(markdownFaults("AGENTS.md", "`apps/web/src/editor/shape-grid.tsx` draws the presets", index)),
+  ["apps/web/src/editor/shape-grid.tsx"],
+)
+
+same(
+  "a command in package.json, a workflow, a shell script or a code string names a script that must exist",
+  [
+    ...codeFaults("package.json", '    "rules": "node scripts/gone-rules.mjs",', index),
+    ...codeFaults(".github/workflows/ci.yml", "        run: node scripts/gone-ci.mjs --part=source", index),
+    ...codeFaults("scripts/pptx-tools.sh", 'exec node scripts/gone-tools.mjs "$@"', index),
+    ...codeFaults("scripts/land.mjs", 'const hint = "Run node scripts/gone-hint.mjs first"', index),
+  ].map((fault) => /`([^`]+)`/.exec(fault)?.[1]),
+  ["scripts/gone-rules.mjs", "scripts/gone-ci.mjs", "scripts/gone-tools.mjs", "scripts/gone-hint.mjs"],
 )
 
 same(
@@ -167,7 +198,7 @@ same(
   "a fault names the file, the line and the fix",
   markdownFaults("CHECKS.md", "one\n`scripts/gone.mjs` holds it", index),
   [
-    "CHECKS.md:2: `scripts/gone.mjs` names no file or folder in the repo. Point it at the file that holds this now, or drop the words that name it.",
+    "CHECKS.md:2: `scripts/gone.mjs` names no file or folder from the repo root or from this file's folder. Write the path from the repo root, or point it at the file that holds this now.",
   ],
 )
 

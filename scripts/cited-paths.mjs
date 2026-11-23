@@ -8,7 +8,7 @@ export const glossaryFile = "tooling/oxlint-plugin-airdesign/glossary.json"
 export const pathListFiles = [".github/actions/ci-changes/pptx-paths.txt"]
 
 const records = [/(^|\/)[\w-]*fixtures\//, /^docs\/adr\//, /^scripts\/red-main-drill\.mjs$/]
-const code = /\.(?:[cm]?[jt]sx?|json)$/
+const code = /\.(?:[cm]?[jt]sx?|json|ya?ml|sh)$/
 const testCode = /\.(?:test|spec)\.[cm]?[jt]sx?$/
 const bareExtensions = /^[\w.-]*[\w-]\.(?:ts|tsx|mts|mjs|js|cjs|tla|cfg|sql)$/
 const fileExtension = /[\w-]\.[a-z]{1,5}$/
@@ -34,10 +34,9 @@ export const repoIndex = (files, built = new Set()) => {
     files: new Set(files),
     folders,
     folderNames,
-    names: new Set(files.map((file) => path.posix.basename(file))),
+    named: Map.groupBy(files, (file) => path.posix.basename(file)),
     tops,
     built,
-    all: [...files, ...folders],
   }
 }
 
@@ -56,6 +55,7 @@ const repoPath = (cited, index) => {
 
 export const asCitation = (span, index) => {
   const cited = trimmed(span)
+  if (/^\.\.?\//.test(cited) && fileExtension.test(cited)) return cited
   if (cited === "" || notAPath.test(cited)) return undefined
   if (!cited.includes("/")) return bareExtensions.test(cited) ? cited : undefined
   return repoPath(cited, index) ? cited : undefined
@@ -63,10 +63,17 @@ export const asCitation = (span, index) => {
 
 const exists = (index, candidate) => index.files.has(candidate) || index.folders.has(candidate)
 
-export const resolves = (cited, from, index) => {
-  if (!cited.includes("/")) return index.names.has(cited)
+export const citedFault = (cited, from, index) => {
   const beside = path.posix.normalize(path.posix.join(path.posix.dirname(from), cited))
-  return exists(index, cited) || exists(index, beside) || index.all.some((each) => each.endsWith(`/${cited}`))
+  if (exists(index, cited) || exists(index, beside)) return undefined
+  if (!cited.includes("/")) {
+    const holders = index.named.get(cited) ?? []
+    if (holders.length === 1) return undefined
+    return holders.length === 0
+      ? "names no file in the repo. Point it at the file that holds this now, or drop the words that name it"
+      : `names ${String(holders.length)} files and none beside this one. Write it with its folder from the repo root`
+  }
+  return "names no file or folder from the repo root or from this file's folder. Write the path from the repo root, or point it at the file that holds this now"
 }
 
 export const citationsIn = (source) => {
@@ -85,25 +92,27 @@ export const citationsIn = (source) => {
 
 const fix = "Point it at the file that holds this now, or drop the words that name it"
 
+const at = (file, line, cited, fault) => `${file}:${line}: \`${cited}\` ${fault}.`
+
 export const markdownFaults = (file, source, index) =>
   citationsIn(source).flatMap(({ line, span, link }) => {
     const cited = link ? trimmed(span) : asCitation(span, index)
     if (cited === undefined || cited === "" || /^[a-z]+:/.test(cited)) return []
-    if (
-      link
-        ? exists(index, path.posix.normalize(path.posix.join(path.posix.dirname(file), cited)))
-        : resolves(cited, file, index)
-    )
-      return []
-    return [`${file}:${line}: \`${cited}\` names no file or folder in the repo. ${fix}.`]
+    const fault = citedFault(link && !cited.includes("/") ? `./${cited}` : cited, file, index)
+    return fault === undefined ? [] : [at(file, line, cited, fault)]
   })
 
+const pathToken = /(?<=^|[\s"'`=(,[])([\w.-]+\/[\w./-]*[\w-]\.[a-z]{1,5})(?=$|[\s"'`),;:\]])/g
+
 export const codeFaults = (file, source, index) =>
-  source.split("\n").flatMap((text, at) =>
-    [...text.matchAll(/["'`]([\w.-]+\/[\w./-]+[\w-]\.[a-z]{1,5})["'`]/g)]
+  source.split("\n").flatMap((text, line) =>
+    [...text.matchAll(pathToken)]
       .map(([, cited]) => cited)
-      .filter((cited) => index.tops.has(cited.split("/")[0]) && repoPath(cited, index) && !resolves(cited, file, index))
-      .map((cited) => `${file}:${at + 1}: \`${cited}\` names no file in the repo. ${fix}.`),
+      .filter((cited) => index.tops.has(cited.split("/")[0]) && repoPath(cited, index))
+      .flatMap((cited) => {
+        const fault = citedFault(cited, file, index)
+        return fault === undefined ? [] : [at(file, line + 1, cited, fault)]
+      }),
   )
 
 export const glossaryFaults = (glossary, read) =>
