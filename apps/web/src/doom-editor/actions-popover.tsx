@@ -107,10 +107,11 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
   const optionId = (index: number) => `${id}-option-${index}`
   const listId = `${id}-results`
 
+  const highlightedId = highlighted === null ? null : optionId(highlighted)
   useEffect(() => {
-    if (highlighted === null) return
-    window.document.getElementById(optionId(highlighted))?.scrollIntoView?.({ block: "nearest" })
-  })
+    if (highlightedId === null) return
+    window.document.getElementById(highlightedId)?.scrollIntoView?.({ block: "nearest" })
+  }, [highlightedId])
 
   const choose = (index: number) => {
     const row = rows[index]
@@ -197,7 +198,7 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
             {doomEditorCopy.iconsGroup}
           </p>
           {iconNames.length === 0 ? null : (
-            <div className="grid grid-cols-8 gap-0.5 px-1">
+            <div className="grid gap-0.5 px-1" style={{ gridTemplateColumns: `repeat(${String(iconColumns)}, 1fr)` }}>
               {iconNames.map((name, index) => (
                 <div
                   key={name}
@@ -226,7 +227,9 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
           {doomEditorCopy.allIcons}
         </button>
       )}
-      {nothing ? <p className="px-2 py-1 text-quiet">{doomEditorCopy.noActions}</p> : null}
+      <p role="status" className={nothing ? "px-2 py-1 text-quiet" : "sr-only"}>
+        {nothing ? doomEditorCopy.noActions : null}
+      </p>
     </div>
   )
 }

@@ -243,3 +243,36 @@ it("drops the highlight when All icons swaps the results, so Enter runs nothing 
     await act(async () => panel.root.unmount())
   }
 })
+
+it("says Nothing matches in a status region that stays mounted, so a screen reader hears it", async () => {
+  const panel = await openPanel()
+  try {
+    const status = panel.host.querySelector("[role='status']")
+    expect(status?.textContent).toBe("")
+    await panel.type("zzzzzz")
+    expect(panel.host.querySelector("[role='status']")).toBe(status)
+    expect(status?.textContent).toBe(doomEditorCopy.noActions)
+    await panel.type("pie")
+    expect(status?.textContent).toBe("")
+  } finally {
+    await act(async () => panel.root.unmount())
+  }
+})
+
+it("lays the icon grid out in the same number of columns the arrow keys step by", async () => {
+  const panel = await openPanel()
+  try {
+    await panel.showAllIcons()
+    const grid = panel.host.querySelector<HTMLElement>("[data-actions-group='icons'] > div")
+    const columns = Number(/repeat\((\d+)/.exec(grid?.style.gridTemplateColumns ?? "")?.[1])
+    expect(grid?.className).not.toMatch(/grid-cols-/)
+    const icons = [...panel.host.querySelectorAll("[data-actions-group='icons'] [role='option']")].map((each) =>
+      each.getAttribute("aria-label"),
+    )
+    await panel.press("ArrowDown")
+    await panel.press("ArrowDown")
+    expect(panel.highlighted()?.getAttribute("aria-label")).toBe(icons[columns])
+  } finally {
+    await act(async () => panel.root.unmount())
+  }
+})

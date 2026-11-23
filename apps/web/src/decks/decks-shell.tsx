@@ -13,6 +13,7 @@ import { settingsPaths, type SettingsPath } from "@/account/settings-paths"
 import { settingsCopy } from "@/copy/settings-copy"
 import { productCopy } from "@/copy/product-copy"
 import { cn } from "@/lib/class-names"
+import { composing } from "@/lib/composing"
 
 const sections: {
   id: DeckSection
@@ -197,7 +198,7 @@ export function DecksShell({
                   value: search.value,
                   onChange: (event) => search.onChange(event.currentTarget.value),
                   onKeyDown: (event) => {
-                    if (event.key !== "Escape" || search.value === "") return
+                    if (composing(event) || event.key !== "Escape" || search.value === "") return
                     event.preventDefault()
                     search.onChange("")
                   },

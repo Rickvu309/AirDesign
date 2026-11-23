@@ -149,3 +149,22 @@ it("keeps a grid control focused when typed zoom restores after the keyboard has
     late.restore()
   }
 })
+
+it.each([
+  ["Chrome and Firefox", { isComposing: true }],
+  ["Safari", { keyCode: 229 }],
+])("keeps Escape from the menu while an IME composes in the zoom field in %s", async (_browser, init) => {
+  const { field } = await opened()
+  const reached = vi.fn()
+  window.document.addEventListener("keydown", reached)
+  try {
+    await act(async () => {
+      field.dispatchEvent(
+        new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true, ...init }),
+      )
+    })
+    expect(reached).not.toHaveBeenCalled()
+  } finally {
+    window.document.removeEventListener("keydown", reached)
+  }
+})

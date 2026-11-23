@@ -3,7 +3,7 @@ import noBareTest from "./rules/no-bare-test.js"
 import noBlindWait from "./rules/no-blind-wait.js"
 import noByteCounter from "./rules/no-byte-counter.js"
 import noElementIdCast from "./rules/no-element-id-cast.js"
-import noEnterWhileComposing from "./rules/no-enter-while-composing.js"
+import noKeyWhileComposing from "./rules/no-key-while-composing.js"
 import noEnvOutsideEntry from "./rules/no-env-outside-entry.js"
 import noFieldEdge from "./rules/no-field-edge.js"
 import noHiddenInput from "./rules/no-hidden-input.js"
@@ -23,7 +23,7 @@ const plugin = {
     "no-comments": noComments,
     "no-byte-counter": noByteCounter,
     "no-element-id-cast": noElementIdCast,
-    "no-enter-while-composing": noEnterWhileComposing,
+    "no-key-while-composing": noKeyWhileComposing,
     "no-env-outside-entry": noEnvOutsideEntry,
     "no-field-edge": noFieldEdge,
     "no-hidden-input": noHiddenInput,
