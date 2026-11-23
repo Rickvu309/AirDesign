@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { useEffect, useRef, useState } from "react"
 import { NotesBar } from "@/editor/notes-bar"
 import { notesOf, notesWrites } from "./deck-writes"

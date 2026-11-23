@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import type { Color as OldColor } from "@airdesign/document"
 import { propOf } from "./node-props"
 import { oldColorOf } from "./design-values"

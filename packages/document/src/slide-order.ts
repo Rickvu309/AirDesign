@@ -17,8 +17,8 @@ import { groupRefusal } from "./group-refusal.js"
 import { elementCommand, elementRefusal, readElementCommand, type ElementCommand } from "./element-order.js"
 import { readElementOrder, stackRefusal } from "./element-stack.js"
 import { readLayoutPart } from "./index-layout.js"
-import { limits } from "./limits.js"
-import { orderKeyBetween, readOrderKey, type OrderKey } from "./order-key.js"
+import { limits } from "@airdesign/doom"
+import { orderKeyBetween, readOrderKey, type OrderKey } from "@airdesign/doom"
 import { readFloor } from "./slide-floor.js"
 
 export type SlideAdd = {

@@ -1,5 +1,5 @@
 import { picturePanelCopy } from "./picture-panel-copy"
-import { limits } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 
 const largest = `${String(limits.media / 1_000_000)} MB`
 const most = `${String(limits.pixels / 1_000_000)} megapixels`

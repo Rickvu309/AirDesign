@@ -24,8 +24,9 @@
   "dependencies": {
     "@airdesign/device": "workspace:*",
     "@airdesign/document": "workspace:*",
-    "zod": "^4.6.7",
+    "@airdesign/doom": "workspace:*",
     "@airdesign/fonts": "workspace:*",
-    "@airdesign/templates": "workspace:*"
+    "@airdesign/templates": "workspace:*",
+    "zod": "^4.6.7"
   }
 }

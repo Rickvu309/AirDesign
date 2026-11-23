@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { TextLines, gestureFor } from "@airdesign/render"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { offsetOfPlace, placeOfOffset, type Place } from "./text-caret"

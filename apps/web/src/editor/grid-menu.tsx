@@ -1,4 +1,5 @@
-import { limits, type GridSide } from "@airdesign/document"
+import { type GridSide } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { gridMoveAt, type GridCommand } from "@/editor/editor-grid-keys"

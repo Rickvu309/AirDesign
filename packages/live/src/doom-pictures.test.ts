@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { picturesWantedMilliseconds } from "@airdesign/catalog"
 import { describe, expect, it, vi } from "vitest"
 import { createDoomDeck } from "./doom-deck.js"

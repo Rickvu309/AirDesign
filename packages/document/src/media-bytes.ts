@@ -1,5 +1,5 @@
 import type { MediaType } from "./asset-ref.js"
-import { limits } from "./limits.js"
+import { limits } from "@airdesign/doom"
 
 export type PixelSize = { readonly width: number; readonly height: number }
 

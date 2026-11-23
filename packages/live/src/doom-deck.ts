@@ -6,7 +6,7 @@ import {
   type DoomRefusal,
   type SlidePictures,
 } from "@airdesign/catalog"
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { appliedOn, dropped, landed, provisionalRevs, queueEdit, sendable, shown, type Queued } from "./doom-queue.js"
 import type { DoomRemote } from "./doom-remote.js"
 import { deviceStorage, type DoomStorage } from "./doom-storage.js"

@@ -4,14 +4,8 @@ declare const process: {
 }
 
 const { readFileSync } = process.getBuiltinModule("node:fs")
-import {
-  orderKeyAfter,
-  orderKeyBetween,
-  presentSlides,
-  slideId,
-  type SlideCommand,
-  type SlideState,
-} from "@airdesign/document"
+import { orderKeyAfter, presentSlides, slideId, type SlideCommand, type SlideState } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { samePartBytes } from "./export-package.js"
 import { readParts } from "./package-container.js"

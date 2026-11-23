@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { slideId, type FieldValue } from "@airdesign/document"
 import { useDoomSlide } from "@airdesign/render"
 import { useMemo } from "react"

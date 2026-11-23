@@ -2,7 +2,7 @@ import { createHash } from "node:crypto"
 import { Client } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
 import { accountRoutes } from "@airdesign/catalog"
-import { limits } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 
 import { ask, signInByCode, postgresInfo, serve } from "../testing/harness.js"
 import { DeckListen, openPool, type Mail, type OriginalUpload } from "../index.js"

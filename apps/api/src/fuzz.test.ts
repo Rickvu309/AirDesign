@@ -15,7 +15,7 @@ import { ask, askForm, signInByCode, postgresInfo, serve, testResource } from ".
 import { DeckListen, openPool, type Mail } from "./index.js"
 import { serveMcp } from "./mcp/mcp.js"
 import { challengeOf } from "./platform/secrets.js"
-import { limits } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import { routes } from "./server.js"
 
 const { body: bodyCap, form: formCap } = limits

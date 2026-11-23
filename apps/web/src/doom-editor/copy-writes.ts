@@ -1,4 +1,5 @@
-import { orderKeyBetween, type OrderKey, type doom } from "@airdesign/document"
+import { orderKeyBetween, type OrderKey } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import { parentSlot, siblingsOf } from "./node-props"
 
 type Slot = NonNullable<doom.Props["parent"]>

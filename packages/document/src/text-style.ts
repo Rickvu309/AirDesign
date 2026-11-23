@@ -1,7 +1,7 @@
 import type { Register } from "./decide.js"
 import type { Color } from "./color.js"
 import { canonicalKeys } from "./key-alias.js"
-import { bytesOf } from "./limits.js"
+import { bytesOf } from "@airdesign/doom"
 import { record } from "./plain-object.js"
 import { text } from "./trait-text.js"
 import type { ParagraphAlign } from "./text-value.js"

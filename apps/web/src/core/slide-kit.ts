@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 type Color = doom.Color
 type Node = doom.TreeNode

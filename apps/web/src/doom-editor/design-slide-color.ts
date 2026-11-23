@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import type { Palette } from "@/design/color-choices"
 import { shownName } from "@/design/color-choices"
 import { oldColorOf } from "./design-values"

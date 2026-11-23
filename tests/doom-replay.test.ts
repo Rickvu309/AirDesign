@@ -1,6 +1,7 @@
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { orderKeyBetween, doom } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import * as view from "../specs/doom/view.mjs"

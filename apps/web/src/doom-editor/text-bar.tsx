@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { Bold, Italic, List, ListOrdered, Underline } from "lucide-react"
 import { memo, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"

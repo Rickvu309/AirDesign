@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { expect, it } from "vitest"
 import { doomRoutes, doomPaths } from "./index.js"
 

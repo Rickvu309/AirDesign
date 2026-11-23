@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { coreRoutes } from "@/core/core-routes"
 import { coreDoom } from "@/core/core-doom"

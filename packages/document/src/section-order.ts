@@ -1,6 +1,6 @@
 import { foldGrid, orderedSpots } from "./grid-order.js"
 import type { SlideId } from "./element-id.js"
-import type { OrderKey } from "./order-key.js"
+import type { OrderKey } from "@airdesign/doom"
 import { foldSlides, type SlideState, type LegacySlideCommand } from "./slide-order.js"
 
 export type FileSection = { readonly name: string; readonly slides: readonly string[] }

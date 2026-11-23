@@ -1,5 +1,5 @@
 import { readDeckId, type DeckId, type DoomRefusal } from "@airdesign/catalog"
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 import type { DeckHost, Landed } from "./deck-host.js"
 import { shortHash } from "./once-ids.js"

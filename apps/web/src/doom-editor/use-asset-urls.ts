@@ -1,4 +1,5 @@
-import { mediaTypeOf, doom } from "@airdesign/document"
+import { mediaTypeOf } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { readMedia } from "@airdesign/live"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 

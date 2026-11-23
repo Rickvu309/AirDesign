@@ -1,5 +1,5 @@
 import { DoomSlide } from "@airdesign/render"
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { landscapeUrl } from "@/core/landscape-art"
 import { pictureAsset } from "@/core/doom/picture-crop"
 

@@ -1,5 +1,5 @@
 import { readDeckName } from "@airdesign/catalog"
-import { limits } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import { productCopy, nameTooLongOf } from "@/copy/product-copy"
 
 export type NameReading = { readonly ok: true; readonly name: string } | { readonly ok: false; readonly words: string }

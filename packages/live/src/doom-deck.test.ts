@@ -1,4 +1,5 @@
-import { orderKeyBetween, doom } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { installIndexedDb } from "./browser-fixtures.js"
 import { deleteDatabase } from "./device.js"

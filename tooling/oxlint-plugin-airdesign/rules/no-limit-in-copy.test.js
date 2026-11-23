@@ -17,12 +17,12 @@ registerHooks({
   },
 })
 
-const { limits } = await import(pathToFileURL(path.join(packages, "document/src/limits.ts")).href)
+const { limits } = await import(pathToFileURL(path.join(packages, "doom/src/limits.ts")).href)
 
 const numbered = Object.fromEntries(Object.entries(limits).filter(([, value]) => typeof value === "number"))
 if (JSON.stringify(numbered) !== JSON.stringify(limitValues)) {
   throw new Error(
-    `no-limit-in-copy read limits that differ from @airdesign/document\nrule ${JSON.stringify(limitValues)}\ndocument ${JSON.stringify(numbered)}`,
+    `no-limit-in-copy read limits that differ from @airdesign/doom\nrule ${JSON.stringify(limitValues)}\ndocument ${JSON.stringify(numbered)}`,
   )
 }
 
@@ -34,7 +34,7 @@ expectRejects(
   source,
   `export const designCopy = {\n  textTooLong: "Use less text. Text and formatting must fit within 8,000 bytes.",\n}\n`,
   rule,
-  "8,000 is limits.valueBytes or limits.notify in @airdesign/document. Import limits from @airdesign/document and interpolate it",
+  "8,000 is limits.valueBytes or limits.notify in @airdesign/doom. Import limits from @airdesign/doom and interpolate it",
 )
 expectRejects(
   "a limit inside a template fails",
@@ -79,9 +79,9 @@ expectRejects(
   "100 is limits.batch or limits.delete",
 )
 expectAccepts(
-  "a limit taken from @airdesign/document stays",
+  "a limit taken from @airdesign/doom stays",
   source,
-  'import { limits } from "@airdesign/document"\nexport const long = `Text must fit within ${limits.valueBytes.toLocaleString("en")} bytes.`\n',
+  'import { limits } from "@airdesign/doom"\nexport const long = `Text must fit within ${limits.valueBytes.toLocaleString("en")} bytes.`\n',
   rule,
 )
 expectAccepts("a percentage stays", "apps/web/src/copy/fill-copy.ts", `export const pct50 = "50%"\n`, rule)

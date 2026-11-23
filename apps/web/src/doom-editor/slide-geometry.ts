@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import type { Bounds } from "@airdesign/render"
 
 export type Point = { readonly x: number; readonly y: number }

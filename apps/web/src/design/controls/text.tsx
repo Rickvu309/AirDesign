@@ -3,15 +3,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { fontNames } from "@airdesign/fonts"
 import { servedFaces } from "@/design/served-faces"
 import { useFaceFallback } from "@/design/face-fallback"
-import {
-  bytesOf,
-  plainText,
-  limits,
-  readTextValue,
-  writeTextValue,
-  type TextRun,
-  type TextValue,
-} from "@airdesign/document"
+import { plainText, readTextValue, writeTextValue, type TextRun, type TextValue } from "@airdesign/document"
+import { bytesOf, limits } from "@airdesign/doom"
 import { useId, useState, type KeyboardEvent } from "react"
 import { Textarea } from "@/components/ui/textarea"
 import { designCopy } from "@/copy/design-copy"

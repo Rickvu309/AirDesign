@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@airdesign/document": "workspace:*",
+    "@airdesign/doom": "workspace:*",
     "@zip.js/zip.js": "2.24.0"
   }
 }

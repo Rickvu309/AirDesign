@@ -1,4 +1,5 @@
-import { bytesOf, limits, type ElementId } from "@airdesign/document"
+import { type ElementId } from "@airdesign/document"
+import { bytesOf, limits } from "@airdesign/doom"
 import * as z from "zod/v4"
 
 import { readDeckName } from "./deck-name.js"

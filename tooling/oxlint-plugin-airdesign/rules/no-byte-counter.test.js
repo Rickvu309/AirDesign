@@ -1,7 +1,7 @@
 import { expectAccepts, expectRejects } from "../harness.js"
 
 const rule = { "airdesign/no-byte-counter": "error" }
-const message = "Count a value's bytes only with bytesOf from @airdesign/document"
+const message = "Count a value's bytes only with bytesOf from @airdesign/doom"
 const source = "packages/live/src/store.ts"
 
 const widthLoop = (name) =>
@@ -122,7 +122,7 @@ expectRejects(
   message,
 )
 
-expectAccepts("the document package keeps bytesOf", "packages/document/src/limits.ts", widthLoop("bytesOf"), rule)
+expectAccepts("the doom package keeps bytesOf", "packages/doom/src/limits.ts", widthLoop("bytesOf"), rule)
 expectAccepts(
   "a test may check bytesOf against TextEncoder",
   "packages/live/src/live.test.ts",

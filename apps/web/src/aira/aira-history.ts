@@ -1,4 +1,4 @@
-import { bytesOf } from "@airdesign/document"
+import { bytesOf } from "@airdesign/doom"
 import { readTurn, sentWithoutPictures, withoutPictures, type ModelMessage, type ToolAnswer } from "@airdesign/catalog"
 import {
   airaChat,

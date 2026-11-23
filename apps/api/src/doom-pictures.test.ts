@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto"
 
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"

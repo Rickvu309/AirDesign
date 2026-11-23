@@ -5,7 +5,7 @@
 \* The person makes one step that names both properties (edit 1, a person's edit on two nodes), then asks for
 \* an undo and a redo. Each turn is an edit that puts back, for each property the step wrote, the value it
 \* replaced, but only where the person's view still shows the edit's own rev (invert in
-\* packages/document/src/doom/invert.ts). Its writes carry the rev they undo as `base`, and the server lands
+\* packages/doom/src/invert.ts). Its writes carry the rev they undo as `base`, and the server lands
 \* an edit whole or not at all (applyEdit): a write whose base is not the property's rev refuses the edit.
 \* The step and each turn go to the device's queue and reach the server in order, one at a time (Sync). The
 \* person's view is the server's fold with the queued edits on top (viewOf), so a turn is asked of the view

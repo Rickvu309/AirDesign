@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { adjustDefaults, presetOutline } from "./preset-path.js"
 
 type Resolved = doom.Resolved

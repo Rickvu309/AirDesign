@@ -9,7 +9,7 @@ import {
   type DoomRan,
   type SlidePictures,
 } from "@airdesign/catalog"
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 export type DoomRemote = {
   create(body: { readonly deck: string }): Promise<DoomOpened>

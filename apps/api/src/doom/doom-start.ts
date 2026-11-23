@@ -1,5 +1,6 @@
 import { blankDeckName } from "@airdesign/catalog"
-import { orderKeyBetween, doom } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import { templateTheme } from "@airdesign/templates"
 
 export const startIds = {

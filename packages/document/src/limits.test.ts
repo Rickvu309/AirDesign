@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { decide, decideUndo, openRegister, type NodeRegister, type Register } from "./decide.js"
 import { legacyElement, type ElementId } from "./element-id.js"
-import { bytesOf, limits, overLimit } from "./limits.js"
+import { bytesOf, limits, overLimit } from "@airdesign/doom"
 import { openedBody, withOpened } from "./decide.walk.js"
 import { storedValue } from "./value.js"
 

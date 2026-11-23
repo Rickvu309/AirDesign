@@ -1,14 +1,12 @@
 import {
-  bytesOf,
   designBytes,
   nextSlideId,
-  orderKeyBetween,
   readIndexPage,
   readSlideId,
-  type OrderKey,
   type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
+import { bytesOf, orderKeyBetween, type OrderKey } from "@airdesign/doom"
 import { orderedParts, readPackage, slideLayouts } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { indexedParts } from "./index-deck"

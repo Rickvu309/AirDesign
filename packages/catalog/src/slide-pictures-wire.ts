@@ -1,4 +1,5 @@
-import { limits, readSlideId, type SlideId } from "@airdesign/document"
+import { readSlideId, type SlideId } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import { knownKeys, recordOf } from "./wire.js"
 
 export const pictureBytes = 600_000

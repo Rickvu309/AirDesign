@@ -1,5 +1,5 @@
 import type { EditRefusal, DoomRefusal } from "@airdesign/catalog"
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 export type ToolText = { readonly type: "text"; readonly text: string }
 export type ToolImage = {

@@ -1,6 +1,6 @@
 import { editorOwnsKey, gridEscapeFromControl } from "@/editor/editor-key-ownership"
 import { gestureFor, noSelection, type Selection } from "@airdesign/render"
-import { limits } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import { toast } from "@/components/ui/toast"
 import { useCallback, useLayoutEffect, useReducer, useRef, useState, type KeyboardEvent, type ReactNode } from "react"
 import { flushSync } from "react-dom"

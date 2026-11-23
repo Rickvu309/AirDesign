@@ -231,6 +231,9 @@ importers:
       '@airdesign/document':
         specifier: workspace:*
         version: link:../../packages/document
+      '@airdesign/doom':
+        specifier: workspace:*
+        version: link:../../packages/doom
       '@airdesign/fonts':
         specifier: workspace:*
         version: link:../../packages/fonts
@@ -326,6 +329,9 @@ importers:
       '@airdesign/document':
         specifier: workspace:*
         version: link:../../packages/document
+      '@airdesign/doom':
+        specifier: workspace:*
+        version: link:../../packages/doom
       '@airdesign/fonts':
         specifier: workspace:*
         version: link:../../packages/fonts
@@ -423,6 +429,9 @@ importers:
       '@airdesign/document':
         specifier: workspace:*
         version: link:../document
+      '@airdesign/doom':
+        specifier: workspace:*
+        version: link:../doom
       '@airdesign/fonts':
         specifier: workspace:*
         version: link:../fonts
@@ -450,6 +459,19 @@ importers:
         version: 7.0.2
 
   packages/document:
+    dependencies:
+      '@airdesign/doom':
+        specifier: workspace:*
+        version: link:../doom
+    devDependencies:
+      oxlint:
+        specifier: ^1.90.0
+        version: 1.92.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
+  packages/doom:
     devDependencies:
       oxlint:
         specifier: ^1.90.0
@@ -475,6 +497,9 @@ importers:
       '@airdesign/document':
         specifier: workspace:*
         version: link:../document
+      '@airdesign/doom':
+        specifier: workspace:*
+        version: link:../doom
     devDependencies:
       oxlint:
         specifier: ^1.90.0
@@ -491,6 +516,9 @@ importers:
       '@airdesign/document':
         specifier: workspace:*
         version: link:../document
+      '@airdesign/doom':
+        specifier: workspace:*
+        version: link:../doom
       '@modelcontextprotocol/server':
         specifier: ^2.4.0
         version: 2.4.0
@@ -525,6 +553,9 @@ importers:
       '@airdesign/document':
         specifier: workspace:*
         version: link:../document
+      '@airdesign/doom':
+        specifier: workspace:*
+        version: link:../doom
       '@zip.js/zip.js':
         specifier: 2.24.0
         version: 2.24.0
@@ -541,6 +572,9 @@ importers:
       '@airdesign/document':
         specifier: workspace:*
         version: link:../document
+      '@airdesign/doom':
+        specifier: workspace:*
+        version: link:../doom
       '@airdesign/fonts':
         specifier: workspace:*
         version: link:../fonts

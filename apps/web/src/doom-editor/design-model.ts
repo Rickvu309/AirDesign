@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import type { PanelModel, PanelSection } from "@/design/panel"
 import type { PanelKind } from "@/design/panel-order"
 import { traitControls } from "@/design/trait-controls"

@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { useState } from "react"
 
 type Held = { readonly id: doom.NodeId | null; readonly index: number }

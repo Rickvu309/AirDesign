@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { geometryKind } from "./node-props"
 import { aroundPlaced, apply, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
 

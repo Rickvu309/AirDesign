@@ -1,5 +1,5 @@
 import type { Color as OldColor, Overlay } from "@airdesign/document"
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 export const pointEmu = 12_700
 export const cornerEmu = 9_525

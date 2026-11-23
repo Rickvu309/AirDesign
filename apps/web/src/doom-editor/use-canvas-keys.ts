@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { arrowOf, gestureFor, releases } from "@airdesign/render"
 import { useEffect, useRef } from "react"
 import { zoomKey, type ZoomKey } from "@/editor/canvas-zoom"

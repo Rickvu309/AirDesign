@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import type { GestureId } from "@airdesign/render"
 import { duplicateWrites, pasteWrites, type Clipboard } from "./copy-writes"
 import { deleteWrites } from "./delete-writes"

@@ -1,5 +1,5 @@
 import { readPalette, type Palette } from "./design.js"
-import { bytesOf, limits } from "./limits.js"
+import { bytesOf, limits } from "@airdesign/doom"
 import { onlyKeys, record } from "./plain-object.js"
 
 export type TemplateStyle = { readonly id: string; readonly name: string | null; readonly palette: Palette }

@@ -9,7 +9,7 @@ import { groupCommand, groupFormed, groupNode, type GroupCommand } from "./eleme
 import { rowsKept } from "./group-place.js"
 import { regroupTurn, ungroupTurn } from "./group-turn.js"
 import { joinEdit, joinTurn, spotNow, type Spot } from "./group-join.js"
-import type { OrderKey } from "./order-key.js"
+import type { OrderKey } from "@airdesign/doom"
 import { openingElement } from "./slide-floor.js"
 import { noCharacters } from "./text-value.js"
 import { foldSlides, type SlideCommand } from "./slide-order.js"

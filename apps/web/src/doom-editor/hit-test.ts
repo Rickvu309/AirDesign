@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { apply, invert, type Placed, type Point } from "./slide-geometry"
 
 export type Skip = (id: doom.NodeId) => boolean

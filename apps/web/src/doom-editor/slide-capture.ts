@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { DoomSlide } from "@airdesign/render"
 import { createElement } from "react"
 import { paintedElement } from "@/editing/painted-picture"

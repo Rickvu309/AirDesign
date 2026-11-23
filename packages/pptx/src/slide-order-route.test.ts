@@ -7,13 +7,13 @@ const { readFileSync } = process.getBuiltinModule("node:fs")
 import {
   nextSlideId,
   orderKeyAfter,
-  orderKeyBetween,
   presentSlides,
   slideId,
   type SlideCommand,
   type SlideId,
   type SlideState,
 } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { slideAddresses } from "./package-address.js"
 import { readParts } from "./package-container.js"

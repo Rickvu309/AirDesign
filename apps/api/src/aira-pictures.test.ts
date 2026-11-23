@@ -1,11 +1,11 @@
 import { randomBytes } from "node:crypto"
 
 import { airaTools, countryHeader, pictureTokenCeiling } from "@airdesign/catalog"
-import { bytesOf } from "@airdesign/document"
+import { bytesOf } from "@airdesign/doom"
 import { Client } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
 
-import { limits } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import { airaMaxTokens, airaSystem, airaTurnCap } from "./aira/aira.js"
 import { Replay } from "./testing/aira-replay.js"
 import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"

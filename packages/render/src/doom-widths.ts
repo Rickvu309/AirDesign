@@ -1,4 +1,5 @@
-import { type FontWidths, type doom, fontFace } from "@airdesign/document"
+import { type FontWidths, fontFace } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import { fontFamily } from "@airdesign/fonts"
 import { fontsFor } from "./font-load.js"
 

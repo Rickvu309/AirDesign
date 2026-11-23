@@ -3,13 +3,13 @@ import {
   elementId,
   format,
   openRegister,
-  orderKeyBetween,
   slideId,
   type Command,
   type ElementPatch,
   type FieldValue,
   type Register,
 } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { exportParts } from "./export-parts.js"
 import { shownFill } from "./fill-read.js"

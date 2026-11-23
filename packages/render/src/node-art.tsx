@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { memo, type CSSProperties, type ReactNode } from "react"
 import { iconNodes, type IconNode } from "./icon-nodes.js"
 import { effectLook } from "./node-effects.js"

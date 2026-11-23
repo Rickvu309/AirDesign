@@ -1,4 +1,5 @@
-import { type FontWidths, doom } from "@airdesign/document"
+import { type FontWidths } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import { useEffect, useMemo, useState } from "react"
 import { useIcons } from "./icon-nodes.js"
 import { type AssetUrl, PaintLayers } from "./node-fills.js"

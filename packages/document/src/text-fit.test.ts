@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { ResolvedParagraph, ResolvedRun, ResolvedText } from "./resolved-slide.js"
-import { fontFace, layText, type FontWidths } from "./text-fit.js"
+import { fontFace, type FontWidths } from "@airdesign/doom"
+import { layText } from "./text-fit.js"
 
 const point = 12_700
 const letters = "abcdefghijklmnopqrstuvwxyz0123456789-•.,"

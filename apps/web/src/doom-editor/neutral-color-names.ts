@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 export const neutralColorNames: Readonly<Record<doom.ColorVar, string>> = {
   text: "Black",

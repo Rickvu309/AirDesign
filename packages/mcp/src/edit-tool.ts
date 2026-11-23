@@ -1,5 +1,5 @@
 import { readDeckEdit, readNamedDeck } from "@airdesign/catalog"
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 import { answered, hostRefused, refused, doomRefused, type ToolResult } from "./answer.js"
 import type { DeckHost } from "./deck-host.js"

@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { useId } from "react"
 import { ArrowMarker, type Arrowhead } from "./arrow-marker.js"
 import { type Outline } from "./node-outline.js"

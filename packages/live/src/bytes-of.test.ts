@@ -1,4 +1,4 @@
-import { bytesOf } from "@airdesign/document"
+import { bytesOf } from "@airdesign/doom"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 

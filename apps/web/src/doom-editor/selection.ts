@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { ancestorsOf, type Placed, type SlideGeometry } from "./slide-geometry"
 import { intersects } from "./hit-test"
 

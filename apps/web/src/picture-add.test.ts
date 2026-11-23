@@ -1,4 +1,5 @@
-import { decide, limits, openRegister, slideId, type Register, type SlideCommand } from "@airdesign/document"
+import { decide, openRegister, slideId, type Register, type SlideCommand } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import { readShapes } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { exportedParts, missingPictures } from "./editing/exported-parts"

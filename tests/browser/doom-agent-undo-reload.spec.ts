@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test"
-import { doom } from "../../packages/document/src/index.ts"
+import * as doom from "../../packages/doom/src/index.ts"
 import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { test, type Stack } from "./api-stack"

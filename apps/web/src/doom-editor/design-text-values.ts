@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { hundredths, wholeFraction } from "./design-values"
 
 const boldFrom = 600

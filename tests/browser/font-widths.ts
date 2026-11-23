@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test"
-import type { FontWidths, ResolvedSlide } from "../../packages/document/src/index.ts"
+import type { ResolvedSlide } from "../../packages/document/src/index.ts"
+import type { FontWidths } from "../../packages/doom/src/index.ts"
 import { fontFamily as cssFamily } from "../../packages/fonts/src/index.ts"
 import { slideWidths as measureSlideWidths } from "./measure-fonts.ts"
 

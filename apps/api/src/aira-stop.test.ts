@@ -4,7 +4,7 @@ import { request } from "node:http"
 import type { Socket } from "node:net"
 
 import { airaTools, countryHeader } from "@airdesign/catalog"
-import { bytesOf } from "@airdesign/document"
+import { bytesOf } from "@airdesign/doom"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 

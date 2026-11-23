@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { propOf } from "./node-props"
 import type { SlideGeometry } from "./slide-geometry"
 

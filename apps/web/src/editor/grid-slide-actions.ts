@@ -1,4 +1,4 @@
-import { limits } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import { toast } from "@/components/ui/toast"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import type { GridMoveSide } from "@/editor/grid-drop"

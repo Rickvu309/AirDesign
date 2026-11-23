@@ -1,5 +1,5 @@
 import type { RefObject } from "react"
-import { limits } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import { zoomRanges } from "@/editor/canvas-zoom"
 import { Button } from "@/components/ui/button"
 import { slideListCopy } from "@/copy/slide-list-copy"

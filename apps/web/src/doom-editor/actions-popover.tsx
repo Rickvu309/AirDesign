@@ -4,7 +4,7 @@ import { useId, useMemo, useState, type ComponentType, type ReactNode } from "re
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { iconMatches, startingIcons } from "@/editor/icon-search"
 import { cn } from "@/lib/class-names"
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 export type ActionRun = {
   readonly chart: (kind: doom.Chart["kind"]) => void

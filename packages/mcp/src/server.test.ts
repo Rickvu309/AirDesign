@@ -1,5 +1,6 @@
 import { catalog, onceMeta, projectTools } from "@airdesign/catalog"
-import { bytesOf, doom } from "@airdesign/document"
+import { bytesOf } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 

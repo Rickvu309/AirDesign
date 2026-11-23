@@ -16,9 +16,6 @@ export {
   type ElementId,
   type SlideId,
 } from "./element-id.js"
-export { orderKeyBetween, type OrderKey } from "./order-key.js"
-import * as doom from "./doom/index.js"
-export { doom }
 export { type IndexLayout } from "./index-layout.js"
 export { answeredRegister } from "./answered-register.js"
 export {
@@ -60,7 +57,6 @@ export {
   type TraitReads,
 } from "./design.js"
 export { replay, unsent, type Queued } from "./replay.js"
-export { bytesOf, limits, overLimit } from "./limits.js"
 export {
   compactChain,
   currentBox,
@@ -84,7 +80,6 @@ export {
   type Refusal,
 } from "./decide.js"
 export { coordinates, readBox, type Box } from "./box.js"
-export { placeNewBox } from "./box-placement.js"
 export { valueBytes, type Value } from "./value.js"
 export type { AddChange } from "./add-change.js"
 export {
@@ -352,7 +347,6 @@ export type {
   ResolvedText,
   Spacing,
 } from "./resolved-slide.js"
-export { fontFace, type FontWidths } from "./text-fit.js"
 export { type Finding } from "./finding.js"
 export { contrast } from "./contrast.js"
 export { colorPaint, gamma, hexRgb, hslRgb, paintSteps, presetColors, rgbHex, type Rgb } from "./color-paint.js"

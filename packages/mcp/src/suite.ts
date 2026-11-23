@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 import { blank, blankDeck, evalDeck, named, person, slides } from "./eval-deck.js"
 import { onceIds } from "./once-ids.js"

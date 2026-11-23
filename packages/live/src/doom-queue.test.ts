@@ -1,4 +1,5 @@
-import { orderKeyBetween, doom } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { dropped, landed, provisionalRevs, queueEdit, sendable, shown, type Queued } from "./doom-queue.js"
 

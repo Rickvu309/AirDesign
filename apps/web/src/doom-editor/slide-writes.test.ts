@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { slidesOf } from "./node-props"
 import { grow, landed, paint, spot } from "./doom-fixtures"

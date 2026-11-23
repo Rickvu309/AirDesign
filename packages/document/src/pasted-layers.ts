@@ -2,7 +2,7 @@ import { readMedia, type Media } from "./asset-ref.js"
 import type { IndexElement } from "./deck-index.js"
 import { shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import type { Kind } from "./kinds.js"
-import { bytesOf, limits } from "./limits.js"
+import { bytesOf, limits } from "@airdesign/doom"
 import { onlyKeys, record } from "./plain-object.js"
 import { readFloor } from "./slide-floor.js"
 

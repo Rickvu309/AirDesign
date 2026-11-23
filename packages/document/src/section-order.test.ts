@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { slideId, type SlideId } from "./element-id.js"
 import { decide, openRegister } from "./decide.js"
-import { orderKeyBetween } from "./order-key.js"
+import { orderKeyBetween } from "@airdesign/doom"
 import { undoSlides } from "./person-undo.js"
 import { foldSections } from "./section-order.js"
 import { orderKeyAfter, presentSlides, type SlideCommand, type SlideState } from "./slide-order.js"

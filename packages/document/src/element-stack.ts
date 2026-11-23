@@ -2,7 +2,7 @@ import type { DeckIndex } from "./deck-index.js"
 import { readElementId, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { groupCommand, groupParent } from "./element-group.js"
 import { elementGone, type ElementOrder } from "./element-order.js"
-import { limits } from "./limits.js"
+import { limits } from "@airdesign/doom"
 import type { SlideState } from "./slide-order.js"
 import { openingElement } from "./slide-floor.js"
 

@@ -1,7 +1,7 @@
 import type { Box } from "./box.js"
 import type { DeckIndex } from "./deck-index.js"
 import { rootElement, shapeOf, slideKind, templateStyleOwned, type ElementId, type SlideId } from "./element-id.js"
-import { limits, overLimit } from "./limits.js"
+import { limits, overLimit } from "@airdesign/doom"
 import { floorFits, openingElement } from "./slide-floor.js"
 import { elementGone } from "./element-order.js"
 import { groupedNow } from "./element-group.js"

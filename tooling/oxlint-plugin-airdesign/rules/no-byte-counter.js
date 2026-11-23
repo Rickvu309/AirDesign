@@ -1,5 +1,5 @@
 const message =
-  "Count a value's bytes only with bytesOf from @airdesign/document, and compare the count against a row of its `limits` table."
+  "Count a value's bytes only with bytesOf from @airdesign/doom, and compare the count against a row of its `limits` table."
 
 const wrappers = new Set([
   "TSAsExpression",
@@ -14,7 +14,7 @@ const relations = new Set(["<", "<=", ">", ">="])
 const textEncodings = new Set(["utf8", "utf-8"])
 
 const exempt = (filename) =>
-  /\/packages\/document\//u.test(filename) || /\.(test|spec|proof)\.[cm]?[jt]sx?$/u.test(filename)
+  /\/packages\/doom\//u.test(filename) || /\.(test|spec|proof)\.[cm]?[jt]sx?$/u.test(filename)
 
 const bare = (node) => (node && wrappers.has(node.type) ? bare(node.expression) : node)
 
@@ -54,7 +54,7 @@ const rule = {
   meta: {
     type: "problem",
     docs: {
-      description: "Reject counting a value's bytes by hand outside packages/document.",
+      description: "Reject counting a value's bytes by hand outside packages/doom.",
     },
   },
   create(context) {

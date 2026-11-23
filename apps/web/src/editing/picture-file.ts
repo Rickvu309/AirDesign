@@ -1,4 +1,5 @@
-import { limits, mediaSize, mediaTypeOf, overPixelLimit, type MediaType } from "@airdesign/document"
+import { mediaSize, mediaTypeOf, overPixelLimit, type MediaType } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 
 export type PictureRefusal = "type" | "size" | "unread"
 

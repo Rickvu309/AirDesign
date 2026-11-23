@@ -1,6 +1,6 @@
 import type { SlideId } from "./element-id.js"
 import { gridGroups, type GridGroup, type GridCommand } from "./grid-order.js"
-import { orderKeyBetween } from "./order-key.js"
+import { orderKeyBetween } from "@airdesign/doom"
 import {
   presentSlides,
   type FoldedSlide,

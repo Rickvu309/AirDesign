@@ -1,4 +1,4 @@
-import { limits } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 
 const { body: bodyCap } = limits
 const session = "airdesign.session"

@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { fontFamily } from "@airdesign/fonts"
 import type { CSSProperties } from "react"
 import { pinnedOpticalSize } from "./doom-widths.js"

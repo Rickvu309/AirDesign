@@ -1,7 +1,6 @@
 import {
   lineGeometries,
   nextElementId,
-  placeNewBox,
   readSlideId,
   shapeOf,
   stackTarget,
@@ -17,6 +16,7 @@ import {
   type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
+import { placeNewBox } from "@airdesign/doom"
 import { applyRoute, freeShapeId, readShapes, readSlides, shapeSiblings } from "@airdesign/pptx"
 import { boxOf, type Moved, type PaintBox, type ShapeDrawn } from "@airdesign/render"
 import { type RemovalRefusal } from "@/copy/element-copy"

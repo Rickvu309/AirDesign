@@ -1,6 +1,7 @@
 {
   "files": [],
   "references": [
+    { "path": "../../packages/doom" },
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" },
     { "path": "../../packages/live" }

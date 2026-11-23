@@ -1,5 +1,6 @@
 declare const process: { cwd(): string; getBuiltinModule(name: "node:fs"): { readFileSync(path: string): Uint8Array } }
-import { elementId, orderKeyBetween, slideId, type Media, type SlideState } from "@airdesign/document"
+import { elementId, slideId, type Media, type SlideState } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
 import { expect, it } from "vitest"
 import { decodeUtf8 } from "./package-bytes.js"
 import { shownPictureMode } from "./picture-mode.js"

@@ -1,5 +1,6 @@
 import type { DeckId, DoomRefusal } from "@airdesign/catalog"
-import { limits, doom } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 
 import { isUniqueViolation, type Sql } from "../platform/pool.js"
 import { startEdit } from "./doom-start.js"

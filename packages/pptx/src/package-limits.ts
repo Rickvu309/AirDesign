@@ -1,4 +1,4 @@
-import { limits } from "@airdesign/document"
+import { limits } from "@airdesign/doom"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader, type FileEntry } from "@zip.js/zip.js"
 import { markupLimits } from "./element-span.js"
 import { presentationPart } from "./package-address.js"

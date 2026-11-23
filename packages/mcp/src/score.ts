@@ -1,5 +1,5 @@
 import { catalog, projectTools, type AgentOp } from "@airdesign/catalog"
-import { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 
 import { emptyLog } from "./admit.js"
 import { callTool, type Session } from "./call-tool.js"

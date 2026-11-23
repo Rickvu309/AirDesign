@@ -4,7 +4,6 @@ import {
   elementId,
   maskTurn,
   openRegister,
-  orderKeyBetween,
   slideId,
   type Command,
   type ElementId,
@@ -12,6 +11,7 @@ import {
   type Register,
   type SlideCommand,
 } from "@airdesign/document"
+import { orderKeyBetween } from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { exportParts } from "./export-parts.js"
 import { indexPackage } from "./index-package.js"

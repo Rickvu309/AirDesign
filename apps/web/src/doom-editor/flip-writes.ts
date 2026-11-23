@@ -1,4 +1,4 @@
-import type { doom } from "@airdesign/document"
+import * as doom from "@airdesign/doom"
 import { flipSelection, normalizeDegrees } from "@airdesign/render"
 import { propOf } from "./node-props"
 import { memberOf } from "./selection-frame"

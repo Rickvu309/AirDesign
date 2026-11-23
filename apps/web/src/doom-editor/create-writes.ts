@@ -1,4 +1,5 @@
-import { doom, type OrderKey } from "@airdesign/document"
+import { type OrderKey } from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 import type { Point } from "./slide-geometry"
 
 export type Drawn = "frame" | "rectangle" | "ellipse" | "line" | "arrow" | `preset:${string}`

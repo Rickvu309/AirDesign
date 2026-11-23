@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { decide, openRegister, version } from "./decide.js"
 import { elementId, slideId, type SlideId } from "./element-id.js"
-import { orderKeyBetween, type OrderKey } from "./order-key.js"
-import { limits } from "./limits.js"
+import { orderKeyBetween, type OrderKey } from "@airdesign/doom"
+import { limits } from "@airdesign/doom"
 import { foldSlides, orderKeyAfter, presentSlides, readSlideState, type SlideCommand } from "./slide-order.js"
 
 const file = [slideId("256"), slideId("257")] as const
