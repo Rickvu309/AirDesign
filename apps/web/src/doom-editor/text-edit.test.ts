@@ -128,6 +128,7 @@ describe("linked words", () => {
     expect(linkedWords(linked(), 10, 14)).toEqual({ from: 10, to: 14, link: "https://a.example", mixed: false })
     expect(linkedWords(linked(), 14, 10)).toEqual({ from: 10, to: 14, link: "https://a.example", mixed: false })
     expect(linkedWords(linked(), 0, 4)).toEqual({ from: 0, to: 4, link: undefined, mixed: false })
+    expect(linkedWords(plain("Read the site"), 0, 4)).toEqual({ from: 0, to: 4, link: undefined, mixed: false })
     expect(linkedWords(linked(), 2, 14)).toEqual({ from: 2, to: 14, link: undefined, mixed: true })
     expect(linkedWords(two, 0, 12)).toEqual({ from: 0, to: 12, link: undefined, mixed: true })
     const adjacent = {
