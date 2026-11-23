@@ -42,9 +42,10 @@ async function read(stack: Stack, opened: Opened, more: Record<string, unknown> 
     { deck: opened.deck, picture: true, ...more },
     opened.cookie,
   )
+  const json = blocks.find((block) => block.type === "text")?.text ?? "{}"
   return {
     images: blocks.filter((block) => block.type === "image"),
-    said: blocks.map((block) => block.text ?? "").join("\n"),
+    answer: JSON.parse(json) as { readonly note?: string; readonly pictures?: readonly string[] },
   }
 }
 
@@ -83,7 +84,7 @@ test("an agent reading a Doom deck with picture gets the slide as the open tab p
     })
     .toBe(1)
   expect(jpeg(first.images[0]?.data)).toBe(true)
-  expect(first.said).toContain(`Slide 1 (${opened.slide})`)
+  expect(first.answer.pictures).toEqual([opened.slide])
   await test.info().attach("slide-picture.jpg", {
     body: Buffer.from(first.images[0]?.data ?? "", "base64"),
     contentType: "image/jpeg",
@@ -98,7 +99,7 @@ test("an agent reading a Doom deck with picture gets the slide as the open tab p
   await expect(page.locator("[data-slide-box]").getByText("Costs fell")).toBeVisible()
   const behind = await read(stack, opened, { slide: opened.slide })
   expect(behind.images).toHaveLength(0)
-  expect(behind.said).toContain(`No current picture of slide ${opened.slide}`)
+  expect(behind.answer.note).toContain(`No current picture of slide ${opened.slide}`)
 
   blocked = false
   await expect
