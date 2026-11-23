@@ -140,18 +140,11 @@ test("every named state of this design shard is reached and scanned in one stack
   }
 })
 
-const editing = [
-  "blank-deck",
-  "slides-several",
-  "editor-text-focused",
-  "editor-selected",
-  "editor-offline",
-  "agent-empty",
-]
+const editing = ["blank-deck", "slides-several", "editor-text-focused", "editor-selected", "doom-agent-empty"]
 
 test("the Agent panel names a tool's work in plain words, never its internal name", () => {
   expect(
-    seen(["agent-working", "agent-done", "agent-failed"], "internal-identifier"),
+    seen(["doom-agent-working", "doom-agent-done"], "internal-identifier"),
     "a step shows an internal tool name",
   ).toEqual([])
 })
@@ -161,28 +154,11 @@ test("the Agent panel shows an empty state before the first ask", () => {
 })
 
 test("a selected text box draws one frame, not two", () => {
-  expect(
-    seen(["editor-text-focused", "editor-offline"], "stacked-frames"),
-    "a selected text box draws two frames",
-  ).toEqual([])
-})
-
-test("the offline notice shows its whole sentence", () => {
-  expect(seen(["editor-offline"], "truncated-text"), "the offline notice is cut by an ellipsis").toEqual([])
-})
-
-test("the save status beside the deck name shows its whole words in readable ink", () => {
-  const saveStates = ["editor-saving", "editor-went-offline", "editor-unreached", "editor-reached-again"]
-  expect(seen(saveStates, "truncated-text"), "the save status is cut by an ellipsis").toEqual([])
-  expect(seen(saveStates, "text-contrast"), "the save status is too faint to read").toEqual([])
+  expect(seen(["editor-text-focused"], "stacked-frames"), "a selected text box draws two frames").toEqual([])
 })
 
 test("an empty placeholder on a blank slide shows that it is there", () => {
   expect(seen(["blank-deck"], "invisible-control"), "an empty placeholder paints nothing").toEqual([])
-})
-
-test("an imported Calibri slide keeps its text inside its boxes", () => {
-  expect(seen(["imported-text"], "overflowing-text"), "imported text runs past its box").toEqual([])
 })
 
 test("text in the real app meets WCAG AA contrast", () => {

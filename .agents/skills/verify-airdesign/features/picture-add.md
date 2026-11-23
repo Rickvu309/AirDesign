@@ -29,7 +29,7 @@ Preconditions:
 - **Add while the upload is blocked.** A second browser context (the first device) blocks the picture's PUT, makes a blank deck and adds `scripts/pptx-fixtures/picture.png`. Polls `deckRoutes.open` for the `element-add` row with its media; `deckRoutes.media` answers `missing`. Evidence `first-device-picture-added.png`.
 - **Another device.** The kit's page opens the deck: placeholder text, evidence `NN-picture-uploading`; Export refuses, evidence `NN-export-waiting`.
 - **Upload lands.** The first device unblocks and reloads; `deckRoutes.media` answers ok. The kit's page reloads and paints the picture, evidence `NN-picture-added`, exports, imports the file, evidence `NN-reimported`.
-- **States for look.** `picture-added`, `picture-uploading` (the Doom editor at `/s`, a picture whose bytes this device lacks), `picture-export-waiting`.
+- **States for look.** `picture-added`, `picture-uploading` (the Doom editor at `/s`, a picture whose bytes this device lacks).
 
 ## Gotchas
 

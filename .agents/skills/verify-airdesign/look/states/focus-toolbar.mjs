@@ -9,9 +9,9 @@ async function drive(kit) {
   for (let press = 0; press < 12; press += 1) {
     await kit.page.keyboard.press("Tab")
     const name = await kit.page.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? "")
-    if (name === "Add text") return
+    if (name === "Text") return
   }
-  throw new Error("Add text box never took focus")
+  throw new Error("the Text tool never took focus")
 }
 
 export default { name: "focus-toolbar", design: editor, drive }
