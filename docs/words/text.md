@@ -28,7 +28,7 @@ How a text layer's box follows its words, with Figma's three names. **Auto width
 _Avoid_: autosize, shrink-wrap
 
 **Text tool**:
-The tool T or Add text arms, as Figma's Text tool. A click on the slide places Auto width text with its top left at the click, a drag of three pixels or more draws a Fixed size box, and either goes back to Move. Esc or V puts the tool down. A drag snaps both corners as a resize does, with red guides along the box's edges, and Control turns it off; a click lands where it is. In grid view Add text still adds text to the chosen slide at once. Resizing a text layer's box by hand makes it Fixed size, in the same undo step, as Figma does.
+The tool T or Add text arms, as Figma's Text tool. A click on the slide places Auto width text with its top left at the click, a drag of three pixels or more draws a Fixed size box, and either goes back to Move. Esc or V puts the tool down. A drag snaps both corners as a resize does, with red guides along the box's edges, and Control turns it off; a click lands where it is. Resizing a text layer's box by hand makes it Fixed size, in the same undo step, as Figma does.
 _Avoid_: text box tool, insert text
 
 **placed text**:

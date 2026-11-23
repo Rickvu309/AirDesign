@@ -14,7 +14,7 @@ _Avoid_: the new editor, the rewrite
 
 **node**:
 One thing in Doom: a deck, slide row, slide, frame or shape, named by its `type`. A new type is added only when its behaviour cannot be a property.
-_Avoid_: element, object, layer (a layer is what a person sees in the layers panel)
+_Avoid_: element, object, layer (a layer is what a person sees on the slide)
 
 **frame**:
 The one container. It holds nodes and may carry paint, radius, clip, a layout or a chart. A frame with no paint is what a person calls a group.

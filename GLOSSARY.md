@@ -37,7 +37,7 @@ The shape names Figma's shape tool uses. A PowerPoint shape Figma does not have 
 _Avoid_: oval, five-point star
 
 **slide group**:
-Slides kept together. Grid shows one line, or several when the group is long. A PowerPoint section imports as one, and export writes them back. A saved command keeps the field `row`, so old decks read.
+Slides kept together, held by one `slideRow` node. A PowerPoint section is one slide group.
 _Avoid_: row, section
 
 **import**:
