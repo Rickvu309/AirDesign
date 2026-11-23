@@ -1,19 +1,23 @@
 # Select layers on a slide
 
-Selecting layers on the slide behaves as Figma Slides does: dragging a marquee from empty slide space or the canvas surround selects every touched layer, Shift+marquee adds to the selection, Cmd/Ctrl+marquee and Cmd/Ctrl+click deep-select inside groups and frames, double-click steps in, Escape and Shift+Enter step up to the parent, Enter selects children, Tab and Shift+Tab cycle siblings, and hovering draws a 1 px blue hover outline.
+Selecting layers on the slide behaves as Figma Slides does: a click takes a layer, or a group whole; Shift+click adds or takes away; Cmd/Ctrl+click reaches inside a group or frame; a double-click steps one level in; Shift+Enter steps out to the parent and Escape clears; a marquee from empty slide space selects every layer it touches, and Shift+marquee adds to the selection. Ctrl/Cmd+A selects every layer on the slide. Hovering draws a 1 px outline around the layer a click would take. A locked layer lets the click pass through, and a hidden one is not painted. The words are in `select.md`.
 
 ## Sub-features
 
-- `marquee` dragging from empty slide area or the grey canvas surround paints a translucent blue `[data-slide-marquee]` overlay without re-rendering layers, selecting touched layers live (using rotated box intersection for turned layers). Escape cancels and restores the prior selection.
-- `shift-marquee` holding Shift while dragging a marquee preserves the existing selection and adds newly touched layers.
-- `deep-select` Cmd/Ctrl+click and Cmd/Ctrl+marquee bypass groups and frames to select leaf layers directly (never selecting a frame's backdrop). Shift+Cmd/Ctrl+click toggles a deep-selected layer.
-- `traverse` double-click steps one level into a group or frame; Enter selects direct non-backdrop children; Escape steps back to the parent group (or clears selection at top level); Shift+Enter selects the parent; Tab and Shift+Tab cycle direct siblings and wrap around without stealing keys from text editing or open menus.
-- `hover-outline` hovering with a mouse paints a 1 px blue `[data-hover-outline]` around the layer a click would select (or the deep leaf while Cmd/Ctrl is held) without re-rendering layers.
+- `select` a click picks the top layer under the pointer, a group whole (`[data-selection-outline]` names the group's node). After a double-click has stepped inside a group, a click on a sibling picks the sibling.
+- `select-add` Shift+click adds a layer to the selection, and Shift+click on a selected layer takes it away.
+- `deep-select` Cmd/Ctrl+click picks the layer inside a group or frame at once.
+- `step-in` a double-click steps one level into a group or frame; Shift+Enter (or `\`) selects the parent; Escape clears the selection.
+- `marquee` dragging from empty slide space paints `[data-marquee]` and selects every layer it touches; Shift keeps the selection and adds to it. Moving a group that a marquee or click took moves what is inside it.
+- `select-all` Ctrl/Cmd+A selects every layer on the slide that is not locked.
+- `hover-outline` hovering paints `[data-hover-outline]` around the layer a click would select.
+- `lock` Ctrl/Cmd+Shift+L locks or unlocks the selection (the node's `locked` prop). A locked layer takes no click on the slide: the click passes through to what is under it.
+- `hide` Ctrl/Cmd+Shift+H hides or shows the selection (the node's `hidden` prop); the slide stops painting it.
 
 ## How to get to it (user POV)
 
-- Open any deck at `/deck/<id>`.
-- Hover a layer to see the hover outline, drag from empty slide area or the surround to draw a marquee, hold Shift to add, hold Cmd/Ctrl to deep-select inside a group or frame, press Escape/Shift+Enter/Enter/Tab to traverse layers.
+- An open deck `/s/<id>`.
+- Hover a layer to see the outline, drag from empty slide space to draw a marquee, hold Shift to add, hold Cmd/Ctrl to reach inside a group or frame, double-click to step in, Shift+Enter and Escape to step out.
 
 ## Driving it with verify-airdesign
 
@@ -21,11 +25,9 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Run it.** `$V journey <run> canvas-select`. Prints `"passed":true`. Listed in `tests/journeys/journeys.spec.ts`.
-- **Journey.** Hover a shape (`NN-hover-outline`), drag a marquee from the surround across three shapes (`NN-marquee-dragging`, `NN-marquee-three`), Shift-marquee a fourth (`NN-shift-marquee-four`), group two (`NN-grouped`), Cmd/Ctrl+click deep-select inside the group (`NN-deep-selected`), Escape back to the group (`NN-escaped-to-group`), drag the group and verify the landed box on the server (`deckRoutes.open`) and after reload (`NN-group-dragged`, `NN-reloaded`), and traverse with Enter, Tab and Shift+Enter.
-- **States for look.** `canvas-marquee`, `canvas-hover`, `two-selected`, `grouped`.
+- **Browser tests.** `pnpm test:browser tests/browser/doom-editor-select.spec.ts`: a click takes a group whole, a double-click steps in, Shift+Enter and Escape step out; Shift adds and takes away, Cmd/Ctrl reaches inside a frame, a locked layer passes the click through, Ctrl+A; a marquee and Shift+marquee, and a moved group carries what is inside it, read from `doomRoutes.open`. `tests/browser/doom-editor-arrange.spec.ts` locks with Ctrl+Shift+L, finds the click passes through, and hides with Ctrl+Shift+H.
+- **States for look.** `canvas-marquee`, `canvas-hover`, `two-selected`, `group-stepped-in`, `group-layer-selected`.
 
 ## Gotchas
 
-- `canvas-marquee` and `canvas-hover` run cleanly on a base build without marquee or hover outline so `before-after` renders both sides.
-- Touch pointers skip marquee and hover outline so touch scrolling stays intact.
+- `selectedIds` in `tests/browser/doom-deck.ts` reads the selection from `[data-selection-outline]`, one per selected layer.

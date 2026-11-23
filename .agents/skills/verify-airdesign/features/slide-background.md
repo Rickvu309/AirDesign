@@ -1,19 +1,19 @@
-# Set a slide's background colour
+# Set a slide's background
 
-On an open deck, the Design panel shows the current slide's background and the deck's ten theme colours. A click on a colour fills that slide's background with it: a fills row on the slide's own node, `<slide>.slide`. The canvas and the thumbnail paint it at once, and Undo gives the slide back the background it had, including the one it took from its layout or master. An agent sets the same paint with `airdesign_edit_deck` and `{ "op": "set", "target": "<slide>", "fills": { "paint": … } }`. The old spelling `"fill": { "value": … }` lands the same row. The export writes `p:bg` in that slide's part only.
+On an open deck with no layer selected, the Design panel shows the current slide: its number, the deck's **Template style**, the slide's **Background** and its **Selection colors**. The background takes a solid colour, a gradient or a picture; the slide and its thumbnail paint it at once, it reaches the server as the slide node's `fills`, and one undo takes it back. An agent sets the same fill with `airdesign_edit_deck` and `{ "op": "set", "target": "<slide>", "fill": … }`.
 
 ## Sub-features
 
-- `background-set` a theme colour from the Colors group. The server's `register.elements["<slide>.slide"]` gets a row `{ fills: { p0: { set: { solid: { scheme } } }, p1: …, p2: …, p3: … } }` whose slots above the paint are `{ set: { none: true } }`. The Background row names the colour, and that colour's button is pressed.
-- `background-undo` `Undo background color` and `Redo background color`. Undo sends a row with the fill before, `"opening"` when the slide showed the background it opened with.
-- `agent-background` `airdesign_edit_deck` `set` with the slide id as target and a paint, through the same run as every other agent change. The person's Undo for the run takes it back. `airdesign_read_deck` lists `<slide>.slide` with its fill.
-- PR 478 stored backgrounds as `slide: "background"` commands in `register.order`. Migration 14 rewrote each one into fill rows on `<slide>.slide`, which the conversion table reads as fills rows. Migration 15 rewrites any it missed and drops the backup migration 14 kept. A device that still holds one from an older build reads it as a fill row through the conversion table in `packages/document/src/stored.ts`, and the commit route refuses it.
-- `background-export` the export changes only that slide's part, with `<p:bg><p:bgPr><a:solidFill>…</a:solidFill><a:effectLst/></p:bgPr></p:bg>` first in `p:cSld`.
+- `background-set` in the **Background** section, `Solid` and `Gradient` switch the fill's kind, and `button "Background color, <colour>"` opens the colour picker with the template's colours. The slide node's `fills[0]` becomes `{ kind: "solid", color: { var: "accent3" } }` for a template colour (`tests/browser/doom-editor-design.spec.ts`). States `panel-slide`, `blank-deck-colors`, `color-picker-background`, `selection-colors-slide`.
+- `background-gradient` a gradient shows only its stops, direction and angle; `From center` saves a radial one (`tests/browser/doom-gradient-fill.spec.ts`). State `slide-line-and-gradient`.
+- `background-picture` an image fill picked from a file fills the slide background (`tests/browser/doom-editor-design.spec.ts`).
+- `background-undo` Ctrl/Cmd+Z on the canvas takes the background back to what it was, and a reload keeps the result.
+- `template-style` the **Template style** card opens the deck's theme; a colour there writes the deck's theme colours and one undo takes it back. State `design-template`.
+- `agent-background` `airdesign_edit_deck` with a `set` whose target is the slide's id and a `fill` paints the slide's background (`packages/doom/src/agent-set.test.ts`, "paints a slide's background"), through the same run as every other agent change. The person's Undo for the run takes it back.
 
 ## How to get to it (user POV)
 
-- An open deck `/deck/<id>`: `Design` beside `Agent` in the toolbar opens the panel for the slide on the canvas.
-- On a slide with no layer selected, the **Template style** card opens the deck's templates. Use `$V look <run> design-template-menu` on the two-template fixture.
+- An open deck `/s/<id>`: `Design` beside `Agent` opens the panel; click the empty slide so no layer is selected.
 
 ## Driving it with verify-airdesign
 
@@ -21,15 +21,12 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Run it.** `$V journey <run> slide-background`. Prints `"passed":true`.
-- **Panel.** A blank deck from `New deck`, then `Design`. Evidence `NN-design-panel`.
-- **Set.** `Accent 1`. Evidence `NN-background-set`. `deckRoutes.open` holds one fill row on `<slide>.slide` and no `background` command.
-- **Undo, redo, reload.** Evidence `NN-background-undone`.
-- **Agent.** `airdesign_read_deck`, `airdesign_edit_deck` with `{ "op": "set", "target": "<slide>", "fills": { "paint": "#1F4E79" } }`, `airdesign_stop_run`. The open editor paints it, and `airdesign_read_deck` lists `<slide>.slide` with `1F4E79`. Evidence `NN-agent-background`.
-- **Export.** The exported slide reads back a solid `1F4E79` background. Evidence `slide-background.pptx`.
-- **States for look.** `design-panel`, `background-set`.
+- **Specs.** `pnpm test:browser tests/browser/doom-editor-design.spec.ts tests/browser/doom-gradient-fill.spec.ts` sets a solid, a gradient, a template colour and a picture on the background, reads each from the saved slide node, undoes and reloads.
+- **In a scratch journey.** Make a deck with `newDoomDeck`, click `button "Design"`, click the button whose name starts `Background color`, pick a template colour, press Escape, and poll `post(doomRoutes.open, { deck }, cookie)` until the slide node's `fills[0].color` names it. Click the slide, press Ctrl/Cmd+Z, and poll until it does not.
+- **Agent.** Over MCP, `airdesign_read_deck`, then `airdesign_edit_deck` with the change `{ "op": "set", "target": "<slide>", "fill": "#1F4E79" }`. The open editor paints it, and `doomRoutes.open` holds the slide node's new `fills`.
+- **States for look.** The states named above.
 
 ## Gotchas
 
-- A build without the panel still reaches both states so the before side of a comparison has a picture: the Design tab is off.
-- A colour button that is already pressed does nothing, so a second click adds no Undo step.
+- Press Escape to close the colour picker, then click the slide before Ctrl/Cmd+Z, so the key reaches the editor's undo and not a field.
+- The panel shows the slide only while nothing is selected; a selected layer shows its own sections (`design-panel.md`).

@@ -14,7 +14,7 @@ export const usage = [
   "verify-airdesign states                     list the named states and their design screens",
   "verify-airdesign before-after <callouts.json> [--base ref] [--head ref] [--before-run run] [--after-run run] [--keep] [--out dir]",
   "                                            the same states on the base and on this change; annotated image and table",
-  "verify-airdesign bench [--cases add-text,add-text-170,type-41,switch-41,drag,open-41,open-50,import-<deck>|all] [--runs 7] [--base ref] [--before-run run] [--after-run run] [--keep] [--out dir]",
+  "verify-airdesign bench [--cases doom-open-40,doom-drag-40,doom-type-40,doom-add-slide-40,doom-agent-edit-40,doom-idle-40|all] [--runs 7] [--base ref] [--before-run run] [--after-run run] [--keep] [--out dir]",
   "                                            time the editor on the base and on this change, interleaved, CPU throttle 4",
   "verify-airdesign annotate <run> <callouts.json> [--out dir]  numbered callouts on one run's states",
   "verify-airdesign publish <dir> [--pr n]     upload images to a proof release with room; prints links and the PR fragment",

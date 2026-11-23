@@ -1,19 +1,20 @@
 # Insert a shape
 
-In an open deck, `Shapes` in the toolbar opens the tray the design shows (`/screens/s43-04-editor-tools-shapes`). A pick in the tray, or in `More shapes`, closes the tray and arms that shape's tool, as R, O, L and Shift+L do and as Figma's shape tools do: a drag on the slide draws it (Shift keeps it square, round or at 45°, Alt draws from the centre), a click places its default size at the click, and Enter places it in clear space. Each lands as its PowerPoint preset (`Arrow` is a line with an end arrowhead) in the theme's own fill and outline, and the tool goes back to Move. It moves, resizes and deletes like any element, and Undo takes back each step.
+In an open deck, `Shapes` in the toolbar opens the tray the design shows (`/screens/s43-04-editor-tools-shapes`), with `More shapes` for the whole grid. A pick in the tray arms that shape's tool, as R (rectangle), O (ellipse), L (line), Shift+L (arrow) and F (frame) do, like Figma's shape tools: a drag on the slide draws it, Shift keeps it square or round, a click places its default size at the click, and the tool goes back to Move. A shape lands in the theme's light fill (`background2` with a small tint) and moves, resizes and deletes like any layer; one undo takes back each add.
 
 ## Sub-features
 
-- `shape-draw` R and a drag, O with Shift, L with Alt, the tray's Rectangle and a click, and O then Enter; the server holds each add at the box drawn and the export writes it there. Dragging a line's end moves the line itself in its own stroke. Journey `shape-draw`; look state `shape-drawing`.
-- `shape-insert` `button "Shapes"`, then `button "Rectangle"`, `"Ellipse"` or `"Line"`, then Enter. The server's `register.order` gets one `slide: "element-add"` row with `geometry` `rect`, `ellipse` or `line`, `element.kind` `shape` or `connector`, and `element.value: null`.
-- `shape-export` the export writes a `p:sp` with `a:prstGeom` `rect` or `ellipse`, or a `p:cxnSp` with `line`, each with a `p:style` that points at the theme's fill and line, and changes only that slide's part. A new import paints all three.
-- `shape-grab` a straight line moves by a band wider than its stroke that paints nothing.
-- No fill or outline editing, connectors that join shapes, or text inside a shape.
+- `shape-draw` R and a drag draws a rectangle in the box dragged; O with Shift draws a circle; a click with R places a 100 by 100 square at the click. The server holds the node with `geometry.kind` `rect` or `ellipse`.
+- `shape-preset` a tray pick such as `Star` arms its preset; a drag draws it as `geometry: { kind: "preset", name: "star5" }`. `More shapes` opens the grid of presets, `[data-shape-grid]`.
+- `line-draw` L draws a line (`arrows: ["none", "none"]`) and Shift+L an arrow (`["none", "arrow"]`), from where the drag starts to where it ends.
+- `frame-draw` F draws a clipping frame (`clip: true`); a shape then drawn inside it lands as the frame's child.
+- `shape-undo` one Ctrl/Cmd+Z after an add takes the shape away.
+- `agent-shape` an agent's `airdesign_edit_deck` change `{ op: "add", kind: "shape", slide }` or `kind: "line"` with `arrow` adds the same layers.
 
 ## How to get to it (user POV)
 
-- An open deck `/deck/<id>`: the shapes button in the toolbar under the slide (`Shapes`), or Tab to it and press Enter. The tray opens above it; Escape closes it.
-- `Undo add shape` in the toolbar takes the shape back.
+- An open deck `/s/<id>`: `Shapes` in the toolbar under the slide opens the tray above it; Escape closes it.
+- Keyboard: R, O, L, Shift+L and F, then a drag or a click on the slide.
 
 ## Driving it with verify-airdesign
 
@@ -21,14 +22,10 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Run it.** `$V journey <run> shape-insert`. Prints `"passed":true`.
-- **Tray.** A blank deck, `Shapes`; evidence `NN-shape-tray`.
-- **Insert.** `Rectangle`, `Ellipse`, `Line`; evidence `NN-shape-added`.
-- **Move, resize, delete, undo.** Shift+ArrowRight and the corner grip on the rectangle, evidence `NN-shape-resized`; Delete on the line, `Undo delete element`, `Redo delete element`, `Undo delete element`, evidence `NN-shape-undone`. `deckRoutes.open` holds three `element-add` rows with geometry `rect`, `ellipse`, `line`.
-- **Export.** Reload, Export, import the file; evidence `NN-reimported` and `shape-insert.pptx`.
-- **States for look.** `shape-tray`, `shape-added`.
+- **Browser tests.** `pnpm test:browser tests/browser/doom-editor-tools.spec.ts`: R draws a rectangle where it is dragged and the tool goes back to Move, O with Shift keeps it round, one undo takes it away; a click places a default size, F draws a frame that holds what is drawn inside it, L and Shift+L draw a line and an arrow; the tray arms a star preset. Each reads the node from `doomRoutes.open`.
+- **States for look.** `shape-tray`, `shape-grid`, `shape-tray-text-focused`, `shape-drawing`, `shape-added`, `shape-after-line`, `shape-dragged`, `shape-faces`.
 
 ## Gotchas
 
-- A straight line's frame is 0 px tall, so Playwright calls it hidden. Wait for its `[data-canvas-line]` and click the middle of that box; the grab band takes the click.
-- On the blank deck the shapes paint grey: the theme's accent1 is `#505050`.
+- A level line's box is 0 px tall, so Playwright may call it hidden; read its node from `doomRoutes.open` rather than its box.
+- The tool goes back to Move after each shape, so arm it again before the next one.

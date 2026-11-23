@@ -41,7 +41,7 @@ An edit, from a person or an agent, is read by `catalog` and applied by `doom` t
 ## Ways to hurt yourself
 
 1. Production is `studio.airdesign.app`, MCP at `/mcp`. `mcp.airdesign.app` does not resolve.
-2. `/screens/` pages are sample data. The deck home and `src/thin-deck.tsx` call the API for real.
+2. `/screens/` pages are sample data. The deck home and the editor at `src/doom-editor/` call the API for real.
 3. Every worktree shares one `git stash`. Keep work in progress as a commit.
 
 ## Taste

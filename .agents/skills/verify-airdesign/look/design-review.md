@@ -21,7 +21,7 @@ Measure CSS geometry in CSS pixels. Record a reference image's dimensions and kn
 1. Open the whole page beside the supplied reference. Judge the sidebar, main gutter, heading, controls, list rhythm, and grid together. Name the strongest visual element. Check whether a card left unchanged now dominates the smaller layout.
 2. Trace icon centers and label starts across the account row, search, navigation, and section headings. Check the intended alignment groups separately. Matching container edges does not prove matching text or icons.
 3. Open unannotated detail crops at native size. Inspect the button perimeter, inset highlight, shadow, radius, and text. Preserve space around the control so an outer ring remains visible. Check idle, hover, and keyboard focus separately. An unwanted idle ring and a necessary focus indicator are different states.
-4. Recheck the longest content after shrinking the layout. Include import failures, Trash notes, account names, empty states, and open menus. A compact populated grid does not prove those states fit.
+4. Recheck the longest content after shrinking the layout. Include Trash notes, account names, empty states, and open menus. A compact populated grid does not prove those states fit.
 5. Check the truth of visible words against the data source. An email-derived name is a fallback. State that limitation in the proof instead of claiming a stored profile name.
 
 A zero finding count means the mechanical detectors found nothing. It does not settle the visual review. The contrast detector skips gradient backgrounds. A passing scan therefore supplies no contrast verdict for the signature gradient button. Inspect or measure that case separately and record what the measurement covers.

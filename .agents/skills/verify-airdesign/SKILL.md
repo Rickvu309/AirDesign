@@ -1,11 +1,11 @@
 ---
 name: verify-airdesign
-description: "Prove an AirDesign change is right before you hand it over. Drive the real app (apps/web with the real apps/api on its own Postgres) the way a user does and read what saved, attack the bad moment, check the TLA+ rules and their replays, prove a PowerPoint export against its original, judge each screen as a design, and time the editor. Use for any change a person sees or the API answers, and when a change touches edit order, undo, saving and the save status, offline replay, two tabs, agent turns and runs, slides and elements, the import index, usage, OAuth or deck ownership, or when a spec or replay fails."
+description: "Prove an AirDesign change is right before you hand it over. Drive the real app (apps/web with the real apps/api on its own Postgres) the way a user does and read what saved, attack the bad moment, check the TLA+ rules and their replays, prove a PowerPoint export against its original, judge each screen as a design, and time the editor. Use for any change a person sees or the API answers, and when a change touches edit order, undo, saving and the save status, offline replay, two tabs, agent turns and runs, slides and elements, usage, OAuth or deck ownership, or when a spec or replay fails."
 ---
 
 # Verify AirDesign
 
-One command starts a private copy of AirDesign: the built `apps/web` bundle and the real `apps/api` server behind one origin, on a fresh PostgreSQL 18 cluster. Every port is free-picked, every data dir is new, and nothing is shared with another agent. You drive it with the repo's Playwright (`@playwright/test` 1.65.0) and with plain HTTP using paths from `packages/catalog/src/deck-routes.ts` (`deckRoutes`, `signInRoutes`). Never type an API path by hand.
+One command starts a private copy of AirDesign: the built `apps/web` bundle and the real `apps/api` server behind one origin, on a fresh PostgreSQL 18 cluster. Every port is free-picked, every data dir is new, and nothing is shared with another agent. You drive it with the repo's Playwright (`@playwright/test` 1.65.0) and with plain HTTP using paths from `packages/catalog/src/deck-routes.ts` (`deckRoutes`, `signInRoutes`) and `packages/catalog/src/doom-wire.ts` (`doomRoutes`, which opens and edits a deck). Never type an API path by hand.
 
 The helper is `.agents/skills/verify-airdesign/bin/verify-airdesign.mjs` (Claude Code also sees it at `.claude/skills/verify-airdesign/`). Run it from the repo root. Below, `V` means that path:
 
@@ -32,7 +32,7 @@ Under both sit the private app (Run the app) and `prove`, which picks the checks
 
 ### Surfaces
 
-- `apps/web`, the product UI. Primary. Home `/`, Trash `/trash`, a deck `/deck/<id>`. Designed screens at `/screens/<id>-<name>` are static sample pages, not the app.
+- `apps/web`, the product UI. Primary. Home `/`, Trash `/trash`, a deck `/s/<id>` (`/s` makes a new one). Designed screens at `/screens/<id>-<name>` are static sample pages, not the app.
 - `apps/api`, the server. Reached through the same origin for every path in its own route table (`routes` in `apps/api/src/server.ts`), so the browser sends its session cookie the way production does.
 - `apps/site`, marketing and the sign-in pages. Served on a second origin of the same stack (`siteOrigin` in the launch line, `kit.siteOrigin`): its sign-in paths go to the API the way the site's Worker sends them, and its pages come from a build made with a placeholder app address that the front server swaps for the stack's app origin. The app's signed-out redirect goes to `https://airdesign.app/sign-in`, built into `apps/web`; the journey kit answers every `airdesign.app` address with a stand-in page so no journey reaches production, and `kit.useSite()` sends `https://airdesign.app/sign-in` to the site origin instead. See `features/sign-in.md`.
 - `packages/mcp`, the agent tools, mounted by the API at `/mcp`. Secondary. Its tests in `apps/api/src/mcp/mcp.test.ts` are the driver today.
@@ -103,14 +103,14 @@ Each run is isolated, and the machine is shared: read [isolation-and-load.md](is
 Journeys are Playwright scripts in `.agents/skills/verify-airdesign/journeys/`. Run one with:
 
 ```sh
-$V journey <run> open-edit-save
+$V journey <run> deck-list-trash
 ```
 
 Every file in `journeys/` is a shipped journey, listed in `tests/journeys/journeys.spec.ts`. `features/README.md` names the feature each one proves, and each feature file names its journeys and steps.
 
 A failed journey saves a `failure` screenshot and writes the whole error, with the locator and the call log, to `failure.txt` in its evidence dir; `proof.md` names that file.
 
-For the full suite, CI sharding and recorded Aira grouping, see [journey suite](journey-suite.md).
+For the full suite, CI sharding and journeys that use recorded Aira, see [journey suite](journey-suite.md).
 
 To prove something no journey covers, write a journey that exports `default async function drive(kit)`: a new file there, or a scratch file anywhere, run by its path (`$V journey <run> ~/tmp/seam.mjs`). The kit gives you:
 
@@ -129,9 +129,9 @@ To prove something no journey covers, write a journey that exports `default asyn
 - `countryHeader`: the catalog's visitor-country header name, for sending another country through `post`.
 - `capture(label)`: screenshot plus ARIA snapshot of the page.
 - `note(line)`: append a line to the run's `proof.md`.
-- `repo`: the checkout root, for fixtures such as `scripts/pptx-fixtures/clean.pptx`.
+- `repo`: the checkout root, for fixtures and for loading `packages/doom/dist/index.js` to read a fold (`readFold`) or compile an agent edit.
 
-Stable handles in the app today: `input[type=file]` on Home (import), `[contenteditable="true"]` (text box being edited), `[data-slide-paint]` (slide canvas), `[data-canvas-element="<key>"]` (painted element; thumbnail tables carry it too, so scope it to `[data-slide-paint]`), `[data-thumb-paint]` (thumbnail), `[data-slide-entry="<n>"]` (slide list entry), `[data-selection]` and `[data-grip]` (selection frame), `[data-editor-panel]` (Agent panel), `[data-step-mark]` (Aira step mark), `.thin-page[data-deck-ready]` (deck ready: painted, opened with the server, its fonts and the thumbnails in view loaded, no zoom settling, no edit painted ahead of the device), roles and names such as `button "New deck"`, `button "Add slide"`, `button "Add text"`, `button "Undo <step>"`, `menuitem "Move to Trash"`, `button "Restore"`, `button "Empty Trash"`, `button "Export"`, `heading "<deck name>"`.
+Stable handles in the app today: `[data-doom-ready="<deck>"]` (the deck painted), `[data-slide-box]` (the slide canvas), `[data-node="<id>"]` (a painted layer; thumbnails carry it too, so scope it to `[data-slide-box]`), `[data-slide-entry="<n>"]` (slide list entry), `[data-slide-thumb]` (its thumbnail), `[data-selection]` and `[data-grip]` (selection frame), `[data-hover-outline]`, `[data-text-editor]` (the text being edited), `[data-editor-panel]` (Agent and Design column), `[data-step-mark]` (Aira step mark), roles and names such as `button "New deck"`, `button "Add slide"`, `menuitem "Move to Trash"`, `heading "<deck name>"`. `look/doom-deck.mjs` and `look/doom-canvas.mjs` open a Doom deck with given layers and find a layer's centre.
 
 Plain HTTP without a browser:
 
@@ -141,7 +141,7 @@ $V api <run> list '{}' --cookie 'airdesign.session=...'
 $V api <run> open '{"deck":"<id>"}' --cookie '...'
 ```
 
-`api` takes a `deckRoutes` key (`open`, `commit`, `watch`, `list`, `rename`, `trash`, `restore`, `delete`, `originalUpload`, `originalDone`, `original`) and saves the answer under the evidence dir.
+`api` takes a `deckRoutes` key (`list`, `rename`, `star`, `trash`, `restore`, `delete`, `mediaUpload`, `media`) and saves the answer under the evidence dir. A deck's content is read and written through `doomRoutes` (`create`, `open`, `edit`, `since`, `pictures`, `run`); post those from a journey with `post`.
 
 #### Saved proof
 
@@ -153,9 +153,9 @@ Everything lands in `~/tmp/verify-airdesign/<run>/` and survives `stop`:
 
 Proof standards:
 
-- Drive the user's path: the file input on Home, typing in the slide, the buttons on Home and Trash. Never call internal setters or test-only routes.
+- Drive the user's path: New deck on Home, typing in the slide, the buttons on Home and Trash. Never call internal setters or test-only routes.
 - Capture the action and the result, not only the last screen.
-- Prove side effects through a second view: after a UI action, read the server copy with `deckRoutes.open` or `deckRoutes.list`. A UI that looks right while the server disagrees is a failure.
+- Prove side effects through a second view: after a UI action, read the server copy with `doomRoutes.open` or `deckRoutes.list`. A UI that looks right while the server disagrees is a failure.
 - The stack has a few stand-ins, each behind a production seam. [stand-ins.md](stand-ins.md) lists them.
 - Put the run id, the journey and the evidence path in your PR or review comment.
 
@@ -176,7 +176,7 @@ For feedback about scale, alignment, names, or button borders, follow [the desig
 
 For every change a person sees:
 
-1. Find the states your change touches with `$V states`. Run `$V look <run> <state>` on each, before your change and after. A page no state covers: `$V look <run> <path>`, with `--import deck.pptx --slide n` for a slide.
+1. Find the states your change touches with `$V states`. Run `$V look <run> <state>` on each, before your change and after. A page no state covers: `$V look <run> <path>`.
 2. Run `$V compare <run> <state>` to put the state beside its design screen under `/screens/`.
 3. Open `annotated.png`, `compare.png` and the crops, and read them. Then write two or three sentences on what you see, as a designer would: what draws the eye, what looks off, how it differs from the design.
 4. Fix every finding or explain it. A finding that is meant gets an entry in `look/allow.json` with a reason; a real fault you leave gets a `test.fail` in `tests/browser/design-states.spec.ts`. When you add a state a person can reach, add `look/states/<name>.mjs`, one file.
@@ -188,7 +188,7 @@ Zero findings is not a design sign-off. The tool cannot judge taste, hierarchy, 
 
 ### Fast
 
-`$V bench` times what a person feels in the editor (Add text box to the first letter painted, frame time while dragging, reopening a 41-slide deck, importing decks) on the merge base and on this checkout, interleaved, under CPU throttle 4, and says `slower` only when the gap beats both spreads and 5 %. A PR that touches the editor's gestures pastes its table in `## Proof`. [bench.md](bench.md) has the cases, flags, verdict rule and output.
+`$V bench` times what a person feels in the editor on a 40-slide deck (reopening it, dragging, typing, adding a slide, an agent's edit reaching the tab, and the idle tab) on the merge base and on this checkout, interleaved, under CPU throttle 4, and says `slower` only when the gap beats both spreads and 5 %. A PR that touches the editor's gestures pastes its table in `## Proof`. [bench.md](bench.md) has the cases, flags, verdict rule and output.
 
 ## Pick the proof
 

@@ -4,8 +4,8 @@
 
 ```sh
 $V bench                                   # default cases, 7 runs a side, base = merge base with origin/main
-$V bench --cases add-text,drag --runs 5    # some cases
-$V bench --cases all                       # every case, with all 20 judged decks imported; by hand only
+$V bench --cases doom-type-40,doom-drag-40 --runs 5    # some cases
+$V bench --cases all                       # every case
 $V bench --keep                            # keep both stacks; the next try takes --before-run and --after-run
 ```
 
@@ -15,26 +15,25 @@ $V bench --keep                            # keep both stacks; the next try take
 
 Each case is a file in `bench/` exporting `{ name, setup(kit), measure(kit, prepared) }`. `setup` gets a journey kit on a fresh browser context and signs in; its answer goes to `measure`, which returns milliseconds. CPU throttle 4 (`Emulation.setCPUThrottlingRate`) is on for `measure` only. The viewport is the kit's 1470x923 at scale 2.
 
-| case            | measures                                                                                                                                                                                                                                                                   |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `add-text`      | the click on `Add text box` to the first typed letter painted: the click event's time to the first frame after the letter shows in the new text box. The letter is typed straight after the click, the way a person types at once                                          |
-| `add-text-170`  | the same click-to-letter paint on a 170-layer slide (160 styled multi-paragraph shapes and 5 auto-layout frames added to `blank.pptx` in the register), which rebuilds the deck export on the update                                                                       |
-| `type-41`       | typing in a text box of the imported `doe-heat-pumps.pptx` (41 slides): for each of nine letters, the keydown's time to the first frame after the letter shows in the box; the run's answer is the median letter                                                           |
-| `switch-41`     | clicking through eight slides of the imported 41-slide deck: pointerdown to the frame after the canvas shows different element keys; the run's answer is the median switch                                                                                                 |
-| `open-50`       | reopening the same imported deck extended to 50 slides through Duplicate: navigation to the deck and all visible thumbnails painted                                                                                                                                        |
-| `drag`          | the 95th percentile of frame time, from `requestAnimationFrame`, while the `clean.pptx` text box is dragged 300 px in 30 moves                                                                                                                                             |
-| `drag-busy`     | the 95th percentile of frame time, from `requestAnimationFrame`, while six cards of the busy slide from `tests/browser/busy-deck.ts` are dragged 240,90 px in 30 moves with the Design panel open                                                                          |
-| `open-41`       | reopening the imported `doe-heat-pumps.pptx` (41 slides): `page.goto("/deck/<id>")` to `.thin-page[data-deck-ready]` and a painted thumbnail (`[data-thumb-paint]`) in every slide list cell in view. Cells out of view paint when scrolled to, so they are not waited for |
-| `import-<deck>` | the file input on Home to the same painted state. The default set imports the largest (`doe-heat-pumps`, 41 slides), a middle (`nasa-cots-parts-nesc`, 17) and the smallest (`nasa-8ft-tunnel`, 4) judged deck                                                             |
+Every case runs on a 40-slide deck the case builds through `doomRoutes.edit`: a new deck at `/s`, 39 added slides, and the board deck's text, KPIs and charts (`boardDeckChanges` in `packages/doom/src/board-deck.ts`) on every five slides (`openBoardDeck` in `bench/doom-deck.mjs`). The editor then sits on slide 2.
 
-The Event Timing API drops events shorter than 16 ms, so `add-text` times the frame after the letter lands in the page instead.
+| case                 | measures                                                                                                                                                                         |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `doom-open-40`       | reopening the deck: `page.goto("/s/<id>")` to `[data-doom-ready="<id>"]` and a painted layer (`[data-node]`) in every slide list cell in view (`[data-slide-thumb]`)             |
+| `doom-drag-40`       | main-thread task time per pointer move (`Performance.getMetrics` `TaskDuration`) while the slide's first layer is dragged in 60 moves                                            |
+| `doom-type-40`       | typing in the slide's first text layer: for each of nine letters, the keydown's time to the first frame after the letter shows in `[data-text-editor]`; the answer is the median |
+| `doom-add-slide-40`  | the pointerdown on `Add slide` to the first frame after the slide list holds one more `[data-slide-entry]`                                                                       |
+| `doom-agent-edit-40` | an agent's box write sent through `doomRoutes.edit` to the first frame after the open tab moved that layer                                                                       |
+| `doom-idle-40`       | main-thread task time over 4 s with a layer selected and nudged, and no input                                                                                                    |
+
+`doom-type-40` and `doom-add-slide-40` time the frame after the change lands in the page, because the Event Timing API drops events shorter than 16 ms.
 
 ## Runs
 
 - Two stacks start once, through the same launch as `before-after`: the merge base in a scratch worktree, and this checkout.
 - Runs interleave main, branch, main, branch for each case, so machine drift falls on both sides. Each run gets a fresh browser context and its own account.
 - The bench takes the `full` lane of the machine lock (job `bench`) for its whole length, because a parallel check moves timings. It records the load before and after each run and counts the runs taken above the core count. Those runs are kept, and the report says how many.
-- The default set at 7 runs a side takes about 6 to 9 minutes.
+- The default set is every case.
 
 ## Verdict
 
@@ -44,9 +43,9 @@ A case is `slower` when `median(branch) - median(main)` is more than both interq
 
 ```
 bench 2c036f24 (main) vs 1a2b3c4d, CPU throttle 4, 7 runs a side, interleaved
-case       main median [IQR]    branch median [IQR]  verdict
-add-text   183 ms [181-188]     214 ms [212-221]     slower by 31 ms (17 %)
-drag       16.9 ms [16.8-17.1]  16.8 ms [16.7-17.0]  no difference shown
+case          main median [IQR]    branch median [IQR]  verdict
+doom-type-40  18.3 ms [18.1-18.8]  21.4 ms [21.2-22.1]  slower by 3.1 ms (17 %)
+doom-drag-40  1.69 ms [1.68-1.71]  1.68 ms [1.67-1.70]  no difference shown
 load max 27.1 on 16 cores (2 runs above the core count)
 ```
 

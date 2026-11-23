@@ -1,22 +1,21 @@
 # Add a picture
 
-In an open deck, `Add picture` in the toolbar opens the file picker for PNG, JPEG and GIF. A dropped or pasted picture file does the same. The picture lands at its natural size, scaled down to fit 90% of the slide, in clear space when the slide has room for it and centred over what the slide holds when it has none; a corner drag keeps its ratio. Its bytes stay on the device and paint at once; the slide command carries only their SHA-256 and media type. The bytes upload to the deck's media through `deckRoutes.mediaUpload` and a presigned PUT, and another device reads them through `deckRoutes.media`.
+In an open deck a PNG, JPEG or GIF file dropped on the canvas lands at the drop point, and one pasted from the clipboard lands centred on the slide. The picture keeps its own ratio at its natural size, scaled down to fit the slide, and stays inside the slide's edges. It is a rectangle whose fill is the image (`fills: [{ kind: "image", asset, fit: "fill" }]`). Its bytes stay on the device and paint at once; the deck stores only their SHA-256 as the asset. The bytes upload to the deck's media through `deckRoutes.mediaUpload` and a presigned PUT, and another device reads them through `deckRoutes.media`. The Design panel's Fill picks an image file for a shape, a picture's Replace, and the slide background in the same way.
 
 ## Sub-features
 
-- `picture-add` `button "Add image"` and a file. The server's `register.order` gets one `slide: "element-add"` row with `element.kind: "picture"` and `media: { sha256, type }`. The new picture frame (`group "Image"`) has focus.
-- `picture-refuse` an SVG, any other type, a file of 10 MB or more, or a file the browser cannot decode paints nothing and shows `Unable to add picture.` with what to choose.
-- `picture-upload` the bytes upload after the command; a failed upload retries when the editor next opens the deck or comes back online (`flushOriginal` flushes media too).
-- `picture-uploading` another device paints the box with `Picture is still uploading from another device` until the bytes land, and its export refuses with `Unable to export. A picture is uploading.`
-- `picture-undo` `Undo add picture` takes the picture away and its Redo brings it back, through a reload (`tests/browser/picture-add.spec.ts`).
-- `picture-account` each account on a browser keeps its own list of the pictures it added or fetched; another account on the same browser reads nothing of them from the device.
-- `agent-web-image` an agent's `airdesign_edit_deck` change `{ op: "add", kind: "shape", slide, image: "https://…", box }` lands the same `element-add` with `media` as a person's add. The API fetches the address once in the edit's prepare step: https on port 443 only, every resolved address and every redirect public, the connection pinned to the checked address, at most three redirects, 10 s, under 10 MB and 40 megapixels, PNG, JPEG or GIF read from the bytes, at most 10 addresses a call. It stores the bytes by hash as deck media, and the open tab reads them through `deckRoutes.media`. With a box the image sits whole inside it at its own proportions. A failed address refuses the call with `image` and one line per address saying why. In the stack, `images.verify.test` answers from `scripts/pptx-fixtures/` (see `../stand-ins.md`); look state `web-image-added`. Proved 2026-11-20 against a real public PNG too.
-- `picture-export` the export writes a `p:pic` with `a:blip r:embed`, a `ppt/media/picture-<hash>.<ext>` part, the slide relationship and the content type default; a new import paints it. An export of a slide range that holds the picture keeps it (see `export.md`).
+- `picture-drop` a dropped file lands as one edit (`pictureWrites` in `apps/web/src/doom-editor/picture-writes.ts`), selected, painted from a `blob:` address. One undo takes it away and redo brings it back; a reload and a fresh device paint it.
+- `picture-paste` a picture file pasted outside a text lands centred on the slide.
+- `picture-refuse` a file that is not a PNG, JPEG or GIF, a file at or over the media limit or past the pixel limit, or one the browser cannot decode lands nothing and shows `Unable to add image.` with what to choose (`pictureCopy` in `apps/web/src/copy/picture-copy.ts`).
+- `picture-upload` the picture paints and lands in the deck while its upload fails; the upload goes through when the device is back online (`flushMedia` in `packages/live/src/media.ts`).
+- `picture-uploading` a device that does not hold the bytes paints the box with `Image is still uploading from another device`.
+- `picture-fill` the Design panel's Fill `Image` picks a file for a shape's fill, the slide background, or a picture's `Replace`, and the panel shows it (see `design-panel.md`).
+- `agent-picture` an agent's `airdesign_edit_deck` change `{ op: "add", kind: "picture", slide, fill: { image: "https://…" } }` lands a picture. The API fetches the address once (`apps/api/src/platform/image-fetch.ts`): https on the default port only, every resolved address and every redirect public, at most three redirects, 10 s, at most `imagesPerCall` (10) addresses a call. A failed address refuses the call with one line per address saying why (`packages/mcp/src/named-image.ts`). In the stack, `images.verify.test` answers from `scripts/pptx-fixtures/` (see `../stand-ins.md`). An agent's first read of a slide with a picture gets the slide as the open tab painted it (`tests/browser/doom-slide-picture.spec.ts`, `tests/browser/doom-picture-wake.spec.ts`).
 
 ## How to get to it (user POV)
 
-- An open deck `/deck/<id>`: the picture button in the toolbar under the slide (`Add picture`), or Tab to it and press Enter.
-- Drop or paste a picture file on the open deck.
+- An open deck `/s/<id>`: drop a picture file on the canvas, or paste one.
+- The Design panel with a shape, a picture or nothing selected: Fill or Background, then `Image`.
 
 ## Driving it with verify-airdesign
 
@@ -25,14 +24,11 @@ Preconditions:
 - `$V doctor <run>` is ok.
 - `scripts/pptx-fixtures/picture.png` exists (480 by 320 px).
 
-- **Run it.** `$V journey <run> picture-add`. Prints `"passed":true`.
-- **Add while the upload is blocked.** A second browser context (the first device) blocks the picture's PUT, makes a blank deck and adds `scripts/pptx-fixtures/picture.png`. Polls `deckRoutes.open` for the `element-add` row with its media; `deckRoutes.media` answers `missing`. Evidence `first-device-picture-added.png`.
-- **Another device.** The kit's page opens the deck: placeholder text, evidence `NN-picture-uploading`; Export refuses, evidence `NN-export-waiting`.
-- **Upload lands.** The first device unblocks and reloads; `deckRoutes.media` answers ok. The kit's page reloads and paints the picture, evidence `NN-picture-added`, exports, imports the file, evidence `NN-reimported`.
-- **States for look.** `picture-added`, `picture-uploading` (the Doom editor at `/s`, a picture whose bytes this device lacks).
+- **Browser tests.** `pnpm test:browser tests/browser/doom-editor-picture.spec.ts`: a dropped `picture.png` lands at the drop point at 1.5 to 1, its asset is on the server and `deckRoutes.media` answers ok, undo and redo, a reload and a fresh device paint it; a pasted picture lands centred and a text file lands nothing with `Unable to add image.`; a drop while the upload fails lands, and the upload goes through once the device is back online. `tests/browser/doom-editor-design.spec.ts` picks an image fill for a shape, the slide background and a picture's Replace.
+- **States for look.** `picture-added`, `picture-uploading` (a picture whose bytes this device lacks), `design-picture-fill`, `panel-picture`.
 
 ## Gotchas
 
-- `page.waitForEvent("filechooser")` before the click or the Enter, then `setFiles`.
-- A painted picture is a frame whose `background-image` is a `blob:` address, or a `data:image/svg+xml` address for an icon; poll for it with `getComputedStyle`, not for an `img`.
-- On a slide already holding a title, a subtitle and a large text box, `picture.png` has no clear space and covers the title; click elements under it through the slide list and the keyboard, or add the picture last.
+- A painted picture is `[data-slide-box] [data-paint="image"]` whose `background-image` is a `blob:` address; poll for it with `getComputedStyle`, not for an `img`.
+- The spec dispatches the drop and the paste on `[data-doom-stage]` as a `DragEvent` or `ClipboardEvent` with a `DataTransfer` holding the file.
+- A browser spec serves the upload's presigned PUT and GET itself with `serveOriginals` from `tests/browser/doom-deck.ts`; the verify stack serves them under `/verify-original/`.

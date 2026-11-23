@@ -1,17 +1,16 @@
 # Bring an element forward or send it backward
 
-On an open deck, a right-click on an element opens Bring to front, Bring forward, Send backward and Send to back. Each one moves that element among the shapes that share its parent. A shape already at that end has the action off. The canvas says what happened, and Undo takes the move back.
+On an open deck the bracket keys change where the selected layers sit in their parent's stack, as in Figma: `]` brings them to the front and `[` sends them to the back, Ctrl/Cmd+] brings them forward one place and Ctrl/Cmd+[ sends them back one place. The slide paints the new order at once, the server keeps it, and one undo takes it back.
 
 ## Sub-features
 
-- `element-order` the menu on the element, and `]` / `[` (plus Mac Cmd+Option+]/[, Windows Ctrl+Shift+]/[) and Cmd/Ctrl+]/[ when the browser delivers them. The server's `register.order` gets a `slide: "element-order"` row. The canvas and the thumbnail paint the new order at once.
-- `element-order-export` the export changes only that slide's part. The moved shape's own XML stays as it was, and a group or a kept frame in the same tree stays whole.
-- A shape inside a group moves only among that group's children. It is not pulled out of the group.
+- `element-order` `]`, Ctrl/Cmd+Shift+] and Cmd+Option+] bring to the front; `[`, Ctrl/Cmd+Shift+[ and Cmd+Option+[ send to the back; Ctrl/Cmd+] and Ctrl/Cmd+[ step one place (the `arrange` rows of `gestures` in `packages/render/src/gestures.ts`). Each writes the moved layers' `parent` with a new order key `at` between their new neighbours (`orderWrites` in `apps/web/src/doom-editor/order-writes.ts`). A layer already at that end writes nothing.
+- `siblings` a layer moves only among the layers that share its parent; a layer inside a group or frame is not pulled out of it.
+- `agent-order` an agent's `airdesign_edit_deck` change `{ op: "move", node, after }` puts a layer after a sibling, or first with `after: null`.
 
 ## How to get to it (user POV)
 
-- An open deck `/deck/<id>`: right-click an element on the slide. The four actions sit in that menu, with the shortcut beside each one.
-- `Undo bring to front`, `Undo bring forward`, `Undo send backward` and `Undo send to back` in the toolbar take the move back.
+- An open deck `/s/<id>`: select a layer, then the bracket keys.
 
 ## Driving it with verify-airdesign
 
@@ -19,14 +18,10 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Run it.** `$V journey <run> element-order`. Prints `"passed":true`.
-- **Overlap.** A blank deck, `Rectangle` then `Ellipse`, then a drag so the ellipse covers part of the rectangle.
-- **Order.** Right-click the rectangle's uncovered part, `Bring to front`. Evidence `NN-arrange-menu` and `NN-element-ordered`. The status reads `Brought to front`. `deckRoutes.open` holds an `element-order` row.
-- **Undo, redo, keys, reload, export.** `Undo bring to front`, `Redo bring to front`, Ctrl+[ (`Sent backward`), `Undo send backward`, a reload, then Export. Evidence `NN-reimported` and `element-order.pptx`.
-- **State for look.** `element-ordered`.
+- **Browser tests.** `pnpm test:browser tests/browser/doom-editor-arrange.spec.ts` presses `]`, `[`, Ctrl+] twice and Ctrl+[ on one of three boxes and reads each order key from `doomRoutes.open`. `tests/browser/doom-arrange.spec.ts` steps a layer with Ctrl+] and Ctrl+[ and sends it to the front and the back with `]` and `[`.
+- **State for look.** `element-ordered` (the back card brought in front of the badge).
 
 ## Gotchas
 
-- The menu is on the element. A right-click on empty slide keeps the browser's own menu.
-- A build without the menu still reaches `element-ordered` so the before side of a comparison has a picture: the ellipse still covers part of the rectangle.
-- Cmd+Shift+[ / Cmd+Shift+] are taken by macOS browsers for tab switching; bare `[` and `]` (and Cmd+Option+[ / Cmd+Option+]) avoid that clash.
+- Cmd+Shift+[ and Cmd+Shift+] switch tabs in macOS browsers; bare `[` and `]`, or Cmd+Option+[ and Cmd+Option+], avoid that clash.
+- While a text is being edited, Ctrl/Cmd+] and Ctrl/Cmd+[ indent and outdent a list instead.
