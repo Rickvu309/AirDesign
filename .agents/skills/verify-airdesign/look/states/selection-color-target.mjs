@@ -6,7 +6,7 @@ async function drive(kit) {
   const { page } = kit
   await designing(kit)
   await page.keyboard.press("o")
-  await clickSlide(page, 1300, 420)
+  await clickSlide(page, 1400, 800)
   await expect(page.locator("[data-selection-outline]")).toHaveCount(1)
   await expect(page.locator("[data-selection-colors]")).toBeVisible()
 }

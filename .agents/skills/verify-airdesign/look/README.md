@@ -37,7 +37,7 @@ To add a state, add `states/<name>.mjs` that default-exports the state, named af
 
 ## The Design panel beside Figma
 
-`panel-kinds.mjs` reaches the Design panel of each kind (text, shape, picture, connector, pair, an auto layout frame made with Shift+A, slide) on a fixture that matches Figma's screenshots as nearly as ours allow, in slides mode or design mode. The states `panel-<kind>` and `panel-<kind>-design` use it, so `look` and `sheet` judge every panel.
+`panel-kinds.mjs` reaches the Design panel of each kind (text, shape, picture, connector, pair, an auto layout frame, slide) on a Doom deck seeded by `doom-design.mjs` to match Figma's screenshots as nearly as ours allow. The states `panel-<kind>` use it, so `look` and `sheet` judge every panel.
 
 `panel-shots.mjs` is a journey that screenshots the panel element itself at 240 px wide and scale 2, the whole panel with nothing scrolled away, and puts each beside Figma's screenshot of the same kind at the same scale:
 
@@ -46,7 +46,7 @@ PANEL_OUT=<folder> PANEL_FIGMA=<folder with text.png, shape.png, picture.png, co
   $V journey <run> .agents/skills/verify-airdesign/look/panel-shots.mjs
 ```
 
-`PANEL_MODES` (default `slides,design`) and `PANEL_KINDS` narrow the set. Figma's screenshots stay out of the repository. Open every `beside-*.png` and name each difference you see.
+`PANEL_KINDS` narrows the set. Figma's screenshots stay out of the repository. Open every `beside-*.png` and name each difference you see.
 
 ## before-after and annotate
 

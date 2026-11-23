@@ -54,12 +54,6 @@
     "reason": "The frame's own layer is where a person grabs the frame, so it paints nothing of its own; its backdrop and the shapes it holds paint under it."
   },
   {
-    "page": "frame-resize-to-fit",
-    "detector": "invisible-control",
-    "selector": "[data-canvas-element=\"ppt/slides/slide1.xml#5\"]",
-    "reason": "The plain frame's own layer is where a person grabs the frame, so it paints nothing of its own; its backdrop and the shapes it holds paint under it."
-  },
-  {
     "page": "grid-groups-eleven",
     "detector": "stacked-frames",
     "selector": "[data-grid-halo]",
