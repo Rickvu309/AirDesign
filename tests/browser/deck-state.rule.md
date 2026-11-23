@@ -4,7 +4,7 @@ The `deckState` fixture in `tests/browser/deck-test.ts` runs for every browser t
 
 When a test fails, the fixture writes `deck-state.json` beside its screenshot and attaches it under that name. It holds, per deck, the `confirmed` and `pending` rows, `head`, `revision`, `aside`, `sectionStarts` and the unsaved shelf from `localStorage`, the names of the other slots (a deck's parts and pictures are left out) and the kept loads. A passing test writes and attaches nothing, and so does a failed test that loaded no page of the app, such as one that drives only contexts it makes itself.
 
-`tests/device-rows.test.ts` holds how keys group into decks. `tests/browser/deck-state.spec.ts` reloads a deck with a typed note and finds the note's row in the load the reload kept. `scripts/land-report.test.mjs` and `scripts/race-issue.test.mjs` hold that a failed browser test's report and its `Race:` issue name `deck-state.json` (`scripts/deck-state-file.mjs`).
+`tests/device-rows.test.ts` holds how keys group into decks. `scripts/land-report.test.mjs` and `scripts/race-issue.test.mjs` hold that a failed browser test's report and its `Race:` issue name `deck-state.json` (`scripts/deck-state-file.mjs`).
 
 Measured on 2026-11-20 over 464 passing runs of the 116 tests in the 13 specs that reload most: setting the fixture up and tearing it down took 1.3 ms at the median, 8.4 ms at the 99th percentile and 15 ms at most, and no passing test attached anything. Over 75 reloads each, a reload took 633 ms to ready at the median without the fixture and 629 ms with it.
 

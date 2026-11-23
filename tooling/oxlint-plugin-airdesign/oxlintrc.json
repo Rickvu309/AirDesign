@@ -21,13 +21,7 @@
       {
         "kept": {
           "tests/browser/design-states.spec.ts": 1,
-          "tests/browser/drag-feel.ts": 1,
-          "tests/browser/export-dialog.spec.ts": 1,
-          "tests/browser/grid-reorder.spec.ts": 4,
-          "tests/browser/slide-findings.spec.ts": 1,
-          "tests/browser/text-fit.spec.ts": 2,
-          "tests/browser/theme.spec.ts": 1,
-          "tests/browser/typing-renders.spec.ts": 1
+          "tests/browser/drag-feel.ts": 1
         }
       }
     ],

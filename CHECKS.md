@@ -12,3 +12,5 @@ This file holds only the rules that review holds: its rows say `review` first. T
 | Extend before you build a parallel version, reduced motion shows the finished state | review |
 | Copy: `better-writing`, `GLOSSARY.md`, current behavior | review |
 | How agents work here | review |
+| The editor marks a deck ready only when it is painted, opened with the server, its fonts and the thumbnails in view are in, and no zoom is settling | review; its tests went with the old editor in 9b0587d26, and a test on the Doom editor is owed |
+| A drag leaves the filmstrip and the Design panel alone until it lands | review; its test went with the old editor in 9b0587d26, and a test on the Doom editor is owed |
