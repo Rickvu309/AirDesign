@@ -23,7 +23,7 @@
       "reason": "the CSS property gridRow places a line of thumbnails"
     },
     {
-      "file": "apps/web/src/editor/adjust-tone.tsx",
+      "file": "apps/web/src/aira/adjust-tone.tsx",
       "text": "className=\"grid aspect-square touch-none cursor-crosshair grid-cols-3 grid-rows-3 place-items-center rounded-md bg-muted disabled:cursor-default disabled:opacity-50\"",
       "reason": "the Tailwind class grid-rows-3 lays out the colour dial"
     }

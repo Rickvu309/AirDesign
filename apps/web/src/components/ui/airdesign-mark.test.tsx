@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { expect, it } from "vitest"
 import { AirdesignMark } from "@/components/ui/airdesign-mark"
-import icon from "../../public/favicon-art.svg?raw"
+import icon from "../../../public/favicon-art.svg?raw"
 
 const strokesOf = (svg: string) => [...svg.matchAll(/stroke-width="([\d.]+)"/g)].map((match) => match[1])
 
