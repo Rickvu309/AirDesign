@@ -10,8 +10,7 @@ import { createMcpHandler } from "@modelcontextprotocol/server"
 
 import { admitCaller } from "../account/caller-log.js"
 import type { DeckPictures } from "../doom/deck-pictures.js"
-import { metricsOf } from "../platform/font-metrics.js"
-import { fontSource } from "../platform/font-route.js"
+import { measureWithin, servedFontMetrics } from "../platform/font-metrics.js"
 import { fetchImage, type ImageNet } from "../platform/image-fetch.js"
 import { keepMedia, storedMedia } from "../doom/media.js"
 import type { OriginalStore } from "../platform/original-store.js"
@@ -37,6 +36,7 @@ export type McpHost = {
 }
 
 const listPage = 50
+const measureBudget = 2_500
 
 const refusal = (kind: Exclude<DoomRefusal["refusal"], "edit">): DoomRefusal => ({ ok: false, refusal: kind })
 
@@ -169,7 +169,7 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured): D
       return decoded(named) ?? opened(id.deck, await openDoom(db, { deck: id.deck }, email))
     }),
     images: async (deck, names) => storedImages(db, deck, email, names, images),
-    measure: async (fold) => metricsOf(fontSource(images.originals)).measure(fold),
+    measure: (fold) => measureWithin(servedFontMetrics(images.originals), fold, measureBudget),
     ...(shots === undefined
       ? {}
       : { pictures: (deck, fold, slides) => slidePictures(shots, seen.wait, deck, fold, slides) }),

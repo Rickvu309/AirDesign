@@ -1,3 +1,3 @@
-# The server measures a served face's advances and pair kerning the way Chromium's canvas does, so its layout findings break lines where the canvas paints them
+# The server measures a served face's advances and pair kerning the way Chromium's canvas does, so its layout findings break lines where the canvas paints them; a font it cannot read, a character the font lacks, or a font slower than the budget answers unchecked, never clear
 
-`apps/api/src/platform/font-metrics.test.ts` reads Liberation Sans Narrow through `FontMetrics` and fails when a line's width or a kerning pair drifts from the widths Chromium's canvas measured for the same file
+`apps/api/src/platform/font-metrics.test.ts` pins Liberation Sans Narrow to Chromium's canvas widths and covers the unread font, the missing letter, the time budget and the twenty-face bound; `tests/browser/layout-agreement.spec.ts` lays out the sample deck's words and a Vietnamese line in Inter, Lora and Liberation Sans Narrow at four styles and three widths and fails on any line break or height the canvas does not share

@@ -1,5 +1,5 @@
 import { deckOf } from "./deck-of.js"
-import type { Doom } from "./doom.js"
+import type { Doom, Write } from "./doom.js"
 import { get, slideOf, slidesOf } from "./doom-walk.js"
 import type { NodeId } from "./ids.js"
 import type { Measure } from "./measure.js"
@@ -200,11 +200,20 @@ export function layoutFindings(doom: Doom, slides: readonly NodeId[], measure: M
   return found
 }
 
-export function touchedSlides(before: Doom, after: Doom, nodes: readonly NodeId[]): readonly NodeId[] {
-  if (nodes.some((node) => after.nodes.get(node)?.type === "deck")) return slidesOf(after).map((slide) => slide.id)
+const laysOut = (prop: string) =>
+  prop === "theme" || prop === "size" || prop.startsWith("theme.fonts.") || prop.startsWith("theme.textStyles.")
+
+export function touchedSlides(
+  before: Doom,
+  after: Doom,
+  writes: readonly Pick<Write, "node" | "prop">[],
+): readonly NodeId[] {
+  const decked = (write: Pick<Write, "node" | "prop">) => after.nodes.get(write.node)?.type === "deck"
+  if (writes.some((write) => decked(write) && laysOut(write.prop))) return slidesOf(after).map((slide) => slide.id)
   const slides = new Set<NodeId>()
-  for (const node of nodes) {
-    const slide = slideOf(after, node) ?? slideOf(before, node)
+  for (const write of writes) {
+    if (decked(write)) continue
+    const slide = slideOf(after, write.node) ?? slideOf(before, write.node)
     if (slide !== undefined && after.nodes.get(slide)?.type === "slide") slides.add(slide)
   }
   return [...slides]
