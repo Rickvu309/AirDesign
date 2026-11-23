@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test"
-import { newBlankDeck } from "../../bin/new-deck.mjs"
+import { node, openDoomDeck, selected } from "../doom-deck.mjs"
 import { editor } from "../editor-screen.mjs"
+import { leaveText, placeText } from "../doom-text.mjs"
 
 async function holdDeviceStore(page) {
   await page.evaluate(
@@ -29,26 +30,20 @@ async function holdDeviceStore(page) {
   return () => page.evaluate(() => window.releaseDeviceStore())
 }
 
-async function drive({ page, signIn }) {
-  await signIn()
-  await page.goto("./")
-  await newBlankDeck(page)
-  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  const deck = page.url().match(/\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
-  await expect(page.locator(".thin-page")).toHaveAttribute("data-deck-ready", deck)
-  const slide = page.locator("[data-slide-paint]").first()
-  const box = await slide.boundingBox()
-  if (box === null) throw new Error("slide")
-  await slide.click({ position: { x: 4, y: 4 } })
+async function drive(kit) {
+  const { page } = kit
+  await openDoomDeck(kit)
   const release = await holdDeviceStore(page)
+  const placed = []
   for (const [index, month] of ["Jan", "Feb", "Mar"].entries()) {
-    await page.keyboard.press("t")
-    await page.mouse.click(box.x + box.width * (0.1 + index * 0.2), box.y + box.height * 0.2)
+    await placeText(page, 192 + index * 384, 860)
     await page.keyboard.type(month)
+    await leaveText(page)
+    placed.push(await selected(page).first().getAttribute("data-selection-outline"))
     await page.keyboard.press("Escape")
   }
   await release()
-  await expect(slide.locator("[data-canvas-element]")).not.toHaveCount(0)
+  for (const id of placed) await expect(node(page, id)).toBeVisible()
   await page.waitForTimeout(1500)
 }
 
