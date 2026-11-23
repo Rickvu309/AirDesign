@@ -11,6 +11,7 @@ import { createMcpHandler } from "@modelcontextprotocol/server"
 import { admitCaller } from "../account/caller-log.js"
 import type { DeckPictures } from "../doom/deck-pictures.js"
 import { servedFontMetrics } from "../platform/font-metrics.js"
+import type { FontSource } from "../platform/font-source.js"
 import { fetchImage, type ImageNet } from "../platform/image-fetch.js"
 import { keepMedia, storedMedia } from "../doom/media.js"
 import type { OriginalStore } from "../platform/original-store.js"
@@ -29,6 +30,7 @@ export type McpHost = {
   readonly hosts: readonly string[]
   readonly bodyCap: number
   readonly originals?: OriginalStore
+  readonly fonts: FontSource
   readonly imageNet?: ImageNet
   readonly pictures?: DeckPictures
   readonly pictureWait?: number
@@ -124,7 +126,7 @@ async function slidePictures(
   return shots
 }
 
-function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured): DeckHost {
+function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured, fonts: FontSource): DeckHost {
   const shots = seen.pictures
   const guarded =
     <Args extends unknown[], Result>(run: (...args: Args) => Promise<Result>) =>
@@ -169,7 +171,7 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured): D
       return decoded(named) ?? opened(id.deck, await openDoom(db, { deck: id.deck }, email))
     }),
     images: async (deck, names) => storedImages(db, deck, email, names, images),
-    measure: (fold) => servedFontMetrics(images.originals).measure(fold, measureBudget),
+    measure: (fold) => servedFontMetrics(fonts).measure(fold, measureBudget),
     ...(shots === undefined
       ? {}
       : { pictures: (deck, fold, slides) => slidePictures(shots, seen.wait, deck, fold, slides) }),
@@ -208,6 +210,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       host.email,
       { originals: host.originals, net: host.imageNet },
       { pictures: host.pictures, wait: host.pictureWait ?? 4_000 },
+      host.fonts,
     ),
     admit: (called) => admitCaller(host.session, host.email, "tool", called.now, host.agentKey),
   }

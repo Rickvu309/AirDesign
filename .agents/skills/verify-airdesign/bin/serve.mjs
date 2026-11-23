@@ -2,7 +2,7 @@ import { appendFileSync, createReadStream, existsSync, readFileSync, statSync, w
 import { request as httpRequest, createServer } from "node:http"
 import path from "node:path"
 import { randomBytes } from "node:crypto"
-import { fontShelf, shelfFolder } from "../../../../tests/browser/font-shelf.mjs"
+import { fontShelf, shelfFolder, shelveFonts } from "../../../../scripts/font-shelf.mjs"
 import { countedTransport } from "./aira-counts.mjs"
 import { scriptedAira } from "./scripted-aira.mjs"
 import { verifyImages } from "./verify-images.mjs"
@@ -93,6 +93,8 @@ export async function serve(
   const { createApi, routes } = await packageBuild(repo, "@airdesign/api", "server.js")
   const { LocalOriginalStore } = await packageBuild(repo, "@airdesign/api", "platform/local-original-store.js")
   const { FontSource } = await packageBuild(repo, "@airdesign/api", "platform/font-source.js")
+  const fonts = new FontSource(fontShelf(shelfFolder))
+  await shelveFonts(fonts)
   const { Replay } = await packageBuild(repo, "@airdesign/api", "testing/aira-replay.js")
   const { airaModel, airaEffort } = await packageBuild(repo, "@airdesign/api", "aira/aira.js")
   const { anthropicTransport } = await packageBuild(repo, "@airdesign/api", "aira/anthropic-transport.js")
@@ -154,7 +156,7 @@ export async function serve(
     resource: "https://mcp.example.test/mcp",
     commit: state.commit,
     originals,
-    fonts: new FontSource(fontShelf(shelfFolder)),
+    fonts,
     ...(imageNet === undefined ? {} : { imageNet }),
     send: async (mail) => {
       appendFileSync(mailFile, `${JSON.stringify(mail)}\n`)

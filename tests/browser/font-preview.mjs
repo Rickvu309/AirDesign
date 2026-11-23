@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url"
-import { fontShelf, offShelf, shelfFolder, shelveFonts } from "./font-shelf.mjs"
+import { fontShelf, offShelf, shelfFolder, shelveFonts } from "../../scripts/font-shelf.mjs"
 import { previewPortLine } from "./preview-port.ts"
 import { startPreview } from "./preview-server.mjs"
 import { packageBuild } from "../../scripts/package-build.mjs"

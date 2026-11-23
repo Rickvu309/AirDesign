@@ -1,26 +1,12 @@
 import { fontRevision, fontRoutes } from "@airdesign/fonts"
 import type { IncomingMessage, ServerResponse } from "node:http"
-import { FontSource } from "./font-source.js"
-import type { OriginalStore } from "./original-store.js"
+import type { FontSource } from "./font-source.js"
 
 type Visit = {
   readonly fonts: FontSource
   readonly query: URLSearchParams
   readonly res: ServerResponse
 }
-const sources = new WeakMap<OriginalStore, FontSource>()
-const local = new FontSource(undefined)
-
-export function fontSource(store: OriginalStore | undefined): FontSource {
-  if (store === undefined) return local
-  let source = sources.get(store)
-  if (source === undefined) {
-    source = new FontSource(store)
-    sources.set(store, source)
-  }
-  return source
-}
-
 async function family({ fonts, query, res }: Visit): Promise<void> {
   const name = query.get("family")
   if (name === null || name.length > 200) {
@@ -69,7 +55,7 @@ const answers = [
 ]
 
 type FontVisit = {
-  readonly options: { readonly originals?: OriginalStore; readonly fonts?: FontSource }
+  readonly options: { readonly fonts: FontSource }
   readonly query: URLSearchParams
   readonly res: ServerResponse
 }
@@ -77,8 +63,7 @@ type FontVisit = {
 export const fontRouteList = answers.map(({ path, answer }) => ({
   method: "GET" as const,
   path,
-  serve: ({ options, query, res }: FontVisit) =>
-    answer({ fonts: options.fonts ?? fontSource(options.originals), query, res }),
+  serve: ({ options, query, res }: FontVisit) => answer({ fonts: options.fonts, query, res }),
 }))
 
 export function fontMiddleware(fonts: FontSource) {

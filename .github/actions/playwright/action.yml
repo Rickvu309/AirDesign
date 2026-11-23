@@ -24,4 +24,4 @@ runs:
       continue-on-error: true
       with:
         path: ~/.cache/airdesign/fonts
-        key: font-shelf-${{ hashFiles('packages/fonts/src/catalog.json', 'tests/browser/font-shelf.mjs') }}
+        key: font-shelf-${{ hashFiles('packages/fonts/src/catalog.json', 'scripts/font-shelf.mjs') }}

@@ -25,14 +25,15 @@ export const fontShelf = (folder) => ({
 })
 
 export const offShelf = async (input) => {
-  const said = `a browser test asked for ${String(input)}, a font the shelf does not hold. Add its family to shelvedFamilies in tests/browser/font-shelf.mjs.`
-  console.error(said)
-  throw new Error(said)
+  console.error(
+    `a browser test asked for ${String(input)}, a font the shelf does not hold. Add its family to shelvedFamilies in scripts/font-shelf.mjs.`,
+  )
+  return new Response(null, { status: 404 })
 }
 
 export const shelveFonts = async (fonts) => {
   for (const family of shelvedFamilies) {
     const answer = await fonts.family(family).catch((error) => ({ ok: false, refusal: String(error) }))
-    if (!answer.ok) throw new Error(`could not shelve the font ${family} for the browser tests: ${answer.refusal}`)
+    if (!answer.ok) throw new Error(`could not shelve the font ${family}: ${answer.refusal}`)
   }
 }

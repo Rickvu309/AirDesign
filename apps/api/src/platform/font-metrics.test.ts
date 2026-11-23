@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { expect, it } from "vitest"
-import { FontMetrics } from "./font-metrics.js"
+import { FontMetrics, servedFontMetrics } from "./font-metrics.js"
 import { FontSource } from "./font-source.js"
 
 const family = "Liberation Sans Narrow"
@@ -158,4 +158,12 @@ it("keeps at most twenty faces, loading the oldest again when it comes back", as
   expect(calls.filter((name) => name === "Face 20")).toHaveLength(1)
   await metrics.widths(faces("Face 0"))
   expect(calls.filter((name) => name === "Face 0")).toHaveLength(2)
+})
+
+it("measures with the fonts the API serves, one measurer for each", async () => {
+  const { calls, source } = anyNameIsLiberation()
+  const metrics = servedFontMetrics(source)
+  expect(servedFontMetrics(source)).toBe(metrics)
+  await metrics.widths({ faces: [{ font: "Lora", bold: false, italic: false }], texts: ["a"] })
+  expect(calls).toEqual(["Lora"])
 })
