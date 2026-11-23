@@ -29,10 +29,7 @@ import { geometryOf } from "./slide-geometry"
 import type { EditorClient } from "./use-doom-deck"
 
 const panelMode = "slides"
-
-const layoutOffWrites = (node: doom.NodeId): readonly doom.Write[] => [
-  { node, prop: "layout", value: { mode: "none" } },
-]
+const estimate = doom.measureWith({})
 
 type Props = {
   readonly deck: string
@@ -150,7 +147,7 @@ export function DesignPanel(props: Props) {
       }
       afterTitle={
         autoLayout && only !== undefined ? (
-          <RemoveAutoLayoutButton onRemove={() => push(layoutOffWrites(only))} />
+          <RemoveAutoLayoutButton onRemove={() => push(doom.bakeLayout(view, only, painted.measure ?? estimate))} />
         ) : null
       }
       selectionColors={

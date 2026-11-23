@@ -88,6 +88,7 @@ export function useDoomSlide(
   readonly nodes: readonly Resolved[] | null
   readonly background: readonly doom.ResolvedPaint[]
   readonly ready: boolean
+  readonly measure: doom.Measure | null
 } {
   const measure = useDoomMeasure(value)
   const nodes = useMemo(
@@ -96,7 +97,7 @@ export function useDoomSlide(
   )
   const iconsReady = useIcons(nodes === null ? [] : iconNames(nodes))
   const background = useMemo(() => doom.slideBackground(value, slide), [value, slide])
-  return { nodes, background, ready: nodes !== null && iconsReady }
+  return { nodes, background, ready: nodes !== null && iconsReady, measure }
 }
 
 export function DoomSlide(props: {

@@ -3,12 +3,16 @@ import { type Draft, type Values, living, put, stop } from "./agent-draft.js"
 import { chartOf, colorOf, iconName, layoutOf, surfaceOf, textOfLook } from "./agent-look.js"
 import { gapFor, slideSize } from "./agent-place.js"
 import { notesText } from "./notes-text.js"
+import { bakeLayout } from "./bake-layout.js"
+import { measureWith } from "./measure.js"
 import { type NodeId, readNodeId } from "./ids.js"
 import type { Geometry } from "./geometry.js"
 import type { Node } from "./doom.js"
 import { descendantsOf, get, slidesOf } from "./doom-walk.js"
 
 type SetChange = Extract<AgentChange, { op: "set" }>
+
+const estimate = measureWith({})
 
 const neverOnSet = ["rows", "items", "axes"] as const
 const wordsOnly = ["size", "font", "lineHeight", "letterSpacing", "case", "underline", "strike"] as const
@@ -131,5 +135,9 @@ export function compileSet(draft: Draft, change: SetChange): void {
     ...(change.chart === undefined ? {} : { chart: chartOf(change.chart) }),
     ...(change.notes === undefined ? {} : { notes: notesText(change.notes) }),
   }
+  if (layout?.mode === "none" && now.layout !== undefined && now.layout.mode !== "none")
+    draft.writes.push(
+      ...bakeLayout(draft.doom, node.id, estimate).filter((write) => write.node !== node.id || !(write.prop in values)),
+    )
   put(draft, node.id, values)
 }
