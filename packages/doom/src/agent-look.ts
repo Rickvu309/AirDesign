@@ -10,6 +10,7 @@ import type { Span, Text, TextStyleName } from "./text.js"
 import { type TextPatch, lookWrite, paraWrite, styleWrite } from "./text-writes.js"
 
 export type Now = {
+  readonly fills?: readonly Paint[] | undefined
   readonly stroke?: StrokeStyle | undefined
   readonly box?: Box | undefined
   readonly layout?: Layout | undefined
@@ -18,12 +19,26 @@ export type Now = {
 
 const defaultWeight = 2
 
-export const colorOf = (color: AgentColor): Color =>
-  color.startsWith("#") ? (color as Hex) : { var: color as ColorVar }
+export function colorOf(color: AgentColor): Color {
+  if (color.startsWith("#")) return color as Hex
+  const [, name, step] = /^([a-z0-9]+)([+-]\d+)?$/.exec(color) ?? []
+  const tint = step === undefined ? 0 : Number(step) / 100
+  return tint === 0 ? { var: name as ColorVar } : { var: name as ColorVar, tint }
+}
 export const solid = (color: AgentColor): Paint => ({ kind: "solid", color: colorOf(color) })
 
-export const paintsOf = (fill: AgentFill): readonly Paint[] =>
-  fill === "none" ? [] : typeof fill === "object" ? [{ kind: "image", asset: fill.image, fit: "fill" }] : [solid(fill)]
+export function paintsOf(fill: AgentFill): readonly Paint[] {
+  if (fill === "none") return []
+  if (typeof fill !== "object") return [solid(fill)]
+  if ("image" in fill) return [{ kind: "image", asset: fill.image, fit: "fill" }]
+  const last = fill.gradient.length - 1
+  const shape = fill.radial === true ? ("radial" as const) : ("linear" as const)
+  const stops = fill.gradient.map((color, at) => ({ at: at / last, color: colorOf(color) }))
+  return [{ kind: "gradient", shape, angle: fill.angle ?? 0, stops }]
+}
+
+const fitted = (paints: readonly Paint[], fit: NonNullable<AgentLook["fit"]>): readonly Paint[] =>
+  paints.map((paint) => (paint.kind === "image" ? { ...paint, fit } : paint))
 
 export const chartOf = (chart: AgentChart): Chart => ({
   kind: chart.kind,
@@ -41,12 +56,19 @@ export const iconName = (icon: string): string => (icon.includes("/") ? icon : `
 export const sidesOf = (all: number): Sides => ({ t: all, r: all, b: all, l: all })
 
 export function surfaceOf(look: AgentLook, now: Now = {}, align: StrokeStyle["align"] = "inside"): Values {
-  const hasColor = look.stroke !== undefined && look.stroke !== "none"
-  const weight = look.strokeWidth ?? (hasColor && now.stroke === undefined ? defaultWeight : undefined)
+  const drawn = (look.stroke !== undefined && look.stroke !== "none") || look.dash !== undefined
+  const weight =
+    look.strokeWidth ??
+    (drawn && now.stroke === undefined ? defaultWeight : look.dash === undefined ? undefined : now.stroke?.weight)
+  const fills = look.fill === undefined ? now.fills : paintsOf(look.fill)
+  const painted = look.fit === undefined || fills === undefined ? fills : fitted(fills, look.fit)
+  const dash = look.dash === undefined ? {} : { dash: look.dash }
   return {
-    ...(look.fill === undefined ? {} : { fills: paintsOf(look.fill) }),
+    ...(look.fill === undefined && look.fit === undefined ? {} : { fills: painted ?? [] }),
     ...(look.stroke === undefined ? {} : { strokes: look.stroke === "none" ? [] : [solid(look.stroke)] }),
-    ...(weight === undefined ? {} : { stroke: { ...(now.stroke ?? { align, dash: "solid" as const }), weight } }),
+    ...(weight === undefined
+      ? {}
+      : { stroke: { ...(now.stroke ?? { align, dash: "solid" as const }), weight, ...dash } }),
     ...(look.radius === undefined ? {} : { radius: look.radius }),
     ...(look.effect === undefined ? {} : { effects: look.effect === "none" ? [] : look.effect }),
     ...(look.opacity === undefined ? {} : { opacity: look.opacity }),

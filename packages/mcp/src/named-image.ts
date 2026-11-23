@@ -47,7 +47,7 @@ const usable = (name: string) => webImage(name) || storedAsset.test(name)
 function imageOf(change: doom.AgentChange): string | undefined {
   if (!("op" in change) || (change.op !== "add" && change.op !== "set")) return undefined
   const fill = change.fill
-  return typeof fill === "object" ? fill.image : undefined
+  return typeof fill === "object" && "image" in fill ? fill.image : undefined
 }
 
 export function imageNames(changes: readonly doom.AgentChange[]): readonly string[] {

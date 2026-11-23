@@ -287,6 +287,7 @@
   "packages/doom/src/agent-edit.test.ts": 1.2,
   "packages/doom/src/agent-findings.test.ts": 1.2,
   "packages/doom/src/agent-layout.test.ts": 1,
+  "packages/doom/src/agent-paint.test.ts": 1.2,
   "packages/doom/src/agent-patterns.test.ts": 1.5,
   "packages/doom/src/agent-read.test.ts": 1.6,
   "packages/doom/src/agent-set.test.ts": 1.5,

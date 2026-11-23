@@ -103,6 +103,8 @@ export const sample: Readonly<Record<string, unknown>> = {
   case: "upper",
   underline: true,
   strike: true,
+  dash: "dot",
+  fit: "tile",
 }
 
 const set = (look: Readonly<Record<string, unknown>>) => ({ op: "set", target: "s:1", ...look })
@@ -126,25 +128,17 @@ export const reach: Readonly<Record<string, Entry>> = {
   "panel:text.case": { agent: "set.case", writes: "text", on: "words", props: ["text"] },
   "panel:text.fill": { agent: "set.color", writes: "text", on: "card", props: ["text"] },
   "panel:textFill.value": { agent: "set.color", writes: "text", on: "words", props: ["text"] },
-  "panel:textFill.value#tint": {
-    owed: "a lighter or darker theme colour",
-    probe: set({ color: "accent1+40" }),
-    props: ["text"],
-  },
+  "panel:textFill.value#tint": { agent: "set.color", writes: "text", on: "words", props: ["text"] },
   "panel:fills.paint": { agent: "set.fill", writes: "fills", on: "card", props: ["fills"] },
-  "panel:fills.paint#gradient": {
-    owed: "a gradient fill",
-    probe: set({ fill: { gradient: ["accent1", "accent2"] } }),
-    props: ["fills"],
-  },
+  "panel:fills.paint#gradient": { agent: "set.fill", writes: "fills", on: "card", props: ["fills"] },
   "panel:opacity.opacity": { agent: "set.opacity", writes: "opacity", on: "card", props: ["opacity"] },
   "panel:corners.corners": { agent: "set.radius", writes: "radius", on: "card", props: ["radius"] },
-  "panel:border.border": { owed: "an outline's dash", probe: set({ dash: "dot" }), props: ["strokes", "stroke"] },
+  "panel:border.border": { agent: "set.dash", writes: "stroke", on: "card", props: ["strokes", "stroke"] },
   "panel:border.color": { agent: "set.stroke", writes: "strokes", on: "rule", props: ["strokes"] },
   "panel:border.width": { agent: "set.strokeWidth", writes: "stroke", on: "rule", props: ["stroke"] },
   "panel:image.color": { agent: "set.stroke", writes: "strokes", on: "star", props: ["strokes"] },
   "panel:image.weight": { agent: "set.strokeWidth", writes: "stroke", on: "star", props: ["stroke"] },
-  "panel:image.mode": { owed: "how a picture sits in its layer", probe: set({ fit: "fit" }), props: ["fills"] },
+  "panel:image.mode": { agent: "set.fit", writes: "fills", on: "photo", props: ["fills"] },
   "panel:image.source": { agent: "set.fill", writes: "fills", on: "photo", props: ["fills"] },
   "panel:shadow.shadow": { agent: "set.effect", writes: "effects", on: "card", props: ["effects"] },
   "panel:shadow.opacity": {
