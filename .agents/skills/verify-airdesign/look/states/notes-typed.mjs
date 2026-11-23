@@ -1,4 +1,4 @@
-import { notesState } from "../notes-deck.mjs"
+import { notesState } from "../doom-notes-deck.mjs"
 import { editor } from "../editor-screen.mjs"
 
 export default {
@@ -6,6 +6,7 @@ export default {
   design: editor,
   drive: async (kit) => {
     await notesState(kit, true)
+    await kit.page.keyboard.press("Enter")
     await kit.page.keyboard.type("Start with the bill savings.")
   },
 }

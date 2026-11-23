@@ -39,6 +39,10 @@ export async function landNodes(kit, opened, nodes) {
   counter += 1
   const orderKeyBetween = await orderKeys(kit)
   const last = new Map()
+  for (const each of Object.values((await readDoom(kit, opened)).fold.nodes)) {
+    const slot = each.parent
+    if (slot && (last.get(slot.id) ?? "") < slot.at) last.set(slot.id, slot.at)
+  }
   const writes = nodes.flatMap((made) => {
     const parent = made.parent ?? opened.slide
     const at = orderKeyBetween(last.get(parent) ?? null, null)
@@ -72,6 +76,12 @@ export async function openDoomDeck(kit, nodes = []) {
   return opened
 }
 
+async function held(page, keys, act) {
+  for (const key of keys) await page.keyboard.down(key)
+  await act()
+  for (const key of keys.toReversed()) await page.keyboard.up(key)
+}
+
 export async function slidePoint(page, x, y) {
   const box = await page.locator("[data-slide-box]").boundingBox()
   if (box === null) throw new Error("no slide painted")
@@ -82,11 +92,7 @@ export async function slidePoint(page, x, y) {
 export async function clickSlide(page, x, y, options = {}) {
   const at = await slidePoint(page, x, y)
   if (options.double === true) await page.mouse.dblclick(at.x, at.y)
-  else {
-    for (const key of options.modifiers ?? []) await page.keyboard.down(key)
-    await page.mouse.click(at.x, at.y)
-    for (const key of options.modifiers ?? []) await page.keyboard.up(key)
-  }
+  else await held(page, options.modifiers ?? [], () => page.mouse.click(at.x, at.y))
 }
 
 export async function dragSlide(page, from, to, options = {}) {
@@ -103,9 +109,7 @@ export async function selectNode(page, id, options = {}) {
   const box = await target.boundingBox()
   if (box === null) throw new Error(`node ${id} is not painted`)
   const position = options.position ?? { x: box.width / 2, y: box.height / 2 }
-  if (options.shift) await page.keyboard.down("Shift")
-  await page.mouse.click(box.x + position.x, box.y + position.y)
-  if (options.shift) await page.keyboard.up("Shift")
+  await held(page, options.shift ? ["Shift"] : [], () => page.mouse.click(box.x + position.x, box.y + position.y))
   await expect(page.locator(`[data-selection-outline="${id}"]`)).toBeAttached()
 }
 
