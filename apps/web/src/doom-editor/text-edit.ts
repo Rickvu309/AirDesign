@@ -110,6 +110,39 @@ export function markOn(text: doom.Text, from: number, to: number, mark: Mark, pe
   return inside.length > 0 && inside.every((run) => run.look[mark] === true)
 }
 
+export type LinkedWords = { readonly from: number; readonly to: number; readonly link: string | undefined }
+
+export function linkedWords(text: doom.Text, anchor: number, focus: number): LinkedWords | null {
+  const [from, to] = [Math.min(anchor, focus), Math.max(anchor, focus)]
+  const runs = runsOf(text)
+  if (from < to) {
+    const links = new Set(runs.filter((run) => run.end > from && run.start < to).map((run) => run.look.link))
+    const [only] = links
+    return { from, to, link: links.size === 1 ? only : undefined }
+  }
+  const link = lookBefore(runs, from).link
+  if (link === undefined) return null
+  const at = runs.findIndex((run) => run.start < from && from <= run.end)
+  let first = at
+  let last = at
+  while (runs[first - 1]?.look.link === link) first -= 1
+  while (runs[last + 1]?.look.link === link) last += 1
+  return { from: runs[first]!.start, to: runs[last]!.end, link }
+}
+
+export function linkWords(text: doom.Text, from: number, to: number, link: string | null): doom.Text {
+  const runs = runsOf(text).flatMap((run): Run[] => {
+    if (run.end <= from || run.start >= to) return [run]
+    const { link: _was, ...rest } = run.look
+    return [
+      { start: run.start, end: from, look: run.look },
+      { start: Math.max(run.start, from), end: Math.min(run.end, to), look: link === null ? rest : { ...rest, link } },
+      { start: to, end: run.end, look: run.look },
+    ]
+  })
+  return { ...text, spans: spansFrom(runs) }
+}
+
 export function lookAt(text: doom.Text, offset: number): Look {
   return lookBefore(runsOf(text), offset)
 }

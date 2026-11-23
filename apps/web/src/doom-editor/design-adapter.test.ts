@@ -182,6 +182,18 @@ describe("text layer", () => {
     )
   })
 
+  it("shows the link of the words the caret is in, and the layer's own link when the caret is in none", () => {
+    const linked = landed(view, [{ node: id("words"), prop: "link", value: "https://layer.example" }])
+    const shown = (words: { from: number; to: number; link: string | undefined } | null) =>
+      find(nodeModel({ view: linked, id: id("words"), theme, slides, words }), "link", "target").value
+    expect(shown({ from: 0, to: 5, link: "https://words.example" })).toEqual({
+      kind: "url",
+      url: "https://words.example",
+    })
+    expect(shown({ from: 0, to: 11, link: undefined })).toBeUndefined()
+    expect(shown(null)).toEqual({ kind: "url", url: "https://layer.example" })
+  })
+
   it("a text style resets the size and weight a span set", () => {
     const sized = write(["words"], find(model, "text", "size"), 3200)
     const heading = write(["words"], find(modelOf("words", sized), "text", "style"), "heading", sized)

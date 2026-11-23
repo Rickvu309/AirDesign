@@ -27,10 +27,7 @@ const seen: Readonly<Record<string, Seen>> = {
   radius: { person: ["panel:corners.corners"] },
   effect: { person: ["panel:shadow.shadow"] },
   opacity: { person: ["panel:opacity.opacity"] },
-  text: {
-    owedToPerson: "a link on some words: not underlined, and no place to read or change its address",
-    partly: ["gesture:edit-text"],
-  },
+  text: { person: ["gesture:edit-text", "panel:link.target#words"] },
   textStyle: { person: ["panel:text.style"] },
   align: {
     owedToPerson: "where a row or column frame places its children: no auto layout controls",
@@ -78,7 +75,7 @@ const seen: Readonly<Record<string, Seen>> = {
   nameFollows: { person: ["strip:deck-name"] },
 }
 
-const owedToPerson = ["text", "align", "layout", "gap", "padding", "icon", "arrow", "chart", "rows", "name"]
+const owedToPerson = ["align", "layout", "gap", "padding", "icon", "arrow", "chart", "rows", "name"]
 
 const structural = new Set([
   "op",

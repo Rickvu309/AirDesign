@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest"
 import {
   graphemeAfter,
   graphemeBefore,
+  linkedWords,
+  linkWords,
   markOn,
   replaceRange,
   toggleMark,
@@ -93,6 +95,44 @@ describe("marks", () => {
   it("leaves a collapsed range alone", () => {
     const text = plain("Hello")
     expect(toggleMark(text, 2, 2, "bold")).toBe(text)
+  })
+})
+
+describe("linked words", () => {
+  const linked = () => doom.textFromMarkdown("Read the **[full report](https://a.example)** now", "body")
+  const report = { from: 9, to: 20, link: "https://a.example" }
+
+  it("finds the whole linked phrase the caret is in, across a change of look inside it", () => {
+    const text = {
+      ...linked(),
+      spans: [
+        { end: 9 },
+        { end: 14, link: "https://a.example" },
+        { end: 20, link: "https://a.example", bold: true },
+        { end: 24 },
+      ],
+    }
+    expect(linkedWords(text, 12, 12)).toEqual(report)
+    expect(linkedWords(text, 20, 20)).toEqual(report)
+    expect(linkedWords(text, 3, 3)).toBeNull()
+    expect(linkedWords(text, 9, 9)).toBeNull()
+  })
+
+  it("names a selection's link only when every word in it holds the same one", () => {
+    expect(linkedWords(linked(), 10, 14)).toEqual({ from: 10, to: 14, link: "https://a.example" })
+    expect(linkedWords(linked(), 2, 14)).toEqual({ from: 2, to: 14, link: undefined })
+    expect(linkedWords(linked(), 14, 10)).toEqual({ from: 10, to: 14, link: "https://a.example" })
+  })
+
+  it("changes or removes the link on those words and keeps their other looks", () => {
+    const changed = valid(linkWords(linked(), report.from, report.to, "https://b.example"))
+    expect(linkedWords(changed, 12, 12)).toEqual({ ...report, link: "https://b.example" })
+    expect(markOn(changed, 9, 20, "bold")).toBe(true)
+    const removed = valid(linkWords(linked(), report.from, report.to, null))
+    expect(linkedWords(removed, 12, 12)).toBeNull()
+    expect(markOn(removed, 9, 20, "bold")).toBe(true)
+    const added = valid(linkWords(plain("Read the report"), 9, 15, "https://c.example"))
+    expect(linkedWords(added, 11, 11)).toEqual({ from: 9, to: 15, link: "https://c.example" })
   })
 })
 

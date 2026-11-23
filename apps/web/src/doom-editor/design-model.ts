@@ -12,12 +12,14 @@ import { isGroup } from "./group-scale"
 import { geometryCopy } from "@/copy/geometry-copy"
 import { shownShape } from "./design-shape-values"
 import { propOf } from "@/editing/node-props"
+import type { LinkedWords } from "./text-edit"
 
 export type ModelInput = {
   readonly view: doom.Doom
   readonly id: doom.NodeId
   readonly theme: doom.Theme
   readonly slides: readonly doom.NodeId[]
+  readonly words?: LinkedWords | null
 }
 
 const visible = (paint: doom.Paint) => paint.visible !== false
@@ -44,7 +46,7 @@ function alignmentSection(): PanelSection {
 }
 
 function linkSection(input: ModelInput): PanelSection[] {
-  const held = propOf(input.view.nodes.get(input.id), "link")
+  const held = input.words == null ? propOf(input.view.nodes.get(input.id), "link") : input.words.link
   const slide = held !== undefined && input.slides.includes(held as doom.NodeId)
   const target = held === undefined ? undefined : slide ? { kind: "slide", slide: held } : { kind: "url", url: held }
   const control = oldControl("link", "target", { value: target }, { slides: input.slides })

@@ -1,4 +1,6 @@
 import { expect, type Page } from "@playwright/test"
+import { doomEditorCopy } from "../../apps/web/src/copy/doom-editor-copy"
+import { linkCopy } from "../../apps/web/src/copy/link-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
 import { clickSlide, landNodes, openDoomEditor, savedNode, spot, type Opened } from "./doom-deck"
@@ -27,7 +29,7 @@ async function seeded(page: Page, stack: Stack, opened: Opened, chars: string) {
 
 type Saved = {
   chars: string
-  spans: { end: number; italic?: boolean; underline?: boolean; strike?: boolean }[]
+  spans: { end: number; italic?: boolean; underline?: boolean; strike?: boolean; link?: string }[]
   paras: { align?: string; list?: string; level?: number }[]
 }
 
@@ -216,4 +218,44 @@ test("Tab and Ctrl+] indent a bulleted paragraph, Shift+Tab and Ctrl+[ take it b
   await expect(editor(page)).toBeFocused()
   await leave(page)
   await expect.poll(async () => (await textOf(stack, opened))?.paras).toEqual([{}, { list: "bullet" }])
+})
+
+test("linked words are underlined, and the Link section reads and changes the link of the words the caret is in", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const linked = {
+    ...layer("Read the site"),
+    text: { ...layer("Read the site").text, spans: [{ end: 9 }, { end: 13, link: "https://a.example/" }] },
+  }
+  await landNodes(stack, opened, [{ id: "t:1", type: "shape", parent: opened.slide, props: linked }])
+  await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(3)
+  const decoration = (at: number) =>
+    runs(page)
+      .nth(at)
+      .evaluate((node) => getComputedStyle(node).textDecorationLine)
+  await expect.poll(() => decoration(1)).toBe("underline")
+  expect(await decoration(0)).toBe("none")
+
+  await clickSlide(page, 300, 640)
+  const address = page.locator(`[data-design-section="${linkCopy.section}"]`).getByRole("textbox")
+  await expect(address).toHaveValue("")
+  await edit(page)
+  await page.keyboard.press("End")
+  await page.keyboard.press("ArrowLeft")
+  await expect(address).toHaveValue("https://a.example/")
+  await page.keyboard.press("Home")
+  await expect(address).toHaveValue("")
+  await page.keyboard.press("End")
+  await expect(address).toHaveValue("https://a.example/")
+
+  await address.fill("https://b.example/")
+  await address.press("Enter")
+  await expect
+    .poll(async () => (await textOf(stack, opened))?.spans)
+    .toEqual([{ end: 9 }, { end: 13, link: "https://b.example/" }])
+  expect((await savedNode(stack, opened, "t:1"))?.link).toBeUndefined()
 })

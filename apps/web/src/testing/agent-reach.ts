@@ -156,6 +156,7 @@ export const reach: Readonly<Record<string, Entry>> = {
     probe: set({ link: "https://example.com" }),
     props: ["link"],
   },
+  "panel:link.target#words": { agent: "set.text", writes: "text", on: "words", props: ["text"] },
   "panel:geometry.preset": { agent: "set.shape", writes: "geometry", on: "card", props: ["geometry"] },
 
   "gesture:edit-text": { agent: "set.text", writes: "text", on: "words", props: ["text"] },

@@ -13,7 +13,7 @@ import { PicturePreview } from "@/editor/picture-preview"
 import { pickPicture } from "@/editor/picture-picker"
 import { RemoveAutoLayoutButton } from "@/editor/remove-auto-layout"
 import { ChartSection } from "./design-chart"
-import { changeWrites, type ChangeContext } from "./design-changes"
+import { changeWrites, linkOf, type ChangeContext } from "./design-changes"
 import { storePicture, useAssetUrl } from "./design-media"
 import { nodeModel } from "./design-model"
 import { paintDesc } from "./design-model-fills"
@@ -28,6 +28,7 @@ import type { Selection } from "./selection"
 import { HiddenLockedLayers } from "./hidden-locked"
 import { geometryOf } from "./slide-geometry"
 import type { EditorClient } from "./use-doom-deck"
+import type { CaretWords } from "./doom-canvas"
 
 const panelMode = "slides"
 const estimate = doom.measureWith({})
@@ -40,6 +41,8 @@ type Props = {
   readonly slideNumber: number
   readonly selection: Selection
   readonly onSelection: (selection: Selection) => void
+  readonly words: CaretWords | null
+  readonly onLinkWords: (link: string | null) => void
 }
 
 function backgroundFill(held: OldPaint): FieldValue<"fills", "p0"> | null {
@@ -131,7 +134,8 @@ export function DesignPanel(props: Props) {
       </div>
     )
   }
-  const models = ids.map((id) => nodeModel({ view, id, theme, slides }))
+  const words = ids.length === 1 && props.words?.node === only ? props.words : null
+  const models = ids.map((id) => nodeModel({ view, id, theme, slides, words }))
   const [first, ...rest] = models
   if (first === undefined) return null
   const model: PanelModel = rest.length === 0 ? first : panelOfMany([first, ...rest], panelMode)
@@ -164,6 +168,8 @@ export function DesignPanel(props: Props) {
       onChange={(control, value) => {
         if (control.trait === "fills" && control.field === "paint" && isImagePick(value))
           return pickPicture((file) => replaceImage(ids, file))
+        const link = control.trait === "link" && words !== null ? linkOf(value) : undefined
+        if (link !== undefined) return props.onLinkWords(link)
         push(changeWrites(context, control, value))
       }}
     >
