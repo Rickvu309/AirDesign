@@ -155,8 +155,9 @@ describe("layout findings in the answers, measured by the host with the deck's f
     })
     const answer = landed.answer as { note: string; added: { id: string }[]; findings: Found[] }
     expect(answer.findings).toMatchObject([{ code: "off-slide", node: answer.added[1]!.id }])
-    expect(answer.note).toContain(`1 text could not be measured`)
-    expect(answer.note).toContain(answer.added[0]!.id)
+    expect(answer.note).toContain(
+      `${answer.added[0]!.id} has a character the deck's fonts lack, so its overflow and overlap are unknown. Check it by eye, or change the font or the character.`,
+    )
     expect(answer.note).not.toContain("Layout clear")
   })
 
@@ -188,5 +189,31 @@ describe("the layout call never fails a landed edit", () => {
       throw new Error("touched broke")
     })
     expect(laid).toEqual({ findings: [], layout: "fault" })
+  })
+})
+
+describe("the note on texts the fonts cannot measure", () => {
+  const texts = (count: number) =>
+    Array.from({ length: count }, (_, at) => ({ op: "add", kind: "text", text: `Launch ${String(at)} 🚀` }))
+
+  it("names every text up to five, then counts the rest, in the right number", async () => {
+    const note = async (count: number) => {
+      const call = agent(async () => measured(["🚀"]))
+      const { deck, rev, slides } = (await call("create_deck", {})).answer as {
+        deck: string
+        rev: number
+        slides: string[]
+      }
+      const changes = texts(count).map((change) => ({ ...change, slide: slides[0] }))
+      const landed = await call("edit_deck", { deck, base: rev, changes })
+      const { added } = landed.answer as { added: { id: string }[] }
+      return { note: String(landed.answer.note), ids: added.map((each) => each.id) }
+    }
+    const two = await note(2)
+    expect(two.note).toContain(
+      `${two.ids[0]!} and ${two.ids[1]!} have characters the deck's fonts lack, so their overflow and overlap are unknown. Check them by eye, or change the font or the characters.`,
+    )
+    const seven = await note(7)
+    expect(seven.note).toContain(`${seven.ids.slice(0, 5).join(", ")} and 2 more have characters`)
   })
 })

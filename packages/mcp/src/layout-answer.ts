@@ -14,13 +14,25 @@ export type Laid = Findings & { readonly boxes?: ReadonlyMap<doom.NodeId, doom.B
 const shownFindings = 10
 const layoutCodes: ReadonlySet<string> = new Set(["overflow", "overlap", "off-slide", "small-text"])
 
+const namedIds = 5
+
+function namesOf(nodes: readonly doom.NodeId[]): string {
+  const shown = nodes.slice(0, namedIds)
+  const more = nodes.length - shown.length
+  const heads = more > 0 ? shown : shown.slice(0, -1)
+  const tail = more > 0 ? `${String(more)} more` : shown.at(-1)!
+  return heads.length === 0 ? tail : `${heads.join(", ")} and ${tail}`
+}
+
 const words = {
   edit: "The edit landed. Each finding names what is off on a slide or off the deck's own choices, and the fix: fix it unless the person asked for it.",
   read: "Each finding names what is off on the slides read, and the fix: fix it unless the person asked for it.",
   clear: "Layout clear: no overflow, overlap, off-slide or small text.",
   more: (count: number, where: string) => `${String(count)} more findings are not listed: ${where}.`,
-  unread: (nodes: readonly doom.NodeId[]) =>
-    `${String(nodes.length)} ${nodes.length === 1 ? "text" : "texts"} could not be measured, since the deck's fonts have no letters for some of their characters, so their overflow and overlap are unknown: ${nodes.slice(0, shownFindings).join(", ")}.`,
+  unread: (nodes: readonly doom.NodeId[]) => {
+    const one = nodes.length === 1
+    return `${namesOf(nodes)} ${one ? "has a character" : "have characters"} the deck's fonts lack, so ${one ? "its" : "their"} overflow and overlap are unknown. Check ${one ? "it" : "them"} by eye, or change the font or the ${one ? "character" : "characters"}.`
+  },
   unchecked: {
     fonts: "the deck's fonts could not be read",
     time: "the fonts took too long to load; read the deck again in a moment",

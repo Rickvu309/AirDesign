@@ -18,6 +18,7 @@ type Shaper = {
   readonly descent: number
   readonly advances: Map<string, number>
   readonly kerning: Map<string, number>
+  readonly glyphs: Map<string, boolean>
 }
 
 type Served = Awaited<ReturnType<FontSource["family"]>>
@@ -76,6 +77,7 @@ function shaperOf(bytes: Uint8Array, face: ServedFace, weight: number): Shaper {
     descent: -extents.descender / hbFace.upem,
     advances: new Map(),
     kerning: new Map(),
+    glyphs: new Map(),
   }
 }
 
@@ -166,11 +168,16 @@ export class FontMetrics {
     for (const [at, face] of needs.faces.entries()) {
       const shaper = shapers[at]
       if (shaper === undefined) return "fonts"
-      if (shaper.advances.size + shaper.kerning.size > heldLimit) {
+      if (shaper.advances.size + shaper.kerning.size + shaper.glyphs.size > heldLimit) {
         shaper.advances.clear()
         shaper.kerning.clear()
+        shaper.glyphs.clear()
       }
-      for (const char of used) if (!shaper.advances.has(char) && !holds(shaper, char)) missing.add(char)
+      for (const char of used) {
+        let held = shaper.glyphs.get(char)
+        if (held === undefined) shaper.glyphs.set(char, (held = holds(shaper, char)))
+        if (!held) missing.add(char)
+      }
       const advance = (char: string) => {
         let known = shaper.advances.get(char)
         if (known === undefined) shaper.advances.set(char, (known = advanceOf(shaper, char)))
