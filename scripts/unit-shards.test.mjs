@@ -3,7 +3,8 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { moduleSeconds, recordUnitSeconds } from "./vitest-metrics.mjs"
+import { foldTimings } from "./timings.mjs"
+import { measureUnitSeconds, moduleSeconds } from "./vitest-metrics.mjs"
 import LongestFirst from "./vitest-longest-first.mjs"
 import { readUnitSeconds, testFilesByProject, unitSecondsFile } from "./unit-test-files.mjs"
 
@@ -34,9 +35,6 @@ for (const total of [1, 2, 3, 4, 6]) {
   )
 }
 
-const staleRecords = Object.keys(recorded).filter((file) => !files.includes(file))
-assert.deepEqual(staleRecords, [], `${unitSecondsFile} holds only unit test files that exist`)
-
 assert.deepEqual(
   await shardOf(2, 1, root, files.toReversed()),
   await shardOf(2, 1),
@@ -55,11 +53,9 @@ try {
   fs.mkdirSync(path.join(folder, "tests"))
   for (const file of ["kept.test.ts", "drifted.test.ts", "added.test.ts", "failed.test.ts"])
     fs.writeFileSync(path.join(folder, file), "")
-  fs.writeFileSync(
-    path.join(folder, unitSecondsFile),
-    JSON.stringify({ "kept.test.ts": 10, "drifted.test.ts": 10, "gone.test.ts": 5, "failed.test.ts": 1 }),
-  )
-  recordUnitSeconds(
+  const before = JSON.stringify({ "kept.test.ts": 10, "drifted.test.ts": 10, "gone.test.ts": 5, "failed.test.ts": 1 })
+  fs.writeFileSync(path.join(folder, unitSecondsFile), before)
+  measureUnitSeconds(
     folder,
     modules([
       ["kept.test.ts", 12],
@@ -68,10 +64,16 @@ try {
       ["failed.test.ts", 40, "failed"],
     ]),
   )
+  assert.equal(
+    fs.readFileSync(path.join(folder, unitSecondsFile), "utf8"),
+    before,
+    "a local run leaves the tracked record alone",
+  )
+  foldTimings(folder)
   assert.deepEqual(
     JSON.parse(fs.readFileSync(path.join(folder, unitSecondsFile), "utf8")),
     { "added.test.ts": 3, "drifted.test.ts": 25, "failed.test.ts": 1, "kept.test.ts": 10 },
-    "a whole passing run records a new file, refreshes one that moved past double, and drops one that is gone",
+    "pnpm timings records a new file, refreshes one that moved past double, and drops one that is gone",
   )
   assert.equal(
     fs.readFileSync(path.join(folder, unitSecondsFile), "utf8").endsWith("}\n"),

@@ -1,6 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
-import { refreshedSpecSeconds } from "./spec-seconds.mjs"
+import { keepMeasured, measuredName, measuredSeconds } from "./spec-seconds.mjs"
 import { testFilesByProject, unitSecondsFile } from "./unit-test-files.mjs"
 
 export const resultFile = (root) => path.join(root, "node_modules/.cache/vitest-metrics.json")
@@ -53,24 +53,15 @@ export const moduleSeconds = (mod) => {
   return environmentSetupDuration + prepareDuration + collectDuration + setupDuration + duration
 }
 
-export const recordUnitSeconds = (root, modules) => {
-  const file = path.join(root, unitSecondsFile)
-  const before = fs.readFileSync(file, "utf8")
-  const scheduled = new Map(modules.map((mod) => [path.relative(root, mod.moduleId), 1]))
+export const measureUnitSeconds = (root, modules) => {
   const tests = modules.map((mod) => ({
     file: path.relative(root, mod.moduleId),
     status: mod.state(),
     expectedStatus: "passed",
     duration: moduleSeconds(mod),
   }))
-  const { seconds } = refreshedSpecSeconds({
-    record: { seconds: JSON.parse(before), export: {} },
-    scheduled,
-    tests,
-    exists: (name) => fs.existsSync(path.join(root, name)),
-  })
-  const after = `${JSON.stringify(seconds, null, 2)}\n`
-  if (after !== before) fs.writeFileSync(file, after)
+  const scheduled = new Map(tests.map(({ file }) => [file, 1]))
+  keepMeasured(path.join(root, measuredName(unitSecondsFile)), measuredSeconds({ scheduled, tests }))
 }
 
 const wholeLocalRun = (config, modules, reason) =>
@@ -88,9 +79,9 @@ export default class VitestMetrics {
   onTestRunEnd(modules, errors = [], reason) {
     writeRun(this.root, countRun(modules))
     try {
-      if (wholeLocalRun(this.config, modules, reason)) recordUnitSeconds(this.root, modules)
+      if (wholeLocalRun(this.config, modules, reason)) measureUnitSeconds(this.root, modules)
     } catch (error) {
-      console.error(`unit seconds not recorded: ${error.message}`)
+      console.error(`unit seconds not measured: ${error.message}`)
     }
     try {
       const tests = modules.map((mod) => ({

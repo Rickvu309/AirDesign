@@ -128,6 +128,7 @@ const preflight = [
   "cited-paths",
   "package-reads",
   "screen-pages",
+  "timings",
 ]
 const full = checkSteps.affectedGateStages({
   tests: ["a.test.ts"],

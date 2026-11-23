@@ -3,9 +3,10 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { browserShares, designScans } from "./check-steps.mjs"
 import {
+  foldedSeconds,
+  measuredSeconds,
   narrowedRun,
   readSpecSeconds,
-  refreshedSpecSeconds,
   specFiles,
   unrecordedSeconds,
   weightedShares,
@@ -57,11 +58,7 @@ const test = (file, duration, more = {}) => ({
   exported: false,
   ...more,
 })
-const refreshed = refreshedSpecSeconds({
-  record: {
-    seconds: { "kept.spec.ts": 10, "slower.spec.ts": 10, "partial.spec.ts": 10, "red.spec.ts": 10, "gone.spec.ts": 5 },
-    export: { "kept.spec.ts": 4, "gone.spec.ts": 2 },
-  },
+const measured = measuredSeconds({
   scheduled,
   tests: [
     test("kept.spec.ts", 15_000),
@@ -71,6 +68,21 @@ const refreshed = refreshedSpecSeconds({
     test("partial.spec.ts", 1_000),
     test("red.spec.ts", 1_000, { status: "failed" }),
   ],
+})
+assert.deepEqual(
+  measured,
+  {
+    seconds: { "kept.spec.ts": 15, "slower.spec.ts": 25, "new.spec.ts": 4 },
+    export: { "kept.spec.ts": null, "slower.spec.ts": null, "new.spec.ts": 3 },
+  },
+  "only files that ran whole and passed are measured",
+)
+const refreshed = foldedSeconds({
+  record: {
+    seconds: { "kept.spec.ts": 10, "slower.spec.ts": 10, "partial.spec.ts": 10, "red.spec.ts": 10, "gone.spec.ts": 5 },
+    export: { "kept.spec.ts": 4, "gone.spec.ts": 2 },
+  },
+  measured,
   exists: (name) => name !== "gone.spec.ts",
 })
 assert.deepEqual(refreshed, {
