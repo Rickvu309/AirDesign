@@ -9,7 +9,7 @@ function chatPrefix(deck: string): string {
   if (!parsed.ok) throw new Error("deck")
   const account = accountKey()
   if (account === undefined) throw new Error("session")
-  return scoped(account, `${parsed.deck}\u0004`)
+  return scoped(account, `${parsed.deck}\u0004chat\u0004`)
 }
 
 const shelfPrefix = "airdesign:chats:"
