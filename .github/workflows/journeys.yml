@@ -32,8 +32,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - uses: ./.github/actions/playwright
-        with:
-          fonts: true
       - uses: ./.github/actions/postgres
       - run: pnpm test:journeys
         env:
