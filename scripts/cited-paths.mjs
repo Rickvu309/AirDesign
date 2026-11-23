@@ -33,6 +33,7 @@ export const repoIndex = (files, built = new Set()) => {
   return {
     files: new Set(files),
     folders,
+    sorted: [...files, ...[...folders].map((folder) => `${folder}/`)].sort(),
     folderNames,
     named: Map.groupBy(files, (file) => path.posix.basename(file)),
     tops,
@@ -104,16 +105,46 @@ export const markdownFaults = (file, source, index) =>
 
 const pathToken = /(?<=^|[\s"'`=(,[])([\w.-]+\/[\w./-]*[\w-]\.[a-z]{1,5})(?=$|[\s"'`),;:\]])/g
 
+const quotedPrefix = /(["'`])([\w.-]+\/[\w./-]*)\1/g
+
+const starts = (index, prefix) => {
+  let low = 0
+  let high = index.sorted.length
+  while (low < high) {
+    const middle = (low + high) >>> 1
+    if (index.sorted[middle] < prefix) low = middle + 1
+    else high = middle
+  }
+  return index.sorted[low]?.startsWith(prefix) ?? false
+}
+
+const prefixFault = (cited, from, index) => {
+  const beside = path.posix.join(path.posix.dirname(from), cited)
+  if (starts(index, cited) || starts(index, beside)) return undefined
+  return cited.endsWith("/")
+    ? "names no folder from the repo root or from this file's folder. Point it at the folder that holds this now, or drop it"
+    : "starts no file or folder path from the repo root or from this file's folder. Point it at the files that hold this now, or drop it"
+}
+
+const repoCited = (cited, index) => index.tops.has(cited.split("/")[0]) && repoPath(cited, index)
+
 export const codeFaults = (file, source, index) =>
-  source.split("\n").flatMap((text, line) =>
-    [...text.matchAll(pathToken)]
+  source.split("\n").flatMap((text, line) => [
+    ...[...text.matchAll(pathToken)]
       .map(([, cited]) => cited)
-      .filter((cited) => index.tops.has(cited.split("/")[0]) && repoPath(cited, index))
+      .filter((cited) => repoCited(cited, index))
       .flatMap((cited) => {
         const fault = citedFault(cited, file, index)
         return fault === undefined ? [] : [at(file, line + 1, cited, fault)]
       }),
-  )
+    ...[...text.matchAll(quotedPrefix)]
+      .map(([, , cited]) => cited)
+      .filter((cited) => !fileExtension.test(cited) && repoCited(cited.replace(/\/$/, ""), index))
+      .flatMap((cited) => {
+        const fault = prefixFault(cited, file, index)
+        return fault === undefined ? [] : [at(file, line + 1, cited, fault)]
+      }),
+  ])
 
 export const glossaryFaults = (glossary, read) =>
   glossary.allowed.flatMap((one) => {
