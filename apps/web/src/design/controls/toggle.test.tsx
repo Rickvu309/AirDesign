@@ -9,8 +9,7 @@ it.each([
   ["text", "bold", "Bold"],
   ["text", "italic", "Italic"],
   ["text", "underline", "Underline"],
-  ["box", "flipH", "Flip horizontally"],
-  ["box", "flipV", "Flip vertically"],
+  ["text", "strike", "Strikethrough"],
 ] satisfies readonly (readonly [PanelControl["trait"], string, string])[])(
   "keeps %s.%s named %s with an icon",
   (trait, field, label) => {

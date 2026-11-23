@@ -7,6 +7,8 @@ import type { NodeId } from "./ids.js"
 export const textStyleNames = ["display", "bigNumber", "title", "heading", "body", "body2", "caption", "label"] as const
 export type TextStyleName = (typeof textStyleNames)[number]
 
+export const paragraphAligns = ["left", "center", "right", "justify"] as const
+
 export type Span = {
   readonly end: number
   readonly bold?: boolean
@@ -21,7 +23,7 @@ export type Span = {
   readonly link?: string | NodeId
 }
 export type Para = {
-  readonly align?: "left" | "center" | "right" | "justify"
+  readonly align?: (typeof paragraphAligns)[number]
   readonly list?: "bullet" | "number"
   readonly level?: number
   readonly lineHeight?: number
@@ -57,7 +59,7 @@ const readSpan = object(
 const readPara = object(
   {},
   {
-    align: literal(["left", "center", "right", "justify"]),
+    align: literal(paragraphAligns),
     list: literal(["bullet", "number"]),
     level: integer(0, 8),
     lineHeight: finite(0.5, 5),

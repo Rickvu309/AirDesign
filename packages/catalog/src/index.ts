@@ -21,11 +21,8 @@ export { readAccountName, accountNameLimit } from "./account-name.js"
 export { blankDeckName, readCreateDeck } from "./create-wire.js"
 export { deckName, readDeckName } from "./deck-name.js"
 
-export { agentNumberOf, readAgent } from "./agent-form.js"
-
-export { iconNames, knownIcon } from "./icon-names.js"
+export { iconNames } from "./icon-names.js"
 export { webImage } from "./image-address.js"
-export { opacityWire } from "./opacity-wire.js"
 
 export { storableText } from "./storable-text.js"
 export {

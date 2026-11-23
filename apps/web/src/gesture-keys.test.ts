@@ -47,7 +47,6 @@ const controlKeys: Readonly<Record<string, readonly string[]>> = {
   "apps/web/src/decks/decks-shell.tsx": ["Escape"],
   "apps/web/src/design/color-picker.tsx": arrows,
   "apps/web/src/design/controls/alignment-grid.tsx": arrows,
-  "apps/web/src/design/controls/dash.tsx": field,
   "apps/web/src/design/controls/link.tsx": field,
   "apps/web/src/design/controls/number.tsx": ["ArrowDown", "ArrowUp", ...field],
   "apps/web/src/design/controls/text.tsx": field,

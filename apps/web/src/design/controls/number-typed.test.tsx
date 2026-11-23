@@ -2,7 +2,6 @@ import { act, createElement } from "react"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import { designCopy } from "@/copy/design-copy"
 import { textCopy } from "@/copy/text-copy"
-import { traits } from "@airdesign/document"
 import { resolveControl } from "@/design/panel-arrangement"
 import type { PanelControl } from "@/design/panel"
 
@@ -41,7 +40,7 @@ function lineHeight(value: number): PanelControl {
       trait: "text",
       field: "lineHeight",
       label: textCopy.lineHeight,
-      desc: traits.text.inputs.lineHeight.desc,
+      desc: { kind: "number", unit: "fraction", min: 10_000, max: 1_000_000 },
       value,
       mixed: false,
       inherited: false,

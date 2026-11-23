@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import type { Desc } from "@airdesign/document"
+import type { Desc } from "./design/control-desc"
 import { describe, expect, it } from "vitest"
 import type { PanelControl } from "./design/panel"
 import { templateColorColumns, typedColor } from "./design/color-choices"

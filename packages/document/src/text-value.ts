@@ -219,10 +219,6 @@ function readParagraph(value: unknown): TextParagraph | null {
   return { ...read, ...spacing }
 }
 
-export function plainText(value: TextValue): string {
-  return value.map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n")
-}
-
 export function readTextValue(value: string): TextValue | null {
   let parsed: unknown
   try {

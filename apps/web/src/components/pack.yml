@@ -27,5 +27,4 @@ public:
   - ui/sonner.tsx
   - ui/status-pill.tsx
   - ui/switch.tsx
-  - ui/textarea.tsx
   - ui/toast.tsx

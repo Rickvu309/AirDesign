@@ -1,15 +1,16 @@
-import type { Desc } from "@airdesign/document"
 import * as doom from "@airdesign/doom"
 import type { PanelModel, PanelSection } from "@/design/panel"
 import type { PanelKind } from "@/design/panel-order"
-import { traitControls } from "@/design/trait-controls"
-import { choiceDesc, doomControl, oldControl } from "./design-controls"
+import { choiceDesc, type Desc } from "@/design/control-desc"
+import { doomControl } from "./design-controls"
 import { cornersSection, opacitySection, shadowSection } from "./design-model-appearance"
 import { borderSections } from "./design-model-border"
 import { fillSections } from "./design-model-fills"
 import { textSections } from "./design-model-text"
 import { isGroup } from "./group-scale"
+import { boxCopy } from "@/copy/box-copy"
 import { geometryCopy } from "@/copy/geometry-copy"
+import { linkCopy } from "@/copy/link-copy"
 import { shownShape } from "./design-shape-values"
 import { propOf } from "@/editing/node-props"
 import type { LinkedWords } from "./text-edit"
@@ -39,9 +40,16 @@ export function kindOf(view: doom.Doom, id: doom.NodeId): PanelKind {
   return text !== undefined && !drawn && !painted ? "text" : "shape"
 }
 
+const alignments = ["left", "center", "right", "top", "middle", "bottom"]
+const distributions = ["horizontal", "vertical"]
+
 function alignmentSection(): PanelSection {
-  const align = oldControl("box", "align", { value: undefined })
-  const distribute = oldControl("box", "distribute", { value: undefined })
+  const align = doomControl({ trait: "box", field: "align" }, boxCopy.align, choiceDesc(alignments), {
+    value: undefined,
+  })
+  const distribute = doomControl({ trait: "box", field: "distribute" }, boxCopy.distribute, choiceDesc(distributions), {
+    value: undefined,
+  })
   return { trait: "alignment", label: null, open: true, strips: [[align, distribute]] }
 }
 
@@ -49,8 +57,14 @@ function linkSection(input: ModelInput): PanelSection[] {
   const held = input.words == null ? propOf(input.view.nodes.get(input.id), "link") : input.words.link
   const slide = held !== undefined && input.slides.includes(held as doom.NodeId)
   const target = held === undefined ? undefined : slide ? { kind: "slide", slide: held } : { kind: "url", url: held }
-  const control = oldControl("link", "target", { value: target }, { slides: input.slides })
-  return [{ trait: "link", label: traitControls.link.section, open: true, strips: [[control]] }]
+  const control = doomControl(
+    { trait: "link", field: "target" },
+    linkCopy.target,
+    { kind: "link" },
+    { value: target },
+    { slides: input.slides },
+  )
+  return [{ trait: "link", label: linkCopy.section, open: true, strips: [[control]] }]
 }
 
 const adjustDesc: Desc = {

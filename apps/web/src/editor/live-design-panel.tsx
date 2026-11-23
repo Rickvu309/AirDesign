@@ -1,11 +1,11 @@
 import { useId } from "react"
-import { traits, type Desc } from "@airdesign/document"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import { UnionControl } from "@/design/controls/union"
 import { resolveControl } from "@/design/panel-arrangement"
 import { fillIcons } from "@/design/preset-icons"
 import { ColorPicker } from "@/design/color-picker"
+import type { Desc } from "@/design/control-desc"
 import { ColorField, fieldLook } from "@/design/controls/color"
 import { type DesignShown } from "@/design/design-shown"
 import type { PanelPaint } from "@/design/panel"
@@ -15,12 +15,12 @@ export function SlideBackground({
   shown,
   deck,
   onFill,
-  paint = traits.fills.inputs.paint.desc,
+  paint,
 }: {
   shown: Pick<DesignShown, "background" | "fill" | "templateColors">
   deck: readonly string[]
   onFill: (paint: PanelPaint) => void
-  paint?: Desc
+  paint: Desc
 }) {
   const { background } = shown
   const named = useId()

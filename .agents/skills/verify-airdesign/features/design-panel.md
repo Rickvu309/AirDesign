@@ -35,5 +35,5 @@ Preconditions:
 
 ## Gotchas
 
-- The panel's controls carry the trait and field names of `apps/web/src/design/trait-controls.ts`; `oldControl` and `doomControl` in `apps/web/src/doom-editor/design-controls.ts` fill them from Doom props.
+- Each control names its panel section and field, and its value's `Desc` (kind, unit, range, choices) from `apps/web/src/design/control-desc.ts`. `doomControl` in `apps/web/src/doom-editor/design-controls.ts` builds each one from the Doom property it edits, with its label from `apps/web/src/copy`.
 - A font the browser lacks paints in the fallback face, so a font such as Georgia changes the text's font but may look the same on a machine without it.

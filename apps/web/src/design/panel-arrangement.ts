@@ -13,12 +13,7 @@ import {
   ListOrdered,
   Strikethrough,
   Underline,
-  FlipHorizontal2,
-  FlipVertical2,
-  RotateCw,
   Minus,
-  ArrowUpToLine,
-  ArrowDownToLine,
   AlignHorizontalDistributeCenter,
   AlignVerticalDistributeCenter,
   type LucideIcon,
@@ -42,22 +37,8 @@ import {
   AlignBottomEdge,
 } from "./preset-icons"
 import { LineHeightIcon, LetterSpacingIcon } from "./text-icons"
-import {
-  BottomPadding,
-  HorizontalFlow,
-  HorizontalGap,
-  HorizontalLayoutAlignment,
-  HorizontalPadding,
-  LeftPadding,
-  RightPadding,
-  TopPadding,
-  VerticalFlow,
-  VerticalGap,
-  VerticalLayoutAlignment,
-  VerticalPadding,
-} from "./layout-icons"
 import { optionWord } from "@/copy/option-copy"
-import type { Desc } from "@airdesign/document"
+import type { Desc } from "./control-desc"
 import type { PanelControl, SectionName } from "./panel"
 
 export type NameLook =
@@ -81,7 +62,6 @@ export type ControlLook = {
 type Placed = {
   readonly field: string
   readonly name: NameLook
-  readonly control?: "canvas"
   readonly kind?: ControlKind
   readonly options?: Readonly<Record<string, LucideIcon>>
   readonly form?: "segments" | "list" | "grid"
@@ -104,38 +84,10 @@ const placed = (field: string, name: NameLook = above, rest: Omit<Placed, "field
   ...rest,
 })
 const icon = (field: string, glyph: LucideIcon): Placed => placed(field, { show: "icon", icon: glyph })
-const letter = (field: string, text: string): Placed => placed(field, { show: "letter", letter: text })
-
-const paragraphSpacing = [icon("spaceBefore", ArrowUpToLine), icon("spaceAfter", ArrowDownToLine)]
 
 export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
-  layout: [
-    [placed("flow", above, { options: { vertical: VerticalFlow, horizontal: HorizontalFlow } })],
-    [placed("width", above, { form: "list" }), placed("height", above, { form: "list" })],
-    [
-      placed("align", above, { form: "grid", glyph: HorizontalLayoutAlignment }),
-      placed("gap", above, { glyph: HorizontalGap, unit: "" }),
-    ],
-    [placed("padding")],
-    [
-      placed("padding.horizontal", { show: "icon", icon: HorizontalPadding }, { unit: "" }),
-      placed("padding.vertical", { show: "icon", icon: VerticalPadding }, { unit: "" }),
-    ],
-    [
-      placed("padding.left", { show: "icon", icon: LeftPadding }, { unit: "" }),
-      placed("padding.top", { show: "icon", icon: TopPadding }, { unit: "" }),
-    ],
-    [
-      placed("padding.right", { show: "icon", icon: RightPadding }, { unit: "" }),
-      placed("padding.bottom", { show: "icon", icon: BottomPadding }, { unit: "" }),
-    ],
-  ],
-  show: [[placed("skipped", hidden, { control: "canvas" })]],
-  transition: [[{ field: "value", name: hidden }]],
-  guides: [[{ field: "ruler", name: hidden }], [{ field: "layout", name: hidden }]],
   link: [[placed("target", hidden)]],
   text: [
-    [placed("value", hidden, { control: "canvas" })],
     [placed("style", hidden)],
     [placed("font", hidden)],
     [placed("weight", above, { form: "list" }), placed("size", above)],
@@ -155,14 +107,8 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
       }),
     ],
     [placed("fill", hidden, { options: fills })],
-    [placed("color", hidden, { control: "canvas" })],
-    paragraphSpacing,
   ],
-  paragraphSpacing: [paragraphSpacing],
   box: [
-    [letter("x", "X"), letter("y", "Y")],
-    [letter("w", "W"), letter("h", "H")],
-    [icon("rot", RotateCw), icon("flipH", FlipHorizontal2), icon("flipV", FlipVertical2)],
     [
       placed("align", hidden, {
         kind: "action",
@@ -183,36 +129,18 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
       }),
     ],
   ],
-  fills: [
-    [placed("paint", hidden, { options: fills })],
-    [placed("paint.solid", hidden)],
-    [placed("add", hidden, { kind: "action" })],
-  ],
+  fills: [[placed("paint", hidden, { options: fills })], [placed("paint.solid", hidden)]],
   alignment: [[placed("align", hidden), placed("distribute", hidden)]],
   pictureFill: [],
   textFill: [[placed("value", hidden, { options: fills })], [placed("value.solid", hidden)]],
-  boxFill: [[placed("paint", hidden, { options: fills })], [placed("paint.solid", hidden)]],
-  fillDetails: [],
   border: [
     [
       placed("border", hidden, {
         options: { none: fillIcons.none, solid: SolidBorder, dash: DashedBorder, dot: DottedBorder },
       }),
     ],
-    [placed("fill", above, { options: fills, form: "list" })],
-    [placed("fill.solid", hidden)],
     [placed("color", above), placed("width", above)],
     [placed("route", above, { options: { straight: StraightLine, elbow: ElbowLine, curve: CurvedLine } })],
-    [placed("dash", above, { form: "list" })],
-    [placed("cap", above, { form: "list" }), placed("compound", above, { form: "list" })],
-    [placed("join", above, { form: "list" })],
-    [placed("head"), placed("tail")],
-    [placed("head.type", above, { form: "list" })],
-    [placed("head.width", above, { form: "list" })],
-    [placed("head.length", above, { form: "list" })],
-    [placed("tail.type", above, { form: "list" })],
-    [placed("tail.width", above, { form: "list" })],
-    [placed("tail.length", above, { form: "list" })],
   ],
   shadow: [
     [
@@ -229,91 +157,14 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   ],
   corners: [[placed("corners", { show: "beside" }, { kind: "corners" })]],
   opacity: [[placed("opacity", { show: "beside" })]],
-  identity: [
-    [placed("name", inside)],
-    [placed("alt", inside)],
-    [placed("hidden")],
-    [placed("locked")],
-    [placed("mask")],
-  ],
-  geometry: [
-    [placed("shape", hidden)],
-    [placed("shape.preset", above, { kind: "preset" })],
-    [placed("shape.adjust", hidden)],
-    [placed("preset", hidden, { kind: "preset" })],
-    [placed("adjust", hidden)],
-    [placed("corners", hidden, { control: "canvas" })],
-  ],
-  effects: [
-    [placed("shadow")],
-    [placed("innerShadow")],
-    [placed("glow")],
-    [placed("softEdge")],
-    [placed("blur")],
-    [placed("shadow.outer", hidden)],
-    [placed("shadow.outer.blur", inside), placed("shadow.outer.distance", inside)],
-    [placed("shadow.outer.direction", inside)],
-    [placed("shadow.outer.color")],
-    [placed("glow.halo", hidden)],
-    [placed("glow.halo.radius", inside)],
-    [placed("glow.halo.color")],
-    [placed("softEdge.radius", inside)],
-    [placed("blur.radius", inside)],
-    [placed("innerShadow.inner", hidden)],
-    [placed("innerShadow.inner.blur", inside), placed("innerShadow.inner.distance", inside)],
-    [placed("innerShadow.inner.direction", inside)],
-    [placed("innerShadow.inner.color")],
-    [placed("add", hidden, { kind: "action" })],
-  ],
-  body: [
-    [placed("insets")],
-    [placed("anchor")],
-    [placed("wrap")],
-    [placed("autofit")],
-    [placed("vertical")],
-    [placed("columns", inside)],
-    [placed("insets.left", inside), placed("insets.top", inside)],
-    [placed("insets.right", inside), placed("insets.bottom", inside)],
-  ],
+  geometry: [[placed("preset", hidden, { kind: "preset" })], [placed("adjust", hidden)]],
   image: [
     [placed("mode")],
-    [placed("tileScale")],
     [placed("color"), placed("weight", above, { glyph: Minus, steps: iconWeightSteps, unit: "" })],
-    [placed("overlay"), placed("blur")],
     [placed("source")],
-    [placed("recolor")],
   ],
-  crop: [
-    [placed("rect", hidden)],
-    [placed("rect.l", inside), placed("rect.t", inside)],
-    [placed("rect.r", inside), placed("rect.b", inside)],
-  ],
-  connection: [
-    [placed("start")],
-    [placed("end")],
-    [placed("start.shape", hidden)],
-    [placed("start.shape.node")],
-    [placed("start.shape.site", above, { kind: "site" })],
-    [placed("end.shape", hidden)],
-    [placed("end.shape.node")],
-    [placed("end.shape.site", above, { kind: "site" })],
-  ],
-  notes: [[placed("value", hidden)]],
-  templateStyle: [
-    [{ field: "id", name: { show: "hidden" } }],
-    [placed("name", inside)],
-    [placed("dk1", hidden), placed("lt1", hidden)],
-    [placed("dk2", hidden), placed("lt2", hidden)],
-    [placed("accent1", hidden), placed("accent2", hidden)],
-    [placed("accent3", hidden), placed("accent4", hidden)],
-    [placed("accent5", hidden), placed("accent6", hidden)],
-    [placed("hlink", hidden), placed("folHlink", hidden)],
-    [placed("major", inside)],
-    [placed("minor", inside)],
-    [placed("custom", hidden)],
-    [placed("removed", hidden)],
-    [placed("textStyle", hidden)],
-  ],
+  templateStyle: [[placed("major", inside)], [placed("minor", inside)]],
+  fillDetails: [],
 }
 
 function placement(trait: SectionName, field: string): Placed | undefined {
@@ -347,25 +198,11 @@ export function resolveControl(control: Omit<PanelControl, "kind" | "look">): Pa
 }
 
 export function arrange(trait: SectionName, controls: readonly PanelControl[]): readonly (readonly PanelControl[])[] {
-  const vertical =
-    trait === "layout" && controls.some((control) => control.field === "flow" && control.value === "vertical")
   const strips = sectionStrips[trait]
     .map((strip) => strip.flatMap((place) => controls.filter((control) => control.field === place.field)))
     .filter((strip) => strip.length > 0)
   const placed = new Set(strips.flat().map((control) => control.field))
-  const rows = [...strips, ...fallbackStrips(controls.filter((control) => !placed.has(control.field)))]
-  if (!vertical) return rows
-  return rows.map((row) =>
-    row.map((control) => {
-      const glyph =
-        control.field === "align" ? VerticalLayoutAlignment : control.field === "gap" ? VerticalGap : undefined
-      return glyph === undefined ? control : { ...control, look: { ...control.look, glyph } }
-    }),
-  )
-}
-
-function fallbackStrips(controls: readonly PanelControl[]): readonly (readonly PanelControl[])[] {
-  return controls.map((control) => [control])
+  return [...strips, ...controls.filter((control) => !placed.has(control.field)).map((control) => [control])]
 }
 
 export function choiceLayout(field: string, options: readonly string[]): "segments" | "list" {
@@ -383,15 +220,12 @@ export const controlKinds = [
   "choice",
   "action",
   "color",
-  "hex",
   "record",
   "union",
   "list",
   "adjust",
   "text",
   "asset",
-  "node",
-  "site",
   "preset",
   "link",
 ] as const
@@ -407,16 +241,11 @@ export function controlOf(desc: Desc): ControlKind | null {
     case "mark":
       return "toggle"
     case "words":
-    case "text":
       return "text"
     case "choice":
       return "choice"
     case "color":
       return "color"
-    case "hex":
-      return "hex"
-    case "alpha":
-      return "percent"
     case "record":
       return "record"
     case "union":
@@ -429,7 +258,5 @@ export function controlOf(desc: Desc): ControlKind | null {
       return "asset"
     case "link":
       return "link"
-    case "node":
-      return "node"
   }
 }

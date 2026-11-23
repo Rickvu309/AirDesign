@@ -22,7 +22,6 @@ public:
   - frame-copy.ts
   - geometry-copy.ts
   - guide-copy.ts
-  - identity-copy.ts
   - link-copy.ts
   - notes-copy.ts
   - opacity-copy.ts

@@ -1,7 +1,6 @@
 import { controlLabel } from "@/design/controls/control-label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { textCopy } from "@/copy/text-copy"
-import { agentNumberOf, readAgent } from "@airdesign/catalog"
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { designCopy } from "@/copy/design-copy"
@@ -10,7 +9,7 @@ import { NoneFill, Opacity } from "@/design/preset-icons"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 import { lineHeightPointsFloor, spaceCeiling } from "@airdesign/document"
-import { fixedLine, typedFixed, typedNumber } from "@/design/typed-number"
+import { fixedLine, shownInUnit, storedOf, typedFixed, typedNumber } from "@/design/typed-number"
 import { roundedShown, steppedFrom, untouched, type Shown } from "@/design/shown-number"
 import { composing } from "@/lib/composing"
 
@@ -24,7 +23,7 @@ export function numberShown(control: ControlProps["control"], scale?: number): S
   if (control.mixed || control.desc.kind !== "number" || typeof control.value !== "number") return roundedShown(null, 0)
   if (scale !== undefined) return roundedShown(control.value / scale, 2)
   if (control.numberScale !== undefined) return roundedShown(control.value / 100 / control.numberScale, 0)
-  return roundedShown(agentNumberOf(control.desc.unit, control.value), 4)
+  return roundedShown(shownInUnit(control.desc.unit, control.value), 4)
 }
 
 function stepOf(event: KeyboardEvent<HTMLInputElement>, unit: number): number {
@@ -82,10 +81,10 @@ export function NumberField({
   const scrub = useRef<Scrub | null>(null)
 
   function readNumber(value: number) {
-    if (control.numberScale !== undefined) return readAgent(control.desc, value * control.numberScale)
+    if (control.numberScale !== undefined) return storedOf(control.desc, value * control.numberScale)
     return scale === undefined || control.desc.kind !== "number"
-      ? readAgent(control.desc, value)
-      : readAgent({ ...control.desc, unit: "count" }, Math.round(value * scale))
+      ? storedOf(control.desc, value)
+      : storedOf({ ...control.desc, unit: "count" }, Math.round(value * scale))
   }
 
   function commitFixed(points: number) {
@@ -104,7 +103,7 @@ export function NumberField({
     const typed = typedNumber(text, typedUnit)
     if (typed === null || !Number.isFinite(typed)) return
     const read = readNumber(typed)
-    if (read.ok && (read.value !== control.value || control.inherited)) onChange(read.value)
+    if (read !== null && (read !== control.value || control.inherited)) onChange(read)
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -137,8 +136,8 @@ export function NumberField({
       return
     }
     const read = readNumber(to.value)
-    scrub.current = read.ok ? to : { ...from, x: to.x }
-    if (read.ok) onChange(read.value)
+    scrub.current = read !== null ? to : { ...from, x: to.x }
+    if (read !== null) onChange(read)
   }
 
   function endScrub() {
@@ -170,7 +169,7 @@ export function NumberField({
       shown={shown}
       onPick={(step) => {
         const read = readNumber(step)
-        if (read.ok && (read.value !== control.value || control.inherited)) onChange(read.value)
+        if (read !== null && (read !== control.value || control.inherited)) onChange(read)
       }}
     />
   )

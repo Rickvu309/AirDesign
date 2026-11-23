@@ -1,4 +1,4 @@
-import type { Desc } from "@airdesign/document"
+import type { Desc } from "./control-desc"
 import * as doom from "@airdesign/doom"
 
 const backdrop: doom.Color = { var: "background" }
@@ -15,7 +15,7 @@ export function firstColor(value: unknown): doom.Color | null {
   return null
 }
 
-export function seedOf(desc: Desc, color: doom.Color, at = 0, count = 1, node: string | null = null): unknown {
+export function seedOf(desc: Desc, color: doom.Color, at = 0, count = 1): unknown {
   switch (desc.kind) {
     case "number":
       if (desc.unit === "fraction" && count > 1) return Math.round((at / (count - 1)) * desc.max)
@@ -30,18 +30,16 @@ export function seedOf(desc: Desc, color: doom.Color, at = 0, count = 1, node: s
       return desc.options[0]
     case "record":
       return Object.fromEntries(
-        Object.entries(desc.fields).map(([name, field]) => [name, seedOf(field, color, at, count, node)]),
+        Object.entries(desc.fields).map(([name, field]) => [name, seedOf(field, color, at, count)]),
       )
     case "list": {
       const length = Math.max(desc.min, 2)
-      return Array.from({ length }, (_, item) => seedOf(desc.item, color, item, length, node))
+      return Array.from({ length }, (_, item) => seedOf(desc.item, color, item, length))
     }
     case "union": {
       const [name, item] = Object.entries(desc.cases).find(([, each]) => each.kind !== "mark") ?? []
-      return name === undefined || item === undefined ? null : { [name]: seedOf(item, color, at, count, node) }
+      return name === undefined || item === undefined ? null : { [name]: seedOf(item, color, at, count) }
     }
-    case "node":
-      return node
     default:
       return null
   }

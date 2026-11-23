@@ -1,4 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react"
+import { notesCopy } from "@/copy/notes-copy"
 
 import {
   clampNotesHeight,
@@ -225,7 +226,7 @@ export function NotesBar({ text, onEdit }: { readonly text: string; readonly onE
           <textarea
             ref={field}
             id="speaker-notes"
-            aria-label="Presenter notes"
+            aria-label={notesCopy.value}
             className="block min-h-0 w-full flex-1 resize-none overflow-auto bg-transparent text-[length:var(--type-dense)] text-ink outline-none placeholder:text-quiet"
             value={text}
             readOnly={onEdit === undefined}
