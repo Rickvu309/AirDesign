@@ -1,6 +1,5 @@
 import { expect } from "@playwright/test"
 import { test } from "./deck-test"
-import { packageBuild } from "../../scripts/package-build.mjs"
 
 type Widths = Record<
   string,
@@ -29,6 +28,7 @@ test("the server breaks and stacks every line where the canvas paints it, in eac
   page,
 }) => {
   const root = process.cwd()
+  const { packageBuild } = await import("../../scripts/package-build.mjs")
   const doom = await packageBuild(root, "@airdesign/doom")
   const { servedFontMetrics, LocalOriginalStore } = await packageBuild(root, "@airdesign/api")
   const metrics = servedFontMetrics(new LocalOriginalStore())
