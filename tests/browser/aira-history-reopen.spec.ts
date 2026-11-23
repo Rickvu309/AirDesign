@@ -13,11 +13,11 @@ test("the chat a person picked from history reopens after a reload, and an empty
   page,
   context,
   stack,
-  decks,
 }) => {
   await signInBrowser(context, await stack.signIn())
   await forward(page, stack)
-  await decks.open()
+  await page.goto("/s")
+  await page.locator("[data-doom-ready]").waitFor()
   const side = page.locator("[data-editor-panel]")
   const log = side.getByRole("log")
   const newChat = side.getByRole("button", { name: "New chat", exact: true })
@@ -36,7 +36,7 @@ test("the chat a person picked from history reopens after a reload, and an empty
   await expect(log.getByText("First chat question", { exact: true })).toBeVisible()
 
   await page.reload()
-  await decks.ready()
+  await page.locator("[data-doom-ready]").waitFor()
   await expect(log.getByText("First chat question", { exact: true })).toBeVisible()
   await expect(log.getByText("Second chat question", { exact: true })).toHaveCount(0)
   await side.getByRole("button", { name: /chat history/ }).click()

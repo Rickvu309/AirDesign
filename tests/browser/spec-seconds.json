@@ -2,7 +2,7 @@
   "seconds": {
     "account.spec.ts": 3.4,
     "agents.spec.ts": 2.7,
-    "aira-history-reopen.spec.ts": 2.1,
+    "aira-history-reopen.spec.ts": 7.4,
     "before-after.spec.ts": 4.8,
     "connection-headings.spec.ts": 2.5,
     "consent.spec.ts": 13.5,
@@ -23,9 +23,7 @@
     "control-union.spec.ts": 5.9,
     "core-screens.spec.ts": 10,
     "credits.spec.ts": 1.7,
-    "deck-status.spec.ts": 1.4,
     "design-detectors.spec.ts": 2.7,
-    "diagram-export.spec.ts": 3.4,
     "doom-agent-undo-reload.spec.ts": 6.3,
     "doom-agent.spec.ts": 6.7,
     "doom-arrange.spec.ts": 11.6,
@@ -46,22 +44,11 @@
     "doom-slides-transform.spec.ts": 11.9,
     "doom-speed.spec.ts": 16.1,
     "doom-text-format.spec.ts": 13.4,
-    "editor-grid-focus.spec.ts": 4,
     "font-widths.spec.ts": 0.3,
-    "grid-gap-save.spec.ts": 2.2,
-    "grid-group-move.spec.ts": 25.4,
-    "grid-marquee.spec.ts": 13.4,
-    "grid-reorder-gesture.spec.ts": 20.9,
-    "grid-selected-set.spec.ts": 22.7,
-    "grid-set-edits.spec.ts": 11.4,
     "hero-chart.spec.ts": 1,
     "hero-ticker.spec.ts": 2.2,
     "home-doom.spec.ts": 11.2,
-    "large-edits.spec.ts": 9.4,
-    "late-font-edits.spec.ts": 5.4,
-    "live-repaint.spec.ts": 6.3,
     "logic-picture.spec.ts": 3.8,
-    "lost-answer.spec.ts": 4.3,
     "nav-pill.spec.ts": 1.1,
     "picture-copy-import.spec.ts": 0,
     "present-screens.spec.ts": 0.7,
@@ -69,17 +56,12 @@
     "recents-grid.spec.ts": 0.7,
     "settings-names.spec.ts": 4.7,
     "site-mobile.spec.ts": 7.2,
-    "slide-export.spec.ts": 4.5,
-    "slide-list-select.spec.ts": 13.4,
     "surfaces.spec.ts": 9.4,
-    "text-tool-snap.spec.ts": 3.2,
     "toast-layout.spec.ts": 3.3,
-    "usage-motion.spec.ts": 1.7,
-    "usage.spec.ts": 4.1
+    "usage-motion.spec.ts": 6.3,
+    "usage.spec.ts": 9.5
   },
   "export": {
-    "control-color.spec.ts": 9.4,
-    "diagram-export.spec.ts": 3.4,
-    "slide-export.spec.ts": 3
+    "control-color.spec.ts": 9.4
   }
 }
