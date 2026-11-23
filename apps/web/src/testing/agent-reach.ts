@@ -219,6 +219,7 @@ export const reach: Readonly<Record<string, Entry>> = {
   "panel:theme-fonts": { agent: "op.deck", props: ["theme"] },
   "panel:chart-data": { agent: "set.chart", props: ["chart"] },
   "panel:remove-auto-layout": { agent: "set.layout", props: ["layout"] },
+  "panel:show-hidden": { agent: "set.hidden", writes: "hidden", on: "card", props: ["hidden"] },
   "actions:icon": { agent: "add.icon", props: ["geometry"] },
   "actions:chart": { agent: "add.chart", props: ["chart"] },
   "drop:picture": { agent: "add.picture", props: ["fills"] },
