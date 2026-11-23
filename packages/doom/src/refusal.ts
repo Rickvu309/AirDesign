@@ -8,11 +8,7 @@ export type Refusal = {
 }
 
 export function refuse(refused: Refusal["refused"], node?: NodeId, prop?: WriteKey): Refusal {
-  return {
-    refused,
-    ...(node === undefined ? {} : { node }),
-    ...(prop === undefined ? {} : { prop }),
-  }
+  return { refused, ...(node === undefined ? {} : { node }), ...(prop === undefined ? {} : { prop }) }
 }
 
 export function isRefusal(result: unknown): result is Refusal {

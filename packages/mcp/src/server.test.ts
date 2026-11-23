@@ -97,6 +97,35 @@ describe("createServer", () => {
     })
   })
 
+  it("replaces every slide in either order over the protocol, and refuses leaving none", async () => {
+    const decks = memoryDecks(started)
+    await withClient(sessionFor(), decks, async (client) => {
+      const call = async (name: string, args: unknown) => {
+        const result = await client.callTool({ name: `airdesign_${name}`, arguments: args as Record<string, unknown> })
+        return result.structuredContent as Record<string, any>
+      }
+      const made = await call("create_deck", { name: "Replace" })
+      const deck = made.deck as string
+      const [first] = made.slides as string[]
+      const add = { op: "slide", add: {} }
+      const gone = { op: "slide", delete: first }
+      const none = await call("edit_deck", { deck, base: made.rev, changes: [gone] })
+      expect(none).toMatchObject({ ok: false, refusal: "last-slide", change: "slide delete", at: 0 })
+      const deleteFirst = await call("edit_deck", { deck, base: made.rev, changes: [gone, add] })
+      expect(deleteFirst).toMatchObject({ ok: true })
+      const read = await call("read_deck", { deck })
+      expect(read.slides).toHaveLength(1)
+      const [second] = read.slides as string[]
+      const addFirst = await call("edit_deck", {
+        deck,
+        base: read.rev,
+        changes: [add, { op: "slide", delete: second }],
+      })
+      expect(addFirst).toMatchObject({ ok: true })
+      expect((await call("read_deck", { deck })).slides).toHaveLength(1)
+    })
+  })
+
   it("builds the board deck brief in six calls over the protocol", async () => {
     const decks = memoryDecks(started)
     await withClient(sessionFor(), decks, async (client) => {

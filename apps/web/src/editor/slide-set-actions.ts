@@ -38,7 +38,6 @@ export function slideSetAction(
       return
     }
     const result = strip.onChangeSet?.(change, held)
-    if (result === null && change === "remove") toast.error(slideListCopy.lastSlide)
     if (result === undefined || result === null) return
     const picked = result.picked
     follow()

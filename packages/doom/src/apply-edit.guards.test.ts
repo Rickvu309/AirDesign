@@ -29,12 +29,7 @@ const refusedWith = (result: unknown, refused: string, node?: string, prop?: str
 describe("compare and set", () => {
   const typed = () =>
     land(sampleDeck(), [
-      {
-        node: ids.title,
-        prop: "text",
-        value: textOf("Revenue 2"),
-        base: revOf(sampleDeck(), ids.title, "text")!,
-      },
+      { node: ids.title, prop: "text", value: textOf("Revenue 2"), base: revOf(sampleDeck(), ids.title, "text")! },
     ])
 
   it("refuses a text write whose base is older than the prop's rev", () => {
@@ -48,12 +43,7 @@ describe("compare and set", () => {
       "text",
     )
     const second = land(first, [
-      {
-        node: ids.title,
-        prop: "text",
-        value: textOf("B"),
-        base: revOf(first, ids.title, "text")!,
-      },
+      { node: ids.title, prop: "text", value: textOf("B"), base: revOf(first, ids.title, "text")! },
     ])
     expect(second.nodes.get(ids.title)).toMatchObject({ text: { chars: "B" } })
   })
@@ -100,12 +90,7 @@ describe("compare and set", () => {
     const doom = typed()
     const stale = tryLand(doom, [
       { node: ids.card, prop: "name", value: "Card" },
-      {
-        node: ids.title,
-        prop: "text",
-        value: textOf("C"),
-        base: revOf(sampleDeck(), ids.title, "text")!,
-      },
+      { node: ids.title, prop: "text", value: textOf("C"), base: revOf(sampleDeck(), ids.title, "text")! },
     ])
     refusedWith(stale, "stale")
     expect(doom.nodes.get(ids.card)).not.toHaveProperty("name")
@@ -114,21 +99,9 @@ describe("compare and set", () => {
 
 describe("agent runs", () => {
   const start = (doom: Doom, run: string, extra: readonly Write[] = []) =>
-    applyEdit(doom, {
-      once: once(),
-      author: agent(run),
-      writes: extra,
-      phase: "start",
-      rev: rev(doom.rev + 1),
-    })
+    applyEdit(doom, { once: once(), author: agent(run), writes: extra, phase: "start", rev: rev(doom.rev + 1) })
   const stop = (doom: Doom, run: string) =>
-    applyEdit(doom, {
-      once: once(),
-      author: agent(run),
-      writes: [],
-      phase: "stop",
-      rev: rev(doom.rev + 1),
-    })
+    applyEdit(doom, { once: once(), author: agent(run), writes: [], phase: "stop", rev: rev(doom.rev + 1) })
 
   it("fences an agent write that names no run, an unstarted run or a stopped run", () => {
     const doom = sampleDeck()
@@ -153,13 +126,7 @@ describe("agent runs", () => {
   it("lets a person start nothing: a phase needs an agent with a run", () => {
     const doom = sampleDeck()
     refusedWith(
-      applyEdit(doom, {
-        once: once(),
-        author: person,
-        writes: [],
-        phase: "start",
-        rev: rev(doom.rev + 1),
-      }),
+      applyEdit(doom, { once: once(), author: person, writes: [], phase: "start", rev: rev(doom.rev + 1) }),
       "shape",
     )
   })
@@ -179,36 +146,17 @@ describe("agent runs", () => {
     expect(isRefusal(tryLand(running, [{ node: ids.card, prop: "opacity", value: 0.5 }], agent("r1")))).toBe(false)
   })
 
-  const claude = (run: string) => ({
-    kind: "agent" as const,
-    id: "claude",
-    run,
-  })
+  const claude = (run: string) => ({ kind: "agent" as const, id: "claude", run })
   const startBy = (doom: Doom, author: ReturnType<typeof claude>) =>
-    applyEdit(doom, {
-      once: once(),
-      author,
-      writes: [],
-      phase: "start",
-      rev: rev(doom.rev + 1),
-    })
+    applyEdit(doom, { once: once(), author, writes: [], phase: "start", rev: rev(doom.rev + 1) })
 
   it("keeps a run to the agent that started it: another agent can neither write into it nor stop it", () => {
     const running = start(sampleDeck(), "r1") as Doom
-    expect(running.runs.get("r1")).toMatchObject({
-      agent: "aira",
-      started: running.rev,
-    })
+    expect(running.runs.get("r1")).toMatchObject({ agent: "aira", started: running.rev })
     const write = [{ node: ids.card, prop: "name" as const, value: "Claude" }]
     refusedWith(tryLand(running, write, claude("r1")), "run-fenced")
     refusedWith(
-      applyEdit(running, {
-        once: once(),
-        author: claude("r1"),
-        writes: [],
-        phase: "stop",
-        rev: rev(running.rev + 1),
-      }),
+      applyEdit(running, { once: once(), author: claude("r1"), writes: [], phase: "stop", rev: rev(running.rev + 1) }),
       "run-fenced",
     )
     expect(isRefusal(tryLand(running, write, agent("r1")))).toBe(false)
@@ -226,19 +174,13 @@ describe("agent runs", () => {
     const mine = start(sampleDeck(), "r1") as Doom
     const both = startBy(mine, claude("c1")) as Doom
     expect(both.runs.get("r1")?.phase).toBe("running")
-    expect(both.runs.get("c1")).toMatchObject({
-      phase: "running",
-      agent: "claude",
-    })
+    expect(both.runs.get("c1")).toMatchObject({ phase: "running", agent: "claude" })
   })
 
   it("records the rev a run last wrote at", () => {
     const running = start(sampleDeck(), "r1") as Doom
     const wrote = land(running, [{ node: ids.card, prop: "name", value: "A" }], agent("r1"))
-    expect(wrote.runs.get("r1")).toMatchObject({
-      started: running.rev,
-      wrote: wrote.rev,
-    })
+    expect(wrote.runs.get("r1")).toMatchObject({ started: running.rev, wrote: wrote.rev })
     const stopped = stop(wrote, "r1") as Doom
     expect(stopped.runs.get("r1")).toMatchObject({ wrote: wrote.rev })
   })
@@ -262,9 +204,7 @@ describe("theme keys", () => {
   it("writes one colour without touching another, and bumps the theme's own rev too", () => {
     const doom = land(sampleDeck(), [{ node: ids.deck, prop: "theme.colors.accent1", value: hex(0xff0000) }])
     expect(doom.nodes.get(ids.deck)).toMatchObject({
-      theme: {
-        colors: { accent1: hex(0xff0000), accent2: theme().colors.accent2 },
-      },
+      theme: { colors: { accent1: hex(0xff0000), accent2: theme().colors.accent2 } },
     })
     expect(revOf(doom, ids.deck, "theme.colors.accent1")).toBe(doom.rev)
     expect(revOf(doom, ids.deck, "theme")).toBe(doom.rev)
@@ -273,12 +213,7 @@ describe("theme keys", () => {
 
   it("lets a whole theme write bump every key", () => {
     const doom = land(sampleDeck(), [
-      {
-        node: ids.deck,
-        prop: "theme",
-        value: theme(),
-        base: revOf(sampleDeck(), ids.deck, "theme")!,
-      },
+      { node: ids.deck, prop: "theme", value: theme(), base: revOf(sampleDeck(), ids.deck, "theme")! },
     ])
     for (const key of ["theme.colors.accent1", "theme.fonts.body", "theme.textStyles.title", "theme.effectStyles.soft"])
       expect(revOf(doom, ids.deck, key)).toBe(doom.rev)
@@ -365,12 +300,7 @@ describe("deck limits", () => {
     )
     refusedWith(
       tryLand(sampleDeck(), [
-        {
-          node: ids.title,
-          prop: "text",
-          value: textOf("a".repeat(limits.valueBytes + 1)),
-          base: rev(99),
-        },
+        { node: ids.title, prop: "text", value: textOf("a".repeat(limits.valueBytes + 1)), base: rev(99) },
       ]),
       "limit",
       ids.title,
