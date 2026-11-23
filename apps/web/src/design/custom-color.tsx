@@ -1,4 +1,5 @@
 import { alphaOf, fadedColor, opaque, sameColor, type Color } from "@airdesign/document"
+import { roundedShown, untouched } from "@/design/shown-number"
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { colorCopy } from "@/copy/color-copy"
@@ -166,6 +167,7 @@ export function CustomColor({
 
   function commitOpacity(text: string) {
     setOpacityTyped(null)
+    if (untouched(text, shownAlpha)) return
     const parsed = Number.parseInt(text, 10)
     if (!Number.isInteger(parsed)) return
     showAlpha(Math.min(100, Math.max(0, parsed)) * 1_000)
@@ -182,7 +184,8 @@ export function CustomColor({
   }
 
   const hex = hexOf(hsv)
-  const shownPercent = String(Math.round(alpha / 1_000))
+  const shownAlpha = roundedShown(alpha / 1_000, 0)
+  const shownPercent = shownAlpha.text
   return (
     <div className="flex flex-col gap-2" data-custom-color>
       <div
