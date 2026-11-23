@@ -1,22 +1,26 @@
 import { notesCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
+import { selectNode } from "../doom-deck.mjs"
 import { editor } from "../editor-screen.mjs"
-import { notesState } from "../notes-deck.mjs"
+import { notesState } from "../doom-notes-deck.mjs"
 
 async function drive(kit) {
+  const { page } = kit
   await notesState(kit, true)
   const held = []
-  await kit.page.route(`**${kit.deckRoutes.commit.path}`, (route) => held.push(route))
-  const field = kit.page.getByRole("textbox", { name: notesCopy.value, exact: true })
+  await page.route(`**${kit.doomRoutes.edit.path}`, (route) => held.push(route))
+  const field = page.getByRole("textbox", { name: notesCopy.value, exact: true })
   await expect(field).toBeEditable()
-  await field.pressSequentially("Hi", { delay: 40 })
+  await field.click()
+  await page.keyboard.press("ControlOrMeta+End")
+  await field.pressSequentially(" Hi", { delay: 40 })
   await expect.poll(() => held.length).toBeGreaterThan(0)
-  const text = kit.page.locator('[data-slide-paint] [contenteditable="true"]').first()
-  await text.dblclick()
-  await kit.page.keyboard.press("ControlOrMeta+a")
-  await text.pressSequentially("Mine", { delay: 40 })
-  await kit.page.keyboard.press("ControlOrMeta+z")
-  await kit.page.waitForTimeout(1500)
+  await selectNode(page, "s:4")
+  await page.keyboard.press("Enter")
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.type("Mine", { delay: 40 })
+  await page.keyboard.press("ControlOrMeta+z")
+  await page.waitForTimeout(1500)
 }
 
 export default { name: "notes-then-text-undone", design: editor, drive }

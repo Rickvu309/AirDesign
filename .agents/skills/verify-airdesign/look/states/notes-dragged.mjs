@@ -1,4 +1,4 @@
-import { notesState } from "../notes-deck.mjs"
+import { notesState } from "../doom-notes-deck.mjs"
 import { editor } from "../editor-screen.mjs"
 
 export default {
