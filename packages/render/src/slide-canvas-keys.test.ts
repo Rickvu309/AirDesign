@@ -2,7 +2,6 @@ import { elementId, type Box, type ElementId } from "@airdesign/document"
 import { act, createElement } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, describe, expect, it } from "vitest"
-import { nudgeStep } from "./box-gesture.js"
 import { paintStore, SlideCanvas, type CanvasElement, type CanvasSlide, type PaintBox } from "./index.js"
 
 const hosts: { host: HTMLDivElement; root: Root }[] = []
@@ -25,7 +24,6 @@ const place: PaintBox = {
   flipH: false,
   flipV: false,
 }
-const start: Box = { x: 457_200, y: 457_200, cx: 5_486_400, cy: 1_828_800 }
 const id = elementId("256.2")
 const key = `ppt/slides/slide1.xml#${id}`
 

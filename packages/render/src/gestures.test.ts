@@ -109,12 +109,12 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "G", code: "KeyG", metaKey: true, shiftKey: true }, "element")).toBe("ungroup")
   })
 
-  it("uses a layer as a mask with Ctrl+Alt+M, Cmd+Option+M or Figma's Control+Command+M, and leaves Ctrl+M alone", () => {
+  it("leaves Ctrl+M alone", () => {
     const press = { key: "m", code: "KeyM", metaKey: false, ctrlKey: false, altKey: false, shiftKey: false }
     expect(gestureFor({ ...press, ctrlKey: true }, "editor")).toBeNull()
   })
 
-  it("frames the selection with Ctrl+Alt+G or Cmd+Option+G and renames with Cmd or Ctrl+R", () => {
+  it("frames the selection with Ctrl+Alt+G or Cmd+Option+G, on a layer only", () => {
     expect(gestureFor({ ...plain, key: "g", code: "KeyG", ctrlKey: true, altKey: true }, "element")).toBe("frame")
     expect(gestureFor({ ...plain, key: "©", code: "KeyG", metaKey: true, altKey: true }, "element")).toBe("frame")
     expect(gestureFor({ ...plain, key: "g", code: "KeyG", ctrlKey: true, altKey: true }, "text")).toBeNull()
@@ -149,7 +149,7 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "ArrowUp", altKey: true }, "slides")).toBe("slide-up")
   })
 
-  it("toggles design mode with Shift+D and keeps the slide duplicate shortcut", () => {
+  it("keeps Shift+D free and Ctrl+D as the slide duplicate shortcut", () => {
     const key = { ...plain, key: "D", shiftKey: true }
     expect(gestureFor(key, "text")).toBeNull()
     expect(gestureFor({ ...key, ctrlKey: true }, "editor")).toBeNull()
@@ -194,11 +194,7 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "d", code: "KeyD", ctrlKey: true }, "slides")).toBe("slide-duplicate")
   })
 
-  it("takes Figma's align keys by where the letter sits, so Option on a Mac still aligns", () => {
-    const align = (code: string) => gestureFor({ ...plain, key: "å", code, altKey: true }, "editor")
-  })
-
-  it("selects all or the inverse on the slide and on a layer, and all the words inside a text box", () => {
+  it("selects all on the slide and all the words inside a text box", () => {
     expect(gestureFor({ ...plain, key: "a", code: "KeyA", ctrlKey: true }, "slide")).toBe("select-all")
     expect(gestureFor({ ...plain, key: "a", code: "KeyA", ctrlKey: true }, "text")).toBe("select-all")
     expect(gestureFor({ ...plain, key: "A", code: "KeyA", metaKey: true, shiftKey: true }, "text")).toBeNull()
@@ -211,7 +207,7 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "Backspace" }, "element")).toBe("delete")
   })
 
-  it("opens the eyedropper with I on a selected layer without colliding with italic or typing", () => {
+  it("keeps I free on a selected layer, and Ctrl or Cmd+I italic", () => {
     expect(gestureFor({ ...plain, key: "i", code: "KeyI", ctrlKey: true }, "element")).toBe("italic")
     expect(gestureFor({ ...plain, key: "i", code: "KeyI", metaKey: true }, "element")).toBe("italic")
     expect(gestureFor({ ...plain, key: "i", code: "KeyI" }, "text")).toBeNull()
@@ -219,16 +215,7 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "i", code: "KeyI", altKey: true }, "element")).toBeNull()
   })
 
-  it("steps a layer's font weight with Figma's Option Command or Ctrl Alt and the angle brackets", () => {
-    const mac = { ...plain, metaKey: true, altKey: true, shiftKey: true }
-    const pc = { ...plain, ctrlKey: true, altKey: true, shiftKey: true }
-  })
-
-  it("steps the selected text's weight with the same keys while typing", () => {
-    const mac = { ...plain, metaKey: true, altKey: true, shiftKey: true }
-  })
-
-  it("resizes a frame to fit with Mod+Alt+Shift+R without colliding with rename or text alignment", () => {
+  it("reads Mod+Alt+R as text right", () => {
     expect(gestureFor({ ...plain, key: "®", code: "KeyR", metaKey: true, altKey: true }, "element")).toBe("text-right")
   })
 })
