@@ -2,7 +2,7 @@ import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { createDoomDeck } from "./doom-deck.js"
-import { memoryDoomRemote } from "./doom-remote.js"
+import { memoryDoomRemote, type DoomRemote } from "./doom-remote.js"
 import { memoryStorage } from "./doom-storage.js"
 
 const id = doom.nodeId
@@ -34,11 +34,11 @@ const start = (name: string): doom.Edit => ({
   ],
 })
 
-async function open(name: string) {
+async function open(name: string, remote: DoomRemote = memoryDoomRemote(start(name)), client = "a") {
   let next = 0
-  const opened = await createDoomDeck(memoryDoomRemote(start(name)), "deck-name", {
-    once: () => `n-${(next += 1)}`,
-    client: "a",
+  const opened = await createDoomDeck(remote, "deck-name", {
+    once: () => `${client}-${(next += 1)}`,
+    client,
     storage: memoryStorage(),
   })
   if (!opened.ok) throw new Error(JSON.stringify(opened))
@@ -54,11 +54,10 @@ const retitle = (_view: doom.Doom, chars: string): doom.Write => ({
 })
 
 describe("a new deck's name", () => {
-  it("follows slide 1's title in the same edit and the same undo step", async () => {
+  it("follows slide 1's title in the same undo step", async () => {
     const opened = await open(doom.blankDeckName)
     expect(opened.push([retitle(opened.view(), "Q3 board update")]).ok).toBe(true)
     expect(nameOf(opened.view())).toBe("Q3 board update")
-    expect(opened.pending()).toHaveLength(1)
     expect(opened.undo().ok).toBe(true)
     expect(nameOf(opened.view())).toBe(doom.blankDeckName)
   })
@@ -67,5 +66,34 @@ describe("a new deck's name", () => {
     const opened = await open("Board pack")
     expect(opened.push([retitle(opened.view(), "Q3 board update")]).ok).toBe(true)
     expect(nameOf(opened.view())).toBe("Board pack")
+  })
+})
+
+describe("a title typed in a tab that is behind", () => {
+  it("keeps the name another tab gave the deck, and keeps the typed title", async () => {
+    const shared = memoryDoomRemote(start(doom.blankDeckName))
+    let release = () => undefined as void
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const slow: DoomRemote = {
+      ...shared,
+      edit: async (body) => {
+        await held
+        return shared.edit(body)
+      },
+    }
+    const behind = await open(doom.blankDeckName, slow, "a")
+    const ahead = await open(doom.blankDeckName, shared, "b")
+    expect(behind.push([retitle(behind.view(), "Stale title")]).ok).toBe(true)
+    expect(ahead.push([{ node: deck, prop: "name", value: "Mine" }]).ok).toBe(true)
+    expect((await ahead.sync()).ok).toBe(true)
+    release()
+    await behind.sync()
+    const server = await shared.open({ deck: "deck-name" })
+    if (!server.ok) throw new Error(JSON.stringify(server))
+    expect(nameOf(server.fold)).toBe("Mine")
+    expect((server.fold.nodes.get(title) as { text?: doom.Text }).text?.chars).toBe("Stale title")
+    expect(behind.notices()).toEqual([])
   })
 })

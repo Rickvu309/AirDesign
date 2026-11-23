@@ -1,8 +1,8 @@
 import { limits } from "./limits.js"
 import { applyEdit } from "./apply-edit.js"
-import type { Author, Doom, Write } from "./doom.js"
+import type { Author, Doom, Node, Write } from "./doom.js"
 import { descendantsOf, get, slidesOf } from "./doom-walk.js"
-import { rev } from "./ids.js"
+import { rev, type NodeId } from "./ids.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { isRefusal } from "./refusal.js"
 
@@ -10,29 +10,53 @@ export const blankDeckName = "Blank deck"
 
 const author: Author = { kind: "person", id: "deck-name" }
 
-function firstTitleOf(doom: Doom): string {
+function firstTitleOf(doom: Doom): { readonly id: NodeId | undefined; readonly chars: string } {
   const first = slidesOf(doom)[0]
-  if (first === undefined) return ""
-  const title = descendantsOf(doom, first.id).find((node) => get(node, "role") === "title")
-  return title === undefined ? "" : (get(title, "text")?.chars ?? "")
+  const title =
+    first === undefined ? undefined : descendantsOf(doom, first.id).find((node) => get(node, "role") === "title")
+  return { id: title?.id, chars: title === undefined ? "" : (get(title, "text")?.chars ?? "") }
 }
 
 const nameOf = (chars: string): string => [...(chars.split("\n")[0] ?? "").trim()].slice(0, limits.name).join("").trim()
 
+const isBlank = (name: unknown): boolean => name === undefined || name === blankDeckName
+
+function nameFollowsTitle(deck: Node): boolean {
+  const flag = get(deck, "nameFollows")
+  return flag ?? isBlank(get(deck, "name"))
+}
+
 export function nameFromTitleWrites(doom: Doom, writes: readonly Write[]): readonly Write[] {
   const deck = [...doom.nodes.values()].find((node) => node.type === "deck")
   if (deck === undefined) return []
-  const before = firstTitleOf(doom)
-  const following = nameOf(before) !== "" && before !== placeholderTitle && deck.name === nameOf(before)
-  if (deck.name !== blankDeckName && !following) return []
+  const ownWrites = writes.filter((write) => write.node === deck.id)
+  const renamed = ownWrites.findLast((write) => write.prop === "name")
+  if (renamed !== undefined) {
+    if (ownWrites.some((write) => write.prop === "nameFollows")) return []
+    const following = isBlank(renamed.value)
+    return get(deck, "nameFollows") === following ? [] : [{ node: deck.id, prop: "nameFollows", value: following }]
+  }
+  const flagged = ownWrites.findLast((write) => write.prop === "nameFollows")
+  if (!(flagged === undefined ? nameFollowsTitle(deck) : flagged.value === true)) return []
   const stamped = writes.map((write) => {
     const was = doom.revs.get(write.node)?.get(write.prop)
     return write.base !== undefined || was === undefined ? write : { ...write, base: was }
   })
   const after = applyEdit(doom, { once: "deck-name", author, writes: stamped, rev: rev(doom.rev + 1) })
   if (isRefusal(after)) return []
-  const chars = firstTitleOf(after)
+  const { id, chars } = firstTitleOf(after)
+  if (!writes.some((write) => write.node === id && write.prop === "text")) return []
   const name = nameOf(chars)
-  if (chars === before || name === "" || chars === placeholderTitle) return []
-  return [{ node: deck.id, prop: "name", value: name }]
+  if (name === "" || chars === placeholderTitle || name === get(deck, "name")) return []
+  const based = (prop: "name" | "nameFollows", value: unknown): Write => {
+    const base = doom.revs.get(deck.id)?.get(prop)
+    return { node: deck.id, prop, value, ...(base === undefined ? {} : { base }) }
+  }
+  const flag = get(deck, "nameFollows") === true || flagged !== undefined ? [] : [based("nameFollows", true)]
+  return [based("name", name), ...flag]
+}
+
+export function deckNameFollows(doom: Doom): boolean {
+  const deck = [...doom.nodes.values()].find((node) => node.type === "deck")
+  return deck !== undefined && nameFollowsTitle(deck)
 }

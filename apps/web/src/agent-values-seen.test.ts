@@ -71,11 +71,24 @@ const seen: Readonly<Record<string, Seen>> = {
   notes: { person: ["notes:slide-notes"] },
   colors: { person: ["panel:theme-colors"] },
   fonts: { person: ["panel:theme-fonts"] },
+  nameFollows: { person: ["strip:deck-name"] },
 }
 
 const owedToPerson = ["text", "align", "layout", "gap", "padding", "icon", "arrow", "chart", "rows", "name", "hidden"]
 
-const structural = new Set(["op", "kind", "add", "move", "delete", "rows", "items", "axes", "colors", "fonts"])
+const structural = new Set([
+  "op",
+  "kind",
+  "add",
+  "move",
+  "delete",
+  "rows",
+  "items",
+  "axes",
+  "colors",
+  "fonts",
+  "nameFollows",
+])
 
 describe("every value an agent sets names where a person sees it and changes it", () => {
   it("names every field of the agent's schema, and every op a person has", () => {

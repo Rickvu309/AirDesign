@@ -13,11 +13,13 @@ export function compileDuplicate(draft: Draft, change: Extract<AgentChange, { op
 
 export function compileDeck(draft: Draft, change: Extract<AgentChange, { op: "deck" }>): void {
   const deck = deckOf(draft.doom) ?? stop("missing")
-  const { name, colors, fonts } = change
-  if (name === undefined && colors === undefined && fonts === undefined) stop("shape", deck.id, "deck")
+  const { name, nameFollows, colors, fonts } = change
+  if (name === undefined && nameFollows === undefined && colors === undefined && fonts === undefined)
+    stop("shape", deck.id, "deck")
   const theme = get(deck, "theme") ?? stop("missing", deck.id, "theme")
   put(draft, deck.id, {
     ...(name === undefined ? {} : { name }),
+    ...(nameFollows === undefined ? {} : { nameFollows }),
     ...(colors === undefined && fonts === undefined
       ? {}
       : {

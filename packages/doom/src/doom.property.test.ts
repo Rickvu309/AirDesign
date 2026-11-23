@@ -21,7 +21,7 @@ type Pick = { readonly node: NodeId; readonly prop: PropName; readonly value: un
 
 const frames = fc.constantFrom(ids.card, ids.side)
 const shapes = fc.constantFrom(ids.title, ids.caption)
-const words = fc.string({ maxLength: 12 })
+const words = fc.string({ minLength: 1, maxLength: 12 }).filter((name) => name.trim() !== "")
 
 const picks: fc.Arbitrary<Pick> = fc.oneof(
   fc.record({ node: frames, prop: fc.constant("name" as const), value: words }),

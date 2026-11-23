@@ -93,6 +93,7 @@ export type AgentLook = {
 }
 export type DeckLook = {
   readonly name?: string
+  readonly nameFollows?: boolean
   readonly colors?: { readonly [K in ColorVar]?: Hex }
   readonly fonts?: { readonly heading?: string; readonly body?: string }
 }
@@ -304,7 +305,10 @@ const lookFields: LookFields = {
     },
     object({ x: px(), y: px(), w: size, h: size }),
   ),
-  name: string(limits.name, "Layer name."),
+  name: field<string>({ type: "string", description: "Layer name." }, (raw) => {
+    const name = words(limits.name, 1)(raw)
+    return name.trim() === "" ? reject() : name
+  }),
   hidden: flag("Hide the layer."),
   size: number(1, 2_000, "Overrides the text style's size, in pixels."),
   font: field(
@@ -395,6 +399,7 @@ const placeFields = {
     },
     object({}, { heading: readFontName, body: readFontName }),
   ),
+  nameFollows: flag("true: the deck's name follows slide 1's title. Setting a name stops it."),
 } as const
 
 const pickFrom = <T extends { readonly [P in keyof T]: Field<unknown> }, K extends keyof T>(
@@ -416,7 +421,7 @@ const readChange = variant("op", {
   delete: object(pickFrom(placeFields, ["nodes"])),
   slide: object({}, pickFrom(placeFields, ["add", "move", "delete"])),
   duplicate: object(pickFrom(placeFields, ["nodes"])),
-  deck: object({}, { ...pickFrom(lookFields, ["name"]), ...pickFrom(placeFields, ["colors", "fonts"]) }),
+  deck: object({}, { ...pickFrom(lookFields, ["name"]), ...pickFrom(placeFields, ["colors", "fonts", "nameFollows"]) }),
 })
 
 export function readAgentChange(raw: unknown): AgentChange | Refusal {
@@ -472,7 +477,7 @@ export const agentChangesSchema = {
         op: {
           enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck"],
           description:
-            "add: kind, slide, into?, look. set: target, look. move: node, into?, after?. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, colors?, fonts?.",
+            "add: kind, slide, into?, look. set: target, look. move: node, into?, after?. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, colors?, fonts?.",
         },
         ...schemasOf(placeFields),
         ...schemasOf(lookFields),

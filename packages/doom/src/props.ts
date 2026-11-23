@@ -83,6 +83,7 @@ export type Props = {
   readonly skipped: boolean
   readonly theme: Theme
   readonly size: { readonly w: Px; readonly h: Px }
+  readonly nameFollows: boolean
   readonly origin: Origin
 }
 export type PropName = keyof Props
@@ -97,7 +98,7 @@ export type PropSpec<K extends PropName> = {
 }
 
 export const accepts = {
-  deck: ["type", "name", "theme", "size"],
+  deck: ["type", "name", "theme", "size", "nameFollows"],
   slideRow: ["type", "parent", "name", "hidden"],
   slide: ["type", "parent", "name", "hidden", "fills", "layout", "slideLayout", "notes", "transition", "skipped"],
   frame: [
@@ -200,7 +201,15 @@ const readOrigin = object({
 export const props: { readonly [K in PropName]: PropSpec<K> } = {
   type: spec(literal(nodeTypes), "none", null, "native"),
   parent: spec(readOptionalParent, "none", null, "native"),
-  name: spec(words(limits.name), "text", "The layer's name in the layers panel.", "native"),
+  name: spec(
+    (raw) => {
+      const name = words(limits.name)(raw)
+      return name.trim() === "" ? reject() : name
+    },
+    "text",
+    "The layer's name in the layers panel.",
+    "native",
+  ),
   hidden: spec(boolean, "toggle", "Whether the layer is hidden.", "native"),
   locked: spec(boolean, "toggle", null, "dropped"),
   box: spec(readBox, "box", "Position, size, rotation and flips on the slide, in pixels.", "native"),
@@ -242,5 +251,6 @@ export const props: { readonly [K in PropName]: PropSpec<K> } = {
   skipped: spec(boolean, "toggle", null, "native"),
   theme: spec(readTheme, "custom", null, "native"),
   size: spec(object({ w: finite(1, 100_000), h: finite(1, 100_000) }), "none", null, "native"),
+  nameFollows: spec(boolean, "none", null, "dropped"),
   origin: spec(readOrigin, "none", null, "dropped"),
 }
