@@ -1,18 +1,19 @@
-import { createRequire } from "node:module"
 import { expect } from "@playwright/test"
-import { largeTextBox } from "../large-text.mjs"
-
-const { connectionCopy } = createRequire(import.meta.url)("../../../../../apps/web/src/copy/connection-copy.ts")
+import { committed, largeTextBox } from "../large-text.mjs"
 
 async function drive(kit) {
+  const { page } = kit
   const element = await largeTextBox(kit)
-  await element.dblclick({ position: { x: 10, y: 10 }, force: true })
-  const editing = element.locator('[contenteditable="true"]')
+  const box = await element.boundingBox()
+  if (box === null) throw new Error("no element box")
+  await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2)
+  const editing = page.locator('[contenteditable="true"]')
   await expect(editing).toBeFocused()
-  await editing.press(connectionCopy.end)
-  await editing.press("!")
-  await editing.press("Escape")
-  await kit.page.waitForTimeout(1500)
+  await committed(kit, async () => {
+    await page.keyboard.press("ControlOrMeta+End")
+    await page.keyboard.press("!")
+    await page.keyboard.press("Escape")
+  })
 }
 
 export default { name: "editor-large-text-typed", design: "/screens/s49-04-editor-errors-unreached", drive }

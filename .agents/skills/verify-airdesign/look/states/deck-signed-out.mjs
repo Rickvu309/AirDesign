@@ -9,7 +9,7 @@ async function drive(kit) {
         body: "<main style='font:16px sans-serif;padding:32px'>Sign in</main>",
       }),
   )
-  await kit.page.goto("/deck/lost-deck")
+  await kit.page.goto("/s/lost-deck")
   await expect(
     kit.page.getByText("Unable to open this deck").or(kit.page.getByText("Sign in", { exact: true })),
   ).toBeVisible()
