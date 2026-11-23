@@ -203,10 +203,47 @@ describe("resolveSlide", () => {
       kind: "line",
       from: { x: 200, y: 0 },
       to: { x: 0, y: 300 },
+      points: [
+        { x: 200, y: 0 },
+        { x: 200, y: 150 },
+        { x: 0, y: 150 },
+        { x: 0, y: 300 },
+      ],
       route: "elbow",
-      leaves: "down",
-      arrives: "down",
       arrows: ["none", "triangle"],
+    })
+  })
+
+  it("keeps an elbow on the side it attaches to, with its stub, and boxes the whole route", () => {
+    const { parts } = resolved([
+      { type: "shape", name: "a", props: { box: spot(500, 100, 100, 100) } },
+      { type: "shape", name: "b", props: { box: spot(100, 100, 100, 100) } },
+      {
+        type: "shape",
+        name: "l",
+        props: (ids: Record<string, string>) =>
+          ({
+            geometry: {
+              kind: "line",
+              start: { node: ids.a, site: "r" },
+              end: { node: ids.b, site: "l" },
+              route: "elbow",
+              arrows: ["none", "arrow"],
+            },
+          }) as never,
+      },
+    ])
+    const line = parts[2]!
+    expect(line.box).toMatchObject({ x: 76, y: 76, w: 548, h: 74 })
+    expect(line.geometry).toMatchObject({
+      points: [
+        { x: 524, y: 74 },
+        { x: 548, y: 74 },
+        { x: 548, y: 0 },
+        { x: 0, y: 0 },
+        { x: 0, y: 74 },
+        { x: 24, y: 74 },
+      ],
     })
   })
 

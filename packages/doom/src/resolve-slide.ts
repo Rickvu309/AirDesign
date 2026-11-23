@@ -1,7 +1,7 @@
 import { deriveChart } from "./derive-chart.js"
 import { deckOf } from "./deck-of.js"
 import type { NodeId } from "./ids.js"
-import { lineEnds } from "./line-ends.js"
+import { lineRoute } from "./line-ends.js"
 import type { Measure } from "./measure.js"
 import { scalePath } from "./path-scale.js"
 import { textArea } from "./preset-geometry.js"
@@ -31,17 +31,14 @@ function geometryOf(context: Context, node: Node, box: Box): ResolvedGeometry {
   if (geometry.kind === "preset") return { kind: "preset", name: geometry.name, adjust: geometry.adjust ?? [] }
   if (geometry.kind === "path") return { kind: "path", d: scalePath(geometry.d, box.w, box.h) }
   const parent = (node as { parent?: { id: NodeId } | null }).parent?.id
-  const { from, to } = lineEnds(context.doom, context.boxes, parent, geometry)
-  const nearer = Math.abs(to.x - from.x) >= Math.abs(to.y - from.y) ? "across" : "down"
-  const facing = (end: typeof geometry.start) =>
-    "node" in end ? (end.site === "t" || end.site === "b" ? "down" : "across") : nearer
+  const { from, to, points } = lineRoute(context.doom, context.boxes, parent, geometry)
+  const local = (point: { readonly x: number; readonly y: number }) => ({ x: point.x - box.x, y: point.y - box.y })
   return {
     kind: "line",
-    from: { x: from.x - box.x, y: from.y - box.y },
-    to: { x: to.x - box.x, y: to.y - box.y },
+    from: local(from),
+    to: local(to),
+    points: points.map(local),
     route: geometry.route,
-    leaves: facing(geometry.start),
-    arrives: facing(geometry.end),
     arrows: geometry.arrows,
   }
 }

@@ -15,7 +15,9 @@ function bodyHit(placed: Placed, local: Point, reach: number): boolean {
   const { geometry } = node
   if (geometry?.kind === "line") {
     const weight = node.stroke?.weight ?? 1
-    return doom.distanceToSegment(local, geometry.from, geometry.to) <= Math.max(reach, weight / 2 + reach / 2)
+    return (
+      doom.routeDistance(geometry.points, geometry.route === "curve", local) <= Math.max(reach, weight / 2 + reach / 2)
+    )
   }
   if (!paints(node)) return false
   if (geometry?.kind === "ellipse") {

@@ -1,7 +1,8 @@
 import type { NodeId } from "./ids.js"
 import type { Box, Point } from "./resolved.js"
 import type { Doom } from "./doom.js"
-import { siteSpot } from "./preset-geometry.js"
+import { curvePoints, elbowPoints, type RouteEnd } from "./line-route.js"
+import { distanceToSegment, siteSpot } from "./preset-geometry.js"
 import type { Props } from "./props.js"
 
 type Line = Extract<NonNullable<Props["geometry"]>, { kind: "line" }>
@@ -21,23 +22,76 @@ function positionOf(doom: Doom, boxes: ReadonlyMap<NodeId, Box>, id: NodeId): Po
   return { x, y }
 }
 
-export function lineEnds(
+export type LineRoute = { readonly from: Point; readonly to: Point; readonly points: readonly Point[] }
+
+export function lineRoute(
   doom: Doom,
   boxes: ReadonlyMap<NodeId, Box>,
   parent: NodeId | undefined,
   line: Line,
-): { readonly from: Point; readonly to: Point } {
+): LineRoute {
   const origin = (parent === undefined ? null : positionOf(doom, boxes, parent)) ?? { x: 0, y: 0 }
-  const resolve = (end: Line["start"]): Point => {
-    if ("x" in end) return { x: end.x, y: end.y }
+  const resolve = (end: Line["start"]): RouteEnd => {
+    if ("x" in end) return { at: { x: end.x, y: end.y }, side: null, around: null }
     const at = positionOf(doom, boxes, end.node)
     const box = boxes.get(end.node)
-    if (at === null || box === undefined) return { x: 0, y: 0 }
+    if (at === null || box === undefined) return { at: { x: 0, y: 0 }, side: null, around: null }
     const geometry = (doom.nodes.get(end.node) as Partial<Props> | undefined)?.geometry
     const spot = siteSpot(geometry, box.w, box.h, end.site)
-    return { x: at.x + spot.x - origin.x, y: at.y + spot.y - origin.y }
+    const x = at.x - origin.x
+    const y = at.y - origin.y
+    return {
+      at: { x: x + spot.x, y: y + spot.y },
+      side: end.site === "c" ? null : end.site,
+      around: { x, y, w: box.w, h: box.h },
+    }
   }
-  return { from: resolve(line.start), to: resolve(line.end) }
+  const start = resolve(line.start)
+  const end = resolve(line.end)
+  const points =
+    line.route === "elbow"
+      ? elbowPoints(start, end)
+      : line.route === "curve"
+        ? curvePoints(start, end)
+        : [start.at, end.at]
+  return { from: start.at, to: end.at, points }
+}
+
+function routeSpots(points: readonly Point[], curved: boolean): readonly Point[] {
+  const [from, pullFrom, pullTo, to] = points
+  return curved && from !== undefined && pullFrom !== undefined && pullTo !== undefined && to !== undefined
+    ? Array.from({ length: 17 }, (_, step) => cubicAt(from, pullFrom, pullTo, to, step / 16))
+    : points
+}
+
+export function routeDistance(points: readonly Point[], curved: boolean, at: Point): number {
+  const spots = routeSpots(points, curved)
+  if (spots.length === 1) return Math.hypot(at.x - spots[0]!.x, at.y - spots[0]!.y)
+  return Math.min(
+    Number.POSITIVE_INFINITY,
+    ...spots.slice(1).map((spot, index) => distanceToSegment(at, spots[index]!, spot)),
+  )
+}
+
+export function routeBox(route: LineRoute, curved: boolean): Box {
+  const spots = routeSpots(route.points, curved)
+  const xs = spots.map((spot) => spot.x)
+  const ys = spots.map((spot) => spot.y)
+  const x = Math.min(...xs)
+  const y = Math.min(...ys)
+  return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y, rotation: 0, flipH: false, flipV: false }
+}
+
+function cubicAt(from: Point, pullFrom: Point, pullTo: Point, to: Point, share: number): Point {
+  const rest = 1 - share
+  const a = rest * rest * rest
+  const b = 3 * rest * rest * share
+  const c = 3 * rest * share * share
+  const d = share * share * share
+  return {
+    x: a * from.x + b * pullFrom.x + c * pullTo.x + d * to.x,
+    y: a * from.y + b * pullFrom.y + c * pullTo.y + d * to.y,
+  }
 }
 
 export function boxBetween(from: Point, to: Point): Box {

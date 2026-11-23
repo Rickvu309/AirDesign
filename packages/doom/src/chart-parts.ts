@@ -57,14 +57,15 @@ export const disc = (id: string, box: Box, color: Hex, ring: Hex | null): Resolv
 
 export const rule = (id: string, from: Point, to: Point, color: Hex, weight: number, opacity: number): Resolved => {
   const box = boxBetween(from, to)
+  const start = { x: from.x - box.x, y: from.y - box.y }
+  const end = { x: to.x - box.x, y: to.y - box.y }
   return {
     ...part(id, box, {
       kind: "line",
-      from: { x: from.x - box.x, y: from.y - box.y },
-      to: { x: to.x - box.x, y: to.y - box.y },
+      from: start,
+      to: end,
+      points: [start, end],
       route: "straight",
-      leaves: "across",
-      arrives: "across",
       arrows: ["none", "none"],
     }),
     strokes: [solid(color, opacity)],

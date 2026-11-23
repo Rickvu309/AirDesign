@@ -1,7 +1,7 @@
 import { deckOf } from "./deck-of.js"
 import type { NodeId } from "./ids.js"
 import type { Align9, Layout, Sizing } from "./layout.js"
-import { boxBetween, lineEnds } from "./line-ends.js"
+import { lineRoute, routeBox } from "./line-ends.js"
 import type { Measure } from "./measure.js"
 import type { Props, PropName } from "./props.js"
 import type { Box } from "./resolved.js"
@@ -303,8 +303,7 @@ function lines(context: Context, boxes: Map<NodeId, Box>, id: NodeId): void {
     if (isLine(child)) {
       const geometry = prop(child, "geometry")
       if (geometry?.kind === "line") {
-        const { from, to } = lineEnds(context.doom, boxes, id, geometry)
-        boxes.set(child.id, boxBetween(from, to))
+        boxes.set(child.id, routeBox(lineRoute(context.doom, boxes, id, geometry), geometry.route === "curve"))
       }
     } else lines(context, boxes, child.id)
   }
