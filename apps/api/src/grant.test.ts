@@ -23,13 +23,13 @@ describe("roles", () => {
     const role = await deck.query<{ role: string }>("select current_user as role")
     expect(role.rows[0]?.role).toBe("deck")
     await expect(deck.query("select email from session.account")).rejects.toThrow(/permission denied/)
-    await expect(listen.query("update deck.saved set revision = revision")).rejects.toThrow(/permission denied/)
+    await expect(listen.query("update deck.doom set rev = rev")).rejects.toThrow(/permission denied/)
     const sync = await deck.query<{ synchronous_commit: string }>("show synchronous_commit")
     expect(sync.rows[0]?.synchronous_commit).toBe("on")
     expect(deck.options.pipeline).not.toBe(true)
   })
 
-  it("keeps the once table from the listen and session roles", async () => {
+  it("keeps the Doom edit table from the listen and session roles", async () => {
     const info = await postgresInfo()
     const listen = new Client({ connectionString: info.listen, application_name: "grant-listen-once" })
     clients.push(listen)
@@ -37,7 +37,7 @@ describe("roles", () => {
     const session = new Client({ connectionString: info.session, application_name: "grant-session-once" })
     clients.push(session)
     await session.connect()
-    await expect(listen.query("select once from deck.once")).rejects.toThrow(/permission denied/)
-    await expect(session.query("select once from deck.once")).rejects.toThrow(/permission denied/)
+    await expect(listen.query("select once from deck.doom_edit")).rejects.toThrow(/permission denied/)
+    await expect(session.query("select once from deck.doom_edit")).rejects.toThrow(/permission denied/)
   })
 })

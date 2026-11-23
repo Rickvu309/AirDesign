@@ -158,9 +158,7 @@ describe("database migrations", () => {
       ["doom_edit", "INSERT SELECT"],
       ["doom_node", noDelete],
       ["media", "DELETE INSERT SELECT"],
-      ["once", full],
       ["original_delete", full],
-      ["saved", noDelete],
     ] as const
     const tables = await admin.query<{ name: string; tableowner: string }>(
       `select schemaname || '.' || tablename as name, tableowner from pg_tables
@@ -181,7 +179,6 @@ describe("database migrations", () => {
     )
     expect(grants.rows).toEqual([
       ...deckRights.map(([table, rights]) => ({ grantee: "deck", name: `deck.${table}`, rights })),
-      { grantee: "listen", name: "deck.saved", rights: "SELECT" },
       ...sessionRights.map(([table, rights]) => ({ grantee: "session", name: `session.${table}`, rights })),
     ])
     const session = await open(roleUrl("session", database))
@@ -226,70 +223,35 @@ describe("database migrations", () => {
     await expect(migrator.query("select id from deck.later")).resolves.toMatchObject({ rowCount: 0 })
   })
 
-  it("adds original storage to a database at migration 1 without changing its decks", async () => {
+  it("drops the old deck tables at migration 25 and queues their stored files, keeping a Doom deck's media", async () => {
     const database = await bootstrappedDatabase()
     const migrator = await open(roleUrl("migrator", database))
-    await applySchema(migrator, [first])
-    await migrator.query(
-      "insert into deck.saved (id, revision, register, owner) values ('kept', 7, '{\"kept\":true}', 'kept@example.com')",
+    await applySchema(
+      migrator,
+      migrations.filter((migration) => migration.id < 25),
     )
-    const before = await migrator.query("select * from deck.saved")
-    expect(await applySchema(migrator)).toEqual({ applied: latest - 1, at: latest })
-    const after = await migrator.query("select * from deck.saved")
-    expect(after.rows).toEqual([
-      {
-        ...before.rows[0],
-        original_key: null,
-        original_bytes: null,
-        original_sha256: null,
-        original_stored: false,
-        original_until: null,
-        deleted: null,
-        import_index: null,
-        starred: false,
-      },
-    ])
-    const deck = await open(roleUrl("deck", database))
-    await expect(
-      deck.query("insert into deck.original_delete (key, owner) values ('retry', 'kept@example.com')"),
-    ).resolves.toMatchObject({ rowCount: 1 })
-  })
-
-  it("marks deleted decks in a database at migration 2 and keeps every deck as it was", async () => {
-    const database = await bootstrappedDatabase()
-    const migrator = await open(roleUrl("migrator", database))
-    await applySchema(migrator, migrations.slice(0, 2))
+    await migrator.query("insert into session.account (email) values ('kept@example.com')")
     await migrator.query(
-      `insert into deck.saved (id, revision, register, owner, name, trashed, original_key, original_bytes, original_sha256, original_stored)
-       values ('live', 3, '{"live":true}', 'kept@example.com', 'Plan', null, null, null, null, false),
-              ('binned', 7, '{"binned":true}', 'kept@example.com', '', now(), 'originals/k', 21, 'ab', true)`,
+      `insert into deck.saved (id, revision, register, owner, original_key, original_bytes, original_sha256, original_stored)
+       values ('old', 3, '{"old":true}', 'kept@example.com', 'originals/old', 21, 'ab', true)`,
     )
     await migrator.query(
-      "insert into deck.once (email, deck, once, revision, notify) values ('kept@example.com', 'live', 'k', 3, 'live:3')",
+      "insert into deck.once (email, deck, once, revision, notify) values ('kept@example.com', 'old', 'k', 3, 'old:3')",
     )
-    const before = await migrator.query("select * from deck.saved order by id")
-    const kept = await migrator.query("select * from deck.once")
-    expect(await applySchema(migrator)).toEqual({ applied: latest - 2, at: latest })
-    const after = await migrator.query("select * from deck.saved order by id")
-    expect(after.rows).toEqual(
-      before.rows.map((row: Record<string, unknown>) => ({
-        ...row,
-        deleted: null,
-        import_index: null,
-        starred: false,
-      })),
+    await migrator.query("insert into deck.doom (id, owner, rev) values ('fresh', 'kept@example.com', 1)")
+    await migrator.query(
+      `insert into deck.media (key, deck, sha256, bytes)
+       values ('media/old', 'old', 'aa', 5), ('media/fresh', 'fresh', 'bb', 6)`,
     )
-    expect((await migrator.query("select * from deck.once")).rows).toMatchObject(kept.rows)
-    const deck = await open(roleUrl("deck", database))
-    await expect(deck.query("delete from deck.saved where id = 'live'")).rejects.toThrow(/permission denied/)
-    await expect(deck.query("update deck.saved set deleted = now() where id = 'live'")).rejects.toThrow(
-      /saved_deleted_empty/,
+    expect(await applySchema(migrator)).toEqual({ applied: 1, at: latest })
+    const gone = await migrator.query<{ saved: string | null; once: string | null }>(
+      "select to_regclass('deck.saved')::text as saved, to_regclass('deck.once')::text as once",
     )
-    await expect(
-      deck.query(
-        "insert into deck.saved (id, revision, register, owner) values ('blank', 0, null, 'kept@example.com')",
-      ),
-    ).rejects.toThrow(/saved_live_register/)
+    expect(gone.rows).toEqual([{ saved: null, once: null }])
+    const queued = await migrator.query<{ key: string }>("select key from deck.original_delete order by key")
+    expect(queued.rows.map((row) => row.key)).toEqual(["media/old", "originals/old"])
+    const media = await migrator.query<{ key: string }>("select key from deck.media order by key")
+    expect(media.rows.map((row) => row.key)).toEqual(["media/fresh"])
   })
 
   it("rolls a failed migration back, records nothing, and applies it on the next run", async () => {

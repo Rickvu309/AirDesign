@@ -88,13 +88,7 @@ it("deletes every row and stored file of the account, refuses its credentials, a
   const other = await fillAccount(served, admin, "stay@example.com")
   const before = await personalRows(admin, person)
   const otherRows = await personalRows(admin, other)
-  expect(emptied(before)).toEqual([
-    "session.aira_ask",
-    "session.agent_turn",
-    "deck.saved",
-    "deck.once",
-    "deck.original_delete",
-  ])
+  expect(emptied(before)).toEqual(["session.aira_ask", "session.agent_turn", "deck.original_delete"])
   expect(await mcpStatus(served, person.access)).toBe(200)
 
   const deleted = await deleteAccount({ email: " Gone@Example.com " }, person.cookie)

@@ -166,10 +166,7 @@ describe("database setup", () => {
     try {
       await session.query("insert into session.account (email) values ('a@example.com')")
       await expect(deck.query("select email from session.account")).rejects.toThrow(/permission denied/)
-      await expect(listen.query("select id from deck.saved")).resolves.toMatchObject({ rowCount: 0 })
-      await expect(
-        listen.query("insert into deck.saved (id, revision, register, owner) values ('d', 1, '{}', 'a@example.com')"),
-      ).rejects.toThrow(/permission denied/)
+      await expect(listen.query("select id from deck.doom")).rejects.toThrow(/permission denied/)
     } finally {
       await Promise.all([session.end(), deck.end(), listen.end()])
     }
