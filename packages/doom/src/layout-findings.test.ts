@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { block, label, measure, plainTheme, spot } from "./doom-fixtures-art.js"
 import { type TreeNode, doomFromTree } from "./doom-tree.js"
-import { layoutFindings } from "./layout-findings.js"
+import { layoutFindings, touchedSlides } from "./layout-findings.js"
 
 const filled = { fills: [{ kind: "solid", color: { var: "accent1" } }] }
 const fixed = { resize: "fixed" } as const
@@ -117,5 +117,13 @@ describe("layout findings: what a slide paints wrong, measured with the deck's f
         label("note", "Margin held", { box: spot(1000, 200, 800, 60) }),
       ]).findings,
     ).toEqual([])
+  })
+
+  it("lays out every slide again for a deck write that moves words, and none for a rename", () => {
+    const grown = doomFromTree({ theme: plainTheme, slides: [{ children: [] }, { children: [] }] })
+    const deck = [...grown.doom.nodes.values()].find((node) => node.type === "deck")!.id
+    expect(touchedSlides(grown.doom, grown.doom, [{ node: deck, prop: "theme.fonts.body" }])).toEqual(grown.slides)
+    expect(touchedSlides(grown.doom, grown.doom, [{ node: deck, prop: "name" }])).toEqual([])
+    expect(touchedSlides(grown.doom, grown.doom, [{ node: deck, prop: "theme.colors.accent1" }])).toEqual([])
   })
 })

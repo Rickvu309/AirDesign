@@ -64,7 +64,8 @@ describe("layout findings in the answers, measured by the host with the deck's f
     expect(landed.ok).toBe(true)
     const answer = landed.answer as { rev: number; note: string; added: { id: string }[]; findings: Found[] }
     expect(answer.rev).toBe(rev + 1)
-    expect(answer.findings).toMatchObject([{ code: "overlap", node: title, with: answer.added[0]!.id }])
+    expect(answer.findings).toMatchObject([{ code: "overlap", node: title }])
+    expect(answer.findings[0]!.note).toContain(answer.added[0]!.id)
     expect(answer.note).toContain("fix it unless the person asked for it")
   })
 
@@ -98,11 +99,11 @@ describe("layout findings in the answers, measured by the host with the deck's f
       changes: [{ op: "add", kind: "shape", slide: slides[0], box: { x: 160, y: 700, w: 400, h: 100 } }],
     })
     expect(landed.answer).not.toHaveProperty("findings")
-    expect(String(landed.answer.note)).toContain("Laid out with the deck's own fonts, no words overflow or overlap")
+    expect(String(landed.answer.note)).toContain("Layout clear: no overflow, overlap, off-slide or small text.")
   })
 
-  it("says the layout went unchecked when the host could not read the deck's fonts, and lands the edit", async () => {
-    const call = agent(async () => undefined)
+  const unchecked = async (measure: DeckHost["measure"]) => {
+    const call = agent(measure)
     const { deck, rev, slides } = (await call("create_deck", {})).answer as {
       deck: string
       rev: number
@@ -111,10 +112,44 @@ describe("layout findings in the answers, measured by the host with the deck's f
     const landed = await call("edit_deck", {
       deck,
       base: rev,
-      changes: [{ op: "add", kind: "shape", slide: slides[0], box: { x: 160, y: 400, w: 400, h: 100 } }],
+      changes: [{ op: "add", kind: "shape", slide: slides[0], box: { x: 160, y: 700, w: 400, h: 100 } }],
     })
     expect(landed.ok).toBe(true)
     expect(landed.answer).not.toHaveProperty("findings")
-    expect(String(landed.answer.note)).toContain("The layout went unchecked")
+    return String(landed.answer.note)
+  }
+
+  it("lands the edit and says why the layout went unchecked: fonts, glyphs, time or a fault", async () => {
+    expect(await unchecked(async () => "fonts")).toContain(
+      "The layout went unchecked: the deck's fonts could not be read",
+    )
+    expect(await unchecked(async () => "glyphs")).toContain("its fonts have no letters for")
+    expect(await unchecked(async () => "time")).toContain("the fonts took too long to load")
+    expect(await unchecked(async () => estimate)).toContain("Layout clear")
+    expect(
+      await unchecked(async () => () => {
+        throw new Error("measure broke")
+      }),
+    ).toContain("The layout went unchecked: it could not be worked out")
+  })
+
+  it("lists at most ten findings and says how many more the read holds", async () => {
+    const call = agent()
+    const { deck, rev, slides } = (await call("create_deck", {})).answer as {
+      deck: string
+      rev: number
+      slides: string[]
+    }
+    const off = Array.from({ length: 12 }, (_, at) => ({
+      op: "add",
+      kind: "shape",
+      slide: slides[0],
+      box: { x: 1850, y: at * 80, w: 200, h: 60 },
+    }))
+    const landed = await call("edit_deck", { deck, base: rev, changes: off })
+    const answer = landed.answer as { note: string; findings: Found[] }
+    expect(answer.findings).toHaveLength(10)
+    expect(answer.findings[0]).toEqual({ code: "off-slide", node: expect.any(String), note: expect.any(String) })
+    expect(answer.note).toContain("2 more findings")
   })
 })

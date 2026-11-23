@@ -2,7 +2,7 @@ import { readDeckEdit, readNamedDeck } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import { answered, hostRefused, refused, doomRefused, type ToolResult } from "./answer.js"
-import { type Findings, findingsNote, layoutOf } from "./layout-answer.js"
+import { type Findings, findingsNote, layoutOf, listed } from "./layout-answer.js"
 import type { DeckHost } from "./deck-host.js"
 import { imageNames, imageProblem, imagesPerCall, pictureSizes, withAssets, type NamedImages } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
@@ -61,7 +61,7 @@ function landedAnswer(
     (each) => `${each.id} ${each.kind}${each.change === undefined ? "" : ` (change ${String(each.change)})`}`,
   )
   const lead = `Landed at rev ${String(rev)}${added.length === 0 ? "" : `, adding ${words.join(", ")}`}. Send runId with your next edits, and to airdesign_stop_run when done.`
-  const found = findings.findings.length === 0 ? {} : { findings: findings.findings }
+  const found = findings.findings.length === 0 ? {} : { findings: listed(findings.findings) }
   return answered([lead, ...findingsNote(findings)].join(" "), {
     ok: true,
     deck,
@@ -94,7 +94,7 @@ export async function editDeckTool(raw: unknown, agent: Agent, once: string, hos
     const slides = doom.touchedSlides(
       opened.fold,
       opened.fold,
-      roots.map((root) => root.id as doom.NodeId),
+      roots.map((root) => ({ node: root.id as doom.NodeId, prop: "type" as const })),
     )
     return landedAnswer(opened.deck, before, run, roots, await layoutOf(host, opened.fold, slides))
   }
@@ -125,11 +125,7 @@ export async function editDeckTool(raw: unknown, agent: Agent, once: string, hos
   if ("refused" in compiled) return doomRefused(compiled, { rev: opened.rev })
   const landed = await host.edit(parsed.deck, compiled.edit)
   if (!landed.ok) return hostRefused(landed)
-  const slides = doom.touchedSlides(
-    opened.fold,
-    compiled.after,
-    compiled.edit.writes.map((write) => write.node),
-  )
+  const slides = doom.touchedSlides(opened.fold, compiled.after, compiled.edit.writes)
   const laid = await layoutOf(host, compiled.after, slides)
   return landedAnswer(landed.deck, landed.rev, run, rootsOfEdit(compiled.edit, compiled.added), {
     findings: [...compiled.findings, ...laid.findings],

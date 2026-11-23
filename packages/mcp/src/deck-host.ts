@@ -13,13 +13,15 @@ export type Listed = {
 }
 export type Landed = { readonly ok: true; readonly deck: DeckId; readonly rev: number }
 
+export type Unmeasured = "fonts" | "glyphs" | "time"
+
 export type DeckHost = {
   readonly list: (cursor: DeckId | undefined) => Promise<Listed | DoomRefusal>
   readonly create: (name: string, once: string) => Promise<Opened | DoomRefusal>
   readonly open: (deck: DeckId) => Promise<Opened | DoomRefusal>
   readonly edit: (deck: DeckId, edit: doom.Edit) => Promise<Landed | DoomRefusal>
   readonly images?: (deck: DeckId, names: readonly string[]) => Promise<NamedImages>
-  readonly measure?: (fold: doom.Doom) => Promise<doom.Measure | undefined>
+  readonly measure?: (fold: doom.Doom) => Promise<doom.Measure | Unmeasured>
   readonly pictures?: (
     deck: DeckId,
     fold: doom.Doom,

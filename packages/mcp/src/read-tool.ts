@@ -3,7 +3,7 @@ import * as doom from "@airdesign/doom"
 
 import { answered, hostRefused, refused, told, type ToolImage, type ToolResult } from "./answer.js"
 import type { DeckHost, Opened } from "./deck-host.js"
-import { type Laid, layoutOf, readFindingsNote } from "./layout-answer.js"
+import { type Laid, layoutOf, listed, readFindingsNote } from "./layout-answer.js"
 import { withOtherRuns } from "./other-runs.js"
 
 const readBytes = 24_000
@@ -110,7 +110,7 @@ export function readAnswer(opened: Opened, query: Query, laid?: Laid): ToolResul
   if (!picked.ok) return picked.result
   const { chosen, next } = picked
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
-  const found = laid === undefined || laid.findings.length === 0 ? {} : { findings: laid.findings }
+  const found = laid === undefined || laid.findings.length === 0 ? {} : { findings: listed(laid.findings) }
   const answer = {
     ok: true,
     deck: opened.deck,
