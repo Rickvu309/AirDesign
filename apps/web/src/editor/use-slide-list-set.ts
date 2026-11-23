@@ -1,8 +1,18 @@
 import { limits } from "@airdesign/doom"
-import { useLayoutEffect, useState, type RefObject } from "react"
+import { useLayoutEffect, useRef, useState, type RefObject } from "react"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { gridDrop, gridGroups, gridMoveMessage } from "@/editor/grid-drop"
-import { heldOf, heldSlides, livePick, pressedPick, type HeldSlides, type SlidePress } from "@/editor/slide-list-pick"
+import {
+  heldOf,
+  heldSlides,
+  livePick,
+  pressedPick,
+  setStepOf,
+  turnedPick,
+  type HeldSlides,
+  type SetStep,
+  type SlidePress,
+} from "@/editor/slide-list-pick"
 import type { SlideKey } from "@/editor/slide-keys"
 import type { SlideMenuSet } from "@/editor/slide-menu"
 import { setMoveAt, slideSetAction } from "@/editor/slide-set-actions"
@@ -12,10 +22,12 @@ export function useSlideListSet(
   strip: SlideStrip,
   {
     following,
+    list,
     announce,
     onSlideSelection,
   }: {
     following: RefObject<boolean>
+    list: RefObject<HTMLElement | null>
     announce: (text: string) => void
     onSlideSelection: ((count: number) => void) | undefined
   },
@@ -31,6 +43,16 @@ export function useSlideListSet(
     onSelection?.(slides)
     onSlideSelection?.(slides.length)
   }, [onSelection, onSlideSelection, heldKey])
+  const step = useRef<SetStep | null>(null)
+  useLayoutEffect(() => {
+    const turned = step.current === null ? null : turnedPick(step.current, ids)
+    if (turned === null) return
+    setPicked(turned.pick)
+    const at = turned.current === undefined ? -1 : ids.findIndex((id) => id === turned.current)
+    if (at === -1) return
+    if (list.current?.contains(document.activeElement) === true) following.current = true
+    strip.onSelect(at)
+  })
   const press = (index: number, how: SlidePress) => {
     const next = pressedPick(live, index, strip.current, how)
     setPicked(heldOf(next.pick, ids))
@@ -51,7 +73,13 @@ export function useSlideListSet(
     },
     pick: (slides) => {
       const [anchor] = slides
-      setPicked(anchor === undefined ? null : { anchor, slides: new Set(slides) })
+      const made = anchor === undefined ? null : { anchor, slides: new Set(slides) }
+      step.current = setStepOf(
+        ids,
+        { pick: heldOf(live, ids), current: ids[strip.current] },
+        { pick: made, current: anchor },
+      )
+      setPicked(made)
     },
     moveSlides,
     announce,

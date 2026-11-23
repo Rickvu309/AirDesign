@@ -1,5 +1,5 @@
 import { SlideItem } from "@/editor/slide-list-item"
-import { Filmstrip } from "@airdesign/render"
+import { Filmstrip, gestureFor } from "@airdesign/render"
 import type { GridSide } from "@airdesign/document"
 import type { NodeId } from "@airdesign/doom"
 import {
@@ -116,6 +116,11 @@ function rovedTo(key: string, count: number, at: number): number {
   return key === "Home" ? 0 : count - 1
 }
 
+function movesWithHistory(event: KeyboardEvent): boolean {
+  const gesture = gestureFor(event.nativeEvent, "editor")
+  return gesture === "undo" || gesture === "redo"
+}
+
 function onListKey(event: KeyboardEvent<HTMLDivElement>, strip: SlideStrip, drop: () => void) {
   if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
   if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return
@@ -160,6 +165,7 @@ function DeckStrip({
   useSlideSay(strip.say, announce)
   const { held, press, moveSlides, inSet, setChange, menuSet, drop } = useSlideListSet(strip, {
     following,
+    list,
     announce,
     onSlideSelection,
   })
@@ -271,7 +277,7 @@ function DeckStrip({
         }}
         onKeyDown={(event) => onListKey(event, strip, drop)}
         onKeyDownCapture={(event) => {
-          if (slideKey(event) !== null) following.current = true
+          if (slideKey(event) !== null || movesWithHistory(event)) following.current = true
         }}
         onDropCapture={() => {
           following.current = true
