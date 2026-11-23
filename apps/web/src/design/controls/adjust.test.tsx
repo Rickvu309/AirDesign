@@ -15,9 +15,6 @@ function painted(preset: string, value: Readonly<Record<string, number>>): strin
     mixed: false,
     inherited: false,
     reset: null,
-    change: () => {
-      throw new Error("unused")
-    },
   })
   return renderToStaticMarkup(
     createElement(AdjustControl, {

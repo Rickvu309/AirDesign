@@ -43,8 +43,6 @@ export type InputName<T extends TraitName> = keyof InputKinds<T> & string
 export type FieldValue<T extends TraitName, F extends FieldName<T>> = ValueOf<FieldKinds<T>[F]>
 export type TraitValue<T extends TraitName> = { readonly [F in FieldName<T>]: FieldValue<T, F> }
 export type FieldKey = { [T in TraitName]: `${T}.${FieldName<T>}` }[TraitName]
-export type InheritableField<T extends TraitName> = (typeof traits)[T]["inheritable"][number] &
-  (FieldName<T> | InputName<T>)
 
 export type SlotField<T extends TraitName> = (typeof traits)[T]["slots"][number] & FieldName<T>
 

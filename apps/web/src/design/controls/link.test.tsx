@@ -92,9 +92,6 @@ it("marks an address it cannot use as invalid and says why, beside the field", a
       mixed: false,
       inherited: false,
       reset: null,
-      change: () => {
-        throw new Error("unused")
-      },
     }),
     slides: ["s:1"],
   }
