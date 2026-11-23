@@ -2,7 +2,6 @@ import { randomBytes } from "node:crypto"
 import { request as httpRequest } from "node:http"
 
 import { catalog, onceMeta, projectTools, doomRoutes } from "@airdesign/catalog"
-import { limits } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
@@ -514,13 +513,13 @@ describe("mcp route", () => {
     const cookie = await sign(address("size"))
     const padded = (size: number) =>
       JSON.stringify({ ...listCall, params: { ...listCall.params, pad: "x".repeat(size) } })
-    const over = padded(limits.body)
-    expect(Buffer.byteLength(over)).toBeGreaterThan(limits.body)
+    const over = padded(doom.limits.body)
+    expect(Buffer.byteLength(over)).toBeGreaterThan(doom.limits.body)
     const blocked = await posted(base, { cookie }, over)
     expect(blocked.status).toBe(413)
     expect(JSON.parse(blocked.text)).toEqual({ ok: false, refusal: "size" })
-    const under = padded(limits.body - Buffer.byteLength(padded(0)) - 1)
-    expect(Buffer.byteLength(under)).toBe(limits.body - 1)
+    const under = padded(doom.limits.body - Buffer.byteLength(padded(0)) - 1)
+    expect(Buffer.byteLength(under)).toBe(doom.limits.body - 1)
     expect((await posted(base, { cookie }, under)).status).toBe(200)
   })
 

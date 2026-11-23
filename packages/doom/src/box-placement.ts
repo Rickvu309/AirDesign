@@ -1,5 +1,4 @@
 type Box = { readonly x: number; readonly y: number; readonly cx: number; readonly cy: number }
-type PixelSize = { readonly width: number; readonly height: number }
 
 export type PlacementArea = { readonly width: number; readonly height: number }
 
@@ -8,7 +7,6 @@ const heightShare = 0.12
 const marginShare = 0.04
 const stepShare = 0.03
 const strokeReachShare = 0.02
-const fittedShare = 0.2
 
 function ascending(left: number, right: number): number {
   return left - right
@@ -114,43 +112,4 @@ export function placeNewBox(
   const best = clearAreas(area, taken).find((free) => free.cx >= size.cx && free.cy >= size.cy)
   if (best !== undefined) return centredIn(best, size)
   return offsetFromTaken(area, centred(area, size), present(area, taken))
-}
-
-function shrunk(free: Box, size: Size): Size {
-  const scale = Math.min(1, free.cx / size.cx, free.cy / size.cy)
-  return { cx: Math.max(1, Math.floor(size.cx * scale)), cy: Math.max(1, Math.floor(size.cy * scale)) }
-}
-
-export function fitNewBox(area: PlacementArea, taken: readonly Box[], size: Size, floor = fittedShare): Box {
-  const areas = clearAreas(area, taken)
-  if (areas.some((free) => free.cx >= size.cx && free.cy >= size.cy)) return placeNewBox(area, taken, size)
-  const smallest = Math.round(area.height * floor)
-  const gap = Math.round(area.height * strokeReachShare)
-  const fits = areas
-    .map((each) => ({ x: each.x + gap, y: each.y + gap, cx: each.cx - 2 * gap, cy: each.cy - 2 * gap }))
-    .filter((free) => free.cx > 0 && free.cy > 0)
-    .map((free) => ({ free, fitted: shrunk(free, size) }))
-    .filter(({ fitted }) => Math.min(fitted.cx, fitted.cy) >= smallest)
-    .sort((left, right) => right.fitted.cx * right.fitted.cy - left.fitted.cx * left.fitted.cy)[0]
-  if (fits === undefined) return placeNewBox(area, taken, size)
-  return centredIn(fits.free, fits.fitted)
-}
-
-const emuPerPixel = 9525
-const pictureShare = 0.9
-
-export function pictureSize(natural: PixelSize, area: PlacementArea): Size {
-  const width = Math.max(1, natural.width) * emuPerPixel
-  const height = Math.max(1, natural.height) * emuPerPixel
-  const scale = Math.min(1, (area.width * pictureShare) / width, (area.height * pictureShare) / height)
-  return { cx: Math.max(1, Math.round(width * scale)), cy: Math.max(1, Math.round(height * scale)) }
-}
-
-export function fittedInside(box: Box, natural: PixelSize): Box {
-  const scale = Math.min(box.cx / Math.max(1, natural.width), box.cy / Math.max(1, natural.height))
-  const size = {
-    cx: Math.max(1, Math.round(Math.max(1, natural.width) * scale)),
-    cy: Math.max(1, Math.round(Math.max(1, natural.height) * scale)),
-  }
-  return centredIn(box, size)
 }
