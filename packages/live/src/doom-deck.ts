@@ -43,7 +43,7 @@ export type DoomDeck = {
   notices(): readonly Notice[]
   clearNotices(): void
   mint(): doom.NodeId
-  push(writes: readonly doom.Write[], options?: { readonly author?: doom.Author }): Pushed
+  push(writes: readonly doom.Write[], options?: { readonly author?: doom.Author; readonly step?: string }): Pushed
   undo(): Turned
   redo(): Turned
   undoRun(run: string): Promise<TurnedRun>
@@ -64,7 +64,12 @@ export type DoomOptions = {
   readonly pause?: (ms: number) => Promise<void>
 }
 
-type Step = { readonly once: string; readonly before: doom.Doom; readonly writes: readonly doom.Write[] }
+type Step = {
+  readonly onces: readonly string[]
+  readonly before: doom.Doom
+  readonly writes: readonly doom.Write[]
+  readonly key?: string
+}
 
 const retryMilliseconds = 2_000
 const watchedRuns = 20
@@ -144,7 +149,11 @@ function connected(
   }
 
   function forget(gone: readonly string[]) {
-    const out = (steps: Step[]) => steps.filter((step) => !gone.includes(step.once))
+    const out = (steps: Step[]) =>
+      steps.flatMap((step) => {
+        const onces = step.onces.filter((once) => !gone.includes(once))
+        return onces.length === 0 ? [] : [{ ...step, onces }]
+      })
     undoSteps = out(undoSteps)
     redoSteps = out(redoSteps)
   }
@@ -338,21 +347,29 @@ function connected(
   }
 
   function turn(from: Step[], to: Step[]): Turned {
-    const step = from.pop()
-    if (step === undefined) return { ok: false, reason: "nothing" }
-    const at = revOf(step.once)
-    if (at === undefined) return { ok: false, reason: "nothing" }
+    const step = from.at(-1)
+    const last = step?.onces.at(-1)
+    if (step === undefined || last === undefined) return { ok: false, reason: "nothing" }
+    const at = revOf(last)
+    if (at === undefined) {
+      from.pop()
+      return { ok: false, reason: "nothing" }
+    }
     const now = view()
     const owned = new Set<doom.Rev>()
-    for (const name of turned) {
+    for (const name of [...turned, ...step.onces]) {
       const turnedAt = revOf(name)
       if (turnedAt !== undefined) owned.add(turnedAt)
     }
-    const writes = doom.invert(step.before, now, { once: step.once, author, writes: step.writes, rev: at }, owned)
-    if (writes.length === 0) return { ok: false, reason: "nothing" }
+    const writes = doom.invert(step.before, now, { once: last, author, writes: step.writes, rev: at }, owned)
+    if (writes.length === 0) {
+      from.pop()
+      return { ok: false, reason: "nothing" }
+    }
     const pushed = pushEdit(writes, author)
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
-    to.push({ once: pushed.once, before: now, writes })
+    from.pop()
+    to.push({ onces: [pushed.once], before: now, writes })
     turned.push(pushed.once)
     if (turned.length > 500) turned.shift()
     return { ok: true, once: pushed.once, saved: pushed.saved }
@@ -407,7 +424,7 @@ function connected(
     if (writes.length === 0) return { ok: false, reason: "nothing" }
     const pushed = pushEdit(writes, author)
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
-    redoSteps.push({ once: pushed.once, before: now, writes })
+    redoSteps.push({ onces: [pushed.once], before: now, writes })
     turned.push(pushed.once)
     if (turned.length > 500) turned.shift()
     return { ok: true, once: pushed.once, saved: pushed.saved }
@@ -461,7 +478,20 @@ function connected(
       const writes = [...given, ...doom.nameFromTitleWrites(view(), given)]
       const pushed = pushEdit(writes, pushing?.author ?? author)
       if (!pushed.ok) return pushed
-      undoSteps.push({ once: pushed.once, before: pushed.before!, writes })
+      const open = undoSteps.at(-1)
+      if (pushing?.step !== undefined && open?.key === pushing.step && redoSteps.length === 0)
+        undoSteps[undoSteps.length - 1] = {
+          ...open,
+          onces: [...open.onces, pushed.once],
+          writes: [...open.writes, ...writes],
+        }
+      else
+        undoSteps.push({
+          onces: [pushed.once],
+          before: pushed.before!,
+          writes,
+          ...(pushing?.step === undefined ? {} : { key: pushing.step }),
+        })
       redoSteps = []
       return { ok: true, once: pushed.once, saved: pushed.saved }
     },

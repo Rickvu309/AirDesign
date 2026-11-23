@@ -194,7 +194,7 @@ test("Ctrl+A inside bulleted words selects every bullet, and typing replaces the
   await expect.poll(async () => (await textOf(stack, opened, "t:1"))?.chars).toBe("Only")
 })
 
-test("pasted words keep their line breaks, and undo while typing takes back the last words typed", async ({
+test("pasted words keep their line breaks, and undo while typing takes back the whole text edit", async ({
   page,
   context,
   stack,
@@ -230,7 +230,7 @@ test("pasted words keep their line breaks, and undo while typing takes back the 
   await page.keyboard.type("??")
   await page.keyboard.press("ControlOrMeta+z")
   await expect(editor(page)).toHaveCount(0)
-  await expect.poll(async () => (await textOf(stack, opened, "t:1"))?.chars).toBe("firsttwo\nthree!")
+  await expect.poll(async () => (await textOf(stack, opened, "t:1"))?.chars).toBe("firsttwo\nthree")
 })
 
 test("the text bar sets the named style and Underline for the selected words", async ({ page, context, stack }) => {
