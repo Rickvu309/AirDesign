@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentEdit, readingOf } from "./agent-edit.js"
 import { agentDeck, minter, richDeck, runName, started } from "./agent-fixtures.js"
-import { type Doom, applyEdit, isRefusal, rev } from "./index.js"
-import { agent, ids, land, person, revOf, sampleDeck, textOf } from "./sample-deck.js"
+import { type Doom, applyEdit, isRefusal, nodeId, rev } from "./index.js"
+import { agent, create, ids, land, person, revOf, sampleDeck, textOf } from "./sample-deck.js"
 import { get } from "./doom-walk.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
@@ -81,6 +81,19 @@ describe("compileAgentEdit", () => {
       by(),
     )
     expect(result).toEqual({ refused: "missing", node: "z:9", field: "target", change: "set z:9", at: 1 })
+  })
+
+  it("refuses a move into a layer under a frame an earlier change of the same edit deleted", () => {
+    const [inner, innermost] = [nodeId("t:90"), nodeId("t:91")]
+    const nested = started(
+      land(sampleDeck(), [...create(inner, "frame", ids.card), ...create(innermost, "frame", inner)]),
+    )
+    const result = compileAgentEdit(
+      nested,
+      [change({ op: "delete", nodes: [inner] }), change({ op: "move", node: ids.card, into: innermost })],
+      by(),
+    )
+    expect(result).toEqual({ refused: "missing", node: ids.card, prop: "parent", change: `move ${ids.card}`, at: 1 })
   })
 
   it("is refused run-fenced for a run that has not started, naming the first change", () => {

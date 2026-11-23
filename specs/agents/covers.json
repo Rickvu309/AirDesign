@@ -28,8 +28,8 @@
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["guardRun", "landEdit", "protect"],
-      "digest": "a232bf9f8ada",
-      "blob": "4c3815f1225ca49040369277dd778885efad3f3d"
+      "digest": "d2b22631d111",
+      "blob": "311b6762d6dd2da0e237cb3c03ae24f97603f334"
     },
     {
       "file": "packages/mcp/src/admit.ts",

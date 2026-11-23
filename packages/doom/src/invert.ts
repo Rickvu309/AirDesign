@@ -1,6 +1,7 @@
 import type { NodeId, Rev } from "./ids.js"
 import type { PropName, WriteKey } from "./props.js"
 import type { Landed, Doom, Write } from "./doom.js"
+import { onStandingLayers } from "./standing-layers.js"
 import { type Theme as ThemeValue, type ThemeKey, themeKeys, themeValueAt } from "./theme.js"
 
 function keysOf(edit: Landed): readonly { readonly node: NodeId; readonly key: WriteKey }[] {
@@ -51,20 +52,4 @@ export function invert(before: Doom, after: Doom, edit: Landed, owned: ReadonlyS
     ...standing.filter((each) => each.prop !== "parent"),
     ...standing.filter((each) => each.prop === "parent" && each.value === null),
   ]
-}
-
-const deletedIn = (doom: Doom, node: NodeId) =>
-  (doom.nodes.get(node) as { parent?: { readonly id: NodeId } | null } | undefined)?.parent === null
-
-function onStandingLayers(after: Doom, writes: readonly Write[]): readonly Write[] {
-  let kept = writes
-  for (;;) {
-    const placed = new Set(kept.flatMap((each) => (each.prop === "parent" && each.value !== null ? [each.node] : [])))
-    const stands = (node: NodeId) => placed.has(node) || !deletedIn(after, node)
-    const next = kept.filter((each) =>
-      each.prop !== "parent" ? stands(each.node) : each.value === null || stands((each.value as { id: NodeId }).id),
-    )
-    if (next.length === kept.length) return next
-    kept = next
-  }
 }

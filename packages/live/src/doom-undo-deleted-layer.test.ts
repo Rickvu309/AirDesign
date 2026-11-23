@@ -6,7 +6,7 @@ import { memoryDoomRemote } from "./doom-remote.js"
 import { memoryStorage } from "./doom-storage.js"
 
 const id = doom.nodeId
-const [deckNode, row, slide, title, card, outer, side] = [
+const [deckNode, row, slide, title, card, outer, side, group, inner] = [
   id("g:1"),
   id("g:2"),
   id("g:3"),
@@ -14,6 +14,8 @@ const [deckNode, row, slide, title, card, outer, side] = [
   id("g:5"),
   id("g:6"),
   id("g:7"),
+  id("g:8"),
+  id("g:9"),
 ] as const
 const at = (parent: doom.NodeId) => ({ id: parent, at: orderKeyBetween(null, null) })
 const words = (chars: string): doom.Text => ({
@@ -46,6 +48,10 @@ const start: doom.Edit = {
     { node: outer, prop: "parent", value: at(slide) },
     { node: side, prop: "type", value: "frame" },
     { node: side, prop: "parent", value: at(slide) },
+    { node: group, prop: "type", value: "frame" },
+    { node: group, prop: "parent", value: at(outer) },
+    { node: inner, prop: "type", value: "frame" },
+    { node: inner, prop: "parent", value: at(group) },
   ],
 }
 
@@ -121,6 +127,21 @@ describe("an undo of a step on a layer another tab deleted", () => {
     expect(mine.undo()).toEqual({ ok: false, reason: "nothing" })
     expect(mine.undo().ok).toBe(true)
     expect(xOf(mine.view(), card)).toBe(0)
+  })
+
+  it("leaves a frame where it is when putting it back would put it inside itself, and the next undo goes on", async () => {
+    const { mine, fromTheirs } = await tabs()
+    expect(mine.push([{ node: card, prop: "box", value: placed(10) }]).ok).toBe(true)
+    expect(mine.push([{ node: inner, prop: "parent", value: at(side) }]).ok).toBe(true)
+    expect(mine.push([{ node: group, prop: "parent", value: at(inner) }]).ok).toBe(true)
+    await fromTheirs([{ node: outer, prop: "parent", value: null }])
+    expect(mine.undo()).toEqual({ ok: false, reason: "nothing" })
+    expect(mine.undo()).toEqual({ ok: false, reason: "nothing" })
+    expect([parentOf(mine.view(), inner), parentOf(mine.view(), group)]).toEqual([side, inner])
+    expect(mine.undo().ok).toBe(true)
+    expect(xOf(mine.view(), card)).toBe(0)
+    expect(await mine.sync()).toEqual({ ok: true })
+    expect(xOf(mine.server(), card)).toBe(0)
   })
 
   it("does nothing on a redo of it, and the next redo puts back the step above", async () => {

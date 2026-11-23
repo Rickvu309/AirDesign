@@ -98,6 +98,16 @@ function reaches(work: Working, from: NodeId, target: NodeId): boolean {
   return false
 }
 
+function underLayerDeletedHere(work: Working, doom: Doom, from: NodeId): boolean {
+  let at: NodeId | undefined = from
+  for (let hops = 0; at !== undefined && hops <= work.nodes.size; hops += 1) {
+    const now = work.nodes.get(at)
+    if (now !== undefined && deleted(now)) return parentOf(doom.nodes.get(at)) !== null
+    at = parentOf(now)?.id
+  }
+  return false
+}
+
 function place(work: Working, node: Node, value: Parent | null, at: Rev): void {
   const was = parentOf(node)
   const next = setProp(work, node, "parent", value, at)
@@ -167,7 +177,8 @@ function write(work: Working, doom: Doom, landed: Landed, raw: Write, known: Kno
     const parent = value as Parent | null
     if (parent !== null) {
       const target = work.nodes.get(parent.id)
-      if (target === undefined || deleted(target)) return refuse("missing", id, key)
+      if (target === undefined || deleted(target) || underLayerDeletedHere(work, doom, parent.id))
+        return refuse("missing", id, key)
       if (!(holds[target.type] as readonly NodeType[]).includes(node.type)) return refuse("shape", id, key)
       if (reaches(work, parent.id, id)) return refuse("cycle", id, key)
     }

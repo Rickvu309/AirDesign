@@ -3,6 +3,7 @@ import { readLanded } from "./fold-json.js"
 import { type NodeId, type Rev, readNodeId, readRev } from "./ids.js"
 import type { PropName, WriteKey } from "./props.js"
 import { readWriteKey } from "./read-write.js"
+import { onStandingLayers } from "./standing-layers.js"
 import { type Refusal, isRefusal, refuse } from "./refusal.js"
 import { type Theme, type ThemeKey, themeKeys, themeValueAt } from "./theme.js"
 
@@ -97,7 +98,7 @@ function settle(now: Doom, edits: readonly Landed[], mine: ReadonlySet<Rev>, res
     .filter(({ cell }) => cell.key === "parent" || !gone(cell.node))
     .map(({ cell, value, base }) => ({ node: cell.node, prop: cell.key, value, base }))
   const roots = [...kept].filter((node) => !kept.has(parentIn(now, node) as NodeId))
-  return { writes: ordered(now, writes), kept: roots }
+  return { writes: ordered(now, onStandingLayers(now, writes)), kept: roots }
 }
 
 function writerOf(now: Doom, edits: readonly Landed[], mine: ReadonlySet<Rev>, cell: Cell): Rev | undefined {
