@@ -58,6 +58,7 @@ export function DoomCanvas(props: {
   readonly notice: ThinNotice | null
   readonly onTryAgain: (notice: ThinNotice) => void
   readonly onTyping?: (writes: readonly doom.Write[], slide: doom.NodeId | undefined) => void
+  readonly onExport: () => void
 }) {
   const { client, view, slide, selection, onSelection, tool, onTool, zoom, scale, room, overlay } = props
   const stage = useRef<HTMLDivElement>(null)
@@ -238,10 +239,15 @@ export function DoomCanvas(props: {
   useLayoutEffect(() => {
     latestInserts.current = inserts
   })
+  const latestExport = useRef(props.onExport)
+  useEffect(() => {
+    latestExport.current = props.onExport
+  })
   const run = useMemo(
     () => ({
       chart: (kind: doom.Chart["kind"]) => latestInserts.current.chart(kind),
       icon: (name: string) => latestInserts.current.icon(name),
+      exportPdf: () => latestExport.current(),
     }),
     [],
   )

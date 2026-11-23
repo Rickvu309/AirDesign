@@ -220,7 +220,15 @@ export const gestures = [
   { id: "tool-move", group: "tools", keys: [{ key: "v" }], where: ["editor"] },
   { id: "tool-hand", group: "tools", keys: [{ key: "h" }], where: ["editor"] },
   { id: "tool-text", group: "tools", keys: [{ key: "t" }], where: ["editor", "slides"] },
-  { id: "actions", group: "tools", keys: [{ key: "k", mod: true }], where: ["editor"] },
+  {
+    id: "actions",
+    group: "tools",
+    keys: [
+      { key: "k", mod: true },
+      { key: "p", mod: true },
+    ],
+    where: ["editor"],
+  },
   { id: "tool-frame", group: "tools", keys: [{ key: "f" }], where: ["editor", "slides"] },
   { id: "tool-rectangle", group: "tools", keys: [{ key: "r" }], where: ["editor", "slides"] },
   { id: "tool-ellipse", group: "tools", keys: [{ key: "o" }], where: ["editor", "slides"] },
