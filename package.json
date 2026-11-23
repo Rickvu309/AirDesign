@@ -12,6 +12,7 @@
     "gate": "node scripts/gate.mjs",
     "rules": "node scripts/rules.mjs",
     "sweep": "node scripts/sweep.mjs",
+    "dead-code": "node scripts/dead-code.mjs",
     "detach": "node scripts/detach.mjs",
     "new:package": "node scripts/new-package.mjs",
     "lint": "pnpm -r --if-present run lint && node tooling/oxlint-plugin-airdesign/lint-tree.js",
@@ -47,6 +48,7 @@
     "railway": "3.16.0",
     "ts-packwerk": "0.1.3",
     "typescript": "catalog:",
+    "typescript-api": "npm:typescript@6.0.3",
     "vitest": "5.1.0",
     "yaml": "^2.9.1"
   }
