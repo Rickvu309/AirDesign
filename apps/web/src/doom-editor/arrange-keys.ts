@@ -28,7 +28,6 @@ function pasteTarget(view: doom.Doom, selection: Selection, slide: doom.NodeId):
 }
 
 function landed(context: ArrangeContext, writes: readonly doom.Write[], selected?: readonly doom.NodeId[]) {
-  if (writes.length === 0) return
   if (!context.client.push(writes).ok) return
   if (selected !== undefined) context.onSelection({ ids: selected, inside: context.selection.inside })
 }

@@ -60,6 +60,36 @@ test("a corner handle resizes, a side handle moves one edge, and one undo takes 
   await expect.poll(async () => (await boxOf()).w).toBe(300)
 })
 
+test("a resize dragged back to where it began changes nothing, so one undo takes back the resize before it", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("resize", "undo")
+  const opened = await openDoomEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(200, 600, 300, 150), fills: accent } },
+  ])
+  const boxOf = async () => (await savedNode(stack, opened, "t:1"))?.box as Saved
+  await clickSlide(page, 350, 675)
+  const corner = await gripCentre(page, "bottom-right")
+  await dragFrom(page, corner, { x: corner.x + 80, y: corner.y + 40 })
+  await expect.poll(async () => (await boxOf()).w).toBeGreaterThan(380)
+  const grown = await boxOf()
+
+  const moved = await gripCentre(page, "bottom-right")
+  await page.mouse.move(moved.x, moved.y)
+  await page.mouse.down()
+  await page.mouse.move(moved.x + 120, moved.y + 60, { steps: 8 })
+  await page.mouse.move(moved.x, moved.y, { steps: 8 })
+  await page.mouse.up()
+  await expect(page.locator("[data-size-label]")).toContainText(String(grown.w))
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await boxOf()).w).toBe(300)
+  expect(await boxOf()).toMatchObject({ x: 200, y: 600, h: 150 })
+})
+
 test("Alt resizes from the centre and Shift keeps the proportions", async ({ page, context, stack }) => {
   covers("resize")
   const opened = await openDoomEditor(page, context, stack)

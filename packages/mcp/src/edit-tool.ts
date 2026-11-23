@@ -72,6 +72,20 @@ function landedAnswer(
   })
 }
 
+function unchangedAnswer(deck: string, rev: number, run: string | undefined): ToolResult {
+  const lead = `Nothing landed: the deck already holds every value you set, so it stays at rev ${String(rev)}.`
+  const next =
+    run === undefined ? "No run started." : "Send runId with your next edits, and to airdesign_stop_run when done."
+  return answered(`${lead} ${next}`, {
+    ok: true,
+    deck,
+    rev,
+    unchanged: true,
+    ...(run === undefined ? {} : { runId: run }),
+    added: [],
+  })
+}
+
 export type Agent = { readonly id: string; readonly name?: string | undefined }
 
 export async function editDeckTool(raw: unknown, agent: Agent, once: string, host: DeckHost): Promise<ToolResult> {
@@ -124,6 +138,7 @@ export async function editDeckTool(raw: unknown, agent: Agent, once: string, hos
     ...(parsed.runId === undefined ? { phase: "start" as const } : {}),
   })
   if ("refused" in compiled) return doomRefused(compiled, { rev: opened.rev })
+  if (compiled.edit.writes.length === 0) return unchangedAnswer(opened.deck, opened.rev, parsed.runId)
   const landed = await host.edit(parsed.deck, compiled.edit)
   if (!landed.ok) return hostRefused(landed)
   const laid = await layoutOf(host, compiled.after, () =>

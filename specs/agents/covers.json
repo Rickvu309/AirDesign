@@ -5,19 +5,19 @@
       "file": "apps/api/src/oauth/agent-key.ts",
       "names": ["agentKey"],
       "digest": "16e4990149b1",
-      "blob": "7a7e56261c8ddbe61730eb109fcfc5eca0820592"
+      "blob": "d8f33975031316b411511bc93880448f4c11eb59"
     },
     {
       "file": "apps/api/src/server.ts",
       "names": ["caller", "mcpRoute"],
-      "digest": "895bb494bd41",
-      "blob": "48c27a91fa4d692492a26ef71c649490067d22ec"
+      "digest": "5b2238fda3b9",
+      "blob": "dddfb64d921a074e4160c50d06c5b696cd25a6d7"
     },
     {
       "file": "packages/mcp/src/edit-tool.ts",
       "names": ["editDeckTool"],
-      "digest": "482ccb58df95",
-      "blob": "71eb05472ef14bc36c1093f637ae5041dfb20952"
+      "digest": "1c1d9de79ade",
+      "blob": "bfaff3fd54afec7a2456a27fe6e9e425a32f2ed1"
     },
     {
       "file": "packages/mcp/src/stop-tool.ts",
@@ -28,14 +28,14 @@
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["guardRun", "landEdit", "protect"],
-      "digest": "165c6b530105",
-      "blob": "e2331922b5ba9f59aa2e3314860b12780aa3843c"
+      "digest": "a232bf9f8ada",
+      "blob": "4c3815f1225ca49040369277dd778885efad3f3d"
     },
     {
       "file": "packages/mcp/src/admit.ts",
       "names": ["admit"],
       "digest": "377d192d10b0",
-      "blob": "365adece74c0a22752dc7b4a66d5fdebae1ade18"
+      "blob": "818df813c146ff4bd5acad3208cc3060f53faa67"
     }
   ]
 }

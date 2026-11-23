@@ -246,6 +246,23 @@ describe("edit_deck", () => {
     expect((third.answer as { runId: string }).runId).not.toBe(runId)
   })
 
+  it("lands nothing and answers unchanged for an edit that sets only values the deck already holds", async () => {
+    const by = agent()
+    const { deck, rev, slides } = await created(by)
+    const set = [{ op: "set", target: `${slides[0]!}.title`, text: "Same" }]
+    const first = await by.call("edit_deck", edit(deck, rev, set))
+    const { runId } = first.answer as { runId: string }
+    const runs = by.decks.decks.get(deck as never)!.runs.size
+    const again = await by.call("edit_deck", edit(deck, rev + 1, set, runId))
+    expect(again.answer).toMatchObject({ ok: true, unchanged: true, rev: rev + 1, runId })
+    const fresh = await by.call("edit_deck", edit(deck, rev + 1, set))
+    expect(fresh.answer).toMatchObject({ ok: true, unchanged: true, rev: rev + 1 })
+    expect(fresh.answer).not.toHaveProperty("runId")
+    const fold = by.decks.decks.get(deck as never)!
+    expect(fold.rev).toBe(rev + 1)
+    expect(fold.runs.size).toBe(runs)
+  })
+
   it("lands none of a batch when one change is refused, and names the change, its place and the field", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)

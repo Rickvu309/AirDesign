@@ -82,13 +82,11 @@ export function useSlideStrip(props: {
     onMove: (from, to) => {
       const slide = slides[from]
       if (slide === undefined) return
-      const writes = moveSlideWrites(view, [slide], to > from ? to + 1 : to)
-      if (writes.length > 0) client.push(writes)
+      client.push(moveSlideWrites(view, [slide], to > from ? to + 1 : to))
       onCurrent(slide)
     },
     onMoveMany: (held, at) => {
-      const writes = moveSlideWrites(view, pick(held), at)
-      if (writes.length > 0) client.push(writes)
+      client.push(moveSlideWrites(view, pick(held), at))
     },
     onChangeSet: (change, held) => {
       if (change === "remove") {
