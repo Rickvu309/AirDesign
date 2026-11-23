@@ -39,6 +39,15 @@ describe("compileAgentEdit", () => {
     expect(get((landed as Doom).nodes.get(result.added[0]!.id)!, "text")?.chars).toBe("Board update Q3")
   })
 
+  it("names the delete that left no slide when it is not the first change", () => {
+    const result = compileAgentEdit(
+      agentDeck(),
+      [change({ op: "set", target: ids.title, text: "A" }), change({ op: "slide", delete: ids.slide })],
+      by(),
+    )
+    expect(result).toMatchObject({ refused: "last-slide", change: "slide delete", at: 1 })
+  })
+
   it("labels a slide added with its change and the kind slide", () => {
     const result = compileAgentEdit(
       agentDeck(),
