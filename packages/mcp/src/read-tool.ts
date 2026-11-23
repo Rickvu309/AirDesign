@@ -41,8 +41,9 @@ async function withPictures(read: ToolResult, opened: Opened, slides: readonly d
 }
 
 function themeOf(fold: doom.Doom) {
-  const { colors, fonts } = doom.deckOf(fold).theme
-  return { colors, fonts }
+  const { colors, fonts, textStyles } = doom.deckOf(fold).theme
+  const sizes = Object.fromEntries(Object.entries(textStyles).map(([name, style]) => [name, style.size]))
+  return { colors, fonts, sizes }
 }
 
 const lead = (opened: Opened, count: number) =>

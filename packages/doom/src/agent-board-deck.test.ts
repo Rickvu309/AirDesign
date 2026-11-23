@@ -127,20 +127,20 @@ describe("the board deck on the slide type scale", () => {
     for (const slide of slides) expect(Math.min(...sizesOn(slide))).toBeGreaterThanOrEqual(24)
   })
 
-  it("sets every slide title at 88 px", () => {
+  it("sets every slide title at 56 px", () => {
     for (const slide of slides.slice(1)) {
       const title = childrenOf(doom, slide).find((node) => get(node, "role") === "title")!
-      expect(sizeOf(title)).toBeGreaterThanOrEqual(88)
+      expect(sizeOf(title)).toBe(56)
     }
   })
 
-  it("sets a KPI as a number of 128 px or more over a label and a note of 28 px or more", () => {
+  it("sets a KPI as a number of 80 px over a label and a note of 24 px", () => {
     const row = childrenOf(doom, slides[1]!).find((node) => get(node, "name") === "KPI")!
     for (const card of childrenOf(doom, row.id)) {
       const [label, number, note] = childrenOf(doom, card.id).map((node) => sizeOf(node)!)
-      expect(number).toBeGreaterThanOrEqual(128)
-      expect(label).toBeGreaterThanOrEqual(28)
-      expect(note).toBeGreaterThanOrEqual(28)
+      expect(number).toBe(80)
+      expect(label).toBe(24)
+      expect(note).toBe(24)
     }
   })
 
@@ -158,8 +158,8 @@ describe("the board deck on the slide type scale", () => {
     const decision = childrenOf(doom, slides[1]!).find((node) => get(node, "name") === "Decision")!
     const card = childrenOf(doom, decision.id)[0]!
     const [heading, points] = childrenOf(doom, card.id).map((node) => sizeOf(node)!)
-    expect(heading).toBe(64)
-    expect(points).toBe(48)
+    expect(heading).toBe(40)
+    expect(points).toBe(32)
     const box = get(decision, "box")!
     expect(box.y + box.h).toBeLessThanOrEqual(1000)
   })

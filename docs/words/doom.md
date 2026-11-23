@@ -35,7 +35,7 @@ One entry of `fills` or `strokes`: solid, gradient or image. A picture is a shap
 _Avoid_: fill kind, image node
 
 **theme**:
-The deck's colour variables, heading and body fonts, named text styles and effect styles. A property bound to a colour variable follows the theme; applying a template writes the theme. A new deck's text styles are the slide type scale for 1920 by 1080: big number 160, title 88, heading 64, body 48, body 2 40, caption 36 and label 36, none under 24.
+The deck's colour variables, heading and body fonts, named text styles and effect styles. A property bound to a colour variable follows the theme; applying a template writes the theme. A new deck's text styles are the consulting type scale for 1920 by 1080, 2 px a point: big number 80, title 56, heading 40, body 32, body 2 28, caption 24 and label 24, none under 24.
 _Avoid_: template style, palette
 
 ## Changing a deck
