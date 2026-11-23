@@ -101,7 +101,28 @@ describe("textToMarkdown", () => {
   it("writes each paragraph on its own line and an empty paragraph as a blank line", () => {
     expect(textToMarkdown(read("one\ntwo"))).toBe("one\ntwo")
     expect(textToMarkdown(read("one\n\ntwo"))).toBe("one\n\ntwo")
-    expect(textToMarkdown(read("- a\n\n- b"))).toBe("- a\n\n- b")
+    expect(textToMarkdown(read("- a\n\nb"))).toBe("- a\n\nb")
+  })
+
+  it("reads a loose list, items apart by blank lines, as the same list as a tight one", () => {
+    expect(read("- a\n\n- b")).toEqual(read("- a\n- b"))
+    expect(read("1. a\n\n2. b\n\n3. c")).toEqual(read("1. a\n2. b\n3. c"))
+    expect(textToMarkdown(read("1. a\n\n2. b\n\n3. c"))).toBe("1. a\n2. b\n3. c")
+  })
+
+  it("reads a loose nested list as one list, back out to its parent level too", () => {
+    expect(read("- a\n\n  - b\n\n- c")).toEqual(read("- a\n  - b\n- c"))
+    expect(read("1. a\n\n   - b\n\n2. c").paras).toEqual([
+      { list: "number" },
+      { list: "bullet", level: 1 },
+      { list: "number" },
+    ])
+  })
+
+  it("keeps a blank line between a list and a paragraph, and between two kinds of list", () => {
+    expect(read("- a\n\nAfter").paras).toEqual([{ list: "bullet" }, {}, {}])
+    expect(read("Before\n\n- a").paras).toEqual([{}, {}, { list: "bullet" }])
+    expect(read("- a\n\n1. b").paras).toEqual([{ list: "bullet" }, {}, { list: "number" }])
   })
 
   it("numbers a list from one and starts again after a break", () => {
@@ -188,8 +209,20 @@ describe("markdown round trip", () => {
   it("gives back the same text for any paragraphs of plain, bold, italic and linked words, and empty ones between", () => {
     fc.assert(
       fc.property(fc.array(paragraph, { minLength: 1, maxLength: 4 }), (drawn) => {
-        const paragraphs = drawn.map((each) => (each.runs.length === 0 ? { runs: [], level: 0 } : each))
+        const paragraphs: readonly Paragraph[] = drawn.map((each) =>
+          each.runs.length === 0 ? { runs: [], level: 0 } : each,
+        )
         fc.pre(paragraphs[0]!.runs.length > 0 && paragraphs.at(-1)!.runs.length > 0)
+        const filled = paragraphs.filter((each) => each.runs.length > 0)
+        fc.pre(
+          filled.every(
+            (each, at) =>
+              at === 0 ||
+              each.list === undefined ||
+              filled[at - 1]!.list === undefined ||
+              paragraphs.indexOf(each) === paragraphs.indexOf(filled[at - 1]!) + 1,
+          ),
+        )
         const text = textOfParagraphs(paragraphs)
         const markdown = textToMarkdown(text as never)
         expect(textFromMarkdown(markdown, "body")).toEqual(text)

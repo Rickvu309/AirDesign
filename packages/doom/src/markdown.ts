@@ -101,14 +101,38 @@ function inline(source: string, base: Look): readonly Piece[] {
   return pieces
 }
 
+type Item = { readonly kind: "bullet" | "number"; readonly level: number }
+
+function itemOf(line: string): Item | undefined {
+  const found = listLine.exec(line)
+  if (found === null) return undefined
+  const level = Math.min(maxLevel, Math.floor((found[1]?.length ?? 0) / 2))
+  return { kind: (found[2] as string).endsWith(".") ? "number" : "bullet", level }
+}
+
+function inLooseList(lines: readonly string[], at: number, blank: (line: string) => boolean): boolean {
+  const before = lines.slice(0, at).findLast((line) => !blank(line))
+  const after = lines.slice(at + 1).find((line) => !blank(line))
+  const next = after === undefined ? undefined : itemOf(after)
+  if (before === undefined || next === undefined || itemOf(before) === undefined) return false
+  if (next.level > itemOf(before)!.level) return true
+  const sibling = lines
+    .slice(0, at)
+    .map(itemOf)
+    .findLast((item) => item !== undefined && item.level <= next.level)
+  return sibling !== undefined && sibling.level === next.level && sibling.kind === next.kind
+}
+
 export function textFromMarkdown(markdown: string, style: TextStyleName): Text {
   const lines = markdown.replace(/\t/g, "  ").split(/\r?\n/)
   const blank = (line: string) => line.trim() === ""
   const first = lines.findIndex((line) => !blank(line))
   const last = lines.findLastIndex((line) => !blank(line))
+  const kept = first < 0 ? [] : lines.slice(first, last + 1)
   const paras: Para[] = []
   const pieces: Piece[] = []
-  for (const line of first < 0 ? [] : lines.slice(first, last + 1)) {
+  for (const [at, line] of kept.entries()) {
+    if (blank(line) && inLooseList(kept, at, blank)) continue
     const found = listLine.exec(line)
     const body = found === null ? line.trimStart() : (found[3] as string)
     const parsed = blank(line) ? [] : inline(body, plain)
