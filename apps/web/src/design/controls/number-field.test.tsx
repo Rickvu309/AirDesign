@@ -24,9 +24,6 @@ function percent(value: number, extra: Partial<PanelControl["look"]>): PanelCont
     mixed: false,
     inherited: false,
     reset: null,
-    change: () => {
-      throw new Error("unused")
-    },
   })
   return { ...control, look: { ...control.look, ...extra } }
 }
@@ -73,9 +70,6 @@ it("shows a border width without a point suffix while keeping its stored value",
     mixed: false,
     inherited: false,
     reset: null,
-    change: () => {
-      throw new Error("unused")
-    },
   })
   const html = renderToStaticMarkup(
     createElement(NumberField, {
@@ -102,9 +96,6 @@ it("leads the opacity value with its glyph and keeps its percentage", () => {
     mixed: false,
     inherited: false,
     reset: null,
-    change: () => {
-      throw new Error("unused")
-    },
   })
   const html = renderToStaticMarkup(
     createElement(NumberField, {
@@ -131,9 +122,6 @@ function lineHeight(value: number): PanelControl {
       mixed: false,
       inherited: false,
       reset: null,
-      change: () => {
-        throw new Error("unused")
-      },
     }),
     typed: { auto: 100, points: 100 / 24 },
   }

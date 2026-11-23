@@ -1,4 +1,5 @@
-import { mediaTypes, pastedMedia, type MediaType } from "@airdesign/document"
+import { pastedMedia } from "@airdesign/document"
+import { mediaTypes, type MediaType } from "@airdesign/doom"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { partOf, relsOf } from "./package-address.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"

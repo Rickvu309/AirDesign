@@ -56,9 +56,8 @@ export { widestEffect } from "./trait-effects.js"
 export { readTextFill, type TextFill } from "./text-fill.js"
 export { iconWeights, paintSlots, patternPresets, type Overlay, type Paint } from "./trait-fills.js"
 export { nameBytes } from "./trait-identity.js"
-export { assetIcon, assetMedia, mediaTypes, type Media, type MediaType } from "./asset-ref.js"
+export { assetIcon, assetMedia, type Media } from "./asset-ref.js"
 
-export { mediaSize, mediaTypeOf, overPixelLimit } from "./media-bytes.js"
 export {
   arrowheads,
   arrowSizes,
@@ -95,7 +94,6 @@ export {
   type SlideCommand,
   type SlideState,
 } from "./slide-order.js"
-export { format, formatOf } from "./format.js"
 export {
   alphaOf,
   bareTransforms,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { mediaSize, mediaTypeOf, overPixelLimit } from "./media-bytes.js"
+import { limits } from "./limits.js"
+import { mediaSize, mediaTypeOf, mediaTypes, overPixelLimit } from "./media-bytes.js"
 
 function png(width: number, height: number): Uint8Array {
   const bytes = new Uint8Array(24)
@@ -55,4 +56,10 @@ describe("an image's type and size read from its bytes", () => {
     expect(overPixelLimit({ width: 8000, height: 5000 })).toBe(false)
     expect(overPixelLimit({ width: 8000, height: 5001 })).toBe(true)
   })
+})
+
+it("accepts PNG, JPEG and GIF and keeps one picture under its own limit", () => {
+  expect(mediaTypes).toEqual(["image/png", "image/jpeg", "image/gif"])
+  expect(limits.media).toBe(10_000_000)
+  expect(limits.media).toBeLessThan(limits.bytes)
 })

@@ -25,7 +25,6 @@ export { NodeArt } from "./node-art.js"
 export { TextLines } from "./node-text.js"
 export { DoomSlide, SlidePaint, useDoomSlide } from "./doom-slide.js"
 export { singleLineHeight } from "./text-look.js"
-export type { PaintBox } from "./paint-box.js"
 export { type TextFormatting } from "./text-formatting.js"
 export {
   arrowOf,

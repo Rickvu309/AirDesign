@@ -3,7 +3,6 @@ import {
   appendIndex,
   designKeys,
   elementId,
-  format,
   indexDue,
   indexKeys,
   readIndexPage,
@@ -14,7 +13,7 @@ import {
   type IndexPage,
 } from "./index.js"
 import { limits } from "@airdesign/doom"
-import { stamps } from "./format.js"
+import { format, stamps } from "./format.js"
 
 const box = { x: 1, y: 2, cx: 3, cy: 4 }
 const page: IndexPage = {

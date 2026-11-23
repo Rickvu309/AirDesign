@@ -231,9 +231,6 @@ importers:
       '@airdesign/catalog':
         specifier: workspace:*
         version: link:../../packages/catalog
-      '@airdesign/document':
-        specifier: workspace:*
-        version: link:../../packages/document
       '@airdesign/doom':
         specifier: workspace:*
         version: link:../../packages/doom
@@ -485,9 +482,6 @@ importers:
       '@airdesign/catalog':
         specifier: workspace:*
         version: link:../catalog
-      '@airdesign/document':
-        specifier: workspace:*
-        version: link:../document
       '@airdesign/doom':
         specifier: workspace:*
         version: link:../doom

@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@airdesign/catalog": "workspace:*",
-    "@airdesign/document": "workspace:*",
     "@airdesign/doom": "workspace:*"
   },
   "devDependencies": {

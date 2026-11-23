@@ -26,7 +26,7 @@ export function unresolvedAssets(
   return [...found]
 }
 
-type Pictures = SlidePictures<doom.NodeId>
+type Pictures = SlidePictures
 
 export async function reportSlidePictures(args: {
   readonly view: doom.Doom

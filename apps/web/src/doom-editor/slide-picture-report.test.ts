@@ -15,10 +15,10 @@ function twoSlides() {
 }
 
 function recorder(missing: (index: number) => readonly doom.NodeId[]) {
-  const sent: { keys: string[]; images: SlidePictures<doom.NodeId>["images"] }[] = []
+  const sent: { keys: string[]; images: SlidePictures["images"] }[] = []
   return {
     sent,
-    send: async (pictures: SlidePictures<doom.NodeId>) => {
+    send: async (pictures: SlidePictures) => {
       sent.push({ keys: pictures.keys.map((each) => each.slide), images: pictures.images })
       return missing(sent.length - 1)
     },

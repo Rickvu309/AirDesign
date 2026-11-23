@@ -1,4 +1,6 @@
-import type { Box, ElementId } from "@airdesign/document"
+import type * as doom from "@airdesign/doom"
+
+type Box = Pick<doom.Box, "x" | "y" | "w" | "h">
 
 export type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right"
 
@@ -29,7 +31,7 @@ export type FlippableLayer = RotatedLayer & {
 
 export type FlipAxis = "horizontal" | "vertical"
 
-export type FlippedLayer<K = ElementId> = {
+export type FlippedLayer<K> = {
   readonly id: K
   readonly box?: Box
   readonly rotation?: number
@@ -37,7 +39,7 @@ export type FlippedLayer<K = ElementId> = {
   readonly flipV?: boolean
 }
 
-export type SelectionResize<K = ElementId> = {
+export type SelectionResize<K> = {
   readonly frame: Box
   readonly boxes: ReadonlyMap<K, Box>
 }
@@ -88,18 +90,18 @@ function clampedSide(size: number, delta: number): number {
 
 function constrainedSize(
   start: Box,
-  freeCx: number,
-  freeCy: number,
+  freeW: number,
+  freeH: number,
   sx: -1 | 0 | 1,
   sy: -1 | 0 | 1,
-): { readonly cx: number; readonly cy: number } {
-  if (start.cx <= 0 || start.cy <= 0) return { cx: freeCx, cy: freeCy }
-  const across = freeCx / start.cx
-  const down = freeCy / start.cy
+): { readonly w: number; readonly h: number } {
+  if (start.w <= 0 || start.h <= 0) return { w: freeW, h: freeH }
+  const across = freeW / start.w
+  const down = freeH / start.h
   const chosen =
     sx !== 0 && sy !== 0 ? (Math.abs(across - 1) >= Math.abs(down - 1) ? across : down) : sx !== 0 ? across : down
   const scale = Math.max(chosen, 0)
-  return { cx: Math.round(start.cx * scale), cy: Math.round(start.cy * scale) }
+  return { w: Math.round(start.w * scale), h: Math.round(start.h * scale) }
 }
 
 export function resizeBox(
@@ -115,20 +117,20 @@ export function resizeBox(
   const ldy = Math.round(own.y)
   const { sx, sy } = gripSigns(grip)
   const factor = modifiers.fromCenter ? 2 : 1
-  const freeCx = sx === 0 ? start.cx : clampedSide(start.cx, sx * ldx * factor)
-  const freeCy = sy === 0 ? start.cy : clampedSide(start.cy, sy * ldy * factor)
-  const { cx, cy } = modifiers.keepRatio ? constrainedSize(start, freeCx, freeCy, sx, sy) : { cx: freeCx, cy: freeCy }
+  const freeW = sx === 0 ? start.w : clampedSide(start.w, sx * ldx * factor)
+  const freeH = sy === 0 ? start.h : clampedSide(start.h, sy * ldy * factor)
+  const { w, h } = modifiers.keepRatio ? constrainedSize(start, freeW, freeH, sx, sy) : { w: freeW, h: freeH }
   const ax = modifiers.fromCenter ? 0 : -sx
   const ay = modifiers.fromCenter ? 0 : -sy
-  const oldAnchor = { x: (ax * start.cx) / 2, y: (ay * start.cy) / 2 }
-  const newAnchor = { x: (ax * cx) / 2, y: (ay * cy) / 2 }
+  const oldAnchor = { x: (ax * start.w) / 2, y: (ay * start.h) / 2 }
+  const newAnchor = { x: (ax * w) / 2, y: (ay * h) / 2 }
   const kept = rotation === 0 ? oldAnchor : rotatePoint(oldAnchor, rotation)
   const next = rotation === 0 ? newAnchor : rotatePoint(newAnchor, rotation)
   return {
-    x: Math.round(start.x + start.cx / 2 + kept.x - next.x - cx / 2),
-    y: Math.round(start.y + start.cy / 2 + kept.y - next.y - cy / 2),
-    cx,
-    cy,
+    x: Math.round(start.x + start.w / 2 + kept.x - next.x - w / 2),
+    y: Math.round(start.y + start.h / 2 + kept.y - next.y - h / 2),
+    w,
+    h,
   }
 }
 
@@ -139,9 +141,9 @@ export function visualBounds(box: Box, rotation: number): Box {
   const cos = Math.abs(Math.cos(radians))
   const sin = Math.abs(Math.sin(radians))
   const square = angle % 90 === 0
-  const across = square ? (angle % 180 === 0 ? box.cx : box.cy) : box.cx * cos + box.cy * sin
-  const down = square ? (angle % 180 === 0 ? box.cy : box.cx) : box.cx * sin + box.cy * cos
-  return { x: box.x + (box.cx - across) / 2, y: box.y + (box.cy - down) / 2, cx: across, cy: down }
+  const across = square ? (angle % 180 === 0 ? box.w : box.h) : box.w * cos + box.h * sin
+  const down = square ? (angle % 180 === 0 ? box.h : box.w) : box.w * sin + box.h * cos
+  return { x: box.x + (box.w - across) / 2, y: box.y + (box.h - down) / 2, w: across, h: down }
 }
 
 export function selectionFrame<K>(layers: ReadonlyMap<K, RotatedLayer>): Box | null {
@@ -149,9 +151,9 @@ export function selectionFrame<K>(layers: ReadonlyMap<K, RotatedLayer>): Box | n
   const bounds = [...layers.values()].map((layer) => visualBounds(layer.box, layer.rotation))
   const left = Math.min(...bounds.map((each) => each.x))
   const top = Math.min(...bounds.map((each) => each.y))
-  const right = Math.max(...bounds.map((each) => each.x + each.cx))
-  const bottom = Math.max(...bounds.map((each) => each.y + each.cy))
-  return { x: left, y: top, cx: right - left, cy: bottom - top }
+  const right = Math.max(...bounds.map((each) => each.x + each.w))
+  const bottom = Math.max(...bounds.map((each) => each.y + each.h))
+  return { x: left, y: top, w: right - left, h: bottom - top }
 }
 
 export function resizeSelection<K>(
@@ -162,19 +164,19 @@ export function resizeSelection<K>(
   modifiers: ResizeModifiers,
 ): SelectionResize<K> {
   const startFrame = selectionFrame(starts)
-  if (startFrame === null) return { frame: { x: 0, y: 0, cx: 0, cy: 0 }, boxes: new Map() }
+  if (startFrame === null) return { frame: { x: 0, y: 0, w: 0, h: 0 }, boxes: new Map() }
   const nextFrame = resizeBox(startFrame, grip, dx, dy, modifiers, 0)
-  const scaleX = startFrame.cx > 0 ? nextFrame.cx / startFrame.cx : 1
-  const scaleY = startFrame.cy > 0 ? nextFrame.cy / startFrame.cy : 1
+  const scaleX = startFrame.w > 0 ? nextFrame.w / startFrame.w : 1
+  const scaleY = startFrame.h > 0 ? nextFrame.h / startFrame.h : 1
   const boxes = new Map<K, Box>()
   for (const [id, { box, rotation }] of starts) {
     const angle = normalizeDegrees(rotation)
     if (angle === 0) {
-      const cx = Math.max(Math.round(box.cx * scaleX), 0)
-      const cy = Math.max(Math.round(box.cy * scaleY), 0)
+      const w = Math.max(Math.round(box.w * scaleX), 0)
+      const h = Math.max(Math.round(box.h * scaleY), 0)
       const x = Math.round(nextFrame.x + (box.x - startFrame.x) * scaleX)
       const y = Math.round(nextFrame.y + (box.y - startFrame.y) * scaleY)
-      boxes.set(id, { x, y, cx, cy })
+      boxes.set(id, { x, y, w, h })
       continue
     }
     const radians = (angle * Math.PI) / 180
@@ -182,11 +184,11 @@ export function resizeSelection<K>(
     const sin = Math.sin(radians)
     const localScaleX = Math.hypot(cos * scaleX, sin * scaleY)
     const localScaleY = Math.hypot(-sin * scaleX, cos * scaleY)
-    const cx = Math.round(box.cx * localScaleX)
-    const cy = Math.round(box.cy * localScaleY)
-    const midX = nextFrame.x + (box.x + box.cx / 2 - startFrame.x) * scaleX
-    const midY = nextFrame.y + (box.y + box.cy / 2 - startFrame.y) * scaleY
-    boxes.set(id, { x: Math.round(midX - cx / 2), y: Math.round(midY - cy / 2), cx, cy })
+    const w = Math.round(box.w * localScaleX)
+    const h = Math.round(box.h * localScaleY)
+    const midX = nextFrame.x + (box.x + box.w / 2 - startFrame.x) * scaleX
+    const midY = nextFrame.y + (box.y + box.h / 2 - startFrame.y) * scaleY
+    boxes.set(id, { x: Math.round(midX - w / 2), y: Math.round(midY - h / 2), w, h })
   }
   return { frame: nextFrame, boxes }
 }
@@ -206,13 +208,13 @@ export function rotatedAngle(center: Point, from: Point, at: Point, startRotatio
 export function flipSelection<K>(layers: ReadonlyMap<K, FlippableLayer>, axis: FlipAxis): readonly FlippedLayer<K>[] {
   const frame = selectionFrame(layers)
   if (frame === null) return []
-  const centerX = frame.x + frame.cx / 2
-  const centerY = frame.y + frame.cy / 2
+  const centerX = frame.x + frame.w / 2
+  const centerY = frame.y + frame.h / 2
   return [...layers].map(([id, layer]): FlippedLayer<K> => {
     const box =
       axis === "horizontal"
-        ? { ...layer.box, x: Math.round(2 * centerX - layer.box.x - layer.box.cx) }
-        : { ...layer.box, y: Math.round(2 * centerY - layer.box.y - layer.box.cy) }
+        ? { ...layer.box, x: Math.round(2 * centerX - layer.box.x - layer.box.w) }
+        : { ...layer.box, y: Math.round(2 * centerY - layer.box.y - layer.box.h) }
     const current = normalizeDegrees(layer.rotation)
     return {
       id,

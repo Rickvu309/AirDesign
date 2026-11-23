@@ -1,4 +1,4 @@
-import type { SlideId } from "@airdesign/document"
+import type { NodeId } from "@airdesign/doom"
 import { pickedSlides, pickRange, pickToggle, prunedPick, toggledCurrent, type GridPick } from "@/editor/grid-selection"
 
 export type SlidePress = "only" | "range" | "toggle" | "menu"
@@ -25,7 +25,7 @@ export function pressedPick(pick: GridPick, index: number, current: number, pres
   return { pick: several(next), current: toggledCurrent(next, index) }
 }
 
-export function livePick(pick: GridPick, current: number, count: number, ids?: readonly SlideId[]): GridPick {
+export function livePick(pick: GridPick, current: number, count: number, ids?: readonly NodeId[]): GridPick {
   const pruned = several(prunedPick(pick, count, ids))
   return pruned?.slides.has(current) === true ? pruned : null
 }

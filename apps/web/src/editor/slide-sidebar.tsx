@@ -1,6 +1,7 @@
 import { SlideItem } from "@/editor/slide-list-item"
-import { Filmstrip, type PaintBox } from "@airdesign/render"
-import type { ElementId, GridSide, SlideId } from "@airdesign/document"
+import { Filmstrip } from "@airdesign/render"
+import type { GridSide } from "@airdesign/document"
+import type { NodeId } from "@airdesign/doom"
 import {
   Fragment,
   useCallback,
@@ -40,12 +41,11 @@ const noGroups: readonly StripGroup[] = []
 
 export type SlideStrip = {
   readonly count: number
-  readonly slideIds?: readonly SlideId[]
+  readonly slideIds?: readonly NodeId[]
   readonly groups?: readonly StripGroup[]
   readonly current: number
   readonly skipped?: readonly boolean[]
   readonly onSkip?: (indices: readonly number[], skipped: boolean) => void
-  readonly selectionBoxes?: (ids: readonly ElementId[]) => readonly PaintBox[]
   readonly onSelection?: (indices: readonly number[]) => void
   readonly onSelect: (index: number) => void
   readonly onAdd?: (layoutPart?: string, after?: number, placement?: GridSide) => void

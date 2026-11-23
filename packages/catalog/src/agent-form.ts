@@ -1,6 +1,5 @@
-import { readLinkTarget } from "@airdesign/document"
-import { readElementId, type Desc, type NumberUnit } from "@airdesign/document"
-import { bytesOf } from "@airdesign/doom"
+import { readLinkTarget, type Desc, type NumberUnit } from "@airdesign/document"
+import { bytesOf, readNodeId } from "@airdesign/doom"
 import { readAgentColor, readAgentHex } from "./agent-color.js"
 import { knownIcon } from "./icon-names.js"
 import { webImage } from "./image-address.js"
@@ -128,7 +127,7 @@ export function readAgent(desc: Desc, raw: unknown): AgentRead {
       return value === null ? refused : { ok: true, value }
     }
     case "node":
-      return readString(raw, (text) => readElementId(text) !== undefined)
+      return readString(raw, (text) => readNodeId(text) !== undefined)
     case "choice":
       return desc.custom !== undefined && typeof raw !== "string"
         ? readFields({ custom: desc.custom }, raw)

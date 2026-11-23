@@ -1,4 +1,4 @@
-import { mediaTypes } from "@airdesign/document"
+import { mediaTypes } from "@airdesign/doom"
 
 export const pictureAccept = mediaTypes.join(",")
 

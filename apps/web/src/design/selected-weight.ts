@@ -1,4 +1,4 @@
-import type { ElementId } from "@airdesign/document"
+import type { NodeId } from "@airdesign/doom"
 import { styleName, readStyleName, type FontStyle } from "@airdesign/fonts"
 import type { TextFormatting } from "@airdesign/render"
 import { useSyncExternalStore } from "react"
@@ -46,12 +46,12 @@ export function selectedWeight(model: PanelModel, style: FontStyle | "mixed" | n
 
 const unsubscribed = () => () => undefined
 
-function selectionStyle(formatting: TextFormatting | undefined, node: ElementId): FontStyle | "mixed" | null {
+function selectionStyle(formatting: TextFormatting | undefined, node: NodeId): FontStyle | "mixed" | null {
   if (formatting === undefined || formatting.aimed() !== node || !formatting.selection()) return null
   return formatting.fontStyle()
 }
 
-export function useSelectedWeight(formatting: TextFormatting | undefined, node: ElementId): FontStyle | "mixed" | null {
+export function useSelectedWeight(formatting: TextFormatting | undefined, node: NodeId): FontStyle | "mixed" | null {
   const seen = useSyncExternalStore(
     formatting?.subscribe ?? unsubscribed,
     () => JSON.stringify(selectionStyle(formatting, node)),

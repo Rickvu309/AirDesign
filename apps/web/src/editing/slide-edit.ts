@@ -1,3 +1,3 @@
-import { type SlideId } from "@airdesign/document"
+import type { NodeId } from "@airdesign/doom"
 export type SlideSetChange = "clone" | "remove"
-export type SelectedCopy = { readonly id: SlideId; readonly index: number }
+export type SelectedCopy = { readonly id: NodeId; readonly index: number }

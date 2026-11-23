@@ -1,5 +1,6 @@
 import { readDeckId, type DeckId, type SlidePictures } from "@airdesign/catalog"
 import { picturesWantedMilliseconds } from "@airdesign/catalog"
+import { nodeId, type NodeId } from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { DeckPictures } from "./deck-pictures.js"
 
@@ -10,20 +11,17 @@ function deckOf(name: string): DeckId {
 }
 
 const deck = deckOf("deck")
-const first = "t:3"
-const second = "t:4"
+const first = nodeId("t:3")
+const second = nodeId("t:4")
 const key = (letter: string) => letter.repeat(64)
-const image = (slide: string, letter: string, data = "QUFB"): SlidePictures<string>["images"][number] => ({
+const image = (slide: NodeId, letter: string, data = "QUFB"): SlidePictures["images"][number] => ({
   slide,
   key: key(letter),
   type: "image/jpeg",
   data,
 })
 
-function report(
-  keys: readonly [string, string][],
-  images: SlidePictures<string>["images"] = [],
-): SlidePictures<string> {
+function report(keys: readonly [NodeId, string][], images: SlidePictures["images"] = []): SlidePictures {
   return { keys: keys.map(([slide, letter]) => ({ slide, key: key(letter) })), images }
 }
 

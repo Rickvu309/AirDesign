@@ -1,5 +1,6 @@
 import { formatCopy } from "@/copy/format-copy"
-import { type Desc, type ElementId, type SetChange, type TraitName } from "@airdesign/document"
+import { type Desc, type TraitName } from "@airdesign/document"
+import type { NodeId } from "@airdesign/doom"
 import type { TypedUnit } from "./typed-number"
 import type { CSSProperties, ReactNode } from "react"
 import { optionWord } from "@/copy/option-copy"
@@ -47,11 +48,10 @@ export type PanelControl = {
   readonly slides?: readonly string[]
   readonly nodes?: readonly NodeChoice[]
   readonly faceFallback?: () => string | null
-  readonly change: (value: unknown) => SetChange
 }
 
 export type NodeChoice = {
-  readonly node: ElementId
+  readonly node: NodeId
   readonly name: string
   readonly sites: readonly string[]
 }
@@ -86,8 +86,8 @@ export type PanelSection = {
 }
 
 export type PanelModel = {
-  readonly node: ElementId
-  readonly nodes: readonly ElementId[]
+  readonly node: NodeId
+  readonly nodes: readonly NodeId[]
   readonly kind: PanelKind | null
   readonly frame?: "auto" | "free"
   readonly selectionKinds?: readonly (PanelKind | null)[]
@@ -117,7 +117,7 @@ function caseOf(value: unknown): string | undefined {
   return typeof value === "object" && value !== null ? Object.keys(value)[0] : undefined
 }
 
-function manyControl(controls: readonly PanelControl[], lead: PanelControl, nodes: readonly ElementId[]): PanelControl {
+function manyControl(controls: readonly PanelControl[], lead: PanelControl): PanelControl {
   const mixed = !sameValue(controls)
   const shared = lead.desc.kind === "union" && controls.every((control) => caseOf(control.value) === caseOf(lead.value))
   const desc = lead.desc
@@ -144,7 +144,6 @@ function manyControl(controls: readonly PanelControl[], lead: PanelControl, node
     mixed,
     inherited: !mixed && controls.every((control) => control.inherited),
     reset: null,
-    change: (value) => ({ ...lead.change(value), target: { nodes } }),
   }
 }
 
@@ -165,7 +164,7 @@ export function panelOfMany(models: readonly [PanelModel, ...PanelModel[]], mode
     const controls = lead.strips.flat().flatMap((control): PanelControl[] => {
       if (loneRows.includes(`${control.trait}.${control.field}`)) return []
       const each = present(found.map((section) => section.strips.flat().find(({ field }) => field === control.field)))
-      return each === null ? [] : [manyControl(each, control, nodes)]
+      return each === null ? [] : [manyControl(each, control)]
     })
     return controls.length === 0 ? [] : [{ ...lead, open: place.open, strips: arrange(lead.trait, controls) }]
   })

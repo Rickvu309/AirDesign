@@ -1,4 +1,4 @@
-import { traits, type Desc, type SetChange, type TraitName } from "@airdesign/document"
+import { traits, type Desc, type TraitName } from "@airdesign/document"
 import { shownPlace, type PanelControl } from "@/design/panel"
 import { resolveControl } from "@/design/panel-arrangement"
 import { traitControls } from "@/design/trait-controls"
@@ -7,8 +7,6 @@ type Loose = Readonly<Record<string, { readonly desc: Desc }>>
 type Labelled = { readonly fields: Readonly<Record<string, { readonly label: string }>> }
 
 export type Held = { readonly value: unknown; readonly mixed?: boolean }
-
-const unused = (): SetChange => ({ target: { nodes: [] } }) as SetChange
 
 export function descOf(trait: TraitName, field: string): Desc {
   const found = (traits[trait].fields as Loose)[field] ?? (traits[trait].inputs as Loose)[field]
@@ -35,7 +33,6 @@ export function oldControl(
     mixed: held.mixed === true,
     inherited: false,
     reset: null,
-    change: unused,
     ...extra,
   })
 }
@@ -55,7 +52,6 @@ export const doomControl = (
     mixed: held.mixed === true,
     inherited: false,
     reset: null,
-    change: unused,
     ...extra,
   })
 

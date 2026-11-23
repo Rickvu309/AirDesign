@@ -1,9 +1,9 @@
-import type { SlideId } from "@airdesign/document"
+import type { NodeId } from "@airdesign/doom"
 
 export type GridPick = {
   readonly anchor: number
   readonly slides: ReadonlySet<number>
-  readonly copies?: ReadonlySet<SlideId>
+  readonly copies?: ReadonlySet<NodeId>
 } | null
 
 function sorted(slides: Iterable<number>): readonly number[] {
@@ -32,7 +32,7 @@ export function pickRange(pick: GridPick, index: number, current: number): GridP
   return heldPick(anchor, new Set(Array.from({ length: high - low + 1 }, (_, offset) => low + offset)))
 }
 
-export function prunedPick(pick: GridPick, count: number, ids?: readonly SlideId[]): GridPick {
+export function prunedPick(pick: GridPick, count: number, ids?: readonly NodeId[]): GridPick {
   if (pick === null) return null
   const copies = pick.copies
   if (copies !== undefined && ids !== undefined) {

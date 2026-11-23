@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { slideId, type FieldValue } from "@airdesign/document"
+import type { FieldValue } from "@airdesign/document"
 import { useDoomSlide } from "@airdesign/render"
 import { useMemo } from "react"
 import { designCopy } from "@/copy/design-copy"
@@ -100,7 +100,6 @@ export function DesignPanel(props: Props) {
                 key={section}
                 paint={paintDesc()}
                 shown={{
-                  slide: slideId(slide),
                   background: resolveColorOf(shownColor, theme, palette),
                   fill: backgroundFill(solid),
                   templateColors: palette.templateColors,
