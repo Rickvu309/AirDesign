@@ -19,13 +19,14 @@ const isStart = (part: string): part is doom.SlideStart => (doom.slideStarts as 
 
 export function useSlideStrip(props: {
   readonly view: doom.Doom
+  readonly shown: doom.Doom
   readonly client: EditorClient
   readonly slides: readonly doom.NodeId[]
   readonly current: doom.NodeId | undefined
   readonly onCurrent: (slide: doom.NodeId) => void
   readonly assetUrl: (asset: string) => string | undefined
 }): SlideStrip {
-  const { view, client, slides, current, onCurrent, assetUrl } = props
+  const { view, shown, client, slides, current, onCurrent, assetUrl } = props
   const say = useRef<(text: string) => void>(() => undefined)
   const { size } = doom.deckOf(view)
   const index = current === undefined ? 0 : Math.max(0, slides.indexOf(current))
@@ -38,7 +39,7 @@ export function useSlideStrip(props: {
     thumbHeight: Math.round((slideThumbWidth * size.h) / size.w),
     thumb: (at, width) => {
       const slide = slides[at]
-      return slide === undefined ? null : <DoomThumb view={view} slide={slide} width={width} assetUrl={assetUrl} />
+      return slide === undefined ? null : <DoomThumb view={shown} slide={slide} width={width} assetUrl={assetUrl} />
     },
     onSelect: (at) => {
       const slide = slides[at]

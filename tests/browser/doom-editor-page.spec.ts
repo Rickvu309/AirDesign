@@ -51,12 +51,24 @@ test("the Doom editor is the old editor's page: its columns, the slide number, n
   await expect(page.locator("[data-zoom-percent]")).toHaveCount(0)
 })
 
-test("the canvas draws no focus ring of its own after a key", async ({ page, context, stack }) => {
+test("the canvas rings focus that Tab brought, and never focus a click brought, even after keys", async ({
+  page,
+  context,
+  stack,
+}) => {
   await openDoomEditor(page, context, stack)
-  await page.locator("[data-doom-stage]").click({ position: { x: 40, y: 40 } })
+  const stage = page.locator("[data-doom-stage]")
+  await stage.click({ position: { x: 40, y: 40 } })
   await page.keyboard.press("r")
-  await expect(page.locator("[data-doom-stage]")).toBeFocused()
-  await expect(page.locator("[data-doom-stage]")).toHaveCSS("outline-style", "none")
+  await page.keyboard.press("ArrowRight")
+  await expect(stage).toBeFocused()
+  await expect(stage).toHaveCSS("outline-style", "none")
+  await page.keyboard.press("Shift+Tab")
+  await expect(stage).not.toBeFocused()
+  await page.keyboard.press("Tab")
+  await expect(stage).toBeFocused()
+  await expect(stage).toHaveCSS("outline-style", "solid")
+  await expect(stage).toHaveCSS("outline-offset", "-2px")
 })
 
 test("the deck's name is renamed in the sidebar, titles the tab, is kept after a reload and shows on the home card", async ({

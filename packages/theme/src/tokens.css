@@ -208,7 +208,8 @@
     [data-focus-ring] > :is(input, textarea),
     [data-slot="input"],
     [data-slot="textarea"],
-    [data-focus-edge]
+    [data-focus-edge],
+    [data-pointer-focus]
   ),
 [data-focus-ring]:has(> :is(input, textarea):focus-visible) {
   outline: var(--focus-ring-width) solid var(--focus-ring);

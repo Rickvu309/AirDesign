@@ -29,6 +29,7 @@ export const shortcutCopy = {
     delete: "Delete",
     move: "Move",
     "duplicate-drag": "Duplicate while dragging",
+    "snap-off": "Move without snapping",
     nudge: "Nudge",
     "nudge-far": "Nudge 10",
     resize: "Resize",

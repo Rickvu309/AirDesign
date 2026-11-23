@@ -57,6 +57,7 @@ export function DoomCanvas(props: {
   readonly shapes?: ShapesShown
   readonly notice: ThinNotice | null
   readonly onTryAgain: (notice: ThinNotice) => void
+  readonly onTyping?: (writes: readonly doom.Write[]) => void
 }) {
   const { client, view, slide, selection, onSelection, tool, onTool, zoom, scale, room, overlay } = props
   const stage = useRef<HTMLDivElement>(null)
@@ -77,6 +78,8 @@ export function DoomCanvas(props: {
     editingFirst.current = undefined
     if (node !== undefined) text.begin(node, { kind: "all" })
   }, [text])
+  const { onTyping } = props
+  useEffect(() => onTyping?.(text.preview), [onTyping, text.preview])
   const shown = useMemo(() => {
     const edits = [
       ...(preview === null ? [] : [{ once: "preview", author, writes: preview.writes }]),
@@ -322,7 +325,6 @@ export function DoomCanvas(props: {
       <div
         ref={stage}
         data-canvas-stage=""
-        data-focus-edge=""
         data-canvas-fit={zoom === "fit" ? "true" : "false"}
         data-doom-stage=""
         data-doom-ready={painted.ready ? props.deck : undefined}
@@ -330,8 +332,19 @@ export function DoomCanvas(props: {
         role="application"
         tabIndex={0}
         className="absolute inset-0 touch-none overflow-auto bg-canvas outline-none select-none"
-        style={{ cursor: panning ? "grab" : "default" }}
-        onPointerDown={pointer.down}
+        style={{
+          cursor: panning ? "grab" : "default",
+          ["--focus-ring-offset" as string]: "calc(-1 * var(--focus-ring-width))",
+        }}
+        onPointerDown={(event) => {
+          event.currentTarget.dataset.pointerFocus = ""
+          pointer.down(event)
+        }}
+        onBlur={(event) => {
+          const next = event.relatedTarget
+          if (!(next instanceof Node && event.currentTarget.contains(next)))
+            delete event.currentTarget.dataset.pointerFocus
+        }}
         onPointerMove={pointer.move}
         onPointerUp={pointer.up}
         onPointerCancel={pointer.cancel}

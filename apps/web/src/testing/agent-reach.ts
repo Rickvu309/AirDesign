@@ -158,6 +158,7 @@ export const reach: Readonly<Record<string, Entry>> = {
   "gesture:delete": { agent: "op.delete", props: ["parent"] },
   "gesture:move": { agent: "set.box", writes: "box", on: "card", props: ["box", "parent"] },
   "gesture:nudge": { agent: "set.box", props: ["box"] },
+  "gesture:snap-off": { agent: "set.box", props: ["box"] },
   "gesture:nudge-far": { agent: "set.box", props: ["box"] },
   "gesture:resize": { agent: "set.box", props: ["box", "sizing", "text", "geometry"] },
   "gesture:rotate": { agent: "set.rotation", writes: "box", on: "card", props: ["box"] },

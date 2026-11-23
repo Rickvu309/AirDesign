@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { NotFoundPage } from "@/decks/not-found-page"
 import { tabTitleOf } from "@/copy/product-copy"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
@@ -41,6 +41,8 @@ function deckName(view: doom.Doom): string {
   const deck = [...view.nodes.values()].find((node) => node.type === "deck")
   return deck?.type === "deck" ? (deck.name ?? "") : ""
 }
+
+const typingAuthor: doom.Author = { kind: "person", id: "preview" }
 
 export type EditorStart = {
   readonly panel?: ShownPanel
@@ -84,7 +86,20 @@ function Editing({
     showSlide(next)
   }
   const assets = useAssetUrls(id, view)
-  const strip = useSlideStrip({ view, client, slides, current: slide, onCurrent: choose, assetUrl: assets.assetUrl })
+  const [typing, setTyping] = useState<readonly doom.Write[]>([])
+  const typed = useMemo(
+    () => (typing.length === 0 ? view : doom.viewOf(view, [{ once: "typing", author: typingAuthor, writes: typing }])),
+    [view, typing],
+  )
+  const strip = useSlideStrip({
+    view,
+    shown: typed,
+    client,
+    slides,
+    current: slide,
+    onCurrent: choose,
+    assetUrl: assets.assetUrl,
+  })
   const present = usePresent({
     count: slides.length,
     current: strip.current,
@@ -148,6 +163,7 @@ function Editing({
             onTryAgain={(notice) => {
               if (notice === "export-failed") exporting.tryAgain()
             }}
+            onTyping={setTyping}
             {...(start.editing === undefined ? {} : { editing: start.editing })}
             {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
           />

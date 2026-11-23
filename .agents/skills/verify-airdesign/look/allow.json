@@ -1,5 +1,11 @@
 [
   {
+    "page": "*",
+    "detector": "focus-visible",
+    "selector": "[data-doom-stage][data-pointer-focus]",
+    "reason": "A click put focus on the slide canvas, so later keys (nudges, tools) show no ring, as the owner decided on 2026-11-23. The theme's ring shows when Tab brings focus there; doom-editor-page.spec.ts holds both."
+  },
+  {
     "page": "/screens/s43-*",
     "detector": "stacked-frames",
     "selector": "span[class*='shadow-[0_0_0_2px_var(--ring)]']",
