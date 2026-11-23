@@ -7,6 +7,7 @@ import { openPool } from "./platform/pool.js"
 import { createApi } from "./server.js"
 import { readStartSettings } from "./platform/start-settings.js"
 import { drainOriginals } from "./doom/original.js"
+import { endIdleRuns, runIdle } from "./doom/idle-runs.js"
 import { R2OriginalStore } from "./platform/r2-original-store.js"
 
 const settings = readStartSettings(process.env)
@@ -72,11 +73,19 @@ drain()
 const drainTimer = setInterval(drain, 3_600_000)
 drainTimer.unref()
 
+const idleTimer = setInterval(() => {
+  endIdleRuns(deck, new Date(Date.now() - runIdle)).catch(() => {
+    process.stderr.write("api idle runs failed\n")
+  })
+}, 20_000)
+idleTimer.unref()
+
 let stopping = false
 function stop(): void {
   if (stopping) return
   stopping = true
   clearInterval(drainTimer)
+  clearInterval(idleTimer)
   const force = setTimeout(() => {
     process.exit(0)
   }, 5000)

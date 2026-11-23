@@ -74,7 +74,9 @@ function landedAnswer(
   })
 }
 
-export async function editDeckTool(raw: unknown, agent: string, once: string, host: DeckHost): Promise<ToolResult> {
+export type Agent = { readonly id: string; readonly name?: string | undefined }
+
+export async function editDeckTool(raw: unknown, agent: Agent, once: string, host: DeckHost): Promise<ToolResult> {
   const named = readNamedDeck(raw)
   if (!named.ok) return refused(named.refusal)
   const opened = await host.open(named.deck)
@@ -103,7 +105,12 @@ export async function editDeckTool(raw: unknown, agent: string, once: string, ho
   if (problem !== undefined) return problem
   const changes = found === undefined ? fonts.changes : withAssets(fonts.changes, found)
   const compiled = doom.compileAgentEdit(opened.fold, changes, {
-    author: { kind: "agent", id: agent, run },
+    author: {
+      kind: "agent",
+      id: agent.id,
+      run,
+      ...(parsed.runId === undefined && agent.name !== undefined ? { name: agent.name } : {}),
+    },
     once,
     mint: ids.mint,
     read: doom.readingOf(opened.fold, parsed.base),

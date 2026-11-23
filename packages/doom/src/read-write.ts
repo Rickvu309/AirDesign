@@ -1,9 +1,9 @@
 import { bytesOf, limits } from "./limits.js"
 import { type NodeId, readNodeId, readRev } from "./ids.js"
 import { type NodeType, type PropName, type WriteKey, accepts, nodeTypes, props } from "./props.js"
-import { object, rejected, words, literal } from "./read-kit.js"
+import { boolean, object, rejected, words, literal } from "./read-kit.js"
 import { type Refusal, isRefusal, refuse } from "./refusal.js"
-import type { Author, Edit, Doom, Write } from "./doom.js"
+import type { Author, Edit, Doom, RunUndo, Write } from "./doom.js"
 import { readThemeKey, readThemeValue } from "./theme.js"
 
 export type Lookup = { readonly type: (node: NodeId) => NodeType | undefined }
@@ -72,25 +72,30 @@ export function readWrite(
 
 const readAuthor = object(
   { kind: literal(["person", "agent"]), id: words(limits.clientName, 1) },
-  { run: words(limits.clientName, 1) },
+  { run: words(limits.clientName, 1), name: words(limits.clientName, 1) },
 )
 
-const editKeys = new Set(["once", "author", "writes", "phase"])
+const readRunUndo = object({ run: words(limits.clientName, 1), undone: boolean })
+
+const editKeys = new Set(["once", "author", "writes", "phase", "runUndo"])
 
 export function readEdit(raw: unknown, doom: Doom): Edit | Refusal {
   const found = plain(raw)
   if (found === undefined || Object.keys(found).some((key) => !editKeys.has(key))) return refuse("shape")
   let author: Author
   let once: string
+  let runUndo: RunUndo | undefined
   try {
     author = readAuthor(found.author)
     once = words(128, 1)(found.once)
+    runUndo = found.runUndo === undefined ? undefined : readRunUndo(found.runUndo)
   } catch (thrown) {
     return refuse(rejected(thrown))
   }
   const phase = found.phase
   if (phase !== undefined && phase !== "start" && phase !== "stop") return refuse("shape")
-  if (!Array.isArray(found.writes) || (author.kind === "person" && author.run !== undefined)) return refuse("shape")
+  if (!Array.isArray(found.writes) || (author.kind === "person" && (author.run ?? author.name) !== undefined))
+    return refuse("shape")
   const created = new Map<NodeId, NodeType>()
   const writes: Write[] = []
   for (const each of found.writes) {
@@ -100,5 +105,12 @@ export function readEdit(raw: unknown, doom: Doom): Edit | Refusal {
       created.set(write.node, write.value as NodeType)
     writes.push(write)
   }
-  return { once, author, writes, ...(phase === undefined ? {} : { phase }) }
+  if (runUndo !== undefined && author.kind !== "person") return refuse("shape")
+  return {
+    once,
+    author,
+    writes,
+    ...(phase === undefined ? {} : { phase }),
+    ...(runUndo === undefined ? {} : { runUndo }),
+  }
 }

@@ -21,7 +21,7 @@ import {
   type FormPairs,
 } from "@airdesign/catalog"
 import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession } from "./account/account.js"
-import { agentKey } from "./oauth/agent-key.js"
+import { agentKey, airaName } from "./oauth/agent-key.js"
 import { accountRouteList } from "./account/account-route.js"
 import { accountCookie, clearSessionCookie, keptSeconds, signedInCookies } from "./account/session-cookie.js"
 import { type AiraSettings } from "./aira/aira.js"
@@ -30,7 +30,7 @@ import { airaRouteList } from "./aira/aira-route.js"
 import { creditsRouteList } from "./usage/credits-route.js"
 import { airaUsageRoute } from "./aira/aira-usage-route.js"
 import { deckListAnswers } from "./doom/deck-list.js"
-import { readRegistration, registerClient } from "./oauth/clients.js"
+import { grantAgentName, readRegistration, registerClient } from "./oauth/clients.js"
 import { approve, describeClient } from "./oauth/consent.js"
 import { DeckPictures } from "./doom/deck-pictures.js"
 import { DeckFollowers } from "./doom/deck-followers.js"
@@ -215,17 +215,25 @@ async function signedIn({ options, req, res, body }: Visit): Promise<string | un
   return undefined
 }
 
-async function caller(visit: Visit): Promise<{ readonly email: string; readonly agentKey: string } | undefined> {
+type Caller = { readonly email: string; readonly agentKey: string; readonly agentName: string }
+
+async function caller(visit: Visit): Promise<Caller | undefined> {
   const { options, now, req, res } = visit
   const authorization = req.headers.authorization
   if (authorization === undefined) {
     res.setHeader("www-authenticate", resourceChallenge(options))
     const email = await signedIn(visit)
-    return email === undefined ? undefined : { email, agentKey: agentKey("aira", email) }
+    return email === undefined ? undefined : { email, agentKey: agentKey("aira", email), agentName: airaName }
   }
   const secret = readBearer(authorization)
   const bearer = secret === undefined ? undefined : await bearerPrincipal(options.session, secret, now())
-  if (bearer?.ok === true) return { email: bearer.principal, agentKey: agentKey("grant", bearer.grant) }
+  if (bearer?.ok === true) {
+    return {
+      email: bearer.principal,
+      agentKey: agentKey("grant", bearer.grant),
+      agentName: await grantAgentName(options.session, bearer.grant),
+    }
+  }
   await visit.body()
   res.setHeader("www-authenticate", resourceChallenge(options, "invalid_token"))
   sendJson(res, 401, { error: "invalid_token" })
@@ -400,6 +408,7 @@ async function mcpRoute(visit: Visit): Promise<void> {
       session: options.session,
       email: called.email,
       agentKey: called.agentKey,
+      agentName: called.agentName,
       now,
       mint: () => `${called.agentKey}-${mint()}`,
       hosts: options.hosts ?? localHosts,

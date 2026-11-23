@@ -71,4 +71,28 @@ describe("undoing an Aira exchange on a doom deck", () => {
     const failed = await undoExchange(done, 0, doomAgentUndo(open))
     expect(failed?.exchanges[0]).toMatchObject({ end: "done", runs: ["run-1"], undoFailed: true })
   })
+
+  it("leaves a run the deck already shows undone, so undoing from the chat after the list lands nothing twice", async () => {
+    const open = { ...client({ "run-1": { ok: true, once: "u1", saved, kept: [] } }) }
+    const undoneTwo = {
+      ...kept,
+      runs: new Map([
+        [
+          "run-2",
+          {
+            phase: "stopped",
+            guarded: new Set(),
+            agent: "aira",
+            name: "Aira",
+            undone: true,
+            started: doom.rev(1),
+            wrote: doom.rev(1),
+          },
+        ],
+      ]),
+    } as doom.Doom
+    const undone = await undoExchange(done, 0, doomAgentUndo({ ...open, view: () => undoneTwo }))
+    expect(open.asked).toEqual(["run-1"])
+    expect(undone?.exchanges[0]?.end).toBe("undone")
+  })
 })

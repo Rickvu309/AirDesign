@@ -4,6 +4,7 @@ import type { EditorClient } from "./use-doom-deck"
 
 export function doomAgentUndo(client: Pick<EditorClient, "undoRun" | "view">): UndoRun {
   return async (_deck, run) => {
+    if (client.view().runs.get(run)?.undone === true) return { kept: [] }
     const turned = await client.undoRun(run)
     if (turned.ok) return { kept: turned.kept.map((id) => layerLabel(client.view(), id)) }
     return turned.reason === "offline" ? "failed" : "refused"

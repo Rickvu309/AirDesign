@@ -33,6 +33,7 @@ import { addAfterKey, useSlideStrip } from "./use-slide-strip"
 import type { Tool } from "./use-canvas-pointer"
 import { useDoomDeck, useDoomView, type EditorClient, type OpenOptions } from "./use-doom-deck"
 import { useSaveShown, type Saving } from "./use-save-shown"
+import { useEditingNow } from "./use-editing-now"
 
 function deckName(view: doom.Doom): string {
   const deck = [...view.nodes.values()].find((node) => node.type === "deck")
@@ -59,6 +60,7 @@ function Editing({
 }) {
   const view = useDoomView(client)
   const saved = useSaveShown(client, start.save)
+  const editingRuns = useEditingNow(view, Date.now)
   const slides = slidesOf(view)
   const [slide, showSlide] = useCurrentSlide(slides)
   const [selection, setSelection] = useState<Selection>(noSelection)
@@ -118,6 +120,7 @@ function Editing({
             client={client}
             view={view}
             slide={slide}
+            editingRuns={editingRuns}
             slideNumber={strip.current + 1}
             selection={selection}
             onSelection={setSelection}
@@ -169,7 +172,12 @@ function Editing({
           </span>
         </PanelHead>
         <div className={cn("flex min-h-0 flex-1 flex-col", panel === "agent" ? null : "hidden")}>
-          <AgentPanel deck={client} {...(start.aira === undefined ? {} : { start: start.aira })} />
+          <AgentPanel
+            deck={client}
+            view={view}
+            editing={editingRuns}
+            {...(start.aira === undefined ? {} : { start: start.aira })}
+          />
         </div>
         {panel === "design" && slide !== undefined ? (
           <DesignPanel

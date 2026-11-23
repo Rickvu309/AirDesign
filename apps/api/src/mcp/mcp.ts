@@ -22,6 +22,7 @@ export type McpHost = {
   readonly session: Sql
   readonly email: string
   readonly agentKey: string
+  readonly agentName?: string
   readonly now: () => number
   readonly mint: () => string
   readonly hosts: readonly string[]
@@ -191,7 +192,13 @@ function mcpRequest(req: IncomingMessage, body: Buffer) {
 export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerResponse, body: Buffer): Promise<void> {
   const names = [...host.hosts]
   if (!hostHeaderValidation(names)(req, res) || !originValidation(names)(req, res)) return
-  const session: Session = { agent: host.agentKey, mint: host.mint, log: emptyLog(), now: host.now() }
+  const session: Session = {
+    agent: host.agentKey,
+    ...(host.agentName === undefined ? {} : { name: host.agentName }),
+    mint: host.mint,
+    log: emptyLog(),
+    now: host.now(),
+  }
   const bridge: Host = {
     ...doomHost(
       host.deck,

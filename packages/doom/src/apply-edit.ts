@@ -5,6 +5,7 @@ import { type NodeType, type PropName, type WriteKey, holds, props } from "./pro
 import { readWriteIn } from "./read-write.js"
 import { type Refusal, isRefusal, refuse } from "./refusal.js"
 import type { Landed, Node, Run, Doom, Write } from "./doom.js"
+import { slideOf } from "./doom-walk.js"
 import { type Theme, themeKeys, withThemeValue } from "./theme.js"
 
 type Parent = { readonly id: NodeId; readonly at: string }
@@ -105,6 +106,15 @@ function place(work: Working, node: Node, value: Parent | null, at: Rev): void {
   work.regrouped = true
 }
 
+function lastSlide(work: Working, doom: Doom, landed: Landed): NodeId | undefined {
+  const now = { ...doom, nodes: work.nodes }
+  for (const each of [...landed.writes].reverse()) {
+    const slide = slideOf(now, each.node)
+    if (slide !== undefined) return slide
+  }
+  return undefined
+}
+
 function guardRun(work: Working, landed: Landed): Refusal | undefined {
   const { author, phase } = landed
   if (phase !== undefined && (author.kind !== "agent" || author.run === undefined)) return refuse("shape")
@@ -118,6 +128,8 @@ function guardRun(work: Working, landed: Landed): Refusal | undefined {
       phase: "running",
       guarded: new Set(),
       agent: author.id,
+      name: author.name ?? "",
+      undone: false,
       started: landed.rev,
       wrote: landed.rev,
     })
@@ -255,14 +267,21 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
   const delta = countDelta(work, doom, landed)
   const crowded = overLimit(delta, known)
   if (crowded !== undefined) return crowded
+  const turned = landed.runUndo === undefined ? undefined : work.runs.get(landed.runUndo.run)
+  if (landed.runUndo !== undefined && (turned === undefined || landed.author.kind !== "person")) return refuse("shape")
+  if (landed.runUndo !== undefined && turned !== undefined)
+    work.runs.set(landed.runUndo.run, { ...turned, undone: landed.runUndo.undone })
   const name = landed.author.kind === "agent" ? landed.author.run : undefined
   const own = name === undefined ? undefined : work.runs.get(name)
-  if (name !== undefined && own !== undefined)
+  if (name !== undefined && own !== undefined) {
+    const slide = lastSlide(work, doom, landed)
     work.runs.set(name, {
       ...own,
-      ...(landed.writes.length > 0 ? { wrote: landed.rev } : {}),
+      ...(landed.writes.length > 0 ? { wrote: landed.rev, undone: false } : {}),
+      ...(slide === undefined ? {} : { slide }),
       ...(landed.phase === "stop" ? { phase: "stopped" as const } : {}),
     })
+  }
   protect(work, landed, new Set(landed.writes.map((each) => each.node)))
   return {
     doom: {

@@ -1,4 +1,5 @@
 import type { AgentOp, EditRefusal } from "@airdesign/catalog"
+import { agentKeptLayers } from "./agent-runs-copy.ts"
 import { elementCopy } from "./element-copy.ts"
 
 export type StepWords = {
@@ -83,11 +84,7 @@ export function airaKeptLayerName(name: string): string {
 }
 
 export function airaKeptLayers(layers: readonly string[]): string {
-  const named = new Intl.ListFormat("en", { type: "conjunction" }).format(layers)
-  const opening = `${named.charAt(0).toUpperCase()}${named.slice(1)}`
-  return layers.length === 1
-    ? `${opening} stays, because it was changed after Aira made it.`
-    : `${opening} stay, because they were changed after Aira made them.`
+  return agentKeptLayers("Aira", layers)
 }
 
 export function airaBackOn(when: string): string {

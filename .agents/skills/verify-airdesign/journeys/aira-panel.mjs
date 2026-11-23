@@ -1,5 +1,6 @@
+import { createHash, randomBytes } from "node:crypto"
 import { expect } from "@playwright/test"
-import { airaCopy, airaStepWords, undoCopy } from "../bin/product-copy.mjs"
+import { agentRunsCopy, airaCopy, airaStepWords, undoCopy } from "../bin/product-copy.mjs"
 
 const asked = "Add three KPIs to this slide"
 
@@ -33,14 +34,103 @@ async function doomAgent(kit, cookie) {
   await expect(canvas.getByText("$4.2M", { exact: true })).toBeVisible()
   await expect(log.getByText("The slide now shows revenue, customers and churn.", { exact: true })).toBeVisible()
   await expect(log.locator('[data-tool-state="done"]')).toHaveText(airaStepWords.edit_deck.done)
-  await expect(side.getByRole("button", { name: undoCopy.undo })).toBeVisible()
+  await expect(log.getByRole("button", { name: undoCopy.undo })).toBeVisible()
   await capture("done")
   note("the call went through /mcp and the canvas painted the KPIs without a reload")
+  return { deck, slide }
+}
+
+async function claudeCode(kit, cookie) {
+  const { origin, post, accountRoutes, oauthRoutes } = kit
+  const mcp = (await post(accountRoutes.agents, {}, cookie)).json.mcp
+  const redirectUri = "http://127.0.0.1:33418/callback"
+  const registered = await post(oauthRoutes.register, { client_name: "Claude Code", redirect_uris: [redirectUri] })
+  const verifier = randomBytes(32).toString("base64url")
+  const challenge = createHash("sha256").update(verifier).digest("base64url")
+  const pairs = { client_id: registered.json.client_id, redirect_uri: redirectUri }
+  const approved = await post(
+    oauthRoutes.approve,
+    { ...pairs, code_challenge: challenge, code_challenge_method: "S256", resource: mcp },
+    cookie,
+  )
+  const code = new URL(approved.json.redirect).searchParams.get("code")
+  const exchanged = await fetch(`${origin}${oauthRoutes.token.path}`, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      ...pairs,
+      grant_type: "authorization_code",
+      code,
+      code_verifier: verifier,
+      resource: mcp,
+    }),
+  })
+  return (await exchanged.json()).access_token
+}
+
+async function outsideAgent(kit, cookie, { deck, slide }) {
+  const { origin, page, post, capture, note, doomRoutes, mcpRoutes } = kit
+  const token = await claudeCode(kit, cookie)
+  const call = async (tool, args) => {
+    const response = await fetch(`${origin}${mcpRoutes.mcp.path}`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        accept: "application/json, text/event-stream",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: `airdesign_${tool}`, arguments: args },
+      }),
+    })
+    const text = await response.text()
+    const line = text.startsWith("{")
+      ? text
+      : text
+          .split("\n")
+          .find((each) => each.startsWith("data: "))
+          .slice(6)
+    return JSON.parse(line).result.structuredContent
+  }
+  const base = (await post(doomRoutes.open, { deck }, cookie)).json.rev
+  const box = { x: 160, y: 150, w: 1200, h: 80 }
+  const landed = await call("edit_deck", {
+    deck,
+    base,
+    changes: [{ op: "add", kind: "text", slide, text: "Churn fell to 2.1% after the Q3 pricing change", box }],
+  })
+  expect(landed.ok).toBe(true)
+  const mark = page.locator("[data-agent-at-work]")
+  await expect(mark).toHaveText("Claude Code is editing this slide")
+  await capture("outside-editing")
+  note(
+    `Claude Code, connected over OAuth, edited the open deck at rev ${String(landed.rev)}; the slide label row names it and the Agent panel lists its live run`,
+  )
+
+  expect((await call("stop_run", { deck, runId: landed.runId })).ok).toBe(true)
+  await expect(mark).toHaveCount(0)
+  await expect(page.locator("[data-agent-run-undo]")).toHaveCount(2)
+  await capture("outside-listed")
+  note("Claude Code stopped its run: the mark left the canvas and its run shows Undo beside Aira's")
+
+  const row = page.locator("[data-agent-runs] li").filter({ hasText: "Claude Code" })
+  await row.locator("[data-agent-run-undo]").click()
+  await expect(row).toContainText(agentRunsCopy.undone)
+  await page.reload()
+  await page.locator("[data-doom-ready]").waitFor()
+  await expect(row).toContainText(agentRunsCopy.undone)
+  await expect(page.locator("[data-agent-run-undo]")).toHaveCount(1)
+  await capture("outside-undone")
+  note("Undo on Claude Code's row took back only its text, and the run still reads Undone after a reload")
 }
 
 export default async function drive(kit) {
   const { signIn, note } = kit
   const { cookie, email } = await signIn()
   note(`signed in as ${email} through the emailed code`)
-  await doomAgent(kit, cookie)
+  const opened = await doomAgent(kit, cookie)
+  await outsideAgent(kit, cookie, opened)
 }

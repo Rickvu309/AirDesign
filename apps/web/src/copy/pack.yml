@@ -1,6 +1,7 @@
 layer: platform
 public:
   - account-copy.ts
+  - agent-runs-copy.ts
   - aira-copy.ts
   - appearance-copy.ts
   - body-copy.ts

@@ -129,8 +129,23 @@ export function readRuns(raw: unknown, nodes?: ReadonlyMap<NodeId, Node>): Map<s
     const started = readRev(run.started ?? 0)
     const wrote = readRev(run.wrote ?? 0)
     const agent = run.agent ?? ""
-    if (typeof agent !== "string" || started === undefined || wrote === undefined) return undefined
-    runs.set(name, { phase: run.phase, guarded, agent, started, wrote })
+    const named = run.name ?? ""
+    const undone = run.undone ?? false
+    if (typeof undone !== "boolean") return undefined
+    const slide = run.slide === undefined ? undefined : readNodeId(run.slide)
+    if (typeof agent !== "string" || typeof named !== "string" || started === undefined || wrote === undefined)
+      return undefined
+    if (run.slide !== undefined && slide === undefined) return undefined
+    runs.set(name, {
+      phase: run.phase,
+      guarded,
+      agent,
+      name: named,
+      undone,
+      started,
+      wrote,
+      ...(slide === undefined ? {} : { slide }),
+    })
   }
   return runs
 }

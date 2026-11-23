@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { CanvasOverlay, type Preview } from "./canvas-overlay"
 import { ThinNoticeView, type ThinNotice } from "./thin-notice"
+import { AgentAtWork } from "./agent-at-work"
 import type { AssetUrls } from "./use-asset-urls"
 import { useDoomPictures } from "./use-pictures"
 import { useSlidePictures } from "./use-slide-pictures"
@@ -37,6 +38,7 @@ export function DoomCanvas(props: {
   readonly client: EditorClient
   readonly view: doom.Doom
   readonly slide: doom.NodeId
+  readonly editingRuns: ReadonlySet<string>
   readonly selection: Selection
   readonly onSelection: (next: Selection) => void
   readonly tool: Tool
@@ -340,10 +342,16 @@ export function DoomCanvas(props: {
         <div style={{ position: "relative", width, height }}>
           <div data-slide-wrapper="" style={{ position: "absolute", left, top, width: slideW, height: slideH }}>
             <span
-              className="absolute inset-x-0 bottom-full mb-3 text-[length:var(--type-dense)] text-quiet"
+              className="absolute inset-x-0 bottom-full mb-3 flex items-end justify-between gap-4 text-[length:var(--type-dense)] text-quiet"
               data-slide-label=""
             >
               {props.slideNumber}
+              <AgentAtWork
+                view={props.view}
+                editing={props.editingRuns}
+                slide={props.slide}
+                onOpen={() => props.onPanel("agent")}
+              />
             </span>
             <div ref={slideBox} data-slide-box="" className={slideFrame} style={{ position: "absolute", inset: 0 }}>
               <SlidePaint
