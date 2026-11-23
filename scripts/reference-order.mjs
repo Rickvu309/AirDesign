@@ -28,18 +28,6 @@ const composite = (project) => {
   return JSON.parse(readFileSync(file, "utf8")).compilerOptions?.composite === true
 }
 
-export const references = (root) =>
-  referenceFolders
-    .flatMap((folder) => {
-      const parent = path.join(root, folder)
-      if (!existsSync(parent)) return []
-      return readdirSync(parent, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory())
-        .map((entry) => `./${folder}/${entry.name}`)
-    })
-    .filter((reference) => composite(path.join(root, reference)))
-    .sort(comparePaths)
-
 const jsonOf = (file) => JSON.parse(readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, ""))
 
 const referenced = (project) =>
@@ -87,7 +75,7 @@ export const unbuiltDependencies = (root) =>
   })
 
 export const handKeptMessage =
-  "tsconfig.json lists references by hand. Delete them: pnpm typecheck reads every composite project under apps/ and packages/."
+  "tsconfig.json lists references by hand. Delete them: pnpm typecheck builds the root project and every project under apps/ and packages/."
 
 export const handKeptReferences = (tsconfig) =>
   tsconfig !== null && typeof tsconfig === "object" && "references" in tsconfig ? [handKeptMessage] : []

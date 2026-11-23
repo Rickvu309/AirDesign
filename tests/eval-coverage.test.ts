@@ -18,6 +18,12 @@ const proven = async (rows: readonly SuiteRow[]) => {
   return tasks.size
 }
 
+const firstRow = () => {
+  const [row] = suite
+  if (row === undefined) throw new Error("The eval suite has no task.")
+  return row
+}
+
 describe("eval-coverage", () => {
   it("is recorded as the number of tasks the scorer proves both ways", async () => {
     const now = await proven(suite)
@@ -28,24 +34,24 @@ describe("eval-coverage", () => {
   })
 
   it("does not count a task whose wrong attempt passes", async () => {
-    const [row] = suite
+    const row = firstRow()
     expect(await proven([row])).toBe(1)
     expect(await proven([{ ...row, wrong: { ...row.wrong, attempt: row.reference } }])).toBe(0)
   })
 
   it("does not count a task whose wrong attempt fails for another reason", async () => {
-    const [row] = suite
+    const row = firstRow()
     const other = row.wrong.reason === "calls" ? "tool" : "calls"
     expect(await proven([{ ...row, wrong: { ...row.wrong, reason: other } }])).toBe(0)
   })
 
   it("does not count a task whose reference fails", async () => {
-    const [row] = suite
+    const row = firstRow()
     expect(await proven([{ ...row, reference: row.wrong.attempt }])).toBe(0)
   })
 
   it("counts a task once however often it is listed", async () => {
-    const [row] = suite
+    const row = firstRow()
     expect(await proven([row, row])).toBe(1)
   })
 })

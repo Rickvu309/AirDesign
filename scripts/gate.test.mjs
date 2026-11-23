@@ -135,12 +135,11 @@ const full = checkSteps.affectedGateStages({
   tooling: ["scripts/land.test.mjs"],
   packages: ["apps/web", "packages/render"],
 })
-same("the cheap checks are the steps that wait for nothing, and the worktree sweep", named(cheap), [
-  ...preflight,
-  "actionlint",
-  "copy-in-tests",
-  "sweep-list",
-])
+same(
+  "the cheap checks are the steps that wait for nothing, the worktree sweep, and the typecheck of every project, which writes built output and so ends before the build starts",
+  named(cheap),
+  [...preflight, "actionlint", "copy-in-tests", "sweep-list", "typecheck"],
+)
 same("then the gate builds and tests what the diff reaches", named(full), ["build", "unit-tests", "script-tests"])
 for (const name of [
   "browser-tests",

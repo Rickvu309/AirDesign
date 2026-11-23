@@ -69,7 +69,7 @@ const presets: Readonly<Record<Preset, string>> = {
   zigZag: "Zigzag",
 }
 
-export const fillWords: Readonly<Record<string, string>> = {
+export const fillWords = {
   hide: "Hide",
   show: "Show",
   up: "Move up",
@@ -103,4 +103,4 @@ export const fillWords: Readonly<Record<string, string>> = {
   fg: "Foreground",
   bg: "Background",
   ...presets,
-}
+} as const satisfies Readonly<Record<string, string>>

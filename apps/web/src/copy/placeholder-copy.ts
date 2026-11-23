@@ -1,4 +1,4 @@
-export const placeholderRoles: Readonly<Record<string, string>> = {
+export const placeholderRoles = {
   title: "Title",
   ctrTitle: "Title",
   subTitle: "Subtitle",
@@ -9,4 +9,4 @@ export const placeholderRoles: Readonly<Record<string, string>> = {
   ftr: "Footer",
   hdr: "Header",
   sldNum: "Slide number",
-}
+} as const satisfies Readonly<Record<string, string>>

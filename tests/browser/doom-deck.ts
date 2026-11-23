@@ -112,7 +112,7 @@ export async function savedNode(
 export const selectedIds = (page: Page) =>
   page
     .locator("[data-selection-outline]")
-    .evaluateAll((all) => all.map((each) => each.getAttribute("data-selection-outline")))
+    .evaluateAll((all) => all.flatMap((each) => each.getAttribute("data-selection-outline") ?? []))
 
 export async function savedSlides(stack: Stack, opened: Opened): Promise<readonly string[]> {
   const { doomRoutes } = await catalog()

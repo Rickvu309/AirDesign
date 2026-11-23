@@ -4,6 +4,11 @@ import { onCi, workerLimit, workerOverrideName } from "./tests/browser-workers.t
 import { previewOrigin, previewPortPattern, startingPort } from "./tests/browser/preview-port.ts"
 
 const start = startingPort(process.cwd(), process.env)
+const workers = workerLimit({
+  cores: availableParallelism(),
+  ci: onCi(process.env),
+  override: process.env[workerOverrideName],
+})
 
 export default defineConfig({
   testDir: "tests/browser",
@@ -11,11 +16,7 @@ export default defineConfig({
   retries: 0,
   forbidOnly: onCi(process.env),
   globalTimeout: onCi(process.env) ? 10 * 60_000 : 0,
-  workers: workerLimit({
-    cores: availableParallelism(),
-    ci: onCi(process.env),
-    override: process.env[workerOverrideName],
-  }),
+  ...(workers === undefined ? {} : { workers }),
   reporter: [["line"], ["./scripts/browser-timings.mjs"]],
   use: {
     baseURL: previewOrigin(process.env),
