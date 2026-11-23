@@ -1,54 +1,12 @@
-import { expect, type Page } from "@playwright/test"
+import { expect } from "@playwright/test"
 import { doomEditorCopy } from "../../apps/web/src/copy/doom-editor-copy"
 import { linkCopy } from "../../apps/web/src/copy/link-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { clickSlide, landNodes, openDoomEditor, savedNode, spot, type Opened } from "./doom-deck"
+import { clickSlide, landNodes, openDoomEditor, savedNode, spot } from "./doom-deck"
+import { edit, editor, labels, layer, leave, lines, runs, seeded, textOf } from "./text-layer"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
-
-type Stack = Parameters<typeof savedNode>[0]
-
-const layer = (chars: string) => ({
-  box: spot(200, 600, 800, 300),
-  text: {
-    chars,
-    spans: [],
-    paras: chars.split("\n").map(() => ({})),
-    style: "body",
-    resize: "fixed",
-    alignV: "top",
-  },
-})
-
-async function seeded(page: Page, stack: Stack, opened: Opened, chars: string) {
-  await landNodes(stack, opened, [{ id: "t:1", type: "shape", parent: opened.slide, props: layer(chars) }])
-  await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(3)
-  await clickSlide(page, 300, 640)
-}
-
-type Saved = {
-  chars: string
-  spans: { end: number; italic?: boolean; underline?: boolean; strike?: boolean; link?: string }[]
-  paras: { align?: string; list?: string; level?: number }[]
-}
-
-const textOf = async (stack: Stack, opened: Opened) =>
-  (await savedNode(stack, opened, "t:1"))?.text as Saved | undefined
-const runs = (page: Page) => page.locator('[data-slide-box] [data-node="t:1"] [data-run]')
-const lines = (page: Page) => page.locator('[data-slide-box] [data-node="t:1"] [data-line]')
-const labels = (page: Page) => page.locator('[data-slide-box] [data-node="t:1"] [data-label]')
-const editor = (page: Page) => page.locator("[data-text-editor]")
-
-async function edit(page: Page) {
-  await page.keyboard.press("Enter")
-  await expect(editor(page)).toBeFocused()
-}
-
-async function leave(page: Page) {
-  await page.keyboard.press("Escape")
-  await expect(editor(page)).toHaveCount(0)
-}
 
 test("Ctrl+I, Ctrl+U and Ctrl+Shift+X italicize, underline and strike the selected words, and a second press takes each off", async ({
   page,
