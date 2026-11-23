@@ -27,6 +27,7 @@ import { propOf, slidesOf } from "@/editing/node-props"
 import { DoomCanvas, type CanvasCommands } from "./doom-canvas"
 import { DoomNotes } from "./doom-notes"
 import { DoomThumb } from "./doom-thumb"
+import { typingPreview } from "./typing-preview"
 import { followLink, linkAt } from "./present-links"
 import { noSelection, type Selection } from "./selection"
 import { useCurrentSlide } from "./use-current-slide"
@@ -42,8 +43,6 @@ function deckName(view: doom.Doom): string {
   const deck = [...view.nodes.values()].find((node) => node.type === "deck")
   return deck?.type === "deck" ? (deck.name ?? "") : ""
 }
-
-const typingAuthor: doom.Author = { kind: "person", id: "preview" }
 
 export type EditorStart = {
   readonly panel?: ShownPanel
@@ -87,14 +86,10 @@ function Editing({
     showSlide(next)
   }
   const assets = useAssetUrls(id, view)
-  const [typing, setTyping] = useState<readonly doom.Write[]>([])
-  const typed = useMemo(
-    () => (typing.length === 0 ? view : doom.viewOf(view, [{ once: "typing", author: typingAuthor, writes: typing }])),
-    [view, typing],
-  )
+  const typing = useMemo(typingPreview, [])
   const strip = useSlideStrip({
     view,
-    shown: typed,
+    typing,
     client,
     slides,
     current: slide,
@@ -164,7 +159,7 @@ function Editing({
             onTryAgain={(notice) => {
               if (notice === "export-failed") exporting.tryAgain()
             }}
-            onTyping={setTyping}
+            onTyping={typing.set}
             {...(start.editing === undefined ? {} : { editing: start.editing })}
             {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
           />
