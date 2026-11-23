@@ -41,7 +41,7 @@ function neutralTheme(): doom.Theme {
     effectStyles: {
       soft: [shadow(4, 12)],
       lifted: [shadow(12, 32)],
-      glow: [{ kind: "layerBlur", radius: 8 }],
+      glow: doom.defaultTheme.effectStyles.glow,
     },
   } as doom.Theme
 }
