@@ -12,12 +12,30 @@ import { propOf } from "./node-props"
 
 export const imageFits = ["fill", "fit", "tile"]
 
-function paintDesc(): Desc {
+function keeping(desc: Desc, names: readonly string[]): Desc {
+  if (desc.kind !== "record") return desc
+  return {
+    kind: "record",
+    fields: Object.fromEntries(Object.entries(desc.fields).filter(([name]) => names.includes(name))),
+  }
+}
+
+function doomGradient(gradient: Desc): Desc {
+  const kept = keeping(gradient, ["stops", "shade"])
+  const shade = kept.kind === "record" ? kept.fields.shade : undefined
+  if (kept.kind !== "record" || shade?.kind !== "union") return kept
+  const { linear, path } = shade.cases
+  if (linear === undefined || path === undefined) return kept
+  const cases = { linear: keeping(linear, ["angle"]), path: keeping(path, []) }
+  return { kind: "record", fields: { ...kept.fields, shade: { ...shade, cases } } }
+}
+
+export function paintDesc(): Desc {
   const whole = descOf("fills", "paint")
   if (whole.kind !== "union") return whole
   const { none, solid, gradient } = whole.cases
   if (none === undefined || solid === undefined || gradient === undefined) return whole
-  return { ...whole, cases: { none, solid, gradient, image: { kind: "mark" } } }
+  return { ...whole, cases: { none, solid, gradient: doomGradient(gradient), image: { kind: "mark" } } }
 }
 
 function modeList(fit: string): PanelControl {

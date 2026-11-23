@@ -1,4 +1,4 @@
-import { doom } from "@airdesign/document"
+import { doom, type Desc } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { panelOfMany, type PanelControl, type PanelModel } from "@/design/panel"
 import { changeWrites, type ChangeContext } from "./design-changes"
@@ -222,6 +222,21 @@ describe("shape layer", () => {
       gradient: { shade: { linear: { angle: 90 * 60_000 } } },
     })
     expect(prop(write(["card"], find(model, "fills", "paint"), { none: true }), "card", "fills")).toBeUndefined()
+  })
+
+  it("offers a gradient only the stops, direction and angle a Doom gradient keeps", () => {
+    const outline = (desc: Desc): unknown => {
+      if (desc.kind === "record")
+        return Object.fromEntries(Object.entries(desc.fields).map(([name, each]) => [name, outline(each)]))
+      if (desc.kind === "union")
+        return Object.fromEntries(Object.entries(desc.cases).map(([name, each]) => [name, outline(each)]))
+      return desc.kind
+    }
+    const paint = find(model, "fills", "paint").desc
+    expect(paint.kind === "union" ? outline(paint.cases.gradient!) : undefined).toEqual({
+      stops: "list",
+      shade: { linear: { angle: "number" }, path: {} },
+    })
   })
 
   it("writes opacity, corners, border and shadow", () => {
