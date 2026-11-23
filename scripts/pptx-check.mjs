@@ -3,7 +3,7 @@ import { randomInt } from "node:crypto"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { fileURLToPath } from "node:url"
 import { validatorFiles } from "./paragraph-export.mjs"
 import { freshBrowserExport, playwrightTestLines } from "./browser-export.mjs"
 import { browserExportArgs, caseExports, caseOriginals, loadCases, writeCases } from "./pptx-cases.mjs"
@@ -62,6 +62,7 @@ import { storedZip } from "./stored-zip.mjs"
 import { sectionProofDeck, sectionProofLines, sectionWarnLines, writeSectionProof } from "./section-list.mjs"
 import { readSpecSeconds } from "./spec-seconds.mjs"
 import { browserEnv } from "../.agents/skills/verify-airdesign/bin/browser.mjs"
+import { packageBuild } from "./package-build.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 await takeMachineLock({ job: "pptx" })
@@ -142,7 +143,7 @@ const browserSpec =
       })
     : Promise.resolve({ ok: true, seconds: 0 })
 const quiet = besideBrowser({ cores: os.availableParallelism(), browser: browserSpec })
-const pptx = memoPptx(await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href))
+const pptx = memoPptx(await packageBuild(root, "@airdesign/pptx"))
 const staticCases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
 const cases = fixedWork ? [...staticCases] : []
 const names = [...new Set([...staticCases.flatMap((row) => [row.before, row.after]), ...caseOriginals(allEntries)])]

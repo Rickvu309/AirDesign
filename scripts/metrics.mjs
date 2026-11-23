@@ -1,13 +1,14 @@
 import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { fileURLToPath } from "node:url"
 import { changesFrom, unitShardVariable } from "./check-steps.mjs"
 import { importParse } from "./import-parse.mjs"
 import { caughtCount, readSeedList } from "./judge-proof.mjs"
 import { judgedDecks } from "./pptx-corpus.mjs"
 import { titleLimit } from "./title.mjs"
 import { readRun } from "./vitest-metrics.mjs"
+import { packageBuild } from "./package-build.mjs"
 
 const seedListFile = (root) => path.join(root, "scripts/pptx-fixtures/judge-seeds.json")
 
@@ -33,13 +34,8 @@ const knownFailures = (root) => readRun(root).faults + listedMisses(root) + brow
 
 const realDecks = (root) => judgedDecks(root).length
 
-const built = (root, name) => {
-  const entry = path.join(root, "packages", name, "dist/index.js")
-  if (!fs.existsSync(entry)) throw new Error(`packages/${name} is not built. Run pnpm build, then run this again.`)
-  return import(pathToFileURL(entry).href)
-}
-
-const capabilitiesExported = async (root) => new Set(Object.values((await built(root, "pptx")).writtenRoutes)).size
+const capabilitiesExported = async (root) =>
+  new Set(Object.values((await packageBuild(root, "@airdesign/pptx")).writtenRoutes)).size
 
 const plantedBreaks = (root) =>
   caughtCount(JSON.parse(fs.readFileSync(path.join(root, "scripts/pptx-fixtures/judge-proof.json"), "utf8")))

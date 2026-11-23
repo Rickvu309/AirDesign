@@ -1,19 +1,15 @@
-import { pathToFileURL } from "node:url"
+import { packageBuild } from "../../../../scripts/package-build.mjs"
 
 const author = { kind: "agent", id: "aira", run: "bench-run" }
 
-async function doomOf(repo) {
-  return import(pathToFileURL(`${repo}/packages/doom/dist/index.js`).href)
-}
-
 async function readOpen(kit, deck, cookie) {
-  const doom = await doomOf(kit.repo)
+  const doom = await packageBuild(kit.repo, "@airdesign/doom")
   const opened = await kit.post(kit.doomRoutes.open, { deck }, cookie)
   return doom.readFold(opened.json.fold)
 }
 
 async function land(kit, deck, cookie, changes, once, counter, phase) {
-  const doom = await doomOf(kit.repo)
+  const doom = await packageBuild(kit.repo, "@airdesign/doom")
   const fold = await readOpen(kit, deck, cookie)
   const mint = () => doom.nodeId(`g:${(counter.value += 1)}`)
   const compiled = doom.compileAgentEdit(fold, changes, {
@@ -29,7 +25,7 @@ async function land(kit, deck, cookie, changes, once, counter, phase) {
 }
 
 export async function boardDeck(kit, cookie, slideCount, deck) {
-  const doom = await doomOf(kit.repo)
+  const doom = await packageBuild(kit.repo, "@airdesign/doom")
   const counter = { value: 0 }
   const first = doom.slidesOf(await readOpen(kit, deck, cookie))[0].id
   const added = await land(

@@ -1,6 +1,6 @@
-import { pathToFileURL } from "node:url"
 import { quantile } from "../bin/bench-verdict.mjs"
 import { openBoardDeck, ready } from "./doom-deck.mjs"
+import { packageBuild } from "../../../../scripts/package-build.mjs"
 
 const slideCount = 40
 const editable = "[data-text-editor]"
@@ -136,7 +136,7 @@ export const doomAgentEdit = {
   name: "doom-agent-edit-40",
   async setup(kit) {
     const made = await seated(kit)
-    const doom = await import(pathToFileURL(`${kit.repo}/packages/doom/dist/index.js`).href)
+    const doom = await packageBuild(kit.repo, "@airdesign/doom")
     return { ...made, doom, runs: 0 }
   },
   async measure(kit, state) {

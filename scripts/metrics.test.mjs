@@ -69,6 +69,10 @@ const seedList = (known) => write("scripts/pptx-fixtures/judge-seeds.json", JSON
 seedList([])
 write("scripts/pptx-fixtures/a.pptx", "x".repeat(100_000))
 write("scripts/pptx-fixtures/b.pptx", "x")
+write(
+  "packages/pptx/package.json",
+  JSON.stringify({ name: "@airdesign/pptx", type: "module", exports: { ".": { import: "./dist/index.js" } } }),
+)
 write("packages/pptx/dist/index.js", 'export const writtenRoutes = { text: "txBody", move: "xfrm", resize: "xfrm" }\n')
 record(1)
 execFileSync("git", ["init", "-q"], { cwd: root })

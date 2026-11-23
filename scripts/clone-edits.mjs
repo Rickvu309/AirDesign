@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
-import { pathToFileURL } from "node:url"
 import { slideExportLines } from "./slide-export.mjs"
+import { packageBuild } from "./package-build.mjs"
 
 export const cloneEditsName = "exported-clone-edits.pptx"
 export const cloneEditsOriginalName = "census-updating-spm.pptx"
@@ -72,7 +72,7 @@ export const clonedParts = (pptx, document, parts) => {
 }
 
 export const writeCloneEdits = async ({ pptx, root, parts, directory }) => {
-  const document = await import(pathToFileURL(path.join(root, "packages/document/dist/index.js")).href)
+  const document = await packageBuild(root, "@airdesign/document")
   const originalFile = path.join(root, "scripts/pptx-fixtures", cloneEditsOriginalName)
   const packed = await pptx.exportPackage(
     fs.readFileSync(originalFile),

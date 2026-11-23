@@ -15,6 +15,7 @@ import { loadLine } from "./load.mjs"
 import { builtSite, fakeOrigins } from "./site.mjs"
 import { replyRoutes } from "./reply-routes.mjs"
 import { usage } from "./usage.mjs"
+import { packageBuild, packageEntry } from "../../../../scripts/package-build.mjs"
 
 const skill = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const repo = process.env.VERIFY_AIRDESIGN_REPO
@@ -24,7 +25,7 @@ const evidenceRoot = path.join(os.homedir(), "tmp", "verify-airdesign")
 const scratchRoot = path.join(os.homedir(), "tmp", "verify-airdesign-scratch")
 const webDist = path.join(repo, "apps/web/dist")
 const apiDist = path.join(repo, "apps/api/dist")
-const catalogDist = path.join(repo, "packages/catalog/dist/index.js")
+const catalogDist = packageEntry(repo, "@airdesign/catalog")
 
 function fail(message) {
   process.stderr.write(`${message}\n`)
@@ -92,7 +93,7 @@ async function launch(args) {
   for (const built of [webDist, apiDist, catalogDist]) {
     if (!existsSync(built)) fail(`missing build output ${built}; run launch without --no-build`)
   }
-  const { airaEfforts } = await import(pathToFileURL(path.join(apiDist, "aira/aira.js")).href)
+  const { airaEfforts } = await packageBuild(repo, "@airdesign/api", "aira/aira.js")
   const chosen = airaChoice(args, process.env, airaEfforts)
   if (!chosen.ok) fail(chosen.message)
   const site = builtSite(repo)
@@ -151,7 +152,7 @@ async function call(origin, method, pathname, body, cookie, headers = {}) {
 
 async function catalog(state) {
   const root = state?.repo ?? repo
-  return import(pathToFileURL(path.join(root, "packages/catalog/dist/index.js")).href)
+  return packageBuild(root, "@airdesign/catalog")
 }
 
 async function doctor(run) {
@@ -196,7 +197,7 @@ async function signIn(state, email = `verify${randomBytes(4).toString("hex")}@ex
   const asked = await call(state.origin, signInRoutes.email.method, signInRoutes.email.path, { email })
   if (asked.status !== 202) throw new Error(`sign-in email answered ${String(asked.status)}`)
   const mails = mailsIn(readFileSync(state.mail, "utf8"))
-  const { readSignInMail } = await import(pathToFileURL(path.join(apiDist, "account/sign-in-mail.js")).href)
+  const { readSignInMail } = await packageBuild(repo, "@airdesign/api", "account/sign-in-mail.js")
   const { code } = readSignInMail(mails.filter((mail) => mail.to === email).at(-1)?.text ?? "")
   const signed = await call(state.origin, signInRoutes.code.method, signInRoutes.code.path, { email, code })
   if (signed.status !== 200 || signed.cookie === undefined)
@@ -287,7 +288,7 @@ export async function journeyKit({ run, name, page, context }) {
       )
     },
     async mailParts(to) {
-      const { readSignInMail } = await import(pathToFileURL(path.join(apiDist, "account/sign-in-mail.js")).href)
+      const { readSignInMail } = await packageBuild(repo, "@airdesign/api", "account/sign-in-mail.js")
       const sent = kit.mail(to)
       if (sent === undefined) throw new Error(`no mail was sent to ${to}`)
       const { code, link } = readSignInMail(sent.text)
@@ -445,7 +446,6 @@ try {
       apiDist,
       webDist,
       siteDist: process.env.VERIFY_AIRDESIGN_SITE,
-      catalogDist,
       scratchDir,
       statePath,
       airaPath,
