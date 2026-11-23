@@ -44,7 +44,7 @@ it("shows nothing and keeps nothing while no one is signed in", async () => {
   await deviceStorage("deck").write({ queue: [{ edit, after: [] }] })
   signInAs(undefined)
   expect(await queued("deck")).toBeUndefined()
-  await expect(deviceStorage("deck").write({ queue: [] })).rejects.toThrow("session")
+  await expect(deviceStorage("deck").write({ queue: [{ edit, after: [] }] })).rejects.toThrow("session")
   signInAs(firstAccount)
   expect(await queued("deck")).toBe(1)
 })

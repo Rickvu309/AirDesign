@@ -81,12 +81,12 @@ async function start(remote: DoomRemote, raw: string, how: "create" | "open", op
   const id = readDeckId(raw)
   if (!id.ok) return { ok: false, refusal: "deck" }
   const storage = options.storage ?? deviceStorage(id.deck)
-  const kept = how === "open" ? await storage.read().catch(() => undefined) : undefined
-  if (kept?.fold !== undefined)
+  const kept = await storage.read().catch(() => undefined)
+  if (how === "open" && kept?.fold !== undefined)
     return { ok: true, deck: connected(remote, id.deck, kept.fold, kept.queue, storage, options) }
   const answer = await remote[how]({ deck: id.deck })
   if (!answer.ok) return answer.refusal === "edit" ? { ok: false, refusal: "payload" } : answer
-  const queue = (await storage.read().catch(() => undefined))?.queue ?? []
+  const queue = kept?.queue ?? []
   await storage.write({ fold: answer.fold, queue }).catch(() => undefined)
   return { ok: true, deck: connected(remote, id.deck, answer.fold, queue, storage, options) }
 }
@@ -138,7 +138,7 @@ function connected(
     redoSteps = out(redoSteps)
   }
 
-  function drop(once: string, refusal: Pick<Notice, "refused" | "node" | "prop">) {
+  function drop(once: string, refusal: Omit<Notice, "once">) {
     const result = dropped(queue, once)
     if (result.gone.length === 0) return
     queue = result.queue
@@ -152,11 +152,13 @@ function connected(
   }
 
   function settle() {
-    for (const each of queue) {
-      const at = server.onces.get(each.edit.once)
-      if (at !== undefined) queue = landed(queue, each.edit.once, at)
+    const named = new Set(queue.flatMap((each) => [each.edit.once, ...each.after]))
+    for (const once of named) {
+      const at = once === null ? undefined : server.onces.get(once)
+      if (at !== undefined) queue = landed(queue, once!, at)
     }
   }
+  settle()
 
   function watch(run: string | undefined, read: doom.Landed, before: doom.Doom) {
     if (run === undefined) return
@@ -225,6 +227,20 @@ function connected(
       const head = queue[0]
       if (head === undefined) return { ok: true }
       const once = head.edit.once
+      const built = head.after.find((name) => name !== null)
+      if (built !== undefined && built !== null) {
+        try {
+          if (!(await catchUp()).ok) return { ok: false, reason: "offline" }
+        } catch {
+          return { ok: false, reason: "offline" }
+        }
+        if (queue[0] === head) {
+          drop(once, { refused: "stale", because: built })
+          await save({ queue })
+          tell()
+        }
+        continue
+      }
       let answer
       try {
         answer = await remote.edit({ deck, edit: sendable(head) })
