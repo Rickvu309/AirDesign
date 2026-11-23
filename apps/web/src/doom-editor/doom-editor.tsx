@@ -23,7 +23,6 @@ import { percentOf, scaleOf, type Zoom } from "./canvas-view"
 import { renameWrites } from "./deck-writes"
 import { AgentPanel } from "./agent-panel"
 import { DesignPanel } from "./design-panel"
-import { propOf, slidesOf } from "@/editing/node-props"
 import { DoomCanvas, type CanvasCommands, type CaretWords } from "./doom-canvas"
 import { DoomNotes } from "./doom-notes"
 import { DoomThumb } from "./doom-thumb"
@@ -66,7 +65,7 @@ function Editing({
   const view = useDoomView(client)
   const saved = useSaveShown(client, start.save)
   const editingRuns = useEditingNow(view, Date.now)
-  const slides = slidesOf(view)
+  const slides = doom.slidesOf(view).map((each) => each.id)
   const [slide, showSlide] = useCurrentSlide(slides)
   const [selection, setSelection] = useState<Selection>(noSelection)
   const [tool, setTool] = useState<Tool>(start.tool ?? "move")
@@ -235,7 +234,7 @@ function Editing({
           const link = linkAt(view, point)
           return link !== undefined && followLink(link, slides, present.go)
         }}
-        notesOf={(index) => propOf(view.nodes.get(slides[index] ?? ("" as doom.NodeId)), "notes")?.chars ?? ""}
+        notesOf={(index) => doom.propOf(view.nodes.get(slides[index] ?? ("" as doom.NodeId)), "notes")?.chars ?? ""}
       />
     </div>
   )

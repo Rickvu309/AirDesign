@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 
 export function deckNodeOf(view: doom.Doom): doom.NodeId | null {
   return [...view.nodes.values()].find((node) => node.type === "deck")?.id ?? null

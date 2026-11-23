@@ -1,15 +1,21 @@
 import type { NodeId } from "./ids.js"
 import type { PropName, Props } from "./props.js"
+import type { Box } from "./resolved.js"
 import type { Node, Doom } from "./doom.js"
 
-export type Box = Props["box"]
-export type Placed = { readonly id: NodeId; readonly at: string }
+export type { Box }
 
 export const zeroBox: Box = { x: 0, y: 0, w: 0, h: 0, rotation: 0, flipH: false, flipV: false }
 
-export const get = <K extends PropName>(node: Node, key: K): Props[K] | undefined => (node as Partial<Props>)[key]
+export function propOf<K extends PropName>(node: Node | undefined, key: K): Props[K] | undefined {
+  return (node as Partial<Props> | undefined)?.[key]
+}
 
-export const parentOf = (node: Node): Placed | null | undefined => get(node, "parent") as Placed | null | undefined
+export function get<K extends PropName>(node: Node | undefined, key: K): Props[K] | undefined {
+  return propOf(node, key)
+}
+
+export const parentOf = (node: Node | undefined): Props["parent"] | undefined => propOf(node, "parent")
 
 export const isLive = (node: Node | undefined): node is Node => node !== undefined && parentOf(node) !== null
 
@@ -54,4 +60,26 @@ export function boxOf(node: Node, boxes?: ReadonlyMap<NodeId, Box>): Box {
 export const isLaidOut = (node: Node): boolean => {
   const mode = get(node, "layout")?.mode
   return mode === "row" || mode === "column" || mode === "grid"
+}
+
+export function lockedIn(doom: Doom, id: NodeId): boolean {
+  for (let at = doom.nodes.get(id), hops = 0; at !== undefined && hops <= doom.nodes.size; hops += 1) {
+    if (propOf(at, "locked") === true) return true
+    const parent = parentOf(at)
+    at = parent == null ? undefined : doom.nodes.get(parent.id)
+  }
+  return false
+}
+
+export function flows(doom: Doom, id: NodeId): boolean {
+  const node = doom.nodes.get(id)
+  const parent = parentOf(node)
+  const holder = parent == null ? undefined : doom.nodes.get(parent.id)
+  return holder !== undefined && holder.type === "frame" && isLaidOut(holder) && propOf(node, "absolute") !== true
+}
+
+export function holdsText(doom: Doom, id: NodeId): boolean {
+  const node = doom.nodes.get(id)
+  const kind = propOf(node, "geometry")?.kind
+  return node?.type === "shape" && kind !== "line" && kind !== "icon"
 }

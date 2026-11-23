@@ -12,7 +12,7 @@ import { choiceDesc, type Desc } from "@/design/control-desc"
 import { doomControl, flagDesc, fontDesc, type Held } from "./design-controls"
 import { lineToFraction, shownText, sizeToHundredths } from "./design-text-values"
 import type { ModelInput } from "./design-model"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 
 const casings = ["none", "upper", "lower", "title"]
 const lists = ["none", "bullets", "numbers"]

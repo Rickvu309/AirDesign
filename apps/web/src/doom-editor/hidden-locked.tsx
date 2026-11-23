@@ -1,7 +1,7 @@
 import type * as doom from "@airdesign/doom"
 import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 
 type Held = "hidden" | "locked"
 

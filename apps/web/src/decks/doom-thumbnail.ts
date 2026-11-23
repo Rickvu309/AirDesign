@@ -3,7 +3,6 @@ import * as doom from "@airdesign/doom"
 import { DoomSlide } from "@airdesign/render"
 import { createElement } from "react"
 import { createRoot } from "react-dom/client"
-import { slidesOf } from "@/editing/node-props"
 
 export const thumbnailWidth = 640
 
@@ -50,7 +49,7 @@ function paintMarkup(shown: doom.Doom, slide: doom.NodeId): Promise<string | nul
 
 async function paintOnce(deck: string, rev: number): Promise<string | null> {
   const shown = await doomAt(deck, rev)
-  const slide = shown === null ? undefined : slidesOf(shown)[0]
+  const slide = shown === null ? undefined : doom.slidesOf(shown)[0]?.id
   if (shown === null || slide === undefined) return null
   return paintMarkup(shown, slide)
 }

@@ -11,7 +11,6 @@ import type { Preview } from "./canvas-overlay"
 import { hitChain } from "./hit-test"
 import { isEndGrip, lineEndDrag, type EndGrip } from "./line-end-drag"
 import { movedBy } from "./move-writes"
-import { holdsText, lockedIn } from "@/editing/node-props"
 import {
   marqueeSelection,
   noSelection,
@@ -141,7 +140,7 @@ export function useCanvasPointer(args: PointerArgs) {
     event: { readonly clientX: number; readonly clientY: number },
     geometry: SlideGeometry,
     view: doom.Doom,
-  ) => hitChain(geometry.roots, toSlide(event), 4.5 / latest.current.scale, (id) => lockedIn(view, id))
+  ) => hitChain(geometry.roots, toSlide(event), 4.5 / latest.current.scale, (id) => doom.lockedIn(view, id))
 
   type Evaluated = Pick<Preview, "writes" | "guides" | "label"> & { readonly copies: doom.Copies | null }
 
@@ -249,7 +248,7 @@ export function useCanvasPointer(args: PointerArgs) {
     a.setMarquee(rect)
     const hits = marqueeSelection(gesture.geometry, rect, {
       deep: event.metaKey || event.ctrlKey,
-      locked: (id) => lockedIn(gesture.view, id),
+      locked: (id) => doom.lockedIn(gesture.view, id),
     })
     a.onSelection({ ids: [...new Set([...gesture.base, ...hits])], inside: null })
   }
@@ -404,7 +403,7 @@ export function useCanvasPointer(args: PointerArgs) {
         return
       }
       const leaf = chain[chain.length - 1]!
-      if (holdsText(a.view, leaf.id)) {
+      if (doom.holdsText(a.view, leaf.id)) {
         a.onSelection({ ids: [leaf.id], inside: a.selection.inside })
         a.onTextEdit(leaf.id, { x: event.clientX, y: event.clientY })
       }

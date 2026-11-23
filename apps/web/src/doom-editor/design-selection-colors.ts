@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 
 export type ColorRow = { readonly hex: string; readonly color: doom.Color }
 

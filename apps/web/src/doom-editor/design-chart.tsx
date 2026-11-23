@@ -7,7 +7,7 @@ import { Fragment } from "react"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { NumberField } from "./number-cell"
 import { PanelSection } from "./panel-fields"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 import {
   chartAddRow,
   chartAddSeries,

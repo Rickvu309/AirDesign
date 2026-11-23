@@ -1,6 +1,5 @@
 import * as doom from "@airdesign/doom"
 import { reachOf, snapMove, type Bounds, type Guide, type SnapTargets } from "./snapping"
-import { flows, lockedIn, propOf } from "@/editing/node-props"
 import { aroundPlaced, invert, linear, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
 
 const zero: Point = { x: 0, y: 0 }
@@ -8,8 +7,8 @@ const zero: Point = { x: 0, y: 0 }
 export function movable(view: doom.Doom, id: doom.NodeId): boolean {
   const node = view.nodes.get(id)
   if (node === undefined || (node.type !== "frame" && node.type !== "shape")) return false
-  if (lockedIn(view, id) || flows(view, id)) return false
-  const geometry = propOf(node, "geometry")
+  if (doom.lockedIn(view, id) || doom.flows(view, id)) return false
+  const geometry = doom.propOf(node, "geometry")
   if (geometry?.kind !== "line") return true
   return !("node" in geometry.start && "node" in geometry.end)
 }
@@ -34,7 +33,7 @@ export function moveWrites(
     const node = view.nodes.get(id)
     if (placed === undefined || node === undefined || !movable(view, id)) return []
     const local = parentSpace(geometry, placed, by)
-    const line = propOf(node, "geometry")
+    const line = doom.propOf(node, "geometry")
     if (line?.kind === "line")
       return [
         {
@@ -43,7 +42,7 @@ export function moveWrites(
           value: { ...line, start: shiftedEnd(line.start, local), end: shiftedEnd(line.end, local) },
         },
       ]
-    const stored = propOf(node, "box") ?? placed.node.box
+    const stored = doom.propOf(node, "box") ?? placed.node.box
     const next = { ...stored, x: Math.round(stored.x + local.x), y: Math.round(stored.y + local.y) }
     return next.x === stored.x && next.y === stored.y ? [] : [{ node: id, prop: "box", value: next }]
   })

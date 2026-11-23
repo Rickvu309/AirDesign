@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import type { PanelControl, PanelModel } from "@/design/panel"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 import { grow, landed, spot } from "@/testing/doom-fixtures"
 import { changeWrites, type ChangeContext } from "./design-changes"
 import { nodeModel } from "./design-model"

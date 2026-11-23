@@ -1,13 +1,12 @@
 import * as doom from "@airdesign/doom"
 import { agentEditingMark, agentShownName } from "@/copy/agent-runs-copy"
-import { slidesOf } from "@/editing/node-props"
 
 export function LiveDot() {
   return <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-primary motion-safe:animate-pulse" />
 }
 
 export function slideNumberOf(view: doom.Doom, slide: doom.NodeId | undefined): number | undefined {
-  const at = slide === undefined ? -1 : slidesOf(view).indexOf(slide)
+  const at = slide === undefined ? -1 : doom.slidesOf(view).findIndex((each) => each.id === slide)
   return at < 0 ? undefined : at + 1
 }
 

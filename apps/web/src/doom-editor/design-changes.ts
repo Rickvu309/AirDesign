@@ -12,7 +12,7 @@ import {
 } from "./design-paint-values"
 import { lineFromFraction, sizeFromHundredths } from "./design-text-values"
 import { cornerEmu, pointEmu, wholeFraction } from "./design-values"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 import type { SlideGeometry } from "./slide-geometry"
 import { shapeWrite, shownShape } from "./design-shape-values"
 

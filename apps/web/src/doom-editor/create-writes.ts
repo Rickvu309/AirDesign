@@ -1,7 +1,7 @@
 import { type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import type { Point } from "./slide-geometry"
-import { propOf } from "@/editing/node-props"
+import { propOf } from "@airdesign/doom"
 
 export type Drawn = "frame" | "rectangle" | "ellipse" | "line" | "arrow" | `preset:${string}`
 type Slot = { readonly id: doom.NodeId; readonly at: OrderKey }

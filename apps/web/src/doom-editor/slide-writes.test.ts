@@ -1,6 +1,5 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { slidesOf } from "@/editing/node-props"
 import { landed, paint, spot } from "@/testing/doom-fixtures"
 import {
   addSlideWrites,
@@ -9,6 +8,8 @@ import {
   moveSlideWrites,
   neighbourAfterDelete,
 } from "./slide-writes"
+
+const slideIds = (view: doom.Doom) => doom.slidesOf(view).map((slide) => slide.id)
 
 function minter() {
   let next = 0
@@ -36,7 +37,7 @@ describe("add slide", () => {
     const { view, slides } = three()
     const writes = addSlideWrites(view, slides[0]!, minter(), "blank")
     const after = landed(view, writes.writes)
-    const order = slidesOf(after)
+    const order = slideIds(after)
     expect(order).toHaveLength(4)
     expect(order[1]).toBe(writes.slide)
     expect(after.nodes.get(writes.slide)).toMatchObject({ type: "slide", name: "Slide 4", fills: paint })
@@ -74,7 +75,7 @@ describe("add slide", () => {
       const children = after.children.get(made.slide) ?? []
       expect(children).toHaveLength(2)
       expect((after.nodes.get(children[0]!) as { role?: string }).role).toBe("title")
-      expect(slidesOf(after)[1]).toBe(made.slide)
+      expect(slideIds(after)[1]).toBe(made.slide)
     },
   )
 
@@ -93,14 +94,34 @@ describe("add slide", () => {
   it("adds after the last slide too", () => {
     const { view, slides } = three()
     const writes = addSlideWrites(view, slides[2]!, minter())
-    expect(slidesOf(landed(view, writes.writes)).at(-1)).toBe(writes.slide)
+    expect(slideIds(landed(view, writes.writes)).at(-1)).toBe(writes.slide)
   })
 
   it("makes a first slide when the deck has none", () => {
     const withoutSlides = doom.doomFromTree({ theme: doom.defaultTheme, slides: [] }).doom
-    expect(slidesOf(withoutSlides)).toEqual([])
+    expect(slideIds(withoutSlides)).toEqual([])
     const writes = addSlideWrites(withoutSlides, null, minter())
-    expect(slidesOf(landed(withoutSlides, writes.writes))).toEqual([writes.slide])
+    expect(slideIds(landed(withoutSlides, writes.writes))).toEqual([writes.slide])
+  })
+
+  it("ignores non-slideRow deck children when choosing a row for a first slide", () => {
+    const withoutSlides = doom.doomFromTree({ theme: doom.defaultTheme, slides: [] }).doom
+    const deck = [...withoutSlides.nodes.values()].find((node) => node.type === "deck")!
+    const stray = doom.nodeId("f:91")
+    const nodes = new Map(withoutSlides.nodes).set(stray, {
+      id: stray,
+      type: "frame",
+      parent: { id: deck.id, at: doom.orderKeyBetween(null, null) },
+      rev: doom.rev(1),
+    })
+    const children = new Map(withoutSlides.children).set(deck.id, [stray])
+    const dirty: doom.Doom = { ...withoutSlides, nodes, children }
+    const made = addSlideWrites(dirty, null, minter(), "blank")
+    const after = landed(dirty, made.writes)
+    expect(slideIds(after)).toEqual([made.slide])
+    const parentRow = doom.parentOf(after.nodes.get(made.slide))
+    expect(parentRow?.id).not.toBe(stray)
+    expect(after.nodes.get(parentRow!.id)?.type).toBe("slideRow")
   })
 })
 
@@ -117,7 +138,7 @@ describe("duplicate slides", () => {
     const { view, slides } = three()
     const copy = duplicateSlideWrites(view, [slides[0]!], minter())
     const after = landed(view, copy.writes)
-    const order = slidesOf(after)
+    const order = slideIds(after)
     const made = copy.slides[0]!
     expect(order).toHaveLength(4)
     expect(order[1]).toBe(made)
@@ -132,7 +153,7 @@ describe("duplicate slides", () => {
     const { view, slides } = four()
     const copy = duplicateSlideWrites(view, [slides[1]!, slides[2]!], minter())
     const [two, three] = copy.slides
-    expect(slidesOf(landed(view, copy.writes))).toEqual([slides[0], slides[1], two, slides[2], three, slides[3]])
+    expect(slideIds(landed(view, copy.writes))).toEqual([slides[0], slides[1], two, slides[2], three, slides[3]])
   })
 })
 
@@ -141,12 +162,12 @@ describe("delete slides", () => {
     const { view, slides } = three()
     const writes = deleteSlideWrites(view, [slides[1]!])
     expect(writes).toEqual([{ node: slides[1], prop: "parent", value: null }])
-    expect(slidesOf(landed(view, writes))).toEqual([slides[0], slides[2]])
+    expect(slideIds(landed(view, writes))).toEqual([slides[0], slides[2]])
   })
 
   it("takes several slides out in one edit", () => {
     const { view, slides } = four()
-    expect(slidesOf(landed(view, deleteSlideWrites(view, [slides[3]!, slides[1]!])))).toEqual([slides[0], slides[2]])
+    expect(slideIds(landed(view, deleteSlideWrites(view, [slides[3]!, slides[1]!])))).toEqual([slides[0], slides[2]])
   })
 
   it("leaves the deck's last slide to the core, which refuses to land it", () => {
@@ -174,21 +195,21 @@ describe("move slides", () => {
     const { view, slides } = three()
     const writes = moveSlideWrites(view, [slides[0]!], 3)
     expect(writes).toHaveLength(1)
-    expect(slidesOf(landed(view, writes))).toEqual([slides[1], slides[2], slides[0]])
+    expect(slideIds(landed(view, writes))).toEqual([slides[1], slides[2], slides[0]])
   })
 
   it("moves up and to the front", () => {
     const { view, slides } = three()
-    expect(slidesOf(landed(view, moveSlideWrites(view, [slides[2]!], 1)))).toEqual([slides[0], slides[2], slides[1]])
-    expect(slidesOf(landed(view, moveSlideWrites(view, [slides[2]!], 0)))).toEqual([slides[2], slides[0], slides[1]])
+    expect(slideIds(landed(view, moveSlideWrites(view, [slides[2]!], 1)))).toEqual([slides[0], slides[2], slides[1]])
+    expect(slideIds(landed(view, moveSlideWrites(view, [slides[2]!], 0)))).toEqual([slides[2], slides[0], slides[1]])
   })
 
   it("moves several slides together, in their deck order, closing the gaps they leave", () => {
     const { view, slides } = four()
     const [one, two, three, last] = slides
-    expect(slidesOf(landed(view, moveSlideWrites(view, [two!, one!], 4)))).toEqual([three, last, one, two])
-    expect(slidesOf(landed(view, moveSlideWrites(view, [one!, three!], 0)))).toEqual([one, three, two, last])
-    expect(slidesOf(landed(view, moveSlideWrites(view, [two!, last!], 1)))).toEqual([one, two, last, three])
+    expect(slideIds(landed(view, moveSlideWrites(view, [two!, one!], 4)))).toEqual([three, last, one, two])
+    expect(slideIds(landed(view, moveSlideWrites(view, [one!, three!], 0)))).toEqual([one, three, two, last])
+    expect(slideIds(landed(view, moveSlideWrites(view, [two!, last!], 1)))).toEqual([one, two, last, three])
   })
 
   it("writes nothing when the slides are already there", () => {
