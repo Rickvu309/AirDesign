@@ -93,24 +93,25 @@ afterAll(async () => {
   await close()
 })
 
-const post = async (route: keyof typeof doomRoutes, body: unknown) =>
-  (await ask(base, "POST", doomRoutes[route].path, body, cookie)).json as Record<string, any>
+const post = async (route: keyof typeof doomRoutes, body: unknown): Promise<unknown> =>
+  (await ask(base, "POST", doomRoutes[route].path, body, cookie)).json
 
 describe("the deck listener", () => {
   it("wakes a held catch-up when it connects again, for an edit that landed while it was cut off", async () => {
     const deck = `wake${randomBytes(6).toString("hex")}`
-    expect((await post("create", { deck })).ok).toBe(true)
-    const reads = () => counted!.times("rev > $2")
-    const before = reads()
+    expect(await post("create", { deck })).toMatchObject({ ok: true })
+    const read = counted!.hold("rev > $2")
     const held = post("since", { deck, rev: 1, wait: true })
-    await expect.poll(reads).toBe(before + 1)
+    await read.reached
+    read.release()
+    await read.answered
     gate!.cut()
     const edit = {
       once: `wake-${randomBytes(4).toString("hex")}`,
       author: { kind: "person", id: "tab" },
       writes: [{ node: startIds.deck, prop: "name", value: "Landed while cut off" }],
     }
-    expect((await post("edit", { deck, edit })).ok).toBe(true)
+    expect(await post("edit", { deck, edit })).toMatchObject({ ok: true })
     gate!.open()
     expect(await held).toMatchObject({ ok: true, rev: 2, edits: [{ rev: 2 }] })
   })
