@@ -62,6 +62,7 @@ export {
   textArea,
 } from "./preset-geometry.js"
 export { routeDistance } from "./line-ends.js"
+export { holdsLineEnd } from "./line-end-holder.js"
 export { defaultTheme } from "./default-theme-art.js"
 export { slideTextStyles } from "./slide-text-styles.js"
 export { type Grown, type Tree, type TreeNode, type TreeSlide, doomFromTree } from "./doom-tree.js"

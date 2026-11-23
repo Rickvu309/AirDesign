@@ -2,9 +2,10 @@ import type { AgentChange } from "./agent-change.js"
 import type { AgentEnd } from "./agent-end.js"
 import { type Draft, living, stop } from "./agent-draft.js"
 import type { Node } from "./doom.js"
-import { boxOf, get, slideOf } from "./doom-walk.js"
+import { boxOf } from "./doom-walk.js"
 import type { End, Geometry } from "./geometry.js"
 import type { NodeId } from "./ids.js"
+import { holdsLineEnd } from "./line-end-holder.js"
 import type { Point } from "./resolved.js"
 
 type Line = Extract<Geometry, { kind: "line" }>
@@ -43,9 +44,7 @@ type Owner = { readonly self: NodeId | null; readonly slide: NodeId | undefined 
 function endOf(draft: Draft, owner: Owner, asked: AgentEnd, other: End, field: "from" | "to"): End {
   if ("x" in asked) return { x: asked.x, y: asked.y }
   const target = living(draft, asked.layer, field)
-  const held = target.type === "shape" || target.type === "frame"
-  if (!held || target.id === owner.self || get(target, "geometry")?.kind === "line") stop("shape", target.id, field)
-  if (slideOf(draft.doom, target.id) !== owner.slide) stop("shape", target.id, field)
+  if (!holdsLineEnd(draft.doom, target.id, owner.self, owner.slide)) stop("shape", target.id, field)
   const site = asked.side === undefined ? facing(centerOf(draft, target.id), spotOf(draft, other)) : sites[asked.side]
   return { node: target.id, site }
 }

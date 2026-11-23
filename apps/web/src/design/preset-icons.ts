@@ -130,3 +130,9 @@ export const fillIcons = {
   pattern: PatternFill,
   image: ImageFill,
 } as const
+
+export const StraightLine = createLucideIcon("StraightLine", [["path", { d: "M5 19 19 5", key: "line" }]])
+
+export const ElbowLine = createLucideIcon("ElbowLine", [["path", { d: "M5 19h7V5h7", key: "line" }]])
+
+export const CurvedLine = createLucideIcon("CurvedLine", [["path", { d: "M5 19c7 0 7-14 14-14", key: "line" }]])
