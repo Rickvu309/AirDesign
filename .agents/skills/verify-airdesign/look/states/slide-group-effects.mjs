@@ -1,81 +1,72 @@
-import fs from "node:fs"
-import path from "node:path"
-import { blankParts } from "../../../../../scripts/pptx-fixtures/blank-deck.mjs"
-import { storedZip } from "../../../../../scripts/stored-zip.mjs"
 import { editor } from "../editor-screen.mjs"
-import { openDeck } from "../open-deck.mjs"
+import { landNodes, openDoomDeck, spot } from "../doom-deck.mjs"
+import { emptySlide } from "../doom-slides.mjs"
 
-const solid = (color) => `<a:solidFill><a:srgbClr val="${color}"/></a:solidFill>`
-const stops =
-  '<a:gsLst><a:gs pos="0"><a:srgbClr val="2F6DB5"/></a:gs><a:gs pos="100000"><a:srgbClr val="E76F51"/></a:gs></a:gsLst>'
-const linear = `<a:gradFill rotWithShape="1">${stops}<a:lin ang="0" scaled="1"/></a:gradFill>`
-const fromSides = `<a:gradFill rotWithShape="1">${stops}<a:path path="rect"><a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path></a:gradFill>`
-const soft = '<a:effectLst><a:softEdge rad="203200"/></a:effectLst>'
-const shadow = (turns) =>
-  `<a:effectLst><a:outerShdw blurRad="76200" dist="152400" dir="2700000" rotWithShape="${turns}"><a:srgbClr val="000000"><a:alpha val="50000"/></a:srgbClr></a:outerShdw></a:effectLst>`
-const glow =
-  '<a:effectLst><a:glow rad="177800"><a:srgbClr val="F4A261"><a:alpha val="70000"/></a:srgbClr></a:glow></a:effectLst>'
+const solid = (color) => [{ kind: "solid", color }]
+const linear = [
+  {
+    kind: "gradient",
+    shape: "linear",
+    angle: 0,
+    stops: [
+      { at: 0, color: "#2f6db5" },
+      { at: 1, color: "#e76f51" },
+    ],
+  },
+]
+const radial = [{ ...linear[0], shape: "radial" }]
+const shadow = [{ kind: "dropShadow", color: "#000000", opacity: 0.5, x: 12, y: 18, blur: 12, spread: 0 }]
+const group = (id, name, box, effects, rotation = 0) => ({
+  id,
+  type: "frame",
+  props: { name, box: spot(box[0], box[1], box[2], box[3], rotation), sizing: { w: "hug", h: "hug" }, effects },
+})
+const inside = (id, parent, name, box, geometry, fills) => ({
+  id,
+  parent,
+  props: { name, box: spot(...box), geometry: { kind: geometry }, fills },
+})
 
-const shape = (id, name, [x, y, cx, cy], preset, fill, effects = "", words = "") =>
-  `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${name}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="${preset}"><a:avLst/></a:prstGeom>${fill}${effects}</p:spPr>${words === "" ? "" : `<p:txBody><a:bodyPr anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="en-US" sz="2000"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:rPr><a:t>${words}</a:t></a:r></a:p></p:txBody>`}</p:sp>`
-
-const group = (id, name, [x, y, cx, cy], effects, inside, turn = 0) =>
-  `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="${id}" name="${name}"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm${turn === 0 ? "" : ` rot="${turn}"`}><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/><a:chOff x="${x}" y="${y}"/><a:chExt cx="${cx}" cy="${cy}"/></a:xfrm>${effects}</p:grpSpPr>${inside}</p:grpSp>`
-
-function deck() {
-  const parts = blankParts()
-  const slide = String(parts.get("ppt/slides/slide1.xml"))
-  const shapes = [
-    shape(10, "Soft linear gradient", [609600, 457200, 2743200, 1371600], "rect", linear, soft),
-    shape(11, "Soft gradient from the sides", [4343400, 457200, 2743200, 1371600], "rect", fromSides, soft),
-    group(
-      12,
-      "Soft group",
-      [8077200, 457200, 2743200, 1371600],
-      soft,
-      shape(13, "Left", [8077200, 457200, 1600200, 1371600], "ellipse", solid("2F6DB5")) +
-        shape(14, "Right", [9220200, 457200, 1600200, 1371600], "ellipse", solid("2A9D8F")),
-    ),
-    group(
-      20,
-      "Shadow group",
-      [609600, 2514600, 2743200, 1371600],
-      shadow(0),
-      shape(21, "Back", [609600, 2514600, 1828800, 1066800], "rect", solid("2F6DB5")) +
-        shape(22, "Front", [1524000, 2819400, 1828800, 1066800], "rect", solid("E76F51"), "", "Group"),
-    ),
-    group(
-      30,
-      "Glow group",
-      [4343400, 2514600, 2743200, 1371600],
-      glow,
-      shape(31, "One", [4343400, 2743200, 914400, 914400], "ellipse", solid("2F6DB5")) +
-        shape(32, "Two", [5257800, 2743200, 914400, 914400], "ellipse", solid("2A9D8F")) +
-        shape(33, "Three", [6172200, 2743200, 914400, 914400], "ellipse", solid("E76F51")),
-    ),
-    group(
-      40,
-      "Turned shadow group",
-      [8077200, 2514600, 2743200, 1371600],
-      shadow(1),
-      shape(41, "Bar", [8077200, 2743200, 2743200, 914400], "rect", solid("2F6DB5")) +
-        shape(42, "Mark", [9144000, 2514600, 609600, 1371600], "rect", solid("E76F51")),
-      1800000,
-    ),
-  ].join("")
-  const start = slide.indexOf("<p:sp>")
-  const end = slide.indexOf("</p:spTree>")
-  parts.set("ppt/slides/slide1.xml", Buffer.from(slide.slice(0, start) + shapes + slide.slice(end)))
-  return storedZip(parts)
-}
+const shapes = [
+  {
+    id: "f:1",
+    props: {
+      name: "Soft linear gradient",
+      box: spot(160, 120, 480, 260),
+      geometry: { kind: "rect" },
+      fills: linear,
+      effects: "soft",
+    },
+  },
+  {
+    id: "f:2",
+    props: {
+      name: "Lifted radial gradient",
+      box: spot(720, 120, 480, 260),
+      geometry: { kind: "rect" },
+      fills: radial,
+      effects: "lifted",
+    },
+  },
+  group("f:3", "Soft group", [1280, 120, 480, 260], "soft"),
+  inside("f:4", "f:3", "Left", [0, 0, 280, 260], "ellipse", solid("#2f6db5")),
+  inside("f:5", "f:3", "Right", [200, 0, 280, 260], "ellipse", solid("#2a9d8f")),
+  group("f:6", "Shadow group", [160, 560, 480, 260], shadow),
+  inside("f:7", "f:6", "Back", [0, 0, 320, 180], "rect", solid("#2f6db5")),
+  inside("f:8", "f:6", "Front", [160, 80, 320, 180], "rect", solid("#e76f51")),
+  group("f:9", "Glow group", [720, 600, 480, 160], "glow"),
+  inside("f:10", "f:9", "One", [0, 0, 160, 160], "ellipse", solid("#2f6db5")),
+  inside("f:11", "f:9", "Two", [160, 0, 160, 160], "ellipse", solid("#2a9d8f")),
+  inside("f:12", "f:9", "Three", [320, 0, 160, 160], "ellipse", solid("#e76f51")),
+  group("f:13", "Turned shadow group", [1280, 560, 480, 260], shadow, 30),
+  inside("f:14", "f:13", "Bar", [0, 80, 480, 100], "rect", solid("#2f6db5")),
+  inside("f:15", "f:13", "Mark", [190, 0, 100, 260], "rect", solid("#e76f51")),
+]
 
 async function drive(kit) {
-  await kit.signIn()
-  await kit.page.goto("/")
-  const file = path.join(kit.out, "group-effects.pptx")
-  fs.writeFileSync(file, deck())
-  await openDeck(kit.page, file)
-  await kit.page.waitForSelector('[data-slide-paint] [data-canvas-element="ppt/slides/slide1.xml#42"]')
+  const opened = await openDoomDeck(kit)
+  await emptySlide(kit, opened)
+  await landNodes(kit, opened, shapes)
 }
 
 export default { name: "slide-group-effects", design: editor, drive }

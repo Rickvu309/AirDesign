@@ -1,13 +1,13 @@
-import { undoCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
+import { savedNode } from "../doom-deck.mjs"
 import { moveThree } from "./three-moved.mjs"
 
 async function drive(kit) {
-  await kit.signIn()
-  await moveThree(kit)
-  await kit.page.getByRole("button", { name: undoCopy.undoNamed.move, exact: true }).click()
-  await expect(kit.page.getByRole("button", { name: undoCopy.redoNamed.move, exact: true })).toBeEnabled()
+  const opened = await moveThree(kit)
+  await kit.page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await savedNode(kit, opened, "w:2")).box.y).toBe(740)
+  await expect(kit.page.locator("[data-selection-outline]")).toHaveCount(3)
 }
 
 export default { name: "three-undone", design: editor, drive }

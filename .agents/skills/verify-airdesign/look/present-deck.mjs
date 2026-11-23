@@ -1,14 +1,28 @@
-import path from "node:path"
-import { openDeck } from "./open-deck.mjs"
+import { openDoomDeck } from "./doom-deck.mjs"
+import { addSlideStart, editNodes, entry, slideIds } from "./doom-slides.mjs"
+
+const notes = "Open with the three numbers, then hand over to the chart. Keep it under a minute."
 
 export async function presentState(kit, view = "audience") {
-  await kit.signIn()
-  await kit.page.goto("/")
-  await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/nasa-1d-cnn.pptx"), 2)
-  await kit.page.getByRole("button", { name: "Present", exact: true }).click()
-  await kit.page.locator("[data-present-show] [data-thumb-paint]").waitFor()
+  const { page } = kit
+  const opened = await openDoomDeck(kit)
+  await addSlideStart(page, "KPIs")
+  await addSlideStart(page, "Chart")
+  const [, second] = await slideIds(kit, opened)
+  await editNodes(kit, opened, [
+    {
+      node: second,
+      prop: "notes",
+      value: { chars: notes, spans: [], paras: [{}], style: "body", resize: "fixed", alignV: "top" },
+    },
+  ])
+  await entry(page, 2).click()
+  await page.locator("[data-notes-width]").getByText(notes).waitFor()
+  await page.getByRole("button", { name: "Present", exact: true }).click()
+  await page.locator('[data-present-show] [data-present-slide="2"]').waitFor()
   if (view === "presenter") {
-    await kit.page.keyboard.press("p")
-    await kit.page.locator("[data-presenter-view] [data-thumb-paint]").first().waitFor()
+    await page.keyboard.press("p")
+    await page.locator("[data-presenter-view]").getByText(notes).waitFor()
   }
+  await page.evaluate(() => document.fonts.ready)
 }
