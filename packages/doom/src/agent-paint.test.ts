@@ -63,13 +63,28 @@ describe("paint an agent sets the way the panel's colour, fill, picture and bord
     expect(get(at(again, ids.card), "stroke")).toMatchObject({ dash: "dash", weight: 2 })
   })
 
+  it("wraps a gradient angle onto the circle as the panel does, so 400 is 40 and -10 is 350", () => {
+    for (const [typed, saved] of [
+      [400, 40],
+      [-10, 350],
+      [720, 0],
+      [359.6, 0],
+      [-0.5, 0],
+    ] as const) {
+      const read = readAgentChange(set(ids.card, { fill: { gradient: ["accent1", "accent2"], angle: typed } }))
+      const doom = build(agentDeck(), read as AgentChange)
+      expect(get(at(doom, ids.card), "fills")).toMatchObject([{ kind: "gradient", angle: saved }])
+    }
+  })
+
   it("refuses a tint past a whole step, a gradient of one colour, and an unknown dash or fit", () => {
     for (const look of [
       { color: "accent1+101" },
       { color: "accent1+" },
       { color: "accent9+10" },
       { fill: { gradient: ["accent1"] } },
-      { fill: { gradient: ["accent1", "accent2"], angle: 4000 } },
+      { fill: { gradient: ["accent1", "accent2"], angle: Number.POSITIVE_INFINITY } },
+      { fill: { gradient: ["accent1", "accent2"], angle: "90" } },
       { dash: "wavy" },
       { fit: "crop" },
     ])

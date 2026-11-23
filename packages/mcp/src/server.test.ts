@@ -203,6 +203,30 @@ describe("createServer", () => {
   })
 })
 
+describe("a gradient angle past a full turn", () => {
+  it("wraps over the protocol as the panel's field does, so an agent sending 400 gets 40", async () => {
+    await withClient(sessionFor(), memoryDecks(started), async (client) => {
+      const call = async (name: string, args: Record<string, unknown>) =>
+        (await client.callTool({ name: `airdesign_${name}`, arguments: args })).structuredContent as Record<string, any>
+      const made = await call("create_deck", { name: "Angle" })
+      const edited = await call("edit_deck", {
+        deck: made.deck,
+        base: made.rev,
+        changes: [
+          {
+            op: "add",
+            kind: "shape",
+            slide: made.slides[0],
+            fill: { gradient: ["accent1", "accent2"], angle: 400 },
+          },
+        ],
+      })
+      expect(edited).toMatchObject({ ok: true })
+      expect((await call("read_deck", { deck: made.deck })).layers).toContain("@40)")
+    })
+  })
+})
+
 describe("an answer read from structuredContent alone", () => {
   const shot = "/9j/AAAA"
   const textOf = (result: { content: unknown }) =>
