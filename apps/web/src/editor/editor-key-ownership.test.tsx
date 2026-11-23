@@ -1,12 +1,14 @@
+import { act } from "react"
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
 import { editorOwnsKey } from "./editor-key-ownership"
 
 let window: Window & typeof globalThis
+let ui: typeof import("@/components/ui/dialog")
 
 beforeAll(async () => {
   const name = "jsdom"
   const { JSDOM } = await import(name)
-  window = new JSDOM("<!doctype html><html><body></body></html>").window
+  window = new JSDOM("<!doctype html><html><body></body></html>", { pretendToBeVisual: true }).window
   for (const name of [
     "window",
     "document",
@@ -15,8 +17,18 @@ beforeAll(async () => {
     "HTMLInputElement",
     "KeyboardEvent",
     "FocusEvent",
+    "HTMLElement",
+    "MutationObserver",
+    "AbortController",
+    "AbortSignal",
+    "DOMRect",
+    "getComputedStyle",
+    "requestAnimationFrame",
+    "cancelAnimationFrame",
   ] as const)
     vi.stubGlobal(name, window[name])
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true)
+  ui = await import("@/components/ui/dialog")
 })
 
 afterEach(() => window.document.body.replaceChildren())
@@ -71,14 +83,39 @@ it("keeps composing Escape and background keys out of the grid without sending m
   expect(keys).toEqual([])
 })
 
-it("leaves a key pressed inside an open dialog to the dialog, so the canvas behind never acts on it", () => {
-  const document = window.document
-  document.body.innerHTML = `<div data-slot="dialog-popup" data-open><button>Export</button></div>`
-  const inside = document.querySelector("button")!
-  let owned: boolean | null = null
-  window.addEventListener("keydown", (event) => (owned = editorOwnsKey(event)), { once: true, capture: true })
-  inside.dispatchEvent(
-    new window.KeyboardEvent("keydown", { key: "p", ctrlKey: true, bubbles: true, cancelable: true }),
-  )
-  expect(owned).toBe(false)
-})
+it.each(["DialogContent", "DialogPopup"] as const)(
+  "leaves a key pressed inside an open %s to the dialog, so the canvas behind never acts on it",
+  async (kind) => {
+    const { createRoot } = await import("react-dom/client")
+    const { Dialog, DialogContent, DialogPopup, DialogPortal } = ui
+    const host = window.document.createElement("div")
+    window.document.body.append(host)
+    const root = createRoot(host)
+    await act(async () =>
+      root.render(
+        <Dialog open>
+          {kind === "DialogContent" ? (
+            <DialogContent>
+              <button id="inside">Export</button>
+            </DialogContent>
+          ) : (
+            <DialogPortal>
+              <DialogPopup>
+                <button id="inside">Export</button>
+              </DialogPopup>
+            </DialogPortal>
+          )}
+        </Dialog>,
+      ),
+    )
+    try {
+      const inside = window.document.querySelector("#inside")!
+      let owned: boolean | null = null
+      window.addEventListener("keydown", (event) => (owned = editorOwnsKey(event)), { once: true, capture: true })
+      inside.dispatchEvent(new window.KeyboardEvent("keydown", { key: "t", bubbles: true, cancelable: true }))
+      expect(owned).toBe(false)
+    } finally {
+      await act(async () => root.unmount())
+    }
+  },
+)
