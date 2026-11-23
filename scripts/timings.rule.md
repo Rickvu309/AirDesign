@@ -1,0 +1,3 @@
+# A local test run never writes a timing record; only `pnpm timings` does, in a pull request that changes nothing else
+
+Local browser, unit and journey runs measure into an untracked `*.measured.json` beside `tests/browser/spec-seconds.json`, `tests/unit-seconds.json` and `tests/journeys/journey-seconds.json`, so a test run leaves the tree clean. `pnpm timings` folds the measures into the records. The `timings` step refuses a diff from `origin/main` that changes a record beside any other file, and names the record and `pnpm timings`. `timings.test.mjs` replays PR 1463 at 0b38eaf, `browser-timings.test.mjs` and `unit-shards.test.mjs` hold the untouched record

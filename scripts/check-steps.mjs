@@ -126,7 +126,7 @@ const rows = [
     gate: { order: 3 },
     showOnSuccess: true,
   },
-  { name: "copy-in-tests", kind: "rule", command: "node", args: ["scripts/copy-literals.mjs"], gate: { order: 17 } },
+  { name: "copy-in-tests", kind: "rule", command: "node", args: ["scripts/copy-literals.mjs"], gate: { order: 18 } },
   {
     name: "test-imports",
     kind: "rule",
@@ -136,7 +136,7 @@ const rows = [
     preflight: true,
     gate: { order: 1 },
   },
-  { name: "actionlint", kind: "rule", command: "node", args: ["scripts/actionlint.mjs"], gate: { order: 16 } },
+  { name: "actionlint", kind: "rule", command: "node", args: ["scripts/actionlint.mjs"], gate: { order: 17 } },
   {
     name: "unit-tests",
     kind: "tests",
@@ -230,7 +230,7 @@ const rows = [
     kind: "report",
     command: "node",
     args: ["scripts/sweep.mjs", "--at-most-every=30"],
-    gate: { order: 18 },
+    gate: { order: 19 },
     showOnSuccess: true,
   },
   {
@@ -241,6 +241,14 @@ const rows = [
     preflight: true,
     gate: { order: 7 },
     showOnSuccess: true,
+  },
+  {
+    name: "timings",
+    kind: "rule",
+    command: "node",
+    args: ["scripts/timings.mjs", "--check"],
+    preflight: true,
+    gate: { order: 16 },
   },
   {
     name: "linear-branch",

@@ -5,6 +5,7 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { parse } from "yaml"
+import { foldedSeconds, measuredName } from "./spec-seconds.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const workflow = parse(fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8"))
@@ -115,11 +116,15 @@ test('expected failure', async () => { test.fail(); throw new Error('known failu
   assert.deepEqual(JSON.parse(fs.readFileSync(record, "utf8")), recorded, "a narrowed run leaves the record alone")
   const whole = runAlone(["a.spec.ts"])
   assert.equal(whole.status, 0, whole.stdout + whole.stderr)
-  const written = JSON.parse(fs.readFileSync(record, "utf8"))
+  assert.deepEqual(JSON.parse(fs.readFileSync(record, "utf8")), recorded, "a local run leaves the tracked record alone")
+  const measured = JSON.parse(fs.readFileSync(path.join(folder, measuredName("spec-seconds.json")), "utf8"))
+  const written = foldedSeconds({ record: recorded, measured, exists: (name) => name === "a.spec.ts" })
   assert.deepEqual(Object.keys(written.seconds), ["a.spec.ts"], "a gone file leaves the record")
   assert.ok(written.seconds["a.spec.ts"] < 9999, "a file that ran whole and far from its record is measured again")
   assert.ok(written.export["a.spec.ts"] >= 0.1, "the seconds of its export tests are kept apart")
-  console.log("browser-timings: passing, failing and skipped tests retain timings and metrics across shards")
+  console.log(
+    "browser-timings: passing, failing and skipped tests retain timings and metrics across shards, and a local run measures beside the record",
+  )
 } finally {
   fs.rmSync(folder, { recursive: true, force: true })
 }

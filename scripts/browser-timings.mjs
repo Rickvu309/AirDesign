@@ -2,7 +2,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { designScans, onCi } from "./check-steps.mjs"
 import { browserExportTag } from "./pptx-cases.mjs"
-import { narrowedRun, refreshedSpecSeconds, specSecondsName } from "./spec-seconds.mjs"
+import { keepMeasured, measuredName, measuredSeconds, narrowedRun, specSecondsName } from "./spec-seconds.mjs"
 
 const noted = ["metric", "warning"]
 const scans = new Set(designScans.map((file) => path.basename(file)))
@@ -56,7 +56,7 @@ export default class BrowserTimings {
     for (const { type, description } of notes)
       if (type === "warning")
         console.log(process.env.GITHUB_ACTIONS === "true" ? `::warning::${description}` : description)
-    if (result.status === "passed" && !onCi(process.env) && !narrowedRun(process.argv)) this.recordSeconds()
+    if (result.status === "passed" && !onCi(process.env) && !narrowedRun(process.argv)) this.measureSeconds()
     fs.mkdirSync("test-results", { recursive: true })
     fs.writeFileSync("test-results/browser-timings.json", `${report}\n`)
     if (process.env.GITHUB_STEP_SUMMARY) {
@@ -67,21 +67,15 @@ export default class BrowserTimings {
     }
   }
 
-  recordSeconds() {
-    const file = path.join(this.root, specSecondsName)
-    if (!fs.existsSync(file)) return
-    const before = fs.readFileSync(file, "utf8")
+  measureSeconds() {
+    if (!fs.existsSync(path.join(this.root, specSecondsName))) return
     const tests = this.tests
       .filter((test) => !scans.has(test.file))
       .map((test) => ({ ...test, exported: this.exported.has(test.id) }))
     if (tests.length === 0) return
-    const record = refreshedSpecSeconds({
-      record: JSON.parse(before),
-      scheduled: this.perFile,
-      tests,
-      exists: (name) => fs.existsSync(path.join(this.root, name)),
-    })
-    const after = `${JSON.stringify(record, null, 2)}\n`
-    if (after !== before) fs.writeFileSync(file, after)
+    keepMeasured(
+      path.join(this.root, measuredName(specSecondsName)),
+      measuredSeconds({ scheduled: this.perFile, tests }),
+    )
   }
 }

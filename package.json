@@ -26,6 +26,7 @@
     "test": "pnpm test:unit && pnpm test:tooling",
     "test:unit": "vitest run",
     "test:tooling": "node scripts/tooling-tests.mjs",
+    "timings": "node scripts/timings.mjs",
     "prove": "node .agents/skills/verify-airdesign/bin/verify-airdesign.mjs prove",
     "test:browser": "if [ \"${AIRDESIGN_WEB_BUILT:-}\" != 1 ]; then pnpm build:browser; fi && playwright test",
     "test:production": "playwright test -c playwright.production.config.ts",
