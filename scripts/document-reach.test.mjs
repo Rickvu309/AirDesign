@@ -69,7 +69,14 @@ same(
       'const message = "Call elementId or readElementId from @airdesign/document instead of casting to ElementId."\n',
     "apps/web/package.json": JSON.stringify({ dependencies: { "@airdesign/doom": "workspace:*" } }),
     "docs/packs.md": 'import { presets } from "@airdesign/document"\n',
-    "scripts/fixture.test.mjs": `  'import { presets } from "@airdesign/document"',\n  'await import("@airdesign/document")',\n`,
+    "scripts/fixture.test.mjs": `const lines = [\n  'import { presets } from "@airdesign/document"',\n  'await import("@airdesign/document")',\n]\n`,
   }),
   [],
+)
+same(
+  "a file that names document but does not parse fails instead of passing unread",
+  faultsOf({ "apps/web/src/broken.tsx": 'import { presets } from "@airdesign/document"\nconst = = ;\n' }),
+  [
+    "apps/web/src/broken.tsx names @airdesign/document and does not parse, so its imports cannot be checked. Fix its syntax.",
+  ],
 )
