@@ -2,6 +2,7 @@ import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import { SlideSidebar, type SlideStrip } from "@/editor/slide-sidebar"
+import { nodeId } from "@airdesign/doom"
 
 const menus = vi.hoisted(() => ({ rendered: 0 }))
 
@@ -44,6 +45,7 @@ afterAll(() => {
 
 const stripOf = (current: number): SlideStrip => ({
   count: 6,
+  slideIds: [nodeId("n:1"), nodeId("n:2"), nodeId("n:3"), nodeId("n:4"), nodeId("n:5"), nodeId("n:6")],
   current,
   onSelect: () => undefined,
   onClone: () => undefined,

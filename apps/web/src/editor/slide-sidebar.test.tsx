@@ -2,9 +2,11 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { slideChangeAllowed } from "@/editor/slide-menu"
 import { SlideSidebar, type SlideStrip } from "@/editor/slide-sidebar"
+import { nodeId } from "@airdesign/doom"
 
 const strip: SlideStrip = {
   count: 4,
+  slideIds: [nodeId("n:1"), nodeId("n:2"), nodeId("n:3"), nodeId("n:4")],
   current: 2,
   groups: [
     { name: "Opening", start: 0, key: "f0" },
@@ -27,7 +29,7 @@ describe("slide list", () => {
   it("enables Add slide once the deck's first slide has painted", () => {
     const onAdd = () => undefined
     const add = (html: string) => tags(html, /<button[^>]*aria-label="Add slide"[^>]*>/g)[0]
-    expect(add(markup({ count: 0, groups: [], onAdd }))).toMatch(/ disabled(?:=|[ >])/)
+    expect(add(markup({ count: 0, slideIds: [], groups: [], onAdd }))).toMatch(/ disabled(?:=|[ >])/)
     expect(add(markup({ onAdd }))).not.toMatch(/ disabled(?:=|[ >])/)
   })
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { pickedSlides, pickRange, pickToggle, prunedPick, toggledCurrent } from "@/editor/grid-selection"
+import { pickedSlides, pickRange, pickToggle, toggledCurrent } from "@/editor/grid-selection"
 
 describe("grid selection", () => {
   it("is the current slide alone until a person picks more", () => {
@@ -27,11 +27,6 @@ describe("grid selection", () => {
     const back = pickRange(forward, 0, 5)
     expect(pickedSlides(back, 0)).toEqual([0, 1, 2])
     expect(pickedSlides(pickRange(null, 3, 1), 3)).toEqual([1, 2, 3])
-  })
-
-  it("drops slides the deck no longer has and keeps the remaining selection", () => {
-    expect(pickedSlides(prunedPick(pickRange(null, 4, 0), 3), 0)).toEqual([0, 1, 2])
-    expect(pickedSlides(prunedPick(pickRange(null, 4, 0), 1), 4)).toEqual([0])
   })
 
   it("makes the clicked slide current, or the nearest selected slide before it when the click took it away", () => {

@@ -2,6 +2,7 @@ import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import { SlideSidebar, type SlideStrip } from "@/editor/slide-sidebar"
+import { nodeId } from "@airdesign/doom"
 
 let window: Window & typeof globalThis
 
@@ -31,6 +32,7 @@ afterAll(() => {
 
 const strip: SlideStrip = {
   count: 6,
+  slideIds: [nodeId("n:1"), nodeId("n:2"), nodeId("n:3"), nodeId("n:4"), nodeId("n:5"), nodeId("n:6")],
   current: 0,
   onSelect: () => undefined,
   onClone: () => undefined,

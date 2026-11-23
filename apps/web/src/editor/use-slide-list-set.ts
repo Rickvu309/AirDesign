@@ -1,14 +1,12 @@
+import { limits } from "@airdesign/doom"
 import { useLayoutEffect, useState, type RefObject } from "react"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { gridDrop, gridGroups, gridMoveMessage } from "@/editor/grid-drop"
-import type { GridPick } from "@/editor/grid-selection"
-import { gridChange, gridMoveAt, gridSlideActions } from "@/editor/grid-slide-actions"
-import { heldSlides, livePick, pressedPick, type SlidePress } from "@/editor/slide-list-pick"
+import { heldOf, heldSlides, livePick, pressedPick, type HeldSlides, type SlidePress } from "@/editor/slide-list-pick"
 import type { SlideKey } from "@/editor/slide-keys"
 import type { SlideMenuSet } from "@/editor/slide-menu"
+import { setMoveAt, slideSetAction } from "@/editor/slide-set-actions"
 import type { SlideStrip } from "@/editor/slide-sidebar"
-
-const setDirection: Readonly<Record<"up" | "down", "earlier" | "later">> = { up: "earlier", down: "later" }
 
 export function useSlideListSet(
   strip: SlideStrip,
@@ -22,8 +20,9 @@ export function useSlideListSet(
     onSlideSelection: ((count: number) => void) | undefined
   },
 ) {
-  const [picked, setPicked] = useState<GridPick>(null)
-  const live = livePick(picked, strip.current, strip.count, strip.slideIds)
+  const [picked, setPicked] = useState<HeldSlides>(null)
+  const ids = strip.slideIds
+  const live = livePick(picked, strip.current, ids)
   const held = heldSlides(live, strip.current)
   const heldKey = held.join(",")
   const onSelection = strip.onSelection
@@ -34,7 +33,7 @@ export function useSlideListSet(
   }, [onSelection, onSlideSelection, heldKey])
   const press = (index: number, how: SlidePress) => {
     const next = pressedPick(live, index, strip.current, how)
-    setPicked(next.pick)
+    setPicked(heldOf(next.pick, ids))
     if (next.pick !== null && how !== "menu") announce(slideListCopy.selected(next.pick.slides.size))
     strip.onSelect(next.current)
   }
@@ -43,20 +42,22 @@ export function useSlideListSet(
     if (first === null || strip.onMoveMany === undefined) return
     following.current = true
     strip.onMoveMany(moved, at)
-    setPicked(moved.length > 1 ? { anchor: first, slides: new Set(moved.map((_, offset) => first + offset)) } : null)
+    setPicked(moved.length > 1 ? heldOf({ anchor: moved[0] ?? first, slides: new Set(moved) }, ids) : null)
     announce(gridMoveMessage(moved, at))
   }
-  const actOnSet = gridSlideActions(strip, live, {
+  const actOnSet = slideSetAction(strip, held, {
     follow: () => {
       following.current = true
     },
-    pick: setPicked,
+    pick: (slides) => {
+      const [anchor] = slides
+      setPicked(anchor === undefined ? null : { anchor, slides: new Set(slides) })
+    },
     moveSlides,
     announce,
   })
   const inSet = (index: number) => live?.slides.has(index) === true
-  const setChange = (index: number): ((change: SlideKey) => void) | null =>
-    inSet(index) ? (change) => actOnSet(gridChange[change], index) : null
+  const setChange = (index: number): ((change: SlideKey) => void) | null => (inSet(index) ? actOnSet : null)
   const menuSet: SlideMenuSet | undefined =
     live === null
       ? undefined
@@ -64,8 +65,10 @@ export function useSlideListSet(
           size: held.length,
           skipped: held.every((index) => strip.skipped?.[index] === true),
           allowed: (change) => {
-            if (change === "clone" || change === "remove") return strip.onChangeSet !== undefined
-            return strip.onMoveMany !== undefined && gridMoveAt(held, strip.count, setDirection[change]) !== null
+            if (change === "up" || change === "down")
+              return strip.onMoveMany !== undefined && setMoveAt(held, strip.count, change) !== null
+            if (strip.onChangeSet === undefined) return false
+            return change === "remove" ? held.length < strip.count : held.length + strip.count <= limits.slides
           },
         }
   const drop = () => setPicked(null)

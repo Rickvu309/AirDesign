@@ -19,7 +19,6 @@ import { EditorIcon } from "@/components/ui/editor-icons"
 import { hairlineShadow, surfaceShadow } from "@/components/ui/shadows"
 import { SidebarHead } from "@/editor/editor-chrome"
 import { slideKey, type SlideKey } from "@/editor/slide-keys"
-import type { SelectedCopy, SlideSetChange } from "@/editing/slide-edit"
 import type { SaveStatus } from "@/editor/save-status"
 import { slideChangeAllowed } from "@/editor/slide-menu"
 import { NewSlideMenu } from "@/editor/new-slide-menu"
@@ -41,7 +40,7 @@ const noGroups: readonly StripGroup[] = []
 
 export type SlideStrip = {
   readonly count: number
-  readonly slideIds?: readonly NodeId[]
+  readonly slideIds: readonly NodeId[]
   readonly groups?: readonly StripGroup[]
   readonly current: number
   readonly skipped?: readonly boolean[]
@@ -52,11 +51,7 @@ export type SlideStrip = {
   readonly layouts?: readonly LayoutChoice[]
   readonly onClone?: (index: number) => void
   readonly onRemove?: (index: number) => void
-  readonly onChangeSet?: (
-    change: SlideSetChange,
-    indices: readonly number[],
-    paint: (copies: readonly SelectedCopy[]) => void,
-  ) => void
+  readonly onChangeSet?: (change: "clone" | "remove", indices: readonly number[]) => readonly string[] | null
   readonly onMoveMany?: (held: readonly number[], at: number) => void
   readonly onMove?: (from: number, to: number) => void
   readonly say?: { current: (text: string) => void }

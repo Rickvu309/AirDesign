@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { heldSlides, livePick, pressedPick, setDropPlace, slidePress } from "@/editor/slide-list-pick"
+import { heldOf, heldSlides, livePick, pressedPick, setDropPlace, slidePress } from "@/editor/slide-list-pick"
 
 const click = { shiftKey: false, metaKey: false, ctrlKey: false }
 
@@ -37,11 +37,15 @@ describe("slide list selection", () => {
     expect(pressedPick(two.pick, 1, two.current, "only")).toEqual({ pick: null, current: 1 })
   })
 
-  it("holds a selection only while it holds the current slide and fits the deck", () => {
+  it("holds a selection only while it holds the current slide, and keeps its slides wherever they move", () => {
+    const ids = ["a", "b", "c", "d", "e", "f"]
     const { pick } = pressedPick(null, 3, 1, "range")
-    expect(livePick(pick, 3, 6)).toEqual(pick)
-    expect(livePick(pick, 5, 6)).toBeNull()
-    expect(heldSlides(livePick(pick, 2, 3), 2)).toEqual([1, 2])
+    const held = heldOf(pick, ids)
+    expect(livePick(held, 3, ids)).toEqual(pick)
+    expect(livePick(held, 5, ids)).toBeNull()
+    expect(heldSlides(livePick(held, 2, ["a", "b", "c"]), 2)).toEqual([1, 2])
+    expect(heldSlides(livePick(held, 0, ["d", "a", "c", "b"]), 0)).toEqual([0, 2, 3])
+    expect(livePick(held, 0, ["d", "a", "e"])).toBeNull()
   })
 
   it("drops a moved set before a slide above it and after a slide below it, and nowhere inside it", () => {
