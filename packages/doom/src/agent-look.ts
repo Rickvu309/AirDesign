@@ -6,8 +6,8 @@ import { textFromMarkdown } from "./markdown.js"
 import type { Color, ColorVar, Hex, Paint, Sides, StrokeStyle } from "./paint.js"
 import type { Box } from "./doom-walk.js"
 import { zeroBox } from "./doom-walk.js"
-import type { Text, TextStyleName } from "./text.js"
-import { styleWrite } from "./text-writes.js"
+import type { Span, Text, TextStyleName } from "./text.js"
+import { type TextPatch, lookWrite, paraWrite, styleWrite } from "./text-writes.js"
 
 export type Now = {
   readonly stroke?: StrokeStyle | undefined
@@ -58,7 +58,7 @@ export function surfaceOf(look: AgentLook, now: Now = {}, align: StrokeStyle["al
 
 const horizontal = { left: "left", center: "center", right: "right" } as const
 
-export function alignWith(previous: Align9 | undefined, align: AgentLook["align"] & string): Align9 {
+export function alignWith(previous: Align9 | undefined, align: keyof typeof horizontal): Align9 {
   return `${previous?.split("-")[0] ?? "top"}-${horizontal[align]}` as Align9
 }
 
@@ -67,7 +67,7 @@ export function layoutOf(look: AgentLook, now: Layout | undefined, fallbackGap: 
     return undefined
   if (look.layout === "none") return { mode: "none" }
   const mode = look.layout ?? (now?.mode === "row" || now?.mode === "column" || now?.mode === "grid" ? now.mode : null)
-  if (mode === null) return undefined
+  if (mode === null || look.align === "justify") return undefined
   const carried = now?.mode === mode ? now : undefined
   if (mode === "grid") {
     if (carried?.mode !== "grid") return undefined
@@ -106,12 +106,54 @@ function coloured(text: Text, color: Color): Text {
   return { ...text, spans: spans.map((span) => ({ ...span, color })) }
 }
 
+const textKeys = [
+  "text",
+  "textStyle",
+  "align",
+  "color",
+  "size",
+  "font",
+  "lineHeight",
+  "letterSpacing",
+  "case",
+  "underline",
+  "strike",
+] as const
+
+function same<K extends keyof Span>(text: Text, key: K): Span[K] | undefined {
+  const first = text.spans[0]?.[key]
+  return first !== undefined && text.spans.every((span) => span[key] === first) ? first : undefined
+}
+
+function keptLook(now: Text): TextPatch {
+  const kept = { size: same(now, "size"), font: same(now, "font"), tracking: same(now, "tracking") }
+  const marks = { case: same(now, "case"), underline: same(now, "underline"), strike: same(now, "strike") }
+  return Object.fromEntries(Object.entries({ ...kept, ...marks }).filter(([, value]) => value !== undefined))
+}
+
+function keptLineHeight(now: Text): number | undefined {
+  const first = now.paras[0]?.lineHeight
+  return first !== undefined && now.paras.every((para) => para.lineHeight === first) ? first : undefined
+}
+
+const askedLook = (look: AgentLook): TextPatch =>
+  Object.fromEntries(
+    Object.entries({
+      size: look.size,
+      font: look.font,
+      tracking: look.letterSpacing,
+      case: look.case,
+      underline: look.underline,
+      strike: look.strike,
+    }).filter(([, value]) => value !== undefined),
+  )
+
 export function textOfLook(look: AgentLook, now: Text | undefined, fallback: TextStyleName): Text | undefined {
-  if (look.text === undefined && look.textStyle === undefined && look.align === undefined && look.color === undefined)
-    return undefined
+  if (textKeys.every((key) => look[key] === undefined)) return undefined
   const style = look.textStyle ?? now?.style ?? fallback
   const words = look.text
   const replacing = words !== undefined && now !== undefined
+  const keeping = replacing && look.textStyle === undefined
   let text: Text
   if (words === undefined)
     text = now === undefined ? textFromMarkdown("", style) : look.textStyle === undefined ? now : styleWrite(now, style)
@@ -130,5 +172,9 @@ export function textOfLook(look: AgentLook, now: Text | undefined, fallback: Tex
   const align = look.align ?? (replacing ? uniformAlign(now) : undefined)
   if (align !== undefined) text = { ...text, paras: text.paras.map((para) => ({ ...para, align })) }
   const color = look.color !== undefined ? colorOf(look.color) : replacing ? uniformColor(now) : undefined
-  return color === undefined ? text : coloured(text, color)
+  if (color !== undefined) text = coloured(text, color)
+  const patch = { ...(keeping ? keptLook(now) : {}), ...askedLook(look) }
+  if (Object.keys(patch).length > 0) text = lookWrite(text, patch)
+  const lineHeight = look.lineHeight ?? (keeping ? keptLineHeight(now) : undefined)
+  return lineHeight === undefined ? text : paraWrite(text, { lineHeight })
 }

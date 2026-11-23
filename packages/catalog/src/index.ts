@@ -91,7 +91,7 @@ export { pictureBytes, pictureType, type SlideKey, type SlidePictures } from "./
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, readOnce } from "./mcp-routes.js"
 
-export { fontRoutes } from "@airdesign/fonts"
+export { fontRoutes, resolveFont } from "@airdesign/fonts"
 
 export {
   creditsRoutes,

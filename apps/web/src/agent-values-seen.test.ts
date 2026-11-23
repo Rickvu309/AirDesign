@@ -60,6 +60,13 @@ const seen: Readonly<Record<string, Seen>> = {
   box: { person: ["gesture:move", "gesture:resize", "panel:box.align"] },
   name: { owedToPerson: "a layer's name: no layers panel" },
   hidden: { owedToPerson: "a hidden layer cannot be seen or shown again: no layers panel", partly: ["gesture:hide"] },
+  size: { person: ["panel:text.size"] },
+  font: { person: ["panel:text.font"] },
+  lineHeight: { person: ["panel:text.lineHeight"] },
+  letterSpacing: { person: ["panel:text.letterSpacing"] },
+  case: { person: ["panel:text.case"] },
+  underline: { person: ["panel:text.underline"] },
+  strike: { person: ["panel:text.strike"] },
 }
 
 const owedToPerson = [
