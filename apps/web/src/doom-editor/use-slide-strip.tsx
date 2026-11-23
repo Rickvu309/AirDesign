@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { gestureFor } from "@airdesign/render"
+import { gestureFor } from "@/lib/gestures"
 import { useRef, type KeyboardEvent } from "react"
 import { toast } from "@/components/ui/toast"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"

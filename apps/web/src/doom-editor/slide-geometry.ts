@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import type { Bounds } from "@airdesign/render"
+import type { Bounds } from "./snapping"
 
 export type Point = { readonly x: number; readonly y: number }
 export type Matrix = readonly [number, number, number, number, number, number]

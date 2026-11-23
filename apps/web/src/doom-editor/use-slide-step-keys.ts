@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { gestureFor } from "@airdesign/render"
+import { gestureFor } from "@/lib/gestures"
 import { useEffect, useRef } from "react"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { typing } from "./use-canvas-keys"

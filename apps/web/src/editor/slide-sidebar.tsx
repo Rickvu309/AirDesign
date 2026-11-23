@@ -1,5 +1,6 @@
 import { SlideItem } from "@/editor/slide-list-item"
-import { Filmstrip, gestureFor } from "@airdesign/render"
+import { Filmstrip } from "@airdesign/render"
+import { gestureFor } from "@/lib/gestures"
 import type { NodeId } from "@airdesign/doom"
 import {
   useCallback,

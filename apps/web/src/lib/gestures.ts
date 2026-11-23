@@ -1,4 +1,4 @@
-export type Where = "slide" | "element" | "guide" | "text" | "control" | "slides" | "grid" | "editor" | "show" | "armed"
+type Where = "slide" | "element" | "guide" | "text" | "control" | "slides" | "grid" | "editor" | "show" | "armed"
 
 type Chord = {
   readonly mod?: true
@@ -38,7 +38,7 @@ export type KeyLike = {
   readonly shiftKey: boolean
 }
 
-export type ArrowStep = { readonly x: number; readonly y: number }
+type ArrowStep = { readonly x: number; readonly y: number }
 
 const arrowSteps = new Map<string, ArrowStep>([
   ["ArrowLeft", { x: -1, y: 0 }],

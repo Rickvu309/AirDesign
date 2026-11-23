@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import type { GestureId } from "@airdesign/render"
+import type { GestureId } from "@/lib/gestures"
 import { deleteWrites } from "./delete-writes"
 import { flipWrites, toggleWrites } from "./flip-writes"
 import { wrapWrites, ungroupWrites } from "./group-writes"

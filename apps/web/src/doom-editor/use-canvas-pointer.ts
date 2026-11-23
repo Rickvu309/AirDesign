@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import type { TransformGrip } from "@airdesign/render"
+import type { TransformGrip } from "./transform-math"
 import {
   useEffect,
   useRef,

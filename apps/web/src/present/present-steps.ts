@@ -1,4 +1,4 @@
-import { gestureFor, type GestureId, type KeyLike } from "@airdesign/render"
+import { gestureFor, type GestureId, type KeyLike } from "@/lib/gestures"
 
 export type ShowView = "audience" | "presenter"
 

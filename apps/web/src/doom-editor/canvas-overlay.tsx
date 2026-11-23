@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import type { Guide } from "@airdesign/render"
+import type { Guide } from "./snapping"
 import type { Rect } from "./selection"
 import { CanvasHandles } from "./canvas-handles"
 import { LineHandles } from "./line-handles"

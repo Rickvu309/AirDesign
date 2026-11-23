@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import type { Bounds } from "@airdesign/render"
+import type { Bounds } from "./snapping"
 import { moveWrites } from "./move-writes"
 import type { Point, SlideGeometry } from "./slide-geometry"
 

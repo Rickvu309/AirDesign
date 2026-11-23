@@ -13,7 +13,7 @@ import {
   type FlippableLayer,
   type ResizeGrip,
   type RotatedLayer,
-} from "./transform-math.js"
+} from "./transform-math"
 
 type Box = Parameters<typeof resizeBox>[0]
 
