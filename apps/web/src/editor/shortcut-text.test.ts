@@ -21,13 +21,13 @@ describe("the keys the shortcuts panel shows", () => {
       [other.mod, other.shift, "G"],
       [other.mod, "Backspace"],
     ])
-    expect(caps("select-matching", "mac")).toEqual([[mac.alt, mac.mod, "A"]])
-    expect(caps("select-matching", "other")).toEqual([[other.mod, other.alt, "A"]])
+    expect(caps("frame", "mac")).toEqual([[mac.alt, mac.mod, "G"]])
+    expect(caps("frame", "other")).toEqual([[other.mod, other.alt, "G"]])
   })
 
   it("keeps Control as Control on a Mac where the row asks for it", () => {
-    expect(caps("shortcuts", "mac")).toEqual([[mac.ctrl, mac.shift, "?"]])
-    expect(caps("shortcuts", "other")).toEqual([[other.ctrl, other.shift, "?"]])
+    expect(caps("redo", "mac").at(-1)).toEqual([mac.ctrl, "Y"])
+    expect(caps("redo", "other").at(-1)).toEqual([other.ctrl, "Y"])
   })
 
   it("shows a Command-only key on a Mac and leaves it out elsewhere", () => {
@@ -49,7 +49,6 @@ describe("the keys the shortcuts panel shows", () => {
     expect(caps("select", "mac")).toEqual([[words.click]])
     expect(caps("select-add", "mac")).toEqual([[mac.shift, words.click]])
     expect(caps("resize", "other")).toEqual([[`${words.drag} ${words.corner}`], [`${words.drag} ${words.edge}`]])
-    expect(caps("measure", "mac")).toEqual([[mac.alt, words.hover]])
     expect(caps("step-in", "other")).toEqual([[words.double]])
   })
 

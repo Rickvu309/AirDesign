@@ -5,7 +5,6 @@ import type { ExportRequest } from "@/export/export-deck"
 import { ExportDialog } from "@/export/export-dialog"
 import { PrintSheet } from "@/export/export-print"
 import type { PrintSize } from "@/export/print-page"
-import { useExportKey } from "@/export/export-key"
 
 export type ExportTarget = {
   readonly name: string
@@ -63,7 +62,6 @@ function ExportFlow({ target }: { target: ExportTarget }) {
     setChoice(firstChoice(target.count, target.selected))
     setOpen(true)
   }
-  useExportKey(openDialog)
 
   return (
     <>

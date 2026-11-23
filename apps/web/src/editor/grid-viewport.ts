@@ -1,4 +1,4 @@
-import { arrowOf, type PaintBox } from "@airdesign/render"
+import { type PaintBox } from "@airdesign/render"
 import { gridElementPresses } from "./grid-number"
 import { zoomRanges } from "./canvas-zoom"
 import { wheelPixelsOf, wheelZoomFactor, type WheelLike } from "./canvas-viewport"
@@ -73,11 +73,6 @@ export function wheeledGrid(view: GridViewport, event: WheelLike, anchor: GridDe
 
 export function gridScaleMoved(view: GridViewport, scale: number): boolean {
   return Math.abs(view.scale - scale) > view.scale * 1e-9
-}
-
-export function arrowGrid(view: GridViewport, key: string): GridViewport {
-  const arrow = arrowOf(key)
-  return arrow === null ? view : pannedGrid(view, { x: -80 * arrow.x, y: -80 * arrow.y })
 }
 
 export function readGridViewport(raw: string | null): GridViewport | null {

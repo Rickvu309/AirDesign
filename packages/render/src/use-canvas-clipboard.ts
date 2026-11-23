@@ -1,6 +1,5 @@
 import type { Box, ElementId } from "@airdesign/document"
 import { useEffect, useRef, type RefObject } from "react"
-import { gestureFor } from "./gestures.js"
 import type { Copied } from "./layer-copies.js"
 import type { CanvasSlide } from "./record.js"
 import type { Selection } from "./selection.js"
@@ -22,11 +21,6 @@ export type LayerClipboard = {
 }
 
 const typingInto = 'input, textarea, select, [contenteditable="true"], [contenteditable=""]'
-
-const keyedModes = new Map<string, PasteMode>([
-  ["paste-over", "over"],
-  ["paste-replace", "replace"],
-])
 
 function clipped(element: Element): boolean {
   const { overflowX, overflowY } = getComputedStyle(element)
@@ -97,36 +91,13 @@ export function useCanvasClipboard(options: {
       if (event.defaultPrevented || !owned(event.target, latest.current.surface.current)) return
       if (pasted("paste", event.clipboardData)) event.preventDefault()
     }
-    function pictured(event: KeyboardEvent) {
-      const { surface, selection, ownsKey, clipboard } = latest.current
-      const ids = selection.current.ids
-      if (clipboard === undefined || ids.length === 0 || !owned(event.target, surface.current)) return
-      if (ownsKey?.(event) === false) return
-      event.preventDefault()
-      const picture = clipboard.picture(ids)
-      void navigator.clipboard.write([new ClipboardItem({ "image/png": picture })]).catch(() => undefined)
-    }
-    function keyed(event: KeyboardEvent) {
-      if (event.defaultPrevented || event.repeat || event.isComposing) return
-      if (gestureFor(event, "editor") === "copy-png") {
-        pictured(event)
-        return
-      }
-      const mode = keyedModes.get(gestureFor(event, "editor") ?? "")
-      if (mode === undefined || !owned(event.target, latest.current.surface.current)) return
-      if (latest.current.ownsKey?.(event) === false) return
-      event.preventDefault()
-      pasted(mode, null)
-    }
     document.addEventListener("copy", copied)
     document.addEventListener("cut", copied)
     document.addEventListener("paste", pastedEvent)
-    document.addEventListener("keydown", keyed)
     return () => {
       document.removeEventListener("copy", copied)
       document.removeEventListener("cut", copied)
       document.removeEventListener("paste", pastedEvent)
-      document.removeEventListener("keydown", keyed)
     }
   }, [working])
 }

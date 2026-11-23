@@ -1,12 +1,5 @@
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
-import {
-  controlHandsKeysBack,
-  editorOwnsKey,
-  handOf,
-  leavesPicker,
-  pickerHandsKeysBack,
-  toolKeyPlace,
-} from "./editor-key-ownership"
+import { editorOwnsKey, handOf, leavesPicker, pickerHandsKeysBack, toolKeyPlace } from "./editor-key-ownership"
 
 let window: Window & typeof globalThis
 
@@ -76,35 +69,6 @@ it("keeps composing Escape and background keys out of the grid without sending m
     expect(event.defaultPrevented).toBe(true)
   }
   expect(keys).toEqual([])
-})
-
-it.each(["Enter", "Escape"])("gives the keys back to the canvas after %s in a design panel control", (key) => {
-  window.document.body.innerHTML =
-    '<div data-design-panel><input id="opacity"><textarea></textarea></div><input id="elsewhere">'
-  const read = (selector: string, init: KeyboardEventInit = {}) => {
-    let handsBack: boolean | null = null
-    const target = window.document.querySelector(selector)!
-    target.addEventListener("keydown", (event) => (handsBack = controlHandsKeysBack(event as KeyboardEvent)), {
-      once: true,
-    })
-    target.dispatchEvent(new window.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...init }))
-    return handsBack
-  }
-  expect(read("#opacity")).toBe(true)
-  expect(read("#opacity", { isComposing: true })).toBe(false)
-  expect(read("#opacity", { ctrlKey: true })).toBe(false)
-  expect(read("textarea")).toBe(false)
-  expect(read("#elsewhere")).toBe(false)
-})
-
-it("keeps the keys in a design panel control for every other key", () => {
-  window.document.body.innerHTML = "<div data-design-panel><input></div>"
-  const input = window.document.querySelector("input")!
-  const read: boolean[] = []
-  input.addEventListener("keydown", (event) => read.push(controlHandsKeysBack(event as KeyboardEvent)))
-  for (const key of ["l", "r", "Tab", "ArrowUp", "Backspace"])
-    input.dispatchEvent(new window.KeyboardEvent("keydown", { key, bubbles: true }))
-  expect(read).toEqual([false, false, false, false, false])
 })
 
 it("gives the keys back to the canvas when focus leaves a picker for its trigger in the design panel", () => {

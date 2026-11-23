@@ -1,6 +1,5 @@
 import type { Box, ElementId } from "@airdesign/document"
-import { nudgeStep, type Corner, type Point } from "./box-gesture.js"
-import { arrowOf } from "./gestures.js"
+import type { Corner, Point } from "./box-gesture.js"
 
 export { type Corner, type Point } from "./box-gesture.js"
 
@@ -155,14 +154,6 @@ export function resizeBox(
     cx,
     cy,
   }
-}
-
-export function resizedByKey(start: Box, key: string, rotation = 0): Box | null {
-  const arrow = arrowOf(key)
-  if (arrow === null) return null
-  const own = { x: arrow.x * nudgeStep, y: arrow.y * nudgeStep }
-  const travel = rotation === 0 ? own : rotatePoint(own, rotation)
-  return resizeBox(start, "bottom-right", travel.x, travel.y, { keepRatio: false, fromCenter: false }, rotation)
 }
 
 export function visualBounds(box: Box, rotation: number): Box {

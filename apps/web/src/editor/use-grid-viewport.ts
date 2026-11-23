@@ -18,7 +18,6 @@ import {
   zoomedGridBy,
   pannedGrid,
   wheeledGrid,
-  arrowGrid,
   fittedGridCards,
   fittedGridElements,
   fittedGridGroups,
@@ -192,10 +191,6 @@ export function useGridViewport({
         setSpace(true)
         return
       }
-      if (gestureFor(event, "grid") !== "pan-arrows" || !canvasKeyTarget(event.target, viewport.current)) return
-      event.preventDefault()
-      paint(arrowGrid(view.current, event.key))
-      settle()
     }
     function up(event: KeyboardEvent) {
       if (releases(event, "pan")) release()

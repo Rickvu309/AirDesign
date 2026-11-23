@@ -2,12 +2,10 @@ import type { Geometry } from "@airdesign/document"
 import { gestureFor, type GestureId } from "@airdesign/render"
 import { useEffect, useRef } from "react"
 import { editorOwnsKey, toolKeyPlace } from "@/editor/editor-key-ownership"
-import { pickPicture } from "@/editor/picture-picker"
 import { typing } from "@/editor/pointer-tool"
 
 export type ToolKeyActions = {
   readonly onShape: ((geometry: Geometry) => void) | undefined
-  readonly onPicture: ((file: File) => void) | undefined
 }
 
 const shapeOfGesture: Partial<Readonly<Record<GestureId, Geometry>>> = {
@@ -18,10 +16,9 @@ const shapeOfGesture: Partial<Readonly<Record<GestureId, Geometry>>> = {
 }
 
 function toolRun(gesture: GestureId | null, actions: ToolKeyActions): (() => void) | undefined {
-  const { onShape, onPicture } = actions
+  const { onShape } = actions
   const shape = gesture === null ? undefined : shapeOfGesture[gesture]
   if (shape !== undefined && onShape !== undefined) return () => onShape(shape)
-  if (gesture === "place-image" && onPicture !== undefined) return () => pickPicture(onPicture)
   return undefined
 }
 

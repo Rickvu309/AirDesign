@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { nudgeStep, type Corner } from "./box-gesture.js"
-import { resizeBox, resizedByKey } from "./transform-math.js"
+import type { Corner } from "./box-gesture.js"
+import { resizeBox } from "./transform-math.js"
 
 const start = { x: 457_200, y: 457_200, cx: 5_486_400, cy: 1_828_800 }
 const free = { keepRatio: false, fromCenter: false } as const
@@ -103,15 +103,6 @@ describe("resizeBox on a turned box", () => {
     expect([box.cx, box.cy]).toEqual([0, 0])
     const kept = onScreen(start, "bottom-right", 30)
     const now = onScreen(box, "bottom-right", 30)
-    expect(Math.abs(now.x - kept.x)).toBeLessThanOrEqual(1)
-    expect(Math.abs(now.y - kept.y)).toBeLessThanOrEqual(1)
-  })
-
-  it("grows a turned box by a key along its own width and keeps its top-left corner on screen", () => {
-    const box = resizedByKey(start, "ArrowRight", 30)
-    expect(box).toEqual({ x: 456_349, y: 460_375, cx: start.cx + nudgeStep, cy: start.cy })
-    const kept = onScreen(start, "top-left", 30)
-    const now = box === null ? kept : onScreen(box, "top-left", 30)
     expect(Math.abs(now.x - kept.x)).toBeLessThanOrEqual(1)
     expect(Math.abs(now.y - kept.y)).toBeLessThanOrEqual(1)
   })

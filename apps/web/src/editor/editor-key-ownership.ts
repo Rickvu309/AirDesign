@@ -1,4 +1,3 @@
-import { gestureFor } from "@airdesign/render"
 import type { KeyboardEvent as ReactKeyboardEvent } from "react"
 
 const designPanel = "[data-design-panel]"
@@ -44,16 +43,6 @@ export function gridEscapeFromControl(event: ReactKeyboardEvent<HTMLDivElement>)
     ) === null &&
     document.querySelector('[role="dialog"][data-open], [role="alertdialog"][data-open]') === null &&
     editorOwnsKey(event)
-  )
-}
-
-export function controlHandsKeysBack(event: KeyboardEvent): boolean {
-  const { target } = event
-  return (
-    !event.isComposing &&
-    target instanceof HTMLInputElement &&
-    target.closest(designPanel) !== null &&
-    gestureFor(event, "control") === "leave-control"
   )
 }
 
