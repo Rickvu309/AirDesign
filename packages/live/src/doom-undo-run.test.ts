@@ -85,6 +85,36 @@ describe("undoing an agent's run", () => {
     expect(xOf(other.view())).toBe(0)
   })
 
+  it("puts back a group the run took apart, with its layers inside it", async () => {
+    const group = id("s:5")
+    const remote = memoryDoomRemote({
+      ...start,
+      writes: [
+        ...start.writes.filter((write) => write.node !== title || write.prop !== "parent"),
+        { node: group, prop: "type", value: "frame" },
+        { node: group, prop: "parent", value: at(slide) },
+        { node: title, prop: "parent", value: at(group) },
+      ],
+    })
+    const mine = await join(remote, "create")
+    await land(remote, {
+      once: "a1",
+      author: agent("run-1"),
+      phase: "start",
+      writes: [
+        { node: title, prop: "parent", value: { id: slide, at: orderKeyBetween(at(slide).at, null) } },
+        { node: group, prop: "parent", value: null },
+      ],
+    })
+    await land(remote, { once: "a2", author: agent("run-1"), phase: "stop", writes: [] })
+    await mine.catchUp()
+    expect(mine.view().children.get(slide)).toEqual([title])
+
+    expect((await mine.undoRun("run-1")).ok).toBe(true)
+    expect(mine.view().children.get(slide)).toEqual([group])
+    expect(mine.view().children.get(group)).toEqual([title])
+  })
+
   it("leaves what a person wrote after the run, and says so when nothing is left to undo", async () => {
     const remote = memoryDoomRemote(start)
     const mine = await join(remote, "create")
