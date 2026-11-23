@@ -25,10 +25,7 @@ const seen: Readonly<Record<string, Seen>> = {
   strokeWidth: { person: ["panel:border.width", "panel:image.weight"] },
   color: { person: ["panel:textFill.value", "panel:text.fill"] },
   radius: { person: ["panel:corners.corners"] },
-  effect: {
-    owedToPerson: "the Shadow section shows nothing for the soft, lifted and glow effect styles",
-    partly: ["panel:shadow.shadow"],
-  },
+  effect: { person: ["panel:shadow.shadow"] },
   opacity: { person: ["panel:opacity.opacity"] },
   text: {
     owedToPerson: "a link on some words: not underlined, and no place to read or change its address",
@@ -76,20 +73,7 @@ const seen: Readonly<Record<string, Seen>> = {
   fonts: { person: ["panel:theme-fonts"] },
 }
 
-const owedToPerson = [
-  "effect",
-  "text",
-  "align",
-  "layout",
-  "gap",
-  "padding",
-  "icon",
-  "arrow",
-  "chart",
-  "rows",
-  "name",
-  "hidden",
-]
+const owedToPerson = ["text", "align", "layout", "gap", "padding", "icon", "arrow", "chart", "rows", "name", "hidden"]
 
 const structural = new Set(["op", "kind", "add", "move", "delete", "rows", "items", "axes", "colors", "fonts"])
 

@@ -1,52 +1,46 @@
 import * as doom from "@airdesign/doom"
-import { shadowBlack } from "./shadow-art"
 import { doomPaintOf, type OldPaint, oldPaintOf } from "./design-values"
 
-export const shadowNames = ["none", "subtle", "medium", "strong"] as const
+export const shadowNames = ["none", ...doom.effectStyleNames] as const
 export type ShadowName = (typeof shadowNames)[number]
 
-const black: doom.Hex = shadowBlack
+type Shown = { readonly name: ShadowName | undefined; readonly opacity: number | null }
 
-const shadowShape = {
-  subtle: { y: 2, blur: 6, opacity: 0.16 },
-  medium: { y: 6, blur: 16, opacity: 0.24 },
-  strong: { y: 12, blur: 32, opacity: 0.32 },
-} as const
+const unknown: Shown = { name: undefined, opacity: null }
 
-export function shadowOf(name: Exclude<ShadowName, "none">, opacity?: number): readonly doom.Effect[] {
-  const { y, blur, opacity: usual } = shadowShape[name]
-  return [{ kind: "dropShadow", color: black, opacity: opacity ?? usual, x: 0, y, blur, spread: 0 }]
+const isStyle = (name: string): name is doom.EffectStyleName =>
+  (doom.effectStyleNames as readonly string[]).includes(name)
+
+const opacityOf = (effects: readonly doom.Effect[]): number | null => {
+  const shadow = effects.find((effect) => "color" in effect)
+  return shadow === undefined || !("color" in shadow) ? null : (shadow.opacity ?? 1)
 }
 
-export function shownShadow(effects: doom.Props["effects"] | undefined): {
-  readonly name: ShadowName | undefined
-  readonly opacity: number | null
-} {
+const fadedTo = (effects: readonly doom.Effect[], opacity: number): readonly doom.Effect[] =>
+  effects.map((effect) => ("color" in effect ? { ...effect, opacity } : effect))
+
+const sameLook = (a: readonly doom.Effect[], b: readonly doom.Effect[]): boolean =>
+  JSON.stringify(fadedTo(a, 1)) === JSON.stringify(fadedTo(b, 1))
+
+export function shownShadow(effects: doom.Props["effects"] | undefined, theme: doom.Theme): Shown {
   if (effects === undefined || (Array.isArray(effects) && effects.length === 0)) return { name: "none", opacity: null }
-  if (typeof effects === "string") return { name: undefined, opacity: null }
-  const [only] = effects as readonly doom.Effect[]
-  if (effects.length !== 1 || only === undefined || only.kind !== "dropShadow")
-    return { name: undefined, opacity: null }
-  const matched = (Object.keys(shadowShape) as (keyof typeof shadowShape)[]).find((name) => {
-    const shape = shadowShape[name]
-    return only.x === 0 && only.y === shape.y && only.blur === shape.blur && only.spread === 0 && only.color === black
-  })
-  return matched === undefined ? { name: undefined, opacity: null } : { name: matched, opacity: only.opacity ?? 1 }
+  if (typeof effects === "string")
+    return isStyle(effects) ? { name: effects, opacity: opacityOf(theme.effectStyles[effects]) } : unknown
+  const list = effects as readonly doom.Effect[]
+  const matched = doom.effectStyleNames.find((name) => sameLook(theme.effectStyles[name], list))
+  return matched === undefined ? unknown : { name: matched, opacity: opacityOf(list) }
 }
 
-export function shadowWrite(name: ShadowName, held: doom.Props["effects"] | undefined): doom.Props["effects"] | null {
-  if (name === "none") return null
-  const kept = shownShadow(held).opacity
-  return shadowOf(name, kept === null ? undefined : kept)
-}
+export const shadowWrite = (name: ShadowName): doom.Props["effects"] | null => (name === "none" ? null : name)
 
 export function shadowOpacityWrite(
   held: doom.Props["effects"] | undefined,
   opacity: number,
+  theme: doom.Theme,
 ): doom.Props["effects"] | null {
-  const { name } = shownShadow(held)
+  const { name } = shownShadow(held, theme)
   if (name === undefined || name === "none") return held ?? null
-  return shadowOf(name, Math.min(1, Math.max(0, opacity)))
+  return fadedTo(theme.effectStyles[name], Math.min(1, Math.max(0, opacity)))
 }
 
 export function shownFill(fills: readonly doom.Paint[] | undefined): OldPaint {

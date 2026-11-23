@@ -49,7 +49,7 @@ export function cornersSection(input: ModelInput): PanelSection[] {
 export function shadowSection(input: ModelInput): PanelSection[] {
   const node = input.view.nodes.get(input.id)
   if (node === undefined) return []
-  const shown = shownShadow(propOf(node, "effects"))
+  const shown = shownShadow(propOf(node, "effects"), input.theme)
   const preset = doomControl({ trait: "shadow", field: "shadow" }, designCopy.shadowPreset, choiceDesc(shadowNames), {
     value: shown.name,
   })

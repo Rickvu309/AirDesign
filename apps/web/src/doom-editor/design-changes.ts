@@ -196,15 +196,15 @@ function appearanceChange(context: ChangeContext, control: PanelControl, value: 
           })
         : []
     case "shadow.shadow":
-      return typeof value === "string"
-        ? setEach(context, "effects", (id) =>
-            shadowWrite(value as ShadowName, propOf(context.view.nodes.get(id), "effects")),
-          )
-        : []
+      return typeof value === "string" ? setEach(context, "effects", () => shadowWrite(value as ShadowName)) : []
     case "shadow.opacity":
       return typeof value === "number"
         ? setEach(context, "effects", (id) =>
-            shadowOpacityWrite(propOf(context.view.nodes.get(id), "effects"), value / wholeFraction),
+            shadowOpacityWrite(
+              propOf(context.view.nodes.get(id), "effects"),
+              value / wholeFraction,
+              doom.deckOf(context.view).theme,
+            ),
           )
         : []
     case "link.target": {

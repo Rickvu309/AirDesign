@@ -1,5 +1,4 @@
 import * as doom from "@airdesign/doom"
-import { shadowOf } from "@/doom-editor/design-paint-values"
 import { grow, spot } from "./doom-fixtures"
 
 export type Probe = "words" | "card" | "rule" | "star" | "photo" | "panel" | "slide"
@@ -31,7 +30,7 @@ export const built = grow([
       fills: solid("accent1"),
       strokes: solid("text2"),
       stroke: { weight: 2, align: "inside", dash: "solid" },
-      effects: shadowOf("medium"),
+      effects: "lifted",
       text: words,
     },
   },

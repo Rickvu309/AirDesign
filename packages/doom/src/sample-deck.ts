@@ -63,7 +63,7 @@ export function theme(): Theme {
     effectStyles: {
       soft: [{ kind: "dropShadow", color: hex(0x000000), x: 0, y: 4, blur: 12, spread: 0 }],
       lifted: [{ kind: "dropShadow", color: hex(0x000000), x: 0, y: 12, blur: 32, spread: 0 }],
-      glow: [{ kind: "layerBlur", radius: 8 }],
+      glow: [{ kind: "dropShadow", color: { var: "accent2" }, opacity: 0.5, x: 0, y: 0, blur: 28, spread: 0 }],
     },
   }
 }
