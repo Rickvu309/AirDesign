@@ -55,7 +55,8 @@ export function NumberField(props: {
           if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return
           event.preventDefault()
           const by = (event.key === "ArrowUp" ? 1 : -1) * (event.shiftKey ? 10 : 1) * (props.step ?? 1)
-          event.currentTarget.value = String(steppedFrom(event.currentTarget.value, shown, read) + by)
+          const next = steppedFrom(event.currentTarget.value, shown, read) + by
+          event.currentTarget.value = String(Math.min(props.max ?? Infinity, Math.max(props.min ?? -Infinity, next)))
         }}
         onBlur={(event) => {
           const text = event.currentTarget.value

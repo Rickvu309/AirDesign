@@ -5,8 +5,8 @@ const sources: Readonly<Record<string, string>> = import.meta.glob(
   { query: "?raw", import: "default", eager: true },
 )
 
-const typesNumbers = /<input\b[^>]*(?:inputMode="(?:decimal|numeric)"|type="number")|<input\b(?=[\s\S]{0,400}?\bvalue=)/
-const rounds = /Math\.round\(|\.toFixed\(/
+const typesNumbers = /<input\b(?:(?!\/>)[\s\S]){0,800}?(?:inputMode="(?:decimal|numeric)"|type="number")/
+const rounds = /Math\.(?:round|floor|ceil|trunc)\(|\.toFixed\(/
 const helper = '"@/design/shown-number"'
 
 describe("a number field writes only what a person changed", () => {

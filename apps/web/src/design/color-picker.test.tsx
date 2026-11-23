@@ -65,9 +65,9 @@ describe("the colour list", () => {
     expect(open).toContain(colorCopy.tints)
     expect(open).toContain(`aria-label="${colorCopy.area}"`)
     expect(open).toContain(`aria-label="${colorCopy.hue}"`)
-    expect(open).toContain(`aria-label="${opacityCopy.label}"`)
     expect(open).toContain(`aria-label="${colorCopy.hex}"`)
-    expect(open).toContain(`aria-label="${colorCopy.opacityPercent}"`)
+    expect(open).not.toContain(`aria-label="${opacityCopy.label}"`)
+    expect(open).not.toContain(`aria-label="${colorCopy.opacityPercent}"`)
     expect(open).toContain(`value="8FAADC"`)
     expect(open).toContain(colorCopy.moreTints)
 
