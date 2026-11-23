@@ -26,7 +26,6 @@ export { agentNumberOf, designOf, readAgent } from "./agent-form.js"
 export { iconNames, knownIcon } from "./icon-names.js"
 export { webImage } from "./image-address.js"
 export { opacityWire } from "./opacity-wire.js"
-export { traitWire } from "./trait-wire.js"
 
 export { storableText } from "./storable-text.js"
 export {
