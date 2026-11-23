@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
+import { agentDeck, apply, build, lastChild, minter } from "./agent-fixtures.js"
 import { readForAgent } from "./agent-read.js"
 import { childrenOf, get, slidesOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { ids, theme } from "./sample-deck.js"
+import { titleSlideWrites } from "./slide-placeholders.js"
 
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
   ({ op: "set", target, ...look }) as AgentChange
@@ -40,7 +41,20 @@ describe("rotation and flips land on the box the canvas's rotate and flip write"
       { kind: "shape", fill: "accent1" },
       { kind: "line" },
       { kind: "frame" },
+      {
+        kind: "frame",
+        rows: [
+          ["A", "B"],
+          ["1", "2"],
+        ],
+      },
       { kind: "icon", icon: "star" },
+      { kind: "text", text: "Note" },
+      { kind: "picture", fill: { image: "https://x.test/a.png" } },
+      {
+        kind: "chart",
+        chart: { kind: "bar", categories: ["Q1"], series: [{ name: "Plan", values: [3] }] },
+      },
     ]
     for (const made of kinds) {
       const read = readAgentChange({ op: "add", slide: ids.slide, rotation: -90, flip: "v", ...made })
@@ -52,6 +66,49 @@ describe("rotation and flips land on the box the canvas's rotate and flip write"
         flipV: true,
       })
     }
+  })
+
+  it("keeps rotation and flip when an add of text fills an empty title or subtitle placeholder", () => {
+    const before = apply(agentDeck(), titleSlideWrites(ids.slide, minter("p"), { w: 1920, h: 1080 }))
+    const byRole = (doom: Doom, role: "title" | "subtitle") =>
+      childrenOf(doom, ids.slide).find((node) => get(node, "role") === role)!
+    const titleBefore = get(byRole(before, "title"), "box")!
+    const subtitleBefore = get(byRole(before, "subtitle"), "box")!
+
+    const titleRead = readAgentChange({
+      op: "add",
+      kind: "text",
+      slide: ids.slide,
+      text: "Q3 board update",
+      textStyle: "title",
+      rotation: -90,
+      flip: "h",
+    })
+    if ("refused" in titleRead) throw new Error(JSON.stringify(titleRead))
+    const titled = build(before, titleRead)
+    expect(get(byRole(titled, "title"), "box")).toEqual({
+      ...titleBefore,
+      rotation: 270,
+      flipH: true,
+      flipV: false,
+    })
+
+    const subRead = readAgentChange({
+      op: "add",
+      kind: "text",
+      slide: ids.slide,
+      text: "Revenue grew",
+      rotation: 400,
+      flip: "hv",
+    })
+    if ("refused" in subRead) throw new Error(JSON.stringify(subRead))
+    const both = build(titled, subRead)
+    expect(get(byRole(both, "subtitle"), "box")).toEqual({
+      ...subtitleBefore,
+      rotation: 40,
+      flipH: true,
+      flipV: true,
+    })
   })
 
   it("refuses a rotation on a slide", () => {

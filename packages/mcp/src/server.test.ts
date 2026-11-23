@@ -287,6 +287,23 @@ describe("a rotation past a full turn", () => {
       expect((await call("read_deck", { deck: made.deck })).layers).toContain("r=270")
     })
   })
+
+  it("keeps a wrapped rotation when an add with textStyle title fills the slide's title placeholder", async () => {
+    await withClient(sessionFor(), memoryDecks(started), async (client) => {
+      const call = async (name: string, args: Record<string, unknown>) =>
+        (await client.callTool({ name: `airdesign_${name}`, arguments: args })).structuredContent as Record<string, any>
+      const made = await call("create_deck", { name: "Turn" })
+      const edited = await call("edit_deck", {
+        deck: made.deck,
+        base: made.rev,
+        changes: [
+          { op: "add", kind: "text", slide: made.slides[0], text: "Turned", textStyle: "title", rotation: -90 },
+        ],
+      })
+      expect(edited).toMatchObject({ ok: true })
+      expect((await call("read_deck", { deck: made.deck })).layers).toContain("r=270")
+    })
+  })
 })
 
 describe("an answer read from structuredContent alone", () => {

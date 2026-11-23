@@ -325,7 +325,7 @@ describe("matrix", () => {
   it("labels the axes, the one up the side turned a quarter", () => {
     expect(parts).toHaveLength(3)
     expect(get(parts[1]!, "text")).toMatchObject({ chars: "Effort", style: "label", resize: "fixed", alignV: "center" })
-    expect(get(parts[2]!, "box")).toMatchObject({ rotation: -90 })
+    expect(get(parts[2]!, "box")).toMatchObject({ rotation: 270 })
     expect(get(parts[2]!, "text")!.chars).toBe("Impact")
   })
 
