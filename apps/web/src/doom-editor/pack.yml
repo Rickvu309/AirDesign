@@ -2,6 +2,7 @@ layer: feature
 dependencies:
   - apps/web/src/aira
   - apps/web/src/components
+  - apps/web/src/core
   - apps/web/src/copy
   - apps/web/src/decks
   - apps/web/src/design
@@ -11,4 +12,6 @@ dependencies:
   - apps/web/src/present
 public:
   - doom-editor.tsx
+  - editor-sample.tsx
+  - editor-screens.tsx
   - node-props.ts

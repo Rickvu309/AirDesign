@@ -23,21 +23,6 @@
       "reason": "the CSS property gridRow places a line of thumbnails"
     },
     {
-      "file": "apps/web/src/editor/grid-groups.tsx",
-      "text": "gridRow: wrapped ? `${first + 1} / span ${groupLines.length}` : first + 1,",
-      "reason": "the CSS property gridRow places a line of thumbnails"
-    },
-    {
-      "file": "apps/web/src/editor/grid-groups.tsx",
-      "text": "const place = { gridRow: index + 1, gridColumn: `1 / span ${length}` }",
-      "reason": "the CSS property gridRow places a line of thumbnails"
-    },
-    {
-      "file": "apps/web/src/editor/grid-groups.tsx",
-      "text": "gridRow: last + 1,",
-      "reason": "the CSS property gridRow places a line of thumbnails"
-    },
-    {
       "file": "apps/web/src/editor/adjust-tone.tsx",
       "text": "className=\"grid aspect-square touch-none cursor-crosshair grid-cols-3 grid-rows-3 place-items-center rounded-md bg-muted disabled:cursor-default disabled:opacity-50\"",
       "reason": "the Tailwind class grid-rows-3 lays out the colour dial"

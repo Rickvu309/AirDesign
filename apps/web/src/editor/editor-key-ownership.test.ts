@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
-import { editorOwnsKey, toolKeyPlace } from "./editor-key-ownership"
+import { editorOwnsKey } from "./editor-key-ownership"
 
 let window: Window & typeof globalThis
 
@@ -69,22 +69,4 @@ it("keeps composing Escape and background keys out of the grid without sending m
     expect(event.defaultPrevented).toBe(true)
   }
   expect(keys).toEqual([])
-})
-
-it("gives the one-key tools to the slide, the layers and the slide list, and not to a button elsewhere", () => {
-  window.document.body.innerHTML = [
-    '<div data-slide-paint><div id="layer"></div></div>',
-    '<div data-layers-panel><button id="row"></button></div>',
-    '<div data-slide-list><button id="slide"></button></div>',
-    '<button id="present"></button>',
-  ].join("")
-  const at = (id: string) => window.document.getElementById(id)
-  expect([at("layer"), at("row"), at("slide"), at("present"), window.document.body, null].map(toolKeyPlace)).toEqual([
-    "editor",
-    "editor",
-    "slides",
-    null,
-    null,
-    null,
-  ])
 })

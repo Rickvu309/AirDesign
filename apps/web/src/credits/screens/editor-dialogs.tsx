@@ -4,9 +4,7 @@ import { lowBalanceEntry } from "@/credits/credits-sample"
 import { LimitCover } from "@/credits/limit-panel"
 import { ResetToast } from "@/credits/reset-toast"
 import { ConfirmResetDialog } from "@/credits/screens/settings-dialogs"
-import { galleryDeck } from "@/editor/gallery-deck"
-import { SlideThumb } from "@/editor/slide-thumb"
-import { EditorView } from "@/editor/screens/editor-view"
+import { EditorSample } from "@/doom-editor/editor-sample"
 
 function EditorBackdrop({
   phase,
@@ -18,19 +16,10 @@ function EditorBackdrop({
   mark?: "tile" | "ring"
 }) {
   return (
-    <EditorView
-      {...galleryDeck}
-      run="done"
-      toast={toast}
-      overlay={
-        <>
-          <LimitCover phase={phase} mark={mark} />
-          <div className="pointer-events-none absolute top-[802px] left-[42px] z-30">
-            <SlideThumb index={6} width={180} queued />
-          </div>
-        </>
-      }
-    />
+    <EditorSample start={{ panel: "agent" }}>
+      {toast}
+      <LimitCover phase={phase} mark={mark} />
+    </EditorSample>
   )
 }
 

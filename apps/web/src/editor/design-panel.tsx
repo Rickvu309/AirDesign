@@ -2,7 +2,6 @@ import { Fragment, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { designCopy } from "@/copy/design-copy"
-import { colorCopy } from "@/copy/color-copy"
 import { FillDetails, UnionControl } from "@/design/controls/union"
 import { controlViews } from "@/design/control-views"
 import { BlurControl, OverlayControl } from "@/design/controls/picture-adjust"
@@ -11,7 +10,6 @@ import type { ControlProps, PanelModel, PanelControl, PanelSection } from "@/des
 import { visibleEffects } from "@/design/effects-list"
 import { panelPlaces, sectionInMode, type PanelMode } from "@/design/panel-order"
 import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
-import { swatchMist, swatchNavy, swatchTeal, swatchWhite } from "@/editor/design-panel-art"
 import { EditorIcon } from "@/editor/editor-icons"
 import { optionWord } from "@/copy/option-copy"
 import { cn } from "@/lib/class-names"
@@ -22,25 +20,6 @@ import { linkCopy } from "@/copy/link-copy"
 import { followsDrag, useLiveBoxControl } from "@/editor/live-box-fields"
 
 const openChrome = ["text", "link", "fills", "textFill", "border", "shadow", "opacity"]
-
-export function DesignPanel() {
-  return (
-    <>
-      <DesignHead>Slide 3</DesignHead>
-      <DesignSection title="Background">
-        <Swatch color={swatchWhite} name="White" edged />
-      </DesignSection>
-      <DesignSection title={colorCopy.template} last>
-        <div className="grid grid-cols-2 gap-2">
-          <Swatch color={swatchNavy} name="Navy" />
-          <Swatch color={swatchTeal} name="Teal" />
-          <Swatch color={swatchMist} name="Mist" />
-          <Swatch color={swatchWhite} name="White" edged />
-        </div>
-      </DesignSection>
-    </>
-  )
-}
 
 export function DesignHead({
   children,
@@ -173,29 +152,6 @@ function SectionReset({
     >
       {control.reset}
     </Button>
-  )
-}
-
-const swatchShape =
-  "flex h-7 items-center gap-2 rounded-[var(--shape-control)] bg-white px-2 shadow-[0px_0px_0px_1px_var(--field-edge)]"
-
-function Chip({ color, edged }: { color: string; edged: boolean }) {
-  return (
-    <span
-      className={
-        edged ? "size-4 shrink-0 rounded-sm shadow-[0px_0px_0px_1px_var(--field-edge)]" : "size-4 shrink-0 rounded-sm"
-      }
-      style={{ background: color }}
-    />
-  )
-}
-
-export function Swatch({ color, name, edged = false }: { color: string; name: string; edged?: boolean }) {
-  return (
-    <span className={swatchShape} data-design-swatch>
-      <Chip color={color} edged={edged} />
-      <span className="truncate text-[length:var(--type-caption)] text-foreground">{name}</span>
-    </span>
   )
 }
 

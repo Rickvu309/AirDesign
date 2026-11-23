@@ -1,3 +1,4 @@
 layer: feature
 public:
+  - core-doom.ts
   - core-screens.tsx

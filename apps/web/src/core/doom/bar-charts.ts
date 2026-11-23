@@ -47,22 +47,17 @@ const quarters = frame("quarters chart", {
   },
 })
 
-export function barCharts(): doom.Grown {
-  return doom.doomFromTree({
-    theme: doom.defaultTheme,
-    slides: [
-      {
-        name: "Bar charts",
-        children: [
-          accentTick(),
-          slideTitle("Enterprise leads every segment in net new revenue"),
-          frame("exhibits", { box: box(margin, 288, contentWidth, 660), layout: rowOf(96) }, [
-            exhibit("ranking", "Net new revenue by segment, 2025, $M", ranking),
-            exhibit("quarterly", "Revenue by quarter, 2025, $M", quarters),
-          ]),
-          ...footer("Source: Company finance, fiscal year 2025", "9"),
-        ],
-      },
+export function barCharts(): doom.TreeSlide {
+  return {
+    name: "Bar charts",
+    children: [
+      accentTick(),
+      slideTitle("Enterprise leads every segment in net new revenue"),
+      frame("exhibits", { box: box(margin, 288, contentWidth, 660), layout: rowOf(96) }, [
+        exhibit("ranking", "Net new revenue by segment, 2025, $M", ranking),
+        exhibit("quarterly", "Revenue by quarter, 2025, $M", quarters),
+      ]),
+      ...footer("Source: Company finance, fiscal year 2025", "9"),
     ],
-  })
+  }
 }

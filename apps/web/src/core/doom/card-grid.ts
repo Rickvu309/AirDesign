@@ -48,32 +48,27 @@ const lever = ([icon, title, body]: (typeof levers)[number], at: number) =>
     copy(`lever ${String(at + 1)} body`, body, { style: "body2", color: quiet, size: 25 }),
   ])
 
-export function cardGrid(): doom.Grown {
-  return doom.doomFromTree({
-    theme: doom.defaultTheme,
-    slides: [
-      {
-        name: "Card grid",
-        children: [
-          accentTick(),
-          slideTitle("Six levers carry the plan for the next phase of growth"),
-          frame(
-            "levers",
-            {
-              box: box(margin, 288, contentWidth, 660),
-              layout: {
-                mode: "grid",
-                columns: [{ fr: 1 }, { fr: 1 }, { fr: 1 }],
-                rows: [{ fr: 1 }, { fr: 1 }],
-                gap: 32,
-                padding: pad(0),
-              },
-            },
-            levers.map(lever),
-          ),
-          ...footer("Source: 2026 operating plan", "7"),
-        ],
-      },
+export function cardGrid(): doom.TreeSlide {
+  return {
+    name: "Card grid",
+    children: [
+      accentTick(),
+      slideTitle("Six levers carry the plan for the next phase of growth"),
+      frame(
+        "levers",
+        {
+          box: box(margin, 288, contentWidth, 660),
+          layout: {
+            mode: "grid",
+            columns: [{ fr: 1 }, { fr: 1 }, { fr: 1 }],
+            rows: [{ fr: 1 }, { fr: 1 }],
+            gap: 32,
+            padding: pad(0),
+          },
+        },
+        levers.map(lever),
+      ),
+      ...footer("Source: 2026 operating plan", "7"),
     ],
-  })
+  }
 }

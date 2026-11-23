@@ -55,36 +55,31 @@ const cell = (icon: string, label: string, inverse: boolean) =>
     ],
   )
 
-export function iconSet(): doom.Grown {
-  return doom.doomFromTree({
-    theme: doom.defaultTheme,
-    slides: [
-      {
-        name: "Icon set",
-        children: [
-          accentTick(),
-          slideTitle("Icons are strokes you can recolour and reweigh"),
-          frame(
-            "icons",
-            {
-              box: box(margin, 330, contentWidth, 100),
-              sizing: { w: "fixed", h: "hug" },
-              layout: {
-                mode: "grid",
-                columns: Array.from({ length: 6 }, () => ({ fr: 1 })),
-                rows: ["hug", "hug"],
-                gap: 96,
-                padding: pad(0),
-              },
-            },
-            [
-              ...light.map(([icon, label]) => cell(icon, label, false)),
-              ...dark.map(([icon, label]) => cell(icon, label, true)),
-            ],
-          ),
-          ...footer("Icons: Lucide, drawn as strokes at 3 px", "13"),
+export function iconSet(): doom.TreeSlide {
+  return {
+    name: "Icon set",
+    children: [
+      accentTick(),
+      slideTitle("Icons are strokes you can recolour and reweigh"),
+      frame(
+        "icons",
+        {
+          box: box(margin, 330, contentWidth, 100),
+          sizing: { w: "fixed", h: "hug" },
+          layout: {
+            mode: "grid",
+            columns: Array.from({ length: 6 }, () => ({ fr: 1 })),
+            rows: ["hug", "hug"],
+            gap: 96,
+            padding: pad(0),
+          },
+        },
+        [
+          ...light.map(([icon, label]) => cell(icon, label, false)),
+          ...dark.map(([icon, label]) => cell(icon, label, true)),
         ],
-      },
+      ),
+      ...footer("Icons: Lucide, drawn as strokes at 3 px", "13"),
     ],
-  })
+  }
 }

@@ -1,6 +1,6 @@
 import { sameColor } from "./color.js"
 import type { TextFormat, TextParagraph, TextRun, TextValue } from "./text-value.js"
-import { formatNames, sizeCeiling, sizeFloor } from "./text-value.js"
+import { formatNames } from "./text-value.js"
 
 export type Caret = { readonly paragraph: number; readonly offset: number }
 export type TextRange = { readonly start: Caret; readonly end: Caret }
@@ -10,7 +10,6 @@ export type FileFormat = (paragraph: number, run: number, format: TextFormat) =>
 export type SizeStep = 1 | -1
 
 type Piece = { readonly run: TextRun; readonly covered: boolean }
-const typedPoints = /^\d+(\.\d+)?$/
 
 function setFormat(run: TextRun, paragraph: number, format: TextFormat, on: boolean, file: FileFormat): TextRun {
   const { [format]: _dropped, ...rest } = run
@@ -102,11 +101,4 @@ export function formatRange(
   file: FileFormat,
 ): TextValue {
   return formatted(value, range, format, on, file)
-}
-
-export function typedSize(text: string): number | null {
-  const trimmed = text.trim()
-  if (!typedPoints.test(trimmed)) return null
-  const size = Math.round(Number(trimmed) * 10) * 10
-  return size < sizeFloor || size > sizeCeiling ? null : size
 }

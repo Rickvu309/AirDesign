@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { geometryWords } from "@/copy/geometry-copy"
 import { shapeCopy } from "@/copy/shape-copy"
 import { floatShadow } from "@/editor/editor-chrome"
-import { basicShapes, LineArt, ShapeSvg } from "@/editor/tool-panels"
-import { shapeFill, shapeStroke } from "@/editor/tool-panels-art"
+import { basicShapes, LineArt, ShapeSvg } from "@/editor/shape-marks"
+import { shapeFill, shapeStroke } from "@/editor/shape-marks-art"
 import { cn } from "@/lib/class-names"
 
 const thumbSide = 20

@@ -3,7 +3,7 @@ import { applyEdit } from "./apply-edit.js"
 import { type NodeId, nodeId, rev } from "./ids.js"
 import type { Props } from "./props.js"
 import { isRefusal } from "./refusal.js"
-import { type Doom, type Write, emptyDoom } from "./doom.js"
+import { type Doom, type Edit, type Write, emptyDoom } from "./doom.js"
 import type { Theme } from "./theme.js"
 
 type Settable = Partial<Omit<Props, "type" | "parent" | "theme" | "size" | "name">>
@@ -23,6 +23,7 @@ export type TreeSlide = {
 }
 export type Tree = {
   readonly theme: Theme
+  readonly name?: string
   readonly size?: { readonly w: number; readonly h: number }
   readonly slides: readonly TreeSlide[]
 }
@@ -30,6 +31,7 @@ export type Grown = {
   readonly doom: Doom
   readonly slides: readonly NodeId[]
   readonly ids: Ids
+  readonly edit: Edit
 }
 
 export function doomFromTree(tree: Tree): Grown {
@@ -64,7 +66,8 @@ export function doomFromTree(tree: Tree): Grown {
       grow(id, node.children ?? [])
     }
   }
-  const deck = add("deck", null, "deck", undefined)
+  const deck = mint("deck")
+  writes.push({ node: deck, prop: "type", value: "deck" }, { node: deck, prop: "name", value: tree.name ?? "deck" })
   writes.push({ node: deck, prop: "theme", value: tree.theme })
   writes.push({ node: deck, prop: "size", value: tree.size ?? { w: 1920, h: 1080 } })
   const row = add("slideRow", { id: deck, at: orderKeyBetween(null, null) }, undefined, undefined)
@@ -76,12 +79,8 @@ export function doomFromTree(tree: Tree): Grown {
     slides.push(id)
     grow(id, slide.children)
   }
-  const grown = applyEdit(emptyDoom, {
-    once: "tree",
-    author: { kind: "person", id: "tree" },
-    writes,
-    rev: rev(1),
-  })
+  const edit: Edit = { once: "tree", author: { kind: "person", id: "tree" }, writes }
+  const grown = applyEdit(emptyDoom, { ...edit, rev: rev(1) })
   if (isRefusal(grown)) throw new Error(`doom tree refused ${JSON.stringify(grown)}`)
-  return { doom: grown, slides, ids }
+  return { doom: grown, slides, ids, edit }
 }

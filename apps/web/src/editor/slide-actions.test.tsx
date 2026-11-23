@@ -44,7 +44,7 @@ it("keeps slide thumbnails free of separate actions buttons", async () => {
   const host = window.document.createElement("div")
   window.document.body.append(host)
   const root = createRoot(host)
-  await act(async () => root.render(<SlideSidebar run="done" title="Deck" strip={strip} />))
+  await act(async () => root.render(<SlideSidebar title="Deck" strip={strip} />))
 
   expect(host.querySelectorAll("[data-slide-entry]")).toHaveLength(strip.count)
   expect(host.querySelectorAll("[data-slide-actions]")).toHaveLength(0)

@@ -90,6 +90,7 @@ flowchart TD
   p_apps_web_src_connect --> p_apps_web_src_decks
   p_apps_web_src_credits --> p_apps_web_src_components
   p_apps_web_src_credits --> p_apps_web_src_copy
+  p_apps_web_src_credits --> p_apps_web_src_doom_editor
   p_apps_web_src_credits --> p_apps_web_src_editor
   p_apps_web_src_credits --> p_apps_web_src_lib
   p_apps_web_src_credits --> p_apps_web_src_settings
@@ -104,6 +105,7 @@ flowchart TD
   p_apps_web_src_design --> p_apps_web_src_lib
   p_apps_web_src_doom_editor --> p_apps_web_src_aira
   p_apps_web_src_doom_editor --> p_apps_web_src_components
+  p_apps_web_src_doom_editor --> p_apps_web_src_core
   p_apps_web_src_doom_editor --> p_apps_web_src_copy
   p_apps_web_src_doom_editor --> p_apps_web_src_decks
   p_apps_web_src_doom_editor --> p_apps_web_src_design
@@ -117,10 +119,10 @@ flowchart TD
   p_apps_web_src_editor --> p_apps_web_src_copy
   p_apps_web_src_editor --> p_apps_web_src_design
   p_apps_web_src_editor --> p_apps_web_src_editing
-  p_apps_web_src_editor --> p_apps_web_src_export
   p_apps_web_src_editor --> p_apps_web_src_lib
   p_apps_web_src_export --> p_apps_web_src_components
   p_apps_web_src_export --> p_apps_web_src_copy
+  p_apps_web_src_export --> p_apps_web_src_doom_editor
   p_apps_web_src_export --> p_apps_web_src_editing
   p_apps_web_src_present --> p_apps_web_src_components
   p_apps_web_src_present --> p_apps_web_src_copy
@@ -149,15 +151,15 @@ flowchart TD
 | `apps/web/src/aira` | feature | aira-loop.ts, aira-panel.tsx, aira-prompts.ts, aira-usage.ts, aira-wire.ts, usage-ring.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/editor, apps/web/src/lib | none |
 | `apps/web/src/components` | platform | ai-elements/chain-of-thought.tsx, ai-elements/conversation-follow.ts, ai-elements/conversation.tsx, ai-elements/message.tsx, ai-elements/prompt-input.tsx, ai-elements/tool.tsx, ui/announcer.tsx, ui/button.tsx, ui/card.tsx, ui/collapsible.tsx, ui/context-menu.tsx, ui/dialog.tsx, ui/dropdown-menu.tsx, ui/input.tsx, ui/popover.tsx, ui/select.tsx, ui/skeleton.tsx, ui/slider.tsx, ui/sonner.tsx, ui/status-pill.tsx, ui/switch.tsx, ui/textarea.tsx, ui/toast.tsx | apps/web/src/copy, apps/web/src/lib | none |
 | `apps/web/src/connect` | feature | connect-screens.tsx, oauth-authorize.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/decks | none |
-| `apps/web/src/copy` | platform | account-copy.ts, adjust-tone-copy.ts, aira-copy.ts, appearance-copy.ts, body-copy.ts, border-copy.ts, box-copy.ts, color-copy.ts, color-name-copy.ts, connect-copy.ts, connection-copy.ts, credits-copy.ts, design-copy.ts, doom-editor-copy.ts, effects-copy.ts, element-copy.ts, fill-copy.ts, format-copy.ts, frame-copy.ts, geometry-copy.ts, guide-copy.ts, identity-copy.ts, link-copy.ts, notes-copy.ts, opacity-copy.ts, option-copy.ts, picture-copy.ts, placeholder-copy.ts, present-copy.ts, product-copy.ts, selection-colors-copy.ts, settings-copy.ts, shape-copy.ts, shortcut-copy.ts, slide-list-copy.ts, slide-number-copy.ts, template-style-copy.ts, text-copy.ts, toolbar-copy.ts, transition-copy.ts, undo-copy.ts, unshown-copy.ts, usage-copy.ts | none | none |
-| `apps/web/src/core` | feature | core-screens.tsx | none | none |
-| `apps/web/src/credits` | feature | credits-cards.tsx, credits-screens.tsx, limit-panel.tsx, use-credits.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/editor, apps/web/src/lib, apps/web/src/settings | none |
+| `apps/web/src/copy` | platform | account-copy.ts, adjust-tone-copy.ts, aira-copy.ts, appearance-copy.ts, body-copy.ts, border-copy.ts, box-copy.ts, color-copy.ts, color-name-copy.ts, connect-copy.ts, connection-copy.ts, credits-copy.ts, design-copy.ts, doom-editor-copy.ts, effects-copy.ts, element-copy.ts, fill-copy.ts, format-copy.ts, frame-copy.ts, geometry-copy.ts, guide-copy.ts, identity-copy.ts, link-copy.ts, notes-copy.ts, opacity-copy.ts, option-copy.ts, picture-copy.ts, placeholder-copy.ts, present-copy.ts, product-copy.ts, selection-colors-copy.ts, settings-copy.ts, shape-copy.ts, shortcut-copy.ts, slide-list-copy.ts, template-style-copy.ts, text-copy.ts, toolbar-copy.ts, transition-copy.ts, undo-copy.ts, unshown-copy.ts, usage-copy.ts | none | none |
+| `apps/web/src/core` | feature | core-doom.ts, core-screens.tsx | none | none |
+| `apps/web/src/credits` | feature | credits-cards.tsx, credits-screens.tsx, limit-panel.tsx, use-credits.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/doom-editor, apps/web/src/editor, apps/web/src/lib, apps/web/src/settings | none |
 | `apps/web/src/decks` | feature | agent-logos.ts, airdesign-mark.tsx, danger-dialog.tsx, deck-glyph.tsx, deck-notice.tsx, deck-time.ts, decks-screens.tsx, decks-shell.tsx, delete-account.tsx, home.tsx, move-deck.ts, not-found-page.tsx, screens/deck-moved-toast.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/editor, apps/web/src/lib | none |
 | `apps/web/src/design` | shared | appearance-presets.ts, color-choices.ts, color-names.ts, color-picker.tsx, control-views.ts, controls/color.tsx, controls/link.tsx, controls/picture-adjust.tsx, controls/text.tsx, controls/union.tsx, corners-control.ts, crop-change.ts, effects-list.ts, eyedropper.ts, opacity-control.ts, panel-arrangement.ts, panel-folds.ts, panel-order.ts, panel.ts, preset-icons.ts, selected-weight.ts, served-faces.ts, spacing-units.ts, text-style-edit.tsx, trait-controls.ts, typed-number.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
-| `apps/web/src/doom-editor` | feature | doom-editor.tsx, node-props.ts | apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/decks, apps/web/src/design, apps/web/src/editing, apps/web/src/editor, apps/web/src/lib, apps/web/src/present | none |
+| `apps/web/src/doom-editor` | feature | doom-editor.tsx, editor-sample.tsx, editor-screens.tsx, node-props.ts | apps/web/src/aira, apps/web/src/components, apps/web/src/core, apps/web/src/copy, apps/web/src/decks, apps/web/src/design, apps/web/src/editing, apps/web/src/editor, apps/web/src/lib, apps/web/src/present | none |
 | `apps/web/src/editing` | shared | canvas-slide.ts, canvas-source.ts, design-rows.ts, element-move.ts, exported-parts.ts, fill-plan.ts, frame-boxes.ts, group-boxes.ts, icon-redraw.ts, index-deck.ts, indexed-register.ts, live-repaint.ts, numbered-text.ts, paint-css.ts, painted-picture.ts, patch-images.ts, picture-file.ts, picture-fill.ts, slide-edit.ts, slide-layout.ts, slide-paint.ts | apps/web/src/components, apps/web/src/copy | none |
-| `apps/web/src/editor` | feature | adjust-tone.tsx, agent-panel.tsx, canvas-zoom.ts, design-panel-art.ts, design-panel.tsx, editor-chrome.tsx, editor-frame.tsx, editor-grid.tsx, editor-icons.tsx, editor-key-ownership.ts, editor-screens.tsx, editor-shell.tsx, editor-toolbar.tsx, element-title-actions.tsx, gallery-deck.ts, grid-drop.ts, group-actions.ts, icon-search.tsx, kept-panel.ts, layer-join.ts, live-design-panel.tsx, notes-bar.tsx, panel-switch.tsx, picture-picker.ts, picture-preview.tsx, pointer-tool.ts, remove-auto-layout.tsx, resizable-panel.tsx, revenue-slide.tsx, screens/editor-view.tsx, selection-colors-section.tsx, shape-grid.tsx, shape-tool.tsx, slide-sidebar.tsx, slide-thumb.tsx, template-style-card.tsx, tone-link.ts, use-canvas-room.ts, view-bar.tsx, zoom-menu.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/design, apps/web/src/editing, apps/web/src/export, apps/web/src/lib | none |
-| `apps/web/src/export` | feature | export-control.tsx, export-options.ts, export-screens.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/editing | none |
+| `apps/web/src/editor` | feature | adjust-tone.tsx, canvas-zoom.ts, design-panel-art.ts, design-panel.tsx, editor-chrome.tsx, editor-icons.tsx, editor-key-ownership.ts, editor-toast.tsx, element-title-actions.tsx, gallery-deck.ts, grid-drop.ts, group-actions.ts, icon-search.tsx, kept-panel.ts, layer-join.ts, live-design-panel.tsx, notes-bar.tsx, panel-switch.tsx, picture-picker.ts, picture-preview.tsx, remove-auto-layout.tsx, resizable-panel.tsx, revenue-slide.tsx, selection-colors-section.tsx, shape-grid.tsx, shape-tool.tsx, slide-sidebar.tsx, slide-thumb.tsx, template-style-card.tsx, tone-link.ts, use-canvas-room.ts, zoom-menu.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/design, apps/web/src/editing, apps/web/src/lib | none |
+| `apps/web/src/export` | feature | export-options.ts, export-screens.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/doom-editor, apps/web/src/editing | none |
 | `apps/web/src/lib` | platform | class-names.ts | none | none |
 | `apps/web/src/present` | feature | present-button.tsx, present-keys.ts, present-layer.tsx, present-screens.tsx, slide-shows.ts, use-leaving.ts, use-present.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/editor, apps/web/src/lib | none |
 | `apps/web/src/pricing` | feature | pricing-screens.tsx | apps/web/src/components, apps/web/src/decks | none |

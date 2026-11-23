@@ -273,7 +273,7 @@ export {
 } from "./text-value.js"
 
 export { levelNumbering, listIndent, type ListIndent } from "./list-level.js"
-export { formatRange, typedSize, type SizeStep, type FormatState } from "./text-format.js"
+export { formatRange, type SizeStep, type FormatState } from "./text-format.js"
 export {
   elementsUndoable,
   redoOf,

@@ -4,22 +4,15 @@ dependencies:
   - apps/web/src/copy
   - apps/web/src/design
   - apps/web/src/editing
-  - apps/web/src/export
   - apps/web/src/lib
 public:
   - adjust-tone.tsx
-  - agent-panel.tsx
   - canvas-zoom.ts
-  - design-panel-art.ts
   - design-panel.tsx
   - editor-chrome.tsx
-  - editor-frame.tsx
-  - editor-grid.tsx
   - editor-icons.tsx
   - editor-key-ownership.ts
-  - editor-screens.tsx
-  - editor-shell.tsx
-  - editor-toolbar.tsx
+  - editor-toast.tsx
   - element-title-actions.tsx
   - gallery-deck.ts
   - grid-drop.ts
@@ -32,18 +25,15 @@ public:
   - panel-switch.tsx
   - picture-picker.ts
   - picture-preview.tsx
-  - pointer-tool.ts
   - remove-auto-layout.tsx
   - resizable-panel.tsx
-  - revenue-slide.tsx
-  - screens/editor-view.tsx
   - selection-colors-section.tsx
   - shape-grid.tsx
   - shape-tool.tsx
+  - slide-frame.ts
   - slide-sidebar.tsx
   - slide-thumb.tsx
   - template-style-card.tsx
   - tone-link.ts
   - use-canvas-room.ts
-  - view-bar.tsx
   - zoom-menu.tsx

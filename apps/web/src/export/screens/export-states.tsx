@@ -1,26 +1,30 @@
-import { galleryDeck } from "@/editor/gallery-deck"
-import { EditorView } from "@/editor/screens/editor-view"
+import { EditorSample } from "@/doom-editor/editor-sample"
 import { firstChoice } from "@/export/export-choice"
 import { ExportDialog } from "@/export/export-dialog"
 import { FailedToast } from "@/export/export-toast"
 
-const galleryCount = 12
+const sampleCount = 7
 
 export function PowerpointOptions() {
   return (
-    <EditorView {...galleryDeck} overlay={<ExportDialog choice={firstChoice(galleryCount)} count={galleryCount} />} />
+    <EditorSample start={{ panel: "agent" }}>
+      <ExportDialog choice={firstChoice(sampleCount)} count={sampleCount} />
+    </EditorSample>
   )
 }
 
 export function PdfOptions() {
   return (
-    <EditorView
-      {...galleryDeck}
-      overlay={<ExportDialog choice={{ ...firstChoice(galleryCount), format: "pdf" }} count={galleryCount} />}
-    />
+    <EditorSample start={{ panel: "agent" }}>
+      <ExportDialog choice={{ ...firstChoice(sampleCount), format: "pdf" }} count={sampleCount} />
+    </EditorSample>
   )
 }
 
 export function ExportFailedScreen() {
-  return <EditorView {...galleryDeck} toast={<FailedToast />} />
+  return (
+    <EditorSample start={{ panel: "agent" }}>
+      <FailedToast />
+    </EditorSample>
+  )
 }

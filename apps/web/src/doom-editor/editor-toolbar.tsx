@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
 import { PanelSwitch } from "@/editor/panel-switch"
-import { ShapeTool } from "@/editor/shape-tool"
+import { ShapeTool, type ShapesShown } from "@/editor/shape-tool"
 import { cn } from "@/lib/class-names"
 import { ActionsPanel, type ActionRun } from "./actions-popover"
 import { toolForShape } from "./shape-tool-picks"
@@ -54,6 +54,7 @@ export const EditorToolbar = memo(function EditorToolbar(props: {
   readonly run: ActionRun
   readonly panel: RightPanel
   readonly onPanel: (next: RightPanel) => void
+  readonly shapes?: ShapesShown
 }) {
   const { tool, onTool } = props
   const bar = useRef<HTMLDivElement>(null)
@@ -118,7 +119,11 @@ export const EditorToolbar = memo(function EditorToolbar(props: {
         </DropdownMenu>
       </div>
       <Divider />
-      <ShapeTool anchor={bar} onShape={(geometry) => onTool(toolForShape(geometry))} />
+      <ShapeTool
+        anchor={bar}
+        onShape={(geometry) => onTool(toolForShape(geometry))}
+        {...(props.shapes === undefined ? {} : { shown: props.shapes })}
+      />
       <Button
         variant="ghost"
         size="icon"

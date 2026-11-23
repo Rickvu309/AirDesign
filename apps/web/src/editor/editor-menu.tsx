@@ -5,9 +5,6 @@ import {
   DropdownMenuItem,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
@@ -131,28 +128,6 @@ export function EditorMenuAction({
         </span>
       )}
     </DropdownMenuItem>
-  )
-}
-
-export function EditorMenuSub({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <DropdownMenuSub>
-      <DropdownMenuSubTrigger
-        className={cn(
-          menuRow,
-          "data-open:bg-quiet data-open:text-white data-popup-open:bg-quiet data-popup-open:text-white **:text-white!",
-        )}
-      >
-        <span className="size-4" />
-        <span className="flex-1">{label}</span>
-      </DropdownMenuSubTrigger>
-      <DropdownMenuSubContent
-        className="flex w-[188px] min-w-0 flex-col rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0 duration-0"
-        data-keeps-format
-      >
-        {children}
-      </DropdownMenuSubContent>
-    </DropdownMenuSub>
   )
 }
 

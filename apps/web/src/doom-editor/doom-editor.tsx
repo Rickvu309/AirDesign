@@ -6,7 +6,9 @@ import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { slideRoom } from "@/editor/canvas-zoom"
 import { ExportButton, PanelHead } from "@/editor/editor-chrome"
 import { ResizablePanel } from "@/editor/resizable-panel"
-import { useKeptPanel } from "@/editor/kept-panel"
+import { useKeptPanel, type ShownPanel } from "@/editor/kept-panel"
+import type { ShapesShown } from "@/editor/shape-tool"
+import type { AiraStart } from "@/aira/aira-panel"
 import { SlideSidebar } from "@/editor/slide-sidebar"
 import { useCanvasRoom } from "@/editor/use-canvas-room"
 import { ZoomMenu } from "@/editor/zoom-menu"
@@ -29,20 +31,36 @@ import { useAssetUrls } from "./use-asset-urls"
 import { useSlideStepKeys } from "./use-slide-step-keys"
 import { addAfterKey, useSlideStrip } from "./use-slide-strip"
 import type { Tool } from "./use-canvas-pointer"
-import { useDoomDeck, useDoomView, type EditorClient } from "./use-doom-deck"
+import { useDoomDeck, useDoomView, type EditorClient, type OpenOptions } from "./use-doom-deck"
 
 function deckName(view: doom.Doom): string {
   const deck = [...view.nodes.values()].find((node) => node.type === "deck")
   return deck?.type === "deck" ? (deck.name ?? "") : ""
 }
 
-function Editing({ client, id }: { readonly client: EditorClient; readonly id: string }) {
+export type EditorStart = {
+  readonly panel?: ShownPanel
+  readonly tool?: Tool
+  readonly editing?: doom.NodeId
+  readonly shapes?: ShapesShown
+  readonly aira?: AiraStart
+}
+
+function Editing({
+  client,
+  id,
+  start,
+}: {
+  readonly client: EditorClient
+  readonly id: string
+  readonly start: EditorStart
+}) {
   const view = useDoomView(client)
   const slides = slidesOf(view)
   const [slide, showSlide] = useCurrentSlide(slides)
   const [selection, setSelection] = useState<Selection>(noSelection)
-  const [tool, setTool] = useState<Tool>("move")
-  const [panel, setPanel] = useKeptPanel(id)
+  const [tool, setTool] = useState<Tool>(start.tool ?? "move")
+  const [panel, setPanel] = useKeptPanel(id, start.panel)
   const [zoom, setZoom] = useState<Zoom>("fit")
   const [toolbarHost, setToolbarHost] = useState<HTMLElement | null>(null)
   const commands = useRef<CanvasCommands>({ zoomTo: setZoom, zoomSelection: null })
@@ -82,12 +100,7 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
   return (
     <div className="window-frame flex" data-doom-editor={id} inert={present.show !== null}>
       <div className="contents" onKeyDownCapture={(event) => addAfterKey(event, strip)}>
-        <SlideSidebar
-          run="done"
-          title={title}
-          strip={strip}
-          onRename={(name) => client.push(renameWrites(view, name))}
-        />
+        <SlideSidebar title={title} strip={strip} onRename={(name) => client.push(renameWrites(view, name))} />
       </div>
       <div ref={canvas.onCanvas} className="relative min-w-0 flex-1" data-editor-canvas>
         {slide === undefined ? null : (
@@ -113,6 +126,8 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
               commands.current = next ?? { zoomTo: setZoom, zoomSelection: null }
             }}
             toolbarHost={toolbarHost}
+            {...(start.editing === undefined ? {} : { editing: start.editing })}
+            {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
           />
         )}
         <div
@@ -145,7 +160,7 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
           </span>
         </PanelHead>
         <div className={cn("flex min-h-0 flex-1 flex-col", panel === "agent" ? null : "hidden")}>
-          <AgentPanel deck={client} />
+          <AgentPanel deck={client} {...(start.aira === undefined ? {} : { start: start.aira })} />
         </div>
         {panel === "design" && slide !== undefined ? (
           <DesignPanel
@@ -176,9 +191,18 @@ function Editing({ client, id }: { readonly client: EditorClient; readonly id: s
   )
 }
 
-export function DoomEditor({ id }: { readonly id: string | null }) {
+export function DoomEditor({
+  id,
+  open = {},
+  start = {},
+}: {
+  readonly id: string | null
+  readonly open?: OpenOptions
+  readonly start?: EditorStart
+}) {
   const opening = useDoomDeck(id, {
     arrived: (made) => window.history.replaceState(null, "", `/s/${made}`),
+    ...open,
   })
   if (opening.status === "missing") return <NotFoundPage kind="deck" />
   if (opening.status === "loading")
@@ -187,5 +211,5 @@ export function DoomEditor({ id }: { readonly id: string | null }) {
         <div className="h-full bg-canvas" />
       </div>
     )
-  return <Editing client={opening.deck} id={opening.id} />
+  return <Editing client={opening.deck} id={opening.id} start={start} />
 }

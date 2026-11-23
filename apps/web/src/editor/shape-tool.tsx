@@ -6,7 +6,7 @@ import { shapeCopy } from "@/copy/shape-copy"
 import { floatShadow } from "@/editor/editor-chrome"
 import { EditorIcon } from "@/editor/editor-icons"
 import { ShapeGrid } from "@/editor/shape-grid"
-import { basicShapes, LineArt, ShapeSvg, trayShapes } from "@/editor/tool-panels"
+import { basicShapes, LineArt, ShapeSvg, trayShapes } from "@/editor/shape-marks"
 import { cn } from "@/lib/class-names"
 
 const trayNames: Readonly<Record<string, Geometry>> = {
@@ -84,15 +84,19 @@ export function ShapeTrayItems({ onShape, onMore }: { onShape: (geometry: Geomet
   )
 }
 
+export type ShapesShown = "tray" | "grid"
+
 export function ShapeTool({
   onShape,
   anchor,
+  shown,
 }: {
   onShape: (geometry: Geometry) => void
   anchor?: RefObject<HTMLElement | null>
+  shown?: ShapesShown
 }) {
-  const [open, setOpen] = useState(false)
-  const [more, setMore] = useState(false)
+  const [open, setOpen] = useState(shown !== undefined)
+  const [more, setMore] = useState(shown === "grid")
   const change = (next: boolean) => {
     setOpen(next)
     setMore(false)

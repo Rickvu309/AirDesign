@@ -13,21 +13,10 @@ import { cn } from "@/lib/class-names"
 const bars = [4.1, 4.6, 5, 5.4, 5.7]
 const frameShadow = "shadow-[0px_0px_0px_1px_var(--field-edge)]"
 
-export function SlideThumb({ index, width, queued = false }: { index: number; width: number; queued?: boolean }) {
+export function SlideThumb({ index, width }: { index: number; width: number }) {
   const height = Math.round((width * 9) / 16)
   const scale = width / 160
   const px = (value: number) => Math.max(1, Math.round(value * scale * 10) / 10)
-  if (queued) {
-    return (
-      <div
-        className="flex shrink-0 items-center justify-center rounded-[2px] bg-canvas text-[length:var(--type-caption)] text-quiet shadow-[inset_0px_0px_0px_1px_var(--field-edge)]"
-        data-slide-card
-        style={{ width, height }}
-      >
-        Queued
-      </div>
-    )
-  }
   const pad = px(12)
   const gap = px(5)
   const titleSize = px(10)

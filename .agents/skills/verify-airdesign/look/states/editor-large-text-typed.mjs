@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test"
+import { editor } from "../editor-screen.mjs"
 import { committed, largeTextBox } from "../large-text.mjs"
 
 async function drive(kit) {
@@ -16,4 +17,4 @@ async function drive(kit) {
   })
 }
 
-export default { name: "editor-large-text-typed", design: "/screens/s49-04-editor-errors-unreached", drive }
+export default { name: "editor-large-text-typed", design: editor, drive }

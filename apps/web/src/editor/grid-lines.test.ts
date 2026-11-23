@@ -9,7 +9,6 @@ import {
   gridWrapColumns,
   type GridLineTrack,
 } from "@/editor/grid-lines"
-import { gridColumns } from "@/editor/grid-zoom"
 
 const groups = (lengths: readonly number[]) => {
   const ranges: { start: number; end: number }[] = []
@@ -34,10 +33,10 @@ describe("grid line layout", () => {
   })
 
   it("wraps one group at the deck's column count, and widens several groups only while that removes lines", () => {
-    expect(gridWrapColumns(6, groups([6]))).toBe(gridColumns(6))
-    expect(gridColumns(6)).toBe(4)
-    expect(gridWrapColumns(10, groups([10]))).toBe(gridColumns(10))
-    expect(gridColumns(10)).toBe(4)
+    expect(gridWrapColumns(6, groups([6]))).toBe(gridBaseColumns(6))
+    expect(gridBaseColumns(6)).toBe(4)
+    expect(gridWrapColumns(10, groups([10]))).toBe(gridBaseColumns(10))
+    expect(gridBaseColumns(10)).toBe(4)
     expect(gridWrapColumns(16, groups([16]))).toBe(5)
     expect(
       gridVisualLines([track(0, 0, 6)], gridWrapColumns(6, groups([6]))).map((line) => line.end - line.start),

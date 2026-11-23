@@ -22,8 +22,8 @@ export function keepPanel(deck: string, panel: ShownPanel): void {
   }
 }
 
-export function useKeptPanel(deck: string): [ShownPanel, (panel: ShownPanel) => void] {
-  const [panel, setPanel] = useState(() => keptPanel(deck))
+export function useKeptPanel(deck: string, shown?: ShownPanel): [ShownPanel, (panel: ShownPanel) => void] {
+  const [panel, setPanel] = useState(() => shown ?? keptPanel(deck))
   return [
     panel,
     (next) => {
