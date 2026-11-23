@@ -3,7 +3,8 @@ import { TextLines, gestureFor } from "@airdesign/render"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { blankLine } from "./text-blank-line"
 import { offsetOfPlace, placeOfOffset, type Place } from "./text-caret"
-import { graphemeAfter, graphemeBefore, wordAfter, wordBefore } from "./text-edit"
+import { readTextClipboard, writeTextClipboard } from "./text-clipboard"
+import { graphemeAfter, graphemeBefore, sliceText, wordAfter, wordBefore } from "./text-edit"
 import type { TextSession } from "./use-text-session"
 import { composing } from "@/lib/composing"
 
@@ -41,19 +42,21 @@ function lineBounds(host: HTMLElement, offset: number): { readonly start: number
 }
 
 export function TextHost(props: {
+  readonly deck: string
+  readonly slides: readonly doom.NodeId[]
   readonly node: doom.Resolved
   readonly theme: doom.Theme
   readonly api: TextSession
   readonly onLeave: () => void
 }) {
-  const { node, theme, api } = props
+  const { deck, slides, node, theme, api } = props
   const session = api.session!
   const host = useRef<HTMLDivElement>(null)
-  const latest = useRef({ api, session, onLeave: props.onLeave })
+  const latest = useRef({ api, session, deck, slides, onLeave: props.onLeave })
   const marked = useRef<{ readonly from: number; readonly to: number } | null>(null)
   const [fresh, setFresh] = useState(0)
   useEffect(() => {
-    latest.current = { api, session, onLeave: props.onLeave }
+    latest.current = { api, session, deck, slides, onLeave: props.onLeave }
   })
 
   useLayoutEffect(() => {
@@ -113,8 +116,7 @@ export function TextHost(props: {
       } else if (type === "deleteByCut" || type === "deleteByDrag") {
         current.replace(from, to, "")
       } else if (type === "insertFromPaste" || type === "insertFromDrop") {
-        const data = (event.dataTransfer?.getData("text/plain") ?? "").replace(/\r\n?/g, "\n")
-        if (data !== "") current.replace(from, to, data)
+        pasteFrom(event.dataTransfer, from, to)
       } else if (type === "historyUndo" || type === "historyRedo") {
         current.step(type === "historyUndo" ? "undo" : "redo")
       }
@@ -165,13 +167,26 @@ export function TextHost(props: {
     }
   }
 
+  function pasteFrom(transfer: DataTransfer | null, from: number, to: number) {
+    if (transfer === null) return
+    const { api: current, deck: currentDeck, slides: currentSlides } = latest.current
+    const slice = readTextClipboard(transfer, { deck: currentDeck, slides: currentSlides })
+    if (slice !== null && slice.chars !== "") {
+      current.paste(from, to, slice)
+      return
+    }
+    const data = transfer.getData("text/plain").replace(/\r\n?/g, "\n")
+    if (data !== "") current.replace(from, to, data)
+  }
+
   function copy(event: React.ClipboardEvent, cut: boolean) {
-    const { api: current, session: now } = latest.current
-    const from = Math.min(now.anchor, now.focus)
-    const to = Math.max(now.anchor, now.focus)
+    const { api: current, session: now, deck: currentDeck } = latest.current
+    const at = (host.current === null ? null : selectionOf(host.current)) ?? { anchor: now.anchor, focus: now.focus }
+    const from = Math.min(at.anchor, at.focus)
+    const to = Math.max(at.anchor, at.focus)
     event.preventDefault()
     if (from === to) return
-    event.clipboardData.setData("text/plain", now.draft.chars.slice(from, to))
+    writeTextClipboard(event.clipboardData, sliceText(now.draft, from, to), currentDeck)
     if (cut) current.replace(from, to, "")
   }
 
@@ -198,9 +213,12 @@ export function TextHost(props: {
       onCut={(event) => copy(event, true)}
       onPaste={(event) => {
         event.preventDefault()
-        const { api: current, session: now } = latest.current
-        const data = event.clipboardData.getData("text/plain").replace(/\r\n?/g, "\n")
-        if (data !== "") current.replace(Math.min(now.anchor, now.focus), Math.max(now.anchor, now.focus), data)
+        const { session: now } = latest.current
+        const at = (host.current === null ? null : selectionOf(host.current)) ?? {
+          anchor: now.anchor,
+          focus: now.focus,
+        }
+        pasteFrom(event.clipboardData, Math.min(at.anchor, at.focus), Math.max(at.anchor, at.focus))
       }}
       onCompositionStart={() => {
         const found = host.current === null ? null : selectionOf(host.current)
