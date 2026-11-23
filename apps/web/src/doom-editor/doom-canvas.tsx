@@ -378,7 +378,10 @@ export function DoomCanvas(props: {
           </div>
         </div>
       </div>
-      <ThinNoticeView notice={pictures.notice ?? props.notice} onTryAgain={() => undefined} />
+      <ThinNoticeView
+        notice={pictures.notice ?? (text.refused ? "text-refused" : props.notice)}
+        onTryAgain={() => undefined}
+      />
       <TextBar api={text} />
       {props.toolbarHost === null
         ? null

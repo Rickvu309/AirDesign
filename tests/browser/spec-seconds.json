@@ -49,6 +49,7 @@
     "doom-slides-transform.spec.ts": 11.9,
     "doom-speed.spec.ts": 16.1,
     "doom-text-format.spec.ts": 13.4,
+    "doom-text-refused.spec.ts": 3.7,
     "doom-text-undo.spec.ts": 7.7,
     "font-widths.spec.ts": 0.3,
     "hero-chart.spec.ts": 1,
