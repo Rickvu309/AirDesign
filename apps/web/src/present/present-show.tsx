@@ -24,6 +24,7 @@ export type PresentShowProps = {
   readonly onWake?: () => void
   readonly transitionOf?: (index: number) => SlideTransition | null
   readonly morphOf?: (from: number, to: number) => LayerPairs
+  readonly onFollow?: (point: { readonly x: number; readonly y: number; readonly show: Element }) => boolean
 }
 
 function held(event: MouseEvent) {
@@ -113,7 +114,15 @@ function none() {
 
 export function PresentShow(props: PresentShowProps) {
   const { leaving, done } = useLeaving(props.at, props.transitionOf ?? none, props.morphOf)
-  const onStage = props.ended ? props.onStop : props.onNext
+  const step = props.ended ? props.onStop : props.onNext
+  const onStage =
+    step === undefined
+      ? undefined
+      : (event: MouseEvent) => {
+          const point = { x: event.clientX, y: event.clientY, show: event.currentTarget }
+          if (!props.ended && props.onFollow?.(point) === true) return
+          step()
+        }
   const said = props.ended ? presentCopy.end : presentCopy.position(props.at + 1, props.count)
   return (
     <section

@@ -27,6 +27,7 @@ import { propOf, slidesOf } from "@/editing/node-props"
 import { DoomCanvas, type CanvasCommands } from "./doom-canvas"
 import { DoomNotes } from "./doom-notes"
 import { DoomThumb } from "./doom-thumb"
+import { followLink, linkAt } from "./present-links"
 import { noSelection, type Selection } from "./selection"
 import { useCurrentSlide } from "./use-current-slide"
 import { useAssetUrls } from "./use-asset-urls"
@@ -227,6 +228,10 @@ function Editing({
           return shown === undefined ? null : (
             <DoomThumb view={view} slide={shown} width={width} assetUrl={assets.assetUrl} />
           )
+        }}
+        onFollow={(point) => {
+          const link = linkAt(view, point)
+          return link !== undefined && followLink(link, slides, present.go)
         }}
         notesOf={(index) => propOf(view.nodes.get(slides[index] ?? ("" as doom.NodeId)), "notes")?.chars ?? ""}
       />

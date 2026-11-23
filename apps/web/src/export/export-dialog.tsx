@@ -106,7 +106,7 @@ function SlideNumber({
       disabled={disabled}
       value={value}
       onChange={(event) => onValue(event.target.value)}
-      className={`h-9 w-20 rounded-lg bg-white px-3 aria-invalid:ring-destructive/40 ${fieldEdge} ${fieldText}`}
+      className={`h-9 w-20 rounded-lg bg-white px-3 ${fieldEdge} ${fieldText}`}
     />
   )
 }

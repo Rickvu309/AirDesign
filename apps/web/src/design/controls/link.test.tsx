@@ -3,6 +3,7 @@ import { traits } from "@airdesign/document"
 import { act, createElement } from "react"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import type { ControlProps } from "@/design/panel"
+import { linkCopy } from "@/copy/link-copy"
 
 let window: Window & typeof globalThis
 let createRoot: typeof import("react-dom/client").createRoot
@@ -73,6 +74,59 @@ it.each([
     expect(onChange).toHaveBeenCalledWith({ kind: "slide", slide: slides[1] })
     await act(async () => root.render(createElement(LinkControl, props({ kind: "slide", slide: slides[1] }))))
     expect(input.value).toBe("2")
+  } finally {
+    await act(async () => root.unmount())
+    host.remove()
+  }
+})
+
+it("marks an address it cannot use as invalid and says why, beside the field", async () => {
+  const host = window.document.createElement("div")
+  window.document.body.append(host)
+  const root = createRoot(host)
+  const onChange = vi.fn()
+  const control = {
+    ...resolveControl({
+      trait: "link",
+      field: "target",
+      label: "Link",
+      desc: traits.link.fields.target.desc,
+      value: undefined,
+      mixed: false,
+      inherited: false,
+      reset: null,
+      change: () => {
+        throw new Error("unused")
+      },
+    }),
+    slides: ["s:1"],
+  }
+  try {
+    await act(async () =>
+      root.render(createElement(LinkControl, { control, palette: { templateColors: [], deck: [] }, onChange })),
+    )
+    const input = host.querySelector("input")
+    if (input === null) throw new Error("Link")
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(input, "9")
+      input.dispatchEvent(new window.Event("input", { bubbles: true }))
+    })
+    await act(async () => {
+      input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
+    })
+    expect(onChange).not.toHaveBeenCalled()
+    expect(input.getAttribute("aria-invalid")).toBe("true")
+    const said = window.document.getElementById(input.getAttribute("aria-describedby") ?? "none")
+    expect(said?.textContent).toBe(linkCopy.invalid)
+    expect(host.querySelector('[data-link-field][data-focus-ring] > input[aria-invalid="true"]')).not.toBeNull()
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(input, "ana@example.com")
+      input.dispatchEvent(new window.Event("input", { bubbles: true }))
+    })
+    await act(async () => {
+      input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
+    })
+    expect(onChange).toHaveBeenCalledWith({ kind: "url", url: "mailto:ana@example.com" })
   } finally {
     await act(async () => root.unmount())
     host.remove()
