@@ -189,7 +189,11 @@ function write(work: Working, doom: Doom, landed: Landed, raw: Write, known: Kno
 }
 
 export type Counts = { readonly elements: number; readonly slides: number }
-export type Known = { readonly counts: () => Counts; readonly deck: () => boolean }
+export type Known = {
+  readonly counts: () => Counts
+  readonly deck: () => boolean
+  readonly partial?: true
+}
 export type Landing = { readonly doom: Doom; readonly delta: Counts }
 
 const noChange: Counts = { elements: 0, slides: 0 }
@@ -267,7 +271,8 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
   const delta = countDelta(work, doom, landed)
   const crowded = overLimit(delta, known)
   if (crowded !== undefined) return crowded
-  if (delta.slides < 0 && known.counts().slides + delta.slides <= 0) return refuse("last-slide")
+  if (known.partial !== true && delta.slides < 0 && known.counts().slides + delta.slides <= 0)
+    return refuse("last-slide")
   const turned = landed.runUndo === undefined ? undefined : work.runs.get(landed.runUndo.run)
   if (landed.runUndo !== undefined && (turned === undefined || landed.author.kind !== "person")) return refuse("shape")
   if (landed.runUndo !== undefined && turned !== undefined)
@@ -299,5 +304,10 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
 
 export function applyEdit(doom: Doom, landed: Landed): Doom | Refusal {
   const landing = landEdit(doom, landed, { counts: () => countsOf(doom), deck: () => hasDeck(doom) })
+  return isRefusal(landing) ? landing : landing.doom
+}
+
+export function applyStep(doom: Doom, landed: Landed): Doom | Refusal {
+  const landing = landEdit(doom, landed, { counts: () => countsOf(doom), deck: () => hasDeck(doom), partial: true })
   return isRefusal(landing) ? landing : landing.doom
 }

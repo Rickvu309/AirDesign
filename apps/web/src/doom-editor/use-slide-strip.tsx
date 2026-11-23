@@ -1,6 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { gestureFor } from "@airdesign/render"
 import { useRef, type KeyboardEvent } from "react"
+import { toast } from "@/components/ui/toast"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { slidesOf } from "@/editing/node-props"
@@ -33,13 +34,14 @@ export function useSlideStrip(props: {
   const index = current === undefined ? 0 : Math.max(0, slides.indexOf(current))
   const mint = () => client.mint()
   const pick = (held: readonly number[]) => held.flatMap((at) => slides[at] ?? [])
-  const remove = (removed: readonly doom.NodeId[]) => {
+  const remove = (removed: readonly doom.NodeId[]): "removed" | "last-slide" | "refused" => {
     const writes = deleteSlideWrites(view, removed)
-    if (writes.length === 0) return false
+    if (writes.length === 0) return "refused"
     const next = neighbourAfterDelete(view, removed)
-    if (!client.push(writes).ok) return false
+    const pushed = client.push(writes)
+    if (!pushed.ok) return pushed.refused.refused === "last-slide" ? "last-slide" : "refused"
     if (next !== null) onCurrent(next)
-    return true
+    return "removed"
   }
   return {
     count: slides.length,
@@ -75,7 +77,7 @@ export function useSlideStrip(props: {
     onRemove: (at) => {
       const slide = slides[at]
       if (slide === undefined) return
-      if (!remove([slide])) say.current(slideListCopy.lastSlide)
+      if (remove([slide]) === "last-slide") say.current(slideListCopy.lastSlide)
     },
     onMove: (from, to) => {
       const slide = slides[from]
@@ -90,7 +92,9 @@ export function useSlideStrip(props: {
     },
     onChangeSet: (change, held) => {
       if (change === "remove") {
-        if (!remove(pick(held))) return null
+        const removed = remove(pick(held))
+        if (removed === "last-slide") toast.error(slideListCopy.lastSlide)
+        if (removed !== "removed") return null
         return { picked: [], order: slidesOf(client.view()) }
       }
       const made = duplicateSlideWrites(view, pick(held), mint)

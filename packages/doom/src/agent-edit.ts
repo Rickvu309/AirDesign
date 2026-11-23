@@ -5,7 +5,7 @@ import type { NodeId, Rev } from "./ids.js"
 import { rev } from "./ids.js"
 import type { WriteKey } from "./props.js"
 import { kindOf } from "./agent-read.js"
-import { applyEdit } from "./apply-edit.js"
+import { applyEdit, applyStep } from "./apply-edit.js"
 import { nameFromTitleWrites } from "./deck-name-from-title.js"
 import { isRefusal } from "./refusal.js"
 import type { Author, Edit, Doom, Write } from "./doom.js"
@@ -50,7 +50,7 @@ export function compileAgentEdit(doom: Doom, changes: readonly AgentChange[], by
   for (const [at, change] of changes.entries()) {
     const compiled = compileAgentChange(view, change, by.mint, reading)
     if ("refused" in compiled) return { ...compiled, at }
-    const next = applyEdit(view, {
+    const next = applyStep(view, {
       ...onTop(view, {
         once: `${by.once}#${at}`,
         author: by.author,
