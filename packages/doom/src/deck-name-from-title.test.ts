@@ -115,6 +115,21 @@ describe("a deck whose name follows its first title", () => {
     expect(nameFromTitleWrites(cleared, [based(cleared, retitle(cleared, "Again"))])).toEqual([named("Again")])
   })
 
+  it("goes back to the default name when the title it follows is deleted or emptied, and stays following", () => {
+    const doom = titled("Draft", true)
+    const gone: Write = { node: titleOf(doom), prop: "parent", value: null }
+    expect(nameFromTitleWrites(doom, [gone])).toEqual([named(blankDeckName)])
+    expect(nameFromTitleWrites(doom, [retitle(doom, "")])).toEqual([named(blankDeckName)])
+    const reset = apply(doom, [gone, named(blankDeckName)])
+    expect(deckNameFollows(reset)).toBe(true)
+    expect(nameFromTitleWrites(reset, [gone])).toEqual([])
+  })
+
+  it("keeps a name that was chosen when the title is deleted", () => {
+    const doom = titled("Board pack", false)
+    expect(nameFromTitleWrites(doom, [{ node: titleOf(doom), prop: "parent", value: null }])).toEqual([])
+  })
+
   it("keeps an agent's name when the same edit retitles slide 1", () => {
     const doom = titled(blankDeckName, true)
     const edit = compileAgentEdit(

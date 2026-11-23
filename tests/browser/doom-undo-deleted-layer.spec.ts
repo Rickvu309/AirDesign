@@ -81,3 +81,40 @@ test("a text box emptied and left goes in one step with its typing, and redo del
   await expect(shownTitle).toHaveCount(0)
   await expect.poll(async () => (await saved())?.parent).toBeNull()
 })
+
+test("a deck named by its title goes back to the default when the emptied title is deleted, and Undo and Redo keep the name with the title", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await page.clock.install()
+  const opened = await openDoomEditor(page, context, stack)
+  const deckName = async () => (await savedNode(stack, opened, "s:1"))?.name
+  const before = await savedNode(stack, opened, "s:4")
+  const title = before?.box as Box
+  const shownTitle = page.locator('[data-slide-box] [data-node="s:4"]')
+  const starting = await deckName()
+  expect(starting).not.toBe("Draft")
+
+  await clickSlide(page, title.x + title.w / 2, title.y + title.h / 2)
+  await page.keyboard.press("Enter")
+  await expect(page.locator("[data-text-editor]")).toBeFocused()
+  await page.keyboard.type("Draft")
+  await page.clock.runFor(1000)
+  await expect.poll(deckName).toBe("Draft")
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.press("Backspace")
+  await page.keyboard.press("Escape")
+  await expect.poll(async () => (await savedNode(stack, opened, "s:4"))?.parent).toBeNull()
+  await expect(shownTitle).toHaveCount(0)
+  await expect.poll(deckName).toBe(starting)
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(shownTitle).toHaveCount(1)
+  await expect.poll(async () => (await savedNode(stack, opened, "s:4"))?.text).toEqual(before?.text)
+  await expect.poll(deckName).toBe(starting)
+
+  await page.keyboard.press("ControlOrMeta+Shift+z")
+  await expect(shownTitle).toHaveCount(0)
+  await expect.poll(deckName).toBe(starting)
+})
