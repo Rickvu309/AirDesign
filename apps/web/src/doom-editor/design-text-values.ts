@@ -83,6 +83,6 @@ export function shownText(text: doom.Text, theme: doom.Theme): TextShown {
 }
 
 export const sizeToHundredths = (px: number): number => Math.round(px * hundredths)
-export const sizeFromHundredths = (old: number): number => old / hundredths
+export const sizeFromHundredths = (stored: number): number => stored / hundredths
 export const lineToFraction = (multiple: number): number => Math.round(multiple * wholeFraction)
-export const lineFromFraction = (old: number): number => old / wholeFraction
+export const lineFromFraction = (stored: number): number => stored / wholeFraction
