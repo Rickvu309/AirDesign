@@ -259,3 +259,40 @@ test("linked words are underlined, and the Link section reads and changes the li
     .toEqual([{ end: 9 }, { end: 13, link: "https://b.example/" }])
   expect((await savedNode(stack, opened, "t:1"))?.link).toBeUndefined()
 })
+
+test("selecting across two different links shows Mixed, leaves them alone on Enter, and replaces both when changed", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const both = [{ end: 3, link: "https://a.example/" }, { end: 8 }, { end: 11, link: "https://b.example/" }]
+  const linked = {
+    ...layer("One and two"),
+    text: { ...layer("One and two").text, spans: both },
+  }
+  await landNodes(stack, opened, [{ id: "t:1", type: "shape", parent: opened.slide, props: linked }])
+  await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(3)
+
+  await clickSlide(page, 300, 640)
+  const address = page.locator(`[data-design-section="${linkCopy.section}"]`).getByRole("textbox")
+  await edit(page)
+  await expect(address).toHaveValue(linkCopy.mixed)
+
+  await address.click()
+  await address.press("Enter")
+  await expect(address).toHaveValue(linkCopy.mixed)
+
+  await editor(page).focus()
+  await page.keyboard.press("Home")
+  await expect(address).toHaveValue("")
+  for (let step = 0; step < 5; step++) await page.keyboard.press("Shift+ArrowRight")
+  await expect(address).toHaveValue(linkCopy.mixed)
+
+  await page.keyboard.press("ControlOrMeta+a")
+  await expect(address).toHaveValue(linkCopy.mixed)
+  await address.fill("https://c.example/")
+  await address.press("Enter")
+  await expect.poll(async () => (await textOf(stack, opened))?.spans).toEqual([{ end: 11, link: "https://c.example/" }])
+})

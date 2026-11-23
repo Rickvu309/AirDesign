@@ -54,6 +54,7 @@ function alignmentSection(): PanelSection {
 }
 
 function linkSection(input: ModelInput): PanelSection[] {
+  const mixed = input.words?.mixed === true
   const held = input.words == null ? propOf(input.view.nodes.get(input.id), "link") : input.words.link
   const slide = held !== undefined && input.slides.includes(held as doom.NodeId)
   const target = held === undefined ? undefined : slide ? { kind: "slide", slide: held } : { kind: "url", url: held }
@@ -61,7 +62,7 @@ function linkSection(input: ModelInput): PanelSection[] {
     { trait: "link", field: "target" },
     linkCopy.target,
     { kind: "link" },
-    { value: target },
+    { value: target, mixed },
     { slides: input.slides },
   )
   return [{ trait: "link", label: linkCopy.section, strips: [[control]] }]

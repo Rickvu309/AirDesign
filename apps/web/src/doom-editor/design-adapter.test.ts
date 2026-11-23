@@ -3,7 +3,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { panelOfMany, type PanelControl, type PanelModel } from "@/design/panel"
 import { changeWrites, type ChangeContext } from "./design-changes"
-import { kindOf, nodeModel } from "./design-model"
+import { kindOf, nodeModel, type ModelInput } from "./design-model"
 import { lineFromFraction, sizeFromHundredths } from "./design-text-values"
 import { distributeWrites } from "./design-align"
 import { fillWrite, shownShadow } from "./design-paint-values"
@@ -190,16 +190,26 @@ describe("text layer", () => {
     )
   })
 
-  it("shows the link of the words the caret is in, and the layer's own link when the caret is in none", () => {
+  it("shows the link of the words the caret is in, Mixed for mixed links, and the layer's own link when the caret is in none", () => {
     const linked = landed(view, [{ node: id("words"), prop: "link", value: "https://layer.example" }])
-    const shown = (words: { from: number; to: number; link: string | undefined } | null) =>
-      find(nodeModel({ view: linked, id: id("words"), theme, slides, words }), "link", "target").value
-    expect(shown({ from: 0, to: 5, link: "https://words.example" })).toEqual({
-      kind: "url",
-      url: "https://words.example",
+    const control = (words: ModelInput["words"]) =>
+      find(nodeModel({ view: linked, id: id("words"), theme, slides, words }), "link", "target")
+    expect(control({ from: 0, to: 5, link: "https://words.example", mixed: false })).toMatchObject({
+      value: { kind: "url", url: "https://words.example" },
+      mixed: false,
     })
-    expect(shown({ from: 0, to: 11, link: undefined })).toBeUndefined()
-    expect(shown(null)).toEqual({ kind: "url", url: "https://layer.example" })
+    expect(control({ from: 0, to: 11, link: undefined, mixed: false })).toMatchObject({
+      value: undefined,
+      mixed: false,
+    })
+    expect(control({ from: 0, to: 11, link: undefined, mixed: true })).toMatchObject({
+      value: undefined,
+      mixed: true,
+    })
+    expect(control(null)).toMatchObject({
+      value: { kind: "url", url: "https://layer.example" },
+      mixed: false,
+    })
   })
 
   it("a text style resets the size and weight a span set", () => {

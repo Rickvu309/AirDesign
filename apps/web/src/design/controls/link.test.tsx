@@ -157,3 +157,49 @@ it("marks an address it cannot use as invalid and says why, beside the field", a
     host.remove()
   }
 })
+
+it("shows Mixed without overwriting on Enter, and writes a new link when replaced", async () => {
+  const host = window.document.createElement("div")
+  window.document.body.append(host)
+  const root = createRoot(host)
+  const onChange = vi.fn()
+  const control = {
+    ...resolveControl({
+      trait: "link",
+      field: "target",
+      label: "Link",
+      desc: { kind: "link" },
+      value: undefined,
+      mixed: true,
+      inherited: false,
+      reset: null,
+    }),
+    slides: ["s:1"],
+  }
+  try {
+    await act(async () =>
+      root.render(createElement(LinkControl, { control, palette: { templateColors: [], deck: [] }, onChange })),
+    )
+    const input = host.querySelector("input")
+    if (input === null) throw new Error("Link")
+    expect(input.value).toBe(linkCopy.mixed)
+    await act(async () => {
+      input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
+    })
+    expect(onChange).not.toHaveBeenCalled()
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(
+        input,
+        "https://c.example/",
+      )
+      input.dispatchEvent(new window.Event("input", { bubbles: true }))
+    })
+    await act(async () => {
+      input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
+    })
+    expect(onChange).toHaveBeenCalledWith({ kind: "url", url: "https://c.example/" })
+  } finally {
+    await act(async () => root.unmount())
+    host.remove()
+  }
+})

@@ -112,27 +112,41 @@ describe("linked words", () => {
         { end: 24 },
       ],
     }
-    expect(linkedWords(text, 12, 12)).toEqual(report)
-    expect(linkedWords(text, 20, 20)).toEqual(report)
+    expect(linkedWords(text, 12, 12)).toEqual({ ...report, mixed: false })
+    expect(linkedWords(text, 20, 20)).toEqual({ ...report, mixed: false })
     expect(linkedWords(text, 3, 3)).toBeNull()
     expect(linkedWords(text, 9, 9)).toBeNull()
+    const leading = doom.textFromMarkdown("[Home](https://a.example) page", "body")
+    expect(linkedWords(leading, 0, 0)).toBeNull()
+    expect(linkedWords(leading, 1, 1)).toEqual({ from: 0, to: 4, link: "https://a.example", mixed: false })
   })
 
-  it("names a selection's link only when every word in it holds the same one", () => {
-    expect(linkedWords(linked(), 10, 14)).toEqual({ from: 10, to: 14, link: "https://a.example" })
-    expect(linkedWords(linked(), 2, 14)).toEqual({ from: 2, to: 14, link: undefined })
-    expect(linkedWords(linked(), 14, 10)).toEqual({ from: 10, to: 14, link: "https://a.example" })
+  it("marks a selection mixed when its words hold different links or mix linked and plain words", () => {
+    const two = doom.textFromMarkdown("[One](https://a.example) and [two](https://b.example)", "body")
+    expect(linkedWords(linked(), 10, 14)).toEqual({ from: 10, to: 14, link: "https://a.example", mixed: false })
+    expect(linkedWords(linked(), 14, 10)).toEqual({ from: 10, to: 14, link: "https://a.example", mixed: false })
+    expect(linkedWords(linked(), 0, 4)).toEqual({ from: 0, to: 4, link: undefined, mixed: false })
+    expect(linkedWords(linked(), 2, 14)).toEqual({ from: 2, to: 14, link: undefined, mixed: true })
+    expect(linkedWords(two, 0, 12)).toEqual({ from: 0, to: 12, link: undefined, mixed: true })
+    const adjacent = {
+      ...plain("OneTwo"),
+      spans: [
+        { end: 3, link: "https://a.example" },
+        { end: 6, link: "https://b.example" },
+      ],
+    }
+    expect(linkedWords(adjacent, 0, 6)).toEqual({ from: 0, to: 6, link: undefined, mixed: true })
   })
 
   it("changes or removes the link on those words and keeps their other looks", () => {
     const changed = valid(linkWords(linked(), report.from, report.to, "https://b.example"))
-    expect(linkedWords(changed, 12, 12)).toEqual({ ...report, link: "https://b.example" })
+    expect(linkedWords(changed, 12, 12)).toEqual({ ...report, link: "https://b.example", mixed: false })
     expect(markOn(changed, 9, 20, "bold")).toBe(true)
     const removed = valid(linkWords(linked(), report.from, report.to, null))
     expect(linkedWords(removed, 12, 12)).toBeNull()
     expect(markOn(removed, 9, 20, "bold")).toBe(true)
     const added = valid(linkWords(plain("Read the report"), 9, 15, "https://c.example"))
-    expect(linkedWords(added, 11, 11)).toEqual({ from: 9, to: 15, link: "https://c.example" })
+    expect(linkedWords(added, 11, 11)).toEqual({ from: 9, to: 15, link: "https://c.example", mixed: false })
   })
 })
 
