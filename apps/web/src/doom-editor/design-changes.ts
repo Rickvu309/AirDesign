@@ -12,7 +12,7 @@ import {
 } from "./design-paint-values"
 import { lineNew, lookWrite, paraWrite, sizeNew, styleWrite, type LookPatch } from "./design-text-values"
 import { cornerEmu, pointEmu, doomColorOf, wholeFraction } from "./design-values"
-import { propOf } from "./node-props"
+import { propOf } from "@/editing/node-props"
 import type { SlideGeometry } from "./slide-geometry"
 import type { Color as OldColor } from "@airdesign/document"
 

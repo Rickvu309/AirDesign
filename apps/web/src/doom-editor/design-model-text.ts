@@ -11,7 +11,7 @@ import { choiceDesc, oldControl, doomControl } from "./design-controls"
 import { lineOld, shownText, sizeOld } from "./design-text-values"
 import { oldColorOf } from "./design-values"
 import type { ModelInput } from "./design-model"
-import { propOf } from "./node-props"
+import { propOf } from "@/editing/node-props"
 
 const casings = ["none", "upper", "lower", "title"]
 const fillDesc = { kind: "union", plain: "solid", cases: { solid: { kind: "color" } } } as const

@@ -6,7 +6,6 @@ dependencies:
   - apps/web/src/editing
   - apps/web/src/lib
 public:
-  - adjust-tone.tsx
   - canvas-zoom.ts
   - design-panel.tsx
   - editor-chrome.tsx
@@ -14,7 +13,6 @@ public:
   - editor-toast.tsx
   - element-title-actions.tsx
   - gallery-deck.ts
-  - grid-drop.ts
   - kept-panel.ts
   - live-design-panel.tsx
   - notes-bar.tsx
@@ -29,6 +27,5 @@ public:
   - slide-sidebar.tsx
   - slide-thumb.tsx
   - template-style-card.tsx
-  - tone-link.ts
   - use-canvas-room.ts
   - zoom-menu.tsx

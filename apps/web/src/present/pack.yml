@@ -10,6 +10,4 @@ public:
   - present-keys.ts
   - present-layer.tsx
   - present-screens.tsx
-  - slide-shows.ts
-  - use-leaving.ts
   - use-present.ts

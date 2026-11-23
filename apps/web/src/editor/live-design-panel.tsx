@@ -7,7 +7,7 @@ import { resolveControl } from "@/design/panel-arrangement"
 import { fillIcons } from "@/design/preset-icons"
 import { ColorPicker } from "@/design/color-picker"
 import { ColorField, fieldLook } from "@/design/controls/color"
-import { type DesignShown } from "@/design-shown"
+import { type DesignShown } from "@/design/design-shown"
 import { ControlView, DesignSection } from "@/editor/design-panel"
 
 export function SlideBackground({

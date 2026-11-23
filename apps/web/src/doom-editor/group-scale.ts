@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { propOf } from "./node-props"
+import { propOf } from "@/editing/node-props"
 import type { SlideGeometry } from "./slide-geometry"
 
 export function isGroup(view: doom.Doom, id: doom.NodeId): boolean {

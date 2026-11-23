@@ -1,6 +1,6 @@
 import { orderKeyBetween, type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { parentSlot, siblingsOf } from "./node-props"
+import { parentSlot, siblingsOf } from "@/editing/node-props"
 
 export type Reorder = "front" | "back" | "forward" | "backward"
 

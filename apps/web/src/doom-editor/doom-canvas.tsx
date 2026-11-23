@@ -14,7 +14,7 @@ import { aroundPlaced, apply, geometryOf, invert, type Point, type SlideGeometry
 import { TextBar } from "./text-bar"
 import { TextHost } from "./text-host"
 import { useTextSession } from "./use-text-session"
-import { propOf } from "./node-props"
+import { propOf } from "@/editing/node-props"
 import { useCanvasKeys } from "./use-canvas-keys"
 import { useCanvasPointer, type DrawRequest, type Tool } from "./use-canvas-pointer"
 import { chartArea, chartWrites, drawWrites, iconWrites } from "./create-writes"

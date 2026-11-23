@@ -8,7 +8,7 @@ import { resetsWhen, usagePercent } from "@/aira/aira-usage"
 import { SettingsPage } from "@/settings/settings-page"
 import { signOut } from "@/account/sign-out"
 import { signInAddress } from "@/account/sign-in-address"
-import { loadUsage, type UsageLoad } from "@/usage-load"
+import { loadUsage, type UsageLoad } from "@/aira/usage-load"
 
 import { useCredits } from "@/credits/use-credits"
 import { CreditsCards } from "@/credits/credits-cards"

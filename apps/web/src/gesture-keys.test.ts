@@ -53,7 +53,7 @@ const controlKeys: Readonly<Record<string, readonly string[]>> = {
   "apps/web/src/design/controls/picture-adjust.tsx": field,
   "apps/web/src/design/controls/text.tsx": field,
   "apps/web/src/design/custom-color.tsx": [...list, ...field],
-  "apps/web/src/editor/adjust-tone.tsx": arrows,
+  "apps/web/src/aira/adjust-tone.tsx": arrows,
   "apps/web/src/editor/deck-title-edit.tsx": field,
   "apps/web/src/editor/editor-grid-keys.ts": list,
   "apps/web/src/editor/editor-key-ownership.ts": ["Escape"],

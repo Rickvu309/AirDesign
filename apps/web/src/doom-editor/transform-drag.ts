@@ -17,7 +17,7 @@ import {
   type TransformGrip,
 } from "@airdesign/render"
 import { isGroup, scaledChildren } from "./group-scale"
-import { flows, geometryKind, lockedIn, propOf } from "./node-props"
+import { flows, geometryKind, lockedIn, propOf } from "@/editing/node-props"
 import { memberOf, type Member } from "./selection-frame"
 import { apply, invert, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
 

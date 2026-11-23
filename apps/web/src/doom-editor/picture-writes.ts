@@ -1,6 +1,6 @@
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { parentSlot, siblingsOf } from "./node-props"
+import { parentSlot, siblingsOf } from "@/editing/node-props"
 
 type Point = { readonly x: number; readonly y: number }
 type Natural = { readonly width: number; readonly height: number }

@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import type { Color as OldColor } from "@airdesign/document"
-import { propOf } from "./node-props"
+import { propOf } from "@/editing/node-props"
 import { oldColorOf } from "./design-values"
 
 export type ColorRow = { readonly hex: string; readonly color: OldColor }

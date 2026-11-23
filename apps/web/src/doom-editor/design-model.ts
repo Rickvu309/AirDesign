@@ -8,7 +8,7 @@ import { borderSections } from "./design-model-border"
 import { fillSections } from "./design-model-fills"
 import { textSections } from "./design-model-text"
 import { isGroup } from "./group-scale"
-import { propOf } from "./node-props"
+import { propOf } from "@/editing/node-props"
 
 export type ModelInput = {
   readonly view: doom.Doom

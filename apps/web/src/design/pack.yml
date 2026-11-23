@@ -13,11 +13,10 @@ public:
   - controls/color.tsx
   - controls/link.tsx
   - controls/picture-adjust.tsx
-  - controls/text.tsx
   - controls/union.tsx
   - corners-control.ts
+  - design-shown.ts
   - effects-list.ts
-  - eyedropper.ts
   - icon-search.tsx
   - opacity-control.ts
   - panel-arrangement.ts
@@ -26,10 +25,7 @@ public:
   - panel.ts
   - preset-icons.ts
   - selected-weight.ts
-  - served-faces.ts
   - shape-grid.tsx
   - shape-marks.tsx
   - spacing-units.ts
-  - text-style-edit.tsx
   - trait-controls.ts
-  - typed-number.ts

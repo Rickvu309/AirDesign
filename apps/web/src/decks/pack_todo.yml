@@ -1,6 +1,0 @@
-apps/web/src/doom-editor:
-  apps/web/src/doom-editor/node-props.ts:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/decks/doom-thumbnail.ts

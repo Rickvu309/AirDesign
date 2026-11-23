@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { DoomSlide } from "@airdesign/render"
 import { createElement } from "react"
 import { paintedElement } from "@/editing/painted-picture"
-import { jpegOf, pictureFit } from "@/slide-pictures"
+import { jpegOf, pictureFit } from "@/editing/slide-pictures"
 
 export async function captureSlide(
   view: doom.Doom,

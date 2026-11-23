@@ -11,7 +11,7 @@ import type { Preview } from "./canvas-overlay"
 import { copiedMove, duplicateWrites, type Copies } from "./copy-writes"
 import { hitChain } from "./hit-test"
 import { movedBy } from "./move-writes"
-import { holdsText, lockedIn } from "./node-props"
+import { holdsText, lockedIn } from "@/editing/node-props"
 import {
   marqueeSelection,
   noSelection,

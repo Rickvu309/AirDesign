@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { deckTime } from "./deck-time"
+import { deckTime } from "./deck-time-copy"
 
 const now = Date.parse("2026-11-11T12:00:00Z")
 const ago = (days: number) => new Date(now - days * 86400000).toISOString()

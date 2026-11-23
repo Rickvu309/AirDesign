@@ -1,7 +1,7 @@
 import { orderKeyBetween, type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import { duplicateWrites } from "./copy-writes"
-import { parentSlot, propOf, siblingsOf, slidesOf } from "./node-props"
+import { parentSlot, propOf, siblingsOf, slidesOf } from "@/editing/node-props"
 
 type Mint = () => doom.NodeId
 

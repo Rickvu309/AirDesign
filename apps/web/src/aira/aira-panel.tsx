@@ -25,11 +25,11 @@ import { chatTitle } from "@/aira/aira-history"
 import { deviceChats, useChatHistory, type ChatStore } from "@/aira/aira-history-hook"
 import { AiraHistoryMenu } from "@/aira/aira-history-menu"
 import { signInAddress } from "@/account/sign-in-address"
-import { useWeekUsage, type UsageLoad } from "@/usage-load"
+import { useWeekUsage, type UsageLoad } from "@/aira/usage-load"
 import { requestedTone, tonePrompt, type Tone, type ToneScope } from "@/aira/aira-prompts"
 import { adjustToneCopy } from "@/copy/adjust-tone-copy"
-import type { ToneControlFor } from "@/editor/adjust-tone"
-import type { ToneLink } from "@/editor/tone-link"
+import type { ToneControlFor } from "@/aira/adjust-tone"
+import type { ToneLink } from "@/aira/tone-link"
 
 function usageBlock(loaded: UsageLoad | undefined) {
   if (loaded?.kind === "signed-out") return airaCopy.signIn
