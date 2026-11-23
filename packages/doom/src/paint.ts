@@ -1,16 +1,4 @@
-import {
-  type Reader,
-  boolean,
-  finite,
-  integer,
-  list,
-  literal,
-  matching,
-  object,
-  oneOf,
-  variant,
-  words,
-} from "./read-kit.js"
+import { type Reader, boolean, finite, list, literal, matching, object, oneOf, variant, words } from "./read-kit.js"
 
 export const colorVars = [
   "text",
@@ -122,4 +110,3 @@ export const readEffect: Reader<Effect> = variant("kind", {
 })
 
 export const readEffectList: Reader<readonly Effect[]> = list(readEffect, 8)
-export const readCount: Reader<number> = integer(0, 1_000_000)

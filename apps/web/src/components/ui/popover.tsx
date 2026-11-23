@@ -42,8 +42,4 @@ function PopoverContent({
   )
 }
 
-function PopoverTitle({ className, ...props }: PopoverPrimitive.Title.Props) {
-  return <PopoverPrimitive.Title data-slot="popover-title" className={cn("font-medium", className)} {...props} />
-}
-
-export { Popover, PopoverContent, PopoverTitle, PopoverTrigger }
+export { Popover, PopoverContent, PopoverTrigger }

@@ -1,5 +1,5 @@
 import { accountCookieName } from "@airdesign/catalog"
-import { accountKey, finished, newPage, scoped, storeName, transaction } from "./device.js"
+import { newPage } from "./device.js"
 
 export const firstAccount = "a".repeat(32)
 export const secondAccount = "b".repeat(32)
@@ -12,26 +12,6 @@ export function signInAs(account: string | undefined): void {
 export type Traffic = { opens: number; ranges: number; keys: number; puts: number }
 
 export const traffic: Traffic = { opens: 0, ranges: 0, keys: 0, puts: 0 }
-
-export function quiet(): void {
-  traffic.opens = 0
-  traffic.ranges = 0
-  traffic.keys = 0
-  traffic.puts = 0
-}
-
-export async function writeSlots(
-  puts: readonly { readonly key: string; readonly value: unknown }[],
-  deletes: readonly string[],
-): Promise<void> {
-  const account = accountKey()
-  if (account === undefined) throw new Error("session")
-  const writing = await transaction("readwrite")
-  const store = writing.objectStore(storeName)
-  for (const key of deletes) store.delete(scoped(account, key))
-  for (const put of puts) store.put(put.value, scoped(account, put.key))
-  await finished(writing, () => undefined)
-}
 
 export type SlowStore = {
   closed: boolean

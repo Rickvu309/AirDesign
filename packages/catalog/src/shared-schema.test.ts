@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest"
 import * as z from "zod/v4"
 import { advertisedSchema } from "./advertised-schema.js"
-import { agentSchema } from "./agent-form.js"
 import { catalog, toolInputSchema } from "./catalog.js"
 import { inlinedSchema, sharedSchemas } from "./shared-schema.js"
 
-const color = agentSchema({ kind: "color" })
+const color = { type: "string", pattern: "^(?:#[0-9A-Fa-f]{6}|accent[1-6]|text[12]|background[12])$" }
 
 function references(value: unknown): readonly string[] {
   if (Array.isArray(value)) return value.flatMap(references)

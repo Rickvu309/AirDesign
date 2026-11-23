@@ -1,10 +1,9 @@
-import { linkSchema } from "./link-schema.js"
 import { readLinkTarget } from "@airdesign/document"
-import { iconNamePattern, readElementId, type Desc, type NumberUnit } from "@airdesign/document"
+import { readElementId, type Desc, type NumberUnit } from "@airdesign/document"
 import { bytesOf } from "@airdesign/doom"
-import { colorPattern, hexPattern, readAgentColor, readAgentHex } from "./agent-color.js"
+import { readAgentColor, readAgentHex } from "./agent-color.js"
 import { knownIcon } from "./icon-names.js"
-import { imageAddressLength, pictureSourcePattern, webImage } from "./image-address.js"
+import { webImage } from "./image-address.js"
 import { storableText } from "./storable-text.js"
 
 const emuPerPoint = 12_700
@@ -14,8 +13,6 @@ const hundredthsPerPoint = 100
 function tenths(value: number): number {
   return Math.round(value * 10) / 10
 }
-
-export type JsonSchema = Readonly<Record<string, unknown>>
 
 export type AgentRead = { readonly ok: true; readonly value: unknown } | { readonly ok: false }
 
@@ -46,99 +43,6 @@ function agentRange(desc: NumberDesc): { readonly type: string; readonly minimum
   const low = desc.unit === "emu" ? Math.max(desc.min, -powerPointWidestSlide) : desc.min
   const high = desc.unit === "emu" ? Math.min(desc.max, powerPointWidestSlide) : desc.max
   return { type: desc.unit === "count" ? "integer" : "number", minimum: low / factor, maximum: high / factor }
-}
-
-function escaped(word: string): string {
-  return word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-}
-
-function unionSchema(desc: Extract<Desc, { readonly kind: "union" }>): JsonSchema {
-  const strings: string[] = []
-  const objects: Record<string, JsonSchema> = {}
-  let number: ReturnType<typeof agentRange> | null = null
-  for (const [name, item] of Object.entries(desc.cases)) {
-    if (item.kind === "mark") {
-      strings.push(escaped(name))
-      continue
-    }
-    objects[name] = agentSchema(item)
-    if (name !== desc.plain) continue
-    if (item.kind === "choice") strings.push(...item.options.map(escaped))
-    else if (item.kind === "color") strings.push(colorPattern)
-    else if (item.kind === "number") number = agentRange(item)
-  }
-  const types: string[] = []
-  const schema: Record<string, unknown> = {}
-  if (strings.length > 0) {
-    types.push("string")
-    schema.pattern = `^(?:${strings.join("|")})$`
-  }
-  if (number !== null) {
-    types.push(number.type)
-    schema.minimum = number.minimum
-    schema.maximum = number.maximum
-  }
-  if (Object.keys(objects).length > 0) {
-    types.push("object")
-    Object.assign(schema, { properties: objects, additionalProperties: false, minProperties: 1, maxProperties: 1 })
-  }
-  return { type: types.length === 1 ? types[0] : types, ...schema }
-}
-
-export function agentSchema(desc: Desc): JsonSchema {
-  switch (desc.kind) {
-    case "number":
-      return agentRange(desc)
-    case "flag":
-      return { type: "boolean" }
-    case "mark":
-      return { type: "boolean", const: true }
-    case "words":
-      return { type: "string", maxLength: desc.max }
-    case "asset":
-      return desc.media === true
-        ? { type: "string", pattern: pictureSourcePattern, maxLength: imageAddressLength }
-        : { type: "string", pattern: iconNamePattern }
-    case "link":
-      return linkSchema
-    case "text":
-    case "node":
-      return { type: "string" }
-    case "choice":
-      return desc.custom === undefined
-        ? { type: "string", enum: desc.options }
-        : {
-            type: ["string", "object"],
-            pattern: `^(?:${desc.options.map(escaped).join("|")})$`,
-            properties: { custom: agentSchema(desc.custom) },
-            required: ["custom"],
-            additionalProperties: false,
-          }
-    case "color":
-      return { type: "string", pattern: `^${colorPattern}$` }
-    case "hex":
-      return { type: "string", pattern: `^${hexPattern}$` }
-    case "alpha":
-      throw new Error("an alpha field is never on the wire")
-    case "record":
-      return {
-        type: "object",
-        additionalProperties: false,
-        required: Object.keys(desc.fields),
-        properties: Object.fromEntries(Object.entries(desc.fields).map(([name, field]) => [name, agentSchema(field)])),
-      }
-    case "list":
-      return {
-        type: "array",
-        items: agentSchema(desc.item),
-        ...(desc.min === 0 ? {} : { minItems: desc.min }),
-        maxItems: desc.max,
-      }
-    case "named":
-      return { type: "object", additionalProperties: agentSchema(desc.item), maxProperties: desc.max }
-    case "union":
-      return unionSchema(desc)
-  }
 }
 
 function readNumber(desc: NumberDesc, raw: unknown): AgentRead {

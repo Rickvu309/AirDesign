@@ -1,108 +1,28 @@
 import { describe, expect, it } from "vitest"
-import { placeNewBox } from "./box-placement.js"
-type Box = { readonly x: number; readonly y: number; readonly cx: number; readonly cy: number }
+import { largestFreeBox } from "./box-placement.js"
 
-const slide = { width: 12_192_000, height: 6_858_000 }
+const slide = { width: 1920, height: 1080 }
+const margin = { x: Math.round(1920 * 0.04), y: Math.round(1080 * 0.04) }
+const whole = { x: margin.x, y: margin.y, cx: 1920 - 2 * margin.x, cy: 1080 - 2 * margin.y }
 
-function overlaps(left: Box, right: Box): boolean {
-  return (
-    left.x < right.x + right.cx &&
-    right.x < left.x + left.cx &&
-    left.y < right.y + right.cy &&
-    right.y < left.y + left.cy
-  )
-}
-
-describe("placing a new text box", () => {
-  it("centres the default box on an empty slide", () => {
-    const placed = placeNewBox(slide, [])
-    expect(placed.cx).toBe(Math.round(slide.width * 0.4))
-    expect(placed.cy).toBe(Math.round(slide.height * 0.12))
-    expect(placed.x).toBe(Math.round((slide.width - placed.cx) / 2))
-    expect(placed.y).toBe(Math.round((slide.height - placed.cy) / 2))
+describe("the largest free box on a slide", () => {
+  it("is the slide inside its margins when nothing is on it", () => {
+    expect(largestFreeBox(slide, [])).toEqual(whole)
   })
 
-  it("lands below a title and a subtitle that sit in the middle of a blank title slide", () => {
-    const title = { x: 1_524_000, y: 1_122_363, cx: 9_144_000, cy: 2_387_600 }
-    const subtitle = { x: 1_524_000, y: 3_602_038, cx: 9_144_000, cy: 1_655_762 }
-    const placed = placeNewBox(slide, [title, subtitle])
-    expect(overlaps(placed, title)).toBe(false)
-    expect(overlaps(placed, subtitle)).toBe(false)
-    expect(placed.y).toBeGreaterThanOrEqual(subtitle.y + subtitle.cy)
-    expect(placed.y + placed.cy).toBeLessThanOrEqual(slide.height)
+  it("is the free column beside a left half that holds text", () => {
+    const left = { x: 0, y: 0, cx: 960, cy: 1080 }
+    expect(largestFreeBox(slide, [left])).toEqual({ x: 960, y: margin.y, cx: 1920 - margin.x - 960, cy: whole.cy })
   })
 
-  it("lands in the free column beside a left half that holds text", () => {
-    const left = { x: 0, y: 0, cx: 6_000_000, cy: 6_858_000 }
-    const placed = placeNewBox(slide, [left])
-    expect(overlaps(placed, left)).toBe(false)
-    expect(placed.x + placed.cx).toBeLessThanOrEqual(slide.width)
+  it("ignores a box with no area, and counts a line as taken", () => {
+    expect(largestFreeBox(slide, [{ x: 500, y: 500, cx: 0, cy: 0 }])).toEqual(whole)
+    const line = { x: margin.x, y: 540, cx: whole.cx, cy: 0 }
+    const below = largestFreeBox(slide, [line])
+    expect(below?.cy).toBeLessThan(whole.cy / 2 + 1)
   })
 
-  it("puts two boxes added in a row in different places", () => {
-    const first = placeNewBox(slide, [])
-    const second = placeNewBox(slide, [first])
-    expect(overlaps(first, second)).toBe(false)
-  })
-
-  it("falls back to the centre, away from a box exactly there, when nothing is free", () => {
-    const full = { x: 0, y: 0, cx: slide.width, cy: slide.height }
-    const centred = placeNewBox(slide, [full])
-    const again = placeNewBox(slide, [full, centred])
-    expect(centred).toEqual(placeNewBox(slide, []))
-    expect(again.x === centred.x && again.y === centred.y).toBe(false)
-    expect(again.x + again.cx).toBeLessThanOrEqual(slide.width)
-    expect(again.y + again.cy).toBeLessThanOrEqual(slide.height)
-  })
-
-  it("keeps the box on the slide when it is offset from the centre again and again", () => {
-    const full = { x: 0, y: 0, cx: slide.width, cy: slide.height }
-    const taken: Box[] = [full]
-    for (let count = 0; count < 40; count += 1) {
-      const placed = placeNewBox(slide, taken)
-      expect(placed.x).toBeGreaterThanOrEqual(0)
-      expect(placed.y).toBeGreaterThanOrEqual(0)
-      expect(placed.x + placed.cx).toBeLessThanOrEqual(slide.width)
-      expect(placed.y + placed.cy).toBeLessThanOrEqual(slide.height)
-      taken.push(placed)
-    }
-  })
-
-  it("ignores boxes with no area", () => {
-    expect(placeNewBox(slide, [{ x: 100, y: 100, cx: 0, cy: 0 }])).toEqual(placeNewBox(slide, []))
-  })
-
-  it("chooses the same place every time", () => {
-    const taken = [{ x: 0, y: 0, cx: 4_000_000, cy: 2_000_000 }]
-    expect(placeNewBox(slide, taken)).toEqual(placeNewBox(slide, taken))
-  })
-
-  it("places a picture of its own size in the same clear space as a text box", () => {
-    const title = { x: 1_524_000, y: 1_122_363, cx: 9_144_000, cy: 2_387_600 }
-    const subtitle = { x: 1_524_000, y: 3_602_038, cx: 9_144_000, cy: 1_655_762 }
-    const picture = { cx: Math.round(slide.width * 0.6), cy: 3 * 370_840 }
-    const placed = placeNewBox(slide, [title, subtitle], picture)
-    expect(placed).toMatchObject(picture)
-    expect(overlaps(placed, title)).toBe(false)
-    expect(overlaps(placed, subtitle)).toBe(false)
-  })
-
-  it("centres a size no free area fits, such as a picture as large as the slide", () => {
-    const picture = { cx: Math.round(slide.width * 0.9), cy: Math.round(slide.height * 0.9) }
-    const title = { x: 1_524_000, y: 1_122_363, cx: 9_144_000, cy: 2_387_600 }
-    expect(placeNewBox(slide, [title], picture)).toEqual({
-      x: Math.round((slide.width - picture.cx) / 2),
-      y: Math.round((slide.height - picture.cy) / 2),
-      ...picture,
-    })
-  })
-
-  it("counts a line, which has no height, as taken", () => {
-    const line = { x: 3_000_000, y: 3_429_000, cx: 6_000_000, cy: 0 }
-    const upright = { x: 6_096_000, y: 500_000, cx: 0, cy: 5_800_000 }
-    for (const stroke of [line, upright]) {
-      const placed = placeNewBox(slide, [stroke], { cx: 1_371_600, cy: 1_371_600 })
-      expect(overlaps(placed, { ...stroke, cx: Math.max(stroke.cx, 1), cy: Math.max(stroke.cy, 1) })).toBe(false)
-    }
+  it("is nothing when the slide is full", () => {
+    expect(largestFreeBox(slide, [{ x: 0, y: 0, cx: 1920, cy: 1080 }])).toBeUndefined()
   })
 })

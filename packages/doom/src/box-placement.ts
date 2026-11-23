@@ -2,10 +2,7 @@ type Box = { readonly x: number; readonly y: number; readonly cx: number; readon
 
 export type PlacementArea = { readonly width: number; readonly height: number }
 
-const widthShare = 0.4
-const heightShare = 0.12
 const marginShare = 0.04
-const stepShare = 0.03
 const strokeReachShare = 0.02
 
 function ascending(left: number, right: number): number {
@@ -49,40 +46,11 @@ function larger(left: Box, right: Box): number {
   return left.y - right.y || left.x - right.x
 }
 
-function centred(area: PlacementArea, size: Pick<Box, "cx" | "cy">): Box {
-  return {
-    x: Math.round((area.width - size.cx) / 2),
-    y: Math.round((area.height - size.cy) / 2),
-    cx: size.cx,
-    cy: size.cy,
-  }
-}
-
-function offsetFromTaken(area: PlacementArea, start: Box, taken: readonly Box[]): Box {
-  const stepX = Math.round(area.width * stepShare)
-  const stepY = Math.round(area.height * stepShare)
-  const room = { x: area.width - start.cx, y: area.height - start.cy }
-  let placed = start
-  for (let count = 1; count <= 100; count += 1) {
-    if (!taken.some((box) => box.x === placed.x && box.y === placed.y)) return placed
-    const slot = (count % 7) - 3
-    const row = Math.floor(count / 7) % 7
-    placed = {
-      ...start,
-      x: Math.min(room.x, Math.max(0, start.x + slot * stepX)),
-      y: Math.min(room.y, Math.max(0, start.y + (row - 3) * stepY + Math.max(1, Math.floor(count / 49)))),
-    }
-  }
-  return placed
-}
-
 function reaching(box: Box, reach: number): Box {
   const cx = Math.max(box.cx, reach)
   const cy = Math.max(box.cy, reach)
   return { x: box.x - Math.round((cx - box.cx) / 2), y: box.y - Math.round((cy - box.cy) / 2), cx, cy }
 }
-
-type Size = Pick<Box, "cx" | "cy">
 
 function present(area: PlacementArea, taken: readonly Box[]): readonly Box[] {
   const reach = Math.round(area.height * strokeReachShare)
@@ -98,18 +66,4 @@ function clearAreas(area: PlacementArea, taken: readonly Box[]): readonly Box[] 
 
 export function largestFreeBox(area: PlacementArea, taken: readonly Box[]): Box | undefined {
   return clearAreas(area, taken)[0]
-}
-
-function centredIn(free: Box, size: Size): Box {
-  return { x: free.x + Math.round((free.cx - size.cx) / 2), y: free.y + Math.round((free.cy - size.cy) / 2), ...size }
-}
-
-export function placeNewBox(
-  area: PlacementArea,
-  taken: readonly Box[],
-  size: Size = { cx: Math.round(area.width * widthShare), cy: Math.round(area.height * heightShare) },
-): Box {
-  const best = clearAreas(area, taken).find((free) => free.cx >= size.cx && free.cy >= size.cy)
-  if (best !== undefined) return centredIn(best, size)
-  return offsetFromTaken(area, centred(area, size), present(area, taken))
 }

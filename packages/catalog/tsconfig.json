@@ -15,16 +15,10 @@
   "references": [
     { "path": "../doom" },
     {
-      "path": "../device"
-    },
-    {
       "path": "../document"
     },
     {
       "path": "../fonts"
-    },
-    {
-      "path": "../templates"
     }
   ]
 }

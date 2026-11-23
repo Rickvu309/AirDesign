@@ -59,15 +59,6 @@ export function ExportButton({
   )
 }
 
-export function ZoomReadout({ value }: { value: string }) {
-  return (
-    <span className="flex h-8 items-center gap-0.5 pr-1.5 pl-2.5 text-[length:var(--type-dense)] font-medium text-foreground tabular-nums">
-      {value}
-      <EditorIcon name="chev" size={12} className="text-faint" />
-    </span>
-  )
-}
-
 export function PanelHead({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-14 shrink-0 items-center justify-between border-b border-line pr-2 pl-3">{children}</div>

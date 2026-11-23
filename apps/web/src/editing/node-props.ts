@@ -15,14 +15,6 @@ export function lockedIn(view: doom.Doom, id: doom.NodeId): boolean {
   return false
 }
 
-export function slideOf(view: doom.Doom, id: doom.NodeId): doom.NodeId | null {
-  for (let at: doom.NodeId | null = id, hops = 0; at !== null && hops <= view.nodes.size; hops += 1) {
-    if (view.nodes.get(at)?.type === "slide") return at
-    at = parentIdOf(view, at)
-  }
-  return null
-}
-
 export function slidesOf(view: doom.Doom): readonly doom.NodeId[] {
   const deck = [...view.nodes.values()].find((node) => node.type === "deck")
   if (deck === undefined) return []
