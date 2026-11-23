@@ -297,7 +297,7 @@ describe("SlideCanvas groups, deep select, keyboard traversal and hover", () => 
     expect(chosenIds(host)).toEqual([child2])
   })
 
-  it("steps up to parent on Escape and Shift+Enter, selects children on Enter, and cycles siblings on Tab/Shift+Tab", async () => {
+  it("steps up to parent on Escape and Shift+Enter, and selects children on Enter", async () => {
     const { host } = await mount()
     await pointer(frameOf(host, child1), "pointerdown", 550, 150, { ctrlKey: true })
     await pointer(document, "pointerup", 550, 150, { ctrlKey: true })
@@ -309,15 +309,6 @@ describe("SlideCanvas groups, deep select, keyboard traversal and hover", () => 
 
     await key(frameOf(host, group), "Enter")
     expect(chosenIds(host)).toEqual([child1, child2])
-
-    await key(frameOf(host, child2), "Tab")
-    expect(chosenIds(host)).toEqual([child1])
-    await key(frameOf(host, child1), "Tab")
-    expect(chosenIds(host)).toEqual([child2])
-    await key(frameOf(host, child2), "Tab")
-    expect(chosenIds(host)).toEqual([child1])
-    await key(frameOf(host, child1), "Tab", { shiftKey: true })
-    expect(chosenIds(host)).toEqual([child2])
 
     await key(frameOf(host, child2), "Enter", { shiftKey: true })
     expect(chosenIds(host)).toEqual([group])

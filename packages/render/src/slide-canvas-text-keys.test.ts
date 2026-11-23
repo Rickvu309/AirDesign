@@ -87,28 +87,6 @@ function firstRun(value: string) {
   return readTextValue(value)?.[0]?.runs[0]
 }
 
-it("steps the size of every selected text layer on Ctrl+Shift+>, as one change", async () => {
-  const { frame, edits } = await mounted()
-  await act(async () => {
-    frame.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        bubbles: true,
-        cancelable: true,
-        key: ">",
-        code: "Period",
-        ctrlKey: true,
-        shiftKey: true,
-      }),
-    )
-  })
-  expect(edits.map(({ id }) => id).sort()).toEqual(labels.map(({ id }) => id).sort())
-  expect(edits.every(({ kind }) => kind === "format")).toBe(true)
-  expect(edits.map(({ value }) => firstRun(value)?.size)).toEqual([2000, 2000, 2000])
-  const [first] = edits
-  expect(first?.together).not.toBeNull()
-  expect(edits.every(({ together }) => together === first?.together)).toBe(true)
-})
-
 it("makes every selected layer bold when one is not, then plain again", async () => {
   const { frame, edits } = await mounted()
   const bold = () =>

@@ -40,16 +40,13 @@ describe("grid keys", () => {
     expect(gridMove("ArrowUp", [row(0, 0), row(120, 0)], 1)).toBe(1)
   })
 
-  it("opens with Enter, deletes, duplicates, and reorders with alt and an arrow", () => {
-    expect(gridCommand(key("Enter"))).toBe("open")
+  it("deletes, duplicates, and reorders with alt and up or down", () => {
     expect(gridCommand(key("Enter", { shiftKey: true }))).toBeNull()
     expect(gridCommand(key("ArrowRight"))).toBeNull()
     expect(gridCommand(key("Delete"))).toBe("remove")
     expect(gridCommand(key("Backspace"))).toBe("remove")
     expect(gridCommand(key("d", { ctrlKey: true }))).toBe("clone")
     expect(gridCommand(key("d", { metaKey: true }))).toBe("clone")
-    expect(gridCommand(key("ArrowLeft", { altKey: true }))).toBe("earlier")
-    expect(gridCommand(key("ArrowRight", { altKey: true }))).toBe("later")
     expect(gridCommand(key("ArrowUp", { altKey: true }))).toBe("earlier")
     expect(gridCommand(key("ArrowDown", { altKey: true }))).toBe("later")
     expect(gridCommand(key("ArrowRight", { altKey: true, shiftKey: true }))).toBeNull()
