@@ -8,4 +8,8 @@ export const editorRoutes = {
   text: "/screens/s43-06-editor-tools-text",
   textFormat: "/screens/s43-08-editor-tools-text-format",
   runFailed: "/screens/s49-01-editor-errors-agent-run-failed",
+  offline: "/screens/s49-02-editor-errors-offline",
+  setAside: "/screens/s49-03-editor-errors-edits-set-aside",
+  unreached: "/screens/s49-04-editor-errors-unreached",
+  setAsideTooLarge: "/screens/s49-05-editor-errors-edit-set-aside-too-large",
 } as const

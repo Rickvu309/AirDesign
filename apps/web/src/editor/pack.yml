@@ -21,6 +21,7 @@ public:
   - picture-preview.tsx
   - remove-auto-layout.tsx
   - resizable-panel.tsx
+  - save-status.tsx
   - selection-colors-section.tsx
   - shape-tool.tsx
   - slide-frame.ts

@@ -22,6 +22,8 @@ export type EditorClient = Pick<
   | "reportPictures"
   | "picturesWanted"
   | "subscribe"
+  | "status"
+  | "clearNotices"
 >
 
 export type Opening =

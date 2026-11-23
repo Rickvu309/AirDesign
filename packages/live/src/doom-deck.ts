@@ -9,6 +9,7 @@ import {
 import * as doom from "@airdesign/doom"
 import { appliedOn, dropped, landed, provisionalRevs, queueEdit, sendable, shown, type Queued } from "./doom-queue.js"
 import type { DoomRemote } from "./doom-remote.js"
+import { statusOf, type DeckStatus, type Reach } from "./doom-status.js"
 import { deviceStorage, type DoomStorage } from "./doom-storage.js"
 
 export type Notice = {
@@ -45,6 +46,7 @@ export type DoomDeck = {
   pending(): readonly doom.Edit[]
   notices(): readonly Notice[]
   clearNotices(): void
+  status(): DeckStatus
   mint(): doom.NodeId
   push(writes: readonly doom.Write[], options?: { readonly author?: doom.Author; readonly step?: string }): Pushed
   undo(): Turned
@@ -121,11 +123,14 @@ function connected(
   let redoSteps: Step[] = []
   const turned: string[] = []
   let notices: readonly Notice[] = []
+  let link: Reach = "reached"
+  let shownStatus: DeckStatus = { kind: "saved" }
   const watched = new Map<string, doom.RunEdit[]>()
   let memo: { readonly server: doom.Doom; readonly queue: readonly Queued[]; readonly view: doom.Doom } | undefined
   let saving: Promise<void> = Promise.resolve()
   let gone = false
   let running: Promise<Synced> | undefined
+  let held: AbortController | undefined
   let wanted = false
   let picturesUntil = 0
   const listeners = new Set<() => void>()
@@ -313,10 +318,13 @@ function connected(
         while (wanted) {
           wanted = false
           result = await drain()
+          link = result.ok ? "reached" : result.reason
           if (!result.ok && !wanted) break
         }
       } finally {
         running = undefined
+        if (link !== "reached") held?.abort()
+        tell()
       }
       return result
     })()
@@ -423,9 +431,10 @@ function connected(
     let wait = false
     while (!signal.aborted) {
       try {
+        held = new AbortController()
         const answer = await remote.since(
           { deck, rev: server.rev, wait, ...(Date.now() < picturesUntil ? { pictures: true } : {}) },
-          signal,
+          AbortSignal.any([signal, held.signal]),
         )
         if (signal.aborted) return "stopped"
         if (!answer.ok && answer.refusal === "deck") return await leave()
@@ -443,7 +452,10 @@ function connected(
           picturesUntil = Date.now() + picturesWantedMilliseconds
           tell()
         }
-        if (queue.length > 0) await sync()
+        if (queue.length > 0 && !(await sync()).ok) {
+          wait = false
+          await pause(retryMilliseconds)
+        }
       } catch {
         if (signal.aborted) return "stopped"
         wait = false
@@ -463,6 +475,7 @@ function connected(
       notices = []
       tell()
     },
+    status: () => (shownStatus = statusOf({ unsent: queue.length, reach: link, aside: notices }, shownStatus)),
     mint: () => doom.nodeId(`${client}:${(counter += 1)}`),
     push(given, pushing) {
       const writes = [...given, ...doom.nameFromTitleWrites(view(), given)]

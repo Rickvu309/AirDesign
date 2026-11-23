@@ -1,5 +1,5 @@
 import { editorRoutes } from "./editor-routes"
-import { airaSamples, EditorSample, sampleText } from "./editor-sample"
+import { airaSamples, EditorSample, sampleText, saveSamples } from "./editor-sample"
 
 export const screens = {
   [editorRoutes.agentWorking]: () => <EditorSample start={{ panel: "agent", aira: airaSamples.working }} />,
@@ -17,4 +17,16 @@ export const screens = {
     />
   ),
   [editorRoutes.runFailed]: () => <EditorSample start={{ panel: "agent", aira: airaSamples.failed }} />,
+  [editorRoutes.offline]: () => (
+    <EditorSample start={{ panel: "agent", aira: airaSamples.done, save: saveSamples.offline }} />
+  ),
+  [editorRoutes.setAside]: () => (
+    <EditorSample start={{ panel: "agent", aira: airaSamples.done, save: saveSamples.setAside }} />
+  ),
+  [editorRoutes.unreached]: () => (
+    <EditorSample start={{ panel: "agent", aira: airaSamples.done, save: saveSamples.unreached }} />
+  ),
+  [editorRoutes.setAsideTooLarge]: () => (
+    <EditorSample start={{ panel: "agent", aira: airaSamples.done, save: saveSamples.setAsideTooLarge }} />
+  ),
 }

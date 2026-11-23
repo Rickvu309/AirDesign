@@ -4,7 +4,7 @@ import { SlidePaint, useDoomSlide } from "@airdesign/render"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { CanvasOverlay, type Preview } from "./canvas-overlay"
-import { ThinNoticeView } from "./thin-notice"
+import { ThinNoticeView, type ThinNotice } from "./thin-notice"
 import type { AssetUrls } from "./use-asset-urls"
 import { useDoomPictures } from "./use-pictures"
 import { useSlidePictures } from "./use-slide-pictures"
@@ -53,6 +53,7 @@ export function DoomCanvas(props: {
   readonly toolbarHost: HTMLElement | null
   readonly editing?: doom.NodeId
   readonly shapes?: ShapesShown
+  readonly notice: ThinNotice | null
 }) {
   const { client, view, slide, selection, onSelection, tool, onTool, zoom, scale, room, overlay } = props
   const stage = useRef<HTMLDivElement>(null)
@@ -377,7 +378,7 @@ export function DoomCanvas(props: {
           </div>
         </div>
       </div>
-      <ThinNoticeView notice={pictures.notice} onTryAgain={() => undefined} />
+      <ThinNoticeView notice={pictures.notice ?? props.notice} onTryAgain={() => undefined} />
       <TextBar api={text} />
       {props.toolbarHost === null
         ? null
