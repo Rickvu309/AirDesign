@@ -3,11 +3,15 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { drifted } from "./spec-sync.mjs"
+import { timingRecords } from "./timings.mjs"
 
 export const glossaryFile = "tooling/oxlint-plugin-airdesign/glossary.json"
 export const pathListFiles = [".github/actions/ci-changes/pptx-paths.txt"]
 
 const records = [/(^|\/)[\w-]*fixtures\//, /^docs\/adr\//, /^scripts\/red-main-drill\.mjs$/]
+const measuredRecords = timingRecords.map(({ record }) => record)
+
+export const citesPaths = (file) => !records.some((record) => record.test(file)) && !measuredRecords.includes(file)
 const code = /\.(?:[cm]?[jt]sx?|json|ya?ml|sh)$/
 const testCode = /\.(?:test|spec)\.[cm]?[jt]sx?$/
 const bareExtensions = /^[\w.-]*[\w-]\.(?:ts|tsx|mts|mjs|js|cjs|tla|cfg|sql)$/
@@ -183,7 +187,7 @@ export const citedPathFaults = (root) => {
     .split("\0")
     .filter((file) => file !== "" && fs.existsSync(path.join(root, file)))
   const index = repoIndex(files, builtFolders(read(".gitignore") ?? ""))
-  const kept = files.filter((file) => !records.some((record) => record.test(file)))
+  const kept = files.filter(citesPaths)
   return [
     ...kept.filter((file) => file.endsWith(".md")).flatMap((file) => markdownFaults(file, read(file), index)),
     ...kept

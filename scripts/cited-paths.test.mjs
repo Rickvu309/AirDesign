@@ -5,6 +5,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import {
   builtFolders,
+  citesPaths,
   codeFaults,
   coverFaults,
   glossaryFaults,
@@ -232,4 +233,21 @@ same(
     repoIndex(tracked, builtFolders("node_modules/\ndist/\n")),
   ),
   [],
+)
+
+same(
+  "deleting packages/render/src/store.test.ts leaves the timing records pnpm timings writes untouched, and cited-paths reads past them as data",
+  [
+    "tests/unit-seconds.json",
+    "tests/browser/spec-seconds.json",
+    "tests/journeys/journey-seconds.json",
+    "scripts/areas.json",
+  ].filter(citesPaths),
+  ["scripts/areas.json"],
+)
+
+same(
+  "a hand-written config that names a deleted test still fails",
+  cited(codeFaults("scripts/areas.json", '{ "render": ["packages/render/src/gone-store.test.ts"] }', index)),
+  ["packages/render/src/gone-store.test.ts"],
 )
