@@ -124,6 +124,7 @@ function connected(
   let redoSteps: Step[] = []
   const turned: string[] = []
   let notices: readonly Notice[] = []
+  const quiet = new Set<string>()
   let link: Reach = "reached"
   let kept = true
   let shownStatus: DeckStatus = { kind: "saved" }
@@ -185,9 +186,11 @@ function connected(
     queue = result.queue
     notices = [
       ...notices,
-      ...result.gone.map((name) =>
-        name === once ? { once, ...refusal } : { once: name, refused: "stale" as const, because: once },
-      ),
+      ...result.gone
+        .filter((name) => !quiet.has(name))
+        .map((name) =>
+          name === once ? { once, ...refusal } : { once: name, refused: "stale" as const, because: once },
+        ),
     ]
     forget(result.gone)
   }
@@ -497,19 +500,26 @@ function connected(
     status: () => (shownStatus = statusOf({ unsent: queue.length, reach: link, kept, aside: notices }, shownStatus)),
     mint: () => doom.nodeId(`${client}:${(counter += 1)}`),
     push(given, pushing) {
-      const writes = [...given, ...doom.nameFromTitleWrites(view(), given)]
-      const pushed = pushEdit(writes, pushing?.author ?? author)
+      const derived = doom.nameFromTitleWrites(view(), given)
+      const fromTitle = derived.some((write) => write.prop === "name")
+      const own = fromTitle ? given : [...given, ...derived]
+      const named = fromTitle ? derived : []
+      const pushed = pushEdit(own, pushing?.author ?? author)
       if (!pushed.ok) return pushed
+      const follow = named.length === 0 ? undefined : pushEdit(named, pushing?.author ?? author)
+      if (follow?.ok === true) quiet.add(follow.once)
+      const writes = follow?.ok === true ? [...own, ...named] : own
+      const onces = follow?.ok === true ? [pushed.once, follow.once] : [pushed.once]
       const open = undoSteps.at(-1)
       if (pushing?.step !== undefined && open?.key === pushing.step && redoSteps.length === 0)
         undoSteps[undoSteps.length - 1] = {
           ...open,
-          onces: [...open.onces, pushed.once],
+          onces: [...open.onces, ...onces],
           writes: [...open.writes, ...writes],
         }
       else
         undoSteps.push({
-          onces: [pushed.once],
+          onces,
           before: pushed.before!,
           writes,
           ...(pushing?.step === undefined ? {} : { key: pushing.step }),

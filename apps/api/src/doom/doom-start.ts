@@ -55,6 +55,7 @@ export function startEdit(): doom.Edit {
     writes: [
       ...create(deck, "deck", undefined),
       { node: deck, prop: "name", value: blankDeckName },
+      { node: deck, prop: "nameFollows", value: true },
       { node: deck, prop: "theme", value: neutralTheme() },
       { node: deck, prop: "size", value: slide },
       ...create(row, "slideRow", deck),

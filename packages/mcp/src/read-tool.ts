@@ -48,7 +48,7 @@ function themeOf(fold: doom.Doom) {
 }
 
 const lead = (opened: Opened, count: number) =>
-  `Deck ${opened.deck} "${doom.deckName(opened.fold)}" at rev ${String(opened.rev)}, ${String(count)} slides. Send rev as base to airdesign_edit_deck.`
+  `Deck ${opened.deck} "${doom.deckName(opened.fold)}"${doom.deckNameFollows(opened.fold) ? " (nameFollows: named by slide 1's title)" : ""} at rev ${String(opened.rev)}, ${String(count)} slides. Send rev as base to airdesign_edit_deck.`
 
 const foundLimit = 400
 
