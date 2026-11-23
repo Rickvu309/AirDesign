@@ -399,6 +399,26 @@ same(
   true,
 )
 
+const byNumber = { number: 394, baseRefName: "main", url: "u", headRefName: "speed-fix" }
+const runsQueried = (run) =>
+  run.log.filter((line) => line.includes("/actions/workflows/ci.yml/runs?event=pull_request"))
+for (const flag of ["--status", "--watch"]) {
+  const numbered = harness({
+    args: [flag, "--pr", "394"],
+    branch: "main",
+    pull: byNumber,
+    reads: [
+      pullAnswer({ contexts: [{ __typename: "CheckRun", name: "ci", conclusion: "FAILURE", status: "COMPLETED" }] }),
+    ],
+  })
+  await numbered.run()
+  same(
+    `${flag} --pr looks for the failed ci run on the pull request's own branch`,
+    runsQueried(numbered).length > 0 && runsQueried(numbered).every((line) => line.includes("branch=speed-fix")),
+    true,
+  )
+}
+
 const ranNothing = (run) => run.log.length === 0
 
 for (const flag of ["--help", "-h"]) {

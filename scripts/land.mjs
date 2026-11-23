@@ -90,7 +90,7 @@ const findPull = ({ gh, branch, number }) => {
           "--limit",
           "1",
         ])
-      : gh(["pr", "view", String(number), "--json", "number,baseRefName,url"])
+      : gh(["pr", "view", String(number), "--json", "number,baseRefName,url,headRefName"])
   const parsed = JSON.parse(succeeds(found, "could not read the pull request"))
   return number === undefined ? parsed[0] : parsed
 }
@@ -156,11 +156,13 @@ export const land = async (ctx) => {
     return code
   }
   try {
-    const branch = args.pr === undefined || !(args.status || args.watch) ? currentBranch(git) : "(by number)"
+    const byNumber = args.pr !== undefined && (args.status || args.watch)
+    const ownBranch = byNumber ? undefined : currentBranch(git)
     succeeds(git(["fetch", "origin", "main"]), "could not fetch origin/main")
     if (args.status || args.watch) {
-      const pull = findPull({ gh, branch, number: args.pr })
-      if (pull === undefined) stop("pull request", `${branch} has no open pull request. ${openAdvice}`)
+      const pull = findPull({ gh, branch: ownBranch, number: args.pr })
+      if (pull === undefined) stop("pull request", `${ownBranch} has no open pull request. ${openAdvice}`)
+      const branch = ownBranch ?? pull.headRefName
       const state = readPull({ read, repository, number: pull.number })
       if (args.status) {
         succeeds(
@@ -174,6 +176,7 @@ export const land = async (ctx) => {
       }
       return await follow(pull.number, branch)
     }
+    const branch = ownBranch
     if (branch === "main" || branch === "HEAD")
       stop("branch", `you are on ${branch}. Land from the branch of your pull request.`)
     line("branch", `${branch}`)
