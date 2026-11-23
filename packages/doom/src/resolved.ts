@@ -25,6 +25,7 @@ export type ResolvedLine = {
   readonly y: Px
   readonly w: Px
   readonly h: Px
+  readonly ink: Px
   readonly align: "left" | "center" | "right" | "justify"
   readonly runs: readonly ResolvedRun[]
   readonly label?: { readonly x: Px; readonly run: ResolvedRun }

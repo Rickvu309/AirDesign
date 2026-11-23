@@ -13,6 +13,7 @@ export function blankLine(text: doom.Text, theme: doom.Theme, node: doom.Resolve
     y: area.y + padding.t + (text.alignV === "center" ? free / 2 : text.alignV === "bottom" ? free : 0),
     w: Math.max(2, area.w - padding.l - padding.r),
     h,
+    ink: 0,
     align: text.paras[0]?.align ?? "left",
     runs: [],
   }

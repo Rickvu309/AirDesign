@@ -164,6 +164,7 @@ function measureOnce(widths: FontWidths): Measure {
           y,
           w: 0,
           h,
+          ink: lineWidth,
           align: alignOf(para),
           runs,
           ...(spanIndex === 0 && para?.list !== undefined

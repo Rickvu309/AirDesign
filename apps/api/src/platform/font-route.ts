@@ -11,7 +11,7 @@ type Visit = {
 const sources = new WeakMap<OriginalStore, FontSource>()
 const local = new FontSource(undefined)
 
-function source(store: OriginalStore | undefined): FontSource {
+export function fontSource(store: OriginalStore | undefined): FontSource {
   if (store === undefined) return local
   let source = sources.get(store)
   if (source === undefined) {
@@ -28,7 +28,7 @@ async function family({ store, query, res }: Visit): Promise<void> {
     res.end()
     return
   }
-  const answer = await source(store).family(name)
+  const answer = await fontSource(store).family(name)
   res.writeHead(answer.ok ? 200 : 404, {
     "content-type": "application/json",
     "cache-control": answer.ok ? "public, max-age=86400" : "no-store",
@@ -44,7 +44,7 @@ async function file({ store, query, res }: Visit): Promise<void> {
     res.end()
     return
   }
-  const bytes = await source(store).file(name, file)
+  const bytes = await fontSource(store).file(name, file)
   if (bytes === undefined) {
     res.writeHead(404)
     res.end()

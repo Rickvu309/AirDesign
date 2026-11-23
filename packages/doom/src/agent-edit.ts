@@ -15,6 +15,7 @@ import { type AgentFinding, agentFindings } from "./agent-findings.js"
 export type AddedNode = { readonly id: NodeId; readonly change: number; readonly kind: string }
 export type AgentEdit = {
   readonly edit: Edit
+  readonly after: Doom
   readonly added: readonly AddedNode[]
   readonly findings: readonly AgentFinding[]
 }
@@ -95,5 +96,5 @@ export function compileAgentEdit(doom: Doom, changes: readonly AgentChange[], by
     return [{ id: node.id, change: at, kind: kindOf(node) }]
   })
   const added = [...made, ...filled].sort((one, two) => one.change - two.change)
-  return { edit, added, findings: agentFindings(landed, writes) }
+  return { edit, after: landed, added, findings: agentFindings(landed, writes) }
 }

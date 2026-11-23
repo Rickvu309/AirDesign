@@ -2,6 +2,7 @@ layer: platform
 public:
   - answer.ts
   - deck-answer.ts
+  - font-metrics.ts
   - font-route.ts
   - forward-secret.ts
   - image-fetch.ts
