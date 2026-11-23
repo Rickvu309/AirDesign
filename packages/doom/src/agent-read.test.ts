@@ -64,7 +64,7 @@ describe("readForAgent", () => {
       `  ${ids.card} frame @100,0 200x100 name="Revenue card" fill=accent2 stroke=${hex(0xaabbcc)} strokeWidth=3 radius=12 effect=soft layout=column gap=10 padding=20`,
     )
     expect(read[2]).toBe(
-      `    ${ids.title} text 200x100 style=heading align=center color=accent1 text="Revenue **up**\\n\\n- a\\n- b"`,
+      `    ${ids.title} text 200x100 style=heading resize=height align=center color=accent1 text="Revenue **up**\\n\\n- a\\n- b"`,
     )
   })
 

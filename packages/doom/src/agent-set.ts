@@ -3,6 +3,7 @@ import { type Draft, type Values, living, put, stop } from "./agent-draft.js"
 import { chartOf, colorOf, iconName, layoutOf, surfaceOf, textOfLook } from "./agent-look.js"
 import { gapFor, slideSize } from "./agent-place.js"
 import { notesText } from "./notes-text.js"
+import { resizedBy } from "./agent-resize.js"
 import { bakeLayout } from "./bake-layout.js"
 import { measureWith } from "./measure.js"
 import { type NodeId, readNodeId } from "./ids.js"
@@ -119,7 +120,8 @@ export function compileSet(draft: Draft, change: SetChange): void {
   }
   const geometry = get(node, "geometry")
   const stroked = geometry?.kind === "line" || geometry?.kind === "icon" ? "center" : "inside"
-  const text = node.type === "shape" ? textOfLook(change, now.text, "body") : undefined
+  const worded = node.type === "shape" ? textOfLook(change, now.text, "body") : undefined
+  const text = resizedBy(worded ?? now.text, change.box, now.box) ?? worded
   const layout = node.type === "frame" ? layoutOf(change, now.layout, gapFor(slideSize(draft).w)) : undefined
   const asked = (["layout", "gap", "padding", "align"] as const).find(
     (field) => node.type === "frame" && change[field] !== undefined,
