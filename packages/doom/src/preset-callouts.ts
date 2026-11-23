@@ -39,6 +39,7 @@ export const presetCallouts: Readonly<Record<string, PresetRule>> = {
       "t8 ?: dyPos yPos b",
       "yb ?: dz t8 b",
     ],
+    sites: ["hc t", "l vc", "hc b", "r vc", "xPos yPos"],
     paths: [
       {
         data: "M l t L x1 t L xt yt L x2 t L r t L r y1 L xr yr L r y2 L r b L x2 b L xb yb L x1 b L l b L l y2 L xl yl L l y1 Z",
@@ -90,6 +91,7 @@ export const presetCallouts: Readonly<Record<string, PresetRule>> = {
       "ir +- r 0 il",
       "ib +- b 0 il",
     ],
+    sites: ["hc t", "l vc", "hc b", "r vc", "xPos yPos"],
     paths: [
       {
         data: "M l u1 A u1 u1 cd2 cd4 L x1 t L xt yt L x2 t L u2 t A u1 u1 3cd4 cd4 L r y1 L xr yr L r y2 L r v2 A u1 u1 0 cd4 L x2 b L xb yb L x1 b L u1 b A u1 u1 cd4 cd4 L l y2 L xl yl L l y1 Z",

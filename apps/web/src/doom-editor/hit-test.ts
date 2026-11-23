@@ -3,14 +3,6 @@ import { apply, invert, type Placed, type Point } from "./slide-geometry"
 
 export type Skip = (id: doom.NodeId) => boolean
 
-function distanceToSegment(at: Point, from: Point, to: Point): number {
-  const along = { x: to.x - from.x, y: to.y - from.y }
-  const square = along.x * along.x + along.y * along.y
-  const share =
-    square === 0 ? 0 : Math.max(0, Math.min(1, ((at.x - from.x) * along.x + (at.y - from.y) * along.y) / square))
-  return Math.hypot(at.x - (from.x + share * along.x), at.y - (from.y + share * along.y))
-}
-
 function paints(node: doom.Resolved): boolean {
   if (node.fills.length > 0 || node.strokes.length > 0) return true
   if (node.type === "frame") return node.children.some((child) => child.derived)
@@ -23,7 +15,7 @@ function bodyHit(placed: Placed, local: Point, reach: number): boolean {
   const { geometry } = node
   if (geometry?.kind === "line") {
     const weight = node.stroke?.weight ?? 1
-    return distanceToSegment(local, geometry.from, geometry.to) <= Math.max(reach, weight / 2 + reach / 2)
+    return doom.distanceToSegment(local, geometry.from, geometry.to) <= Math.max(reach, weight / 2 + reach / 2)
   }
   if (!paints(node)) return false
   if (geometry?.kind === "ellipse") {
@@ -31,6 +23,7 @@ function bodyHit(placed: Placed, local: Point, reach: number): boolean {
     const down = (local.y - h / 2) / Math.max(h / 2, 1e-6)
     return across * across + down * down <= 1
   }
+  if (geometry?.kind === "preset") return doom.presetHolds(geometry.name, w, h, geometry.adjust, local, reach)
   return local.x >= 0 && local.y >= 0 && local.x <= w && local.y <= h
 }
 

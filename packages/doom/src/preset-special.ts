@@ -34,6 +34,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
       "sy3 +- svc ihd2 0",
       "yAdj +- svc 0 ihd2",
     ],
+    sites: ["hc t", "x1 y1", "x2 y2", "x3 y2", "x4 y1"],
     paths: [
       {
         data: "M x1 y1 L sx2 sy1 L hc t L sx3 sy1 L x4 y1 L sx4 sy2 L x3 y2 L hc sy3 L x2 y2 L sx1 sy2 Z",
@@ -45,12 +46,14 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
   pieWedge: {
     area: "x1 y1 r b",
     adjusts: [],
-    guides: [],
+    guides: ["g1 cos w 13500000", "g2 sin h 13500000", "x1 +- r g1 0", "y1 +- b g2 0"],
+    sites: ["r vc", "hc b"],
     paths: [{ data: "M l b A w h cd2 cd4 L r b Z", fill: true, stroke: true }],
   },
   flowChartProcess: {
     adjusts: [],
     guides: [],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M 0 0 L 1 0 L 1 1 L 0 1 Z",
@@ -65,6 +68,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     area: "wd4 hd4 ir ib",
     adjusts: [],
     guides: ["ir */ w 3 4", "ib */ h 3 4"],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M 0 1 L 1 0 L 2 1 L 1 2 Z",
@@ -79,6 +83,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     area: "il it ir ib",
     adjusts: [],
     guides: ["il */ w 1018 21600", "ir */ w 20582 21600", "it */ h 3163 21600", "ib */ h 18437 21600"],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M 3475 0 L 18125 0 A 3475 10800 3cd4 cd2 L 3475 21600 A 3475 10800 cd4 cd2 Z",
@@ -101,6 +106,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
       "ir +- r 0 il",
       "ib +- b 0 il",
     ],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M l x1 A x1 x1 cd2 cd4 L x2 t A x1 x1 3cd4 cd4 L r y2 A x1 x1 0 cd4 L x1 b A x1 x1 cd4 cd4 Z",
@@ -131,6 +137,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
       "ir +- r 0 il",
       "ib +- b 0 it",
     ],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M x2 b A x1 x1 cd4 cd4 L x1 y3 A x1 x1 0 -5400000 A x1 x1 cd4 -5400000 L x1 x1 A x1 x1 cd2 cd4 L x3 t A x1 x1 3cd4 cd4 L x4 y2 A x1 x1 cd2 -5400000 A x1 x1 3cd4 -5400000 L x4 y4 A x1 x1 0 cd4 Z",
@@ -159,6 +166,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
       "it +- vc 0 idy",
       "ib +- vc idy 0",
     ],
+    sites: ["hc t", "il it", "l vc", "il ib", "hc b", "ir ib", "r vc", "ir it"],
     paths: [
       {
         data: "M l vc A wd2 hd2 cd2 cd4 A wd2 hd2 3cd4 cd4 A wd2 hd2 0 cd4 A wd2 hd2 cd4 cd4 Z M dr vc A iwd2 ihd2 cd2 -5400000 A iwd2 ihd2 cd4 -5400000 A iwd2 ihd2 0 -5400000 A iwd2 ihd2 3cd4 -5400000 Z",
@@ -214,6 +222,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
       "cang2 +- enAng cd4 0",
       "cang3 +/ cang1 cang2 2",
     ],
+    sites: ["x1 y1", "hc vc", "x2 y2"],
     paths: [
       {
         data: "M x1 y1 A wd2 hd2 stAng swAng L hc vc Z",
@@ -231,6 +240,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     area: "l y2 r y3",
     adjusts: ["adj val 25000"],
     guides: ["maxAdj */ 50000 h ss", "a pin 0 adj maxAdj", "y1 */ ss a 200000", "y2 +- y1 y1 0", "y3 +- b 0 y1"],
+    sites: ["hc y2", "hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M l y1 A wd2 y1 cd2 -10800000 L r y3 A wd2 y1 0 cd2 Z",
@@ -263,6 +273,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
       "x2 */ x4 1 2",
       "x3 +/ y1 r 2",
     ],
+    sites: ["x3 t", "x2 y1", "l y3", "x2 b", "x4 y3", "r y2"],
     paths: [
       {
         data: "M l y1 L x4 y1 L x4 b L l b Z",
@@ -308,6 +319,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
       "it +- y1 0 dy1",
       "ib +- b dy1 y1",
     ],
+    sites: ["l t", "r y3", "l b"],
     paths: [
       {
         data: "M l t A wd2 y1 3cd4 cd4 L hc y2 A wd2 y1 cd2 -5400000 A wd2 y1 3cd4 -5400000 L hc y4 A wd2 y1 0 cd4 Z",
@@ -340,6 +352,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
       "it +- y1 0 dy1",
       "ib +- b dy1 y1",
     ],
+    sites: ["r t", "l y3", "r b"],
     paths: [
       {
         data: "M r b A wd2 y1 cd4 cd4 L hc y4 A wd2 y1 0 -5400000 A wd2 y1 cd4 -5400000 L hc y1 A wd2 y1 cd2 cd4 Z",
@@ -366,6 +379,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
       "g29 */ w 21582 21600",
       "g30 */ h 1235 21600",
     ],
+    sites: ["g29 vc", "hc g28", "g27 vc", "hc g30"],
     paths: [
       {
         data: "M 3900 14370 A 6753 9190 -11429249 7426832 A 5333 7267 -8646143 5396714 A 4365 5945 -8748475 5983381 A 4857 6595 -7859164 7034504 A 5333 7273 -4722533 6541615 A 6775 9220 -2776035 7816140 A 5785 7867 37501 6842000 A 6752 9215 1347096 6910353 A 7720 10543 3974558 4542661 A 4360 5918 -16496525 8804134 A 4345 5945 -14809710 9151131 Z",
@@ -386,7 +400,8 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
   flowChartInputOutput: {
     area: "wd5 t x5 b",
     adjusts: [],
-    guides: [],
+    guides: ["x3 */ w 2 5", "x4 */ w 3 5", "x6 */ w 9 10", "x5 */ w 4 5"],
+    sites: ["x4 t", "hc t", "wd10 vc", "x3 b", "hc b", "x6 vc"],
     paths: [
       {
         data: "M 0 5 L 1 0 L 5 0 L 4 5 Z",
@@ -400,7 +415,8 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
   flowChartManualOperation: {
     area: "wd5 t x3 b",
     adjusts: [],
-    guides: [],
+    guides: ["x4 */ w 9 10", "x3 */ w 4 5"],
+    sites: ["hc t", "wd10 vc", "hc b", "x4 vc"],
     paths: [
       {
         data: "M 0 0 L 5 0 L 4 5 L 1 5 Z",
@@ -414,7 +430,8 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
   flowChartMerge: {
     area: "wd4 t x2 vc",
     adjusts: [],
-    guides: [],
+    guides: ["x2 */ w 3 4"],
+    sites: ["hc t", "wd4 vc", "hc b", "x2 vc"],
     paths: [
       {
         data: "M 0 0 L 2 0 L 1 2 Z",
@@ -428,7 +445,8 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
   flowChartExtract: {
     area: "wd4 vc x2 b",
     adjusts: [],
-    guides: [],
+    guides: ["x2 */ w 3 4"],
+    sites: ["hc t", "wd4 vc", "hc b", "x2 vc"],
     paths: [
       {
         data: "M 0 2 L 1 0 L 2 2 Z",
@@ -442,7 +460,8 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
   flowChartPreparation: {
     area: "wd5 t x2 b",
     adjusts: [],
-    guides: [],
+    guides: ["x2 */ w 4 5"],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M 0 5 L 2 0 L 8 0 L 10 5 L 8 10 L 2 10 Z",
@@ -457,6 +476,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     area: "l hd5 r b",
     adjusts: [],
     guides: [],
+    sites: ["hc hd10", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M 0 1 L 5 0 L 5 5 L 0 5 Z",
@@ -470,7 +490,8 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
   flowChartOffpageConnector: {
     area: "l t r y1",
     adjusts: [],
-    guides: [],
+    guides: ["y1 */ h 4 5"],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M 0 0 L 10 0 L 10 8 L 5 10 L 0 8 Z",
@@ -485,6 +506,7 @@ export const presetSpecial: Readonly<Record<string, PresetRule>> = {
     area: "l hd5 r b",
     adjusts: [],
     guides: [],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M 0 1 L 1 0 L 5 0 L 5 5 L 0 5 Z",

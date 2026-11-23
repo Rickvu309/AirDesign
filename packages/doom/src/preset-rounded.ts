@@ -5,6 +5,7 @@ export const presetRounded: Readonly<Record<string, PresetRule>> = {
     area: "l t ir b",
     adjusts: ["adj val 16667"],
     guides: ["a pin 0 adj 50000", "dx1 */ ss a 100000", "x1 +- r 0 dx1", "idx */ dx1 29289 100000", "ir +- r 0 idx"],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M l t L x1 t A dx1 dx1 3cd4 cd4 L r b L l b Z",
@@ -31,6 +32,7 @@ export const presetRounded: Readonly<Record<string, PresetRule>> = {
       "ir +- r 0 il",
       "ib +- b 0 bdx",
     ],
+    sites: ["r vc", "hc b", "l vc", "hc t"],
     paths: [
       {
         data: "M tx1 t L tx2 t A tx1 tx1 3cd4 cd4 L r by1 A bx1 bx1 0 cd4 L bx1 b A bx1 bx1 cd4 cd4 L l tx1 A tx1 tx1 cd2 cd4 Z",
@@ -43,6 +45,7 @@ export const presetRounded: Readonly<Record<string, PresetRule>> = {
     area: "l it ir b",
     adjusts: ["adj val 16667"],
     guides: ["a pin 0 adj 50000", "dx1 */ ss a 100000", "x1 +- r 0 dx1", "it */ dx1 1 2", "ir +/ x1 r 2"],
+    sites: ["r vc", "hc b", "l vc", "hc t"],
     paths: [
       {
         data: "M l t L x1 t L r dx1 L r b L l b Z",
@@ -69,6 +72,7 @@ export const presetRounded: Readonly<Record<string, PresetRule>> = {
       "ir +- r 0 il",
       "ib +- b 0 il",
     ],
+    sites: ["r vc", "hc b", "l vc", "hc t"],
     paths: [
       {
         data: "M lx1 t L rx2 t L r rx1 L r ly1 L lx2 b L rx1 b L l ry1 L l lx1 Z",
@@ -89,6 +93,7 @@ export const presetRounded: Readonly<Record<string, PresetRule>> = {
       "ir +- r 0 il",
       "ib +- b 0 il",
     ],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M l x1 A x1 x1 cd2 cd4 L x2 t A x1 x1 3cd4 cd4 L r y2 A x1 x1 0 cd4 L x1 b A x1 x1 cd4 cd4 Z",

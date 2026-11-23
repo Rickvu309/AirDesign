@@ -1,5 +1,4 @@
 import * as doom from "@airdesign/doom"
-import { adjustDefaults, presetOutline } from "./preset-path.js"
 
 type Resolved = doom.Resolved
 type Line = Extract<NonNullable<Resolved["geometry"]>, { kind: "line" }>
@@ -67,11 +66,7 @@ export function outlineOf(node: Resolved): Outline {
   if (geometry.kind === "path") return { fill: geometry.d, stroke: [geometry.d] }
   if (geometry.kind === "line") return { fill: null, stroke: [routePath(geometry)] }
   if (geometry.kind === "icon") return nothing
-  const names = Object.keys(adjustDefaults(geometry.name))
-  const adjusts = Object.fromEntries(
-    geometry.adjust.flatMap((value, at) => (names[at] === undefined ? [] : [[names[at], value] as const])),
-  )
-  const paths = presetOutline(geometry.name, w, h, adjusts)
+  const paths = doom.presetOutline(geometry.name, w, h, geometry.adjust)
   if (paths === null) {
     const d = roundedRectPath(w, h, node.radius)
     return { fill: d, stroke: [d] }

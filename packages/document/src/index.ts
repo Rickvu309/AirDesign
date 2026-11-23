@@ -72,7 +72,6 @@ export { anchors, autofits, mostColumns, verticals } from "./trait-body.js"
 export { adjustLimit, presetAdjusts, presets, type Preset } from "./trait-geometry.js"
 export { outlineOf, route, routed, siteTie, type Outline, type Tie } from "./connector.js"
 export { type Spot } from "./preset-sites.js"
-export { presetGuides } from "./preset-guides.js"
 export { alignments } from "./trait-box.js"
 export { pastedMedia, type PastedLayers } from "./pasted-layers.js"
 export {

@@ -5,6 +5,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     area: "x1 vc x3 b",
     adjusts: ["adj val 50000"],
     guides: ["a pin 0 adj 100000", "x1 */ w a 200000", "x2 */ w a 100000", "x3 +- x1 wd2 0"],
+    sites: ["x2 t", "x1 vc", "l b", "x2 b", "r b", "x3 vc"],
     paths: [
       {
         data: "M l b L x2 t L r b Z",
@@ -17,6 +18,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     area: "wd12 it ir ib",
     adjusts: [],
     guides: ["it */ h 7 12", "ir */ w 7 12", "ib */ h 11 12"],
+    sites: ["l t", "l vc", "l b", "hc b", "r b", "hc vc"],
     paths: [
       {
         data: "M l b L l t L r b Z",
@@ -29,6 +31,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     area: "wd4 hd4 ir ib",
     adjusts: [],
     guides: ["ir */ w 3 4", "ib */ h 3 4"],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M l vc L hc t L r vc L hc b Z",
@@ -60,6 +63,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
       "y1 pin 0 q3 h",
       "y2 +- b 0 y1",
     ],
+    sites: ["hc y2", "x4 t", "x6 vc", "x3 b", "hc y1", "x1 vc"],
     paths: [
       {
         data: "M l b L x2 t L r t L x5 b Z",
@@ -82,6 +86,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
       "it */ hd3 a maxAdj",
       "ir +- r 0 il",
     ],
+    sites: ["hc t", "x1 vc", "hc b", "x4 vc"],
     paths: [
       {
         data: "M l b L x2 t L x3 t L r b Z",
@@ -109,6 +114,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
       "y2 +- svc 0 dy2",
       "it */ y1 dx2 dx1",
     ],
+    sites: ["hc t", "x1 y1", "x2 y2", "hc b", "x3 y2", "x4 y1"],
     paths: [
       {
         data: "M x1 y1 L hc t L x4 y1 L x3 y2 L x2 y2 Z",
@@ -142,6 +148,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
       "ir +- r 0 il",
       "ib +- b 0 it",
     ],
+    sites: ["r vc", "x2 y2", "x1 y2", "l vc", "x1 y1", "x2 y1"],
     paths: [
       {
         data: "M l vc L x1 y1 L x2 y1 L r vc L x2 y2 L x1 y2 Z",
@@ -162,6 +169,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
       "ir +- r 0 il",
       "ib +- b 0 il",
     ],
+    sites: ["r x1", "r y2", "x2 b", "x1 b", "l y2", "l x1", "x1 t", "x2 t"],
     paths: [
       {
         data: "M l x1 L x1 t L x2 t L r x1 L r y2 L x2 b L x1 b L l y2 Z",
@@ -181,6 +189,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
       "ir +/ x1 r 2",
       "x2 */ x1 1 2",
     ],
+    sites: ["x2 t", "l vc", "x1 b", "r vc"],
     paths: [
       {
         data: "M l t L x1 t L r vc L x1 b L l b Z",
@@ -202,6 +211,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
       "il ?: dx x1 l",
       "ir ?: dx x2 r",
     ],
+    sites: ["x3 t", "x1 vc", "x3 b", "r vc"],
     paths: [
       {
         data: "M l t L x2 t L r vc L x2 b L l b L x1 vc Z",
@@ -224,6 +234,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
       "it ?: d x1 t",
       "ib ?: d y2 b",
     ],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M l x1 L x1 x1 L x1 t L x2 t L x2 x1 L r x1 L r y2 L x2 y2 L x2 b L x1 b L x1 y2 L l y2 Z",
@@ -236,6 +247,7 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
     area: "x1 x1 x4 y4",
     adjusts: ["adj1 val 12500"],
     guides: ["a1 pin 0 adj1 50000", "x1 */ ss a1 100000", "x4 +- r 0 x1", "y4 +- b 0 x1"],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M l t L r t L r b L l b Z M x1 x1 L x1 y4 L x4 y4 L x4 x1 Z",
@@ -255,7 +267,13 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
       "x1 */ ss a2 100000",
       "dy1 */ ss a1 100000",
       "y1 +- b 0 dy1",
+      "cx1 */ x1 1 2",
+      "cy1 +/ y1 b 2",
+      "d +- w 0 h",
+      "it ?: d y1 t",
+      "ir ?: d r x1",
     ],
+    sites: ["r cy1", "hc b", "l vc", "cx1 t"],
     paths: [
       {
         data: "M l t L x1 t L x1 y1 L r y1 L r b L l b Z",
@@ -277,7 +295,9 @@ export const presetBasic: Readonly<Record<string, PresetRule>> = {
       "sx2 +- hc sdx 0",
       "sy1 +- vc 0 sdy",
       "sy2 +- vc sdy 0",
+      "yAdj +- vc 0 ihd2",
     ],
+    sites: ["hc t", "l vc", "hc b", "r vc"],
     paths: [
       {
         data: "M l vc L sx1 sy1 L hc t L sx2 sy1 L r vc L sx2 sy2 L hc b L sx1 sy2 Z",

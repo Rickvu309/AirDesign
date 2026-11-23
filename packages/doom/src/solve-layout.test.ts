@@ -434,6 +434,18 @@ describe("solveLayout of a line", () => {
     })
   })
 
+  it("attaches an end to the site on a shape's outline, not to its box", () => {
+    const { at } = solved([
+      {
+        type: "shape",
+        name: "peak",
+        props: { box: spot(100, 100, 200, 100), geometry: { kind: "preset", name: "triangle" } },
+      },
+      line({ x: 0, y: 150 }, (ids: Record<string, string>) => ({ node: ids.peak, site: "l" })),
+    ])
+    expect(at("line")).toMatchObject({ x: 0, y: 150, w: 150, h: 0 })
+  })
+
   it("keeps a line out of an auto layout's flow", () => {
     const { at } = solved([
       rowOf([block("a", 100, 40), line({ x: 0, y: 0 }, { x: 50, y: 50 }), block("b", 100, 40)], { gap: 10 }),
