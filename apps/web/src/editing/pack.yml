@@ -6,6 +6,5 @@ public:
   - node-props.ts
   - painted-picture.ts
   - picture-file.ts
-  - slide-edit.ts
   - slide-layout.ts
   - slide-pictures.ts

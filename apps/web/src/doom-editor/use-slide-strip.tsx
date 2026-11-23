@@ -31,8 +31,18 @@ export function useSlideStrip(props: {
   const { size } = doom.deckOf(view)
   const index = current === undefined ? 0 : Math.max(0, slides.indexOf(current))
   const mint = () => client.mint()
+  const pick = (held: readonly number[]) => held.flatMap((at) => slides[at] ?? [])
+  const remove = (removed: readonly doom.NodeId[]) => {
+    const writes = deleteSlideWrites(view, removed)
+    if (writes.length === 0) return false
+    const next = neighbourAfterDelete(view, removed)
+    if (!client.push(writes).ok) return false
+    if (next !== null) onCurrent(next)
+    return true
+  }
   return {
     count: slides.length,
+    slideIds: slides,
     current: index,
     layouts,
     say,
@@ -57,28 +67,33 @@ export function useSlideStrip(props: {
     onClone: (at) => {
       const slide = slides[at]
       if (slide === undefined) return
-      const made = duplicateSlideWrites(view, slide, mint)
-      client.push(made.writes)
-      onCurrent(made.slide)
+      const made = duplicateSlideWrites(view, [slide], mint)
+      const copy = made.slides[0]
+      if (copy !== undefined && client.push(made.writes).ok) onCurrent(copy)
     },
     onRemove: (at) => {
       const slide = slides[at]
       if (slide === undefined) return
-      const writes = deleteSlideWrites(view, slide)
-      if (writes.length === 0) {
-        say.current(slideListCopy.lastSlide)
-        return
-      }
-      const next = neighbourAfterDelete(view, slide)
-      client.push(writes)
-      if (next !== null) onCurrent(next)
+      if (!remove([slide])) say.current(slideListCopy.lastSlide)
     },
     onMove: (from, to) => {
       const slide = slides[from]
       if (slide === undefined) return
-      const writes = moveSlideWrites(view, slide, to)
+      const writes = moveSlideWrites(view, [slide], to > from ? to + 1 : to)
       if (writes.length > 0) client.push(writes)
       onCurrent(slide)
+    },
+    onMoveMany: (held, at) => {
+      const writes = moveSlideWrites(view, pick(held), at)
+      if (writes.length > 0) client.push(writes)
+    },
+    onChangeSet: (change, held) => {
+      if (change === "remove") return remove(pick(held)) ? [] : null
+      const made = duplicateSlideWrites(view, pick(held), mint)
+      const copy = made.slides[0]
+      if (copy === undefined || !client.push(made.writes).ok) return null
+      onCurrent(copy)
+      return made.slides
     },
   }
 }

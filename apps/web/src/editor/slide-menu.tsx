@@ -74,7 +74,7 @@ export const SlideMenu = memo(function SlideMenu({
         side="right"
         align="start"
         sideOffset={8}
-        className="flex w-[188px] min-w-0 flex-col rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0 duration-0"
+        className="flex w-max min-w-[188px] flex-col rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0 duration-0"
       >
         {set === undefined ? (
           <SlideMenuRows index={index} count={count} onChoose={onChoose} />

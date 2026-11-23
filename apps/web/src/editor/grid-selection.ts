@@ -1,10 +1,4 @@
-import type { NodeId } from "@airdesign/doom"
-
-export type GridPick = {
-  readonly anchor: number
-  readonly slides: ReadonlySet<number>
-  readonly copies?: ReadonlySet<NodeId>
-} | null
+export type GridPick = { readonly anchor: number; readonly slides: ReadonlySet<number> } | null
 
 function sorted(slides: Iterable<number>): readonly number[] {
   return [...slides].sort((left, right) => left - right)
@@ -30,17 +24,6 @@ export function pickRange(pick: GridPick, index: number, current: number): GridP
   const low = Math.min(anchor, index)
   const high = Math.max(anchor, index)
   return heldPick(anchor, new Set(Array.from({ length: high - low + 1 }, (_, offset) => low + offset)))
-}
-
-export function prunedPick(pick: GridPick, count: number, ids?: readonly NodeId[]): GridPick {
-  if (pick === null) return null
-  const copies = pick.copies
-  if (copies !== undefined && ids !== undefined) {
-    const indices = ids.flatMap((id, index) => (copies.has(id) ? [index] : []))
-    const first = indices[0]
-    return first === undefined ? null : heldPick(first, new Set(indices))
-  }
-  return heldPick(pick.anchor, new Set([...pick.slides].filter((index) => index < count)))
 }
 
 export function toggledCurrent(pick: GridPick, index: number): number {
