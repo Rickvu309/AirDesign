@@ -85,6 +85,7 @@ export type AgentLook = {
   readonly box?: AgentBox
   readonly name?: string
   readonly hidden?: boolean
+  readonly locked?: boolean
   readonly size?: Px
   readonly font?: string
   readonly lineHeight?: number
@@ -313,6 +314,7 @@ const lookFields: LookFields = {
     },
   ),
   hidden: flag("Hide the layer."),
+  locked: flag("Lock the layer so it cannot be selected or moved on the canvas."),
   size: number(1, 2_000, "Overrides the text style's size, in pixels."),
   font: field(
     { type: "string", description: "Overrides the text style's font: a family such as Inter or Montserrat." },

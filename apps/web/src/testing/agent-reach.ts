@@ -98,6 +98,7 @@ export const sample: Readonly<Record<string, unknown>> = {
   box: { x: 10, y: 10, w: 50, h: 50 },
   name: "Renamed",
   hidden: true,
+  locked: true,
   size: 72,
   font: "Montserrat",
   lineHeight: 1.4,
@@ -181,7 +182,7 @@ export const reach: Readonly<Record<string, Entry>> = {
   "gesture:frame": { owed: "a frame that clips its children", probe: set({ clip: true }), props: ["clip"] },
   "gesture:ungroup": { agent: "op.unwrap", props: ["parent"] },
   "gesture:hide": { agent: "set.hidden", writes: "hidden", on: "card", props: ["hidden"] },
-  "gesture:lock": { owed: "a locked layer", probe: set({ locked: true }), props: ["locked"] },
+  "gesture:lock": { agent: "set.locked", writes: "locked", on: "card", props: ["locked"] },
   "gesture:undo": {
     personOnly: "the person's history; an agent writes the value back, and its run undoes as one",
     props: [],

@@ -388,6 +388,18 @@ export const suite: readonly SuiteRow[] = [
     "touched",
   ),
   row(
+    "lock-card",
+    "Lock the card on the numbers slide so it cannot be moved on the canvas.",
+    {
+      touches: [named.card],
+      landed: (end) =>
+        end.nodes.get(named.card) !== undefined && (end.nodes.get(named.card) as { locked?: boolean }).locked === true,
+    },
+    setOn(named.card, { locked: true }),
+    setOn(named.card, { hidden: true }),
+    "touched",
+  ),
+  row(
     "add-slide",
     "Add a slide at the end.",
     { landed: (end) => slideIds(end).length === slideCount + 1 },
