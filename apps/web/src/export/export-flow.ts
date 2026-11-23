@@ -1,5 +1,6 @@
 import type * as doom from "@airdesign/doom"
-import { useRef, useState } from "react"
+import { gestureFor } from "@airdesign/render"
+import { useEffect, useRef, useState } from "react"
 import { chosenSlides, firstChoice, type ExportChoice } from "@/export/export-choice"
 
 export type ExportTarget = {
@@ -48,6 +49,7 @@ function useFlowState(target: ExportTarget, start: ExportStart | undefined) {
     setChoice,
     print,
     openDialog: () => {
+      if (open) return
       setFailed(false)
       setChoice(firstChoice(target.slides.length))
       setOpen(true)
@@ -76,4 +78,14 @@ function useFlowState(target: ExportTarget, start: ExportStart | undefined) {
 export function useExport(target: ExportTarget, start?: ExportStart): ExportFlow {
   const control = useFlowState(target, start)
   return { failed: control.failed, tryAgain: () => control.print(control.choice), control }
+}
+
+export function usePrintKeyHeld() {
+  useEffect(() => {
+    function hold(event: KeyboardEvent) {
+      if (gestureFor(event, "editor") === "actions") event.preventDefault()
+    }
+    window.addEventListener("keydown", hold)
+    return () => window.removeEventListener("keydown", hold)
+  }, [])
 }

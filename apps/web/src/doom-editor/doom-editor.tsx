@@ -6,7 +6,7 @@ import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { slideRoom } from "@/editor/canvas-zoom"
 import { PanelHead } from "@/editor/editor-chrome"
 import { ExportControl } from "@/export/export-control"
-import { useExport, type ExportStart } from "@/export/export-flow"
+import { useExport, usePrintKeyHeld, type ExportStart } from "@/export/export-flow"
 import { ResizablePanel } from "@/editor/resizable-panel"
 import { useKeptPanel, type ShownPanel } from "@/editor/kept-panel"
 import type { ShapesShown } from "@/editor/shape-tool"
@@ -112,6 +112,7 @@ function Editing({
     { name: title, view, slides, current: strip.current, assetUrl: assets.assetUrl },
     start.export,
   )
+  usePrintKeyHeld()
   useEffect(() => {
     if (title === "") return
     const before = document.title
@@ -156,6 +157,7 @@ function Editing({
             }}
             toolbarHost={toolbarHost}
             notice={exporting.failed ? "export-failed" : saved.notice}
+            onExport={exporting.control.openDialog}
             onTryAgain={(notice) => {
               if (notice === "export-failed") exporting.tryAgain()
             }}

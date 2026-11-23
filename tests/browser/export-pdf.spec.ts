@@ -1,11 +1,13 @@
 import { writeFile } from "node:fs/promises"
 import { expect, type Page } from "@playwright/test"
+import { doomEditorCopy } from "../../apps/web/src/copy/doom-editor-copy"
 import { exportCopy } from "../../apps/web/src/copy/export-copy"
 import { editorRoutes } from "../../apps/web/src/doom-editor/editor-routes"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import * as doom from "../../packages/doom/src/index.ts"
 import { test, type Stack } from "./api-stack"
+import { covers } from "./gesture"
 import { landNodes, openDoomEditor, savedSlides, spot, type Opened } from "./doom-deck"
 import { openScreen } from "./open-screen"
 import { pdfPages } from "./pdf-file"
@@ -97,7 +99,7 @@ test("Export prints every slide on its own 16:9 page under the deck's name, with
 
   await expect.poll(() => printTitles(page)).toEqual(["Q3 Board final"])
   await expect(dialog(page)).toHaveCount(0)
-  await expect(page).not.toHaveTitle("Q3 Board final")
+  await expect(page).toHaveTitle("Q3 Board final")
   await expect(printPages(page)).toHaveCount(3)
 
   const pages = pdfPages(await page.pdf({ preferCSSPageSize: true }))
@@ -106,6 +108,7 @@ test("Export prints every slide on its own 16:9 page under the deck's name, with
   expect(pages[0]?.content).toMatch(/\bBT\b[\s\S]*\bT[jJ]\b/)
   expect(pages[0]?.links).toEqual(expect.arrayContaining(["https://airdesign.app/board", "page"]))
   await expect(printPages(page)).toHaveCount(0)
+  await expect(page).not.toHaveTitle("Q3 Board final")
 })
 
 test("the current slide or a range prints only those slides, and a wrong range says why until it is fixed", async ({
@@ -148,6 +151,58 @@ test("the current slide or a range prints only those slides, and a wrong range s
   expect(await printPages(page).evaluateAll((all) => all.map((each) => each.getAttribute("data-print-page")))).toEqual(
     slides.slice(1),
   )
+})
+
+async function recordPrintKeys(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const held: boolean[] = []
+    Object.assign(window, { printKeysHeld: held })
+    window.addEventListener(
+      "keydown",
+      (event) => {
+        if (event.key.toLowerCase() === "p" && (event.ctrlKey || event.metaKey))
+          setTimeout(() => held.push(event.defaultPrevented))
+      },
+      true,
+    )
+  })
+}
+
+const printKeysHeld = (page: Page) =>
+  page.evaluate(() => (window as unknown as { printKeysHeld: readonly boolean[] }).printKeysHeld)
+
+test("Ctrl or Cmd+P opens the actions bar, whose Export as PDF opens Export; the browser never prints the editor or the show", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("actions")
+  await recordPrints(page)
+  await recordPrintKeys(page)
+  await openDoomEditor(page, context, stack)
+  const actions = page.locator("[data-actions-panel]")
+  await page.keyboard.press("ControlOrMeta+p")
+  await expect(actions).toBeVisible()
+  await actions.getByRole("button", { name: doomEditorCopy.exportPdf }).click()
+  await expect(actions).toHaveCount(0)
+  await expect(dialog(page)).toBeVisible()
+  await choose(page, exportCopy.slides, exportCopy.currentSlide)
+  await page.keyboard.press("ControlOrMeta+p")
+  await expect(dialog(page).getByRole("combobox", { name: exportCopy.slides })).toContainText(exportCopy.currentSlide)
+  await page.keyboard.press("Escape")
+  await expect(dialog(page)).toHaveCount(0)
+
+  await page.locator("[data-notes-bar] textarea").click()
+  await page.keyboard.press("ControlOrMeta+p")
+  await expect(actions).toHaveCount(0)
+
+  await page.locator("[data-slide-box]").click()
+  await page.keyboard.press("F5")
+  await expect(page.locator("[data-present-show]")).toBeVisible()
+  await page.keyboard.press("ControlOrMeta+p")
+  await expect.poll(async () => (await printKeysHeld(page)).length).toBe(4)
+  expect(await printKeysHeld(page)).toEqual([true, true, true, true])
+  expect(await printTitles(page)).toEqual([])
 })
 
 test("Escape closes the dialog, focus returns to Export, and nothing prints", async ({ page, context, stack }) => {

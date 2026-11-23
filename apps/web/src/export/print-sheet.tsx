@@ -184,11 +184,7 @@ export function PrintSheet({
         if (!live || !calls.current.onReady()) return
         title = document.title
         document.title = exportBaseName(calls.current.name)
-        try {
-          window.print()
-        } finally {
-          restore()
-        }
+        window.print()
       },
       () => {
         if (live) calls.current.onFailed()

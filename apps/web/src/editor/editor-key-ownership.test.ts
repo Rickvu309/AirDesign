@@ -70,3 +70,15 @@ it("keeps composing Escape and background keys out of the grid without sending m
   }
   expect(keys).toEqual([])
 })
+
+it("leaves a key pressed inside an open dialog to the dialog, so the canvas behind never acts on it", () => {
+  const document = window.document
+  document.body.innerHTML = `<div data-slot="dialog-popup" data-open><button>Export</button></div>`
+  const inside = document.querySelector("button")!
+  let owned: boolean | null = null
+  window.addEventListener("keydown", (event) => (owned = editorOwnsKey(event)), { once: true, capture: true })
+  inside.dispatchEvent(
+    new window.KeyboardEvent("keydown", { key: "p", ctrlKey: true, bubbles: true, cancelable: true }),
+  )
+  expect(owned).toBe(false)
+})

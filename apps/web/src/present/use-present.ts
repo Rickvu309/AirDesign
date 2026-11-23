@@ -1,3 +1,4 @@
+import { gestureFor } from "@airdesign/render"
 import { useEffect, useRef, useState } from "react"
 import type { SlideTransition } from "@airdesign/pptx"
 import { firstShow, showKey, stepShow, type Show, type ShowKey, type ShownDeck } from "@/present/present-steps"
@@ -118,6 +119,10 @@ export function usePresent(deck: PresentDeck | null): Present {
       )
         return
       event.stopPropagation()
+      if (gestureFor(event, "editor") === "actions") {
+        event.preventDefault()
+        return
+      }
       const key = showKey(event)
       if (key === null) return
       event.preventDefault()

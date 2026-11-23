@@ -1,4 +1,4 @@
-import { ChartBar, ChartColumn, ChartLine, ChartNoAxesColumn, ChartPie, Search } from "lucide-react"
+import { ChartBar, ChartColumn, ChartLine, ChartNoAxesColumn, ChartPie, FileDown, Search } from "lucide-react"
 import { DynamicIcon, type IconName } from "lucide-react/dynamic"
 import { useId, useMemo, useState, type ComponentType, type ReactNode } from "react"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
@@ -9,6 +9,7 @@ import * as doom from "@airdesign/doom"
 export type ActionRun = {
   readonly chart: (kind: doom.Chart["kind"]) => void
   readonly icon: (name: string) => void
+  readonly exportPdf: () => void
 }
 
 type Group = {
@@ -89,7 +90,29 @@ const chartsGroup: Group = {
   },
 }
 
-const actionGroups: readonly Group[] = [chartsGroup]
+const deckGroup: Group = {
+  id: "deck",
+  title: doomEditorCopy.deckGroup,
+  render(query, run, finish) {
+    const words = query.trim().toLowerCase()
+    if (words !== "" && !`${doomEditorCopy.exportPdf} print`.toLowerCase().includes(words)) return null
+    return (
+      <button
+        type="button"
+        className={rowClass}
+        onClick={() => {
+          finish()
+          run.exportPdf()
+        }}
+      >
+        <FileDown className="size-4" />
+        {doomEditorCopy.exportPdf}
+      </button>
+    )
+  },
+}
+
+const actionGroups: readonly Group[] = [chartsGroup, deckGroup]
 
 export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: () => void }) {
   const id = useId()

@@ -2,7 +2,9 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react"
 
 export function editorOwnsKey(event: KeyboardEvent | ReactKeyboardEvent): boolean {
   const overlays = [
-    ...document.querySelectorAll<HTMLElement>('[role="menu"][data-open], [data-slot="popover-content"][data-open]'),
+    ...document.querySelectorAll<HTMLElement>(
+      '[role="menu"][data-open], [data-slot="popover-content"][data-open], [data-slot="dialog-popup"][data-open]',
+    ),
   ]
   const overlay = overlays.at(-1)
   if (overlay === undefined) return true

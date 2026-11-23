@@ -218,4 +218,10 @@ describe("gestureFor", () => {
   it("reads Mod+Alt+R as text right", () => {
     expect(gestureFor({ ...plain, key: "®", code: "KeyR", metaKey: true, altKey: true }, "element")).toBe("text-right")
   })
+
+  it("reads Ctrl or Cmd+P in the editor as the actions bar, as Figma's quick actions", () => {
+    expect(gestureFor({ ...plain, key: "p", code: "KeyP", ctrlKey: true }, "editor")).toBe("actions")
+    expect(gestureFor({ ...plain, key: "p", code: "KeyP", metaKey: true }, "editor")).toBe("actions")
+    expect(gestureFor({ ...plain, key: "p", code: "KeyP" }, "editor")).toBeNull()
+  })
 })
