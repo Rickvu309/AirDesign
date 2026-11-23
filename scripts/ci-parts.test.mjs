@@ -132,9 +132,9 @@ same(
 )
 same("the question may read runs", workflow.permissions.actions, "read")
 
-const pptxCheck = steps.filter((step) => step.run === "pnpm check:pptx")
-same("one step runs the PowerPoint check", pptxCheck.length, 1)
-same("the PowerPoint check runs in the pptx part", onlyOn(pptxCheck[0], "pptx"), true)
+const pptxCheck = steps.filter((step) => step.run === "pnpm check:pptx && pnpm check:pdf")
+same("one step runs the PowerPoint check, then the PDF check", pptxCheck.length, 1)
+same("the PowerPoint and PDF checks run in the pptx part", onlyOn(pptxCheck[0], "pptx"), true)
 same(
   "the PowerPoint check is a check job of its own, which changes keeps only when its inputs changed",
   entries.filter((entry) => entry.part === "pptx"),

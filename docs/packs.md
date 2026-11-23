@@ -128,6 +128,7 @@ flowchart TD
   p_apps_web_src_doom_editor --> p_apps_web_src_design
   p_apps_web_src_doom_editor --> p_apps_web_src_editing
   p_apps_web_src_doom_editor --> p_apps_web_src_editor
+  p_apps_web_src_doom_editor --> p_apps_web_src_export
   p_apps_web_src_doom_editor --> p_apps_web_src_lib
   p_apps_web_src_doom_editor --> p_apps_web_src_present
   p_apps_web_src_editing --> p_apps_web_src_components
@@ -139,7 +140,6 @@ flowchart TD
   p_apps_web_src_editor --> p_apps_web_src_lib
   p_apps_web_src_export --> p_apps_web_src_components
   p_apps_web_src_export --> p_apps_web_src_copy
-  p_apps_web_src_export --> p_apps_web_src_doom_editor
   p_apps_web_src_export --> p_apps_web_src_editing
   p_apps_web_src_present --> p_apps_web_src_components
   p_apps_web_src_present --> p_apps_web_src_copy
@@ -175,10 +175,10 @@ flowchart TD
 | `apps/web/src/credits` | feature | credits-cards.tsx, credits-routes.ts, credits-screens.tsx, use-credits.ts | apps/web/src/account, apps/web/src/components, apps/web/src/copy, apps/web/src/doom-editor, apps/web/src/lib | none |
 | `apps/web/src/decks` | feature | agent-logos.ts, danger-dialog.tsx, deck-glyph.tsx, decks-screens.tsx, decks-shell.tsx, delete-account.tsx, home.tsx, not-found-page.tsx | apps/web/src/account, apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
 | `apps/web/src/design` | shared | appearance-presets.ts, color-choices.ts, color-names.ts, color-picker.tsx, control-views.ts, controls/color.tsx, controls/link.tsx, controls/picture-adjust.tsx, controls/union.tsx, corners-control.ts, design-shown.ts, effects-list.ts, icon-search.tsx, opacity-control.ts, panel-arrangement.ts, panel-folds.ts, panel-order.ts, panel.ts, preset-icons.ts, selected-weight.ts, shape-grid.tsx, shape-marks.tsx, shown-number.ts, spacing-units.ts, trait-controls.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
-| `apps/web/src/doom-editor` | feature | doom-editor.tsx, editor-sample.tsx, editor-screens.tsx | apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/core, apps/web/src/decks, apps/web/src/design, apps/web/src/editing, apps/web/src/editor, apps/web/src/lib, apps/web/src/present | none |
+| `apps/web/src/doom-editor` | feature | doom-editor.tsx, editor-sample.tsx, editor-screens.tsx | apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/core, apps/web/src/decks, apps/web/src/design, apps/web/src/editing, apps/web/src/editor, apps/web/src/export, apps/web/src/lib, apps/web/src/present | none |
 | `apps/web/src/editing` | shared | node-props.ts, painted-picture.ts, picture-file.ts, slide-edit.ts, slide-layout.ts, slide-pictures.ts | apps/web/src/components, apps/web/src/copy | none |
 | `apps/web/src/editor` | feature | canvas-zoom.ts, design-panel.tsx, editor-chrome.tsx, editor-key-ownership.ts, editor-toast.tsx, element-title-actions.tsx, gallery-deck.ts, kept-panel.ts, live-design-panel.tsx, notes-bar.tsx, panel-switch.tsx, picture-picker.ts, picture-preview.tsx, remove-auto-layout.tsx, resizable-panel.tsx, save-status.tsx, selection-colors-section.tsx, shape-tool.tsx, slide-frame.ts, slide-sidebar.tsx, slide-thumb.tsx, template-style-card.tsx, use-canvas-room.ts, zoom-menu.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/design, apps/web/src/editing, apps/web/src/lib | none |
-| `apps/web/src/export` | feature | export-screens.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/doom-editor, apps/web/src/editing | none |
+| `apps/web/src/export` | feature | export-control.tsx, export-flow.ts, export-routes.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/editing | none |
 | `apps/web/src/lib` | platform | class-names.ts, fields-of.ts | none | none |
 | `apps/web/src/present` | feature | present-button.tsx, present-keys.ts, present-layer.tsx, present-screens.tsx, use-present.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/editor, apps/web/src/lib | none |
 | `apps/web/src/settings` | feature | account-page.tsx, agents-page.tsx, settings-screens.tsx, usage-page.tsx | apps/web/src/account, apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/credits, apps/web/src/decks, apps/web/src/lib | none |

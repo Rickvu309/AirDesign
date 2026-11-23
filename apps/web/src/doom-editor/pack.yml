@@ -8,6 +8,7 @@ dependencies:
   - apps/web/src/design
   - apps/web/src/editing
   - apps/web/src/editor
+  - apps/web/src/export
   - apps/web/src/lib
   - apps/web/src/present
 public:

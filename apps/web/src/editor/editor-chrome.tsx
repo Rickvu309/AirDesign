@@ -1,4 +1,4 @@
-import type { ReactNode, Ref } from "react"
+import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { DeckTitleEdit } from "@/editor/deck-title-edit"
@@ -33,29 +33,6 @@ export function DeckTitle({
       <span className="truncate text-[length:var(--type-dense)] font-medium text-foreground">{title}</span>
       <EditorIcon name="chev" size={14} className="text-faint" />
     </span>
-  )
-}
-
-export function ExportButton({
-  onClick,
-  ref,
-  disabled = false,
-}: {
-  onClick?: () => void
-  ref?: Ref<HTMLButtonElement>
-  disabled?: boolean
-}) {
-  return (
-    <Button
-      {...(ref === undefined ? {} : { ref })}
-      type="button"
-      variant="default"
-      disabled={disabled}
-      className={cn("h-8 rounded-lg px-3 text-[length:var(--type-dense)] font-medium active:translate-y-0")}
-      {...(onClick === undefined ? {} : { onClick })}
-    >
-      {productCopy.exportDeck}
-    </Button>
   )
 }
 

@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest"
 import { chosenSlides, firstChoice, rangeProblem } from "./export-choice"
 
 describe("export choice", () => {
-  it("starts on PowerPoint with every slide and the whole deck as the range", () => {
-    expect(firstChoice(12)).toEqual({ format: "powerpoint", slides: "all", from: "1", to: "12" })
+  it("starts on PDF with every slide and the whole deck as the range", () => {
+    expect(firstChoice(12)).toEqual({ format: "pdf", slides: "all", from: "1", to: "12" })
   })
 
-  it("leaves all slides unnamed so the export is the whole deck as before", () => {
-    expect(chosenSlides(firstChoice(3), 3, 1)).toBeUndefined()
+  it("chooses every slide in deck order", () => {
+    expect(chosenSlides(firstChoice(3), 3, 1)).toEqual([0, 1, 2])
   })
 
   it("chooses the current slide by its place in the deck", () => {
@@ -34,13 +34,5 @@ describe("export choice", () => {
     }
     expect(rangeProblem({ ...firstChoice(9), slides: "range", from: "2", to: "3" }, 9)).toBeNull()
     expect(rangeProblem({ ...firstChoice(9), slides: "all", from: "", to: "" }, 9)).toBeNull()
-  })
-
-  it("starts on the selected slides when a person selected several, and exports them in deck order", () => {
-    const choice = firstChoice(9, [6, 1, 3])
-    expect(choice.slides).toBe("selected")
-    expect(chosenSlides(choice, 9, 0, [6, 1, 3])).toEqual([1, 3, 6])
-    expect(firstChoice(9, [4]).slides).toBe("all")
-    expect(chosenSlides({ ...firstChoice(9), slides: "selected" }, 9, 4, [])).toEqual([4])
   })
 })

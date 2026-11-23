@@ -1,3 +1,4 @@
+import { exportRoutes } from "@/export/export-routes"
 import { editorRoutes } from "./editor-routes"
 import { airaSamples, EditorSample, sampleText, saveSamples } from "./editor-sample"
 
@@ -29,4 +30,6 @@ export const screens = {
   [editorRoutes.setAsideTooLarge]: () => (
     <EditorSample start={{ panel: "agent", aira: airaSamples.done, save: saveSamples.setAsideTooLarge }} />
   ),
+  [exportRoutes.pdf]: () => <EditorSample start={{ panel: "agent", export: "choosing" }} />,
+  [exportRoutes.failed]: () => <EditorSample start={{ panel: "agent", export: "failed" }} />,
 }

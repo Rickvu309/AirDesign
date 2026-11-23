@@ -137,6 +137,7 @@ html:has(.reflow-frame) #root {
 
   [data-print-page] {
     overflow: hidden;
+    contain: strict;
     break-after: page;
   }
 

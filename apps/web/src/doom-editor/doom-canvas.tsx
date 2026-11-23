@@ -56,6 +56,7 @@ export function DoomCanvas(props: {
   readonly editing?: doom.NodeId
   readonly shapes?: ShapesShown
   readonly notice: ThinNotice | null
+  readonly onTryAgain: (notice: ThinNotice) => void
 }) {
   const { client, view, slide, selection, onSelection, tool, onTool, zoom, scale, room, overlay } = props
   const stage = useRef<HTMLDivElement>(null)
@@ -388,7 +389,7 @@ export function DoomCanvas(props: {
       </div>
       <ThinNoticeView
         notice={pictures.notice ?? (text.refused ? "text-refused" : props.notice)}
-        onTryAgain={() => undefined}
+        onTryAgain={props.onTryAgain}
       />
       <TextBar api={text} />
       {props.toolbarHost === null
