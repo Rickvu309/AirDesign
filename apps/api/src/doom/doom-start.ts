@@ -15,8 +15,6 @@ export const startAuthor: doom.Author = { kind: "person", id: "airdesign" }
 
 const slide = { w: 1920, h: 1080 } as const
 
-const shadow = (y: number, blur: number) => ({ kind: "dropShadow", color: { var: "text" }, x: 0, y, blur, spread: 0 })
-
 function neutralTheme(): doom.Theme {
   const neutral = templateTheme("neutral")
   if (neutral === undefined) throw new Error("neutral template")
@@ -38,11 +36,7 @@ function neutralTheme(): doom.Theme {
     },
     fonts: { heading: fonts.major, body: fonts.minor },
     textStyles: doom.slideTextStyles,
-    effectStyles: {
-      soft: [shadow(4, 12)],
-      lifted: [shadow(12, 32)],
-      glow: doom.defaultTheme.effectStyles.glow,
-    },
+    effectStyles: doom.defaultTheme.effectStyles,
   } as doom.Theme
 }
 

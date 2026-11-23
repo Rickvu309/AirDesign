@@ -31,8 +31,8 @@ describe("a new deck's title slide", () => {
     expect(theme.textStyles.title.size).toBe(88)
   })
 
-  it("gives glow the default theme's look, a drop shadow with no offset, never a blur of the layer", () => {
-    expect(theme.effectStyles.glow).toEqual(doom.defaultTheme.effectStyles.glow)
+  it("takes the default theme's effect styles, so glow is a drop shadow with no offset, never a blur of the layer", () => {
+    expect(theme.effectStyles).toEqual(doom.defaultTheme.effectStyles)
   })
 })
 
