@@ -1,3 +1,4 @@
+import { expect } from "@playwright/test"
 import { openDoomDeck } from "./doom-deck.mjs"
 import { addSlideStart, editNodes, entry, slideIds } from "./doom-slides.mjs"
 
@@ -8,6 +9,7 @@ export async function presentState(kit, view = "audience") {
   const opened = await openDoomDeck(kit)
   await addSlideStart(page, "KPIs")
   await addSlideStart(page, "Chart")
+  await expect.poll(async () => (await slideIds(kit, opened)).length).toBe(3)
   const [, second] = await slideIds(kit, opened)
   await editNodes(kit, opened, [
     {
