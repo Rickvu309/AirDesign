@@ -111,7 +111,7 @@ export function ungroupWrites(view: doom.Doom, geometry: SlideGeometry, ids: rea
         writes.push({ node: child, prop: "geometry", value: { ...line, start: move(line.start), end: move(line.end) } })
         continue
       }
-      const { w, h } = stored ?? placed.node.box
+      const { w, h } = placed.node.box
       const centre = toHolder(apply(placed.matrix, { x: placed.node.box.w / 2, y: placed.node.box.h / 2 }))
       writes.push({
         node: child,
