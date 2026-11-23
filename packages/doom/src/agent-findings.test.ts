@@ -44,9 +44,7 @@ describe("value findings: the edit lands, and the answer names the nearest named
       { code: "off-font", node: ids.title, font: "Comic Neue" },
     ])
     expect(found[0]!.note).toContain(`size 72 is off the deck's type scale; the nearest text style is`)
-    expect(found[1]!.note).toBe(
-      `t:6: Comic Neue is not the deck's heading or body font (${theme().fonts.heading}, ${theme().fonts.body}).`,
-    )
+    expect(found[1]!.note).toBe(`t:6: Comic Neue is not the deck's heading or body font (${theme().fonts.heading}).`)
   })
 
   it("finds nothing when the edit names the theme's own colours, styles and fonts", () => {

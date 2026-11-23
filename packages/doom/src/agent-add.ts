@@ -16,7 +16,19 @@ type Add = Extract<AgentChange, { op: "add" }>
 
 const common = ["box", "name", "hidden", "opacity", "effect"] as const
 const painted = ["fill", "stroke", "strokeWidth", "radius"] as const
-const words = ["text", "textStyle", "align", "color"] as const
+const words = [
+  "text",
+  "textStyle",
+  "align",
+  "color",
+  "size",
+  "font",
+  "lineHeight",
+  "letterSpacing",
+  "case",
+  "underline",
+  "strike",
+] as const
 const patternFields = ["box", "name", "hidden", "items"] as const
 
 const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
@@ -140,6 +152,7 @@ function addLine(draft: Draft, parent: Node, change: Add): void {
 
 function addFrame(draft: Draft, parent: Node, change: Add): void {
   if (change.rows !== undefined) return addGrid(draft, parent, change)
+  if (change.align === "justify") stop("shape", undefined, "align")
   const area = areaFor(draft, parent, change.box)
   const layout = layoutOf(change, undefined, gapFor(slideSize(draft).w))
   create(draft, "frame", parent.id, {

@@ -6,6 +6,7 @@ import type { Color, Paint, Sides } from "./paint.js"
 import type { Node, Doom } from "./doom.js"
 import { type Box, childrenOf, get, isLaidOut, isLive, parentOf, slidesOf } from "./doom-walk.js"
 import { textToMarkdown } from "./markdown.js"
+import type { Span, Text } from "./text.js"
 
 const quoted = (words: string) => JSON.stringify(words)
 const num = (value: number) => String(Number(value.toFixed(1)))
@@ -104,6 +105,7 @@ function looksOf(node: Node): readonly string[] {
     if (align !== undefined && align !== "left") out.push(`align=${align}`)
     const color = uniformColor(text)
     if (color !== undefined && colorWords(color) !== "text") out.push(`color=${colorWords(color)}`)
+    out.push(...overrideWords(text))
   }
   if (geometry?.kind === "icon") out.push(`icon=${iconWords(geometry.name)}`)
   if (geometry?.kind === "line" && geometry.arrows[1] !== "none") out.push("arrow")
@@ -111,6 +113,27 @@ function looksOf(node: Node): readonly string[] {
   if (chart !== undefined) out.push(chart)
   if (text !== undefined) out.push(`text=${quoted(textToMarkdown(text))}`)
   return out
+}
+
+function overrideWords(text: Text): readonly string[] {
+  const same = <K extends keyof Span>(key: K): Span[K] | undefined => {
+    const first = text.spans[0]?.[key]
+    return first !== undefined && text.spans.every((span) => span[key] === first) ? first : undefined
+  }
+  const size = same("size")
+  const font = same("font")
+  const tracking = same("tracking")
+  const letterCase = same("case")
+  const line = text.paras[0]?.lineHeight
+  return [
+    ...(size === undefined ? [] : [`size=${num(size)}`]),
+    ...(font === undefined ? [] : [`font=${quoted(font)}`]),
+    ...(tracking === undefined ? [] : [`letterSpacing=${num(tracking)}`]),
+    ...(letterCase === undefined ? [] : [`case=${letterCase}`]),
+    ...(same("underline") === true ? ["underline"] : []),
+    ...(same("strike") === true ? ["strike"] : []),
+    ...(line !== undefined && text.paras.every((para) => para.lineHeight === line) ? [`lineHeight=${num(line)}`] : []),
+  ]
 }
 
 function lineOf(doom: Doom, node: Node, depth: number, boxes: ReadonlyMap<NodeId, Box> | undefined): string {

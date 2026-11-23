@@ -18,14 +18,6 @@ import {
 const slideOps = new Set(["add", "move", "delete"])
 
 const owedToAgent = [
-  "panel:text.font",
-  "panel:text.size",
-  "panel:text.lineHeight",
-  "panel:text.letterSpacing",
-  "panel:text.underline",
-  "panel:text.strike",
-  "panel:text.align#justify",
-  "panel:text.case",
   "panel:textFill.value#tint",
   "panel:fills.paint#gradient",
   "panel:border.border",
@@ -43,7 +35,6 @@ const owedToAgent = [
   "gesture:tool-ellipse",
   "gesture:underline",
   "gesture:strike",
-  "gesture:text-justify",
   "gesture:slide-duplicate",
   "strip:deck-name",
   "notes:slide-notes",

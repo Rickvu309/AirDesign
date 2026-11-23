@@ -5,6 +5,7 @@ import { answered, hostRefused, refused, doomRefused, type ToolResult } from "./
 import type { DeckHost } from "./deck-host.js"
 import { imageNames, imageProblem, imagesPerCall, pictureSizes, withAssets, type NamedImages } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
+import { withCatalogFonts } from "./font-names.js"
 
 type Read =
   | { readonly ok: true; readonly changes: readonly doom.AgentChange[] }
@@ -82,13 +83,15 @@ export async function editDeckTool(raw: unknown, agent: string, once: string, ho
   if (!parsed.ok) return refused(parsed.refusal)
   const read = readChanges(parsed.changes)
   if (!read.ok) return read.result
+  const fonts = withCatalogFonts(read.changes)
+  if (!fonts.ok) return fonts.result
   if (parsed.base > opened.rev) return refused("base", { rev: opened.rev })
   const ids = onceIds(once)
   const run = parsed.runId ?? ids.run
   const before = opened.fold.onces.get(once)
   if (before !== undefined)
     return landedAnswer(opened.deck, before, run, rootsInFold(opened.fold, ids.client, read.changes))
-  const names = imageNames(read.changes)
+  const names = imageNames(fonts.changes)
   const found: NamedImages | undefined =
     names.length > 0 && host.images !== undefined
       ? new Map([
@@ -96,9 +99,9 @@ export async function editDeckTool(raw: unknown, agent: string, once: string, ho
           ...names.slice(imagesPerCall).map((each) => [each, { ok: false, refusal: "many" }] as const),
         ])
       : undefined
-  const problem = imageProblem(read.changes, found)
+  const problem = imageProblem(fonts.changes, found)
   if (problem !== undefined) return problem
-  const changes = found === undefined ? read.changes : withAssets(read.changes, found)
+  const changes = found === undefined ? fonts.changes : withAssets(fonts.changes, found)
   const compiled = doom.compileAgentEdit(opened.fold, changes, {
     author: { kind: "agent", id: agent, run },
     once,

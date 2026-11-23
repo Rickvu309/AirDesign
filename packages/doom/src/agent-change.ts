@@ -60,7 +60,7 @@ export type AgentLook = {
   readonly opacity?: number
   readonly text?: string
   readonly textStyle?: TextStyleName
-  readonly align?: "left" | "center" | "right"
+  readonly align?: "left" | "center" | "right" | "justify"
   readonly layout?: "row" | "column" | "none"
   readonly gap?: Px
   readonly padding?: Px
@@ -73,6 +73,13 @@ export type AgentLook = {
   readonly box?: AgentBox
   readonly name?: string
   readonly hidden?: boolean
+  readonly size?: Px
+  readonly font?: string
+  readonly lineHeight?: number
+  readonly letterSpacing?: Px
+  readonly case?: "none" | "upper" | "lower" | "title"
+  readonly underline?: boolean
+  readonly strike?: boolean
 }
 export type SlideAdd = { readonly after?: NodeId }
 export type SlideMove = { readonly slide: NodeId; readonly after: NodeId | null }
@@ -164,6 +171,7 @@ const readChart: Reader<AgentChart> = (raw) => {
   return chart.series.every((series) => series.values.length === chart.categories.length) ? chart : reject()
 }
 
+const readFontName = matching(/^[A-Za-z0-9][A-Za-z0-9 ]{0,99}$/, 100)
 const readIconName = matching(/^([a-z0-9-]+\/)?[a-z0-9-]+$/, 80)
 const readAfter: Reader<NodeId | null> = (raw) => (raw === null ? null : readId(raw))
 
@@ -204,10 +212,10 @@ const lookFields: LookFields = {
   ),
   textStyle: choice(
     textStyleNames,
-    "A named size from the deck. You cannot set a size. The first title text on a slide becomes its title.",
+    "A named style from the deck: size, font, weight and spacing together. It clears size, font, lineHeight, letterSpacing and case. The first title text on a slide becomes its title.",
   ),
   align: choice(
-    ["left", "center", "right"],
+    ["left", "center", "right", "justify"],
     "Text alignment. In a frame with a layout: where its children sit across the layout.",
   ),
   layout: choice(["row", "column", "none"], "How a frame places its children. none leaves them where they are."),
@@ -264,6 +272,16 @@ const lookFields: LookFields = {
   ),
   name: string(limits.name, "Layer name."),
   hidden: flag("Hide the layer."),
+  size: number(1, 2_000, "Overrides the text style's size, in pixels."),
+  font: field(
+    { type: "string", description: "Overrides the text style's font: a family such as Inter or Montserrat." },
+    readFontName,
+  ),
+  lineHeight: number(0.5, 5, "Overrides the text style's line height, as a multiple of the size."),
+  letterSpacing: number(-100, 100, "Overrides the text style's letter spacing, in pixels."),
+  case: choice(["none", "upper", "lower", "title"], "Letter case."),
+  underline: flag("Underline all the words."),
+  strike: flag("Strike through all the words."),
 }
 
 const lookKeys = Object.keys(lookFields) as (keyof AgentLook)[]

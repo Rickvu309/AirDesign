@@ -56,8 +56,8 @@ const sizeNote = (node: NodeId, size: number, style: TextStyleName, to: number) 
   `${node}: size ${String(size)} is off the deck's type scale; the nearest text style is ${style} (${String(to)}).`
 const colorNote = (node: NodeId, color: Hex, to: ColorVar, theme: Theme) =>
   `${node}: ${color} is not a theme colour, so a new template will not recolour it; the nearest is ${to} (${theme.colors[to]}).`
-const fontNote = (node: NodeId, font: string, theme: Theme) =>
-  `${node}: ${font} is not the deck's heading or body font (${theme.fonts.heading}, ${theme.fonts.body}).`
+const fontNote = (node: NodeId, font: string, families: readonly string[]) =>
+  `${node}: ${font} is not the deck's heading or body font (${families.join(", ")}).`
 
 export function agentFindings(after: Doom, writes: readonly Write[]): readonly AgentFinding[] {
   const deck = deckOf(after)
@@ -95,8 +95,8 @@ export function agentFindings(after: Doom, writes: readonly Write[]): readonly A
           code: "off-font",
           node,
           font: span.font,
-          to: [theme.fonts.heading, theme.fonts.body],
-          note: fontNote(node, span.font, theme),
+          to: [...families],
+          note: fontNote(node, span.font, [...families]),
         })
     }
   }

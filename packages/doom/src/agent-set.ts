@@ -10,8 +10,10 @@ import { descendantsOf, get } from "./doom-walk.js"
 type SetChange = Extract<AgentChange, { op: "set" }>
 
 const neverOnSet = ["rows", "items", "axes"] as const
+const wordsOnly = ["size", "font", "lineHeight", "letterSpacing", "case", "underline", "strike"] as const
 const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentLook)[]>> = {
   slide: [
+    ...wordsOnly,
     "stroke",
     "strokeWidth",
     "color",
@@ -29,7 +31,7 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "chart",
     "box",
   ],
-  frame: ["color", "text", "textStyle", "icon", "arrow"],
+  frame: ["color", "text", "textStyle", "icon", "arrow", ...wordsOnly],
   shape: ["layout", "gap", "padding", "chart"],
 }
 const roleTarget = /^([a-z0-9]{1,16}:[0-9]{1,12})\.(title|subtitle|body)$/
