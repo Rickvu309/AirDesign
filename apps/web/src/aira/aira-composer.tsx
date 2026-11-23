@@ -1,9 +1,10 @@
-import { useRef, type KeyboardEvent, type RefObject } from "react"
+import type { KeyboardEvent, RefObject } from "react"
 import { PromptInput, PromptInputButton, PromptInputTextarea } from "@/components/ai-elements/prompt-input"
 import { airaCopy } from "@/copy/aira-copy"
 import { surfaceShadow } from "@/components/ui/shadows"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
+import { composing } from "@/lib/composing"
 
 const buttonRing = "outline-hidden"
 
@@ -26,12 +27,10 @@ export function AiraComposer({
   onStop: () => void
   onFocusChange: (focused: boolean) => void
 }) {
-  const composing = useRef(false)
   const waiting = blocked !== undefined
   const hint = blocked ?? (working ? airaCopy.addToRequest : airaCopy.askAira)
   function onKey(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key !== "Enter" || event.shiftKey) return
-    if (composing.current || event.nativeEvent.isComposing) return
+    if (composing(event) || event.key !== "Enter" || event.shiftKey) return
     event.preventDefault()
     onSend()
   }
@@ -61,12 +60,6 @@ export function AiraComposer({
           onFocus={() => onFocusChange(true)}
           onBlur={(event) => {
             if (!event.currentTarget.disabled) onFocusChange(false)
-          }}
-          onCompositionStart={() => {
-            composing.current = true
-          }}
-          onCompositionEnd={() => {
-            composing.current = false
           }}
         />
         <span className="flex h-8 shrink-0 items-center">

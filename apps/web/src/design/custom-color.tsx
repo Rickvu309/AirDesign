@@ -5,6 +5,7 @@ import { colorCopy } from "@/copy/color-copy"
 import { hexOf, hsvOf, shownHex, typedColor, type Hsv, type Palette } from "@/design/color-choices"
 import { dropperOf, pickScreenColor } from "@/design/eyedropper"
 import { EditorIcon } from "@/components/ui/editor-icons"
+import { composing } from "@/lib/composing"
 
 const hueStops = [0, 60, 120, 180, 240, 300, 360]
 const hueTrack = `linear-gradient(to right, ${hueStops.map((hue) => `#${hexOf({ hue, saturation: 1, value: 1 })}`).join(", ")})`
@@ -230,6 +231,7 @@ export function CustomColor({
               if (typed !== null) commitTyped(event.currentTarget.value)
             }}
             onKeyDown={(event) => {
+              if (composing(event)) return
               if (event.key === "Enter") {
                 event.preventDefault()
                 commitTyped(event.currentTarget.value)

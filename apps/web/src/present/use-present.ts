@@ -4,6 +4,7 @@ import type { SlideTransition } from "@airdesign/pptx"
 import { firstShow, showKey, stepShow, type Show, type ShowKey, type ShownDeck } from "@/present/present-steps"
 import type { ShownSlide } from "@/present/slide-shows"
 import type { LayerPairs } from "@/present/use-leaving"
+import { composing } from "@/lib/composing"
 
 export type PresentDeck = {
   readonly count: number
@@ -111,7 +112,7 @@ export function usePresent(deck: PresentDeck | null): Present {
   useEffect(() => {
     if (!presenting) return
     function listen(event: KeyboardEvent) {
-      if (event.key === "Tab") return
+      if (event.key === "Tab" || composing(event)) return
       if (
         (event.key === "Enter" || event.key === " ") &&
         event.target instanceof HTMLElement &&

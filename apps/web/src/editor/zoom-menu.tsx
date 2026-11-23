@@ -12,6 +12,7 @@ import {
   EditorMenuRow,
   EditorMenuRule,
 } from "@/editor/editor-menu"
+import { composing } from "@/lib/composing"
 
 export type ViewToggle = { readonly shown: boolean; readonly onChange: (shown: boolean) => void }
 
@@ -36,7 +37,7 @@ function ZoomField({ percent, onZoom }: { percent: number; onZoom: (zoom: Zoom) 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (menuKeys.has(event.key)) return
     event.stopPropagation()
-    if (event.key !== "Enter") return
+    if (composing(event) || event.key !== "Enter") return
     event.preventDefault()
     const next = typedZoom(text)
     if (next === null) setText(shown)

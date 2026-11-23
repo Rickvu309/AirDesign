@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
 import { cn } from "@/lib/class-names"
+import { composing } from "@/lib/composing"
 
 function styleOf(run: TextRun | undefined): Omit<TextRun, "from" | "text"> {
   if (run === undefined) return {}
@@ -112,7 +113,7 @@ function WordsField({ control, onChange, max }: ControlProps & { readonly max: n
             if (draft !== null) commit(event.currentTarget.value)
           }}
           onKeyDown={(event) => {
-            if (event.nativeEvent.isComposing) return
+            if (composing(event)) return
             if (event.key === "Enter") {
               event.preventDefault()
               commit(event.currentTarget.value)
@@ -188,7 +189,7 @@ export function PassageField({
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.nativeEvent.isComposing) return
+    if (composing(event)) return
     if (event.key === "Escape") {
       event.stopPropagation()
       setDraft(null)

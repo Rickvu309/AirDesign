@@ -183,7 +183,7 @@ test("Ctrl or Cmd+P opens the actions bar, whose Export as PDF opens Export; the
   const actions = page.locator("[data-actions-panel]")
   await page.keyboard.press("ControlOrMeta+p")
   await expect(actions).toBeVisible()
-  await actions.getByRole("button", { name: doomEditorCopy.exportPdf }).click()
+  await actions.getByRole("option", { name: doomEditorCopy.exportPdf }).click()
   await expect(actions).toHaveCount(0)
   await expect(dialog(page)).toBeVisible()
   await choose(page, exportCopy.slides, exportCopy.currentSlide)
