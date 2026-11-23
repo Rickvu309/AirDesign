@@ -2,7 +2,6 @@ layer: feature
 dependencies:
   - apps/api/src/platform
 public:
-  - deck-findings.ts
   - deck-followers.ts
   - deck-list.ts
   - deck-pictures.ts

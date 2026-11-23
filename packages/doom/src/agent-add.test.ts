@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { agentDeck, apply, build, compiled, firstSlide, lastChild, minter } from "./agent-fixtures.js"
+import { compileAgentEdit } from "./agent-edit.js"
+import { agentDeck, apply, build, compiled, firstSlide, lastChild, minter, runName } from "./agent-fixtures.js"
 import { placeholderTitle } from "./placeholder-title.js"
-import { create, hex, ids } from "./sample-deck.js"
+import { agent, create, hex, ids } from "./sample-deck.js"
 import { childrenOf, get } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { nodeId } from "./ids.js"
@@ -121,6 +122,16 @@ describe("add text on a slide holding the new deck's title placeholder", () => {
     })
     expect(get(filled, "box")).toMatchObject({ x: 160, y: 240, w: 1600, h: 300 })
     expect(get(filled, "role")).toBe("title")
+  })
+
+  it("names the filled placeholder as the layer the add made, so the agent has its id", () => {
+    const edit = compileAgentEdit(withPlaceholder(), [text({ textStyle: "title", text: "Q3 board update" })], {
+      author: agent(runName),
+      once: "fill-1",
+      mint: minter(),
+    })
+    if ("refused" in edit) throw new Error(edit.refused)
+    expect(edit.added).toEqual([{ id: startTitle, change: 0, kind: "text" }])
   })
 
   it("carries the agent's markdown and colour into the filled text", () => {

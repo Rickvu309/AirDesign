@@ -43,7 +43,7 @@ describe("an agent's title on a deck made over MCP", () => {
     return { answer: result.structuredContent as Record<string, any>, content: result.content as { text: string }[] }
   }
 
-  it("fills the Untitled title and the Subtitle placeholder and adds no text of its own", async () => {
+  it("fills the Untitled title and the Subtitle placeholder, adds no text of its own, and names the two it filled", async () => {
     const cookie = await signInByCode(base, mails, `fill${randomBytes(4).toString("hex")}@example.com`)
     const client = new Client({ name: "airdesign-test", version: "0.0.0" })
     await client.connect(
@@ -61,8 +61,18 @@ describe("an agent's title on a deck made over MCP", () => {
           { op: "add", kind: "text", slide: first.slides[0], text: "Revenue grew", textStyle: "heading" },
         ],
       })
-      expect(landed.answer.added).toHaveLength(0)
       const lines = await read()
+      const filled = (landed.answer.added as { id: string; change: number; kind: string }[]).map(
+        ({ change, kind }) => ({
+          change,
+          kind,
+        }),
+      )
+      expect(filled).toEqual([
+        { change: 0, kind: "text" },
+        { change: 1, kind: "text" },
+      ])
+      for (const { id } of landed.answer.added as { id: string }[]) expect(lines).toContain(`  ${id} text`)
       expect(lines).not.toContain("Untitled")
       expect(lines).toContain("Q3 board update")
       expect(lines.split("\n").filter((line) => line.includes("text="))).toHaveLength(2)

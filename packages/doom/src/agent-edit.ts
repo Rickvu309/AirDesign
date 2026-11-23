@@ -10,9 +10,14 @@ import { nameFromTitleWrites } from "./deck-name-from-title.js"
 import { isRefusal } from "./refusal.js"
 import type { Author, Edit, Doom, Write } from "./doom.js"
 import { onTop } from "./view-of.js"
+import { type AgentFinding, agentFindings } from "./agent-findings.js"
 
 export type AddedNode = { readonly id: NodeId; readonly change: number; readonly kind: string }
-export type AgentEdit = { readonly edit: Edit; readonly added: readonly AddedNode[] }
+export type AgentEdit = {
+  readonly edit: Edit
+  readonly added: readonly AddedNode[]
+  readonly findings: readonly AgentFinding[]
+}
 export type EditBy = {
   readonly author: Author
   readonly once: string
@@ -77,10 +82,18 @@ export function compileAgentEdit(doom: Doom, changes: readonly AgentChange[], by
     )
     return { ...landed, change: nameOf(changes[at] as AgentChange), at }
   }
-  const added = writes.flatMap((write, index): AddedNode[] => {
+  const made = writes.flatMap((write, index): AddedNode[] => {
     const node = landed.nodes.get(write.node)
     if (write.prop !== "type" || doom.nodes.has(write.node) || node === undefined) return []
     return [{ id: write.node, change: ends.findIndex((end) => end > index), kind: kindOf(node) }]
   })
-  return { edit, added }
+  const filled = changes.flatMap((change, at): AddedNode[] => {
+    const own = writes.slice(ends[at - 1] ?? 0, ends[at])
+    const first = own[0]
+    const node = first === undefined ? undefined : landed.nodes.get(first.node)
+    if (change.op !== "add" || node === undefined || own.some((write) => write.prop === "type")) return []
+    return [{ id: node.id, change: at, kind: kindOf(node) }]
+  })
+  const added = [...made, ...filled].sort((one, two) => one.change - two.change)
+  return { edit, added, findings: agentFindings(landed, writes) }
 }

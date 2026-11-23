@@ -32,7 +32,6 @@ import { airaUsageRoute } from "./aira/aira-usage-route.js"
 import { deckListAnswers } from "./doom/deck-list.js"
 import { readRegistration, registerClient } from "./oauth/clients.js"
 import { approve, describeClient } from "./oauth/consent.js"
-import { DeckFindings } from "./doom/deck-findings.js"
 import { DeckPictures } from "./doom/deck-pictures.js"
 import { DeckFollowers } from "./doom/deck-followers.js"
 import { DeckListen } from "./platform/listen.js"
@@ -75,7 +74,6 @@ export type ApiOptions = {
 type ServedOptions = ApiOptions & {
   readonly closing: Closing
   readonly followers: DeckFollowers
-  readonly findings: DeckFindings
   readonly pictures: DeckPictures
 }
 
@@ -523,7 +521,6 @@ export function createApi(given: ApiOptions): Server {
     ...given,
     closing: given.closing ?? new Closing({ db: given.session, listen: given.listen }),
     followers: new DeckFollowers(given.now ?? Date.now),
-    findings: new DeckFindings(),
     pictures: new DeckPictures(),
   }
   requireOrigin("publicOrigin", options.publicOrigin)
