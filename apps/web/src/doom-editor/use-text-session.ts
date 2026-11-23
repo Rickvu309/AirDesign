@@ -1,6 +1,6 @@
 import { type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 import { propOf } from "@/editing/node-props"
 import { blankTextFor, holdsPaint, leaveEmptyWrites } from "./text-leave"
 import {
@@ -14,6 +14,7 @@ import {
   type Mark,
 } from "./text-edit"
 import type { EditorClient } from "./use-doom-deck"
+import { refusedText, type Sent } from "./text-refused"
 
 export type Created = {
   readonly id: doom.NodeId
@@ -41,6 +42,7 @@ export type Session = {
 
 export type TextSession = {
   readonly session: Session | null
+  readonly refused: boolean
   readonly preview: readonly doom.Write[]
   begin(node: doom.NodeId, entry: Entry): void
   beginNew(created: Created, resize: doom.Text["resize"]): void
@@ -76,6 +78,10 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
   const ref = useRef<Session | null>(null)
   const pushed = useRef<string>("")
   const step = useRef("")
+  const sent = useRef<Sent | null>(null)
+  const reopened = useRef("")
+  const [refused, setRefused] = useState(false)
+  const notices = useSyncExternalStore(client.subscribe, client.notices)
   const viewRef = useRef(view)
   useEffect(() => {
     viewRef.current = view
@@ -86,30 +92,59 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
     setState(next)
   }
 
+  function keep(once: string, draft: doom.Text, node: doom.NodeId) {
+    const before = sent.current?.node === node ? sent.current.onces : []
+    sent.current = { node, draft, onces: [...before, once] }
+  }
+
   function flush() {
     const now = ref.current
     if (now === null) return
     const json = JSON.stringify(now.draft)
     if (json === pushed.current || now.draft.chars === "") return
-    if (now.created !== null) {
-      if (client.push(creationWrites(now.created, now.draft), { step: step.current }).ok) {
-        pushed.current = json
-        set({ ...now, created: null })
-      }
+    const writes =
+      now.created === null
+        ? [{ node: now.node, prop: "text" as const, value: now.draft }]
+        : creationWrites(now.created, now.draft)
+    const done = client.push(writes, { step: step.current })
+    if (!done.ok) return
+    pushed.current = json
+    keep(done.once, now.draft, now.node)
+    if (now.created !== null) set({ ...now, created: null })
+  }
+
+  useEffect(() => {
+    const found = refusedText(notices, sent.current)
+    if (found === null) return
+    sent.current = null
+    const now = ref.current
+    const json = JSON.stringify(found.draft)
+    const open = now !== null && now.node === found.node
+    if (!open && (now !== null || reopened.current === json || !viewRef.current.nodes.has(found.node))) return
+    if (found.only) client.clearNotices()
+    setRefused(true)
+    if (open) {
+      pushed.current = ""
       return
     }
-    if (client.push([{ node: now.node, prop: "text", value: now.draft }], { step: step.current }).ok)
-      pushed.current = json
-  }
+    reopened.current = json
+    begin(found.node, { kind: "end" })
+    const opened = ref.current as Session | null
+    if (opened === null) return
+    pushed.current = json
+    set({ ...opened, draft: found.draft, anchor: found.draft.chars.length, focus: found.draft.chars.length })
+  }, [notices])
 
   function finish() {
     const now = ref.current
     if (now === null) return
+    if (refused) pushed.current = ""
     flush()
     if (now.created === null) {
       const writes = leaveEmptyWrites({ node: now.node, keeps: now.keeps, draft: now.draft, pushed: pushed.current })
       if (writes.length > 0) client.push(writes, { step: step.current })
     }
+    setRefused(false)
     set(null)
   }
 
@@ -174,6 +209,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
 
   const sessionApi: TextSession = {
     session,
+    refused,
     preview: useMemo(() => {
       if (session === null) return []
       return session.created === null

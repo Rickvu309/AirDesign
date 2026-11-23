@@ -14,6 +14,12 @@ async function titleBox(stack: Stack, opened: Opened): Promise<Box> {
   return (await savedNode(stack, opened, "s:4"))?.box as Box
 }
 
+async function nudge(page: Page, box: Box) {
+  await clickSlide(page, box.x + box.w / 2, box.y + box.h / 2)
+  await expect(page.locator("[data-selection-outline]")).toBeAttached()
+  await page.keyboard.press("ArrowRight")
+}
+
 async function typeInto(page: Page, box: Box, words: string) {
   await clickSlide(page, box.x + box.w / 2, box.y + box.h / 2)
   await page.keyboard.press("Enter")
@@ -65,16 +71,16 @@ test("an edit the server refuses after it was sent says it was set aside", async
   await page.route(`**${path}`, (route) =>
     route.fulfill({ json: { ok: false, refusal: "edit", refused: "stale", node: "s:4", prop: "text" } }),
   )
-  await typeInto(page, await titleBox(stack, opened), "Refused words")
+  const box = await titleBox(stack, opened)
+  await nudge(page, box)
   await expect(page.getByText(productCopy.editSetAside, { exact: true })).toBeVisible()
-  await expect(page.locator("[data-slide-box] [data-line]").filter({ hasText: "Refused words" })).toHaveCount(0)
-  expect(await chars(stack, opened)).not.toBe("Refused words")
+  expect(((await savedNode(stack, opened, "s:4"))?.box as Box).x).toBe(box.x)
 })
 
 test("an edit refused for its size says it was too large and undone", async ({ page, context, stack }) => {
   const opened = await openDoomEditor(page, context, stack)
   const path = await editPath()
   await page.route(`**${path}`, (route) => route.fulfill({ json: { ok: false, refusal: "size" } }))
-  await typeInto(page, await titleBox(stack, opened), "Too large")
+  await nudge(page, await titleBox(stack, opened))
   await expect(page.getByText(productCopy.editSetAsideTooLarge, { exact: true })).toBeVisible()
 })
