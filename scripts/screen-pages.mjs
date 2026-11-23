@@ -14,10 +14,14 @@ export const isScreen = (file) => /\/screens\/[^/]+\.tsx$/.test(file) || /-scree
 
 const literalSource = (node) => (node?.type === "Literal" && typeof node.value === "string" ? node.value : undefined)
 
+const typeOnly = (statement) =>
+  statement.importKind === "type" ||
+  (statement.specifiers.length > 0 && statement.specifiers.every((specifier) => specifier.importKind === "type"))
+
 export const specifiers = (program) => {
   const found = []
   for (const statement of program.body) {
-    if (statement.type === "ImportDeclaration" && statement.importKind !== "type") found.push(statement.source.value)
+    if (statement.type === "ImportDeclaration" && !typeOnly(statement)) found.push(statement.source.value)
     if (
       (statement.type === "ExportNamedDeclaration" || statement.type === "ExportAllDeclaration") &&
       statement.source &&
@@ -60,50 +64,92 @@ const walk = (node, visit) => {
   for (const child of children(node)) walk(child, visit)
 }
 
-const declaredNames = (statement) => {
+const drawsJsx = (node) => {
+  let found = false
+  walk(node, (each) => {
+    if (found) return false
+    if (each.type === "JSXElement" || each.type === "JSXFragment") found = true
+  })
+  return found
+}
+
+const functionLike = (node) =>
+  node?.type === "ArrowFunctionExpression" ||
+  node?.type === "FunctionExpression" ||
+  node?.type === "FunctionDeclaration"
+
+const componentValue = (node) => {
+  if (functionLike(node)) return drawsJsx(node)
+  if (node?.type === "CallExpression") return node.arguments.some(componentValue)
+  if (node?.type === "ObjectExpression")
+    return node.properties.some((property) => property.type === "Property" && componentValue(property.value))
+  return false
+}
+
+const componentDeclarations = (statement) => {
   const declaration = statement.type.startsWith("Export") ? statement.declaration : statement
   if (!declaration) return []
+  if (declaration.type === "FunctionDeclaration")
+    return declaration.id && drawsJsx(declaration) ? [{ name: declaration.id.name, node: declaration }] : []
   if (declaration.type === "VariableDeclaration")
-    return declaration.declarations.filter((each) => each.id.type === "Identifier").map((each) => each.id.name)
-  return declaration.id?.name ? [declaration.id.name] : []
+    return declaration.declarations
+      .filter((each) => each.id.type === "Identifier" && componentValue(each.init))
+      .map((each) => ({ name: each.id.name, node: each }))
+  return []
 }
 
 export const appRoot = `${webSource}/App.tsx`
 
 const importedNames = (program) =>
   program.body
-    .filter((statement) => statement.type === "ImportDeclaration" && statement.importKind !== "type")
+    .filter((statement) => statement.type === "ImportDeclaration" && !typeOnly(statement))
     .flatMap((statement) =>
-      statement.specifiers.map((specifier) => ({ name: specifier.local.name, from: statement.source.value })),
+      statement.specifiers
+        .filter((specifier) => specifier.importKind !== "type")
+        .map((specifier) => ({ name: specifier.local.name, from: statement.source.value })),
     )
 
-const used = (program) => {
-  const counts = new Map()
-  walk(program, (node) => {
-    if (node.type === "ExportNamedDeclaration" && node.declaration === null) return false
-    if (node.type === "ExportDefaultDeclaration" && node.declaration.type === "Identifier") return false
-    if (node.type === "Identifier" || node.type === "JSXIdentifier")
-      counts.set(node.name, (counts.get(node.name) ?? 0) + 1)
-  })
-  return (name) => (counts.get(name) ?? 0) > 1
-}
+const jsxRoot = (name) => (name.type === "JSXMemberExpression" ? jsxRoot(name.object) : name)
 
-const drawnNames = (program) => {
-  const isUsed = used(program)
-  return new Set(
-    importedNames(program)
-      .map(({ name }) => name)
-      .filter(isUsed),
-  )
+export const drawUses = (program) => {
+  const uses = []
+  walk(program, (node) => {
+    if (node.type === "JSXOpeningElement") {
+      const root = jsxRoot(node.name)
+      if (root.type === "JSXIdentifier") uses.push({ name: root.name, at: node.start })
+    }
+    if (node.type === "CallExpression" && node.callee.type === "Identifier")
+      uses.push({ name: node.callee.name, at: node.start })
+    if (node.type === "JSXExpressionContainer" && node.expression.type === "Identifier")
+      uses.push({ name: node.expression.name, at: node.start })
+  })
+  return uses
 }
 
 const componentName = /^[A-Z]/
 
+const drawnNames = (program) => {
+  const uses = new Set(drawUses(program).map(({ name }) => name))
+  return new Set(
+    importedNames(program)
+      .map(({ name }) => name)
+      .filter((name) => uses.has(name)),
+  )
+}
+
 export const ownComponents = (program) => {
-  const isUsed = used(program)
-  return [...new Set(program.body.flatMap(declaredNames))]
-    .filter((name) => componentName.test(name) && isUsed(name))
-    .toSorted()
+  const uses = drawUses(program)
+  return [
+    ...new Set(
+      program.body
+        .flatMap(componentDeclarations)
+        .filter(({ name }) => componentName.test(name))
+        .filter(({ name, node }) =>
+          uses.some((use) => use.name === name && (use.at < node.start || use.at >= node.end)),
+        )
+        .map(({ name }) => name),
+    ),
+  ].toSorted()
 }
 
 export const screenFaultReads = (sources) => {
