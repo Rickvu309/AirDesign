@@ -150,10 +150,13 @@ export function iconSwapWrites(
   ids: readonly doom.NodeId[],
   name: string,
 ): readonly doom.Write[] | null {
-  const [only] = ids
-  const geometry = ids.length === 1 && only !== undefined ? propOf(view.nodes.get(only), "geometry") : undefined
-  if (only === undefined || geometry?.kind !== "icon") return null
-  return [{ node: only, prop: "geometry", value: { ...geometry, name: `lucide/${name}` } }]
+  const swaps = ids.flatMap((id) => {
+    const geometry = propOf(view.nodes.get(id), "geometry")
+    return geometry?.kind === "icon"
+      ? [{ node: id, prop: "geometry" as const, value: { ...geometry, name: `lucide/${name}` } }]
+      : []
+  })
+  return ids.length === 0 || swaps.length !== ids.length ? null : swaps
 }
 
 export function chartArea(view: doom.Doom, parent: doom.NodeId, inside: Size): Size & { x: number; y: number } {
