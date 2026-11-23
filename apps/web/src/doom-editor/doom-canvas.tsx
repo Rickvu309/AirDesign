@@ -57,7 +57,7 @@ export function DoomCanvas(props: {
   readonly shapes?: ShapesShown
   readonly notice: ThinNotice | null
   readonly onTryAgain: (notice: ThinNotice) => void
-  readonly onTyping?: (writes: readonly doom.Write[]) => void
+  readonly onTyping?: (writes: readonly doom.Write[], slide: doom.NodeId | undefined) => void
 }) {
   const { client, view, slide, selection, onSelection, tool, onTool, zoom, scale, room, overlay } = props
   const stage = useRef<HTMLDivElement>(null)
@@ -79,7 +79,9 @@ export function DoomCanvas(props: {
     if (node !== undefined) text.begin(node, { kind: "all" })
   }, [text])
   const { onTyping } = props
-  useEffect(() => onTyping?.(text.preview), [onTyping, text.preview])
+  const typedOn =
+    text.session === null ? undefined : doom.slideOf(view, text.session.created?.parent.id ?? text.session.node)
+  useEffect(() => onTyping?.(text.preview, typedOn), [onTyping, text.preview, typedOn])
   const shown = useMemo(() => {
     const edits = [
       ...(preview === null ? [] : [{ once: "preview", author, writes: preview.writes }]),

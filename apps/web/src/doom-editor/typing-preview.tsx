@@ -3,18 +3,23 @@ import { useMemo, useSyncExternalStore } from "react"
 import { DoomThumb } from "./doom-thumb"
 
 export type TypingPreview = {
-  readonly writes: () => readonly doom.Write[]
-  readonly set: (writes: readonly doom.Write[]) => void
+  readonly writesOn: (slide: doom.NodeId) => readonly doom.Write[]
+  readonly set: (writes: readonly doom.Write[], slide: doom.NodeId | undefined) => void
   readonly subscribe: (listener: () => void) => () => void
 }
+
+type Typed = { readonly writes: readonly doom.Write[]; readonly slide: doom.NodeId | undefined }
 
 const author: doom.Author = { kind: "person", id: "preview" }
 
 const followMilliseconds = 150
 
+const none: readonly doom.Write[] = []
+const idle: Typed = { writes: none, slide: undefined }
+
 export function typingPreview(): TypingPreview {
-  let latest: readonly doom.Write[] = []
-  let shown: readonly doom.Write[] = []
+  let latest = idle
+  let shown = idle
   let timer: ReturnType<typeof setTimeout> | undefined
   const listeners = new Set<() => void>()
   const show = () => {
@@ -24,11 +29,11 @@ export function typingPreview(): TypingPreview {
     for (const listener of listeners) listener()
   }
   return {
-    writes: () => shown,
-    set: (writes) => {
-      if (writes.length === 0 && latest.length === 0) return
-      latest = writes
-      if (writes.length === 0) {
+    writesOn: (slide) => (shown.slide === slide ? shown.writes : none),
+    set: (writes, slide) => {
+      if (writes.length === 0 && latest.writes.length === 0) return
+      latest = writes.length === 0 || slide === undefined ? idle : { writes, slide }
+      if (latest === idle) {
         clearTimeout(timer)
         show()
       } else timer ??= setTimeout(show, followMilliseconds)
@@ -47,11 +52,11 @@ export function TypedThumb(props: {
   readonly width: number
   readonly assetUrl: (asset: string) => string | undefined
 }) {
-  const { typing, view } = props
-  const writes = useSyncExternalStore(typing.subscribe, typing.writes)
+  const { typing, view, slide } = props
+  const writes = useSyncExternalStore(typing.subscribe, () => typing.writesOn(slide))
   const shown = useMemo(
     () => (writes.length === 0 ? view : doom.viewOf(view, [{ once: "typing", author, writes }])),
     [view, writes],
   )
-  return <DoomThumb view={shown} slide={props.slide} width={props.width} assetUrl={props.assetUrl} />
+  return <DoomThumb view={shown} slide={slide} width={props.width} assetUrl={props.assetUrl} />
 }
