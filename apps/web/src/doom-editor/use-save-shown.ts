@@ -11,6 +11,7 @@ export const setAsideMilliseconds = 10_000
 
 export function saveShown({ status, online }: Saving): SaveShown {
   if (status.kind === "saved" || status.kind === "saving") return { notice: null, save: status.kind }
+  if (status.kind === "storage-failed") return { notice: "storage-failed", save: "saving" }
   if (status.kind === "offline" && !online) return { notice: "offline", save: "offline" }
   if (status.kind === "offline" || status.kind === "blocked") return { notice: "unreached", save: "unreached" }
   const notice = status.tooLarge ? "set-aside-too-large" : status.edits === 1 ? "set-aside-one" : "set-aside"

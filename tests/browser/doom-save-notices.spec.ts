@@ -84,3 +84,29 @@ test("an edit refused for its size says it was too large and undone", async ({ p
   await nudge(page, await titleBox(stack, opened))
   await expect(page.getByText(productCopy.editSetAsideTooLarge, { exact: true })).toBeVisible()
 })
+
+test("an edit the device cannot keep while it waits to send says it is at risk", async ({ page, context, stack }) => {
+  const opened = await openDoomEditor(page, context, stack)
+  const path = await editPath()
+  let release: () => void = () => undefined
+  const held = new Promise<void>((resolve) => (release = resolve))
+  await page.route(`**${path}`, async (route) => {
+    await held
+    await route.fallback()
+  })
+  await page.evaluate(() => {
+    const put = IDBObjectStore.prototype.put
+    Object.assign(window, { keptPut: put })
+    IDBObjectStore.prototype.put = () => {
+      throw new DOMException("full", "QuotaExceededError")
+    }
+  })
+  await typeInto(page, await titleBox(stack, opened), "At risk")
+  await expect(page.getByText(productCopy.storageFailed, { exact: true })).toBeVisible()
+  await page.evaluate(() => {
+    IDBObjectStore.prototype.put = (window as unknown as { keptPut: IDBObjectStore["put"] }).keptPut
+  })
+  release()
+  await expect.poll(() => chars(stack, opened), { timeout: 15_000 }).toBe("At risk")
+  await expect(page.getByText(productCopy.storageFailed, { exact: true })).toHaveCount(0)
+})

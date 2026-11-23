@@ -167,3 +167,34 @@ describe("a deck's status", () => {
     await following
   })
 })
+
+describe("a deck whose device storage fails", () => {
+  it("says edits are at risk while they wait unsent and the device cannot keep them, and recovers on the next good write", async () => {
+    names += 1
+    const shared = memoryDoomRemote(start)
+    const steer = steered(shared)
+    const kept = memoryStorage()
+    let full = false
+    const failing = {
+      ...kept,
+      write: async (changed: Parameters<typeof kept.write>[0]) => {
+        if (full) throw new DOMException("full", "QuotaExceededError")
+        return kept.write(changed)
+      },
+    }
+    const made = await createDoomDeck(steer.remote, `status${String(names)}`, { client: "a", storage: failing })
+    if (!made.ok) throw new Error("create")
+    const mine = made.deck
+    full = true
+    steer.answer("held")
+    mine.push([{ node: card, prop: "name", value: "At risk" }])
+    await expect.poll(() => mine.status()).toEqual({ kind: "storage-failed" })
+    full = false
+    steer.answer("server")
+    const synced = mine.sync()
+    steer.release()
+    expect(await synced).toEqual({ ok: true })
+    expect(mine.status()).toEqual({ kind: "saved" })
+    expect(kept.saved()?.queue).toEqual([])
+  })
+})

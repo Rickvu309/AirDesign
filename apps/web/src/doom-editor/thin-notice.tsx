@@ -125,15 +125,7 @@ function NoticeContent({
   if (notice === "set-aside-one") return <StatusNotice kind="error" text={productCopy.editSetAside} />
   if (notice === "text-refused") return <StatusNotice kind="error" text={productCopy.textRefused} />
   if (notice === "set-aside-too-large") return <StatusNotice kind="error" text={productCopy.editSetAsideTooLarge} />
-  if (notice === "storage-failed")
-    return (
-      <FailureNotice
-        error
-        text={productCopy.storageFailed}
-        action={productCopy.reload}
-        onAct={() => onTryAgain(notice)}
-      />
-    )
+  if (notice === "storage-failed") return <StatusNotice kind="error" text={productCopy.storageFailed} />
   if (notice === "too-large")
     return (
       <FailureNotice

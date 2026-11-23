@@ -19,6 +19,13 @@ describe("what the editor shows for a deck's status", () => {
     })
   })
 
+  it("says edits are at risk while the device cannot keep them", () => {
+    expect(saveShown({ status: { kind: "storage-failed" }, online: true })).toEqual({
+      notice: "storage-failed",
+      save: "saving",
+    })
+  })
+
   it("says one edit, several edits or a too large edit was set aside", () => {
     const aside = (edits: number, tooLarge: boolean) =>
       saveShown({ status: { kind: "set-aside", edits, tooLarge }, online: true })
