@@ -139,7 +139,7 @@ test("the zoom menu in the right column zooms the slide and goes back to fit", a
   await expect.poll(async () => Math.round((await slide.boundingBox())?.width ?? 0)).toBe(Math.round(fitted))
 })
 
-test("Agent and Design share one column width and one zoom, and a reload opens the panel the deck last showed", async ({
+test("Agent opens at 360 and Design at 240, the slide fits each, and a reload opens the panel the deck last showed", async ({
   page,
   context,
   stack,
@@ -148,15 +148,15 @@ test("Agent and Design share one column width and one zoom, and a reload opens t
   const column = page.locator("[data-editor-panel]")
   const readout = page.locator("[data-zoom-readout]")
   await expect(column.locator("[data-aira-panel]")).toBeVisible()
-  const widthBefore = (await box(page, "[data-editor-panel]")).width
+  expect((await box(page, "[data-editor-panel]")).width).toBe(360)
   const slideBefore = (await box(page, "[data-slide-box]")).width
   const zoomBefore = await readout.textContent()
 
   await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
   await expect(page.locator("[data-design-panel]")).toBeVisible()
-  expect((await box(page, "[data-editor-panel]")).width).toBe(widthBefore)
-  expect((await box(page, "[data-slide-box]")).width).toBeCloseTo(slideBefore, 1)
-  await expect(readout).toHaveText(zoomBefore ?? "")
+  expect((await box(page, "[data-editor-panel]")).width).toBe(240)
+  await expect.poll(async () => (await box(page, "[data-slide-box]")).width).toBeGreaterThan(slideBefore)
+  await expect(readout).not.toHaveText(zoomBefore ?? "")
 
   await page.reload()
   await page.locator("[data-doom-ready]").waitFor()

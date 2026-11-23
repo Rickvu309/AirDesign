@@ -34,7 +34,7 @@ function ActionsIcon() {
 }
 
 function Divider() {
-  return <span className="mx-1 block h-5.5 w-px shrink-0 bg-[var(--field-edge)]" />
+  return <span data-toolbar-divider className="mx-1 block h-5.5 w-px shrink-0 bg-[var(--field-edge)]" />
 }
 
 const toolButton = "size-8 rounded-lg active:translate-y-0"
@@ -118,7 +118,6 @@ export const EditorToolbar = memo(function EditorToolbar(props: {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <Divider />
       <ShapeTool
         anchor={bar}
         onShape={(geometry) => onTool(toolForShape(geometry))}

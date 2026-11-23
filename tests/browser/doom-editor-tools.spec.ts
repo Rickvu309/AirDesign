@@ -124,6 +124,8 @@ test("the Move menu is dark, lined up with its chevron, and marks the tool in us
   covers("tool-hand")
   await openDoomEditor(page, context, stack)
   const chevron = page.getByRole("button", { name: doomEditorCopy.moveTools })
+  const toolbar = page.getByRole("toolbar", { name: doomEditorCopy.tools })
+  await expect(toolbar.locator("[data-toolbar-divider]")).toHaveCount(1)
   await chevron.click()
   const menu = page.getByRole("menu")
   await expect(menu).toBeVisible()
