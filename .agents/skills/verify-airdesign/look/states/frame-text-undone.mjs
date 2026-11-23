@@ -21,7 +21,7 @@ async function drive(kit) {
       id: "t:0",
       type: "frame",
       props: {
-        name: "Cards",
+        name: "Card column",
         box: spot(1000, 160, 720, 400),
         sizing: { w: "fixed", h: "hug" },
         layout: { mode: "column", gap: 24, padding: { t: 0, r: 0, b: 0, l: 0 }, align: "top-left" },

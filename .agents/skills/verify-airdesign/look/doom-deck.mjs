@@ -119,3 +119,6 @@ export async function openDesign(page) {
   await page.getByRole("button", { name: "Design", exact: true }).click()
   await expect(page.locator("[data-design-panel]")).toBeVisible()
 }
+
+export const group = (scope, name) =>
+  name === undefined ? scope.getByRole("group") : scope.getByRole("group", { name, exact: true })

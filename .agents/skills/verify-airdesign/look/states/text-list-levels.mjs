@@ -1,3 +1,4 @@
+import { textWords } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { openDoomDeck, spot } from "../doom-deck.mjs"
 import { editText, textLayer } from "../doom-text.mjs"
@@ -12,7 +13,10 @@ async function drive(kit) {
   await editText(page, "t:1")
   await page.keyboard.press("ControlOrMeta+End")
   await page.keyboard.press("Tab")
-  await expect(page.getByRole("button", { name: "Bulleted list", exact: true })).toHaveAttribute("aria-pressed", "true")
+  await expect(page.getByRole("button", { name: textWords["list.bullets"], exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  )
 }
 
 export default { name: "text-list-levels", design: "/screens/s43-08-editor-tools-text-format", drive }

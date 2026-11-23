@@ -27,7 +27,7 @@ const frame = (id, name, y, align) => ({
 
 const shapes = [
   line("l:1", "Thick dash", 120, 16, "dash", ["none", "none"]),
-  line("l:2", "Dot", 240, 8, "dot", ["none", "none"]),
+  line("l:2", "Dotted rule", 240, 8, "dot", ["none", "none"]),
   line("l:3", "Arrow end", 360, 6, "solid", ["none", "arrow"]),
   line("l:4", "Triangle end", 480, 6, "solid", ["none", "triangle"]),
   line("l:5", "Circle ends", 600, 6, "solid", ["circle", "circle"]),

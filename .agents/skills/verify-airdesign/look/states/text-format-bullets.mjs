@@ -1,3 +1,4 @@
+import { textWords } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { spot } from "../doom-deck.mjs"
 import { editText, textBar, textLayer } from "../doom-text.mjs"
@@ -10,7 +11,7 @@ async function drive(kit) {
   ])
   await editText(page, "t:1")
   await page.keyboard.press("ControlOrMeta+a")
-  const bullets = textBar(page).getByRole("button", { name: "Bulleted list", exact: true })
+  const bullets = textBar(page).getByRole("button", { name: textWords["list.bullets"], exact: true })
   await bullets.click()
   await expect(bullets).toHaveAttribute("aria-pressed", "true")
 }

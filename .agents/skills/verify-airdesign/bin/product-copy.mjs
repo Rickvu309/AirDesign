@@ -66,3 +66,7 @@ export const { shortcutCopy } = createRequire(import.meta.url)("../../../../apps
 
 export const { guideCopy, guideWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/guide-copy.ts")
 export const { opacityCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/opacity-copy.ts")
+export const { geometryCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/geometry-copy.ts")
+export const { effectsWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/effects-copy.ts")
+export const { textCopy, textWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/text-copy.ts")
+export const { doomEditorCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/doom-editor-copy.ts")

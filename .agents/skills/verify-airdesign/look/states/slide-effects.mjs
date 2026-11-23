@@ -32,7 +32,7 @@ const shapes = [
   shape("e:2", "Lifted style", 1, 0, { kind: "rect" }, "lifted", { fills: blue }),
   shape("e:3", "Triangle shadow", 2, 0, { kind: "preset", name: "triangle" }, [shadow(12, 18, 12)]),
   shape("e:4", "Glow style", 0, 1, { kind: "ellipse" }, "glow"),
-  shape("e:5", "Inner shadow", 1, 1, { kind: "rect" }, [
+  shape("e:5", "Inset shade", 1, 1, { kind: "rect" }, [
     { kind: "innerShadow", color: "#000000", opacity: 0.5, x: 0, y: 10, blur: 24, spread: 0 },
   ]),
   shape("e:6", "Turned shadow", 2, 1, { kind: "rect" }, [shadow(18, 18, 12)], { rotation: 15 }),

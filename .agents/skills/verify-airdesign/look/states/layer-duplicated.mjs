@@ -1,3 +1,4 @@
+import { shortcutCopy } from "../../bin/product-copy.mjs"
 import { editor } from "../editor-screen.mjs"
 import { expect } from "@playwright/test"
 import { centre, drag, selectedIds, twoShapes } from "../doom-canvas.mjs"
@@ -8,9 +9,9 @@ async function drive(kit) {
   await openDoomDeck(kit, twoShapes)
   await selectNode(page, "w:1")
   const from = await centre(page, "w:1")
-  await page.keyboard.down("Alt")
+  await page.keyboard.down(shortcutCopy.chord.other.alt)
   await drag(page, from, { x: from.x + 40, y: from.y + 150 }, 10)
-  await page.keyboard.up("Alt")
+  await page.keyboard.up(shortcutCopy.chord.other.alt)
   const [copy] = await selectedIds(page)
   expect(copy).not.toBe("w:1")
   await page.keyboard.press("ControlOrMeta+KeyD")

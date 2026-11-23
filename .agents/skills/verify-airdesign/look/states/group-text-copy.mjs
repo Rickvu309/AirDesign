@@ -10,7 +10,7 @@ async function drive(kit) {
     {
       id: "w:1",
       props: {
-        name: "Star",
+        name: "Gold star",
         box: spot(960, 220, 160, 160),
         geometry: { kind: "icon", name: "lucide/star" },
         strokes: accent,
