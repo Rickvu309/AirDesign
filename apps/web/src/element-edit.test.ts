@@ -13,7 +13,7 @@ import type { PaintBox } from "@airdesign/render"
 import { expect, it } from "vitest"
 import { elementCommand, removalRefusal, removals } from "./element-edit"
 import { exportedParts } from "./editing/exported-parts"
-import { onSlide, twoBoxSlide, xml } from "./slide-fixtures"
+import { onSlide, twoBoxSlide, xml } from "@/testing/slide-fixtures"
 
 const size = { width: 1000, height: 500 }
 const file = [slideId("256")]

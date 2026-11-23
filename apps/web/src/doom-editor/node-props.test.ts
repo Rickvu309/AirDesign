@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { holdsText } from "./node-props"
-import { grow, paint, spot } from "./doom-fixtures"
+import { grow, paint, spot } from "@/testing/doom-fixtures"
 
 describe("which layers hold words", () => {
   const built = grow([

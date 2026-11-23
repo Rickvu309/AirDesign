@@ -230,7 +230,6 @@ export function NotesBar({ text, onEdit }: { readonly text: string; readonly onE
             value={text}
             readOnly={onEdit === undefined}
             placeholder="Add presenter notes"
-            data-person-undo
             data-focus-edge
             onChange={(event) => onEdit?.(event.target.value)}
           />

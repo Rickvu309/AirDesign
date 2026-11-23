@@ -16,7 +16,6 @@ import { beforeAll, describe, expect, it } from "vitest"
 import { optionCopy } from "./copy/option-copy"
 import { canvasControl } from "./design/panel-arrangement"
 import { traitControls } from "./design/trait-controls"
-import { ensureMarkup } from "./markup"
 import {
   agentRegister,
   deckParts,
@@ -29,8 +28,8 @@ import {
   sameParts,
   type At,
   type Parts,
-} from "./parity-probe"
-import { probes } from "./trait-probes"
+} from "@/testing/parity-probe"
+import { probes } from "@/testing/trait-probes"
 
 const unjudgedOnDoom: readonly string[] = [
   "body.anchor",
@@ -294,7 +293,6 @@ async function parityProblems(): Promise<readonly Problem[]> {
 let found: readonly Problem[] = []
 
 beforeAll(async () => {
-  await ensureMarkup()
   found = await parityProblems()
 }, 120_000)
 

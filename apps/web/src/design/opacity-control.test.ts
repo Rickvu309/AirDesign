@@ -13,7 +13,6 @@ import {
 import { exportParts, fadedFrames, shownAlphas } from "@airdesign/pptx"
 import { beforeAll, expect, it } from "vitest"
 import { opacityCopy } from "@/copy/opacity-copy"
-import { ensureMarkup } from "@/markup"
 import {
   agentRegister,
   deckParts,
@@ -26,7 +25,7 @@ import {
   sameParts,
   type At,
   type Parts,
-} from "@/parity-probe"
+} from "@/testing/parity-probe"
 import { panelOf } from "./panel"
 
 const unjudgedOnDoom: readonly string[] = ["border.alpha", "fills.alpha", "layout.opacity", "text.alpha"]
@@ -124,7 +123,6 @@ let found: readonly Problem[] = []
 let probed: readonly string[] = []
 
 beforeAll(async () => {
-  await ensureMarkup()
   const problems: Problem[] = []
   for (const probe of probes) problems.push(...(await kindProblems(probe)))
   found = problems

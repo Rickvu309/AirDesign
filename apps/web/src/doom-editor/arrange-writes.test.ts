@@ -5,7 +5,7 @@ import { flipWrites, toggleWrites } from "./flip-writes"
 import { wrapWrites, ungroupWrites } from "./group-writes"
 import { orderWrites } from "./order-writes"
 import { geometryOf } from "./slide-geometry"
-import { grow, landed, paint, spot } from "./doom-fixtures"
+import { grow, landed, paint, spot } from "@/testing/doom-fixtures"
 
 function minter() {
   let next = 0

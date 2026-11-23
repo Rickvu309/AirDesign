@@ -2,7 +2,7 @@ import { decide, elementId, format, openRegister, type Command, type Register } 
 import { markupBytesRead, readShapes } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { boxStorable, landedBox, paintedBox } from "./element-move"
-import { onSlide, xml } from "../slide-fixtures"
+import { onSlide, xml } from "@/testing/slide-fixtures"
 
 const namespaces =
   'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"'

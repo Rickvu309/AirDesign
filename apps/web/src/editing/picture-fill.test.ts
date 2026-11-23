@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { iconParts } from "@airdesign/pptx"
-import { iconMarkup } from "../icon-fallback"
+import { iconMarkup } from "@/testing/icon-markup"
 import { pictureLayer, pictureSources, type PictureImage } from "./picture-fill"
 
 const whole = { left: 0, top: 0, right: 0, bottom: 0 }

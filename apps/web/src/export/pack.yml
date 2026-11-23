@@ -4,6 +4,5 @@ dependencies:
   - apps/web/src/copy
   - apps/web/src/editing
 public:
-  - chosen-parts.ts
   - export-control.tsx
   - export-options.ts

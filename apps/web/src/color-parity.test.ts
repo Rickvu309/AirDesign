@@ -14,9 +14,8 @@ import { exportParts, themeSwatches } from "@airdesign/pptx"
 import { beforeAll, describe, expect, it } from "vitest"
 import { templateColorColumns, typedColor, type Swatch } from "./design/color-choices"
 import { namedByColor } from "./design/color-names"
-import { ensureMarkup } from "./markup"
-import { deckParts, indexed, painted, panelRegister, placed, type At, type Parts } from "./parity-probe"
-import { probes } from "./trait-probes"
+import { deckParts, indexed, painted, panelRegister, placed, type At, type Parts } from "@/testing/parity-probe"
+import { probes } from "@/testing/trait-probes"
 
 const hash = "#"
 
@@ -126,7 +125,6 @@ async function landings(): Promise<readonly Landed[]> {
 let found: readonly Landed[] = []
 
 beforeAll(async () => {
-  await ensureMarkup()
   found = await landings()
 }, 120_000)
 

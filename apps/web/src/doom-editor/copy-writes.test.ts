@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { copiedMove, duplicateWrites } from "./copy-writes"
-import { grow, landed, paint, spot } from "./doom-fixtures"
+import { grow, landed, paint, spot } from "@/testing/doom-fixtures"
 
 const built = grow([{ type: "shape", name: "card", props: { box: spot(100, 100, 300, 200), fills: paint } }])
 const card = built.ids.card!

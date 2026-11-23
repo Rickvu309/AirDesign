@@ -2,8 +2,7 @@ import { elementId, planChange, registerScope, type ScopedElement } from "@airde
 import { exportParts, shownGeometry } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { geometryCopy } from "@/copy/geometry-copy"
-import { ensureMarkup } from "@/markup"
-import { deckParts, indexed, landed, painted, placed, type Parts } from "@/parity-probe"
+import { deckParts, indexed, landed, painted, placed, type Parts } from "@/testing/parity-probe"
 import { cornerSteps, cornersSection } from "./corners-control"
 import { panelOf } from "./panel"
 
@@ -78,7 +77,6 @@ function driftedParts(before: Parts, after: Parts, slide: string): readonly stri
 }
 
 it.each(["shape", "image"] as const)("exports Corners as native %s geometry and keeps other parts", async (name) => {
-  await ensureMarkup()
   const parts = await deckParts("doe-heat-pumps.pptx")
   const at = placed(parts, "shape", name === "shape" ? "2797.13" : "2883.13")
   const register = indexed(parts)

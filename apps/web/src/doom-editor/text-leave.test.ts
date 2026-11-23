@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { blankTextFor, holdsPaint, leaveEmptyWrites } from "./text-leave"
-import { grow, paint, spot } from "./doom-fixtures"
+import { grow, paint, spot } from "@/testing/doom-fixtures"
 
 const blank = doom.textFromMarkdown("", "body")
 const words = doom.textFromMarkdown("Hello", "body")

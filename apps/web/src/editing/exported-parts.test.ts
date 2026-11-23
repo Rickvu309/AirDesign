@@ -2,7 +2,7 @@ import { decide, elementId, openRegister, writeTextValue, type Box, type Command
 import { applyRoute, readPackage, readShapes } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { exportedParts, missingPictures } from "./exported-parts"
-import { editedRegister, fallbackSlide, onSlide, twoBoxSlide, xml } from "../slide-fixtures"
+import { editedRegister, fallbackSlide, onSlide, twoBoxSlide, xml } from "@/testing/slide-fixtures"
 
 it("an export skips an element whose only rows were undone", () => {
   const parts = onSlide(xml(twoBoxSlide))

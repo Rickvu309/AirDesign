@@ -9,8 +9,8 @@ import {
   chartSeriesName,
   themeColorWrites,
 } from "./chart-theme-writes"
-import { hexes } from "./design-adapter-art"
-import { grow, landed, paint, spot } from "./doom-fixtures"
+import { hexes } from "@/testing/design-adapter-art"
+import { grow, landed, paint, spot } from "@/testing/doom-fixtures"
 
 const sampleHexes = hexes
 const built = grow([{ type: "shape", name: "rect", props: { box: spot(100, 100, 200, 100), fills: paint } }])

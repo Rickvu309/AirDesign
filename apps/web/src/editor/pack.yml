@@ -10,7 +10,6 @@ public:
   - adjust-tone.tsx
   - agent-panel.tsx
   - canvas-zoom.ts
-  - deck-colors.ts
   - design-panel-art.ts
   - design-panel.tsx
   - editor-chrome.tsx
@@ -29,8 +28,6 @@ public:
   - layer-join.ts
   - live-design-panel.tsx
   - notes-bar.tsx
-  - painted-ahead.ts
-  - panel-fields.ts
   - panel-switch.tsx
   - picture-picker.ts
   - picture-preview.tsx

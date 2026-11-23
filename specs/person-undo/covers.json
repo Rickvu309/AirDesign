@@ -18,12 +18,6 @@
       "names": ["netPatch", "formatOne"],
       "digest": "40bcc7371844",
       "blob": "302f9ed36ae692de3b7898ccb8e6520dfda09468"
-    },
-    {
-      "file": "apps/web/src/editing/undo-list.ts",
-      "names": ["turnBack", "sent", "sentCommand"],
-      "digest": "59505e6ed638",
-      "blob": "fda449a501688ee11767cdea256f8cf9e5aeffb8"
     }
   ]
 }
