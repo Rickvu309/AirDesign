@@ -1,0 +1,3 @@
+# A sample slide paints no line of text over another layer's words or fill
+
+`tests/browser/core-screens.spec.ts` opens each core sample screen with real fonts and fails when a text line's box meets another layer's text line or filled body, other than a layer that holds it or that it holds. Chart parts drawn by Doom are left out, since a chart's value labels sit on its bars by design. The unit test in `apps/web/src/core/core-doom.test.ts` measures with stand-in widths, so it never saw a title wrap at 88 px into the row beneath it; this check runs in Chromium where the words have their true width.

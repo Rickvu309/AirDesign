@@ -23,7 +23,7 @@ import {
 const kpi = (name: string, label: string, value: string, change: string) =>
   tile(name, {}, [
     copy(`${name} label`, label, { style: "label", color: quiet }),
-    copy(`${name} value`, value, { style: "bigNumber", color: navy }),
+    copy(`${name} value`, value, { style: "title", color: navy }),
     copy(`${name} change`, change, { style: "caption", color: green, bold: true }),
   ])
 
