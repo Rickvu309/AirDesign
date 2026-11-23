@@ -3,15 +3,15 @@
   "covers": [
     {
       "file": "packages/mcp/src/edit-tool.ts",
-      "names": ["editDeck", "addTurn"],
-      "digest": "6b1698ca9ae1",
-      "blob": "eeecbcba01d7a409d301071fd436d6a9998ba1b5"
+      "names": ["editDeckTool"],
+      "digest": "482ccb58df95",
+      "blob": "71eb05472ef14bc36c1093f637ae5041dfb20952"
     },
     {
-      "file": "packages/document/src/decide.ts",
-      "names": ["personEdit"],
-      "digest": "64b2ea1ec698",
-      "blob": "c09ae971feb317d4f98b48593f7fbe39967c20c4"
+      "file": "packages/doom/src/apply-edit.ts",
+      "names": ["guardRun", "protect"],
+      "digest": "3d6d3087d131",
+      "blob": "15d1837183642ecb50a9c9d1bb1c5cb6ea668eeb"
     }
   ]
 }

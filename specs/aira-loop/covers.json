@@ -4,26 +4,32 @@
     {
       "file": "apps/web/src/aira/aira-loop.ts",
       "names": ["askAira", "retryAira", "converse", "callTool", "stopAsk", "continues", "landedIn", "closeRuns"],
-      "digest": "0aa5d29c1a7c",
-      "blob": "3e06e502c548c69cf91a5b30026d13ceca2edf43"
+      "digest": "7ec790f03e6e",
+      "blob": "e1ce26defa3e13807ab747c93e82ae80d0d70422"
     },
     {
       "file": "apps/web/src/aira/aira-panel.tsx",
       "names": ["AiraPanel"],
-      "digest": "7aa24c96f8c9",
-      "blob": "62f863a80d4effde344e4fd84ee0128aad7c9fc7"
+      "digest": "54d8aaa075b2",
+      "blob": "2cc29244197b0d1f06ef5ceaf713737133b770a9"
     },
     {
       "file": "apps/api/src/aira/aira-route.ts",
       "names": ["airaRouteList"],
-      "digest": "7d3ce1d791cf",
-      "blob": "92675c52a53c6f71c5cf45523f00051a4ca39db8"
+      "digest": "683ff8954847",
+      "blob": "400034bb5b91074a567769f810046b6a691c18a2"
+    },
+    {
+      "file": "apps/api/src/doom/doom-deck.ts",
+      "names": ["doomOnceRun"],
+      "digest": "0f63b31111ad",
+      "blob": "0ecca648118fbc2cedae109728a6e172d76d0249"
     },
     {
       "file": "apps/api/src/mcp/mcp.ts",
-      "names": ["serveMcp", "commitEdit"],
-      "digest": "bd7ea9d0aee1",
-      "blob": "c2f708866fb7f1b05ff95a93e001b53d23dd7ff8"
+      "names": ["serveMcp"],
+      "digest": "fe3a1e15e91d",
+      "blob": "b4ac205b212909d035ed6122644c82eed9f3e3b3"
     }
   ]
 }

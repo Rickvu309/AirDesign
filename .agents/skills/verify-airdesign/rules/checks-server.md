@@ -9,9 +9,19 @@ Two agents of one account edit one deck. The server names the agent from the cre
 - `NoSilentOverwrite`: an agent's edit never replaces another agent's write that it had not read. Harm: an agent's change is lost with no refusal, and no one is told. The code: each agent write carries the rev the agent read (`readingOf` in `packages/doom/src/agent-edit.ts`, capped at the call's `base`), and `applyEdit` in `packages/doom/src/apply-edit.ts` refuses it `stale` when the property was written after that rev.
 - `RunsAreOwn`, `StopsOnlyOwn`, `HeldOnlyWhileLive`: no code holds these on a Doom deck. `guardRun` in `apply-edit.ts` takes an edit into any running run it names, whichever agent started it, `stopRunTool` in `packages/mcp/src/stop-tool.ts` stops any running run of the deck, and no element is held for an agent.
 
-Bounds: agents a and b, one element, two runs each, `MaxVer = 2`. 259 states. Run: `pnpm check:specs agents`. Replay: none, so `node scripts/spec-replays.mjs` names it. `apps/api/src/agents.test.ts` drives two grants, and Aira with a grant, on one deck through `POST /mcp` on Postgres: each agent gets its own run, stopping one leaves the other running, a write to a stopped run is refused `run-fenced`, and a person's change to a layer refuses both runs `person-protected`. It also holds the call limits per agent and per account (`admit` in `packages/mcp/src/admit.ts`).
+Bounds: agents a and b, one element, two runs each, `MaxVer = 2`. 259 states. Run: `pnpm check:specs agents`. Replay: none, and `unreplayed` in `scripts/spec-replays.mjs` says why. `apps/api/src/agents.test.ts` drives two grants, and Aira with a grant, on one deck through `POST /mcp` on Postgres: each agent gets its own run, stopping one leaves the other running, a write to a stopped run is refused `run-fenced`, and a person's change to a layer refuses both runs `person-protected`. It also holds the call limits per agent and per account (`admit` in `packages/mcp/src/admit.ts`).
 
 Sync: `specs/agents/covers.json`.
+
+## turn
+
+A turn is one agent's time on a deck: it starts with the agent's first edit or slide call there and ends with a stop of its run or the idle window. A person's edit on an element the turn holds closes that element to the turn's writes until the turn ends.
+
+- `ClosedUntilTurnEnds`, `RefusalKeepsTurn`, `TurnKeepsItsRuns`: no code holds these on a Doom deck. `editDeckTool` in `packages/mcp/src/edit-tool.ts` starts a run for any call without `runId`, and `protect` in `packages/doom/src/apply-edit.ts` guards a node for the runs running when the person writes, not for the agent's turn.
+
+Bounds: one agent, two elements. 160 states. Run: `pnpm check:specs turn`. Replay: none, and `unreplayed` in `scripts/spec-replays.mjs` says why.
+
+Sync: `specs/turn/covers.json`.
 
 ## stop
 
