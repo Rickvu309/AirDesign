@@ -9,7 +9,7 @@ import {
   corpusInputs,
   corpusPartition,
 } from "./pptx-corpus.mjs"
-import { readSpecSeconds, specFolder, unrecordedSeconds } from "./spec-seconds.mjs"
+import { readSpecSeconds, specFolder } from "./spec-seconds.mjs"
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url))
 const same = (name, actual, expected) => assert.deepEqual(actual, expected, name)
@@ -100,16 +100,27 @@ assert.ok(
 )
 assert.deepEqual(corpusCases({ argv: ["--corpus"], entries, seconds: exported }), entries)
 assert.deepEqual(corpusCases({ argv: [], entries, seconds: exported }), entries)
-for (const seconds of [exported, {}]) {
-  const weigh = unrecordedSeconds(seconds)
-  const heaviest = Math.max(
-    0,
-    ...entries.flatMap((entry) => entry.specs ?? []).map((spec) => weigh(spec.slice(`${specFolder}/`.length))),
-  )
-  const { loads } = corpusCaseShares({ entries, seconds })
+const spec = (name) => `${specFolder}/${name}.spec.ts`
+const synthetic = [
+  { file: "a.mjs", specs: [spec("a")] },
+  { file: "ab.mjs", specs: [spec("a"), spec("b")] },
+  { file: "c.mjs", specs: [spec("c")] },
+  { file: "d.mjs", specs: [spec("d")] },
+  { file: "e.mjs", specs: [spec("e")] },
+  { file: "f.mjs", specs: [spec("f")] },
+]
+for (const { seconds, heaviestGroup } of [
+  {
+    seconds: { "a.spec.ts": 10, "b.spec.ts": 1, "c.spec.ts": 1, "d.spec.ts": 10, "e.spec.ts": 1, "f.spec.ts": 10 },
+    heaviestGroup: 11,
+  },
+  { seconds: {}, heaviestGroup: 2 },
+]) {
+  const { loads } = corpusCaseShares({ entries: synthetic, seconds })
+  assert.equal(loads[0] + loads[1], Object.keys(seconds).length === 0 ? 6 : 33, "every spec group is placed once")
   assert.ok(
-    Math.abs(loads[0] - loads[1]) <= heaviest,
-    `the export specs split evenly with ${Object.keys(seconds).length} recorded`,
+    Math.abs(loads[0] - loads[1]) <= heaviestGroup,
+    `the export specs split within the heaviest group with ${String(Object.keys(seconds).length)} recorded: ${String(loads)}`,
   )
 }
 const unknown = { file: "unknown.mjs", specs: ["tests/browser/unknown.spec.ts"], exports: ["exported-unknown.pptx"] }
