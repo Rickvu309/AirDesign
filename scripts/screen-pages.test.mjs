@@ -132,6 +132,32 @@ same(
 )
 
 same(
+  "constants, objects, lists, types, a recursive helper and a constant passed as a prop are not components",
+  withScreen(
+    'import { DoomEditor } from "@/doom-editor/doom-editor"\nconst SIZE = 3\nconst Sizes = { small: SIZE, large: SIZE * 2 }\nconst Items = [Sizes.small]\ntype Props = { readonly size: number }\ninterface Shape {\n  readonly props: Props\n}\nfunction Fact(n: number): number {\n  return n < 2 ? 1 : n * Fact(n - 1)\n}\nconst Scale = Fact(3)\nexport const EditorView = (props: Props, shape: Shape) => (\n  <DoomEditor size={Scale} items={Items} />\n)\n',
+    [],
+  ),
+  [],
+)
+
+same(
+  "a component wrapped in memo and drawn is its own component",
+  withScreen(
+    'import { memo } from "react"\nconst Row = memo(() => <div />)\nexport const EditorView = () => <Row />\n',
+    [],
+  ),
+  ["apps/web/src/editor/screens/editor-view.tsx -> own Row"],
+)
+
+same(
+  "an import whose every name is a type, written inline, is type-only",
+  withScreen('import { type MockPanel } from "@/zz/mock"\nexport const EditorView = (panel: MockPanel) => null\n', [
+    mock,
+  ]),
+  [],
+)
+
+same(
   "a screen's own export that it does not draw is not its own component",
   withScreen(
     'import { EditorSample } from "@/doom-editor/editor-sample"\nfunction EditorView() {\n  return <EditorSample />\n}\nexport { EditorView }\nexport default EditorView\n',
