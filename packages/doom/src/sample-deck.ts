@@ -1,3 +1,4 @@
+import { defaultTheme } from "./default-theme-art.js"
 import { orderKeyBetween, type OrderKey } from "./order-key.js"
 import {
   applyEdit,
@@ -60,11 +61,7 @@ export function theme(): Theme {
       caption: { ...style, size: 22 },
       label: { ...style, size: 20 },
     },
-    effectStyles: {
-      soft: [{ kind: "dropShadow", color: hex(0x000000), x: 0, y: 4, blur: 12, spread: 0 }],
-      lifted: [{ kind: "dropShadow", color: hex(0x000000), x: 0, y: 12, blur: 32, spread: 0 }],
-      glow: [{ kind: "dropShadow", color: { var: "accent2" }, opacity: 0.5, x: 0, y: 0, blur: 28, spread: 0 }],
-    },
+    effectStyles: defaultTheme.effectStyles,
   }
 }
 
