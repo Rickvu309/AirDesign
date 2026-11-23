@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { flipSelection, normalizeDegrees } from "@airdesign/render"
+import { flipSelection } from "@airdesign/render"
 import { propOf } from "@/editing/node-props"
 import { memberOf } from "./selection-frame"
 import { apply, invert, type SlideGeometry } from "./slide-geometry"
@@ -46,7 +46,7 @@ export function flipWrites(
           ...stored,
           x: Math.round(local.x - placed.node.box.w / 2),
           y: Math.round(local.y - placed.node.box.h / 2),
-          rotation: Math.round(normalizeDegrees(turn - (parent?.rotation ?? 0)) * 10) / 10,
+          rotation: doom.wrapRotation(turn - (parent?.rotation ?? 0)),
           flipH: flipped.flipH ?? stored.flipH,
           flipV: flipped.flipV ?? stored.flipV,
         },
