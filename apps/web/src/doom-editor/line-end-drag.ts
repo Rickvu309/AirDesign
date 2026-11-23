@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { geometryKind, lockedIn, propOf } from "@/editing/node-props"
+import { propOf } from "@/editing/node-props"
 import { apply, invert, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
 
 export type EndGrip = "line-start" | "line-end"
@@ -26,14 +26,7 @@ function siteSpots(view: doom.Doom, placed: Placed): readonly { readonly site: d
 }
 
 function holders(view: doom.Doom, geometry: SlideGeometry, line: doom.NodeId): readonly Placed[] {
-  return [...geometry.byId.values()].filter(
-    (placed) =>
-      placed.id !== line &&
-      geometryKind(view, placed.id) !== "line" &&
-      !lockedIn(view, placed.id) &&
-      placed.node.box.w > 0 &&
-      placed.node.box.h > 0,
-  )
+  return [...geometry.byId.values()].filter((placed) => doom.holdsLineEnd(view, placed.id, line))
 }
 
 function inside(placed: Placed, at: Point): boolean {

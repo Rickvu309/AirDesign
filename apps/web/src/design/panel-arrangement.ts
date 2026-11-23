@@ -27,6 +27,9 @@ import {
   SolidBorder,
   DashedBorder,
   DottedBorder,
+  StraightLine,
+  ElbowLine,
+  CurvedLine,
   SoftShadow,
   LiftedShadow,
   GlowShadow,
@@ -191,7 +194,6 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   boxFill: [[placed("paint", hidden, { options: fills })], [placed("paint.solid", hidden)]],
   fillDetails: [],
   border: [
-    [placed("route", hidden)],
     [
       placed("border", hidden, {
         options: { none: fillIcons.none, solid: SolidBorder, dash: DashedBorder, dot: DottedBorder },
@@ -200,6 +202,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("fill", above, { options: fills, form: "list" })],
     [placed("fill.solid", hidden)],
     [placed("color", above), placed("width", above)],
+    [placed("route", above, { options: { straight: StraightLine, elbow: ElbowLine, curve: CurvedLine } })],
     [placed("dash", above, { form: "list" })],
     [placed("cap", above, { form: "list" }), placed("compound", above, { form: "list" })],
     [placed("join", above, { form: "list" })],
