@@ -38,6 +38,7 @@
     "doom-editor-transform.spec.ts": 10.7,
     "doom-editor-view.spec.ts": 1.9,
     "doom-editor.spec.ts": 3.2,
+    "doom-gone-deck.spec.ts": 34.1,
     "doom-gradient-fill.spec.ts": 2.1,
     "doom-offline-tabs.spec.ts": 45.9,
     "doom-picture-wake.spec.ts": 1.8,

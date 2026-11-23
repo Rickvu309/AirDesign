@@ -49,11 +49,13 @@ export type DoomDeck = {
   undoRun(run: string): Promise<TurnedRun>
   sync(): Promise<Synced>
   catchUp(): Promise<{ readonly ok: boolean }>
-  follow(signal: AbortSignal): Promise<void>
+  follow(signal: AbortSignal): Promise<Followed>
   reportPictures(rev: number, pictures: SlidePictures<doom.NodeId>): Promise<DoomPictured>
   picturesWanted(): boolean
   subscribe(listener: () => void): () => void
 }
+
+export type Followed = "stopped" | "gone"
 
 export type DoomOptions = {
   readonly once?: () => string
@@ -85,6 +87,7 @@ async function start(remote: DoomRemote, raw: string, how: "create" | "open", op
   if (how === "open" && kept?.fold !== undefined)
     return { ok: true, deck: connected(remote, id.deck, kept.fold, kept.queue, storage, options) }
   const answer = await remote[how]({ deck: id.deck })
+  if (!answer.ok && answer.refusal === "deck") await storage.drop().catch(() => undefined)
   if (!answer.ok) return answer.refusal === "edit" ? { ok: false, refusal: "payload" } : answer
   const queue = kept?.queue ?? []
   await storage.write({ fold: answer.fold, queue }).catch(() => undefined)
@@ -113,6 +116,7 @@ function connected(
   const watched = new Map<string, { readonly before: doom.Doom; readonly edits: doom.Landed[] }>()
   let memo: { readonly server: doom.Doom; readonly queue: readonly Queued[]; readonly view: doom.Doom } | undefined
   let saving: Promise<void> = Promise.resolve()
+  let gone = false
   let running: Promise<Synced> | undefined
   let wanted = false
   let picturesUntil = 0
@@ -128,8 +132,15 @@ function connected(
   }
 
   const save = (changed: { fold?: doom.Doom; queue?: readonly Queued[] }): Promise<void> => {
-    saving = saving.then(() => storage.write(changed)).catch(() => undefined)
+    saving = saving.then(() => (gone ? undefined : storage.write(changed))).catch(() => undefined)
     return saving
+  }
+
+  const leave = async (): Promise<Followed> => {
+    gone = true
+    saving = saving.then(() => storage.drop()).catch(() => undefined)
+    await saving
+    return "gone"
   }
 
   function forget(gone: readonly string[]) {
@@ -402,7 +413,7 @@ function connected(
     return { ok: true, once: pushed.once, saved: pushed.saved }
   }
 
-  async function follow(signal: AbortSignal): Promise<void> {
+  async function follow(signal: AbortSignal): Promise<Followed> {
     let wait = false
     while (!signal.aborted) {
       try {
@@ -410,7 +421,8 @@ function connected(
           { deck, rev: server.rev, wait, ...(Date.now() < picturesUntil ? { pictures: true } : {}) },
           signal,
         )
-        if (signal.aborted) return
+        if (signal.aborted) return "stopped"
+        if (!answer.ok && answer.refusal === "deck") return await leave()
         if (!answer.ok) {
           await pause(retryMilliseconds)
           continue
@@ -426,11 +438,12 @@ function connected(
         }
         if (queue.length > 0) await sync()
       } catch {
-        if (signal.aborted) return
+        if (signal.aborted) return "stopped"
         wait = false
         await pause(retryMilliseconds)
       }
     }
+    return "stopped"
   }
 
   return {

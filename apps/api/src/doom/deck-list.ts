@@ -59,9 +59,12 @@ order by edited desc, created desc, id
 const starSql = "update deck.doom set starred = $3 where id = $1 and owner = $2 returning starred"
 
 const trashSql = `
-update deck.doom set trashed = coalesce(trashed, now())
-where id = $1 and owner = $2
-returning id, trashed
+with trashed as (
+  update deck.doom set trashed = coalesce(trashed, now())
+  where id = $1 and owner = $2
+  returning id, rev, trashed
+)
+select id, trashed, pg_notify('deck', id || ':' || rev::text) as notified from trashed
 `
 
 const restoreSql = "update deck.doom set trashed = null where id = $1 and owner = $2 returning id"

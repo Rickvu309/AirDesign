@@ -5,10 +5,10 @@ import * as doom from "@airdesign/doom"
 import { isUniqueViolation, type Sql } from "../platform/pool.js"
 import { startEdit } from "./doom-start.js"
 
-const headSql = "select id, owner, rev from deck.doom where id = $1"
+const headSql = "select id, owner, rev, trashed is not null as trashed from deck.doom where id = $1"
 
 export const openSql = `
-select s.id, s.owner, s.rev, s.name,
+select s.id, s.owner, s.rev, s.name, s.trashed is not null as trashed,
   jsonb_build_object(
     'rev', s.rev,
     'nodes', coalesce((select jsonb_object_agg(n.id, n.node) from deck.doom_node n where n.deck = s.id), '{}'::jsonb),
@@ -30,7 +30,7 @@ wanted as (
   select n.id from deck.doom_node n join chain on n.parent = chain.id
   where n.deck = $1 and chain.id = any($4::text[]) and chain.type = 'slideRow' and n.type = 'slide'
 )
-select s.owner, s.rev, s.runs, s.elements, s.slides,
+select s.owner, s.rev, s.runs, s.elements, s.slides, s.trashed is not null as trashed,
   exists (select 1 from deck.doom_node d where d.deck = s.id and d.type = 'deck') as has_deck,
   (select e.rev from deck.doom_edit e where e.deck = s.id and e.once = $3) as landed,
   coalesce(
@@ -86,9 +86,10 @@ const editsSql =
 const attempts = 8
 const answerEdits = 100
 
-type Stored = { readonly id: string; readonly owner: string; readonly rev: number }
+type Stored = { readonly id: string; readonly owner: string; readonly rev: number; readonly trashed: boolean }
 type Part = {
   readonly owner: string
+  readonly trashed: boolean
   readonly rev: number
   readonly runs: unknown
   readonly elements: number
@@ -184,10 +185,15 @@ export async function createDoom(db: Sql, parsed: { readonly deck: DeckId }, ema
   return openDoom(db, parsed, email)
 }
 
-export async function openDoom(db: Sql, parsed: { readonly deck: DeckId }, email: string) {
+export async function openDoom(
+  db: Sql,
+  parsed: { readonly deck: DeckId; readonly trashed?: true | undefined },
+  email: string,
+) {
   const found = (await db.query<Stored & { readonly fold: unknown }>(openSql, [parsed.deck])).rows[0]
   if (found === undefined) return refusal("deck")
   if (found.owner !== email) return refusal("owner")
+  if (found.trashed !== (parsed.trashed === true)) return refusal("deck")
   return { ok: true, deck: parsed.deck, rev: found.rev, fold: found.fold } as const
 }
 
@@ -202,6 +208,7 @@ export async function editDoom(
     const stored = (await db.query<Part>(partSql, [parsed.deck, seeds, once, regrouped])).rows[0]
     if (stored === undefined) return refusal("deck")
     if (stored.owner !== email) return refusal("owner")
+    if (stored.trashed) return refusal("deck")
     const part = partOf(stored, once)
     if (part === undefined) return refusal("payload")
     const read = doom.readEdit(parsed.edit, part)
@@ -247,6 +254,7 @@ export async function sinceDoom(db: Sql, parsed: { readonly deck: DeckId; readon
   const stored = await readStored(db, parsed.deck)
   if (stored === undefined) return refusal("deck")
   if (stored.owner !== email) return refusal("owner")
+  if (stored.trashed) return refusal("deck")
   if (parsed.rev > stored.rev) return refusal("cursor")
   const rows = await db.query<{ rev: number; edit: unknown; bytes: number }>(editsSql, [
     parsed.deck,
@@ -268,6 +276,7 @@ export async function runDoom(db: Sql, parsed: { readonly deck: DeckId; readonly
   const stored = await readStored(db, parsed.deck)
   if (stored === undefined) return refusal("deck")
   if (stored.owner !== email) return refusal("owner")
+  if (stored.trashed) return refusal("deck")
   const rows = await db.query<{ rev: number; edit: object; was: Record<string, unknown> | null; bytes: number }>(
     runSql,
     [parsed.deck, parsed.run, runEdits + 1],
@@ -291,12 +300,13 @@ export async function doomRev(db: Sql, deck: DeckId, email: string) {
   const stored = await readStored(db, deck)
   if (stored === undefined) return refusal("deck")
   if (stored.owner !== email) return refusal("owner")
+  if (stored.trashed) return refusal("deck")
   return { ok: true, rev: stored.rev } as const
 }
 
 const listSql = `
 select id, name, rev from deck.doom
-where owner = $1
+where owner = $1 and trashed is null
   and ($2::text is null or (edited, id) < (select edited, id from deck.doom where id = $2 and owner = $1))
 order by edited desc, id desc
 limit $3`

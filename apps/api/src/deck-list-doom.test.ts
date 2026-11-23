@@ -133,6 +133,34 @@ describe("starring, trashing and deleting a doom deck", () => {
     expect(back.live).toMatchObject({ deck, doom: { rev: expect.any(Number) } })
   })
 
+  it("refuses to open, edit, catch up or read a run of a trashed deck until it is restored", async () => {
+    const deck = await made()
+    await post("/decks/trash", { deck })
+    const edit = {
+      once: "in-trash",
+      author: { kind: "person", id: "tab" },
+      writes: [{ node: "s:1", prop: "name", value: "Edited in the trash" }],
+    }
+    const gone = { ok: false, refusal: "deck" }
+    expect(await post(doomRoutes.open.path, { deck })).toEqual(gone)
+    expect(await post(doomRoutes.create.path, { deck })).toEqual(gone)
+    expect(await post(doomRoutes.edit.path, { deck, edit })).toEqual(gone)
+    expect(await post(doomRoutes.since.path, { deck, rev: 0 })).toEqual(gone)
+    expect(await post(doomRoutes.run.path, { deck, run: "run" })).toEqual(gone)
+    expect(await post(doomRoutes.open.path, { deck, trashed: true })).toMatchObject({ ok: true, deck, rev: 1 })
+    await post("/decks/restore", { deck })
+    expect(await post(doomRoutes.open.path, { deck, trashed: true })).toEqual(gone)
+    expect(await post(doomRoutes.edit.path, { deck, edit })).toMatchObject({ ok: true, rev: 2 })
+  })
+
+  it("answers a tab waiting on a deck when the deck moves to the trash", async () => {
+    const deck = await made()
+    const waiting = post(doomRoutes.since.path, { deck, rev: 1, wait: true })
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    await post("/decks/trash", { deck })
+    expect(await waiting).toEqual({ ok: false, refusal: "deck" })
+  })
+
   it("keeps the first trashed time when trashed twice", async () => {
     const deck = await made()
     const first = (await post("/decks/trash", { deck })) as { trashed: string }

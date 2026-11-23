@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
 import type { Queued } from "./doom-queue.js"
+import { dropDeck } from "./device-sweep.js"
 import { changeSlots, readRange, readSlot } from "./store.js"
 
 export type Saved = { readonly fold?: doom.Doom; readonly queue: readonly Queued[] }
@@ -7,6 +8,7 @@ export type Saved = { readonly fold?: doom.Doom; readonly queue: readonly Queued
 export type DoomStorage = {
   read(): Promise<Saved | undefined>
   write(changed: { readonly fold?: doom.Doom; readonly queue?: readonly Queued[] }): Promise<void>
+  drop(): Promise<void>
 }
 
 export const doomFoldKey = (deck: string): string => `${deck}\u0004fold`
@@ -71,6 +73,10 @@ export function deviceStorage(deck: string): DoomStorage {
       rows.clear()
       for (const [once, row] of next) rows.set(once, row)
     },
+    async drop() {
+      rows.clear()
+      await dropDeck(deck)
+    },
   }
 }
 
@@ -84,6 +90,9 @@ export function memoryStorage(): DoomStorage & { readonly saved: () => Saved | u
     async write({ fold, queue }) {
       const next = fold ?? saved?.fold
       saved = { ...(next === undefined ? {} : { fold: next }), queue: queue ?? saved?.queue ?? [] }
+    },
+    async drop() {
+      saved = undefined
     },
   }
 }
