@@ -5,6 +5,7 @@ import { blankLine } from "./text-blank-line"
 import { offsetOfPlace, placeOfOffset, type Place } from "./text-caret"
 import { graphemeAfter, graphemeBefore, wordAfter, wordBefore } from "./text-edit"
 import type { TextSession } from "./use-text-session"
+import { composing } from "@/lib/composing"
 
 function selectionOf(host: HTMLElement): { readonly anchor: number; readonly focus: number } | null {
   const selection = host.ownerDocument.defaultView?.getSelection()
@@ -49,7 +50,7 @@ export function TextHost(props: {
   const session = api.session!
   const host = useRef<HTMLDivElement>(null)
   const latest = useRef({ api, session, onLeave: props.onLeave })
-  const composing = useRef<{ readonly from: number; readonly to: number } | null>(null)
+  const marked = useRef<{ readonly from: number; readonly to: number } | null>(null)
   const [fresh, setFresh] = useState(0)
   useEffect(() => {
     latest.current = { api, session, onLeave: props.onLeave }
@@ -76,10 +77,10 @@ export function TextHost(props: {
     const doc = element.ownerDocument
     function listen() {
       const found = selectionOf(element!)
-      if (found !== null && !composing.current) latest.current.api.select(found.anchor, found.focus)
+      if (found !== null && !marked.current) latest.current.api.select(found.anchor, found.focus)
     }
     function before(event: InputEvent) {
-      if (composing.current !== null || event.inputType === "insertCompositionText") return
+      if (marked.current !== null || event.inputType === "insertCompositionText") return
       event.preventDefault()
       const { api: current, session: now } = latest.current
       const at = selectionOf(element!) ?? { anchor: now.anchor, focus: now.focus }
@@ -127,6 +128,7 @@ export function TextHost(props: {
   }, [fresh])
 
   function keys(event: React.KeyboardEvent) {
+    if (composing(event)) return
     const gesture = gestureFor(event.nativeEvent, "text") ?? gestureFor(event.nativeEvent, "editor")
     const { api: current } = latest.current
     const handled = () => event.preventDefault()
@@ -204,11 +206,11 @@ export function TextHost(props: {
         const found = host.current === null ? null : selectionOf(host.current)
         const now = latest.current.session
         const at = found ?? { anchor: now.anchor, focus: now.focus }
-        composing.current = { from: Math.min(at.anchor, at.focus), to: Math.max(at.anchor, at.focus) }
+        marked.current = { from: Math.min(at.anchor, at.focus), to: Math.max(at.anchor, at.focus) }
       }}
       onCompositionEnd={(event) => {
-        const range = composing.current
-        composing.current = null
+        const range = marked.current
+        marked.current = null
         if (range === null) return
         latest.current.api.replace(range.from, range.to, event.data)
         setFresh((value) => value + 1)

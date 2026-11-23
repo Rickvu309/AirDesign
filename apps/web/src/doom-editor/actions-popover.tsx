@@ -1,19 +1,12 @@
 import { ChartBar, ChartColumn, ChartLine, ChartNoAxesColumn, ChartPie, FileDown, Search } from "lucide-react"
 import { DynamicIcon, type IconName } from "lucide-react/dynamic"
-import {
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type ComponentType,
-  type KeyboardEvent,
-  type ReactNode,
-} from "react"
+import { useEffect, useId, useMemo, useRef, useState, type ComponentType, type KeyboardEvent } from "react"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { iconMatches, startingIcons } from "@/design/icon-search"
 import { cn } from "@/lib/class-names"
+import { composing } from "@/lib/composing"
 import * as doom from "@airdesign/doom"
+import { stepHighlight, type HighlightKey } from "./actions-highlight"
 
 export type ActionRun = {
   readonly chart: (kind: doom.Chart["kind"]) => void
@@ -21,117 +14,81 @@ export type ActionRun = {
   readonly exportPdf: () => void
 }
 
+type Action = {
+  readonly key: string
+  readonly label: string
+  readonly glyph: ComponentType<{ className?: string }>
+  readonly run: (run: ActionRun, finish: () => void) => void
+}
+
 type Group = {
   readonly id: string
   readonly title: string
-  readonly render: (query: string, run: ActionRun, finish: () => void) => ReactNode
+  readonly find: (words: string) => readonly Action[]
 }
 
-const charts: readonly { readonly kind: doom.Chart["kind"]; readonly icon: ComponentType<{ className?: string }> }[] = [
-  { kind: "column", icon: ChartColumn },
-  { kind: "bar", icon: ChartBar },
-  { kind: "line", icon: ChartLine },
-  { kind: "pie", icon: ChartPie },
-  { kind: "stacked", icon: ChartNoAxesColumn },
-]
-
-const rowClass =
-  "flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-left text-[length:var(--type-dense)] hover:bg-muted data-[active]:bg-muted"
-
-function IconGrid({
-  names,
-  run,
-  finish,
-}: {
-  readonly names: readonly string[]
-  readonly run: ActionRun
-  readonly finish: () => void
-}) {
-  return (
-    <div role="group" aria-label={doomEditorCopy.iconsGroup} className="grid grid-cols-8 gap-0.5 px-1">
-      {names.map((name) => (
-        <button
-          key={name}
-          type="button"
-          aria-label={name}
-          title={name}
-          data-action-row=""
-          className="flex size-8 items-center justify-center rounded-md hover:bg-muted data-[active]:bg-muted"
-          onClick={() => {
-            run.icon(name)
-            finish()
-          }}
-        >
-          <DynamicIcon name={name as IconName} size={18} aria-hidden="true" />
-        </button>
-      ))}
-    </div>
-  )
-}
+const charts: readonly { readonly kind: doom.Chart["kind"]; readonly glyph: ComponentType<{ className?: string }> }[] =
+  [
+    { kind: "column", glyph: ChartColumn },
+    { kind: "bar", glyph: ChartBar },
+    { kind: "line", glyph: ChartLine },
+    { kind: "pie", glyph: ChartPie },
+    { kind: "stacked", glyph: ChartNoAxesColumn },
+  ]
 
 const chartsGroup: Group = {
   id: "charts",
   title: doomEditorCopy.chartsGroup,
-  render(query, run, finish) {
-    const words = query.trim().toLowerCase()
-    const found = charts.filter(
-      ({ kind }) =>
-        words === "" ||
-        doomEditorCopy.chartKinds[kind].toLowerCase().includes(words) ||
-        doomEditorCopy.chartsGroup.toLowerCase().includes(words),
-    )
-    if (found.length === 0) return null
-    return (
-      <div>
-        {found.map(({ kind, icon: Icon }) => (
-          <button
-            key={kind}
-            type="button"
-            data-action-row=""
-            className={rowClass}
-            onClick={() => {
-              run.chart(kind)
-              finish()
-            }}
-          >
-            <Icon className="size-4" />
-            {doomEditorCopy.chartKinds[kind]}
-          </button>
-        ))}
-      </div>
-    )
-  },
+  find: (words) =>
+    charts
+      .filter(
+        ({ kind }) =>
+          words === "" ||
+          doomEditorCopy.chartKinds[kind].toLowerCase().includes(words) ||
+          doomEditorCopy.chartsGroup.toLowerCase().includes(words),
+      )
+      .map(({ kind, glyph }) => ({
+        key: kind,
+        label: doomEditorCopy.chartKinds[kind],
+        glyph,
+        run(run, finish) {
+          run.chart(kind)
+          finish()
+        },
+      })),
 }
 
 const deckGroup: Group = {
   id: "deck",
   title: doomEditorCopy.deckGroup,
-  render(query, run, finish) {
-    const words = query.trim().toLowerCase()
-    if (words !== "" && !`${doomEditorCopy.deckGroup} ${doomEditorCopy.exportPdf} print`.toLowerCase().includes(words))
-      return null
-    return (
-      <button
-        type="button"
-        data-action-row=""
-        className={rowClass}
-        onClick={() => {
-          finish()
-          run.exportPdf()
-        }}
-      >
-        <FileDown className="size-4" />
-        {doomEditorCopy.exportPdf}
-      </button>
-    )
-  },
+  find: (words) =>
+    words === "" || `${doomEditorCopy.deckGroup} ${doomEditorCopy.exportPdf} print`.toLowerCase().includes(words)
+      ? [
+          {
+            key: "export-pdf",
+            label: doomEditorCopy.exportPdf,
+            glyph: FileDown,
+            run(run, finish) {
+              finish()
+              run.exportPdf()
+            },
+          },
+        ]
+      : [],
 }
 
 const actionGroups: readonly Group[] = [chartsGroup, deckGroup]
+const iconColumns = 8
+const highlightKeys = new Set<string>(["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"])
+
+const highlightKey = (key: string): key is HighlightKey => highlightKeys.has(key)
+
+const optionClass = "cursor-default rounded-md aria-selected:bg-muted"
+const rowClass = cn(optionClass, "flex h-8 w-full items-center gap-2.5 px-2 text-left text-[length:var(--type-dense)]")
 
 export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: () => void }) {
   const id = useId()
-  const panel = useRef<HTMLDivElement>(null)
+  const field = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState("")
   const [all, setAll] = useState(false)
   const [active, setActive] = useState<number | null>(null)
@@ -141,47 +98,69 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
   const sections = all
     ? []
     : actionGroups
-        .map((group) => ({ group, shown: group.render(query, props.run, props.finish) }))
-        .filter((each) => each.shown !== null)
-  const nothing = sections.length === 0 && iconNames.length === 0
-  const rowsOf = () => Array.from(panel.current?.querySelectorAll<HTMLElement>("[data-action-row]") ?? [])
+        .map((group) => ({ group, actions: group.find(words.toLowerCase()) }))
+        .filter((each) => each.actions.length > 0)
+  const rows = sections.flatMap((each) => each.actions)
+  const layout = { rows: rows.length, icons: iconNames.length, columns: iconColumns }
+  const total = layout.rows + layout.icons
+  const highlighted = active !== null && active < total ? active : null
+  const optionId = (index: number) => `${id}-option-${index}`
+  const listId = `${id}-results`
+
   useEffect(() => {
-    const rows = rowsOf()
-    const input = panel.current?.querySelector("input")
-    rows.forEach((row, index) => {
-      row.id = `${id}-row-${index}`
-      if (index === active) row.setAttribute("data-active", "")
-      else row.removeAttribute("data-active")
-    })
-    const row = active === null ? undefined : rows[active]
-    if (row === undefined) input?.removeAttribute("aria-activedescendant")
-    else {
-      input?.setAttribute("aria-activedescendant", row.id)
-      row.scrollIntoView?.({ block: "nearest" })
-    }
+    if (highlighted === null) return
+    window.document.getElementById(optionId(highlighted))?.scrollIntoView?.({ block: "nearest" })
   })
+
+  const choose = (index: number) => {
+    const row = rows[index]
+    if (row !== undefined) return row.run(props.run, props.finish)
+    const name = iconNames[index - rows.length]
+    if (name === undefined) return
+    props.run.icon(name)
+    props.finish()
+  }
+
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    const last = rowsOf().length - 1
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    if (composing(event)) return
+    if (highlightKey(event.key)) {
+      const next = stepHighlight(layout, highlighted, event.key)
+      if (next === null) return
       event.preventDefault()
-      if (last < 0) return
-      const step = event.key === "ArrowDown" ? 1 : -1
-      setActive((now) => Math.min(last, Math.max(0, (now ?? (step === 1 ? -1 : 1)) + step)))
-    } else if (event.key === "Enter" && active !== null) {
+      setActive(next)
+    } else if (event.key === "Enter" && highlighted !== null) {
       event.preventDefault()
-      rowsOf()[active]?.click()
+      choose(highlighted)
     }
   }
+
+  const option = (index: number) => ({
+    id: optionId(index),
+    role: "option",
+    "aria-selected": index === highlighted,
+    onMouseMove: () => {
+      if (index !== highlighted) setActive(index)
+    },
+    onClick: () => choose(index),
+  })
+
+  const nothing = total === 0
   return (
-    <div ref={panel} className="flex flex-col gap-1 text-[length:var(--type-dense)]" data-actions-panel="">
+    <div className="flex flex-col gap-1 text-[length:var(--type-dense)]" data-actions-panel="">
       <label htmlFor={id} className="sr-only">
         {doomEditorCopy.actionsSearch}
       </label>
       <div data-focus-ring className="flex items-center gap-2 rounded-lg bg-muted px-2.5">
         <Search className="size-3.5 shrink-0 text-quiet" />
         <input
+          ref={field}
           id={id}
           type="search"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={!nothing}
+          aria-controls={listId}
+          {...(highlighted === null ? {} : { "aria-activedescendant": optionId(highlighted) })}
           autoFocus
           placeholder={doomEditorCopy.actionsSearch}
           value={query}
@@ -193,21 +172,60 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
           className="h-8 w-full min-w-0 bg-transparent text-[length:var(--type-dense)] outline-none placeholder:text-quiet"
         />
       </div>
-      {sections.map(({ group, shown }) => (
-        <div key={group.id} data-actions-group={group.id}>
-          <p className="px-2 pt-2 pb-1 text-[length:var(--type-dense)] text-quiet">{group.title}</p>
-          {shown}
+      <div
+        id={listId}
+        role="listbox"
+        aria-label={doomEditorCopy.actions}
+        className="flex flex-col gap-1"
+        onMouseDown={(event) => event.preventDefault()}
+      >
+        {sections.map(({ group, actions }) => (
+          <div key={group.id} role="group" aria-labelledby={`${id}-${group.id}`} data-actions-group={group.id}>
+            <p id={`${id}-${group.id}`} className="px-2 pt-2 pb-1 text-[length:var(--type-dense)] text-quiet">
+              {group.title}
+            </p>
+            {actions.map((action) => (
+              <div key={action.key} className={rowClass} {...option(rows.indexOf(action))}>
+                <action.glyph className="size-4" />
+                {action.label}
+              </div>
+            ))}
+          </div>
+        ))}
+        <div role="group" aria-labelledby={`${id}-icons`} data-actions-group="icons">
+          <p id={`${id}-icons`} className="px-2 pt-2 pb-1 text-quiet">
+            {doomEditorCopy.iconsGroup}
+          </p>
+          {iconNames.length === 0 ? null : (
+            <div className="grid grid-cols-8 gap-0.5 px-1">
+              {iconNames.map((name, index) => (
+                <div
+                  key={name}
+                  aria-label={name}
+                  title={name}
+                  className={cn(optionClass, "flex size-8 items-center justify-center")}
+                  {...option(rows.length + index)}
+                >
+                  <DynamicIcon name={name as IconName} size={18} aria-hidden="true" />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      ))}
-      <div data-actions-group="icons">
-        <p className="px-2 pt-2 pb-1 text-quiet">{doomEditorCopy.iconsGroup}</p>
-        {iconNames.length === 0 ? null : <IconGrid names={iconNames} run={props.run} finish={props.finish} />}
-        {all ? null : (
-          <button type="button" className={cn(rowClass, "text-quiet")} onClick={() => setAll(true)}>
-            {doomEditorCopy.allIcons}
-          </button>
-        )}
       </div>
+      {all ? null : (
+        <button
+          type="button"
+          className={cn(rowClass, "-mt-1 text-quiet hover:bg-muted")}
+          onClick={() => {
+            setAll(true)
+            setActive(null)
+            field.current?.focus()
+          }}
+        >
+          {doomEditorCopy.allIcons}
+        </button>
+      )}
       {nothing ? <p className="px-2 py-1 text-quiet">{doomEditorCopy.noActions}</p> : null}
     </div>
   )

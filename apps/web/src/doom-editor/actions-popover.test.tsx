@@ -4,6 +4,7 @@ import { afterAll, beforeAll, expect, it, vi } from "vitest"
 let window: Window & typeof globalThis
 let createRoot: typeof import("react-dom/client").createRoot
 let ActionsPanel: typeof import("./actions-popover").ActionsPanel
+let doomEditorCopy: typeof import("@/copy/doom-editor-copy").doomEditorCopy
 
 beforeAll(async () => {
   const module = "jsdom"
@@ -16,11 +17,13 @@ beforeAll(async () => {
     HTMLInputElement: window.HTMLInputElement,
     Element: window.Element,
     Node: window.Node,
+    MouseEvent: window.MouseEvent,
     IS_REACT_ACT_ENVIRONMENT: true,
   }))
     vi.stubGlobal(name, value)
   createRoot = (await import("react-dom/client")).createRoot
   ActionsPanel = (await import("./actions-popover")).ActionsPanel
+  doomEditorCopy = (await import("@/copy/doom-editor-copy")).doomEditorCopy
 })
 
 afterAll(() => {
@@ -43,11 +46,35 @@ async function openPanel() {
       setter?.call(input, text)
       input.dispatchEvent(new window.Event("input", { bubbles: true }))
     })
-  const press = (key: string) =>
+  const press = (key: string, init: KeyboardEventInit = {}) =>
     act(async () => {
-      input.dispatchEvent(new window.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }))
+      input.dispatchEvent(new window.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...init }))
     })
-  return { host, root, run, finish, type, press, input }
+  const highlighted = () => {
+    const named = input.getAttribute("aria-activedescendant")
+    return named === null ? null : window.document.getElementById(named)
+  }
+  const option = (name: string) => {
+    const found = [...host.querySelectorAll<HTMLElement>("[role='option']")].find(
+      (each) => each.getAttribute("aria-label") === name || each.textContent === name,
+    )
+    if (found === undefined) throw new Error(name)
+    return found
+  }
+  const hover = (target: HTMLElement) =>
+    act(async () => {
+      target.dispatchEvent(new window.MouseEvent("mousemove", { bubbles: true }))
+    })
+  const click = (target: HTMLElement) =>
+    act(async () => {
+      target.dispatchEvent(new window.MouseEvent("click", { bubbles: true }))
+    })
+  const showAllIcons = () => {
+    const button = [...host.querySelectorAll("button")].find((each) => each.textContent === doomEditorCopy.allIcons)
+    if (button === undefined) throw new Error("all icons")
+    return click(button)
+  }
+  return { host, root, run, finish, type, press, input, highlighted, option, hover, click, showAllIcons }
 }
 
 it("runs the top match when Enter is pressed in the search", async () => {
@@ -113,7 +140,105 @@ it("finds every chart by the Charts group title", async () => {
   const panel = await openPanel()
   try {
     await panel.type("charts")
-    expect(panel.host.querySelectorAll("[data-actions-group='charts'] button").length).toBe(5)
+    expect(panel.host.querySelectorAll("[data-actions-group='charts'] [role='option']").length).toBe(5)
+  } finally {
+    await act(async () => panel.root.unmount())
+  }
+})
+
+it.each([
+  ["an IME composing in Chrome and Firefox", { isComposing: true }],
+  ["an IME composing in Safari", { keyCode: 229 }],
+])("leaves Enter to %s instead of running the highlighted action", async (_, init) => {
+  const panel = await openPanel()
+  try {
+    await panel.type("pie")
+    await panel.press("Enter", init)
+    expect(panel.run.chart).not.toHaveBeenCalled()
+    expect(panel.finish).not.toHaveBeenCalled()
+  } finally {
+    await act(async () => panel.root.unmount())
+  }
+})
+
+it("names the search a combobox whose active descendant is the selected option of its listbox", async () => {
+  const panel = await openPanel()
+  try {
+    await panel.type("chart")
+    await panel.press("ArrowDown")
+    const listbox = window.document.getElementById(panel.input.getAttribute("aria-controls") ?? "")
+    expect(panel.input.getAttribute("role")).toBe("combobox")
+    expect(panel.input.getAttribute("aria-expanded")).toBe("true")
+    expect(listbox?.getAttribute("role")).toBe("listbox")
+    expect(panel.highlighted()?.getAttribute("role")).toBe("option")
+    expect(panel.highlighted()?.textContent).toBe(doomEditorCopy.chartKinds.bar)
+    expect(listbox?.querySelectorAll("[aria-selected='true']")).toHaveLength(1)
+    expect(listbox?.querySelectorAll("button")).toHaveLength(0)
+  } finally {
+    await act(async () => panel.root.unmount())
+  }
+})
+
+it("moves the one highlight to the row under the pointer", async () => {
+  const panel = await openPanel()
+  try {
+    await panel.type("chart")
+    await panel.hover(panel.option(doomEditorCopy.chartKinds.line))
+    expect(panel.highlighted()?.textContent).toBe(doomEditorCopy.chartKinds.line)
+    expect(panel.host.querySelectorAll("[aria-selected='true']")).toHaveLength(1)
+    await panel.press("ArrowDown")
+    await panel.press("Enter")
+    expect(panel.run.chart).toHaveBeenCalledWith("pie")
+  } finally {
+    await act(async () => panel.root.unmount())
+  }
+})
+
+it("runs an option on click", async () => {
+  const panel = await openPanel()
+  try {
+    await panel.click(panel.option(doomEditorCopy.exportPdf))
+    expect(panel.run.exportPdf).toHaveBeenCalledTimes(1)
+  } finally {
+    await act(async () => panel.root.unmount())
+  }
+})
+
+it("walks the icon grid by row with Up and Down and within the row with Left and Right", async () => {
+  const panel = await openPanel()
+  try {
+    await panel.showAllIcons()
+    const icons = [...panel.host.querySelectorAll("[data-actions-group='icons'] [role='option']")].map((each) =>
+      each.getAttribute("aria-label"),
+    )
+    await panel.press("ArrowDown")
+    expect(panel.highlighted()?.getAttribute("aria-label")).toBe(icons[0])
+    await panel.press("ArrowLeft")
+    expect(panel.highlighted()?.getAttribute("aria-label")).toBe(icons[0])
+    await panel.press("ArrowDown")
+    expect(panel.highlighted()?.getAttribute("aria-label")).toBe(icons[8])
+    await panel.press("ArrowRight")
+    await panel.press("ArrowRight")
+    await panel.press("ArrowLeft")
+    expect(panel.highlighted()?.getAttribute("aria-label")).toBe(icons[9])
+    await panel.press("ArrowUp")
+    await panel.press("Enter")
+    expect(panel.run.icon).toHaveBeenCalledWith(icons[1])
+  } finally {
+    await act(async () => panel.root.unmount())
+  }
+})
+
+it("drops the highlight when All icons swaps the results, so Enter runs nothing the person did not pick", async () => {
+  const panel = await openPanel()
+  try {
+    await panel.type("pie")
+    await panel.showAllIcons()
+    expect(panel.highlighted()).toBeNull()
+    await panel.press("Enter")
+    expect(panel.run.chart).not.toHaveBeenCalled()
+    expect(panel.run.icon).not.toHaveBeenCalled()
+    expect(window.document.activeElement).toBe(panel.input)
   } finally {
     await act(async () => panel.root.unmount())
   }

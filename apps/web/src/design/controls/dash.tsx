@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input"
 import { borderCopy } from "@/copy/border-copy"
 import type { ControlProps } from "@/design/panel"
 import { ChoiceControl } from "./choice"
+import { composing } from "@/lib/composing"
 
 type Pattern = Exclude<FieldValue<"border", "dash">, string>
 
@@ -56,7 +57,7 @@ function Dashes({
           onChange={(event) => setDraft(event.target.value)}
           onBlur={commit}
           onKeyDown={(event) => {
-            if (event.nativeEvent.isComposing) return
+            if (composing(event)) return
             if (event.key === "Enter") {
               event.preventDefault()
               commit()

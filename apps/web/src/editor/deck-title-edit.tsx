@@ -10,6 +10,7 @@ import { deckActionsOf, productCopy } from "@/copy/product-copy"
 import { nameReading } from "@/editor/deck-name-edit"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
+import { composing } from "@/lib/composing"
 
 export function DeckTitleEdit({
   title,
@@ -132,6 +133,7 @@ export function DeckTitleEdit({
         }}
         onBlur={(event) => save(event.currentTarget.value, true)}
         onKeyDown={(event) => {
+          if (composing(event)) return
           if (event.key === "Enter") {
             event.preventDefault()
             save(event.currentTarget.value, false)

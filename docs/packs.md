@@ -179,7 +179,7 @@ flowchart TD
 | `apps/web/src/editing` | shared | node-props.ts, painted-picture.ts, picture-file.ts, slide-layout.ts, slide-pictures.ts | apps/web/src/components, apps/web/src/copy | none |
 | `apps/web/src/editor` | feature | canvas-zoom.ts, design-panel.tsx, editor-chrome.tsx, editor-key-ownership.ts, editor-toast.tsx, element-title-actions.tsx, gallery-deck.ts, kept-panel.ts, live-design-panel.tsx, notes-bar.tsx, panel-switch.tsx, picture-picker.ts, picture-preview.tsx, remove-auto-layout.tsx, resizable-panel.tsx, save-status.tsx, selection-colors-section.tsx, shape-tool.tsx, slide-frame.ts, slide-sidebar.tsx, slide-thumb.tsx, template-style-card.tsx, use-canvas-room.ts, zoom-menu.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/design, apps/web/src/editing, apps/web/src/lib | none |
 | `apps/web/src/export` | feature | export-control.tsx, export-flow.ts, export-routes.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/editing | none |
-| `apps/web/src/lib` | platform | class-names.ts, fields-of.ts | none | none |
+| `apps/web/src/lib` | platform | class-names.ts, composing.ts, fields-of.ts | none | none |
 | `apps/web/src/present` | feature | present-button.tsx, present-keys.ts, present-layer.tsx, present-screens.tsx, use-present.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/editor, apps/web/src/lib | none |
 | `apps/web/src/settings` | feature | account-page.tsx, agents-page.tsx, settings-screens.tsx, usage-page.tsx | apps/web/src/account, apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/credits, apps/web/src/decks, apps/web/src/lib | none |
 | `packages/catalog` | model | src/index.ts | none | none |

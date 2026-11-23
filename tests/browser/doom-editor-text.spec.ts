@@ -69,6 +69,31 @@ test("the Text tool places a text layer, typing and Ctrl+B write it, and Escape 
   await expect(page.locator("[data-slide-box] [data-line]").filter({ hasText: "Hello world" })).toHaveCount(1)
 })
 
+test("Escape while an IME composes, as it cancels a Japanese conversion, keeps the text box open, and the committed Vietnamese word is kept", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  await page.keyboard.press("t")
+  await clickSlide(page, 300, 700)
+  await expect(editor(page)).toBeFocused()
+  const ime = await context.newCDPSession(page)
+  await ime.send("Input.imeSetComposition", { text: "vieejt", selectionStart: 6, selectionEnd: 6 })
+  await ime.send("Input.dispatchKeyEvent", {
+    type: "keyDown",
+    key: "Escape",
+    code: "Escape",
+    windowsVirtualKeyCode: 27,
+  })
+  await ime.send("Input.insertText", { text: "việt" })
+  await expect(editor(page)).toContainText("việt")
+  await page.keyboard.press("Escape")
+  await expect(editor(page)).toHaveCount(0)
+  const [id] = await selectedIds(page)
+  await expect.poll(async () => (await textOf(stack, opened, id ?? ""))?.chars).toBe("việt")
+})
+
 test("a drag with the Text tool draws a fixed box, and leaving it empty leaves no layer behind", async ({
   page,
   context,

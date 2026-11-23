@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { createContext, useContext, useId, useState, useSyncExternalStore } from "react"
 import { linkCopy } from "@/copy/link-copy"
 import type { ControlProps } from "@/design/panel"
+import { composing } from "@/lib/composing"
 
 export const LinkFormatting = createContext<TextFormatting | undefined>(undefined)
 const noop = () => () => undefined
@@ -95,7 +96,7 @@ export function LinkControl({ control, onChange }: ControlProps) {
             if (draft !== null) commit(event.target.value)
           }}
           onKeyDown={(event) => {
-            if (event.nativeEvent.isComposing) return
+            if (composing(event)) return
             if (event.key === "Enter") {
               event.preventDefault()
               commit(event.currentTarget.value)

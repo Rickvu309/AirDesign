@@ -1,4 +1,5 @@
 layer: platform
 public:
   - class-names.ts
+  - composing.ts
   - fields-of.ts

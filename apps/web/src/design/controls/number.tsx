@@ -12,6 +12,7 @@ import { cn } from "@/lib/class-names"
 import { lineHeightPointsFloor, spaceCeiling } from "@airdesign/document"
 import { fixedLine, typedFixed, typedNumber } from "@/design/typed-number"
 import { roundedShown, steppedFrom, untouched, type Shown } from "@/design/shown-number"
+import { composing } from "@/lib/composing"
 
 export function chosenStep(shown: string, steps: readonly number[]): number | null {
   const value = Number(shown.trim().replace(",", "."))
@@ -107,6 +108,7 @@ export function NumberField({
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (composing(event)) return
     if (event.key === "Enter") commit(event.currentTarget.value)
     if (event.key === "Escape") setDraft(null)
     const moved = stepOf(event, step)
