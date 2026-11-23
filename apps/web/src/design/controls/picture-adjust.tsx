@@ -1,4 +1,5 @@
 import { agentNumberOf, readAgent } from "@airdesign/catalog"
+import { roundedShown, untouched } from "@/design/shown-number"
 import { alphaOf, fadedColor, type Color } from "@airdesign/document"
 import { useState, type CSSProperties, type KeyboardEvent } from "react"
 import { Button } from "@/components/ui/button"
@@ -32,9 +33,7 @@ function overlayOf(value: unknown): Overlay {
   return { none: true }
 }
 
-function percentOf(stored: number): number {
-  return Math.round(stored / 1_000)
-}
+const percentOf = (stored: number): number => stored / 1_000
 
 function cssOf(color: Color, templateColors: ControlProps["palette"]["templateColors"]): string {
   const hex = shownHex(color, templateColors)
@@ -47,10 +46,12 @@ function laid(color: Color, current: Overlay): Color {
   return alphaOf(color) >= 100_000 ? fadedColor(color, half) : color
 }
 
-function PercentRow({ label, shown, onCommit }: { label: string; shown: number; onCommit: (percent: number) => void }) {
+function PercentRow({ label, exact, onCommit }: { label: string; exact: number; onCommit: (percent: number) => void }) {
   const [draft, setDraft] = useState<string | null>(null)
+  const shown = roundedShown(exact, 0)
   function commit(text: string) {
     setDraft(null)
+    if (untouched(text, shown)) return
     const typed = Number(text.trim().replace(",", "."))
     if (text.trim() === "" || !Number.isFinite(typed)) return
     onCommit(Math.min(100, Math.max(0, typed)))
@@ -67,7 +68,7 @@ function PercentRow({ label, shown, onCommit }: { label: string; shown: number; 
         min={0}
         max={100}
         step={1}
-        value={shown}
+        value={Number(shown.text)}
         onValueChange={(value) => onCommit(Math.round(value))}
         className="min-w-0 flex-1"
       />
@@ -75,7 +76,7 @@ function PercentRow({ label, shown, onCommit }: { label: string; shown: number; 
         className="w-12 bg-transparent text-right text-[length:var(--type-caption)] text-foreground tabular-nums outline-none"
         inputMode="decimal"
         aria-label={label}
-        value={draft ?? String(shown)}
+        value={draft ?? shown.text}
         onChange={(event) => setDraft(event.target.value)}
         onBlur={(event) => {
           if (draft !== null) commit(event.currentTarget.value)
@@ -89,7 +90,7 @@ function PercentRow({ label, shown, onCommit }: { label: string; shown: number; 
 export function OverlayControl({ control, palette, onChange }: ControlProps) {
   const current = overlayOf(control.mixed ? undefined : control.value)
   const color = "solid" in current ? current.solid : null
-  const shown = color === null ? 0 : percentOf(alphaOf(color))
+  const exact = color === null ? 0 : percentOf(alphaOf(color))
   function cover(next: Color) {
     onChange({ solid: next })
   }
@@ -121,7 +122,7 @@ export function OverlayControl({ control, palette, onChange }: ControlProps) {
         />
         <PercentRow
           label={pictureCopy.overlayOpacity}
-          shown={shown}
+          exact={exact}
           onCommit={(percent) => cover(fadedColor(color ?? black, Math.round(percent * 1_000)))}
         />
         <Button type="button" variant="ghost" className="justify-start" onClick={() => onChange({ none: true })}>
@@ -134,7 +135,7 @@ export function OverlayControl({ control, palette, onChange }: ControlProps) {
 
 export function BlurControl({ control, onChange }: ControlProps) {
   const stored = !control.mixed && typeof control.value === "number" ? control.value : 0
-  const shown = control.desc.kind === "number" ? agentNumberOf(control.desc.unit, stored) : percentOf(stored)
+  const exact = control.desc.kind === "number" ? agentNumberOf(control.desc.unit, stored) : percentOf(stored)
   function commit(percent: number) {
     const read = readAgent(control.desc, percent)
     if (read.ok && (read.value !== control.value || control.inherited)) onChange(read.value)
@@ -154,7 +155,7 @@ export function BlurControl({ control, onChange }: ControlProps) {
         data-session
         data-keeps-selection
       >
-        <PercentRow label={control.label} shown={shown} onCommit={commit} />
+        <PercentRow label={control.label} exact={exact} onCommit={commit} />
       </PopoverContent>
     </Popover>
   )

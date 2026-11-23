@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { chosenStep, numberShown, scrubbed, shownNumber, steppedFrom, untouched } from "@/design/controls/number"
+import { chosenStep, numberShown, scrubbed } from "@/design/controls/number"
+import { steppedFrom, untouched } from "@/design/shown-number"
+import { typedNumber } from "@/design/typed-number"
 import type { PanelControl } from "@/design/panel"
 import { spacingUnits } from "@/design/spacing-units"
 
@@ -47,7 +49,7 @@ describe("letter spacing", () => {
       mixed: false,
       ...spacingUnits("text", "letterSpacing", 8800),
     } as unknown as PanelControl
-    expect(shownNumber(control)).toBe("-2")
+    expect(numberShown(control).text).toBe("-2")
   })
 
   it("writes nothing on Enter in an untouched rounded field, and steps and scrubs from the stored value", () => {
@@ -57,10 +59,11 @@ describe("letter spacing", () => {
       mixed: false,
       ...spacingUnits("text", "letterSpacing", 8800),
     } as unknown as PanelControl
-    const { text, exact } = numberShown(control)
-    expect(untouched(text, text)).toBe(true)
-    expect(exact).toBeCloseTo(-1.7045, 4)
-    expect(steppedFrom(text, text, exact, {}) + 1).toBeCloseTo(-0.7045, 4)
-    expect(steppedFrom("-3", text, exact, {})).toBe(-3)
+    const shown = numberShown(control)
+    const read = (text: string) => typedNumber(text, {})
+    expect(untouched(shown.text, shown)).toBe(true)
+    expect(shown.exact).toBeCloseTo(-1.7045, 4)
+    expect(steppedFrom(shown.text, shown, read) + 1).toBeCloseTo(-0.7045, 4)
+    expect(steppedFrom("-3", shown, read)).toBe(-3)
   })
 })

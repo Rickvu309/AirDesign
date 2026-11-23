@@ -10,7 +10,8 @@ import { NoneFill, Opacity } from "@/design/preset-icons"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 import { lineHeightPointsFloor, spaceCeiling } from "@airdesign/document"
-import { fixedLine, typedFixed, typedNumber, type TypedUnit } from "@/design/typed-number"
+import { fixedLine, typedFixed, typedNumber } from "@/design/typed-number"
+import { roundedShown, steppedFrom, untouched, type Shown } from "@/design/shown-number"
 
 export function chosenStep(shown: string, steps: readonly number[]): number | null {
   const value = Number(shown.trim().replace(",", "."))
@@ -18,31 +19,11 @@ export function chosenStep(shown: string, steps: readonly number[]): number | nu
   return steps.find((step) => step === value) ?? null
 }
 
-export type NumberShown = { readonly text: string; readonly exact: number | null }
-
-export function numberShown(control: ControlProps["control"], scale?: number): NumberShown {
-  if (control.mixed || control.desc.kind !== "number" || typeof control.value !== "number")
-    return { text: "", exact: null }
-  if (scale !== undefined) {
-    const exact = control.value / scale
-    return { text: String(Math.round(exact * 100) / 100), exact }
-  }
-  if (control.numberScale !== undefined) {
-    const exact = control.value / 100 / control.numberScale
-    return { text: String(Math.round(exact)), exact }
-  }
-  const exact = agentNumberOf(control.desc.unit, control.value)
-  return { text: String(Math.round(exact * 10000) / 10000), exact }
-}
-
-export const shownNumber = (control: ControlProps["control"], scale?: number): string =>
-  numberShown(control, scale).text
-
-export const untouched = (text: string, shown: string): boolean => text.trim() === shown
-
-export function steppedFrom(text: string, shown: string, exact: number | null, typed: TypedUnit): number {
-  if (untouched(text, shown) && exact !== null) return exact
-  return typedNumber(text, typed) ?? 0
+export function numberShown(control: ControlProps["control"], scale?: number): Shown {
+  if (control.mixed || control.desc.kind !== "number" || typeof control.value !== "number") return roundedShown(null, 0)
+  if (scale !== undefined) return roundedShown(control.value / scale, 2)
+  if (control.numberScale !== undefined) return roundedShown(control.value / 100 / control.numberScale, 0)
+  return roundedShown(agentNumberOf(control.desc.unit, control.value), 4)
 }
 
 function stepOf(event: KeyboardEvent<HTMLInputElement>, unit: number): number {
@@ -92,9 +73,8 @@ export function NumberField({
   const named = Icon !== undefined || look.name.show === "letter" || look.name.show === "inside"
   const [draft, setDraft] = useState<string | null>(null)
   const fixed = fixedLine(control.value)
-  const held = numberShown(control, scale)
-  const shown = fixed === null ? held.text : String(fixed.points / 100)
-  const exact = fixed === null ? held.exact : fixed.points / 100
+  const held = fixed === null ? numberShown(control, scale) : roundedShown(fixed.points / 100, 2)
+  const shown = held.text
   const typedUnit = control.typed ?? {}
   const auto = fixed === null && typedUnit.auto !== undefined && shown !== "" && Number(shown) === typedUnit.auto
   const field = useRef<HTMLInputElement>(null)
@@ -114,7 +94,7 @@ export function NumberField({
 
   function commit(text: string) {
     setDraft(null)
-    if (untouched(text, shown)) return
+    if (untouched(text, held)) return
     const points = typedFixed(text, typedUnit, fixed !== null)
     if (points !== null) {
       commitFixed(points)
@@ -132,7 +112,7 @@ export function NumberField({
     const moved = stepOf(event, step)
     if (moved === 0) return
     event.preventDefault()
-    commit(String(steppedFrom(event.currentTarget.value, shown, exact, typedUnit) + moved))
+    commit(String(steppedFrom(event.currentTarget.value, held, (text) => typedNumber(text, typedUnit)) + moved))
   }
 
   function startScrub(event: PointerEvent<HTMLSpanElement>) {
@@ -141,7 +121,7 @@ export function NumberField({
     field.current?.blur()
     field.current?.focus()
     event.currentTarget.setPointerCapture(event.pointerId)
-    scrub.current = { value: exact ?? Number(shown), x: event.clientX }
+    scrub.current = { value: held.exact ?? Number(shown), x: event.clientX }
   }
 
   function moveScrub(event: PointerEvent<HTMLSpanElement>) {

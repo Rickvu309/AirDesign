@@ -1,6 +1,7 @@
 import { type ReactNode, useId } from "react"
 import { DesignSection } from "@/editor/design-panel"
 import { cn } from "@/lib/class-names"
+import { roundedShown, steppedFrom, untouched } from "@/design/shown-number"
 
 export function PanelSection(props: { readonly title: string; readonly name: string; readonly children: ReactNode }) {
   return (
@@ -22,7 +23,8 @@ export function NumberField(props: {
   readonly onCommit: (value: number) => void
 }) {
   const id = useId()
-  const shown = props.value === undefined ? "" : String(Math.round(props.value * 100) / 100)
+  const shown = roundedShown(props.value, 2)
+  const read = (text: string) => (text.trim() === "" || !Number.isFinite(Number(text)) ? null : Number(text))
   return (
     <form
       data-focus-ring
@@ -39,22 +41,27 @@ export function NumberField(props: {
         {props.label}
       </label>
       <input
-        key={`${shown}|${String(props.mixed)}`}
+        key={`${shown.text}|${String(props.mixed)}`}
         id={id}
         type="number"
         inputMode="decimal"
-        defaultValue={props.mixed === true ? "" : shown}
+        defaultValue={props.mixed === true ? "" : shown.text}
         placeholder={props.mixed === true ? "—" : undefined}
         {...(props.min === undefined ? {} : { min: props.min })}
         {...(props.max === undefined ? {} : { max: props.max })}
         step={props.step ?? 1}
         className="min-w-0 flex-1 bg-transparent text-[length:var(--type-caption)] outline-none [appearance:textfield]"
+        onKeyDown={(event) => {
+          if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return
+          event.preventDefault()
+          const by = (event.key === "ArrowUp" ? 1 : -1) * (event.shiftKey ? 10 : 1) * (props.step ?? 1)
+          event.currentTarget.value = String(steppedFrom(event.currentTarget.value, shown, read) + by)
+        }}
         onBlur={(event) => {
-          const text = event.currentTarget.value.trim()
-          if (text === "") return
-          const next = Number(text)
-          if (Number.isFinite(next) && String(Math.round(next * 100) / 100) !== shown) props.onCommit(next)
-          else event.currentTarget.value = props.mixed === true ? "" : shown
+          const text = event.currentTarget.value
+          const next = read(text)
+          if (!untouched(text, shown) && next !== null) props.onCommit(next)
+          else event.currentTarget.value = props.mixed === true ? "" : shown.text
         }}
       />
       {props.suffix === undefined ? null : (
