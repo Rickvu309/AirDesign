@@ -4,8 +4,10 @@ export type Reader<T> = (raw: unknown) => T
 
 class Reject {
   readonly kind: "shape" | "limit"
-  constructor(kind: "shape" | "limit") {
+  field: string | undefined
+  constructor(kind: "shape" | "limit", field?: string) {
     this.kind = kind
+    this.field = field
   }
 }
 
@@ -16,6 +18,18 @@ export const reject = (kind: "shape" | "limit" = "shape"): never => {
 export function rejected(thrown: unknown): "shape" | "limit" {
   if (thrown instanceof Reject) return thrown.kind
   throw thrown
+}
+
+export const rejectedField = (thrown: unknown): string | undefined =>
+  thrown instanceof Reject ? thrown.field : undefined
+
+function naming<T>(field: string, read: () => T): T {
+  try {
+    return read()
+  } catch (thrown) {
+    if (thrown instanceof Reject && thrown.field === undefined) thrown.field = field
+    throw thrown
+  }
 }
 
 const plain = (raw: unknown): Record<string, unknown> =>
@@ -96,14 +110,14 @@ export function object<R extends Shape, O extends Shape = Record<never, never>>(
   const allowed = new Set([...Object.keys(required), ...Object.keys(optional ?? {})])
   return (raw) => {
     const found = plain(raw)
-    for (const key of Object.keys(found)) if (!allowed.has(key)) reject()
+    for (const key of Object.keys(found)) if (!allowed.has(key)) throw new Reject("shape", key)
     const read: Record<string, unknown> = {}
     for (const [key, reader] of Object.entries(required)) {
-      if (!Object.hasOwn(found, key)) reject()
-      read[key] = reader(found[key])
+      if (!Object.hasOwn(found, key)) throw new Reject("shape", key)
+      read[key] = naming(key, () => reader(found[key]))
     }
     for (const [key, reader] of Object.entries(optional ?? {}))
-      if (Object.hasOwn(found, key)) read[key] = reader(found[key])
+      if (Object.hasOwn(found, key)) read[key] = naming(key, () => reader(found[key]))
     return read as Required<R> & Optional<O>
   }
 }

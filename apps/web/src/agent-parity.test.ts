@@ -20,10 +20,8 @@ const slideOps = new Set(["add", "move", "delete"])
 const owedToAgent = [
   "panel:shadow.opacity",
   "panel:link.target",
-  "panel:geometry.shape",
   "gesture:frame",
   "gesture:lock",
-  "gesture:tool-ellipse",
   "gesture:underline",
   "gesture:strike",
 ]

@@ -21,6 +21,7 @@ const wordsOnly = ["size", "font", "lineHeight", "letterSpacing", "case", "under
 const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentLook)[]>> = {
   slide: [
     ...wordsOnly,
+    "shape",
     "dash",
     "fit",
     "rotation",
@@ -45,7 +46,7 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "chart",
     "box",
   ],
-  frame: ["color", "text", "textStyle", "icon", "arrow", "from", "to", "route", "notes", ...wordsOnly],
+  frame: ["color", "text", "textStyle", "icon", "arrow", "from", "to", "route", "notes", "shape", ...wordsOnly],
   shape: ["layout", "gap", "padding", "chart", "notes"],
 }
 const roleTarget = /^([a-z0-9]{1,16}:[0-9]{1,12})\.(title|subtitle|body)$/
@@ -119,6 +120,9 @@ export function compileSet(draft: Draft, change: SetChange): void {
     if (change[field] !== undefined) stop("shape", node.id, field)
   if (change.fit !== undefined && !(get(node, "fills") ?? []).some((paint) => paint.kind === "image"))
     stop("shape", node.id, "fit")
+  const outline = get(node, "geometry")?.kind
+  if (change.shape !== undefined && (outline === "line" || outline === "icon" || outline === "path"))
+    stop("shape", node.id, "shape")
   const now = {
     fills: get(node, "fills"),
     stroke: get(node, "stroke"),

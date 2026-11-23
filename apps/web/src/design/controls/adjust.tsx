@@ -4,7 +4,7 @@ import { geometryCopy } from "@/copy/geometry-copy"
 import { NumberField } from "@/design/controls/number"
 import type { ControlProps } from "@/design/panel"
 
-const adjustStep = 1_000
+const percent = 1_000
 
 function presetOf(parent: unknown): string | null {
   if (typeof parent !== "object" || parent === null || !("preset" in parent)) return null
@@ -14,7 +14,9 @@ function presetOf(parent: unknown): string | null {
 export function AdjustControl({ control, palette, onChange }: ControlProps) {
   const preset = presetOf(control.parent)
   const defaults = preset === null ? {} : adjustDefaults(preset)
-  const names = Object.keys(defaults)
+  const names = Object.keys(defaults).filter(
+    (name) => preset !== null && geometryCopy.adjust(preset, name) !== undefined,
+  )
   const held =
     typeof control.value === "object" && control.value !== null
       ? (control.value as Readonly<Record<string, number>>)
@@ -29,15 +31,15 @@ export function AdjustControl({ control, palette, onChange }: ControlProps) {
           control={resolveControl({
             ...control,
             field: `${control.field}.${name}`,
-            label: geometryCopy.adjust(name),
+            label: geometryCopy.adjust(preset ?? "", name) ?? name,
             desc: item,
             value: held[name] ?? defaults[name],
           })}
           palette={palette}
           onChange={(next) => onChange({ ...held, [name]: next })}
-          unit=""
+          unit="%"
           kind="count"
-          step={adjustStep}
+          scale={percent}
         />
       ))}
     </div>

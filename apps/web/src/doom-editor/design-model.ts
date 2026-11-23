@@ -1,13 +1,16 @@
+import type { Desc } from "@airdesign/document"
 import * as doom from "@airdesign/doom"
 import type { PanelModel, PanelSection } from "@/design/panel"
 import type { PanelKind } from "@/design/panel-order"
 import { traitControls } from "@/design/trait-controls"
-import { oldControl } from "./design-controls"
+import { choiceDesc, doomControl, oldControl } from "./design-controls"
 import { cornersSection, opacitySection, shadowSection } from "./design-model-appearance"
 import { borderSections } from "./design-model-border"
 import { fillSections } from "./design-model-fills"
 import { textSections } from "./design-model-text"
 import { isGroup } from "./group-scale"
+import { geometryCopy } from "@/copy/geometry-copy"
+import { shownShape } from "./design-shape-values"
 import { propOf } from "@/editing/node-props"
 
 export type ModelInput = {
@@ -48,13 +51,30 @@ function linkSection(input: ModelInput): PanelSection[] {
   return [{ trait: "link", label: traitControls.link.section, open: true, strips: [[control]] }]
 }
 
+const adjustDesc: Desc = {
+  kind: "named",
+  item: { kind: "number", unit: "count", min: -2_147_483_647, max: 2_147_483_647 },
+  max: 8,
+}
+
 function geometrySection(view: doom.Doom, id: doom.NodeId): PanelSection[] {
-  const geometry = propOf(view.nodes.get(id), "geometry")
-  const named =
-    geometry === undefined || geometry.kind === "rect" ? "rect" : geometry.kind === "ellipse" ? "ellipse" : null
-  if (named === null) return []
-  const shape = oldControl("geometry", "shape", { value: { preset: named, adjust: {} } })
-  return [{ trait: "geometry", label: traitControls.geometry.section, open: false, strips: [[shape]] }]
+  const node = view.nodes.get(id)
+  if (node?.type !== "shape") return []
+  const shown = shownShape(propOf(node, "geometry"))
+  if (shown === null) return []
+  const preset = doomControl({ trait: "geometry", field: "preset" }, geometryCopy.shape, choiceDesc(doom.shapeNames), {
+    value: shown.preset,
+  })
+  const named = Object.keys(shown.adjust).some((name) => geometryCopy.adjust(shown.preset, name) !== undefined)
+  const adjust = doomControl(
+    { trait: "geometry", field: "adjust" },
+    geometryCopy.shape,
+    adjustDesc,
+    { value: shown.adjust },
+    { parent: { preset: shown.preset } },
+  )
+  const strips = named ? [[preset], [adjust]] : [[preset]]
+  return [{ trait: "geometry", label: geometryCopy.section, open: true, strips }]
 }
 
 export function nodeModel(input: ModelInput): PanelModel {

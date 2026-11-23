@@ -1,4 +1,5 @@
 import type { AgentChart, AgentColor, AgentFill, AgentLook } from "./agent-change.js"
+import { shapeGeometry } from "./preset-geometry.js"
 import type { Chart } from "./chart.js"
 import type { Values } from "./agent-draft.js"
 import type { Align9, Layout } from "./layout.js"
@@ -69,6 +70,7 @@ export function surfaceOf(look: AgentLook, now: Now = {}, align: StrokeStyle["al
     ...(weight === undefined
       ? {}
       : { stroke: { ...(now.stroke ?? { align, dash: "solid" as const }), weight, ...dash } }),
+    ...(look.shape === undefined ? {} : { geometry: shapeGeometry(look.shape) }),
     ...(look.radius === undefined ? {} : { radius: look.radius }),
     ...(look.effect === undefined ? {} : { effects: look.effect === "none" ? [] : look.effect }),
     ...(look.opacity === undefined ? {} : { opacity: look.opacity }),

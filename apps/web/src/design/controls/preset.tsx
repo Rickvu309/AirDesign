@@ -1,5 +1,5 @@
 import { controlLabel } from "@/design/controls/control-label"
-import { presets, type Preset } from "@airdesign/document"
+import type { Preset } from "@airdesign/document"
 import { ChevronDownIcon } from "lucide-react"
 import { useId, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -9,20 +9,16 @@ import type { ControlProps } from "@/design/panel"
 import { PresetThumb, ShapeGrid } from "@/design/shape-grid"
 import { cn } from "@/lib/class-names"
 
-function isPreset(value: unknown): value is Preset {
-  return typeof value === "string" && (presets as readonly string[]).includes(value)
-}
-
 export function PresetControl({ control, onChange }: ControlProps) {
   const label = useId()
   const shown = useId()
   const [open, setOpen] = useState(false)
   const chosenRef = useRef<HTMLButtonElement>(null)
-  const shapes = control.desc.kind === "choice" ? control.desc.options.filter(isPreset) : []
-  const chosen = !control.mixed && isPreset(control.value) ? control.value : null
+  const shapes = (control.desc.kind === "choice" ? control.desc.options : []) as readonly Preset[]
+  const chosen = !control.mixed && shapes.includes(control.value as Preset) ? (control.value as Preset) : null
   return (
     <div className="flex flex-col gap-1" data-control="preset" data-inherited={control.inherited ? "" : undefined}>
-      <span id={label} className={controlLabel}>
+      <span id={label} className={control.look.name.show === "hidden" ? "sr-only" : controlLabel}>
         {control.label}
       </span>
       <Popover open={open} onOpenChange={setOpen}>

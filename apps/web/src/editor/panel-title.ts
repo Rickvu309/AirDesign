@@ -7,9 +7,10 @@ const controls = (sections: readonly PanelSection[]) => sections.flatMap((sectio
 export function panelTitle({ kind, nodes, sections, frame }: PanelModel): string {
   if (kind === "frame" && frame === "auto") return designCopy.autoFrame
   if (kind === "shape") {
-    const shape = controls(sections).find((control) => control.trait === "geometry" && control.field === "shape")?.value
-    if (typeof shape === "object" && shape !== null && "preset" in shape && typeof shape.preset === "string")
-      return shape.preset === "rect" ? designCopy.square : optionWord("shape.preset", shape.preset)
+    const preset = controls(sections).find(
+      (control) => control.trait === "geometry" && control.field === "preset",
+    )?.value
+    if (typeof preset === "string") return preset === "rect" ? designCopy.square : optionWord("shape.preset", preset)
   }
   if (
     kind === "picture" &&

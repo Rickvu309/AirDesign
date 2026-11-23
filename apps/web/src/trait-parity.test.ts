@@ -83,7 +83,7 @@ const size = doom.deckOf(view).size
 const layers = ["words", "card", "rule", "star", "photo", "panel"] as const
 const id = (name: string) => built.ids[name]!
 
-const writesNothingOnDoom: readonly string[] = ["geometry.shape", "image.source"]
+const writesNothingOnDoom: readonly string[] = ["image.source"]
 const paintsNothing: readonly string[] = ["link.target"]
 const personOnlyOnDoom: readonly string[] = ["link"]
 
@@ -92,7 +92,6 @@ const kept: Readonly<Record<string, readonly unknown[]>> = {
   "text.font": ["Georgia"],
   "fills.source": ["b".repeat(64)],
   "link.target": [{ kind: "url", url: "https://example.com" }],
-  "geometry.shape": [{ preset: "ellipse", adjust: {} }],
 }
 
 function candidates(control: PanelControl): readonly unknown[] {
@@ -162,6 +161,7 @@ function agentProps(name: string): ReadonlySet<string> {
     { text: "Changed", textStyle: "heading", align: "center" },
     { name: "Renamed", hidden: true },
     { box: { x: 10, y: 10, w: 50, h: 50 } },
+    { shape: "ellipse" },
   ]
   let next = 0
   const mint = () => doom.nodeId(`m:${String((next += 1))}`)

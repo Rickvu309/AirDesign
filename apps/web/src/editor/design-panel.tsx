@@ -18,7 +18,7 @@ import type { TextFormatting } from "@airdesign/render"
 import { linkCopy } from "@/copy/link-copy"
 import { panelTitle } from "@/editor/panel-title"
 
-const openChrome = ["text", "link", "fills", "textFill", "border", "shadow", "opacity"]
+const openChrome = ["text", "link", "fills", "textFill", "border", "shadow", "opacity", "geometry"]
 
 export function DesignHead({
   children,

@@ -69,6 +69,7 @@ const seen: Readonly<Record<string, Seen>> = {
   strike: { person: ["panel:text.strike"] },
   dash: { person: ["panel:border.border"] },
   fit: { person: ["panel:image.mode"] },
+  shape: { person: ["panel:geometry.preset", "gesture:tool-ellipse"] },
   rotation: { person: ["gesture:rotate"] },
   flip: { person: ["gesture:flip-horizontal", "gesture:flip-vertical"] },
   notes: { person: ["notes:slide-notes"] },

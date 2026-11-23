@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import type { AgentChange } from "./agent-change.js"
+import { readAgentChange, type AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { agentDeck, build, compiled, minter, more, richDeck, started } from "./agent-fixtures.js"
 import { type Doom, type Write, applyEdit, isRefusal, rev } from "./index.js"
@@ -69,6 +69,26 @@ describe("set by node id", () => {
       hidden: true,
       box: { x: 5, y: 6, w: 7, h: 8, rotation: 0 },
     })
+  })
+
+  it("turns a drawn layer into a rectangle, an ellipse or a named preset, and refuses an unknown outline", () => {
+    const star = build(agentDeck(), set(ids.caption, { shape: "star5" }))
+    expect(get(star.nodes.get(ids.caption)!, "geometry")).toEqual({ kind: "preset", name: "star5" })
+    const round = build(star, set(ids.caption, { shape: "ellipse" }))
+    expect(get(round.nodes.get(ids.caption)!, "geometry")).toEqual({ kind: "ellipse" })
+    expect(get(build(round, set(ids.caption, { shape: "rect" })).nodes.get(ids.caption)!, "geometry")).toEqual({
+      kind: "rect",
+    })
+    expect(readAgentChange({ op: "set", target: ids.caption, shape: "blob" })).toHaveProperty("refused")
+    expect(() => build(agentDeck(), set(ids.card, { shape: "ellipse" }))).toThrow(/"field":"shape"/)
+  })
+
+  it("adds a shape with any outline Doom draws, as the toolbar does", () => {
+    const writes = compiled(agentDeck(), { op: "add", kind: "shape", slide: ids.slide, shape: "star5" })
+    expect(writes.find((write) => write.prop === "geometry")?.value).toEqual({ kind: "preset", name: "star5" })
+    expect(readAgentChange({ op: "add", kind: "shape", slide: ids.slide, shape: "bentConnector3" })).toHaveProperty(
+      "refused",
+    )
   })
 
   it("clears paint with none and an effect with none", () => {

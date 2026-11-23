@@ -14,6 +14,7 @@ import { lineNew, sizeNew } from "./design-text-values"
 import { cornerEmu, pointEmu, doomColorOf, wholeFraction } from "./design-values"
 import { propOf } from "@/editing/node-props"
 import type { SlideGeometry } from "./slide-geometry"
+import { shapeWrite, shownShape } from "./design-shape-values"
 import type { Color as OldColor } from "@airdesign/document"
 
 export type ChangeContext = {
@@ -220,6 +221,15 @@ function appearanceChange(context: ChangeContext, control: PanelControl, value: 
       const next = target.kind === "url" ? addressOf(target.url) : target.slide
       return next === undefined ? [] : setEach(context, "link", () => next as doom.Props["link"])
     }
+    case "geometry.preset": {
+      const next = shapeWrite({ preset: value, adjust: {} })
+      return next === undefined ? [] : setEach(context, "geometry", () => next)
+    }
+    case "geometry.adjust":
+      return setEach(context, "geometry", (id) => {
+        const preset = shownShape(propOf(context.view.nodes.get(id), "geometry"))?.preset
+        return preset === undefined ? undefined : shapeWrite({ preset, adjust: value })
+      })
     case "box.align":
       return alignWrites(context.view, context.geometry, context.ids, value as AlignTo, context.size)
     case "box.distribute":

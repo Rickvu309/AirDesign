@@ -240,6 +240,8 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("shape", hidden)],
     [placed("shape.preset", above, { kind: "preset" })],
     [placed("shape.adjust", hidden)],
+    [placed("preset", hidden, { kind: "preset" })],
+    [placed("adjust", hidden)],
     [placed("corners", hidden, { control: "canvas" })],
   ],
   effects: [
