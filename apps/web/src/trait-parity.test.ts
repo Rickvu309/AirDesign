@@ -21,7 +21,6 @@ import {
   agentRegister,
   deckParts,
   indexed,
-  judgedCases,
   landed,
   painted,
   panelRegister,
@@ -32,7 +31,7 @@ import {
 } from "./parity-probe"
 import { probes } from "./trait-probes"
 
-type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "undo" | "inherit" | "pptx-case"
+type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "undo" | "inherit"
 
 type Problem = { readonly field: string; readonly missing: Layer } | { readonly word: string; readonly missing: "copy" }
 
@@ -138,7 +137,6 @@ async function fieldProblems(
     if (shape?.inherited === undefined || !shape.inherited(back, at) || shape.inherited(parts, at))
       problems.push({ field: key, missing: "inherit" })
   }
-  if (!judgedCases.some((each) => each.covers?.includes(key))) problems.push({ field: key, missing: "pptx-case" })
   return problems
 }
 

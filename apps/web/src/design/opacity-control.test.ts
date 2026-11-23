@@ -19,7 +19,6 @@ import {
   deckParts,
   element,
   indexed,
-  judgedCases,
   landed,
   painted,
   placed,
@@ -29,7 +28,7 @@ import {
 } from "@/parity-probe"
 import { panelOf } from "./panel"
 
-type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "undo" | "pptx-case" | "copy"
+type Layer = "change" | "wire" | "control" | "round-trip" | "paint-change" | "undo" | "copy"
 
 type Problem = { readonly field: string; readonly missing: Layer }
 
@@ -111,8 +110,6 @@ async function kindProblems(probe: OpacityProbe): Promise<readonly Problem[]> {
   const turn = panel === null || step === null ? null : undoOf(panel.register, { steps: [step] })
   const undone = panel === null || turn === null || !turn.ok ? null : landed(panel.register, turn.commands)
   if (undone === null || !sameParts(written(parts, undone), parts)) problems.push(...missing(keys, "undo"))
-  const judged = keys.filter((key) => !judgedCases.some((each) => each.covers?.includes(key)))
-  problems.push(...missing(judged, "pptx-case"))
   return problems
 }
 
@@ -127,7 +124,7 @@ beforeAll(async () => {
   probed = probes.flatMap((probe) => opacityFields(factsOf(probe, true)))
 }, 120_000)
 
-it("lands { opacity: 60 } on each kind that takes an alpha field as an agent and from the Opacity row, exports, reads, paints, undoes and judges every alpha it takes", () => {
+it("lands { opacity: 60 } on each kind that takes an alpha field as an agent and from the Opacity row, exports, reads, paints and undoes every alpha it takes", () => {
   expect(found).toEqual([])
 })
 

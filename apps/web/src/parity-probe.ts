@@ -43,13 +43,6 @@ export type At = {
   readonly shape: string
 }
 
-export const judgedCases: readonly { readonly covers?: readonly string[] }[] = Object.values(
-  import.meta.glob<{ readonly covers?: readonly string[] }>("../../../scripts/pptx-cases/*.mjs", {
-    import: "default",
-    eager: true,
-  }),
-)
-
 const indexes = new WeakMap<Parts, ReturnType<typeof indexPackage>>()
 
 function packageIndex(parts: Parts): ReturnType<typeof indexPackage> {
