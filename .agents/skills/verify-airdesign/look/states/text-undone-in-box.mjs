@@ -1,15 +1,15 @@
 import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
-import { fixtureDeck } from "../fixture-deck.mjs"
+import { node } from "../doom-deck.mjs"
+import { titleEdited } from "../doom-text.mjs"
 
 async function drive(kit) {
-  await fixtureDeck(kit)
-  const text = kit.page.locator('[data-slide-paint] [contenteditable="true"]')
-  await text.dblclick()
-  await kit.page.keyboard.press("ControlOrMeta+a")
-  await text.pressSequentially("Mine", { delay: 40 })
-  await kit.page.keyboard.press("ControlOrMeta+z")
-  await expect(text).not.toHaveText("Mine")
+  const { page } = kit
+  await titleEdited(kit)
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.type("Mine", { delay: 40 })
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(node(page, "s:4")).not.toHaveText("Mine")
 }
 
 export default { name: "text-undone-in-box", design: editor, drive }

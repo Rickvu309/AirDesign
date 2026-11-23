@@ -1,18 +1,17 @@
+import { expect } from "@playwright/test"
+import { openDoomDeck } from "../doom-deck.mjs"
 import { editor } from "../editor-screen.mjs"
-import { fixtureDeck } from "../fixture-deck.mjs"
+import { placeText, textEditor } from "../doom-text.mjs"
 
 async function drive(kit) {
-  await fixtureDeck(kit)
-  const slide = kit.page.locator("[data-slide-paint]")
-  await slide.click({ position: { x: 4, y: 4 } })
-  await kit.page.keyboard.press("t")
-  const placing = kit.page.locator("[data-text-placing]")
-  const room = await placing.boundingBox()
-  await placing.click({ position: { x: (room?.width ?? 0) * 0.2, y: (room?.height ?? 0) * 0.8 } })
-  await kit.page.locator('[data-slide-paint] [contenteditable="true"]:focus').waitFor()
-  await kit.page.keyboard.type("Revenue")
-  await kit.page.keyboard.press("Tab")
-  await kit.page.keyboard.type(" grew")
+  const { page } = kit
+  await openDoomDeck(kit)
+  await placeText(page, 384, 860)
+  await page.keyboard.type("Revenue")
+  await page.keyboard.press("Tab")
+  await page.keyboard.type(" grew")
+  await expect(textEditor(page)).toBeFocused()
+  await expect(textEditor(page)).toContainText("Revenue")
 }
 
 export default { name: "text-tab-kept", design: editor, drive }
