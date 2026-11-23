@@ -1,15 +1,31 @@
-import { shapeTextDeck } from "../../../../../scripts/pptx-fixtures/shape-text-deck.mjs"
-import { openDeck } from "../open-deck.mjs"
+import { openDoomDeck, spot, words } from "../doom-deck.mjs"
+
+const fill = [{ kind: "solid", color: { var: "accent1", tint: 0.8 } }]
+const edge = [{ kind: "solid", color: { var: "accent1" } }]
+const shape = (id, name, geometry, box, chars, more = {}) => ({
+  id,
+  props: {
+    name,
+    box,
+    geometry,
+    fills: fill,
+    strokes: edge,
+    stroke: { weight: 3, align: "inside", dash: "solid" },
+    text: words(chars, { alignV: "center", paras: [{ align: "center" }], ...more }),
+  },
+})
 
 async function drive(kit) {
-  await kit.signIn()
-  await kit.page.goto("/")
-  await openDeck(kit.page, {
-    name: "Shape text.pptx",
-    mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    buffer: shapeTextDeck(),
-  })
-  await kit.page.evaluate(() => document.fonts.ready)
+  await openDoomDeck(kit, [
+    shape("t:1", "Rectangle", { kind: "rect" }, spot(1000, 120, 380, 240), "Words sit inside the rectangle"),
+    shape("t:2", "Ellipse", { kind: "ellipse" }, spot(1440, 120, 380, 240), "Words keep inside the ellipse"),
+    shape("t:3", "Triangle", { kind: "preset", name: "triangle" }, spot(1000, 420, 380, 300), "Inside the triangle"),
+    shape("t:4", "Diamond", { kind: "preset", name: "diamond" }, spot(1440, 420, 380, 300), "Inside the diamond"),
+    shape("t:5", "Top words", { kind: "rect" }, spot(1000, 780, 820, 200), "Words held to the top of a wide shape", {
+      alignV: "top",
+    }),
+  ])
+  await kit.page.evaluate(() => document.fonts.ready.then(() => undefined))
 }
 
 export default { name: "shape-text-area", design: null, drive }
