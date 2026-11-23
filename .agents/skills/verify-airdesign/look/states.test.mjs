@@ -43,6 +43,7 @@ describe("states", () => {
   it("selects states with a star", () => {
     expect(matching("agent-*").map((state) => state.name)).toEqual([
       "agent-malformed",
+      "agent-not-offered",
       "agent-off",
       "agent-out-of-usage",
       "agent-retried",
@@ -53,6 +54,7 @@ describe("states", () => {
     const grouped = units(matching("agent-*"))
     expect(grouped.map((unit) => unit.states.map((state) => state.name))).toEqual([
       ["agent-malformed"],
+      ["agent-not-offered"],
       ["agent-off"],
       ["agent-out-of-usage"],
       ["agent-retried"],
