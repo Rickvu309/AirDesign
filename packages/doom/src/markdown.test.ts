@@ -46,10 +46,22 @@ describe("textFromMarkdown", () => {
     ])
   })
 
-  it("splits paragraphs on blank lines and on single line breaks, and drops empty ones", () => {
+  it("makes each line a paragraph and keeps a blank line between paragraphs as an empty one", () => {
     const text = read("one\n\ntwo\nthree\n\n\nfour")
-    expect(text.chars).toBe("one\ntwo\nthree\nfour")
-    expect(text.paras).toHaveLength(4)
+    expect(text.chars).toBe("one\n\ntwo\nthree\n\n\nfour")
+    expect(text.paras).toHaveLength(7)
+  })
+
+  it("drops blank lines before the first words and after the last", () => {
+    const text = read("\n  \none\n\n")
+    expect(text.chars).toBe("one")
+    expect(text.paras).toEqual([{}])
+  })
+
+  it("keeps the gap in an agent's bold lead lines, as the person sees it", () => {
+    const text = read("**52 to 40 days**\n\nA 12-day reduction")
+    expect(text.chars).toBe("52 to 40 days\n\nA 12-day reduction")
+    expect(text.paras).toEqual([{}, {}, {}])
   })
 
   it("keeps a star with a space beside it, an unmatched marker and an escaped marker as words", () => {
@@ -84,6 +96,12 @@ describe("textToMarkdown", () => {
   it("writes the words an agent reads: markers, lists and blank lines between paragraphs", () => {
     const markdown = "Lead **bold** *it*\n\n- a\n  - b\n- c\n\n1. x\n2. y\n\nEnd"
     expect(textToMarkdown(read(markdown))).toBe(markdown)
+  })
+
+  it("writes each paragraph on its own line and an empty paragraph as a blank line", () => {
+    expect(textToMarkdown(read("one\ntwo"))).toBe("one\ntwo")
+    expect(textToMarkdown(read("one\n\ntwo"))).toBe("one\n\ntwo")
+    expect(textToMarkdown(read("- a\n\n- b"))).toBe("- a\n\n- b")
   })
 
   it("numbers a list from one and starts again after a break", () => {
@@ -121,7 +139,7 @@ const run = fc.oneof(
   fc.record({ text: edgeless, link: address }),
 )
 const paragraph = fc.record({
-  runs: fc.array(run, { minLength: 1, maxLength: 4 }),
+  runs: fc.oneof(fc.array(run, { minLength: 1, maxLength: 4 }), fc.constant([])),
   list: fc.constantFrom(undefined, "bullet" as const, "number" as const),
   level: fc.integer({ min: 0, max: 3 }),
 })
@@ -167,9 +185,11 @@ const textOfParagraphs = (paragraphs: readonly Paragraph[]) => {
 }
 
 describe("markdown round trip", () => {
-  it("gives back the same text for any paragraphs of plain, bold, italic and linked words", () => {
+  it("gives back the same text for any paragraphs of plain, bold, italic and linked words, and empty ones between", () => {
     fc.assert(
-      fc.property(fc.array(paragraph, { minLength: 1, maxLength: 4 }), (paragraphs) => {
+      fc.property(fc.array(paragraph, { minLength: 1, maxLength: 4 }), (drawn) => {
+        const paragraphs = drawn.map((each) => (each.runs.length === 0 ? { runs: [], level: 0 } : each))
+        fc.pre(paragraphs[0]!.runs.length > 0 && paragraphs.at(-1)!.runs.length > 0)
         const text = textOfParagraphs(paragraphs)
         const markdown = textToMarkdown(text as never)
         expect(textFromMarkdown(markdown, "body")).toEqual(text)

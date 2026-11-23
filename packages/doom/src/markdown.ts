@@ -102,17 +102,16 @@ function inline(source: string, base: Look): readonly Piece[] {
 }
 
 export function textFromMarkdown(markdown: string, style: TextStyleName): Text {
-  const lines = markdown
-    .replace(/\t/g, "  ")
-    .split(/\r?\n/)
-    .filter((line) => line.trim() !== "")
+  const lines = markdown.replace(/\t/g, "  ").split(/\r?\n/)
+  const blank = (line: string) => line.trim() === ""
+  const first = lines.findIndex((line) => !blank(line))
+  const last = lines.findLastIndex((line) => !blank(line))
   const paras: Para[] = []
   const pieces: Piece[] = []
-  for (const line of lines) {
+  for (const line of first < 0 ? [] : lines.slice(first, last + 1)) {
     const found = listLine.exec(line)
     const body = found === null ? line.trimStart() : (found[3] as string)
-    const parsed = inline(body, plain)
-    if (parsed.length === 0) continue
+    const parsed = blank(line) ? [] : inline(body, plain)
     if (paras.length > 0) pieces.push({ text: "\n", look: plain })
     pieces.push(...parsed)
     const marker = found?.[2]
@@ -217,21 +216,17 @@ const asWords = (line: string) =>
 
 export function textToMarkdown(text: Text): string {
   const counters: number[] = []
-  let out = ""
-  let before: Para | undefined
+  const lines: string[] = []
   let from = 0
   text.chars.split("\n").forEach((chars, at) => {
     const para = text.paras[at] ?? {}
     const body = lineOf(text, from, from + chars.length)
     from += chars.length + 1
-    if (body === "") return
     const level = para.level ?? 0
     counters.splice(para.list === undefined ? 0 : para.list === "number" ? level + 1 : level)
     const number = para.list === "number" ? (counters[level] = (counters[level] ?? 0) + 1) : 0
     const marker = para.list === undefined ? "" : `${"  ".repeat(level)}${para.list === "bullet" ? "-" : `${number}.`} `
-    const separator = out === "" ? "" : before?.list !== undefined && before.list === para.list ? "\n" : "\n\n"
-    out += `${separator}${marker}${asWords(body)}`
-    before = para
+    lines.push(body === "" ? "" : `${marker}${asWords(body)}`)
   })
-  return out
+  return lines.join("\n").trim() === "" ? "" : lines.join("\n")
 }
