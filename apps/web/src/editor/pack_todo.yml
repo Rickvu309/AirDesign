@@ -5,13 +5,6 @@ apps/web/src:
       - layer
     files:
       - apps/web/src/editor/live-design-panel.tsx
-  apps/web/src/element-edit.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/editor/editor-shell.tsx
-      - apps/web/src/editor/editor-toolbar.tsx
 apps/web/src/aira:
   apps/web/src/aira/aira-prompts.ts:
     violations:
@@ -19,47 +12,9 @@ apps/web/src/aira:
     files:
       - apps/web/src/editor/adjust-tone.tsx
       - apps/web/src/editor/tone-link.ts
-  apps/web/src/aira/usage-ring.tsx:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/editor/agent-panel.tsx
 apps/web/src/decks:
   apps/web/src/decks/airdesign-mark.tsx:
     violations:
       - dependency
     files:
       - apps/web/src/editor/editor-chrome.tsx
-      - apps/web/src/editor/grid-head.tsx
-apps/web/src/present:
-  apps/web/src/present/present-button.tsx:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/editor/editor-shell.tsx
-      - apps/web/src/editor/grid-head.tsx
-  apps/web/src/present/present-keys.ts:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/editor/editor-shell.tsx
-  apps/web/src/present/present-layer.tsx:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/editor/editor-shell.tsx
-  apps/web/src/present/slide-shows.ts:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/editor/editor-shell.tsx
-  apps/web/src/present/use-leaving.ts:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/editor/editor-shell.tsx
-  apps/web/src/present/use-present.ts:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/editor/editor-shell.tsx

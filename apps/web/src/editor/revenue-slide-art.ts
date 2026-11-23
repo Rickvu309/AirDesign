@@ -1,5 +1,0 @@
-export const revenueEyebrow = "#1d6b8f"
-export const revenueBar = "#a9c4d2"
-export const revenueBarLatest = "#1d6b8f"
-export const revenueAxis = "#666666"
-export const revenueRule = "#d7d7d6"

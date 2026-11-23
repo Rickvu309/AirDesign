@@ -8,9 +8,6 @@ import {
   steppedZoom,
   typedZoom,
   zoomKey,
-  zoomPercent,
-  zoomPresets,
-  zoomWidth,
 } from "@/editor/canvas-zoom"
 
 const wide = { width: 12_192_000, height: 6_858_000 }
@@ -44,20 +41,6 @@ describe("canvas zoom", () => {
 
   it("fits to the room's width when the slide has no size", () => {
     expect(fitWidth(room, { width: 0, height: 0 })).toBe(800)
-  })
-
-  it("reads a width as a percent of the slide's size at 96 pixels an inch", () => {
-    expect(zoomPercent(1280, wide)).toBe(100)
-    expect(zoomPercent(800, wide)).toBe(63)
-    expect(zoomPercent(800, standard)).toBe(83)
-  })
-
-  it("turns each step into the width that shows that percent", () => {
-    expect(zoomWidth("fit", room, wide)).toBe(800)
-    expect(zoomPresets.map((step) => zoomWidth(step, room, wide))).toEqual([640, 1280, 2560])
-    expect(zoomWidth(37, room, wide)).toBe(474)
-    for (const step of [...zoomPresets, 10, 37, 400])
-      expect(zoomPercent(zoomWidth(step, room, standard), standard)).toBe(step)
   })
 
   it("fits a wide slide to the designed 800 px in the canvas column of a 1470x923 window", () => {

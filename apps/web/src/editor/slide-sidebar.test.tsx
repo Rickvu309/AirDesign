@@ -16,7 +16,7 @@ const strip: SlideStrip = {
 }
 
 function markup(over: Partial<SlideStrip> = {}): string {
-  return renderToStaticMarkup(<SlideSidebar run="done" title="Deck" strip={{ ...strip, ...over }} />)
+  return renderToStaticMarkup(<SlideSidebar title="Deck" strip={{ ...strip, ...over }} />)
 }
 
 function tags(html: string, pattern: RegExp): string[] {
@@ -95,11 +95,6 @@ describe("way home", () => {
   it("links the mark to the deck home, named by where it goes", () => {
     const html = markup()
     expect(html).toMatch(/<a [^>]*href="\/"[^>]*aria-label="Go to your decks"[^>]*>\s*<svg/)
-  })
-
-  it("leaves the design screen's mark as it was", () => {
-    const html = renderToStaticMarkup(<SlideSidebar run="done" title="Deck" />)
-    expect(html).not.toContain('aria-label="Go to your decks"')
   })
 })
 

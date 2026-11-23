@@ -37,7 +37,7 @@ export type { Box, Point, Resolved, ResolvedEffect, ResolvedLine, ResolvedPaint,
 export { resolveSlide, slideBackground } from "./resolve-slide.js"
 export { defaultTheme } from "./default-theme-art.js"
 export { slideTextStyles } from "./slide-text-styles.js"
-export { type Grown, type Tree, type TreeNode, doomFromTree } from "./doom-tree.js"
+export { type Grown, type Tree, type TreeNode, type TreeSlide, doomFromTree } from "./doom-tree.js"
 export { deckName, deckOf } from "./deck-of.js"
 export { slidesOf } from "./doom-walk.js"
 export { type Face, type FaceNeeds, doomFaces } from "./text-faces.js"

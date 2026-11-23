@@ -15,7 +15,6 @@ import { airaCopy, airaLimitBodyOn } from "@/copy/aira-copy"
 import { productCopy, usageResetsOn } from "@/copy/product-copy"
 import { usageCopy } from "@/copy/usage-copy"
 import { LimitMark } from "@/credits/limit-panel"
-import { FailedMark } from "@/editor/agent-panel"
 import { surfaceShadow } from "@/editor/editor-chrome"
 import { EditorIcon, SparkIcon } from "@/editor/editor-icons"
 import type { AiraExchange, AiraStep, ToolState } from "@/aira/aira-loop"
@@ -410,5 +409,16 @@ export function UsagePop({ usage }: { usage: WeekUsage }) {
         </a>
       </span>
     </PopoverContent>
+  )
+}
+
+function FailedMark() {
+  return (
+    <span className="flex size-5 items-center justify-center rounded-[var(--shape-control)] bg-[linear-gradient(180deg,var(--danger-light),var(--destructive))] shadow-[inset_0px_1px_0px_var(--white-35),0px_0px_0px_1px_var(--danger-edge),0px_1px_2px_var(--black-12)]">
+      <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true">
+        <path d="M6 2.6v4.2" stroke="var(--background)" strokeWidth="1.9" strokeLinecap="round" />
+        <circle cx="6" cy="9.2" r="1" fill="var(--background)" />
+      </svg>
+    </span>
   )
 }

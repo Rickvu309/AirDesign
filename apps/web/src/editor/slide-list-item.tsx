@@ -22,7 +22,6 @@ export function SlideItem({
   picked = false,
   menuSet,
   reachable = true,
-  working = false,
   skipped = false,
   onSkip,
   onSelect,
@@ -39,7 +38,6 @@ export function SlideItem({
   picked?: boolean
   menuSet?: SlideMenuSet | undefined
   reachable?: boolean
-  working?: boolean
   skipped?: boolean
   onSkip?: ((skipped: boolean) => void) | undefined
   onSelect?: (press: SlidePress) => void
@@ -70,7 +68,6 @@ export function SlideItem({
     <span className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
       <span className={cn("text-xs", active ? "font-medium text-index" : "text-quiet")}>{index}</span>
       {skipped ? <SkippedSlide /> : null}
-      {working ? <span className="block size-1.5 rounded-full bg-primary" /> : null}
     </span>
   )
   if (onSelect === undefined) {

@@ -40,6 +40,12 @@ function usageBlock(loaded: UsageLoad | undefined) {
   return undefined
 }
 
+export type AiraStart = {
+  readonly chat?: AiraChat
+  readonly draft?: string
+  readonly usage?: () => Promise<UsageLoad>
+}
+
 const headControl = "outline-hidden active:translate-y-0"
 
 export function AiraPanel({
@@ -54,6 +60,7 @@ export function AiraPanel({
   now = Date.now,
   mint = () => crypto.randomUUID(),
   store = deviceChats,
+  start = {},
 }: {
   deck: string
   hidden: boolean
@@ -66,9 +73,10 @@ export function AiraPanel({
   now?: () => number
   mint?: () => string
   store?: ChatStore
+  start?: AiraStart
 }) {
-  const [chat, setChat] = useState(() => airaChat(deck))
-  const [draft, setDraft] = useState("")
+  const [chat, setChat] = useState(() => start.chat ?? airaChat(deck))
+  const [draft, setDraft] = useState(start.draft ?? "")
   const [queued, setQueued] = useState<readonly string[]>([])
   const [undoing, setUndoing] = useState(false)
   const [settling, setSettling] = useState(false)
@@ -85,7 +93,7 @@ export function AiraPanel({
   const last = chat.exchanges.at(-1)
   const working = last?.end === "working"
   const busy = working || settling || undoing || checkingTone
-  const { usage, available, loaded, refresh: refreshUsage } = useWeekUsage(chat.usage, online)
+  const { usage, available, loaded, refresh: refreshUsage } = useWeekUsage(chat.usage, online, start.usage)
   const limit = last?.end === "out-of-usage" && usage !== null ? airaBackOn(resetsWhen(usage.resets)) : undefined
   const notOffered = !available || last?.end === "country"
   const blocked = notOffered ? airaCopy.unavailable : last?.end === "malformed" ? airaCopy.malformedBlocked : limit

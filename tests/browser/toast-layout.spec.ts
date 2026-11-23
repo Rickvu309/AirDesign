@@ -21,15 +21,6 @@ for (const width of [320, 480, 735]) {
   })
 }
 
-test("state-owned editor status stays until its owning state changes", async ({ page }) => {
-  await page.goto("/screens/s49-02-editor-errors-offline")
-  const notice = page.locator("[data-sonner-toast]")
-  await expect(notice).toBeVisible()
-  await expect(notice.getByRole("button", { name: productCopy.close, exact: true })).toHaveCount(0)
-  await page.clock.fastForward(15000)
-  await expect(notice).toBeVisible()
-})
-
 test("Trash Undo and Close dismiss by touch on a phone", async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 320, height: 700 }, hasTouch: true })
   try {

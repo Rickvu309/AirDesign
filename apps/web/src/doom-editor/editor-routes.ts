@@ -1,18 +1,11 @@
 export const editorRoutes = {
   agentWorking: "/screens/s42-01-editor-agent-working",
   agentComplete: "/screens/s42-02-editor-agent-run-complete",
-  agentOwn: "/screens/s42-03-editor-agent-own-agent-editing",
   agentLong: "/screens/s42-04-editor-agent-long-message",
   designPanel: "/screens/s43-02-editor-tools-design-panel",
-  images: "/screens/s43-03-editor-tools-images",
   shapes: "/screens/s43-04-editor-tools-shapes",
   shapesExpanded: "/screens/s43-05-editor-tools-shapes-expanded",
   text: "/screens/s43-06-editor-tools-text",
   textFormat: "/screens/s43-08-editor-tools-text-format",
-  shortcuts: "/screens/s43-11-editor-tools-keyboard-shortcuts",
   runFailed: "/screens/s49-01-editor-errors-agent-run-failed",
-  offline: "/screens/s49-02-editor-errors-offline",
-  setAside: "/screens/s49-03-editor-errors-edits-set-aside",
-  unreached: "/screens/s49-04-editor-errors-unreached",
-  setAsideTooLarge: "/screens/s49-05-editor-errors-edit-set-aside-too-large",
 } as const

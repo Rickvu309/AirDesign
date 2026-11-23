@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { formatRange, typedSize, type FileFormat } from "./text-format.js"
+import { formatRange, type FileFormat } from "./text-format.js"
 import type { TextValue } from "./text-value.js"
 
 const plain: FileFormat = () => false
@@ -103,20 +103,5 @@ describe("formatState", () => {
         ],
       },
     ])
-  })
-})
-
-describe("size, colour, alignment and bullets", () => {
-  it("reads a typed size in points to the tenth and refuses one outside 1 to 4000", () => {
-    expect(typedSize("24")).toBe(2400)
-    expect(typedSize(" 10.5 ")).toBe(1050)
-    expect(typedSize("11.26")).toBe(1130)
-    expect(typedSize("4000")).toBe(400000)
-    expect(typedSize("1")).toBe(100)
-    expect(typedSize("0.5")).toBeNull()
-    expect(typedSize("4001")).toBeNull()
-    expect(typedSize("")).toBeNull()
-    expect(typedSize("big")).toBeNull()
-    expect(typedSize("12pt")).toBeNull()
   })
 })

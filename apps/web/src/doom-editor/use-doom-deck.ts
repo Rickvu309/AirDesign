@@ -1,4 +1,11 @@
-import { createDoomDeck, httpDoomRemote, openDoomDeck, type DoomDeck, type DoomRemote } from "@airdesign/live"
+import {
+  createDoomDeck,
+  httpDoomRemote,
+  openDoomDeck,
+  type DoomDeck,
+  type DoomRemote,
+  type DoomStorage,
+} from "@airdesign/live"
 import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 
 export type EditorClient = Pick<
@@ -24,6 +31,7 @@ export type Opening =
 
 export type OpenOptions = {
   readonly remote?: DoomRemote
+  readonly storage?: DoomStorage
   readonly mint?: () => string
   readonly arrived?: (id: string) => void
 }
@@ -42,8 +50,10 @@ export function useDoomDeck(id: string | null, options: OpenOptions = {}): Openi
     const stop = new AbortController()
     const fresh = id === null
     const mint = latest.current.mint ?? crypto.randomUUID.bind(crypto)
+    const storage = latest.current.storage
     const deck = id ?? mint()
-    void (fresh ? createDoomDeck(remote, deck) : openDoomDeck(remote, deck)).then((opened) => {
+    const kept = storage === undefined ? {} : { storage }
+    void (fresh ? createDoomDeck(remote, deck, kept) : openDoomDeck(remote, deck, kept)).then((opened) => {
       if (!current) return
       if (!opened.ok) {
         setOpening({ status: "missing" })

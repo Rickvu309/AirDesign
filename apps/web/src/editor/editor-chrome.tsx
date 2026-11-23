@@ -82,14 +82,6 @@ export function PanelHead({ children }: { children: ReactNode }) {
   )
 }
 
-export function Island({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={cn("flex h-11 items-center gap-1 rounded-xl bg-white px-1.5", cardShadow, className)}>
-      {children}
-    </div>
-  )
-}
-
 export function SidebarHead({
   title,
   trailing,

@@ -25,7 +25,7 @@ export { Filmstrip } from "./filmstrip.js"
 export { NodeArt } from "./node-art.js"
 export { TextLines } from "./node-text.js"
 export { DoomSlide, SlidePaint, useDoomSlide } from "./doom-slide.js"
-export { startSettling, useSettled } from "./settling.js"
+export { useSettled } from "./settling.js"
 export { singleLineHeight } from "./text-look.js"
 export type { CanvasCrop, Framing, GroupOf, Measure } from "./element-paint.js"
 export { placedFrame } from "./crop-drag.js"
@@ -45,7 +45,7 @@ export {
   type PaintBox,
 } from "./record.js"
 export { adjustDefaults, openPreset, presetOutline } from "./preset-path.js"
-export type { ShapeDrawing, ShapeDrawn, ShapeLook } from "./shape-drawing.js"
+export type { ShapeDrawn } from "./shape-drawing.js"
 
 export { paintStore, type PaintStore } from "./store.js"
 export { type TextFormatting } from "./text-formatting.js"
@@ -57,7 +57,6 @@ export {
   type GestureId,
   type GestureRow,
   type KeyLike,
-  type Keys,
   type Pointing,
 } from "./gestures.js"
 export { noSelection, type Selection } from "./selection.js"

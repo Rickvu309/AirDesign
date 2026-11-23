@@ -57,15 +57,15 @@ it("leaves the closed slide menus alone when the deck paints again with the same
   const host = window.document.createElement("div")
   window.document.body.append(host)
   const root = createRoot(host)
-  await act(async () => root.render(<SlideSidebar run="done" title="Deck" strip={stripOf(0)} />))
+  await act(async () => root.render(<SlideSidebar title="Deck" strip={stripOf(0)} />))
   const first = menus.rendered
   expect(first).toBeGreaterThanOrEqual(6)
 
   for (let typed = 0; typed < 5; typed += 1)
-    await act(async () => root.render(<SlideSidebar run="done" title="Deck" strip={stripOf(0)} />))
+    await act(async () => root.render(<SlideSidebar title="Deck" strip={stripOf(0)} />))
   expect(menus.rendered).toBe(first)
 
-  await act(async () => root.render(<SlideSidebar run="done" title="Deck" strip={stripOf(1)} />))
+  await act(async () => root.render(<SlideSidebar title="Deck" strip={stripOf(1)} />))
   expect(menus.rendered).toBe(first)
 
   await act(async () => root.unmount())

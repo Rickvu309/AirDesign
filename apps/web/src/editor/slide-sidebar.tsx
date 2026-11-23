@@ -23,13 +23,10 @@ import type { SaveStatus } from "@/editor/save-status"
 import { slideChangeAllowed } from "@/editor/slide-menu"
 import { NewSlideMenu } from "@/editor/new-slide-menu"
 import { heldGroups, groupAt } from "@/editor/collapsed-groups"
-import { SlideThumb } from "@/editor/slide-thumb"
 import type { LayoutChoice } from "@/editing/slide-layout"
 import { cn } from "@/lib/class-names"
 import { setDropPlace } from "@/editor/slide-list-pick"
 import { useSlideListSet } from "@/editor/use-slide-list-set"
-
-export type SidebarRun = "working" | "done" | "own" | "compose" | "failed" | "offline"
 
 export const slideThumbWidth = 197
 
@@ -78,7 +75,6 @@ export function useSlideSay(say: SlideStrip["say"], announce: (text: string) => 
 }
 
 export function SlideSidebar({
-  run,
   title,
   strip,
   onRename,
@@ -88,9 +84,8 @@ export function SlideSidebar({
   layers = null,
   onSlideSelection,
 }: {
-  run: SidebarRun
   title: string
-  strip?: SlideStrip
+  strip: SlideStrip
   onTrash?: () => void
   onRename?: (name: string) => void
   onGrid?: () => void
@@ -100,24 +95,15 @@ export function SlideSidebar({
 }) {
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white" data-editor-sidebar>
-      {strip === undefined ? (
-        <>
-          <SidebarHead title={title} />
-          <SampleStrip run={run} />
-        </>
-      ) : (
-        <>
-          <SidebarHead
-            title={title}
-            homeHref="/"
-            save={save}
-            {...(onGrid === undefined ? { gridOff: true } : { onGrid })}
-            {...(onRename === undefined ? {} : { onRename })}
-            {...(onTrash === undefined ? {} : { onTrash })}
-          />
-          <DeckStrip strip={strip} onSlideSelection={onSlideSelection} />
-        </>
-      )}
+      <SidebarHead
+        title={title}
+        homeHref="/"
+        save={save}
+        {...(onGrid === undefined ? { gridOff: true } : { onGrid })}
+        {...(onRename === undefined ? {} : { onRename })}
+        {...(onTrash === undefined ? {} : { onTrash })}
+      />
+      <DeckStrip strip={strip} onSlideSelection={onSlideSelection} />
       {layers}
     </aside>
   )
@@ -383,54 +369,6 @@ function GroupBlock({
           </div>
         </div>
       )}
-    </>
-  )
-}
-
-function SampleStrip({ run }: { run: SidebarRun }) {
-  const queuedFrom = run === "working" ? 4 : 0
-  const working = run === "working" || run === "own"
-  const item = (index: number) => (
-    <SlideItem index={index} active={index === 3} working={working && index === 3}>
-      <SlideThumb index={index} width={thumbWidth} queued={queuedFrom > 0 && index >= queuedFrom} />
-    </SlideItem>
-  )
-  return (
-    <>
-      <div className="flex px-3 pb-2">
-        <div className={cn("flex h-7 flex-1 items-center rounded-lg bg-white", surfaceShadow)}>
-          <span className="flex flex-1 items-center justify-center gap-1 text-[length:var(--type-dense)] text-foreground">
-            New slide
-            <EditorIcon name="chev" size={13} className="text-quiet" />
-          </span>
-          <span className="block h-7 w-px bg-[var(--field-edge)]" />
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-7 w-8 rounded-l-none rounded-r-lg px-0 text-foreground hover:bg-black/4 active:translate-y-0"
-            aria-label="Add slide"
-          >
-            <EditorIcon name="plus" size={15} />
-          </Button>
-        </div>
-      </div>
-      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden px-1.5 pb-2">
-        <GroupHead name="Opening" open />
-        {item(1)}
-        {item(2)}
-        <GroupHead name="Performance" open />
-        {item(3)}
-        {item(4)}
-        {item(5)}
-        <GroupHead name="Outlook" range="6 to 8" />
-        <div className="flex pt-1 pl-[var(--space-32)]" data-group-stack>
-          <div className="flex w-[197px] flex-col items-center">
-            <SlideThumb index={6} width={thumbWidth} queued={queuedFrom > 0 && 6 >= queuedFrom} />
-            <span className="block h-1.5 w-[183px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
-            <span className="block h-1.5 w-[167px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
-          </div>
-        </div>
-      </div>
     </>
   )
 }

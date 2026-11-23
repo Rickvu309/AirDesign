@@ -15,8 +15,6 @@ export const zoomRanges = {
 
 export type ZoomRange = { readonly least: number; readonly most: number }
 
-export const zoomLimits = zoomRanges.slides
-
 export function boundedZoom(percent: number, range: ZoomRange): number {
   return Math.min(range.most, Math.max(range.least, percent))
 }
@@ -47,21 +45,6 @@ export function fitWidth(room: SlideSize, slide: SlideSize): number {
 
 export function percentWidth(percent: number, slide: SlideSize): number {
   return Math.round(((slide.width / emuPerPixel) * percent) / 100)
-}
-
-export function zoomWidth(zoom: Zoom, room: SlideSize, slide: SlideSize): number {
-  if (zoom === "fit") return fitWidth(room, slide)
-  return percentWidth(zoom, slide)
-}
-
-export function widthZoom(width: number, slide: SlideSize, range: ZoomRange = zoomRanges.slides): number {
-  if (slide.width <= 0) return 100
-  return boundedZoom((width * emuPerPixel * 100) / slide.width, range)
-}
-
-export function zoomPercent(width: number, slide: SlideSize): number {
-  if (slide.width <= 0) return 100
-  return Math.round((width * emuPerPixel * 100) / slide.width)
 }
 
 export type ZoomKey = "in" | "out" | "fit" | "selection" | "actual"

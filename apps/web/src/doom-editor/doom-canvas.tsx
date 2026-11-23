@@ -19,9 +19,10 @@ import { useCanvasKeys } from "./use-canvas-keys"
 import { useCanvasPointer, type DrawRequest, type Tool } from "./use-canvas-pointer"
 import { chartArea, chartWrites, drawWrites, iconWrites } from "./create-writes"
 import { EditorToolbar, type RightPanel } from "./editor-toolbar"
+import type { ShapesShown } from "@/editor/shape-tool"
 import type { EditorClient } from "./use-doom-deck"
 import { canvasInset, slideTop, type ZoomKey } from "@/editor/canvas-zoom"
-import { slideFrame } from "@/editor/revenue-slide"
+import { slideFrame } from "@/editor/slide-frame"
 import { pictureCopy } from "@/copy/picture-copy"
 import { doomEditorCopy } from "@/copy/doom-editor-copy"
 
@@ -50,6 +51,8 @@ export function DoomCanvas(props: {
   readonly onZoom: (zoom: Zoom) => void
   readonly onCommands: (commands: CanvasCommands | null) => void
   readonly toolbarHost: HTMLElement | null
+  readonly editing?: doom.NodeId
+  readonly shapes?: ShapesShown
 }) {
   const { client, view, slide, selection, onSelection, tool, onTool, zoom, scale, room, overlay } = props
   const stage = useRef<HTMLDivElement>(null)
@@ -64,6 +67,12 @@ export function DoomCanvas(props: {
 
   const { size } = doom.deckOf(view)
   const text = useTextSession(client, view)
+  const editingFirst = useRef(props.editing)
+  useEffect(() => {
+    const node = editingFirst.current
+    editingFirst.current = undefined
+    if (node !== undefined) text.begin(node, { kind: "all" })
+  }, [text])
   const shown = useMemo(() => {
     const edits = [
       ...(preview === null ? [] : [{ once: "preview", author, writes: preview.writes }]),
@@ -381,6 +390,7 @@ export function DoomCanvas(props: {
               run={run}
               panel={props.panel}
               onPanel={props.onPanel}
+              {...(props.shapes === undefined ? {} : { shapes: props.shapes })}
             />,
             props.toolbarHost,
           )}
