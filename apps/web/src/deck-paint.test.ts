@@ -2,20 +2,24 @@ import {
   decide,
   elementId,
   format,
+  nextElementId,
   openRegister,
+  readSlideId,
   templateStylesNode,
   writeTextValue,
   type Box,
   type Command,
+  type Media,
   type Register,
+  type SlideCommand,
 } from "@airdesign/document"
-import { iconParts, indexPackage, readPackage, readParts, readShapes } from "@airdesign/pptx"
+import { freeShapeId, iconParts, indexPackage, readPackage, readParts, readShapes, readSlides } from "@airdesign/pptx"
 import { paintStore, type PaintStore } from "@airdesign/render"
 import { beforeAll, expect, it } from "vitest"
 import { paint } from "./deck-paint"
 import { elementCommand, removals } from "./element-edit"
 import { busyElements } from "./editing/live-repaint"
-import { pictureCommand } from "./picture-add"
+import { slideBase } from "./editing/exported-parts"
 import { fileSlides } from "./editing/slide-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -142,19 +146,22 @@ it("a paint with nothing changed repaints no slide and hands back the same canva
   expect(whole.canvases(1)).not.toBe(canvases[1])
 }, 120_000)
 
+function pictureCommand(parts: Parts, register: Register, index: number, media: Media, box: Box): SlideCommand | null {
+  const base = slideBase(parts, register)
+  const slide = readSlides(base)[index]
+  const id = slide === undefined ? undefined : readSlideId(slide.slide)
+  if (slide === undefined || id === undefined) return null
+  const node = nextElementId(register, id, freeShapeId(base, slide.part))
+  return { slide: "element-add", id, element: { node, kind: "shape", value: null, box, grouped: false }, media }
+}
+
 it("paints a picture once its bytes arrive after the slide was painted without them", () => {
   const store = paintStore()
   const busy = busyElements()
   const sha256 = "a".repeat(64)
   const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])
   const register = openRegister("", "clean")
-  const edit = pictureCommand(
-    parts,
-    register,
-    1,
-    { media: { sha256, type: "image/png" } },
-    { x: 0, y: 0, cx: 9525, cy: 9525 },
-  )
+  const edit = pictureCommand(parts, register, 1, { sha256, type: "image/png" }, { x: 0, y: 0, cx: 9525, cy: 9525 })
   if (edit === null) throw new Error("refused")
   const added = { ...register, file: fileSlides(parts, register), order: [edit] }
   const waiting = paint(store, parts, added, busy)

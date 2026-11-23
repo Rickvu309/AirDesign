@@ -2,7 +2,7 @@ import type { SlidePictures } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { reportSlidePictures, slideKey, unresolvedAssets } from "./slide-picture-report"
-import { grow, paint, spot } from "./doom-fixtures"
+import { grow, paint, spot } from "@/testing/doom-fixtures"
 
 const asset = "a".repeat(64)
 

@@ -1,7 +1,7 @@
 import { airaRoutes, mcpRoutes, onceMeta, type ReplyBlock } from "@airdesign/catalog"
 import { describe, expect, it, vi } from "vitest"
 import { airaChat, askAira, undoExchange, type AiraChat } from "./aira-loop"
-import { call, deck, edit, editCall, edited, ended, read, scripted, stop } from "./aira-loop-script"
+import { call, deck, edit, editCall, edited, ended, read, scripted, stop } from "@/testing/aira-loop-script"
 
 describe("Aira's loop when Stop comes while a tool call is still waiting for the server", () => {
   const never = () => new Promise<void>(() => undefined)

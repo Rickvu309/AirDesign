@@ -8,11 +8,8 @@ import {
   type Value,
 } from "@airdesign/document"
 import { readPackage, readShapes, shapeKind, type ReadShape } from "@airdesign/pptx"
-import { beforeAll, expect, it } from "vitest"
+import { expect, it } from "vitest"
 import { exportedParts } from "./exported-parts"
-import { ensureMarkup } from "../markup"
-
-beforeAll(ensureMarkup)
 
 async function census() {
   const fsName = "node:fs/promises"

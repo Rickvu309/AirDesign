@@ -9,8 +9,8 @@ import { fillWrite, shownShadow } from "./design-paint-values"
 import { colorRows, idsWithColor, replaceColorWrites } from "./design-selection-colors"
 import { oldColorOf, doomColorOf } from "./design-values"
 import { propOf } from "./node-props"
-import { hexes } from "./design-adapter-art"
-import { grow, landed, spot } from "./doom-fixtures"
+import { hexes } from "@/testing/design-adapter-art"
+import { grow, landed, spot } from "@/testing/doom-fixtures"
 
 const theme = doom.defaultTheme
 const words = (chars: string, extra: Partial<doom.Text> = {}): doom.Text => ({

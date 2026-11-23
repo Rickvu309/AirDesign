@@ -1,5 +1,5 @@
 import { airaRoutes, catalog, mcpRoutes, projectTools, type ReplyBlock } from "@airdesign/catalog"
-import { askAira, type AiraChat } from "./aira-loop"
+import { askAira, type AiraChat } from "@/aira/aira-loop"
 
 export const deck = "deck"
 const nameOf = (op: string) => projectTools(catalog).find((tool) => tool.op === op)?.name ?? ""

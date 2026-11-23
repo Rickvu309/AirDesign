@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { landed, paint, spot } from "./doom-fixtures"
+import { landed, paint, spot } from "@/testing/doom-fixtures"
 import { sameSignature, slideSignature } from "./slide-signature"
 
 function deck() {

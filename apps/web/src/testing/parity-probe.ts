@@ -30,9 +30,9 @@ import {
   shownPictureMode,
   shownTileScale,
 } from "@airdesign/pptx"
-import { fillSlotFields } from "./design/fill-slots"
-import { panelOf, shownPlace } from "./design/panel"
-import { sectionInMode } from "./design/panel-order"
+import { fillSlotFields } from "./fill-slots"
+import { panelOf, shownPlace } from "@/design/panel"
+import { sectionInMode } from "@/design/panel-order"
 
 export type Parts = ReadonlyMap<string, Uint8Array>
 
@@ -44,7 +44,7 @@ export type At = {
 }
 
 export const judgedCases: readonly { readonly covers?: readonly string[] }[] = Object.values(
-  import.meta.glob<{ readonly covers?: readonly string[] }>("../../../scripts/pptx-cases/*.mjs", {
+  import.meta.glob<{ readonly covers?: readonly string[] }>("../../../../scripts/pptx-cases/*.mjs", {
     import: "default",
     eager: true,
   }),
@@ -67,7 +67,9 @@ export function element(parts: Parts, at: At): IndexElement | undefined {
 async function readDeck(name: string): Promise<Parts> {
   const fsName = "node:fs/promises"
   const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
-  const read = await readPackage(await fs.readFile(new URL(`../../../scripts/pptx-fixtures/${name}`, import.meta.url)))
+  const read = await readPackage(
+    await fs.readFile(new URL(`../../../../scripts/pptx-fixtures/${name}`, import.meta.url)),
+  )
   if (!read.ok) throw new Error(read.reason)
   return read.parts
 }

@@ -1,6 +1,6 @@
 import { paintSlots } from "@airdesign/document"
 import { shownFill, shownSlots } from "@airdesign/pptx"
-import type { ShownField } from "./panel"
+import type { ShownField } from "@/design/panel"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 type At = { readonly slide: string; readonly part: string; readonly shape: string }

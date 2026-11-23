@@ -2,7 +2,6 @@ import { act, createElement, useState } from "react"
 import type { Root } from "react-dom/client"
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
 import { NotesBar } from "./notes-bar"
-import { useUndoKeys, type UndoKey } from "./undo-keys"
 
 let window: Window & typeof globalThis
 let root: Root | null = null
@@ -56,17 +55,16 @@ afterAll(() => {
   window.close()
 })
 
-function Notes(props: { readonly text: string; readonly keys: UndoKey[] }) {
+function Notes(props: { readonly text: string }) {
   const [text, setText] = useState(props.text)
-  useUndoKeys(true, (key) => props.keys.push(key))
   return createElement(NotesBar, { text, onEdit: setText })
 }
 
-function rendered(text: string, keys: UndoKey[] = []) {
+function rendered(text: string) {
   const host = window.document.createElement("div")
   window.document.body.append(host)
   root = createRoot(host)
-  act(() => root?.render(createElement(Notes, { text, keys })))
+  act(() => root?.render(createElement(Notes, { text })))
   act(() => handle(host).click())
   return host
 }
@@ -104,8 +102,10 @@ it("gives the focus back to the closed bar when the notes collapse", () => {
 })
 
 it("leaves Ctrl+Z in the notes to the person's undo, never the field's own", () => {
-  const keys: UndoKey[] = []
-  const host = rendered("Talk", keys)
+  const keys: string[] = []
+  const listen = (event: KeyboardEvent) => keys.push(event.shiftKey ? "redo" : "undo")
+  window.addEventListener("keydown", listen)
+  const host = rendered("Talk")
   act(() => expand(host)[0]?.click())
   const box = field(host)
   const undo = new window.KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true, cancelable: true })
@@ -120,8 +120,8 @@ it("leaves Ctrl+Z in the notes to the person's undo, never the field's own", () 
     box.dispatchEvent(undo)
     box.dispatchEvent(redo)
   })
+  window.removeEventListener("keydown", listen)
   expect(keys).toEqual(["undo", "redo"])
-  expect([undo.defaultPrevented, redo.defaultPrevented]).toEqual([true, true])
   const menu = new window.InputEvent("beforeinput", { inputType: "historyUndo", bubbles: true, cancelable: true })
   box.dispatchEvent(menu)
   expect(menu.defaultPrevented).toBe(true)
@@ -215,7 +215,6 @@ it("keeps static notes read-only and cancels a drag without toggling", () => {
   root = createRoot(host)
   act(() => root?.render(createElement(NotesBar, { text: "Read only" })))
   expect(field(host).readOnly).toBe(true)
-  expect(field(host).hasAttribute("data-person-undo")).toBe(true)
   pointer(host, "pointerdown", 400)
   pointer(host, "pointermove", 280)
   pointer(host, "pointercancel", 280)

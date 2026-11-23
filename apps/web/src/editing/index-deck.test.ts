@@ -10,7 +10,7 @@ import { bytesOf, orderKeyBetween, type OrderKey } from "@airdesign/doom"
 import { orderedParts, readPackage, slideLayouts } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { indexedParts } from "./index-deck"
-import { onSlide, twoBoxSlide, xml } from "../slide-fixtures"
+import { onSlide, twoBoxSlide, xml } from "@/testing/slide-fixtures"
 
 it("indexes layout placeholders on the device without copying the slide text", async () => {
   const fsName = "node:fs/promises"

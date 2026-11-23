@@ -1,7 +1,7 @@
 import { readTurn } from "@airdesign/catalog"
 import { expect, it } from "vitest"
 import { airaChat } from "./aira-loop"
-import { asking, call, deck, ended, read, scripted } from "./aira-loop-script"
+import { asking, call, deck, ended, read, scripted } from "@/testing/aira-loop-script"
 
 const data = "/9j/4AAQSkZJRgABAQ=="
 const label = "Slide 1 (256) at revision 4:"

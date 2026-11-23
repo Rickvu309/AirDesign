@@ -6,7 +6,6 @@ dependencies:
   - apps/web/src/editor
   - apps/web/src/lib
 public:
-  - notes-on.ts
   - present-button.tsx
   - present-keys.ts
   - present-layer.tsx
