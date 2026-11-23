@@ -1,7 +1,7 @@
 import { AddCreditsDialog } from "@/credits/add-credits-dialog"
 import { addedBalance, addedHistory, amountEntry, creditsCopy } from "@/credits/credits-sample"
 import { ErrorTile, ExpiredTile, OkTile, ResultDialog } from "@/credits/result-dialog"
-import { UsageStage, WaitingBanner } from "@/credits/usage-stage"
+import { UsageStage, WaitingBanner } from "@/settings/screens/usage-stage"
 import { productCopy } from "@/copy/product-copy"
 import { UsageTab } from "@/settings/screens/usage-tab"
 import { usageHistory } from "@/settings/settings-sample"

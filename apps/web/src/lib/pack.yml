@@ -1,3 +1,4 @@
 layer: platform
 public:
   - class-names.ts
+  - fields-of.ts

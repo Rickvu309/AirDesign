@@ -8,7 +8,7 @@ import { distributeWrites } from "./design-align"
 import { fillWrite, shownShadow } from "./design-paint-values"
 import { colorRows, idsWithColor, replaceColorWrites } from "./design-selection-colors"
 import { oldColorOf, doomColorOf } from "./design-values"
-import { propOf } from "./node-props"
+import { propOf } from "@/editing/node-props"
 import { hexes } from "@/testing/design-adapter-art"
 import { grow, landed, spot } from "@/testing/doom-fixtures"
 

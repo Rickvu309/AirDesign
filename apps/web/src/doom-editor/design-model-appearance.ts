@@ -12,7 +12,7 @@ import { choiceDesc, doomControl } from "./design-controls"
 import { shadowNames, shownShadow } from "./design-paint-values"
 import { cornerEmu, wholeFraction } from "./design-values"
 import type { ModelInput } from "./design-model"
-import { propOf } from "./node-props"
+import { propOf } from "@/editing/node-props"
 
 export function opacitySection(input: ModelInput, kind: PanelKind): PanelSection[] {
   const held = propOf(input.view.nodes.get(input.id), "opacity") ?? 1

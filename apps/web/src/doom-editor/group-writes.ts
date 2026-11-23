@@ -1,6 +1,6 @@
 import { orderKeyBetween, type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { parentSlot, propOf, siblingsOf } from "./node-props"
+import { parentSlot, propOf, siblingsOf } from "@/editing/node-props"
 import { apply, invert, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
 
 type Made = { readonly writes: readonly doom.Write[]; readonly selected: readonly doom.NodeId[] }

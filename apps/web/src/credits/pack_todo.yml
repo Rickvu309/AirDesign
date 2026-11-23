@@ -1,6 +1,0 @@
-apps/web/src/aira:
-  apps/web/src/aira/aira-wire.ts:
-    violations:
-      - dependency
-    files:
-      - apps/web/src/credits/credits-load.ts

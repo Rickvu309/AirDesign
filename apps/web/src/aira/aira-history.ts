@@ -1,5 +1,6 @@
 import { bytesOf } from "@airdesign/doom"
 import { readTurn, sentWithoutPictures, withoutPictures, type ModelMessage, type ToolAnswer } from "@airdesign/catalog"
+import { fieldsOf } from "@/lib/fields-of"
 import {
   airaChat,
   airaStep,
@@ -149,10 +150,6 @@ export function saveStep(
   const [first, ...rest] = queue.next
   if (first !== undefined) return { queue: { writing: true, next: rest }, write: first }
   return { queue: { writing: false, next: [] }, write: null }
-}
-
-function fieldsOf(raw: unknown): Readonly<Record<string, unknown>> | undefined {
-  return typeof raw === "object" && raw !== null && !Array.isArray(raw) ? (raw as Record<string, unknown>) : undefined
 }
 
 function readStep(raw: unknown): AiraStep | undefined {

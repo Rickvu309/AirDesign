@@ -9,7 +9,7 @@ import { choiceDesc, doomControl } from "./design-controls"
 import { shownStroke } from "./design-paint-values"
 import { oldColorOf, emuOf } from "./design-values"
 import type { ModelInput } from "./design-model"
-import { propOf } from "./node-props"
+import { propOf } from "@/editing/node-props"
 
 const widest = 20_116_800
 

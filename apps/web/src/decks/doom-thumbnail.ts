@@ -3,7 +3,7 @@ import * as doom from "@airdesign/doom"
 import { DoomSlide } from "@airdesign/render"
 import { createElement } from "react"
 import { createRoot } from "react-dom/client"
-import { slidesOf } from "@/doom-editor/node-props"
+import { slidesOf } from "@/editing/node-props"
 
 export const thumbnailWidth = 640
 

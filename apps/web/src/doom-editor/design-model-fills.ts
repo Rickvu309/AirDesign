@@ -8,7 +8,7 @@ import { choiceDesc, descOf, oldControl } from "./design-controls"
 import { shownFill } from "./design-paint-values"
 import { oldColorOf } from "./design-values"
 import type { ModelInput } from "./design-model"
-import { propOf } from "./node-props"
+import { propOf } from "@/editing/node-props"
 
 export const imageFits = ["fill", "fit", "tile"]
 

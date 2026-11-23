@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { airaChatsKeptOf, airaCopy, airaHistoryNameOf } from "@/copy/aira-copy"
-import { deckTime } from "@/decks/deck-time"
+import { deckTime } from "@/copy/deck-time-copy"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { chatsKept, type SavedChat } from "@/aira/aira-history"
 

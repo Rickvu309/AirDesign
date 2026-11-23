@@ -1,5 +1,5 @@
 import { creditsRoutes, readCredits, type Credits } from "@airdesign/catalog"
-import { fieldsOf } from "@/aira/aira-wire"
+import { fieldsOf } from "@/lib/fields-of"
 
 export type CreditsLoad =
   | { readonly kind: "credits"; readonly credits: Credits }

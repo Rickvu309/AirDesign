@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { reachOf, snapMove, type Bounds, type Guide, type SnapTargets } from "@airdesign/render"
-import { flows, lockedIn, propOf } from "./node-props"
+import { flows, lockedIn, propOf } from "@/editing/node-props"
 import { aroundPlaced, invert, linear, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
 
 const zero: Point = { x: 0, y: 0 }

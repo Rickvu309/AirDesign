@@ -3,12 +3,10 @@ dependencies:
   - apps/web/src/account
   - apps/web/src/components
   - apps/web/src/copy
-  - apps/web/src/editor
   - apps/web/src/lib
 public:
   - aira-loop.ts
   - aira-panel.tsx
-  - aira-prompts.ts
+  - aira-tile.tsx
   - aira-usage.ts
-  - aira-wire.ts
-  - usage-ring.tsx
+  - usage-load.ts

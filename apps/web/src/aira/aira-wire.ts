@@ -1,4 +1,5 @@
 import { pictureType, type ReplyBlock, type ResultBlock } from "@airdesign/catalog"
+import { fieldsOf } from "@/lib/fields-of"
 
 export type WeekUsage = { readonly used: number; readonly allowed: number; readonly resets: string }
 
@@ -19,11 +20,6 @@ export type ToolOutcome = {
   readonly text: string
   readonly fields: Readonly<Record<string, unknown>> | undefined
   readonly pictures?: readonly ResultBlock[]
-}
-
-export function fieldsOf(raw: unknown): Readonly<Record<string, unknown>> | undefined {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return undefined
-  return raw as Record<string, unknown>
 }
 
 function parsed(text: string): unknown {

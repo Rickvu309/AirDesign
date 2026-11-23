@@ -1,7 +1,7 @@
 import { type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { propOf } from "./node-props"
+import { propOf } from "@/editing/node-props"
 import { blankTextFor, holdsPaint, leaveEmptyWrites } from "./text-leave"
 import {
   lookAt,

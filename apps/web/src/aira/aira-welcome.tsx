@@ -1,7 +1,7 @@
 import { ConversationEmptyState } from "@/components/ai-elements/conversation"
 import { airaCopy } from "@/copy/aira-copy"
 import { productCopy } from "@/copy/product-copy"
-import { AiraTile } from "@/settings/settings-controls"
+import { AiraTile } from "@/aira/aira-tile"
 
 export function AiraWelcome({ notOffered = false }: { notOffered?: boolean }) {
   return (

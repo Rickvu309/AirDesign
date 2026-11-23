@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { flipSelection, normalizeDegrees } from "@airdesign/render"
-import { propOf } from "./node-props"
+import { propOf } from "@/editing/node-props"
 import { memberOf } from "./selection-frame"
 import { apply, invert, type SlideGeometry } from "./slide-geometry"
 import { transformable } from "./transform-drag"

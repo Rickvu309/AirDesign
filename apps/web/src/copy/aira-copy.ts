@@ -1,8 +1,12 @@
 import type { AgentOp, EditRefusal } from "@airdesign/catalog"
-import type { ToolState } from "@/aira/aira-loop"
 import { elementCopy } from "./element-copy.ts"
 
-export type StepWords = Readonly<Record<ToolState, string>>
+export type StepWords = {
+  readonly working: string
+  readonly done: string
+  readonly refused: string
+  readonly stopped: string
+}
 
 export const airaStepWords: Readonly<Record<AgentOp, StepWords | null>> = {
   read_deck: {

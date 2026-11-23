@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 import type { Palette, Swatch } from "@/design/color-choices"
 import { namedByColor } from "@/design/color-names"
-import { propOf } from "./node-props"
+import { propOf } from "@/editing/node-props"
 import { slotOfVar } from "./design-values"
 
 export function swatchesOf(theme: doom.Theme): readonly Swatch[] {

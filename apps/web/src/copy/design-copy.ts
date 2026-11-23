@@ -3,7 +3,6 @@ import { appearanceCopy } from "./appearance-copy"
 import type { PaintFill } from "@airdesign/pptx"
 import { nameTooLongOf } from "./product-copy"
 import { frameCopy } from "./frame-copy"
-import type { PanelKind } from "@/design/panel-order"
 
 type Named = Exclude<PaintFill["type"], "solid" | "none">
 
@@ -54,6 +53,5 @@ export const designCopy = {
   cell: (row: number, column: number) => `Row ${String(row)}, column ${String(column)}`,
 } as const satisfies {
   readonly fills: Record<Named, string>
-  readonly panels: Record<Exclude<PanelKind, "many">, string>
   readonly [key: string]: unknown
 }
