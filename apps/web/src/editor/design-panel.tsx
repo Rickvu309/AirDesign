@@ -11,13 +11,13 @@ import { visibleEffects } from "@/design/effects-list"
 import { panelPlaces, sectionInMode, type PanelMode } from "@/design/panel-order"
 import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
 import { EditorIcon } from "@/components/ui/editor-icons"
-import { optionWord } from "@/copy/option-copy"
 import { cn } from "@/lib/class-names"
 import { LinkFormatting } from "@/design/controls/link"
 import { isWeight, selectedWeight, useSelectedWeight, weightPicked } from "@/design/selected-weight"
 import type { TextFormatting } from "@airdesign/render"
 import { linkCopy } from "@/copy/link-copy"
 import { followsDrag, useLiveBoxControl } from "@/editor/live-box-fields"
+import { panelTitle } from "@/editor/panel-title"
 
 const openChrome = ["text", "link", "fills", "textFill", "border", "shadow", "opacity"]
 
@@ -233,20 +233,6 @@ export function SectionStrips({
       ))}
     </div>
   )
-}
-
-function panelTitle({ kind, nodes, sections, frame }: PanelModel): string {
-  if (kind === "frame" && frame === "auto") return designCopy.autoFrame
-  if (kind === "shape") {
-    const shape = sections
-      .flatMap((section) => section.strips.flat())
-      .find((control) => control.trait === "geometry" && control.field === "shape")?.value
-    if (typeof shape === "object" && shape !== null && "preset" in shape && typeof shape.preset === "string")
-      return shape.preset === "rect" ? designCopy.square : optionWord("shape.preset", shape.preset)
-  }
-  if (kind === "text" || kind === "picture") return designCopy.titles[kind]
-  if (kind === "many") return designCopy.selected(nodes.length)
-  return kind === null ? designCopy.panels.kept : designCopy.panels[kind]
 }
 
 export function ElementDesign({

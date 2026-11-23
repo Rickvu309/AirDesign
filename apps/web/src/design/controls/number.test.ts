@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { chosenStep, scrubbed } from "@/design/controls/number"
+import { chosenStep, numberShown, scrubbed, shownNumber, steppedFrom, untouched } from "@/design/controls/number"
+import type { PanelControl } from "@/design/panel"
+import { spacingUnits } from "@/design/spacing-units"
 
 const plain = { shiftKey: false, altKey: false }
 const shift = { shiftKey: true, altKey: false }
@@ -34,5 +36,31 @@ describe("a preset list", () => {
     expect(chosenStep("", steps)).toBeNull()
     expect(chosenStep("8", [0, 4, 8, 16])).toBe(8)
     expect(chosenStep("80", [0, 4, 8, 16])).toBeNull()
+  })
+})
+
+describe("letter spacing", () => {
+  it("shows a whole percent of the size, as Figma does, so a title's -1.5 px at 88 reads -2%", () => {
+    const control = {
+      desc: { kind: "number", unit: "emu", min: -100_000, max: 100_000 },
+      value: -150,
+      mixed: false,
+      ...spacingUnits("text", "letterSpacing", 8800),
+    } as unknown as PanelControl
+    expect(shownNumber(control)).toBe("-2")
+  })
+
+  it("writes nothing on Enter in an untouched rounded field, and steps and scrubs from the stored value", () => {
+    const control = {
+      desc: { kind: "number", unit: "emu", min: -100_000, max: 100_000 },
+      value: -150,
+      mixed: false,
+      ...spacingUnits("text", "letterSpacing", 8800),
+    } as unknown as PanelControl
+    const { text, exact } = numberShown(control)
+    expect(untouched(text, text)).toBe(true)
+    expect(exact).toBeCloseTo(-1.7045, 4)
+    expect(steppedFrom(text, text, exact, {}) + 1).toBeCloseTo(-0.7045, 4)
+    expect(steppedFrom("-3", text, exact, {})).toBe(-3)
   })
 })

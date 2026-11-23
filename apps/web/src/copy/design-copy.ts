@@ -30,7 +30,7 @@ export const designCopy = {
   selectMatching: "Select matching layers",
   noMatching: "No matching layers found.",
   multiEditText: "Multi-edit text",
-  titles: { text: "Text", picture: "Image" },
+  titles: { text: "Text", picture: "Image", icon: "Icon" },
   autoFrame: frameCopy.autoFrame,
   removeAutoLayout: frameCopy.removeAutoLayout,
   resizeToFit: frameCopy.resizeToFit,
