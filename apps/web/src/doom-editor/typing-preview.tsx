@@ -1,0 +1,57 @@
+import * as doom from "@airdesign/doom"
+import { useMemo, useSyncExternalStore } from "react"
+import { DoomThumb } from "./doom-thumb"
+
+export type TypingPreview = {
+  readonly writes: () => readonly doom.Write[]
+  readonly set: (writes: readonly doom.Write[]) => void
+  readonly subscribe: (listener: () => void) => () => void
+}
+
+const author: doom.Author = { kind: "person", id: "preview" }
+
+const followMilliseconds = 150
+
+export function typingPreview(): TypingPreview {
+  let latest: readonly doom.Write[] = []
+  let shown: readonly doom.Write[] = []
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const listeners = new Set<() => void>()
+  const show = () => {
+    timer = undefined
+    if (shown === latest) return
+    shown = latest
+    for (const listener of listeners) listener()
+  }
+  return {
+    writes: () => shown,
+    set: (writes) => {
+      if (writes.length === 0 && latest.length === 0) return
+      latest = writes
+      if (writes.length === 0) {
+        clearTimeout(timer)
+        show()
+      } else timer ??= setTimeout(show, followMilliseconds)
+    },
+    subscribe: (listener) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+  }
+}
+
+export function TypedThumb(props: {
+  readonly typing: TypingPreview
+  readonly view: doom.Doom
+  readonly slide: doom.NodeId
+  readonly width: number
+  readonly assetUrl: (asset: string) => string | undefined
+}) {
+  const { typing, view } = props
+  const writes = useSyncExternalStore(typing.subscribe, typing.writes)
+  const shown = useMemo(
+    () => (writes.length === 0 ? view : doom.viewOf(view, [{ once: "typing", author, writes }])),
+    [view, writes],
+  )
+  return <DoomThumb view={shown} slide={props.slide} width={props.width} assetUrl={props.assetUrl} />
+}

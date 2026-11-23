@@ -5,6 +5,7 @@ import { doomEditorCopy } from "@/copy/doom-editor-copy"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { slideThumbWidth, type SlideStrip } from "@/editor/slide-sidebar"
 import { DoomThumb } from "./doom-thumb"
+import { TypedThumb, type TypingPreview } from "./typing-preview"
 import {
   addSlideWrites,
   deleteSlideWrites,
@@ -19,14 +20,14 @@ const isStart = (part: string): part is doom.SlideStart => (doom.slideStarts as 
 
 export function useSlideStrip(props: {
   readonly view: doom.Doom
-  readonly shown: doom.Doom
+  readonly typing: TypingPreview
   readonly client: EditorClient
   readonly slides: readonly doom.NodeId[]
   readonly current: doom.NodeId | undefined
   readonly onCurrent: (slide: doom.NodeId) => void
   readonly assetUrl: (asset: string) => string | undefined
 }): SlideStrip {
-  const { view, shown, client, slides, current, onCurrent, assetUrl } = props
+  const { view, typing, client, slides, current, onCurrent, assetUrl } = props
   const say = useRef<(text: string) => void>(() => undefined)
   const { size } = doom.deckOf(view)
   const index = current === undefined ? 0 : Math.max(0, slides.indexOf(current))
@@ -39,7 +40,12 @@ export function useSlideStrip(props: {
     thumbHeight: Math.round((slideThumbWidth * size.h) / size.w),
     thumb: (at, width) => {
       const slide = slides[at]
-      return slide === undefined ? null : <DoomThumb view={shown} slide={slide} width={width} assetUrl={assetUrl} />
+      if (slide === undefined) return null
+      return slide === current ? (
+        <TypedThumb typing={typing} view={view} slide={slide} width={width} assetUrl={assetUrl} />
+      ) : (
+        <DoomThumb view={view} slide={slide} width={width} assetUrl={assetUrl} />
+      )
     },
     onSelect: (at) => {
       const slide = slides[at]
