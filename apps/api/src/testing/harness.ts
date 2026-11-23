@@ -1,10 +1,10 @@
-import { readCommit, signInRoutes } from "@airdesign/catalog"
+import { signInRoutes } from "@airdesign/catalog"
 import { createHash, randomBytes } from "node:crypto"
 import { request, type IncomingHttpHeaders, type Server } from "node:http"
 import type { AddressInfo } from "node:net"
 import { Client } from "pg"
 
-import { createApi, type ApiOptions, type Commit, type Mail } from "../index.js"
+import { createApi, type ApiOptions, type Mail } from "../index.js"
 import { clusterFile, publishedCluster } from "./postgres-setup.js"
 import { readSignInMail } from "../account/sign-in-mail.js"
 
@@ -172,12 +172,6 @@ export async function signInByCode(base: string, mails: readonly Mail[], email: 
   const cookie = cookieFrom(signed.headers)
   if (cookie === undefined) throw new Error("cookie")
   return cookie
-}
-
-export function wireCommit(raw: unknown): Commit {
-  const parsed = readCommit(raw)
-  if (!parsed.ok) throw new Error(parsed.refusal)
-  return parsed
 }
 
 export const testResource = "https://mcp.example.test/mcp"

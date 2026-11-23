@@ -4,9 +4,7 @@ import type { BrowserContext, Page, TestInfo } from "@playwright/test"
 import { deckStateFile } from "../../scripts/deck-state-file.mjs"
 import { deviceRows, valuedKey, type DeviceRows, type RawDeviceRows, type RawRow } from "../device-rows.ts"
 
-const shownDeck = /^\/deck\/([A-Za-z0-9_-]{1,64})$/
 const keptLoads = 4
-const keptAnswer = 500
 const loadBinding = "airdesignKeepDeckState"
 
 type Reading = DeviceRows | { readonly error: string }
@@ -33,14 +31,6 @@ type Loaded = {
 }
 
 const said = (error: unknown) => (error instanceof Error ? error.message : String(error))
-
-const deckOf = (page: Page) => {
-  try {
-    return shownDeck.exec(new URL(page.url()).pathname)?.[1]
-  } catch {
-    return undefined
-  }
-}
 
 type Place = { readonly valued: string; readonly database: string; readonly store: string }
 
@@ -118,44 +108,6 @@ async function reading(page: Page): Promise<Reading> {
   }
 }
 
-type OpenAnswer = {
-  readonly ok?: unknown
-  readonly revision?: unknown
-  readonly register?: { readonly elements?: unknown }
-}
-
-function openAnswer(text: string): OpenAnswer | undefined {
-  try {
-    return JSON.parse(text) as OpenAnswer
-  } catch {
-    return undefined
-  }
-}
-
-async function serverDeck(page: Page, deck: string): Promise<Record<string, unknown>> {
-  try {
-    const { deckRoutes } = await import("../../packages/catalog/src/index.ts")
-    const answer = await page.evaluate(
-      async ({ path, deck }) => {
-        const response = await fetch(path, {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ deck }),
-        })
-        return { status: response.status, text: await response.text() }
-      },
-      { path: deckRoutes.open.path, deck },
-    )
-    const opened = openAnswer(answer.text)
-    if (opened?.ok === true)
-      return { deck, status: answer.status, revision: opened.revision, elements: opened.register?.elements }
-    return { deck, status: answer.status, answer: answer.text.slice(0, keptAnswer) }
-  } catch (error) {
-    return { deck, error: said(error) }
-  }
-}
-
 export async function watchDeckState(context: BrowserContext, now: () => number = Date.now): Promise<DeckState> {
   const began = now()
   const loads: Load[] = []
@@ -172,17 +124,9 @@ export async function watchDeckState(context: BrowserContext, now: () => number 
       if (pages.length === 0 && loads.length === 0) return
       const reader = pages[0]
       const device = reader === undefined ? { error: "no page of the app was open" } : await reading(reader)
-      const server: Record<string, unknown>[] = []
-      const asked = new Set<string>()
-      for (const page of pages) {
-        const deck = deckOf(page)
-        if (deck === undefined || asked.has(deck)) continue
-        asked.add(deck)
-        server.push(await serverDeck(page, deck))
-      }
       const file = testInfo.outputPath(deckStateFile)
       await mkdir(dirname(file), { recursive: true })
-      const state = { status: testInfo.status, pages: pages.map((page) => page.url()), device, server, loads }
+      const state = { status: testInfo.status, pages: pages.map((page) => page.url()), device, loads }
       await writeFile(file, `${JSON.stringify(state, null, 1)}\n`)
       await testInfo.attach(deckStateFile, { path: file, contentType: "application/json" })
     },

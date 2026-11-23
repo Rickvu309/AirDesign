@@ -25,27 +25,33 @@ import type { UndoButtonsState } from "@/editor/undo-buttons"
 import type { FormatShown } from "@/editor/format-buttons"
 import type { ToneSource } from "@/editor/tone-link"
 import { type Selection, type ShapeDrawing, type TextFormatting } from "@airdesign/render"
-import type { SaveStatus } from "@/editor/use-deck-status"
+import type { SaveStatus } from "@/editor/save-status"
 import { ImagesPanel, ShapesPanel, ShapeTray, SlideColumn, TemplatePicker, TextPanel } from "@/editor/tool-panels"
 import { useCanvasRoom } from "@/editor/use-canvas-room"
 import type { ToolbarTools } from "@/editor/toolbar-tools"
 import { useToolKeys } from "@/editor/tool-keys"
 import { shapeDrawing, type ShapeAdd } from "@/editor/shape-draw-tool"
 import type { TextPlace } from "@/element-edit"
-import type { PartsWatch } from "@/editor/use-deck-paint"
 import { useKeptView } from "@/editor/kept-view"
-import type { GuidesShown } from "@/editor/slide-guides"
 import { ShortcutsPanel } from "@/editor/shortcuts-panel"
 import { useZoomKeys } from "@/editor/zoom-keys"
 import { ZoomMenu } from "@/editor/zoom-menu"
 import { ExportControl } from "@/export/export-control"
-import type { ExportRequest } from "@/export/export-deck"
+import type { ExportRequest } from "@/export/export-control"
 import { PresentButton } from "@/present/present-button"
 import { usePresentKeys } from "@/present/present-keys"
 import { PresentLayer } from "@/present/present-layer"
 import type { ShownSlide } from "@/present/slide-shows"
 import type { LayerPairs } from "@/present/use-leaving"
 import { usePresent } from "@/present/use-present"
+
+export type PartsWatch = {
+  readonly subscribe: (listener: () => void) => () => void
+  readonly version: () => number
+  readonly changed: () => void
+}
+
+export type GuidesShown = { readonly rulers: boolean; readonly layoutGuides: boolean }
 
 export type EditorRail = "slides" | "images" | "shapes" | "text"
 

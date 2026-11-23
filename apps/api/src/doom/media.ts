@@ -10,19 +10,11 @@ type MediaRow = { readonly key: string; readonly bytes: number }
 
 const refused = (refusal: WireRefusal) => ({ ok: false as const, refusal })
 
-const ownedSql = `
-select deleted is not null as deleted from deck.saved where id = $1 and owner = $2
-union all
-select false from deck.doom where id = $1 and owner = $2
-limit 1`
+const ownedSql = "select id from deck.doom where id = $1 and owner = $2"
 
 const insertSql = `
-with saved_live as (
-  select id from deck.saved where id = $1 and owner = $2 and deleted is null for share
-), doom_live as (
+with live as (
   select id from deck.doom where id = $1 and owner = $2 for share
-), live as (
-  select id from saved_live union all select id from doom_live limit 1
 ), held as (
   select coalesce(sum(bytes), 0) as total from deck.media where deck = $1
 )
@@ -34,10 +26,8 @@ returning key, bytes`
 const heldSql = "select key, bytes from deck.media where deck = $1 and sha256 = $2"
 
 async function unowned(db: Sql, deck: DeckId, email: string) {
-  const result = await db.query<{ deleted: boolean }>(ownedSql, [deck, email])
-  const row = result.rows[0]
-  if (row === undefined) return refused("owner")
-  return row.deleted ? refused("deleted") : undefined
+  const result = await db.query(ownedSql, [deck, email])
+  return result.rows.length === 0 ? refused("owner") : undefined
 }
 
 async function held(db: Sql, deck: DeckId, sha256: string): Promise<MediaRow | undefined> {

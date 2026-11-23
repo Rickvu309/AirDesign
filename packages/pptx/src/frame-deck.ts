@@ -6,6 +6,7 @@ import {
   slideId,
   type Command,
   type IndexElement,
+  type IndexSlide,
   type Register,
   type SlideCommand,
 } from "@airdesign/document"
@@ -47,7 +48,9 @@ function packaged() {
 }
 
 const parts = packaged()
-export const { slides, elements: read } = indexPackage(parts)
+const indexed = indexPackage(parts)
+export const slides: readonly IndexSlide[] = indexed.slides
+const read = indexed.elements
 const turned = { "box.rot": [90], "box.flipH": [true] } as const
 const elements: IndexElement[] = read.map((element) =>
   element.node === "258.10" ? { ...element, design: turned } : element,

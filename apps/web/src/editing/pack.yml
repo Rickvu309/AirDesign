@@ -5,10 +5,7 @@ dependencies:
 public:
   - canvas-slide.ts
   - canvas-source.ts
-  - command-store.ts
-  - commit-edit.ts
   - design-rows.ts
-  - device-copy.ts
   - element-move.ts
   - exported-parts.ts
   - fill-plan.ts
@@ -19,7 +16,6 @@ public:
   - indexed-register.ts
   - layer-clipboard.ts
   - live-repaint.ts
-  - notes-edit.ts
   - numbered-text.ts
   - paint-css.ts
   - paint-structure.ts

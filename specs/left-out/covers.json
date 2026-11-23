@@ -24,12 +24,6 @@
       "names": ["paint"],
       "digest": "0c17433fd38a",
       "blob": "81282ff2a5cde3d9e193c9a750a024cbd3011270"
-    },
-    {
-      "file": "apps/web/src/export/export-deck.ts",
-      "names": ["exportDeck"],
-      "digest": "370676e0f110",
-      "blob": "f616bc3fe0e3dc8707b3f828a7a9d46c416fbe55"
     }
   ]
 }

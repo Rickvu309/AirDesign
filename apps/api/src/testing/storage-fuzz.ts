@@ -16,9 +16,6 @@ export function storageFuzzGood(deck: string) {
         fields: { family: "UnknownFont", file: "unknown.ttf", v: fontRevision },
       },
     ],
-    "POST /decks/original/upload": storage({ deck, bytes: 4, sha256 }),
-    "POST /decks/original/done": storage({ deck }),
-    "POST /decks/original": storage({ deck }),
     "POST /decks/media/upload": storage({ deck, bytes: 4, sha256 }),
     "POST /decks/media": storage({ deck, sha256 }),
   }

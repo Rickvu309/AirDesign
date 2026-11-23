@@ -1,6 +1,6 @@
 import { limits } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { deckRoutes, readFindingsReport } from "./index.js"
+import { readFindingsReport } from "./index.js"
 
 const overflow = { code: "overflow", node: "258.7", needed: 86.4, room: 64.8, size: 28, height: 93.6 }
 const findings = [
@@ -18,13 +18,11 @@ const findings = [
 ]
 const report = { deck: "deck", revision: 3, findings }
 
-it("reads a tab's findings report for one revision and keeps the route in the catalog", () => {
+it("reads a tab's findings report for one revision", () => {
   expect(readFindingsReport(report)).toEqual({ ok: true, ...report })
-  expect(deckRoutes.findings.read(report)).toEqual({ ok: true, ...report })
   expect(readFindingsReport({ ...report, findings: [] })).toEqual({ ok: true, ...report, findings: [] })
   const twice = [overflow, { ...findings[6], node: "258.7" }]
   expect(readFindingsReport({ ...report, findings: twice })).toEqual({ ok: true, ...report, findings: twice })
-  expect(deckRoutes.findings.result({ ok: true, deck: "deck" })).toEqual({ ok: true, deck: "deck" })
   const broken = { ...report, findings: [], broken: true }
   expect(readFindingsReport(broken)).toEqual({ ok: true, ...broken })
 })

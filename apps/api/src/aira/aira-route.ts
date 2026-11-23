@@ -6,7 +6,7 @@ import { airaTurn, airaTurnCap, type AiraLine, type AiraSettings } from "./aira.
 import type { Closing } from "./aira-closing.js"
 import { filterForwardedHeaders } from "../platform/forward-secret.js"
 import type { Sql } from "../platform/pool.js"
-import { spendOnce } from "../legacy-decks/saved.js"
+import { doomOnceRun } from "../doom/doom-deck.js"
 
 type AiraVisit = {
   readonly options: {
@@ -101,15 +101,15 @@ export function airaRouteList<Visit extends AiraVisit>(http: AiraHttp<Visit>): r
           http.sendJson(visit.res, 400, { ok: false, refusal: "body" })
           return
         }
-        const spent =
+        const landed =
           stop.call === undefined
             ? undefined
-            : await spendOnce(visit.options.deck, email, stop.call.deck, stop.call.once)
+            : await doomOnceRun(visit.options.deck, email, stop.call.deck, stop.call.once)
         await visit.options.closing.stop(email, stop.ask)
         http.sendJson(
           visit.res,
           200,
-          spent?.ok === true && spent.runId !== undefined ? { ok: true, runId: spent.runId } : { ok: true },
+          landed?.landed === true && landed.run !== undefined ? { ok: true, runId: landed.run } : { ok: true },
         )
       },
     },

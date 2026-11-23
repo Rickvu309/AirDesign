@@ -1,5 +1,13 @@
 import { createHash, randomBytes } from "node:crypto"
-import { airaRoutes, countryHeader, deckRoutes, mcpRoutes, oauthRoutes, signInRoutes } from "@airdesign/catalog"
+import {
+  airaRoutes,
+  countryHeader,
+  deckRoutes,
+  doomRoutes,
+  mcpRoutes,
+  oauthRoutes,
+  signInRoutes,
+} from "@airdesign/catalog"
 
 import { ask, askForm, cookieFrom, verifierPair } from "./harness.js"
 import type { Mail, OriginalUpload, Sql } from "../index.js"
@@ -19,7 +27,7 @@ export type Filled = {
 }
 
 const callback = "http://127.0.0.1:8124/account"
-const bytes = Buffer.from("original presentation")
+const bytes = Buffer.from("a picture on the deck")
 const sha256 = createHash("sha256").update(bytes).digest("hex")
 
 export async function signIn(served: Served, email: string): Promise<string> {
@@ -40,15 +48,14 @@ async function posted(served: Served, path: string, body: unknown, cookie: strin
 
 async function storedDeck(served: Served, cookie: string): Promise<string> {
   const deck = `account${randomBytes(4).toString("hex")}`
-  await posted(served, deckRoutes.open.path, { deck }, cookie)
+  await posted(served, doomRoutes.create.path, { deck }, cookie)
   const signed = (await posted(
     served,
-    deckRoutes.originalUpload.path,
+    deckRoutes.mediaUpload.path,
     { deck, bytes: bytes.length, sha256 },
     cookie,
   )) as OriginalUpload
   served.store.put(signed.url, bytes, signed.headers)
-  await posted(served, deckRoutes.originalDone.path, { deck }, cookie)
   return deck
 }
 
@@ -148,7 +155,7 @@ export function emptied(counts: Record<string, number>): readonly string[] {
 
 export function storedKeys(store: LocalOriginalStore, email: string): readonly string[] {
   const account = createHash("sha256").update(email).digest("hex")
-  return [...store.objects.keys()].filter((key) => key.startsWith(`originals/${account}/`))
+  return [...store.objects.keys()].filter((key) => key.startsWith(`media/${account}/`))
 }
 
 async function agentCall(served: Served, access: string, name: string, args: unknown): Promise<Record<string, any>> {

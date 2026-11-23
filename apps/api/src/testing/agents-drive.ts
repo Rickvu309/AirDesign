@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto"
 
-import { deckRoutes, mcpRoutes, oauthRoutes, signInRoutes } from "@airdesign/catalog"
+import { mcpRoutes, oauthRoutes, signInRoutes } from "@airdesign/catalog"
 
 import { ask, askForm, cookieFrom, postgresInfo, serve, verifierPair } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "../index.js"
@@ -122,10 +122,4 @@ export async function connected(headers: Record<string, string>): Promise<Agent>
       }
     },
   }
-}
-
-export async function deckOf(owner: Account): Promise<string> {
-  const id = `deck${randomBytes(5).toString("hex")}`
-  await ask(address.base, "POST", deckRoutes.open.path, { deck: id }, owner.cookie)
-  return id
 }

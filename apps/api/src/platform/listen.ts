@@ -2,27 +2,17 @@ import { Client, type Notification } from "pg"
 
 export type Channel = "deck" | "aira"
 
-export type CaughtRevision = {
-  readonly id: string
-  readonly revision: number
-}
-
 export class DeckListen {
   private client: Client | undefined
   private trusted = false
   private stopped = true
   private opening: Promise<void> | undefined
   private pendingWake = false
-  private caught: CaughtRevision[] = []
   private readonly waiters: Record<Channel, Set<() => void>> = { deck: new Set(), aira: new Set() }
   private readonly connectionString: string
 
   constructor(connectionString: string) {
     this.connectionString = connectionString
-  }
-
-  revisions(): readonly CaughtRevision[] {
-    return this.caught
   }
 
   async open(): Promise<void> {
@@ -125,13 +115,6 @@ export class DeckListen {
     }
     await client.query("listen deck")
     await client.query("listen aira")
-    const seen = await client.query<{ id: string; revision: number }>("select id, revision from deck.saved")
-    if (this.stopped) {
-      client.removeAllListeners()
-      await client.end().catch(() => undefined)
-      return
-    }
-    this.caught = seen.rows.map((row) => ({ id: row.id, revision: row.revision }))
     this.client = client
     this.trusted = true
     this.wake("aira")

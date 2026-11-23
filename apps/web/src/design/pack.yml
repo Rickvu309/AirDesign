@@ -17,7 +17,6 @@ public:
   - controls/union.tsx
   - corners-control.ts
   - crop-change.ts
-  - design-change.ts
   - effects-list.ts
   - eyedropper.ts
   - fill-image.ts

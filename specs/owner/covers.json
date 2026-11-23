@@ -2,12 +2,6 @@
   "check": "checks-server.md#owner",
   "covers": [
     {
-      "file": "apps/api/src/legacy-decks/saved.ts",
-      "names": ["deckAccess"],
-      "digest": "241ce53cbcc7",
-      "blob": "ba34bb38939f74bdb8616b44210ae4c72046404e"
-    },
-    {
       "file": "apps/api/src/mcp/mcp.ts",
       "names": ["serveMcp"],
       "digest": "eebf80872441",

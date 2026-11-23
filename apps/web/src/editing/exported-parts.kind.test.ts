@@ -11,7 +11,6 @@ import { readPackage, readShapes, shapeKind, type ReadShape } from "@airdesign/p
 import { beforeAll, expect, it } from "vitest"
 import { exportedParts } from "./exported-parts"
 import { ensureMarkup } from "../markup"
-import { notesShown } from "./notes-edit"
 
 beforeAll(ensureMarkup)
 
@@ -64,7 +63,6 @@ it("opens and exports a deck whose register holds agent text on elements that ho
   const shapes = readShapes(parts)
   const refused = ["photo", "group", "kept", "connector"].map((kind) => first(shapes, kind))
   const register = storedBeforeTheFix(refused.map((node) => [node, agentText] as const))
-  expect(() => notesShown(parts, register)).not.toThrow()
   const exported = exportedParts(parts, register)
   for (const [name, bytes] of parts) expect(exported.get(name), name).toEqual(bytes)
 })
@@ -81,7 +79,6 @@ it("opens and exports a deck whose register holds an agent edit on a shape with 
     [node, { property: "box", value: box }],
   ])
   expect(shapeKind(locked)).toBe("kept")
-  expect(() => notesShown(parts, register)).not.toThrow()
   const exported = exportedParts(parts, register)
   for (const [name, bytes] of parts) expect(exported.get(name), name).toEqual(bytes)
 })

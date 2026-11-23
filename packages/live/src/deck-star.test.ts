@@ -24,7 +24,7 @@ function answering(sent: Sent[]) {
 }
 
 async function queuedStars(decks: string[]): Promise<[string, boolean][]> {
-  return [...(await sendQueued(decks)).stars]
+  return [...(await sendQueued(decks))]
 }
 
 it("sends a star to the server and keeps nothing queued once it lands", async () => {

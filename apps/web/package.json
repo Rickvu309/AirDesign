@@ -15,7 +15,6 @@
     "@airdesign/document": "workspace:*",
     "@airdesign/fonts": "workspace:*",
     "@airdesign/templates": "workspace:*",
-    "@airdesign/engine": "workspace:*",
     "@airdesign/live": "workspace:*",
     "@airdesign/pptx": "workspace:*",
     "@airdesign/render": "workspace:*",

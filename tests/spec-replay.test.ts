@@ -1,11 +1,7 @@
 import { parseDot, type Graph } from "./spec-graph.js"
-import { replayElement } from "./element-replay.js"
-import * as elementView from "../specs/element/view.mjs"
 import { opened, viewed, personSplit, storedRoot, traitRow } from "./spec-register.js"
 import { dumpTopics } from "./spec-dump.js"
-import { replayIndex } from "./index-replay.js"
 import { replayUsage } from "./usage-replay.js"
-import { replayOffline } from "./offline-replay.js"
 import { replayOauth } from "./oauth-replay.js"
 import { replayPersonUndo } from "./person-undo-replay.js"
 import { replayStructure } from "./structure-replay.js"
@@ -31,7 +27,6 @@ import {
 } from "@airdesign/document"
 import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import { group as editGroup, state as editState, step as editStep } from "../specs/edit/view.mjs"
-import { group as offlineGroup, state as offlineState, step as offlineStep } from "../specs/offline/view.mjs"
 import { group as runGroup, state as runState, step as runStep } from "../specs/run/view.mjs"
 import { group as structureGroup, state as structureState, step as structureStep } from "../specs/structure/view.mjs"
 import { group as undoGroup, state as undoState, step as undoStep } from "../specs/undo/view.mjs"
@@ -39,7 +34,6 @@ import * as usageView from "../specs/usage/view.mjs"
 import { group as oauthGroup, state as oauthState, step as oauthStep } from "../specs/oauth/view.mjs"
 import { group as rerunGroup, state as rerunState, step as rerunStep } from "../specs/rerun/view.mjs"
 import * as turnView from "../specs/turn/view.mjs"
-import { group as indexGroup, state as indexState, step as indexStep } from "../specs/index/view.mjs"
 import * as personUndoView from "../specs/person-undo/view.mjs"
 
 type Value = boolean | number | string
@@ -785,13 +779,10 @@ describe("spec replay", () => {
       undo: { state: undoState, step: undoStep, group: undoGroup },
       structure: { state: structureState, step: structureStep, group: structureGroup },
       run: { state: runState, step: runStep, group: runGroup },
-      offline: { state: offlineState, step: offlineStep, group: offlineGroup },
       usage: usageView,
       oauth: { state: oauthState, step: oauthStep, group: oauthGroup },
       rerun: { state: rerunState, step: rerunStep, group: rerunGroup },
       turn: turnView,
-      element: elementView,
-      index: { state: indexState, step: indexStep, group: indexGroup },
       "person-undo": personUndoView,
     }
     const found = every.filter((topic) => topic.name in views)
@@ -807,8 +798,6 @@ describe("spec replay", () => {
       if (!view) throw new Error(`${topic.name} has no reader`)
       const told = (source: Spec, target: Spec, action: string) =>
         `${readView(view, source, action)} -${action}-> ${readView(view, target, action)}`
-      if (topic.name === "element") reports.element = replayElement(graph, failures)
-      if (topic.name === "index") reports.index = replayIndex(graph, failures)
       if (topic.name === "person-undo") reports.personUndo = replayPersonUndo(graph, told, failures)
       if (topic.name === "edit")
         reports.edit = { states: graph.states.size, edges: graph.edges.length, ...replayEdit(graph, view, failures) }
@@ -826,13 +815,6 @@ describe("spec replay", () => {
           states: graph.states.size,
           edges: graph.edges.length,
           ...replayRun(graph, view, failures),
-        }
-      }
-      if (topic.name === "offline") {
-        reports.offline = {
-          states: graph.states.size,
-          edges: graph.edges.length,
-          ...replayOffline(graph, told, failures),
         }
       }
       if (topic.name === "usage") {
@@ -859,13 +841,11 @@ describe("spec replay", () => {
     }
     expect(failures, JSON.stringify(reports)).toEqual([])
     expect(reports).toMatchObject({
-      index: { replayed: expect.any(Number), stuttered: expect.any(Number) },
       personUndo: { replayed: expect.any(Number), told: expect.any(Number) },
       edit: { stuttered: expect.any(Number) },
       undo: { stuttered: expect.any(Number) },
       structure: { replayed: expect.any(Number), grouped: expect.any(Number) },
       run: { unconnected: { Resume: expect.any(Number), Limit: expect.any(Number) } },
-      offline: { unconnected: { Crash: expect.any(Number), Wipe: expect.any(Number), Undo: 0 } },
       usage: { replayed: expect.any(Number), stuttered: expect.any(Number) },
       oauth: { replayed: expect.any(Number), stuttered: expect.any(Number) },
       rerun: { replayed: expect.any(Number), stuttered: expect.any(Number) },

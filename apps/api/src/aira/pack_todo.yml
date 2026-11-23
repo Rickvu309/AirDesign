@@ -1,7 +1,0 @@
-apps/api/src/legacy-decks:
-  apps/api/src/legacy-decks/saved.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/api/src/aira/aira-route.ts

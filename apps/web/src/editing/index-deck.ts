@@ -14,9 +14,7 @@ import {
   type SlideId,
 } from "@airdesign/document"
 import { designOf } from "@airdesign/catalog"
-import { connect } from "@airdesign/live"
 import { deckLayouts, indexPackage, orderedParts, readTraits, slideLayouts, type DeckTraits } from "@airdesign/pptx"
-import { server } from "@/editing/commit-edit"
 
 function traitsOf(parts: ReadonlyMap<string, Uint8Array>): DeckTraits | null {
   try {
@@ -156,9 +154,4 @@ export function indexedParts(parts: ReadonlyMap<string, Uint8Array>) {
   const layouts = indexedLayouts(parts, file)
   const layered = { ...indexed, slides }
   return { ...(layoutsFit(layered) ? layered : indexed), ...(layouts === undefined ? {} : { layouts }) }
-}
-
-export async function backfillIndex(deck: string, parts: ReadonlyMap<string, Uint8Array>): Promise<void> {
-  const queued = await connect(server).index(deck, indexedParts(parts))
-  if (!queued.ok) throw new Error(queued.refusal)
 }

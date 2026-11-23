@@ -1,5 +1,4 @@
 import { lazy, Suspense, useEffect, useState } from "react"
-import { LiveProof } from "./live-proof"
 import { DoomProof } from "./doom-proof"
 import { OAuthAuthorize } from "./connect/oauth-authorize"
 import { Home, homeSection } from "./decks/home"
@@ -41,7 +40,6 @@ function AppRoutes() {
         <DoomEditor id={doomDeck[1] ?? null} />
       </Suspense>
     )
-  if (path === "/live-proof") return <LiveProof />
   if (path === "/doom-proof") return <DoomProof />
   if (path === "/oauth/authorize") return <OAuthAuthorize />
   if (path === "/screens" || path.startsWith("/screens/"))
@@ -55,8 +53,7 @@ function AppRoutes() {
 
 export default function App() {
   const path = currentPath()
-  if (path.startsWith("/screens") || path === "/live-proof" || path === "/doom-proof" || path === "/oauth/authorize")
-    return <AppRoutes />
+  if (path.startsWith("/screens") || path === "/doom-proof" || path === "/oauth/authorize") return <AppRoutes />
   return (
     <AccountProfile>
       <AppRoutes />

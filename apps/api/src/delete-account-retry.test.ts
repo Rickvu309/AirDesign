@@ -87,7 +87,10 @@ it("rolls back a delete that dies midway, so the account works whole, and delete
   await holder.connect()
   try {
     await holder.query("begin")
-    await holder.query("select id from deck.saved where owner = $1 for update", [person.email])
+    await holder.query(
+      "select key from deck.media where deck in (select id from deck.doom where owner = $1) for update",
+      [person.email],
+    )
     const pending = deleteAccount(person.email, person.cookie)
     await admin.query("select pg_cancel_backend($1)", [await waitingDelete()])
     expect((await pending).status).toBe(500)

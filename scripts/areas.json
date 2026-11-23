@@ -78,13 +78,10 @@
   "document": {
     "paths": [
       "packages/document/",
-      "packages/engine/",
       "packages/catalog/",
       "packages/live/",
       "apps/api/src/slide-",
-      "apps/api/src/order",
       "apps/api/src/undo",
-      "apps/api/src/legacy-decks/undo",
       "apps/api/src/parallel-edits"
     ]
   },

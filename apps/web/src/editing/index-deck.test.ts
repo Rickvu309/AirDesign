@@ -9,7 +9,6 @@ import {
   type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
-import { indexPages } from "@airdesign/live"
 import { orderedParts, readPackage, slideLayouts } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { indexedParts } from "./index-deck"
@@ -128,9 +127,4 @@ it("indexes a 50-slide deck with every layout floor, in at most 4 pages, with no
   expect(
     Math.max(...index.elements.map((element) => bytesOf(JSON.stringify(element.design ?? {})))),
   ).toBeLessThanOrEqual(designBytes)
-  let once = 0
-  const pages = indexPages(index, () => `page-${String((once += 1))}`.padEnd(36, "x"))
-  if (!pages.ok) throw new Error(pages.refusal)
-  expect(pages.pages.length).toBeLessThanOrEqual(4)
-  expect(pages.pages.every((page) => readIndexPage(page) !== null)).toBe(true)
 })

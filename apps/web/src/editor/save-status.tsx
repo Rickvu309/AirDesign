@@ -1,5 +1,6 @@
 import { productCopy } from "@/copy/product-copy"
-import type { SaveStatus } from "@/editor/use-deck-status"
+
+export type SaveStatus = "saved" | "saving" | "offline" | "unreached" | "unsaved"
 
 const words: Record<SaveStatus, string> = {
   saved: productCopy.saved,

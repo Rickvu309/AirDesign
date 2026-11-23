@@ -1,10 +1,14 @@
 import { useRef, useState, type ReactNode } from "react"
 import { ExportButton } from "@/editor/editor-chrome"
 import { chosenSlides, firstChoice, type ExportChoice } from "@/export/export-choice"
-import type { ExportRequest } from "@/export/export-deck"
 import { ExportDialog } from "@/export/export-dialog"
 import { PrintSheet } from "@/export/export-print"
 import type { PrintSize } from "@/export/print-page"
+
+export type ExportRequest = {
+  readonly slides?: readonly number[]
+  readonly signal?: AbortSignal
+}
 
 export type ExportTarget = {
   readonly name: string

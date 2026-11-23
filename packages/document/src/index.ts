@@ -1,6 +1,5 @@
 export {
   elementId,
-  elementPattern,
   legacyElement,
   readElementId,
   readSlideId,
@@ -14,7 +13,6 @@ export {
   templateStylesNode,
   templateStyleNode,
   templateStyleIndex,
-  templateStyleOwned,
   type ElementId,
   type SlideId,
 } from "./element-id.js"
@@ -26,7 +24,6 @@ export { answeredRegister } from "./answered-register.js"
 export {
   appendIndex,
   indexDue,
-  indexedSectionStarts,
   indexKeys,
   readIndexPage,
   type DeckIndex,
@@ -87,8 +84,8 @@ export {
   type Refusal,
 } from "./decide.js"
 export { coordinates, readBox, type Box } from "./box.js"
-export { fitNewBox, fittedInside, pictureSize, placeNewBox } from "./box-placement.js"
-export { storedValue, valueBytes, type FormatOneValue, type Value } from "./value.js"
+export { placeNewBox } from "./box-placement.js"
+export { valueBytes, type Value } from "./value.js"
 export type { AddChange } from "./add-change.js"
 export {
   planChange,
@@ -177,7 +174,7 @@ export {
 export { listedPaints, listedSlots, type FillsListEdit } from "./fills-list.js"
 export { nameBytes } from "./trait-identity.js"
 export { assetIcon, assetMedia, iconNamePattern, mediaTypes, type Media, type MediaType } from "./asset-ref.js"
-export { iconSideOn } from "./icon-size.js"
+
 export { mediaSize, mediaTypeOf, overPixelLimit } from "./media-bytes.js"
 export {
   arrowheads,
@@ -202,10 +199,9 @@ export {
   siteTie,
   type Bound,
   type Outline,
-  type Routed,
   type Tie,
 } from "./connector.js"
-export { followedPlace } from "./connector-place.js"
+
 export { drawnDesign } from "./drawn-design.js"
 export { siteCount, siteSpot, type Spot } from "./preset-sites.js"
 export { presetGuides } from "./preset-guides.js"
@@ -214,7 +210,6 @@ export { slideMeasure } from "./slide-measure.js"
 export { cloneOf, type CopiedRows } from "./element-clone.js"
 export { pastedMedia, type PastedLayers } from "./pasted-layers.js"
 export {
-  addedGeometry,
   addedPictures,
   elementCommand,
   elementGone,
@@ -226,14 +221,7 @@ export {
   type Geometry,
   lineGeometries,
 } from "./element-order.js"
-export {
-  elementStacks,
-  slideLayers,
-  sitsBefore,
-  stackTarget,
-  type ElementStack,
-  type StackMove,
-} from "./element-stack.js"
+export { elementStacks, stackTarget, type ElementStack, type StackMove } from "./element-stack.js"
 export {
   groupCommand,
   groupedNow,
@@ -245,7 +233,7 @@ export {
   plainGroup,
   type Member,
 } from "./element-group.js"
-export { groupOf, openingPlace, placeOf, throughGroup, ungroupRows, type Place, type PlacedRow } from "./group-place.js"
+export { groupOf, openingPlace, placeOf, throughGroup, type Place, type PlacedRow } from "./group-place.js"
 export { followsGroups, rebased, rebasedGroups, shownPlace, storedPlace } from "./group-space.js"
 export { changeLayout, layoutNodes, readLayout, type LayoutView } from "./frame-layout.js"
 export { fitFrameRows, fitFramesRows } from "./frame-fit.js"
@@ -253,10 +241,10 @@ export { fittedPlace } from "./group-space.js"
 export { spotNow } from "./group-join.js"
 export { plainFrameTurn } from "./plain-frame.js"
 export { layoutFromFile, layoutMarker } from "./frame-marker.js"
-export { placedByFrame, resizedSides, sidesPatch, type Sides } from "./frame-sizing.js"
+export { placedByFrame, resizedSides, type Sides } from "./frame-sizing.js"
 export { measureDue, measureOwed, measureStale } from "./frame-measure.js"
 export { hugsText, textOpening } from "./text-resizing.js"
-export { measuredOnly, personWrote } from "./measured-row.js"
+
 export { regroupTurn, ungroupTurn } from "./group-turn.js"
 export {
   foldSlides,
@@ -268,8 +256,8 @@ export {
   type SlideCommand,
   type SlideState,
 } from "./slide-order.js"
-export { format, formatOf, newerFormat, type StoredRead } from "./format.js"
-export { readRegister, readRow, readStoredEdit, type StoredEdit } from "./stored.js"
+export { format, formatOf } from "./format.js"
+export { readRegister, readRow } from "./stored.js"
 export {
   alphaOf,
   bareTransforms,
@@ -288,13 +276,12 @@ export {
 } from "./color.js"
 export { cycledColor, presentSlots } from "./template-remix.js"
 export { fixedLineHeight } from "./text-restyle.js"
-export { filedText, paragraphedText } from "./line-breaks.js"
+
 export { placedText } from "./added-text.js"
 export {
   noCharacters,
   readTextValue,
   hasSlideNumber,
-  openingSlideNumber,
   alignNames,
   caseNames,
   formatNames,
@@ -316,7 +303,7 @@ export {
   type TextValue,
   plainText,
 } from "./text-value.js"
-export { withCurrentKeys } from "./current-keys.js"
+
 export { levelNumbering, listIndent, type ListIndent } from "./list-level.js"
 export {
   applyRuns,
@@ -369,7 +356,7 @@ export { fontFace, type FontWidths } from "./text-fit.js"
 export { type Finding } from "./finding.js"
 export { contrast } from "./contrast.js"
 export { colorPaint, gamma, hexRgb, hslRgb, paintSteps, presetColors, rgbHex, type Rgb } from "./color-paint.js"
-export { scaleMark, typeSteps } from "./finding-scale.js"
+export { typeSteps } from "./finding-scale.js"
 
 export {
   defaultGrid1,
@@ -383,7 +370,7 @@ export { gridMovePlacement } from "./grid-move.js"
 export { readElementLink, readLinkTarget, type ElementLink, type LinkEdit } from "./link-target.js"
 
 export { slideBirths } from "./slide-births.js"
-export { cloneMany } from "./grid-set.js"
+
 export { type TemplateStyle } from "./template-style.js"
 export { readTextStyles, textStylesOf, type TextStyle, type TextStyleFields } from "./text-style.js"
 export {

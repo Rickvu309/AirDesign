@@ -1,6 +1,6 @@
 import { limits } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { deckRoutes, pictureBytes, readFindingsReport } from "./index.js"
+import { pictureBytes, readFindingsReport } from "./index.js"
 
 const key = "a".repeat(64)
 const other = "b".repeat(64)
@@ -22,11 +22,6 @@ it("reads the slide keys and the pictures a tab adds to its findings report", ()
     pictures: { ...pictures, images: [] },
   })
   expect(readFindingsReport(report)).toEqual({ ok: true, ...report })
-  expect(deckRoutes.findings.result({ ok: true, deck: "deck", missing: ["257"] })).toEqual({
-    ok: true,
-    deck: "deck",
-    missing: ["257"],
-  })
 })
 
 it("refuses pictures it cannot trust", () => {

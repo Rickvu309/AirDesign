@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { firstAccount, installIndexedDb, memoryShelf, secondAccount, signInAs, writeRows } from "./browser-fixtures.js"
+import { firstAccount, installIndexedDb, memoryShelf, secondAccount, signInAs } from "./browser-fixtures.js"
 import {
   deleteDatabase,
   dropAccount,
@@ -12,7 +12,7 @@ import {
 } from "./index.js"
 import { dropShelvedChats } from "./chat-slot.js"
 import { doomFoldKey, doomQueueKey } from "./doom-storage.js"
-import { readRows, readSlot, rowKey, writeSlot } from "./store.js"
+import { readSlot, writeSlot } from "./store.js"
 
 async function readSlotsLeft(): Promise<string[]> {
   const found: string[] = []
@@ -54,16 +54,8 @@ describe("a deck's chats on this device", () => {
     expect(await readChats("decktwo")).toEqual([{ id: "c", text: "other deck" }])
   })
 
-  it("drops the named chats, or every chat of the deck, and leaves its rows and other decks alone", async () => {
-    await writeRows(
-      [
-        {
-          key: rowKey("deckone", "confirmed", 0),
-          row: { kind: "confirmed", deck: "deckone" as never, revision: 0, value: "kept" },
-        },
-      ],
-      [],
-    )
+  it("drops the named chats, or every chat of the deck, and leaves other decks alone", async () => {
+    await writeSlot("deckone\u0003star", "starred")
     for (const id of ["a", "b", "c"]) await writeChat("deckone", { id })
     await writeChat("decktwo", { id: "d" })
     await dropChats("deckone", ["a"])
@@ -71,7 +63,7 @@ describe("a deck's chats on this device", () => {
     await dropChats("deckone")
     expect(await readChats("deckone")).toEqual([])
     expect(await readChats("decktwo")).toEqual([{ id: "d" }])
-    expect(await readRows("deckone")).toHaveLength(1)
+    expect(await readSlot("deckone\u0003star")).toBe("starred")
   })
 
   it("never reads or drops the deck's other slots, such as its index and its queued original", async () => {

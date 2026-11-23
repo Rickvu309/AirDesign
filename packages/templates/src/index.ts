@@ -13,7 +13,7 @@ type TemplateThemeColors = {
   readonly folHlink: string
 }
 
-export type TemplateTheme = {
+type TemplateTheme = {
   readonly id: string
   readonly name: string
   readonly map: "light" | "dark"
@@ -94,8 +94,4 @@ export function templateTheme(id: string): TemplateTheme | undefined {
 
 export function templateFile(id: string, start = false): string {
   return `files/${id}${start ? "-start" : ""}.pptx`
-}
-
-export function startIndexFile(id: string): string {
-  return `files/${id}-start.index.json`
 }

@@ -22,10 +22,10 @@ The common defect is a change that works where you tried it and is missing elsew
 
 ## How it works
 
-An edit, from a person or an agent, is read by `catalog`, decided by `document` and run by `engine` on the open deck. `render` paints it at once, then `live` sends it to `apps/api`, which orders everyone's edits as rows. `pptx` turns a PowerPoint file into a deck and back, on the device. `GLOSSARY.md` and the word files in `docs/words/` give one word per idea, for code, test and tool.
+An edit, from a person or an agent, is read by `catalog` and decided by `document` on the open deck. `render` paints it at once, then `live` sends it to `apps/api`, which orders everyone's edits as rows. `pptx` turns a PowerPoint file into a deck and back, on the device. `GLOSSARY.md` and the word files in `docs/words/` give one word per idea, for code, test and tool.
 
 - `apps/web` is the product UI, with designed states at `/screens/<id>-<name>`. `apps/site` is marketing and sign-in. `apps/api` is the server, on Postgres.
-- In `packages/`, a package's `src/index.ts` is its whole interface: `document` (imports no package), `engine`, `catalog`, `render`, `live`, `mcp`, `pptx`, plus `templates` (start decks), `theme` (tokens), `fonts`, `device` (when a tab can work), `oauth`, `usage` (Claude spend).
+- In `packages/`, a package's `src/index.ts` is its whole interface: `document` (imports no package), `catalog`, `render`, `live`, `mcp`, `pptx`, plus `templates` (start decks), `theme` (tokens), `fonts`, `device` (when a tab can work), `oauth`, `usage` (Claude spend).
 - A folder with a `pack.yml` is a pack. `packwerk.yml` ranks packs in layers, and `pnpm check:boundaries` fails an import its pack does not allow. Read `pnpm exec ts-packwerk explain <folder>` before you change a pack. A `pack_todo.yml` lists known violations: fix them, never add to them.
 
 ## Land a change

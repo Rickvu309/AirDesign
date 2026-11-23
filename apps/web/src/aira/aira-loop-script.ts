@@ -1,4 +1,4 @@
-import { airaRoutes, catalog, deckRoutes, mcpRoutes, projectTools, type ReplyBlock } from "@airdesign/catalog"
+import { airaRoutes, catalog, mcpRoutes, projectTools, type ReplyBlock } from "@airdesign/catalog"
 import { askAira, type AiraChat } from "./aira-loop"
 
 export const deck = "deck"
@@ -86,11 +86,6 @@ export function scripted(
       const text = reply.text ?? JSON.stringify(reply.structuredContent ?? {})
       const result = { content: [{ type: "text", text }], ...reply }
       return new Response(`event: message\ndata: ${JSON.stringify({ jsonrpc: "2.0", id: body.id, result })}\n\n`)
-    }
-    if (path === deckRoutes.undo.path) {
-      const runId = String(body.runId)
-      if (runId === "fenced") return new Response(JSON.stringify({ ok: false, refusal: "run-fenced" }))
-      return new Response(JSON.stringify({ ok: true, deck, revision: 9, key: `${deck}:9` }))
     }
     throw new Error(path)
   }

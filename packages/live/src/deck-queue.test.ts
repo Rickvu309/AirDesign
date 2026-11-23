@@ -2,25 +2,13 @@ import { deckRoutes } from "@airdesign/catalog"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import {
   firstAccount,
-  installParts,
   installSlowIndexedDb,
   memoryShelf,
   secondAccount,
   signInAs,
   slowStore,
 } from "./browser-fixtures.js"
-import { queuedName } from "./deck-rename.js"
-import {
-  deleteDatabase,
-  dropAccount,
-  dropDeck,
-  getParts,
-  keepQueued,
-  putParts,
-  renameDeck,
-  sendQueued,
-  starDeck,
-} from "./index.js"
+import { deleteDatabase, dropAccount, dropDeck, sendQueued, starDeck } from "./index.js"
 
 const slow = slowStore()
 let shelf = new Map<string, string>()
@@ -47,21 +35,15 @@ async function leftBeforeTheDeviceWrite(change: () => Promise<unknown>) {
 }
 
 async function stars(decks: string[]): Promise<[string, boolean][]> {
-  return [...(await sendQueued(decks)).stars]
+  return [...(await sendQueued(decks))]
 }
 
 beforeEach(async () => {
   installSlowIndexedDb(slow)
-  installParts()
   shelf = new Map()
   vi.stubGlobal("window", {})
   vi.stubGlobal("localStorage", memoryShelf(shelf))
   vi.stubGlobal("fetch", () => Promise.reject(new TypeError("offline")))
-  await putParts("deck-one", {
-    parts: new Map([["a.xml", new Uint8Array([1])]]),
-    file: new Uint8Array([2]),
-    name: "Old",
-  })
 })
 
 afterEach(async () => {
@@ -80,15 +62,6 @@ it("keeps a star whose device write never landed and sends it once from the next
   expect(shelf.size).toBe(0)
   expect(await stars(["deck-one"])).toEqual([])
   expect(sent).toHaveLength(1)
-})
-
-it("keeps a name whose device write never landed as the deck's name on the next page", async () => {
-  await leftBeforeTheDeviceWrite(() => renameDeck("deck-one", "Quarterly plan"))
-  await keepQueued()
-  const stored = await getParts("deck-one")
-  expect(stored.ok && stored.name).toBe("Quarterly plan")
-  expect(await queuedName("deck-one")).toBe("Quarterly plan")
-  expect(shelf.size).toBe(0)
 })
 
 it("keeps the newest choice when several never reached the device, and over an older one that did", async () => {

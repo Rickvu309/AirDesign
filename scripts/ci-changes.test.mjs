@@ -143,7 +143,6 @@ try {
         "apps/site/",
         "apps/web/",
         "packages/catalog/",
-        "packages/engine/",
         "packages/live/",
         "packages/mcp/",
         "tests/",

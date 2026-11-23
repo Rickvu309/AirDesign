@@ -1,20 +1,11 @@
 export { acceptCode, acceptLink, findAccess, issueMail } from "./account/account.js"
 export { screenFor, type Screen } from "./oauth/clients.js"
 export { deleteDecks, listDecks, renameDeck, restoreDeck, trashDeck } from "./doom/deck-list.js"
-export { DeckListen, type CaughtRevision } from "./platform/listen.js"
+export { DeckListen } from "./platform/listen.js"
 export { sendWithResend, signLink, type Mail, type ResendAccount, type Sender } from "./platform/mail.js"
 export { openPool, type Sql } from "./platform/pool.js"
-export {
-  chosenRevision,
-  commitEdits,
-  openSaved,
-  readSaved,
-  writeRevision,
-  type Commit,
-  type RevisionWrite,
-} from "./legacy-decks/saved.js"
 export { applySchema } from "./platform/schema.js"
-export { discardOriginals, downloadOriginal, drainOriginals, finishOriginal, uploadOriginal } from "./doom/original.js"
+export { drainOriginals } from "./doom/original.js"
 export { LocalOriginalStore } from "./platform/local-original-store.js"
 export { R2OriginalStore, type R2Settings } from "./platform/r2-original-store.js"
 export type { OriginalStore, OriginalUpload, SignedOriginal } from "./platform/original-store.js"

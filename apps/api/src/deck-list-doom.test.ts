@@ -87,14 +87,11 @@ describe("a doom deck in the deck list", () => {
     expect((await list(stranger)).decks.map((row) => row.deck)).not.toContain(deck)
   })
 
-  it("sits among older decks, newest edited first, and an element deck carries no doom mark", async () => {
-    const old = named()
-    await post("/decks/open", { deck: old })
+  it("sits above an older deck, newest edited first", async () => {
+    const old = await made()
     const fresh = await made()
-    const listed = await list()
-    const order = listed.decks.map((row) => row.deck)
+    const order = (await list()).decks.map((row) => row.deck)
     expect(order.indexOf(fresh)).toBeLessThan(order.indexOf(old))
-    expect(listed.decks.find((row) => row.deck === old)?.doom).toBeUndefined()
   })
 
   it("moves its edited time forward when an edit lands", async () => {
@@ -134,16 +131,12 @@ describe("renaming, starring, trashing and deleting a doom deck", () => {
     expect((await found(deck)).live?.name).toBe(blankDeckName)
   })
 
-  it("refuses a name Postgres cannot store and keeps the old name, for either kind of deck", async () => {
-    const old = named()
-    await post("/decks/open", { deck: old })
-    const fresh = await made()
-    for (const deck of [old, fresh]) {
-      await post("/decks/rename", { deck, name: "kept" })
-      for (const name of ["a\u0000b", "\ud800", "a\udc00b"])
-        expect(await post("/decks/rename", { deck, name })).toEqual({ ok: false, refusal: "field" })
-      expect((await found(deck)).live?.name).toBe("kept")
-    }
+  it("refuses a name Postgres cannot store and keeps the old name", async () => {
+    const deck = await made()
+    await post("/decks/rename", { deck, name: "kept" })
+    for (const name of ["a\u0000b", "\ud800", "a\udc00b"])
+      expect(await post("/decks/rename", { deck, name })).toEqual({ ok: false, refusal: "field" })
+    expect((await found(deck)).live?.name).toBe("kept")
   })
 
   it("stars and unstars it", async () => {
@@ -218,11 +211,44 @@ describe("renaming, starring, trashing and deleting a doom deck", () => {
     expect((await found(deck)).trash).toBeDefined()
   })
 
-  it("is removed after thirty days in the trash", async () => {
+  it("is removed after thirty days in the trash and kept at twenty-nine", async () => {
     const deck = await made()
+    const recent = await made()
     await post("/decks/trash", { deck })
+    await post("/decks/trash", { deck: recent })
     await admin.query("update deck.doom set trashed = now() - interval '31 days' where id = $1", [deck])
+    await admin.query("update deck.doom set trashed = now() - interval '29 days' where id = $1", [recent])
     const listed = await list()
     expect([...listed.decks, ...listed.trash].map((row) => row.deck)).not.toContain(deck)
+    expect(listed.trash.map((row) => row.deck)).toContain(recent)
+  })
+
+  it("is kept past thirty days in the trash when another account reads its list", async () => {
+    const deck = await made(stranger)
+    await post("/decks/trash", { deck }, stranger)
+    await admin.query("update deck.doom set trashed = now() - interval '40 days' where id = $1", [deck])
+    await list()
+    expect((await admin.query("select 1 from deck.doom where id = $1", [deck])).rows).toHaveLength(1)
+  })
+
+  it("answers only the ids it deleted, skipping a missing one", async () => {
+    const deck = await made()
+    await post("/decks/trash", { deck })
+    expect(await post("/decks/delete", { decks: [named(), deck] })).toEqual({ ok: true, deleted: [deck] })
+  })
+
+  it("refuses every deck list route without a session", async () => {
+    for (const path of [
+      "/decks/list",
+      "/decks/rename",
+      "/decks/star",
+      "/decks/trash",
+      "/decks/restore",
+      "/decks/delete",
+    ]) {
+      const response = await ask(base, "POST", path, { deck: "abc", name: "x", starred: true, decks: ["abc"] })
+      expect(response.status).toBe(401)
+      expect(response.json).toEqual({ ok: false, refusal: "session" })
+    }
   })
 })

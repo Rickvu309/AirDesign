@@ -2,11 +2,11 @@ import { readElementId, type ElementId, type TextValue } from "@airdesign/docume
 import { applyRoute, paintKind, readShapes, type PaintReader, type ReadShape } from "@airdesign/pptx"
 import type { CanvasSlide, CanvasTemplateColor } from "@airdesign/render"
 import { slideCanvas, type CanvasSource } from "@/editing/canvas-slide"
-import type { TextBox } from "@/editing/commit-edit"
 import { boxStorable } from "@/editing/element-move"
 import type { Framed } from "@/editing/frame-boxes"
 import { storedText } from "@/editing/exported-parts"
 import type { PictureSource } from "@/editing/picture-fill"
+export type TextBox = { readonly id: ElementId; readonly file: string }
 
 type Parts = ReadonlyMap<string, Uint8Array>
 

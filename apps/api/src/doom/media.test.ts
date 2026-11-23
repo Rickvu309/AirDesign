@@ -23,7 +23,7 @@ it("removes an account's picture rows and its device key when the person deletes
   const email = "media-device-leaving@example.com"
   const leaving = await signInByCode(base, mails, email)
   const id = `media-device-leaving${String(++sequence)}`
-  await post("/decks/open", { deck: id }, leaving)
+  await post("/doom/create", { deck: id }, leaving)
   await post("/decks/media/upload", { deck: id, bytes: bytes.length, sha256 }, leaving)
   const device = await admin.query<{ device: string }>("select device from session.account where email = $1", [email])
   const key = device.rows[0]?.device ?? ""
@@ -44,7 +44,7 @@ async function post(path: string, body: unknown, session = cookie, origin = base
 
 async function deck(): Promise<string> {
   const id = `media${String(++sequence)}`
-  await post("/decks/open", { deck: id })
+  expect((await post("/doom/create", { deck: id })).json).toMatchObject({ ok: true })
   return id
 }
 
@@ -168,57 +168,9 @@ it("queues an added picture's object for removal when its account is deleted", a
   const email = "media-leaving@example.com"
   const leaving = await signInByCode(base, mails, email)
   const id = `media-leaving${String(++sequence)}`
-  await post("/decks/open", { deck: id }, leaving)
+  await post("/doom/create", { deck: id }, leaving)
   await post("/decks/media/upload", { deck: id, bytes: bytes.length, sha256 }, leaving)
   const [key] = await keys(id)
-  await admin.query("select session.delete_account($1)", [email])
-  expect(await keys(id)).toEqual([])
-  expect((await admin.query("select key from deck.original_delete where key = $1", [key])).rows).toEqual([{ key }])
-})
-
-async function doomDeck(session = cookie): Promise<string> {
-  const id = `doommedia${String(++sequence)}`
-  expect((await post("/doom/create", { deck: id }, session)).json).toMatchObject({ ok: true })
-  return id
-}
-
-it("stores a picture for a Doom deck by hash and hands it to a second session once it lands", async () => {
-  const id = await doomDeck()
-  expect((await post("/decks/media", { deck: id, sha256 })).json).toEqual({ ok: false, refusal: "missing" })
-  const signed = await upload(id)
-  store.put(signed.url, bytes, signed.headers)
-  const second = await signInByCode(base, mails, "media@example.com")
-  const reply = await post("/decks/media", { deck: id, sha256 }, second)
-  expect(reply.json).toMatchObject({ ok: true, bytes: bytes.length, sha256 })
-  expect(Buffer.from(store.get((reply.json as { url: string }).url))).toEqual(bytes)
-})
-
-it("answers owner to another account asking for a Doom deck's picture", async () => {
-  const id = await doomDeck()
-  await upload(id)
-  const other = await signInByCode(base, mails, "other-media@example.com")
-  expect((await post("/decks/media", { deck: id, sha256 }, other)).json).toEqual({ ok: false, refusal: "owner" })
-  expect((await post("/decks/media/upload", { deck: id, bytes: bytes.length, sha256 }, other)).json).toEqual({
-    ok: false,
-    refusal: "owner",
-  })
-})
-
-it("keeps a Doom deck's pictures within the same size limits", async () => {
-  const id = await doomDeck()
-  expect((await post("/decks/media/upload", { deck: id, bytes: limits.media, sha256 })).json).toEqual({
-    ok: false,
-    refusal: "limit",
-  })
-})
-
-it("queues a Doom deck's picture objects for removal when its account is deleted", async () => {
-  const email = "doom-media-leaving@example.com"
-  const leaving = await signInByCode(base, mails, email)
-  const id = await doomDeck(leaving)
-  await post("/decks/media/upload", { deck: id, bytes: bytes.length, sha256 }, leaving)
-  const [key] = await keys(id)
-  expect(key).toBeDefined()
   await admin.query("select session.delete_account($1)", [email])
   expect(await keys(id)).toEqual([])
   expect((await admin.query("select key from deck.original_delete where key = $1", [key])).rows).toEqual([{ key }])

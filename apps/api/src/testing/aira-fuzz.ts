@@ -31,8 +31,5 @@ export function fuzzGood(deck: string) {
       { shape: "json" as const, answers: 200, says: '"ok":true', fields: { enabled: false } },
     ],
     "POST /aira/stop": [{ shape: "json" as const, answers: 200, says: '"ok":true', fields: { ask: "fuzzask" } }],
-    "POST /decks/undo": [
-      { shape: "json" as const, answers: 200, says: '"refusal":"run-fenced"', fields: { deck, runId: "fuzzrun" } },
-    ],
   }
 }

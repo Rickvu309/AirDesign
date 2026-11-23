@@ -35,25 +35,20 @@ import { approve, describeClient } from "./oauth/consent.js"
 import { DeckFindings } from "./doom/deck-findings.js"
 import { DeckPictures } from "./doom/deck-pictures.js"
 import { DeckFollowers } from "./doom/deck-followers.js"
-import { findingsRoute } from "./legacy-decks/findings-route.js"
-import { deckWatchRoute } from "./legacy-decks/deck-watch.js"
 import { DeckListen } from "./platform/listen.js"
 import { answeredDeckRoutes, type DeckAnswers } from "./platform/deck-answer.js"
 import type { Sender } from "./platform/mail.js"
 import { serveMcp } from "./mcp/mcp.js"
 import type { Sql } from "./platform/pool.js"
 import { mediaAnswers } from "./doom/media.js"
-import { originalAnswers } from "./doom/original.js"
 import type { OriginalStore } from "./platform/original-store.js"
 import type { ImageNet } from "./platform/image-fetch.js"
 import { sameSecret } from "./platform/secrets.js"
 import { checkedResource, readUrl } from "./platform/resource.js"
 import { requireDomain, requireOrigin } from "./platform/start-origins.js"
 import { authorizationMetadata, resourceChallenge, resourceMetadata } from "./oauth/discovery.js"
-import { savedAnswers } from "./legacy-decks/saved.js"
 import { doomRouteList } from "./doom/doom-route.js"
 import { bearerPrincipal, revokeToken, tokenAnswer } from "./oauth/tokens.js"
-import { undoAnswers } from "./legacy-decks/undo.js"
 
 export type ApiOptions = {
   readonly session: Sql
@@ -440,11 +435,8 @@ async function authorizationMetadataRoute({ options, res }: Visit): Promise<void
 }
 
 export const deckAnswers: DeckAnswers = {
-  ...savedAnswers,
   ...deckListAnswers,
-  ...originalAnswers,
   ...mediaAnswers,
-  ...undoAnswers,
 }
 
 const deckHttp = { signedIn, answerSize, parsedJson, sendJson, gone }
@@ -469,8 +461,6 @@ export const routes: readonly Route[] = [
   { method: "POST", path: signInRoutes.code.path, serve: codeRoute },
   { method: "GET", path: signInRoutes.link.path, serve: linkRoute },
   ...answeredDeckRoutes(deckAnswers, deckRoute),
-  deckWatchRoute(deckHttp),
-  findingsRoute({ signedIn, answerSize, parsedJson, sendJson }),
   ...doomRouteList(deckHttp),
   ...accountRouteList({ signedIn, answerSize, parsedJson, sendJson, clearSessionCookie }),
 ]
