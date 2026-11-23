@@ -15,7 +15,14 @@ const applies = (filename) =>
 const keyLiteral = (node) =>
   node?.type === "Literal" && (keyNames.has(node.value) || (typeof node.value === "number" && keyCodes.has(node.value)))
 
-const propertyName = (node) => {
+const unchained = (node) => {
+  let current = node
+  while (current?.type === "ChainExpression") current = current.expression
+  return current
+}
+
+const propertyName = (value) => {
+  const node = unchained(value)
   if (node?.type !== "MemberExpression") return undefined
   const property = node.property
   if (node.computed === true) return property?.type === "Literal" ? property.value : undefined
@@ -25,8 +32,8 @@ const propertyName = (node) => {
 const keyRead = (node) => keyProperties.has(propertyName(node))
 
 const rootName = (node) => {
-  let current = node
-  while (current?.type === "MemberExpression") current = current.object
+  let current = unchained(node)
+  while (current?.type === "MemberExpression") current = unchained(current.object)
   return current?.type === "Identifier" ? current.name : undefined
 }
 
@@ -80,8 +87,9 @@ const rule = {
 
     const alias = (name, owner, event) => aliases.push({ name, owner, event })
 
-    const keyOperand = (node) => {
-      if (keyRead(node)) return { event: rootName(node.object) }
+    const keyOperand = (value) => {
+      const node = unchained(value)
+      if (keyRead(node)) return { event: rootName(unchained(node).object) }
       if (node?.type !== "Identifier") return undefined
       for (let owner = enclosingFunction(node); ; owner = enclosingFunction(owner)) {
         const match = aliases.find((entry) => entry.name === node.name && entry.owner === owner)
@@ -127,7 +135,8 @@ const rule = {
       VariableDeclarator(node) {
         declares(node.id)
         const owner = enclosingFunction(node)
-        if (node.id?.type === "Identifier" && keyRead(node.init)) alias(node.id.name, owner, rootName(node.init.object))
+        if (node.id?.type === "Identifier" && keyRead(node.init))
+          alias(node.id.name, owner, rootName(unchained(node.init).object))
         else bindPattern(node.id, node.init, owner)
       },
       FunctionDeclaration(node) {
@@ -137,11 +146,11 @@ const rule = {
       FunctionExpression: visitFunction,
       ArrowFunctionExpression: visitFunction,
       CallExpression(node) {
-        const callee = node.callee
+        const callee = unchained(node.callee)
         if (callee?.type === "Identifier" && callee.name === "composing") guardCalls.push(node)
-        if (propertyName(callee) === "includes" && callee.object?.type === "ArrayExpression") {
+        if (propertyName(callee) === "includes" && unchained(callee.object)?.type === "ArrayExpression") {
           const operand = keyOperand(node.arguments[0])
-          if (operand && callee.object.elements.some(keyLiteral)) record(node, operand)
+          if (operand && unchained(callee.object).elements.some(keyLiteral)) record(node, operand)
         }
       },
       BinaryExpression(node) {
