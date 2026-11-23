@@ -9,8 +9,7 @@ export {
   readStyleName,
   regularWeight,
   styleName,
-  styleTypeface,
   type FontStyle,
   type ServedFace,
 } from "./named-face.js"
-export { listedStyles, plainStyles } from "./weight-step.js"
+export { plainStyles } from "./weight-step.js"

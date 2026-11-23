@@ -219,11 +219,6 @@ function readParagraph(value: unknown): TextParagraph | null {
   return { ...read, ...spacing }
 }
 
-export function noCharacters(value: string): boolean {
-  const text = readTextValue(value)
-  return text === null ? value === "" : text.every((paragraph) => paragraph.runs.every((run) => run.text === ""))
-}
-
 export function plainText(value: TextValue): string {
   return value.map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n")
 }
@@ -287,11 +282,4 @@ export function hasSlideNumber(value: string | null): boolean {
     value.includes('"slideNumber"') &&
     readTextValue(value)?.some((paragraph) => paragraph.runs.some((run) => run.slideNumber !== undefined)) === true
   )
-}
-
-export function openingSlideNumber(value: string | null): boolean {
-  if (!hasSlideNumber(value) || value === null) return false
-  const text = readTextValue(value)
-  const paragraph = text?.[0]
-  return text?.length === 1 && paragraph?.from === 0 && paragraph.runs.length === 1 && paragraph.runs[0]?.from === -1
 }

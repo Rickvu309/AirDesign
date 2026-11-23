@@ -83,16 +83,3 @@ export function readFraming(raw: unknown, node: ElementId): Framing | null {
   if (fills === null) return null
   return { backdrop, children, layout, ...(fills.length === 0 ? {} : { fills }) }
 }
-
-const fillsFiled = new WeakMap<readonly { readonly framing?: Framing }[], ReadonlyMap<ElementId, FramingFill>>()
-
-export function filedFill(
-  elements: readonly { readonly framing?: Framing }[],
-  node: ElementId,
-): FramingFill | undefined {
-  const known = fillsFiled.get(elements)
-  if (known !== undefined) return known.get(node)
-  const found = new Map(elements.flatMap((element) => element.framing?.fills ?? []).map((fill) => [fill.node, fill]))
-  fillsFiled.set(elements, found)
-  return found.get(node)
-}

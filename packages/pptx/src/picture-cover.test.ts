@@ -1,21 +1,6 @@
-import {
-  boxPatch,
-  decide,
-  format,
-  openRegister,
-  undoOf,
-  type Command,
-  type ElementPatch,
-  type Register,
-} from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { exportParts } from "./export-parts.js"
-import { indexPackage } from "./index-package.js"
-import { readParts } from "./package-container.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { paintReader } from "./paint-reader.js"
 import { shownPictureMode } from "./picture-mode.js"
-import { readSlides } from "./read-shapes.js"
 import { writeTrait } from "./trait-xml.js"
 
 declare const process: {
@@ -200,86 +185,5 @@ describe("a picture switched to Crop", () => {
   it("leaves the whole image when its bytes are missing", () => {
     const next = writeTrait(pack(picture("4", `<a:stretch><a:fillRect/></a:stretch>`), null), at, "fills", crop.fills)
     expect(xml(next)).toContain(`<a:srcRect/><a:stretch><a:fillRect/></a:stretch>`)
-  })
-})
-
-async function deck(name: string): Promise<Map<string, Uint8Array>> {
-  const fs = process.getBuiltinModule("node:fs")
-  return new Map(await readParts(new Uint8Array(fs.readFileSync(`${process.cwd()}/scripts/pptx-fixtures/${name}`))))
-}
-
-function pictureNode(parts: ReadonlyMap<string, Uint8Array>) {
-  const found = readSlides(parts).find((slide) => slide.slide === "256")
-  const element = indexPackage(parts).elements.find((each) => each.node === "256.4")
-  if (found === undefined || element === undefined) throw new Error("picture")
-  return { node: element.node, slide: "256", part: found.part, shape: "4" }
-}
-
-function opened(parts: ReadonlyMap<string, Uint8Array>): Register {
-  const index = indexPackage(parts)
-  return { ...openRegister("", "clean"), index: { ...index, total: index.elements.length, pages: [] } }
-}
-
-function landed(register: Register, command: Command): Register {
-  const decision = decide(register, command)
-  if (decision.decision !== "apply") throw new Error(decision.code)
-  return decision.register
-}
-
-const origin = { x: 3_810_000, y: 1_905_000, cx: 4_572_000, cy: 3_048_000 }
-const portrait = { x: 3_810_000, y: 1_905_000, cx: 3_048_000, cy: 4_572_000 }
-
-function edited(
-  parts: ReadonlyMap<string, Uint8Array>,
-  patch: ElementPatch,
-): { parts: Map<string, Uint8Array>; register: Register } {
-  const picture = pictureNode(parts)
-  const register = landed(opened(parts), { command: "add", node: picture.node, floor: "", route: "clean" })
-  const changed = landed(register, { command: "person", node: picture.node, v: format, patch })
-  return { parts: new Map(exportParts(parts, changed)), register: changed }
-}
-
-describe("an imported Fill picture", () => {
-  it("keeps covering when a person resizes it, in the same box row, and one undo restores the file", async () => {
-    const parts = await deck("picture-png.pptx")
-    const picture = pictureNode(parts)
-    const patch = boxPatch(portrait)
-    const resized = edited(parts, patch)
-    const slide = xml(resized.parts)
-    expect(slide).toContain(`<a:ext cx="3048000" cy="4572000"/>`)
-    expect(slide).toContain(`<a:fillRect l="-62500" t="0" r="-62500" b="0"/>`)
-    expect(shownPictureMode(resized.parts, picture)).toBe("fill")
-    const painted = paintReader(resized.parts)
-      .slide(picture.part)
-      .elements.find((each) => each.shape === "4")
-    expect(painted?.image?.destination).toEqual({ left: -0.625, top: 0, right: -0.625, bottom: 0 })
-    const rows = resized.register.elements[picture.node]?.landed.filter((row) => row.visible) ?? []
-    expect(rows).toHaveLength(1)
-    const row = rows[0]
-    if (row === undefined || !("patch" in row)) throw new Error("box row")
-    expect(row.patch).toEqual(patch)
-    const step = { node: picture.node, before: boxPatch(origin), after: patch }
-    const turn = undoOf(resized.register, { steps: [step] })
-    expect(turn.ok).toBe(true)
-    if (!turn.ok) return
-    const restored = turn.commands.reduce(landed, resized.register)
-    expect(exportParts(parts, restored).get(picture.part)).toEqual(parts.get(picture.part))
-  })
-
-  it("keeps covering when an agent resizes it", async () => {
-    const parts = await deck("picture-png.pptx")
-    const picture = pictureNode(parts)
-    const started = landed(opened(parts), { command: "add", node: picture.node, floor: "", route: "clean" })
-    const running = landed(started, { command: "start", runId: "run", node: picture.node })
-    const readAt = running.elements[picture.node]?.readAt ?? 0
-    const changed = landed(running, {
-      command: "agent",
-      runId: "run",
-      readAt,
-      property: "box",
-      value: portrait,
-      node: picture.node,
-    })
-    expect(xml(new Map(exportParts(parts, changed)))).toContain(`<a:fillRect l="-62500" t="0" r="-62500" b="0"/>`)
   })
 })

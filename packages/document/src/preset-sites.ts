@@ -291,10 +291,6 @@ const siteRules: { readonly [P in Preset]: SiteRule } = {
 
 export const siteLimit = 8
 
-export function siteCount(preset: Preset): number {
-  return siteRules[preset].sites.length
-}
-
 export function siteSpot(
   preset: Preset,
   width: number,

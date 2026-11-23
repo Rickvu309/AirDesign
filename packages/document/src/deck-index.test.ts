@@ -1,23 +1,19 @@
 import { describe, expect, it } from "vitest"
 import {
-  answeredRegister,
   appendIndex,
   designKeys,
   elementId,
   format,
   indexDue,
   indexKeys,
-  openRegister,
   readIndexPage,
-  rootElement,
   roles,
-  slideId,
   sources,
   type DeckIndex,
   type IndexElement,
   type IndexPage,
 } from "./index.js"
-import { limits, orderKeyBetween } from "@airdesign/doom"
+import { limits } from "@airdesign/doom"
 import { stamps } from "./format.js"
 
 const box = { x: 1, y: 2, cx: 3, cy: 4 }
@@ -342,64 +338,5 @@ describe("index format", () => {
     }
     expect(indexKeys).toEqual(recorded.keys)
     expect(stamps.index).toBeGreaterThanOrEqual(recorded.stamp)
-  })
-})
-
-describe("the register answer says the highest format the deck stores", () => {
-  const register = openRegister("", "deck")
-  const node = elementId("258.7")
-  const body = register.elements[rootElement]
-
-  it("counts a stored row's format beside the index's", () => {
-    if (body === undefined) throw new Error("root")
-    const landed = [
-      { actor: "agent" as const, visible: false, runId: "r", v: format, patch: { box: { x: { set: 1 } } } },
-    ]
-    const withRow = {
-      ...register,
-      nodes: [...register.nodes, node],
-      elements: { ...register.elements, [node]: { ...body, landed } },
-    }
-    expect(answeredRegister(withRow).format).toBe(format)
-    expect(answeredRegister(register).format).toBeUndefined()
-    const index: DeckIndex = { format: 2, total: 0, slides: [], elements: [], pages: [] }
-    expect(answeredRegister({ ...register, index }).format).toBe(2)
-    expect(answeredRegister({ ...withRow, index }).format).toBe(format)
-  })
-
-  it("says this build's format for a deck holding a command planned against slide groups", () => {
-    const order = [{ slide: "remove", grid: 3, id: slideId("257") }] as const
-    expect(
-      answeredRegister({ ...register, order: [{ slide: "remove", grid: 1, id: slideId("257") }] }).format,
-    ).toBeUndefined()
-    expect(answeredRegister({ ...register, order }).format).toBe(format)
-  })
-
-  it("says this build's format when a command's opening text writes line height under today's name", () => {
-    const value = (key: string) => `[{"from":0,"${key}":150000,"runs":[{"from":-1,"text":"Quarterly plan"}]}]`
-    const clone = (key: string) => ({
-      slide: "clone" as const,
-      id: slideId("257"),
-      source: slideId("256"),
-      key: orderKeyBetween(null, null),
-      floor: [{ node: elementId("257.2"), kind: "shape" as const, value: value(key), box: null, grouped: false }],
-    })
-    expect(answeredRegister({ ...register, order: [clone("lineSpacing")] }).format).toBeUndefined()
-    expect(answeredRegister({ ...register, order: [clone("lineHeight")] }).format).toBe(format)
-    const typed = `[{"from":0,"runs":[{"from":-1,"text":"He wrote \\"lineHeight\\": 2"}]}]`
-    const quoted = { ...clone("lineSpacing"), floor: [{ ...clone("lineSpacing").floor[0]!, value: typed }] }
-    expect(answeredRegister({ ...register, order: [quoted] }).format).toBeUndefined()
-    const added = {
-      slide: "element-add" as const,
-      id: slideId("256"),
-      element: {
-        node: elementId("256.6"),
-        kind: "shape" as const,
-        value: value("lineHeight"),
-        box: null,
-        grouped: false,
-      },
-    }
-    expect(answeredRegister({ ...register, order: [added] }).format).toBe(format)
   })
 })

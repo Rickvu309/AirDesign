@@ -25,7 +25,7 @@ try {
   put(".github/workflows/ci.yml")
   put(".github/workflows/deploy.yml")
   put(".github/actions/queued/action.yml")
-  put("specs/edit/Edit.tla")
+  put("specs/doom-runs/DoomRuns.tla")
   put("apps/web/src/thin-deck.tsx")
   put("apps/web/src/other.tsx")
   put("scripts/gate.mjs")
@@ -34,7 +34,7 @@ try {
   put("scripts/workflow.test.mjs", 'readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8")\n')
   put(
     "scripts/folders.test.mjs",
-    'const queued = ".github/actions/queued"\nconst specs = "specs/edit/"\n\n\n\n\nreaddirSync(path.join(root, queued))\nreaddirSync(specs)\n',
+    'const queued = ".github/actions/queued"\nconst specs = "specs/doom-runs/"\n\n\n\n\nreaddirSync(path.join(root, queued))\nreaddirSync(specs)\n',
   )
   put(
     "scripts/app.test.mjs",
@@ -70,7 +70,7 @@ try {
     "a folder two levels deep is linked to every file under it, and a sibling folder is not",
     [
       readersOf(reads, ".github/actions/queued/action.yml"),
-      readersOf(reads, "specs/edit/Edit.tla"),
+      readersOf(reads, "specs/doom-runs/DoomRuns.tla"),
       readersOf(reads, ".github/workflows/deploy.yml"),
     ],
     [["scripts/folders.test.mjs"], ["scripts/folders.test.mjs"], []],
@@ -121,7 +121,7 @@ same(
 )
 same(
   "a size limit on a file is held by a test the gate would name",
-  ["COMMANDS.md", "CHECKS.md", ".oxfmtrc.json", ".railway/railway.ts", "specs/edit/Edit.tla"].map(
+  ["COMMANDS.md", "CHECKS.md", ".oxfmtrc.json", ".railway/railway.ts", "specs/doom-runs/DoomRuns.tla"].map(
     (file) => readersOf(real, file).length > 0,
   ),
   [true, true, true, true, true],

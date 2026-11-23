@@ -1,16 +1,6 @@
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
-import {
-  elementId,
-  legacyElement,
-  readElementId,
-  rootElement,
-  shapeOf,
-  slideId,
-  slideNode,
-  slideKind,
-  storedElements,
-} from "./element-id.js"
+import { elementId, readElementId, shapeOf } from "./element-id.js"
 
 const accepted = [
   "258.7",
@@ -92,38 +82,5 @@ describe("elementId", () => {
 
   it("keeps the shape of a minted id", () => {
     expect(shapeOf(elementId("258.n4k2j9x0q1zab"))).toEqual({ slide: "258", shape: "n4k2j9x0q1zab" })
-  })
-})
-
-describe("the named elements", () => {
-  it("name the root and the legacy element", () => {
-    expect(rootElement).toBe("a")
-    expect(legacyElement).toBe("b")
-  })
-
-  it("list every stored key of a register as an element id", () => {
-    expect(storedElements({ elements: { [rootElement]: 1, [legacyElement]: 2, "258.7": 3 } })).toEqual([
-      "a",
-      "b",
-      "258.7",
-    ])
-  })
-
-  it("drops a stored key that is not an element id", () => {
-    expect(storedElements({ elements: { toString: 1, "258.": 2, "258.7": 3 } })).toEqual(["258.7"])
-  })
-})
-
-describe("slideKind", () => {
-  it("names a slide's own nodes and nothing else", () => {
-    expect(slideKind(elementId("258.notes"))).toBe("notes")
-    expect(slideKind(elementId("258.slide"))).toBe("slide")
-    expect(slideKind(elementId("258.7"))).toBeNull()
-    expect(slideKind(elementId("258.n4k2j9x0q1zab"))).toBeNull()
-  })
-
-  it("builds the node it reads", () => {
-    expect(slideNode(slideId("258"), "slide")).toBe(elementId("258.slide"))
-    expect(slideKind(slideNode(slideId("258"), "notes"))).toBe("notes")
   })
 })

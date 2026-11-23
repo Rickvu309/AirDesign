@@ -1,31 +1,8 @@
 import { linkSchema } from "./link-schema.js"
 import { readLinkTarget } from "@airdesign/document"
-import {
-  designBytes,
-  designOrder,
-  shadowSlotKeys,
-  iconNamePattern,
-  readElementId,
-  type Desc,
-  type NumberUnit,
-  type Design,
-  type DesignKey,
-  type ElementRead,
-  type FillRead,
-  type IndexElement,
-  type Read,
-  type BoundRead,
-  type Shown,
-  type TemplateFont,
-  type TraitReads,
-} from "@airdesign/document"
+import { iconNamePattern, readElementId, type Desc, type NumberUnit } from "@airdesign/document"
 import { bytesOf } from "@airdesign/doom"
-import { cornersAgents } from "./agent-corners.js"
-import { effectAgents } from "./agent-effects.js"
-import { identityAgents } from "./agent-identity.js"
-import { imageAgents } from "./agent-image.js"
-import { fontReferences } from "./template-font.js"
-import { agentColor, colorPattern, hexPattern, readAgentColor, readAgentHex } from "./agent-color.js"
+import { colorPattern, hexPattern, readAgentColor, readAgentHex } from "./agent-color.js"
 import { knownIcon } from "./icon-names.js"
 import { imageAddressLength, pictureSourcePattern, webImage } from "./image-address.js"
 import { storableText } from "./storable-text.js"
@@ -36,82 +13,6 @@ const hundredthsPerPoint = 100
 
 function tenths(value: number): number {
   return Math.round(value * 10) / 10
-}
-
-function agentFill(fill: FillRead): string {
-  if (fill === "image" || fill === "group") return fill
-  if ("color" in fill) return agentColor(fill.color)
-  if ("gradient" in fill) return `gradient ${fill.gradient.map(agentColor).join(", ")}`
-  return `pattern ${fill.pattern}`
-}
-
-function agentBound(bound: BoundRead): string {
-  return `${bound.node} site ${String(bound.site)}`
-}
-
-type Agent = { readonly [Key in DesignKey]: (read: NonNullable<TraitReads[Key]>["value"]) => Shown[0] }
-
-const agent: Agent = {
-  geometry: (value) => value,
-  ...cornersAgents,
-  fills: agentFill,
-  "border.width": (value) => tenths(value / emuPerPoint),
-  "border.fill": agentFill,
-  "border.dash": (value) => value,
-  "border.head": (value) => value,
-  "border.tail": (value) => value,
-  ...effectAgents,
-  "text.size": (value) => tenths(value / hundredthsPerPoint),
-  "text.color": agentColor,
-  "text.font": (value) => value,
-  "text.bold": (value) => value,
-  "body.anchor": (value) => value,
-  "body.autofit": (value) => value,
-  "body.vertical": (value) => value,
-  "box.rot": (value) => tenths(value / anglePerDegree),
-  "box.flipH": (value) => value,
-  "box.flipV": (value) => value,
-  ...imageAgents,
-  ...identityAgents,
-  "connection.start": agentBound,
-  "connection.end": agentBound,
-}
-
-function shownOf<Key extends DesignKey>(
-  key: Key,
-  read: Read<NonNullable<TraitReads[Key]>["value"]> & { readonly templateFont?: TemplateFont },
-): Shown {
-  const value = read.templateFont === undefined ? agent[key](read.value) : fontReferences[read.templateFont]
-  return read.source === undefined ? [value] : [value, read.source]
-}
-
-export function designOf(read: ElementRead): Pick<IndexElement, "role" | "design" | "kept" | "placed" | "link"> {
-  const design: Partial<Record<DesignKey, Shown>> = {}
-  const stacked = shadowSlotKeys.some((slot) => read.reads[slot] !== undefined)
-  const primary = ["effects.shadow", "effects.innerShadow"] as const
-  const order = stacked
-    ? [...primary, ...designOrder.filter((key) => !primary.some((slot) => slot === key))]
-    : designOrder
-  for (const key of order) {
-    const field = read.reads[key] as Read<never> | undefined
-    if (field === undefined) continue
-    const shown = shownOf(key, field)
-    const trial = { ...design, [key]: shown }
-    if (bytesOf(JSON.stringify(trial)) > designBytes) break
-    design[key] = shown
-  }
-  for (const slot of shadowSlotKeys) {
-    const field = read.reads[slot]
-    if (field !== undefined) design[slot] = shownOf(slot, field)
-  }
-  const written: Design = design
-  return {
-    ...(read.link === undefined ? {} : { link: read.link }),
-    ...(read.role === undefined ? {} : { role: read.role }),
-    ...(Object.keys(written).length === 0 ? {} : { design: written }),
-    ...(read.kept.length === 0 ? {} : { kept: read.kept }),
-    ...(read.placed === undefined ? {} : { placed: read.placed }),
-  }
 }
 
 export type JsonSchema = Readonly<Record<string, unknown>>
@@ -347,11 +248,4 @@ export function readAgent(desc: Desc, raw: unknown): AgentRead {
     case "union":
       return readCase(desc, raw)
   }
-}
-
-export function flat(schema: unknown): boolean {
-  if (Array.isArray(schema)) return schema.every(flat)
-  if (!plainObject(schema)) return true
-  if (Object.hasOwn(schema, "oneOf") || Object.hasOwn(schema, "anyOf")) return false
-  return Object.values(schema).every(flat)
 }

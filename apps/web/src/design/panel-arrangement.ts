@@ -344,10 +344,6 @@ export function resolveControl(control: Omit<PanelControl, "kind" | "look">): Pa
   }
 }
 
-export function canvasControl(trait: SectionName, field: string): boolean {
-  return placement(trait, field)?.control === "canvas"
-}
-
 export function arrange(trait: SectionName, controls: readonly PanelControl[]): readonly (readonly PanelControl[])[] {
   const vertical =
     trait === "layout" && controls.some((control) => control.field === "flow" && control.value === "vertical")

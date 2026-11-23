@@ -5,12 +5,11 @@ import { elementCommand } from "./element-order.js"
 import { groupCommand } from "./element-group.js"
 import { changeSet } from "./grid-set.js"
 import { moveGroup } from "./grid-move.js"
-import { limits } from "@airdesign/doom"
 import { orderKeyBetween, type OrderKey } from "@airdesign/doom"
 import { mappedSlideGroups, openingTags, partition, retag, sectionsOf, type HeadTag } from "./slide-group-keys.js"
-import type { SlideSpot } from "./person-undo.js"
-import type { FoldedSlide, LegacySlideCommand, SlideState, SlideRefusal } from "./slide-order.js"
-export { readGridCommand } from "./grid-read.js"
+import type { FoldedSlide, LegacySlideCommand, SlideState } from "./slide-order.js"
+
+type SlideSpot = { readonly present: boolean; readonly key: OrderKey }
 
 export type GridSide = "same" | "new"
 export type GridLayout = { readonly starts: readonly SlideId[]; readonly keys?: readonly string[] }
@@ -22,14 +21,6 @@ export type GridTurn = {
   readonly spots: readonly SlideStep[]
   readonly heads: readonly HeadStep[]
   readonly rows: readonly GroupGuard[]
-}
-export type GridUndoable = {
-  readonly file: readonly SlideId[]
-  readonly grid: GridVersion
-  readonly spots: readonly SlideStep[]
-  readonly heads: readonly HeadStep[]
-  readonly groupsBefore: readonly GroupGuard[]
-  readonly groupsAfter: readonly GroupGuard[]
 }
 export type GridCopy = Omit<Extract<LegacySlideCommand, { readonly slide: "clone" }>, "slide" | "key" | "runId">
 
@@ -93,11 +84,6 @@ function packSections(sections: readonly (readonly SlideId[])[], columns: number
 
 export function gridSectionStarts(state: Pick<SlideState, "index" | "sectionStarts">): readonly SlideId[] | undefined {
   return indexedSectionStarts(state.index) ?? state.sectionStarts
-}
-
-export function gridCommandVersion(state: Pick<SlideState, "index" | "sectionStarts" | "order">): GridVersion {
-  if (gridSectionStarts(state) !== undefined || state.order.some((command) => command.grid === 3)) return 3
-  return state.order.some((command) => command.grid !== undefined) ? 2 : 1
 }
 
 export function orderedSpots(spots: readonly FoldedSlide[]): readonly FoldedSlide[] {
@@ -315,66 +301,4 @@ export function foldGrid(
           : openingGrid(ids, opening),
     effects,
   }
-}
-
-export function gridGroups(state: SlideState, opening?: GridVersion): readonly GridGroup[] {
-  const folded = foldGrid(state, opening)
-  return partition(
-    orderedSpots(folded.spots).map((spot) => spot.id),
-    new Set(folded.grid.starts),
-  )
-}
-
-function sits(now: FoldedSlide | undefined, expected: SlideSpot): boolean {
-  return (now?.present ?? false) === expected.present && (!expected.present || now?.key === expected.key)
-}
-
-export function turnRefusal(state: SlideState, turn: GridTurn, opening: GridVersion): SlideRefusal | null {
-  const folded = foldGrid(state, opening)
-  const spots = new Map(folded.spots.map((spot) => [spot.id, spot]))
-  const heads = new Set(folded.grid.starts)
-  if (turn.heads.some((step) => !turn.spots.some((spot) => spot.id === step.id))) return "stale"
-  if (turn.spots.some((step) => !spots.has(step.id) || !sits(spots.get(step.id), step.before))) return "stale"
-  if (turn.heads.some((step) => heads.has(step.id) !== step.before)) return "stale"
-  const groups = gridGroups(state, opening)
-  if (
-    turn.rows.some(
-      (guard) =>
-        !groups.some((group) => group[0] === guard.head && JSON.stringify(group) === JSON.stringify(guard.slides)),
-    )
-  )
-    return "stale"
-  for (const step of turn.spots) {
-    const spot = spots.get(step.id)
-    if (spot !== undefined) spots.set(step.id, { ...spot, ...step.after })
-  }
-  const present = orderedSpots([...spots.values()])
-  if (present.length === 0) return "dead"
-  if (present.length > limits.slides) return "limit"
-  for (const step of turn.heads) {
-    if (step.after) heads.add(step.id)
-    else heads.delete(step.id)
-  }
-  if ([...heads].some((id) => !present.some((spot) => spot.id === id))) return "stale"
-  const first = present[0]
-  if (first !== undefined) heads.add(first.id)
-  const afterGroups = partition(
-    present.map((spot) => spot.id),
-    heads,
-  )
-  const owner = new Map(afterGroups.flatMap((group) => group.map((id) => [id, group[0]] as const)))
-  const guarded = new Set(turn.spots.map((step) => step.id))
-  const staying = new Set(
-    turn.spots
-      .filter((step) => step.before.present && step.after.present && step.before.key === step.after.key)
-      .map((step) => step.id),
-  )
-  for (const group of groups) {
-    for (const id of group) {
-      const next = owner.get(id)
-      if (guarded.has(id) || next === undefined || next === group[0]) continue
-      if (!group.some((witness) => staying.has(witness) && owner.get(witness) === next)) return "stale"
-    }
-  }
-  return null
 }

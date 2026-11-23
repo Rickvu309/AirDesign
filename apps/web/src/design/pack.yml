@@ -16,7 +16,6 @@ public:
   - controls/text.tsx
   - controls/union.tsx
   - corners-control.ts
-  - crop-change.ts
   - effects-list.ts
   - eyedropper.ts
   - opacity-control.ts

@@ -29,10 +29,10 @@ const write = (relative, source) => {
   fs.mkdirSync(path.dirname(file), { recursive: true })
   fs.writeFileSync(file, source)
 }
-const cache = (tests, faults, measured = { "slides-repainted": 1 }) => {
+const cache = (tests, faults) => {
   const file = path.join(root, "node_modules/.cache/vitest-metrics.json")
   fs.mkdirSync(path.dirname(file), { recursive: true })
-  fs.writeFileSync(file, `${JSON.stringify({ tests, faults, measured })}\n`)
+  fs.writeFileSync(file, `${JSON.stringify({ tests, faults })}\n`)
 }
 const record = (faults, tests = 2) => {
   cache(tests, faults)
@@ -44,7 +44,6 @@ const record = (faults, tests = 2) => {
       "export-coverage": { now: 2, goal: 3 },
       "fault-detection": { now: 1, goal: 2 },
       "long-titles": { goal: 0 },
-      "slides-repainted": { goal: 1 },
       "check-duration": { limit: 40 },
       "gate-duration": { limit: 60 },
       "ci-duration": { limit: 40 },
@@ -84,23 +83,6 @@ const steady = await readMetrics(root)
 if (steady.drift.length !== 0) throw new Error(`a matching record drifted\n${steady.drift.join("\n")}`)
 if (steady.rows.find((row) => row.name === "known-failures")?.now !== 1)
   throw new Error("one known failure was not counted")
-
-const repainted = steady.rows.find((row) => row.name === "slides-repainted")
-if (repainted?.now !== 1 || repainted.goal !== 1)
-  throw new Error(`the slides one edit repaints were not read: ${JSON.stringify(repainted)}`)
-cache(2, 1, { "slides-repainted": 41 })
-if ((await readMetrics(root)).rows.find((row) => row.name === "slides-repainted")?.now !== 41)
-  throw new Error("more slides repainted must show in the metric")
-if ((await readMetrics(root)).drift.length !== 0) throw new Error("a live metric must need no record")
-cache(2, 1, {})
-let unmeasured = ""
-try {
-  await readMetrics(root)
-} catch (error) {
-  unmeasured = error.message
-}
-if (unmeasured !== "Vitest did not measure slides-repainted. Run pnpm test:unit, then run this again.")
-  throw new Error(`a missing measure passed: ${unmeasured}`)
 
 cache(2, 2)
 if (steady.rows.find((row) => row.name === "check-duration")?.limit !== 40)
@@ -243,7 +225,6 @@ const proveVitest = () => {
         'describe.skip("block", () => { it("inside", () => {}) })',
         'it("reads skip", () => { expect({ skip: true }.skip).toBe(true) })',
         'it("ctx", (ctx) => { ctx.skip() })',
-        'it("measures", ({ task }) => { Object.assign(task.meta, { measured: { probe: 3 } }); expect(1).toBe(1) })',
         "",
       ].join("\n"),
     )
@@ -280,11 +261,9 @@ const proveVitest = () => {
       throw new Error(`${failed.stdout ?? ""}\n${failed.stderr ?? failed.message}`)
     }
     const counted = JSON.parse(fs.readFileSync(reported, "utf8"))
-    if (counted.tests !== 15 || counted.faults !== 11) {
-      throw new Error(`vitest counted ${JSON.stringify(counted)}, expected 15 tests and 11 faults`)
+    if (counted.tests !== 14 || counted.faults !== 11) {
+      throw new Error(`vitest counted ${JSON.stringify(counted)}, expected 14 tests and 11 faults`)
     }
-    if (counted.measured?.probe !== 3)
-      throw new Error(`vitest did not report what a test measured: ${JSON.stringify(counted)}`)
   } finally {
     fs.rmSync(path.join(probe, "node_modules"), { force: true })
     fs.rmSync(probe, { recursive: true, force: true })
@@ -337,9 +316,9 @@ const narrowed = Object.fromEntries(
 fs.rmSync(path.join(root, "node_modules/.cache/vitest-metrics.json"))
 const fromNarrowRun = await readEvery(root, narrowed)
 const names = fromNarrowRun.rows.map((row) => row.name)
-if (names.includes("known-failures") || names.includes("slides-repainted"))
+if (names.includes("known-failures"))
   throw new Error("a run of only the unit tests its change reaches must not read the whole unit run")
-if (fromNarrowRun.drift.some((line) => /known-failures|slides-repainted/.test(line)))
+if (fromNarrowRun.drift.some((line) => /known-failures/.test(line)))
   throw new Error(`a narrowed run must not call the unit run's metrics unmeasured\n${fromNarrowRun.drift.join("\n")}`)
 
 const unitShard = (current) => ({ AIRDESIGN_UNIT_TESTS: "all", AIRDESIGN_UNIT_SHARD: `${current}/3` })
@@ -348,7 +327,7 @@ const inShard = (current) =>
 const unitRow = (read, name) => read.rows.find((row) => row.name === name)
 
 seedList([{ seed: 1, kind: "one kind", deck: "a.pptx", what: "slide 1" }])
-cache(2, 1, {})
+cache(2, 1)
 const secondShard = await readEvery(root, inShard(2))
 const measuredRows = (read) => read.rows.filter((row) => !("limit" in row))
 if (
@@ -365,10 +344,7 @@ if (!unitRow(secondShard, "known-failures")?.note?.includes("unit shard 2/3"))
   throw new Error("a shard's known-failures line says it is one part of the sum")
 if (metricLines(secondShard.rows).length !== 1 || !metricLines(secondShard.rows)[0].includes("unit shard 2/3"))
   throw new Error("a shard prints the note beside its number")
-cache(2, 3, { "slides-repainted": 7 })
-const thirdShard = await readEvery(root, inShard(3))
-if (unitRow(thirdShard, "slides-repainted")?.now !== 7) throw new Error("the shard that ran the paint test reports it")
-cache(2, 2, {})
+cache(2, 2)
 const firstShard = await readEvery(root, inShard(1))
 if (measuredRows(firstShard).some((row) => !(row.name in fromUnitMeasures)))
   throw new Error("a shard measures only the unit run's metrics, since another source job measures the rest")
@@ -376,8 +352,6 @@ if (unitRow(firstShard, "known-failures")?.now !== 2 + 1)
   throw new Error(
     `the first shard adds the repo's static faults to its own: ${unitRow(firstShard, "known-failures")?.now}`,
   )
-if (unitRow(firstShard, "slides-repainted") !== undefined)
-  throw new Error("a shard that did not run the paint test must not fail for it")
 if (measuredHere({ ...unitShard(1), AIRDESIGN_UNIT_SHARD: "1/1" }) !== measures)
   throw new Error("one shard is the whole run")
 if (
@@ -386,9 +360,5 @@ if (
   )
 )
   throw new Error("a narrowed run measures nothing from the unit run, shards or not")
-
-const deckPaintTest = "apps/web/src/deck-paint.test.ts"
-if (!fs.readFileSync(path.join(repoRoot, deckPaintTest), "utf8").includes('"slides-repainted"'))
-  throw new Error(`${deckPaintTest} must measure slides-repainted, since a split run reads it from one shard`)
 
 console.log("metrics tests passed")

@@ -1,6 +1,5 @@
-import { decide, format, openRegister, slideId, slideNode, type FieldEdit, type Register } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { applyRoute, exportPackage, exportParts, readPackage, readShows } from "./index.js"
+import { applyRoute, exportPackage, readPackage, readShows } from "./index.js"
 import { decodeUtf8, encodeUtf8 as encode } from "./package-bytes.js"
 
 const choice = (inner: string) =>
@@ -75,25 +74,4 @@ it("keeps a hidden slide hidden and its transition through an edit and an export
   expect(readShows(exported.parts)).toEqual([
     expect.objectContaining({ part, hidden: true, transition: { kind: "push", direction: "r", duration: 750 } }),
   ])
-})
-
-it("skips one slide by changing only its show attribute and restores the opening bytes", () => {
-  const slide = slideId("256")
-  const node = slideNode(slide, "slide")
-  const part = "ppt/slides/slide1.xml"
-  const register = { ...openRegister("", "deck"), file: [slide] }
-  const added = decide(register, { command: "add", node, floor: "", route: register.route })
-  if (added.decision !== "apply") throw new Error(added.code)
-  const change = (from: Register, skipped: FieldEdit<boolean>) => {
-    const result = decide(from, { command: "person", node, v: format, patch: { show: { skipped } } })
-    if (result.decision !== "apply") throw new Error(result.code)
-    return result.register
-  }
-  const skipped = change(added.register, { set: true })
-  const edited = exportParts(parts, skipped)
-  expect(decodeUtf8(edited.get(part)!)).toBe(slides[0]!.replace("<p:sld>", '<p:sld show="0">'))
-  expect(readShows(edited)[0]?.hidden).toBe(true)
-  for (const [name, bytes] of parts) if (name !== part) expect(edited.get(name)).toBe(bytes)
-  expect(exportParts(parts, change(skipped, "opening")).get(part)).toBe(parts.get(part))
-  expect(decodeUtf8(exportParts(edited, change(added.register, { set: false })).get(part)!)).toBe(slides[0]!)
 })

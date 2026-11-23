@@ -16,14 +16,6 @@ export function formatOf(raw: unknown): number {
   return typeof stored === "number" && Number.isSafeInteger(stored) && stored >= 1 ? stored : 1
 }
 
-export function newerFormat(raw: unknown): boolean {
-  return formatOf(raw) > format
-}
-
-export type StoredRead<T> =
-  | { readonly ok: true; readonly value: T }
-  | { readonly ok: false; readonly refusal: "newer" | "payload" }
-
 export type Conversion<Context> = {
   readonly introduced: number
   readonly convert: (raw: Record<string, unknown>, context: Context) => unknown

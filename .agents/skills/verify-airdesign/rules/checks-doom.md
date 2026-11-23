@@ -1,6 +1,6 @@
 # Checks on the doom core's writes, undo and agent runs
 
-Same fields as [checks-document.md](checks-document.md). doom is replayed in `tests/doom-replay.test.ts`: `pnpm vitest run tests/doom-replay.test.ts`, and doom-runs in `tests/doom-runs-replay.test.ts`. It restates, over property writes, what person-undo and undo hold for the stored deck ([checks-undo.md](checks-undo.md), [checks-document.md](checks-document.md)).
+Each entry: what the check promises, the code it covers, its bounds, how to run it alone, its replay, what it leaves out, and its sync: the `covers.json` that records the code the model was last confirmed against. doom is replayed in `tests/doom-replay.test.ts`: `pnpm vitest run tests/doom-replay.test.ts`, and doom-runs in `tests/doom-runs-replay.test.ts`. Together they restate, over property writes, what the edit, undo, run, rerun and person-undo models held for the old stored deck, whose register model is gone.
 
 ## doom
 

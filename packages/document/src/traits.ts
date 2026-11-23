@@ -1,9 +1,8 @@
-import type { Kind } from "./kinds.js"
 import { body } from "./trait-body.js"
 import { border } from "./trait-border.js"
 import { box } from "./trait-box.js"
 import { connection } from "./trait-connection.js"
-import { dropSlots, effects, innerSlots } from "./trait-effects.js"
+import { effects } from "./trait-effects.js"
 import { fills } from "./trait-fills.js"
 import { geometry } from "./trait-geometry.js"
 import { guides } from "./trait-guides.js"
@@ -15,7 +14,7 @@ import { show } from "./trait-show.js"
 import { text } from "./trait-text.js"
 import { templateStyle } from "./trait-template-style.js"
 import { transition } from "./trait-transition.js"
-import type { AgentOf, Alpha, Fields, ValueOf } from "./value-kind.js"
+import type { Alpha, Fields, ValueOf } from "./value-kind.js"
 
 export const traits = {
   identity,
@@ -59,53 +58,10 @@ export type WireField<T extends TraitName> =
   | Exclude<FieldName<T>, AlphaField<T> | (T extends "effects" ? never : SlotField<T>)>
   | InputName<T>
 
-export type WireAgent<T extends TraitName, F extends WireField<T>> =
-  F extends FieldName<T>
-    ? AgentOf<FieldKinds<T>[F]> | (F extends InheritableField<T> ? null : never)
-    : F extends InputName<T>
-      ? AgentOf<InputKinds<T>[F]> | (F extends InheritableField<T> ? null : never)
-      : never
-
 export const traitNames = Object.keys(traits) as readonly TraitName[]
-
-export const kindTraits = {
-  deck: ["templateStyle"],
-  master: [],
-  layout: [],
-  section: [],
-  slide: ["fills", "templateStyle", "show", "transition", "guides"],
-  notes: ["notes"],
-  shape: ["identity", "box", "geometry", "fills", "border", "effects", "body", "text", "link", "layout"],
-  connector: ["identity", "box", "geometry", "border", "effects", "connection"],
-  group: ["identity", "box", "effects", "layout"],
-  kept: ["identity"],
-} as const satisfies { readonly [K in Kind]: readonly TraitName[] }
-
-export function fieldKeys(trait: TraitName): readonly FieldKey[] {
-  return Object.keys(traits[trait].fields).map((field) => `${trait}.${field}` as FieldKey)
-}
 
 export const alphaKeys: readonly FieldKey[] = traitNames.flatMap((trait) =>
   Object.entries(traits[trait].fields as Fields).flatMap(([field, kind]) =>
     kind.desc.kind === "alpha" ? [`${trait}.${field}` as FieldKey] : [],
   ),
 )
-
-export function inheritable(trait: TraitName, field: string): boolean {
-  return (traits[trait].inheritable as readonly string[]).includes(field)
-}
-
-export function slotted(trait: TraitName, field: string): boolean {
-  return (traits[trait].slots as readonly string[]).includes(field)
-}
-
-const replacing: Partial<Readonly<Record<TraitName, string>>> = { fills: "paint", geometry: "shape" }
-
-export function keptRefuses(kept: readonly string[], trait: TraitName, field: string): boolean {
-  if (kept.includes(`${trait}.${field}`)) return true
-  if (trait === "effects") {
-    if (dropSlots.some((slot) => slot === field) && kept.includes("effects.shadow")) return true
-    if (innerSlots.some((slot) => slot === field) && kept.includes("effects.innerShadow")) return true
-  }
-  return kept.includes(trait) && replacing[trait] !== field
-}

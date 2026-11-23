@@ -38,11 +38,6 @@ export function namedFace(typeface: string): NamedFace | undefined {
   return { family: family.family, typeface, name: weight.name, weight: weight.weight }
 }
 
-export function styleTypeface(family: string, weight: number): string {
-  const name = fontWeights.find((each) => each.weight === weight)?.name
-  return name === undefined || weight === regularWeight || weight === boldWeight ? family : `${family} ${name}`
-}
-
 export type ServedFace = { readonly style: string; readonly weight: string }
 
 const italicName = "Italic"
@@ -64,12 +59,4 @@ export function readStyleName(text: string): FontStyle | undefined {
 export function holdsWeight(face: ServedFace, weight: number): boolean {
   const [low, high = low] = face.weight.split(" ").map(Number)
   return low !== undefined && high !== undefined && weight >= low && weight <= high
-}
-
-export function familyStyles(faces: readonly ServedFace[]): readonly FontStyle[] {
-  const held = (weight: number, italic: boolean) =>
-    faces.some((face) => (face.style === "italic") === italic && holdsWeight(face, weight))
-  return fontWeights.flatMap(({ weight }) =>
-    [false, true].filter((italic) => held(weight, italic)).map((italic) => ({ weight, italic })),
-  )
 }

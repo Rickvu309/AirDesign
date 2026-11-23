@@ -1,7 +1,6 @@
 import type { Box } from "./box.js"
 import { shapeOf, type ElementId } from "./element-id.js"
 import type { Framing, FramingFill, FramingLayout } from "./frame-index.js"
-import type { LayoutView } from "./frame-layout.js"
 import { flows, layoutAligns } from "./trait-layout.js"
 
 export type SeenGroup = {
@@ -28,13 +27,6 @@ function seal(box: Box, children: readonly { readonly node: ElementId; readonly 
   return hash.toString(16).padStart(8, "0")
 }
 
-function fillsText(children: LayoutView["children"]): readonly string[] {
-  const filled = children.flatMap(({ node, fill }) =>
-    fill === undefined ? [] : [`${shapeOf(node).shape}:${fill.width ? "w" : ""}${fill.height ? "h" : ""}`],
-  )
-  return filled.length === 0 ? [] : [`l=${filled.join(",")}`]
-}
-
 function fillsOf(text: string | undefined, children: readonly ElementId[]): readonly FramingFill[] {
   const named = new Map(children.map((child) => [shapeOf(child).shape, child]))
   return (text ?? "").split(",").flatMap((item) => {
@@ -43,23 +35,6 @@ function fillsOf(text: string | undefined, children: readonly ElementId[]): read
     if (node === undefined || sides === undefined || !/^w?h?$/.test(sides) || sides === "") return []
     return [{ node, width: sides.includes("w"), height: sides.includes("h") }]
   })
-}
-
-export function layoutMarker(view: LayoutView): string {
-  const { left, top, right, bottom } = view.padding
-  return [
-    version,
-    `b=${shapeOf(view.backdrop).shape}`,
-    `f=${flowCodes[view.flow]}`,
-    `g=${String(view.gap)}`,
-    `p=${[left, top, right, bottom].map(String).join(",")}`,
-    `a=${view.align}`,
-    ...(view.width === "fixed" ? ["w=f"] : []),
-    ...(view.height === "fixed" ? ["h=f"] : []),
-    `c=${view.children.map((child) => shapeOf(child.node).shape).join(",")}`,
-    ...fillsText(view.children),
-    `s=${seal(view.box, view.children)}`,
-  ].join(";")
 }
 
 function fieldsOf(marker: string): ReadonlyMap<string, string> | null {

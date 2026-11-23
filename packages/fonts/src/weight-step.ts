@@ -1,19 +1,9 @@
-import { boldWeight, familyStyles, regularWeight, type FontStyle, type ServedFace } from "./named-face.js"
-import { resolveFont } from "./source.js"
+import { boldWeight, regularWeight, type FontStyle } from "./named-face.js"
 
 export const plainStyles: readonly FontStyle[] = [regularWeight, boldWeight].flatMap((weight) => [
   { weight, italic: false },
   { weight, italic: true },
 ])
-
-export function listedStyles(
-  family: string,
-  faces: (family: string) => readonly ServedFace[] | undefined,
-): readonly FontStyle[] {
-  const served = resolveFont(family)?.family.toLowerCase() === family.toLowerCase()
-  const held = served ? faces(family) : undefined
-  return held === undefined ? plainStyles : familyStyles(held)
-}
 
 export function steppedWeight(current: FontStyle, styles: readonly FontStyle[], step: 1 | -1): FontStyle | null {
   const slanted = styles.filter((style) => style.italic === current.italic)

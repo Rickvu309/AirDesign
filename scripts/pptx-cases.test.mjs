@@ -20,16 +20,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const entries = await loadCases(root)
 assert.deepEqual(
   entries.map((entry) => entry.file),
-  [
-    "frame-group.mjs",
-    "frame-nested.mjs",
-    "group-duplicate.mjs",
-    "group-join.mjs",
-    "group-transform.mjs",
-    "layer-paste-decks.mjs",
-    "layer-paste.mjs",
-    "section-list.mjs",
-  ],
+  ["section-list.mjs"],
 )
 for (const spec of caseSpecs(entries)) assert.ok(fs.existsSync(path.join(root, spec)), `${spec} is not a spec file`)
 for (const entry of entries) {

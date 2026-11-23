@@ -26,7 +26,7 @@ import { bytesOf, limits } from "@airdesign/doom"
 import { onlyKeys, record, same } from "./plain-object.js"
 import { readIndexLayouts, type IndexLayout } from "./index-layout.js"
 import { kinds, type Kind } from "./kinds.js"
-import type { ElementPatch } from "./row.js"
+import type { ElementPatch } from "./trait-patch.js"
 import { readFraming, type Framing } from "./frame-index.js"
 
 export type SlideSize = { readonly width: number; readonly height: number }

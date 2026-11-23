@@ -21,7 +21,7 @@ export { readAccountName, accountNameLimit } from "./account-name.js"
 export { blankDeckName, readCreateDeck } from "./create-wire.js"
 export { deckName, readDeckName } from "./deck-name.js"
 
-export { agentNumberOf, designOf, readAgent } from "./agent-form.js"
+export { agentNumberOf, readAgent } from "./agent-form.js"
 
 export { iconNames, knownIcon } from "./icon-names.js"
 export { webImage } from "./image-address.js"
@@ -84,7 +84,6 @@ export {
   type FormPairs,
   type TokenRequest,
 } from "./wire.js"
-export { readSetChange, readTarget } from "./set-wire.js"
 
 export { readDeckEdit } from "./deck-edit-wire.js"
 export { readDeckQuery, readListDecks } from "./read-wire.js"

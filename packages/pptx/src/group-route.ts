@@ -2,7 +2,6 @@ import {
   elementStacks,
   groupCommand,
   groupNode,
-  landedPatch,
   openingPlace,
   madeGroup,
   plainGroup,
@@ -12,7 +11,6 @@ import {
   type ElementClone,
   type Member,
   type Place,
-  type Register,
   type SlideId,
   type SlideState,
   type TraitPatch,
@@ -27,7 +25,7 @@ import { writeTrait } from "./trait-xml.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
-export type GroupedState = SlideState & { readonly index?: DeckIndex; readonly elements?: Register["elements"] }
+export type GroupedState = SlideState & { readonly index?: DeckIndex }
 
 function boxPatch(place: Place): TraitPatch<"box"> {
   return {
@@ -62,11 +60,6 @@ function bytesOf(parts: Parts, part: string): Uint8Array {
   const bytes = parts.get(part)
   if (bytes === undefined) throw new Error("part")
   return bytes
-}
-
-function rowsOf(state: GroupedState, node: Parameters<typeof shapeOf>[0]): TraitPatch<"box"> | undefined {
-  const body = state.elements === undefined || !Object.hasOwn(state.elements, node) ? undefined : state.elements[node]
-  return body === undefined ? undefined : landedPatch(body, "text").box
 }
 
 export type PasteSource = (command: ElementClone, at: number) => { readonly parts: Parts; readonly part: string }
@@ -213,10 +206,8 @@ export function groupsReplayed(
       continue
     }
     const backdrop = madeGroup(prefix, command.node)?.backdrop?.node
-    const rows = rowsOf(state, command.node)
     editor.editWhole(part, (current) => {
       let next = current
-      if (rows !== undefined && backdrop === undefined) next = writeTrait(next, where(shape), "box", rows)
       const unwrapped = unwrapGroup(bytesOf(next, part), shape)
       next = withPart(next, part, unwrapped.bytes)
       if (backdrop !== undefined) {

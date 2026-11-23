@@ -50,7 +50,7 @@ const reading = {
   reads: {
     "scripts/deploy.test.mjs": [".railway/railway.ts"],
     "scripts/land.test.mjs": ["apps/web/src/thin-deck.tsx"],
-    "scripts/check-specs.test.mjs": ["specs/edit/"],
+    "scripts/check-specs.test.mjs": ["specs/doom-runs/"],
   },
 }
 const mapReading = (changed) => changeMap(changed, reading)
@@ -67,7 +67,7 @@ same(
 )
 same(
   "a file under a folder a script test reads runs the script tests, and its neighbour in another folder does not",
-  [on(mapReading(["specs/edit/Edit.tla"])), on(mapReading(["specs/run/Run.tla"]))],
+  [on(mapReading(["specs/doom-runs/DoomRuns.tla"])), on(mapReading(["specs/doom/Doom.tla"]))],
   [
     ["source", "scripts", "model-check"],
     ["source", "model-check"],
@@ -333,7 +333,7 @@ same("in the repo, the PR body check is a script alone", on(real(["scripts/pr-bo
 same("in the repo, the oauth package runs no pptx part", real(["packages/oauth/src/index.ts"]).parts.pptx, false)
 same(
   "in the repo, a file a script test reads turns on the script tests even when no import links them",
-  [".oxfmtrc.json", ".railway/railway.ts", "specs/edit/Edit.tla", "tests/browser/preview-port.ts"].map(
+  [".oxfmtrc.json", ".railway/railway.ts", "specs/doom-runs/DoomRuns.tla", "tests/browser/preview-port.ts"].map(
     (file) => real([file]).parts.scripts,
   ),
   [true, true, true, true],

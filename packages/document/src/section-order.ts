@@ -1,10 +1,8 @@
-import { foldGrid, orderedSpots } from "./grid-order.js"
 import type { SlideId } from "./element-id.js"
 import type { OrderKey } from "@airdesign/doom"
-import { foldSlides, type SlideState, type LegacySlideCommand } from "./slide-order.js"
+import { foldSlides, type LegacySlideCommand } from "./slide-order.js"
 
 export type FileSection = { readonly name: string; readonly slides: readonly string[] }
-export type Section = { readonly name: string; readonly slides: readonly SlideId[] }
 
 export function sectionRuns(
   file: readonly SlideId[],
@@ -65,15 +63,4 @@ function neighbour(placed: ReadonlyMap<SlideId, OrderKey | null>, id: SlideId, k
     } else if (after === undefined || earlier(other, at, after[0], after[1])) after = [other, at]
   }
   return (before ?? after)?.[0]
-}
-
-export function foldSections(state: SlideState, base: readonly FileSection[]): readonly Section[] {
-  if (base.length === 0) return []
-  const folded = foldGrid(state)
-  return sectionRuns(
-    state.file,
-    folded.effects,
-    orderedSpots(folded.spots).map((spot) => spot.id),
-    base.map((section) => section.slides),
-  ).map((slides, position) => ({ name: base[position]!.name, slides }))
 }

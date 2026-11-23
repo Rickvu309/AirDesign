@@ -1,5 +1,5 @@
 import { record } from "./plain-object.js"
-import { stagedElement, stagedIndex, stamped, type Renames, type Stage } from "./fills-conversion.js"
+import { stagedIndex, type Renames, type Stage } from "./fills-conversion.js"
 
 export const borderFormat = 64
 
@@ -26,29 +26,6 @@ const borderStage: Stage = {
   opening: (opening) => opening,
 }
 
-export function borderRow(raw: Loose): unknown {
-  return stamped(raw, borderPatch(raw.patch), borderFormat)
-}
-
-export function borderElement(raw: unknown): unknown {
-  return stagedElement(raw, borderStage)
-}
-
 export function borderIndex(raw: Loose): Loose | null {
   return stagedIndex(raw, borderStage)
-}
-
-export function borderRegister(raw: Loose): unknown {
-  const index = record(raw.index)
-  if (index === null) return raw
-  const converted = borderIndex(index)
-  return converted === null ? null : { ...raw, index: converted }
-}
-
-export function holdsBorder(raw: unknown): boolean {
-  const element = record(raw)
-  return (
-    Object.keys(record(element?.design) ?? {}).some((key) => key.startsWith(`${trait}.`)) ||
-    record(element?.opening)?.[trait] !== undefined
-  )
 }

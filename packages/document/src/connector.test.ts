@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { connectorEnds, elbowClearance, outlineOf, routed, siteTie, sitePoint, type Tie } from "./connector.js"
-import { siteCount } from "./preset-sites.js"
+import { connectorEnds, elbowClearance, routed, siteTie, sitePoint, type Tie } from "./connector.js"
 
 const upright = { rot: 0, flipH: false, flipV: false }
 const picture = { box: { x: 4358398, y: 3042697, cx: 895278, cy: 914400 }, ...upright }
@@ -52,14 +51,6 @@ describe("a connector bound to two shapes", () => {
   it("leaves a connector whose preset no route knows to its file geometry", () => {
     const anywhere = { spot: { x: 0, y: 0 }, way: { x: 1, y: 0 } }
     expect(routed(line, "rightArrow", {}, anywhere, anywhere)).toBeNull()
-  })
-
-  it("gives an element with no preset the rectangle's four sites, and a custom outline none", () => {
-    expect(outlineOf(null, {})).toEqual(rect)
-    expect(outlineOf("custom", {})).toBeNull()
-    expect(siteCount("rect")).toBe(4)
-    expect(siteCount("ellipse")).toBe(8)
-    expect(sitePoint(card, rect, 4)).toBeNull()
   })
 
   it("places a site through the shape's turn and flips", () => {

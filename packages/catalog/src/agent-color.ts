@@ -8,24 +8,6 @@ import {
   type ColorTransform,
 } from "@airdesign/document"
 
-export function agentPercent(value: number): string {
-  return String(Math.round(value / 100) / 10)
-}
-
-function baseOf(color: Color): string {
-  if ("scheme" in color) return color.scheme
-  if ("rgb" in color) return `#${color.rgb}`
-  if ("system" in color) return `#${color.last}`
-  return color.preset
-}
-
-export function agentColor(color: Color): string {
-  const transforms = (color.transforms ?? []).map((transform) =>
-    "val" in transform ? `${transform.op} ${agentPercent(transform.val)}` : transform.op,
-  )
-  return [baseOf(color), ...transforms].join(" ")
-}
-
 const agentNumber = "-?[0-9]+(?:\\.[0-9]+)?"
 function slotPattern(slots: readonly string[]): string {
   const groups = new Map<string, string[]>()
