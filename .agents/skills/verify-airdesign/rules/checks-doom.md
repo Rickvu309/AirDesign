@@ -61,3 +61,11 @@ Planted faults, each put in the model and then in the code:
 | A write on an old rev lands                 | not in the model                       | `write` without its `stale` check: the probe's write lands                                                   |
 
 Sync: `specs/doom-runs/covers.json`.
+
+## Structure on Doom
+
+No model: a property test drives the editor's writes. `apps/web/src/doom-editor/children-keep-place.property.test.ts` runs up to eight steps on four layers, each turned 0°, 30°, 90° or 135°: wrap in a group or a frame (`wrapWrites`), ungroup (`ungroupWrites`), move any layer or group (`moveWrites`), and the person's undo and redo (`invert` with the device's turned revs, as `turn` in `packages/live/src/doom-deck.ts` does). After each step every layer shows where it showed before, or moved by exactly the move when it or a group holding it moved; an undo or redo leaves the slide holding the same layers as before the step it turns. A second test undoes a run that wrapped two layers, as `undoRun` does: the group is gone and the layers show where they did. This ports structure's `ChildrenKeepPlace`, `LeftChildStaysOut`, `EmptiedGroupHoldsNoLayer` and `RunUndoTurnsBackGroup`.
+
+Leaves out: auto layout (Shift+A, padding, Remove auto layout), a drag into or out of a group, and the read set and counts of the stored deck (structure's `ReadSetHeld`, `AbsentEditLeavesCounts`, `StructuralRecord`), which have no doom code; a frame's backdrop (`BackdropOnlyInFrame`): a doom frame paints its own fills. The run's undo of a group the person moved since (`PersonMoveKeepsAgentGroup`) differs: the stored deck refused it, the doom takes the group away and puts its layers back where they were before the run, so the person's move is lost. That is a fault for the feature review.
+
+Found: a group around a hugging group jumped on ungroup, by half the difference between the size the inner group stored and the size it showed (#1406).
