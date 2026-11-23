@@ -21,21 +21,11 @@ const owedToAgent = [
   "panel:shadow.opacity",
   "panel:link.target",
   "panel:geometry.shape",
-  "gesture:rotate",
-  "gesture:flip-horizontal",
-  "gesture:flip-vertical",
-  "gesture:duplicate",
-  "gesture:duplicate-drag",
   "gesture:frame",
   "gesture:lock",
   "gesture:tool-ellipse",
   "gesture:underline",
   "gesture:strike",
-  "gesture:slide-duplicate",
-  "strip:deck-name",
-  "notes:slide-notes",
-  "panel:theme-colors",
-  "panel:theme-fonts",
 ]
 
 const viewOnly = new Set([

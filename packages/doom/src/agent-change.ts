@@ -87,6 +87,14 @@ export type AgentLook = {
   readonly strike?: boolean
   readonly dash?: "solid" | "dash" | "dot"
   readonly fit?: "fill" | "fit" | "tile"
+  readonly rotation?: number
+  readonly flip?: "none" | "h" | "v" | "hv"
+  readonly notes?: string
+}
+export type DeckLook = {
+  readonly name?: string
+  readonly colors?: { readonly [K in ColorVar]?: Hex }
+  readonly fonts?: { readonly heading?: string; readonly body?: string }
 }
 export type SlideAdd = { readonly after?: NodeId }
 export type SlideMove = { readonly slide: NodeId; readonly after: NodeId | null }
@@ -97,6 +105,8 @@ export type AgentChange =
   | { readonly op: "wrap"; readonly nodes: readonly NodeId[]; readonly layout?: "row" | "column" | "none" }
   | { readonly op: "unwrap"; readonly node: NodeId }
   | { readonly op: "delete"; readonly nodes: readonly NodeId[] }
+  | { readonly op: "duplicate"; readonly nodes: readonly NodeId[] }
+  | ({ readonly op: "deck" } & DeckLook)
   | {
       readonly op: "slide"
       readonly add?: SlideAdd
@@ -308,6 +318,9 @@ const lookFields: LookFields = {
   strike: flag("Strike through all the words."),
   dash: choice(["solid", "dash", "dot"], "Outline dash."),
   fit: choice(["fill", "fit", "tile"], "How a picture sits in its layer."),
+  rotation: number(-360, 360, "Degrees clockwise."),
+  flip: choice(["none", "h", "v", "hv"], "Mirror the layer across, up and down, or both."),
+  notes: field({ type: "string", description: "A slide's presenter notes, as plain words." }, words(limits.valueBytes)),
 }
 
 const lookKeys = Object.keys(lookFields) as (keyof AgentLook)[]
@@ -362,6 +375,23 @@ const placeFields = {
     readSlideMove,
   ),
   delete: id("A slide to delete."),
+  colors: field(
+    {
+      type: "object",
+      additionalProperties: { type: "string", pattern: "^#[0-9a-fA-F]{6}$" },
+      description: "Theme colours by name, as #rrggbb. Every layer that names one follows.",
+    },
+    object({}, Object.fromEntries(colorVars.map((name) => [name, readHex])) as Record<ColorVar, Reader<Hex>>),
+  ),
+  fonts: field(
+    {
+      type: "object",
+      additionalProperties: false,
+      properties: { heading: { type: "string" }, body: { type: "string" } },
+      description: "The theme's heading and body font families.",
+    },
+    object({}, { heading: readFontName, body: readFontName }),
+  ),
 } as const
 
 const pickFrom = <T extends { readonly [P in keyof T]: Field<unknown> }, K extends keyof T>(
@@ -382,6 +412,8 @@ const readChange = variant("op", {
   unwrap: object(pickFrom(placeFields, ["node"])),
   delete: object(pickFrom(placeFields, ["nodes"])),
   slide: object({}, pickFrom(placeFields, ["add", "move", "delete"])),
+  duplicate: object(pickFrom(placeFields, ["nodes"])),
+  deck: object({}, { ...pickFrom(lookFields, ["name"]), ...pickFrom(placeFields, ["colors", "fonts"]) }),
 })
 
 export function readAgentChange(raw: unknown): AgentChange | Refusal {
@@ -435,9 +467,9 @@ export const agentChangesSchema = {
       required: ["op"],
       properties: {
         op: {
-          enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide"],
+          enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck"],
           description:
-            "add: kind, slide, into?, look. set: target, look. move: node, into?, after?. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete.",
+            "add: kind, slide, into?, look. set: target, look. move: node, into?, after?. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, colors?, fonts?.",
         },
         ...schemasOf(placeFields),
         ...schemasOf(lookFields),

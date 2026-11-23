@@ -152,6 +152,11 @@ describe("the advertised schema", () => {
       "strike",
       "dash",
       "fit",
+      "rotation",
+      "flip",
+      "notes",
+      "colors",
+      "fonts",
     ]
     expect(Object.keys(change).sort()).toEqual([...named].sort())
     const used = new Set(valid.flatMap((each) => Object.keys(each)))
@@ -172,8 +177,8 @@ describe("the advertised schema", () => {
     }
   })
 
-  it("names the seven ops", () => {
-    expect(change.op?.enum).toEqual(["add", "set", "move", "wrap", "unwrap", "delete", "slide"])
+  it("names the nine ops", () => {
+    expect(change.op?.enum).toEqual(["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck"])
   })
 
   it("fits the budget for the one tool that carries it", () => {

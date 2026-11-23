@@ -84,7 +84,8 @@ function placeWords(doom: Doom, node: Node, boxes: ReadonlyMap<NodeId, Box> | un
   const free = solved !== undefined || parent === undefined || !isLaidOut(parent)
   const size = `${num(box.w)}x${num(box.h)}`
   const turned = box.rotation === 0 ? "" : ` r=${num(box.rotation)}`
-  return `${free ? `@${num(box.x)},${num(box.y)} ` : ""}${size}${turned}`
+  const flipped = box.flipH || box.flipV ? ` flip=${box.flipH ? "h" : ""}${box.flipV ? "v" : ""}` : ""
+  return `${free ? `@${num(box.x)},${num(box.y)} ` : ""}${size}${turned}${flipped}`
 }
 
 function looksOf(node: Node): readonly string[] {
@@ -165,12 +166,14 @@ function walk(doom: Doom, node: Node, depth: number, boxes: ReadonlyMap<NodeId, 
 function slideLine(node: Node): string {
   const name = get(node, "name")
   const fills = get(node, "fills")
+  const notes = get(node, "notes")
   return [
     "slide",
     node.id,
     ...(name === undefined ? [] : [quoted(name)]),
     ...(get(node, "hidden") === true ? ["hidden"] : []),
     ...(fills !== undefined && fills.length > 0 ? [`fill=${paintWords(fills)}`] : []),
+    ...(notes === undefined || notes.chars === "" ? [] : [`notes=${quoted(notes.chars)}`]),
   ].join(" ")
 }
 

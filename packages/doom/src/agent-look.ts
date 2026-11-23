@@ -74,7 +74,16 @@ export function surfaceOf(look: AgentLook, now: Now = {}, align: StrokeStyle["al
     ...(look.opacity === undefined ? {} : { opacity: look.opacity }),
     ...(look.name === undefined ? {} : { name: look.name }),
     ...(look.hidden === undefined ? {} : { hidden: look.hidden }),
-    ...(look.box === undefined ? {} : { box: { ...(now.box ?? zeroBox), ...look.box } }),
+    ...(look.box === undefined && look.rotation === undefined && look.flip === undefined
+      ? {}
+      : {
+          box: {
+            ...(now.box ?? zeroBox),
+            ...look.box,
+            ...(look.rotation === undefined ? {} : { rotation: look.rotation }),
+            ...(look.flip === undefined ? {} : { flipH: look.flip.includes("h"), flipV: look.flip.includes("v") }),
+          },
+        }),
   }
 }
 

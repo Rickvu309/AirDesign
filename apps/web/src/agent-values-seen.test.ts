@@ -15,7 +15,7 @@ const seen: Readonly<Record<string, Seen>> = {
   into: { address: "the frame to add into" },
   target: { address: "the layer, role or chart bar a set changes" },
   node: { address: "the layer moved or unwrapped" },
-  nodes: { address: "the layers wrapped or deleted" },
+  nodes: { address: "the layers wrapped, deleted or duplicated" },
   after: { address: "the place among siblings" },
   add: { person: ["gesture:slide-add"] },
   move: { person: ["gesture:slide-up", "gesture:slide-down"] },
@@ -69,6 +69,11 @@ const seen: Readonly<Record<string, Seen>> = {
   strike: { person: ["panel:text.strike"] },
   dash: { person: ["panel:border.border"] },
   fit: { person: ["panel:image.mode"] },
+  rotation: { person: ["gesture:rotate"] },
+  flip: { person: ["gesture:flip-horizontal", "gesture:flip-vertical"] },
+  notes: { person: ["notes:slide-notes"] },
+  colors: { person: ["panel:theme-colors"] },
+  fonts: { person: ["panel:theme-fonts"] },
 }
 
 const owedToPerson = [
@@ -86,7 +91,7 @@ const owedToPerson = [
   "hidden",
 ]
 
-const structural = new Set(["op", "kind", "add", "move", "delete", "rows", "items", "axes"])
+const structural = new Set(["op", "kind", "add", "move", "delete", "rows", "items", "axes", "colors", "fonts"])
 
 describe("every value an agent sets names where a person sees it and changes it", () => {
   it("names every field of the agent's schema, and every op a person has", () => {
