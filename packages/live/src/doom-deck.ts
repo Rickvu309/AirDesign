@@ -464,10 +464,7 @@ function connected(
           picturesUntil = Date.now() + picturesWantedMilliseconds
           tell()
         }
-        if (queue.length > 0 && !(await sync()).ok) {
-          wait = false
-          await pause(retryMilliseconds)
-        }
+        if (queue.length > 0) void sync()
       } catch {
         if (signal.aborted) return "stopped"
         wait = false
