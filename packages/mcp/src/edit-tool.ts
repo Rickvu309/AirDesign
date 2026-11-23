@@ -91,12 +91,13 @@ export async function editDeckTool(raw: unknown, agent: Agent, once: string, hos
   const before = opened.fold.onces.get(once)
   if (before !== undefined) {
     const roots = rootsInFold(opened.fold, ids.client, read.changes)
-    const slides = doom.touchedSlides(
-      opened.fold,
-      opened.fold,
-      roots.map((root) => ({ node: root.id as doom.NodeId, prop: "type" as const })),
-    )
-    return landedAnswer(opened.deck, before, run, roots, await layoutOf(host, opened.fold, slides))
+    const touched = () =>
+      doom.touchedSlides(
+        opened.fold,
+        opened.fold,
+        roots.map((root) => ({ node: root.id as doom.NodeId, prop: "type" as const })),
+      )
+    return landedAnswer(opened.deck, before, run, roots, await layoutOf(host, opened.fold, touched))
   }
   const names = imageNames(fonts.changes)
   const found: NamedImages | undefined =
@@ -125,10 +126,12 @@ export async function editDeckTool(raw: unknown, agent: Agent, once: string, hos
   if ("refused" in compiled) return doomRefused(compiled, { rev: opened.rev })
   const landed = await host.edit(parsed.deck, compiled.edit)
   if (!landed.ok) return hostRefused(landed)
-  const slides = doom.touchedSlides(opened.fold, compiled.after, compiled.edit.writes)
-  const laid = await layoutOf(host, compiled.after, slides)
+  const laid = await layoutOf(host, compiled.after, () =>
+    doom.touchedSlides(opened.fold, compiled.after, compiled.edit.writes),
+  )
   return landedAnswer(landed.deck, landed.rev, run, rootsOfEdit(compiled.edit, compiled.added), {
     findings: [...compiled.findings, ...laid.findings],
     layout: laid.layout,
+    ...(laid.unread === undefined ? {} : { unread: laid.unread }),
   })
 }

@@ -129,7 +129,7 @@ export function readAnswer(opened: Opened, query: Query, laid?: Laid): ToolResul
 async function laidRead(opened: Opened, query: Query, host: DeckHost): Promise<Laid | undefined> {
   if (query.find !== undefined) return undefined
   const picked = chosenSlides(opened, query)
-  return picked.ok ? layoutOf(host, opened.fold, picked.chosen) : undefined
+  return picked.ok ? layoutOf(host, opened.fold, () => picked.chosen) : undefined
 }
 
 export async function readDeckTool(raw: unknown, agent: string, host: DeckHost): Promise<ToolResult> {
