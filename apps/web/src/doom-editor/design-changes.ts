@@ -148,6 +148,13 @@ function strokeChange(context: ChangeContext, control: PanelControl, value: unkn
         return writes
       })
     }
+    case "border.route":
+      return value === "straight" || value === "elbow" || value === "curve"
+        ? setEach(context, "geometry", (id) => {
+            const geometry = propOf(context.view.nodes.get(id), "geometry")
+            return geometry?.kind === "line" ? { ...geometry, route: value } : undefined
+          })
+        : []
     case "border.color": {
       const color = doomColorOf(value as OldColor)
       if (color === undefined) return []

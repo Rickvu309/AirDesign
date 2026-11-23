@@ -191,6 +191,7 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   boxFill: [[placed("paint", hidden, { options: fills })], [placed("paint.solid", hidden)]],
   fillDetails: [],
   border: [
+    [placed("route", hidden)],
     [
       placed("border", hidden, {
         options: { none: fillIcons.none, solid: SolidBorder, dash: DashedBorder, dot: DottedBorder },

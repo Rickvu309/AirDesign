@@ -1,6 +1,7 @@
 import type { AgentChange, AgentLook } from "./agent-change.js"
 import { type Draft, type Values, living, put, stop } from "./agent-draft.js"
 import { chartOf, colorOf, iconName, layoutOf, surfaceOf, textOfLook } from "./agent-look.js"
+import { lineEnds } from "./agent-line-ends.js"
 import { gapFor, slideSize } from "./agent-place.js"
 import { notesText } from "./notes-text.js"
 import { resizedBy } from "./agent-resize.js"
@@ -9,7 +10,7 @@ import { measureWith } from "./measure.js"
 import { type NodeId, readNodeId } from "./ids.js"
 import type { Geometry } from "./geometry.js"
 import type { Node } from "./doom.js"
-import { descendantsOf, get, slidesOf } from "./doom-walk.js"
+import { descendantsOf, get, slideOf, slidesOf } from "./doom-walk.js"
 
 type SetChange = Extract<AgentChange, { op: "set" }>
 
@@ -38,10 +39,13 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "padding",
     "icon",
     "arrow",
+    "from",
+    "to",
+    "route",
     "chart",
     "box",
   ],
-  frame: ["color", "text", "textStyle", "icon", "arrow", "notes", ...wordsOnly],
+  frame: ["color", "text", "textStyle", "icon", "arrow", "from", "to", "route", "notes", ...wordsOnly],
   shape: ["layout", "gap", "padding", "chart", "notes"],
 }
 const roleTarget = /^([a-z0-9]{1,16}:[0-9]{1,12})\.(title|subtitle|body)$/
@@ -81,22 +85,26 @@ function setEverySlide(draft: Draft, change: SetChange, role: string): void {
   for (const slide of slides) compileSet(draft, { ...change, target: `${slide.id}.${role}` })
 }
 
-function geometryOf(node: Node, change: SetChange): Geometry | undefined {
+function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | undefined {
   const geometry = get(node, "geometry")
   if (change.icon !== undefined) {
     if (geometry?.kind !== "icon") stop("shape", node.id, "icon")
     return { kind: "icon", name: iconName(change.icon) }
   }
-  if (change.arrow !== undefined && geometry?.kind !== "line") stop("shape", node.id, "arrow")
+  const lined = (["arrow", "from", "to", "route"] as const).find((field) => change[field] !== undefined)
+  if (lined !== undefined && geometry?.kind !== "line") stop("shape", node.id, lined)
   if (geometry?.kind !== "line") return undefined
   const box = change.box
   const pointed = "x" in geometry.start && "x" in geometry.end
-  if (change.arrow === undefined && !(box !== undefined && pointed)) return undefined
+  if (lined === undefined && !(box !== undefined && pointed)) return undefined
+  const placed =
+    box !== undefined && pointed
+      ? { ...geometry, start: { x: box.x, y: box.y }, end: { x: box.x + box.w, y: box.y + box.h } }
+      : geometry
   return {
-    ...geometry,
-    ...(box !== undefined && pointed
-      ? { start: { x: box.x, y: box.y }, end: { x: box.x + box.w, y: box.y + box.h } }
-      : {}),
+    ...placed,
+    ...lineEnds(draft, { self: node.id, slide: slideOf(draft.doom, node.id) }, placed, change),
+    ...(change.route === undefined ? {} : { route: change.route }),
     arrows: [geometry.arrows[0], change.arrow === undefined ? geometry.arrows[1] : change.arrow ? "arrow" : "none"],
   }
 }
@@ -128,7 +136,7 @@ export function compileSet(draft: Draft, change: SetChange): void {
   )
   if (asked !== undefined && layout === undefined) stop("shape", node.id, asked)
   if (change.chart !== undefined && get(node, "chart") === undefined) stop("shape", node.id, "chart")
-  const shaped = geometryOf(node, change)
+  const shaped = geometryOf(draft, node, change)
   const values: Values = {
     ...surfaceOf(change, now, stroked),
     ...(text === undefined ? {} : { text }),

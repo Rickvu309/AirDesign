@@ -5,6 +5,7 @@ import { addGrid, addPattern } from "./agent-patterns.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { placeholderSubtitle } from "./slide-placeholders.js"
 import { type Area, areaFor, cardRadiusFor, gapFor, slideSize, themeOf } from "./agent-place.js"
+import { lineEnds } from "./agent-line-ends.js"
 import { pictureFit } from "./picture-fit.js"
 import type { Box } from "./doom-walk.js"
 import { descendantsOf, get, isLaidOut, slideOf, zeroBox } from "./doom-walk.js"
@@ -34,7 +35,7 @@ const patternFields = ["box", "name", "hidden", "items"] as const
 const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
   text: [...common, ...painted, ...words],
   shape: [...common, ...painted, ...words],
-  line: [...common, "stroke", "strokeWidth", "arrow", "dash"],
+  line: [...common, "stroke", "strokeWidth", "arrow", "dash", "from", "to", "route"],
   frame: [...common, ...painted, "layout", "gap", "padding", "align", "rows"],
   picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit"],
   icon: [...common, "icon", "stroke", "strokeWidth"],
@@ -148,9 +149,19 @@ function addLine(draft: Draft, parent: Node, change: Add): void {
     box,
     geometry: {
       kind: "line",
-      start: { x: box.x, y: box.y },
-      end: { x: box.x + box.w, y: box.y + box.h },
-      route: "straight",
+      ...lineEnds(
+        draft,
+        { self: null, slide: slideOf(draft.doom, parent.id) },
+        {
+          kind: "line",
+          start: { x: box.x, y: box.y },
+          end: { x: box.x + box.w, y: box.y + box.h },
+          route: "straight",
+          arrows: ["none", "none"],
+        },
+        change,
+      ),
+      route: change.route ?? "straight",
       arrows: ["none", change.arrow === true ? "arrow" : "none"],
     },
   })

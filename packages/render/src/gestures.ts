@@ -11,7 +11,7 @@ type Chord = {
 export type Keys = Chord & ({ readonly key: string } | { readonly code: string })
 
 export type Pointing = {
-  readonly on: "element" | "corner" | "edge" | "rotate" | "slide" | "ruler" | "guide"
+  readonly on: "element" | "corner" | "edge" | "rotate" | "end" | "slide" | "ruler" | "guide"
   readonly drag: boolean
   readonly shift?: true
   readonly mod?: true
@@ -142,6 +142,7 @@ export const gestures = [
     where: ["slide"],
   },
   { id: "rotate", group: "size", keys: [], pointing: [{ on: "rotate", drag: true }], where: ["slide"] },
+  { id: "line-end", group: "size", keys: [], pointing: [{ on: "end", drag: true }], where: ["slide"] },
   { id: "flip-horizontal", group: "size", keys: [{ code: "KeyH", shift: true }], where: ["element"] },
   { id: "flip-vertical", group: "size", keys: [{ code: "KeyV", shift: true }], where: ["element"] },
   { id: "forward", group: "arrange", keys: [{ code: "BracketRight", mod: true }], where: ["element"] },

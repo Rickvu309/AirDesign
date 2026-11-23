@@ -12,6 +12,7 @@ import type { ModelInput } from "./design-model"
 import { propOf } from "@/editing/node-props"
 
 const widest = 20_116_800
+const routes = ["straight", "elbow", "curve"] as const
 
 export function borderSections(input: ModelInput, kind: PanelKind): PanelSection[] {
   const node = input.view.nodes.get(input.id)
@@ -39,12 +40,21 @@ export function borderSections(input: ModelInput, kind: PanelKind): PanelSection
     look: { ...width.look, name: { show: "above" as const }, glyph: Minus, steps: borderWidths, unit: "" },
   }
   const colorLook = { ...color, look: { ...color.look, name: { show: "above" as const } } }
+  const geometry = propOf(node, "geometry")
+  const route =
+    geometry?.kind === "line"
+      ? [
+          doomControl({ trait: "border", field: "route" }, borderCopy.route, choiceDesc(routes), {
+            value: geometry.route,
+          }),
+        ]
+      : []
   return [
     {
       trait: "border",
       label: designCopy.border,
       open: true,
-      strips: arrange("border", styled ? [border, colorLook, widthLook] : [border]),
+      strips: arrange("border", [...route, ...(styled ? [border, colorLook, widthLook] : [border])]),
     },
   ]
 }
