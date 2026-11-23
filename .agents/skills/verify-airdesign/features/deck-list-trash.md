@@ -31,15 +31,15 @@ Home (`Recents`, `/`) shows the signed-in person's six most recently edited deck
 Preconditions:
 
 - `$V doctor <run>` is ok.
-- The person owns at least one deck. The journey imports `clean.pptx` to make one.
+- The person owns at least one deck. The journey makes two Doom decks with `New deck`.
 
 - **Grid motion.** `deck-grid-motion` drives pointer Trash and Undo against the real API, checks 220 ms neighbour transforms, the fading exit, return to the original slot, focus, and a second Trash and Undo during a paused shift. It also checks no motion on load, search, keyboard actions, list view or reduced motion, including the last card and its first return. Proven 2026-11-16.
 - **Run it.** `$V journey <run> deck-list-trash`. Prints `"passed":true`.
-- **Make a deck.** Import `clean.pptx` from Home. Poll `post(deckRoutes.list, {})` until the deck's name is `clean`, the file name without `.pptx`.
-- **Make a doom deck.** From Home, `button "New deck"` then `menuitem "Blank deck"` opens `/s/<id>`. Poll `post(deckRoutes.list, {})` until the deck carries `doom: { rev: 1 }`.
-- **Listed.** Open `/`. `heading "clean"` is visible, and the doom deck's card paints a `[data-doom-thumbnail]`. Evidence `NN-home-lists-deck`.
-- **Move to Trash.** Click `button "clean actions"`, then `menuitem "Move to Trash"`. The text `clean moved to Trash` appears. `deckRoutes.list` shows the deck under `trash`. Evidence `NN-moved-to-trash`, `NN-api-decks-list.json`.
-- **Trash.** Open `/trash`. `heading "clean"` is visible. Evidence `NN-trash-lists-deck`.
+- **Make a deck.** From Home, `button "New deck"` (then `menuitem "Blank deck"` while the menu exists) opens `/s/<id>`. Rename it in the editor's title to `Quarterly review` and poll `post(deckRoutes.list, {})` until it carries that name.
+- **Make a second deck.** `New deck` again; poll `post(deckRoutes.list, {})` until it carries `doom`.
+- **Listed.** Open `/`. `heading "Quarterly review"` is visible, and both cards paint a `[data-doom-thumbnail]`. Evidence `NN-home-lists-deck`.
+- **Move to Trash.** Click `button "Quarterly review actions"`, then `menuitem "Move to Trash"`. The text `Quarterly review moved to Trash` appears. `deckRoutes.list` shows the deck under `trash`. Evidence `NN-moved-to-trash`, `NN-api-decks-list.json`.
+- **Trash.** Open `/trash`. `heading "Quarterly review"` is visible. Evidence `NN-trash-lists-deck`.
 - **Restore.** Click `button "Restore"`. The heading leaves Trash, `deckRoutes.list` lists the deck under `decks`, and Home shows it again. Evidence `NN-restored`.
 - **Empty Trash.** Not in the journey. In a scratch journey: move to Trash, open `/trash`, click `Empty Trash`, then `Delete for good`. `deckRoutes.list` no longer has the deck anywhere and `deckRoutes.open` refuses it.
 - **Signed out.** Not in the journey. The stack builds `apps/web` for production, so the signed-out redirect goes to `https://airdesign.app/sign-in?next=%2F`; the journey kit answers that address with a stand-in page, so assert the URL. `signed-out-deck` drives it from a deck address.
@@ -47,7 +47,7 @@ Preconditions:
 
 ## Gotchas
 
-- Each journey signs in a new account, so Home starts empty apart from the imported deck. With more than one deck, scope a card's buttons to the card of the deck you mean.
+- Each journey signs in a new account, so Home starts empty apart from the decks it makes. With more than one deck, scope a card's buttons to the card of the deck you mean.
 - A rename does not change a deck's edit time, so it does not move the deck up in Recents.
 - Edit times read `Edited just now` only right after the edit. Assert names and server state, not times.
 - The `Undo` toast disappears after a few seconds. Click it at once or skip `trash-undo`.
