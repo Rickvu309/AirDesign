@@ -5,6 +5,7 @@ import os from "node:os"
 import path from "node:path"
 
 const root = mkdtempSync(path.join(os.tmpdir(), "browser-imports-"))
+spawnSync("git", ["init", "-q", root])
 const write = (file, source) => {
   const target = path.join(root, file)
   mkdirSync(path.dirname(target), { recursive: true })
@@ -45,6 +46,26 @@ try {
   const missing = check()
   assert.equal(missing.status, 1)
   assert.match(missing.stderr, /missing.ts/)
+  write("tests/browser/lazy.spec.ts", "export const load = () => 1")
+  write("scripts/package-build.mjs", "export const packageBuild = () => 1")
+  write(
+    "tests/browser/layout-agreement.spec.ts",
+    'import { packageBuild } from "../../scripts/package-build.mjs"\nexport const built = packageBuild()',
+  )
+  const twoSystems = check()
+  assert.equal(twoSystems.status, 1)
+  assert.ok(
+    twoSystems.stderr.includes(
+      'tests/browser/layout-agreement.spec.ts:1: the static import of "../../scripts/package-build.mjs" loads scripts/package-build.mjs (an ES module)',
+    ),
+    twoSystems.stderr,
+  )
+  assert.ok(twoSystems.stderr.includes('await import("../../scripts/package-build.mjs")'), twoSystems.stderr)
+  write(
+    "tests/browser/layout-agreement.spec.ts",
+    'export const built = async () => (await import("../../scripts/package-build.mjs")).packageBuild()',
+  )
+  assert.equal(check().status, 0)
 } finally {
   rmSync(root, { recursive: true, force: true })
 }

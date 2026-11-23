@@ -1,7 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import { dirname } from "node:path"
 import type { BrowserContext, Page, TestInfo } from "@playwright/test"
-import { deckStateFile } from "../../scripts/deck-state-file.mjs"
 import { deviceRows, valuedKey, type DeviceRows, type RawDeviceRows, type RawRow } from "../device-rows.ts"
 
 const keptLoads = 4
@@ -124,6 +123,7 @@ export async function watchDeckState(context: BrowserContext, now: () => number 
       if (pages.length === 0 && loads.length === 0) return
       const reader = pages[0]
       const device = reader === undefined ? { error: "no page of the app was open" } : await reading(reader)
+      const { deckStateFile } = await import("../../scripts/deck-state-file.mjs")
       const file = testInfo.outputPath(deckStateFile)
       await mkdir(dirname(file), { recursive: true })
       const state = { status: testInfo.status, pages: pages.map((page) => page.url()), device, loads }

@@ -9,7 +9,6 @@ import { test, type Stack } from "./api-stack"
 import { landNodes, openDoomEditor, savedSlides, spot, type Opened } from "./doom-deck"
 import { openScreen } from "./open-screen"
 import { pdfPages } from "./pdf-file"
-import { sampleDeckLines, sampleDeckPdf } from "../../scripts/pdf-sample.mjs"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -211,6 +210,7 @@ test("the sample deck exports as a PDF for the poppler check @pdf", async ({ pag
   const lines = await printPages(page).evaluateAll((all) =>
     all.map((each) => each.querySelector("[data-line]")?.textContent?.trim() ?? ""),
   )
+  const { sampleDeckLines, sampleDeckPdf } = await import("../../scripts/pdf-sample.mjs")
   await writeFile(sampleDeckLines, JSON.stringify({ pages: lines.length, lines }))
   await writeFile(sampleDeckPdf, await page.pdf({ preferCSSPageSize: true }))
 })
