@@ -8,16 +8,8 @@ import { productCopy } from "@/copy/product-copy"
 import { UsageRing } from "@/aira/usage-ring"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
-import {
-  airaChat,
-  askAira,
-  retryAira,
-  settledByRuns,
-  undoExchange,
-  type AiraChat,
-  type AskOptions,
-  type UndoRun,
-} from "@/aira/aira-loop"
+import { airaChat, askAira, retryAira, settledByRuns, type AiraChat, type AskOptions } from "@/aira/aira-loop"
+import { type UndoRun, undoExchange } from "@/aira/aira-undo"
 import { AiraComposer } from "@/aira/aira-composer"
 import { Asked, ExchangeView, UsagePop, retryable } from "@/aira/aira-reply"
 import { resetsWhen, usagePercent } from "@/aira/aira-usage"

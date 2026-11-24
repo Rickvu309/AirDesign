@@ -279,8 +279,23 @@ describe("an undo of a step on a layer another tab deleted", () => {
       expect((await remote.edit({ deck: "deleted", edit })).ok).toBe(true)
     await mine.catchUp()
     await fromTheirs([{ node: side, prop: "parent", value: null }])
-    expect(await mine.undoRun("run-1")).toEqual({ ok: false, reason: "left", left: [title] })
+    expect(await mine.undoRun("run-1")).toEqual({ ok: false, reason: "left", kept: [], left: [title], waiting: [] })
     expect(parentOf(mine.view(), title)).toBe(inner)
+  })
+
+  it("names a layer an agent run deleted apart from those it leaves in place, while the frame it was in is deleted", async () => {
+    const { remote, mine, fromTheirs } = await tabs()
+    expect(mine.push([{ node: title, prop: "parent", value: at(inner) }]).ok).toBe(true)
+    expect(await mine.sync()).toEqual({ ok: true })
+    const author = { kind: "agent" as const, id: "aira", run: "run-1" }
+    for (const edit of [
+      { once: "r1", author, phase: "start" as const, writes: [{ node: title, prop: "parent" as const, value: null }] },
+      { once: "r2", author, phase: "stop" as const, writes: [] },
+    ])
+      expect((await remote.edit({ deck: "deleted", edit })).ok).toBe(true)
+    await mine.catchUp()
+    await fromTheirs([{ node: inner, prop: "parent", value: null }])
+    expect(await mine.undoRun("run-1")).toMatchObject({ kept: [], left: [], waiting: [title] })
   })
 
   it("does nothing on a redo of it, and the next redo puts back the step above", async () => {

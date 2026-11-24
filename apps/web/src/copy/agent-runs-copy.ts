@@ -41,6 +41,26 @@ export function agentLeftLayers(layers: readonly string[]): string {
     : `${opening(layers)} stay where they are, because the frames they came from were deleted or moved since.`
 }
 
+export function agentWaitingLayers(layers: readonly string[]): string {
+  return layers.length === 1
+    ? `${opening(layers)} can't come back until the frame it was in is back.`
+    : `${opening(layers)} can't come back until the frames they were in are back.`
+}
+
+export type UndoStays = {
+  readonly kept: readonly string[]
+  readonly left: readonly string[]
+  readonly waiting: readonly string[]
+}
+
+export function agentUndoStays(agent: string, stays: UndoStays): string {
+  return [
+    ...(stays.kept.length === 0 ? [] : [agentKeptLayers(agent, stays.kept)]),
+    ...(stays.left.length === 0 ? [] : [agentLeftLayers(stays.left)]),
+    ...(stays.waiting.length === 0 ? [] : [agentWaitingLayers(stays.waiting)]),
+  ].join(" ")
+}
+
 export function agentKeptLayers(agent: string, layers: readonly string[]): string {
   return layers.length === 1
     ? `${opening(layers)} stays, because it was changed after ${agent} made it.`

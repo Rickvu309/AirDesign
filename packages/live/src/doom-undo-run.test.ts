@@ -134,6 +134,27 @@ describe("undoing an agent's run", () => {
     expect(xOf(mine.view())).toBe(77)
   })
 
+  it("names the frame the run made when it keeps it for the person's layer, instead of saying nothing is left", async () => {
+    const remote = memoryDoomRemote(start)
+    const mine = await join(remote, "create")
+    await land(remote, {
+      once: "a1",
+      author: agent("run-1"),
+      phase: "start",
+      writes: [
+        { node: made, prop: "type", value: "frame" },
+        { node: made, prop: "parent", value: at(slide) },
+      ],
+    })
+    await land(remote, { once: "a2", author: agent("run-1"), phase: "stop", writes: [] })
+    await mine.catchUp()
+    mine.push([{ node: title, prop: "parent", value: at(made) }])
+    await mine.sync()
+
+    expect(await mine.undoRun("run-1")).toEqual({ ok: false, reason: "left", kept: [made], left: [], waiting: [] })
+    expect((mine.view().nodes.get(title) as { parent: { id: doom.NodeId } }).parent.id).toBe(made)
+  })
+
   it.each(["watched", "after a reload"] as const)(
     "puts back another agent's write that the run wrote over (T7), %s",
     async (how) => {

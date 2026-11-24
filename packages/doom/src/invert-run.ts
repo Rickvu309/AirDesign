@@ -18,6 +18,7 @@ export type Undone = {
   readonly writes: readonly Write[]
   readonly kept: readonly NodeId[]
   readonly left: readonly NodeId[]
+  readonly waiting: readonly NodeId[]
 }
 
 type Cell = { readonly node: NodeId; readonly key: WriteKey }
@@ -91,6 +92,32 @@ function ordered(now: Doom, writes: readonly Write[]): readonly Write[] {
   ]
 }
 
+function unshownOf(now: Doom, standing: readonly Write[], moved: readonly NodeId[]): ReadonlyMap<NodeId, boolean> {
+  const landed = new Map(
+    standing.flatMap((each) => (each.prop === "parent" ? [[each.node, each.value as { id: NodeId } | null]] : [])),
+  )
+  const above = (node: NodeId) =>
+    landed.has(node)
+      ? landed.get(node)
+      : (now.nodes.get(node) as { parent?: { readonly id: NodeId } | null } | undefined)?.parent
+  const chain = (node: NodeId): NodeId[] | undefined => {
+    const frames: NodeId[] = []
+    let parent = above(node)
+    for (let hops = 0; parent != null && hops <= now.nodes.size; hops += 1) {
+      frames.push(parent.id)
+      parent = above(parent.id)
+    }
+    return parent === undefined ? undefined : frames
+  }
+  const unshown = new Map(
+    moved.flatMap((node) => {
+      const frames = chain(node)
+      return frames === undefined ? [] : [[node, frames] as const]
+    }),
+  )
+  return new Map([...unshown].map(([node, frames]) => [node, !frames.some((frame) => unshown.has(frame))]))
+}
+
 function settle(now: Doom, edits: readonly Landed[], mine: ReadonlySet<Rev>, restored: readonly Restore[]): Undone {
   const kept = keptOf(now, edits, mine)
   const chosen = restored.filter(({ cell }) => !kept.has(cell.node))
@@ -103,8 +130,17 @@ function settle(now: Doom, edits: readonly Landed[], mine: ReadonlySet<Rev>, res
     .map(({ cell, value, base }) => ({ node: cell.node, prop: cell.key, value, base }))
   const roots = [...kept].filter((node) => !kept.has(parentIn(now, node) as NodeId))
   const standing = onStandingLayers(now, writes, edits.at(-1)?.rev ?? now.rev)
-  const left = writes.filter((each) => each.prop === "parent" && each.value !== null && !standing.includes(each))
-  return { writes: ordered(now, standing), kept: roots, left: left.map((each) => each.node) }
+  const left = writes
+    .filter((each) => each.prop === "parent" && each.value !== null && !standing.includes(each))
+    .map((each) => each.node)
+  const back = standing.filter((each) => each.prop === "parent" && each.value !== null).map((each) => each.node)
+  const unshown = unshownOf(now, standing, [...left, ...back])
+  return {
+    writes: ordered(now, standing),
+    kept: roots,
+    left: left.filter((node) => !unshown.has(node)),
+    waiting: [...left, ...back].filter((node) => unshown.get(node) === true),
+  }
 }
 
 function writerOf(now: Doom, edits: readonly Landed[], mine: ReadonlySet<Rev>, cell: Cell): Rev | undefined {

@@ -183,6 +183,7 @@ function readExchange(raw: unknown): AiraExchange | undefined {
     Array.isArray(raw) ? raw.filter((layer): layer is string => typeof layer === "string") : []
   const kept = names(exchange.kept)
   const left = names(exchange.left)
+  const waiting = names(exchange.waiting)
   const read: AiraExchange = { asked: exchange.asked, steps: steps as AiraStep[], end: exchange.end as AiraEnd, runs }
   return {
     ...read,
@@ -190,6 +191,7 @@ function readExchange(raw: unknown): AiraExchange | undefined {
     ...(exchange.undoFailed === true ? { undoFailed: true } : {}),
     ...(kept.length === 0 ? {} : { kept }),
     ...(left.length === 0 ? {} : { left }),
+    ...(waiting.length === 0 ? {} : { waiting }),
   }
 }
 

@@ -149,6 +149,16 @@ describe("a request Aira's changes were undone from", () => {
     expect(two).toContain("A group and “Revenue” stay, because they were changed after Aira made them.")
   })
 
+  it("names what stays and offers Undo again when the undo landed nothing, as the Agents panel does", () => {
+    const markup = offered({ ...exchange(edited, "done", ["r1"]), left: ["“Card”"], waiting: ["“Logo”"] })
+    expect(markup).toContain(
+      "“Card” stays where it is, because the frame it came from was deleted or moved since. “Logo” can't come back until the frame it was in is back.",
+    )
+    expect(markup).not.toContain(airaCopy.undone)
+    expect(markup).not.toContain(airaCopy.undoRefused)
+    expect(markup).toContain(productCopy.undo)
+  })
+
   it("says an undo failed and offers Undo again", () => {
     const markup = offered({ ...exchange(edited, "done", ["r1"]), undoFailed: true })
     expect(markup).toContain(airaCopy.undoFailed)
