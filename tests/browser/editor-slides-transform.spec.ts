@@ -23,17 +23,17 @@ async function withThreeSlides(
   return { opened, order: await savedSlides(stack, opened) }
 }
 
-test("Alt+Down and Mod+] move the chosen slide one place later, and a reload keeps the order", async ({
+test("Mod+[ and Mod+] move the chosen slide one place later, and a reload keeps the order", async ({
   page,
   context,
   stack,
 }) => {
-  covers("slide-down", "undo")
+  covers("slide-up", "slide-down", "undo")
   const { opened, order } = await withThreeSlides(page, context, stack)
   const [first, second, third] = order
 
   await entry(page, 1).click()
-  await page.keyboard.press("Alt+ArrowDown")
+  await page.keyboard.press("ControlOrMeta+BracketRight")
   await expect.poll(() => savedSlides(stack, opened)).toEqual([second, first, third])
   await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
 
@@ -41,7 +41,10 @@ test("Alt+Down and Mod+] move the chosen slide one place later, and a reload kee
   await expect.poll(() => savedSlides(stack, opened)).toEqual([second, third, first])
   await expect(entry(page, 3)).toHaveAttribute("aria-current", "true")
 
-  await page.keyboard.press("Alt+ArrowDown")
+  await page.keyboard.press("ControlOrMeta+BracketRight")
+  expect(await savedSlides(stack, opened)).toEqual([second, third, first])
+
+  await page.keyboard.press("Alt+ArrowUp")
   expect(await savedSlides(stack, opened)).toEqual([second, third, first])
 
   await page.keyboard.press("ControlOrMeta+z")

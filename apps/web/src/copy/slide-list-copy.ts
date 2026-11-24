@@ -41,6 +41,6 @@ export const slideListCopy = {
   moveDown: "Move down",
   duplicateKey: "Ctrl+D",
   deleteKey: "Delete",
-  moveUpKey: "Alt+Up",
-  moveDownKey: "Alt+Down",
+  moveUpKey: "Ctrl+[",
+  moveDownKey: "Ctrl+]",
 } as const

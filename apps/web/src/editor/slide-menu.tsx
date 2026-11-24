@@ -9,8 +9,16 @@ export const slideMenuItem =
 const keys: Record<SlideKey, { readonly label: string; readonly shown: string; readonly shortcuts: string }> = {
   clone: { label: slideListCopy.duplicate, shown: slideListCopy.duplicateKey, shortcuts: "Control+D Meta+D" },
   remove: { label: slideListCopy.delete, shown: slideListCopy.deleteKey, shortcuts: "Delete Backspace" },
-  up: { label: slideListCopy.moveUp, shown: slideListCopy.moveUpKey, shortcuts: "Alt+ArrowUp" },
-  down: { label: slideListCopy.moveDown, shown: slideListCopy.moveDownKey, shortcuts: "Alt+ArrowDown" },
+  up: {
+    label: slideListCopy.moveUp,
+    shown: slideListCopy.moveUpKey,
+    shortcuts: "Control+BracketLeft Meta+BracketLeft",
+  },
+  down: {
+    label: slideListCopy.moveDown,
+    shown: slideListCopy.moveDownKey,
+    shortcuts: "Control+BracketRight Meta+BracketRight",
+  },
 }
 
 const order: readonly SlideKey[] = ["clone", "remove", "up", "down"]

@@ -265,19 +265,13 @@ export const gestures = [
   {
     id: "slide-up",
     group: "slides",
-    keys: [
-      { key: "ArrowUp", alt: true },
-      { code: "BracketLeft", mod: true },
-    ],
+    keys: [{ code: "BracketLeft", mod: true }],
     where: ["slides"],
   },
   {
     id: "slide-down",
     group: "slides",
-    keys: [
-      { key: "ArrowDown", alt: true },
-      { code: "BracketRight", mod: true },
-    ],
+    keys: [{ code: "BracketRight", mod: true }],
     where: ["slides"],
   },
   { id: "slide-add", group: "slides", keys: [{ key: "Enter" }], where: ["slides"] },

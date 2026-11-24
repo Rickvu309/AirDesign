@@ -39,7 +39,7 @@ test("several slides picked in the list move, duplicate and delete together, eac
   expect(await picked(page)).toEqual(["3", "4"])
 
   await entry(page, 3).focus()
-  await page.keyboard.press("Alt+ArrowUp")
+  await page.keyboard.press("ControlOrMeta+BracketLeft")
   await expect.poll(saved).toEqual([three, one, two, four])
   expect(await picked(page)).toEqual(["2", "3"])
 
@@ -82,7 +82,7 @@ test("several slides picked in the list move, duplicate and delete together, eac
   await expect.poll(saved).toEqual([three, one, two, four])
   expect(await picked(page)).toEqual(["2", "3"])
 
-  await page.keyboard.press("Alt+ArrowDown")
+  await page.keyboard.press("ControlOrMeta+BracketRight")
   await expect.poll(saved).toEqual([three, four, one, two])
   await expect(entry(page, 4)).toBeFocused()
   await page.keyboard.press("ControlOrMeta+z")
@@ -123,7 +123,7 @@ test("an undo or another tab's edit later on never puts an old pick back", async
 
   await entry(page, 1).click()
   await entry(page, 1).focus()
-  await page.keyboard.press("Alt+ArrowDown")
+  await page.keyboard.press("ControlOrMeta+BracketRight")
   await expect.poll(async () => (await saved())[0]).toBe(before[1])
   await entry(page, 8).click()
   await page.keyboard.press("ControlOrMeta+z")

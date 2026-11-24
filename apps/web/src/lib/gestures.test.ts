@@ -146,7 +146,8 @@ describe("gestureFor", () => {
     expect(gestureFor({ ...plain, key: "ArrowDown" }, "slides")).toBe("slide-next")
     expect(gestureFor({ ...plain, key: "PageDown" }, "editor")).toBeNull()
     expect(gestureFor({ ...plain, key: "ArrowUp" }, "element")).toBe("nudge")
-    expect(gestureFor({ ...plain, key: "ArrowUp", altKey: true }, "slides")).toBe("slide-up")
+    expect(gestureFor({ ...plain, key: "ArrowUp", altKey: true }, "slides")).toBeNull()
+    expect(gestureFor({ ...plain, key: "ArrowDown", altKey: true }, "slides")).toBeNull()
   })
 
   it("keeps Shift+D free and Ctrl+D as the slide duplicate shortcut", () => {
