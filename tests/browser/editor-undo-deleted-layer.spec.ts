@@ -412,10 +412,12 @@ test("Ctrl+Z on a nudge, after another tab grouped the layer and took the group 
   await expect.poll(async () => (await boxOf()).x).toBe(grouped.x + 1)
   await expect.poll(() => painted(other)).not.toEqual(beforeNudge)
   await paintsAs(other, page, painted)
+  const nudged = await painted(other)
   await other.keyboard.press("ControlOrMeta+z")
   await expect.poll(parentOf).toBe(opened.slide)
   const seen = await boxOf()
   await paintsAs(page, other, painted)
+  expect(await painted(page)).toEqual(nudged)
 
   await page.keyboard.press("ControlOrMeta+z")
   await expect(page.locator("[data-save-status]")).toHaveText(productCopy.saved)

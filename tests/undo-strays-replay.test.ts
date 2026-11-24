@@ -24,6 +24,7 @@ const [deckNode, row, slide, frame, card] = [id("m:1"), id("m:2"), id("m:3"), id
 const at = (parent: doom.NodeId) => ({ id: parent, at: orderKeyBetween(null, null) })
 const parents = [slide, frame] as const
 const boxAt = (x: number) => ({ x: x * 40, y: 0, w: 100, h: 50, rotation: 0, flipH: false, flipV: false })
+const frameBox = { x: 80, y: 0, w: 600, h: 400, rotation: 0, flipH: false, flipV: false }
 
 const start: doom.Edit = {
   once: "start",
@@ -36,6 +37,7 @@ const start: doom.Edit = {
     { node: slide, prop: "parent", value: at(row) },
     { node: frame, prop: "type", value: "frame" },
     { node: frame, prop: "parent", value: at(slide) },
+    { node: frame, prop: "box", value: frameBox },
     { node: card, prop: "type", value: "shape" },
     { node: card, prop: "parent", value: at(frame) },
     { node: card, prop: "box", value: boxAt(0) },
@@ -146,7 +148,7 @@ async function replayed(graph: Graph, failures: string[]) {
   type Leg = { readonly action: string; readonly from: Spec; readonly to: Spec }
   const paths = new Map<string, readonly Leg[]>(firsts.map((name) => [name, []]))
   const queued = [...firsts]
-  const seen = { starts: firsts.length, edges: 0, keptStrayed: 0, putBack: 0 }
+  const seen = { starts: firsts.length, edges: 0, keptStrayed: 0, putBack: 0, replanted: 0 }
   while (queued.length > 0) {
     const from = queued.shift() as string
     const source = graph.states.get(from) as Spec
@@ -168,6 +170,9 @@ async function replayed(graph: Graph, failures: string[]) {
       const pressed = edge.action === "Undo" || edge.action === "Redo"
       if (pressed && String(target.told).startsWith("nothing") && source.acted === true) seen.keptStrayed += 1
       if (pressed && (target.told === "undone" || target.told === "redone")) seen.putBack += 1
+      const placeOf = (spec: Spec) => Number(spec.x) + 2 * Number(spec.p)
+      if (pressed && target.p !== source.p && target.x !== source.x && placeOf(target) === placeOf(source))
+        seen.replanted += 1
       if (!paths.has(edge.to)) {
         paths.set(edge.to, route)
         queued.push(edge.to)
@@ -194,5 +199,6 @@ describe("undo strays replay", () => {
     expect(seen).toMatchObject({ starts: 1 })
     expect(seen.keptStrayed).toBeGreaterThan(0)
     expect(seen.putBack).toBeGreaterThan(0)
+    expect(seen.replanted).toBeGreaterThan(0)
   }, 120_000)
 })

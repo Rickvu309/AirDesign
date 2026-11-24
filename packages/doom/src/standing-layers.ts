@@ -4,6 +4,7 @@ import type { Doom, Write } from "./doom.js"
 import { propOf, zeroBox } from "./doom-walk.js"
 import type { Geometry } from "./geometry.js"
 import type { NodeId, Rev } from "./ids.js"
+import { landingsOf, replanted } from "./replant.js"
 import type { Box } from "./resolved.js"
 
 const parentIn = (doom: Doom, node: NodeId) =>
@@ -152,6 +153,9 @@ function lineLeftInPlace(now: Doom, write: Write): Write | undefined {
   return sameValue(value, here) ? undefined : { ...write, value }
 }
 
+const placesLayer = (write: Write) =>
+  write.prop === "box" || (write.prop === "geometry" && (write.value as { kind?: string } | null)?.kind === "line")
+
 type MeasuredIn = ReadonlyMap<NodeId, NodeId | null>
 
 function strayedFrom(now: Doom, node: NodeId, measuredIn: MeasuredIn, since: Rev): boolean {
@@ -164,6 +168,7 @@ export function onStandingLayers(
   now: Doom,
   writes: readonly Write[],
   since: Rev,
+  began: Rev,
   measuredIn: MeasuredIn,
   step?: Step,
 ): readonly Write[] {
@@ -179,10 +184,20 @@ export function onStandingLayers(
   })
   const turned = new Set(standing.flatMap((each) => (each.prop === "box" && placed(each.node) ? [each.node] : [])))
   const turnOf = turnsLeftInPlace(now, standing, (node) => turned.has(node), step)
-  return standing.flatMap((each) => {
+  const kept = standing.flatMap((each) => {
     if (each.prop === "parent" || !placed(each.node)) return [each]
     if (each.prop === "box") return boxLeftInPlace(now, each, turnOf(each.node)) ?? []
     if (each.prop === "geometry") return lineLeftInPlace(now, each) ?? []
     return [each]
   })
+  const boxed = new Set(kept.filter(placesLayer).map((each) => each.node))
+  const landings = landingsOf(kept)
+  const replants = [...lands].flatMap((node) => {
+    const into = moves.get(node)!
+    if (boxed.has(node) || parentIn(now, node)?.id === into) return []
+    const write = replanted(now, node, into, landings)
+    const base = write === undefined ? undefined : now.revs.get(node)?.get(write.prop)
+    return write === undefined || base === undefined || base <= began ? [] : [{ ...write, base }]
+  })
+  return [...kept, ...replants]
 }

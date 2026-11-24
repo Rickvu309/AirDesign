@@ -286,7 +286,17 @@ function connected(
     if (kept === undefined) return false
     queue = kept.queue
     if (kept.skipped) forget([once])
+    else relaid(once)
     return true
+  }
+
+  function relaid(once: string) {
+    const writes = queue.find((each) => each.edit.once === once)?.edit.writes
+    if (writes === undefined) return
+    const again = (steps: Step[]) =>
+      steps.map((step) => (step.onces.includes(once) ? { ...step, before: server, writes } : step))
+    undoSteps = again(undoSteps)
+    redoSteps = again(redoSteps)
   }
 
   async function drain(): Promise<Synced> {
