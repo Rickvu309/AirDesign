@@ -15,7 +15,7 @@ This directory is the maintained source for verifying what an AirDesign user doe
 ## Driving conventions
 
 - Start each journey from Home `/` as a signed-in person, the way a user arrives.
-- Prefer roles and accessible names, then the app's data attributes (`data-slide-box` for the canvas, `data-node="<id>"` for a painted layer, `data-slide-entry` for a slide in the list, `data-doom-ready` once the deck painted), then `[contenteditable="true"]`.
+- Prefer roles and accessible names, then the app's data attributes (`data-slide-box` for the canvas, `data-node="<id>"` for a painted layer, `data-slide-entry` for a slide in the list, `data-editor-ready` once the deck painted), then `[contenteditable="true"]`.
 - Take every API path from `deckRoutes`, `doomRoutes` or `signInRoutes`. Never type one.
 - The app paints before the network. After a UI action, wait for the server copy with `expect.poll` on `doomRoutes.open` or `deckRoutes.list` before you call it saved.
 
@@ -37,7 +37,7 @@ Each feature file starts with an H1 title and one paragraph describing what the 
 ## Features
 
 - [Start a deck and edit its text](./open-edit-save.md): New deck or Blank deck opens `/s/<id>` with a title; double-click or T to edit, the text bar and its keys format it, the server keeps it and a reload shows it. Specs `editor.spec.ts`, `editor-text.spec.ts`, `editor-text-format.spec.ts`; look states `blank-deck`, `text-format-bold`.
-- [Deck list and Trash](./deck-list-trash.md): Recents' six newest decks with thumbnails, `No decks yet`, starring and the Starred list, Move to Trash and Undo, Restore, Empty Trash. Journey `deck-list-trash`; spec `home-doom.spec.ts`.
+- [Deck list and Trash](./deck-list-trash.md): Recents' six newest decks with thumbnails, `No decks yet`, starring and the Starred list, Move to Trash and Undo, Restore, Empty Trash. Journey `deck-list-trash`; spec `home.spec.ts`.
 - [Deck names, search and All decks](./deck-names.md): `All decks`, the sidebar search, renaming from the editor's title, a name taken from slide 1's title. Journey `deck-list-trash`; spec `editor-page.spec.ts`; look states `decks-all`, `decks-search-match`, `editor-renaming`, `editor-rename-refused`.
 - [Keep edits on the device and paint from it](./keep-typed-text.md): edits queue on the device through a reload, a closed tab or offline, paint before the server answers, stay with the account, and open from the server on a fresh device. Tests `packages/live/src/doom-deck.test.ts`, `device-account.test.ts`; spec `editor-picture.spec.ts`.
 - [Zoom and pan the slide](./navigate-zoom-pan.md): Ctrl+scroll or a Chrome pinch zooms about the cursor, Space or the hand tool pans, Shift+2 zooms to the selection, Shift+1 fits, Shift+0 is 100%, and the zoom menu. Spec `editor-view.spec.ts`; look states `zoom-selection`, `zoom-menu`.

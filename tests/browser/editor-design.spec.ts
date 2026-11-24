@@ -5,7 +5,7 @@ import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
 import { geometryCopy } from "../../apps/web/src/copy/geometry-copy"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
-import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { colorCopy } from "../../apps/web/src/copy/color-copy"
 import { textCopy, textWords } from "../../apps/web/src/copy/text-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"
@@ -16,7 +16,7 @@ import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { test } from "./api-stack"
 import { typeColor } from "./design-panel"
 import { hexes, neutralColorNames } from "./editor-design-art"
-import { accent, clickSlide, landNodes, openDoomEditor, savedNode, selectedIds, spot, type Opened } from "./editor-deck"
+import { accent, clickSlide, landNodes, openEditor, savedNode, selectedIds, spot, type Opened } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -26,7 +26,7 @@ type Saved = Record<string, any>
 const saved = async (stack: Stack, opened: Opened, id: string) => (await savedNode(stack, opened, id)) as Saved
 const panel = (page: Page) => page.locator("[data-design-panel]")
 const section = (page: Page, title: string) => panel(page).locator(`[data-design-section="${title}"]`)
-const stage = (page: Page) => page.locator("[data-doom-stage]")
+const stage = (page: Page) => page.locator("[data-editor-stage]")
 const node = (page: Page, id: string) => page.locator(`[data-slide-box] [data-node="${id}"]`)
 const undo = (page: Page) => page.keyboard.press("ControlOrMeta+z")
 
@@ -35,9 +35,9 @@ async function typeInto(field: Locator, value: string) {
   await field.press("Tab")
 }
 
-async function designing(page: Page, context: Parameters<typeof openDoomEditor>[1], stack: Stack) {
-  const opened = await openDoomEditor(page, context, stack)
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+async function designing(page: Page, context: Parameters<typeof openEditor>[1], stack: Stack) {
+  const opened = await openEditor(page, context, stack)
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   await expect(panel(page)).toBeVisible()
   return opened
 }
@@ -53,11 +53,11 @@ const words = (chars: string) => ({
 
 async function reloadIntoDesign(page: Page) {
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  await page.locator("[data-editor-ready]").waitFor()
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
 }
 
-async function layers(page: Page, context: Parameters<typeof openDoomEditor>[1], stack: Stack) {
+async function layers(page: Page, context: Parameters<typeof openEditor>[1], stack: Stack) {
   const opened = await designing(page, context, stack)
   await landNodes(stack, opened, [
     {
@@ -106,7 +106,7 @@ async function layers(page: Page, context: Parameters<typeof openDoomEditor>[1],
       type: "frame",
       parent: opened.slide,
       props: {
-        name: doomEditorCopy.chart,
+        name: editorCopy.chart,
         box: spot(1100, 700, 600, 260),
         chart: {
           kind: "column",
@@ -329,21 +329,21 @@ test("a picture and a frame get the old panel's fit, replace and remove-auto-lay
   await page.locator("[data-chart-data]").getByLabel("1", { exact: true }).first().fill("30")
   await page.locator("[data-chart-data]").getByLabel("1", { exact: true }).first().press("Tab")
   await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.series[0].values[0]).toBe(30)
-  await page.getByRole("button", { name: doomEditorCopy.addRow }).click()
+  await page.getByRole("button", { name: editorCopy.addRow }).click()
   await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.categories.length).toBe(4)
-  await typeInto(chart.getByLabel(doomEditorCopy.seriesName(1), { exact: true }), "Plan")
+  await typeInto(chart.getByLabel(editorCopy.seriesName(1), { exact: true }), "Plan")
   await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.series[0].name).toBe("Plan")
-  await page.getByRole("button", { name: doomEditorCopy.addSeries }).click()
+  await page.getByRole("button", { name: editorCopy.addSeries }).click()
   await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.series.length).toBe(2)
-  await typeInto(chart.getByLabel(doomEditorCopy.seriesName(2), { exact: true }), "Actual")
+  await typeInto(chart.getByLabel(editorCopy.seriesName(2), { exact: true }), "Actual")
   await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.series[1].name).toBe("Actual")
   const second = page.locator("[data-chart-data]").getByLabel("2", { exact: true }).first()
   await typeInto(second, "3.1")
   await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.series[1].values[0]).toBe(3.1)
   expect(await second.evaluate((field) => field.scrollWidth <= field.clientWidth)).toBe(true)
   await expect(second).toHaveValue("3.1")
-  await chart.getByRole("combobox", { name: doomEditorCopy.chartKind }).click()
-  await page.getByRole("option", { name: doomEditorCopy.kinds.line, exact: true }).click()
+  await chart.getByRole("combobox", { name: editorCopy.chartKind }).click()
+  await page.getByRole("option", { name: editorCopy.kinds.line, exact: true }).click()
   await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.kind).toBe("line")
   await stage(page).click({ position: { x: 20, y: 20 } })
   await undo(page)

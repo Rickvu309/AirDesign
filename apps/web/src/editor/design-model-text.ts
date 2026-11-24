@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { fontFamily, plainStyles, boldWeight, regularWeight, styleName } from "@airdesign/fonts"
 import { fillCopy } from "@/copy/fill-copy"
 import { formatCopy } from "@/copy/format-copy"
-import { doomEditorCopy } from "@/copy/editor-copy"
+import { editorCopy } from "@/copy/editor-copy"
 import { textCopy } from "@/copy/text-copy"
 import type { PanelControl, PanelSection } from "@/design/panel"
 import type { PanelKind } from "@/design/panel-order"
@@ -42,13 +42,13 @@ const textControl = (field: string, label: string, desc: Desc, held: Held, extra
   doomControl({ trait: "text", field }, label, desc, held, extra)
 
 function typography(control: PanelControl, theme: doom.Theme, current: doom.TextStyleName): PanelControl {
-  const names = Object.keys(doomEditorCopy.textStyles) as doom.TextStyleName[]
+  const names = Object.keys(editorCopy.textStyles) as doom.TextStyleName[]
   const choices = names.map((name) => {
     const style = theme.textStyles[name]
     const font = theme.fonts[style.font]
     return {
       value: name,
-      label: doomEditorCopy.textStyles[name],
+      label: editorCopy.textStyles[name],
       font,
       detail: String(style.size),
       appearance: {

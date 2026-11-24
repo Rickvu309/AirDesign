@@ -22,11 +22,11 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Browser tests.** `pnpm test:browser tests/browser/editor-view.spec.ts` drives the zoom keys, Shift+2 on a selected layer, the hand tool from the Move menu, V and a Ctrl+wheel zoom, reading `[data-zoom-readout]` and the scroll of `[data-doom-stage]`. `tests/browser/editor-page.spec.ts` picks 100% and Fit from the zoom menu and checks Agent and Design keep one zoom.
+- **Browser tests.** `pnpm test:browser tests/browser/editor-view.spec.ts` drives the zoom keys, Shift+2 on a selected layer, the hand tool from the Move menu, V and a Ctrl+wheel zoom, reading `[data-zoom-readout]` and the scroll of `[data-editor-stage]`. `tests/browser/editor-page.spec.ts` picks 100% and Fit from the zoom menu and checks Agent and Design keep one zoom.
 - **States for look.** `zoom-selection` (a text box after Shift+2) and `zoom-menu` (the menu open).
 
 ## Gotchas
 
 - Read the readout, not the slide's box, to know the zoom.
-- The canvas scrolls once the slide is larger than the room: `[data-doom-stage]` has `scrollWidth > clientWidth` after Shift+0 on a 1920-wide slide.
+- The canvas scrolls once the slide is larger than the room: `[data-editor-stage]` has `scrollWidth > clientWidth` after Shift+0 on a 1920-wide slide.
 - A press inside a text that is being edited places the caret; Space there types.

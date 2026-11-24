@@ -3,7 +3,7 @@ import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { openDoomEditor, savedSlides } from "./editor-deck"
+import { openEditor, savedSlides } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -21,7 +21,7 @@ test("several slides picked in the list move, duplicate and delete together, eac
   covers("slide-duplicate", "slide-delete", "slide-up", "slide-down", "undo")
   const faults: string[] = []
   page.on("pageerror", (error) => faults.push(error.message))
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const saved = () => savedSlides(stack, opened)
   for (const count of [2, 3, 4]) {
     await page.getByRole("button", { name: slideListCopy.addSlide }).click()
@@ -105,7 +105,7 @@ test("several slides picked in the list move, duplicate and delete together, eac
 
 test("an undo or another tab's edit later on never puts an old pick back", async ({ page, context, stack }) => {
   covers("slide-duplicate", "slide-down", "undo")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const saved = () => savedSlides(stack, opened)
   for (const count of [2, 3, 4, 5, 6, 7, 8]) {
     await page.getByRole("button", { name: slideListCopy.addSlide }).click()

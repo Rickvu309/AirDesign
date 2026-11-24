@@ -27,7 +27,7 @@ test("a deck named by its first slide's title follows the title of whichever sli
   await forward(page, stack)
   await page.goto("/")
   await newDoomDeck(page)
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   const deck = new URL(page.url()).pathname.slice("/s/".length)
   const opened = { deck, cookie, slide: "s:3" }
   const deckName = async () => (await savedNode(stack, opened, "s:1"))?.name

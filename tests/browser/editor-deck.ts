@@ -19,12 +19,12 @@ export const spot = (x: number, y: number, w: number, h: number) => ({
 
 export const accent = [{ kind: "solid", color: { var: "accent1" } }]
 
-export async function openDoomEditor(page: Page, context: BrowserContext, stack: Stack): Promise<Opened> {
+export async function openEditor(page: Page, context: BrowserContext, stack: Stack): Promise<Opened> {
   const cookie = await stack.signIn()
   await signInBrowser(context, cookie)
   await forward(page, stack)
   await page.goto("/s")
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   const deck = new URL(page.url()).pathname.slice("/s/".length)
   const { doomRoutes } = await catalog()
   const opened = await stack.post(doomRoutes.open.path, { deck }, cookie)

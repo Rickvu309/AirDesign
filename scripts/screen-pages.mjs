@@ -221,7 +221,7 @@ export const screenFaults = (reads, known) => {
       .filter((read) => !listed.has(read))
       .map(
         (read) =>
-          `${what(read)}. A screen shows the page a person sees: render that page with sample data, as editor-screens.tsx renders DoomEditor through editor-sample.tsx, a harness that draws only what the app draws.`,
+          `${what(read)}. A screen shows the page a person sees: render that page with sample data, as editor-screens.tsx renders Editor through editor-sample.tsx, a harness that draws only what the app draws.`,
       ),
     ...known
       .filter((read) => !now.has(read))

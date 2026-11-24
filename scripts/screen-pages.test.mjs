@@ -28,14 +28,11 @@ const beforeDoomScreens = new Map([
   ["apps/web/src/editor/gallery-deck.ts", "export const galleryDeck = {}\n"],
   ["apps/web/src/copy/editor-copy.ts", "export const editorCopy = {}\n"],
   ["apps/web/src/main.tsx", 'import App from "./App.tsx"\ncreateRoot(root).render(<App />)\n'],
-  [
-    "apps/web/src/App.tsx",
-    'import { DoomEditor } from "./doom-editor/doom-editor"\nexport default () => <DoomEditor />\n',
-  ],
+  ["apps/web/src/App.tsx", 'import { Editor } from "./doom-editor/doom-editor"\nexport default () => <Editor />\n'],
   ["apps/web/src/components/ui/button.tsx", "export const Button = () => null\n"],
   [
     "apps/web/src/doom-editor/doom-editor.tsx",
-    'import { Button } from "@/components/ui/button"\nexport const DoomEditor = () => <Button />\n',
+    'import { Button } from "@/components/ui/button"\nexport const Editor = () => <Button />\n',
   ],
 ])
 
@@ -53,7 +50,7 @@ const afterDoomScreens = new Map([
   ],
   [
     "apps/web/src/doom-editor/editor-sample.tsx",
-    'import { DoomEditor } from "./doom-editor"\nexport const EditorSample = () => <DoomEditor />\n',
+    'import { Editor } from "./doom-editor"\nexport const EditorSample = () => <Editor />\n',
   ],
 ])
 
@@ -76,7 +73,7 @@ same(
   withScreen('import { PanelSample } from "@/zz/panel-sample"\nexport const EditorView = () => <PanelSample />\n', [
     [
       "apps/web/src/zz/panel-sample.tsx",
-      'import { DoomEditor } from "@/doom-editor/doom-editor"\nfunction MockPanel() {\n  return <aside />\n}\nexport const PanelSample = () => (\n  <>\n    <DoomEditor />\n    <MockPanel />\n  </>\n)\n',
+      'import { Editor } from "@/doom-editor/doom-editor"\nfunction MockPanel() {\n  return <aside />\n}\nexport const PanelSample = () => (\n  <>\n    <Editor />\n    <MockPanel />\n  </>\n)\n',
     ],
   ]),
   ["apps/web/src/editor/screens/editor-view.tsx -> apps/web/src/zz/panel-sample.tsx"],
@@ -121,7 +118,7 @@ same(
 same(
   "a component of its own drawn as <K.R />, called as R() or passed as a prop is seen",
   withScreen(
-    'import { DoomEditor } from "@/doom-editor/doom-editor"\nconst Kit = { Row: () => <div /> }\nfunction Called() {\n  return <div />\n}\nfunction Passed() {\n  return <div />\n}\nexport const EditorView = () => (\n  <>\n    <Kit.Row />\n    {Called()}\n    <DoomEditor render={Passed} />\n  </>\n)\n',
+    'import { Editor } from "@/doom-editor/doom-editor"\nconst Kit = { Row: () => <div /> }\nfunction Called() {\n  return <div />\n}\nfunction Passed() {\n  return <div />\n}\nexport const EditorView = () => (\n  <>\n    <Kit.Row />\n    {Called()}\n    <Editor render={Passed} />\n  </>\n)\n',
     [],
   ),
   [
@@ -134,7 +131,7 @@ same(
 same(
   "constants, objects, lists, types, a recursive helper and a constant passed as a prop are not components",
   withScreen(
-    'import { DoomEditor } from "@/doom-editor/doom-editor"\nconst SIZE = 3\nconst Sizes = { small: SIZE, large: SIZE * 2 }\nconst Items = [Sizes.small]\ntype Props = { readonly size: number }\ninterface Shape {\n  readonly props: Props\n}\nfunction Fact(n: number): number {\n  return n < 2 ? 1 : n * Fact(n - 1)\n}\nconst Scale = Fact(3)\nexport const EditorView = (props: Props, shape: Shape) => (\n  <DoomEditor size={Scale} items={Items} />\n)\n',
+    'import { Editor } from "@/doom-editor/doom-editor"\nconst SIZE = 3\nconst Sizes = { small: SIZE, large: SIZE * 2 }\nconst Items = [Sizes.small]\ntype Props = { readonly size: number }\ninterface Shape {\n  readonly props: Props\n}\nfunction Fact(n: number): number {\n  return n < 2 ? 1 : n * Fact(n - 1)\n}\nconst Scale = Fact(3)\nexport const EditorView = (props: Props, shape: Shape) => (\n  <Editor size={Scale} items={Items} />\n)\n',
     [],
   ),
   [],

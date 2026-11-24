@@ -1,7 +1,7 @@
 import { ChartBar, ChartColumn, ChartLine, ChartNoAxesColumn, ChartPie, FileDown, Search } from "lucide-react"
 import { DynamicIcon, type IconName } from "lucide-react/dynamic"
 import { useEffect, useId, useMemo, useRef, useState, type ComponentType, type KeyboardEvent } from "react"
-import { doomEditorCopy } from "@/copy/editor-copy"
+import { editorCopy } from "@/copy/editor-copy"
 import { iconMatches, startingIcons } from "@/design/icon-search"
 import { cn } from "@/lib/class-names"
 import { composing } from "@/lib/composing"
@@ -38,18 +38,18 @@ const charts: readonly { readonly kind: doom.Chart["kind"]; readonly glyph: Comp
 
 const chartsGroup: Group = {
   id: "charts",
-  title: doomEditorCopy.chartsGroup,
+  title: editorCopy.chartsGroup,
   find: (words) =>
     charts
       .filter(
         ({ kind }) =>
           words === "" ||
-          doomEditorCopy.chartKinds[kind].toLowerCase().includes(words) ||
-          doomEditorCopy.chartsGroup.toLowerCase().includes(words),
+          editorCopy.chartKinds[kind].toLowerCase().includes(words) ||
+          editorCopy.chartsGroup.toLowerCase().includes(words),
       )
       .map(({ kind, glyph }) => ({
         key: kind,
-        label: doomEditorCopy.chartKinds[kind],
+        label: editorCopy.chartKinds[kind],
         glyph,
         run(run, finish) {
           run.chart(kind)
@@ -60,13 +60,13 @@ const chartsGroup: Group = {
 
 const deckGroup: Group = {
   id: "deck",
-  title: doomEditorCopy.deckGroup,
+  title: editorCopy.deckGroup,
   find: (words) =>
-    words === "" || `${doomEditorCopy.deckGroup} ${doomEditorCopy.exportPdf} print`.toLowerCase().includes(words)
+    words === "" || `${editorCopy.deckGroup} ${editorCopy.exportPdf} print`.toLowerCase().includes(words)
       ? [
           {
             key: "export-pdf",
-            label: doomEditorCopy.exportPdf,
+            label: editorCopy.exportPdf,
             glyph: FileDown,
             run(run, finish) {
               finish()
@@ -149,7 +149,7 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
   return (
     <div className="flex flex-col gap-1 text-[length:var(--type-dense)]" data-actions-panel="">
       <label htmlFor={id} className="sr-only">
-        {doomEditorCopy.actionsSearch}
+        {editorCopy.actionsSearch}
       </label>
       <div data-focus-ring className="flex items-center gap-2 rounded-lg bg-muted px-2.5">
         <Search className="size-3.5 shrink-0 text-quiet" />
@@ -163,7 +163,7 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
           aria-controls={listId}
           {...(highlighted === null ? {} : { "aria-activedescendant": optionId(highlighted) })}
           autoFocus
-          placeholder={doomEditorCopy.actionsSearch}
+          placeholder={editorCopy.actionsSearch}
           value={query}
           onChange={(event) => {
             setQuery(event.target.value)
@@ -176,7 +176,7 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
       <div
         id={listId}
         role="listbox"
-        aria-label={doomEditorCopy.actions}
+        aria-label={editorCopy.actions}
         className="flex flex-col gap-1"
         onMouseDown={(event) => event.preventDefault()}
       >
@@ -195,7 +195,7 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
         ))}
         <div role="group" aria-labelledby={`${id}-icons`} data-actions-group="icons">
           <p id={`${id}-icons`} className="px-2 pt-2 pb-1 text-quiet">
-            {doomEditorCopy.iconsGroup}
+            {editorCopy.iconsGroup}
           </p>
           {iconNames.length === 0 ? null : (
             <div className="grid gap-0.5 px-1" style={{ gridTemplateColumns: `repeat(${String(iconColumns)}, 1fr)` }}>
@@ -224,11 +224,11 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
             field.current?.focus()
           }}
         >
-          {doomEditorCopy.allIcons}
+          {editorCopy.allIcons}
         </button>
       )}
       <p role="status" className={nothing ? "px-2 py-1 text-quiet" : "sr-only"}>
-        {nothing ? doomEditorCopy.noActions : null}
+        {nothing ? editorCopy.noActions : null}
       </p>
     </div>
   )

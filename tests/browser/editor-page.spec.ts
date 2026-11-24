@@ -2,10 +2,10 @@ import { expect, type Page } from "@playwright/test"
 import { guideWords } from "../../apps/web/src/copy/guide-copy"
 import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { productCopy, tabTitleOf, zoomCopy, zoomToOf } from "../../apps/web/src/copy/product-copy"
-import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
-import { openDoomEditor, savedNode, savedSlides } from "./editor-deck"
+import { openEditor, savedNode, savedSlides } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -22,7 +22,7 @@ test("the Doom editor is the old editor's page: its columns, the slide number, n
   context,
   stack,
 }) => {
-  await openDoomEditor(page, context, stack)
+  await openEditor(page, context, stack)
   await expect(page.locator("header")).toHaveCount(0)
 
   const left = page.locator("[data-editor-sidebar]")
@@ -56,8 +56,8 @@ test("the canvas rings focus that Tab brought, and never focus a click brought, 
   context,
   stack,
 }) => {
-  await openDoomEditor(page, context, stack)
-  const stage = page.locator("[data-doom-stage]")
+  await openEditor(page, context, stack)
+  const stage = page.locator("[data-editor-stage]")
   await stage.click({ position: { x: 40, y: 40 } })
   await page.keyboard.press("r")
   await page.keyboard.press("ArrowRight")
@@ -76,7 +76,7 @@ test("the deck's name is renamed in the sidebar, titles the tab, is kept after a
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const deck = "s:1"
   await page.getByRole("button", { name: new RegExp(`^${productCopy.renameDeck}`) }).click()
   const field = page.getByRole("textbox", { name: productCopy.deckName })
@@ -85,7 +85,7 @@ test("the deck's name is renamed in the sidebar, titles the tab, is kept after a
   await expect.poll(async () => (await savedNode(stack, opened, deck))?.name).toBe("Board update")
   await expect(page).toHaveTitle(tabTitleOf("Board update"))
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(page.getByRole("button", { name: `${productCopy.renameDeck}: Board update` })).toBeVisible()
   await page.getByRole("link", { name: productCopy.goToDecks }).click()
   const card = page.locator(`[data-deck="${opened.deck}"]`)
@@ -93,7 +93,7 @@ test("the deck's name is renamed in the sidebar, titles the tab, is kept after a
 })
 
 test("presenter notes belong to their slide and are kept after a reload", async ({ page, context, stack }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await notes(page).fill("Open with the number\nthen the plan")
   await page.locator("[data-slide-list]").click({ position: { x: 5, y: 400 } })
   await expect
@@ -107,7 +107,7 @@ test("presenter notes belong to their slide and are kept after a reload", async 
   await expect(notes(page)).toHaveValue("Open with the number\nthen the plan")
 
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(notes(page)).toHaveValue("Open with the number\nthen the plan")
 })
 
@@ -116,7 +116,7 @@ test("New slide offers the designed starting slides, and the plus adds a slide w
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const painted = page.locator("[data-slide-box] [data-node]")
   const menu = page.getByRole("button", { name: "Choose a layout for the new slide" })
   const choose = async (name: string) => {
@@ -124,13 +124,13 @@ test("New slide offers the designed starting slides, and the plus adds a slide w
     await page.getByRole("menuitem", { name, exact: true }).click()
   }
   await menu.click()
-  await expect(page.getByRole("menuitem")).toHaveText(Object.values(doomEditorCopy.slideStarts))
+  await expect(page.getByRole("menuitem")).toHaveText(Object.values(editorCopy.slideStarts))
   await page.keyboard.press("Escape")
-  await choose(doomEditorCopy.slideStarts.blank)
+  await choose(editorCopy.slideStarts.blank)
   await expect(painted).toHaveCount(0)
-  await choose(doomEditorCopy.slideStarts.title)
+  await choose(editorCopy.slideStarts.title)
   await expect(painted).toHaveCount(2)
-  await choose(doomEditorCopy.slideStarts.kpis)
+  await choose(editorCopy.slideStarts.kpis)
   expect(await painted.count()).toBeGreaterThan(5)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(4)
   await page.getByRole("button", { name: slideListCopy.addSlide }).click()
@@ -139,7 +139,7 @@ test("New slide offers the designed starting slides, and the plus adds a slide w
 })
 
 test("the zoom menu in the right column zooms the slide and goes back to fit", async ({ page, context, stack }) => {
-  await openDoomEditor(page, context, stack)
+  await openEditor(page, context, stack)
   const slide = page.locator("[data-slide-box]")
   const fitted = (await box(page, "[data-slide-box]")).width
   expect(fitted).toBeLessThan(1920)
@@ -156,7 +156,7 @@ test("Agent opens at 360 and Design at 240, the slide fits each, and a reload op
   context,
   stack,
 }) => {
-  await openDoomEditor(page, context, stack)
+  await openEditor(page, context, stack)
   const column = page.locator("[data-editor-panel]")
   const readout = page.locator("[data-zoom-readout]")
   await expect(column.locator("[data-aira-panel]")).toBeVisible()
@@ -164,19 +164,19 @@ test("Agent opens at 360 and Design at 240, the slide fits each, and a reload op
   const slideBefore = (await box(page, "[data-slide-box]")).width
   const zoomBefore = await readout.textContent()
 
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   await expect(page.locator("[data-design-panel]")).toBeVisible()
   expect((await box(page, "[data-editor-panel]")).width).toBe(240)
   await expect.poll(async () => (await box(page, "[data-slide-box]")).width).toBeGreaterThan(slideBefore)
   await expect(readout).not.toHaveText(zoomBefore ?? "")
 
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(page.locator("[data-design-panel]")).toBeVisible()
-  await page.getByRole("button", { name: doomEditorCopy.panelAgent, exact: true }).click()
+  await page.getByRole("button", { name: editorCopy.panelAgent, exact: true }).click()
   await expect(column.locator("[data-aira-panel]")).toBeVisible()
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(page.locator("[data-design-panel]")).toHaveCount(0)
   await expect(column.locator("[data-aira-panel]")).toBeVisible()
 })
@@ -186,7 +186,7 @@ test("Present shows the deck full screen and Escape returns to the editor with t
   context,
   stack,
 }) => {
-  await openDoomEditor(page, context, stack)
+  await openEditor(page, context, stack)
   const button = page.getByRole("button", { name: presentCopy.present, exact: true })
   await button.click()
   await expect(page.locator("[data-present-show] [data-present-slide]")).toBeVisible()

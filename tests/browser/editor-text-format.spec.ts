@@ -1,9 +1,9 @@
 import { expect } from "@playwright/test"
-import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { linkCopy } from "../../apps/web/src/copy/link-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { clickSlide, landNodes, openDoomEditor, savedNode, spot } from "./editor-deck"
+import { clickSlide, landNodes, openEditor, savedNode, spot } from "./editor-deck"
 import { edit, editor, labels, layer, leave, lines, runs, seeded, textOf } from "./text-layer"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -14,7 +14,7 @@ test("Ctrl+I, Ctrl+U and Ctrl+Shift+X italicize, underline and strike the select
   stack,
 }) => {
   covers("italic", "underline", "strike")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await seeded(page, stack, opened, "Alpha beta")
   await edit(page)
   const style = (name: "fontStyle" | "textDecorationLine") =>
@@ -45,7 +45,7 @@ test("Ctrl+I, Ctrl+U and Ctrl+Shift+X italicize, underline and strike the select
 
 test("Ctrl+Shift+X strikes only the words selected, and the rest stay plain", async ({ page, context, stack }) => {
   covers("strike", "italic")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await seeded(page, stack, opened, "Alpha beta")
   await edit(page)
   await page.keyboard.press("ControlOrMeta+Home")
@@ -66,12 +66,12 @@ test("the Italic button italicizes the words selected at the click, even before 
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await seeded(page, stack, opened, "Alpha beta")
   await edit(page)
   await page.keyboard.press("ControlOrMeta+Home")
   for (let step = 0; step < 4; step++) await page.keyboard.press("Shift+ArrowRight")
-  const italic = page.getByRole("button", { name: doomEditorCopy.italic })
+  const italic = page.getByRole("button", { name: editorCopy.italic })
   await italic.evaluate((button: HTMLButtonElement) => {
     button.ownerDocument.getSelection()?.modify("extend", "forward", "character")
     button.click()
@@ -87,7 +87,7 @@ test("Ctrl+Alt+T, R, J and L align the paragraphs the cursor touches and leave t
   stack,
 }) => {
   covers("text-left", "text-center", "text-right", "text-justify")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await seeded(page, stack, opened, "First line\nSecond line")
   await edit(page)
   await page.keyboard.press("ControlOrMeta+End")
@@ -110,7 +110,7 @@ test("Ctrl+Alt+T, R, J and L align the paragraphs the cursor touches and leave t
   await expect.poll(async () => (await textOf(stack, opened))?.paras).toEqual([{}, { align: "right" }])
 
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(lines(page).nth(1)).toHaveCSS("text-align", "right")
 })
 
@@ -120,7 +120,7 @@ test("Ctrl+Shift+8 bullets every paragraph selected and a second press takes the
   stack,
 }) => {
   covers("bullets")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await seeded(page, stack, opened, "One\nTwo")
   await edit(page)
   await page.keyboard.press("ControlOrMeta+Shift+Digit8")
@@ -142,7 +142,7 @@ test("Ctrl+Shift+7 numbers every paragraph selected and a second press takes the
   stack,
 }) => {
   covers("numbers")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await seeded(page, stack, opened, "One\nTwo")
   await edit(page)
   await page.keyboard.press("ControlOrMeta+Shift+Digit7")
@@ -163,7 +163,7 @@ test("Tab and Ctrl+] indent a bulleted paragraph, Shift+Tab and Ctrl+[ take it b
   stack,
 }) => {
   covers("list-indent", "list-outdent", "bullets")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await seeded(page, stack, opened, "One\nTwo")
   await edit(page)
   await page.keyboard.press("ControlOrMeta+End")
@@ -203,8 +203,8 @@ test("linked words are underlined, and the Link section reads and changes the li
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const opened = await openEditor(page, context, stack)
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   const linked = {
     ...layer("Read the site"),
     text: { ...layer("Read the site").text, spans: [{ end: 9 }, { end: 13, link: "https://a.example/" }] },
@@ -243,8 +243,8 @@ test("selecting across two different links shows Mixed, leaves them alone on Ent
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const opened = await openEditor(page, context, stack)
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   const both = [{ end: 3, link: "https://a.example/" }, { end: 8 }, { end: 11, link: "https://b.example/" }]
   const linked = {
     ...layer("One and two"),
@@ -280,8 +280,8 @@ test("copying and pasting linked words keeps web links within a deck and between
   context,
   stack,
 }) => {
-  const first = await openDoomEditor(page, context, stack)
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const first = await openEditor(page, context, stack)
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   const source = {
     ...layer("Read site and slide"),
     text: {
@@ -321,7 +321,7 @@ test("copying and pasting linked words keeps web links within a deck and between
     )
     .toBe("underline")
 
-  const second = await openDoomEditor(page, context, stack)
+  const second = await openEditor(page, context, stack)
   await landNodes(stack, second, [{ id: "t:1", type: "shape", parent: second.slide, props: layer("Deck two: ") }])
   await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(3)
   await clickSlide(page, 300, 640)
@@ -340,7 +340,7 @@ test("undo after pasting linked words restores the text in one step and redo bri
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const source = {
     ...layer("Read site"),
     text: { ...layer("Read site").text, spans: [{ end: 5 }, { end: 9, link: "https://a.example/" }] },
@@ -391,8 +391,8 @@ test("pasting linked words into a layer with a layer-level link keeps both the w
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const opened = await openEditor(page, context, stack)
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   const source = {
     ...layer("Read site"),
     text: { ...layer("Read site").text, spans: [{ end: 5 }, { end: 9, link: "https://a.example/" }] },
@@ -447,8 +447,8 @@ test("typing just after a link's last letter extends the link, while typing befo
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const opened = await openEditor(page, context, stack)
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   const linked = {
     ...layer("Read site now"),
     text: {

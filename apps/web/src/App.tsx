@@ -10,7 +10,7 @@ import { UsagePage } from "./settings/usage-page"
 import { AccountProfile } from "./account/account-profile"
 
 const ScreenRoute = lazy(() => import("./screen-routes"))
-const DoomEditor = lazy(() => import("./editor/editor").then((module) => ({ default: module.DoomEditor })))
+const Editor = lazy(() => import("./editor/editor").then((module) => ({ default: module.Editor })))
 
 function currentPath(): string {
   return window.location.pathname.replace(/\/$/, "") || "/"
@@ -36,7 +36,7 @@ function AppRoutes() {
   if (doomDeck !== null)
     return (
       <Suspense>
-        <DoomEditor id={doomDeck[1] ?? null} />
+        <Editor id={doomDeck[1] ?? null} />
       </Suspense>
     )
   if (path === "/oauth/authorize") return <OAuthAuthorize />

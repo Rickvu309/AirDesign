@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { accent, clickSlide, landNodes, openDoomEditor, savedNode, selectedIds, slidePoint, spot } from "./editor-deck"
+import { accent, clickSlide, landNodes, openEditor, savedNode, selectedIds, slidePoint, spot } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -29,7 +29,7 @@ test("a corner handle resizes, a side handle moves one edge, and one undo takes 
   stack,
 }) => {
   covers("resize", "undo")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(200, 600, 300, 150), fills: accent } },
   ])
@@ -66,7 +66,7 @@ test("a resize dragged back to where it began changes nothing, so one undo takes
   stack,
 }) => {
   covers("resize", "undo")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(200, 600, 300, 150), fills: accent } },
   ])
@@ -92,7 +92,7 @@ test("a resize dragged back to where it began changes nothing, so one undo takes
 
 test("Alt resizes from the centre and Shift keeps the proportions", async ({ page, context, stack }) => {
   covers("resize")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(600, 600, 300, 150), fills: accent } },
   ])
@@ -117,7 +117,7 @@ test("a rotate zone turns the layer about its centre and Shift steps by 15 degre
   stack,
 }) => {
   covers("rotate")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(700, 600, 300, 150), fills: accent } },
   ])
@@ -140,7 +140,7 @@ test("a rotate zone turns the layer about its centre and Shift steps by 15 degre
 
 test("resizing a group scales the layers inside it and leaves it hugging them", async ({ page, context, stack }) => {
   covers("resize")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     {
       id: "t:1",
@@ -169,7 +169,7 @@ test("Alt-drag leaves the layer where it is and drags a copy above it, and one u
   stack,
 }) => {
   covers("duplicate-drag", "undo")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(200, 600, 300, 150), fills: accent } },
   ])
@@ -198,7 +198,7 @@ test("Alt-drag leaves the layer where it is and drags a copy above it, and one u
 
 test("Escape during an Alt-drag drops the copy and keeps the original selected", async ({ page, context, stack }) => {
   covers("duplicate-drag")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(200, 600, 300, 150), fills: accent } },
   ])
@@ -219,7 +219,7 @@ test("Escape during an Alt-drag drops the copy and keeps the original selected",
 
 test("a drag snaps a layer's edge to another's, and holding Ctrl stops the snap", async ({ page, context, stack }) => {
   covers("move", "snap-off")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     { id: "q:1", type: "shape", parent: opened.slide, props: { box: spot(1000, 150, 200, 120), fills: accent } },
     { id: "q:2", type: "shape", parent: opened.slide, props: { box: spot(1500, 700, 200, 120), fills: accent } },

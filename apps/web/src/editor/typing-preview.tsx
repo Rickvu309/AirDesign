@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { useMemo, useSyncExternalStore } from "react"
-import { DoomThumb } from "./thumb"
+import { Thumb } from "./thumb"
 
 export type TypingPreview = {
   readonly writesOn: (slide: doom.NodeId) => readonly doom.Write[]
@@ -58,5 +58,5 @@ export function TypedThumb(props: {
     () => (writes.length === 0 ? view : doom.viewOf(view, [{ once: "typing", author, writes }])),
     [view, writes],
   )
-  return <DoomThumb view={shown} slide={slide} width={props.width} assetUrl={props.assetUrl} />
+  return <Thumb view={shown} slide={slide} width={props.width} assetUrl={props.assetUrl} />
 }

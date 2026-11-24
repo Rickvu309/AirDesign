@@ -27,7 +27,7 @@ test("a new deck opens as a doom deck, and the home lists it with its name and a
   await forward(page, stack)
   await page.goto("/")
   await newDoomDeck(page)
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(page).toHaveURL(/\/s\/[A-Za-z0-9_-]{1,64}$/)
   const deck = new URL(page.url()).pathname.slice("/s/".length)
 
@@ -42,12 +42,12 @@ test("a new deck opens as a doom deck, and the home lists it with its name and a
   const card = page.locator(`[data-deck="${deck}"]`)
   await expect(card).toBeVisible()
   await expect(card.getByRole("heading")).toHaveText(first)
-  await expect(card.locator("[data-doom-thumbnail]")).toContainText("Quarterly review")
+  await expect(card.locator("[data-deck-thumbnail]")).toContainText("Quarterly review")
   await expect(card.locator("[data-doom-slide]")).toHaveCount(1)
 
   await card.getByRole("link").click()
   await expect(page).toHaveURL(new RegExp(`/s/${deck}$`))
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(page.locator("[data-slide-box]")).toContainText("Quarterly review")
   expect(faults).toEqual([])
 })
@@ -62,11 +62,11 @@ test("a doom deck moves to the Trash and comes back from the home, and its thumb
   await forward(page, stack)
   await page.goto("/")
   await newDoomDeck(page)
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   const deck = new URL(page.url()).pathname.slice("/s/".length)
   await page.goto("/")
   const card = page.locator(`[data-deck="${deck}"]`)
-  await expect(card.locator("[data-doom-thumbnail]")).toContainText("Untitled")
+  await expect(card.locator("[data-deck-thumbnail]")).toContainText("Untitled")
 
   const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
   const deckReads: string[] = []
@@ -85,7 +85,7 @@ test("a doom deck moves to the Trash and comes back from the home, and its thumb
   await trashed.getByRole("button", { name: /restore/i }).click()
   await expect(trashed).toHaveCount(0)
   await page.getByRole("link", { name: "Recents" }).click()
-  await expect(page.locator(`[data-deck="${deck}"] [data-doom-thumbnail]`)).toContainText("Untitled")
+  await expect(page.locator(`[data-deck="${deck}"] [data-deck-thumbnail]`)).toContainText("Untitled")
   expect(deckReads).toEqual([])
 })
 

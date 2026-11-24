@@ -3,7 +3,7 @@ import { memo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { doomEditorCopy } from "@/copy/editor-copy"
+import { editorCopy } from "@/copy/editor-copy"
 import { EditorIcon, type EditorIconName } from "@/components/ui/editor-icons"
 import { PanelSwitch } from "@/editor/panel-switch"
 import { ShapeTool, type ShapesShown } from "@/editor/shape-tool"
@@ -42,8 +42,8 @@ const armed =
   "bg-primary text-primary-foreground hover:bg-primary aria-expanded:bg-primary aria-expanded:text-primary-foreground"
 
 const moves = [
-  { tool: "move", icon: "cursor", label: doomEditorCopy.toolMove, key: doomEditorCopy.toolMoveKey },
-  { tool: "hand", icon: "hand", label: doomEditorCopy.toolHand, key: doomEditorCopy.toolHandKey },
+  { tool: "move", icon: "cursor", label: editorCopy.toolMove, key: editorCopy.toolMoveKey },
+  { tool: "hand", icon: "hand", label: editorCopy.toolHand, key: editorCopy.toolHandKey },
 ] as const satisfies readonly { tool: string; icon: EditorIconName; label: string; key: string }[]
 
 export const EditorToolbar = memo(function EditorToolbar(props: {
@@ -64,14 +64,14 @@ export const EditorToolbar = memo(function EditorToolbar(props: {
     <div
       ref={bar}
       role="toolbar"
-      aria-label={doomEditorCopy.tools}
+      aria-label={editorCopy.tools}
       className="pointer-events-auto flex items-center gap-0.5 rounded-xl bg-white p-1 shadow-[0px_0px_0px_1px_var(--field-edge),0px_4px_12px_var(--black-6)]"
     >
       <div className="flex items-center">
         <Button
           variant="ghost"
           size="icon"
-          aria-label={tool === "hand" ? doomEditorCopy.toolHand : doomEditorCopy.toolMove}
+          aria-label={tool === "hand" ? editorCopy.toolHand : editorCopy.toolMove}
           aria-pressed={moving}
           className={cn(toolButton, moving ? armed : null)}
           onClick={() => onTool(tool === "hand" ? "hand" : "move")}
@@ -84,7 +84,7 @@ export const EditorToolbar = memo(function EditorToolbar(props: {
               <Button
                 variant="ghost"
                 size="icon-xs"
-                aria-label={doomEditorCopy.moveTools}
+                aria-label={editorCopy.moveTools}
                 className="-ml-0.5 h-8 w-4 rounded-md"
               />
             }
@@ -126,7 +126,7 @@ export const EditorToolbar = memo(function EditorToolbar(props: {
       <Button
         variant="ghost"
         size="icon"
-        aria-label={doomEditorCopy.textTool}
+        aria-label={editorCopy.textTool}
         aria-pressed={tool === "text"}
         className={cn(toolButton, tool === "text" ? armed : null)}
         onClick={() => onTool(tool === "text" ? "move" : "text")}
@@ -139,7 +139,7 @@ export const EditorToolbar = memo(function EditorToolbar(props: {
             <Button
               variant="ghost"
               size="icon"
-              aria-label={doomEditorCopy.actions}
+              aria-label={editorCopy.actions}
               aria-pressed={props.actionsOpen}
               className={cn(toolButton, props.actionsOpen ? armed : null)}
             />

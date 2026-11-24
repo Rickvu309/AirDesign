@@ -4,7 +4,7 @@ Home (`Recents`, `/`) shows the signed-in person's six most recently edited deck
 
 ## Sub-features
 
-- `list-home` Recents lists the six newest server decks as `heading "<name>"` with their edit time and a `[data-doom-thumbnail]` of the first slide; a card links to `/s/<id>`. `link "All decks"` in the sidebar opens `/all` with every deck, and the sidebar marks the page you are on with `aria-current="page"`. Search, All decks and renaming are in `deck-names.md`.
+- `list-home` Recents lists the six newest server decks as `heading "<name>"` with their edit time and a `[data-deck-thumbnail]` of the first slide; a card links to `/s/<id>`. `link "All decks"` in the sidebar opens `/all` with every deck, and the sidebar marks the page you are on with `aria-current="page"`. Search, All decks and renaming are in `deck-names.md`.
 - `list-view` `/?view=list` shows a table with `Name`, `Edited` and `Created` columns. Rows show no action buttons. Right-click anywhere in a row, or focus its deck link and press Shift+F10, to open Star or Remove star and Move to Trash. State `decks-list-menu`.
 - `star` each deck card has `button "Star <name>"`; list rows offer `menuitem "Star <name>"` in their context menu. Once starred, the action reads `Remove star from <name>` and a status line says `Starred <name>` or `Removed star from <name>`. The sidebar's `navigation "Starred"` links each starred deck to `/s/<id>` in Home's order, or says `Star a deck to keep it here.` The star paints at once and is kept on the device under the signed-in account until `deckRoutes.star` takes it; Home sends a held one again on load and on focus (`packages/live/src/deck-star.test.ts`). States `decks-starred`, `decks-starred-list`.
 - `home-no-decks` with no decks, on a first visit or while Trash holds some, Home shows the `No decks yet` card with its own `Blank deck` button. No sample deck is shown. It never shows with the search's `No decks match` card. States `decks-empty`, `recents-empty`.
@@ -32,12 +32,12 @@ Preconditions:
 - **Run it.** `$V journey <run> deck-list-trash`. Prints `"passed":true`.
 - **Make a deck.** From Home, `button "New deck"` opens `/s/<id>` (`newDoomDeck` in `../bin/new-deck.mjs`). Rename it in the editor's title to `Quarterly review` and poll `post(deckRoutes.list, {})` until it carries that name.
 - **Make a second deck.** `New deck` again; poll `post(deckRoutes.list, {})` until it carries `doom`.
-- **Listed.** Open `/`. `heading "Quarterly review"` is visible, and both cards paint a `[data-doom-thumbnail]`. Evidence `NN-home-lists-deck`.
+- **Listed.** Open `/`. `heading "Quarterly review"` is visible, and both cards paint a `[data-deck-thumbnail]`. Evidence `NN-home-lists-deck`.
 - **Move to Trash.** Click `button "Quarterly review actions"`, then `menuitem "Move to Trash"`. The text `Quarterly review moved to Trash` appears. `deckRoutes.list` shows the deck under `trash`. Evidence `NN-moved-to-trash`, `NN-api-decks-list.json`.
 - **Trash.** Open `/trash`. `heading "Quarterly review"` is visible. Evidence `NN-trash-lists-deck`.
 - **Restore.** Click `button "Restore"`. The heading leaves Trash, `deckRoutes.list` lists the deck under `decks`, and Home shows it again. Evidence `NN-restored`.
 - **Empty Trash.** Not in the journey. In a scratch journey: move to Trash, open `/trash`, click `Empty Trash`, then `Delete for good`. `deckRoutes.list` has the deck nowhere and `doomRoutes.open` refuses it. `apps/api/src/deck-list-doom.test.ts` holds the server side: the 30 days, delete for good, and another account's decks.
-- **Specs.** `tests/browser/home-doom.spec.ts` lists a new deck with its thumbnail, moves it to Trash and back; `tests/browser/toast-layout.spec.ts` holds the moved toast's Undo and Close on a phone.
+- **Specs.** `tests/browser/home.spec.ts` lists a new deck with its thumbnail, moves it to Trash and back; `tests/browser/toast-layout.spec.ts` holds the moved toast's Undo and Close on a phone.
 - **Signed out.** Not in the journey. The stack builds `apps/web` for production, so the signed-out redirect goes to `https://airdesign.app/sign-in?next=%2F`; the journey kit answers that address with a stand-in page, so assert the URL.
 
 ## Gotchas

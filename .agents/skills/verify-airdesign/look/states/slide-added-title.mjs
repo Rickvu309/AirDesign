@@ -1,4 +1,4 @@
-import { doomEditorCopy } from "../../bin/product-copy.mjs"
+import { editorCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
 import { clickSlide, openDoomDeck } from "../doom-deck.mjs"
@@ -7,7 +7,7 @@ import { addSlideStart } from "../doom-slides.mjs"
 async function drive(kit) {
   const { page } = kit
   await openDoomDeck(kit)
-  await addSlideStart(page, doomEditorCopy.slideStarts.blank)
+  await addSlideStart(page, editorCopy.slideStarts.blank)
   await page.keyboard.press("t")
   await clickSlide(page, 160, 120)
   await expect(page.locator('[data-slide-box] [contenteditable="true"]')).toBeFocused()

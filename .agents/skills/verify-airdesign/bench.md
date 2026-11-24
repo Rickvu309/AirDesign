@@ -19,7 +19,7 @@ Every case runs on a 40-slide deck the case builds through `doomRoutes.edit`: a 
 
 | case                 | measures                                                                                                                                                                         |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `doom-open-40`       | reopening the deck: `page.goto("/s/<id>")` to `[data-doom-ready="<id>"]` and a painted layer (`[data-node]`) in every slide list cell in view (`[data-slide-thumb]`)             |
+| `doom-open-40`       | reopening the deck: `page.goto("/s/<id>")` to `[data-editor-ready="<id>"]` and a painted layer (`[data-node]`) in every slide list cell in view (`[data-slide-thumb]`)           |
 | `doom-drag-40`       | main-thread task time per pointer move (`Performance.getMetrics` `TaskDuration`) while the slide's first layer is dragged in 60 moves                                            |
 | `doom-type-40`       | typing in the slide's first text layer: for each of nine letters, the keydown's time to the first frame after the letter shows in `[data-text-editor]`; the answer is the median |
 | `doom-add-slide-40`  | the pointerdown on `Add slide` to the first frame after the slide list holds one more `[data-slide-entry]`                                                                       |

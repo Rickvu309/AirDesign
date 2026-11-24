@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test"
-import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
@@ -8,7 +8,7 @@ import {
   clickSlide,
   dragSlide,
   landNodes,
-  openDoomEditor,
+  openEditor,
   savedNode,
   selectedIds,
   spot,
@@ -40,9 +40,9 @@ test("the Text tool places a text layer, typing and Ctrl+B write it, and Escape 
   stack,
 }) => {
   covers("tool-text", "bold", "deselect")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await page.keyboard.press("t")
-  await expect(page.getByRole("button", { name: doomEditorCopy.textTool })).toHaveAttribute("aria-pressed", "true")
+  await expect(page.getByRole("button", { name: editorCopy.textTool })).toHaveAttribute("aria-pressed", "true")
   await clickSlide(page, 300, 700)
   await expect(editor(page)).toBeFocused()
   await page.keyboard.type("Hello world")
@@ -53,7 +53,7 @@ test("the Text tool places a text layer, typing and Ctrl+B write it, and Escape 
   await page.keyboard.press("Shift+ArrowLeft")
   await page.keyboard.press("Shift+ArrowLeft")
   await page.keyboard.press("ControlOrMeta+b")
-  await expect(page.getByRole("button", { name: doomEditorCopy.bold })).toHaveAttribute("aria-pressed", "true")
+  await expect(page.getByRole("button", { name: editorCopy.bold })).toHaveAttribute("aria-pressed", "true")
   await page.keyboard.press("Escape")
   await expect(editor(page)).toHaveCount(0)
   const [id] = await selectedIds(page)
@@ -65,7 +65,7 @@ test("the Text tool places a text layer, typing and Ctrl+B write it, and Escape 
   expect((await savedNode(stack, opened, id ?? ""))?.box).toMatchObject({ x: 300, y: 700 })
 
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(page.locator("[data-slide-box] [data-line]").filter({ hasText: "Hello world" })).toHaveCount(1)
 })
 
@@ -74,7 +74,7 @@ test("Escape while an IME composes, as it cancels a Japanese conversion, keeps t
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await page.keyboard.press("t")
   await clickSlide(page, 300, 700)
   await expect(editor(page)).toBeFocused()
@@ -99,7 +99,7 @@ test("a drag with the Text tool draws a fixed box, and leaving it empty leaves n
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await page.keyboard.press("t")
   await dragSlide(page, { x: 200, y: 600 }, { x: 800, y: 760 })
   await expect(editor(page)).toBeFocused()
@@ -124,7 +124,7 @@ test("a double-click edits a text layer where it was clicked, Enter edits it wit
   stack,
 }) => {
   covers("edit-text", "undo")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const title = "s:4"
   await clickSlide(page, 600, 410)
   await page.keyboard.press("Enter")
@@ -155,7 +155,7 @@ test("a double-click on a shape with no words starts words inside it, makes no n
   stack,
 }) => {
   covers("edit-text")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(200, 600, 600, 300), fills: accent } },
   ])
@@ -194,7 +194,7 @@ test("Ctrl+A inside bulleted words selects every bullet, and typing replaces the
   stack,
 }) => {
   covers("edit-text", "select-all")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     {
       id: "t:1",
@@ -230,7 +230,7 @@ test("pasted words keep their line breaks, and undo while typing takes back the 
   stack,
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"])
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     {
       id: "t:1",
@@ -264,19 +264,19 @@ test("pasted words keep their line breaks, and undo while typing takes back the 
 })
 
 test("the text bar sets the named style and Underline for the selected words", async ({ page, context, stack }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await clickSlide(page, 600, 410)
   await page.keyboard.press("Enter")
-  await page.getByRole("button", { name: doomEditorCopy.underline }).click()
-  await page.getByRole("combobox", { name: doomEditorCopy.textStyle }).click()
-  await page.getByRole("option", { name: doomEditorCopy.textStyles.heading, exact: true }).click()
+  await page.getByRole("button", { name: editorCopy.underline }).click()
+  await page.getByRole("combobox", { name: editorCopy.textStyle }).click()
+  await page.getByRole("option", { name: editorCopy.textStyles.heading, exact: true }).click()
   await page.keyboard.press("Escape")
   await expect.poll(async () => (await textOf(stack, opened, "s:4"))?.style).toBe("heading")
   expect((await textOf(stack, opened, "s:4"))?.spans).toEqual([{ end: 8, underline: true }])
 })
 
 test("the slide's thumbnail follows typing before the words are kept", async ({ page, context, stack }) => {
-  await openDoomEditor(page, context, stack)
+  await openEditor(page, context, stack)
   await page.keyboard.press("t")
   await clickSlide(page, 300, 700)
   await expect(editor(page)).toBeFocused()
@@ -292,7 +292,7 @@ test("leaving a slide while typing keeps the typed words in its thumbnail every 
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await page.getByRole("button", { name: slideListCopy.addSlide }).click()
   await page.locator("[data-slide-entry='1']").click()
   await page.keyboard.press("t")

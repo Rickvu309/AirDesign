@@ -30,5 +30,5 @@ Preconditions:
 ## Gotchas
 
 - A painted picture is `[data-slide-box] [data-paint="image"]` whose `background-image` is a `blob:` address; poll for it with `getComputedStyle`, not for an `img`.
-- The spec dispatches the drop and the paste on `[data-doom-stage]` as a `DragEvent` or `ClipboardEvent` with a `DataTransfer` holding the file.
+- The spec dispatches the drop and the paste on `[data-editor-stage]` as a `DragEvent` or `ClipboardEvent` with a `DataTransfer` holding the file.
 - A browser spec serves the upload's presigned PUT and GET itself with `serveOriginals` from `tests/browser/editor-deck.ts`; the verify stack serves them under `/verify-original/`.

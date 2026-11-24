@@ -74,4 +74,4 @@ export function paintedOnce(paint: Paint): Paint {
   }
 }
 
-export const doomThumbnail = paintedOnce(paintOnce)
+export const deckThumbnail = paintedOnce(paintOnce)

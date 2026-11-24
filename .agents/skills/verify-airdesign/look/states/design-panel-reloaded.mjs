@@ -5,7 +5,7 @@ async function drive(kit) {
   const { page } = kit
   await designing(kit)
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(page.locator("[data-design-panel]")).toBeVisible()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
 }

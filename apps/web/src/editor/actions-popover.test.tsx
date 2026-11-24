@@ -4,7 +4,7 @@ import { afterAll, beforeAll, expect, it, vi } from "vitest"
 let window: Window & typeof globalThis
 let createRoot: typeof import("react-dom/client").createRoot
 let ActionsPanel: typeof import("./actions-popover").ActionsPanel
-let doomEditorCopy: typeof import("@/copy/editor-copy").doomEditorCopy
+let editorCopy: typeof import("@/copy/editor-copy").editorCopy
 
 beforeAll(async () => {
   const module = "jsdom"
@@ -23,7 +23,7 @@ beforeAll(async () => {
     vi.stubGlobal(name, value)
   createRoot = (await import("react-dom/client")).createRoot
   ActionsPanel = (await import("./actions-popover")).ActionsPanel
-  doomEditorCopy = (await import("@/copy/editor-copy")).doomEditorCopy
+  editorCopy = (await import("@/copy/editor-copy")).editorCopy
 })
 
 afterAll(() => {
@@ -70,7 +70,7 @@ async function openPanel() {
       target.dispatchEvent(new window.MouseEvent("click", { bubbles: true }))
     })
   const showAllIcons = () => {
-    const button = [...host.querySelectorAll("button")].find((each) => each.textContent === doomEditorCopy.allIcons)
+    const button = [...host.querySelectorAll("button")].find((each) => each.textContent === editorCopy.allIcons)
     if (button === undefined) throw new Error("all icons")
     return click(button)
   }
@@ -171,7 +171,7 @@ it("names the search a combobox whose active descendant is the selected option o
     expect(panel.input.getAttribute("aria-expanded")).toBe("true")
     expect(listbox?.getAttribute("role")).toBe("listbox")
     expect(panel.highlighted()?.getAttribute("role")).toBe("option")
-    expect(panel.highlighted()?.textContent).toBe(doomEditorCopy.chartKinds.bar)
+    expect(panel.highlighted()?.textContent).toBe(editorCopy.chartKinds.bar)
     expect(listbox?.querySelectorAll("[aria-selected='true']")).toHaveLength(1)
     expect(listbox?.querySelectorAll("button")).toHaveLength(0)
   } finally {
@@ -183,8 +183,8 @@ it("moves the one highlight to the row under the pointer", async () => {
   const panel = await openPanel()
   try {
     await panel.type("chart")
-    await panel.hover(panel.option(doomEditorCopy.chartKinds.line))
-    expect(panel.highlighted()?.textContent).toBe(doomEditorCopy.chartKinds.line)
+    await panel.hover(panel.option(editorCopy.chartKinds.line))
+    expect(panel.highlighted()?.textContent).toBe(editorCopy.chartKinds.line)
     expect(panel.host.querySelectorAll("[aria-selected='true']")).toHaveLength(1)
     await panel.press("ArrowDown")
     await panel.press("Enter")
@@ -197,7 +197,7 @@ it("moves the one highlight to the row under the pointer", async () => {
 it("runs an option on click", async () => {
   const panel = await openPanel()
   try {
-    await panel.click(panel.option(doomEditorCopy.exportPdf))
+    await panel.click(panel.option(editorCopy.exportPdf))
     expect(panel.run.exportPdf).toHaveBeenCalledTimes(1)
   } finally {
     await act(async () => panel.root.unmount())
@@ -251,7 +251,7 @@ it("says Nothing matches in a status region that stays mounted, so a screen read
     expect(status?.textContent).toBe("")
     await panel.type("zzzzzz")
     expect(panel.host.querySelector("[role='status']")).toBe(status)
-    expect(status?.textContent).toBe(doomEditorCopy.noActions)
+    expect(status?.textContent).toBe(editorCopy.noActions)
     await panel.type("pie")
     expect(status?.textContent).toBe("")
   } finally {

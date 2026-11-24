@@ -9,7 +9,7 @@ import { distributeWrites } from "./design-align"
 import { fillWrite, shownShadow } from "./design-paint-values"
 import { colorRows, idsWithColor, replaceColorWrites } from "./design-selection-colors"
 import { propOf } from "@airdesign/doom"
-import { doomEditorCopy } from "@/copy/editor-copy"
+import { editorCopy } from "@/copy/editor-copy"
 import { optionCopy } from "@/copy/option-copy"
 import { designCopy } from "@/copy/design-copy"
 import { panelTitle } from "@/editor/panel-title"
@@ -355,7 +355,7 @@ describe("picture, icon, frame and line", () => {
   })
 
   it("names the image paint Image, as the Doom paint kinds do", () => {
-    expect(optionCopy.image).toBe(doomEditorCopy.paintKinds.image)
+    expect(optionCopy.image).toBe(editorCopy.paintKinds.image)
   })
 
   it("titles an icon's panel Icon and a picture's Image", () => {

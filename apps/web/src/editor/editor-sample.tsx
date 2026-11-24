@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { AiraChat, AiraExchange, AiraStep } from "@/aira/aira-loop"
 import type { AiraStart } from "@/aira/aira-panel"
 import { sampleDeck } from "@/samples/sample-slides"
-import { DoomEditor, type EditorStart } from "./editor"
+import { Editor, type EditorStart } from "./editor"
 import type { Saving } from "./use-save-shown"
 
 const deck = "sample-deck"
@@ -81,7 +81,7 @@ export function EditorSample({ start }: { readonly start: EditorStart }) {
   const [open] = useState(opened)
   return (
     <div className="relative">
-      <DoomEditor id={deck} open={open} start={{ ...start, aira: { usage: loadUsage, ...start.aira } }} />
+      <Editor id={deck} open={open} start={{ ...start, aira: { usage: loadUsage, ...start.aira } }} />
     </div>
   )
 }

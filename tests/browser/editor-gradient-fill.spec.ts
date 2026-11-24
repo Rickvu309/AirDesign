@@ -1,9 +1,9 @@
 import { expect, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
-import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
 import { test } from "./api-stack"
-import { clickSlide, landNodes, openDoomEditor, savedNode, spot } from "./editor-deck"
+import { clickSlide, landNodes, openEditor, savedNode, spot } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -21,8 +21,8 @@ test("a gradient on a shape and the slide background shows only stops, direction
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const opened = await openEditor(page, context, stack)
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   await landNodes(stack, opened, [
     {
       id: "t:1",
@@ -54,7 +54,7 @@ test("a gradient on a shape and the slide background shows only stops, direction
   await expect.poll(async () => (await saved("t:1")).fills[0].shape).toBe("radial")
   await showsOnlyWhatDoomKeeps(page, fillCopy.section)
 
-  await page.locator("[data-doom-stage]").click({ position: { x: 20, y: 20 } })
+  await page.locator("[data-editor-stage]").click({ position: { x: 20, y: 20 } })
   await section(page, designCopy.background).getByRole("button", { name: fillWords.gradient, exact: true }).click()
   await expect.poll(async () => (await saved(opened.slide)).fills?.[0]?.kind).toBe("gradient")
   await showsOnlyWhatDoomKeeps(page, designCopy.background)

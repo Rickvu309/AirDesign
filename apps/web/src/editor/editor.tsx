@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { NotFoundPage } from "@/decks/not-found-page"
 import { tabTitleOf } from "@/copy/product-copy"
-import { doomEditorCopy } from "@/copy/editor-copy"
+import { editorCopy } from "@/copy/editor-copy"
 import { slideRoom } from "@/editing/canvas-zoom"
 import { PanelHead } from "@/editor/editor-chrome"
 import { ExportControl } from "@/export/export-control"
@@ -25,7 +25,7 @@ import { AgentPanel } from "./agent-panel"
 import { DesignPanel } from "./design-panel"
 import { DoomCanvas, type CanvasCommands, type CaretWords } from "./canvas"
 import { DoomNotes } from "./notes"
-import { DoomThumb } from "./thumb"
+import { Thumb } from "./thumb"
 import { typingPreview } from "./typing-preview"
 import { followLink, linkAt } from "./present-links"
 import { noSelection, type Selection } from "./selection"
@@ -123,7 +123,7 @@ function Editing({
     }
   }, [title])
   return (
-    <div className="window-frame flex" data-doom-editor={id} inert={present.show !== null}>
+    <div className="window-frame flex" data-editor-frame={id} inert={present.show !== null}>
       <div className="contents" onKeyDownCapture={(event) => addAfterKey(event, strip)}>
         <SlideSidebar
           title={title}
@@ -227,7 +227,7 @@ function Editing({
         paint={(index, width) => {
           const shown = slides[index]
           return shown === undefined ? null : (
-            <DoomThumb view={view} slide={shown} width={width} assetUrl={assets.assetUrl} />
+            <Thumb view={view} slide={shown} width={width} assetUrl={assets.assetUrl} />
           )
         }}
         onFollow={(point) => {
@@ -240,7 +240,7 @@ function Editing({
   )
 }
 
-export function DoomEditor({
+export function Editor({
   id,
   open = {},
   start = {},
@@ -256,7 +256,7 @@ export function DoomEditor({
   if (opening.status === "missing") return <NotFoundPage kind="deck" />
   if (opening.status === "loading")
     return (
-      <div className="window-frame" aria-busy="true" aria-label={doomEditorCopy.loading}>
+      <div className="window-frame" aria-busy="true" aria-label={editorCopy.loading}>
         <div className="h-full bg-canvas" />
       </div>
     )

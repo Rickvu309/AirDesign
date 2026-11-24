@@ -7,7 +7,7 @@ const asked = "Add three KPIs to this slide"
 async function doomAgent(kit, cookie) {
   const { page, post, capture, note, doomRoutes, mcpRoutes, aira, holdReply } = kit
   await page.goto("/s")
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   const deck = new URL(page.url()).pathname.slice("/s/".length)
   const opened = (await post(doomRoutes.open, { deck }, cookie)).json
   const slide = Object.values(opened.fold.nodes).find((node) => node.type === "slide").id
@@ -120,7 +120,7 @@ async function outsideAgent(kit, cookie, { deck, slide }) {
   await row.locator("[data-agent-run-undo]").click()
   await expect(row).toContainText(agentRunsCopy.undone)
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(row).toContainText(agentRunsCopy.undone)
   await expect(page.locator("[data-agent-run-undo]")).toHaveCount(1)
   await capture("outside-undone")

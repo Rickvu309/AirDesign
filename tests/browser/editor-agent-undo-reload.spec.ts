@@ -3,7 +3,7 @@ import * as doom from "../../packages/doom/src/index.ts"
 import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { test, type Stack } from "./api-stack"
-import { openDoomEditor, type Opened } from "./editor-deck"
+import { openEditor, type Opened } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 }, locale: "en-US", timezoneId: "Asia/Ho_Chi_Minh" })
 
@@ -27,7 +27,7 @@ test("Undo takes an agent's run back after the tab reloaded, reading only that r
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const base = (await saved(stack, opened)).rev
   const side = page.locator("[data-editor-panel]")
   const canvas = page.locator("[data-slide-box]")

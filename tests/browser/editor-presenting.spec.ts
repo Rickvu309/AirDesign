@@ -6,7 +6,7 @@ import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { accent, landNodes, openDoomEditor, savedNode, savedSlides, spot, type Opened } from "./editor-deck"
+import { accent, landNodes, openEditor, savedNode, savedSlides, spot, type Opened } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -17,11 +17,11 @@ const presentButton = (page: Page) => page.getByRole("button", { name: presentCo
 
 async function deckOfSlides(
   page: Page,
-  context: Parameters<typeof openDoomEditor>[1],
-  stack: Parameters<typeof openDoomEditor>[2],
+  context: Parameters<typeof openEditor>[1],
+  stack: Parameters<typeof openEditor>[2],
   count: number,
 ) {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   for (let made = 1; made < count; made += 1) {
     await page.getByRole("button", { name: slideListCopy.addSlide }).click()
     await expect(page.locator("[data-slide-entry]")).toHaveCount(made + 1)
@@ -32,7 +32,7 @@ async function deckOfSlides(
 
 async function noteOn(
   page: Page,
-  stack: Parameters<typeof openDoomEditor>[2],
+  stack: Parameters<typeof openEditor>[2],
   opened: Opened,
   slide: number,
   text: string,
@@ -72,7 +72,7 @@ test("F5 starts the show on the first slide of a Doom deck, the show keys step t
   await expect(shown(page)).toContainText(placeholderRoles.subTitle)
   const box = await shown(page).boundingBox()
   expect(box?.width).toBeGreaterThan(1500)
-  expect(await page.locator("[data-doom-editor]").evaluate((node: HTMLElement) => node.inert)).toBe(true)
+  expect(await page.locator("[data-editor-frame]").evaluate((node: HTMLElement) => node.inert)).toBe(true)
 
   for (const [key, slide] of [
     ["ArrowRight", "2"],

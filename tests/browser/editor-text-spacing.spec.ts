@@ -1,9 +1,9 @@
 import { expect, type Locator } from "@playwright/test"
-import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { textCopy } from "../../apps/web/src/copy/text-copy"
 import { test } from "./api-stack"
-import { clickSlide, landNodes, openDoomEditor, savedNode, spot } from "./editor-deck"
+import { clickSlide, landNodes, openEditor, savedNode, spot } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -17,7 +17,7 @@ test("letter spacing typed past Doom's limit at the largest size is clamped and 
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     {
       id: "t:1",
@@ -30,7 +30,7 @@ test("letter spacing typed past Doom's limit at the largest size is clamped and 
     },
   ])
   await clickSlide(page, 300, 640)
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   const panel = page.locator("[data-design-panel]")
   const spans = async () => ((await savedNode(stack, opened, "t:1")) as { text: { spans: unknown[] } }).text.spans
 
@@ -47,7 +47,7 @@ test("text size and line height typed past Doom's limit are clamped and saved on
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     {
       id: "t:1",
@@ -60,7 +60,7 @@ test("text size and line height typed past Doom's limit are clamped and saved on
     },
   ])
   await clickSlide(page, 300, 640)
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   const panel = page.locator("[data-design-panel]")
   const text = async () =>
     (await savedNode(stack, opened, "t:1")) as { text: { spans: unknown[]; paras: { lineHeight?: number }[] } }

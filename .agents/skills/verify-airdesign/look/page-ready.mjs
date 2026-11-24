@@ -1,7 +1,7 @@
-const doomEditor = /^\/s(?:\/|\?|#|$)/
+const editorPath = /^\/s(?:\/|\?|#|$)/
 
 export function paintedSignal(where) {
-  return doomEditor.test(where) ? "[data-doom-ready]" : null
+  return editorPath.test(where) ? "[data-editor-ready]" : null
 }
 
 export async function pageReady(page, where) {

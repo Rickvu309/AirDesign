@@ -1,6 +1,6 @@
 import { writeFile } from "node:fs/promises"
 import { expect, type Page } from "@playwright/test"
-import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { exportCopy } from "../../apps/web/src/copy/export-copy"
 import { editorRoutes } from "../../apps/web/src/editor/editor-routes"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
@@ -8,7 +8,7 @@ import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import * as doom from "../../packages/doom/src/index.ts"
 import { test, type Stack } from "./api-stack"
 import { covers } from "./gesture"
-import { landNodes, openDoomEditor, savedSlides, spot, type Opened } from "./editor-deck"
+import { landNodes, openEditor, savedSlides, spot, type Opened } from "./editor-deck"
 import { openScreen } from "./open-screen"
 import { pdfPages } from "./pdf-file"
 
@@ -65,7 +65,7 @@ test("Export prints every slide on its own 16:9 page under the deck's name, with
   stack,
 }) => {
   await recordPrints(page)
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const slides = await deckOfSlides(page, stack, opened, 3)
   await nameDeck(stack, opened, "Q3 / Board: final")
   await landNodes(stack, opened, [
@@ -117,7 +117,7 @@ test("the current slide or a range prints only those slides, and a wrong range s
   stack,
 }) => {
   await recordPrints(page)
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const slides = await deckOfSlides(page, stack, opened, 3)
   await page.locator('[data-slide-entry="2"]').click()
 
@@ -179,11 +179,11 @@ test("Ctrl or Cmd+P opens the actions bar, whose Export as PDF opens Export; the
   covers("actions")
   await recordPrints(page)
   await recordPrintKeys(page)
-  await openDoomEditor(page, context, stack)
+  await openEditor(page, context, stack)
   const actions = page.locator("[data-actions-panel]")
   await page.keyboard.press("ControlOrMeta+p")
   await expect(actions).toBeVisible()
-  await actions.getByRole("option", { name: doomEditorCopy.exportPdf }).click()
+  await actions.getByRole("option", { name: editorCopy.exportPdf }).click()
   await expect(actions).toHaveCount(0)
   await expect(dialog(page)).toBeVisible()
   await choose(page, exportCopy.slides, exportCopy.currentSlide)
@@ -207,7 +207,7 @@ test("Ctrl or Cmd+P opens the actions bar, whose Export as PDF opens Export; the
 
 test("Escape closes the dialog, focus returns to Export, and nothing prints", async ({ page, context, stack }) => {
   await recordPrints(page)
-  await openDoomEditor(page, context, stack)
+  await openEditor(page, context, stack)
   await exportButton(page).click()
   await expect(dialog(page)).toBeVisible()
   await page.keyboard.press("Escape")
@@ -224,7 +224,7 @@ test("a picture that never arrives fails the export after a wait, and Try again 
 }) => {
   await recordPrints(page)
   await page.clock.install()
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     {
       id: "t:9",

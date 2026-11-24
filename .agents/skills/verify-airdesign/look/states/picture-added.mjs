@@ -13,7 +13,7 @@ async function drive(kit) {
     ([bytes, at]) => {
       const transfer = new DataTransfer()
       transfer.items.add(new File([new Uint8Array(bytes)], "picture.png", { type: "image/png" }))
-      document.querySelector("[data-doom-stage]").dispatchEvent(
+      document.querySelector("[data-editor-stage]").dispatchEvent(
         new DragEvent("drop", {
           bubbles: true,
           cancelable: true,

@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { clickSlide, openDoomEditor, savedNode, type Opened } from "./editor-deck"
+import { clickSlide, openEditor, savedNode, type Opened } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -24,7 +24,7 @@ test("typing with pauses in one text edit is one undo step, and redo puts all of
 }) => {
   covers("edit-text", "undo", "redo")
   await page.clock.install()
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const title = "s:4"
   const before = await charsOf(stack, opened, title)
   await clickSlide(page, 600, 420)
@@ -46,7 +46,7 @@ test("typing with pauses in one text edit is one undo step, and redo puts all of
 test("a new text layer typed with pauses goes in one undo step", async ({ page, context, stack }) => {
   covers("tool-text", "undo")
   await page.clock.install()
-  await openDoomEditor(page, context, stack)
+  await openEditor(page, context, stack)
   const layers = page.locator("[data-slide-box] [data-node]")
   const count = await layers.count()
   await page.keyboard.press("t")
@@ -65,7 +65,7 @@ test("presenter notes typed with pauses are one undo step once the notes lose fo
   stack,
 }) => {
   await page.clock.install()
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const notes = page.locator("[data-notes-bar] textarea")
   const saved = async () =>
     ((await savedNode(stack, opened, opened.slide))?.notes as { chars: string } | undefined)?.chars ?? ""
