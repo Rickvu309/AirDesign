@@ -25,7 +25,8 @@ const toolFiles = new Set([
   "scripts/worktrees.mjs",
 ])
 const judgeFolders = [".github/workflows/", ".github/actions/", "scripts/", "tooling/"]
-const judgeFiles = new Set([".github/pull_request_template.md"])
+const speedBudgetFile = "tests/browser/editor-speed-budget.ts"
+const judgeFiles = new Set([".github/pull_request_template.md", speedBudgetFile])
 const judgeNames = [
   /^tsconfig.*\.json$/,
   /^\.?oxlintrc\.json$/,
@@ -175,6 +176,36 @@ const raisedLimits = (file, { lines }) => {
   })
 }
 
+const speedLimits = (text = "") => {
+  const limits = new Map()
+  const sections = [
+    ["local", /const localTiming = \{([^}]*)\}/],
+    ["CI", /const ciTiming = \{([^}]*)\}/],
+    ["shared", /export const editorSpeedBudget = [^\n]*=> \(\{([^}]*)\}\)/],
+  ]
+  for (const [scope, section] of sections) {
+    const body = text.match(section)?.[1] ?? ""
+    for (const [, name, value] of body.matchAll(/^\s*(\w+):\s*(\d[\d_]*(?:\.\d+)?),?\s*$/gm)) {
+      if (name === "slides") continue
+      limits.set(`${scope} ${name}`, {
+        value: Number(value.replaceAll("_", "")),
+        minimum: name === "typePreviewRedraws",
+      })
+    }
+  }
+  return limits
+}
+
+const speedBudgetLowered = (file, { base, head }) => {
+  const before = speedLimits(base)
+  const after = speedLimits(head)
+  return [...before].flatMap(([name, limit]) => {
+    const now = after.get(name)?.value ?? limit.value
+    const looser = limit.minimum ? now < limit.value : now > limit.value
+    return looser ? [`In ${file}, ${name} went from ${limit.value} to ${now}.`] : []
+  })
+}
+
 const workflowFile = (file) => file.startsWith(".github/workflows/") || file.startsWith(".github/actions/")
 const lintFile = (file) => /^\.?oxlintrc\.json$/.test(nameOf(file))
 const typesFile = (file) => /^tsconfig.*\.json$/.test(nameOf(file))
@@ -186,7 +217,8 @@ const detectors = [
   [lintFile, lintLowered],
   [typesFile, typesLowered],
   [(file) => /\.(?:test|spec)\.tsx?$/.test(file), testsLowered],
-  [judges, raisedLimits],
+  [(file) => file === speedBudgetFile, speedBudgetLowered],
+  [(file) => file !== speedBudgetFile && judges(file), raisedLimits],
 ]
 
 export const patchLines = (patch) => {

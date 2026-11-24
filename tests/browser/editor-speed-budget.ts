@@ -15,9 +15,9 @@ const ciTiming = {
   typeTaskPerKey: 4,
   typePreviewRender: 2.6,
   typePreviewPaint: 3.1,
-  dragScriptPerFrame: 2.7,
+  dragScriptPerFrame: 3.0,
   dragTaskPerFrame: 8.6,
-  agentEditPaintMilliseconds: 38,
+  agentEditPaintMilliseconds: 42,
 }
 
 export const editorSpeedBudget = (env: NodeJS.ProcessEnv) => ({

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs"
+import ts from "typescript-api"
 import { expect, it } from "vitest"
 import { checkPhaseSpeed } from "./browser/speed-machine"
 
@@ -75,3 +77,33 @@ it("reports speed not measured when a failing guard has a sample exactly at the 
   const check = () => checkPhaseSpeed("typing", samples, () => expect(9).toBeLessThan(8))
   expect(check).toThrow("machine oversubscribed during typing: max 48 runnable on 48 cores; speed not measured")
 })
+
+it.each(["typeMeasureCalls", "typePreviewRedraws"])(
+  "keeps the %s count assertion outside speed relabelling",
+  (guard) => {
+    const url = new URL("./browser/editor-speed.spec.ts", import.meta.url)
+    const spec = ts.createSourceFile(url.pathname, readFileSync(url, "utf8"), ts.ScriptTarget.Latest, true)
+    const enclosingSpeedChecks: boolean[] = []
+
+    function visit(node: ts.Node, insideSpeedCheck: boolean) {
+      if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+        insideSpeedCheck ||= /^check\w*Speed$/.test(node.expression.text)
+      }
+      if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        /^toBe(?:Greater|Less)ThanOrEqual$/.test(node.expression.name.text) &&
+        node.arguments.some(
+          (arg) =>
+            ts.isPropertyAccessExpression(arg) && arg.expression.getText(spec) === "budget" && arg.name.text === guard,
+        )
+      ) {
+        enclosingSpeedChecks.push(insideSpeedCheck)
+      }
+      ts.forEachChild(node, (child) => visit(child, insideSpeedCheck))
+    }
+
+    visit(spec, false)
+    expect(enclosingSpeedChecks).toEqual([false])
+  },
+)

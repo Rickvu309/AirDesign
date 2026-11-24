@@ -313,6 +313,39 @@ same(
   [],
 )
 
+const speedBudgetFile = "tests/browser/editor-speed-budget.ts"
+const speedBudget = fs.readFileSync(new URL(`../${speedBudgetFile}`, import.meta.url), "utf8")
+const speedBudgetLabels = (headBudget) =>
+  labelsFor(
+    verdict({
+      reasons: readReasons({
+        text: (sha, file) => {
+          if (file === "metrics.json") return JSON.stringify(metrics)
+          if (file === speedBudgetFile) return sha === "fork" ? speedBudget : headBudget
+        },
+        fork: "fork",
+        head: "head",
+        listed: [{ name: speedBudgetFile, status: "modified" }],
+      }),
+    }),
+  )
+
+same(
+  "raising CI's drag script budget needs a countersign",
+  speedBudgetLabels(speedBudget.replace(/dragScriptPerFrame: [23](?:\.\d+)?/, "dragScriptPerFrame: 3.5")),
+  ["changes-ci", "lowers-the-bar"],
+)
+same(
+  "tightening CI's typing budget needs no countersign",
+  speedBudgetLabels(speedBudget.replace("typeTaskPerKey: 4,", "typeTaskPerKey: 3,")),
+  ["changes-ci"],
+)
+same(
+  "lowering the required redraw count needs a countersign",
+  speedBudgetLabels(speedBudget.replace("typePreviewRedraws: 7,", "typePreviewRedraws: 6,")),
+  ["changes-ci", "lowers-the-bar"],
+)
+
 const localRepo = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-bar-local-"))
 process.on("exit", () => fs.rmSync(localRepo, { recursive: true, force: true }))
 const localGit = (args, input) =>
