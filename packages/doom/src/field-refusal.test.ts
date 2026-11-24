@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { type AgentChange, readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { minter, more, richDeck } from "./agent-fixtures.js"
-import { hex, ids } from "./sample-deck.js"
+import { hex, ids, land } from "./sample-deck.js"
 
 const hiddenCaption = {
   op: "add",
@@ -185,6 +185,24 @@ const readRows: { readonly raw: unknown; readonly field: string; readonly fault:
     fault: "form",
     form: "An https or mailto address, or a slide id.",
   },
+  {
+    raw: { op: "set", target: "t:3", crop: { left: 50, right: 50 } },
+    field: "crop",
+    fault: "form",
+    form: "Percents cut from left, top, right and bottom, each from 0 to 99, leaving some of the picture.",
+  },
+  {
+    raw: { op: "set", target: "t:3", crop: { left: 100 } },
+    field: "crop.left",
+    fault: "form",
+    form: "A number from 0 to 99.",
+  },
+  {
+    raw: { op: "set", target: "t:3", crop: { sideways: 4 } },
+    field: "crop.sideways",
+    fault: "unknown",
+    form: "One of left, top, right, bottom.",
+  },
 ]
 
 describe("each refused edit names its own path", () => {
@@ -209,6 +227,7 @@ describe("each refused edit names its own path", () => {
     needs(set(ids.title, { icon: "star" }), "icon", "an icon")
     needs(set(ids.title, { arrow: true }), "arrow", "a line")
     needs(set(ids.title, { fit: "fill" }), "fit", "an image fill")
+    needs(set(ids.card, { crop: { left: 10 } }), "crop", "an image fill")
     needs(set(ids.title, { chart }), "chart", "a chart layer")
     needs(set(ids.card, { gap: 16 }), "gap", "a row or column layout")
     needs(
@@ -222,6 +241,12 @@ describe("each refused edit names its own path", () => {
     needs(set(ids.caption, { insert: linked }), "insert", "a text layer")
     needs(set("*.title", { insert: linked }), "insert", "a text layer")
     needs(set(`${more.chart}#Plan:Q1`, { insert: linked }), "insert", "a text layer")
+    const pictured = land(richDeck(), [
+      { node: ids.title, prop: "fills", value: [{ kind: "image", asset: "a".repeat(64), fit: "tile" }] },
+    ])
+    const fought = compileAgentChange(pictured, set(ids.title, { fit: "tile", crop: { left: 10 } }), minter())
+    expect(fought).toMatchObject({ refused: "shape", field: "crop", fault: "form", form: "fit crop, or no fit." })
+    expect(fought).not.toHaveProperty("needs")
     const both = compileAgentChange(richDeck(), set(ids.title, { text: "A", insert: linked }), minter())
     expect(both).toMatchObject({
       refused: "shape",

@@ -1,6 +1,6 @@
 import { field } from "./agent-fields.js"
 import type { CropSides } from "./picture-crop.js"
-import { type Reader, finite, object, reject } from "./read-kit.js"
+import { type Reader, accepting, finite, object, reject } from "./read-kit.js"
 
 const cutSide = finite(0, 99)
 
@@ -10,6 +10,8 @@ const readCrop: Reader<CropSides> = (raw) => {
   if (Object.keys(cut).length === 0 || sides.left + sides.right >= 100 || sides.top + sides.bottom >= 100) reject()
   return sides
 }
+
+const cropForm = "Percents cut from left, top, right and bottom, each from 0 to 99, leaving some of the picture."
 
 export const cropField = field(
   {
@@ -21,5 +23,5 @@ export const cropField = field(
     description:
       "Crop a picture: the percent cut from each side, 0 to 99. The layer keeps its size, so set box too to resize it. Sets fit crop.",
   },
-  readCrop,
+  accepting(cropForm, readCrop),
 )
