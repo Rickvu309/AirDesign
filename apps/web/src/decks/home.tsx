@@ -276,16 +276,7 @@ export function Home({
       {loading && listView && !trash && <DeckTableSkeleton />}
       {noDecks && (
         <div className="mt-8">
-          <Card
-            className="w-full"
-            title={productCopy.noDecksTitle}
-            description={productCopy.noDecksBody}
-            actions={
-              <Button size="sm" onClick={() => navigate("/s")}>
-                {productCopy.blankDeck}
-              </Button>
-            }
-          />
+          <Card className="w-full" title={productCopy.noDecksTitle} description={productCopy.noDecksBody} />
         </div>
       )}
       {listing !== null && showGrid && !noDecks && !noMatch && (
