@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto"
-import { readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs"
+import { readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
 const statelessAgeMs = 24 * 60 * 60 * 1000
@@ -39,8 +39,18 @@ export function writeAtomic(file, text) {
   renameSync(temp, file)
 }
 
+export function canonical(dir) {
+  try {
+    return realpathSync(dir)
+  } catch {
+    return dir
+  }
+}
+
+export const sameWorktree = (owner, repo) => canonical(owner) === canonical(repo)
+
 export function writeOwner(dir, repo) {
-  writeAtomic(path.join(dir, "owner"), repo)
+  writeAtomic(path.join(dir, "owner"), canonical(repo))
 }
 
 export function ownerOf(dir) {
@@ -71,12 +81,15 @@ function runNames(scratchRoot) {
 }
 
 export function runsOf({ scratchRoot, repo }) {
-  return runNames(scratchRoot).filter((run) => ownerOf(path.join(scratchRoot, run)) === repo)
+  return runNames(scratchRoot).filter((run) => {
+    const owner = ownerOf(path.join(scratchRoot, run))
+    return owner !== undefined && sameWorktree(owner, repo)
+  })
 }
 
 export function foreignRun({ scratchRoot, repo, run }) {
   const owner = ownerOf(path.join(scratchRoot, run))
-  return owner !== undefined && owner !== repo ? owner : undefined
+  return owner !== undefined && !sameWorktree(owner, repo) ? owner : undefined
 }
 
 export async function removeLeftoverRuns({ scratchRoot, repo, stop, now = Date.now() }) {
@@ -85,7 +98,7 @@ export async function removeLeftoverRuns({ scratchRoot, repo, stop, now = Date.n
   for (const run of runNames(scratchRoot)) {
     const dir = path.join(scratchRoot, run)
     const owner = ownerOf(dir)
-    if (owner !== undefined && owner !== repo) continue
+    if (owner !== undefined && !sameWorktree(owner, repo)) continue
     const state = stateIn(dir)
     if (state !== undefined) {
       if (state.run === run && !ownsServe(state)) {

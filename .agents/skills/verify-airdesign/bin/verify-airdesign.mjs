@@ -1,7 +1,16 @@
 #!/usr/bin/env node
 import { execFileSync, spawn } from "node:child_process"
 import { randomBytes } from "node:crypto"
-import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import {
+  appendFileSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
@@ -19,18 +28,24 @@ import {
   ownsServe,
   removeLeftoverRuns,
   runsOf,
+  sameWorktree,
   writeOwner,
 } from "./leftover-runs.mjs"
+import { buildStack } from "./launch-build.mjs"
+import { rollbackLaunch } from "./launch-rollback.mjs"
 import { loadLine } from "./load.mjs"
+import { call } from "./api-call.mjs"
 import { builtSite, fakeOrigins } from "./site.mjs"
 import { replyRoutes } from "./reply-routes.mjs"
 import { usage } from "./usage.mjs"
 import { packageBuild, packageEntry } from "../../../../scripts/package-build.mjs"
 
 const skill = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
-const repo = process.env.VERIFY_AIRDESIGN_REPO
-  ? path.resolve(process.env.VERIFY_AIRDESIGN_REPO)
-  : execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: skill, encoding: "utf8" }).trim()
+const repo = realpathSync(
+  process.env.VERIFY_AIRDESIGN_REPO
+    ? path.resolve(process.env.VERIFY_AIRDESIGN_REPO)
+    : execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: skill, encoding: "utf8" }).trim(),
+)
 const evidenceRoot = path.join(os.homedir(), "tmp", "verify-airdesign")
 const scratchRoot = path.join(os.homedir(), "tmp", "verify-airdesign-scratch")
 const webDist = path.join(repo, "apps/web/dist")
@@ -80,6 +95,8 @@ function pause(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+const interruptions = ["SIGINT", "SIGTERM"]
+
 async function launch(args) {
   const leftover = await removeLeftoverRuns({ scratchRoot, repo, stop: stopRun })
   if (leftover.stopped.length + leftover.removed.length > 0) process.stderr.write(`${JSON.stringify({ leftover })}\n`)
@@ -87,78 +104,57 @@ async function launch(args) {
   mkdirSync(evidenceDir(run), { recursive: true })
   mkdirSync(scratchDir(run), { recursive: true })
   writeOwner(scratchDir(run), repo)
-  if (!args.includes("--no-build")) {
-    const log = path.join(scratchDir(run), "build.log")
-    for (const filter of [
-      ["--filter", "@airdesign/api...", "run", "build"],
-      ["--filter", "web", "build"],
-    ]) {
-      try {
-        execFileSync("pnpm", filter, { cwd: repo, stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1 << 28 })
-      } catch (error) {
-        writeFileSync(log, `${String(error.stdout ?? "")}${String(error.stderr ?? "")}`)
-        fail(`build failed: pnpm ${filter.join(" ")}. Log: ${log}`)
-      }
-    }
-  }
-  for (const built of [webDist, apiDist, catalogDist]) {
-    if (!existsSync(built)) fail(`missing build output ${built}; run launch without --no-build`)
-  }
-  const { airaEfforts } = await packageBuild(repo, "@airdesign/api", "aira/aira.js")
-  const chosen = airaChoice(args, process.env, airaEfforts)
-  if (!chosen.ok) fail(chosen.message)
-  const site = builtSite(repo)
-  const log = path.join(scratchDir(run), "stack.log")
-  const child = spawn(process.execPath, [fileURLToPath(import.meta.url), "serve", run, ...airaArgs(chosen.choice)], {
-    cwd: repo,
-    detached: true,
-    stdio: ["ignore", "ignore", "ignore"],
-    env: { ...process.env, VERIFY_AIRDESIGN_LOG: log, VERIFY_AIRDESIGN_SITE: site.dist },
-  })
-  child.unref()
-  for (let waited = 0; waited < 120_000; waited += 500) {
-    if (existsSync(statePath(run))) {
-      const state = readState(run)
-      if (state.ready) {
-        proof(
-          run,
-          `# verify-airdesign run ${run}\n\n- commit ${state.commit}\n- origin ${state.origin}\n- site origin ${state.siteOrigin}, build ${site.built ? "made" : "reused"} at ${site.dist}\n- Aira: ${state.aira.streams} streams, ${state.aira.model} at ${state.aira.effort} effort\n- launched at ${loadLine()}`,
-        )
-        process.stdout.write(
-          `${JSON.stringify({ run, origin: state.origin, siteOrigin: state.siteOrigin, aira: state.aira, evidence: evidenceDir(run), pid: state.pid })}\n`,
-        )
-        return
-      }
-    }
-    if (!alive(child.pid)) fail(`stack exited before ready. Log: ${log}`)
-    await pause(500)
-  }
-  fail(`stack not ready after 120 s. Log: ${log}. Run: verify-airdesign stop ${run}`)
-}
-
-function answerOf(type, text) {
-  const rows = text.split("\n").filter((line) => line.trim() !== "")
-  if (type.includes("ndjson")) return { lines: rows.map((line) => JSON.parse(line)) }
-  const data = rows.flatMap((line) => (line.startsWith("data: ") ? [JSON.parse(line.slice(6))] : []))
-  if (type.includes("event-stream")) return { events: data }
-  return text.length === 0 ? {} : JSON.parse(text)
-}
-
-async function call(origin, method, pathname, body, cookie, headers = {}) {
-  const response = await fetch(`${origin}${pathname}`, {
-    method,
-    headers: { "content-type": "application/json", ...headers, ...(cookie === undefined ? {} : { cookie }) },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-  })
-  const text = await response.text()
-  let json
+  const stackLog = path.join(evidenceDir(run), "stack.log")
+  const interrupted = new AbortController()
+  const interrupt = (signal) => interrupted.abort(new Error(`launch interrupted by ${signal}`))
+  for (const signal of interruptions) process.once(signal, interrupt)
+  let child
   try {
-    json = answerOf(response.headers.get("content-type") ?? "", text)
-  } catch {
-    json = { text: text.slice(0, 200) }
+    if (!args.includes("--no-build")) {
+      const failed = buildStack(repo, path.join(evidenceDir(run), "build.log"))
+      if (failed !== undefined) throw new Error(failed)
+    }
+    for (const built of [webDist, apiDist, catalogDist]) {
+      if (!existsSync(built)) throw new Error(`missing build output ${built}; run launch without --no-build`)
+    }
+    const { airaEfforts } = await packageBuild(repo, "@airdesign/api", "aira/aira.js")
+    const chosen = airaChoice(args, process.env, airaEfforts)
+    if (!chosen.ok) throw new Error(chosen.message)
+    const site = builtSite(repo)
+    interrupted.signal.throwIfAborted()
+    const log = path.join(scratchDir(run), "stack.log")
+    child = spawn(process.execPath, [fileURLToPath(import.meta.url), "serve", run, ...airaArgs(chosen.choice)], {
+      cwd: repo,
+      detached: true,
+      stdio: ["ignore", "ignore", "ignore"],
+      env: { ...process.env, VERIFY_AIRDESIGN_LOG: log, VERIFY_AIRDESIGN_SITE: site.dist },
+    })
+    child.unref()
+    for (let waited = 0; waited < 120_000; waited += 500) {
+      interrupted.signal.throwIfAborted()
+      if (existsSync(statePath(run))) {
+        const state = readState(run)
+        if (state.ready) {
+          proof(
+            run,
+            `# verify-airdesign run ${run}\n\n- commit ${state.commit}\n- origin ${state.origin}\n- site origin ${state.siteOrigin}, build ${site.built ? "made" : "reused"} at ${site.dist}\n- Aira: ${state.aira.streams} streams, ${state.aira.model} at ${state.aira.effort} effort\n- launched at ${loadLine()}`,
+          )
+          process.stdout.write(
+            `${JSON.stringify({ run, origin: state.origin, siteOrigin: state.siteOrigin, aira: state.aira, evidence: evidenceDir(run), pid: state.pid })}\n`,
+          )
+          return
+        }
+      }
+      if (!alive(child.pid)) throw new Error(`stack exited before ready. Log: ${stackLog}`)
+      await pause(500)
+    }
+    throw new Error(`stack not ready after 120 s. Log: ${stackLog}`)
+  } catch (error) {
+    await rollbackLaunch(child, () => teardownRun(run), scratchDir(run), stackLog)
+    fail(String(error.message ?? error))
+  } finally {
+    for (const signal of interruptions) process.off(signal, interrupt)
   }
-  const cookies = response.headers.getSetCookie().map((header) => header.split(";")[0])
-  return { status: response.status, json, cookie: cookies[0], cookies }
 }
 
 async function catalog(state) {
@@ -386,17 +382,10 @@ async function journey(run, given) {
   if (!passed) process.exit(1)
 }
 
-async function stopRun(run) {
+async function teardownRun(run) {
   const stateFile = statePath(run)
   if (!existsSync(stateFile)) return { run, stopped: [], note: "no state; nothing of this run is running" }
-  let state
-  try {
-    state = JSON.parse(readFileSync(stateFile, "utf8"))
-  } catch {
-    fail(`run ${run} has a state that cannot be read, so its owner cannot be checked; nothing was stopped`)
-  }
-  const owner = ownerOf(scratchDir(run)) ?? state.repo
-  if (owner !== repo) fail(`run ${run} is not owned by this worktree (${repo}); only its own worktree stops it`)
+  const state = JSON.parse(readFileSync(stateFile, "utf8"))
   const stopped = []
   if (ownsServe(state)) {
     process.kill(state.pid, "SIGTERM")
@@ -420,6 +409,21 @@ async function stopRun(run) {
   rmSync(scratchDir(run), { recursive: true, force: true })
   if (existsSync(evidenceDir(run))) proof(run, `- stopped: ${stopped.join(", ") || "nothing was running"}`)
   return { run, stopped, left, evidence: evidenceDir(run), evidenceKept: existsSync(evidenceDir(run)) }
+}
+
+async function stopRun(run) {
+  const stateFile = statePath(run)
+  if (!existsSync(stateFile)) return { run, stopped: [], note: "no state; nothing of this run is running" }
+  let state
+  try {
+    state = JSON.parse(readFileSync(stateFile, "utf8"))
+  } catch {
+    fail(`run ${run} has a state that cannot be read, so its owner cannot be checked; nothing was stopped`)
+  }
+  const owner = ownerOf(scratchDir(run)) ?? state.repo
+  if (!sameWorktree(owner, repo))
+    fail(`run ${run} is not owned by this worktree (${repo}); only its own worktree stops it`)
+  return teardownRun(run)
 }
 
 async function stop(run) {
