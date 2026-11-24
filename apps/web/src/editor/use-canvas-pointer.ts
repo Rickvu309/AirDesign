@@ -207,6 +207,7 @@ export function useCanvasPointer(args: PointerArgs) {
       origin: gesture.origin,
       at,
       keepRatio: event.shiftKey,
+      breakAspect: event.ctrlKey || event.getModifierState("Fn"),
       fromCenter: event.altKey,
       snapAngle: event.shiftKey,
       snap: !event.ctrlKey,
