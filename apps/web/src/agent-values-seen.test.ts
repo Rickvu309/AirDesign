@@ -7,6 +7,7 @@ type Seen =
   | { readonly person: readonly string[] }
   | { readonly address: string }
   | { readonly owedToPerson: string; readonly partly?: readonly string[] }
+  | { readonly declined: string; readonly partly?: readonly string[] }
 
 const seen: Readonly<Record<string, Seen>> = {
   op: { person: ["gesture:tool-text", "gesture:delete", "gesture:group", "gesture:ungroup", "gesture:forward"] },
@@ -30,15 +31,15 @@ const seen: Readonly<Record<string, Seen>> = {
   text: { person: ["gesture:edit-text", "panel:link.target#words"] },
   textStyle: { person: ["panel:text.style"] },
   align: {
-    owedToPerson: "where a row or column frame places its children: no auto layout controls",
+    declined: "One simple panel. Agents still set auto layout.",
     partly: ["panel:text.align"],
   },
   layout: {
-    owedToPerson: "row, column and grid: the panel only removes auto layout",
+    declined: "One simple panel. Agents still set auto layout.",
     partly: ["panel:remove-auto-layout"],
   },
-  gap: { owedToPerson: "the space between a frame's children: no auto layout controls" },
-  padding: { owedToPerson: "the space inside a frame: no auto layout controls" },
+  gap: { declined: "One simple panel. Agents still set auto layout." },
+  padding: { declined: "One simple panel. Agents still set auto layout." },
   icon: { person: ["actions:icon#swap"] },
   arrow: {
     owedToPerson: "an arrowhead on a line already drawn: lines have no end controls",
@@ -48,7 +49,10 @@ const seen: Readonly<Record<string, Seen>> = {
     owedToPerson: "a series colour and a single bar's colour: the chart editor shows names and values only",
     partly: ["panel:chart-data"],
   },
-  rows: { owedToPerson: "a grid frame's rows and columns: no grid controls", partly: ["gesture:edit-text"] },
+  rows: {
+    declined: "One simple panel. Agents still set auto layout.",
+    partly: ["gesture:edit-text"],
+  },
   items: { person: ["gesture:edit-text", "gesture:move"] },
   axes: { person: ["gesture:edit-text"] },
   from: { person: ["gesture:line-end"] },
@@ -106,7 +110,7 @@ describe("every value an agent sets names where a person sees it and changes it"
 
   it("names only person capabilities the reach table lists", () => {
     const named = Object.values(seen).flatMap((entry) =>
-      "person" in entry ? entry.person : "owedToPerson" in entry ? (entry.partly ?? []) : [],
+      "person" in entry ? entry.person : "owedToPerson" in entry || "declined" in entry ? (entry.partly ?? []) : [],
     )
     expect(named.filter((key) => reach[key] === undefined)).toEqual([])
   })
@@ -118,7 +122,20 @@ describe("every value an agent sets names where a person sees it and changes it"
 
   it("lists the agent values a person cannot yet see or change, and no others", () => {
     expect(Object.entries(seen).flatMap(([field, entry]) => ("owedToPerson" in entry ? [field] : []))).toEqual(
-      owedToPerson,
+      owedToPerson.filter((field) => {
+        const entry = seen[field]
+        return entry === undefined || !("declined" in entry)
+      }),
     )
+  })
+
+  it("declines auto layout controls and reads each reason", () => {
+    const reason = "One simple panel. Agents still set auto layout."
+    expect(seen.align).toEqual({ declined: reason, partly: ["panel:text.align"] })
+    expect(seen.layout).toEqual({ declined: reason, partly: ["panel:remove-auto-layout"] })
+    expect(seen.gap).toEqual({ declined: reason })
+    expect(seen.padding).toEqual({ declined: reason })
+    expect(seen.rows).toEqual({ declined: reason, partly: ["gesture:edit-text"] })
+    for (const field of ["align", "layout", "gap", "padding", "rows"]) expect(owedToPerson).toContain(field)
   })
 })
