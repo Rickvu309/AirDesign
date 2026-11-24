@@ -1,0 +1,6419 @@
+{
+  "chromium": "158.0.8127.18",
+  "node": "v24.22.3",
+  "icu": "78.3",
+  "hb": "15.0.0",
+  "fonts": [
+    ["AD-Arabic", "loaded"],
+    ["AD-Balinese", "loaded"],
+    ["AD-Devanagari", "loaded"],
+    ["AD-Emoji", "loaded"],
+    ["AD-Garamond", "loaded"],
+    ["AD-Geist", "loaded"],
+    ["AD-Hebrew", "loaded"],
+    ["AD-Inter", "loaded"],
+    ["AD-JP", "loaded"],
+    ["AD-Javanese", "loaded"],
+    ["AD-KR", "loaded"],
+    ["AD-Lora", "loaded"],
+    ["AD-Math", "loaded"],
+    ["AD-Myanmar", "loaded"],
+    ["AD-Narrow", "loaded"],
+    ["AD-NarrowBold", "loaded"],
+    ["AD-Playfair", "loaded"],
+    ["AD-Serif", "loaded"],
+    ["AD-Sundanese", "loaded"],
+    ["AD-Symbols", "loaded"],
+    ["AD-Thai", "loaded"]
+  ],
+  "records": [
+    {
+      "id": "arabic-joining",
+      "w": 403.392014,
+      "natural": 403.40625,
+      "explicit": 403.40625,
+      "naturalDiff": 0.014236,
+      "explicitDiff": 0.014236,
+      "maxAssignedDiff": 0.012741,
+      "maxDevicePaintDiff": 0.013992,
+      "maxBrowserWrapDiff": 0.012741,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Arabic",
+          "postScriptName": "NotoSansArabic-Regular",
+          "isCustomFont": true,
+          "glyphCount": 25
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans Arabic",
+          "postScriptName": "NotoSansArabic-Regular",
+          "isCustomFont": true,
+          "glyphCount": 25
+        }
+      ],
+      "missing": [],
+      "checks": 12,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "arabic-mixed-bidi",
+      "w": 673.947983,
+      "natural": 673.984375,
+      "explicit": 673.984375,
+      "naturalDiff": 0.036392,
+      "explicitDiff": 0.036392,
+      "maxAssignedDiff": 0.028015,
+      "maxDevicePaintDiff": 0.028015,
+      "maxBrowserWrapDiff": 0.028015,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Arabic",
+          "postScriptName": "NotoSansArabic-Regular",
+          "isCustomFont": true,
+          "glyphCount": 37
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans Arabic",
+          "postScriptName": "NotoSansArabic-Regular",
+          "isCustomFont": true,
+          "glyphCount": 37
+        }
+      ],
+      "missing": [],
+      "checks": 14,
+      "breakCounts": {
+        "icu": 0,
+        "word": 8,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "arabic-diacritics",
+      "w": 217.227997,
+      "natural": 217.234375,
+      "explicit": 217.234375,
+      "naturalDiff": 0.006378,
+      "explicitDiff": 0.006378,
+      "maxAssignedDiff": 0.006378,
+      "maxDevicePaintDiff": 0.013992,
+      "maxBrowserWrapDiff": 0.006378,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Arabic",
+          "postScriptName": "NotoSansArabic-Regular",
+          "isCustomFont": true,
+          "glyphCount": 22
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans Arabic",
+          "postScriptName": "NotoSansArabic-Regular",
+          "isCustomFont": true,
+          "glyphCount": 22
+        }
+      ],
+      "missing": [],
+      "checks": 8,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "latin-kerning",
+      "w": 487.871979,
+      "natural": 487.875,
+      "explicit": 487.875,
+      "naturalDiff": 0.003021,
+      "explicitDiff": 0.003021,
+      "maxAssignedDiff": 0.015137,
+      "maxDevicePaintDiff": 0.015137,
+      "maxBrowserWrapDiff": 0.015137,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "EB Garamond",
+          "postScriptName": "EBGaramond-Regular",
+          "isCustomFont": true,
+          "glyphCount": 22
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "EB Garamond",
+          "postScriptName": "EBGaramond-Regular",
+          "isCustomFont": true,
+          "glyphCount": 22
+        }
+      ],
+      "missing": [],
+      "checks": 16,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "latin-ligatures-Garamond",
+      "w": 500.412003,
+      "natural": 500.421875,
+      "explicit": 500.421875,
+      "naturalDiff": 0.009872,
+      "explicitDiff": 0.009872,
+      "maxAssignedDiff": 0.014236,
+      "maxDevicePaintDiff": 0.015121,
+      "maxBrowserWrapDiff": 0.014236,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "EB Garamond",
+          "postScriptName": "EBGaramond-Regular",
+          "isCustomFont": true,
+          "glyphCount": 27
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "EB Garamond",
+          "postScriptName": "EBGaramond-Regular",
+          "isCustomFont": true,
+          "glyphCount": 27
+        }
+      ],
+      "missing": [],
+      "checks": 18,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "latin-ligatures-Lora",
+      "w": 628.144028,
+      "natural": 628.15625,
+      "explicit": 628.15625,
+      "naturalDiff": 0.012222,
+      "explicitDiff": 0.012222,
+      "maxAssignedDiff": 0.014862,
+      "maxDevicePaintDiff": 0.015366,
+      "maxBrowserWrapDiff": 0.014862,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Lora",
+          "postScriptName": "Lora-Regular",
+          "isCustomFont": true,
+          "glyphCount": 32
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Lora",
+          "postScriptName": "Lora-Regular",
+          "isCustomFont": true,
+          "glyphCount": 32
+        }
+      ],
+      "missing": [],
+      "checks": 18,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "latin-ligatures-Playfair",
+      "w": 600.995956,
+      "natural": 601,
+      "explicit": 601,
+      "naturalDiff": 0.004044,
+      "explicitDiff": 0.004044,
+      "maxAssignedDiff": 0.014877,
+      "maxDevicePaintDiff": 0.015381,
+      "maxBrowserWrapDiff": 1.139114,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Playfair Display",
+          "postScriptName": "PlayfairDisplay-Regular",
+          "isCustomFont": true,
+          "glyphCount": 27
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Playfair Display",
+          "postScriptName": "PlayfairDisplay-Regular",
+          "isCustomFont": true,
+          "glyphCount": 27
+        }
+      ],
+      "missing": [],
+      "checks": 18,
+      "breakCounts": {
+        "icu": 1,
+        "word": 1,
+        "uax": 1,
+        "emergency": 0
+      },
+      "mismatches": [
+        {
+          "probe": 260,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 109.20799255371094
+            },
+            {
+              "start": 7,
+              "end": 23,
+              "width": 229.81199645996094
+            },
+            {
+              "start": 23,
+              "end": 38,
+              "width": 240.06398010253906
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 16,
+              "width": 259.296875
+            },
+            {
+              "start": 16,
+              "end": 29,
+              "width": 157.703125
+            },
+            {
+              "start": 29,
+              "end": 38,
+              "width": 162.109375
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "latin-tracked",
+      "w": 431.375992,
+      "natural": 431.390625,
+      "explicit": 431.390625,
+      "naturalDiff": 0.014633,
+      "explicitDiff": 0.014633,
+      "maxAssignedDiff": 0.012985,
+      "maxDevicePaintDiff": 0.014862,
+      "maxBrowserWrapDiff": 0.012985,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "EB Garamond",
+          "postScriptName": "EBGaramond-Regular",
+          "isCustomFont": true,
+          "glyphCount": 22
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "EB Garamond",
+          "postScriptName": "EBGaramond-Regular",
+          "isCustomFont": true,
+          "glyphCount": 22
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "latin-bold-optical",
+      "w": 234.842896,
+      "natural": 234.84375,
+      "explicit": 234.84375,
+      "naturalDiff": 0.000854,
+      "explicitDiff": 0.000854,
+      "maxAssignedDiff": 0.005417,
+      "maxDevicePaintDiff": 0.014893,
+      "maxBrowserWrapDiff": 0.005417,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 18
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 18
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "latin-fractional-tracking",
+      "w": 84.552065,
+      "natural": 84.546875,
+      "explicit": 84.546875,
+      "naturalDiff": 0.00519,
+      "explicitDiff": 0.00519,
+      "maxAssignedDiff": 0.010401,
+      "maxDevicePaintDiff": 0.010401,
+      "maxBrowserWrapDiff": 0.010401,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 12
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 12
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "vietnamese-nfc",
+      "w": 223.995071,
+      "natural": 224,
+      "explicit": 224.015625,
+      "naturalDiff": 0.004929,
+      "explicitDiff": 0.020554,
+      "maxAssignedDiff": 0.030319,
+      "maxDevicePaintDiff": 0.030319,
+      "maxBrowserWrapDiff": 0.014694,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Liberation Sans Narrow",
+          "postScriptName": "LiberationSansNarrow",
+          "isCustomFont": true,
+          "glyphCount": 11
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Liberation Sans Narrow",
+          "postScriptName": "LiberationSansNarrow",
+          "isCustomFont": true,
+          "glyphCount": 11
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "vietnamese-nfd",
+      "w": 223.995071,
+      "natural": 224,
+      "explicit": 224.015625,
+      "naturalDiff": 0.004929,
+      "explicitDiff": 0.020554,
+      "maxAssignedDiff": 0.030319,
+      "maxDevicePaintDiff": 0.030319,
+      "maxBrowserWrapDiff": 0.014694,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Liberation Sans Narrow",
+          "postScriptName": "LiberationSansNarrow",
+          "isCustomFont": true,
+          "glyphCount": 11
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Liberation Sans Narrow",
+          "postScriptName": "LiberationSansNarrow",
+          "isCustomFont": true,
+          "glyphCount": 11
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "vietnamese-nfd-Inter",
+      "w": 761.986328,
+      "natural": 762,
+      "explicit": 762,
+      "naturalDiff": 0.013672,
+      "explicitDiff": 0.013672,
+      "maxAssignedDiff": 0.013672,
+      "maxDevicePaintDiff": 0.013672,
+      "maxBrowserWrapDiff": 0.013672,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 39
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Inter",
+          "postScriptName": "Inter-Regular",
+          "isCustomFont": true,
+          "glyphCount": 39
+        }
+      ],
+      "missing": [],
+      "checks": 22,
+      "breakCounts": {
+        "icu": 0,
+        "word": 2,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "vietnamese-nfd-Lora",
+      "w": 820.512009,
+      "natural": 820.515625,
+      "explicit": 820.515625,
+      "naturalDiff": 0.003616,
+      "explicitDiff": 0.003616,
+      "maxAssignedDiff": 0.014496,
+      "maxDevicePaintDiff": 0.014496,
+      "maxBrowserWrapDiff": 0.014496,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Lora",
+          "postScriptName": "Lora-Regular",
+          "isCustomFont": true,
+          "glyphCount": 39
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Lora",
+          "postScriptName": "Lora-Regular",
+          "isCustomFont": true,
+          "glyphCount": 39
+        }
+      ],
+      "missing": [],
+      "checks": 22,
+      "breakCounts": {
+        "icu": 0,
+        "word": 3,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "vietnamese-nfd-Geist",
+      "w": 798.819931,
+      "natural": 798.828125,
+      "explicit": 798.828125,
+      "naturalDiff": 0.008194,
+      "explicitDiff": 0.008194,
+      "maxAssignedDiff": 0.014389,
+      "maxDevicePaintDiff": 0.015259,
+      "maxBrowserWrapDiff": 0.014389,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 39
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 39
+        }
+      ],
+      "missing": [],
+      "checks": 22,
+      "breakCounts": {
+        "icu": 0,
+        "word": 2,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "vietnamese-nfd-Playfair",
+      "w": 787.423904,
+      "natural": 787.4375,
+      "explicit": 787.4375,
+      "naturalDiff": 0.013596,
+      "explicitDiff": 0.013596,
+      "maxAssignedDiff": 0.015381,
+      "maxDevicePaintDiff": 0.014877,
+      "maxBrowserWrapDiff": 1.136993,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Playfair Display",
+          "postScriptName": "PlayfairDisplay-Regular",
+          "isCustomFont": true,
+          "glyphCount": 39
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Playfair Display",
+          "postScriptName": "PlayfairDisplay-Regular",
+          "isCustomFont": true,
+          "glyphCount": 39
+        }
+      ],
+      "missing": [],
+      "checks": 22,
+      "breakCounts": {
+        "icu": 1,
+        "word": 4,
+        "uax": 1,
+        "emergency": 0
+      },
+      "mismatches": [
+        {
+          "probe": 290.25,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 10,
+              "width": 207.37197875976562
+            },
+            {
+              "start": 10,
+              "end": 30,
+              "width": 269.3679504394531
+            },
+            {
+              "start": 30,
+              "end": 48,
+              "width": 288.77198791503906
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 15,
+              "width": 289.703125
+            },
+            {
+              "start": 15,
+              "end": 30,
+              "width": 187.046875
+            },
+            {
+              "start": 30,
+              "end": 48,
+              "width": 288.78125
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stacked-marks",
+      "w": 222.126434,
+      "natural": 192.375,
+      "explicit": 192.453125,
+      "naturalDiff": 29.751434,
+      "explicitDiff": 29.673309,
+      "maxAssignedDiff": 29.673309,
+      "maxDevicePaintDiff": 29.673309,
+      "maxBrowserWrapDiff": 29.751434,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [
+        {
+          "familyName": "Liberation Serif",
+          "postScriptName": "LiberationSerif",
+          "isCustomFont": false,
+          "glyphCount": 6
+        }
+      ],
+      "chromiumFonts": [
+        {
+          "familyName": "Liberation Serif",
+          "postScriptName": "LiberationSerif",
+          "isCustomFont": false,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Liberation Sans Narrow",
+          "postScriptName": "LiberationSansNarrow",
+          "isCustomFont": true,
+          "glyphCount": 5
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 11
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Liberation Serif",
+          "postScriptName": "LiberationSerif",
+          "isCustomFont": false,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Liberation Sans Narrow",
+          "postScriptName": "LiberationSansNarrow",
+          "isCustomFont": true,
+          "glyphCount": 5
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 11
+        }
+      ],
+      "missing": [
+        {
+          "start": 8,
+          "end": 11,
+          "text": "ɛ̃́"
+        },
+        {
+          "start": 19,
+          "end": 22,
+          "text": "o̤̓"
+        }
+      ],
+      "checks": 16,
+      "breakCounts": {
+        "icu": 8,
+        "word": 8,
+        "uax": 8,
+        "emergency": 1
+      },
+      "mismatches": [
+        {
+          "probe": 65,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 61.95320129394531
+            },
+            {
+              "start": 8,
+              "end": 12,
+              "width": 30.099609375
+            },
+            {
+              "start": 12,
+              "end": 19,
+              "width": 59.84120178222656
+            },
+            {
+              "start": 19,
+              "end": 22,
+              "width": 40.1328125
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 61.953125
+            },
+            {
+              "start": 8,
+              "end": 15,
+              "width": 54.078125
+            },
+            {
+              "start": 15,
+              "end": 22,
+              "width": 56.28125
+            }
+          ]
+        },
+        {
+          "probe": 205,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 19,
+              "width": 171.96041870117188
+            },
+            {
+              "start": 19,
+              "end": 22,
+              "width": 40.1328125
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 22,
+              "width": 192.375
+            }
+          ]
+        },
+        {
+          "probe": 61.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 4,
+              "width": 26.17999267578125
+            },
+            {
+              "start": 4,
+              "end": 8,
+              "width": 25.740005493164062
+            },
+            {
+              "start": 8,
+              "end": 12,
+              "width": 30.099609375
+            },
+            {
+              "start": 12,
+              "end": 19,
+              "width": 59.84120178222656
+            },
+            {
+              "start": 19,
+              "end": 22,
+              "width": 40.1328125
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 4,
+              "width": 26.1875
+            },
+            {
+              "start": 4,
+              "end": 12,
+              "width": 54.25
+            },
+            {
+              "start": 12,
+              "end": 19,
+              "width": 59.84375
+            },
+            {
+              "start": 19,
+              "end": 22,
+              "width": 22
+            }
+          ]
+        },
+        {
+          "probe": 62.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 61.95320129394531
+            },
+            {
+              "start": 8,
+              "end": 12,
+              "width": 30.099609375
+            },
+            {
+              "start": 12,
+              "end": 19,
+              "width": 59.84120178222656
+            },
+            {
+              "start": 19,
+              "end": 22,
+              "width": 40.1328125
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 61.953125
+            },
+            {
+              "start": 8,
+              "end": 15,
+              "width": 54.078125
+            },
+            {
+              "start": 15,
+              "end": 22,
+              "width": 56.28125
+            }
+          ]
+        },
+        {
+          "probe": 101.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 61.95320129394531
+            },
+            {
+              "start": 8,
+              "end": 19,
+              "width": 99.97401428222656
+            },
+            {
+              "start": 19,
+              "end": 22,
+              "width": 40.1328125
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 12,
+              "width": 90.46875
+            },
+            {
+              "start": 12,
+              "end": 22,
+              "width": 91.875
+            }
+          ]
+        },
+        {
+          "probe": 102.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 12,
+              "width": 102.08601379394531
+            },
+            {
+              "start": 12,
+              "end": 19,
+              "width": 59.84120178222656
+            },
+            {
+              "start": 19,
+              "end": 22,
+              "width": 40.1328125
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 12,
+              "width": 90.46875
+            },
+            {
+              "start": 12,
+              "end": 22,
+              "width": 91.875
+            }
+          ]
+        },
+        {
+          "probe": 137.25,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 12,
+              "width": 102.08601379394531
+            },
+            {
+              "start": 12,
+              "end": 22,
+              "width": 110.00721740722656
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 15,
+              "width": 126.0625
+            },
+            {
+              "start": 15,
+              "end": 22,
+              "width": 56.28125
+            }
+          ]
+        },
+        {
+          "probe": 171.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 15,
+              "width": 137.68321228027344
+            },
+            {
+              "start": 15,
+              "end": 22,
+              "width": 74.41001892089844
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 19,
+              "width": 160.34375
+            },
+            {
+              "start": 19,
+              "end": 22,
+              "width": 22
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "greek-nfd",
+      "w": 299.463989,
+      "natural": 299.46875,
+      "explicit": 299.46875,
+      "naturalDiff": 0.004761,
+      "explicitDiff": 0.004761,
+      "maxAssignedDiff": 0.013,
+      "maxDevicePaintDiff": 0.015381,
+      "maxBrowserWrapDiff": 0.013,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Serif",
+          "postScriptName": "NotoSerif-Regular",
+          "isCustomFont": true,
+          "glyphCount": 13
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Serif",
+          "postScriptName": "NotoSerif-Regular",
+          "isCustomFont": true,
+          "glyphCount": 13
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "hebrew-niqqud",
+      "w": 441.407974,
+      "natural": 441.453125,
+      "explicit": 441.453125,
+      "naturalDiff": 0.045151,
+      "explicitDiff": 0.045151,
+      "maxAssignedDiff": 0.016891,
+      "maxDevicePaintDiff": 0.016891,
+      "maxBrowserWrapDiff": 0.036896,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Hebrew Thin",
+          "postScriptName": "NotoSansHebrew-Thin",
+          "isCustomFont": true,
+          "glyphCount": 25
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans Hebrew Thin",
+          "postScriptName": "NotoSansHebrew-Thin",
+          "isCustomFont": true,
+          "glyphCount": 25
+        }
+      ],
+      "missing": [],
+      "checks": 12,
+      "breakCounts": {
+        "icu": 0,
+        "word": 10,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "cjk-punctuation",
+      "w": 748,
+      "natural": 704,
+      "explicit": 748,
+      "naturalDiff": 44,
+      "explicitDiff": 0,
+      "maxAssignedDiff": 0,
+      "maxDevicePaintDiff": 0,
+      "maxBrowserWrapDiff": 44,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans JP Thin",
+          "postScriptName": "NotoSansJP-Thin",
+          "isCustomFont": true,
+          "glyphCount": 17
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans JP Thin",
+          "postScriptName": "NotoSansJP-Thin",
+          "isCustomFont": true,
+          "glyphCount": 17
+        }
+      ],
+      "missing": [],
+      "checks": 28,
+      "breakCounts": {
+        "icu": 15,
+        "word": 27,
+        "uax": 15,
+        "emergency": 0
+      },
+      "mismatches": [
+        {
+          "probe": 155,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 3,
+              "width": 132
+            },
+            {
+              "start": 3,
+              "end": 5,
+              "width": 88
+            },
+            {
+              "start": 5,
+              "end": 7,
+              "width": 88
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 88
+            },
+            {
+              "start": 9,
+              "end": 12,
+              "width": 132
+            },
+            {
+              "start": 12,
+              "end": 15,
+              "width": 132
+            },
+            {
+              "start": 15,
+              "end": 17,
+              "width": 88
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 3,
+              "width": 132
+            },
+            {
+              "start": 3,
+              "end": 5,
+              "width": 88
+            },
+            {
+              "start": 5,
+              "end": 9,
+              "width": 154
+            },
+            {
+              "start": 9,
+              "end": 13,
+              "width": 154
+            },
+            {
+              "start": 13,
+              "end": 15,
+              "width": 88
+            },
+            {
+              "start": 15,
+              "end": 17,
+              "width": 88
+            }
+          ]
+        },
+        {
+          "probe": 205,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 4,
+              "width": 176
+            },
+            {
+              "start": 4,
+              "end": 7,
+              "width": 132
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 88
+            },
+            {
+              "start": 9,
+              "end": 13,
+              "width": 176
+            },
+            {
+              "start": 13,
+              "end": 17,
+              "width": 176
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 4,
+              "width": 176
+            },
+            {
+              "start": 4,
+              "end": 9,
+              "width": 198
+            },
+            {
+              "start": 9,
+              "end": 14,
+              "width": 198
+            },
+            {
+              "start": 14,
+              "end": 17,
+              "width": 132
+            }
+          ]
+        },
+        {
+          "probe": 270,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 5,
+              "width": 220
+            },
+            {
+              "start": 5,
+              "end": 9,
+              "width": 176
+            },
+            {
+              "start": 9,
+              "end": 15,
+              "width": 264
+            },
+            {
+              "start": 15,
+              "end": 17,
+              "width": 88
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 5,
+              "width": 220
+            },
+            {
+              "start": 5,
+              "end": 12,
+              "width": 264
+            },
+            {
+              "start": 12,
+              "end": 17,
+              "width": 220
+            }
+          ]
+        },
+        {
+          "probe": 390,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 308
+            },
+            {
+              "start": 7,
+              "end": 15,
+              "width": 352
+            },
+            {
+              "start": 15,
+              "end": 17,
+              "width": 88
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 9,
+              "width": 374
+            },
+            {
+              "start": 9,
+              "end": 17,
+              "width": 330
+            }
+          ]
+        },
+        {
+          "probe": 175.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 3,
+              "width": 132
+            },
+            {
+              "start": 3,
+              "end": 5,
+              "width": 88
+            },
+            {
+              "start": 5,
+              "end": 7,
+              "width": 88
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 88
+            },
+            {
+              "start": 9,
+              "end": 12,
+              "width": 132
+            },
+            {
+              "start": 12,
+              "end": 15,
+              "width": 132
+            },
+            {
+              "start": 15,
+              "end": 17,
+              "width": 88
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 3,
+              "width": 132
+            },
+            {
+              "start": 3,
+              "end": 5,
+              "width": 88
+            },
+            {
+              "start": 5,
+              "end": 9,
+              "width": 154
+            },
+            {
+              "start": 9,
+              "end": 13,
+              "width": 154
+            },
+            {
+              "start": 13,
+              "end": 15,
+              "width": 88
+            },
+            {
+              "start": 15,
+              "end": 17,
+              "width": 88
+            }
+          ]
+        },
+        {
+          "probe": 219.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 4,
+              "width": 176
+            },
+            {
+              "start": 4,
+              "end": 7,
+              "width": 132
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 88
+            },
+            {
+              "start": 9,
+              "end": 13,
+              "width": 176
+            },
+            {
+              "start": 13,
+              "end": 17,
+              "width": 176
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 4,
+              "width": 176
+            },
+            {
+              "start": 4,
+              "end": 9,
+              "width": 198
+            },
+            {
+              "start": 9,
+              "end": 14,
+              "width": 198
+            },
+            {
+              "start": 14,
+              "end": 17,
+              "width": 132
+            }
+          ]
+        },
+        {
+          "probe": 307.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 5,
+              "width": 220
+            },
+            {
+              "start": 5,
+              "end": 9,
+              "width": 176
+            },
+            {
+              "start": 9,
+              "end": 15,
+              "width": 264
+            },
+            {
+              "start": 15,
+              "end": 17,
+              "width": 88
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 5,
+              "width": 220
+            },
+            {
+              "start": 5,
+              "end": 12,
+              "width": 264
+            },
+            {
+              "start": 12,
+              "end": 17,
+              "width": 220
+            }
+          ]
+        },
+        {
+          "probe": 395.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 308
+            },
+            {
+              "start": 7,
+              "end": 15,
+              "width": 352
+            },
+            {
+              "start": 15,
+              "end": 17,
+              "width": 88
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 9,
+              "width": 374
+            },
+            {
+              "start": 9,
+              "end": 17,
+              "width": 330
+            }
+          ]
+        },
+        {
+          "probe": 527.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 9,
+              "width": 396
+            },
+            {
+              "start": 9,
+              "end": 17,
+              "width": 352
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 12,
+              "width": 484
+            },
+            {
+              "start": 12,
+              "end": 17,
+              "width": 220
+            }
+          ]
+        },
+        {
+          "probe": 528.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 12,
+              "width": 528
+            },
+            {
+              "start": 12,
+              "end": 17,
+              "width": 220
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 13,
+              "width": 528
+            },
+            {
+              "start": 13,
+              "end": 17,
+              "width": 176
+            }
+          ]
+        },
+        {
+          "probe": 571.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 12,
+              "width": 528
+            },
+            {
+              "start": 12,
+              "end": 17,
+              "width": 220
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 13,
+              "width": 528
+            },
+            {
+              "start": 13,
+              "end": 17,
+              "width": 176
+            }
+          ]
+        },
+        {
+          "probe": 572.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 13,
+              "width": 572
+            },
+            {
+              "start": 13,
+              "end": 17,
+              "width": 176
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 572
+            },
+            {
+              "start": 14,
+              "end": 17,
+              "width": 132
+            }
+          ]
+        },
+        {
+          "probe": 615.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 13,
+              "width": 572
+            },
+            {
+              "start": 13,
+              "end": 17,
+              "width": 176
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 572
+            },
+            {
+              "start": 14,
+              "end": 17,
+              "width": 132
+            }
+          ]
+        },
+        {
+          "probe": 616.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 616
+            },
+            {
+              "start": 14,
+              "end": 17,
+              "width": 132
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 15,
+              "width": 616
+            },
+            {
+              "start": 15,
+              "end": 17,
+              "width": 88
+            }
+          ]
+        },
+        {
+          "probe": 659.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 616
+            },
+            {
+              "start": 14,
+              "end": 17,
+              "width": 132
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 15,
+              "width": 616
+            },
+            {
+              "start": 15,
+              "end": 17,
+              "width": 88
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cjk-variation-selector",
+      "w": 141.856003,
+      "natural": 141.859375,
+      "explicit": 141.859375,
+      "naturalDiff": 0.003372,
+      "explicitDiff": 0.003372,
+      "maxAssignedDiff": 0.003372,
+      "maxDevicePaintDiff": 0.003372,
+      "maxBrowserWrapDiff": 0.003372,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans JP Thin",
+          "postScriptName": "NotoSansJP-Thin",
+          "isCustomFont": true,
+          "glyphCount": 4
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans JP Thin",
+          "postScriptName": "NotoSansJP-Thin",
+          "isCustomFont": true,
+          "glyphCount": 4
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 5,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "han-fallback",
+      "w": 368.84375,
+      "natural": 368.84375,
+      "explicit": 368.859375,
+      "naturalDiff": 0,
+      "explicitDiff": 0.015625,
+      "maxAssignedDiff": 0.015625,
+      "maxDevicePaintDiff": 0.015625,
+      "maxBrowserWrapDiff": 0.013672,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans JP Thin",
+          "postScriptName": "NotoSansJP-Thin",
+          "isCustomFont": true,
+          "glyphCount": 2
+        },
+        {
+          "familyName": "Liberation Sans Narrow",
+          "postScriptName": "LiberationSansNarrow",
+          "isCustomFont": true,
+          "glyphCount": 17
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans JP Thin",
+          "postScriptName": "NotoSansJP-Thin",
+          "isCustomFont": true,
+          "glyphCount": 2
+        },
+        {
+          "familyName": "Liberation Sans Narrow",
+          "postScriptName": "LiberationSansNarrow",
+          "isCustomFont": true,
+          "glyphCount": 17
+        }
+      ],
+      "missing": [],
+      "checks": 14,
+      "breakCounts": {
+        "icu": 0,
+        "word": 4,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "hangul-nfc",
+      "w": 307.999985,
+      "natural": 308,
+      "explicit": 308,
+      "naturalDiff": 0.000015,
+      "explicitDiff": 0.000015,
+      "maxAssignedDiff": 0.013138,
+      "maxDevicePaintDiff": 0.013138,
+      "maxBrowserWrapDiff": 0.013138,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans KR Thin",
+          "postScriptName": "NotoSansKR-Thin",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans KR Thin",
+          "postScriptName": "NotoSansKR-Thin",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "missing": [],
+      "checks": 18,
+      "breakCounts": {
+        "icu": 0,
+        "word": 13,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "hangul-nfd",
+      "w": 307.999985,
+      "natural": 308,
+      "explicit": 308,
+      "naturalDiff": 0.000015,
+      "explicitDiff": 0.000015,
+      "maxAssignedDiff": 0.013138,
+      "maxDevicePaintDiff": 0.013138,
+      "maxBrowserWrapDiff": 0.013138,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans KR Thin",
+          "postScriptName": "NotoSansKR-Thin",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans KR Thin",
+          "postScriptName": "NotoSansKR-Thin",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "missing": [],
+      "checks": 18,
+      "breakCounts": {
+        "icu": 0,
+        "word": 13,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "hangul-old-jamo",
+      "w": 214.719986,
+      "natural": 214.734375,
+      "explicit": 214.734375,
+      "naturalDiff": 0.014389,
+      "explicitDiff": 0.014389,
+      "maxAssignedDiff": 0.014389,
+      "maxDevicePaintDiff": 0.014389,
+      "maxBrowserWrapDiff": 0.014389,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans KR Thin",
+          "postScriptName": "NotoSansKR-Thin",
+          "isCustomFont": true,
+          "glyphCount": 6
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans KR Thin",
+          "postScriptName": "NotoSansKR-Thin",
+          "isCustomFont": true,
+          "glyphCount": 6
+        }
+      ],
+      "missing": [],
+      "checks": 14,
+      "breakCounts": {
+        "icu": 0,
+        "word": 11,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "thai-dictionary",
+      "w": 336.292007,
+      "natural": 336.296875,
+      "explicit": 336.296875,
+      "naturalDiff": 0.004868,
+      "explicitDiff": 0.004868,
+      "maxAssignedDiff": 0.01062,
+      "maxDevicePaintDiff": 0.015244,
+      "maxBrowserWrapDiff": 0.01062,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Thai",
+          "postScriptName": "NotoSansThai-Regular",
+          "isCustomFont": true,
+          "glyphCount": 23
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans Thai",
+          "postScriptName": "NotoSansThai-Regular",
+          "isCustomFont": true,
+          "glyphCount": 23
+        }
+      ],
+      "missing": [],
+      "checks": 14,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 13,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "devanagari",
+      "w": 259.644012,
+      "natural": 259.65625,
+      "explicit": 259.65625,
+      "naturalDiff": 0.012238,
+      "explicitDiff": 0.012238,
+      "maxAssignedDiff": 0.015244,
+      "maxDevicePaintDiff": 0.015244,
+      "maxBrowserWrapDiff": 0.015244,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Devanagari",
+          "postScriptName": "NotoSansDevanagari-Regular",
+          "isCustomFont": true,
+          "glyphCount": 15
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans Devanagari",
+          "postScriptName": "NotoSansDevanagari-Regular",
+          "isCustomFont": true,
+          "glyphCount": 15
+        }
+      ],
+      "missing": [],
+      "checks": 12,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "myanmar",
+      "w": 509.652023,
+      "natural": 509.65625,
+      "explicit": 509.65625,
+      "naturalDiff": 0.004227,
+      "explicitDiff": 0.004227,
+      "maxAssignedDiff": 0.012741,
+      "maxDevicePaintDiff": 0.014999,
+      "maxBrowserWrapDiff": 0.012741,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Myanmar",
+          "postScriptName": "NotoSansMyanmar-Regular",
+          "isCustomFont": true,
+          "glyphCount": 22
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans Myanmar",
+          "postScriptName": "NotoSansMyanmar-Regular",
+          "isCustomFont": true,
+          "glyphCount": 22
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 5,
+        "emergency": 2
+      },
+      "mismatches": []
+    },
+    {
+      "id": "balinese",
+      "w": 342.892014,
+      "natural": 342.90625,
+      "explicit": 342.90625,
+      "naturalDiff": 0.014236,
+      "explicitDiff": 0.014236,
+      "maxAssignedDiff": 0.014999,
+      "maxDevicePaintDiff": 0.014999,
+      "maxBrowserWrapDiff": 0.014999,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Balinese",
+          "postScriptName": "NotoSansBalinese-Regular",
+          "isCustomFont": true,
+          "glyphCount": 11
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans Balinese",
+          "postScriptName": "NotoSansBalinese-Regular",
+          "isCustomFont": true,
+          "glyphCount": 11
+        }
+      ],
+      "missing": [],
+      "checks": 16,
+      "breakCounts": {
+        "icu": 0,
+        "word": 12,
+        "uax": 12,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "javanese",
+      "w": 287.716003,
+      "natural": 287.71875,
+      "explicit": 287.71875,
+      "naturalDiff": 0.002747,
+      "explicitDiff": 0.002747,
+      "maxAssignedDiff": 0.014496,
+      "maxDevicePaintDiff": 0.014496,
+      "maxBrowserWrapDiff": 0.014496,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Javanese",
+          "postScriptName": "NotoSansJavanese-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans Javanese",
+          "postScriptName": "NotoSansJavanese-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "missing": [],
+      "checks": 16,
+      "breakCounts": {
+        "icu": 0,
+        "word": 12,
+        "uax": 12,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "sundanese",
+      "w": 198.923981,
+      "natural": 198.9375,
+      "explicit": 198.9375,
+      "naturalDiff": 0.013519,
+      "explicitDiff": 0.013519,
+      "maxAssignedDiff": 0.014008,
+      "maxDevicePaintDiff": 0.014008,
+      "maxBrowserWrapDiff": 0.014008,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Sundanese",
+          "postScriptName": "NotoSansSundanese-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans Sundanese",
+          "postScriptName": "NotoSansSundanese-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        }
+      ],
+      "missing": [],
+      "checks": 8,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "math-vs1",
+      "w": 72.951996,
+      "natural": 72.953125,
+      "explicit": 72.953125,
+      "naturalDiff": 0.001129,
+      "explicitDiff": 0.001129,
+      "maxAssignedDiff": 0.009628,
+      "maxDevicePaintDiff": 0.009628,
+      "maxBrowserWrapDiff": 0.009628,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Math",
+          "postScriptName": "NotoSansMath-Regular",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans Math",
+          "postScriptName": "NotoSansMath-Regular",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "missing": [],
+      "checks": 8,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-zwj-Emoji",
+      "w": 378.156631,
+      "natural": 378.15625,
+      "explicit": 378.171875,
+      "naturalDiff": 0.000381,
+      "explicitDiff": 0.015244,
+      "maxAssignedDiff": 0.020691,
+      "maxDevicePaintDiff": 0.020691,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 4
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 4
+        }
+      ],
+      "missing": [],
+      "checks": 12,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-flag-Emoji",
+      "w": 378.156631,
+      "natural": 378.15625,
+      "explicit": 378.171875,
+      "naturalDiff": 0.000381,
+      "explicitDiff": 0.015244,
+      "maxAssignedDiff": 0.020691,
+      "maxDevicePaintDiff": 0.020691,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 4
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 4
+        }
+      ],
+      "missing": [],
+      "checks": 12,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-keycap-Emoji",
+      "w": 323.371475,
+      "natural": 323.375,
+      "explicit": 323.390625,
+      "naturalDiff": 0.003525,
+      "explicitDiff": 0.01915,
+      "maxAssignedDiff": 0.020691,
+      "maxDevicePaintDiff": 0.020691,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-keycap-no-vs-Emoji",
+      "w": 323.371475,
+      "natural": 323.375,
+      "explicit": 323.390625,
+      "naturalDiff": 0.003525,
+      "explicitDiff": 0.01915,
+      "maxAssignedDiff": 0.020691,
+      "maxDevicePaintDiff": 0.020691,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-tag-flag-Emoji",
+      "w": 323.371475,
+      "natural": 323.375,
+      "explicit": 323.390625,
+      "naturalDiff": 0.003525,
+      "explicitDiff": 0.01915,
+      "maxAssignedDiff": 0.020691,
+      "maxDevicePaintDiff": 0.020691,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-skin-Emoji",
+      "w": 323.371475,
+      "natural": 323.375,
+      "explicit": 323.390625,
+      "naturalDiff": 0.003525,
+      "explicitDiff": 0.01915,
+      "maxAssignedDiff": 0.020691,
+      "maxDevicePaintDiff": 0.020691,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-heart-vs15-Emoji",
+      "w": 311.970322,
+      "natural": 311.984375,
+      "explicit": 312.015625,
+      "naturalDiff": 0.014053,
+      "explicitDiff": 0.045303,
+      "maxAssignedDiff": 0.045303,
+      "maxDevicePaintDiff": 0.045303,
+      "maxBrowserWrapDiff": 0.014053,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Symbols 2",
+          "postScriptName": "NotoSansSymbols2-Regular",
+          "isCustomFont": true,
+          "glyphCount": 1
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans Symbols 2",
+          "postScriptName": "NotoSansSymbols2-Regular",
+          "isCustomFont": true,
+          "glyphCount": 1
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-smile-vs15-Emoji",
+      "w": 305.018326,
+      "natural": 305.03125,
+      "explicit": 305.0625,
+      "naturalDiff": 0.012924,
+      "explicitDiff": 0.044174,
+      "maxAssignedDiff": 0.044174,
+      "maxDevicePaintDiff": 0.044174,
+      "maxBrowserWrapDiff": 0.014465,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 7
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 7
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-heart-vs16-Emoji",
+      "w": 323.371475,
+      "natural": 323.375,
+      "explicit": 323.390625,
+      "naturalDiff": 0.003525,
+      "explicitDiff": 0.01915,
+      "maxAssignedDiff": 0.020691,
+      "maxDevicePaintDiff": 0.020691,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-plain-Emoji",
+      "w": 323.371475,
+      "natural": 323.375,
+      "explicit": 323.390625,
+      "naturalDiff": 0.003525,
+      "explicitDiff": 0.01915,
+      "maxAssignedDiff": 0.020691,
+      "maxDevicePaintDiff": 0.020691,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-text-default-Emoji",
+      "w": 323.371475,
+      "natural": 323.375,
+      "explicit": 323.390625,
+      "naturalDiff": 0.003525,
+      "explicitDiff": 0.01915,
+      "maxAssignedDiff": 0.020691,
+      "maxDevicePaintDiff": 0.020691,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-lone-modifier-Emoji",
+      "w": 323.371475,
+      "natural": 323.375,
+      "explicit": 323.390625,
+      "naturalDiff": 0.003525,
+      "explicitDiff": 0.01915,
+      "maxAssignedDiff": 0.020691,
+      "maxDevicePaintDiff": 0.020691,
+      "maxBrowserWrapDiff": 0.020691,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 7,
+        "word": 7,
+        "uax": 7,
+        "emergency": 2
+      },
+      "mismatches": [
+        {
+          "probe": 65,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 217.85430908203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 217.875
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "width": 0
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.734375
+            }
+          ]
+        },
+        {
+          "probe": 110,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 217.85430908203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 217.875
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "width": 0
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.734375
+            }
+          ]
+        },
+        {
+          "probe": 155,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 217.85430908203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 217.875
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "width": 0
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.734375
+            }
+          ]
+        },
+        {
+          "probe": 205,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 217.85430908203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 217.875
+            },
+            {
+              "start": 7,
+              "end": 10,
+              "width": 105.53125
+            }
+          ]
+        },
+        {
+          "probe": 107.75,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 217.85430908203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 217.875
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "width": 0
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.734375
+            }
+          ]
+        },
+        {
+          "probe": 108.75,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 217.85430908203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 217.875
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "width": 0
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.734375
+            }
+          ]
+        },
+        {
+          "probe": 217.25,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 217.85430908203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 217.875
+            },
+            {
+              "start": 7,
+              "end": 10,
+              "width": 105.53125
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emoji-lone-ri-Emoji",
+      "w": 323.371475,
+      "natural": 323.375,
+      "explicit": 323.390625,
+      "naturalDiff": 0.003525,
+      "explicitDiff": 0.01915,
+      "maxAssignedDiff": 0.020691,
+      "maxDevicePaintDiff": 0.020691,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-hair-Emoji",
+      "w": 323.371475,
+      "natural": 323.375,
+      "explicit": 323.390625,
+      "naturalDiff": 0.003525,
+      "explicitDiff": 0.01915,
+      "maxAssignedDiff": 0.020691,
+      "maxDevicePaintDiff": 0.020691,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-zwj-no-emoji-Emoji",
+      "w": 318.65831,
+      "natural": 318.671875,
+      "explicit": 318.703125,
+      "naturalDiff": 0.013565,
+      "explicitDiff": 0.044815,
+      "maxAssignedDiff": 0.044815,
+      "maxDevicePaintDiff": 0.044815,
+      "maxBrowserWrapDiff": 0.015106,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-zwnj-Emoji",
+      "w": 318.65831,
+      "natural": 319.03125,
+      "explicit": 319.0625,
+      "naturalDiff": 0.37294,
+      "explicitDiff": 0.40419,
+      "maxAssignedDiff": 0.40419,
+      "maxDevicePaintDiff": 0.40419,
+      "maxBrowserWrapDiff": 0.374481,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-copyright-vs15-Emoji",
+      "w": 305.018326,
+      "natural": 305.03125,
+      "explicit": 305.0625,
+      "naturalDiff": 0.012924,
+      "explicitDiff": 0.044174,
+      "maxAssignedDiff": 0.044174,
+      "maxDevicePaintDiff": 0.044174,
+      "maxBrowserWrapDiff": 0.014465,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 7
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 7
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-lone-vs15-Emoji",
+      "w": 268.586319,
+      "natural": 268.59375,
+      "explicit": 268.609375,
+      "naturalDiff": 0.007431,
+      "explicitDiff": 0.023056,
+      "maxAssignedDiff": 0.024597,
+      "maxDevicePaintDiff": 0.024597,
+      "maxBrowserWrapDiff": 0.024597,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 3
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 6,
+        "word": 6,
+        "uax": 6,
+        "emergency": 1
+      },
+      "mismatches": [
+        {
+          "probe": 65,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 163.06915283203125
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 163.09375
+            },
+            {
+              "start": 6,
+              "end": 7,
+              "width": 0
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 50.734375
+            }
+          ]
+        },
+        {
+          "probe": 110,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 163.06915283203125
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 163.09375
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 105.53125
+            }
+          ]
+        },
+        {
+          "probe": 155,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 163.06915283203125
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 163.09375
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 105.53125
+            }
+          ]
+        },
+        {
+          "probe": 107.75,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 163.06915283203125
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 163.09375
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 105.53125
+            }
+          ]
+        },
+        {
+          "probe": 108.75,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 163.06915283203125
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 163.09375
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 105.53125
+            }
+          ]
+        },
+        {
+          "probe": 162.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 163.06915283203125
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 163.09375
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 105.53125
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emoji-zwj-Geist",
+      "w": 290.586319,
+      "natural": 290.59375,
+      "explicit": 290.609375,
+      "naturalDiff": 0.007431,
+      "explicitDiff": 0.023056,
+      "maxAssignedDiff": 0.024597,
+      "maxDevicePaintDiff": 0.024597,
+      "maxBrowserWrapDiff": 0.014084,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "missing": [],
+      "checks": 12,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-flag-Geist",
+      "w": 290.586319,
+      "natural": 290.59375,
+      "explicit": 290.609375,
+      "naturalDiff": 0.007431,
+      "explicitDiff": 0.023056,
+      "maxAssignedDiff": 0.024597,
+      "maxDevicePaintDiff": 0.024597,
+      "maxBrowserWrapDiff": 0.014084,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "missing": [],
+      "checks": 12,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-keycap-Geist",
+      "w": 235.801163,
+      "natural": 235.8125,
+      "explicit": 235.828125,
+      "naturalDiff": 0.011337,
+      "explicitDiff": 0.026962,
+      "maxAssignedDiff": 0.026962,
+      "maxDevicePaintDiff": 0.026962,
+      "maxBrowserWrapDiff": 0.014084,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-keycap-no-vs-Geist",
+      "w": 235.801163,
+      "natural": 274.484375,
+      "explicit": 235.828125,
+      "naturalDiff": 38.683212,
+      "explicitDiff": 0.026962,
+      "maxAssignedDiff": 0.026962,
+      "maxDevicePaintDiff": 0.026962,
+      "maxBrowserWrapDiff": 38.685959,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Symbols 2",
+          "postScriptName": "NotoSansSymbols2-Regular",
+          "isCustomFont": true,
+          "glyphCount": 2
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 4,
+        "word": 4,
+        "uax": 4,
+        "emergency": 1
+      },
+      "mismatches": [
+        {
+          "probe": 155,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 5,
+              "width": 108.28399658203125
+            },
+            {
+              "start": 5,
+              "end": 10,
+              "width": 116.51716613769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 5,
+              "width": 108.296875
+            },
+            {
+              "start": 5,
+              "end": 8,
+              "width": 93.46875
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.734375
+            }
+          ]
+        },
+        {
+          "probe": 205,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 174.06915283203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 5,
+              "width": 108.296875
+            },
+            {
+              "start": 5,
+              "end": 10,
+              "width": 155.203125
+            }
+          ]
+        },
+        {
+          "probe": 270,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 10,
+              "width": 235.80116271972656
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 212.75
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.734375
+            }
+          ]
+        },
+        {
+          "probe": 174.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 174.06915283203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 5,
+              "width": 108.296875
+            },
+            {
+              "start": 5,
+              "end": 10,
+              "width": 155.203125
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emoji-tag-flag-Geist",
+      "w": 235.801163,
+      "natural": 235.8125,
+      "explicit": 235.828125,
+      "naturalDiff": 0.011337,
+      "explicitDiff": 0.026962,
+      "maxAssignedDiff": 0.026962,
+      "maxDevicePaintDiff": 0.026962,
+      "maxBrowserWrapDiff": 0.014084,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-skin-Geist",
+      "w": 235.801163,
+      "natural": 235.8125,
+      "explicit": 235.828125,
+      "naturalDiff": 0.011337,
+      "explicitDiff": 0.026962,
+      "maxAssignedDiff": 0.026962,
+      "maxDevicePaintDiff": 0.026962,
+      "maxBrowserWrapDiff": 0.014084,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-heart-vs15-Geist",
+      "w": 224.400009,
+      "natural": 224.40625,
+      "explicit": 224.421875,
+      "naturalDiff": 0.006241,
+      "explicitDiff": 0.021866,
+      "maxAssignedDiff": 0.021866,
+      "maxDevicePaintDiff": 0.021866,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Symbols 2",
+          "postScriptName": "NotoSansSymbols2-Regular",
+          "isCustomFont": true,
+          "glyphCount": 1
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans Symbols 2",
+          "postScriptName": "NotoSansSymbols2-Regular",
+          "isCustomFont": true,
+          "glyphCount": 1
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-smile-vs15-Geist",
+      "w": 217.448013,
+      "natural": 217.453125,
+      "explicit": 217.453125,
+      "naturalDiff": 0.005112,
+      "explicitDiff": 0.005112,
+      "maxAssignedDiff": 0.012878,
+      "maxDevicePaintDiff": 0.012878,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-heart-vs16-Geist",
+      "w": 235.801163,
+      "natural": 235.8125,
+      "explicit": 235.828125,
+      "naturalDiff": 0.011337,
+      "explicitDiff": 0.026962,
+      "maxAssignedDiff": 0.026962,
+      "maxDevicePaintDiff": 0.026962,
+      "maxBrowserWrapDiff": 0.014084,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-plain-Geist",
+      "w": 235.801163,
+      "natural": 235.8125,
+      "explicit": 235.828125,
+      "naturalDiff": 0.011337,
+      "explicitDiff": 0.026962,
+      "maxAssignedDiff": 0.026962,
+      "maxDevicePaintDiff": 0.026962,
+      "maxBrowserWrapDiff": 0.014084,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-text-default-Geist",
+      "w": 217.448013,
+      "natural": 217.453125,
+      "explicit": 217.453125,
+      "naturalDiff": 0.005112,
+      "explicitDiff": 0.005112,
+      "maxAssignedDiff": 0.012878,
+      "maxDevicePaintDiff": 0.012878,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-lone-modifier-Geist",
+      "w": 279.586319,
+      "natural": 279.59375,
+      "explicit": 279.609375,
+      "naturalDiff": 0.007431,
+      "explicitDiff": 0.023056,
+      "maxAssignedDiff": 0.023056,
+      "maxDevicePaintDiff": 0.023056,
+      "maxBrowserWrapDiff": 0.020691,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 7
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 7
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 7,
+        "word": 7,
+        "uax": 7,
+        "emergency": 2
+      },
+      "mismatches": [
+        {
+          "probe": 65,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 217.85430908203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 217.875
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "width": 0
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.734375
+            }
+          ]
+        },
+        {
+          "probe": 110,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 217.85430908203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 217.875
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "width": 0
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.734375
+            }
+          ]
+        },
+        {
+          "probe": 155,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 217.85430908203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 217.875
+            },
+            {
+              "start": 7,
+              "end": 10,
+              "width": 61.75
+            }
+          ]
+        },
+        {
+          "probe": 205,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 217.85430908203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 217.875
+            },
+            {
+              "start": 7,
+              "end": 10,
+              "width": 61.75
+            }
+          ]
+        },
+        {
+          "probe": 107.75,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 217.85430908203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 217.875
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "width": 0
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.734375
+            }
+          ]
+        },
+        {
+          "probe": 108.75,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 217.85430908203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 217.875
+            },
+            {
+              "start": 7,
+              "end": 8,
+              "width": 0
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.734375
+            }
+          ]
+        },
+        {
+          "probe": 217.25,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 217.85430908203125
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 217.875
+            },
+            {
+              "start": 7,
+              "end": 10,
+              "width": 61.75
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "emoji-lone-ri-Geist",
+      "w": 235.801163,
+      "natural": 235.8125,
+      "explicit": 235.828125,
+      "naturalDiff": 0.011337,
+      "explicitDiff": 0.026962,
+      "maxAssignedDiff": 0.026962,
+      "maxDevicePaintDiff": 0.026962,
+      "maxBrowserWrapDiff": 0.014084,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-hair-Geist",
+      "w": 235.801163,
+      "natural": 235.8125,
+      "explicit": 235.828125,
+      "naturalDiff": 0.011337,
+      "explicitDiff": 0.026962,
+      "maxAssignedDiff": 0.026962,
+      "maxDevicePaintDiff": 0.026962,
+      "maxBrowserWrapDiff": 0.014084,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-zwj-no-emoji-Geist",
+      "w": 231.087997,
+      "natural": 231.09375,
+      "explicit": 231.09375,
+      "naturalDiff": 0.005753,
+      "explicitDiff": 0.005753,
+      "maxAssignedDiff": 0.012878,
+      "maxDevicePaintDiff": 0.012878,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 11
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 11
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-zwnj-Geist",
+      "w": 231.087997,
+      "natural": 231.453125,
+      "explicit": 231.453125,
+      "naturalDiff": 0.365128,
+      "explicitDiff": 0.365128,
+      "maxAssignedDiff": 0.367874,
+      "maxDevicePaintDiff": 0.371262,
+      "maxBrowserWrapDiff": 0.367874,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 11
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 11
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-copyright-vs15-Geist",
+      "w": 217.448013,
+      "natural": 217.453125,
+      "explicit": 217.453125,
+      "naturalDiff": 0.005112,
+      "explicitDiff": 0.005112,
+      "maxAssignedDiff": 0.012878,
+      "maxDevicePaintDiff": 0.012878,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "emoji-lone-vs15-Geist",
+      "w": 181.016006,
+      "natural": 181.015625,
+      "explicit": 181.015625,
+      "naturalDiff": 0.000381,
+      "explicitDiff": 0.000381,
+      "maxAssignedDiff": 0.012878,
+      "maxDevicePaintDiff": 0.012878,
+      "maxBrowserWrapDiff": 0.012878,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 5,
+        "word": 5,
+        "uax": 5,
+        "emergency": 1
+      },
+      "mismatches": [
+        {
+          "probe": 65,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 119.28399658203125
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 119.296875
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 61.734375
+            }
+          ]
+        },
+        {
+          "probe": 110,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 119.28399658203125
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 119.296875
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 61.734375
+            }
+          ]
+        },
+        {
+          "probe": 107.75,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 119.28399658203125
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 119.296875
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 61.734375
+            }
+          ]
+        },
+        {
+          "probe": 108.75,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 119.28399658203125
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 119.296875
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 61.734375
+            }
+          ]
+        },
+        {
+          "probe": 118.75,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 119.28399658203125
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 119.296875
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 61.734375
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "symbols-twin",
+      "w": 261.892303,
+      "natural": 261.90625,
+      "explicit": 261.96875,
+      "naturalDiff": 0.013947,
+      "explicitDiff": 0.076447,
+      "maxAssignedDiff": 0.076447,
+      "maxDevicePaintDiff": 0.076447,
+      "maxBrowserWrapDiff": 0.013947,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans Symbols 2",
+          "postScriptName": "NotoSansSymbols2-Regular",
+          "isCustomFont": true,
+          "glyphCount": 1
+        },
+        {
+          "familyName": "Liberation Sans Narrow",
+          "postScriptName": "LiberationSansNarrow",
+          "isCustomFont": true,
+          "glyphCount": 7
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans Symbols 2",
+          "postScriptName": "NotoSansSymbols2-Regular",
+          "isCustomFont": true,
+          "glyphCount": 1
+        },
+        {
+          "familyName": "Liberation Sans Narrow",
+          "postScriptName": "LiberationSansNarrow",
+          "isCustomFont": true,
+          "glyphCount": 7
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "missing": [],
+      "checks": 14,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "mixed-fallback",
+      "w": 434.451019,
+      "natural": 434.46875,
+      "explicit": 434.484375,
+      "naturalDiff": 0.017731,
+      "explicitDiff": 0.033356,
+      "maxAssignedDiff": 0.033463,
+      "maxDevicePaintDiff": 0.033463,
+      "maxBrowserWrapDiff": 0.03009,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Noto Sans JP Thin",
+          "postScriptName": "NotoSansJP-Thin",
+          "isCustomFont": true,
+          "glyphCount": 12
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        },
+        {
+          "familyName": "Noto Sans Arabic",
+          "postScriptName": "NotoSansArabic-Regular",
+          "isCustomFont": true,
+          "glyphCount": 5
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Noto Sans JP Thin",
+          "postScriptName": "NotoSansJP-Thin",
+          "isCustomFont": true,
+          "glyphCount": 12
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        },
+        {
+          "familyName": "Noto Sans Arabic",
+          "postScriptName": "NotoSansArabic-Regular",
+          "isCustomFont": true,
+          "glyphCount": 5
+        }
+      ],
+      "missing": [],
+      "checks": 14,
+      "breakCounts": {
+        "icu": 0,
+        "word": 4,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "mixed-styles",
+      "w": 464.029648,
+      "natural": 464.046875,
+      "explicit": 464.0625,
+      "naturalDiff": 0.017227,
+      "explicitDiff": 0.032852,
+      "maxAssignedDiff": 0.026947,
+      "maxDevicePaintDiff": 0.030304,
+      "maxBrowserWrapDiff": 0.015137,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 1
+        },
+        {
+          "familyName": "Liberation Sans Narrow",
+          "postScriptName": "LiberationSansNarrow-Bold",
+          "isCustomFont": true,
+          "glyphCount": 5
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        },
+        {
+          "familyName": "Noto Sans JP Thin",
+          "postScriptName": "NotoSansJP-Thin",
+          "isCustomFont": true,
+          "glyphCount": 4
+        },
+        {
+          "familyName": "Noto Sans Arabic",
+          "postScriptName": "NotoSansArabic-Regular",
+          "isCustomFont": true,
+          "glyphCount": 18
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 1
+        },
+        {
+          "familyName": "Liberation Sans Narrow",
+          "postScriptName": "LiberationSansNarrow-Bold",
+          "isCustomFont": true,
+          "glyphCount": 5
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 1
+        },
+        {
+          "familyName": "Noto Sans JP Thin",
+          "postScriptName": "NotoSansJP-Thin",
+          "isCustomFont": true,
+          "glyphCount": 4
+        },
+        {
+          "familyName": "Noto Sans Arabic",
+          "postScriptName": "NotoSansArabic-Regular",
+          "isCustomFont": true,
+          "glyphCount": 18
+        }
+      ],
+      "missing": [],
+      "checks": 18,
+      "breakCounts": {
+        "icu": 5,
+        "word": 10,
+        "uax": 5,
+        "emergency": 2
+      },
+      "mismatches": [
+        {
+          "probe": 110,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 78.24609375
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 74
+            },
+            {
+              "start": 9,
+              "end": 13,
+              "width": 81.26200866699219
+            },
+            {
+              "start": 13,
+              "end": 23,
+              "width": 144.97598266601562
+            },
+            {
+              "start": 23,
+              "end": 28,
+              "width": 48.5595703125
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 78.25
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 74
+            },
+            {
+              "start": 9,
+              "end": 13,
+              "width": 81.265625
+            },
+            {
+              "start": 13,
+              "end": 22,
+              "width": 144.984375
+            },
+            {
+              "start": 22,
+              "end": 23,
+              "width": 0
+            },
+            {
+              "start": 23,
+              "end": 28,
+              "width": 48.5625
+            }
+          ]
+        },
+        {
+          "probe": 77.75,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 3,
+              "width": 36.10986328125
+            },
+            {
+              "start": 3,
+              "end": 6,
+              "width": 35.59423828125
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 74
+            },
+            {
+              "start": 9,
+              "end": 13,
+              "width": 81.26200866699219
+            },
+            {
+              "start": 13,
+              "end": 23,
+              "width": 144.97598266601562
+            },
+            {
+              "start": 23,
+              "end": 28,
+              "width": 48.5595703125
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 3,
+              "width": 36.125
+            },
+            {
+              "start": 3,
+              "end": 6,
+              "width": 35.609375
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 74
+            },
+            {
+              "start": 9,
+              "end": 13,
+              "width": 81.265625
+            },
+            {
+              "start": 13,
+              "end": 22,
+              "width": 144.984375
+            },
+            {
+              "start": 22,
+              "end": 23,
+              "width": 0
+            },
+            {
+              "start": 23,
+              "end": 28,
+              "width": 48.5625
+            }
+          ]
+        },
+        {
+          "probe": 78.75,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 78.24609375
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 74
+            },
+            {
+              "start": 9,
+              "end": 13,
+              "width": 81.26200866699219
+            },
+            {
+              "start": 13,
+              "end": 23,
+              "width": 144.97598266601562
+            },
+            {
+              "start": 23,
+              "end": 28,
+              "width": 48.5595703125
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 78.25
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 74
+            },
+            {
+              "start": 9,
+              "end": 13,
+              "width": 81.265625
+            },
+            {
+              "start": 13,
+              "end": 22,
+              "width": 144.984375
+            },
+            {
+              "start": 22,
+              "end": 23,
+              "width": 0
+            },
+            {
+              "start": 23,
+              "end": 28,
+              "width": 48.5625
+            }
+          ]
+        },
+        {
+          "probe": 123,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 78.24609375
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 74
+            },
+            {
+              "start": 9,
+              "end": 13,
+              "width": 81.26200866699219
+            },
+            {
+              "start": 13,
+              "end": 23,
+              "width": 144.97598266601562
+            },
+            {
+              "start": 23,
+              "end": 28,
+              "width": 48.5595703125
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 6,
+              "width": 78.25
+            },
+            {
+              "start": 6,
+              "end": 9,
+              "width": 74
+            },
+            {
+              "start": 9,
+              "end": 13,
+              "width": 81.265625
+            },
+            {
+              "start": 13,
+              "end": 22,
+              "width": 144.984375
+            },
+            {
+              "start": 22,
+              "end": 23,
+              "width": 0
+            },
+            {
+              "start": 23,
+              "end": 28,
+              "width": 48.5625
+            }
+          ]
+        },
+        {
+          "probe": 124,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 123.53408813476562
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 37
+            },
+            {
+              "start": 9,
+              "end": 13,
+              "width": 81.26200866699219
+            },
+            {
+              "start": 13,
+              "end": 23,
+              "width": 144.97598266601562
+            },
+            {
+              "start": 23,
+              "end": 28,
+              "width": 48.5595703125
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 7,
+              "width": 123.546875
+            },
+            {
+              "start": 7,
+              "end": 9,
+              "width": 37
+            },
+            {
+              "start": 9,
+              "end": 13,
+              "width": 81.265625
+            },
+            {
+              "start": 13,
+              "end": 22,
+              "width": 144.984375
+            },
+            {
+              "start": 22,
+              "end": 23,
+              "width": 0
+            },
+            {
+              "start": 23,
+              "end": 28,
+              "width": 48.5625
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "punctuation-glue",
+      "w": 1096.964081,
+      "natural": 1096.96875,
+      "explicit": 1096.96875,
+      "naturalDiff": 0.004669,
+      "explicitDiff": 0.004669,
+      "maxAssignedDiff": 0.014374,
+      "maxDevicePaintDiff": 0.015244,
+      "maxBrowserWrapDiff": 4.824753,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Lora",
+          "postScriptName": "Lora-Regular",
+          "isCustomFont": true,
+          "glyphCount": 52
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Lora",
+          "postScriptName": "Lora-Regular",
+          "isCustomFont": true,
+          "glyphCount": 52
+        }
+      ],
+      "missing": [],
+      "checks": 22,
+      "breakCounts": {
+        "icu": 8,
+        "word": 12,
+        "uax": 8,
+        "emergency": 2
+      },
+      "mismatches": [
+        {
+          "probe": 65,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 301.31202697753906
+            },
+            {
+              "start": 14,
+              "end": 23,
+              "width": 141.81201171875
+            },
+            {
+              "start": 23,
+              "end": 27,
+              "width": 88.22000122070312
+            },
+            {
+              "start": 27,
+              "end": 29,
+              "width": 44.220001220703125
+            },
+            {
+              "start": 29,
+              "end": 31,
+              "width": 25.608001708984375
+            },
+            {
+              "start": 31,
+              "end": 36,
+              "width": 99.83599853515625
+            },
+            {
+              "start": 36,
+              "end": 43,
+              "width": 152.4600067138672
+            },
+            {
+              "start": 43,
+              "end": 48,
+              "width": 90.50801086425781
+            },
+            {
+              "start": 48,
+              "end": 53,
+              "width": 117.08399963378906
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 301.3125
+            },
+            {
+              "start": 14,
+              "end": 23,
+              "width": 141.8125
+            },
+            {
+              "start": 23,
+              "end": 27,
+              "width": 88.234375
+            },
+            {
+              "start": 27,
+              "end": 29,
+              "width": 44.234375
+            },
+            {
+              "start": 29,
+              "end": 31,
+              "width": 25.609375
+            },
+            {
+              "start": 31,
+              "end": 37,
+              "width": 99.859375
+            },
+            {
+              "start": 37,
+              "end": 43,
+              "width": 126.421875
+            },
+            {
+              "start": 43,
+              "end": 48,
+              "width": 90.515625
+            },
+            {
+              "start": 48,
+              "end": 53,
+              "width": 117.09375
+            }
+          ]
+        },
+        {
+          "probe": 110,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 301.31202697753906
+            },
+            {
+              "start": 14,
+              "end": 23,
+              "width": 141.81201171875
+            },
+            {
+              "start": 23,
+              "end": 27,
+              "width": 88.22000122070312
+            },
+            {
+              "start": 27,
+              "end": 31,
+              "width": 69.8280029296875
+            },
+            {
+              "start": 31,
+              "end": 36,
+              "width": 99.83599853515625
+            },
+            {
+              "start": 36,
+              "end": 43,
+              "width": 152.4600067138672
+            },
+            {
+              "start": 43,
+              "end": 48,
+              "width": 90.50801086425781
+            },
+            {
+              "start": 48,
+              "end": 53,
+              "width": 117.08399963378906
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 301.3125
+            },
+            {
+              "start": 14,
+              "end": 23,
+              "width": 141.8125
+            },
+            {
+              "start": 23,
+              "end": 27,
+              "width": 88.234375
+            },
+            {
+              "start": 27,
+              "end": 31,
+              "width": 69.828125
+            },
+            {
+              "start": 31,
+              "end": 37,
+              "width": 99.859375
+            },
+            {
+              "start": 37,
+              "end": 43,
+              "width": 126.421875
+            },
+            {
+              "start": 43,
+              "end": 48,
+              "width": 90.515625
+            },
+            {
+              "start": 48,
+              "end": 53,
+              "width": 117.09375
+            }
+          ]
+        },
+        {
+          "probe": 155,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 301.31202697753906
+            },
+            {
+              "start": 14,
+              "end": 23,
+              "width": 141.81201171875
+            },
+            {
+              "start": 23,
+              "end": 29,
+              "width": 144.0120086669922
+            },
+            {
+              "start": 29,
+              "end": 36,
+              "width": 137.01600646972656
+            },
+            {
+              "start": 36,
+              "end": 43,
+              "width": 152.4600067138672
+            },
+            {
+              "start": 43,
+              "end": 48,
+              "width": 90.50801086425781
+            },
+            {
+              "start": 48,
+              "end": 53,
+              "width": 117.08399963378906
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 301.3125
+            },
+            {
+              "start": 14,
+              "end": 23,
+              "width": 141.8125
+            },
+            {
+              "start": 23,
+              "end": 29,
+              "width": 144.015625
+            },
+            {
+              "start": 29,
+              "end": 37,
+              "width": 137.03125
+            },
+            {
+              "start": 37,
+              "end": 43,
+              "width": 126.421875
+            },
+            {
+              "start": 43,
+              "end": 48,
+              "width": 90.515625
+            },
+            {
+              "start": 48,
+              "end": 53,
+              "width": 117.09375
+            }
+          ]
+        },
+        {
+          "probe": 205,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 301.31202697753906
+            },
+            {
+              "start": 14,
+              "end": 23,
+              "width": 141.81201171875
+            },
+            {
+              "start": 23,
+              "end": 31,
+              "width": 169.62001037597656
+            },
+            {
+              "start": 31,
+              "end": 36,
+              "width": 99.83599853515625
+            },
+            {
+              "start": 36,
+              "end": 43,
+              "width": 152.4600067138672
+            },
+            {
+              "start": 43,
+              "end": 48,
+              "width": 90.50801086425781
+            },
+            {
+              "start": 48,
+              "end": 53,
+              "width": 117.08399963378906
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 301.3125
+            },
+            {
+              "start": 14,
+              "end": 23,
+              "width": 141.8125
+            },
+            {
+              "start": 23,
+              "end": 31,
+              "width": 169.625
+            },
+            {
+              "start": 31,
+              "end": 37,
+              "width": 99.859375
+            },
+            {
+              "start": 37,
+              "end": 43,
+              "width": 126.421875
+            },
+            {
+              "start": 43,
+              "end": 48,
+              "width": 90.515625
+            },
+            {
+              "start": 48,
+              "end": 53,
+              "width": 117.09375
+            }
+          ]
+        },
+        {
+          "probe": 270,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 301.31202697753906
+            },
+            {
+              "start": 14,
+              "end": 27,
+              "width": 241.60401916503906
+            },
+            {
+              "start": 27,
+              "end": 36,
+              "width": 181.2360076904297
+            },
+            {
+              "start": 36,
+              "end": 48,
+              "width": 254.54002380371094
+            },
+            {
+              "start": 48,
+              "end": 53,
+              "width": 117.08399963378906
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 301.3125
+            },
+            {
+              "start": 14,
+              "end": 27,
+              "width": 241.609375
+            },
+            {
+              "start": 27,
+              "end": 37,
+              "width": 181.265625
+            },
+            {
+              "start": 37,
+              "end": 48,
+              "width": 228.5
+            },
+            {
+              "start": 48,
+              "end": 53,
+              "width": 117.09375
+            }
+          ]
+        },
+        {
+          "probe": 454.25,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 301.31202697753906
+            },
+            {
+              "start": 14,
+              "end": 36,
+              "width": 434.4120330810547
+            },
+            {
+              "start": 36,
+              "end": 53,
+              "width": 371.18402099609375
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 14,
+              "width": 301.3125
+            },
+            {
+              "start": 14,
+              "end": 37,
+              "width": 434.4375
+            },
+            {
+              "start": 37,
+              "end": 53,
+              "width": 345.140625
+            }
+          ]
+        },
+        {
+          "probe": 747.75,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 36,
+              "width": 747.2960662841797
+            },
+            {
+              "start": 36,
+              "end": 53,
+              "width": 371.18402099609375
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 37,
+              "width": 747.3125
+            },
+            {
+              "start": 37,
+              "end": 53,
+              "width": 345.140625
+            }
+          ]
+        },
+        {
+          "probe": 877.75,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 36,
+              "width": 747.2960662841797
+            },
+            {
+              "start": 36,
+              "end": 53,
+              "width": 371.18402099609375
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 37,
+              "width": 747.3125
+            },
+            {
+              "start": 37,
+              "end": 53,
+              "width": 345.140625
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "explicit-break",
+      "w": 187.352005,
+      "natural": 187.359375,
+      "explicit": 187.359375,
+      "naturalDiff": 0.00737,
+      "explicitDiff": 0.00737,
+      "maxAssignedDiff": 0.014236,
+      "maxDevicePaintDiff": 0.014236,
+      "maxBrowserWrapDiff": 0.014236,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 20
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 20
+        }
+      ],
+      "missing": [],
+      "checks": 6,
+      "breakCounts": {
+        "icu": 0,
+        "word": 1,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "production-vs15-Emoji",
+      "w": 323.371475,
+      "natural": 305.46875,
+      "explicit": 305.46875,
+      "naturalDiff": 17.902725,
+      "explicitDiff": 17.902725,
+      "maxAssignedDiff": 17.911697,
+      "maxDevicePaintDiff": 17.911697,
+      "maxBrowserWrapDiff": 17.916809,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [
+        {
+          "familyName": "DejaVu Sans",
+          "postScriptName": "DejaVuSans",
+          "isCustomFont": false,
+          "glyphCount": 1
+        }
+      ],
+      "chromiumFonts": [
+        {
+          "familyName": "DejaVu Sans",
+          "postScriptName": "DejaVuSans",
+          "isCustomFont": false,
+          "glyphCount": 1
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "DejaVu Sans",
+          "postScriptName": "DejaVuSans",
+          "isCustomFont": false,
+          "glyphCount": 1
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 6
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "missing": [
+        {
+          "start": 5,
+          "end": 7,
+          "text": "❤︎"
+        }
+      ],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 3,
+        "word": 3,
+        "uax": 3,
+        "emergency": 1
+      },
+      "mismatches": [
+        {
+          "probe": 155,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 5,
+              "width": 108.28399658203125
+            },
+            {
+              "start": 5,
+              "end": 8,
+              "width": 54.78515625
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.73200988769531
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 5,
+              "width": 108.296875
+            },
+            {
+              "start": 5,
+              "end": 10,
+              "width": 142.390625
+            }
+          ]
+        },
+        {
+          "probe": 205,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 5,
+              "width": 108.28399658203125
+            },
+            {
+              "start": 5,
+              "end": 10,
+              "width": 160.3023223876953
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 199.9375
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.734375
+            }
+          ]
+        },
+        {
+          "probe": 217.25,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 5,
+              "width": 108.28399658203125
+            },
+            {
+              "start": 5,
+              "end": 10,
+              "width": 160.3023223876953
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 199.9375
+            },
+            {
+              "start": 8,
+              "end": 10,
+              "width": 50.734375
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "production-vs15-smile-Emoji",
+      "w": 305.018326,
+      "natural": 305.03125,
+      "explicit": 305.0625,
+      "naturalDiff": 0.012924,
+      "explicitDiff": 0.044174,
+      "maxAssignedDiff": 0.044174,
+      "maxDevicePaintDiff": 0.044174,
+      "maxBrowserWrapDiff": 0.014465,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 7
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 7
+        },
+        {
+          "familyName": "Noto Color Emoji",
+          "postScriptName": "NotoColorEmoji",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ],
+      "missing": [],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "production-zwj-Geist",
+      "w": 233.815994,
+      "natural": 233.828125,
+      "explicit": 233.828125,
+      "naturalDiff": 0.012131,
+      "explicitDiff": 0.012131,
+      "maxAssignedDiff": 0.014877,
+      "maxDevicePaintDiff": 0.014877,
+      "maxBrowserWrapDiff": 0.014877,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 11
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 11
+        }
+      ],
+      "missing": [
+        {
+          "start": 5,
+          "end": 10,
+          "text": "👩‍💻"
+        }
+      ],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 0,
+        "uax": 0,
+        "emergency": 1
+      },
+      "mismatches": []
+    },
+    {
+      "id": "unserved-geist-han",
+      "w": 237.555984,
+      "natural": 237.5625,
+      "explicit": 237.5625,
+      "naturalDiff": 0.006516,
+      "explicitDiff": 0.006516,
+      "maxAssignedDiff": 0.012512,
+      "maxDevicePaintDiff": 0.014755,
+      "maxBrowserWrapDiff": 0.012512,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [],
+      "chromiumFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 10
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 10
+        }
+      ],
+      "missing": [
+        {
+          "start": 8,
+          "end": 9,
+          "text": "収"
+        },
+        {
+          "start": 9,
+          "end": 10,
+          "text": "益"
+        }
+      ],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 0,
+        "word": 1,
+        "uax": 0,
+        "emergency": 0
+      },
+      "mismatches": []
+    },
+    {
+      "id": "unserved-geist-arabic",
+      "w": 512.555923,
+      "natural": 435.96875,
+      "explicit": 435.96875,
+      "naturalDiff": 76.587173,
+      "explicitDiff": 76.587173,
+      "maxAssignedDiff": 78.287445,
+      "maxDevicePaintDiff": 79.128082,
+      "maxBrowserWrapDiff": 78.287445,
+      "maxParagraphContextDiff": 0,
+      "browserSystem": [
+        {
+          "familyName": "DejaVu Sans",
+          "postScriptName": "DejaVuSans",
+          "isCustomFont": false,
+          "glyphCount": 11
+        }
+      ],
+      "chromiumFonts": [
+        {
+          "familyName": "DejaVu Sans",
+          "postScriptName": "DejaVuSans",
+          "isCustomFont": false,
+          "glyphCount": 11
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "explicitFonts": [
+        {
+          "familyName": "DejaVu Sans",
+          "postScriptName": "DejaVuSans",
+          "isCustomFont": false,
+          "glyphCount": 11
+        },
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ],
+      "missing": [
+        {
+          "start": 8,
+          "end": 9,
+          "text": "ن"
+        },
+        {
+          "start": 9,
+          "end": 10,
+          "text": "م"
+        },
+        {
+          "start": 10,
+          "end": 11,
+          "text": "ت"
+        },
+        {
+          "start": 12,
+          "end": 13,
+          "text": "ا"
+        },
+        {
+          "start": 13,
+          "end": 14,
+          "text": "ل"
+        },
+        {
+          "start": 14,
+          "end": 15,
+          "text": "إ"
+        },
+        {
+          "start": 15,
+          "end": 16,
+          "text": "ي"
+        },
+        {
+          "start": 16,
+          "end": 17,
+          "text": "ر"
+        },
+        {
+          "start": 17,
+          "end": 18,
+          "text": "ا"
+        },
+        {
+          "start": 18,
+          "end": 19,
+          "text": "د"
+        },
+        {
+          "start": 19,
+          "end": 20,
+          "text": "ا"
+        },
+        {
+          "start": 20,
+          "end": 21,
+          "text": "ت"
+        }
+      ],
+      "checks": 10,
+      "breakCounts": {
+        "icu": 2,
+        "word": 2,
+        "uax": 2,
+        "emergency": 2
+      },
+      "mismatches": [
+        {
+          "probe": 263.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 173.75599670410156
+            },
+            {
+              "start": 8,
+              "end": 12,
+              "width": 79.19998168945312
+            },
+            {
+              "start": 12,
+              "end": 21,
+              "width": 237.59994506835938
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 173.765625
+            },
+            {
+              "start": 8,
+              "end": 21,
+              "width": 251.203125
+            }
+          ]
+        },
+        {
+          "probe": 264.5,
+          "predicted": [
+            {
+              "start": 0,
+              "end": 12,
+              "width": 263.9559783935547
+            },
+            {
+              "start": 12,
+              "end": 21,
+              "width": 237.59994506835938
+            }
+          ],
+          "actual": [
+            {
+              "start": 0,
+              "end": 8,
+              "width": 173.765625
+            },
+            {
+              "start": 8,
+              "end": 21,
+              "width": 251.203125
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

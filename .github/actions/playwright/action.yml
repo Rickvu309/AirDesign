@@ -1,5 +1,9 @@
 name: playwright
 description: Puts Chromium where Playwright looks and the font shelf where the preview server looks.
+inputs:
+  font-layout:
+    description: Fill the shelf for the font layout differential spec.
+    default: "false"
 runs:
   using: composite
   steps:
@@ -19,4 +23,8 @@ runs:
       continue-on-error: true
       with:
         path: ~/.cache/airdesign/fonts
-        key: font-shelf-${{ hashFiles('packages/fonts/src/catalog.json', 'scripts/font-shelf.mjs') }}
+        key: font-shelf-${{ hashFiles('packages/fonts/src/catalog.json', 'scripts/font-shelf.mjs') }}${{ inputs.font-layout == 'true' && format('-{0}', hashFiles('tests/browser/font-layout/faces.json')) || '' }}
+        restore-keys: ${{ inputs.font-layout == 'true' && format('font-shelf-{0}', hashFiles('packages/fonts/src/catalog.json', 'scripts/font-shelf.mjs')) || '' }}
+    - if: inputs.font-layout == 'true'
+      shell: bash
+      run: node tests/browser/font-layout/prepare-shelf.mjs

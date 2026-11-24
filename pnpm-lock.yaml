@@ -177,6 +177,9 @@ importers:
       '@astrojs/compiler':
         specifier: ^4.0.0
         version: 4.0.0
+      '@echogarden/icu-segmentation-wasm':
+        specifier: 0.4.0
+        version: 0.4.0
       '@playwright/test':
         specifier: 1.65.0
         version: 1.65.0
@@ -189,9 +192,15 @@ importers:
       '@types/node':
         specifier: ^24.19.2
         version: 24.19.2
+      bidi-js:
+        specifier: 1.1.0
+        version: 1.1.0
       fast-check:
         specifier: 4.10.2
         version: 4.10.2
+      harfbuzzjs:
+        specifier: 1.6.4
+        version: 1.6.4
       jsdom:
         specifier: ^31.0.0
         version: 31.0.0
@@ -1175,6 +1184,9 @@ packages:
 
   '@dotenvx/primitives@0.8.0':
     resolution: {integrity: sha512-VYJy0uhFm9zTJ1TxBaW/pA8bjbOM/OttaNMwZ1RHG4JKyRG7DhSdiqD1ipQoAyoD22olUtxbP78W9xY3Wd11bg==}
+
+  '@echogarden/icu-segmentation-wasm@0.4.0':
+    resolution: {integrity: sha512-vfqjdWyyn2ywA2PKtWQ+2qFEd4yklmxwDE8C3WfIHekhT9RVHlOhwzmjAnLhVpct6JaWFKtTBJ9tNUWWrvvlpg==}
 
   '@emmetio/abbreviation@2.3.3':
     resolution: {integrity: sha512-mgv58UrU3rh4YgbE/TzgLQwJ3pFsHHhCLqY20aJq+9comytTXUDNGG/SMtSeMJdkpxgXSXunBGLD8Boka3JyVA==}
@@ -3169,6 +3181,9 @@ packages:
   bcp-47@2.1.2:
     resolution: {integrity: sha512-wsv86UuNFuPnVieKLyECTT+CP1WSAHeoIg5P3xu2kA9Z+7fVPoKt7dxzSeEhtJel0AI+NW3fIW3KtTKQKUCngg==}
 
+  bidi-js@1.1.0:
+    resolution: {integrity: sha512-fX1Onk0tdVPC7obPWB5EbJ1z7NVhLq4m2xZLq2YXBkxzMXIGRpNMU88n0EPgWseKl12J7zXs7qrDxPK4sRs2fg==}
+
   blake3-wasm@2.1.5:
     resolution: {integrity: sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g==}
 
@@ -5161,6 +5176,10 @@ packages:
     resolution: {integrity: sha512-4Nsy8K5Tr6SPDH9jhKJOHf7ChDrc1zufZTVSF7x72hwuEXBqxqk9G6cK+K2NRUtB3iELRJqjXb4JPDMBjMTl2Q==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
 
+  wasm-heap-manager@0.4.1:
+    resolution: {integrity: sha512-YJWzJlG/WXoKTHDqCY8I8/+qDS9A29dwDzA6k87Em95ZdhuR8doWpjwWRKVwZmtFtEYjDcrgrNa1skaIce8ENQ==}
+    engines: {node: '>=18'}
+
   weapon-regex@2.0.6:
     resolution: {integrity: sha512-iJC2vqYp+bh3r4X6zjuP0h65XqXjgUX3nJgmhj0PQMrdhAbUwCfN76CSTEEQqV3G7468kjOJ69PmytTG8l/8Gg==}
 
@@ -5990,6 +6009,10 @@ snapshots:
       yocto-spinner: 1.2.2
 
   '@dotenvx/primitives@0.8.0': {}
+
+  '@echogarden/icu-segmentation-wasm@0.4.0':
+    dependencies:
+      wasm-heap-manager: 0.4.1
 
   '@emmetio/abbreviation@2.3.3':
     dependencies:
@@ -7529,6 +7552,10 @@ snapshots:
       is-alphabetical: 2.0.1
       is-alphanumerical: 2.0.1
       is-decimal: 2.0.1
+
+  bidi-js@1.1.0:
+    dependencies:
+      require-from-string: 2.0.2
 
   blake3-wasm@2.1.5: {}
 
@@ -9461,6 +9488,8 @@ snapshots:
   w3c-xmlserializer@6.0.0:
     dependencies:
       xml-name-validator: 5.0.0
+
+  wasm-heap-manager@0.4.1: {}
 
   weapon-regex@2.0.6: {}
 
