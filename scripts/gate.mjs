@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import { requirePinnedNode } from "./node-version.cjs"
 import { changeMap, readChangeGraph } from "./change-map.mjs"
-import { run, runCheck } from "./check.mjs"
+import { keepSteps, run, runCheck } from "./check.mjs"
 import { checkSteps, unitTestsIn } from "./check-steps.mjs"
 import { stampChecked, workingTree } from "./checked.mjs"
 import { timeMetric } from "./metrics.mjs"
@@ -73,7 +73,25 @@ export const recordedSeconds = (folder) => {
   return seconds
 }
 
-const noLine = async () => () => {}
+const runGateChecks = async ({ later, run: runStep, all, cheap, report }) => {
+  const choosing = later().then(
+    (chosen) => ({ chosen }),
+    (error) => ({ error }),
+  )
+  const first = await runCheck({ chosen: cheap, run: runStep, all })
+  if (first.failed.length > 0 && !all) return first
+  const picked = await choosing
+  if (picked.error !== undefined) throw picked.error
+  try {
+    await report()
+  } catch (error) {
+    console.error(`affected report incomplete: ${error.message}`)
+  }
+  const second = await runCheck({ chosen: picked.chosen, run: runStep, all })
+  return { failed: [...first.failed, ...second.failed], ranSteps: first.ranSteps && second.ranSteps }
+}
+
+const isReport = ([name]) => checkSteps.kindOf(name) === "report"
 
 export const runGate = async ({
   later,
@@ -83,22 +101,14 @@ export const runGate = async ({
   cheap = checkSteps.cheapGateStages(),
   report = async () => {},
 }) => {
-  const choosing = later().then(
-    (chosen) => ({ chosen }),
-    (error) => ({ error }),
-  )
-  const first = await runCheck({ chosen: cheap, run: runStep, all, lock: noLine })
-  if (first.failed.length > 0 && !all) return first
-  const picked = await choosing
-  if (picked.error !== undefined) throw picked.error
-  try {
-    await report()
-  } catch (error) {
-    console.error(`affected report incomplete: ${error.message}`)
-  }
-  const second = await runCheck({ chosen: picked.chosen, run: runStep, all, lock: noLine })
-  const failed = [...first.failed, ...second.failed]
-  const ranSteps = first.ranSteps && second.ranSteps
+  const [checked, listed] = await Promise.allSettled([
+    runGateChecks({ later, run: runStep, all, cheap: keepSteps(cheap, (step) => !isReport(step)), report }),
+    runCheck({ chosen: keepSteps(cheap, isReport), run: runStep, all }),
+  ])
+  if (checked.status === "rejected") throw checked.reason
+  if (listed.status === "rejected") throw listed.reason
+  const failed = [...checked.value.failed, ...listed.value.failed]
+  const ranSteps = checked.value.ranSteps && listed.value.ranSteps
   if (checkSteps.stampable(failed, ranSteps)) stamp()
   return { failed, ranSteps }
 }
@@ -114,6 +124,7 @@ const relatedTests = async (base, folder) => {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   requirePinnedNode()
   const started = Date.now()
+  const loadAtStart = os.loadavg()[0]
   const at = process.argv.indexOf("--base")
   const against = at === -1 ? "origin/main" : process.argv[at + 1]
   const tree = workingTree(root)
@@ -186,6 +197,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   }
   const seconds = timeMetric(root, "gate-duration", started)
   console.log(seconds.line)
+  console.log(
+    `gate load: 1-minute average ${loadAtStart.toFixed(1)} → ${os.loadavg()[0].toFixed(1)} on ${String(os.availableParallelism())} cores`,
+  )
   if (seconds.over !== undefined) console.error(seconds.over)
   if (left !== undefined)
     console.log(left.length === 0 ? "CI will also run: nothing more" : `CI will also run: ${left.join(", ")}`)

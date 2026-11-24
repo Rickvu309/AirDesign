@@ -216,20 +216,55 @@ const passed = await gateOf(undefined)
 same("a passing gate stamps the commit once", passed.stamped, 1)
 same("the gate starts choosing its tests before the cheap checks run, so the two overlap", passed.events[0], "choose")
 same(
-  "the cheap checks run before anything slower",
+  "the gate starts the preflight checks in table order before the other cheap checks",
   passed.events.slice(1, preflight.length + 1).sort(),
   [...preflight].sort(),
 )
-for (const failing of ["format", "lint", "file-growth"]) {
+const running = []
+const lintRelease = Promise.withResolvers()
+const typecheckRelease = Promise.withResolvers()
+const sweepRelease = Promise.withResolvers()
+let overlapStamps = 0
+const overlap = runGate({
+  later: async () => full,
+  run: async ([name]) => {
+    running.push(name)
+    if (name === "lint") await lintRelease.promise
+    if (name === "typecheck") await typecheckRelease.promise
+    if (name === "sweep-list") await sweepRelease.promise
+    return 0
+  },
+  stamp: () => {
+    overlapStamps += 1
+  },
+})
+await new Promise(setImmediate)
+const beforeLintFinishes = [...running]
+lintRelease.resolve()
+await new Promise(setImmediate)
+const beforeTypecheckFinishes = [...running]
+typecheckRelease.resolve()
+await new Promise(setImmediate)
+const whileSweepRuns = { build: running.includes("build"), stamps: overlapStamps }
+sweepRelease.resolve()
+await overlap
+same("typecheck starts while the independent lint check runs", beforeLintFinishes.includes("typecheck"), true)
+same("the build waits for typecheck to finish writing its outputs", beforeTypecheckFinishes.includes("build"), false)
+same("the build can run while sweep lists worktrees, and the stamp waits for sweep", whileSweepRuns, {
+  build: true,
+  stamps: 0,
+})
+
+for (const failing of ["format", "lint", "file-growth", "package-boundaries", "typecheck"]) {
   const early = await gateOf(failing)
   same(`a ${failing} failure stamps nothing`, early.stamped, 0)
   same(
-    `and runs nothing slower after ${failing}`,
+    `and runs no affected steps after ${failing}`,
     early.events.filter((name) => name !== "choose").sort(),
-    [...preflight].sort(),
+    named(cheap).sort(),
   )
 }
-for (const failing of ["build", "unit-tests", "actionlint", "copy-in-tests"]) {
+for (const failing of ["build", "unit-tests", "actionlint", "copy-in-tests", "sweep-list"]) {
   const late = await gateOf(failing)
   same(`a ${failing} failure stamps nothing`, [late.stamped, late.failed], [0, [failing]])
 }
