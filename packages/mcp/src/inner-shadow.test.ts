@@ -57,7 +57,7 @@ describe("inner shadow over the protocol", () => {
         base: edited.rev,
         changes: [{ op: "set", target: slide, innerShadow: { color: "nope", x: 0, y: 0, blur: 0, spread: 0 } }],
       })
-      expect(bad).toMatchObject({ ok: false, field: "color" })
+      expect(bad).toMatchObject({ ok: false, field: "innerShadow.color" })
     })
   })
 })
