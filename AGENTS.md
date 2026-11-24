@@ -34,7 +34,7 @@ An edit, from a person or an agent, is read by `catalog` and applied by `doom` t
 2. Write the failing test first, at the lowest layer that fails. Tests never retry: a failure only under load is a race.
 3. For anything a person sees or the API answers, drive the real app with `verify-airdesign` and judge each touched state as a design.
 4. `pnpm gate` stamps the commit. Never `--no-verify`.
-5. `pnpm land --title "<imperative, at most 72 chars>" --body-file <file>` follows the PR to merged. Write the body with the `pr` skill.
+5. `pnpm land --title "<imperative, at most 72 chars>" --body-file <file>` follows the PR to merged. Write the body with the `pr` skill. Fix a body later with `pnpm pr-body <number> <file>`, never `gh api`.
 
 `ci` judges. `COMMANDS.md` explains every command, `pnpm rules` every checked rule, and `CHECKS.md` the rules review holds: read them when one fails.
 

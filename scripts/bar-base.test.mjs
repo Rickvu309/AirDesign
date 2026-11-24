@@ -20,16 +20,19 @@ if (args.includes("/files")) process.exit(0)
 if (args.includes("/compare/")) console.log("f".repeat(40))
 else if (args.includes("/contents/")) console.log("{}")
 else if (args.includes("-X")) process.exit(0)
-else if (args.includes("/pulls/")) console.log(JSON.stringify({ head: "h", base: "b", baseRef: process.env.FAKE_BASE, files: 0, body: "" }))
+else if (args.includes("/pulls/")) console.log(JSON.stringify({ head: "h", base: "b", baseRef: process.env.FAKE_BASE, files: 0, body: process.env.FAKE_BODY ?? "" }))
 `,
   { mode: 0o755 },
 )
 
-const barOnPull = (number, baseRef) => {
+const barOnPull = (number, baseRef, body = "") => {
   const result = spawnSync(
     process.execPath,
     [fileURLToPath(new URL("./bar.mjs", import.meta.url)), "Rickvu309/AirDesign", String(number)],
-    { encoding: "utf8", env: { ...process.env, PATH: `${folder}:${process.env.PATH}`, FAKE_BASE: baseRef } },
+    {
+      encoding: "utf8",
+      env: { ...process.env, PATH: `${folder}:${process.env.PATH}`, FAKE_BASE: baseRef, FAKE_BODY: body },
+    },
   )
   return { status: result.status, out: `${result.stdout}${result.stderr}` }
 }
@@ -39,4 +42,10 @@ const another = barOnPull(403, "agent-element-tools")
 same("bar fails a pull request against another pull request's branch", another.status, 1)
 if (!another.out.includes("run pnpm land in its branch; it moves the base to main")) {
   throw new Error(`bar does not name the fix for a base that is not main: ${another.out}`)
+}
+
+const unfit = barOnPull(407, "main", "Log: /home/quanvm/tmp/run.log\n")
+same("bar fails a body with a local path", unfit.status, 1)
+if (!unfit.out.includes("pnpm pr-body 407 <file>")) {
+  throw new Error(`bar does not name pnpm pr-body as the way to set a fixed body: ${unfit.out}`)
 }
