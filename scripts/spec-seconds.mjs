@@ -34,15 +34,22 @@ export const unrecordedSeconds = (seconds) => {
   return (key) => seconds[key] ?? unrecorded
 }
 
-export const weightedShares = ({ keys, seconds, total }) => {
+export const weightedShares = ({ keys, seconds, total, serialKey }) => {
   const weigh = unrecordedSeconds(seconds)
+  const hasSerial = keys.includes(serialKey)
   const weighed = [...new Set(keys)]
+    .filter((key) => key !== serialKey)
     .map((key) => ({ key, seconds: weigh(key) }))
     .toSorted((a, b) => b.seconds - a.seconds || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
   const loads = Array.from({ length: total }, () => 0)
   const shares = Array.from({ length: total }, () => [])
+  if (hasSerial) {
+    loads[0] = weigh(serialKey)
+    shares[0].push(serialKey)
+  }
   for (const { key, seconds: weight } of weighed) {
-    const lightest = loads.indexOf(Math.min(...loads))
+    const elapsed = loads.map((load, index) => (hasSerial && index > 0 ? load / 2 : load))
+    const lightest = elapsed.indexOf(Math.min(...elapsed))
     loads[lightest] += weight
     shares[lightest].push(key)
   }

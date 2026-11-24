@@ -1,9 +1,18 @@
+import assert from "node:assert/strict"
 import { spawn } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { checkSlots, laneProtocol, queueLogName, recentRunSeconds, takeMachineLock, waitLine } from "./machine-lock.mjs"
+import {
+  checkSlots,
+  laneProtocol,
+  queueLogName,
+  recentRunSeconds,
+  takeMachineLock,
+  takeSpeedLock,
+  waitLine,
+} from "./machine-lock.mjs"
 
 const fail = (message) => {
   console.error(message)
@@ -57,6 +66,22 @@ const waiter = (
 }
 const started = (seen) => seen.out.includes("started")
 const placed = (place) => (seen) => seen.err.includes(`number ${place} in line`)
+
+const speedFolder = path.join(folder, "speed")
+const releaseSpeed = await within(takeSpeedLock({ folder: speedFolder }), "a free speed lock kept a check waiting")
+try {
+  assert.ok(fs.existsSync(path.join(speedFolder, "speed.lock")), "the speed lock uses its own directory")
+  await assert.rejects(
+    within(takeSpeedLock({ folder: speedFolder, waitSeconds: 0 }), "the speed lock did not honor its wait limit"),
+    {
+      message: `speed not measured: could not acquire ${path.join(speedFolder, "speed.lock")} (wait limit 0 s); check for a running speed spec or bench`,
+    },
+  )
+} finally {
+  await releaseSpeed()
+}
+const reacquiredSpeed = await within(takeSpeedLock({ folder: speedFolder }), "the speed lock was not released")
+await reacquiredSpeed()
 
 const first = { AIRDESIGN_CHECK_SLOTS: "1" }
 const releaseFirst = await within(takeMachineLock({ folder, env: first, say }), "a free lock kept a check waiting")

@@ -1,7 +1,7 @@
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { designScans } from "./browser-change-map.mjs"
+import { designScans, editorSpeedSpec } from "./browser-change-map.mjs"
 import { smallLaneCommand } from "./machine-lock.mjs"
 import { readSpecSeconds, specFiles, specFolder, weightedShares } from "./spec-seconds.mjs"
 import { testFilesByProject } from "./unit-test-files.mjs"
@@ -22,6 +22,7 @@ export const browserShares = (folder, total) =>
     keys: specFiles(folder).filter((name) => !designScans.includes(`${specFolder}/${name}`)),
     seconds: readSpecSeconds(folder).seconds,
     total,
+    serialKey: editorSpeedSpec,
   })
 
 const specPattern = (file) => `${file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`
@@ -33,7 +34,7 @@ const browserShare = (shard) => {
   return share.map((name) => specPattern(`${specFolder}/${name}`))
 }
 
-const speedSpec = specPattern(`${specFolder}/editor-speed.spec.ts`)
+const speedSpec = specPattern(`${specFolder}/${editorSpeedSpec}`)
 
 const browserArgs = (part, shard, { browserSpecs = "all" }) => {
   if (part === "design") return designScans

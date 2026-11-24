@@ -36,11 +36,12 @@ placedOnce(many.shares, ["x.spec.ts", "y.spec.ts"])
 assert.deepEqual(many.shares[2], [], "more shares than keys leaves a share empty, which the browser part refuses")
 
 const browserFiles = specFiles(root).filter((name) => !designScans.includes(`tests/browser/${name}`))
-for (const total of [1, 2, 4, 6]) {
+for (const total of [1, 2, 4, 6, 8]) {
   const { shares, loads } = browserShares(root, total)
   placedOnce(shares, browserFiles)
   const heaviest = Math.max(...Object.values(readSpecSeconds(root).seconds))
-  assert.ok(Math.max(...loads) - Math.min(...loads) <= heaviest, `${total} browser shares stay within one file`)
+  const elapsed = loads.map((load, index) => (shares[index].includes("editor-speed.spec.ts") ? load : load / 2))
+  assert.ok(Math.max(...elapsed) - Math.min(...elapsed) <= heaviest, `${total} browser shares account for worker count`)
 }
 
 const scheduled = new Map([

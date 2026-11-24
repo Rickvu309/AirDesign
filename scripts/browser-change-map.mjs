@@ -4,6 +4,8 @@ import { specFolder, unrecordedSeconds, weightedShares } from "./spec-seconds.mj
 export const inBrowser = (file) => file.startsWith(`${specFolder}/`)
 export const browserSpec = (file) => inBrowser(file) && file.endsWith(".spec.ts")
 
+export const editorSpeedSpec = "editor-speed.spec.ts"
+
 export const designScans = ["tests/browser/design-states.spec.ts", "tests/browser/every-screen.spec.ts"]
 
 export const browserSetup = [
@@ -30,7 +32,7 @@ export const browserJobs = (specs, seconds, limit) => {
   const weigh = unrecordedSeconds(seconds)
   const work = keys.reduce((sum, key) => sum + weigh(key), 0)
   const total = Math.max(1, Math.min(limit, keys.length, Math.ceil(work / specSecondsPerJob)))
-  const { shares } = weightedShares({ keys, seconds, total })
+  const { shares } = weightedShares({ keys, seconds, total, serialKey: editorSpeedSpec })
   const populated = shares.filter((share) => share.length > 0)
   return populated.map((share, index) => ({
     part: "browser",
