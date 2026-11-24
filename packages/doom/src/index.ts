@@ -77,6 +77,7 @@ export { childrenOf, flows, holdsText, lockedIn, parentOf, propOf, slideOf, slid
 export { type ListedRun, liveRuns, runsOf } from "./live-runs.js"
 export { type Face, type FaceNeeds, doomFaces } from "./text-faces.js"
 export { contentAreaOf } from "./agent-place.js"
+export { freeAreaOf } from "./free-area-of.js"
 export { sampleChart } from "./sample-charts.js"
 export { placeholderSubtitle, titleOnlyWrites, titleSlideWrites } from "./slide-placeholders.js"
 export { type SlideStart, slideStartWrites, slideStarts } from "./slide-starts.js"

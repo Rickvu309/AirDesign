@@ -1,4 +1,4 @@
-import { ChartBar, ChartColumn, ChartLine, ChartNoAxesColumn, ChartPie, FileDown, Search } from "lucide-react"
+import { ChartBar, ChartColumn, ChartLine, ChartNoAxesColumn, ChartPie, FileDown, Image, Search } from "lucide-react"
 import { DynamicIcon, type IconName } from "lucide-react/dynamic"
 import { useEffect, useId, useMemo, useRef, useState, type ComponentType, type KeyboardEvent } from "react"
 import { editorCopy } from "@/copy/editor-copy"
@@ -7,10 +7,12 @@ import { cn } from "@/lib/class-names"
 import { composing } from "@/lib/composing"
 import * as doom from "@airdesign/doom"
 import { stepHighlight, type HighlightKey } from "./actions-highlight"
+import { pickPicture } from "./picture-picker"
 
 export type ActionRun = {
   readonly chart: (kind: doom.Chart["kind"]) => void
   readonly icon: (name: string) => void
+  readonly picture: (file: File) => void
   readonly exportPdf: () => void
 }
 
@@ -35,6 +37,25 @@ const charts: readonly { readonly kind: doom.Chart["kind"]; readonly glyph: Comp
     { kind: "pie", glyph: ChartPie },
     { kind: "stacked", glyph: ChartNoAxesColumn },
   ]
+
+const imageGroup: Group = {
+  id: "image",
+  title: editorCopy.imageGroup,
+  find: (words) =>
+    words === "" || `${editorCopy.imageGroup} ${editorCopy.placeImage} picture`.toLowerCase().includes(words)
+      ? [
+          {
+            key: "place-image",
+            label: editorCopy.placeImage,
+            glyph: Image,
+            run(run, finish) {
+              pickPicture((file) => run.picture(file))
+              finish()
+            },
+          },
+        ]
+      : [],
+}
 
 const chartsGroup: Group = {
   id: "charts",
@@ -77,7 +98,7 @@ const deckGroup: Group = {
       : [],
 }
 
-const actionGroups: readonly Group[] = [chartsGroup, deckGroup]
+const actionGroups: readonly Group[] = [imageGroup, chartsGroup, deckGroup]
 const iconColumns = 8
 const highlightKeys = new Set<string>(["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"])
 

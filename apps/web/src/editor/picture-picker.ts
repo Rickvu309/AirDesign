@@ -14,10 +14,14 @@ export function pickPicture(onPicture: (file: File) => void, made: Document = do
   input.accept = pictureAccept
   input.addEventListener("change", () => {
     letGo(input)
+    input.blur()
     const file = input.files?.[0]
     if (file !== undefined) onPicture(file)
   })
-  input.addEventListener("cancel", () => letGo(input))
+  input.addEventListener("cancel", () => {
+    letGo(input)
+    input.blur()
+  })
   held = input
   input.click()
 }

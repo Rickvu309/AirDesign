@@ -15,6 +15,7 @@ export type Pictures = {
   readonly assetUrl: (asset: string) => string | undefined
   readonly drop: (event: DragEvent) => void
   readonly over: (event: DragEvent) => void
+  readonly add: (file: Blob) => void
   readonly notice: ThinNotice | null
 }
 
@@ -98,5 +99,12 @@ export function useDoomPictures(args: {
     [place],
   )
 
-  return { assetUrl, drop, over, notice }
+  const add = useCallback(
+    (file: Blob) => {
+      void place(file, null)
+    },
+    [place],
+  )
+
+  return { assetUrl, drop, over, add, notice }
 }

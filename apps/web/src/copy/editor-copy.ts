@@ -89,6 +89,8 @@ export const editorCopy = {
   actionsSearch: "Search actions, icons and charts",
   deckGroup: "Deck",
   exportPdf: "Export as PDF",
+  imageGroup: "Image",
+  placeImage: "Place image",
   chartsGroup: "Charts",
   iconsGroup: "Icons",
   allIcons: "All icons…",
