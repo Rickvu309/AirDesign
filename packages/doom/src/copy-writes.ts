@@ -1,5 +1,5 @@
 import type { Doom, Write } from "./doom.js"
-import { get } from "./doom-walk.js"
+import { propOf } from "./doom-walk.js"
 import type { End, Geometry } from "./geometry.js"
 import type { NodeId } from "./ids.js"
 import { type OrderKey, orderKeyBetween } from "./order-key.js"
@@ -20,7 +20,7 @@ export type Clipboard = { readonly view: Doom; readonly roots: readonly NodeId[]
 
 const slotOf = (view: Doom, id: NodeId): Slot | null => {
   const node = view.nodes.get(id)
-  return node === undefined ? null : (get(node, "parent") ?? null)
+  return node === undefined ? null : (propOf(node, "parent") ?? null)
 }
 
 const siblingsOf = (view: Doom, parent: NodeId): readonly NodeId[] => view.children.get(parent) ?? []

@@ -5,7 +5,7 @@ import type { NodeId } from "./ids.js"
 import type { Layout } from "./layout.js"
 import type { Color, Paint, Sides } from "./paint.js"
 import type { Node, Doom } from "./doom.js"
-import { type Box, childrenOf, get, isLaidOut, isLive, parentOf, slidesOf } from "./doom-walk.js"
+import { type Box, childrenOf, isLaidOut, isLive, parentOf, propOf, slidesOf } from "./doom-walk.js"
 import { textToMarkdown } from "./markdown.js"
 import type { Span, Text } from "./text.js"
 
@@ -50,7 +50,7 @@ function layoutWords(layout: Layout): readonly string[] {
 }
 
 function chartWords(node: Node): string | undefined {
-  const chart = get(node, "chart")
+  const chart = propOf(node, "chart")
   if (chart === undefined) return undefined
   const words: AgentChart = {
     kind: chart.kind,
@@ -67,18 +67,18 @@ function chartWords(node: Node): string | undefined {
 
 export function kindOf(node: Node): string {
   if (node.type === "slide" || node.type === "slideRow") return node.type
-  if (node.type === "frame") return get(node, "chart") === undefined ? "frame" : "chart"
-  const kind = get(node, "geometry")?.kind
+  if (node.type === "frame") return propOf(node, "chart") === undefined ? "frame" : "chart"
+  const kind = propOf(node, "geometry")?.kind
   if (kind === "line" || kind === "icon") return kind
-  const fills = get(node, "fills") ?? []
+  const fills = propOf(node, "fills") ?? []
   if (fills.some((paint) => paint.kind === "image")) return "picture"
-  const painted = fills.length > 0 || (get(node, "strokes") ?? []).length > 0
-  return get(node, "text") !== undefined && !painted ? "text" : "shape"
+  const painted = fills.length > 0 || (propOf(node, "strokes") ?? []).length > 0
+  return propOf(node, "text") !== undefined && !painted ? "text" : "shape"
 }
 
 function placeWords(doom: Doom, node: Node, boxes: ReadonlyMap<NodeId, Box> | undefined): string | undefined {
   const solved = boxes?.get(node.id)
-  const box = solved ?? get(node, "box")
+  const box = solved ?? propOf(node, "box")
   if (box === undefined) return undefined
   const above = parentOf(node)
   const parent = above == null ? undefined : doom.nodes.get(above.id)
@@ -91,15 +91,15 @@ function placeWords(doom: Doom, node: Node, boxes: ReadonlyMap<NodeId, Box> | un
 
 function looksOf(node: Node): readonly string[] {
   const out: string[] = []
-  const name = get(node, "name")
-  const fills = get(node, "fills")
-  const strokes = get(node, "strokes")
-  const stroke = get(node, "stroke")
-  const radius = get(node, "radius")
-  const effects = get(node, "effects")
-  const opacity = get(node, "opacity")
-  const text = get(node, "text")
-  const geometry = get(node, "geometry")
+  const name = propOf(node, "name")
+  const fills = propOf(node, "fills")
+  const strokes = propOf(node, "strokes")
+  const stroke = propOf(node, "stroke")
+  const radius = propOf(node, "radius")
+  const effects = propOf(node, "effects")
+  const opacity = propOf(node, "opacity")
+  const text = propOf(node, "text")
+  const geometry = propOf(node, "geometry")
   if (name !== undefined) out.push(`name=${quoted(name)}`)
   if (fills !== undefined && fills.length > 0) out.push(`fill=${paintWords(fills)}`)
   if (strokes !== undefined && strokes.length > 0) out.push(`stroke=${paintWords(strokes)}`)
@@ -111,9 +111,9 @@ function looksOf(node: Node): readonly string[] {
   if (effects !== undefined && (typeof effects === "string" || effects.length > 0))
     out.push(`effect=${typeof effects === "string" ? effects : "custom"}`)
   if (opacity !== undefined && opacity !== 1) out.push(`opacity=${num(opacity)}`)
-  if (get(node, "hidden") === true) out.push("hidden")
-  if (get(node, "locked") === true) out.push("locked")
-  const layout = get(node, "layout")
+  if (propOf(node, "hidden") === true) out.push("hidden")
+  if (propOf(node, "locked") === true) out.push("locked")
+  const layout = propOf(node, "layout")
   if (layout !== undefined && node.type === "frame") out.push(...layoutWords(layout))
   if (text !== undefined) {
     out.push(`style=${text.style}`, `resize=${text.resize}`)
@@ -167,7 +167,7 @@ function overrideWords(text: Text): readonly string[] {
 }
 
 function lineOf(doom: Doom, node: Node, depth: number, boxes: ReadonlyMap<NodeId, Box> | undefined): string {
-  const role = get(node, "role")
+  const role = propOf(node, "role")
   const kind = `${kindOf(node)}${role === undefined ? "" : `:${role}`}`
   const place = placeWords(doom, node, boxes)
   return `${"  ".repeat(depth)}${[node.id, kind, ...(place === undefined ? [] : [place]), ...looksOf(node)].join(" ")}`
@@ -179,14 +179,14 @@ function walk(doom: Doom, node: Node, depth: number, boxes: ReadonlyMap<NodeId, 
 }
 
 function slideLine(node: Node): string {
-  const name = get(node, "name")
-  const fills = get(node, "fills")
-  const notes = get(node, "notes")
+  const name = propOf(node, "name")
+  const fills = propOf(node, "fills")
+  const notes = propOf(node, "notes")
   return [
     "slide",
     node.id,
     ...(name === undefined ? [] : [quoted(name)]),
-    ...(get(node, "hidden") === true ? ["hidden"] : []),
+    ...(propOf(node, "hidden") === true ? ["hidden"] : []),
     ...(fills !== undefined && fills.length > 0 ? [`fill=${paintWords(fills)}`] : []),
     ...(notes === undefined || notes.chars === "" ? [] : [`notes=${quoted(notes.chars)}`]),
   ].join(" ")

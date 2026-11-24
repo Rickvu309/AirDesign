@@ -1,6 +1,6 @@
 import type { MouseEvent } from "react"
 import type { SlideTransition } from "@airdesign/pptx"
-import type { SlideSize } from "@/editor/canvas-zoom"
+import type { SlideSize } from "@/editing/canvas-zoom"
 import { presentCopy } from "@/copy/present-copy"
 import { cn } from "@/lib/class-names"
 import { focusOnOpen } from "@/present/present-focus"

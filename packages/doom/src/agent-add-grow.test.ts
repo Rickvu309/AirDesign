@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { agentDeck, build, compiled, lastChild, minter } from "./agent-fixtures.js"
 import { agent, ids, tryLand } from "./sample-deck.js"
-import { get } from "./doom-walk.js"
+import { propOf } from "./doom-walk.js"
 import {
   applyEdit,
   deckOf,
@@ -24,15 +24,15 @@ describe("an agent's text grows with its words, as Figma's auto height", () => {
   it("keeps an explicit box's place and width, and lets its height follow the words, as Figma's auto height", () => {
     const doom = build(agentDeck(), text({ box: { x: 10, y: 20, w: 300, h: 80 } }))
     const made = lastChild(doom, slide)
-    expect(get(made, "box")).toMatchObject({ x: 10, y: 20, w: 300, rotation: 0 })
-    expect(get(made, "text")?.resize).toBe("height")
+    expect(propOf(made, "box")).toMatchObject({ x: 10, y: 20, w: 300, rotation: 0 })
+    expect(propOf(made, "text")?.resize).toBe("height")
   })
 
   it("grows a boxed text past the height the agent guessed when its words need more lines", () => {
     const words =
       "Cutting DSO by 12 days is the clearest cash lever; we ask the board to endorse all three Q4 priorities"
     const doom = build(agentDeck(), text({ textStyle: "title", text: words, box: { x: 120, y: 70, w: 900, h: 160 } }))
-    expect(get(lastChild(doom, slide), "box")!.h).toBeGreaterThan(160)
+    expect(propOf(lastChild(doom, slide), "box")!.h).toBeGreaterThan(160)
   })
 
   it("keeps a shape's label fixed to the shape, as Figma does", () => {
@@ -44,8 +44,8 @@ describe("an agent's text grows with its words, as Figma's auto height", () => {
       box: { x: 10, y: 20, w: 300, h: 80 },
     } as unknown as AgentChange)
     const made = lastChild(doom, slide)
-    expect(get(made, "box")).toMatchObject({ w: 300, h: 80 })
-    expect(get(made, "text")?.resize).toBe("fixed")
+    expect(propOf(made, "box")).toMatchObject({ w: 300, h: 80 })
+    expect(propOf(made, "text")?.resize).toBe("fixed")
   })
 
   const estimate = measureWith({})
@@ -58,21 +58,21 @@ describe("an agent's text grows with its words, as Figma's auto height", () => {
     const made = lastChild(before, slide)
     const after = build(before, { op: "set", target: made.id, box: { h: 400 } } as unknown as AgentChange)
     const set = after.nodes.get(made.id)!
-    expect(get(set, "text")?.resize).toBe("fixed")
-    expect(get(set, "box")?.h).toBe(400)
+    expect(propOf(set, "text")?.resize).toBe("fixed")
+    expect(propOf(set, "box")?.h).toBe(400)
     expect(solveLayout(after, slide, estimate).get(made.id)?.h).toBe(400)
   })
 
   it("keeps auto height when the agent moves the box and sends back the height it already has", () => {
     const before = grown()
     const made = lastChild(before, slide)
-    const { h } = get(made, "box")!
+    const { h } = propOf(made, "box")!
     const after = build(before, {
       op: "set",
       target: made.id,
       box: { x: 200, y: 80, w: 900, h },
     } as unknown as AgentChange)
-    expect(get(after.nodes.get(made.id)!, "text")?.resize).toBe("height")
+    expect(propOf(after.nodes.get(made.id)!, "text")?.resize).toBe("height")
   })
 
   it("tells the agent in its read whether a text grows with its words or keeps its box", () => {
@@ -96,7 +96,7 @@ describe("an agent's text grows with its words, as Figma's auto height", () => {
     const before = grown()
     const made = lastChild(before, slide)
     const after = build(before, { op: "set", target: made.id, box: { w: 1600 } } as unknown as AgentChange)
-    expect(get(after.nodes.get(made.id)!, "text")?.resize).toBe("height")
+    expect(propOf(after.nodes.get(made.id)!, "text")?.resize).toBe("height")
   })
 
   it("undoes the add whole, and undoes a height set back to auto height", () => {
@@ -114,11 +114,11 @@ describe("an agent's text grows with its words, as Figma's auto height", () => {
     const added = step(agentDeck(), text({ box: { x: 10, y: 20, w: 300, h: 80 } }))
     const made = lastChild(added.after, slide)
     const gone = (tryLand(added.after, invert(added.before, added.after, added.edit)) as Doom).nodes.get(made.id)
-    expect(gone === undefined || get(gone, "parent") == null).toBe(true)
+    expect(gone === undefined || propOf(gone, "parent") == null).toBe(true)
     const sized = step(added.after, { op: "set", target: made.id, box: { h: 400 } } as unknown as AgentChange)
-    expect(get(sized.after.nodes.get(made.id)!, "text")?.resize).toBe("fixed")
+    expect(propOf(sized.after.nodes.get(made.id)!, "text")?.resize).toBe("fixed")
     const undone = tryLand(sized.after, invert(sized.before, sized.after, sized.edit)) as Doom
-    expect(get(undone.nodes.get(made.id)!, "text")?.resize).toBe("height")
+    expect(propOf(undone.nodes.get(made.id)!, "text")?.resize).toBe("height")
   })
 
   it("hugs its words in an auto layout frame, whatever height the agent named", () => {
@@ -132,9 +132,9 @@ describe("an agent's text grows with its words, as Figma's auto height", () => {
     const frame = lastChild(framed, slide)
     const doom = build(framed, text({ into: frame.id, box: { x: 0, y: 0, w: 800, h: 20 } }), minter("b"))
     const made = lastChild(doom, frame.id)
-    expect(get(made, "text")?.resize).toBe("height")
+    expect(propOf(made, "text")?.resize).toBe("height")
     expect(solveLayout(doom, slide, estimate).get(made.id)?.h).toBe(
-      estimate(get(made, "text")!, deckOf(doom).theme, 800).h,
+      estimate(propOf(made, "text")!, deckOf(doom).theme, 800).h,
     )
   })
 })

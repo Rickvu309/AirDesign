@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { gestures } from "@/lib/gestures"
 import { describe, expect, it } from "vitest"
-import { nodeModel } from "./doom-editor/design-model"
+import { nodeModel } from "./editor/design-model"
 import {
   agentFields,
   agentKinds,
@@ -88,7 +88,7 @@ function wordExists(word: string): boolean {
 }
 
 const editorSources: Readonly<Record<string, string>> = import.meta.glob(
-  ["./doom-editor/*.{ts,tsx}", "!./doom-editor/*.test.{ts,tsx}"],
+  ["./editor/*.{ts,tsx}", "!./editor/*.test.{ts,tsx}"],
   { query: "?raw", import: "default", eager: true },
 )
 

@@ -3,7 +3,7 @@ import { type Doom, type Layout, type NodeId, bakeLayout, solveLayout } from "./
 import { block, column, label, measure, padding, plainTheme, row, spot } from "./doom-fixtures-art.js"
 import { type TreeNode, doomFromTree } from "./doom-tree.js"
 import { land } from "./sample-deck.js"
-import { get } from "./doom-walk.js"
+import { propOf } from "./doom-walk.js"
 
 function grown(children: readonly TreeNode[]) {
   const made = doomFromTree({ theme: plainTheme, slides: [{ children }] })
@@ -24,7 +24,7 @@ describe("bakeLayout", () => {
     const deck = grown([hugging([block("a", 100, 50), block("b", 120, 80), label("words", "Hello")])])
     const before = deck.boxes(deck.doom)
     const baked = land(deck.doom, bakeLayout(deck.doom, deck.id("frame"), measure))
-    expect(get(baked.nodes.get(deck.id("frame"))!, "layout")).toEqual({ mode: "none" })
+    expect(propOf(baked.nodes.get(deck.id("frame"))!, "layout")).toEqual({ mode: "none" })
     const after = deck.boxes(baked)
     for (const name of ["frame", "a", "b", "words"]) expect(after.get(deck.id(name))).toEqual(before.get(deck.id(name)))
   })
@@ -50,7 +50,7 @@ describe("bakeLayout", () => {
     const before = deck.boxes(deck.doom)
     const writes = bakeLayout(deck.doom, deck.id("frame"), measure)
     const baked = land(deck.doom, writes)
-    const sizing = (name: string) => get(baked.nodes.get(deck.id(name))!, "sizing")
+    const sizing = (name: string) => propOf(baked.nodes.get(deck.id(name))!, "sizing")
     expect(sizing("frame")).toEqual({ w: "fixed", h: "fixed" })
     expect(sizing("fill")).toEqual({ w: "fixed", h: "fixed" })
     expect(sizing("nested")).toEqual({ w: "hug", h: "hug" })
@@ -72,7 +72,7 @@ describe("bakeLayout", () => {
     }
     const deck = grown([grid])
     const baked = land(deck.doom, bakeLayout(deck.doom, deck.id("frame"), measure))
-    expect(get(baked.nodes.get(deck.id("a"))!, "cell")).toBeUndefined()
+    expect(propOf(baked.nodes.get(deck.id("a"))!, "cell")).toBeUndefined()
     expect(deck.boxes(baked).get(deck.id("a"))).toMatchObject({ x: 200, y: 0, w: 10, h: 10 })
     expect(bakeLayout(baked, deck.id("frame"), measure)).toEqual([])
   })

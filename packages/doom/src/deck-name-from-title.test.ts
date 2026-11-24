@@ -7,7 +7,7 @@ import { agent, ids } from "./sample-deck.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { titleSlideWrites } from "./slide-placeholders.js"
 import { applyEdit, invert, isRefusal, orderKeyBetween, rev, type Doom, type NodeId, type Write } from "./index.js"
-import { childrenOf, get, slidesOf } from "./doom-walk.js"
+import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import { deckName } from "./deck-of.js"
 import { limits } from "./limits.js"
 
@@ -28,12 +28,12 @@ const based = (doom: Doom, write: Write): Write => ({
 })
 
 const titleOn = (doom: Doom, slide: NodeId): NodeId =>
-  childrenOf(doom, slide).find((node) => get(node, "role") === "title")!.id
+  childrenOf(doom, slide).find((node) => propOf(node, "role") === "title")!.id
 
 const typed = (doom: Doom, title: NodeId, chars: string): Write => ({
   node: title,
   prop: "text",
-  value: { ...get(doom.nodes.get(title)!, "text")!, chars, paras: chars.split("\n").map(() => ({})) },
+  value: { ...propOf(doom.nodes.get(title)!, "text")!, chars, paras: chars.split("\n").map(() => ({})) },
 })
 
 function twoSlides(first: string, second: string): { readonly doom: Doom; readonly second: NodeId } {
@@ -51,12 +51,12 @@ const nameFromTitleWrites = (doom: Doom, writes: readonly Write[]): readonly Wri
 
 const deckWrites = (writes: readonly Write[]) => writes.filter((write) => write.node === ids.deck)
 
-const titleOf = (doom: Doom): NodeId => childrenOf(doom, ids.slide).find((node) => get(node, "role") === "title")!.id
+const titleOf = (doom: Doom): NodeId => childrenOf(doom, ids.slide).find((node) => propOf(node, "role") === "title")!.id
 
 const retitle = (doom: Doom, chars: string): Write => ({
   node: titleOf(doom),
   prop: "text",
-  value: { ...get(doom.nodes.get(titleOf(doom))!, "text")!, chars, paras: chars.split("\n").map(() => ({})) },
+  value: { ...propOf(doom.nodes.get(titleOf(doom))!, "text")!, chars, paras: chars.split("\n").map(() => ({})) },
 })
 
 describe("a deck whose name follows its first title", () => {
@@ -94,7 +94,7 @@ describe("a deck whose name follows its first title", () => {
 
   it("follows the title of whichever slide is first after a delete or a reorder, and goes blank when it has none", () => {
     const { doom, second } = twoSlides("Alpha", "Beta")
-    const row = get(slidesOf(doom)[0]!, "parent")!
+    const row = propOf(slidesOf(doom)[0]!, "parent")!
     const moved = { node: second, prop: "parent", value: { id: row.id, at: orderKeyBetween(null, row.at) } } as Write
     expect(deckWrites(nameFromTitleWrites(doom, [moved]))).toEqual([named("Beta")])
     const firstGone: Write = { node: ids.slide, prop: "parent", value: null }
@@ -126,7 +126,7 @@ describe("a deck whose name follows its first title", () => {
   it("leaves a chosen name alone when slide 1 is deleted or another slide moves first", () => {
     const { doom, second } = twoSlides("Alpha", "Beta")
     const chosen = apply(doom, [named("Board pack"), follows(false)])
-    const row = get(slidesOf(chosen)[0]!, "parent")!
+    const row = propOf(slidesOf(chosen)[0]!, "parent")!
     const moved = { node: second, prop: "parent", value: { id: row.id, at: orderKeyBetween(null, row.at) } } as Write
     expect(nameFromTitleWrites(chosen, [moved])).toEqual([])
     expect(nameFromTitleWrites(chosen, [{ node: ids.slide, prop: "parent", value: null }])).toEqual([])
@@ -169,7 +169,7 @@ describe("a deck whose name follows its first title", () => {
     if (isRefusal(landed)) throw new Error(JSON.stringify(landed))
     expect(deckName(landed)).toBe("Board pack")
     expect(
-      get(
+      propOf(
         [...landed.nodes.values()].find((node) => node.type === "deck")!,
         "nameFollows",
       ),

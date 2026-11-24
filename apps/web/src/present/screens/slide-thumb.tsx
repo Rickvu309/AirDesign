@@ -7,7 +7,7 @@ import {
   thumbNavy,
   thumbTeal,
   thumbTitle,
-} from "@/editor/slide-thumb-art"
+} from "@/present/screens/slide-thumb-art"
 import { cn } from "@/lib/class-names"
 
 const bars = [4.1, 4.6, 5, 5.4, 5.7]

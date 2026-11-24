@@ -4,7 +4,7 @@ import { compileAgentChange } from "./agent-compile.js"
 import { build, compiled, minter, more, richDeck, started } from "./agent-fixtures.js"
 import { applyEdit, emptyDoom, isRefusal, rev, type Doom } from "./index.js"
 import { agent, create, ids, land, once, theme } from "./sample-deck.js"
-import { get, parentOf, slidesOf } from "./doom-walk.js"
+import { parentOf, propOf, slidesOf } from "./doom-walk.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
 const order = (doom: Doom) => slidesOf(doom).map((slide) => slide.id)
@@ -14,7 +14,7 @@ describe("slide add", () => {
   it("adds a slide after the last one, in the same group, named by its place", () => {
     const doom = build(richDeck(), change({ op: "slide", add: {} }))
     const slides = slidesOf(doom)
-    expect(slides.map((slide) => get(slide, "name"))).toEqual(["Slide 1", "Slide 2", "Slide 3"])
+    expect(slides.map((slide) => propOf(slide, "name"))).toEqual(["Slide 1", "Slide 2", "Slide 3"])
     expect(parentOf(slides[2]!)?.id).toBe(ids.row)
   })
 
@@ -22,7 +22,7 @@ describe("slide add", () => {
     const doom = build(richDeck(), change({ op: "slide", add: { after: ids.slide } }))
     expect(order(doom)[0]).toBe(ids.slide)
     expect(order(doom)[2]).toBe(more.slide2)
-    expect(get(slidesOf(doom)[1]!, "name")).toBe("Slide 3")
+    expect(propOf(slidesOf(doom)[1]!, "name")).toBe("Slide 3")
   })
 
   it("starts a slide group when the deck has none", () => {

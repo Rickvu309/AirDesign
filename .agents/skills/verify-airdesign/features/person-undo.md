@@ -4,7 +4,7 @@ The person's own edits in an open deck can be undone and redone from the keyboar
 
 ## Sub-features
 
-- `undo-keys` Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z and Ctrl+Y reach the deck's undo from anywhere in the editor outside a form field (`useCanvasKeys` in `apps/web/src/doom-editor/use-canvas-keys.ts`). Form fields (`input`, `textarea`, `select`) keep the browser's own undo, so in the speaker notes field the keys undo the browser's typing.
+- `undo-keys` Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z and Ctrl+Y reach the deck's undo from anywhere in the editor outside a form field (`useCanvasKeys` in `apps/web/src/editor/use-canvas-keys.ts`). Form fields (`input`, `textarea`, `select`) keep the browser's own undo, so in the speaker notes field the keys undo the browser's typing.
 - `undo-steps` each edit the editor pushes is one step: one gesture, one key, one panel change. Undo writes back each prop's value from before the step and redo the step's own values; an undo of an add deletes the layer and its redo puts it back; a new edit forgets the redo steps (`packages/live/src/doom-deck.ts`, cases in `packages/live/src/doom-deck.test.ts` and `doom-undo-chain.test.ts`).
 - `undo-typing` Ctrl/Cmd+Z while typing ends the edit and takes back the words typed since the text last saved (`use-text-session.ts`).
 - `undo-paint` an undone move paints the layer back at once and the server gets its box; an undone text edit repaints the slide at once.

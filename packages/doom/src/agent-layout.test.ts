@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
-import { childrenOf, get, slidesOf } from "./doom-walk.js"
+import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import { ids } from "./sample-deck.js"
 import { measureWith, solveLayout } from "./index.js"
 
@@ -23,8 +23,8 @@ describe("a frame given a height keeps it", () => {
   it("keeps the height of a KPI row and lets each card fill it", () => {
     const doom = build(agentDeck(), add({ kind: "kpi", items: kpiItems, box }))
     const row = lastChild(doom, slide)
-    expect(get(row, "box")).toMatchObject({ h: 420 })
-    for (const card of childrenOf(doom, row.id)) expect(get(card, "sizing")).toEqual({ w: "fill", h: "fill" })
+    expect(propOf(row, "box")).toMatchObject({ h: 420 })
+    for (const card of childrenOf(doom, row.id)) expect(propOf(card, "sizing")).toEqual({ w: "fill", h: "fill" })
   })
 
   it("keeps the height of a grid and gives the body rows the room", () => {
@@ -35,8 +35,8 @@ describe("a frame given a height keeps it", () => {
     ]
     const doom = build(agentDeck(), add({ kind: "frame", rows, box: { ...box, h: 600 } }))
     const grid = lastChild(doom, slide)
-    expect(get(grid, "box")).toMatchObject({ h: 600 })
-    expect(get(grid, "layout")).toMatchObject({ mode: "grid", rows: ["hug", { fr: 1 }, { fr: 1 }] })
+    expect(propOf(grid, "box")).toMatchObject({ h: 600 })
+    expect(propOf(grid, "layout")).toMatchObject({ mode: "grid", rows: ["hug", { fr: 1 }, { fr: 1 }] })
   })
 })
 
@@ -52,7 +52,7 @@ describe("a grid header reads as a header", () => {
         ],
       }),
     )
-    const [header, , body] = childrenOf(doom, lastChild(doom, slide).id).map((node) => get(node, "text")!)
+    const [header, , body] = childrenOf(doom, lastChild(doom, slide).id).map((node) => propOf(node, "text")!)
     expect(header!.style).toBe(body!.style)
     expect(header!.spans).toMatchObject([{ end: 2, bold: true }])
   })
@@ -66,7 +66,7 @@ describe("content with no box uses the slide well", () => {
       add({ kind: "cards", slide: on, items: [{ title: "Grow", points: ["Enter two markets"] }] }),
       minter("b"),
     )
-    const cards = get(lastChild(doom, on), "box")!
+    const cards = propOf(lastChild(doom, on), "box")!
     expect(cards.x).toBe(80)
     expect(cards.w).toBe(1760)
     expect(cards.y + cards.h).toBeLessThanOrEqual(1080 - 40)
@@ -83,7 +83,7 @@ describe("content with no box uses the slide well", () => {
       ],
     })
     const doom = build(build(start, title(on), minter("a")), grid, minter("b"))
-    const box = get(lastChild(doom, on), "box")!
+    const box = propOf(lastChild(doom, on), "box")!
     expect(box.y + box.h).toBeGreaterThan(1080 * 0.66)
   })
 })
@@ -91,13 +91,13 @@ describe("content with no box uses the slide well", () => {
 describe("a labelled shape looks like a card", () => {
   it("rounds its corners like the cards of a pattern", () => {
     let doom = build(agentDeck(), add({ kind: "cards", items: [{ title: "Grow" }], box }), minter("a"))
-    const cardRadius = get(childrenOf(doom, lastChild(doom, slide).id)[0]!, "radius")
+    const cardRadius = propOf(childrenOf(doom, lastChild(doom, slide).id)[0]!, "radius")
     doom = build(
       doom,
       add({ kind: "shape", text: "Decision", fill: "accent1", box: { ...box, y: 700, h: 200 } }),
       minter("b"),
     )
-    expect(get(lastChild(doom, slide), "radius")).toBe(cardRadius)
+    expect(propOf(lastChild(doom, slide), "radius")).toBe(cardRadius)
     expect(cardRadius).toBeGreaterThan(0)
   })
 })
@@ -108,11 +108,11 @@ describe("layout none keeps the frame as it looked", () => {
     const row = lastChild(doom, slide)
     const laid = solveLayout(doom, slide, measureWith({}))
     const off = build(doom, { op: "set", target: row.id, layout: "none" } as AgentChange)
-    expect(get(off.nodes.get(row.id)!, "layout")).toEqual({ mode: "none" })
+    expect(propOf(off.nodes.get(row.id)!, "layout")).toEqual({ mode: "none" })
     const kept = solveLayout(off, slide, measureWith({}))
     for (const card of childrenOf(doom, row.id)) {
       expect(kept.get(card.id)).toEqual(laid.get(card.id))
-      expect(get(off.nodes.get(card.id)!, "sizing")).toEqual({ w: "fixed", h: "fixed" })
+      expect(propOf(off.nodes.get(card.id)!, "sizing")).toEqual({ w: "fixed", h: "fixed" })
     }
   })
 })

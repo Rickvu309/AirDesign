@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState, type KeyboardEvent, type RefObject }
 import { zoomCopy, zoomToOf } from "@/copy/product-copy"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuRadioGroup, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { steppedZoom, typedZoom, zoomPresets, type Zoom } from "@/editor/canvas-zoom"
+import { steppedZoom, typedZoom, zoomPresets, type Zoom } from "@/editing/canvas-zoom"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { guideCopy } from "@/copy/guide-copy"
 import {

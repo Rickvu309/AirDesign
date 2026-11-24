@@ -1,9 +1,9 @@
 import { expect } from "@playwright/test"
-import { coreRoutes } from "../../apps/web/src/core/core-routes"
+import { sampleRoutes } from "../../apps/web/src/samples/sample-routes"
 import { test } from "./deck-test"
 import { openScreen } from "./open-screen"
 
-for (const [name, path] of Object.entries(coreRoutes)) {
+for (const [name, path] of Object.entries(sampleRoutes)) {
   test(`${name} paints each line of text inside the width the layout gave it`, async ({ page }) => {
     const faults: string[] = []
     page.on("pageerror", (error) => faults.push(error.message))
@@ -23,7 +23,7 @@ for (const [name, path] of Object.entries(coreRoutes)) {
   })
 }
 
-for (const [name, path] of Object.entries(coreRoutes)) {
+for (const [name, path] of Object.entries(sampleRoutes)) {
   test(`${name} paints no line of text over another layer's words or fill`, async ({ page }) => {
     await openScreen(page, path)
     await page.locator("[data-doom-slide]").waitFor()

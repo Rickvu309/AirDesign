@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { agentDeck, build, lastChild, minter, more, richDeck } from "./agent-fixtures.js"
-import { get } from "./doom-walk.js"
+import { propOf } from "./doom-walk.js"
 import { ids, land } from "./sample-deck.js"
 
 const slide = ids.slide
@@ -23,7 +23,7 @@ describe("a line's ends and route from an agent", () => {
       } as AgentChange),
       slide,
     )
-    expect(get(made, "geometry")).toMatchObject({
+    expect(propOf(made, "geometry")).toMatchObject({
       start: { node: ids.card, site: "r" },
       end: { node: ids.side, site: "l" },
       route: "elbow",
@@ -35,7 +35,7 @@ describe("a line's ends and route from an agent", () => {
       richDeck(),
       set(more.line, { from: { layer: ids.card, side: "right" }, to: { layer: ids.side }, route: "elbow" }),
     )
-    expect(get(doom.nodes.get(more.line)!, "geometry")).toEqual({
+    expect(propOf(doom.nodes.get(more.line)!, "geometry")).toEqual({
       kind: "line",
       start: { node: ids.card, site: "r" },
       end: { node: ids.side, site: "l" },
@@ -47,7 +47,7 @@ describe("a line's ends and route from an agent", () => {
   it("frees an end to a point and refuses an end on a layer it cannot hold", () => {
     const attached = build(richDeck(), set(more.line, { from: { layer: ids.card, side: "top" } }))
     const freed = build(attached, set(more.line, { from: { x: 10, y: 20 } }))
-    expect(get(freed.nodes.get(more.line)!, "geometry")).toMatchObject({ start: { x: 10, y: 20 } })
+    expect(propOf(freed.nodes.get(more.line)!, "geometry")).toMatchObject({ start: { x: 10, y: 20 } })
     expect(refusal(richDeck(), set(more.line, { to: { layer: more.line } }))).toMatchObject({ field: "to" })
     expect(refusal(richDeck(), set(more.line, { to: { layer: more.titled } }))).toMatchObject({ field: "to" })
     expect(refusal(richDeck(), set(ids.card, { route: "curve" }))).toMatchObject({ field: "route" })
@@ -58,7 +58,7 @@ describe("a line's ends and route from an agent", () => {
       richDeck(),
       set(more.line, { from: { layer: ids.title, side: "left" }, to: { layer: more.icon } }),
     )
-    expect(get(text.nodes.get(more.line)!, "geometry")).toMatchObject({
+    expect(propOf(text.nodes.get(more.line)!, "geometry")).toMatchObject({
       start: { node: ids.title, site: "l" },
       end: { node: more.icon, site: "l" },
     })

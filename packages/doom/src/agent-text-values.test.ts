@@ -4,13 +4,13 @@ import { readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { agentDeck, build, minter, started } from "./agent-fixtures.js"
 import { readForAgent } from "./agent-read.js"
-import { get } from "./doom-walk.js"
+import { propOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { ids, land, revOf, sampleDeck, textOf } from "./sample-deck.js"
 
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
   ({ op: "set", target, ...look }) as AgentChange
-const textAt = (doom: Doom) => get(doom.nodes.get(ids.title)!, "text")!
+const textAt = (doom: Doom) => propOf(doom.nodes.get(ids.title)!, "text")!
 
 describe("raw text values: an agent sets what the panel's text controls set", () => {
   it("writes size, font, line height, letter spacing, case, underline, strike and justify, and reads them back", () => {

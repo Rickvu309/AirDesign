@@ -1,6 +1,6 @@
 import { flushSync } from "react-dom"
 import { useLayoutEffect, useState } from "react"
-import { canvasRoom, fitWidth, slideTop, type SlideSize } from "@/editor/canvas-zoom"
+import { canvasRoom, fitWidth, slideTop, type SlideSize } from "@/editing/canvas-zoom"
 
 export function useCanvasRoom(): {
   readonly room: SlideSize | null

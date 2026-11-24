@@ -5,7 +5,7 @@ A person clicks a layer on the slide to select it. A frame with corner and side 
 ## Sub-features
 
 - `select` a click on a layer selects it and shows `[data-selection-outline]`, `[data-handles]` with `[data-grip]` grips and `[data-size-label]`. A click on the empty slide, or Escape, clears it. Selecting more layers is in `canvas-select.md`.
-- `move` dragging inside a layer moves it; Shift holds the drag to one axis. A locked layer, a layer laid out by an auto layout frame, and a line with both ends on shapes do not move by a drag (`movable` in `apps/web/src/doom-editor/move-writes.ts`).
+- `move` dragging inside a layer moves it; Shift holds the drag to one axis. A locked layer, a layer laid out by an auto layout frame, and a line with both ends on shapes do not move by a drag (`movable` in `apps/web/src/editor/move-writes.ts`).
 - `resize` a corner grip resizes from that corner and keeps the opposite one; a side grip moves one edge. Shift keeps the proportions and Alt resizes from the centre. Resizing a group scales the layers inside it and leaves the group hugging them. Each resize is one undo step.
 - `rotate` dragging a rotate zone (`rotate-top-right` and the other corners) turns the layer about its centre; Shift steps by 15 degrees. Shift+H and Shift+V flip the selection.
 - `snap` while a drag moves a layer, its edges and centre snap to other layers' and the slide's, with snap guides in the limit colour, and an equal gap in its row or column shows spacing guides. A corner or side resize of upright layers snaps the edges it moves, from the centre with Alt too; a resize with Shift or of a turned layer does not snap. Holding Control places with no snapping. The saved box is the snapped one.

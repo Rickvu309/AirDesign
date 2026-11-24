@@ -1,7 +1,7 @@
 import type { AgentChange } from "./agent-change.js"
 import { type Draft, living, put, stop } from "./agent-draft.js"
 import { duplicateWrites } from "./copy-writes.js"
-import { deckOf, get } from "./doom-walk.js"
+import { deckOf, propOf } from "./doom-walk.js"
 
 export function compileDuplicate(draft: Draft, change: Extract<AgentChange, { op: "duplicate" }>): void {
   for (const id of change.nodes) {
@@ -16,7 +16,7 @@ export function compileDeck(draft: Draft, change: Extract<AgentChange, { op: "de
   const { name, nameFollows, colors, fonts } = change
   if (name === undefined && nameFollows === undefined && colors === undefined && fonts === undefined)
     stop("shape", deck.id, "deck")
-  const theme = get(deck, "theme") ?? stop("missing", deck.id, "theme")
+  const theme = propOf(deck, "theme") ?? stop("missing", deck.id, "theme")
   put(draft, deck.id, {
     ...(name === undefined ? {} : { name }),
     ...(nameFollows === undefined ? {} : { nameFollows }),

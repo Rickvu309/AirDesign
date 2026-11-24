@@ -1,5 +1,5 @@
 import type { Doom } from "./doom.js"
-import { get, lockedIn, slideOf } from "./doom-walk.js"
+import { lockedIn, propOf, slideOf } from "./doom-walk.js"
 import type { NodeId } from "./ids.js"
 
 export function holdsLineEnd(
@@ -10,6 +10,6 @@ export function holdsLineEnd(
 ): boolean {
   const node = doom.nodes.get(target)
   if (node === undefined || target === line || (node.type !== "shape" && node.type !== "frame")) return false
-  if (get(node, "geometry")?.kind === "line" || slideOf(doom, target) !== slide) return false
+  if (propOf(node, "geometry")?.kind === "line" || slideOf(doom, target) !== slide) return false
   return !lockedIn(doom, target)
 }

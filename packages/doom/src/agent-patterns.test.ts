@@ -4,14 +4,15 @@ import { compileAgentChange } from "./agent-compile.js"
 import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
 import type { NodeId, Doom } from "./index.js"
 import { ids } from "./sample-deck.js"
-import { childrenOf, descendantsOf, get } from "./doom-walk.js"
+import { childrenOf, descendantsOf, propOf } from "./doom-walk.js"
 import { textStyleNames } from "./text.js"
 
 const slide = ids.slide
 const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as AgentChange
-const texts = (doom: Doom, root: NodeId) => descendantsOf(doom, root).filter((node) => get(node, "text") !== undefined)
+const texts = (doom: Doom, root: NodeId) =>
+  descendantsOf(doom, root).filter((node) => propOf(node, "text") !== undefined)
 const made = (doom: Doom) => lastChild(doom, slide)
-const styled = (doom: Doom, root: NodeId) => texts(doom, root).map((node) => get(node, "text")!.style)
+const styled = (doom: Doom, root: NodeId) => texts(doom, root).map((node) => propOf(node, "text")!.style)
 
 const kpiItems = [
   { title: "Revenue", value: "$4.2M", note: "+12% YoY" },
@@ -69,7 +70,7 @@ describe.each([
 
   it("lands as a frame tree the doom accepts, inside the slide and clear of what was there", () => {
     expect(root.type).toBe("frame")
-    const box = get(root, "box")!
+    const box = propOf(root, "box")!
     expect(box.x).toBeGreaterThanOrEqual(0)
     expect(box.x + box.w).toBeLessThanOrEqual(1920)
     expect(box.y).toBeGreaterThanOrEqual(100)
@@ -80,7 +81,7 @@ describe.each([
   it("writes every text in a named style of the deck, and no size, font, tracking or case of its own", () => {
     expect(texts(doom, root.id).length).toBeGreaterThan(0)
     for (const node of texts(doom, root.id)) {
-      const text = get(node, "text")!
+      const text = propOf(node, "text")!
       expect(textStyleNames).toContain(text.style)
       for (const span of text.spans)
         expect(Object.keys(span).filter((key) => !["end", "bold", "italic", "link", "color"].includes(key))).toEqual([])
@@ -89,8 +90,8 @@ describe.each([
 
   it("never writes a box for a child a layout places, except the fixed ones", () => {
     for (const node of descendantsOf(doom, root.id)) {
-      const sizing = get(node, "sizing")
-      if (sizing?.w === "fill" && sizing.h === "hug") expect(get(node, "box")).toBeUndefined()
+      const sizing = propOf(node, "sizing")
+      if (sizing?.w === "fill" && sizing.h === "hug") expect(propOf(node, "box")).toBeUndefined()
     }
   })
 
@@ -108,24 +109,24 @@ describe("kpi", () => {
   const root = made(doom)
 
   it("is a row of cards, each a column of label, number and note in the named styles", () => {
-    expect(get(root, "name")).toBe("KPI")
-    expect(get(root, "layout")).toMatchObject({ mode: "row" })
+    expect(propOf(root, "name")).toBe("KPI")
+    expect(propOf(root, "layout")).toMatchObject({ mode: "row" })
     const cards = childrenOf(doom, root.id)
     expect(cards).toHaveLength(3)
-    expect(get(cards[0]!, "layout")).toMatchObject({ mode: "column" })
-    expect(get(cards[0]!, "fills")).toEqual([{ kind: "solid", color: { var: "background2" } }])
-    expect(childrenOf(doom, cards[0]!.id).map((node) => get(node, "text")!.style)).toEqual([
+    expect(propOf(cards[0]!, "layout")).toMatchObject({ mode: "column" })
+    expect(propOf(cards[0]!, "fills")).toEqual([{ kind: "solid", color: { var: "background2" } }])
+    expect(childrenOf(doom, cards[0]!.id).map((node) => propOf(node, "text")!.style)).toEqual([
       "label",
       "bigNumber",
       "caption",
     ])
-    expect(childrenOf(doom, cards[2]!.id).map((node) => get(node, "text")!.style)).toEqual(["label", "bigNumber"])
+    expect(childrenOf(doom, cards[2]!.id).map((node) => propOf(node, "text")!.style)).toEqual(["label", "bigNumber"])
   })
 
   it("hugs the tallest card, so the next add takes the area below", () => {
     const next = build(doom, add({ kind: "cards", items: [{ title: "A", points: ["b"] }] }), minter("b"))
-    const first = get(root, "box")!
-    expect(get(made(next), "box")!.y).toBeGreaterThanOrEqual(first.y + first.h)
+    const first = propOf(root, "box")!
+    expect(propOf(made(next), "box")!.y).toBeGreaterThanOrEqual(first.y + first.h)
   })
 
   it("steps the number down to the heading size and no further when a value is too wide for its card", () => {
@@ -138,7 +139,7 @@ describe("kpi", () => {
       }),
     )
     const cards = childrenOf(narrow, made(narrow).id)
-    expect(childrenOf(narrow, cards[0]!.id).map((node) => get(node, "text")!.style)).toEqual([
+    expect(childrenOf(narrow, cards[0]!.id).map((node) => propOf(node, "text")!.style)).toEqual([
       "label",
       "heading",
       "caption",
@@ -147,7 +148,7 @@ describe("kpi", () => {
 
   it("keeps the explicit box's corner and width", () => {
     const boxed = build(agentDeck(), add({ kind: "kpi", box: { x: 40, y: 50, w: 1000, h: 400 }, items: kpiItems }))
-    expect(get(made(boxed), "box")).toMatchObject({ x: 40, y: 50, w: 1000 })
+    expect(propOf(made(boxed), "box")).toMatchObject({ x: 40, y: 50, w: 1000 })
   })
 
   it("says limit, naming the items, when no named size fits the area, or when there are too many", () => {
@@ -178,7 +179,7 @@ describe("cards sized to their words", () => {
 
   it("takes between 55% and 70% of the room below the title for three short cards", () => {
     const doom = build(agentDeck(), add({ kind: "cards", items: shortCards }))
-    const box = get(made(doom), "box")!
+    const box = propOf(made(doom), "box")!
     const room = 1080 - box.y
     expect(box.h).toBeGreaterThanOrEqual(0.55 * room)
     expect(box.h).toBeLessThan(0.7 * room)
@@ -186,15 +187,15 @@ describe("cards sized to their words", () => {
 
   it("takes the same share of the room for a KPI row, and only what it needs for one card", () => {
     const kpis = build(agentDeck(), add({ kind: "kpi", items: kpiItems }))
-    const box = get(made(kpis), "box")!
+    const box = propOf(made(kpis), "box")!
     expect(box.h).toBeGreaterThanOrEqual(0.55 * (1080 - box.y))
     const one = build(agentDeck(), add({ kind: "cards", items: [shortCards[0]] }))
-    expect(get(made(one), "box")!.h).toBeLessThan(0.4 * (1080 - get(made(one), "box")!.y))
+    expect(propOf(made(one), "box")!.h).toBeLessThan(0.4 * (1080 - propOf(made(one), "box")!.y))
   })
 
   it("keeps every card in the row as tall as the row", () => {
     const doom = build(agentDeck(), add({ kind: "cards", items: shortCards }))
-    for (const card of childrenOf(doom, made(doom).id)) expect(get(card, "sizing")).toMatchObject({ h: "fill" })
+    for (const card of childrenOf(doom, made(doom).id)) expect(propOf(card, "sizing")).toMatchObject({ h: "fill" })
   })
 
   it("grows past the minimum to hug the tallest card when its words need the room", () => {
@@ -202,8 +203,8 @@ describe("cards sized to their words", () => {
       shortCards[0]!,
       { title: "Long", points: Array.from({ length: 14 }, (_, at) => `A line of words ${at}`) },
     ]
-    const short = get(row(shortCards), "box")!.h
-    expect(get(row(tall), "box")!.h).toBeGreaterThan(short)
+    const short = propOf(row(shortCards), "box")!.h
+    expect(propOf(row(tall), "box")!.h).toBeGreaterThan(short)
   })
 })
 
@@ -218,11 +219,11 @@ describe("cards and compare", () => {
       }),
     )
     const root = made(doom)
-    expect(get(root, "box")).toMatchObject({ h: 500 })
+    expect(propOf(root, "box")).toMatchObject({ h: 500 })
     const first = childrenOf(doom, childrenOf(doom, root.id)[0]!.id)
-    expect(first.map((node) => get(node, "geometry")?.kind)).toEqual(["icon", "rect", "rect"])
-    expect(get(first[0]!, "geometry")).toEqual({ kind: "icon", name: "lucide/star" })
-    expect(get(first[2]!, "text")).toMatchObject({
+    expect(first.map((node) => propOf(node, "geometry")?.kind)).toEqual(["icon", "rect", "rect"])
+    expect(propOf(first[0]!, "geometry")).toEqual({ kind: "icon", name: "lucide/star" })
+    expect(propOf(first[2]!, "text")).toMatchObject({
       chars: "One\nTwo",
       style: "body",
       paras: [{ list: "bullet" }, { list: "bullet" }],
@@ -234,7 +235,7 @@ describe("cards and compare", () => {
       { title: "Grow", points: ["One"] },
       { title: "Hold", points: ["Two"] },
     ]
-    const filling = get(
+    const filling = propOf(
       made(build(agentDeck(), add({ kind: "cards", items, box: { x: 0, y: 0, w: 1000, h: 700 } }))),
       "box",
     )!
@@ -278,7 +279,7 @@ describe("cards and compare", () => {
     )
     const root = made(doom)
     const heading = childrenOf(doom, childrenOf(doom, root.id)[0]!.id)[0]!
-    expect(get(heading, "text")!.spans).toEqual([{ end: 5, color: { var: "accent1" } }])
+    expect(propOf(heading, "text")!.spans).toEqual([{ end: 5, color: { var: "accent1" } }])
     const cards = cardsGap(doom)
     expect(cards).toBeGreaterThan(40)
     expect(
@@ -288,7 +289,7 @@ describe("cards and compare", () => {
 })
 
 const cardsGap = (doom: Doom) => {
-  const layout = get(made(doom), "layout")
+  const layout = propOf(made(doom), "layout")
   return layout?.mode === "row" ? layout.gap : 0
 }
 
@@ -306,32 +307,37 @@ describe("matrix", () => {
 
   it("is a two by two grid of cards with the top right one in the first accent", () => {
     const grid = parts[0]!
-    expect(get(grid, "layout")).toMatchObject({
+    expect(propOf(grid, "layout")).toMatchObject({
       mode: "grid",
       columns: [{ fr: 1 }, { fr: 1 }],
       rows: [{ fr: 1 }, { fr: 1 }],
     })
     const cells = childrenOf(doom, grid.id)
-    expect(cells.map((cell) => get(cell, "cell"))).toEqual([
+    expect(cells.map((cell) => propOf(cell, "cell"))).toEqual([
       { row: 0, col: 0 },
       { row: 0, col: 1 },
       { row: 1, col: 0 },
       { row: 1, col: 1 },
     ])
-    expect(get(cells[1]!, "fills")).toEqual([{ kind: "solid", color: { var: "accent1" } }])
-    expect(get(childrenOf(doom, cells[1]!.id)[0]!, "text")!.spans[0]).toMatchObject({ color: { var: "background" } })
+    expect(propOf(cells[1]!, "fills")).toEqual([{ kind: "solid", color: { var: "accent1" } }])
+    expect(propOf(childrenOf(doom, cells[1]!.id)[0]!, "text")!.spans[0]).toMatchObject({ color: { var: "background" } })
   })
 
   it("labels the axes, the one up the side turned a quarter", () => {
     expect(parts).toHaveLength(3)
-    expect(get(parts[1]!, "text")).toMatchObject({ chars: "Effort", style: "label", resize: "fixed", alignV: "center" })
-    expect(get(parts[2]!, "box")).toMatchObject({ rotation: 270 })
-    expect(get(parts[2]!, "text")!.chars).toBe("Impact")
+    expect(propOf(parts[1]!, "text")).toMatchObject({
+      chars: "Effort",
+      style: "label",
+      resize: "fixed",
+      alignV: "center",
+    })
+    expect(propOf(parts[2]!, "box")).toMatchObject({ rotation: 270 })
+    expect(propOf(parts[2]!, "text")!.chars).toBe("Impact")
   })
 
   it("is the grid alone when it has no axes, and keeps empty cards for missing items", () => {
     const bare = build(agentDeck(), add({ kind: "matrix", items: [{ title: "Only" }] }))
-    expect(get(made(bare), "layout")).toMatchObject({ mode: "grid" })
+    expect(propOf(made(bare), "layout")).toMatchObject({ mode: "grid" })
     expect(childrenOf(bare, made(bare).id)).toHaveLength(4)
   })
 })
@@ -353,13 +359,13 @@ describe("timeline", () => {
   it("draws a line from the first marker to the last, behind a row of columns, each led by a marker", () => {
     const [line, lane] = childrenOf(doom, root.id)
     const markers = childrenOf(doom, lane!.id).map((column) => childrenOf(doom, column.id)[0]!)
-    expect(markers.map((marker) => get(marker, "geometry")?.kind)).toEqual(["ellipse", "ellipse", "ellipse"])
-    expect(get(line!, "geometry")).toMatchObject({
+    expect(markers.map((marker) => propOf(marker, "geometry")?.kind)).toEqual(["ellipse", "ellipse", "ellipse"])
+    expect(propOf(line!, "geometry")).toMatchObject({
       kind: "line",
       start: { node: markers[0]!.id, site: "c" },
       end: { node: markers[2]!.id, site: "c" },
     })
-    expect(childrenOf(doom, childrenOf(doom, lane!.id)[0]!.id).map((node) => get(node, "text")?.style)).toEqual([
+    expect(childrenOf(doom, childrenOf(doom, lane!.id)[0]!.id).map((node) => propOf(node, "text")?.style)).toEqual([
       undefined,
       "label",
       "heading",
@@ -379,13 +385,13 @@ describe("flow", () => {
     const steps = childrenOf(doom, lane!.id)
     expect(steps).toHaveLength(3)
     expect(arrows).toHaveLength(2)
-    expect(get(arrows[0]!, "geometry")).toMatchObject({
+    expect(propOf(arrows[0]!, "geometry")).toMatchObject({
       kind: "line",
       start: { node: steps[0]!.id, site: "r" },
       end: { node: steps[1]!.id, site: "l" },
       arrows: ["none", "arrow"],
     })
-    expect(get(arrows[1]!, "geometry")).toMatchObject({ start: { node: steps[1]!.id }, end: { node: steps[2]!.id } })
+    expect(propOf(arrows[1]!, "geometry")).toMatchObject({ start: { node: steps[1]!.id }, end: { node: steps[2]!.id } })
   })
 })
 
@@ -399,22 +405,22 @@ describe("a grid of words", () => {
   const root = made(doom)
 
   it("is a grid frame with a cell of text for each word, the first row a header", () => {
-    expect(get(root, "name")).toBe("Roadmap")
-    expect(get(root, "layout")).toMatchObject({
+    expect(propOf(root, "name")).toBe("Roadmap")
+    expect(propOf(root, "layout")).toMatchObject({
       mode: "grid",
       columns: [{ fr: 1 }, { fr: 1 }, { fr: 1 }, { fr: 1 }],
       rows: ["hug", { fr: 1 }, { fr: 1 }],
     })
     const cells = childrenOf(doom, root.id)
-    expect(get(cells[0]!, "cell")).toEqual({ row: 0, col: 1 })
-    expect(get(cells[0]!, "text")).toMatchObject({ chars: "Q1", style: "body" })
-    expect(get(cells[4]!, "text")).toMatchObject({ chars: "Beta", style: "body" })
-    expect(get(cells[10]!, "cell")).toEqual({ row: 2, col: 3 })
+    expect(propOf(cells[0]!, "cell")).toEqual({ row: 0, col: 1 })
+    expect(propOf(cells[0]!, "text")).toMatchObject({ chars: "Q1", style: "body" })
+    expect(propOf(cells[4]!, "text")).toMatchObject({ chars: "Beta", style: "body" })
+    expect(propOf(cells[10]!, "cell")).toEqual({ row: 2, col: 3 })
   })
 
   it("leaves an empty word out, so the grid keeps a hole instead of an empty text", () => {
     const cells = childrenOf(doom, root.id)
-    expect(cells.map((cell) => get(cell, "cell"))).not.toContainEqual({ row: 0, col: 0 })
+    expect(cells.map((cell) => propOf(cell, "cell"))).not.toContainEqual({ row: 0, col: 0 })
     expect(cells).toHaveLength(11)
   })
 
@@ -422,7 +428,7 @@ describe("a grid of words", () => {
     const ragged = build(agentDeck(), add({ kind: "frame", rows: [["a", "b"], ["**c**"]] }))
     const cells = childrenOf(ragged, made(ragged).id)
     expect(cells).toHaveLength(3)
-    expect(get(cells[2]!, "text")!.spans[0]).toMatchObject({ bold: true })
+    expect(propOf(cells[2]!, "text")!.spans[0]).toMatchObject({ bold: true })
   })
 
   it("steps down to fit, refuses when it cannot, and refuses a layout beside the rows", () => {

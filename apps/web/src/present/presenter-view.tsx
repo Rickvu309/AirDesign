@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import type { SlideSize } from "@/editor/canvas-zoom"
+import type { SlideSize } from "@/editing/canvas-zoom"
 import { presentCopy } from "@/copy/present-copy"
 import { clockText } from "@/present/present-clock"
 import { focusOnOpen } from "@/present/present-focus"

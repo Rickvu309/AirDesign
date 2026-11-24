@@ -10,7 +10,7 @@ import { measure } from "./doom-fixtures-art.js"
 import { readForAgent } from "./agent-read.js"
 import { type NodeId, applyEdit, isRefusal, rev } from "./index.js"
 import { agent, ids } from "./sample-deck.js"
-import { childrenOf, descendantsOf, get, slidesOf } from "./doom-walk.js"
+import { childrenOf, descendantsOf, propOf, slidesOf } from "./doom-walk.js"
 import { textStyleNames } from "./text.js"
 
 function board(mode: "together" | "per-slide") {
@@ -49,8 +49,8 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
   it("gives every slide a title and keeps what each slide holds clear of the rest", () => {
     for (const slide of slides) {
       const top = childrenOf(doom, slide)
-      expect(top.some((node) => get(node, "role") === "title")).toBe(true)
-      const boxes = top.map((node) => get(node, "box")!)
+      expect(top.some((node) => propOf(node, "role") === "title")).toBe(true)
+      const boxes = top.map((node) => propOf(node, "box")!)
       for (const box of boxes) {
         expect(box.x).toBeGreaterThanOrEqual(0)
         expect(box.x + box.w).toBeLessThanOrEqual(1920)
@@ -62,18 +62,20 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
   })
 
   it("holds the KPI row with a decision card under it, the chart, three icon cards and the roadmap grid", () => {
-    const names = (slide: NodeId) => childrenOf(doom, slide).map((node) => get(node, "name"))
+    const names = (slide: NodeId) => childrenOf(doom, slide).map((node) => propOf(node, "name"))
     expect(names(slides[1]!)).toEqual([undefined, "KPI", "Decision"])
-    expect(childrenOf(doom, slides[2]!).some((node) => get(node, "chart")?.kind === "bar")).toBe(true)
+    expect(childrenOf(doom, slides[2]!).some((node) => propOf(node, "chart")?.kind === "bar")).toBe(true)
     const priorities = childrenOf(doom, slides[3]!)[1]!
-    expect(descendantsOf(doom, priorities.id).filter((node) => get(node, "geometry")?.kind === "icon")).toHaveLength(3)
+    expect(descendantsOf(doom, priorities.id).filter((node) => propOf(node, "geometry")?.kind === "icon")).toHaveLength(
+      3,
+    )
     const roadmap = childrenOf(doom, slides[4]!)[1]!
-    expect(get(roadmap, "layout")).toMatchObject({ mode: "grid" })
+    expect(propOf(roadmap, "layout")).toMatchObject({ mode: "grid" })
     expect(childrenOf(doom, roadmap.id)).toHaveLength(19)
   })
 
   it("fills most of the room with the KPI row and keeps the decision card under it, inside the slide", () => {
-    const [, row, decision] = childrenOf(doom, slides[1]!).map((node) => get(node, "box")!)
+    const [, row, decision] = childrenOf(doom, slides[1]!).map((node) => propOf(node, "box")!)
     expect(row!.h).toBeGreaterThanOrEqual(0.55 * (1000 - row!.y))
     expect(decision!.y).toBeGreaterThanOrEqual(row!.y + row!.h)
     expect(decision!.y + decision!.h).toBeLessThanOrEqual(1000)
@@ -82,7 +84,7 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
   it("uses the deck's named text styles and no size of its own anywhere", () => {
     for (const slide of slides)
       for (const node of descendantsOf(doom, slide)) {
-        const text = get(node, "text")
+        const text = propOf(node, "text")
         if (text === undefined) continue
         expect(textStyleNames).toContain(text.style)
         for (const span of text.spans)
@@ -118,7 +120,7 @@ describe("the board deck on the slide type scale", () => {
   for (const part of boardDeckChanges(slides)) send(part)
 
   const sizeOf = (node: ReturnType<typeof childrenOf>[number]) => {
-    const text = get(node, "text")
+    const text = propOf(node, "text")
     return text === undefined ? undefined : defaultTheme.textStyles[text.style].size
   }
   const sizesOn = (slide: NodeId) => descendantsOf(doom, slide).flatMap((node) => sizeOf(node) ?? [])
@@ -129,13 +131,13 @@ describe("the board deck on the slide type scale", () => {
 
   it("sets every slide title at 56 px", () => {
     for (const slide of slides.slice(1)) {
-      const title = childrenOf(doom, slide).find((node) => get(node, "role") === "title")!
+      const title = childrenOf(doom, slide).find((node) => propOf(node, "role") === "title")!
       expect(sizeOf(title)).toBe(56)
     }
   })
 
   it("sets a KPI as a number of 80 px over a label and a note of 24 px", () => {
-    const row = childrenOf(doom, slides[1]!).find((node) => get(node, "name") === "KPI")!
+    const row = childrenOf(doom, slides[1]!).find((node) => propOf(node, "name") === "KPI")!
     for (const card of childrenOf(doom, row.id)) {
       const [label, number, note] = childrenOf(doom, card.id).map((node) => sizeOf(node)!)
       expect(number).toBe(80)
@@ -147,7 +149,7 @@ describe("the board deck on the slide type scale", () => {
   it("sets card bullets, the decision card and the roadmap cells at 32 px or more", () => {
     for (const slide of [slides[1]!, slides[3]!, slides[4]!]) {
       const rest = childrenOf(doom, slide).filter(
-        (node) => get(node, "role") !== "title" && get(node, "name") !== "KPI",
+        (node) => propOf(node, "role") !== "title" && propOf(node, "name") !== "KPI",
       )
       for (const frame of rest)
         for (const node of descendantsOf(doom, frame.id)) expect(sizeOf(node) ?? 32).toBeGreaterThanOrEqual(32)
@@ -155,18 +157,18 @@ describe("the board deck on the slide type scale", () => {
   })
 
   it("keeps the decision card under the KPIs at the slide type scale, inside the slide", () => {
-    const decision = childrenOf(doom, slides[1]!).find((node) => get(node, "name") === "Decision")!
+    const decision = childrenOf(doom, slides[1]!).find((node) => propOf(node, "name") === "Decision")!
     const card = childrenOf(doom, decision.id)[0]!
     const [heading, points] = childrenOf(doom, card.id).map((node) => sizeOf(node)!)
     expect(heading).toBe(40)
     expect(points).toBe(32)
-    const box = get(decision, "box")!
+    const box = propOf(decision, "box")!
     expect(box.y + box.h).toBeLessThanOrEqual(1000)
   })
 
   it("sets a chart's words, value labels included, at 24 px or more", () => {
-    const chart = childrenOf(doom, slides[2]!).find((node) => get(node, "chart") !== undefined)!
-    const words = deriveChart(chart.id, get(chart, "chart")!, get(chart, "box")!, defaultTheme, measure).flatMap(
+    const chart = childrenOf(doom, slides[2]!).find((node) => propOf(node, "chart") !== undefined)!
+    const words = deriveChart(chart.id, propOf(chart, "chart")!, propOf(chart, "box")!, defaultTheme, measure).flatMap(
       (part) => part.text?.lines.flatMap((line) => line.runs.map((run) => run.size)) ?? [],
     )
     expect(words.length).toBeGreaterThan(0)

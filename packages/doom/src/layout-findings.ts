@@ -1,6 +1,6 @@
 import { deckOf } from "./deck-of.js"
 import type { Doom, Write } from "./doom.js"
-import { descendantsOf, get, slideOf, slidesOf } from "./doom-walk.js"
+import { descendantsOf, propOf, slideOf, slidesOf } from "./doom-walk.js"
 import type { NodeId } from "./ids.js"
 import type { Measure } from "./measure.js"
 import { textArea } from "./preset-geometry.js"
@@ -104,7 +104,7 @@ function place(slide: Slide, node: Resolved, x: number, y: number): Placed {
 
 function holdsMissing(doom: Doom, id: NodeId, missing: ReadonlySet<string>): boolean {
   const node = doom.nodes.get(id)
-  const text = node === undefined ? undefined : get(node, "text")
+  const text = node === undefined ? undefined : propOf(node, "text")
   return missing.size > 0 && text !== undefined && [...text.chars].some((char) => missing.has(char))
 }
 
@@ -112,10 +112,10 @@ const unread = (slide: Slide, id: string) => holdsMissing(slide.doom, id as Node
 
 function judgeOwn(slide: Slide, node: Resolved, box: Rect): void {
   const stored = slide.doom.nodes.get(node.id as NodeId)
-  const text = stored === undefined ? undefined : get(stored, "text")
+  const text = stored === undefined ? undefined : propOf(stored, "text")
   if (stored === undefined || text === undefined || node.text === null) return
   if (text.resize === "fixed" && !unread(slide, stored.id)) {
-    const area = textArea(get(stored, "geometry"), box.w, box.h)
+    const area = textArea(propOf(stored, "geometry"), box.w, box.h)
     const need = Math.ceil(slide.measure(text, slide.theme, area.w).h)
     const room = Math.round(area.h)
     if (need > room + spill)

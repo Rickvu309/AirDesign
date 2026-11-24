@@ -2,14 +2,7 @@ import { gestures } from "@/lib/gestures"
 import { describe, expect, it } from "vitest"
 
 const sources: Readonly<Record<string, string>> = import.meta.glob(
-  [
-    "./**/*.{ts,tsx}",
-    "../../../packages/render/src/**/*.{ts,tsx}",
-    "!./**/*.test.{ts,tsx}",
-    "!../../../packages/render/src/**/*.test.{ts,tsx}",
-    "!./copy/**",
-    "!./lib/gestures.ts",
-  ],
+  ["./**/*.{ts,tsx}", "!./**/*.test.{ts,tsx}", "!./copy/**", "!./lib/gestures.ts"],
   { query: "?raw", import: "default", eager: true },
 )
 
@@ -51,9 +44,9 @@ const controlKeys: Readonly<Record<string, readonly string[]>> = {
   "apps/web/src/design/controls/number.tsx": ["ArrowDown", "ArrowUp", ...field],
   "apps/web/src/design/controls/text.tsx": field,
   "apps/web/src/design/custom-color.tsx": [...list, ...field],
-  "apps/web/src/doom-editor/actions-highlight.ts": arrows,
-  "apps/web/src/doom-editor/actions-popover.tsx": [...arrows, "Enter"],
-  "apps/web/src/doom-editor/number-cell.tsx": ["ArrowDown", "ArrowUp"],
+  "apps/web/src/editor/actions-highlight.ts": arrows,
+  "apps/web/src/editor/actions-popover.tsx": [...arrows, "Enter"],
+  "apps/web/src/editor/number-cell.tsx": ["ArrowDown", "ArrowUp"],
   "apps/web/src/editor/deck-title-edit.tsx": field,
   "apps/web/src/editor/editor-key-ownership.ts": ["Escape"],
   "apps/web/src/editor/notes-bar.tsx": upDown,

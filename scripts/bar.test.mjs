@@ -395,7 +395,7 @@ same(
     head: "head",
     listed: [
       {
-        name: "apps/web/src/doom-editor/a.test.ts",
+        name: "apps/web/src/editor/a.test.ts",
         before: "apps/web/src/scene-editor/a.test.ts",
         status: "renamed",
         patch: null,

@@ -142,7 +142,7 @@ same(
   "a path from the repo root, a path from the citing file's folder, a name beside it and a name one file has resolve",
   markdownFaults(
     ".agents/skills/verify-airdesign/features/aira-turn.md",
-    "`apps/web/src/doom-editor/doom-editor.tsx`, `../bin/verify-airdesign.mjs`, `deck-names.md` and `filmstrip.test.ts`",
+    "`apps/web/src/editor/doom-editor.tsx`, `../bin/verify-airdesign.mjs`, `deck-names.md` and `filmstrip.test.ts`",
     index,
   ),
   [],
@@ -229,7 +229,7 @@ same(
   "urls, globs, placeholders, builds, words with a slash and prefixes some file starts with are not faults in code",
   codeFaults(
     "scripts/land.mjs",
-    'const a = ["https://studio.airdesign.app/mcp", "packages/*/src/", "apps/${name}/", "specs/<topic>/", "apps/web/dist/", "node_modules/.bin/", "and/or", "apps/web/src/doom-", "scripts/"]',
+    'const a = ["https://studio.airdesign.app/mcp", "packages/*/src/", "apps/${name}/", "specs/<topic>/", "apps/web/dist/", "node_modules/.bin/", "and/or", "apps/web/src/editor/doom-", "scripts/"]',
     repoIndex(tracked, builtFolders("node_modules/\ndist/\n")),
   ),
   [],

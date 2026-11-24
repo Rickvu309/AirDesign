@@ -1,4 +1,4 @@
-import { boundedZoom } from "@/editor/canvas-zoom"
+import { boundedZoom } from "@/editing/canvas-zoom"
 
 export type Size = { readonly w: number; readonly h: number }
 export type Zoom = "fit" | number

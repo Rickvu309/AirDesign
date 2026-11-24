@@ -6,14 +6,14 @@ import { gapFor, slideSize } from "./agent-place.js"
 import type { NodeId } from "./ids.js"
 import type { Layout } from "./layout.js"
 import type { Node } from "./doom.js"
-import { boxOf, childrenOf, descendantsOf, get, parentOf, zeroBox } from "./doom-walk.js"
+import { boxOf, childrenOf, descendantsOf, parentOf, propOf, zeroBox } from "./doom-walk.js"
 
 type Op<K extends AgentChange["op"]> = Extract<AgentChange, { op: K }>
 
 const arrangeable = (node: Node) => node.type === "frame" || node.type === "shape"
 
 const hasBox = (draft: Draft, node: Node) =>
-  get(node, "box") !== undefined || draft.reading.boxes?.has(node.id) === true
+  propOf(node, "box") !== undefined || draft.reading.boxes?.has(node.id) === true
 
 function shift(draft: Draft, node: Node, dx: number, dy: number): void {
   if (!hasBox(draft, node) || (dx === 0 && dy === 0)) return
@@ -48,7 +48,7 @@ export function compileMove(draft: Draft, change: Op<"move">): void {
   const node = arrangeableNode(draft, change.node, "node")
   const from = parentIdOf(node)
   const target = change.into === undefined ? living(draft, from, "into") : living(draft, change.into, "into")
-  if ((target.type !== "slide" && target.type !== "frame") || get(target, "chart") !== undefined)
+  if ((target.type !== "slide" && target.type !== "frame") || propOf(target, "chart") !== undefined)
     stop("shape", target.id, "into")
   if (target.id === node.id || descendantsOf(draft.doom, node.id).some((inside) => inside.id === target.id))
     stop("cycle", node.id, "into")
@@ -105,7 +105,7 @@ export function compileWrap(draft: Draft, change: Op<"wrap">): void {
 
 export function compileUnwrap(draft: Draft, change: Op<"unwrap">): void {
   const frame = living(draft, change.node, "node")
-  if (frame.type !== "frame" || get(frame, "chart") !== undefined) stop("shape", frame.id, "node")
+  if (frame.type !== "frame" || propOf(frame, "chart") !== undefined) stop("shape", frame.id, "node")
   const parent = parentIdOf(frame)
   const kids = childrenOf(draft.doom, frame.id)
   const keys = keysAfter(draft, parent, frame.id, kids.length)

@@ -1,32 +1,16 @@
 layer: feature
 dependencies:
+  - apps/web/src/aira
   - apps/web/src/components
   - apps/web/src/copy
+  - apps/web/src/decks
   - apps/web/src/design
   - apps/web/src/editing
+  - apps/web/src/export
   - apps/web/src/lib
+  - apps/web/src/present
+  - apps/web/src/samples
 public:
-  - canvas-zoom.ts
-  - design-panel.tsx
-  - editor-chrome.tsx
-  - editor-key-ownership.ts
-  - editor-toast.tsx
-  - element-title-actions.tsx
-  - gallery-deck.ts
-  - kept-panel.ts
-  - live-design-panel.tsx
-  - notes-bar.tsx
-  - panel-switch.tsx
-  - picture-picker.ts
-  - picture-preview.tsx
-  - remove-auto-layout.tsx
-  - resizable-panel.tsx
-  - save-status.tsx
-  - selection-colors-section.tsx
-  - shape-tool.tsx
-  - slide-frame.ts
-  - slide-sidebar.tsx
-  - slide-thumb.tsx
-  - template-style-card.tsx
-  - use-canvas-room.ts
-  - zoom-menu.tsx
+  - doom-editor.tsx
+  - editor-sample.tsx
+  - editor-screens.tsx

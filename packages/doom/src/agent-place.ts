@@ -3,7 +3,7 @@ import { type Draft, Stop, draftOf, stop } from "./agent-draft.js"
 import type { NodeId } from "./ids.js"
 import type { Px } from "./paint.js"
 import type { Doom, Node } from "./doom.js"
-import { boxOf, childrenOf, deckOf, descendantsOf, get, isLaidOut } from "./doom-walk.js"
+import { boxOf, childrenOf, deckOf, descendantsOf, isLaidOut, propOf } from "./doom-walk.js"
 import type { Theme } from "./theme.js"
 
 export type Area = { readonly x: Px; readonly y: Px; readonly w: Px; readonly h: Px }
@@ -15,12 +15,12 @@ const smallestHeightShare = 0.05
 
 export function themeOf(draft: Draft): Theme {
   const deck = deckOf(draft.doom)
-  return (deck === undefined ? undefined : get(deck, "theme")) ?? stop("missing")
+  return (deck === undefined ? undefined : propOf(deck, "theme")) ?? stop("missing")
 }
 
 export function slideSize(draft: Draft): { readonly w: Px; readonly h: Px } {
   const deck = deckOf(draft.doom)
-  return (deck === undefined ? undefined : get(deck, "size")) ?? stop("missing")
+  return (deck === undefined ? undefined : propOf(deck, "size")) ?? stop("missing")
 }
 
 export const gapFor = (width: Px): Px => Math.round(width * gapShare)
@@ -39,7 +39,7 @@ export function freeArea(draft: Draft, parent: Node): Area | undefined {
   if (isLaidOut(parent)) return { x: 0, y: 0, w, h }
   const clear = gapFor(slideSize(draft).w)
   const taken = childrenOf(draft.doom, parent.id)
-    .filter((child) => get(child, "hidden") !== true)
+    .filter((child) => propOf(child, "hidden") !== true)
     .map((child) => boxOf(child, draft.reading.boxes))
     .map((box) => ({ x: box.x - clear, y: box.y - clear, cx: box.w + 2 * clear, cy: box.h + 2 * clear }))
   const best = largestFreeBox({ width: w, height: h }, taken)
@@ -48,7 +48,7 @@ export function freeArea(draft: Draft, parent: Node): Area | undefined {
 }
 
 function alignedWithTitle(draft: Draft, slide: Node, area: Area): Area {
-  const title = descendantsOf(draft.doom, slide.id).find((node) => get(node, "role") === "title")
+  const title = descendantsOf(draft.doom, slide.id).find((node) => propOf(node, "role") === "title")
   const box = title === undefined ? undefined : boxOf(title, draft.reading.boxes)
   if (box === undefined) return area
   const left = Math.max(area.x, box.x)

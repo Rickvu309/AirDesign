@@ -10,7 +10,7 @@ import { UsagePage } from "./settings/usage-page"
 import { AccountProfile } from "./account/account-profile"
 
 const ScreenRoute = lazy(() => import("./screen-routes"))
-const DoomEditor = lazy(() => import("./doom-editor/doom-editor").then((module) => ({ default: module.DoomEditor })))
+const DoomEditor = lazy(() => import("./editor/doom-editor").then((module) => ({ default: module.DoomEditor })))
 
 function currentPath(): string {
   return window.location.pathname.replace(/\/$/, "") || "/"

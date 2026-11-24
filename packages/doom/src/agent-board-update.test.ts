@@ -4,7 +4,7 @@ import { compileAgentEdit } from "./agent-edit.js"
 import { agentDeck, apply, minter, runName } from "./agent-fixtures.js"
 import { defaultTheme } from "./default-theme-art.js"
 import { measure } from "./doom-fixtures-art.js"
-import { descendantsOf, get } from "./doom-walk.js"
+import { descendantsOf, propOf } from "./doom-walk.js"
 import { type NodeId, applyEdit, isRefusal, nodeId, rev } from "./index.js"
 import type { Resolved } from "./resolved.js"
 import { resolveSlide } from "./resolve-slide.js"
@@ -75,7 +75,7 @@ const flat = (nodes: readonly Resolved[]): readonly Resolved[] =>
 describe("the audit's Q3 board update, written by an agent on the default theme", () => {
   const { doom, slides } = boardUpdate()
   const painted = (slide: NodeId) => flat(resolveSlide(doom, slide, measure))
-  const textOf = (node: Resolved) => get(doom.nodes.get(nodeId(node.id))!, "text")
+  const textOf = (node: Resolved) => propOf(doom.nodes.get(nodeId(node.id))!, "text")
   const chars = (node: Resolved) => textOf(node)?.chars ?? ""
 
   it("sets each action title on one or two lines inside the title box the agent drew", () => {
@@ -107,6 +107,6 @@ describe("the audit's Q3 board update, written by an agent on the default theme"
   it("lets the agent's whole deck use the theme's own sizes only", () => {
     for (const slide of slides)
       for (const node of descendantsOf(doom, slide))
-        for (const span of get(node, "text")?.spans ?? []) expect(span.size).toBeUndefined()
+        for (const span of propOf(node, "text")?.spans ?? []) expect(span.size).toBeUndefined()
   })
 })

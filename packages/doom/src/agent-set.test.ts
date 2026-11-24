@@ -4,7 +4,7 @@ import { compileAgentChange } from "./agent-compile.js"
 import { agentDeck, build, compiled, minter, more, richDeck, started } from "./agent-fixtures.js"
 import { type Doom, type Write, applyEdit, isRefusal, rev } from "./index.js"
 import { agent, ids, land, once, person, revOf, sampleDeck, textOf } from "./sample-deck.js"
-import { get } from "./doom-walk.js"
+import { propOf } from "./doom-walk.js"
 
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
   ({ op: "set", target, ...look }) as AgentChange
@@ -16,7 +16,7 @@ describe("set by node id", () => {
   it("replaces the words with markdown and keeps the box's resizing, the style and the colour", () => {
     let doom = build(agentDeck(), set(ids.title, { text: "Plain", textStyle: "heading", color: "accent2" }))
     doom = build(doom, set(ids.title, { text: "Now **bold**" }))
-    expect(get(doom.nodes.get(ids.title)!, "text")).toMatchObject({
+    expect(propOf(doom.nodes.get(ids.title)!, "text")).toMatchObject({
       chars: "Now bold",
       style: "heading",
       resize: "height",
@@ -29,7 +29,7 @@ describe("set by node id", () => {
 
   it("changes only the style when only the style is named", () => {
     const doom = build(agentDeck(), set(ids.title, { textStyle: "caption" }))
-    expect(get(doom.nodes.get(ids.title)!, "text")).toMatchObject({ chars: "Revenue", style: "caption" })
+    expect(propOf(doom.nodes.get(ids.title)!, "text")).toMatchObject({ chars: "Revenue", style: "caption" })
   })
 
   it("makes the words the named style whole, as the panel does, so a person's size cannot cancel it", () => {
@@ -38,7 +38,7 @@ describe("set by node id", () => {
       { node: ids.title, prop: "text", value: sized, base: revOf(sampleDeck(), ids.title, "text")! },
     ])
     const doom = build(started(typed), set(ids.title, { textStyle: "heading" }))
-    const text = get(doom.nodes.get(ids.title)!, "text")!
+    const text = propOf(doom.nodes.get(ids.title)!, "text")!
     expect(text.style).toBe("heading")
     expect(text.spans).toEqual([{ end: 7, italic: true }])
   })
@@ -73,18 +73,18 @@ describe("set by node id", () => {
 
   it("locks and unlocks a layer, and refuses to lock a slide", () => {
     const locked = build(agentDeck(), set(ids.card, { locked: true }))
-    expect(get(locked.nodes.get(ids.card)!, "locked")).toBe(true)
+    expect(propOf(locked.nodes.get(ids.card)!, "locked")).toBe(true)
     const open = build(locked, set(ids.card, { locked: false }))
-    expect(get(open.nodes.get(ids.card)!, "locked")).toBe(false)
+    expect(propOf(open.nodes.get(ids.card)!, "locked")).toBe(false)
     expect(refusal(agentDeck(), set(ids.slide, { locked: true }))).toMatchObject({ refused: "shape", field: "locked" })
   })
 
   it("turns a drawn layer into a rectangle, an ellipse or a named preset, and refuses an unknown outline", () => {
     const star = build(agentDeck(), set(ids.caption, { shape: "star5" }))
-    expect(get(star.nodes.get(ids.caption)!, "geometry")).toEqual({ kind: "preset", name: "star5" })
+    expect(propOf(star.nodes.get(ids.caption)!, "geometry")).toEqual({ kind: "preset", name: "star5" })
     const round = build(star, set(ids.caption, { shape: "ellipse" }))
-    expect(get(round.nodes.get(ids.caption)!, "geometry")).toEqual({ kind: "ellipse" })
-    expect(get(build(round, set(ids.caption, { shape: "rect" })).nodes.get(ids.caption)!, "geometry")).toEqual({
+    expect(propOf(round.nodes.get(ids.caption)!, "geometry")).toEqual({ kind: "ellipse" })
+    expect(propOf(build(round, set(ids.caption, { shape: "rect" })).nodes.get(ids.caption)!, "geometry")).toEqual({
       kind: "rect",
     })
     expect(readAgentChange({ op: "set", target: ids.caption, shape: "blob" })).toHaveProperty("refused")
@@ -108,19 +108,19 @@ describe("set by node id", () => {
   it("keeps the outline style when only the colour changes", () => {
     let doom = build(agentDeck(), set(ids.card, { stroke: "text", strokeWidth: 6 }))
     doom = build(doom, set(ids.card, { stroke: "accent1" }))
-    expect(get(doom.nodes.get(ids.card)!, "stroke")?.weight).toBe(6)
+    expect(propOf(doom.nodes.get(ids.card)!, "stroke")?.weight).toBe(6)
   })
 
   it("sets a frame's layout, then its gap and padding on their own, and refuses a gap with no layout", () => {
     let doom = build(agentDeck(), set(ids.card, { layout: "column", gap: 10 }))
-    expect(get(doom.nodes.get(ids.card)!, "layout")).toEqual({
+    expect(propOf(doom.nodes.get(ids.card)!, "layout")).toEqual({
       mode: "column",
       gap: 10,
       padding: { t: 0, r: 0, b: 0, l: 0 },
       align: "top-left",
     })
     doom = build(doom, set(ids.card, { padding: 12, align: "center" }))
-    expect(get(doom.nodes.get(ids.card)!, "layout")).toMatchObject({
+    expect(propOf(doom.nodes.get(ids.card)!, "layout")).toMatchObject({
       gap: 10,
       padding: { t: 12, r: 12, b: 12, l: 12 },
       align: "top-center",
@@ -136,15 +136,15 @@ describe("set by node id", () => {
       ),
       set(more.chart, { chart: { kind: "line", categories: ["a"], series: [{ name: "s", values: [1] }] } }),
     )
-    expect(get(doom.nodes.get(more.icon)!, "geometry")).toEqual({ kind: "icon", name: "lucide/check" })
-    expect(get(doom.nodes.get(more.line)!, "geometry")).toEqual({
+    expect(propOf(doom.nodes.get(more.icon)!, "geometry")).toEqual({ kind: "icon", name: "lucide/check" })
+    expect(propOf(doom.nodes.get(more.line)!, "geometry")).toEqual({
       kind: "line",
       start: { x: 0, y: 0 },
       end: { x: 50, y: 50 },
       route: "straight",
       arrows: ["none", "arrow"],
     })
-    expect(get(doom.nodes.get(more.chart)!, "chart")).toMatchObject({ kind: "line" })
+    expect(propOf(doom.nodes.get(more.chart)!, "chart")).toMatchObject({ kind: "line" })
   })
 
   it("refuses a field the node does not take, naming node, field and change", () => {
@@ -171,7 +171,7 @@ describe("set by node id", () => {
 
   it("paints a slide's background", () => {
     const doom = build(agentDeck(), set(ids.slide, { fill: "background2" }))
-    expect(get(doom.nodes.get(ids.slide)!, "fills")).toEqual([{ kind: "solid", color: { var: "background2" } }])
+    expect(propOf(doom.nodes.get(ids.slide)!, "fills")).toEqual([{ kind: "solid", color: { var: "background2" } }])
   })
 
   it("refuses a node that is not there or was deleted, naming the change", () => {
@@ -189,7 +189,7 @@ describe("set by node id", () => {
 describe("set by role and by chart bar", () => {
   it("finds a slide's title by its role", () => {
     const doom = build(richDeck(), set(`${more.slide2}.title`, { text: "New title" }))
-    expect(get(doom.nodes.get(more.titled)!, "text")?.chars).toBe("New title")
+    expect(propOf(doom.nodes.get(more.titled)!, "text")?.chars).toBe("New title")
   })
 
   it("refuses a role the slide has no node for", () => {
@@ -208,9 +208,9 @@ describe("set by role and by chart bar", () => {
   it("colours one bar by its derived id, and clears it with none", () => {
     const bar = `${more.chart}#Plan:Q2`
     let doom = build(richDeck(), set(bar, { fill: "accent3" }))
-    expect(get(doom.nodes.get(more.chart)!, "chart")?.points).toEqual({ [bar]: { var: "accent3" } })
+    expect(propOf(doom.nodes.get(more.chart)!, "chart")?.points).toEqual({ [bar]: { var: "accent3" } })
     doom = build(doom, set(bar, { fill: "none" }))
-    expect(get(doom.nodes.get(more.chart)!, "chart")?.points).toEqual({})
+    expect(propOf(doom.nodes.get(more.chart)!, "chart")?.points).toEqual({})
   })
 
   it("refuses a bar the chart has not, a look beyond its colour, and a bar of a frame with no chart", () => {

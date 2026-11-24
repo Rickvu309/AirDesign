@@ -3,7 +3,7 @@ import { contentAreaOf } from "./agent-place.js"
 import { minter } from "./agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
 import { defaultTheme } from "./default-theme-art.js"
-import { childrenOf, descendantsOf, get } from "./doom-walk.js"
+import { childrenOf, descendantsOf, propOf } from "./doom-walk.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { type SlideStart, slideStartWrites, slideStarts } from "./slide-starts.js"
 import { titleOnlyWrites } from "./slide-placeholders.js"
@@ -37,11 +37,11 @@ describe("a designed starting slide", () => {
     (start) => {
       const { doom, slide } = started(start)
       const top = childrenOf(doom, slide)
-      const titles = top.filter((node) => get(node, "role") === "title")
+      const titles = top.filter((node) => propOf(node, "role") === "title")
       expect(titles).toHaveLength(1)
-      expect(get(titles[0]!, "text")).toMatchObject({ chars: placeholderTitle, style: "title" })
-      expect(get(titles[0]!, "box")).toMatchObject({ x: 160, y: 80, w: 1600 })
-      const boxes = top.map((node) => get(node, "box")!)
+      expect(propOf(titles[0]!, "text")).toMatchObject({ chars: placeholderTitle, style: "title" })
+      expect(propOf(titles[0]!, "box")).toMatchObject({ x: 160, y: 80, w: 1600 })
+      const boxes = top.map((node) => propOf(node, "box")!)
       for (const box of boxes) {
         expect(box.x).toBeGreaterThanOrEqual(0)
         expect(box.x + box.w).toBeLessThanOrEqual(1920)
@@ -55,17 +55,17 @@ describe("a designed starting slide", () => {
 
   it("title: holds the title and the subtitle placeholder only", () => {
     const { doom, slide } = started("title")
-    expect(childrenOf(doom, slide).map((node) => get(node, "role"))).toEqual(["title", "subtitle"])
+    expect(childrenOf(doom, slide).map((node) => propOf(node, "role"))).toEqual(["title", "subtitle"])
   })
 
   it("kpis: sets the numbers in a style a typical figure fits on one line", () => {
     const { doom, slide } = started("kpis")
-    const kpi = childrenOf(doom, slide).find((node) => get(node, "name") === "KPI")!
-    const numbers = descendantsOf(doom, kpi.id).filter((node) => get(node, "text")?.chars === "00.0%")
+    const kpi = childrenOf(doom, slide).find((node) => propOf(node, "name") === "KPI")!
+    const numbers = descendantsOf(doom, kpi.id).filter((node) => propOf(node, "text")?.chars === "00.0%")
     expect(numbers).toHaveLength(3)
     const theme = { textStyles: slideTextStyles } as Theme
     for (const node of numbers) {
-      const text = get(node, "text")!
+      const text = propOf(node, "text")!
       const room = Math.floor((1600 - 2 * 29) / 3) - 2 * 38
       for (const figure of ["$4.2M", "118%", "$12.5M", "+24.8%"]) {
         const one = textHeight({ ...text, chars: figure }, theme, room)
@@ -78,8 +78,8 @@ describe("a designed starting slide", () => {
     "%s: fills most of the room under the title, so the lower half of the slide is not left empty",
     (start) => {
       const { doom, slide } = started(start)
-      const [content] = childrenOf(doom, slide).filter((node) => get(node, "role") !== "title")
-      const box = get(content!, "box")!
+      const [content] = childrenOf(doom, slide).filter((node) => propOf(node, "role") !== "title")
+      const box = propOf(content!, "box")!
       const room = 1000 - box.y
       expect(box.h).toBeGreaterThanOrEqual(0.55 * room)
       expect(box.y + box.h).toBeLessThanOrEqual(1000)
@@ -94,17 +94,17 @@ describe("a designed starting slide", () => {
   it("is built by the agent's patterns, with placeholder words", () => {
     const names = (start: SlideStart) => {
       const { doom, slide } = started(start)
-      return childrenOf(doom, slide).map((node) => get(node, "name"))
+      return childrenOf(doom, slide).map((node) => propOf(node, "name"))
     }
     expect(names("kpis")).toEqual(["Title", "KPI"])
     expect(names("cards")).toEqual(["Title", "Cards"])
     expect(names("timeline")).toEqual(["Title", "Timeline"])
     expect(names("grid")).toEqual(["Title", "Grid"])
     const { doom, slide } = started("chart")
-    expect(childrenOf(doom, slide).some((node) => get(node, "chart")?.kind === "column")).toBe(true)
+    expect(childrenOf(doom, slide).some((node) => propOf(node, "chart")?.kind === "column")).toBe(true)
     const text = started("text")
-    const body = childrenOf(text.doom, text.slide).find((node) => get(node, "role") !== "title")!
-    expect(get(body, "text")).toMatchObject({
+    const body = childrenOf(text.doom, text.slide).find((node) => propOf(node, "role") !== "title")!
+    expect(propOf(body, "text")).toMatchObject({
       style: "body",
       paras: [{ list: "bullet" }, { list: "bullet" }, { list: "bullet" }],
     })

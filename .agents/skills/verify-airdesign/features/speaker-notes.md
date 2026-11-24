@@ -5,7 +5,7 @@ Under the slide of an open deck, the presenter notes bar shows the current slide
 ## Sub-features
 
 - `notes-open` the bar starts open with `textbox "Presenter notes"` (placeholder `Add presenter notes`). Its handle, `button "Collapse presenter notes"` or `button "Expand presenter notes"`, closes and opens it; a drag on the handle sets its height, and Home, End, ArrowUp and ArrowDown on the handle do the same from the keyboard (`apps/web/src/editor/notes-bar.tsx`). States `notes-open`, `notes-closed`, `notes-dragged`.
-- `notes-edit` typed notes show at once; 600 ms after the last key, or when the field loses focus or the slide changes, they are one write of the slide node's `notes` through `doomRoutes.edit` (`DoomNotes` in `apps/web/src/doom-editor/doom-notes.tsx`, `notesWrites` in `deck-writes.ts`). Each slide has its own notes; a new slide's field is empty.
+- `notes-edit` typed notes show at once; 600 ms after the last key, or when the field loses focus or the slide changes, they are one write of the slide node's `notes` through `doomRoutes.edit` (`DoomNotes` in `apps/web/src/editor/doom-notes.tsx`, `notesWrites` in `deck-writes.ts`). Each slide has its own notes; a new slide's field is empty.
 - `notes-reload` saved notes are there after a reload (`tests/browser/doom-editor-page.spec.ts`).
 - `notes-present` the presenter view shows the current slide's notes (`p` during a show; see `slide-commands.md`).
 

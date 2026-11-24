@@ -9,7 +9,7 @@ import type { Desc } from "@/design/control-desc"
 import { ColorField, fieldLook } from "@/design/controls/color"
 import { type DesignShown } from "@/design/design-shown"
 import type { PanelPaint } from "@/design/panel"
-import { ControlView, DesignSection } from "@/editor/design-panel"
+import { ControlView, DesignSection } from "@/editor/design-sections"
 
 export function SlideBackground({
   shown,

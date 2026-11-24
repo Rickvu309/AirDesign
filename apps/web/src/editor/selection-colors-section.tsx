@@ -6,7 +6,7 @@ import { selectionColorsCopy } from "@/copy/selection-colors-copy"
 import { shownName, type Palette } from "@/design/color-choices"
 import { ColorPicker } from "@/design/color-picker"
 import { ColorField, fieldLook } from "@/design/controls/color"
-import { DesignSection } from "./design-panel"
+import { DesignSection } from "./design-sections"
 
 export function SelectionColorRows({
   rows,

@@ -2,7 +2,9 @@ layer: shared
 dependencies:
   - apps/web/src/components
   - apps/web/src/copy
+  - apps/web/src/lib
 public:
+  - canvas-zoom.ts
   - painted-picture.ts
   - picture-file.ts
   - slide-layout.ts
