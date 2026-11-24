@@ -88,13 +88,26 @@ function unchangedAnswer(deck: string, rev: number, run: string | undefined): To
 
 export type Agent = { readonly id: string; readonly name?: string | undefined }
 
+function toldRefusal(refusal: {
+  readonly refusal: "field" | "deck" | "base" | "batch"
+  readonly field?: string
+  readonly fault?: "missing" | "unknown" | "form"
+  readonly form?: string
+}): ToolResult {
+  return refused(refusal.refusal, {
+    ...(refusal.field === undefined ? {} : { field: refusal.field }),
+    ...(refusal.fault === undefined ? {} : { fault: refusal.fault }),
+    ...(refusal.form === undefined ? {} : { form: refusal.form }),
+  })
+}
+
 export async function editDeckTool(raw: unknown, agent: Agent, once: string, host: DeckHost): Promise<ToolResult> {
   const named = readNamedDeck(raw)
-  if (!named.ok) return refused(named.refusal)
+  if (!named.ok) return toldRefusal(named)
   const opened = await host.open(named.deck)
   if (!opened.ok) return hostRefused(opened)
   const parsed = readDeckEdit(raw)
-  if (!parsed.ok) return refused(parsed.refusal)
+  if (!parsed.ok) return toldRefusal(parsed)
   const read = readChanges(parsed.changes)
   if (!read.ok) return read.result
   const fonts = withCatalogFonts(read.changes)

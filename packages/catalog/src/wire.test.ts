@@ -282,8 +282,15 @@ describe("deck list readers", () => {
   it("readNamedDeck ignores other arguments and refuses a bad deck", () => {
     expect(readNamedDeck({ deck: "d", other: 1 })).toEqual({ ok: true, deck: "d" })
     expect(readNamedDeck({ deck: "a b" })).toEqual({ ok: false, refusal: "deck" })
-    expect(readNamedDeck(JSON.parse('{"__proto__":{"deck":"d"}}'))).toEqual(field)
-    for (const body of [...wrongBodies, {}]) expect(readNamedDeck(body)).toEqual(field)
+    const missingDeck = {
+      ok: false,
+      refusal: "field",
+      field: "deck",
+      fault: "missing",
+      form: "1 to 64 of letters, digits, _ or -.",
+    }
+    expect(readNamedDeck(JSON.parse('{"__proto__":{"deck":"d"}}'))).toEqual(missingDeck)
+    for (const body of [...wrongBodies, {}]) expect(readNamedDeck(body)).toEqual(missingDeck)
   })
 
   it("readDecks bounds and folds the list", () => {

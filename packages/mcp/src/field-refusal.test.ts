@@ -12,9 +12,11 @@ function agent() {
   const decks = memoryDecks(
     () => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ name: "Title", children: [] }] }).doom,
   )
+  let calls = 0
   return {
     call: (op: string, args: unknown) => {
-      session.once = "once"
+      calls += 1
+      session.once = `once${String(calls)}`
       return callTool(names[op] ?? op, args, session, decks)
     },
   }
@@ -46,5 +48,47 @@ describe("an agent reads the field a refusal names", () => {
       at: 0,
     })
     expect(refused.answer.note).toBe("Change 1 (add): field text. The wrong form. Accepted form: A non-empty string.")
+  })
+
+  it("names an empty batch, an unknown argument, a bad run id and a missing deck", async () => {
+    const by = agent()
+    const made = await by.call("create_deck", {})
+    const { deck, rev, slides } = made.answer as { deck: string; rev: number; slides: string[] }
+    const idForm = "1 to 64 of letters, digits, _ or -."
+    const empty = await by.call("edit_deck", { deck, base: rev, changes: [] })
+    expect(empty.answer).toMatchObject({
+      ok: false,
+      refusal: "batch",
+      field: "changes",
+      fault: "form",
+      form: "1 to 100 changes.",
+    })
+    expect(empty.answer.note).toBe("field changes. The wrong form. Accepted form: 1 to 100 changes.")
+    const extra = await by.call("edit_deck", { deck, base: rev, extra: 1, changes: [{ op: "add" }] })
+    expect(extra.answer).toMatchObject({
+      refusal: "field",
+      field: "extra",
+      fault: "unknown",
+      form: "One of deck, base, runId, changes.",
+    })
+    expect(extra.answer.note).toBe("field extra. Unknown. Accepted form: One of deck, base, runId, changes.")
+    const run = await by.call("edit_deck", { deck, base: rev, runId: "bad id!", changes: [{ op: "add" }] })
+    expect(run.answer).toMatchObject({ refusal: "field", field: "runId", fault: "form", form: idForm })
+    expect(run.answer.note).toBe(`field runId. The wrong form. Accepted form: ${idForm}`)
+    const deckless = await by.call("edit_deck", { base: rev, changes: [{ op: "add" }] })
+    expect(deckless.answer).toMatchObject({ refusal: "field", field: "deck", fault: "missing", form: idForm })
+    expect(deckless.answer.note).toBe(`field deck. Missing. Accepted form: ${idForm}`)
+    const added = await by.call("edit_deck", {
+      deck,
+      base: rev,
+      changes: [{ op: "add", kind: "text", slide: slides[0], text: "Hi" }],
+    })
+    const id = (added.answer as { added: { id: string }[]; rev: number }).added[0]!.id
+    const next = (added.answer as { rev: number }).rev
+    const arrow = await by.call("edit_deck", { deck, base: next, changes: [{ op: "set", target: id, arrow: true }] })
+    expect(arrow.answer).toMatchObject({ field: "arrow", fault: "needs", needs: "a line" })
+    expect(arrow.answer).not.toHaveProperty("form")
+    expect(String(arrow.answer.note)).toContain("Needs a line.")
+    expect(String(arrow.answer.note)).not.toContain("Accepted form")
   })
 })
