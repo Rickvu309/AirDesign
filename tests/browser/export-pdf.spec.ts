@@ -8,7 +8,7 @@ import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import * as doom from "../../packages/doom/src/index.ts"
 import { test, type Stack } from "./api-stack"
 import { covers } from "./gesture"
-import { landNodes, openEditor, savedSlides, spot, type Opened } from "./editor-deck"
+import { landNodes, landOffScreen, openEditor, savedSlides, spot, type Opened } from "./editor-deck"
 import { openScreen } from "./open-screen"
 import { pdfPages } from "./pdf-file"
 
@@ -68,7 +68,7 @@ test("Export prints every slide on its own 16:9 page under the deck's name, with
   const opened = await openEditor(page, context, stack)
   const slides = await deckOfSlides(page, stack, opened, 3)
   await nameDeck(stack, opened, "Q3 / Board: final")
-  await landNodes(stack, opened, [
+  await landOffScreen(stack, opened, [
     {
       id: "t:7",
       type: "shape",

@@ -86,6 +86,8 @@ test("Undo on an agent run that moved a layer out of its frame, after the person
     expect((await stack.post(doomRoutes.edit.path, { deck: opened.deck, edit }, opened.cookie)).json.ok).toBe(true)
   const cardIn = async () => (await savedNode(stack, opened, "t:83")) as { parent: { id: string }; box: Box }
   await expect.poll(async () => (await cardIn()).parent.id).toBe(opened.slide)
+  await expect(page.locator('[data-slide-box] [data-node="t:81"] [data-node="t:83"]')).toHaveCount(0)
+  await expect(page.locator('[data-slide-box] [data-node="t:83"]')).toHaveCount(1)
 
   await clickSlide(page, 300, 350)
   await expect.poll(() => selectedIds(page)).toEqual(["t:83"])
