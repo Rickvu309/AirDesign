@@ -451,10 +451,19 @@ const knownFlags = harness({
 })
 same("every flag the script knows is accepted", knownFlags.context.args.unknown, [])
 
+const conflictingWatch = harness({ args: ["--no-follow", "--watch"], reads: [pullAnswer({ queue: true })] })
+same("--no-follow refuses --watch, which can merge the PR", await conflictingWatch.run(), 1)
+same("it stops before contacting GitHub", conflictingWatch.log, [])
+
 const early = harness({
   pull: null,
   args: ["--title", "Add land", "--body-file", "/tmp/body.md", "--no-follow"],
-  reads: [pullAnswer({ contexts: [] }), pullAnswer({ contexts: [] }), pullAnswer({ armed: true })],
+  reads: [
+    pullAnswer({ contexts: [] }),
+    pullAnswer({ contexts: [] }),
+    pullAnswer({ queue: true }),
+    pullAnswer({ armed: true }),
+  ],
 })
 early.context.gh = ((original) => (command) => {
   if (command[0] === "pr" && command[1] === "list" && early.log.some((line) => line.startsWith("gh pr create"))) {
@@ -466,16 +475,16 @@ early.context.read = ((original) => () => {
   early.log.push("read")
   return original()
 })(early.context.read)
-same("a push whose ci has not started waits, then arms", await early.run(), 0)
-const mergeAt = early.log.findIndex((line) => line.startsWith("gh pr merge"))
+same("--no-follow opens a PR and waits for checks to start", await early.run(), 0)
 same(
-  "and merges only after a check is on the head",
-  early.log.slice(0, mergeAt).filter((line) => line === "read").length,
-  3,
+  "it never requests a merge with the queue active",
+  early.log.some((line) => line.startsWith("gh pr merge")),
+  false,
 )
+same("it waits for a check on the head", early.log.filter((line) => line === "read").length, 3)
 same(
   "and says it waits",
-  early.said.some((line) => line.startsWith("queue") && line.includes("waiting")),
+  early.said.some((line) => line.trim() === "queue      waiting for a ci check to start on the head"),
   true,
 )
 
