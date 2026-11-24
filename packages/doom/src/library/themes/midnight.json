@@ -1,0 +1,25 @@
+{
+  "id": "midnight",
+  "name": "Midnight",
+  "colors": {
+    "text": "#f4f6fa",
+    "background": "#0e1626",
+    "text2": "#9aa6ba",
+    "background2": "#1a2438",
+    "accent1": "#6b9bff",
+    "accent2": "#34c3a6",
+    "accent3": "#f5b54a",
+    "accent4": "#a98bfa",
+    "accent5": "#f06a73",
+    "accent6": "#8ad167",
+    "link": "#7aa6ff"
+  },
+  "fonts": {
+    "heading": "Inter SemiBold",
+    "body": "Inter"
+  },
+  "powerPoint": {
+    "map": "dark",
+    "followedLink": "#c3a9ff"
+  }
+}

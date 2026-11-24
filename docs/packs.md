@@ -50,7 +50,6 @@ flowchart TD
     p_packages_doom["packages/doom"]
     p_packages_fonts["packages/fonts"]
     p_packages_oauth["packages/oauth"]
-    p_packages_templates["packages/templates"]
     p_packages_theme["packages/theme"]
     p_packages_usage["packages/usage"]
   end
@@ -182,6 +181,5 @@ flowchart TD
 | `packages/oauth` | core | src/index.ts | none | none |
 | `packages/pptx` | model | src/index.ts | none | none |
 | `packages/render` | model | src/index.ts | none | none |
-| `packages/templates` | core | src/index.ts | none | none |
 | `packages/theme` | core | none | none | none |
 | `packages/usage` | core | src/index.ts | none | none |

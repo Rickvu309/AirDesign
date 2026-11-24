@@ -2,15 +2,14 @@ import { describe, expect, it } from "vitest"
 import { agentDeck, apply, build, minter } from "./agent-fixtures.js"
 import { placeholderSubtitle, titleOnlyWrites, titleSlideWrites } from "./slide-placeholders.js"
 import { placeholderTitle } from "./placeholder-title.js"
-import { slideTextStyles } from "./slide-text-styles.js"
+import { defaultTheme } from "./theme.js"
 import { textHeight } from "./text-estimate.js"
 import { childrenOf, propOf } from "./doom-walk.js"
 import { ids } from "./sample-deck.js"
 import type { Doom } from "./doom.js"
-import type { Theme } from "./theme.js"
 
 const size = { w: 1920, h: 1080 }
-const theme = { textStyles: slideTextStyles } as Theme
+const theme = defaultTheme
 
 function withTitleSlide(): Doom {
   const mint = minter("p")
@@ -42,7 +41,9 @@ describe("a title slide's placeholders", () => {
     expect(below.y - (above.y + above.h)).toBeGreaterThanOrEqual(32)
     expect(below.x).toBe(above.x)
     expect(below.w).toBe(above.w)
-    expect(slideTextStyles[text.style].weight).toBeLessThan(slideTextStyles[propOf(title, "text")!.style].weight)
+    expect(defaultTheme.textStyles[text.style].weight).toBeLessThan(
+      defaultTheme.textStyles[propOf(title, "text")!.style].weight,
+    )
     expect(text.spans).toEqual([{ end: placeholderSubtitle.length, color: { var: "text2" } }])
   })
 

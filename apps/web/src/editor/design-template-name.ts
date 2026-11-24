@@ -1,17 +1,11 @@
 import * as doom from "@airdesign/doom"
-import { deckTemplates, templateTheme } from "@airdesign/templates"
-
-const hexOf = (value: string) => `#${value.toLowerCase()}`
 
 export function templateNameOf(theme: doom.Theme): string | null {
-  const found = deckTemplates.find(({ id }) => {
-    const template = templateTheme(id)
-    return (
-      template !== undefined &&
-      theme.fonts.heading === template.fonts.major &&
-      theme.colors.accent1 === hexOf(template.colors.accent1) &&
-      theme.colors.accent2 === hexOf(template.colors.accent2)
-    )
-  })
+  const found = Object.values(doom.themeLibrary).find(
+    ({ theme: builtIn }) =>
+      theme.fonts.heading === builtIn.fonts.heading &&
+      theme.colors.accent1 === builtIn.colors.accent1 &&
+      theme.colors.accent2 === builtIn.colors.accent2,
+  )
   return found?.name ?? null
 }

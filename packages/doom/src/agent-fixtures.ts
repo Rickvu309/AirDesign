@@ -4,7 +4,7 @@ import type { Reading } from "./agent-draft.js"
 import { type NodeId, type Doom, type Write, applyEdit, isRefusal, nodeId, rev } from "./index.js"
 import { agent, once, sampleDeck } from "./sample-deck.js"
 import { childrenOf, slidesOf } from "./doom-walk.js"
-import { defaultTheme } from "./default-theme-art.js"
+import { defaultTheme } from "./theme.js"
 import { doomFromTree } from "./doom-tree.js"
 import { titleOnlyWrites } from "./slide-placeholders.js"
 

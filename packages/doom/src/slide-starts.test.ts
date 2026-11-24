@@ -2,14 +2,12 @@ import { describe, expect, it } from "vitest"
 import { contentAreaOf } from "./agent-place.js"
 import { minter } from "./agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
-import { defaultTheme } from "./default-theme-art.js"
+import { defaultTheme } from "./theme.js"
 import { childrenOf, descendantsOf, propOf } from "./doom-walk.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { type SlideStart, slideStartWrites, slideStarts } from "./slide-starts.js"
 import { titleOnlyWrites } from "./slide-placeholders.js"
-import { slideTextStyles } from "./slide-text-styles.js"
 import { textHeight } from "./text-estimate.js"
-import type { Theme } from "./theme.js"
 import { sampleChart } from "./sample-charts.js"
 import { applyEdit, isRefusal, rev, type Doom, type NodeId } from "./index.js"
 
@@ -63,7 +61,7 @@ describe("a designed starting slide", () => {
     const kpi = childrenOf(doom, slide).find((node) => propOf(node, "name") === "KPI")!
     const numbers = descendantsOf(doom, kpi.id).filter((node) => propOf(node, "text")?.chars === "00.0%")
     expect(numbers).toHaveLength(3)
-    const theme = { textStyles: slideTextStyles } as Theme
+    const theme = defaultTheme
     for (const node of numbers) {
       const text = propOf(node, "text")!
       const room = Math.floor((1600 - 2 * 29) / 3) - 2 * 38

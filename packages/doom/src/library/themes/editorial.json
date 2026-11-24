@@ -1,0 +1,25 @@
+{
+  "id": "editorial",
+  "name": "Editorial",
+  "colors": {
+    "text": "#231f1c",
+    "background": "#fbf8f3",
+    "text2": "#3a2e26",
+    "background2": "#efe8dd",
+    "accent1": "#b4532a",
+    "accent2": "#5f7a4a",
+    "accent3": "#c8962e",
+    "accent4": "#7b4b6e",
+    "accent5": "#2f6f8f",
+    "accent6": "#8c6239",
+    "link": "#b4532a"
+  },
+  "fonts": {
+    "heading": "Source Serif 4 SemiBold",
+    "body": "Inter"
+  },
+  "powerPoint": {
+    "map": "light",
+    "followedLink": "#7b4b6e"
+  }
+}

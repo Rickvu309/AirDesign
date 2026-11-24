@@ -1,3 +1,6 @@
+import editorial from "./library/themes/editorial.json" with { type: "json" }
+import midnight from "./library/themes/midnight.json" with { type: "json" }
+import neutral from "./library/themes/neutral.json" with { type: "json" }
 import {
   type ColorVar,
   type Effect,
@@ -11,7 +14,7 @@ import {
   readHex,
 } from "./paint.js"
 import { type Reader, finite, integer, keyed, literal, object, words } from "./read-kit.js"
-import { slideTextStyles } from "./slide-text-styles.js"
+import fallback from "./library/themes/fallback.json" with { type: "json" }
 import { type TextStyleName, textStyleNames } from "./text.js"
 
 export type TextStyle = {
@@ -48,14 +51,48 @@ const readTextStyle: Reader<TextStyle> = object(
 )
 
 const readEveryTextStyle = keyed(textStyleNames, readTextStyle)
-const readTextStyles: Reader<Theme["textStyles"]> = (raw) =>
-  readEveryTextStyle(typeof raw === "object" && raw !== null ? { ...slideTextStyles, ...raw } : raw)
-
-export const readTheme: Reader<Theme> = object({
+const readEffectStyles = keyed(effectStyleNames, readEffectList)
+const themeFields = {
   colors: keyed(colorVars, readHex),
   fonts: object({ heading: readFontName, body: readFontName }),
+}
+const themeStyleFields = {
+  textStyles: readEveryTextStyle,
+  effectStyles: readEffectStyles,
+}
+
+export const defaultTheme: Theme = object({ ...themeFields, ...themeStyleFields })(fallback)
+
+const readEntry = object(
+  {
+    id: words(100, 1),
+    name: words(100, 1),
+    powerPoint: object({ map: literal(["light", "dark"]), followedLink: readHex }),
+    ...themeFields,
+  },
+  themeStyleFields,
+)
+
+type LibraryTheme = { readonly name: string; readonly theme: Theme }
+
+function readLibraryTheme(raw: unknown): LibraryTheme {
+  const { id: _id, name, powerPoint: _powerPoint, ...art } = readEntry(raw)
+  return { name, theme: { ...defaultTheme, ...art } }
+}
+
+export const themeLibrary: Readonly<Record<"neutral" | "midnight" | "editorial", LibraryTheme>> = {
+  neutral: readLibraryTheme(neutral),
+  midnight: readLibraryTheme(midnight),
+  editorial: readLibraryTheme(editorial),
+}
+
+const readTextStyles: Reader<Theme["textStyles"]> = (raw) =>
+  readEveryTextStyle(typeof raw === "object" && raw !== null ? { ...defaultTheme.textStyles, ...raw } : raw)
+
+export const readTheme: Reader<Theme> = object({
+  ...themeFields,
+  ...themeStyleFields,
   textStyles: readTextStyles,
-  effectStyles: keyed(effectStyleNames, readEffectList),
 })
 
 const entries = <const N extends string>(group: string, names: readonly N[]) =>

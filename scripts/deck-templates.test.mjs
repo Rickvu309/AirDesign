@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import fs from "node:fs"
 import { styleNames } from "./deck-templates/deck-parts.mjs"
-import { templateCatalog, templateDeck, templateSpecs, templateUrl } from "./deck-templates/build.mjs"
+import { templateDeck, templateSpecs, templateUrl } from "./deck-templates/build.mjs"
 
 for (const spec of templateSpecs) {
   for (const start of [false, true]) {
@@ -12,13 +12,6 @@ for (const spec of templateSpecs) {
   }
 }
 console.log("template decks are reproducible")
-
-assert.deepEqual(
-  templateSpecs.map(({ id, name }) => ({ id, name })),
-  templateCatalog,
-  "the generator writes exactly the catalog's templates",
-)
-console.log("the catalog names every generated template")
 
 const layouts = ["Title Slide", "Section Header", "Title and Content", "Two Content", "Title Only", "Closing", "Blank"]
 for (const spec of templateSpecs) {

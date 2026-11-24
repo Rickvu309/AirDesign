@@ -1,4 +1,5 @@
-import { templateTheme } from "../../packages/templates/src/index.ts"
+import editorial from "../../packages/doom/src/library/themes/editorial.json" with { type: "json" }
+import { themeSlots } from "./theme-slots.mjs"
 import { boxes, layouts, master } from "./deck-layouts.mjs"
 import { boardSlides } from "./board-slides.mjs"
 
@@ -68,7 +69,7 @@ const look = {
 }
 
 export default {
-  ...templateTheme("editorial"),
+  ...themeSlots(editorial),
   scale,
   master: master(look),
   layouts: layouts(look),
