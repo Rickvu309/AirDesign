@@ -1,6 +1,8 @@
 import { useEffect } from "react"
 import { toast } from "@/components/ui/toast"
 import { pageToastWidth, PageToaster } from "@/components/ui/page-notice"
+import { StatusPill } from "@/components/ui/status-pill"
+import { productCopy } from "@/copy/product-copy"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { movedDeckCards } from "@/decks/sample-decks"
@@ -13,15 +15,21 @@ export function MovedToast({
   onUndo?: (pointer: boolean) => void
 }) {
   return (
-    <div
-      className="flex h-10 items-center rounded-[var(--shape-card)] bg-foreground pr-4 pl-4 text-[length:var(--type-dense)] leading-[17px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]"
-      style={{ width: pageToastWidth }}
-    >
-      <span className="min-w-0 flex-1 truncate">{name} moved to Trash</span>
-      <button type="button" onClick={(event) => onUndo?.(event.detail > 0)} className="font-medium text-white">
-        Undo
+    <StatusPill className="h-auto min-h-10 max-w-full gap-2.5 py-1.5 pr-4 pl-4" style={{ width: pageToastWidth }}>
+      <span className="flex min-w-0 flex-1 flex-wrap items-baseline">
+        <bdi title={name} className="line-clamp-2 max-w-full shrink-0 [overflow-wrap:anywhere]">
+          {name}
+        </bdi>
+        <span className="shrink-0 whitespace-nowrap"> moved to Trash</span>
+      </span>
+      <button
+        type="button"
+        onClick={(event) => onUndo?.(event.detail > 0)}
+        className="shrink-0 font-medium whitespace-nowrap"
+      >
+        {productCopy.undo}
       </button>
-    </div>
+    </StatusPill>
   )
 }
 

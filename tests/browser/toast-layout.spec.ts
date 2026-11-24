@@ -3,6 +3,28 @@ import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { expect } from "@playwright/test"
 import { test } from "./deck-test"
 
+test("a normal deck name stays whole on the trash notice", async ({ page }) => {
+  await page.setViewportSize({ width: 1470, height: 923 })
+  await page.goto("/screens/s33-01-decks-trash-deck-moved-toast")
+  const name = "Pricing Strategy Review"
+  const notice = page.locator("[data-sonner-toast]")
+  await expect(notice).toContainText(`${name} moved to Trash`)
+  const deck = notice.locator("bdi")
+  await expect(deck).toHaveText(name)
+  const cut = await deck.evaluate((element) => {
+    const style = getComputedStyle(element)
+    const clamp = style.webkitLineClamp !== "none" && style.webkitLineClamp !== ""
+    const tall = element.scrollHeight > element.clientHeight + 1
+    const wide = element.scrollWidth > element.clientWidth + 1
+    return { clamp, tall, wide, scrollHeight: element.scrollHeight, clientHeight: element.clientHeight }
+  })
+  expect(cut.clamp ? cut.tall : cut.wide).toBe(false)
+  const action = notice.locator("span").filter({ hasText: /^ moved to Trash$/ })
+  await expect(action).toHaveText(" moved to Trash")
+  const actionCut = await action.evaluate((element) => element.scrollWidth > element.clientWidth + 1)
+  expect(actionCut).toBe(false)
+})
+
 for (const width of [320, 480, 735]) {
   test(`Trash Undo and pointer Close fit at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 700 })
