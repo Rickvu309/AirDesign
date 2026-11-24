@@ -69,15 +69,13 @@ function WordsCell(props: {
   )
 }
 
-const valueColumnCap = 14
-
 const valueColumn = (chart: doom.Chart, at: number) => {
   const longest = chart.series[at]?.values.reduce(
     (most, value) => Math.max(most, roundedShown(value, 2).text.length),
     0,
   )
-  const digits = Math.min(valueColumnCap, (longest ?? 0) + 1)
-  return `minmax(max(4.5rem, ${String(digits)}ch + 1.75rem), auto)`
+  const digits = (longest ?? 0) + 1
+  return `minmax(4.5rem, min(7.75rem, max(4.5rem, ${String(digits)}ch + 1.75rem)))`
 }
 
 const kinds = ["column", "bar", "line", "pie", "stacked"] as const
@@ -130,7 +128,7 @@ export function ChartSection({
         <div
           className="grid w-max min-w-full items-center gap-1"
           style={{
-            gridTemplateColumns: `5rem ${chart.series.map((_, at) => valueColumn(chart, at)).join(" ")} auto`,
+            gridTemplateColumns: `5rem ${chart.series.map((_, at) => valueColumn(chart, at)).join(" ")}`,
           }}
         >
           <span />
@@ -147,16 +145,25 @@ export function ChartSection({
               }}
             />
           ))}
-          <span />
           {chart.categories.map((category, row) => (
             <Fragment key={row}>
-              <WordsCell
-                key={category}
-                label={`${editorCopy.chartData} ${String(row + 1)}`}
-                value={category}
-                className="sticky left-0 z-10 bg-muted"
-                onCommit={(words) => words !== category && change(chartRow(chart, row, words))}
-              />
+              <div className="sticky left-0 z-10 flex min-w-0 items-center rounded-lg bg-muted">
+                <WordsCell
+                  key={category}
+                  label={`${editorCopy.chartData} ${String(row + 1)}`}
+                  value={category}
+                  className="flex-1 bg-transparent pr-0"
+                  onCommit={(words) => words !== category && change(chartRow(chart, row, words))}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={editorCopy.dropRow(category)}
+                  onClick={() => change(chartDropRow(chart, row))}
+                >
+                  <Trash2 />
+                </Button>
+              </div>
               {chart.series.map((series, at) => (
                 <div key={at} className="min-w-0">
                   <NumberField
@@ -167,14 +174,6 @@ export function ChartSection({
                   />
                 </div>
               ))}
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                aria-label={editorCopy.dropRow(category)}
-                onClick={() => change(chartDropRow(chart, row))}
-              >
-                <Trash2 />
-              </Button>
             </Fragment>
           ))}
         </div>
