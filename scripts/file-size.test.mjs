@@ -59,8 +59,8 @@ same(
 )
 same(
   "a test file over the limit that grows is told where the new test goes",
-  sizeFault({ file: "apps/api/src/mcp/mcp.test.ts", before: over, after: over + 4 }),
-  "apps/api/src/mcp/mcp.test.ts is 5002 tokens, over the limit of 5000, and this change adds 1. Put the new test in a new test file beside the code it tests, named after that code. Do not add to this file.",
+  sizeFault({ file: "apps/api/src/mcp.test.ts", before: over, after: over + 4 }),
+  "apps/api/src/mcp.test.ts is 5002 tokens, over the limit of 5000, and this change adds 1. Put the new test in a new test file beside the code it tests, named after that code. Do not add to this file.",
 )
 same(
   "a new file over the limit is told the same",

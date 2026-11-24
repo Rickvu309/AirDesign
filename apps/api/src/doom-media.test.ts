@@ -4,9 +4,9 @@ import { afterAll, beforeAll, expect, it } from "vitest"
 import { accountRoutes } from "@airdesign/catalog"
 import { limits } from "@airdesign/doom"
 
-import { ask, signInByCode, postgresInfo, serve } from "../testing/harness.js"
-import { DeckListen, openPool, type Mail, type OriginalUpload } from "../index.js"
-import { LocalOriginalStore } from "../platform/local-original-store.js"
+import { ask, signInByCode, postgresInfo, serve } from "./testing/harness.js"
+import { DeckListen, openPool, type Mail, type OriginalUpload } from "./index.js"
+import { LocalOriginalStore } from "./platform/local-original-store.js"
 
 const bytes = Buffer.from("added picture bytes")
 const sha256 = createHash("sha256").update(bytes).digest("hex")

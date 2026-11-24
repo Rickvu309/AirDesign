@@ -14,7 +14,7 @@ test_exempt:
   - "apps/web/src/real-words.test.ts"
   - "apps/web/src/agent-parity.test.ts"
   - "apps/web/src/rounded-inputs.test.ts"
-todo_ceiling: 262
+todo_ceiling: 137
 layers:
   - app
   - feature
@@ -24,6 +24,8 @@ layers:
   - model
   - core
 table_exempt:
+  - "apps/api/src/*.test.ts"
+  - "apps/api/src/testing/**"
   - "apps/api/src/platform/migrations.ts"
   - "apps/api/src/platform/doom-migrations.ts"
   - "apps/api/src/platform/migrations/*.ts"

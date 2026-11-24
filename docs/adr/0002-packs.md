@@ -19,5 +19,5 @@ The api is a root pack over seven packs: `platform`, `account`, `oauth`, `usage`
 - `ts-packwerk explain <folder>` tells an agent a pack's layer, public files, declared dependencies and what uses it, before it changes the pack.
 - A new violation fails the check with its next step. `update-todo` only removes fixed entries; recording all of them takes `--all`, so a todo file only shrinks. `todo_ceiling` in `packwerk.yml` is the number of recorded entries, and `pnpm check:boundaries` fails when that number is above the one on `origin/main`.
 - The check takes about 1 s on 1,400 files, tests included, and runs in `pnpm check:boundaries`.
-- Table names count only inside string and template literals, so a property such as `deck.id` never matches. Migrations, schema setup and role provisioning are exempt.
+- Table names count only inside string and template literals, so a property such as `deck.id` never matches. Migrations, schema setup and role provisioning are exempt. Tests at the api root and in `apps/api/src/testing` test the whole app and may name any table; a pack's own tests name only the tables it owns.
 - The delete-account test lists every table in the `session` and `deck` schemas, so a module that adds a table must say how an account's rows leave with it.

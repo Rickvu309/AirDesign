@@ -5,26 +5,12 @@ apps/api/src:
       - layer
     files:
       - apps/api/src/mcp/mcp-trash.test.ts
-      - apps/api/src/mcp/mcp.test.ts
   apps/api/src/testing/harness.ts:
     violations:
       - dependency
       - layer
     files:
       - apps/api/src/mcp/mcp-trash.test.ts
-      - apps/api/src/mcp/mcp.test.ts
-apps/api/src/account:
-  session.access:
-    violations:
-      - table
-    files:
-      - apps/api/src/mcp/mcp.test.ts
-apps/api/src/doom:
-  deck.doom:
-    violations:
-      - table
-    files:
-      - apps/api/src/mcp/mcp.test.ts
 packages/mcp:
   packages/mcp/src/testing/evals.ts:
     violations:
