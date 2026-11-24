@@ -40,6 +40,28 @@ function painted(
 }
 
 describe("NodeArt", () => {
+  it("extends the fill of a path only when its own paint and all ancestors are opaque", () => {
+    const path = (opacity = 1, alpha = 1) =>
+      shape("wedge", {
+        box: spot(0, 0, 100, 100),
+        geometry: { kind: "path", d: "M0 0L1 0L1 1Z", fillStroke: true },
+        opacity,
+        fills: [solid({ var: "accent1" }, { opacity: alpha })],
+      })
+    expect(painted([path()])).toContain(`stroke="${navy}"`)
+    expect(painted([path(0.5)])).not.toContain("stroke-width")
+    expect(painted([path(1, 0.5)])).not.toContain("stroke-width")
+    expect(
+      painted([
+        {
+          type: "frame",
+          props: { box: spot(0, 0, 100, 100), opacity: 0.5 },
+          children: [{ type: "frame", props: { box: spot(0, 0, 100, 100) }, children: [path()] }],
+        },
+      ]),
+    ).not.toContain("stroke-width")
+  })
+
   it("places a node by its box and rounds the box by its radius, filling it with each paint in order", () => {
     const html = painted([
       shape("card", {

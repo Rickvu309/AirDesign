@@ -1,17 +1,36 @@
 import { type NodeId, readNodeId } from "./ids.js"
 import { type Px, px } from "./paint.js"
-import { type Reader, finite, list, literal, matching, object, oneOf, pair, reject, variant } from "./read-kit.js"
+import {
+  type Reader,
+  boolean,
+  finite,
+  list,
+  literal,
+  matching,
+  object,
+  oneOf,
+  pair,
+  reject,
+  variant,
+} from "./read-kit.js"
 
 export type End =
   | { readonly x: Px; readonly y: Px }
   | { readonly node: NodeId; readonly site: "t" | "r" | "b" | "l" | "c" }
 export const lineArrowheads = ["none", "arrow", "triangle", "circle"] as const
 export type Arrow = (typeof lineArrowheads)[number]
+export const pathLimit = 4_000
+export const readPathData: Reader<string> = matching(
+  /^[MmLlHhVvCcSsQqTtAaZz0-9eE.,+\- ]+$/,
+  pathLimit,
+  `SVG path data, up to ${pathLimit} characters.`,
+)
+
 export type Geometry =
   | { readonly kind: "rect" }
   | { readonly kind: "ellipse" }
   | { readonly kind: "preset"; readonly name: string; readonly adjust?: readonly number[] }
-  | { readonly kind: "path"; readonly d: string }
+  | { readonly kind: "path"; readonly d: string; readonly fillStroke?: boolean }
   | { readonly kind: "icon"; readonly name: string }
   | {
       readonly kind: "line"
@@ -35,7 +54,7 @@ export const readGeometry: Reader<Geometry> = variant("kind", {
   rect: object({}),
   ellipse: object({}),
   preset: object({ name: matching(/^[A-Za-z0-9]+$/, 40) }, { adjust: list(finite(-1_000_000, 1_000_000), 12) }),
-  path: object({ d: matching(/^[MmLlHhVvCcSsQqTtAaZz0-9eE.,+\- ]+$/, 4_000) }),
+  path: object({ d: readPathData }, { fillStroke: boolean }),
   icon: object({ name: matching(/^[a-z0-9-]+\/[a-z0-9-]+$/, 80) }),
   line: object({
     start: readEnd,

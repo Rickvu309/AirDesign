@@ -66,12 +66,12 @@ const lead = (opened: Opened, count: number) =>
 
 const foundLimit = 400
 
-function foundAnswer(opened: Opened, find: string): ToolResult {
+function foundAnswer(opened: Opened, find: string, detail: doom.NodeId | undefined): ToolResult {
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
   const wanted = find.toLowerCase()
   const lines = slides.flatMap((slide) =>
     doom
-      .readForAgent(opened.fold, [slide])
+      .readForAgent(opened.fold, [slide], undefined, detail)
       .split("\n")
       .slice(1)
       .filter((line) => line.toLowerCase().includes(wanted))
@@ -92,6 +92,7 @@ function foundAnswer(opened: Opened, find: string): ToolResult {
 }
 
 type Query = {
+  readonly detail?: string | undefined
   readonly slide?: string | undefined
   readonly cursor?: string | undefined
   readonly find?: string | undefined
@@ -103,7 +104,11 @@ type Chosen =
 
 function chosenSlides(opened: Opened, query: Query): Chosen {
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
-  const { slide, cursor } = query
+  const detail = doom.readNodeId(query.detail)
+  const detailSlide = detail === undefined ? undefined : doom.slideOf(opened.fold, detail)
+  if (query.detail !== undefined && detailSlide === undefined)
+    return { ok: false, result: refused("dead", { node: query.detail }) }
+  const { slide = detailSlide, cursor } = query
   const alone = slide === undefined ? undefined : slides.find((id) => id === slide)
   if (slide !== undefined && alone === undefined) return { ok: false, result: refused("dead", { node: slide }) }
   const from = cursor === undefined ? 0 : slides.findIndex((id) => id === cursor)
@@ -112,7 +117,7 @@ function chosenSlides(opened: Opened, query: Query): Chosen {
   const chosen: doom.NodeId[] = []
   let bytes = 0
   for (const slide of wanted) {
-    bytes += doom.readForAgent(opened.fold, [slide]).length
+    bytes += doom.readForAgent(opened.fold, [slide], undefined, detail).length
     if (chosen.length > 0 && bytes > readBytes) break
     chosen.push(slide)
   }
@@ -120,7 +125,8 @@ function chosenSlides(opened: Opened, query: Query): Chosen {
 }
 
 export function readAnswer(opened: Opened, query: Query, laid?: Laid): ToolResult {
-  if (query.find !== undefined) return foundAnswer(opened, query.find)
+  const detail = doom.readNodeId(query.detail)
+  if (query.find !== undefined) return foundAnswer(opened, query.find, detail)
   const picked = chosenSlides(opened, query)
   if (!picked.ok) return picked.result
   const { chosen, next } = picked
@@ -137,7 +143,7 @@ export function readAnswer(opened: Opened, query: Query, laid?: Laid): ToolResul
     ...found,
   }
   const note = [lead(opened, slides.length), ...(laid === undefined ? [] : readFindingsNote(laid))].join(" ")
-  return answered(note, { ...answer, layers: doom.readForAgent(opened.fold, chosen, laid?.boxes) })
+  return answered(note, { ...answer, layers: doom.readForAgent(opened.fold, chosen, laid?.boxes, detail) })
 }
 
 async function laidRead(opened: Opened, query: Query, host: DeckHost): Promise<Laid | undefined> {
@@ -156,7 +162,9 @@ export async function readDeckTool(raw: unknown, agent: string, host: DeckHost):
   const read = withOtherRuns(readAnswer(opened, parsed, await laidRead(opened, parsed, host)), opened.fold, agent)
   if (parsed.picture !== true || !read.ok || parsed.find !== undefined) return read
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
+  const detail = doom.readNodeId(parsed.detail)
+  const slide = parsed.slide ?? (detail === undefined ? undefined : doom.slideOf(opened.fold, detail))
   const from = parsed.cursor === undefined ? 0 : slides.findIndex((id) => id === parsed.cursor)
-  const wanted = parsed.slide === undefined ? slides.slice(from) : slides.filter((id) => id === parsed.slide)
+  const wanted = slide === undefined ? slides.slice(from) : slides.filter((id) => id === slide)
   return withPictures(read, opened, wanted, host)
 }

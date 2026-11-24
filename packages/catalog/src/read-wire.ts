@@ -14,6 +14,7 @@ export const readDeckQuery = readInput(
     deck: deckInput,
     slide: z.string().regex(nodeIdPattern).describe("Only this slide.").exactOptional(),
     cursor: z.string().regex(nodeIdPattern).describe("Continue from this slide id.").exactOptional(),
+    detail: z.string().regex(nodeIdPattern).describe("Include SVG commands for this path id.").exactOptional(),
     picture: z.literal(true).describe("Add a picture of each slide read, up to 10.").exactOptional(),
     find: z
       .string()

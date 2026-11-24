@@ -81,7 +81,7 @@ export function kindOf(node: Node): string {
   if (node.type === "slide" || node.type === "slideRow") return node.type
   if (node.type === "frame") return propOf(node, "chart") === undefined ? "frame" : "chart"
   const kind = propOf(node, "geometry")?.kind
-  if (kind === "line" || kind === "icon") return kind
+  if (kind === "line" || kind === "icon" || kind === "path") return kind
   const fills = propOf(node, "fills") ?? []
   if (fills.some((paint) => paint.kind === "image")) return "picture"
   const painted = fills.length > 0 || (propOf(node, "strokes") ?? []).length > 0
@@ -101,7 +101,7 @@ function placeWords(doom: Doom, node: Node, boxes: ReadonlyMap<NodeId, Box> | un
   return `${free ? `@${num(box.x)},${num(box.y)} ` : ""}${size}${turned}${flipped}`
 }
 
-function looksOf(node: Node): readonly string[] {
+function looksOf(node: Node, detail: boolean): readonly string[] {
   const out: string[] = []
   const name = propOf(node, "name")
   const fills = propOf(node, "fills")
@@ -156,6 +156,10 @@ function looksOf(node: Node): readonly string[] {
   if (geometry?.kind === "ellipse") out.push("shape=ellipse")
   if (geometry?.kind === "preset") out.push(`shape=${geometry.name}`)
   if (geometry?.kind === "icon") out.push(`icon=${iconWords(geometry.name)}`)
+  if (geometry?.kind === "path") {
+    out.push(`fillStroke=${String(geometry.fillStroke === true)}`)
+    if (detail) out.push(`d=${quoted(geometry.d)}`)
+  }
   if (geometry?.kind === "line") out.push(...lineWords(geometry))
   const chart = chartWords(node)
   if (chart !== undefined) out.push(chart)
@@ -216,16 +220,29 @@ function overrideWords(text: Text): readonly string[] {
   ]
 }
 
-function lineOf(doom: Doom, node: Node, depth: number, boxes: ReadonlyMap<NodeId, Box> | undefined): string {
+function lineOf(
+  doom: Doom,
+  node: Node,
+  depth: number,
+  boxes: ReadonlyMap<NodeId, Box> | undefined,
+  detail: NodeId | undefined,
+): string {
   const role = propOf(node, "role")
   const kind = `${kindOf(node)}${role === undefined ? "" : `:${role}`}`
   const place = placeWords(doom, node, boxes)
-  return `${"  ".repeat(depth)}${[node.id, kind, ...(place === undefined ? [] : [place]), ...looksOf(node)].join(" ")}`
+  return `${"  ".repeat(depth)}${[node.id, kind, ...(place === undefined ? [] : [place]), ...looksOf(node, node.id === detail)].join(" ")}`
 }
 
-function walk(doom: Doom, node: Node, depth: number, boxes: ReadonlyMap<NodeId, Box> | undefined, out: string[]): void {
-  out.push(lineOf(doom, node, depth, boxes))
-  for (const child of childrenOf(doom, node.id)) walk(doom, child, depth + 1, boxes, out)
+function walk(
+  doom: Doom,
+  node: Node,
+  depth: number,
+  boxes: ReadonlyMap<NodeId, Box> | undefined,
+  out: string[],
+  detail: NodeId | undefined,
+): void {
+  out.push(lineOf(doom, node, depth, boxes, detail))
+  for (const child of childrenOf(doom, node.id)) walk(doom, child, depth + 1, boxes, out, detail)
 }
 
 function slideLine(node: Node): string {
@@ -245,7 +262,12 @@ function slideLine(node: Node): string {
   ].join(" ")
 }
 
-export function readForAgent(doom: Doom, slides: readonly NodeId[] | "all", boxes?: ReadonlyMap<NodeId, Box>): string {
+export function readForAgent(
+  doom: Doom,
+  slides: readonly NodeId[] | "all",
+  boxes?: ReadonlyMap<NodeId, Box>,
+  detail?: NodeId,
+): string {
   const out: string[] = []
   const wanted = slides === "all" ? slidesOf(doom).map((slide) => slide.id) : slides
   for (const id of wanted) {
@@ -255,7 +277,7 @@ export function readForAgent(doom: Doom, slides: readonly NodeId[] | "all", boxe
       continue
     }
     out.push(slideLine(slide))
-    for (const child of childrenOf(doom, slide.id)) walk(doom, child, 1, boxes, out)
+    for (const child of childrenOf(doom, slide.id)) walk(doom, child, 1, boxes, out, detail)
   }
   return out.join("\n")
 }

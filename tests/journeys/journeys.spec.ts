@@ -43,6 +43,8 @@ for (const name of [
   "aira-panel",
   "deck-list-trash",
   "connected-agents",
+  "component-paths",
+  "path-paint",
   "usage-page",
   "account-name",
   "sign-in-mail",

@@ -179,7 +179,11 @@ describe("resolveSlide", () => {
     const { parts } = resolved([
       { type: "shape", name: "p", props: { box: spot(0, 0, 200, 100), geometry: { kind: "path", d: "M0 0L1 1" } } },
     ])
-    expect(parts[0]?.geometry).toEqual({ kind: "path", d: "M0 0L200 100" })
+    expect(parts[0]?.geometry).toEqual({
+      kind: "path",
+      d: "M0 0L200 100",
+      bounds: { x: 0, y: 0, width: 200, height: 100 },
+    })
   })
 
   it("answers a line's ends in its own box, whichever way it points", () => {

@@ -81,6 +81,10 @@ function emission(read: (raw: unknown) => Expr) {
   }
   return variant("kind", {
     rect: object({ ...position, fill: read }),
+    path: object(
+      { ...position, d: read },
+      { fill: read, fillStroke: boolean, stroke: object({ color: read, width: read }) },
+    ),
     text: object(
       { ...position, chars: read, style: read, color: read, align: read, alignV: read },
       { fit: (raw: unknown) => (raw === "omit" ? raw : fitText(raw)) },

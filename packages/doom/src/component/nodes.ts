@@ -143,6 +143,33 @@ export function preparePart(
       props: { ...shared, fills: [{ kind: "solid", color: readField("fill", emit.fill, color) }] },
     }
 
+  if (emit.kind === "path") {
+    const geometry = readField("d", emit.d, (d) => {
+      if (typeof d === "string") charge(d.length)
+      return prop("geometry", { kind: "path", d, ...(emit.fillStroke ? { fillStroke: true } : {}) })
+    })
+    const fill = emit.fill
+    const stroke = emit.stroke
+    return {
+      key,
+      field,
+      kind: "shape",
+      props: {
+        ...shared,
+        geometry,
+        ...(fill === undefined ? {} : { fills: [{ kind: "solid", color: readField("fill", fill, color) }] }),
+        ...(stroke === undefined
+          ? {}
+          : {
+              strokes: [{ kind: "solid", color: readField("stroke.color", stroke.color, color) }],
+              stroke: readField("stroke.width", stroke.width, (weight) =>
+                prop("stroke", { weight, align: "center", dash: "solid" }),
+              ),
+            }),
+      },
+    }
+  }
+
   const chars = readField("chars", emit.chars, (value) => {
     if (typeof value === "string") charge(value.length)
     return string(value)

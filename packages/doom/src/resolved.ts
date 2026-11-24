@@ -1,5 +1,6 @@
-import type { Arrow } from "./geometry.js"
+import type { Arrow, Geometry } from "./geometry.js"
 import type { ImagePaint, Hex, Px, StrokeStyle } from "./paint.js"
+import type { PathBounds } from "./path-scale.js"
 import type { Props } from "./props.js"
 
 export type Box = Props["box"]
@@ -58,7 +59,7 @@ export type ResolvedGeometry =
   | { readonly kind: "rect" }
   | { readonly kind: "ellipse" }
   | { readonly kind: "preset"; readonly name: string; readonly adjust: readonly number[] }
-  | { readonly kind: "path"; readonly d: string }
+  | (Extract<Geometry, { kind: "path" }> & { readonly bounds?: PathBounds })
   | { readonly kind: "icon"; readonly name: string }
   | {
       readonly kind: "line"

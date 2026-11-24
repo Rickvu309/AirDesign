@@ -29,7 +29,7 @@ function geometryOf(context: Context, node: Node, box: Box): ResolvedGeometry {
   if (geometry === undefined || geometry.kind === "rect" || geometry.kind === "ellipse" || geometry.kind === "icon")
     return geometry ?? { kind: "rect" }
   if (geometry.kind === "preset") return { kind: "preset", name: geometry.name, adjust: geometry.adjust ?? [] }
-  if (geometry.kind === "path") return { kind: "path", d: scalePath(geometry.d, box.w, box.h) }
+  if (geometry.kind === "path") return { ...geometry, ...scalePath(geometry.d, box.w, box.h) }
   const parent = (node as { parent?: { id: NodeId } | null }).parent?.id
   const { from, to, points } = lineRoute(context.doom, context.boxes, parent, geometry)
   const local = (point: { readonly x: number; readonly y: number }) => ({ x: point.x - box.x, y: point.y - box.y })

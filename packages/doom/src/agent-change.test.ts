@@ -33,6 +33,7 @@ const valid: readonly AgentChange[] = [
   },
   { op: "set", target: "t:3.title", text: "x", fill: "none", stroke: hex(0xaabbcc), effect: "lifted" },
   { op: "set", target: "t:6", insert: { at: 2, text: "linked", link: "https://example.com" } },
+  { op: "set", target: "t:6", d: "M0 0L1 1" },
   { op: "set", target: "t:9#Plan:Q1", fill: "accent3" },
   { op: "move", node: "t:4" as never, into: "t:5" as never, after: null },
   { op: "wrap", nodes: ["t:4" as never], layout: "row" },
@@ -51,6 +52,17 @@ describe("readAgentChange", () => {
       expect(read).not.toHaveProperty("refused")
       expect(read).toMatchObject(json(change))
     }
+  })
+
+  it("accepts path data up to 4000 characters and names the limit above it", () => {
+    const d = "M0 0L1 1".padEnd(4000)
+    const change = { op: "set", target: "t:3", d }
+    expect(readAgentChange(change)).toEqual(change)
+    expect(readAgentChange({ ...change, d: d + "Z" })).toMatchObject({
+      refused: expect.any(String),
+      field: "d",
+      form: expect.stringContaining("4000"),
+    })
   })
 
   it("reads a hex colour in lower case, however the agent wrote it", () => {
@@ -139,6 +151,7 @@ describe("the advertised schema", () => {
       "move",
       "delete",
       "fill",
+      "fillStroke",
       "stroke",
       "strokeWidth",
       "color",
@@ -178,6 +191,7 @@ describe("the advertised schema", () => {
       "case",
       "underline",
       "strike",
+      "d",
       "dash",
       "fit",
       "crop",

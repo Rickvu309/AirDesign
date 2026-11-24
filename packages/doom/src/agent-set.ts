@@ -143,12 +143,21 @@ function setEverySlide(draft: Draft, change: SetChange, role: string): void {
 
 function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | undefined {
   const geometry = propOf(node, "geometry")
+  const pathField = change.d !== undefined ? "d" : change.fillStroke !== undefined ? "fillStroke" : undefined
+  if (pathField !== undefined && geometry?.kind !== "path") stop("shape", node.id, pathField, "needs", "a path")
   if (change.icon !== undefined) {
     if (geometry?.kind !== "icon") stop("shape", node.id, "icon", "needs", "an icon")
     return { kind: "icon", name: iconName(change.icon) }
   }
   const lined = (["startArrow", "arrow", "from", "to", "route"] as const).find((field) => change[field] !== undefined)
   if (lined !== undefined && geometry?.kind !== "line") stop("shape", node.id, lined, "needs", "a line")
+  if (pathField !== undefined && geometry?.kind === "path") {
+    return {
+      ...geometry,
+      ...(change.d === undefined ? {} : { d: change.d }),
+      ...(change.fillStroke === undefined ? {} : { fillStroke: change.fillStroke }),
+    }
+  }
   if (geometry?.kind !== "line") return undefined
   const box = change.box
   const pointed = "x" in geometry.start && "x" in geometry.end
@@ -195,7 +204,8 @@ export function compileSet(draft: Draft, change: SetChange): void {
     effects: propOf(node, "effects"),
   }
   const geometry = propOf(node, "geometry")
-  const stroked = geometry?.kind === "line" || geometry?.kind === "icon" ? "center" : "inside"
+  const stroked =
+    geometry?.kind === "line" || geometry?.kind === "icon" || geometry?.kind === "path" ? "center" : "inside"
   const current = now.text
   if (change.insert !== undefined && change.text !== undefined)
     stop("shape", node.id, "insert", "form", "Insert or text, not both.")
