@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process"
+import { execFileSync, spawn } from "node:child_process"
 import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
@@ -34,23 +34,39 @@ function read(args) {
 const gitIn = (root) => (args) =>
   execFileSync("git", ["-C", root, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim()
 
-function launchAt(repo, build, args = []) {
-  try {
-    const said = execFileSync(process.execPath, [self, "launch", ...(build ? [] : ["--no-build"]), ...args], {
-      cwd: repo,
-      encoding: "utf8",
-      env: { ...process.env, VERIFY_AIRDESIGN_REPO: repo },
-      stdio: ["ignore", "pipe", "pipe"],
-      maxBuffer: 1 << 26,
+function launchAt(repo, build, cleanup, args = []) {
+  const child = spawn(process.execPath, [self, "launch", ...(build ? [] : ["--no-build"]), ...args], {
+    cwd: repo,
+    detached: true,
+    env: { ...process.env, VERIFY_AIRDESIGN_REPO: repo },
+    stdio: ["ignore", "pipe", "pipe"],
+  })
+  let said = ""
+  let complained = ""
+  child.stdout.on("data", (chunk) => (said += chunk))
+  child.stderr.on("data", (chunk) => (complained += chunk))
+  const done = new Promise((resolve, reject) => {
+    child.on("error", reject)
+    child.on("close", (status) => {
+      try {
+        if (status !== 0) throw new Error(complained.trim())
+        const run = JSON.parse(said.trim().split("\n").at(-1)).run
+        cleanup.runs.push({ run, repo })
+        resolve(run)
+      } catch (error) {
+        reject(new Error(`launch at ${repo} failed: ${String(error.message ?? error)}`))
+      }
     })
-    return JSON.parse(said.trim().split("\n").at(-1)).run
-  } catch (error) {
-    throw new Error(`launch at ${repo} failed: ${String(error.stderr ?? error.message).trim()}`)
-  }
+  })
+  cleanup.launching.add({ child, ended: done.catch(() => undefined) })
+  return done
 }
 
-function stopRun(run) {
-  execFileSync(process.execPath, [self, "stop", run], { stdio: "ignore" })
+function stopRun(run, repo) {
+  execFileSync(process.execPath, [self, "stop", run], {
+    env: { ...process.env, VERIFY_AIRDESIGN_REPO: repo },
+    stdio: ["ignore", "ignore", "inherit"],
+  })
 }
 
 export const carriedFolders = [
@@ -116,59 +132,120 @@ export function baseTree(repo, commit, carry = [], root = scratchRoot) {
   return dir
 }
 
-function treeAt(repo, commit, carry) {
-  const dir = baseTree(repo, commit, carry)
-  const built = `${dir}.built`
-  if (!existsSync(path.join(dir, "node_modules"))) {
-    try {
-      execFileSync("pnpm", ["install", "--frozen-lockfile", "--prefer-offline"], {
-        cwd: dir,
-        stdio: ["ignore", "pipe", "pipe"],
-        maxBuffer: 1 << 26,
-      })
-    } catch (error) {
-      throw new Error(
-        `pnpm install at ${dir} failed: ${String(error.stderr ?? error.message)
-          .trim()
-          .slice(-600)}`,
-      )
-    }
+function installIn(dir) {
+  if (existsSync(path.join(dir, "node_modules"))) return
+  try {
+    execFileSync("pnpm", ["install", "--frozen-lockfile", "--prefer-offline"], {
+      cwd: dir,
+      stdio: ["ignore", "pipe", "pipe"],
+      maxBuffer: 1 << 26,
+    })
+  } catch (error) {
+    throw new Error(
+      `pnpm install at ${dir} failed: ${String(error.stderr ?? error.message)
+        .trim()
+        .slice(-600)}`,
+    )
   }
+}
+
+function treeAt(repo, commit, carry, cleanup, root, install) {
+  const dir = baseTree(repo, commit, carry, root)
+  const built = `${dir}.built`
+  cleanup.trees.push({ dir, built })
+  install(dir)
   return { dir, built }
 }
 
-export function stackFor({ run, ref, runtime, cleanup, args, carry = [] }) {
+export async function stackFor({
+  run,
+  ref,
+  runtime,
+  cleanup,
+  args,
+  carry = [],
+  launch = launchAt,
+  mark = writeFileSync,
+  root = scratchRoot,
+  install = installIn,
+}) {
   if (run !== undefined) return run
-  let at
-  if (ref === undefined) at = launchAt(runtime.repo, true, args)
-  else {
-    const commit = gitIn(runtime.repo)(["rev-parse", "--verify", `${ref}^{commit}`])
-    const tree = treeAt(runtime.repo, commit, carry)
-    at = launchAt(tree.dir, !existsSync(tree.built))
-    writeFileSync(tree.built, commit)
-    cleanup.trees.push(tree)
-  }
-  cleanup.runs.push(at)
+  if (ref === undefined) return launch(runtime.repo, true, cleanup, args)
+  const commit = gitIn(runtime.repo)(["rev-parse", "--verify", `${ref}^{commit}`])
+  const tree = treeAt(runtime.repo, commit, carry, cleanup, root, install)
+  const at = await launch(tree.dir, !existsSync(tree.built), cleanup)
+  mark(tree.built, commit)
   return at
 }
 
-export function cleanUp(cleanup, keep, runtime) {
-  if (keep) {
-    if (cleanup.runs.length > 0)
-      process.stderr.write(`kept runs ${cleanup.runs.join(" ")}; stop each with verify-airdesign stop\n`)
-    return
+async function endLaunches(cleanup) {
+  const live = [...cleanup.launching].filter(({ child }) => child.pid !== undefined && child.exitCode === null)
+  const signalGroups = (signal) => {
+    for (const { child } of live) {
+      try {
+        process.kill(-child.pid, signal)
+      } catch {}
+    }
   }
-  for (const run of cleanup.runs) stopRun(run)
-  for (const tree of cleanup.trees) {
-    gitIn(runtime.repo)(["worktree", "remove", "--force", tree.dir])
-    rmSync(tree.built, { force: true })
+  signalGroups("SIGTERM")
+  const timer = setTimeout(() => signalGroups("SIGKILL"), 20_000)
+  await Promise.all([...cleanup.launching].map(({ ended }) => ended))
+  clearTimeout(timer)
+}
+
+function cleanUp(cleanup, runtime, stop) {
+  const unstopped = cleanup.runs.filter(({ run, repo }) => {
+    try {
+      stop(run, repo)
+      return false
+    } catch {
+      return true
+    }
+  })
+  const unremoved = cleanup.trees.filter((tree) => {
+    try {
+      gitIn(runtime.repo)(["worktree", "remove", "--force", tree.dir])
+      rmSync(tree.built, { force: true })
+      return false
+    } catch {
+      return true
+    }
+  })
+  if (unstopped.length > 0) throw new Error(`could not stop runs ${unstopped.map(({ run }) => run).join(" ")}`)
+  if (unremoved.length > 0) throw new Error(`could not remove scratch trees ${unremoved.map((t) => t.dir).join(" ")}`)
+}
+
+export const newCleanup = () => ({ runs: [], trees: [], launching: new Set() })
+
+const interruptions = ["SIGINT", "SIGTERM"]
+
+export async function cleaning({ cleanup, keep, runtime, body, stop = stopRun }) {
+  let interrupt
+  const interrupted = new Promise((_, reject) => {
+    interrupt = (signal) => reject(new Error(`interrupted by ${signal}`))
+  })
+  for (const signal of interruptions) process.once(signal, interrupt)
+  let finished = false
+  try {
+    const result = await Promise.race([body(), interrupted])
+    finished = true
+    return result
+  } finally {
+    for (const signal of interruptions) process.off(signal, interrupt)
+    await endLaunches(cleanup)
+    if (finished && keep) {
+      for (const { run, repo } of cleanup.runs)
+        process.stderr.write(
+          `kept run ${run}; stop it with VERIFY_AIRDESIGN_REPO=${repo} verify-airdesign stop ${run}\n`,
+        )
+    } else cleanUp(cleanup, runtime, stop)
   }
 }
 
 export const mergeBase = (runtime) => gitIn(runtime.repo)(["merge-base", "HEAD", "origin/main"])
 
 async function sideOf({ key, name, label, missing, run, ref, runtime, cleanup, carry = [] }) {
-  const at = stackFor({ run, ref, runtime, cleanup, carry })
+  const at = await stackFor({ run, ref, runtime, cleanup, carry })
   const state = runtime.readState(at)
   const repo = state.repo ?? runtime.repo
   return {
@@ -244,72 +321,87 @@ async function beforeAfter(command, values, flags, runtime) {
   if (annotate && first === undefined) throw new Error("name the run: verify-airdesign annotate <run> <callouts.json>")
   const out = path.resolve(flags.out ?? runtime.evidenceDir(`${command}-${String(Date.now())}`))
   mkdirSync(out, { recursive: true })
-  const cleanup = { runs: [], trees: [] }
+  const cleanup = newCleanup()
   const base = flags.base ?? mergeBase(runtime)
   const carry = annotate || flags["before-run"] !== undefined ? [] : carried(runtime.repo, base, flags.head)
   const labels = { before: flags.base ? `${flags.base}` : "main", after: flags.head ?? "this PR" }
-  try {
-    const sides = annotate
-      ? [await sideOf({ key: "page", name: "", label: "", missing: "not on this page", run: first, runtime, cleanup })]
-      : [
-          await sideOf({
-            key: "before",
-            name: labels.before,
-            label: `BEFORE (${labels.before})`,
-            missing: `not in ${labels.before}`,
-            run: flags["before-run"],
-            ref: base,
-            runtime,
-            cleanup,
-            carry,
-          }),
-          await sideOf({
-            key: "after",
-            name: labels.after,
-            label: `AFTER (${labels.after})`,
-            missing: `not in ${labels.after}`,
-            run: flags["after-run"],
-            ref: flags.head,
-            runtime,
-            cleanup,
-          }),
-        ]
-    const shot = await shoot({ blocks, sides, runtime, out })
-    const relative = (file) => path.relative(out, file)
-    const summary = {
-      labels,
-      images: shot.images.map(relative),
-      rows: shot.rows.map((row) => ({
-        title: row.title,
-        before: row.before && relative(row.before),
-        beforeOutcome: row.beforeOutcome,
-        after: relative(row.after),
-        callouts: row.callouts.map(({ number, note, ...files }) => ({
-          number,
-          note,
-          ...Object.fromEntries(Object.entries(files).map(([side, file]) => [side, relative(file)])),
+  return cleaning({
+    cleanup,
+    keep: flags.keep,
+    runtime,
+    body: async () => {
+      const sides = annotate
+        ? [
+            await sideOf({
+              key: "page",
+              name: "",
+              label: "",
+              missing: "not on this page",
+              run: first,
+              runtime,
+              cleanup,
+            }),
+          ]
+        : [
+            await sideOf({
+              key: "before",
+              name: labels.before,
+              label: `BEFORE (${labels.before})`,
+              missing: `not in ${labels.before}`,
+              run: flags["before-run"],
+              ref: base,
+              runtime,
+              cleanup,
+              carry,
+            }),
+            await sideOf({
+              key: "after",
+              name: labels.after,
+              label: `AFTER (${labels.after})`,
+              missing: `not in ${labels.after}`,
+              run: flags["after-run"],
+              ref: flags.head,
+              runtime,
+              cleanup,
+            }),
+          ]
+      const shot = await shoot({ blocks, sides, runtime, out })
+      const relative = (file) => path.relative(out, file)
+      const summary = {
+        labels,
+        images: shot.images.map(relative),
+        rows: shot.rows.map((row) => ({
+          title: row.title,
+          before: row.before && relative(row.before),
+          beforeOutcome: row.beforeOutcome,
+          after: relative(row.after),
+          callouts: row.callouts.map(({ number, note, ...files }) => ({
+            number,
+            note,
+            ...Object.fromEntries(Object.entries(files).map(([side, file]) => [side, relative(file)])),
+          })),
         })),
-      })),
-      sides: Object.fromEntries(
-        sides.map((side) => [side.key, { run: side.run, commit: side.commit, carried: side.carried }]),
-      ),
-      warnings: [...warnings, ...shot.warnings],
-    }
-    writeFileSync(path.join(out, "before-after.json"), `${JSON.stringify(summary, null, 2)}\n`)
-    if (!annotate) writeFileSync(path.join(out, "before-after.md"), fragment(summary))
-    return {
-      command,
-      out,
-      images: shot.images,
-      full: shot.rows.flatMap((row) => [row.before, row.after].filter(Boolean)),
-      fragment: annotate ? undefined : path.join(out, "before-after.md"),
-      warnings: summary.warnings,
-      kept: flags.keep ? { runs: cleanup.runs, trees: cleanup.trees.map((tree) => tree.dir) } : undefined,
-      next: "Open every annotated image and check each arrow and note before you publish.",
-    }
-  } finally {
-    cleanUp(cleanup, flags.keep, runtime)
-  }
+        sides: Object.fromEntries(
+          sides.map((side) => [side.key, { run: side.run, commit: side.commit, carried: side.carried }]),
+        ),
+        warnings: [...warnings, ...shot.warnings],
+      }
+      writeFileSync(path.join(out, "before-after.json"), `${JSON.stringify(summary, null, 2)}\n`)
+      if (!annotate) writeFileSync(path.join(out, "before-after.md"), fragment(summary))
+      return {
+        command,
+        out,
+        images: shot.images,
+        full: shot.rows.flatMap((row) => [row.before, row.after].filter(Boolean)),
+        fragment: annotate ? undefined : path.join(out, "before-after.md"),
+        warnings: summary.warnings,
+        kept: flags.keep
+          ? { runs: cleanup.runs.map(({ run }) => run), trees: cleanup.trees.map((tree) => tree.dir) }
+          : undefined,
+        next: "Open every annotated image and check each arrow and note before you publish.",
+      }
+    },
+  })
 }
 
 function publishCommand(values, flags, runtime) {

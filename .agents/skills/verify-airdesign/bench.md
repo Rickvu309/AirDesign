@@ -9,7 +9,7 @@ $V bench --cases all                       # every case
 $V bench --keep                            # keep both stacks; the next try takes --before-run and --after-run
 ```
 
-`--base <ref>` benches against another commit. `--out <dir>` picks the report folder.
+`--base <ref>` benches against another commit. `--out <dir>` picks the report folder. Without `--keep`, every stack and scratch tree it started is gone when it ends, however it ends. With `--keep`, it prints the command that stops each kept run: the base run belongs to its scratch tree, so `stop` takes `VERIFY_AIRDESIGN_REPO=<tree>`.
 
 ## Cases
 

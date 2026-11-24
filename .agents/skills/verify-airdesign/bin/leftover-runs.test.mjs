@@ -1,9 +1,18 @@
 import { spawn, spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs"
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
-import { foreignRun, newRun, removeLeftoverRuns, runsOf, writeOwner } from "./leftover-runs.mjs"
+import { foreignRun, newRun, ownerOf, removeLeftoverRuns, runsOf, writeOwner } from "./leftover-runs.mjs"
 
 const folders = []
 const children = []
@@ -188,5 +197,62 @@ describe("a sweep and a stop beside another worktree's run", () => {
     expect(result.stderr).toContain(diagnostic)
     expect(result.status).toBe(1)
     process.kill(pid, 0)
+  })
+
+  it("lets the worktree its owner file names stop a run, and refuses any other", async () => {
+    const home = scratchRoot()
+    const root = path.join(home, "tmp", "verify-airdesign-scratch")
+    const run = newRun()
+    const pid = await sleeper(["serve", run])
+    const dir = runFolder(root, run, { ...stateOf(run, pid), repo: "/scratch/tree-abc" }, 0)
+    const caller = checkout()
+    writeOwner(dir, caller)
+    const foreign = stopCli(home, checkout(), run)
+    expect(foreign.stderr).toContain(`was started in ${caller}`)
+    expect(foreign.status).toBe(1)
+    process.kill(pid, 0)
+    const gone = newRun()
+    const goneDir = runFolder(root, gone, { ...stateOf(gone, await deadPid()), repo: "/scratch/tree-abc" }, 0)
+    writeOwner(goneDir, caller)
+    const own = stopCli(home, caller, gone)
+    expect(own.status).toBe(0)
+    expect(existsSync(goneDir)).toBe(false)
+  })
+})
+
+describe("the owner a run records", () => {
+  function aliased() {
+    const root = scratchRoot()
+    const real = path.join(root, "worktree")
+    mkdirSync(real)
+    const link = path.join(root, "tree-link")
+    symlinkSync(real, link)
+    return { root, real: realpathSync(real), link }
+  }
+
+  it("is the real path of the worktree that launched, whatever name reached it", () => {
+    const { root, real, link } = aliased()
+    const dir = runFolder(root, newRun(), undefined, 0)
+    writeOwner(dir, link)
+    expect(ownerOf(dir)).toBe(real)
+    writeOwner(dir, path.join(link, "..", "tree-link"))
+    expect(ownerOf(dir)).toBe(real)
+  })
+
+  it("cannot be set from outside, by an override or by a scratch-looking name", () => {
+    const { root, real, link } = aliased()
+    const dir = runFolder(root, newRun(), undefined, 0)
+    writeOwner(dir, link, { VERIFY_AIRDESIGN_OWNER: "/work/foreign" }, root)
+    expect(ownerOf(dir)).toBe(real)
+  })
+
+  it("is the same worktree seen through an alias, and another worktree seen through none", () => {
+    const { root, real, link } = aliased()
+    const [mine, theirs] = [newRun(), newRun()]
+    writeOwner(runFolder(root, mine, stateOf(mine, 1), 0), real)
+    writeOwner(runFolder(root, theirs, stateOf(theirs, 1), 0), "/work/b")
+    expect(runsOf({ scratchRoot: root, repo: link })).toEqual([mine])
+    expect(foreignRun({ scratchRoot: root, repo: link, run: mine })).toBeUndefined()
+    expect(foreignRun({ scratchRoot: root, repo: link, run: theirs })).toBe("/work/b")
   })
 })

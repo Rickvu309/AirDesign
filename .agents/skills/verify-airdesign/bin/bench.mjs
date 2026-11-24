@@ -6,7 +6,7 @@ import { doomCases } from "../bench/doom.mjs"
 import { benchTable, schedule, sides, summary, verdict } from "./bench-verdict.mjs"
 import { designContext, openBrowser } from "./browser.mjs"
 import { load } from "./load.mjs"
-import { cleanUp, mergeBase, stackFor } from "./proof.mjs"
+import { cleaning, mergeBase, newCleanup, stackFor } from "./proof.mjs"
 
 export const throttle = 4
 const caseLimit = 180_000
@@ -68,12 +68,12 @@ export async function benchCommand(args, runtime) {
   const say = (line) => process.stderr.write(`${line}\n`)
   const { takeMachineLock } = await import(pathToFileURL(path.join(runtime.repo, "scripts/machine-lock.mjs")).href)
   const release = await takeMachineLock({ job: "bench", lane: "full", say })
-  const cleanup = { runs: [], trees: [] }
+  const cleanup = newCleanup()
   let browser
-  try {
+  const measure = async () => {
     const stacks = {
-      main: stackFor({ run: flags["before-run"], ref: flags.base ?? mergeBase(runtime), runtime, cleanup }),
-      branch: stackFor({ run: flags["after-run"], runtime, cleanup }),
+      main: await stackFor({ run: flags["before-run"], ref: flags.base ?? mergeBase(runtime), runtime, cleanup }),
+      branch: await stackFor({ run: flags["after-run"], runtime, cleanup }),
     }
     const states = Object.fromEntries(sides.map((side) => [side, runtime.readState(stacks[side])]))
     browser = await openBrowser()
@@ -144,9 +144,17 @@ export async function benchCommand(args, runtime) {
     const slower = rows.filter((row) => row.slower).map((row) => row.case)
     if (slower.length > 0) process.exitCode = 1
     return { command: "bench", slower, report: path.join(out, "bench.md") }
+  }
+  const measuring = async () => {
+    try {
+      return await measure()
+    } finally {
+      await browser?.close()
+    }
+  }
+  try {
+    return await cleaning({ cleanup, keep: flags.keep, runtime, body: measuring })
   } finally {
-    await browser?.close()
-    cleanUp(cleanup, flags.keep, runtime)
     await release({ status: process.exitCode === 1 ? "failed" : "passed" })
   }
 }

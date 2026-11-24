@@ -1,10 +1,11 @@
-import { execFileSync } from "node:child_process"
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import { execFileSync, spawn } from "node:child_process"
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { expect, it } from "vitest"
 import { driverFor } from "../look/before-after.mjs"
-import { baseTree, carried } from "./proof.mjs"
+import { alive } from "./leftover-runs.mjs"
+import { baseTree, carried, cleaning, newCleanup, stackFor } from "./proof.mjs"
 
 const skill = ".agents/skills/verify-airdesign"
 const streams = "apps/api/src/testing/aira-streams"
@@ -104,4 +105,125 @@ it("builds the plain base tree when there is nothing to carry, and a tree of its
   changeOnHead(repo)
   const carriedDir = baseTree(repo, base, carried(repo, base), scratch)
   expect(path.basename(carriedDir)).toMatch(new RegExp(`^tree-${base.slice(0, 12)}-[0-9a-f]{10}$`))
+})
+
+const started = (run) => (repo, _build, cleanup) => {
+  cleanup.runs.push({ run, repo })
+  return Promise.resolve(run)
+}
+
+function failingBaseRun(failure) {
+  const { repo, base } = repoWithBase()
+  const root = mkdtempSync(path.join(tmpdir(), "carry-scratch-"))
+  const cleanup = newCleanup()
+  const stopped = []
+  const attempt = () =>
+    cleaning({
+      cleanup,
+      runtime: { repo },
+      stop: (run, at) => stopped.push([run, at]),
+      body: () =>
+        stackFor({
+          ref: base,
+          runtime: { repo },
+          cleanup,
+          root,
+          install: failure.install ?? (() => {}),
+          launch: failure.launch ?? started("run-base"),
+          mark: failure.mark ?? (() => {}),
+        }),
+    })
+  return { repo, root, stopped, attempt }
+}
+
+it.each([
+  [
+    "the ready marker cannot be written",
+    {
+      mark: () => {
+        throw new Error("injected marker failure")
+      },
+    },
+    true,
+  ],
+  [
+    "the install fails",
+    {
+      install: () => {
+        throw new Error("injected install failure")
+      },
+    },
+    false,
+  ],
+  [
+    "the launch fails",
+    {
+      launch: () => Promise.reject(new Error("injected launch failure")),
+    },
+    false,
+  ],
+])(
+  "stops the base run it started, as the tree that owns it, and removes the scratch tree when %s",
+  async (_, failure, ran) => {
+    const { repo, root, stopped, attempt } = failingBaseRun(failure)
+    await expect(attempt()).rejects.toThrow("injected")
+    expect(stopped).toEqual(ran ? [["run-base", expect.stringContaining("tree-")]] : [])
+    expect(existsSync(root) ? readdirSync(root) : []).toEqual([])
+    expect(execFileSync("git", ["-C", repo, "worktree", "list"], { encoding: "utf8" }).trim().split("\n")).toHaveLength(
+      1,
+    )
+  },
+)
+
+it("keeps what it started only when the work succeeded and it was asked to", async () => {
+  const { repo } = repoWithBase()
+  const cleanup = newCleanup()
+  const stopped = []
+  const run = (keep, body) => cleaning({ cleanup, keep, runtime: { repo }, stop: (name) => stopped.push(name), body })
+  cleanup.runs.push({ run: "kept", repo })
+  await run(true, async () => {})
+  expect(stopped).toEqual([])
+  await expect(
+    run(true, async () => {
+      throw new Error("boom")
+    }),
+  ).rejects.toThrow("boom")
+  expect(stopped).toEqual(["kept"])
+})
+
+it("stops what it started and ends a launch in flight when interrupted", async () => {
+  const { repo } = repoWithBase()
+  const marker = path.join(mkdtempSync(path.join(tmpdir(), "interrupt-")), "stopped")
+  const script = `
+    import { spawn } from "node:child_process"
+    import { appendFileSync } from "node:fs"
+    import { cleaning, newCleanup } from ${JSON.stringify(new URL("proof.mjs", import.meta.url).href)}
+    const cleanup = newCleanup()
+    cleanup.runs.push({ run: "base-run", repo: "/scratch/tree-x" })
+    const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { detached: true, stdio: "ignore" })
+    const ended = new Promise((resolve) => child.on("close", resolve))
+    cleanup.launching.add({ child, ended })
+    appendFileSync(${JSON.stringify(marker)}, "launching " + child.pid + "\\n")
+    try {
+      await cleaning({
+        cleanup,
+        runtime: { repo: ${JSON.stringify(repo)} },
+        stop: (run, at) => appendFileSync(${JSON.stringify(marker)}, "stopped " + run + " " + at + "\\n"),
+        body: () => new Promise(() => setInterval(() => {}, 1000)),
+      })
+    } catch (error) {
+      appendFileSync(${JSON.stringify(marker)}, String(error.message) + "\\n")
+      process.exit(2)
+    }
+  `
+  const child = spawn(process.execPath, ["--input-type=module", "-e", script], { stdio: "ignore" })
+  const closed = new Promise((resolve) => child.on("close", resolve))
+  for (let waited = 0; waited < 20_000 && !existsSync(marker); waited += 100)
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  await new Promise((resolve) => setTimeout(resolve, 500))
+  child.kill("SIGINT")
+  expect(await closed).toBe(2)
+  const lines = readFileSync(marker, "utf8").trim().split("\n")
+  expect(lines.slice(1)).toEqual(["stopped base-run /scratch/tree-x", "interrupted by SIGINT"])
+  expect(alive(Number(lines[0].split(" ")[1]))).toBe(false)
 })
