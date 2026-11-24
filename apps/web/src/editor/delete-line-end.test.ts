@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { landed } from "@/testing/doom-fixtures"
+import { landed } from "./testing/doom-fixtures"
 import { deleteWrites } from "./delete-writes"
 
 const box = (x: number, y: number, w: number, h: number) => ({
