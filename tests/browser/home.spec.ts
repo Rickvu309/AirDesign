@@ -46,7 +46,7 @@ test("a new deck opens as a doom deck, and the home lists it with its name and a
   await expect(card.locator("[data-doom-slide]")).toHaveCount(1)
 
   await card.getByRole("link").click()
-  await expect(page).toHaveURL(new RegExp(`/s/${deck}$`))
+  await expect(page).toHaveURL(new RegExp(`/s/${deck}(\\?node-id=.*)?$`))
   await page.locator("[data-editor-ready]").waitFor()
   await expect(page.locator("[data-slide-box]")).toContainText("Quarterly review")
   expect(faults).toEqual([])

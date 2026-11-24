@@ -11,6 +11,6 @@ test("an empty home starts a deck from New deck alone", async ({ page, context, 
   await expect(page.getByRole("button", { name: productCopy.newDeck, exact: true })).toHaveCount(1)
   await expect(page.getByRole("button", { name: productCopy.blankDeck, exact: true })).toHaveCount(0)
   await page.getByRole("button", { name: productCopy.newDeck, exact: true }).click()
-  await expect(page).toHaveURL(/\/s\/[A-Za-z0-9_-]{1,64}$/)
+  await expect(page).toHaveURL(/\/s\/[A-Za-z0-9_-]{1,64}(\?node-id=.*)?$/)
   await page.locator("[data-editor-ready]").waitFor()
 })
