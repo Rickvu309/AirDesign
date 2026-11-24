@@ -1,12 +1,15 @@
 import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
-import { accent, node, openDoomDeck, spot } from "../doom-deck.mjs"
+import { accent, landNodes, node, openDoomDeck, spot } from "../doom-deck.mjs"
+import { emptySlide } from "../doom-slides.mjs"
 
 const fill = (name) => [{ kind: "solid", color: { var: name } }]
 
 async function drive(kit) {
   const { page } = kit
-  const opened = await openDoomDeck(kit, [
+  const opened = await openDoomDeck(kit)
+  await emptySlide(kit, opened)
+  await landNodes(kit, opened, [
     {
       id: "w:1",
       type: "frame",
