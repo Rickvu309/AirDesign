@@ -5,7 +5,7 @@
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["applyEdit"],
       "digest": "4ecf149e8f59",
-      "blob": "311b6762d6dd2da0e237cb3c03ae24f97603f334"
+      "blob": "cd700d3a0a9443f8f1016358757e178e13a37eb1"
     },
     {
       "file": "packages/doom/src/invert.ts",

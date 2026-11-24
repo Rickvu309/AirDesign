@@ -112,18 +112,25 @@ it("applies an edit twice to the same doom as once", () => {
   )
 })
 
-it("never makes a cycle of parents, and refuses exactly the reparents that would", () => {
+it("never makes a cycle of parents, and refuses exactly the reparents that would, and a move into a deleted frame unless it takes back a delete", () => {
   const nodes = Array.from({ length: 6 }, (_, index) => nodeId(`c:${index}`))
   const start = fold(sampleDeck(), [nodes.flatMap((node) => create(node, "frame", ids.slide))])
   fc.assert(
     fc.property(
-      fc.array(fc.record({ node: fc.integer({ min: 0, max: 5 }), target: fc.integer({ min: -2, max: 5 }) }), {
-        maxLength: 30,
-      }),
+      fc.array(
+        fc.record({
+          node: fc.integer({ min: 0, max: 5 }),
+          target: fc.integer({ min: -2, max: 5 }),
+          restore: fc.boolean(),
+        }),
+        {
+          maxLength: 30,
+        },
+      ),
       (steps) => {
         let doom = start
         const parents: (number | "slide" | null)[] = nodes.map(() => "slide")
-        for (const { node, target } of steps) {
+        for (const { node, target, restore } of steps) {
           const underNode = (from: number) => {
             for (let at: number | "slide" | null = from; typeof at === "number"; at = parents[at] ?? null)
               if (at === node) return true
@@ -131,12 +138,17 @@ it("never makes a cycle of parents, and refuses exactly the reparents that would
           }
           const parent = target === -2 ? null : target === -1 ? ids.slide : nodes[target]!
           const expected =
-            target >= 0 && parents[target] === null ? "missing" : target >= 0 && underNode(target) ? "cycle" : "ok"
+            target >= 0 && parents[target] === null && !(restore && parents[node] === null)
+              ? "missing"
+              : target >= 0 && underNode(target)
+                ? "cycle"
+                : "ok"
           const result = tryLand(doom, [
             {
               node: nodes[node]!,
               prop: "parent",
               value: parent === null ? null : { id: parent, at: orderKeyBetween(null, null) },
+              ...(restore ? { base: doom.revs.get(nodes[node]!)!.get("parent")! } : {}),
             },
           ])
           if (expected === "ok") {

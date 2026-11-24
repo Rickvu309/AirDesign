@@ -4,8 +4,8 @@
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["applyEdit", "landEdit", "guardRun", "write", "protect"],
-      "digest": "ad627503e993",
-      "blob": "311b6762d6dd2da0e237cb3c03ae24f97603f334"
+      "digest": "9bc548727449",
+      "blob": "f9bb998e32dc7a10253ce9ffdb21c78a7905ac87"
     },
     {
       "file": "packages/doom/src/invert-run.ts",
@@ -17,7 +17,7 @@
       "file": "packages/live/src/doom-deck.ts",
       "names": ["createDoomDeck"],
       "digest": "c636c91ff4bb",
-      "blob": "c8804aa5f5c3b0ad164014e4005072e0930a6e3a"
+      "blob": "2b1e649b36af5aec2e01667f795cef4b75dfa8ce"
     }
   ]
 }

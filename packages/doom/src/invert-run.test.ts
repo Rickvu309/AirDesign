@@ -165,6 +165,16 @@ describe("undoing a run, edit by edit from the values each write replaced", () =
     }
   })
 
+  it("puts back a layer a run deleted from a frame deleted since, so it comes back with that frame", () => {
+    let world = run(opened(), runA, [{ node: ids.title, prop: "parent", value: null }])
+    const slot = (sampleDeck().nodes.get(ids.card) as { parent: unknown }).parent
+    world = by(world, person, [{ node: ids.card, prop: "parent", value: null }])
+    const { world: after } = undo(world)
+    expect(nodeOf(after, ids.title).parent).toMatchObject({ id: ids.card })
+    const back = by(after, person, [{ node: ids.card, prop: "parent", value: slot }])
+    expect(back.doom.children.get(ids.card)).toEqual([ids.title])
+  })
+
   it("takes back the whole run when nobody else touched it, and a second undo finds nothing", () => {
     const made = nodeId("a:1")
     let world = run(opened(), runA, create(made, "shape", ids.slide, { node: made, prop: "box", value: box(10) }))

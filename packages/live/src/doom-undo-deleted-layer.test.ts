@@ -2,7 +2,7 @@ import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { createDoomDeck, openDoomDeck } from "./doom-deck.js"
-import { memoryDoomRemote } from "./doom-remote.js"
+import { type DoomRemote, memoryDoomRemote } from "./doom-remote.js"
 import { memoryStorage } from "./doom-storage.js"
 
 const id = doom.nodeId
@@ -57,14 +57,26 @@ const start: doom.Edit = {
 
 async function tabs() {
   const remote = memoryDoomRemote(start)
+  const cut = { off: false }
+  const reachable =
+    <A extends unknown[], R>(call: (...args: A) => Promise<R>) =>
+    async (...args: A) => {
+      if (cut.off) throw new TypeError("offline")
+      return call(...args)
+    }
+  const mineRemote: DoomRemote = { ...remote, edit: reachable(remote.edit), since: reachable(remote.since) }
   const join = async (client: string, how: "create" | "open") => {
     let next = 0
-    const opened = await (how === "create" ? createDoomDeck : openDoomDeck)(remote, "deleted", {
-      once: () => `${client}-${(next += 1)}`,
-      client,
-      storage: memoryStorage(),
-      pause: () => Promise.resolve(),
-    })
+    const opened = await (how === "create" ? createDoomDeck : openDoomDeck)(
+      how === "create" ? mineRemote : remote,
+      "deleted",
+      {
+        once: () => `${client}-${(next += 1)}`,
+        client,
+        storage: memoryStorage(),
+        pause: () => Promise.resolve(),
+      },
+    )
     if (!opened.ok) throw new Error(JSON.stringify(opened))
     return opened.deck
   }
@@ -84,11 +96,13 @@ async function tabs() {
     expect(await theirs.sync()).toEqual({ ok: true })
     await mine.catchUp()
   }
-  return { remote, mine, theirs, fromTheirs, theirUndo }
+  return { remote, cut, mine, theirs, fromTheirs, theirUndo }
 }
 
 const xOf = (view: doom.Doom, node: doom.NodeId) => (view.nodes.get(node) as { box: { x: number } }).box.x
 const textOf = (view: doom.Doom) => (view.nodes.get(title) as { text: doom.Text }).text.chars
+const keyOf = (view: doom.Doom, node: doom.NodeId) =>
+  (view.nodes.get(node) as { parent: { at: doom.OrderKey } }).parent.at
 const parentOf = (view: doom.Doom, node: doom.NodeId) =>
   (view.nodes.get(node) as { parent?: { id: doom.NodeId } | null }).parent?.id ?? null
 
@@ -204,6 +218,18 @@ describe("an undo of a step on a layer another tab deleted", () => {
     }
   })
 
+  it("puts back a layer the person deleted from the very frame another tab deleted since, so their undo brings both back", async () => {
+    const { mine, theirs, fromTheirs, theirUndo } = await tabs()
+    expect(mine.push([{ node: title, prop: "parent", value: at(inner) }]).ok).toBe(true)
+    expect(mine.push([{ node: title, prop: "parent", value: null }]).ok).toBe(true)
+    await fromTheirs([{ node: inner, prop: "parent", value: null }])
+    expect(mine.undo().ok).toBe(true)
+    expect(parentOf(mine.view(), title)).toBe(inner)
+    await theirUndo()
+    for (const view of [mine.view(), theirs.view(), mine.server()])
+      expect([parentOf(view, title), parentOf(view, inner)]).toEqual([inner, group])
+  })
+
   it("puts back the colour and words an agent run gave a layer it leaves in the frame the run moved it to", async () => {
     const { remote, mine, fromTheirs } = await tabs()
     const red = [{ kind: "solid", color: { var: "accent2" } }]
@@ -295,5 +321,59 @@ describe("an undo of a step on a layer another tab deleted", () => {
     expect(mine.undo().ok).toBe(true)
     expect(parentOf(mine.view(), title)).toBe(slide)
     expect(textOf(mine.view())).toBe("Title")
+  })
+})
+
+describe("a move of a layer another tab deleted, into the frame they deleted after it", () => {
+  async function framed() {
+    const opened = await tabs()
+    const { mine, theirs } = opened
+    expect(
+      mine.push([
+        { node: title, prop: "parent", value: at(inner) },
+        { node: card, prop: "parent", value: { id: inner, at: orderKeyBetween(orderKeyBetween(null, null), null) } },
+      ]).ok,
+    ).toBe(true)
+    expect(await mine.sync()).toEqual({ ok: true })
+    await theirs.catchUp()
+    const reorder = () =>
+      mine.push([
+        { node: title, prop: "parent", value: { id: inner, at: orderKeyBetween(keyOf(mine.view(), card), null) } },
+      ])
+    const theirDeletes = async () => {
+      for (const node of [title, inner]) {
+        expect(theirs.push([{ node, prop: "parent", value: null }]).ok).toBe(true)
+        expect(await theirs.sync()).toEqual({ ok: true })
+      }
+    }
+    const theirUndoBrings = async () => {
+      expect(theirs.undo().ok).toBe(true)
+      expect(await theirs.sync()).toEqual({ ok: true })
+      return [parentOf(theirs.view(), inner), parentOf(theirs.view(), title)]
+    }
+    return { ...opened, reorder, theirDeletes, theirUndoBrings }
+  }
+
+  it("refuses a reorder made offline when it replays, so each of their undos brings back one step", async () => {
+    const { cut, mine, reorder, theirDeletes, theirUndoBrings } = await framed()
+    cut.off = true
+    expect(reorder().ok).toBe(true)
+    await theirDeletes()
+    cut.off = false
+    expect(await mine.sync()).toEqual({ ok: true })
+    expect(mine.notices()).toMatchObject([{ refused: "missing", node: title, prop: "parent" }])
+    expect(parentOf(mine.server(), title)).toBeNull()
+    expect(await theirUndoBrings()).toEqual([group, null])
+    expect(await theirUndoBrings()).toEqual([group, inner])
+  })
+
+  it("refuses a reorder from a tab that has not caught up with their deletes", async () => {
+    const { mine, reorder, theirDeletes, theirUndoBrings } = await framed()
+    await theirDeletes()
+    expect(reorder().ok).toBe(true)
+    expect(await mine.sync()).toEqual({ ok: true })
+    expect(mine.notices()).toMatchObject([{ refused: "missing", node: title, prop: "parent" }])
+    expect(await theirUndoBrings()).toEqual([group, null])
+    expect(await theirUndoBrings()).toEqual([group, inner])
   })
 })

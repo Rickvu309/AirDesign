@@ -25,6 +25,9 @@ const parentOf = (node: Node | undefined): Parent | null | undefined =>
 
 const deleted = (node: Node) => parentOf(node) === null
 
+const takesBackDelete = (doom: Doom, write: Write) =>
+  write.base !== undefined && parentOf(doom.nodes.get(write.node)) === null
+
 function open(doom: Doom): Working {
   return {
     nodes: new Map(doom.nodes),
@@ -177,7 +180,11 @@ function write(work: Working, doom: Doom, landed: Landed, raw: Write, known: Kno
     const parent = value as Parent | null
     if (parent !== null) {
       const target = work.nodes.get(parent.id)
-      if (target === undefined || deleted(target) || underLayerDeletedHere(work, doom, parent.id))
+      if (
+        target === undefined ||
+        (deleted(target) && !takesBackDelete(doom, read)) ||
+        underLayerDeletedHere(work, doom, parent.id)
+      )
         return refuse("missing", id, key)
       if (!(holds[target.type] as readonly NodeType[]).includes(node.type)) return refuse("shape", id, key)
       if (reaches(work, parent.id, id)) return refuse("cycle", id, key)
