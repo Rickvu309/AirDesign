@@ -1,9 +1,21 @@
-import { type Reader, boolean, finite, literal, words } from "./read-kit.js"
+import { type Reader, boolean, explain, finite, literal, rememberForm, words } from "./read-kit.js"
 
 type JsonSchema = Readonly<Record<string, unknown>>
 export type Field<T> = { readonly schema: JsonSchema; readonly read: Reader<T> }
 
-export const field = <T>(schema: JsonSchema, read: Reader<T>): Field<T> => ({ schema, read })
+export const field = <T>(schema: JsonSchema, read: Reader<T>): Field<T> => {
+  const form = typeof schema.description === "string" ? schema.description : undefined
+  const wrapped: Reader<T> = (raw) => {
+    try {
+      return read(raw)
+    } catch (thrown) {
+      explain(thrown, form)
+      throw thrown
+    }
+  }
+  if (form !== undefined) rememberForm(wrapped, form)
+  return { schema, read: wrapped }
+}
 
 export const choice = <const V extends string>(values: readonly V[], description?: string) =>
   field<V>({ enum: values, ...(description === undefined ? {} : { description }) }, literal(values))

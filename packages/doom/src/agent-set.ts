@@ -74,9 +74,15 @@ const roleTarget = /^([a-z0-9]{1,16}:[0-9]{1,12})\.(title|subtitle|body)$/
 
 function targetNode(draft: Draft, target: string): Node {
   const role = roleTarget.exec(target)
-  if (role === null) return living(draft, readNodeId(target) ?? stop("shape", undefined, "target"), "target")
+  if (role === null)
+    return living(
+      draft,
+      readNodeId(target) ??
+        stop("shape", undefined, "target", "form", "A node id, a slide role, every slide's role, or a chart bar."),
+      "target",
+    )
   const slide = living(draft, role[1] as NodeId, "target")
-  if (slide.type !== "slide") stop("shape", slide.id, "target")
+  if (slide.type !== "slide") stop("shape", slide.id, "target", "form", "A slide id, then .title, .subtitle or .body.")
   const found = descendantsOf(draft.doom, slide.id).find(
     (node) => node.type === "shape" && propOf(node, "role") === role[2],
   )
@@ -85,14 +91,16 @@ function targetNode(draft: Draft, target: string): Node {
 
 function setBar(draft: Draft, change: SetChange, at: number): void {
   const frame = living(draft, readNodeId(change.target.slice(0, at)) ?? stop("missing", undefined, "target"), "target")
-  const chart = propOf(frame, "chart") ?? stop("shape", frame.id, "target")
+  const chart =
+    propOf(frame, "chart") ?? stop("shape", frame.id, "target", "form", "A chart id, then #series:category.")
   const bar = change.target.slice(at + 1)
   const known = chart.series.some((series) => chart.categories.some((category) => bar === `${series.name}:${category}`))
   if (!known) stop("missing", frame.id, "target")
   for (const [key, value] of Object.entries(change))
-    if (value !== undefined && key !== "op" && key !== "target" && key !== "fill") stop("shape", frame.id, key)
-  const fill = change.fill ?? stop("shape", frame.id, "fill")
-  if (typeof fill === "object") stop("shape", frame.id, "fill")
+    if (value !== undefined && key !== "op" && key !== "target" && key !== "fill")
+      stop("shape", frame.id, key, "unknown", "fill.")
+  const fill = change.fill ?? stop("shape", frame.id, "fill", "missing", "A theme colour, a hex or none.")
+  if (typeof fill === "object") stop("shape", frame.id, "fill", "form", "A theme colour, a hex or none.")
   const { [change.target]: _was, ...others } = chart.points ?? {}
   put(draft, frame.id, {
     chart: { ...chart, points: fill === "none" ? others : { ...others, [change.target]: colorOf(fill) } },
@@ -110,11 +118,11 @@ function setEverySlide(draft: Draft, change: SetChange, role: string): void {
 function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | undefined {
   const geometry = propOf(node, "geometry")
   if (change.icon !== undefined) {
-    if (geometry?.kind !== "icon") stop("shape", node.id, "icon")
+    if (geometry?.kind !== "icon") stop("shape", node.id, "icon", "form", "An icon.")
     return { kind: "icon", name: iconName(change.icon) }
   }
   const lined = (["startArrow", "arrow", "from", "to", "route"] as const).find((field) => change[field] !== undefined)
-  if (lined !== undefined && geometry?.kind !== "line") stop("shape", node.id, lined)
+  if (lined !== undefined && geometry?.kind !== "line") stop("shape", node.id, lined, "form", "A line.")
   if (geometry?.kind !== "line") return undefined
   const box = change.box
   const pointed = "x" in geometry.start && "x" in geometry.end
@@ -138,16 +146,18 @@ export function compileSet(draft: Draft, change: SetChange): void {
   const at = change.target.indexOf("#")
   if (at >= 0) return setBar(draft, change, at)
   const node = targetNode(draft, change.target)
-  if (node.type !== "slide" && node.type !== "frame" && node.type !== "shape") stop("shape", node.id, "target")
+  if (node.type !== "slide" && node.type !== "frame" && node.type !== "shape")
+    stop("shape", node.id, "target", "form", "A slide, a frame or a shape.")
   for (const field of [...neverOnSet, ...unfit[node.type]])
-    if (change[field] !== undefined) stop("shape", node.id, field)
+    if (change[field] !== undefined) stop("shape", node.id, field, "unknown", `A ${node.type} does not take ${field}.`)
   const fitting = change.fit !== undefined || change.crop !== undefined
   if (fitting && !(propOf(node, "fills") ?? []).some((paint) => paint.kind === "image"))
-    stop("shape", node.id, change.crop === undefined ? "fit" : "crop")
-  if (change.crop !== undefined && change.fit !== undefined && change.fit !== "crop") stop("shape", node.id, "crop")
+    stop("shape", node.id, change.crop === undefined ? "fit" : "crop", "form", "A layer whose fill is an image.")
+  if (change.crop !== undefined && change.fit !== undefined && change.fit !== "crop")
+    stop("shape", node.id, "crop", "form", "fit crop, or no fit.")
   const outline = propOf(node, "geometry")?.kind
   if (change.shape !== undefined && (outline === "line" || outline === "icon" || outline === "path"))
-    stop("shape", node.id, "shape")
+    stop("shape", node.id, "shape", "form", "A preset outline. A line, an icon or a path does not take one.")
   if (change.link !== undefined && propOf(node, "text") === undefined) stop("shape", node.id, "link")
   const now = {
     fills: propOf(node, "fills"),
@@ -173,8 +183,10 @@ export function compileSet(draft: Draft, change: SetChange): void {
   const asked = (["layout", "gap", "padding", "align"] as const).find(
     (field) => node.type === "frame" && change[field] !== undefined,
   )
-  if (asked !== undefined && layout === undefined) stop("shape", node.id, asked)
-  if (change.chart !== undefined && propOf(node, "chart") === undefined) stop("shape", node.id, "chart")
+  if (asked !== undefined && layout === undefined)
+    stop("shape", node.id, asked, "form", "row or column, with gap, padding and left, center or right.")
+  if (change.chart !== undefined && propOf(node, "chart") === undefined)
+    stop("shape", node.id, "chart", "form", "A chart layer.")
   const shaped = geometryOf(draft, node, change)
   const values: Values = {
     ...surfaceOf(change, now, stroked, change.effectOpacity === undefined ? undefined : themeOf(draft)),

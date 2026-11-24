@@ -77,7 +77,8 @@ const givenBox = (look: AgentLook, area: Area, h: number = area.h, grows = false
 function checkFields(change: Add): void {
   const allowed = new Set<string>(["op", "kind", "slide", "into", ...takes[change.kind]])
   for (const [key, value] of Object.entries(change))
-    if (value !== undefined && !allowed.has(key)) stop("shape", undefined, key)
+    if (value !== undefined && !allowed.has(key))
+      stop("shape", undefined, key, "unknown", `One of ${[...allowed].join(", ")}.`)
 }
 
 function emptyPlaceholderOf(draft: Draft, slide: Node, role: "title" | "subtitle", prompt: string): Node | undefined {
@@ -96,7 +97,7 @@ const inkOn = (fill: AgentLook["fill"]) =>
   fill === undefined || (typeof fill === "string" && fill.startsWith("accent")) ? "background" : undefined
 
 function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "text" | "shape"): void {
-  if (kind === "text" && change.text === undefined) stop("shape", undefined, "text")
+  if (kind === "text" && change.text === undefined) stop("shape", undefined, "text", "missing", "A non-empty string.")
   const labelled = kind === "shape"
   const ink = change.color ?? inkOn(change.fill)
   const look: AgentLook =
@@ -195,7 +196,7 @@ function addLine(draft: Draft, parent: Node, change: Add): void {
 
 function addFrame(draft: Draft, parent: Node, change: Add): void {
   if (change.rows !== undefined) return addGrid(draft, parent, change)
-  if (change.align === "justify") stop("shape", undefined, "align")
+  if (change.align === "justify") stop("shape", undefined, "align", "form", "left, center or right.")
   const area = areaFor(draft, parent, change.box)
   const layout = layoutOf(change, undefined, gapFor(slideSize(draft).w))
   create(draft, "frame", parent.id, {
@@ -212,7 +213,8 @@ const centred = (area: Area, size: { readonly w: number; readonly h: number }) =
 })
 
 function addPicture(draft: Draft, parent: Node, change: Add): void {
-  if (typeof change.fill !== "object" || !("image" in change.fill)) stop("shape", undefined, "fill")
+  if (typeof change.fill !== "object" || !("image" in change.fill))
+    stop("shape", undefined, "fill", "form", "An object with image: an https address, or an asset read from the deck.")
   const area = areaFor(draft, parent, change.box)
   const natural = draft.reading.pictures?.get(change.fill.image)
   const fitted =
@@ -225,7 +227,8 @@ function addPicture(draft: Draft, parent: Node, change: Add): void {
 }
 
 function addIcon(draft: Draft, parent: Node, change: Add): void {
-  if (change.icon === undefined) stop("shape", undefined, "icon")
+  if (change.icon === undefined)
+    stop("shape", undefined, "icon", "missing", "An icon name such as star, arrow-right or trending-up.")
   const area = areaFor(draft, parent, change.box)
   const side = Math.min(iconSide, area.w, area.h)
   const box = givenBox(change, { ...area, w: side }, side)
@@ -243,7 +246,8 @@ function addIcon(draft: Draft, parent: Node, change: Add): void {
 }
 
 function addChart(draft: Draft, parent: Node, change: Add): void {
-  if (change.chart === undefined) stop("shape", undefined, "chart")
+  if (change.chart === undefined)
+    stop("shape", undefined, "chart", "missing", "An object with kind, categories and series.")
   const area = patternArea(draft, parent, change.box)
   create(draft, "frame", parent.id, {
     ...surfaced(draft, change),
@@ -254,11 +258,11 @@ function addChart(draft: Draft, parent: Node, change: Add): void {
 
 export function compileAdd(draft: Draft, change: Add): void {
   const slide = living(draft, change.slide, "slide")
-  if (slide.type !== "slide") stop("shape", slide.id, "slide")
+  if (slide.type !== "slide") stop("shape", slide.id, "slide", "form", "A slide id.")
   const parent = change.into === undefined ? slide : living(draft, change.into, "into")
   if (change.into !== undefined && (parent.type !== "frame" || slideOf(draft.doom, parent.id) !== slide.id))
     stop("missing", parent.id, "into")
-  if (propOf(parent, "chart") !== undefined) stop("shape", parent.id, "into")
+  if (propOf(parent, "chart") !== undefined) stop("shape", parent.id, "into", "form", "A frame that is not a chart.")
   checkFields(change)
   compileKind(draft, parent, slide, change)
 }

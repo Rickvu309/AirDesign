@@ -41,7 +41,7 @@ function parentIdOf(node: Node): NodeId {
 
 function arrangeableNode(draft: Draft, id: NodeId, field: string): Node {
   const node = living(draft, id, field)
-  return arrangeable(node) ? node : stop("shape", id, field)
+  return arrangeable(node) ? node : stop("shape", id, field, "form", "A frame or a shape.")
 }
 
 export function compileMove(draft: Draft, change: Op<"move">): void {
@@ -49,7 +49,7 @@ export function compileMove(draft: Draft, change: Op<"move">): void {
   const from = parentIdOf(node)
   const target = change.into === undefined ? living(draft, from, "into") : living(draft, change.into, "into")
   if ((target.type !== "slide" && target.type !== "frame") || propOf(target, "chart") !== undefined)
-    stop("shape", target.id, "into")
+    stop("shape", target.id, "into", "form", "A slide or a frame that is not a chart.")
   if (target.id === node.id || descendantsOf(draft.doom, node.id).some((inside) => inside.id === target.id))
     stop("cycle", node.id, "into")
   const previous =
@@ -58,7 +58,8 @@ export function compileMove(draft: Draft, change: Op<"move">): void {
           .filter((sibling) => sibling.id !== node.id)
           .at(-1)?.id ?? null)
       : change.after
-  if (previous === node.id) stop("shape", node.id, "after")
+  if (previous === node.id)
+    stop("shape", node.id, "after", "form", "Another sibling, or null to put it first. Leave it out to put it last.")
   const [key] = keysAfter(draft, target.id, previous, 1, new Set([node.id]))
   draft.writes.push({ node: node.id, prop: "parent", value: { id: target.id, at: key as OrderKey } })
   if (target.id === from) return
@@ -70,7 +71,8 @@ export function compileMove(draft: Draft, change: Op<"move">): void {
 export function compileWrap(draft: Draft, change: Op<"wrap">): void {
   const nodes = [...new Set(change.nodes)].map((id) => arrangeableNode(draft, id, "nodes"))
   const parent = parentIdOf(nodes[0] as Node)
-  for (const node of nodes) if (parentIdOf(node) !== parent) stop("shape", node.id, "nodes")
+  for (const node of nodes)
+    if (parentIdOf(node) !== parent) stop("shape", node.id, "nodes", "form", "Layers that share one parent.")
   const position = new Map(childrenOf(draft.doom, parent).map((child, at) => [child.id, at]))
   const ordered = [...nodes].sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0))
   const boxes = ordered.map((node) => boxOf(node, draft.reading.boxes))
@@ -106,7 +108,8 @@ export function compileWrap(draft: Draft, change: Op<"wrap">): void {
 
 export function compileUnwrap(draft: Draft, change: Op<"unwrap">): void {
   const frame = living(draft, change.node, "node")
-  if (frame.type !== "frame" || propOf(frame, "chart") !== undefined) stop("shape", frame.id, "node")
+  if (frame.type !== "frame" || propOf(frame, "chart") !== undefined)
+    stop("shape", frame.id, "node", "form", "A frame that is not a chart.")
   const parent = parentIdOf(frame)
   const kids = childrenOf(draft.doom, frame.id)
   const keys = keysAfter(draft, parent, frame.id, kids.length)

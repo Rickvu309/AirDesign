@@ -1,0 +1,3 @@
+# A field refusal names the field path, whether it is missing, unknown or the wrong form, and the form it accepts
+
+`packages/doom/src/field-refusal.test.ts` reads the audit's empty hidden caption and fails unless the refusal names field `text`, fault `form` and the accepted form `A non-empty string.`. `packages/mcp/src/field-refusal.test.ts` sends that same edit through `edit_deck` and fails unless the note names the field, the fault and the accepted form. `refuse` in `packages/doom/src/refusal.ts` copies that path off the read that failed, so a refusal with no path stays the generic sentence.

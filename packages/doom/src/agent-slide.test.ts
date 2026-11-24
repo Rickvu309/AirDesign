@@ -94,7 +94,13 @@ describe("slide move and delete", () => {
   })
 
   it("wants exactly one of add, move and delete", () => {
-    expect(refusal(richDeck(), { op: "slide" })).toEqual({ refused: "shape", field: "slide", change: "slide" })
+    expect(refusal(richDeck(), { op: "slide" })).toEqual({
+      refused: "shape",
+      field: "slide",
+      fault: "form",
+      form: "Exactly one of add, move or delete.",
+      change: "slide",
+    })
     expect(refusal(richDeck(), { op: "slide", add: {}, delete: ids.slide })).toMatchObject({
       refused: "shape",
       field: "slide",

@@ -222,6 +222,8 @@ describe("set by node id", () => {
       refused: "shape",
       node: ids.card,
       field: "text",
+      fault: "unknown",
+      form: "A frame does not take text.",
       change: `set ${ids.card}`,
     })
     expect(refusal(richDeck(), set(ids.title, { icon: "x" }))).toMatchObject({ field: "icon" })

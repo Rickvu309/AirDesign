@@ -209,7 +209,13 @@ describe("compileAgentEdit", () => {
   })
 
   it("refuses an empty batch", () => {
-    expect(compileAgentEdit(agentDeck(), [], by())).toEqual({ refused: "shape", change: "changes" })
+    expect(compileAgentEdit(agentDeck(), [], by())).toEqual({
+      refused: "shape",
+      change: "changes",
+      field: "changes",
+      fault: "missing",
+      form: "One to one hundred changes.",
+    })
   })
 })
 
