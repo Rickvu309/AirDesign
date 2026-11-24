@@ -1,6 +1,24 @@
+import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { grow, spot } from "@/testing/doom-fixtures"
 import { cropDrag, cropShown, type CropGrip } from "./crop-drag"
+import { geometryOf } from "./slide-geometry"
+
+const spot = (x: number, y: number, w: number, h: number, rotation = 0) => ({
+  x,
+  y,
+  w,
+  h,
+  rotation,
+  flipH: false,
+  flipV: false,
+})
+
+function grow(children: readonly doom.TreeNode[]) {
+  const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children }] })
+  const measure = doom.measureWith({})
+  const geometry = geometryOf(doom.resolveSlide(grown.doom, grown.slides[0]!, measure))
+  return { ...grown, view: grown.doom, geometry, measure }
+}
 
 const asset = "a".repeat(64)
 const wide = { width: 400, height: 200 }
