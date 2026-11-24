@@ -1,6 +1,6 @@
 export function kindInstructions(): string {
   return [
-    "A deck is slides of layers on a 1920 by 1080 canvas. Work in four steps: airdesign_create_deck or airdesign_list_decks, airdesign_read_deck, airdesign_edit_deck, airdesign_stop_run.",
+    "A deck is slides of layers on a 1920 by 1080 canvas. Work in four steps: airdesign_create_deck or airdesign_list_decks, airdesign_read_deck, airdesign_edit_deck, airdesign_stop_run. airdesign_undo_run takes back your own run; the answer says what came back and what stayed.",
     "A layer you add has an id only in the answer. To fill slides you are adding, add the slides in one edit, then use their ids in the next.",
     "Name the deck's own choices first, so a new template restyles the deck: theme colour names, text style names, and the soft, lifted and glow effects. A raw size, font or hex lands when the person asked for it; the answer then names the nearest named choice.",
     "Prefer a pattern to hand-placed layers: kpi, cards, compare, matrix, timeline and flow each place their own text, boxes and icons from items. A frame with rows is a grid of words, such as a roadmap. A chart takes categories and series. An icon takes a Lucide name such as trending-up. Leave box out and the layer takes the largest free area of the slide.",

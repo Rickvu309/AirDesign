@@ -36,6 +36,12 @@ export const airaStepWords: Readonly<Record<AgentOp, StepWords | null>> = {
     stopped: "Stopped creating a deck",
   },
   stop_run: null,
+  undo_run: {
+    working: "Undoing the run",
+    done: "Undid the run",
+    refused: "Couldn't undo the run",
+    stopped: "Stopped undoing the run",
+  },
 }
 
 export const airaOtherStepWords: StepWords = {

@@ -16,11 +16,18 @@ export type Landed = { readonly ok: true; readonly deck: DeckId; readonly rev: n
 export type Unmeasured = "fonts" | "time"
 export type Measured = { readonly measure: doom.Measure; readonly missing: ReadonlySet<string> }
 
+export type RunLog = {
+  readonly ok: true
+  readonly edits: readonly unknown[]
+  readonly replaced: readonly unknown[]
+}
+
 export type DeckHost = {
   readonly list: (cursor: DeckId | undefined) => Promise<Listed | DoomRefusal>
   readonly create: (name: string, once: string) => Promise<Opened | DoomRefusal>
   readonly open: (deck: DeckId) => Promise<Opened | DoomRefusal>
   readonly edit: (deck: DeckId, edit: doom.Edit) => Promise<Landed | DoomRefusal>
+  readonly run: (deck: DeckId, run: string) => Promise<RunLog | DoomRefusal>
   readonly images?: (deck: DeckId, names: readonly string[]) => Promise<NamedImages>
   readonly measure?: (fold: doom.Doom) => Promise<Measured | Unmeasured>
   readonly pictures?: (

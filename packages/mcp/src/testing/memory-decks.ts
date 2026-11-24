@@ -10,6 +10,7 @@ const refusal = (kind: Exclude<DoomRefusal["refusal"], "edit">): DoomRefusal => 
 
 export function memoryDecks(start: () => doom.Doom, initial: ReadonlyMap<string, doom.Doom> = new Map()): MemoryDecks {
   const decks = new Map<DeckId, doom.Doom>()
+  const logs = new Map<DeckId, { edit: unknown; replaced: unknown }[]>()
   for (const [id, fold] of initial) {
     const read = readDeckId(id)
     if (!read.ok) throw new Error(id)
@@ -20,11 +21,15 @@ export function memoryDecks(start: () => doom.Doom, initial: ReadonlyMap<string,
     if (fold === undefined) return refusal("deck")
     const read = doom.readEdit(JSON.parse(JSON.stringify(sent)), fold)
     if (doom.isRefusal(read)) return { ok: false, refusal: "edit", ...read }
+    const replaced = doom.replacedBy(fold, read)
     const landed = { ...read, rev: doom.rev(fold.rev + 1) }
     const next = doom.applyEdit(fold, landed)
     if (doom.isRefusal(next)) return { ok: false, refusal: "edit", ...next }
     if (next === fold) return { ok: true, deck, rev: fold.onces.get(read.once) ?? fold.rev }
     decks.set(deck, next)
+    const log = logs.get(deck) ?? []
+    log.push(JSON.parse(JSON.stringify({ edit: landed, replaced })))
+    logs.set(deck, log)
     return { ok: true, deck, rev: landed.rev }
   }
   return {
@@ -53,6 +58,13 @@ export function memoryDecks(start: () => doom.Doom, initial: ReadonlyMap<string,
       return fold === undefined ? refusal("deck") : { ok: true, deck, rev: fold.rev, fold }
     },
     edit,
+    run: async (deck, run) => {
+      if (!decks.has(deck)) return refusal("deck")
+      const rows = (logs.get(deck) ?? []).filter(
+        (row) => (row.edit as { author?: { run?: string } }).author?.run === run,
+      )
+      return { ok: true, edits: rows.map((row) => row.edit), replaced: rows.map((row) => row.replaced) }
+    },
   }
 }
 

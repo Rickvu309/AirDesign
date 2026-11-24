@@ -8,6 +8,7 @@ import { editDeckTool } from "./edit-tool.js"
 import { listDecksTool } from "./list-tool.js"
 import { readDeckTool } from "./read-tool.js"
 import { stopRunTool } from "./stop-tool.js"
+import { undoRunTool } from "./undo-tool.js"
 
 export type Session = {
   readonly agent: string
@@ -37,5 +38,7 @@ export async function callTool(name: string, raw: unknown, session: Session, hos
       return editDeckTool(raw, { id: session.agent, name: session.name }, once, host)
     case "stop_run":
       return stopRunTool(raw, session.agent, once, host)
+    case "undo_run":
+      return undoRunTool(raw, session.agent, once, host)
   }
 }

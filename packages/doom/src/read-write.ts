@@ -105,7 +105,12 @@ export function readEdit(raw: unknown, doom: Doom): Edit | Refusal {
       created.set(write.node, write.value as NodeType)
     writes.push(write)
   }
-  if (runUndo !== undefined && author.kind !== "person") return refuse("shape")
+  if (
+    runUndo !== undefined &&
+    author.kind !== "person" &&
+    !(author.kind === "agent" && author.run === runUndo.run && doom.runs.get(runUndo.run)?.agent === author.id)
+  )
+    return refuse("shape")
   return {
     once,
     author,

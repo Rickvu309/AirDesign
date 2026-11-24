@@ -45,11 +45,19 @@ describe("createServer", () => {
     expect(createServer(session, memoryDecks(started))).not.toBe(createServer(session, memoryDecks(started)))
   })
 
-  it("lists the five tools within 8,000 tokens, each as the catalog describes it", async () => {
+  it("lists the six tools within 8,000 tokens, each as the catalog describes it", async () => {
     const projected = projectTools(catalog)
     await withClient(sessionFor(), memoryDecks(started), async (client) => {
       expect(client.getServerVersion()?.name).toBe("airdesign")
       const { tools } = await client.listTools()
+      const advertised = tools.map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+        annotations: tool.annotations,
+      }))
+      const advertisedTokens = Math.ceil(bytesOf(JSON.stringify(advertised)) / 4)
+      const listedTokens = Math.ceil(bytesOf(JSON.stringify(await client.listTools())) / 4)
       expect(tools.map((tool) => tool.name)).toEqual(projected.map((tool) => tool.name))
       expect(tools.map((tool) => tool.name)).toEqual([
         "airdesign_create_deck",
@@ -57,6 +65,7 @@ describe("createServer", () => {
         "airdesign_list_decks",
         "airdesign_read_deck",
         "airdesign_stop_run",
+        "airdesign_undo_run",
       ])
       for (const [index, tool] of tools.entries()) {
         const expected = projected[index]!
@@ -85,14 +94,8 @@ describe("createServer", () => {
         "duplicate",
         "deck",
       ])
-      const advertised = tools.map((tool) => ({
-        name: tool.name,
-        description: tool.description,
-        inputSchema: tool.inputSchema,
-        annotations: tool.annotations,
-      }))
-      expect(Math.ceil(bytesOf(JSON.stringify(advertised)) / 4)).toBeLessThanOrEqual(8000)
-      expect(Math.ceil(bytesOf(JSON.stringify(await client.listTools())) / 4)).toBeLessThanOrEqual(8000)
+      expect(advertisedTokens).toBeLessThanOrEqual(8000)
+      expect(listedTokens).toBeLessThanOrEqual(8000)
       expect(tools.every((tool) => !Object.hasOwn(tool, "outputSchema"))).toBe(true)
     })
   })

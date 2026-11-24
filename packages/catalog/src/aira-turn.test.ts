@@ -56,6 +56,7 @@ describe("Aira's tools", () => {
       "airdesign_list_decks",
       "airdesign_read_deck",
       "airdesign_stop_run",
+      "airdesign_undo_run",
     ])
   })
 })
@@ -128,7 +129,6 @@ describe("readTurn", () => {
     expect(readTurn({ deck, messages: [ask, { role: "assistant", content: [read] }, readAnswer] }).ok).toBe(true)
     for (const block of [
       { ...read, name: "bash" },
-      { ...read, name: "airdesign_undo_run" },
       { ...read, name: "airdesign_commit_edits" },
       { ...read, input: [deck] },
       { ...read, input: "deck" },
