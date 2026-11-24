@@ -69,3 +69,40 @@ test("a line's end drags onto a shape's side and stays there, frees again, and t
   await page.keyboard.press("ControlOrMeta+z")
   await expect.poll(async () => (await line()).end).toEqual({ node: "t:1", site: "l" })
 })
+
+test("deleting a shape frees the connector at the point it last painted", async ({ page, context, stack }) => {
+  covers("delete")
+  const opened = await openEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: opened.slide,
+      props: { box: spot(400, 200, 200, 100), fills: accent, geometry: { kind: "rect" } },
+    },
+    {
+      id: "t:2",
+      type: "shape",
+      parent: opened.slide,
+      props: {
+        box: spot(100, 250, 300, 0),
+        strokes: accent,
+        stroke: { weight: 4, align: "center", dash: "solid" },
+        geometry: {
+          kind: "line",
+          start: { x: 100, y: 250 },
+          end: { node: "t:1", site: "l" },
+          route: "straight",
+          arrows: ["none", "none"],
+        },
+      },
+    },
+  ])
+  const line = async () => (await savedNode(stack, opened, "t:2"))?.geometry as Line
+  await clickSlide(page, 500, 250)
+  await page.keyboard.press("Delete")
+  await expect.poll(async () => (await savedNode(stack, opened, "t:1"))?.parent ?? null).toBeNull()
+  await expect.poll(async () => (await line()).end).toEqual({ x: 400, y: 250 })
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await line()).end).toEqual({ node: "t:1", site: "l" })
+})
