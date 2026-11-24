@@ -1,6 +1,6 @@
 import { gestureFor } from "@/lib/gestures"
 import { useEffect, useRef, useState } from "react"
-import type { SlideTransition } from "@airdesign/pptx"
+import type { Props } from "@airdesign/doom"
 import { firstShow, showKey, stepShow, type Show, type ShowKey, type ShownDeck } from "@/present/present-steps"
 import type { ShownSlide } from "@/present/slide-shows"
 import type { LayerPairs } from "@/present/morph-pairs"
@@ -28,7 +28,7 @@ export type Present = {
   readonly pause: () => void
   readonly restart: () => void
   readonly hidden: readonly boolean[]
-  readonly transitionOf: (index: number) => SlideTransition | null
+  readonly transitionOf: (index: number) => Props["transition"] | null
   readonly morphOf: (from: number, to: number) => LayerPairs
 }
 

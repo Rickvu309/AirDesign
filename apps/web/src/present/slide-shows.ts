@@ -1,7 +1,7 @@
-import { type SlideTransition } from "@airdesign/pptx"
+import type { Props } from "@airdesign/doom"
 
 export type ShownSlide = {
   readonly hidden: boolean
-  readonly transition: SlideTransition | null
+  readonly transition: Props["transition"] | null
   readonly advance: number | null
 }

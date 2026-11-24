@@ -1,4 +1,4 @@
-import type { SlideTransition } from "@airdesign/pptx"
+import type { Props } from "@airdesign/doom"
 import { act, createElement } from "react"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 
@@ -29,9 +29,9 @@ afterAll(() => {
   window.close()
 })
 
-const fade: SlideTransition = { kind: "fade", direction: null, duration: 400 }
+const fade: Props["transition"] = { kind: "fade", ms: 400 }
 
-function show(transitionOf: (index: number) => SlideTransition | null, waitingFor: readonly number[]) {
+function show(transitionOf: (index: number) => Props["transition"] | null, waitingFor: readonly number[]) {
   const host = window.document.createElement("div")
   window.document.body.append(host)
   const played: HTMLElement[] = []

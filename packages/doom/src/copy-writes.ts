@@ -8,7 +8,7 @@ import type { PropName, Props } from "./props.js"
 type Slot = NonNullable<Props["parent"]>
 type Mint = () => NodeId
 
-const skipped = new Set(["id", "rev", "type", "parent", "origin", "slideLayout"])
+const skipped = new Set(["id", "rev", "type", "parent", "origin"])
 
 export type Copies = {
   readonly writes: readonly Write[]

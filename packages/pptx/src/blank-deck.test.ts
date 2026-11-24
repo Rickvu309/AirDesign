@@ -1,5 +1,6 @@
 import { expect, it } from "vitest"
-import { applyRoute, exportPackage, indexPackage, paintReader, readPackage, readShapes, readSlides } from "./index.js"
+import { applyRoute, exportPackage, indexPackage, readPackage, readShapes, readSlides } from "./index.js"
+import { paintReader } from "./paint-reader.js"
 import { decodeUtf8 } from "./package-bytes.js"
 
 declare const process: {

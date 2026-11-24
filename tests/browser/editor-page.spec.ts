@@ -28,7 +28,7 @@ test("the Doom editor is the old editor's page: its columns, the slide number, n
   const left = page.locator("[data-editor-sidebar]")
   await expect(left.getByRole("link", { name: productCopy.goToDecks })).toHaveAttribute("href", /^\/$/)
   await expect(left.getByRole("button", { name: new RegExp(`^${productCopy.renameDeck}`) })).toBeVisible()
-  await expect(left.getByRole("button", { name: guideWords.grid, exact: true })).toBeDisabled()
+  await expect(left.getByRole("button", { name: guideWords.grid, exact: true })).toHaveCount(0)
   await expect(left.getByRole("button", { name: slideListCopy.addSlide })).toBeVisible()
   await expect(left.getByText(slideListCopy.newSlide, { exact: true })).toBeVisible()
 

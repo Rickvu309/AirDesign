@@ -1,5 +1,5 @@
 import type { MouseEvent } from "react"
-import type { SlideTransition } from "@airdesign/pptx"
+import type { Props } from "@airdesign/doom"
 import type { SlideSize } from "@/editing/canvas-zoom"
 import { presentCopy } from "@/copy/present-copy"
 import { cn } from "@/lib/class-names"
@@ -23,7 +23,7 @@ export type PresentShowProps = {
   readonly onStop?: () => void
   readonly onPresenter?: () => void
   readonly onWake?: () => void
-  readonly transitionOf?: (index: number) => SlideTransition | null
+  readonly transitionOf?: (index: number) => Props["transition"] | null
   readonly morphOf?: (from: number, to: number) => LayerPairs
   readonly onFollow?: (point: { readonly x: number; readonly y: number; readonly show: Element }) => boolean
 }

@@ -29,6 +29,6 @@ Preconditions:
 
 ## Gotchas
 
-- The editor's way back to Home is `link "Go to your decks"`; `Grid` is disabled. The browser's Back (`page.goBack()`) reloads the page.
+- The editor's way back to Home is `link "Go to your decks"`. The browser's Back (`page.goBack()`) reloads the page.
 - Wait for the server name with `expect.poll` on `deckRoutes.list`, never only for the button text.
 - `context.unroute` needs the same function `context.route` got; a new arrow function removes nothing, and the abort stays.

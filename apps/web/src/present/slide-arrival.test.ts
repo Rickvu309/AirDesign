@@ -17,13 +17,13 @@ function landed(view: doom.Doom, writes: readonly doom.Write[]): doom.Doom {
 }
 
 describe("how a slide arrives in Present", () => {
-  it("maps the slide transition onto the playback styles", () => {
+  it("plays the saved transition when it has a kind and duration", () => {
     expect(arrivalOf(undefined)).toBeNull()
     expect(arrivalOf({ kind: "none", ms: 400 })).toBeNull()
     expect(arrivalOf({ kind: "fade", ms: 0 })).toBeNull()
-    expect(arrivalOf({ kind: "fade", ms: 400 })).toEqual({ kind: "fade", direction: null, duration: 400 })
-    expect(arrivalOf({ kind: "push", ms: 300 })).toEqual({ kind: "push", direction: "l", duration: 300 })
-    expect(arrivalOf({ kind: "smartMove", ms: 500 })).toEqual({ kind: "morph", direction: null, duration: 500 })
+    expect(arrivalOf({ kind: "fade", ms: 400 })).toEqual({ kind: "fade", ms: 400 })
+    expect(arrivalOf({ kind: "push", ms: 300 })).toEqual({ kind: "push", ms: 300 })
+    expect(arrivalOf({ kind: "smartMove", ms: 500 })).toEqual({ kind: "smartMove", ms: 500 })
   })
 
   it("hides a skipped slide and plays the next slide's transition", () => {
@@ -38,7 +38,7 @@ describe("how a slide arrives in Present", () => {
     ])
     expect(showsOf(after, slides)).toEqual([
       { hidden: true, transition: null, advance: null },
-      { hidden: false, transition: { kind: "push", direction: "l", duration: 250 }, advance: null },
+      { hidden: false, transition: { kind: "push", ms: 250 }, advance: null },
     ])
   })
 })

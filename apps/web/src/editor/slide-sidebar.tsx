@@ -72,7 +72,6 @@ export function SlideSidebar({
   strip,
   onRename,
   onTrash,
-  onGrid,
   save = null,
   layers = null,
   onSlideSelection,
@@ -81,7 +80,6 @@ export function SlideSidebar({
   strip: SlideStrip
   onTrash?: () => void
   onRename?: (name: string) => void
-  onGrid?: () => void
   save?: SaveStatus | null
   layers?: ReactNode
   onSlideSelection?: (count: number) => void
@@ -92,7 +90,6 @@ export function SlideSidebar({
         title={title}
         homeHref="/"
         save={save}
-        {...(onGrid === undefined ? { gridOff: true } : { onGrid })}
         {...(onRename === undefined ? {} : { onRename })}
         {...(onTrash === undefined ? {} : { onTrash })}
       />

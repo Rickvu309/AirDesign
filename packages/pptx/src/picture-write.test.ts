@@ -4,15 +4,8 @@ import { orderKeyBetween } from "@airdesign/doom"
 import { expect, it } from "vitest"
 import { decodeUtf8 } from "./package-bytes.js"
 import { shownPictureMode } from "./picture-mode.js"
-import {
-  danglingShapeReferences,
-  orderedParts,
-  paintReader,
-  readParts,
-  readShapes,
-  readSlides,
-  sharedOwnedParts,
-} from "./index.js"
+import { danglingShapeReferences, orderedParts, readParts, readShapes, readSlides, sharedOwnedParts } from "./index.js"
+import { paintReader } from "./paint-reader.js"
 
 const { readFileSync } = process.getBuiltinModule("node:fs")
 const box = { x: 914400, y: 685800, cx: 2743200, cy: 1828800 }
