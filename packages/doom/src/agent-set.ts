@@ -18,10 +18,22 @@ type SetChange = Extract<AgentChange, { op: "set" }>
 const estimate = measureWith({})
 
 const neverOnSet = ["rows", "items", "axes"] as const
-const wordsOnly = ["size", "font", "lineHeight", "letterSpacing", "case", "underline", "strike"] as const
+const wordsOnly = [
+  "size",
+  "font",
+  "lineHeight",
+  "letterSpacing",
+  "case",
+  "underline",
+  "strike",
+  "alignV",
+  "spaceBefore",
+  "spaceAfter",
+] as const
 const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentLook)[]>> = {
   slide: [
     ...wordsOnly,
+    "blur",
     "locked",
     "shape",
     "dash",
@@ -65,9 +77,11 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "route",
     "notes",
     "shape",
+    "skipped",
+    "transition",
     ...wordsOnly,
   ],
-  shape: ["layout", "gap", "padding", "notes", "clip"],
+  shape: ["layout", "gap", "padding", "notes", "clip", "skipped", "transition"],
 }
 const roleTarget = /^([a-z0-9]{1,16}:[0-9]{1,12})\.(title|subtitle|body)$/
 
@@ -189,12 +203,19 @@ export function compileSet(draft: Draft, change: SetChange): void {
     stop("shape", node.id, "chart", "needs", "a chart layer")
   const shaped = geometryOf(draft, node, change)
   const values: Values = {
-    ...surfaceOf(change, now, stroked, change.effectOpacity === undefined ? undefined : themeOf(draft)),
+    ...surfaceOf(
+      change,
+      now,
+      stroked,
+      change.effectOpacity === undefined && change.blur === undefined ? undefined : themeOf(draft),
+    ),
     ...(text === undefined ? {} : { text }),
     ...(layout === undefined ? {} : { layout }),
     ...(shaped === undefined ? {} : { geometry: shaped }),
     ...(change.chart === undefined ? {} : { chart: chartOf(change.chart) }),
     ...(change.notes === undefined ? {} : { notes: notesText(change.notes) }),
+    ...(change.skipped === undefined ? {} : { skipped: change.skipped }),
+    ...(change.transition === undefined ? {} : { transition: change.transition }),
   }
   if (layout?.mode === "none" && now.layout !== undefined && now.layout.mode !== "none")
     draft.writes.push(

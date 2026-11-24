@@ -18,6 +18,7 @@ import { placeholderSubtitle } from "./slide-placeholders.js"
 import { type Area, areaFor, cardRadiusFor, gapFor, patternArea, slideSize, themeOf } from "./agent-place.js"
 import { lineEnds } from "./agent-line-ends.js"
 import { pictureFit } from "./picture-fit.js"
+import type { StrokeStyle } from "./paint.js"
 import type { Box } from "./doom-walk.js"
 import { descendantsOf, isLaidOut, propOf, slideOf, zeroBox } from "./doom-walk.js"
 import type { Node } from "./doom.js"
@@ -26,7 +27,7 @@ import { textHeight } from "./text-estimate.js"
 
 type Add = Extract<AgentChange, { op: "add" }>
 
-const common = ["box", "name", "hidden", "opacity", "effect", "effectOpacity", "rotation", "flip"] as const
+const common = ["box", "name", "hidden", "opacity", "effect", "effectOpacity", "blur", "rotation", "flip"] as const
 const painted = ["fill", "stroke", "strokeWidth", "radius", "dash"] as const
 const words = [
   "text",
@@ -40,6 +41,9 @@ const words = [
   "case",
   "underline",
   "strike",
+  "alignV",
+  "spaceBefore",
+  "spaceAfter",
 ] as const
 const patternFields = ["box", "name", "hidden", "items"] as const
 
@@ -64,8 +68,9 @@ const iconSide = 96
 const lineWeight = 3
 const iconWeightShare = 12
 
-function surfaced(draft: Draft, look: AgentLook, now: Now = {}, align: "inside" | "center" = "inside") {
-  return surfaceOf(look, now, align, look.effectOpacity === undefined ? undefined : themeOf(draft))
+function surfaced(draft: Draft, look: AgentLook, now: Now = {}, align: StrokeStyle["align"] = "inside") {
+  const themed = look.effectOpacity !== undefined || look.blur !== undefined
+  return surfaceOf(look, now, align, themed ? themeOf(draft) : undefined)
 }
 
 const givenBox = (look: AgentLook, area: Area, h: number = area.h, grows = false): Box => ({
@@ -123,14 +128,14 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
   if (empty !== undefined) {
     const held = propOf(empty, "text") as Text
     const { textStyle: _, ...unstyled } = change
-    const { chars, spans, paras } = textOfLook(unstyled, held, held.style) as Text
+    const next = textOfLook(unstyled, held, held.style) as Text
     put(draft, empty.id, {
       ...surfaced(draft, change, {
         fills: propOf(empty, "fills"),
         stroke: propOf(empty, "stroke"),
         box: propOf(empty, "box"),
       }),
-      text: { ...held, chars, spans, paras },
+      text: { ...held, chars: next.chars, spans: next.spans, paras: next.paras, alignV: next.alignV },
     })
     return
   }
@@ -159,7 +164,11 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
     ...(made === undefined
       ? {}
       : {
-          text: { ...made, resize: labelled ? "fixed" : "height", ...(labelled ? { alignV: "center" as const } : {}) },
+          text: {
+            ...made,
+            resize: labelled ? "fixed" : "height",
+            ...(labelled ? { alignV: change.alignV ?? "center" } : {}),
+          },
         }),
   })
 }
