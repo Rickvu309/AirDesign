@@ -30,6 +30,11 @@ same("a spec is not chosen", changedSources("M\tpackages/document/src/decide.spe
 same("a declaration is not chosen", changedSources("M\tpackages/render/src/types.d.ts\n"), [])
 same("the api test harness is not chosen", changedSources("M\tapps/api/src/testing/harness.ts\n"), [])
 same("the api postgres setup is not chosen", changedSources("M\tapps/api/src/testing/postgres-setup.ts\n"), [])
+same(
+  "a package helper in src/testing is not chosen",
+  changedSources("M\tpackages/doom/src/testing/doom-fixtures-art.ts\n"),
+  [],
+)
 same("a web source is not chosen", changedSources("M\tapps/web/src/deck.ts\n"), [])
 same("a site source is not chosen", changedSources("M\tapps/site/src/page.ts\n"), [])
 same("a package file outside src is not chosen", changedSources("M\tpackages/pptx/markup-setup.ts\n"), [])

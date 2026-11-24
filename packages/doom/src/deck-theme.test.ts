@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { deckOf } from "./deck-of.js"
 import { defaultTheme } from "./default-theme-art.js"
-import { measure } from "./doom-fixtures-art.js"
+import { measure } from "./testing/doom-fixtures-art.js"
 import { doomFromTree } from "./doom-tree.js"
 import { isRefusal } from "./index.js"
 import { resolveSlide } from "./resolve-slide.js"

@@ -1,6 +1,6 @@
-import { type Text, type Theme, measureWith } from "./index.js"
-import { textOf, theme } from "./sample-deck.js"
-import type { TreeNode } from "./doom-tree.js"
+import { type Text, type Theme, measureWith } from "../index.js"
+import { textOf, theme } from "../sample-deck.js"
+import type { TreeNode } from "../doom-tree.js"
 
 export const plainTheme: Theme = {
   ...theme(),

@@ -10,6 +10,7 @@ import noHiddenInput from "./rules/no-hidden-input.js"
 import noHttpOutsideServer from "./rules/no-http-outside-server.js"
 import noLimitInCopy from "./rules/no-limit-in-copy.js"
 import noRaw from "./rules/no-raw.js"
+import noTestingImport from "./rules/no-testing-import.js"
 import noRouteLiteral from "./rules/no-route-literal.js"
 import noRunLiteral from "./rules/no-run-literal.js"
 import noStampLiteral from "./rules/no-stamp-literal.js"
@@ -31,6 +32,7 @@ const plugin = {
     "no-http-outside-server": noHttpOutsideServer,
     "no-limit-in-copy": noLimitInCopy,
     "no-raw": noRaw,
+    "no-testing-import": noTestingImport,
     "no-route-literal": noRouteLiteral,
     "no-run-literal": noRunLiteral,
     "no-stamp-literal": noStampLiteral,

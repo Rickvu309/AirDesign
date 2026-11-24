@@ -3,7 +3,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
 import { callTool, emptyLog, type DeckHost, type Session, type ToolResult } from "./index.js"
-import { memoryDecks } from "./memory-decks.js"
+import { memoryDecks } from "./testing/memory-decks.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 const logo = "https://images.example.com/logo.png"

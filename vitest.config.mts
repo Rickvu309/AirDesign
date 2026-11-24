@@ -12,6 +12,10 @@ const commit = spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "u
 
 const alias = [
   {
+    find: /^@airdesign\/mcp\/testing\/evals$/,
+    replacement: path.join(import.meta.dirname, "packages/mcp/src/testing/evals.ts"),
+  },
+  {
     find: /^@airdesign\/([a-z0-9-]+)$/,
     replacement: path.join(import.meta.dirname, "packages/$1/src/index.ts"),
   },

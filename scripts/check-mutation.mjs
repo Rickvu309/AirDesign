@@ -13,12 +13,12 @@ const metricName = "guards a test would miss"
 const changedFlag = "--changed-from"
 const changedFolders = /^(?:packages\/[^/]+|apps\/api)\/src\/.+\.tsx?$/
 const testNames = /\.(?:test|spec)\.tsx?$|\.d\.ts$/
-const testSupport = new Set(["apps/api/src/testing/harness.ts", "apps/api/src/testing/postgres-setup.ts"])
+const testSupport = (file) => file.includes("/src/testing/")
 
 export const changedSources = (nameStatus) =>
   nameStatus.split("\n").flatMap((row) => {
     const [status, file] = row.split("\t")
-    const chosen = status !== "D" && changedFolders.test(file ?? "") && !testNames.test(file) && !testSupport.has(file)
+    const chosen = status !== "D" && changedFolders.test(file ?? "") && !testNames.test(file) && !testSupport(file)
     return chosen ? [file] : []
   })
 

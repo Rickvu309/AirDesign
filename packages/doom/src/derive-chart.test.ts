@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { type Chart, type Resolved, deriveChart, nodeId } from "./index.js"
 import { defaultTheme } from "./default-theme-art.js"
-import { measure, plainTheme, spot, swatches } from "./doom-fixtures-art.js"
+import { measure, plainTheme, spot, swatches } from "./testing/doom-fixtures-art.js"
 
 const frame = nodeId("t:9")
 const area = spot(0, 0, 800, 400)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { doomFaces } from "./index.js"
-import { block, label, plainTheme, spot } from "./doom-fixtures-art.js"
+import { block, label, plainTheme, spot } from "./testing/doom-fixtures-art.js"
 import { doomFromTree } from "./doom-tree.js"
 
 const faces = (nodes: Parameters<typeof doomFromTree>[0]["slides"][number]["children"]) =>
