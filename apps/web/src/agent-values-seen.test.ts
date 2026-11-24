@@ -78,12 +78,31 @@ const seen: Readonly<Record<string, Seen>> = {
   rotation: { person: ["gesture:rotate"] },
   flip: { person: ["gesture:flip-horizontal", "gesture:flip-vertical"] },
   notes: { person: ["notes:slide-notes"] },
+  skipped: { owedToPerson: "skipping a slide in Present: the slide menu does not write it yet" },
+  transition: { owedToPerson: "how a slide arrives in Present: no control" },
+  alignV: { owedToPerson: "where words sit in their box: no control" },
+  spaceBefore: { owedToPerson: "space before a paragraph: no control" },
+  spaceAfter: { owedToPerson: "space after a paragraph: no control" },
+  blur: { owedToPerson: "a layer blur: the effects panel offers only named shadows" },
   colors: { person: ["panel:theme-colors"] },
   fonts: { person: ["panel:theme-fonts"] },
   nameFollows: { person: ["strip:deck-name"] },
 }
 
-const owedToPerson = ["align", "layout", "gap", "padding", "chart", "rows"]
+const owedToPerson = [
+  "align",
+  "layout",
+  "gap",
+  "padding",
+  "chart",
+  "rows",
+  "skipped",
+  "transition",
+  "alignV",
+  "spaceBefore",
+  "spaceAfter",
+  "blur",
+]
 
 const structural = new Set([
   "op",

@@ -132,6 +132,12 @@ export const sample: Readonly<Record<string, unknown>> = {
   rotation: 15,
   flip: "h",
   notes: "Say why",
+  skipped: true,
+  transition: { kind: "fade", ms: 400 },
+  alignV: "bottom",
+  spaceBefore: 12,
+  spaceAfter: 8,
+  blur: 8,
 }
 
 export const reach: Readonly<Record<string, Entry>> = {

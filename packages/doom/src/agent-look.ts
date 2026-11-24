@@ -22,7 +22,7 @@ import {
 import type { Theme } from "./theme.js"
 import type { Box } from "./doom-walk.js"
 import { zeroBox } from "./doom-walk.js"
-import type { Span, Text, TextStyleName } from "./text.js"
+import type { Para, Span, Text, TextStyleName } from "./text.js"
 import { type TextPatch, lookWrite, paraWrite, styleWrite } from "./text-writes.js"
 
 export type Now = {
@@ -116,6 +116,28 @@ function writtenEffects(look: AgentLook, held: Now["effects"], theme: Theme | un
   return theme.effectStyles[name].map((effect) => ("color" in effect ? { ...effect, opacity } : effect))
 }
 
+const listed = (
+  effects: readonly Effect[] | EffectStyleName | undefined,
+  theme: Theme | undefined,
+): readonly Effect[] => {
+  if (effects === undefined) return []
+  return typeof effects === "string" ? (theme === undefined ? [] : theme.effectStyles[effects]) : effects
+}
+
+export function effectsOf(
+  look: AgentLook,
+  now: Now["effects"],
+  theme?: Theme,
+): readonly Effect[] | EffectStyleName | undefined {
+  const written = writtenEffects(look, now, theme)
+  if (look.blur === undefined) return written
+  const base = written !== undefined ? written : now
+  const list = listed(base, theme)
+  if (look.blur === 0 && !list.some((effect) => effect.kind === "layerBlur")) return base === undefined ? [] : base
+  const kept = list.filter((effect) => effect.kind !== "layerBlur")
+  return look.blur === 0 ? kept : [...kept, { kind: "layerBlur", radius: look.blur }]
+}
+
 export function surfaceOf(
   look: AgentLook,
   now: Now = {},
@@ -130,7 +152,7 @@ export function surfaceOf(
   const fitting = look.fit !== undefined || look.crop !== undefined
   const painted = !fitting || fills === undefined ? fills : fitted(fills, look)
   const dash = look.dash === undefined ? {} : { dash: look.dash }
-  const effects = writtenEffects(look, now.effects, theme)
+  const effects = effectsOf(look, now.effects, theme)
   return {
     ...(look.fill === undefined && !fitting ? {} : { fills: painted ?? [] }),
     ...(look.stroke === undefined ? {} : { strokes: look.stroke === "none" ? [] : [solid(look.stroke)] }),
@@ -220,6 +242,9 @@ const textKeys = [
   "case",
   "underline",
   "strike",
+  "alignV",
+  "spaceBefore",
+  "spaceAfter",
 ] as const
 
 function same<K extends keyof Span>(text: Text, key: K): Span[K] | undefined {
@@ -278,5 +303,11 @@ export function textOfLook(look: AgentLook, now: Text | undefined, fallback: Tex
   const patch = { ...(keeping ? keptLook(now) : {}), ...askedLook(look) }
   if (Object.keys(patch).length > 0) text = lookWrite(text, patch)
   const lineHeight = look.lineHeight ?? (keeping ? keptLineHeight(now) : undefined)
-  return lineHeight === undefined ? text : paraWrite(text, { lineHeight })
+  const para: Para = {
+    ...(lineHeight === undefined ? {} : { lineHeight }),
+    ...(look.spaceBefore === undefined ? {} : { spaceBefore: look.spaceBefore }),
+    ...(look.spaceAfter === undefined ? {} : { spaceAfter: look.spaceAfter }),
+  }
+  if (Object.keys(para).length > 0) text = paraWrite(text, para)
+  return look.alignV === undefined ? text : { ...text, alignV: look.alignV }
 }

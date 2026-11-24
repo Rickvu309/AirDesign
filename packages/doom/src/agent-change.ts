@@ -6,6 +6,7 @@ import { type AgentItem, itemSchema, readItem } from "./agent-item.js"
 import { linkField } from "./agent-link.js"
 import { limits } from "./limits.js"
 import { type Field, choice, field, flag, number, string } from "./agent-fields.js"
+import { type SlideLook, slideLookFields } from "./agent-slide-look.js"
 import { type NodeId, readNodeId } from "./ids.js"
 import {
   type ColorVar,
@@ -110,7 +111,8 @@ export type AgentLook = {
   readonly rotation?: number
   readonly flip?: "none" | "h" | "v" | "hv"
   readonly notes?: string
-}
+} & SlideLook
+
 export type DeckLook = {
   readonly name?: string
   readonly nameFollows?: boolean
@@ -336,6 +338,7 @@ const lookFields: LookFields = {
   rotation: field<number>({ type: "number", description: "Degrees clockwise. Wraps past a full turn." }, readRotation),
   flip: choice(["none", "h", "v", "hv"], "Mirror across, down, or both."),
   notes: field({ type: "string", description: "Presenter notes." }, words(limits.valueBytes)),
+  ...slideLookFields,
 }
 
 const lookKeys = Object.keys(lookFields) as (keyof AgentLook)[]

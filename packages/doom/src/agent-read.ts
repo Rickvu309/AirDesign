@@ -8,7 +8,7 @@ import { cropSides } from "./picture-crop.js"
 import type { Node, Doom } from "./doom.js"
 import { type Box, childrenOf, isLaidOut, isLive, parentOf, propOf, slidesOf } from "./doom-walk.js"
 import { textToMarkdown } from "./markdown.js"
-import type { Span, Text } from "./text.js"
+import type { Para, Span, Text } from "./text.js"
 
 const quoted = (words: string) => JSON.stringify(words)
 const num = (value: number) => String(Number(value.toFixed(1)))
@@ -115,8 +115,12 @@ function looksOf(node: Node): readonly string[] {
     out.push(`dash=${stroke.dash}`)
   if (radius !== undefined && radius !== 0)
     out.push(`radius=${typeof radius === "number" ? num(radius) : radius.map(num).join(",")}`)
-  if (effects !== undefined && (typeof effects === "string" || effects.length > 0))
-    out.push(`effect=${typeof effects === "string" ? effects : "custom"}`)
+  if (typeof effects === "string") out.push(`effect=${effects}`)
+  else if (effects !== undefined && effects.length > 0) {
+    const blur = effects.find((effect) => effect.kind === "layerBlur")
+    if (effects.some((effect) => effect.kind !== "layerBlur")) out.push("effect=custom")
+    if (blur !== undefined && "radius" in blur) out.push(`blur=${num(blur.radius)}`)
+  }
   if (opacity !== undefined && opacity !== 1) out.push(`opacity=${num(opacity)}`)
   if (propOf(node, "hidden") === true) out.push("hidden")
   if (propOf(node, "locked") === true) out.push("locked")
@@ -129,6 +133,11 @@ function looksOf(node: Node): readonly string[] {
     const color = uniformColor(text)
     if (color !== undefined && colorWords(color) !== "text") out.push(`color=${colorWords(color)}`)
     out.push(...overrideWords(text))
+    if (text.alignV !== "top") out.push(`alignV=${text.alignV}`)
+    const before = uniformPara(text, "spaceBefore")
+    const after = uniformPara(text, "spaceAfter")
+    if (before !== undefined && before !== 0) out.push(`spaceBefore=${num(before)}`)
+    if (after !== undefined && after !== 0) out.push(`spaceAfter=${num(after)}`)
   }
   if (geometry?.kind === "ellipse") out.push("shape=ellipse")
   if (geometry?.kind === "preset") out.push(`shape=${geometry.name}`)
@@ -157,6 +166,11 @@ function lineWords(line: Extract<Geometry, { kind: "line" }>): readonly string[]
     ...shownArrow("startArrow", line.arrows[0]),
     ...shownArrow("arrow", line.arrows[1]),
   ]
+}
+
+function uniformPara<K extends keyof Para>(text: Text, key: K): Para[K] | undefined {
+  const first = text.paras[0]?.[key]
+  return text.paras.every((para) => para[key] === first) ? first : undefined
 }
 
 function overrideWords(text: Text): readonly string[] {
@@ -196,11 +210,14 @@ function slideLine(node: Node): string {
   const name = propOf(node, "name")
   const fills = propOf(node, "fills")
   const notes = propOf(node, "notes")
+  const transition = propOf(node, "transition")
   return [
     "slide",
     node.id,
     ...(name === undefined ? [] : [quoted(name)]),
     ...(propOf(node, "hidden") === true ? ["hidden"] : []),
+    ...(propOf(node, "skipped") === true ? ["skipped"] : []),
+    ...(transition === undefined ? [] : [`transition=${transition.kind}/${String(transition.ms)}`]),
     ...(fills !== undefined && fills.length > 0 ? [`fill=${paintWords(fills)}`] : []),
     ...(notes === undefined || notes.chars === "" ? [] : [`notes=${quoted(notes.chars)}`]),
   ].join(" ")
