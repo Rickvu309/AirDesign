@@ -42,18 +42,18 @@ test("Mod+[ and Mod+] move the chosen slide one place later, and a reload keeps 
   await expect(entry(page, 3)).toHaveAttribute("aria-current", "true")
 
   await page.keyboard.press("ControlOrMeta+BracketRight")
-  expect(await savedSlides(stack, opened)).toEqual([second, third, first])
-
   await page.keyboard.press("Alt+ArrowUp")
-  expect(await savedSlides(stack, opened)).toEqual([second, third, first])
+  await page.keyboard.press("ControlOrMeta+BracketLeft")
+  await expect.poll(() => savedSlides(stack, opened)).toEqual([second, first, third])
+  await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
 
   await page.keyboard.press("ControlOrMeta+z")
-  await expect.poll(() => savedSlides(stack, opened)).toEqual([second, first, third])
+  await expect.poll(() => savedSlides(stack, opened)).toEqual([second, third, first])
 
   await page.reload()
   await page.locator("[data-editor-ready]").waitFor()
   await expect(entries(page)).toHaveCount(3)
-  expect(await savedSlides(stack, opened)).toEqual([second, first, third])
+  expect(await savedSlides(stack, opened)).toEqual([second, third, first])
 })
 
 test("the Menu key and Shift+F10 open the slide menu on the focused slide, which moves it and closes on Escape", async ({
