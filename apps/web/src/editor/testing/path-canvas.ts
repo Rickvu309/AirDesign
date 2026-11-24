@@ -50,7 +50,10 @@ export function stubPathCanvas(): void {
   vi.stubGlobal(
     "Path2D",
     class {
-      constructor(readonly d: string) {}
+      d: string
+      constructor(d: string) {
+        this.d = d
+      }
     },
   )
   vi.stubGlobal("document", {

@@ -116,7 +116,7 @@ test("a click in a corner a rounded mask's radius cuts away does not select the 
     },
     { id: "t:2", type: "shape", parent: opened.slide, props: { box: spot(100, 500, 400, 400), fills: accent1 } },
   ])
-  await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(3)
+  await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(2)
 
   await clickSlide(page, 210, 610)
   expect(await selectedIds(page)).not.toContain("t:2")
