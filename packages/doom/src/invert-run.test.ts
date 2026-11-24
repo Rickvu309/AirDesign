@@ -221,6 +221,36 @@ describe("undoing a run, edit by edit from the values each write replaced", () =
     expect(undoRun(world, "a")).toMatchObject({ left: [ids.caption], waiting: [ids.title] })
   })
 
+  it("puts back the size and flip a run gave a layer it moved, and keeps its line end,, though the frame it came from was deleted since", () => {
+    const line = nodeId("t:10")
+    const lineOf = (start: unknown) => ({
+      kind: "line",
+      start,
+      end: { x: 10, y: 10 },
+      route: "straight",
+      arrows: ["none", "none"],
+    })
+    let world = by(
+      opened(),
+      person,
+      create(line, "shape", ids.card, { node: line, prop: "geometry", value: lineOf({ node: ids.title, site: "r" }) }),
+    )
+    world = run(world, runA, [
+      { node: ids.title, prop: "parent", value: place(ids.side) },
+      { node: ids.title, prop: "box", value: { ...box(30, 40, 300, 150), flipH: true } },
+      { node: line, prop: "parent", value: place(ids.side) },
+      { node: line, prop: "geometry", value: lineOf({ x: 230, y: 90 }) },
+    ])
+    world = by(world, person, [{ node: ids.card, prop: "parent", value: null }])
+    expect(undoRun(world, "a").left).toEqual([ids.title, line])
+    const { world: after } = undo(world)
+    expect(nodeOf(after, ids.title)).toMatchObject({ parent: { id: ids.side }, box: box(30, 40) })
+    expect(nodeOf(after, line)).toMatchObject({
+      parent: { id: ids.side },
+      geometry: lineOf({ x: 230, y: 90 }),
+    })
+  })
+
   it("takes back the whole run when nobody else touched it, and a second undo finds nothing", () => {
     const made = nodeId("a:1")
     let world = run(opened(), runA, create(made, "shape", ids.slide, { node: made, prop: "box", value: box(10) }))

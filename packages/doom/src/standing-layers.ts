@@ -1,6 +1,9 @@
 import { sameValue } from "./changing-writes.js"
 import type { Doom, Write } from "./doom.js"
+import { propOf, zeroBox } from "./doom-walk.js"
+import type { Geometry } from "./geometry.js"
 import type { NodeId, Rev } from "./ids.js"
+import type { Box } from "./resolved.js"
 
 const parentIn = (doom: Doom, node: NodeId) =>
   (doom.nodes.get(node) as { parent?: { readonly id: NodeId } | null } | undefined)?.parent
@@ -71,22 +74,17 @@ function heldFrames(
   return held
 }
 
-const measuredInFrame = { box: ["x", "y", "rotation", "flipH", "flipV"], geometry: ["start", "end"] } as const
-const placedInFrame = { box: ["x", "y", "rotation"], geometry: ["start", "end"] } as const
+function boxLeftInPlace(now: Doom, write: Write): Write | undefined {
+  const here = propOf(now.nodes.get(write.node), "box") ?? zeroBox
+  const value = { ...((write.value as Box | null) ?? zeroBox), x: here.x, y: here.y, rotation: here.rotation }
+  return sameValue(value, here) ? undefined : { ...write, value }
+}
 
-function leftInPlace(
-  now: Doom,
-  write: Write,
-  measured: typeof measuredInFrame | typeof placedInFrame,
-): Write | undefined {
-  if (write.prop !== "box" && write.prop !== "geometry") return write
-  const here = (now.nodes.get(write.node) as Record<string, unknown> | undefined)?.[write.prop] as
-    | Record<string, unknown>
-    | undefined
-  const was = write.value as Record<string, unknown> | null
-  if (here === undefined || was === null) return undefined
-  if (write.prop === "geometry" && (here.kind !== "line" || was.kind !== "line")) return write
-  const value = { ...was, ...Object.fromEntries(measured[write.prop].map((key) => [key, here[key]])) }
+function lineLeftInPlace(now: Doom, write: Write): Write | undefined {
+  const here = propOf(now.nodes.get(write.node), "geometry")
+  const was = write.value as Geometry | null
+  if (here?.kind !== "line" || was?.kind !== "line") return write
+  const value = { ...was, start: here.start, end: here.end }
   return sameValue(value, here) ? undefined : { ...write, value }
 }
 
@@ -112,9 +110,10 @@ export function onStandingLayers(
     if (each.prop === "parent") return (each.value === null ? !held.has(each.node) : lands.has(each.node)) ? [each] : []
     if (lands.has(each.node)) return [each]
     if (parentIn(now, each.node) === null) return []
-    if (moves.has(each.node)) return leftInPlace(now, each, measuredInFrame) ?? []
-    if (!wroteParent.has(each.node) && strayedFrom(now, each.node, measuredIn, since))
-      return leftInPlace(now, each, placedInFrame) ?? []
+    const left = moves.has(each.node) || (!wroteParent.has(each.node) && strayedFrom(now, each.node, measuredIn, since))
+    if (!left) return [each]
+    if (each.prop === "box") return boxLeftInPlace(now, each) ?? []
+    if (each.prop === "geometry") return lineLeftInPlace(now, each) ?? []
     return [each]
   })
 }

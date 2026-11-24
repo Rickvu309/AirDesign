@@ -15,9 +15,9 @@
     },
     {
       "file": "packages/doom/src/standing-layers.ts",
-      "names": ["onStandingLayers", "landingMoves", "shows", "heldFrames", "leftInPlace"],
-      "digest": "cea4c28b3ba3",
-      "blob": "152f1349b672f8b05fefe748650d71d62d0ecef5"
+      "names": ["onStandingLayers", "landingMoves", "shows", "heldFrames", "boxLeftInPlace", "lineLeftInPlace"],
+      "digest": "336428e55de7",
+      "blob": "83e9701c500bd89682885878ac8b0e7cbe8fa376"
     },
     {
       "file": "packages/doom/src/changing-writes.ts",
