@@ -3,7 +3,7 @@ import { chosenSlides, choiceProblem, firstChoice, problemOn } from "./export-ch
 
 describe("export choice", () => {
   it("starts on PDF with every slide and the whole deck as the range", () => {
-    expect(firstChoice(12)).toEqual({ format: "pdf", slides: "all", from: "1", to: "12" })
+    expect(firstChoice(12)).toEqual({ slides: "all", from: "1", to: "12" })
   })
 
   it("chooses every slide in deck order", () => {

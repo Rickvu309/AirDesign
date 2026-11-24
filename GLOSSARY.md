@@ -6,11 +6,11 @@ The words for how a change is checked, measured, proven and named are in [check-
 
 ## Product words
 
-The words a person reads in AirDesign. Code may keep its own names; the screen uses these. Every button, title and menu item is in sentence case, except the names Trash, PowerPoint, Aira and AirDesign. Copy speaks to the person as "you", never "we".
+The words a person reads in AirDesign. Code may keep its own names; the screen uses these. Every button, title and menu item is in sentence case, except the names Trash, Aira and AirDesign. Copy speaks to the person as "you", never "we".
 
 **deck**:
-One presentation a person makes, imports or exports.
-_Avoid_: presentation, project, file (a file is what a deck is imported from or exported to)
+A presentation a person or agent makes in AirDesign.
+_Avoid_: presentation, project, file (the PDF you get when you export a deck)
 
 **slide**:
 One page of a deck.
@@ -21,7 +21,7 @@ One thing on a slide: a shape, text, an image, a line or a group. The code and t
 _Avoid_: element, object, item
 
 **text**:
-A layer that holds only text, as a person adds it with Add text. The design panel's Text box section is PowerPoint's: how text sits in its shape.
+A layer that holds only text, as a person adds it with Add text. The design panel's Text box section controls how the text sits in its shape.
 _Avoid_: text box (as a layer's name)
 
 **image**:
@@ -33,7 +33,7 @@ A fill of one color, the fill kind beside None, Gradient and Image. Its Color ro
 _Avoid_: color (as a fill kind)
 
 **ellipse**, **star**:
-The shape names Figma's shape tool uses. A PowerPoint shape Figma does not have keeps its PowerPoint name, such as Chevron or Cloud. The code still says `ellipse` and `star5`.
+The shape names Figma's shape tool uses. Other shapes use familiar names such as Chevron and Cloud. The code still says `ellipse` and `star5`.
 _Avoid_: oval, five-point star
 
 **slide group**:
@@ -81,7 +81,7 @@ What a design panel control shows when selected layers hold different values. Ch
 _Avoid_: multiple, varies
 
 **inherited**:
-A value painted from a layer's layout, master, template style or PowerPoint's default. It uses quiet ink in the design panel; a value set by a person or agent uses full ink. Reset returns the inherited value.
+A value painted from a layer's layout, master, template style or the editor's default. It uses quiet ink in the design panel; a value set by a person or agent uses full ink. Reset returns the inherited value.
 _Avoid_: default, placeholder value, unset
 
 **scrub**:
@@ -99,7 +99,7 @@ A paragraph’s one choice of No list, Bulleted list or Numbered list. The code 
 _Avoid_: bullets (as the name of the choice)
 
 **line height**:
-The distance from one line of text to the next, in percent of PowerPoint's single line: `text.lineHeight`. A deck or an agent that still says `lineSpacing` is read as line height.
+The distance from one line of text to the next, as a percentage of the font's default line spacing: `text.lineHeight`. A deck or an agent that still says `lineSpacing` is read as line height.
 _Avoid_: line spacing
 
 **template style**:
@@ -115,7 +115,7 @@ The heading font and the body font of a template style, stored as `major` and `m
 _Avoid_: theme fonts
 
 **color picker**:
-Where a person picks any color a field takes: a fill, border, effect, text, gradient stop, background or template color. The menu is titled with that property. Template colors are shown without names; the closed row names a template color and shows a hex for any other color. Others in this deck starts with Add color, then the RGB colors already in the deck, and shows more when there are many. Add color opens a picker with a color area, hue, opacity, a hex field and the screen's eyedropper. PowerPoint's lighter and darker tints are in that picker under Tints, stored as the template color with `lumMod` and `lumOff`, so a tint follows a template style change. The menu keeps twelve template colors. A shape stores an added color as hex. An agent sends the same colors as words, such as `accent1 lumMod 60 lumOff 40` or `#1F4E79`.
+Where a person picks any color a field takes: a fill, border, effect, text, gradient stop, background or template color. The menu is titled with that property. Template colors are shown without names; the closed row names a template color and shows a hex for any other color. Others in this deck starts with Add color, then the RGB colors already in the deck, and shows more when there are many. Add color opens a picker with a color area, hue, opacity, a hex field and the screen's eyedropper. Lighter and darker tints are in that picker under Tints, stored as the template color with `lumMod` and `lumOff`, so a tint follows a template style change. The menu keeps twelve template colors. A shape stores an added color as hex. An agent sends the same colors as words, such as `accent1 lumMod 60 lumOff 40` or `#1F4E79`.
 _Avoid_: palette, swatches, color menu
 
 **icon**:

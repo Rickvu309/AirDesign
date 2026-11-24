@@ -7,7 +7,7 @@ export type ElsewhereRefusal = "layout" | "carried"
 export const elementCopy = {
   removeRefusedTitle: "Unable to delete this layer",
   removeRefusedBody: {
-    animated: "It has an animation in the PowerPoint file, and the exported file can't lose it.",
+    animated: "AirDesign can't remove this layer because it has an animation.",
     group: "It is inside a group, and AirDesign can't delete one layer of a group yet.",
   },
   copyRefusedTitle: "Unable to duplicate this layer",

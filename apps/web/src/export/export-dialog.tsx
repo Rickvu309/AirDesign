@@ -4,7 +4,7 @@ import { Dialog, DialogClose, DialogOverlay, DialogPopup, DialogPortal, DialogTi
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { choiceProblem, problemOn, type ExportChoice, type SlideChoice } from "@/export/export-choice"
 import { exportCopy } from "@/copy/export-copy"
-import { formatNames, slideNames, type ExportFormat } from "@/export/export-options"
+import { slideNames } from "@/export/export-options"
 
 const fieldEdge = "shadow-[0_0_0_1px_var(--field-edge)]"
 const fieldText = "text-[length:var(--type-dense)] leading-[17px] text-foreground"
@@ -136,7 +136,6 @@ export function ExportDialog({
   onClose?: () => void
   finalFocus?: RefObject<HTMLElement | null>
 }) {
-  const fileTypeId = useId()
   const slidesId = useId()
   const rangeId = useId()
   const problemId = useId()
@@ -176,15 +175,6 @@ export function ExportDialog({
               </DialogClose>
             </div>
             <div className="flex flex-col gap-3 px-5 py-5">
-              <OptionRow label={exportCopy.fileType} labelId={fileTypeId}>
-                <OptionSelect<ExportFormat>
-                  labelId={fileTypeId}
-                  value={choice.format}
-                  names={formatNames}
-                  disabled={exporting}
-                  onValue={(format) => onChoice({ ...choice, format })}
-                />
-              </OptionRow>
               <OptionRow label={exportCopy.slides} labelId={slidesId}>
                 <OptionSelect<SlideChoice>
                   labelId={slidesId}
