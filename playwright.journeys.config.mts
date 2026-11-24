@@ -1,5 +1,8 @@
+import { requirePinnedNode } from "./scripts/node-version.mjs"
 import { defineConfig, type ReporterDescription } from "@playwright/test"
 import { journeyGrep } from "./tests/journeys/journey-shards.mjs"
+
+requirePinnedNode()
 
 const reporter: ReporterDescription[] = [["line"], ["./tests/journeys/journey-timings.mjs"]]
 if (process.env.JOURNEYS_REPORT) reporter.push(["json", { outputFile: process.env.JOURNEYS_REPORT }])

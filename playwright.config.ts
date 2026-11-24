@@ -1,7 +1,10 @@
+import { requirePinnedNode } from "./scripts/node-version.mjs"
 import { availableParallelism } from "node:os"
 import { defineConfig } from "@playwright/test"
 import { onCi, workerLimit, workerOverrideName } from "./tests/browser-workers.ts"
 import { previewOrigin, previewPortPattern, startingPort } from "./tests/browser/preview-port.ts"
+
+requirePinnedNode()
 
 const start = startingPort(process.cwd(), process.env)
 const workers = workerLimit({

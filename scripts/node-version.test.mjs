@@ -1,5 +1,7 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
+import fs from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
@@ -27,3 +29,17 @@ test("requirePinnedNode exits 1 with the fix on another major", () => {
   assert.equal(result.status, 1)
   assert.match(result.stderr, /nvm use 24/)
 })
+
+for (const pin of ["24", "24.22.3", "v24.22.3", "v24", " v24.22.3\n"]) {
+  test(`the pin ${JSON.stringify(pin)} reads as major 24`, () => {
+    const folder = fs.mkdtempSync(path.join(os.tmpdir(), "node-pin-"))
+    fs.writeFileSync(path.join(folder, ".node-version"), pin)
+    assert.equal(pinnedMajor(folder), "24")
+  })
+}
+
+for (const config of ["playwright.config.ts", "playwright.journeys.config.mts", "playwright.production.config.ts"]) {
+  test(`${config} calls requirePinnedNode`, () => {
+    assert.match(fs.readFileSync(path.join(root, config), "utf8"), /^requirePinnedNode\(\)$/m)
+  })
+}

@@ -1,11 +1,15 @@
 import fs from "node:fs"
 import path from "node:path"
-import { fileURLToPath } from "node:url"
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+const pinFolder = (from = process.cwd()) => {
+  for (let folder = path.resolve(from); ; folder = path.dirname(folder)) {
+    if (fs.existsSync(path.join(folder, ".node-version"))) return folder
+    if (path.dirname(folder) === folder) throw new Error(`No .node-version above ${from}`)
+  }
+}
 
-export const pinnedMajor = (folder = root) =>
-  fs.readFileSync(path.join(folder, ".node-version"), "utf8").trim().split(".")[0]
+export const pinnedMajor = (folder = pinFolder()) =>
+  fs.readFileSync(path.join(folder, ".node-version"), "utf8").trim().replace(/^v/, "").split(".")[0]
 
 export const nodeMismatch = (running, pinned) => {
   const major = running.replace(/^v/, "").split(".")[0]
