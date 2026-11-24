@@ -7,7 +7,7 @@
   "fault-detection": { "now": 10, "goal": 10, "better": "higher" },
   "import-parse": { "now": 115, "goal": 100, "better": "lower" },
   "eval-coverage": { "now": 47, "goal": 47, "better": "higher" },
-  "design-findings": { "now": 24, "goal": 0, "better": "lower" },
+  "design-findings": { "now": 5, "goal": 0, "better": "lower" },
   "paint-fidelity": { "now": 0, "goal": 85, "better": "higher" },
   "check-duration": { "limit": 40 },
   "gate-duration": { "limit": 60 },
