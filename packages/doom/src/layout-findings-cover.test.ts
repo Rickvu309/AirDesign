@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { block, label, measure, plainTheme, spot } from "./doom-fixtures-art.js"
+import { block, label, measure, plainTheme, spot } from "./testing/doom-fixtures-art.js"
 import { type TreeNode, doomFromTree } from "./doom-tree.js"
 import type { Geometry } from "./geometry.js"
 import { layoutFindings } from "./layout-findings.js"
