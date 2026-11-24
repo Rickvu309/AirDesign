@@ -10,9 +10,9 @@ async function drive(kit) {
   await titleSlides(kit, opened, ["Hello", "Second", "Third"])
   await entries(page).first().click()
   const helloAt = async () => (await entries(page).allTextContents()).findIndex((each) => each.includes("Hello")) + 1
-  await page.keyboard.press("Alt+ArrowDown")
+  await page.keyboard.press("ControlOrMeta+BracketRight")
   await expect.poll(helloAt).toBe(2)
-  await page.keyboard.press("Alt+ArrowDown")
+  await page.keyboard.press("ControlOrMeta+BracketRight")
   await expect.poll(helloAt).toBe(3)
 }
 
