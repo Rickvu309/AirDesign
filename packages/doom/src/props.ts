@@ -78,7 +78,6 @@ export type Props = {
   readonly chart: Chart
   readonly link: string | NodeId
   readonly role: "title" | "subtitle" | "body" | "number" | "footer"
-  readonly slideLayout: NodeId
   readonly notes: Text
   readonly transition: { readonly kind: "none" | "fade" | "push" | "smartMove"; readonly ms: number }
   readonly skipped: boolean
@@ -101,7 +100,7 @@ export type PropSpec<K extends PropName> = {
 export const accepts = {
   deck: ["type", "name", "theme", "size", "nameFollows"],
   slideRow: ["type", "parent", "name", "hidden"],
-  slide: ["type", "parent", "name", "hidden", "fills", "layout", "slideLayout", "notes", "transition", "skipped"],
+  slide: ["type", "parent", "name", "hidden", "fills", "layout", "notes", "transition", "skipped"],
   frame: [
     "type",
     "parent",
@@ -245,7 +244,6 @@ export const props: { readonly [K in PropName]: PropSpec<K> } = {
   chart: spec(readChart, "custom", "The data a chart frame draws.", "picture"),
   link: spec(readLink, "text", null, "native"),
   role: spec(literal(["title", "subtitle", "body", "number", "footer"]), "choice", null, "native"),
-  slideLayout: spec(readId, "none", null, "dropped"),
   notes: spec(readText, "text", "A slide's presenter notes.", "native", "base"),
   transition: spec(
     object({ kind: literal(["none", "fade", "push", "smartMove"]), ms: integer(0, 60_000) }),

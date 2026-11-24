@@ -38,9 +38,10 @@ it("puts a normal deck name on its own row, still able to ellipsize", async () =
   const title = "Annual strategy review"
   const markup = renderToStaticMarkup(<SidebarHead title={title} homeHref="/" onRename={() => undefined} />)
   expect(markup).not.toContain("minmax(0,1fr)")
-  const grid = markup.indexOf('aria-label="Grid"')
+  const home = markup.indexOf(`aria-label="${productCopy.goToDecks}"`)
   const name = markup.indexOf(`aria-label="Rename deck: ${title}"`)
-  expect(grid).toBeGreaterThan(-1)
-  expect(name).toBeGreaterThan(grid)
+  expect(home).toBeGreaterThan(-1)
+  expect(name).toBeGreaterThan(home)
+  expect(markup).not.toContain('aria-label="Grid"')
   expect(markup).toContain("truncate")
 })

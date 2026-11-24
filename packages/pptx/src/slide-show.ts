@@ -2,11 +2,8 @@ import { spliceBytes, type MarkupElement } from "./element-span.js"
 import { attributeEdit } from "./markup-attribute.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { whole, type TraitXml } from "./xml-codec.js"
-import { type PlayedTransition } from "./transition-read.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
-
-export type SlideTransition = PlayedTransition
 
 function attr(element: MarkupElement, name: string): string | undefined {
   return element.attributes.find((attribute) => attribute.name === name)?.value

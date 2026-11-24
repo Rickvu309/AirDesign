@@ -1,5 +1,6 @@
 import { expect, it } from "vitest"
-import { deckLayouts, readPackage } from "./index.js"
+import { readPackage } from "./index.js"
+import { deckLayouts } from "./deck-layouts.js"
 
 declare const process: {
   cwd(): string

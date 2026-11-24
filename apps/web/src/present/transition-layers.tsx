@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react"
-import type { SlideTransition } from "@airdesign/pptx"
+import type { Props } from "@airdesign/doom"
 import type { SlideSize } from "@/editing/canvas-zoom"
 import type { SlidePaint } from "@/present/present-stage"
 import { morphLayers } from "@/present/morph-layers"
@@ -58,7 +58,7 @@ export function TransitionLayers({
   width: number
   size: SlideSize
   paint: SlidePaint
-  transitionOf: (index: number) => SlideTransition | null
+  transitionOf: (index: number) => Props["transition"] | null
   morphOf: (from: number, to: number) => LayerPairs
 }): ReactNode {
   const [shown, setShown] = useState(() => settled(at))
@@ -99,14 +99,13 @@ export function TransitionLayers({
         : () => undefined
     const entered = play(incoming.current, frames.incoming, frames.duration, frames.easing)
     const exited = play(outgoing.current, frames.outgoing, frames.duration, frames.easing)
-    const lead = frames.incoming === null ? exited : entered
-    if (lead === null) {
+    if (entered === null) {
       settle()
       finish()
       return
     }
     let live = true
-    void lead.finished.then(
+    void entered.finished.then(
       () => {
         if (live) finish()
       },
@@ -114,7 +113,7 @@ export function TransitionLayers({
     )
     return () => {
       live = false
-      entered?.cancel()
+      entered.cancel()
       exited?.cancel()
       settle()
     }
@@ -135,12 +134,7 @@ export function TransitionLayers({
             {paint(index, width)}
           </div>
         ) : (
-          <div
-            key={index}
-            ref={outgoing}
-            className={moving?.frames.outgoingOnTop === true ? "absolute inset-0 z-10" : "absolute inset-0"}
-            data-present-leaving={index + 1}
-          >
+          <div key={index} ref={outgoing} className="absolute inset-0" data-present-leaving={index + 1}>
             {paint(index, width)}
           </div>
         ),

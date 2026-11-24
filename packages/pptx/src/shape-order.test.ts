@@ -10,7 +10,9 @@ import {
   type SlideCommand,
 } from "@airdesign/document"
 import { expect, it } from "vitest"
-import { freeShapeId, indexPackage, orderedParts, paintReader, readParts, readShapes } from "./index.js"
+import { indexPackage, orderedParts, readParts, readShapes } from "./index.js"
+import { freeShapeId } from "./shape-id.js"
+import { paintReader } from "./paint-reader.js"
 import { applyStructuralRoute } from "./structural-route.js"
 
 const { readFileSync } = process.getBuiltinModule("node:fs")

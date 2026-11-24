@@ -5,14 +5,6 @@ import { pushSide, sideOf, speedDuration, type Side } from "./transition-map.js"
 
 export type Arrival = { readonly state: "value"; readonly value: TransitionValue } | { readonly state: "kept" }
 
-export type PlayedKind = "fade" | "push" | "wipe" | "cover" | "pull" | "morph"
-
-export type PlayedTransition = {
-  readonly kind: PlayedKind
-  readonly direction: string | null
-  readonly duration: number
-}
-
 type Advance = { readonly click: true } | { readonly delay: number }
 
 const clicked: Advance = { click: true }

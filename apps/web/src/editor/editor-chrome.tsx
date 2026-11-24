@@ -1,5 +1,4 @@
 import type { ReactNode } from "react"
-import { Button } from "@/components/ui/button"
 import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { DeckTitleEdit } from "@/editor/deck-title-edit"
 import { SaveStatusLine } from "@/editor/save-status"
@@ -44,18 +43,12 @@ export function PanelHead({ children }: { children: ReactNode }) {
 
 export function SidebarHead({
   title,
-  trailing,
-  gridOff = false,
-  onGrid,
   onRename,
   onTrash,
   homeHref,
   save = null,
 }: {
   title: string
-  trailing?: ReactNode
-  gridOff?: boolean
-  onGrid?: () => void
   onTrash?: () => void
   onRename?: (name: string) => void
   homeHref?: string
@@ -74,20 +67,6 @@ export function SidebarHead({
           >
             <AirdesignMark size={20} />
           </a>
-        )}
-        {trailing ?? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8 rounded-md text-quiet active:translate-y-0"
-            aria-label="Grid"
-            data-keeps-selection
-            disabled={gridOff}
-            {...(onGrid === undefined ? {} : { onClick: onGrid, "aria-pressed": false })}
-          >
-            <EditorIcon name="grid" size={16} />
-          </Button>
         )}
       </div>
       <div className="flex w-full min-w-0">

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 import { fontsFor } from "@airdesign/render"
-import { SlidersVertical } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -13,7 +12,6 @@ import {
 import { designCopy } from "@/copy/design-copy"
 import { textCopy } from "@/copy/text-copy"
 import type { ControlProps } from "@/design/panel"
-import { useTextStyleEdit } from "@/design/text-style-edit"
 import { cn } from "@/lib/class-names"
 
 export function TypographyControl({ control, onChange }: ControlProps) {
@@ -33,7 +31,6 @@ export function TypographyControl({ control, onChange }: ControlProps) {
     }
   }, [key, loader, ready])
   const chosen = control.choices?.find((choice) => choice.value === control.value)
-  const edit = useTextStyleEdit()
   return (
     <div data-fonts-pending={!ready && loaded !== key ? "" : undefined}>
       <Select
@@ -61,31 +58,10 @@ export function TypographyControl({ control, onChange }: ControlProps) {
           <SelectGroup>
             <SelectLabel>{textCopy.styles}</SelectLabel>
             {control.choices?.map((choice) => (
-              <div key={choice.value} className="relative">
-                <SelectItem
-                  value={choice.value}
-                  style={choice.appearance}
-                  title={choice.label}
-                  className={edit !== null && choice.value === chosen?.value ? "pr-14" : undefined}
-                >
-                  <span className="min-w-0 truncate">{choice.label}</span>
-                  {choice.detail === undefined ? null : <span className="shrink-0">{` · ${choice.detail}`}</span>}
-                </SelectItem>
-                {edit !== null && choice.value === chosen?.value ? (
-                  <button
-                    type="button"
-                    aria-label={designCopy.editTextStyle}
-                    className="absolute top-1/2 right-7 z-10 flex size-6 -translate-y-1/2 items-center justify-center"
-                    onPointerDown={(event) => {
-                      event.preventDefault()
-                      event.stopPropagation()
-                      edit(choice.value)
-                    }}
-                  >
-                    <SlidersVertical className="size-3.5" />
-                  </button>
-                ) : null}
-              </div>
+              <SelectItem key={choice.value} value={choice.value} style={choice.appearance} title={choice.label}>
+                <span className="min-w-0 truncate">{choice.label}</span>
+                {choice.detail === undefined ? null : <span className="shrink-0">{` · ${choice.detail}`}</span>}
+              </SelectItem>
             ))}
           </SelectGroup>
         </SelectContent>

@@ -2,7 +2,8 @@ declare const process: { cwd(): string; getBuiltinModule(name: "node:fs"): { rea
 import { elementId, slideId } from "@airdesign/document"
 import { orderKeyBetween } from "@airdesign/doom"
 import { expect, it } from "vitest"
-import { applyRoute, freeShapeId, orderedParts, readParts, readShapes } from "./index.js"
+import { applyRoute, orderedParts, readParts, readShapes } from "./index.js"
+import { freeShapeId } from "./shape-id.js"
 
 const { readFileSync } = process.getBuiltinModule("node:fs")
 const id = slideId("256")

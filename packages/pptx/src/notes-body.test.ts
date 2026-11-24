@@ -1,16 +1,9 @@
 import { expect, it } from "vitest"
 import { slideId } from "@airdesign/document"
 import { orderKeyBetween } from "@airdesign/doom"
-import {
-  notesLinkFailures,
-  orderedParts,
-  readNotes,
-  readPackage,
-  sharedOwnedParts,
-  writeNotes,
-  routeRuns,
-  touchMatches,
-} from "./index.js"
+import { orderedParts, readPackage, sharedOwnedParts, routeRuns, touchMatches } from "./index.js"
+import { notesLinkFailures } from "./notes-links.js"
+import { readNotes, writeNotes } from "./notes-body.js"
 
 import { encodeUtf8 as encode, decodeUtf8 } from "./package-bytes.js"
 declare const process: {

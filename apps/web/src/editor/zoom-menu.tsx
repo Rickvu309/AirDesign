@@ -4,17 +4,8 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuRadioGroup, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { steppedZoom, typedZoom, zoomPresets, type Zoom } from "@/editing/canvas-zoom"
 import { EditorIcon } from "@/components/ui/editor-icons"
-import { guideCopy } from "@/copy/guide-copy"
-import {
-  EditorMenuAction,
-  EditorMenuCheck,
-  EditorMenuContent,
-  EditorMenuRow,
-  EditorMenuRule,
-} from "@/editor/editor-menu"
+import { EditorMenuAction, EditorMenuContent, EditorMenuRow, EditorMenuRule } from "@/editor/editor-menu"
 import { composing } from "@/lib/composing"
-
-export type ViewToggle = { readonly shown: boolean; readonly onChange: (shown: boolean) => void }
 
 const menuKeys = new Set(["ArrowDown", "ArrowUp", "Escape", "Tab"])
 
@@ -70,16 +61,12 @@ export function ZoomMenu({
   onZoom,
   onSelection,
   canvas,
-  rulers,
-  layoutGuides,
 }: {
   zoom: Zoom
   percent: number
   onZoom: (zoom: Zoom) => void
   onSelection?: () => void
   canvas?: RefObject<HTMLElement | null>
-  rulers?: ViewToggle
-  layoutGuides?: ViewToggle
 }) {
   const [open, setOpen] = useState(false)
   const typed = useRef(false)
@@ -178,27 +165,6 @@ export function ZoomMenu({
             />
           ))}
         </DropdownMenuRadioGroup>
-        {rulers === undefined ? null : (
-          <>
-            <EditorMenuRule />
-            <EditorMenuCheck
-              label={guideCopy.rulers}
-              checked={rulers.shown}
-              shortcut={guideCopy.rulersKey}
-              keys="Shift+R"
-              onChange={rulers.onChange}
-            />
-          </>
-        )}
-        {layoutGuides === undefined ? null : (
-          <EditorMenuCheck
-            label={guideCopy.layoutGuides}
-            checked={layoutGuides.shown}
-            shortcut={guideCopy.layoutGuidesKey}
-            keys="Shift+G Control+Shift+4"
-            onChange={layoutGuides.onChange}
-          />
-        )}
       </EditorMenuContent>
     </DropdownMenu>
   )
