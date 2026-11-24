@@ -14,7 +14,8 @@ export type Refusal = {
 }
 
 export function refuse(refused: Refusal["refused"], node?: NodeId, prop?: WriteKey): Refusal {
-  const found = takeRejection(refused)
+  const found = refused === "shape" || refused === "limit" ? takeRejection(refused) : undefined
+  if (refused !== "shape" && refused !== "limit") takeRejection("shape")
   const carried = node === undefined && prop === undefined ? found : undefined
   return {
     refused,
