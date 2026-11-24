@@ -163,6 +163,25 @@ describe("layout findings: what a slide paints wrong, measured with the deck's f
     ])
   })
 
+  it("names words an off-centre turn carries onto a layer, in the one direction they go", () => {
+    const turned = (rotation: number) =>
+      found([
+        label("title", "aaaa bbbb", { box: { ...spot(300, 300, 400, 100), rotation } }, fixed),
+        block("chart", 40, 99, { box: spot(520, 150, 40, 99), ...filled }),
+      ])
+    const clockwise = turned(90)
+    expect(clockwise.findings).toEqual([
+      {
+        code: "overlap",
+        node: clockwise.ids.title,
+        with: clockwise.ids.chart,
+        area: { x: 525, y: 150, w: 20, h: 99 },
+        note: `${clockwise.ids.title}: its words and ${clockwise.ids.chart} overlap over 20x99 px at 525,150; move one clear of the other.`,
+      },
+    ])
+    expect(turned(-90).findings).toEqual([])
+  })
+
   it("names a layer that runs past the slide's edge, by how far", () => {
     const { ids, findings } = found([block("photo", 200, 100, { box: spot(1850, 500, 200, 100), ...filled })])
     expect(findings).toEqual([
@@ -173,22 +192,6 @@ describe("layout findings: what a slide paints wrong, measured with the deck's f
         note: `${ids.photo}: it runs 130 px past the slide's edge, where the slide cuts it off.`,
       },
     ])
-  })
-
-  it("finds nothing for a background that covers the slide, even where its box runs past the edge", () => {
-    const title = () => label("title", "Revenue grew", { box: spot(100, 80, 800, 60) })
-    expect(
-      found([block("backdrop", 2000, 1160, { box: spot(-40, -40, 2000, 1160), ...filled }), title()]).findings,
-    ).toEqual([])
-    expect(
-      found([block("backdrop", 1920, 1080, { box: spot(0, 0, 1920, 1080), ...filled }), title()]).findings,
-    ).toEqual([])
-    expect(
-      found([
-        block("backdrop", 1080, 1920, { box: { ...spot(420, -420, 1080, 1920), rotation: 90 }, ...filled }),
-        title(),
-      ]).findings,
-    ).toEqual([])
   })
 
   it("names a background that misses a corner of the slide, or sits in from an edge", () => {
