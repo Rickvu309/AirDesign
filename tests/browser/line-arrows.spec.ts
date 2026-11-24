@@ -6,6 +6,12 @@ import { test } from "./api-stack"
 import { accent, clickSlide, landNodes, openEditor, spot } from "./editor-deck"
 import { panel, pick, reloadDesign, saved, undoOnStage } from "./editor-design"
 
+function borderWord(key: "arrow" | "triangle"): string {
+  const word = borderWords[key]
+  if (word === undefined) throw new Error(key)
+  return word
+}
+
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("a person sets a line's start and end arrowheads, and a rectangle has neither", async ({
@@ -46,10 +52,10 @@ test("a person sets a line's start and end arrowheads, and a rectangle has neith
   await pick(page, "t:1", 400, 300)
   const end = panel(page).getByRole("combobox", { name: borderCopy.tail, exact: true })
   const start = panel(page).getByRole("combobox", { name: borderCopy.head, exact: true })
-  await expect(end).toContainText(borderWords.arrow)
+  await expect(end).toContainText(borderWord("arrow"))
   await expect(start).toContainText(fillWords.none)
   await end.click()
-  await page.getByRole("option", { name: borderWords.triangle, exact: true }).click()
+  await page.getByRole("option", { name: borderWord("triangle"), exact: true }).click()
   await expect.poll(arrowsOf).toEqual(["none", "triangle"])
   await start.click()
   await page.getByRole("option", { name: fillWords.circle, exact: true }).click()
@@ -67,7 +73,7 @@ test("a person sets a line's start and end arrowheads, and a rectangle has neith
     fillWords.circle,
   )
   await expect(panel(page).getByRole("combobox", { name: borderCopy.tail, exact: true })).toContainText(
-    borderWords.triangle,
+    borderWord("triangle"),
   )
   await expect.poll(arrowsOf).toEqual(["circle", "triangle"])
 
