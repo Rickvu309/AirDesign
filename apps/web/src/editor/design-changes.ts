@@ -149,6 +149,19 @@ function strokeChange(context: ChangeContext, control: PanelControl, value: unkn
             return geometry?.kind === "line" ? { ...geometry, route: value } : undefined
           })
         : []
+    case "border.start":
+    case "border.end": {
+      const arrow =
+        value === "none" || value === "arrow" || value === "triangle" || value === "circle" ? value : undefined
+      if (arrow === undefined) return []
+      const atEnd = keyOf(control) === "border.end"
+      return setEach(context, "geometry", (id) => {
+        const geometry = propOf(context.view.nodes.get(id), "geometry")
+        if (geometry?.kind !== "line") return undefined
+        const [start, end] = geometry.arrows
+        return { ...geometry, arrows: atEnd ? [start, arrow] : [arrow, end] }
+      })
+    }
     case "border.color": {
       const color = doom.readColor(value)
       if (color === undefined) return []

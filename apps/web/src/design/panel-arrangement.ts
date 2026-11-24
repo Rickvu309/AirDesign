@@ -141,6 +141,8 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     ],
     [placed("color", above), placed("width", above)],
     [placed("route", above, { options: { straight: StraightLine, elbow: ElbowLine, curve: CurvedLine } })],
+    [placed("start", above, { form: "list" })],
+    [placed("end", above, { form: "list" })],
   ],
   shadow: [
     [

@@ -43,10 +43,7 @@ const seen: Readonly<Record<string, Seen>> = {
   gap: { declined: "One simple panel. Agents still set auto layout." },
   padding: { declined: "One simple panel. Agents still set auto layout." },
   icon: { person: ["actions:icon#swap"] },
-  arrow: {
-    owedToPerson: "an arrowhead on a line already drawn: lines have no end controls",
-    partly: ["gesture:tool-arrow"],
-  },
+  arrow: { person: ["gesture:tool-arrow", "panel:border.end"] },
   chart: {
     owedToPerson: "a series colour and a single bar's colour: the chart editor shows names and values only",
     partly: ["panel:chart-data"],
@@ -85,7 +82,7 @@ const seen: Readonly<Record<string, Seen>> = {
   nameFollows: { person: ["strip:deck-name"] },
 }
 
-const owedToPerson = ["align", "layout", "gap", "padding", "arrow", "chart", "rows"]
+const owedToPerson = ["align", "layout", "gap", "padding", "chart", "rows"]
 
 const structural = new Set([
   "op",
@@ -146,5 +143,9 @@ describe("every value an agent sets names where a person sees it and changes it"
 
   it("lets a person rename a layer from the design panel", () => {
     expect(seen.name).toEqual({ person: ["panel:name"] })
+  })
+
+  it("lets a person set a line's end arrowhead, and drawing an arrow still does", () => {
+    expect(seen.arrow).toEqual({ person: ["gesture:tool-arrow", "panel:border.end"] })
   })
 })
