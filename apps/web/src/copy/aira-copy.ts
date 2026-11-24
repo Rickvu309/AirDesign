@@ -38,7 +38,7 @@ export const airaStepWords: Readonly<Record<AgentOp, StepWords | null>> = {
   undo_run: {
     working: "Undoing the run",
     done: "Undid the run",
-    refused: "Couldn't undo the run",
+    refused: "Unable to undo the run",
     stopped: "Stopped undoing the run",
   },
 }
@@ -128,7 +128,7 @@ export const airaCopy = {
   keptNote: "Its changes so far are kept.",
   notOffered: "Aira isn't available in your country or region yet.",
   notOfferedBody: "You can keep editing this deck yourself.",
-  undoRefused: "Couldn't undo. Something Aira changed was changed again after its edit.",
+  undoRefused: "Unable to undo. Something Aira changed was changed again after its edit.",
   undone: "Aira's changes from this request are undone.",
   keptKinds: {
     text: "a text layer",

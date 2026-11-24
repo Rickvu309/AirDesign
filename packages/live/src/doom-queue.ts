@@ -1,10 +1,30 @@
 import * as doom from "@airdesign/doom"
 
+export const componentFields = ["data", "tokens", "variant"] as const
+export type Regeneration = {
+  readonly frame: doom.NodeId
+  readonly fields: readonly (typeof componentFields)[number][]
+}
+
+export function regenerationFor(frame: doom.NodeId, patch: doom.ComponentPatch): Regeneration {
+  return { frame, fields: componentFields.filter((field) => Object.hasOwn(patch, field)) }
+}
+
+export type Suppression = {
+  readonly frame: doom.NodeId
+  readonly node: doom.NodeId
+  readonly key: doom.PartKey
+}
+
 export type Queued = {
   readonly edit: doom.Edit
   readonly after: readonly (string | null)[]
   readonly follows?: string
   readonly afterRead?: readonly string[]
+  readonly regeneration?: Regeneration
+  readonly suppressions?: readonly Suppression[]
+  readonly turnFrom?: readonly string[]
+  readonly turnSource?: doom.RunEdit
 }
 
 export function readGap(fold: doom.Doom, { edit, afterRead }: Queued): string | undefined {
@@ -27,6 +47,34 @@ export function shownAfter(view: doom.Doom, each: Queued): doom.Doom {
   if (readGap(view, each) !== undefined) return view
   const next = appliedOn(view, each.edit)
   return doom.isRefusal(next) ? view : next
+}
+
+export function queueProjection() {
+  type Projection = {
+    readonly server: doom.Doom
+    readonly queue: readonly Queued[]
+    readonly view: doom.Doom
+    readonly provisional: Map<doom.Rev, string>
+  }
+  let memo: Projection | undefined
+  return {
+    read(server: doom.Doom, queue: readonly Queued[]): Projection {
+      if (memo?.server !== server || memo.queue !== queue) {
+        const provisional = new Map<doom.Rev, string>()
+        memo = { server, queue, view: shown(server, queue, provisional), provisional }
+      }
+      return memo
+    },
+    adopt(server: doom.Doom, queue: readonly Queued[], view: doom.Doom, provisional: Map<doom.Rev, string>) {
+      memo = { server, queue, view, provisional }
+    },
+    append(server: doom.Doom, queue: readonly Queued[], view: doom.Doom, once: string) {
+      if (memo === undefined) return
+      const { provisional } = memo
+      if (view !== memo.view) provisional.set(view.rev, once)
+      memo = { server, queue, view, provisional }
+    },
+  }
 }
 
 export function appliedOn(view: doom.Doom, edit: doom.Edit): doom.Doom | doom.Refusal {
@@ -80,6 +128,10 @@ export function queueEditOn(
   }
 }
 
+export function acceptedWithoutRow(edit: doom.Edit, rev: number): boolean {
+  return edit.readBase === rev && edit.writes.length === 0 && edit.phase === undefined && edit.runUndo === undefined
+}
+
 export function sendable(queued: Queued): doom.Edit {
   if (queued.after.some((once) => once !== null)) throw new Error("a base still names a queued edit")
   return queued.edit
@@ -103,6 +155,17 @@ export function landed(queue: readonly Queued[], once: string, rev: doom.Rev): Q
     })
   }
   return rest
+}
+
+export function settled(server: doom.Doom, queue: readonly Queued[]): readonly Queued[] {
+  const names = new Set(queue.flatMap((each) => [each.edit.once, ...each.after]))
+  let pending = queue
+  for (const once of names) {
+    if (once === null) continue
+    const at = server.onces.get(once)
+    if (at !== undefined) pending = landed(pending, once, at)
+  }
+  return pending
 }
 
 const writeKey = ({ node, prop }: doom.Write) => `${node}/${prop}`
@@ -162,12 +225,11 @@ export function revIn(server: doom.Doom, queue: readonly Queued[], once: string)
   return server.onces.get(once) ?? shown(server, queue).onces.get(once)
 }
 
-export function ownedIn(server: doom.Doom, queue: readonly Queued[], onces: Iterable<string>): Set<doom.Rev> {
+export function ownedAt(view: doom.Doom, onces: Iterable<string>): Set<doom.Rev> {
   const owned = new Set<doom.Rev>()
-  let view: doom.Doom | undefined
-  for (const name of onces) {
-    const turnedAt = server.onces.get(name) ?? (view ??= shown(server, queue)).onces.get(name)
-    if (turnedAt !== undefined) owned.add(turnedAt)
+  for (const once of onces) {
+    const at = view.onces.get(once)
+    if (at !== undefined) owned.add(at)
   }
   return owned
 }

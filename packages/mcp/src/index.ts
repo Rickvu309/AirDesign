@@ -1,7 +1,7 @@
 export { admit, emptyLog, type Admission, type CallerLog, type LimitKind } from "./admit.js"
 export { callTool, type Session } from "./call-tool.js"
 export { type ToolResult } from "./answer.js"
-export { type DeckHost, type SlideShot } from "./deck-host.js"
+export { type DeckHost, type SlideShot, type UndoHost } from "./deck-host.js"
 export { type NamedImage } from "./named-image.js"
 export { kindInstructions } from "./instructions.js"
 export { createServer, type Host } from "./server.js"

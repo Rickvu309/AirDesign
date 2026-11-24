@@ -1,4 +1,8 @@
-import type { Measure, Refusal, Theme } from "../index.js"
+import type { Measure } from "../measure.js"
+import type { Refusal } from "../refusal.js"
+import type { TextStyleName } from "../text.js"
+import type { Theme } from "../theme.js"
+import type { PartKey } from "./instance.js"
 import { boolean, naming, reject } from "../read-kit.js"
 import { readData } from "./collections.js"
 import { type Bindings, type Scope, childScope, evaluator, valuesOf } from "./expression.js"
@@ -15,6 +19,7 @@ export type ComponentInput = {
   readonly themeTokens?: unknown
   readonly tokens?: unknown
   readonly variant?: unknown
+  readonly styleFor?: (key: PartKey) => TextStyleName | undefined
 }
 
 export function expandComponent(spec: ComponentSpec, input: ComponentInput): ComponentTree | Refusal {
@@ -61,7 +66,11 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
           return
         }
         const emitField = `${field}.emit`
-        const prepared = preparePart(part.emit, emitField, { ...fitting, read: (expr) => evaluate(expr, local) })
+        const prepared = preparePart(part.emit, emitField, {
+          ...fitting,
+          read: (expr) => evaluate(expr, local),
+          styleFor: input.styleFor,
+        })
         if (prepared.kind === "shape" || prepared.kind === "line") {
           if (emitted >= 499) naming(emitField, () => reject("limit", "An expansion may emit at most 499 parts."))
           emitted += 1

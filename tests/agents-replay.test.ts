@@ -67,6 +67,7 @@ const start = opened()
 function hosted(server: doom.Doom): { readonly host: DeckHost; readonly now: () => doom.Doom } {
   let fold = server
   const host: DeckHost = {
+    withUndo: async (_deck, undo) => undo({ ...host, undoRevs: async () => new Set() }),
     list: async () => ({ ok: true, decks: [] }),
     create: async () => ({ ok: false, refusal: "deck" }),
     open: async () => ({ ok: true, deck, rev: fold.rev, fold }),

@@ -1,4 +1,5 @@
-import { type Refusal, readColor } from "../index.js"
+import { readColor } from "../color.js"
+import type { Refusal } from "../refusal.js"
 import { boolean, finite, integer, naming, object, reject, variant } from "../read-kit.js"
 import { readCollections } from "./collections.js"
 import { type Bindings, type Expr, binding, readExpr } from "./expression.js"
@@ -17,7 +18,7 @@ import {
   wordsWithin,
 } from "./values.js"
 
-const tokenRecord = (raw: unknown): Readonly<Record<string, ReturnType<typeof token>>> =>
+export const tokenRecord = (raw: unknown): Readonly<Record<string, ReturnType<typeof token>>> =>
   Object.fromEntries(
     entries(raw, 64).map(([key, value]) => {
       switch (key) {
@@ -38,7 +39,7 @@ function variantValue(raw: unknown): string | boolean {
     : reject("shape", "A string or boolean variant.")
 }
 
-const variantRecord = (raw: unknown): Readonly<Record<string, string | boolean>> =>
+export const variantRecord = (raw: unknown): Readonly<Record<string, string | boolean>> =>
   Object.fromEntries(entries(raw, 16).map(([key, value]) => [name(key), naming(key, () => variantValue(value))]))
 
 const variants = (raw: unknown) =>

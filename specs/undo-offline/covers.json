@@ -4,26 +4,32 @@
     {
       "file": "packages/live/src/doom-deck.ts",
       "names": ["connected"],
-      "digest": "5a0dba1d09d0",
-      "blob": "c9a991e729282ed9ac46f567b314fa93fa465653"
+      "digest": "eb0785e8354c",
+      "blob": "ad4339b1f8206858f09acdcded81d1d092c3ba56"
+    },
+    {
+      "file": "packages/live/src/doom-follow.ts",
+      "names": ["catchDoom", "foldCaught"],
+      "digest": "f53264b656b1",
+      "blob": "e82ddb2d0e86bad7e4d65507d82583813cdef393"
     },
     {
       "file": "packages/live/src/doom-queue.ts",
       "names": ["landed", "queueEditOn", "releasedBases", "releaseBases"],
       "digest": "0ed9e3c3e080",
-      "blob": "2d62753dc9546ca25ce0713d62379df0fca697ce"
+      "blob": "4426be3f0a74033d7cc45517bbc1e26430141497"
     },
     {
       "file": "packages/live/src/turn-replay.ts",
       "names": ["onStandingOnly", "pressedOn", "catchingUpResolves", "onStanding"],
-      "digest": "c924df91c9a7",
-      "blob": "421219db5af3c90a3c65e30717c4df4ca611da1a"
+      "digest": "3508e147af83",
+      "blob": "041e65af742ac2de9f87170c6123cd10de825637"
     },
     {
       "file": "packages/doom/src/standing-layers.ts",
       "names": ["onStandingLayers"],
       "digest": "150c33c42b3b",
-      "blob": "6d350dbd748f12f41727d45c4211f4308fd2048e"
+      "blob": "35f67662cf68bd0f1425291d07c61ca428ff4347"
     }
   ]
 }

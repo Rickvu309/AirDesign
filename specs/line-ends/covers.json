@@ -10,8 +10,8 @@
     {
       "file": "packages/doom/src/freed-line-ends.ts",
       "names": ["paintedBack", "freedEnds", "leftBy", "freeLineEnds"],
-      "digest": "4e201b1210c7",
-      "blob": "9a99e4c46c804b2602c292060344f59f2501de1a"
+      "digest": "3d7d31a32124",
+      "blob": "bf12cae743c3797859975e9e25bdf7146b76826d"
     },
     {
       "file": "packages/doom/src/line-ends-back.ts",
@@ -23,7 +23,7 @@
       "file": "packages/live/src/turn-replay.ts",
       "names": ["endsOnly", "onStandingOnly", "pressedOn"],
       "digest": "d8bb2adb0c8f",
-      "blob": "9600e951ad0f2c66a8081086c7f238d7b4482d11"
+      "blob": "041e65af742ac2de9f87170c6123cd10de825637"
     }
   ]
 }

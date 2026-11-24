@@ -10,6 +10,8 @@ export function undoAgentRun(client: Pick<EditorClient, "undoRun" | "view">): Un
     const named = (ids: readonly doom.NodeId[]) => ids.map((id) => layerLabel(client.view(), id))
     if (turned.ok || turned.reason === "left")
       return { kept: named(turned.kept), left: named(turned.left), waiting: named(turned.waiting), undone: turned.ok }
+    if (turned.reason === "size") return "size"
+    if (turned.reason === "refused" && turned.refused.prop === "instance") return "rebuild"
     return turned.reason === "offline" ? "failed" : "refused"
   }
 }

@@ -28,7 +28,7 @@ export const pressedOn = (
   owned,
 })
 
-export function remember(turned: Map<string, Pressed>, once: string, pressed: Pressed) {
+export function remember<T>(turned: Map<string, T>, once: string, pressed: T) {
   turned.set(once, pressed)
   const oldest = turned.keys().next().value
   if (turned.size > 500 && oldest !== undefined) turned.delete(oldest)
@@ -66,6 +66,7 @@ function onStandingOnly(
 export type Replayed = {
   readonly queue: readonly Queued[]
   readonly view: doom.Doom
+  readonly provisional: Map<doom.Rev, string>
   readonly gone: readonly string[]
   readonly steps: ReadonlyMap<string, { readonly before: doom.Doom; readonly writes: readonly doom.Write[] }>
   readonly pressed: ReadonlyMap<string, Pressed>
@@ -171,5 +172,5 @@ export async function onStanding(
       view = folded
     }
   }
-  return { queue: next, view, gone, steps, pressed: again }
+  return { queue: next, view, provisional, gone, steps, pressed: again }
 }

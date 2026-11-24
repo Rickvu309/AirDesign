@@ -4,8 +4,10 @@ export const agentRunsCopy = {
   title: "Agents on this deck",
   someone: "An agent",
   undone: "Undone",
-  undoRefused: "Couldn't undo. Something it changed was changed again after its edit.",
-  nothingLeft: "Nothing left to undo. Everything it changed was changed or deleted since.",
+  undoRefused: "Unable to undo. Something it changed was changed again after its edit.",
+  nothingLeft: "Unable to undo. Everything it changed was changed or deleted since.",
+  undoTooLarge: "Unable to undo. This run made too many changes.",
+  undoRebuildFailed: "Unable to undo. The chart can't be restored.",
   undoFailed: "Unable to undo. Check your connection and try again.",
 } as const
 

@@ -1,0 +1,83 @@
+{
+  "check": "checks-linked-instance.md#linked-instance",
+  "covers": [
+    {
+      "file": "packages/doom/src/component/join-instance.ts",
+      "names": ["join", "regenerateComponent", "restoreComponent"],
+      "digest": "20b57af6732d",
+      "blob": "3bfee8324a9bd2ee2514723bf16c6dd45130483a"
+    },
+    {
+      "file": "packages/doom/src/component/instance-ownership.ts",
+      "names": ["partDeletes", "suppressKeys", "withPartDeletes", "guardInstances", "suppressionChanges"],
+      "digest": "11799748d0f7",
+      "blob": "2f47f3123b898f1ecb304c53a307a7a7543282ff"
+    },
+    {
+      "file": "packages/doom/src/invert.ts",
+      "names": ["invertStep"],
+      "digest": "17947d562ec1",
+      "blob": "f64bb9a06e33ee25c6a654b8e96d23b60b266a97"
+    },
+    {
+      "file": "packages/doom/src/standing-layers.ts",
+      "names": ["onStandingLayers"],
+      "digest": "150c33c42b3b",
+      "blob": "35f67662cf68bd0f1425291d07c61ca428ff4347"
+    },
+    {
+      "file": "packages/doom/src/apply-edit.ts",
+      "names": ["landEdit"],
+      "digest": "2be37f12ea6e",
+      "blob": "4f3249169a85a8fdb3a255a285d094e7f7c3ea2e"
+    },
+    {
+      "file": "packages/live/src/doom-set-aside.ts",
+      "names": ["replayLinked", "turnAgain", "reprepare"],
+      "digest": "685032c1df75",
+      "blob": "81e5b683ed7e9ad7e73fae70a3cd7c2b276cd684"
+    },
+    {
+      "file": "packages/live/src/doom-deck.ts",
+      "names": ["connected"],
+      "digest": "eb0785e8354c",
+      "blob": "ad4339b1f8206858f09acdcded81d1d092c3ba56"
+    },
+    {
+      "file": "packages/doom/src/component/part-id.ts",
+      "names": ["partId", "reservedPartId"],
+      "digest": "0c7137634566",
+      "blob": "815aa0ac9a5cf2dfefbe20f687c62677e10a3f96"
+    },
+    {
+      "file": "packages/doom/src/component/instance-inverse.ts",
+      "names": ["instanceTransition", "restoreInstance"],
+      "digest": "f63231ec9c13",
+      "blob": "939d7c2a155c16412dc3c8c91075485888d26a3f"
+    },
+    {
+      "file": "packages/doom/src/invert-run.ts",
+      "names": ["invertRun", "linkedEdits"],
+      "digest": "f7ba80aee262",
+      "blob": "a4854552e1f89cfd8a834143bc8980ab36877447"
+    },
+    {
+      "file": "packages/mcp/src/undo-tool.ts",
+      "names": ["turnRun"],
+      "digest": "ea31a53f0e55",
+      "blob": "26f355e56ef0e72d192144fec40c5e1d29dc740a"
+    },
+    {
+      "file": "apps/api/src/doom/doom-write.ts",
+      "names": ["withDoomWrite", "runUndoRevs"],
+      "digest": "f04e3604235f",
+      "blob": "e2cfe89dda936211258ff5341afa2c3f28ba7717"
+    },
+    {
+      "file": "packages/doom/src/invert-run.ts",
+      "names": ["undoSourceOf", "withoutGenerated"],
+      "digest": "d1628ca439ec",
+      "blob": "a4854552e1f89cfd8a834143bc8980ab36877447"
+    }
+  ]
+}

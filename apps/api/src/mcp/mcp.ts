@@ -9,6 +9,7 @@ import {
   type DeckHost,
   type Host,
   type NamedImage,
+  type UndoHost,
   type Session,
   type SlideShot,
 } from "@airdesign/mcp"
@@ -23,7 +24,8 @@ import { fetchImage, type ImageNet } from "../platform/image-fetch.js"
 import { keepMedia, storedMedia } from "../doom/media.js"
 import type { OriginalStore } from "../platform/original-store.js"
 import type { Sql } from "../platform/pool.js"
-import { createDoom, editDoom, foldAtDoom, listDoom, openDoom, runDoom } from "../doom/doom-deck.js"
+import { createDoom, editDoom, listDoom, openDoom, runDoom, runPositions } from "../doom/doom-deck.js"
+import { runUndoRevs, withDoomWrite } from "../doom/doom-write.js"
 import { startIds } from "../doom/doom-start.js"
 
 export type McpHost = {
@@ -147,6 +149,26 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured, fo
         return refusal("server")
       }
     }
+  const on = (client: Sql, forUndo = false): UndoHost => ({
+    measure: (folds, layers) => servedFontMetrics(fonts).measure(folds, measureBudget, layers),
+    open: guarded(async (deck) => opened(deck, await openDoom(client, { deck, forUndo }, email))),
+    edit: guarded(async (deck, edit) => {
+      const landed = await editDoom(client, { deck, edit: edit as unknown as Readonly<Record<string, unknown>> }, email)
+      return decoded(landed) ?? (landed.ok ? ({ ok: true, deck, rev: landed.rev } as const) : refusal("server"))
+    }),
+    run: guarded(async (deck, run) => {
+      const found = await runDoom(client, { deck, run }, email)
+      return found.ok ? { ok: true, edits: found.edits, replaced: found.replaced } : found
+    }),
+    positionsAt: async (deck, rev, nodes) => {
+      try {
+        return await runPositions(client, { deck, rev, nodes }, email)
+      } catch {
+        return undefined
+      }
+    },
+    undoRevs: (deck, agent) => runUndoRevs(client, deck, email, agent),
+  })
   return {
     list: guarded(async (cursor) => {
       const found = await listDoom(db, email, cursor, listPage + 1)
@@ -181,26 +203,11 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured, fo
       return decoded(named) ?? opened(id.deck, await openDoom(db, { deck: id.deck }, email))
     }),
     images: async (deck, names) => storedImages(db, deck, email, names, images),
-    measure: (folds, layers) => servedFontMetrics(fonts).measure(folds, measureBudget, layers),
     ...(shots === undefined
       ? {}
       : { pictures: (deck, fold, slides) => slidePictures(shots, seen.wait, deck, fold, slides) }),
-    open: guarded(async (deck) => opened(deck, await openDoom(db, { deck }, email))),
-    edit: guarded(async (deck, edit) => {
-      const landed = await editDoom(db, { deck, edit: edit as unknown as Readonly<Record<string, unknown>> }, email)
-      return decoded(landed) ?? (landed.ok ? ({ ok: true, deck, rev: landed.rev } as const) : refusal("server"))
-    }),
-    run: guarded(async (deck, run) => {
-      const found = await runDoom(db, { deck, run }, email)
-      return found.ok ? { ok: true, edits: found.edits, replaced: found.replaced } : found
-    }),
-    foldAt: async (deck, rev) => {
-      try {
-        return await foldAtDoom(db, { deck, rev }, email)
-      } catch {
-        return undefined
-      }
-    },
+    ...on(db),
+    withUndo: (deck, undo) => guarded(() => withDoomWrite(db, deck, email, (client) => undo(on(client, true))))(),
   }
 }
 

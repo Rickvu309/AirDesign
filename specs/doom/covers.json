@@ -5,13 +5,13 @@
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["applyEdit"],
       "digest": "4ecf149e8f59",
-      "blob": "d33a4ef6972695f0eadfaa5f5647c40d07d2e553"
+      "blob": "4f3249169a85a8fdb3a255a285d094e7f7c3ea2e"
     },
     {
       "file": "packages/doom/src/invert.ts",
       "names": ["invert"],
-      "digest": "f7f1cffe1da1",
-      "blob": "96a8c4b1abad68626dc832271996e66db4300a85"
+      "digest": "e0f9643b59e8",
+      "blob": "6cf41d95cbf7e9ef4ec8adf751959089b9008499"
     },
     {
       "file": "packages/doom/src/view-of.ts",

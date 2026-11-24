@@ -1,10 +1,10 @@
+import type { RevisionKey } from "./doom.js"
 import type { AgentChange, AgentRefusal } from "./agent-change.js"
 import { compileAgentChange, nameOf } from "./agent-compile.js"
 import type { Reading } from "./agent-draft.js"
 import type { Measure } from "./measure.js"
 import type { NodeId, Rev } from "./ids.js"
 import { rev } from "./ids.js"
-import type { WriteKey } from "./props.js"
 import { kindOf } from "./agent-read.js"
 import { applyEdit, applyStep, countsOf } from "./apply-edit.js"
 import { changingWrites } from "./changing-writes.js"
@@ -34,7 +34,7 @@ export type EditBy = {
 
 export function readingOf(doom: Doom, base: number): Doom {
   const at = rev(base)
-  const revs = new Map<NodeId, ReadonlyMap<WriteKey, Rev>>()
+  const revs = new Map<NodeId, ReadonlyMap<RevisionKey, Rev>>()
   for (const [node, props] of doom.revs)
     revs.set(node, new Map([...props].map(([key, was]) => [key, was > at ? at : was])))
   return { ...doom, revs }

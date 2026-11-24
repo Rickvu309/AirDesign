@@ -40,11 +40,11 @@ async function doomAgent(kit, cookie) {
   return { deck, slide }
 }
 
-async function claudeCode(kit, cookie) {
+async function outsideAgentToken(kit, cookie, name) {
   const { origin, post, accountRoutes, oauthRoutes } = kit
   const mcp = (await post(accountRoutes.agents, {}, cookie)).json.mcp
   const redirectUri = "http://127.0.0.1:33418/callback"
-  const registered = await post(oauthRoutes.register, { client_name: "Claude Code", redirect_uris: [redirectUri] })
+  const registered = await post(oauthRoutes.register, { client_name: name, redirect_uris: [redirectUri] })
   const verifier = randomBytes(32).toString("base64url")
   const challenge = createHash("sha256").update(verifier).digest("base64url")
   const pairs = { client_id: registered.json.client_id, redirect_uri: redirectUri }
@@ -68,10 +68,10 @@ async function claudeCode(kit, cookie) {
   return (await exchanged.json()).access_token
 }
 
-async function outsideAgent(kit, cookie, { deck, slide }) {
-  const { origin, page, post, capture, note, doomRoutes, mcpRoutes } = kit
-  const token = await claudeCode(kit, cookie)
-  const call = async (tool, args) => {
+export async function connectOutsideAgent(kit, cookie, name) {
+  const { origin, mcpRoutes } = kit
+  const token = await outsideAgentToken(kit, cookie, name)
+  return async (tool, args) => {
     const response = await fetch(`${origin}${mcpRoutes.mcp.path}`, {
       method: "POST",
       headers: {
@@ -95,6 +95,11 @@ async function outsideAgent(kit, cookie, { deck, slide }) {
           .slice(6)
     return JSON.parse(line).result.structuredContent
   }
+}
+
+async function outsideAgent(kit, cookie, { deck, slide }) {
+  const { page, post, capture, note, doomRoutes } = kit
+  const call = await connectOutsideAgent(kit, cookie, "Claude Code")
   const base = (await post(doomRoutes.open, { deck }, cookie)).json.rev
   const box = { x: 160, y: 150, w: 1200, h: 80 }
   const landed = await call("edit_deck", {

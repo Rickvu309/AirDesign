@@ -198,7 +198,9 @@ function readExchange(raw: unknown): AiraExchange | undefined {
   return {
     ...read,
     ...(exchange.undoRefused === true ? { undoRefused: true } : {}),
-    ...(exchange.undoFailed === true ? { undoFailed: true } : {}),
+    ...(exchange.undoFailed === true || exchange.undoFailed === "size" || exchange.undoFailed === "rebuild"
+      ? { undoFailed: exchange.undoFailed }
+      : {}),
     ...(kept.length === 0 ? {} : { kept }),
     ...(left.length === 0 ? {} : { left }),
     ...(waiting.length === 0 ? {} : { waiting }),

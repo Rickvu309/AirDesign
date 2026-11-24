@@ -45,8 +45,19 @@ async function replay(route: readonly Edge[]) {
   })
   if (!opened.ok) throw new Error(JSON.stringify(opened))
   const deck = opened.deck
+  let empty = false
   for (const { action } of route) {
-    if (action === "Other") {
+    if (action === "CheckEmpty") {
+      const before = await remote.open({ deck: deck.deck })
+      if (!before.ok) throw new Error(JSON.stringify(before))
+      const readBase = before.fold.rev
+      expect(
+        await remote.edit({ deck: deck.deck, edit: { once: "empty", author: person, readBase, writes: [] } }),
+      ).toMatchObject({ ok: true, rev: readBase })
+      const after = await remote.open({ deck: deck.deck })
+      expect(after.ok && after.fold).toBe(before.fold)
+      empty = true
+    } else if (action === "Other") {
       expect(await remote.edit({ deck: deck.deck, edit: other })).toMatchObject({ ok: true })
     } else if (action === "PrepareFirst" || action === "PrepareSecond") {
       const name = action === "PrepareFirst" ? "first" : "second"
@@ -71,6 +82,7 @@ async function replay(route: readonly Edge[]) {
   }
   return {
     head: stored.rev,
+    empty,
     known: deck.server().rev,
     other: at("other") > 0,
     first: status("first"),
@@ -92,7 +104,7 @@ it("replays every guarded edit edge through the device deck", async () => {
   const [dump] = await dumpTopics([topic])
   if (dump === undefined) throw new Error("no graph")
   const graph = parseDot(dump.graph)
-  const initial = [...graph.states].find(([, state]) => state.first === "none")
+  const initial = [...graph.states].find(([, state]) => state.first === "none" && state.empty === false)
   if (initial === undefined) throw new Error("no initial state")
   const paths = new Map<string, Edge[]>([[initial[0], []]])
   let checked = 0
@@ -111,5 +123,5 @@ it("replays every guarded edit edge through the device deck", async () => {
   }
   expect(checked).toBe(graph.edges.length)
   expect(paths.size).toBe(graph.states.size)
-  expect(new Set(graph.edges.map((edge) => edge.action)).size).toBe(10)
+  expect(new Set(graph.edges.map((edge) => edge.action)).size).toBe(11)
 }, 30_000)

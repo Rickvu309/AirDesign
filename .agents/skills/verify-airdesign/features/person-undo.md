@@ -25,7 +25,13 @@ Preconditions:
 - **Unit tests.** `packages/live/src/doom-deck.test.ts`, `doom-undo-chain.test.ts` and `doom-undo-run.test.ts`; `tests/doom-replay.test.ts` drives a person's step, undo and redo against an agent's run through the Doom core.
 - **States for look.** `text-undone`, `text-undone-in-box`, `three-undone`, `notes-then-text-undone`, `frame-text-undone`.
 
+Run the `linked-offline-undo` journey for a linked chart. It deletes Beta, restores it with the undo shortcut while offline, reloads, lets another device delete Alpha, and checks the canvas and saved deck on reconnect.
+
+Run `linked-label-undo` to check that Undo restores a bar after an agent restyles a category label. The journey checks Redo and saves a fresh data update with the override still applied.
+
 ## Gotchas
 
 - Press Escape after typing to give the canvas the keys when the next key should act on the layer, such as Delete or an arrow.
 - Wait for the screen to show the undo before you reload: the undo paints first and lands on the server after.
+
+Run `linked-refused-undo` to see the chart undo notice, see that the save indicator still reads Saved, and retry the same undo after repairing the chart's input.

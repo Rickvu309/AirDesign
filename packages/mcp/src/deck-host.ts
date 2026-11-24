@@ -28,13 +28,22 @@ export type RunLog = {
 
 export type SlideShot = string | { readonly failure: "fonts" }
 
+export type UndoHost = Pick<DeckHost, "open" | "edit" | "run" | "positionsAt" | "measure"> & {
+  readonly undoRevs: (deck: DeckId, agent: string) => Promise<ReadonlySet<doom.Rev>>
+}
+
 export type DeckHost = {
+  readonly withUndo: <T>(deck: DeckId, undo: (host: UndoHost) => Promise<T>) => Promise<T | DoomRefusal>
   readonly list: (cursor: DeckId | undefined) => Promise<Listed | DoomRefusal>
   readonly create: (name: string, once: string) => Promise<Opened | DoomRefusal>
   readonly open: (deck: DeckId) => Promise<Opened | DoomRefusal>
   readonly edit: (deck: DeckId, edit: doom.Edit) => Promise<Landed | DoomRefusal>
   readonly run: (deck: DeckId, run: string) => Promise<RunLog | DoomRefusal>
-  readonly foldAt?: (deck: DeckId, rev: number) => Promise<doom.Doom | undefined>
+  readonly positionsAt?: (
+    deck: DeckId,
+    rev: number,
+    nodes: readonly doom.NodeId[],
+  ) => Promise<doom.LayerPositions | doom.Doom | undefined>
   readonly images?: (deck: DeckId, names: readonly string[]) => Promise<NamedImages>
   readonly measure?: (folds: readonly doom.Doom[], layers?: readonly doom.NodeId[]) => Promise<Measured | Unmeasured>
   readonly pictures?: (

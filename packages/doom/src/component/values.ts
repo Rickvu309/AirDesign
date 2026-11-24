@@ -1,4 +1,6 @@
-import { type Color, type Refusal, readColor } from "../index.js"
+import { readColor } from "../color.js"
+import type { Color } from "../paint.js"
+import type { Refusal } from "../refusal.js"
 import { boolean, detailOf, finite, matching, reject, words } from "../read-kit.js"
 
 export type Scalar = boolean | number | string | null

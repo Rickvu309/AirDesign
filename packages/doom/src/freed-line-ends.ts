@@ -160,7 +160,12 @@ export function freedEnds(seen: Doom, into: Doom, lost: readonly LostEnds[], mea
 function leftBy(before: Doom, writes: readonly Write[]): { readonly after: Doom; readonly lost: readonly LostEnds[] } {
   if (!mayLeaveDeck(before, writes) && !mayDrawOffDeck(before, writes) && !mayBringBack(before, writes))
     return { after: before, lost: [] }
-  const edit = onTop(before, { once: "free-line-ends", author: sweeper, writes })
+  const edit = onTop(before, {
+    once: "free-line-ends",
+    author: sweeper,
+    writes,
+    ...(writes.some(({ prop }) => prop === "instance") ? { readBase: before.rev } : {}),
+  })
   const after = applyBeforeFreeing(before, { ...edit, rev: rev(before.rev + 1) })
   return isRefusal(after) ? { after: before, lost: [] } : { after, lost: lostEnds(before.nodes, after.nodes, writes) }
 }

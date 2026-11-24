@@ -1,5 +1,7 @@
+import { instanceFieldKeys } from "./component/instance.js"
+import type { RevisionKey } from "./doom.js"
 import { type NodeId, type Rev, readNodeId, readRev } from "./ids.js"
-import { type NodeType, type PropName, type WriteKey, accepts, nodeTypes, props } from "./props.js"
+import { type NodeType, type PropName, accepts, nodeTypes, props } from "./props.js"
 import { readEdit, readWriteKey } from "./read-write.js"
 import { type Refusal, isRefusal, refuse } from "./refusal.js"
 import type { Landed, Node, Run, Doom } from "./doom.js"
@@ -61,12 +63,15 @@ function childrenOf(nodes: ReadonlyMap<NodeId, Node>): Map<NodeId, NodeId[]> | u
   return children
 }
 
-function readNodeRevs(raw: unknown): Map<WriteKey, Rev> | undefined {
+function readNodeRevs(raw: unknown): Map<RevisionKey, Rev> | undefined {
   const list = plain(raw)
   if (list === undefined) return undefined
-  const own = new Map<WriteKey, Rev>()
+  const own = new Map<RevisionKey, Rev>()
   for (const [name, at] of Object.entries(list)) {
-    const write = readWriteKey(name)
+    const write =
+      name === "suppression" || name === "partExit"
+        ? name
+        : (instanceFieldKeys.find((key) => key === name) ?? readWriteKey(name))
     const read = readRev(at)
     if (write === undefined || read === undefined) return undefined
     own.set(write, read)
@@ -74,10 +79,10 @@ function readNodeRevs(raw: unknown): Map<WriteKey, Rev> | undefined {
   return own
 }
 
-function readRevs(raw: unknown, nodes: ReadonlyMap<NodeId, Node>): Map<NodeId, Map<WriteKey, Rev>> | undefined {
+function readRevs(raw: unknown, nodes: ReadonlyMap<NodeId, Node>): Map<NodeId, Map<RevisionKey, Rev>> | undefined {
   const found = plain(raw)
   if (found === undefined) return undefined
-  const revs = new Map<NodeId, Map<WriteKey, Rev>>()
+  const revs = new Map<NodeId, Map<RevisionKey, Rev>>()
   for (const [key, each] of Object.entries(found)) {
     const id = readNodeId(key)
     const own = readNodeRevs(each)
@@ -87,7 +92,7 @@ function readRevs(raw: unknown, nodes: ReadonlyMap<NodeId, Node>): Map<NodeId, M
   return revs
 }
 
-export type StoredNode = { readonly node: Node; readonly revs: ReadonlyMap<WriteKey, Rev> }
+export type StoredNode = { readonly node: Node; readonly revs: ReadonlyMap<RevisionKey, Rev> }
 
 export function readStoredNode(id: string, rawNode: unknown, rawRevs: unknown): StoredNode | undefined {
   const node = readNode(id, rawNode)
@@ -95,7 +100,7 @@ export function readStoredNode(id: string, rawNode: unknown, rawRevs: unknown): 
   return node === undefined || revs === undefined ? undefined : { node, revs }
 }
 
-export const revsToJson = (revs: ReadonlyMap<WriteKey, Rev> | undefined): unknown => Object.fromEntries(revs ?? [])
+export const revsToJson = (revs: ReadonlyMap<RevisionKey, Rev> | undefined): unknown => Object.fromEntries(revs ?? [])
 
 export const runsToJson = (runs: ReadonlyMap<string, Run>): unknown =>
   Object.fromEntries([...runs].map(([name, run]) => [name, { ...run, guarded: [...run.guarded] }]))

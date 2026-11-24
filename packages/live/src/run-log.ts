@@ -7,9 +7,14 @@ export async function runInLog(
   deck: DeckId,
   view: doom.Doom,
   run: string,
-): Promise<doom.RunEdit[] | undefined> {
+): Promise<doom.RunEdit[] | "size" | undefined> {
   const answer = await remote.run?.({ deck, run })
-  if (answer === undefined || !answer.ok || answer.edits.length === 0) return undefined
+  if (answer === undefined) return undefined
+  if (!answer.ok) {
+    if (answer.refusal === "size") return "size"
+    throw new Error(answer.refusal)
+  }
+  if (answer.edits.length === 0) return undefined
   const known = new Map(view.nodes)
   const edits: doom.RunEdit[] = []
   for (const [index, raw] of answer.edits.entries()) {

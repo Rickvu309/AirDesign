@@ -41,6 +41,9 @@ async function drive(name: string, page: Page, context: BrowserContext): Promise
 
 for (const name of [
   "aira-panel",
+  "linked-offline-undo",
+  "linked-label-undo",
+  "linked-refused-undo",
   "deck-list-trash",
   "connected-agents",
   "component-paths",

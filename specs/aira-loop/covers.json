@@ -23,13 +23,13 @@
       "file": "apps/api/src/doom/doom-deck.ts",
       "names": ["spendOnce"],
       "digest": "cd1493e076e5",
-      "blob": "09480a9afbf1c4de971261f3890b5552a966b9bf"
+      "blob": "f0f240f19a9ceb32ae42328210004f99b5ceb3ad"
     },
     {
       "file": "apps/api/src/mcp/mcp.ts",
       "names": ["serveMcp"],
-      "digest": "b581d0968d14",
-      "blob": "034cae2a3455cee1cdf65bce640e07dcbbe7a2d0"
+      "digest": "9a39ec97fb69",
+      "blob": "87709e1454f3657b8a2c661662c4a7e3db562c5c"
     }
   ]
 }

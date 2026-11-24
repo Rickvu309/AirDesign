@@ -4,20 +4,20 @@
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["takesBackDelete", "write"],
-      "digest": "5e1f3e79f994",
-      "blob": "d33a4ef6972695f0eadfaa5f5647c40d07d2e553"
+      "digest": "ca682e486c7e",
+      "blob": "4f3249169a85a8fdb3a255a285d094e7f7c3ea2e"
     },
     {
       "file": "packages/live/src/doom-queue.ts",
       "names": ["queueEdit"],
       "digest": "a56af4f791c4",
-      "blob": "2d62753dc9546ca25ce0713d62379df0fca697ce"
+      "blob": "4426be3f0a74033d7cc45517bbc1e26430141497"
     },
     {
       "file": "packages/doom/src/invert.ts",
       "names": ["invert"],
-      "digest": "f7f1cffe1da1",
-      "blob": "96a8c4b1abad68626dc832271996e66db4300a85"
+      "digest": "e0f9643b59e8",
+      "blob": "b838ee3dcb42c41bcffb3321584ac66fdd236120"
     }
   ]
 }

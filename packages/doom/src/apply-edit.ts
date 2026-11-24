@@ -1,7 +1,18 @@
+import { sameValue } from "./changing-writes.js"
+import { instanceFieldKey, instanceFields } from "./component/instance.js"
+import type { RevisionKey } from "./doom.js"
+import {
+  guardInstances,
+  linkedOwner,
+  instanceRoots,
+  linkedOverride,
+  suppressionChanges,
+  withPartDeletes,
+} from "./component/instance-ownership.js"
 import { limits } from "./limits.js"
 import type { NodeId, Rev } from "./ids.js"
 import { rev } from "./ids.js"
-import { type NodeType, type PropName, type WriteKey, holds, props } from "./props.js"
+import { type NodeType, type PropName, holds, props } from "./props.js"
 import { readWriteIn } from "./read-write.js"
 import { type Refusal, isRefusal, refuse } from "./refusal.js"
 import type { Landed, Node, Run, Doom, Write } from "./doom.js"
@@ -13,7 +24,7 @@ import { type Theme, themeKeys, withThemeValue } from "./theme.js"
 type Parent = { readonly id: NodeId; readonly at: string }
 type Working = {
   readonly nodes: Map<NodeId, Node>
-  readonly revs: Map<NodeId, Map<WriteKey, Rev>>
+  readonly revs: Map<NodeId, Map<RevisionKey, Rev>>
   readonly children: Map<NodeId, NodeId[]>
   readonly runs: Map<string, Run>
   readonly created: Set<NodeId>
@@ -33,7 +44,7 @@ const takesBackDelete = (doom: Doom, write: Write) =>
 function open(doom: Doom): Working {
   return {
     nodes: new Map(doom.nodes),
-    revs: new Map(doom.revs as Map<NodeId, Map<WriteKey, Rev>>),
+    revs: new Map(doom.revs as Map<NodeId, Map<RevisionKey, Rev>>),
     children: new Map(doom.children as Map<NodeId, NodeId[]>),
     runs: new Map(doom.runs),
     created: new Set(),
@@ -43,7 +54,7 @@ function open(doom: Doom): Working {
   }
 }
 
-function stamp(work: Working, node: NodeId, keys: readonly WriteKey[], at: Rev): void {
+function stamp(work: Working, node: NodeId, keys: readonly RevisionKey[], at: Rev): void {
   let revs = work.revs.get(node)
   if (revs === undefined || !work.ownRevs.has(node)) {
     revs = new Map(revs)
@@ -176,7 +187,7 @@ function write(work: Working, doom: Doom, landed: Landed, raw: Write, known: Kno
     if (!work.created.has(id) && run?.guarded.has(id)) return refuse("person", id, key)
   }
   const was = doom.revs.get(id)?.get(key)
-  if (was !== undefined) {
+  if (was !== undefined && !(landed.readBase === undefined && linkedOverride(doom.nodes, read))) {
     const spec = key.startsWith("theme.") ? undefined : props[key as PropName]
     if (read.base === undefined ? spec?.conflict === "base" : read.base < was) return refuse("stale", id, key)
   }
@@ -196,6 +207,9 @@ function write(work: Working, doom: Doom, landed: Landed, raw: Write, known: Kno
     }
     place(work, node, parent, landed.rev)
     stamp(work, id, ["parent"], landed.rev)
+    const exited = doom.revs.get(id)?.get("partExit")
+    if (parent === null && (linkedOwner(doom.nodes, id) !== undefined || (exited !== undefined && exited === was)))
+      stamp(work, id, ["partExit"], landed.rev)
     return undefined
   }
   if (key.startsWith("theme.")) {
@@ -227,6 +241,7 @@ function keepLiveEnds(work: Working, doom: Doom, landed: Landed): void {
 
 export type Counts = { readonly elements: number; readonly slides: number }
 export type Known = {
+  readonly accepting?: boolean
   readonly counts: () => Counts
   readonly deck: () => boolean
   readonly partial?: true
@@ -299,9 +314,35 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
   const work = open(doom)
   const fenced = guardRun(work, landed)
   if (fenced !== undefined) return fenced
-  for (const each of landed.writes) {
-    const refusal = write(work, doom, landed, each, known)
+  if (
+    known.accepting === true &&
+    landed.readBase !== undefined &&
+    landed.writes.length === 0 &&
+    landed.phase === undefined &&
+    landed.runUndo === undefined
+  )
+    return { doom, delta: noChange }
+  const writes = withPartDeletes(doom, landed.writes)
+  if (isRefusal(writes)) return writes
+  const expanded = writes === landed.writes ? landed : { ...landed, writes }
+  for (const each of expanded.writes) {
+    const refusal = write(work, doom, expanded, each, known)
     if (refusal !== undefined) return refusal
+  }
+  const ownership = guardInstances(
+    doom,
+    work,
+    expanded,
+    writes !== landed.writes && instanceRoots(landed.writes).length === 0,
+  )
+  if (ownership !== undefined) return ownership
+  for (const root of instanceRoots(expanded.writes)) {
+    const before = propOf(doom.nodes.get(root), "instance")
+    const after = propOf(work.nodes.get(root), "instance")
+    for (const field of instanceFields)
+      if (!sameValue(before?.[field], after?.[field])) stamp(work, root, [instanceFieldKey(field)], landed.rev)
+    for (const node of suppressionChanges(root, before, after))
+      if (work.nodes.get(node) !== doom.nodes.get(node)) stamp(work, node, ["suppression"], landed.rev)
   }
   keepLiveEnds(work, doom, landed)
   if (known.freeing !== true) {
@@ -339,7 +380,7 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
       ...(landed.phase === "stop" ? { phase: "stopped" as const } : {}),
     })
   }
-  protect(work, landed, new Set(landed.writes.map((each) => each.node)))
+  protect(work, landed, new Set(expanded.writes.map((each) => each.node)))
   return {
     doom: {
       nodes: work.nodes,

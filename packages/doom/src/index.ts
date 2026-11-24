@@ -44,10 +44,19 @@ export { foldToJson, readFold, readLanded, readRuns, readStoredNode, revsToJson,
 export { type Arrow, type End, type Geometry, lineArrowheads } from "./geometry.js"
 export { type NodeId, type Rev, nodeId, readNodeId, rev } from "./ids.js"
 export { changingWrites } from "./changing-writes.js"
-export { invert } from "./invert.js"
+export { invert, invertStep, removePlacedInstance } from "./invert.js"
 export { onStandingLayers } from "./standing-layers.js"
 export { replayLog } from "./replay-log.js"
-export { type Replaced, type RunEdit, type Undone, invertRun, readRunEdit, replacedBy } from "./invert-run.js"
+export {
+  type Replaced,
+  type RunEdit,
+  type Undone,
+  invertRun,
+  readRunEdit,
+  replacedBy,
+  undoSourceOf,
+  instanceAfterEdit,
+} from "./invert-run.js"
 export type { Align9, Cell, Layout, Sizing, Track } from "./layout.js"
 export type { Chart } from "./chart.js"
 export type { Color, ColorVar, Effect, Hex, ImagePaint, Paint, StrokeStyle } from "./paint.js"
@@ -64,6 +73,7 @@ export {
   type Run,
   type RunUndo,
   type Doom,
+  type RevisionKey,
   type Write,
   emptyDoom,
 } from "./doom.js"
@@ -106,6 +116,7 @@ export {
   flows,
   holdsText,
   lockedIn,
+  onDeck,
   parentOf,
   propOf,
   slideOf,
@@ -124,3 +135,15 @@ export { type FontFace, type FontWidths, type Glyph, fontFace } from "./line-bre
 export { familyOf, paintedFace, storedFace } from "./painted-face.js"
 export { type OrderKey, orderKeyBetween } from "./order-key.js"
 export { type Clipboard, type Copies, copiedMove, duplicateWrites, pasteWrites } from "./copy-writes.js"
+export {
+  type ComponentPatch,
+  type ComponentUpdateFinding,
+  placeComponent,
+  regenerateComponent,
+  detachComponent,
+  suppressPart,
+} from "./component/join-instance.js"
+export { type PartKey, readPartKey } from "./component/instance.js"
+export { partDeletes, suppressKeys } from "./component/instance-ownership.js"
+
+export type { LayerPositions } from "./standing-layers.js"

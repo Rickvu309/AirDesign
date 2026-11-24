@@ -111,7 +111,11 @@ function fieldNote(fault: unknown, form: unknown, needs: unknown): string | unde
 export function refused(code: Refused, more: Where & Readonly<Record<string, unknown>> = {}): ToolResult {
   const where = whereWords(more)
   const specific =
-    more.fault !== undefined || more.needs !== undefined ? fieldNote(more.fault, more.form, more.needs) : undefined
+    more.fault !== undefined || more.needs !== undefined
+      ? fieldNote(more.fault, more.form, more.needs)
+      : typeof more.form === "string"
+        ? more.form
+        : undefined
   const words = specific ?? (typeof more.note === "string" ? more.note : refusalWords[code])
   return told(false, {
     ok: false,
