@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { Fragment, type ReactNode, useId } from "react"
+import { paintPathFades } from "./path-fades.js"
 import { masksOf, silhouetteIn } from "./silhouette.js"
 
 type Resolved = doom.Resolved
@@ -59,7 +60,7 @@ function MaskRun({
           />
         </mask>
       </svg>
-      <div style={{ position: "absolute", inset: 0, mask: `url(#${id})` }}>{nodes.map(render)}</div>
+      <div style={{ position: "absolute", inset: 0, mask: `url(#${id})` }}>{paintPathFades(nodes, render)}</div>
     </>
   )
 }
@@ -73,7 +74,7 @@ export function MaskedChildren({
 }) {
   return runsOf(nodes).map((run) =>
     run.mask === null ? (
-      <Fragment key={run.nodes[0]!.id}>{run.nodes.map(render)}</Fragment>
+      <Fragment key={run.nodes[0]!.id}>{paintPathFades(run.nodes, render)}</Fragment>
     ) : (
       <MaskRun key={run.mask.id} mask={run.mask} nodes={run.nodes} render={render} />
     ),

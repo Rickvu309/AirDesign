@@ -8,9 +8,19 @@ import { clickSlide, landNodes, openDoomDeck, readDoom, spot } from "../look/doo
 
 const colors = ["#d7263d", "#2e933c", "#1b98e0", "#f2c14e", "#8338ec"]
 const blue = "#336699"
-const pieSize = 300
-const cases = ["opaque", "node", "fill", "ancestor"]
-const center = (index, control = false) => [190 + 460 * index, control ? 500 : 170]
+const pieSize = 220
+const cases = [
+  ...Array.from({ length: 10 }, (_, i) => {
+    const opacity = (i + 1) / 10
+    return { name: `node ${opacity}`, node: opacity, limit: 4 }
+  }),
+  { name: "ancestor 0.5", ancestor: 0.5, limit: 4 },
+  { name: "fill 0.5", fill: 0.5, limit: 4 },
+  { name: "agent fill 0.5", fill: 0.5, noStroke: true, limit: 20 },
+  { name: "ring node 0.9", node: 0.9, inner: 0.25, limit: 4 },
+  { name: "ring ancestor 0.5", ancestor: 0.5, inner: 0.25, limit: 4 },
+]
+const center = (index) => [190 + (index % 5) * 385, 125 + Math.floor(index / 5) * 235]
 
 const paint = (color, opacity = 1) => ({ kind: "solid", color, opacity })
 const wedge = (key, x, y, size, from, to, r0) => ({
@@ -27,23 +37,20 @@ const wedge = (key, x, y, size, from, to, r0) => ({
 })
 
 function pies() {
-  return cases.flatMap((mode, index) =>
-    [false, true].flatMap((control) => {
-      const [x, y] = center(index, control)
-      return colors.map((color, i) => ({
-        ...wedge(`pie-${mode}-${control}-${i}`, x - pieSize / 2, y - pieSize / 2, pieSize, i / 5, (i + 1) / 5, 0),
-        color,
-        mode,
-        control,
-      }))
-    }),
-  )
+  return cases.flatMap((mode, index) => {
+    const [x, y] = center(index)
+    return colors.map((color, i) => ({
+      ...wedge(`pie-${index}-${i}`, x - pieSize / 2, y - pieSize / 2, pieSize, i / 5, (i + 1) / 5, mode.inner ?? 0),
+      color,
+      mode,
+    }))
+  })
 }
 
 const sweepSize = 80
 const sweepGrid = Array.from({ length: 80 }, (_, i) => {
   const x = 8 + (i % 20) * 96
-  const y = 660 + Math.floor(i / 20) * 100
+  const y = 738 + Math.floor(i / 20) * 84
   const delta = (i % 40) * 4e-9
   const direction = i < 40 ? 1 : -1
   return { x, y, delta, direction, start: i < 40 ? 0.125 : 0.625, inner: i < 40 ? 0 : 0.29 }
@@ -61,13 +68,13 @@ function seamDistance(pixel, left, right) {
   return Math.hypot(...spread.map((c, i) => pixel[i] - left[i] - c * t))
 }
 
-function seamScore(png, x, y) {
+function seamScore(png, x, y, inner) {
   let worst = 0
-  for (let i = 1; i < colors.length; i++) {
+  for (let i = 0; i < colors.length; i++) {
     const angle = (i * 2 * Math.PI) / colors.length
     const cos = Math.cos(angle)
     const sin = Math.sin(angle)
-    for (const r of [40, 70, 100, 130]) {
+    for (const r of inner ? [65, 80, 95] : [30, 55, 80, 95]) {
       const at = (offset) => rgb(png, x + cos * r - sin * offset, y + sin * r + cos * offset)
       for (let offset = -1.5; offset <= 1.5; offset += 0.5) {
         worst = Math.max(worst, seamDistance(at(offset), at(-6), at(6)))
@@ -78,14 +85,29 @@ function seamScore(png, x, y) {
 }
 
 function checkPaint(kit, name, png) {
-  const scores = cases.map((mode, i) => ({
-    mode,
-    score: seamScore(png, ...center(i)),
-    control: seamScore(png, ...center(i, true)),
+  const scores = cases.map(({ name, inner, limit }, i) => ({
+    name,
+    score: seamScore(png, ...center(i), inner),
+    limit,
   }))
   kit.note(
-    `${name} seams (worst RGB distance): ${scores.map(({ mode, score, control }) => `${mode} ${score.toFixed(1)} / control ${control.toFixed(1)}`).join(", ")}.`,
+    `${name} seams (worst RGB distance): ${scores.map(({ name, score }) => `${name} ${score.toFixed(1)}`).join(", ")}.`,
   )
+  for (const [index, mode] of cases.entries()) {
+    const [x, y] = center(index)
+    const alpha = (mode.node ?? 1) * (mode.fill ?? 1) * (mode.ancestor ?? 1)
+    colors.forEach((color, i) => {
+      const angle = ((i + 0.5) * 2 * Math.PI) / colors.length
+      const pixel = rgb(png, x + 80 * Math.cos(angle), y + 80 * Math.sin(angle))
+      const expected = [1, 3, 5].map((at) => 255 * (1 - alpha) + Number.parseInt(color.slice(at, at + 2), 16) * alpha)
+      kit.expect
+        .soft(
+          Math.hypot(...pixel.map((value, channel) => value - expected[channel])),
+          `${name} ${mode.name} interior colour`,
+        )
+        .toBeLessThanOrEqual(4)
+    })
+  }
   const missing = sweepGrid.filter(({ x, y, inner }) =>
     Array.from({ length: 8 }, (_, i) => ((i + 0.5) / 8) * 2 * Math.PI).some((angle) =>
       (inner === 0 ? [13, 32] : [32]).some((r) => {
@@ -111,7 +133,8 @@ export default async function drive(kit) {
       wedge(`arc-${i}`, x, y, sweepSize, start, start + direction * (1 - delta), inner),
     ),
   ]
-  const trees = [parts.slice(0, 60), parts.slice(60)].map((batch, i) => {
+  const trees = Array.from({ length: Math.ceil(parts.length / 60) }, (_, i) => {
+    const batch = parts.slice(i * 60, (i + 1) * 60)
     const spec = readComponentSpec({
       version: 1,
       name: "Path paint",
@@ -132,31 +155,36 @@ export default async function drive(kit) {
       children: tree.children.map((child, j) => ({ ...child, id: `paint${i}:${j + 2}` })),
     }
   })
-  const [first] = trees
   const byKey = new Map(slices.map((slice) => [slice.emit.key[1], slice]))
-  const frame = {
-    id: "translucent:1",
-    type: "frame",
-    parent: first.id,
-    props: { box: spot(0, 0, 1920, 1080), opacity: 0.5 },
-  }
-  const nodes = trees.flatMap((tree) =>
-    tree.children.map((child) => {
+  const ancestors = []
+  const nodes = trees.flatMap((tree) => {
+    const frames = new Map()
+    return tree.children.map((child) => {
       const slice = byKey.get(child.key[0])
       if (!slice) return { ...child, parent: tree.id }
-      const { mode, color, control } = slice
+      const { mode, color } = slice
+      if (mode.ancestor !== undefined && !frames.has(mode)) {
+        const frame = {
+          id: `translucent:${ancestors.length + 1}`,
+          type: "frame",
+          parent: tree.id,
+          props: { box: spot(0, 0, 1920, 1080), opacity: mode.ancestor },
+        }
+        frames.set(mode, frame.id)
+        ancestors.push(frame)
+      }
       return {
         ...child,
-        parent: mode === "ancestor" ? frame.id : tree.id,
+        parent: frames.get(mode) ?? tree.id,
         props: {
           ...child.props,
-          geometry: { ...child.props.geometry, fillStroke: !control },
-          fills: [paint(color, mode === "fill" ? 0.5 : 1)],
-          opacity: mode === "node" ? 0.5 : 1,
+          geometry: { ...child.props.geometry, ...(mode.noStroke ? {} : { fillStroke: true }) },
+          fills: [paint(color, mode.fill)],
+          opacity: mode.node ?? 1,
         },
       }
-    }),
-  )
+    })
+  })
 
   await page.addInitScript(() => {
     window.print = () => {}
@@ -170,7 +198,7 @@ export default async function drive(kit) {
       Object.values((await readDoom(kit, opened)).fold.nodes).filter((node) => node.parent?.id === opened.slide),
     )
     .toHaveLength(0)
-  await landNodes(kit, opened, [...trees, frame])
+  await landNodes(kit, opened, [...trees, ...ancestors])
   for (let i = 0; i < nodes.length; i += 30) await landNodes(kit, opened, nodes.slice(i, i + 30))
   const canvas = await page.locator("[data-slide-box]").screenshot()
   const out = dirname(await kit.capture("path-paint"))
@@ -192,10 +220,9 @@ export default async function drive(kit) {
   ]
   for (const [name, { scores, missing }] of results) {
     expect.soft(missing, `${name} near-full discs and rings`).toHaveLength(0)
-    for (const { mode, score, control } of scores) {
-      const limit = mode === "opaque" ? 4 : mode === "ancestor" ? control + 3 : Math.min(20, control + 3)
-      expect.soft(score, `${name} ${mode} seam; no-stroke control ${control.toFixed(1)}`).toBeLessThanOrEqual(limit)
+    for (const { name: mode, score, limit } of scores) {
+      expect.soft(score, `${name} ${mode} seam`).toBeLessThanOrEqual(limit)
     }
   }
-  note("The same near-full grid and opacity controls were read from the slide canvas and the rasterized PDF.")
+  note("The same near-full grid and opacity cases were read from the slide canvas and the rasterized PDF.")
 }

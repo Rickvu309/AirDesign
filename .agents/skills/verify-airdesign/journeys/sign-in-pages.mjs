@@ -1,5 +1,7 @@
+import { setTimeout as delay } from "node:timers/promises"
 import { productCopy, accountCopy } from "../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
+import signUpName from "../look/states/sign-up-name.mjs"
 
 const phone = { width: 390, height: 844 }
 const desktop = { width: 1470, height: 923 }
@@ -126,4 +128,20 @@ export default async function drive(kit) {
   await expect(page.getByRole("heading", { level: 1 })).toHaveCSS("font-size", "26px")
   await expect(page.locator("body > div")).toHaveCSS("background-color", "rgb(245, 245, 242)")
   note("the expired page has the sign-in page's canvas and 26 px heading")
+  const paths = [kit.signInRoutes.email.path, kit.signInRoutes.code.path]
+  const held = []
+  for (const path of paths) {
+    await page.route(
+      `${siteOrigin}${path}`,
+      async (route) => {
+        held.push(path)
+        await delay(5500)
+        await route.continue()
+      },
+      { times: 1 },
+    )
+  }
+  await signUpName.drive(kit)
+  expect(held).toEqual(paths)
+  await capture("sign-up-name-slow-replies")
 }

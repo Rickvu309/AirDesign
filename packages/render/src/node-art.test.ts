@@ -40,7 +40,7 @@ function painted(
 }
 
 describe("NodeArt", () => {
-  it("extends the fill of a path only when its own paint and all ancestors are opaque", () => {
+  it("extends the fill of a path when its own paint is opaque, including inside a faded group", () => {
     const path = (opacity = 1, alpha = 1) =>
       shape("wedge", {
         box: spot(0, 0, 100, 100),
@@ -59,7 +59,40 @@ describe("NodeArt", () => {
           children: [{ type: "frame", props: { box: spot(0, 0, 100, 100) }, children: [path()] }],
         },
       ]),
-    ).not.toContain("stroke-width")
+    ).toContain('stroke-width="2"')
+  })
+
+  it("paints a translucent solid path directly even without fillStroke", () => {
+    const html = painted([
+      shape("triangle", {
+        box: spot(0, 0, 100, 100),
+        geometry: { kind: "path", d: "M0 0L1 0L1 1Z" },
+        fills: [solid({ var: "accent1" }, { opacity: 0.5 })],
+      }),
+    ])
+    expect(html).toContain(`<path d="M0 0L100 0L100 100Z" fill="${navy}"`)
+    expect(html).not.toContain("clip-path")
+    expect(html).not.toContain("stroke-width")
+  })
+
+  it("fades adjacent wedge fills together and overlapping wedge fills separately", () => {
+    const wedge = (d: string) =>
+      shape("wedge", {
+        box: spot(0, 0, 100, 100),
+        geometry: { kind: "path", d, fillStroke: true },
+        fills: [solid({ var: "accent1" })],
+        opacity: 0.5,
+      })
+    const upper = "M0 0.5A0.5 0.5 0 0 1 1 0.5L0.5 0.5Z"
+    const lower = "M1 0.5A0.5 0.5 0 0 1 0 0.5L0.5 0.5Z"
+    const frame = (d: string): doom.TreeNode => ({
+      type: "frame",
+      props: { box: spot(0, 0, 100, 100) },
+      children: [wedge(upper), wedge(d)],
+    })
+    const paintOrder = (d: string) => painted([frame(d)]).match(/opacity:0\.5|stroke-width="2"/g)
+    expect(paintOrder(lower)).toEqual(["opacity:0.5", 'stroke-width="2"', 'stroke-width="2"'])
+    expect(paintOrder(upper)).toEqual(["opacity:0.5", "opacity:0.5"])
   })
 
   it("places a node by its box and rounds the box by its radius, filling it with each paint in order", () => {
