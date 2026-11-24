@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./icon-names": {
+      "types": "./dist/icon-names.d.ts",
+      "import": "./dist/icon-names.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
