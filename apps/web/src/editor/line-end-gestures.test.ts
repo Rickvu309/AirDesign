@@ -5,7 +5,7 @@ import { deleteWrites } from "./delete-writes"
 import { ungroupWrites } from "./group-writes"
 import { geometryOf } from "./slide-geometry"
 import { deleteSlideWrites } from "./slide-writes"
-import { draftWrites, leaveEmptyWrites } from "./text-leave"
+import { draftWrites, leaveEmptyWrites, leaveWrites } from "./text-leave"
 
 const id = doom.nodeId
 const [deckId, row, first, second, text, group, child, holder, toText, toGroup, toOther, other] = [
@@ -241,12 +241,48 @@ describe("the editor's gestures free a connector end the moment its shape leaves
       node: text,
       keeps: false,
       draft: { ...doom.textFromMarkdown("", "body"), resize: "widthAndHeight" as const },
+      painted: { ...doom.textFromMarkdown("Hello", "body"), resize: "widthAndHeight" as const },
     }
     const typing = doom.viewOf(client.view(), [
       { once: "typing", author: { kind: "person", id: "typing" }, writes: draftWrites(client.view(), draft, wide) },
     ])
     expect(startOf(typing, toText, wide)).toEqual(seen)
-    client.push(leaveEmptyWrites({ ...draft, pushed: "" }))
+    client.push(leaveWrites(client.view(), { ...draft, pushed: "" }, wide))
+    expect(startOf(client.view(), toText, wide)).toEqual(seen)
+  })
+  it("frees an emptied text's connector end where the last painted draft put it, not where the saved words put it", async () => {
+    const wide: doom.Measure = (words, theme, width) => {
+      const measured = estimate(words, theme, width)
+      return { ...measured, w: measured.w * 1.6 }
+    }
+    const hugging: doom.Edit = {
+      ...start,
+      writes: start.writes.map((write) =>
+        write.node === text && write.prop === "text"
+          ? { ...write, value: { ...doom.textFromMarkdown("Hello world hello", "body"), resize: "widthAndHeight" } }
+          : write,
+      ),
+    }
+    const { client } = await opened(wide, hugging)
+    const saved = startOf(client.view(), toText, wide)
+    const short = { ...doom.textFromMarkdown("Hi", "body"), resize: "widthAndHeight" as const }
+    const none = { ...doom.textFromMarkdown("", "body"), resize: "widthAndHeight" as const }
+    const typed = doom.viewOf(client.view(), [
+      {
+        once: "typed",
+        author: { kind: "person", id: "typed" },
+        writes: draftWrites(client.view(), { node: text, keeps: false, draft: short, painted: short }, wide),
+      },
+    ])
+    const seen = startOf(typed, toText, wide)
+    expect(seen.x).not.toBe(saved.x)
+    const left = { node: text, keeps: false, draft: none, painted: short, pushed: JSON.stringify(short) }
+    const emptying = doom.viewOf(client.view(), [
+      { once: "emptying", author: { kind: "person", id: "emptying" }, writes: draftWrites(client.view(), left, wide) },
+    ])
+    expect(startOf(emptying, toText, wide)).toEqual(seen)
+    expect(client.push(leaveWrites(client.view(), left, wide)).ok).toBe(true)
+    expect(doom.parentOf(client.view().nodes.get(text))).toBeNull()
     expect(startOf(client.view(), toText, wide)).toEqual(seen)
   })
 })

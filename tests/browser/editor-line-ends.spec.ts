@@ -317,3 +317,38 @@ test("a tab that still saw the attachment moves the line, and the end the other 
   await page.keyboard.press("ControlOrMeta+Shift+z")
   await expect.poll(async () => (await geometry()).start).toEqual({ x: 400, y: 250 })
 })
+
+test("emptying a draft that already reflowed keeps the connector where the draft painted it", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("edit-text")
+  const opened = await openEditor(page, context, stack)
+  const [, words] = hugging(opened.slide)
+  await landNodes(stack, opened, [
+    { ...words!, parent: opened.slide, props: { ...words!.props, box: spot(300, 250, 500, 80) } },
+    lineFrom(opened.slide, { node: "w:1", site: "r" }),
+  ])
+  await expect(page.locator('[data-slide-box] [data-node="l:1"]')).toBeVisible()
+  await page.evaluate(() => document.fonts.ready)
+  const saved = await paintedStart(page, "l:1")
+  await clickSlide(page, 350, 275)
+  await page.keyboard.press("Enter")
+  await expect(page.locator("[data-text-editor]")).toBeFocused()
+  const painted = () =>
+    page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))))
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.type("7")
+  await painted()
+  const seen = await paintedStart(page, "l:1")
+  expect(seen.x).toBeLessThan(saved.x - 20)
+  await page.keyboard.press("Backspace")
+  await painted()
+  expect(await paintedStart(page, "l:1")).toEqual(seen)
+  await page.keyboard.press("Escape")
+  await expect(page.locator('[data-slide-box] [data-node="w:1"]')).toHaveCount(0)
+  expect(await paintedStart(page, "l:1")).toEqual(seen)
+  const freed = (await savedNode(stack, opened, "l:1"))?.geometry as { start: Point }
+  expect(Math.abs(freed.start.x - seen.x)).toBeLessThanOrEqual(1)
+})

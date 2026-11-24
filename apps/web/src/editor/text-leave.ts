@@ -17,16 +17,35 @@ export function leaveEmptyWrites(left: {
   return JSON.stringify(left.draft) === left.pushed ? [] : [{ node: left.node, prop: "text", value: left.draft }]
 }
 
-export function draftWrites(
+type Leaving = {
+  readonly node: doom.NodeId
+  readonly keeps: boolean
+  readonly draft: doom.Text
+  readonly painted: doom.Text
+}
+
+const typist: doom.Author = { kind: "person", id: "typing" }
+
+function freedByLeaving(view: doom.Doom, left: Leaving, writes: readonly doom.Write[], measure: doom.Measure) {
+  if (!writes.some((write) => write.prop === "parent")) return []
+  const seen = doom.viewOf(view, [
+    { once: "painted-draft", author: typist, writes: [{ node: left.node, prop: "text", value: left.painted }] },
+  ])
+  return doom.freedLineEnds(seen, writes, measure)
+}
+
+export function draftWrites(view: doom.Doom, draft: Leaving, measure: doom.Measure): readonly doom.Write[] {
+  const leaving = leaveEmptyWrites({ ...draft, pushed: "" })
+  return [{ node: draft.node, prop: "text", value: draft.draft }, ...freedByLeaving(view, draft, leaving, measure)]
+}
+
+export function leaveWrites(
   view: doom.Doom,
-  draft: { readonly node: doom.NodeId; readonly keeps: boolean; readonly draft: doom.Text },
+  left: Leaving & { readonly pushed: string },
   measure: doom.Measure,
 ): readonly doom.Write[] {
-  const leaving = leaveEmptyWrites({ ...draft, pushed: "" })
-  return [
-    { node: draft.node, prop: "text", value: draft.draft },
-    ...(leaving.some((write) => write.prop === "parent") ? doom.freedLineEnds(view, leaving, measure) : []),
-  ]
+  const leaving = leaveEmptyWrites(left)
+  return [...freedByLeaving(view, left, leaving, measure), ...leaving]
 }
 
 export function blankTextFor(painted: boolean): doom.Text {
