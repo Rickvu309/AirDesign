@@ -43,6 +43,25 @@ describe("a grid of words fills the band with its text size", () => {
     expect(small.box.y + small.box.h).toBeLessThan(bottomLimitOf(1080))
   })
 
+  const boldOf = (doom: Doom, cell: NodeId) => {
+    const text = propOf(doom.nodes.get(cell)!, "text")!
+    const style = defaultTheme.textStyles[text.style]
+    return text.spans.length === 0 ? style.weight >= 600 : text.spans.every((span) => span.bold ?? style.weight >= 600)
+  }
+  const weights = (count: number) => {
+    const { doom, root } = gridOf(count)
+    return childrenOf(doom, root.id).map((cell) => ({
+      cell: propOf(cell, "cell")!,
+      label: propOf(cell, "text")!.chars,
+      bold: boldOf(doom, cell.id),
+    }))
+  }
+
+  it.each([4, 11])("sets headers and row labels semibold and every value regular, in a %i row grid", (count) => {
+    for (const { cell, label, bold } of weights(count))
+      expect(bold, `${label} at ${cell.row},${cell.col}`).toBe(cell.row === 0 || cell.col === 0)
+  })
+
   it("keeps rows at the height of their words, the theme gap between them, from the top of the band", () => {
     const { doom, root, box } = gridOf(4)
     const kpi = build(agentDeck(), add({ kind: "kpi", items: kpiItems }))

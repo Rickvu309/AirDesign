@@ -42,9 +42,12 @@ export function wrappedLines(chars: string, room: number, upper: boolean): numbe
   return lines
 }
 
+const emOf = (style: Theme["textStyles"][Text["style"]]) =>
+  style.size * (style.weight >= boldWeight ? boldWidening : 1) + style.tracking
+
 export function textHeight(text: Text, theme: Theme, width: Px): Px {
   const style = theme.textStyles[text.style]
-  const em = style.size * (style.weight >= boldWeight ? boldWidening : 1) + style.tracking
+  const em = emOf(style)
   const inner = width - (text.padding?.l ?? 0) - (text.padding?.r ?? 0)
   let total = (text.padding?.t ?? 0) + (text.padding?.b ?? 0)
   text.chars.split("\n").forEach((chars, at) => {
@@ -60,4 +63,17 @@ export function textHeight(text: Text, theme: Theme, width: Px): Px {
 export function widestLine(chars: readonly string[], theme: Theme, style: Text["style"]): Px {
   const size = theme.textStyles[style].size
   return Math.max(0, ...chars.map((each) => wordWidth(each, theme.textStyles[style].case === "upper") * size))
+}
+
+export function widestWord(chars: readonly string[], theme: Theme, style: Text["style"]): Px {
+  const look = theme.textStyles[style]
+  const upper = look.case === "upper"
+  const words = chars.flatMap((each) => each.split(/\s+/).filter((word) => word.length > 0))
+  return Math.max(0, ...words.map((word) => wordWidth(word, upper) * emOf(look)))
+}
+
+export function widestWhole(chars: readonly string[], theme: Theme, style: Text["style"]): Px {
+  const look = theme.textStyles[style]
+  const upper = look.case === "upper"
+  return Math.max(0, ...chars.map((each) => wordWidth(each, upper) * emOf(look)))
 }

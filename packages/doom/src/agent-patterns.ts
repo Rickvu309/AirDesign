@@ -7,6 +7,7 @@ import { type Area, gapFor, padFor, patternArea, slideSize, themeOf } from "./ag
 import type { Px } from "./paint.js"
 import {
   type Block,
+  type Part,
   type Sized,
   type Styles,
   bullets,
@@ -23,7 +24,7 @@ import {
 import { borrowing, endsInside } from "./pattern-lend.js"
 import type { Node } from "./doom.js"
 import type { Text, TextStyleName } from "./text.js"
-import { widestLine } from "./text-estimate.js"
+import { widestLine, widestWhole, widestWord } from "./text-estimate.js"
 import { zeroBox } from "./doom-walk.js"
 import type { Theme } from "./theme.js"
 
@@ -35,10 +36,10 @@ type Scale = {
   readonly styles: Styles
   readonly root: Values
   readonly filled: boolean
-  readonly wrap?: boolean
   readonly axes?: readonly [string, string] | undefined
 }
 type Build = (area: Area, items: readonly AgentItem[], scale: Scale) => Block | undefined
+type Way = { readonly build: Build; readonly stepping: boolean }
 
 const counts: Readonly<Record<PatternName, readonly [number, number]>> = {
   kpi: [1, 6],
@@ -217,43 +218,53 @@ const matrix: Build = (area, items, scale) => {
   ])
 }
 
+const wordsOf = (items: readonly AgentItem[], field: "value" | "title" | "note") =>
+  items.flatMap((item) => (item[field] === undefined ? [] : [item[field]]))
+
+const wholeWords = (items: readonly AgentItem[], scale: Scale, room: Px) =>
+  widestWord(wordsOf(items, "value"), scale.theme, scale.styles.label) <= room &&
+  widestWord(wordsOf(items, "title"), scale.theme, scale.styles.heading) <= room &&
+  widestWord(wordsOf(items, "note"), scale.theme, scale.styles.caption) <= room
+
+function stepWords(item: AgentItem, scale: Scale, room: Px): readonly Sized[] {
+  const { theme, styles } = scale
+  return [
+    ...(item.value === undefined ? [] : [sizedPart(partOf(item.value, styles.label, "accent1"), theme, room)]),
+    ...(item.title === undefined ? [] : [sizedPart(partOf(item.title, styles.heading), theme, room)]),
+    ...(item.note === undefined ? [] : [sizedPart(partOf(item.note, styles.caption, "text2"), theme, room)]),
+  ]
+}
+
+const dotOf = (at: number, side: Px): Block => ({
+  type: "shape",
+  key: `m${at}`,
+  values: { box: { ...zeroBox, w: side, h: side }, geometry: { kind: "ellipse" }, fills: [solid("accent1")] },
+})
+
+const railOf = (dot: Px, last: number, box: { readonly w: Px; readonly h: Px }): Block => ({
+  type: "shape",
+  values: (ref) => ({
+    box: { ...zeroBox, x: Math.round(dot / 2), y: Math.round(dot / 2), ...box },
+    geometry: {
+      kind: "line",
+      start: { node: ref("m0"), site: "c" },
+      end: { node: ref(`m${last}`), site: "c" },
+      route: "straight",
+      arrows: ["none", "none"],
+    },
+    strokes: [solid("accent1")],
+    stroke: strokeOf(slideWeight),
+  }),
+})
+
 const timeline: Build = (area, items, scale) => {
-  const { gap, pad, theme, styles } = scale
+  const { gap, pad } = scale
   const dot = Math.round(pad * dotShare)
   const inner = Math.round(gap / 2)
-  const most = (scale.filled ? area.w : Math.min(area.w, Math.round(area.w * flowWidthShare))) - dot - inner
-  if (most <= 0) return undefined
-  const widest = Math.max(
-    widestLine(
-      items.flatMap((item) => (item.value === undefined ? [] : [item.value])),
-      theme,
-      styles.label,
-    ),
-    widestLine(
-      items.flatMap((item) => (item.title === undefined ? [] : [item.title])),
-      theme,
-      styles.heading,
-    ),
-    widestLine(
-      items.flatMap((item) => (item.note === undefined ? [] : [item.note])),
-      theme,
-      styles.caption,
-    ),
-  )
-  const room = scale.filled ? most : Math.min(most, Math.ceil(widest) + pad)
-  const across = dot + inner + room
-  const left = scale.filled ? 0 : Math.round((area.w - across) / 2)
+  const room = area.w - dot - inner
+  if (room <= 0 || !wholeWords(items, scale, room)) return undefined
   const steps = items.map((item, at): Sized => {
-    const marker: Block = {
-      type: "shape",
-      key: `m${at}`,
-      values: { box: { ...zeroBox, w: dot, h: dot }, geometry: { kind: "ellipse" }, fills: [solid("accent1")] },
-    }
-    const words = [
-      ...(item.value === undefined ? [] : [sizedPart(partOf(item.value, styles.label, "accent1"), theme, room)]),
-      ...(item.title === undefined ? [] : [sizedPart(partOf(item.title, styles.heading), theme, room)]),
-      ...(item.note === undefined ? [] : [sizedPart(partOf(item.note, styles.caption, "text2"), theme, room)]),
-    ]
+    const words = stepWords(item, scale, room)
     const textHigh = words.reduce((sum, word) => sum + word.high, 0) + inner * Math.max(0, words.length - 1)
     const copy =
       words.length === 0
@@ -274,7 +285,7 @@ const timeline: Build = (area, items, scale) => {
           sizing: { w: "fill", h: "hug" },
           layout: { mode: "row", gap: inner, padding: sidesOf(0), align: "top-left" },
         },
-        [marker, ...copy],
+        [dotOf(at, dot), ...copy],
       ),
     }
   })
@@ -284,44 +295,66 @@ const timeline: Build = (area, items, scale) => {
     gap,
   )
   if (spread === undefined) return undefined
-  const last = items.length - 1
-  const line: Block = {
-    type: "shape",
-    values: (ref) => ({
-      box: { ...zeroBox, x: Math.round(dot / 2), y: Math.round(dot / 2), w: 0, h: Math.max(0, spread.high - dot) },
-      geometry: {
-        kind: "line",
-        start: { node: ref("m0"), site: "c" },
-        end: { node: ref(`m${last}`), site: "c" },
-        route: "straight",
-        arrows: ["none", "none"],
-      },
-      strokes: [solid("accent1")],
-      stroke: strokeOf(slideWeight),
-    }),
-  }
   const lane = frameOf(
     {
-      box: { ...zeroBox, w: across, h: spread.high },
+      box: { ...zeroBox, w: area.w, h: spread.high },
       layout: { mode: "column", gap: spread.gap, padding: sidesOf(0), align: "top-left" },
     },
     steps.map((step) => step.block),
   )
-  return frameOf(
+  return frameOf({ ...scale.root, box: boxIn(area, spread.high) }, [
+    railOf(dot, items.length - 1, { w: 0, h: Math.max(0, spread.high - dot) }),
+    lane,
+  ])
+}
+
+const timelineAcross: Build = (area, items, scale) => {
+  const { gap, pad } = scale
+  const dot = Math.round(pad * dotShare)
+  const inner = Math.round(gap / 2)
+  const slot = slotWidth(area, items.length, gap)
+  if (slot <= 0 || !wholeWords(items, scale, slot)) return undefined
+  const steps = items.map((item, at): Sized => {
+    const words = stepWords(item, scale, slot)
+    const textHigh = words.reduce((sum, word) => sum + word.high, 0) + inner * words.length
+    return {
+      high: dot + textHigh,
+      block: frameOf(
+        {
+          sizing: { w: "fill", h: "hug" },
+          layout: { mode: "column", gap: inner, padding: sidesOf(0), align: "top-left" },
+        },
+        [dotOf(at, dot), ...words.map((word) => word.block)],
+      ),
+    }
+  })
+  const tallest = Math.max(...steps.map((step) => step.high))
+  if (tallest > area.h) return undefined
+  const high = scale.filled ? area.h : tallest
+  const lane = frameOf(
     {
-      ...scale.root,
-      box: { ...boxIn(area, spread.high), x: area.x + left, w: scale.filled ? area.w : across },
+      box: { ...zeroBox, w: area.w, h: high },
+      layout: { mode: "row", gap, padding: sidesOf(0), align: "top-left" },
     },
-    [line, lane],
+    steps.map((step) => step.block),
   )
+  return frameOf({ ...scale.root, box: boxIn(area, high) }, [
+    railOf(dot, items.length - 1, { w: (slot + gap) * (items.length - 1), h: 0 }),
+    lane,
+  ])
 }
 
 const flowSpacing = (scale: Scale) => Math.max(scale.gap * 2, arrowRoom)
+
+const flowWordsFit = (items: readonly AgentItem[], scale: Scale, room: Px) =>
+  widestWord(wordsOf(items, "title"), scale.theme, scale.styles.heading) <= room &&
+  widestWord(wordsOf(items, "note"), scale.theme, scale.styles.caption) <= room
 
 const flowDown: Build = (area, items, scale) => {
   const { pad, theme, styles } = scale
   const cardW = Math.min(area.w, Math.max(pad * 8, Math.round(area.w * flowWidthShare)))
   const room = cardW - pad * 2
+  if (!flowWordsFit(items, scale, room)) return undefined
   const steps = items.map((item, at) =>
     cardOf(
       [
@@ -362,16 +395,16 @@ const flowDown: Build = (area, items, scale) => {
   return frameOf({ ...scale.root, box: boxIn(area, spread.high) }, [lane, ...arrows])
 }
 
-const flowAcross: Build = (area, items, scale) => {
+function flowAcross(area: Area, items: readonly AgentItem[], scale: Scale, wrapped: boolean): Block | undefined {
   const { pad, theme, styles } = scale
   const spacing = flowSpacing(scale)
   const cardW = slotWidth(area, items.length, spacing)
   const room = cardW - pad * 2
   if (room <= 0) return undefined
-  const titles = items.flatMap((item) => (item.title === undefined ? [] : [item.title]))
-  const notes = items.flatMap((item) => (item.note === undefined ? [] : [item.note]))
-  const oneLine = widestLine(titles, theme, styles.heading) <= room && widestLine(notes, theme, styles.caption) <= room
-  if (!oneLine && scale.wrap !== true) return undefined
+  const oneLine =
+    widestWhole(wordsOf(items, "title"), theme, styles.heading) <= room &&
+    widestWhole(wordsOf(items, "note"), theme, styles.caption) <= room
+  if (wrapped ? !flowWordsFit(items, scale, room) : !oneLine) return undefined
   const steps = items.map((item, at) =>
     cardOf(
       [
@@ -409,15 +442,24 @@ const flowAcross: Build = (area, items, scale) => {
   return frameOf({ ...scale.root, box: boxIn(area, high) }, [lane, ...arrows])
 }
 
-const flowAcrossWrapped: Build = (area, items, scale) => flowAcross(area, items, { ...scale, wrap: true })
+const flowAcrossOneLine: Build = (area, items, scale) => flowAcross(area, items, scale, false)
+const flowAcrossWrapped: Build = (area, items, scale) => flowAcross(area, items, scale, true)
 
-const builders: Readonly<Record<PatternName, readonly Build[]>> = {
-  kpi: [kpi],
-  cards: [cards],
-  compare: [compare],
-  matrix: [matrix],
-  timeline: [timeline],
-  flow: [flowAcross, flowDown, flowAcrossWrapped],
+const stepped = (build: Build): Way => ({ build, stepping: true })
+const fixed = (build: Build): Way => ({ build, stepping: false })
+
+const builders: Readonly<Record<PatternName, readonly Way[]>> = {
+  kpi: [stepped(kpi)],
+  cards: [stepped(cards)],
+  compare: [stepped(compare)],
+  matrix: [stepped(matrix)],
+  timeline: [fixed(timeline), stepped(timelineAcross)],
+  flow: [fixed(flowAcrossOneLine), fixed(flowDown), stepped(flowAcrossWrapped)],
+}
+
+const tooMuch: Readonly<Partial<Record<PatternName, string>>> = {
+  timeline: "shorter labels or fewer steps",
+  flow: "shorter labels or fewer steps",
 }
 
 export function addPattern(draft: Draft, parent: Node, change: Add): void {
@@ -434,7 +476,7 @@ export function addPattern(draft: Draft, parent: Node, change: Add): void {
     name: change.name ?? names[kind],
     ...(change.hidden === undefined ? {} : { hidden: change.hidden }),
   }
-  const place = (way: Build): Block | undefined => {
+  const place = ({ build: way, stepping }: Way): Block | undefined => {
     const make = (at: Area, styles: Styles) =>
       way(at, items, {
         gap: gapFor(width),
@@ -449,12 +491,21 @@ export function addPattern(draft: Draft, parent: Node, change: Add): void {
     const first = make(area, start)
     const borrowed =
       change.box === undefined && !endsInside(draft, first) ? borrowing(draft, parent, area, make, start) : undefined
-    return borrowed ?? first ?? largestFitting(theme, (styles) => make(area, styles))
+    return borrowed ?? first ?? (stepping ? largestFitting(theme, (styles) => make(area, styles)) : undefined)
   }
+  const reason = tooMuch[kind]
   const block =
     builders[kind].reduce<Block | undefined>((got, way) => got ?? place(way), undefined) ??
-    stop("limit", undefined, "items")
+    (reason === undefined ? stop("limit", undefined, "items") : stop("limit", undefined, "items", "needs", reason))
   emit(draft, parent.id, block)
+}
+
+function weighted(part: Part, bold: boolean): Part {
+  const { chars, spans } = part.text
+  const open = spans.length === 0 ? [{ end: chars.length }] : spans
+  const text: Text = { ...part.text, spans: open.map((span) => ({ ...span, bold: span.bold ?? bold })) }
+  const values = part.block.values as Values
+  return { ...part, text, block: { ...part.block, values: { ...values, text } } }
 }
 
 export function addGrid(draft: Draft, parent: Node, change: Add): void {
@@ -479,8 +530,8 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
   const steps = ladder.slice(ladder.indexOf("heading"), ladder.indexOf("caption") + 1)
   const attempt = (style: TextStyleName) => {
     const cells = rows.map((row, at) =>
-      row.map((cell) =>
-        cell === "" ? undefined : at === 0 ? partOf(`**${cell}**`, style, "text2") : partOf(cell, style, "text"),
+      row.map((cell, col) =>
+        cell === "" ? undefined : weighted(partOf(cell, style, at === 0 ? "text2" : "text"), at === 0 || col === 0),
       ),
     )
     const heights = cells.map((row) =>
