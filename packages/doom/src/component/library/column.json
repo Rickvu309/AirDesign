@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "name": "Quarterly revenue",
+  "name": "Chart",
   "collections": {
     "rows": {
       "label": "string",
@@ -16,11 +16,11 @@
   "defaults": {
     "scale": 1,
     "digits": 0,
-    "prefix": "$",
-    "suffix": "M",
-    "unitHeader": "$M",
+    "prefix": "",
+    "suffix": "",
+    "unitHeader": "",
     "unitPlace": "header",
-    "title": "Revenue",
+    "title": "",
     "ink": {
       "var": "text"
     },
@@ -33,20 +33,41 @@
     },
     "heading": "label",
     "label": "label",
-    "caption": "caption"
+    "caption": "caption",
+    "captionSmall": 18
   },
   "let": [
     ["gutter", 12],
     ["plotTop", 99],
-    ["plotBottom", ["sub", ["get", "frame.h"], 55]],
+    ["categoryTop", ["sub", ["get", "frame.h"], 62]],
     ["present", ["filter", ["get", "data.rows"], "r", ["if", ["eq", ["get", "r.value"], null], false, true]]],
     ["values", ["map", ["get", "present"], "r", ["get", "r.value"]]],
     ["lo", ["min", 0, ["get", "values"]]],
     ["hi", ["max", 1, ["get", "values"]]],
+    [
+      "plotBottom",
+      ["sub", ["get", "categoryTop"], ["if", ["get", "variant.labels"], ["if", ["lt", ["get", "lo"], 0], 44, 12], 12]]
+    ],
+    ["headerUnit", ["if", ["eq", ["get", "token.unitPlace"], "header"], ["get", "token.unitHeader"], ""]],
+    [
+      "header",
+      [
+        "if",
+        ["eq", ["get", "token.title"], ""],
+        ["get", "headerUnit"],
+        [
+          "if",
+          ["eq", ["get", "headerUnit"], ""],
+          ["get", "token.title"],
+          ["concat", ["get", "token.title"], ", ", ["get", "headerUnit"]]
+        ]
+      ]
+    ],
     ["zero", ["linear", 0, ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]]
   ],
   "parts": [
     {
+      "when": ["if", ["eq", ["get", "header"], ""], false, true],
       "emit": {
         "kind": "text",
         "key": ["list", "unit"],
@@ -54,11 +75,7 @@
         "y": 0,
         "w": ["get", "frame.w"],
         "h": 42,
-        "chars": [
-          "concat",
-          ["get", "token.title"],
-          ["if", ["eq", ["get", "token.unitPlace"], "header"], ["concat", ", ", ["get", "token.unitHeader"]], ""]
-        ],
+        "chars": ["get", "header"],
         "style": ["get", "token.heading"],
         "color": ["get", "token.ink"],
         "align": "left",
@@ -111,16 +128,16 @@
           "emit": {
             "kind": "text",
             "key": ["list", "category", ["get", "r.id"]],
-            "x": ["get", "lane.x"],
-            "y": ["add", ["get", "plotBottom"], 17],
-            "w": ["get", "lane.w"],
-            "h": 32,
+            "x": ["get", "lane.start"],
+            "y": ["get", "categoryTop"],
+            "w": ["get", "lane.size"],
+            "h": 56,
             "chars": ["get", "r.label"],
             "style": ["get", "token.caption"],
             "color": ["get", "token.muted"],
             "align": "center",
             "alignV": "center",
-            "fit": "omit"
+            "fit": { "smaller": ["get", "token.captionSmall"] }
           }
         },
         {
@@ -141,9 +158,9 @@
               "emit": {
                 "kind": "rect",
                 "key": ["list", "bar", ["get", "r.id"]],
-                "x": ["get", "mark.x"],
+                "x": ["get", "mark.start"],
                 "y": ["min", ["get", "zero"], ["get", "edge"]],
-                "w": ["get", "mark.w"],
+                "w": ["get", "mark.size"],
                 "h": [
                   "max",
                   2,
@@ -157,9 +174,9 @@
               "emit": {
                 "kind": "text",
                 "key": ["list", "value", ["get", "r.id"]],
-                "x": ["get", "lane.x"],
+                "x": ["get", "lane.start"],
                 "y": ["if", ["lt", ["get", "r.value"], 0], ["add", ["get", "edge"], 5], ["sub", ["get", "edge"], 37]],
-                "w": ["get", "lane.w"],
+                "w": ["get", "lane.size"],
                 "h": 32,
                 "chars": [
                   "format",
@@ -183,11 +200,5 @@
         }
       ]
     }
-  ],
-  "quantities": {
-    "rows.value": {
-      "baseUnit": "USD",
-      "storedScale": 1000000
-    }
-  }
+  ]
 }

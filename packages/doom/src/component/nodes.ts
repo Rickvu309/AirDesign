@@ -3,16 +3,17 @@ import {
   type Measure,
   type NodeId,
   type Props,
+  type Text,
   type Theme,
   isRefusal,
   nodeId,
   props,
   siteSpot,
 } from "../index.js"
-import { type Reader, finite, literal, object, reject } from "../read-kit.js"
+import { type Reader, finite, literal, naming, object, reject } from "../read-kit.js"
 import type { Expr } from "./expression.js"
 import type { Emission } from "./spec.js"
-import { color, id, isList, numeric, string, type Value } from "./values.js"
+import { type Charge, color, id, isList, numeric, string, type Value } from "./values.js"
 
 export type PartKey = readonly [string, ...string[]]
 type ShapeProps = Pick<Props, "name" | "box" | "geometry"> &
@@ -23,17 +24,25 @@ export type ComponentNode = {
   readonly type: "shape"
   readonly props: ShapeProps
 }
+export type ComponentFinding = {
+  readonly kind: "text-fit"
+  readonly key: PartKey
+  readonly field: string
+}
 export type ComponentTree = {
   readonly id: NodeId
   readonly key: readonly ["root"]
   readonly type: "frame"
   readonly props: Pick<Props, "name" | "box">
   readonly children: readonly ComponentNode[]
+  readonly findings: readonly ComponentFinding[]
 }
 
 const prop = <K extends keyof typeof props>(key: K, raw: unknown): Props[K] => {
   const value = props[key].read(raw)
-  return isRefusal(value) ? reject(value.refused === "limit" ? "limit" : "shape") : value
+  if (!isRefusal(value)) return value
+  const refuse = () => reject(value.refused === "limit" ? "limit" : "shape", value.form ?? `Valid ${key} properties.`)
+  return value.field === undefined ? refuse() : naming(value.field, refuse)
 }
 
 const coordinate = finite(-1_000_000, 1_000_000)
@@ -41,14 +50,12 @@ const size = finite(0, 1_000_000)
 export const readFrame: Reader<{ readonly x: number; readonly y: number; readonly w: number; readonly h: number }> =
   object({ x: coordinate, y: coordinate, w: size, h: size })
 
-function box(x: unknown, y: unknown, w: unknown, h: unknown): Props["box"] {
-  const left = coordinate(x)
-  const top = coordinate(y)
+function box(x: number, y: number, w: number, h: number): Props["box"] {
   return {
-    x: Math.round(left),
-    y: Math.round(top),
-    w: Math.round(left + size(w)) - Math.round(left),
-    h: Math.round(top + size(h)) - Math.round(top),
+    x: Math.round(x),
+    y: Math.round(y),
+    w: Math.round(x + w) - Math.round(x),
+    h: Math.round(y + h) - Math.round(y),
     rotation: 0,
     flipH: false,
     flipV: false,
@@ -56,8 +63,8 @@ function box(x: unknown, y: unknown, w: unknown, h: unknown): Props["box"] {
 }
 
 function keyOf(raw: unknown): PartKey {
-  if (!isList(raw) || raw.length === 0) return reject()
-  if (raw.length > 5) return reject("limit")
+  if (!isList(raw) || raw.length === 0) return reject("shape", "A non-empty list of part key segments.")
+  if (raw.length > 5) return reject("limit", "At most five part key segments.")
   return [id(raw[0]), ...raw.slice(1).map(id)]
 }
 
@@ -77,53 +84,106 @@ type Line = {
   readonly stroke: Props["stroke"]
 }
 
-export type PreparedPart = { readonly key: PartKey } & (
+export type PreparedPart = { readonly key: PartKey; readonly field: string } & (
   | { readonly kind: "shape"; readonly props: ShapeProps }
   | { readonly kind: "line"; readonly line: Line }
 )
 
+type EmissionContext = {
+  readonly read: (expr: Expr) => Value
+  readonly measure: Measure
+  readonly theme: Theme
+  readonly charge: Charge
+}
+
+const align = literal(["left", "center", "right", "justify"])
+const vertical = literal(["top", "center", "bottom"])
+const route = literal(["straight", "elbow", "curve"])
+const arrow = literal(["none", "arrow", "triangle", "circle"])
+const smallerSize = finite(1, 2_000)
+
 export function preparePart(
   emit: Emission,
-  read: (expr: Expr) => Value,
-  measure: Measure,
-  theme: Theme,
-): PreparedPart | undefined {
-  const key = keyOf(read(emit.key))
+  field: string,
+  { read, measure, theme, charge }: EmissionContext,
+): PreparedPart | ComponentFinding | undefined {
+  const readField = <T>(name: string, expr: Expr, parse: (value: Value) => T): T =>
+    naming(`${field}.${name}`, () => parse(read(expr)))
+  const key = readField("key", emit.key, keyOf)
   if (emit.kind === "line") {
     return {
       key,
+      field,
       kind: "line",
       line: {
-        start: endpoint(read(emit.start)),
-        end: endpoint(read(emit.end)),
-        route: literal(["straight", "elbow", "curve"])(read(emit.route)),
-        arrow: literal(["none", "arrow", "triangle", "circle"])(read(emit.arrow)),
-        strokes: [{ kind: "solid", color: color(read(emit.color)) }],
-        stroke: prop("stroke", { weight: read(emit.width), align: "center", dash: "solid" }),
+        start: readField("start", emit.start, endpoint),
+        end: readField("end", emit.end, endpoint),
+        route: readField("route", emit.route, route),
+        arrow: readField("arrow", emit.arrow, arrow),
+        strokes: [{ kind: "solid", color: readField("color", emit.color, color) }],
+        stroke: readField("width", emit.width, (weight) => prop("stroke", { weight, align: "center", dash: "solid" })),
       },
     }
   }
-  const position = box(read(emit.x), read(emit.y), read(emit.w), read(emit.h))
+  const position = box(
+    readField("x", emit.x, coordinate),
+    readField("y", emit.y, coordinate),
+    readField("w", emit.w, size),
+    readField("h", emit.h, size),
+  )
   const shared = { name: key.join(" / "), box: position, geometry: { kind: "rect" } } as const
   if (emit.kind === "rect")
-    return { key, kind: "shape", props: { ...shared, fills: [{ kind: "solid", color: color(read(emit.fill)) }] } }
+    return {
+      key,
+      field,
+      kind: "shape",
+      props: { ...shared, fills: [{ kind: "solid", color: readField("fill", emit.fill, color) }] },
+    }
 
-  const chars = string(read(emit.chars))
-  const alignment = literal(["left", "center", "right", "justify"])(read(emit.align))
-  const ink = color(read(emit.color))
-  const text = prop("text", {
-    chars,
-    spans: chars === "" ? [] : [{ end: chars.length, color: ink }],
-    paras: chars.split("\n").map(() => ({ align: alignment })),
-    style: read(emit.style),
-    resize: "fixed",
-    alignV: read(emit.alignV),
+  const chars = readField("chars", emit.chars, (value) => {
+    if (typeof value === "string") charge(value.length)
+    return string(value)
   })
-  if (emit.fit === "omit") {
-    const measured = measure(text, theme, null)
-    if (numeric(measured.w) > position.w || numeric(measured.h) > position.h) return undefined
-  }
-  return { key, kind: "shape", props: { ...shared, text } }
+  const alignment = readField("align", emit.align, align)
+  const ink = readField("color", emit.color, color)
+  const textStyle = naming(`${field}.style`, () => read(emit.style))
+  const alignV = readField("alignV", emit.alignV, vertical)
+  const lines = chars.split("\n")
+  naming(`${field}.chars`, () => charge(16 * lines.length))
+  const text = naming(field, () =>
+    prop("text", {
+      chars,
+      spans: chars === "" ? [] : [{ end: chars.length, color: ink }],
+      paras: lines.map(() => ({ align: alignment })),
+      style: textStyle,
+      resize: "fixed",
+      alignV,
+    }),
+  )
+  const fit = emit.fit
+  if (fit === undefined) return { key, field, kind: "shape", props: { ...shared, text } }
+
+  const fits = (candidate: Text, width: number | null, linesLimit: number) =>
+    naming(`${field}.fit`, () => {
+      charge(96 + (width === null ? 2 : 6) * chars.length + 8 * (lines.length - 1))
+      const result = measure(candidate, theme, width)
+      return (
+        numeric(result.w) <= position.w &&
+        numeric(result.h) <= position.h &&
+        result.lines.length <= linesLimit &&
+        (width === null || result.lines.every((line) => line.ink <= position.w + 1e-6))
+      )
+    })
+  if (fits(text, null, fit === "omit" ? Infinity : 2)) return { key, field, kind: "shape", props: { ...shared, text } }
+  if (fit === "omit") return undefined
+
+  const small = readField("fit.smaller", fit.smaller, smallerSize)
+  const reduced =
+    small < theme.textStyles[text.style].size
+      ? { ...text, spans: text.spans.map((span) => ({ ...span, size: small })) }
+      : text
+  if (fits(reduced, position.w, 2)) return { key, field, kind: "shape", props: { ...shared, text: reduced } }
+  return { kind: "text-fit", key, field: `${field}.chars` }
 }
 
 const rootKey = ["root"] as const
@@ -133,11 +193,17 @@ export function treeOf(
   name: string,
   frame: ReturnType<typeof readFrame>,
   parts: readonly PreparedPart[],
+  findings: readonly ComponentFinding[],
+  charge: Charge,
 ): ComponentTree {
   const seen = new Map<string, { readonly id: NodeId; readonly part: PreparedPart }>()
   for (const [index, part] of parts.entries()) {
     const key = keyString(part.key)
-    if (key === keyString(rootKey) || seen.has(key)) return reject()
+    naming(`${part.field}.key`, () => {
+      charge(key.length)
+      if (key === keyString(rootKey)) reject("shape", 'The key ["root"] is reserved.')
+      if (seen.has(key)) reject("shape", `Duplicate emitted key ${key}.`)
+    })
     seen.set(key, { id: nodeId(`component:${index + 2}`), part })
   }
 
@@ -147,7 +213,8 @@ export function treeOf(
       return { ...point, end: point }
     }
     const target = seen.get(keyString(end.key))
-    if (target === undefined || target.part.kind !== "shape") return reject()
+    if (target === undefined || target.part.kind !== "shape")
+      return reject("shape", `The site must name an emitted shape. No shape has key ${keyString(end.key)}.`)
     const { box, geometry } = target.part.props
     const spot = siteSpot(geometry, box.w, box.h, end.site)
     return { x: box.x + spot.x, y: box.y + spot.y, end: { node: target.id, site: end.site } }
@@ -161,13 +228,20 @@ export function treeOf(
       continue
     }
     const { start, end, route, arrow, strokes, stroke } = part.line
-    const a = resolve(start)
-    const b = resolve(end)
+    const a = naming(`${part.field}.start`, () => resolve(start))
+    const b = naming(`${part.field}.end`, () => resolve(end))
     children.push({
       ...node,
       props: {
         name: part.key.join(" / "),
-        box: box(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(a.x - b.x), Math.abs(a.y - b.y)),
+        box: naming(part.field, () =>
+          box(
+            coordinate(Math.min(a.x, b.x)),
+            coordinate(Math.min(a.y, b.y)),
+            size(Math.abs(a.x - b.x)),
+            size(Math.abs(a.y - b.y)),
+          ),
+        ),
         geometry: { kind: "line", start: a.end, end: b.end, route, arrows: ["none", arrow] },
         strokes,
         stroke,
@@ -180,5 +254,6 @@ export function treeOf(
     key: rootKey,
     props: { name, box: box(frame.x, frame.y, frame.w, frame.h) },
     children,
+    findings,
   }
 }

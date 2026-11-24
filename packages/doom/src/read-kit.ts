@@ -16,8 +16,8 @@ export class Reject {
   }
 }
 
-export const reject = (kind: "shape" | "limit" = "shape"): never => {
-  throw new Reject(kind)
+export const reject = (kind: "shape" | "limit" = "shape", form?: string): never => {
+  throw new Reject(kind, undefined, form === undefined || kind === "limit" ? undefined : "form", form)
 }
 
 const wrong = (form: string): never => {
@@ -124,12 +124,13 @@ export function explain(thrown: unknown, form: string | undefined): void {
     thrown.form = form
 }
 
-function naming<T>(field: string, read: () => T): T {
+export function naming<T>(field: string, read: () => T): T {
   try {
     return read()
   } catch (thrown) {
     if (thrown instanceof Reject) {
-      thrown.field = thrown.field === undefined ? field : `${field}.${thrown.field}`
+      const suffix = thrown.field
+      thrown.field = suffix === undefined ? field : suffix.startsWith("[") ? `${field}${suffix}` : `${field}.${suffix}`
       if (thrown.fault === undefined && thrown.kind === "shape") thrown.fault = "form"
     }
     throw thrown

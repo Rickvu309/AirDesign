@@ -3,6 +3,7 @@ import {
   applyEdit,
   defaultTheme,
   doomFromTree,
+  fontFace,
   isRefusal,
   measureWith,
   orderKeyBetween,
@@ -25,6 +26,21 @@ import column from "./testing/column.json" with { type: "json" }
 import waterfall from "./testing/waterfall.json" with { type: "json" }
 
 const measure = measureWith({})
+const dejavu = { ...defaultTheme, fonts: { heading: "DejaVu Sans", body: "DejaVu Sans" } }
+const metrics = (digits: number, extra: Readonly<Record<string, number>>) => ({
+  ascent: 1901 / 2048,
+  descent: 483 / 2048,
+  advances: Object.fromEntries(
+    [...Array.from("0123456789", (char) => [char, digits] as const), ...Object.entries(extra)].map(([char, width]) => [
+      char,
+      width / 2048,
+    ]),
+  ),
+})
+const exact = measureWith({
+  [fontFace("DejaVu Sans", false, false)]: metrics(1303, { F: 1178, Y: 1251, E: 1294, W: 2025, i: 569, " ": 651 }),
+  [fontFace("DejaVu Sans", true, false)]: metrics(1425, { "−": 1716, ".": 778 }),
+})
 const inputs = { ...column, theme: defaultTheme, measure }
 const expand = (spec: ComponentSpec, input: ComponentInput) => {
   const result = expandComponent(spec, input)
@@ -49,6 +65,21 @@ const zero = (node: { props: { geometry: Props["geometry"] } } | undefined) => {
 const rectangle = { kind: "rect", key: ["list", "rectangle"], x: 0, y: 0, w: 1, h: 1, fill: defaultTheme.colors.text }
 const specOf = (parts: readonly unknown[]) => ({ version: 1, name: "Fixture", collections: {}, parts })
 const repeat = (as: string) => ({ over: ["list", ...Array.from({ length: 50 }, (_, i) => String(i))], as })
+const widestList = ["list", ...Array.from({ length: 64 }, (_, i) => i)]
+const measuredText = {
+  kind: "text",
+  key: ["list", "label"],
+  x: 0,
+  y: 0,
+  w: 1,
+  h: 1,
+  chars: ["concat", "W".repeat(200), "W".repeat(200)],
+  style: "body",
+  color: defaultTheme.colors.text,
+  align: "left",
+  alignV: "top",
+  fit: "omit",
+}
 
 function land(tree: ComponentTree) {
   const { doom, slides } = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
@@ -97,28 +128,60 @@ describe("expandComponent", () => {
     expect(part(result, "value", "zero")?.props.text?.chars).toBe("0")
   })
 
-  it("fits labels with measured glyph widths and keeps both bars", () => {
-    const theme = {
-      ...defaultTheme,
-      fonts: { heading: "DejaVu Sans", body: "DejaVu Sans" },
-    }
-    const advances = { i: 569 / 2048, W: 2025 / 2048 }
-    const exact = measureWith({ "DejaVu Sans": { ascent: 1901 / 2048, descent: 483 / 2048, advances } })
+  it("keeps all text boxes apart for a signed column with DejaVu Sans widths", () => {
+    const rows = [12.4, 18.9, -6.2, null, 0, 24.1].map((value, i) => ({
+      id: `fy${21 + i}`,
+      label: `FY${21 + i}`,
+      value,
+    }))
+    const result = nodes({ ...inputs, theme: dejavu, measure: exact, data: { rows }, tokens: { digits: 1 } })
+    expect(part(result, "value", "fy23")?.props.text?.chars).toBe("−6.2")
+    expect(part(result, "category", "fy23")?.props.text?.chars).toBe("FY23")
+    const labels = result.filter((node) => node.props.text !== undefined)
+    for (const [
+      i,
+      {
+        key,
+        props: { box: a },
+      },
+    ] of labels.entries())
+      for (const {
+        key: other,
+        props: { box: b },
+      } of labels.slice(i + 1))
+        expect(a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h, `${key} vs ${other}`).toBe(
+          false,
+        )
+  })
+
+  it("shrinks and wraps category labels and reports a label that cannot fit", () => {
+    const frame = { ...column.frame, w: 170 }
     const rows = [
-      { id: "narrow", label: "iiii", value: 12 },
-      { id: "wide", label: "WWWW", value: 12 },
+      { id: "shorter", label: "WWWW", value: 12 },
+      { id: "wrapped", label: "WWWW WWWW", value: 12 },
     ]
-    const result = nodes({ ...inputs, theme, measure: exact, frame: { ...column.frame, w: 114 }, data: { rows } })
-    expect(part(result, "category", "narrow")?.props.text?.chars).toBe("iiii")
-    expect(part(result, "category", "wide")).toBeUndefined()
-    expect(part(result, "bar", "narrow")).toBeDefined()
-    expect(part(result, "bar", "wide")).toBeDefined()
+    const input = { ...inputs, theme: dejavu, measure: exact, frame, data: { rows } }
+    const tree = expand(columnComponent, input)
+    const shorter = part(tree.children, "category", "shorter")
+    expect(shorter?.props.text).toMatchObject({ chars: "WWWW", spans: [{ size: 18 }] })
+    const wrapped = part(tree.children, "category", "wrapped")
+    expect(wrapped?.props.text?.chars).toBe("WWWW WWWW")
+    expect(exact(wrapped!.props.text!, dejavu, wrapped!.props.box.w).lines).toHaveLength(2)
+    expect(tree.findings).toEqual([])
+    const crowded = expand(columnComponent, { ...input, frame: { ...frame, w: 100 } })
+    expect(part(crowded.children, "bar", "wrapped")).toBeDefined()
+    expect(crowded.findings).toContainEqual({
+      kind: "text-fit",
+      key: ["category", "wrapped"],
+      field: "parts[2].children[0].emit.chars",
+    })
   })
 
   it("formats units and precision from tokens without moving the bars", () => {
-    const result = nodes({ ...inputs, tokens: { scale: 10, digits: 2, unitPlace: "label", suffix: "B" } })
-    expect(part(nodes(), "unit")?.props.text?.chars).toBe("Revenue, $M")
-    expect(part(result, "unit")?.props.text?.chars).toBe("Revenue")
+    const base = { ...inputs, tokens: { title: "Sales", unitHeader: "$M", prefix: "$" } }
+    const result = nodes({ ...base, tokens: { ...base.tokens, scale: 10, digits: 2, unitPlace: "label", suffix: "B" } })
+    expect(part(nodes(base), "unit")?.props.text?.chars).toBe("Sales, $M")
+    expect(part(result, "unit")?.props.text?.chars).toBe("Sales")
     expect(part(result, "value", "q1")?.props.text?.chars).toBe("$1.20B")
     expect(part(result, "bar", "q1")?.props.box).toEqual(part(nodes(), "bar", "q1")?.props.box)
     expect(part(nodes({ ...inputs, variant: { labels: false } }), "value", "q1")).toBeUndefined()
@@ -127,8 +190,23 @@ describe("expandComponent", () => {
     ).toEqual([{ kind: "solid", color: defaultTheme.colors.accent2 }])
   })
 
-  it("expands empty data to a heading and a baseline", () => {
-    expect(nodes({ ...inputs, data: { rows: [] } }).map((node) => node.key)).toEqual([["unit"], ["zero"]])
+  it("uses grouping and locale from theme tokens with instance overrides", () => {
+    const data = { rows: [{ id: "r", label: "Row", value: -12345.6 }] }
+    const input = { ...inputs, data, tokens: { digits: 2 } }
+    expect(part(nodes(input), "value", "r")?.props.text?.chars).toBe("−12,345.60")
+    const localized = { ...input, themeTokens: { "number.locale": "de-DE", "number.group": true } }
+    expect(part(nodes(localized), "value", "r")?.props.text?.chars).toBe("−12.345,60")
+    expect(
+      part(nodes({ ...localized, tokens: { ...input.tokens, "number.group": false } }), "value", "r")?.props.text
+        ?.chars,
+    ).toBe("−12345,60")
+  })
+
+  it("expands empty data without assuming a subject or unit", () => {
+    const tree = expand(columnComponent, { ...inputs, data: { rows: [] } })
+    expect(tree.props.name).toBe("Chart")
+    expect(tree.children.map((node) => node.key)).toEqual([["zero"]])
+    expect(columnComponent.quantities).toBeUndefined()
   })
 
   it("produces the same nodes for the same inputs and preserves keys across reorder", () => {
@@ -141,6 +219,13 @@ describe("expandComponent", () => {
   it("refuses oversized data", () => {
     const rows = Array.from({ length: 101 }, (_, i) => ({ id: `q${i}`, label: "", value: 0 }))
     expect(expandComponent(columnComponent, { ...inputs, data: { rows } })).toMatchObject({ refused: "limit" })
+  })
+
+  it("expands 100 short rows and reports categories that cannot fit", () => {
+    const rows = Array.from({ length: 100 }, (_, i) => ({ id: `r${i}`, label: `Row ${i}`, value: i - 40 }))
+    const tree = expand(columnComponent, { ...inputs, data: { rows } })
+    expect(tree.children.filter((node) => node.key[0] === "bar")).toHaveLength(rows.length)
+    expect(tree.findings).toHaveLength(rows.length)
   })
 
   it("refuses excessive spec depth and validates operators in unreachable branches", () => {
@@ -161,6 +246,82 @@ describe("expandComponent", () => {
       ]),
     )
     expect(expandComponent(spec, { ...inputs, data: {} })).toMatchObject({ refused: "limit" })
+  })
+
+  it("bounds nested maps and scope lookup across wide scopes", () => {
+    const bindings = (prefix: string) => Array.from({ length: 32 }, (_, i) => [`${prefix}${i}`, i])
+    const nested = ["map", widestList, "a", ["map", widestList, "b", ["map", widestList, "c", 1]]]
+    let parts: unknown[] = [{ emit: { ...rectangle, w: ["count", nested] } }]
+    for (let i = 0; i < 30; i += 1) parts = [{ let: bindings(`v${i}x`), children: parts }]
+    const spec = read({ ...specOf(parts), let: bindings("root") })
+    expect(expandComponent(spec, { ...inputs, data: {} })).toMatchObject({
+      refused: "limit",
+      field: expect.stringContaining(".emit.w"),
+      form: expect.stringContaining("work"),
+    })
+
+    const lookups = ["map", widestList, "row", ["map", widestList, "cell", ["get", "root0"]]]
+    parts = [{ emit: { ...rectangle, w: ["count", lookups] } }]
+    for (let i = 0; i < 20; i += 1) parts = [{ let: [[`local${i}`, i]], children: parts }]
+    expect(expandComponent(read({ ...specOf(parts), let: [["root0", 1]] }), { ...inputs, data: {} })).toMatchObject({
+      refused: "limit",
+      field: expect.stringContaining(".emit.w"),
+    })
+  })
+
+  it("bounds measure calls and their text even when every label is omitted", () => {
+    const spec = read(
+      specOf([
+        {
+          repeat: { over: widestList, as: "a" },
+          children: [
+            {
+              repeat: { over: widestList, as: "b" },
+              children: [{ repeat: { over: widestList, as: "c" }, emit: measuredText }],
+            },
+          ],
+        },
+      ]),
+    )
+    let calls = 0
+    let chars = 0
+    const measure: ComponentInput["measure"] = (text, theme, width) => {
+      calls += 1
+      chars += text.chars.length
+      return exact(text, theme, width)
+    }
+    const result = expandComponent(spec, { ...inputs, data: {}, measure })
+    expect(calls).toBeGreaterThan(0)
+    expect(calls).toBeLessThanOrEqual(80)
+    expect(chars).toBeLessThanOrEqual(32_000)
+    expect(result).toMatchObject({
+      refused: "limit",
+      field: expect.stringContaining(".emit."),
+    })
+  })
+
+  it("refuses division by zero at its expression path", () => {
+    const spec = read(specOf([{ emit: { ...rectangle, w: ["add", 1, ["div", 0, 0]] } }]))
+    expect(expandComponent(spec, { ...inputs, data: {} })).toMatchObject({
+      refused: "shape",
+      field: "parts[0].emit.w[2]",
+      form: "The divisor must be nonzero.",
+    })
+  })
+
+  it("names an unknown value and a duplicate key at their spec paths", () => {
+    const unknown = read(specOf([{ emit: { ...rectangle, w: ["get", "missing"] } }]))
+    expect(expandComponent(unknown, { ...inputs, data: {} })).toMatchObject({
+      refused: "shape",
+      field: "parts[0].emit.w",
+      form: 'Unknown value "missing".',
+    })
+    const duplicate = read(specOf([{ emit: rectangle }, { emit: rectangle }]))
+    expect(expandComponent(duplicate, { ...inputs, data: {} })).toMatchObject({
+      refused: "shape",
+      field: "parts[1].emit.key",
+      form: 'Duplicate emitted key ["rectangle"].',
+    })
   })
 
   it("refuses a tree above the node limit", () => {

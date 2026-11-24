@@ -176,7 +176,7 @@ flowchart TD
 | `apps/web/src/settings` | feature | account-page.tsx, agents-page.tsx, settings-screens.tsx, usage-page.tsx | apps/web/src/account, apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/credits, apps/web/src/decks, apps/web/src/lib | none |
 | `packages/catalog` | model | src/index.ts, src/icon-names.ts | none | none |
 | `packages/document` | model | src/index.ts | none | none |
-| `packages/doom` | core | src/index.ts, src/read-kit.ts | none | none |
+| `packages/doom` | core | runtime: packages/doom/src/index.ts; readers: packages/doom/src/read-kit.ts | none | none |
 | `packages/doom/src/component` | core | index.ts | packages/doom | none |
 | `packages/fonts` | core | src/index.ts | none | none |
 | `packages/live` | service | src/index.ts | none | none |

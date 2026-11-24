@@ -1,4 +1,5 @@
 layer: core
 dependencies:
-  - packages/doom
+  - packages/doom#runtime
+  - packages/doom#readers
 enforce_public_types: true

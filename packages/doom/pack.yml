@@ -1,5 +1,5 @@
 layer: core
 enforce_public_types: true
 public:
-  - src/index.ts
-  - src/read-kit.ts
+  runtime: [src/index.ts]
+  readers: [src/read-kit.ts]

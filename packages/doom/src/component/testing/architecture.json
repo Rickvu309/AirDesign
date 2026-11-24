@@ -87,9 +87,9 @@
             "emit": {
               "kind": "text",
               "key": ["list", "lane", ["get", "l.id"]],
-              "x": ["get", "lane.x"],
+              "x": ["get", "lane.start"],
               "y": 48,
-              "w": ["get", "lane.w"],
+              "w": ["get", "lane.size"],
               "h": 36,
               "chars": ["get", "l.label"],
               "style": ["get", "token.caption"],
@@ -105,16 +105,16 @@
             },
             "let": [
               ["slot", ["band", ["get", "i"], ["count", ["get", "services"]], ["get", "top"], ["get", "rowsH"], 0]],
-              ["y", ["sub", ["get", "slot.x"], ["div", ["get", "cardH"], 2]]]
+              ["y", ["sub", ["get", "slot.start"], ["div", ["get", "cardH"], 2]]]
             ],
             "children": [
               {
                 "emit": {
                   "kind": "rect",
                   "key": ["list", "service", ["get", "n.id"]],
-                  "x": ["get", "lane.x"],
+                  "x": ["get", "lane.start"],
                   "y": ["get", "y"],
-                  "w": ["get", "lane.w"],
+                  "w": ["get", "lane.size"],
                   "h": ["get", "cardH"],
                   "fill": ["get", "token.card"]
                 }
@@ -123,9 +123,9 @@
                 "emit": {
                   "kind": "text",
                   "key": ["list", "name", ["get", "n.id"]],
-                  "x": ["get", "lane.x"],
+                  "x": ["get", "lane.start"],
                   "y": ["add", ["get", "y"], 23],
-                  "w": ["get", "lane.w"],
+                  "w": ["get", "lane.size"],
                   "h": 35,
                   "chars": ["get", "n.name"],
                   "style": ["get", "token.label"],
@@ -138,9 +138,9 @@
                 "emit": {
                   "kind": "text",
                   "key": ["list", "detail", ["get", "n.id"]],
-                  "x": ["get", "lane.x"],
+                  "x": ["get", "lane.start"],
                   "y": ["add", ["get", "y"], 64],
-                  "w": ["get", "lane.w"],
+                  "w": ["get", "lane.size"],
                   "h": 31,
                   "chars": ["get", "n.detail"],
                   "style": ["get", "token.caption"],
