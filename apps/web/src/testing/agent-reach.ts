@@ -192,6 +192,11 @@ export const reach: Readonly<Record<string, Entry>> = {
   "gesture:crop-drag": { agent: "set.crop", writes: "fills", on: "photo", props: ["fills", "box"] },
   "gesture:line-end": { agent: "set.to", writes: "geometry", on: "rule", props: ["geometry"] },
   "panel:border.route": { agent: "set.route", writes: "geometry", on: "rule", props: ["geometry"] },
+  "panel:border.end": { agent: "set.arrow", writes: "geometry", on: "rule", props: ["geometry"] },
+  "panel:border.start": {
+    personOnly: "the arrowhead where a line starts; an agent sets only the end",
+    props: ["geometry"],
+  },
   "gesture:bold": { agent: "set.text", props: ["text"] },
   "gesture:italic": { agent: "set.text", props: ["text"] },
   "gesture:underline": { agent: "set.text", writes: "text", on: "words", props: ["text"] },

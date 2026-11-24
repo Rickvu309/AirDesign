@@ -14,6 +14,7 @@ import { propOf } from "@airdesign/doom"
 
 const widest = 20_116_800
 const routes = ["straight", "elbow", "curve"] as const
+const arrowheads = ["none", "arrow", "triangle", "circle"] as const
 
 export function borderSections(input: ModelInput, kind: PanelKind): PanelSection[] {
   const node = input.view.nodes.get(input.id)
@@ -47,6 +48,12 @@ export function borderSections(input: ModelInput, kind: PanelKind): PanelSection
       ? [
           doomControl({ trait: "border", field: "route" }, borderCopy.route, choiceDesc(routes), {
             value: geometry.route,
+          }),
+          doomControl({ trait: "border", field: "start" }, borderCopy.head, choiceDesc(arrowheads), {
+            value: geometry.arrows[0],
+          }),
+          doomControl({ trait: "border", field: "end" }, borderCopy.tail, choiceDesc(arrowheads), {
+            value: geometry.arrows[1],
           }),
         ]
       : []
