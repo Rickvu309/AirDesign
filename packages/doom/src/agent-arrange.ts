@@ -7,6 +7,8 @@ import type { NodeId } from "./ids.js"
 import type { Layout } from "./layout.js"
 import type { Node } from "./doom.js"
 import { boxOf, childrenOf, descendantsOf, parentOf, propOf, zeroBox } from "./doom-walk.js"
+import { freedLineEnds } from "./freed-line-ends.js"
+import { measureWith } from "./measure.js"
 
 type Op<K extends AgentChange["op"]> = Extract<AgentChange, { op: K }>
 
@@ -122,8 +124,7 @@ export function compileUnwrap(draft: Draft, change: Op<"unwrap">): void {
 }
 
 export function compileDelete(draft: Draft, change: Op<"delete">): void {
-  for (const id of new Set(change.nodes)) {
-    const node = arrangeableNode(draft, id, "nodes")
-    draft.writes.push({ node: node.id, prop: "parent", value: null })
-  }
+  const nodes = [...new Set(change.nodes)].map((id) => arrangeableNode(draft, id, "nodes").id)
+  for (const write of freedLineEnds(draft.doom, nodes, measureWith({}))) draft.writes.push(write)
+  for (const id of nodes) draft.writes.push({ node: id, prop: "parent", value: null })
 }

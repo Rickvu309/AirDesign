@@ -1,6 +1,7 @@
 import type { NodeId } from "./ids.js"
 import type { Box, Point } from "./resolved.js"
 import type { Doom } from "./doom.js"
+import { propOf } from "./doom-walk.js"
 import { curvePoints, elbowPoints, type RouteEnd, type Side } from "./line-route.js"
 import { distanceToSegment, outlineRings, type Shaped, type Site, siteSpot } from "./preset-geometry.js"
 import type { Props } from "./props.js"
@@ -23,6 +24,37 @@ function positionOf(doom: Doom, boxes: ReadonlyMap<NodeId, Box>, id: NodeId): Po
 }
 
 const sideTurns: readonly Side[] = ["t", "r", "b", "l"]
+const empty: Box = { x: 0, y: 0, w: 0, h: 0, rotation: 0, flipH: false, flipV: false }
+
+function resting(
+  doom: Doom,
+  boxes: ReadonlyMap<NodeId, Box>,
+  id: NodeId,
+): { readonly at: Point; readonly box: Box } | null {
+  const node = doom.nodes.get(id)
+  const parent = parentOf(doom, id)
+  if (node === undefined || parent === undefined) return null
+  const own = propOf(node, "box") ?? empty
+  let x = own.x
+  let y = own.y
+  for (let at: NodeId | undefined = parent, hops = 0; at !== undefined && hops <= doom.nodes.size; hops += 1) {
+    if (boxes.has(at)) {
+      const origin = positionOf(doom, boxes, at)
+      if (origin === null) return null
+      return { at: { x: x + origin.x, y: y + origin.y }, box: own }
+    }
+    const current = doom.nodes.get(at)
+    if (current === undefined) return null
+    if (current.type === "slide" || current.type === "slideRow" || current.type === "deck") {
+      return { at: { x, y }, box: own }
+    }
+    const box = propOf(current, "box") ?? empty
+    x += box.x
+    y += box.y
+    at = parentOf(doom, at)
+  }
+  return { at: { x, y }, box: own }
+}
 
 export function endOnShape(shaped: Shaped | null | undefined, box: Box, x: number, y: number, site: Site): RouteEnd {
   const center = { x: x + box.w / 2, y: y + box.h / 2 }
@@ -73,9 +105,10 @@ export function lineRoute(
     if ("x" in end) return { at: { x: end.x, y: end.y }, side: null, around: null }
     const at = positionOf(doom, boxes, end.node)
     const box = boxes.get(end.node)
-    if (at === null || box === undefined) return { at: { x: 0, y: 0 }, side: null, around: null }
-    const geometry = (doom.nodes.get(end.node) as Partial<Props> | undefined)?.geometry
-    return endOnShape(geometry, box, at.x - origin.x, at.y - origin.y, end.site)
+    const placed = at !== null && box !== undefined ? { at, box } : resting(doom, boxes, end.node)
+    if (placed === null) return { at: { x: 0, y: 0 }, side: null, around: null }
+    const geometry = propOf(doom.nodes.get(end.node), "geometry")
+    return endOnShape(geometry, placed.box, placed.at.x - origin.x, placed.at.y - origin.y, end.site)
   }
   const start = resolve(line.start)
   const end = resolve(line.end)
