@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { type AgentChange, readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { minter, richDeck } from "./agent-fixtures.js"
-import { ids } from "./sample-deck.js"
+import { hex, ids } from "./sample-deck.js"
 
 const hiddenCaption = {
   op: "add",
@@ -81,19 +81,19 @@ const readRows: { readonly raw: unknown; readonly field: string; readonly fault:
     form: "A node id, or null.",
   },
   {
-    raw: { op: "set", target: "t:3", fill: { gradient: ["#112233", "notacolor"] } },
+    raw: { op: "set", target: "t:3", fill: { gradient: [hex(0x112233), "notacolor"] } },
     field: "fill.gradient.1",
     fault: "form",
     form: colorForm,
   },
   {
-    raw: { op: "set", target: "t:3", fill: { gradient: ["#112233", "#445566"], angle: "forty" } },
+    raw: { op: "set", target: "t:3", fill: { gradient: [hex(0x112233), hex(0x445566)], angle: "forty" } },
     field: "fill.angle",
     fault: "form",
     form: "A number from -1000000000 to 1000000000.",
   },
   {
-    raw: { op: "set", target: "t:3", fill: { gradient: ["#112233", "#445566"], bogus: true } },
+    raw: { op: "set", target: "t:3", fill: { gradient: [hex(0x112233), hex(0x445566)], bogus: true } },
     field: "fill.bogus",
     fault: "unknown",
     form: "One of gradient, angle, radial.",
