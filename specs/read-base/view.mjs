@@ -1,4 +1,5 @@
 const steps = {
+  CheckEmpty: "accept an empty guarded edit without advancing the head",
   PrepareFirst: "prepare the first edit while offline",
   PrepareSecond: "prepare a second edit on the first",
   Other: "another writer advances the deck",

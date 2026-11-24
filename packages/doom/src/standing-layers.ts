@@ -76,19 +76,19 @@ function heldFrames(
   return held
 }
 
-export type Step = { readonly before: Doom; readonly writes: readonly Write[] }
+export type Step = { readonly before: LayerPositions | Doom; readonly writes: readonly Write[] }
 
-type Frames = {
+export type LayerPositions = {
   readonly parent: (node: NodeId) => NodeId | undefined
   readonly rotation: (node: NodeId) => number
 }
 
-const framesIn = (doom: Doom): Frames => ({
+const framesIn = (doom: Doom): LayerPositions => ({
   parent: (node) => parentIn(doom, node)?.id,
   rotation: (node) => propOf(doom.nodes.get(node), "box")?.rotation ?? 0,
 })
 
-function framesAfter(writes: readonly Write[], under: Frames): Frames {
+function framesAfter(writes: readonly Write[], under: LayerPositions): LayerPositions {
   const last = new Map(writes.map((each) => [`${each.node}/${each.prop}`, each.value]))
   return {
     parent: (node) =>
@@ -98,7 +98,7 @@ function framesAfter(writes: readonly Write[], under: Frames): Frames {
   }
 }
 
-function turnOnSlide({ parent, rotation }: Frames, node: NodeId | undefined, most: number): number {
+function turnOnSlide({ parent, rotation }: LayerPositions, node: NodeId | undefined, most: number): number {
   let turn = 0
   for (let at = node, hops = 0; at !== undefined && hops <= most; hops += 1) {
     turn += rotation(at)
@@ -107,7 +107,7 @@ function turnOnSlide({ parent, rotation }: Frames, node: NodeId | undefined, mos
   return turn
 }
 
-const nowhere: Frames = { parent: () => undefined, rotation: () => 0 }
+const nowhere: LayerPositions = { parent: () => undefined, rotation: () => 0 }
 
 function turnsLeftInPlace(
   now: Doom,
@@ -118,13 +118,13 @@ function turnsLeftInPlace(
   const here = framesIn(now)
   if (step === undefined) return here.rotation
   const most = now.nodes.size + step.writes.length
-  const before = framesIn(step.before)
+  const before = "nodes" in step.before ? framesIn(step.before) : step.before
   const left = framesAfter(step.writes, before)
   const putBack = framesAfter(undo, nowhere)
-  const shown: Frames = { parent: (node) => here.parent(node) ?? putBack.parent(node), rotation: here.rotation }
+  const shown: LayerPositions = { parent: (node) => here.parent(node) ?? putBack.parent(node), rotation: here.rotation }
   const written = framesAfter(undo, here)
   const turns = new Map<NodeId, number>()
-  const landed: Frames = { parent: written.parent, rotation: (node) => turnOf(node) }
+  const landed: LayerPositions = { parent: written.parent, rotation: (node) => turnOf(node) }
   const turnOf = (node: NodeId): number => {
     const settled = turns.get(node)
     if (settled !== undefined) return settled

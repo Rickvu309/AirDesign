@@ -66,7 +66,31 @@ describe("a local edit with a read base", () => {
     accepted(first.redo())
     await first.sync()
     expect(doom.deckName(first.view())).toBe("Mine")
-    expect(remote.sent.map(({ readBase }) => readBase)).toEqual([1, 2, 3, 4])
-    expect(remote.sent[1]?.writes).toEqual([])
+    expect(remote.sent.map(({ readBase }) => readBase)).toEqual([1, 2, 3])
   })
+})
+
+it("removes an empty guarded edit cached by an older client after the server returns the same head", async () => {
+  const shared = memoryDoomRemote(start)
+  const deck = "read-base"
+  const opened = await shared.create({ deck })
+  if (!opened.ok) throw new Error(JSON.stringify(opened))
+  const storage = memoryStorage()
+  const edit: doom.Edit = { ...start, once: "old-empty", writes: [], readBase: opened.fold.rev }
+  await storage.write({ fold: opened.fold, queue: [{ edit, after: [], afterRead: [] }] })
+  let attempts = 0
+  const remote: DoomRemote = {
+    ...shared,
+    edit(body) {
+      attempts += 1
+      if (attempts > 1) throw new Error("empty edit was resent")
+      return shared.edit(body)
+    },
+  }
+  const restored = await openDoomDeck(remote, deck, { storage })
+  if (!restored.ok) throw new Error(JSON.stringify(restored))
+  expect(await restored.deck.sync()).toEqual({ ok: true })
+  expect(restored.deck.pending()).toEqual([])
+  expect(restored.deck.view().rev).toBe(opened.rev)
+  expect(restored.deck.notices()).toEqual([])
 })

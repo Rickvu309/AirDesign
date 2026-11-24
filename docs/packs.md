@@ -46,7 +46,6 @@ flowchart TD
   end
   subgraph p_layer_core["core"]
     p_packages_doom["packages/doom"]
-    p_packages_doom_src_component["packages/doom/src/component"]
     p_packages_fonts["packages/fonts"]
     p_packages_oauth["packages/oauth"]
     p_packages_theme["packages/theme"]
@@ -143,7 +142,6 @@ flowchart TD
   p_apps_web_src_settings --> p_apps_web_src_credits
   p_apps_web_src_settings --> p_apps_web_src_decks
   p_apps_web_src_settings --> p_apps_web_src_lib
-  p_packages_doom_src_component --> p_packages_doom
 ```
 
 | Pack | Layer | Public | Dependencies | Tables |
@@ -151,7 +149,7 @@ flowchart TD
 | `apps/api/src` | app | none | apps/api/src/account, apps/api/src/aira, apps/api/src/doom, apps/api/src/mcp, apps/api/src/oauth, apps/api/src/platform, apps/api/src/usage | none |
 | `apps/api/src/account` | feature | runtime: apps/api/src/account/account-route.ts, apps/api/src/account/account.ts, apps/api/src/account/caller-log.ts, apps/api/src/account/session-cookie.ts; testing: apps/api/src/account/testing/read-sign-in-mail.ts | packages/mcp, apps/api/src/doom, apps/api/src/oauth, apps/api/src/platform | session.account, session.access, session.code, session.sent, session.caller_log |
 | `apps/api/src/aira` | feature | aira-closing.ts, aira-route.ts, aira-usage-route.ts, aira.ts, anthropic-transport.ts | packages/mcp, apps/api/src/account, apps/api/src/doom, apps/api/src/platform, apps/api/src/usage | session.aira_turn, session.aira_ask |
-| `apps/api/src/doom` | feature | deck-followers.ts, deck-list.ts, deck-pictures.ts, doom-deck.ts, doom-route.ts, doom-start.ts, idle-runs.ts, media.ts, original.ts | apps/api/src/platform | deck.doom, deck.doom_edit, deck.doom_node, deck.media, deck.original_delete |
+| `apps/api/src/doom` | feature | deck-followers.ts, deck-list.ts, deck-pictures.ts, doom-deck.ts, doom-route.ts, doom-start.ts, doom-write.ts, idle-runs.ts, media.ts, original.ts | apps/api/src/platform | deck.doom, deck.doom_edit, deck.doom_node, deck.media, deck.original_delete |
 | `apps/api/src/mcp` | feature | mcp.ts | packages/mcp, apps/api/src/account, apps/api/src/doom, apps/api/src/platform | none |
 | `apps/api/src/oauth` | feature | agent-key.ts, clients.ts, consent.ts, discovery.ts, grants.ts, tokens.ts | apps/api/src/platform | session.oauth_client, session.oauth_grant, session.oauth_token |
 | `apps/api/src/platform` | platform | runtime: apps/api/src/platform/answer.ts, apps/api/src/platform/deck-answer.ts, apps/api/src/platform/font-metrics.ts, apps/api/src/platform/font-route.ts, apps/api/src/platform/font-source.ts, apps/api/src/platform/forward-secret.ts, apps/api/src/platform/image-fetch.ts, apps/api/src/platform/listen.ts, apps/api/src/platform/local-original-store.ts, apps/api/src/platform/mail.ts, apps/api/src/platform/original-store.ts, apps/api/src/platform/pool.ts, apps/api/src/platform/provision.ts, apps/api/src/platform/r2-original-store.ts, apps/api/src/platform/resource.ts, apps/api/src/platform/schema.ts, apps/api/src/platform/secrets.ts, apps/api/src/platform/start-origins.ts, apps/api/src/platform/start-settings.ts; testing: apps/api/src/platform/testing/migrations.ts | none | none |
@@ -174,7 +172,6 @@ flowchart TD
 | `apps/web/src/settings` | feature | account-page.tsx, agents-page.tsx, settings-screens.tsx, usage-page.tsx | apps/web/src/account, apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/credits, apps/web/src/decks, apps/web/src/lib | none |
 | `packages/catalog` | model | src/index.ts, src/icon-names.ts | none | none |
 | `packages/doom` | core | runtime: packages/doom/src/index.ts; readers: packages/doom/src/read-kit.ts | none | none |
-| `packages/doom/src/component` | core | index.ts | packages/doom | none |
 | `packages/fonts` | core | src/index.ts | none | none |
 | `packages/live` | service | src/index.ts | none | none |
 | `packages/mcp` | service | runtime: packages/mcp/src/index.ts; testing: packages/mcp/src/testing/evals.ts | none | none |

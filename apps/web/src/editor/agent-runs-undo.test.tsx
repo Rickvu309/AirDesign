@@ -51,11 +51,12 @@ function deckWithRun(): doom.Doom {
   return next(started, { once: "c1-stop", author, writes: [], phase: "stop" })
 }
 
-async function undoWith(reason: "nothing" | "refused" | "offline") {
+async function undoWith(reason: "nothing" | "refused" | "offline" | "size") {
   const host = window.document.createElement("div")
   window.document.body.append(host)
   const root = createRoot(host)
-  const undoRun = async () => ({ ok: false, reason }) as never
+  const undoRun = async () =>
+    ({ ok: false, reason, ...(reason === "refused" ? { refused: { refused: "stale" } } : {}) }) as never
   const render = (view: doom.Doom) =>
     act(async () => {
       root.render(createElement(AgentRuns, { view, editing: new Set<string>(), undoRun }))
@@ -99,4 +100,8 @@ it("drops a nothing-left or refused note once the deck changes, so it never outl
 
 it("keeps the Undo button when the network failed, so the person can try again", async () => {
   expect(await undoWith("offline")).toMatchObject({ button: true, note: agentRunsCopy.undoFailed })
+})
+
+it("says when a run made too many changes to undo", async () => {
+  expect(await undoWith("size")).toMatchObject({ button: true, note: agentRunsCopy.undoTooLarge })
 })

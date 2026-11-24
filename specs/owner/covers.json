@@ -4,8 +4,8 @@
     {
       "file": "apps/api/src/mcp/mcp.ts",
       "names": ["serveMcp"],
-      "digest": "b581d0968d14",
-      "blob": "034cae2a3455cee1cdf65bce640e07dcbbe7a2d0"
+      "digest": "9a39ec97fb69",
+      "blob": "87709e1454f3657b8a2c661662c4a7e3db562c5c"
     },
     {
       "file": "apps/api/src/oauth/tokens.ts",

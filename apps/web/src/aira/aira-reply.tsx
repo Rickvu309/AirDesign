@@ -1,3 +1,4 @@
+import { agentRunsCopy } from "@/copy/agent-runs-copy"
 import { cn } from "@/lib/class-names"
 import { servedFontAlias } from "@airdesign/fonts"
 import { fontsFor } from "@airdesign/render"
@@ -167,10 +168,14 @@ function Undone({ stays }: { readonly stays: string }) {
   )
 }
 
-function UndoFailed() {
+function UndoFailed({ reason }: { readonly reason: NonNullable<AiraExchange["undoFailed"]> }) {
   return (
     <p className="flex min-h-6 items-center text-xs text-muted-foreground" data-undo-failed>
-      {airaCopy.undoFailed}
+      {reason === "size"
+        ? agentRunsCopy.undoTooLarge
+        : reason === "rebuild"
+          ? agentRunsCopy.undoRebuildFailed
+          : airaCopy.undoFailed}
     </p>
   )
 }
@@ -354,7 +359,7 @@ function cardOf(
 
 function undoNoteOf(exchange: AiraExchange): ReactNode | null {
   if (exchange.undoRefused === true) return <UndoRefused />
-  if (exchange.undoFailed === true) return <UndoFailed />
+  if (exchange.undoFailed !== undefined) return <UndoFailed reason={exchange.undoFailed} />
   const stays = exchange.end === "undone" ? "" : staysOf(exchange)
   return stays === "" ? null : <UndoStays stays={stays} />
 }

@@ -1,7 +1,22 @@
+import { applyBeforeFreeing } from "./apply-edit.js"
+import {
+  derivedCells,
+  detachInverseConflicts,
+  discardedOverrides,
+  instanceFieldRevs,
+  instanceRemovalConflicts,
+  instanceTransition,
+  restoreInstance,
+  withRegenerated,
+} from "./component/instance-inverse.js"
+import { measureWith, type Measure } from "./measure.js"
+import { instanceRoots, withPartDeletes } from "./component/instance-ownership.js"
+import { rev } from "./ids.js"
+import { isRefusal, type Refusal } from "./refusal.js"
 import type { NodeId, Rev } from "./ids.js"
-import type { PropName, WriteKey } from "./props.js"
+import { type PropName, type WriteKey } from "./props.js"
 import type { Landed, Doom, Write } from "./doom.js"
-import { propOf } from "./doom-walk.js"
+import { onDeck, propOf } from "./doom-walk.js"
 import { lineEndsBack } from "./line-ends-back.js"
 import { onStandingLayers } from "./standing-layers.js"
 import { type Theme as ThemeValue, type ThemeKey, themeKeys, themeValueAt } from "./theme.js"
@@ -30,12 +45,101 @@ function depthIn(doom: Doom, node: NodeId): number {
   return depth
 }
 
-export function invert(before: Doom, after: Doom, edit: Landed, owned: ReadonlySet<Rev> = new Set()): readonly Write[] {
+export function removePlacedInstance(
+  now: Doom,
+  root: NodeId,
+  placed: Rev,
+  owned: ReadonlySet<Rev>,
+): readonly Write[] | undefined {
+  const current = propOf(now.nodes.get(root), "instance")
+  const parent = now.revs.get(root)?.get("parent")
+  const instance = now.revs.get(root)?.get("instance")
+  if (current === undefined || parent === undefined || instance === undefined) return undefined
+  if (parent !== placed && !owned.has(parent)) return undefined
+  const writes: Write[] = [{ node: root, prop: "instance", value: null, base: instance }]
+  for (const node of [root, current.generated, ...current.parts.map((part) => part.node)]) {
+    const base = now.revs.get(node)?.get("parent")
+    if (base === undefined) return undefined
+    writes.push({ node, prop: "parent", value: null, base })
+  }
+  return writes
+}
+
+export function invert(
+  before: Doom,
+  after: Doom,
+  asked: Landed,
+  owned: ReadonlySet<Rev> = new Set(),
+  measure: Measure = measureWith({}),
+): readonly Write[] {
+  const result = invertStep(before, after, asked, owned, measure)
+  return isRefusal(result) ? [] : result
+}
+
+export function invertStep(
+  before: Doom,
+  after: Doom,
+  asked: Landed,
+  owned: ReadonlySet<Rev> = new Set(),
+  measure: Measure = measureWith({}),
+): readonly Write[] | Refusal {
+  const expanded = withPartDeletes(before, asked.writes)
+  if (isRefusal(expanded)) return []
+  const edit = { ...asked, writes: expanded }
+  const transitions = instanceRoots(edit.writes).flatMap((root) => {
+    const prior = propOf(before.nodes.get(root), "instance")
+    if (prior === undefined) return []
+    const change = instanceTransition(
+      root,
+      prior,
+      edit,
+      instanceFieldRevs(before, root),
+      discardedOverrides(before, root, edit.writes),
+    )
+    return change === undefined ? [] : [change]
+  })
+  const derived = derivedCells(transitions, edit.writes, (node, key) => propOf(before.nodes.get(node), key))
+  const structural = { ...edit, writes: edit.writes.filter(({ node, prop }) => !derived({ node, key: prop })) }
+  const roots = instanceRoots(structural.writes)
+  const grouped = roots.length > 0
+  const removed = new Set(
+    edit.writes.flatMap(({ node, prop, value }) => (prop === "parent" && value === null ? [node] : [])),
+  )
+  if (roots.some((root) => !onDeck(after.nodes, root) && !removed.has(root))) return []
+  if (grouped && instanceRemovalConflicts(after, structural, owned)) return []
+  if (
+    grouped &&
+    edit.writes.some(
+      ({ node, prop, value }) =>
+        prop === "instance" &&
+        value === null &&
+        !removed.has(node) &&
+        detachInverseConflicts(after, node, propOf(before.nodes.get(node), "instance"), edit.rev, owned),
+    )
+  )
+    return []
   const writes: Write[] = []
-  for (const { node, key } of keysOf(edit)) {
+  const placements = new Set<NodeId>()
+  const entering = new Set(
+    structural.writes.flatMap(({ node, prop, value }) => (prop === "parent" && value !== null ? [node] : [])),
+  )
+  for (const root of roots) {
+    if (parentIn(before, root) !== null || !entering.has(root)) continue
+    if (propOf(after.nodes.get(root), "instance") === undefined) continue
+    const removal = removePlacedInstance(after, root, edit.rev, owned)
+    if (removal === undefined) return []
+    writes.push(...removal)
+    for (const { node } of removal) placements.add(node)
+  }
+  for (const { node, key } of keysOf(structural)) {
+    if (placements.has(node) && (key === "parent" || key === "instance")) continue
     const writer = after.revs.get(node)?.get(key)
-    if (writer === undefined) continue
+    if (writer === undefined) {
+      if (grouped && key === "instance") return []
+      continue
+    }
     if (writer !== edit.rev && !owned.has(writer)) {
+      if (grouped && key === "instance") return []
       const wrote = edit.writes.findLast((write) => write.node === node && write.prop === "geometry")?.value
       const ends =
         key === "geometry"
@@ -56,12 +160,34 @@ export function invert(before: Doom, after: Doom, edit: Landed, owned: ReadonlyS
   }
   const measuredIn = new Map(writes.map(({ node }) => [node, parentIn(before, node)?.id ?? null]))
   const standing = onStandingLayers(after, writes, edit.rev, edit.rev, measuredIn, { before, writes: edit.writes })
+  if (writes.some((write) => write.prop === "parent" && placements.has(write.node) && !standing.includes(write)))
+    return []
   const moves = standing.filter((each) => each.prop === "parent" && each.value !== null)
   const depths = new Map(moves.map((each) => [each.node, depthIn(before, each.node)]))
   moves.sort((one, other) => depths.get(one.node)! - depths.get(other.node)!)
-  return [
-    ...moves,
-    ...standing.filter((each) => each.prop !== "parent"),
-    ...standing.filter((each) => each.prop === "parent" && each.value === null),
-  ]
+  const rebuilt: Write[] = []
+  for (const change of transitions) {
+    const restored = restoreInstance(after, [change], owned, measure)
+    if (isRefusal(restored)) return restored
+    rebuilt.push(...restored)
+  }
+  const inverse = withRegenerated(
+    [
+      ...moves,
+      ...standing.filter((each) => each.prop !== "parent"),
+      ...standing.filter((each) => each.prop === "parent" && each.value === null),
+    ],
+    rebuilt,
+  )
+  if (grouped || rebuilt.length > 0) {
+    const trial = applyBeforeFreeing(after, {
+      once: edit.once + ":inverse",
+      author: { kind: "person", id: "inverse" },
+      rev: rev(after.rev + 1),
+      readBase: after.rev,
+      writes: inverse,
+    })
+    if (isRefusal(trial)) return rebuilt.length === 0 ? [] : trial
+  }
+  return inverse
 }

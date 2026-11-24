@@ -26,6 +26,12 @@ describe("what the editor shows for a deck's status", () => {
     })
   })
 
+  it("shows a refused undo while keeping the saved status", () => {
+    expect(
+      saveShown({ status: { kind: "turn-refused", turn: "undo", save: { kind: "saved" } }, online: true }),
+    ).toEqual({ notice: "undo-refused", save: "saved" })
+  })
+
   it("says one edit, several edits or a too large edit was set aside", () => {
     const aside = (edits: number, tooLarge: boolean) =>
       saveShown({ status: { kind: "set-aside", edits, tooLarge }, online: true })

@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto"
-import { doomRoutes } from "@airdesign/catalog"
+import { doomRoutes, readDeckId } from "@airdesign/catalog"
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import { Client } from "pg"
@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
-import { foldAtDoom } from "./doom/doom-deck.js"
+import { runPositions } from "./doom/doom-deck.js"
 import { startIds } from "./doom/doom-start.js"
 import type { Sql } from "./platform/pool.js"
 
@@ -137,15 +137,37 @@ describe("a run's edits and the values each one replaced", () => {
   })
 })
 
-describe("the deck as it stood after an edit", () => {
-  it("rebuilds the deck at each revision from its log, for the owner alone", async () => {
-    const deck = await deckWithRun()
-    const boxAt = async (rev: number, email = owner.email) =>
-      doom.propOf((await foldAtDoom(decks, { deck: deck as never, rev }, email))?.nodes.get(startIds.title), "box")
-    expect(await boxAt(1)).not.toEqual(box(5))
-    expect(await boxAt(2)).toEqual(box(5))
-    expect(await boxAt(3)).toEqual(box(10))
-    expect(await boxAt(4)).toEqual(box(20))
-    expect(await foldAtDoom(decks, { deck: deck as never, rev: 2 }, "stranger@example.com")).toBeUndefined()
-  })
+it("reads a layer's rotation and ancestors as of the start of its run, for the owner alone", async () => {
+  const id = await deckWithRun()
+  const parsed = readDeckId(id)
+  if (!parsed.ok) throw new Error("Missing deck")
+  const { deck } = parsed
+  const group = doom.nodeId("test:1")
+  const node = startIds.title
+  const send = async (once: string, rotation: number, parent: doom.NodeId) =>
+    expect(
+      await post(doomRoutes.edit.path, {
+        deck,
+        edit: {
+          once,
+          author: person,
+          writes: [
+            { node: group, prop: "type", value: "frame" },
+            { node: group, prop: "parent", value: at(startIds.slide) },
+            { node: group, prop: "box", value: { ...box(0), rotation } },
+            { node, prop: "parent", value: at(parent) },
+          ],
+        },
+      }),
+    ).toMatchObject({ ok: true })
+  await send("group", 20, group)
+  await send("ungroup", 45, startIds.slide)
+  const nodes = [node]
+  const prior = await runPositions(decks, { deck, rev: 6, nodes }, owner.email)
+  const later = await runPositions(decks, { deck, rev: 7, nodes }, owner.email)
+  expect(prior?.rotation(group)).toBe(20)
+  expect(prior?.parent(node)).toBe(group)
+  expect(prior?.parent(group)).toBe(startIds.slide)
+  expect(later?.parent(node)).toBe(startIds.slide)
+  expect(await runPositions(decks, { deck, rev: 6, nodes }, "stranger@example.com")).toBeUndefined()
 })

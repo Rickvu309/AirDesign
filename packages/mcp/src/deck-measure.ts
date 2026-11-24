@@ -3,7 +3,7 @@ import type * as doom from "@airdesign/doom"
 import type { DeckHost, Measured } from "./deck-host.js"
 
 export async function deckMeasure(
-  host: DeckHost,
+  host: Pick<DeckHost, "measure">,
   folds: readonly doom.Doom[],
   layers?: readonly doom.NodeId[],
 ): Promise<Measured | undefined> {

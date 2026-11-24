@@ -3,20 +3,26 @@ import { limits } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 
 import { isUniqueViolation, type Sql } from "../platform/pool.js"
+import { readRunRecord, runRecord } from "./doom-run-record.js"
 import { startAuthor, startEdit } from "./doom-start.js"
 
 const headSql = "select id, owner, rev, trashed is not null as trashed from deck.doom where id = $1"
 
-export const openSql = `
+const openWith = (onces: string) => `
 select s.id, s.owner, s.rev, s.name, s.trashed is not null as trashed,
   jsonb_build_object(
     'rev', s.rev,
     'nodes', coalesce((select jsonb_object_agg(n.id, n.node) from deck.doom_node n where n.deck = s.id), '{}'::jsonb),
     'revs', coalesce((select jsonb_object_agg(n.id, n.revs) from deck.doom_node n where n.deck = s.id), '{}'::jsonb),
-    'onces', coalesce((select jsonb_object_agg(e.once, e.rev) from deck.doom_edit e where e.deck = s.id), '{}'::jsonb),
+    'onces', ${onces},
     'runs', s.runs
   ) as fold
 from deck.doom s where s.id = $1`
+
+export const openSql = openWith(
+  "coalesce((select jsonb_object_agg(e.once, e.rev) from deck.doom_edit e where e.deck = s.id), '{}'::jsonb)",
+)
+const undoOpenSql = openWith("'{}'::jsonb")
 
 const partSql = `
 with recursive gone(id) as (
@@ -60,8 +66,20 @@ chain(id, type, parent) as (
   select up.id, up.type, up.parent from chain
   cross join lateral (select up.id, up.type, up.parent from deck.doom_node up where up.deck = $1 and up.id = chain.parent offset 0) up
 ),
+generated as (
+  select n.node #>> '{instance,generated}' as id
+  from chain join deck.doom_node n on n.deck = $1 and n.id = chain.id
+  where n.node ? 'instance'
+  union
+  select unnest($7::text[])
+),
 wanted as (
   select id from chain
+  union
+  select id from generated
+  union
+  select n.id from generated
+  cross join lateral (select n.id from deck.doom_node n where n.deck = $1 and n.parent = generated.id offset 0) n
   union
   select n.id from deck.doom_node n join chain on n.parent = chain.id
   where n.deck = $1 and chain.id = any($4::text[]) and chain.type = 'slideRow' and n.type = 'slide'
@@ -110,15 +128,6 @@ logged as (
 landed as (select id from updated),
 written as (${writeNodesSql.replace("$NODES", "$10")})
 select rev, pg_notify('deck', deck || ':' || rev::text) as notified from logged`
-
-const runSql =
-  "select rev, edit, replaced, octet_length(edit::text) + coalesce(octet_length(replaced::text), 0) as bytes from deck.doom_edit where deck = $1 and edit -> 'author' ->> 'run' = $2 order by rev limit $3"
-
-const runEdits = 500
-
-const logSql = "select rev, edit from deck.doom_edit where deck = $1 and rev <= $2 order by rev limit $3"
-
-const replayedEdits = 20000
 
 const sinceSql = `
 select s.owner, s.rev, s.trashed is not null as trashed,
@@ -184,13 +193,19 @@ function endNodes(value: unknown): readonly string[] {
   })
 }
 
-type Seeds = { readonly seeds: string[]; readonly regrouped: string[]; readonly removed: string[] }
+type Seeds = {
+  readonly seeds: string[]
+  readonly regrouped: string[]
+  readonly removed: string[]
+  readonly generated: string[]
+}
 
 function seedsOf(edit: Readonly<Record<string, unknown>>): Seeds {
   const seeds = new Set<string>()
   const regrouped = new Set<string>()
   const removed = new Set<string>()
-  if (!Array.isArray(edit.writes)) return { seeds: [], regrouped: [], removed: [] }
+  const generated = new Set<string>()
+  if (!Array.isArray(edit.writes)) return { seeds: [], regrouped: [], removed: [], generated: [] }
   for (const each of edit.writes as unknown[]) {
     if (typeof each !== "object" || each === null) continue
     const { node, prop, value } = each as { node?: unknown; prop?: unknown; value?: unknown }
@@ -199,14 +214,18 @@ function seedsOf(edit: Readonly<Record<string, unknown>>): Seeds {
     if (typeof node === "string" && prop === "parent" && value === null) removed.add(node)
     const parent = typeof value === "object" && value !== null ? (value as { id?: unknown }).id : undefined
     if (prop === "parent" && typeof parent === "string") seeds.add(parent)
+    if (prop === "instance" && typeof value === "object" && value !== null && "generated" in value) {
+      const id = doom.readNodeId(value.generated)
+      if (id !== undefined) generated.add(id)
+    }
     if (prop === "geometry") for (const end of endNodes(value)) seeds.add(end)
   }
-  return { seeds: [...seeds], regrouped: [...regrouped], removed: [...removed] }
+  return { seeds: [...seeds], regrouped: [...regrouped], removed: [...removed], generated: [...generated] }
 }
 
 function partOf(part: Part): doom.Doom | undefined {
   const nodes = new Map<doom.NodeId, doom.Node>()
-  const revs = new Map<doom.NodeId, ReadonlyMap<doom.WriteKey, doom.Rev>>()
+  const revs = new Map<doom.NodeId, ReadonlyMap<doom.RevisionKey, doom.Rev>>()
   const children = new Map<doom.NodeId, doom.NodeId[]>()
   for (const found of part.nodes) {
     const stored = doom.readStoredNode(found.id, found.node, found.revs)
@@ -217,7 +236,18 @@ function partOf(part: Part): doom.Doom | undefined {
   }
   for (const node of nodes.values()) {
     const parent = doom.parentOf(node)
-    if (node.type === "slide" && parent != null) children.get(parent.id)?.push(node.id)
+    if (parent == null) continue
+    const siblings = children.get(parent.id) ?? []
+    siblings.push(node.id)
+    children.set(parent.id, siblings)
+  }
+  for (const siblings of children.values()) {
+    siblings.sort((left, right) => {
+      const a = doom.parentOf(nodes.get(left))?.at ?? ""
+      const b = doom.parentOf(nodes.get(right))?.at ?? ""
+      if (a !== b) return a < b ? -1 : 1
+      return left < right ? -1 : 1
+    })
   }
   const runs = doom.readRuns(part.runs)
   if (runs === undefined) return undefined
@@ -248,10 +278,12 @@ export async function createDoom(db: Sql, parsed: { readonly deck: DeckId }, ema
 
 export async function openDoom(
   db: Sql,
-  parsed: { readonly deck: DeckId; readonly trashed?: true | undefined },
+  parsed: { readonly deck: DeckId; readonly trashed?: true | undefined; readonly forUndo?: boolean },
   email: string,
 ) {
-  const found = (await db.query<Stored & { readonly fold: unknown }>(openSql, [parsed.deck])).rows[0]
+  const found = (
+    await db.query<Stored & { readonly fold: unknown }>(parsed.forUndo ? undoOpenSql : openSql, [parsed.deck])
+  ).rows[0]
   if (found === undefined) return refusal("deck")
   if (found.owner !== email) return refusal("owner")
   if (found.trashed !== (parsed.trashed === true)) return refusal("deck")
@@ -264,12 +296,13 @@ export async function editDoom(
   email: string,
   still: (part: doom.Doom) => boolean = () => true,
 ) {
-  const { seeds, regrouped, removed: nulled } = seedsOf(parsed.edit)
+  const { seeds, regrouped, removed: nulled, generated } = seedsOf(parsed.edit)
   let removed = nulled
   let back: string[] = []
   const once = typeof parsed.edit.once === "string" ? parsed.edit.once : ""
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const stored = (await db.query<Part>(partSql, [parsed.deck, seeds, once, regrouped, removed, back])).rows[0]
+    const stored = (await db.query<Part>(partSql, [parsed.deck, seeds, once, regrouped, removed, back, generated]))
+      .rows[0]
     if (stored === undefined) return refusal("deck")
     if (stored.owner !== email) return refusal("owner")
     if (stored.trashed) return refusal("deck")
@@ -281,10 +314,12 @@ export async function editDoom(
     if (doom.isRefusal(read)) return editRefusal(read)
     const landed = { ...read, rev: doom.rev(part.rev + 1) }
     const landing = doom.landEdit(part, landed, {
+      accepting: true,
       counts: () => ({ elements: stored.elements, slides: stored.slides }),
       deck: () => stored.has_deck,
     })
     if (doom.isRefusal(landing)) return editRefusal(landing)
+    if (landing.doom === part) return { ok: true, deck: parsed.deck, rev: part.rev } as const
     const unread = [...doom.leavingRoots(part.nodes, landing.doom.nodes, landed.writes)].filter(
       (root) => !removed.includes(root),
     )
@@ -301,6 +336,8 @@ export async function editDoom(
     const deck = touched.find((row) => row.type === "deck")
     const runsMoved =
       next.runs.size !== part.runs.size || [...next.runs].some(([name, run]) => part.runs.get(name) !== run)
+    const run = read.author.kind === "agent" ? read.author.run : undefined
+    const replaced = run === undefined ? null : JSON.stringify(await runRecord(db, parsed.deck, run, part, landed))
     try {
       const wrote = await db.query(updateSql, [
         parsed.deck,
@@ -313,9 +350,7 @@ export async function editDoom(
         landed.once,
         JSON.stringify(read),
         JSON.stringify(touched),
-        read.author.kind === "agent" && read.author.run !== undefined
-          ? JSON.stringify(doom.replacedBy(part, landed))
-          : null,
+        replaced,
       ])
       if (wrote.rows.length > 0) return { ok: true, deck: parsed.deck, rev: landed.rev } as const
     } catch (error) {
@@ -350,31 +385,54 @@ export async function runDoom(db: Sql, parsed: { readonly deck: DeckId; readonly
   if (stored === undefined) return refusal("deck")
   if (stored.owner !== email) return refusal("owner")
   if (stored.trashed) return refusal("deck")
-  const rows = await db.query<{ rev: number; edit: object; replaced: unknown; bytes: number }>(runSql, [
-    parsed.deck,
-    parsed.run,
-    runEdits + 1,
-  ])
-  if (rows.rows.length > runEdits) return refusal("size")
-  const edits: unknown[] = []
-  const replaced: unknown[] = []
-  let bytes = 0
-  for (const row of rows.rows) {
-    if (!Array.isArray(row.replaced)) return refusal("payload")
-    bytes += row.bytes
-    edits.push({ ...row.edit, rev: row.rev })
-    replaced.push(row.replaced)
-  }
-  if (bytes > limits.body) return refusal("size")
-  return { ok: true, deck: parsed.deck, rev: stored.rev, edits, replaced } as const
+  const result = await readRunRecord(db, parsed.deck, parsed.run)
+  return result.ok ? { ...result, deck: parsed.deck, rev: stored.rev } : result
 }
 
-export async function foldAtDoom(db: Sql, parsed: { readonly deck: DeckId; readonly rev: number }, email: string) {
+const runPositionsSql = `
+with recursive positions as materialized (
+  select distinct on (write ->> 'node', write ->> 'prop')
+    write ->> 'node' as node, write ->> 'prop' as prop, write -> 'value' as value
+  from deck.doom_edit cross join lateral jsonb_array_elements(edit -> 'writes') with ordinality as w(write, at)
+  where deck = $1 and rev <= $2 and write ->> 'prop' in ('box', 'parent')
+  order by write ->> 'node', write ->> 'prop', rev desc, at desc
+), ancestors(node) as (
+  select unnest($3::text[])
+  union
+  select value ->> 'id' from positions join ancestors using (node)
+  where prop = 'parent' and value ->> 'id' is not null
+)
+select node, prop, value from positions join ancestors using (node)
+`
+
+export async function runPositions(
+  db: Sql,
+  parsed: { readonly deck: DeckId; readonly rev: number; readonly nodes: readonly doom.NodeId[] },
+  email: string,
+): Promise<doom.LayerPositions | undefined> {
   const stored = await readStored(db, parsed.deck)
   if (stored === undefined || stored.owner !== email || stored.trashed) return undefined
-  const rows = await db.query<{ rev: number; edit: object }>(logSql, [parsed.deck, parsed.rev, replayedEdits + 1])
-  if (rows.rows.length > replayedEdits) return undefined
-  return doom.replayLog(rows.rows.map((row) => ({ ...row.edit, rev: row.rev })))
+  const { rows } = await db.query<{ node: string; prop: "box" | "parent"; value: unknown }>(runPositionsSql, [
+    parsed.deck,
+    parsed.rev,
+    parsed.nodes,
+  ])
+  const parents = new Map<doom.NodeId, doom.NodeId>()
+  const rotations = new Map<doom.NodeId, number>()
+  for (const { node, prop, value } of rows) {
+    const id = doom.readNodeId(node)
+    if (id === undefined) return undefined
+    if (prop === "parent") {
+      const parent = doom.props.parent.read(value)
+      if (doom.isRefusal(parent)) return undefined
+      if (parent !== null) parents.set(id, parent.id)
+    } else if (value !== null) {
+      const box = doom.props.box.read(value)
+      if (doom.isRefusal(box)) return undefined
+      rotations.set(id, box.rotation)
+    }
+  }
+  return { parent: (node) => parents.get(node), rotation: (node) => rotations.get(node) ?? 0 }
 }
 
 export async function doomRev(db: Sql, deck: DeckId, email: string) {

@@ -1,0 +1,29 @@
+{
+  "check": "checks-linked-instance.md#linked-turn-reload",
+  "covers": [
+    {
+      "file": "packages/live/src/doom-storage.ts",
+      "names": ["readQueued", "deviceStorage"],
+      "digest": "9a4b509b2cf1",
+      "blob": "f9d2e2c680aaa5e7a96fe343b587324a3f2df61d"
+    },
+    {
+      "file": "packages/live/src/doom-set-aside.ts",
+      "names": ["turnAgain", "replayLinked"],
+      "digest": "bacc4e9bd488",
+      "blob": "81e5b683ed7e9ad7e73fae70a3cd7c2b276cd684"
+    },
+    {
+      "file": "packages/doom/src/invert-run.ts",
+      "names": ["undoSourceOf"],
+      "digest": "dedd0a6970f2",
+      "blob": "a4854552e1f89cfd8a834143bc8980ab36877447"
+    },
+    {
+      "file": "packages/doom/src/component/instance-inverse.ts",
+      "names": ["restoreInstance"],
+      "digest": "8c2838531b55",
+      "blob": "939d7c2a155c16412dc3c8c91075485888d26a3f"
+    }
+  ]
+}

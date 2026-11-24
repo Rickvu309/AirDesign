@@ -1,11 +1,16 @@
-import { type End, type NodeId, type Props, type Text, isRefusal, nodeId, props, siteSpot } from "../index.js"
+import type { End } from "../geometry.js"
+import { siteSpot } from "../preset-geometry.js"
+import { nodeId, type NodeId } from "../ids.js"
+import { props, type Props } from "../props.js"
+import { isRefusal } from "../refusal.js"
+import type { Text, TextStyleName } from "../text.js"
+import { keyOf, keyString, type PartKey } from "./instance.js"
 import { type Reader, finite, literal, naming, object, reject } from "../read-kit.js"
 import { type FittingContext, fitGroups, fitOne } from "./fit-text.js"
 import type { Expr } from "./expression.js"
 import type { Emission } from "./spec.js"
-import { color, id, isList, string, type Value } from "./values.js"
+import { color, string, type Value } from "./values.js"
 
-export type PartKey = readonly [string, ...string[]]
 type ShapeProps = Pick<Props, "name" | "box" | "geometry"> &
   Partial<Pick<Props, "fills" | "strokes" | "stroke" | "text">>
 export type ComponentNode = {
@@ -13,6 +18,7 @@ export type ComponentNode = {
   readonly key: PartKey
   readonly type: "shape"
   readonly props: ShapeProps
+  readonly generatedStyle?: TextStyleName
 }
 export type ComponentFinding = {
   readonly kind: "text-fit"
@@ -56,12 +62,6 @@ function box(x: number, y: number, w: number, h: number): Props["box"] {
   }
 }
 
-function keyOf(raw: unknown): PartKey {
-  if (!isList(raw) || raw.length === 0) return reject("shape", "A non-empty list of part key segments.")
-  if (raw.length > 5) return reject("limit", "At most five part key segments.")
-  return [id(raw[0]), ...raw.slice(1).map(id)]
-}
-
 const readPoint = object({ x: coordinate, y: coordinate })
 const readSite = object({ key: keyOf, site: literal(["t", "r", "b", "l", "c"]) })
 
@@ -79,7 +79,7 @@ type Line = {
 }
 
 type PlacedPart = { readonly key: PartKey; readonly field: string } & (
-  | { readonly kind: "shape"; readonly props: ShapeProps }
+  | { readonly kind: "shape"; readonly props: ShapeProps; readonly generatedStyle?: TextStyleName }
   | { readonly kind: "line"; readonly line: Line }
 )
 
@@ -88,6 +88,7 @@ export type TextPart = {
   readonly key: PartKey
   readonly field: string
   readonly props: ShapeProps & { readonly text: Text }
+  readonly generatedStyle?: TextStyleName
 }
 export type GroupedText = {
   readonly kind: "grouped-text"
@@ -105,10 +106,12 @@ const route = literal(["straight", "elbow", "curve"])
 const arrow = literal(["none", "arrow", "triangle", "circle"])
 const smallerSize = finite(1, 2_000)
 
+type ComponentStyle = ((key: PartKey) => TextStyleName | undefined) | undefined
+
 export function preparePart(
   emit: Emission,
   field: string,
-  context: FittingContext & { readonly read: (expr: Expr) => Value },
+  context: FittingContext & { readonly read: (expr: Expr) => Value; readonly styleFor: ComponentStyle },
 ): PreparedPart {
   const { read, charge } = context
   const readField = <T>(name: string, expr: Expr, parse: (value: Value) => T): T =>
@@ -181,7 +184,7 @@ export function preparePart(
   const lines = chars.split("\n")
   naming(`${field}.chars`, () => charge(16 * lines.length))
   const fit = emit.fit
-  const text = naming(field, () =>
+  const generated = naming(field, () =>
     prop("text", {
       chars,
       spans: chars === "" ? [] : [{ end: chars.length, color: ink }],
@@ -192,8 +195,16 @@ export function preparePart(
       ...(fit === undefined ? {} : { wrap: "words" }),
     }),
   )
-  const part: TextPart = { key, field, kind: "shape", props: { ...shared, text } }
-  if (fit === undefined) return part
+  const style = context.styleFor?.(key)
+  const text = style === undefined ? generated : { ...generated, style }
+  const part: TextPart = {
+    key,
+    field,
+    kind: "shape",
+    props: { ...shared, text },
+    ...(style === undefined ? {} : { generatedStyle: generated.style }),
+  }
+  if (fit === undefined || (style !== undefined && typeof fit === "object" && fit.group !== undefined)) return part
   if (fit === "omit") return fitOne(part, undefined, context)
   const smaller = Math.min(
     readField("fit.smaller", fit.smaller, smallerSize),
@@ -213,7 +224,6 @@ export function preparePart(
 }
 
 const rootKey = ["root"] as const
-const keyString = (key: PartKey): string => JSON.stringify(key)
 
 export function treeOf(
   name: string,
@@ -256,7 +266,11 @@ export function treeOf(
   for (const { id, part } of seen.values()) {
     const node = { type: "shape", id, key: part.key } as const
     if (part.kind === "shape") {
-      children.push({ ...node, props: part.props })
+      children.push({
+        ...node,
+        props: part.props,
+        ...(part.generatedStyle === undefined ? {} : { generatedStyle: part.generatedStyle }),
+      })
       continue
     }
     const { start, end, route, arrow, strokes, stroke } = part.line

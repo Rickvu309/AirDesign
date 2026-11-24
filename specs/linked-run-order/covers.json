@@ -1,0 +1,29 @@
+{
+  "check": "checks-linked-instance.md#linked-run-order",
+  "covers": [
+    {
+      "file": "packages/doom/src/component/instance-inverse.ts",
+      "names": ["derivedCells", "restoreInstance"],
+      "digest": "b1ba3d7b601f",
+      "blob": "939d7c2a155c16412dc3c8c91075485888d26a3f"
+    },
+    {
+      "file": "packages/doom/src/invert-run.ts",
+      "names": ["invertRun", "undoSourceOf"],
+      "digest": "a89af9e5a093",
+      "blob": "a4854552e1f89cfd8a834143bc8980ab36877447"
+    },
+    {
+      "file": "packages/mcp/src/undo-tool.ts",
+      "names": ["turnRun"],
+      "digest": "ea31a53f0e55",
+      "blob": "26f355e56ef0e72d192144fec40c5e1d29dc740a"
+    },
+    {
+      "file": "apps/api/src/doom/doom-write.ts",
+      "names": ["runUndoRevs"],
+      "digest": "fc4ce01d9ec0",
+      "blob": "e2cfe89dda936211258ff5341afa2c3f28ba7717"
+    }
+  ]
+}

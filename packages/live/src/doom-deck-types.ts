@@ -9,6 +9,7 @@ export type Notice = {
   readonly node?: doom.NodeId
   readonly prop?: doom.WriteKey
   readonly because?: string
+  readonly turn?: "undo" | "redo"
 }
 
 export type Sent = { readonly ok: true; readonly once: string; readonly saved: Promise<void> }
@@ -38,7 +39,7 @@ export type TurnedRun =
       readonly waiting: readonly doom.NodeId[]
     }
   | Exclude<Turned, { readonly ok: true }>
-  | { readonly ok: false; readonly reason: "offline" }
+  | { readonly ok: false; readonly reason: "offline" | "size" }
 
 export type Synced =
   | { readonly ok: true }
@@ -63,6 +64,10 @@ export type DoomDeck = {
       readonly seen?: doom.Doom
     },
   ): Pushed
+  regenerate(
+    frame: doom.NodeId,
+    patch: doom.ComponentPatch,
+  ): (Exclude<Pushed, Refused> & { readonly findings: readonly doom.ComponentUpdateFinding[] }) | Refused
   undo(): Turned
   redo(): Turned
   undoRun(run: string): Promise<TurnedRun>

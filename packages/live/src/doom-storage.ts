@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import type { Queued } from "./doom-queue.js"
+import { componentFields, type Queued, type Regeneration, type Suppression } from "./doom-queue.js"
 import { dropDeck } from "./device-sweep.js"
 import { changeSlots, readRange, readSlot } from "./store.js"
 
@@ -11,18 +11,72 @@ export type DoomStorage = {
   drop(): Promise<void>
 }
 
+export function keepDoom(storage: DoomStorage, keep: (kept: boolean) => void) {
+  let saving: Promise<void> = Promise.resolve()
+  let gone = false
+  return {
+    save(changed: Parameters<DoomStorage["write"]>[0]) {
+      saving = saving
+        .then(() => (gone ? undefined : storage.write(changed)))
+        .then(
+          () => keep(true),
+          () => keep(false),
+        )
+      return saving
+    },
+    async leave() {
+      gone = true
+      saving = saving.then(() => storage.drop()).catch(() => undefined)
+      await saving
+      return "gone" as const
+    },
+  }
+}
+
 export const doomFoldKey = (deck: string): string => `${deck}\u0004fold`
 export const doomQueuePrefix = (deck: string): string => `${deck}\u0004queue\u0004`
 
 const stampLength = 11
 
+function readRegeneration(raw: unknown): Regeneration | undefined {
+  if (typeof raw !== "object" || raw === null || !("frame" in raw) || !("fields" in raw)) return undefined
+  const frame = doom.readNodeId(raw.frame)
+  const fields = raw.fields
+  if (
+    frame === undefined ||
+    !Array.isArray(fields) ||
+    fields.length > componentFields.length ||
+    !fields.every((field) => componentFields.some((name) => name === field))
+  )
+    return undefined
+  return { frame, fields: componentFields.filter((field) => fields.includes(field)) }
+}
+
+function readSuppressions(raw: unknown): readonly Suppression[] | undefined {
+  if (!Array.isArray(raw) || raw.length > 499) return undefined
+  const found: Suppression[] = []
+  for (const each of raw) {
+    if (typeof each !== "object" || each === null) return undefined
+    const frame = doom.readNodeId(each.frame)
+    const node = doom.readNodeId(each.node)
+    const key = doom.readPartKey(each.key)
+    if (frame === undefined || node === undefined || key === undefined) return undefined
+    found.push({ frame, node, key })
+  }
+  return found
+}
+
 function readQueued(raw: unknown): Queued | undefined {
   if (typeof raw !== "object" || raw === null) return undefined
-  const { edit, after, follows, afterRead } = raw as {
+  const { edit, after, follows, afterRead, regeneration, suppressions, turnFrom, turnSource } = raw as {
     edit?: doom.Edit
     after?: unknown
     follows?: unknown
     afterRead?: unknown
+    regeneration?: unknown
+    suppressions?: unknown
+    turnFrom?: unknown
+    turnSource?: doom.RunEdit
   }
   if (edit === undefined || typeof edit.once !== "string" || !Array.isArray(edit.writes)) return undefined
   if (
@@ -40,7 +94,20 @@ function readQueued(raw: unknown): Queued | undefined {
     !afterRead.every((once): once is string => typeof once === "string")
   )
     return undefined
-  return { ...queued, afterRead }
+  const intent = readRegeneration(regeneration)
+  const deletes = readSuppressions(suppressions)
+  const sources =
+    Array.isArray(turnFrom) && turnFrom.every((once): once is string => typeof once === "string") ? turnFrom : undefined
+  return {
+    ...queued,
+    afterRead,
+    ...(intent === undefined ? {} : { regeneration: intent }),
+    ...(deletes === undefined ? {} : { suppressions: deletes }),
+    ...(sources === undefined ? {} : { turnFrom: sources }),
+    ...(sources !== undefined && Array.isArray(turnSource?.writes) && Array.isArray(turnSource.replaced)
+      ? { turnSource }
+      : {}),
+  }
 }
 
 export function deviceStorage(deck: string): DoomStorage {

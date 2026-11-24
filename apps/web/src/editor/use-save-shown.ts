@@ -10,6 +10,11 @@ export type SaveShown = { readonly notice: ThinNotice | null; readonly save: Sav
 export const setAsideMilliseconds = 10_000
 
 export function saveShown({ status, online }: Saving): SaveShown {
+  if (status.kind === "turn-refused")
+    return {
+      notice: status.turn === "undo" ? "undo-refused" : "redo-refused",
+      save: saveShown({ status: status.save, online }).save,
+    }
   if (status.kind === "saved" || status.kind === "saving") return { notice: null, save: status.kind }
   if (status.kind === "storage-failed") return { notice: "storage-failed", save: "saving" }
   if (status.kind === "offline" && !online) return { notice: "offline", save: "offline" }
@@ -35,7 +40,7 @@ export function useSaveShown(
 ): SaveShown {
   const status = useSyncExternalStore(client.subscribe, client.status)
   const online = useSyncExternalStore(watchNetwork, browserOnline)
-  const aside = sample === undefined && status.kind === "set-aside" ? status : null
+  const aside = sample === undefined && (status.kind === "set-aside" || status.kind === "turn-refused") ? status : null
   useEffect(() => {
     if (aside === null) return
     const clear = window.setTimeout(() => client.clearNotices(), setAsideMilliseconds)

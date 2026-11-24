@@ -128,3 +128,9 @@ describe("undoing an Aira exchange on a doom deck", () => {
     expect(undone?.exchanges[0]?.end).toBe("undone")
   })
 })
+
+it("preserves the size refusal for the exchange's undo notice", async () => {
+  const open = client({ "run-2": { ok: false, reason: "size" } })
+  const result = await undoExchange(done, 0, undoAgentRun(open))
+  expect(result?.exchanges[0]).toMatchObject({ end: "done", undoFailed: "size" })
+})

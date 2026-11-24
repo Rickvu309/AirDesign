@@ -48,7 +48,7 @@ export type AiraExchange = {
   readonly end: AiraEnd
   readonly runs: readonly string[]
   readonly undoRefused?: true
-  readonly undoFailed?: true
+  readonly undoFailed?: true | "size" | "rebuild"
   readonly kept?: readonly string[]
   readonly left?: readonly string[]
   readonly waiting?: readonly string[]
@@ -87,7 +87,12 @@ export type AiraEvent =
   | { readonly type: "end"; readonly end: AiraEnd; readonly usage?: WeekUsage | undefined }
   | ({ readonly type: "undone" | "undo-stays"; readonly exchange: number } & UndoStays)
   | { readonly type: "undo-refused"; readonly exchange: number }
-  | { readonly type: "undo-failed"; readonly exchange: number; readonly runs: readonly string[] }
+  | {
+      readonly type: "undo-failed"
+      readonly exchange: number
+      readonly runs: readonly string[]
+      readonly reason?: "size" | "rebuild"
+    }
 
 export type AskOptions = {
   readonly signal: AbortSignal
@@ -238,7 +243,11 @@ export function airaStep(chat: AiraChat, event: AiraEvent): AiraChat {
     case "undo-refused":
       return changeAt(chat, event.exchange, (exchange) => ({ ...withoutFailure(exchange), undoRefused: true }))
     case "undo-failed":
-      return changeAt(chat, event.exchange, (exchange) => ({ ...exchange, runs: event.runs, undoFailed: true }))
+      return changeAt(chat, event.exchange, (exchange) => ({
+        ...exchange,
+        runs: event.runs,
+        undoFailed: event.reason ?? true,
+      }))
   }
 }
 

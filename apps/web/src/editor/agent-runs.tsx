@@ -14,12 +14,21 @@ import { LiveDot, slideNumberOf } from "./agent-at-work"
 import { layerLabel } from "./layer-label"
 import type { EditorClient } from "./use-deck"
 
-type Undoing = "undoing" | (UndoStays & { readonly landed: boolean }) | "nothing" | "refused" | "failed"
+type Undoing =
+  | "undoing"
+  | (UndoStays & { readonly landed: boolean })
+  | "nothing"
+  | "refused"
+  | "failed"
+  | "size"
+  | "rebuild"
 
 const said: Partial<Record<Extract<Undoing, string>, string>> = {
   nothing: agentRunsCopy.nothingLeft,
   refused: agentRunsCopy.undoRefused,
   failed: agentRunsCopy.undoFailed,
+  size: agentRunsCopy.undoTooLarge,
+  rebuild: agentRunsCopy.undoRebuildFailed,
 }
 
 function placeOf(view: doom.Doom, run: doom.ListedRun): RunPlace {
@@ -56,7 +65,8 @@ export function AgentRuns({
     const named = (ids: readonly doom.NodeId[]) => ids.map((id) => layerLabel(view, id))
     if (turned.ok || turned.reason === "left")
       mark({ kept: named(turned.kept), left: named(turned.left), waiting: named(turned.waiting), landed: turned.ok })
-    else mark(turned.reason === "offline" ? "failed" : turned.reason === "nothing" ? "nothing" : "refused")
+    else if (turned.reason === "refused") mark(turned.refused.prop === "instance" ? "rebuild" : "refused")
+    else mark(turned.reason === "offline" ? "failed" : turned.reason)
   }
 
   return (

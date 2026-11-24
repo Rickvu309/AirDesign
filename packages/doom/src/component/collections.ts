@@ -1,5 +1,5 @@
 import { naming, reject } from "../read-kit.js"
-import { type Charge, type ValueRecord, entries, id, isList, name, numeric, wordsWithin } from "./values.js"
+import { type Charge, entries, id, isList, name, numeric, wordsWithin } from "./values.js"
 
 type Field =
   | { readonly kind: "string" | "number" | "number?" | "positive" | "nonnegative" }
@@ -81,7 +81,10 @@ function readValue(field: Field, raw: unknown): string | number | null {
   }
 }
 
-export function readData(schema: Collections, raw: unknown, charge: Charge): ValueRecord {
+type Row = Readonly<Record<string, string | number | null>> & { readonly id: string }
+type Data = Readonly<Record<string, readonly Row[]>>
+
+export function readData(schema: Collections, raw: unknown, charge: Charge): Data {
   const ids = new Map<string, Set<string>>()
   const references: { table: string; value: string; path: string }[] = []
   const tables = entries(raw, 16).map(([table, rawRows]) =>
@@ -114,7 +117,7 @@ export function readData(schema: Collections, raw: unknown, charge: Charge): Val
               references.push({ table: field.table, value, path: `${table}[${i}].${name}` })
             return [name, value] as const
           })
-          return Object.fromEntries([["id", rowId], ...values])
+          return { ...Object.fromEntries(values), id: rowId }
         }),
       )
       return [table, rows] as const

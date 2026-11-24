@@ -1,6 +1,6 @@
-import { catalog, projectTools } from "@airdesign/catalog"
+import { catalog, projectTools, readDeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
 import { emptyLog, callTool, type Session, type ToolResult } from "./index.js"
 import { memoryDecks, type MemoryDecks } from "./testing/memory-decks.js"
@@ -78,7 +78,7 @@ describe("undo_run", () => {
     expect(again.answer).toMatchObject({
       ok: false,
       reason: "nothing",
-      note: "Nothing left to undo. Everything it changed was changed or deleted since.",
+      note: "Unable to undo. Everything it changed was changed or deleted since.",
     })
     expect(doom.propOf(by.decks.decks.get(deck as never)!.nodes.get(title), "name")).toBe("Title")
   })
@@ -267,5 +267,117 @@ describe("design details an agent sets", () => {
         expect(doom.propOf(restored.nodes.get(id), field)).toEqual(doom.propOf(before.nodes.get(id), field))
       }
     }
+  })
+})
+
+it.each(["data update", "person delete", "later run", "in-flight rename"])(
+  "undo_run restores its own bar after %s",
+  async (between) => {
+    const person: doom.Author = { kind: "person", id: "person" }
+    const frame = doom.nodeId("chart:1")
+    const measure = doom.measureWith({})
+    const data = (value: number) => ({
+      rows: [
+        { id: "a", label: "A", value },
+        { id: "b", label: "B", value: 2 },
+      ],
+    })
+    const by = agent(
+      memoryDecks(() => {
+        const { doom: before, slides } = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [] }] })
+        const writes = doom.placeComponent(before, {
+          frame,
+          parent: { id: slides[0]!, at: doom.orderKeyBetween(null, null) },
+          box: { x: 100, y: 100, w: 1500, h: 700, rotation: 0, flipH: false, flipV: false },
+          data: data(1),
+          measure,
+        })
+        if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
+        const placed = doom.applyEdit(before, {
+          once: "place",
+          author: person,
+          rev: doom.rev(before.rev + 1),
+          readBase: before.rev,
+          writes,
+        })
+        if (doom.isRefusal(placed)) throw new Error(JSON.stringify(placed))
+        return placed
+      }),
+    )
+    const created = await by.call("create_deck", { name: "Board" })
+    const named = readDeckId(created.answer.deck)
+    if (!named.ok) throw new Error(JSON.stringify(created.answer))
+    const { deck } = named
+    const fold = () => by.decks.decks.get(deck)!
+    const inst = () => doom.propOf(fold().nodes.get(frame), "instance")!
+    const bar = (id: string) => inst().parts.find(({ key }) => key[0] === "bar" && key[1] === id)!.node
+    const a = bar("a")
+    const b = bar("b")
+    const remove = (node: doom.NodeId) =>
+      by.call("edit_deck", { deck, base: fold().rev, changes: [{ op: "delete", nodes: [node] }] })
+    const deleted = await remove(a)
+    expect(deleted.answer.ok).toBe(true)
+    if (between === "data update") {
+      const update = doom.regenerateComponent(fold(), frame, { data: data(9) }, measure)
+      if (doom.isRefusal(update)) throw new Error(JSON.stringify(update))
+      expect(
+        await by.decks.edit(deck, { once: "update", author: person, writes: update.writes, readBase: fold().rev }),
+      ).toMatchObject({ ok: true })
+    } else if (between === "person delete") {
+      expect(
+        await by.decks.edit(deck, {
+          once: "delete",
+          author: person,
+          writes: [{ node: b, prop: "parent", value: null }],
+        }),
+      ).toMatchObject({ ok: true })
+    } else if (between === "in-flight rename") {
+      const withUndo = by.decks.withUndo
+      vi.spyOn(by.decks, "withUndo").mockImplementation(async (deck, turn) => {
+        const slide = doom.parentOf(fold().nodes.get(frame))!.id
+        expect(
+          await by.decks.edit(deck, {
+            once: "race",
+            author: person,
+            writes: [{ node: slide, prop: "name", value: "Raced" }],
+          }),
+        ).toMatchObject({ ok: true })
+        return withUndo(deck, turn)
+      })
+    } else {
+      expect((await remove(b)).answer.ok).toBe(true)
+    }
+    const undone = await by.call("undo_run", { deck, runId: deleted.answer.runId })
+    expect(undone.answer).toMatchObject({ ok: true, left: [], kept: [], waiting: [], note: "Undone" })
+    expect(bar("a")).toBe(a)
+    expect(doom.onDeck(fold().nodes, b)).toBe(between === "data update" || between === "in-flight rename")
+    expect(inst().data.rows).toEqual(data(between === "data update" ? 9 : 1).rows)
+  },
+)
+
+it("undoes consecutive runs that both renamed the same layer", async () => {
+  const { by, deck, runId, rev, title } = await renamed()
+  const newer = await by.call("edit_deck", {
+    deck,
+    base: rev,
+    changes: [{ op: "set", target: title, name: "Newer" }],
+  })
+  expect(newer.answer.ok).toBe(true)
+  expect((await by.call("undo_run", { deck, runId: newer.answer.runId })).answer.ok).toBe(true)
+  expect(doom.propOf(by.decks.decks.get(deck as never)?.nodes.get(title), "name")).toBe("Renamed")
+  expect((await by.call("undo_run", { deck, runId })).answer.ok).toBe(true)
+  expect(doom.propOf(by.decks.decks.get(deck as never)?.nodes.get(title), "name")).toBe("Title")
+})
+
+it("explains a run undo that exceeds the size limit", async () => {
+  const { by, deck, runId } = await renamed()
+  const withUndo = by.decks.withUndo
+  vi.spyOn(by.decks, "withUndo").mockImplementation((deck, turn) =>
+    withUndo(deck, (locked) => turn({ ...locked, run: async () => ({ ok: false, refusal: "size" }) })),
+  )
+  expect((await by.call("undo_run", { deck, runId })).answer).toMatchObject({
+    ok: false,
+    refusal: "size",
+    note: "Unable to undo. This run made too many changes.",
   })
 })
