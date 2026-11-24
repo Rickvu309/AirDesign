@@ -10,7 +10,6 @@ import { DesignPanel } from "./design-panel"
 import { kindOf, nodeModel } from "./design-model"
 import { panelTitle } from "./panel-title"
 import type { EditorClient } from "./use-deck"
-import { grow, spot } from "@/testing/doom-fixtures"
 
 let window: Window & typeof globalThis
 let createRoot: typeof import("react-dom/client").createRoot
@@ -44,35 +43,38 @@ const chart = {
   labels: true,
 }
 
-const built = grow([
-  {
-    type: "frame",
-    name: "plain",
-    props: { box: spot(0, 0, 400, 200), fills: [{ kind: "solid", color: { var: "background2" } }] },
-  },
-  {
-    type: "frame",
-    name: "chart",
-    props: {
-      box: spot(0, 300, 640, 360),
-      fills: [{ kind: "solid", color: { var: "background2" } }],
-      chart,
+const box = { x: 0, y: 0, w: 400, h: 200, rotation: 0, flipH: false, flipV: false }
+const fills = [{ kind: "solid" as const, color: { var: "background2" as const } }]
+
+const built = doom.doomFromTree({
+  theme: doom.defaultTheme,
+  slides: [
+    {
+      children: [
+        { type: "frame", name: "plain", props: { box, fills } },
+        {
+          type: "frame",
+          name: "chart",
+          props: { box: { ...box, y: 300, w: 640, h: 360 }, fills, chart },
+        },
+      ],
     },
-  },
-])
+  ],
+})
 
 const theme = doom.defaultTheme
 const slides = built.slides
+const view = built.doom
 const chartId = built.ids.chart!
 const plainId = built.ids.plain!
 
 function modelOf(id: doom.NodeId) {
-  return nodeModel({ view: built.view, id, theme, slides })
+  return nodeModel({ view, id, theme, slides })
 }
 
 it("names a chart Chart, and a plain frame Frame", () => {
-  expect(kindOf(built.view, chartId)).toBe("chart")
-  expect(kindOf(built.view, plainId)).toBe("frame")
+  expect(kindOf(view, chartId)).toBe("chart")
+  expect(kindOf(view, plainId)).toBe("frame")
   expect(panelTitle(modelOf(chartId))).toBe(editorCopy.chart)
   expect(panelTitle(modelOf(plainId))).toBe(designCopy.panels.frame)
   expect(panelSections("chart")).toEqual(panelSections("frame"))
@@ -96,12 +98,12 @@ async function shown(node: ReturnType<typeof createElement>) {
 }
 
 it("puts the chart's own section before Fill and titles the panel Chart", async () => {
-  const client = { deck: "deck", view: () => built.view, push: () => undefined } as unknown as EditorClient
+  const client = { deck: "deck", view: () => view, push: () => undefined } as unknown as EditorClient
   const { host, stop } = await shown(
     createElement(DesignPanel, {
       deck: "deck",
       client,
-      view: built.view,
+      view,
       slide: slides[0]!,
       slideNumber: 1,
       selection: { ids: [chartId], inside: null },
@@ -130,9 +132,7 @@ it("puts the chart's own section before Fill and titles the panel Chart", async 
 })
 
 it("shows a long category and series name in full, wrapping inside the panel", async () => {
-  const { host, stop } = await shown(
-    createElement(ChartSection, { id: chartId, view: built.view, push: () => undefined }),
-  )
+  const { host, stop } = await shown(createElement(ChartSection, { id: chartId, view, push: () => undefined }))
   try {
     const category = host.querySelector(`[aria-label="${editorCopy.chartData} 1"]`)
     const series = host.querySelector(`[aria-label="${editorCopy.seriesName(1)}"]`)
