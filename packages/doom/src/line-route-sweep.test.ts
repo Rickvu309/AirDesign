@@ -14,13 +14,8 @@ type Shaped_ = RouteEnd & {
 const rect: Shaped = { kind: "rect" }
 const triangle: Shaped = { kind: "preset", name: "triangle" }
 const ellipse: Shaped = { kind: "ellipse" }
-const presets: readonly Shaped[] = [
-  rect,
-  { kind: "preset", name: "roundRect" },
-  ellipse,
-  { kind: "preset", name: "diamond" },
-  triangle,
-]
+const diamond: Shaped = { kind: "preset", name: "diamond" }
+const presets: readonly Shaped[] = [rect, { kind: "preset", name: "roundRect" }, ellipse, diamond, triangle]
 const sides: readonly Side[] = ["t", "r", "b", "l"]
 const outward: Readonly<Record<Side, Point>> = {
   t: { x: 0, y: -1 },
@@ -36,6 +31,9 @@ const offsets = (gaps: readonly number[], own: number, other: number): readonly 
   0,
   own / 2,
 ]
+
+const range = (from: number, to: number, by: number) =>
+  Array.from({ length: Math.floor((to - from) / by) + 1 }, (_, at) => from + at * by)
 
 const ends = new Map<string, Shaped_>()
 
@@ -163,16 +161,35 @@ function faults(start: Shaped_, end: Shaped_): readonly string[] {
   return found
 }
 
+const side = (a: Point, b: Point, c: Point) => Math.sign((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x))
+
+function distanceBetween(one: Rings, two: Rings): number {
+  const edges = (rings: Rings) =>
+    rings.flatMap((ring) => ring.map((a, index) => [a, ring[(index + 1) % ring.length]!] as const))
+  const meet = edges(one).some(([a, b]) =>
+    edges(two).some(([c, d]) => side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0),
+  )
+  const reach = (from: Rings, to: Rings) =>
+    Math.min(...from.flatMap((ring) => ring.map((point) => edgeDistance(to, point))))
+  return meet || strictlyInside(two, one[0]![0]!) || strictlyInside(one, two[0]![0]!)
+    ? 0
+    : Math.min(reach(one, two), reach(two, one))
+}
+
+type Places = { readonly dx: readonly number[]; readonly dy: readonly number[] }
+
 function sweep(
   pairs: readonly (readonly [Shaped, number, Shaped, number])[],
   gaps: readonly number[],
   size: { readonly w: number; readonly h: number },
+  places?: Places,
 ) {
   let routes = 0
   const failures: string[] = []
+  const apart: number[] = []
   for (const [shape, turn, other, otherTurn] of pairs)
-    for (const dx of offsets(gaps, size.w, 100))
-      for (const dy of offsets(gaps, size.h, 100))
+    for (const dx of places?.dx ?? offsets(gaps, size.w, 100))
+      for (const dy of places?.dy ?? offsets(gaps, size.h, 100))
         for (const from of sides)
           for (const to of sides) {
             const start = endOf(shape, 0, 0, size.w, size.h, turn, from)
@@ -180,12 +197,14 @@ function sweep(
             if (unavoidable(start, end)) continue
             routes += 1
             const found = faults(start, end)
-            if (found.length > 0)
+            if (found.length > 0) {
+              apart.push(distanceBetween(start.outline, end.outline))
               failures.push(
                 `${shape.name ?? shape.kind}@${turn} ${from} -> ${other.name ?? other.kind}@${otherTurn} ${to} at ${dx},${dy}: ${found.join(", ")}`,
               )
+            }
           }
-  return { routes, failures }
+  return { routes, failures, apart }
 }
 
 describe("an elbow line routed between two shapes", () => {
@@ -209,8 +228,25 @@ describe("an elbow line routed between two shapes", () => {
       [rect, 30, rect, 30],
       [triangle, 30, rect, 45],
     ] as const
-    const { routes, failures } = sweep(pairs, [0, 10, 60], { w: 100, h: 60 })
+    const { routes, failures, apart } = sweep(pairs, [0, 10, 60], { w: 100, h: 60 })
     expect(routes).toBeGreaterThan(4500)
+    expect(Math.max(...apart)).toBeLessThanOrEqual(11)
     expect(failures.length, failures.join("\n")).toBeLessThanOrEqual(17)
+  })
+
+  it("crosses a level diamond only from a site wedged against a triangle at most 11 px away", () => {
+    const places = { dx: [-75, -60, -30, 0, 30, 60, 75], dy: [1, 12, 23, 34, 48] }
+    const { routes, failures, apart } = sweep([[diamond, 0, triangle, 0]], [], { w: 100, h: 100 }, places)
+    expect(routes).toBeGreaterThan(380)
+    expect(Math.max(...apart)).toBeLessThanOrEqual(11)
+    expect(failures.length, failures.join("\n")).toBeLessThanOrEqual(16)
+  })
+
+  it("crosses a shape turned 30 degrees only from a site wedged at most 15 px from the other", () => {
+    const places = { dx: range(-65, -40, 5), dy: range(50, 65, 5) }
+    const { routes, failures, apart } = sweep([[rect, 30, rect, 30]], [], { w: 100, h: 60 }, places)
+    expect(routes).toBeGreaterThan(370)
+    expect(Math.max(...apart)).toBeLessThanOrEqual(15)
+    expect(failures.length, failures.join("\n")).toBeLessThanOrEqual(49)
   })
 })

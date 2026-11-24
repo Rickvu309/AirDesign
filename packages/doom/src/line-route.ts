@@ -291,10 +291,10 @@ function within(rings: Rings, at: Point): boolean {
       const b = ring[(index + 1) % ring.length]!
       if (a.y > at.y !== b.y > at.y && at.x < a.x + ((at.y - a.y) * (b.x - a.x)) / (b.y - a.y)) crossed = !crossed
     })
-  const onEdge = rings.some((ring) =>
+  if (!crossed) return false
+  return !rings.some((ring) =>
     ring.some((a, index) => distanceToSegment(at, a, ring[(index + 1) % ring.length]!) < 1e-6),
   )
-  return crossed && !onEdge
 }
 
 type Outline = { readonly rings: Rings; readonly bounds: Rect }
@@ -307,26 +307,25 @@ function outlineOf(rings: Rings): Outline {
   return { rings, bounds: { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y } }
 }
 
-function crossesOutline(from: Point, to: Point, { rings, bounds }: Outline, hugs: boolean): boolean {
+type Cut = "free" | "along" | "through"
+
+function cutOf(from: Point, to: Point, { rings, bounds }: Outline): Cut {
   if (
     Math.max(from.x, to.x) < bounds.x ||
     Math.min(from.x, to.x) > bounds.x + bounds.w ||
     Math.max(from.y, to.y) < bounds.y ||
     Math.min(from.y, to.y) > bounds.y + bounds.h
   )
-    return false
-  const cut = rings.some((ring) =>
-    ring.some((a, index) => {
-      const b = ring[(index + 1) % ring.length]!
-      return properlyCross(from, to, a, b) || (!hugs && runsAlong(from, to, a, b))
-    }),
-  )
-  return (
-    cut ||
+    return "free"
+  const through =
+    rings.some((ring) => ring.some((a, index) => properlyCross(from, to, a, ring[(index + 1) % ring.length]!))) ||
     [0.25, 0.5, 0.75].some((share) =>
       within(rings, { x: from.x + (to.x - from.x) * share, y: from.y + (to.y - from.y) * share }),
     )
-  )
+  if (through) return "through"
+  return rings.some((ring) => ring.some((a, index) => runsAlong(from, to, a, ring[(index + 1) % ring.length]!)))
+    ? "along"
+    : "free"
 }
 
 function freeRun(leg: Leg, outlines: readonly Rings[]): number {
@@ -403,6 +402,7 @@ function routed(start: RouteEnd, end: RouteEnd): readonly Point[] {
   const attached = [start, end].filter((each) => each.side !== null)
   const boxes = attached.flatMap((each) => (each.around === null ? [] : [each.around]))
   const outlines = attached.flatMap((each) => (each.outline === undefined ? [] : [outlineOf(each.outline)]))
+  const hugged = { mattered: false }
   const fromSite = { ...from, edge: start.at }
   const toSite = { ...to, edge: end.at }
   const tries = [
@@ -410,6 +410,7 @@ function routed(start: RouteEnd, end: RouteEnd): readonly Point[] {
       start: from,
       end: to,
       blocked: (here: Point, there: Point) => boxes.some((box) => crosses(here, there, box)),
+      skip: () => false,
       extra: [],
     },
     ...(outlines.length === 0
@@ -422,7 +423,19 @@ function routed(start: RouteEnd, end: RouteEnd): readonly Point[] {
     ).map(([hugs, shorter]) => ({
       start: fromSite,
       end: toSite,
-      blocked: (here: Point, there: Point) => outlines.some((outline) => crossesOutline(here, there, outline, hugs)),
+      blocked: (here: Point, there: Point) => {
+        let blocked = false
+        for (const outline of outlines) {
+          const cut = cutOf(here, there, outline)
+          if (cut === "through") return true
+          if (cut === "along" && !hugs) {
+            blocked = true
+            hugged.mattered = true
+          }
+        }
+        return blocked
+      },
+      skip: () => hugs && shorter.length === 0 && !hugged.mattered,
       extra: [
         ...shortStubs(
           [fromSite, toSite],
@@ -432,9 +445,10 @@ function routed(start: RouteEnd, end: RouteEnd): readonly Point[] {
         ...outlines.flatMap(corners),
       ],
     })),
-    { start: from, end: to, blocked: () => false, extra: [] },
+    { start: from, end: to, blocked: () => false, skip: () => false, extra: [] },
   ]
   for (const each of tries) {
+    if (each.skip()) continue
     const found = search({ ...each, boxes, middle })
     if (found !== null) return [start.at, ...found, end.at]
   }
