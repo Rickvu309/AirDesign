@@ -304,7 +304,7 @@ const builders: Readonly<Record<PatternName, readonly Way[]>> = {
   cards: [stepped(cards)],
   compare: [stepped(compare)],
   matrix: [stepped(matrix)],
-  timeline: [fixed(timeline), stepped(timelineAcross)],
+  timeline: [fixed(timelineAcross), fixed(timeline), stepped(timelineAcross)],
   flow: [fixed(flowAcrossOneLine), fixed(flowDown), stepped(flowAcrossWrapped)],
 }
 

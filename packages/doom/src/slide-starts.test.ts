@@ -74,7 +74,7 @@ describe("a designed starting slide", () => {
     }
   })
 
-  it.each(["kpis", "cards", "grid"] as const)(
+  it.each(["kpis", "cards", "grid", "timeline"] as const)(
     "%s: stays at content height under the title, short of the bottom margin",
     (start) => {
       const { doom, slide } = started(start)
@@ -85,7 +85,7 @@ describe("a designed starting slide", () => {
     },
   )
 
-  it.each(["chart", "timeline"] as const)("%s: fills the band under the title down to the bottom margin", (start) => {
+  it.each(["chart"] as const)("%s: fills the band under the title down to the bottom margin", (start) => {
     const { doom, slide } = started(start)
     const [content] = childrenOf(doom, slide).filter((node) => propOf(node, "role") !== "title")
     const box = propOf(content!, "box")!

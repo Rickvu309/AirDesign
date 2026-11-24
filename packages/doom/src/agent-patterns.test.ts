@@ -363,9 +363,9 @@ describe("timeline", () => {
   )
   const root = made(doom)
 
-  it("draws a line from the first marker to the last, down a column of steps, each led by a marker", () => {
+  it("draws a line from the first marker to the last, across a row of steps, each led by a marker", () => {
     const [line, lane] = childrenOf(doom, root.id)
-    expect(propOf(lane!, "layout")).toMatchObject({ mode: "column" })
+    expect(propOf(lane!, "layout")).toMatchObject({ mode: "row" })
     const markers = childrenOf(doom, lane!.id).map((step) => childrenOf(doom, step.id)[0]!)
     expect(markers.map((marker) => propOf(marker, "geometry")?.kind)).toEqual(["ellipse", "ellipse", "ellipse"])
     expect(propOf(line!, "geometry")).toMatchObject({
@@ -373,7 +373,7 @@ describe("timeline", () => {
       start: { node: markers[0]!.id, site: "c" },
       end: { node: markers[2]!.id, site: "c" },
     })
-    const words = childrenOf(doom, childrenOf(doom, childrenOf(doom, lane!.id)[0]!.id)[1]!.id)
+    const words = childrenOf(doom, childrenOf(doom, lane!.id)[0]!.id).slice(1)
     expect(words.map((node) => propOf(node, "text")?.style)).toEqual(["label", "heading"])
   })
 })
