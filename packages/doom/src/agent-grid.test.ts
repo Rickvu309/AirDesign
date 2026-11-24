@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { bottomLimitOf, gapFor } from "./agent-place.js"
-import { agentDeck, build, lastChild } from "./agent-fixtures.js"
+import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
 import { defaultTheme } from "./default-theme-art.js"
-import { childrenOf, propOf } from "./doom-walk.js"
+import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import { ladderOf } from "./pattern-parts.js"
 import { type Doom, type NodeId } from "./index.js"
-import { ids } from "./sample-deck.js"
+import { widestWord } from "./text-estimate.js"
+import { ids, land } from "./sample-deck.js"
 
 const slide = ids.slide
 const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as AgentChange
@@ -68,5 +69,69 @@ describe("a grid of words fills the band with its text size", () => {
     expect(box.y).toBe(propOf(made(kpi), "box")!.y)
     expect(propOf(root, "layout")).toMatchObject({ rows: ["hug", "hug", "hug", "hug"], gap: gapFor(1920) })
     expect(childrenOf(doom, root.id).length).toBeGreaterThan(0)
+  })
+})
+
+describe("a grid sets its values in the body face and keeps every word whole", () => {
+  const namedWeight = { ...defaultTheme, fonts: { heading: "Inter SemiBold", body: "Inter" } }
+
+  it("paints every cell in the body font when the heading font is a single named weight", () => {
+    const themed = land(agentDeck(), [{ node: ids.deck, prop: "theme", value: namedWeight }])
+    const rows = [
+      ["", "Q1", "Q2"],
+      ["Revenue", "3.0", "3.4"],
+    ]
+    const doom = build(themed, add({ kind: "frame", rows }))
+    const cells = childrenOf(doom, made(doom).id).map((cell) => propOf(cell, "text")!)
+    expect(cells.length).toBeGreaterThan(0)
+    for (const text of cells)
+      expect(
+        text.spans.every((span) => span.font === namedWeight.fonts.body),
+        text.chars,
+      ).toBe(true)
+  })
+
+  const longWords = [
+    ["", "Implementation", "Transformation", "Commercialisation"],
+    ["North America", "Reconciliation", "Standardisation", "Consolidation"],
+  ]
+  const narrow = () => {
+    const resized = land(agentDeck(), [{ node: ids.deck, prop: "size", value: { w: 1440, h: 1080 } }])
+    return build(resized, { op: "slide", add: {} }, minter("s"))
+  }
+  const splitCells = (doom: Doom, root: NodeId) => {
+    const layout = propOf(doom.nodes.get(root)!, "layout")!
+    const width = propOf(doom.nodes.get(root)!, "box")!.w
+    if (layout.mode !== "grid") throw new Error("grid")
+    const room = (width - layout.gap * (layout.columns.length - 1)) / layout.columns.length
+    return childrenOf(doom, root)
+      .map((cell) => propOf(cell, "text")!)
+      .filter(
+        (text) =>
+          widestWord(
+            [text.chars],
+            defaultTheme,
+            text.style,
+            text.spans.some((span) => span.bold),
+          ) > room,
+      )
+      .map((text) => text.chars)
+  }
+
+  it("steps a four-column 4:3 grid down until its widest word fits a column", () => {
+    const deck = narrow()
+    const on = slidesOf(deck).at(-1)!.id
+    const doom = build(deck, { op: "add", slide: on, kind: "frame", rows: longWords } as AgentChange)
+    expect(splitCells(doom, lastChild(doom, on).id)).toEqual([])
+  })
+
+  it("refuses a grid whose widest word fits no step", () => {
+    const rows = [
+      ["", "Pneumonoultramicroscopicsilicovolcanoconiosis", "B", "C", "D"],
+      ["A", "1", "2", "3", "4"],
+    ]
+    expect(() => build(agentDeck(), add({ kind: "frame", rows }))).toThrow(
+      /shorter labels, fewer columns or fewer rows/,
+    )
   })
 })
