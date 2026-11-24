@@ -3,7 +3,8 @@ import { expect, it } from "vitest"
 
 import { startEmptyCluster } from "./testing/postgres-setup.js"
 import { createRole, runSetup } from "./platform/provision.js"
-import { applySchema, migrations } from "./platform/schema.js"
+import { applySchema } from "./platform/schema.js"
+import { migrations } from "./platform/testing/migrations.js"
 
 it("brings a database at migration 6 to the latest through setup", async () => {
   const cluster = await startEmptyCluster()

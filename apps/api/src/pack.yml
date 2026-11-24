@@ -1,10 +1,12 @@
 layer: app
 dependencies:
   - apps/api/src/account
+  - apps/api/src/account#testing
   - apps/api/src/aira
   - apps/api/src/doom
   - apps/api/src/mcp
   - apps/api/src/oauth
   - apps/api/src/platform
+  - apps/api/src/platform#testing
   - apps/api/src/usage
 enforce_privacy: false

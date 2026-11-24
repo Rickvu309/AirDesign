@@ -5,10 +5,8 @@ dependencies:
   - apps/api/src/oauth
   - apps/api/src/platform
 public:
-  - account-route.ts
-  - account.ts
-  - caller-log.ts
-  - session-cookie.ts
+  runtime: [account-route.ts, account.ts, caller-log.ts, session-cookie.ts]
+  testing: [testing/read-sign-in-mail.ts]
 owns_tables:
   - session.account
   - session.access

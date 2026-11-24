@@ -6,7 +6,7 @@ import { Client } from "pg"
 
 import { createApi, type ApiOptions, type Mail } from "../index.js"
 import { clusterFile, publishedCluster } from "./postgres-setup.js"
-import { readSignInMail } from "../account/account.js"
+import { readSignInMail } from "../account/testing/read-sign-in-mail.js"
 
 export type PostgresInfo = {
   readonly admin: string

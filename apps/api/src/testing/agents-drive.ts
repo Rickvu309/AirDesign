@@ -4,7 +4,7 @@ import { mcpRoutes, oauthRoutes, signInRoutes } from "@airdesign/catalog"
 
 import { ask, askForm, cookieFrom, postgresInfo, serve, verifierPair } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "../index.js"
-import { readSignInMail } from "../account/account.js"
+import { readSignInMail } from "../account/testing/read-sign-in-mail.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 

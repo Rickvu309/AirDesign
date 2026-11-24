@@ -4,7 +4,8 @@ import { afterAll, beforeAll, expect, it } from "vitest"
 
 import { startEmptyCluster, type EmptyCluster } from "./testing/postgres-setup.js"
 import { runBootstrap } from "./platform/provision.js"
-import { applySchema, migrations } from "./platform/schema.js"
+import { applySchema } from "./platform/schema.js"
+import { migrations } from "./platform/testing/migrations.js"
 
 const secrets = {
   session: randomBytes(18).toString("base64url"),

@@ -1,21 +1,25 @@
 layer: platform
 public:
-  - answer.ts
-  - deck-answer.ts
-  - font-metrics.ts
-  - font-route.ts
-  - font-source.ts
-  - forward-secret.ts
-  - image-fetch.ts
-  - listen.ts
-  - local-original-store.ts
-  - mail.ts
-  - original-store.ts
-  - pool.ts
-  - provision.ts
-  - r2-original-store.ts
-  - resource.ts
-  - schema.ts
-  - secrets.ts
-  - start-origins.ts
-  - start-settings.ts
+  runtime:
+    [
+      answer.ts,
+      deck-answer.ts,
+      font-metrics.ts,
+      font-route.ts,
+      font-source.ts,
+      forward-secret.ts,
+      image-fetch.ts,
+      listen.ts,
+      local-original-store.ts,
+      mail.ts,
+      original-store.ts,
+      pool.ts,
+      provision.ts,
+      r2-original-store.ts,
+      resource.ts,
+      schema.ts,
+      secrets.ts,
+      start-origins.ts,
+      start-settings.ts,
+    ]
+  testing: [testing/migrations.ts]

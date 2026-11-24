@@ -3,7 +3,7 @@ import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, askForm, cookieFrom, postgresInfo, serve, testResource, verifierPair } from "./testing/harness.js"
-import { readSignInMail } from "./account/account.js"
+import { readSignInMail } from "./account/testing/read-sign-in-mail.js"
 
 type AgentRow = {
   readonly id: string
