@@ -342,6 +342,32 @@ test("a picture and a frame get the old panel's fit, replace and remove-auto-lay
   await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.series[1].values[0]).toBe(3.1)
   expect(await second.evaluate((field) => field.scrollWidth <= field.clientWidth)).toBe(true)
   await expect(second).toHaveValue("3.1")
+  await typeInto(second, "3021.75")
+  await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.series[1].values[0]).toBe(3021.75)
+  for (let more = 0; more < 3; more++) await page.getByRole("button", { name: editorCopy.addSeries }).click()
+  await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.series.length).toBe(5)
+  const data = page.locator("[data-chart-data]")
+  const clipped = await data
+    .locator("input")
+    .evaluateAll((fields) => fields.filter((field) => field.scrollWidth > field.clientWidth).length)
+  expect(clipped).toBe(0)
+  const category = data.getByLabel(`${editorCopy.chartData} 1`, { exact: true })
+  const reach = await data.evaluate((scroller) => {
+    scroller.scrollLeft = scroller.scrollWidth
+    return scroller.scrollLeft
+  })
+  expect(reach).toBeGreaterThan(0)
+  const edges = await category.evaluate(
+    (field, scroller) => {
+      const cell = field.parentElement!.getBoundingClientRect()
+      return { cell: cell.left, scroller: scroller.getBoundingClientRect().left }
+    },
+    await data.elementHandle(),
+  )
+  expect(Math.abs(edges.cell - edges.scroller)).toBeLessThan(4)
+  await data.evaluate((scroller) => {
+    scroller.scrollLeft = 0
+  })
   await chart.getByRole("combobox", { name: editorCopy.chartKind }).click()
   await page.getByRole("option", { name: editorCopy.kinds.line, exact: true }).click()
   await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.kind).toBe("line")
