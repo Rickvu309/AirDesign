@@ -36,6 +36,9 @@ describe("doomFaces", () => {
       ),
     ])
     expect(wanted.faces).toContainEqual({ font: "Fira Code", bold: true, italic: false })
+    const named = faces([label("n", "M", {}, { spans: [{ end: 1, font: "Source Serif 4 SemiBold" }] })])
+    expect(named.faces).toContainEqual({ font: "Source Serif 4", bold: true, italic: false })
+    expect(named.faces).toContainEqual({ font: "Source Serif 4 SemiBold", bold: false, italic: false })
     expect(wanted.faces).toContainEqual({ font: "Inter", bold: false, italic: true })
     expect(faces([]).faces.some((face) => face.italic)).toBe(false)
   })

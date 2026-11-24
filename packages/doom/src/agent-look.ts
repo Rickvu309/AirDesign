@@ -22,6 +22,7 @@ import {
 import type { Theme } from "./theme.js"
 import type { Box } from "./doom-walk.js"
 import { zeroBox } from "./doom-walk.js"
+import { paintedFace, storedFace, type WeightName } from "./painted-face.js"
 import type { Para, Span, Text, TextStyleName } from "./text.js"
 import { type TextPatch, lookWrite, paraWrite, styleWrite } from "./text-writes.js"
 
@@ -266,6 +267,7 @@ const textKeys = [
   "color",
   "size",
   "font",
+  "weight",
   "lineHeight",
   "letterSpacing",
   "case",
@@ -304,7 +306,12 @@ const askedLook = (look: AgentLook): TextPatch =>
     }).filter(([, value]) => value !== undefined),
   )
 
-export function textOfLook(look: AgentLook, now: Text | undefined, fallback: TextStyleName): Text | undefined {
+export function textOfLook(
+  look: AgentLook,
+  now: Text | undefined,
+  fallback: TextStyleName,
+  theme?: Theme,
+): Text | undefined {
   if (textKeys.every((key) => look[key] === undefined)) return undefined
   const style = look.textStyle ?? now?.style ?? fallback
   const words = look.text
@@ -338,5 +345,26 @@ export function textOfLook(look: AgentLook, now: Text | undefined, fallback: Tex
     ...(look.spaceAfter === undefined ? {} : { spaceAfter: look.spaceAfter }),
   }
   if (Object.keys(para).length > 0) text = paraWrite(text, para)
+  if (look.weight !== undefined) text = weightOn(text, look.weight, look.font, theme)
   return look.alignV === undefined ? text : { ...text, alignV: look.alignV }
+}
+
+function weightOn(text: Text, weight: WeightName, askedFont: string | undefined, theme: Theme | undefined): Text {
+  if (text.chars.length === 0) return text
+  const slot = theme?.textStyles[text.style].font
+  const themeFont = slot === undefined || theme === undefined ? undefined : theme.fonts[slot]
+  const spans = text.spans.length === 0 ? [{ end: text.chars.length }] : text.spans
+  return {
+    ...text,
+    spans: spans.map((span) => {
+      const family = paintedFace(askedFont ?? span.font ?? themeFont ?? "Inter", 400, false).family
+      const stored = storedFace(family, weight)
+      const next = { ...span, bold: stored.bold }
+      if (stored.font === themeFont) {
+        const { font: _font, ...rest } = next
+        return rest
+      }
+      return { ...next, font: stored.font }
+    }),
+  }
 }

@@ -1,4 +1,5 @@
 import { type FontWidths, type Glyph, fontFace, spansOf } from "./line-breaks.js"
+import { paintedFace } from "./painted-face.js"
 import { resolveColor } from "./color.js"
 import type { Px } from "./paint.js"
 import type { ResolvedLine, ResolvedRun } from "./resolved.js"
@@ -35,14 +36,16 @@ const baseLook = (text: Text, theme: Theme): Look & { readonly case: Cased; read
 function lookOf(span: Span | undefined, base: ReturnType<typeof baseLook>, theme: Theme): Look & { case: Cased } {
   const { lineHeight: _lineHeight, ...look } = base
   if (span === undefined) return look
+  const font = span.font ?? look.font
+  const painted = span.bold === true ? paintedFace(font, 400, true) : undefined
   return {
     ...look,
-    ...(span.bold === undefined ? {} : { bold: span.bold }),
+    bold: painted !== undefined ? painted.font === painted.family && painted.weight >= 700 : (span.bold ?? look.bold),
     ...(span.italic === undefined ? {} : { italic: span.italic }),
     ...(span.underline === undefined ? {} : { underline: span.underline }),
     ...(span.strike === undefined ? {} : { strike: span.strike }),
     ...(span.size === undefined ? {} : { size: span.size }),
-    ...(span.font === undefined ? {} : { font: span.font }),
+    font: painted?.font ?? font,
     ...(span.color === undefined ? {} : { color: resolveColor(span.color, theme) }),
     ...(span.tracking === undefined ? {} : { tracking: span.tracking }),
     ...(span.case === undefined ? {} : { case: span.case }),

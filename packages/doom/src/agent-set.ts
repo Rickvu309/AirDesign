@@ -21,6 +21,7 @@ const neverOnSet = ["rows", "items", "axes"] as const
 const wordsOnly = [
   "size",
   "font",
+  "weight",
   "lineHeight",
   "letterSpacing",
   "case",
@@ -192,7 +193,7 @@ export function compileSet(draft: Draft, change: SetChange): void {
     change.insert === undefined || current === undefined
       ? current
       : insertLinkedRun(current, change.insert.at, change.insert.text, change.insert.link)
-  const worded = node.type === "shape" ? textOfLook(change, held, "body") : undefined
+  const worded = node.type === "shape" ? textOfLook(change, held, "body", themeOf(draft)) : undefined
   const written = worded ?? (change.insert === undefined ? undefined : held)
   const text = resizedBy(written ?? now.text, change.box, now.box) ?? written
   const layout = node.type === "frame" ? layoutOf(change, now.layout, gapFor(slideSize(draft).w)) : undefined

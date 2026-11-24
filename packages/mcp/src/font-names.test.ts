@@ -56,6 +56,26 @@ describe("a raw size and font over the protocol", () => {
     expect(String(read.answer.layers)).toContain('size=72 font="Montserrat"')
   })
 
+  it("sets a weight the panel names, and reads the family and that weight", async () => {
+    const call = agent()
+    const { deck, rev, slides } = (await call("create_deck", {})).answer as {
+      deck: string
+      rev: number
+      slides: string[]
+    }
+    const title = `${slides[0]!}.title`
+    const landed = await call("edit_deck", {
+      deck,
+      base: rev,
+      changes: [{ op: "set", target: title, weight: "ExtraBold" }],
+    })
+    expect(landed.ok).toBe(true)
+    const read = await call("read_deck", { deck })
+    expect(String(read.answer.layers)).toContain('font="Inter"')
+    expect(String(read.answer.layers)).toContain("weight=ExtraBold")
+    expect(String(read.answer.layers)).not.toContain("Inter ExtraBold")
+  })
+
   it("refuses a font the catalog does not serve, and lands nothing", async () => {
     const call = agent()
     const { deck, rev, slides } = (await call("create_deck", {})).answer as {

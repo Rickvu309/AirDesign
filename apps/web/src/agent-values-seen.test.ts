@@ -64,6 +64,7 @@ const seen: Readonly<Record<string, Seen>> = {
   locked: { person: ["gesture:lock"] },
   size: { person: ["panel:text.size"] },
   font: { person: ["panel:text.font"] },
+  weight: { person: ["panel:text.weight"] },
   lineHeight: { person: ["panel:text.lineHeight"] },
   letterSpacing: { person: ["panel:text.letterSpacing"] },
   case: { person: ["panel:text.case"] },

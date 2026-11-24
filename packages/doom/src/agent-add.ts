@@ -47,6 +47,7 @@ const words = [
   "color",
   "size",
   "font",
+  "weight",
   "lineHeight",
   "letterSpacing",
   "case",
@@ -120,7 +121,7 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
     labelled && change.text !== undefined
       ? { ...change, align: change.align ?? "center", ...(ink === undefined ? {} : { color: ink }) }
       : change
-  const made = textOfLook(look, undefined, "body")
+  const made = textOfLook(look, undefined, "body", themeOf(draft))
   if (change.link !== undefined && change.link !== "none" && made === undefined)
     stop("shape", undefined, "link", "needs", "a text layer")
   if (kind === "text" && made !== undefined && change.box === undefined && isLaidOut(parent)) {
@@ -139,7 +140,7 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
   if (empty !== undefined) {
     const held = propOf(empty, "text") as Text
     const { textStyle: _, ...unstyled } = change
-    const next = textOfLook(unstyled, held, held.style) as Text
+    const next = textOfLook(unstyled, held, held.style, themeOf(draft)) as Text
     put(draft, empty.id, {
       ...surfaced(draft, change, {
         fills: propOf(empty, "fills"),
