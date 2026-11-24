@@ -17,10 +17,10 @@ export function MovedToast({
   return (
     <StatusPill className="h-auto min-h-10 max-w-full gap-2.5 py-1.5 pr-4 pl-4" style={{ width: pageToastWidth }}>
       <span className="flex min-w-0 flex-1 flex-wrap items-baseline">
-        <bdi title={name} className="line-clamp-2 max-w-full shrink-0 [overflow-wrap:anywhere]">
+        <bdi title={name} className="mr-1 line-clamp-2 max-w-full shrink-0 text-left [overflow-wrap:anywhere]">
           {name}
-        </bdi>
-        <span className="shrink-0 whitespace-pre"> moved to Trash</span>
+        </bdi>{" "}
+        <span className="shrink-0">moved to Trash</span>
       </span>
       <button
         type="button"

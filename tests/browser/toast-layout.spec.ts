@@ -19,19 +19,25 @@ test("a normal deck name stays whole on the trash notice", async ({ page }) => {
     return { clamp, tall, wide, scrollHeight: element.scrollHeight, clientHeight: element.clientHeight }
   })
   expect(cut.clamp ? cut.tall : cut.wide).toBe(false)
-  const action = notice.locator("span").filter({ hasText: /^ moved to Trash$/ })
-  await expect(action).toHaveText(" moved to Trash")
+  const action = notice.locator("span").filter({ hasText: /^moved to Trash$/ })
+  await expect(action).toHaveText("moved to Trash")
   const actionCut = await action.evaluate((element) => element.scrollWidth > element.clientWidth + 1)
   expect(actionCut).toBe(false)
-  const space = await action.evaluate((element) => {
-    const text = element.firstChild
-    if (text === null || text.nodeType !== Node.TEXT_NODE) return 0
-    const range = document.createRange()
-    range.setStart(text, 0)
-    range.setEnd(text, 1)
-    return range.getBoundingClientRect().width
+})
+
+test("a long deck name and the phrase after it share one left edge", async ({ page }) => {
+  await page.setViewportSize({ width: 1470, height: 923 })
+  await page.goto("/screens/s33-01-decks-trash-deck-moved-toast")
+  const notice = page.locator("[data-sonner-toast]")
+  const deck = notice.locator("bdi")
+  await deck.evaluate((element) => {
+    element.textContent = "Quarterly pricing review for regional leads"
   })
-  expect(space).toBeGreaterThan(1)
+  const phrase = notice.locator("span").filter({ hasText: /^moved to Trash$/ })
+  const [deckBox, phraseBox] = await Promise.all([deck.boundingBox(), phrase.boundingBox()])
+  if (deckBox === null || phraseBox === null) throw new Error("Missing notice parts")
+  expect(phraseBox.y).toBeGreaterThan(deckBox.y + deckBox.height - 1)
+  expect(Math.abs(phraseBox.x - deckBox.x)).toBeLessThanOrEqual(0.5)
 })
 
 for (const width of [320, 480, 735]) {
