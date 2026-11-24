@@ -1,7 +1,7 @@
 import { expect, type BrowserContext, type Locator, type Page } from "@playwright/test"
-import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import type { Stack } from "./api-stack"
-import { clickSlide, landNodes, openDoomEditor, savedNode, selectedIds, type Opened } from "./editor-deck"
+import { clickSlide, landNodes, openEditor, savedNode, selectedIds, type Opened } from "./editor-deck"
 
 type Made = Parameters<typeof landNodes>[2][number]
 export type Saved = Record<string, any>
@@ -26,8 +26,8 @@ export async function designDoom(
   stack: Stack,
   made: (slide: string) => readonly Made[],
 ): Promise<Opened> {
-  const opened = await openDoomEditor(page, context, stack)
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const opened = await openEditor(page, context, stack)
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   await expect(panel(page)).toBeVisible()
   const nodes = made(opened.slide)
   await landNodes(stack, opened, nodes)
@@ -46,13 +46,13 @@ export async function typeInto(field: Locator, value: string): Promise<void> {
 }
 
 export async function undoOnStage(page: Page): Promise<void> {
-  await page.locator("[data-doom-stage]").click({ position: { x: 20, y: 20 } })
+  await page.locator("[data-editor-stage]").click({ position: { x: 20, y: 20 } })
   await page.keyboard.press("ControlOrMeta+z")
 }
 
 export async function reloadDesign(page: Page): Promise<void> {
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  await page.locator("[data-editor-ready]").waitFor()
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   await expect(panel(page)).toBeVisible()
 }

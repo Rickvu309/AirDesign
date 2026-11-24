@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { forward, signInBrowser, test } from "./api-stack"
-import { clickSlide, openDoomEditor } from "./editor-deck"
+import { clickSlide, openEditor } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -33,7 +33,7 @@ test("a deck moved to the Trash while it is open shows Deck not found, and opens
   stack,
 }) => {
   const deckRoutes = await routes()
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await expect.poll(() => keptRows(page, opened.deck)).toBeGreaterThan(0)
   await stack.post(deckRoutes.trash.path, { deck: opened.deck }, opened.cookie)
   await expect(page.locator('[data-not-found="deck"]')).toBeVisible()
@@ -43,7 +43,7 @@ test("a deck moved to the Trash while it is open shows Deck not found, and opens
 
   await stack.post(deckRoutes.restore.path, { deck: opened.deck }, opened.cookie)
   await page.reload()
-  await expect(page.locator("[data-doom-ready]")).toBeVisible()
+  await expect(page.locator("[data-editor-ready]")).toBeVisible()
 })
 
 test("a deck deleted for good elsewhere opens as Deck not found, not from the copy on this device", async ({
@@ -52,7 +52,7 @@ test("a deck deleted for good elsewhere opens as Deck not found, not from the co
   stack,
 }) => {
   const deckRoutes = await routes()
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await clickSlide(page, 600, 420)
   await page.keyboard.press("Enter")
   await page.keyboard.type("Kept on this device")
@@ -88,5 +88,5 @@ test("a trashed deck this device never opened still shows its slide on the Trash
   await signInBrowser(context, cookie)
   await forward(page, stack)
   await page.goto("/trash")
-  await expect(page.locator(`[data-deck="${deck}"] [data-doom-thumbnail]`)).toContainText("Untitled")
+  await expect(page.locator(`[data-deck="${deck}"] [data-deck-thumbnail]`)).toContainText("Untitled")
 })

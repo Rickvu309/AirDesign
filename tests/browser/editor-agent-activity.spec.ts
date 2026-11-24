@@ -3,10 +3,10 @@ import { expect, type Page } from "@playwright/test"
 import * as doom from "../../packages/doom/src/index.ts"
 import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { agentEditingMark, agentRunStatus, agentRunsCopy } from "../../apps/web/src/copy/agent-runs-copy.ts"
-import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy.ts"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { test, type Stack } from "./api-stack"
-import { openDoomEditor, type Opened } from "./editor-deck"
+import { openEditor, type Opened } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 }, locale: "en-US", timezoneId: "Asia/Ho_Chi_Minh" })
 
@@ -95,7 +95,7 @@ test("the mark shows while an agent writes, leaves after thirty quiet seconds wi
   stack,
 }) => {
   await page.clock.install()
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const side = page.locator("[data-editor-panel]")
   const canvas = page.locator("[data-slide-box]")
   const label = page.locator("[data-slide-label]")
@@ -115,7 +115,7 @@ test("the mark shows while an agent writes, leaves after thirty quiet seconds wi
   await expect(row).toContainText("Editing slide 1")
   await expect(row.getByRole("button", { name: productCopy.undo })).toHaveCount(0)
 
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   await expect(side.locator("[data-aira-panel]")).toBeHidden()
   await mark.click()
   await expect(side.locator("[data-aira-panel]")).toBeVisible()
@@ -144,7 +144,7 @@ test("Undo from the list and from Aira's chat read one undone state, which takes
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const side = page.locator("[data-editor-panel]")
   const log = side.getByRole("log")
   const canvas = page.locator("[data-slide-box]")
@@ -194,7 +194,7 @@ test("Undo from the list and from Aira's chat read one undone state, which takes
 
   await expect.poll(async () => [...(await saved(stack, opened)).runs.values()].every((run) => run.undone)).toBe(true)
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(claude).toContainText(agentRunsCopy.undone)
   await expect(aira).toContainText(agentRunsCopy.undone)
   await expect(side.locator("[data-agent-run-undo]")).toHaveCount(0)

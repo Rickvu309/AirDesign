@@ -8,7 +8,7 @@ import {
   clearSubtitle,
   clickSlide,
   landNodes,
-  openDoomEditor,
+  openEditor,
   savedNode,
   selectedIds,
   spot,
@@ -23,8 +23,8 @@ type Stack = Parameters<typeof savedNode>[0]
 type Box = { x: number; y: number; w: number; h: number }
 type Parent = { id: string; at: string } | null
 
-async function threeBoxes(page: Page, context: Parameters<typeof openDoomEditor>[1], stack: Stack) {
-  const opened = await openDoomEditor(page, context, stack as Parameters<typeof openDoomEditor>[2])
+async function threeBoxes(page: Page, context: Parameters<typeof openEditor>[1], stack: Stack) {
+  const opened = await openEditor(page, context, stack as Parameters<typeof openEditor>[2])
   await clearSubtitle(stack, opened)
   await landNodes(stack, opened, [
     { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(100, 700, 200, 120), fills: accent } },

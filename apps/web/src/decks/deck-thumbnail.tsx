@@ -2,7 +2,7 @@ import { Filmstrip } from "@airdesign/render"
 import { useEffect, useState } from "react"
 import { DeckInitial } from "@/decks/deck-card"
 import { fittedWidth, usePreviewBox, type Size } from "@/decks/deck-preview"
-import { doomThumbnail, thumbnailWidth } from "@/decks/doom-thumbnail"
+import { deckThumbnail, thumbnailWidth } from "@/decks/thumbnail-paint"
 import { hairlineShadow } from "@/components/ui/shadows"
 import { cn } from "@/lib/class-names"
 
@@ -12,7 +12,7 @@ function ThumbnailPaint({ deck, rev, name, box }: { deck: string; rev: number; n
   const [markup, setMarkup] = useState<string | null | undefined>(undefined)
   useEffect(() => {
     let live = true
-    void doomThumbnail(deck, rev).then((painted) => {
+    void deckThumbnail(deck, rev).then((painted) => {
       if (live) setMarkup(painted)
     })
     return () => {
@@ -24,7 +24,7 @@ function ThumbnailPaint({ deck, rev, name, box }: { deck: string; rev: number; n
   const width = fittedWidth(box, { width: 1920, height: 1080 })
   return (
     <div
-      data-doom-thumbnail=""
+      data-deck-thumbnail=""
       className={cn("shrink-0 overflow-hidden rounded-[2px]", hairlineShadow)}
       style={{ width, height: width * slideRatio }}
     >
@@ -36,7 +36,7 @@ function ThumbnailPaint({ deck, rev, name, box }: { deck: string; rev: number; n
   )
 }
 
-export function DoomPreview({ deck, rev, name }: { deck: string; rev: number; name: string }) {
+export function DeckThumbnail({ deck, rev, name }: { deck: string; rev: number; name: string }) {
   const { frame, box } = usePreviewBox()
   return (
     <div ref={frame} data-deck-preview className="size-full">

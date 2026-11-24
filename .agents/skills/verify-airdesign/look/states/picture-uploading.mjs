@@ -6,7 +6,7 @@ async function drive(kit) {
   const { page, post, doomRoutes } = kit
   const { cookie } = await kit.signIn()
   await page.goto("/s")
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   const deck = new URL(page.url()).pathname.slice("/s/".length)
   const { orderKeyBetween } = await packageBuild(kit.repo, "@airdesign/doom")
   const opened = await post(doomRoutes.open, { deck }, cookie)

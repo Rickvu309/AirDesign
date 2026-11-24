@@ -30,7 +30,7 @@ import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { clearGridShift, gridShift } from "@/decks/grid-shift"
 import { DeckActions, DeckRowMenu } from "@/decks/deck-menu"
 import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
-import { DoomPreview } from "@/decks/doom-preview"
+import { DeckThumbnail } from "@/decks/deck-thumbnail"
 import { MovedToast } from "@/decks/screens/deck-moved-toast"
 import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
 import { deckTime } from "@/copy/deck-time-copy"
@@ -301,7 +301,7 @@ export function Home({
                   }
                   href={trash ? undefined : deckPath(deck)}
                   previewClassName={section !== "recents" ? "h-[136px]" : undefined}
-                  preview={<DoomPreview deck={deck.deck} rev={deck.doom.rev} name={deck.name} />}
+                  preview={<DeckThumbnail deck={deck.deck} rev={deck.doom.rev} name={deck.name} />}
                   action={
                     trash ? (
                       <RestoreButton onClick={(pointer) => void restore(deck, pointer)} />

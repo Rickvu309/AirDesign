@@ -26,7 +26,7 @@ import type { EditorClient } from "./use-deck"
 import { canvasInset, slideTop, type ZoomKey } from "@/editing/canvas-zoom"
 import { slideFrame } from "@/editor/slide-frame"
 import { pictureCopy } from "@/copy/picture-copy"
-import { doomEditorCopy } from "@/copy/editor-copy"
+import { editorCopy } from "@/copy/editor-copy"
 
 const author: doom.Author = { kind: "person", id: "preview" }
 const emptyGeometry: SlideGeometry = { roots: [], byId: new Map() }
@@ -354,9 +354,9 @@ export function DoomCanvas(props: {
         ref={stage}
         data-canvas-stage=""
         data-canvas-fit={zoom === "fit" ? "true" : "false"}
-        data-doom-stage=""
-        data-doom-ready={painted.ready ? props.deck : undefined}
-        aria-label={doomEditorCopy.canvas}
+        data-editor-stage=""
+        data-editor-ready={painted.ready ? props.deck : undefined}
+        aria-label={editorCopy.canvas}
         role="application"
         tabIndex={0}
         className="absolute inset-0 touch-none overflow-auto bg-canvas outline-none select-none"

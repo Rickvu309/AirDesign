@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { forward, test } from "./api-stack"
-import { clickSlide, openDoomEditor, savedNode } from "./editor-deck"
+import { clickSlide, openEditor, savedNode } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -34,17 +34,17 @@ test("two tabs typing offline keep both tabs' words, and the next open sends a c
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const title = (await savedNode(stack, opened, "s:4"))?.box as Box
   const subtitle = (await savedNode(stack, opened, "s:5"))?.box as Box
   const first = await cutOff(page)
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   const other = await context.newPage()
   await forward(other, stack)
   const second = await cutOff(other)
   await other.goto(`/s/${opened.deck}`)
-  await other.locator("[data-doom-ready]").waitFor()
+  await other.locator("[data-editor-ready]").waitFor()
 
   await typeInto(page, title, "First tab")
   await typeInto(other, subtitle, "Second tab")
@@ -56,7 +56,7 @@ test("two tabs typing offline keep both tabs' words, and the next open sends a c
 
   await expect.poll(() => chars("s:4")).toBe("First tab again")
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect.poll(() => chars("s:5")).toBe("Second tab")
   await expect(page.locator("[data-slide-box] [data-line]").filter({ hasText: "Second tab" })).toHaveCount(1)
   expect(await chars("s:4")).toBe("First tab again")

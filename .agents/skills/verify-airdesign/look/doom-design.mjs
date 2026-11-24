@@ -129,7 +129,7 @@ export async function dropPicture(kit, at = { x: 1300, y: 560 }) {
     ([bytes, point]) => {
       const transfer = new DataTransfer()
       transfer.items.add(new File([new Uint8Array(bytes)], "picture.png", { type: "image/png" }))
-      document.querySelector("[data-doom-stage]").dispatchEvent(
+      document.querySelector("[data-editor-stage]").dispatchEvent(
         new DragEvent("drop", {
           bubbles: true,
           cancelable: true,

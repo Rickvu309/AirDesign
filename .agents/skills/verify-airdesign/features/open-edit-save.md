@@ -4,7 +4,7 @@ A signed-in person presses `New deck` on Home and AirDesign opens a new deck at 
 
 ## Sub-features
 
-- `new-deck` `button "New deck"` on Home, or `Blank deck` on the `No decks yet` card, goes to `/s`, which creates the deck with `doomRoutes.create` and replaces the address with `/s/<id>` (`DoomEditor` in `apps/web/src/editor/editor.tsx`). The deck is named `Blank deck` and its slide holds a title (`s:4` in a new deck) and a subtitle. `[data-doom-ready]` marks the open editor.
+- `new-deck` `button "New deck"` on Home, or `Blank deck` on the `No decks yet` card, goes to `/s`, which creates the deck with `doomRoutes.create` and replaces the address with `/s/<id>` (`Editor` in `apps/web/src/editor/editor.tsx`). The deck is named `Blank deck` and its slide holds a title (`s:4` in a new deck) and a subtitle. `[data-editor-ready]` marks the open editor.
 - `deck-name-follows-title` while the deck is still named `Blank deck`, or its name still matches slide 1's title, an edit to slide 1's title renames the deck in the same edit and the same undo step (`nameFromTitleWrites` in `packages/doom/src/deck-name-from-title.ts`). A name the person typed is kept.
 - `edit-text` a double-click on a text layer edits it where it was clicked; Enter on a selected text layer edits it with all its words selected; Escape leaves the text and keeps the layer selected. Emptying a text layer removes it, and one undo brings it back (`tests/browser/editor-text.spec.ts`).
 - `text-tool` T (the Text tool) and a click places a text layer that grows with its words; a drag draws a fixed box. A text layer left empty leaves nothing behind.
@@ -24,11 +24,11 @@ Preconditions:
 - `$V doctor <run>` is ok.
 
 - **Specs.** `pnpm test:browser tests/browser/editor.spec.ts tests/browser/editor-text.spec.ts tests/browser/editor-text-format.spec.ts` opens a new deck, edits and formats its text, and reads each saved node from `doomRoutes.open`.
-- **In a scratch journey.** `signIn()`, then on `/` click `button "New deck"` and wait for `[data-doom-ready]` (`newDoomDeck` in `../bin/new-deck.mjs`). Read the deck id from `page.url()` (`/s/<id>`).
+- **In a scratch journey.** `signIn()`, then on `/` click `button "New deck"` and wait for `[data-editor-ready]` (`newDoomDeck` in `../bin/new-deck.mjs`). Read the deck id from `page.url()` (`/s/<id>`).
 - **Type.** Double-click the title, press Ctrl/Cmd+A, type `Saved on the server` with `pressSequentially`, press Escape. Evidence `NN-typed`.
 - **Server copy.** Poll `post(doomRoutes.open, { deck }, cookie)` until the title node in `json.fold.nodes` has `text.chars` `Saved on the server`. Evidence `NN-api-doom-open.json`.
 - **Listed.** `post(deckRoutes.list, {}, cookie)` lists the deck with its `doom` revision and the name `Saved on the server`, which followed the title.
-- **Reopen.** Reload, wait for `[data-doom-ready]`; the title reads `Saved on the server`.
+- **Reopen.** Reload, wait for `[data-editor-ready]`; the title reads `Saved on the server`.
 - **States for look.** `blank-deck`, `editor-text-focused`, `text-typed-at-once`, `text-format-bold`.
 
 ## Gotchas

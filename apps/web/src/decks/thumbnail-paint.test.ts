@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { paintedOnce } from "./doom-thumbnail"
+import { paintedOnce } from "./thumbnail-paint"
 
 function painter() {
   const painted: string[] = []

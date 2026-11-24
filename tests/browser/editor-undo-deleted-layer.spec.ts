@@ -4,7 +4,7 @@ import { airaKeptLayerName } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import * as doom from "../../packages/doom/src/index.ts"
 import { forward, test, type Stack } from "./api-stack"
-import { accent, clickSlide, landNodes, openDoomEditor, savedNode, selectedIds, spot } from "./editor-deck"
+import { accent, clickSlide, landNodes, openEditor, savedNode, selectedIds, spot } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -16,7 +16,7 @@ async function otherTab(context: BrowserContext, stack: Stack, deck: string): Pr
   const other = await context.newPage()
   await forward(other, stack)
   await other.goto(`/s/${deck}`)
-  await other.locator("[data-doom-ready]").waitFor()
+  await other.locator("[data-editor-ready]").waitFor()
   return other
 }
 
@@ -25,7 +25,7 @@ test("an undo of typing in a layer another tab deleted does nothing, and the nex
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const boxOf = async (id: string) => (await savedNode(stack, opened, id))?.box as Box
   const charsOf = async (id: string) => ((await savedNode(stack, opened, id))?.text as { chars?: string })?.chars
   const title = await boxOf("s:4")
@@ -48,7 +48,7 @@ test("an undo of typing in a layer another tab deleted does nothing, and the nex
   const other = await context.newPage()
   await forward(other, stack)
   await other.goto(`/s/${opened.deck}`)
-  await other.locator("[data-doom-ready]").waitFor()
+  await other.locator("[data-editor-ready]").waitFor()
   await clickSlide(other, ...centre(title))
   await other.keyboard.press("Delete")
   await expect.poll(async () => (await savedNode(stack, opened, "s:4"))?.parent).toBeNull()
@@ -69,7 +69,7 @@ for (const above of [true, false])
     context,
     stack,
   }) => {
-    const opened = await openDoomEditor(page, context, stack)
+    const opened = await openEditor(page, context, stack)
     const gone = above ? "t:71" : "t:72"
     await landNodes(stack, opened, [
       ...(above
@@ -136,7 +136,7 @@ for (const [whose, frame] of [
     context,
     stack,
   }) => {
-    const opened = await openDoomEditor(page, context, stack)
+    const opened = await openEditor(page, context, stack)
     await landNodes(stack, opened, [
       { id: "t:71", type: "frame", parent: opened.slide, props: { box: spot(200, 200, 900, 600), fills: accent } },
       { id: "t:72", type: "frame", parent: "t:71", props: { box: spot(100, 100, 600, 400), fills: blue } },
@@ -181,7 +181,7 @@ test("a reorder made offline of a layer another tab deleted, from the frame they
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     { id: "t:91", type: "frame", parent: opened.slide, props: { box: spot(200, 200, 900, 600), fills: accent } },
     {
@@ -247,7 +247,7 @@ test("Undo on an agent run puts back the colour of a layer it leaves in the fram
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     { id: "t:81", type: "frame", parent: opened.slide, props: { box: spot(100, 200, 500, 500), fills: accent } },
     { id: "t:82", type: "frame", parent: opened.slide, props: { box: spot(800, 200, 500, 500), fills: accent } },
@@ -298,7 +298,7 @@ test("a text box emptied and left goes in one step with its typing, and redo del
   stack,
 }) => {
   await page.clock.install()
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const saved = () => savedNode(stack, opened, "s:4")
   const before = await saved()
   const box = before?.box as Box
@@ -331,7 +331,7 @@ test("a deck named by its title goes back to the default when the emptied title 
   stack,
 }) => {
   await page.clock.install()
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const deckName = async () => (await savedNode(stack, opened, "s:1"))?.name
   const before = await savedNode(stack, opened, "s:4")
   const title = before?.box as Box

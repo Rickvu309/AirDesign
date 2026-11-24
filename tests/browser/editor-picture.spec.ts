@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { test, signInBrowser, forward } from "./api-stack"
-import { openDoomEditor, savedNode, serveOriginals, slidePoint } from "./editor-deck"
+import { openEditor, savedNode, serveOriginals, slidePoint } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -22,7 +22,7 @@ async function send(
     ([how, name, type, bytes, at]) => {
       const transfer = new DataTransfer()
       transfer.items.add(new File([new Uint8Array(bytes)], name, { type }))
-      const target = document.querySelector("[data-doom-stage]")!
+      const target = document.querySelector("[data-editor-stage]")!
       if (how === "drop")
         target.dispatchEvent(
           new DragEvent("drop", {
@@ -51,7 +51,7 @@ test("a picture file dropped on the canvas lands at the drop point at its own ra
   stack,
 }) => {
   await serveOriginals(page, stack.originals)
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const bytes = [...(await readFile(pictureFile))]
   const at = await slidePoint(page, 600, 300)
   await send(page, "drop", "picture.png", "image/png", bytes, at)
@@ -86,7 +86,7 @@ test("a picture file dropped on the canvas lands at the drop point at its own ra
   await expect.poll(async () => (await savedNode(stack, opened, id ?? ""))?.parent).toMatchObject({ id: opened.slide })
 
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(pictures(page)).toHaveCount(1)
   await expect
     .poll(async () => pictures(page).evaluate((node) => getComputedStyle(node).backgroundImage))
@@ -98,7 +98,7 @@ test("a picture file dropped on the canvas lands at the drop point at its own ra
   await forward(other, stack)
   await serveOriginals(other, stack.originals)
   await other.goto(`/s/${opened.deck}`)
-  await other.locator("[data-doom-ready]").waitFor()
+  await other.locator("[data-editor-ready]").waitFor()
   await expect(pictures(other)).toHaveCount(1)
   await expect
     .poll(async () => pictures(other).evaluate((node) => getComputedStyle(node).backgroundImage))
@@ -112,7 +112,7 @@ test("a picture pasted from the clipboard lands centred, and a file that is not 
   stack,
 }) => {
   await serveOriginals(page, stack.originals)
-  await openDoomEditor(page, context, stack)
+  await openEditor(page, context, stack)
   await send(page, "paste", "notes.txt", "text/plain", [104, 105])
   await send(page, "drop", "notes.txt", "text/plain", [104, 105], { x: 400, y: 400 })
   await expect(pictures(page)).toHaveCount(0)
@@ -141,7 +141,7 @@ test("a dropped picture paints and lands in the deck while its upload is failing
       else await route.fallback()
     },
   )
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await send(page, "drop", "picture.png", "image/png", [...(await readFile(pictureFile))], { x: 800, y: 500 })
   await expect
     .poll(async () => pictures(page).evaluate((node) => getComputedStyle(node).backgroundImage))

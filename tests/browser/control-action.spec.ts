@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
 import { boxCopy, boxWords } from "../../apps/web/src/copy/box-copy"
-import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { test } from "./api-stack"
 import { accent, spot } from "./editor-deck"
 import { designDoom, panel, pick, saved, undoOnStage } from "./editor-design"
@@ -26,7 +26,7 @@ test("an action moves the shape on the slide, is a button that never stays press
   await pick(page, "t:1", 300, 200)
   const align = panel(page).getByRole("group", { name: boxCopy.align, exact: true })
   await expect(align.getByRole("button")).toHaveCount(6)
-  await expect(align.getByRole("button").first()).toHaveAttribute("title", doomEditorCopy.alignLeft)
+  await expect(align.getByRole("button").first()).toHaveAttribute("title", editorCopy.alignLeft)
   await panel(page).getByRole("button", { name: boxCopy.distribute, exact: true }).click()
   for (const way of [boxWords.horizontal, boxWords.vertical])
     await expect(
@@ -34,7 +34,7 @@ test("an action moves the shape on the slide, is a button that never stays press
     ).toBeVisible()
   await page.keyboard.press("Escape")
 
-  await align.getByRole("button", { name: doomEditorCopy.alignCenter, exact: true }).click()
+  await align.getByRole("button", { name: editorCopy.alignCenter, exact: true }).click()
   await expect.poll(async () => (await box()).x).toBe(760)
   await align.getByRole("button", { name: named(boxWords.middle ?? ""), exact: true }).click()
   await expect.poll(async () => (await box()).y).toBe(440)

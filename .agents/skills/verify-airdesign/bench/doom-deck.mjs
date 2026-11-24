@@ -48,12 +48,12 @@ export async function boardDeck(kit, cookie, slideCount, deck) {
 export async function openBoardDeck(kit, slideCount) {
   const { cookie } = await kit.signIn()
   await kit.page.goto("/s")
-  await kit.page.locator("[data-doom-ready]").waitFor()
+  await kit.page.locator("[data-editor-ready]").waitFor()
   const deck = new URL(kit.page.url()).pathname.slice("/s/".length)
   const slides = await boardDeck(kit, cookie, slideCount, deck)
   return { deck, cookie, slides }
 }
 
 export async function ready(page, deck) {
-  await page.locator(`[data-doom-ready="${deck}"]`).waitFor()
+  await page.locator(`[data-editor-ready="${deck}"]`).waitFor()
 }

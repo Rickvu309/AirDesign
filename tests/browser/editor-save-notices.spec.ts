@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { test } from "./api-stack"
-import { clickSlide, openDoomEditor, savedNode, type Opened } from "./editor-deck"
+import { clickSlide, openEditor, savedNode, type Opened } from "./editor-deck"
 import type { Stack } from "./api-stack"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -38,7 +38,7 @@ test("an edit AirDesign cannot reach says so, and the notice goes once the edit 
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const path = await editPath()
   await page.route(`**${path}`, (route) => route.abort("connectionfailed"))
   await typeInto(page, await titleBox(stack, opened), "Kept here")
@@ -51,7 +51,7 @@ test("an edit AirDesign cannot reach says so, and the notice goes once the edit 
 })
 
 test("an edit made offline says the device is offline", async ({ page, context, stack }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const box = await titleBox(stack, opened)
   const cut = (url: URL) => url.pathname.startsWith("/doom/")
   await page.route(cut, (route) => route.abort("internetdisconnected"))
@@ -66,7 +66,7 @@ test("an edit made offline says the device is offline", async ({ page, context, 
 })
 
 test("an edit the server refuses after it was sent says it was set aside", async ({ page, context, stack }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const path = await editPath()
   await page.route(`**${path}`, (route) =>
     route.fulfill({ json: { ok: false, refusal: "edit", refused: "stale", node: "s:4", prop: "text" } }),
@@ -78,7 +78,7 @@ test("an edit the server refuses after it was sent says it was set aside", async
 })
 
 test("an edit refused for its size says it was too large and undone", async ({ page, context, stack }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const path = await editPath()
   await page.route(`**${path}`, (route) => route.fulfill({ json: { ok: false, refusal: "size" } }))
   await nudge(page, await titleBox(stack, opened))
@@ -86,7 +86,7 @@ test("an edit refused for its size says it was too large and undone", async ({ p
 })
 
 test("an edit the device cannot keep while it waits to send says it is at risk", async ({ page, context, stack }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const path = await editPath()
   let release: () => void = () => undefined
   const held = new Promise<void>((resolve) => (release = resolve))

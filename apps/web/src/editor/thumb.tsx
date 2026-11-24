@@ -13,7 +13,7 @@ function useStableView(view: doom.Doom, slide: doom.NodeId): doom.Doom {
   return held.current.view
 }
 
-export function DoomThumb(props: {
+export function Thumb(props: {
   readonly view: doom.Doom
   readonly slide: doom.NodeId
   readonly width: number

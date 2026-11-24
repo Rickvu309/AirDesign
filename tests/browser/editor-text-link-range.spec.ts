@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test"
-import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { linkCopy } from "../../apps/web/src/copy/link-copy"
 import { test } from "./api-stack"
-import { clickSlide, landNodes, openDoomEditor, savedNode } from "./editor-deck"
+import { clickSlide, landNodes, openEditor, savedNode } from "./editor-deck"
 import { edit, layer, leave, runs, textOf } from "./text-layer"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -12,8 +12,8 @@ test("a selected range of plain words shows an empty Link field and links only t
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const opened = await openEditor(page, context, stack)
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   const withLayerLink = { ...layer("Read the site"), link: "https://layer.example/" }
   await landNodes(stack, opened, [{ id: "t:1", type: "shape", parent: opened.slide, props: withLayerLink }])
   await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(3)
@@ -57,8 +57,8 @@ test("the Link field links the words selected when focus leaves the text, even b
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  const opened = await openEditor(page, context, stack)
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   await landNodes(stack, opened, [{ id: "t:1", type: "shape", parent: opened.slide, props: layer("Read the site") }])
   await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(3)
 

@@ -1,10 +1,10 @@
 import { expect, type Page } from "@playwright/test"
-import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { shapeCopy } from "../../apps/web/src/copy/shape-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { clickSlide, dragSlide, openDoomEditor, savedNode, selectedIds, type Opened } from "./editor-deck"
+import { clickSlide, dragSlide, openEditor, savedNode, selectedIds, type Opened } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -29,10 +29,10 @@ test("R draws a rectangle where it is dragged, Shift keeps it square, and the to
   stack,
 }) => {
   covers("tool-rectangle", "tool-ellipse", "undo")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await page.keyboard.press("r")
   await dragSlide(page, { x: 300, y: 640 }, { x: 700, y: 900 })
-  await expect(page.getByRole("button", { name: doomEditorCopy.toolMove, exact: true })).toHaveAttribute(
+  await expect(page.getByRole("button", { name: editorCopy.toolMove, exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
   )
@@ -60,7 +60,7 @@ test("a click places a default size, F draws a frame that holds what is drawn in
   stack,
 }) => {
   covers("tool-frame", "tool-line", "tool-arrow")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await page.keyboard.press("f")
   await dragSlide(page, { x: 200, y: 560 }, { x: 1000, y: 1000 })
   const frame = await picked(page, stack, opened)
@@ -89,16 +89,16 @@ test("Actions, centred over the toolbar, adds an icon from a search and each kin
   stack,
 }) => {
   covers("actions")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await page.keyboard.press("ControlOrMeta+k")
   const panel = page.locator("[data-actions-panel]")
   await expect(panel).toBeVisible()
-  const bar = await page.getByRole("toolbar", { name: doomEditorCopy.tools }).boundingBox()
+  const bar = await page.getByRole("toolbar", { name: editorCopy.tools }).boundingBox()
   const open = await page.locator('[data-slot="popover-content"]').boundingBox()
   expect(near((open?.x ?? 0) + (open?.width ?? 0) / 2, (bar?.x ?? 0) + (bar?.width ?? 0) / 2, 3)).toBe(true)
   expect(near((bar?.y ?? 0) - ((open?.y ?? 0) + (open?.height ?? 0)), 12, 3)).toBe(true)
 
-  const search = page.getByRole("combobox", { name: doomEditorCopy.actionsSearch })
+  const search = page.getByRole("combobox", { name: editorCopy.actionsSearch })
   await expect(search).toBeFocused()
   await expect(search).toHaveCSS("outline-style", "none")
   await search.fill("rocket")
@@ -109,8 +109,8 @@ test("Actions, centred over the toolbar, adds an icon from a search and each kin
   expect(near(icon.box.x, 900, 1) && near(icon.box.y, 480, 1)).toBe(true)
 
   for (const kind of ["column", "bar", "line", "pie", "stacked"] as const) {
-    await page.getByRole("button", { name: doomEditorCopy.actions, exact: true }).click()
-    await page.getByRole("option", { name: doomEditorCopy.chartKinds[kind], exact: true }).click()
+    await page.getByRole("button", { name: editorCopy.actions, exact: true }).click()
+    await page.getByRole("option", { name: editorCopy.chartKinds[kind], exact: true }).click()
     await expect.poll(async () => (await picked(page, stack, opened)).node?.chart).toMatchObject({ kind })
   }
   await expect.poll(() => page.locator("[data-slide-box] [data-derived]").count()).toBeGreaterThan(4)
@@ -121,12 +121,12 @@ test("in Actions, Enter runs the top match, the arrow keys move the highlight, a
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
-  const open = () => page.getByRole("button", { name: doomEditorCopy.actions, exact: true }).click()
-  const search = page.getByRole("combobox", { name: doomEditorCopy.actionsSearch })
+  const opened = await openEditor(page, context, stack)
+  const open = () => page.getByRole("button", { name: editorCopy.actions, exact: true }).click()
+  const search = page.getByRole("combobox", { name: editorCopy.actionsSearch })
   await open()
   await search.fill("pie")
-  await expect(page.getByRole("option", { selected: true })).toHaveText(doomEditorCopy.chartKinds.pie)
+  await expect(page.getByRole("option", { selected: true })).toHaveText(editorCopy.chartKinds.pie)
   await page.keyboard.press("Enter")
   await expect.poll(async () => (await picked(page, stack, opened)).node?.chart).toMatchObject({ kind: "pie" })
   await expect(search).toBeHidden()
@@ -136,13 +136,13 @@ test("in Actions, Enter runs the top match, the arrow keys move the highlight, a
   await page.keyboard.press("ArrowDown")
   await page.keyboard.press("ArrowDown")
   await page.keyboard.press("ArrowUp")
-  await expect(page.getByRole("option", { selected: true })).toHaveText(doomEditorCopy.chartKinds.bar)
+  await expect(page.getByRole("option", { selected: true })).toHaveText(editorCopy.chartKinds.bar)
   await page.keyboard.press("Enter")
   await expect.poll(async () => (await picked(page, stack, opened)).node?.chart).toMatchObject({ kind: "bar" })
 
   await open()
-  await search.fill(doomEditorCopy.deckGroup.toLowerCase())
-  await expect(page.getByRole("option", { name: doomEditorCopy.exportPdf })).toBeVisible()
+  await search.fill(editorCopy.deckGroup.toLowerCase())
+  await expect(page.getByRole("option", { name: editorCopy.exportPdf })).toBeVisible()
 })
 
 test("in Actions, the Enter that ends an IME composition, as Vietnamese Telex sends it, commits the word and runs nothing", async ({
@@ -150,9 +150,9 @@ test("in Actions, the Enter that ends an IME composition, as Vietnamese Telex se
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
-  await page.getByRole("button", { name: doomEditorCopy.actions, exact: true }).click()
-  const search = page.getByRole("combobox", { name: doomEditorCopy.actionsSearch })
+  const opened = await openEditor(page, context, stack)
+  await page.getByRole("button", { name: editorCopy.actions, exact: true }).click()
+  const search = page.getByRole("combobox", { name: editorCopy.actionsSearch })
   await expect(search).toBeFocused()
   await page.evaluate(() =>
     window.addEventListener(
@@ -165,7 +165,7 @@ test("in Actions, the Enter that ends an IME composition, as Vietnamese Telex se
   )
   const ime = await context.newCDPSession(page)
   await ime.send("Input.imeSetComposition", { text: "pie", selectionStart: 3, selectionEnd: 3 })
-  await expect(page.getByRole("option", { selected: true })).toHaveText(doomEditorCopy.chartKinds.pie)
+  await expect(page.getByRole("option", { selected: true })).toHaveText(editorCopy.chartKinds.pie)
   await page.keyboard.press("Enter")
   await expect(page.locator("body")).toHaveAttribute("data-key-composing", "true")
   await expect(search).toHaveValue("pie")
@@ -184,17 +184,17 @@ test("in Actions, the pointer moves the one highlight, Down walks the icon grid 
   context,
   stack,
 }) => {
-  await openDoomEditor(page, context, stack)
-  await page.getByRole("button", { name: doomEditorCopy.actions, exact: true }).click()
-  const search = page.getByRole("combobox", { name: doomEditorCopy.actionsSearch })
+  await openEditor(page, context, stack)
+  await page.getByRole("button", { name: editorCopy.actions, exact: true }).click()
+  const search = page.getByRole("combobox", { name: editorCopy.actionsSearch })
   const selected = page.getByRole("option", { selected: true })
   await search.fill("chart")
-  await page.getByRole("option", { name: doomEditorCopy.chartKinds.line }).hover()
+  await page.getByRole("option", { name: editorCopy.chartKinds.line }).hover()
   await expect(selected).toHaveCount(1)
-  await expect(selected).toHaveText(doomEditorCopy.chartKinds.line)
+  await expect(selected).toHaveText(editorCopy.chartKinds.line)
   await expect(search).toHaveAttribute("aria-activedescendant", (await selected.getAttribute("id")) ?? "")
 
-  await page.getByRole("button", { name: doomEditorCopy.allIcons }).click()
+  await page.getByRole("button", { name: editorCopy.allIcons }).click()
   await expect(selected).toHaveCount(0)
   await expect(search).toBeFocused()
   const icons = page.locator("[data-actions-group='icons']").getByRole("option")
@@ -210,10 +210,10 @@ test("with one icon selected, picking an icon in Actions swaps it in place, pick
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const pick = async (name: string) => {
-    await page.getByRole("button", { name: doomEditorCopy.actions, exact: true }).click()
-    await page.getByRole("combobox", { name: doomEditorCopy.actionsSearch }).fill(name)
+    await page.getByRole("button", { name: editorCopy.actions, exact: true }).click()
+    await page.getByRole("combobox", { name: editorCopy.actionsSearch }).fill(name)
     await page.getByRole("option", { name, exact: true }).click()
   }
   const layers = page.locator("[data-slide-box] [data-node]")
@@ -235,7 +235,7 @@ test("with one icon selected, picking an icon in Actions swaps it in place, pick
   expect(await layers.count()).toBe(count)
   expect(await selectedIds(page)).toEqual([rocket.id])
 
-  await page.locator("[data-doom-stage]").click({ position: { x: 20, y: 20 } })
+  await page.locator("[data-editor-stage]").click({ position: { x: 20, y: 20 } })
   await page.keyboard.press("ControlOrMeta+z")
   await expect
     .poll(async () => (await savedNode(stack, opened, rocket.id))?.geometry)
@@ -250,16 +250,16 @@ test("with several icons selected, picking an icon in Actions swaps every one, a
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const pick = async (name: string) => {
-    await page.getByRole("button", { name: doomEditorCopy.actions, exact: true }).click()
-    await page.getByRole("combobox", { name: doomEditorCopy.actionsSearch }).fill(name)
+    await page.getByRole("button", { name: editorCopy.actions, exact: true }).click()
+    await page.getByRole("combobox", { name: editorCopy.actionsSearch }).fill(name)
     await page.getByRole("option", { name, exact: true }).click()
   }
   await pick("rocket")
   await expect.poll(async () => (await picked(page, stack, opened)).node?.geometry.kind).toBe("icon")
   const left = (await picked(page, stack, opened)).id
-  await page.locator("[data-doom-stage]").click({ position: { x: 20, y: 20 } })
+  await page.locator("[data-editor-stage]").click({ position: { x: 20, y: 20 } })
   await pick("heart")
   await expect.poll(async () => (await selectedIds(page)).length).toBe(1)
   const right = (await picked(page, stack, opened)).id
@@ -283,7 +283,7 @@ test("with several icons selected, picking an icon in Actions swaps every one, a
     await expect.poll(async () => (await savedNode(stack, opened, id))?.geometry).toMatchObject({ name: "lucide/star" })
   expect(await page.locator("[data-slide-box] [data-node]").count()).toBe(count)
 
-  await page.locator("[data-doom-stage]").click({ position: { x: 20, y: 20 } })
+  await page.locator("[data-editor-stage]").click({ position: { x: 20, y: 20 } })
   await page.keyboard.press("ControlOrMeta+z")
   await expect
     .poll(async () => (await savedNode(stack, opened, left))?.geometry)
@@ -297,9 +297,9 @@ test("the Move menu is dark, lined up with its chevron, and marks the tool in us
   stack,
 }) => {
   covers("tool-hand")
-  await openDoomEditor(page, context, stack)
-  const chevron = page.getByRole("button", { name: doomEditorCopy.moveTools })
-  const toolbar = page.getByRole("toolbar", { name: doomEditorCopy.tools })
+  await openEditor(page, context, stack)
+  const chevron = page.getByRole("button", { name: editorCopy.moveTools })
+  const toolbar = page.getByRole("toolbar", { name: editorCopy.tools })
   await expect(toolbar.locator("[data-toolbar-divider]")).toHaveCount(1)
   await chevron.click()
   const menu = page.getByRole("menu")
@@ -308,17 +308,17 @@ test("the Move menu is dark, lined up with its chevron, and marks the tool in us
   const box = await menu.boundingBox()
   expect(near(box?.x, edge?.x, 2)).toBe(true)
   await expect(menu).toHaveCSS("background-color", "rgb(30, 30, 30)")
-  await expect(menu.getByRole("menuitem", { name: new RegExp(doomEditorCopy.toolMove) })).toHaveAttribute(
+  await expect(menu.getByRole("menuitem", { name: new RegExp(editorCopy.toolMove) })).toHaveAttribute(
     "aria-current",
     "true",
   )
-  await menu.getByRole("menuitem", { name: new RegExp(doomEditorCopy.toolHand) }).click()
-  await expect(page.getByRole("button", { name: doomEditorCopy.toolHand, exact: true })).toHaveAttribute(
+  await menu.getByRole("menuitem", { name: new RegExp(editorCopy.toolHand) }).click()
+  await expect(page.getByRole("button", { name: editorCopy.toolHand, exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
   )
   await page.keyboard.press("v")
-  await expect(page.getByRole("button", { name: doomEditorCopy.toolMove, exact: true })).toHaveAttribute(
+  await expect(page.getByRole("button", { name: editorCopy.toolMove, exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
   )
@@ -329,10 +329,10 @@ test("the shape tray arms a preset shape and the Agent and Design switch stays o
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
-  const bar = page.getByRole("toolbar", { name: doomEditorCopy.tools })
+  const opened = await openEditor(page, context, stack)
+  const bar = page.getByRole("toolbar", { name: editorCopy.tools })
   const widths = await Promise.all(
-    [doomEditorCopy.toolMove, shapeCopy.tool, doomEditorCopy.textTool, doomEditorCopy.actions].map(
+    [editorCopy.toolMove, shapeCopy.tool, editorCopy.textTool, editorCopy.actions].map(
       async (name) =>
         (await bar.getByRole("button", { name, exact: true }).locator("svg").first().boundingBox())!.width,
     ),
@@ -348,15 +348,15 @@ test("the shape tray arms a preset shape and the Agent and Design switch stays o
     (await tray.getByRole("button", { name, exact: true }).locator("svg").boundingBox())!
   expect((await art(shapeCopy.shapes.star ?? "")).width).toBe(26)
   expect((await art(shapeCopy.line)).width).toBe(22)
-  await expect(page.getByRole("button", { name: doomEditorCopy.panelDesign })).toBeVisible()
+  await expect(page.getByRole("button", { name: editorCopy.panelDesign })).toBeVisible()
   await page.getByRole("button", { name: shapeCopy.shapes.star ?? "", exact: true }).click()
   await dragSlide(page, { x: 300, y: 600 }, { x: 500, y: 800 })
   await expect.poll(async () => (await picked(page, stack, opened)).node?.geometry.kind).toBe("preset")
   const star = (await picked(page, stack, opened)).node!
   expect(star.geometry).toMatchObject({ name: "star5" })
   expect(star.fills).toEqual([{ kind: "solid", color: { var: "background2", tint: -0.06 } }])
-  const agent = page.getByRole("button", { name: doomEditorCopy.panelAgent })
-  const design = page.getByRole("button", { name: doomEditorCopy.panelDesign })
+  const agent = page.getByRole("button", { name: editorCopy.panelAgent })
+  const design = page.getByRole("button", { name: editorCopy.panelDesign })
   await expect(agent).toHaveAttribute("aria-pressed", "true")
   await expect(page.locator("[data-aira-panel]")).toBeVisible()
   await design.click()

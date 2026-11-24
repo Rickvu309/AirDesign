@@ -4,7 +4,7 @@ An opened deck shows its current slide on the canvas at the deck's own size and 
 
 ## Sub-features
 
-- `paint-canvas` `[data-slide-box]` holds the slide inside `[data-doom-stage]`; the painted slide is `[data-doom-slide][data-slide-paint]`, scaled from the deck's size to the width it is given (`DoomSlide` in `packages/render/src/doom-slide.tsx`).
+- `paint-canvas` `[data-slide-box]` holds the slide inside `[data-editor-stage]`; the painted slide is `[data-doom-slide][data-slide-paint]`, scaled from the deck's size to the width it is given (`DoomSlide` in `packages/render/src/doom-slide.tsx`).
 - `paint-place` each layer is `[data-slide-box] [data-node="<id>"]`, placed by its box, turned by its rotation and mirrored by its flips; `data-geometry` names its shape (`packages/render/src/node-art.tsx`).
 - `paint-kinds` fills in order (solid, gradient, image), a PowerPoint preset's outline, strokes inside, centred or outside with dashes and arrow ends, lines along their route, text lines (`[data-line]`) of runs (`[data-run]`), frames that nest and clip their children, Lucide icons, charts from their data, shadows and layer blur (`packages/render/src/node-art.test.ts`). States `slide-effects`, `slide-group-effects`, `slide-line-styles`, `slide-line-and-gradient`, `slide-text-fit`, `slide-chart`, `shape-faces`.
 - `paint-fonts` a text's faces come from `fontRoutes.family` and `fontRoutes.file`; while a slide's face loads, the slide holds `[data-fonts-pending]`, and print and capture wait for it. An unknown name or a failed load falls back and is reported (`packages/render/src/font-load.test.ts`, `font-wait.test.ts`). State `font-catalog`.

@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { clickSlide, dragSlide, openDoomEditor, savedNode, selectedIds, spot } from "./editor-deck"
+import { clickSlide, dragSlide, openEditor, savedNode, selectedIds, spot } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -13,7 +13,7 @@ test("a new doom deck opens at its own address, paints its first slide and keeps
   covers("select", "move", "nudge", "nudge-far", "delete", "undo", "redo")
   const faults: string[] = []
   page.on("pageerror", (error) => faults.push(error.message))
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await expect(page).toHaveURL(new RegExp(`/s/${opened.deck}$`))
   const node = "s:4"
   const title = page.locator(`[data-slide-box] [data-node="${node}"]`)
@@ -42,7 +42,7 @@ test("a new doom deck opens at its own address, paints its first slide and keeps
   await expect.poll(boxOf.bind(null, node)).toMatchObject({ x: x + 1, y: y + 10 })
 
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(title).toHaveCount(1)
   const shown = await title.boundingBox()
   const slide = await page.locator("[data-slide-box]").boundingBox()

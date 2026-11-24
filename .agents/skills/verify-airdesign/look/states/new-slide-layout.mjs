@@ -1,11 +1,11 @@
-import { doomEditorCopy } from "../../bin/product-copy.mjs"
+import { editorCopy } from "../../bin/product-copy.mjs"
 import { editor } from "../editor-screen.mjs"
 import { openDoomDeck } from "../doom-deck.mjs"
 import { addSlideStart } from "../doom-slides.mjs"
 
 async function drive(kit) {
   await openDoomDeck(kit)
-  await addSlideStart(kit.page, doomEditorCopy.slideStarts.text)
+  await addSlideStart(kit.page, editorCopy.slideStarts.text)
   await kit.page.evaluate(() => document.fonts.ready)
 }
 

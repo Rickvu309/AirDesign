@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url"
 import { expect, type CDPSession, type Page } from "@playwright/test"
 import { test } from "./api-stack"
 import { dragFeel, type Feel } from "./drag-feel"
-import { openDoomEditor } from "./editor-deck"
+import { openEditor } from "./editor-deck"
 import { keptWait, keptWaitApproval } from "./kept-wait"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -68,7 +68,7 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
   page.on("request", (request) => {
     if (new URL(request.url()).pathname === "/doom/pictures") requested.push(request.url())
   })
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
   const { boardDeck } = (await import(
     pathToFileURL(`${process.cwd()}/.agents/skills/verify-airdesign/bench/doom-deck.mjs`).href
@@ -84,7 +84,7 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
   await boardDeck(kit, opened.cookie, budget.slides, opened.deck)
   await page.reload()
   await device.send("Performance.enable", { timeDomain: "threadTicks" })
-  await page.locator(`[data-doom-ready="${opened.deck}"]`).waitFor()
+  await page.locator(`[data-editor-ready="${opened.deck}"]`).waitFor()
   await page.locator('[data-slide-entry="2"]').click()
   const node = page.locator("[data-slide-box] [data-node]").first()
   await expect(node).toBeVisible()

@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { expect, type Page } from "@playwright/test"
 import { test, type Stack } from "./api-stack"
-import { accent, landNodes, openDoomEditor, serveOriginals, spot, type Opened } from "./editor-deck"
+import { accent, landNodes, openEditor, serveOriginals, spot, type Opened } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -24,7 +24,7 @@ async function dropPicture(page: Page) {
       const transfer = new DataTransfer()
       transfer.items.add(new File([new Uint8Array(bytes!)], "picture.png", { type: "image/png" }))
       document
-        .querySelector("[data-doom-stage]")!
+        .querySelector("[data-editor-stage]")!
         .dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: transfer }))
     },
     [bytes] as const,
@@ -66,7 +66,7 @@ test("an agent reading a Doom deck with picture gets the slide as the open tab p
   stack,
 }) => {
   await serveOriginals(page, stack.originals)
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landTitle(stack, opened, "w:1", "Revenue grew")
   await expect(page.locator("[data-slide-box]").getByText("Revenue grew")).toBeVisible()
   await dropPicture(page)
@@ -113,7 +113,7 @@ test("a picture whose bytes this device does not hold says it is still uploading
   stack,
 }) => {
   await serveOriginals(page, stack.originals)
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     {
       id: "w:3",

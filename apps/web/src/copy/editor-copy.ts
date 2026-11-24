@@ -1,4 +1,4 @@
-export const doomEditorCopy = {
+export const editorCopy = {
   title: "Deck editor",
   zoom: "Zoom",
   canvas: "Slide canvas",

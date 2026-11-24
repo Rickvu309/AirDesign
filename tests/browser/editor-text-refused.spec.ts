@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { test } from "./api-stack"
-import { clickSlide, openDoomEditor, savedNode } from "./editor-deck"
+import { clickSlide, openEditor, savedNode } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -13,7 +13,7 @@ test("a text commit the server refuses keeps the words in the text box with a no
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const box = (await savedNode(stack, opened, "s:4"))?.box as Box
   const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
   let refused = 0

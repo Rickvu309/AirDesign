@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
 import { test } from "./api-stack"
-import { accent, landNodes, openDoomEditor, spot } from "./editor-deck"
+import { accent, landNodes, openEditor, spot } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -10,7 +10,7 @@ test("an agent's first picture read reaches a tab that is between two catch-ups 
   stack,
 }) => {
   const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   let held = false
   let reopen: () => void = () => undefined
   const gap = new Promise<void>((resolve) => {

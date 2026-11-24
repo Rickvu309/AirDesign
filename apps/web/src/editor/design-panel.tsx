@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { useDoomSlide } from "@airdesign/render"
 import { useMemo } from "react"
 import { designCopy } from "@/copy/design-copy"
-import { doomEditorCopy } from "@/copy/editor-copy"
+import { editorCopy } from "@/copy/editor-copy"
 import { panelOfMany, type PanelModel, type PanelPaint } from "@/design/panel"
 import { panelSections } from "@/design/panel-order"
 import { DesignHead, ElementDesign } from "@/editor/design-sections"
@@ -85,7 +85,7 @@ export function DesignPanel(props: Props) {
     return (
       <div
         data-design-panel=""
-        aria-label={doomEditorCopy.designPanel}
+        aria-label={editorCopy.designPanel}
         role="region"
         className="flex min-h-0 flex-1 flex-col overflow-y-auto"
       >

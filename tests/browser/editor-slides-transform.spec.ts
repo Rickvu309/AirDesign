@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { accent, clickSlide, landNodes, openDoomEditor, savedNode, savedSlides, selectedIds, spot } from "./editor-deck"
+import { accent, clickSlide, landNodes, openEditor, savedNode, savedSlides, selectedIds, spot } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -12,10 +12,10 @@ const menu = (page: Page) => page.locator('[role="menu"][data-open]')
 
 async function withThreeSlides(
   page: Page,
-  context: Parameters<typeof openDoomEditor>[1],
-  stack: Parameters<typeof openDoomEditor>[2],
+  context: Parameters<typeof openEditor>[1],
+  stack: Parameters<typeof openEditor>[2],
 ) {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await page.getByRole("button", { name: slideListCopy.addSlide }).click()
   await page.getByRole("button", { name: slideListCopy.addSlide }).click()
   await expect(entries(page)).toHaveCount(3)
@@ -48,7 +48,7 @@ test("Alt+Down and Mod+] move the chosen slide one place later, and a reload kee
   await expect.poll(() => savedSlides(stack, opened)).toEqual([second, first, third])
 
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(entries(page)).toHaveCount(3)
   expect(await savedSlides(stack, opened)).toEqual([second, first, third])
 })
@@ -92,7 +92,7 @@ test("Shift+V flips the selected layer top to bottom, again flips it back, undo 
   stack,
 }) => {
   covers("flip-vertical", "undo")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(200, 600, 300, 150), fills: accent } },
     { id: "t:2", type: "shape", parent: opened.slide, props: { box: spot(700, 600, 300, 150), fills: accent } },
@@ -124,6 +124,6 @@ test("Shift+V flips the selected layer top to bottom, again flips it back, undo 
   await expect.poll(async () => (await boxOf("t:1")).flipV).toBe(true)
 
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(painted("t:1")).toHaveCSS("transform", /matrix\(1, 0, 0, -1/)
 })

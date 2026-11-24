@@ -1,10 +1,10 @@
 import { expect, type Page } from "@playwright/test"
 import { borderWords } from "../../apps/web/src/copy/border-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
-import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { accent, clickSlide, landNodes, openDoomEditor, savedNode, slidePoint, spot } from "./editor-deck"
+import { accent, clickSlide, landNodes, openEditor, savedNode, slidePoint, spot } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -29,7 +29,7 @@ test("a line's end drags onto a shape's side and stays there, frees again, and t
   stack,
 }) => {
   covers("line-end")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(1000, 500, 300, 200), fills: accent } },
     {
@@ -58,7 +58,7 @@ test("a line's end drags onto a shape's side and stays there, frees again, and t
   await expect.poll(async () => (await line()).end).toEqual({ node: "t:1", site: "l" })
   await expect(page.locator('[data-line-end="attached"]')).toHaveCount(1)
 
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   const border = page.locator(`[data-design-panel] [data-design-section="${designCopy.border}"]`)
   await border.getByRole("button", { name: borderWords["route.elbow"]!, exact: true }).click()
   await expect.poll(async () => (await line()).route).toBe("elbow")

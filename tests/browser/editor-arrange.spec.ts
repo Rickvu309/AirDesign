@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
-import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { frameCopy } from "../../apps/web/src/copy/frame-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { test } from "./api-stack"
@@ -10,7 +10,7 @@ import {
   clearSubtitle,
   clickSlide,
   landNodes,
-  openDoomEditor,
+  openEditor,
   savedNode,
   selectedIds,
   spot,
@@ -24,8 +24,8 @@ const shift = shortcutCopy.chord.other.shift
 type Stack = Parameters<typeof savedNode>[0]
 type Saved = { x: number; y: number; w: number; h: number; flipH: boolean }
 
-async function threeBoxes(page: Page, context: Parameters<typeof openDoomEditor>[1], stack: Stack) {
-  const opened = await openDoomEditor(page, context, stack as Parameters<typeof openDoomEditor>[2])
+async function threeBoxes(page: Page, context: Parameters<typeof openEditor>[1], stack: Stack) {
+  const opened = await openEditor(page, context, stack as Parameters<typeof openEditor>[2])
   await clearSubtitle(stack, opened)
   await landNodes(stack, opened, [
     { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(100, 700, 200, 120), fills: accent } },
@@ -150,7 +150,7 @@ test("the slide panel counts hidden and locked layers, and Show all and Unlock a
   await page.keyboard.press("Escape")
   await expect.poll(() => shapeCount(page)).toBe(2)
 
-  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   const panel = page.locator("[data-design-panel]")
   const hidden = panel.locator('[data-held="hidden"]')
   const locked = panel.locator('[data-held="locked"]')
@@ -161,7 +161,7 @@ test("the slide panel counts hidden and locked layers, and Show all and Unlock a
   await expect.poll(() => shapeCount(page)).toBe(4)
   await expect(hidden).toHaveCount(0)
   await expect.poll(async () => (await savedNode(stack, opened, "t:2"))?.hidden ?? false).toBe(false)
-  await page.locator("[data-doom-stage]").click({ position: { x: 20, y: 20 } })
+  await page.locator("[data-editor-stage]").click({ position: { x: 20, y: 20 } })
   await page.keyboard.press("ControlOrMeta+z")
   await expect.poll(() => shapeCount(page)).toBe(2)
   await expect(hidden).toContainText(designCopy.heldLayers.hidden(2))

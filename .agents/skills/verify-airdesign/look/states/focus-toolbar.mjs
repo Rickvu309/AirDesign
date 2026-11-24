@@ -1,4 +1,4 @@
-import { doomEditorCopy } from "../../bin/product-copy.mjs"
+import { editorCopy } from "../../bin/product-copy.mjs"
 import { editor } from "../editor-screen.mjs"
 import { threeSlideDeck } from "../three-slide-deck.mjs"
 
@@ -10,7 +10,7 @@ async function drive(kit) {
   for (let press = 0; press < 12; press += 1) {
     await kit.page.keyboard.press("Tab")
     const name = await kit.page.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? "")
-    if (name === doomEditorCopy.textTool) return
+    if (name === editorCopy.textTool) return
   }
   throw new Error("the Text tool never took focus")
 }

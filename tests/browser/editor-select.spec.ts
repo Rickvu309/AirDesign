@@ -8,7 +8,7 @@ import {
   clickSlide,
   dragSlide,
   landNodes,
-  openDoomEditor,
+  openEditor,
   savedNode,
   selectedIds,
   spot,
@@ -19,11 +19,11 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 const shift = shortcutCopy.chord.other.shift
 
 async function withLayers(
-  page: Parameters<typeof openDoomEditor>[0],
-  context: Parameters<typeof openDoomEditor>[1],
-  stack: Parameters<typeof openDoomEditor>[2],
+  page: Parameters<typeof openEditor>[0],
+  context: Parameters<typeof openEditor>[1],
+  stack: Parameters<typeof openEditor>[2],
 ) {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const slide = opened.slide
   await clearSubtitle(stack, opened)
   await landNodes(stack, opened, [
@@ -113,7 +113,7 @@ test("the hover outline goes when the pointer leaves the canvas before the brows
   context,
   stack,
 }) => {
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   const text = { chars: "A card line", spans: [], paras: [{}], style: "body", resize: "fixed", alignV: "top" }
   await landNodes(stack, opened, [
     { id: "t:0", type: "frame", parent: opened.slide, props: { box: spot(600, 600, 720, 200) } },

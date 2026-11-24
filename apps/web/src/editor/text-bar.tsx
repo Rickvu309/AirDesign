@@ -3,17 +3,17 @@ import { Bold, Italic, List, ListOrdered, Underline } from "lucide-react"
 import { memo, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { doomEditorCopy } from "@/copy/editor-copy"
+import { editorCopy } from "@/copy/editor-copy"
 import { markOn, type Mark } from "./text-edit"
 import type { TextSession } from "./use-text-session"
 
 const marks = [
-  { mark: "bold", icon: Bold, label: doomEditorCopy.bold },
-  { mark: "italic", icon: Italic, label: doomEditorCopy.italic },
-  { mark: "underline", icon: Underline, label: doomEditorCopy.underline },
+  { mark: "bold", icon: Bold, label: editorCopy.bold },
+  { mark: "italic", icon: Italic, label: editorCopy.italic },
+  { mark: "underline", icon: Underline, label: editorCopy.underline },
 ] as const
 
-const styles = Object.keys(doomEditorCopy.textStyles) as readonly doom.TextStyleName[]
+const styles = Object.keys(editorCopy.textStyles) as readonly doom.TextStyleName[]
 
 function holdFocus(event: React.MouseEvent) {
   event.preventDefault()
@@ -68,21 +68,21 @@ const TextBarView = memo(function TextBarView({
   return (
     <div
       role="toolbar"
-      aria-label={doomEditorCopy.textBar}
+      aria-label={editorCopy.textBar}
       data-text-bar=""
       className="absolute top-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-xl bg-white p-1 shadow-[0px_0px_0px_1px_var(--field-edge),0px_4px_12px_var(--black-6)]"
       onMouseDown={holdFocus}
     >
       <Select value={style} onValueChange={(next) => api.setStyle(next as doom.TextStyleName)}>
-        <SelectTrigger aria-label={doomEditorCopy.textStyle} className="h-8 w-32 border-0 shadow-none">
+        <SelectTrigger aria-label={editorCopy.textStyle} className="h-8 w-32 border-0 shadow-none">
           <SelectValue>
-            {(value: string | null) => doomEditorCopy.textStyles[(value ?? style) as doom.TextStyleName]}
+            {(value: string | null) => editorCopy.textStyles[(value ?? style) as doom.TextStyleName]}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {styles.map((style) => (
             <SelectItem key={style} value={style}>
-              {doomEditorCopy.textStyles[style]}
+              {editorCopy.textStyles[style]}
             </SelectItem>
           ))}
         </SelectContent>
@@ -103,7 +103,7 @@ const TextBarView = memo(function TextBarView({
       <Button
         variant={list === "bullet" ? "default" : "ghost"}
         size="icon"
-        aria-label={doomEditorCopy.bullets}
+        aria-label={editorCopy.bullets}
         aria-pressed={list === "bullet"}
         onMouseDown={holdFocus}
         onClick={() => api.list("bullet")}
@@ -113,7 +113,7 @@ const TextBarView = memo(function TextBarView({
       <Button
         variant={list === "number" ? "default" : "ghost"}
         size="icon"
-        aria-label={doomEditorCopy.numbers}
+        aria-label={editorCopy.numbers}
         aria-pressed={list === "number"}
         onMouseDown={holdFocus}
         onClick={() => api.list("number")}

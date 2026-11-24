@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { clickSlide, openDoomEditor, savedNode, savedSlides, selectedIds, type Opened } from "./editor-deck"
+import { clickSlide, openEditor, savedNode, savedSlides, selectedIds, type Opened } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -20,7 +20,7 @@ test("the slide strip shows, adds, steps through, reorders, deletes and restores
   covers("slide-add", "slide-duplicate", "slide-delete", "slide-up", "slide-previous", "slide-next", "undo")
   const faults: string[] = []
   page.on("pageerror", (error) => faults.push(error.message))
-  const opened: Opened = await openDoomEditor(page, context, stack)
+  const opened: Opened = await openEditor(page, context, stack)
   const saved = () => savedSlides(stack, opened)
   const [first] = await saved()
   await expect(entries(page)).toHaveCount(1)
@@ -86,7 +86,7 @@ test("the slide strip shows, adds, steps through, reorders, deletes and restores
   await expect(painted(page)).toHaveCount(2)
 
   await page.reload()
-  await page.locator("[data-doom-ready]").waitFor()
+  await page.locator("[data-editor-ready]").waitFor()
   await expect(entries(page)).toHaveCount(3)
   await expect.poll(saved).toEqual([added, order[1], first])
   await entry(page, 3).click()
@@ -102,7 +102,7 @@ test("the slide strip shows, adds, steps through, reorders, deletes and restores
 
 test("the last slide cannot be deleted", async ({ page, context, stack }) => {
   covers("slide-delete")
-  const opened = await openDoomEditor(page, context, stack)
+  const opened = await openEditor(page, context, stack)
   await entry(page, 1).click()
   await page.keyboard.press("Delete")
   await expect(entries(page)).toHaveCount(1)
