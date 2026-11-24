@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { skipped, trimmed, type Queued } from "./doom-queue.js"
+import { ownedIn, revIn, rewritten, shown, skipped, trimmed, type Queued } from "./doom-queue.js"
 
 const setAside: ReadonlySet<doom.Refusal["refused"]> = new Set(["shape", "limit", "person", "run-fenced", "last-slide"])
 
@@ -51,4 +51,64 @@ export function onStandingOnly(
     return undefined
   if (writes.length === 0) return { queue: skipped(queue, head.edit.once), skipped: true }
   return { queue: trimmed(queue, head.edit.once, writes), skipped: false }
+}
+
+export type Replayed = {
+  readonly queue: readonly Queued[]
+  readonly gone: readonly string[]
+  readonly steps: ReadonlyMap<string, { readonly before: doom.Doom; readonly writes: readonly doom.Write[] }>
+  readonly pressed: ReadonlyMap<string, Pressed>
+}
+
+export function onStanding(
+  server: doom.Doom,
+  queue: readonly Queued[],
+  turned: ReadonlyMap<string, Pressed>,
+  once: string,
+): Replayed | undefined {
+  const pressed = turned.get(once)
+  if (pressed === undefined) return undefined
+  const ownedBy = (now: readonly Queued[], onces: readonly string[]) =>
+    ownedIn(server, now, [...turned.keys(), ...onces])
+  const kept = onStandingOnly(server, queue, pressed, ownedBy(queue, pressed.owned))
+  if (kept === undefined) return undefined
+  let next = kept.queue
+  const gone: string[] = kept.skipped ? [once] : []
+  const steps = new Map<string, { before: doom.Doom; writes: readonly doom.Write[] }>()
+  const again = new Map<string, Pressed>()
+  const relay = (name: string) => {
+    const at = next.findIndex((each) => each.edit.once === name)
+    steps.set(name, { before: shown(server, next.slice(0, at)), writes: next[at]!.edit.writes })
+  }
+  if (!kept.skipped) relay(once)
+  const changed = new Set([once])
+  for (const { edit } of queue) {
+    const over = turned.get(edit.once)
+    const inverted = over?.owned.at(-1)
+    if (over === undefined || inverted === undefined || !over.owned.some((name) => changed.has(name))) continue
+    changed.add(edit.once)
+    const at = next.findIndex((each) => each.edit.once === edit.once)
+    const prior = next.findIndex((each) => each.edit.once === inverted)
+    const rev = revIn(server, next, inverted)
+    const now = shown(server, next.slice(0, at))
+    const writes =
+      prior < 0 || rev === undefined
+        ? []
+        : doom.invert(
+            shown(server, next.slice(0, prior)),
+            now,
+            { once: inverted, author: edit.author, writes: next[prior]!.edit.writes, rev },
+            ownedBy(next, over.owned),
+          )
+    const made = writes.length === 0 ? undefined : rewritten(server, next, edit.once, writes)
+    if (made === undefined || doom.isRefusal(made)) {
+      next = skipped(next, edit.once)
+      gone.push(edit.once)
+      continue
+    }
+    next = made
+    relay(edit.once)
+    again.set(edit.once, pressedOn(server, now, writes, over.owned))
+  }
+  return { queue: next, gone, steps, pressed: again }
 }

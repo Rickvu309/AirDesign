@@ -7,13 +7,13 @@ import {
   type SlidePictures,
 } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
-import { appliedOn, dropped, landed, provisionalRevs, queueEdit, sendable, shown, type Queued } from "./doom-queue.js"
+import { appliedOn, dropped, landed, ownedIn, queueEdit, revIn, sendable, shown, type Queued } from "./doom-queue.js"
 import type { DoomRemote } from "./doom-remote.js"
 import { statusOf, type DeckStatus, type Reach } from "./doom-status.js"
 import { deviceStorage, type DoomStorage } from "./doom-storage.js"
 import { runInLog } from "./run-log.js"
 import { watchedRunsOf } from "./watched-runs.js"
-import { catchingUpResolves, onStandingOnly, pressedOn, remember, type Pressed } from "./turn-replay.js"
+import { catchingUpResolves, onStanding, pressedOn, remember, type Pressed } from "./turn-replay.js"
 
 export type Notice = {
   readonly once: string
@@ -272,31 +272,22 @@ function connected(
     return true
   }
 
-  function ownedRevs(onces: Iterable<string>): Set<doom.Rev> {
-    const owned = new Set<doom.Rev>()
-    for (const name of onces) {
-      const turnedAt = revOf(name)
-      if (turnedAt !== undefined) owned.add(turnedAt)
-    }
-    return owned
-  }
+  const ownedRevs = (onces: Iterable<string>) => ownedIn(server, queue, onces)
 
-  function standOnly(once: string, pressed: Pressed): boolean {
-    const kept = onStandingOnly(server, queue, pressed, ownedRevs([...turned.keys(), ...pressed.owned]))
+  function standOnly(once: string): boolean {
+    const kept = onStanding(server, queue, turned, once)
     if (kept === undefined) return false
     queue = kept.queue
-    if (kept.skipped) forget([once])
-    else relaid(once)
-    return true
-  }
-
-  function relaid(once: string) {
-    const writes = queue.find((each) => each.edit.once === once)?.edit.writes
-    if (writes === undefined) return
+    forget(kept.gone)
     const again = (steps: Step[]) =>
-      steps.map((step) => (step.onces.includes(once) ? { ...step, before: server, writes } : step))
+      steps.map((step) => {
+        const relaid = kept.steps.get(step.onces[0]!)
+        return step.onces.length === 1 && relaid !== undefined ? { ...step, ...relaid } : step
+      })
     undoSteps = again(undoSteps)
     redoSteps = again(redoSteps)
+    for (const [name, pressed] of kept.pressed) turned.set(name, pressed)
+    return true
   }
 
   async function drain(): Promise<Synced> {
@@ -345,7 +336,7 @@ function connected(
       const pressed = turned.get(once)
       if (refusal === "edit" && catchingUpResolves(answer.refused) && pressed !== undefined) {
         if (!(await catchUp().catch(() => ({ ok: false }))).ok) return { ok: false, reason: "offline" }
-        if (queue[0] !== head || standOnly(once, pressed)) {
+        if (queue[0] !== head || standOnly(once)) {
           await save({ queue })
           tell()
           continue
@@ -409,16 +400,7 @@ function connected(
     return { ok: true, once: edit.once, saved, before }
   }
 
-  function revOf(once: string): doom.Rev | undefined {
-    const landedAt = server.onces.get(once)
-    if (landedAt !== undefined) return landedAt
-    for (const [at, name] of provisionalRevs(
-      server,
-      queue.map((each) => each.edit),
-    ))
-      if (name === once) return at
-    return undefined
-  }
+  const revOf = (once: string) => revIn(server, queue, once)
 
   function turn(from: Step[], to: Step[]): Turned {
     const step = from.at(-1)

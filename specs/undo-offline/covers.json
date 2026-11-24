@@ -4,20 +4,20 @@
     {
       "file": "packages/live/src/doom-deck.ts",
       "names": ["connected"],
-      "digest": "00aa9d9ffc3f",
-      "blob": "955fbf36fb548c792025ce19b8be8ad08bf3160f"
+      "digest": "08c55e05ede4",
+      "blob": "c874a7d17bf7da31751bbbb3353772185fdfcb0c"
     },
     {
       "file": "packages/live/src/doom-queue.ts",
-      "names": ["skipped", "trimmed", "landed", "queueEdit"],
-      "digest": "7fb1fd5cbeb7",
-      "blob": "1f65fdddf8679807d4524491174ea23c712ab259"
+      "names": ["skipped", "trimmed", "landed", "queueEdit", "rewritten"],
+      "digest": "7ed503b89311",
+      "blob": "5a1e53b6abac2923767373a75145d5173f7a3fcd"
     },
     {
       "file": "packages/live/src/turn-replay.ts",
-      "names": ["onStandingOnly", "pressedOn", "catchingUpResolves"],
-      "digest": "845fbd94a990",
-      "blob": "63daff99c0770542b9b29153d565a0e08834dacb"
+      "names": ["onStandingOnly", "pressedOn", "catchingUpResolves", "onStanding"],
+      "digest": "433b7b3c47ac",
+      "blob": "234edfe3b7f200d4a78c25e8ad864cc46e02b10d"
     },
     {
       "file": "packages/doom/src/standing-layers.ts",
