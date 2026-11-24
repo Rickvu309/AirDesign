@@ -10,12 +10,34 @@ const same = (what, actual, expected) => {
   }
 }
 
-const planted = ["pk" + "ill -f playwright", "kill" + "all node", "pgrep -f vite | xargs " + "kill -9"]
+const K = "kil" + "l"
+const planted = [
+  "p" + K + " -f playwright",
+  K + "all node",
+  "pgrep -f vite | xargs " + K + " -9",
+  'ps -eo pid,args | awk "/playwright/ {print \\$1}" | xargs -r /bin/' + K,
+  "ps aux | grep vite | xargs -r -n 1 -I {} /usr/bin/" + K + " -9 {}",
+  K + " $(pgrep -f vite)",
+  "  " + K + " -9 `pgrep node`",
+  "/usr/bin/p" + K + " -f node",
+  "sudo /usr/bin/" + K + "all -9 node",
+  "true && p" + K + " node",
+  "lsof -t -i :4485 | xargs " + K,
+]
 for (const line of planted) {
   same(`${line} is caught`, broadKills([{ file: "a.sh", text: `echo hi\n${line}\n` }]), [
     { file: "a.sh", line: 2, text: line },
   ])
 }
+const harmless = [
+  "Never use p" + K + " to clean up browser tests.",
+  "# Never invoke " + K + "all for this server.",
+  "printf '%s\\n' \"$owned_child_pid\" | xargs " + K,
+  "Stop it with `p" + K + "` only never.",
+  "process." + K + "(child.pid)",
+  K + " " + "$child_pid",
+]
+for (const line of harmless) same(`${line} is not caught`, broadKills([{ file: "a.md", text: `${line}\n` }]), [])
 same("a pid kill is fine", broadKills([{ file: "a.mjs", text: "process.kill(child.pid, 'SIGTERM')\n" }]), [])
 same("no fault when nothing is found", killFault([]), undefined)
 if (!killFault([{ file: "a.sh", line: 2, text: "" }]).includes("verify-airdesign stop")) {

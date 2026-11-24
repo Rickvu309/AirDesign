@@ -1,9 +1,9 @@
-import { spawn } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
-import { foreignRun, newRun, removeLeftoverRuns, runsOf } from "./leftover-runs.mjs"
+import { foreignRun, newRun, removeLeftoverRuns, runsOf, writeOwner } from "./leftover-runs.mjs"
 
 const folders = []
 const children = []
@@ -52,9 +52,17 @@ function stateOf(run, pid) {
   return { run, pid, postgres: { pid: 0, dataDir: "/nowhere/airdesign-api-x/data" } }
 }
 
+function ownedBy(dir, repo) {
+  writeOwner(dir, repo)
+}
+
 async function sweep(root) {
   const stopped = []
-  const result = await removeLeftoverRuns({ scratchRoot: root, stop: async (run) => stopped.push(run) })
+  const result = await removeLeftoverRuns({
+    scratchRoot: root,
+    repo: "/work/a",
+    stop: async (run) => stopped.push(run),
+  })
   return { stopped, result }
 }
 
@@ -123,12 +131,50 @@ describe("the runs of one worktree", () => {
   it("lists only runs started in this worktree and names the owner of another's", () => {
     const root = scratchRoot()
     const [mine, theirs, bare] = Array.from({ length: 3 }, newRun)
-    runFolder(root, mine, { ...stateOf(mine, 1), repo: "/work/a" }, 0)
-    runFolder(root, theirs, { ...stateOf(theirs, 1), repo: "/work/b" }, 0)
+    ownedBy(runFolder(root, mine, stateOf(mine, 1), 0), "/work/a")
+    ownedBy(runFolder(root, theirs, stateOf(theirs, 1), 0), "/work/b")
     runFolder(root, bare, undefined, 0)
     expect(runsOf({ scratchRoot: root, repo: "/work/a" })).toEqual([mine])
     expect(foreignRun({ scratchRoot: root, repo: "/work/a", run: theirs })).toBe("/work/b")
     expect(foreignRun({ scratchRoot: root, repo: "/work/a", run: mine })).toBeUndefined()
     expect(foreignRun({ scratchRoot: root, repo: "/work/a", run: bare })).toBeUndefined()
+  })
+})
+
+describe("a sweep and a stop beside another worktree's run", () => {
+  it("leaves a dead run of another worktree to its owner", async () => {
+    const root = scratchRoot()
+    const theirs = newRun()
+    ownedBy(runFolder(root, theirs, stateOf(theirs, await deadPid()), 0), "/work/b")
+    expect((await sweep(root)).stopped).toEqual([])
+  })
+
+  it("sweeps a dead run of this worktree", async () => {
+    const root = scratchRoot()
+    const mine = newRun()
+    ownedBy(runFolder(root, mine, stateOf(mine, await deadPid()), 0), "/work/a")
+    expect((await sweep(root)).stopped).toEqual([mine])
+  })
+
+  const stopCli = (home, repo, run) =>
+    spawnSync(process.execPath, [new URL("verify-airdesign.mjs", import.meta.url).pathname, "stop", run], {
+      encoding: "utf8",
+      env: { ...process.env, HOME: home, VERIFY_AIRDESIGN_REPO: repo },
+    })
+
+  it.each([
+    ["an owner file naming another worktree", "/work/b", JSON.stringify],
+    ["a state that cannot be read and no owner", undefined, () => ""],
+  ])("never stops a live stack with %s", async (_, owner, text) => {
+    const home = scratchRoot()
+    const root = path.join(home, "tmp", "verify-airdesign-scratch")
+    const theirs = newRun()
+    const pid = await sleeper(["serve", theirs])
+    const dir = runFolder(root, theirs, undefined, 0)
+    writeFileSync(path.join(dir, "state.json"), text(stateOf(theirs, pid)))
+    if (owner !== undefined) writeOwner(dir, owner)
+    const result = stopCli(home, "/work/a", theirs)
+    expect(result.status).toBe(1)
+    process.kill(pid, 0)
   })
 })

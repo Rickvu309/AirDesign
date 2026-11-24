@@ -3,8 +3,18 @@ import { readFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
-const killers = ["pk" + "ill", "kill" + "all"]
-const broad = new RegExp(`\\b(?:${killers.join("|")})\\b|\\bxargs\\s+(?:-\\S+\\s+)*kill\\b`)
+const killers = ["pk" + "ill", "kill" + "all"].join("|")
+const stop = "kil" + "l"
+const exe = (names) => `(?:\\S*/)?(?:${names})(?=\\s|$)`
+const wrappers = "(?:(?:sudo|exec|env|nohup|xargs)\\s+(?:-\\S+\\s+|\\{\\}\\s+|\\d+\\s+)*)*"
+const commandStart = "(?:^|[|;&(]|\\$\\()\\s*(?:\\$\\s+)?"
+const searcher = "(?:ps|pgrep|pidof|lsof|fuser)"
+const patterns = [
+  new RegExp(`${commandStart}${wrappers}${exe(killers)}`),
+  new RegExp(`\\b${searcher}\\s[^\\n]*\\|\\s*${wrappers}${exe(stop)}`),
+  new RegExp(`${commandStart}${exe(stop)}\\s+(?:-\\S+\\s+)*(?:\\$\\(|\`)\\s*${searcher}\\b`),
+]
+const broad = { test: (line) => !line.trimStart().startsWith("#") && patterns.some((each) => each.test(line)) }
 
 export const broadKills = (files) =>
   files.flatMap(({ file, text }) =>

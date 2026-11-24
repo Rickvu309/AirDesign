@@ -1,6 +1,7 @@
-import { appendFileSync, createReadStream, existsSync, readFileSync, statSync, writeFileSync } from "node:fs"
+import { appendFileSync, createReadStream, existsSync, readFileSync, statSync } from "node:fs"
 import { request as httpRequest, createServer } from "node:http"
 import path from "node:path"
+import { writeAtomic } from "./leftover-runs.mjs"
 import { randomBytes } from "node:crypto"
 import { fontShelf, shelfFolder, shelveFonts } from "../../../../scripts/font-shelf.mjs"
 import { countedTransport } from "./aira-counts.mjs"
@@ -128,7 +129,7 @@ export async function serve(
     postgres: { pid: postgresPid, dataDir, port: cluster.port },
     ready: false,
   }
-  writeFileSync(statePath(run), JSON.stringify(state, null, 2))
+  writeAtomic(statePath(run), JSON.stringify(state, null, 2))
   if ((await runBootstrap(environment, write)) !== 0) throw new Error("bootstrap")
   if ((await runSetup(environment, write)) !== 0) throw new Error("setup")
   const session = openPool(environment.SESSION_DATABASE_URL, "verify-session")
@@ -219,7 +220,7 @@ export async function serve(
   process.on("SIGHUP", stop)
   process.on("uncaughtException", (error) => stop(`uncaught ${String(error?.stack ?? error)}`))
   process.on("unhandledRejection", (error) => stop(`unhandled ${String(error?.stack ?? error)}`))
-  writeFileSync(
+  writeAtomic(
     statePath(run),
     JSON.stringify(
       { ...state, apiPort, origin, siteOrigin: origins.site, mail: mailFile, airaCounts, ready: true },
