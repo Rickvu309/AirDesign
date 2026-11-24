@@ -10,7 +10,17 @@ import { airaArgs, airaChoice, airaFlags } from "./aira-choice.mjs"
 import { serve } from "./serve.mjs"
 import { browserCookies } from "./browser-cookies.mjs"
 import { designContext, openBrowser, settle } from "./browser.mjs"
-import { alive, commandLine, foreignRun, newRun, ownsServe, removeLeftoverRuns, runsOf } from "./leftover-runs.mjs"
+import {
+  alive,
+  commandLine,
+  foreignRun,
+  newRun,
+  ownerOf,
+  ownsServe,
+  removeLeftoverRuns,
+  runsOf,
+  writeOwner,
+} from "./leftover-runs.mjs"
 import { loadLine } from "./load.mjs"
 import { builtSite, fakeOrigins } from "./site.mjs"
 import { replyRoutes } from "./reply-routes.mjs"
@@ -71,11 +81,12 @@ function pause(ms) {
 }
 
 async function launch(args) {
-  const leftover = await removeLeftoverRuns({ scratchRoot, stop: stopRun })
+  const leftover = await removeLeftoverRuns({ scratchRoot, repo, stop: stopRun })
   if (leftover.stopped.length + leftover.removed.length > 0) process.stderr.write(`${JSON.stringify({ leftover })}\n`)
   const run = newRun()
   mkdirSync(evidenceDir(run), { recursive: true })
   mkdirSync(scratchDir(run), { recursive: true })
+  writeOwner(scratchDir(run), repo)
   if (!args.includes("--no-build")) {
     const log = path.join(scratchDir(run), "build.log")
     for (const filter of [
@@ -378,7 +389,14 @@ async function journey(run, given) {
 async function stopRun(run) {
   const stateFile = statePath(run)
   if (!existsSync(stateFile)) return { run, stopped: [], note: "no state; nothing of this run is running" }
-  const state = JSON.parse(readFileSync(stateFile, "utf8"))
+  let state
+  try {
+    state = JSON.parse(readFileSync(stateFile, "utf8"))
+  } catch {
+    fail(`run ${run} has a state that cannot be read, so its owner cannot be checked; nothing was stopped`)
+  }
+  const owner = ownerOf(scratchDir(run)) ?? state.repo
+  if (owner !== repo) fail(`run ${run} is not owned by this worktree (${repo}); only its own worktree stops it`)
   const stopped = []
   if (ownsServe(state)) {
     process.kill(state.pid, "SIGTERM")
