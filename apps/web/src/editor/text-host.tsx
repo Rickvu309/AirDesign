@@ -79,9 +79,10 @@ export function TextHost(props: {
     const element = host.current
     if (element === null) return
     const doc = element.ownerDocument
+    const selected = () => (marked.current === null ? selectionOf(element!) : null)
     function listen() {
-      const found = selectionOf(element!)
-      if (found !== null && !marked.current) latest.current.api.select(found.anchor, found.focus)
+      const found = selected()
+      if (found !== null) latest.current.api.select(found.anchor, found.focus)
     }
     function before(event: InputEvent) {
       if (marked.current !== null || event.inputType === "insertCompositionText") return
@@ -122,10 +123,14 @@ export function TextHost(props: {
         current.step(type === "historyUndo" ? "undo" : "redo")
       }
     }
+    latest.current.api.host(selected)
     doc.addEventListener("selectionchange", listen)
+    element.addEventListener("focusout", listen)
     element.addEventListener("beforeinput", before)
     return () => {
+      latest.current.api.host(null)
       doc.removeEventListener("selectionchange", listen)
+      element.removeEventListener("focusout", listen)
       element.removeEventListener("beforeinput", before)
     }
   }, [fresh])
@@ -135,8 +140,6 @@ export function TextHost(props: {
     const gesture = gestureFor(event.nativeEvent, "text") ?? gestureFor(event.nativeEvent, "editor")
     const { api: current } = latest.current
     const handled = () => event.preventDefault()
-    const found = host.current === null ? null : selectionOf(host.current)
-    if (found !== null) current.select(found.anchor, found.focus)
     if (gesture === "deselect") {
       handled()
       latest.current.onLeave()

@@ -59,10 +59,13 @@ export type TextSession = {
   indent(by: 1 | -1): void
   setStyle(style: doom.TextStyleName): void
   select(anchor: number, focus: number): void
+  host(selected: (() => Caret | null) | null): void
   flush(): void
   finish(): void
   step(kind: "undo" | "redo"): void
 }
+
+export type Caret = { readonly anchor: number; readonly focus: number }
 
 const idle = 700
 
@@ -88,6 +91,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
   const reopened = useRef("")
   const [refused, setRefused] = useState(false)
   const notices = useSyncExternalStore(client.subscribe, client.notices)
+  const selected = useRef<(() => Caret | null) | null>(null)
   const viewRef = useRef(view)
   useEffect(() => {
     viewRef.current = view
@@ -96,6 +100,15 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
   function set(next: Session | null) {
     ref.current = next
     setState(next)
+  }
+
+  function live(): Session | null {
+    const now = ref.current
+    const at = selected.current?.() ?? null
+    if (now === null || at === null || (now.anchor === at.anchor && now.focus === at.focus)) return now
+    const next = { ...now, ...at, pending: null }
+    set(next)
+    return next
   }
 
   function keep(once: string, draft: doom.Text, node: doom.NodeId) {
@@ -240,7 +253,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
       change({ draft, anchor: caret, focus: caret, pending: null })
     },
     mark(mark) {
-      const now = ref.current
+      const now = live()
       if (now === null) return
       const [low, high] = [Math.min(now.anchor, now.focus), Math.max(now.anchor, now.focus)]
       if (low === high) {
@@ -253,22 +266,22 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
       change({ draft: toggleMark(now.draft, low, high, mark) })
     },
     link(link) {
-      const now = ref.current
+      const now = live()
       const words = now === null ? null : linkedWords(now.draft, now.anchor, now.focus)
       if (now === null || words === null) return
       change({ draft: linkWords(now.draft, words.from, words.to, link) })
     },
     align(align) {
-      const now = ref.current
+      const now = live()
       if (now === null) return
       change({ draft: withParagraphs(now.draft, now.anchor, now.focus, (para) => ({ ...para, align })) })
     },
     list(kind) {
-      const now = ref.current
+      const now = live()
       if (now !== null) change({ draft: toggledList(now.draft, now.anchor, now.focus, kind) })
     },
     indent(by) {
-      const now = ref.current
+      const now = live()
       if (now === null) return
       const draft = withParagraphs(now.draft, now.anchor, now.focus, (para) => {
         if (para.list === undefined) return para
@@ -286,6 +299,9 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
       const now = ref.current
       if (now === null || (now.anchor === anchor && now.focus === focus)) return
       set({ ...now, anchor, focus, pending: null })
+    },
+    host(read) {
+      selected.current = read
     },
     flush,
     finish,
