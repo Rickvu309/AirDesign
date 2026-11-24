@@ -16,8 +16,8 @@
     {
       "file": "packages/mcp/src/edit-tool.ts",
       "names": ["editDeckTool"],
-      "digest": "1c1d9de79ade",
-      "blob": "bfaff3fd54afec7a2456a27fe6e9e425a32f2ed1"
+      "digest": "9c4280115606",
+      "blob": "d10b9c8103114a69fb7038b5e4136d1d079a7527"
     },
     {
       "file": "packages/mcp/src/stop-tool.ts",
@@ -28,8 +28,8 @@
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["guardRun", "landEdit", "protect"],
-      "digest": "d2b22631d111",
-      "blob": "cd700d3a0a9443f8f1016358757e178e13a37eb1"
+      "digest": "a1c4b9c0a8c1",
+      "blob": "c04f451bb04b24e3346f69afe437fd3d8d82a3b4"
     },
     {
       "file": "packages/mcp/src/admit.ts",

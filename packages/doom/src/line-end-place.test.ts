@@ -3,10 +3,19 @@ import { compileAgentEdit } from "./agent-edit.js"
 import { compiled, minter, runName, started } from "./agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
 import type { NodeId } from "./ids.js"
-import { freedLineEnds, invert, orderKeyBetween, type Doom, type Measure } from "./index.js"
+import { freeLineEnds, invert, orderKeyBetween, type Doom, type Measure } from "./index.js"
 import { agent, once } from "./sample-deck.js"
 import { block, label, measure, padding, plainTheme, row, spot } from "./testing/doom-fixtures-art.js"
-import { attached, deck, detach, freePoint, lineOf, startOf, step } from "./testing/line-end-fixtures.js"
+import {
+  attached,
+  deck,
+  deletedUnfreed,
+  detach,
+  freePoint,
+  lineOf,
+  startOf,
+  step,
+} from "./testing/line-end-fixtures.js"
 
 function nested() {
   return doomFromTree({
@@ -37,7 +46,7 @@ function nested() {
 
 function drop(doom: Doom, once: string, ids: readonly NodeId[]) {
   const gone = detach(ids)
-  return step(doom, once, [...gone, ...freedLineEnds(doom, gone, measure)])
+  return step(doom, once, freeLineEnds(doom, gone, measure))
 }
 
 describe("a line end whose shape is not on the laid-out slide", () => {
@@ -134,7 +143,7 @@ describe("a connector whose place depends on text width", () => {
     const seen = startOf(grown.doom, slide, line, wide)
     expect(seen.x).not.toBe(startOf(grown.doom, slide, line).x)
     const gone = detach([grown.ids.t!])
-    const person = step(grown.doom, "person", [...gone, ...freedLineEnds(grown.doom, gone, wide)]).after
+    const person = step(grown.doom, "person", freeLineEnds(grown.doom, gone, wide)).after
     const agentWrites = compiled(grown.doom, { op: "delete", nodes: [grown.ids.t!] }, minter(), { measure: wide })
     const edited = compileAgentEdit(started(grown.doom), [{ op: "delete", nodes: [grown.ids.t!] }], {
       author: agent(runName),
@@ -356,7 +365,7 @@ describe("deleting the shape a line is attached to", () => {
 
   it("does not invent a corner point for a shape that is already gone", () => {
     const grown = deck()
-    const gone = step(grown.doom, "raw", [{ node: grown.ids.t!, prop: "parent", value: null }]).after
-    expect(freedLineEnds(gone, detach([grown.ids.t!]), measure)).toEqual([])
+    const gone = deletedUnfreed(grown.doom, grown.ids.t!)
+    expect(freeLineEnds(gone, detach([grown.ids.t!]), measure)).toEqual(detach([grown.ids.t!]))
   })
 })

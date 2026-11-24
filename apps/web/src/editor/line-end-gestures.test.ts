@@ -247,7 +247,8 @@ describe("the editor's gestures free a connector end the moment its shape leaves
       { once: "typing", author: { kind: "person", id: "typing" }, writes: draftWrites(client.view(), draft, wide) },
     ])
     expect(startOf(typing, toText, wide)).toEqual(seen)
-    client.push(leaveWrites(client.view(), { ...draft, pushed: "" }, wide))
+    const leaving = leaveWrites(client.view(), { ...draft, pushed: "" })
+    client.push(leaving.writes, { seen: leaving.seen })
     expect(startOf(client.view(), toText, wide)).toEqual(seen)
   })
   it("frees an emptied text's connector end where the last painted draft put it, not where the saved words put it", async () => {
@@ -281,8 +282,32 @@ describe("the editor's gestures free a connector end the moment its shape leaves
       { once: "emptying", author: { kind: "person", id: "emptying" }, writes: draftWrites(client.view(), left, wide) },
     ])
     expect(startOf(emptying, toText, wide)).toEqual(seen)
-    expect(client.push(leaveWrites(client.view(), left, wide)).ok).toBe(true)
+    const leaving = leaveWrites(client.view(), left)
+    expect(client.push(leaving.writes, { seen: leaving.seen }).ok).toBe(true)
     expect(doom.parentOf(client.view().nodes.get(text))).toBeNull()
     expect(startOf(client.view(), toText, wide)).toEqual(seen)
+  })
+
+  it("keeps an emptied text's connector end still while the empty text holds its place in an auto-layout row", async () => {
+    const seed: doom.Edit = {
+      ...drifting,
+      writes: [
+        ...drifting.writes.filter((write) => write.node !== toText),
+        ...joined(holder, "frame", group, [["box", box(0, 0, 200, 100)]]),
+        ...connector(toText, text),
+      ],
+    }
+    const { client } = await opened(estimate, seed)
+    const short: doom.Text = { ...doom.textFromMarkdown("Wi", "body"), resize: "widthAndHeight" }
+    const blank: doom.Text = { ...doom.textFromMarkdown("", "body"), resize: "widthAndHeight" }
+    const typing = { node: text, keeps: false, draft: short, painted: short }
+    const left = { ...typing, draft: blank, pushed: "" }
+    const shown = (writes: readonly doom.Write[]) =>
+      doom.viewOf(client.view(), [{ once: "preview", author: { kind: "person", id: "typing" }, writes }])
+    const seen = startOf(shown(draftWrites(client.view(), typing, estimate)), toText)
+    expect(startOf(shown(draftWrites(client.view(), left, estimate)), toText)).toEqual(seen)
+    const leaving = leaveWrites(client.view(), left)
+    expect(client.push(leaving.writes, { seen: leaving.seen }).ok).toBe(true)
+    expect(startOf(client.view(), toText)).toEqual(seen)
   })
 })

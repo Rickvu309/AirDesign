@@ -8,7 +8,7 @@ import { type Reading, Stop, draftOf } from "./agent-draft.js"
 import type { NodeId } from "./ids.js"
 import type { Write } from "./doom.js"
 import type { Doom } from "./doom.js"
-import { freedLineEnds } from "./freed-line-ends.js"
+import { freeLineEnds } from "./freed-line-ends.js"
 import { measureWith } from "./measure.js"
 
 export function nameOf(change: AgentChange): string {
@@ -48,7 +48,7 @@ export function compileAgentChange(
     if (change.op === "deck") compileDeck(draft, change)
     if (change.op === "delete") compileDelete(draft, change)
     if (change.op === "slide") compileSlide(draft, change)
-    return [...draft.writes, ...freedLineEnds(doom, draft.writes, reading.measure ?? measureWith({}))]
+    return freeLineEnds(doom, draft.writes, reading.measure ?? measureWith({}))
   } catch (thrown) {
     if (thrown instanceof Stop) return { ...thrown.refusal, change: nameOf(change) }
     throw thrown

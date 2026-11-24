@@ -1,0 +1,29 @@
+{
+  "check": "checks-line-ends.md#line-ends",
+  "covers": [
+    {
+      "file": "packages/doom/src/lost-ends.ts",
+      "names": ["*"],
+      "digest": "16aee81bc01b",
+      "blob": "cf0e22a94fa67668a749d11b0245fc58180f4c8b"
+    },
+    {
+      "file": "packages/doom/src/freed-line-ends.ts",
+      "names": ["paintedBack", "freedEnds", "leftBy", "freeLineEnds"],
+      "digest": "4e201b1210c7",
+      "blob": "9a99e4c46c804b2602c292060344f59f2501de1a"
+    },
+    {
+      "file": "packages/doom/src/line-ends-back.ts",
+      "names": ["lineEndsBack"],
+      "digest": "858ace0058a5",
+      "blob": "92d44685740f69d83b2d85ca84cad5bcb4674f52"
+    },
+    {
+      "file": "packages/live/src/turn-replay.ts",
+      "names": ["endsOnly", "onStandingOnly", "pressedOn"],
+      "digest": "1e6b1cd69bcc",
+      "blob": "a861552b7bfe1e8d635520d2492930200a0958f2"
+    }
+  ]
+}

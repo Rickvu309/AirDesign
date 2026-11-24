@@ -19,10 +19,46 @@ select s.id, s.owner, s.rev, s.name, s.trashed is not null as trashed,
 from deck.doom s where s.id = $1`
 
 const partSql = `
-with recursive chain(id, type, parent) as (
-  select n.id, n.type, n.parent from deck.doom_node n where n.deck = $1 and n.id = any($2::text[])
+with recursive gone(id) as (
+  select n.id from deck.doom_node n where n.deck = $1 and n.id = any($5::text[])
   union
-  select up.id, up.type, up.parent from deck.doom_node up join chain on up.id = chain.parent where up.deck = $1
+  select n.id from gone
+  cross join lateral (select n.id from deck.doom_node n where n.deck = $1 and n.parent = gone.id offset 0) n
+),
+back(id, node) as (
+  select n.id, n.node from deck.doom_node n where n.deck = $1 and n.id = any($6::text[])
+  union
+  select n.id, n.node from back
+  cross join lateral (select n.id, n.node from deck.doom_node n where n.deck = $1 and n.parent = back.id offset 0) n
+),
+seeded(ids) as (
+  select array(
+    select unnest($2::text[])
+    union
+    select id from back
+    where node #>> '{geometry,start,node}' is not null or node #>> '{geometry,end,node}' is not null
+    union
+    select n.id from deck.doom_node n
+    where n.deck = $1 and n.node #>> '{geometry,start,node}' = any(array(select id from gone))
+    union
+    select n.id from deck.doom_node n
+    where n.deck = $1 and n.node #>> '{geometry,end,node}' = any(array(select id from gone))
+  )
+),
+named(ids) as (
+  select array(
+    select unnest(ids) from seeded
+    union
+    select e.id from deck.doom_node n
+    cross join lateral (values (n.node #>> '{geometry,start,node}'), (n.node #>> '{geometry,end,node}')) as e(id)
+    where n.deck = $1 and n.id = any((select ids from seeded)::text[]) and e.id is not null
+  )
+),
+chain(id, type, parent) as (
+  select n.id, n.type, n.parent from deck.doom_node n where n.deck = $1 and n.id = any((select ids from named)::text[])
+  union
+  select up.id, up.type, up.parent from chain
+  cross join lateral (select up.id, up.type, up.parent from deck.doom_node up where up.deck = $1 and up.id = chain.parent offset 0) up
 ),
 wanted as (
   select id from chain
@@ -35,7 +71,7 @@ select s.owner, s.rev, s.runs, s.elements, s.slides, s.trashed is not null as tr
   (select e.rev from deck.doom_edit e where e.deck = s.id and e.once = $3) as landed,
   coalesce(
     (select jsonb_agg(jsonb_build_object('id', n.id, 'node', n.node, 'revs', n.revs))
-     from deck.doom_node n join wanted on wanted.id = n.id where n.deck = s.id),
+     from wanted cross join lateral (select n.id, n.node, n.revs from deck.doom_node n where n.deck = s.id and n.id = wanted.id offset 0) n),
     '[]'::jsonb
   ) as nodes
 from deck.doom s where s.id = $1`
@@ -135,6 +171,10 @@ function nodeRows(fold: doom.Doom, ids: Iterable<doom.NodeId>) {
   return rows
 }
 
+function* changedNodes(part: doom.Doom, next: doom.Doom): Iterable<doom.NodeId> {
+  for (const [id, node] of next.nodes) if (part.nodes.get(id) !== node) yield id
+}
+
 function endNodes(value: unknown): readonly string[] {
   if (typeof value !== "object" || value === null) return []
   const { start, end } = value as { start?: unknown; end?: unknown }
@@ -144,20 +184,24 @@ function endNodes(value: unknown): readonly string[] {
   })
 }
 
-function seedsOf(edit: Readonly<Record<string, unknown>>): { readonly seeds: string[]; readonly regrouped: string[] } {
+type Seeds = { readonly seeds: string[]; readonly regrouped: string[]; readonly removed: string[] }
+
+function seedsOf(edit: Readonly<Record<string, unknown>>): Seeds {
   const seeds = new Set<string>()
   const regrouped = new Set<string>()
-  if (!Array.isArray(edit.writes)) return { seeds: [], regrouped: [] }
+  const removed = new Set<string>()
+  if (!Array.isArray(edit.writes)) return { seeds: [], regrouped: [], removed: [] }
   for (const each of edit.writes as unknown[]) {
     if (typeof each !== "object" || each === null) continue
     const { node, prop, value } = each as { node?: unknown; prop?: unknown; value?: unknown }
     if (typeof node === "string") seeds.add(node)
     if (typeof node === "string" && (prop === "parent" || prop === "hidden")) regrouped.add(node)
+    if (typeof node === "string" && prop === "parent" && value === null) removed.add(node)
     const parent = typeof value === "object" && value !== null ? (value as { id?: unknown }).id : undefined
     if (prop === "parent" && typeof parent === "string") seeds.add(parent)
     if (prop === "geometry") for (const end of endNodes(value)) seeds.add(end)
   }
-  return { seeds: [...seeds], regrouped: [...regrouped] }
+  return { seeds: [...seeds], regrouped: [...regrouped], removed: [...removed] }
 }
 
 function partOf(part: Part, once: string): doom.Doom | undefined {
@@ -221,10 +265,12 @@ export async function editDoom(
   email: string,
   still: (part: doom.Doom) => boolean = () => true,
 ) {
-  const { seeds, regrouped } = seedsOf(parsed.edit)
+  const { seeds, regrouped, removed: nulled } = seedsOf(parsed.edit)
+  let removed = nulled
+  let back: string[] = []
   const once = typeof parsed.edit.once === "string" ? parsed.edit.once : ""
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const stored = (await db.query<Part>(partSql, [parsed.deck, seeds, once, regrouped])).rows[0]
+    const stored = (await db.query<Part>(partSql, [parsed.deck, seeds, once, regrouped, removed, back])).rows[0]
     if (stored === undefined) return refusal("deck")
     if (stored.owner !== email) return refusal("owner")
     if (stored.trashed) return refusal("deck")
@@ -239,10 +285,21 @@ export async function editDoom(
       deck: () => stored.has_deck,
     })
     if (doom.isRefusal(landing)) return editRefusal(landing)
+    const unread = [...doom.leavingRoots(part.nodes, landing.doom.nodes, landed.writes)].filter(
+      (root) => !removed.includes(root),
+    )
+    const unreadBack = [...doom.returningRoots(part.nodes, landing.doom.nodes, landed.writes)].filter(
+      (root) => !back.includes(root),
+    )
+    if (unread.length > 0 || unreadBack.length > 0) {
+      removed = [...removed, ...unread]
+      back = [...back, ...unreadBack]
+      continue
+    }
     if (landing.doom === part)
       return { ok: true, deck: parsed.deck, rev: part.onces.get(read.once) ?? part.rev } as const
     const next = landing.doom
-    const touched = nodeRows(next, new Set(landed.writes.map((each) => each.node)))
+    const touched = nodeRows(next, changedNodes(part, next))
     const deck = touched.find((row) => row.type === "deck")
     const runsMoved =
       next.runs.size !== part.runs.size || [...next.runs].some(([name, run]) => part.runs.get(name) !== run)

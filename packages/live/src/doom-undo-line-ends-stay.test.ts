@@ -240,9 +240,9 @@ describe("an undo that leaves a line in place keeps both of its ends where they 
       expect(now).toEqual(kept)
     })
 
-  it("A0, the line goes back into the frame it left, so it is not left in place and takes its attachment with it, as on main", async () => {
+  it("A0, the line goes back into the frame it left and frees its start where the deleted shape last painted", async () => {
     const { now } = await undoneStep(origin("slide", []), freeAt(5, 5), [deleted(shape)])
-    expect(now).toEqual(lineOf(attached))
+    expect(now).toEqual(lineOf({ x: 300, y: 225 }))
   })
 
   it("X5P, Ctrl+Z after T was taken out of a group that is then hidden", async () => {

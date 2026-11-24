@@ -26,26 +26,24 @@ type Leaving = {
 
 const typist: doom.Author = { kind: "person", id: "typing" }
 
-function freedByLeaving(view: doom.Doom, left: Leaving, writes: readonly doom.Write[], measure: doom.Measure) {
-  if (!writes.some((write) => write.prop === "parent")) return []
-  const seen = doom.viewOf(view, [
-    { once: "painted-draft", author: typist, writes: [{ node: left.node, prop: "text", value: left.painted }] },
-  ])
-  return doom.freedLineEnds(seen, writes, measure)
-}
+const overlaid = (view: doom.Doom, once: string, writes: readonly doom.Write[]) =>
+  doom.viewOf(view, [{ once, author: typist, writes }])
+
+const paintedIn = (view: doom.Doom, left: Leaving) =>
+  overlaid(view, "painted-draft", [{ node: left.node, prop: "text", value: left.painted }])
 
 export function draftWrites(view: doom.Doom, draft: Leaving, measure: doom.Measure): readonly doom.Write[] {
-  const leaving = leaveEmptyWrites({ ...draft, pushed: "" })
-  return [{ node: draft.node, prop: "text", value: draft.draft }, ...freedByLeaving(view, draft, leaving, measure)]
+  const typed: doom.Write = { node: draft.node, prop: "text", value: draft.draft }
+  const lost = doom.lostBy(view, leaveEmptyWrites({ ...draft, pushed: "" }))
+  if (lost.length === 0) return [typed]
+  return [typed, ...doom.freedEnds(paintedIn(view, draft), overlaid(view, "draft", [typed]), lost, measure)]
 }
 
 export function leaveWrites(
   view: doom.Doom,
   left: Leaving & { readonly pushed: string },
-  measure: doom.Measure,
-): readonly doom.Write[] {
-  const leaving = leaveEmptyWrites(left)
-  return [...freedByLeaving(view, left, leaving, measure), ...leaving]
+): { readonly writes: readonly doom.Write[]; readonly seen: doom.Doom } {
+  return { writes: leaveEmptyWrites(left), seen: paintedIn(view, left) }
 }
 
 export function blankTextFor(painted: boolean): doom.Text {
