@@ -56,7 +56,7 @@ function ShowControls(props: PresentShowProps) {
       data-show-controls
       onClick={held}
       className={cn(
-        "absolute bottom-4 left-4 flex items-center gap-0.5 rounded-xl bg-ink p-1 shadow-[0_0_0_1px_var(--stage-hover)] transition-opacity duration-200 ease-out motion-reduce:transition-none",
+        "absolute bottom-4 left-4 z-20 flex items-center gap-0.5 rounded-xl bg-ink p-1 shadow-[0_0_0_1px_var(--stage-hover)] transition-opacity duration-200 ease-out motion-reduce:transition-none",
         props.controls ? "opacity-100" : "opacity-0 focus-within:opacity-100",
       )}
     >
@@ -139,31 +139,30 @@ export function PresentShow(props: PresentShowProps) {
       {...(onStage === undefined ? {} : { onClick: onStage })}
       {...(props.onWake === undefined ? {} : { onPointerMove: props.onWake })}
     >
+      <FittedSlide
+        index={props.at}
+        size={props.size}
+        paint={props.paint}
+        className="size-full"
+        layers={(width) => (
+          <TransitionLayers
+            at={props.at}
+            width={width}
+            size={props.size}
+            paint={props.paint}
+            transitionOf={props.transitionOf ?? none}
+            morphOf={props.morphOf ?? noPairs}
+          />
+        )}
+      >
+        {props.ended || props.typed === "" ? null : <GoTo typed={props.typed} />}
+        {props.ended ? null : <ShowControls {...props} />}
+      </FittedSlide>
       {props.ended ? (
-        <div className="flex size-full items-center justify-center">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-stage">
           <EndOfDeck />
         </div>
-      ) : (
-        <FittedSlide
-          index={props.at}
-          size={props.size}
-          paint={props.paint}
-          className="size-full"
-          layers={(width) => (
-            <TransitionLayers
-              at={props.at}
-              width={width}
-              size={props.size}
-              paint={props.paint}
-              transitionOf={props.transitionOf ?? none}
-              morphOf={props.morphOf ?? noPairs}
-            />
-          )}
-        >
-          {props.typed === "" ? null : <GoTo typed={props.typed} />}
-          <ShowControls {...props} />
-        </FittedSlide>
-      )}
+      ) : null}
       {props.ended ? <ShowControls {...props} /> : null}
       <p className="sr-only" aria-live="polite">
         {said}

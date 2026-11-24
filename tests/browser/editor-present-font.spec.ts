@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test"
+import { expect, type BrowserContext, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
@@ -77,12 +77,9 @@ test("a painted slide stays painted while a font another slide asks for is held,
   await page.keyboard.press("Escape")
 })
 
-test("pressing Next twice while a font is held keeps the painted slide on screen until the slide it lands on can paint", async ({
-  page,
-  context,
-  stack,
-}) => {
-  covers("present", "show-next", "show-stop")
+type Stack = Parameters<typeof openEditor>[2]
+
+async function openHeldThreeSlideShow(page: Page, context: BrowserContext, stack: Stack) {
   const opened = await openEditor(page, context, stack)
   for (const count of [2, 3]) {
     await page.getByRole("button", { name: slideListCopy.addSlide }).click()
@@ -147,6 +144,16 @@ test("pressing Next twice while a font is held keeps the painted slide on screen
     requestAnimationFrame(look)
   })
 
+  return { release, shown }
+}
+
+test("pressing Next twice while a font is held keeps the painted slide on screen until the slide it lands on can paint", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("present", "show-next", "show-stop")
+  const { release, shown } = await openHeldThreeSlideShow(page, context, stack)
   await page.keyboard.press("ArrowRight")
   await expect(shown).toHaveAttribute("data-present-slide", "2")
   await page.keyboard.press("ArrowRight")
@@ -163,6 +170,49 @@ test("pressing Next twice while a font is held keeps the painted slide on screen
     () => (window as unknown as { presentFrames: { frames: number; blank: number } }).presentFrames,
   )
   expect(seen.frames).toBeGreaterThan(0)
+  expect(seen.blank).toBe(0)
+  await page.keyboard.press("Escape")
+})
+
+test("pressing Previous from End of deck while a font is held keeps the painted slide on screen", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("present", "show-next", "show-previous", "show-stop")
+  const { release, shown } = await openHeldThreeSlideShow(page, context, stack)
+  await page.keyboard.press("ArrowRight")
+  await expect(shown).toHaveAttribute("data-present-slide", "2")
+  await page.keyboard.press("ArrowRight")
+  await expect(shown).toHaveAttribute("data-present-slide", "3")
+  await page.keyboard.press("ArrowRight")
+  await expect(page.locator("[data-present-end]")).toBeVisible()
+  await page.evaluate(() => {
+    const seen = { frames: 0, blank: 0 }
+    Object.assign(window, { endFrames: seen })
+    const look = () => {
+      const painted = [...document.querySelectorAll("[data-present-show] [data-node]")].some((node) => {
+        const box = node.getBoundingClientRect()
+        return box.width > 0 && node.checkVisibility({ visibilityProperty: true, opacityProperty: false })
+      })
+      seen.frames += 1
+      if (!painted) seen.blank += 1
+      requestAnimationFrame(look)
+    }
+    requestAnimationFrame(look)
+  })
+  await page.keyboard.press("ArrowLeft")
+  await expect(page.locator("[data-present-end]")).toHaveCount(0)
+  await expect(page.locator('[data-present-show] [data-node="k:1"]')).toBeVisible()
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { endFrames: { frames: number } }).endFrames.frames))
+    .toBeGreaterThan(20)
+  release()
+  await expect(page.locator('[data-present-show] [data-node="k:3"]')).toBeVisible()
+  const seen = await page.evaluate(
+    () => (window as unknown as { endFrames: { frames: number; blank: number } }).endFrames,
+  )
+  expect(seen.frames).toBeGreaterThan(10)
   expect(seen.blank).toBe(0)
   await page.keyboard.press("Escape")
 })
