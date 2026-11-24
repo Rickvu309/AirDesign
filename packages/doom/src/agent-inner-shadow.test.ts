@@ -32,10 +32,10 @@ describe("an inner shadow", () => {
       field: "innerShadow",
     })
     expect(readAgentChange({ op: "set", target: ids.card, innerShadow: { ...shadow, color: "nope" } })).toMatchObject({
-      field: "color",
+      field: "innerShadow.color",
     })
     expect(readAgentChange({ op: "set", target: ids.card, innerShadow: { ...shadow, blur: -1 } })).toMatchObject({
-      field: "blur",
+      field: "innerShadow.blur",
     })
     expect(readAgentChange({ op: "set", target: ids.card, innerShadow: 4 })).toMatchObject({ field: "innerShadow" })
   })
