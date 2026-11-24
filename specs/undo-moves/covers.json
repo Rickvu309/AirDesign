@@ -4,8 +4,8 @@
     {
       "file": "packages/live/src/doom-deck.ts",
       "names": ["connected"],
-      "digest": "373b1f893643",
-      "blob": "1443b8d34b2239e435865010db8f0afbc4408505"
+      "digest": "e93f867fc99f",
+      "blob": "c8804aa5f5c3b0ad164014e4005072e0930a6e3a"
     },
     {
       "file": "packages/doom/src/invert.ts",
@@ -15,9 +15,9 @@
     },
     {
       "file": "packages/doom/src/standing-layers.ts",
-      "names": ["onStandingLayers", "landingMoves"],
-      "digest": "bda4a25bc02a",
-      "blob": "c40fbdf2e2644ab2540eab74b1d2fd969edd3d4a"
+      "names": ["onStandingLayers", "landingMoves", "shows"],
+      "digest": "175f59d17a9c",
+      "blob": "f7be7a39e7773353c53e1c5a3949d14a327ec198"
     }
   ]
 }

@@ -39,8 +39,8 @@ function client(answers: Record<string, Awaited<ReturnType<Parameters<typeof doo
 describe("undoing an Aira exchange on a doom deck", () => {
   it("takes the runs back newest first through the open deck and marks the exchange undone", async () => {
     const open = client({
-      "run-1": { ok: true, once: "u1", saved, kept: [] },
-      "run-2": { ok: true, once: "u2", saved, kept: [] },
+      "run-1": { ok: true, once: "u1", saved, kept: [], left: [] },
+      "run-2": { ok: true, once: "u2", saved, kept: [], left: [] },
     })
     const undone = await undoExchange(done, 0, doomAgentUndo(open))
     expect(open.asked).toEqual(["run-2", "run-1"])
@@ -50,11 +50,21 @@ describe("undoing an Aira exchange on a doom deck", () => {
 
   it("names the layers each run kept because they were changed after Aira made them", async () => {
     const open = client({
-      "run-1": { ok: true, once: "u1", saved, kept: [ids.named, ids.group] },
-      "run-2": { ok: true, once: "u2", saved, kept: [ids.named] },
+      "run-1": { ok: true, once: "u1", saved, kept: [ids.named, ids.group], left: [] },
+      "run-2": { ok: true, once: "u2", saved, kept: [ids.named], left: [] },
     })
     const undone = await undoExchange(done, 0, doomAgentUndo(open))
     expect(undone?.exchanges[0]).toMatchObject({ end: "undone", kept: ["“Revenue”", "a group"] })
+  })
+
+  it("names the layers a run's undo leaves where they are because the frame they came from is gone", async () => {
+    const open = client({
+      "run-1": { ok: true, once: "u1", saved, kept: [], left: [ids.named] },
+      "run-2": { ok: true, once: "u2", saved, kept: [], left: [ids.named] },
+    })
+    const undone = await undoExchange(done, 0, doomAgentUndo(open))
+    expect(undone?.exchanges[0]).toMatchObject({ end: "undone", left: ["“Revenue”"] })
+    expect(undone?.exchanges[0]?.kept).toBeUndefined()
   })
 
   it("says the undo is refused when a person's newer write left nothing to take back", async () => {
@@ -65,7 +75,7 @@ describe("undoing an Aira exchange on a doom deck", () => {
 
   it("keeps Undo and the runs still left when the deck cannot be reached", async () => {
     const open = client({
-      "run-2": { ok: true, once: "u2", saved, kept: [] },
+      "run-2": { ok: true, once: "u2", saved, kept: [], left: [] },
       "run-1": { ok: false, reason: "offline" },
     })
     const failed = await undoExchange(done, 0, doomAgentUndo(open))
@@ -73,7 +83,7 @@ describe("undoing an Aira exchange on a doom deck", () => {
   })
 
   it("leaves a run the deck already shows undone, so undoing from the chat after the list lands nothing twice", async () => {
-    const open = { ...client({ "run-1": { ok: true, once: "u1", saved, kept: [] } }) }
+    const open = { ...client({ "run-1": { ok: true, once: "u1", saved, kept: [], left: [] } }) }
     const undoneTwo = {
       ...kept,
       runs: new Map([

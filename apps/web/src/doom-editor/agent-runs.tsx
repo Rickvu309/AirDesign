@@ -1,13 +1,25 @@
 import * as doom from "@airdesign/doom"
 import { useState } from "react"
 import { EditorIcon } from "@/components/ui/editor-icons"
-import { agentKeptLayers, agentRunStatus, agentRunsCopy, agentShownName, type RunPlace } from "@/copy/agent-runs-copy"
+import {
+  agentKeptLayers,
+  agentLeftLayers,
+  agentRunStatus,
+  agentRunsCopy,
+  agentShownName,
+  type RunPlace,
+} from "@/copy/agent-runs-copy"
 import { productCopy } from "@/copy/product-copy"
 import { LiveDot, slideNumberOf } from "./agent-at-work"
 import { layerLabel } from "./layer-label"
 import type { EditorClient } from "./use-doom-deck"
 
-type Undoing = "undoing" | { readonly kept: readonly string[] } | "nothing" | "refused" | "failed"
+type Undoing =
+  | "undoing"
+  | { readonly kept: readonly string[]; readonly left: readonly string[] }
+  | "nothing"
+  | "refused"
+  | "failed"
 
 const said: Partial<Record<Extract<Undoing, string>, string>> = {
   nothing: agentRunsCopy.nothingLeft,
@@ -40,7 +52,9 @@ export function AgentRuns({
     const mark = (state: Undoing) => setUndoing((now) => new Map(now).set(run.id, state))
     mark("undoing")
     const turned = await undoRun(run.id)
-    if (turned.ok) mark({ kept: turned.kept.map((id) => layerLabel(view, id)) })
+    const named = (ids: readonly doom.NodeId[]) => ids.map((id) => layerLabel(view, id))
+    if (turned.ok) mark({ kept: named(turned.kept), left: named(turned.left) })
+    else if (turned.reason === "left") mark({ kept: [], left: named(turned.left) })
     else mark(turned.reason === "offline" ? "failed" : turned.reason === "nothing" ? "nothing" : "refused")
   }
 
@@ -57,9 +71,10 @@ export function AgentRuns({
           const status = run.undone ? agentRunsCopy.undone : agentRunStatus(live, placeOf(view, run))
           const note =
             typeof state === "object"
-              ? state.kept.length === 0 || !run.undone
-                ? undefined
-                : agentKeptLayers(name, state.kept)
+              ? [
+                  ...(state.kept.length === 0 || !run.undone ? [] : [agentKeptLayers(name, state.kept)]),
+                  ...(state.left.length === 0 ? [] : [agentLeftLayers(state.left)]),
+                ].join(" ") || undefined
               : state === undefined || state === "undoing"
                 ? undefined
                 : said[state]

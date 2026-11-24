@@ -49,6 +49,7 @@ export type AiraExchange = {
   readonly undoRefused?: true
   readonly undoFailed?: true
   readonly kept?: readonly string[]
+  readonly left?: readonly string[]
 }
 
 export type AiraChat = {
@@ -80,7 +81,12 @@ export type AiraEvent =
     }
   | { readonly type: "landed"; readonly run: string; readonly id: string }
   | { readonly type: "end"; readonly end: AiraEnd; readonly usage?: WeekUsage | undefined }
-  | { readonly type: "undone"; readonly exchange: number; readonly kept: readonly string[] }
+  | {
+      readonly type: "undone"
+      readonly exchange: number
+      readonly kept: readonly string[]
+      readonly left: readonly string[]
+    }
   | { readonly type: "undo-refused"; readonly exchange: number }
   | { readonly type: "undo-failed"; readonly exchange: number; readonly runs: readonly string[] }
 
@@ -214,6 +220,7 @@ export function airaStep(chat: AiraChat, event: AiraEvent): AiraChat {
         ...withoutFailure(exchange),
         end: "undone",
         ...(event.kept.length === 0 ? {} : { kept: event.kept }),
+        ...(event.left.length === 0 ? {} : { left: event.left }),
       }))
     case "undo-refused":
       return changeAt(chat, event.exchange, (exchange) => ({ ...withoutFailure(exchange), undoRefused: true }))
@@ -472,11 +479,11 @@ export function settledByRuns(exchange: AiraExchange, undoneRun: (run: string) =
   if (states.some((state) => state === undefined)) return exchange
   const undone = states.every((state) => state === true)
   if (undone === (exchange.end === "undone")) return exchange
-  const { undoRefused: _refused, undoFailed: _failed, kept: _kept, ...settled } = exchange
+  const { undoRefused: _refused, undoFailed: _failed, kept: _kept, left: _left, ...settled } = exchange
   return undone ? { ...settled, end: "undone" } : { ...settled, end: "done" }
 }
 
-export type RunUndone = { readonly kept: readonly string[] } | "refused" | "failed"
+export type RunUndone = { readonly kept: readonly string[]; readonly left: readonly string[] } | "refused" | "failed"
 export type UndoRun = (deck: string, run: string) => Promise<RunUndone>
 
 export async function undoExchange(chat: AiraChat, exchange: number, undo: UndoRun): Promise<AiraChat | undefined> {
@@ -491,6 +498,7 @@ export async function undoExchange(chat: AiraChat, exchange: number, undo: UndoR
     return undefined
   }
   const kept: string[] = []
+  const left: string[] = []
   for (const [index, runId] of [...found.runs].reverse().entries()) {
     const failed = airaStep(chat, {
       type: "undo-failed",
@@ -501,6 +509,7 @@ export async function undoExchange(chat: AiraChat, exchange: number, undo: UndoR
     if (result === "refused") return airaStep(chat, { type: "undo-refused", exchange })
     if (result === "failed") return failed
     kept.push(...result.kept.filter((layer) => !kept.includes(layer)))
+    left.push(...result.left.filter((layer) => !left.includes(layer)))
   }
-  return airaStep(chat, { type: "undone", exchange, kept })
+  return airaStep(chat, { type: "undone", exchange, kept, left })
 }

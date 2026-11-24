@@ -1,10 +1,23 @@
-import { expect } from "@playwright/test"
-import { forward, test } from "./api-stack"
+import { expect, type BrowserContext, type Page } from "@playwright/test"
+import { agentLeftLayers } from "../../apps/web/src/copy/agent-runs-copy.ts"
+import { airaKeptLayerName } from "../../apps/web/src/copy/aira-copy.ts"
+import * as doom from "../../packages/doom/src/index.ts"
+import { forward, test, type Stack } from "./api-stack"
 import { accent, clickSlide, landNodes, openDoomEditor, savedNode, selectedIds, spot } from "./doom-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 type Box = { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
+
+const blue = [{ kind: "solid", color: { var: "accent4" } }]
+
+async function otherTab(context: BrowserContext, stack: Stack, deck: string): Promise<Page> {
+  const other = await context.newPage()
+  await forward(other, stack)
+  await other.goto(`/s/${deck}`)
+  await other.locator("[data-doom-ready]").waitFor()
+  return other
+}
 
 test("an undo of typing in a layer another tab deleted does nothing, and the next undo takes back the nudge below it", async ({
   page,
@@ -50,13 +63,12 @@ test("an undo of typing in a layer another tab deleted does nothing, and the nex
 })
 
 for (const above of [true, false])
-  test(`an undo of framing a layer whose ${above ? "frame's frame" : "frame"} another tab deleted keeps the new frame, so their undo brings the layer back in it`, async ({
+  test(`an undo of framing a layer whose ${above ? "frame's frame another tab deleted puts it back unframed" : "frame another tab deleted keeps the new frame"}, so their undo brings the layer back`, async ({
     page,
     context,
     stack,
   }) => {
     const opened = await openDoomEditor(page, context, stack)
-    const card = [{ kind: "solid", color: { var: "accent4" } }]
     const gone = above ? "t:71" : "t:72"
     await landNodes(stack, opened, [
       ...(above
@@ -79,13 +91,14 @@ for (const above of [true, false])
         id: "t:73",
         type: "shape",
         parent: "t:72",
-        props: { box: spot(100, 100, 200, 100), geometry: { kind: "rect" }, fills: card },
+        props: { box: spot(100, 100, 200, 100), geometry: { kind: "rect" }, fills: blue },
       },
     ])
     const parentId = async (id: string) =>
       ((await savedNode(stack, opened, id))?.parent as { id: string } | null | undefined)?.id ?? null
     const shownCard = (tab: typeof page) => tab.locator('[data-slide-box] [data-node="t:73"]')
     await expect(shownCard(page)).toHaveCount(1)
+    const placed = (await savedNode(stack, opened, "t:73"))?.box
     await page.keyboard.down("Control")
     await clickSlide(page, 500, 450)
     await page.keyboard.up("Control")
@@ -96,10 +109,7 @@ for (const above of [true, false])
     const framed = (await savedNode(stack, opened, "t:73"))?.box
     expect(await parentId(frame)).toBe("t:72")
 
-    const other = await context.newPage()
-    await forward(other, stack)
-    await other.goto(`/s/${opened.deck}`)
-    await other.locator("[data-doom-ready]").waitFor()
+    const other = await otherTab(context, stack, opened.deck)
     await clickSlide(other, 330, 330)
     await expect.poll(() => selectedIds(other)).toEqual([gone])
     await other.keyboard.press("Delete")
@@ -111,10 +121,103 @@ for (const above of [true, false])
     await expect.poll(() => parentId(gone)).toBe(opened.slide)
     await expect(shownCard(page)).toHaveCount(1)
     await expect(shownCard(other)).toHaveCount(1)
-    expect([await parentId("t:73"), await parentId(frame)]).toEqual([frame, "t:72"])
-    expect((await savedNode(stack, opened, "t:73"))?.box).toEqual(framed)
+    expect([await parentId("t:73"), await parentId(frame)]).toEqual(above ? ["t:72", null] : [frame, "t:72"])
+    expect((await savedNode(stack, opened, "t:73"))?.box).toEqual(above ? placed : framed)
     await other.close()
   })
+
+test("an undo of deleting a layer whose frame's frame another tab deleted puts it back, so their undo brings it back with the frames", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    { id: "t:71", type: "frame", parent: opened.slide, props: { box: spot(200, 200, 900, 600), fills: accent } },
+    { id: "t:72", type: "frame", parent: "t:71", props: { box: spot(100, 100, 600, 400) } },
+    {
+      id: "t:73",
+      type: "shape",
+      parent: "t:72",
+      props: { box: spot(100, 100, 200, 100), geometry: { kind: "rect" }, fills: blue },
+    },
+  ])
+  const shownCard = (tab: Page) => tab.locator('[data-slide-box] [data-node="t:73"]')
+  await expect(shownCard(page)).toHaveCount(1)
+  await page.keyboard.down("Control")
+  await clickSlide(page, 500, 450)
+  await page.keyboard.up("Control")
+  await expect.poll(() => selectedIds(page)).toEqual(["t:73"])
+  await page.keyboard.press("Delete")
+  await expect.poll(async () => (await savedNode(stack, opened, "t:73"))?.parent).toBeNull()
+
+  const other = await otherTab(context, stack, opened.deck)
+  await clickSlide(other, 230, 230)
+  await expect.poll(() => selectedIds(other)).toEqual(["t:71"])
+  await other.keyboard.press("Delete")
+  await expect.poll(async () => (await savedNode(stack, opened, "t:71"))?.parent).toBeNull()
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect
+    .poll(async () => ((await savedNode(stack, opened, "t:73"))?.parent as { id: string } | null)?.id)
+    .toBe("t:72")
+  await expect(shownCard(page)).toHaveCount(0)
+  await other.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await savedNode(stack, opened, "t:71"))?.parent).not.toBeNull()
+  await expect(shownCard(page)).toHaveCount(1)
+  await expect(shownCard(other)).toHaveCount(1)
+  await other.close()
+})
+
+test("Undo on an agent run puts back the colour of a layer it leaves in the frame the run moved it to, and says why it stays", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    { id: "t:81", type: "frame", parent: opened.slide, props: { box: spot(100, 200, 500, 500), fills: accent } },
+    { id: "t:82", type: "frame", parent: opened.slide, props: { box: spot(800, 200, 500, 500), fills: accent } },
+    {
+      id: "t:83",
+      type: "shape",
+      parent: "t:81",
+      props: { box: spot(100, 100, 200, 100), geometry: { kind: "rect" }, fills: blue, name: "Card" },
+    },
+  ])
+  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+  const opening = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
+  const base = doom.readFold(opening.json.fold)?.revs.get(doom.nodeId("t:83"))?.get("fills")
+  const author = { kind: "agent", id: "helper", run: "run-card" }
+  const red = [{ kind: "solid", color: { var: "accent2" } }]
+  for (const edit of [
+    {
+      once: "card-1",
+      author,
+      phase: "start",
+      writes: [
+        { node: "t:83", prop: "parent", value: { id: "t:82", at: "a0" } },
+        { node: "t:83", prop: "fills", value: red, base },
+      ],
+    },
+    { once: "card-2", author, phase: "stop", writes: [] },
+  ])
+    expect((await stack.post(doomRoutes.edit.path, { deck: opened.deck, edit }, opened.cookie)).json.ok).toBe(true)
+  await expect.poll(async () => (await savedNode(stack, opened, "t:83"))?.fills).toEqual(red)
+
+  const other = await otherTab(context, stack, opened.deck)
+  await clickSlide(other, 130, 230)
+  await expect.poll(() => selectedIds(other)).toEqual(["t:81"])
+  await other.keyboard.press("Delete")
+  await expect.poll(async () => (await savedNode(stack, opened, "t:81"))?.parent).toBeNull()
+
+  const row = page.locator('[data-agent-run="run-card"]')
+  await row.locator("[data-agent-run-undo]").click()
+  await expect.poll(async () => (await savedNode(stack, opened, "t:83"))?.fills).toEqual(blue)
+  expect(((await savedNode(stack, opened, "t:83"))?.parent as { id: string }).id).toBe("t:82")
+  await expect(row.locator("[data-agent-run-note]")).toHaveText(agentLeftLayers([airaKeptLayerName("Card")]))
+  await other.close()
+})
 
 test("a text box emptied and left goes in one step with its typing, and redo deletes it again after an undo", async ({
   page,
