@@ -3,25 +3,13 @@ import { borderWords } from "../../apps/web/src/copy/border-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { forward, test } from "./api-stack"
+import { dragTo, gripCentre, lineFrom, paintedStart, type Point } from "./editor-line-end"
 import { covers } from "./gesture"
 import { accent, clickSlide, landNodes, openEditor, savedNode, slidePoint, spot } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 type Line = { start: unknown; end: unknown; route: string }
-
-async function gripCentre(page: Page, grip: string) {
-  const box = await page.locator(`[data-grip="${grip}"]`).boundingBox()
-  if (box === null) throw new Error(`no ${grip}`)
-  return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-}
-
-async function dragTo(page: Page, from: { x: number; y: number }, to: { x: number; y: number }) {
-  await page.mouse.move(from.x, from.y)
-  await page.mouse.down()
-  await page.mouse.move(to.x, to.y, { steps: 8 })
-  await page.mouse.up()
-}
 
 test("a line's end drags onto a shape's side and stays there, frees again, and the panel changes its route", async ({
   page,
@@ -173,21 +161,6 @@ test("emptying a text frees the connector at the left edge it painted", async ({
   await expect.poll(async () => (await line()).end).toEqual({ node: "t:1", site: "l" })
 })
 
-type Point = { readonly x: number; readonly y: number }
-
-async function paintedStart(page: Page, id: string): Promise<Point> {
-  return page.locator(`[data-slide-box] [data-node="${id}"]`).evaluate((element) => {
-    const node = element as HTMLElement
-    const d = node.querySelector("path")?.getAttribute("d") ?? ""
-    const first = /M\s*([-\d.]+)[,\s]+([-\d.]+)/.exec(d)
-    if (first === null) throw new Error(`no path in ${d}`)
-    return {
-      x: parseFloat(node.style.left || "0") + Number(first[1]),
-      y: parseFloat(node.style.top || "0") + Number(first[2]),
-    }
-  })
-}
-
 const hugging = (slide: string) => [
   {
     id: "f:1",
@@ -218,18 +191,6 @@ const hugging = (slide: string) => [
   },
   { id: "t:1", type: "shape" as const, parent: "f:1", props: { box: spot(0, 0, 140, 80), fills: accent } },
 ]
-
-const lineFrom = (parent: string, start: unknown, end: Point = { x: 80, y: 500 }) => ({
-  id: "l:1",
-  type: "shape" as const,
-  parent,
-  props: {
-    box: spot(0, 0, 10, 10),
-    strokes: accent,
-    stroke: { weight: 4, align: "center", dash: "solid" },
-    geometry: { kind: "line", start, end, route: "straight", arrows: ["none", "none"] },
-  },
-})
 
 test("an agent's unwrap frees the connector where the canvas painted it", async ({ page, context, stack }) => {
   const opened = await openEditor(page, context, stack)

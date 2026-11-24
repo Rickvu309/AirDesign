@@ -4,8 +4,8 @@
     {
       "file": "packages/doom/src/lost-ends.ts",
       "names": ["*"],
-      "digest": "16aee81bc01b",
-      "blob": "cf0e22a94fa67668a749d11b0245fc58180f4c8b"
+      "digest": "d8728c035693",
+      "blob": "61036d762a230d8cc62d0a30d37be87bfc7ceb7f"
     },
     {
       "file": "packages/doom/src/freed-line-ends.ts",

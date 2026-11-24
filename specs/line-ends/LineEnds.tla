@@ -7,17 +7,18 @@
 \* the line's geometry last. atDel says the start was attached when X left the deck by a batch that wrote the line.
 \* Tab A shows what it last caught up to (B's write is missing until seen) with its queued edits on top. An edit is a
 \* slot: a for the first edit A makes, b for the second. A slot's kind is the delete (del), the undo of the delete
-\* (undo) or the redo of that undo (redo). A run starts either fresh (A may delete, then undo) or with the delete and
-\* its undo landed (A may redo). Each slot holds whether it writes the line (g), the start and end it writes (s, e), the
+\* (undo), its redo (redo), or the undo of a creation and attachment (undoAttach). A run starts fresh, after a
+\* delete and undo, or after A creates and attaches X in one step. Each slot holds whether it writes the line (g),
+\* the start and end it writes (s, e), the
 \* base of that write (gb), the start and end A showed when it made the edit (rs, re), and whether B's write was unseen
 \* then (pre). A base is "pre" (read before B's write landed, or before A saw it), "post", "a" for the landing of slot
 \* a, still queued, or "last" for a write that wins whatever landed before it.
 \* Under Rule "tabView", the device frees an end only when the batch it sends leaves the end on a shape that leaves the
 \* deck, at the point its own view painted, and the base names only the line's geometry; the server keeps an end that
 \* names a dead shape. A refused turn drops a write to a property another tab wrote since the press.
-\* Under Rule "deletesWin", the device frees every end its view shows on a shape that leaves the deck, at the point its
-\* view painted, in a line write that wins (`freeLineEnds`). The deck frees an end still on a shape off the deck after
-\* a batch where the shape's stored box paints (`freedInFold`), so a delete always lands. A refused turn keeps each end
+\* Under Rule "deletesWin", the device frees an end still attached after the batch, at the point its view painted,
+\* in a line write that wins (`freeLineEnds`). "overwritePoint" also overwrites restored points. After the batch,
+\* the deck frees an end still on a shape off the deck at the shape's stored box (`freedInFold`). A refused turn keeps each end
 \* the other tab did not change since the press, takes the other tab's end for the rest, and frees again against the
 \* caught-up deck (`onStandingOnly`).
 EXTENDS Integers
@@ -32,13 +33,15 @@ vars == <<xOn, xBox, s, e, gB, atDel, other, seen, from, told,
   ka, qa, ga, sa, ea, gba, rsa, rea, prea,
   kb, qb, gbw, sb, eb, gbb, rsb, reb, preb>>
 
-Kinds == {"none", "del", "undo", "redo"}
+Kinds == {"none", "del", "undo", "redo", "undoAttach"}
+
+FoldsFree == Rule # "tabView"
 States == {"none", "queued", "landed", "dropped"}
 Bases == {"pre", "post", "a", "last"}
 
 TypeOK ==
   /\ xOn \in BOOLEAN /\ xBox \in 0..1 /\ s \in -1..2 /\ e \in 0..1 /\ {gB, atDel, seen} \subseteq BOOLEAN
-  /\ other \in {"none", "move", "attach", "end"} /\ from \in {"fresh", "undone"} /\ told \in {"none", "set aside"}
+  /\ other \in {"none", "move", "attach", "end"} /\ from \in {"fresh", "undone", "attached"} /\ told \in {"none", "set aside"}
   /\ ka \in Kinds /\ kb \in Kinds /\ qa \in States /\ qb \in States
   /\ {ga, gbw, prea, preb} \subseteq BOOLEAN /\ {sa, sb, rsa, rsb} \subseteq -1..2 /\ {ea, eb, rea, reb} \subseteq 0..1
   /\ {gba, gbb} \subseteq Bases
@@ -58,7 +61,7 @@ VOn == IF qb = "queued" THEN On(kb) ELSE IF qa = "queued" THEN On(ka) ELSE xOn
 \* undo queued after it does not write the line back.
 AfterA ==
   IF qa = "queued" /\ ga THEN sa
-  ELSE IF Rule = "deletesWin" /\ qa = "queued" /\ KS = -1 /\ ~On(ka) THEN KBox
+  ELSE IF FoldsFree /\ qa = "queued" /\ KS = -1 /\ ~On(ka) THEN KBox
   ELSE KS
 VS == IF qb = "queued" /\ gbw THEN sb ELSE AfterA
 VE == IF qb = "queued" /\ gbw THEN eb ELSE IF qa = "queued" /\ ga THEN ea ELSE KE
@@ -71,7 +74,7 @@ Back(now, wrote, was) == IF now = wrote /\ was # wrote THEN was ELSE now
 Freed(g, ns, ne, base) ==
   LET start == IF g THEN ns ELSE VS
       end == IF g THEN ne ELSE VE
-      frees == IF Rule = "tabView" THEN start = -1 ELSE VS = -1
+      frees == IF Rule = "overwritePoint" THEN VS = -1 ELSE start = -1
       wins == IF Rule = "tabView" THEN base ELSE "last"
   IN IF frees THEN [g |-> TRUE, s |-> KBox, e |-> end, gb |-> wins] ELSE [g |-> g, s |-> ns, e |-> ne, gb |-> base]
 
@@ -103,13 +106,22 @@ Redo ==
   /\ told' = "none"
   /\ UNCHANGED <<xOn, xBox, s, e, gB, atDel, other, seen, from, kb, qb, gbw, sb, eb, gbb, rsb, reb, preb>>
 
+\* Undo the single step that created X and attached the line. The original point was away from X's box.
+UndoAttach ==
+  /\ from = "attached" /\ ka = "none"
+  /\ LET w == Freed(TRUE, 2, VE, Fresh) IN
+       /\ ka' = "undoAttach" /\ qa' = "queued" /\ ga' = w.g /\ sa' = w.s /\ ea' = w.e
+       /\ gba' = w.gb /\ rsa' = VS /\ rea' = VE /\ prea' = ~SawB
+  /\ told' = "none"
+  /\ UNCHANGED <<xOn, xBox, s, e, gB, atDel, other, seen, from, kb, qb, gbw, sb, eb, gbb, rsb, reb, preb>>
+
 \* Whether the server takes a batch, and what it holds after.
 Refused(g, gbase) == g /\ gbase = "pre" /\ gB
 
 Lands(k, g, ws, we) ==
   LET kept == IF ~g THEN s ELSE IF ws = -1 /\ ~On(k) THEN s ELSE ws
   IN /\ xOn' = On(k)
-     /\ s' = (IF Rule = "deletesWin" /\ kept = -1 /\ ~On(k) THEN xBox ELSE kept)
+     /\ s' = (IF FoldsFree /\ kept = -1 /\ ~On(k) THEN xBox ELSE kept)
      /\ e' = (IF g THEN we ELSE e)
      /\ gB' = (gB /\ ~g)
      /\ atDel' = (IF ~On(k) /\ xOn THEN s = -1 /\ g ELSE atDel)
@@ -124,7 +136,8 @@ Again(k, g, ws, we, rs, re, pre) ==
   LET theirs == g /\ gB /\ pre
       ns == IF s = rs THEN ws ELSE s
       ne == IF e = re THEN we ELSE e
-      frees == ~On(k) /\ xOn /\ s = -1
+      start == IF ~g THEN s ELSE IF theirs THEN ns ELSE ws
+      frees == ~On(k) /\ xOn /\ (IF Rule = "overwritePoint" THEN s ELSE start) = -1
   IN IF Rule = "tabView"
        THEN [g |-> g /\ ~theirs, s |-> ws, e |-> we, gb |-> "pre", changed |-> theirs]
      ELSE IF frees
@@ -173,7 +186,7 @@ CatchUp ==
 
 \* B's one write, on what the server holds.
 BWrites(kind) ==
-  /\ other = "none" /\ other' = kind /\ seen' = FALSE /\ told' = "none"
+  /\ from # "attached" /\ other = "none" /\ other' = kind /\ seen' = FALSE /\ told' = "none"
   /\ UNCHANGED <<xOn, atDel, from>> /\ KeepA /\ KeepB
 
 BMove == xOn /\ BWrites("move") /\ xBox' = 1 /\ UNCHANGED <<s, e, gB>>
@@ -181,15 +194,15 @@ BAttach == xOn /\ s # -1 /\ BWrites("attach") /\ s' = -1 /\ gB' = TRUE /\ UNCHAN
 BEnd == BWrites("end") /\ e' = 1 /\ gB' = TRUE /\ UNCHANGED <<xBox, s>>
 
 Init ==
-  \E start \in {"fresh", "undone"}, free \in BOOLEAN :
-    /\ from = start /\ (start = "undone" => ~free)
+  \E start \in {"fresh", "undone", "attached"}, free \in BOOLEAN :
+    /\ from = start /\ (start # "fresh" => ~free)
     /\ xOn = TRUE /\ xBox = 0 /\ s = (IF free THEN 2 ELSE -1) /\ e = 0
     /\ gB = FALSE /\ atDel = FALSE /\ other = "none" /\ seen = FALSE /\ told = "none"
     /\ ka = "none" /\ qa = "none" /\ ga = FALSE /\ sa = 0 /\ ea = 0 /\ gba = "pre" /\ rsa = 0 /\ rea = 0
     /\ prea = FALSE /\ kb = "none" /\ qb = "none" /\ gbw = FALSE /\ sb = 0 /\ eb = 0 /\ gbb = "pre" /\ rsb = 0 /\ reb = 0
     /\ preb = FALSE
 
-Next == Delete \/ Undo \/ Redo \/ SendA \/ SendB \/ CatchUp \/ BMove \/ BAttach \/ BEnd
+Next == Delete \/ Undo \/ Redo \/ UndoAttach \/ SendA \/ SendB \/ CatchUp \/ BMove \/ BAttach \/ BEnd
 
 Spec == Init /\ [][Next]_vars
 
@@ -202,7 +215,12 @@ NeverSetAside == told # "set aside"
 
 \* A freed end sits where X's right side painted at one of its boxes, on the server or in the view of the tab that took
 \* X away when it pressed, never anywhere else.
-FreesWherePainted == [][s = -1 /\ s' # -1 => s' \in 0..1]_vars
+FreesWherePainted == [][s = -1 /\ s' # -1 /\ ka' # "undoAttach" => s' \in 0..1]_vars
+
+\* Both the queued view and the saved fold restore the original point when undo removes the target.
+RestoresOriginalPoint ==
+  /\ ka = "undoAttach" /\ qa = "queued" => VS = 2
+  /\ ka = "undoAttach" /\ qa = "landed" => s = 2
 
 \* The undo of a delete that freed the start in its own line write puts the start back on X, since no one else can
 \* write it meanwhile. An end the deck freed is not in the delete, so its undo leaves it free.

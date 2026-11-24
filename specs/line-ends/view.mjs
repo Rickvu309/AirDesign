@@ -1,6 +1,7 @@
 const steps = {
   Delete: "the person deletes the shape",
   Undo: "the person presses Ctrl+Z",
+  UndoAttach: "the person undoes a step that created the shape and attached the line",
   Redo: "the person presses Ctrl+Shift+Z",
   SendA: "the person's tab sends its first queued edit",
   SendB: "the person's tab sends its second queued edit",
