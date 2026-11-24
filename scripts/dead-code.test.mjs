@@ -29,6 +29,8 @@ write(
 )
 write("packages/shapes/src/testing/art.ts", `export const art = () => 8\n`)
 write("packages/shapes/src/art-use.test.ts", `import { art } from "./testing/art.ts"\nart()\n`)
+write("packages/shapes/src/board/testing/more-art.ts", `export const moreArt = () => 9\n`)
+write("packages/shapes/src/more-art-use.test.ts", `import { moreArt } from "./board/testing/more-art.ts"\nmoreArt()\n`)
 write("packages/shapes/src/lazy.ts", `export const lazy = () => 4\n`)
 write("packages/shapes/src/lazy.test.ts", `const { lazy } = await import("./lazy.ts")\nlazy()\n`)
 write("scripts/runner.mjs", `import { checked } from "../packages/shapes/src/only-tested.test.ts"\nchecked()\n`)
@@ -62,8 +64,8 @@ try {
     ],
   )
   same(
-    "a helper in src/testing is test support, not a dead product file",
-    dead.deadFiles.some((each) => each.file.includes("/src/testing/")),
+    "a helper in a testing folder is test support, not a dead product file",
+    dead.deadFiles.some((each) => each.file.includes("/testing/")),
     false,
   )
   same(

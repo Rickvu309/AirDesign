@@ -5,7 +5,7 @@ import { catalog, onceMeta, projectTools, doomRoutes } from "@airdesign/catalog"
 import { limits, readFold, textFromMarkdown } from "@airdesign/doom"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import { sessionRefusal, storeFailure, toolLimit, toolLimited } from "../testing/mcp-expected.js"
+import { sessionRefusal, storeFailure, toolLimit, toolLimited } from "./testing/mcp-expected.js"
 
 import { ask, postgresInfo, serve, signInByCode } from "../testing/harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "../index.js"

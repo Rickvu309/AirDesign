@@ -26,8 +26,8 @@ apps/api/src/doom:
     files:
       - apps/api/src/mcp/mcp.test.ts
 packages/mcp:
-  packages/mcp/src/evals.ts:
+  packages/mcp/src/testing/evals.ts:
     violations:
-      - interface
+      - privacy
     files:
       - apps/api/src/mcp/unmeasured-answers.test.ts

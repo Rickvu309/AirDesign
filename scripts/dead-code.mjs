@@ -43,7 +43,7 @@ export const roles = (ruleTests) => {
   const isTest = (file) =>
     !file.startsWith("tests/browser/") &&
     !ruleTests.has(file) &&
-    (/\.(test|spec)\.[a-z]+$/.test(file) || file.includes("/src/testing/"))
+    (/\.(test|spec)\.[a-z]+$/.test(file) || file.includes("/testing/"))
   const isProduct = (file) =>
     !isTest(file) &&
     (file.startsWith("apps/") || file.startsWith("packages/")) &&

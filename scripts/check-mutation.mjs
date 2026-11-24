@@ -13,7 +13,7 @@ const metricName = "guards a test would miss"
 const changedFlag = "--changed-from"
 const changedFolders = /^(?:packages\/[^/]+|apps\/api)\/src\/.+\.tsx?$/
 const testNames = /\.(?:test|spec)\.tsx?$|\.d\.ts$/
-const testSupport = (file) => file.includes("/src/testing/")
+const testSupport = (file) => file.includes("/testing/")
 
 export const changedSources = (nameStatus) =>
   nameStatus.split("\n").flatMap((row) => {

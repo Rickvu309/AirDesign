@@ -35,6 +35,11 @@ same(
   changedSources("M\tpackages/doom/src/testing/doom-fixtures-art.ts\n"),
   [],
 )
+same(
+  "a helper in a feature pack's testing folder is not chosen",
+  changedSources("M\tapps/api/src/mcp/testing/mcp-expected.ts\n"),
+  [],
+)
 same("a web source is not chosen", changedSources("M\tapps/web/src/deck.ts\n"), [])
 same("a site source is not chosen", changedSources("M\tapps/site/src/page.ts\n"), [])
 same("a package file outside src is not chosen", changedSources("M\tpackages/pptx/markup-setup.ts\n"), [])
