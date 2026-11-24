@@ -131,7 +131,6 @@ export function ChartSection({
         role="group"
         aria-label={editorCopy.chartData}
         className="-my-0.5 -mr-0.5 min-w-0 overflow-x-auto py-0.5 pr-0.5"
-        style={{ scrollPaddingLeft: `calc(${categoryTrack} + 1rem)` }}
         data-chart-data=""
       >
         <div
@@ -156,7 +155,7 @@ export function ChartSection({
           ))}
           {chart.categories.map((category, row) => (
             <Fragment key={row}>
-              <div className="sticky left-0 z-10 flex min-w-0 items-center rounded-lg bg-muted">
+              <div className="flex min-w-0 items-center rounded-lg bg-muted" data-chart-category="">
                 <WordsCell
                   key={category}
                   label={`${editorCopy.chartData} ${String(row + 1)}`}
