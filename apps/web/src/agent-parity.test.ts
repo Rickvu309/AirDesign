@@ -56,13 +56,7 @@ const viewOnly = new Set([
   "show-presenter",
 ])
 
-const manualPanel = new Set([
-  "panel:slide-background",
-  "panel:chart-data",
-  "panel:remove-auto-layout",
-  "panel:show-hidden",
-  "panel:name",
-])
+const manualPanel = new Set(["panel:slide-background", "panel:remove-auto-layout", "panel:show-hidden", "panel:name"])
 
 function panelKeys(): ReadonlySet<string> {
   const keys = layers.flatMap((name) =>

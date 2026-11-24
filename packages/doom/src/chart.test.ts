@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { build } from "./agent-fixtures.js"
-import { chartWithKind, readChart } from "./chart.js"
+import { readChart } from "./chart.js"
 import { propOf, readForAgent } from "./index.js"
 import { more, richDeck } from "./testing/rich-deck.js"
 import { swatches } from "./testing/doom-fixtures-art.js"
@@ -52,22 +52,6 @@ describe("readChart", () => {
       points: [{ at: 1, color: swatches.recoloured }],
     })
     expect(readChart({ ...pie, kind: "column" }).series[0]?.color).toEqual(swatches.custom)
-  })
-
-  it("drops series colours when a chart becomes a pie, and keeps its points", () => {
-    const column = {
-      kind: "column" as const,
-      categories: ["A", "B"],
-      series: [
-        { name: "Share", values: [1, 2], color: swatches.custom, points: [{ at: 1, color: swatches.recoloured }] },
-      ],
-    }
-    expect(chartWithKind(column, "pie").series[0]).toEqual({
-      name: "Share",
-      values: [1, 2],
-      points: [{ at: 1, color: swatches.recoloured }],
-    })
-    expect(chartWithKind(column, "bar").series[0]?.color).toEqual(swatches.custom)
   })
 
   it("shows an agent each point colour where it reads the chart", () => {

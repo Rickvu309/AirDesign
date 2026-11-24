@@ -226,7 +226,6 @@ export function ElementDesign({
   titleActions,
   afterTitle = null,
   afterAlignment = null,
-  children = null,
   selectionColors = null,
   layerName,
   onLayerName,
@@ -236,7 +235,6 @@ export function ElementDesign({
   titleActions?: ReactNode
   afterTitle?: ReactNode
   afterAlignment?: ReactNode
-  children?: ReactNode
   selectionColors?: ReactNode
   palette: Palette
   onChange: (control: PanelControl, value: unknown) => void
@@ -264,9 +262,6 @@ export function ElementDesign({
     ) : (
       panelTitle(model)
     )
-  const lead = sections.findIndex((section) => section !== "selectionColors" && section.label === null)
-  const childrenFollow = children !== null && lead < 0
-  const closes = (at: number) => at === last && !childrenFollow
   return (
     <div
       className="design-panel-chrome flex min-h-0 flex-1 flex-col overflow-y-auto outline-none"
@@ -293,7 +288,7 @@ export function ElementDesign({
         if (section === "selectionColors") return <Fragment key={section}>{selectionColors}</Fragment>
         if (section.trait === "pictureFill")
           return (
-            <DesignSection key={section.trait} title={section.label} last={closes(at)}>
+            <DesignSection key={section.trait} title={section.label} last={at === last}>
               {fill === undefined ? null : (
                 <UnionControl control={fill} palette={palette} onChange={(value) => onChange(fill, value)} />
               )}
@@ -303,19 +298,16 @@ export function ElementDesign({
           )
         if (section.label === null)
           return (
-            <Fragment key={section.trait}>
-              <div data-design-alignment>
-                <DesignSection title={null}>
-                  <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
-                </DesignSection>
-                <DesignHead actions={titleActions} ruled={afterTitle === null}>
-                  {title}
-                </DesignHead>
-                {afterAlignment}
-                {afterTitle}
-              </div>
-              {at === lead ? children : null}
-            </Fragment>
+            <div key={section.trait} data-design-alignment>
+              <DesignSection title={null}>
+                <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
+              </DesignSection>
+              <DesignHead actions={titleActions} ruled={afterTitle === null}>
+                {title}
+              </DesignHead>
+              {afterAlignment}
+              {afterTitle}
+            </div>
           )
         const reset = section.strips
           .flat()
@@ -324,7 +316,7 @@ export function ElementDesign({
           <DesignSection
             key={section.trait}
             title={section.trait === "text" && kind === "text" ? null : section.label}
-            last={closes(at)}
+            last={at === last}
             action={
               section.trait === "link" ? (
                 <button
@@ -369,7 +361,6 @@ export function ElementDesign({
           </DesignSection>
         )
       })}
-      {lead < 0 ? children : null}
     </div>
   )
 }
