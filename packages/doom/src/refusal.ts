@@ -1,15 +1,13 @@
 import type { NodeId } from "./ids.js"
 import type { WriteKey } from "./props.js"
-import { type FieldFault, takeRejection } from "./read-kit.js"
-
-export type { FieldFault }
+import { takeRejection } from "./read-kit.js"
 
 export type Refusal = {
   readonly refused: "shape" | "limit" | "cycle" | "person" | "missing" | "stale" | "run-fenced" | "last-slide"
   readonly node?: NodeId
   readonly prop?: WriteKey
   readonly field?: string
-  readonly fault?: FieldFault
+  readonly fault?: "missing" | "unknown" | "form"
   readonly form?: string
 }
 

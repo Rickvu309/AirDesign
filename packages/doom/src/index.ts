@@ -31,7 +31,7 @@ export { colorVars, effectStyleNames } from "./paint.js"
 export { type NodeType, type Origin, type PropName, type Props, type WriteKey, accepts, holds, props } from "./props.js"
 export { textFromMarkdown, textToMarkdown } from "./markdown.js"
 export { readEdit, readWrite } from "./read-write.js"
-export { type FieldFault, type Refusal, isRefusal } from "./refusal.js"
+export { type Refusal, isRefusal } from "./refusal.js"
 export {
   type Author,
   type Edit,
