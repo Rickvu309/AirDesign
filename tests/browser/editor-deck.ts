@@ -5,7 +5,9 @@ import { forward, signInBrowser, type Stack } from "./api-stack"
 
 const catalog = () => import("../../packages/catalog/src/index.ts")
 
-export type Opened = { readonly deck: string; readonly cookie: string; readonly slide: string }
+export type Deck = { readonly deck: string; readonly cookie: string }
+
+export type Opened = Deck & { readonly slide: string; readonly page: Page }
 
 export const spot = (x: number, y: number, w: number, h: number) => ({
   x,
@@ -31,14 +33,30 @@ export async function openEditor(page: Page, context: BrowserContext, stack: Sta
   const fold = doom.readFold(opened.json.fold)
   const slide = [...(fold?.nodes.values() ?? [])].find((node) => node.type === "slide")
   if (slide === undefined) throw new Error("no slide")
-  return { deck, cookie, slide: slide.id }
+  return { deck, cookie, slide: slide.id, page }
 }
 
 type Made = { readonly id: string; readonly type: "frame" | "shape"; readonly parent: string; readonly props?: object }
 
 let counter = 0
 
-export async function landNodes(stack: Stack, opened: Opened, nodes: readonly Made[]): Promise<void> {
+const slideBoxNode = (page: Page, id: string) => page.locator(`[data-slide-box] [data-node="${id}"]`)
+
+function reachingSlide(opened: Opened, nodes: readonly Made[]): readonly Made[] {
+  const reached = new Set([opened.slide])
+  let grew = true
+  while (grew) {
+    grew = false
+    for (const node of nodes)
+      if (!reached.has(node.id) && reached.has(node.parent)) {
+        reached.add(node.id)
+        grew = true
+      }
+  }
+  return nodes.filter((node) => reached.has(node.id))
+}
+
+export async function landOffScreen(stack: Stack, opened: Opened, nodes: readonly Made[]): Promise<void> {
   counter += 1
   const { doomRoutes } = await catalog()
   const last = new Map<string, OrderKey | null>([[opened.slide, orderKeyBetween(null, null)]])
@@ -56,6 +74,11 @@ export async function landNodes(stack: Stack, opened: Opened, nodes: readonly Ma
   if (landed.json.ok !== true) throw new Error(JSON.stringify(landed.json))
 }
 
+export async function landNodes(stack: Stack, opened: Opened, nodes: readonly Made[]): Promise<void> {
+  await landOffScreen(stack, opened, nodes)
+  for (const node of reachingSlide(opened, nodes)) await expect(slideBoxNode(opened.page, node.id)).toBeAttached()
+}
+
 export async function clearSubtitle(stack: Stack, opened: Opened): Promise<void> {
   counter += 1
   const { doomRoutes } = await catalog()
@@ -66,6 +89,7 @@ export async function clearSubtitle(stack: Stack, opened: Opened): Promise<void>
   }
   const landed = await stack.post(doomRoutes.edit.path, { deck: opened.deck, edit }, opened.cookie)
   if (landed.json.ok !== true) throw new Error(JSON.stringify(landed.json))
+  await expect(slideBoxNode(opened.page, "s:5")).toHaveCount(0)
 }
 
 export async function slidePoint(
@@ -98,11 +122,7 @@ export async function clickSlide(page: Page, x: number, y: number, options: { re
   else await page.mouse.click(at.x, at.y)
 }
 
-export async function savedNode(
-  stack: Stack,
-  opened: Opened,
-  id: string,
-): Promise<Record<string, unknown> | undefined> {
+export async function savedNode(stack: Stack, opened: Deck, id: string): Promise<Record<string, unknown> | undefined> {
   const { doomRoutes } = await catalog()
   const answer = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
   const fold = doom.readFold(answer.json.fold)
@@ -114,7 +134,7 @@ export const selectedIds = (page: Page) =>
     .locator("[data-selection-outline]")
     .evaluateAll((all) => all.flatMap((each) => each.getAttribute("data-selection-outline") ?? []))
 
-export async function savedSlides(stack: Stack, opened: Opened): Promise<readonly string[]> {
+export async function savedSlides(stack: Stack, opened: Deck): Promise<readonly string[]> {
   const { doomRoutes } = await catalog()
   const answer = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
   const fold = doom.readFold(answer.json.fold)

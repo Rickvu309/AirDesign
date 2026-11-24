@@ -6,7 +6,7 @@ import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { accent, landNodes, openEditor, savedNode, savedSlides, spot, type Opened } from "./editor-deck"
+import { accent, landOffScreen, openEditor, savedNode, savedSlides, spot, type Opened } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -181,7 +181,7 @@ test("a click on a linked layer or linked words in the show follows the link, an
 }) => {
   const opened = await deckOfSlides(page, context, stack, 3)
   const [first, , third] = await savedSlides(stack, opened)
-  await landNodes(stack, opened, [
+  await landOffScreen(stack, opened, [
     {
       id: "k:1",
       type: "shape",
