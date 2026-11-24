@@ -4,6 +4,7 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
+import { requirePinnedNode } from "./node-version.mjs"
 import { changeMap, readChangeGraph } from "./change-map.mjs"
 import { run, runCheck } from "./check.mjs"
 import { checkSteps, unitTestsIn } from "./check-steps.mjs"
@@ -112,6 +113,7 @@ const relatedTests = async (base, folder) => {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  requirePinnedNode()
   const started = Date.now()
   const at = process.argv.indexOf("--base")
   const against = at === -1 ? "origin/main" : process.argv[at + 1]

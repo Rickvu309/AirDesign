@@ -4,6 +4,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { onCi } from "./check-steps.mjs"
 import { cleanEnvironment } from "./test-environment.mjs"
+import { requirePinnedNode } from "./node-version.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -56,6 +57,7 @@ export const runToolingTests = async (tests, { width = 4, cwd = root, limit = li
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  requirePinnedNode()
   const named = process.argv.slice(2)
   const results = await runToolingTests(named.length > 0 ? named : toolingTests(root))
   const failures = results.filter((result) => result.status !== 0)
