@@ -1,12 +1,12 @@
 import { group } from "../doom-deck.mjs"
-import { editorCopy, toolbarCopy } from "../../bin/product-copy.mjs"
+import { editorCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { designing } from "../doom-design.mjs"
 
 async function drive(kit) {
   const { page } = kit
   await designing(kit)
-  await page.getByRole("button", { name: toolbarCopy.actions, exact: true }).click()
+  await page.getByRole("button", { name: editorCopy.actions, exact: true }).click()
   const icons = group(page, editorCopy.iconsGroup).getByRole("option")
   await expect(icons.first()).toBeVisible()
   await expect(icons.filter({ hasNot: page.locator("svg") })).toHaveCount(0)

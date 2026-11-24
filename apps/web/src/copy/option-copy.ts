@@ -27,7 +27,6 @@ export const optionCopy: Readonly<Record<string, string>> = {
   name: "Name",
   id: "Text style",
   size: "Size",
-  font: "Font",
 }
 
 export function optionWord(field: string, option: string): string {

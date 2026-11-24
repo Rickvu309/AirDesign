@@ -2,16 +2,6 @@ export const frameCopy = {
   frame: "Frame",
   autoFrame: "Auto layout frame",
   removeAutoLayout: "Remove auto layout",
-  resizeToFit: "Resize to fit",
-  autoLayout: "Auto layout",
-  flow: "Direction",
-  gap: "Gap",
-  padding: "Padding",
-  align: "Alignment",
-  resizing: "Resizing",
-  width: "Width",
-  height: "Height",
-  individualPadding: "Edit individual padding",
 } as const
 
 export const layoutWords = {

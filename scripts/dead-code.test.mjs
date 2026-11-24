@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { deadCode, report } from "./dead-code.mjs"
+import { deadCode, deadCopy, report } from "./dead-code.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -18,7 +18,7 @@ const write = (file, text) => {
 
 write(
   "apps/web/src/main.tsx",
-  `import { used } from "@airdesign/shapes"\nimport { marks } from "@airdesign/shapes/marks"\nused()\nmarks()\n`,
+  `import { used } from "@airdesign/shapes"\nimport { marks } from "@airdesign/shapes/marks"\nimport { words } from "./copy/words.ts"\nused()\nmarks()\nwords.dotted\n`,
 )
 write(
   "packages/shapes/src/index.ts",
@@ -40,7 +40,10 @@ write("scripts/runner.mjs", `import { checked } from "../packages/shapes/src/onl
 write("apps/api/src/server.ts", `import { migrate } from "./platform/migrate.ts"\nmigrate()\n`)
 write("apps/api/src/platform/migrate.ts", `export const migrate = () => new URL("./migrations/", import.meta.url)\n`)
 write("apps/api/src/platform/migrations/0001-start.ts", `export const up = "create table decks ()"\n`)
-write("apps/web/src/copy/words.ts", `export const words = { open: "Open" }\n`)
+write(
+  "apps/web/src/copy/words.ts",
+  `export const requiredWords = "Required"\nexport const words = { dotted: "Open", planted: "Unused" }\n`,
+)
 write(
   ".agents/skills/look/bin/copy.mjs",
   `import { createRequire } from "node:module"\nexport const { words } = createRequire(import.meta.url)("../../../../apps/web/src/copy/words.ts")\n`,
@@ -72,10 +75,34 @@ write(
   "scripts/load-shapes.mjs",
   `import { packageBuild } from "./package-build.mjs"\nconst shapes = await packageBuild(root, "@airdesign/shapes")\nshapes.used()\n`,
 )
+write("apps/web/src/copy/words.test.ts", `import { words } from "./words.ts"\nwords.planted\n`)
+write("apps/site/src/sign-in-copy.ts", `export const siteCopy = { send: "Send", unused: "Unused" }\n`)
+write(
+  "apps/site/src/sign-in.astro",
+  `---\nimport { siteCopy as words } from "./sign-in-copy"\n---\n<p>{words.send}</p>\n`,
+)
 execFileSync("git", ["init", "-q"], { cwd: repo })
 
 try {
   const dead = deadCode(repo)
+  same("a copy key read only by a test is unused", deadCopy(repo), [
+    { file: "apps/site/src/sign-in-copy.ts", key: "siteCopy.unused", line: 1 },
+    { file: "apps/web/src/copy/words.ts", key: "words.planted", line: 2 },
+  ])
+
+  write(
+    "apps/web/src/copy/words.ts",
+    `export const words = { dotted: "Dotted", jsOnly: "JS only", nested: { bracketed: "Bracketed" }, whole: { one: "One", two: "Two" }, unused: "Unused" }`,
+  )
+  write(
+    ".agents/skills/look/states/copy.mjs",
+    `import { words as labels } from "../bin/copy.mjs"\nlabels.jsOnly\nlabels["nested"]?.["bracketed"]\nObject.values(labels.whole)\nlabels["removed"]\n`,
+  )
+  same("JavaScript reads through a copy loader are checked in both directions", deadCopy(repo), [
+    { file: "apps/site/src/sign-in-copy.ts", key: "siteCopy.unused", line: 1 },
+    { file: "apps/web/src/copy/words.ts", key: "words.unused", line: 1 },
+    { file: ".agents/skills/look/states/copy.mjs", key: "words.removed", line: 5, missing: true },
+  ])
 
   same(
     "a file only tests use is dead, even when a test loads it by path or a script imports that test",
@@ -110,8 +137,8 @@ try {
   )
   same(
     "a skill that requires a copy file by path keeps it alive",
-    dead.chainTo("apps/web/src/copy/words.ts", "words"),
-    [".agents/skills/look/bin/copy.mjs:line 2", "apps/web/src/copy/words.ts:words"],
+    dead.chainTo("apps/web/src/copy/words.ts", "requiredWords"),
+    [".agents/skills/look/bin/copy.mjs:line 2", "apps/web/src/copy/words.ts:requiredWords"],
   )
   same("a skill's look state is a root", dead.chainTo("apps/web/src/shown.ts", "shown"), [
     ".agents/skills/look/states/open.mjs:line 2",
@@ -133,7 +160,7 @@ try {
   same(
     "a subpath named in package.json exports is a real import",
     dead.chainTo("packages/shapes/src/marks.ts", "marks"),
-    ["apps/web/src/main.tsx:line 4", "packages/shapes/src/marks.ts:marks"],
+    ["apps/web/src/main.tsx:line 5", "packages/shapes/src/marks.ts:marks"],
   )
   same(
     "a property read in another script keeps an export of a package some script loads",

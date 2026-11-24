@@ -1,24 +1,8 @@
 export const borderCopy = {
   color: "Color",
-  dash: "Dash",
-  dashes: "Dashes",
-  custom: "Custom",
-  patternError: "Enter up to 32 dash and gap pairs in pixels, separated by commas.",
-  cap: "Cap",
-  compound: "Compound",
-  join: "Join",
   "Start arrow": "Start arrow",
   "End arrow": "End arrow",
   route: "Line type",
-  reset: {
-    fill: "Reset border color",
-    dash: "Reset dash",
-    cap: "Reset cap",
-    compound: "Reset compound",
-    join: "Reset join",
-    "Start arrow": "Reset start arrow",
-    "End arrow": "Reset end arrow",
-  },
 } as const
 
 export const startArrowLabel = borderCopy["Start arrow"]

@@ -61,13 +61,13 @@ function seen(names: readonly string[], detector: string): string[] {
 test.describe.configure({ mode: "serial" })
 
 test("loads product copy through workspace exports under Playwright", async () => {
-  type IconCopy = { addIcon: string }
-  const { readPictureToolCopy } = await load<{ readPictureToolCopy: () => IconCopy }>(
+  type PictureCopy = { replace: string }
+  const { readReplaceImageCopy } = await load<{ readReplaceImageCopy: () => string }>(
     join(skill, "bin/product-copy.mjs"),
   )
-  const { pictureCopy } = await load<{ pictureCopy: IconCopy }>(join(root, "apps/web/src/copy/picture-copy.ts"))
-  expect(readPictureToolCopy().addIcon).toEqual(expect.any(String))
-  expect(readPictureToolCopy().addIcon).toBe(pictureCopy.addIcon)
+  const { pictureCopy } = await load<{ pictureCopy: PictureCopy }>(join(root, "apps/web/src/copy/picture-copy.ts"))
+  expect(readReplaceImageCopy()).toEqual(expect.any(String))
+  expect(readReplaceImageCopy()).toBe(pictureCopy.replace)
 })
 
 test("every named state of this design shard is reached and scanned in one stack", async ({ browser }) => {

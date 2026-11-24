@@ -1,11 +1,8 @@
 export const fillCopy = {
   section: "Fill",
   box: "Box fill",
-  text: "Text fill",
   value: "Fill",
   reset: "Reset fill",
-  add: "Add",
-  paint: (at: number, count: number) => (count === 1 ? "Fill" : `Fill ${String(count - at)} of ${String(count)}`),
 } as const
 
 export const fillWords = {

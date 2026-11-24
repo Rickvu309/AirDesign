@@ -16,8 +16,6 @@ const editRefusals = [
   "dead",
   "present",
   "limit",
-  "group-box",
-  "locked",
   "kind",
   "last-slide",
   "field",
@@ -25,14 +23,9 @@ const editRefusals = [
   "batch",
   "base",
   "payload",
-  "kept",
-  "site",
-  "image",
-  "text-from",
   "owner",
   "deleted",
   "store",
-  "held",
 ] as const
 
 const wireRefusals = [

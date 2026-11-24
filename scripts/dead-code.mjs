@@ -1,3 +1,4 @@
+import { copyCompilerHost, unusedCopy } from "./dead-copy.mjs"
 import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import { createRequire } from "node:module"
@@ -272,14 +273,24 @@ const distRootsOf = ({ checker, program, root, files, byFile, unitOf, isScript }
 
 const lineOf = (unit, position) => unit.source.getLineAndCharacterOfPosition(position).line + 1
 
-export const deadCode = (root, files = scannedFiles(root)) => {
-  const { isTest, isProduct, isRoot } = roles(ruleTestsOf(root))
+const loadSources = (root, files, makeHost) => {
+  const options = compilerOptions(root)
   const program = ts.createProgram(
     files.map((file) => path.join(root, file)),
-    compilerOptions(root),
+    options,
+    makeHost?.(root, options),
   )
-  const checker = program.getTypeChecker()
-  const { units, byFile, unitOf } = statementsOf(program, root, files)
+  return { program, checker: program.getTypeChecker(), ...statementsOf(program, root, files) }
+}
+
+export const deadCopy = (root, files = scannedFiles(root)) => {
+  const { checker, units } = loadSources(root, files, copyCompilerHost)
+  return unusedCopy(root, checker, units)
+}
+
+export const deadCode = (root, files = scannedFiles(root)) => {
+  const { isTest, isProduct, isRoot } = roles(ruleTestsOf(root))
+  const { program, checker, units, byFile, unitOf } = loadSources(root, files)
   link({ checker, root, units, byFile, unitOf })
   const isScript = (file) => !isTest(file) && !isProduct(file)
 
@@ -394,6 +405,12 @@ const flagValue = (argv, flag) => {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
   const argv = process.argv.slice(2)
+  if (argv.includes("--copy")) {
+    const unread = deadCopy(root)
+    for (const { file, line, key, missing } of unread)
+      console.log(`${file}:${line} ${missing ? "missing copy key" : "unread copy key"} ${key}`)
+    process.exit(unread.length === 0 ? 0 : 1)
+  }
   const dead = deadCode(root)
   const json = flagValue(argv, "--json")
   if (json)

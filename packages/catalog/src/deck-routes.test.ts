@@ -61,6 +61,12 @@ it("refuses malformed answer envelopes for every deck route", () => {
   }
 })
 
+it("treats retired edit refusals as an unexpected response", () => {
+  for (const refusal of ["group-box", "locked", "kept", "site", "image", "text-from", "held"]) {
+    expect(deckRoutes.list.result({ ok: false, refusal })).toEqual(payload)
+  }
+})
+
 it("decodes deleted on every deck route", () => {
   for (const route of Object.values(deckRoutes)) {
     expect(route.result({ ok: false, refusal: "deleted" })).toEqual({ ok: false, refusal: "deleted" })

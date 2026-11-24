@@ -1,5 +1,4 @@
 import { appearanceCopy } from "./appearance-copy"
-import { nameTooLongOf } from "./product-copy"
 import { frameCopy } from "./frame-copy"
 
 const layerCount = (count: number, kind: string) =>
@@ -8,20 +7,14 @@ const layerCount = (count: number, kind: string) =>
 export const designCopy = {
   slide: (number: number) => `Slide ${String(number)}`,
   background: "Background",
-  selectOneSlide: "Select one slide to change its design.",
-  selectSlide: "Select a slide to change its design.",
   theme: "Theme",
   customTheme: "Custom theme",
   themeSample: "Aa",
   chooseTheme: (name: string) => `Change theme, ${name}`,
   backgroundColor: (name: string) => `Background color, ${name}`,
   ...appearanceCopy,
-  white: "White",
-  fills: { gradient: "Gradient", pattern: "Pattern", picture: "Image" },
   panels: {
-    text: "Text",
     shape: "Shape",
-    picture: "Image",
     connector: "Line",
     group: "Group",
     frame: frameCopy.frame,
@@ -29,20 +22,14 @@ export const designCopy = {
   },
   selected: (count: number) => `${String(count)} selected`,
   selectMatching: "Select matching layers",
-  noMatching: "No matching layers found.",
-  multiEditText: "Multi-edit text",
   titles: { text: "Text", picture: "Image", icon: "Icon" },
   autoFrame: frameCopy.autoFrame,
   removeAutoLayout: frameCopy.removeAutoLayout,
-  resizeToFit: frameCopy.resizeToFit,
   square: "Rectangle",
   layerName: "Layer name",
   layerNameEmpty: "Enter a name for this layer.",
   renameLayer: (name: string) => `Rename layer: ${name}`,
   nothing: "Nothing on this layer can be changed here yet.",
-  refused: "Unable to make that change. Select the layer and try again, or reload the deck if it keeps happening.",
-  tooLong: (max: number, wide: boolean) =>
-    wide ? `${nameTooLongOf(max)} Some letters and emoji count as 2 to 4.` : nameTooLongOf(max),
   mixed: "Mixed",
   points: "pt",
   percent: "%",
@@ -56,5 +43,4 @@ export const designCopy = {
     locked: (count: number) => layerCount(count, "locked"),
   },
   heldLayersBack: { hidden: "Show all", locked: "Unlock all" },
-  cell: (row: number, column: number) => `Row ${String(row)}, column ${String(column)}`,
 } as const
