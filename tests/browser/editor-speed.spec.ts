@@ -1,20 +1,63 @@
-import { readFile } from "node:fs/promises"
+import { readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
-import { expect, type CDPSession, type Page } from "@playwright/test"
-import { test } from "./api-stack"
+import { expect, type Page } from "@playwright/test"
+import { waitForAgentPaint, watchAgentPaint } from "./agent-paint"
+import { test as stackTest } from "./api-stack"
 import { dragFeel, type Feel } from "./drag-feel"
 import { openEditor } from "./editor-deck"
 import { keptWait, keptWaitApproval } from "./kept-wait"
+import {
+  agentPaintTasks,
+  keyTaskDumps,
+  keyTasks,
+  quietThread,
+  redrawDumps,
+  redrawTimes,
+  thumbnailRedraws,
+  tracedSpans,
+} from "./renderer-thread"
+import { measureOnQuietMachine } from "./speed-machine"
+import { spikeKeys, typedLetters } from "./typed-letter"
+
+const speedTasksFile = "speed-tasks.json"
+
+const test = stackTest.extend<{ speedTasks: Map<string, unknown> }, { speedLock: void }>({
+  speedLock: [
+    async ({}, use) => {
+      const { takeSpeedLock } = await import("../../scripts/machine-lock.mjs")
+      const release = await takeSpeedLock({ browser: true })
+      try {
+        await use()
+      } finally {
+        await release()
+      }
+    },
+    { scope: "worker", auto: true, timeout: 610_000 },
+  ],
+  speedTasks: async ({}, use, testInfo) => {
+    const kept = new Map<string, unknown>()
+    await use(kept)
+    if (testInfo.status === testInfo.expectedStatus || kept.size === 0) return
+    const file = testInfo.outputPath(speedTasksFile)
+    await writeFile(file, `${JSON.stringify(Object.fromEntries(kept), null, 1)}\n`)
+    await testInfo.attach(speedTasksFile, { path: file, contentType: "application/json" })
+  },
+})
 
 test.use({ viewport: { width: 1600, height: 1000 } })
+
+const thumbnailMark = "typed-slide-thumbnail"
 
 const budget = {
   slides: 40,
   idleTaskMilliseconds: 150,
   idleLongTaskMilliseconds: 50,
-  typeScriptPerKey: 8,
+  typeTaskPerKey: 8,
+  typeTaskBeyondTypical: 1.2,
   typeMeasureCalls: 6,
+  typePreviewPerRedraw: 8,
+  typePreviewRedraws: 7,
   dragScriptPerFrame: 8,
   dragTaskPerFrame: 16,
   dragLongFrames: 0,
@@ -54,16 +97,13 @@ async function reportDrag(feel: Feel): Promise<void> {
   }
 }
 
-async function engineMilliseconds(device: CDPSession, name: "TaskDuration" | "ScriptDuration"): Promise<number> {
-  const { metrics } = (await device.send("Performance.getMetrics")) as { metrics: { name: string; value: number }[] }
-  return (metrics.find((metric) => metric.name === name)?.value ?? 0) * 1000
-}
-
 test("a 40-slide Doom deck does no picture work while no agent reads it and keeps a drag inside one frame", async ({
   page,
   context,
   stack,
-}) => {
+  speedTasks,
+}, testInfo) => {
+  const measure = <T>(phase: string, run: () => Promise<T>) => measureOnQuietMachine(speedTasks, phase, run, testInfo)
   const requested: string[] = []
   page.on("request", (request) => {
     if (new URL(request.url()).pathname === "/doom/pictures") requested.push(request.url())
@@ -83,7 +123,6 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
   const device = await context.newCDPSession(page)
   await boardDeck(kit, opened.cookie, budget.slides, opened.deck)
   await page.reload()
-  await device.send("Performance.enable", { timeDomain: "threadTicks" })
   await page.locator(`[data-editor-ready="${opened.deck}"]`).waitFor()
   await page.locator('[data-slide-entry="2"]').click()
   const node = page.locator("[data-slide-box] [data-node]").first()
@@ -95,53 +134,29 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
   await expect(page.locator("[data-selection-outline]")).toHaveCount(1)
   await frames(page, 240)
 
-  const idleFrom = await page.evaluate(() => {
-    const holder = window as unknown as {
-      idleLongTasks: { start: number; duration: number }[]
-      idleLongTaskObserver?: PerformanceObserver
-    }
-    holder.idleLongTasks = []
-    const observer = new PerformanceObserver((list) => {
-      for (const entry of list.getEntries())
-        holder.idleLongTasks.push({ start: entry.startTime, duration: entry.duration })
-    })
-    observer.observe({ type: "longtask", buffered: true })
-    holder.idleLongTaskObserver = observer
-    return performance.now()
+  const { reading: idle, checkSpeed: checkIdleSpeed } = await measure("idle", () =>
+    tracedSpans(device, () =>
+      page.waitForTimeout(
+        keptWait(3000, {
+          why: "the quiet span is what is measured, and frames the test drove would count as the deck's own work",
+          until: "2027-02-18",
+          approval: keptWaitApproval,
+        }),
+      ),
+    ),
+  )
+  const quiet = quietThread(idle, budget.idleLongTaskMilliseconds)
+  speedTasks.set("idle", { work: quiet.work, tasks: quiet.tasks, longTasks: quiet.longTasks })
+  checkIdleSpeed(() => {
+    expect(
+      quiet.work,
+      `an open deck idles at most ${String(budget.idleTaskMilliseconds)} ms of work in 3 s`,
+    ).toBeLessThan(budget.idleTaskMilliseconds)
+    expect(
+      quiet.longTasks,
+      `an open deck runs no idle task over ${String(budget.idleLongTaskMilliseconds)} ms of thread time in 3 s`,
+    ).toEqual([])
   })
-  const before = await engineMilliseconds(device, "TaskDuration")
-  await page.waitForTimeout(
-    keptWait(3000, {
-      why: "the quiet span is what is measured, and frames the test drove would count as the deck's own work",
-      until: "2027-02-18",
-      approval: keptWaitApproval,
-    }),
-  )
-  const idle = (await engineMilliseconds(device, "TaskDuration")) - before
-  const idleLongTasks = await page.evaluate((from) => {
-    const holder = window as unknown as {
-      idleLongTasks: { start: number; duration: number }[]
-      idleLongTaskObserver?: PerformanceObserver
-    }
-    for (const entry of holder.idleLongTaskObserver?.takeRecords() ?? [])
-      holder.idleLongTasks.push({ start: entry.startTime, duration: entry.duration })
-    holder.idleLongTaskObserver?.disconnect()
-    return holder.idleLongTasks.filter((task) => task.start >= from)
-  }, idleFrom)
-  const idleStutters = idleLongTasks.filter((task) => task.duration > budget.idleLongTaskMilliseconds)
-  expect(idle, `an open deck idles at most ${String(budget.idleTaskMilliseconds)} ms of work in 3 s`).toBeLessThan(
-    budget.idleTaskMilliseconds,
-  )
-  const stutterSummary = idleStutters
-    .map(
-      (task) =>
-        `${String(Math.round(task.duration))} ms starting at ${String(Math.round(task.start))} ms (${String(Math.round(task.start - idleFrom))} ms into the window)`,
-    )
-    .join("; ")
-  expect(
-    idleStutters,
-    `an open deck runs no idle task over ${String(budget.idleLongTaskMilliseconds)} ms in 3 s (saw ${stutterSummary})`,
-  ).toEqual([])
 
   await page.mouse.dblclick(from.x, from.y)
   await expect(page.locator("[data-text-editor]")).toHaveCount(1)
@@ -155,78 +170,130 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
       return measure.apply(this, args)
     }
   })
-  const keys = 24
-  const typedFrom = await engineMilliseconds(device, "ScriptDuration")
-  for (let key = 0; key < keys; key += 1) {
-    await page.keyboard.press("a")
-    await frames(page, 2)
-  }
-  const typing = (await engineMilliseconds(device, "ScriptDuration")) - typedFrom
+  await page.evaluate((mark) => {
+    const thumbnail = document.querySelector('[data-slide-entry="2"]')
+    if (thumbnail === null) throw new Error("no thumbnail for the typed slide")
+    new MutationObserver(() => console.timeStamp(mark)).observe(thumbnail, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      characterData: true,
+    })
+  }, thumbnailMark)
+  const keys = 48
+  const { reading: typed, checkSpeed: checkTypingSpeed } = await measure("typing", () =>
+    tracedSpans(device, async () => {
+      for (let key = 0; key < keys; key += 1) {
+        await page.keyboard.press("a")
+        await frames(page, 2)
+      }
+    }),
+  )
+  const perKey = keyTasks(typed)
+  const thumbnailUpdates = thumbnailRedraws(typed, thumbnailMark)
+  const typingLongTasks = quietThread(typed, budget.idleLongTaskMilliseconds).longTasks
+  speedTasks.set("keys", keyTaskDumps(typed))
+  speedTasks.set("redraws", redrawDumps(typed, thumbnailUpdates))
+  speedTasks.set("typingLongTasks", typingLongTasks)
+  expect(perKey, "every typed letter ran in a traced task").toHaveLength(keys)
+  const typing = typedLetters(perKey)
+  const redraws = thumbnailUpdates.map(redrawTimes)
+  checkTypingSpeed(() => {
+    expect(
+      redraws.length,
+      "the filmstrip redrew the typed slide's thumbnail while the trace ran",
+    ).toBeGreaterThanOrEqual(budget.typePreviewRedraws)
+  })
+  const meanOf = (values: readonly number[]) =>
+    values.reduce((total, each) => total + each, 0) / Math.max(values.length, 1)
+  const render = meanOf(redraws.map((each) => each.render))
+  const paint = meanOf(redraws.map((each) => each.paint))
+  await expect(page.locator('[data-slide-entry="2"]'), "the filmstrip shows the typed letters").toContainText(
+    "a".repeat(keys),
+  )
   const measured = await page.evaluate(() => (window as unknown as { measured: number }).measured)
   await page.keyboard.press("Escape")
   await page.mouse.click(from.x, from.y)
   await expect(page.locator("[data-selection-outline]")).toHaveCount(1)
 
-  const feel = await dragFeel(page, from, { x: 240, y: 90 }, 120, "dragged")
+  const { reading: feel, checkSpeed: checkDragSpeed } = await measure("pointer drag", () =>
+    dragFeel(page, from, { x: 240, y: 90 }, 120, "dragged"),
+  )
   await reportDrag(feel)
 
   const target = await page.locator("[data-slide-box] [data-node]").nth(1).getAttribute("data-node")
-  const painted: number[] = []
-  for (let edit = 1; edit <= 5; edit += 1) {
-    await page.evaluate((id) => {
-      const first = document.querySelector(`[data-slide-box] [data-node="${String(id)}"]`)?.getAttribute("style")
-      const holder = window as unknown as { agentPainted: Promise<number> }
-      holder.agentPainted = new Promise<number>((resolve) => {
-        const watch = new MutationObserver(() => {
-          const now = document.querySelector(`[data-slide-box] [data-node="${String(id)}"]`)?.getAttribute("style")
-          if (now === first) return
-          watch.disconnect()
-          requestAnimationFrame(() => setTimeout(() => resolve(Date.now())))
-        })
-        watch.observe(document.querySelector("[data-slide-box]")!, { subtree: true, childList: true, attributes: true })
-      })
-    }, target)
-    const sent = Date.now()
-    const landed = await stack.post(
-      doomRoutes.edit.path,
-      {
-        deck: opened.deck,
-        edit: {
-          once: `speed-agent-${String(edit)}`,
-          author: { kind: "agent", id: "aira", run: "bench-run" },
-          writes: [
-            {
-              node: target,
-              prop: "box",
-              value: { x: 100 + edit * 40, y: 60, w: 400, h: 120, rotation: 0, flipH: false, flipV: false },
+  if (target === null) throw new Error("no target for the agent edit")
+  const { reading: painted, checkSpeed: checkAgentSpeed } = await measure("agent edit to paint", async () => {
+    const edits: ReturnType<typeof agentPaintTasks>[] = []
+    speedTasks.set("agentPaint", edits)
+    for (let edit = 1; edit <= 5; edit += 1) {
+      const once = `speed-agent-${String(edit)}`
+      await watchAgentPaint(page, target, doomRoutes.since.path, once)
+      const spans = await tracedSpans(device, async () => {
+        const landed = await stack.post(
+          doomRoutes.edit.path,
+          {
+            deck: opened.deck,
+            edit: {
+              once,
+              author: { kind: "agent", id: "aira", run: "bench-run" },
+              writes: [
+                {
+                  node: target,
+                  prop: "box",
+                  value: { x: 100 + edit * 40, y: 60, w: 400, h: 120, rotation: 0, flipH: false, flipV: false },
+                },
+              ],
             },
-          ],
-        },
-      },
-      opened.cookie,
-    )
-    expect(landed.json, "a node the person never touched takes an agent's write").toMatchObject({ ok: true })
-    painted.push(
-      (await page.evaluate(() => (window as unknown as { agentPainted: Promise<number> }).agentPainted)) - sent,
-    )
-  }
+          },
+          opened.cookie,
+        )
+        expect(landed.json, "a node the person never touched takes an agent's write").toMatchObject({ ok: true })
+        await waitForAgentPaint(page)
+      })
+      edits.push(agentPaintTasks(spans))
+    }
+    return edits.map((tasks) => tasks.reduce((total, task) => total + task.thread, 0))
+  })
   painted.sort((left, right) => left - right)
   const agentEditPaint = painted[2]!
   test.info().annotations.push({
     type: "metric",
-    description: `idle ${String(Math.round(idle * 10) / 10)} ms in 3 s, ${String(idleLongTasks.length)} long tasks (${String(idleStutters.length)} over ${String(budget.idleLongTaskMilliseconds)} ms); ${String(measured)} text measurements; typing script ${String(Math.round((typing / keys) * 10) / 10)} ms a key; agent edit to paint ${String(agentEditPaint)} ms; drag script ${String(feel.scriptPerFrame)} ms and task ${String(feel.taskPerFrame)} ms a frame, ${String(feel.longFrames)} long frames`,
+    description: `idle ${String(Math.round(quiet.work * 10) / 10)} ms in 3 s over ${String(quiet.tasks)} tasks, ${String(quiet.longTasks.length)} over ${String(budget.idleLongTaskMilliseconds)} ms; ${String(measured)} text measurements; typing task ${String(Math.round(typing.trimmedMean * 100) / 100)} ms a key without the slowest ${String(spikeKeys)}, ${String(Math.round(typing.mean * 100) / 100)} with them, typical ${String(Math.round(typing.typical * 100) / 100)}, ${String(Math.round(typing.beyondTypical * 100) / 100)} beyond typical, slowest ${String(Math.round(typing.slowest * 10) / 10)}; thumbnail render ${String(Math.round(render * 100) / 100)} ms and paint ${String(Math.round(paint * 100) / 100)} ms over ${String(redraws.length)} updates, slowest ${String(Math.round(Math.max(0, ...redraws.map((each) => each.render + each.paint)) * 10) / 10)}; ${String(typingLongTasks.length)} tasks over ${String(budget.idleLongTaskMilliseconds)} ms while typing; agent edit to paint ${String(Math.round(agentEditPaint * 10) / 10)} ms; drag script ${String(feel.scriptPerFrame)} ms and task ${String(feel.taskPerFrame)} ms a frame, ${String(feel.longFrames)} long frames`,
   })
-  expect(measured, "typing measures a glyph or pair of glyphs once, never again on each key").toBeLessThanOrEqual(
-    budget.typeMeasureCalls,
-  )
-  expect(typing / keys, "a typed letter's script work stays inside one frame").toBeLessThan(budget.typeScriptPerKey)
-  expect(feel.scriptPerFrame, "a drag move's script work stays under 8 ms").toBeLessThan(budget.dragScriptPerFrame)
-  expect(feel.taskPerFrame, "a drag move's main-thread work stays inside one frame").toBeLessThan(
-    budget.dragTaskPerFrame,
-  )
-  expect(feel.longFrames, "no frame during a drag runs past 50 ms").toBeLessThanOrEqual(budget.dragLongFrames)
-  expect(agentEditPaint, "an agent's edit paints in the open tab within a few frames").toBeLessThan(
-    budget.agentEditPaintMilliseconds,
-  )
+  checkTypingSpeed(() => {
+    expect(measured, "typing measures a glyph or pair of glyphs once, never again on each key").toBeLessThanOrEqual(
+      budget.typeMeasureCalls,
+    )
+    expect(
+      typing.trimmedMean,
+      `a typed letter's task stays inside one frame, leaving out the slowest ${String(spikeKeys)} letters`,
+    ).toBeLessThan(budget.typeTaskPerKey)
+    expect(typing.beyondTypical, "no share of typed letters runs much longer than the typical letter").toBeLessThan(
+      budget.typeTaskBeyondTypical,
+    )
+    expect(render, "the thumbnail render that typing leaves for later fits in the frame beside a letter").toBeLessThan(
+      budget.typePreviewPerRedraw,
+    )
+    expect(paint, "the frame that paints the typed slide's thumbnail fits in the frame beside a letter").toBeLessThan(
+      budget.typePreviewPerRedraw,
+    )
+    expect(
+      typingLongTasks,
+      `no task while typing, on any scheduler, runs over ${String(budget.idleLongTaskMilliseconds)} ms of thread time`,
+    ).toEqual([])
+  })
+  checkDragSpeed(() => {
+    expect(feel.scriptPerFrame, "a drag move's script work stays under 8 ms").toBeLessThan(budget.dragScriptPerFrame)
+    expect(feel.taskPerFrame, "a drag move's main-thread work stays inside one frame").toBeLessThan(
+      budget.dragTaskPerFrame,
+    )
+    expect(feel.longFrames, "no frame during a drag runs past 50 ms").toBeLessThanOrEqual(budget.dragLongFrames)
+  })
+  checkAgentSpeed(() => {
+    expect(agentEditPaint, "an agent's edit paints in the open tab within a few frames").toBeLessThan(
+      budget.agentEditPaintMilliseconds,
+    )
+  })
   expect(requested, "no slide picture is painted or sent while no agent has asked for one").toEqual([])
 })

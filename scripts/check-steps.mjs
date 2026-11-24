@@ -33,16 +33,19 @@ const browserShare = (shard) => {
   return share.map((name) => specPattern(`${specFolder}/${name}`))
 }
 
-const browserArgs = (part, shard, { browserSpecs = "all" }) =>
-  part === "design"
-    ? designScans
-    : part === "browser"
-      ? browserSpecs !== "all" && browserSpecs.length > 0
-        ? browserSpecs.map(specPattern)
-        : shard === undefined
-          ? ["--grep-invert", exceptDesignScans]
-          : browserShare(shard)
-      : []
+const speedSpec = specPattern(`${specFolder}/editor-speed.spec.ts`)
+
+const browserArgs = (part, shard, { browserSpecs = "all" }) => {
+  if (part === "design") return designScans
+  if (part !== "browser") return []
+  const selected =
+    browserSpecs !== "all" && browserSpecs.length > 0
+      ? browserSpecs.map(specPattern)
+      : shard === undefined
+        ? ["--grep-invert", exceptDesignScans]
+        : browserShare(shard)
+  return selected.includes(speedSpec) || selected[0] === "--grep-invert" ? ["--workers=1", ...selected] : selected
+}
 
 const unitShardArgs = (part, shard) =>
   part === "source" && shard !== undefined ? [`--shard=${shard.current}/${shard.total}`] : []

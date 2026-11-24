@@ -66,7 +66,9 @@ export async function benchCommand(args, runtime) {
   if (!Number.isInteger(runs) || runs < 2) throw new Error("--runs takes a whole number, 2 or more")
   const cases = casesFor(flags.cases, runtime.repo)
   const say = (line) => process.stderr.write(`${line}\n`)
-  const { takeMachineLock } = await import(pathToFileURL(path.join(runtime.repo, "scripts/machine-lock.mjs")).href)
+  const { takeMachineLock, takeSpeedLock } = await import(
+    pathToFileURL(path.join(runtime.repo, "scripts/machine-lock.mjs")).href
+  )
   const release = await takeMachineLock({ job: "bench", lane: "full", say })
   const cleanup = newCleanup()
   let browser
@@ -153,7 +155,12 @@ export async function benchCommand(args, runtime) {
     }
   }
   try {
-    return await cleaning({ cleanup, keep: flags.keep, runtime, body: measuring })
+    const releaseSpeed = await takeSpeedLock()
+    try {
+      return await cleaning({ cleanup, keep: flags.keep, runtime, body: measuring })
+    } finally {
+      await releaseSpeed()
+    }
   } finally {
     await release({ status: process.exitCode === 1 ? "failed" : "passed" })
   }
