@@ -265,6 +265,90 @@ describe("a hidden child of an auto-layout frame", () => {
     expect(startOf(hidden, grown.slides[0]!, grown.ids.l!)).toEqual(seen)
     expect(lineOf(hidden, grown.ids.l!).start).toEqual({ node: grown.ids.h, site: "l" })
   })
+
+  const leftOf = (target: string) => (ids: Readonly<Record<string, NodeId>>) => ({
+    box: spot(0, 0, 10, 10),
+    geometry: {
+      kind: "line" as const,
+      start: { node: ids[target]!, site: "l" as const },
+      end: { x: 5, y: 5 },
+      route: "straight" as const,
+      arrows: ["none", "none"] as const,
+    },
+  })
+
+  it("does not show an already hidden sibling when its frame is hidden", () => {
+    const grown = doomFromTree({
+      theme: plainTheme,
+      slides: [
+        {
+          children: [
+            {
+              type: "frame",
+              name: "f",
+              props: {
+                box: spot(100, 50, 10, 10),
+                layout: row({}, 10, padding(20)),
+                sizing: { w: "hug", h: "hug" },
+              },
+              children: [
+                block("a", 80, 40),
+                { type: "shape", name: "gone", props: { box: spot(0, 0, 100, 40), hidden: true } },
+                block("t", 100, 50),
+              ],
+            },
+            { type: "shape", name: "l", props: leftOf("t") },
+          ],
+        },
+      ],
+    })
+    const slide = grown.slides[0]!
+    const seen = startOf(grown.doom, slide, grown.ids.l!)
+    const hidden = step(grown.doom, "hide", [{ node: grown.ids.f!, prop: "hidden", value: true }]).after
+    expect(startOf(hidden, slide, grown.ids.l!)).toEqual(seen)
+  })
+
+  it("does not grow a fill frame by its already hidden child when a sibling is hidden", () => {
+    const grown = doomFromTree({
+      theme: plainTheme,
+      slides: [
+        {
+          children: [
+            {
+              type: "frame",
+              name: "outer",
+              props: {
+                box: spot(100, 50, 500, 100),
+                layout: { mode: "row", align: "center-left", gap: 10, padding: padding(0) },
+                sizing: { w: "fixed", h: "hug" },
+              },
+              children: [
+                {
+                  type: "frame",
+                  name: "inner",
+                  props: {
+                    box: spot(0, 0, 100, 40),
+                    layout: { mode: "column", align: "top-left", gap: 10, padding: padding(0) },
+                    sizing: { w: "fill", h: "hug" },
+                  },
+                  children: [
+                    block("v", 100, 40),
+                    { type: "shape", name: "gone", props: { box: spot(0, 0, 100, 200), hidden: true } },
+                  ],
+                },
+                block("t", 100, 50),
+              ],
+            },
+            { type: "shape", name: "l", props: leftOf("t") },
+          ],
+        },
+      ],
+    })
+    const slide = grown.slides[0]!
+    const seen = startOf(grown.doom, slide, grown.ids.l!)
+    const hidden = step(grown.doom, "hide", [{ node: grown.ids.t!, prop: "hidden", value: true }]).after
+    expect(startOf(hidden, slide, grown.ids.l!)).toEqual(seen)
+  })
 })
 
 describe("deleting the shape a line is attached to", () => {

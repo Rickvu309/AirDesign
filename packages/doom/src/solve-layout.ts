@@ -15,7 +15,7 @@ type Context = {
   readonly theme: Theme
   readonly measure: Measure
   readonly sizes: Map<string, Size>
-  readonly showHidden?: boolean
+  readonly showHidden?: NodeId
 }
 type Placed = { readonly id: NodeId; readonly box: Box }
 type Plan = { readonly size: Size; readonly kids: readonly Placed[] }
@@ -43,7 +43,7 @@ function childrenOf(context: Context, id: NodeId): readonly Node[] {
   return (context.doom.children.get(id) ?? []).flatMap((child) => {
     const node = context.doom.nodes.get(child)
     if (node === undefined) return []
-    if (context.showHidden !== true && prop(node, "hidden") === true) return []
+    if (context.showHidden !== id && prop(node, "hidden") === true) return []
     return [node]
   })
 }
@@ -302,19 +302,18 @@ function arrange(context: Context, boxes: Map<NodeId, Box>, node: Node, w: numbe
 }
 
 function placeHidden(context: Context, boxes: Map<NodeId, Box>, node: Node): void {
-  const inclusive: Context = { ...context, showHidden: true }
+  const inclusive: Context = { ...context, showHidden: node.id }
   const mode = modes(node)
   const laid = boxes.get(node.id)
   const w = mode.w === "hug" ? null : (laid?.w ?? null)
   const h = mode.h === "hug" ? null : (laid?.h ?? null)
   for (const kid of plan(inclusive, node, w, h).kids) {
     const child = context.doom.nodes.get(kid.id)
-    if (boxes.has(kid.id)) {
-      if (child?.type === "frame") placeHidden(context, boxes, child)
-      continue
+    if (!boxes.has(kid.id)) {
+      boxes.set(kid.id, kid.box)
+      if (child?.type === "frame") arrange(context, boxes, child, kid.box.w, kid.box.h)
     }
-    boxes.set(kid.id, kid.box)
-    if (child?.type === "frame") arrange(inclusive, boxes, child, kid.box.w, kid.box.h)
+    if (child?.type === "frame") placeHidden(context, boxes, child)
   }
 }
 
