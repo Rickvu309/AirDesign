@@ -74,7 +74,7 @@ export { type TextPatch, lookWrite, paraWrite, styleWrite } from "./text-writes.
 export type { Theme } from "./theme.js"
 export { viewOf } from "./view-of.js"
 export { readColor, resolveColor, sameColor, tinted } from "./color.js"
-export { type Measure, type Measured, charsByFace, measureWith } from "./measure.js"
+export { type Measure, type Measured, type MeasureProbe, charsByFace, measureWith } from "./measure.js"
 export { solveLayout } from "./solve-layout.js"
 export { fontSamples, graphemes } from "./graphemes.js"
 export { bakeLayout, bakeTextLayers } from "./bake-layout.js"

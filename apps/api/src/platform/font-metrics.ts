@@ -1,5 +1,13 @@
 import * as doom from "@airdesign/doom"
-import { boldWeight, fallbackFont, regularWeight } from "@airdesign/fonts"
+import {
+  boldWeight,
+  createLayoutProbe,
+  fallbackFont,
+  pickServedFace,
+  regularWeight,
+  weightRange,
+  type LayoutComparison,
+} from "@airdesign/fonts"
 import * as hb from "harfbuzzjs"
 import type { FontSource } from "./font-source.js"
 
@@ -21,21 +29,6 @@ type Shaper = {
 
 type Served = Awaited<ReturnType<FontSource["family"]>>
 type ServedFace = Extract<Served, { ok: true }>["faces"][number]
-
-function weightRange(face: ServedFace): readonly [number, number] {
-  const [low = regularWeight, high = low] = face.weight.split(" ").map(Number)
-  return [low, high]
-}
-
-function pickFace(faces: readonly ServedFace[], weight: number, italic: boolean): ServedFace | undefined {
-  const styled = faces.filter((face) => face.style === (italic ? "italic" : "normal"))
-  const pool = styled.length > 0 ? styled : faces
-  const distance = (face: ServedFace) => {
-    const [low, high] = weightRange(face)
-    return weight < low ? low - weight : weight > high ? weight - high : 0
-  }
-  return [...pool].sort((one, two) => distance(one) - distance(two))[0]
-}
 
 function shaped(shaper: Shaper, text: string): hb.Buffer {
   const { buffer, font } = shaper
@@ -111,21 +104,48 @@ function within<T>(work: Promise<T>, budget: number): Promise<T | "time"> {
 
 export class FontMetrics {
   private readonly fonts: Pick<FontSource, "family" | "file">
+  private readonly probe: doom.MeasureProbe | undefined
   private readonly now: () => number
   private readonly shapers = new Map<string, Promise<Shaper | "unknown" | undefined>>()
   private readonly failed = new Map<string, number>()
   private readonly loading = new Map<string, number>()
 
-  constructor(fonts: Pick<FontSource, "family" | "file">, now: () => number = Date.now) {
+  constructor(
+    fonts: Pick<FontSource, "family" | "file">,
+    now: () => number = Date.now,
+    record?: (result: LayoutComparison) => void,
+  ) {
     this.fonts = fonts
     this.now = now
+    this.probe =
+      record === undefined
+        ? undefined
+        : createLayoutProbe({
+            record,
+            family: async (name) => {
+              const manifest = await fonts.family(name)
+              return !manifest.ok
+                ? []
+                : manifest.faces.map((face) => ({
+                    ...face,
+                    key: face.url,
+                    read: async () => {
+                      const file = await fonts.file(name, face.file)
+                      if (file === undefined) throw new Error("Served face unavailable")
+                      return file.buffer instanceof ArrayBuffer
+                        ? new Uint8Array(file.buffer, file.byteOffset, file.byteLength)
+                        : new Uint8Array(file)
+                    },
+                  }))
+            },
+          })
   }
 
   private async load(face: doom.Face): Promise<Shaper | "unknown" | undefined> {
     const served = await this.fonts.family(face.font)
     if (!served.ok) return "unknown"
     const weight = face.bold ? boldWeight : regularWeight
-    const chosen = pickFace(served.faces, weight, face.italic)
+    const chosen = pickServedFace(served.faces, weight, face.italic)
     if (chosen === undefined) return "unknown"
     const bytes = await this.fonts.file(face.font, chosen.file)
     return bytes === undefined ? undefined : shaperOf(bytes, chosen, weight)
@@ -259,15 +279,15 @@ export class FontMetrics {
     const read = await this.widths(needs, used, budget)
     if (typeof read === "string") return read
     if (layers === undefined && read.pending.size > 0) return read.timedOut ? "time" : "fonts"
-    return { measure: doom.measureWith(read.widths), missing: read.missing, pending: read.pending }
+    return { measure: doom.measureWith(read.widths, this.probe), missing: read.missing, pending: read.pending }
   }
 }
 
 type Fonts = Pick<FontSource, "family" | "file">
 const held = new WeakMap<Fonts, FontMetrics>()
 
-export function servedFontMetrics(fonts: Fonts): FontMetrics {
+export function servedFontMetrics(fonts: Fonts, record?: (result: LayoutComparison) => void): FontMetrics {
   let metrics = held.get(fonts)
-  if (metrics === undefined) held.set(fonts, (metrics = new FontMetrics(fonts)))
+  if (metrics === undefined) held.set(fonts, (metrics = new FontMetrics(fonts, undefined, record)))
   return metrics
 }

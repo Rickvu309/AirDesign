@@ -1,4 +1,6 @@
 import { fontRouteList } from "./platform/font-route.js"
+import type { LayoutComparison } from "@airdesign/fonts"
+import { servedFontMetrics } from "./platform/font-metrics.js"
 import { FontSource } from "./platform/font-source.js"
 import { randomUUID } from "node:crypto"
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http"
@@ -66,6 +68,7 @@ export type ApiOptions = {
   readonly smokeToken?: string
   readonly originals?: OriginalStore
   readonly fonts?: FontSource
+  readonly recordFontComparison?: (result: LayoutComparison) => void
   readonly imageNet?: ImageNet
   readonly pictureWait?: number
   readonly aira?: AiraSettings
@@ -537,6 +540,7 @@ export function createApi(given: ApiOptions): Server {
     followers: new DeckFollowers(given.now ?? Date.now),
     pictures: new DeckPictures(),
   }
+  if (given.recordFontComparison !== undefined) servedFontMetrics(options.fonts, given.recordFontComparison)
   requireOrigin("publicOrigin", options.publicOrigin)
   requireOrigin("siteOrigin", options.siteOrigin)
   requireDomain(options.cookieDomain)

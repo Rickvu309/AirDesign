@@ -21,6 +21,7 @@ export type StartSettings = {
   readonly resendFrom: string
   readonly r2: R2Settings | undefined
   readonly forwardSecret: string | undefined
+  readonly compareFontLayout: boolean
   readonly aira: AiraStart
 }
 
@@ -112,6 +113,7 @@ export function readStartSettings(env: Environment): StartSettings | StartRefusa
     resendFrom,
     r2,
     forwardSecret: nonEmpty(env.FORWARD_SECRET),
+    compareFontLayout: env.NODE_ENV === "development" && env.AIRDESIGN_COMPARE_FONT_LAYOUT === "1",
     aira: { on: airaOn, key: airaKey, secret: airaSecret },
   }
 }

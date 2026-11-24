@@ -17,3 +17,11 @@ export type { FontLayout } from "./layout-contract.js"
 
 export const loadFontLayoutContract = (): Promise<typeof import("./layout-contract.js")> =>
   import("./layout-contract.js")
+
+export type { FontLayoutEngine, LayoutFace } from "./layout-contract.js"
+
+export const loadFontLayout = async (byteBudget?: number): Promise<import("./layout-contract.js").FontLayoutEngine> =>
+  (await import("./layout.js")).createFontLayout(byteBudget)
+
+export { pickServedFace, weightRange } from "./served-face.js"
+export { createLayoutProbe, type LayoutComparison } from "./layout-probe.js"

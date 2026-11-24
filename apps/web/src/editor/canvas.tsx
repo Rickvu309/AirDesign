@@ -1,5 +1,6 @@
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
+import type { LayoutComparison } from "@airdesign/fonts"
 import { SlidePaint, useDoomSlide } from "@airdesign/render"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
@@ -30,6 +31,11 @@ import { canvasInset, slideTop, type ZoomKey } from "@/editing/canvas-zoom"
 import { slideFrame } from "@/editor/slide-frame"
 import { pictureCopy } from "@/copy/picture-copy"
 import { editorCopy } from "@/copy/editor-copy"
+
+const recordFontComparison =
+  import.meta.env.DEV && import.meta.env.VITE_COMPARE_FONT_LAYOUT === "1"
+    ? (result: LayoutComparison) => console.info("Served font comparison", result)
+    : undefined
 
 const author: doom.Author = { kind: "person", id: "preview" }
 const emptyGeometry: SlideGeometry = { roots: [], byId: new Map() }
@@ -109,7 +115,7 @@ export function DoomCanvas(props: {
     ]
     return edits.length === 0 ? view : doom.viewOf(view, edits)
   }, [view, preview, text.preview])
-  const painted = useDoomSlide(shown, slide)
+  const painted = useDoomSlide(shown, slide, recordFontComparison)
   const geometry = useMemo(() => (painted.nodes === null ? emptyGeometry : geometryOf(painted.nodes)), [painted.nodes])
   const current = kept(selection, geometry)
   const panning = space || tool === "hand"

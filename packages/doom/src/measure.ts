@@ -17,6 +17,18 @@ export type Measured = {
 }
 export type Measure = (text: Text, theme: Theme, width: Px | null, fit?: "two-lines") => Measured
 
+type ProbedRun = Pick<ResolvedRun, "font" | "bold" | "italic" | "size" | "tracking"> & {
+  readonly range: { readonly start: number; readonly end: number }
+}
+
+export type MeasureProbe = (paragraph: {
+  readonly text: string
+  readonly runs: readonly ProbedRun[]
+  readonly sourceOffsetByTextOffset: readonly number[]
+  readonly width: number
+  readonly lines: readonly Pick<ResolvedLine, "start" | "end" | "ink">[]
+}) => void
+
 const fallbackAdvance = 0.55
 const listStep = 1.2
 const space = " "
@@ -139,7 +151,34 @@ export function charsByFace(text: Text, theme: Theme): ReadonlyMap<string, Reado
   return found
 }
 
-function measureOnce(widths: FontWidths): Measure {
+function probeParagraph(
+  probe: MeasureProbe,
+  glyphs: readonly Glyph[],
+  chars: readonly Styled[],
+  looks: readonly Look[],
+  width: number,
+  lines: Parameters<MeasureProbe>[0]["lines"],
+): void {
+  const runs: (Omit<ProbedRun, "range"> & { range: { start: number; end: number } })[] = []
+  const offsets: number[] = []
+  let text = ""
+  for (const [index, glyph] of glyphs.entries()) {
+    const char = chars[index]!
+    const start = text.length
+    for (let offset = 0; offset < glyph.char.length; offset++) offsets.push(Math.min(char.at + offset, char.end))
+    text += glyph.char
+    const last = runs.at(-1)
+    if (last !== undefined && glyph.run === glyphs[index - 1]?.run) last.range.end = text.length
+    else {
+      const { font, bold, italic, size, tracking } = looks[glyph.run]!
+      runs.push({ font, bold, italic, size, tracking, range: { start, end: text.length } })
+    }
+  }
+  offsets.push(chars.at(-1)!.end)
+  probe({ text, runs, sourceOffsetByTextOffset: offsets, width, lines })
+}
+
+function measureOnce(widths: FontWidths, probe: MeasureProbe | undefined): Measure {
   return (text, theme, width, fit) => {
     const words = text.wrap === "words" || fit === "two-lines"
     const base = baseLook(text, theme)
@@ -194,6 +233,7 @@ function measureOnce(widths: FontWidths): Measure {
           wordFit = { w: split + padding.l + padding.r, h: 2 * look.size * lineScale + padding.t + padding.b }
       }
       const paragraphEnd = chars.at(-1)?.end ?? paragraphStart
+      const firstLine = lines.length
       for (const [spanIndex, span] of spansOf(glyphs, inner - indent, inner - indent, words).entries()) {
         const runs: ResolvedRun[] = []
         let size = base.size
@@ -234,6 +274,13 @@ function measureOnce(widths: FontWidths): Measure {
         })
         y += h
       }
+      if (
+        probe !== undefined &&
+        glyphs.length > 0 &&
+        glyphs.length <= 512 &&
+        (chars.at(-1)?.end ?? paragraphStart) - paragraphStart <= 512
+      )
+        probeParagraph(probe, glyphs, chars, looks, inner - indent, lines.slice(firstLine))
       y += index === text.paras.length - 1 ? 0 : (para?.spaceAfter ?? 0)
       paragraphStart = paragraphEnd + 1
     }
@@ -247,8 +294,8 @@ function measureOnce(widths: FontWidths): Measure {
   }
 }
 
-export function measureWith(widths: FontWidths): Measure {
-  const measure = measureOnce(widths)
+export function measureWith(widths: FontWidths, probe?: MeasureProbe): Measure {
+  const measure = measureOnce(widths, probe)
   const known = new WeakMap<Text, WeakMap<Theme, Map<Px | null, Measured>>>()
   return (text, theme, width, fit) => {
     if (fit !== undefined) return measure(text, theme, width, fit)

@@ -67,7 +67,7 @@ function checkBidi(data) {
   if (!same(actual, expected)) return { expected, actual }
 }
 
-export function unicodeResults(icu, version) {
+export function breakResults(icu, version) {
   return Promise.all([
     readSuite("GraphemeBreakTest", version, checkBreaks(icu.graphemes, true)),
     readSuite(
@@ -75,6 +75,11 @@ export function unicodeResults(icu, version) {
       version,
       checkBreaks((text) => icu.lines(text, "und"), false),
     ),
-    readSuite("BidiCharacterTest", version, checkBidi),
   ])
+}
+
+export async function unicodeResults(icu, version) {
+  const breaks = breakResults(icu, version)
+  const bidi = readSuite("BidiCharacterTest", version, checkBidi)
+  return [...(await breaks), await bidi]
 }
