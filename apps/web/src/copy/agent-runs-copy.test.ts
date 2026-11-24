@@ -11,12 +11,10 @@ describe("the notes after an Undo on an agent run", () => {
     )
   })
 
-  it("says a left layer's frame was deleted or sits inside it, and never tells the person to move the layer", () => {
-    expect(agentLeftLayers(["“Card”"])).toBe(
-      "“Card” stays where it is, because the frame it came from, or one above it, was deleted or now sits inside it. Put that frame right, then press Undo again.",
-    )
+  it("says a left layer stays where it is because the place it came from has changed", () => {
+    expect(agentLeftLayers(["“Card”"])).toBe("“Card” stays where it is, because the place it came from has changed.")
     expect(agentLeftLayers(["“Card”", "“Logo”"])).toBe(
-      "“Card” and “Logo” stay where they are, because the frames they came from, or ones above them, were deleted or now sit inside them. Put those frames right, then press Undo again.",
+      "“Card” and “Logo” stay where they are, because the places they came from have changed.",
     )
   })
 

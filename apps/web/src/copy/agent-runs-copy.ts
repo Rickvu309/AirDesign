@@ -37,8 +37,8 @@ function opening(layers: readonly string[]): string {
 
 export function agentLeftLayers(layers: readonly string[]): string {
   return layers.length === 1
-    ? `${opening(layers)} stays where it is, because the frame it came from, or one above it, was deleted or now sits inside it. Put that frame right, then press Undo again.`
-    : `${opening(layers)} stay where they are, because the frames they came from, or ones above them, were deleted or now sit inside them. Put those frames right, then press Undo again.`
+    ? `${opening(layers)} stays where it is, because the place it came from has changed.`
+    : `${opening(layers)} stay where they are, because the places they came from have changed.`
 }
 
 export function agentWaitingLayers(layers: readonly string[]): string {
