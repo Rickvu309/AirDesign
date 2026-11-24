@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
 import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
+import { bottomLimitOf, gapFor } from "./agent-place.js"
 import { ids } from "./sample-deck.js"
 import { measureWith, solveLayout } from "./index.js"
 
@@ -27,7 +28,7 @@ describe("a frame given a height keeps it", () => {
     for (const card of childrenOf(doom, row.id)) expect(propOf(card, "sizing")).toEqual({ w: "fill", h: "fill" })
   })
 
-  it("keeps the height of a grid and gives the body rows the room", () => {
+  it("keeps the height of a grid and hugs every row", () => {
     const rows = [
       ["", "Q1", "Q2"],
       ["Product", "Beta", "Launch"],
@@ -36,7 +37,7 @@ describe("a frame given a height keeps it", () => {
     const doom = build(agentDeck(), add({ kind: "frame", rows, box: { ...box, h: 600 } }))
     const grid = lastChild(doom, slide)
     expect(propOf(grid, "box")).toMatchObject({ h: 600 })
-    expect(propOf(grid, "layout")).toMatchObject({ mode: "grid", rows: ["hug", { fr: 1 }, { fr: 1 }] })
+    expect(propOf(grid, "layout")).toMatchObject({ mode: "grid", rows: ["hug", "hug", "hug"], gap: gapFor(1920) })
   })
 })
 
@@ -72,7 +73,7 @@ describe("content with no box uses the slide well", () => {
     expect(cards.y + cards.h).toBeLessThanOrEqual(1080 - 40)
   })
 
-  it("grows a grid to most of the room under the title", () => {
+  it("keeps a grid at the height of its words under the title", () => {
     const { doom: start, on } = blank()
     const grid = add({
       kind: "frame",
@@ -83,8 +84,10 @@ describe("content with no box uses the slide well", () => {
       ],
     })
     const doom = build(build(start, title(on), minter("a")), grid, minter("b"))
-    const box = propOf(lastChild(doom, on), "box")!
-    expect(box.y + box.h).toBeGreaterThan(1080 * 0.66)
+    const node = lastChild(doom, on)
+    const box = propOf(node, "box")!
+    expect(box.y + box.h).toBeLessThan(bottomLimitOf(1080))
+    expect(propOf(node, "layout")).toMatchObject({ rows: ["hug", "hug"], gap: gapFor(1920) })
   })
 })
 

@@ -3,7 +3,7 @@ import type { AgentItem } from "./agent-item.js"
 import { type Draft, type Values, stop } from "./agent-draft.js"
 import { iconName, sidesOf, solid, surfaceOf, turnOf } from "./agent-look.js"
 import { wrapRotation } from "./angle.js"
-import { type Area, areaFor, gapFor, padFor, slideSize, themeOf } from "./agent-place.js"
+import { type Area, gapFor, padFor, patternArea, slideSize, themeOf } from "./agent-place.js"
 import type { Px } from "./paint.js"
 import {
   type Block,
@@ -55,13 +55,11 @@ const names: Readonly<Record<PatternName, string>> = {
   timeline: "Timeline",
   flow: "Flow",
 }
-const kpiShare = 0.6
-const cardsShare = 0.6
-const gridShare = 0.7
 const iconShare = 1.7
 const dotShare = 0.7
 const axisShare = 2.6
 const arrowRoom = 48
+const flowWidthShare = 0.46
 const connectorWeight = 3
 const slideWeight = 3
 
@@ -69,27 +67,26 @@ const slotWidth = (area: Area, count: number, gap: Px) => Math.floor((area.w - g
 const boxIn = (area: Area, h: Px) => ({ ...zeroBox, x: area.x, y: area.y, w: area.w, h })
 const strokeOf = (weight: Px) => ({ weight, align: "center" as const, dash: "solid" as const })
 
-const stretched = (area: Area, hug: Px, filled: boolean, share: number): Px =>
-  filled ? area.h : Math.min(area.h, Math.max(hug, Math.round(area.h * share)))
-
-function rowOf(
-  area: Area,
-  cards: readonly Sized[],
-  gap: Px,
-  filled: boolean,
-  root: Values,
-  share: number,
-): Block | undefined {
+function rowOf(area: Area, cards: readonly Sized[], gap: Px, filled: boolean, root: Values): Block | undefined {
   const tallest = Math.max(...cards.map((card) => card.high))
   if (tallest > area.h) return undefined
   return frameOf(
     {
       ...root,
-      box: boxIn(area, stretched(area, tallest, filled, share)),
+      box: boxIn(area, filled ? area.h : tallest),
       layout: { mode: "row", gap, padding: sidesOf(0), align: "top-left" },
     },
     cards.map((card) => card.block),
   )
+}
+
+function spreadDown(area: Area, highs: readonly Px[], minGap: Px): { readonly gap: Px; readonly high: Px } | undefined {
+  const gaps = highs.length - 1
+  if (gaps < 1) return undefined
+  const content = highs.reduce((sum, high) => sum + high, 0)
+  if (content + minGap * gaps > area.h) return undefined
+  const gap = Math.floor((area.h - content) / gaps)
+  return { gap, high: content + gap * gaps }
 }
 
 function iconOf(name: string, side: Px): Sized {
@@ -132,7 +129,7 @@ const kpi: Build = (area, items, scale) => {
       { pad, gap, fill: "background2" },
     ),
   )
-  return rowOf(area, cards, gap, scale.filled, scale.root, kpiShare)
+  return rowOf(area, cards, gap, scale.filled, scale.root)
 }
 
 function cardsLike(spacing: number, headingColor: "text" | "accent1", icons: boolean): Build {
@@ -152,7 +149,7 @@ function cardsLike(spacing: number, headingColor: "text" | "accent1", icons: boo
         { pad, gap: scale.gap, fill: "background2" },
       ),
     )
-    return rowOf(area, cards, gap, scale.filled, scale.root, items.length === 1 ? 0 : cardsShare)
+    return rowOf(area, cards, gap, scale.filled, scale.root)
   }
 }
 
@@ -221,42 +218,56 @@ const matrix: Build = (area, items, scale) => {
 
 const timeline: Build = (area, items, scale) => {
   const { gap, pad, theme, styles } = scale
-  const width = slotWidth(area, items.length, gap)
   const dot = Math.round(pad * dotShare)
-  const columns = items.map((item, at): Sized => {
-    const marker: Sized = {
-      high: dot,
-      block: {
-        type: "shape",
-        key: `m${at}`,
-        values: { box: { ...zeroBox, w: dot, h: dot }, geometry: { kind: "ellipse" }, fills: [solid("accent1")] },
-      },
+  const inner = Math.round(gap / 2)
+  const room = area.w - dot - inner
+  if (room <= 0) return undefined
+  const steps = items.map((item, at): Sized => {
+    const marker: Block = {
+      type: "shape",
+      key: `m${at}`,
+      values: { box: { ...zeroBox, w: dot, h: dot }, geometry: { kind: "ellipse" }, fills: [solid("accent1")] },
     }
-    const members = [
-      marker,
-      ...(item.value === undefined ? [] : [sizedPart(partOf(item.value, styles.label, "accent1"), theme, width)]),
-      ...(item.title === undefined ? [] : [sizedPart(partOf(item.title, styles.heading), theme, width)]),
-      ...(item.note === undefined ? [] : [sizedPart(partOf(item.note, styles.caption, "text2"), theme, width)]),
+    const words = [
+      ...(item.value === undefined ? [] : [sizedPart(partOf(item.value, styles.label, "accent1"), theme, room)]),
+      ...(item.title === undefined ? [] : [sizedPart(partOf(item.title, styles.heading), theme, room)]),
+      ...(item.note === undefined ? [] : [sizedPart(partOf(item.note, styles.caption, "text2"), theme, room)]),
     ]
-    const inner = Math.round(gap / 2)
+    const textHigh = words.reduce((sum, word) => sum + word.high, 0) + inner * Math.max(0, words.length - 1)
+    const copy =
+      words.length === 0
+        ? []
+        : [
+            frameOf(
+              {
+                sizing: { w: "fill", h: "hug" },
+                layout: { mode: "column", gap: inner, padding: sidesOf(0), align: "top-left" },
+              },
+              words.map((word) => word.block),
+            ),
+          ]
     return {
-      high: members.reduce((sum, member) => sum + member.high, 0) + inner * (members.length - 1),
+      high: Math.max(dot, textHigh),
       block: frameOf(
         {
-          sizing: { w: "fill", h: "fill" },
-          layout: { mode: "column", gap: inner, padding: sidesOf(0), align: "top-left" },
+          sizing: { w: "fill", h: "hug" },
+          layout: { mode: "row", gap: inner, padding: sidesOf(0), align: "top-left" },
         },
-        members.map((member) => member.block),
+        [marker, ...copy],
       ),
     }
   })
-  const high = Math.max(...columns.map((column) => column.high))
-  if (high > area.h) return undefined
+  const spread = spreadDown(
+    area,
+    steps.map((step) => step.high),
+    gap,
+  )
+  if (spread === undefined) return undefined
   const last = items.length - 1
   const line: Block = {
     type: "shape",
     values: (ref) => ({
-      box: { ...zeroBox, x: Math.round(dot / 2), y: Math.round(dot / 2), w: last * (width + gap), h: 0 },
+      box: { ...zeroBox, x: Math.round(dot / 2), y: Math.round(dot / 2), w: 0, h: Math.max(0, spread.high - dot) },
       geometry: {
         kind: "line",
         start: { node: ref("m0"), site: "c" },
@@ -270,45 +281,48 @@ const timeline: Build = (area, items, scale) => {
   }
   const lane = frameOf(
     {
-      box: { ...zeroBox, w: area.w, h: high },
-      layout: { mode: "row", gap, padding: sidesOf(0), align: "top-left" },
+      box: { ...zeroBox, w: area.w, h: spread.high },
+      layout: { mode: "column", gap: spread.gap, padding: sidesOf(0), align: "top-left" },
     },
-    columns.map((column) => column.block),
+    steps.map((step) => step.block),
   )
-  return frameOf({ ...scale.root, box: boxIn(area, high) }, [line, lane])
+  return frameOf({ ...scale.root, box: boxIn(area, spread.high) }, [line, lane])
 }
 
 const flow: Build = (area, items, scale) => {
   const { pad, theme, styles } = scale
-  const step = Math.max(scale.gap * 2, arrowRoom)
-  const width = slotWidth(area, items.length, step)
-  const room = width - pad * 2
+  const cardW = Math.min(area.w, Math.max(pad * 8, Math.round(area.w * flowWidthShare)))
+  const room = cardW - pad * 2
   const steps = items.map((item, at) =>
     cardOf(
       [
         ...(item.title === undefined ? [] : [sizedPart(partOf(item.title, styles.heading, "text", true), theme, room)]),
         ...(item.note === undefined ? [] : [sizedPart(partOf(item.note, styles.caption, "text2", true), theme, room)]),
       ],
-      { pad, gap: scale.gap, fill: "background2", key: `s${at}` },
+      { pad, gap: scale.gap, fill: "background2", key: `s${at}`, hug: true },
     ),
   )
-  const high = Math.max(...steps.map((each) => each.high))
-  if (high > area.h) return undefined
+  const spread = spreadDown(
+    area,
+    steps.map((step) => step.high),
+    Math.max(scale.gap * 2, arrowRoom),
+  )
+  if (spread === undefined) return undefined
   const lane = frameOf(
     {
-      box: { ...zeroBox, w: area.w, h: high },
-      layout: { mode: "row", gap: step, padding: sidesOf(0), align: "top-left" },
+      box: { ...zeroBox, x: Math.round((area.w - cardW) / 2), w: cardW, h: spread.high },
+      layout: { mode: "column", gap: spread.gap, padding: sidesOf(0), align: "top-left" },
     },
     steps.map((each) => each.block),
   )
   const arrows = items.slice(1).map((_, at): Block => ({
     type: "shape",
     values: (ref) => ({
-      box: { ...zeroBox, x: (at + 1) * width + at * step, y: Math.round(high / 2), w: step, h: 0 },
+      box: { ...zeroBox, x: Math.round(area.w / 2), y: 0, w: 0, h: spread.gap },
       geometry: {
         kind: "line",
-        start: { node: ref(`s${at}`), site: "r" },
-        end: { node: ref(`s${at + 1}`), site: "l" },
+        start: { node: ref(`s${at}`), site: "b" },
+        end: { node: ref(`s${at + 1}`), site: "t" },
         route: "straight",
         arrows: ["none", "arrow"],
       },
@@ -316,7 +330,7 @@ const flow: Build = (area, items, scale) => {
       stroke: strokeOf(connectorWeight),
     }),
   }))
-  return frameOf({ ...scale.root, box: boxIn(area, high) }, [lane, ...arrows])
+  return frameOf({ ...scale.root, box: boxIn(area, spread.high) }, [lane, ...arrows])
 }
 
 const builders: Readonly<Record<PatternName, Build>> = { kpi, cards, compare, matrix, timeline, flow }
@@ -327,7 +341,7 @@ export function addPattern(draft: Draft, parent: Node, change: Add): void {
   const [fewest, most] = counts[kind]
   if (items.length > most) stop("limit", undefined, "items")
   if (items.length < fewest) stop("shape", undefined, "items")
-  const area = areaFor(draft, parent, change.box)
+  const area = patternArea(draft, parent, change.box)
   const theme = themeOf(draft)
   const width = slideSize(draft).w
   const root: Values = {
@@ -356,7 +370,7 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
   const rows = change.rows ?? stop("shape", undefined, "rows")
   if (rows.length === 0 || rows.some((row) => row.length === 0)) stop("shape", undefined, "rows")
   if (change.layout !== undefined) stop("shape", undefined, "layout")
-  const area = areaFor(draft, parent, change.box)
+  const area = patternArea(draft, parent, change.box)
   const theme = themeOf(draft)
   const gap = gapFor(slideSize(draft).w)
   const columns = Math.max(...rows.map((row) => row.length))
@@ -380,11 +394,11 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
       {
         ...surfaceOf(change),
         name: change.name ?? "Grid",
-        box: { ...boxIn(area, stretched(area, total, change.box !== undefined, gridShare)), ...turnOf(change) },
+        box: { ...boxIn(area, change.box !== undefined ? area.h : total), ...turnOf(change) },
         layout: {
           mode: "grid",
           columns: Array.from({ length: columns }, () => ({ fr: 1 })),
-          rows: rows.map((_, at) => (at === 0 ? ("hug" as const) : { fr: 1 })),
+          rows: rows.map(() => "hug" as const),
           gap,
           padding: sidesOf(0),
         },
