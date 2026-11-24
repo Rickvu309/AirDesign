@@ -1,13 +1,11 @@
 import type { CDPSession, Page } from "@playwright/test"
+import { dragThreadTimes, tracedSpans } from "./renderer-thread"
 import { keptWait, keptWaitApproval } from "./kept-wait"
 
 type Point = { readonly x: number; readonly y: number }
 
 type Recorded = {
-  readonly frames: readonly number[]
-  readonly delays: readonly number[]
   readonly moves: number
-  readonly long: number
   readonly thumbnails: number
   readonly panel: number
   readonly placements: number
@@ -61,43 +59,15 @@ async function engineCounts(device: CDPSession): Promise<Map<string, number>> {
 
 async function record(page: Page, dragged: string): Promise<void> {
   await page.evaluate((key) => {
-    const frames: number[] = []
-    const delays: number[] = []
-    let waiting: number[] = []
-    let settling: number[][] = []
     let moves = 0
-    let long = 0
     let thumbnails = 0
     let panel = 0
     let placements = 0
     let restyled = 0
-    let running = true
-    const painted = new MessageChannel()
-    painted.port1.onmessage = () => {
-      const at = performance.now()
-      for (const stamp of settling.shift() ?? []) delays.push(at - stamp)
-    }
-    const tick = (at: number) => {
-      if (!running) return
-      frames.push(at)
-      settling.push(waiting)
-      waiting = []
-      painted.port2.postMessage(null)
-      requestAnimationFrame(tick)
-    }
-    requestAnimationFrame(tick)
-    const onMove = (event: PointerEvent) => {
+    const onMove = () => {
       moves += 1
-      const raw = event.getCoalescedEvents?.() ?? []
-      for (const each of raw.length === 0 ? [event] : raw) waiting.push(each.timeStamp)
     }
     window.addEventListener("pointermove", onMove, { capture: true })
-    const loafs = new PerformanceObserver((list) => {
-      long += list.getEntries().length
-    })
-    try {
-      loafs.observe({ type: "long-animation-frame" })
-    } catch {}
     const watched = { attributes: true, childList: true, subtree: true, characterData: true }
     const thumbWatch = new MutationObserver((list) => {
       thumbnails += list.length
@@ -125,15 +95,12 @@ async function record(page: Page, dragged: string): Promise<void> {
     const frame = document.querySelector(`[data-slide-paint] [data-canvas-element="${key}"]`)
     if (frame !== null) placeWatch.observe(frame, { attributes: true, attributeFilter: ["style"] })
     window.feelStop = () => {
-      running = false
       window.removeEventListener("pointermove", onMove, { capture: true })
-      loafs.disconnect()
       thumbWatch.disconnect()
       panelWatch.disconnect()
       placeWatch.disconnect()
       textWatch.disconnect()
-      settling = []
-      return { frames, delays, moves, long, thumbnails, panel, placements, restyled }
+      return { moves, thumbnails, panel, placements, restyled }
     }
   }, dragged)
 }
@@ -143,7 +110,7 @@ function pause(ms: number): Promise<void> {
     setTimeout(
       resolve,
       keptWait(ms, {
-        why: "paces mouse moves 8 ms apart like a 120 Hz mouse, so the frame-time bench measures a real drag",
+        why: "paces mouse moves 8 ms apart like a 120 Hz mouse, so the drag bench sees a stream of moves",
         until: "2027-02-18",
         approval: keptWaitApproval,
       }),
@@ -160,37 +127,40 @@ export async function dragFeel(page: Page, from: Point, by: Point, samples: numb
   await page.mouse.down()
   await record(page, dragged)
   const before = await engineCounts(device)
-  const sent: Promise<unknown>[] = []
-  for (let step = 1; step <= samples; step += 1) {
-    const x = from.x + (by.x * step) / samples
-    const y = from.y + (by.y * step) / samples
-    sent.push(device.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y, button: "left", buttons: 1 }))
-    await pause(sampleGap)
-  }
-  await Promise.all(sent)
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-      }),
-  )
+  const spans = await tracedSpans(device, async () => {
+    const sent: Promise<unknown>[] = []
+    for (let step = 1; step <= samples; step += 1) {
+      const x = from.x + (by.x * step) / samples
+      const y = from.y + (by.y * step) / samples
+      sent.push(device.send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y, button: "left", buttons: 1 }))
+      await pause(sampleGap)
+    }
+    await Promise.all(sent)
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+        }),
+    )
+  })
   const after = await engineCounts(device)
   const recorded = await page.evaluate(() => window.feelStop?.())
   await page.mouse.move(from.x + by.x, from.y + by.y)
   await page.mouse.up()
   await device.detach()
   if (recorded === undefined) throw new Error("the drag was not recorded")
-  const gaps = recorded.frames.slice(1).map((at, index) => at - (recorded.frames[index] ?? at))
+  const thread = dragThreadTimes(spans)
+  if (thread.frames.length === 0) throw new Error("the drag recorded no animation frame")
   const grew = (name: string) => (after.get(name) ?? 0) - (before.get(name) ?? 0)
-  const perFrame = (seconds: number) => tenths((seconds * 1000) / Math.max(gaps.length, 1))
+  const perFrame = (seconds: number) => tenths((seconds * 1000) / Math.max(thread.frames.length, 1))
   return {
-    frames: gaps.length,
-    frameMedian: tenths(quantile(gaps, 0.5)),
-    frameP95: tenths(quantile(gaps, 0.95)),
-    frameLongest: tenths(Math.max(0, ...gaps)),
-    delayMedian: tenths(quantile(recorded.delays, 0.5)),
-    delayP95: tenths(quantile(recorded.delays, 0.95)),
-    longFrames: recorded.long,
+    frames: thread.frames.length,
+    frameMedian: tenths(quantile(thread.frames, 0.5)),
+    frameP95: tenths(quantile(thread.frames, 0.95)),
+    frameLongest: tenths(Math.max(0, ...thread.frames)),
+    delayMedian: tenths(quantile(thread.delays, 0.5)),
+    delayP95: tenths(quantile(thread.delays, 0.95)),
+    longFrames: thread.longFrames,
     moves: recorded.moves,
     layouts: grew("LayoutCount"),
     styles: grew("RecalcStyleCount"),

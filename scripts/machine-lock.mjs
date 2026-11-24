@@ -18,9 +18,9 @@ const lanes = {
 
 export const smallLaneCommand = (command, args) => ["nice", ["-n", "10", command, ...args]]
 
-const hold = (file) =>
+const hold = (file, options = ["-n"]) =>
   new Promise((resolve) => {
-    const holder = spawn("flock", ["-n", file, "sh", "-c", "echo held; exec cat"], {
+    const holder = spawn("flock", [...options, file, "sh", "-c", "echo held; exec cat"], {
       stdio: ["pipe", "pipe", "ignore"],
     })
     holder.on("error", () => resolve(undefined))
@@ -76,6 +76,40 @@ const lineage = () => {
     links.push([pid, parent])
   }
   return links
+}
+
+const ancestorHolds = (file) => {
+  const ancestors = new Set(lineage().map(([, parent]) => parent))
+  const listed = spawnSync("lslocks", ["--json", "--notruncate", "--output", "PID,PATH,TYPE,MODE"], {
+    encoding: "utf8",
+  })
+  if (listed.status !== 0) return false
+  const { locks } = JSON.parse(listed.stdout)
+  return locks?.some(
+    (lock) => lock.path === file && lock.type === "FLOCK" && lock.mode === "WRITE" && ancestors.has(lock.pid),
+  )
+}
+
+export const takeSpeedLock = async ({ browser = false } = {}) => {
+  const speedLock = path.join(machineLockFolder, "speed.lock")
+  const browserLock = path.join(os.homedir(), "tmp", "browser-4485.lock")
+  const files = browser && !ancestorHolds(browserLock) ? [browserLock, speedLock] : [speedLock]
+  const holders = []
+  const release = async () => {
+    for (const holder of holders.reverse()) await letGo(holder)
+  }
+  try {
+    for (const file of files) {
+      fs.mkdirSync(path.dirname(file), { recursive: true })
+      const holder = await hold(file, ["-w", "300"])
+      if (!holder) throw new Error(`could not take the speed measurement lock at ${file}`)
+      holders.push(holder)
+    }
+    return release
+  } catch (error) {
+    await release()
+    throw error
+  }
 }
 
 const abandoned = (links) => links.some(([pid, parent]) => parentOf(pid) !== parent)

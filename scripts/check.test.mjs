@@ -221,7 +221,7 @@ const browserStep = (part, shard) =>
     .find(([name]) => name === "browser-tests")
 const browserRun = (part, shard) => browserStep(part, shard)?.[2].join(" ")
 const exceptDesignScans = "--grep-invert design-states\\.spec\\.ts|every-screen\\.spec\\.ts"
-if (browserRun("browser") !== `test:browser ${exceptDesignScans}`)
+if (browserRun("browser") !== `test:browser --workers=1 ${exceptDesignScans}`)
   throw new Error("a browser part with no shard runs every browser test outside the design scans")
 const scopedBrowser = stagesFor(
   "browser",
@@ -238,7 +238,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const sharesOfThree = browserShares(repoRoot, 3).shares
 for (const current of [1, 2, 3]) {
   const files = sharesOfThree[current - 1].map((name) => `tests/browser/${name.replaceAll(".", "\\.")}$`)
-  if (browserRun("browser", { current, total: 3 }) !== `test:browser ${files.join(" ")}`)
+  const workers = sharesOfThree[current - 1].includes("editor-speed.spec.ts") ? "--workers=1 " : ""
+  if (browserRun("browser", { current, total: 3 }) !== `test:browser ${workers}${files.join(" ")}`)
     throw new Error(`shard ${current} does not run its weighted share of the spec files outside the design scans`)
   if (ranWhen("browser", true).join() !== "test-imports,browser-build,browser-tests")
     throw new Error(`shard ${current} must run only its share of the browser tests`)
