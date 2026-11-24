@@ -6,18 +6,6 @@
     "reason": "A click put focus on the slide canvas, so later keys (nudges, tools) show no ring, as the owner decided on 2026-11-23. The theme's ring shows when Tab brings focus there; editor-page.spec.ts holds both."
   },
   {
-    "page": "/screens/s43-*",
-    "detector": "stacked-frames",
-    "selector": "span[class*='shadow-[0_0_0_2px_var(--ring)]']",
-    "reason": "The tool panels' slide column marks the current slide with a ring around its bordered card, as designed. The ring is the selection, not a second frame."
-  },
-  {
-    "page": "*",
-    "detector": "truncated-text",
-    "selector": "[data-account-name]",
-    "reason": "The account row is one line in a fixed 248 px sidebar. A long email address is cut with an ellipsis and its full text is the row's title, as a name is in any account menu."
-  },
-  {
     "page": "check-email*",
     "detector": "dead-control",
     "selector": "[data-send-again]",
@@ -34,5 +22,11 @@
     "detector": "dead-control",
     "selector": "[data-demo-pause]",
     "reason": "The demo's pause button gets its click handler from playEditorDemoAnimation with addEventListener, which the detector cannot see; product-demo-pause.spec.ts clicks it."
+  },
+  {
+    "page": "*",
+    "detector": "truncated-text",
+    "selector": "[data-aira-history], [data-aira-chats]",
+    "reason": "The history row is one line, in the sidebar and in the chat menu. A longer ask is cut with an ellipsis, and the full ask is that control's title. The long title in history-long-title is that long on purpose."
   }
 ]
