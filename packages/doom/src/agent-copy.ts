@@ -2,6 +2,7 @@ import type { AgentChange } from "./agent-change.js"
 import { type Draft, living, put, stop } from "./agent-draft.js"
 import { duplicateWrites } from "./copy-writes.js"
 import { deckOf, propOf } from "./doom-walk.js"
+import { themeLibrary } from "./theme.js"
 
 export function compileDuplicate(draft: Draft, change: Extract<AgentChange, { op: "duplicate" }>): void {
   for (const id of change.nodes) {
@@ -14,14 +15,24 @@ export function compileDuplicate(draft: Draft, change: Extract<AgentChange, { op
 
 export function compileDeck(draft: Draft, change: Extract<AgentChange, { op: "deck" }>): void {
   const deck = deckOf(draft.doom) ?? stop("missing")
-  const { name, nameFollows, colors, fonts } = change
-  if (name === undefined && nameFollows === undefined && colors === undefined && fonts === undefined)
-    stop("shape", deck.id, "deck", "missing", "A name, nameFollows, colors or fonts.")
-  const theme = propOf(deck, "theme") ?? stop("missing", deck.id, "theme")
+  const { name, nameFollows, theme: themeId, colors, fonts } = change
+  if (
+    name === undefined &&
+    nameFollows === undefined &&
+    themeId === undefined &&
+    colors === undefined &&
+    fonts === undefined
+  )
+    stop("shape", deck.id, "deck", "missing", "A name, nameFollows, theme, colors or fonts.")
+  const theme =
+    themeId === undefined
+      ? (propOf(deck, "theme") ?? stop("missing", deck.id, "theme"))
+      : ((Object.hasOwn(themeLibrary, themeId) ? themeLibrary[themeId]?.theme : undefined) ??
+        stop("shape", deck.id, "theme", "form", `One of ${Object.keys(themeLibrary).join(", ")}.`))
   put(draft, deck.id, {
     ...(name === undefined ? {} : { name }),
     ...(nameFollows === undefined ? {} : { nameFollows }),
-    ...(colors === undefined && fonts === undefined
+    ...(themeId === undefined && colors === undefined && fonts === undefined
       ? {}
       : {
           theme: {

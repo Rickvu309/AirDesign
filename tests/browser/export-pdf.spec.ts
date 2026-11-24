@@ -111,6 +111,27 @@ test("Export prints every slide on its own 16:9 page under the deck's name, with
   await expect(page).not.toHaveTitle("Q3 Board final")
 })
 
+test("a library theme repaints every page of a PDF", async ({ page, context, stack }) => {
+  await recordPrints(page)
+  const opened = await openEditor(page, context, stack)
+  await deckOfSlides(page, stack, opened, 2)
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
+  await page.getByRole("combobox", { name: /^Change theme/ }).click()
+  await page.getByRole("option", { name: "Midnight", exact: true }).click()
+
+  await exportButton(page).click()
+  await dialog(page).getByRole("button", { name: exportCopy.action }).click()
+  await expect.poll(() => printTitles(page)).toHaveLength(1)
+  const pages = pdfPages(await page.pdf({ preferCSSPageSize: true, printBackground: true }))
+  expect(pages).toHaveLength(2)
+  for (const { content } of pages) {
+    const fills = [...content.matchAll(/([\d.]+) ([\d.]+) ([\d.]+) rg\b/g)].map(([, ...color]) =>
+      color.map((channel) => Math.round(Number(channel) * 255)),
+    )
+    expect(fills).toContainEqual([14, 22, 38])
+  }
+})
+
 test("the current slide or a range prints only those slides, and a wrong range says why until it is fixed", async ({
   page,
   context,

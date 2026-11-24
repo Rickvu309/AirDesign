@@ -229,6 +229,7 @@ export const reach: Readonly<Record<string, Entry>> = {
 
   "strip:deck-name": { agent: "op.deck", props: ["name"] },
   "notes:slide-notes": { agent: "set.notes", writes: "notes", on: "slide", props: ["notes"] },
+  "panel:theme": { agent: "deck.theme", props: ["theme"] },
   "panel:slide-background": { agent: "set.fill", writes: "fills", on: "slide", props: ["fills"] },
   "menu:skip-slide": { agent: "set.skipped", writes: "skipped", on: "slide", props: ["skipped"] },
   "panel:text.alignV": { agent: "set.alignV", writes: "text", on: "card", props: ["text"] },

@@ -87,7 +87,7 @@ const readEntry = object(
   themeStyleFields,
 )
 
-type LibraryTheme = { readonly id: string; readonly name: string; readonly theme: Theme }
+export type LibraryTheme = { readonly id: string; readonly name: string; readonly theme: Theme }
 
 function readLibrary(files: Readonly<Record<string, unknown>>) {
   const entries = new Map<string, LibraryTheme>()

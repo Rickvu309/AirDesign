@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { defaultTheme, themeLibrary } from "./index.js"
+import { defaultTheme, libraryThemeOf, themeLibrary } from "./index.js"
 import { themeFiles } from "./library/theme-index.js"
 import midnight from "./library/themes/midnight.json" with { type: "json" }
 import { colorVars, type ColorVar, type Hex } from "./paint.js"
@@ -42,6 +42,12 @@ describe("built-in themes", () => {
       })
     },
   )
+
+  it("recognizes a stored copy and distinguishes a customized theme", () => {
+    const { theme } = themeLibrary.neutral
+    expect(libraryThemeOf({ ...theme, colors: { ...theme.colors } })?.id).toBe("neutral")
+    expect(libraryThemeOf({ ...theme, fonts: { ...theme.fonts, body: "Lora" } })).toBeUndefined()
+  })
 
   it("preserves fallback art", () => {
     expect(defaultTheme).toMatchObject(fallbackArt)
