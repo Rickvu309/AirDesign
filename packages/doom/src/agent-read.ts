@@ -1,4 +1,5 @@
-import type { AgentChart, AgentColor } from "./agent-change.js"
+import type { AgentChart } from "./agent-chart.js"
+import type { AgentColor } from "./agent-change.js"
 import { uniformAlign, uniformColor } from "./agent-look.js"
 import type { Arrow, End, Geometry } from "./geometry.js"
 import type { NodeId } from "./ids.js"

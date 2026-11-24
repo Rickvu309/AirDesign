@@ -25,7 +25,7 @@ function namesOf(nodes: readonly doom.NodeId[]): string {
 }
 
 const words = {
-  edit: "The edit landed. Each finding names what is off on a slide or off the deck's own choices, and the fix: fix it unless the person asked for it.",
+  edit: "The edit landed. Findings report automatic adjustments and flag layout or styling issues. If a finding flags an issue, fix it unless the person asked for it.",
   read: "Each finding names what is off on the slides read, and the fix: fix it unless the person asked for it.",
   clear: "Layout clear: no overflow, overlap, off-slide or small text.",
   more: (count: number, where: string) => `${String(count)} more findings are not listed: ${where}.`,

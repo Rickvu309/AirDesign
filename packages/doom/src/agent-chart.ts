@@ -1,7 +1,19 @@
 import type { AgentColor } from "./agent-change.js"
 import { type Field, field } from "./agent-fields.js"
-import { chartLimits, readAxisUnit } from "./chart.js"
-import { type Reader, boolean, finite, forms, integer, list, literal, mismatch, object, words } from "./read-kit.js"
+import { axisUnitBytes, chartLimits } from "./chart.js"
+import {
+  type Reader,
+  boolean,
+  finite,
+  formed,
+  forms,
+  integer,
+  list,
+  literal,
+  mismatch,
+  object,
+  words,
+} from "./read-kit.js"
 
 export type AgentChart = {
   readonly kind: "bar" | "column" | "line" | "pie" | "stacked"
@@ -48,10 +60,16 @@ const chartSchema = {
         },
       },
     },
-    labels: { type: "boolean", description: "Print each value on its bar." },
-    unit: { type: "string", description: "After each axis number, such as $M." },
+    labels: { type: "boolean", description: "Show values where labels fit." },
+    unit: {
+      type: "string",
+      description: `A currency symbol or code, % or one letter attaches to each number ($43.2M, -€2.5, ₹40, CHF 9, 50%, 12K). Any other unit (kg, thousand USD) is printed once at the value axis. AirDesign fits the unit to one line and ${axisUnitBytes} UTF-8 bytes and reports adjustments. A blank unit clears it.`,
+    },
   },
 }
+
+const unitText = formed((raw) => (typeof raw === "string" ? raw : undefined), "A string.")
+
 const chartReader =
   (readColor: Reader<AgentColor>): Reader<AgentChart> =>
   (raw) => {
@@ -74,7 +92,7 @@ const chartReader =
           1,
         ),
       },
-      { labels: boolean, unit: readAxisUnit },
+      { labels: boolean, unit: unitText },
     )(raw)
     if (!chart.series.every((series) => series.values.length === chart.categories.length))
       return mismatch("series", forms.series)

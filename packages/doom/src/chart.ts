@@ -1,6 +1,7 @@
 import { sameColor } from "./color.js"
 import { type Color, readColor } from "./paint.js"
-import { type Reader, boolean, finite, integer, list, literal, object, reject, words } from "./read-kit.js"
+import { bytesOf } from "./limits.js"
+import { type Reader, boolean, finite, integer, list, literal, object, reject, unsafe, words } from "./read-kit.js"
 
 export type ChartPoint = { readonly at: number; readonly color: Color }
 
@@ -21,8 +22,28 @@ export type Chart = {
 
 export const chartLimits = { categories: 200, series: 20 } as const
 
+export const axisUnitBytes = 24
+
+const graphemes = new Intl.Segmenter()
+
+const printable = (typed: string): readonly string[] =>
+  [...graphemes.segment(typed.replace(/[\t\n\r\u2028\u2029]+/g, " ").trim())]
+    .map(({ segment }) => segment)
+    .filter((segment) => !unsafe.test(segment))
+
+export const unitHasPrintable = (typed: string): boolean => printable(typed).join("").trim() !== ""
+
+export function fitAxisUnit(typed: string): string {
+  let unit = ""
+  for (const segment of printable(typed)) {
+    if (bytesOf(unit + segment) > axisUnitBytes) break
+    unit += segment
+  }
+  return unit.trim()
+}
+
 export const readAxisUnit: Reader<string> = (raw) => {
-  const name = words(24, 1)(raw)
+  const name = words(axisUnitBytes, 1)(raw)
   const trimmed = name.trim()
   return trimmed === "" ? reject() : trimmed
 }

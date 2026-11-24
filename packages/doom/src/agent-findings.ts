@@ -1,4 +1,4 @@
-import type { Chart } from "./chart.js"
+import { type Chart, axisUnitBytes, unitHasPrintable } from "./chart.js"
 import { deckOf, propOf } from "./doom-walk.js"
 import type { Doom, Write } from "./doom.js"
 import type { NodeId } from "./ids.js"
@@ -10,6 +10,7 @@ import type { Theme } from "./theme.js"
 export type AgentFinding = { readonly node: NodeId; readonly note: string } & (
   | { readonly code: "off-scale"; readonly size: number; readonly style: TextStyleName; readonly to: number }
   | { readonly code: "off-palette"; readonly color: Hex; readonly to: ColorVar }
+  | { readonly code: "chart-unit-fit"; readonly to: string | null }
   | { readonly code: "off-font"; readonly font: string; readonly to: readonly string[] }
 )
 
@@ -63,7 +64,11 @@ const colorNote = (node: NodeId, color: Hex, to: ColorVar, theme: Theme) =>
 const fontNote = (node: NodeId, font: string, families: readonly string[]) =>
   `${node}: ${font} is not the deck's heading or body font (${families.join(", ")}).`
 
-export function agentFindings(after: Doom, writes: readonly Write[]): readonly AgentFinding[] {
+export function agentFindings(
+  after: Doom,
+  writes: readonly Write[],
+  chartUnits?: ReadonlyMap<NodeId, string | undefined>,
+): readonly AgentFinding[] {
   const deck = deckOf(after)
   const theme = deck === undefined ? undefined : propOf(deck, "theme")
   if (theme === undefined) return []
@@ -74,6 +79,24 @@ export function agentFindings(after: Doom, writes: readonly Write[]): readonly A
   const found = new Map<string, AgentFinding>()
   const note = (key: string, finding: AgentFinding) => {
     if (after.nodes.has(finding.node) && !found.has(key)) found.set(key, finding)
+  }
+  for (const [node, requested] of chartUnits ?? []) {
+    const chart = propOf(after.nodes.get(node), "chart")
+    if (chart === undefined || requested === undefined || requested === (chart.unit ?? "")) continue
+    const to = chart.unit ?? null
+    note(`${node}|unit`, {
+      code: "chart-unit-fit",
+      node,
+      to,
+      note:
+        to !== null
+          ? `${node}: Stored the chart unit as ${JSON.stringify(to)}.`
+          : requested.trim() === ""
+            ? `${node}: Cleared the chart unit.`
+            : !unitHasPrintable(requested)
+              ? `${node}: ${JSON.stringify(requested)} has no printable character, so no unit is stored.`
+              : `${node}: ${JSON.stringify(requested)} did not fit ${String(axisUnitBytes)} bytes, so none is stored.`,
+    })
   }
   for (const { node, prop, value } of writes) {
     for (const color of colorsOf({ node, prop, value }))

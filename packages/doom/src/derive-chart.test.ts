@@ -144,6 +144,112 @@ describe("deriveChart", () => {
     expect(wordsOf(derive({ ...odd, labels: true })).filter((word) => word === "37")).toHaveLength(1)
   })
 
+  it("keeps a negative bar's value label out of the category gutter", () => {
+    const parts = derive(
+      {
+        kind: "bar",
+        categories: ["Loss", "Peak"],
+        series: [{ name: "Sales", values: [-2.5, 987654321012.34] }],
+        labels: true,
+        unit: "thousand USD",
+      },
+      spot(0, 0, 900, 460),
+    )
+    const category = byId(parts, "t:9#~category:0").box
+    const value = byId(parts, "t:9#~value:0:0").box
+    expect(value.x).toBeGreaterThan(category.x + category.w)
+  })
+
+  it("prints the unit on every tick and value label, a currency first", () => {
+    const words = wordsOf(derive({ ...column, labels: true, unit: "$" }))
+    expect(words).toEqual(expect.arrayContaining(["$0", "$10", "$20", "$30"]))
+    expect(words).toEqual(expect.arrayContaining(["$5", "$8", "$12"]))
+    expect(words).not.toContain("10")
+  })
+
+  it("labels a pie's slices with their value and unit, and keeps the legend on shares", () => {
+    const pie: Chart = {
+      kind: "pie",
+      categories: ["A", "B", "C"],
+      series: [{ name: "Share", values: [50, 30, 20] }],
+      labels: true,
+      unit: "$M",
+    }
+    const words = wordsOf(derive(pie))
+    expect(words).toEqual(expect.arrayContaining(["$50M", "$30M", "$20M"]))
+    expect(words).toEqual(expect.arrayContaining(["50%", "30%", "20%"]))
+  })
+
+  describe("a pie slice's label", () => {
+    const pie = (values: number[], unit?: string): Chart => ({
+      kind: "pie",
+      categories: values.map((_, at) => `C${String(at)}`),
+      series: [{ name: "Share", values }],
+      labels: true,
+      ...(unit === undefined ? {} : { unit }),
+    })
+    const labelsOf = (parts: readonly Resolved[]) => parts.filter((part) => part.id.includes("#~value:"))
+    const wide = { ...area, w: 880, h: 404 }
+
+    it("shows the value and unit only where they fit the slice, and the share where they do not", () => {
+      const words = wordsOf(derive(pie([5, 3, 92], "$M"), wide))
+      expect(words).toContain("$92M")
+      expect(words).not.toContain("$5M")
+      expect(words).not.toContain("$3M")
+      const long = wordsOf(derive(pie([15, 15, 70], "thousand USD"), wide))
+      expect(long).not.toContain("15 thousand USD")
+      expect(long).toEqual(expect.arrayContaining(["15%"]))
+    })
+
+    it("never runs a label past its slice for the longest unit", () => {
+      const unit = "x".repeat(24)
+      const labels = labelsOf(derive(pie([45, 30, 25], unit), wide))
+      const radius = wide.h / 2
+      for (const label of labels)
+        for (const x of [label.box.x, label.box.x + label.box.w])
+          for (const y of [label.box.y, label.box.y + label.box.h])
+            expect(Math.hypot(x - radius, y - radius)).toBeLessThanOrEqual(radius)
+      expect(wordsOf(labels).some((word) => word.includes(unit))).toBe(false)
+    })
+
+    it("never lets two labels overlap, however thin the slices", () => {
+      for (const values of [
+        [5, 3, 92],
+        [1, 1, 1, 97],
+        [40, 30, 20, 6, 4],
+        [50, 50],
+      ]) {
+        const labels = labelsOf(derive(pie(values, "$M"), wide))
+        labels.forEach((one, at) =>
+          labels.slice(at + 1).forEach((other) => {
+            const apart =
+              one.box.x + one.box.w <= other.box.x ||
+              other.box.x + other.box.w <= one.box.x ||
+              one.box.y + one.box.h <= other.box.y ||
+              other.box.y + other.box.h <= one.box.y
+            expect(apart).toBe(true)
+          }),
+        )
+      }
+    })
+
+    it("keeps a label with no unit on a slice that holds it", () => {
+      expect(wordsOf(derive(pie([60, 40]), wide))).toEqual(expect.arrayContaining(["60%", "40%"]))
+    })
+  })
+
+  it("labels a pie's slices with percentages while no unit is set", () => {
+    const pie: Chart = {
+      kind: "pie",
+      categories: ["A", "B"],
+      series: [{ name: "Share", values: [60, 40] }],
+      labels: true,
+    }
+    const words = wordsOf(derive(pie))
+    expect(words).toEqual(expect.arrayContaining(["60%", "40%"]))
+    expect(words.some((word) => word.includes("$"))).toBe(false)
+  })
+
   it("keeps everything it derives inside the box it was given", () => {
     for (const chart of [
       column,

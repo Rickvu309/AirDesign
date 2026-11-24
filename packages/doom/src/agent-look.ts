@@ -1,7 +1,8 @@
-import type { AgentChart, AgentColor, AgentFill, AgentLook } from "./agent-change.js"
+import type { AgentChart } from "./agent-chart.js"
+import type { AgentColor, AgentFill, AgentLook } from "./agent-change.js"
 import type { Arrow } from "./geometry.js"
 import { shapeGeometry } from "./preset-geometry.js"
-import type { Chart } from "./chart.js"
+import { type Chart, fitAxisUnit } from "./chart.js"
 import { sameColor as samePaint } from "./color.js"
 import type { Values } from "./agent-draft.js"
 import type { Align9, Layout } from "./layout.js"
@@ -72,20 +73,23 @@ function fitted(paints: readonly Paint[], look: AgentLook): readonly Paint[] {
   })
 }
 
-export const chartOf = (chart: AgentChart): Chart => ({
-  kind: chart.kind,
-  categories: chart.categories,
-  series: chart.series.map((series) => ({
-    name: series.name,
-    values: series.values,
-    ...(series.color === undefined ? {} : { color: colorOf(series.color) }),
-    ...(series.points === undefined
-      ? {}
-      : { points: series.points.map((point) => ({ at: point.at, color: colorOf(point.color) })) }),
-  })),
-  ...(chart.labels === undefined ? {} : { labels: chart.labels }),
-  ...(chart.unit === undefined ? {} : { unit: chart.unit }),
-})
+export function chartOf(chart: AgentChart): Chart {
+  const unit = fitAxisUnit(chart.unit ?? "")
+  return {
+    kind: chart.kind,
+    categories: chart.categories,
+    series: chart.series.map((series) => ({
+      name: series.name,
+      values: series.values,
+      ...(series.color === undefined ? {} : { color: colorOf(series.color) }),
+      ...(series.points === undefined
+        ? {}
+        : { points: series.points.map((point) => ({ at: point.at, color: colorOf(point.color) })) }),
+    })),
+    ...(chart.labels === undefined ? {} : { labels: chart.labels }),
+    ...(unit === "" ? {} : { unit }),
+  }
+}
 
 export const iconName = (icon: string): string => (icon.includes("/") ? icon : `lucide/${icon}`)
 

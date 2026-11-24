@@ -1,7 +1,6 @@
 import { readAngle, readRotation } from "./angle.js"
 import { arrowField, startArrowField } from "./agent-arrow.js"
 import { type AgentChart, chartField } from "./agent-chart.js"
-import { type WeightName, weightNames } from "./painted-face.js"
 import { type AgentEnd, endSchema, readEnd } from "./agent-end.js"
 import { type AgentInsert, insertField } from "./agent-insert.js"
 import { type AgentItem, itemSchema, readItem } from "./agent-item.js"
@@ -12,6 +11,7 @@ import { type Field, choice, field, flag, number, string } from "./agent-fields.
 import { type InnerLook, innerShadowFields } from "./agent-inner-shadow.js"
 import { type SlideLook, slideLookFields } from "./agent-slide-look.js"
 import { type NodeId, readNodeId } from "./ids.js"
+import { type WeightName, weightNames } from "./painted-face.js"
 import {
   type ColorVar,
   type EffectStyleName,

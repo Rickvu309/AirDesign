@@ -43,15 +43,16 @@ describe("doomFaces", () => {
     expect(faces([]).faces.some((face) => face.italic)).toBe(false)
   })
 
-  it("gives the words to measure: every text, a chart's names, and the plain alphabet", () => {
-    const chart = { kind: "column", categories: ["Zürich"], series: [{ name: "Ωmega", values: [1] }] }
+  it("gives the words to measure: every text, a chart's names and unit, and the plain alphabet", () => {
+    const chart = { kind: "column", categories: ["Zürich"], series: [{ name: "Ωmega", values: [1] }], unit: "دولار" }
     const texts = faces([
       label("t", "hello", {}),
       { type: "frame", name: "c", props: { box: spot(0, 0, 100, 100), chart } as never },
       block("b", 1, 1),
     ]).texts
-    expect(texts).toEqual(expect.arrayContaining(["hello", "Zürich", "Ωmega"]))
+    expect(texts).toEqual(expect.arrayContaining(["hello", "Zürich", "Ωmega", "دولار"]))
     expect(texts.join("")).toMatch(/0123456789/)
     expect(texts.join("")).toContain("•")
+    for (const pair of ["98", "$5", "0M", "1,", "-€"]) expect(texts.join(" ")).toContain(pair)
   })
 })

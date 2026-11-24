@@ -164,7 +164,7 @@ export const integer = (min: number, max: number): Reader<number> => {
   return read
 }
 
-const unsafe =
+export const unsafe =
   /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/
 
 export const words = (maxBytes: number, minLength = 0): Reader<string> => {

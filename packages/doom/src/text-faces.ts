@@ -7,6 +7,9 @@ export type FaceNeeds = { readonly faces: readonly Face[]; readonly texts: reado
 
 const alphabet = Array.from({ length: 95 }, (_, at) => String.fromCharCode(32 + at)).join("") + "•–—…’‘“”°%€£¥×÷·"
 
+const numberChars = [..."0123456789,.-$€£¥%KMBT"]
+const numberPairs = numberChars.flatMap((left) => numberChars.map((right) => left + right)).join(" ")
+
 export function doomFaces(doom: Doom): FaceNeeds {
   const { theme } = deckOf(doom)
   const fonts = new Set([theme.fonts.heading, theme.fonts.body])
@@ -22,8 +25,10 @@ export function doomFaces(doom: Doom): FaceNeeds {
       }
     }
     const chart = node.type === "frame" ? node.chart : undefined
+    if (chart !== undefined) texts.add(numberPairs)
     if (chart !== undefined)
-      for (const name of [...chart.categories, ...chart.series.map((series) => series.name)]) texts.add(name)
+      for (const name of [...chart.categories, ...chart.series.map((series) => series.name), chart.unit ?? ""])
+        texts.add(name)
   }
   for (const font of fonts) {
     const family = familyOf(font)

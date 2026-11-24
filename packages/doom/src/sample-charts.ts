@@ -1,4 +1,4 @@
-import type { AgentChart } from "./agent-change.js"
+import type { AgentChart } from "./agent-chart.js"
 import type { Chart } from "./chart.js"
 
 type Sample = Chart & AgentChart

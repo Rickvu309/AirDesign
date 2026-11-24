@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { test } from "./api-stack"
-import { clickSlide, landNodes, openEditor, spot } from "./editor-deck"
+import { clickSlide, landNodes, openEditor, savedNode, spot } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -41,6 +41,78 @@ async function chartData(
   const data = page.locator("[data-chart-data]")
   await expect(data).toBeVisible()
   return data
+}
+
+for (const kind of ["line", "bar", "column", "stacked"] as const) {
+  test(`the ${kind} chart never paints chart text over other chart text, with and without a unit`, async ({
+    page,
+    context,
+    stack,
+  }) => {
+    const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+    const opened = await openEditor(page, context, stack)
+    const chart = {
+      kind,
+      labels: true,
+      categories: ["Loss", "Zero", "Huge", "Tiny", "Major"],
+      series: [{ name: "Sales", values: [-2.5, 0, 987654321012.34, 0.004, 324000000000.25] }],
+    }
+    await landNodes(stack, opened, [
+      {
+        id: "t:1",
+        type: "frame",
+        parent: opened.slide,
+        props: {
+          box: spot(150, 330, 900, 460),
+          chart,
+        },
+      },
+    ])
+    const canvas = page.locator('[data-slide-box] [data-node="t:1"]')
+    const words = (scope: ReturnType<typeof page.locator>) =>
+      scope.locator('[data-node^="t:1#~"]').filter({ hasText: /\S/ })
+    const texts = words(canvas)
+    const thumb = words(page.locator("[data-slide-thumb]"))
+    await expect(texts.first()).toBeVisible()
+    for (const input of ["", "thousand USD", "دولار"]) {
+      if (input !== "") {
+        const { json } = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
+        const blocks = await stack.toolBlocks(
+          "airdesign_edit_deck",
+          {
+            deck: opened.deck,
+            base: json.rev,
+            changes: [{ op: "set", target: "t:1", chart: { ...chart, unit: input } }],
+          },
+          opened.cookie,
+        )
+        expect(JSON.parse(blocks.find((block) => block.type === "text")?.text ?? "{}")).toMatchObject({ ok: true })
+        await expect.poll(async () => (await savedNode(stack, opened, "t:1"))?.chart).toEqual({ ...chart, unit: input })
+        await expect(texts.filter({ hasText: input })).toHaveCount(1)
+      }
+      const painted = await texts.allTextContents()
+      expect(painted.length).toBeGreaterThan(1)
+      await expect.poll(() => thumb.allTextContents()).toEqual(painted)
+      const clashes = await texts.evaluateAll((nodes) => {
+        const labels = nodes.map((node) => {
+          const range = document.createRange()
+          range.selectNodeContents(node)
+          return { text: node.textContent, box: range.getBoundingClientRect() }
+        })
+        return labels.flatMap(({ text, box }, index) =>
+          labels
+            .slice(index + 1)
+            .filter(
+              ({ box: other }) =>
+                Math.min(box.right, other.right) - Math.max(box.left, other.left) > 0 &&
+                Math.min(box.bottom, other.bottom) - Math.max(box.top, other.top) > 0,
+            )
+            .map((other) => [text, other.text]),
+        )
+      })
+      expect.soft(clashes, `unit ${JSON.stringify(input)}`).toEqual([])
+    }
+  })
 }
 
 test("a chart's data shows every value in full once the values scroll into view", async ({ page, context, stack }) => {

@@ -1,223 +1,262 @@
-import { type Axis, formatTick, formatValue, niceAxis, seriesPrecision, tickPrecision } from "./chart-axis.js"
+import { type Axis, axisUnit, formatCompact, formatValue, seriesPrecision } from "./chart-axis.js"
+import {
+  type Context,
+  clamp,
+  markColor,
+  markId,
+  seriesColor,
+  valueId,
+  markShare,
+  muted,
+  seriesColorsOf,
+  smaller,
+  strong,
+} from "./chart-context.js"
+import { inkBoard, overlaps, textBoxes } from "./chart-ink.js"
+import { type Room, chartLayout } from "./chart-layout.js"
+import { legendEntries } from "./chart-legend.js"
+import { pieChart } from "./chart-pie.js"
 import {
   type Kit,
   type Words,
   block,
   disc,
   rule,
-  slice,
   spot,
   stroked,
-  whole,
   words,
   wordsHeight,
   wordsWidth,
 } from "./chart-parts.js"
+import {
+  gutterGuess,
+  gutterCap,
+  horizontalTicks,
+  unitLabel,
+  unitWidth,
+  valueAxis,
+  verticalTicks,
+} from "./chart-value-axis.js"
 import type { Chart } from "./chart.js"
-import { resolveColor } from "./color.js"
 import type { NodeId } from "./ids.js"
-import type { Hex } from "./paint.js"
 import type { Box, Resolved } from "./resolved.js"
 import type { Theme } from "./theme.js"
 
-type Context = Kit & {
-  readonly frame: NodeId
-  readonly chart: Chart
-  readonly w: number
-  readonly h: number
-  readonly lineH: number
-  readonly seriesColors: readonly Hex[]
-}
-type Entry = { readonly name: string; readonly color: Hex; readonly note?: string }
-
-const accents = ["accent1", "accent2", "accent3", "accent4", "accent5", "accent6"] as const
-const markShare = 0.5
-const legendGap = 28
-
-const markId = (context: Context, series: number, category: number) =>
-  `${context.frame}#${String(series)}:${String(category)}`
-const valueId = (context: Context, series: number, category: number) =>
-  `${context.frame}#~value:${String(series)}:${String(category)}`
-
-function axisLabels(
-  chart: Chart,
-  axis: Axis,
-): {
-  readonly tick: (value: number) => string
-  readonly value: (value: number) => string
-} {
+const valueLabels = (chart: Chart) => {
   const digits = seriesPrecision(chart.series)
-  const tickDigits = tickPrecision(chart.series, axis)
+  return (value: number): readonly string[] => {
+    const precise = formatValue(value, digits, chart.unit)
+    const short = formatCompact(value, chart.unit)
+    return short === undefined || short === precise ? [precise] : [precise, short]
+  }
+}
+
+type Chrome = {
+  readonly above: number
+  readonly below: number
+  readonly left: number
+  readonly right: number
+  readonly captionInGutter: boolean
+}
+
+const plotHeightShare = 0.4
+const plotWidthShare = 0.35
+
+const within = (context: Context, region: Box): Context => ({
+  ...context,
+  w: region.x + region.w,
+  h: region.y + region.h,
+  bounds: spot(0, 0, region.x + region.w, region.y + region.h),
+})
+
+function roomFor(context: Context, region: Box, chrome: Chrome): Room {
+  const w = region.w - chrome.left - chrome.right
+  const h = region.h - chrome.above - chrome.below
   return {
-    tick: (value) => formatTick(value, tickDigits, chart.unit),
-    value: (value) => formatValue(value, digits),
+    fits: h >= Math.max(3 * context.lineH, context.h * plotHeightShare) && w >= context.w * plotWidthShare,
+    score: Math.min(w / context.w, h / context.h),
   }
 }
 
-function seriesColorsOf(chart: Chart, theme: Theme): readonly Hex[] {
-  const own = chart.series.map((series) => (series.color === undefined ? undefined : resolveColor(series.color, theme)))
-  const free = accents.map((name) => theme.colors[name]).filter((color) => !own.includes(color))
-  const fallback = free.length === 0 ? accents.map((name) => theme.colors[name]) : free
-  let next = 0
-  return own.map((color) => color ?? fallback[next++ % fallback.length]!)
-}
-
-function markColor(context: Context, series: number, category: number): Hex {
-  const { chart, theme } = context
-  const own = chart.series[series]?.points?.find((point) => point.at === category)
-  if (own !== undefined) return resolveColor(own.color, theme)
-  if (chart.kind === "pie") return theme.colors[accents[category % accents.length]!]
-  return context.seriesColors[series] ?? theme.colors.accent1
-}
-
-const muted = (theme: Theme): Words => ({ style: "caption", color: theme.colors.text2, align: "left" })
-const strong = (theme: Theme): Words => ({ style: "caption", color: theme.colors.text, align: "center", bold: true })
-
-function legendOf(context: Context, entries: readonly Entry[], x: number, y: number, vertical: boolean): Resolved[] {
-  const parts: Resolved[] = []
-  const look = muted(context.theme)
-  const noteLook = { ...look, color: context.theme.colors.text }
-  const noteGap = 24
-  const swatch = Math.round(context.lineH * markShare)
-  const nameRoom = Math.max(0, ...entries.map((entry) => wordsWidth(context, entry.name, look)))
-  let at = vertical ? y : x
-  for (const [index, entry] of entries.entries()) {
-    const textW = wordsWidth(context, entry.name, look)
-    const left = vertical ? x : at
-    const top = vertical ? at : y
-    parts.push(
-      block(
-        `${context.frame}#~swatch:${String(index)}`,
-        spot(left, top + (context.lineH - swatch) / 2, swatch, swatch),
-        entry.color,
-        3,
-      ),
+function chromeOf(context: Context, axis: Axis): Chrome {
+  const { chart, lineH, theme } = context
+  const unit = axisUnit(chart.unit)
+  const labelled = chart.labels === true
+  const row = lineH + 14
+  if (chart.kind === "bar") {
+    const look = strong(theme)
+    const text = valueLabels(chart)
+    const widest = Math.max(
+      0,
+      ...chart.series.flatMap((series) => series.values.map((one) => wordsWidth(context, text(one)[0]!, look))),
     )
-    parts.push(
-      words(
-        `${context.frame}#~legend:${String(index)}`,
-        context,
-        entry.name,
-        spot(left + swatch + 10, top, textW + 2, context.lineH),
-        look,
-      ),
-    )
-    if (entry.note !== undefined) {
-      const noteW = wordsWidth(context, entry.note, noteLook)
-      parts.push(
-        words(
-          `${context.frame}#~note:${String(index)}`,
-          context,
-          entry.note,
-          spot(left + swatch + 10 + nameRoom + noteGap, top, noteW + 2, context.lineH),
-          noteLook,
-        ),
-      )
+    return {
+      above: 6,
+      below: row + (unit === undefined ? 0 : lineH + 2),
+      left: categoryRoom(context),
+      right: labelled ? Math.min(gutterCap(context) + 10, widest + 22) : 2,
+      captionInGutter: false,
     }
-    at += vertical ? context.lineH + 18 : swatch + 10 + textW + legendGap
   }
-  return parts
+  const caption = unit === undefined ? 0 : unitWidth(context, unit)
+  const captionInGutter = unit !== undefined && caption <= gutterCap(context)
+  const line = chart.kind === "line"
+  return {
+    above: labelled ? lineH + (line ? 12 : 10) : Math.max(line ? 14 : 10, lineH / 2 + 2),
+    below: unit === undefined ? row : captionInGutter ? Math.max(row, captionDrop(context) + lineH) : row + lineH + 2,
+    left: gutterGuess(context, axis, captionInGutter ? caption : 0),
+    right: line ? 0 : 2,
+    captionInGutter,
+  }
 }
 
-function valueAxis(context: Context): Axis {
-  const { chart } = context
-  const sums = chart.categories.map((_, at) => {
-    let up = 0
-    let down = 0
-    for (const series of chart.series) {
-      const value = series.values[at] ?? 0
-      if (value >= 0) up += value
-      else down += value
-    }
-    return { up, down }
+const captionDrop = (context: Context) => context.lineH / 2 + 2
+
+const categoryRoom = (context: Context) =>
+  Math.min(
+    context.frameW * 0.4,
+    Math.max(0, ...context.chart.categories.map((name) => wordsWidth(context, name, muted(context.theme)))) + 28,
+  )
+
+function axisLayout(context: Context, axis: Axis) {
+  const chrome = (region: Box) => chromeOf(within(context, region), axis)
+  const layout = chartLayout(context, {
+    entries: legendEntries(context),
+    header: undefined,
+    sides: ["top", "right"],
+    indent: chromeOf(context, axis).left,
+    besideTop: (region) => region.y + chrome(region).above,
+    plot: (region) => roomFor(context, region, chrome(region)),
   })
-  const flat = chart.series.flatMap((series) => series.values)
-  const stacked = chart.kind === "stacked"
-  const hi = Math.max(0, ...(stacked ? sums.map((sum) => sum.up) : flat))
-  const lo = Math.min(0, ...(stacked ? sums.map((sum) => sum.down) : flat))
-  return niceAxis(lo, hi)
+  return { ...layout, plot: within(context, layout.region), chrome: chrome(layout.region) }
 }
 
-function clamp(value: number, low: number, high: number): number {
-  return Math.max(low, Math.min(high, value))
+type Candidate = { readonly value: number; readonly tries: readonly Resolved[]; readonly own?: Box }
+
+function placeValues(
+  context: Context,
+  candidates: readonly Candidate[],
+  area: Box,
+  bars: readonly Box[] = [],
+): Resolved[] {
+  return [...candidates]
+    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+    .flatMap((candidate) => {
+      const clear = candidate.tries.filter((part) =>
+        textBoxes(part).every((ink) => !bars.some((bar) => bar !== candidate.own && overlaps(ink, bar))),
+      )
+      const kept = context.board.first(clear, area)
+      return kept === undefined ? [] : [kept]
+    })
+}
+
+function categoryNames(context: Context, make: (look: Words) => (index: number) => Resolved): Resolved[] {
+  const { chart, board, bounds, theme } = context
+  const count = chart.categories.length
+  const [normal, small] = [muted(theme), smaller(context, muted(theme))].map(make)
+  const roomy = board.spaced(count, 0, bounds, normal!)
+  const tight = roomy.length < count ? board.spaced(count, 0, bounds, small!) : []
+  const kept = tight.length > roomy.length ? tight.map(small!) : roomy.map(normal!)
+  board.take(kept)
+  return kept
+}
+
+function bottomNames(context: Context, left: number, band: number, y: number): Resolved[] {
+  const { chart, frame } = context
+  return categoryNames(context, (muted) => (index) => {
+    const look = { ...muted, align: "center" as const }
+    const name = chart.categories[index]!
+    const w = wordsWidth(context, name, look) + 2
+    return words(
+      `${frame}#~category:${String(index)}`,
+      context,
+      name,
+      spot(left + band * (index + 0.5) - w / 2, y, w, wordsHeight(context, look)),
+      look,
+    )
+  })
+}
+
+function captionParts(plot: Context, chrome: Chrome, bottom: number, tickRight: number): Resolved[] {
+  const unit = axisUnit(plot.chart.unit)
+  if (unit === undefined) return []
+  if (plot.chart.kind === "bar")
+    return [unitLabel(plot, unit, plot.w - chrome.right, bottom + 10 + plot.lineH, "right")]
+  const y = chrome.captionInGutter ? bottom + captionDrop(plot) : bottom + 12 + plot.lineH
+  return [unitLabel(plot, unit, tickRight, y, "right")]
 }
 
 function barChart(context: Context): Resolved[] {
-  const { chart, theme, frame } = context
+  const { chart, theme, frame, board, lineH } = context
   const horizontal = chart.kind === "bar"
-  const axis = valueAxis(context)
-  const labels = axisLabels(chart, axis)
-  const tickWords = axis.ticks.map(labels.tick)
-  const look = muted(theme)
-  const legend: Entry[] =
-    chart.series.length > 1
-      ? chart.series.map((series, index) => ({
-          name: series.name,
-          color: context.seriesColors[index] ?? context.theme.colors.accent1,
-        }))
-      : []
-  const legendH = legend.length > 0 ? context.lineH + 22 : 0
+  const axis = valueAxis(chart)
+  const { legend, region, plot, chrome } = axisLayout(context, axis)
+  const valueText = valueLabels(chart)
+  const barLook = strong(theme)
   const labelled = chart.labels === true
-  const valueRoom = Math.max(0, ...tickWords.map((text) => wordsWidth(context, text, look))) + 16
-  const categoryRoom = Math.max(0, ...chart.categories.map((name) => wordsWidth(context, name, look))) + 28
-  const left = horizontal ? categoryRoom : valueRoom
-  const right = horizontal && labelled ? valueRoom + 4 : 2
-  const bottomRoom = context.lineH + 14
-  const top = legendH + (horizontal ? 6 : labelled ? context.lineH + 10 : 10)
-  const bottom = context.h - bottomRoom
-  const along = horizontal ? { from: left, to: context.w - right } : { from: bottom, to: top }
-  const place = (value: number) => along.from + ((value - axis.lo) / (axis.hi - axis.lo)) * (along.to - along.from)
-  const zero = place(0)
+  const edge = plot.w
+  const top = region.y + chrome.above
+  const bottom = region.y + region.h - chrome.below
   const count = Math.max(1, chart.categories.length)
-  const bandSize = horizontal ? (bottom - top) / count : (context.w - left - right) / count
-  const parts: Resolved[] = [...legendOf(context, legend, left, 0, false)]
-  const chrome: Resolved[] = []
-  axis.ticks.forEach((tick, index) => {
-    const at = place(tick)
-    const faint = tick === 0 ? 0 : 0.28
-    if (horizontal) {
-      parts.push(
-        rule(`${frame}#~grid:${String(index)}`, { x: at, y: top }, { x: at, y: bottom }, theme.colors.text2, 1, faint),
+  const gutter = horizontal
+    ? null
+    : verticalTicks(
+        plot,
+        axis,
+        (tick) => bottom - ((tick - axis.lo) / (axis.hi - axis.lo)) * (bottom - top),
+        chrome.left - 16,
       )
-      const w = wordsWidth(context, tickWords[index]!, look) + 8
-      chrome.push(
-        words(
-          `${frame}#~tick:${String(index)}`,
+  const left = horizontal ? chrome.left : gutter!.left
+  const right = chrome.right
+  const along = horizontal ? { from: left, to: edge - right } : { from: bottom, to: top }
+  const place = (tick: number) => along.from + ((tick - axis.lo) / (axis.hi - axis.lo)) * (along.to - along.from)
+  const zero = place(0)
+  const bandSize = horizontal ? (bottom - top) / count : (edge - left - right) / count
+  const parts: Resolved[] = [...legend]
+  const chrome2: Resolved[] = []
+  const tickParts = horizontal ? horizontalTicks(plot, axis, place, bottom + 8).parts : gutter!.parts
+  board.take(tickParts)
+  chrome2.push(...tickParts)
+  for (const tick of tickParts) {
+    const index = Number(tick.id.slice(tick.id.lastIndexOf(":") + 1))
+    const at = place(axis.ticks[index]!)
+    const faint = axis.ticks[index] === 0 ? 0 : 0.28
+    parts.push(
+      horizontal
+        ? rule(`${frame}#~grid:${String(index)}`, { x: at, y: top }, { x: at, y: bottom }, theme.colors.text2, 1, faint)
+        : rule(
+            `${frame}#~grid:${String(index)}`,
+            { x: left, y: at },
+            { x: edge - right, y: at },
+            theme.colors.text2,
+            1,
+            faint,
+          ),
+    )
+  }
+  chrome2.push(...captionParts(plot, chrome, bottom, left - 10))
+  if (horizontal) {
+    chrome2.push(
+      ...categoryNames(plot, (look) => (index) => {
+        const nameH = wordsHeight(context, look)
+        return words(
+          `${frame}#~category:${String(index)}`,
           context,
-          tickWords[index]!,
-          spot(clamp(at - w / 2, 0, context.w - w), bottom + 8, w, context.lineH),
-          { ...look, align: "center" },
-        ),
-      )
-    } else {
-      parts.push(
-        rule(
-          `${frame}#~grid:${String(index)}`,
-          { x: left, y: at },
-          { x: context.w - right, y: at },
-          theme.colors.text2,
-          1,
-          faint,
-        ),
-      )
-      chrome.push(
-        words(
-          `${frame}#~tick:${String(index)}`,
-          context,
-          tickWords[index]!,
-          spot(0, at - context.lineH / 2, left - 10, context.lineH),
+          chart.categories[index]!,
+          spot(0, top + bandSize * (index + 0.5) - nameH / 2, left - 20, nameH),
           { ...look, align: "right" },
-        ),
-      )
-    }
-  })
+        )
+      }),
+    )
+  } else chrome2.push(...bottomNames(plot, left, bandSize, bottom + 10))
   const clusters = chart.kind !== "stacked"
   const crowd = chart.series.length
-  const groupSize = bandSize * (clusters ? 0.64 : 0.52)
-  const gap = clusters && crowd > 1 ? 6 : 0
+  const groupSize = bandSize * (clusters ? 0.64 : 0.6)
+  const gap = clusters && crowd > 1 ? Math.min(6, (groupSize * 0.25) / (crowd - 1)) : 0
   const barSize = clusters ? (groupSize - gap * (crowd - 1)) / crowd : groupSize
-  const barLook = strong(theme)
-  chart.categories.forEach((category, at) => {
+  const candidates: Candidate[] = []
+  const bars: Box[] = []
+  chart.categories.forEach((_, at) => {
     const band = (horizontal ? top : left) + bandSize * at
     const start = band + (bandSize - groupSize) / 2
     let up = 0
@@ -238,123 +277,82 @@ function barChart(context: Context): Resolved[] {
       const length = Math.abs(to - from)
       const box = horizontal ? spot(lead, start + offset, length, barSize) : spot(start + offset, lead, barSize, length)
       parts.push(block(id, box, color))
+      bars.push(box)
       if (!labelled) return
-      const shown = labels.value(value)
-      const w = wordsWidth(context, shown, barLook) + 12
-      if (!clusters) {
-        if (length < context.lineH + 6) return
-        parts.push(
-          words(
-            valueId(context, index, at),
-            context,
-            shown,
-            spot(box.x + (box.w - w) / 2, box.y + (box.h - context.lineH) / 2, w, context.lineH),
-            { ...barLook, color: theme.colors.background },
-          ),
-        )
-      } else if (horizontal) {
-        const x = value >= 0 ? box.x + box.w + 6 : box.x - 6 - w
-        parts.push(
-          words(
-            valueId(context, index, at),
-            context,
-            shown,
-            spot(clamp(x, 0, context.w - w), box.y + (box.h - context.lineH) / 2, w, context.lineH),
-            { ...barLook, align: value >= 0 ? "left" : "right" },
-          ),
-        )
-      } else {
-        const y = value >= 0 ? box.y - context.lineH - 2 : box.y + box.h + 2
-        parts.push(
-          words(
-            valueId(context, index, at),
-            context,
-            shown,
-            spot(clamp(box.x + (box.w - w) / 2, 0, context.w - w), y, w, context.lineH),
-            barLook,
-          ),
-        )
+      const labelId = valueId(context, index, at)
+      const triesFor = (text: string): readonly Resolved[] => {
+        const w = wordsWidth(context, text, barLook) + 2
+        const on = (x: number, y: number, look: Words) => words(labelId, context, text, spot(x, y, w, lineH), look)
+        const centred = (look: Words) => on(box.x + (box.w - w) / 2, box.y + (box.h - lineH) / 2, look)
+        const onBar =
+          box.h >= lineH + (horizontal ? 0 : 6) && w - 2 <= box.w - 4
+            ? [centred({ ...barLook, color: theme.colors.background })]
+            : []
+        if (!clusters) return onBar
+        if (horizontal) {
+          const middle = box.y + (box.h - lineH) / 2
+          return value >= 0
+            ? [on(box.x + box.w + 6, middle, { ...barLook, align: "left" }), ...onBar]
+            : [
+                on(box.x - 6 - w, middle, { ...barLook, align: "right" }),
+                on(box.x + box.w + 6, middle, { ...barLook, align: "left" }),
+                ...onBar,
+              ]
+        }
+        const x = box.x + (box.w - w) / 2
+        return [on(x, value >= 0 ? box.y - lineH - 2 : box.y + box.h + 2, barLook), ...onBar]
       }
+      candidates.push({ value, own: box, tries: valueText(value).flatMap(triesFor) })
     })
-    if (horizontal)
-      chrome.push(
-        words(`${frame}#~category:${String(at)}`, context, category, spot(0, band, left - 20, bandSize), {
-          ...look,
-          align: "right",
-        }),
-      )
-    else
-      chrome.push(
-        words(`${frame}#~category:${String(at)}`, context, category, spot(band, bottom + 10, bandSize, context.lineH), {
-          ...look,
-          align: "center",
-        }),
-      )
   })
+  const area = horizontal
+    ? spot(left, top, edge - left, bottom - top)
+    : spot(left, region.y, edge - right - left, bottom - region.y)
+  parts.push(...placeValues(context, candidates, area, bars))
   const baseline = horizontal
     ? rule(`${frame}#~baseline`, { x: zero, y: top }, { x: zero, y: bottom }, theme.colors.text, 2, 0.7)
-    : rule(`${frame}#~baseline`, { x: left, y: zero }, { x: context.w - right, y: zero }, theme.colors.text, 2, 0.7)
-  return [...parts, baseline, ...chrome]
+    : rule(`${frame}#~baseline`, { x: left, y: zero }, { x: edge - right, y: zero }, theme.colors.text, 2, 0.7)
+  return [...parts, baseline, ...chrome2]
 }
 
 function lineChart(context: Context): Resolved[] {
-  const { chart, theme, frame } = context
-  const axis = valueAxis(context)
-  const labels = axisLabels(chart, axis)
-  const look = muted(theme)
-  const legend: Entry[] =
-    chart.series.length > 1
-      ? chart.series.map((series, index) => ({
-          name: series.name,
-          color: context.seriesColors[index] ?? context.theme.colors.accent1,
-        }))
-      : []
-  const legendH = legend.length > 0 ? context.lineH + 22 : 0
+  const { chart, theme, frame, board, lineH } = context
+  const axis = valueAxis(chart)
+  const { legend, region, plot: room, chrome } = axisLayout(context, axis)
+  const valueText = valueLabels(chart)
   const labelled = chart.labels === true
-  const left = Math.max(0, ...axis.ticks.map((tick) => wordsWidth(context, labels.tick(tick), look))) + 16
-  const top = legendH + (labelled ? context.lineH + 12 : 14)
-  const bottom = context.h - (context.lineH + 14)
+  const edge = room.w
+  const top = region.y + chrome.above
+  const bottom = region.y + region.h - chrome.below
   const place = (value: number) => bottom - ((value - axis.lo) / (axis.hi - axis.lo)) * (bottom - top)
-  const band = (context.w - left) / Math.max(1, chart.categories.length)
-  const parts: Resolved[] = [...legendOf(context, legend, left, 0, false)]
-  axis.ticks.forEach((tick, index) => {
-    const at = place(tick)
-    const text = labels.tick(tick)
+  const gutter = verticalTicks(room, axis, place, chrome.left - 16)
+  const left = gutter.left
+  const band = (edge - left) / Math.max(1, chart.categories.length)
+  const parts: Resolved[] = [...legend]
+  const ticks = gutter.parts
+  board.take(ticks)
+  for (const tick of ticks) {
+    const index = Number(tick.id.slice(tick.id.lastIndexOf(":") + 1))
+    const value = axis.ticks[index]!
     parts.push(
       rule(
         `${frame}#~grid:${String(index)}`,
-        { x: left, y: at },
-        { x: context.w, y: at },
-        tick === 0 ? theme.colors.text : theme.colors.text2,
-        tick === 0 ? 2 : 1,
-        tick === 0 ? 0.7 : 0.28,
+        { x: left, y: place(value) },
+        { x: edge, y: place(value) },
+        value === 0 ? theme.colors.text : theme.colors.text2,
+        value === 0 ? 2 : 1,
+        value === 0 ? 0.7 : 0.28,
       ),
     )
-    parts.push(
-      words(
-        `${frame}#~tick:${String(index)}`,
-        context,
-        text,
-        spot(0, at - context.lineH / 2, left - 10, context.lineH),
-        { ...look, align: "right" },
-      ),
-    )
-  })
-  chart.categories.forEach((category, at) => {
-    parts.push(
-      words(
-        `${frame}#~category:${String(at)}`,
-        context,
-        category,
-        spot(left + band * at, bottom + 10, band, context.lineH),
-        { ...look, align: "center" },
-      ),
-    )
-  })
-  const plot = spot(left, top, context.w - left, bottom - top)
-  const markerSize = Math.round(context.lineH * markShare)
+  }
+  parts.push(...ticks, ...captionParts(room, chrome, bottom, left - 10), ...bottomNames(room, left, band, bottom + 10))
+  const plot = spot(left, top, edge - left, bottom - top)
+  const markerSize = Math.round(lineH * markShare)
+  const valueLook = strong(theme)
+  const valueHeight = wordsHeight(context, valueLook)
+  const candidates: Candidate[] = []
   chart.series.forEach((series, index) => {
-    const color = context.seriesColors[index] ?? context.theme.colors.accent1
+    const color = seriesColor(context, index)
     const points = chart.categories.map((category, at) => ({
       category,
       x: left + band * (at + 0.5),
@@ -366,86 +364,34 @@ function lineChart(context: Context): Resolved[] {
       .join("")
     if (points.length > 1) parts.push(stroked(`${frame}#${String(index)}`, plot, d, color, 4))
     for (const [pointAt, point] of points.entries()) {
+      const id = markId(context, index, pointAt)
       parts.push(
         disc(
-          markId(context, index, pointAt),
+          id,
           spot(point.x - markerSize / 2, point.y - markerSize / 2, markerSize, markerSize),
           markColor(context, index, pointAt),
           theme.colors.background,
         ),
       )
       if (!labelled) continue
-      const shown = labels.value(point.value)
-      const w = wordsWidth(context, shown, strong(theme)) + 12
-      parts.push(
-        words(
-          valueId(context, index, pointAt),
-          context,
-          shown,
-          spot(
-            clamp(point.x - w / 2, 0, context.w - w),
-            point.y - markerSize / 2 - context.lineH - 2,
-            w,
-            context.lineH,
-          ),
-          strong(theme),
-        ),
-      )
+      candidates.push({
+        value: point.value,
+        tries: valueText(point.value).map((text) => {
+          const w = wordsWidth(context, text, valueLook) + 2
+          return words(
+            valueId(context, index, pointAt),
+            context,
+            text,
+            spot(clamp(point.x - w / 2, left, edge - w), point.y - markerSize / 2 - valueHeight - 2, w, valueHeight),
+            valueLook,
+          )
+        }),
+      })
     }
   })
+  const area = spot(left, region.y, edge - left, bottom - region.y)
+  parts.push(...placeValues(context, candidates, area))
   return parts
-}
-
-function pieChart(context: Context): Resolved[] {
-  const { chart, theme } = context
-  const series = chart.series[0]
-  if (series === undefined) return []
-  const shares = chart.categories.map((category, at) => ({ category, at, value: Math.max(0, series.values[at] ?? 0) }))
-  const total = shares.reduce((sum, share) => sum + share.value, 0)
-  const diameter = Math.min(context.h, context.w * 0.46)
-  const area: Box = spot(0, (context.h - diameter) / 2, diameter, diameter)
-  const radius = diameter / 2
-  const entries: Entry[] = shares.map((share) => ({
-    name: share.category,
-    color: markColor(context, 0, share.at),
-    note: total === 0 ? "0%" : `${String(Math.round((share.value / total) * 100))}%`,
-  }))
-  const rowsH = entries.length * (context.lineH + 18) - 18
-  const parts: Resolved[] = []
-  const live = shares.filter((share) => share.value > 0)
-  let angle = -Math.PI / 2
-  for (const share of live) {
-    const id = markId(context, 0, share.at)
-    const color = entries[share.at]!.color
-    if (live.length === 1) {
-      parts.push(whole(id, area, color))
-      continue
-    }
-    const sweep = (share.value / total) * Math.PI * 2
-    const next = angle + sweep
-    const point = (turn: number) =>
-      `${(radius + radius * Math.cos(turn)).toFixed(2)} ${(radius + radius * Math.sin(turn)).toFixed(2)}`
-    const d = `M${String(radius)} ${String(radius)}L${point(angle)}A${String(radius)} ${String(radius)} 0 ${sweep > Math.PI ? 1 : 0} 1 ${point(next)}Z`
-    parts.push(slice(id, area, d, color, theme.colors.background))
-    if (chart.labels === true) {
-      const middle = angle + sweep / 2
-      const shown = `${String(Math.round((share.value / total) * 100))}%`
-      const w = wordsWidth(context, shown, strong(theme)) + 12
-      const cx = area.x + radius + radius * 0.66 * Math.cos(middle)
-      const cy = area.y + radius + radius * 0.66 * Math.sin(middle)
-      parts.push(
-        words(
-          valueId(context, 0, share.at),
-          context,
-          shown,
-          spot(clamp(cx - w / 2, 0, context.w - w), cy - context.lineH / 2, w, context.lineH),
-          { ...strong(theme), color: theme.colors.background },
-        ),
-      )
-    }
-    angle = next
-  }
-  return [...parts, ...legendOf(context, entries, diameter + 64, (context.h - rowsH) / 2, true)]
 }
 
 export function deriveChart(
@@ -462,8 +408,11 @@ export function deriveChart(
     chart,
     w: box.w,
     h: box.h,
+    frameW: box.w,
     lineH: wordsHeight(kit, { style: "caption", color: theme.colors.text, bold: false }),
     seriesColors: seriesColorsOf(chart, theme),
+    board: inkBoard(),
+    bounds: spot(0, 0, box.w, box.h),
   }
   if (chart.kind === "pie") return pieChart(context)
   if (chart.kind === "line") return lineChart(context)

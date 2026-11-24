@@ -11,6 +11,7 @@ export type Words = {
   readonly color: Hex
   readonly align: "left" | "center" | "right"
   readonly bold?: boolean
+  readonly size?: number
 }
 export type Kit = { readonly theme: Theme; readonly measure: Measure }
 
@@ -94,7 +95,14 @@ export const whole = (id: string, box: Box, color: Hex): Resolved => ({
 
 const textOf = (chars: string, look: Words): Text => ({
   chars,
-  spans: [{ end: chars.length, color: look.color, ...(look.bold === true ? { bold: true } : {}) }],
+  spans: [
+    {
+      end: chars.length,
+      color: look.color,
+      ...(look.bold === true ? { bold: true } : {}),
+      ...(look.size === undefined ? {} : { size: look.size }),
+    },
+  ],
   paras: chars.split("\n").map(() => ({ align: look.align })),
   style: look.style,
   resize: "fixed",
@@ -106,6 +114,9 @@ export const wordsWidth = (kit: Kit, chars: string, look: Omit<Words, "align">):
 
 export const wordsHeight = (kit: Kit, look: Omit<Words, "align">): number =>
   kit.measure(textOf("0", { ...look, align: "left" }), kit.theme, null).h
+
+export const wrappedHeight = (kit: Kit, chars: string, look: Omit<Words, "align">, width: number): number =>
+  kit.measure(textOf(chars, { ...look, align: "left" }), kit.theme, width).h
 
 export function words(id: string, kit: Kit, chars: string, box: Box, look: Words): Resolved {
   return {
