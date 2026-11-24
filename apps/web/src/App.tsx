@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react"
 import { OAuthAuthorize } from "./connect/oauth-authorize"
+import { isOAuthConsentPath } from "./connect/oauth-consent-path"
 import { Home, homeSection } from "./decks/home"
 import { NotFoundPage } from "./decks/not-found-page"
 import { AccountPage } from "./settings/account-page"
@@ -39,7 +40,7 @@ function AppRoutes() {
         <Editor id={editorPath[1] ?? null} />
       </Suspense>
     )
-  if (path === "/oauth/authorize") return <OAuthAuthorize />
+  if (isOAuthConsentPath(window.location.pathname)) return <OAuthAuthorize />
   if (path === "/screens" || path.startsWith("/screens/"))
     return (
       <Suspense>
@@ -51,7 +52,7 @@ function AppRoutes() {
 
 export default function App() {
   const path = currentPath()
-  if (path.startsWith("/screens") || path === "/oauth/authorize") return <AppRoutes />
+  if (path.startsWith("/screens") || isOAuthConsentPath(window.location.pathname)) return <AppRoutes />
   return (
     <AccountProfile>
       <AppRoutes />

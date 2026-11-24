@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { landed, spot } from "@/testing/doom-fixtures"
+import { landed, spot } from "./testing/doom-fixtures"
 import { heldBack, showWrites } from "./hidden-locked"
 
 function slideWithHeldLayers() {

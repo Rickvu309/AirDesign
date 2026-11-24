@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { pictureBox, pictureWrites } from "./picture-writes"
-import { grow, landed } from "@/testing/doom-fixtures"
+import { grow, landed } from "./testing/doom-fixtures"
 
 const slideSize = { w: 1920, h: 1080 }
 const asset = "a".repeat(64)

@@ -1,4 +1,3 @@
-import { elementCopy } from "@/copy/element-copy"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { toast as sonner, type ToastT } from "sonner"
@@ -22,7 +21,7 @@ it("keeps a recovery error dismissible even when a caller asks for a short lifet
 })
 
 it("closes a refusal the person cannot act on after Figma's 3 seconds, and still lets them close it sooner", () => {
-  const id = toast.refusal(elementCopy.removeRefusedTitle, { description: elementCopy.removeRefusedBody.animated })
+  const id = toast.refusal("Layer stays", { description: "It cannot be removed." })
   expect(
     sonner
       .getHistory()

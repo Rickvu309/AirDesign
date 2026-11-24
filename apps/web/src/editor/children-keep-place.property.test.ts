@@ -4,7 +4,7 @@ import { expect, it } from "vitest"
 import { wrapWrites, ungroupWrites } from "./group-writes"
 import { moveWrites } from "./move-writes"
 import { geometryOf, type Point, type SlideGeometry } from "./slide-geometry"
-import { grow, landed, paint, spot } from "@/testing/doom-fixtures"
+import { grow, landed, paint, spot } from "./testing/doom-fixtures"
 
 type Op =
   | { readonly kind: "wrap"; readonly as: "group" | "frame"; readonly pick: readonly number[] }

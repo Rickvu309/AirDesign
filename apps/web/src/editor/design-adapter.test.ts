@@ -13,8 +13,8 @@ import { editorCopy } from "@/copy/editor-copy"
 import { optionCopy } from "@/copy/option-copy"
 import { designCopy } from "@/copy/design-copy"
 import { panelTitle } from "@/editor/panel-title"
-import { hexes } from "@/testing/design-adapter-art"
-import { grow, landed, spot } from "@/testing/doom-fixtures"
+import { hexes } from "./testing/design-adapter-art"
+import { grow, landed, spot } from "./testing/doom-fixtures"
 
 const theme = doom.defaultTheme
 const words = (chars: string, extra: Partial<doom.Text> = {}): doom.Text => ({

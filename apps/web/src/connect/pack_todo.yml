@@ -1,7 +1,0 @@
-apps/web/src:
-  apps/web/src/App.tsx:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/connect/oauth-frame.test.tsx

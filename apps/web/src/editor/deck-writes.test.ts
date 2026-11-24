@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { deckNodeOf, notesOf, notesWrites, renameWrites } from "./deck-writes"
-import { grow, landed } from "@/testing/doom-fixtures"
+import { grow, landed } from "./testing/doom-fixtures"
 
 describe("deck name", () => {
   it("writes the new name on the deck", () => {

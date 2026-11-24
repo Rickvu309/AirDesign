@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { deckTemplates, templateTheme } from "@airdesign/templates"
 import { describe, expect, it } from "vitest"
 import { colorNameOf, swatchesOf } from "./design-palette"
-import { neutralColorNames } from "@/testing/neutral-color-names"
+import { neutralColorNames } from "./testing/neutral-color-names"
 import { templateNameOf } from "./design-template-name"
 
 const newDeckTheme = (): doom.Theme => {

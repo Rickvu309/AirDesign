@@ -15,7 +15,7 @@ import {
   scripted,
   stop,
   usage,
-} from "@/testing/aira-loop-script"
+} from "./testing/aira-loop-script"
 
 describe("Aira's loop in the browser", () => {
   it("streams a text answer and ends the exchange with nothing to undo", async () => {

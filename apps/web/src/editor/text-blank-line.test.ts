@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { grow, paint, spot } from "@/testing/doom-fixtures"
+import { grow, paint, spot } from "./testing/doom-fixtures"
 import { blankLine } from "./text-blank-line"
 
 const blank = (alignV: doom.Text["alignV"]): doom.Text => ({ ...doom.textFromMarkdown("", "body"), alignV })

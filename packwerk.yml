@@ -14,7 +14,7 @@ test_exempt:
   - "apps/web/src/real-words.test.ts"
   - "apps/web/src/agent-parity.test.ts"
   - "apps/web/src/rounded-inputs.test.ts"
-todo_ceiling: 137
+todo_ceiling: 77
 layers:
   - app
   - feature

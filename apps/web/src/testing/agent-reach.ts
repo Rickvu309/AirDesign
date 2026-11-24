@@ -1,5 +1,19 @@
 import * as doom from "@airdesign/doom"
-import { grow, spot } from "./doom-fixtures"
+
+const spot = (x: number, y: number, w: number, h: number, rotation = 0) => ({
+  x,
+  y,
+  w,
+  h,
+  rotation,
+  flipH: false,
+  flipV: false,
+})
+
+function deckOf(children: readonly doom.TreeNode[]) {
+  const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children }] })
+  return { ...grown, view: grown.doom }
+}
 
 export type Probe = "words" | "card" | "rule" | "star" | "photo" | "panel" | "slide"
 
@@ -19,7 +33,7 @@ const words: doom.Text = {
   alignV: "top",
 }
 const solid = (name: doom.ColorVar) => [{ kind: "solid" as const, color: { var: name } }]
-export const built = grow([
+export const built = deckOf([
   { type: "shape", name: "words", props: { box: spot(100, 100, 300, 60), text: words } },
   {
     type: "shape",
