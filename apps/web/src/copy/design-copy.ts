@@ -1,4 +1,3 @@
-import { templateCopy } from "./template-copy"
 import { appearanceCopy } from "./appearance-copy"
 import { nameTooLongOf } from "./product-copy"
 import { frameCopy } from "./frame-copy"
@@ -11,7 +10,10 @@ export const designCopy = {
   background: "Background",
   selectOneSlide: "Select one slide to change its design.",
   selectSlide: "Select a slide to change its design.",
-  ...templateCopy,
+  theme: "Theme",
+  customTheme: "Custom theme",
+  themeSample: "Aa",
+  chooseTheme: (name: string) => `Change theme, ${name}`,
   backgroundColor: (name: string) => `Background color, ${name}`,
   ...appearanceCopy,
   white: "White",

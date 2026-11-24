@@ -43,6 +43,7 @@ import {
 } from "./read-kit.js"
 import { type Refusal, refuse } from "./refusal.js"
 import { type TextStyleName, textStyleNames } from "./text.js"
+import { themeLibrary } from "./theme.js"
 import type { Arrow } from "./geometry.js"
 import { shapeNames } from "./preset-geometry.js"
 import { cropField } from "./agent-crop.js"
@@ -116,6 +117,7 @@ export type AgentLook = {
 export type DeckLook = {
   readonly name?: string
   readonly nameFollows?: boolean
+  readonly theme?: string
   readonly colors?: { readonly [K in ColorVar]?: Hex }
   readonly fonts?: { readonly heading?: string; readonly body?: string }
 }
@@ -354,6 +356,7 @@ const placeFields = {
     readSlideMove,
   ),
   delete: id("A slide to delete."),
+  theme: choice(Object.keys(themeLibrary), "Replace the deck theme with this library theme by id."),
   colors: field(
     {
       type: "object",
@@ -393,7 +396,10 @@ const readChange = variant("op", {
   delete: object(pickFrom(placeFields, ["nodes"])),
   slide: object({}, pickFrom(placeFields, ["add", "move", "delete"])),
   duplicate: object(pickFrom(placeFields, ["nodes"])),
-  deck: object({}, { ...pickFrom(lookFields, ["name"]), ...pickFrom(placeFields, ["colors", "fonts", "nameFollows"]) }),
+  deck: object(
+    {},
+    { ...pickFrom(lookFields, ["name"]), ...pickFrom(placeFields, ["theme", "colors", "fonts", "nameFollows"]) },
+  ),
 })
 
 export function readAgentChange(raw: unknown): AgentChange | (Refusal & { readonly field?: string }) {
@@ -449,7 +455,7 @@ export const agentChangesSchema = {
         op: {
           enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck"],
           description:
-            "add: kind, slide, into?, look. set: target, look. move: node, into?, after?. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, colors?, fonts?.",
+            "add: kind, slide, into?, look. set: target, look. move: node, into?, after?. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
         },
         ...schemasOf(placeFields),
         ...schemasOf(lookFields),

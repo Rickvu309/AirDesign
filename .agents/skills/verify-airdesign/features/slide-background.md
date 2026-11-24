@@ -1,6 +1,6 @@
 # Set a slide's background
 
-On an open deck with no layer selected, the Design panel shows the current slide: its number, the deck's **Template style**, the slide's **Background** and its **Selection colors**. The background takes a solid colour, a gradient or a picture; the slide and its thumbnail paint it at once, it reaches the server as the slide node's `fills`, and one undo takes it back. An agent sets the same fill with `airdesign_edit_deck` and `{ "op": "set", "target": "<slide>", "fill": … }`.
+On an open deck with no layer selected, the Design panel shows the current slide: its number, the deck's **Theme**, the slide's **Background** and its **Selection colors**. The background takes a solid colour, a gradient or a picture; the slide and its thumbnail paint it at once, it reaches the server as the slide node's `fills`, and one undo takes it back. An agent sets the same fill with `airdesign_edit_deck` and `{ "op": "set", "target": "<slide>", "fill": … }`.
 
 ## Sub-features
 
@@ -8,7 +8,7 @@ On an open deck with no layer selected, the Design panel shows the current slide
 - `background-gradient` a gradient shows only its stops, direction and angle; `From center` saves a radial one (`tests/browser/editor-gradient-fill.spec.ts`). State `slide-line-and-gradient`.
 - `background-picture` an image fill picked from a file fills the slide background (`tests/browser/editor-design.spec.ts`).
 - `background-undo` Ctrl/Cmd+Z on the canvas takes the background back to what it was, and a reload keeps the result.
-- `template-style` the **Template style** card is a readout of the deck's theme (name, fonts, colours) with nothing to open; an agent changes the theme. State `design-template`.
+- `theme` opens the library picker and applies a theme to the whole deck. States `design-template` and `design-theme-options`.
 - `agent-background` `airdesign_edit_deck` with a `set` whose target is the slide's id and a `fill` paints the slide's background (`packages/doom/src/agent-set.test.ts`, "paints a slide's background"), through the same run as every other agent change. The person's Undo for the run takes it back.
 
 ## How to get to it (user POV)

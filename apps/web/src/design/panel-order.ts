@@ -2,7 +2,7 @@ import type { SectionName } from "./panel"
 
 export type PanelKind = "text" | "shape" | "picture" | "icon" | "connector" | "group" | "frame" | "many"
 
-type PanelSectionName = SectionName | "selectionColors" | "templateStyle" | "background"
+type PanelSectionName = SectionName | "selectionColors" | "theme" | "background"
 
 export const panelOrder: Readonly<Record<PanelKind | "slide", readonly PanelSectionName[]>> = {
   text: ["alignment", "text", "link", "textFill"],
@@ -13,7 +13,7 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly PanelSect
   group: ["alignment", "selectionColors"],
   frame: ["alignment", "fills", "border", "selectionColors"],
   many: ["alignment", "text", "textFill", "fills", "link", "border", "selectionColors"],
-  slide: ["templateStyle", "background", "selectionColors"],
+  slide: ["theme", "background", "selectionColors"],
 }
 
 export function panelSections(

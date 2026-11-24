@@ -10,7 +10,7 @@ async function drive(kit) {
   const icons = group(page, editorCopy.iconsGroup).getByRole("option")
   await expect(icons.first()).toBeVisible()
   await expect(icons.filter({ hasNot: page.locator("svg") })).toHaveCount(0)
-  const field = page.getByRole("combobox")
+  const field = page.getByRole("combobox", { name: editorCopy.actionsSearch, exact: true })
   await page.keyboard.press("Tab")
   await field.focus()
   await expect(field).toBeFocused()

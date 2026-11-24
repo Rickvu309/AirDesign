@@ -45,7 +45,6 @@ export const { creditsCopy } = createRequire(import.meta.url)("../../../../apps/
 export function readPictureToolCopy() {
   return createRequire(import.meta.url)("../../../../apps/web/src/copy/picture-copy.ts").pictureCopy
 }
-export const { templateCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/template-copy.ts")
 
 export const { slideListCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/slide-list-copy.ts")
 

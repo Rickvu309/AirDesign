@@ -56,7 +56,13 @@ const viewOnly = new Set([
   "show-presenter",
 ])
 
-const manualPanel = new Set(["panel:slide-background", "panel:remove-auto-layout", "panel:show-hidden", "panel:name"])
+const manualPanel = new Set([
+  "panel:theme",
+  "panel:slide-background",
+  "panel:remove-auto-layout",
+  "panel:show-hidden",
+  "panel:name",
+])
 
 function panelKeys(): ReadonlySet<string> {
   const keys = layers.flatMap((name) =>
@@ -73,6 +79,7 @@ function wordExists(word: string): boolean {
   if (where === "op") return agentOps.has(name)
   if (where === "add") return agentKinds.has(name)
   if (where === "slide") return slideOps.has(name) && agentFields.has(name)
+  if (where === "deck") return name === "theme" && agentFields.has(name)
   return false
 }
 

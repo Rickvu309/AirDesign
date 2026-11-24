@@ -85,6 +85,8 @@ it("knows a family's faces once its manifest arrives, before its files install",
   await installing
   expect(loader.faces("Montserrat")).toEqual([{ style: "normal", weight: "100 900" }])
   expect(loader.ready("Montserrat")).toBe(false)
+  expect(loader.servedFamily("montserrat")).toBeUndefined()
   finish()
   await loaded
+  expect(loader.servedFamily("montserrat")).toBe("Montserrat")
 })

@@ -9,7 +9,7 @@ import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { linkCopy } from "../../apps/web/src/copy/link-copy"
 import { selectionColorsCopy } from "../../apps/web/src/copy/selection-colors-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
-import { readFold } from "../../packages/doom/src/index.ts"
+import * as doom from "../../packages/doom/src/index.ts"
 import { test } from "./api-stack"
 import { hexes, neutralColorNames } from "./editor-design-art"
 import { accent, clickSlide, landNodes, openEditor, savedNode, selectedIds, spot, type Opened } from "./editor-deck"
@@ -101,14 +101,14 @@ async function layers(page: Page, context: Parameters<typeof openEditor>[1], sta
   return opened
 }
 
-test("with nothing selected the panel is the old slide panel: the head, template style, a background that takes solid, gradient and a colour, and selection colours", async ({
+test("with nothing selected the slide panel shows the theme, background and selection colours", async ({
   page,
   context,
   stack,
 }) => {
   const opened = await layers(page, context, stack)
   await expect(panel(page).getByText(designCopy.slide(1), { exact: true })).toBeVisible()
-  for (const title of [designCopy.templateStyle, designCopy.background, selectionColorsCopy.section])
+  for (const title of [designCopy.theme, designCopy.background, selectionColorsCopy.section])
     await expect(section(page, title)).toBeVisible()
   await expect(page.getByRole("tab", { name: "Animate" })).toHaveCount(0)
 
@@ -131,17 +131,6 @@ test("with nothing selected the panel is the old slide panel: the head, template
     .not.toEqual({ var: "accent3" })
   await reloadIntoDesign(page)
   await expect(section(page, designCopy.background)).toBeVisible()
-})
-
-test("template style reads out the deck's theme and has nothing to open", async ({ page, context, stack }) => {
-  const opened = await designing(page, context, stack)
-  const { theme } = await saved(stack, opened, "s:1")
-  const card = section(page, designCopy.templateStyle).locator("[data-template-style]")
-  await expect(card).toBeVisible()
-  await expect(card).toContainText(theme.fonts.heading as string)
-  await expect(section(page, designCopy.templateStyle).getByRole("button")).toHaveCount(0)
-  await card.click()
-  await expect(page.getByRole("dialog")).toHaveCount(0)
 })
 
 test("a text layer shows the old Text section and each control writes its spans, undoes and survives a reload", async ({
@@ -284,7 +273,7 @@ test("a selected chart keeps its frame controls and paints data set by an agent"
 
   const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
   const answer = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
-  const fold = readFold(answer.json.fold)
+  const fold = doom.readFold(answer.json.fold)
   if (fold === undefined) throw new Error("could not read the deck")
   const chart = {
     kind: "column",

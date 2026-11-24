@@ -2,7 +2,17 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises"
 import { homedir } from "node:os"
 import { dirname, join } from "node:path"
 
-export const shelvedFamilies = ["Inter", "IBM Plex Sans", "Lato", "Lora", "Montserrat", "Playfair Display"]
+export const shelvedFamilies = [
+  "Inter",
+  "IBM Plex Sans",
+  "Lato",
+  "Lora",
+  "Montserrat",
+  "Playfair Display",
+  "Geist",
+  "Source Sans 3",
+  "Source Serif 4",
+]
 
 export const shelfFolder = join(homedir(), ".cache/airdesign/fonts")
 

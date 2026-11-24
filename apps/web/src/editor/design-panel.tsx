@@ -20,7 +20,7 @@ import { paletteOf } from "./design-palette"
 import { fillWrite, shownFill } from "./design-paint-values"
 import { DoomSelectionColors } from "./design-selection-section"
 import { panelTitle } from "./panel-title"
-import { DoomThemeCard } from "./design-theme-card"
+import { ThemePicker } from "./design-theme-picker"
 import { resolveColorOf } from "./design-slide-color"
 import type { Selection } from "./selection"
 import { HiddenLockedLayers } from "./hidden-locked"
@@ -95,8 +95,17 @@ export function DesignPanel(props: Props) {
         <DesignHead>{designCopy.slide(props.slideNumber)}</DesignHead>
         <HiddenLockedLayers view={view} slide={slide} push={client.push} />
         {panelSections("slide").map((section) => {
-          if (section === "templateStyle")
-            return <DoomThemeCard key={section} theme={theme} swatches={palette.templateColors} />
+          if (section === "theme")
+            return (
+              <ThemePicker
+                key={section}
+                theme={theme}
+                onChoose={(id) => {
+                  const writes = doom.compileAgentChange(client.view(), { op: "deck", theme: id }, client.mint)
+                  if (!doom.isRefusal(writes)) client.push(writes)
+                }}
+              />
+            )
           if (section === "background")
             return (
               <SlideBackground

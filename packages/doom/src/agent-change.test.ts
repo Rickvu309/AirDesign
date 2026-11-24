@@ -41,6 +41,7 @@ const valid: readonly AgentChange[] = [
   { op: "slide", add: { after: "t:3" as never } },
   { op: "slide", move: { slide: "t:3" as never, after: null } },
   { op: "slide", delete: "t:3" as never },
+  { op: "deck", theme: "neutral" },
 ]
 
 describe("readAgentChange", () => {
@@ -191,6 +192,7 @@ describe("the advertised schema", () => {
       "spaceAfter",
       "blur",
       "innerShadow",
+      "theme",
       "colors",
       "fonts",
       "nameFollows",
@@ -203,14 +205,13 @@ describe("the advertised schema", () => {
   it("lists as enum exactly the values the reader accepts", () => {
     for (const [key, schema] of Object.entries(change)) {
       if (schema.enum === undefined || key === "op") continue
-      for (const value of schema.enum) {
-        const base =
-          key === "kind" ? { op: "add", kind: value, slide: "t:3" } : { op: "set", target: "t:3", [key]: value }
-        expect(readAgentChange(base)).not.toHaveProperty("refused")
+      const changeWith = (value: string) => {
+        if (key === "kind") return { op: "add", kind: value, slide: "t:3" }
+        if (key === "theme") return { op: "deck", theme: value }
+        return { op: "set", target: "t:3", [key]: value }
       }
-      const base =
-        key === "kind" ? { op: "add", kind: "nope", slide: "t:3" } : { op: "set", target: "t:3", [key]: "nope" }
-      expect(readAgentChange(base)).toMatchObject({ refused: "shape" })
+      for (const value of schema.enum) expect(readAgentChange(changeWith(value))).not.toHaveProperty("refused")
+      expect(readAgentChange(changeWith("nope"))).toMatchObject({ refused: "shape" })
     }
   })
 

@@ -65,7 +65,7 @@ export class FontLoader {
   private readonly pending = new Map<string, Promise<FontIssue | null>>()
   private readonly settled = new Set<string>()
   private readonly watchers = new Set<() => void>()
-  private readonly served = new Map<string, readonly ServedFace[]>()
+  private readonly served = new Map<string, { readonly family: string; readonly faces: readonly ServedFace[] }>()
   private readonly network: typeof fetch
   private readonly install: (family: Manifest) => Promise<void>
 
@@ -83,7 +83,11 @@ export class FontLoader {
   }
 
   faces(name: string): readonly ServedFace[] | undefined {
-    return this.served.get(name.toLowerCase())
+    return this.served.get(name.toLowerCase())?.faces
+  }
+
+  servedFamily(name: string): string | undefined {
+    return this.ready(name) ? this.served.get(name.toLowerCase())?.family : undefined
   }
 
   settledCount(): number {
@@ -134,10 +138,7 @@ export class FontLoader {
     const raw: unknown = await response.json()
     if (!manifest(raw)) throw new Error("font manifest")
     const key = name.toLowerCase()
-    this.served.set(
-      key,
-      raw.faces.map(({ style, weight }) => ({ style, weight })),
-    )
+    this.served.set(key, { family: raw.family, faces: raw.faces.map(({ style, weight }) => ({ style, weight })) })
     await this.install(raw).catch((error: unknown) => {
       this.served.delete(key)
       throw error
