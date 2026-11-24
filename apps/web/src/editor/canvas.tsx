@@ -236,6 +236,13 @@ export function DoomCanvas(props: {
     return { parent: slide, inside: size }
   }
 
+  function anchorOf(parent: doom.NodeId) {
+    const [only] = current.ids
+    const box =
+      parent === slide && current.ids.length === 1 && only !== undefined ? geometry.byId.get(only)?.node.box : undefined
+    return box === undefined ? undefined : { x: box.x, y: box.y, w: box.w, h: box.h }
+  }
+
   function inserted(id: doom.NodeId, writes: readonly doom.Write[]) {
     if (client.push(writes).ok) onSelection({ ids: [id], inside: null })
   }
@@ -259,12 +266,12 @@ export function DoomCanvas(props: {
       }
       const { parent, inside } = insertTarget()
       const id = client.mint()
-      inserted(id, iconWrites(view, id, slotIn(parent), name, inside))
+      inserted(id, iconWrites(view, id, slotIn(parent), name, inside, anchorOf(parent)))
     },
     chart(kind: doom.Chart["kind"]) {
       const { parent, inside } = insertTarget()
       const id = client.mint()
-      inserted(id, chartWrites(id, slotIn(parent), chartArea(view, parent, inside), kind))
+      inserted(id, chartWrites(id, slotIn(parent), chartArea(view, parent, inside, anchorOf(parent)), kind))
     },
     picture(file: File) {
       pictures.add(file)

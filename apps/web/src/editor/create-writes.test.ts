@@ -177,27 +177,27 @@ describe("inserting", () => {
     })
   })
 
-  it("fills the free area under a title, leaving the title's box clear", () => {
+  it("fills the content area under a title, on the title's left edge", () => {
     let next = 0
     const titled = landed(
       built.view,
       doom.titleOnlyWrites(slide, () => doom.nodeId(`t:${String((next += 1))}`), inside),
     )
-    expect(chartArea(titled, slide, inside)).toEqual({ x: 77, y: 229, w: 1766, h: 808 })
+    expect(chartArea(titled, slide, inside)).toEqual({ x: 160, y: 229, w: 1600, h: 771 })
   })
 
-  it("fills the free area of a slide with nothing on it", () => {
-    expect(chartArea(built.view, slide, inside)).toEqual({ x: 77, y: 43, w: 1766, h: 994 })
+  it("keeps the content margins on an empty slide, a 0% fill", () => {
+    expect(chartArea(built.view, slide, inside)).toEqual({ x: 160, y: 80, w: 1600, h: 920 })
   })
 
-  it("centres an icon in the free area under a title and a subtitle", () => {
+  it("centres an icon in the content area under a title and a subtitle", () => {
     let next = 0
     const titled = landed(
       built.view,
       doom.titleSlideWrites(slide, () => doom.nodeId(`s:${String((next += 1))}`), inside),
     )
     const after = landed(titled, iconWrites(titled, id, slot, "rocket", inside))
-    expect(after.nodes.get(id)).toMatchObject({ box: { x: 900, y: 827, w: 120, h: 120 } })
+    expect(after.nodes.get(id)).toMatchObject({ box: { x: 900, y: 808, w: 120, h: 120 } })
   })
 
   it("puts a chart and an icon beside a block on a title slide", () => {
@@ -229,16 +229,68 @@ describe("inserting", () => {
       { node: frame, prop: "geometry", value: { kind: "rect" } },
     ])
     const after = landed(occupied, iconWrites(occupied, id, { id: slide, at: "a4" as never }, "rocket", inside))
-    expect(after.nodes.get(id)).toMatchObject({ box: { x: 1576, y: 480, w: 120, h: 120 } })
+    expect(after.nodes.get(id)).toMatchObject({ box: { x: 1535, y: 480, w: 120, h: 120 } })
   })
 
-  it("falls back to the whole parent when nothing is free", () => {
-    const frame = doom.nodeId("m:9")
-    const covered = landed(built.view, [
-      { node: frame, prop: "type", value: "frame" },
+  function occupied(share: number, idName: string) {
+    const width = Math.round(inside.w * share)
+    const frame = doom.nodeId(idName)
+    return {
+      width,
+      view: landed(built.view, [
+        { node: frame, prop: "type", value: "shape" },
+        { node: frame, prop: "parent", value: slot },
+        {
+          node: frame,
+          prop: "box",
+          value: { x: 0, y: 0, w: width, h: inside.h, rotation: 0, flipH: false, flipV: false },
+        },
+        { node: frame, prop: "geometry", value: { kind: "rect" } },
+      ]),
+    }
+  }
+
+  it("puts a chart and an icon in the open half of a 50% fill, inside the content margins", () => {
+    const { view, width } = occupied(0.5, "m:20")
+    const area = chartArea(view, slide, inside)
+    const after = landed(view, iconWrites(view, id, { id: slide, at: "a4" as never }, "rocket", inside))
+    expect(area).toEqual({ x: 989, y: 80, w: 771, h: 920 })
+    expect(area.x).toBeGreaterThanOrEqual(width)
+    expect(after.nodes.get(id)).toMatchObject({ box: { x: 1315, y: 480, w: 120, h: 120 } })
+  })
+
+  it("keeps a readable size at an 85% fill, on top at the slide centre, instead of the whole slide", () => {
+    const { view } = occupied(0.85, "m:21")
+    expect(chartArea(view, slide, inside)).toEqual({ x: 820, y: 420, w: 280, h: 240 })
+    const after = landed(view, iconWrites(view, id, { id: slide, at: "a4" as never }, "rocket", inside))
+    expect(after.nodes.get(id)).toMatchObject({ box: { x: 900, y: 480, w: 120, h: 120 } })
+  })
+
+  it("keeps that size at a 95% fill, and steps it off a selection", () => {
+    const { view } = occupied(0.95, "m:22")
+    expect(chartArea(view, slide, inside)).toEqual({ x: 820, y: 420, w: 280, h: 240 })
+    const selected = { x: 100, y: 200, w: 400, h: 300 }
+    expect(chartArea(view, slide, inside, selected)).toEqual({ x: 129, y: 229, w: 280, h: 240 })
+    const after = landed(view, iconWrites(view, id, { id: slide, at: "a4" as never }, "rocket", inside, selected))
+    expect(after.nodes.get(id)).toMatchObject({ box: { x: 129, y: 229, w: 120, h: 120 } })
+  })
+
+  it("refuses the short strip under a block that covers the top 85%, and stays on the slide", () => {
+    const frame = doom.nodeId("m:23")
+    const view = landed(built.view, [
+      { node: frame, prop: "type", value: "shape" },
       { node: frame, prop: "parent", value: slot },
-      { node: frame, prop: "box", value: { x: 0, y: 0, w: 1920, h: 1080, rotation: 0, flipH: false, flipV: false } },
+      {
+        node: frame,
+        prop: "box",
+        value: { x: 0, y: 0, w: inside.w, h: Math.round(inside.h * 0.85), rotation: 0, flipH: false, flipV: false },
+      },
+      { node: frame, prop: "geometry", value: { kind: "rect" } },
     ])
-    expect(chartArea(covered, slide, inside)).toEqual({ x: 0, y: 0, w: 1920, h: 1080 })
+    expect(chartArea(view, slide, inside)).toEqual({ x: 820, y: 420, w: 280, h: 240 })
+    const corner = { x: 1800, y: 1000, w: 100, h: 50 }
+    expect(chartArea(view, slide, inside, corner)).toEqual({ x: 1640, y: 840, w: 280, h: 240 })
+    const after = landed(view, iconWrites(view, id, { id: slide, at: "a4" as never }, "rocket", inside))
+    expect(after.nodes.get(id)).toMatchObject({ box: { x: 900, y: 480, w: 120, h: 120 } })
   })
 })
