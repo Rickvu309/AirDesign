@@ -37,8 +37,8 @@ function opening(layers: readonly string[]): string {
 
 export function agentLeftLayers(layers: readonly string[]): string {
   return layers.length === 1
-    ? `${opening(layers)} stays where it is, because the frame it came from was deleted or moved since.`
-    : `${opening(layers)} stay where they are, because the frames they came from were deleted or moved since.`
+    ? `${opening(layers)} stays where it is, because the frame it came from was deleted or moved since. Move it yourself if it should go back.`
+    : `${opening(layers)} stay where they are, because the frames they came from were deleted or moved since. Move them yourself if they should go back.`
 }
 
 export function agentWaitingLayers(layers: readonly string[]): string {
@@ -63,6 +63,6 @@ export function agentUndoStays(agent: string, stays: UndoStays): string {
 
 export function agentKeptLayers(agent: string, layers: readonly string[]): string {
   return layers.length === 1
-    ? `${opening(layers)} stays, because it was changed after ${agent} made it.`
-    : `${opening(layers)} stay, because they were changed after ${agent} made them.`
+    ? `${opening(layers)} stays, because you changed it or added to it after ${agent} made it. Delete it yourself if you don't want it.`
+    : `${opening(layers)} stay, because you changed them or added to them after ${agent} made them. Delete them yourself if you don't want them.`
 }

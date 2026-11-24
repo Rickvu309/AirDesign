@@ -78,7 +78,7 @@ export function AgentRuns({
                   {live ? <LiveDot /> : null}
                   <span className="truncate">{status}</span>
                 </span>
-                {live || run.undone ? null : (
+                {live || run.undone || state === "nothing" || state === "refused" ? null : (
                   <button
                     type="button"
                     data-agent-run-undo=""

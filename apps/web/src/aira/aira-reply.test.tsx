@@ -144,15 +144,19 @@ describe("a request Aira's changes were undone from", () => {
 
   it("names the layers the undo kept because they were changed after Aira made them", () => {
     const one = offered({ ...exchange(edited, "undone", ["r1"]), kept: ["“Revenue”"] })
-    expect(one).toContain(`${airaCopy.undone} “Revenue” stays, because it was changed after Aira made it.`)
+    expect(one).toContain(
+      `${airaCopy.undone} “Revenue” stays, because you changed it or added to it after Aira made it. Delete it yourself if you don't want it.`,
+    )
     const two = offered({ ...exchange(edited, "undone", ["r1"]), kept: ["a group", "“Revenue”"] })
-    expect(two).toContain("A group and “Revenue” stay, because they were changed after Aira made them.")
+    expect(two).toContain(
+      "A group and “Revenue” stay, because you changed them or added to them after Aira made them. Delete them yourself if you don't want them.",
+    )
   })
 
   it("names what stays and offers Undo again when the undo landed nothing, as the Agents panel does", () => {
     const markup = offered({ ...exchange(edited, "done", ["r1"]), left: ["“Card”"], waiting: ["“Logo”"] })
     expect(markup).toContain(
-      "“Card” stays where it is, because the frame it came from was deleted or moved since. “Logo” can't come back until the frame it was in is back.",
+      "“Card” stays where it is, because the frame it came from was deleted or moved since. Move it yourself if it should go back. “Logo” can't come back until the frame it was in is back.",
     )
     expect(markup).not.toContain(airaCopy.undone)
     expect(markup).not.toContain(airaCopy.undoRefused)
