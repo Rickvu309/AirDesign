@@ -12,4 +12,3 @@ This file holds only the rules that review holds: its rows say `review` first. T
 | Extend before you build a parallel version, reduced motion shows the finished state | review |
 | Copy: `better-writing`, `GLOSSARY.md`, current behavior | review |
 | How agents work here | review |
-| A drag leaves the filmstrip and the Design panel alone until it lands | review; its test went with the old editor in 9b0587d26, and a test on the Doom editor is owed |
