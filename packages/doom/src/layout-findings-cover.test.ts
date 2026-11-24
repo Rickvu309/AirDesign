@@ -25,6 +25,18 @@ describe("layout findings: what may cover the slide without a word of its own", 
       found([block("backdrop", 2000, 1080, { box: { ...spot(-40, 0, 2000, 1080), rotation: 360 }, ...filled })])
         .findings,
     ).toEqual([])
+    const rect = found([
+      {
+        type: "shape",
+        name: "backdrop",
+        props: {
+          box: spot(-40, -40, 2000, 1160),
+          fills: [{ kind: "solid", color: { var: "accent1" } }],
+          geometry: { kind: "rect" },
+        },
+      },
+    ])
+    expect(rect.findings).toEqual([])
   })
 
   it("names a cover that is not one plain leaf, however plainly it covers the slide", () => {
@@ -65,6 +77,20 @@ describe("layout findings: what may cover the slide without a word of its own", 
         note: `${clear.ids.clear}: it runs 40 px past the slide's edge, where the slide cuts it off.`,
       },
     ])
+    const washed = found([
+      block("washed", 2000, 1160, {
+        box: spot(-40, -40, 2000, 1160),
+        fills: [{ kind: "solid", color: { var: "accent1" }, opacity: 0 }],
+      }),
+    ])
+    expect(washed.findings).toEqual([
+      {
+        code: "off-slide",
+        node: washed.ids.washed,
+        past: 40,
+        note: `${washed.ids.washed}: it runs 40 px past the slide's edge, where the slide cuts it off.`,
+      },
+    ])
     const cover = (name: string, geometry: Geometry): ReturnType<typeof found> =>
       found([
         {
@@ -75,6 +101,7 @@ describe("layout findings: what may cover the slide without a word of its own", 
       ])
     for (const [name, geometry] of [
       ["oval", { kind: "ellipse" }],
+      ["wedge", { kind: "preset", name: "triangle" }],
       ["drawn", { kind: "path", d: "M0 0 L1 0 L1 1 L0 1 Z" }],
       ["glyph", { kind: "icon", name: "lucide/star" }],
     ] as const) {

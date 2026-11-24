@@ -61,14 +61,6 @@ function meet(a: Rect, b: Rect): Rect | null {
 const contains = (outer: Rect, inner: Rect) =>
   outer.x <= inner.x && outer.y <= inner.y && right(outer) >= right(inner) && bottom(outer) >= bottom(inner)
 
-function turned(rect: Rect, rotation: number): Rect {
-  if (rotation % 360 === 0) return rect
-  const angle = (rotation * Math.PI) / 180
-  const w = rect.w * Math.abs(Math.cos(angle)) + rect.h * Math.abs(Math.sin(angle))
-  const h = rect.w * Math.abs(Math.sin(angle)) + rect.h * Math.abs(Math.cos(angle))
-  return { x: rect.x + rect.w / 2 - w / 2, y: rect.y + rect.h / 2 - h / 2, w, h }
-}
-
 function around(rect: Rect, rotation: number, cx: number, cy: number): Rect {
   const angle = (rotation * Math.PI) / 180
   const cos = Math.cos(angle)
@@ -91,6 +83,11 @@ function around(rect: Rect, rotation: number, cx: number, cy: number): Rect {
   return { x: left, y: top, w: maxX - left, h: maxY - top }
 }
 
+function turned(rect: Rect, rotation: number): Rect {
+  if (rotation % 360 === 0) return rect
+  return around(rect, rotation, rect.x + rect.w / 2, rect.y + rect.h / 2)
+}
+
 const written = (line: ResolvedLine) => line.runs.some((run) => run.text.trim() !== "")
 
 const wordless = (node: Resolved): boolean => node.text === null || !node.text.lines.some(written)
@@ -106,25 +103,35 @@ function inkOf(line: ResolvedLine, x: number, y: number): Rect {
 const painted = (node: Resolved) =>
   node.fills.some((paint) => paint.opacity > 0) || node.strokes.length > 0 || node.children.some((kid) => kid.derived)
 
-function place(slide: Slide, node: Resolved, x: number, y: number): Placed {
+function place(slide: Slide, node: Resolved, x: number, y: number, toSlide: (rect: Rect) => Rect): Placed {
   const box = { x: x + node.box.x, y: y + node.box.y, w: node.box.w, h: node.box.h }
   const rotation = node.box.rotation
-  const kids = node.children.filter((kid) => !kid.derived).map((kid) => place(slide, kid, box.x, box.y))
-  judgeKids(slide, kids)
+  const cx = box.x + box.w / 2
+  const cy = box.y + box.h / 2
+  const spin = (rect: Rect) => (rotation % 360 === 0 ? rect : around(rect, rotation, cx, cy))
+  const seen = (rect: Rect) => toSlide(spin(rect))
+  const laid = node.children.filter((kid) => !kid.derived).map((kid) => place(slide, kid, box.x, box.y, seen))
+  judgeKids(
+    slide,
+    laid.map((kid) => ({
+      ...kid,
+      inks: kid.inks.map(seen),
+      content: kid.content === null ? null : seen(kid.content),
+    })),
+  )
   const lines =
     node.text === null || unread(slide, node.id)
       ? []
       : node.text.lines.filter(written).map((line) => inkOf(line, box.x, box.y))
-  const own =
-    rotation % 360 === 0 ? lines : lines.map((ink) => around(ink, rotation, box.x + box.w / 2, box.y + box.h / 2))
-  const inks = [...own, ...kids.flatMap((kid) => kid.inks)]
+  const own = lines.map(spin)
+  const inks = [...own, ...laid.flatMap((kid) => kid.inks.map(spin))]
   const line = node.geometry?.kind === "line"
   const content = line
     ? null
     : painted(node)
-      ? turned(box, node.box.rotation)
-      : union(kids.flatMap((kid) => (kid.content === null ? kid.inks : [kid.content])))
-  const bounds = union([turned(box, node.box.rotation), ...inks]) ?? box
+      ? turned(box, rotation)
+      : union(laid.flatMap((kid) => (kid.content === null ? kid.inks : [kid.content])).map(spin))
+  const bounds = union([turned(box, rotation), ...inks]) ?? box
   judgeOwn(slide, node, box)
   return { node, box, inks, content, bounds }
 }
@@ -250,7 +257,7 @@ export function layoutFindings(
   for (const id of slides) {
     if (doom.nodes.get(id)?.type !== "slide") continue
     const slide: Slide = { doom, theme, measure, size, found, missing }
-    const tops = resolveSlide(doom, id, measure).map((node) => place(slide, node, 0, 0))
+    const tops = resolveSlide(doom, id, measure).map((node) => place(slide, node, 0, 0, (rect) => rect))
     judgeKids(slide, tops)
     for (const top of tops) judgeEdges(slide, top)
   }
