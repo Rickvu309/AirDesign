@@ -5,6 +5,7 @@ import { agentDeck, build, lastChild, minter, titledSlide } from "./agent-fixtur
 import { defaultTheme } from "./default-theme-art.js"
 import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import { widestWord } from "./text-estimate.js"
+import type { TextStyleName } from "./text.js"
 import { type Doom, type NodeId } from "./index.js"
 import { ids, land } from "./sample-deck.js"
 
@@ -224,25 +225,78 @@ describe("a timeline of many steps", () => {
     { value: "Q8", title: "Renew", note: "Second platform" },
   ]
 
-  it.each([2, 6, 8])("places %i steps on a 16:9 slide, inside the bottom margin", (count) => {
-    const { doom: start, on } = titledSlide()
+  const placed = (count: number, size: { readonly w: number; readonly h: number }) => {
+    const { doom: start, on } = titledSlide(size)
     const doom = build(
       start,
       { op: "add", slide: on, kind: "timeline", items: stages.slice(0, count) } as AgentChange,
       minter("p"),
     )
-    const box = propOf(lastChild(doom, on), "box")!
-    expect(box.y + box.h).toBeLessThanOrEqual(bottomLimitOf(1080))
+    const root = lastChild(doom, on)
+    const lane = childrenOf(doom, root.id).find((node) => propOf(node, "layout") !== undefined)!
+    const layout = propOf(lane, "layout")!
+    const steps = childrenOf(doom, lane.id)
+    const laneW = propOf(lane, "box")!.w
+    const slot = layout.mode === "row" ? (laneW - layout.gap * (steps.length - 1)) / steps.length : laneW
+    const words = steps.flatMap((step) => {
+      const stepLayout = propOf(step, "layout")!
+      const dot = childrenOf(doom, step.id)[0]!
+      const room = stepLayout.mode === "row" ? slot - propOf(dot, "box")!.w - stepLayout.gap : slot
+      const found: { readonly chars: string; readonly style: TextStyleName }[] = []
+      const walk = (id: NodeId) => {
+        for (const child of childrenOf(doom, id)) {
+          const text = propOf(child, "text")
+          if (text) found.push({ chars: text.chars, style: text.style })
+          walk(child.id)
+        }
+      }
+      walk(step.id)
+      return found.map((word) => ({ room, word }))
+    })
+    return { doom, root, mode: layout.mode, words }
+  }
+
+  it.each([
+    ["16:9", { w: 1920, h: 1080 }],
+    ["4:3", { w: 1440, h: 1080 }],
+  ])("runs 3, 6 and 8 steps across a %s slide, in whole words, inside the bottom margin", (ratio, size) => {
+    for (const count of [3, 6, 8]) {
+      const { root, mode, words } = placed(count, size)
+      expect(mode, `${ratio} ${count}`).toBe("row")
+      const split = words
+        .filter(({ room, word }) => widestWord([word.chars], defaultTheme, word.style) > room)
+        .map(({ word }) => word.chars)
+      expect(split).toEqual([])
+      const box = propOf(root, "box")!
+      expect(box.y + box.h).toBeLessThanOrEqual(bottomLimitOf(size.h))
+      if (count === 3) {
+        const titles = words
+          .filter(({ word }) => word.style === "heading" || word.style === "body" || word.style === "body2")
+          .map(({ word }) => word.style)
+        expect(titles).toEqual(["heading", "heading", "heading"])
+      }
+    }
   })
 
-  it.each([6, 8])("places %i steps on a 4:3 slide, inside the bottom margin", (count) => {
-    const { doom: start, on } = titledSlide({ w: 1440, h: 1080 })
-    const doom = build(
-      start,
-      { op: "add", slide: on, kind: "timeline", items: stages.slice(0, count) } as AgentChange,
-      minter("p"),
-    )
-    const box = propOf(lastChild(doom, on), "box")!
-    expect(box.y + box.h).toBeLessThanOrEqual(bottomLimitOf(1080))
+  it("runs down at the normal step when a word does not fit across", () => {
+    const items = [
+      { value: "Q1", title: "Antidisestablishmentarianism", note: "One word" },
+      { value: "Q2", title: "Build", note: "Core platform" },
+      { value: "Q3", title: "Pilot", note: "Ten customers" },
+    ]
+    const doom = build(agentDeck(), add({ kind: "timeline", items }))
+    const lane = childrenOf(doom, made(doom).id).find((node) => propOf(node, "layout") !== undefined)!
+    expect(propOf(lane, "layout")).toMatchObject({ mode: "column" })
+    const titles: string[] = []
+    const walk = (id: NodeId) => {
+      for (const child of childrenOf(doom, id)) {
+        const text = propOf(child, "text")
+        if (text && (text.style === "heading" || text.style === "body" || text.style === "body2"))
+          titles.push(text.style)
+        walk(child.id)
+      }
+    }
+    walk(lane.id)
+    expect(titles).toEqual(["heading", "heading", "heading"])
   })
 })

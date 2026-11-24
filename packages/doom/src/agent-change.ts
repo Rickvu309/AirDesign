@@ -150,7 +150,7 @@ export type AgentRefusal = Refusal & { readonly change: string; readonly at?: nu
 
 const idSchema = { $ref: "#/$defs/id" }
 const kindWords =
-  "text and shape hold words. line. frame groups children, or rows makes a grid. picture: fill {image}. icon. chart. kpi: title, value, note. cards: title, points, icon. compare: 2 or 3 of title, points. matrix: up to 4, axes. timeline: 2 to 8 of value, title, note, runs down when it fits, else across. flow: 2 to 6 of title, note, runs across at the normal text step if every label fits, else down at that step if the stack fits, else across at the largest smaller step where every whole word fits, else refused."
+  "text and shape hold words. line. frame groups children, or rows makes a grid. picture: fill {image}. icon. chart. kpi: title, value, note. cards: title, points, icon. compare: 2 or 3 of title, points. matrix: up to 4, axes. timeline: 2 to 8 of value, title, note, runs across at the normal text step if every whole word fits, else down, else across at the largest smaller step where every whole word fits, else refused. flow: 2 to 6 of title, note, runs across at the normal text step if every label fits, else down at that step if the stack fits, else across at the largest smaller step where every whole word fits, else refused."
 const colorSchema = { $ref: "#/$defs/color" }
 const readId = formed(readNodeId, forms.node)
 const tintedName = new RegExp(`^(${colorVars.join("|")})([+-](100|[1-9][0-9]?))?$`)

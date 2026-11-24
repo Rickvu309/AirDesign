@@ -47,9 +47,9 @@ describe("a pattern under a title", () => {
         ? [{ title: "Quick wins" }, { title: "Big bets" }, { title: "Fill-ins" }, { title: "Avoid" }]
         : kind === "timeline"
           ? [
-              { value: "Q1", title: "Plan" },
-              { value: "Q2", title: "Build" },
-              { value: "Q3", title: "Launch" },
+              { value: "Q1", title: "Antidisestablishmentarianism", note: "One word" },
+              { value: "Q2", title: "Build", note: "Core platform" },
+              { value: "Q3", title: "Pilot", note: "Ten customers" },
             ]
           : [
               { title: "Collect the customer order" },
@@ -70,6 +70,26 @@ describe("a pattern under a title", () => {
     const box = propOf(lastChild(doom, on), "box")!
     expect(box.y + box.h).toBeGreaterThan(bottomLimitOf(1080) - items.length)
     expect(box.y + box.h).toBeLessThanOrEqual(bottomLimitOf(1080))
+  })
+
+  it("keeps a timeline that runs across at content height, short of the bottom margin", () => {
+    const { doom: start, on } = titled()
+    const doom = build(
+      start,
+      {
+        op: "add",
+        slide: on,
+        kind: "timeline",
+        items: [
+          { value: "Q1", title: "Plan" },
+          { value: "Q2", title: "Build" },
+          { value: "Q3", title: "Launch" },
+        ],
+      } as AgentChange,
+      minter("p"),
+    )
+    const box = propOf(lastChild(doom, on), "box")!
+    expect(box.y + box.h).toBeLessThan(bottomLimitOf(1080))
   })
 
   it("keeps a flow that runs across at content height, short of the bottom margin", () => {
