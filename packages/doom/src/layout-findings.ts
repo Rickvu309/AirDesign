@@ -25,6 +25,7 @@ const referenceHeight = 1080
 
 type Placed = {
   readonly node: Resolved
+  readonly box: Rect
   readonly inks: readonly Rect[]
   readonly content: Rect | null
   readonly bounds: Rect
@@ -68,7 +69,32 @@ function turned(rect: Rect, rotation: number): Rect {
   return { x: rect.x + rect.w / 2 - w / 2, y: rect.y + rect.h / 2 - h / 2, w, h }
 }
 
+function around(rect: Rect, rotation: number, cx: number, cy: number): Rect {
+  const angle = (rotation * Math.PI) / 180
+  const cos = Math.cos(angle)
+  const sin = Math.sin(angle)
+  let left = Infinity
+  let top = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const px of [rect.x, right(rect)])
+    for (const py of [rect.y, bottom(rect)]) {
+      const dx = px - cx
+      const dy = py - cy
+      const x = cx + dx * cos - dy * sin
+      const y = cy + dx * sin + dy * cos
+      left = Math.min(left, x)
+      top = Math.min(top, y)
+      maxX = Math.max(maxX, x)
+      maxY = Math.max(maxY, y)
+    }
+  return { x: left, y: top, w: maxX - left, h: maxY - top }
+}
+
 const written = (line: ResolvedLine) => line.runs.some((run) => run.text.trim() !== "")
+
+const wordless = (node: Resolved): boolean =>
+  (node.text === null || !node.text.lines.some(written)) && node.children.every(wordless)
 
 function inkOf(line: ResolvedLine, x: number, y: number): Rect {
   const free = Math.max(0, line.w - line.ink)
@@ -83,13 +109,15 @@ const painted = (node: Resolved) =>
 
 function place(slide: Slide, node: Resolved, x: number, y: number): Placed {
   const box = { x: x + node.box.x, y: y + node.box.y, w: node.box.w, h: node.box.h }
-  const upright = node.box.rotation % 360 === 0
+  const rotation = node.box.rotation
   const kids = node.children.filter((kid) => !kid.derived).map((kid) => place(slide, kid, box.x, box.y))
   judgeKids(slide, kids)
-  const own =
-    !upright || node.text === null || unread(slide, node.id)
+  const lines =
+    node.text === null || unread(slide, node.id)
       ? []
       : node.text.lines.filter(written).map((line) => inkOf(line, box.x, box.y))
+  const own =
+    rotation % 360 === 0 ? lines : lines.map((ink) => around(ink, rotation, box.x + box.w / 2, box.y + box.h / 2))
   const inks = [...own, ...kids.flatMap((kid) => kid.inks)]
   const line = node.geometry?.kind === "line"
   const content = line
@@ -99,7 +127,7 @@ function place(slide: Slide, node: Resolved, x: number, y: number): Placed {
       : union(kids.flatMap((kid) => (kid.content === null ? kid.inks : [kid.content])))
   const bounds = union([turned(box, node.box.rotation), ...inks]) ?? box
   judgeOwn(slide, node, box)
-  return { node, inks, content, bounds }
+  return { node, box, inks, content, bounds }
 }
 
 function holdsMissing(doom: Doom, id: NodeId, missing: ReadonlySet<string>): boolean {
@@ -182,11 +210,32 @@ function judgeKids(slide: Slide, kids: readonly Placed[]): void {
     }
 }
 
+function coversSlide(slide: Slide, top: Placed): boolean {
+  const { box, node } = top
+  if (node.geometry?.kind === "line" || !node.fills.some((paint) => paint.opacity > 0) || !wordless(node)) return false
+  const angle = (-node.box.rotation * Math.PI) / 180
+  const cos = Math.cos(angle)
+  const sin = Math.sin(angle)
+  const cx = box.x + box.w / 2
+  const cy = box.y + box.h / 2
+  const { w, h } = slide.size
+  return [0, w].every((px) =>
+    [0, h].every((py) => {
+      const dx = px - cx
+      const dy = py - cy
+      const x = cx + dx * cos - dy * sin
+      const y = cy + dx * sin + dy * cos
+      return x >= box.x && x <= right(box) && y >= box.y && y <= bottom(box)
+    }),
+  )
+}
+
 function judgeEdges(slide: Slide, top: Placed): void {
   const { bounds } = top
   const { w, h } = slide.size
   const past = Math.round(Math.max(0, -bounds.x, -bounds.y, right(bounds) - w, bottom(bounds) - h))
   if (past <= pastEdge) return
+  if (coversSlide(slide, top)) return
   const whole = bounds.x >= w || bounds.y >= h || right(bounds) <= 0 || bottom(bounds) <= 0
   slide.found.push({
     code: "off-slide",
