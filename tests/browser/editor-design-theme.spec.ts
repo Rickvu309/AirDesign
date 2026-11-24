@@ -62,6 +62,7 @@ test("each theme picked by keyboard saves in one undo step and repaints both tab
   for (const entry of [...Object.values(doom.themeLibrary).filter(({ id }) => id !== neutral.id), neutral]) {
     await picker.press("Enter")
     await page.keyboard.type(entry.name)
+    await expect(page.getByRole("option", { name: entry.name, exact: true })).toBeFocused()
     await page.keyboard.press("Enter")
     await expect(picker.getByText(entry.name, { exact: true })).toBeVisible()
     await expect.poll(savedTheme).toEqual(entry.theme)
