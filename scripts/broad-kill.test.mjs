@@ -23,6 +23,9 @@ const planted = [
   "sudo /usr/bin/" + K + "all -9 node",
   "true && p" + K + " node",
   "lsof -t -i :4485 | xargs " + K,
+  "sudo -u root /usr/bin/p" + K + " -f node",
+  "ps|xargs -r /bin/" + K,
+  K + " $(/usr/bin/pgrep -f vite)",
 ]
 for (const line of planted) {
   same(`${line} is caught`, broadKills([{ file: "a.sh", text: `echo hi\n${line}\n` }]), [
@@ -36,6 +39,9 @@ const harmless = [
   "Stop it with `p" + K + "` only never.",
   "process." + K + "(child.pid)",
   K + " " + "$child_pid",
+  "echo ok # example; p" + K + " -f vite",
+  "ps aux >/dev/null; printf '%s\\n' \"$owned_child_pid\" | xargs " + K,
+  "echo 'a # b' && printf '%s\\n' \"$owned_child_pid\" | xargs " + K,
 ]
 for (const line of harmless) same(`${line} is not caught`, broadKills([{ file: "a.md", text: `${line}\n` }]), [])
 same("a pid kill is fine", broadKills([{ file: "a.mjs", text: "process.kill(child.pid, 'SIGTERM')\n" }]), [])

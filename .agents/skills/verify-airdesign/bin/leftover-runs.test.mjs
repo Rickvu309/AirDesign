@@ -156,6 +156,17 @@ describe("a sweep and a stop beside another worktree's run", () => {
     expect((await sweep(root)).stopped).toEqual([mine])
   })
 
+  const checkout = () => {
+    const repo = scratchRoot()
+    const folder = path.join(repo, "packages", "catalog")
+    mkdirSync(folder, { recursive: true })
+    writeFileSync(
+      path.join(folder, "package.json"),
+      JSON.stringify({ name: "@airdesign/catalog", exports: { ".": { import: "./dist/index.js" } } }),
+    )
+    return repo
+  }
+
   const stopCli = (home, repo, run) =>
     spawnSync(process.execPath, [new URL("verify-airdesign.mjs", import.meta.url).pathname, "stop", run], {
       encoding: "utf8",
@@ -163,9 +174,9 @@ describe("a sweep and a stop beside another worktree's run", () => {
     })
 
   it.each([
-    ["an owner file naming another worktree", "/work/b", JSON.stringify],
-    ["a state that cannot be read and no owner", undefined, () => ""],
-  ])("never stops a live stack with %s", async (_, owner, text) => {
+    ["an owner file naming another worktree", "/work/b", JSON.stringify, "was started in /work/b"],
+    ["a state that cannot be read and no owner", undefined, () => '{"run":', "state that cannot be read"],
+  ])("never stops a live stack with %s", async (_, owner, text, diagnostic) => {
     const home = scratchRoot()
     const root = path.join(home, "tmp", "verify-airdesign-scratch")
     const theirs = newRun()
@@ -173,7 +184,8 @@ describe("a sweep and a stop beside another worktree's run", () => {
     const dir = runFolder(root, theirs, undefined, 0)
     writeFileSync(path.join(dir, "state.json"), text(stateOf(theirs, pid)))
     if (owner !== undefined) writeOwner(dir, owner)
-    const result = stopCli(home, "/work/a", theirs)
+    const result = stopCli(home, checkout(), theirs)
+    expect(result.stderr).toContain(diagnostic)
     expect(result.status).toBe(1)
     process.kill(pid, 0)
   })
