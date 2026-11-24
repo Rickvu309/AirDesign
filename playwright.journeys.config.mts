@@ -1,4 +1,4 @@
-import { requirePinnedNode } from "./scripts/node-version.mjs"
+import { requirePinnedNode } from "./scripts/node-version.cjs"
 import { defineConfig, type ReporterDescription } from "@playwright/test"
 import { journeyGrep } from "./tests/journeys/journey-shards.mjs"
 

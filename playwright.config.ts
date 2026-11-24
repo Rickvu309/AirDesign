@@ -1,4 +1,4 @@
-import { requirePinnedNode } from "./scripts/node-version.mjs"
+import { requirePinnedNode } from "./scripts/node-version.cjs"
 import { availableParallelism } from "node:os"
 import { defineConfig } from "@playwright/test"
 import { onCi, workerLimit, workerOverrideName } from "./tests/browser-workers.ts"
