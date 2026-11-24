@@ -1,5 +1,6 @@
 import type { AgentChange, AgentLook } from "./agent-change.js"
 import { type Draft, type Values, living, put, stop } from "./agent-draft.js"
+import { insertLinkedRun } from "./agent-insert.js"
 import { chartOf, colorOf, iconName, layoutOf, surfaceOf, textOfLook } from "./agent-look.js"
 import { lineEnds } from "./agent-line-ends.js"
 import { gapFor, slideSize } from "./agent-place.js"
@@ -34,6 +35,7 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "effect",
     "opacity",
     "text",
+    "insert",
     "textStyle",
     "align",
     "layout",
@@ -47,7 +49,20 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "chart",
     "box",
   ],
-  frame: ["color", "text", "textStyle", "icon", "arrow", "from", "to", "route", "notes", "shape", ...wordsOnly],
+  frame: [
+    "color",
+    "text",
+    "insert",
+    "textStyle",
+    "icon",
+    "arrow",
+    "from",
+    "to",
+    "route",
+    "notes",
+    "shape",
+    ...wordsOnly,
+  ],
   shape: ["layout", "gap", "padding", "chart", "notes"],
 }
 const roleTarget = /^([a-z0-9]{1,16}:[0-9]{1,12})\.(title|subtitle|body)$/
@@ -112,6 +127,8 @@ function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | und
 }
 
 export function compileSet(draft: Draft, change: SetChange): void {
+  if (change.insert !== undefined && (change.target.startsWith("*.") || change.target.includes("#")))
+    stop("shape", undefined, "insert")
   if (change.target.startsWith("*.")) return setEverySlide(draft, change, change.target.slice(2))
   const at = change.target.indexOf("#")
   if (at >= 0) return setBar(draft, change, at)
@@ -133,8 +150,16 @@ export function compileSet(draft: Draft, change: SetChange): void {
   }
   const geometry = propOf(node, "geometry")
   const stroked = geometry?.kind === "line" || geometry?.kind === "icon" ? "center" : "inside"
-  const worded = node.type === "shape" ? textOfLook(change, now.text, "body") : undefined
-  const text = resizedBy(worded ?? now.text, change.box, now.box) ?? worded
+  const current = now.text
+  if (change.insert !== undefined && (change.text !== undefined || current === undefined))
+    stop("shape", node.id, "insert")
+  const held =
+    change.insert === undefined || current === undefined
+      ? current
+      : insertLinkedRun(current, change.insert.at, change.insert.text, change.insert.link)
+  const worded = node.type === "shape" ? textOfLook(change, held, "body") : undefined
+  const written = worded ?? (change.insert === undefined ? undefined : held)
+  const text = resizedBy(written ?? now.text, change.box, now.box) ?? written
   const layout = node.type === "frame" ? layoutOf(change, now.layout, gapFor(slideSize(draft).w)) : undefined
   const asked = (["layout", "gap", "padding", "align"] as const).find(
     (field) => node.type === "frame" && change[field] !== undefined,

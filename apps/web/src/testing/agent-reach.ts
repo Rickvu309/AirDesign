@@ -84,6 +84,7 @@ export const sample: Readonly<Record<string, unknown>> = {
   effect: "soft",
   opacity: 0.5,
   text: "Changed",
+  insert: { at: 2, text: "linked", link: "https://example.com" },
   textStyle: "heading",
   align: "center",
   layout: "row",
