@@ -90,8 +90,9 @@ export function compileWrap(draft: Draft, change: Op<"wrap">): void {
     parent,
     {
       box: { ...zeroBox, x: left, y: top, w: right - left, h: bottom - top },
-      sizing: { w: "hug", h: "hug" },
+      ...(change.clip === true && layout === undefined ? {} : { sizing: { w: "hug" as const, h: "hug" as const } }),
       ...(layout === undefined ? {} : { layout }),
+      ...(change.clip === true ? { clip: true } : {}),
     },
     parentOf(ordered[0] as Node)?.at as OrderKey,
   )

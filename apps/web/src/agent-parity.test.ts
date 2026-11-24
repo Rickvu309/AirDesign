@@ -17,13 +17,7 @@ import {
 
 const slideOps = new Set(["add", "move", "delete"])
 
-const owedToAgent = [
-  "panel:shadow.opacity",
-  "panel:link.target",
-  "gesture:frame",
-  "gesture:underline",
-  "gesture:strike",
-]
+const owedToAgent: readonly string[] = []
 
 const viewOnly = new Set([
   "select",

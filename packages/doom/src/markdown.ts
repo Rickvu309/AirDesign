@@ -1,24 +1,49 @@
 import type { Para, Span, Text, TextStyleName } from "./text.js"
 
-type Look = { readonly bold: boolean; readonly italic: boolean; readonly link?: string }
+type Look = {
+  readonly bold: boolean
+  readonly italic: boolean
+  readonly underline: boolean
+  readonly strike: boolean
+  readonly link?: string
+}
 type Piece = { readonly text: string; readonly look: Look }
 type Flag = "bold" | "italic"
 
-const plain: Look = { bold: false, italic: false }
+const plain: Look = { bold: false, italic: false, underline: false, strike: false }
 const listLine = /^( *)([-*+]|\d+\.) +(.*)$/
 const escapable = /[!-/:-@[-`{-~ ]/
 const maxLevel = 8
 
 const isSpace = (char: string | undefined) => char !== undefined && /\s/.test(char)
-const sameLook = (a: Look, b: Look) => a.bold === b.bold && a.italic === b.italic && a.link === b.link
+const sameLook = (a: Look, b: Look) =>
+  a.bold === b.bold &&
+  a.italic === b.italic &&
+  a.underline === b.underline &&
+  a.strike === b.strike &&
+  a.link === b.link
 
 const flagsOf = (count: number): readonly Flag[] =>
   count === 1 ? ["italic"] : count === 2 ? ["bold"] : count === 3 ? ["bold", "italic"] : []
 
-function starRunAt(source: string, at: number): number {
+function runAt(source: string, at: number, mark: string): number {
   let end = at
-  while (source[end] === "*") end += 1
+  while (source[end] === mark) end += 1
   return end - at
+}
+
+const starRunAt = (source: string, at: number) => runAt(source, at, "*")
+
+function markClosesLater(source: string, from: number, mark: string): boolean {
+  for (let at = from; at < source.length; at += 1) {
+    if (source[at] === "\\") at += 1
+    else if (source[at] === mark) {
+      const count = runAt(source, at, mark)
+      if (count === 2 && !isSpace(source[at - 1])) return true
+      at += count - 1
+    }
+  }
+  return false
 }
 
 function closesLater(source: string, from: number, flag: Flag): boolean {
@@ -84,6 +109,17 @@ function inline(source: string, base: Look): readonly Piece[] {
         }
       else add(source.slice(at, after), look)
       at = after
+    } else if (char === "+" || char === "~") {
+      const count = runAt(source, at, char)
+      const after = at + count
+      const flag = char === "+" ? "underline" : "strike"
+      const pair = count === 2
+      const opens =
+        pair && !look[flag] && after < source.length && !isSpace(source[after]) && markClosesLater(source, after, char)
+      const closes = pair && look[flag] && !isSpace(source[at - 1])
+      if (opens || closes) look = { ...look, [flag]: !look[flag] }
+      else add(source.slice(at, after), look)
+      at = after
     } else if (char === "[") {
       const found = linkAt(source, at)
       if (found === undefined) {
@@ -147,7 +183,7 @@ export function textFromMarkdown(markdown: string, style: TextStyleName): Text {
     )
   }
   if (paras.length === 0) paras.push({})
-  const spans: { end: number; bold?: true; italic?: true; link?: string }[] = []
+  const spans: { end: number; bold?: true; italic?: true; underline?: true; strike?: true; link?: string }[] = []
   let end = 0
   for (const { text, look } of pieces) {
     end += text.length
@@ -156,6 +192,8 @@ export function textFromMarkdown(markdown: string, style: TextStyleName): Text {
       last !== undefined &&
       (last.bold === true) === look.bold &&
       (last.italic === true) === look.italic &&
+      (last.underline === true) === look.underline &&
+      (last.strike === true) === look.strike &&
       last.link === look.link
     if (same) last.end = end
     else
@@ -163,10 +201,14 @@ export function textFromMarkdown(markdown: string, style: TextStyleName): Text {
         end,
         ...(look.bold ? { bold: true as const } : {}),
         ...(look.italic ? { italic: true as const } : {}),
+        ...(look.underline ? { underline: true as const } : {}),
+        ...(look.strike ? { strike: true as const } : {}),
         ...(look.link === undefined ? {} : { link: look.link }),
       })
   }
-  const styled = spans.some((span) => span.bold || span.italic || span.link !== undefined)
+  const styled = spans.some(
+    (span) => span.bold || span.italic || span.underline || span.strike || span.link !== undefined,
+  )
   return {
     chars: pieces.map((piece) => piece.text).join(""),
     spans: styled ? spans : [],
@@ -180,12 +222,14 @@ export function textFromMarkdown(markdown: string, style: TextStyleName): Text {
 const lookOf = (span: Span | undefined): Look => ({
   bold: span?.bold === true,
   italic: span?.italic === true,
+  underline: span?.underline === true,
+  strike: span?.strike === true,
   ...(span?.link === undefined ? {} : { link: span.link }),
 })
 
-const escapeWords = (words: string) => words.replace(/[\\*[\]]/g, (char) => `\\${char}`)
+const escapeWords = (words: string) => words.replace(/[\\*[\]+~]/g, (char) => `\\${char}`)
 const escapeAddress = (address: string) => address.replace(/[\\)]/g, (char) => `\\${char}`)
-const styled = (look: Look) => look.bold || look.italic || look.link !== undefined
+const styled = (look: Look) => look.bold || look.italic || look.underline || look.strike || look.link !== undefined
 
 function runsOf(text: Text, from: number, to: number): readonly Piece[] {
   const spans = text.spans.length === 0 ? [{ end: text.chars.length }] : text.spans
@@ -216,20 +260,30 @@ function runsOf(text: Text, from: number, to: number): readonly Piece[] {
   return merged
 }
 
-const toggles = (from: Look, to: Look): string => {
-  const count = (from.bold === to.bold ? 0 : 2) + (from.italic === to.italic ? 0 : 1)
-  return "*".repeat(count)
+const starsOf = (look: Look) => (look.bold ? 2 : 0) + (look.italic ? 1 : 0)
+
+function markerDelta(from: Look, to: Look): string {
+  if (from.underline === to.underline && from.strike === to.strike) {
+    const count = (from.bold === to.bold ? 0 : 2) + (from.italic === to.italic ? 0 : 1)
+    return "*".repeat(count)
+  }
+  let out = "*".repeat(starsOf(from))
+  if (from.strike && !to.strike) out += "~~"
+  if (from.underline && !to.underline) out += "++"
+  if (!from.underline && to.underline) out += "++"
+  if (!from.strike && to.strike) out += "~~"
+  return out + "*".repeat(starsOf(to))
 }
 
 function lineOf(text: Text, from: number, to: number): string {
   let out = ""
   let state = plain
   for (const { text: words, look } of runsOf(text, from, to)) {
-    out += toggles(state, look)
-    state = { bold: look.bold, italic: look.italic }
+    out += markerDelta(state, look)
+    state = { bold: look.bold, italic: look.italic, underline: look.underline, strike: look.strike }
     out += look.link === undefined ? escapeWords(words) : `[${escapeWords(words)}](${escapeAddress(look.link)})`
   }
-  return out + toggles(state, plain)
+  return out + markerDelta(state, plain)
 }
 
 const asWords = (line: string) =>

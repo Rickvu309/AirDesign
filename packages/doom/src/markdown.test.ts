@@ -18,6 +18,15 @@ describe("textFromMarkdown", () => {
     })
   })
 
+  it("reads underline and strike on a range of words, and writes them back", () => {
+    const markdown = "Say ++under++ and ~~gone~~ now"
+    expect(read(markdown)).toMatchObject({
+      chars: "Say under and gone now",
+      spans: [{ end: 4 }, { end: 9, underline: true }, { end: 14 }, { end: 18, strike: true }, { end: 22 }],
+    })
+    expect(textToMarkdown(read(markdown))).toBe(markdown)
+  })
+
   it("reads bold, italic, both and a link as end-indexed spans that cover the characters", () => {
     expect(read("a **b** *c* ***d*** [e](https://x.test/y)")).toMatchObject({
       chars: "a b c d e",
@@ -130,7 +139,16 @@ describe("textToMarkdown", () => {
   })
 
   it("escapes what would read as a marker", () => {
-    for (const words of ["5 * 3", "[x](y)", "back\\slash", "- not a bullet", "1. not a number", " leading space"]) {
+    for (const words of [
+      "5 * 3",
+      "[x](y)",
+      "back\\slash",
+      "- not a bullet",
+      "1. not a number",
+      " leading space",
+      "a+b",
+      "a~b",
+    ]) {
       const text = { ...read("x"), chars: words, paras: [{}] }
       expect(textFromMarkdown(textToMarkdown(text), "body").chars).toBe(words)
     }

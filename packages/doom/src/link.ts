@@ -3,6 +3,9 @@ import { limits } from "./limits.js"
 import { type Reader, oneOf, reject, rejected, words } from "./read-kit.js"
 
 const address = /^(https?:\/\/[^\s/?#]+[^\s]*|mailto:[^\s?]+(?:\?[^\s]*)?)$/i
+const scheme = /^[a-z][a-z0-9+.-]*:/i
+
+export const withScheme = (typed: string): string => (scheme.test(typed) ? typed : `https://${typed}`)
 
 const readAddress: Reader<string> = (raw) => {
   const link = words(limits.address, 1)(raw)
