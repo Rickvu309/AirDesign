@@ -1,0 +1,149 @@
+{
+  "Arabic": {
+    "file": "NotoSansArabic[wdth,wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/notosansarabic/NotoSansArabic%5Bwdth%2Cwght%5D.ttf",
+    "weight": "100 900",
+    "bytes": 844676,
+    "sha256": "63111b5b2e074dd48cc67692e0a2726d86ee94c1c37fe8598257b7b4e87e869e"
+  },
+  "Balinese": {
+    "file": "NotoSansBalinese[wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/notosansbalinese/NotoSansBalinese%5Bwght%5D.ttf",
+    "weight": "400 700",
+    "bytes": 193412,
+    "sha256": "ccca9d3492b86930d8e0272d1e06d9e2e11147489b04d9858aa58e766cc30374"
+  },
+  "Devanagari": {
+    "file": "NotoSansDevanagari[wdth,wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/notosansdevanagari/NotoSansDevanagari%5Bwdth%2Cwght%5D.ttf",
+    "weight": "100 900",
+    "bytes": 641944,
+    "sha256": "14ec4af41f27482216d1c2229f417ff9b1425e1babb014e57d1d40d03229853e"
+  },
+  "Emoji": {
+    "file": "NotoColorEmoji-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/notocoloremoji/NotoColorEmoji-Regular.ttf",
+    "weight": "400",
+    "bytes": 25332736,
+    "sha256": "4d82a18d8d95f60ba883ce242bbadbf84a576e987745dd7ba38d71c67cff2d73"
+  },
+  "Garamond": {
+    "file": "EBGaramond[wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/ebgaramond/EBGaramond%5Bwght%5D.ttf",
+    "weight": "400 800",
+    "bytes": 851176,
+    "sha256": "ef9512f92f6d579e5dc75af59a5a4b1b8b47d2eda89e00b954d44520e5369027"
+  },
+  "Geist": {
+    "file": "Geist[wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/geist/Geist%5Bwght%5D.ttf",
+    "weight": "100 900",
+    "bytes": 169056,
+    "sha256": "73894e0448cae90a92b6c2f8732b7bb9acb7b94c418bff559dad4a18e1de9659"
+  },
+  "Hebrew": {
+    "file": "NotoSansHebrew[wdth,wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/notosanshebrew/NotoSansHebrew%5Bwdth%2Cwght%5D.ttf",
+    "weight": "100 900",
+    "bytes": 112640,
+    "sha256": "7ef36a2c3593758cdb622e1bdef4f84523e92fbc3ccc667438dd80ff54c2de88"
+  },
+  "Inter": {
+    "file": "Inter[opsz,wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf",
+    "weight": "100 900",
+    "bytes": 876576,
+    "sha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031"
+  },
+  "JP": {
+    "file": "NotoSansJP[wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/notosansjp/NotoSansJP%5Bwght%5D.ttf",
+    "weight": "100 900",
+    "bytes": 9589900,
+    "sha256": "c2f3b4d463500a2ddcd3849cded1fceeb9fd6d1c32e6cbecd568453ba50fc68f"
+  },
+  "Javanese": {
+    "file": "NotoSansJavanese[wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/notosansjavanese/NotoSansJavanese%5Bwght%5D.ttf",
+    "weight": "400 700",
+    "bytes": 252904,
+    "sha256": "0bcb88de05a855aec38471d6317e860fa2a40d1c3ca93f2736b7c34ad9288d90"
+  },
+  "KR": {
+    "file": "NotoSansKR[wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/notosanskr/NotoSansKR%5Bwght%5D.ttf",
+    "weight": "100 900",
+    "bytes": 10414588,
+    "sha256": "194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252"
+  },
+  "Lora": {
+    "file": "Lora[wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/lora/Lora%5Bwght%5D.ttf",
+    "weight": "400 700",
+    "bytes": 212196,
+    "sha256": "822a6621ccbe8d97d20ac88c1c41f5615c9c2c202eaa75f272cd452aac6475a7"
+  },
+  "Math": {
+    "file": "NotoSansMath-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/notosansmath/NotoSansMath-Regular.ttf",
+    "weight": "400",
+    "bytes": 1015396,
+    "sha256": "3f495fe933c06786e4d5f6d86b8ee70b6753a68ee3b9d87528726de0f6e2c47d"
+  },
+  "Myanmar": {
+    "file": "NotoSansMyanmar[wdth,wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/notosansmyanmar/NotoSansMyanmar%5Bwdth%2Cwght%5D.ttf",
+    "weight": "100 900",
+    "bytes": 784832,
+    "sha256": "7abbbfbe2514105d7ce94937aee3feb2ba89b73a256c8b77b5866bd9b83e32ec"
+  },
+  "Narrow": {
+    "file": "LiberationSansNarrow-Regular.ttf",
+    "source": "apps/api/fonts/LiberationSansNarrow-Regular.ttf",
+    "weight": "400",
+    "bytes": 112644,
+    "sha256": "ab74085ab53ca88945d1ef57493c955c1dca3f2e7d7b4b7ab90cd107a7262bc7"
+  },
+  "NarrowBold": {
+    "file": "LiberationSansNarrow-Bold.ttf",
+    "source": "apps/api/fonts/LiberationSansNarrow-Bold.ttf",
+    "weight": "700",
+    "bytes": 109868,
+    "sha256": "4cd16b98cea43a9ce4471df068634fce71ab279dfc9b303b6b188bd96b35226a"
+  },
+  "Playfair": {
+    "file": "PlayfairDisplay[wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf",
+    "weight": "400 900",
+    "bytes": 300724,
+    "sha256": "c40f2293766a503bc70cce9e512ef844a4ccb7cbcde792fe2ea31d191917d8d6"
+  },
+  "Serif": {
+    "file": "NotoSerif[wdth,wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/notoserif/NotoSerif%5Bwdth%2Cwght%5D.ttf",
+    "weight": "100 900",
+    "bytes": 1887192,
+    "sha256": "4d8e6761424656867019081a1a01336f3cb086982682698714054fc33f782713"
+  },
+  "Sundanese": {
+    "file": "NotoSansSundanese[wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/notosanssundanese/NotoSansSundanese%5Bwght%5D.ttf",
+    "weight": "400 700",
+    "bytes": 61796,
+    "sha256": "28282be9cce5a96e6b5baa3cc48044187f65d610879ff29b1dc5fe5ea465df6a"
+  },
+  "Symbols": {
+    "file": "NotoSansSymbols2-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/notosanssymbols2/NotoSansSymbols2-Regular.ttf",
+    "weight": "400",
+    "bytes": 1233128,
+    "sha256": "7d5fb73b7ca67a6798101741f5d280a3d016a56a197afcd4199dbb57b4b82a21"
+  },
+  "Thai": {
+    "file": "NotoSansThai[wdth,wght].ttf",
+    "source": "https://raw.githubusercontent.com/google/fonts/7af0d90b4d532ffa4b041937b560c6df4e7b1e95/ofl/notosansthai/NotoSansThai%5Bwdth%2Cwght%5D.ttf",
+    "weight": "100 900",
+    "bytes": 218652,
+    "sha256": "5a1c559bb539583c8a1fd99d1c5b9491e5e14478c9cd2bd0970d5c3096cc9ef8"
+  }
+}

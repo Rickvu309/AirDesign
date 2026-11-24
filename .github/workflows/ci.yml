@@ -82,6 +82,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - if: steps.work.outputs.needed == 'true'
         uses: ./.github/actions/playwright
+        with:
+          font-layout: ${{ matrix.part == 'browser' && (!matrix.browserSpecs || contains(matrix.browserSpecs, 'tests/browser/font-layout.spec.ts')) }}
       - if: steps.work.outputs.needed == 'true'
         uses: ./.github/actions/tla
       - if: steps.work.outputs.needed == 'true' && matrix.part == 'source'

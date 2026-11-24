@@ -12,3 +12,8 @@ export {
   stylesHeld,
   type ServedFace,
 } from "./named-face.js"
+
+export type { FontLayout } from "./layout-contract.js"
+
+export const loadFontLayoutContract = (): Promise<typeof import("./layout-contract.js")> =>
+  import("./layout-contract.js")
