@@ -3,7 +3,7 @@ import { type Draft, type Values, living, put, stop } from "./agent-draft.js"
 import { insertLinkedRun } from "./agent-insert.js"
 import { chartOf, colorOf, iconName, layoutOf, surfaceOf, textOfLook } from "./agent-look.js"
 import { lineEnds } from "./agent-line-ends.js"
-import { gapFor, slideSize } from "./agent-place.js"
+import { gapFor, slideSize, themeOf } from "./agent-place.js"
 import { notesText } from "./notes-text.js"
 import { resizedBy } from "./agent-resize.js"
 import { bakeLayout } from "./bake-layout.js"
@@ -33,6 +33,8 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "color",
     "radius",
     "effect",
+    "effectOpacity",
+    "clip",
     "opacity",
     "text",
     "insert",
@@ -63,7 +65,7 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "shape",
     ...wordsOnly,
   ],
-  shape: ["layout", "gap", "padding", "chart", "notes"],
+  shape: ["layout", "gap", "padding", "chart", "notes", "clip"],
 }
 const roleTarget = /^([a-z0-9]{1,16}:[0-9]{1,12})\.(title|subtitle|body)$/
 
@@ -141,12 +143,14 @@ export function compileSet(draft: Draft, change: SetChange): void {
   const outline = propOf(node, "geometry")?.kind
   if (change.shape !== undefined && (outline === "line" || outline === "icon" || outline === "path"))
     stop("shape", node.id, "shape")
+  if (change.link !== undefined && propOf(node, "text") === undefined) stop("shape", node.id, "link")
   const now = {
     fills: propOf(node, "fills"),
     stroke: propOf(node, "stroke"),
     box: propOf(node, "box"),
     layout: propOf(node, "layout"),
     text: propOf(node, "text"),
+    effects: propOf(node, "effects"),
   }
   const geometry = propOf(node, "geometry")
   const stroked = geometry?.kind === "line" || geometry?.kind === "icon" ? "center" : "inside"
@@ -168,7 +172,7 @@ export function compileSet(draft: Draft, change: SetChange): void {
   if (change.chart !== undefined && propOf(node, "chart") === undefined) stop("shape", node.id, "chart")
   const shaped = geometryOf(draft, node, change)
   const values: Values = {
-    ...surfaceOf(change, now, stroked),
+    ...surfaceOf(change, now, stroked, change.effectOpacity === undefined ? undefined : themeOf(draft)),
     ...(text === undefined ? {} : { text }),
     ...(layout === undefined ? {} : { layout }),
     ...(shaped === undefined ? {} : { geometry: shaped }),
@@ -180,4 +184,5 @@ export function compileSet(draft: Draft, change: SetChange): void {
       ...bakeLayout(draft.doom, node.id, estimate).filter((write) => write.node !== node.id || !(write.prop in values)),
     )
   put(draft, node.id, values)
+  if (change.link === "none") draft.writes.push({ node: node.id, prop: "link", value: null })
 }

@@ -1,7 +1,7 @@
 import type { AgentAdd, AgentChange, AgentLook } from "./agent-change.js"
 import { shapeGeometry } from "./preset-geometry.js"
 import { type Draft, create, living, put, stop } from "./agent-draft.js"
-import { chartOf, iconName, layoutOf, solid, surfaceOf, textOfLook, turnOf } from "./agent-look.js"
+import { chartOf, iconName, layoutOf, solid, surfaceOf, textOfLook, turnOf, type Now } from "./agent-look.js"
 import { addGrid, addPattern } from "./agent-patterns.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { placeholderSubtitle } from "./slide-placeholders.js"
@@ -16,7 +16,7 @@ import { textHeight } from "./text-estimate.js"
 
 type Add = Extract<AgentChange, { op: "add" }>
 
-const common = ["box", "name", "hidden", "opacity", "effect", "rotation", "flip"] as const
+const common = ["box", "name", "hidden", "opacity", "effect", "effectOpacity", "rotation", "flip"] as const
 const painted = ["fill", "stroke", "strokeWidth", "radius", "dash"] as const
 const words = [
   "text",
@@ -34,10 +34,10 @@ const words = [
 const patternFields = ["box", "name", "hidden", "items"] as const
 
 const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
-  text: [...common, ...painted, ...words],
-  shape: [...common, ...painted, ...words, "shape"],
+  text: [...common, ...painted, ...words, "link"],
+  shape: [...common, ...painted, ...words, "shape", "link"],
   line: [...common, "stroke", "strokeWidth", "arrow", "dash", "from", "to", "route"],
-  frame: [...common, ...painted, "layout", "gap", "padding", "align", "rows"],
+  frame: [...common, ...painted, "layout", "gap", "padding", "align", "rows", "clip"],
   picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit"],
   icon: [...common, "icon", "stroke", "strokeWidth"],
   chart: [...common, ...painted, "chart"],
@@ -53,6 +53,10 @@ const titleStyles: ReadonlySet<Text["style"]> = new Set(["display", "title"])
 const iconSide = 96
 const lineWeight = 3
 const iconWeightShare = 12
+
+function surfaced(draft: Draft, look: AgentLook, now: Now = {}, align: "inside" | "center" = "inside") {
+  return surfaceOf(look, now, align, look.effectOpacity === undefined ? undefined : themeOf(draft))
+}
 
 const givenBox = (look: AgentLook, area: Area, h: number = area.h, grows = false): Box => ({
   ...zeroBox,
@@ -90,9 +94,10 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
       ? { ...change, align: change.align ?? "center", ...(ink === undefined ? {} : { color: ink }) }
       : change
   const made = textOfLook(look, undefined, "body")
+  if (change.link !== undefined && change.link !== "none" && made === undefined) stop("shape", undefined, "link")
   if (kind === "text" && made !== undefined && change.box === undefined && isLaidOut(parent)) {
     create(draft, "shape", parent.id, {
-      ...surfaceOf(change),
+      ...surfaced(draft, change),
       geometry: { kind: "rect" },
       sizing: { w: "fill", h: "hug" },
       text: made,
@@ -108,7 +113,7 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
     const { textStyle: _, ...unstyled } = change
     const { chars, spans, paras } = textOfLook(unstyled, held, held.style) as Text
     put(draft, empty.id, {
-      ...surfaceOf(change, {
+      ...surfaced(draft, change, {
         fills: propOf(empty, "fills"),
         stroke: propOf(empty, "stroke"),
         box: propOf(empty, "box"),
@@ -133,7 +138,7 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
     titleStyles.has(made.style) &&
     !descendantsOf(draft.doom, slide.id).some((node) => propOf(node, "role") === "title")
   create(draft, "shape", parent.id, {
-    ...surfaceOf(change),
+    ...surfaced(draft, change),
     ...(labelled && change.radius === undefined ? { radius: cardRadiusFor(slideSize(draft).w) } : {}),
     ...(filled ? { fills: [solid("accent1")] } : {}),
     box: givenBox(change, area, high, grows),
@@ -151,7 +156,8 @@ function addLine(draft: Draft, parent: Node, change: Add): void {
   const area = areaFor(draft, parent, change.box)
   const box = givenBox(change, area, 0)
   create(draft, "shape", parent.id, {
-    ...surfaceOf(
+    ...surfaced(
+      draft,
       { ...change, stroke: change.stroke ?? "text2", strokeWidth: change.strokeWidth ?? lineWeight },
       {},
       "center",
@@ -183,7 +189,7 @@ function addFrame(draft: Draft, parent: Node, change: Add): void {
   const area = areaFor(draft, parent, change.box)
   const layout = layoutOf(change, undefined, gapFor(slideSize(draft).w))
   create(draft, "frame", parent.id, {
-    ...surfaceOf(change),
+    ...surfaced(draft, change),
     box: givenBox(change, area),
     ...(layout === undefined ? {} : { layout }),
   })
@@ -201,7 +207,11 @@ function addPicture(draft: Draft, parent: Node, change: Add): void {
   const natural = draft.reading.pictures?.get(change.fill.image)
   const fitted =
     change.box !== undefined || natural === undefined ? area : { ...area, ...centred(area, pictureFit(natural, area)) }
-  create(draft, "shape", parent.id, { ...surfaceOf(change), box: givenBox(change, fitted), geometry: { kind: "rect" } })
+  create(draft, "shape", parent.id, {
+    ...surfaced(draft, change),
+    box: givenBox(change, fitted),
+    geometry: { kind: "rect" },
+  })
 }
 
 function addIcon(draft: Draft, parent: Node, change: Add): void {
@@ -211,7 +221,8 @@ function addIcon(draft: Draft, parent: Node, change: Add): void {
   const box = givenBox(change, { ...area, w: side }, side)
   const weight = Math.max(2, Math.round(Math.min(box.w, box.h) / iconWeightShare))
   create(draft, "shape", parent.id, {
-    ...surfaceOf(
+    ...surfaced(
+      draft,
       { ...change, stroke: change.stroke ?? "accent1", strokeWidth: change.strokeWidth ?? weight },
       {},
       "center",
@@ -224,7 +235,11 @@ function addIcon(draft: Draft, parent: Node, change: Add): void {
 function addChart(draft: Draft, parent: Node, change: Add): void {
   if (change.chart === undefined) stop("shape", undefined, "chart")
   const area = areaFor(draft, parent, change.box)
-  create(draft, "frame", parent.id, { ...surfaceOf(change), box: givenBox(change, area), chart: chartOf(change.chart) })
+  create(draft, "frame", parent.id, {
+    ...surfaced(draft, change),
+    box: givenBox(change, area),
+    chart: chartOf(change.chart),
+  })
 }
 
 export function compileAdd(draft: Draft, change: Add): void {

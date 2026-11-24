@@ -82,6 +82,7 @@ export const sample: Readonly<Record<string, unknown>> = {
   color: "accent2",
   radius: 6,
   effect: "soft",
+  effectOpacity: 0.4,
   opacity: 0.5,
   text: "Changed",
   insert: { at: 2, text: "linked", link: "https://example.com" },
@@ -107,6 +108,8 @@ export const sample: Readonly<Record<string, unknown>> = {
   case: "upper",
   underline: true,
   strike: true,
+  link: "https://example.com",
+  clip: true,
   dash: "dot",
   fit: "tile",
   shape: "ellipse",
@@ -114,8 +117,6 @@ export const sample: Readonly<Record<string, unknown>> = {
   flip: "h",
   notes: "Say why",
 }
-
-const set = (look: Readonly<Record<string, unknown>>) => ({ op: "set", target: "s:1", ...look })
 
 export const reach: Readonly<Record<string, Entry>> = {
   "panel:box.align": { agent: "set.box", props: ["box"] },
@@ -149,15 +150,8 @@ export const reach: Readonly<Record<string, Entry>> = {
   "panel:image.mode": { agent: "set.fit", writes: "fills", on: "photo", props: ["fills"] },
   "panel:image.source": { agent: "set.fill", writes: "fills", on: "photo", props: ["fills"] },
   "panel:shadow.shadow": { agent: "set.effect", writes: "effects", on: "card", props: ["effects"] },
-  "panel:shadow.opacity": {
-    owed: "a shadow's opacity, once the panel offers the theme's effect styles",
-    props: ["effects"],
-  },
-  "panel:link.target": {
-    owed: "a link on the whole layer",
-    probe: set({ link: "https://example.com" }),
-    props: ["link"],
-  },
+  "panel:shadow.opacity": { agent: "set.effectOpacity", writes: "effects", on: "card", props: ["effects"] },
+  "panel:link.target": { agent: "set.link", writes: "link", on: "words", props: ["link"] },
   "panel:link.target#words": { agent: "set.text", writes: "text", on: "words", props: ["text"] },
   "panel:geometry.preset": { agent: "set.shape", writes: "geometry", on: "card", props: ["geometry"] },
 
@@ -180,7 +174,7 @@ export const reach: Readonly<Record<string, Entry>> = {
   "gesture:cut": { agent: "op.delete", props: ["parent"] },
   "gesture:paste": { agent: "op.add", props: ["parent", "type"] },
   "gesture:group": { agent: "op.wrap", props: ["parent", "type", "box"] },
-  "gesture:frame": { owed: "a frame that clips its children", probe: set({ clip: true }), props: ["clip"] },
+  "gesture:frame": { agent: "set.clip", writes: "clip", on: "panel", props: ["clip"] },
   "gesture:ungroup": { agent: "op.unwrap", props: ["parent"] },
   "gesture:hide": { agent: "set.hidden", writes: "hidden", on: "card", props: ["hidden"] },
   "gesture:lock": { agent: "set.locked", writes: "locked", on: "card", props: ["locked"] },
@@ -199,8 +193,8 @@ export const reach: Readonly<Record<string, Entry>> = {
   "panel:border.route": { agent: "set.route", writes: "geometry", on: "rule", props: ["geometry"] },
   "gesture:bold": { agent: "set.text", props: ["text"] },
   "gesture:italic": { agent: "set.text", props: ["text"] },
-  "gesture:underline": { owed: "underline on a range of words: markdown has no underline", props: ["text"] },
-  "gesture:strike": { owed: "strike on a range of words: markdown has no strike", props: ["text"] },
+  "gesture:underline": { agent: "set.text", writes: "text", on: "words", props: ["text"] },
+  "gesture:strike": { agent: "set.text", writes: "text", on: "words", props: ["text"] },
   "gesture:text-left": { agent: "set.align", props: ["text"] },
   "gesture:text-center": { agent: "set.align", props: ["text"] },
   "gesture:text-right": { agent: "set.align", props: ["text"] },

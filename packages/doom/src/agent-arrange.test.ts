@@ -112,6 +112,12 @@ describe("wrap and unwrap", () => {
     expect(kids(doom, ids.slide)).toEqual([frame.id, more.chart, more.line, more.icon])
   })
 
+  it("wraps a frame that clips its children, as the frame gesture does, with no hug sizing", () => {
+    const frame = childrenOf(wrapped({ clip: true }), ids.slide)[0]!
+    expect(propOf(frame, "clip")).toBe(true)
+    expect(propOf(frame, "sizing")).toBeUndefined()
+  })
+
   it("wraps into a row or column that places the children itself", () => {
     const frame = childrenOf(wrapped({ layout: "row" }), ids.slide)[0]!
     expect(propOf(frame, "layout")).toMatchObject({

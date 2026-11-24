@@ -1,10 +1,23 @@
 import type { AgentChart, AgentColor, AgentFill, AgentLook } from "./agent-change.js"
 import { shapeGeometry } from "./preset-geometry.js"
 import type { Chart } from "./chart.js"
+import { sameColor as samePaint } from "./color.js"
 import type { Values } from "./agent-draft.js"
 import type { Align9, Layout } from "./layout.js"
+import { withScheme } from "./link.js"
 import { textFromMarkdown } from "./markdown.js"
-import type { Color, ColorVar, Hex, Paint, Sides, StrokeStyle } from "./paint.js"
+import {
+  type Color,
+  type ColorVar,
+  type Effect,
+  type EffectStyleName,
+  type Hex,
+  type Paint,
+  type Sides,
+  type StrokeStyle,
+  effectStyleNames,
+} from "./paint.js"
+import type { Theme } from "./theme.js"
 import type { Box } from "./doom-walk.js"
 import { zeroBox } from "./doom-walk.js"
 import type { Span, Text, TextStyleName } from "./text.js"
@@ -16,6 +29,7 @@ export type Now = {
   readonly box?: Box | undefined
   readonly layout?: Layout | undefined
   readonly text?: Text | undefined
+  readonly effects?: readonly Effect[] | EffectStyleName | undefined
 }
 
 const defaultWeight = 2
@@ -61,7 +75,37 @@ export const turnOf = (look: AgentLook): Partial<Box> => ({
   ...(look.flip === undefined ? {} : { flipH: look.flip.includes("h"), flipV: look.flip.includes("v") }),
 })
 
-export function surfaceOf(look: AgentLook, now: Now = {}, align: StrokeStyle["align"] = "inside"): Values {
+function sameEffect(a: Effect, b: Effect): boolean {
+  if (a.kind !== b.kind) return false
+  if ("radius" in a || "radius" in b) return "radius" in a && "radius" in b && a.radius === b.radius
+  return a.x === b.x && a.y === b.y && a.blur === b.blur && a.spread === b.spread && samePaint(a.color, b.color)
+}
+
+function styleName(held: Now["effects"], theme: Theme | undefined): EffectStyleName | undefined {
+  if (theme === undefined || held === undefined) return undefined
+  if (typeof held === "string") return effectStyleNames.find((name) => name === held)
+  return effectStyleNames.find((name) => {
+    const style = theme.effectStyles[name]
+    return style.length === held.length && style.every((effect, at) => sameEffect(effect, held[at]!))
+  })
+}
+
+function writtenEffects(look: AgentLook, held: Now["effects"], theme: Theme | undefined): Values["effects"] {
+  if (look.effect === undefined && look.effectOpacity === undefined) return undefined
+  if (look.effect === "none") return []
+  if (look.effectOpacity === undefined) return look.effect
+  const opacity = look.effectOpacity
+  const name = look.effect ?? styleName(held, theme)
+  if (name === undefined || theme === undefined) return undefined
+  return theme.effectStyles[name].map((effect) => ("color" in effect ? { ...effect, opacity } : effect))
+}
+
+export function surfaceOf(
+  look: AgentLook,
+  now: Now = {},
+  align: StrokeStyle["align"] = "inside",
+  theme?: Theme,
+): Values {
   const drawn = (look.stroke !== undefined && look.stroke !== "none") || look.dash !== undefined
   const weight =
     look.strokeWidth ??
@@ -69,6 +113,7 @@ export function surfaceOf(look: AgentLook, now: Now = {}, align: StrokeStyle["al
   const fills = look.fill === undefined ? now.fills : paintsOf(look.fill)
   const painted = look.fit === undefined || fills === undefined ? fills : fitted(fills, look.fit)
   const dash = look.dash === undefined ? {} : { dash: look.dash }
+  const effects = writtenEffects(look, now.effects, theme)
   return {
     ...(look.fill === undefined && look.fit === undefined ? {} : { fills: painted ?? [] }),
     ...(look.stroke === undefined ? {} : { strokes: look.stroke === "none" ? [] : [solid(look.stroke)] }),
@@ -77,7 +122,9 @@ export function surfaceOf(look: AgentLook, now: Now = {}, align: StrokeStyle["al
       : { stroke: { ...(now.stroke ?? { align, dash: "solid" as const }), weight, ...dash } }),
     ...(look.shape === undefined ? {} : { geometry: shapeGeometry(look.shape) }),
     ...(look.radius === undefined ? {} : { radius: look.radius }),
-    ...(look.effect === undefined ? {} : { effects: look.effect === "none" ? [] : look.effect }),
+    ...(effects === undefined ? {} : { effects }),
+    ...(look.clip === undefined ? {} : { clip: look.clip }),
+    ...(look.link === undefined || look.link === "none" ? {} : { link: withScheme(look.link) }),
     ...(look.opacity === undefined ? {} : { opacity: look.opacity }),
     ...(look.name === undefined ? {} : { name: look.name }),
     ...(look.hidden === undefined ? {} : { hidden: look.hidden }),

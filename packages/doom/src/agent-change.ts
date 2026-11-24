@@ -1,6 +1,7 @@
 import { readAngle, readRotation } from "./angle.js"
 import { type AgentEnd, endSchema, readEnd } from "./agent-end.js"
 import { type AgentInsert, insertField } from "./agent-insert.js"
+import { linkField } from "./agent-link.js"
 import { limits } from "./limits.js"
 import { type Field, choice, field, flag, number, string } from "./agent-fields.js"
 import { type NodeId, readNodeId } from "./ids.js"
@@ -68,6 +69,9 @@ export type AgentLook = {
   readonly color?: AgentColor
   readonly radius?: Px
   readonly effect?: EffectStyleName | "none"
+  readonly effectOpacity?: number
+  readonly link?: string | "none"
+  readonly clip?: boolean
   readonly opacity?: number
   readonly text?: string
   readonly insert?: AgentInsert
@@ -115,7 +119,12 @@ export type AgentChange =
   | ({ readonly op: "add"; readonly kind: AgentAdd; readonly slide: NodeId; readonly into?: NodeId } & AgentLook)
   | ({ readonly op: "set"; readonly target: string } & AgentLook)
   | { readonly op: "move"; readonly node: NodeId; readonly into?: NodeId; readonly after?: NodeId | null }
-  | { readonly op: "wrap"; readonly nodes: readonly NodeId[]; readonly layout?: "row" | "column" | "none" }
+  | {
+      readonly op: "wrap"
+      readonly nodes: readonly NodeId[]
+      readonly layout?: "row" | "column" | "none"
+      readonly clip?: boolean
+    }
   | { readonly op: "unwrap"; readonly node: NodeId }
   | { readonly op: "delete"; readonly nodes: readonly NodeId[] }
   | { readonly op: "duplicate"; readonly nodes: readonly NodeId[] }
@@ -131,7 +140,7 @@ export type AgentRefusal = Refusal & { readonly change: string; readonly at?: nu
 
 const idSchema = { $ref: "#/$defs/id" }
 const kindWords =
-  "text and shape hold words. line. frame groups and lays out its children, or with rows is a grid of words. picture (fill: {image}). icon (icon). chart (chart). Patterns: kpi (items: title, value, note), cards (title, points, icon), compare (2 or 3 items: title, points), matrix (up to 4 items, axes), timeline (2 to 8: value, title, note), flow (2 to 6: title, note)."
+  "text and shape hold words. line. frame groups children, or rows makes a grid. picture: fill {image}. icon. chart. kpi: title, value, note. cards: title, points, icon. compare: 2 or 3 of title, points. matrix: up to 4, axes. timeline: 2 to 8 of value, title, note. flow: 2 to 6 of title, note."
 const colorSchema = { $ref: "#/$defs/color" }
 const readId: Reader<NodeId> = (raw) => readNodeId(raw) ?? reject()
 const tintedName = new RegExp(`^(${colorVars.join("|")})([+-](100|[1-9][0-9]?))?$`)
@@ -241,10 +250,13 @@ const lookFields: LookFields = {
     [...effectStyleNames, "none"],
     "A shadow or glow style from the deck, or none.",
   ),
+  effectOpacity: number(0, 1, "Shadow strength, 0 to 1."),
+  link: linkField,
+  clip: flag("Clip a frame's children."),
   opacity: number(0, 1, "0 is clear, 1 is solid."),
   text: string(
     limits.valueBytes,
-    "Words as markdown: **bold**, *italic*, [label](url), '- ' bullets, '1. ' numbers, two spaces for each level, a blank line between paragraphs. Replaces all the words in the layer.",
+    "Words as markdown: **bold**, *italic*, ++underline++, ~~strike~~, [label](url), '- ' bullets, '1. ' numbers, two spaces for each level, a blank line between paragraphs. Replaces all the words.",
   ),
   insert: insertField,
   textStyle: choice(
@@ -318,14 +330,11 @@ const lookFields: LookFields = {
     },
   ),
   hidden: flag("Hide the layer."),
-  locked: flag("Lock the layer so it cannot be selected or moved on the canvas."),
-  size: number(1, 2_000, "Overrides the text style's size, in pixels."),
-  font: field(
-    { type: "string", description: "Overrides the text style's font: a family such as Inter or Montserrat." },
-    readFontName,
-  ),
-  lineHeight: number(0.5, 5, "Overrides the text style's line height, as a multiple of the size."),
-  letterSpacing: number(-100, 100, "Overrides the text style's letter spacing, in pixels."),
+  locked: flag("Lock the layer against selection and moves."),
+  size: number(1, 2_000, "Text size in pixels."),
+  font: field({ type: "string", description: "A font family, such as Inter." }, readFontName),
+  lineHeight: number(0.5, 5, "Line height as a multiple of the size."),
+  letterSpacing: number(-100, 100, "Letter spacing in pixels."),
   case: choice(["none", "upper", "lower", "title"], "Letter case."),
   underline: flag("Underline all the words."),
   strike: flag("Strike through all the words."),
@@ -333,8 +342,8 @@ const lookFields: LookFields = {
   fit: choice(["fill", "fit", "tile"], "How a picture sits in its layer."),
   shape: choice(shapeNames, "A shape's outline. Lines and connectors are not shapes: add kind line."),
   rotation: field<number>({ type: "number", description: "Degrees clockwise. Wraps past a full turn." }, readRotation),
-  flip: choice(["none", "h", "v", "hv"], "Mirror the layer across, up and down, or both."),
-  notes: field({ type: "string", description: "A slide's presenter notes, as plain words." }, words(limits.valueBytes)),
+  flip: choice(["none", "h", "v", "hv"], "Mirror across, down, or both."),
+  notes: field({ type: "string", description: "Presenter notes." }, words(limits.valueBytes)),
 }
 
 const lookKeys = Object.keys(lookFields) as (keyof AgentLook)[]
@@ -426,7 +435,7 @@ const readChange = variant("op", {
   add: object(pickFrom(placeFields, ["kind", "slide"]), { ...pickFrom(placeFields, ["into"]), ...lookReaders }),
   set: object(pickFrom(placeFields, ["target"]), lookReaders),
   move: object(pickFrom(placeFields, ["node"]), pickFrom(placeFields, ["into", "after"])),
-  wrap: object(pickFrom(placeFields, ["nodes"]), pickFrom(lookFields, ["layout"])),
+  wrap: object(pickFrom(placeFields, ["nodes"]), pickFrom(lookFields, ["layout", "clip"])),
   unwrap: object(pickFrom(placeFields, ["node"])),
   delete: object(pickFrom(placeFields, ["nodes"])),
   slide: object({}, pickFrom(placeFields, ["add", "move", "delete"])),
