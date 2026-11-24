@@ -273,6 +273,17 @@ same("and one line says it is locked", lockedLines, [
 ])
 same("its branch stays", branches().includes("locked"), true)
 
+const merging = add("merging")
+const mergingHead = commit(merging, "merging.txt", "merging")
+const peer = git(root, "commit-tree", `${mergingHead}^{tree}`, "-p", `${mergingHead}^`, "-m", "peer").trim()
+git(merging, "merge", "--no-commit", "--no-ff", peer)
+const mergingLines = run("merging", { head: mergingHead, number: 18 })
+same("a clean worktree mid-merge stays", fs.existsSync(merging), true)
+same("and one line says a git operation is in progress", mergingLines, [
+  `left worktree ${merging}, because a git operation is in progress. Remove it with: git -C ${root} worktree remove ${merging} && git -C ${root} branch -D merging`,
+])
+same("its branch stays", branches().includes("merging"), true)
+
 const unnamed = add("unnamed")
 const unnamedLines = run("unnamed")
 same("a sweep without the merged head leaves the worktree", fs.existsSync(unnamed), true)
