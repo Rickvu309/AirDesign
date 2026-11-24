@@ -68,18 +68,60 @@ const hookCall = (node) => {
   return undefined
 }
 
+const typeWrappers = new Set([
+  "TSAsExpression",
+  "TSTypeAssertion",
+  "TSSatisfiesExpression",
+  "TSNonNullExpression",
+  "TSInstantiationExpression",
+])
+
+const opensType = (type) => typeof type === "string" && type.startsWith("TS") && !typeWrappers.has(type)
+
+const usedAsValue = (program, local) => {
+  let found = false
+  const visit = (node, typed) => {
+    if (found || !node || typeof node !== "object") return
+    if (node.type === "ImportDeclaration") return
+    const typedHere = typed || opensType(node.type)
+    if (!typedHere && node.type === "Identifier" && node.name === local) {
+      found = true
+      return
+    }
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) {
+        for (const item of value) visit(item, typedHere)
+      } else if (value && typeof value === "object" && value.type) visit(value, typedHere)
+    }
+  }
+  visit(program, false)
+  return found
+}
+
 const valueImports = (file, source) => {
   const parsed = parseSync(file, source)
   if (parsed.errors.length > 0) throw new Error(`Cannot parse ${file}: ${parsed.errors[0].message}`)
   const barrelsHit = []
   const local = []
+  const doomValueNamed = parsed.program.body.some(
+    (stmt) =>
+      stmt.type === "ImportDeclaration" &&
+      stmt.importKind !== "type" &&
+      stmt.source?.value === "@airdesign/doom" &&
+      stmt.specifiers.some((spec) => spec.type === "ImportSpecifier" && spec.importKind !== "type"),
+  )
   for (const stmt of parsed.program.body) {
     if (stmt.type !== "ImportDeclaration" || stmt.importKind === "type") continue
     const specifier = stmt.source.value
-    const live = stmt.specifiers.some((spec) => spec.importKind !== "type")
+    const live = stmt.specifiers.length === 0 || stmt.specifiers.some((spec) => spec.importKind !== "type")
     if (!live) continue
-    const namespace = stmt.specifiers.some((spec) => spec.type === "ImportNamespaceSpecifier")
-    if (specifier === "@airdesign/catalog" || (specifier === "@airdesign/doom" && namespace)) barrelsHit.push(specifier)
+    const localName = stmt.specifiers.find((spec) => spec.type === "ImportNamespaceSpecifier")?.local.name
+    const needlessDoom =
+      specifier === "@airdesign/doom" &&
+      localName !== undefined &&
+      !doomValueNamed &&
+      !usedAsValue(parsed.program, localName)
+    if (specifier === "@airdesign/catalog" || needlessDoom) barrelsHit.push(specifier)
     else if (!barrels.has(specifier)) local.push(specifier)
   }
   return { barrelsHit, local }

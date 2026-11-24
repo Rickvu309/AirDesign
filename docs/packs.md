@@ -173,7 +173,7 @@ flowchart TD
 | `apps/web/src/present` | feature | present-button.tsx, present-keys.ts, present-layer.tsx, present-screens.tsx, use-present.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
 | `apps/web/src/samples` | feature | sample-screens.tsx, sample-slides.ts | none | none |
 | `apps/web/src/settings` | feature | account-page.tsx, agents-page.tsx, settings-screens.tsx, usage-page.tsx | apps/web/src/account, apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/credits, apps/web/src/decks, apps/web/src/lib | none |
-| `packages/catalog` | model | src/index.ts | none | none |
+| `packages/catalog` | model | src/index.ts, src/icon-names.ts | none | none |
 | `packages/document` | model | src/index.ts | none | none |
 | `packages/doom` | core | src/index.ts | none | none |
 | `packages/fonts` | core | src/index.ts | none | none |

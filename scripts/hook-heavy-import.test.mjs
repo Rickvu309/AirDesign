@@ -66,6 +66,35 @@ const oneFile = withTempRepo({
 })
 assert.deepEqual(oneFile, [])
 
+const calledDoom = withTempRepo({
+  "apps/web/src/editor/panel.test.tsx": hook("./panel"),
+  "apps/web/src/editor/panel.tsx": [
+    'import * as doom from "@airdesign/doom"',
+    "export const runs = (view) => doom.runsOf(view)",
+  ].join("\n"),
+})
+assert.deepEqual(calledDoom, [])
+
+const typeNamespace = withTempRepo({
+  "apps/web/src/editor/panel.test.tsx": hook("./panel"),
+  "apps/web/src/editor/panel.tsx": [
+    'import * as doom from "@airdesign/doom"',
+    'export const kind = (chart: doom.Chart["kind"]) => chart',
+  ].join("\n"),
+})
+assert.equal(typeNamespace.length, 1)
+assert.match(typeNamespace[0], /panel\.tsx loads @airdesign\/doom/)
+
+const namedBeside = withTempRepo({
+  "apps/web/src/editor/panel.test.tsx": hook("./panel"),
+  "apps/web/src/editor/panel.tsx": [
+    'import * as doom from "@airdesign/doom"',
+    'import { propOf } from "@airdesign/doom"',
+    'export const group = (view: doom.Doom, id: doom.NodeId) => propOf(view.nodes.get(id), "sizing")',
+  ].join("\n"),
+})
+assert.deepEqual(namedBeside, [])
+
 const namedDoom = withTempRepo({
   "apps/web/src/editor/panel.test.tsx": hook("./panel"),
   "apps/web/src/editor/panel.tsx": panel('import { readLinkAddress } from "@airdesign/doom"'),
