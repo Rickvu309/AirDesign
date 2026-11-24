@@ -52,10 +52,9 @@ it("keeps a star whose device write never landed and sends it once from the next
   const sent: Sent[] = []
   vi.stubGlobal("fetch", answering(sent))
   expect(await stars(["deck-one"])).toEqual([["deck-one", true]])
-  await expect.poll(() => sent).toEqual([{ path: deckRoutes.star.path, body: { deck: "deck-one", starred: true } }])
+  await expect.poll(() => stars(["deck-one"])).toEqual([])
+  expect(sent).toEqual([{ path: deckRoutes.star.path, body: { deck: "deck-one", starred: true } }])
   expect(shelf.size).toBe(0)
-  expect(await stars(["deck-one"])).toEqual([])
-  expect(sent).toHaveLength(1)
 })
 
 it("keeps the newest choice when several never reached the device, and over an older one that did", async () => {
@@ -75,8 +74,7 @@ it("applies a shelved change that also reached the device once", async () => {
   const sent: Sent[] = []
   vi.stubGlobal("fetch", answering(sent))
   expect(await stars(["deck-one"])).toEqual([["deck-one", true]])
-  await expect.poll(() => sent).toHaveLength(1)
-  expect(await stars(["deck-one"])).toEqual([])
+  await expect.poll(() => stars(["deck-one"])).toEqual([])
   await tick()
   expect(sent).toHaveLength(1)
   expect(shelf.size).toBe(0)
