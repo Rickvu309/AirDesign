@@ -60,6 +60,10 @@ export function stylesAt(theme: Theme, step: number): Styles {
 }
 
 export function fitting<T>(theme: Theme, attempt: (styles: Styles) => T | undefined): T {
+  return largestFitting(theme, attempt) ?? stop("limit", undefined, "items")
+}
+
+export function largestFitting<T>(theme: Theme, attempt: (styles: Styles) => T | undefined): T | undefined {
   let before: string | undefined
   for (let step = 0; step <= textStyleNames.length; step += 1) {
     const styles = stylesAt(theme, step)
@@ -69,7 +73,7 @@ export function fitting<T>(theme: Theme, attempt: (styles: Styles) => T | undefi
     const made = attempt(styles)
     if (made !== undefined) return made
   }
-  return stop("limit", undefined, "items")
+  return undefined
 }
 
 export function partOf(markdown: string, style: TextStyleName, color: AgentColor = "text", center = false): Part {
