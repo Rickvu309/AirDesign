@@ -2,7 +2,7 @@ import { type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 import { propOf } from "@airdesign/doom"
-import { blankTextFor, draftWrites, holdsPaint, leaveEmptyWrites } from "./text-leave"
+import { blankTextFor, draftWrites, holdsPaint, leaveWrites } from "./text-leave"
 import {
   insertSlice,
   linkedWords,
@@ -38,6 +38,7 @@ export type Session = {
   readonly created: Created | null
   readonly keeps: boolean
   readonly draft: doom.Text
+  readonly painted: doom.Text
   readonly saved: doom.Text
   readonly anchor: number
   readonly focus: number
@@ -97,13 +98,16 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
   const notices = useSyncExternalStore(client.subscribe, client.notices)
   const selected = useRef<(() => Caret | null) | null>(null)
   const viewRef = useRef(view)
+  const measureRef = useRef(measure)
   useEffect(() => {
     viewRef.current = view
+    measureRef.current = measure
   })
 
   function set(next: Session | null) {
-    ref.current = next
-    setState(next)
+    const kept = next === null || next.draft.chars === "" ? next : { ...next, painted: next.draft }
+    ref.current = kept
+    setState(kept)
   }
 
   function live(): Session | null {
@@ -164,7 +168,11 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
     if (refused) pushed.current = ""
     flush()
     if (now.created === null) {
-      const writes = leaveEmptyWrites({ node: now.node, keeps: now.keeps, draft: now.draft, pushed: pushed.current })
+      const writes = leaveWrites(
+        viewRef.current,
+        { node: now.node, keeps: now.keeps, draft: now.draft, painted: now.painted, pushed: pushed.current },
+        measureRef.current ?? estimate,
+      )
       client.push(writes, { step: step.current })
     }
     setRefused(false)
@@ -198,6 +206,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
       created: null,
       keeps,
       draft: text,
+      painted: text,
       saved: text,
       anchor: from,
       focus: text.chars.length,
@@ -216,6 +225,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
       created,
       keeps: false,
       draft: text,
+      painted: text,
       saved: text,
       anchor: 0,
       focus: 0,
@@ -238,7 +248,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
       if (session === null) return []
       if (session.created !== null) return creationWrites(session.created, session.draft)
       return draftWrites(view, session, measure ?? estimate)
-    }, [session?.draft, session?.created, session?.node, session?.keeps, view, measure]),
+    }, [session?.draft, session?.painted, session?.created, session?.node, session?.keeps, view, measure]),
     begin,
     beginNew,
     replace(from, to, insert) {
