@@ -6,6 +6,7 @@ import { waitForAgentPaint, watchAgentPaint } from "./agent-paint"
 import { test as stackTest } from "./api-stack"
 import { dragFeel, type Feel } from "./drag-feel"
 import { openEditor } from "./editor-deck"
+import { editorSpeedBudget } from "./editor-speed-budget"
 import { keptWait, keptWaitApproval } from "./kept-wait"
 import {
   agentPaintTasks,
@@ -26,14 +27,14 @@ const test = stackTest.extend<{ speedTasks: Map<string, unknown> }, { speedLock:
   speedLock: [
     async ({}, use) => {
       const { takeSpeedLock } = await import("../../scripts/machine-lock.mjs")
-      const release = await takeSpeedLock({ browser: true })
+      const release = await takeSpeedLock()
       try {
         await use()
       } finally {
         await release()
       }
     },
-    { scope: "worker", auto: true, timeout: 610_000 },
+    { scope: "worker", auto: true, timeout: 310_000 },
   ],
   speedTasks: async ({}, use, testInfo) => {
     const kept = new Map<string, unknown>()
@@ -49,20 +50,7 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 
 const thumbnailMark = "typed-slide-thumbnail"
 
-const budget = {
-  slides: 40,
-  idleTaskMilliseconds: 150,
-  idleLongTaskMilliseconds: 50,
-  typeTaskPerKey: 8,
-  typeTaskBeyondTypical: 1.2,
-  typeMeasureCalls: 6,
-  typePreviewPerRedraw: 8,
-  typePreviewRedraws: 7,
-  dragScriptPerFrame: 8,
-  dragTaskPerFrame: 16,
-  dragLongFrames: 0,
-  agentEditPaintMilliseconds: 80,
-}
+const budget = editorSpeedBudget(process.env)
 
 async function frames(page: Page, count: number): Promise<void> {
   await page.evaluate(
@@ -198,12 +186,9 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
   expect(perKey, "every typed letter ran in a traced task").toHaveLength(keys)
   const typing = typedLetters(perKey)
   const redraws = thumbnailUpdates.map(redrawTimes)
-  checkTypingSpeed(() => {
-    expect(
-      redraws.length,
-      "the filmstrip redrew the typed slide's thumbnail while the trace ran",
-    ).toBeGreaterThanOrEqual(budget.typePreviewRedraws)
-  })
+  expect(redraws.length, "the filmstrip redrew the typed slide's thumbnail while the trace ran").toBeGreaterThanOrEqual(
+    budget.typePreviewRedraws,
+  )
   const meanOf = (values: readonly number[]) =>
     values.reduce((total, each) => total + each, 0) / Math.max(values.length, 1)
   const render = meanOf(redraws.map((each) => each.render))
@@ -212,6 +197,9 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
     "a".repeat(keys),
   )
   const measured = await page.evaluate(() => (window as unknown as { measured: number }).measured)
+  expect(measured, "typing measures a glyph or pair of glyphs once, never again on each key").toBeLessThanOrEqual(
+    budget.typeMeasureCalls,
+  )
   await page.keyboard.press("Escape")
   await page.mouse.click(from.x, from.y)
   await expect(page.locator("[data-selection-outline]")).toHaveCount(1)
@@ -262,9 +250,6 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
     description: `idle ${String(Math.round(quiet.work * 10) / 10)} ms in 3 s over ${String(quiet.tasks)} tasks, ${String(quiet.longTasks.length)} over ${String(budget.idleLongTaskMilliseconds)} ms; ${String(measured)} text measurements; typing task ${String(Math.round(typing.trimmedMean * 100) / 100)} ms a key without the slowest ${String(spikeKeys)}, ${String(Math.round(typing.mean * 100) / 100)} with them, typical ${String(Math.round(typing.typical * 100) / 100)}, ${String(Math.round(typing.beyondTypical * 100) / 100)} beyond typical, slowest ${String(Math.round(typing.slowest * 10) / 10)}; thumbnail render ${String(Math.round(render * 100) / 100)} ms and paint ${String(Math.round(paint * 100) / 100)} ms over ${String(redraws.length)} updates, slowest ${String(Math.round(Math.max(0, ...redraws.map((each) => each.render + each.paint)) * 10) / 10)}; ${String(typingLongTasks.length)} tasks over ${String(budget.idleLongTaskMilliseconds)} ms while typing; agent edit to paint ${String(Math.round(agentEditPaint * 10) / 10)} ms; drag script ${String(feel.scriptPerFrame)} ms and task ${String(feel.taskPerFrame)} ms a frame, ${String(feel.longFrames)} long frames`,
   })
   checkTypingSpeed(() => {
-    expect(measured, "typing measures a glyph or pair of glyphs once, never again on each key").toBeLessThanOrEqual(
-      budget.typeMeasureCalls,
-    )
     expect(
       typing.trimmedMean,
       `a typed letter's task stays inside one frame, leaving out the slowest ${String(spikeKeys)} letters`,
@@ -273,10 +258,10 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
       budget.typeTaskBeyondTypical,
     )
     expect(render, "the thumbnail render that typing leaves for later fits in the frame beside a letter").toBeLessThan(
-      budget.typePreviewPerRedraw,
+      budget.typePreviewRender,
     )
     expect(paint, "the frame that paints the typed slide's thumbnail fits in the frame beside a letter").toBeLessThan(
-      budget.typePreviewPerRedraw,
+      budget.typePreviewPaint,
     )
     expect(
       typingLongTasks,
@@ -284,7 +269,9 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
     ).toEqual([])
   })
   checkDragSpeed(() => {
-    expect(feel.scriptPerFrame, "a drag move's script work stays under 8 ms").toBeLessThan(budget.dragScriptPerFrame)
+    expect(feel.scriptPerFrame, "a drag move's script work stays within its budget").toBeLessThan(
+      budget.dragScriptPerFrame,
+    )
     expect(feel.taskPerFrame, "a drag move's main-thread work stays inside one frame").toBeLessThan(
       budget.dragTaskPerFrame,
     )

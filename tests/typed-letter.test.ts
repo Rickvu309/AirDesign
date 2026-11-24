@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
+import { editorSpeedBudget } from "./browser/editor-speed-budget"
 import { spikeKeys, typedLetters, warmupKeys } from "./browser/typed-letter"
 
-const meanLimit = 8
-const beyondLimit = 1.2
+const { typeTaskPerKey: meanLimit, typeTaskBeyondTypical: beyondLimit } = editorSpeedBudget({})
 const keys = 48
 const quietKey = 5.5
 const busyMachine = 1.2
@@ -18,6 +18,15 @@ const passes = (perKey: readonly number[]) => {
 }
 
 describe("a typed letter's task", () => {
+  it("accepts the high clean CI reading and catches a doubled low CI reading", () => {
+    const { typeTaskPerKey } = editorSpeedBudget({ CI: "true" })
+    const onEveryKey = (thread: number) => typedLetters(Array.from({ length: keys }, () => thread)).trimmedMean
+
+    expect(onEveryKey(2.93)).toBeLessThan(typeTaskPerKey)
+    expect(onEveryKey(2.2 * 2)).toBeGreaterThanOrEqual(typeTaskPerKey)
+    expect(onEveryKey(2.2 * 2)).toBeLessThan(meanLimit)
+  })
+
   it("passes a quiet run, and the same run on a machine that slows every key by a fifth", () => {
     expect(passes(Array.from({ length: keys }, () => quietKey))).toBe(true)
     expect(passes(Array.from({ length: keys }, () => quietKey * busyMachine))).toBe(true)
