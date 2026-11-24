@@ -112,7 +112,8 @@ export type AgentLook = {
   readonly rotation?: number
   readonly flip?: "none" | "h" | "v" | "hv"
   readonly notes?: string
-} & SlideLook & InnerLook
+} & SlideLook &
+  InnerLook
 
 export type DeckLook = {
   readonly name?: string
