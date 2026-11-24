@@ -1,0 +1,90 @@
+import { act } from "react"
+import { createRoot, type Root } from "react-dom/client"
+import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
+import { AiraPanel } from "@/aira/aira-panel"
+
+let host: HTMLDivElement
+let root: Root
+let close: () => void
+const sent: string[] = []
+
+beforeAll(async () => {
+  const name = "jsdom"
+  const { JSDOM } = (await import(name)) as {
+    JSDOM: new (html: string, options: { url: string }) => { window: Window & typeof globalThis }
+  }
+  const { window } = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/s/abc" })
+  close = () => window.close()
+  window.matchMedia = () =>
+    ({ matches: true, addEventListener() {}, removeEventListener() {} }) as unknown as MediaQueryList
+  for (const [key, value] of Object.entries({
+    window,
+    document: window.document,
+    HTMLElement: window.HTMLElement,
+    Element: window.Element,
+    Node: window.Node,
+    IS_REACT_ACT_ENVIRONMENT: true,
+  }))
+    vi.stubGlobal(key, value)
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  )
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof fetch>(async (_input, init) => {
+      sent.push(String(init?.body ?? ""))
+      return new Response("{}", { status: 500 })
+    }),
+  )
+})
+
+afterEach(async () => {
+  if (root) await act(async () => root.unmount())
+  host?.remove()
+  sent.length = 0
+})
+
+afterAll(() => {
+  close()
+  vi.unstubAllGlobals()
+})
+
+async function open(start: { readonly request?: string; readonly draft?: string }) {
+  host = document.createElement("div")
+  document.body.append(host)
+  root = createRoot(host)
+  await act(async () =>
+    root.render(
+      <AiraPanel
+        deck="deck-1"
+        hidden={false}
+        undo={async () => ({ ok: false, reason: "nothing" }) as never}
+        store={{
+          list: async () => [],
+          put: async () => undefined,
+          drop: async () => undefined,
+          take: () => [],
+          shelve: () => undefined,
+        }}
+        start={start}
+      />,
+    ),
+  )
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 20)))
+}
+
+it("sends the first request once, as the first message of the chat", async () => {
+  await open({ request: "A board update on Q3 revenue" })
+  expect(host.textContent).toContain("A board update on Q3 revenue")
+  expect(sent.filter((body) => body.includes("A board update on Q3 revenue"))).toHaveLength(1)
+})
+
+it("sends nothing when there is no first request", async () => {
+  await open({})
+  expect(host.querySelector("[data-aira-welcome]")).not.toBeNull()
+})

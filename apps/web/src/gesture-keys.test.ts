@@ -37,6 +37,7 @@ const upDown = ["ArrowDown", "ArrowUp", "End", "Home"]
 
 const controlKeys: Readonly<Record<string, readonly string[]>> = {
   "apps/web/src/aira/aira-composer.tsx": ["Enter"],
+  "apps/web/src/decks/describe-deck.tsx": ["Enter"],
   "apps/web/src/decks/decks-shell.tsx": ["Escape"],
   "apps/web/src/design/color-picker.tsx": arrows,
   "apps/web/src/design/controls/alignment-grid.tsx": arrows,

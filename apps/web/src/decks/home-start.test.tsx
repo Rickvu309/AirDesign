@@ -82,3 +82,18 @@ it("offers no deck start on Trash", async () => {
   expect(named(productCopy.newDeck)).toHaveLength(0)
   expect(named(productCopy.blankDeck)).toHaveLength(0)
 })
+
+const box = () => host.querySelector(`textarea[aria-label="${productCopy.describeDeck}"]`)
+
+it("offers the Describe your deck box on Recents, and on neither All decks nor Trash", async () => {
+  await show()
+  expect(box()).not.toBeNull()
+  await act(async () => root.unmount())
+  host.remove()
+  await show("all-decks")
+  expect(box()).toBeNull()
+  await act(async () => root.unmount())
+  host.remove()
+  await show("trash")
+  expect(box()).toBeNull()
+})

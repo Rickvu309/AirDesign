@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { useEffect, useMemo, useRef, useState } from "react"
+import { clearFirstRequest, peekFirstRequest } from "@/lib/first-request"
 import { NotFoundPage } from "@/decks/not-found-page"
 import { tabTitleOf } from "@/copy/product-copy"
 import { editorCopy } from "@/copy/editor-copy"
@@ -253,6 +254,10 @@ export function Editor({
   readonly open?: OpenOptions
   readonly start?: EditorStart
 }) {
+  const [request] = useState(() => (id === null ? peekFirstRequest() : undefined))
+  useEffect(() => {
+    clearFirstRequest()
+  }, [])
   const opening = useDoomDeck(id, {
     arrived: (made) => window.history.replaceState(null, "", `/s/${made}`),
     ...open,
@@ -264,5 +269,6 @@ export function Editor({
         <div className="h-full bg-canvas" />
       </div>
     )
-  return <Editing client={opening.deck} id={opening.id} start={start} />
+  const started = request === undefined ? start : { ...start, aira: { ...start.aira, request } }
+  return <Editing client={opening.deck} id={opening.id} start={started} />
 }

@@ -23,6 +23,7 @@ import { useWeekUsage, type UsageLoad } from "@/aira/usage-load"
 export type AiraStart = {
   readonly chat?: AiraChat
   readonly draft?: string
+  readonly request?: string
   readonly usage?: () => Promise<UsageLoad>
 }
 
@@ -94,6 +95,15 @@ export function AiraPanel({
     },
     [],
   )
+
+  useEffect(() => {
+    const first = start.request
+    if (first === undefined) return
+    const timer = window.setTimeout(() => {
+      if (!ask(first)) setDraft(first)
+    })
+    return () => window.clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     function moved(event: FocusEvent) {

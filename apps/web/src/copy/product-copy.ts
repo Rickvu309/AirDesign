@@ -123,6 +123,9 @@ export const productCopy = {
   disconnect: "Disconnect",
   disconnectFailed: "Unable to disconnect. Check your connection and try again.",
   newDeck: "New deck",
+  describeDeck: "Describe your deck",
+  describeDeckExample: "Describe your deck, like a Q3 board update with the numbers first",
+  makeDeck: "Make deck",
   exportDeck: "Export",
   blankDeck: "Blank deck",
 } as const

@@ -169,7 +169,7 @@ flowchart TD
 | `apps/web/src/editing` | shared | canvas-zoom.ts, painted-picture.ts, picture-file.ts, slide-layout.ts, slide-pictures.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |
 | `apps/web/src/editor` | feature | editor.tsx, editor-sample.tsx, editor-screens.tsx | apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/decks, apps/web/src/design, apps/web/src/editing, apps/web/src/export, apps/web/src/lib, apps/web/src/present, apps/web/src/samples | none |
 | `apps/web/src/export` | feature | export-control.tsx, export-flow.ts, export-routes.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |
-| `apps/web/src/lib` | platform | class-names.ts, composing.ts, fields-of.ts, gestures.ts | none | none |
+| `apps/web/src/lib` | platform | class-names.ts, composing.ts, first-request.ts, fields-of.ts, gestures.ts | none | none |
 | `apps/web/src/present` | feature | present-button.tsx, present-keys.ts, present-layer.tsx, present-screens.tsx, use-present.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
 | `apps/web/src/samples` | feature | sample-screens.tsx, sample-slides.ts | none | none |
 | `apps/web/src/settings` | feature | account-page.tsx, agents-page.tsx, settings-screens.tsx, usage-page.tsx | apps/web/src/account, apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/credits, apps/web/src/decks, apps/web/src/lib | none |
