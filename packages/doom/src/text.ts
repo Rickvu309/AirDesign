@@ -37,6 +37,7 @@ export type Text = {
   readonly style: TextStyleName
   readonly resize: "fixed" | "height" | "widthAndHeight" | "truncate"
   readonly alignV: "top" | "center" | "bottom"
+  readonly wrap?: "none" | "words"
   readonly padding?: Sides
 }
 
@@ -83,7 +84,7 @@ const readFrame = object(
     resize: literal(["fixed", "height", "widthAndHeight", "truncate"]),
     alignV: literal(["top", "center", "bottom"]),
   },
-  { padding: readSides },
+  { padding: readSides, wrap: literal(["none", "words"]) },
 )
 
 export const readText: Reader<Text> = (raw) => {

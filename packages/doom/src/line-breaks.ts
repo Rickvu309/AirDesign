@@ -1,4 +1,5 @@
 const tolerance = 1e-6
+const subpixel = 1 / 64
 const forced = "\n"
 const space = " "
 
@@ -11,7 +12,7 @@ export type FontFace = {
 
 export type FontWidths = Readonly<Record<string, FontFace>>
 
-export type Glyph = { readonly char: string; readonly width: number; readonly run: number }
+export type Glyph = { readonly char: string; readonly width: number; readonly run: number; readonly join?: number }
 export type LineSpan = { readonly start: number; readonly end: number; readonly forced: boolean }
 
 export function fontFace(font: string, bold: boolean, italic: boolean): string {
@@ -35,7 +36,16 @@ function breaksAfter(chars: readonly string[], at: number): boolean {
   return next === "—"
 }
 
-export function spansOf(glyphs: readonly Glyph[], first: number, rest: number): readonly LineSpan[] {
+export function isCjk(char: string): boolean {
+  return /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(char)
+}
+
+export function wordBoundary(char: string, next: string): boolean {
+  return char === space ? next !== space : isCjk(char) && isCjk(next)
+}
+
+export function spansOf(glyphs: readonly Glyph[], first: number, rest: number, words: boolean): readonly LineSpan[] {
+  const slack = words ? subpixel : tolerance
   const chars = glyphs.map((glyph) => glyph.char)
   const spans: LineSpan[] = []
   let start = 0
@@ -52,8 +62,10 @@ export function spansOf(glyphs: readonly Glyph[], first: number, rest: number): 
   let from = 0
   while (from < glyphs.length) {
     let to = from
-    while (to < glyphs.length - 1 && !breaksAfter(chars, to)) to += 1
-    let content = 0
+    while (to < glyphs.length - 1) {
+      if (words ? wordBoundary(chars[to]!, chars[to + 1]!) : breaksAfter(chars, to)) break
+      to += 1
+    }
     let full = 0
     let tail = 0
     for (let at = from; at <= to; at += 1) {
@@ -62,9 +74,9 @@ export function spansOf(glyphs: readonly Glyph[], first: number, rest: number): 
       full += glyph.width
       tail = glyph.char === space || glyph.char === forced ? tail + glyph.width : 0
     }
-    content = full - tail
-    if (has && width + content > room + tolerance) close(from, false)
-    if (!has && content > room + tolerance) {
+    const content = full - tail
+    if (has && width + content > room + slack) close(from, false)
+    if (!words && !has && content > room + tolerance) {
       for (let at = from; at <= to; at += 1) {
         const glyph = glyphs[at]
         if (glyph === undefined) continue
@@ -74,7 +86,7 @@ export function spansOf(glyphs: readonly Glyph[], first: number, rest: number): 
         has = true
       }
     } else {
-      width += full
+      width += full - (has ? 0 : (glyphs[from]?.join ?? 0))
       has = true
     }
     if (chars[to] === forced) close(to + 1, true)

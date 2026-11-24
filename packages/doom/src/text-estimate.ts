@@ -1,3 +1,4 @@
+import { isCjk } from "./line-breaks.js"
 import type { Px } from "./paint.js"
 import type { Text } from "./text.js"
 import type { Theme } from "./theme.js"
@@ -7,8 +8,10 @@ const letterWidths: readonly (readonly [RegExp, number])[] = [
   [/[ft \-()[\]r/]/, 0.31],
   [/[mw]/, 0.83],
   [/[MW%]/, 0.9],
+  [/Q/, 0.78],
+  [/[0-9]/, 0.64],
   [/[A-Z]/, 0.7],
-  [/[0-9$a-z]/, 0.55],
+  [/[$a-z]/, 0.55],
 ]
 
 const bulletIndent = 0.9
@@ -17,10 +20,13 @@ const bulletGap = 0.35
 const boldWidening = 1.07
 const boldWeight = 600
 
+export function estimateAdvance(char: string): number {
+  return isCjk(char) ? 1 : (letterWidths.find(([kind]) => kind.test(char))?.[1] ?? 0.9)
+}
+
 function wordWidth(word: string, upper: boolean): number {
   let total = 0
-  for (const letter of upper ? word.toUpperCase() : word)
-    total += letterWidths.find(([kind]) => kind.test(letter))?.[1] ?? 0.9
+  for (const letter of upper ? word.toUpperCase() : word) total += estimateAdvance(letter)
   return total
 }
 

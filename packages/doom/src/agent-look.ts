@@ -333,6 +333,7 @@ export function textOfLook(
             ...made,
             resize: now.resize,
             alignV: now.alignV,
+            ...(now.wrap === "words" ? { wrap: now.wrap } : {}),
             ...(now.padding === undefined ? {} : { padding: now.padding }),
           }
   }
