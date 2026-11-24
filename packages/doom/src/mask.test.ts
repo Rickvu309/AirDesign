@@ -28,7 +28,7 @@ const spot = (x: number, y: number, w: number, h: number) => ({
   flipH: false,
   flipV: false,
 })
-const fill = (color: `#${string}`) => [{ kind: "solid" as const, color }]
+const fill = (name: "accent1" | "accent2" | "accent3") => [{ kind: "solid" as const, color: { var: name } }]
 
 function group(children: readonly TreeNode[]) {
   return doomFromTree({
@@ -49,13 +49,13 @@ function group(children: readonly TreeNode[]) {
 }
 
 const layers: TreeNode[] = [
-  { type: "shape" as const, name: "back", props: { box: spot(10, 10, 80, 60), fills: fill("#111111") } },
+  { type: "shape" as const, name: "back", props: { box: spot(10, 10, 80, 60), fills: fill("accent1") } },
   {
     type: "shape" as const,
     name: "hole",
-    props: { box: spot(40, 30, 200, 120), radius: 24, fills: fill("#ff00aa"), mask: true },
+    props: { box: spot(40, 30, 200, 120), radius: 24, fills: fill("accent2"), mask: true },
   },
-  { type: "shape" as const, name: "front", props: { box: spot(20, 20, 300, 200), fills: fill("#00aaff") } },
+  { type: "shape" as const, name: "front", props: { box: spot(20, 20, 300, 200), fills: fill("accent3") } },
 ]
 
 function open(doom: Doom): Doom {
@@ -90,7 +90,7 @@ describe("a mask is a layer that clips every sibling above it", () => {
   it("writes the same flag an agent sets, reads it back, and names a bad value", () => {
     const plain = group([
       layers[0]!,
-      { ...layers[1]!, props: { box: spot(40, 30, 200, 120), fills: fill("#ff00aa") } },
+      { ...layers[1]!, props: { box: spot(40, 30, 200, 120), fills: fill("accent2") } },
       layers[2]!,
     ])
     const hole = plain.ids.hole!
