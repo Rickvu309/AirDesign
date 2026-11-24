@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test"
 import * as doom from "../../packages/doom/src/index.ts"
-import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
+import { agentKeptLayers } from "../../apps/web/src/copy/agent-runs-copy.ts"
+import { airaKeptLayerName, airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { test, type Stack } from "./api-stack"
 import { clickSlide, openEditor, selectedIds, type Opened } from "./editor-deck"
@@ -56,7 +57,7 @@ test("Undo of Aira's request keeps the layer the person moved since, says so, an
   await expect(canvas.getByText("Draft note", { exact: true })).toHaveCount(0)
   await expect(canvas.getByText("Q3 summary", { exact: true })).toBeVisible()
   await expect(
-    side.getByText(`${airaCopy.undone} “Q3 summary” stays, because it was changed after Aira made it.`),
+    side.getByText(`${airaCopy.undone} ${agentKeptLayers("Aira", [airaKeptLayerName("Q3 summary")])}`),
   ).toBeVisible()
   await expect.poll(async () => textNode(await saved(stack, opened), "Draft note")).toMatchObject({ parent: null })
   const after = await saved(stack, opened)
