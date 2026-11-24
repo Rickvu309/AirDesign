@@ -4,7 +4,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { onCi } from "./check-steps.mjs"
 import { cleanEnvironment } from "./test-environment.mjs"
-import { requirePinnedNode } from "./node-version.mjs"
+import { requirePinnedNode } from "./node-version.cjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 

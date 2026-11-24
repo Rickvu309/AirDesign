@@ -1,4 +1,4 @@
-import { requirePinnedNode } from "./scripts/node-version.mjs"
+import { requirePinnedNode } from "./scripts/node-version.cjs"
 import { defineConfig } from "@playwright/test"
 import { deployed, type Production } from "./tests/browser/production.ts"
 

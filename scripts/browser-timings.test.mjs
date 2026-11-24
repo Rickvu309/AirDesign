@@ -23,7 +23,6 @@ const folder = fs.mkdtempSync(path.join(os.tmpdir(), "browser-timings-"))
 try {
   fs.symlinkSync(path.join(root, "node_modules"), path.join(folder, "node_modules"), "dir")
   fs.symlinkSync(path.join(root, "scripts"), path.join(folder, "scripts"), "dir")
-  fs.symlinkSync(path.join(root, ".node-version"), path.join(folder, ".node-version"))
   fs.writeFileSync(
     path.join(folder, "playwright.config.ts"),
     `
