@@ -21,7 +21,6 @@ export type SlowStore = {
   drop(): void
 }
 
-// beforeEach(installIndexedDb) passes Vitest's hook context as the first argument.
 const isSlowStore = (value: unknown): value is SlowStore =>
   typeof value === "object" &&
   value !== null &&
