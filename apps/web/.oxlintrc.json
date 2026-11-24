@@ -9,11 +9,11 @@
         "forbid": [
           {
             "propName": "onPointerLeave",
-            "message": "React fires its leave only after a pointerout, and the browser sends none when the node under the pointer was removed. Listen for the native pointerleave with addEventListener, as use-canvas-pointer.ts does."
+            "message": "React fires its leave only after a pointerout, and the browser sends none when the node under the pointer was removed. Listen for the native pointerleave with addEventListener, as use-canvas-pointer.ts does. A stable element that never unmounts under the pointer may opt out with a lint-disable comment that gives the reason."
           },
           {
             "propName": "onMouseLeave",
-            "message": "React fires its leave only after a mouseout, and the browser sends none when the node under the pointer was removed. Listen for the native pointerleave with addEventListener, as use-canvas-pointer.ts does."
+            "message": "React fires its leave only after a mouseout, and the browser sends none when the node under the pointer was removed. Listen for the native pointerleave with addEventListener, as use-canvas-pointer.ts does. A stable element that never unmounts under the pointer may opt out with a lint-disable comment that gives the reason."
           }
         ]
       }
