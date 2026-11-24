@@ -1,7 +1,7 @@
 import { field } from "./agent-fields.js"
 import { readLink } from "./link.js"
 import { limits } from "./limits.js"
-import { integer, object, reject, words } from "./read-kit.js"
+import { integer, mismatch, object, words } from "./read-kit.js"
 import type { Span, Text } from "./text.js"
 
 export type AgentInsert = { readonly at: number; readonly text: string; readonly link: string }
@@ -21,7 +21,7 @@ export const insertField = field(
   },
   (raw) => {
     const read = object({ at: integer(0, limits.valueBytes), text: words(limits.valueBytes, 1), link: readLink })(raw)
-    if (read.text.includes("\n")) return reject()
+    if (read.text.includes("\n")) mismatch("text", "One line.")
     return read
   },
 )

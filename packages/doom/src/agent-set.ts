@@ -140,7 +140,7 @@ function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | und
 
 export function compileSet(draft: Draft, change: SetChange): void {
   if (change.insert !== undefined && (change.target.startsWith("*.") || change.target.includes("#")))
-    stop("shape", undefined, "insert")
+    stop("shape", undefined, "insert", "needs", "a text layer")
   if (change.target.startsWith("*.")) return setEverySlide(draft, change, change.target.slice(2))
   const at = change.target.indexOf("#")
   if (at >= 0) return setBar(draft, change, at)
@@ -157,7 +157,8 @@ export function compileSet(draft: Draft, change: SetChange): void {
   const outline = propOf(node, "geometry")?.kind
   if (change.shape !== undefined && (outline === "line" || outline === "icon" || outline === "path"))
     stop("shape", node.id, "shape", "needs", "a preset outline")
-  if (change.link !== undefined && propOf(node, "text") === undefined) stop("shape", node.id, "link")
+  if (change.link !== undefined && propOf(node, "text") === undefined)
+    stop("shape", node.id, "link", "needs", "a text layer")
   const now = {
     fills: propOf(node, "fills"),
     stroke: propOf(node, "stroke"),
@@ -169,8 +170,9 @@ export function compileSet(draft: Draft, change: SetChange): void {
   const geometry = propOf(node, "geometry")
   const stroked = geometry?.kind === "line" || geometry?.kind === "icon" ? "center" : "inside"
   const current = now.text
-  if (change.insert !== undefined && (change.text !== undefined || current === undefined))
-    stop("shape", node.id, "insert")
+  if (change.insert !== undefined && change.text !== undefined)
+    stop("shape", node.id, "insert", "form", "Insert or text, not both.")
+  if (change.insert !== undefined && current === undefined) stop("shape", node.id, "insert", "needs", "a text layer")
   const held =
     change.insert === undefined || current === undefined
       ? current
