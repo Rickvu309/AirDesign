@@ -11,6 +11,8 @@ import { appliedOn, dropped, landed, provisionalRevs, queueEdit, sendable, shown
 import type { DoomRemote } from "./doom-remote.js"
 import { statusOf, type DeckStatus, type Reach } from "./doom-status.js"
 import { deviceStorage, type DoomStorage } from "./doom-storage.js"
+import { runInLog } from "./run-log.js"
+import { catchingUpResolves, onStandingOnly, pressedOn, remember, type Pressed } from "./turn-replay.js"
 
 export type Notice = {
   readonly once: string
@@ -137,7 +139,7 @@ function connected(
   let queue: readonly Queued[] = firstQueue
   let undoSteps: Step[] = []
   let redoSteps: Step[] = []
-  const turned: string[] = []
+  const turned = new Map<string, Pressed>()
   let notices: readonly Notice[] = []
   let link: Reach = "reached"
   let kept = true
@@ -281,6 +283,23 @@ function connected(
     return true
   }
 
+  function ownedRevs(onces: Iterable<string>): Set<doom.Rev> {
+    const owned = new Set<doom.Rev>()
+    for (const name of onces) {
+      const turnedAt = revOf(name)
+      if (turnedAt !== undefined) owned.add(turnedAt)
+    }
+    return owned
+  }
+
+  function standOnly(once: string, pressed: Pressed): boolean {
+    const kept = onStandingOnly(server, queue, pressed, ownedRevs([...turned.keys(), ...pressed.owned]))
+    if (kept === undefined) return false
+    queue = kept.queue
+    if (kept.skipped) forget([once])
+    return true
+  }
+
   async function drain(): Promise<Synced> {
     for (;;) {
       const head = queue[0]
@@ -324,6 +343,15 @@ function connected(
         continue
       }
       const { refusal } = answer
+      const pressed = turned.get(once)
+      if (refusal === "edit" && catchingUpResolves(answer.refused) && pressed !== undefined) {
+        if (!(await catchUp().catch(() => ({ ok: false }))).ok) return { ok: false, reason: "offline" }
+        if (queue[0] !== head || standOnly(once, pressed)) {
+          await save({ queue })
+          tell()
+          continue
+        }
+      }
       if (refusal === "edit") {
         drop(once, {
           refused: answer.refused,
@@ -403,11 +431,7 @@ function connected(
       return { ok: false, reason: "nothing" }
     }
     const now = view()
-    const owned = new Set<doom.Rev>()
-    for (const name of [...turned, ...step.onces]) {
-      const turnedAt = revOf(name)
-      if (turnedAt !== undefined) owned.add(turnedAt)
-    }
+    const owned = ownedRevs([...turned.keys(), ...step.onces])
     const writes = doom.invert(step.before, now, { once: last, author, writes: step.writes, rev: at }, owned)
     if (writes.length === 0) {
       from.pop()
@@ -421,44 +445,22 @@ function connected(
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
     from.pop()
     to.push({ onces: [pushed.once], before: now, writes, ...(step.run === undefined ? {} : { run: step.run }) })
-    turned.push(pushed.once)
-    if (turned.length > 500) turned.shift()
+    remember(turned, pushed.once, pressedOn(server, now, writes, step.onces))
     return { ok: true, once: pushed.once, saved: pushed.saved }
-  }
-
-  async function runInLog(run: string): Promise<doom.RunEdit[] | undefined> {
-    const answer = await remote.run?.({ deck, run })
-    if (answer === undefined || !answer.ok || answer.edits.length === 0) return undefined
-    const known = new Map(view().nodes)
-    const edits: doom.RunEdit[] = []
-    for (const [index, raw] of answer.edits.entries()) {
-      const read = doom.readRunEdit(raw, answer.replaced[index], { ...view(), nodes: known })
-      if (doom.isRefusal(read)) return undefined
-      for (const write of read.writes)
-        if (write.prop === "type" && !known.has(write.node))
-          known.set(write.node, { id: write.node, rev: read.rev, type: write.value } as doom.Node)
-      edits.push(read)
-    }
-    return edits
   }
 
   async function undoRun(run: string): Promise<TurnedRun> {
     let edits
     try {
       if (!(await catchUp()).ok) return { ok: false, reason: "offline" }
-      edits = watched.get(run) ?? (await runInLog(run))
+      edits = watched.get(run) ?? (await runInLog(remote, deck, view(), run))
     } catch {
       return { ok: false, reason: "offline" }
     }
     if (edits === undefined || edits.length === 0 || view().runs.get(run)?.undone === true)
       return { ok: false, reason: "nothing" }
     const now = view()
-    const owned = new Set<doom.Rev>()
-    for (const name of turned) {
-      const turnedAt = revOf(name)
-      if (turnedAt !== undefined) owned.add(turnedAt)
-    }
-    const { writes, kept, left, waiting } = doom.invertRun(now, edits, owned)
+    const { writes, kept, left, waiting } = doom.invertRun(now, edits, ownedRevs(turned.keys()))
     if (writes.length === 0)
       return [...kept, ...left, ...waiting].length === 0
         ? { ok: false, reason: "nothing" }
@@ -466,8 +468,7 @@ function connected(
     const pushed = pushEdit(writes, author, { run, undone: true })
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
     redoSteps.push({ onces: [pushed.once], before: now, writes, run })
-    turned.push(pushed.once)
-    if (turned.length > 500) turned.shift()
+    remember(turned, pushed.once, pressedOn(server, now, writes))
     return { ok: true, once: pushed.once, saved: pushed.saved, kept, left, waiting }
   }
 

@@ -1,0 +1,29 @@
+{
+  "check": "checks-undo-offline.md#undo-offline",
+  "covers": [
+    {
+      "file": "packages/live/src/doom-deck.ts",
+      "names": ["connected"],
+      "digest": "3d6569127049",
+      "blob": "04a81cbdfec400cb5c37c65a7aa47aeb3abf5a4a"
+    },
+    {
+      "file": "packages/live/src/doom-queue.ts",
+      "names": ["skipped", "trimmed", "landed", "queueEdit"],
+      "digest": "7fb1fd5cbeb7",
+      "blob": "1f65fdddf8679807d4524491174ea23c712ab259"
+    },
+    {
+      "file": "packages/live/src/turn-replay.ts",
+      "names": ["onStandingOnly", "pressedOn", "catchingUpResolves"],
+      "digest": "9fa50bae9b3d",
+      "blob": "a4a784ed2d22e9c563096c4883b3650080b9c74f"
+    },
+    {
+      "file": "packages/doom/src/standing-layers.ts",
+      "names": ["onStandingLayers"],
+      "digest": "0921c0dbc9b3",
+      "blob": "152f1349b672f8b05fefe748650d71d62d0ecef5"
+    }
+  ]
+}

@@ -90,6 +90,37 @@ export function landed(queue: readonly Queued[], once: string, rev: doom.Rev): Q
   return rest
 }
 
+export function trimmed(queue: readonly Queued[], once: string, keep: readonly doom.Write[]): Queued[] {
+  const head = queue.find((each) => each.edit.once === once)
+  if (head === undefined) return [...queue]
+  const same = (a: doom.Write, b: doom.Write) => a.node === b.node && a.prop === b.prop
+  const baseOf = (write: doom.Write) => head.edit.writes.find((each) => same(each, write))?.base
+  return queue.flatMap((each) => {
+    if (each === head)
+      return keep.length === 0 ? [] : [{ ...each, edit: { ...each.edit, writes: keep }, after: keep.map(() => null) }]
+    if (!each.after.includes(once)) return [each]
+    const released = each.edit.writes.map(
+      (write, index) => each.after[index] === once && !keep.some((kept) => same(kept, write)),
+    )
+    return [
+      {
+        ...each,
+        edit: {
+          ...each.edit,
+          writes: each.edit.writes.map((write, index) => {
+            if (!released[index]) return write
+            const base = baseOf(write)
+            return base === undefined ? withoutBase(write) : { ...write, base }
+          }),
+        },
+        after: each.after.map((name, index) => (released[index] ? null : name)),
+      },
+    ]
+  })
+}
+
+export const skipped = (queue: readonly Queued[], once: string): Queued[] => trimmed(queue, once, [])
+
 export function dropped(
   queue: readonly Queued[],
   once: string,

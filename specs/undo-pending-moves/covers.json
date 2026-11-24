@@ -11,7 +11,7 @@
       "file": "packages/live/src/doom-queue.ts",
       "names": ["queueEdit"],
       "digest": "ce6deb9a803a",
-      "blob": "1aa2c7ed1e4707d4d69e7421cb6f150412b4aade"
+      "blob": "6f300555779ac21b2ea927f457f96f3bad306531"
     },
     {
       "file": "packages/doom/src/invert.ts",

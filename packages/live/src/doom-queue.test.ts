@@ -1,7 +1,17 @@
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { dropped, landed, provisionalRevs, queueEdit, sendable, shown, type Queued } from "./doom-queue.js"
+import {
+  dropped,
+  landed,
+  provisionalRevs,
+  queueEdit,
+  sendable,
+  shown,
+  skipped,
+  trimmed,
+  type Queued,
+} from "./doom-queue.js"
 
 const person: doom.Author = { kind: "person", id: "tab" }
 const id = doom.nodeId
@@ -146,6 +156,60 @@ describe("an edit landing", () => {
     let queue = queued(base, [], edit("a", [{ node: title, prop: "text", value: words("two") }]))
     queue = queued(base, queue, edit("b", [{ node: title, prop: "text", value: words("three") }]))
     expect(() => sendable(queue[1]!)).toThrow("queued")
+  })
+})
+
+describe("a turn skipped", () => {
+  it("leaves the queue and gives each edit built on it the base the turn had, as if it never was", () => {
+    const base = server()
+    let queue = queued(base, [], edit("undo", [{ node: title, prop: "text", value: words("two"), base: doom.rev(1) }]))
+    queue = queued(base, queue, edit("redo", [{ node: title, prop: "text", value: words("one") }]))
+    expect(queue[1]?.after).toEqual(["undo"])
+    queue = queued(base, queue, edit("other", [{ node: card, prop: "name", value: "C" }]))
+    const rest = skipped(queue, "undo")
+    expect(rest.map((each) => each.edit.once)).toEqual(["redo", "other"])
+    expect(rest[0]?.after).toEqual([null])
+    expect(rest[0]?.edit.writes[0]).toMatchObject({ base: doom.rev(1) })
+    expect(sendable(rest[0]!)).toEqual(rest[0]?.edit)
+    expect(rest[1]).toEqual(queue[2])
+  })
+})
+
+describe("a turn trimmed to some of its writes", () => {
+  it("gives a write built on a write it lost that write's base, and keeps the base to come for one it kept", () => {
+    const filled = doom.applyEdit(server(), {
+      once: "fill",
+      author: person,
+      rev: doom.rev(2),
+      writes: [{ node: title, prop: "fills", value: [{ kind: "solid", color: { var: "accent1" } }] }],
+    })
+    if (doom.isRefusal(filled)) throw new Error("fill")
+    const red = [{ kind: "solid", color: { var: "accent2" } }]
+    let queue = queued(
+      filled,
+      [],
+      edit("undo", [
+        { node: title, prop: "text", value: words("two") },
+        { node: title, prop: "fills", value: red },
+      ]),
+    )
+    queue = queued(
+      filled,
+      queue,
+      edit("redo", [
+        { node: title, prop: "text", value: words("one") },
+        { node: title, prop: "fills", value: [] },
+      ]),
+    )
+    expect(queue[1]?.after).toEqual(["undo", "undo"])
+    const kept = queue[0]!.edit.writes.filter((write) => write.prop === "fills")
+    const rest = trimmed(queue, "undo", kept)
+    expect(rest[0]?.edit.writes).toEqual(kept)
+    expect(rest[0]?.after).toEqual([null])
+    expect(rest[1]?.after).toEqual([null, "undo"])
+    expect(rest[1]?.edit.writes[0]).toMatchObject({ prop: "text", base: doom.rev(1) })
+    expect(rest[1]?.edit.writes[1]).not.toHaveProperty("base")
+    expect(landed(rest, "undo", doom.rev(5))[0]?.edit.writes[1]).toMatchObject({ prop: "fills", base: doom.rev(5) })
   })
 })
 
