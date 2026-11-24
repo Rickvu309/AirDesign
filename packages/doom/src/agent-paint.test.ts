@@ -55,6 +55,48 @@ describe("paint an agent sets the way the panel's colour, fill, picture and bord
     })
   })
 
+  it("crops a picture by the sides cut in percent, reads the crop back, and drops it when the fit changes", () => {
+    const pictured = started(land(sampleDeck(), [{ node: ids.title, prop: "fills", value: photo() }]))
+    let doom = build(pictured, set(ids.title, { crop: { left: 10, top: 0, right: 30, bottom: 25 } }))
+    expect(propOf(at(doom, ids.title), "fills")).toEqual([
+      { kind: "image", asset: "a".repeat(64), fit: "crop", crop: { x: 0.1, y: 0, w: 0.6, h: 0.75 } },
+    ])
+    expect(readForAgent(doom, [ids.slide])).toContain(`fill=image:${"a".repeat(64)}/crop(10,0,30,25)`)
+    doom = build(doom, set(ids.title, { fit: "crop" }))
+    expect(propOf(at(doom, ids.title), "fills")).toMatchObject([{ fit: "crop", crop: { x: 0.1, w: 0.6 } }])
+    doom = build(doom, set(ids.title, { fit: "fill" }))
+    expect(propOf(at(doom, ids.title), "fills")).toEqual(photo())
+  })
+
+  it("sets the crop mode alone, with the whole picture still showing, and reads it as crop", () => {
+    const pictured = started(land(sampleDeck(), [{ node: ids.title, prop: "fills", value: photo() }]))
+    const doom = build(pictured, set(ids.title, { fit: "crop" }))
+    expect(propOf(at(doom, ids.title), "fills")).toEqual([{ kind: "image", asset: "a".repeat(64), fit: "crop" }])
+    expect(readForAgent(doom, [ids.slide])).toContain(`fill=image:${"a".repeat(64)}/crop`)
+  })
+
+  it("refuses a crop on a layer with no picture, one that cuts a whole axis, and one that is not sides", () => {
+    expect(compileAgentChange(agentDeck(), set(ids.card, { crop: { left: 10 } }), minter())).toMatchObject({
+      refused: "shape",
+      field: "crop",
+    })
+    const pictured = started(land(sampleDeck(), [{ node: ids.title, prop: "fills", value: photo() }]))
+    expect(compileAgentChange(pictured, set(ids.title, { fit: "tile", crop: { left: 10 } }), minter())).toMatchObject({
+      refused: "shape",
+      field: "crop",
+    })
+    for (const crop of [
+      { left: 50, right: 50 },
+      { top: 99.5, bottom: 1 },
+      { left: -1 },
+      { left: 100 },
+      { sideways: 4 },
+      [10, 0, 0, 0],
+      {},
+    ])
+      expect(readAgentChange(set(ids.title, { crop }))).toMatchObject({ refused: "shape" })
+  })
+
   it("sets an outline's dash, drawing a thin outline when there was none", () => {
     const doom = build(agentDeck(), set(ids.card, { stroke: "accent1", dash: "dot" }))
     expect(propOf(at(doom, ids.card), "stroke")).toMatchObject({ dash: "dot", weight: 2 })
@@ -86,7 +128,7 @@ describe("paint an agent sets the way the panel's colour, fill, picture and bord
       { fill: { gradient: ["accent1", "accent2"], angle: Number.POSITIVE_INFINITY } },
       { fill: { gradient: ["accent1", "accent2"], angle: "90" } },
       { dash: "wavy" },
-      { fit: "crop" },
+      { fit: "stretch" },
     ])
       expect(readAgentChange(set(ids.title, look))).toMatchObject({ refused: "shape" })
   })

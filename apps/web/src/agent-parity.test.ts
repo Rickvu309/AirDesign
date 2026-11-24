@@ -26,6 +26,8 @@ const viewOnly = new Set([
   "marquee",
   "select-all",
   "step-in",
+  "crop",
+  "crop-end",
   "select-parent",
   "deselect",
   "copy",

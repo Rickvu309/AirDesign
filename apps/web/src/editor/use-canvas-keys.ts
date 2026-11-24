@@ -24,6 +24,8 @@ export type KeyArgs = {
   readonly cancelDrag: () => boolean
   readonly onEditText: (id: doom.NodeId) => void
   readonly onActions: () => void
+  readonly cropping: boolean
+  readonly onCropEnd: () => void
 }
 
 const toolOf = {
@@ -67,6 +69,12 @@ export function useCanvasKeys(args: KeyArgs) {
       if (zoom !== null) {
         event.preventDefault()
         a.onZoom(zoom)
+        return
+      }
+      if (a.cropping && gestureFor(event, "crop") === "crop-end") {
+        event.preventDefault()
+        a.cancelDrag()
+        a.onCropEnd()
         return
       }
       const selected = a.selection.ids.length > 0

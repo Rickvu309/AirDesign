@@ -131,7 +131,7 @@ Repainting an image in gray tones, or in two colors that replace its dark and li
 _Avoid_: tint, filter, colorize
 
 **crop**:
-How much of an image is cut from each side, in percent. The frame keeps its size.
+The part of an image a layer shows, stored on the image paint as `crop`: `x`, `y`, `w` and `h`, fractions of the whole image. PowerPoint's `srcRect` is the same cut by its sides: `l` is `x`, `t` is `y`, `r` is `1 - x - w` and `b` is `1 - y - h`. An agent says it as the percent cut from each side. Dragging a crop handle cuts that side and shrinks the frame by as much, so the picture keeps its scale; dragging the picture moves it in the frame.
 _Avoid_: trim, clip, mask
 
 **alt text**:

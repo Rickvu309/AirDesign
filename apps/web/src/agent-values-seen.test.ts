@@ -75,6 +75,7 @@ const seen: Readonly<Record<string, Seen>> = {
   clip: { person: ["gesture:frame", "gesture:tool-frame"] },
   dash: { person: ["panel:border.border"] },
   fit: { person: ["panel:image.mode"] },
+  crop: { person: ["gesture:crop-drag"] },
   shape: { person: ["panel:geometry.preset", "gesture:tool-ellipse"] },
   rotation: { person: ["gesture:rotate"] },
   flip: { person: ["gesture:flip-horizontal", "gesture:flip-vertical"] },

@@ -3,7 +3,8 @@ import { uniformAlign, uniformColor } from "./agent-look.js"
 import type { End, Geometry } from "./geometry.js"
 import type { NodeId } from "./ids.js"
 import type { Layout } from "./layout.js"
-import type { Color, Paint, Sides } from "./paint.js"
+import type { Color, ImagePaint, Paint, Sides } from "./paint.js"
+import { cropSides } from "./picture-crop.js"
 import type { Node, Doom } from "./doom.js"
 import { type Box, childrenOf, isLaidOut, isLive, parentOf, propOf, slidesOf } from "./doom-walk.js"
 import { textToMarkdown } from "./markdown.js"
@@ -21,10 +22,16 @@ const colorWords = (color: Color): AgentColor =>
       ? color.var
       : (`${color.var}${tintWords(color.tint)}` as AgentColor)
 
+function fitWords(paint: ImagePaint): string {
+  if (paint.fit === "fill") return ""
+  if (paint.fit !== "crop" || paint.crop === undefined) return `/${paint.fit}`
+  const { left, top, right, bottom } = cropSides(paint.crop)
+  return `/crop(${[left, top, right, bottom].map(num).join(",")})`
+}
+
 function oneWords(paint: Paint): string {
   if (paint.kind === "solid") return colorWords(paint.color)
-  if (paint.kind === "image")
-    return `image:${paint.asset}${paint.fit === "fill" || paint.fit === "crop" ? "" : `/${paint.fit}`}`
+  if (paint.kind === "image") return `image:${paint.asset}${fitWords(paint)}`
   const stops = paint.stops.map((stop) => colorWords(stop.color)).join(">")
   return paint.shape === "radial" ? `radial(${stops})` : `gradient(${stops}@${num(paint.angle)})`
 }

@@ -9,7 +9,7 @@ import { shownFill } from "./design-paint-values"
 import type { ModelInput } from "./design-model"
 import { propOf } from "@airdesign/doom"
 
-export const imageFits = ["fill", "fit", "tile"]
+export const imageFits = ["fill", "fit", "crop", "tile"]
 
 const mark: Desc = { kind: "mark" }
 const colorDesc: Desc = { kind: "color" }
@@ -80,7 +80,7 @@ export function fillSections(input: ModelInput, kind: PanelKind): PanelSection[]
   const held = shownFill(fills)
   const image = fills?.findLast((paint) => paint.visible !== false)
   const paint = doomControl({ trait: "fills", field: "paint" }, fillCopy.value, paintDesc, { value: held })
-  const placement = image?.kind === "image" ? [[modeList(image.fit === "crop" ? "fill" : image.fit)]] : []
+  const placement = image?.kind === "image" ? [[modeList(image.fit)]] : []
   const fillsSection: PanelSection = {
     trait: "fills",
     label: fillCopy.section,

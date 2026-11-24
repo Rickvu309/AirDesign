@@ -1,6 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { readStyleName } from "@airdesign/fonts"
 import type { PanelControl } from "@/design/panel"
+import { fitWrites } from "./crop-drag"
 import { alignWrites, distributeWrites, type AlignTo, type DistributeAcross } from "./design-align"
 import {
   defaultStroke,
@@ -120,14 +121,7 @@ function paintChange(context: ChangeContext, control: PanelControl, value: unkno
       return color === undefined ? [] : look(context, { color })
     }
     case "image.mode":
-      return setEach(context, "fills", (id) => {
-        const fills = propOf(context.view.nodes.get(id), "fills") ?? []
-        const at = fills.findLastIndex((paint) => paint.kind === "image")
-        const fit = value as doom.ImagePaint["fit"]
-        const held = fills[at]
-        if (at < 0 || held?.kind !== "image") return undefined
-        return fills.map((paint, index) => (index === at ? { ...held, fit } : paint))
-      })
+      return context.ids.flatMap((id) => fitWrites(context.view, id, value as doom.ImagePaint["fit"]))
     default:
       return null
   }

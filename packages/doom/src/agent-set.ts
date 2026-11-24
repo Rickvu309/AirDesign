@@ -26,6 +26,7 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "shape",
     "dash",
     "fit",
+    "crop",
     "rotation",
     "flip",
     "stroke",
@@ -138,8 +139,10 @@ export function compileSet(draft: Draft, change: SetChange): void {
   if (node.type !== "slide" && node.type !== "frame" && node.type !== "shape") stop("shape", node.id, "target")
   for (const field of [...neverOnSet, ...unfit[node.type]])
     if (change[field] !== undefined) stop("shape", node.id, field)
-  if (change.fit !== undefined && !(propOf(node, "fills") ?? []).some((paint) => paint.kind === "image"))
-    stop("shape", node.id, "fit")
+  const fitting = change.fit !== undefined || change.crop !== undefined
+  if (fitting && !(propOf(node, "fills") ?? []).some((paint) => paint.kind === "image"))
+    stop("shape", node.id, change.crop === undefined ? "fit" : "crop")
+  if (change.crop !== undefined && change.fit !== undefined && change.fit !== "crop") stop("shape", node.id, "crop")
   const outline = propOf(node, "geometry")?.kind
   if (change.shape !== undefined && (outline === "line" || outline === "icon" || outline === "path"))
     stop("shape", node.id, "shape")

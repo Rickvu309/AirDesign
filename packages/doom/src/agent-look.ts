@@ -6,6 +6,7 @@ import type { Values } from "./agent-draft.js"
 import type { Align9, Layout } from "./layout.js"
 import { withScheme } from "./link.js"
 import { textFromMarkdown } from "./markdown.js"
+import { cropWindow } from "./picture-crop.js"
 import {
   type Color,
   type ColorVar,
@@ -52,8 +53,16 @@ export function paintsOf(fill: AgentFill): readonly Paint[] {
   return [{ kind: "gradient", shape, angle: fill.angle ?? 0, stops }]
 }
 
-const fitted = (paints: readonly Paint[], fit: NonNullable<AgentLook["fit"]>): readonly Paint[] =>
-  paints.map((paint) => (paint.kind === "image" ? { ...paint, fit } : paint))
+function fitted(paints: readonly Paint[], look: AgentLook): readonly Paint[] {
+  const fit = look.crop === undefined ? look.fit : "crop"
+  return paints.map((paint) => {
+    if (paint.kind !== "image" || fit === undefined) return paint
+    const { crop, ...rest } = paint
+    if (fit !== "crop") return { ...rest, fit }
+    const shown = look.crop === undefined ? crop : cropWindow(look.crop)
+    return { ...rest, fit, ...(shown === undefined ? {} : { crop: shown }) }
+  })
+}
 
 export const chartOf = (chart: AgentChart): Chart => ({
   kind: chart.kind,
@@ -111,11 +120,12 @@ export function surfaceOf(
     look.strokeWidth ??
     (drawn && now.stroke === undefined ? defaultWeight : look.dash === undefined ? undefined : now.stroke?.weight)
   const fills = look.fill === undefined ? now.fills : paintsOf(look.fill)
-  const painted = look.fit === undefined || fills === undefined ? fills : fitted(fills, look.fit)
+  const fitting = look.fit !== undefined || look.crop !== undefined
+  const painted = !fitting || fills === undefined ? fills : fitted(fills, look)
   const dash = look.dash === undefined ? {} : { dash: look.dash }
   const effects = writtenEffects(look, now.effects, theme)
   return {
-    ...(look.fill === undefined && look.fit === undefined ? {} : { fills: painted ?? [] }),
+    ...(look.fill === undefined && !fitting ? {} : { fills: painted ?? [] }),
     ...(look.stroke === undefined ? {} : { strokes: look.stroke === "none" ? [] : [solid(look.stroke)] }),
     ...(weight === undefined
       ? {}
