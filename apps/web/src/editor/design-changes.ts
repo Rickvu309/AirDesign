@@ -11,7 +11,7 @@ import {
   strokePaintWrite,
   type ShadowName,
 } from "./design-paint-values"
-import { lineFromFraction, sizeFromHundredths } from "./design-text-values"
+import { lineFromFraction, sizeFromHundredths, textWithWeight } from "./design-text-values"
 import { cornerEmu, pointEmu, wholeFraction } from "./design-values"
 import { propOf } from "@airdesign/doom"
 import type { SlideGeometry } from "./slide-geometry"
@@ -67,8 +67,10 @@ function textChange(context: ChangeContext, control: PanelControl, value: unknow
     case "font":
       return typeof value === "string" ? look(context, { font: value }) : []
     case "weight": {
-      const style = typeof value === "string" ? readStyleName(value) : undefined
-      return style === undefined ? [] : look(context, { bold: style.weight >= 600, italic: style.italic })
+      const picked = typeof value === "string" ? readStyleName(value) : undefined
+      if (picked === undefined) return []
+      const theme = doom.deckOf(context.view).theme
+      return eachText(context, (text) => textWithWeight(text, theme, picked))
     }
     case "size":
       return number === undefined ? [] : look(context, { size: sizeFromHundredths(number) })

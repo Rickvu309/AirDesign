@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
-import { fontFamily, plainStyles, boldWeight, regularWeight, styleName } from "@airdesign/fonts"
+import { fontFamily, namedFace, styleName, stylesHeld, type ServedFace } from "@airdesign/fonts"
+import { fontsFor } from "@airdesign/render"
 import { fillCopy } from "@/copy/fill-copy"
 import { formatCopy } from "@/copy/format-copy"
 import { editorCopy } from "@/copy/editor-copy"
@@ -10,7 +11,7 @@ import { arrange, resolveControl } from "@/design/panel-arrangement"
 import { spacingUnits } from "@/design/spacing-units"
 import { choiceDesc, type Desc } from "@/design/control-desc"
 import { doomControl, flagDesc, fontDesc, type Held } from "./design-controls"
-import { lineToFraction, shownText, sizeToHundredths } from "./design-text-values"
+import { lineToFraction, shownText, sizeToHundredths, type TextShown } from "./design-text-values"
 import type { ModelInput } from "./design-model"
 import { propOf } from "@airdesign/doom"
 
@@ -41,40 +42,52 @@ const lineDesc: Desc = {
 const textControl = (field: string, label: string, desc: Desc, held: Held, extra: Partial<PanelControl> = {}) =>
   doomControl({ trait: "text", field }, label, desc, held, extra)
 
+function familyFaces(family: string): readonly ServedFace[] | undefined {
+  if (typeof document === "undefined") return undefined
+  const fonts = fontsFor(document)
+  if (fonts === undefined) return undefined
+  if (!fonts.ready(family)) queueMicrotask(() => void fonts.load(family))
+  return fonts.faces(family)
+}
+
+function weightChoices(family: string, current: { readonly weight: number; readonly italic: boolean }) {
+  const styles = stylesHeld(familyFaces(family))
+  const listed = styles.some((style) => style.weight === current.weight && style.italic === current.italic)
+  return (listed ? styles : [...styles, current]).map((style) => ({ value: styleName(style), label: styleName(style) }))
+}
+
 function typography(control: PanelControl, theme: doom.Theme, current: doom.TextStyleName): PanelControl {
   const names = Object.keys(editorCopy.textStyles) as doom.TextStyleName[]
   const choices = names.map((name) => {
     const style = theme.textStyles[name]
     const font = theme.fonts[style.font]
+    const face = namedFace(font)
     return {
       value: name,
       label: editorCopy.textStyles[name],
       font,
       detail: String(style.size),
       appearance: {
-        fontFamily: fontFamily(font),
+        fontFamily: fontFamily(face?.family ?? font),
         fontSize: Math.max(12, Math.min(28, style.size / 3)),
-        fontWeight: style.weight >= 600 ? 700 : 400,
+        fontWeight: face?.weight ?? style.weight,
       },
     }
   })
   return { ...control, kind: "typography", value: current, choices, placeholder: textCopy.custom }
 }
 
-function weight(bold: PanelControl, italic: PanelControl): PanelControl {
-  const choices = plainStyles.map((style) => ({ value: styleName(style), label: styleName(style) }))
-  const mixed = bold.mixed || italic.mixed
-  const current = { weight: bold.value === true ? boldWeight : regularWeight, italic: italic.value === true }
-  return resolveControl({
-    ...bold,
-    field: "weight",
-    label: textCopy.weight,
-    desc: choiceDesc(choices.map((choice) => choice.value)),
-    value: mixed ? undefined : styleName(current),
-    mixed,
-    reset: null,
+function weight(shown: TextShown): PanelControl {
+  const current = { weight: shown.look.weight.value, italic: shown.look.italic.value }
+  const choices = weightChoices(shown.look.font.value, current)
+  const mixed = shown.look.weight.mixed || shown.look.italic.mixed
+  return {
+    ...textControl("weight", textCopy.weight, choiceDesc(choices.map((choice) => choice.value)), {
+      value: mixed ? undefined : styleName(current),
+      mixed,
+    }),
     choices,
-  })
+  }
 }
 
 export function textSections(input: ModelInput, kind: PanelKind): PanelSection[] {
@@ -93,7 +106,7 @@ export function textSections(input: ModelInput, kind: PanelKind): PanelSection[]
   const controls: PanelControl[] = [
     typography(textControl("style", textCopy.style, styleDesc, { value: shown.style }), theme, shown.style),
     textControl("font", textCopy.font, fontDesc, look.font),
-    weight(bold, italic),
+    weight(shown),
     textControl("size", formatCopy.sizeGroup, sizeDesc, { value: size, mixed: look.size.mixed }),
     textControl(
       "letterSpacing",
