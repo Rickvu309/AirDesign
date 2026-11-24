@@ -71,6 +71,7 @@ const seen: Readonly<Record<string, Seen>> = {
   strike: { person: ["panel:text.strike"] },
   link: { person: ["panel:link.target"] },
   clip: { person: ["gesture:frame", "gesture:tool-frame"] },
+  mask: { person: ["menu:use-as-mask"] },
   dash: { person: ["panel:border.border"] },
   fit: { person: ["panel:image.mode"] },
   crop: { person: ["gesture:crop-drag"] },

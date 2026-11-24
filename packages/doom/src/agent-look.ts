@@ -192,6 +192,7 @@ export function surfaceOf(
     ...(look.radius === undefined ? {} : { radius: look.radius }),
     ...(effects === undefined ? {} : { effects }),
     ...(look.clip === undefined ? {} : { clip: look.clip }),
+    ...(look.mask === undefined ? {} : { mask: look.mask }),
     ...(look.link === undefined || look.link === "none" ? {} : { link: withScheme(look.link) }),
     ...(look.opacity === undefined ? {} : { opacity: look.opacity }),
     ...(look.name === undefined ? {} : { name: look.name }),

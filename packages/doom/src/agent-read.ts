@@ -133,6 +133,7 @@ function looksOf(node: Node): readonly string[] {
   if (opacity !== undefined && opacity !== 1) out.push(`opacity=${num(opacity)}`)
   if (propOf(node, "hidden") === true) out.push("hidden")
   if (propOf(node, "locked") === true) out.push("locked")
+  if (propOf(node, "mask") === true) out.push("mask")
   const layout = propOf(node, "layout")
   if (layout !== undefined && node.type === "frame") out.push(...layoutWords(layout))
   if (text !== undefined) {

@@ -4,6 +4,7 @@ import { iconNodes, type IconNode } from "./icon-nodes.js"
 import { InnerShadowFilter } from "./inner-shadow.js"
 import { effectLook, type ShadowFrom } from "./node-effects.js"
 import { type AssetUrl, PaintLayers } from "./node-fills.js"
+import { MaskedChildren } from "./mask-layers.js"
 import { outlineOf } from "./node-outline.js"
 import { NodeStrokes } from "./node-strokes.js"
 import { TextLines } from "./node-text.js"
@@ -166,16 +167,19 @@ export const NodeArt = memo(function NodeArt({
             ...(node.clip ? { overflow: "hidden", borderRadius: round } : {}),
           }}
         >
-          {node.children.map((child) => (
-            <NodeArt
-              key={child.id}
-              node={child}
-              assetUrl={assetUrl}
-              {...(waiting === undefined ? {} : { waiting })}
-              host={host !== undefined && holds(child, host.id) ? host : undefined}
-              iconsReady={iconsReady}
-            />
-          ))}
+          <MaskedChildren
+            nodes={node.children}
+            render={(child) => (
+              <NodeArt
+                key={child.id}
+                node={child}
+                assetUrl={assetUrl}
+                {...(waiting === undefined ? {} : { waiting })}
+                host={host !== undefined && holds(child, host.id) ? host : undefined}
+                iconsReady={iconsReady}
+              />
+            )}
+          />
         </div>
       )}
     </div>

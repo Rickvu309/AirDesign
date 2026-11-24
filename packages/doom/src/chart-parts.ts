@@ -39,6 +39,7 @@ const part = (id: string, box: Box, geometry: ResolvedGeometry): Resolved => ({
   geometry,
   text: null,
   clip: false,
+  mask: false,
   children: [],
   derived: true,
 })

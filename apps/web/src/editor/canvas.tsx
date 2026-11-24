@@ -23,6 +23,7 @@ import { useCanvasKeys } from "./use-canvas-keys"
 import { useCanvasPointer, type DrawRequest, type Tool } from "./use-canvas-pointer"
 import { chartArea, chartWrites, drawWrites, iconSwapWrites, iconWrites } from "./create-writes"
 import { EditorToolbar, type RightPanel } from "./editor-toolbar"
+import { LayerMenu } from "./layer-menu"
 import type { ShapesShown } from "@/editor/shape-tool"
 import type { EditorClient } from "./use-deck"
 import { canvasInset, slideTop, type ZoomKey } from "@/editing/canvas-zoom"
@@ -435,45 +436,55 @@ export function DoomCanvas(props: {
               />
             </span>
             <div ref={slideBox} data-slide-box="" className={slideFrame} style={{ position: "absolute", inset: 0 }}>
-              <SlidePaint
-                nodes={painted.nodes ?? []}
-                background={painted.background}
-                size={size}
-                width={size.w * scale}
-                assetUrl={pictures.assetUrl}
-                waiting={pictureCopy.uploading}
-                iconsReady={painted.ready}
-                {...(text.session === null
-                  ? {}
-                  : {
-                      host: {
-                        id: text.session.node,
-                        render: (resolved) => (
-                          <TextHost
-                            deck={props.deck}
-                            slides={slides}
-                            node={resolved}
-                            theme={theme}
-                            api={text}
-                            onLeave={leaveText}
-                          />
-                        ),
-                      },
-                    })}
-              />
-              <CanvasOverlay
-                view={shown}
-                preview={preview}
+              <LayerMenu
+                view={view}
                 geometry={geometry}
-                selected={current.ids}
-                hovered={hover}
-                marquee={marquee}
-                editing={text.session !== null}
-                crop={crop}
-                cropUrl={cropUrl}
+                selection={current}
+                onSelection={onSelection}
                 scale={scale}
-                size={size}
-              />
+                client={client}
+                slideBox={slideBox}
+              >
+                <SlidePaint
+                  nodes={painted.nodes ?? []}
+                  background={painted.background}
+                  size={size}
+                  width={size.w * scale}
+                  assetUrl={pictures.assetUrl}
+                  waiting={pictureCopy.uploading}
+                  iconsReady={painted.ready}
+                  {...(text.session === null
+                    ? {}
+                    : {
+                        host: {
+                          id: text.session.node,
+                          render: (resolved) => (
+                            <TextHost
+                              deck={props.deck}
+                              slides={slides}
+                              node={resolved}
+                              theme={theme}
+                              api={text}
+                              onLeave={leaveText}
+                            />
+                          ),
+                        },
+                      })}
+                />
+                <CanvasOverlay
+                  view={shown}
+                  preview={preview}
+                  geometry={geometry}
+                  selected={current.ids}
+                  hovered={hover}
+                  marquee={marquee}
+                  editing={text.session !== null}
+                  crop={crop}
+                  cropUrl={cropUrl}
+                  scale={scale}
+                  size={size}
+                />
+              </LayerMenu>
             </div>
           </div>
         </div>

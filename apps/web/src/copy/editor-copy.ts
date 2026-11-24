@@ -35,6 +35,8 @@ export const editorCopy = {
   opacity: "Opacity",
   radius: "Radius",
   clip: "Clip content",
+  useAsMask: "Use as mask",
+  removeMask: "Remove mask",
   text: "Text",
   textAlign: "Text alignment",
   alignLeft: "Align left",
