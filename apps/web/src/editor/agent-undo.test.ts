@@ -85,7 +85,7 @@ describe("undoing an Aira exchange on a doom deck", () => {
     const again = await undoExchange(
       refused!,
       0,
-      doomAgentUndo(
+      undoAgentRun(
         client({
           "run-2": { ok: true, once: "u2", saved, kept: [], left: [], waiting: [] },
           "run-1": { ok: true, once: "u1", saved, kept: [], left: [], waiting: [] },
