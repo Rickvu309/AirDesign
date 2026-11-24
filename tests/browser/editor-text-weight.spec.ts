@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
+import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { textCopy } from "../../apps/web/src/copy/text-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
@@ -69,7 +70,7 @@ test("Ctrl+B on a template heading toggles SemiBold and Bold, and the painted wi
   await expect.poll(async () => (await painted()).width).toBeGreaterThan(before.width + 2)
   await expect.poll(async () => (await painted()).family).not.toContain("SemiBold")
   await expect.poll(async () => (await painted()).weight).toBe("700")
-  await expect.poll(weightName).toBe("Bold")
+  await expect.poll(weightName).toBe(shortcutCopy.gestures.bold)
   const bold = await painted()
 
   await page.keyboard.press("ControlOrMeta+b")
