@@ -62,8 +62,6 @@ const iconPaths = {
   flowHorizontal: '<path d="M7 7v10M12 5v14M17 8v8"/>',
   flowVertical: '<path d="M7 7h10M5 12h14M8 17h8"/>',
   layers: '<path d="m12 3.5 8.5 4.75L12 13 3.5 8.25z"/><path d="m3.5 12.5 8.5 4.75 8.5-4.75"/>',
-  styleSliders:
-    '<path d="M8 3v6.5M8 14.5V21M16 3v1.5M16 9.5V21"/><circle cx="8" cy="12" r="2.5"/><circle cx="16" cy="7" r="2.5"/>',
 } as const
 
 export type EditorIconName = keyof typeof iconPaths

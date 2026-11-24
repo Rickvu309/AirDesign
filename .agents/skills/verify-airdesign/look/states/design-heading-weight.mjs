@@ -13,9 +13,7 @@ async function drive(kit) {
   await page.getByRole("option", { name: new RegExp(`^${heading}\\b`) }).click()
   await expect(style).toContainText(heading)
   const weight = panel.getByRole("combobox", { name: textCopy.weight, exact: true })
-  const font = panel.getByRole("textbox", { name: textCopy.font, exact: true })
   await expect(weight).not.toHaveText("")
-  await expect(font).not.toHaveValue("")
 }
 
 export default { name: "design-heading-weight", design: element, drive }

@@ -1,19 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import {
-  chartAddRow,
-  chartAddSeries,
-  chartCell,
-  chartDropRow,
-  chartRow,
-  chartSeriesName,
-  themeColorWrites,
-} from "./chart-theme-writes"
+import { chartAddRow, chartAddSeries, chartCell, chartDropRow, chartRow, chartSeriesName } from "./chart-data-writes"
 import { hexes } from "./testing/design-adapter-art"
-import { grow, landed, paint, spot } from "./testing/doom-fixtures"
-
-const sampleHexes = hexes
-const built = grow([{ type: "shape", name: "rect", props: { box: spot(100, 100, 200, 100), fills: paint } }])
 
 describe("chart data", () => {
   const chart = { kind: "column", categories: ["a", "b"], series: [{ name: "s", values: [1, 2] }] } as const
@@ -68,25 +56,5 @@ describe("chart data", () => {
 
   it("adds a series with a value for each category", () => {
     expect(chartAddSeries(chart).series[1]).toEqual({ name: "Series 2", values: [0, 0] })
-  })
-})
-
-describe("theme colours", () => {
-  it("writes the deck's theme with one colour changed, keeping the rest", () => {
-    const view = built.view
-    const writes = themeColorWrites(view, "accent1", sampleHexes.themeTyped)
-    expect(writes).toHaveLength(1)
-    const after = landed(view, writes)
-    const theme = doom.deckOf(after).theme
-    expect(theme.colors.accent1).toBe(sampleHexes.theme)
-    expect(theme.colors.accent2).toBe(doom.deckOf(view).theme.colors.accent2)
-    expect(theme.fonts).toEqual(doom.deckOf(view).theme.fonts)
-  })
-
-  it("writes nothing for a word that is not a six digit hex, or for the colour it already is", () => {
-    const view = built.view
-    expect(themeColorWrites(view, "accent1", "red")).toEqual([])
-    expect(themeColorWrites(view, "accent1", "#12345")).toEqual([])
-    expect(themeColorWrites(view, "accent1", doom.deckOf(view).theme.colors.accent1.toUpperCase())).toEqual([])
   })
 })

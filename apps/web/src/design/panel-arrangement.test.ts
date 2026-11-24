@@ -16,7 +16,6 @@ it("gives every control in a strip the same name placement", () => {
 it("places size, formatting and paragraph strips in order", () => {
   expect(sectionStrips.text.map((strip) => strip.map(({ field }) => field))).toEqual([
     ["style"],
-    ["font"],
     ["weight", "size"],
     ["bold", "italic", "underline", "strike"],
     ["align", "list"],

@@ -97,7 +97,7 @@ export function DesignPanel(props: Props) {
         <HiddenLockedLayers view={view} slide={slide} push={client.push} />
         {panelSections("slide").map((section) => {
           if (section === "templateStyle")
-            return <DoomThemeCard key={section} client={client} view={view} theme={theme} />
+            return <DoomThemeCard key={section} theme={theme} swatches={palette.templateColors} />
           if (section === "background")
             return (
               <SlideBackground

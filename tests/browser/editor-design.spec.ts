@@ -4,14 +4,12 @@ import { borderWords } from "../../apps/web/src/copy/border-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
-import { colorCopy } from "../../apps/web/src/copy/color-copy"
-import { textCopy, textWords } from "../../apps/web/src/copy/text-copy"
+import { textWords } from "../../apps/web/src/copy/text-copy"
 import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { linkCopy } from "../../apps/web/src/copy/link-copy"
 import { selectionColorsCopy } from "../../apps/web/src/copy/selection-colors-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { test } from "./api-stack"
-import { typeColor } from "./design-panel"
 import { hexes, neutralColorNames } from "./editor-design-art"
 import { accent, clickSlide, landNodes, openEditor, savedNode, selectedIds, spot, type Opened } from "./editor-deck"
 
@@ -150,28 +148,15 @@ test("with nothing selected the panel is the old slide panel: the head, template
   await expect(section(page, designCopy.background)).toBeVisible()
 })
 
-test("template style opens the deck's theme: a colour writes the theme and Undo takes it back", async ({
-  page,
-  context,
-  stack,
-}) => {
+test("template style reads out the deck's theme and has nothing to open", async ({ page, context, stack }) => {
   const opened = await designing(page, context, stack)
-  const before = (await saved(stack, opened, "s:1")).theme.colors.accent1 as string
-  await section(page, designCopy.templateStyle).locator("[data-template-style]").click()
-  const dialog = page.locator("[data-template-style-dialog]")
-  await expect(dialog).toBeVisible()
-  await typeColor(
-    page,
-    dialog.getByRole("button", { name: neutralColorNames.accent1, exact: true }),
-    colorCopy.hexName("1f4e79"),
-  )
-  await expect.poll(async () => (await saved(stack, opened, "s:1")).theme.colors.accent1).toBe(hexes.navy)
-  await page.keyboard.press("Escape")
-  await expect(dialog).toHaveCount(0)
-  await stage(page).click({ position: { x: 20, y: 20 } })
-  await undo(page)
-  await expect.poll(async () => (await saved(stack, opened, "s:1")).theme.colors.accent1).toBe(before)
-  expect(before).toMatch(/^#[0-9a-f]{6}$/)
+  const { theme } = await saved(stack, opened, "s:1")
+  const card = section(page, designCopy.templateStyle).locator("[data-template-style]")
+  await expect(card).toBeVisible()
+  await expect(card).toContainText(theme.fonts.heading as string)
+  await expect(section(page, designCopy.templateStyle).getByRole("button")).toHaveCount(0)
+  await card.click()
+  await expect(page.getByRole("dialog")).toHaveCount(0)
 })
 
 test("a text layer shows the old Text section and each control writes its spans, undoes and survives a reload", async ({
@@ -198,8 +183,6 @@ test("a text layer shows the old Text section and each control writes its spans,
   await expect.poll(async () => (await read()).paras[0]?.align).toBe("center")
   await text.getByRole("button", { name: textWords["list.bullets"], exact: true }).click()
   await expect.poll(async () => (await read()).paras[0]?.list).toBe("bullet")
-  await typeInto(text.getByRole("textbox", { name: textCopy.font, exact: true }), "Georgia")
-  await expect.poll(async () => (await read()).spans[0]?.font).toBe("Georgia")
 
   await section(page, fillCopy.section).getByRole("button", { name: /Text/ }).click()
   await page.getByRole("button", { name: neutralColorNames.accent2, exact: true }).first().click()

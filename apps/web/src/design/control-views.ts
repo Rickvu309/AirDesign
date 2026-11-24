@@ -12,7 +12,6 @@ import { ListControl } from "@/design/controls/list"
 import { PercentControl } from "@/design/controls/percent"
 import { PresetControl } from "@/design/controls/preset"
 import { RecordControl } from "@/design/controls/record"
-import { TextControl } from "@/design/controls/text"
 import { ToggleControl } from "@/design/controls/toggle"
 import { UnionControl } from "@/design/controls/union"
 import type { ControlKind, ControlProps } from "@/design/panel"
@@ -32,6 +31,5 @@ export const controlViews: Partial<Readonly<Record<ControlKind, ComponentType<Co
   record: RecordControl,
   union: UnionControl,
   list: ListControl,
-  text: TextControl,
   preset: PresetControl,
 }

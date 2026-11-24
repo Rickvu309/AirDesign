@@ -4,6 +4,7 @@ import type { PanelControl, PanelModel } from "@/design/panel"
 import { propOf } from "@airdesign/doom"
 import { changeWrites, type ChangeContext } from "./design-changes"
 import { nodeModel } from "./design-model"
+import { shownText } from "./design-text-values"
 import { geometryOf } from "./slide-geometry"
 
 const spot = (x: number, y: number, w: number, h: number) => ({
@@ -97,7 +98,7 @@ describe("named font weights", () => {
     const semibold = { ...theme, fonts: { heading: "Inter SemiBold", body: "Inter" } }
     const titled = write(find(model, "style"), "title")
     const shown = modelOf(titled, semibold)
-    expect(find(shown, "font").value).toBe("Inter")
+    expect(shownText(textOf(titled)!, semibold).look.font.value).toBe("Inter")
     expect(find(shown, "weight").value).toBe("SemiBold")
   })
 
@@ -105,7 +106,7 @@ describe("named font weights", () => {
     const semi = write(find(model, "weight"), "SemiBold")
     expect(textOf(semi)?.spans).toEqual([{ end: 11, font: "Inter SemiBold", bold: false, italic: false }])
     expect(find(modelOf(semi), "weight").value).toBe("SemiBold")
-    expect(find(modelOf(semi), "font").value).toBe("Inter")
+    expect(shownText(textOf(semi)!, theme).look.font.value).toBe("Inter")
     const bolded = write(find(modelOf(semi), "bold"), true, semi)
     expect(textOf(bolded)?.spans).toEqual([{ end: 11, font: "Inter SemiBold", bold: true, italic: false }])
     expect(find(modelOf(bolded), "weight").value).toBe("Bold")

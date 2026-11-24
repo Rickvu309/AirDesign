@@ -6,8 +6,6 @@ export type Held = { readonly value: unknown; readonly mixed?: boolean }
 
 export const flagDesc: Desc = { kind: "flag" }
 
-export const fontDesc: Desc = { kind: "words", max: 64 }
-
 export const doomControl = (
   place: { readonly trait: PanelControl["trait"]; readonly field: string },
   label: string,

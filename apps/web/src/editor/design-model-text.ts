@@ -9,7 +9,7 @@ import type { PanelKind } from "@/design/panel-order"
 import { arrange, resolveControl } from "@/design/panel-arrangement"
 import { choiceDesc, type Desc } from "@/design/control-desc"
 import { servedFaces } from "@/design/served-faces"
-import { doomControl, flagDesc, fontDesc, type Held } from "./design-controls"
+import { doomControl, flagDesc, type Held } from "./design-controls"
 import { shownText, sizeToHundredths, type TextShown } from "./design-text-values"
 import type { ModelInput } from "./design-model"
 import { paintedFace, propOf } from "@airdesign/doom"
@@ -18,7 +18,7 @@ const lists = ["none", "bullets", "numbers"]
 const vertical = ["top", "center", "bottom"]
 const heightHeld = new Set<doom.Text["resize"]>(["fixed", "truncate"])
 const fillDesc: Desc = { kind: "union", plain: "solid", cases: { solid: { kind: "color" } } }
-const styleDesc: Desc = { kind: "words", max: 200 }
+const styleDesc = choiceDesc(Object.keys(editorCopy.textStyles))
 const sizeLimit = doom.textLimits.size
 const sizeDesc: Desc = {
   kind: "number",
@@ -84,7 +84,6 @@ export function textSections(input: ModelInput, kind: PanelKind): PanelSection[]
   const size = sizeToHundredths(look.size.value)
   const controls: PanelControl[] = [
     typography(textControl("style", textCopy.style, styleDesc, { value: shown.style }), theme, shown.style),
-    textControl("font", textCopy.font, fontDesc, look.font),
     weight(shown),
     textControl("size", formatCopy.sizeGroup, sizeDesc, { value: size, mixed: look.size.mixed }),
     bold,

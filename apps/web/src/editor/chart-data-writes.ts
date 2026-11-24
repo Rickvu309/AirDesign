@@ -45,14 +45,3 @@ export function chartAddSeries(chart: doom.Chart): doom.Chart {
     ],
   }
 }
-
-const hexColor = /^#[0-9a-fA-F]{6}$/
-
-export function themeColorWrites(view: doom.Doom, name: doom.ColorVar, hex: string): readonly doom.Write[] {
-  const deck = [...view.nodes.values()].find((node) => node.type === "deck")
-  if (deck === undefined || !hexColor.test(hex)) return []
-  const theme = doom.deckOf(view).theme
-  const next = hex.toLowerCase() as doom.Hex
-  if (theme.colors[name].toLowerCase() === next) return []
-  return [{ node: deck.id, prop: "theme", value: { ...theme, colors: { ...theme.colors, [name]: next } } }]
-}

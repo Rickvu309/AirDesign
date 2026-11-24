@@ -57,8 +57,7 @@ export type DesignKey = (typeof designKeys)[number]
 export type Shown = readonly [value: string | number | boolean, source?: Source]
 export type Design = { readonly [Key in DesignKey]?: Shown }
 
-export const templateFonts = ["major", "minor"] as const
-export type TemplateFont = (typeof templateFonts)[number]
+type TemplateFont = "major" | "minor"
 
 export type Palette = {
   readonly slots: { readonly [Slot in TemplateColor]?: string }

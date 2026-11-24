@@ -8,8 +8,6 @@ export const textCopy = {
   regular: "Regular",
   size: "Size",
   sizes: "Font sizes",
-  font: "Font",
-  fonts: "Fonts",
   list: "List",
   alignV: "Vertical align",
 } as const

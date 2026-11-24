@@ -73,7 +73,6 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   link: [[placed("target", hidden)]],
   text: [
     [placed("style", hidden)],
-    [placed("font", hidden)],
     [placed("weight", above, { form: "list" }), placed("size", above)],
     [icon("bold", Bold), icon("italic", Italic), icon("underline", Underline), icon("strike", Strikethrough)],
     [
@@ -133,7 +132,6 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   ],
   geometry: [[placed("preset", hidden, { kind: "preset" })], [placed("adjust", hidden)]],
   image: [[placed("mode")], [placed("color", hidden)]],
-  templateStyle: [[placed("major", inside)], [placed("minor", inside)]],
 }
 
 function placement(trait: SectionName, field: string): Placed | undefined {
@@ -188,7 +186,6 @@ export const controlKinds = [
   "union",
   "list",
   "adjust",
-  "text",
   "preset",
   "link",
 ] as const
@@ -203,8 +200,6 @@ export function controlOf(desc: Desc): ControlKind | null {
     case "flag":
     case "mark":
       return "toggle"
-    case "words":
-      return "text"
     case "choice":
       return "choice"
     case "color":

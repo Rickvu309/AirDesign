@@ -122,15 +122,14 @@ describe("every control kind a field uses", () => {
       for (const option of options) expect(optionWord(field, option).length).toBeLessThanOrEqual(12)
   })
 
-  it("maps a length, a type size, a flag, a colour, a choice and words to their controls", () => {
+  it("maps a length, a type size, a flag, a colour, and a choice to their controls", () => {
     const descs: readonly Desc[] = [
       { kind: "number", unit: "emu", min: 0, max: 100 },
       { kind: "number", unit: "hundredth-point", min: 100, max: 400_000 },
       { kind: "flag" },
       { kind: "color" },
       { kind: "choice", options: ["left", "right"] },
-      { kind: "words", max: 64 },
     ]
-    expect(descs.map(controlOf)).toEqual(["length", "length", "toggle", "color", "choice", "text"])
+    expect(descs.map(controlOf)).toEqual(["length", "length", "toggle", "color", "choice"])
   })
 })

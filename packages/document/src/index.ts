@@ -1,15 +1,6 @@
 export { elementId, readElementId, readSlideId, shapeOf, slideId, type ElementId, type SlideId } from "./element-id.js"
 export { type DeckIndex, type IndexElement, type SlideSize } from "./deck-index.js"
-export {
-  roles,
-  sources,
-  templateFonts,
-  type Design,
-  type Palette,
-  type Role,
-  type Shown,
-  type Source,
-} from "./design.js"
+export { roles, sources, type Design, type Palette, type Role, type Shown, type Source } from "./design.js"
 export { type Box } from "./box.js"
 export { type FieldEdit, type TraitPatch } from "./trait-patch.js"
 export type { FieldName, FieldValue, TraitName, TraitValue } from "./traits.js"

@@ -19,7 +19,6 @@ export type SectionName =
   | "border"
   | "link"
   | "geometry"
-  | "templateStyle"
 
 export type PanelControl = {
   readonly trait: SectionName
@@ -42,7 +41,6 @@ export type PanelControl = {
   readonly placeholder?: string
   readonly parent?: unknown
   readonly slides?: readonly string[]
-  readonly faceFallback?: () => string | null
 }
 
 export type PanelGradient = {

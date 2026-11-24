@@ -162,7 +162,6 @@ export function PickerBody({
   title,
   value,
   palette,
-  showTemplateColors = true,
   picking = false,
   onPick,
   onSwatch,
@@ -173,7 +172,6 @@ export function PickerBody({
   title: string
   value: doom.Color | undefined
   palette: Palette
-  showTemplateColors?: boolean
   picking?: boolean
   onPick: (color: doom.Color) => void
   onSwatch?: () => void
@@ -197,7 +195,7 @@ export function PickerBody({
   const heldTint = value === undefined ? -1 : tints.findIndex((choice) => matches(choice.color, value))
   const tintShown = visibleChoices(tints, heldTint, moreTints, tintLimit)
   const deckFocus = deckPressed < 0 ? "0,0" : atOf(deckPressed + 1)
-  const templateShown = showTemplateColors && bases.length > 0
+  const templateShown = bases.length > 0
   return (
     <>
       <Heading
@@ -219,7 +217,7 @@ export function PickerBody({
       {picking ? (
         <>
           <CustomColor value={value} palette={palette} onPick={onPick} />
-          {showTemplateColors && tintShown.length > 0 ? (
+          {tintShown.length > 0 ? (
             <div className="flex flex-col gap-2">
               <span className="text-[length:var(--type-caption)] text-quiet">{colorCopy.tints}</span>
               <ColorGrid
@@ -296,7 +294,6 @@ export function ColorPicker({
   title,
   value,
   palette,
-  showTemplateColors = true,
   keepsFormat = false,
   closesOnSwatch = false,
   side = "bottom",
@@ -308,7 +305,6 @@ export function ColorPicker({
   title: string
   value: doom.Color | undefined
   palette: Palette
-  showTemplateColors?: boolean
   keepsFormat?: boolean
   closesOnSwatch?: boolean
   side?: "top" | "bottom" | "left" | "right"
@@ -340,7 +336,6 @@ export function ColorPicker({
           title={title}
           value={value}
           palette={palette}
-          showTemplateColors={showTemplateColors}
           picking={picking}
           onPick={onPick}
           onAdd={() => setPicking(true)}

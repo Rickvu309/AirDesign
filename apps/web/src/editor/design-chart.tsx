@@ -19,7 +19,7 @@ import {
   chartRow,
   chartSeriesName,
   chartWrites,
-} from "./chart-theme-writes"
+} from "./chart-data-writes"
 
 const wordsClass =
   "min-w-0 flex-1 bg-transparent text-[length:var(--type-caption)] leading-[var(--panel-label-leading)] outline-none"
