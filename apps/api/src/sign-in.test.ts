@@ -589,7 +589,7 @@ describe("sign-in", () => {
     }) as typeof fetch
     const link = "https://app.example/sign-in/link?token=abc"
     const code = "123456"
-    const mail = { subject: "Sign in", text: `${link}\n${code}\n${signInMinutes}`, html: `<p>${link} ${code}</p>` }
+    const mail = { subject: "Sign in", text: link, html: code }
     await sendWithResend({ to: "a@example.com", ...mail }, { key: "test-key", from: "sign-in@localhost" })
     const body = seen[0]?.body
     if (body === undefined) throw new Error("body")
