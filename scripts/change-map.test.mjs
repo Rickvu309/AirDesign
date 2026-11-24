@@ -309,7 +309,7 @@ same(
 )
 same(
   "in the repo, a deck template and its generator reach pptx and corpus, since new decks ship those files",
-  ["packages/templates/files/neutral-start.pptx", "scripts/deck-templates/neutral.mjs"].map((file) => {
+  ["scripts/deck-templates/files/neutral-start.pptx", "scripts/deck-templates/neutral.mjs"].map((file) => {
     const parts = real([file]).parts
     return [parts.pptx, parts.corpus]
   }),

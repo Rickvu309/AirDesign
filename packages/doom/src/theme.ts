@@ -1,6 +1,4 @@
-import editorial from "./library/themes/editorial.json" with { type: "json" }
-import midnight from "./library/themes/midnight.json" with { type: "json" }
-import neutral from "./library/themes/neutral.json" with { type: "json" }
+import { themeFiles } from "./library/theme-index.js"
 import {
   type ColorVar,
   type Effect,
@@ -13,8 +11,7 @@ import {
   readEffectList,
   readHex,
 } from "./paint.js"
-import { type Reader, finite, integer, keyed, literal, object, words } from "./read-kit.js"
-import fallback from "./library/themes/fallback.json" with { type: "json" }
+import { type Reader, detailOf, finite, integer, keyed, literal, object, words } from "./read-kit.js"
 import { type TextStyleName, textStyleNames } from "./text.js"
 
 export type TextStyle = {
@@ -61,7 +58,24 @@ const themeStyleFields = {
   effectStyles: readEffectStyles,
 }
 
-export const defaultTheme: Theme = object({ ...themeFields, ...themeStyleFields })(fallback)
+function readBuiltIn<T>(file: string, raw: unknown, read: Reader<T>): T {
+  try {
+    return read(raw)
+  } catch (thrown) {
+    const { field, fault, form, refused } = detailOf(thrown)
+    const reason = `${field ?? "entry"} (${fault ?? refused})`
+    throw new Error(`Built-in theme ${file}: ${reason}${form === undefined ? "" : `. Expected ${form}`}`, {
+      cause: thrown,
+    })
+  }
+}
+
+const { "fallback.json": fallback, ...libraryFiles } = themeFiles
+export const defaultTheme: Theme = readBuiltIn(
+  "fallback.json",
+  fallback,
+  object({ ...themeFields, ...themeStyleFields }),
+)
 
 const readEntry = object(
   {
@@ -73,18 +87,22 @@ const readEntry = object(
   themeStyleFields,
 )
 
-type LibraryTheme = { readonly name: string; readonly theme: Theme }
+type LibraryTheme = { readonly id: string; readonly name: string; readonly theme: Theme }
 
-function readLibraryTheme(raw: unknown): LibraryTheme {
-  const { id: _id, name, powerPoint: _powerPoint, ...art } = readEntry(raw)
-  return { name, theme: { ...defaultTheme, ...art } }
+function readLibrary(files: Readonly<Record<string, unknown>>) {
+  const entries = new Map<string, LibraryTheme>()
+  for (const [file, raw] of Object.entries(files)) {
+    const { id, name, powerPoint: _powerPoint, ...art } = readBuiltIn(file, raw, readEntry)
+    if (entries.has(id)) throw new Error(`Built-in theme ${file}: duplicate id "${id}"`)
+    entries.set(id, { id, name, theme: { ...defaultTheme, ...art } })
+  }
+  const neutral = entries.get("neutral")
+  if (neutral === undefined) throw new Error('Built-in theme library is missing id "neutral"')
+  return { ...Object.fromEntries(entries), neutral }
 }
 
-export const themeLibrary: Readonly<Record<"neutral" | "midnight" | "editorial", LibraryTheme>> = {
-  neutral: readLibraryTheme(neutral),
-  midnight: readLibraryTheme(midnight),
-  editorial: readLibraryTheme(editorial),
-}
+export const themeLibrary: Readonly<Record<string, LibraryTheme> & { neutral: LibraryTheme }> =
+  readLibrary(libraryFiles)
 
 const readTextStyles: Reader<Theme["textStyles"]> = (raw) =>
   readEveryTextStyle(typeof raw === "object" && raw !== null ? { ...defaultTheme.textStyles, ...raw } : raw)

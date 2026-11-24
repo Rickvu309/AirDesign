@@ -11,12 +11,12 @@ export const templateSpecs = [neutral, midnight, editorial]
 
 export const templateDeck = (spec, options) => storedZip(deckParts(spec, options))
 
-export const templatePackage = new URL("../../packages/templates/", import.meta.url)
+const templateFolder = new URL("./files/", import.meta.url)
 
-export const templateUrl = (id, start = false) => new URL(`files/${id}${start ? "-start" : ""}.pptx`, templatePackage)
+export const templateUrl = (id, start = false) => new URL(`${id}${start ? "-start" : ""}.pptx`, templateFolder)
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  fs.mkdirSync(new URL("files/", templatePackage), { recursive: true })
+  fs.mkdirSync(templateFolder, { recursive: true })
   for (const spec of templateSpecs) {
     fs.writeFileSync(templateUrl(spec.id), templateDeck(spec))
     fs.writeFileSync(templateUrl(spec.id, true), templateDeck(spec, { start: true }))

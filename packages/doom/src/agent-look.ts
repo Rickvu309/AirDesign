@@ -19,7 +19,7 @@ import {
   type StrokeStyle,
   effectStyleNames,
 } from "./paint.js"
-import type { Theme } from "./theme.js"
+import { type Theme, defaultTheme } from "./theme.js"
 import type { Box } from "./doom-walk.js"
 import { zeroBox } from "./doom-walk.js"
 import { familyOf, storedFace, type WeightName } from "./painted-face.js"
@@ -361,7 +361,7 @@ function weightOn(text: Text, weight: WeightName, askedFont: string | undefined,
   return {
     ...text,
     spans: spans.map((span) => {
-      const family = familyOf(askedFont ?? span.font ?? themeFont ?? "Inter")
+      const family = familyOf(askedFont ?? span.font ?? themeFont ?? theme?.fonts.body ?? defaultTheme.fonts.body)
       const stored = storedFace(family, weight)
       const next = { ...span, bold: stored.bold }
       if (stored.font === themeFont) {
