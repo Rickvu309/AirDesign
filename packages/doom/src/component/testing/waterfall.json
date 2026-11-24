@@ -164,8 +164,8 @@
             "emit": {
               "kind": "line",
               "key": ["list", "bridge", ["get", "r.id"]],
-              "start": ["point", ["add", ["get", "previousMark.x"], ["get", "previousMark.w"]], ["get", "a"]],
-              "end": ["point", ["get", "mark.x"], ["get", "a"]],
+              "start": ["point", ["add", ["get", "previousMark.start"], ["get", "previousMark.size"]], ["get", "a"]],
+              "end": ["point", ["get", "mark.start"], ["get", "a"]],
               "color": ["get", "token.rule"],
               "width": 2,
               "route": "straight",
@@ -176,9 +176,9 @@
             "emit": {
               "kind": "rect",
               "key": ["list", "bar", ["get", "r.id"]],
-              "x": ["get", "mark.x"],
+              "x": ["get", "mark.start"],
               "y": ["get", "top"],
-              "w": ["get", "mark.w"],
+              "w": ["get", "mark.size"],
               "h": ["max", 2, ["get", "height"]],
               "fill": [
                 "if",
@@ -193,9 +193,9 @@
             "emit": {
               "kind": "text",
               "key": ["list", "value", ["get", "r.id"]],
-              "x": ["get", "lane.x"],
+              "x": ["get", "lane.start"],
               "y": ["sub", ["get", "top"], 37],
-              "w": ["get", "lane.w"],
+              "w": ["get", "lane.size"],
               "h": 32,
               "chars": [
                 "format",
@@ -218,9 +218,9 @@
             "emit": {
               "kind": "text",
               "key": ["list", "category", ["get", "r.id"]],
-              "x": ["get", "lane.x"],
+              "x": ["get", "lane.start"],
               "y": ["add", ["get", "plotBottom"], 17],
-              "w": ["get", "lane.w"],
+              "w": ["get", "lane.size"],
               "h": 30,
               "chars": ["get", "r.label"],
               "style": ["get", "token.caption"],
