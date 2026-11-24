@@ -337,10 +337,11 @@ const builders: Readonly<Record<PatternName, Build>> = { kpi, cards, compare, ma
 
 export function addPattern(draft: Draft, parent: Node, change: Add): void {
   const kind = change.kind as PatternName
-  const items = change.items ?? stop("shape", undefined, "items")
+  const items =
+    change.items ?? stop("shape", undefined, "items", "missing", "One item or more, in the shape this pattern takes.")
   const [fewest, most] = counts[kind]
   if (items.length > most) stop("limit", undefined, "items")
-  if (items.length < fewest) stop("shape", undefined, "items")
+  if (items.length < fewest) stop("shape", undefined, "items", "form", `${String(fewest)} to ${String(most)} items.`)
   const area = patternArea(draft, parent, change.box)
   const theme = themeOf(draft)
   const width = slideSize(draft).w
@@ -367,9 +368,19 @@ export function addPattern(draft: Draft, parent: Node, change: Add): void {
 }
 
 export function addGrid(draft: Draft, parent: Node, change: Add): void {
-  const rows = change.rows ?? stop("shape", undefined, "rows")
-  if (rows.length === 0 || rows.some((row) => row.length === 0)) stop("shape", undefined, "rows")
-  if (change.layout !== undefined) stop("shape", undefined, "layout")
+  const rows =
+    change.rows ??
+    stop(
+      "shape",
+      undefined,
+      "rows",
+      "missing",
+      "One row or more, each with one cell or more. An empty string leaves a cell empty.",
+    )
+  if (rows.length === 0 || rows.some((row) => row.length === 0))
+    stop("shape", undefined, "rows", "form", "One row or more, each with one cell or more.")
+  if (change.layout !== undefined)
+    stop("shape", undefined, "layout", "unknown", "Leave layout out. rows places the grid.")
   const area = patternArea(draft, parent, change.box)
   const theme = themeOf(draft)
   const gap = gapFor(slideSize(draft).w)

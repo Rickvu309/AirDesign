@@ -2,7 +2,7 @@ import { type OrderKey, orderKeyBetween } from "./order-key.js"
 import type { AgentRefusal } from "./agent-change.js"
 import type { NodeId } from "./ids.js"
 import { type PropName, props } from "./props.js"
-import type { Refusal } from "./refusal.js"
+import { type FieldFault, type Refusal } from "./refusal.js"
 import type { Node, Doom, Write } from "./doom.js"
 import { type Box, childrenOf, isLive, parentOf } from "./doom-walk.js"
 import type { Props } from "./props.js"
@@ -30,8 +30,20 @@ export class Stop extends Error {
   }
 }
 
-export function stop(refused: Refusal["refused"], node?: NodeId, field?: string): never {
-  throw new Stop({ refused, ...(node === undefined ? {} : { node }), ...(field === undefined ? {} : { field }) })
+export function stop(
+  refused: Refusal["refused"],
+  node?: NodeId,
+  field?: string,
+  fault?: FieldFault,
+  form?: string,
+): never {
+  throw new Stop({
+    refused,
+    ...(node === undefined ? {} : { node }),
+    ...(field === undefined ? {} : { field }),
+    ...(fault === undefined ? {} : { fault }),
+    ...(form === undefined ? {} : { form }),
+  })
 }
 
 export const draftOf = (doom: Doom, mint: () => NodeId, reading: Reading = {}): Draft => ({

@@ -27,8 +27,8 @@ import {
   object,
   oneOf,
   quad,
+  Reject,
   reject,
-  rejected,
   words,
 } from "./read-kit.js"
 import { readLink } from "./link.js"
@@ -161,7 +161,8 @@ const refusing =
     try {
       return reader(raw)
     } catch (thrown) {
-      return { refused: rejected(thrown) }
+      if (!(thrown instanceof Reject)) throw thrown
+      return { refused: thrown.kind }
     }
   }
 

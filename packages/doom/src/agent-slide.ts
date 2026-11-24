@@ -9,7 +9,7 @@ function deckSlide(draft: Draft, id: NodeId, field: string): Node {
   const node = living(draft, id, field)
   return node.type === "slide" && slidesOf(draft.doom).some((slide) => slide.id === id)
     ? node
-    : stop("shape", id, field)
+    : stop("shape", id, field, "form", "A slide id.")
 }
 
 function addSlide(draft: Draft, options: SlideAdd): void {
@@ -28,7 +28,7 @@ function addSlide(draft: Draft, options: SlideAdd): void {
 function moveSlide(draft: Draft, options: SlideMove): void {
   const slide = deckSlide(draft, options.slide, "move")
   const after = options.after === null ? null : deckSlide(draft, options.after, "after")
-  if (after?.id === slide.id) stop("shape", slide.id, "after")
+  if (after?.id === slide.id) stop("shape", slide.id, "after", "form", "A different slide, or null to put it first.")
   const row = after === null ? rowsOf(draft.doom, false)[0]?.id : parentOf(after)?.id
   if (row === undefined) stop("missing", undefined, "after")
   const [key] = keysAfter(draft, row, after?.id ?? null, 1, new Set([slide.id]))
@@ -37,7 +37,7 @@ function moveSlide(draft: Draft, options: SlideMove): void {
 
 export function compileSlide(draft: Draft, change: Extract<AgentChange, { op: "slide" }>): void {
   const given = [change.add, change.move, change.delete].filter((part) => part !== undefined)
-  if (given.length !== 1) stop("shape", undefined, "slide")
+  if (given.length !== 1) stop("shape", undefined, "slide", "form", "Exactly one of add, move or delete.")
   if (change.add !== undefined) return addSlide(draft, change.add)
   if (change.move !== undefined) return moveSlide(draft, change.move)
   if (change.delete !== undefined)

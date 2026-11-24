@@ -44,7 +44,8 @@ type Owner = { readonly self: NodeId | null; readonly slide: NodeId | undefined 
 function endOf(draft: Draft, owner: Owner, asked: AgentEnd, other: End, field: "from" | "to"): End {
   if ("x" in asked) return { x: asked.x, y: asked.y }
   const target = living(draft, asked.layer, field)
-  if (!holdsLineEnd(draft.doom, target.id, owner.self, owner.slide)) stop("shape", target.id, field)
+  if (!holdsLineEnd(draft.doom, target.id, owner.self, owner.slide))
+    stop("shape", target.id, field, "form", "A shape or an image on the same slide, not the line itself.")
   const site = asked.side === undefined ? facing(centerOf(draft, target.id), spotOf(draft, other)) : sites[asked.side]
   return { node: target.id, site }
 }

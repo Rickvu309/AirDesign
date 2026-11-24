@@ -39,7 +39,14 @@ export function readingOf(doom: Doom, base: number): Doom {
 }
 
 export function compileAgentEdit(doom: Doom, changes: readonly AgentChange[], by: EditBy): AgentEdit | AgentRefusal {
-  if (changes.length === 0) return { refused: "shape", change: "changes" }
+  if (changes.length === 0)
+    return {
+      refused: "shape",
+      change: "changes",
+      field: "changes",
+      fault: "missing",
+      form: "One to one hundred changes.",
+    }
   const reading: Reading = {
     read: by.read ?? doom,
     ...(by.boxes === undefined ? {} : { boxes: by.boxes }),

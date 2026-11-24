@@ -1,6 +1,6 @@
 import { readNodeId } from "./ids.js"
 import { limits } from "./limits.js"
-import { type Reader, oneOf, reject, rejected, words } from "./read-kit.js"
+import { type Reader, Reject, oneOf, reject, words } from "./read-kit.js"
 
 const address = /^(https?:\/\/[^\s/?#]+[^\s]*|mailto:[^\s?]+(?:\?[^\s]*)?)$/i
 const scheme = /^[a-z][a-z0-9+.-]*:/i
@@ -18,7 +18,7 @@ export function readLinkAddress(raw: unknown): string | undefined {
   try {
     return readAddress(raw)
   } catch (thrown) {
-    rejected(thrown)
+    if (!(thrown instanceof Reject)) throw thrown
     return undefined
   }
 }

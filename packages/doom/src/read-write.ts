@@ -1,7 +1,7 @@
 import { bytesOf, limits } from "./limits.js"
 import { type NodeId, readNodeId, readRev } from "./ids.js"
 import { type NodeType, type PropName, type WriteKey, accepts, nodeTypes, props } from "./props.js"
-import { boolean, object, rejected, words, literal } from "./read-kit.js"
+import { Reject, boolean, object, rejected, words, literal } from "./read-kit.js"
 import { type Refusal, isRefusal, refuse } from "./refusal.js"
 import type { Author, Edit, Doom, RunUndo, Write } from "./doom.js"
 import { readThemeKey, readThemeValue } from "./theme.js"
@@ -26,7 +26,8 @@ function readValue(key: WriteKey, raw: unknown): unknown | Refusal {
     try {
       return readThemeValue(key as never)(raw)
     } catch (thrown) {
-      return { refused: rejected(thrown) }
+      if (!(thrown instanceof Reject)) throw thrown
+      return { refused: thrown.kind }
     }
   }
   return props[key as PropName].read(raw)

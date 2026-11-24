@@ -79,6 +79,8 @@ describe("add text", () => {
     expect(compileAgentChange(agentDeck(), { op: "add", kind: "text", slide }, minter())).toEqual({
       refused: "shape",
       field: "text",
+      fault: "missing",
+      form: "A non-empty string.",
       change: "add text",
     })
   })
