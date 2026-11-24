@@ -10,7 +10,7 @@ declare const process: {
 
 async function template(name: string) {
   const fs = process.getBuiltinModule("node:fs")
-  return readParts(new Uint8Array(fs.readFileSync(`${process.cwd()}/packages/templates/files/${name}.pptx`)))
+  return readParts(new Uint8Array(fs.readFileSync(`${process.cwd()}/scripts/deck-templates/files/${name}.pptx`)))
 }
 
 it("names a template's master text styles from its AirDesign names: the type scale", async () => {

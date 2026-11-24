@@ -121,7 +121,7 @@ const byFile = new Map([
   ["a.pptx", ["Error: a"]],
   ["neutral.pptx", []],
 ])
-const named = namedLists(byFile, ["a.pptx", "../../packages/templates/files/neutral.pptx"])
+const named = namedLists(byFile, ["a.pptx", "../../scripts/deck-templates/files/neutral.pptx"])
 assert.deepEqual(named.get("a.pptx"), ["Error: a"])
-assert.deepEqual(named.get("../../packages/templates/files/neutral.pptx"), [])
+assert.deepEqual(named.get("../../scripts/deck-templates/files/neutral.pptx"), [])
 assert.deepEqual(named.get("neutral.pptx"), [])
