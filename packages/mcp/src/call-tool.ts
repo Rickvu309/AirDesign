@@ -23,7 +23,13 @@ const tools = projectTools(catalog)
 
 export const opOf = (name: string): AgentOp | undefined => tools.find((tool) => tool.name === name)?.op
 
-export async function callTool(name: string, raw: unknown, session: Session, host: DeckHost): Promise<ToolResult> {
+export async function callTool(
+  name: string,
+  raw: unknown,
+  session: Session,
+  host: DeckHost,
+  pendingFonts: ReadonlySet<string> = new Set(),
+): Promise<ToolResult> {
   const op = opOf(name)
   if (op === undefined) return refused("field")
   const once = session.once ?? session.mint()
@@ -35,7 +41,7 @@ export async function callTool(name: string, raw: unknown, session: Session, hos
     case "read_deck":
       return readDeckTool(raw, session.agent, host)
     case "edit_deck":
-      return editDeckTool(raw, { id: session.agent, name: session.name }, once, host)
+      return editDeckTool(raw, { id: session.agent, name: session.name }, once, host, pendingFonts)
     case "stop_run":
       return stopRunTool(raw, session.agent, once, host)
     case "undo_run":

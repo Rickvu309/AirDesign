@@ -8,6 +8,8 @@ export const shelvedFamilies = [
   "Lato",
   "Lora",
   "Montserrat",
+  "Noto Sans Arabic",
+  "Noto Sans JP",
   "Playfair Display",
   "Geist",
   "Source Sans 3",

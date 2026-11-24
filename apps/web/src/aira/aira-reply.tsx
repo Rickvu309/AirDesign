@@ -1,5 +1,7 @@
 import { cn } from "@/lib/class-names"
-import type { ReactNode } from "react"
+import { servedFontAlias } from "@airdesign/fonts"
+import { fontsFor } from "@airdesign/render"
+import { useEffect, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { PopoverContent } from "@/components/ui/popover"
 import {
@@ -11,7 +13,7 @@ import {
   type StepStatus,
 } from "@/components/ai-elements/chain-of-thought"
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message"
-import { airaCopy, airaLimitBodyOn, airaUndoStays } from "@/copy/aira-copy"
+import { airaFontIssue, airaFontRequest, airaCopy, airaLimitBodyOn, airaUndoStays } from "@/copy/aira-copy"
 import { productCopy, usageResetsOn } from "@/copy/product-copy"
 import { usageCopy } from "@/copy/usage-copy"
 import { surfaceShadow } from "@/components/ui/shadows"
@@ -59,15 +61,39 @@ const statusOf: Readonly<Record<ToolState, StepStatus | undefined>> = {
   stopped: "stopped",
 }
 
+const reasonFonts = [
+  { script: /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u, font: "Noto Sans JP" },
+  { script: /\p{Script=Arabic}/u, font: "Noto Sans Arabic" },
+] as const
+
+function StepReason({ text, className }: { readonly text: string; readonly className?: string }) {
+  const names = reasonFonts.filter(({ script }) => script.test(text)).map(({ font }) => font)
+  useEffect(() => {
+    const loader = fontsFor(document)
+    for (const name of names) void loader?.load(name)
+  }, [text])
+  const fontFamily =
+    names.length === 0
+      ? undefined
+      : ['"Inter Variable"', ...names.map((name) => `"${servedFontAlias(name)}"`), "sans-serif"].join(", ")
+  return (
+    <p
+      data-step-reason
+      className={cn("text-xs leading-[1.5] [overflow-wrap:anywhere] text-muted-foreground", className ?? "pl-4.5")}
+      style={{ fontFamily }}
+    >
+      {text}
+    </p>
+  )
+}
+
 function StepsRow({ row }: { row: Extract<ReplyPiece, { kind: "steps" }> }) {
   if (row.reasons.length === 0) return <StepsLine row={row} />
   return (
     <div className="flex flex-col">
       <StepsLine row={row} />
       {row.reasons.map((reason) => (
-        <p key={reason} data-step-reason className="pl-4.5 text-xs leading-[1.5] text-muted-foreground">
-          {reason}
-        </p>
+        <StepReason key={reason} text={reason} />
       ))}
     </div>
   )
@@ -172,9 +198,11 @@ function FailedCard({
   body,
   onUndo,
   onRetry,
+  action = airaCopy.retry,
 }: {
   title: string
-  body: string
+  body: ReactNode
+  action?: string
   onUndo: (() => void) | undefined
   onRetry: (() => void) | undefined
 }) {
@@ -184,12 +212,12 @@ function FailedCard({
         <FailedMark />
         <span className={cardTitle}>{title}</span>
       </span>
-      <p className={cardBody}>{body}</p>
+      {typeof body === "string" ? <p className={cardBody}>{body}</p> : body}
       {onUndo === undefined && onRetry === undefined ? null : (
         <span className="flex items-center gap-2">
           {onRetry === undefined ? null : (
-            <Button type="button" variant="ghost" className={cardButton} onClick={onRetry}>
-              {airaCopy.retry}
+            <Button type="button" variant="ghost" className={cardButton} onClick={() => onRetry()}>
+              {action}
             </Button>
           )}
           {onUndo === undefined ? null : (
@@ -265,11 +293,13 @@ function LimitCard({ resets }: { resets: string | undefined }) {
   )
 }
 
+type Retry = (request?: string) => void
+
 function cardOf(
   exchange: AiraExchange,
   resets: string | undefined,
   onUndo: (() => void) | undefined,
-  onRetry: (() => void) | undefined,
+  onRetry: Retry | undefined,
   onNewChat: (() => void) | undefined,
 ): ReactNode | null {
   const undoable = exchange.runs.length > 0
@@ -286,6 +316,27 @@ function cardOf(
         changed={undoable}
         onUndo={onUndo}
         onNewChat={onNewChat}
+      />
+    )
+  }
+  const issue = fontRefusal(exchange)?.fontIssue
+  if (issue !== undefined) {
+    const coverage = issue.kind === "coverage"
+    const request = airaFontRequest(issue.layers, issue.target)
+    const title = coverage
+      ? airaCopy.missingFontTitle
+      : issue.kind === "shaping"
+        ? airaCopy.shapingTitle
+        : airaCopy.pendingFontTitle
+    return (
+      <FailedCard
+        title={title}
+        body={<StepReason text={airaFontIssue(issue)} className={cardBody} />}
+        action={coverage ? airaCopy.fixFonts : airaCopy.retry}
+        onUndo={onUndo}
+        onRetry={
+          onRetry === undefined || issue.kind === "shaping" ? undefined : () => onRetry(coverage ? request : undefined)
+        }
       />
     )
   }
@@ -312,7 +363,7 @@ function endingOf(
   exchange: AiraExchange,
   resets: string | undefined,
   onUndo: (() => void) | undefined,
-  onRetry: (() => void) | undefined,
+  onRetry: Retry | undefined,
   onNewChat: (() => void) | undefined,
 ): ReactNode | null {
   const undoable = exchange.runs.length > 0
@@ -343,9 +394,36 @@ function endingOf(
   return null
 }
 
+function remainingSteps(steps: readonly AiraStep[]): readonly AiraStep[] {
+  const handled = new Set<string>()
+  return steps
+    .toReversed()
+    .filter((step) => {
+      if (step.kind !== "tool") return true
+      for (const frame of step.bakedLayouts ?? []) handled.add(frame)
+      const target = step.fontIssue?.target
+      if (target === undefined) return true
+      if (handled.has(target)) return false
+      handled.add(target)
+      return true
+    })
+    .reverse()
+}
+
+function lastAttempt(steps: readonly AiraStep[]): readonly AiraStep[] {
+  return remainingSteps(steps.slice(steps.findLastIndex((step) => step.kind === "retry") + 1))
+}
+
+function fontRefusal(exchange: AiraExchange) {
+  if (exchange.end !== "done" && exchange.end !== "failed") return undefined
+  return lastAttempt(exchange.steps).findLast(
+    (step): step is Extract<AiraStep, { kind: "tool" }> =>
+      step.kind === "tool" && step.state === "refused" && step.fontIssue !== undefined,
+  )
+}
+
 export function refusedLast(steps: readonly AiraStep[]): boolean {
-  const from = steps.findLastIndex((step) => step.kind === "retry")
-  return steps.slice(from + 1).some((step) => step.kind === "tool" && step.state === "refused")
+  return lastAttempt(steps).some((step) => step.kind === "tool" && step.state === "refused")
 }
 
 export function retryable(exchange: AiraExchange): boolean {
@@ -368,9 +446,11 @@ export function ExchangeView({
   resets: string | undefined
   onUndo: (() => void) | undefined
   onNewChat?: (() => void) | undefined
-  onRetry: (() => void) | undefined
+  onRetry: Retry | undefined
 }) {
-  const parts = segments(exchange)
+  const separate = fontRefusal(exchange)
+  const steps = remainingSteps(exchange.steps).filter((step) => step !== separate)
+  const parts = segments({ ...exchange, steps })
   const ending = endingOf(exchange, resets, onUndo, onRetry, onNewChat)
   const endsWithReply = parts.at(-1)?.from === "assistant"
   return (

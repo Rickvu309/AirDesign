@@ -1,6 +1,6 @@
 import { catalog, projectTools, type AgentOp } from "@airdesign/catalog"
 import type { AiraStep, ToolState } from "@/aira/aira-loop"
-import { airaOtherStepWords, airaRefusalWords, airaStepWords, airaStepsSummary } from "@/copy/aira-copy"
+import { airaFontIssue, airaOtherStepWords, airaRefusalWords, airaStepWords, airaStepsSummary } from "@/copy/aira-copy"
 
 export type StepLine = {
   readonly id: string
@@ -31,6 +31,7 @@ const reasonOf: Readonly<Record<string, string>> = airaRefusalWords
 
 function reasonFor(step: Extract<AiraStep, { kind: "tool" }>): string | undefined {
   if (step.state !== "refused" || step.refusal === undefined) return undefined
+  if (step.fontIssue !== undefined) return airaFontIssue(step.fontIssue)
   return Object.hasOwn(reasonOf, step.refusal) ? reasonOf[step.refusal] : undefined
 }
 

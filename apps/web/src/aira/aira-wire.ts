@@ -1,4 +1,11 @@
-import { pictureType, type ReplyBlock, type ResultBlock } from "@airdesign/catalog"
+import {
+  mcpRoutes,
+  onceMeta,
+  pendingFontsMeta,
+  pictureType,
+  type ReplyBlock,
+  type ResultBlock,
+} from "@airdesign/catalog"
 import { fieldsOf } from "@/lib/fields-of"
 
 export type WeekUsage = { readonly used: number; readonly allowed: number; readonly resets: string }
@@ -139,4 +146,33 @@ export function toolOutcome(body: string): ToolOutcome {
     }
   }
   return { ok: false, text: body === "" ? "The tool answered with nothing." : body, fields: undefined }
+}
+
+export async function sendTool(
+  send: typeof fetch,
+  rpc: number,
+  name: string,
+  input: unknown,
+  signal?: AbortSignal,
+  once?: string,
+  pending: readonly string[] = [],
+): Promise<ToolOutcome> {
+  const meta =
+    once === undefined
+      ? {}
+      : {
+          _meta: { [onceMeta]: once, ...(pending.length === 0 ? {} : { [pendingFontsMeta]: pending }) },
+        }
+  const response = await send(mcpRoutes.mcp.path, {
+    method: mcpRoutes.mcp.method,
+    headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: rpc,
+      method: "tools/call",
+      params: { name, arguments: input, ...meta },
+    }),
+    ...(signal === undefined ? {} : { signal }),
+  })
+  return toolOutcome(await response.text())
 }

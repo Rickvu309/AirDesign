@@ -16,6 +16,7 @@ export type Reading = {
   readonly boxes?: ReadonlyMap<NodeId, Box>
   readonly pictures?: ReadonlyMap<string, Natural>
   readonly measure?: Measure
+  readonly bake?: (frame: NodeId) => readonly Write[]
 }
 export type Draft = {
   readonly doom: Doom

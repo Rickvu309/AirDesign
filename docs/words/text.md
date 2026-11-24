@@ -42,3 +42,7 @@ _Avoid_: blank text, cleared text
 **text layer inset**:
 The room between a text layer's box and its words. Text a person or an agent adds in AirDesign has none by default.
 _Avoid_: padding, margin (the design panel's Margins fields set it)
+
+**fallback font**:
+Geist, the family that paints grapheme clusters the run’s font lacks and clusters in a family the server does not serve. The canvas, the filmstrip and the server’s measure use the same stack, with text normalized to NFC for measuring. The canvas can paint clusters from a system font when the stack cannot cover them. An agent’s layout none refuses to bake measured text inside the frame when the fonts are pending, the stack cannot cover it or the text needs contextual shaping, including Hangul and emoji sequences. Text with the U+FE0E text-presentation selector is also refused.
+_Avoid_: default font, system font (the machine's own fonts, which nothing measures)

@@ -9,8 +9,16 @@ export type FontFamily = {
 }
 
 export const fontRevision: string = catalog.revision
+const geist: FontFamily = {
+  family: "Geist",
+  category: "Sans Serif",
+  folder: "local",
+  license: "OFL",
+  notice: "Geist-OFL.txt",
+}
+
 export const fontCatalog: readonly FontFamily[] = [
-  ...catalog.families,
+  ...catalog.families.map((font) => (font.family === geist.family ? geist : font)),
   {
     family: "Liberation Sans Narrow",
     category: "Sans Serif",

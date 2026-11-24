@@ -1,6 +1,7 @@
 import * as doom from "@airdesign/doom"
-import { fontFamily } from "@airdesign/fonts"
+import { fallbackFont, fontFamily, servedFontName } from "@airdesign/fonts"
 import type { CSSProperties } from "react"
+import { fontsFor } from "./font-load.js"
 import { pinnedOpticalSize } from "./doom-widths.js"
 
 type Run = doom.ResolvedRun
@@ -27,6 +28,9 @@ export function TextLines({
   readonly lines: readonly doom.ResolvedLine[]
   readonly editing?: boolean
 }) {
+  const loader = typeof document === "undefined" ? undefined : fontsFor(document)
+  const pending = (run: Run) =>
+    loader !== undefined && (!loader.ready(servedFontName(run.font) ?? fallbackFont) || !loader.ready(fallbackFont))
   return (
     <>
       {lines.map((line, at) => (
@@ -60,6 +64,7 @@ export function TextLines({
             <span
               key={index}
               data-run=""
+              data-font-pending={pending(run) ? "" : undefined}
               {...(run.link === undefined ? {} : { "data-link": run.link })}
               style={runLook(run)}
             >

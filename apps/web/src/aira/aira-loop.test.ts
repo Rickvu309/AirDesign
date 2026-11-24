@@ -406,3 +406,15 @@ describe("Aira's loop in the browser", () => {
     expect(asked).toEqual(["run-2", "run-1", "run-1"])
   })
 })
+
+it("keeps the letters and layer IDs from a font refusal in the visible step", async () => {
+  const link = scripted(
+    [{ lines: [ended([editCall])] }, { lines: [ended([{ type: "text", text: "The frame is still laid out." }])] }],
+    [{ isError: true, structuredContent: { ok: false, refusal: "fonts", characters: "収益", layers: ["t:2"] } }],
+  )
+  const { done } = await asking(airaChat(deck), "Remove auto layout", link)
+  expect(done.exchanges[0]?.steps[0]).toMatchObject({
+    refusal: "fonts",
+    fontIssue: { kind: "coverage", characters: "収益", layers: ["t:2"], layerNames: [] },
+  })
+})

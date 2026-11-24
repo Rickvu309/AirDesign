@@ -1,8 +1,8 @@
 import type { NodeId } from "./ids.js"
 import type { Sizing } from "./layout.js"
-import type { Measure } from "./measure.js"
+import { measureWith, type Measure } from "./measure.js"
 import type { Doom, Node, Write } from "./doom.js"
-import { childrenOf, propOf, slideOf } from "./doom-walk.js"
+import { childrenOf, descendantsOf, isLaidOut, parentOf, propOf, slideOf } from "./doom-walk.js"
 import type { Box } from "./resolved.js"
 import { solveLayout } from "./solve-layout.js"
 
@@ -32,9 +32,8 @@ function boxWrite(node: Node, boxes: ReadonlyMap<NodeId, Box>): Write[] {
 
 export function bakeLayout(doom: Doom, frame: NodeId, measure: Measure): readonly Write[] {
   const node = doom.nodes.get(frame)
-  const slide = slideOf(doom, frame)
-  if (node?.type !== "frame" || slide === undefined) return []
-  const boxes = solveLayout(doom, slide, measure)
+  if (node?.type !== "frame" || slideOf(doom, frame) === undefined) return []
+  const boxes = bakeBoxes(doom, node, measure)
   const layout = propOf(node, "layout")
   const children = childrenOf(doom, frame).filter(
     (child) => propOf(child, "hidden") !== true && propOf(child, "geometry")?.kind !== "line",
@@ -51,4 +50,36 @@ export function bakeLayout(doom: Doom, frame: NodeId, measure: Measure): readonl
       ...(propOf(child, "cell") === undefined ? [] : [{ node: child.id, prop: "cell", value: null } satisfies Write]),
     ]),
   ]
+}
+
+function bakeBoxes(doom: Doom, frame: Node, measure: Parameters<typeof solveLayout>[2]) {
+  let root = frame
+  let hidden = false
+  const path: NodeId[] = []
+  for (;;) {
+    hidden ||= propOf(root, "hidden") === true
+    const up = parentOf(root)
+    const parent = up === undefined || up === null ? undefined : doom.nodes.get(up.id)
+    if (parent === undefined || !isLaidOut(parent) || propOf(root, "absolute") === true) break
+    path.unshift(root.id)
+    root = parent
+  }
+  return solveLayout(doom, root.id, measure, hidden ? undefined : path)
+}
+
+const estimate = measureWith({})
+
+export function bakeTextLayers(
+  doom: Doom,
+  frame: NodeId,
+): { readonly required: readonly NodeId[]; readonly measured: readonly NodeId[] } {
+  const node = doom.nodes.get(frame)
+  if (node?.type !== "frame") return { required: [], measured: [] }
+  const layers = new Set<NodeId>()
+  bakeBoxes(doom, node, (text, theme, width, id) => {
+    layers.add(id)
+    return estimate(text, theme, width)
+  })
+  const inside = new Set(descendantsOf(doom, frame).map((child) => child.id))
+  return { required: [...layers].filter((layer) => inside.has(layer)), measured: [...layers] }
 }

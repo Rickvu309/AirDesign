@@ -26,6 +26,7 @@ const editRefusals = [
   "owner",
   "deleted",
   "store",
+  "fonts",
 ] as const
 
 const wireRefusals = [

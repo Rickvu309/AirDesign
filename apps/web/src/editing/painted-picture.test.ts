@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { neededFaces } from "./painted-picture"
+import { neededFaces, usedFaces } from "./painted-picture"
 
 const face = (family: string, weight: string, style: string, url: string) => ({ family, weight, style, url })
 
@@ -21,4 +21,18 @@ it("inlines only the faces the painted words use, once each, including a quoted 
     '"Inter SemiBold" /inter',
     '"Inter SemiBold" /inter-italic',
   ])
+})
+
+it("embeds every served family in a painted run's fallback stack", async () => {
+  const module = "jsdom"
+  const { JSDOM } = (await import(module)) as { JSDOM: new () => { window: Window } }
+  const { document } = new JSDOM().window
+  const root = document.createElement("div")
+  root.style.fontFamily = '"Narrow", "Geist", sans-serif'
+  root.style.fontWeight = "400"
+  root.style.fontStyle = "normal"
+  root.textContent = "Doanh thu quý 3"
+  document.body.append(root)
+  const used = usedFaces(root, new Set(["Narrow", "Geist"]))
+  expect([...used.looks]).toEqual(["Narrow|400|normal", "Geist|400|normal"])
 })

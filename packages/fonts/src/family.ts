@@ -1,14 +1,25 @@
-import twins from "./twins.json" with { type: "json" }
+import { namedFace } from "./named-face.js"
+import { resolveFont } from "./source.js"
 
 export const fontRoutes = {
   family: { path: "/fonts/family" },
   file: { path: "/fonts/file" },
 } as const
 
-const quote = (font: string) => `"${font.replace(/["\\]/g, "\\$&")}"`
+export const fallbackFont = "Geist"
+
+export const servedFontAlias = (family: string): string => `airdesign-font-${encodeURIComponent(family.toLowerCase())}`
+
+export function servedFontName(font: string): string | undefined {
+  const served = resolveFont(font)
+  return served === undefined ? undefined : (namedFace(font)?.typeface ?? served.family)
+}
 
 export function fontFamily(font: string | null): string {
-  if (font === null) return "var(--font-sans)"
-  const twin = twins.find((twin) => twin.family.toLowerCase() === font.toLowerCase())?.prefer
-  return [quote(font), ...(twin === undefined ? [] : [quote(twin)]), "var(--font-sans)"].join(", ")
+  const primary = font === null ? undefined : servedFontName(font)
+  const stack = new Set([primary ?? fallbackFont, fallbackFont])
+  return [...stack]
+    .map((name) => `"${servedFontAlias(name)}"`)
+    .concat("sans-serif")
+    .join(", ")
 }

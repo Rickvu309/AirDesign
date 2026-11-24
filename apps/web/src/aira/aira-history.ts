@@ -1,3 +1,4 @@
+import { readFontIssue, stringList } from "@/aira/aira-answers"
 import { bytesOf } from "@airdesign/doom"
 import { readTurn, sentWithoutPictures, withoutPictures, type ModelMessage, type ToolAnswer } from "@airdesign/catalog"
 import { fieldsOf } from "@/lib/fields-of"
@@ -165,8 +166,17 @@ function readStep(raw: unknown): AiraStep | undefined {
     typeof step.state === "string" &&
     toolStates.has(step.state)
   ) {
-    const read = { kind: "tool", id: step.id, name: step.name, state: step.state as ToolState } as const
-    return typeof step.refusal === "string" ? { ...read, refusal: step.refusal } : read
+    const bakedLayouts = stringList(step.bakedLayouts)
+    const read = {
+      kind: "tool",
+      id: step.id,
+      name: step.name,
+      state: step.state as ToolState,
+      ...(bakedLayouts.length === 0 ? {} : { bakedLayouts }),
+    } as const
+    if (typeof step.refusal !== "string") return read
+    const fontIssue = step.refusal === "fonts" ? readFontIssue(step.fontIssue) : undefined
+    return { ...read, refusal: step.refusal, ...(fontIssue === undefined ? {} : { fontIssue }) }
   }
   if (step.kind === "retry") return { kind: "retry" }
   return undefined

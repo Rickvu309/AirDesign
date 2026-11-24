@@ -1,4 +1,5 @@
 import * as doom from "@airdesign/doom"
+import { servedFontAlias } from "@airdesign/fonts"
 import { act, createElement } from "react"
 import { createRoot } from "react-dom/client"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -85,7 +86,7 @@ describe("DoomSlide widths in a deck that mixes fonts", () => {
       fontKerning: "",
       textRendering: "",
       measureText(text: string) {
-        const advance = this.font.includes("Lora") ? 18 : 12
+        const advance = this.font.includes(servedFontAlias("Lora")) ? 18 : 12
         return { width: advance * [...text].length, fontBoundingBoxAscent: 20, fontBoundingBoxDescent: 5 }
       },
     }

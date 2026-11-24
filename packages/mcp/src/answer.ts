@@ -36,6 +36,8 @@ export const refusalWords = {
     "A deck keeps at least one slide, so nothing landed. Leave one slide in the deck, or add the new slide in the same edit.",
   payload: "The deck is too large for this call, and nothing landed.",
   store: "The deck could not be read or saved, and nothing changed. Send the call again.",
+  fonts:
+    "A frame you set to layout none holds words AirDesign could not measure, so its layers could not stay where they are painted, and nothing landed. If the answer names characters, set those layers in a font AirDesign serves that covers them; otherwise send the edit again.",
 } as const satisfies Partial<Record<EditRefusal, string>>
 
 export type Refused = keyof typeof refusalWords
@@ -110,7 +112,7 @@ export function refused(code: Refused, more: Where & Readonly<Record<string, unk
   const where = whereWords(more)
   const specific =
     more.fault !== undefined || more.needs !== undefined ? fieldNote(more.fault, more.form, more.needs) : undefined
-  const words = specific ?? refusalWords[code]
+  const words = specific ?? (typeof more.note === "string" ? more.note : refusalWords[code])
   return told(false, {
     ok: false,
     refusal: code,

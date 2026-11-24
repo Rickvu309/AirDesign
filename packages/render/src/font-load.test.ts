@@ -34,14 +34,14 @@ it("waits for the requested face and shares one load across case variants", asyn
   expect(requests).toEqual(["/fonts/family?family=Montserrat"])
 })
 
-it("reports unknown names and failed loads, then permits fallback", async () => {
+it("permits fallback for unknown names and retries unavailable loads", async () => {
   for (const status of [404, 503]) {
     const loader = new FontLoader(document, async () => new Response(null, { status }))
     expect(await loader.load("Missing")).toEqual({
       family: "Missing",
       refusal: status === 404 ? "unknown" : "unavailable",
     })
-    expect(loader.ready("Missing")).toBe(true)
+    expect(loader.ready("Missing")).toBe(status === 404)
   }
 })
 
@@ -89,4 +89,25 @@ it("knows a family's faces once its manifest arrives, before its files install",
   finish()
   await loaded
   expect(loader.servedFamily("montserrat")).toBe("Montserrat")
+})
+
+it("can recover a face in the same document after its file failed to load", async () => {
+  let available = false
+  const loader = new FontLoader(
+    document,
+    async () =>
+      Response.json({
+        ok: true,
+        family: "Geist",
+        faces: [{ url: "/fonts/file?geist", style: "normal", weight: "400" }],
+      }),
+    async () => {
+      if (!available) throw new Error("file unavailable")
+    },
+  )
+  expect(await loader.load("Geist")).toMatchObject({ refusal: "unavailable" })
+  expect(loader.ready("Geist")).toBe(false)
+  available = true
+  expect(await loader.load("Geist")).toBeNull()
+  expect(loader.ready("Geist")).toBe(true)
 })

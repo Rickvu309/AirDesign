@@ -10,6 +10,8 @@ export const mcpRoutes = {
 
 export const mcpPaths: readonly string[] = Object.values(mcpRoutes).map((route) => route.path)
 
+export const pendingFontsMeta = "app.airdesign/pending-fonts"
+
 export const onceMeta = "app.airdesign/once"
 
 export type OnceRead = { readonly ok: true; readonly once: string | undefined } | { readonly ok: false }

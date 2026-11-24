@@ -1,4 +1,28 @@
-import { fontRoutes, type ServedFace } from "@airdesign/fonts"
+import { fallbackFont, fontRoutes, servedFontAlias, type ServedFace } from "@airdesign/fonts"
+
+const paintFontWait = 400
+const outputFontWait = 10_000
+
+async function beforeFontDeadline(work: Promise<boolean>, limit: number): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      work,
+      new Promise<boolean>((resolve) => {
+        timer = setTimeout(() => resolve(false), limit)
+      }),
+    ])
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+export async function waitForPaintFonts(work: Promise<unknown>): Promise<void> {
+  await beforeFontDeadline(
+    work.then(() => true),
+    paintFontWait,
+  )
+}
 
 export type FontIssue = { readonly family: string; readonly refusal: "unknown" | "unavailable" }
 type Face = ServedFace & { readonly url: string }
@@ -48,24 +72,26 @@ export function installedFaces(doc: Document): readonly InstalledFace[] {
 }
 
 async function installFonts(doc: Document, family: Manifest): Promise<void> {
-  const kept = installed.get(doc) ?? []
-  installed.set(doc, kept)
-  for (const file of family.faces)
-    kept.push({ family: family.family, url: file.url, style: file.style, weight: file.weight })
+  const alias = servedFontAlias(family.family)
   const faces = await Promise.all(
     family.faces.map(async (file) => {
-      const face = new FontFace(family.family, `url("${file.url}")`, { style: file.style, weight: file.weight })
+      const face = new FontFace(alias, `url("${file.url}")`, { style: file.style, weight: file.weight })
       return face.load()
     }),
   )
   for (const face of faces) doc.fonts.add(face)
+  const kept = installed.get(doc) ?? []
+  for (const file of family.faces) kept.push({ family: alias, url: file.url, style: file.style, weight: file.weight })
+  installed.set(doc, kept)
 }
 
 export class FontLoader {
   private readonly pending = new Map<string, Promise<FontIssue | null>>()
   private readonly settled = new Set<string>()
+  private readonly failures = new Set<string>()
   private readonly watchers = new Set<() => void>()
   private readonly served = new Map<string, { readonly family: string; readonly faces: readonly ServedFace[] }>()
+  private readonly doc: Document
   private readonly network: typeof fetch
   private readonly install: (family: Manifest) => Promise<void>
 
@@ -74,12 +100,21 @@ export class FontLoader {
     network: typeof fetch = (...args) => fetch(...args),
     install = (family: Manifest) => installFonts(doc, family),
   ) {
+    this.doc = doc
     this.network = network
     this.install = install
   }
 
   ready(name: string): boolean {
     return this.settled.has(name.toLowerCase())
+  }
+
+  pendingNames(): readonly string[] {
+    return [...new Set([...this.pending.keys(), ...this.failures])].filter((name) => !this.settled.has(name))
+  }
+
+  failed(name: string): boolean {
+    return this.failures.has(name.toLowerCase())
   }
 
   faces(name: string): readonly ServedFace[] | undefined {
@@ -105,8 +140,14 @@ export class FontLoader {
     }
   }
 
-  async wait(): Promise<void> {
-    await Promise.all(this.pending.values())
+  async wait(names: readonly string[]): Promise<boolean> {
+    const installed = async () => {
+      const issues = await Promise.all(names.map((name) => this.load(name)))
+      if (issues.some((issue) => issue?.refusal === "unavailable")) return false
+      await this.doc.fonts?.ready
+      return true
+    }
+    return beforeFontDeadline(installed(), outputFontWait)
   }
 
   load(name: string): Promise<FontIssue | null> {
@@ -116,7 +157,13 @@ export class FontLoader {
     pending = this.register(name)
       .catch((): FontIssue => ({ family: name, refusal: "unavailable" }))
       .then((issue) => {
-        this.settled.add(key)
+        if (issue?.refusal === "unavailable") {
+          this.pending.delete(key)
+          this.failures.add(key)
+        } else {
+          this.settled.add(key)
+          this.failures.delete(key)
+        }
         this.tell()
         return issue
       })
@@ -133,7 +180,8 @@ export class FontLoader {
     const response = await this.network(`${fontRoutes.family.path}?family=${encodeURIComponent(name)}`, {
       signal: AbortSignal.timeout(45_000),
     })
-    if (response.status === 404) return { family: name, refusal: "unknown" }
+    if (response.status === 404 && name.toLowerCase() !== fallbackFont.toLowerCase())
+      return { family: name, refusal: "unknown" }
     if (!response.ok) throw new Error("font source")
     const raw: unknown = await response.json()
     if (!manifest(raw)) throw new Error("font manifest")
@@ -156,9 +204,4 @@ export function fontsFor(doc: Document): FontLoader | undefined {
     loaders.set(doc, loader)
   }
   return loader
-}
-
-export async function waitForFonts(doc: Document): Promise<void> {
-  await fontsFor(doc)?.wait()
-  await doc.fonts?.ready
 }

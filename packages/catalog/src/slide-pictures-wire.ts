@@ -15,6 +15,7 @@ export type SlidePicture = SlideKey & {
 export type SlidePictures = {
   readonly keys: readonly SlideKey[]
   readonly images: readonly SlidePicture[]
+  readonly fontFailures?: readonly SlideKey[]
 }
 
 const keyPattern = /^[0-9a-f]{64}$/
@@ -40,7 +41,7 @@ function readImage(raw: unknown, keys: ReadonlyMap<NodeId, string>): SlidePictur
 
 export function readSlidePictures(raw: unknown): SlidePictures | undefined {
   const body = recordOf(raw)
-  if (body === undefined || !knownKeys(body, ["keys", "images"])) return undefined
+  if (body === undefined || !knownKeys(body, ["keys", "images", "fontFailures"])) return undefined
   const { keys: rawKeys, images: rawImages } = body
   if (!Array.isArray(rawKeys) || !Array.isArray(rawImages) || rawKeys.length > limits.slides) return undefined
   const keyed = new Map<NodeId, string>()
@@ -55,5 +56,20 @@ export function readSlidePictures(raw: unknown): SlidePictures | undefined {
     if (read === undefined || images.some((each) => each.slide === read.slide)) return undefined
     images.push(read)
   }
-  return { keys: [...keyed].map(([slide, key]) => ({ slide, key })), images }
+  const fontFailures: SlideKey[] = []
+  if (body.fontFailures !== undefined) {
+    if (!Array.isArray(body.fontFailures) || body.fontFailures.length > keyed.size) return undefined
+    const reported = new Set(images.map(({ slide }) => slide))
+    for (const row of body.fontFailures) {
+      const read = readKey(row)
+      if (read === undefined || keyed.get(read.slide) !== read.key || reported.has(read.slide)) return undefined
+      reported.add(read.slide)
+      fontFailures.push(read)
+    }
+  }
+  return {
+    keys: [...keyed].map(([slide, key]) => ({ slide, key })),
+    images,
+    ...(fontFailures.length === 0 ? {} : { fontFailures }),
+  }
 }

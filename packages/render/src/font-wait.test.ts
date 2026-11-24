@@ -1,4 +1,4 @@
-import { expect, it } from "vitest"
+import { expect, it, vi } from "vitest"
 import { FontLoader } from "./font-load.js"
 
 it("keeps print and capture waiting while a slide's face is being installed", async () => {
@@ -17,15 +17,21 @@ it("keeps print and capture waiting while a slide's face is being installed", as
   const loader = new FontLoader(document, source, async () => installing)
   const load = loader.load("Montserrat")
   let ready = false
-  const wait = loader.wait().then(() => {
+  vi.useFakeTimers()
+  const wait = loader.wait(["Montserrat"]).then(() => {
     ready = true
   })
-  await Promise.resolve()
-  expect(ready).toBe(false)
-  finish()
-  await wait
-  expect(ready).toBe(true)
-  expect(await load).toBeNull()
+  try {
+    await vi.advanceTimersByTimeAsync(1_500)
+    expect(ready).toBe(false)
+    finish()
+    await wait
+    expect(ready).toBe(true)
+    expect(await load).toBeNull()
+  } finally {
+    finish()
+    vi.useRealTimers()
+  }
 })
 
 it("is busy while a face loads and tells its watchers when it starts and settles", async () => {
@@ -55,4 +61,18 @@ it("is busy while a face loads and tells its watchers when it starts and settles
   stop()
   await loader.load("Lato")
   expect(told).toEqual([true, false])
+})
+
+it.each(["failed", "timed out"])("refuses output when the font load has %s", async (outcome) => {
+  vi.useFakeTimers()
+  try {
+    const network: typeof fetch = () =>
+      outcome === "failed" ? Promise.resolve(new Response(null, { status: 503 })) : new Promise(() => {})
+    const loader = new FontLoader(document, network)
+    const wait = loader.wait(["Montserrat"])
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(await wait).toBe(false)
+  } finally {
+    vi.useRealTimers()
+  }
 })

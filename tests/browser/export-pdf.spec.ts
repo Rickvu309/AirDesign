@@ -1,3 +1,4 @@
+import { fontRoutes } from "../../packages/fonts/src/index.ts"
 import { writeFile } from "node:fs/promises"
 import { expect, type Page } from "@playwright/test"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
@@ -174,6 +175,60 @@ test("the current slide or a range prints only those slides, and a wrong range s
   )
 })
 
+test("exporting the current slide works when a font on another slide fails", async ({ page, context, stack }) => {
+  await recordPrints(page)
+  const opened = await openEditor(page, context, stack)
+  const [, other] = await deckOfSlides(page, stack, opened, 2)
+  if (other === undefined) throw new Error("Missing second slide")
+  await page.locator('[data-slide-entry="1"]').click()
+  await page.route(
+    (url) => url.pathname === fontRoutes.family.path && url.searchParams.get("family") === "Montserrat",
+    (route) => route.fulfill({ status: 503 }),
+  )
+  await landNodes(stack, opened, [
+    {
+      id: "t:21",
+      type: "shape",
+      parent: opened.slide,
+      props: {
+        box: spot(160, 120, 1200, 120),
+        text: {
+          chars: "Healthy slide",
+          spans: [{ end: 13, font: "Lora" }],
+          paras: [{}],
+          style: "body",
+          resize: "fixed",
+          alignV: "top",
+        },
+      },
+    },
+    {
+      id: "t:22",
+      type: "shape",
+      parent: other,
+      props: {
+        box: spot(160, 120, 1200, 120),
+        text: {
+          chars: "Second slide",
+          spans: [{ end: 12, font: "Montserrat" }],
+          paras: [{}],
+          style: "body",
+          resize: "fixed",
+          alignV: "top",
+        },
+      },
+    },
+  ])
+  await expect(page.locator('[data-slide-entry="2"] [data-node="t:22"] [data-font-pending]')).toBeVisible()
+
+  await exportButton(page).click()
+  await choose(page, exportCopy.slides, exportCopy.currentSlide)
+  await dialog(page).getByRole("button", { name: exportCopy.action }).click()
+  await expect.poll(async () => (await printTitles(page)).length).toBe(1)
+  await expect(printPages(page)).toHaveCount(1)
+  await expect(printPages(page)).toHaveAttribute("data-print-page", opened.slide)
+})
+
 async function recordPrintKeys(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const held: boolean[] = []
@@ -292,3 +347,73 @@ test("the sample deck exports as a PDF for the poppler check @pdf", async ({ pag
   await writeFile(sampleDeckLines, JSON.stringify({ pages: lines.length, lines }))
   await writeFile(sampleDeckPdf, await page.pdf({ preferCSSPageSize: true }))
 })
+
+for (const font of ["slow", "failed"] as const) {
+  test(`PDF export handles a ${font} font before opening print`, async ({ page, context, stack }) => {
+    await recordPrints(page)
+    const opened = await openEditor(page, context, stack)
+    await landNodes(stack, opened, [
+      {
+        id: "t:7",
+        type: "shape",
+        parent: opened.slide,
+        props: {
+          box: spot(160, 700, 1200, 120),
+          text: {
+            chars: "Quarter four revenue",
+            spans: [{ end: 20, font: "Montserrat" }],
+            paras: [{}],
+            style: "body",
+            resize: "fixed",
+            alignV: "top",
+          },
+        },
+      },
+    ])
+    let release = () => {}
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    await page.route(
+      (url) => url.pathname === fontRoutes.family.path && url.searchParams.get("family") === "Montserrat",
+      async (route) => {
+        if (font === "failed") await route.fulfill({ status: 503 })
+        else {
+          await held
+          await route.continue()
+        }
+      },
+    )
+    try {
+      await page.reload({ waitUntil: "domcontentloaded" })
+      await expect(page.locator("[data-editor-ready]")).toBeVisible()
+      await expect(page.locator('[data-slide-box] [data-node="t:7"] [data-font-pending]')).toBeVisible()
+      await exportButton(page).click()
+      await dialog(page).getByRole("button", { name: exportCopy.action }).click()
+      if (font === "failed") {
+        await expect(page.getByText(/A font in these slides couldn’t load/)).toBeVisible()
+        expect(await printTitles(page)).toEqual([])
+      } else {
+        await expect(dialog(page)).toBeVisible()
+        const stoppedWaiting = await dialog(page)
+          .waitFor({ state: "detached", timeout: 1_500 })
+          .then(
+            () => true,
+            () => false,
+          )
+        expect(stoppedWaiting).toBe(false)
+        expect(await printTitles(page)).toEqual([])
+        release()
+        await expect.poll(() => printTitles(page)).toHaveLength(1)
+        await expect(printPages(page).locator('[data-node="t:7"] [data-run]')).not.toHaveAttribute("data-font-pending")
+        expect(
+          await page.evaluate(() =>
+            [...document.fonts].some((face) => face.family.includes("montserrat") && face.status === "loaded"),
+          ),
+        ).toBe(true)
+      }
+    } finally {
+      release()
+    }
+  })
+}

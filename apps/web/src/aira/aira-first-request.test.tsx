@@ -2,6 +2,7 @@ import { act, StrictMode } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
 import { AiraPanel } from "@/aira/aira-panel"
+import { airaCopy } from "@/copy/aira-copy"
 import type { UsageLoad } from "@/aira/usage-load"
 
 let host: HTMLDivElement
@@ -119,4 +120,13 @@ it("sends the first request once when development mounts the panel twice", async
 it("sends nothing when there is no first request", async () => {
   await open({})
   expect(host.querySelector("[data-aira-welcome]")).not.toBeNull()
+})
+
+it("sends the original request when the person clicks Try again", async () => {
+  const request = "A board update on Q3 revenue"
+  await open({ request })
+  const retry = [...host.querySelectorAll("button")].find((button) => button.textContent === airaCopy.retry)
+  expect(retry).toBeDefined()
+  await act(async () => retry?.click())
+  expect(sent.filter((body) => body.includes(request))).toHaveLength(2)
 })

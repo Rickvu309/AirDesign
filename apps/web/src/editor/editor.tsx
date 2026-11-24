@@ -180,10 +180,10 @@ function Editing({
               commands.current = next ?? idle
             }}
             toolbarHost={toolbarHost}
-            notice={exporting.failed ? "export-failed" : saved.notice}
+            notice={exporting.failed === "fonts" ? "export-fonts" : exporting.failed ? "export-failed" : saved.notice}
             onExport={exporting.control.openDialog}
             onTryAgain={(notice) => {
-              if (notice === "export-failed") exporting.tryAgain()
+              if (notice === "export-failed" || notice === "export-fonts") exporting.tryAgain()
             }}
             onTyping={typing.set}
             onWords={setWords}

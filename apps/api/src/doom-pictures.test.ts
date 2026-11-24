@@ -82,9 +82,9 @@ describe("an open tab sends the picture of each slide of a Doom deck, and an age
       expect(first.json).toEqual({ ok: true, deck: made.deck, missing: [] })
       const [slide] = slides
       const pending = read(client, made.deck, { slide })
-      await new Promise((resolve) => setTimeout(resolve, 40))
-      const asked = await send(made.deck, rev, { keys, images: [] }, cookie)
-      expect(asked.json).toEqual({ ok: true, deck: made.deck, missing: [slide] })
+      await expect
+        .poll(async () => (await send(made.deck, rev, { keys, images: [] }, cookie)).json)
+        .toEqual({ ok: true, deck: made.deck, missing: [slide] })
       const next = await send(
         made.deck,
         rev,
@@ -98,6 +98,31 @@ describe("an open tab sends the picture of each slide of a Doom deck, and an age
       expect(blocks.filter((block) => block.type === "image")).toEqual([
         { type: "image", data: shot, mimeType: "image/jpeg" },
       ])
+    } finally {
+      await client.close()
+    }
+  })
+
+  it("reports a font failure for the current slide and accepts a later capture of the same revision", async () => {
+    const { cookie, client, made } = await opened()
+    try {
+      const { rev, keyOf, slides } = await keysOf(made.deck, cookie)
+      const [slide] = slides
+      const key = keyOf(slide!)
+      const keys = [{ slide, key }]
+      const pending = read(client, made.deck, { slide })
+      await expect
+        .poll(async () => (await send(made.deck, rev, { keys, images: [] }, cookie)).json)
+        .toMatchObject({ missing: [slide] })
+      const failed = await send(made.deck, rev, { keys, images: [], fontFailures: keys }, cookie)
+      const answer = await pending
+      expect(failed.json).toMatchObject({ ok: true })
+      expect(answer.structuredContent).toMatchObject({ pictureFailures: [{ slide, reason: "fonts" }] })
+      expect((answer.content as readonly Block[]).some((block) => block.type === "image")).toBe(false)
+
+      const retry = read(client, made.deck, { slide })
+      await send(made.deck, rev, { keys, images: [{ slide, key, type: "image/jpeg", data: shot }] }, cookie)
+      expect((await retry).structuredContent).toMatchObject({ pictures: [slide] })
     } finally {
       await client.close()
     }

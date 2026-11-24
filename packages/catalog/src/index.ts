@@ -86,9 +86,9 @@ export { readDeckEdit } from "./deck-edit-wire.js"
 export { readDeckQuery, readListDecks } from "./read-wire.js"
 export { pictureBytes, pictureType, type SlidePictures } from "./slide-pictures-wire.js"
 
-export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, readOnce } from "./mcp-routes.js"
+export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, pendingFontsMeta, readOnce } from "./mcp-routes.js"
 
-export { fontRoutes, resolveFont } from "@airdesign/fonts"
+export { fallbackFont, fontRoutes, resolveFont, servedFontName } from "@airdesign/fonts"
 
 export {
   creditsRoutes,

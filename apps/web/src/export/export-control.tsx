@@ -45,7 +45,7 @@ export function ExportControl({ flow }: { readonly flow: ExportFlow }) {
           assetUrl={target.assetUrl}
           onReady={() => flow.control.ready(printing.run)}
           onPrinted={() => flow.control.printed(printing.run)}
-          onFailed={() => flow.control.fail(printing.run)}
+          onFailed={(reason) => flow.control.fail(printing.run, reason)}
         />
       )}
     </>

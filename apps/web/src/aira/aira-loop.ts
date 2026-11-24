@@ -1,8 +1,6 @@
 import {
   airaRoutes,
   catalog,
-  mcpRoutes,
-  onceMeta,
   projectTools,
   sentWithoutPictures,
   type AgentOp,
@@ -11,8 +9,8 @@ import {
   type ToolAnswer,
   type ToolCall,
 } from "@airdesign/catalog"
-import { cappedPictures, toolAnswer } from "@/aira/aira-answers"
-import { airaLine, bodyLines, toolOutcome, weekUsage, type WeekUsage } from "@/aira/aira-wire"
+import { cappedPictures, readFontIssue, stringList, toolAnswer, type FontIssue } from "@/aira/aira-answers"
+import { airaLine, bodyLines, sendTool, weekUsage, type WeekUsage } from "@/aira/aira-wire"
 import type { UndoStays } from "@/copy/agent-runs-copy"
 import { fieldsOf } from "@/lib/fields-of"
 
@@ -27,6 +25,8 @@ export type AiraStep =
       readonly name: string
       readonly state: ToolState
       readonly refusal?: string
+      readonly bakedLayouts?: readonly string[] | undefined
+      readonly fontIssue?: FontIssue
     }
   | { readonly kind: "retry" }
 
@@ -80,6 +80,8 @@ export type AiraEvent =
       readonly state: ToolState
       readonly run: string | undefined
       readonly refusal?: string | undefined
+      readonly bakedLayouts?: readonly string[] | undefined
+      readonly fontIssue?: FontIssue | undefined
     }
   | { readonly type: "landed"; readonly run: string; readonly id: string }
   | { readonly type: "end"; readonly end: AiraEnd; readonly usage?: WeekUsage | undefined }
@@ -95,6 +97,7 @@ export type AskOptions = {
   readonly mint?: () => string
   readonly after?: Promise<AiraChat | undefined>
   readonly opened?: Promise<unknown>
+  readonly pendingFonts?: () => readonly string[]
 }
 
 type Turned =
@@ -108,9 +111,10 @@ type Called = {
   readonly stopped?: true
   readonly cut?: string
   readonly refusal?: string
+  readonly bakedLayouts?: readonly string[] | undefined
+  readonly fontIssue?: FontIssue
 }
 
-const accept = "application/json, text/event-stream"
 const tools = projectTools(catalog)
 const opOf: ReadonlyMap<string, AgentOp> = new Map(tools.map((tool) => [tool.name, tool.op]))
 const stopTool = tools.find((tool) => tool.op === "stop_run")?.name ?? ""
@@ -150,10 +154,20 @@ function settled(
   id: string,
   state: ToolState,
   refusal: string | undefined,
+  fontIssue?: FontIssue,
+  bakedLayouts?: readonly string[],
 ): readonly AiraStep[] {
   return steps.map((step) => {
     if (step.kind !== "tool" || step.id !== id) return step
-    return state === "refused" && refusal !== undefined ? { ...step, state, refusal } : { ...step, state }
+    return {
+      kind: step.kind,
+      id: step.id,
+      name: step.name,
+      state,
+      ...(state !== "refused" || refusal === undefined ? {} : { refusal }),
+      ...(fontIssue === undefined ? {} : { fontIssue }),
+      ...(bakedLayouts === undefined || bakedLayouts.length === 0 ? {} : { bakedLayouts }),
+    }
   })
 }
 
@@ -194,11 +208,11 @@ export function airaStep(chat: AiraChat, event: AiraEvent): AiraChat {
       return changeLast(next, (last) => ({ ...last, steps: calling(last.steps, event.content) }))
     }
     case "answered": {
-      const { answer, run, state, refusal } = event
+      const { answer, run, state, refusal, fontIssue, bakedLayouts } = event
       const next = { ...chat, answers: [...chat.answers, answer] }
       return changeLast(next, (last) => ({
         ...last,
-        steps: settled(last.steps, answer.tool_use_id, state, refusal),
+        steps: settled(last.steps, answer.tool_use_id, state, refusal, fontIssue, bakedLayouts),
         runs: withRun(last.runs, run),
       }))
     }
@@ -276,29 +290,6 @@ async function takeTurn(
   return signal.aborted ? { kind: "ended", end: "stopped" } : cut
 }
 
-async function sendTool(
-  send: typeof fetch,
-  rpc: number,
-  name: string,
-  input: unknown,
-  signal?: AbortSignal,
-  once?: string,
-) {
-  const meta = once === undefined ? {} : { _meta: { [onceMeta]: once } }
-  const response = await send(mcpRoutes.mcp.path, {
-    method: mcpRoutes.mcp.method,
-    headers: { "content-type": "application/json", accept },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: rpc,
-      method: "tools/call",
-      params: { name, arguments: input, ...meta },
-    }),
-    ...(signal === undefined ? {} : { signal }),
-  })
-  return toolOutcome(await response.text())
-}
-
 function interruptedAnswer(call: ToolCall): ToolAnswer {
   return toolAnswer(
     call.id,
@@ -327,23 +318,36 @@ async function callTool(
   call: ToolCall,
   signal: AbortSignal,
   once: string,
+  pendingFonts: AskOptions["pendingFonts"],
   again = true,
 ): Promise<Called> {
   const sent = changes(call) ? once : undefined
   try {
-    const outcome = await sendTool(send, rpc, call.name, call.input, signal, sent)
+    const outcome = await sendTool(
+      send,
+      rpc,
+      call.name,
+      call.input,
+      signal,
+      sent,
+      sent === undefined ? [] : pendingFonts?.(),
+    )
     const run = outcome.fields?.runId
     const edited = outcome.ok && changes(call) && typeof run === "string"
     const answer = toolAnswer(call.id, outcome.text, outcome.ok, outcome.pictures)
     const refusal = outcome.fields?.refusal
-    if (outcome.ok || typeof refusal !== "string") return { answer, ok: outcome.ok, run: edited ? run : undefined }
-    return { answer, ok: false, run: undefined, refusal }
+    if (outcome.ok || typeof refusal !== "string") {
+      const bakedLayouts = stringList(outcome.fields?.bakedLayouts)
+      return { answer, ok: outcome.ok, run: edited ? run : undefined, bakedLayouts }
+    }
+    const fontIssue = refusal === "fonts" ? readFontIssue(outcome.fields) : undefined
+    return { answer, ok: false, run: undefined, refusal, ...(fontIssue === undefined ? {} : { fontIssue }) }
   } catch {
     if (signal.aborted) {
       const stopped = { answer: interruptedAnswer(call), ok: false, run: undefined, stopped: true } as const
       return sent === undefined ? stopped : { ...stopped, cut: sent }
     }
-    if (sent !== undefined && again) return callTool(send, rpc, call, signal, once, false)
+    if (sent !== undefined && again) return callTool(send, rpc, call, signal, once, pendingFonts, false)
     const lost =
       sent === undefined
         ? "The call did not reach the server. Nothing landed."
@@ -397,10 +401,15 @@ export function askAira(start: AiraChat, asked: string, options: AskOptions): Pr
   return converse(start, { type: "ask", text: asked }, userMessage(start.answers, asked), options)
 }
 
-export function retryAira(start: AiraChat, options: AskOptions): Promise<AiraChat> {
+export function retryAira(start: AiraChat, options: AskOptions, request?: string): Promise<AiraChat> {
   const asked = start.exchanges.at(-1)?.asked ?? ""
   const waiting = start.answers.length > 0
-  return converse(start, { type: "retry" }, userMessage(start.answers, waiting ? undefined : asked), options)
+  return converse(
+    start,
+    { type: "retry" },
+    userMessage(start.answers, request ?? (waiting ? undefined : asked)),
+    options,
+  )
 }
 
 async function converse(
@@ -449,13 +458,21 @@ async function converse(
         update({ type: "answered", answer: stoppedAnswer(call), state: "stopped", run: undefined })
         continue
       }
-      const called = await callTool(send, rpc, call, signal, `${ask}-${String(rpc)}`)
+      const called = await callTool(send, rpc, call, signal, `${ask}-${String(rpc)}`, options.pendingFonts)
       rpc += 1
       const runId = call.input.runId
       if (called.ok && call.name === stopTool && typeof runId === "string") closed.add(runId)
       if (called.cut !== undefined) cut = { once: called.cut, id: call.id }
       const state = called.stopped === true ? "stopped" : called.ok ? "done" : "refused"
-      update({ type: "answered", answer: called.answer, state, run: called.run, refusal: called.refusal })
+      update({
+        type: "answered",
+        answer: called.answer,
+        state,
+        run: called.run,
+        refusal: called.refusal,
+        fontIssue: called.fontIssue,
+        bakedLayouts: called.bakedLayouts,
+      })
     }
     if (signal.aborted) {
       update({ type: "end", end: "stopped" })
