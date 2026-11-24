@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Plus, Trash2 } from "lucide-react"
 import { Fragment } from "react"
 import { editorCopy } from "@/copy/editor-copy"
+import { composing } from "@/lib/composing"
 import { NumberField } from "./number-cell"
 import { PanelSection } from "./panel-fields"
 import { propOf } from "@airdesign/doom"
@@ -31,6 +32,7 @@ function WordsCell(props: {
         rows={1}
         className="min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-[length:var(--type-caption)] leading-[var(--panel-label-leading)] break-words outline-none field-sizing-content"
         onKeyDown={(event) => {
+          if (composing(event)) return
           if (event.key !== "Enter") return
           event.preventDefault()
           event.currentTarget.blur()
