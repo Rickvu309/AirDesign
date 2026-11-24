@@ -1,6 +1,5 @@
 export const picturePanelCopy = {
   mode: "Fill mode",
-  weight: "Weight",
   color: "Color",
 } as const
 

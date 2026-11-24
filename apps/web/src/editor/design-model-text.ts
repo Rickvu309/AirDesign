@@ -7,38 +7,23 @@ import { textCopy } from "@/copy/text-copy"
 import type { PanelControl, PanelSection } from "@/design/panel"
 import type { PanelKind } from "@/design/panel-order"
 import { arrange, resolveControl } from "@/design/panel-arrangement"
-import { spacingUnits } from "@/design/spacing-units"
 import { choiceDesc, type Desc } from "@/design/control-desc"
 import { servedFaces } from "@/design/served-faces"
 import { doomControl, flagDesc, fontDesc, type Held } from "./design-controls"
-import { lineToFraction, shownText, sizeToHundredths, type TextShown } from "./design-text-values"
+import { shownText, sizeToHundredths, type TextShown } from "./design-text-values"
 import type { ModelInput } from "./design-model"
 import { paintedFace, propOf } from "@airdesign/doom"
 
-const casings = ["none", "upper", "lower", "title"]
 const lists = ["none", "bullets", "numbers"]
 const fillDesc: Desc = { kind: "union", plain: "solid", cases: { solid: { kind: "color" } } }
 const styleDesc: Desc = { kind: "words", max: 200 }
-const { size: sizeLimit, tracking: trackingLimit, lineHeight: lineLimit } = doom.textLimits
+const sizeLimit = doom.textLimits.size
 const sizeDesc: Desc = {
   kind: "number",
   unit: "hundredth-point",
   min: sizeToHundredths(sizeLimit.min),
   max: sizeToHundredths(sizeLimit.max),
 }
-const spacingDesc: Desc = {
-  kind: "number",
-  unit: "hundredth-point",
-  min: sizeToHundredths(trackingLimit.min),
-  max: sizeToHundredths(trackingLimit.max),
-}
-const lineDesc: Desc = {
-  kind: "number",
-  unit: "fraction",
-  min: lineToFraction(lineLimit.min),
-  max: lineToFraction(lineLimit.max),
-}
-
 const textControl = (field: string, label: string, desc: Desc, held: Held, extra: Partial<PanelControl> = {}) =>
   doomControl({ trait: "text", field }, label, desc, held, extra)
 
@@ -100,24 +85,12 @@ export function textSections(input: ModelInput, kind: PanelKind): PanelSection[]
     textControl("font", textCopy.font, fontDesc, look.font),
     weight(shown),
     textControl("size", formatCopy.sizeGroup, sizeDesc, { value: size, mixed: look.size.mixed }),
-    textControl(
-      "letterSpacing",
-      textCopy.letterSpacing,
-      spacingDesc,
-      { value: Math.round(look.tracking.value * 100), mixed: look.tracking.mixed },
-      spacingUnits("text", "letterSpacing", size),
-    ),
-    textControl("lineHeight", textCopy.lineHeight, lineDesc, {
-      value: lineToFraction(shown.lineHeight.value),
-      mixed: shown.lineHeight.mixed,
-    }),
     bold,
     italic,
     textControl("underline", formatCopy.named.underline, flagDesc, look.underline),
     textControl("strike", formatCopy.named.strike, flagDesc, look.strike),
     textControl("align", formatCopy.alignGroup, choiceDesc(doom.paragraphAligns), shown.align),
     textControl("list", textCopy.list, choiceDesc(lists), shown.list),
-    textControl("case", textCopy.case, choiceDesc(casings), look.case),
     fill,
   ]
   const named = kind === "text" ? controls.filter((control) => control !== fill) : controls

@@ -140,6 +140,7 @@ export const airaCopy = {
     text: "a text layer",
     shape: "a shape",
     picture: "an image",
+    icon: "an icon",
     connector: "a line",
     group: "a group",
     frame: "a frame",

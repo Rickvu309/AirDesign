@@ -2,7 +2,6 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { colorCopy } from "@/copy/color-copy"
 import { colorNameCopy } from "@/copy/color-name-copy"
-import { opacityCopy } from "@/copy/opacity-copy"
 import type { Palette } from "@/design/color-choices"
 import { namedByColor } from "@/design/color-names"
 import { PickerBody } from "@/design/color-picker"
@@ -62,7 +61,6 @@ describe("the colour list", () => {
     expect(open).toContain(`aria-label="${colorCopy.area}"`)
     expect(open).toContain(`aria-label="${colorCopy.hue}"`)
     expect(open).toContain(`aria-label="${colorCopy.hex}"`)
-    expect(open).not.toContain(`aria-label="${opacityCopy.label}"`)
     expect(open).not.toContain(`aria-label="${colorCopy.opacityPercent}"`)
     expect(open).toContain(`value="8FAADC"`)
     expect(open).toContain(colorCopy.moreTints)

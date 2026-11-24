@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest"
 import { panelOfMany, type PanelControl, type PanelModel } from "@/design/panel"
 import { changeWrites, type ChangeContext } from "./design-changes"
 import { kindOf, nodeModel, type ModelInput } from "./design-model"
-import { lineFromFraction, sizeFromHundredths } from "./design-text-values"
+import { sizeFromHundredths } from "./design-text-values"
 import { distributeWrites } from "./design-align"
-import { fillWrite, shownShadow } from "./design-paint-values"
+import { fillWrite } from "./design-paint-values"
 import { colorRows, idsWithColor, replaceColorWrites } from "./design-selection-colors"
 import { propOf } from "@airdesign/doom"
 import { editorCopy } from "@/copy/editor-copy"
@@ -113,7 +113,7 @@ describe("which panel a layer gets", () => {
     expect(kindOf(view, id("words"))).toBe("text")
     expect(kindOf(view, id("card"))).toBe("shape")
     expect(kindOf(view, id("photo"))).toBe("picture")
-    expect(kindOf(view, id("star"))).toBe("picture")
+    expect(kindOf(view, id("star"))).toBe("icon")
     expect(kindOf(view, id("panel"))).toBe("frame")
     expect(kindOf(view, id("rule"))).toBe("connector")
   })
@@ -132,7 +132,7 @@ describe("text layer", () => {
     expect(find(model, "textFill", "value").value).toEqual({ solid: { var: "text" } })
   })
 
-  it("writes size, weight, toggles, alignment, list, case and colour onto every span", () => {
+  it("writes size, weight, toggles, alignment, list and colour onto every span", () => {
     const sized = write(["words"], find(model, "text", "size"), 3200)
     expect(prop(sized, "words", "text")?.spans).toEqual([{ end: 11, size: 32 }])
     const bold = write(["words"], find(model, "text", "weight"), "Bold Italic")
@@ -147,17 +147,8 @@ describe("text layer", () => {
       prop(write(["words"], find(modelOf("words", listed), "text", "list"), "none", listed), "words", "text")?.paras[0]
         ?.list,
     ).toBeUndefined()
-    const upper = write(["words"], find(model, "text", "case"), "upper")
-    expect(prop(upper, "words", "text")?.spans[0]?.case).toBe("upper")
     const tinted = write(["words"], find(model, "textFill", "value"), { solid: hexes.red })
     expect(prop(tinted, "words", "text")?.spans[0]?.color).toBe(hexes.red)
-  })
-
-  it("writes line height as a multiple and letter spacing in pixels", () => {
-    const lined = write(["words"], find(model, "text", "lineHeight"), 150_000)
-    expect(prop(lined, "words", "text")?.paras[0]?.lineHeight).toBe(1.5)
-    const spaced = write(["words"], find(model, "text", "letterSpacing"), 250)
-    expect(prop(spaced, "words", "text")?.spans[0]?.tracking).toBe(2.5)
   })
 
   it("takes every text number range from Doom, so the panel offers nothing Doom refuses", () => {
@@ -170,13 +161,6 @@ describe("text layer", () => {
     expect([sizeFromHundredths(size.min), sizeFromHundredths(size.max)]).toEqual([
       doom.textLimits.size.min,
       doom.textLimits.size.max,
-    ])
-    const spacing = range("letterSpacing")
-    expect([spacing.min / 100, spacing.max / 100]).toEqual([doom.textLimits.tracking.min, doom.textLimits.tracking.max])
-    const line = range("lineHeight")
-    expect([lineFromFraction(line.min), lineFromFraction(line.max)]).toEqual([
-      doom.textLimits.lineHeight.min,
-      doom.textLimits.lineHeight.max,
     ])
   })
 
@@ -229,14 +213,10 @@ describe("text layer", () => {
 
 describe("shape layer", () => {
   const model = modelOf("card")
-  it("reads fill, opacity, corners, border and shadow like the old panel", () => {
+  it("reads fill and border", () => {
     expect(find(model, "fills", "paint").value).toEqual({ solid: hexes.blue })
-    expect(find(model, "opacity", "opacity").value).toBe(50_000)
-    expect(find(model, "corners", "corners").value).toBe(8 * 9525)
     expect(find(model, "border", "border").value).toBe("dash")
     expect(find(model, "border", "color").value).toEqual({ var: "accent2" })
-    expect(find(model, "border", "width").value).toBe(2 * 12_700)
-    expect(find(model, "shadow", "shadow").value).toBe("none")
   })
 
   it("writes the paint, switching between solid, gradient and none", () => {
@@ -284,44 +264,12 @@ describe("shape layer", () => {
     })
   })
 
-  it("writes opacity, corners, border and shadow", () => {
-    expect(prop(write(["card"], find(model, "opacity", "opacity"), 25_000), "card", "opacity")).toBe(0.25)
-    expect(prop(write(["card"], find(model, "opacity", "opacity"), 100_000), "card", "opacity")).toBeUndefined()
-    expect(prop(write(["card"], find(model, "corners", "corners"), 16 * 9525), "card", "radius")).toBe(16)
+  it("writes border style and colour", () => {
     expect(prop(write(["card"], find(model, "border", "border"), "none"), "card", "strokes")).toBeUndefined()
     expect(prop(write(["card"], find(model, "border", "border"), "dot"), "card", "stroke")?.dash).toBe("dot")
-    expect(prop(write(["card"], find(model, "border", "width"), 6 * 12_700), "card", "stroke")?.weight).toBe(6)
     expect(prop(write(["card"], find(model, "border", "color"), hexes.green), "card", "strokes")).toEqual([
       { kind: "solid", color: hexes.green },
     ])
-    const shadowed = write(["card"], find(model, "shadow", "shadow"), "lifted")
-    expect(prop(shadowed, "card", "effects")).toBe("lifted")
-    expect(find(modelOf("card", shadowed), "shadow", "shadow").value).toBe("lifted")
-    const faded = write(["card"], find(modelOf("card", shadowed), "shadow", "opacity"), 40_000, shadowed)
-    expect(shownShadow(prop(faded, "card", "effects"), doom.deckOf(faded).theme)).toEqual({
-      name: "lifted",
-      opacity: 0.4,
-    })
-    expect(
-      prop(write(["card"], find(modelOf("card", shadowed), "shadow", "shadow"), "none", shadowed), "card", "effects"),
-    ).toBeUndefined()
-  })
-
-  it("knows a theme shadow whose fields were written in another order", () => {
-    const lifted = doom.defaultTheme.effectStyles.lifted[0]!
-    if (!("color" in lifted)) throw new Error("lifted is a shadow")
-    const reordered = [
-      {
-        spread: lifted.spread,
-        blur: lifted.blur,
-        y: lifted.y,
-        x: lifted.x,
-        opacity: 0.4,
-        color: lifted.color,
-        kind: lifted.kind,
-      },
-    ] as const
-    expect(shownShadow(reordered, doom.defaultTheme)).toEqual({ name: "lifted", opacity: 0.4 })
   })
 
   it("turning the border on gives a layer with none a visible one", () => {
@@ -350,8 +298,8 @@ describe("picture, icon, frame and line", () => {
   it("shows a picture's fit and writes it back on the image fill", () => {
     const model = modelOf("photo")
     expect(find(model, "image", "mode").value).toBe("fit")
-    const tiled = write(["photo"], find(model, "image", "mode"), "tile")
-    expect(prop(tiled, "photo", "fills")).toEqual([{ kind: "image", asset: "a".repeat(64), fit: "tile" }])
+    const filled = write(["photo"], find(model, "image", "mode"), "fill")
+    expect(prop(filled, "photo", "fills")).toEqual([{ kind: "image", asset: "a".repeat(64), fit: "fill" }])
   })
 
   it("names the image paint Image, as the Doom paint kinds do", () => {
@@ -363,19 +311,15 @@ describe("picture, icon, frame and line", () => {
     expect(panelTitle(modelOf("photo"))).toBe(designCopy.titles.picture)
   })
 
-  it("shows an icon's colour and weight and writes them to its stroke", () => {
+  it("shows an icon's colour and writes it to its stroke", () => {
     const model = modelOf("star")
     expect(find(model, "image", "color").value).toEqual({ var: "text" })
-    expect(find(model, "image", "weight").value).toBe(200)
     const coloured = write(["star"], find(model, "image", "color"), { var: "accent1" })
     expect(prop(coloured, "star", "strokes")).toEqual([{ kind: "solid", color: { var: "accent1" } }])
-    const heavier = write(["star"], find(model, "image", "weight"), 300)
-    expect(prop(heavier, "star", "stroke")?.weight).toBe(15)
   })
 
-  it("shows a frame's fill and corners, and a line's border without a none choice", () => {
+  it("shows a frame's fill, and a line's border without a none choice", () => {
     expect(find(modelOf("panel"), "fills", "paint").value).toEqual({ solid: { var: "background2" } })
-    expect(find(modelOf("panel"), "corners", "corners").value).toBe(0)
     const line = modelOf("rule")
     expect(find(line, "border", "border").desc).toEqual({ kind: "choice", options: ["solid", "dash", "dot"] })
     expect(find(line, "border", "color").value).toEqual(hexes.red)
@@ -387,11 +331,11 @@ describe("several layers", () => {
   it("shows the shared controls, marks differing values mixed and writes every layer", () => {
     const many = panelOfMany([modelOf("card"), modelOf("panel")])
     expect(many.kind).toBe("many")
-    const opacity = find(many, "opacity", "opacity")
-    expect(opacity.mixed).toBe(true)
-    const next = write(["card", "panel"], opacity, 80_000)
-    expect(prop(next, "card", "opacity")).toBe(0.8)
-    expect(prop(next, "panel", "opacity")).toBe(0.8)
+    const fill = find(many, "fills", "paint")
+    expect(fill.mixed).toBe(true)
+    const next = write(["card", "panel"], fill, { solid: hexes.red })
+    expect(prop(next, "card", "fills")).toEqual([{ kind: "solid", color: hexes.red }])
+    expect(prop(next, "panel", "fills")).toEqual([{ kind: "solid", color: hexes.red }])
   })
 
   it("aligns every selected layer to the selection's edge", () => {

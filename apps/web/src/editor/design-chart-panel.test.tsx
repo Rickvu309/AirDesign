@@ -78,9 +78,7 @@ it("names a chart Chart, and a plain frame Frame", () => {
   expect(panelTitle(modelOf(chartId))).toBe(editorCopy.chart)
   expect(panelTitle(modelOf(plainId))).toBe(designCopy.panels.frame)
   expect(panelSections("chart")).toEqual(panelSections("frame"))
-  expect(modelOf(chartId).sections.map((section) => section.trait)).toEqual(
-    expect.arrayContaining(["fills", "opacity", "corners", "border", "shadow"]),
-  )
+  expect(modelOf(chartId).sections.map((section) => section.trait)).toEqual(["alignment", "fills", "border"])
 })
 
 async function shown(node: ReturnType<typeof createElement>) {

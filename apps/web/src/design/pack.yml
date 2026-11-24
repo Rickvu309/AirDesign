@@ -5,7 +5,6 @@ dependencies:
   - apps/web/src/editing
   - apps/web/src/lib
 public:
-  - appearance-presets.ts
   - color-choices.ts
   - color-names.ts
   - color-picker.tsx
@@ -13,10 +12,8 @@ public:
   - control-views.ts
   - controls/color.tsx
   - controls/union.tsx
-  - corners-control.ts
   - design-shown.ts
   - icon-search.tsx
-  - opacity-control.ts
   - panel-arrangement.ts
   - panel-folds.ts
   - panel-order.ts
@@ -26,4 +23,3 @@ public:
   - served-faces.ts
   - shape-marks.tsx
   - shown-number.ts
-  - spacing-units.ts

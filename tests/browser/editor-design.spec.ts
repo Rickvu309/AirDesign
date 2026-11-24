@@ -1,10 +1,8 @@
 import { join } from "node:path"
 import { expect, type Locator, type Page } from "@playwright/test"
-import { borderCopy, borderWords } from "../../apps/web/src/copy/border-copy"
+import { borderWords } from "../../apps/web/src/copy/border-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
-import { geometryCopy } from "../../apps/web/src/copy/geometry-copy"
-import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { colorCopy } from "../../apps/web/src/copy/color-copy"
 import { textCopy, textWords } from "../../apps/web/src/copy/text-copy"
@@ -87,7 +85,7 @@ async function layers(page: Page, context: Parameters<typeof openEditor>[1], sta
         name: "Photo",
         box: spot(600, 300, 400, 260),
         geometry: { kind: "rect" },
-        fills: [{ kind: "image", asset: "e".repeat(64), fit: "fill" }],
+        fills: [{ kind: "image", asset: "e".repeat(64), fit: "tile" }],
       },
     },
     {
@@ -186,8 +184,7 @@ test("a text layer shows the old Text section and each control writes its spans,
   await clickSlide(page, 300, 160)
   expect(await selectedIds(page)).toEqual(["t:1"])
   const text = panel(page)
-  for (const title of [linkCopy.section, fillCopy.section, opacityCopy.section])
-    await expect(section(page, title)).toBeVisible()
+  for (const title of [linkCopy.section, fillCopy.section]) await expect(section(page, title)).toBeVisible()
   const read = async () => (await saved(stack, opened, "t:1")).text
 
   await typeInto(text.getByRole("textbox", { name: formatCopy.sizeGroup, exact: true }), "40")
@@ -202,10 +199,6 @@ test("a text layer shows the old Text section and each control writes its spans,
   await expect.poll(async () => (await read()).paras[0]?.align).toBe("center")
   await text.getByRole("button", { name: textWords["list.bullets"], exact: true }).click()
   await expect.poll(async () => (await read()).paras[0]?.list).toBe("bullet")
-  await text.getByRole("button", { name: textWords.upper, exact: true }).click()
-  await expect.poll(async () => (await read()).spans[0]?.case).toBe("upper")
-  await typeInto(text.getByRole("textbox", { name: textCopy.lineHeight, exact: true }), "150")
-  await expect.poll(async () => (await read()).paras[0]?.lineHeight).toBe(1.5)
   await typeInto(text.getByRole("textbox", { name: textCopy.font, exact: true }), "Georgia")
   await expect.poll(async () => (await read()).spans[0]?.font).toBe("Georgia")
 
@@ -216,15 +209,9 @@ test("a text layer shows the old Text section and each control writes its spans,
 
   await typeInto(section(page, linkCopy.section).getByRole("textbox"), "https://airdesign.app")
   await expect.poll(async () => (await saved(stack, opened, "t:1")).link).toBe("https://airdesign.app")
-  await typeInto(
-    section(page, opacityCopy.section).getByRole("textbox", { name: opacityCopy.label, exact: true }),
-    "60",
-  )
-  await expect.poll(async () => (await saved(stack, opened, "t:1")).opacity).toBe(0.6)
-
   await stage(page).click({ position: { x: 20, y: 20 } })
   await undo(page)
-  await expect.poll(async () => (await saved(stack, opened, "t:1")).opacity).toBeUndefined()
+  await expect.poll(async () => (await saved(stack, opened, "t:1")).link).toBeUndefined()
   await reloadIntoDesign(page)
   await clickSlide(page, 300, 160)
   await expect(panel(page).getByRole("button", { name: formatCopy.named.bold, exact: true })).toHaveAttribute(
@@ -233,7 +220,7 @@ test("a text layer shows the old Text section and each control writes its spans,
   )
 })
 
-test("a shape shows fill, opacity, corners, border and shadow like the old panel, paints before the server answers, and each undoes", async ({
+test("a shape shows fill and border, paints before the server answers, and saves an undo", async ({
   page,
   context,
   stack,
@@ -241,47 +228,27 @@ test("a shape shows fill, opacity, corners, border and shadow like the old panel
   const opened = await layers(page, context, stack)
   await clickSlide(page, 300, 400)
   expect(await selectedIds(page)).toEqual(["t:2"])
-  for (const title of [
-    fillCopy.section,
-    opacityCopy.section,
-    geometryCopy.corners,
-    designCopy.border,
-    designCopy.shadow,
-  ])
-    await expect(section(page, title)).toBeVisible()
+  for (const title of [fillCopy.section, designCopy.border]) await expect(section(page, title)).toBeVisible()
   const read = async () => saved(stack, opened, "t:2")
 
-  const release = await heldEdits(page)
-  await typeInto(
-    section(page, opacityCopy.section).getByRole("textbox", { name: opacityCopy.label, exact: true }),
-    "30",
-  )
-  await expect.poll(() => node(page, "t:2").evaluate((each) => getComputedStyle(each).opacity)).toBe("0.3")
-  expect((await read()).opacity).toBeUndefined()
-  release()
-  await expect.poll(async () => (await read()).opacity).toBe(0.3)
-
   const fill = section(page, fillCopy.section)
-  await fill.getByRole("button", { name: fillWords.gradient, exact: true }).click()
+  const release = await heldEdits(page)
+  try {
+    await fill.getByRole("button", { name: fillWords.gradient, exact: true }).click()
+    await expect(node(page, "t:2").locator('[data-paint="gradient"]')).toBeVisible()
+    expect((await read()).fills[0].kind).toBe("solid")
+  } finally {
+    release()
+  }
   await expect.poll(async () => (await read()).fills[0].kind).toBe("gradient")
   await fill.getByRole("button", { name: fillWords.solid, exact: true }).click()
   await expect.poll(async () => (await read()).fills[0].kind).toBe("solid")
   await fill.getByRole("button", { name: fillWords.none, exact: true }).click()
   await expect.poll(async () => (await read()).fills).toBeUndefined()
 
-  await typeInto(
-    section(page, geometryCopy.corners).getByRole("textbox", { name: geometryCopy.corners, exact: true }),
-    "24",
-  )
-  await expect.poll(async () => (await read()).radius).toBe(24)
   const border = section(page, designCopy.border)
   await border.getByRole("button", { name: borderWords["border.dash"]!, exact: true }).click()
   await expect.poll(async () => (await read()).stroke.dash).toBe("dash")
-  await typeInto(border.getByRole("textbox", { name: borderCopy.width, exact: true }), "6")
-  await expect.poll(async () => (await read()).stroke.weight).toBe(6)
-  await section(page, designCopy.shadow).locator("[data-segments] button").nth(2).click()
-  await expect.poll(async () => (await read()).effects).toBe("lifted")
-
   const colors = section(page, selectionColorsCopy.section)
   await expect(colors.locator("[data-selection-colors] > div")).toHaveCount(1)
   await colors.locator("[data-selection-colors] > div").first().getByRole("button").first().click()
@@ -294,12 +261,12 @@ test("a shape shows fill, opacity, corners, border and shadow like the old panel
   await expect.poll(async () => (await read()).strokes[0].color).toBe(hexes.edge)
   await reloadIntoDesign(page)
   await clickSlide(page, 300, 400)
-  await expect(section(page, geometryCopy.corners).getByRole("textbox", { name: geometryCopy.corners })).toHaveValue(
-    "24",
-  )
+  await expect(
+    section(page, designCopy.border).getByRole("button", { name: borderWords["border.dash"]! }),
+  ).toHaveAttribute("aria-pressed", "true")
 })
 
-test("a picture and a frame get the old panel's fit, replace and remove-auto-layout, and a chart edits its data and kind", async ({
+test("a tiled picture shows its mode alongside the current fit options, a frame removes auto layout, and a chart edits data", async ({
   page,
   context,
   stack,
@@ -313,9 +280,12 @@ test("a picture and a frame get the old panel's fit, replace and remove-auto-lay
   const { pictureCopy } = await import("../../apps/web/src/copy/picture-copy")
   const { pictureWords } = await import("../../apps/web/src/copy/picture-panel-copy")
   await expect(page.getByRole("button", { name: pictureCopy.replace, exact: true })).toBeVisible()
-  await section(page, fillCopy.section).getByRole("combobox").click()
-  await page.getByRole("option", { name: pictureWords.tile, exact: true }).click()
-  await expect.poll(async () => (await saved(stack, opened, "t:3")).fills[0].fit).toBe("tile")
+  const mode = section(page, fillCopy.section).getByRole("combobox", { name: pictureCopy.mode })
+  await expect(mode.getByText(pictureWords.tile, { exact: true })).toBeVisible()
+  await mode.click()
+  await expect(page.getByRole("option")).toHaveText([pictureWords.fill, pictureWords.fit, pictureWords.crop])
+  await page.getByRole("option", { name: pictureWords.fit, exact: true }).click()
+  await expect.poll(async () => (await saved(stack, opened, "t:3")).fills[0].fit).toBe("fit")
 
   await clickSlide(page, 1300, 400)
   expect(await selectedIds(page)).toEqual(["t:4"])
@@ -350,7 +320,7 @@ test("a picture and a frame get the old panel's fit, replace and remove-auto-lay
   await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.kind).toBe("column")
 })
 
-test("several layers share one panel: a shared edit writes each, and Align moves them to the selection's edge", async ({
+test("several layers share one panel and Align moves them to the selection's edge", async ({
   page,
   context,
   stack,
@@ -361,12 +331,6 @@ test("several layers share one panel: a shared edit writes each, and Align moves
   await clickSlide(page, 800, 400)
   await page.keyboard.up(shortcutCopy.chord.other.shift)
   await expect(panel(page).getByText(designCopy.selected(2), { exact: true })).toBeVisible()
-  await typeInto(
-    section(page, opacityCopy.section).getByRole("textbox", { name: opacityCopy.label, exact: true }),
-    "50",
-  )
-  await expect.poll(async () => (await saved(stack, opened, "t:2")).opacity).toBe(0.5)
-  expect((await saved(stack, opened, "t:3")).opacity).toBe(0.5)
   await panel(page)
     .getByRole("button", { name: /align right/i })
     .first()

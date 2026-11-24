@@ -7,7 +7,6 @@ import {
   nodeId,
   rev,
   type Hex,
-  type Landed,
   type Author,
   type NodeId,
   type Refusal,
@@ -125,10 +124,3 @@ export function sampleDeck(): Doom {
 }
 
 export const revOf = (doom: Doom, node: NodeId, prop: string) => doom.revs.get(node)?.get(prop as never)
-
-export function step(doom: Doom, writes: readonly Write[], by = person) {
-  const edit: Landed = { once: once(), author: by, writes, rev: rev(doom.rev + 1) }
-  const after = applyEdit(doom, edit)
-  if (isRefusal(after)) throw new Error(`refused ${JSON.stringify(after)}`)
-  return { before: doom, after, edit }
-}

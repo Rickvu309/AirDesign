@@ -180,3 +180,92 @@ describe("undo_run", () => {
     expect(doom.propOf(by.decks.decks.get(deck as never)!.nodes.get(title), "name")).toBe("Title")
   })
 })
+
+describe("design details an agent sets", () => {
+  it("writes typography, appearance, tile fit and icon weight, then undoes the run", async () => {
+    const asset = "a".repeat(64)
+    const by = agent(
+      memoryDecks(
+        () =>
+          doom.doomFromTree({
+            theme: doom.defaultTheme,
+            slides: [
+              {
+                children: [
+                  { type: "shape", name: "Words", props: { text: doom.textFromMarkdown("Hello", "body") } },
+                  {
+                    type: "shape",
+                    name: "Card",
+                    props: { geometry: { kind: "rect" }, fills: [{ kind: "solid", color: { var: "accent1" } }] },
+                  },
+                  { type: "shape", name: "Photo", props: { fills: [{ kind: "image", asset, fit: "fit" }] } },
+                  { type: "shape", name: "Star", props: { geometry: { kind: "icon", name: "lucide/star" } } },
+                ],
+              },
+            ],
+          }).doom,
+      ),
+    )
+    const made = await by.call("create_deck", { name: "Design details" })
+    const deck = made.answer.deck
+    const key = [...by.decks.decks.keys()].find((id) => id === deck)
+    if (key === undefined) throw new Error("No deck was created")
+    const before = by.decks.decks.get(key)!
+    const layer = (name: string) => {
+      const node = [...before.nodes.values()].find((node) => doom.propOf(node, "name") === name)
+      if (node === undefined) throw new Error(`Missing layer ${name}`)
+      return node.id
+    }
+    const words = layer("Words")
+    const card = layer("Card")
+    const photo = layer("Photo")
+    const star = layer("Star")
+    const edited = await by.call("edit_deck", {
+      deck,
+      base: made.answer.rev,
+      changes: [
+        { op: "set", target: words, lineHeight: 1.5, letterSpacing: 2.5, case: "upper" },
+        { op: "set", target: card, opacity: 0.6, radius: 18, stroke: "accent2", strokeWidth: 6, effect: "glow" },
+        { op: "set", target: photo, fit: "tile" },
+        { op: "set", target: star, strokeWidth: 8 },
+      ],
+    })
+    expect(edited.answer).toMatchObject({ ok: true })
+    const written = by.decks.decks.get(key)!
+    expect(doom.propOf(written.nodes.get(words), "text")).toMatchObject({
+      paras: [{ lineHeight: 1.5 }],
+      spans: [{ tracking: 2.5, case: "upper" }],
+    })
+    expect(doom.propOf(written.nodes.get(card), "opacity")).toBe(0.6)
+    expect(doom.propOf(written.nodes.get(card), "radius")).toBe(18)
+    expect(doom.propOf(written.nodes.get(card), "stroke")?.weight).toBe(6)
+    expect(doom.propOf(written.nodes.get(card), "effects")).toBe("glow")
+    expect(doom.propOf(written.nodes.get(photo), "fills")).toEqual([{ kind: "image", asset, fit: "tile" }])
+    expect(doom.propOf(written.nodes.get(star), "stroke")?.weight).toBe(8)
+
+    const strength = await by.call("edit_deck", {
+      deck,
+      base: edited.answer.rev,
+      runId: edited.answer.runId,
+      changes: [{ op: "set", target: card, effectOpacity: 0.4 }],
+    })
+    expect(strength.answer).toMatchObject({ ok: true })
+    expect(doom.propOf(by.decks.decks.get(key)?.nodes.get(card), "effects")).toEqual(
+      doom.defaultTheme.effectStyles.glow.map((effect) => ({ ...effect, opacity: 0.4 })),
+    )
+
+    const undone = await by.call("undo_run", { deck, runId: edited.answer.runId })
+    expect(undone.answer).toMatchObject({ ok: true, kept: [], left: [], waiting: [] })
+    const restored = by.decks.decks.get(key)!
+    for (const [id, fields] of [
+      [words, ["text"]],
+      [card, ["opacity", "radius", "strokes", "stroke", "effects"]],
+      [photo, ["fills"]],
+      [star, ["stroke"]],
+    ] as const) {
+      for (const field of fields) {
+        expect(doom.propOf(restored.nodes.get(id), field)).toEqual(doom.propOf(before.nodes.get(id), field))
+      }
+    }
+  })
+})

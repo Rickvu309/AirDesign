@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { applyMatrix, invert, nodeId, type Box, type Doom, type NodeId } from "./index.js"
 import { worldMatrix } from "./replant.js"
-import { box, create, ids, land, place, revOf, sampleDeck, step, tryLand } from "./sample-deck.js"
+import { box, create, ids, land, place, revOf, sampleDeck, tryLand } from "./sample-deck.js"
+import { step } from "./testing/invert-edit.js"
 
 function seenAt(doom: Doom, node: NodeId) {
   const matrix = worldMatrix(doom, node)

@@ -1,7 +1,6 @@
 import { formatCopy } from "@/copy/format-copy"
 import type { Desc } from "./control-desc"
 import type { Color, NodeId } from "@airdesign/doom"
-import type { TypedUnit } from "./typed-number"
 import type { CSSProperties, ReactNode } from "react"
 import { optionWord } from "@/copy/option-copy"
 import type { Palette } from "./color-choices"
@@ -17,10 +16,7 @@ export type SectionName =
   | "fills"
   | "pictureFill"
   | "image"
-  | "opacity"
-  | "corners"
   | "border"
-  | "shadow"
   | "link"
   | "geometry"
   | "templateStyle"
@@ -44,8 +40,6 @@ export type PanelControl = {
     readonly appearance?: CSSProperties
   }[]
   readonly placeholder?: string
-  readonly numberScale?: number
-  readonly typed?: TypedUnit
   readonly parent?: unknown
   readonly slides?: readonly string[]
   readonly faceFallback?: () => string | null

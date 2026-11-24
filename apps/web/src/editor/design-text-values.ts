@@ -9,7 +9,7 @@ import {
   type TextStyleName,
   type Theme,
 } from "@airdesign/doom"
-import { hundredths, wholeFraction } from "./design-values"
+import { hundredths } from "./design-values"
 
 export type TextLook = {
   readonly size: number
@@ -20,8 +20,6 @@ export type TextLook = {
   readonly underline: boolean
   readonly strike: boolean
   readonly color: Color
-  readonly tracking: number
-  readonly case: "none" | "upper" | "lower" | "title"
 }
 
 function lookFrom(font: string, style: Theme["textStyles"][TextStyleName], span: Span | undefined): TextLook {
@@ -35,8 +33,6 @@ function lookFrom(font: string, style: Theme["textStyles"][TextStyleName], span:
     underline: span?.underline ?? false,
     strike: span?.strike ?? false,
     color: span?.color ?? { var: "text" },
-    tracking: span?.tracking ?? style.tracking,
-    case: span?.case ?? style.case ?? "none",
   }
 }
 
@@ -76,7 +72,6 @@ export type TextShown = {
   readonly look: { readonly [K in keyof TextLook]: { readonly value: TextLook[K]; readonly mixed: boolean } }
   readonly align: { readonly value: NonNullable<Para["align"]>; readonly mixed: boolean }
   readonly list: { readonly value: "none" | "bullets" | "numbers"; readonly mixed: boolean }
-  readonly lineHeight: { readonly value: number; readonly mixed: boolean }
 }
 
 function agreed<T>(values: readonly T[]): { readonly value: T; readonly mixed: boolean } {
@@ -89,7 +84,6 @@ function agreed<T>(values: readonly T[]): { readonly value: T; readonly mixed: b
 export function shownText(text: Text, theme: Theme): TextShown {
   const looks = looksOf(text, theme)
   const pick = <K extends keyof TextLook>(key: K) => agreed(looks.map((look) => look[key]))
-  const style = theme.textStyles[text.style]
   return {
     style: text.style,
     look: {
@@ -101,18 +95,13 @@ export function shownText(text: Text, theme: Theme): TextShown {
       underline: pick("underline"),
       strike: pick("strike"),
       color: pick("color"),
-      tracking: pick("tracking"),
-      case: pick("case"),
     },
     align: agreed(text.paras.map((para) => para.align ?? "left")),
     list: agreed(
       text.paras.map((para) => (para.list === "bullet" ? "bullets" : para.list === "number" ? "numbers" : "none")),
     ),
-    lineHeight: agreed(text.paras.map((para) => para.lineHeight ?? style.lineHeight)),
   }
 }
 
 export const sizeToHundredths = (px: number): number => Math.round(px * hundredths)
 export const sizeFromHundredths = (stored: number): number => stored / hundredths
-export const lineToFraction = (multiple: number): number => Math.round(multiple * wholeFraction)
-export const lineFromFraction = (stored: number): number => stored / wholeFraction

@@ -1,28 +1,21 @@
 import type { SectionName } from "./panel"
 
-export type PanelKind = "text" | "shape" | "picture" | "connector" | "group" | "frame" | "chart" | "many"
+export type PanelKind = "text" | "shape" | "picture" | "icon" | "connector" | "group" | "frame" | "chart" | "many"
 
 type PanelSectionName = SectionName | "selectionColors" | "templateStyle" | "background"
 
-const frameSections = [
-  "alignment",
-  "fills",
-  "opacity",
-  "corners",
-  "border",
-  "shadow",
-  "selectionColors",
-] as const satisfies readonly PanelSectionName[]
+const frameSections = ["alignment", "fills", "border", "selectionColors"] as const satisfies readonly PanelSectionName[]
 
 export const panelOrder: Readonly<Record<PanelKind | "slide", readonly PanelSectionName[]>> = {
-  text: ["alignment", "text", "link", "textFill", "opacity"],
-  shape: ["alignment", "fills", "opacity", "corners", "border", "shadow", "selectionColors", "geometry"],
-  picture: ["alignment", "pictureFill", "opacity", "corners", "border", "shadow"],
-  connector: ["alignment", "border", "shadow"],
+  text: ["alignment", "text", "link", "textFill"],
+  shape: ["alignment", "fills", "border", "selectionColors", "geometry"],
+  picture: ["alignment", "pictureFill", "border"],
+  icon: ["alignment", "pictureFill"],
+  connector: ["alignment", "border"],
   group: ["alignment", "selectionColors"],
   frame: frameSections,
   chart: frameSections,
-  many: ["alignment", "text", "textFill", "fills", "opacity", "link", "corners", "border", "shadow", "selectionColors"],
+  many: ["alignment", "text", "textFill", "fills", "link", "border", "selectionColors"],
   slide: ["templateStyle", "background", "selectionColors"],
 }
 

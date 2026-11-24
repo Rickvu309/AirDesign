@@ -3,7 +3,6 @@ import type { PanelModel, PanelSection } from "@/design/panel"
 import type { PanelKind } from "@/design/panel-order"
 import { choiceDesc, type Desc } from "@/design/control-desc"
 import { doomControl } from "./design-controls"
-import { cornersSection, opacitySection, shadowSection } from "./design-model-appearance"
 import { borderSections } from "./design-model-border"
 import { fillSections } from "./design-model-fills"
 import { textSections } from "./design-model-text"
@@ -34,7 +33,7 @@ export function kindOf(view: doom.Doom, id: doom.NodeId): PanelKind {
   }
   const geometry = propOf(node, "geometry")
   if (geometry?.kind === "line") return "connector"
-  if (geometry?.kind === "icon") return "picture"
+  if (geometry?.kind === "icon") return "icon"
   const fills = (propOf(node, "fills") ?? []).filter(visible)
   const text = propOf(node, "text")
   if (text === undefined && fills.some((paint) => paint.kind === "image")) return "picture"
@@ -102,9 +101,7 @@ export function nodeModel(input: ModelInput): PanelModel {
   const kind = kindOf(view, id)
   const surface = kind === "chart" ? "frame" : kind
   const layout = propOf(view.nodes.get(id), "layout")
-  const iconed = propOf(view.nodes.get(id), "geometry")?.kind === "icon"
-  const drawn =
-    surface === "shape" || surface === "frame" || surface === "connector" || (surface === "picture" && !iconed)
+  const drawn = surface === "shape" || surface === "frame" || surface === "connector" || surface === "picture"
   return {
     node: id,
     nodes: [id],
@@ -114,12 +111,7 @@ export function nodeModel(input: ModelInput): PanelModel {
       alignmentSection(),
       ...textSections(input, surface),
       ...fillSections(input, surface),
-      ...(surface === "group" ? [] : opacitySection(input, surface)),
-      ...(surface === "shape" || surface === "frame" || (surface === "picture" && !iconed)
-        ? cornersSection(input)
-        : []),
       ...(drawn ? borderSections(input, surface) : []),
-      ...(drawn || surface === "picture" ? shadowSection(input) : []),
       ...(surface === "text" ? linkSection(input) : []),
       ...geometrySection(view, id),
     ],
