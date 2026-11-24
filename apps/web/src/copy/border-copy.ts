@@ -23,6 +23,9 @@ export const borderCopy = {
   },
 } as const
 
+export const startArrowLabel = borderCopy["Start arrow"]
+export const endArrowLabel = borderCopy["End arrow"]
+
 export const borderWords: Readonly<Record<string, string>> = {
   "border.none": "None",
   "border.solid": "Solid",
