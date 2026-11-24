@@ -189,7 +189,7 @@ describe("an undo that writes a layer's box but not its frame", () => {
     expect(cardIn(a.view())).toEqual(seen)
   })
 
-  it("refuses the group's undo as stale when the tab pressing it has not yet seen the other tab's nudge of the layer", async () => {
+  it("catches the group's undo up when the tab pressing it has not yet seen the other tab's nudge of the layer", async () => {
     const remote = memoryDoomRemote(start)
     const [a, b] = [await joinedAs(remote, "a"), await joinedAs(remote, "b")]
     const group = doom.nodeId("g:9")
@@ -208,8 +208,19 @@ describe("an undo that writes a layer's box but not its frame", () => {
     await a.sync()
     expect(b.undo().ok).toBe(true)
     await b.sync()
-    expect(b.notices()).toMatchObject([{ refused: "stale", node: card, prop: "box" }])
-    expect(cardIn(b.view()).parent).toBe(group)
+    const nudged = { parent: frame, box: box(20, 10, 100, 50) }
+    expect(b.notices()).toEqual([])
+    expect(cardIn(b.view())).toEqual(nudged)
+    expect(b.view().nodes.get(group)).toMatchObject({ parent: null })
+    await a.catchUp()
+    expect(cardIn(a.view())).toEqual(nudged)
+    expect(b.redo().ok).toBe(true)
+    await b.sync()
+    const regrouped = { parent: group, box: box(20, 10, 100, 50) }
+    expect(b.notices()).toEqual([])
+    expect(cardIn(b.view())).toEqual(regrouped)
+    await a.catchUp()
+    expect(cardIn(a.view())).toEqual(regrouped)
   })
 
   it("lands the group's undo once the tab pressing it has caught up with the other tab's nudge", async () => {
