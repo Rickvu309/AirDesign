@@ -21,6 +21,44 @@ function agent() {
   return { decks, call }
 }
 
+describe("edit_deck in a stopped run", () => {
+  it("answers run-fenced before it fetches a picture the change names", async () => {
+    const decks = memoryDecks(start)
+    const fetched: string[][] = []
+    const host = {
+      ...decks,
+      images: async (_deck: string, names: readonly string[]) => {
+        fetched.push([...names])
+        return new Map()
+      },
+    }
+    let calls = 0
+    const session: Session = { agent: "aira", mint: () => `minted${String((calls += 1))}`, log: emptyLog(), now: 0 }
+    const call = (op: string, args: unknown) => {
+      session.once = `call${String((calls += 1))}`
+      return callTool(names[op] ?? op, args, session, host)
+    }
+    const deck = ((await call("create_deck", {})).answer as { deck: string }).deck
+    const fold = () => decks.decks.get(deck as never)!
+    const slide = doom.slidesOf(fold())[0]!.id
+    const first = await call("edit_deck", {
+      deck,
+      base: fold().rev,
+      changes: [{ op: "add", kind: "text", slide, text: "a" }],
+    })
+    const runId = (first.answer as { runId: string }).runId
+    await call("stop_run", { deck, runId })
+    const late = await call("edit_deck", {
+      deck,
+      base: fold().rev,
+      runId,
+      changes: [{ op: "add", kind: "shape", slide, fill: { image: "0".repeat(64) } }],
+    })
+    expect(late.answer).toMatchObject({ ok: false, refusal: "run-fenced" })
+    expect(fetched).toEqual([])
+  })
+})
+
 describe("edit_deck refusals", () => {
   it("refuses a move into a frame inside one an earlier change deleted, and says so in the answer", async () => {
     const by = agent()

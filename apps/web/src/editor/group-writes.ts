@@ -85,8 +85,7 @@ export function ungroupWrites(view: doom.Doom, geometry: SlideGeometry, ids: rea
     if (node?.type !== "frame" || slot === null || frame === undefined) continue
     const holder = geometry.byId.get(slot.id)
     const toHolder = (point: Point) => (holder === undefined ? point : apply(invert(holder.matrix), point))
-    const siblings = doom.childrenOf(view, slot.id)
-    const nextAt = doom.parentOf(siblings[siblings.findIndex((each) => each.id === id) + 1])?.at ?? null
+    const nextAt = doom.keyAbove(view, id)
     let after: OrderKey | null = slot.at
     for (const child of doom.childrenOf(view, id)) {
       const placed = geometry.byId.get(child.id)

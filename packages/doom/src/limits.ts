@@ -11,6 +11,7 @@ export const limits = {
   batch: 100,
   notify: 8_000,
   name: 200,
+  source: 300,
   delete: 100,
   clientName: 200,
   address: 2_000,

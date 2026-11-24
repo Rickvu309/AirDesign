@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
-import { bottomLimitOf, gapFor } from "./agent-place.js"
+import { gapFor } from "./agent-place.js"
+import { footerTop } from "./slide-footer.js"
 import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
 import { defaultTheme } from "./default-theme-art.js"
 import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
@@ -40,8 +41,8 @@ describe("a grid of words fills the band with its text size", () => {
     const tallStyles = [...styleOf(tall.doom, tall.root.id)]
     expect(tallStyles).toHaveLength(1)
     expect(sizeOfStyle(tallStyles[0]!)).toBeGreaterThan(sizeOfStyle("heading"))
-    expect(tall.box.y + tall.box.h).toBeLessThanOrEqual(bottomLimitOf(1080))
-    expect(small.box.y + small.box.h).toBeLessThan(bottomLimitOf(1080))
+    expect(tall.box.y + tall.box.h).toBeLessThanOrEqual(footerTop(1080))
+    expect(small.box.y + small.box.h).toBeLessThan(footerTop(1080))
   })
 
   const boldOf = (doom: Doom, cell: NodeId) => {

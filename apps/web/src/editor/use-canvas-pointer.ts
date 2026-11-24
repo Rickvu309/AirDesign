@@ -64,6 +64,8 @@ export type PointerArgs = {
   readonly crop: CropTarget | null
   readonly onCrop: (id: doom.NodeId) => void
   readonly onCropEnd: () => void
+  readonly source: doom.FooterPart["box"] | null
+  readonly onSource: () => void
 }
 
 type Active =
@@ -498,7 +500,13 @@ export function useCanvasPointer(args: PointerArgs) {
       const a = latest.current
       if (inEditor(event.target)) return
       const chain = chainAt(event, a.geometry, a.view)
-      if (chain === null) return
+      if (chain === null) {
+        const at = toSlide(event)
+        const box = a.source
+        if (box !== null && at.x >= box.x && at.x <= box.x + box.w && at.y >= box.y && at.y <= box.y + box.h)
+          a.onSource()
+        return
+      }
       const inside = steppedIn(chain, a.selection)
       if (inside !== null) {
         a.onSelection(inside)

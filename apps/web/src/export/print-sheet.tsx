@@ -79,7 +79,7 @@ function PrintSlide({
   readonly links: readonly LinkBox[]
   readonly onPainted: (slide: doom.NodeId, painted: Painted) => void
 }) {
-  const { nodes, background, ready } = useDoomSlide(view, slide)
+  const { nodes, footer, background, ready } = useDoomSlide(view, slide)
   const { size } = doom.deckOf(view)
   useEffect(() => {
     if (ready && nodes !== null) onPainted(slide, { nodes, background })
@@ -92,6 +92,7 @@ function PrintSlide({
     >
       <SlidePaint
         nodes={nodes ?? []}
+        footer={footer}
         background={background}
         size={size}
         width={printWidth}

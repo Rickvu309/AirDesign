@@ -1,6 +1,6 @@
 import fc from "fast-check"
 import { expect, it } from "vitest"
-import { orderKeyBetween, type OrderKey } from "./order-key.js"
+import { keysForOrder, orderKeyBetween, type OrderKey } from "./order-key.js"
 
 function beforeKey(keys: OrderKey[], index: number): OrderKey | null {
   if (index === 0) {
@@ -74,4 +74,32 @@ it("appends from 0 through 200 in strict order", () => {
     if (previous !== null) expect(previous < key, `append ${count} is not greater`).toBe(true)
     previous = key
   }
+})
+
+it("keys a sibling order whose saved keys tie, rekeying only the tied neighbours of a moved slot", () => {
+  fc.assert(
+    fc.property(
+      fc.array(fc.integer({ min: 0, max: 6 }), { minLength: 1, maxLength: 16 }),
+      fc.array(fc.boolean(), { minLength: 16, maxLength: 16 }),
+      (steps, moving) => {
+        const pool: OrderKey[] = []
+        let previous: OrderKey | null = null
+        for (let made = 0; made < 7; made += 1) pool.push((previous = orderKeyBetween(previous, null)))
+        const saved = [...steps].sort((one, two) => one - two).map((step) => pool[step]!)
+        const slots = saved.map((key, at) => (moving[at] === true ? null : key))
+        const keys = keysForOrder(slots)
+        const final = slots.map((slot, at) => keys[at] ?? slot)
+        for (let at = 1; at < final.length; at += 1) {
+          const touched = keys[at] !== undefined || keys[at - 1] !== undefined
+          expect(touched ? final[at - 1]! < final[at]! : final[at - 1]! <= final[at]!).toBe(true)
+        }
+        for (const [at, slot] of slots.entries()) {
+          if (slot === null) expect(keys[at]).toBeDefined()
+          else if (keys[at] !== undefined)
+            expect(at > 0 && (slots[at - 1] === null || keys[at - 1] !== undefined)).toBe(true)
+          if (slot !== null && at > 0 && slot > final[at - 1]!) expect(keys[at]).toBeUndefined()
+        }
+      },
+    ),
+  )
 })

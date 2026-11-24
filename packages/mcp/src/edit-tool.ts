@@ -127,6 +127,27 @@ export async function editDeckTool(raw: unknown, agent: Agent, once: string, hos
       )
     return landedAnswer(opened.deck, before, run, roots, await layoutOf(host, opened.fold, touched))
   }
+  const author: doom.Author = {
+    kind: "agent",
+    id: agent.id,
+    run,
+    ...(parsed.runId === undefined && agent.name !== undefined ? { name: agent.name } : {}),
+  }
+  const phase = parsed.runId === undefined ? { phase: "start" as const } : {}
+  const compileOf = (changes: readonly doom.AgentChange[], found?: NamedImages, measure?: doom.Measure) =>
+    doom.compileAgentEdit(opened.fold, changes, {
+      author,
+      once,
+      mint: onceIds(once).mint,
+      read: doom.readingOf(opened.fold, parsed.base),
+      ...(found === undefined ? {} : { pictures: pictureSizes(found) }),
+      ...(measure === undefined ? {} : { measure }),
+      ...phase,
+    })
+  if (doom.runFence(opened.fold.runs, { author, ...phase }) !== undefined) {
+    const fenced = compileOf(fonts.changes)
+    if ("refused" in fenced) return doomRefused(fenced, { rev: opened.rev })
+  }
   const names = imageNames(fonts.changes)
   const found: NamedImages | undefined =
     names.length > 0 && host.images !== undefined
@@ -138,21 +159,7 @@ export async function editDeckTool(raw: unknown, agent: Agent, once: string, hos
   const problem = imageProblem(fonts.changes, found)
   if (problem !== undefined) return problem
   const changes = found === undefined ? fonts.changes : withAssets(fonts.changes, found)
-  const compile = (measure?: doom.Measure) =>
-    doom.compileAgentEdit(opened.fold, changes, {
-      author: {
-        kind: "agent",
-        id: agent.id,
-        run,
-        ...(parsed.runId === undefined && agent.name !== undefined ? { name: agent.name } : {}),
-      },
-      once,
-      mint: onceIds(once).mint,
-      read: doom.readingOf(opened.fold, parsed.base),
-      ...(found === undefined ? {} : { pictures: pictureSizes(found) }),
-      ...(measure === undefined ? {} : { measure }),
-      ...(parsed.runId === undefined ? { phase: "start" as const } : {}),
-    })
+  const compile = (measure?: doom.Measure) => compileOf(changes, found, measure)
   let compiled = compile()
   if (!("refused" in compiled) && doom.mayLeaveDeck(opened.fold, compiled.edit.writes)) {
     const measure = await deckMeasure(host, [opened.fold, compiled.after])

@@ -30,7 +30,7 @@ for (const [name, path] of Object.entries(sampleRoutes)) {
     await expect(page.locator("[data-fonts-pending]")).toHaveCount(0)
     const clashes = await page.evaluate(() => {
       const slide = document.querySelector("[data-doom-slide]")!
-      const owner = (element: Element) => element.closest("[data-node]")!
+      const owner = (element: Element) => element.closest("[data-node], [data-footer]")!
       const drawn = (element: Element) => element.closest("[data-derived]") === null
       const lines = [...slide.querySelectorAll<HTMLElement>("[data-line]")].filter(
         (line) => drawn(line) && line.textContent?.trim(),

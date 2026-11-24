@@ -80,6 +80,7 @@ function Editing({
   const [cropping, setCropping] = useState<doom.NodeId | null>(null)
   const [tool, setTool] = useState<Tool>(start.tool ?? "move")
   const [panel, setPanel] = useKeptPanel(id, start.panel)
+  const [askedSource, setAskedSource] = useState(0)
   const [zoom, setZoom] = useState<Zoom>("fit")
   const [toolbarHost, setToolbarHost] = useState<HTMLElement | null>(null)
   const idle: CanvasCommands = { zoomTo: setZoom, zoomSelection: null, linkWords: () => undefined }
@@ -159,6 +160,11 @@ function Editing({
             onTool={setTool}
             panel={panel}
             onPanel={setPanel}
+            onSource={() => {
+              setSelection(noSelection)
+              setPanel("design")
+              setAskedSource((asked) => asked + 1)
+            }}
             zoom={zoom}
             scale={scale}
             room={fit}
@@ -230,6 +236,7 @@ function Editing({
             words={words}
             onCrop={setCropping}
             onLinkWords={(link) => commands.current.linkWords(link)}
+            askedSource={askedSource}
           />
         ) : null}
       </ResizablePanel>

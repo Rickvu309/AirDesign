@@ -185,6 +185,7 @@ describe("the advertised schema", () => {
       "flip",
       "notes",
       "skipped",
+      "source",
       "transition",
       "alignV",
       "spaceBefore",

@@ -73,6 +73,7 @@ export function DoomCanvas(props: {
   readonly onWords?: (words: CaretWords | null) => void
   readonly cropping: doom.NodeId | null
   readonly onCropping: (id: doom.NodeId | null) => void
+  readonly onSource: () => void
 }) {
   const { client, view, slide, selection, onSelection, tool, onTool, zoom, scale, room, overlay } = props
   const stage = useRef<HTMLDivElement>(null)
@@ -339,6 +340,8 @@ export function DoomCanvas(props: {
       onCropping(id)
     },
     onCropEnd: () => onCropping(null),
+    source: painted.footer.find((each) => each.part === "source")?.box ?? null,
+    onSource: props.onSource,
   })
 
   function onZoomKey(key: ZoomKey) {
@@ -446,6 +449,7 @@ export function DoomCanvas(props: {
               >
                 <SlidePaint
                   nodes={painted.nodes ?? []}
+                  footer={painted.footer}
                   background={painted.background}
                   size={size}
                   width={size.w * scale}

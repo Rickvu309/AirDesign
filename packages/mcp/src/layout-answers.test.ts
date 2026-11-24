@@ -194,7 +194,12 @@ describe("the layout call never fails a landed edit", () => {
 
 describe("the note on texts the fonts cannot measure", () => {
   const texts = (count: number) =>
-    Array.from({ length: count }, (_, at) => ({ op: "add", kind: "text", text: `Launch ${String(at)} 🚀` }))
+    Array.from({ length: count }, (_, at) => ({
+      op: "add",
+      kind: "text",
+      text: `Launch ${String(at)} 🚀`,
+      box: { x: 160, y: 240 + at * 100, w: 600, h: 60 },
+    }))
 
   it("names every text up to five, then counts the rest, in the right number", async () => {
     const note = async (count: number) => {

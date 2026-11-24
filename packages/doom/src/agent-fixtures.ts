@@ -2,7 +2,8 @@ import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import type { Reading } from "./agent-draft.js"
 import { type NodeId, type Doom, type Write, applyEdit, isRefusal, nodeId, rev } from "./index.js"
-import { agent, once, sampleDeck } from "./sample-deck.js"
+import { agent, land, once, sampleDeck } from "./sample-deck.js"
+import { slideStartWrites } from "./slide-starts.js"
 import { childrenOf, slidesOf } from "./doom-walk.js"
 import { defaultTheme } from "./default-theme-art.js"
 import { doomFromTree } from "./doom-tree.js"
@@ -59,4 +60,12 @@ export function titledSlide(size: { readonly w: number; readonly h: number } = {
   })
   if (isRefusal(next)) throw new Error(JSON.stringify(next))
   return { doom: started(next), on }
+}
+
+export function startedDeck(count: number, start: "title" | "titleOnly" = "titleOnly"): Doom {
+  const grown = doomFromTree({ theme: defaultTheme, slides: Array.from({ length: count }, () => ({ children: [] })) })
+  let doom = grown.doom
+  for (const [at, slide] of grown.slides.entries())
+    doom = land(doom, slideStartWrites(doom, slide, minter(`s${String(at)}`), start))
+  return started(doom)
 }

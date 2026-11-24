@@ -129,28 +129,35 @@ function lastSlide(work: Working, doom: Doom, landed: Landed): NodeId | undefine
   return undefined
 }
 
-function guardRun(work: Working, landed: Landed): Refusal | undefined {
+type Fenced = Pick<Landed, "author" | "phase" | "runUndo">
+
+export function runFence(runs: ReadonlyMap<string, Run>, landed: Fenced): Refusal | undefined {
   const { author, phase } = landed
   if (phase !== undefined && (author.kind !== "agent" || author.run === undefined)) return refuse("shape")
   if (author.kind !== "agent") return undefined
-  const run = author.run === undefined ? undefined : work.runs.get(author.run)
-  if (phase === "start") {
-    if (run !== undefined || author.run === undefined) return refuse("run-fenced")
-    for (const [name, other] of work.runs)
-      if (other.phase === "running" && other.agent === author.id) work.runs.set(name, { ...other, phase: "stopped" })
-    work.runs.set(author.run, {
-      phase: "running",
-      guarded: new Set(),
-      agent: author.id,
-      name: author.name ?? "",
-      undone: false,
-      started: landed.rev,
-      wrote: landed.rev,
-    })
-    return undefined
-  }
+  const run = author.run === undefined ? undefined : runs.get(author.run)
+  if (phase === "start") return run !== undefined || author.run === undefined ? refuse("run-fenced") : undefined
   if (landed.runUndo?.run === author.run && run?.agent === author.id) return undefined
   return run?.phase === "running" && run.agent === author.id ? undefined : refuse("run-fenced")
+}
+
+function guardRun(work: Working, landed: Landed): Refusal | undefined {
+  const fenced = runFence(work.runs, landed)
+  const { author } = landed
+  if (fenced !== undefined || landed.phase !== "start" || author.kind !== "agent" || author.run === undefined)
+    return fenced
+  for (const [name, other] of work.runs)
+    if (other.phase === "running" && other.agent === author.id) work.runs.set(name, { ...other, phase: "stopped" })
+  work.runs.set(author.run, {
+    phase: "running",
+    guarded: new Set(),
+    agent: author.id,
+    name: author.name ?? "",
+    undone: false,
+    started: landed.rev,
+    wrote: landed.rev,
+  })
+  return undefined
 }
 
 function write(work: Working, doom: Doom, landed: Landed, raw: Write, known: Known): Refusal | undefined {

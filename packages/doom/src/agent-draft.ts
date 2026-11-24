@@ -93,8 +93,11 @@ export function keysAfter(
   const index = previous === null ? -1 : siblings.findIndex((node) => node.id === previous)
   if (previous !== null && index < 0) stop("missing", previous, "after")
   const low = index < 0 ? null : keyOf(draft.doom, siblings[index]?.id)
-  const nextKeyed = keyOf(draft.doom, siblings[index + 1]?.id)
-  const high = low !== null && nextKeyed !== null && low >= nextKeyed ? null : nextKeyed
+  const high =
+    siblings
+      .slice(index + 1)
+      .map((node) => keyOf(draft.doom, node.id))
+      .find((key) => key !== null && (low === null || key > low)) ?? null
   const keys: OrderKey[] = []
   let before = low
   for (let made = 0; made < count; made += 1) {

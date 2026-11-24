@@ -1,6 +1,7 @@
 import { choice, field, flag, number } from "./agent-fields.js"
+import { limits } from "./limits.js"
 import type { Px } from "./paint.js"
-import { integer, literal, object } from "./read-kit.js"
+import { integer, literal, object, words } from "./read-kit.js"
 
 export type SlideTransition = {
   readonly kind: "none" | "fade" | "push" | "smartMove"
@@ -9,6 +10,7 @@ export type SlideTransition = {
 
 export type SlideLook = {
   readonly skipped?: boolean
+  readonly source?: string
   readonly transition?: SlideTransition
   readonly alignV?: "top" | "center" | "bottom"
   readonly spaceBefore?: Px
@@ -20,6 +22,10 @@ const kinds = ["none", "fade", "push", "smartMove"] as const
 
 export const slideLookFields = {
   skipped: flag("Skip this slide in Present."),
+  source: field(
+    { type: "string", description: "The slide's source line, in its footer beside the page number. Empty clears it." },
+    words(limits.source),
+  ),
   transition: field(
     {
       type: "object",

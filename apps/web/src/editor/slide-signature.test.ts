@@ -34,4 +34,11 @@ describe("slide signature", () => {
     const next = landed(view, [{ node: deckId, prop: "size", value: { w: 1280, h: 720 } }])
     expect(sameSignature(slideSignature(view, slides[0]!), slideSignature(next, slides[0]!))).toBe(false)
   })
+
+  it("changes for a slide whose page number moved, though nothing on it changed", () => {
+    const { view, slides } = deck()
+    const second = doom.parentOf(view.nodes.get(slides[1]!))!
+    const next = landed(view, [{ node: slides[0]!, prop: "parent", value: { ...second, at: `${second.at}V` } }])
+    expect(sameSignature(slideSignature(view, slides[1]!), slideSignature(next, slides[1]!))).toBe(false)
+  })
 })

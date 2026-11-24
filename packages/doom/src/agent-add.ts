@@ -15,7 +15,7 @@ import {
 import { addGrid, addPattern } from "./agent-patterns.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { placeholderSubtitle } from "./slide-placeholders.js"
-import { type Area, areaFor, cardRadiusFor, gapFor, patternArea, slideSize, themeOf } from "./agent-place.js"
+import { type Area, areaFor, cardRadiusFor, gapFor, patternArea, shapeSlot, slideSize, themeOf } from "./agent-place.js"
 import { lineEnds } from "./agent-line-ends.js"
 import { pictureFit } from "./picture-fit.js"
 import type { StrokeStyle } from "./paint.js"
@@ -153,7 +153,7 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
     return
   }
   const area =
-    kind === "text" && change.box === undefined ? areaFor(draft, parent, undefined) : areaFor(draft, parent, change.box)
+    kind === "shape" && change.box === undefined ? shapeSlot(draft, parent) : areaFor(draft, parent, change.box)
   const grows = !labelled && made !== undefined
   const wordsHigh = (w: number) => Math.max(1, Math.round(textHeight(made!, themeOf(draft), w)))
   const high = !grows

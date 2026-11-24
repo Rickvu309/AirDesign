@@ -80,6 +80,7 @@ const seen: Readonly<Record<string, Seen>> = {
   rotation: { person: ["gesture:rotate"] },
   flip: { person: ["gesture:flip-horizontal", "gesture:flip-vertical"] },
   notes: { person: ["notes:slide-notes"] },
+  source: { person: ["panel:slide-source"] },
   skipped: { owedToPerson: "skipping a slide in Present: the slide menu does not write it yet" },
   transition: { owedToPerson: "how a slide arrives in Present: no control" },
   alignV: { owedToPerson: "where words sit in their box: no control" },

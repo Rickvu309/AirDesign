@@ -12,6 +12,8 @@ const layerCount = (count: number, kind: string) =>
 export const designCopy = {
   slide: (number: number) => `Slide ${String(number)}`,
   background: "Background",
+  source: "Source",
+  sourceExample: "Source: Company filings",
   selectOneSlide: "Select one slide to change its design.",
   selectSlide: "Select a slide to change its design.",
   ...templateCopy,

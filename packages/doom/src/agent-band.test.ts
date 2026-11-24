@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { agentDeck, build, lastChild, minter, titledSlide } from "./agent-fixtures.js"
-import { bottomLimitOf } from "./agent-place.js"
+import { footerTop } from "./slide-footer.js"
 import { childrenOf, propOf } from "./doom-walk.js"
 import type { Doom } from "./index.js"
 import { ids } from "./sample-deck.js"
@@ -36,7 +36,7 @@ describe("a pattern under a title", () => {
       const titleBox = propOf(title, "box")!
       const box = propOf(lastChild(doom, on), "box")!
       expect(box.y).toBeGreaterThanOrEqual(titleBox.y + titleBox.h)
-      expect(box.y + box.h).toBeLessThan(bottomLimitOf(1080))
+      expect(box.y + box.h).toBeLessThan(footerTop(1080))
     },
   )
 
@@ -68,8 +68,8 @@ describe("a pattern under a title", () => {
       minter("p"),
     )
     const box = propOf(lastChild(doom, on), "box")!
-    expect(box.y + box.h).toBeGreaterThan(bottomLimitOf(1080) - items.length)
-    expect(box.y + box.h).toBeLessThanOrEqual(bottomLimitOf(1080))
+    expect(box.y + box.h).toBeGreaterThan(footerTop(1080) - items.length)
+    expect(box.y + box.h).toBeLessThanOrEqual(footerTop(1080))
   })
 
   it("keeps a timeline that runs across at content height, short of the bottom margin", () => {
@@ -89,7 +89,7 @@ describe("a pattern under a title", () => {
       minter("p"),
     )
     const box = propOf(lastChild(doom, on), "box")!
-    expect(box.y + box.h).toBeLessThan(bottomLimitOf(1080))
+    expect(box.y + box.h).toBeLessThan(footerTop(1080))
   })
 
   it("keeps a flow that runs across at content height, short of the bottom margin", () => {
@@ -105,7 +105,7 @@ describe("a pattern under a title", () => {
       minter("p"),
     )
     const box = propOf(lastChild(doom, on), "box")!
-    expect(box.y + box.h).toBeLessThan(bottomLimitOf(1080))
+    expect(box.y + box.h).toBeLessThan(footerTop(1080))
   })
 
   it("fills a lone chart down to the bottom margin", () => {
@@ -121,7 +121,7 @@ describe("a pattern under a title", () => {
       minter("c"),
     )
     const box = propOf(lastChild(doom, on), "box")!
-    expect(box.y + box.h).toBe(bottomLimitOf(1080))
+    expect(box.y + box.h).toBe(footerTop(1080))
   })
 })
 
@@ -136,7 +136,7 @@ describe("cards sized to their words", () => {
   it("keeps three short cards at content height, short of the bottom margin", () => {
     const doom = build(agentDeck(), add({ kind: "cards", items: shortCards }))
     const box = propOf(made(doom), "box")!
-    expect(box.y + box.h).toBeLessThan(bottomLimitOf(1080))
+    expect(box.y + box.h).toBeLessThan(footerTop(1080))
     expect(box.h).toBeLessThan(0.55 * (1080 - box.y))
   })
 
@@ -161,6 +161,6 @@ describe("cards sized to their words", () => {
     const box = propOf(row(tall), "box")!
     const short = propOf(row(shortCards), "box")!
     expect(box.h).toBeGreaterThan(short.h)
-    expect(box.y + box.h).toBeLessThanOrEqual(bottomLimitOf(1080))
+    expect(box.y + box.h).toBeLessThanOrEqual(footerTop(1080))
   })
 })

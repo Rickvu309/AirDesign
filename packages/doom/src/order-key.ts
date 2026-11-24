@@ -170,6 +170,26 @@ export function orderKeyBetween(before: OrderKey | null, after: OrderKey | null)
   return generate(before, after) as OrderKey
 }
 
+export function keysForOrder(slots: readonly (OrderKey | null)[]): readonly (OrderKey | undefined)[] {
+  const keys: (OrderKey | undefined)[] = slots.map(() => undefined)
+  let low: OrderKey | null = null
+  let at = 0
+  while (at < slots.length) {
+    const kept = slots[at] ?? null
+    if (kept !== null && (low === null || kept >= low)) {
+      low = kept
+      at += 1
+      continue
+    }
+    let end = at
+    const floor: OrderKey | null = low
+    while (end < slots.length && (slots[end] == null || (floor !== null && slots[end]! <= floor))) end += 1
+    const high = slots[end] ?? null
+    for (; at < end; at += 1) keys[at] = low = orderKeyBetween(low, high)
+  }
+  return keys
+}
+
 export function readOrderKey(raw: unknown): OrderKey | undefined {
   if (typeof raw !== "string" || raw.length === 0 || raw.length > 64) return undefined
   for (const char of raw) {

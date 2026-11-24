@@ -1,5 +1,5 @@
 import type { Doom, Write } from "./doom.js"
-import { propOf } from "./doom-walk.js"
+import { keyAbove, propOf } from "./doom-walk.js"
 import type { End, Geometry } from "./geometry.js"
 import type { NodeId } from "./ids.js"
 import { type OrderKey, orderKeyBetween } from "./order-key.js"
@@ -81,10 +81,7 @@ export function duplicateWrites(view: Doom, ids: readonly NodeId[], mint: Mint):
   const placements = ids.flatMap((root) => {
     const slot = slotOf(view, root)
     if (slot === null) return []
-    const siblings = siblingsOf(view, slot.id)
-    const next = siblings[siblings.indexOf(root) + 1]
-    const above = next === undefined ? null : (slotOf(view, next)?.at ?? null)
-    return [{ root, slot: { id: slot.id, at: orderKeyBetween(slot.at, above) } }]
+    return [{ root, slot: { id: slot.id, at: orderKeyBetween(slot.at, keyAbove(view, root)) } }]
   })
   return copiesOf(view, placements, mint)
 }

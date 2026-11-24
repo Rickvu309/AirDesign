@@ -54,6 +54,7 @@ function LayoutThumb({ picture, iconsReady }: { readonly picture: LayoutPicture;
       <span data-fonts-pending={iconsReady ? undefined : ""}>
         <SlidePaint
           nodes={picture.nodes}
+          footer={[]}
           background={picture.background}
           size={picture.size}
           width={thumbWidth}

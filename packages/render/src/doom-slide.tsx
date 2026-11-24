@@ -6,6 +6,7 @@ import { type AssetUrl, PaintLayers } from "./node-fills.js"
 import { MaskedChildren } from "./mask-layers.js"
 import { NodeArt, holds, type NodeHost } from "./node-art.js"
 import { measureFaces } from "./doom-widths.js"
+import { TextLines } from "./node-text.js"
 
 type Resolved = doom.Resolved
 
@@ -36,6 +37,7 @@ function iconNames(nodes: readonly Resolved[]): readonly string[] {
 
 export function SlidePaint(props: {
   readonly nodes: readonly Resolved[]
+  readonly footer: readonly doom.FooterPart[]
   readonly background: readonly doom.ResolvedPaint[]
   readonly size: { readonly w: number; readonly h: number }
   readonly width: number
@@ -80,6 +82,17 @@ export function SlidePaint(props: {
             />
           )}
         />
+        <div data-slide-footer="" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+          {props.footer.map(({ part, box, opacity, lines }) => (
+            <div
+              key={part}
+              data-footer={part}
+              style={{ position: "absolute", left: box.x, top: box.y, width: box.w, height: box.h, opacity }}
+            >
+              <TextLines lines={lines} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -90,6 +103,7 @@ export function useDoomSlide(
   slide: doom.NodeId,
 ): {
   readonly nodes: readonly Resolved[] | null
+  readonly footer: readonly doom.FooterPart[]
   readonly background: readonly doom.ResolvedPaint[]
   readonly ready: boolean
   readonly measure: doom.Measure | null
@@ -99,9 +113,13 @@ export function useDoomSlide(
     () => (measure === null ? null : doom.resolveSlide(value, slide, measure)),
     [value, slide, measure],
   )
+  const footer = useMemo(
+    () => (measure === null ? [] : doom.resolveFooter(value, slide, measure)),
+    [value, slide, measure],
+  )
   const iconsReady = useIcons(nodes === null ? [] : iconNames(nodes))
   const background = useMemo(() => doom.slideBackground(value, slide), [value, slide])
-  return { nodes, background, ready: nodes !== null && iconsReady, measure }
+  return { nodes, footer, background, ready: nodes !== null && iconsReady, measure }
 }
 
 export function DoomSlide(props: {
@@ -111,12 +129,13 @@ export function DoomSlide(props: {
   readonly assetUrl?: AssetUrl
   readonly waiting?: string
 }) {
-  const { nodes, background, ready } = useDoomSlide(props.doom, props.slide)
+  const { nodes, footer, background, ready } = useDoomSlide(props.doom, props.slide)
   const { size } = doom.deckOf(props.doom)
   return (
     <div data-fonts-pending={ready ? undefined : ""}>
       <SlidePaint
         nodes={nodes ?? []}
+        footer={footer}
         background={background}
         size={size}
         width={props.width}

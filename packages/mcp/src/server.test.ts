@@ -346,7 +346,7 @@ describe("an answer read from structuredContent alone", () => {
 
       const seen = read.structuredContent as { note: string; layers: string; pictures: string[] }
       expect(seen.note).toContain("Send rev as base to airdesign_edit_deck.")
-      expect(seen.layers.split("\n")[0]).toBe(`slide ${first} "Title"`)
+      expect(seen.layers.split("\n")[0]).toBe(`slide ${first} "Title" page=1`)
       expect(seen.layers).toContain('text="Untitled"')
       expect(seen.pictures).toEqual([first])
       expect(read.content).toContainEqual({ type: "image", data: shot, mimeType: "image/jpeg" })

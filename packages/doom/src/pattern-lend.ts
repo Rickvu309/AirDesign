@@ -1,6 +1,7 @@
 import type { Draft } from "./agent-draft.js"
 import { put } from "./agent-draft.js"
-import { type Area, bottomLimitOf, gapFor, slideSize, themeOf } from "./agent-place.js"
+import { type Area, gapFor, slideSize, themeOf } from "./agent-place.js"
+import { footerTop } from "./slide-footer.js"
 import type { Node } from "./doom.js"
 import { boxOf, childrenOf, propOf } from "./doom-walk.js"
 import type { Px } from "./paint.js"
@@ -55,7 +56,7 @@ const boxOfBlock = (block: Block | undefined) =>
 
 export const endsInside = (draft: Draft, block: Block | undefined): boolean => {
   const box = boxOfBlock(block)
-  return box !== undefined && box.y + box.h <= bottomLimitOf(slideSize(draft).h)
+  return box !== undefined && box.y + box.h <= footerTop(slideSize(draft).h)
 }
 
 export function borrowing(
@@ -67,7 +68,7 @@ export function borrowing(
 ): Block | undefined {
   const lender = lenderAbove(draft, parent, area)
   if (lender === undefined) return undefined
-  const limit = Math.min(area.y + area.h, bottomLimitOf(slideSize(draft).h))
+  const limit = Math.min(area.y + area.h, footerTop(slideSize(draft).h))
   const top = area.y - lender.spare
   const block = make({ ...area, y: top, h: limit - top }, styles)
   const box = boxOfBlock(block)

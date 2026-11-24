@@ -317,7 +317,7 @@ describe("add picture and icon", () => {
     expect(box.w).toBeLessThanOrEqual(free.w)
     expect(box.h).toBeLessThanOrEqual(free.h)
     expect(box.x + box.w / 2).toBeCloseTo(free.x + free.w / 2, 0)
-    expect(box.y + box.h / 2).toBeCloseTo(free.y + free.h / 2, 0)
+    expect(box.y + box.h / 2).toBeCloseTo(Math.round(free.y + free.h / 2), 0)
   })
 
   it("keeps a small picture with no box at its own size", () => {

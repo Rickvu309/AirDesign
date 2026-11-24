@@ -39,7 +39,13 @@ export function addSlideWrites(
   }
   const order = doom.childrenOf(view, row)
   const index = previous === undefined ? -1 : order.findIndex((each) => each.id === previous)
-  const at = orderKeyBetween(doom.parentOf(order[index])?.at ?? null, doom.parentOf(order[index + 1])?.at ?? null)
+  const slots = [...order.slice(0, index + 1), null, ...order.slice(index + 1)]
+  const placed = doom.keysForOrder(slots.map((each) => (each === null ? null : keyOf(view, each.id))))
+  const at = placed[index + 1]!
+  slots.forEach((each, spot) => {
+    const key = placed[spot]
+    if (each !== null && key !== undefined) writes.push({ node: each.id, prop: "parent", value: { id: row, at: key } })
+  })
   writes.push(
     { node: slide, prop: "type", value: "slide" },
     { node: slide, prop: "parent", value: { id: row, at } },
@@ -87,15 +93,13 @@ export function moveSlideWrites(view: doom.Doom, moved: readonly doom.NodeId[], 
   const place = slides.slice(0, Math.max(0, at)).filter((slide) => !held.includes(slide)).length
   const order = [...others.slice(0, place), ...held, ...others.slice(place)]
   if (order.every((slide, index) => slide === slides[index])) return []
-  const before = others[place - 1]
-  const next = others[place]
-  const anchor = next ?? before
+  const anchor = others[place] ?? others[place - 1]
   const row = anchor === undefined ? undefined : doom.parentOf(view.nodes.get(anchor))?.id
   if (anchor === undefined || row === undefined) return []
-  let low = before !== undefined && doom.parentOf(view.nodes.get(before))?.id === row ? keyOf(view, before) : null
-  const high = next !== undefined && doom.parentOf(view.nodes.get(next))?.id === row ? keyOf(view, next) : null
-  return held.map((slide) => {
-    low = orderKeyBetween(low, high)
-    return { node: slide, prop: "parent", value: { id: row, at: low } }
+  const inRow = order.filter((slide) => held.includes(slide) || doom.parentOf(view.nodes.get(slide))?.id === row)
+  const placed = doom.keysForOrder(inRow.map((slide) => (held.includes(slide) ? null : keyOf(view, slide))))
+  return inRow.flatMap((slide, index): doom.Write[] => {
+    const at = placed[index]
+    return at === undefined ? [] : [{ node: slide, prop: "parent", value: { id: row, at } }]
   })
 }

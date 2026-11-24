@@ -109,6 +109,7 @@ it("puts the chart's own section before Fill and titles the panel Chart", async 
       words: null,
       onLinkWords: () => undefined,
       onCrop: () => undefined,
+      askedSource: 0,
     }),
   )
   try {

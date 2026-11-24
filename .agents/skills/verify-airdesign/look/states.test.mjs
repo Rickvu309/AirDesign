@@ -47,6 +47,7 @@ describe("states", () => {
       "agent-off",
       "agent-out-of-usage",
       "agent-retried",
+      "agent-shapes-placed",
     ])
   })
 
@@ -58,6 +59,7 @@ describe("states", () => {
       ["agent-off"],
       ["agent-out-of-usage"],
       ["agent-retried"],
+      ["agent-shapes-placed"],
     ])
   })
 

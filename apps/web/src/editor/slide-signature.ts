@@ -16,6 +16,7 @@ export function slideSignature(view: doom.Doom, slide: doom.NodeId): SlideSignat
       signature.push(node)
       break
     }
+  signature.push(doom.pageOf(view, slide))
   gather(view, slide, signature)
   return signature
 }

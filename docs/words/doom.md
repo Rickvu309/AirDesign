@@ -91,7 +91,7 @@ A designed first state for a new slide, chosen in the New slide menu: title, tit
 _Avoid_: layout, template slide
 
 **free area**:
-The largest clear rectangle of a slide or frame, with a gap round what is already there. An add with no `box` takes it.
+The largest clear rectangle of a slide or frame, with a gap round what is already there. On a slide it ends at the footer. An add with no `box` takes it.
 _Avoid_: empty space, gap
 
 **reading**:
@@ -102,3 +102,15 @@ _Avoid_: snapshot, readAt
 One agent turn on a deck, and that agent's alone. Its first edit opens it (`phase: start`), and `stop_run` or the same agent's next start closes it, so an agent has one open run per deck. Another agent's write into it or stop of it is refused `run-fenced`. A person's change to a layer while it is open closes that layer to the run: the agent's next write to it is refused `person`.
 A run keeps the name its agent connected under (`Aira`, `Claude Code`) and the slide of its last write. The editor says an agent is editing while that run wrote in the last 30 seconds; the server closes a run that wrote nothing for ten minutes (`endIdleRuns`). A person's run undo carries `runUndo`, which marks the run `undone` for every device and agent; its redo clears the mark, and so does the agent's next write into the run.
 _Avoid_: session, turn
+
+**slide footer**:
+The quiet line at the foot of every slide: its source line on the left and its page number on the right. It is slide furniture, as in a Figma Slides or PowerPoint layout, not a layer: Doom resolves it from the slide (`resolveFooter`) and the painter draws it after the content, outside any mask, on the canvas, the filmstrip, Present, a capture and a PDF. So no select, move, group, mask, arrange, delete, copy or paste reaches it. Its look is the theme's caption style at 60% opacity. An agent's placement leaves its band free (`footerTop`).
+_Avoid_: footer layer, margin layer
+
+**source line**:
+A slide's `source` words, painted at the left of its footer, and nothing while empty. A person writes it in the slide panel's Source field, or double-clicks it on the slide to reach that field. An agent sets it with `set` on the slide (`source`), and `read` shows it as `source="…"`. Duplicating a slide keeps it.
+_Avoid_: footer text, caption
+
+**page number**:
+A slide's place in the deck, counted from 1 over every slide in deck order, skipped slides included, as PowerPoint numbers hidden slides. It is never stored: moving, adding, deleting or undoing a slide renumbers every slide with no write. An agent's `read` shows it as `page=`.
+_Avoid_: slide number (for anything stored), stamp, counter

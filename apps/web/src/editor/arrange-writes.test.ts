@@ -228,6 +228,30 @@ describe("layer order", () => {
   })
 })
 
+describe("layer order when two layers saved one key", () => {
+  const built = grow(tree)
+  const { a, b, c } = built.ids
+  const slide = built.slides[0]!
+  const top = doom.orderKeyBetween(doom.parentOf(built.view.nodes.get(c!))!.at, null)
+  const tied = landed(built.view, [
+    { node: b!, prop: "parent", value: { id: slide, at: top } },
+    { node: c!, prop: "parent", value: { id: slide, at: top } },
+  ])
+  const press = (view: doom.Doom, ids: readonly doom.NodeId[], how: Parameters<typeof orderWrites>[2]) =>
+    landed(view, orderWrites(view, ids, how))
+
+  it("steps a layer between them one neighbour at a time", () => {
+    expect(childrenOf(tied, slide)).toEqual([a, b, c])
+    const once = press(tied, [a!], "forward")
+    expect(childrenOf(once, slide)).toEqual([b, a, c])
+    expect(childrenOf(press(once, [a!], "forward"), slide)).toEqual([b, c, a])
+  })
+
+  it("steps the upper one back under the lower one", () => {
+    expect(childrenOf(press(tied, [c!], "backward"), slide)).toEqual([a, c, b])
+  })
+})
+
 describe("flip, hide and lock", () => {
   it("flips a layer in place and turns a rotated one the other way", () => {
     const built = grow([{ type: "shape", name: "s", props: { box: spot(100, 100, 200, 100, 30), fills: paint } }])

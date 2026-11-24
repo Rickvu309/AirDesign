@@ -48,11 +48,13 @@ function painted(children: readonly doom.TreeNode[]) {
 }
 
 function slide(children: readonly doom.TreeNode[]) {
-  const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children }] })
-  const resolved = doom.resolveSlide(grown.doom, grown.slides[0]!, doom.measureWith({}))
+  const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children, props: { source: "Source: X" } }] })
+  const measure = doom.measureWith({})
+  const resolved = doom.resolveSlide(grown.doom, grown.slides[0]!, measure)
   const html = renderToStaticMarkup(
     createElement(SlidePaint, {
       nodes: resolved,
+      footer: doom.resolveFooter(grown.doom, grown.slides[0]!, measure),
       background: [],
       size: { w: 1920, h: 1080 },
       width: 1920,
@@ -117,6 +119,20 @@ describe("a mask clips the layers above it to its outline and does not paint", (
     ])
     expect(html).not.toContain(`data-node="${ids.back}"`)
     expect(html.indexOf("mask:url(#")).toBeLessThan(html.indexOf(`data-node="${ids.front}"`))
+  })
+
+  it("leaves the slide's footer outside a mask on its content", () => {
+    const { html } = slide([
+      shape("cover", { box: spot(0, 0, 1920, 1080), fills: fill(swatches.black), mask: true }),
+      shape("front", { box: spot(0, 0, 1920, 1080), fills: fill(swatches.white) }),
+    ])
+    const wrapper = html.lastIndexOf("<div", html.indexOf("mask:url(#"))
+    const footer = html.indexOf("data-slide-footer")
+    const between = html.slice(wrapper, html.lastIndexOf("<div", footer))
+    expect(footer).toBeGreaterThan(wrapper)
+    expect(between.split("</div>").length).toBe(between.split("<div").length)
+    expect(html.slice(footer)).toContain('data-footer="source"')
+    expect(html.slice(footer)).toContain('data-footer="number"')
   })
 
   it("turns the outline with the mask", () => {

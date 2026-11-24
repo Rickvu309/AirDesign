@@ -1,4 +1,5 @@
 import type { NodeId } from "./ids.js"
+import type { OrderKey } from "./order-key.js"
 import type { PropName, Props } from "./props.js"
 import type { Box } from "./resolved.js"
 import type { Node, Doom } from "./doom.js"
@@ -90,4 +91,15 @@ export function holdsText(doom: Doom, id: NodeId): boolean {
   const node = doom.nodes.get(id)
   const kind = propOf(node, "geometry")?.kind
   return node?.type === "shape" && kind !== "line" && kind !== "icon"
+}
+
+export function keyAbove(doom: Doom, id: NodeId): OrderKey | null {
+  const node = doom.nodes.get(id)
+  const slot = parentOf(node)
+  if (node === undefined || slot == null) return null
+  const siblings = childrenOf(doom, slot.id)
+  const above = siblings
+    .slice(siblings.findIndex((each) => each.id === id) + 1)
+    .find((each) => parentOf(each)!.at > slot.at)
+  return above === undefined ? null : parentOf(above)!.at
 }

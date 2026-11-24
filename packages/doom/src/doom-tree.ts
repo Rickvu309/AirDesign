@@ -18,7 +18,7 @@ export type TreeNode = {
 }
 export type TreeSlide = {
   readonly name?: string
-  readonly props?: Made<Pick<Settable, "fills" | "layout" | "hidden" | "notes" | "transition" | "skipped">>
+  readonly props?: Made<Pick<Settable, "fills" | "layout" | "hidden" | "notes" | "transition" | "skipped" | "source">>
   readonly children: readonly TreeNode[]
 }
 export type Tree = {

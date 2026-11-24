@@ -9,6 +9,7 @@ import type { Node, Doom } from "./doom.js"
 import { type Box, childrenOf, isLaidOut, isLive, parentOf, propOf, slidesOf } from "./doom-walk.js"
 import { textToMarkdown } from "./markdown.js"
 import { paintedFace } from "./painted-face.js"
+import { pageOf } from "./slide-footer.js"
 import type { Para, Span, Text } from "./text.js"
 
 const quoted = (words: string) => JSON.stringify(words)
@@ -228,8 +229,9 @@ function walk(doom: Doom, node: Node, depth: number, boxes: ReadonlyMap<NodeId, 
   for (const child of childrenOf(doom, node.id)) walk(doom, child, depth + 1, boxes, out)
 }
 
-function slideLine(node: Node): string {
+function slideLine(doom: Doom, node: Node): string {
   const name = propOf(node, "name")
+  const source = propOf(node, "source")
   const fills = propOf(node, "fills")
   const notes = propOf(node, "notes")
   const transition = propOf(node, "transition")
@@ -237,10 +239,12 @@ function slideLine(node: Node): string {
     "slide",
     node.id,
     ...(name === undefined ? [] : [quoted(name)]),
+    `page=${String(pageOf(doom, node.id))}`,
     ...(propOf(node, "hidden") === true ? ["hidden"] : []),
     ...(propOf(node, "skipped") === true ? ["skipped"] : []),
     ...(transition === undefined ? [] : [`transition=${transition.kind}/${String(transition.ms)}`]),
     ...(fills !== undefined && fills.length > 0 ? [`fill=${paintWords(fills)}`] : []),
+    ...(source === undefined || source === "" ? [] : [`source=${quoted(source)}`]),
     ...(notes === undefined || notes.chars === "" ? [] : [`notes=${quoted(notes.chars)}`]),
   ].join(" ")
 }
@@ -254,7 +258,7 @@ export function readForAgent(doom: Doom, slides: readonly NodeId[] | "all", boxe
       out.push(`${id} missing`)
       continue
     }
-    out.push(slideLine(slide))
+    out.push(slideLine(doom, slide))
     for (const child of childrenOf(doom, slide.id)) walk(doom, child, 1, boxes, out)
   }
   return out.join("\n")

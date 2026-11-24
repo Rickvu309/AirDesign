@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { bottomLimitOf, gapFor, padFor } from "./agent-place.js"
+import { gapFor, padFor } from "./agent-place.js"
+import { footerTop } from "./slide-footer.js"
 import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
 import { childrenOf, descendantsOf, propOf, slidesOf } from "./doom-walk.js"
 import { ladderOf } from "./pattern-parts.js"
@@ -136,8 +137,8 @@ describe("kpi", () => {
     const card = propOf(made(next), "box")!
     expect(rowBox.h).toBe(propOf(root, "box")!.h)
     expect(card.y).toBeGreaterThanOrEqual(rowBox.y + rowBox.h)
-    expect(rowBox.y + rowBox.h).toBeLessThan(bottomLimitOf(1080))
-    expect(card.y + card.h).toBeLessThanOrEqual(bottomLimitOf(1080))
+    expect(rowBox.y + rowBox.h).toBeLessThan(footerTop(1080))
+    expect(card.y + card.h).toBeLessThanOrEqual(footerTop(1080))
   })
 
   it("uses one number style on two KPI slides when the values are the same width", () => {

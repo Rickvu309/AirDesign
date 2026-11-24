@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
-import { bottomLimitOf } from "./agent-place.js"
+import { footerTop } from "./slide-footer.js"
 import { agentDeck, build, lastChild, minter, titledSlide } from "./agent-fixtures.js"
 import { defaultTheme } from "./default-theme-art.js"
 import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
@@ -55,7 +55,7 @@ describe("a flow never splits a word", () => {
     const doom = build(agentDeck(), add({ kind: "flow", items: longSteps }))
     expect(splitWords(doom, made(doom).id)).toEqual([])
     const box = propOf(made(doom), "box")!
-    expect(box.y + box.h).toBeLessThanOrEqual(bottomLimitOf(1080))
+    expect(box.y + box.h).toBeLessThanOrEqual(footerTop(1080))
   })
 
   it.each([
@@ -161,7 +161,7 @@ describe("a flow that fits a row", () => {
     const [lane] = childrenOf(doom, made(doom).id)
     expect(propOf(lane!, "layout")).toMatchObject({ mode: "row" })
     const box = propOf(made(doom), "box")!
-    expect(box.y + box.h).toBeLessThanOrEqual(bottomLimitOf(1080))
+    expect(box.y + box.h).toBeLessThanOrEqual(footerTop(1080))
   })
 
   it("decides by the slide's ratio: four steps that fit a row at 16:9 can run down a 4:3 slide", () => {
@@ -268,7 +268,7 @@ describe("a timeline of many steps", () => {
         .map(({ word }) => word.chars)
       expect(split).toEqual([])
       const box = propOf(root, "box")!
-      expect(box.y + box.h).toBeLessThanOrEqual(bottomLimitOf(size.h))
+      expect(box.y + box.h).toBeLessThanOrEqual(footerTop(size.h))
       if (count === 3) {
         const titles = words
           .filter(({ word }) => word.style === "heading" || word.style === "body" || word.style === "body2")

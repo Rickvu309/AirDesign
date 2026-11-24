@@ -77,11 +77,12 @@ export type Props = {
   readonly mask: boolean
   readonly chart: Chart
   readonly link: string | NodeId
-  readonly role: "title" | "subtitle" | "body" | "number" | "footer"
+  readonly role: "title" | "subtitle" | "body"
   readonly slideLayout: NodeId
   readonly notes: Text
   readonly transition: { readonly kind: "none" | "fade" | "push" | "smartMove"; readonly ms: number }
   readonly skipped: boolean
+  readonly source: string
   readonly theme: Theme
   readonly size: { readonly w: Px; readonly h: Px }
   readonly nameFollows: boolean
@@ -101,7 +102,19 @@ export type PropSpec<K extends PropName> = {
 export const accepts = {
   deck: ["type", "name", "theme", "size", "nameFollows"],
   slideRow: ["type", "parent", "name", "hidden"],
-  slide: ["type", "parent", "name", "hidden", "fills", "layout", "slideLayout", "notes", "transition", "skipped"],
+  slide: [
+    "type",
+    "parent",
+    "name",
+    "hidden",
+    "fills",
+    "layout",
+    "slideLayout",
+    "notes",
+    "transition",
+    "skipped",
+    "source",
+  ],
   frame: [
     "type",
     "parent",
@@ -244,7 +257,7 @@ export const props: { readonly [K in PropName]: PropSpec<K> } = {
   mask: spec(boolean, "toggle", "Whether this layer masks the layers above it.", "dropped"),
   chart: spec(readChart, "custom", "The data a chart frame draws.", "picture"),
   link: spec(readLink, "text", null, "native"),
-  role: spec(literal(["title", "subtitle", "body", "number", "footer"]), "choice", null, "native"),
+  role: spec(literal(["title", "subtitle", "body"]), "choice", null, "native"),
   slideLayout: spec(readId, "none", null, "dropped"),
   notes: spec(readText, "text", "A slide's presenter notes.", "native", "base"),
   transition: spec(
@@ -254,6 +267,7 @@ export const props: { readonly [K in PropName]: PropSpec<K> } = {
     "native",
   ),
   skipped: spec(boolean, "toggle", null, "native"),
+  source: spec(words(limits.source), "text", "The slide's source line, painted in its footer.", "native"),
   theme: spec(readTheme, "custom", null, "native"),
   size: spec(object({ w: finite(1, 100_000), h: finite(1, 100_000) }), "none", null, "native"),
   nameFollows: spec(boolean, "none", null, "dropped"),

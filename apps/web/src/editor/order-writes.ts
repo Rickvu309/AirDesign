@@ -1,4 +1,3 @@
-import { orderKeyBetween, type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 
 export type Reorder = "front" | "back" | "forward" | "backward"
@@ -27,22 +26,11 @@ export function orderWrites(view: doom.Doom, ids: readonly doom.NodeId[], how: R
     const next = moved(order, chosen, how)
     if (next.every((id, at) => id === order[at])) continue
     const keys = new Map(children.map((child) => [child.id, doom.parentOf(child)!.at]))
-    let at = 0
-    while (at < next.length) {
-      if (!chosen.has(next[at]!)) {
-        at += 1
-        continue
-      }
-      let end = at
-      while (end < next.length && chosen.has(next[end]!)) end += 1
-      let low: OrderKey | null = at === 0 ? null : keys.get(next[at - 1]!)!
-      const high: OrderKey | null = end === next.length ? null : keys.get(next[end]!)!
-      for (let index = at; index < end; index += 1) {
-        low = orderKeyBetween(low, high)
-        writes.push({ node: next[index]!, prop: "parent", value: { id: parent, at: low } })
-      }
-      at = end
-    }
+    const placed = doom.keysForOrder(next.map((id) => (chosen.has(id) ? null : keys.get(id)!)))
+    next.forEach((id, at) => {
+      const key = placed[at]
+      if (key !== undefined) writes.push({ node: id, prop: "parent", value: { id: parent, at: key } })
+    })
   }
   return writes
 }

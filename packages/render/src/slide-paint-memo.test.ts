@@ -50,6 +50,7 @@ async function paint(nodes: readonly doom.Resolved[], host?: object, iconsReady 
     mounted.root.render(
       createElement(SlidePaint, {
         nodes,
+        footer: [],
         background: [],
         size: { w: 1920, h: 1080 },
         width: 960,

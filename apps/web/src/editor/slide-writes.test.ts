@@ -212,6 +212,23 @@ describe("move slides", () => {
     expect(slideIds(landed(view, moveSlideWrites(view, [two!, last!], 1)))).toEqual([one, two, last, three])
   })
 
+  it("adds a slide between two slides that saved one key", () => {
+    const { view, slides } = three()
+    const [one, two, last] = slides
+    const tied = landed(view, [{ node: last!, prop: "parent", value: doom.parentOf(view.nodes.get(two!))! }])
+    const added = addSlideWrites(tied, two!, minter())
+    expect(slideIds(landed(tied, added.writes))).toEqual([one, two, added.slide, last])
+  })
+
+  it("moves a slide between two slides that saved one key", () => {
+    const { view, slides } = three()
+    const [one, two, last] = slides
+    const row = doom.parentOf(view.nodes.get(two!))!
+    const tied = landed(view, [{ node: last!, prop: "parent", value: row }])
+    expect(slideIds(tied)).toEqual([one, two, last])
+    expect(slideIds(landed(tied, moveSlideWrites(tied, [one!], 2)))).toEqual([two, one, last])
+  })
+
   it("writes nothing when the slides are already there", () => {
     const { view, slides } = four()
     expect(moveSlideWrites(view, [slides[1]!], 1)).toEqual([])

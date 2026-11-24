@@ -51,6 +51,7 @@ describe("DoomSlide", () => {
     expect(host.querySelector("[data-fonts-pending]")).toBeNull()
     expect(host.querySelectorAll("[data-node]")).toHaveLength(2)
     expect(host.querySelector("[data-line]")?.textContent).toBe("Revenue")
+    expect(host.querySelector('[data-footer="number"] [data-line]')?.textContent).toBe("1")
     expect(slide?.firstElementChild?.getAttribute("style")).toContain("scale(0.5)")
   })
 })

@@ -13,6 +13,7 @@ export function doomFaces(doom: Doom): FaceNeeds {
   const texts = new Set([alphabet])
   let italic = false
   for (const node of doom.nodes.values()) {
+    if (node.type === "slide" && node.source !== undefined) texts.add(node.source)
     const text = node.type === "shape" ? node.text : undefined
     if (text !== undefined) {
       texts.add(text.chars)

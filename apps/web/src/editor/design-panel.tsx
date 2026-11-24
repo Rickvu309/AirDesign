@@ -9,6 +9,7 @@ import { useServedFaces } from "@/design/served-faces"
 import { DesignHead, ElementDesign } from "@/editor/design-sections"
 import { ElementTitleActions } from "@/editor/element-title-actions"
 import { SlideBackground } from "@/editor/slide-background"
+import { SlideSource } from "@/editor/slide-source"
 import { PicturePreview } from "@/editor/picture-preview"
 import { pickPicture } from "@/editor/picture-picker"
 import { RemoveAutoLayoutButton } from "@/editor/remove-auto-layout"
@@ -42,6 +43,7 @@ type Props = {
   readonly words: CaretWords | null
   readonly onCrop: (id: doom.NodeId) => void
   readonly onLinkWords: (link: string | null) => void
+  readonly askedSource: number
 }
 
 function backgroundFill(held: PanelPaint): PanelPaint | null {
@@ -114,6 +116,15 @@ export function DesignPanel(props: Props) {
                   const next = fillWrite(background, paint)
                   if (next !== undefined) client.push([{ node: slide, prop: "fills", value: next }])
                 }}
+              />
+            )
+          if (section === "source")
+            return (
+              <SlideSource
+                key={section}
+                source={doom.propOf(view.nodes.get(slide), "source") ?? ""}
+                asked={props.askedSource}
+                onSource={(source) => client.push([{ node: slide, prop: "source", value: source }])}
               />
             )
           if (section === "selectionColors")

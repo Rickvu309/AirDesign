@@ -58,6 +58,7 @@ const viewOnly = new Set([
 
 const manualPanel = new Set([
   "panel:slide-background",
+  "panel:slide-source",
   "panel:theme-colors",
   "panel:theme-fonts",
   "panel:chart-data",

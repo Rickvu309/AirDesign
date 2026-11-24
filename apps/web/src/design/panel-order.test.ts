@@ -11,5 +11,5 @@ it("orders each kind's sections", () => {
   expect(panelSections("picture")).toEqual(["alignment", "pictureFill", "border"])
   expect(panelSections("connector")).toEqual(["alignment", "border"])
   expect(panelSections("many")).toEqual(["alignment", "text", "textFill", "fills", "link", "border", "selectionColors"])
-  expect(panelSections("slide")).toEqual(["templateStyle", "background", "selectionColors"])
+  expect(panelSections("slide")).toEqual(["templateStyle", "background", "source", "selectionColors"])
 })

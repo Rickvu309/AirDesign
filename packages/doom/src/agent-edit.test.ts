@@ -106,6 +106,24 @@ describe("compileAgentEdit", () => {
     expect(result).toMatchObject({ refused: "run-fenced", change: "add text", at: 0 })
   })
 
+  it("is refused run-fenced for a stopped run before it reads or places any change", () => {
+    const running = agentDeck()
+    const stopped = applyEdit(running, {
+      once: "stop",
+      author: agent(runName),
+      writes: [],
+      phase: "stop",
+      rev: rev(running.rev + 1),
+    })
+    if (isRefusal(stopped)) throw new Error(JSON.stringify(stopped))
+    const result = compileAgentEdit(
+      stopped,
+      [change({ op: "add", kind: "text", slide: nodeId("gone:1"), text: "late" })],
+      by(),
+    )
+    expect(result).toMatchObject({ refused: "run-fenced", change: "add text", at: 0 })
+  })
+
   it("is refused person for a node a person changed during the run", () => {
     const open = richDeck()
     const during = land(

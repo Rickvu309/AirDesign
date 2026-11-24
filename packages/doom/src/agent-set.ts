@@ -82,10 +82,11 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "notes",
     "shape",
     "skipped",
+    "source",
     "transition",
     ...wordsOnly,
   ],
-  shape: ["layout", "gap", "padding", "notes", "clip", "skipped", "transition"],
+  shape: ["layout", "gap", "padding", "notes", "clip", "skipped", "source", "transition"],
 }
 const roleTarget = /^([a-z0-9]{1,16}:[0-9]{1,12})\.(title|subtitle|body)$/
 
@@ -230,6 +231,7 @@ export function compileSet(draft: Draft, change: SetChange): void {
     ...(change.chart === undefined ? {} : { chart: chartKeepingPoints(propOf(node, "chart"), chartOf(change.chart)) }),
     ...(change.notes === undefined ? {} : { notes: notesText(change.notes) }),
     ...(change.skipped === undefined ? {} : { skipped: change.skipped }),
+    ...(change.source === undefined ? {} : { source: change.source }),
     ...(change.transition === undefined ? {} : { transition: change.transition }),
   }
   if (layout?.mode === "none" && now.layout !== undefined && now.layout.mode !== "none")

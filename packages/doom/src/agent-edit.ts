@@ -6,7 +6,7 @@ import type { NodeId, Rev } from "./ids.js"
 import { rev } from "./ids.js"
 import type { WriteKey } from "./props.js"
 import { kindOf } from "./agent-read.js"
-import { applyEdit, applyStep, countsOf } from "./apply-edit.js"
+import { applyEdit, applyStep, countsOf, runFence } from "./apply-edit.js"
 import { changingWrites } from "./changing-writes.js"
 import { nameFromTitleWrites } from "./deck-name-from-title.js"
 import { isRefusal } from "./refusal.js"
@@ -49,6 +49,8 @@ export function compileAgentEdit(doom: Doom, changes: readonly AgentChange[], by
       fault: "missing",
       form: "One to one hundred changes.",
     }
+  const fenced = runFence(doom.runs, { author: by.author, ...(by.phase === undefined ? {} : { phase: by.phase }) })
+  if (fenced !== undefined) return { ...fenced, change: nameOf(changes[0] as AgentChange), at: 0 }
   const reading: Reading = {
     read: by.read ?? doom,
     ...(by.boxes === undefined ? {} : { boxes: by.boxes }),
