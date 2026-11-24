@@ -21,15 +21,21 @@ import {
 function WordsCell(props: {
   readonly label: string
   readonly value: string
-  readonly onCommit: (words: string, field: HTMLInputElement) => void
+  readonly onCommit: (words: string, field: HTMLTextAreaElement) => void
 }) {
   return (
-    <div data-focus-ring className="flex h-8 min-w-0 items-center rounded-lg bg-muted px-2.5">
-      <input
+    <div data-focus-ring className="flex min-h-8 min-w-0 items-center rounded-lg bg-muted px-2.5 py-1">
+      <textarea
         aria-label={props.label}
         defaultValue={props.value}
-        className="min-w-0 flex-1 bg-transparent text-[length:var(--type-caption)] outline-none"
-        onBlur={(event) => props.onCommit(event.currentTarget.value, event.currentTarget)}
+        rows={1}
+        className="min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-[length:var(--type-caption)] leading-[var(--panel-label-leading)] break-words outline-none field-sizing-content"
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return
+          event.preventDefault()
+          event.currentTarget.blur()
+        }}
+        onBlur={(event) => props.onCommit(event.currentTarget.value.replaceAll("\n", " "), event.currentTarget)}
       />
     </div>
   )
@@ -50,7 +56,7 @@ export function ChartSection({
   if (chart === undefined) return null
   const change = (next: doom.Chart) => push(chartWrites(id, next))
   return (
-    <PanelSection title={editorCopy.chart} name="chart">
+    <PanelSection title={null} name="chart">
       <Select value={chart.kind} onValueChange={(kind) => change({ ...chart, kind: kind as doom.Chart["kind"] })}>
         <SelectTrigger
           aria-label={editorCopy.chartKind}
@@ -76,10 +82,12 @@ export function ChartSection({
           onCheckedChange={(on) => change({ ...chart, labels: on })}
         />
       </label>
-      <div role="group" aria-label={editorCopy.chartData} className="-m-0.5 overflow-x-auto p-0.5" data-chart-data="">
+      <div role="group" aria-label={editorCopy.chartData} className="-m-0.5 min-w-0 p-0.5" data-chart-data="">
         <div
-          className="grid items-center gap-1"
-          style={{ gridTemplateColumns: `5rem repeat(${String(chart.series.length)}, minmax(4.5rem, 1fr)) 1.5rem` }}
+          className="grid min-w-0 items-center gap-1"
+          style={{
+            gridTemplateColumns: `repeat(${String(chart.series.length + 1)}, minmax(0, 1fr)) auto`,
+          }}
         >
           <span />
           {chart.series.map((series, at) => (
@@ -104,13 +112,14 @@ export function ChartSection({
                 onCommit={(words) => words !== category && change(chartRow(chart, row, words))}
               />
               {chart.series.map((series, at) => (
-                <NumberField
-                  key={at}
-                  label={String(at + 1)}
-                  hideLabel
-                  value={series.values[row]}
-                  onCommit={(value) => change(chartCell(chart, at, row, value))}
-                />
+                <div key={at} className="min-w-0">
+                  <NumberField
+                    label={String(at + 1)}
+                    hideLabel
+                    value={series.values[row]}
+                    onCommit={(value) => change(chartCell(chart, at, row, value))}
+                  />
+                </div>
               ))}
               <Button
                 variant="ghost"
