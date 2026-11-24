@@ -123,8 +123,41 @@ test("New slide offers the designed starting slides, and the plus adds a slide w
     await menu.click()
     await page.getByRole("menuitem", { name, exact: true }).click()
   }
+  await expect
+    .poll(() => page.locator("[data-layout-menu]").evaluate((node) => getComputedStyle(node).display))
+    .toBe("flex")
+  expect(
+    await page.locator("[data-layout-menu]").evaluate((node) => (node as HTMLElement).offsetHeight),
+  ).toBeGreaterThan(200)
   await menu.click()
-  await expect(page.getByRole("menuitem")).toHaveText(Object.values(editorCopy.slideStarts))
+  const items = page.getByRole("menuitem")
+  await expect(items).toHaveCount(Object.keys(editorCopy.slideStarts).length)
+  for (const [part, name] of Object.entries(editorCopy.slideStarts)) {
+    const item = page.locator(`[data-layout="${part}"]`)
+    await expect(item).toHaveAccessibleName(name)
+    await expect(item.locator("[data-layout-thumb] [data-slide-paint]")).toBeVisible()
+  }
+  await expect(page.locator("[data-layout-thumb] [data-fonts-pending]")).toHaveCount(0)
+  await page.locator('[data-layout="title"]').focus()
+  await expect(page.locator('[data-layout="title"] > span:not([data-layout-thumb])')).toHaveCSS(
+    "color",
+    "rgb(255, 255, 255)",
+  )
+  await page.locator('[data-layout="chart"]').hover()
+  await expect(page.locator('[data-layout="chart"] > span:not([data-layout-thumb])')).toHaveCSS(
+    "color",
+    "rgb(255, 255, 255)",
+  )
+  await expect(page.locator('[data-layout="title"] [data-run]').first()).not.toHaveCSS("color", "rgb(255, 255, 255)")
+  expect(
+    await page
+      .locator('[data-layout="chart"] svg')
+      .first()
+      .evaluate((node) => node.getBoundingClientRect().width),
+  ).toBeGreaterThan(16)
+  await expect(page.locator('[data-layout="blank"] [data-node]')).toHaveCount(0)
+  await expect(page.locator('[data-layout="title"] [data-node]')).toHaveCount(2)
+  expect(await page.locator('[data-layout="kpis"] [data-node]').count()).toBeGreaterThan(5)
   await page.keyboard.press("Escape")
   await choose(editorCopy.slideStarts.blank)
   await expect(painted).toHaveCount(0)
@@ -136,6 +169,54 @@ test("New slide offers the designed starting slides, and the plus adds a slide w
   await page.getByRole("button", { name: slideListCopy.addSlide }).click()
   await expect(painted).toHaveCount(1)
   await expect.poll(async () => (await savedSlides(stack, opened)).length).toBe(5)
+})
+
+test("New slide builds no pictures until the pointer or focus arrives, and works from the keyboard alone", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await openEditor(page, context, stack)
+  const trigger = page.getByRole("button", { name: "Choose a layout for the new slide" })
+  const painted = page.locator("[data-layout-thumb] [data-slide-paint]")
+  const items = page.getByRole("menuitem")
+  await expect(page.locator("[data-layout-thumb-pending]")).toHaveCount(Object.keys(editorCopy.slideStarts).length)
+  await page.evaluate(async () => {
+    for (let turn = 0; turn < 30; turn += 1)
+      await new Promise<void>((resolve) => requestIdleCallback(() => resolve(), { timeout: 500 }))
+  })
+  await expect(painted).toHaveCount(0)
+  await trigger.focus()
+  await expect(painted).toHaveCount(Object.keys(editorCopy.slideStarts).length)
+  await expect(trigger).toHaveAttribute("aria-expanded", "false")
+  await expect(items).toHaveCount(0)
+
+  await page.keyboard.press("Enter")
+  await expect(trigger).toHaveAttribute("aria-expanded", "true")
+  await expect(items).toHaveCount(Object.keys(editorCopy.slideStarts).length)
+  await expect(page.locator('[data-layout="title"]')).toBeFocused()
+  await page.keyboard.press("ArrowDown")
+  await expect(page.locator('[data-layout="text"]')).toBeFocused()
+  await page.keyboard.press("Enter")
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
+  await expect(trigger).toHaveAttribute("aria-expanded", "false")
+  await expect(trigger).toBeFocused()
+
+  await page.keyboard.press("Space")
+  await expect(trigger).toHaveAttribute("aria-expanded", "true")
+  await expect(page.locator('[data-layout="title"]')).toBeFocused()
+  await page.keyboard.press("Tab")
+  await expect(trigger).toHaveAttribute("aria-expanded", "false")
+  await expect(items).toHaveCount(0)
+  await expect(trigger).not.toBeFocused()
+
+  await trigger.focus()
+  await page.keyboard.press("ArrowUp")
+  await expect(trigger).toHaveAttribute("aria-expanded", "true")
+  await expect(items.last()).toBeFocused()
+  await page.keyboard.press("Escape")
+  await expect(trigger).toBeFocused()
+  await expect(trigger).toHaveAttribute("aria-expanded", "false")
 })
 
 test("the zoom menu in the right column zooms the slide and goes back to fit", async ({ page, context, stack }) => {
