@@ -22,11 +22,7 @@ same(
   waiting.said.some((line) => line.startsWith("next") && line.includes("node scripts/countersign.mjs 394")),
   true,
 )
-same(
-  "it does not follow to merged",
-  waiting.said.some((line) => line.startsWith("sweep ")),
-  false,
-)
+same("it does not follow to merged", waiting.swept, [])
 
 const countersigned = harness()
 countersigned.context.countersign = () => ({ pass: true, line: `Countersigned ${head}: the deck moved.` })
@@ -36,6 +32,6 @@ same(
   countersigned.said.includes(`bar        Countersigned ${head}: the deck moved.`),
   true,
 )
-same("and names the sweep at the end", countersigned.said.at(-1).includes("pnpm sweep"), true)
+same("and sweeps that pull request's leftovers", countersigned.swept, [{ branch: "land-command", number: 394 }])
 
 console.log("land countersign tests passed")

@@ -88,6 +88,7 @@ export const harness = (options = {}) => {
   } = options
   const log = []
   const said = []
+  const swept = []
   let readAt = 0
   let mergeAt = 0
   let checkAt = 0
@@ -175,6 +176,11 @@ export const harness = (options = {}) => {
     },
     now: () => clock,
     say: (line) => said.push(line),
+    sweepPull:
+      options.sweepPull ??
+      ((asked) => {
+        swept.push({ branch: asked.branch, number: asked.number })
+      }),
   }
   const pullReads = () => reads[Math.min(readAt++, reads.length - 1)]
   const run = async () => {
@@ -183,5 +189,5 @@ export const harness = (options = {}) => {
     if (handEdit !== undefined) throw new Error(`land told the agent to run gh by hand: ${handEdit}`)
     return code
   }
-  return { context, log, said, edits, raised, run }
+  return { context, log, said, edits, raised, swept, run }
 }

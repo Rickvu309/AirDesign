@@ -31,7 +31,7 @@ import { branchBodyFaults } from "./pr-body.mjs"
 import { baseFault } from "./pull-base.mjs"
 import { editLines, editPull, pullEdits } from "./pull-edit.mjs"
 import { restoredLimit, staleFault, staleFiles } from "./stale-tree.mjs"
-import { sweepLine } from "./sweep.mjs"
+import { sweepPull } from "./sweep.mjs"
 import { hasProof, titleAdvice, titleLimit, titleVerdict } from "./title.mjs"
 
 const valueFlags = ["--pr", "--title", "--body-file"]
@@ -152,7 +152,14 @@ export const land = async (ctx) => {
     })
   const follow = async (number, branch) => {
     const code = await followed(number, branch)
-    if (code === 0) say(sweepLine)
+    if (code === 0)
+      (ctx.sweepPull ?? sweepPull)({
+        root: ctx.root,
+        branch,
+        number,
+        here: ctx.here ?? process.cwd(),
+        say,
+      })
     return code
   }
   try {
@@ -351,6 +358,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   const gh = runner("gh", root)
   const code = await land({
     args: parseArgs(process.argv.slice(2)),
+    root,
+    here: process.cwd(),
     git,
     gh,
     check: () => tee(process.execPath, ["scripts/gate.mjs"], process.env, root),
