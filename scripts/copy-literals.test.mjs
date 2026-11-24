@@ -38,6 +38,9 @@ assert.equal(
     .length,
   1,
 )
+const joinWords = copyWords(file, 'export const listCopy = (names: string[]) => `Fix ${names.join(", ")} now`')
+assert.equal(joinWords.has(", "), false, "a separator passed to join is code, not copy")
+assert.deepEqual(literalFaults("tests/browser/list.spec.ts", "", 'names.join(", ")', joinWords), [])
 const moveWords = copyWords(file, 'export const arrangeMoves = ["front", "back"] as const')
 assert.deepEqual(literalFaults("tests/browser/arrange.spec.ts", "", 'covers("front", "back")', moveWords), [])
 assert.equal(literalFaults("tests/browser/arrange.spec.ts", "", 'page.getByText("front")', moveWords).length, 1)
