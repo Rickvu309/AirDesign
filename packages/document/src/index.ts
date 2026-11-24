@@ -1,18 +1,15 @@
 export { elementId, readElementId, readSlideId, shapeOf, slideId, type ElementId, type SlideId } from "./element-id.js"
 export { type DeckIndex, type IndexElement, type SlideSize } from "./deck-index.js"
 export {
-  designKeys,
   roles,
   sources,
   templateFonts,
   type Design,
-  type DesignKey,
   type Palette,
   type Read,
   type Role,
   type Shown,
   type Source,
-  type TemplateFont,
 } from "./design.js"
 export { type Box } from "./box.js"
 export { type FieldEdit, type TraitPatch } from "./trait-patch.js"
@@ -38,7 +35,7 @@ export {
   dashPresets,
   widestBorder,
 } from "./trait-border.js"
-export { anchors, autofits, mostColumns, verticals } from "./trait-body.js"
+export { anchors, mostColumns, verticals } from "./trait-body.js"
 export { adjustLimit, presetAdjusts, presets } from "./trait-geometry.js"
 export { route, routed, type Outline, type Tie } from "./connector.js"
 export { type Spot } from "./preset-sites.js"
