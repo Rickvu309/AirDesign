@@ -10,14 +10,14 @@
     {
       "file": "packages/doom/src/invert.ts",
       "names": ["invert"],
-      "digest": "ce5d772aa465",
-      "blob": "049784a0470b43ddcde43367be72189bdfece6c7"
+      "digest": "ee787ea6fea6",
+      "blob": "cd1aad5a3b5c7c4dd38204c2691a95fd7aef7564"
     },
     {
       "file": "packages/doom/src/standing-layers.ts",
       "names": ["onStandingLayers", "strayedFrom", "leftInPlace"],
-      "digest": "6aed5dc24861",
-      "blob": "cfcc79152caf57b3211b908fb5f87f8f9446fe29"
+      "digest": "50fb0761cc1f",
+      "blob": "152f1349b672f8b05fefe748650d71d62d0ecef5"
     }
   ]
 }

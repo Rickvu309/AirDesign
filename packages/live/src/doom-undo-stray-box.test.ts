@@ -116,4 +116,75 @@ describe("an undo that writes a layer's box but not its frame", () => {
     expect(deck.undo().ok).toBe(true)
     expect(cardIn(deck.view())).toEqual({ parent: frame, box: box(10, 10, 100, 50) })
   })
+
+  it("leaves where the layer sits when another writer reordered it within the frame the step moved it to", async () => {
+    const { deck, run } = await open()
+    const k = orderKeyBetween(null, null)
+    expect(
+      deck.push([
+        { node: card, prop: "parent", value: { id: slide, at: orderKeyBetween(k, null) } },
+        { node: card, prop: "box", value: box(110, 110, 100, 50) },
+        { node: frame, prop: "parent", value: null },
+      ]).ok,
+    ).toBe(true)
+    await run("run-1", [{ node: card, prop: "parent", value: { id: slide, at: orderKeyBetween(null, k) } }])
+    expect(deck.undo().ok).toBe(true)
+    expect(cardIn(deck.view())).toEqual({ parent: slide, box: box(110, 110, 100, 50) })
+    expect((deck.view().nodes.get(frame) as { parent: unknown }).parent).not.toBeNull()
+  })
+
+  it("leaves where the layer sits for Undo on a run that moved it out of a frame when another writer reordered it", async () => {
+    const { deck, run } = await open()
+    const k = orderKeyBetween(null, null)
+    await run("run-1", [
+      { node: card, prop: "parent", value: { id: slide, at: orderKeyBetween(k, null) } },
+      { node: card, prop: "box", value: box(110, 110, 200, 80) },
+    ])
+    expect(deck.push([{ node: card, prop: "parent", value: { id: slide, at: orderKeyBetween(null, k) } }]).ok).toBe(
+      true,
+    )
+    expect((await deck.undoRun("run-1")).ok).toBe(true)
+    expect(cardIn(deck.view())).toEqual({ parent: slide, box: box(110, 110, 100, 50) })
+  })
+
+  it("leaves where the layer sits when two people group it, move it and undo in turn", async () => {
+    const remote = memoryDoomRemote(start)
+    const joined = async (client: string) => {
+      let next = 0
+      const opened = await createDoomDeck(remote, "stray", {
+        once: () => `${client}-${(next += 1)}`,
+        client,
+        storage: memoryStorage(),
+        pause: () => Promise.resolve(),
+      })
+      if (!opened.ok) throw new Error(JSON.stringify(opened))
+      return opened.deck
+    }
+    const [a, b] = [await joined("a"), await joined("b")]
+    const both = async () => {
+      for (const deck of [a, b, a, b]) {
+        await deck.sync()
+        await deck.catchUp()
+      }
+    }
+    const group = doom.nodeId("g:9")
+    expect(
+      b.push([
+        { node: group, prop: "type", value: "frame" },
+        { node: group, prop: "parent", value: at(slide) },
+        { node: group, prop: "box", value: box(300, 200, 400, 300) },
+        { node: card, prop: "parent", value: at(group) },
+        { node: card, prop: "box", value: box(10, 10, 100, 50) },
+      ]).ok,
+    ).toBe(true)
+    await both()
+    expect(a.push([{ node: card, prop: "box", value: box(20, 10, 100, 50) }]).ok).toBe(true)
+    await both()
+    expect(b.undo().ok).toBe(true)
+    await both()
+    const seen = cardIn(a.view())
+    a.undo()
+    await both()
+    expect(cardIn(a.view())).toEqual(seen)
+  })
 })

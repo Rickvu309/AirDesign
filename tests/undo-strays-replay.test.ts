@@ -99,6 +99,11 @@ async function played(route: readonly { readonly action: string; readonly from: 
     } else if (action === "OtherMove") {
       await fromTheirs([{ node: card, prop: "parent", value: at(moveTo) }])
       told = "none"
+    } else if (action === "OtherReorder") {
+      await fromTheirs([
+        { node: card, prop: "parent", value: { id: moveTo, at: orderKeyBetween(orderKeyBetween(null, null), null) } },
+      ])
+      told = "none"
     } else if (action === "OtherWrite") {
       await fromTheirs([{ node: card, prop: "box", value: placeAt }])
       told = "none"
@@ -175,7 +180,7 @@ async function replayed(graph: Graph, failures: string[]) {
 }
 
 describe("undo strays replay", () => {
-  it("drives every edge of the person's nudges and drags, another writer's move and write, undo and redo through the real device deck", async () => {
+  it("drives every edge of the person's nudges and drags, another writer's move, reorder and write, undo and redo through the real device deck", async () => {
     assertJar(jarPath())
     const spec = topics(root).find((topic: { name: string }) => topic.name === "undo-strays")
     if (spec === undefined) throw new Error("no undo-strays spec")

@@ -2,6 +2,7 @@ const steps = {
   Nudge: "the person nudges the card K, which writes its x",
   Drag: "the person drags K into the other frame, which writes its parent and its x",
   OtherMove: "another writer moves K to the other parent and writes no x",
+  OtherReorder: "another writer reorders K inside its parent, which writes the parent and keeps it",
   OtherWrite: "another writer writes K's x",
   Undo: "the person presses Ctrl+Z",
   Redo: "the person presses Ctrl+Shift+Z",

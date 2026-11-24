@@ -6,16 +6,17 @@
 \* the set of the other writer's edits and turned the set of presses that landed, each as bits.
 \* Before the first press the person makes two steps while K sits in F or on the slide: a nudge, which writes x, or a drag,
 \* which writes the parent and x, as a person's move into another frame does. Once the person has a step, another
-\* writer may act once, at any time: move K to the other parent with no new x, as an agent's move does, or write x.
+\* writer may act once, at any time: move K to the other parent with no new x, as an agent's move does, reorder K inside the
+\* parent it is in, which writes the parent and keeps it, as Ctrl+] does, or write x.
 \* An undo looks at the top step. It writes x when the step or a press that landed wrote it last, and the parent when it is
 \* a drag and wrote the parent last (`invert` in packages/doom/src/invert.ts). When it writes x but not the parent, and
-\* K no longer sits in the frame the step left it in, it keeps x as it is (`onStandingLayers` in
-\* packages/doom/src/standing-layers.ts), as for a move it leaves out. With nothing to write it takes the step off and
+\* K no longer sits in the frame the x it would write is measured in, the frame K sat in before the step, it keeps x as it
+\* is (`onStandingLayers` in packages/doom/src/standing-layers.ts), as for a move it leaves out. With nothing to write it takes the step off and
 \* answers nothing. A press that lands pushes on the other stack a step that writes back what it replaced. A redo does
 \* the same from the redo stack.
 \* A stack is a number in base 8 whose last digit is the top step's slot: 1 and 2 for the person's steps, 3 to 5 for the
-\* step each landed press pushed. A slot holds the edit, 8 if it wrote the parent, 16 times the x it replaced, 64 times the
-\* parent it replaced and 128 times the parent it left K in.
+\* step each landed press pushed. A slot holds the edit, 8 if it wrote the parent, 16 times the x it replaced and 64 times
+\* the parent it replaced.
 EXTENDS Integers
 
 VARIABLES p, x, wp, wx, n, us, rs, s1, s2, s3, s4, s5, turned, others, made, turns, acted, presses, told
@@ -30,20 +31,19 @@ Edit(k) == Slot(k) % 8
 Wrote(k) == (Slot(k) \div 8) % 2 = 1
 Replaced(k) == (Slot(k) \div 16) % 4
 Before(k) == (Slot(k) \div 64) % 2
-LeftIn(k) == (Slot(k) \div 128) % 2
-Pack(e, w, rx, rp, lp) == e + 8 * w + 16 * rx + 64 * rp + 128 * lp
+Pack(e, w, rx, rp) == e + 8 * w + 16 * rx + 64 * rp
 Seen == x + 2 * p
 
 OwnsX(k) == wx = Edit(k) \/ In(turned, wx)
 OwnsP(k) == Wrote(k) /\ (wp = Edit(k) \/ In(turned, wp))
-Strays(k) == Fixed /\ ~OwnsP(k) /\ p # LeftIn(k)
+Strays(k) == Fixed /\ ~OwnsP(k) /\ p # Before(k)
 WritesX(k) == OwnsX(k) /\ ~Strays(k)
 Lands(k) == WritesX(k) \/ OwnsP(k)
 
 TypeOK ==
   /\ p \in 0..1 /\ x \in 0..1 /\ {wp, wx} \subseteq 0..7 /\ n \in 0..7
   /\ us \in 0..32767 /\ rs \in 0..32767
-  /\ {s1, s2, s3, s4, s5} \subseteq 0..255
+  /\ {s1, s2, s3, s4, s5} \subseteq 0..127
   /\ turned \in 0..255 /\ others \in 0..255
   /\ made \in 0..2 /\ turns \in 0..3 /\ acted \in BOOLEAN /\ presses \in 0..3
   /\ told \in {"none", "undone", "redone", "nothing to undo", "nothing to redo"}
@@ -64,14 +64,14 @@ Nudge ==
   \E nx \in 0..1 :
     /\ made < 2 /\ presses = 0 /\ nx # x
     /\ x' = nx /\ wx' = n + 1
-    /\ Stepped(Pack(n + 1, 0, x, p, p))
+    /\ Stepped(Pack(n + 1, 0, x, p))
     /\ UNCHANGED <<p, wp>>
 
 Drag ==
   \E np \in 0..1, nx \in 0..1 :
     /\ made < 2 /\ presses = 0 /\ np # p /\ nx # x
     /\ p' = np /\ x' = nx /\ wp' = n + 1 /\ wx' = n + 1
-    /\ Stepped(Pack(n + 1, 1, x, p, np))
+    /\ Stepped(Pack(n + 1, 1, x, p))
 
 OtherMove ==
   /\ ~acted /\ made > 0
@@ -79,6 +79,13 @@ OtherMove ==
   /\ others' = others + 2 ^ (n + 1)
   /\ n' = n + 1 /\ acted' = TRUE /\ told' = "none"
   /\ UNCHANGED <<x, wx, us, rs, s1, s2, s3, s4, s5, turned, made, turns, presses>>
+
+OtherReorder ==
+  /\ ~acted /\ made > 0
+  /\ wp' = n + 1
+  /\ others' = others + 2 ^ (n + 1)
+  /\ n' = n + 1 /\ acted' = TRUE /\ told' = "none"
+  /\ UNCHANGED <<p, x, wx, us, rs, s1, s2, s3, s4, s5, turned, made, turns, presses>>
 
 OtherWrite ==
   \E nx \in 0..1 :
@@ -92,7 +99,7 @@ OtherWrite ==
 Turns(k) ==
   LET np == IF OwnsP(k) THEN Before(k) ELSE p
       nx == IF WritesX(k) THEN Replaced(k) ELSE x
-      back == Pack(n + 1, IF OwnsP(k) THEN 1 ELSE 0, x, p, np) IN
+      back == Pack(n + 1, IF OwnsP(k) THEN 1 ELSE 0, x, p) IN
   /\ p' = np /\ x' = nx
   /\ wp' = IF OwnsP(k) THEN n + 1 ELSE wp
   /\ wx' = IF WritesX(k) THEN n + 1 ELSE wx
@@ -122,15 +129,15 @@ Redo ==
        ELSE rs' = rs \div 8 /\ told' = "nothing to redo" /\ Kept /\ UNCHANGED us
   /\ UNCHANGED <<s1, s2, others, made, acted>>
 
-Next == Nudge \/ Drag \/ OtherMove \/ OtherWrite \/ Undo \/ Redo
+Next == Nudge \/ Drag \/ OtherMove \/ OtherReorder \/ OtherWrite \/ Undo \/ Redo
 
 Spec == Init /\ [][Next]_vars
 
 \* A press that lands never moves K away from where the person saw it, unless it writes K's parent or K still sits in the
-\* frame the step left it in.
+\* frame the x it writes is measured in, the frame K sat in before the step.
 PutsBackWhereSeen ==
   [][\A k \in {IF told' = "undone" THEN us % 8 ELSE rs % 8} :
-       (told' \in {"undone", "redone"} /\ Seen' # Seen) => (p' # p \/ wp' # wp \/ p = LeftIn(k))]_vars
+       (told' \in {"undone", "redone"} /\ Seen' # Seen) => (p' # p \/ wp' # wp \/ p = Before(k))]_vars
 
 \* A press never writes the x the other writer wrote last.
 NeverCoversTheirs ==

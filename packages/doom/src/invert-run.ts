@@ -118,7 +118,7 @@ function unshownOf(now: Doom, standing: readonly Write[], moved: readonly NodeId
   return new Map([...unshown].map(([node, frames]) => [node, !frames.some((frame) => unshown.has(frame))]))
 }
 
-function settle(now: Doom, edits: readonly Landed[], mine: ReadonlySet<Rev>, restored: readonly Restore[]): Undone {
+function settle(now: Doom, edits: readonly RunEdit[], mine: ReadonlySet<Rev>, restored: readonly Restore[]): Undone {
   const kept = keptOf(now, edits, mine)
   const chosen = restored.filter(({ cell }) => !kept.has(cell.node))
   const parents = new Map(
@@ -129,11 +129,12 @@ function settle(now: Doom, edits: readonly Landed[], mine: ReadonlySet<Rev>, res
     .filter(({ cell }) => cell.key === "parent" || !gone(cell.node))
     .map(({ cell, value, base }) => ({ node: cell.node, prop: cell.key, value, base }))
   const roots = [...kept].filter((node) => !kept.has(parentIn(now, node) as NodeId))
-  const leftIn = new Map<NodeId, NodeId | null>()
+  const measuredIn = new Map<NodeId, NodeId | null>()
   for (const edit of edits)
-    for (const each of edit.writes)
-      if (each.prop === "parent") leftIn.set(each.node, (each.value as { readonly id: NodeId } | null)?.id ?? null)
-  const standing = onStandingLayers(now, writes, edits.at(-1)?.rev ?? now.rev, leftIn)
+    for (const was of edit.replaced)
+      if (was.key === "parent" && !measuredIn.has(was.node))
+        measuredIn.set(was.node, (was.value as { readonly id: NodeId } | null)?.id ?? null)
+  const standing = onStandingLayers(now, writes, edits.at(-1)?.rev ?? now.rev, measuredIn)
   const left = writes
     .filter((each) => each.prop === "parent" && each.value !== null && !standing.includes(each))
     .map((each) => each.node)

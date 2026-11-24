@@ -90,11 +90,11 @@ function leftInPlace(
   return sameValue(value, here) ? undefined : { ...write, value }
 }
 
-export type LeftIn = ReadonlyMap<NodeId, NodeId | null>
+type MeasuredIn = ReadonlyMap<NodeId, NodeId | null>
 
-function strayedFrom(now: Doom, node: NodeId, leftIn: LeftIn, since: Rev): boolean {
+function strayedFrom(now: Doom, node: NodeId, measuredIn: MeasuredIn, since: Rev): boolean {
   const here = parentIn(now, node)?.id ?? null
-  if (leftIn.has(node)) return leftIn.get(node) !== here
+  if (measuredIn.has(node)) return measuredIn.get(node) !== here
   return (now.revs.get(node)?.get("parent") ?? 0) > since
 }
 
@@ -102,7 +102,7 @@ export function onStandingLayers(
   now: Doom,
   writes: readonly Write[],
   since: Rev,
-  leftIn: LeftIn = new Map(),
+  measuredIn: MeasuredIn,
 ): readonly Write[] {
   const moves = movesIn(writes)
   const wroteParent = new Set(writes.flatMap((each) => (each.prop === "parent" ? [each.node] : [])))
@@ -113,7 +113,7 @@ export function onStandingLayers(
     if (lands.has(each.node)) return [each]
     if (parentIn(now, each.node) === null) return []
     if (moves.has(each.node)) return leftInPlace(now, each, measuredInFrame) ?? []
-    if (!wroteParent.has(each.node) && strayedFrom(now, each.node, leftIn, since))
+    if (!wroteParent.has(each.node) && strayedFrom(now, each.node, measuredIn, since))
       return leftInPlace(now, each, placedInFrame) ?? []
     return [each]
   })
