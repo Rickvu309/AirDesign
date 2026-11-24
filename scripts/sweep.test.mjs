@@ -3,8 +3,8 @@ import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { listedRecently, listingMinutes, sweepPull } from "./sweep.mjs"
-import { findStale, idleBefore } from "./worktrees.mjs"
+import { listedRecently, listingMinutes, sweep, sweepPull } from "./sweep.mjs"
+import { findStale, idleBefore, recentFor } from "./worktrees.mjs"
 
 const folder = fs.mkdtempSync(path.join(os.tmpdir(), "sweep-test-"))
 try {
@@ -319,3 +319,90 @@ same("both lines are printed", ownLines, [
   `removed worktree ${own}, because its pull request 3 is merged`,
   "deleted branch own, because its pull request 3 is merged",
 ])
+
+const outside = fs.mkdtempSync(path.join(os.tmpdir(), "sweep-outside-"))
+process.on("exit", () => fs.rmSync(outside, { recursive: true, force: true }))
+const outsideRemote = path.join(outside, "remote.git")
+const checkout = path.join(outside, "repo")
+const elsewhere = path.join(outside, "elsewhere")
+fs.mkdirSync(checkout)
+git(outside, "init", "-q", "--bare", outsideRemote)
+git(checkout, "init", "-q", "-b", "main")
+commit(checkout, "a.txt", "a")
+git(checkout, "remote", "add", "origin", outsideRemote)
+git(checkout, "push", "-q", "-u", "origin", "main")
+const place = (name) => path.join(elsewhere, name)
+const pushedTree = place("t3/pushed")
+const unpushedTree = place("t3/unpushed")
+const recentTree = place("t3/recent")
+const lockedOutside = place("t3/locked")
+const verifyTree = place("AirDesign-verify-clean")
+const dirtyTree = place("AirDesign-verify-dirty")
+const busyTree = place("AirDesign-verify-busy")
+git(checkout, "worktree", "add", "-q", "-b", "pushed", pushedTree, "main")
+git(checkout, "worktree", "add", "-q", "-b", "unpushed", unpushedTree, "main")
+git(checkout, "worktree", "add", "-q", "-b", "recent", recentTree, "main")
+git(checkout, "worktree", "add", "-q", "-b", "locked-outside", lockedOutside, "main")
+git(checkout, "worktree", "add", "-q", "--detach", verifyTree, "main")
+git(checkout, "worktree", "add", "-q", "--detach", dirtyTree, "main")
+git(checkout, "worktree", "add", "-q", "--detach", busyTree, "main")
+const pushedHead = commit(pushedTree, "pushed.txt", "pushed")
+git(pushedTree, "push", "-q", "-u", "origin", "pushed")
+const unpushedHead = commit(unpushedTree, "unpushed.txt", "unpushed")
+commit(recentTree, "recent.txt", "recent")
+git(recentTree, "push", "-q", "-u", "origin", "recent")
+git(checkout, "worktree", "lock", lockedOutside)
+fs.writeFileSync(path.join(dirtyTree, "unsaved.txt"), "unsaved")
+const age = (worktree) => {
+  const raw = fs.readFileSync(path.join(worktree, ".git"), "utf8").replace("gitdir:", "").trim()
+  const gitdir = path.isAbsolute(raw) ? raw : path.resolve(worktree, raw)
+  const when = new Date(Date.now() - recentFor - 60_000)
+  for (const name of ["HEAD", "index"]) fs.utimesSync(path.join(gitdir, name), when, when)
+}
+for (const worktree of [pushedTree, unpushedTree, lockedOutside, verifyTree, dirtyTree, busyTree]) age(worktree)
+const home = path.join(outside, "home")
+fs.mkdirSync(home)
+const quiet = { pulls: new Map(), home, busy: (where) => where === busyTree, now: Date.now() }
+const named = (lines) => lines.filter((line) => line.startsWith("would remove worktree ")).sort()
+const dryLines = []
+sweep({ root: checkout, apply: false, say: (line) => dryLines.push(line), ...quiet })
+same("the outside worktrees are not inside the checkout", path.relative(checkout, pushedTree).startsWith(".."), true)
+same(
+  "a dry run names a pushed worktree and a detached verify checkout outside the repo",
+  named(dryLines),
+  [
+    `would remove worktree ${pushedTree}, because its commit is on a remote branch`,
+    `would remove worktree ${verifyTree}, because its commit is on a remote branch`,
+  ].sort(),
+)
+same(
+  "a dry run leaves the checkout, a dirty tree, an unpushed tree, a busy tree, a locked tree and a recent tree",
+  [checkout, dirtyTree, unpushedTree, busyTree, lockedOutside, recentTree].every((where) => fs.existsSync(where)),
+  true,
+)
+same(
+  "none of those kept trees are named",
+  dryLines.some((line) =>
+    [checkout, dirtyTree, unpushedTree, busyTree, lockedOutside, recentTree].some((where) => line.includes(where)),
+  ),
+  false,
+)
+const applied = []
+sweep({ root: checkout, apply: true, say: (line) => applied.push(line), ...quiet })
+same(
+  "apply removes the pushed worktree and the detached verify checkout",
+  applied.sort(),
+  [
+    `removed worktree ${pushedTree}, because its commit is on a remote branch`,
+    `removed worktree ${verifyTree}, because its commit is on a remote branch`,
+  ].sort(),
+)
+same(
+  "the removed folders are gone and the kept ones stay",
+  [pushedTree, verifyTree, checkout, dirtyTree, unpushedTree, busyTree, lockedOutside, recentTree].map((where) =>
+    fs.existsSync(where),
+  ),
+  [false, false, true, true, true, true, true, true],
+)
+same("the pushed branch stays", git(checkout, "rev-parse", "--verify", "refs/heads/pushed").trim(), pushedHead)
+same("the unpushed commit stays on its branch", git(checkout, "rev-parse", "unpushed").trim(), unpushedHead)

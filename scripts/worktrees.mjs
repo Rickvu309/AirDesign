@@ -77,6 +77,11 @@ const ownCommits = (root, tip, base) => {
 const upstreamGone = (root, branch) =>
   branch !== undefined && git(root, ["for-each-ref", "--format=%(upstream:track)", branch])?.trim() === "[gone]"
 
+const onRemote = (root, commit) => {
+  const listed = git(root, ["branch", "-r", "--contains", commit])
+  return listed !== undefined && listed.split("\n").some((line) => line.trim() !== "")
+}
+
 const lastTouched = (worktree) => {
   const pointer = path.join(worktree, ".git")
   try {
@@ -115,7 +120,7 @@ export const usedByAProcess = (worktree) => {
   return false
 }
 
-const clean = (worktree) => git(worktree, ["status", "--porcelain"]) === ""
+const clean = (worktree) => git(worktree, ["--no-optional-locks", "status", "--porcelain"]) === ""
 
 const removeWorktree = (root, where) => git(root, ["worktree", "remove", where]) !== undefined
 
@@ -168,10 +173,11 @@ export const readPulls = (root) => {
   }
 }
 
-export const staleReason = ({ commits, gone, idle, detached, recent, pull, scratch }) => {
+export const staleReason = ({ commits, gone, idle, detached, recent, pull, scratch, pushed }) => {
   if (recent) return undefined
   if (pull !== undefined) return pullReason(pull)
   if (scratch) return "it is a verify-airdesign scratch tree"
+  if (pushed) return "its commit is on a remote branch"
   if (detached && !idle) return undefined
   if (commits !== undefined && commits.total > 0 && commits.unlanded === 0) return "its work is on main"
   if (gone) return "its branch is gone from GitHub"
@@ -197,7 +203,7 @@ export const findStale = ({
     const touched = now - lastTouched(worktree.path)
     const detached = worktree.branch === undefined
     const pull = detached ? undefined : pulls.get(worktree.head)
-    const reason = staleReason({
+    const facts = {
       commits,
       gone: upstreamGone(root, worktree.branch),
       idle: touched > idleBefore,
@@ -205,7 +211,10 @@ export const findStale = ({
       detached,
       pull,
       scratch: detached && path.dirname(worktree.path) === scratchRoot,
-    })
+    }
+    const reason =
+      staleReason(facts) ??
+      (!facts.recent && onRemote(root, worktree.head) ? staleReason({ ...facts, pushed: true }) : undefined)
     if (reason === undefined) continue
     if (busy(worktree.path) || !clean(worktree.path)) continue
     stale.push({ ...worktree, reason, landed: pull !== undefined || (commits !== undefined && commits.unlanded === 0) })
