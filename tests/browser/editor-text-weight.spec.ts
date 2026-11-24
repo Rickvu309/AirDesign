@@ -120,13 +120,13 @@ test("Ctrl+B on a label whose style weight is 600 on a plain family toggles Bold
       .then((text) => text.replace(/[^A-Za-z]/g, "").replace(/Weight/g, ""))
 
   const resting = await painted()
-  const restingName = resting.weight === "700" ? shortcutCopy.gestures.bold : "Regular"
+  const restingName = resting.weight === "700" ? shortcutCopy.gestures.bold : textCopy.regular
   await expect.poll(weightName).toBe(restingName)
 
   await page.keyboard.press("ControlOrMeta+b")
   await expect.poll(async () => (await painted()).weight).not.toBe(resting.weight)
   const flipped = await painted()
-  await expect.poll(weightName).toBe(flipped.weight === "700" ? shortcutCopy.gestures.bold : "Regular")
+  await expect.poll(weightName).toBe(flipped.weight === "700" ? shortcutCopy.gestures.bold : textCopy.regular)
   expect(flipped.width).not.toBeCloseTo(resting.width, 0)
 
   await page.keyboard.press("ControlOrMeta+b")
