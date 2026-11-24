@@ -132,8 +132,35 @@ export function centeredIn(inside: Size, size: Size): { readonly x: number; read
   return { x: Math.round((inside.w - size.w) / 2), y: Math.round((inside.h - size.h) / 2) }
 }
 
-function openArea(view: doom.Doom, parent: doom.NodeId, inside: Size): Size & { x: number; y: number } {
-  return doom.freeAreaOf(view, parent) ?? { x: 0, y: 0, ...inside }
+type Box = Size & { readonly x: number; readonly y: number }
+
+const iconSide = 120
+const chartLeast: Size = { w: 280, h: 240 }
+
+const fits = (area: Box, least: Size) => area.w >= least.w && area.h >= least.h
+
+function placed(inside: Size, size: Size, at: { readonly x: number; readonly y: number }): Box {
+  const along = (value: number, span: number, room: number) => Math.min(Math.max(0, value), Math.max(0, room - span))
+  return { x: along(at.x, size.w, inside.w), y: along(at.y, size.h, inside.h), ...size }
+}
+
+function onTop(inside: Size, size: Size, anchor: Box | undefined): Box {
+  if (anchor === undefined) return placed(inside, size, centeredIn(inside, size))
+  const nudge = doom.gapFor(inside.w)
+  return placed(inside, size, { x: anchor.x + nudge, y: anchor.y + nudge })
+}
+
+function openArea(view: doom.Doom, parent: doom.NodeId, inside: Size, least: Size, anchor: Box | undefined): Box {
+  const content = doom.contentAreaOf(view, parent)
+  if (content !== undefined && fits(content, least)) return content
+  return onTop(inside, least, anchor)
+}
+
+function iconAt(view: doom.Doom, parent: doom.NodeId, inside: Size, anchor: Box | undefined): Box {
+  const least = { w: iconSide, h: iconSide }
+  const area = openArea(view, parent, inside, least, anchor)
+  const at = centeredIn(area, least)
+  return { x: area.x + at.x, y: area.y + at.y, ...least }
 }
 
 export function iconWrites(
@@ -142,18 +169,17 @@ export function iconWrites(
   parent: Slot,
   name: string,
   inside: Size,
+  anchor?: Box,
 ): readonly doom.Write[] {
-  const area = openArea(view, parent.id, inside)
-  const side = Math.min(120, area.w, area.h)
-  const at = centeredIn(area, { w: side, h: side })
+  const at = iconAt(view, parent.id, inside, anchor)
   return [
     { node: id, prop: "type", value: "shape" },
     { node: id, prop: "parent", value: parent },
     { node: id, prop: "name", value: "Icon" },
-    { node: id, prop: "box", value: { x: area.x + at.x, y: area.y + at.y, w: side, h: side, ...upright } },
+    { node: id, prop: "box", value: { x: at.x, y: at.y, w: at.w, h: at.h, ...upright } },
     { node: id, prop: "geometry", value: { kind: "icon", name: `lucide/${name}` } },
     { node: id, prop: "strokes", value: [themed("text")] },
-    { node: id, prop: "stroke", value: { weight: side / 12, align: "center", dash: "solid" } },
+    { node: id, prop: "stroke", value: { weight: iconSide / 12, align: "center", dash: "solid" } },
   ]
 }
 
@@ -171,8 +197,8 @@ export function iconSwapWrites(
   return ids.length === 0 || swaps.length !== ids.length ? null : swaps
 }
 
-export function chartArea(view: doom.Doom, parent: doom.NodeId, inside: Size): Size & { x: number; y: number } {
-  return openArea(view, parent, inside)
+export function chartArea(view: doom.Doom, parent: doom.NodeId, inside: Size, anchor?: Box): Box {
+  return openArea(view, parent, inside, chartLeast, anchor)
 }
 
 export function chartWrites(
