@@ -80,8 +80,7 @@ const lineWeight = 3
 const iconWeightShare = 12
 
 function surfaced(draft: Draft, look: AgentLook, now: Now = {}, align: StrokeStyle["align"] = "inside") {
-  const themed =
-    look.effectOpacity !== undefined || look.blur !== undefined || look.innerShadow !== undefined
+  const themed = look.effectOpacity !== undefined || look.blur !== undefined || look.innerShadow !== undefined
   return surfaceOf(look, now, align, themed ? themeOf(draft) : undefined)
 }
 
