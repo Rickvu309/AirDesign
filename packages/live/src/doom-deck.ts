@@ -31,7 +31,14 @@ export type Turned =
   | { readonly ok: false; readonly reason: "refused"; readonly refused: doom.Refusal }
 
 export type TurnedRun =
-  | { readonly ok: true; readonly once: string; readonly saved: Promise<void>; readonly kept: readonly doom.NodeId[] }
+  | {
+      readonly ok: true
+      readonly once: string
+      readonly saved: Promise<void>
+      readonly kept: readonly doom.NodeId[]
+      readonly left: readonly doom.NodeId[]
+    }
+  | { readonly ok: false; readonly reason: "left"; readonly left: readonly doom.NodeId[] }
   | Exclude<Turned, { readonly ok: true }>
   | { readonly ok: false; readonly reason: "offline" }
 
@@ -444,14 +451,15 @@ function connected(
       const turnedAt = revOf(name)
       if (turnedAt !== undefined) owned.add(turnedAt)
     }
-    const { writes, kept } = doom.invertRun(now, edits, owned)
-    if (writes.length === 0) return { ok: false, reason: "nothing" }
+    const { writes, kept, left } = doom.invertRun(now, edits, owned)
+    if (writes.length === 0)
+      return left.length === 0 ? { ok: false, reason: "nothing" } : { ok: false, reason: "left", left }
     const pushed = pushEdit(writes, author, { run, undone: true })
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
     redoSteps.push({ onces: [pushed.once], before: now, writes, run })
     turned.push(pushed.once)
     if (turned.length > 500) turned.shift()
-    return { ok: true, once: pushed.once, saved: pushed.saved, kept }
+    return { ok: true, once: pushed.once, saved: pushed.saved, kept, left }
   }
 
   async function follow(signal: AbortSignal): Promise<Followed> {

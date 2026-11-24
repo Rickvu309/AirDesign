@@ -1,3 +1,4 @@
+import { sameValue } from "./changing-writes.js"
 import type { Doom, Write } from "./doom.js"
 import type { NodeId, Rev } from "./ids.js"
 
@@ -11,16 +12,23 @@ const movesIn = (writes: readonly Write[]) =>
     ),
   )
 
+function shows(now: Doom, node: NodeId): boolean {
+  let parent = parentIn(now, node)
+  for (let hops = 0; parent != null && hops <= now.nodes.size; hops += 1) parent = parentIn(now, parent.id)
+  return parent === undefined
+}
+
 function landingMoves(now: Doom, moves: ReadonlyMap<NodeId, NodeId>): ReadonlySet<NodeId> {
   const lands = new Set<NodeId>()
   const stays = new Set<NodeId>()
   const judge = (node: NodeId, into: NodeId): boolean | undefined => {
+    const hidden = !shows(now, node)
     let at = into
     for (let hops = 0; hops <= now.nodes.size; hops += 1) {
       if (at === node) return false
       if (moves.has(at) && !lands.has(at) && !stays.has(at)) return undefined
       const parent = lands.has(at) ? { id: moves.get(at)! } : parentIn(now, at)
-      if (parent === null) return false
+      if (parent === null) return hidden && at !== into
       if (parent === undefined) return true
       at = parent.id
     }
@@ -63,15 +71,28 @@ function heldFrames(
   return held
 }
 
+const measuredInFrame = { box: ["x", "y", "rotation", "flipH", "flipV"], geometry: ["start", "end"] } as const
+
+function leftInPlace(now: Doom, write: Write): Write | undefined {
+  if (write.prop !== "box" && write.prop !== "geometry") return write
+  const here = (now.nodes.get(write.node) as Record<string, unknown> | undefined)?.[write.prop] as
+    | Record<string, unknown>
+    | undefined
+  const was = write.value as Record<string, unknown> | null
+  if (here === undefined || was === null) return undefined
+  if (write.prop === "geometry" && (here.kind !== "line" || was.kind !== "line")) return write
+  const value = { ...was, ...Object.fromEntries(measuredInFrame[write.prop].map((key) => [key, here[key]])) }
+  return sameValue(value, here) ? undefined : { ...write, value }
+}
+
 export function onStandingLayers(now: Doom, writes: readonly Write[], since: Rev): readonly Write[] {
   const moves = movesIn(writes)
   const lands = landingMoves(now, moves)
   const held = heldFrames(now, writes, moves, lands, since)
-  return writes.filter((each) =>
-    each.prop === "parent"
-      ? each.value === null
-        ? !held.has(each.node)
-        : lands.has(each.node)
-      : lands.has(each.node) || (!moves.has(each.node) && parentIn(now, each.node) !== null),
-  )
+  return writes.flatMap((each) => {
+    if (each.prop === "parent") return (each.value === null ? !held.has(each.node) : lands.has(each.node)) ? [each] : []
+    if (lands.has(each.node)) return [each]
+    if (parentIn(now, each.node) === null) return []
+    return (moves.has(each.node) ? leftInPlace(now, each) : each) ?? []
+  })
 }

@@ -1,7 +1,7 @@
 const steps = {
   PersonDrag: "the person drags the card K into frame G or frame H",
   PersonFrame: "the person frames K (Ctrl+Alt+G): a new frame X where K is, holding K",
-  OtherDelete: "another tab deletes frame F, G or H",
+  OtherDelete: "another tab deletes frame F, G or H, or X before the first press",
   OtherDrag: "another tab drags K into G, H or X, or H into X",
   Undo: "the person presses Ctrl+Z",
   Redo: "the person presses Ctrl+Shift+Z",
@@ -16,7 +16,7 @@ const depth = (stack) => (stack === 0 ? 0 : 1 + depth(Math.floor(stack / 8)))
 export const state = (v) =>
   `K is in ${names[v.pK]} (by ${writer(v, v.wK)}), H is in ${names[v.pH]}, ` +
   `${v.pX === -1 ? (v.wX === 0 ? "X is not made" : "X is deleted") : `X is in ${names[v.pX]}`}` +
-  `${v.gone === 0 ? "" : `, ${names[v.gone]} is deleted`}; ` +
+  `${v.gone === 0 ? "" : v.gone === 5 ? " and the other tab deleted it" : `, ${names[v.gone]} is deleted`}; ` +
   `${depth(v.us)} undo and ${depth(v.rs)} redo steps` +
   `${v.told === "none" ? "" : `; the last press: ${v.told}`}`
 

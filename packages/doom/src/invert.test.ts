@@ -244,10 +244,14 @@ describe("invert", () => {
       { node: leaf, prop: "parent", value: place(wrap) },
       { node: leaf, prop: "box", value: box(0) },
     ])
-    for (const gone of [ids.card, inner]) {
-      const later = step(after, [{ node: gone, prop: "parent", value: null }])
-      expect(invert(before, later.after, edit)).toEqual([])
-    }
+    const innerGone = step(after, [{ node: inner, prop: "parent", value: null }])
+    expect(invert(before, innerGone.after, edit)).toEqual([])
+    const cardGone = step(after, [{ node: ids.card, prop: "parent", value: null }])
+    expect(invert(before, cardGone.after, edit)).toEqual([
+      { node: leaf, prop: "parent", value: place(inner), base: edit.rev },
+      { node: leaf, prop: "box", value: null, base: edit.rev },
+      { node: wrap, prop: "parent", value: null, base: edit.rev },
+    ])
     const theirs = step(after, [{ node: ids.caption, prop: "parent", value: place(wrap) }])
     const writes = invert(before, theirs.after, edit)
     expect(writes).toEqual([
@@ -255,6 +259,61 @@ describe("invert", () => {
       { node: leaf, prop: "box", value: null, base: edit.rev },
     ])
     expect((tryLand(theirs.after, writes) as Doom).children.get(wrap)).toEqual([ids.caption])
+  })
+
+  it("puts back the colour, the words and the size of a layer it leaves in its new frame, and keeps only where it sits", () => {
+    const red = [{ kind: "solid", color: hex(0xff0000) }]
+    const { before, after, edit } = step(sampleDeck(), [
+      { node: ids.title, prop: "parent", value: place(ids.side) },
+      { node: ids.title, prop: "box", value: box(30, 40, 300, 150) },
+      { node: ids.title, prop: "fills", value: red },
+      { node: ids.title, prop: "text", value: textOf("Typed"), base: revOf(sampleDeck(), ids.title, "text")! },
+    ])
+    const later = step(after, [{ node: ids.card, prop: "parent", value: null }])
+    const writes = invert(before, later.after, edit)
+    expect(writes).toEqual([
+      { node: ids.title, prop: "box", value: box(30, 40), base: edit.rev },
+      { node: ids.title, prop: "fills", value: null, base: edit.rev },
+      { node: ids.title, prop: "text", value: textOf("Revenue"), base: edit.rev },
+    ])
+    const undone = tryLand(later.after, writes) as Doom
+    expect(undone.nodes.get(ids.title)).toMatchObject({
+      parent: place(ids.side),
+      box: box(30, 40),
+      text: textOf("Revenue"),
+    })
+    expect(undone.nodes.get(ids.title)).not.toHaveProperty("fills")
+  })
+
+  it("leaves out the box of a layer it leaves in its new frame when only its place there changed", () => {
+    const { before, after, edit } = step(sampleDeck(), [
+      { node: ids.title, prop: "parent", value: place(ids.side) },
+      { node: ids.title, prop: "box", value: { ...box(30, 40), rotation: 45 } },
+    ])
+    const later = step(after, [{ node: ids.card, prop: "parent", value: null }])
+    expect(invert(before, later.after, edit)).toEqual([])
+  })
+
+  it("puts a deleted layer back into its frame though a frame above it was deleted since, so it comes back with that frame", () => {
+    const inner = nodeId("t:10")
+    const nested = land(sampleDeck(), [
+      ...create(inner, "frame", ids.card),
+      { node: ids.title, prop: "parent", value: place(inner) },
+    ])
+    const { before, after, edit } = step(nested, [
+      { node: ids.title, prop: "text", value: textOf(""), base: revOf(nested, ids.title, "text")! },
+      { node: ids.title, prop: "parent", value: null },
+    ])
+    const later = step(after, [{ node: ids.card, prop: "parent", value: null }])
+    const writes = invert(before, later.after, edit)
+    expect(writes).toEqual([
+      { node: ids.title, prop: "parent", value: place(inner), base: edit.rev },
+      { node: ids.title, prop: "text", value: textOf("Revenue"), base: edit.rev },
+    ])
+    const back = land(tryLand(later.after, writes) as Doom, [
+      { node: ids.card, prop: "parent", value: place(ids.slide) },
+    ])
+    expect(back.nodes.get(ids.title)).toMatchObject({ parent: place(inner), text: textOf("Revenue") })
   })
 
   it("keeps the writes to a layer the undo itself puts back", () => {

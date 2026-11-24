@@ -67,10 +67,16 @@ const codeOf = (now: doom.Doom, node: doom.NodeId) => {
   const parent = parentOf(now, node)
   return parent == null ? -1 : layers.indexOf(parent.id as (typeof layers)[number])
 }
-const goneOf = (now: doom.Doom) =>
-  ([outer, inner, side] as const)
-    .map((each, index) => (parentOf(now, each) === null ? [1, 2, 4][index]! : 0))
-    .find((code) => code !== 0) ?? 0
+const goneOf = (now: doom.Doom, theirs: ReadonlySet<string>) => {
+  const writer = now.revs.get(wrap)?.get("parent")
+  const wrapGone =
+    parentOf(now, wrap) === null && [...now.onces].some(([once, at]) => at === writer && theirs.has(once))
+  return (
+    ([outer, inner, side, wrap] as const)
+      .map((each, index) => (parentOf(now, each) === null ? [1, 2, 4, 5][index]! : 0))
+      .find((code) => code !== 0 && (code !== 5 || wrapGone)) ?? 0
+  )
+}
 
 function moveOf(from: Spec, to: Spec): doom.Write {
   if (from.pK !== to.pK) return { node: card, prop: "parent", value: at(layers[Number(to.pK)]!) }
@@ -91,11 +97,13 @@ async function played(route: readonly { readonly action: string; readonly from: 
   let landed = 0
   let told = "none"
   const named = (once: string) => edits.set(once, (landed += 1))
+  const sent = new Set<string>()
   const fromTheirs = async (writes: readonly doom.Write[]) => {
     await theirs.catchUp()
     const pushed = theirs.push(writes)
     if (!("once" in pushed)) throw new Error(`the other tab sent nothing: ${JSON.stringify(pushed)}`)
     named(pushed.once)
+    sent.add(pushed.once)
     expect(await theirs.sync()).toEqual({ ok: true })
     await mine.catchUp()
   }
@@ -110,7 +118,7 @@ async function played(route: readonly { readonly action: string; readonly from: 
       stepped([...frame(wrap, layers[Number(from.pK)]!), { node: card, prop: "parent", value: at(wrap) }])
     else if (action === "OtherDrag") await fromTheirs([moveOf(from, to)])
     else if (action === "OtherDelete") {
-      const gone = { 1: outer, 2: inner, 4: side }[Number(to.gone)]!
+      const gone = { 1: outer, 2: inner, 4: side, 5: wrap }[Number(to.gone)]!
       await fromTheirs([{ node: gone, prop: "parent", value: null }])
     } else if (action === "Undo" || action === "Redo") {
       const turned = action === "Undo" ? mine.undo() : mine.redo()
@@ -127,7 +135,7 @@ async function played(route: readonly { readonly action: string; readonly from: 
     const once = [...now.onces].find(([, rev]) => rev === writer)?.[0]
     return once === undefined ? -1 : (edits.get(once) ?? -1)
   }
-  const gone = goneOf(now)
+  const gone = goneOf(now, sent)
   const seen: Seen = {
     pK: codeOf(now, card),
     ...(gone === 4 ? {} : { pH: codeOf(now, side), wH: writerOf(side) }),
@@ -142,11 +150,12 @@ async function played(route: readonly { readonly action: string; readonly from: 
     codeOf(server, card) === seen.pK &&
     codeOf(server, side) === (seen.pH ?? -1) &&
     codeOf(server, wrap) === seen.pX &&
-    goneOf(server) === seen.gone
+    goneOf(server, sent) === seen.gone
   return { seen, agreed }
 }
 
-function differences(expected: Spec, found: Seen): string[] {
+function differences(model: Spec, found: Seen): string[] {
+  const expected = Number(model.gone) === 5 ? { ...model, pX: -1 } : model
   return (Object.keys(found) as (keyof Seen)[])
     .filter((key) => expected[key] !== found[key])
     .map((key) => `${key} is ${String(found[key])}, the model says ${String(expected[key])}`)
@@ -160,7 +169,7 @@ async function replayed(graph: Graph, failures: string[]) {
   type Leg = { readonly action: string; readonly from: Spec; readonly to: Spec }
   const paths = new Map<string, readonly Leg[]>(firsts.map((name) => [name, []]))
   const queued = [...firsts]
-  const seen = { starts: firsts.length, edges: 0, framesKept: 0, framesDeleted: 0, putBack: 0 }
+  const seen = { starts: firsts.length, edges: 0, framesKept: 0, framesDeleted: 0, putBack: 0, theirX: 0 }
   while (queued.length > 0) {
     const from = queued.shift() as string
     const source = graph.states.get(from) as Spec
@@ -185,6 +194,7 @@ async function replayed(graph: Graph, failures: string[]) {
       if (deletes && Number(source.pX) !== -1 && Number(target.pX) !== -1) seen.framesKept += 1
       if (deletes && Number(source.pX) !== -1 && Number(target.pX) === -1) seen.framesDeleted += 1
       if (target.told === "undone" || target.told === "redone") seen.putBack += 1
+      if (Number(target.gone) === 5 && Number(target.presses) > 0) seen.theirX += 1
       if (!paths.has(edge.to)) {
         paths.set(edge.to, route)
         queued.push(edge.to)
@@ -212,5 +222,6 @@ describe("undo frames replay", () => {
     expect(seen.framesKept).toBeGreaterThan(0)
     expect(seen.framesDeleted).toBeGreaterThan(0)
     expect(seen.putBack).toBeGreaterThan(0)
+    expect(seen.theirX).toBeGreaterThan(0)
   }, 120_000)
 })

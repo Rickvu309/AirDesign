@@ -1,0 +1,23 @@
+{
+  "check": "checks-undo-frames.md#undo-deleted-frames",
+  "covers": [
+    {
+      "file": "packages/live/src/doom-deck.ts",
+      "names": ["connected"],
+      "digest": "e93f867fc99f",
+      "blob": "c8804aa5f5c3b0ad164014e4005072e0930a6e3a"
+    },
+    {
+      "file": "packages/doom/src/invert.ts",
+      "names": ["invert"],
+      "digest": "2939b2741ed1",
+      "blob": "d9f255c09aa3b3ac5fc4950fb641cac23d2be969"
+    },
+    {
+      "file": "packages/doom/src/standing-layers.ts",
+      "names": ["onStandingLayers", "landingMoves", "shows", "leftInPlace"],
+      "digest": "e0b7914216b4",
+      "blob": "f7be7a39e7773353c53e1c5a3949d14a327ec198"
+    }
+  ]
+}

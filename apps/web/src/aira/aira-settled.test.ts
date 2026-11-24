@@ -14,7 +14,7 @@ describe("an Aira request read against its runs in the deck", () => {
   })
 
   it("offers Undo again when the deck has its runs back, as after a redo", () => {
-    const undone: AiraExchange = { ...done, end: "undone", kept: ["“Revenue”"] }
+    const undone: AiraExchange = { ...done, end: "undone", kept: ["“Revenue”"], left: ["“Card”"] }
     expect(settledByRuns(undone, states({ r1: false, r2: true }))).toEqual({ ...done, end: "done" })
   })
 

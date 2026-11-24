@@ -77,7 +77,14 @@ async function tabs() {
     expect(await theirs.sync()).toEqual({ ok: true })
     await mine.catchUp()
   }
-  return { mine, theirs, fromTheirs }
+  const theirUndo = async () => {
+    expect(await mine.sync()).toEqual({ ok: true })
+    await theirs.catchUp()
+    expect(theirs.undo().ok).toBe(true)
+    expect(await theirs.sync()).toEqual({ ok: true })
+    await mine.catchUp()
+  }
+  return { remote, mine, theirs, fromTheirs, theirUndo }
 }
 
 const xOf = (view: doom.Doom, node: doom.NodeId) => (view.nodes.get(node) as { box: { x: number } }).box.x
@@ -144,8 +151,8 @@ describe("an undo of a step on a layer another tab deleted", () => {
     expect(xOf(mine.server(), card)).toBe(0)
   })
 
-  it("leaves a layer framed in a frame another tab deleted where it is, so their undo brings it back", async () => {
-    const { mine, theirs, fromTheirs } = await tabs()
+  it("puts a layer framed under a frame another tab deleted back where it was, so their undo brings it back unframed", async () => {
+    const { mine, theirs, fromTheirs, theirUndo } = await tabs()
     const wrap = id("a:90")
     expect(
       mine.push([
@@ -163,19 +170,91 @@ describe("an undo of a step on a layer another tab deleted", () => {
       ]).ok,
     ).toBe(true)
     await fromTheirs([{ node: outer, prop: "parent", value: null }])
-    expect(mine.undo()).toEqual({ ok: false, reason: "nothing" })
-    expect(await mine.sync()).toEqual({ ok: true })
-    await theirs.catchUp()
-    expect(theirs.undo().ok).toBe(true)
-    expect(await theirs.sync()).toEqual({ ok: true })
-    await mine.catchUp()
+    expect(mine.undo().ok).toBe(true)
+    await theirUndo()
     for (const view of [mine.view(), theirs.view()])
       expect([parentOf(view, card), parentOf(view, wrap), parentOf(view, outer), xOf(view, card)]).toEqual([
-        wrap,
         inner,
+        null,
         slide,
-        0,
+        20,
       ])
+  })
+
+  it("puts back a layer the person deleted under a frame another tab deleted since, so their undo brings both back", async () => {
+    for (const emptied of [false, true]) {
+      const { mine, theirs, fromTheirs, theirUndo } = await tabs()
+      expect(mine.push([{ node: title, prop: "parent", value: at(inner) }]).ok).toBe(true)
+      expect(
+        mine.push([
+          ...(emptied ? [{ node: title, prop: "text" as const, value: words("") }] : []),
+          { node: title, prop: "parent", value: null },
+        ]).ok,
+      ).toBe(true)
+      await fromTheirs([{ node: outer, prop: "parent", value: null }])
+      expect(mine.undo().ok).toBe(true)
+      await theirUndo()
+      for (const view of [mine.view(), theirs.view(), mine.server()])
+        expect([parentOf(view, title), parentOf(view, inner), parentOf(view, outer), textOf(view)]).toEqual([
+          inner,
+          group,
+          slide,
+          "Title",
+        ])
+    }
+  })
+
+  it("puts back the colour and words an agent run gave a layer it leaves in the frame the run moved it to", async () => {
+    const { remote, mine, fromTheirs } = await tabs()
+    const red = [{ kind: "solid", color: { var: "accent2" } }]
+    expect(mine.push([{ node: title, prop: "parent", value: at(side) }]).ok).toBe(true)
+    expect(await mine.sync()).toEqual({ ok: true })
+    const author = { kind: "agent" as const, id: "aira", run: "run-1" }
+    const base = mine.view().revs.get(title)!.get("text")!
+    for (const edit of [
+      {
+        once: "r1",
+        author,
+        phase: "start" as const,
+        writes: [
+          { node: title, prop: "parent" as const, value: at(inner) },
+          { node: title, prop: "fills" as const, value: red },
+          { node: title, prop: "text" as const, value: words("ai"), base },
+        ],
+      },
+      { once: "r2", author, phase: "stop" as const, writes: [] },
+    ])
+      expect((await remote.edit({ deck: "deleted", edit })).ok).toBe(true)
+    await mine.catchUp()
+    await fromTheirs([{ node: side, prop: "parent", value: null }])
+    const undone = await mine.undoRun("run-1")
+    expect(undone).toMatchObject({ ok: true, left: [title] })
+    expect(await mine.sync()).toEqual({ ok: true })
+    for (const view of [mine.view(), mine.server()]) {
+      expect([parentOf(view, title), textOf(view)]).toEqual([inner, "Title"])
+      expect(view.nodes.get(title)).not.toHaveProperty("fills")
+    }
+  })
+
+  it("names the layer an agent run only moved when the frame it came from is gone, and lands nothing", async () => {
+    const { remote, mine, fromTheirs } = await tabs()
+    expect(mine.push([{ node: title, prop: "parent", value: at(side) }]).ok).toBe(true)
+    expect(await mine.sync()).toEqual({ ok: true })
+    const author = { kind: "agent" as const, id: "aira", run: "run-1" }
+    for (const edit of [
+      {
+        once: "r1",
+        author,
+        phase: "start" as const,
+        writes: [{ node: title, prop: "parent" as const, value: at(inner) }],
+      },
+      { once: "r2", author, phase: "stop" as const, writes: [] },
+    ])
+      expect((await remote.edit({ deck: "deleted", edit })).ok).toBe(true)
+    await mine.catchUp()
+    await fromTheirs([{ node: side, prop: "parent", value: null }])
+    expect(await mine.undoRun("run-1")).toEqual({ ok: false, reason: "left", left: [title] })
+    expect(parentOf(mine.view(), title)).toBe(inner)
   })
 
   it("does nothing on a redo of it, and the next redo puts back the step above", async () => {

@@ -8,8 +8,9 @@
 \* Edits are numbered from 1 in the order they land. wG and wJ name the edit that wrote each parent last, others is
 \* the set of the other tab's edits and turned the set of turns that landed, each as bits.
 \* An undo looks at the top step. When its layer's parent was last written by the step or a turn that landed, it
-\* puts back the parent the step replaced, if that frame and every frame above it stands and it is not inside
-\* the layer (`onStandingLayers` in packages/doom/src/standing-layers.ts). Otherwise it takes the step off the
+\* puts back the parent the step replaced, if that frame stands and is not inside the layer, and, while the layer
+\* shows, every frame above it stands too (`onStandingLayers` in packages/doom/src/standing-layers.ts): a layer
+\* that does not show goes back under a deleted frame and comes back with it. Otherwise it takes the step off the
 \* stack and answers nothing, as Figma does nothing for an undo of a move into a frame that is gone. A turn that
 \* lands takes the step off and pushes on the redo stack a step that wrote what it put back. A redo does the same
 \* from the redo stack.
@@ -41,9 +42,10 @@ Into(t, x, d) ==
   IF t = x \/ d = 0 THEN "cycle" ELSE IF t = 0 THEN "lands" ELSE IF Par(t) = -1 THEN "missing" ELSE Into(Par(t), x, d - 1)
 Shows(x) == Into(Par(x), x, 5) = "lands"
 Lands(x, t) == Into(t, x, 5) = "lands"
+Back(x, t) == IF Shows(x) THEN Lands(x, t) ELSE Into(t, x, 5) # "cycle" /\ Par(t) # -1
 
 Owned(k) == W(Node(k)) = Edit(k) \/ In(turned, W(Node(k)))
-Puts(k) == Owned(k) /\ Lands(Node(k), Replaced(k))
+Puts(k) == Owned(k) /\ Back(Node(k), Replaced(k))
 
 TypeOK ==
   /\ {pG, pJ} \subseteq Layers /\ {wG, wJ} \subseteq 0..7 /\ gone \in {0, 1, 4} /\ n \in 0..7
@@ -126,17 +128,19 @@ Next == PersonStep \/ OtherDelete \/ OtherMove \/ Undo \/ Redo
 
 Spec == Init /\ [][Next]_vars
 
-\* Nothing of the step can show again: someone else moved its layer since, or the frame it came from is gone or
-\* now sits inside the layer.
-Spent(k) == ~Owned(k) \/ ~Lands(Node(k), Replaced(k))
+\* Nothing of the step can come back: someone else moved its layer since, or the frame it came from is gone or
+\* now sits inside the layer, or, while the layer shows, a frame above that frame is gone.
+Spent(k) == ~Owned(k) \/ ~Back(Node(k), Replaced(k))
 
 \* A press that finds nothing to put back takes off only a spent step, and a turn that lands puts the layer back
-\* where the step found it.
+\* where the step found it, where it shows if it showed before.
 NeverLosesAStep ==
   [][/\ (told' = "nothing to undo" /\ us > 0) => Spent(us % 8)
      /\ (told' = "nothing to redo" /\ rs > 0) => Spent(rs % 8)
-     /\ (told' = "undone" /\ us > 0) => \A x \in {Node(us % 8)} : Par(x)' = Replaced(us % 8) /\ Shows(x)'
-     /\ (told' = "redone" /\ rs > 0) => \A x \in {Node(rs % 8)} : Par(x)' = Replaced(rs % 8) /\ Shows(x)']_vars
+     /\ (told' = "undone" /\ us > 0) =>
+          \A x \in {Node(us % 8)} : Par(x)' = Replaced(us % 8) /\ (Shows(x) => Shows(x)')
+     /\ (told' = "redone" /\ rs > 0) =>
+          \A x \in {Node(rs % 8)} : Par(x)' = Replaced(rs % 8) /\ (Shows(x) => Shows(x)')]_vars
 
 \* A turn never moves a layer the other tab moved last.
 NeverCoversTheirs ==

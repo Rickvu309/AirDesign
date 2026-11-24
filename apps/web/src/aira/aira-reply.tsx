@@ -11,7 +11,7 @@ import {
   type StepStatus,
 } from "@/components/ai-elements/chain-of-thought"
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message"
-import { airaCopy, airaKeptLayers, airaLimitBodyOn } from "@/copy/aira-copy"
+import { airaCopy, airaKeptLayers, airaLeftLayers, airaLimitBodyOn } from "@/copy/aira-copy"
 import { productCopy, usageResetsOn } from "@/copy/product-copy"
 import { usageCopy } from "@/copy/usage-copy"
 import { surfaceShadow } from "@/components/ui/shadows"
@@ -122,16 +122,18 @@ function UndoLink({ onUndo }: { onUndo: (() => void) | undefined }) {
   )
 }
 
-function Undone({ kept }: { readonly kept: readonly string[] }) {
+function Undone({ kept, left }: { readonly kept: readonly string[]; readonly left: readonly string[] }) {
+  const plain = kept.length === 0 && left.length === 0
   return (
     <p
-      className={`flex min-h-6 gap-1.5 text-xs text-muted-foreground ${kept.length === 0 ? "items-center" : "items-start py-1"}`}
+      className={`flex min-h-6 gap-1.5 text-xs text-muted-foreground ${plain ? "items-center" : "items-start py-1"}`}
       data-aira-undone
     >
-      <EditorIcon name="undo" size={13} className={kept.length === 0 ? "shrink-0" : "mt-px shrink-0"} />
+      <EditorIcon name="undo" size={13} className={plain ? "shrink-0" : "mt-px shrink-0"} />
       <span>
         {airaCopy.undone}
         {kept.length === 0 ? null : ` ${airaKeptLayers(kept)}`}
+        {left.length === 0 ? null : ` ${airaLeftLayers(left)}`}
       </span>
     </p>
   )
@@ -316,7 +318,7 @@ function endingOf(
       </>
     )
   }
-  if (exchange.end === "undone") return <Undone kept={exchange.kept ?? []} />
+  if (exchange.end === "undone") return <Undone kept={exchange.kept ?? []} left={exchange.left ?? []} />
   if ((exchange.end === "done" || exchange.end === "stopped") && undoable) {
     if (exchange.undoRefused === true) return note
     if (note === null) return <UndoLink onUndo={onUndo} />

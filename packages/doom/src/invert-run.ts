@@ -14,7 +14,11 @@ export type Replaced = {
   readonly rev: Rev | null
 }
 export type RunEdit = Landed & { readonly replaced: readonly Replaced[] }
-export type Undone = { readonly writes: readonly Write[]; readonly kept: readonly NodeId[] }
+export type Undone = {
+  readonly writes: readonly Write[]
+  readonly kept: readonly NodeId[]
+  readonly left: readonly NodeId[]
+}
 
 type Cell = { readonly node: NodeId; readonly key: WriteKey }
 type Restore = { readonly cell: Cell; readonly value: unknown; readonly base: Rev }
@@ -98,7 +102,9 @@ function settle(now: Doom, edits: readonly Landed[], mine: ReadonlySet<Rev>, res
     .filter(({ cell }) => cell.key === "parent" || !gone(cell.node))
     .map(({ cell, value, base }) => ({ node: cell.node, prop: cell.key, value, base }))
   const roots = [...kept].filter((node) => !kept.has(parentIn(now, node) as NodeId))
-  return { writes: ordered(now, onStandingLayers(now, writes, edits.at(-1)?.rev ?? now.rev)), kept: roots }
+  const standing = onStandingLayers(now, writes, edits.at(-1)?.rev ?? now.rev)
+  const left = writes.filter((each) => each.prop === "parent" && each.value !== null && !standing.includes(each))
+  return { writes: ordered(now, standing), kept: roots, left: left.map((each) => each.node) }
 }
 
 function writerOf(now: Doom, edits: readonly Landed[], mine: ReadonlySet<Rev>, cell: Cell): Rev | undefined {

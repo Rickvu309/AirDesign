@@ -6,7 +6,7 @@ import { type Theme, type ThemeKey, themeValueAt, withThemeValue } from "./theme
 
 type Values = Readonly<Record<string, unknown>>
 
-function sameValue(one: unknown, two: unknown): boolean {
+export function sameValue(one: unknown, two: unknown): boolean {
   if (one === two) return true
   if (typeof one !== "object" || typeof two !== "object" || one === null || two === null) return false
   if (Array.isArray(one) || Array.isArray(two)) {

@@ -5,7 +5,7 @@ export const agentRunsCopy = {
   someone: "An agent",
   undone: "Undone",
   undoRefused: "Couldn't undo. Something it changed was changed again after its edit.",
-  nothingLeft: "Nothing left to undo. Everything it changed has been changed again since.",
+  nothingLeft: "Nothing left to undo. Everything it changed was changed or deleted since.",
   undoFailed: "Unable to undo. Check your connection and try again.",
 } as const
 
@@ -30,10 +30,19 @@ export function agentRunStatus(live: boolean, place: RunPlace): string {
   return live ? `Editing slide ${String(place.slide)}` : `Last edited slide ${String(place.slide)}`
 }
 
-export function agentKeptLayers(agent: string, layers: readonly string[]): string {
+function opening(layers: readonly string[]): string {
   const named = listed(layers)
-  const opening = `${named.charAt(0).toUpperCase()}${named.slice(1)}`
+  return `${named.charAt(0).toUpperCase()}${named.slice(1)}`
+}
+
+export function agentLeftLayers(layers: readonly string[]): string {
   return layers.length === 1
-    ? `${opening} stays, because it was changed after ${agent} made it.`
-    : `${opening} stay, because they were changed after ${agent} made them.`
+    ? `${opening(layers)} stays where it is, because the frame it came from was deleted or moved since.`
+    : `${opening(layers)} stay where they are, because the frames they came from were deleted or moved since.`
+}
+
+export function agentKeptLayers(agent: string, layers: readonly string[]): string {
+  return layers.length === 1
+    ? `${opening(layers)} stays, because it was changed after ${agent} made it.`
+    : `${opening(layers)} stay, because they were changed after ${agent} made them.`
 }

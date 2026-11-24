@@ -23,6 +23,7 @@ import {
   once,
   person,
   place,
+  revOf,
   sampleDeck,
   textOf,
   theme,
@@ -139,6 +140,29 @@ describe("undoing a run, edit by edit from the values each write replaced", () =
     world = by(world, person, [{ node: ids.card, prop: "parent", value: null }])
     expect(undoRun(world, "a").writes).toEqual([])
     expect(nodeOf(world, ids.title).parent).toMatchObject({ id: wrap })
+  })
+
+  it("puts back the colour and words of a layer a run moved, though the frame it came from was deleted since", () => {
+    const red = [{ kind: "solid", color: hex(0xff0000) }]
+    for (const edits of [
+      [
+        [
+          { node: ids.title, prop: "parent", value: place(ids.side) },
+          { node: ids.title, prop: "fills", value: red },
+          { node: ids.title, prop: "text", value: textOf("ai"), base: revOf(sampleDeck(), ids.title, "text")! },
+        ],
+      ],
+      [[{ node: ids.title, prop: "fills", value: red }], [{ node: ids.title, prop: "parent", value: place(ids.side) }]],
+    ] as const) {
+      let world = opened()
+      for (const writes of edits) world = run(world, runA, writes as readonly Write[])
+      world = by(world, person, [{ node: ids.card, prop: "parent", value: null }])
+      expect(undoRun(world, "a").left).toEqual([ids.title])
+      const { world: after } = undo(world)
+      expect(nodeOf(after, ids.title).parent).toMatchObject({ id: ids.side })
+      expect(nodeOf(after, ids.title).fills).toBeUndefined()
+      expect(nodeOf(after, ids.title).text).toEqual(textOf("Revenue"))
+    }
   })
 
   it("takes back the whole run when nobody else touched it, and a second undo finds nothing", () => {
