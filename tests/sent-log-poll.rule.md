@@ -1,0 +1,3 @@
+# A test waits for a queue to drain, never for its fetch to start
+
+`tests/sent-log-poll.test.ts` fails when a test file runs `expect.poll` or `vi.waitFor` on a `sent`, `requests`, `fetched`, `fetches` or `posted` log. Such a poll proves only that the fetch began: reading the queue afterwards, or ending the test, races the flush that clears its slot, and fails only under load (`packages/live/src/deck-queue.test.ts` in 7b7fc155e, `packages/live/src/deck-star.test.ts` in 0d5b8f72e). `answeringServer` in `packages/live/src/testing/answering-server.ts` is the one way to wait: `await server.drained(() => queue())` polls the queue to empty and returns what was sent, then the test asserts that list exactly.
