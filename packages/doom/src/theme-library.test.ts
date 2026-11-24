@@ -2,11 +2,23 @@ import { describe, expect, it, vi } from "vitest"
 import { defaultTheme, themeLibrary } from "./index.js"
 import { themeFiles } from "./library/theme-index.js"
 import midnight from "./library/themes/midnight.json" with { type: "json" }
-import { fallbackArt, libraryArt } from "./testing/theme-library-art.js"
+import { colorVars, type ColorVar, type Hex } from "./paint.js"
+import { designedThemes, fallbackArt, libraryArt } from "./testing/theme-library-art.js"
 
 declare const process: {
   getBuiltinModule(name: "node:fs"): { readdirSync(path: string): string[] }
 }
+
+const backgrounds = ["background", "background2"] as const satisfies readonly ColorVar[]
+const inks = colorVars.filter((color) => color !== "background" && color !== "background2")
+
+function linearChannel(color: Hex, offset: number): number {
+  const srgb = Number.parseInt(color.slice(offset, offset + 2), 16) / 255
+  return srgb <= 0.04045 ? srgb / 12.92 : ((srgb + 0.055) / 1.055) ** 2.4
+}
+
+const luminance = (color: Hex) =>
+  0.2126 * linearChannel(color, 1) + 0.7152 * linearChannel(color, 3) + 0.0722 * linearChannel(color, 5)
 
 describe("built-in themes", () => {
   it("indexes every JSON file in the theme folder", () => {
@@ -33,6 +45,25 @@ describe("built-in themes", () => {
 
   it("preserves fallback art", () => {
     expect(defaultTheme).toMatchObject(fallbackArt)
+  })
+
+  it.each(designedThemes)("preserves $name art and type scale", ({ id, name, ...theme }) => {
+    expect(themeLibrary[id]).toMatchObject({ id, name, theme })
+  })
+
+  it.each(designedThemes)("meets WCAG AA for $name text on both background tokens", ({ id }) => {
+    const entry = themeLibrary[id]
+    if (entry === undefined) throw new Error(`Missing theme ${id}`)
+
+    const { colors } = entry.theme
+    for (const background of backgrounds) {
+      const surface = luminance(colors[background])
+      for (const ink of inks) {
+        const foreground = luminance(colors[ink])
+        const ratio = (Math.max(surface, foreground) + 0.05) / (Math.min(surface, foreground) + 0.05)
+        expect(ratio, `${id} ${ink} / ${background}`).toBeGreaterThanOrEqual(4.5)
+      }
+    }
   })
 })
 

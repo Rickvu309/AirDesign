@@ -1,0 +1,83 @@
+{
+  "id": "technical",
+  "name": "Technical",
+  "colors": {
+    "text": "#151e32",
+    "background": "#f8faff",
+    "text2": "#46556e",
+    "background2": "#eef2f8",
+    "accent1": "#244f9f",
+    "accent2": "#006661",
+    "accent3": "#633ca0",
+    "accent4": "#83501d",
+    "accent5": "#8e3858",
+    "accent6": "#475673",
+    "link": "#244f9f"
+  },
+  "fonts": {
+    "heading": "Geist",
+    "body": "Geist"
+  },
+  "textStyles": {
+    "display": {
+      "size": 80,
+      "font": "heading",
+      "weight": 650,
+      "lineHeight": 1.04,
+      "tracking": -2.2
+    },
+    "bigNumber": {
+      "size": 72,
+      "font": "heading",
+      "weight": 650,
+      "lineHeight": 1,
+      "tracking": -1.5
+    },
+    "title": {
+      "size": 52,
+      "font": "heading",
+      "weight": 650,
+      "lineHeight": 1.08,
+      "tracking": -1.2
+    },
+    "heading": {
+      "size": 36,
+      "font": "heading",
+      "weight": 600,
+      "lineHeight": 1.15,
+      "tracking": -0.45
+    },
+    "body": {
+      "size": 30,
+      "font": "body",
+      "weight": 400,
+      "lineHeight": 1.28,
+      "tracking": 0
+    },
+    "body2": {
+      "size": 27,
+      "font": "body",
+      "weight": 400,
+      "lineHeight": 1.25,
+      "tracking": 0
+    },
+    "caption": {
+      "size": 23,
+      "font": "body",
+      "weight": 400,
+      "lineHeight": 1.24,
+      "tracking": 0
+    },
+    "label": {
+      "size": 24,
+      "font": "body",
+      "weight": 600,
+      "lineHeight": 1.16,
+      "tracking": 0.2
+    }
+  },
+  "powerPoint": {
+    "map": "light",
+    "followedLink": "#633ca0"
+  }
+}
