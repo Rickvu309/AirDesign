@@ -1,0 +1,315 @@
+{
+  "spec": {
+    "version": 1,
+    "name": "Operating profit bridge",
+    "collections": {
+      "rows": {
+        "label": "string",
+        "value": "number",
+        "mode": ["delta", "total"],
+        "after": ["carry", "reset"]
+      }
+    },
+    "variants": {
+      "labels": [true, false]
+    },
+    "defaultVariant": {
+      "labels": true
+    },
+    "defaults": {
+      "scale": 1,
+      "digits": 0,
+      "prefix": "$",
+      "suffix": "M",
+      "unitHeader": "$M",
+      "unitPlace": "header",
+      "title": "Operating profit change",
+      "down": "#C65153",
+      "up": "#257E76",
+      "total": "#243C5A"
+    },
+    "let": [
+      ["gutter", 12],
+      ["plotTop", 99],
+      ["plotBottom", ["sub", ["get", "frame.h"], 55]],
+      [
+        "steps",
+        [
+          "scan",
+          ["get", "data.rows"],
+          "r",
+          0,
+          [
+            "if",
+            ["eq", ["get", "r.after"], "reset"],
+            0,
+            ["if", ["eq", ["get", "r.mode"], "total"], ["get", "acc"], ["add", ["get", "acc"], ["get", "r.value"]]]
+          ],
+          {
+            "id": ["get", "r.id"],
+            "label": ["get", "r.label"],
+            "mode": ["get", "r.mode"],
+            "after": ["get", "r.after"],
+            "start": ["if", ["eq", ["get", "r.mode"], "total"], 0, ["get", "acc"]],
+            "end": [
+              "if",
+              ["eq", ["get", "r.mode"], "total"],
+              ["get", "acc"],
+              ["add", ["get", "acc"], ["get", "r.value"]]
+            ],
+            "value": ["if", ["eq", ["get", "r.mode"], "total"], ["get", "acc"], ["get", "r.value"]]
+          }
+        ]
+      ],
+      ["starts", ["map", ["get", "steps"], "r", ["get", "r.start"]]],
+      ["ends", ["map", ["get", "steps"], "r", ["get", "r.end"]]],
+      ["lo", ["min", 0, ["get", "starts"], ["get", "ends"]]],
+      ["hi", ["max", 1, ["get", "starts"], ["get", "ends"]]],
+      ["zero", ["linear", 0, ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]]
+    ],
+    "parts": [
+      {
+        "emit": {
+          "kind": "text",
+          "key": ["list", "unit"],
+          "x": 0,
+          "y": 0,
+          "w": ["get", "frame.w"],
+          "h": 42,
+          "chars": [
+            "concat",
+            ["get", "token.title"],
+            ["if", ["eq", ["get", "token.unitPlace"], "header"], ["concat", ", ", ["get", "token.unitHeader"]], ""]
+          ],
+          "style": ["get", "token.heading"],
+          "color": ["get", "token.ink"],
+          "align": "left",
+          "alignV": "center"
+        }
+      },
+      {
+        "emit": {
+          "kind": "line",
+          "key": ["list", "zero"],
+          "start": ["point", ["get", "gutter"], ["get", "zero"]],
+          "end": ["point", ["sub", ["get", "frame.w"], ["get", "gutter"]], ["get", "zero"]],
+          "color": ["get", "token.rule"],
+          "width": 2,
+          "route": "straight",
+          "arrow": "none"
+        }
+      },
+      {
+        "repeat": {
+          "over": ["get", "steps"],
+          "as": "r"
+        },
+        "let": [
+          [
+            "lane",
+            [
+              "band",
+              ["get", "i"],
+              ["count", ["get", "steps"]],
+              ["get", "gutter"],
+              ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]],
+              1
+            ]
+          ],
+          [
+            "mark",
+            [
+              "band",
+              ["get", "i"],
+              ["count", ["get", "steps"]],
+              ["get", "gutter"],
+              ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]],
+              0.59
+            ]
+          ],
+          ["prev", ["at", ["get", "steps"], ["sub", ["get", "i"], 1]]],
+          ["previousIndex", ["sub", ["get", "i"], 1]],
+          [
+            "previousMark",
+            [
+              "band",
+              ["get", "previousIndex"],
+              ["count", ["get", "steps"]],
+              ["get", "gutter"],
+              ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]],
+              0.59
+            ]
+          ],
+          [
+            "a",
+            ["linear", ["get", "r.start"], ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]
+          ],
+          ["b", ["linear", ["get", "r.end"], ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]],
+          ["top", ["min", ["get", "a"], ["get", "b"]]],
+          ["height", ["sub", ["max", ["get", "a"], ["get", "b"]], ["get", "top"]]]
+        ],
+        "children": [
+          {
+            "when": [
+              "if",
+              ["eq", ["get", "prev"], null],
+              false,
+              [
+                "if",
+                ["eq", ["get", "prev.after"], "reset"],
+                false,
+                ["if", ["eq", ["get", "r.mode"], "total"], false, true]
+              ]
+            ],
+            "emit": {
+              "kind": "line",
+              "key": ["list", "bridge", ["get", "r.id"]],
+              "start": ["point", ["add", ["get", "previousMark.x"], ["get", "previousMark.w"]], ["get", "a"]],
+              "end": ["point", ["get", "mark.x"], ["get", "a"]],
+              "color": ["get", "token.rule"],
+              "width": 2,
+              "route": "straight",
+              "arrow": "none"
+            }
+          },
+          {
+            "emit": {
+              "kind": "rect",
+              "key": ["list", "bar", ["get", "r.id"]],
+              "x": ["get", "mark.x"],
+              "y": ["get", "top"],
+              "w": ["get", "mark.w"],
+              "h": ["max", 2, ["get", "height"]],
+              "fill": [
+                "if",
+                ["eq", ["get", "r.mode"], "total"],
+                ["get", "token.total"],
+                ["if", ["lt", ["get", "r.value"], 0], ["get", "token.down"], ["get", "token.up"]]
+              ]
+            }
+          },
+          {
+            "when": ["get", "variant.labels"],
+            "emit": {
+              "kind": "text",
+              "key": ["list", "value", ["get", "r.id"]],
+              "x": ["get", "lane.x"],
+              "y": ["sub", ["get", "top"], 37],
+              "w": ["get", "lane.w"],
+              "h": 32,
+              "chars": [
+                "format",
+                ["get", "r.value"],
+                {
+                  "scale": ["get", "token.scale"],
+                  "digits": ["get", "token.digits"],
+                  "prefix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.prefix"], ""],
+                  "suffix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.suffix"], ""],
+                  "sign": ["if", ["eq", ["get", "r.mode"], "total"], "negative", "always"]
+                }
+              ],
+              "style": ["get", "token.label"],
+              "color": ["get", "token.ink"],
+              "align": "center",
+              "alignV": "center"
+            }
+          },
+          {
+            "emit": {
+              "kind": "text",
+              "key": ["list", "category", ["get", "r.id"]],
+              "x": ["get", "lane.x"],
+              "y": ["add", ["get", "plotBottom"], 17],
+              "w": ["get", "lane.w"],
+              "h": 30,
+              "chars": ["get", "r.label"],
+              "style": ["get", "token.caption"],
+              "color": ["get", "token.muted"],
+              "align": "center",
+              "alignV": "center"
+            }
+          }
+        ]
+      }
+    ],
+    "quantities": {
+      "rows.value": {
+        "baseUnit": "USD",
+        "storedScale": 1000000
+      }
+    }
+  },
+  "fixture": {
+    "theme": {
+      "ink": "#182C43",
+      "muted": "#455B73",
+      "rule": "#93A6BA",
+      "accent": {
+        "var": "accent1"
+      },
+      "heading": "label",
+      "label": "label",
+      "caption": "caption"
+    },
+    "tokens": {},
+    "frame": {
+      "x": 190,
+      "y": 210,
+      "w": 1540,
+      "h": 650
+    },
+    "data": {
+      "rows": [
+        {
+          "id": "open",
+          "label": "Opening",
+          "mode": "delta",
+          "value": 20,
+          "after": "carry"
+        },
+        {
+          "id": "win",
+          "label": "Expansion",
+          "mode": "delta",
+          "value": 9,
+          "after": "carry"
+        },
+        {
+          "id": "loss",
+          "label": "Churn",
+          "mode": "delta",
+          "value": -34,
+          "after": "carry"
+        },
+        {
+          "id": "gain",
+          "label": "Cost savings",
+          "mode": "delta",
+          "value": 19,
+          "after": "carry"
+        },
+        {
+          "id": "subtotal",
+          "label": "Subtotal",
+          "mode": "total",
+          "value": 0,
+          "after": "reset"
+        },
+        {
+          "id": "reset",
+          "label": "One-off costs",
+          "mode": "delta",
+          "value": -7,
+          "after": "carry"
+        },
+        {
+          "id": "end",
+          "label": "Net one-offs",
+          "mode": "total",
+          "value": 0,
+          "after": "carry"
+        }
+      ]
+    }
+  }
+}
