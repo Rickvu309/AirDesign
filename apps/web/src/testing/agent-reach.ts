@@ -138,6 +138,7 @@ export const sample: Readonly<Record<string, unknown>> = {
   spaceBefore: 12,
   spaceAfter: 8,
   blur: 8,
+  innerShadow: { color: "accent1", x: 0, y: 2, blur: 4, spread: 0 },
 }
 
 export const reach: Readonly<Record<string, Entry>> = {

@@ -6,6 +6,7 @@ import { type AgentItem, itemSchema, readItem } from "./agent-item.js"
 import { linkField } from "./agent-link.js"
 import { limits } from "./limits.js"
 import { type Field, choice, field, flag, number, string } from "./agent-fields.js"
+import { type InnerLook, innerShadowFields } from "./agent-inner-shadow.js"
 import { type SlideLook, slideLookFields } from "./agent-slide-look.js"
 import { type NodeId, readNodeId } from "./ids.js"
 import {
@@ -111,7 +112,7 @@ export type AgentLook = {
   readonly rotation?: number
   readonly flip?: "none" | "h" | "v" | "hv"
   readonly notes?: string
-} & SlideLook
+} & SlideLook & InnerLook
 
 export type DeckLook = {
   readonly name?: string
@@ -150,7 +151,7 @@ const kindWords =
 const colorSchema = { $ref: "#/$defs/color" }
 const readId = formed(readNodeId, forms.node)
 const tintedName = new RegExp(`^(${colorVars.join("|")})([+-](100|[1-9][0-9]?))?$`)
-const readColor = agentColor(tintedName, 16, forms.color) as Reader<AgentColor>
+export const readColor = agentColor(tintedName, 16, forms.color) as Reader<AgentColor>
 const id = (description: string) => field<NodeId>({ ...idSchema, description }, readId)
 
 const readNone = literal(["none"] as const)
@@ -339,6 +340,7 @@ const lookFields: LookFields = {
   flip: choice(["none", "h", "v", "hv"], "Mirror across, down, or both."),
   notes: field({ type: "string", description: "Presenter notes." }, words(limits.valueBytes)),
   ...slideLookFields,
+  ...innerShadowFields(readColor),
 }
 
 const lookKeys = Object.keys(lookFields) as (keyof AgentLook)[]

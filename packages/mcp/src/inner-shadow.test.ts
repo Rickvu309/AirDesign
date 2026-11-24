@@ -1,0 +1,63 @@
+import * as doom from "@airdesign/doom"
+import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
+import { describe, expect, it } from "vitest"
+
+import { createServer, emptyLog, type Host, type Session } from "./index.js"
+import { memoryDecks } from "./testing/memory-decks.js"
+
+function started(): doom.Doom {
+  return doom.doomFromTree({
+    theme: doom.defaultTheme,
+    slides: [{ name: "Title", children: [{ type: "shape", name: "Card" }] }],
+  }).doom
+}
+
+function sessionFor(): Session {
+  return { agent: "aira", mint: () => "minted", log: emptyLog(), now: 0 }
+}
+
+async function withClient(session: Session, host: Host, use: (client: Client) => Promise<void>): Promise<void> {
+  const server = createServer(session, host)
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
+  const client = new Client({ name: "airdesign-test", version: "0.0.0" })
+  await server.connect(serverTransport)
+  await client.connect(clientTransport)
+  try {
+    await use(client)
+  } finally {
+    await client.close()
+    await server.close()
+  }
+}
+
+describe("inner shadow over the protocol", () => {
+  it("writes an inner shadow, reads it back, and names a bad field", async () => {
+    await withClient(sessionFor(), memoryDecks(started), async (client) => {
+      const call = async (name: string, args: Record<string, unknown>) =>
+        (await client.callTool({ name: `airdesign_${name}`, arguments: args })).structuredContent as Record<string, any>
+      const made = await call("create_deck", { name: "Shadow" })
+      const slide = (made.slides as string[])[0]!
+      const edited = await call("edit_deck", {
+        deck: made.deck,
+        base: made.rev,
+        changes: [
+          {
+            op: "add",
+            kind: "shape",
+            slide,
+            fill: "accent1",
+            innerShadow: { color: "accent1", x: 0, y: 2, blur: 4, spread: 1, opacity: 0.4 },
+          },
+        ],
+      })
+      expect(edited).toMatchObject({ ok: true })
+      expect((await call("read_deck", { deck: made.deck })).layers).toContain("innerShadow=accent1,0,2,4,1@0.4")
+      const bad = await call("edit_deck", {
+        deck: made.deck,
+        base: edited.rev,
+        changes: [{ op: "set", target: slide, innerShadow: { color: "nope", x: 0, y: 0, blur: 0, spread: 0 } }],
+      })
+      expect(bad).toMatchObject({ ok: false, field: "color" })
+    })
+  })
+})

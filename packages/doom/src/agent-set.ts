@@ -47,6 +47,7 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "radius",
     "effect",
     "effectOpacity",
+    "innerShadow",
     "clip",
     "opacity",
     "text",
@@ -207,7 +208,9 @@ export function compileSet(draft: Draft, change: SetChange): void {
       change,
       now,
       stroked,
-      change.effectOpacity === undefined && change.blur === undefined ? undefined : themeOf(draft),
+      change.effectOpacity === undefined && change.blur === undefined && change.innerShadow === undefined
+        ? undefined
+        : themeOf(draft),
     ),
     ...(text === undefined ? {} : { text }),
     ...(layout === undefined ? {} : { layout }),

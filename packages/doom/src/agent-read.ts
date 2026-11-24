@@ -118,8 +118,16 @@ function looksOf(node: Node): readonly string[] {
   if (typeof effects === "string") out.push(`effect=${effects}`)
   else if (effects !== undefined && effects.length > 0) {
     const blur = effects.find((effect) => effect.kind === "layerBlur")
-    if (effects.some((effect) => effect.kind !== "layerBlur")) out.push("effect=custom")
+    if (effects.some((effect) => effect.kind !== "layerBlur" && effect.kind !== "innerShadow"))
+      out.push("effect=custom")
     if (blur !== undefined && "radius" in blur) out.push(`blur=${num(blur.radius)}`)
+    for (const shadow of effects) {
+      if (shadow.kind !== "innerShadow") continue
+      const opacity = shadow.opacity === undefined ? "" : `@${num(shadow.opacity)}`
+      out.push(
+        `innerShadow=${colorWords(shadow.color)},${num(shadow.x)},${num(shadow.y)},${num(shadow.blur)},${num(shadow.spread)}${opacity}`,
+      )
+    }
   }
   if (opacity !== undefined && opacity !== 1) out.push(`opacity=${num(opacity)}`)
   if (propOf(node, "hidden") === true) out.push("hidden")

@@ -84,6 +84,7 @@ const seen: Readonly<Record<string, Seen>> = {
   spaceBefore: { owedToPerson: "space before a paragraph: no control" },
   spaceAfter: { owedToPerson: "space after a paragraph: no control" },
   blur: { owedToPerson: "a layer blur: the effects panel offers only named shadows" },
+  innerShadow: { owedToPerson: "an inner shadow: the effects panel does not write one yet" },
   colors: { person: ["panel:theme-colors"] },
   fonts: { person: ["panel:theme-fonts"] },
   nameFollows: { person: ["strip:deck-name"] },
@@ -102,6 +103,7 @@ const owedToPerson = [
   "spaceBefore",
   "spaceAfter",
   "blur",
+  "innerShadow",
 ]
 
 const structural = new Set([

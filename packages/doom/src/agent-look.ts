@@ -124,18 +124,46 @@ const listed = (
   return typeof effects === "string" ? (theme === undefined ? [] : theme.effectStyles[effects]) : effects
 }
 
+const heldEffects = (
+  produced: readonly Effect[] | EffectStyleName | undefined,
+  now: Now["effects"],
+): readonly Effect[] | EffectStyleName | undefined => (produced !== undefined ? produced : now)
+
 export function effectsOf(
   look: AgentLook,
   now: Now["effects"],
   theme?: Theme,
 ): readonly Effect[] | EffectStyleName | undefined {
-  const written = writtenEffects(look, now, theme)
-  if (look.blur === undefined) return written
-  const base = written !== undefined ? written : now
+  let current = writtenEffects(look, now, theme)
+  if (look.blur !== undefined) {
+    const base = heldEffects(current, now)
+    const list = listed(base, theme)
+    if (look.blur === 0 && !list.some((effect) => effect.kind === "layerBlur")) current = base === undefined ? [] : base
+    else {
+      const kept = list.filter((effect) => effect.kind !== "layerBlur")
+      current = look.blur === 0 ? kept : [...kept, { kind: "layerBlur", radius: look.blur }]
+    }
+  }
+  if (look.innerShadow === undefined) return current
+  const base = heldEffects(current, now)
   const list = listed(base, theme)
-  if (look.blur === 0 && !list.some((effect) => effect.kind === "layerBlur")) return base === undefined ? [] : base
-  const kept = list.filter((effect) => effect.kind !== "layerBlur")
-  return look.blur === 0 ? kept : [...kept, { kind: "layerBlur", radius: look.blur }]
+  if (look.innerShadow === "none" && !list.some((effect) => effect.kind === "innerShadow"))
+    return base === undefined ? [] : base
+  const kept = list.filter((effect) => effect.kind !== "innerShadow")
+  if (look.innerShadow === "none") return kept
+  const shadow = look.innerShadow
+  return [
+    ...kept,
+    {
+      kind: "innerShadow",
+      color: colorOf(shadow.color),
+      x: shadow.x,
+      y: shadow.y,
+      blur: shadow.blur,
+      spread: shadow.spread,
+      ...(shadow.opacity === undefined ? {} : { opacity: shadow.opacity }),
+    },
+  ]
 }
 
 export function surfaceOf(
