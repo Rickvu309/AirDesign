@@ -1,21 +1,12 @@
 import { deckRoutes } from "@airdesign/catalog"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { firstAccount, installIndexedDb, signInAs } from "./browser-fixtures.js"
+import { answeringServer } from "./testing/answering-server.js"
 import { memoryShelf, secondAccount, slowStore } from "./testing/browser-shelf.js"
 import { deleteDatabase, dropAccount, dropDeck, sendQueued, starDeck } from "./index.js"
 
 const slow = slowStore()
 let shelf = new Map<string, string>()
-
-type Sent = { readonly path: string; readonly body: Record<string, unknown> }
-
-function answering(sent: Sent[]) {
-  return async (path: string, init: RequestInit) => {
-    const body = JSON.parse(String(init.body)) as Record<string, unknown>
-    sent.push({ path, body })
-    return new Response(JSON.stringify({ ok: true, ...body }))
-  }
-}
 
 async function tick() {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -49,11 +40,12 @@ afterEach(async () => {
 it("keeps a star whose device write never landed and sends it once from the next page", async () => {
   await leftBeforeTheDeviceWrite(() => starDeck("deck-one", true))
   expect(shelf.size).toBe(1)
-  const sent: Sent[] = []
-  vi.stubGlobal("fetch", answering(sent))
+  const server = answeringServer()
+  vi.stubGlobal("fetch", server.fetch)
   expect(await stars(["deck-one"])).toEqual([["deck-one", true]])
-  await expect.poll(() => stars(["deck-one"])).toEqual([])
-  expect(sent).toEqual([{ path: deckRoutes.star.path, body: { deck: "deck-one", starred: true } }])
+  expect(await server.drained(() => stars(["deck-one"]))).toEqual([
+    { path: deckRoutes.star.path, body: { deck: "deck-one", starred: true } },
+  ])
   expect(shelf.size).toBe(0)
 })
 
@@ -71,12 +63,12 @@ it("applies a shelved change that also reached the device once", async () => {
   await starDeck("deck-one", true)
   expect(shelf.size).toBe(0)
   shelf.set(`airdesign:queued:${firstAccount}:deck-one\u0003star`, "starred")
-  const sent: Sent[] = []
-  vi.stubGlobal("fetch", answering(sent))
+  const server = answeringServer()
+  vi.stubGlobal("fetch", server.fetch)
   expect(await stars(["deck-one"])).toEqual([["deck-one", true]])
-  await expect.poll(() => stars(["deck-one"])).toEqual([])
+  await server.drained(() => stars(["deck-one"]))
   await tick()
-  expect(sent).toHaveLength(1)
+  expect(server.sent).toHaveLength(1)
   expect(shelf.size).toBe(0)
 })
 
