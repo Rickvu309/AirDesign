@@ -1,5 +1,5 @@
 import { type Refusal, readColor } from "../index.js"
-import { boolean, integer, naming, object, reject, variant } from "../read-kit.js"
+import { boolean, finite, integer, naming, object, reject, variant } from "../read-kit.js"
 import { readCollections } from "./collections.js"
 import { type Bindings, type Expr, binding, readExpr } from "./expression.js"
 import { defaultNumberTokens, readLocale } from "./operators.js"
@@ -72,7 +72,13 @@ const quantities = (raw: unknown) =>
 
 function emission(read: (raw: unknown) => Expr) {
   const position = { key: read, x: read, y: read, w: read, h: read }
-  const fitText = object({ smaller: read })
+  const readFit = object({ smaller: read }, { group: name, thin: finite(0, 1_000) })
+  const fitText = (raw: unknown) => {
+    const fit = readFit(raw)
+    if (fit.thin !== undefined && fit.group === undefined)
+      naming("thin", () => reject("shape", "Thinning requires a fit group."))
+    return fit
+  }
   return variant("kind", {
     rect: object({ ...position, fill: read }),
     text: object(

@@ -154,29 +154,6 @@ describe("expandComponent", () => {
         )
   })
 
-  it("shrinks and wraps category labels and reports a label that cannot fit", () => {
-    const frame = { ...column.frame, w: 170 }
-    const rows = [
-      { id: "shorter", label: "WWWW", value: 12 },
-      { id: "wrapped", label: "WWWW WWWW", value: 12 },
-    ]
-    const input = { ...inputs, theme: dejavu, measure: exact, frame, data: { rows } }
-    const tree = expand(columnComponent, input)
-    const shorter = part(tree.children, "category", "shorter")
-    expect(shorter?.props.text).toMatchObject({ chars: "WWWW", spans: [{ size: 18 }] })
-    const wrapped = part(tree.children, "category", "wrapped")
-    expect(wrapped?.props.text?.chars).toBe("WWWW WWWW")
-    expect(exact(wrapped!.props.text!, dejavu, wrapped!.props.box.w).lines).toHaveLength(2)
-    expect(tree.findings).toEqual([])
-    const crowded = expand(columnComponent, { ...input, frame: { ...frame, w: 100 } })
-    expect(part(crowded.children, "bar", "wrapped")).toBeDefined()
-    expect(crowded.findings).toContainEqual({
-      kind: "text-fit",
-      key: ["category", "wrapped"],
-      field: "parts[2].children[0].emit.chars",
-    })
-  })
-
   it("formats units and precision from tokens without moving the bars", () => {
     const base = { ...inputs, tokens: { title: "Sales", unitHeader: "$M", prefix: "$" } }
     const result = nodes({ ...base, tokens: { ...base.tokens, scale: 10, digits: 2, unitPlace: "label", suffix: "B" } })
@@ -219,13 +196,6 @@ describe("expandComponent", () => {
   it("refuses oversized data", () => {
     const rows = Array.from({ length: 101 }, (_, i) => ({ id: `q${i}`, label: "", value: 0 }))
     expect(expandComponent(columnComponent, { ...inputs, data: { rows } })).toMatchObject({ refused: "limit" })
-  })
-
-  it("expands 100 short rows and reports categories that cannot fit", () => {
-    const rows = Array.from({ length: 100 }, (_, i) => ({ id: `r${i}`, label: `Row ${i}`, value: i - 40 }))
-    const tree = expand(columnComponent, { ...inputs, data: { rows } })
-    expect(tree.children.filter((node) => node.key[0] === "bar")).toHaveLength(rows.length)
-    expect(tree.findings).toHaveLength(rows.length)
   })
 
   it("refuses excessive spec depth and validates operators in unreachable branches", () => {

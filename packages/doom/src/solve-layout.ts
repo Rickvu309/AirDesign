@@ -68,7 +68,7 @@ function measuredSize(context: Context, node: Node, forcedW: number | null, forc
   if (node.type === "frame") return plan(context, node, w, h).size
   const text = prop(node, "text")
   if (text === undefined) return { w: w ?? stored.w, h: h ?? stored.h }
-  const measured = context.measure(text, context.theme, w, node.id)
+  const measured = context.measure(text, context.theme, w, undefined, node.id)
   return { w: w ?? measured.w, h: h ?? measured.h }
 }
 

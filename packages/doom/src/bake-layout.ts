@@ -76,7 +76,7 @@ export function bakeTextLayers(
   const node = doom.nodes.get(frame)
   if (node?.type !== "frame") return { required: [], measured: [] }
   const layers = new Set<NodeId>()
-  bakeBoxes(doom, node, (text, theme, width, id) => {
+  bakeBoxes(doom, node, (text, theme, width, _fit, id) => {
     layers.add(id)
     return estimate(text, theme, width)
   })

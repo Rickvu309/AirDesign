@@ -2,14 +2,7 @@ import type { Measure, Refusal, Theme } from "../index.js"
 import { boolean, naming, reject } from "../read-kit.js"
 import { readData } from "./collections.js"
 import { type Bindings, type Scope, childScope, evaluator, valuesOf } from "./expression.js"
-import {
-  type ComponentFinding,
-  type ComponentTree,
-  type PreparedPart,
-  preparePart,
-  readFrame,
-  treeOf,
-} from "./nodes.js"
+import { type ComponentTree, type PreparedPart, preparePart, readFrame, treeOf } from "./nodes.js"
 import { numberFormat } from "./operators.js"
 import { type ComponentSpec, type Part, readChoices, readTokens } from "./spec.js"
 import { type Value, budget, componentRefusal } from "./values.js"
@@ -53,8 +46,9 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
       return scope
     }
 
+    const fitting = { measure, theme, charge }
+    let emitted = 0
     const parts: PreparedPart[] = []
-    const findings: ComponentFinding[] = []
     const visit = (part: Part, parent: Scope, field: string): void => {
       naming(field, () => charge())
       const emit = (scope: Scope) => {
@@ -67,19 +61,11 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
           return
         }
         const emitField = `${field}.emit`
-        const prepared = preparePart(part.emit, emitField, {
-          read: (expr) => evaluate(expr, local),
-          measure,
-          theme,
-          charge,
-        })
-        if (prepared === undefined) return
-        if (prepared.kind === "text-fit") {
-          findings.push(prepared)
-          return
+        const prepared = preparePart(part.emit, emitField, { ...fitting, read: (expr) => evaluate(expr, local) })
+        if (prepared.kind === "shape" || prepared.kind === "line") {
+          if (emitted >= 499) naming(emitField, () => reject("limit", "An expansion may emit at most 499 parts."))
+          emitted += 1
         }
-        if (parts.length >= 499)
-          return naming(emitField, () => reject("limit", "An expansion may emit at most 499 parts."))
         parts.push(prepared)
       }
       if (part.repeat === undefined) {
@@ -94,7 +80,7 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
     }
     const root = bind(spec.let, scope, "let")
     for (const [i, part] of spec.parts.entries()) visit(part, root, `parts[${i}]`)
-    return treeOf(spec.name, frame, parts, findings, charge)
+    return treeOf(spec.name, frame, parts, fitting)
   } catch (thrown) {
     return componentRefusal(thrown)
   }

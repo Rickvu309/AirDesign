@@ -1,19 +1,9 @@
-import {
-  type End,
-  type Measure,
-  type NodeId,
-  type Props,
-  type Text,
-  type Theme,
-  isRefusal,
-  nodeId,
-  props,
-  siteSpot,
-} from "../index.js"
+import { type End, type NodeId, type Props, type Text, isRefusal, nodeId, props, siteSpot } from "../index.js"
 import { type Reader, finite, literal, naming, object, reject } from "../read-kit.js"
+import { type FittingContext, fitGroups, fitOne } from "./fit-text.js"
 import type { Expr } from "./expression.js"
 import type { Emission } from "./spec.js"
-import { type Charge, color, id, isList, numeric, string, type Value } from "./values.js"
+import { color, id, isList, string, type Value } from "./values.js"
 
 export type PartKey = readonly [string, ...string[]]
 type ShapeProps = Pick<Props, "name" | "box" | "geometry"> &
@@ -28,6 +18,10 @@ export type ComponentFinding = {
   readonly kind: "text-fit"
   readonly key: PartKey
   readonly field: string
+  readonly size: number
+  readonly neededWidth: number
+  readonly availableWidth: number
+  readonly thinned?: number
 }
 export type ComponentTree = {
   readonly id: NodeId
@@ -84,17 +78,26 @@ type Line = {
   readonly stroke: Props["stroke"]
 }
 
-export type PreparedPart = { readonly key: PartKey; readonly field: string } & (
+type PlacedPart = { readonly key: PartKey; readonly field: string } & (
   | { readonly kind: "shape"; readonly props: ShapeProps }
   | { readonly kind: "line"; readonly line: Line }
 )
 
-type EmissionContext = {
-  readonly read: (expr: Expr) => Value
-  readonly measure: Measure
-  readonly theme: Theme
-  readonly charge: Charge
+export type TextPart = {
+  readonly kind: "shape"
+  readonly key: PartKey
+  readonly field: string
+  readonly props: ShapeProps & { readonly text: Text }
 }
+export type GroupedText = {
+  readonly kind: "grouped-text"
+  readonly part: TextPart
+  readonly group: string
+  readonly smaller: number
+  readonly thin: number | undefined
+  readonly laneWidth: number
+}
+export type PreparedPart = PlacedPart | GroupedText | ComponentFinding
 
 const align = literal(["left", "center", "right", "justify"])
 const vertical = literal(["top", "center", "bottom"])
@@ -105,8 +108,9 @@ const smallerSize = finite(1, 2_000)
 export function preparePart(
   emit: Emission,
   field: string,
-  { read, measure, theme, charge }: EmissionContext,
-): PreparedPart | ComponentFinding | undefined {
+  context: FittingContext & { readonly read: (expr: Expr) => Value },
+): PreparedPart {
+  const { read, charge } = context
   const readField = <T>(name: string, expr: Expr, parse: (value: Value) => T): T =>
     naming(`${field}.${name}`, () => parse(read(expr)))
   const key = readField("key", emit.key, keyOf)
@@ -125,12 +129,11 @@ export function preparePart(
       },
     }
   }
-  const position = box(
-    readField("x", emit.x, coordinate),
-    readField("y", emit.y, coordinate),
-    readField("w", emit.w, size),
-    readField("h", emit.h, size),
-  )
+  const x = readField("x", emit.x, coordinate)
+  const y = readField("y", emit.y, coordinate)
+  const w = readField("w", emit.w, size)
+  const h = readField("h", emit.h, size)
+  const position = box(x, y, w, h)
   const shared = { name: key.join(" / "), box: position, geometry: { kind: "rect" } } as const
   if (emit.kind === "rect")
     return {
@@ -150,6 +153,7 @@ export function preparePart(
   const alignV = readField("alignV", emit.alignV, vertical)
   const lines = chars.split("\n")
   naming(`${field}.chars`, () => charge(16 * lines.length))
+  const fit = emit.fit
   const text = naming(field, () =>
     prop("text", {
       chars,
@@ -158,32 +162,27 @@ export function preparePart(
       style: textStyle,
       resize: "fixed",
       alignV,
+      ...(fit === undefined ? {} : { wrap: "words" }),
     }),
   )
-  const fit = emit.fit
-  if (fit === undefined) return { key, field, kind: "shape", props: { ...shared, text } }
-
-  const fits = (candidate: Text, width: number | null, linesLimit: number) =>
-    naming(`${field}.fit`, () => {
-      charge(96 + (width === null ? 2 : 6) * chars.length + 8 * (lines.length - 1))
-      const result = measure(candidate, theme, width)
-      return (
-        numeric(result.w) <= position.w &&
-        numeric(result.h) <= position.h &&
-        result.lines.length <= linesLimit &&
-        (width === null || result.lines.every((line) => line.ink <= position.w + 1e-6))
-      )
-    })
-  if (fits(text, null, fit === "omit" ? Infinity : 2)) return { key, field, kind: "shape", props: { ...shared, text } }
-  if (fit === "omit") return undefined
-
-  const small = readField("fit.smaller", fit.smaller, smallerSize)
-  const reduced =
-    small < theme.textStyles[text.style].size
-      ? { ...text, spans: text.spans.map((span) => ({ ...span, size: small })) }
-      : text
-  if (fits(reduced, position.w, 2)) return { key, field, kind: "shape", props: { ...shared, text: reduced } }
-  return { kind: "text-fit", key, field: `${field}.chars` }
+  const part: TextPart = { key, field, kind: "shape", props: { ...shared, text } }
+  if (fit === undefined) return part
+  if (fit === "omit") return fitOne(part, undefined, context)
+  const smaller = Math.min(
+    readField("fit.smaller", fit.smaller, smallerSize),
+    context.theme.textStyles[text.style].size,
+  )
+  if (fit.group === undefined) return fitOne(part, smaller, context)
+  const laneWidth = fit.thin === undefined ? position.w : w
+  const inset = Math.min((fit.thin ?? 0) / 2, laneWidth / 2)
+  const label =
+    fit.thin === undefined
+      ? part
+      : {
+          ...part,
+          props: { ...part.props, box: { ...position, x: x + inset, w: laneWidth - 2 * inset } },
+        }
+  return { kind: "grouped-text", part: label, group: fit.group, smaller, thin: fit.thin, laneWidth }
 }
 
 const rootKey = ["root"] as const
@@ -193,14 +192,20 @@ export function treeOf(
   name: string,
   frame: ReturnType<typeof readFrame>,
   parts: readonly PreparedPart[],
-  findings: readonly ComponentFinding[],
-  charge: Charge,
+  context: FittingContext,
 ): ComponentTree {
-  const seen = new Map<string, { readonly id: NodeId; readonly part: PreparedPart }>()
-  for (const [index, part] of parts.entries()) {
+  const findings: ComponentFinding[] = []
+  const seen = new Map<string, { readonly id: NodeId; readonly part: PlacedPart }>()
+  for (const part of fitGroups(parts, context, frame.w)) {
+    if (part.kind === "text-fit") {
+      findings.push(part)
+      continue
+    }
+    const index = seen.size
+    if (index >= 499) naming(part.field, () => reject("limit", "An expansion may emit at most 499 parts."))
     const key = keyString(part.key)
     naming(`${part.field}.key`, () => {
-      charge(key.length)
+      context.charge(key.length)
       if (key === keyString(rootKey)) reject("shape", 'The key ["root"] is reserved.')
       if (seen.has(key)) reject("shape", `Duplicate emitted key ${key}.`)
     })

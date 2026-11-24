@@ -38,10 +38,14 @@
   },
   "let": [
     ["gutter", 12],
+    ["rowCount", ["count", ["get", "data.rows"]]],
+    ["plotWidth", ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]]],
+    ["laneWidth", ["div", ["get", "plotWidth"], ["max", 1, ["get", "rowCount"]]]],
+    ["markWidth", ["mul", ["get", "laneWidth"], 0.57]],
+    ["markInset", ["div", ["sub", ["get", "laneWidth"], ["get", "markWidth"]], 2]],
     ["plotTop", 99],
     ["categoryTop", ["sub", ["get", "frame.h"], 62]],
-    ["present", ["filter", ["get", "data.rows"], "r", ["if", ["eq", ["get", "r.value"], null], false, true]]],
-    ["values", ["map", ["get", "present"], "r", ["get", "r.value"]]],
+    ["values", ["map", ["get", "data.rows"], "r", ["if", ["eq", ["get", "r.value"], null], 0, ["get", "r.value"]]]],
     ["lo", ["min", 0, ["get", "values"]]],
     ["hi", ["max", 1, ["get", "values"]]],
     [
@@ -62,6 +66,16 @@
           ["concat", ["get", "token.title"], ", ", ["get", "headerUnit"]]
         ]
       ]
+    ],
+    [
+      "valueFormat",
+      {
+        "scale": ["get", "token.scale"],
+        "digits": ["get", "token.digits"],
+        "prefix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.prefix"], ""],
+        "suffix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.suffix"], ""],
+        "sign": "negative"
+      }
     ],
     ["zero", ["linear", 0, ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]]
   ],
@@ -99,102 +113,81 @@
         "over": ["get", "data.rows"],
         "as": "r"
       },
-      "let": [
-        [
-          "lane",
-          [
-            "band",
-            ["get", "i"],
-            ["count", ["get", "data.rows"]],
-            ["get", "gutter"],
-            ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]],
-            1
-          ]
-        ],
-        [
-          "mark",
-          [
-            "band",
-            ["get", "i"],
-            ["count", ["get", "data.rows"]],
-            ["get", "gutter"],
-            ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]],
-            0.57
-          ]
-        ]
-      ],
+      "let": [["laneStart", ["add", ["get", "gutter"], ["mul", ["get", "i"], ["get", "laneWidth"]]]]],
       "children": [
         {
           "emit": {
             "kind": "text",
             "key": ["list", "category", ["get", "r.id"]],
-            "x": ["get", "lane.start"],
+            "x": ["get", "laneStart"],
             "y": ["get", "categoryTop"],
-            "w": ["get", "lane.size"],
+            "w": ["get", "laneWidth"],
             "h": 56,
             "chars": ["get", "r.label"],
             "style": ["get", "token.caption"],
             "color": ["get", "token.muted"],
             "align": "center",
             "alignV": "center",
-            "fit": { "smaller": ["get", "token.captionSmall"] }
+            "fit": { "smaller": ["get", "token.captionSmall"], "group": "categories", "thin": 4 }
           }
         },
         {
           "when": ["if", ["eq", ["get", "r.value"], null], false, true],
-          "let": [
-            [
-              "edge",
-              [
-                "if",
-                ["eq", ["get", "r.value"], null],
-                ["get", "zero"],
-                ["linear", ["get", "r.value"], ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]
-              ]
-            ]
-          ],
           "children": [
             {
-              "emit": {
-                "kind": "rect",
-                "key": ["list", "bar", ["get", "r.id"]],
-                "x": ["get", "mark.start"],
-                "y": ["min", ["get", "zero"], ["get", "edge"]],
-                "w": ["get", "mark.size"],
-                "h": [
-                  "max",
-                  2,
-                  ["sub", ["max", ["get", "zero"], ["get", "edge"]], ["min", ["get", "zero"], ["get", "edge"]]]
-                ],
-                "fill": ["get", "token.accent"]
-              }
-            },
-            {
-              "when": ["get", "variant.labels"],
-              "emit": {
-                "kind": "text",
-                "key": ["list", "value", ["get", "r.id"]],
-                "x": ["get", "lane.start"],
-                "y": ["if", ["lt", ["get", "r.value"], 0], ["add", ["get", "edge"], 5], ["sub", ["get", "edge"], 37]],
-                "w": ["get", "lane.size"],
-                "h": 32,
-                "chars": [
-                  "format",
-                  ["get", "r.value"],
-                  {
-                    "scale": ["get", "token.scale"],
-                    "digits": ["get", "token.digits"],
-                    "prefix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.prefix"], ""],
-                    "suffix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.suffix"], ""],
-                    "sign": "negative"
+              "let": [
+                [
+                  "edge",
+                  [
+                    "linear",
+                    ["get", "r.value"],
+                    ["get", "lo"],
+                    ["get", "hi"],
+                    ["get", "plotBottom"],
+                    ["get", "plotTop"]
+                  ]
+                ]
+              ],
+              "children": [
+                {
+                  "emit": {
+                    "kind": "rect",
+                    "key": ["list", "bar", ["get", "r.id"]],
+                    "x": ["add", ["get", "laneStart"], ["get", "markInset"]],
+                    "y": ["min", ["get", "zero"], ["get", "edge"]],
+                    "w": ["get", "markWidth"],
+                    "h": [
+                      "max",
+                      2,
+                      ["sub", ["get", "edge"], ["get", "zero"]],
+                      ["sub", ["get", "zero"], ["get", "edge"]]
+                    ],
+                    "fill": ["get", "token.accent"]
                   }
-                ],
-                "style": ["get", "token.label"],
-                "color": ["get", "token.ink"],
-                "align": "center",
-                "alignV": "center",
-                "fit": "omit"
-              }
+                },
+                {
+                  "when": ["get", "variant.labels"],
+                  "emit": {
+                    "kind": "text",
+                    "key": ["list", "value", ["get", "r.id"]],
+                    "x": ["get", "laneStart"],
+                    "y": [
+                      "if",
+                      ["lt", ["get", "r.value"], 0],
+                      ["add", ["get", "edge"], 5],
+                      ["sub", ["get", "edge"], 37]
+                    ],
+                    "w": ["get", "laneWidth"],
+                    "h": 32,
+                    "chars": ["format", ["get", "r.value"], ["get", "valueFormat"]],
+                    "style": ["get", "token.label"],
+                    "color": ["get", "token.ink"],
+                    "align": "center",
+                    "alignV": "center",
+                    "fit": "omit"
+                  }
+                }
+              ]
             }
           ]
         }
