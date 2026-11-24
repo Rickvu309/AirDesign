@@ -55,8 +55,8 @@ describe("layout findings: what may cover the slide without a word of its own", 
       {
         code: "off-slide",
         node: holder.ids.holder,
-        past: 40,
-        note: `${holder.ids.holder}: it runs 40 px past the slide's edge, where the slide cuts it off.`,
+        past: 80,
+        note: `${holder.ids.holder}: it runs 80 px past the slide's edge, where the slide cuts it off.`,
       },
     ])
     const bare = found([block("bare", 2000, 1160, { box: spot(-40, -40, 2000, 1160) })])

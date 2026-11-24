@@ -61,31 +61,33 @@ function meet(a: Rect, b: Rect): Rect | null {
 const contains = (outer: Rect, inner: Rect) =>
   outer.x <= inner.x && outer.y <= inner.y && right(outer) >= right(inner) && bottom(outer) >= bottom(inner)
 
-function around(rect: Rect, rotation: number, cx: number, cy: number): Rect {
-  const angle = (rotation * Math.PI) / 180
+type Spin = { readonly rotation: number; readonly cx: number; readonly cy: number }
+
+function turn(x: number, y: number, spin: Spin): { readonly x: number; readonly y: number } {
+  if (spin.rotation % 360 === 0) return { x, y }
+  const angle = (spin.rotation * Math.PI) / 180
   const cos = Math.cos(angle)
   const sin = Math.sin(angle)
+  const dx = x - spin.cx
+  const dy = y - spin.cy
+  return { x: spin.cx + dx * cos - dy * sin, y: spin.cy + dx * sin + dy * cos }
+}
+
+function mapRect(spins: readonly Spin[], rect: Rect): Rect {
+  if (spins.every((spin) => spin.rotation % 360 === 0)) return rect
   let left = Infinity
   let top = Infinity
   let maxX = -Infinity
   let maxY = -Infinity
   for (const px of [rect.x, right(rect)])
     for (const py of [rect.y, bottom(rect)]) {
-      const dx = px - cx
-      const dy = py - cy
-      const x = cx + dx * cos - dy * sin
-      const y = cy + dx * sin + dy * cos
-      left = Math.min(left, x)
-      top = Math.min(top, y)
-      maxX = Math.max(maxX, x)
-      maxY = Math.max(maxY, y)
+      const point = spins.reduceRight((at, spin) => turn(at.x, at.y, spin), { x: px, y: py })
+      left = Math.min(left, point.x)
+      top = Math.min(top, point.y)
+      maxX = Math.max(maxX, point.x)
+      maxY = Math.max(maxY, point.y)
     }
   return { x: left, y: top, w: maxX - left, h: maxY - top }
-}
-
-function turned(rect: Rect, rotation: number): Rect {
-  if (rotation % 360 === 0) return rect
-  return around(rect, rotation, rect.x + rect.w / 2, rect.y + rect.h / 2)
 }
 
 const written = (line: ResolvedLine) => line.runs.some((run) => run.text.trim() !== "")
@@ -103,35 +105,24 @@ function inkOf(line: ResolvedLine, x: number, y: number): Rect {
 const painted = (node: Resolved) =>
   node.fills.some((paint) => paint.opacity > 0) || node.strokes.length > 0 || node.children.some((kid) => kid.derived)
 
-function place(slide: Slide, node: Resolved, x: number, y: number, toSlide: (rect: Rect) => Rect): Placed {
+function place(slide: Slide, node: Resolved, x: number, y: number, ancestors: readonly Spin[]): Placed {
   const box = { x: x + node.box.x, y: y + node.box.y, w: node.box.w, h: node.box.h }
-  const rotation = node.box.rotation
-  const cx = box.x + box.w / 2
-  const cy = box.y + box.h / 2
-  const spin = (rect: Rect) => (rotation % 360 === 0 ? rect : around(rect, rotation, cx, cy))
-  const seen = (rect: Rect) => toSlide(spin(rect))
-  const laid = node.children.filter((kid) => !kid.derived).map((kid) => place(slide, kid, box.x, box.y, seen))
-  judgeKids(
-    slide,
-    laid.map((kid) => ({
-      ...kid,
-      inks: kid.inks.map(seen),
-      content: kid.content === null ? null : seen(kid.content),
-    })),
-  )
+  const chain = [...ancestors, { rotation: node.box.rotation, cx: box.x + box.w / 2, cy: box.y + box.h / 2 }]
+  const laid = node.children.filter((kid) => !kid.derived).map((kid) => place(slide, kid, box.x, box.y, chain))
+  judgeKids(slide, laid)
   const lines =
     node.text === null || unread(slide, node.id)
       ? []
       : node.text.lines.filter(written).map((line) => inkOf(line, box.x, box.y))
-  const own = lines.map(spin)
-  const inks = [...own, ...laid.flatMap((kid) => kid.inks.map(spin))]
+  const inks = [...lines.map((ink) => mapRect(chain, ink)), ...laid.flatMap((kid) => kid.inks)]
+  const frame = mapRect(chain, box)
   const line = node.geometry?.kind === "line"
   const content = line
     ? null
     : painted(node)
-      ? turned(box, rotation)
-      : union(laid.flatMap((kid) => (kid.content === null ? kid.inks : [kid.content])).map(spin))
-  const bounds = union([turned(box, rotation), ...inks]) ?? box
+      ? frame
+      : union(laid.flatMap((kid) => (kid.content === null ? kid.inks : [kid.content])))
+  const bounds = union([frame, ...inks, ...laid.map((kid) => kid.bounds)]) ?? frame
   judgeOwn(slide, node, box)
   return { node, box, inks, content, bounds }
 }
@@ -257,7 +248,7 @@ export function layoutFindings(
   for (const id of slides) {
     if (doom.nodes.get(id)?.type !== "slide") continue
     const slide: Slide = { doom, theme, measure, size, found, missing }
-    const tops = resolveSlide(doom, id, measure).map((node) => place(slide, node, 0, 0, (rect) => rect))
+    const tops = resolveSlide(doom, id, measure).map((node) => place(slide, node, 0, 0, []))
     judgeKids(slide, tops)
     for (const top of tops) judgeEdges(slide, top)
   }
