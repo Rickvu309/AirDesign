@@ -74,17 +74,24 @@ describe("a designed starting slide", () => {
     }
   })
 
-  it.each(["kpis", "cards"] as const)(
-    "%s: fills most of the room under the title, so the lower half of the slide is not left empty",
+  it.each(["kpis", "cards", "grid"] as const)(
+    "%s: stays at content height under the title, short of the bottom margin",
     (start) => {
       const { doom, slide } = started(start)
       const [content] = childrenOf(doom, slide).filter((node) => propOf(node, "role") !== "title")
       const box = propOf(content!, "box")!
-      const room = 1000 - box.y
-      expect(box.h).toBeGreaterThanOrEqual(0.55 * room)
-      expect(box.y + box.h).toBeLessThanOrEqual(1000)
+      expect(box.h).toBeLessThan(0.55 * (1000 - box.y))
+      expect(box.y + box.h).toBeLessThan(1000)
     },
   )
+
+  it.each(["chart", "timeline"] as const)("%s: fills the band under the title down to the bottom margin", (start) => {
+    const { doom, slide } = started(start)
+    const [content] = childrenOf(doom, slide).filter((node) => propOf(node, "role") !== "title")
+    const box = propOf(content!, "box")!
+    expect(box.y + box.h).toBeGreaterThan(1000 - 8)
+    expect(box.y + box.h).toBeLessThanOrEqual(1000)
+  })
 
   it("blank: holds nothing", () => {
     const { doom, slide } = started("blank")

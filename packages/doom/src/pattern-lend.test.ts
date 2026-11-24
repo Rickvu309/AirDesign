@@ -50,14 +50,14 @@ describe("a card under a KPI row on the slide type scale", () => {
   const sizesOf = (doom: Doom, root: NodeId) => styled(doom, root).map((style) => defaultTheme.textStyles[style].size)
   const rowIn = (doom: Doom) => childrenOf(doom, slide).find((node) => propOf(node, "name") === "KPI")!
 
-  it("keeps its heading at 40 and its bullets at 32, taking the height from the row above", () => {
+  it("keeps its heading at 40 and its bullets at 32, under the row", () => {
     const withKpi = send(scaled(), add({ kind: "kpi", items: kpiItems }))
     const before = propOf(rowIn(withKpi), "box")!
     const doom = send(withKpi, longDecision)
     const card = made(doom)
     expect(sizesOf(doom, card.id)).toEqual([40, 32])
     const after = propOf(rowIn(doom), "box")!
-    expect(after.h).toBeLessThan(before.h)
+    expect(after.h).toBe(before.h)
     const box = propOf(card, "box")!
     expect(box.y).toBeGreaterThanOrEqual(after.y + after.h)
     expect(box.y + box.h).toBeLessThanOrEqual(1000)

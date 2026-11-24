@@ -102,6 +102,7 @@ export function cardOf(
     readonly cell?: Cell
     readonly key?: string
     readonly align?: Align9
+    readonly hug?: boolean
   },
 ): Sized {
   const inner = Math.round(look.gap / 2)
@@ -109,7 +110,7 @@ export function cardOf(
     look.pad * 2 + members.reduce((sum, member) => sum + member.high, 0) + inner * Math.max(0, members.length - 1)
   const framed = frameOf(
     {
-      sizing: { w: "fill", h: "fill" },
+      sizing: { w: "fill", h: look.hug === true ? "hug" : "fill" },
       ...(look.cell === undefined ? {} : { cell: look.cell }),
       layout: {
         mode: "column",

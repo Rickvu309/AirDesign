@@ -15,7 +15,7 @@ import {
 import { addGrid, addPattern } from "./agent-patterns.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { placeholderSubtitle } from "./slide-placeholders.js"
-import { type Area, areaFor, cardRadiusFor, gapFor, slideSize, themeOf } from "./agent-place.js"
+import { type Area, areaFor, cardRadiusFor, gapFor, patternArea, slideSize, themeOf } from "./agent-place.js"
 import { lineEnds } from "./agent-line-ends.js"
 import { pictureFit } from "./picture-fit.js"
 import type { Box } from "./doom-walk.js"
@@ -244,7 +244,7 @@ function addIcon(draft: Draft, parent: Node, change: Add): void {
 
 function addChart(draft: Draft, parent: Node, change: Add): void {
   if (change.chart === undefined) stop("shape", undefined, "chart")
-  const area = areaFor(draft, parent, change.box)
+  const area = patternArea(draft, parent, change.box)
   create(draft, "frame", parent.id, {
     ...surfaced(draft, change),
     box: givenBox(change, area),

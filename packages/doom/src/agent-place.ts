@@ -62,6 +62,21 @@ export function areaFor(draft: Draft, parent: Node, box: Area | undefined): Area
   return parent.type === "slide" ? alignedWithTitle(draft, parent, free) : free
 }
 
+function underTitle(draft: Draft, slide: Node, area: Area): Area {
+  const size = slideSize(draft)
+  const title = descendantsOf(draft.doom, slide.id).find((node) => propOf(node, "role") === "title")
+  const titleBox = title === undefined ? undefined : boxOf(title, draft.reading.boxes)
+  const top = titleBox === undefined ? area.y : Math.max(area.y, titleBox.y + titleBox.h + gapFor(size.w))
+  const bottom = Math.min(area.y + area.h, bottomLimitOf(size.h))
+  return bottom > top ? { x: area.x, y: top, w: area.w, h: bottom - top } : area
+}
+
+export function patternArea(draft: Draft, parent: Node, box: Area | undefined): Area {
+  if (box !== undefined) return box
+  const free = areaFor(draft, parent, undefined)
+  return parent.type === "slide" ? underTitle(draft, parent, free) : free
+}
+
 const slideMarginShare = 1 / 12
 const slideEdgeShare = 1 / 13.5
 
