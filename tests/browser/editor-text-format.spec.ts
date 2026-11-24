@@ -61,6 +61,26 @@ test("Ctrl+Shift+X strikes only the words selected, and the rest stay plain", as
   await expect(runs(page).last()).toHaveCSS("text-decoration-line", "none")
 })
 
+test("the Italic button italicizes the words selected at the click, even before the canvas hears the last change", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  await seeded(page, stack, opened, "Alpha beta")
+  await edit(page)
+  await page.keyboard.press("ControlOrMeta+Home")
+  for (let step = 0; step < 4; step++) await page.keyboard.press("Shift+ArrowRight")
+  const italic = page.getByRole("button", { name: doomEditorCopy.italic })
+  await italic.evaluate((button: HTMLButtonElement) => {
+    button.ownerDocument.getSelection()?.modify("extend", "forward", "character")
+    button.click()
+  })
+  await expect(italic).toHaveAttribute("aria-pressed", "true")
+  await leave(page)
+  await expect.poll(async () => (await textOf(stack, opened))?.spans).toEqual([{ end: 5, italic: true }, { end: 10 }])
+})
+
 test("Ctrl+Alt+T, R, J and L align the paragraphs the cursor touches and leave the others alone", async ({
   page,
   context,

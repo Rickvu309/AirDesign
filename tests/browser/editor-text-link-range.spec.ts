@@ -51,3 +51,35 @@ test("a selected range of plain words shows an empty Link field and links only t
       .evaluate((node) => getComputedStyle(node).textDecorationLine),
   ).toBe("none")
 })
+
+test("the Link field links the words selected when focus leaves the text, even before the canvas hears the last change", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  await page.getByRole("button", { name: doomEditorCopy.panelDesign, exact: true }).click()
+  await landNodes(stack, opened, [{ id: "t:1", type: "shape", parent: opened.slide, props: layer("Read the site") }])
+  await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(3)
+
+  await clickSlide(page, 300, 640)
+  const address = page.locator(`[data-design-section="${linkCopy.section}"]`).getByRole("textbox")
+  await edit(page)
+  await page.keyboard.press("Home")
+  for (let step = 0; step < 3; step++) await page.keyboard.press("Shift+ArrowRight")
+  await expect(address).toHaveAttribute("placeholder", linkCopy.target)
+
+  await address.evaluate((field: HTMLInputElement) => {
+    field.ownerDocument.getSelection()?.modify("extend", "forward", "character")
+    field.focus()
+  })
+  await expect(address).toBeFocused()
+  await address.fill("https://words.example/")
+  await address.press("Enter")
+  await expect(address).toHaveValue("https://words.example/")
+  await leave(page)
+
+  await expect
+    .poll(async () => (await textOf(stack, opened))?.spans)
+    .toEqual([{ end: 4, link: "https://words.example/" }, { end: 13 }])
+})
