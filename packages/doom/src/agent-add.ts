@@ -63,6 +63,7 @@ const patternFields = ["box", "name", "hidden", "items"] as const
 const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
   text: [...common, ...painted, ...words, "link"],
   shape: [...common, ...painted, ...words, "shape", "link"],
+  path: [...common, ...painted, ...words, "d", "fillStroke", "link"],
   line: [...common, "stroke", "strokeWidth", "arrow", "startArrow", "dash", "from", "to", "route"],
   frame: [...common, ...painted, "layout", "gap", "padding", "align", "rows", "clip"],
   picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit", "crop"],
@@ -114,9 +115,17 @@ function emptyPlaceholderFor(draft: Draft, slide: Node, style: Text["style"], bo
 const inkOn = (fill: AgentLook["fill"]) =>
   fill === undefined || (typeof fill === "string" && fill.startsWith("accent")) ? "background" : undefined
 
-function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "text" | "shape"): void {
+function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "text" | "shape" | "path"): void {
   if (kind === "text" && change.text === undefined) stop("shape", undefined, "text", "missing", "A non-empty string.")
-  const labelled = kind === "shape"
+  const labelled = kind !== "text"
+  const geometry =
+    kind === "path"
+      ? {
+          kind: "path" as const,
+          d: change.d ?? stop("shape", undefined, "d", "missing", "SVG path data."),
+          ...(change.fillStroke === undefined ? {} : { fillStroke: change.fillStroke }),
+        }
+      : shapeGeometry(change.shape ?? "rect")
   const ink = change.color ?? inkOn(change.fill)
   const look: AgentLook =
     labelled && change.text !== undefined
@@ -161,18 +170,18 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
     : change.box === undefined
       ? Math.min(area.h, wordsHigh(area.w))
       : wordsHigh(change.box.w)
-  const filled = kind === "shape" && change.fill === undefined && change.stroke === undefined
+  const filled = labelled && change.fill === undefined && change.stroke === undefined
   const titled =
     kind === "text" &&
     made !== undefined &&
     titleStyles.has(made.style) &&
     !descendantsOf(draft.doom, slide.id).some((node) => propOf(node, "role") === "title")
   create(draft, "shape", parent.id, {
-    ...surfaced(draft, change),
-    ...(labelled && change.radius === undefined ? { radius: cardRadiusFor(slideSize(draft).w) } : {}),
+    ...surfaced(draft, change, {}, kind === "path" ? "center" : "inside"),
+    ...(kind === "shape" && change.radius === undefined ? { radius: cardRadiusFor(slideSize(draft).w) } : {}),
     ...(filled ? { fills: [solid("accent1")] } : {}),
     box: givenBox(change, area, high, grows),
-    geometry: shapeGeometry(change.shape ?? "rect"),
+    geometry,
     ...(titled ? { role: "title" as const } : {}),
     ...(made === undefined
       ? {}
@@ -294,6 +303,7 @@ function compileKind(draft: Draft, parent: Node, slide: Node, change: Add): void
   switch (change.kind) {
     case "text":
     case "shape":
+    case "path":
       return addWords(draft, parent, slide, change, change.kind)
     case "line":
       return addLine(draft, parent, change)

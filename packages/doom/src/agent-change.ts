@@ -44,14 +44,14 @@ import {
 import { type Refusal, refuse } from "./refusal.js"
 import { type TextStyleName, textStyleNames } from "./text.js"
 import { themeLibrary } from "./theme.js"
-import type { Arrow } from "./geometry.js"
+import { type Arrow, pathLimit, readPathData } from "./geometry.js"
 import { shapeNames } from "./preset-geometry.js"
 import { cropField } from "./agent-crop.js"
 import type { CropSides } from "./picture-crop.js"
 
 export const patternNames = ["kpi", "cards", "compare", "matrix", "timeline", "flow"] as const
 export type PatternName = (typeof patternNames)[number]
-export const addKinds = ["text", "shape", "line", "frame", "picture", "icon", "chart", ...patternNames] as const
+export const addKinds = ["text", "shape", "line", "path", "frame", "picture", "icon", "chart", ...patternNames] as const
 export type AgentAdd = (typeof addKinds)[number]
 
 export type AgentColor = ColorVar | `${ColorVar}${"+" | "-"}${number}` | Hex
@@ -64,6 +64,8 @@ export type AgentFill = AgentColor | "none" | { readonly image: string } | Agent
 export type { AgentChart } from "./agent-chart.js"
 export type AgentBox = { readonly x: Px; readonly y: Px; readonly w: Px; readonly h: Px }
 export type AgentLook = {
+  readonly d?: string
+  readonly fillStroke?: boolean
   readonly fill?: AgentFill
   readonly stroke?: AgentColor | "none"
   readonly strokeWidth?: Px
@@ -162,6 +164,15 @@ const readAfter = accepting(forms.after, (raw) => (raw === null ? null : readId(
 type LookFields = { readonly [K in keyof AgentLook]-?: Field<Exclude<AgentLook[K], undefined>> }
 
 const lookFields: LookFields = {
+  d: field(
+    {
+      type: "string",
+      maxLength: pathLimit,
+      description: "Set a path's SVG commands in box-relative coordinates (0 to 1 spans the box).",
+    },
+    readPathData,
+  ),
+  fillStroke: flag("Extend an opaque path fill by one pixel along its edge."),
   fill: field(
     {
       description:

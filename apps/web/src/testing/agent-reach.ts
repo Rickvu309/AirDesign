@@ -131,6 +131,8 @@ export const sample: Readonly<Record<string, unknown>> = {
   fit: "crop",
   crop: { left: 10, top: 5 },
   shape: "ellipse",
+  fillStroke: true,
+  d: "M0 0L1 1",
   rotation: 15,
   flip: "h",
   notes: "Say why",

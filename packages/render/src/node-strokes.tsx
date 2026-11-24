@@ -2,6 +2,7 @@ import * as doom from "@airdesign/doom"
 import { useId } from "react"
 import { ArrowMarker, type Arrowhead } from "./arrow-marker.js"
 import { type Outline } from "./node-outline.js"
+import { strokeDash } from "./stroke-dash.js"
 
 type Resolved = doom.Resolved
 type Paint = doom.ResolvedPaint
@@ -14,8 +15,6 @@ const heads: Readonly<Record<Exclude<Arrow, "none">, Arrowhead>> = {
 }
 
 const headSize = { length: 4.5, width: 4 }
-
-const dashes = { solid: "", dash: "3 2", dot: "0.01 2" } as const
 
 function strokeRef(paint: Paint, id: string): string {
   if (paint.kind === "solid") return paint.color
@@ -45,16 +44,7 @@ export function NodeStrokes({ node, outline }: { readonly node: Resolved; readon
   const open = geometry?.kind === "line" || geometry?.kind === "path"
   const align = open ? "center" : stroke.align
   const weight = align === "center" ? stroke.weight : stroke.weight * 2
-  const dash = dashes[stroke.dash]
-  const dashed =
-    dash === ""
-      ? {}
-      : {
-          strokeDasharray: dash
-            .split(" ")
-            .map((step) => Number(step) * stroke.weight)
-            .join(" "),
-        }
+  const dash = strokeDash(stroke)
   const round = open || stroke.dash === "dot" ? ({ strokeLinecap: "round", strokeLinejoin: "round" } as const) : {}
   const shape = outline.fill ?? outline.stroke[0] ?? ""
   const arrows = geometry?.kind === "line" ? geometry.arrows : (["none", "none"] as const)
@@ -152,7 +142,7 @@ export function NodeStrokes({ node, outline }: { readonly node: Resolved; readon
               stroke={strokeRef(paint, `${id}-${String(at)}`)}
               strokeOpacity={paint.opacity === 1 ? undefined : paint.opacity}
               strokeWidth={weight}
-              {...dashed}
+              strokeDasharray={dash.length === 0 ? undefined : dash.join(" ")}
               {...round}
               {...markers}
             />

@@ -55,3 +55,5 @@ export const { shortcutCopy } = createRequire(import.meta.url)("../../../../apps
 export const { guideWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/guide-copy.ts")
 export const { textCopy, textWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/text-copy.ts")
 export const { editorCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/editor-copy.ts")
+
+export const { exportCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/export-copy.ts")

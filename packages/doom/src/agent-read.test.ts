@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { build } from "./agent-fixtures.js"
+import { apply, build } from "./agent-fixtures.js"
 import { more, richDeck } from "./testing/rich-deck.js"
 import { readForAgent } from "./agent-read.js"
 import { hex, ids } from "./sample-deck.js"
@@ -75,6 +75,18 @@ describe("readForAgent", () => {
     expect(readForAgent(build(doom, change({ op: "set", target: ids.caption, shape: "rect" })), "all")).not.toContain(
       "shape=",
     )
+  })
+
+  it("summarizes a path and shows its commands on request", () => {
+    const d = "M0 0L1 1"
+    const withPath = apply(doom, [
+      { node: ids.caption, prop: "geometry", value: { kind: "path", d, fillStroke: true } },
+    ])
+    const line = lines(readForAgent(withPath, "all")).find((line) => line.trim().startsWith(ids.caption))
+    expect(line).toMatch(new RegExp(`${ids.caption} path @-?\\d+,-?\\d+ \\d+x\\d+`))
+    expect(line).toContain("fillStroke=true")
+    expect(line).not.toContain("d=")
+    expect(readForAgent(withPath, "all", undefined, ids.caption)).toContain(`d="${d}"`)
   })
 
   it("leaves out what is the default: the plain ink colour and a padding of nothing", () => {

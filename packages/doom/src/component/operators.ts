@@ -1,4 +1,5 @@
 import { finite, integer, literal, object, reject } from "../read-kit.js"
+import { polyline, wedge } from "./path-operators.js"
 import {
   type Charge,
   type Value,
@@ -141,6 +142,8 @@ const operators: Readonly<Record<string, Operation>> = {
     const lead = rounded < 0 ? "−" : rounded > 0 && sign === "always" ? "+" : ""
     return string(lead + prefix + format(Math.abs(rounded), digits) + suffix)
   }),
+  polyline: fixed(1, ([points], charge) => polyline(list(points), charge)),
+  wedge: fixed(5, wedge),
   point: fixed(2, ([x, y]) => ({ x: number(x), y: number(y) })),
   site: fixed(2, ([key, site]) => ({ key: list(key), site: literal(["t", "r", "b", "l", "c"])(site) })),
 }

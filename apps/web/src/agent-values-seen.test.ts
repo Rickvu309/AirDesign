@@ -74,6 +74,8 @@ const seen: Readonly<Record<string, Seen>> = {
   fit: { declined: "Tile is an agent styling choice.", partly: ["panel:image.mode"] },
   crop: { person: ["gesture:crop-drag"] },
   shape: { person: ["panel:geometry.preset", "gesture:tool-ellipse"] },
+  fillStroke: { declined: "Templates and agents set the path fill edge." },
+  d: { declined: "Templates and agents draw raw SVG paths. The panel edits their paint and placement." },
   rotation: { person: ["gesture:rotate"] },
   flip: { person: ["gesture:flip-horizontal", "gesture:flip-vertical"] },
   notes: { person: ["notes:slide-notes"] },

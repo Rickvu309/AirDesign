@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { hitChain } from "./hit-test"
 import { grow, paint, spot } from "./testing/doom-fixtures"
 import { allIn, kept, marqueeSelection, noSelection, picked, rectBetween, steppedIn, steppedOut } from "./selection"
@@ -93,6 +93,34 @@ describe("what a click reaches", () => {
     ])
     expect(hitChain(lined.geometry.roots, { x: 200, y: 3 }, 4)).not.toBeNull()
     expect(hitChain(lined.geometry.roots, { x: 200, y: 30 }, 4)).toBeNull()
+  })
+
+  it("checks the painted stroke within the padded path bounds and skips it beyond them", () => {
+    const trace = grow([
+      {
+        type: "shape",
+        name: "trace",
+        props: {
+          box: spot(0, 0, 100, 100),
+          geometry: { kind: "path", d: "M0 0L1 0" },
+          strokes: paint,
+          stroke: { weight: 4, align: "center", dash: "dash" },
+        },
+      },
+    ])
+    const isPointInStroke = vi.fn((_path: unknown, _x: number, y: number) => y < 0)
+    const context = { resetTransform: () => {}, setLineDash: vi.fn(), isPointInStroke }
+    vi.stubGlobal("Path2D", class {})
+    vi.stubGlobal("document", { createElement: () => ({ getContext: () => context }) })
+    try {
+      expect(hitChain(trace.geometry.roots, { x: 12, y: -5 }, 4)).toBeNull()
+      expect(isPointInStroke).not.toHaveBeenCalled()
+      expect(hitChain(trace.geometry.roots, { x: 12, y: -3 }, 4)?.map(({ id }) => id)).toEqual([trace.ids.trace])
+      expect(hitChain(trace.geometry.roots, { x: 50, y: 50 }, 4)).toBeNull()
+      expect(context.setLineDash).not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it("reaches an elbow of no length at the seam of two touching shapes", () => {

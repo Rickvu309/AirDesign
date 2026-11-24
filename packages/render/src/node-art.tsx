@@ -91,16 +91,22 @@ export const NodeArt = memo(function NodeArt({
   waiting,
   host,
   iconsReady,
+  opaqueParent = true,
 }: {
   readonly node: Resolved
   readonly assetUrl: AssetUrl
   readonly waiting?: string
   readonly host?: NodeHost | undefined
   readonly iconsReady?: boolean | undefined
+  readonly opaqueParent?: boolean
 }) {
   const { box, geometry } = node
   const boxy = geometry === null || geometry.kind === "rect" || geometry.kind === "ellipse"
   const outline = outlineOf(node)
+  const onlyFill = node.fills.length === 1 ? node.fills[0] : undefined
+  const opaque = opaqueParent && node.opacity === 1
+  const pathFill = geometry?.kind === "path" && geometry.fillStroke && onlyFill?.kind === "solid" ? onlyFill : undefined
+  const seamStroke = opaque && pathFill?.opacity === 1
   const painted = node.fills.length > 0 && geometry?.kind !== "line" && geometry?.kind !== "icon"
   const typing = host?.id === node.id && node.text !== null
   const from: ShadowFrom = painted ? (boxy ? "box" : "outline") : typing ? "typing" : "contents"
@@ -134,19 +140,34 @@ export const NodeArt = memo(function NodeArt({
       <div style={{ ...fill, ...(flipOf(box) === undefined ? {} : { transform: flipOf(box) }) }}>
         {painted || missing ? (
           <div style={{ ...fill, ...(look.bodyFilter === undefined ? {} : { filter: look.bodyFilter }) }}>
-            <div
-              data-body=""
-              style={{
-                ...fill,
-                overflow: "hidden",
-                ...(missing ? { background: "var(--line)" } : {}),
-                ...(boxy ? { borderRadius: round } : { clipPath: clipped }),
-                ...(look.boxShadow === undefined ? {} : { boxShadow: look.boxShadow }),
-                ...(look.backdrop === undefined ? {} : { backdropFilter: look.backdrop }),
-              }}
-            >
-              <PaintLayers fills={node.fills} assetUrl={assetUrl} />
-            </div>
+            {pathFill !== undefined && geometry?.kind === "path" ? (
+              <svg
+                data-body=""
+                width={box.w}
+                height={box.h}
+                style={{ ...fill, overflow: seamStroke ? "visible" : "hidden", opacity: pathFill.opacity }}
+              >
+                <path
+                  d={geometry.d}
+                  fill={pathFill.color}
+                  {...(seamStroke ? { stroke: pathFill.color, strokeWidth: 2, strokeLinejoin: "round" } : {})}
+                />
+              </svg>
+            ) : (
+              <div
+                data-body=""
+                style={{
+                  ...fill,
+                  overflow: "hidden",
+                  ...(missing ? { background: "var(--line)" } : {}),
+                  ...(boxy ? { borderRadius: round } : { clipPath: clipped }),
+                  ...(look.boxShadow === undefined ? {} : { boxShadow: look.boxShadow }),
+                  ...(look.backdrop === undefined ? {} : { backdropFilter: look.backdrop }),
+                }}
+              >
+                <PaintLayers fills={node.fills} assetUrl={assetUrl} />
+              </div>
+            )}
           </div>
         ) : null}
         {geometry?.kind === "icon" ? (
@@ -177,6 +198,7 @@ export const NodeArt = memo(function NodeArt({
                 {...(waiting === undefined ? {} : { waiting })}
                 host={host !== undefined && holds(child, host.id) ? host : undefined}
                 iconsReady={iconsReady}
+                opaqueParent={opaque}
               />
             )}
           />

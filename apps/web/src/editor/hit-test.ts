@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import type { Silhouette } from "@airdesign/render"
+import { type Silhouette } from "@airdesign/render"
 import { apply, invert, type Placed, type Point } from "./slide-geometry"
 
 export type Skip = (id: doom.NodeId) => boolean
@@ -27,19 +27,90 @@ function bodyHit(placed: Placed, local: Point, reach: number): boolean {
     return across * across + down * down <= 1
   }
   if (geometry?.kind === "preset") return doom.presetHolds(geometry.name, w, h, geometry.adjust, local, reach)
-  return local.x >= 0 && local.y >= 0 && local.x <= w && local.y <= h
+  const inBox = local.x >= 0 && local.y >= 0 && local.x <= w && local.y <= h
+  if (geometry?.kind !== "path") return inBox
+  if (inBox && node.text !== null) return true
+  return pathHit(node, geometry, local, reach, inBox)
 }
 
 let scratch: CanvasRenderingContext2D | null = null
-const paths = new WeakMap<Silhouette, Path2D>()
+type PathData = { readonly d: string }
+type PathGeometry = Extract<doom.Resolved["geometry"], { kind: "path" }>
+const paths = new WeakMap<PathData, Path2D>()
+const pathBounds = new WeakMap<PathData, DOMRect>()
+const svgNamespace = "http://www.w3.org/2000/svg"
+let boundsProbe: SVGPathElement | undefined
+
+function boundsOf(shape: PathData): DOMRect {
+  const cached = pathBounds.get(shape)
+  if (cached !== undefined) return cached
+  if (boundsProbe === undefined) {
+    const svg = document.createElementNS(svgNamespace, "svg")
+    svg.setAttribute("aria-hidden", "true")
+    svg.style.cssText = "position:fixed;width:0;height:0;visibility:hidden;pointer-events:none"
+    boundsProbe = document.createElementNS(svgNamespace, "path")
+    svg.append(boundsProbe)
+    document.body.append(svg)
+  }
+  boundsProbe.setAttribute("d", shape.d)
+  const bounds = boundsProbe.getBBox()
+  pathBounds.set(shape, bounds)
+  return bounds
+}
+
+function pathOf(shape: PathData): Path2D {
+  const cached = paths.get(shape)
+  if (cached !== undefined) return cached
+  const path = new Path2D(shape.d)
+  paths.set(shape, path)
+  return path
+}
 
 function holds(shape: Silhouette, at: Point): boolean {
   scratch ??= document.createElement("canvas").getContext("2d")
   if (scratch === null) return false
-  const path = paths.get(shape) ?? new Path2D(shape.d)
-  paths.set(shape, path)
   scratch.setTransform(...shape.matrix)
-  return scratch.isPointInPath(path, at.x, at.y)
+  return scratch.isPointInPath(pathOf(shape), at.x, at.y)
+}
+
+function pathHit(node: doom.Resolved, geometry: PathGeometry, local: Point, reach: number, inBox: boolean): boolean {
+  const { w, h, flipH, flipV } = node.box
+  const x = flipH ? w - local.x : local.x
+  const y = flipV ? h - local.y : local.y
+  const filled = inBox && node.fills.length > 0
+  const { stroke, strokes } = node
+  const sides = strokes[0]?.kind === "solid" ? stroke?.sides : undefined
+  const width =
+    stroke === null || strokes.length === 0 || stroke.weight === 0 ? 0 : Math.max(2 * reach, stroke.weight + reach)
+  let stroked = false
+  if (width > 0 && sides === undefined) {
+    const bounds = geometry.bounds ?? boundsOf(geometry)
+    const pad = width / 2
+    stroked =
+      x >= bounds.x - pad &&
+      y >= bounds.y - pad &&
+      x <= bounds.x + bounds.width + pad &&
+      y <= bounds.y + bounds.height + pad
+  }
+  if (!filled && !stroked && sides === undefined) return false
+  if (filled || stroked) {
+    scratch ??= document.createElement("canvas").getContext("2d")
+    if (scratch === null) return false
+    scratch.resetTransform()
+    const path = pathOf(geometry)
+    if (filled && scratch.isPointInPath(path, x, y)) return true
+    if (stroked) {
+      scratch.lineWidth = width
+      scratch.lineCap = "round"
+      scratch.lineJoin = "round"
+      return scratch.isPointInStroke(path, x, y)
+    }
+  }
+  return (
+    sides !== undefined &&
+    inBox &&
+    (y < (sides.t ?? 0) || h - y < (sides.b ?? 0) || x < (sides.l ?? 0) || w - x < (sides.r ?? 0))
+  )
 }
 
 export function hitChain(
