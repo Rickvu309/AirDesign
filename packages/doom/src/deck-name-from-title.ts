@@ -1,5 +1,5 @@
 import { limits } from "./limits.js"
-import { applyEdit } from "./apply-edit.js"
+import { applyBeforeFreeing } from "./apply-edit.js"
 import type { Author, Doom, Node, Write } from "./doom.js"
 import { descendantsOf, propOf, slidesOf } from "./doom-walk.js"
 import { rev, type NodeId } from "./ids.js"
@@ -42,7 +42,7 @@ export function nameFromTitleWrites(doom: Doom, writes: readonly Write[]): reado
     const was = doom.revs.get(write.node)?.get(write.prop)
     return write.base !== undefined || was === undefined ? write : { ...write, base: was }
   })
-  const after = applyEdit(doom, { once: "deck-name", author, writes: stamped, rev: rev(doom.rev + 1) })
+  const after = applyBeforeFreeing(doom, { once: "deck-name", author, writes: stamped, rev: rev(doom.rev + 1) })
   if (isRefusal(after)) return []
   const { id, chars } = firstTitleOf(after)
   const before = firstTitleOf(doom).id

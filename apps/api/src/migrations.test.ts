@@ -234,7 +234,7 @@ describe("database migrations", () => {
     await migrator.query(
       `insert into deck.doom_edit (deck, rev, once, edit, was) values ('fresh', 1, 'a1', '{}', '[{"node":"s:4"}]')`,
     )
-    expect(await applySchema(migrator)).toEqual({ applied: 2, at: latest })
+    expect(await applySchema(migrator)).toEqual({ applied: latest - 25, at: latest })
     const kept = await migrator.query("select replaced from deck.doom_edit where deck = 'fresh'")
     expect(kept.rows).toEqual([{ replaced: [{ node: "s:4" }] }])
   })

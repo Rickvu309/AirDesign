@@ -121,8 +121,8 @@ export async function undoRunTool(raw: unknown, agent: string, once: string, hos
   const measure = doom.mayLeaveDeck(opened.fold, edit.writes)
     ? await deckMeasure(host, [opened.fold, doom.viewOf(opened.fold, [edit])])
     : undefined
-  const freed = doom.freedLineEnds(opened.fold, edit.writes, measure ?? doom.measureWith({}))
-  const landed = await host.edit(opened.deck, { ...edit, writes: [...edit.writes, ...freed] })
+  const writes = doom.freeLineEnds(opened.fold, edit.writes, measure ?? doom.measureWith({}))
+  const landed = await host.edit(opened.deck, { ...edit, writes })
   if (!landed.ok) {
     const detail = hostRefused(landed)
     return answered(undoRefused, {

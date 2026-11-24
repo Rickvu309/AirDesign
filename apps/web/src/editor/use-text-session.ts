@@ -98,10 +98,8 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
   const notices = useSyncExternalStore(client.subscribe, client.notices)
   const selected = useRef<(() => Caret | null) | null>(null)
   const viewRef = useRef(view)
-  const measureRef = useRef(measure)
   useEffect(() => {
     viewRef.current = view
-    measureRef.current = measure
   })
 
   function set(next: Session | null) {
@@ -168,12 +166,14 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
     if (refused) pushed.current = ""
     flush()
     if (now.created === null) {
-      const writes = leaveWrites(
-        viewRef.current,
-        { node: now.node, keeps: now.keeps, draft: now.draft, painted: now.painted, pushed: pushed.current },
-        measureRef.current ?? estimate,
-      )
-      client.push(writes, { step: step.current })
+      const { writes, seen } = leaveWrites(viewRef.current, {
+        node: now.node,
+        keeps: now.keeps,
+        draft: now.draft,
+        painted: now.painted,
+        pushed: pushed.current,
+      })
+      client.push(writes, { step: step.current, seen })
     }
     setRefused(false)
     set(null)

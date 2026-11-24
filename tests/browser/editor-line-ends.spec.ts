@@ -352,3 +352,113 @@ test("emptying a draft that already reflowed keeps the connector where the draft
   const freed = (await savedNode(stack, opened, "l:1"))?.geometry as { start: Point }
   expect(Math.abs(freed.start.x - seen.x)).toBeLessThanOrEqual(1)
 })
+
+test("emptying a draft beside the connector's frame in an auto layout row keeps the connector still", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("edit-text")
+  const opened = await openEditor(page, context, stack)
+  const [row, words] = hugging(opened.slide)
+  await landNodes(stack, opened, [
+    {
+      ...row!,
+      props: {
+        ...row!.props,
+        layout: { mode: "row", gap: 100, padding: { t: 20, r: 20, b: 20, l: 20 }, align: "top-left" },
+      },
+    },
+    words!,
+    { id: "g:1", type: "frame", parent: "f:1", props: { box: spot(0, 0, 200, 100), fills: accent } },
+    lineFrom("g:1", { node: "w:1", site: "r" }, { x: 100, y: 50 }),
+  ])
+  await expect(page.locator('[data-slide-box] [data-node="l:1"]')).toBeVisible()
+  await page.evaluate(() => document.fonts.ready)
+  const start = () =>
+    page.locator('[data-slide-box] [data-node="l:1"]').evaluate((element) => {
+      const path = element.querySelector("path")
+      const canvas = element.closest("[data-slide-box]")
+      const matrix = path?.getScreenCTM()
+      if (path == null || matrix == null || canvas == null) throw new Error("no line path")
+      const screen = path.getPointAtLength(0).matrixTransform(matrix)
+      const box = canvas.getBoundingClientRect()
+      const scale = box.width / 1920
+      return { x: (screen.x - box.x) / scale, y: (screen.y - box.y) / scale }
+    })
+  const near = (one: Point, other: Point) => Math.hypot(one.x - other.x, one.y - other.y) <= 0.5
+  const saved = await start()
+  await page.keyboard.down("Control")
+  await clickSlide(page, 145, 192)
+  await page.keyboard.up("Control")
+  await page.keyboard.press("Enter")
+  await expect(page.locator("[data-text-editor]")).toBeFocused()
+  await page.clock.install()
+  await page.clock.pauseAt(new Date(Date.now() + 100))
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.insertText("Wi")
+  await expect.poll(async () => (await start()).x).toBeLessThan(saved.x - 100)
+  const seen = await start()
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.press("Backspace")
+  await expect.poll(async () => (await page.locator("[data-text-editor]").textContent())?.trim()).toBe("")
+  expect(near(await start(), seen)).toBe(true)
+  await page.keyboard.press("Escape")
+  await expect.poll(async () => (await savedNode(stack, opened, "w:1"))?.parent).toBeNull()
+  expect(near(await start(), seen)).toBe(true)
+})
+
+test("an undo that brings back a frame after another tab deleted the connector's shape frees the end where it last painted", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("delete", "undo")
+  const opened = await openEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    { id: "f:1", type: "frame", parent: opened.slide, props: { box: spot(100, 100, 170, 160), fills: accent } },
+    { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(400, 200, 200, 100), fills: accent } },
+    {
+      id: "l:1",
+      type: "shape",
+      parent: "f:1",
+      props: {
+        box: spot(0, 0, 10, 10),
+        strokes: accent,
+        stroke: { weight: 4, align: "center", dash: "solid" },
+        geometry: {
+          kind: "line",
+          start: { node: "t:1", site: "r" },
+          end: { x: 15, y: 120 },
+          route: "straight",
+          arrows: ["none", "none"],
+        },
+      },
+    },
+  ])
+  const painted = (tab: Page, id: string) => tab.locator(`[data-slide-box] [data-node="${id}"]`)
+  const other = await context.newPage()
+  await forward(other, stack)
+  await other.goto(page.url())
+  await other.locator("[data-editor-ready]").waitFor()
+  await page.bringToFront()
+  await clickSlide(page, 120, 120)
+  await page.keyboard.press("Delete")
+  await expect.poll(async () => (await savedNode(stack, opened, "f:1"))?.parent).toBeNull()
+  await expect(painted(other, "f:1")).toHaveCount(0)
+  await other.bringToFront()
+  await clickSlide(other, 500, 250)
+  await other.keyboard.press("Delete")
+  await expect.poll(async () => (await savedNode(stack, opened, "t:1"))?.parent).toBeNull()
+  await expect(painted(page, "t:1")).toHaveCount(0)
+  await page.bringToFront()
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(painted(page, "l:1")).toBeVisible()
+  await expect.poll(async () => (await savedNode(stack, opened, "f:1"))?.parent).toMatchObject({ id: opened.slide })
+  await expect
+    .poll(async () => ((await savedNode(stack, opened, "l:1"))?.geometry as Line | undefined)?.start)
+    .toEqual({ x: 500, y: 150 })
+  await page.reload()
+  await expect(painted(page, "l:1")).toBeVisible()
+  expect(((await savedNode(stack, opened, "l:1"))?.geometry as Line).start).toEqual({ x: 500, y: 150 })
+})

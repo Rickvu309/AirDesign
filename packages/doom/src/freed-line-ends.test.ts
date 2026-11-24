@@ -3,7 +3,7 @@ import { compiled } from "./agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
 import { parentOf, propOf } from "./doom-walk.js"
 import type { NodeId } from "./ids.js"
-import { freedLineEnds, invert, orderKeyBetween, type Doom, type OrderKey, type Write } from "./index.js"
+import { freeLineEnds, invert, orderKeyBetween, type Doom, type OrderKey, type Write } from "./index.js"
 import type { Point } from "./resolved.js"
 import { attached, deck, detach, freePoint, lineOf, startOf, step } from "./testing/line-end-fixtures.js"
 import { block, measure, plainTheme, row, spot } from "./testing/doom-fixtures-art.js"
@@ -85,7 +85,7 @@ describe("ungrouping the frame a line is attached to", () => {
       x: 300,
       y: 300,
     })
-    const loose = [...raw, ...freedLineEnds(grown.doom, raw, measure)]
+    const loose = freeLineEnds(grown.doom, raw, measure)
     const ungrouped = step(grown.doom, "ungroup", loose)
     expect(startOf(ungrouped.after, slide, grown.ids.l!)).toEqual(seen)
     expect(freePoint(lineOf(ungrouped.after, grown.ids.l!).start)).toEqual({
@@ -167,7 +167,7 @@ describe("deleting the slide a line points into", () => {
     const seen = startOf(grown.doom, first, grown.ids.l!)
     expect(seen).toEqual({ x: 400, y: 325 })
     const raw = detach([grown.slides[1]!])
-    const deleted = step(grown.doom, "person", [...raw, ...freedLineEnds(grown.doom, raw, measure)])
+    const deleted = step(grown.doom, "person", freeLineEnds(grown.doom, raw, measure))
     expect(freePoint(lineOf(deleted.after, grown.ids.l!).start)).toEqual({
       x: 300,
       y: 225,
@@ -187,7 +187,7 @@ describe("deleting the slide a line points into", () => {
 
   it("leaves a line on the deleted slide alone", () => {
     const grown = slides()
-    expect(freedLineEnds(grown.doom, detach([grown.slides[0]!]), measure)).toEqual([])
+    expect(freeLineEnds(grown.doom, detach([grown.slides[0]!]), measure)).toEqual(detach([grown.slides[0]!]))
   })
 })
 
@@ -202,7 +202,7 @@ describe("a change that only adds", () => {
         value: { id: grown.slides[0]!, at: orderKeyBetween(null, null) },
       },
     ]
-    expect(freedLineEnds(grown.doom, added, measure)).toEqual([])
+    expect(freeLineEnds(grown.doom, added, measure)).toEqual(added)
   })
 })
 
@@ -235,7 +235,7 @@ describe("a line whose own frame moves or turns while its shape leaves", () => {
     const seen = startOf(grown.doom, slide, grown.ids.l!)
     expect(seen).toEqual({ x: 200, y: 125 })
     const raw = detach([grown.ids.t!])
-    const after = step(grown.doom, "person", [...raw, ...freedLineEnds(grown.doom, raw, measure)]).after
+    const after = step(grown.doom, "person", freeLineEnds(grown.doom, raw, measure)).after
     expect(freePoint(lineOf(after, grown.ids.l!).start)).toEqual({ x: 100, y: 25 })
     expect(startOf(after, slide, grown.ids.l!)).toEqual(seen)
   })
@@ -262,7 +262,7 @@ describe("a line whose own frame moves or turns while its shape leaves", () => {
       { node: grown.ids.in!, prop: "parent", value: { id: slide, at: orderKeyBetween(null, null) } },
       { node: grown.ids.grp!, prop: "parent", value: null },
     ]
-    const after = step(grown.doom, "ungroup", [...raw, ...freedLineEnds(grown.doom, raw, measure)]).after
+    const after = step(grown.doom, "ungroup", freeLineEnds(grown.doom, raw, measure)).after
     expect(startOf(after, slide, grown.ids.in!)).toEqual(seen)
   })
 })

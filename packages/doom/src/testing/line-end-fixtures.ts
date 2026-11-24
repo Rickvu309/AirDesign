@@ -1,5 +1,6 @@
 import { doomFromTree } from "../doom-tree.js"
-import { propOf } from "../doom-walk.js"
+import type { Node } from "../doom.js"
+import { parentOf, propOf } from "../doom-walk.js"
 import type { End } from "../geometry.js"
 import type { NodeId } from "../ids.js"
 import { applyEdit, isRefusal, rev, resolveSlide, type Doom, type Landed, type Measure, type Write } from "../index.js"
@@ -92,4 +93,17 @@ export function detach(ids: readonly NodeId[]): readonly Write[] {
 export function freePoint(end: End): Point {
   if ("node" in end) throw new Error("still attached")
   return { x: end.x, y: end.y }
+}
+
+export function deletedUnfreed(doom: Doom, id: NodeId): Doom {
+  const node = doom.nodes.get(id)!
+  const parent = parentOf(node)!
+  return {
+    ...doom,
+    nodes: new Map(doom.nodes).set(id, { ...node, parent: null } as Node),
+    children: new Map(doom.children).set(
+      parent.id,
+      (doom.children.get(parent.id) ?? []).filter((child) => child !== id),
+    ),
+  }
 }

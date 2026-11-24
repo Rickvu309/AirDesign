@@ -66,7 +66,10 @@ export type DoomDeck = {
   clearNotices(): void
   status(): DeckStatus
   mint(): doom.NodeId
-  push(writes: readonly doom.Write[], options?: { readonly author?: doom.Author; readonly step?: string }): Pushed
+  push(
+    writes: readonly doom.Write[],
+    options?: { readonly author?: doom.Author; readonly step?: string; readonly seen?: doom.Doom },
+  ): Pushed
   undo(): Turned
   redo(): Turned
   undoRun(run: string): Promise<TurnedRun>
@@ -277,7 +280,7 @@ function connected(
   const ownedRevs = (onces: Iterable<string>) => ownedIn(server, queue, onces)
 
   function standOnly(once: string): boolean {
-    const kept = onStanding(server, queue, turned, once)
+    const kept = onStanding(server, queue, turned, once, options.measure?.() ?? estimate)
     if (kept === undefined) return false
     queue = kept.queue
     forget(kept.gone)
@@ -388,9 +391,11 @@ function connected(
     by: doom.Author,
     runUndo?: doom.RunUndo,
     follows?: string,
+    seen?: doom.Doom,
+    last?: doom.Doom,
   ): (Sent & { readonly before: doom.Doom; readonly writes: readonly doom.Write[] }) | Refused {
     const before = view()
-    const writes = [...asked, ...doom.freedLineEnds(before, asked, options.measure?.() ?? estimate)]
+    const writes = doom.freeLineEnds(before, asked, options.measure?.() ?? estimate, seen, last)
     const edit: doom.Edit = { once: nextOnce(), author: by, writes, ...(runUndo === undefined ? {} : { runUndo }) }
     const made = queueEdit(server, queue, edit)
     if (doom.isRefusal(made)) return { ok: false, refused: made }
@@ -425,6 +430,9 @@ function connected(
       writes,
       author,
       step.run === undefined ? undefined : { run: step.run, undone: to === redoSteps },
+      undefined,
+      undefined,
+      step.before,
     )
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
     from.pop()
@@ -517,7 +525,7 @@ function connected(
       const fromTitle = derived.some((write) => write.prop === "name")
       const own = fromTitle ? given : [...given, ...derived]
       const named = fromTitle ? derived : []
-      const pushed = pushEdit(own, pushing?.author ?? author)
+      const pushed = pushEdit(own, pushing?.author ?? author, undefined, undefined, pushing?.seen)
       if (!pushed.ok) return pushed
       const follow = named.length === 0 ? undefined : pushEdit(named, pushing?.author ?? author, undefined, pushed.once)
       const writes = follow?.ok === true ? [...pushed.writes, ...follow.writes] : pushed.writes

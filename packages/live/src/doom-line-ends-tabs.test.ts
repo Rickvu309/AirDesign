@@ -145,24 +145,106 @@ describe("a connector end whose shape leaves the deck stays where it painted, wh
     expect(geometry(b.view()).start).toEqual(onTarget)
   })
 
-  it("paints an end another tab attached at its shape's last place when a tab that never saw it deletes the shape", async () => {
+  it("lands a delete from a tab that never saw another tab attach the line, and its whole line write wins", async () => {
     const { a, b } = await tabs(seed(true))
     await saved(b.push([{ node: line, prop: "geometry", value: lineOf({ x: 0, y: 0 }, onTarget) }]))
     await b.sync()
     await saved(a.push([gone(target)]))
     await settle(a, b)
-    for (const view of [a.view(), b.view()]) expect(painted(view).to).toEqual(onShape)
+    expect(a.notices()).toEqual([])
+    for (const view of [a.view(), b.view()]) {
+      expect(doom.parentOf(view.nodes.get(target))).toBe(null)
+      expect(geometry(view)).toEqual(lineOf({ x: 300, y: 125 }))
+      expect(painted(view).from).toEqual(onShape)
+    }
   })
 
-  it("refuses a delete whose freed end was read before another tab changed the line, so neither tab's line is lost", async () => {
+  it("frees an end attached unseen to a shape inside a frame where the shape painted, never out of the frame", async () => {
+    const framed: doom.Edit = {
+      ...seed(true),
+      writes: [
+        ...seed(true).writes.filter((write) => write.node !== target),
+        ...targetWrites.map((write) => (write.prop === "parent" ? { ...write, value: at(holder) } : write)),
+      ].map((write) =>
+        write.node === line && write.prop === "parent"
+          ? { ...write, value: at(slide) }
+          : write.node === line && write.prop === "geometry"
+            ? { ...write, value: lineOf({ x: 500, y: 325 }) }
+            : write,
+      ),
+    }
+    const { a, b } = await tabs(framed)
+    await saved(b.push([{ node: line, prop: "geometry", value: lineOf(onTarget) }]))
+    await b.sync()
+    expect(painted(b.view()).from).toEqual({ x: 500, y: 325 })
+    await saved(a.push([gone(target)]))
+    await settle(a, b)
+    expect(a.notices()).toEqual([])
+    for (const view of [a.view(), b.view()]) {
+      expect(geometry(view).start).toEqual({ x: 500, y: 325 })
+      expect(painted(view).from).toEqual({ x: 500, y: 325 })
+    }
+  })
+
+  it("lands a delete read before another tab moved the shape, freeing the end where the deleting tab painted it", async () => {
+    const { a, b } = await tabs(seed(true))
+    await saved(b.push([{ node: target, prop: "box", value: box(550, 200) }]))
+    await b.sync()
+    expect(painted(b.view()).from).toEqual({ x: 650, y: 225 })
+    await saved(a.push([gone(target)]))
+    await settle(a, b)
+    expect(a.notices()).toEqual([])
+    for (const view of [a.view(), b.view()]) {
+      expect(doom.parentOf(view.nodes.get(target))).toBe(null)
+      expect(geometry(view).start).toEqual({ x: 300, y: 125 })
+      expect(painted(view).from).toEqual(onShape)
+    }
+  })
+
+  it("puts the end back on its shape when an undo sent late finds another tab moved only the other end", async () => {
+    const { a, b } = await tabs(seed(true))
+    await saved(a.push([gone(target)]))
+    await settle(a, b)
+    await saved(b.push([{ node: line, prop: "geometry", value: lineOf({ x: 300, y: 125 }, { x: 40, y: 10 }) }]))
+    await b.sync()
+    await saved(a.undo())
+    await settle(a, b)
+    expect(a.notices()).toEqual([])
+    for (const view of [a.view(), b.view()]) {
+      expect(doom.parentOf(view.nodes.get(target))).toEqual(at(slide))
+      expect(geometry(view)).toEqual(lineOf(onTarget, { x: 40, y: 10 }))
+      expect(painted(view).from).toEqual(onShape)
+    }
+  })
+
+  it("lands a redo sent late where the redoing tab painted, its line write winning over the other tab's", async () => {
+    const { a, b } = await tabs(seed(true))
+    await saved(a.push([gone(target)]))
+    await settle(a, b)
+    await saved(a.undo())
+    await settle(a, b)
+    await saved(b.push([{ node: target, prop: "box", value: box(550, 200) }]))
+    await saved(b.push([{ node: line, prop: "geometry", value: lineOf(onTarget, { x: 40, y: 10 }) }]))
+    await b.sync()
+    await saved(a.redo())
+    await settle(a, b)
+    expect(a.notices()).toEqual([])
+    for (const view of [a.view(), b.view()]) {
+      expect(view.nodes.get(target) === undefined || doom.parentOf(view.nodes.get(target)) === null).toBe(true)
+      expect(geometry(view)).toEqual(lineOf({ x: 300, y: 125 }))
+      expect(painted(view).from).toEqual(onShape)
+    }
+  })
+
+  it("lands a delete read before another tab changed the line, quietly, with the deleting tab's line", async () => {
     const { a, b } = await tabs(seed(true))
     await saved(b.push([{ node: line, prop: "geometry", value: lineOf(onTarget, { x: 40, y: 10 }) }]))
     await b.sync()
-    expect(a.push([gone(target)]).ok).toBe(true)
+    await saved(a.push([gone(target)]))
     await settle(a, b)
-    expect(a.notices()).toMatchObject([{ refused: "stale", node: line, prop: "geometry" }])
+    expect(a.notices()).toEqual([])
     for (const view of [a.view(), b.view()]) {
-      expect(geometry(view)).toEqual(lineOf(onTarget, { x: 40, y: 10 }))
+      expect(geometry(view)).toEqual(lineOf({ x: 300, y: 125 }))
       expect(painted(view).from).toEqual(onShape)
     }
   })

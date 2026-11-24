@@ -3,10 +3,14 @@ import { boxOf, onDeck, parentOf, propOf, slideOf } from "./doom-walk.js"
 import type { End } from "./geometry.js"
 import type { NodeId } from "./ids.js"
 import { lineRoute } from "./line-ends.js"
+import { linesBack, lostEnds, type LostEnds } from "./lost-ends.js"
 import type { Measure } from "./measure.js"
 import type { Box, Point } from "./resolved.js"
 import { solveLayout } from "./solve-layout.js"
-import { viewOf } from "./view-of.js"
+import { applyBeforeFreeing } from "./apply-edit.js"
+import { rev } from "./ids.js"
+import { isRefusal } from "./refusal.js"
+import { onTop } from "./view-of.js"
 
 const sweeper: Author = { kind: "person", id: "line-ends" }
 
@@ -59,11 +63,63 @@ export const mayLeaveDeck = (before: Doom, writes: readonly Write[]): boolean =>
     return parent === null || !onDeck(before.nodes, parent.id)
   })
 
-export function freedLineEnds(before: Doom, writes: readonly Write[], measure: Measure): readonly Write[] {
-  if (!mayLeaveDeck(before, writes)) return []
-  const after = viewOf(before, [{ once: "free-line-ends", author: sweeper, writes }])
-  if (after === before) return []
-  const lost = (end: End): boolean => "node" in end && onDeck(before.nodes, end.node) && !onDeck(after.nodes, end.node)
+const namesOffDeck = (before: Doom, value: unknown): boolean =>
+  typeof value === "object" &&
+  value !== null &&
+  [(value as { start?: unknown }).start, (value as { end?: unknown }).end].some(
+    (end) => typeof end === "object" && end !== null && "node" in end && !onDeck(before.nodes, end.node as NodeId),
+  )
+
+const mayDrawOffDeck = (before: Doom, writes: readonly Write[]): boolean =>
+  writes.some((write) => write.prop === "geometry" && namesOffDeck(before, write.value))
+
+const mayBringBack = (before: Doom, writes: readonly Write[]): boolean =>
+  writes.some(
+    (write) =>
+      write.prop === "parent" &&
+      write.value !== null &&
+      before.nodes.has(write.node) &&
+      !onDeck(before.nodes, write.node),
+  )
+
+function paintedBack(last: Doom, after: Doom, lines: readonly NodeId[]): readonly LostEnds[] {
+  const back: LostEnds[] = []
+  for (const line of lines) {
+    const now = propOf(after.nodes.get(line), "geometry")
+    if (now?.kind !== "line" || !onDeck(last.nodes, line)) continue
+    const dead = (end: End) => ("node" in end && !onDeck(after.nodes, end.node) ? end.node : null)
+    const [start, end] = [dead(now.start), dead(now.end)]
+    if (start === null && end === null) continue
+    if ([start, end].every((shape) => shape === null || onDeck(last.nodes, shape))) back.push({ line, start, end })
+  }
+  return back
+}
+
+function paintedEnds(into: Doom, writes: readonly Write[], measure: Measure): readonly Write[] {
+  const drawn = new Set(
+    writes.flatMap((write) => (write.prop === "parent" || write.prop === "geometry" ? [write.node] : [])),
+  )
+  const freed: Write[] = []
+  for (const line of drawn) {
+    const now = propOf(into.nodes.get(line), "geometry")
+    const parent = parentOf(into.nodes.get(line))
+    const slide = slideOf(into, line)
+    if (now?.kind !== "line" || parent == null || slide === undefined) continue
+    const dead = (end: End) => "node" in end && !onDeck(into.nodes, end.node)
+    if (!dead(now.start) && !dead(now.end)) continue
+    const route = lineRoute(into, solveLayout(into, slide, measure), parent.id, now)
+    const base = writes.find((write) => write.node === line && write.prop === "geometry")?.base
+    freed.push({
+      node: line,
+      prop: "geometry",
+      value: { ...now, start: dead(now.start) ? route.from : now.start, end: dead(now.end) ? route.to : now.end },
+      ...(base === undefined ? {} : { base }),
+    })
+  }
+  return freed
+}
+
+export function freedEnds(seen: Doom, into: Doom, lost: readonly LostEnds[], measure: Measure): readonly Write[] {
   const laid = new Map<Doom, Map<NodeId, ReadonlyMap<NodeId, Box>>>()
   const layout = (doom: Doom, slide: NodeId) => {
     const slides = laid.get(doom) ?? new Map<NodeId, ReadonlyMap<NodeId, Box>>()
@@ -73,34 +129,65 @@ export function freedLineEnds(before: Doom, writes: readonly Write[], measure: M
     return known
   }
   const freed: Write[] = []
-  for (const line of after.nodes.values()) {
-    const geometry = propOf(line, "geometry")
-    if (geometry?.kind !== "line") continue
-    const startLost = lost(geometry.start)
-    const endLost = lost(geometry.end)
-    if (!startLost && !endLost) continue
-    const was = parentOf(before.nodes.get(line.id))
-    const now = parentOf(line)
-    const slide = slideOf(before, line.id)
-    const slideNow = slideOf(after, line.id)
-    if (was == null || now == null || slide === undefined || slideNow === undefined) continue
-    if (!onDeck(before.nodes, line.id) || !onDeck(after.nodes, line.id)) continue
-    const boxes = layout(before, slide)
-    const route = lineRoute(before, boxes, was.id, geometry)
-    const from = placeOf(before, () => boxes, was.id)
-    const to = placeOf(after, () => layout(after, slideNow), now.id)
+  for (const { line, start, end } of lost) {
+    const read = propOf(seen.nodes.get(line), "geometry")
+    const now = propOf(into.nodes.get(line), "geometry")
+    const was = parentOf(seen.nodes.get(line))
+    const parent = parentOf(into.nodes.get(line))
+    const slide = slideOf(seen, line)
+    const slideNow = slideOf(into, line)
+    if (read?.kind !== "line" || now?.kind !== "line" || was == null || parent == null) continue
+    if (slide === undefined || slideNow === undefined) continue
+    const boxes = layout(seen, slide)
+    const route = lineRoute(seen, boxes, was.id, read)
+    const from = placeOf(seen, () => boxes, was.id)
+    const to = placeOf(into, () => layout(into, slideNow), parent.id)
     const point = (at: Point) => inside(to, onSlide(from, at))
-    const base = before.revs.get(line.id)?.get("geometry")
+    const live = (at: End, lost: NodeId) => "node" in at && at.node !== lost && onDeck(into.nodes, at.node)
     freed.push({
-      node: line.id,
+      node: line,
       prop: "geometry",
       value: {
-        ...geometry,
-        start: startLost ? point(route.from) : geometry.start,
-        end: endLost ? point(route.to) : geometry.end,
+        ...now,
+        start: start === null || live(now.start, start) ? now.start : point(route.from),
+        end: end === null || live(now.end, end) ? now.end : point(route.to),
       },
-      ...(base === undefined ? {} : { base }),
     })
   }
   return freed
+}
+
+function leftBy(before: Doom, writes: readonly Write[]): { readonly after: Doom; readonly lost: readonly LostEnds[] } {
+  if (!mayLeaveDeck(before, writes) && !mayDrawOffDeck(before, writes) && !mayBringBack(before, writes))
+    return { after: before, lost: [] }
+  const edit = onTop(before, { once: "free-line-ends", author: sweeper, writes })
+  const after = applyBeforeFreeing(before, { ...edit, rev: rev(before.rev + 1) })
+  return isRefusal(after) ? { after: before, lost: [] } : { after, lost: lostEnds(before.nodes, after.nodes, writes) }
+}
+
+export const lostBy = (before: Doom, writes: readonly Write[]): readonly LostEnds[] => leftBy(before, writes).lost
+
+export function freeLineEnds(
+  before: Doom,
+  writes: readonly Write[],
+  measure: Measure,
+  seen: Doom = before,
+  last: Doom = before,
+): readonly Write[] {
+  const { after, lost } = leftBy(before, writes)
+  if (after === before) return writes
+  const losing = new Set(lost.map((each) => each.line))
+  const back = paintedBack(last, after, linesBack(before.nodes, after.nodes, writes)).filter(
+    (each) => !losing.has(each.line),
+  )
+  const freeing = new Set([...losing, ...back.map((each) => each.line)])
+  const freed = [
+    ...freedEnds(seen, after, lost, measure),
+    ...freedEnds(last, after, back, measure),
+    ...paintedEnds(after, writes, measure).filter((write) => !freeing.has(write.node)),
+  ]
+  if (freed.length === 0) return writes
+  const replaced = new Set(freed.map((write) => write.node))
+  const kept = writes.filter((write) => write.prop !== "geometry" || !replaced.has(write.node))
+  return [...kept, ...freed]
 }

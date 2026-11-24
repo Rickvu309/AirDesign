@@ -7,6 +7,7 @@ import { type Refusal, isRefusal, refuse } from "./refusal.js"
 import type { Landed, Node, Run, Doom, Write } from "./doom.js"
 import { onDeck, propOf, slideOf } from "./doom-walk.js"
 import type { End } from "./geometry.js"
+import { freedInFold } from "./lost-ends.js"
 import { type Theme, themeKeys, withThemeValue } from "./theme.js"
 
 type Parent = { readonly id: NodeId; readonly at: string }
@@ -229,6 +230,7 @@ export type Known = {
   readonly counts: () => Counts
   readonly deck: () => boolean
   readonly partial?: true
+  readonly freeing?: true
 }
 export type Landing = { readonly doom: Doom; readonly delta: Counts }
 
@@ -301,6 +303,14 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
     if (refusal !== undefined) return refusal
   }
   keepLiveEnds(work, doom, landed)
+  if (known.freeing !== true) {
+    const freed = freedInFold(doom, { ...doom, nodes: work.nodes, children: work.children }, landed.writes)
+    if (isRefusal(freed)) return freed
+    for (const [id, line] of freed) {
+      setProp(work, work.nodes.get(id)!, "geometry", line, landed.rev)
+      stamp(work, id, ["geometry"], landed.rev)
+    }
+  }
   for (const id of work.created) {
     const node = work.nodes.get(id)!
     if (node.type !== "deck" && parentOf(node) === undefined) return refuse("shape", id)
@@ -344,6 +354,11 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
 
 export function applyEdit(doom: Doom, landed: Landed): Doom | Refusal {
   const landing = landEdit(doom, landed, { counts: () => countsOf(doom), deck: () => hasDeck(doom) })
+  return isRefusal(landing) ? landing : landing.doom
+}
+
+export function applyBeforeFreeing(doom: Doom, landed: Landed): Doom | Refusal {
+  const landing = landEdit(doom, landed, { counts: () => countsOf(doom), deck: () => hasDeck(doom), freeing: true })
   return isRefusal(landing) ? landing : landing.doom
 }
 
