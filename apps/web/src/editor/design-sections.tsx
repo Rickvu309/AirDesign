@@ -11,6 +11,7 @@ import { foldOpen, setFold, useFolds } from "@/design/panel-folds"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 import { linkCopy } from "@/copy/link-copy"
+import { LayerName } from "@/editor/layer-name-edit"
 import { panelTitle } from "@/editor/panel-title"
 
 const openChrome = ["text", "link", "fills", "textFill", "border", "shadow", "opacity", "geometry"]
@@ -32,7 +33,9 @@ export function DesignHead({
         ruled ? "border-b border-line" : null,
       )}
     >
-      <span className="text-[length:var(--panel-title-size)] font-medium text-foreground">{children}</span>
+      <span className="min-w-0 flex-1 text-[length:var(--panel-title-size)] font-medium text-foreground">
+        {children}
+      </span>
       {actions}
     </div>
   )
@@ -225,6 +228,8 @@ export function ElementDesign({
   afterAlignment = null,
   children = null,
   selectionColors = null,
+  layerName,
+  onLayerName,
 }: {
   model: PanelModel
   picture?: ReactNode
@@ -235,6 +240,8 @@ export function ElementDesign({
   selectionColors?: ReactNode
   palette: Palette
   onChange: (control: PanelControl, value: unknown) => void
+  layerName?: string
+  onLayerName?: (name: string) => void
 }) {
   const folds = useFolds()
   const { kind } = model
@@ -251,6 +258,12 @@ export function ElementDesign({
           return modelSection === undefined ? [] : [modelSection]
         })
   const last = sections.length - 1
+  const title =
+    layerName !== undefined && onLayerName !== undefined ? (
+      <LayerName name={layerName} onRename={onLayerName} />
+    ) : (
+      panelTitle(model)
+    )
   return (
     <div
       className="design-panel-chrome flex min-h-0 flex-1 flex-col overflow-y-auto outline-none"
@@ -264,7 +277,7 @@ export function ElementDesign({
       {sections.every((section) => section === "selectionColors" || section.label !== null) ? (
         <>
           <DesignHead actions={titleActions} ruled={afterTitle === null}>
-            {panelTitle(model)}
+            {title}
           </DesignHead>
           {afterAlignment}
           {afterTitle}
@@ -292,7 +305,7 @@ export function ElementDesign({
                 <SectionStrips strips={section.strips} palette={palette} onChange={onChange} />
               </DesignSection>
               <DesignHead actions={titleActions} ruled={afterTitle === null}>
-                {panelTitle(model)}
+                {title}
               </DesignHead>
               {afterAlignment}
               {afterTitle}

@@ -216,6 +216,7 @@ export const reach: Readonly<Record<string, Entry>> = {
   "panel:chart-data": { agent: "set.chart", props: ["chart"] },
   "panel:remove-auto-layout": { agent: "set.layout", props: ["layout"] },
   "panel:show-hidden": { agent: "set.hidden", writes: "hidden", on: "card", props: ["hidden"] },
+  "panel:name": { agent: "set.name", writes: "name", on: "card", props: ["name"] },
   "actions:icon": { agent: "add.icon", props: ["geometry"] },
   "actions:icon#swap": { agent: "set.icon", writes: "geometry", on: "star", props: ["geometry"] },
   "actions:chart": { agent: "add.chart", props: ["chart"] },

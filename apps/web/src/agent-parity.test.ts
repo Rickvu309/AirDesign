@@ -61,6 +61,7 @@ const manualPanel = new Set([
   "panel:chart-data",
   "panel:remove-auto-layout",
   "panel:show-hidden",
+  "panel:name",
 ])
 
 function panelKeys(): ReadonlySet<string> {

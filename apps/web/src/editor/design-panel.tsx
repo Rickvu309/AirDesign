@@ -19,6 +19,7 @@ import { paintDesc } from "./design-model-fills"
 import { paletteOf } from "./design-palette"
 import { fillWrite, shownFill } from "./design-paint-values"
 import { DoomSelectionColors } from "./design-selection-section"
+import { panelTitle } from "./panel-title"
 import { DoomThemeCard } from "./design-theme-card"
 import { resolveColorOf } from "./design-slide-color"
 import type { Selection } from "./selection"
@@ -136,10 +137,23 @@ export function DesignPanel(props: Props) {
   const model: PanelModel = rest.length === 0 ? first : panelOfMany([first, ...rest])
   const autoLayout = ids.length === 1 && model.frame === "auto"
   const chart = ids.length === 1 && only !== undefined && doom.propOf(view.nodes.get(only), "chart") !== undefined
+  const storedName = only === undefined ? undefined : doom.propOf(view.nodes.get(only), "name")
+  const layerName =
+    ids.length === 1
+      ? typeof storedName === "string" && storedName !== ""
+        ? storedName
+        : panelTitle(model)
+      : undefined
   return (
     <ElementDesign
       model={model}
       palette={palette}
+      layerName={layerName}
+      onLayerName={
+        only === undefined || ids.length !== 1
+          ? undefined
+          : (name) => client.push([{ node: only, prop: "name", value: name }])
+      }
       picture={url === null ? null : <PicturePreview src={url} />}
       titleActions={
         <ElementTitleActions onMatch={undefined} model={model} onReplace={(_node, file) => replaceImage(ids, file)} />
