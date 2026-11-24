@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { invert, isRefusal, nodeId, type Doom } from "./index.js"
-import { box, create, hex, ids, land, place, revOf, sampleDeck, step, textOf, theme, tryLand } from "./sample-deck.js"
+import { box, create, hex, ids, land, place, revOf, sampleDeck, textOf, theme, tryLand } from "./sample-deck.js"
+import { step } from "./testing/invert-edit.js"
 import { valuesOf } from "./testing/values-of.js"
 
 describe("invert", () => {

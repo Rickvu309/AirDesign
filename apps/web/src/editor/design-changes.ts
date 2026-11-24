@@ -3,16 +3,8 @@ import { readStyleName } from "@airdesign/fonts"
 import type { PanelControl } from "@/design/panel"
 import { fitWrites } from "./crop-drag"
 import { alignWrites, distributeWrites, type AlignTo, type DistributeAcross } from "./design-align"
-import {
-  defaultStroke,
-  fillWrite,
-  shadowOpacityWrite,
-  shadowWrite,
-  strokePaintWrite,
-  type ShadowName,
-} from "./design-paint-values"
-import { lineFromFraction, sizeFromHundredths, textWithWeight } from "./design-text-values"
-import { cornerEmu, pointEmu, wholeFraction } from "./design-values"
+import { defaultStroke, fillWrite, strokePaintWrite } from "./design-paint-values"
+import { sizeFromHundredths, textWithWeight } from "./design-text-values"
 import { propOf } from "@airdesign/doom"
 import type { SlideGeometry } from "./slide-geometry"
 import { shapeWrite, shownShape } from "./design-shape-values"
@@ -74,12 +66,6 @@ function textChange(context: ChangeContext, control: PanelControl, value: unknow
     }
     case "size":
       return number === undefined ? [] : look(context, { size: sizeFromHundredths(number) })
-    case "letterSpacing":
-      return number === undefined ? [] : look(context, { tracking: Math.round(number) / 100 })
-    case "lineHeight":
-      return number === undefined
-        ? []
-        : eachText(context, (text) => doom.paraWrite(text, { lineHeight: lineFromFraction(number) }))
     case "bold":
     case "italic":
     case "underline":
@@ -101,10 +87,6 @@ function textChange(context: ChangeContext, control: PanelControl, value: unknow
               : rest
         }),
       }))
-    case "case":
-      return value === "none" || value === "upper" || value === "lower" || value === "title"
-        ? look(context, { case: value })
-        : []
     case "fill": {
       const color = onlyColor(value)
       return color === undefined ? [] : look(context, { color })
@@ -123,7 +105,9 @@ function paintChange(context: ChangeContext, control: PanelControl, value: unkno
       return color === undefined ? [] : look(context, { color })
     }
     case "image.mode":
-      return context.ids.flatMap((id) => fitWrites(context.view, id, value as doom.ImagePaint["fit"]))
+      return value === "fill" || value === "fit" || value === "crop"
+        ? context.ids.flatMap((id) => fitWrites(context.view, id, value))
+        : []
     default:
       return null
   }
@@ -169,27 +153,12 @@ function strokeChange(context: ChangeContext, control: PanelControl, value: unkn
       if (color === undefined) return []
       return setEach(context, "strokes", (id) => strokePaintWrite(propOf(context.view.nodes.get(id), "strokes"), color))
     }
-    case "border.width":
-      return typeof value === "number"
-        ? setEach(context, "stroke", (id) => ({
-            ...styled(id),
-            weight: Math.max(0, Math.round((value / pointEmu) * 100) / 100),
-          }))
-        : []
     case "image.color": {
       const color = doom.readColor(value)
       return color === undefined
         ? []
         : setEach(context, "strokes", (id) => strokePaintWrite(propOf(context.view.nodes.get(id), "strokes"), color))
     }
-    case "image.weight":
-      return typeof value === "number"
-        ? setEach(context, "stroke", (id) => {
-            const box = propOf(context.view.nodes.get(id), "box")
-            const side = Math.min(box?.w ?? 1, box?.h ?? 1)
-            return { ...styled(id), weight: Math.round((value / 100 / 24) * side * 100) / 100 }
-          })
-        : []
     default:
       return null
   }
@@ -197,32 +166,6 @@ function strokeChange(context: ChangeContext, control: PanelControl, value: unkn
 
 function appearanceChange(context: ChangeContext, control: PanelControl, value: unknown): Writes | null {
   switch (keyOf(control)) {
-    case "opacity.opacity":
-      return typeof value === "number"
-        ? setEach(context, "opacity", () => {
-            const next = Math.min(1, Math.max(0, value / wholeFraction))
-            return next === 1 ? null : next
-          })
-        : []
-    case "corners.corners":
-      return typeof value === "number"
-        ? setEach(context, "radius", () => {
-            const next = Math.max(0, Math.round(value / cornerEmu))
-            return next === 0 ? null : next
-          })
-        : []
-    case "shadow.shadow":
-      return typeof value === "string" ? setEach(context, "effects", () => shadowWrite(value as ShadowName)) : []
-    case "shadow.opacity":
-      return typeof value === "number"
-        ? setEach(context, "effects", (id) =>
-            shadowOpacityWrite(
-              propOf(context.view.nodes.get(id), "effects"),
-              value / wholeFraction,
-              doom.deckOf(context.view).theme,
-            ),
-          )
-        : []
     case "link.target": {
       const next = linkOf(value)
       return next === undefined ? [] : setEach(context, "link", () => next as doom.Props["link"] | null)

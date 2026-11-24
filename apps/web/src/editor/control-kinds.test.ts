@@ -11,7 +11,7 @@ const specs = Object.keys(import.meta.glob("../../../../tests/browser/control-*.
   (path) => /control-([a-z]+)\.spec\.ts$/.exec(path)?.[1] ?? path,
 )
 
-const notInDoomPanel: readonly string[] = ["adjust", "count", "preset"]
+const notInDoomPanel: readonly string[] = ["adjust", "count", "percent", "preset"]
 
 const words: doom.Text = { chars: "Hi", spans: [], paras: [{}], style: "body", resize: "widthAndHeight", alignV: "top" }
 const solid = [{ kind: "solid" as const, color: { var: "accent1" as const } }]

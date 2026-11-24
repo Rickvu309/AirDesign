@@ -9,7 +9,7 @@ import { shownFill } from "./design-paint-values"
 import type { ModelInput } from "./design-model"
 import { propOf } from "@airdesign/doom"
 
-export const imageFits = ["fill", "fit", "crop", "tile"]
+const imageFits = ["fill", "fit", "crop"]
 
 const mark: Desc = { kind: "mark" }
 const colorDesc: Desc = { kind: "color" }
@@ -43,20 +43,12 @@ export const paintDesc: Desc = {
   plain: "solid",
 }
 
-const iconWeightDesc: Desc = { kind: "number", unit: "hundredth-point", min: 50, max: 300 }
-
 const imageControl = (field: string, label: string, desc: Desc, value: unknown) =>
   doomControl({ trait: "image", field }, label, desc, { value })
 
 function modeList(fit: string): PanelControl {
   const mode = imageControl("mode", pictureCopy.mode, choiceDesc(imageFits), fit)
   return { ...mode, look: { ...mode.look, name: { show: "above" }, form: "list" } }
-}
-
-const lucideWeight = 24
-
-export function iconWeightOld(stroke: number, side: number): number {
-  return Math.round((stroke / Math.max(1, side)) * lucideWeight * 100)
 }
 
 export function fillSections(input: ModelInput, kind: PanelKind): PanelSection[] {
@@ -66,15 +58,8 @@ export function fillSections(input: ModelInput, kind: PanelKind): PanelSection[]
   if (geometry?.kind === "icon") {
     const strokes = propOf(node, "strokes") ?? []
     const top = strokes.findLast((paint) => paint.visible !== false)
-    const box = propOf(node, "box")
     const color = imageControl("color", pictureCopy.color, colorDesc, top?.kind === "solid" ? top.color : undefined)
-    const weight = imageControl(
-      "weight",
-      pictureCopy.weight,
-      iconWeightDesc,
-      iconWeightOld(propOf(node, "stroke")?.weight ?? 0, Math.min(box?.w ?? 1, box?.h ?? 1)),
-    )
-    return [{ trait: "pictureFill", label: fillCopy.section, strips: [[color, weight]] }]
+    return [{ trait: "pictureFill", label: pictureCopy.color, strips: [[color]] }]
   }
   const fills = propOf(node, "fills")
   const held = shownFill(fills)

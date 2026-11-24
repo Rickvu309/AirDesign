@@ -1,18 +1,14 @@
-import { Minus } from "lucide-react"
 import { designCopy } from "@/copy/design-copy"
 import { borderCopy } from "@/copy/border-copy"
 import type { PanelSection } from "@/design/panel"
 import type { PanelKind } from "@/design/panel-order"
-import { borderWidths } from "@/design/appearance-presets"
 import { arrange } from "@/design/panel-arrangement"
 import { choiceDesc } from "@/design/control-desc"
 import { doomControl } from "./design-controls"
 import { shownStroke } from "./design-paint-values"
-import { emuOf } from "./design-values"
 import type { ModelInput } from "./design-model"
 import { lineArrowheads, propOf } from "@airdesign/doom"
 
-const widest = 20_116_800
 const routes = ["straight", "elbow", "curve"] as const
 
 export function borderSections(input: ModelInput, kind: PanelKind): PanelSection[] {
@@ -30,17 +26,6 @@ export function borderSections(input: ModelInput, kind: PanelKind): PanelSection
     { kind: "color" },
     { value: shown.color },
   )
-  const width = doomControl(
-    { trait: "border", field: "width" },
-    borderCopy.width,
-    { kind: "number", unit: "emu", min: 0, max: widest },
-    { value: emuOf(shown.weight) },
-  )
-  const widthLook = {
-    ...width,
-    look: { ...width.look, name: { show: "above" as const }, glyph: Minus, steps: borderWidths, unit: "" },
-  }
-  const colorLook = { ...color, look: { ...color.look, name: { show: "above" as const } } }
   const geometry = propOf(node, "geometry")
   const route =
     geometry?.kind === "line"
@@ -60,7 +45,7 @@ export function borderSections(input: ModelInput, kind: PanelKind): PanelSection
     {
       trait: "border",
       label: designCopy.border,
-      strips: arrange("border", [...route, ...(styled ? [border, colorLook, widthLook] : [border])]),
+      strips: arrange("border", [...route, ...(styled ? [border, color] : [border])]),
     },
   ]
 }

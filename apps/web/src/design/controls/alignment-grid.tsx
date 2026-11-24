@@ -25,7 +25,6 @@ export function AlignmentGrid({
   options,
 }: ControlProps & { label: string; options: readonly string[] }) {
   const selected = !control.mixed && typeof control.value === "string" ? options.indexOf(control.value) : -1
-  const Mark = control.look.glyph
 
   function move(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     const next = neighbor(index, event.key)
@@ -62,7 +61,7 @@ export function AlignmentGrid({
             }}
             onKeyDown={(event) => move(event, index)}
           >
-            {chosen && Mark ? <Mark aria-hidden /> : <span aria-hidden className="size-0.5 rounded-full bg-current" />}
+            <span aria-hidden className="size-0.5 rounded-full bg-current" />
           </Button>
         )
       })}

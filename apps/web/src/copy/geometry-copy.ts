@@ -1,5 +1,4 @@
 export const geometryCopy = {
-  corners: "Corners",
   section: "Shape",
   shape: "Shape",
   adjust: (preset: string, name: string): string | undefined => adjustNames[preset]?.[name],

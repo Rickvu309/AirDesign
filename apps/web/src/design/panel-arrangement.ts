@@ -1,8 +1,4 @@
 import {
-  ALargeSmall,
-  CaseLower,
-  CaseSensitive,
-  CaseUpper,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -25,9 +21,6 @@ import {
   StraightLine,
   ElbowLine,
   CurvedLine,
-  SoftShadow,
-  LiftedShadow,
-  GlowShadow,
   fillIcons,
   AlignLeftEdge,
   AlignHorizontalCenter,
@@ -36,27 +29,20 @@ import {
   AlignVerticalCenter,
   AlignBottomEdge,
 } from "./preset-icons"
-import { LineHeightIcon, LetterSpacingIcon } from "./text-icons"
 import { optionWord } from "@/copy/option-copy"
 import type { Desc } from "./control-desc"
 import type { PanelControl, SectionName } from "./panel"
 
 export type NameLook =
   | { readonly show: "above" }
-  | { readonly show: "beside" }
   | { readonly show: "hidden" }
   | { readonly show: "inside" }
   | { readonly show: "icon"; readonly icon: LucideIcon }
-  | { readonly show: "letter"; readonly letter: string }
 
 export type ControlLook = {
   readonly name: NameLook
   readonly options: Readonly<Record<string, LucideIcon | undefined>>
   readonly form: "segments" | "list" | "grid" | "header"
-  readonly glyph?: LucideIcon
-  readonly steps?: readonly number[]
-  readonly slider?: boolean
-  readonly unit?: string
 }
 
 type Placed = {
@@ -65,15 +51,10 @@ type Placed = {
   readonly kind?: ControlKind
   readonly options?: Readonly<Record<string, LucideIcon>>
   readonly form?: "segments" | "list" | "grid"
-  readonly unit?: string
-  readonly glyph?: LucideIcon
-  readonly steps?: readonly number[]
-  readonly slider?: boolean
 }
 
 type Strip = readonly Placed[]
 
-export const iconWeightSteps = [1, 1.5, 2, 2.5, 3] as const
 const above: NameLook = { show: "above" }
 const hidden: NameLook = { show: "hidden" }
 const inside: NameLook = { show: "inside" }
@@ -91,7 +72,6 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
     [placed("style", hidden)],
     [placed("font", hidden)],
     [placed("weight", above, { form: "list" }), placed("size", above)],
-    [icon("lineHeight", LineHeightIcon), icon("letterSpacing", LetterSpacingIcon)],
     [icon("bold", Bold), icon("italic", Italic), icon("underline", Underline), icon("strike", Strikethrough)],
     [
       placed("align", hidden, {
@@ -99,12 +79,6 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
         options: { left: AlignLeft, center: AlignCenter, right: AlignRight, justify: AlignJustify },
       }),
       placed("list", hidden, { form: "segments", options: { none: Minus, bullets: List, numbers: ListOrdered } }),
-    ],
-    [
-      placed("case", hidden, {
-        form: "segments",
-        options: { none: Minus, upper: CaseUpper, lower: CaseLower, title: CaseSensitive, small: ALargeSmall },
-      }),
     ],
     [placed("fill", hidden, { options: fills })],
   ],
@@ -139,31 +113,13 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
         options: { none: fillIcons.none, solid: SolidBorder, dash: DashedBorder, dot: DottedBorder },
       }),
     ],
-    [placed("color", above), placed("width", above)],
+    [placed("color", hidden)],
     [placed("route", above, { options: { straight: StraightLine, elbow: ElbowLine, curve: CurvedLine } })],
     [placed("start", above, { form: "list" })],
     [placed("end", above, { form: "list" })],
   ],
-  shadow: [
-    [
-      placed("shadow", hidden, {
-        options: {
-          none: fillIcons.none,
-          soft: SoftShadow,
-          lifted: LiftedShadow,
-          glow: GlowShadow,
-        },
-      }),
-    ],
-    [placed("opacity", above, { slider: true })],
-  ],
-  corners: [[placed("corners", { show: "beside" }, { kind: "corners" })]],
-  opacity: [[placed("opacity", { show: "beside" })]],
   geometry: [[placed("preset", hidden, { kind: "preset" })], [placed("adjust", hidden)]],
-  image: [
-    [placed("mode")],
-    [placed("color"), placed("weight", above, { glyph: Minus, steps: iconWeightSteps, unit: "" })],
-  ],
+  image: [[placed("mode")], [placed("color", hidden)]],
   templateStyle: [[placed("major", inside)], [placed("minor", inside)]],
 }
 
@@ -189,10 +145,6 @@ export function resolveControl(control: Omit<PanelControl, "kind" | "look">): Pa
       name: place?.name ?? fallbackName(kind, control.field),
       options,
       form: place?.form ?? choiceLayout(control.field, choices),
-      ...(place?.glyph === undefined ? {} : { glyph: place.glyph }),
-      ...(place?.unit === undefined ? {} : { unit: place.unit }),
-      ...(place?.steps === undefined ? {} : { steps: place.steps }),
-      ...(place?.slider === undefined ? {} : { slider: true }),
     },
   }
 }
@@ -210,7 +162,6 @@ export function choiceLayout(field: string, options: readonly string[]): "segmen
 }
 
 export const controlKinds = [
-  "corners",
   "typography",
   "length",
   "angle",

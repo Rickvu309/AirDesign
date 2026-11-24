@@ -1,23 +1,11 @@
 import { wrapDegrees } from "@airdesign/doom"
-import { textCopy } from "@/copy/text-copy"
 import type { Desc, NumberUnit } from "./control-desc"
 
-export type TypedUnit = { readonly auto?: number; readonly points?: number }
+const typed = /^(-?(?:\d+(?:\.\d+)?|\.\d+))\s*%?$/
 
-const typed = /^(-?(?:\d+(?:\.\d+)?|\.\d+))\s*(%|pt)?$/
-
-function matched(text: string): RegExpExecArray | null {
-  return typed.exec(text.trim().replace(",", ".").toLowerCase())
-}
-
-export function typedNumber(text: string, unit: TypedUnit): number | null {
-  const trimmed = text.trim().replace(",", ".").toLowerCase()
-  if (unit.auto !== undefined && trimmed === textCopy.auto.toLowerCase()) return unit.auto
-  const match = matched(text)
-  if (match === null) return null
-  const value = Number(match[1])
-  if (match[2] !== "pt") return value
-  return unit.points === undefined ? null : value * unit.points
+export function typedNumber(text: string): number | null {
+  const match = typed.exec(text.trim().replace(",", "."))
+  return match === null ? null : Number(match[1])
 }
 
 const perUnit: { readonly [Unit in NumberUnit]: number } = {

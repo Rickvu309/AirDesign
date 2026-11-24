@@ -28,5 +28,11 @@
     "detector": "truncated-text",
     "selector": "[data-aira-history], [data-aira-chats]",
     "reason": "The history row is one line, in the sidebar and in the chat menu. A longer ask is cut with an ellipsis, and the full ask is that control's title. The long title in history-long-title is that long on purpose."
+  },
+  {
+    "page": "panel-icon",
+    "detector": "empty-region",
+    "selector": "[data-editor-panel]",
+    "reason": "The icon panel has alignment and one color swatch. The shared panel leaves the space below them open so the controls stay at the top."
   }
 ]

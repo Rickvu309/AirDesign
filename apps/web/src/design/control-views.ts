@@ -1,7 +1,6 @@
 import { LinkControl } from "./controls/link"
 import { TypographyControl } from "@/design/controls/typography"
 import type { ComponentType } from "react"
-import { CornersControl } from "@/design/controls/corners"
 import { ActionControl } from "@/design/controls/action"
 import { AdjustControl } from "@/design/controls/adjust"
 import { AngleControl } from "@/design/controls/angle"
@@ -19,7 +18,6 @@ import { UnionControl } from "@/design/controls/union"
 import type { ControlKind, ControlProps } from "@/design/panel"
 
 export const controlViews: Partial<Readonly<Record<ControlKind, ComponentType<ControlProps>>>> = {
-  corners: CornersControl,
   link: LinkControl,
   typography: TypographyControl,
   length: LengthControl,

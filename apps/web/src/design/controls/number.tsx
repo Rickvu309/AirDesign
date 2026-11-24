@@ -2,31 +2,22 @@ import { controlLabel } from "@/design/controls/control-label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { textCopy } from "@/copy/text-copy"
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { designCopy } from "@/copy/design-copy"
 import type { ControlProps } from "@/design/panel"
-import { NoneFill, Opacity } from "@/design/preset-icons"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 import { clampedOf, shownInUnit, typedNumber } from "@/design/typed-number"
 import { roundedShown, steppedFrom, untouched, type Shown } from "@/design/shown-number"
 import { composing } from "@/lib/composing"
 
-export function chosenStep(shown: string, steps: readonly number[]): number | null {
-  const value = Number(shown.trim().replace(",", "."))
-  if (shown.trim() === "" || !Number.isFinite(value)) return null
-  return steps.find((step) => step === value) ?? null
-}
-
 export function numberShown(control: ControlProps["control"], scale?: number): Shown {
   if (control.mixed || control.desc.kind !== "number" || typeof control.value !== "number") return roundedShown(null, 0)
   if (scale !== undefined) return roundedShown(control.value / scale, 2)
-  if (control.numberScale !== undefined) return roundedShown(control.value / 100 / control.numberScale, 0)
   return roundedShown(shownInUnit(control.desc.unit, control.value), 4)
 }
 
 export function storedFromTyped(control: ControlProps["control"], value: number): number | null {
-  return clampedOf(control.desc, value * (control.numberScale ?? 1))
+  return clampedOf(control.desc, value)
 }
 
 function stepOf(event: KeyboardEvent<HTMLInputElement>, unit: number): number {
@@ -67,27 +58,16 @@ export function NumberField({
 }: ControlProps & { unit: string; kind: string; step?: number; scale?: number }) {
   const size = control.trait === "text" && control.field === "size"
   const look = control.look
-  const borderWidth = control.trait === "border" && control.field === "width"
-  const Icon =
-    look.glyph ??
-    (look.name.show === "icon"
-      ? look.name.icon
-      : borderWidth
-        ? NoneFill
-        : control.trait === "opacity"
-          ? Opacity
-          : undefined)
-  const named = Icon !== undefined || look.name.show === "letter" || look.name.show === "inside"
+  const Icon = look.name.show === "icon" ? look.name.icon : undefined
+  const named = Icon !== undefined || look.name.show === "inside"
   const [draft, setDraft] = useState<string | null>(null)
   const held = numberShown(control, scale)
   const shown = held.text
-  const typedUnit = control.typed ?? {}
-  const auto = typedUnit.auto !== undefined && shown !== "" && Number(shown) === typedUnit.auto
   const field = useRef<HTMLInputElement>(null)
   const scrub = useRef<Scrub | null>(null)
 
   function readNumber(value: number) {
-    return scale === undefined || control.numberScale !== undefined || control.desc.kind !== "number"
+    return scale === undefined || control.desc.kind !== "number"
       ? storedFromTyped(control, value)
       : clampedOf({ ...control.desc, unit: "count" }, Math.round(value * scale))
   }
@@ -95,7 +75,7 @@ export function NumberField({
   function commit(text: string) {
     setDraft(null)
     if (untouched(text, held)) return
-    const typed = typedNumber(text, typedUnit)
+    const typed = typedNumber(text)
     if (typed === null || !Number.isFinite(typed)) return
     const read = readNumber(typed)
     if (read !== null && (read !== control.value || control.inherited)) onChange(read)
@@ -108,7 +88,7 @@ export function NumberField({
     const moved = stepOf(event, step)
     if (moved === 0) return
     event.preventDefault()
-    commit(String(steppedFrom(event.currentTarget.value, held, (text) => typedNumber(text, typedUnit)) + moved))
+    commit(String(steppedFrom(event.currentTarget.value, held, typedNumber) + moved))
   }
 
   function startScrub(event: PointerEvent<HTMLSpanElement>) {
@@ -138,9 +118,8 @@ export function NumberField({
     scrub.current = null
   }
 
-  const suffix = size || borderWidth || unit === "" || (auto && draft === null) ? "" : unit
-  const value = draft ?? (auto ? textCopy.auto : shown)
-  const steps = look.steps
+  const suffix = size ? "" : unit
+  const value = draft ?? shown
   const list = size ? (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label={textCopy.sizes} className={listTrigger} data-focus-ring>
@@ -154,18 +133,7 @@ export function NumberField({
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  ) : steps === undefined ? null : (
-    <StepList
-      label={designCopy.list(control.label)}
-      steps={steps}
-      unit={unit}
-      shown={shown}
-      onPick={(step) => {
-        const read = readNumber(step)
-        if (read !== null && (read !== control.value || control.inherited)) onChange(read)
-      }}
-    />
-  )
+  ) : null
   const row = (
     <label
       className={cn(
@@ -191,8 +159,6 @@ export function NumberField({
         >
           {Icon ? (
             <Icon size={14} className="size-3.5" strokeWidth={1.5} aria-hidden />
-          ) : look.name.show === "letter" ? (
-            look.name.letter
           ) : look.name.show === "inside" ? (
             control.label
           ) : null}
@@ -247,50 +213,6 @@ export function NumberField({
     </div>
   ) : (
     row
-  )
-}
-
-function StepList({
-  label,
-  steps,
-  unit,
-  shown,
-  onPick,
-}: {
-  label: string
-  steps: readonly number[]
-  unit: string
-  shown: string
-  onPick: (step: number) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const chosen = chosenStep(shown, steps)
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<button type="button" aria-label={label} className={listTrigger} data-focus-ring />}>
-        <EditorIcon name="chev" size={12} className="size-3" />
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-auto min-w-24 gap-0 p-1 duration-0">
-        <div role="listbox" aria-label={label} className="flex flex-col">
-          {steps.map((step) => (
-            <button
-              key={step}
-              type="button"
-              role="option"
-              aria-selected={chosen === step}
-              className="rounded-[var(--shape-control)] px-2 py-1 text-left text-[length:var(--type-caption)] tabular-nums hover:bg-muted"
-              onClick={() => {
-                setOpen(false)
-                onPick(step)
-              }}
-            >
-              {String(step)}
-              {unit}
-            </button>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
   )
 }
 

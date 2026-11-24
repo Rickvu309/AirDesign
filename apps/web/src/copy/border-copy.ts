@@ -1,6 +1,5 @@
 export const borderCopy = {
   color: "Color",
-  width: "Border width",
   dash: "Dash",
   dashes: "Dashes",
   custom: "Custom",
@@ -13,7 +12,6 @@ export const borderCopy = {
   route: "Line type",
   reset: {
     fill: "Reset border color",
-    width: "Reset border width",
     dash: "Reset dash",
     cap: "Reset cap",
     compound: "Reset compound",

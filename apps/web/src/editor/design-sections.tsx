@@ -14,7 +14,7 @@ import { linkCopy } from "@/copy/link-copy"
 import { LayerName } from "@/editor/layer-name-edit"
 import { panelTitle } from "@/editor/panel-title"
 
-const openChrome = ["text", "link", "fills", "textFill", "border", "shadow", "opacity", "geometry"]
+const openChrome = ["text", "link", "fills", "textFill", "border", "geometry"]
 
 export function DesignHead({
   children,
@@ -316,22 +316,6 @@ export function ElementDesign({
               </div>
               {at === lead ? children : null}
             </Fragment>
-          )
-        const [strip, ...more] = section.strips
-        const [lone, ...beside] = strip ?? []
-        if (lone !== undefined && more.length === 0 && beside.length === 0 && lone.look.name.show === "beside")
-          return (
-            <section
-              key={section.trait}
-              data-design-section={section.label}
-              className={cn(
-                "grid grid-cols-2 items-center gap-2 px-4 py-3",
-                closes(at) ? null : "border-b border-line",
-              )}
-            >
-              <h2 className="text-[length:var(--type-caption)] font-medium text-foreground">{section.label}</h2>
-              <ControlView control={lone} palette={palette} onChange={(value) => onChange(lone, value)} />
-            </section>
           )
         const reset = section.strips
           .flat()

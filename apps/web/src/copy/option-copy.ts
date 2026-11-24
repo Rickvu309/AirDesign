@@ -2,7 +2,6 @@ import { textWords } from "@/copy/text-copy"
 import { bodyWords } from "@/copy/body-copy"
 import { boxWords } from "@/copy/box-copy"
 import { connectionWords } from "@/copy/connection-copy"
-import { effectsWords } from "@/copy/effects-copy"
 import { fillWords } from "@/copy/fill-copy"
 import { borderWords } from "@/copy/border-copy"
 import { geometryWords } from "@/copy/geometry-copy"
@@ -21,7 +20,6 @@ export const optionCopy: Readonly<Record<string, string>> = {
   ...geometryWords,
   ...fillWords,
   ...borderWords,
-  ...effectsWords,
   ...bodyWords,
   ...pictureWords,
   ...connectionWords,

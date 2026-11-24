@@ -54,10 +54,10 @@ const context = (view: doom.Doom) => ({
 })
 
 describe("the picture's Fill mode in the design panel", () => {
-  it("lists Crop beside Fill, Fit and Tile, and shows it for a cropped picture", () => {
+  it("offers Fill, Fit and Crop, and shows the current mode", () => {
     const control = modeControl(made.view)
     expect(control.value).toBe("crop")
-    expect(JSON.stringify(control.desc)).toContain('"crop"')
+    expect(control.desc).toEqual({ kind: "choice", options: ["fill", "fit", "crop"] })
   })
 
   it("keeps the crop when Crop is picked again, and drops it when another mode is picked", () => {

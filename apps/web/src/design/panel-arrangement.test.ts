@@ -13,15 +13,13 @@ it("gives every control in a strip the same name placement", () => {
   expect(faults).toEqual([])
 })
 
-it("places Figma's size, spacing, format and paragraph strips in order", () => {
+it("places size, formatting and paragraph strips in order", () => {
   expect(sectionStrips.text.map((strip) => strip.map(({ field }) => field))).toEqual([
     ["style"],
     ["font"],
     ["weight", "size"],
-    ["lineHeight", "letterSpacing"],
     ["bold", "italic", "underline", "strike"],
     ["align", "list"],
-    ["case"],
     ["fill"],
   ])
 })

@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { chosenStep, numberShown, scrubAfter, scrubbed, storedFromTyped } from "@/design/controls/number"
-import { steppedFrom, untouched } from "@/design/shown-number"
-import { typedNumber } from "@/design/typed-number"
+import { scrubAfter, scrubbed, storedFromTyped } from "@/design/controls/number"
 import type { PanelControl } from "@/design/panel"
-import { spacingUnits } from "@/design/spacing-units"
 
 const plain = { shiftKey: false, altKey: false }
 const shift = { shiftKey: true, altKey: false }
@@ -36,58 +33,6 @@ describe("scrubbing past a limit", () => {
     expect(held).toEqual({ value: 100, x: 400 })
     expect(scrubbed(held, 300, plain, 1).value).toBe(50)
     expect(scrubAfter(past, 300)).toBe(past)
-  })
-})
-
-describe("a preset list", () => {
-  const steps = [100, 75, 50, 25, 10, 0]
-
-  it("marks the preset that matches the field and marks nothing else", () => {
-    expect(chosenStep("75", steps)).toBe(75)
-    expect(chosenStep("10", steps)).toBe(10)
-    expect(chosenStep("37", steps)).toBeNull()
-    expect(chosenStep("", steps)).toBeNull()
-    expect(chosenStep("8", [0, 4, 8, 16])).toBe(8)
-    expect(chosenStep("80", [0, 4, 8, 16])).toBeNull()
-  })
-})
-
-describe("letter spacing", () => {
-  it("shows a whole percent of the size, as Figma does, so a title's -1.5 px at 88 reads -2%", () => {
-    const control = {
-      desc: { kind: "number", unit: "emu", min: -100_000, max: 100_000 },
-      value: -150,
-      mixed: false,
-      ...spacingUnits("text", "letterSpacing", 8800),
-    } as unknown as PanelControl
-    expect(numberShown(control).text).toBe("-2")
-  })
-
-  it("writes nothing on Enter in an untouched rounded field, and steps and scrubs from the stored value", () => {
-    const control = {
-      desc: { kind: "number", unit: "emu", min: -100_000, max: 100_000 },
-      value: -150,
-      mixed: false,
-      ...spacingUnits("text", "letterSpacing", 8800),
-    } as unknown as PanelControl
-    const shown = numberShown(control)
-    const read = (text: string) => typedNumber(text, {})
-    expect(untouched(shown.text, shown)).toBe(true)
-    expect(shown.exact).toBeCloseTo(-1.7045, 4)
-    expect(steppedFrom(shown.text, shown, read) + 1).toBeCloseTo(-0.7045, 4)
-    expect(steppedFrom("-3", shown, read)).toBe(-3)
-  })
-
-  it("is clamped to Doom's limit and written, never dropped, when typed past it", () => {
-    const control = {
-      desc: { kind: "number", unit: "hundredth-point", min: -10_000, max: 10_000 },
-      value: 0,
-      mixed: false,
-      ...spacingUnits("text", "letterSpacing", 200_000),
-    } as unknown as PanelControl
-    expect(storedFromTyped(control, 100)).toBe(10_000)
-    expect(storedFromTyped(control, -100)).toBe(-10_000)
-    expect(storedFromTyped(control, 3)).toBe(6_000)
   })
 })
 

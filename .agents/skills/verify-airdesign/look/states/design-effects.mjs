@@ -1,20 +1,14 @@
-import { group } from "../doom-deck.mjs"
-import { appearanceCopy, effectsWords } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
-import { designing, element, selectMany } from "../doom-design.mjs"
+import { openDesign, openDoomDeck } from "../doom-deck.mjs"
+import { element, seeds, selectMany } from "../doom-design.mjs"
 
 async function drive(kit) {
-  const { page } = kit
-  await designing(kit, "shape")
-  await selectMany(page, ["w:2"])
-  const panel = page.locator("[data-design-element]")
-  const shadow = group(panel, appearanceCopy.shadowPreset)
-  await shadow.getByRole("button", { name: effectsWords["shadow.glow"], exact: true }).click()
-  await expect(shadow.getByRole("button", { name: effectsWords["shadow.glow"], exact: true })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  )
-  await panel.getByRole("heading", { name: effectsWords["add.shadow"], exact: true }).scrollIntoViewIfNeeded()
+  const card = { ...seeds.shape, props: { ...seeds.shape.props, effects: "glow" } }
+  await openDoomDeck(kit, [card])
+  await openDesign(kit.page)
+  await selectMany(kit.page, [card.id])
+  const body = kit.page.locator(`[data-slide-box] [data-node="${card.id}"] [data-body]`)
+  await expect(body).toHaveCSS("box-shadow", /rgba?\(/)
 }
 
 export default { name: "design-effects", design: element, drive }

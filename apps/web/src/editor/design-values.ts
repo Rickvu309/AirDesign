@@ -1,18 +1,12 @@
 import * as doom from "@airdesign/doom"
 import type { PanelGradient, PanelPaint } from "@/design/panel"
 
-export const pointEmu = 12_700
-export const cornerEmu = 9_525
 export const hundredths = 100
 export const wholeFraction = 100_000
 export const degreeAngle = 60_000
 
 const wholeCircle = 21_600_000
 const middle = 50_000
-
-export function emuOf(px: number): number {
-  return Math.round(px * pointEmu)
-}
 
 export function panelPaintOf(paint: doom.Paint): PanelPaint {
   if (paint.kind === "solid") return { solid: paint.color }
