@@ -14,7 +14,7 @@ test("a new doom deck opens at its own address, paints its first slide and keeps
   const faults: string[] = []
   page.on("pageerror", (error) => faults.push(error.message))
   const opened = await openEditor(page, context, stack)
-  await expect(page).toHaveURL(new RegExp(`/s/${opened.deck}$`))
+  await expect(page).toHaveURL(new RegExp(`/s/${opened.deck}\\?node-id=`))
   const node = "s:4"
   const title = page.locator(`[data-slide-box] [data-node="${node}"]`)
   await expect(title).toHaveCount(1)

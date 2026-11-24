@@ -28,7 +28,7 @@ test("a new deck opens as a doom deck, and the home lists it with its name and a
   await page.goto("/")
   await newDoomDeck(page)
   await page.locator("[data-editor-ready]").waitFor()
-  await expect(page).toHaveURL(/\/s\/[A-Za-z0-9_-]{1,64}$/)
+  await expect(page).toHaveURL(/\/s\/[A-Za-z0-9_-]{1,64}(\?node-id=.*)?$/)
   const deck = new URL(page.url()).pathname.slice("/s/".length)
 
   const first = "Quarterly review"

@@ -28,7 +28,8 @@ Preconditions:
 
 - **Specs.** `pnpm test:browser tests/browser/editor-slides.spec.ts tests/browser/editor-slides-transform.spec.ts tests/browser/editor-presenting.spec.ts`: add, step, drag, move, duplicate, delete, undo and reload, each read from the server's fold with `savedSlides`; the last slide kept; the slide menu from the keyboard; the show and the presenter view.
 - **In a scratch journey.** Make a deck with `newDoomDeck`, click `Add slide` twice, click entry 1, press Ctrl+], then poll `post(doomRoutes.open, { deck }, cookie)` until the slide order in `json.fold` has the first slide second. Reload; the list shows three entries in that order.
-- **States for look.** `slides-several`, `slide-list-set`, plus the states named above.
+- **Reload.** `tests/browser/editor-slide-address.spec.ts`: the address carries `node-id`, a reload opens that slide, a gone slide opens slide 1, and moving between slides adds no history entry.
+- **States for look.** `slides-several`, `slides-reloaded`, `slide-list-set`, plus the states named above.
 
 ## Gotchas
 
