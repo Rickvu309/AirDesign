@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { readAgentChange } from "./agent-change.js"
-import { build, richDeck } from "./agent-fixtures.js"
+import { build } from "./agent-fixtures.js"
+import { richDeck } from "./testing/rich-deck.js"
 import { readChart } from "./chart.js"
 import { type Chart, type Resolved, deriveChart, nodeId, propOf, readForAgent } from "./index.js"
 import { ids } from "./sample-deck.js"
@@ -40,6 +41,19 @@ describe("chart axis labels", () => {
     expect(words).not.toContain("0.0")
   })
 
+  const tickWords = (values: readonly number[]) =>
+    wordsOf(derive({ kind: "column", categories: ["A", "B"], series: [{ name: "N", values }] })).filter((word) =>
+      /^-?\d/.test(word),
+    )
+
+  it("prints the half step when the series is 1 and 2", () => {
+    expect(tickWords([1, 2])).toEqual(["0.0", "0.5", "1.0", "1.5", "2.0"])
+  })
+
+  it("prints the fifth step when the series is 0 and 1", () => {
+    expect(tickWords([0, 1])).toEqual(["0.0", "0.2", "0.4", "0.6", "0.8", "1.0"])
+  })
+
   it("uses the finer series when two series disagree", () => {
     const words = wordsOf(
       derive({
@@ -70,9 +84,9 @@ describe("chart axis labels", () => {
   it("names a blank or non-text axis unit", () => {
     const chart = { ...revenue, unit: "$M" }
     const set = (unit: unknown) => readAgentChange({ op: "set", target: "t:3", chart: { ...chart, unit } })
-    expect(set("")).toMatchObject({ field: "unit" })
-    expect(set("   ")).toMatchObject({ field: "unit" })
-    expect(set(4)).toMatchObject({ field: "unit" })
+    expect(set("")).toMatchObject({ field: "chart.unit" })
+    expect(set("   ")).toMatchObject({ field: "chart.unit" })
+    expect(set(4)).toMatchObject({ field: "chart.unit" })
     expect(set("$M")).not.toHaveProperty("refused")
   })
 })

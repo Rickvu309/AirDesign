@@ -16,18 +16,25 @@ export function niceAxis(lo: number, hi: number, target = 5): Axis {
 
 const fractionCap = 2
 
+const fractionDigits = (value: number): number => {
+  if (!Number.isFinite(value)) return 0
+  const fixed = Math.abs(value).toFixed(fractionCap)
+  const dot = fixed.indexOf(".")
+  const fraction = dot < 0 ? "" : fixed.slice(dot + 1).replace(/0+$/, "")
+  return fraction.length
+}
+
 export function seriesPrecision(series: readonly { readonly values: readonly number[] }[]): number {
   let digits = 0
   for (const one of series) {
-    for (const value of one.values) {
-      if (!Number.isFinite(value)) continue
-      const fixed = Math.abs(value).toFixed(fractionCap)
-      const dot = fixed.indexOf(".")
-      const fraction = dot < 0 ? "" : fixed.slice(dot + 1).replace(/0+$/, "")
-      if (fraction.length > digits) digits = fraction.length
-    }
+    for (const value of one.values) digits = Math.max(digits, fractionDigits(value))
   }
   return digits
+}
+
+export function tickPrecision(series: readonly { readonly values: readonly number[] }[], axis: Axis): number {
+  const step = axis.ticks.length < 2 ? 0 : Math.abs(axis.ticks[1]! - axis.ticks[0]!)
+  return Math.max(seriesPrecision(series), fractionDigits(step))
 }
 
 const fixed = [0, 1, 2].map(

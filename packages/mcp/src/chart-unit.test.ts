@@ -75,7 +75,7 @@ describe("an axis unit over the protocol", () => {
           },
         ],
       })
-      expect(bad).toMatchObject({ ok: false, field: "unit" })
+      expect(bad).toMatchObject({ ok: false, field: "chart.unit" })
       expect((await call("read_deck", { deck })).rev).toBe(read.rev)
     })
   })

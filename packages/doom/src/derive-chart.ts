@@ -1,4 +1,4 @@
-import { type Axis, formatTick, formatValue, niceAxis, seriesPrecision, slug } from "./chart-axis.js"
+import { type Axis, formatTick, formatValue, niceAxis, seriesPrecision, slug, tickPrecision } from "./chart-axis.js"
 import {
   type Kit,
   type Words,
@@ -37,13 +37,17 @@ const legendGap = 28
 const dataId = (context: Context, series: string, category: string) =>
   `${context.frame}#${slug(series)}:${slug(category)}`
 
-function axisLabels(chart: Chart): {
+function axisLabels(
+  chart: Chart,
+  axis: Axis,
+): {
   readonly tick: (value: number) => string
   readonly value: (value: number) => string
 } {
   const digits = seriesPrecision(chart.series)
+  const tickDigits = tickPrecision(chart.series, axis)
   return {
-    tick: (value) => formatTick(value, digits, chart.unit),
+    tick: (value) => formatTick(value, tickDigits, chart.unit),
     value: (value) => formatValue(value, digits),
   }
 }
@@ -141,7 +145,7 @@ function barChart(context: Context): Resolved[] {
   const { chart, theme, frame } = context
   const horizontal = chart.kind === "bar"
   const axis = valueAxis(context)
-  const labels = axisLabels(chart)
+  const labels = axisLabels(chart, axis)
   const tickWords = axis.ticks.map(labels.tick)
   const look = muted(theme)
   const legend: Entry[] =
@@ -295,7 +299,7 @@ function barChart(context: Context): Resolved[] {
 function lineChart(context: Context): Resolved[] {
   const { chart, theme, frame } = context
   const axis = valueAxis(context)
-  const labels = axisLabels(chart)
+  const labels = axisLabels(chart, axis)
   const look = muted(theme)
   const legend: Entry[] =
     chart.series.length > 1
