@@ -56,7 +56,8 @@ it("sends only the last choice when a deck was starred and the star removed whil
   expect(await queuedStars(["deck-one"])).toEqual([["deck-one", false]])
   const sent: Sent[] = []
   vi.stubGlobal("fetch", answering(sent))
-  await expect.poll(() => sent).toEqual([{ deck: "deck-one", starred: false }])
+  await expect.poll(() => queuedStars(["deck-one"])).toEqual([])
+  expect(sent).toEqual([{ deck: "deck-one", starred: false }])
 })
 
 it("never has two stars of one deck in flight, so the last choice is the one the server keeps", async () => {
