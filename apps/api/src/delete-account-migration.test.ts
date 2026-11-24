@@ -2,10 +2,9 @@ import { randomBytes } from "node:crypto"
 import { Client } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
 
-import { migrations } from "./platform/migrations.js"
 import { startEmptyCluster, type EmptyCluster } from "./testing/postgres-setup.js"
 import { runBootstrap } from "./platform/provision.js"
-import { applySchema } from "./platform/schema.js"
+import { applySchema, migrations } from "./platform/schema.js"
 
 const secrets = {
   session: randomBytes(18).toString("base64url"),

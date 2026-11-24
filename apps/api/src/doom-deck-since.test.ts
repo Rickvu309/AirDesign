@@ -3,11 +3,11 @@ import { doomRoutes } from "@airdesign/catalog"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, postgresInfo, serve, signInByCode } from "../testing/harness.js"
-import { heldQueries, type HeldQueries } from "../testing/held-queries.js"
-import { DeckListen, openPool, type Mail } from "../index.js"
-import { sinceDoom } from "./doom-deck.js"
-import { startIds } from "./doom-start.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
+import { heldQueries, type HeldQueries } from "./testing/held-queries.js"
+import { DeckListen, openPool, type Mail } from "./index.js"
+import { sinceDoom } from "./doom/doom-deck.js"
+import { startIds } from "./doom/doom-start.js"
 
 const mails: Mail[] = []
 let base = ""

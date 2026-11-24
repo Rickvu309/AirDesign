@@ -3,10 +3,10 @@ import { connect, createServer, type AddressInfo, type Server, type Socket } fro
 import { doomRoutes } from "@airdesign/catalog"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, postgresInfo, serve, signInByCode } from "../testing/harness.js"
-import { heldQueries, type HeldQueries } from "../testing/held-queries.js"
-import { startIds } from "../doom/doom-start.js"
-import { DeckListen, openPool, type Mail } from "../index.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
+import { heldQueries, type HeldQueries } from "./testing/held-queries.js"
+import { startIds } from "./doom/doom-start.js"
+import { DeckListen, openPool, type Mail } from "./index.js"
 
 type Gate = { readonly url: string; readonly cut: () => void; readonly open: () => void; readonly close: () => void }
 

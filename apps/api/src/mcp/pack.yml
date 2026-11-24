@@ -1,6 +1,7 @@
 layer: feature
 dependencies:
   - packages/mcp#runtime
+  - packages/mcp#testing
   - apps/api/src/account
   - apps/api/src/doom
   - apps/api/src/platform

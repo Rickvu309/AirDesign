@@ -3,9 +3,9 @@ import { randomBytes } from "node:crypto"
 import { countryHeader, forwardSecretHeader } from "@airdesign/catalog"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
-import { Replay } from "../testing/aira-replay.js"
-import { ask, postgresInfo, serve, signInByCode } from "../testing/harness.js"
-import { DeckListen, openPool, type Mail, type Sql } from "../index.js"
+import { Replay } from "./testing/aira-replay.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
+import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 const fakeKey = "test-key-not-real"

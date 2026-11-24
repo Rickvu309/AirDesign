@@ -4,8 +4,8 @@ import { deckRoutes } from "@airdesign/catalog"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, postgresInfo, serve, signInByCode } from "../testing/harness.js"
-import { DeckListen, openPool, type Mail } from "../index.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
+import { DeckListen, openPool, type Mail } from "./index.js"
 
 type Answer = Record<string, any>
 

@@ -1,10 +1,9 @@
 import { Client } from "pg"
 import { expect, it } from "vitest"
 
-import { migrations } from "./platform/migrations.js"
 import { startEmptyCluster } from "./testing/postgres-setup.js"
 import { createRole, runSetup } from "./platform/provision.js"
-import { applySchema } from "./platform/schema.js"
+import { applySchema, migrations } from "./platform/schema.js"
 
 it("brings a database at migration 6 to the latest through setup", async () => {
   const cluster = await startEmptyCluster()

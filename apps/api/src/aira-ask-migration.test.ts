@@ -2,8 +2,7 @@ import { Client } from "pg"
 import { expect, it } from "vitest"
 
 import { sharedCluster, unmigratedDatabase } from "./testing/harness.js"
-import { migrations } from "./platform/migrations.js"
-import { applySchema } from "./platform/schema.js"
+import { applySchema, migrations } from "./platform/schema.js"
 
 it("names each ask once at migration 16 and keeps every row it found", async () => {
   const database = await unmigratedDatabase()

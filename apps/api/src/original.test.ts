@@ -1,10 +1,10 @@
 import { Client } from "pg"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 
-import { ask, signInByCode, postgresInfo, serve } from "../testing/harness.js"
-import { DeckListen, openPool, type Mail } from "../index.js"
-import { LocalOriginalStore } from "../platform/local-original-store.js"
-import { drainOriginals } from "./original.js"
+import { ask, signInByCode, postgresInfo, serve } from "./testing/harness.js"
+import { DeckListen, openPool, type Mail } from "./index.js"
+import { LocalOriginalStore } from "./platform/local-original-store.js"
+import { drainOriginals } from "./doom/original.js"
 
 const bytes = Buffer.from("a picture on the deck")
 const store = new LocalOriginalStore()
