@@ -318,6 +318,11 @@ describe("picture, icon, frame and line", () => {
     expect(prop(coloured, "star", "strokes")).toEqual([{ kind: "solid", color: { var: "accent1" } }])
   })
 
+  it("gives a chart the same design panel as its frame", () => {
+    const chart = landed(view, [{ node: id("panel"), prop: "chart", value: doom.sampleChart("column") }])
+    expect(modelOf("panel", chart)).toEqual(modelOf("panel"))
+  })
+
   it("shows a frame's fill, and a line's border without a none choice", () => {
     expect(find(modelOf("panel"), "fills", "paint").value).toEqual({ solid: { var: "background2" } })
     const line = modelOf("rule")

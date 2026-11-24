@@ -12,7 +12,6 @@ import { SlideBackground } from "@/editor/slide-background"
 import { PicturePreview } from "@/editor/picture-preview"
 import { pickPicture } from "@/editor/picture-picker"
 import { RemoveAutoLayoutButton } from "@/editor/remove-auto-layout"
-import { ChartSection } from "./design-chart"
 import { changeWrites, linkOf, type ChangeContext } from "./design-changes"
 import { storePicture, useAssetUrl } from "./design-media"
 import { nodeModel } from "./design-model"
@@ -139,7 +138,6 @@ export function DesignPanel(props: Props) {
   if (first === undefined) return null
   const model: PanelModel = rest.length === 0 ? first : panelOfMany([first, ...rest])
   const autoLayout = ids.length === 1 && model.frame === "auto"
-  const chart = ids.length === 1 && only !== undefined && doom.propOf(view.nodes.get(only), "chart") !== undefined
   const storedName = only === undefined ? undefined : doom.propOf(view.nodes.get(only), "name")
   const layerName =
     ids.length === 1
@@ -193,8 +191,6 @@ export function DesignPanel(props: Props) {
         )
           props.onCrop(only)
       }}
-    >
-      {chart && only !== undefined ? <ChartSection id={only} view={view} push={client.push} /> : null}
-    </ElementDesign>
+    />
   )
 }

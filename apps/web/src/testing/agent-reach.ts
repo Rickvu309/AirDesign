@@ -232,7 +232,6 @@ export const reach: Readonly<Record<string, Entry>> = {
   "panel:slide-background": { agent: "set.fill", writes: "fills", on: "slide", props: ["fills"] },
   "menu:skip-slide": { agent: "set.skipped", writes: "skipped", on: "slide", props: ["skipped"] },
   "panel:text.alignV": { agent: "set.alignV", writes: "text", on: "card", props: ["text"] },
-  "panel:chart-data": { agent: "set.chart", props: ["chart"] },
   "panel:remove-auto-layout": { agent: "set.layout", props: ["layout"] },
   "panel:show-hidden": { agent: "set.hidden", writes: "hidden", on: "card", props: ["hidden"] },
   "panel:name": { agent: "set.name", writes: "name", on: "card", props: ["name"] },

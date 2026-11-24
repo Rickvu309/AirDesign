@@ -1,10 +1,8 @@
 import type { SectionName } from "./panel"
 
-export type PanelKind = "text" | "shape" | "picture" | "icon" | "connector" | "group" | "frame" | "chart" | "many"
+export type PanelKind = "text" | "shape" | "picture" | "icon" | "connector" | "group" | "frame" | "many"
 
 type PanelSectionName = SectionName | "selectionColors" | "templateStyle" | "background"
-
-const frameSections = ["alignment", "fills", "border", "selectionColors"] as const satisfies readonly PanelSectionName[]
 
 export const panelOrder: Readonly<Record<PanelKind | "slide", readonly PanelSectionName[]>> = {
   text: ["alignment", "text", "link", "textFill"],
@@ -13,8 +11,7 @@ export const panelOrder: Readonly<Record<PanelKind | "slide", readonly PanelSect
   icon: ["alignment", "pictureFill"],
   connector: ["alignment", "border"],
   group: ["alignment", "selectionColors"],
-  frame: frameSections,
-  chart: frameSections,
+  frame: ["alignment", "fills", "border", "selectionColors"],
   many: ["alignment", "text", "textFill", "fills", "link", "border", "selectionColors"],
   slide: ["templateStyle", "background", "selectionColors"],
 }

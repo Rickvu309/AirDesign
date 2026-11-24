@@ -9,6 +9,7 @@ import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { linkCopy } from "../../apps/web/src/copy/link-copy"
 import { selectionColorsCopy } from "../../apps/web/src/copy/selection-colors-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
+import { readFold } from "../../packages/doom/src/index.ts"
 import { test } from "./api-stack"
 import { hexes, neutralColorNames } from "./editor-design-art"
 import { accent, clickSlide, landNodes, openEditor, savedNode, selectedIds, spot, type Opened } from "./editor-deck"
@@ -96,23 +97,7 @@ async function layers(page: Page, context: Parameters<typeof openEditor>[1], sta
         layout: { mode: "row", gap: 16, padding: { t: 0, r: 0, b: 0, l: 0 }, align: "top-left" },
       },
     },
-    {
-      id: "t:5",
-      type: "frame",
-      parent: opened.slide,
-      props: {
-        name: editorCopy.chart,
-        box: spot(1100, 700, 600, 260),
-        chart: {
-          kind: "column",
-          categories: ["Q1", "Q2", "Q3"],
-          series: [{ name: "Revenue", values: [12, 19, 15] }],
-          labels: true,
-        },
-      },
-    },
   ])
-  await expect(node(page, "t:5")).toBeVisible()
   return opened
 }
 
@@ -248,7 +233,7 @@ test("a shape shows fill and border, paints before the server answers, and saves
   ).toHaveAttribute("aria-pressed", "true")
 })
 
-test("a tiled picture shows its mode alongside the current fit options, a frame removes auto layout, and a chart edits data", async ({
+test("a tiled picture shows its mode alongside the current fit options, and a frame removes auto layout", async ({
   page,
   context,
   stack,
@@ -273,33 +258,57 @@ test("a tiled picture shows its mode alongside the current fit options, a frame 
   expect(await selectedIds(page)).toEqual(["t:4"])
   await page.locator("[data-auto-layout]").getByRole("button", { name: designCopy.removeAutoLayout }).click()
   await expect.poll(async () => (await saved(stack, opened, "t:4")).layout?.mode).toBe("none")
+})
+
+test("a selected chart keeps its frame controls and paints data set by an agent", async ({ page, context, stack }) => {
+  const opened = await designing(page, context, stack)
+  await landNodes(stack, opened, [
+    {
+      id: "t:5",
+      type: "frame",
+      parent: opened.slide,
+      props: {
+        name: editorCopy.chart,
+        box: spot(1100, 700, 600, 260),
+        chart: {
+          kind: "column",
+          categories: ["Q1", "Q2", "Q3"],
+          series: [{ name: "Revenue", values: [12, 19, 15] }],
+          labels: true,
+        },
+      },
+    },
+  ])
+  const canvas = page.locator("[data-slide-box]")
+  await expect(canvas.getByText("Q1", { exact: true })).toBeVisible()
+
+  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+  const answer = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
+  const fold = readFold(answer.json.fold)
+  if (fold === undefined) throw new Error("could not read the deck")
+  const chart = {
+    kind: "column",
+    categories: ["Launch", "Renewal"],
+    series: [{ name: "Revenue", values: [37, 61] }],
+    labels: true,
+  }
+  await stack.toolBlocks(
+    "airdesign_edit_deck",
+    { deck: opened.deck, base: fold.rev, changes: [{ op: "set", target: "t:5", chart }] },
+    opened.cookie,
+  )
+  expect((await savedNode(stack, opened, "t:5"))?.chart).toEqual(chart)
+  await expect(canvas.getByText("Launch", { exact: true })).toBeVisible()
+  await expect(canvas.getByText("61", { exact: true })).toBeVisible()
+  await expect(canvas.getByText("Q1", { exact: true })).toHaveCount(0)
 
   await clickSlide(page, 1300, 850)
   expect(await selectedIds(page)).toEqual(["t:5"])
-  const chart = page.locator('[data-panel-section="chart"]')
-  await expect(chart).toBeVisible()
-  await page.locator("[data-chart-data]").getByLabel("1", { exact: true }).first().fill("30")
-  await page.locator("[data-chart-data]").getByLabel("1", { exact: true }).first().press("Tab")
-  await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.series[0].values[0]).toBe(30)
-  await page.getByRole("button", { name: editorCopy.addRow }).click()
-  await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.categories.length).toBe(4)
-  await typeInto(chart.getByLabel(editorCopy.seriesName(1), { exact: true }), "Plan")
-  await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.series[0].name).toBe("Plan")
-  await page.getByRole("button", { name: editorCopy.addSeries }).click()
-  await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.series.length).toBe(2)
-  await typeInto(chart.getByLabel(editorCopy.seriesName(2), { exact: true }), "Actual")
-  await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.series[1].name).toBe("Actual")
-  const second = page.locator("[data-chart-data]").getByLabel("2", { exact: true }).first()
-  await typeInto(second, "3.1")
-  await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.series[1].values[0]).toBe(3.1)
-  expect(await second.evaluate((field) => field.scrollWidth <= field.clientWidth)).toBe(true)
-  await expect(second).toHaveValue("3.1")
-  await chart.getByRole("combobox", { name: editorCopy.chartKind }).click()
-  await page.getByRole("option", { name: editorCopy.kinds.line, exact: true }).click()
-  await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.kind).toBe("line")
-  await stage(page).click({ position: { x: 20, y: 20 } })
-  await undo(page)
-  await expect.poll(async () => (await saved(stack, opened, "t:5")).chart.kind).toBe("column")
+  await expect(panel(page).getByRole("button", { name: /align right/i })).toBeVisible()
+  await expect(page.locator('[data-grip="bottom-right"]')).toBeVisible()
+  await expect(panel(page)).toHaveAttribute("data-panel-kind", "frame")
+  await expect(section(page, fillCopy.section)).toBeVisible()
+  await expect(section(page, designCopy.border)).toBeVisible()
 })
 
 test("several layers share one panel and Align moves them to the selection's edge", async ({

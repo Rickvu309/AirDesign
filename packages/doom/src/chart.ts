@@ -57,11 +57,6 @@ function withoutSeriesColors(chart: Chart): Chart {
   }
 }
 
-export function chartWithKind(chart: Chart, kind: Chart["kind"]): Chart {
-  const next = { ...chart, kind }
-  return kind === "pie" ? withoutSeriesColors(next) : next
-}
-
 const sortedPoints = (points: readonly ChartPoint[]): readonly ChartPoint[] =>
   [...points].sort((left, right) => left.at - right.at)
 
@@ -85,24 +80,6 @@ export function chartWithPointColor(chart: Chart, series: number, at: number, co
   const others = (held.points ?? []).filter((point) => point.at !== at)
   const points = color === null ? others : sortedPoints([...others, { at, color }])
   return { ...chart, series: chart.series.map((each, index) => (index === series ? { ...each, points } : each)) }
-}
-
-export function chartWithoutCategory(chart: Chart, at: number): Chart {
-  return {
-    ...chart,
-    categories: chart.categories.filter((_, index) => index !== at),
-    series: chart.series.map((series) => ({
-      ...series,
-      values: series.values.filter((_, index) => index !== at),
-      ...(series.points === undefined
-        ? {}
-        : {
-            points: series.points.flatMap((point) =>
-              point.at === at ? [] : [point.at > at ? { ...point, at: point.at - 1 } : point],
-            ),
-          }),
-    })),
-  }
 }
 
 export function chartKeepingPoints(held: Chart | undefined, next: Chart): Chart {

@@ -45,10 +45,7 @@ const seen: Readonly<Record<string, Seen>> = {
   icon: { person: ["actions:icon#swap"] },
   arrow: { person: ["gesture:tool-arrow", "panel:border.end"] },
   startArrow: { person: ["panel:border.start"] },
-  chart: {
-    declined: "One simple panel. Chart colours and the axis unit come from the theme, and an agent sets them.",
-    partly: ["panel:chart-data"],
-  },
+  chart: { declined: "agent-only; charts become components (owner 2026-11-24)" },
   rows: {
     declined: "One simple panel. Agents still set auto layout.",
     partly: ["gesture:edit-text"],
@@ -97,7 +94,6 @@ const owedToPerson = [
   "layout",
   "gap",
   "padding",
-  "chart",
   "rows",
   "transition",
   "spaceBefore",
