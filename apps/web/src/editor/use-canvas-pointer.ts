@@ -124,6 +124,13 @@ export function useCanvasPointer(args: PointerArgs) {
   useEffect(() => {
     latest.current = args
   })
+  useEffect(() => {
+    const stage = latest.current.stage.current
+    if (stage === null) return
+    const leave = () => latest.current.setHover(null)
+    stage.addEventListener("pointerleave", leave)
+    return () => stage.removeEventListener("pointerleave", leave)
+  }, [])
   const active = useRef<Active | null>(null)
   const pending = useRef<PointerEvent | ReactPointerEvent | null>(null)
   const frame = useRef(0)
@@ -425,9 +432,6 @@ export function useCanvasPointer(args: PointerArgs) {
     },
     cancel() {
       finish(false, null)
-    },
-    leave() {
-      latest.current.setHover(null)
     },
     cancelDrag() {
       const had = active.current !== null

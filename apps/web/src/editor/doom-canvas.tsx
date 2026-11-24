@@ -376,7 +376,6 @@ export function DoomCanvas(props: {
         onPointerMove={pointer.move}
         onPointerUp={pointer.up}
         onPointerCancel={pointer.cancel}
-        onPointerLeave={pointer.leave}
         onDoubleClick={pointer.double}
         onDragOver={pictures.over}
         onDrop={pictures.drop}

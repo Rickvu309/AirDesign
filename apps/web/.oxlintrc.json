@@ -3,6 +3,21 @@
   "plugins": ["react", "typescript", "oxc"],
   "rules": {
     "react/rules-of-hooks": "error",
+    "react/forbid-dom-props": [
+      "error",
+      {
+        "forbid": [
+          {
+            "propName": "onPointerLeave",
+            "message": "React fires its leave only after a pointerout, and the browser sends none when the node under the pointer was removed. Listen for the native pointerleave with addEventListener, as use-canvas-pointer.ts does."
+          },
+          {
+            "propName": "onMouseLeave",
+            "message": "React fires its leave only after a mouseout, and the browser sends none when the node under the pointer was removed. Listen for the native pointerleave with addEventListener, as use-canvas-pointer.ts does."
+          }
+        ]
+      }
+    ],
     "react/only-export-components": [
       "warn",
       {

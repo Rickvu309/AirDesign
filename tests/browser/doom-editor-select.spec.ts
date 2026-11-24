@@ -107,3 +107,40 @@ test("a marquee takes every layer it touches, Shift adds to it, and moving a gro
   const inside = (await savedNode(stack, opened, "t:3"))?.box
   expect(inside).toMatchObject(spot(0, 0, 200, 200))
 })
+
+test("the hover outline goes when the pointer leaves the canvas before the browser hovers what replaced the text editor", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openDoomEditor(page, context, stack)
+  const text = { chars: "A card line", spans: [], paras: [{}], style: "body", resize: "fixed", alignV: "top" }
+  await landNodes(stack, opened, [
+    { id: "t:0", type: "frame", parent: opened.slide, props: { box: spot(600, 600, 720, 200) } },
+    { id: "t:1", type: "shape", parent: "t:0", props: { box: spot(0, 0, 720, 72), text } },
+  ])
+  const hover = page.locator("[data-hover-outline]")
+  const editor = page.locator("[data-text-editor]")
+  await clickSlide(page, 960, 636, { double: true })
+  expect(await selectedIds(page)).toEqual(["t:1"])
+  await expect(hover).toBeAttached()
+  await page.keyboard.press("Enter")
+  await expect(editor).toBeFocused()
+
+  let closed = () => {}
+  const editorClosed = new Promise<void>((resolve) => {
+    closed = resolve
+  })
+  await page.exposeFunction("editorClosedUnderPointer", () => closed())
+  const heldUntilPointerLeft = editor.evaluate((element) => {
+    element.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }))
+    void (window as unknown as { editorClosedUnderPointer: () => Promise<void> }).editorClosedUnderPointer()
+    const until = performance.now() + 500
+    while (performance.now() < until);
+  })
+  await editorClosed
+  await page.mouse.move(4, 4)
+  await heldUntilPointerLeft
+  await expect(editor).toHaveCount(0)
+  await expect(hover).toHaveCount(0)
+})
