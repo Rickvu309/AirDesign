@@ -110,8 +110,9 @@ function cutByAClip(page: Page) {
           if (rect.width <= 0 || rect.height <= 0) continue
           for (let at = element.parentElement; at && at !== document.body; at = at.parentElement) {
             const style = getComputedStyle(at)
-            const clipX = style.overflowX === "hidden" || style.overflowX === "clip"
-            const clipY = style.overflowY === "hidden" || style.overflowY === "clip"
+            const clips = (value: string) => value === "clip" || value.endsWith("idden")
+            const clipX = clips(style.overflowX)
+            const clipY = clips(style.overflowY)
             if (!clipX && !clipY) continue
             const edge = at.getBoundingClientRect()
             const left = edge.left + at.clientLeft
