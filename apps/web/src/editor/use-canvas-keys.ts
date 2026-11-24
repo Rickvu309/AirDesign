@@ -27,7 +27,6 @@ export type KeyArgs = {
   readonly onActions: () => void
   readonly cropping: boolean
   readonly onCropEnd: () => void
-  readonly measure: doom.Measure
 }
 
 const toolOf = {
@@ -119,7 +118,7 @@ export function useCanvasKeys(args: KeyArgs) {
       } else if (gesture === "delete") {
         handled()
         if (a.dragging()) return
-        const writes = deleteWrites(a.view, a.selection.ids, a.measure)
+        const writes = deleteWrites(a.view, a.selection.ids)
         a.client.push(writes)
         a.onSelection(noSelection)
       } else if (gesture === "nudge" || gesture === "nudge-far") {

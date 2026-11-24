@@ -17,6 +17,18 @@ export function leaveEmptyWrites(left: {
   return JSON.stringify(left.draft) === left.pushed ? [] : [{ node: left.node, prop: "text", value: left.draft }]
 }
 
+export function draftWrites(
+  view: doom.Doom,
+  draft: { readonly node: doom.NodeId; readonly keeps: boolean; readonly draft: doom.Text },
+  measure: doom.Measure,
+): readonly doom.Write[] {
+  const leaving = leaveEmptyWrites({ ...draft, pushed: "" })
+  return [
+    { node: draft.node, prop: "text", value: draft.draft },
+    ...(leaving.some((write) => write.prop === "parent") ? doom.freedLineEnds(view, leaving, measure) : []),
+  ]
+}
+
 export function blankTextFor(painted: boolean): doom.Text {
   const blank = doom.textFromMarkdown("", "body")
   return painted

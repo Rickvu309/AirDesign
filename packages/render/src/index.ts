@@ -1,7 +1,7 @@
 export { Filmstrip } from "./filmstrip.js"
 export { masksOf, type Silhouette, silhouetteIn } from "./silhouette.js"
 export { TextLines } from "./node-text.js"
-export { DoomSlide, SlidePaint, useDoomSlide } from "./doom-slide.js"
+export { DoomSlide, SlidePaint, useDoomMeasure, useDoomSlide } from "./doom-slide.js"
 export { measureDoom } from "./doom-widths.js"
 export { useIcons } from "./icon-nodes.js"
 export { singleLineHeight } from "./text-look.js"

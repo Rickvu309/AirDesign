@@ -68,7 +68,7 @@ it("reads a served face's advances and pair kerning as Chromium's canvas measure
 
 it("measures a deck's words with its theme fonts, so a fixed box too short for them is found", async () => {
   const grown = deckIn({ heading: family, body: family })
-  const measured = await new FontMetrics(new FontSource(undefined)).measure(grown.doom)
+  const measured = await new FontMetrics(new FontSource(undefined)).measure([grown.doom])
   if (typeof measured === "string") throw new Error(measured)
   expect(doom.layoutFindings(grown.doom, grown.slides, measured.measure)).toMatchObject([
     { code: "overflow", node: grown.ids.title, room: 100 },
@@ -81,20 +81,20 @@ it("answers fonts when a deck's font cannot be served, and asks again only after
   const metrics = new FontMetrics(source, () => now)
   const deck = deckIn({ heading: "Never", body: family }).doom
   const asked = () => calls.filter((name) => name === "Never").length
-  expect(await metrics.measure(deck)).toBe("fonts")
+  expect(await metrics.measure([deck])).toBe("fonts")
   const first = asked()
   now = 30_000
-  expect(await metrics.measure(deck)).toBe("fonts")
+  expect(await metrics.measure([deck])).toBe("fonts")
   expect(asked()).toBe(first)
   now = 61_000
-  expect(await metrics.measure(deck)).toBe("fonts")
+  expect(await metrics.measure([deck])).toBe("fonts")
   expect(asked()).toBe(first * 2)
 })
 
 it("names the characters a deck's font has no letters for, and only those", async () => {
   const metrics = new FontMetrics(new FontSource(undefined))
   const read = async (words: string) => {
-    const measured = await metrics.measure(deckIn({ heading: family, body: family }, words).doom)
+    const measured = await metrics.measure([deckIn({ heading: family, body: family }, words).doom])
     if (typeof measured === "string") throw new Error(measured)
     return [...measured.missing]
   }
@@ -106,7 +106,7 @@ it("names a missing character on every measure, not only the first", async () =>
   const metrics = new FontMetrics(new FontSource(undefined))
   const deck = deckIn({ heading: family, body: family }, "Launch 🚀").doom
   for (let time = 0; time < 3; time += 1) {
-    const measured = await metrics.measure(deck)
+    const measured = await metrics.measure([deck])
     if (typeof measured === "string") throw new Error(measured)
     expect([...measured.missing]).toEqual(["🚀"])
   }
@@ -117,9 +117,9 @@ it("answers time past the budget, and at once while that font still hangs", asyn
   let now = 0
   const metrics = new FontMetrics(source, () => now)
   const deck = deckIn({ heading: "Slow", body: "Slow" }).doom
-  expect(await metrics.measure(deck, 50)).toBe("time")
+  expect(await metrics.measure([deck], 50)).toBe("time")
   now = 120_000
-  expect(await metrics.measure(deck, 60_000)).toBe("time")
+  expect(await metrics.measure([deck], 60_000)).toBe("time")
   expect(calls.filter((name) => name === "Slow")).toHaveLength(2)
 })
 

@@ -89,20 +89,20 @@ function drifted() {
               { type: "shape", name: "t", props: { box: box(0, 0, 100, 50) } },
             ],
           },
-          {
-            type: "shape",
-            name: "l",
-            props: (ids) => ({
+          ...(["l", "lf"] as const).map((name) => ({
+            type: "shape" as const,
+            name,
+            props: (ids: Readonly<Record<string, doom.NodeId>>) => ({
               box: box(0, 0, 10, 10),
               geometry: {
                 kind: "line" as const,
-                start: { node: ids.t!, site: "l" as const },
+                start: name === "l" ? { node: ids.t!, site: "l" as const } : { node: ids.f!, site: "r" as const },
                 end: { x: 5, y: 5 },
                 route: "straight" as const,
                 arrows: ["none", "none"] as const,
               },
             }),
-          },
+          })),
         ],
       },
     ],
@@ -123,11 +123,11 @@ function painted(view: doom.Doom, slide: doom.NodeId, line: doom.NodeId, measure
   return { x: found.box.x + found.geometry.from.x, y: found.box.y + found.geometry.from.y }
 }
 
-function connected(grown: ReturnType<typeof drifted>, measureOf: (fold: doom.Doom) => doom.Measure) {
+function connected(grown: ReturnType<typeof drifted>, measureOf: (folds: readonly doom.Doom[]) => doom.Measure) {
   const decks = memoryDecks(() => grown.doom)
   const host = {
     ...decks,
-    measure: async (fold: doom.Doom) => ({ measure: measureOf(fold), missing: new Set<string>() }),
+    measure: async (folds: readonly doom.Doom[]) => ({ measure: measureOf(folds), missing: new Set<string>() }),
   }
   let calls = 0
   const session: Session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0 }
@@ -139,8 +139,8 @@ function connected(grown: ReturnType<typeof drifted>, measureOf: (fold: doom.Doo
     const created = await call("create_deck", {})
     return (created.answer as { deck: string }).deck
   }
-  const freeEnd = (deck: string) => {
-    const geometry = doom.propOf(decks.decks.get(deck as never)!.nodes.get(grown.ids.l!), "geometry")
+  const freeEnd = (deck: string, line = grown.ids.l!) => {
+    const geometry = doom.propOf(decks.decks.get(deck as never)!.nodes.get(line), "geometry")
     if (geometry?.kind !== "line" || !("x" in geometry.start)) throw new Error(JSON.stringify(geometry))
     return { x: geometry.start.x, y: geometry.start.y }
   }
@@ -148,6 +148,36 @@ function connected(grown: ReturnType<typeof drifted>, measureOf: (fold: doom.Doo
     call("edit_deck", { deck, base: decks.decks.get(deck as never)!.rev, changes })
   return { decks, made, freeEnd, edit }
 }
+
+describe("edit_deck takes a shape off the deck", () => {
+  const knowsLora = (folds: readonly doom.Doom[]) =>
+    folds.some((fold) => doom.doomFaces(fold).faces.some((face) => face.font === "Lora")) ? wide : estimate
+
+  it("frees a connector on an unwrapped frame at the point the host's measure painted", async () => {
+    const grown = drifted()
+    const by = connected(grown, () => wide)
+    const deck = await by.made()
+    const seen = painted(grown.doom, grown.slides[0]!, grown.ids.lf!, wide)
+    expect(seen.x).not.toBe(painted(grown.doom, grown.slides[0]!, grown.ids.lf!, estimate).x)
+    expect((await by.edit(deck, [{ op: "unwrap", node: grown.ids.f }])).answer).toMatchObject({ ok: true })
+    expect(by.freeEnd(deck, grown.ids.lf!)).toEqual(seen)
+  })
+
+  it("frees a connector with the widths of a font a later change in the same batch removes", async () => {
+    const grown = drifted()
+    const by = connected(grown, knowsLora)
+    const deck = await by.made()
+    const lora = await by.edit(deck, [{ op: "set", target: grown.ids.words, font: "Lora" }])
+    expect(lora.answer).toMatchObject({ ok: true })
+    const seen = painted(by.decks.decks.get(deck as never)!, grown.slides[0]!, grown.ids.l!, wide)
+    const batch = await by.edit(deck, [
+      { op: "delete", nodes: [grown.ids.t] },
+      { op: "set", target: grown.ids.words, font: "Inter" },
+    ])
+    expect(batch.answer).toMatchObject({ ok: true })
+    expect(by.freeEnd(deck)).toEqual(seen)
+  })
+})
 
 describe("edit_deck delete", () => {
   it("frees a connector at the point the host's measure painted", async () => {
@@ -163,8 +193,12 @@ describe("edit_deck delete", () => {
 
   it("frees a connector with the widths of text an earlier change in the same batch wrote", async () => {
     const grown = drifted()
-    const knowsCapital = (fold: doom.Doom) =>
-      [...fold.nodes.values()].some((node) => node.type === "shape" && node.text?.chars.includes("W")) ? wide : estimate
+    const knowsCapital = (folds: readonly doom.Doom[]) =>
+      folds.some((fold) =>
+        [...fold.nodes.values()].some((node) => node.type === "shape" && node.text?.chars.includes("W")),
+      )
+        ? wide
+        : estimate
     const by = connected(grown, knowsCapital)
     const rewrite = { op: "set", target: grown.ids.words, text: "Hello World hello" }
     const apart = await by.made()
@@ -174,5 +208,108 @@ describe("edit_deck delete", () => {
     expect(batch.answer).toMatchObject({ ok: true })
     const seen = painted(by.decks.decks.get(apart as never)!, grown.slides[0]!, grown.ids.l!, wide)
     expect(by.freeEnd(together)).toEqual(seen)
+  })
+})
+
+function pointed() {
+  const grown = doom.doomFromTree({
+    theme: doom.defaultTheme,
+    slides: [
+      {
+        children: [
+          {
+            type: "frame",
+            name: "grp",
+            props: { box: box(300, 300, 140, 80) },
+            children: [{ type: "shape", name: "child", props: { box: box(0, 0, 100, 50) } }],
+          },
+          { type: "shape", name: "far", props: { box: box(600, 100, 100, 50) } },
+          {
+            type: "frame",
+            name: "holder",
+            props: { box: box(100, 100, 400, 200) },
+            children: ["toGroup", "toChild"].map((name) => ({
+              type: "shape" as const,
+              name,
+              props: (ids: Readonly<Record<string, doom.NodeId>>) => ({
+                box: box(0, 0, 10, 10),
+                geometry: {
+                  kind: "line" as const,
+                  start: { node: name === "toGroup" ? ids.grp! : ids.child!, site: "r" as const },
+                  end: { x: 10, y: 10 },
+                  route: "straight" as const,
+                  arrows: ["none", "none"] as const,
+                },
+              }),
+            })),
+          },
+        ],
+      },
+      { name: "two", children: [{ type: "shape", name: "other", props: { box: box(50, 50, 100, 50) } }] },
+    ],
+  })
+  return grown
+}
+
+describe("edit_deck frees a connector end whose shape leaves the slide", () => {
+  async function opened() {
+    const grown = pointed()
+    const decks = memoryDecks(() => grown.doom)
+    let calls = 0
+    const session: Session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0 }
+    const call = (op: string, args: unknown) => {
+      session.once = `call${String((calls += 1))}`
+      return callTool(names[op] ?? op, args, session, decks)
+    }
+    const deck = ((await call("create_deck", {})).answer as { deck: string }).deck
+    const fold = () => decks.decks.get(deck as never)!
+    const lineStart = (line: doom.NodeId) => {
+      const geometry = doom.propOf(fold().nodes.get(line), "geometry")
+      if (geometry?.kind !== "line") throw new Error("no line")
+      return geometry.start
+    }
+    const paintedAt = (line: doom.NodeId) => painted(fold(), grown.slides[0]!, line, estimate)
+    const edit = (change: unknown) => call("edit_deck", { deck, base: fold().rev, changes: [change] })
+    const undo = (answer: unknown) =>
+      call("undo_run", { deck, runId: (answer as { runId: string }).runId }).then((undone) => undone.answer)
+    return { grown, lineStart, paintedAt, edit, undo }
+  }
+
+  it("keeps a connector on an unwrapped frame where it painted, and undo_run attaches it again", async () => {
+    const { grown, lineStart, paintedAt, edit, undo } = await opened()
+    const seen = paintedAt(grown.ids.toGroup!)
+    const landed = await edit({ op: "unwrap", node: grown.ids.grp })
+    expect(landed.answer).toMatchObject({ ok: true })
+    expect("node" in lineStart(grown.ids.toGroup!)).toBe(false)
+    expect(paintedAt(grown.ids.toGroup!)).toEqual(seen)
+    expect(lineStart(grown.ids.toChild!)).toEqual({ node: grown.ids.child, site: "r" })
+    expect(await undo(landed.answer)).toMatchObject({ ok: true })
+    expect(lineStart(grown.ids.toGroup!)).toEqual({ node: grown.ids.grp, site: "r" })
+    expect(paintedAt(grown.ids.toGroup!)).toEqual(seen)
+  })
+
+  it("keeps a connector on a deleted slide's shape where it painted, and undo_run attaches it again", async () => {
+    const { grown, lineStart, paintedAt, edit, undo } = await opened()
+    await edit({ op: "move", node: grown.ids.grp, into: grown.slides[1] })
+    const seen = paintedAt(grown.ids.toGroup!)
+    const deleted = await edit({ op: "slide", delete: grown.slides[1] })
+    expect(deleted.answer).toMatchObject({ ok: true })
+    expect("node" in lineStart(grown.ids.toGroup!)).toBe(false)
+    expect(paintedAt(grown.ids.toGroup!)).toEqual(seen)
+    expect(await undo(deleted.answer)).toMatchObject({ ok: true })
+    expect(lineStart(grown.ids.toGroup!)).toEqual({ node: grown.ids.grp, site: "r" })
+  })
+
+  it("frees an end another run attached when undo_run takes away the shape it added", async () => {
+    const { grown, lineStart, paintedAt, edit, undo } = await opened()
+    const added = await edit({ op: "add", kind: "frame", slide: grown.slides[0] })
+    expect(added.answer).toMatchObject({ ok: true })
+    const shape = (added.answer as { added: { id: string }[] }).added[0]!.id
+    const attached = await edit({ op: "set", target: grown.ids.toChild, from: { layer: shape, side: "right" } })
+    expect(attached.answer).toMatchObject({ ok: true })
+    const seen = paintedAt(grown.ids.toChild!)
+    expect(await undo(added.answer)).toMatchObject({ ok: true })
+    expect("node" in lineStart(grown.ids.toChild!)).toBe(false)
+    expect(paintedAt(grown.ids.toChild!)).toEqual(seen)
   })
 })

@@ -170,7 +170,7 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured, fo
       return decoded(named) ?? opened(id.deck, await openDoom(db, { deck: id.deck }, email))
     }),
     images: async (deck, names) => storedImages(db, deck, email, names, images),
-    measure: (fold) => servedFontMetrics(fonts).measure(fold, measureBudget),
+    measure: (folds) => servedFontMetrics(fonts).measure(folds, measureBudget),
     ...(shots === undefined
       ? {}
       : { pictures: (deck, fold, slides) => slidePictures(shots, seen.wait, deck, fold, slides) }),

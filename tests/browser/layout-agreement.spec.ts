@@ -96,6 +96,6 @@ test("the server breaks and stacks every line where the canvas paints it, in eac
     theme: missing,
     slides: [{ children: [{ type: "shape", props: { text: doom.textFromMarkdown(vietnamese, "body") } }] }],
   })
-  const unread = await metrics.measure(deck.doom)
+  const unread = await metrics.measure([deck.doom])
   expect(typeof unread === "string" ? unread : [...unread.missing].sort()).toEqual([..."ệợậữởứ"].sort())
 })

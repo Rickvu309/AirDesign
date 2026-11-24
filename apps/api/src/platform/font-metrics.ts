@@ -201,12 +201,16 @@ export class FontMetrics {
     return { widths, missing }
   }
 
-  async measure(fold: doom.Doom, budget = Number.POSITIVE_INFINITY): Promise<Measured | Unmeasured> {
-    const needs = doom.doomFaces(fold)
+  async measure(folds: readonly doom.Doom[], budget = Number.POSITIVE_INFINITY): Promise<Measured | Unmeasured> {
+    const each = folds.map(doom.doomFaces)
+    const faces = new Map(each.flatMap((needs) => needs.faces).map((face) => [JSON.stringify(face), face]))
+    const needs = { faces: [...faces.values()], texts: [...new Set(each.flatMap((needs) => needs.texts))] }
     if (this.hung(needs, budget)) return "time"
     const used = new Set(
-      [...fold.nodes.values()].flatMap((node) =>
-        node.type === "shape" && node.text !== undefined ? [...node.text.chars] : [],
+      folds.flatMap((fold) =>
+        [...fold.nodes.values()].flatMap((node) =>
+          node.type === "shape" && node.text !== undefined ? [...node.text.chars] : [],
+        ),
       ),
     )
     const read = await within(this.widths(needs, used), budget)

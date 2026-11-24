@@ -3,6 +3,7 @@ import { readLanded } from "./fold-json.js"
 import { type NodeId, type Rev, readNodeId, readRev } from "./ids.js"
 import type { PropName, WriteKey } from "./props.js"
 import { readWriteKey } from "./read-write.js"
+import { lineEndsBack } from "./line-ends-back.js"
 import { onStandingLayers } from "./standing-layers.js"
 import { type Refusal, isRefusal, refuse } from "./refusal.js"
 import { type Theme, type ThemeKey, themeKeys, themeValueAt } from "./theme.js"
@@ -182,7 +183,15 @@ export function invertRun(
     for (const was of edit.replaced) {
       const name = cellName(was)
       if (!writer.has(name)) writer.set(name, writerOf(now, edits, mine, was))
-      if (writer.get(name) !== edit.rev) continue
+      const other = writer.get(name)
+      if (other !== edit.rev) {
+        if (was.key !== "geometry" || other == null || restored.has(name) || edits.some((each) => each.rev === other))
+          continue
+        const wrote = edit.writes.findLast((write) => write.node === was.node && write.prop === was.key)?.value
+        const ends = lineEndsBack(was.value, valueIn(now.nodes.get(was.node), was.key), wrote)
+        if (ends !== undefined) restored.set(name, { cell: was, value: ends, base: other })
+        continue
+      }
       restored.set(name, { cell: was, value: was.value, base: now.revs.get(was.node)!.get(was.key)! })
       writer.set(name, was.rev)
     }

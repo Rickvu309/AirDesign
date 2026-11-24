@@ -47,6 +47,16 @@ export function slideOf(doom: Doom, id: NodeId): NodeId | undefined {
   return undefined
 }
 
+export function onDeck(nodes: ReadonlyMap<NodeId, Node>, id: NodeId): boolean {
+  let at = nodes.get(id)
+  for (let hops = 0; at !== undefined && hops <= nodes.size; hops += 1) {
+    if (at.type === "deck") return true
+    const parent = parentOf(at)
+    at = parent == null ? undefined : nodes.get(parent.id)
+  }
+  return false
+}
+
 export function descendantsOf(doom: Doom, id: NodeId): readonly Node[] {
   return childrenOf(doom, id).flatMap((child) => [child, ...descendantsOf(doom, child.id)])
 }

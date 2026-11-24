@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test"
 import { borderWords } from "../../apps/web/src/copy/border-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
-import { test } from "./api-stack"
+import { forward, test } from "./api-stack"
 import { covers } from "./gesture"
 import { accent, clickSlide, landNodes, openEditor, savedNode, slidePoint, spot } from "./editor-deck"
 
@@ -105,4 +105,215 @@ test("deleting a shape frees the connector at the point it last painted", async 
   await expect.poll(async () => (await line()).end).toEqual({ x: 400, y: 250 })
   await page.keyboard.press("ControlOrMeta+z")
   await expect.poll(async () => (await line()).end).toEqual({ node: "t:1", site: "l" })
+})
+
+const wiredTo = (target: string) => ({
+  box: spot(100, 250, 300, 0),
+  strokes: accent,
+  stroke: { weight: 4, align: "center", dash: "solid" },
+  geometry: {
+    kind: "line",
+    start: { x: 100, y: 250 },
+    end: { node: target, site: "l" },
+    route: "straight",
+    arrows: ["none", "none"],
+  },
+})
+
+test("ungrouping a frame frees the connector at the point it last painted and keeps the children", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("ungroup")
+  const opened = await openEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    {
+      id: "t:1",
+      type: "frame",
+      parent: opened.slide,
+      props: { box: spot(400, 200, 300, 100), fills: accent },
+    },
+    { id: "t:3", type: "shape", parent: "t:1", props: { box: spot(10, 10, 60, 40), fills: accent } },
+    { id: "t:2", type: "shape", parent: opened.slide, props: wiredTo("t:1") },
+  ])
+  const line = async () => (await savedNode(stack, opened, "t:2"))?.geometry as Line
+  await clickSlide(page, 650, 280)
+  await page.keyboard.press("ControlOrMeta+Shift+g")
+  await expect.poll(async () => (await savedNode(stack, opened, "t:1"))?.parent ?? null).toBeNull()
+  await expect.poll(async () => (await line()).end).toEqual({ x: 400, y: 250 })
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await line()).end).toEqual({ node: "t:1", site: "l" })
+})
+
+test("emptying a text frees the connector at the left edge it painted", async ({ page, context, stack }) => {
+  covers("edit-text")
+  const opened = await openEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: opened.slide,
+      props: {
+        box: spot(400, 200, 300, 60),
+        text: { chars: "Hello", spans: [], paras: [{}], style: "body", resize: "height", alignV: "top" },
+      },
+    },
+    { id: "t:2", type: "shape", parent: opened.slide, props: wiredTo("t:1") },
+  ])
+  const line = async () => (await savedNode(stack, opened, "t:2"))?.geometry as Line
+  await clickSlide(page, 420, 220)
+  await page.keyboard.press("Enter")
+  await expect(page.locator("[data-text-editor]")).toBeFocused()
+  await page.keyboard.press("Backspace")
+  await page.keyboard.press("Escape")
+  await expect.poll(async () => (await savedNode(stack, opened, "t:1"))?.parent ?? null).toBeNull()
+  await expect.poll(async () => (await line()).end).toMatchObject({ x: 400 })
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await line()).end).toEqual({ node: "t:1", site: "l" })
+})
+
+type Point = { readonly x: number; readonly y: number }
+
+async function paintedStart(page: Page, id: string): Promise<Point> {
+  return page.locator(`[data-slide-box] [data-node="${id}"]`).evaluate((element) => {
+    const node = element as HTMLElement
+    const d = node.querySelector("path")?.getAttribute("d") ?? ""
+    const first = /M\s*([-\d.]+)[,\s]+([-\d.]+)/.exec(d)
+    if (first === null) throw new Error(`no path in ${d}`)
+    return {
+      x: parseFloat(node.style.left || "0") + Number(first[1]),
+      y: parseFloat(node.style.top || "0") + Number(first[2]),
+    }
+  })
+}
+
+const hugging = (slide: string) => [
+  {
+    id: "f:1",
+    type: "frame" as const,
+    parent: slide,
+    props: {
+      box: spot(100, 150, 1, 1),
+      layout: { mode: "row", gap: 10, padding: { t: 20, r: 20, b: 20, l: 20 }, align: "top-left" },
+      sizing: { w: "hug", h: "hug" },
+    },
+  },
+  {
+    id: "w:1",
+    type: "shape" as const,
+    parent: "f:1",
+    props: {
+      box: spot(0, 0, 200, 100),
+      sizing: { w: "hug", h: "hug" },
+      text: {
+        chars: "Hello world hello WWW",
+        spans: [],
+        paras: [{}],
+        style: "body",
+        resize: "widthAndHeight",
+        alignV: "top",
+      },
+    },
+  },
+  { id: "t:1", type: "shape" as const, parent: "f:1", props: { box: spot(0, 0, 140, 80), fills: accent } },
+]
+
+const lineFrom = (parent: string, start: unknown, end: Point = { x: 80, y: 500 }) => ({
+  id: "l:1",
+  type: "shape" as const,
+  parent,
+  props: {
+    box: spot(0, 0, 10, 10),
+    strokes: accent,
+    stroke: { weight: 4, align: "center", dash: "solid" },
+    geometry: { kind: "line", start, end, route: "straight", arrows: ["none", "none"] },
+  },
+})
+
+test("an agent's unwrap frees the connector where the canvas painted it", async ({ page, context, stack }) => {
+  const opened = await openEditor(page, context, stack)
+  await landNodes(stack, opened, [...hugging(opened.slide), lineFrom(opened.slide, { node: "f:1", site: "r" })])
+  await expect(page.locator('[data-slide-box] [data-node="l:1"]')).toBeVisible()
+  await page.evaluate(() => document.fonts.ready)
+  const seen = await paintedStart(page, "l:1")
+  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+  const fold = (await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)).json.fold as {
+    rev: number
+  }
+  await stack.toolBlocks(
+    "airdesign_edit_deck",
+    { deck: opened.deck, base: fold.rev, changes: [{ op: "unwrap", node: "f:1" }] },
+    opened.cookie,
+  )
+  await expect(page.locator('[data-slide-box] [data-node="f:1"]')).toHaveCount(0)
+  const freed = (await savedNode(stack, opened, "l:1"))?.geometry as { start: Point }
+  expect(Math.abs(freed.start.x - seen.x)).toBeLessThanOrEqual(1)
+  expect(Math.abs((await paintedStart(page, "l:1")).x - seen.x)).toBeLessThanOrEqual(1)
+})
+
+test("an emptied text's connector stays where it painted while typing and after leaving", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("edit-text")
+  const opened = await openEditor(page, context, stack)
+  const [, words] = hugging(opened.slide)
+  await landNodes(stack, opened, [
+    { ...words!, parent: opened.slide, props: { ...words!.props, box: spot(300, 250, 500, 80) } },
+    lineFrom(opened.slide, { node: "w:1", site: "r" }),
+  ])
+  await expect(page.locator('[data-slide-box] [data-node="l:1"]')).toBeVisible()
+  await page.evaluate(() => document.fonts.ready)
+  const seen = await paintedStart(page, "l:1")
+  await clickSlide(page, 350, 275)
+  await page.keyboard.press("Enter")
+  await expect(page.locator("[data-text-editor]")).toBeFocused()
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.press("Backspace")
+  await expect.poll(() => paintedStart(page, "l:1")).toEqual(seen)
+  await page.keyboard.press("Escape")
+  await expect(page.locator('[data-slide-box] [data-node="w:1"]')).toHaveCount(0)
+  expect(await paintedStart(page, "l:1")).toEqual(seen)
+})
+
+test("a tab that still saw the attachment moves the line, and the end the other tab freed stays; undo attaches it again", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("delete")
+  const opened = await openEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    { id: "t:1", type: "shape", parent: opened.slide, props: { box: spot(400, 200, 200, 100), fills: accent } },
+    lineFrom(opened.slide, { node: "t:1", site: "l" }, { x: 100, y: 350 }),
+  ])
+  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+  const cut: readonly string[] = [doomRoutes.since.path, doomRoutes.edit.path]
+  const second = await context.newPage()
+  await forward(second, stack)
+  let apart = true
+  await second.route(
+    (url) => cut.includes(url.pathname),
+    (route) => (apart ? route.abort("internetdisconnected") : route.fallback()),
+  )
+  await second.goto(page.url())
+  await expect(second.locator('[data-slide-box] [data-node="l:1"]')).toBeVisible()
+  const geometry = async () => (await savedNode(stack, opened, "l:1"))?.geometry as Line
+  await clickSlide(page, 505, 250)
+  await page.keyboard.press("Delete")
+  await expect.poll(async () => (await geometry()).start).toEqual({ x: 400, y: 250 })
+  await clickSlide(second, 250, 300)
+  await second.keyboard.press("ArrowDown")
+  apart = false
+  await expect.poll(async () => (await geometry()).end).toEqual({ x: 100, y: 351 })
+  expect((await geometry()).start).toEqual({ x: 400, y: 250 })
+  for (const tab of [page, second]) await expect.poll(() => paintedStart(tab, "l:1")).toEqual({ x: 400, y: 250 })
+  await page.bringToFront()
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await geometry()).start).toEqual({ node: "t:1", site: "l" })
+  expect((await geometry()).end).toEqual({ x: 100, y: 351 })
+  await page.keyboard.press("ControlOrMeta+Shift+z")
+  await expect.poll(async () => (await geometry()).start).toEqual({ x: 400, y: 250 })
 })

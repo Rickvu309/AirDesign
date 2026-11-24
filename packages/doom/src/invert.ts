@@ -1,6 +1,8 @@
 import type { NodeId, Rev } from "./ids.js"
 import type { PropName, WriteKey } from "./props.js"
 import type { Landed, Doom, Write } from "./doom.js"
+import { propOf } from "./doom-walk.js"
+import { lineEndsBack } from "./line-ends-back.js"
 import { onStandingLayers } from "./standing-layers.js"
 import { type Theme as ThemeValue, type ThemeKey, themeKeys, themeValueAt } from "./theme.js"
 
@@ -32,7 +34,16 @@ export function invert(before: Doom, after: Doom, edit: Landed, owned: ReadonlyS
   const writes: Write[] = []
   for (const { node, key } of keysOf(edit)) {
     const writer = after.revs.get(node)?.get(key)
-    if (writer === undefined || (writer !== edit.rev && !owned.has(writer))) continue
+    if (writer === undefined) continue
+    if (writer !== edit.rev && !owned.has(writer)) {
+      const wrote = edit.writes.findLast((write) => write.node === node && write.prop === "geometry")?.value
+      const ends =
+        key === "geometry"
+          ? lineEndsBack(propOf(before.nodes.get(node), "geometry"), propOf(after.nodes.get(node), "geometry"), wrote)
+          : undefined
+      if (ends !== undefined) writes.push({ node, prop: key, value: ends, base: writer })
+      continue
+    }
     const was = before.nodes.get(node)
     if (was === undefined) {
       if (key === "parent") writes.push({ node, prop: key, value: null, base: writer })

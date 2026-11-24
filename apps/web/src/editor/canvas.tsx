@@ -31,7 +31,6 @@ import { slideFrame } from "@/editor/slide-frame"
 import { pictureCopy } from "@/copy/picture-copy"
 import { editorCopy } from "@/copy/editor-copy"
 
-const estimate = doom.measureWith({})
 const author: doom.Author = { kind: "person", id: "preview" }
 const emptyGeometry: SlideGeometry = { roots: [], byId: new Map() }
 
@@ -48,6 +47,7 @@ export function DoomCanvas(props: {
   readonly assets: AssetUrls
   readonly client: EditorClient
   readonly view: doom.Doom
+  readonly measure: doom.Measure | null
   readonly slide: doom.NodeId
   readonly editingRuns: ReadonlySet<string>
   readonly selection: Selection
@@ -86,7 +86,7 @@ export function DoomCanvas(props: {
   const anchor = useRef<{ readonly point: Point; readonly at: Point } | null>(null)
 
   const { size } = doom.deckOf(view)
-  const text = useTextSession(client, view)
+  const text = useTextSession(client, view, props.measure)
   const editingFirst = useRef(props.editing)
   useEffect(() => {
     const node = editingFirst.current
@@ -371,7 +371,6 @@ export function DoomCanvas(props: {
     onActions: () => setActionsOpen((open) => !open),
     cropping: cropNode !== null,
     onCropEnd: () => onCropping(null),
-    measure: painted.measure ?? estimate,
   })
 
   useLayoutEffect(() => {

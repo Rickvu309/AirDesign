@@ -32,9 +32,10 @@ function resting(
   id: NodeId,
 ): { readonly at: Point; readonly box: Box } | null {
   const node = doom.nodes.get(id)
-  const parent = parentOf(doom, id)
-  if (node === undefined || parent === undefined) return null
+  if (node === undefined) return null
   const own = propOf(node, "box") ?? empty
+  const parent = parentOf(doom, id)
+  if (parent === undefined) return { at: { x: own.x, y: own.y }, box: own }
   let x = own.x
   let y = own.y
   for (let at: NodeId | undefined = parent, hops = 0; at !== undefined && hops <= doom.nodes.size; hops += 1) {

@@ -4,6 +4,7 @@ import * as doom from "@airdesign/doom"
 import { answered, hostRefused, refused, doomRefused, type ToolResult } from "./answer.js"
 import { type Findings, findingsNote, layoutOf, listed } from "./layout-answer.js"
 import type { DeckHost } from "./deck-host.js"
+import { deckMeasure } from "./deck-measure.js"
 import { imageNames, imageProblem, imagesPerCall, pictureSizes, withAssets, type NamedImages } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
 import { withCatalogFonts } from "./font-names.js"
@@ -86,16 +87,6 @@ function unchangedAnswer(deck: string, rev: number, run: string | undefined): To
   })
 }
 
-async function deckMeasure(host: DeckHost, fold: doom.Doom): Promise<doom.Measure | undefined> {
-  if (host.measure === undefined) return undefined
-  try {
-    const read = await host.measure(fold)
-    return typeof read === "string" ? undefined : read.measure
-  } catch {
-    return undefined
-  }
-}
-
 export type Agent = { readonly id: string; readonly name?: string | undefined }
 
 function toldRefusal(refusal: {
@@ -163,8 +154,8 @@ export async function editDeckTool(raw: unknown, agent: Agent, once: string, hos
       ...(parsed.runId === undefined ? { phase: "start" as const } : {}),
     })
   let compiled = compile()
-  if (!("refused" in compiled) && changes.some((change) => change.op === "delete")) {
-    const measure = await deckMeasure(host, compiled.after)
+  if (!("refused" in compiled) && doom.mayLeaveDeck(opened.fold, compiled.edit.writes)) {
+    const measure = await deckMeasure(host, [opened.fold, compiled.after])
     if (measure !== undefined) compiled = compile(measure)
   }
   if ("refused" in compiled) return doomRefused(compiled, { rev: opened.rev })
