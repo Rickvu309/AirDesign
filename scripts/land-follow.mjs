@@ -67,6 +67,7 @@ export const followPull = async ({
   graceMs = 180000,
   limitMs = 4 * 60 * 60 * 1000,
   merge,
+  onMerged,
 }) => {
   const started = now()
   let queuedSeen = false
@@ -165,6 +166,7 @@ export const followPull = async ({
     const pull = readPull({ read, repository, number })
     if (pull.merged) {
       speak(`merged. pull request ${number} is on main.`)
+      onMerged?.(pull.head)
       return 0
     }
     if (pull.state === "CLOSED") {
@@ -179,6 +181,7 @@ export const followPull = async ({
       const again = readPull({ read, repository, number })
       if (again.merged) {
         speak(`merged. pull request ${number} is on main.`)
+        onMerged?.(again.head)
         return 0
       }
       say("follow: dropped from the merge queue. The queue's own run failed:")
@@ -254,7 +257,11 @@ export const followPull = async ({
       }
       for (const url of recorded.urls ?? []) say(`follow: the race is recorded in ${url}.`)
     }
-    if (green && !pull.hasQueue && merge !== undefined) return await merge(pull)
+    if (green && !pull.hasQueue && merge !== undefined) {
+      const code = await merge(pull)
+      if (code === 0) onMerged?.(pull.head)
+      return code
+    }
     greenSince = green ? (greenSince ?? now()) : undefined
     if (green && now() - greenSince >= graceMs) {
       say(

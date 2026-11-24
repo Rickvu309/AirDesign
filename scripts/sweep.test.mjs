@@ -89,6 +89,26 @@ const sharedScratch = detach("tree-main", "main")
 const other = add("other")
 const otherHead = commit(other, "other.txt", "other")
 const otherScratch = detach("tree-other", otherHead)
+const lockedTree = add("locked")
+const lockedHead = commit(lockedTree, "locked.txt", "locked")
+git(root, "worktree", "lock", lockedTree)
+const ahead = add("ahead")
+const aheadLanded = commit(ahead, "ahead.txt", "ahead")
+commit(ahead, "ahead-extra.txt", "extra")
+const orphan = add("orphan")
+const orphanLanded = commit(orphan, "orphan.txt", "orphan")
+commit(orphan, "orphan-extra.txt", "extra")
+git(root, "worktree", "remove", orphan)
+const older = add("older")
+const olderTip = commit(older, "older.txt", "older")
+const olderMerged = commit(older, "older-child.txt", "child")
+git(older, "reset", "-q", "--hard", olderTip)
+const based = add("based")
+const basedHead = commit(based, "based.txt", "based")
+const basedScratch = detach("tree-based", basedHead)
+const strayScratch = detach("tree-stray", "main")
+const own = add("own")
+const ownHead = commit(own, "own.txt", "own")
 const primary = path.join(repo, "primary")
 fs.mkdirSync(primary)
 git(primary, "init", "-q", "-b", "main")
@@ -111,8 +131,9 @@ const run = (branch, extra = {}) => {
     root,
     branch,
     number: extra.number ?? 12,
+    head: extra.head,
     here: extra.here ?? root,
-    base: "main",
+    base: extra.base ?? "main",
     scratchRoot,
     busy: extra.busy ?? (() => false),
     say: (line) => lines.push(line),
@@ -120,39 +141,65 @@ const run = (branch, extra = {}) => {
   return lines
 }
 
-const onlyLines = run("only", { number: 4 })
+const onlyHead = git(root, "rev-parse", "refs/heads/only").trim()
+const onlyLines = run("only", { number: 4, head: onlyHead })
 same("a merged pull request's branch goes when no worktree holds it", onlyLines, [
   "deleted branch only, because its pull request 4 is merged",
 ])
 same("and the branch ref is gone", branches().includes("only"), false)
 
-const busyLines = run("busy", { busy: (where) => where === busy })
+const busyLines = run("busy", { head: git(busy, "rev-parse", "HEAD").trim(), busy: (where) => where === busy })
 same("a worktree a process is using stays", fs.existsSync(busy), true)
 same("and one line says why and how to remove it", busyLines, [
   `left worktree ${busy}, because a process is using it. Remove it with: git -C ${root} worktree remove ${busy} && git -C ${root} branch -D busy`,
 ])
 same("its branch stays while the worktree does", branches().includes("busy"), true)
 
-const dirtyLines = run("dirty")
+const dirtyLines = run("dirty", { head: git(dirty, "rev-parse", "HEAD").trim() })
 same("a worktree with uncommitted changes stays", fs.existsSync(dirty), true)
 same("and one line says why and how to remove it", dirtyLines, [
   `left worktree ${dirty}, because it has uncommitted changes. Remove it with: git -C ${root} worktree remove ${dirty} && git -C ${root} branch -D dirty`,
 ])
 
-const insideLines = run("inside", { number: 8, here: inside, busy: (where) => where === inside })
-same("the worktree land is running from stays, even when a process is using it", fs.existsSync(inside), true)
+const insideLines = run("inside", { number: 8, here: inside, head: insideHead })
+same("the worktree land is running in stays", fs.existsSync(inside), true)
 same("and the line is the one command that removes it", insideLines, [
   `left worktree ${inside}, because land is running there. Remove it with: git -C ${root} worktree remove ${inside} && git -C ${root} branch -D inside`,
   `removed worktree ${insideScratch}, because it is a verify-airdesign scratch tree of pull request 8`,
 ])
 same("a scratch tree of that same pull request still goes", fs.existsSync(insideScratch), false)
 same("the branch stays while land's worktree holds it", branches().includes("inside"), true)
+same(
+  "pnpm sweep leaves that worktree while a process is using it",
+  findStale({
+    root,
+    base: "main",
+    busy: (where) => where === inside,
+    now: later,
+    scratchRoot,
+    pulls: new Map([[insideHead, { number: 8, state: "MERGED" }]]),
+  }).some((worktree) => worktree.path === inside),
+  false,
+)
+same(
+  "pnpm sweep picks that worktree up once it has been quiet and no process is using it",
+  findStale({
+    root,
+    base: "main",
+    busy: () => false,
+    now: later,
+    scratchRoot,
+    pulls: new Map([[insideHead, { number: 8, state: "MERGED" }]]),
+  }).some((worktree) => worktree.path === inside),
+  true,
+)
 
 const heldLines = []
 sweepPull({
   root: primary,
   branch: "held",
   number: 9,
+  head: git(primary, "rev-parse", "HEAD").trim(),
   here: primary,
   base: "main",
   scratchRoot,
@@ -168,7 +215,8 @@ same("and the line names the main checkout", heldLines, [
 ])
 same("its branch stays", git(primary, "branch", "--format=%(refname:short)").includes("held"), true)
 
-const featureLines = run("feature", { busy: (where) => where === tipScratch })
+const featureHead = git(feature, "rev-parse", "HEAD").trim()
+const featureLines = run("feature", { head: featureHead, busy: (where) => where === tipScratch })
 same("the pull request worktree is removed", fs.existsSync(feature), false)
 same("a scratch tree of its own commit is removed", fs.existsSync(midScratch), false)
 same("a scratch tree a process is using stays", fs.existsSync(tipScratch), true)
@@ -189,3 +237,85 @@ same(
   featureLines.some((line) => line.includes("--force")),
   false,
 )
+
+const aheadLines = run("ahead", { head: aheadLanded, number: 15 })
+const aheadTip = git(ahead, "rev-parse", "HEAD").trim()
+same("a worktree with a commit after the merged head stays", fs.existsSync(ahead), true)
+same("and one line says it has unpushed commits", aheadLines, [
+  `left worktree ${ahead}, because it has unpushed commits. Remove it with: git -C ${root} worktree remove ${ahead} && git -C ${root} branch -D ahead`,
+])
+same("its branch stays", branches().includes("ahead"), true)
+same("the unpushed commit stays on that branch", git(root, "branch", "--contains", aheadTip).includes("ahead"), true)
+
+const orphanLines = run("orphan", { head: orphanLanded, number: 16 })
+same("a branch with a commit after the merged head stays", branches().includes("orphan"), true)
+same("and one line says how to delete it", orphanLines, [
+  `left branch orphan, because it has unpushed commits. Remove it with: git -C ${root} branch -D orphan`,
+])
+same(
+  "the unpushed branch tip stays reachable",
+  git(root, "merge-base", "--is-ancestor", orphanLanded, "refs/heads/orphan").trim(),
+  "",
+)
+
+const olderLines = run("older", { head: olderMerged })
+same("a worktree whose tip is an ancestor of the merged head is removed", fs.existsSync(older), false)
+same("and its branch is deleted", branches().includes("older"), false)
+same("the lines name that ancestor removal", olderLines, [
+  `removed worktree ${older}, because its pull request 12 is merged`,
+  "deleted branch older, because its pull request 12 is merged",
+])
+
+const lockedLines = run("locked", { head: lockedHead, number: 17 })
+same("a locked worktree stays", fs.existsSync(lockedTree), true)
+same("and one line says it is locked", lockedLines, [
+  `left worktree ${lockedTree}, because it is locked. Remove it with: git -C ${root} worktree remove ${lockedTree} && git -C ${root} branch -D locked`,
+])
+same("its branch stays", branches().includes("locked"), true)
+
+const unnamed = add("unnamed")
+const unnamedLines = run("unnamed")
+same("a sweep without the merged head leaves the worktree", fs.existsSync(unnamed), true)
+same("and prints the command instead of deleting it", unnamedLines, [
+  `left worktree ${unnamed}, because it has unpushed commits. Remove it with: git -C ${root} worktree remove ${unnamed} && git -C ${root} branch -D unnamed`,
+])
+
+const missingBase = []
+sweepPull({
+  root,
+  branch: "based",
+  number: 7,
+  head: basedHead,
+  here: root,
+  base: "origin/does-not-exist",
+  scratchRoot,
+  say: (line) => missingBase.push(line),
+})
+same(
+  "a missing base removes no scratch trees",
+  [fs.existsSync(basedScratch), fs.existsSync(strayScratch)],
+  [true, true],
+)
+same("and still removes the worktree whose tip is the merged head", missingBase, [
+  `removed worktree ${based}, because its pull request 7 is merged`,
+  "deleted branch based, because its pull request 7 is merged",
+])
+same("that branch is gone", branches().includes("based"), false)
+
+const ownLines = []
+sweepPull({
+  root: own,
+  branch: "own",
+  number: 3,
+  head: ownHead,
+  here: root,
+  base: "main",
+  scratchRoot,
+  say: (line) => ownLines.push(line),
+})
+same("removing the worktree land was given still deletes it from the main checkout", fs.existsSync(own), false)
+same("and deletes the branch from that same checkout", branches().includes("own"), false)
+same("both lines are printed", ownLines, [
+  `removed worktree ${own}, because its pull request 3 is merged`,
+  "deleted branch own, because its pull request 3 is merged",
+])
