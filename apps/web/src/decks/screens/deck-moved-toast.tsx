@@ -20,7 +20,7 @@ export function MovedToast({
         <bdi title={name} className="line-clamp-2 max-w-full shrink-0 [overflow-wrap:anywhere]">
           {name}
         </bdi>
-        <span className="shrink-0 whitespace-nowrap"> moved to Trash</span>
+        <span className="shrink-0 whitespace-pre"> moved to Trash</span>
       </span>
       <button
         type="button"

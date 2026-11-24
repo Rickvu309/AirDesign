@@ -32,6 +32,7 @@ it("cuts only a very long deck name and leaves the action words whole", () => {
   const markup = notice(name)
   const box = nameBox(markup, name)
   expect(box).toContain("line-clamp-2")
-  expect(markup).toContain("whitespace-nowrap")
+  expect(markup).toContain("whitespace-pre")
+  expect(markup).toContain("> moved to Trash<")
   expect(markup).not.toMatch(/line-clamp-2[^>]*>[^<]*moved to Trash/)
 })
