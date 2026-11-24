@@ -178,11 +178,11 @@ describe("mcp route", () => {
     expect((await deck.query("select id from deck.doom")).rowCount).toBe(before.rowCount)
   })
 
-  it("lists the five agent tools for a signed-in caller", async () => {
+  it("lists the six agent tools for a signed-in caller", async () => {
     await withMcp(await sign(address("list")), async (client) => {
       const listed = await client.listTools()
       expect(listed.tools.map((tool) => tool.name)).toEqual(projectTools(catalog).map((each) => each.name))
-      expect(listed.tools).toHaveLength(5)
+      expect(listed.tools).toHaveLength(6)
     })
   })
 
