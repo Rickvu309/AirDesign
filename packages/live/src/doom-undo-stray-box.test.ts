@@ -54,7 +54,7 @@ async function open() {
     await remote.edit({ deck: "stray", edit: { once: `${name}-2`, author, writes: [], phase: "stop" } })
     await opened.deck.catchUp()
   }
-  return { deck: opened.deck, run }
+  return { deck: opened.deck, run, remote }
 }
 
 async function joinedAs(remote: ReturnType<typeof memoryDoomRemote>, client: string) {
@@ -189,6 +189,37 @@ describe("an undo that writes a layer's box but not its frame", () => {
     expect(cardIn(a.view())).toEqual(seen)
   })
 
+  it("keeps the layer where the person sees it when Undo on a run that moved it out of a frame meets a nudge since", async () => {
+    const { deck, remote } = await open()
+    const author = { kind: "agent" as const, id: "aira", run: "run-1" }
+    await deck.sync()
+    const moved = [toSlide(), { node: card, prop: "box" as const, value: box(110, 110, 100, 50) }]
+    expect((await remote.edit({ deck: "stray", edit: { once: "r1", author, writes: moved, phase: "start" } })).ok).toBe(
+      true,
+    )
+    await deck.catchUp()
+    expect(deck.push([{ node: card, prop: "box", value: box(150, 110, 100, 50) }]).ok).toBe(true)
+    await deck.sync()
+    await deck.catchUp()
+    const named = [{ node: slide, prop: "name" as const, value: "Revenue" }]
+    expect((await remote.edit({ deck: "stray", edit: { once: "r2", author, writes: named } })).ok).toBe(true)
+    await remote.edit({ deck: "stray", edit: { once: "r3", author, writes: [], phase: "stop" } })
+    await deck.catchUp()
+    expect((await deck.undoRun("run-1")).ok).toBe(true)
+    expect(cardIn(deck.view())).toEqual({ parent: frame, box: box(50, 10, 100, 50) })
+    deck.undo()
+    expect(cardIn(deck.view())).toEqual({ parent: frame, box: box(50, 10, 100, 50) })
+  })
+
+  it("carries the layer through a frame the person turned since, so it keeps its place on the slide", async () => {
+    const { deck, run } = await open()
+    await run("run-1", [toSlide(), { node: card, prop: "box", value: box(110, 110, 100, 50) }])
+    expect(deck.push([{ node: card, prop: "box", value: box(150, 110, 100, 50) }]).ok).toBe(true)
+    expect(deck.push([{ node: frame, prop: "box", value: { ...box(100, 100, 600, 400), rotation: 90 } }]).ok).toBe(true)
+    expect((await deck.undoRun("run-1")).ok).toBe(true)
+    expect(cardIn(deck.view())).toEqual({ parent: frame, box: { ...box(85, 375, 100, 50), rotation: 270 } })
+  })
+
   it("catches the group's undo up when the tab pressing it has not yet seen the other tab's nudge of the layer", async () => {
     const remote = memoryDoomRemote(start)
     const [a, b] = [await joinedAs(remote, "a"), await joinedAs(remote, "b")]
@@ -208,7 +239,7 @@ describe("an undo that writes a layer's box but not its frame", () => {
     await a.sync()
     expect(b.undo().ok).toBe(true)
     await b.sync()
-    const nudged = { parent: frame, box: box(20, 10, 100, 50) }
+    const nudged = { parent: frame, box: box(220, 110, 100, 50) }
     expect(b.notices()).toEqual([])
     expect(cardIn(b.view())).toEqual(nudged)
     expect(b.view().nodes.get(group)).toMatchObject({ parent: null })
@@ -245,5 +276,32 @@ describe("an undo that writes a layer's box but not its frame", () => {
     await b.sync()
     expect(b.notices()).toEqual([])
     expect(cardIn(b.view()).parent).toBe(frame)
+  })
+
+  it("keeps the layer where the person sees it for the Ctrl+Z of the person who grouped it after the other nudged it", async () => {
+    const remote = memoryDoomRemote(start)
+    const [a, b] = [await joinedAs(remote, "a"), await joinedAs(remote, "b")]
+    const both = async () => {
+      for (const deck of [a, b, a, b]) {
+        await deck.sync()
+        await deck.catchUp()
+      }
+    }
+    const group = doom.nodeId("g:9")
+    expect(
+      b.push([
+        { node: group, prop: "type", value: "frame" },
+        { node: group, prop: "parent", value: at(slide) },
+        { node: group, prop: "box", value: box(300, 200, 400, 300) },
+        { node: card, prop: "parent", value: at(group) },
+        { node: card, prop: "box", value: box(10, 10, 100, 50) },
+      ]).ok,
+    ).toBe(true)
+    await both()
+    expect(a.push([{ node: card, prop: "box", value: box(20, 10, 100, 50) }]).ok).toBe(true)
+    await both()
+    expect(b.undo().ok).toBe(true)
+    await both()
+    expect(cardIn(a.view())).toEqual({ parent: frame, box: box(220, 110, 100, 50) })
   })
 })

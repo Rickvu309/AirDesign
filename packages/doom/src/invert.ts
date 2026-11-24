@@ -44,7 +44,7 @@ export function invert(before: Doom, after: Doom, edit: Landed, owned: ReadonlyS
     writes.push({ node, prop: key, value: value ?? null, base: writer })
   }
   const measuredIn = new Map(writes.map(({ node }) => [node, parentIn(before, node)?.id ?? null]))
-  const standing = onStandingLayers(after, writes, edit.rev, measuredIn, { before, writes: edit.writes })
+  const standing = onStandingLayers(after, writes, edit.rev, edit.rev, measuredIn, { before, writes: edit.writes })
   const moves = standing.filter((each) => each.prop === "parent" && each.value !== null)
   const depths = new Map(moves.map((each) => [each.node, depthIn(before, each.node)]))
   moves.sort((one, other) => depths.get(one.node)! - depths.get(other.node)!)

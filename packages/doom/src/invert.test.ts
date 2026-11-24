@@ -1,28 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { applyEdit, invert, isRefusal, nodeId, rev, type Landed, type Doom, type Write } from "./index.js"
-import {
-  box,
-  create,
-  hex,
-  ids,
-  land,
-  once,
-  person,
-  place,
-  revOf,
-  sampleDeck,
-  textOf,
-  theme,
-  tryLand,
-} from "./sample-deck.js"
+import { invert, isRefusal, nodeId, type Doom } from "./index.js"
+import { box, create, hex, ids, land, place, revOf, sampleDeck, step, textOf, theme, tryLand } from "./sample-deck.js"
 import { valuesOf } from "./testing/values-of.js"
-
-function step(doom: Doom, writes: readonly Write[], by = person) {
-  const edit: Landed = { once: once(), author: by, writes, rev: rev(doom.rev + 1) }
-  const after = applyEdit(doom, edit)
-  if (isRefusal(after)) throw new Error(`refused ${JSON.stringify(after)}`)
-  return { before: doom, after, edit }
-}
 
 describe("invert", () => {
   it("puts back what the edit replaced, and unsets what it added", () => {

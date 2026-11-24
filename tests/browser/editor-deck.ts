@@ -163,3 +163,11 @@ export const paintedOrder = (tab: Page) =>
 export async function paintsAs<T>(tab: Page, other: Page, read: (tab: Page) => Promise<T>): Promise<void> {
   await expect.poll(() => read(tab)).toEqual(await read(other))
 }
+
+export async function otherTab(context: BrowserContext, stack: Stack, deck: string): Promise<Page> {
+  const other = await context.newPage()
+  await forward(other, stack)
+  await other.goto(`/s/${deck}`)
+  await other.locator("[data-editor-ready]").waitFor()
+  return other
+}

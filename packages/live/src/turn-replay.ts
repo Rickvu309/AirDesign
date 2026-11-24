@@ -44,9 +44,11 @@ export function onStandingOnly(
     server,
     head.edit.writes.filter((write) => !theirs(write)),
     pressed.since,
+    pressed.since,
     pressed.measuredIn,
   )
-  if (writes.length === head.edit.writes.length) return undefined
+  if (writes.length === head.edit.writes.length && writes.every((write, at) => write === head.edit.writes[at]))
+    return undefined
   if (writes.length === 0) return { queue: skipped(queue, head.edit.once), skipped: true }
   return { queue: trimmed(queue, head.edit.once, writes), skipped: false }
 }

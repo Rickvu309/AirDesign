@@ -141,7 +141,14 @@ function settle(
       if (was.key === "parent" && !measuredIn.has(was.node))
         measuredIn.set(was.node, (was.value as { readonly id: NodeId } | null)?.id ?? null)
   const step = started === undefined ? undefined : { before: started, writes: edits.flatMap((edit) => edit.writes) }
-  const standing = onStandingLayers(now, writes, edits.at(-1)?.rev ?? now.rev, measuredIn, step)
+  const standing = onStandingLayers(
+    now,
+    writes,
+    edits.at(-1)?.rev ?? now.rev,
+    edits[0]?.rev ?? now.rev,
+    measuredIn,
+    step,
+  )
   const left = writes
     .filter((each) => each.prop === "parent" && each.value !== null && !standing.includes(each))
     .map((each) => each.node)
