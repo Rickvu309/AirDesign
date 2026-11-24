@@ -148,17 +148,6 @@ export function oneRunValue(
   return value
 }
 
-export function textStorable(parts: ReadonlyMap<string, Uint8Array>, part: string, shape: string): boolean {
-  const current = oneRunRead(parts, part, shape)
-  if (current === null) return false
-  try {
-    oneRunValue(parts, part, shape, `${current.text}.`)
-    return true
-  } catch {
-    return false
-  }
-}
-
 export type RouteResult = {
   readonly parts: Map<string, Uint8Array>
   readonly id: string | null

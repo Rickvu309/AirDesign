@@ -1,6 +1,4 @@
-import { routeHosts as hosts } from "./route-hosts.js"
-import { cloneFault } from "./route-clone-proof.js"
-import { commonPrefix } from "./byte-prefix.js"
+import { cloneFault, commonPrefix, routeHosts as hosts } from "./route-fixtures.spec.js"
 import { beforeAll, describe, expect, it } from "vitest"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8, encodeUtf8 as text } from "./package-bytes.js"

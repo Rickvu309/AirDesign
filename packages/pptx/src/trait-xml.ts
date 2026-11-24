@@ -4,14 +4,13 @@ import { bodyXml, writtenBody } from "./trait-xml-body.js"
 import { boxXml } from "./trait-xml-box.js"
 import { connectionXml } from "./trait-xml-connection.js"
 import { effectsXml } from "./trait-xml-effects.js"
-import type { Faded } from "./alpha-codec.js"
-import { fillAlpha, fillsXml, writtenFills } from "./trait-xml-fills.js"
+import { fillsXml, writtenFills } from "./trait-xml-fills.js"
 import { geometryXml } from "./trait-xml-geometry.js"
 import { guidesXml } from "./guide-list.js"
 import { identityXml } from "./trait-xml-identity.js"
-import { borderAlpha, borderXml } from "./trait-xml-border.js"
+import { borderXml } from "./trait-xml-border.js"
 import { notesXml } from "./trait-xml-notes.js"
-import { textAlpha, textXml } from "./trait-xml-text.js"
+import { textXml } from "./trait-xml-text.js"
 import { showXml } from "./slide-show.js"
 import { templateStyleXml } from "./trait-xml-template-style.js"
 import { transitionXml } from "./trait-xml-transition.js"
@@ -45,10 +44,4 @@ export function writeTrait<T extends TraitName>(parts: Parts, at: ElementAt, tra
   const next = writeFields(parts, at, traitXml[trait as Written], patch as TraitPatch<Written>)
   if (trait !== "box" || next === parts) return next
   return coverOnResize(parts, next, at)
-}
-
-export type ShownAlphas = { readonly fills: Faded; readonly border: Faded; readonly text: Faded }
-
-export function shownAlphas(parts: Parts, at: ElementAt): ShownAlphas {
-  return { fills: fillAlpha(parts, at), border: borderAlpha(parts, at), text: textAlpha(parts, at) }
 }

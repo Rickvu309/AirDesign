@@ -137,12 +137,6 @@ export function isSlideNumber(element: MarkupElement): boolean {
   )
 }
 
-export function shapeHasText(children: MarkupChildren, shape: MarkupElement): boolean {
-  const body = childrenOf(children, shape).find((part) => part.kind === "p:txBody" || part.kind === "a:txBody")
-  if (body === undefined || body.selfClosing) return false
-  return childrenOf(children, body).some((part) => part.kind === "a:p")
-}
-
 export function shapeTextValue(children: MarkupChildren, bytes: Uint8Array, shape: MarkupElement): TextValue {
   return (sourceBody(children, bytes, shape) ?? []).map((paragraph, from) => ({
     from,

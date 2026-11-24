@@ -3,12 +3,11 @@ import {
   templateColors,
   type Color,
   type ColorTransform,
-  type FillRead,
   type MappedSlot,
   type TemplateColor,
 } from "@airdesign/document"
 import type { MarkupElement } from "./element-span.js"
-import { child, inside, whole, type Held } from "./markup-held.js"
+import { inside, whole, type Held } from "./markup-held.js"
 import { paintAttribute } from "./paint-color.js"
 
 export const fillKinds = new Set(["a:noFill", "a:solidFill", "a:gradFill", "a:pattFill", "a:blipFill", "a:grpFill"])
@@ -85,33 +84,6 @@ export function colorsIn(held: Held, placed: Color | null): readonly (Color | nu
 export function colorIn(held: Held | undefined, placed: Color | null): Color | null {
   const element = held === undefined ? undefined : inside(held).find((item) => colorKinds.has(item.kind))
   return held === undefined || element === undefined ? null : colorOf({ ...held, element }, placed)
-}
-
-export function fillOf(held: Held, placed: Color | null): FillRead | "none" | null {
-  switch (held.element.kind) {
-    case "a:noFill":
-      return "none"
-    case "a:solidFill": {
-      const color = colorIn(held, placed)
-      return color === null ? null : { color }
-    }
-    case "a:gradFill": {
-      const stops = inside(child(held, "a:gsLst") ?? held).flatMap((stop) => {
-        const color = stop.kind === "a:gs" ? colorIn({ ...held, element: stop }, placed) : null
-        return color === null ? [] : [color]
-      })
-      return stops.length === 0 ? null : { gradient: stops }
-    }
-    case "a:pattFill": {
-      const preset = paintAttribute(held.element, "prst")
-      return preset === null ? null : { pattern: preset }
-    }
-    case "a:blipFill":
-      return "image"
-    case "a:grpFill":
-      return "group"
-  }
-  return null
 }
 
 export const fillIn = (held: Held | undefined): Held | undefined => {

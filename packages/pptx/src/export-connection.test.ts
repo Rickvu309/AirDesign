@@ -1,9 +1,9 @@
-import { routed, siteTie, outlineOf } from "@airdesign/document"
+import { routed } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { routedParts } from "./connector-route.js"
 import { readParts } from "./package-container.js"
 import { decodeUtf8 } from "./package-bytes.js"
 import { readSlides } from "./read-shapes.js"
+import { outlineOf, siteTie } from "./site-tie.spec.js"
 
 declare const process: {
   cwd(): string
@@ -11,25 +11,6 @@ declare const process: {
 }
 
 type Parts = ReadonlyMap<string, Uint8Array>
-
-const part = "ppt/slides/slide10.xml"
-
-async function census(): Promise<{ parts: Parts; slide: string }> {
-  const fs = process.getBuiltinModule("node:fs")
-  const parts = await readParts(
-    new Uint8Array(fs.readFileSync(`${process.cwd()}/scripts/pptx-fixtures/census-updating-spm.pptx`)),
-  )
-  const slide = readSlides(parts).find((each) => each.part === part)?.slide
-  if (slide === undefined) throw new Error("slide")
-  return { parts, slide }
-}
-
-describe("a connector bound to two shapes on export", () => {
-  it("routes nothing on a slide whose bytes did not change", async () => {
-    const { parts } = await census()
-    expect(routedParts(parts, parts)).toBe(parts)
-  })
-})
 
 async function connectorDeck(): Promise<{ parts: Parts; slide: string }> {
   const fs = process.getBuiltinModule("node:fs")

@@ -1,6 +1,7 @@
 import { expect, it } from "vitest"
-import { siteLimit, siteSpot } from "./preset-sites.js"
+import { siteLimit } from "./preset-sites.js"
 import { presets } from "./trait-geometry.js"
+import { siteSpot } from "./site-tie.spec.js"
 
 const count = (preset: (typeof presets)[number]) => {
   let sites = 0

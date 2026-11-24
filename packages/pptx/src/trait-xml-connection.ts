@@ -86,12 +86,6 @@ function writtenEnd(tag: EndTag) {
   }
 }
 
-export function shownConnection(parts: Parts, at: ElementAt): { readonly start: End; readonly end: End } | null {
-  const start = shownEnd("a:stCxn")(parts, at)
-  const end = shownEnd("a:endCxn")(parts, at)
-  return start === null || end === null ? null : { start, end }
-}
-
 export const connectionXml: TraitXml<"connection"> = {
   slot: null,
   fields: {

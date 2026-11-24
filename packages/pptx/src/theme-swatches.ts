@@ -1,12 +1,10 @@
-import { mappedSlots, schemeNames, type MappedSlot, type SchemeName } from "@airdesign/document"
+import { schemeNames, type MappedSlot, type SchemeName } from "@airdesign/document"
 import { markupDocument } from "./element-span.js"
 import { relationshipTarget } from "./markup-slice.js"
 import { paintAttribute, paintColor, type PaintPalette } from "./paint-color.js"
 import { paintChild } from "./paint-fill.js"
 import { partOf, relsOf } from "./package-address.js"
 import { markupChildren } from "./text-value-route.js"
-
-const themeFile = /^ppt\/theme\/theme\d+\.xml$/
 
 export type ThemeSwatch = {
   readonly scheme: SchemeName
@@ -38,39 +36,6 @@ export function slideTheme(parts: ReadonlyMap<string, Uint8Array>, slide: string
   const master = layout === null ? null : related(parts, layout, "slideMaster")
   const theme = master === null ? null : related(parts, master, "theme")
   return theme !== null && parts.has(theme) ? theme : null
-}
-
-function themePart(parts: ReadonlyMap<string, Uint8Array>, slide: string | null): string | null {
-  const theme = slide === null ? null : slideTheme(parts, slide)
-  if (theme !== null) return theme
-  return [...parts.keys()].filter((name) => themeFile.test(name)).sort()[0] ?? null
-}
-
-function mapIn(parts: ReadonlyMap<string, Uint8Array>, part: string | null, kind: string): Map<string, string> {
-  const bytes = part === null ? undefined : parts.get(part)
-  const found = bytes === undefined ? undefined : markupDocument(bytes).elements.find((each) => each.kind === kind)
-  return new Map((found?.attributes ?? []).map(({ name, value }) => [name, value]))
-}
-
-function slideColourMap(parts: ReadonlyMap<string, Uint8Array>, slide: string): ReadonlyMap<string, string> {
-  const layout = related(parts, slide, "slideLayout")
-  const master = layout === null ? null : related(parts, layout, "slideMaster")
-  return new Map([
-    ...mapIn(parts, master, "p:clrMap"),
-    ...mapIn(parts, layout, "a:overrideClrMapping"),
-    ...mapIn(parts, slide, "a:overrideClrMapping"),
-  ])
-}
-
-export function themeSwatches(parts: ReadonlyMap<string, Uint8Array>, slide: string | null): readonly ThemeSwatch[] {
-  const part = themePart(parts, slide)
-  const swatches = part === null ? [] : themePartSwatches(parts, part)
-  if (slide === null) return swatches
-  const map = slideColourMap(parts, slide)
-  return swatches.map((swatch) => {
-    const mapped = mappedSlots.filter((slot) => map.get(slot) === swatch.scheme)
-    return mapped.length === 0 ? swatch : { ...swatch, mapped }
-  })
 }
 
 export function themePartSwatches(parts: ReadonlyMap<string, Uint8Array>, part: string): readonly ThemeSwatch[] {

@@ -126,18 +126,3 @@ export function shownBorderField<F extends BorderField>(
   if (name === "head") return arrowOf(levels, "a:headEnd") as ShownBorder[F]
   return arrowOf(levels, "a:tailEnd") as ShownBorder[F]
 }
-
-export function shownBorder(parts: ReadonlyMap<string, Uint8Array>, at: BorderAt): ShownBorder | null {
-  const levels = levelsOf(parts, at)
-  if (levels === null) return null
-  return {
-    width: first(levels, width, null),
-    fill: first(levels, fill, { none: true }),
-    dash: first(levels, ({ line }) => readDash(line), "solid"),
-    cap: first(levels, capReader, "flat"),
-    compound: first(levels, compoundReader, "sng"),
-    join: first(levels, join, "round"),
-    head: arrowOf(levels, "a:headEnd"),
-    tail: arrowOf(levels, "a:tailEnd"),
-  }
-}

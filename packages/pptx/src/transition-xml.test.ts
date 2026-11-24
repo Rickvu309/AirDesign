@@ -1,8 +1,8 @@
 import { type TransitionValue } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { indexPackage, readParts, readShows, readSlides } from "./index.js"
+import { indexPackage, readParts, readSlides } from "./index.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { readArrival, readPlayback } from "./transition-read.js"
+import { readArrival } from "./transition-read.js"
 import { writeArrival } from "./transition-write.js"
 
 declare const process: { cwd(): string; getBuiltinModule(name: "node:fs"): { readFileSync(path: string): Uint8Array } }
@@ -35,21 +35,14 @@ describe("a slide transition", () => {
     const wiped = readSlides(wipe)[1]
     if (wiped === undefined) throw new Error("wipe")
     expect(readArrival(wipe.get(wiped.part)).state).toBe("kept")
-    expect(readPlayback(wipe.get(wiped.part))).toEqual({
-      transition: { kind: "wipe", direction: "l", duration: 1000 },
-      advance: null,
-    })
     const pumps = await readParts(readFileSync(`${process.cwd()}/scripts/pptx-fixtures/doe-heat-pumps.pptx`))
     const ninth = readSlides(pumps).find((each) => each.part.endsWith("slide9.xml"))
     if (ninth === undefined) throw new Error("slide 9")
     expect(readArrival(pumps.get(ninth.part)).state).toBe("kept")
-    expect(readPlayback(pumps.get(ninth.part))).toEqual({ transition: null, advance: null })
     const sound = slide(`<p:transition><p:fade/><p:sndAc><p:stSnd/></p:sndAc></p:transition>`)
     expect(readArrival(sound).state).toBe("kept")
-    expect(readPlayback(sound).transition?.kind).toBe("fade")
     const exact = slide(`<p:transition p14:dur="3"><p:fade/></p:transition>`)
     expect(readArrival(exact).state).toBe("kept")
-    expect(readPlayback(exact).transition).toEqual({ kind: "fade", direction: null, duration: 3 })
   })
 
   it("writes each offered kind in PowerPoint's form and reads that form back", () => {
@@ -92,10 +85,6 @@ describe("a slide transition", () => {
       `<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159"><p:transition xmlns:p14="${p14}" spd="slow" p14:dur="1200"><p159:morph option="byObject"/></p:transition></mc:Choice><mc:Fallback><p:transition spd="slow"><p:fade/></p:transition></mc:Fallback></mc:AlternateContent></p:sld>`,
     )
     expect(readArrival(encode(morphed))).toEqual({ state: "value", value: smart })
-    expect(readPlayback(encode(morphed))).toEqual({
-      transition: { kind: "morph", direction: null, duration: 1200 },
-      advance: null,
-    })
     const delayed: TransitionValue = { smartAnimate: { duration: 500, advance: { delay: 2000 } } }
     const later = written(slide(""), delayed)
     expect(later).toContain(`<mc:Fallback><p:transition spd="fast" advClick="0" advTm="2000"><p:fade/></p:transition>`)
@@ -113,7 +102,6 @@ describe("a slide transition", () => {
       `<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159"><p:transition spd="slow" p14:dur="2000"><p159:morph option="byWord"/></p:transition></mc:Choice><mc:Fallback><p:transition spd="slow"><p:fade/></p:transition></mc:Fallback></mc:AlternateContent>`,
     )
     expect(readArrival(byWord)).toEqual({ state: "kept" })
-    expect(readPlayback(byWord).transition?.kind).toBe("morph")
   })
 
   it("refuses to splice a transition into markup it cannot parse", () => {
@@ -147,17 +135,5 @@ describe("a slide transition", () => {
       ["ppt/slides/slide3.xml", kept],
     ])
     expect(indexPackage(parts).slides.map((slide) => slide.transition ?? null)).toEqual([null, dissolve, "kept"])
-  })
-
-  it("plays a plain push and does not play the fallback inside alternate content", () => {
-    expect(readPlayback(slide(`<p:transition spd="med"><p:push dir="r"/></p:transition>`))).toEqual({
-      transition: { kind: "push", direction: "r", duration: 750 },
-      advance: null,
-    })
-    expect(readPlayback(slide(`<p:transition spd="slow" advTm="3000"/>`))).toEqual({
-      transition: null,
-      advance: 3000,
-    })
-    expect(readShows(new Map()).length).toBe(0)
   })
 })

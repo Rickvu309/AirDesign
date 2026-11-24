@@ -1,7 +1,8 @@
 import { expect, it } from "vitest"
-import { connectorEnds, routed, siteTie, type Tie } from "./connector.js"
+import { connectorEnds, routed, type Tie } from "./connector.js"
 import type { Place } from "./group-place.js"
 import { presets } from "./trait-geometry.js"
+import { siteTie } from "./site-tie.spec.js"
 
 type Spot = { readonly x: number; readonly y: number }
 

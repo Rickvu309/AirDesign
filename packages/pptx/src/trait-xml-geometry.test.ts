@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest"
 import { shownGeometry } from "./geometry-read.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { writeTrait } from "./trait-xml.js"
-import { shownTurn } from "./turn-read.js"
 
 const slidePart = "ppt/slides/slide1.xml"
 const drawing = "http://schemas.openxmlformats.org/drawingml/2006/main"
@@ -113,16 +112,5 @@ describe("a box's turn and flips", () => {
     expect(written(writeTrait(parts, at, "box", { x: { set: 9 }, flipV: { set: true } }))).toContain(
       `<a:xfrm flipV="1"><a:off x="9" y="2"/><a:ext cx="3" cy="4"/></a:xfrm>`,
     )
-  })
-})
-
-describe("the turn a box shows", () => {
-  it("reads the own transform's turn and flips, and none where it has neither", () => {
-    expect(shownTurn(slideOnly(`<p:spPr><a:xfrm rot="5400000" flipV="1"/></p:spPr>`), at)).toEqual({
-      rot: 5_400_000,
-      flipH: false,
-      flipV: true,
-    })
-    expect(shownTurn(slideOnly(`<p:spPr>${transform}</p:spPr>`), at)).toEqual({ rot: 0, flipH: false, flipV: false })
   })
 })

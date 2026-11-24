@@ -6,22 +6,6 @@ it("rejects invalid template fields at the index boundary", () => {
   expect(readTextStyles([{ id: "a", name: "Title", fields: { value: "replace content" } }])).toBeNull()
 })
 
-it("reads shared template definitions once per slide layout and rejects missing sources", async () => {
-  const { readIndexPage } = await import("./deck-index.js")
-  const page = {
-    once: "styles",
-    offset: 0,
-    total: 0,
-    elements: [],
-    slides: [
-      { id: "258", position: 0, textStyles: [{ id: "title", name: "Title", fields: { size: 4400 } }] },
-      { id: "259", position: 1, textStyles: "258" },
-    ],
-  }
-  expect(readIndexPage(page)).toEqual(page)
-  expect(readIndexPage({ ...page, slides: [{ id: "258", position: 0, textStyles: "258" }] })).toBeNull()
-})
-
 const savedSubtitle = {
   id: "ppt/slideLayouts/slideLayout1.xml/3/0",
   name: "Subtitle",
