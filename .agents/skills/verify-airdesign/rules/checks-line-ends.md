@@ -6,11 +6,11 @@ Concurrent edits follow Figma: the last write wins property by property, and a d
 
 ## line-ends
 
-One connector's start and end beside the shape X its start may attach to. Tab A deletes X, undoes the delete or redoes it, and sends late: offline, or before it caught up. Tab B writes once, at any time: it moves X, attaches the start to X, or moves the line's end. A run starts either fresh, with the start on X or free, or with the delete and its undo landed, so the next press is a redo.
+One connector's start and end beside the shape X its start may attach to. Tab A deletes X, undoes the delete or redoes it, and sends late: offline, or before it caught up. Tab B writes once, at any time: it moves X, attaches the start to X, or moves the line's end. A run starts either fresh, with the start on X or free, with the delete and its undo landed so the next press is a redo, or after a single step creates X and attaches the line to it.
 
 The rule (`packages/doom/src/line-ends.rule.md`) in three parts:
 
-- The device frees every end its view shows on a shape the batch takes off the deck, at the point it painted, in a line write with no base, so it wins over what landed before it (`freeLineEnds` in `packages/doom/src/freed-line-ends.ts`).
+- The device frees each end that still names the same shape after the batch takes that shape off the deck. It writes the point it painted in a line write with no base, so it wins over what landed before it (`freeLineEnds` in `packages/doom/src/freed-line-ends.ts`).
 - The deck frees any end still on a shape off the deck after the batch where the shape's stored box paints (`freedInFold` in `packages/doom/src/lost-ends.ts`, run by `landEdit`), so the delete lands even from a tab that never saw the attach.
 - A refused undo or redo is sent again with each end the other tab left as the tab read it at the press, the other tab's end for the rest (`lineEndsBack`, the ownership rule of an undo online), and its ends freed again against the caught-up deck (`onStandingOnly` in `packages/live/src/turn-replay.ts`).
 
@@ -18,12 +18,13 @@ Properties:
 
 - `NoDeadEnd`: an end on a shape names a shape on the deck. Harm if broken: a tab that never saw another tab attach the line deletes the shape, and the end paints from the deleted shape's box, out of its frame, on every tab and after reload (verdicts 1614-1fa3d87 finding 2, 1614-cfac37d).
 - `DeletesWin` and `NeverSetAside`: every delete and redo A sends lands, and no edge sets an edit aside. Harm if broken: a delete from a tab that missed another tab's change is refused with a notice and the shape stays.
-- `FreesWherePainted`: a freed end sits where X's right side painted at one of its boxes, on the server or in the deleting tab's view when it pressed. If the other tab moved X first, the end may land a few pixels from where that tab saw it; the owner accepts that.
+- `RestoresOriginalPoint`: undoing the step that creates X and attaches the line restores the original point in both the queued view and the saved fold. The `overwritePoint` rule fails on the press, when the queued view jumps to X's edge.
+- `FreesWherePainted`: in a delete or redo, a freed end sits where X's right side painted at one of its boxes, on the server or in the deleting tab's view when it pressed. If the other tab moved X first, the end may land a few pixels from where that tab saw it; the owner accepts that.
 - `RestoresAttachment`: the undo of a delete that freed the start in its own line write puts the start back on X. Harm if broken: an undo sent late, after the other tab moved only the line's other end, brings X back with the start left free (verdict 1614-1fa3d87 finding 1).
 - `KeepsTheirEnd`: B's end stays unless a batch that takes X off the deck writes the whole line after it.
 - The replay also reads, at every edge, what the tab shows and what the server holds and how many edits wait to send.
 
-Bounds: one shape, one line, two tabs, one write by the other tab, a delete and one press, or one redo. 133 states. Run: `pnpm check:specs line-ends`. Replay: `tests/line-ends-replay.test.ts` drives all 174 edges from the three starts through the real `createDoomDeck`, `openDoomDeck` and `memoryDoomRemote`, the person's tab cut off from the server except for the edit a send step lets through, and another tab on the same server. `packages/live/src/doom-line-ends-tabs.test.ts` holds the same cases with a frame, `packages/doom/src/lost-ends.test.ts` the deck's freeing, a moved frame and the redo, and `apps/api/src/doom-deck-line-ends.test.ts` the server's partial fold.
+Bounds: one shape, one line, two tabs, one write by the other tab, a delete and one press, one redo, or one undo of a creation and attachment. 136 states. Run: `pnpm check:specs line-ends`. Replay: `tests/line-ends-replay.test.ts` drives all 176 edges from the four starts through the real `createDoomDeck`, `openDoomDeck` and `memoryDoomRemote`, the person's tab cut off from the server except for the edit a send step lets through, and another tab on the same server. `packages/live/src/doom-line-ends-tabs.test.ts` holds the same cases with a frame, `packages/doom/src/lost-ends.test.ts` the deck's freeing, a moved frame and the redo, and `apps/api/src/doom-deck-line-ends.test.ts` the server's partial fold.
 
 Leaves out: frames in the model (`freedInFold` reads the shape's frames as the deck held them before the batch, and `lost-ends.test.ts` holds a moved frame); a removal and undo or redo queued together, and a turn rebuilt behind a resent one (`onStanding` frees the rebuilt turn again; `turn-replay-queued.test.ts` holds the order); agent runs, which take `edit_deck` and `undo_run` through the same `freeLineEnds` and `freedInFold`.
 

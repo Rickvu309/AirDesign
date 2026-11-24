@@ -62,12 +62,14 @@ export function lostEnds(before: Nodes, after: Nodes, writes: readonly Write[]):
   const leaving = (id: NodeId) => !onDeck(after, id) && left(id)
   const lost: LostEnds[] = []
   for (const line of after.values()) {
-    if (propOf(line, "geometry")?.kind !== "line") continue
+    const now = propOf(line, "geometry")
+    if (now?.kind !== "line") continue
     const was = propOf(before.get(line.id), "geometry")
     if (was?.kind !== "line") continue
-    const gone = (end: End) => ("node" in end && leaving(end.node) ? end.node : null)
-    const start = gone(was.start)
-    const end = gone(was.end)
+    const gone = (before: End, after: End) =>
+      "node" in after && "node" in before && after.node === before.node && leaving(after.node) ? after.node : null
+    const start = gone(was.start, now.start)
+    const end = gone(was.end, now.end)
     if (start === null && end === null) continue
     if (onDeck(before, line.id) && onDeck(after, line.id)) lost.push({ line: line.id, start, end })
   }

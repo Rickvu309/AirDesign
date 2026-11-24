@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { doomFromTree } from "./doom-tree.js"
-import { freeLineEnds, invert, type Doom, type Write } from "./index.js"
+import { freeLineEnds, invert, nodeId, type Doom, type Write } from "./index.js"
 import { measure, plainTheme, spot } from "./testing/doom-fixtures-art.js"
 import { attached, deck, detach, freePoint, lineOf, startOf, step } from "./testing/line-end-fixtures.js"
 
@@ -65,17 +65,52 @@ describe("a change that takes a shape off the deck while a line's end is on it",
     expect(freePoint(lineOf(gone, l).start)).toEqual(seen)
   })
 
-  it("frees a redone delete where the shape paints now, not where the first delete froze it", () => {
+  it("preserves the original point when an inverse batch both restores the line and removes its new target", () => {
+    const grown = deck()
+    const [l, slide] = [grown.ids.l!, grown.slides[0]!]
+    const original = { x: 230, y: 145 }
+    const free = landed(grown.doom, [
+      { node: l, prop: "geometry", value: { ...lineOf(grown.doom, l), start: original } },
+    ])
+    const target = nodeId("t3:1")
+    const attached = step(free, "attach", [
+      { node: target, prop: "type", value: "frame" },
+      { node: target, prop: "parent", value: { id: slide, at: "a9" } },
+      { node: target, prop: "box", value: spot(400, 200, 200, 100) },
+      { node: l, prop: "geometry", value: { ...lineOf(free, l), start: { node: target, site: "r" } } },
+    ])
+    const undo = invert(attached.before, attached.after, attached.edit)
+    expect(lineOf(step(attached.after, "undo", undo).after, l).start).toEqual(original)
+    expect(
+      lineOf(step(attached.after, "measured-undo", freeLineEnds(attached.after, undo, measure)).after, l).start,
+    ).toEqual(original)
+  })
+
+  it("keeps both an explicit reattachment and the other end that still needs freeing", () => {
+    const grown = deck()
+    const [t, j, l] = [grown.ids.t!, grown.ids.j!, grown.ids.l!]
+    const geometry = lineOf(grown.doom, l)
+    const connected = landed(grown.doom, [{ node: l, prop: "geometry", value: { ...geometry, end: geometry.start } }])
+    const live = { node: j, site: "l" }
+    const writes: readonly Write[] = [
+      { node: l, prop: "geometry", value: { ...lineOf(connected, l), start: live } },
+      ...detach([t]),
+    ]
+    const freed = step(connected, "delete", freeLineEnds(connected, writes, measure)).after
+    expect(lineOf(freed, l)).toMatchObject({ start: live, end: { x: 300, y: 225 } })
+  })
+
+  it("restores the first delete’s free point when redoing it after the shape moved", () => {
     const grown = deck()
     const [t, slide, l] = [grown.ids.t!, grown.slides[0]!, grown.ids.l!]
     const deleted = step(grown.doom, "delete", freeLineEnds(grown.doom, detach([t]), measure))
     const undone = step(deleted.after, "undo", invert(deleted.before, deleted.after, deleted.edit))
     expect(lineOf(undone.after, l).start).toEqual(attached(grown.ids).geometry.start)
     const nudged = step(undone.after, "nudge", [moved(t, 300, 360)]).after
-    const painted = startOf(nudged, slide, l)
+    expect(startOf(nudged, slide, l)).not.toEqual(startOf(deleted.after, slide, l))
     const redo = invert(undone.before, nudged, undone.edit)
     const redone = step(nudged, "redo", freeLineEnds(nudged, redo, measure)).after
-    expect(startOf(redone, slide, l)).toEqual(painted)
+    expect(startOf(redone, slide, l)).toEqual(startOf(deleted.after, slide, l))
   })
 })
 

@@ -54,7 +54,13 @@ const lineOf = (start: doom.End, end: doom.End) => ({
   arrows: ["none", "none"] as const,
 })
 
-const seed = (free: boolean): doom.Edit => ({
+const makeShape: readonly doom.Write[] = [
+  { node: shape, prop: "type", value: "shape" },
+  { node: shape, prop: "parent", value: at(slide) },
+  { node: shape, prop: "box", value: placed(0) },
+]
+
+const seed = (free: boolean, withoutShape: boolean): doom.Edit => ({
   once: "start",
   author: { kind: "person", id: "start" },
   writes: [
@@ -63,9 +69,7 @@ const seed = (free: boolean): doom.Edit => ({
     { node: row, prop: "parent", value: at(deckNode) },
     { node: slide, prop: "type", value: "slide" },
     { node: slide, prop: "parent", value: at(row) },
-    { node: shape, prop: "type", value: "shape" },
-    { node: shape, prop: "parent", value: at(slide) },
-    { node: shape, prop: "box", value: placed(0) },
+    ...(withoutShape ? [] : makeShape),
     { node: line, prop: "type", value: "shape" },
     { node: line, prop: "parent", value: at(slide, doom.orderKeyBetween(first, null)) },
     { node: line, prop: "geometry", value: lineOf(free ? spots[2]! : onShape, ends[0]!) },
@@ -90,7 +94,7 @@ const shapeOn = (fold: doom.Doom) => doom.parentOf(fold.nodes.get(shape)) != nul
 const boxIn = (fold: doom.Doom) => ((doom.propOf(fold.nodes.get(shape), "box")?.x ?? 300) === 300 ? 0 : 1)
 
 async function played(route: readonly { readonly action: string }[], from: Spec) {
-  const remote = memoryDoomRemote(seed(from.s === 2))
+  const remote = memoryDoomRemote(seed(from.s === 2 || from.from === "attached", from.from === "attached"))
   const sending = { once: null as string | null }
   const join = async (client: string, how: "create" | "open", gated: boolean) => {
     let next = 0
@@ -133,6 +137,10 @@ async function played(route: readonly { readonly action: string }[], from: Spec)
     pushed(mine.undo())
     await send(mine)
   }
+  if (from.from === "attached") {
+    pushed(mine.push([...makeShape, { node: line, prop: "geometry", value: lineOf(onShape, ends[0]!) }]))
+    await send(mine)
+  }
   const theirWrite = async (writes: (now: doom.Doom) => readonly doom.Write[]) => {
     await theirs.catchUp()
     pushed(theirs.push(writes(theirs.view())))
@@ -143,7 +151,7 @@ async function played(route: readonly { readonly action: string }[], from: Spec)
     const before = mine.notices().length
     told = "none"
     if (action === "Delete") pushed(mine.push([{ node: shape, prop: "parent", value: null }]))
-    else if (action === "Undo") pushed(mine.undo())
+    else if (action === "Undo" || action === "UndoAttach") pushed(mine.undo())
     else if (action === "Redo") pushed(mine.redo())
     else if (action === "SendA" || action === "SendB") await send(mine)
     else if (action === "CatchUp") await mine.catchUp()
@@ -256,7 +264,7 @@ describe("line ends replay", () => {
     const seen = await replayed(graph, failures)
     expect(failures.slice(0, 5), `${failures.length} edges disagree; ${JSON.stringify(seen)}`).toEqual([])
     expect(seen.edges).toBe(graph.edges.length)
-    expect(seen).toMatchObject({ starts: 3 })
+    expect(seen).toMatchObject({ starts: 4 })
     expect(seen.refused).toBe(0)
   }, 120_000)
 })

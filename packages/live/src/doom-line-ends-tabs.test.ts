@@ -217,7 +217,7 @@ describe("a connector end whose shape leaves the deck stays where it painted, wh
     }
   })
 
-  it("lands a redo sent late where the redoing tab painted, its line write winning over the other tab's", async () => {
+  it("lands a redo sent late with the original free point and keeps the other tab's end", async () => {
     const { a, b } = await tabs(seed(true))
     await saved(a.push([gone(target)]))
     await settle(a, b)
@@ -231,7 +231,7 @@ describe("a connector end whose shape leaves the deck stays where it painted, wh
     expect(a.notices()).toEqual([])
     for (const view of [a.view(), b.view()]) {
       expect(view.nodes.get(target) === undefined || doom.parentOf(view.nodes.get(target)) === null).toBe(true)
-      expect(geometry(view)).toEqual(lineOf({ x: 300, y: 125 }))
+      expect(geometry(view)).toEqual(lineOf({ x: 300, y: 125 }, { x: 40, y: 10 }))
       expect(painted(view).from).toEqual(onShape)
     }
   })
