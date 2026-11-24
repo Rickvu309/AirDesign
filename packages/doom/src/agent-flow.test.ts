@@ -181,19 +181,6 @@ describe("a flow that fits a row", () => {
 })
 
 describe("a timeline", () => {
-  const doom = build(
-    agentDeck(),
-    add({
-      kind: "timeline",
-      items: [
-        { value: "Q1", title: "Plan" },
-        { value: "Q2", title: "Build" },
-        { value: "Q3", title: "Launch" },
-      ],
-    }),
-  )
-  const root = made(doom)
-
   it("starts at the title's left edge and runs the width of the band", () => {
     const { doom: start, on } = titledSlide()
     const items = [
