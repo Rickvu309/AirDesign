@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
-import { useDoomSlide } from "@airdesign/render"
-import { useMemo } from "react"
+import { fontsFor, useDoomSlide } from "@airdesign/render"
+import { useMemo, useSyncExternalStore } from "react"
 import { designCopy } from "@/copy/design-copy"
 import { editorCopy } from "@/copy/editor-copy"
 import { panelOfMany, type PanelModel, type PanelPaint } from "@/design/panel"
@@ -52,7 +52,19 @@ function isImagePick(value: unknown): boolean {
   return typeof value === "object" && value !== null && "image" in value && value.image === true
 }
 
+function useLoadedFaces(): void {
+  useSyncExternalStore(
+    (listener) =>
+      typeof document === "undefined"
+        ? () => undefined
+        : (fontsFor(document)?.subscribe(listener) ?? (() => undefined)),
+    () => (typeof document === "undefined" ? 0 : (fontsFor(document)?.settledCount() ?? 0)),
+    () => 0,
+  )
+}
+
 export function DesignPanel(props: Props) {
+  useLoadedFaces()
   const { deck, client, view, slide, selection, onSelection } = props
   const ids = selection.ids.filter((id) => view.nodes.has(id))
   const painted = useDoomSlide(view, slide)

@@ -1,11 +1,11 @@
-import type { Color, Para, Text, TextStyleName, Theme } from "@airdesign/doom"
+import type { Color, Para, Span, Text, TextStyleName, Theme } from "@airdesign/doom"
+import { boldWeight, familyName, namedFace, nearestWeight, regularWeight, typefaceFor } from "@airdesign/fonts"
 import { hundredths, wholeFraction } from "./design-values"
-
-const boldFrom = 600
 
 export type TextLook = {
   readonly size: number
   readonly font: string
+  readonly weight: number
   readonly bold: boolean
   readonly italic: boolean
   readonly underline: boolean
@@ -15,31 +15,62 @@ export type TextLook = {
   readonly case: "none" | "upper" | "lower" | "title"
 }
 
+export function weightOf(font: string, styleWeight: number, bold: boolean | undefined): number {
+  if (bold === true) return boldWeight
+  const face = namedFace(font)
+  if (bold === false && face === undefined) return regularWeight
+  return nearestWeight(face?.weight ?? styleWeight)
+}
+
+function lookFrom(
+  font: string,
+  style: Theme["textStyles"][TextStyleName],
+  span: Span | undefined,
+): TextLook {
+  const weight = weightOf(font, style.weight, span?.bold)
+  return {
+    size: span?.size ?? style.size,
+    font: familyName(font),
+    weight,
+    bold: weight === boldWeight,
+    italic: span?.italic ?? false,
+    underline: span?.underline ?? false,
+    strike: span?.strike ?? false,
+    color: span?.color ?? { var: "text" },
+    tracking: span?.tracking ?? style.tracking,
+    case: span?.case ?? style.case ?? "none",
+  }
+}
+
 export function looksOf(text: Text, theme: Theme): readonly TextLook[] {
   const style = theme.textStyles[text.style]
-  const base: TextLook = {
-    size: style.size,
-    font: theme.fonts[style.font],
-    bold: style.weight >= boldFrom,
-    italic: false,
-    underline: false,
-    strike: false,
-    color: { var: "text" },
-    tracking: style.tracking,
-    case: style.case ?? "none",
+  const themeFont = theme.fonts[style.font]
+  if (text.spans.length === 0) return [lookFrom(themeFont, style, undefined)]
+  return text.spans.map((span) => lookFrom(span.font ?? themeFont, style, span))
+}
+
+function spanWithoutFont({ font: _, ...span }: Span): Span {
+  return span
+}
+
+export function textWithWeight(
+  text: Text,
+  theme: Theme,
+  picked: { readonly weight: number; readonly italic: boolean },
+): Text {
+  const length = text.chars.length
+  if (length === 0) return text
+  const style = theme.textStyles[text.style]
+  const themeFont = theme.fonts[style.font]
+  const base = text.spans.length === 0 ? [{ end: length }] : text.spans
+  return {
+    ...text,
+    spans: base.map((span) => {
+      const stored = typefaceFor(familyName(span.font ?? themeFont), picked.weight)
+      const next = { ...span, bold: stored.bold, italic: picked.italic }
+      return stored.font === themeFont ? spanWithoutFont(next) : { ...next, font: stored.font }
+    }),
   }
-  if (text.spans.length === 0) return [base]
-  return text.spans.map((span) => ({
-    size: span.size ?? base.size,
-    font: span.font ?? base.font,
-    bold: span.bold ?? base.bold,
-    italic: span.italic ?? base.italic,
-    underline: span.underline ?? base.underline,
-    strike: span.strike ?? base.strike,
-    color: span.color ?? base.color,
-    tracking: span.tracking ?? base.tracking,
-    case: span.case ?? base.case,
-  }))
 }
 
 export type TextShown = {
@@ -66,6 +97,7 @@ export function shownText(text: Text, theme: Theme): TextShown {
     look: {
       size: pick("size"),
       font: pick("font"),
+      weight: pick("weight"),
       bold: pick("bold"),
       italic: pick("italic"),
       underline: pick("underline"),

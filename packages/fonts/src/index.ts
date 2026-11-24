@@ -4,11 +4,14 @@ export { fontFamily, fontRoutes } from "./family.js"
 
 export {
   boldWeight,
+  familyName,
   holdsWeight,
   namedFace,
+  nearestWeight,
   readStyleName,
   regularWeight,
   styleName,
+  stylesHeld,
+  typefaceFor,
   type ServedFace,
 } from "./named-face.js"
-export { plainStyles } from "./plain-styles.js"
