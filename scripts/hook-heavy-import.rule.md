@@ -1,0 +1,3 @@
+# A Vitest hook does not import the catalog barrel or a namespace import of Doom
+
+`scripts/hook-heavy-import.mjs`, tested by `scripts/hook-heavy-import.test.mjs`, fails a `beforeAll`, `beforeEach`, `afterAll` or `afterEach` whose dynamic import reaches `import * as doom from "@airdesign/doom"` or a value import of `@airdesign/catalog`. The actions panel's hook did both, for a type and for icon names, and that import crossed Vitest's 10 second hook limit when `apps/web/src` started in parallel. Import a type, or `@airdesign/catalog/icon-names`, instead of the barrel. A named Doom import stays in the hook, because the DOM has to exist before React loads.

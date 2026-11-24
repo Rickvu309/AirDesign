@@ -5,11 +5,11 @@ import { editorCopy } from "@/copy/editor-copy"
 import { iconMatches, startingIcons } from "@/design/icon-search"
 import { cn } from "@/lib/class-names"
 import { composing } from "@/lib/composing"
-import * as doom from "@airdesign/doom"
+import type { Chart } from "@airdesign/doom"
 import { stepHighlight, type HighlightKey } from "./actions-highlight"
 
 export type ActionRun = {
-  readonly chart: (kind: doom.Chart["kind"]) => void
+  readonly chart: (kind: Chart["kind"]) => void
   readonly icon: (name: string) => void
   readonly exportPdf: () => void
 }
@@ -27,14 +27,13 @@ type Group = {
   readonly find: (words: string) => readonly Action[]
 }
 
-const charts: readonly { readonly kind: doom.Chart["kind"]; readonly glyph: ComponentType<{ className?: string }> }[] =
-  [
-    { kind: "column", glyph: ChartColumn },
-    { kind: "bar", glyph: ChartBar },
-    { kind: "line", glyph: ChartLine },
-    { kind: "pie", glyph: ChartPie },
-    { kind: "stacked", glyph: ChartNoAxesColumn },
-  ]
+const charts: readonly { readonly kind: Chart["kind"]; readonly glyph: ComponentType<{ className?: string }> }[] = [
+  { kind: "column", glyph: ChartColumn },
+  { kind: "bar", glyph: ChartBar },
+  { kind: "line", glyph: ChartLine },
+  { kind: "pie", glyph: ChartPie },
+  { kind: "stacked", glyph: ChartNoAxesColumn },
+]
 
 const chartsGroup: Group = {
   id: "charts",

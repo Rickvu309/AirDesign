@@ -1,4 +1,4 @@
-import { iconNames } from "@airdesign/catalog"
+import { iconNames } from "@airdesign/catalog/icon-names"
 
 const shownCount = 24
 const startingCount = 12
