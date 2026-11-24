@@ -5,7 +5,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
 import { ask, cookieFrom, postgresInfo, serve, testResource } from "./testing/harness.js"
 import { DeckListen, createApi, openPool, sendWithResend, type Mail } from "./index.js"
-import { readSignInMail, signInMail, signInMinutes } from "./account/account.js"
+import { signInMinutes } from "./account/account.js"
+import { readSignInMail } from "./account/testing/read-sign-in-mail.js"
 
 const publicOrigin = "https://app.example"
 const siteOrigin = "https://site.example"
@@ -588,7 +589,7 @@ describe("sign-in", () => {
     }) as typeof fetch
     const link = "https://app.example/sign-in/link?token=abc"
     const code = "123456"
-    const mail = signInMail({ link, code, minutes: signInMinutes })
+    const mail = { subject: "Sign in", text: `${link}\n${code}\n${signInMinutes}`, html: `<p>${link} ${code}</p>` }
     await sendWithResend({ to: "a@example.com", ...mail }, { key: "test-key", from: "sign-in@localhost" })
     const body = seen[0]?.body
     if (body === undefined) throw new Error("body")

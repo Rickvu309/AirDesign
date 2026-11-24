@@ -3,9 +3,6 @@ import type { Client } from "pg"
 import type { Migration } from "./migration.js"
 import { migrations } from "./migrations.js"
 
-export type { Migration }
-export { migrations }
-
 export const migrationLock = 720481136
 
 export type Applied = { readonly applied: number; readonly at: number }

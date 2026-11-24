@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
-import { migrations } from "./platform/schema.js"
+import { migrations } from "./platform/testing/migrations.js"
 import { startEmptyCluster, type EmptyCluster } from "./testing/postgres-setup.js"
 import { runBootstrap, runSetup, type Environment, type Write } from "./platform/provision.js"
 

@@ -2,7 +2,6 @@ import { mailDark, mailLight, mailRadius } from "./sign-in-mail-art.js"
 
 export type SignInMailInput = { readonly link: string; readonly code: string; readonly minutes: number }
 export type SignInMail = { readonly subject: string; readonly text: string; readonly html: string }
-export type SignInMailParts = { readonly link: string; readonly code: string }
 
 const english = new Intl.PluralRules("en")
 
@@ -133,16 +132,4 @@ function signInHtml({ link, code, minutes }: SignInMailInput): string {
 
 export function signInMail(input: SignInMailInput): SignInMail {
   return { subject: copy.subject, text: signInText(input), html: signInHtml(input) }
-}
-
-export function readSignInMail(text: string): SignInMailParts {
-  const lines = text.split("\n").map((line) => line.trim())
-  const codes = lines.filter((line) => /^\d{6}$/.test(line))
-  const links = lines.filter((line) => line.startsWith("https://") || line.startsWith("http://"))
-  const [code] = codes
-  const [link] = links
-  if (codes.length !== 1 || links.length !== 1 || code === undefined || link === undefined) {
-    throw new Error("not one sign-in mail")
-  }
-  return { link, code }
 }
