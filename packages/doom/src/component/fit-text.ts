@@ -97,9 +97,9 @@ type Group = {
   shrink: boolean
 }
 
-function widen(part: TextPart, width: number): TextPart {
+function widen(part: TextPart, width: number, x = part.props.box.x + (part.props.box.w - width) / 2): TextPart {
   const box = part.props.box
-  return { ...part, props: { ...part.props, box: { ...box, x: box.x + (box.w - width) / 2, w: width } } }
+  return { ...part, props: { ...part.props, box: { ...box, x, w: width } } }
 }
 
 const center = ({
@@ -113,12 +113,18 @@ function thinGroup(fits: readonly Fit[], frameWidth: number, gap: number, charge
     const x = center(fit)
     const minimum = fit.neededWidth
     const capacity = 2 * Math.min(x, frameWidth - x)
-    const viable = capacity + tolerance >= minimum && withWidth(fit, widen(fit.part, minimum)) !== undefined
-    return { fit, x, minimum, capacity, viable }
+    const left = x - minimum / 2
+    const edgeLeft = Math.max(0, Math.min(left, frameWidth - minimum))
+    const label = minimum <= frameWidth ? withWidth(fit, widen(fit.part, minimum, edgeLeft)) : undefined
+    return { fit, x, left, edgeLeft, minimum, capacity, label }
   })
-  type Slot = (typeof slots)[number]
+  type Slot = (typeof slots)[number] & { readonly placedLeft: number }
   const placed = new Map<TextPart, TextPart>()
-  if (!slots[0]?.viable) return placed
+  if (slots[0]?.label === undefined) {
+    const first = slots.find(({ label }) => label !== undefined)
+    if (first?.label !== undefined) placed.set(first.fit.part, first.label)
+    return placed
+  }
 
   let selected: Slot[] = []
   for (let stride = 1; stride <= slots.length; stride += 1) {
@@ -127,13 +133,16 @@ function thinGroup(fits: readonly Fit[], frameWidth: number, gap: number, charge
     for (let i = 0; i < slots.length; i += stride) {
       charge()
       const slot = slots[i]!
+      const edge = i === 0 || i + stride >= slots.length
+      const placedLeft = edge ? slot.edgeLeft : slot.left
       const before = sample.at(-1)
       if (
-        !slot.viable ||
-        (before !== undefined && slot.x - before.x + tolerance < (before.minimum + slot.minimum) / 2 + gap)
+        slot.label === undefined ||
+        (!edge && slot.capacity + tolerance < slot.minimum) ||
+        (before !== undefined && placedLeft + tolerance < before.placedLeft + before.minimum + gap)
       )
         break
-      sample.push(slot)
+      sample.push({ ...slot, placedLeft })
     }
     if (sample.length === Math.ceil(slots.length / stride)) {
       selected = sample
@@ -142,17 +151,21 @@ function thinGroup(fits: readonly Fit[], frameWidth: number, gap: number, charge
   }
 
   for (const [i, slot] of selected.entries()) {
+    if (slot.label === undefined) continue
+    if (slot.left !== slot.placedLeft) {
+      placed.set(slot.fit.part, slot.label)
+      continue
+    }
     const roomBeside = (neighbor: Slot | undefined) => {
       if (neighbor === undefined) return Infinity
-      const room = Math.abs(neighbor.x - slot.x) - gap
+      const room = Math.abs(neighbor.placedLeft + neighbor.minimum / 2 - slot.x) - gap
       return Math.min(room, 2 * room - neighbor.minimum)
     }
     const width = Math.max(
       slot.minimum,
       Math.min(slot.capacity, roomBeside(selected[i - 1]), roomBeside(selected[i + 1])),
     )
-    const part = withWidth(slot.fit, widen(slot.fit.part, width))
-    if (part !== undefined) placed.set(slot.fit.part, part)
+    placed.set(slot.fit.part, widen(slot.label, width, slot.x - width / 2))
   }
   return placed
 }
@@ -210,9 +223,12 @@ export function* fitGroups(
     if (selected.size < fits.length) {
       const lanes = new Map(group.entries.map((entry) => [entry.part, entry.laneWidth]))
       const deficit = (fit: Fit) => fit.neededWidth - (lanes.get(fit.part) ?? fit.part.props.box.w)
-      const worst = omitted.reduce((a, b) => (deficit(a) >= deficit(b) ? a : b))
+      const empty = selected.size === 0
+      const example = empty
+        ? fits.reduce((a, b) => (a.neededWidth <= b.neededWidth ? a : b))
+        : omitted.reduce((a, b) => (deficit(a) >= deficit(b) ? a : b))
       yield {
-        ...finding(worst.part, worst.size, worst.neededWidth, lanes.get(worst.part)),
+        ...finding(example.part, example.size, example.neededWidth, empty ? frameWidth : lanes.get(example.part)),
         key: [name],
         thinned: fits.length - selected.size,
       }

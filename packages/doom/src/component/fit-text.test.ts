@@ -231,6 +231,95 @@ describe("component text fitting", () => {
     )
   })
 
+  it.each([
+    [
+      "regional",
+      7,
+      540,
+      ["North America East", "EMEA", "Asia Pacific & Japan", "LatAm", "ANZ", "Greater China", "Middle East & Africa"],
+    ],
+    [
+      "hyphenated",
+      20,
+      300,
+      [
+        "Cross-border",
+        "Year-over-year growth",
+        "Non-interest income",
+        "Mid-market",
+        "Sub-Saharan Africa",
+        "Asia-Pacific",
+      ],
+    ],
+    ["CJK", 100, 300, ["北美东部", "欧洲中东非洲", "亚太及日本地区", "拉丁美洲", "澳新", "大中华区", "中东与非洲"]],
+  ] as const)("keeps the %s category axis when the first label needs clamping", (_name, count, width, labels) => {
+    const rows = Array.from({ length: count }, (_, i) => ({
+      id: `r${i}`,
+      label: labels[i % labels.length] + (i >= labels.length ? ` ${i}` : ""),
+      value: i,
+    }))
+    const tree = expand(columnComponent, { ...inputs, frame: { ...inputs.frame, w: width }, data: { rows } })
+    const categories = tree.children.filter((node) => node.key[0] === "category")
+    expect(categories[0]?.key).toEqual(["category", "r0"])
+    expect(categories[0]?.props.box.x).toBe(0)
+    const stride = Number(categories[1]?.key[1]?.slice(1) ?? count)
+    expect(categories.map(({ key }) => key[1])).toEqual(
+      Array.from({ length: Math.ceil(count / stride) }, (_, i) => `r${i * stride}`),
+    )
+    for (const [
+      i,
+      {
+        props: { box, text },
+      },
+    ] of categories.entries()) {
+      expect(box.x + box.w).toBeLessThanOrEqual(width)
+      expect(text?.spans[0]?.size).toBe(18)
+      if (i > 0) {
+        const previous = categories[i - 1]!.props.box
+        expect(box.x - (previous.x + previous.w)).toBeGreaterThanOrEqual(4 - 1e-6)
+      }
+    }
+    expect(tree.findings.filter(({ key }) => key[0] === "categories")).toEqual([
+      expect.objectContaining({ thinned: count - categories.length }),
+    ])
+  })
+
+  it("increases the stride when clamped edge labels collide with a neighbour", () => {
+    const rows = Array.from({ length: 5 }, (_, i) => ({ id: `r${i}`, label: "EMEA", value: i }))
+    const width = 169.25
+    const tree = expand(columnComponent, { ...inputs, frame: { ...inputs.frame, w: width }, data: { rows } })
+    const categories = tree.children.filter((node) => node.key[0] === "category")
+    expect(categories.map(({ key }) => key[1])).toEqual(["r0", "r3"])
+    expect(categories[0]?.props.box.x).toBe(0)
+  })
+
+  it("clamps both edges and leaves the interior label centered", () => {
+    const rows = Array.from({ length: 5 }, (_, i) => ({ id: `r${i}`, label: "EMEA", value: i }))
+    const width = 171
+    const tree = expand(columnComponent, { ...inputs, frame: { ...inputs.frame, w: width }, data: { rows } })
+    const categories = tree.children.filter((node) => node.key[0] === "category")
+    expect(categories.map(({ key }) => key[1])).toEqual(["r0", "r2", "r4"])
+    const [first, middle, last] = categories.map(({ props }) => props.box)
+    expect(first?.x).toBe(0)
+    expect(middle!.x + middle!.w / 2).toBeCloseTo(width / 2, 8)
+    expect(last!.x + last!.w).toBeCloseTo(width, 8)
+  })
+
+  it("keeps a single label if row zero is too wide and reports the frame width if none fits", () => {
+    const rows = [
+      { id: "r0", label: "W".repeat(20), value: 12 },
+      { id: "r1", label: "EMEA", value: 12 },
+    ]
+    const input = { ...inputs, frame: { ...inputs.frame, w: 100 }, data: { rows } }
+    const tree = expand(columnComponent, input)
+    expect(tree.children.filter(({ key }) => key[0] === "category").map(({ key }) => key[1])).toEqual(["r1"])
+    const empty = expand(columnComponent, { ...input, frame: { ...input.frame, w: 50 } })
+    expect(empty.children.filter(({ key }) => key[0] === "category")).toHaveLength(0)
+    expect(empty.findings.filter(({ key }) => key[0] === "categories")).toEqual([
+      expect.objectContaining({ kind: "text-fit", size: 18, neededWidth: 54, availableWidth: 50, thinned: 2 }),
+    ])
+  })
+
   it("counts CJK glyphs as one em in the estimate and fits two lines between characters", () => {
     const spec = read(
       specOf([
@@ -377,7 +466,7 @@ describe("component text fitting", () => {
     const tree = expand(columnComponent, { ...inputs, theme: dejavu, measure, data: { rows } })
     expect(tree.children.filter((node) => node.key[0] === "bar")).toHaveLength(rows.length)
     const categories = tree.children.filter((node) => node.key[0] === "category")
-    expect(categories).toEqual([])
+    expect(categories[0]?.key).toEqual(["category", "r0"])
     expect(tree.findings.filter((finding) => finding.key[0] === "categories")).toEqual([
       expect.objectContaining({ thinned: rows.length - categories.length }),
     ])
