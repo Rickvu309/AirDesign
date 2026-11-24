@@ -90,33 +90,56 @@ export function landed(queue: readonly Queued[], once: string, rev: doom.Rev): Q
   return rest
 }
 
+const sameWrite = (a: doom.Write, b: doom.Write) => a.node === b.node && a.prop === b.prop
+
+function released(queue: readonly Queued[], once: string, was: Queued, keep: readonly doom.Write[]): Queued[] {
+  const read = (write: doom.Write) => was.edit.writes.findIndex((each) => sameWrite(each, write))
+  return queue.map((each) => {
+    if (!each.after.includes(once)) return each
+    const freed = each.edit.writes.map(
+      (write, index) => each.after[index] === once && !keep.some((kept) => sameWrite(kept, write)),
+    )
+    return {
+      ...each,
+      edit: {
+        ...each.edit,
+        writes: each.edit.writes.map((write, index) => {
+          if (!freed[index]) return write
+          const base = was.edit.writes[read(write)]?.base
+          return base === undefined ? withoutBase(write) : { ...write, base }
+        }),
+      },
+      after: each.after.map((name, index) =>
+        freed[index] ? (was.after[read(each.edit.writes[index]!)] ?? null) : name,
+      ),
+    }
+  })
+}
+
 export function trimmed(queue: readonly Queued[], once: string, keep: readonly doom.Write[]): Queued[] {
   const head = queue.find((each) => each.edit.once === once)
   if (head === undefined) return [...queue]
-  const same = (a: doom.Write, b: doom.Write) => a.node === b.node && a.prop === b.prop
-  const baseOf = (write: doom.Write) => head.edit.writes.find((each) => same(each, write))?.base
-  return queue.flatMap((each) => {
-    if (each === head)
-      return keep.length === 0 ? [] : [{ ...each, edit: { ...each.edit, writes: keep }, after: keep.map(() => null) }]
-    if (!each.after.includes(once)) return [each]
-    const released = each.edit.writes.map(
-      (write, index) => each.after[index] === once && !keep.some((kept) => same(kept, write)),
-    )
-    return [
-      {
-        ...each,
-        edit: {
-          ...each.edit,
-          writes: each.edit.writes.map((write, index) => {
-            if (!released[index]) return write
-            const base = baseOf(write)
-            return base === undefined ? withoutBase(write) : { ...write, base }
-          }),
-        },
-        after: each.after.map((name, index) => (released[index] ? null : name)),
-      },
-    ]
-  })
+  const kept = (each: Queued): Queued[] =>
+    each !== head
+      ? [each]
+      : keep.length === 0
+        ? []
+        : [{ ...each, edit: { ...each.edit, writes: keep }, after: keep.map(() => null) }]
+  return released(queue.flatMap(kept), once, head, keep)
+}
+
+export function rewritten(
+  server: doom.Doom,
+  queue: readonly Queued[],
+  once: string,
+  writes: readonly doom.Write[],
+): Queued[] | doom.Refusal {
+  const at = queue.findIndex((each) => each.edit.once === once)
+  const was = queue[at]
+  if (was === undefined) return [...queue]
+  const made = queueEdit(server, queue.slice(0, at), { ...was.edit, writes })
+  if (doom.isRefusal(made)) return made
+  return [...queue.slice(0, at), made, ...released(queue.slice(at + 1), once, was, writes)]
 }
 
 export const skipped = (queue: readonly Queued[], once: string): Queued[] => trimmed(queue, once, [])
@@ -137,4 +160,24 @@ export function dropped(
     queue: queue.filter((each) => !gone.has(each.edit.once)),
     gone: queue.filter((each) => gone.has(each.edit.once)).map((each) => each.edit.once),
   }
+}
+
+export function revIn(server: doom.Doom, queue: readonly Queued[], once: string): doom.Rev | undefined {
+  const landedAt = server.onces.get(once)
+  if (landedAt !== undefined) return landedAt
+  for (const [at, name] of provisionalRevs(
+    server,
+    queue.map((each) => each.edit),
+  ))
+    if (name === once) return at
+  return undefined
+}
+
+export function ownedIn(server: doom.Doom, queue: readonly Queued[], onces: Iterable<string>): Set<doom.Rev> {
+  const owned = new Set<doom.Rev>()
+  for (const name of onces) {
+    const turnedAt = revIn(server, queue, name)
+    if (turnedAt !== undefined) owned.add(turnedAt)
+  }
+  return owned
 }
