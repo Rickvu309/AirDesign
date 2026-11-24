@@ -77,30 +77,69 @@ const ownCommits = (root, tip, base) => {
 const upstreamGone = (root, branch) =>
   branch !== undefined && git(root, ["for-each-ref", "--format=%(upstream:track)", branch])?.trim() === "[gone]"
 
-const onRemote = (root, commit) => {
-  const listed = git(root, ["branch", "-r", "--contains", commit])
-  return listed !== undefined && listed.split("\n").some((line) => line.trim() !== "")
-}
-
-const lastTouched = (worktree) => {
-  const pointer = path.join(worktree, ".git")
+const remoteHeads = (root, remote) => {
   try {
-    const gitdir = fs.readFileSync(pointer, "utf8").replace("gitdir:", "").trim()
-    return Math.max(
-      ...["index", "HEAD"].map((name) => {
-        try {
-          return fs.statSync(path.join(gitdir, name)).mtimeMs
-        } catch {
-          return 0
-        }
-      }),
+    const listed = execFileSync("git", ["ls-remote", "--heads", remote], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 30_000,
+    })
+    return new Set(
+      listed
+        .split("\n")
+        .map((line) => line.trim().split("\t")[1])
+        .filter(Boolean),
     )
   } catch {
-    return 0
+    return undefined
   }
 }
 
+const onRemote = (root, commit, remote, heads) => {
+  const listed = git(root, ["branch", "-r", "--contains", commit])
+  if (listed === undefined || heads === undefined) return false
+  return listed.split("\n").some((line) => {
+    const ref = line.trim()
+    return ref.startsWith(`${remote}/`) && heads.has(`refs/heads/${ref.slice(remote.length + 1)}`)
+  })
+}
+
+const gitDir = (worktree) => {
+  try {
+    const pointer = fs.readFileSync(path.join(worktree, ".git"), "utf8").replace("gitdir:", "").trim()
+    return path.isAbsolute(pointer) ? pointer : path.resolve(worktree, pointer)
+  } catch {
+    return undefined
+  }
+}
+
+const lastTouched = (worktree) => {
+  const gitdir = gitDir(worktree)
+  if (gitdir === undefined) return 0
+  return Math.max(
+    ...["index", "HEAD"].map((name) => {
+      try {
+        return fs.statSync(path.join(gitdir, name)).mtimeMs
+      } catch {
+        return 0
+      }
+    }),
+  )
+}
+
+const midOperation = (worktree) => {
+  const gitdir = gitDir(worktree)
+  return (
+    gitdir !== undefined &&
+    ["rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD", "BISECT_LOG"].some((name) =>
+      fs.existsSync(path.join(gitdir, name)),
+    )
+  )
+}
+
 export const usedByAProcess = (worktree) => {
+  const holds = (where) => where === worktree || where.startsWith(`${worktree}/`)
   let entries
   try {
     entries = fs.readdirSync("/proc")
@@ -109,13 +148,21 @@ export const usedByAProcess = (worktree) => {
   }
   for (const entry of entries) {
     if (!/^\d+$/.test(entry)) continue
-    let cwd
     try {
-      cwd = fs.readlinkSync(`/proc/${entry}/cwd`)
+      if (holds(fs.readlinkSync(`/proc/${entry}/cwd`))) return true
+      for (const open of fs.readdirSync(`/proc/${entry}/fd`)) {
+        if (holds(fs.readlinkSync(`/proc/${entry}/fd/${open}`))) return true
+      }
+      if (
+        fs
+          .readFileSync(`/proc/${entry}/cmdline`, "utf8")
+          .split("\0")
+          .some((word) => holds(word))
+      )
+        return true
     } catch {
       continue
     }
-    if (cwd === worktree || cwd.startsWith(`${worktree}/`)) return true
   }
   return false
 }
@@ -196,6 +243,8 @@ export const findStale = ({
   const listed = git(root, ["worktree", "list", "--porcelain"])
   if (listed === undefined) return []
   const [, ...others] = readWorktrees(listed)
+  const remote = base.includes("/") ? base.split("/")[0] : undefined
+  const heads = remote === undefined ? new Set() : remoteHeads(root, remote)
   const stale = []
   for (const worktree of others) {
     if (worktree.locked || worktree.path === undefined || worktree.head === undefined) continue
@@ -212,11 +261,10 @@ export const findStale = ({
       pull,
       scratch: detached && path.dirname(worktree.path) === scratchRoot,
     }
-    const reason =
-      staleReason(facts) ??
-      (!facts.recent && onRemote(root, worktree.head) ? staleReason({ ...facts, pushed: true }) : undefined)
+    const pushed = !facts.recent && onRemote(root, worktree.head, remote, heads)
+    const reason = staleReason(facts) ?? (pushed ? staleReason({ ...facts, pushed: true }) : undefined)
     if (reason === undefined) continue
-    if (busy(worktree.path) || !clean(worktree.path)) continue
+    if (busy(worktree.path) || midOperation(worktree.path) || !clean(worktree.path)) continue
     stale.push({ ...worktree, reason, landed: pull !== undefined || (commits !== undefined && commits.unlanded === 0) })
   }
   return stale

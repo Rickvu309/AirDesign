@@ -1,5 +1,5 @@
 # Finished worktrees and branches are swept safely
 
-`pnpm sweep` lists every registered worktree, wherever its folder is, and removes merged, closed, scratch and already-pushed work; `--apply` removes it. `scripts/worktrees.mjs` guards live processes, dirty files, unpushed commits and 3-hour activity, and listing a worktree does not refresh that clock; `scripts/sweep.test.mjs` covers a worktree outside the checkout
+`pnpm sweep` lists every registered worktree, wherever its folder is, and removes merged, closed, scratch and already-pushed work; `--apply` removes it. `scripts/worktrees.mjs` guards live processes by cwd, open files and command lines, in-progress git operations (rebase, merge, cherry-pick, revert, bisect), dirty files, unpushed commits and 3-hour activity, resolves a worktree's relative `.git` pointer before reading that clock, and trusts a remote-tracking ref only while the remote still advertises the branch; listing a worktree does not refresh the clock. `scripts/worktree-guards.test.mjs` holds the keep-cases and `scripts/sweep.test.mjs` covers a worktree outside the checkout
 
 The gate's `sweep-list` step passes `--at-most-every=30`: within 30 minutes of the last list on this machine it prints one line and lists nothing, so many agents gating at once do not each walk every worktree and branch (`scripts/sweep.test.mjs`)
