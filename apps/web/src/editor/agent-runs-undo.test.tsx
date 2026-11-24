@@ -56,9 +56,12 @@ async function undoWith(reason: "nothing" | "refused" | "offline") {
   window.document.body.append(host)
   const root = createRoot(host)
   const undoRun = async () => ({ ok: false, reason }) as never
-  await act(async () => {
-    root.render(createElement(AgentRuns, { view: deckWithRun(), editing: new Set<string>(), undoRun }))
-  })
+  const render = (view: doom.Doom) =>
+    act(async () => {
+      root.render(createElement(AgentRuns, { view, editing: new Set<string>(), undoRun }))
+    })
+  const view = deckWithRun()
+  await render(view)
   const button = host.querySelector<HTMLButtonElement>("[data-agent-run-undo]")
   await act(async () => {
     button?.click()
@@ -67,19 +70,33 @@ async function undoWith(reason: "nothing" | "refused" | "offline") {
     button: host.querySelector("[data-agent-run-undo]") !== null,
     note: host.querySelector("[data-agent-run-note]")?.textContent,
   }
+  const later = doom.applyEdit(view, {
+    once: "p1",
+    author: { kind: "person", id: "p" } as doom.Author,
+    writes: [{ node: layer, prop: "name", value: "Mine" }],
+    rev: doom.rev(view.rev + 1),
+  })
+  if (doom.isRefusal(later)) throw new Error(later.refused)
+  await render(later)
+  const after = host.querySelector("[data-agent-run-note]")?.textContent
   await act(async () => root.unmount())
   host.remove()
-  return result
+  return { ...result, after }
 }
 
-it("takes the Undo button away once the run has nothing left to undo, as Aira drops its link", async () => {
-  expect(await undoWith("nothing")).toEqual({ button: false, note: agentRunsCopy.nothingLeft })
+it("keeps the Undo button when the run has nothing left, because undoing the newer write brings it back", async () => {
+  expect(await undoWith("nothing")).toMatchObject({ button: true, note: agentRunsCopy.nothingLeft })
 })
 
-it("takes the Undo button away when everything the run changed was changed again, as Aira does", async () => {
-  expect(await undoWith("refused")).toEqual({ button: false, note: agentRunsCopy.undoRefused })
+it("keeps the Undo button when the last Undo was refused", async () => {
+  expect(await undoWith("refused")).toMatchObject({ button: true, note: agentRunsCopy.undoRefused })
+})
+
+it("drops a nothing-left or refused note once the deck changes, so it never outlives what it said", async () => {
+  expect((await undoWith("nothing")).after).toBeUndefined()
+  expect((await undoWith("refused")).after).toBeUndefined()
 })
 
 it("keeps the Undo button when the network failed, so the person can try again", async () => {
-  expect(await undoWith("offline")).toEqual({ button: true, note: agentRunsCopy.undoFailed })
+  expect(await undoWith("offline")).toMatchObject({ button: true, note: agentRunsCopy.undoFailed })
 })

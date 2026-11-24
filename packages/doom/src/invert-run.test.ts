@@ -115,6 +115,40 @@ describe("undoing a run, edit by edit from the values each write replaced", () =
     expect(nodeOf(undone, ids.side).parent).toMatchObject({ id: frame })
   })
 
+  it("keeps a frame the run added when another agent changed what is in it, so the note cannot say the person did", () => {
+    const frame = nodeId("a:1")
+    let world = run(opened(), runA, create(frame, "frame", ids.slide, { node: frame, prop: "box", value: box(10) }))
+    world = run(world, runB, [{ node: ids.side, prop: "parent", value: place(frame) }])
+    const undone = undoRun(world, "a")
+    expect(undone.kept).toEqual([frame])
+    expect(undone.left).toEqual([])
+  })
+
+  it("leaves a layer where it is when the frame it came from now sits inside it", () => {
+    const inner = nodeId("t:10")
+    let world = by(opened(), person, create(inner, "frame", ids.card))
+    world = run(world, runA, [{ node: inner, prop: "parent", value: place(ids.slide) }])
+    world = by(world, person, [{ node: ids.card, prop: "parent", value: place(inner) }])
+    const undone = undoRun(world, "a")
+    expect(undone.writes).toEqual([])
+    expect(undone.left).toEqual([inner])
+    expect(undone.waiting).toEqual([])
+  })
+
+  it("leaves a layer where it is, not waiting, when only a frame above its old frame was deleted", () => {
+    const inner = nodeId("t:10")
+    let world = by(opened(), person, [
+      ...create(inner, "frame", ids.card),
+      { node: ids.title, prop: "parent", value: place(inner) },
+    ])
+    world = run(world, runA, [{ node: ids.title, prop: "parent", value: place(ids.slide) }])
+    world = by(world, person, [{ node: ids.card, prop: "parent", value: null }])
+    const undone = undoRun(world, "a")
+    expect(undone.writes).toEqual([])
+    expect(undone.left).toEqual([ids.title])
+    expect(undone.waiting).toEqual([])
+  })
+
   it("leaves a layer where it is when the frame it came from, or a frame above that, was deleted since", () => {
     const inner = nodeId("t:10")
     let world = by(opened(), person, create(inner, "frame", ids.card))

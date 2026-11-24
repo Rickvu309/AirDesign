@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import {
   agentRunStatus,
@@ -40,11 +40,17 @@ export function AgentRuns({
   readonly undoRun: EditorClient["undoRun"]
 }) {
   const [undoing, setUndoing] = useState<ReadonlyMap<string, Undoing>>(new Map())
+  const [answeredAt, setAnsweredAt] = useState<ReadonlyMap<string, number>>(new Map())
+  const latest = useRef(view)
+  latest.current = view
   const runs = doom.runsOf(view)
   if (runs.length === 0) return null
 
   async function undo(run: doom.ListedRun) {
-    const mark = (state: Undoing) => setUndoing((now) => new Map(now).set(run.id, state))
+    const mark = (state: Undoing) => {
+      setUndoing((now) => new Map(now).set(run.id, state))
+      setAnsweredAt((now) => new Map(now).set(run.id, latest.current.rev))
+    }
     mark("undoing")
     const turned = await undoRun(run.id)
     const named = (ids: readonly doom.NodeId[]) => ids.map((id) => layerLabel(view, id))
@@ -60,7 +66,10 @@ export function AgentRuns({
       </h2>
       <ul className="max-h-[7.5rem] overflow-x-hidden overflow-y-auto">
         {runs.map((run) => {
-          const state = undoing.get(run.id)
+          const answered = undoing.get(run.id)
+          const aged =
+            answered === "nothing" || answered === "refused" || (typeof answered === "object" && !answered.landed)
+          const state = aged && answeredAt.get(run.id) !== view.rev ? undefined : answered
           const live = editing.has(run.id)
           const name = agentShownName(run.name)
           const status = run.undone ? agentRunsCopy.undone : agentRunStatus(live, placeOf(view, run))
@@ -78,7 +87,7 @@ export function AgentRuns({
                   {live ? <LiveDot /> : null}
                   <span className="truncate">{status}</span>
                 </span>
-                {live || run.undone || state === "nothing" || state === "refused" ? null : (
+                {live || run.undone ? null : (
                   <button
                     type="button"
                     data-agent-run-undo=""
