@@ -16,8 +16,8 @@
     {
       "file": "packages/doom/src/standing-layers.ts",
       "names": ["onStandingLayers", "landingMoves", "shows", "heldFrames"],
-      "digest": "dcdbd3630e82",
-      "blob": "152f1349b672f8b05fefe748650d71d62d0ecef5"
+      "digest": "fb2d8fdf5a5b",
+      "blob": "83e9701c500bd89682885878ac8b0e7cbe8fa376"
     }
   ]
 }

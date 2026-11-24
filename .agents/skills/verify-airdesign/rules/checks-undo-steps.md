@@ -65,7 +65,7 @@ One device's undo and redo stacks over steps on the card K's place, beside a mov
 
 Bounds: x is 0 or 1, two steps before the first press, one action by the other writer at any time after the person's first step, three presses. 343 states. Run: `pnpm check:specs undo-strays`. Replay: `tests/undo-strays-replay.test.ts` drives all 342 edges through the real `createDoomDeck`, `openDoomDeck` and `memoryDoomRemote`, the person's tab and another tab on one server. `packages/live/src/doom-undo-stray-box.test.ts` holds the cases beside it: the size and flip that come back, a run's undo, the chain through a deleted frame, a reorder inside the frame the step moved K to, and two people who group, nudge and undo in turn. `tests/browser/editor-undo-deleted-layer.spec.ts` holds the same two as keys in two tabs.
 
-Leaves out: deleted frames (undo-deleted-frames), a line's point ends, which follow the same rule in `leftInPlace`, turns of the frame (K's turn is kept as x and y are), and a step that moves several layers.
+Leaves out: deleted frames (undo-deleted-frames), a line's point ends, which follow the same rule in `lineLeftInPlace`, turns of the frame (K's turn is kept as x and y are), and a step that moves several layers.
 
 Planted faults, each put in the model and then in the code:
 

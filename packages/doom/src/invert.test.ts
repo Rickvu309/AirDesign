@@ -238,7 +238,10 @@ describe("invert", () => {
 
   it("keeps a frame the undo would delete while a layer the undo leaves in place, or someone else's, still sits in it", () => {
     const [inner, leaf, wrap] = [nodeId("t:10"), nodeId("t:11"), nodeId("t:12")]
-    const nested = land(sampleDeck(), [...create(inner, "frame", ids.card), ...create(leaf, "shape", inner)])
+    const nested = land(sampleDeck(), [
+      ...create(inner, "frame", ids.card),
+      ...create(leaf, "shape", inner, { node: leaf, prop: "box", value: box(5) }),
+    ])
     const { before, after, edit } = step(nested, [
       ...create(wrap, "frame", inner, { node: wrap, prop: "box", value: box(100) }),
       { node: leaf, prop: "parent", value: place(wrap) },
@@ -249,14 +252,14 @@ describe("invert", () => {
     const cardGone = step(after, [{ node: ids.card, prop: "parent", value: null }])
     expect(invert(before, cardGone.after, edit)).toEqual([
       { node: leaf, prop: "parent", value: place(inner), base: edit.rev },
-      { node: leaf, prop: "box", value: null, base: edit.rev },
+      { node: leaf, prop: "box", value: box(5), base: edit.rev },
       { node: wrap, prop: "parent", value: null, base: edit.rev },
     ])
     const theirs = step(after, [{ node: ids.caption, prop: "parent", value: place(wrap) }])
     const writes = invert(before, theirs.after, edit)
     expect(writes).toEqual([
       { node: leaf, prop: "parent", value: place(inner), base: edit.rev },
-      { node: leaf, prop: "box", value: null, base: edit.rev },
+      { node: leaf, prop: "box", value: box(5), base: edit.rev },
     ])
     expect((tryLand(theirs.after, writes) as Doom).children.get(wrap)).toEqual([ids.caption])
   })
@@ -294,7 +297,7 @@ describe("invert", () => {
     expect(invert(before, later.after, edit)).toEqual([])
   })
 
-  it("keeps where a layer sits and puts back its size and flips when someone moved it out of the frame the step left it in", () => {
+  it("keeps where a layer sits and puts back its size and flips when someone moved it out of the frame it sat in before the step", () => {
     const { before, after, edit } = step(sampleDeck(), [
       { node: ids.title, prop: "box", value: { ...box(30, 40, 300, 150), flipH: true } },
     ])
@@ -310,6 +313,28 @@ describe("invert", () => {
     ])
     const undone = tryLand(theirs.after, writes) as Doom
     expect(undone.nodes.get(ids.title)).toMatchObject({ parent: place(ids.side), box: { x: 30, y: 40, flipH: false } })
+  })
+
+  it("keeps the end a line has when someone moved the line out of the frame it sat in before the step", () => {
+    const line = nodeId("t:10")
+    const lineOf = (start: unknown) => ({
+      kind: "line",
+      start,
+      end: { x: 10, y: 10 },
+      route: "straight",
+      arrows: ["none", "none"],
+    })
+    const [toTitle, onTitle] = [
+      { node: ids.title, site: "r" },
+      { x: -100, y: 50 },
+    ]
+    const deck = land(
+      sampleDeck(),
+      create(line, "shape", ids.card, { node: line, prop: "geometry", value: lineOf(toTitle) }),
+    )
+    const { before, after, edit } = step(deck, [{ node: line, prop: "geometry", value: lineOf(onTitle) }])
+    const theirs = step(after, [{ node: line, prop: "parent", value: place(ids.side) }])
+    expect(invert(before, theirs.after, edit)).toEqual([])
   })
 
   it("puts a deleted layer back into its frame though a frame above it was deleted since, so it comes back with that frame", () => {

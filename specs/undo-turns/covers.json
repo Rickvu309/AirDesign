@@ -1,0 +1,11 @@
+{
+  "check": "checks-undo-turns.md#undo-turns",
+  "covers": [
+    {
+      "file": "packages/doom/src/standing-layers.ts",
+      "names": ["boxLeftInPlace"],
+      "digest": "7b9ce94acf17",
+      "blob": "83e9701c500bd89682885878ac8b0e7cbe8fa376"
+    }
+  ]
+}
