@@ -1,5 +1,6 @@
 import { readAngle, readRotation } from "./angle.js"
 import { arrowField, startArrowField } from "./agent-arrow.js"
+import { readAxisUnit } from "./chart.js"
 import { type AgentEnd, endSchema, readEnd } from "./agent-end.js"
 import { type AgentInsert, insertField } from "./agent-insert.js"
 import { type AgentItem, itemSchema, readItem } from "./agent-item.js"
@@ -65,6 +66,7 @@ export type AgentChart = {
   readonly categories: readonly string[]
   readonly series: readonly { readonly name: string; readonly values: readonly number[]; readonly color?: AgentColor }[]
   readonly labels?: boolean
+  readonly unit?: string
 }
 export type AgentLook = {
   readonly fill?: AgentFill
@@ -178,6 +180,7 @@ const chartSchema = {
       },
     },
     labels: { type: "boolean", description: "Print each value on its bar." },
+    unit: { type: "string", description: "After each axis number, such as $M." },
   },
 }
 const readChart: Reader<AgentChart> = (raw) => {
@@ -187,7 +190,7 @@ const readChart: Reader<AgentChart> = (raw) => {
       categories: list(words(200), 200, 1),
       series: list(object({ name: words(200), values: list(finite(-1e12, 1e12), 200) }, { color: readColor }), 20, 1),
     },
-    { labels: boolean },
+    { labels: boolean, unit: readAxisUnit },
   )(raw)
   return chart.series.every((series) => series.values.length === chart.categories.length)
     ? chart

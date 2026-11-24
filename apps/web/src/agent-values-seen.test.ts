@@ -46,7 +46,7 @@ const seen: Readonly<Record<string, Seen>> = {
   arrow: { person: ["gesture:tool-arrow", "panel:border.end"] },
   startArrow: { person: ["panel:border.start"] },
   chart: {
-    owedToPerson: "a series colour and a single bar's colour: the chart editor shows names and values only",
+    owedToPerson: "a series colour, one bar's colour, and the axis unit: the chart editor shows names and values only",
     partly: ["panel:chart-data"],
   },
   rows: {
