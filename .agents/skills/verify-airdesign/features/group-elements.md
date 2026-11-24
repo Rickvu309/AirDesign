@@ -4,7 +4,7 @@ On an open deck, Shift+click adds a layer to the selection, and Ctrl/Cmd+G makes
 
 ## Sub-features
 
-- `group` Ctrl/Cmd+G on layers that share a parent writes one new frame node named `Group` with `sizing: { w: "hug", h: "hug" }`, at the front layer's place in the stack, whose box is the layers' bounds; each layer moves into it with its box in the group's space, so nothing moves on the slide (`wrapWrites` in `apps/web/src/doom-editor/group-writes.ts`). The group is selected.
+- `group` Ctrl/Cmd+G on layers that share a parent writes one new frame node named `Group` with `sizing: { w: "hug", h: "hug" }`, at the front layer's place in the stack, whose box is the layers' bounds; each layer moves into it with its box in the group's space, so nothing moves on the slide (`wrapWrites` in `apps/web/src/editor/group-writes.ts`). The group is selected.
 - `frame` Ctrl/Cmd+Alt+G wraps the selection the same way in a frame named `Frame` with `clip: true` that covers it.
 - `group-move` a click on any layer of a group selects the group, and a drag moves all its layers; the server stores only the group's new box.
 - `ungroup` Ctrl/Cmd+Shift+G or Ctrl/Cmd+Backspace puts each layer of the selected group back in its parent where it showed, and deletes the group (`ungroupWrites`). Undo after an ungroup brings the group back, and a second undo takes the group away.
@@ -30,4 +30,4 @@ Preconditions:
 ## Gotchas
 
 - Ctrl/Cmd+G does nothing on layers with different parents.
-- A group and a frame are both `type: "frame"` nodes; the panel calls one a group when it has no fill, no border and no auto layout and hugs its layers both ways (`isGroup` in `apps/web/src/doom-editor/group-scale.ts`).
+- A group and a frame are both `type: "frame"` nodes; the panel calls one a group when it has no fill, no border and no auto layout and hugs its layers both ways (`isGroup` in `apps/web/src/editor/group-scale.ts`).

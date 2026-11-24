@@ -1,13 +1,12 @@
 {
   "reason": "Screens that draw what the app never draws, from before this check. Fix them, never add to them: render the real page with sample data, or delete the screen when the product has no such page.",
   "known": [
-    "apps/web/src/core/core-screens.tsx -> apps/web/src/core/core-slide.tsx",
+    "apps/web/src/samples/sample-screens.tsx -> apps/web/src/samples/slide-screen.tsx",
     "apps/web/src/decks/screens/deck-moved-toast.tsx -> own MovedToast",
     "apps/web/src/decks/screens/trash-list.tsx -> own EmptyTrashButton",
     "apps/web/src/decks/screens/trash-list.tsx -> own EmptyTrashDialog",
     "apps/web/src/decks/screens/trash-list.tsx -> own RestoreButton",
     "apps/web/src/decks/screens/trash-list.tsx -> own TrashNote",
-    "apps/web/src/present/screens/present-states.tsx -> apps/web/src/editor/slide-thumb.tsx",
     "apps/web/src/settings/screens/account-tab.tsx -> apps/web/src/settings/settings-frame.tsx",
     "apps/web/src/settings/screens/account-tab.tsx -> own PreferenceRow",
     "apps/web/src/settings/screens/agents-tab.tsx -> apps/web/src/settings/settings-frame.tsx",

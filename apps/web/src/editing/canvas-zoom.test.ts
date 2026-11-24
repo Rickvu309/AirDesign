@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { canvasRoom, slideTop, fitWidth, slideRoom, steppedZoom, typedZoom, zoomKey } from "@/editor/canvas-zoom"
+import { canvasRoom, slideTop, fitWidth, slideRoom, steppedZoom, typedZoom, zoomKey } from "@/editing/canvas-zoom"
 
 const wide = { width: 12_192_000, height: 6_858_000 }
 const standard = { width: 9_144_000, height: 6_858_000 }

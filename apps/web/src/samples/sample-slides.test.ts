@@ -1,8 +1,8 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { coreRoutes } from "@/core/core-routes"
-import { coreDoom } from "@/core/core-doom"
-import { screens } from "@/core/core-screens"
+import { sampleRoutes } from "@/samples/sample-routes"
+import { sampleSlides } from "@/samples/sample-slides"
+import { screens } from "@/samples/sample-screens"
 
 const measure = doom.measureWith({})
 const slideSize = { w: 1920, h: 1080 }
@@ -26,13 +26,13 @@ function placed(
   ])
 }
 
-describe("the designed states of the doom core", () => {
+describe("the sample slides", () => {
   it("registers one screen for each address", () => {
-    expect(Object.keys(screens).sort()).toEqual(Object.values(coreRoutes).sort())
-    expect(Object.keys(coreDoom).sort()).toEqual(Object.values(coreRoutes).sort())
+    expect(Object.keys(screens).sort()).toEqual(Object.values(sampleRoutes).sort())
+    expect(Object.keys(sampleSlides).sort()).toEqual(Object.values(sampleRoutes).sort())
   })
 
-  for (const [route, grown] of Object.entries(coreDoom)) {
+  for (const [route, grown] of Object.entries(sampleSlides)) {
     const nodes = placed(doom.resolveSlide(grown.doom, grown.slides[0]!, measure), null, 0, 0)
 
     it(`${route} keeps every drawn part inside its frame, and every frame inside the slide`, () => {

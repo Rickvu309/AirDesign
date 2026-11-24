@@ -10,7 +10,7 @@ import { measureWith } from "./measure.js"
 import { type NodeId, readNodeId } from "./ids.js"
 import type { Geometry } from "./geometry.js"
 import type { Node } from "./doom.js"
-import { descendantsOf, get, slideOf, slidesOf } from "./doom-walk.js"
+import { descendantsOf, propOf, slideOf, slidesOf } from "./doom-walk.js"
 
 type SetChange = Extract<AgentChange, { op: "set" }>
 
@@ -58,14 +58,14 @@ function targetNode(draft: Draft, target: string): Node {
   const slide = living(draft, role[1] as NodeId, "target")
   if (slide.type !== "slide") stop("shape", slide.id, "target")
   const found = descendantsOf(draft.doom, slide.id).find(
-    (node) => node.type === "shape" && get(node, "role") === role[2],
+    (node) => node.type === "shape" && propOf(node, "role") === role[2],
   )
   return found ?? stop("missing", slide.id, "target")
 }
 
 function setBar(draft: Draft, change: SetChange, at: number): void {
   const frame = living(draft, readNodeId(change.target.slice(0, at)) ?? stop("missing", undefined, "target"), "target")
-  const chart = get(frame, "chart") ?? stop("shape", frame.id, "target")
+  const chart = propOf(frame, "chart") ?? stop("shape", frame.id, "target")
   const bar = change.target.slice(at + 1)
   const known = chart.series.some((series) => chart.categories.some((category) => bar === `${series.name}:${category}`))
   if (!known) stop("missing", frame.id, "target")
@@ -81,14 +81,14 @@ function setBar(draft: Draft, change: SetChange, at: number): void {
 
 function setEverySlide(draft: Draft, change: SetChange, role: string): void {
   const slides = slidesOf(draft.doom).filter((slide) =>
-    descendantsOf(draft.doom, slide.id).some((node) => get(node, "role") === role),
+    descendantsOf(draft.doom, slide.id).some((node) => propOf(node, "role") === role),
   )
   if (slides.length === 0) stop("missing", undefined, "target")
   for (const slide of slides) compileSet(draft, { ...change, target: `${slide.id}.${role}` })
 }
 
 function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | undefined {
-  const geometry = get(node, "geometry")
+  const geometry = propOf(node, "geometry")
   if (change.icon !== undefined) {
     if (geometry?.kind !== "icon") stop("shape", node.id, "icon")
     return { kind: "icon", name: iconName(change.icon) }
@@ -119,19 +119,19 @@ export function compileSet(draft: Draft, change: SetChange): void {
   if (node.type !== "slide" && node.type !== "frame" && node.type !== "shape") stop("shape", node.id, "target")
   for (const field of [...neverOnSet, ...unfit[node.type]])
     if (change[field] !== undefined) stop("shape", node.id, field)
-  if (change.fit !== undefined && !(get(node, "fills") ?? []).some((paint) => paint.kind === "image"))
+  if (change.fit !== undefined && !(propOf(node, "fills") ?? []).some((paint) => paint.kind === "image"))
     stop("shape", node.id, "fit")
-  const outline = get(node, "geometry")?.kind
+  const outline = propOf(node, "geometry")?.kind
   if (change.shape !== undefined && (outline === "line" || outline === "icon" || outline === "path"))
     stop("shape", node.id, "shape")
   const now = {
-    fills: get(node, "fills"),
-    stroke: get(node, "stroke"),
-    box: get(node, "box"),
-    layout: get(node, "layout"),
-    text: get(node, "text"),
+    fills: propOf(node, "fills"),
+    stroke: propOf(node, "stroke"),
+    box: propOf(node, "box"),
+    layout: propOf(node, "layout"),
+    text: propOf(node, "text"),
   }
-  const geometry = get(node, "geometry")
+  const geometry = propOf(node, "geometry")
   const stroked = geometry?.kind === "line" || geometry?.kind === "icon" ? "center" : "inside"
   const worded = node.type === "shape" ? textOfLook(change, now.text, "body") : undefined
   const text = resizedBy(worded ?? now.text, change.box, now.box) ?? worded
@@ -140,7 +140,7 @@ export function compileSet(draft: Draft, change: SetChange): void {
     (field) => node.type === "frame" && change[field] !== undefined,
   )
   if (asked !== undefined && layout === undefined) stop("shape", node.id, asked)
-  if (change.chart !== undefined && get(node, "chart") === undefined) stop("shape", node.id, "chart")
+  if (change.chart !== undefined && propOf(node, "chart") === undefined) stop("shape", node.id, "chart")
   const shaped = geometryOf(draft, node, change)
   const values: Values = {
     ...surfaceOf(change, now, stroked),

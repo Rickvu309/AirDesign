@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { DesignSection } from "@/editor/design-panel"
+import { DesignSection } from "@/editor/design-sections"
 
 export function PanelSection(props: { readonly title: string; readonly name: string; readonly children: ReactNode }) {
   return (

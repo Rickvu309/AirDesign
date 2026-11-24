@@ -4,7 +4,7 @@ import { compileAgentEdit, readingOf } from "./agent-edit.js"
 import { agentDeck, minter, richDeck, runName, started } from "./agent-fixtures.js"
 import { type Doom, applyEdit, isRefusal, nodeId, rev } from "./index.js"
 import { agent, create, ids, land, person, revOf, sampleDeck, textOf } from "./sample-deck.js"
-import { get } from "./doom-walk.js"
+import { propOf } from "./doom-walk.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
 const by = (more: Record<string, unknown> = {}) => ({
@@ -36,7 +36,7 @@ describe("compileAgentEdit", () => {
     ])
     const landed = landEdit(doom, result.edit as never)
     expect(isRefusal(landed)).toBe(false)
-    expect(get((landed as Doom).nodes.get(result.added[0]!.id)!, "text")?.chars).toBe("Board update Q3")
+    expect(propOf((landed as Doom).nodes.get(result.added[0]!.id)!, "text")?.chars).toBe("Board update Q3")
   })
 
   it("names the delete that left no slide when it is not the first change", () => {

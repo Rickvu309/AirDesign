@@ -3,7 +3,7 @@ import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { build, minter, more, richDeck } from "./agent-fixtures.js"
 import { ids, land } from "./sample-deck.js"
-import { childrenOf, get, parentOf } from "./doom-walk.js"
+import { childrenOf, parentOf, propOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
@@ -40,12 +40,12 @@ describe("move", () => {
   it("puts a node into another frame and keeps it where it was on the slide", () => {
     const doom = build(richDeck(), change({ op: "move", node: ids.title, into: ids.side }))
     expect(parentOf(doom.nodes.get(ids.title)!)?.id).toBe(ids.side)
-    expect(get(doom.nodes.get(ids.title)!, "box")).toMatchObject({ x: -300, y: 0, w: 200, h: 100 })
+    expect(propOf(doom.nodes.get(ids.title)!, "box")).toMatchObject({ x: -300, y: 0, w: 200, h: 100 })
   })
 
   it("moves a node to the slide from a frame, adding the frame's offset", () => {
     const doom = build(richDeck(), change({ op: "move", node: ids.title, into: ids.slide }))
-    expect(get(doom.nodes.get(ids.title)!, "box")).toMatchObject({ x: 100, y: 0 })
+    expect(propOf(doom.nodes.get(ids.title)!, "box")).toMatchObject({ x: 100, y: 0 })
   })
 
   it("moves to another slide", () => {
@@ -103,25 +103,29 @@ describe("wrap and unwrap", () => {
     const doom = wrapped()
     const frame = childrenOf(doom, ids.slide)[0]!
     expect(frame.type).toBe("frame")
-    expect(get(frame, "box")).toMatchObject({ x: 100, y: 0, w: 500, h: 100 })
-    expect(get(frame, "layout")).toBeUndefined()
-    expect(get(frame, "sizing")).toEqual({ w: "hug", h: "hug" })
+    expect(propOf(frame, "box")).toMatchObject({ x: 100, y: 0, w: 500, h: 100 })
+    expect(propOf(frame, "layout")).toBeUndefined()
+    expect(propOf(frame, "sizing")).toEqual({ w: "hug", h: "hug" })
     expect(kids(doom, frame.id)).toEqual([ids.card, ids.side])
-    expect(get(doom.nodes.get(ids.card)!, "box")).toMatchObject({ x: 0, y: 0 })
-    expect(get(doom.nodes.get(ids.side)!, "box")).toMatchObject({ x: 300, y: 0 })
+    expect(propOf(doom.nodes.get(ids.card)!, "box")).toMatchObject({ x: 0, y: 0 })
+    expect(propOf(doom.nodes.get(ids.side)!, "box")).toMatchObject({ x: 300, y: 0 })
     expect(kids(doom, ids.slide)).toEqual([frame.id, more.chart, more.line, more.icon])
   })
 
   it("wraps into a row or column that places the children itself", () => {
     const frame = childrenOf(wrapped({ layout: "row" }), ids.slide)[0]!
-    expect(get(frame, "layout")).toMatchObject({ mode: "row", padding: { t: 0, r: 0, b: 0, l: 0 }, align: "top-left" })
+    expect(propOf(frame, "layout")).toMatchObject({
+      mode: "row",
+      padding: { t: 0, r: 0, b: 0, l: 0 },
+      align: "top-left",
+    })
   })
 
   it("unwraps a frame: its children take its place and position, and the frame goes", () => {
     const doom = build(wrapped(), change({ op: "unwrap", node: childrenOf(wrapped(), ids.slide)[0]!.id }))
     expect(kids(doom, ids.slide)).toEqual([ids.card, ids.side, more.chart, more.line, more.icon])
-    expect(get(doom.nodes.get(ids.card)!, "box")).toMatchObject({ x: 100, y: 0 })
-    expect(get(doom.nodes.get(ids.side)!, "box")).toMatchObject({ x: 400, y: 0 })
+    expect(propOf(doom.nodes.get(ids.card)!, "box")).toMatchObject({ x: 100, y: 0 })
+    expect(propOf(doom.nodes.get(ids.side)!, "box")).toMatchObject({ x: 400, y: 0 })
   })
 
   it("unwraps a laid-out frame by the boxes it was solved to", () => {

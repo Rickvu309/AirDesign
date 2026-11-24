@@ -1,5 +1,5 @@
-import { galleryDeck } from "@/editor/gallery-deck"
-import { SlideThumb } from "@/editor/slide-thumb"
+import { galleryDeck } from "@/present/screens/gallery-deck"
+import { SlideThumb } from "@/present/screens/slide-thumb"
 import { PresentShow } from "@/present/present-show"
 import { PresenterView } from "@/present/presenter-view"
 

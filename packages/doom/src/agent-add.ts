@@ -9,7 +9,7 @@ import { type Area, areaFor, cardRadiusFor, gapFor, slideSize, themeOf } from ".
 import { lineEnds } from "./agent-line-ends.js"
 import { pictureFit } from "./picture-fit.js"
 import type { Box } from "./doom-walk.js"
-import { descendantsOf, get, isLaidOut, slideOf, zeroBox } from "./doom-walk.js"
+import { descendantsOf, isLaidOut, propOf, slideOf, zeroBox } from "./doom-walk.js"
 import type { Node } from "./doom.js"
 import type { Text } from "./text.js"
 import { textHeight } from "./text-estimate.js"
@@ -68,8 +68,8 @@ function checkFields(change: Add): void {
 
 function emptyPlaceholderOf(draft: Draft, slide: Node, role: "title" | "subtitle", prompt: string): Node | undefined {
   return descendantsOf(draft.doom, slide.id).find((node) => {
-    const chars = get(node, "text")?.chars
-    return get(node, "role") === role && (chars === "" || chars === prompt)
+    const chars = propOf(node, "text")?.chars
+    return propOf(node, "role") === role && (chars === "" || chars === prompt)
   })
 }
 
@@ -104,11 +104,15 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
       ? emptyPlaceholderFor(draft, slide, made.style, change.box !== undefined)
       : undefined
   if (empty !== undefined) {
-    const held = get(empty, "text") as Text
+    const held = propOf(empty, "text") as Text
     const { textStyle: _, ...unstyled } = change
     const { chars, spans, paras } = textOfLook(unstyled, held, held.style) as Text
     put(draft, empty.id, {
-      ...surfaceOf(change, { fills: get(empty, "fills"), stroke: get(empty, "stroke"), box: get(empty, "box") }),
+      ...surfaceOf(change, {
+        fills: propOf(empty, "fills"),
+        stroke: propOf(empty, "stroke"),
+        box: propOf(empty, "box"),
+      }),
       text: { ...held, chars, spans, paras },
     })
     return
@@ -127,7 +131,7 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
     kind === "text" &&
     made !== undefined &&
     titleStyles.has(made.style) &&
-    !descendantsOf(draft.doom, slide.id).some((node) => get(node, "role") === "title")
+    !descendantsOf(draft.doom, slide.id).some((node) => propOf(node, "role") === "title")
   create(draft, "shape", parent.id, {
     ...surfaceOf(change),
     ...(labelled && change.radius === undefined ? { radius: cardRadiusFor(slideSize(draft).w) } : {}),
@@ -229,7 +233,7 @@ export function compileAdd(draft: Draft, change: Add): void {
   const parent = change.into === undefined ? slide : living(draft, change.into, "into")
   if (change.into !== undefined && (parent.type !== "frame" || slideOf(draft.doom, parent.id) !== slide.id))
     stop("missing", parent.id, "into")
-  if (get(parent, "chart") !== undefined) stop("shape", parent.id, "into")
+  if (propOf(parent, "chart") !== undefined) stop("shape", parent.id, "into")
   checkFields(change)
   compileKind(draft, parent, slide, change)
 }

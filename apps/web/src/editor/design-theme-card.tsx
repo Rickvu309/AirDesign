@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { designCopy } from "@/copy/design-copy"
 import { arrange } from "@/design/panel-arrangement"
 import { ColorPicker } from "@/design/color-picker"
-import { DesignSection, SectionStrips } from "@/editor/design-panel"
+import { DesignSection, SectionStrips } from "@/editor/design-sections"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { TemplateStyleFace } from "@/editor/template-style-card"
 import { templateStyleCopy } from "@/copy/template-style-copy"

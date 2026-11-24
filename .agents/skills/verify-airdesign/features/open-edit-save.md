@@ -4,7 +4,7 @@ A signed-in person presses `New deck` on Home and AirDesign opens a new deck at 
 
 ## Sub-features
 
-- `new-deck` `button "New deck"` on Home, or `Blank deck` on the `No decks yet` card, goes to `/s`, which creates the deck with `doomRoutes.create` and replaces the address with `/s/<id>` (`DoomEditor` in `apps/web/src/doom-editor/doom-editor.tsx`). The deck is named `Blank deck` and its slide holds a title (`s:4` in a new deck) and a subtitle. `[data-doom-ready]` marks the open editor.
+- `new-deck` `button "New deck"` on Home, or `Blank deck` on the `No decks yet` card, goes to `/s`, which creates the deck with `doomRoutes.create` and replaces the address with `/s/<id>` (`DoomEditor` in `apps/web/src/editor/doom-editor.tsx`). The deck is named `Blank deck` and its slide holds a title (`s:4` in a new deck) and a subtitle. `[data-doom-ready]` marks the open editor.
 - `deck-name-follows-title` while the deck is still named `Blank deck`, or its name still matches slide 1's title, an edit to slide 1's title renames the deck in the same edit and the same undo step (`nameFromTitleWrites` in `packages/doom/src/deck-name-from-title.ts`). A name the person typed is kept.
 - `edit-text` a double-click on a text layer edits it where it was clicked; Enter on a selected text layer edits it with all its words selected; Escape leaves the text and keeps the layer selected. Emptying a text layer removes it, and one undo brings it back (`tests/browser/doom-editor-text.spec.ts`).
 - `text-tool` T (the Text tool) and a click places a text layer that grows with its words; a drag draws a fixed box. A text layer left empty leaves nothing behind.

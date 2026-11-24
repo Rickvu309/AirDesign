@@ -1,7 +1,7 @@
 import { limits } from "./limits.js"
 import { applyEdit } from "./apply-edit.js"
 import type { Author, Doom, Node, Write } from "./doom.js"
-import { descendantsOf, get, slidesOf } from "./doom-walk.js"
+import { descendantsOf, propOf, slidesOf } from "./doom-walk.js"
 import { rev, type NodeId } from "./ids.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { isRefusal } from "./refusal.js"
@@ -13,8 +13,8 @@ const author: Author = { kind: "person", id: "deck-name" }
 function firstTitleOf(doom: Doom): { readonly id: NodeId | undefined; readonly chars: string } {
   const first = slidesOf(doom)[0]
   const title =
-    first === undefined ? undefined : descendantsOf(doom, first.id).find((node) => get(node, "role") === "title")
-  return { id: title?.id, chars: title === undefined ? "" : (get(title, "text")?.chars ?? "") }
+    first === undefined ? undefined : descendantsOf(doom, first.id).find((node) => propOf(node, "role") === "title")
+  return { id: title?.id, chars: title === undefined ? "" : (propOf(title, "text")?.chars ?? "") }
 }
 
 const nameOf = (chars: string): string => [...(chars.split("\n")[0] ?? "").trim()].slice(0, limits.name).join("").trim()
@@ -22,8 +22,8 @@ const nameOf = (chars: string): string => [...(chars.split("\n")[0] ?? "").trim(
 const isBlank = (name: unknown): boolean => name === undefined || name === blankDeckName
 
 function nameFollowsTitle(deck: Node): boolean {
-  const flag = get(deck, "nameFollows")
-  return flag ?? isBlank(get(deck, "name"))
+  const flag = propOf(deck, "nameFollows")
+  return flag ?? isBlank(propOf(deck, "name"))
 }
 
 export function nameFromTitleWrites(doom: Doom, writes: readonly Write[]): readonly Write[] {
@@ -34,7 +34,7 @@ export function nameFromTitleWrites(doom: Doom, writes: readonly Write[]): reado
   if (renamed !== undefined) {
     if (ownWrites.some((write) => write.prop === "nameFollows")) return []
     const following = isBlank(renamed.value)
-    return get(deck, "nameFollows") === following ? [] : [{ node: deck.id, prop: "nameFollows", value: following }]
+    return propOf(deck, "nameFollows") === following ? [] : [{ node: deck.id, prop: "nameFollows", value: following }]
   }
   const flagged = ownWrites.findLast((write) => write.prop === "nameFollows")
   if (!(flagged === undefined ? nameFollowsTitle(deck) : flagged.value === true)) return []
@@ -51,12 +51,12 @@ export function nameFromTitleWrites(doom: Doom, writes: readonly Write[]): reado
   if (unwritten && before === id) return []
   const typed = unwritten ? "" : nameOf(chars)
   const name = typed === "" ? blankDeckName : typed
-  if (name === get(deck, "name")) return []
+  if (name === propOf(deck, "name")) return []
   const based = (prop: "name" | "nameFollows", value: unknown): Write => {
     const base = doom.revs.get(deck.id)?.get(prop)
     return { node: deck.id, prop, value, ...(base === undefined ? {} : { base }) }
   }
-  const flag = get(deck, "nameFollows") === true || flagged !== undefined ? [] : [based("nameFollows", true)]
+  const flag = propOf(deck, "nameFollows") === true || flagged !== undefined ? [] : [based("nameFollows", true)]
   return [based("name", name), ...flag]
 }
 

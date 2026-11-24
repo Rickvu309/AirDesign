@@ -1,5 +1,5 @@
 import { useLayoutEffect, useState } from "react"
-import type { SlideSize } from "@/editor/canvas-zoom"
+import type { SlideSize } from "@/editing/canvas-zoom"
 
 export function useRoom(): { readonly room: SlideSize | null; readonly onRoom: (node: HTMLElement | null) => void } {
   const [node, setNode] = useState<HTMLElement | null>(null)

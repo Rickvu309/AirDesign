@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom"
-import type { SlideSize } from "@/editor/canvas-zoom"
+import type { SlideSize } from "@/editing/canvas-zoom"
 import { PresentShow } from "@/present/present-show"
 import type { SlidePaint } from "@/present/present-stage"
 import { nextShown } from "@/present/present-steps"

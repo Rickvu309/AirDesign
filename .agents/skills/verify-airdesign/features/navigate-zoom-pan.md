@@ -4,8 +4,8 @@ A person zooms and pans the slide as in Figma Slides. Ctrl or Command with the s
 
 ## Sub-features
 
-- `wheel` Ctrl/Cmd+scroll over a point zooms and keeps that point of the slide under the cursor (`wheelScale` in `apps/web/src/doom-editor/canvas-view.ts`).
-- `keys` Shift+0 and Ctrl/Cmd+0 go to 100%, `+`, `-`, Ctrl/Cmd+= and Ctrl/Cmd+- step through 10, 25, 50, 75, 100, 150, 200, 300 and 400%, and Shift+1 goes back to fit. The range is 10% to 400% (`zoomRange` in `apps/web/src/editor/canvas-zoom.ts`). The keys are the `view` rows of `gestures` in `apps/web/src/lib/gestures.ts`.
+- `wheel` Ctrl/Cmd+scroll over a point zooms and keeps that point of the slide under the cursor (`wheelScale` in `apps/web/src/editor/canvas-view.ts`).
+- `keys` Shift+0 and Ctrl/Cmd+0 go to 100%, `+`, `-`, Ctrl/Cmd+= and Ctrl/Cmd+- step through 10, 25, 50, 75, 100, 150, 200, 300 and 400%, and Shift+1 goes back to fit. The range is 10% to 400% (`zoomRange` in `apps/web/src/editing/canvas-zoom.ts`). The keys are the `view` rows of `gestures` in `apps/web/src/lib/gestures.ts`.
 - `selection` Shift+2 fills the canvas with the selected layers and centres them.
 - `pan` holding Space, or the hand tool, shows the grab cursor; a drag scrolls the view and moves nothing on the slide. V goes back to Move. Space types a space while editing text.
 - `zoom-menu` a click on `[data-zoom-readout]` opens the zoom menu: a percent or Fit zooms the slide. Agent and Design share one zoom.

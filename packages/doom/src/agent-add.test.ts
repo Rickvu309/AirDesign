@@ -5,7 +5,7 @@ import { compileAgentEdit } from "./agent-edit.js"
 import { agentDeck, apply, build, compiled, firstSlide, lastChild, minter, runName } from "./agent-fixtures.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { agent, create, hex, ids } from "./sample-deck.js"
-import { childrenOf, get } from "./doom-walk.js"
+import { childrenOf, propOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { nodeId } from "./ids.js"
 
@@ -18,9 +18,9 @@ describe("add text", () => {
     const doom = build(agentDeck(), text())
     const made = lastChild(doom, slide)
     expect(made.type).toBe("shape")
-    expect(get(made, "geometry")).toEqual({ kind: "rect" })
-    expect(get(made, "text")).toMatchObject({ chars: "Margin held", style: "body", resize: "height" })
-    const box = get(made, "box")!
+    expect(propOf(made, "geometry")).toEqual({ kind: "rect" })
+    expect(propOf(made, "text")).toMatchObject({ chars: "Margin held", style: "body", resize: "height" })
+    const box = propOf(made, "box")!
     expect(box.x).toBeGreaterThanOrEqual(0)
     expect(box.x + box.w).toBeLessThanOrEqual(1920)
     expect(box.y).toBeGreaterThanOrEqual(100)
@@ -38,7 +38,7 @@ describe("add text", () => {
     doom = build(doom, text({ textStyle: "heading", text: "Revenue grew" }), minter("b"))
     const [title, subtitle] = childrenOf(doom, slide)
       .slice(-2)
-      .map((node) => get(node, "box")!)
+      .map((node) => propOf(node, "box")!)
     expect(subtitle!.x).toBe(title!.x)
     expect(subtitle!.x + subtitle!.w).toBeLessThanOrEqual(title!.x + title!.w)
     expect(subtitle!.y).toBeGreaterThanOrEqual(title!.y + title!.h)
@@ -49,13 +49,13 @@ describe("add text", () => {
     doom = build(doom, text({ text: "Second" }), minter("b"))
     const [first, second] = childrenOf(doom, slide)
       .slice(-2)
-      .map((node) => get(node, "box")!)
+      .map((node) => propOf(node, "box")!)
     expect(second!.y).toBeGreaterThanOrEqual(first!.y + first!.h + 29)
   })
 
   it("reads markdown, a named text style, alignment and a colour from the look", () => {
     const doom = build(agentDeck(), text({ text: "A **b**", textStyle: "title", align: "center", color: "accent2" }))
-    const written = get(lastChild(doom, slide), "text")!
+    const written = propOf(lastChild(doom, slide), "text")!
     expect(written.style).toBe("title")
     expect(written.paras).toEqual([{ align: "center" }])
     expect(written.spans).toEqual([
@@ -71,7 +71,7 @@ describe("add text", () => {
     expect(
       childrenOf(doom, slide)
         .slice(-3)
-        .map((node) => get(node, "role")),
+        .map((node) => propOf(node, "role")),
     ).toEqual(["title", undefined, undefined])
   })
 
@@ -107,14 +107,14 @@ describe("add text on a slide holding the new deck's title placeholder", () => {
     const doom = build(before, text({ textStyle: "title", text: "Q3 board update" }))
     expect(childrenOf(doom, slide)).toHaveLength(childrenOf(before, slide).length)
     const filled = doom.nodes.get(startTitle)!
-    expect(get(filled, "text")).toMatchObject({
+    expect(propOf(filled, "text")).toMatchObject({
       chars: "Q3 board update",
       style: "bigNumber",
       resize: "fixed",
       alignV: "bottom",
     })
-    expect(get(filled, "box")).toMatchObject({ x: 160, y: 240, w: 1600, h: 300 })
-    expect(get(filled, "role")).toBe("title")
+    expect(propOf(filled, "box")).toMatchObject({ x: 160, y: 240, w: 1600, h: 300 })
+    expect(propOf(filled, "role")).toBe("title")
   })
 
   it("names the filled placeholder as the layer the add made, so the agent has its id", () => {
@@ -129,7 +129,7 @@ describe("add text on a slide holding the new deck's title placeholder", () => {
 
   it("carries the agent's markdown and colour into the filled text", () => {
     const doom = build(withPlaceholder(), text({ textStyle: "title", text: "Q3 **board**", color: "accent2" }))
-    expect(get(doom.nodes.get(startTitle)!, "text")!.spans).toEqual([
+    expect(propOf(doom.nodes.get(startTitle)!, "text")!.spans).toEqual([
       { end: 3, color: { var: "accent2" } },
       { end: 8, bold: true, color: { var: "accent2" } },
     ])
@@ -138,28 +138,28 @@ describe("add text on a slide holding the new deck's title placeholder", () => {
   it("puts the subtitle under the filled title, on its left edge", () => {
     let doom = build(withPlaceholder(), text({ textStyle: "title", text: "Q3 board update" }), minter("a"))
     doom = build(doom, text({ textStyle: "heading", text: "Revenue grew" }), minter("b"))
-    const title = get(doom.nodes.get(startTitle)!, "box")!
-    const subtitle = get(lastChild(doom, slide), "box")!
+    const title = propOf(doom.nodes.get(startTitle)!, "box")!
+    const subtitle = propOf(lastChild(doom, slide), "box")!
     expect(subtitle.x).toBe(title.x)
     expect(subtitle.y).toBeGreaterThanOrEqual(title.y + title.h)
   })
 
   it("fills a title left empty too", () => {
     const doom = build(withPlaceholder(""), text({ textStyle: "title", text: "Q3 board update" }))
-    expect(get(doom.nodes.get(startTitle)!, "text")!.chars).toBe("Q3 board update")
+    expect(propOf(doom.nodes.get(startTitle)!, "text")!.chars).toBe("Q3 board update")
   })
 
   it("keeps a title a person wrote, and adds the agent's text beside it", () => {
     const before = withPlaceholder("Our plan")
     const doom = build(before, text({ textStyle: "title", text: "Another" }))
-    expect(get(doom.nodes.get(startTitle)!, "text")!.chars).toBe("Our plan")
+    expect(propOf(doom.nodes.get(startTitle)!, "text")!.chars).toBe("Our plan")
     expect(childrenOf(doom, slide)).toHaveLength(childrenOf(before, slide).length + 1)
   })
 
   it("adds a body text beside the placeholder", () => {
     const before = withPlaceholder()
     const doom = build(before, text())
-    expect(get(doom.nodes.get(startTitle)!, "text")!.chars).toBe(placeholderTitle)
+    expect(propOf(doom.nodes.get(startTitle)!, "text")!.chars).toBe(placeholderTitle)
     expect(childrenOf(doom, slide)).toHaveLength(childrenOf(before, slide).length + 1)
   })
 })
@@ -170,8 +170,8 @@ describe("add shape", () => {
       build(agentDeck(), { op: "add", kind: "shape", slide, box: { x: 0, y: 0, w: 100, h: 100 } }),
       slide,
     )
-    expect(get(made, "fills")).toEqual([{ kind: "solid", color: { var: "accent1" } }])
-    expect(get(made, "text")).toBeUndefined()
+    expect(propOf(made, "fills")).toEqual([{ kind: "solid", color: { var: "accent1" } }])
+    expect(propOf(made, "text")).toBeUndefined()
   })
 
   it("keeps a stroke-only shape unfilled and writes the outline weight", () => {
@@ -187,10 +187,10 @@ describe("add shape", () => {
       }),
       slide,
     )
-    expect(get(made, "fills")).toBeUndefined()
-    expect(get(made, "strokes")).toEqual([{ kind: "solid", color: { var: "text2" } }])
-    expect(get(made, "stroke")).toEqual({ weight: 4, align: "inside", dash: "solid" })
-    expect(get(made, "radius")).toBe(12)
+    expect(propOf(made, "fills")).toBeUndefined()
+    expect(propOf(made, "strokes")).toEqual([{ kind: "solid", color: { var: "text2" } }])
+    expect(propOf(made, "stroke")).toEqual({ weight: 4, align: "inside", dash: "solid" })
+    expect(propOf(made, "radius")).toBe(12)
   })
 
   it("centres words inside it and picks a colour that reads on an accent fill", () => {
@@ -198,9 +198,9 @@ describe("add shape", () => {
       build(agentDeck(), { op: "add", kind: "shape", slide, text: "Decision", box: { x: 0, y: 0, w: 300, h: 80 } }),
       slide,
     )
-    expect(get(made, "text")).toMatchObject({ resize: "fixed", alignV: "center" })
-    expect(get(made, "text")?.paras).toEqual([{ align: "center" }])
-    expect(get(made, "text")?.spans).toEqual([{ end: 8, color: { var: "background" } }])
+    expect(propOf(made, "text")).toMatchObject({ resize: "fixed", alignV: "center" })
+    expect(propOf(made, "text")?.paras).toEqual([{ align: "center" }])
+    expect(propOf(made, "text")?.spans).toEqual([{ end: 8, color: { var: "background" } }])
   })
 })
 
@@ -210,20 +210,20 @@ describe("add line", () => {
       build(agentDeck(), { op: "add", kind: "line", slide, arrow: true, box: { x: 10, y: 20, w: 300, h: 0 } }),
       slide,
     )
-    expect(get(made, "geometry")).toEqual({
+    expect(propOf(made, "geometry")).toEqual({
       kind: "line",
       start: { x: 10, y: 20 },
       end: { x: 310, y: 20 },
       route: "straight",
       arrows: ["none", "arrow"],
     })
-    expect(get(made, "strokes")).toEqual([{ kind: "solid", color: { var: "text2" } }])
-    expect(get(made, "stroke")).toMatchObject({ weight: 3, align: "center" })
+    expect(propOf(made, "strokes")).toEqual([{ kind: "solid", color: { var: "text2" } }])
+    expect(propOf(made, "stroke")).toMatchObject({ weight: 3, align: "center" })
   })
 
   it("runs across the free area, level, when it has no box", () => {
     const made = lastChild(build(agentDeck(), { op: "add", kind: "line", slide }), slide)
-    const box = get(made, "box")!
+    const box = propOf(made, "box")!
     expect(box.h).toBe(0)
     expect(box.w).toBeGreaterThan(1000)
   })
@@ -247,15 +247,15 @@ describe("add frame", () => {
       slide,
     )
     expect(made.type).toBe("frame")
-    expect(get(made, "layout")).toEqual({
+    expect(propOf(made, "layout")).toEqual({
       mode: "row",
       gap: 24,
       padding: { t: 16, r: 16, b: 16, l: 16 },
       align: "top-left",
     })
-    expect(get(made, "fills")).toEqual([{ kind: "solid", color: { var: "background2" } }])
-    expect(get(made, "radius")).toBe(20)
-    expect(get(made, "effects")).toBe("soft")
+    expect(propOf(made, "fills")).toEqual([{ kind: "solid", color: { var: "background2" } }])
+    expect(propOf(made, "radius")).toBe(20)
+    expect(propOf(made, "effects")).toBe("soft")
   })
 
   it("refuses words on a frame, naming the field", () => {
@@ -278,8 +278,8 @@ describe("add picture and icon", () => {
       }),
       slide,
     )
-    expect(get(made, "fills")).toEqual([{ kind: "image", asset: "https://x.test/a.png", fit: "fill" }])
-    expect(get(made, "geometry")).toEqual({ kind: "rect" })
+    expect(propOf(made, "fills")).toEqual([{ kind: "image", asset: "https://x.test/a.png", fit: "fill" }])
+    expect(propOf(made, "geometry")).toEqual({ kind: "rect" })
   })
 
   it("sizes a picture with no box to its own shape, centred in the free area and no larger than it is", () => {
@@ -326,13 +326,13 @@ describe("add picture and icon", () => {
       build(agentDeck(), { op: "add", kind: "icon", slide, icon: "arrow-right", box: { x: 0, y: 0, w: 96, h: 96 } }),
       slide,
     )
-    expect(get(made, "geometry")).toEqual({ kind: "icon", name: "lucide/arrow-right" })
-    expect(get(made, "strokes")).toEqual([{ kind: "solid", color: { var: "accent1" } }])
-    expect(get(made, "stroke")).toEqual({ weight: 8, align: "center", dash: "solid" })
+    expect(propOf(made, "geometry")).toEqual({ kind: "icon", name: "lucide/arrow-right" })
+    expect(propOf(made, "strokes")).toEqual([{ kind: "solid", color: { var: "accent1" } }])
+    expect(propOf(made, "stroke")).toEqual({ weight: 8, align: "center", dash: "solid" })
   })
 
   it("sizes an icon on its own when it has no box", () => {
-    const box = get(
+    const box = propOf(
       lastChild(build(agentDeck(), { op: "add", kind: "icon", slide, icon: "lucide/star" }), slide),
       "box",
     )!
@@ -365,7 +365,7 @@ describe("add chart", () => {
     })
     const made = lastChild(doom, slide)
     expect(made.type).toBe("frame")
-    expect(get(made, "chart")).toEqual({
+    expect(propOf(made, "chart")).toEqual({
       kind: "bar",
       categories: ["Q1", "Q2"],
       series: [
@@ -374,7 +374,7 @@ describe("add chart", () => {
       ],
       labels: true,
     })
-    expect(get(made, "box")!.w).toBeGreaterThan(1000)
+    expect(propOf(made, "box")!.w).toBeGreaterThan(1000)
   })
 
   it("refuses a chart with no data", () => {
@@ -399,8 +399,8 @@ describe("where an add lands", () => {
     const card = lastChild(doom, slide).id
     doom = build(doom, { op: "add", kind: "text", slide, into: card, text: "Inside" }, mint)
     const inside = lastChild(doom, card)
-    expect(get(inside, "parent")?.id).toBe(card)
-    const box = get(inside, "box")!
+    expect(propOf(inside, "parent")?.id).toBe(card)
+    const box = propOf(inside, "box")!
     expect(box.x + box.w).toBeLessThanOrEqual(400)
     expect(box.y + box.h).toBeLessThanOrEqual(300)
   })
@@ -411,8 +411,8 @@ describe("where an add lands", () => {
     const column = lastChild(doom, slide).id
     doom = build(doom, { op: "add", kind: "text", slide, into: column, text: "Row one" }, mint)
     const inside = lastChild(doom, column)
-    expect(get(inside, "box")).toBeUndefined()
-    expect(get(inside, "sizing")).toEqual({ w: "fill", h: "hug" })
+    expect(propOf(inside, "box")).toBeUndefined()
+    expect(propOf(inside, "sizing")).toEqual({ w: "fill", h: "hug" })
   })
 
   it("asks for a box when a shape goes into a laid-out frame whose size nobody wrote", () => {
@@ -423,7 +423,7 @@ describe("where an add lands", () => {
       field: "box",
     })
     const words = build(doom, { op: "add", kind: "text", slide, into: card.id, text: "Extra" }, minter("c"))
-    expect(get(lastChild(words, card.id), "text")?.chars).toBe("Extra")
+    expect(propOf(lastChild(words, card.id), "text")?.chars).toBe("Extra")
   })
 
   it("refuses to add into a chart, which draws its own", () => {

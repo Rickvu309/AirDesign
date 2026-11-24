@@ -5,12 +5,13 @@ import { agentDeck, apply, lastChild, minter, runName } from "./agent-fixtures.j
 import { defaultTheme } from "./default-theme-art.js"
 import { type NodeId, type Doom, applyEdit, isRefusal, rev } from "./index.js"
 import { agent, ids } from "./sample-deck.js"
-import { childrenOf, descendantsOf, get } from "./doom-walk.js"
+import { childrenOf, descendantsOf, propOf } from "./doom-walk.js"
 
 const slide = ids.slide
 const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as AgentChange
 const made = (doom: Doom) => lastChild(doom, slide)
-const styled = (doom: Doom, root: NodeId) => descendantsOf(doom, root).flatMap((node) => get(node, "text")?.style ?? [])
+const styled = (doom: Doom, root: NodeId) =>
+  descendantsOf(doom, root).flatMap((node) => propOf(node, "text")?.style ?? [])
 
 const kpiItems = [
   { title: "Revenue", value: "$4.2M", note: "+12% YoY" },
@@ -47,17 +48,17 @@ describe("a card under a KPI row on the slide type scale", () => {
     ],
   })
   const sizesOf = (doom: Doom, root: NodeId) => styled(doom, root).map((style) => defaultTheme.textStyles[style].size)
-  const rowIn = (doom: Doom) => childrenOf(doom, slide).find((node) => get(node, "name") === "KPI")!
+  const rowIn = (doom: Doom) => childrenOf(doom, slide).find((node) => propOf(node, "name") === "KPI")!
 
   it("keeps its heading at 40 and its bullets at 32, taking the height from the row above", () => {
     const withKpi = send(scaled(), add({ kind: "kpi", items: kpiItems }))
-    const before = get(rowIn(withKpi), "box")!
+    const before = propOf(rowIn(withKpi), "box")!
     const doom = send(withKpi, longDecision)
     const card = made(doom)
     expect(sizesOf(doom, card.id)).toEqual([40, 32])
-    const after = get(rowIn(doom), "box")!
+    const after = propOf(rowIn(doom), "box")!
     expect(after.h).toBeLessThan(before.h)
-    const box = get(card, "box")!
+    const box = propOf(card, "box")!
     expect(box.y).toBeGreaterThanOrEqual(after.y + after.h)
     expect(box.y + box.h).toBeLessThanOrEqual(1000)
   })
@@ -66,19 +67,19 @@ describe("a card under a KPI row on the slide type scale", () => {
     const doom = send(send(scaled(), add({ kind: "kpi", items: kpiItems })), decision)
     const need = Math.max(
       ...childrenOf(doom, rowIn(doom).id).map((card) => {
-        const layout = get(card, "layout")!
+        const layout = propOf(card, "layout")!
         const pad = layout.mode === "column" ? layout.padding.t + layout.padding.b : 0
-        const lines = childrenOf(doom, card.id).map((node) => defaultTheme.textStyles[get(node, "text")!.style])
+        const lines = childrenOf(doom, card.id).map((node) => defaultTheme.textStyles[propOf(node, "text")!.style])
         return pad + lines.reduce((sum, style) => sum + style.size * style.lineHeight, 0)
       }),
     )
-    expect(get(rowIn(doom), "box")!.h).toBeGreaterThanOrEqual(need)
+    expect(propOf(rowIn(doom), "box")!.h).toBeGreaterThanOrEqual(need)
   })
 
   it("leaves the row above alone when the card already fits at the start scale", () => {
     const box = { x: 80, y: 199, w: 1760, h: 400 }
     const withKpi = send(scaled(), add({ kind: "kpi", items: kpiItems, box }))
     const doom = send(withKpi, decision)
-    expect(get(rowIn(doom), "box")).toEqual(get(rowIn(withKpi), "box"))
+    expect(propOf(rowIn(doom), "box")).toEqual(propOf(rowIn(withKpi), "box"))
   })
 })

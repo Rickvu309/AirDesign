@@ -4,7 +4,7 @@ import { readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { agentDeck, apply, build, lastChild, minter } from "./agent-fixtures.js"
 import { readForAgent } from "./agent-read.js"
-import { childrenOf, get, slidesOf } from "./doom-walk.js"
+import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { ids, theme } from "./sample-deck.js"
 import { titleSlideWrites } from "./slide-placeholders.js"
@@ -16,17 +16,17 @@ const at = (doom: Doom, id: string) => doom.nodes.get(id as never)!
 describe("rotation and flips land on the box the canvas's rotate and flip write", () => {
   it("turns and mirrors a layer and reads it back", () => {
     let doom = build(agentDeck(), set(ids.card, { rotation: 15, flip: "h" }))
-    expect(get(at(doom, ids.card), "box")).toMatchObject({ x: 100, rotation: 15, flipH: true, flipV: false })
+    expect(propOf(at(doom, ids.card), "box")).toMatchObject({ x: 100, rotation: 15, flipH: true, flipV: false })
     expect(readForAgent(doom, [ids.slide])).toContain("r=15 flip=h")
     doom = build(doom, set(ids.card, { flip: "none" }))
-    expect(get(at(doom, ids.card), "box")).toMatchObject({ rotation: 15, flipH: false, flipV: false })
+    expect(propOf(at(doom, ids.card), "box")).toMatchObject({ rotation: 15, flipH: false, flipV: false })
   })
 
   it("wraps a turn past a whole one onto the circle in tenths, as the canvas's rotate stores it", () => {
     const turned = (rotation: number) => {
       const read = readAgentChange(set(ids.card, { rotation }))
       if ("refused" in read) throw new Error(JSON.stringify(read))
-      return get(at(build(agentDeck(), read), ids.card), "box")?.rotation
+      return propOf(at(build(agentDeck(), read), ids.card), "box")?.rotation
     }
     expect(turned(400)).toBe(40)
     expect(turned(-90)).toBe(270)
@@ -60,7 +60,7 @@ describe("rotation and flips land on the box the canvas's rotate and flip write"
       const read = readAgentChange({ op: "add", slide: ids.slide, rotation: -90, flip: "v", ...made })
       if ("refused" in read) throw new Error(JSON.stringify(read))
       const doom = build(agentDeck(), read)
-      expect(get(lastChild(doom, ids.slide), "box"), made.kind).toMatchObject({
+      expect(propOf(lastChild(doom, ids.slide), "box"), made.kind).toMatchObject({
         rotation: 270,
         flipH: false,
         flipV: true,
@@ -71,9 +71,9 @@ describe("rotation and flips land on the box the canvas's rotate and flip write"
   it("keeps rotation and flip when an add of text fills an empty title or subtitle placeholder", () => {
     const before = apply(agentDeck(), titleSlideWrites(ids.slide, minter("p"), { w: 1920, h: 1080 }))
     const byRole = (doom: Doom, role: "title" | "subtitle") =>
-      childrenOf(doom, ids.slide).find((node) => get(node, "role") === role)!
-    const titleBefore = get(byRole(before, "title"), "box")!
-    const subtitleBefore = get(byRole(before, "subtitle"), "box")!
+      childrenOf(doom, ids.slide).find((node) => propOf(node, "role") === role)!
+    const titleBefore = propOf(byRole(before, "title"), "box")!
+    const subtitleBefore = propOf(byRole(before, "subtitle"), "box")!
 
     const titleRead = readAgentChange({
       op: "add",
@@ -86,7 +86,7 @@ describe("rotation and flips land on the box the canvas's rotate and flip write"
     })
     if ("refused" in titleRead) throw new Error(JSON.stringify(titleRead))
     const titled = build(before, titleRead)
-    expect(get(byRole(titled, "title"), "box")).toEqual({
+    expect(propOf(byRole(titled, "title"), "box")).toEqual({
       ...titleBefore,
       rotation: 270,
       flipH: true,
@@ -103,7 +103,7 @@ describe("rotation and flips land on the box the canvas's rotate and flip write"
     })
     if ("refused" in subRead) throw new Error(JSON.stringify(subRead))
     const both = build(titled, subRead)
-    expect(get(byRole(both, "subtitle"), "box")).toEqual({
+    expect(propOf(byRole(both, "subtitle"), "box")).toEqual({
       ...subtitleBefore,
       rotation: 40,
       flipH: true,
@@ -138,7 +138,7 @@ describe("duplicate copies a layer or a slide the way the canvas's duplicate doe
 describe("presenter notes and the deck's name and theme", () => {
   it("writes a slide's notes as the notes bar holds them, plain words, and reads them back", () => {
     const doom = build(agentDeck(), set(ids.slide, { notes: "Open with the number.\nThen the why." }))
-    expect(get(at(doom, ids.slide), "notes")).toMatchObject({ chars: "Open with the number.\nThen the why." })
+    expect(propOf(at(doom, ids.slide), "notes")).toMatchObject({ chars: "Open with the number.\nThen the why." })
     expect(readForAgent(doom, [ids.slide])).toContain('notes="Open with the number.\\nThen the why."')
     expect(compileAgentChange(agentDeck(), set(ids.card, { notes: "x" }), minter())).toMatchObject({ refused: "shape" })
   })
@@ -151,8 +151,8 @@ describe("presenter notes and the deck's name and theme", () => {
       colors: { accent1: blue },
       fonts: { heading: "Lora" },
     })
-    expect(get(at(doom, ids.deck), "name")).toBe("Board")
-    expect(get(at(doom, ids.deck), "theme")).toEqual({
+    expect(propOf(at(doom, ids.deck), "name")).toBe("Board")
+    expect(propOf(at(doom, ids.deck), "theme")).toEqual({
       ...theme(),
       colors: { ...theme().colors, accent1: blue },
       fonts: { ...theme().fonts, heading: "Lora" },

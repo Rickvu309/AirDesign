@@ -11,10 +11,6 @@ export function propOf<K extends PropName>(node: Node | undefined, key: K): Prop
   return (node as Partial<Props> | undefined)?.[key]
 }
 
-export function get<K extends PropName>(node: Node | undefined, key: K): Props[K] | undefined {
-  return propOf(node, key)
-}
-
 export const parentOf = (node: Node | undefined): Props["parent"] | undefined => propOf(node, "parent")
 
 export const isLive = (node: Node | undefined): node is Node => node !== undefined && parentOf(node) !== null
@@ -34,7 +30,9 @@ export function deckOf(doom: Doom): Node | undefined {
 export function rowsOf(doom: Doom, hidden: boolean): readonly Node[] {
   const deck = deckOf(doom)
   if (deck === undefined) return []
-  return childrenOf(doom, deck.id).filter((row) => row.type === "slideRow" && (get(row, "hidden") === true) === hidden)
+  return childrenOf(doom, deck.id).filter(
+    (row) => row.type === "slideRow" && (propOf(row, "hidden") === true) === hidden,
+  )
 }
 
 export const slidesOf = (doom: Doom): readonly Node[] => rowsOf(doom, false).flatMap((row) => childrenOf(doom, row.id))
@@ -54,11 +52,11 @@ export function descendantsOf(doom: Doom, id: NodeId): readonly Node[] {
 }
 
 export function boxOf(node: Node, boxes?: ReadonlyMap<NodeId, Box>): Box {
-  return boxes?.get(node.id) ?? get(node, "box") ?? zeroBox
+  return boxes?.get(node.id) ?? propOf(node, "box") ?? zeroBox
 }
 
 export const isLaidOut = (node: Node): boolean => {
-  const mode = get(node, "layout")?.mode
+  const mode = propOf(node, "layout")?.mode
   return mode === "row" || mode === "column" || mode === "grid"
 }
 

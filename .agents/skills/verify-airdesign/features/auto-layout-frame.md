@@ -7,7 +7,7 @@ An auto layout frame is a frame node whose `layout` lays its children out in a r
 - `layout` a frame with `layout: { mode: "row" | "column", gap, padding, align }` paints each child at its place in the flow; the children's own `x` and `y` are not used. A child with `absolute: true` keeps its own place (`packages/doom/src/solve-layout.ts`).
 - `frame-paint` the frame's own `fills`, `radius`, `strokes` and shadow paint behind its children, set from the Design panel's Fill, Corners, Border and Shadow as for a shape (`panel-frame`).
 - `pick-child` a click on a child selects the frame; a double-click selects the child. A child laid out by the frame does not move by a drag (`flows` in `packages/doom/src/doom-walk.ts`).
-- `sizing` a side that hugs (`sizing.w` or `sizing.h` is `hug`) follows the children. Dragging that side's grip resizes the frame and makes the side `fixed` in the same undo step (`apps/web/src/doom-editor/transform-drag.ts`). A child whose side is `fill` takes an equal share of the frame's free length along the flow.
+- `sizing` a side that hugs (`sizing.w` or `sizing.h` is `hug`) follows the children. Dragging that side's grip resizes the frame and makes the side `fixed` in the same undo step (`apps/web/src/editor/transform-drag.ts`). A child whose side is `fill` takes an equal share of the frame's free length along the flow.
 - `growing-text` a text child that grows with its words pushes the next children along as it is typed, and undo takes the words back.
 - `remove` `Remove auto layout` in the Design panel, shown for a frame with auto layout, writes `layout: { mode: "none" }`; the frame keeps its children.
 - `nested` a frame with auto layout can sit inside another; a click picks the outer frame and each double-click steps one level in.

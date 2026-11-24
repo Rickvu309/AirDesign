@@ -8,7 +8,7 @@ In an open deck the Text tool (T, or `Text` in the toolbar) places a text layer 
 - `text-type` typing writes the text's `chars` and `spans`; Ctrl/Cmd+B and the other text keys format the selected words while typing. Escape ends the edit and keeps the layer selected.
 - `text-edit` a double-click on a text layer edits it where it was clicked; Enter on a selected text layer edits it with all its words selected. A double-click on a shape with no words starts words inside it and makes no new layer.
 - `emptied-text` a text layer whose words are all deleted is removed when the edit ends, and one undo brings it back with its words. A shape left with no words stays.
-- `delete` Delete or Backspace on a selected layer, outside its text, removes it with what it holds: the node's `parent` becomes `null` on the server (`deleteWrites` in `apps/web/src/doom-editor/delete-writes.ts`). While the caret is in the text, the keys edit the text. One undo brings the layer back.
+- `delete` Delete or Backspace on a selected layer, outside its text, removes it with what it holds: the node's `parent` becomes `null` on the server (`deleteWrites` in `apps/web/src/editor/delete-writes.ts`). While the caret is in the text, the keys edit the text. One undo brings the layer back.
 - `agent` `airdesign_edit_deck` with `{ op: "add", kind: "text", slide, text }` adds a text layer and `{ op: "delete", nodes: [...] }` deletes layers (`AgentChange` in `packages/doom/src/agent-change.ts`); the Agent panel's Undo takes the run back (see `aira-panel.md`).
 
 ## How to get to it (user POV)

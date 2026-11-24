@@ -1,5 +1,5 @@
 import type { Chart } from "./chart.js"
-import { deckOf, get } from "./doom-walk.js"
+import { deckOf, propOf } from "./doom-walk.js"
 import type { Doom, Write } from "./doom.js"
 import type { NodeId } from "./ids.js"
 import { type Color, type ColorVar, type Hex, type Paint, colorVars } from "./paint.js"
@@ -61,7 +61,7 @@ const fontNote = (node: NodeId, font: string, families: readonly string[]) =>
 
 export function agentFindings(after: Doom, writes: readonly Write[]): readonly AgentFinding[] {
   const deck = deckOf(after)
-  const theme = deck === undefined ? undefined : get(deck, "theme")
+  const theme = deck === undefined ? undefined : propOf(deck, "theme")
   if (theme === undefined) return []
   const scale = new Set(textStyleNames.map((name) => theme.textStyles[name].size))
   const palette = new Set(colorVars.map((name) => theme.colors[name].toLowerCase()))

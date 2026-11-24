@@ -4,7 +4,7 @@ import type { Reading } from "./agent-draft.js"
 import { type NodeId, type Doom, type Write, applyEdit, isRefusal, nodeId, rev } from "./index.js"
 import { type OrderKey, orderKeyBetween } from "./order-key.js"
 import { agent, box, ids, land, once, sampleDeck, textOf } from "./sample-deck.js"
-import { childrenOf, get, parentOf, slidesOf } from "./doom-walk.js"
+import { childrenOf, parentOf, propOf, slidesOf } from "./doom-walk.js"
 
 export const runName = "run-1"
 
@@ -46,7 +46,7 @@ export const firstSlide = (doom: Doom): NodeId => slidesOf(doom)[0]!.id
 
 export const lastChild = (doom: Doom, parent: NodeId) => childrenOf(doom, parent).at(-1)!
 
-export const boxOfNode = (doom: Doom, id: NodeId) => get(doom.nodes.get(id)!, "box")!
+export const boxOfNode = (doom: Doom, id: NodeId) => propOf(doom.nodes.get(id)!, "box")!
 
 export const more = {
   slide2: nodeId("t:10"),

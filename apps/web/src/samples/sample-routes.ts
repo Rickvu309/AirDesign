@@ -1,4 +1,4 @@
-export const coreRoutes = {
+export const sampleRoutes = {
   titleSlide: "/screens/core-01-title-slide",
   kpiRow: "/screens/core-02-kpi-row",
   cardGrid: "/screens/core-03-card-grid",
