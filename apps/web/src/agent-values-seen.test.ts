@@ -61,7 +61,7 @@ const seen: Readonly<Record<string, Seen>> = {
   to: { person: ["gesture:line-end"] },
   route: { person: ["panel:border.route"] },
   box: { person: ["gesture:move", "gesture:resize", "panel:box.align"] },
-  name: { owedToPerson: "a layer's name: no layers panel" },
+  name: { person: ["panel:name"] },
   hidden: { person: ["gesture:hide", "panel:show-hidden"] },
   locked: { person: ["gesture:lock"] },
   size: { person: ["panel:text.size"] },
@@ -84,7 +84,7 @@ const seen: Readonly<Record<string, Seen>> = {
   nameFollows: { person: ["strip:deck-name"] },
 }
 
-const owedToPerson = ["align", "layout", "gap", "padding", "arrow", "chart", "rows", "name"]
+const owedToPerson = ["align", "layout", "gap", "padding", "arrow", "chart", "rows"]
 
 const structural = new Set([
   "op",
@@ -141,5 +141,9 @@ describe("every value an agent sets names where a person sees it and changes it"
     expect(seen.padding).toEqual({ declined: reason })
     expect(seen.rows).toEqual({ declined: reason, partly: ["gesture:edit-text"] })
     for (const field of ["align", "layout", "gap", "padding", "rows"]) expect(owedToPerson).toContain(field)
+  })
+
+  it("lets a person rename a layer from the design panel", () => {
+    expect(seen.name).toEqual({ person: ["panel:name"] })
   })
 })

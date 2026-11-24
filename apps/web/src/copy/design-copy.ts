@@ -37,6 +37,9 @@ export const designCopy = {
   removeAutoLayout: frameCopy.removeAutoLayout,
   resizeToFit: frameCopy.resizeToFit,
   square: "Rectangle",
+  layerName: "Layer name",
+  layerNameEmpty: "Enter a name for this layer.",
+  renameLayer: (name: string) => `Rename layer: ${name}`,
   nothing: "Nothing on this layer can be changed here yet.",
   refused: "Unable to make that change. Select the layer and try again, or reload the deck if it keeps happening.",
   tooLong: (max: number, wide: boolean) =>
