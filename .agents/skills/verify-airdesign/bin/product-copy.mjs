@@ -21,7 +21,6 @@ export const { productCopy, starOf, unstarOf } = createRequire(import.meta.url)(
 export const { agentRunsCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/agent-runs-copy.ts")
 
 export const { airaCopy, airaStepWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/aira-copy.ts")
-export const { toolbarCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/toolbar-copy.ts")
 export const { undoCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/undo-copy.ts")
 
 export const { fillCopy, fillWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/fill-copy.ts")
@@ -42,8 +41,8 @@ export const { borderCopy, borderWords } = createRequire(import.meta.url)(
 export const { appearanceCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/appearance-copy.ts")
 export const { creditsCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/credits-copy.ts")
 
-export function readPictureToolCopy() {
-  return createRequire(import.meta.url)("../../../../apps/web/src/copy/picture-copy.ts").pictureCopy
+export function readReplaceImageCopy() {
+  return createRequire(import.meta.url)("../../../../apps/web/src/copy/picture-copy.ts").pictureCopy.replace
 }
 
 export const { slideListCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/slide-list-copy.ts")
@@ -53,6 +52,6 @@ export const { frameCopy, layoutWords } = createRequire(import.meta.url)("../../
 export const { shapeCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/shape-copy.ts")
 export const { shortcutCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/shortcut-copy.ts")
 
-export const { guideCopy, guideWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/guide-copy.ts")
+export const { guideWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/guide-copy.ts")
 export const { textCopy, textWords } = createRequire(import.meta.url)("../../../../apps/web/src/copy/text-copy.ts")
 export const { editorCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/editor-copy.ts")

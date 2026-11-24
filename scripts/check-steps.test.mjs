@@ -40,6 +40,20 @@ assert.deepEqual(withAnotherStage.stagesFor("all", true), [...only, [["summary",
 assert.deepEqual(withAnotherStage.stagesFor("scripts", true), [[["summary", "node", []]]])
 assert.deepEqual(withAnotherStage.stagesFor("source", true), only)
 
+for (const ci of [false, true]) {
+  const commands = checkSteps.stagesFor("source", ci).flatMap((stage) => stage.flatMap(stepsOf))
+  assert.ok(
+    commands.some(
+      ([name, command, args]) => name === "dead-code" && command === "pnpm" && args.join(" ") === "dead-code",
+    ),
+  )
+  assert.ok(
+    commands.some(
+      ([name, command, args]) => name === "dead-copy" && command === "pnpm" && args.join(" ") === "dead-code --copy",
+    ),
+  )
+}
+
 const kinds = ["rule", "tests", "build", "report"]
 for (const ci of [false, true]) {
   const steps = checkSteps.stagesFor("all", ci).flatMap((stage) => stage.flatMap(stepsOf))

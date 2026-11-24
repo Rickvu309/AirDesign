@@ -1,11 +1,11 @@
-import { toolbarCopy } from "../../bin/product-copy.mjs"
+import { editorCopy } from "../../bin/product-copy.mjs"
 import { expect } from "@playwright/test"
 import { designing } from "../doom-design.mjs"
 
 async function drive(kit) {
   const { page } = kit
   await designing(kit)
-  await page.getByRole("button", { name: toolbarCopy.actions, exact: true }).click()
+  await page.getByRole("button", { name: editorCopy.actions, exact: true }).click()
   const field = page.locator("[data-actions-panel] input")
   await field.fill("chart")
   await field.press("ArrowDown")

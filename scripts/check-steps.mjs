@@ -136,6 +136,8 @@ const rows = [
     preflight: true,
     gate: { order: 1 },
   },
+  { name: "dead-code", kind: "report", command: "pnpm", args: ["dead-code"] },
+  { name: "dead-copy", kind: "rule", command: "pnpm", args: ["dead-code", "--copy"] },
   { name: "actionlint", kind: "rule", command: "node", args: ["scripts/actionlint.mjs"], gate: { order: 17 } },
   {
     name: "unit-tests",

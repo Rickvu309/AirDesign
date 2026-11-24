@@ -1,6 +1,5 @@
 import type { AgentOp, EditRefusal } from "@airdesign/catalog"
 import { type UndoStays, agentUndoStays } from "./agent-runs-copy.ts"
-import { elementCopy } from "./element-copy.ts"
 import { slideListCopy } from "./slide-list-copy.ts"
 
 export type StepWords = {
@@ -57,27 +56,20 @@ const unsaved = "AirDesign couldn't save this change. Try again."
 export const airaRefusalWords: Readonly<Record<EditRefusal | "unreached", string>> = {
   stale: "You or another agent changed the deck after Aira read it.",
   "person-protected": "You edited that layer while Aira was working, so Aira left it as you made it.",
-  held: "Another agent is editing that layer right now.",
   "run-fenced": "Another request is holding that layer.",
   limit: "The deck is at its size limit, or the text is too long.",
   dead: "That layer is no longer in the deck.",
   present: "That layer is already in the deck.",
-  "group-box": "That layer is inside a group. Ungroup it to change it on its own.",
   kind: "That layer can't take this change.",
   "last-slide": slideListCopy.lastSlide,
-  locked: elementCopy.removeRefusedBody.animated,
   deck: "Aira couldn't find this deck.",
   owner: "This deck belongs to another account.",
   deleted: "This deck was deleted.",
   base: oddForm,
   batch: oddForm,
   field: oddForm,
-  "text-from": oddForm,
-  site: oddForm,
   payload: unsaved,
   store: unsaved,
-  kept: "Aira can't change that part of the deck.",
-  image: "AirDesign couldn't use the image at that web address.",
   unreached: "Aira lost its connection during this step. Check your connection and try again.",
 }
 
@@ -113,10 +105,7 @@ export function airaChatsKeptOf(count: number): string {
 
 export const airaCopy = {
   askAira: "Ask Aira",
-  signIn: "Sign in",
   newChat: "New chat",
-  attach: "Attach",
-  microphone: "Microphone",
   welcome: "Tell Aira what to change in this deck.",
   addToRequest: "Add to your request",
   latest: "Show latest message",
