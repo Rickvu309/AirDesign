@@ -27,11 +27,7 @@ export function weightOf(font: string, styleWeight: number, bold: boolean | unde
   return paintedFace(font, styleWeight, bold).weight
 }
 
-function lookFrom(
-  font: string,
-  style: Theme["textStyles"][TextStyleName],
-  span: Span | undefined,
-): TextLook {
+function lookFrom(font: string, style: Theme["textStyles"][TextStyleName], span: Span | undefined): TextLook {
   const painted = paintedFace(font, style.weight, span?.bold)
   return {
     size: span?.size ?? style.size,
