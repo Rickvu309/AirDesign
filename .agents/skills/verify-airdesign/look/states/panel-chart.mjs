@@ -8,7 +8,6 @@ async function drive(kit) {
       id: "c:1",
       type: "frame",
       props: {
-        name: "Chart",
         box: spot(160, 180, 1500, 720),
         fills: [{ kind: "solid", color: { var: "background2" } }],
         chart: {
