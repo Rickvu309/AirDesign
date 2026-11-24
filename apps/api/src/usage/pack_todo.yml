@@ -1,0 +1,19 @@
+apps/api/src:
+  apps/api/src/index.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/usage/credits.test.ts
+  apps/api/src/testing/aira-replay.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/usage/credits.test.ts
+  apps/api/src/testing/harness.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/usage/credits.test.ts

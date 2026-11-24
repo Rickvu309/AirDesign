@@ -15,7 +15,7 @@ const scanned = [
   /^vitest\.config\.mts$/,
   /^\.agents\/skills\//,
 ]
-const sourceReadingTests = ["apps/web/src/color-parity.test.ts", "tests/spec-replay.test.ts"]
+const sourceReadingTests = ["apps/web/src/editor/color-parity.test.ts", "tests/spec-replay.test.ts"]
 
 const git = (root, args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).split("\n").filter(Boolean)
 

@@ -26,7 +26,7 @@ An edit, from a person or an agent, is read by `catalog` and applied by `doom` t
 
 - `apps/web` is the product UI, with designed states at `/screens/<id>-<name>`. `apps/site` is marketing and sign-in. `apps/api` is the server, on Postgres.
 - In `packages/`, `packages/<name>/src/index.ts` is a package's whole interface: `doom` (the core, imports no package), `document` (the slide model the painter still reads), `catalog`, `render`, `live`, `mcp`, `pptx`, plus `templates` (start decks), `theme` (tokens), `fonts`, `oauth`, `usage` (Claude spend).
-- A folder with a `pack.yml` is a pack. `packwerk.yml` ranks packs in layers, and `pnpm check:boundaries` fails an import its pack does not allow. Read `pnpm exec ts-packwerk explain <folder>` before you change a pack. A `pack_todo.yml` lists known violations: fix them, never add to them.
+- A folder with a `pack.yml` is a pack. `packwerk.yml` ranks packs in layers, and `pnpm check:boundaries` fails an import its pack does not allow. Read `pnpm exec ts-packwerk explain <folder>` before you change a pack. Tests are checked too: a test may import its own pack's private files, and `test_exempt` names the source-reading tests that stay unchecked. A `pack_todo.yml` lists known violations: fix them, never add to them. `todo_ceiling` is that list's size, and the check fails when it grows past `origin/main`.
 
 ## Land a change
 

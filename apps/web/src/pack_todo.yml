@@ -1,0 +1,23 @@
+apps/web/src/decks:
+  apps/web/src/decks/not-found.tsx:
+    violations:
+      - privacy
+    files:
+      - apps/web/src/not-found.test.tsx
+apps/web/src/editor:
+  apps/web/src/editor/design-changes.ts:
+    violations:
+      - privacy
+    files:
+      - apps/web/src/trait-parity.test.ts
+  apps/web/src/editor/design-model.ts:
+    violations:
+      - privacy
+    files:
+      - apps/web/src/control-kinds.test.ts
+      - apps/web/src/trait-parity.test.ts
+  apps/web/src/editor/slide-geometry.ts:
+    violations:
+      - privacy
+    files:
+      - apps/web/src/testing/doom-fixtures.ts

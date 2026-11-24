@@ -1,10 +1,34 @@
 import * as doom from "@airdesign/doom"
 import { deckTemplates, templateTheme } from "@airdesign/templates"
 import { describe, expect, it } from "vitest"
-import { startEdit } from "../../../api/src/doom/doom-start"
 import { colorNameOf, swatchesOf } from "./design-palette"
 import { neutralColorNames } from "@/testing/neutral-color-names"
 import { templateNameOf } from "./design-template-name"
+
+const newDeckTheme = (): doom.Theme => {
+  const neutral = templateTheme("neutral")
+  if (neutral === undefined) throw new Error("neutral template")
+  const { colors, fonts } = neutral
+  const hex = (value: string) => `#${value.toLowerCase()}` as doom.Hex
+  return {
+    colors: {
+      text: hex(colors.dk1),
+      background: hex(colors.lt1),
+      text2: hex(colors.dk2),
+      background2: hex(colors.lt2),
+      accent1: hex(colors.accent1),
+      accent2: hex(colors.accent2),
+      accent3: hex(colors.accent3),
+      accent4: hex(colors.accent4),
+      accent5: hex(colors.accent5),
+      accent6: hex(colors.accent6),
+      link: hex(colors.hlink),
+    },
+    fonts: { heading: fonts.major, body: fonts.minor },
+    textStyles: doom.slideTextStyles,
+    effectStyles: doom.defaultTheme.effectStyles,
+  }
+}
 
 const asTheme = (id: string): doom.Theme => {
   const { colors, fonts } = templateTheme(id)!
@@ -39,7 +63,7 @@ describe("templateNameOf", () => {
 
 describe("neutralColorNames", () => {
   it("are the names a new deck's panel shows", () => {
-    const theme = startEdit().writes.find((write) => write.prop === "theme")!.value as doom.Theme
+    const theme = newDeckTheme()
     for (const [name, shown] of Object.entries(neutralColorNames))
       expect(colorNameOf(theme, name as doom.ColorVar)).toBe(shown)
   })

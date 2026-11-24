@@ -1,0 +1,6 @@
+apps/web/src/copy:
+  apps/web/src/copy/element-copy.ts:
+    violations:
+      - privacy
+    files:
+      - apps/web/src/components/ui/toast.test.tsx
