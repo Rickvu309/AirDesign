@@ -44,7 +44,7 @@ function WordsCell(props: {
   return (
     <div
       data-focus-ring
-      className={cn("flex min-h-8 min-w-0 items-center rounded-lg bg-muted px-2.5 py-1", props.className ?? "max-w-56")}
+      className={cn("flex min-h-8 min-w-0 items-center rounded-lg bg-muted px-2.5 py-1", props.className)}
     >
       {props.truncate === true ? (
         <input
@@ -60,7 +60,7 @@ function WordsCell(props: {
           aria-label={props.label}
           defaultValue={props.value}
           rows={1}
-          className={cn(wordsClass, "resize-none overflow-hidden break-words field-sizing-content")}
+          className={cn(wordsClass, "resize-none overflow-hidden break-words w-0 field-sizing-content")}
           onKeyDown={onKeyDown}
           onBlur={onBlur}
         />
@@ -77,7 +77,7 @@ const valueColumn = (chart: doom.Chart, at: number) => {
     0,
   )
   const digits = Math.min(valueColumnCap, (longest ?? 0) + 1)
-  return `minmax(max(4.5rem, ${String(digits)}ch + 1.75rem), 1fr)`
+  return `minmax(max(4.5rem, ${String(digits)}ch + 1.75rem), auto)`
 }
 
 const kinds = ["column", "bar", "line", "pie", "stacked"] as const
@@ -130,7 +130,7 @@ export function ChartSection({
         <div
           className="grid w-max min-w-full items-center gap-1"
           style={{
-            gridTemplateColumns: `minmax(5rem, 1fr) ${chart.series.map((_, at) => valueColumn(chart, at)).join(" ")} auto`,
+            gridTemplateColumns: `5rem ${chart.series.map((_, at) => valueColumn(chart, at)).join(" ")} auto`,
           }}
         >
           <span />
@@ -154,7 +154,7 @@ export function ChartSection({
                 key={category}
                 label={`${editorCopy.chartData} ${String(row + 1)}`}
                 value={category}
-                className="sticky left-0 z-10 max-w-32 bg-muted"
+                className="sticky left-0 z-10 bg-muted"
                 onCommit={(words) => words !== category && change(chartRow(chart, row, words))}
               />
               {chart.series.map((series, at) => (
