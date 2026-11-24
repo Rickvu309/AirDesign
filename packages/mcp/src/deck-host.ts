@@ -28,6 +28,7 @@ export type DeckHost = {
   readonly open: (deck: DeckId) => Promise<Opened | DoomRefusal>
   readonly edit: (deck: DeckId, edit: doom.Edit) => Promise<Landed | DoomRefusal>
   readonly run: (deck: DeckId, run: string) => Promise<RunLog | DoomRefusal>
+  readonly foldAt?: (deck: DeckId, rev: number) => Promise<doom.Doom | undefined>
   readonly images?: (deck: DeckId, names: readonly string[]) => Promise<NamedImages>
   readonly measure?: (fold: doom.Doom) => Promise<Measured | Unmeasured>
   readonly pictures?: (

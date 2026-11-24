@@ -15,7 +15,7 @@ import { fetchImage, type ImageNet } from "../platform/image-fetch.js"
 import { keepMedia, storedMedia } from "../doom/media.js"
 import type { OriginalStore } from "../platform/original-store.js"
 import type { Sql } from "../platform/pool.js"
-import { createDoom, editDoom, listDoom, openDoom, runDoom } from "../doom/doom-deck.js"
+import { createDoom, editDoom, foldAtDoom, listDoom, openDoom, runDoom } from "../doom/doom-deck.js"
 import { startIds } from "../doom/doom-start.js"
 
 export type McpHost = {
@@ -183,6 +183,13 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured, fo
       const found = await runDoom(db, { deck, run }, email)
       return found.ok ? { ok: true, edits: found.edits, replaced: found.replaced } : found
     }),
+    foldAt: async (deck, rev) => {
+      try {
+        return await foldAtDoom(db, { deck, rev }, email)
+      } catch {
+        return undefined
+      }
+    },
   }
 }
 

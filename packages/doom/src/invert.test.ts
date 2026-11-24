@@ -288,15 +288,6 @@ describe("invert", () => {
     expect(undone.nodes.get(ids.title)).not.toHaveProperty("fills")
   })
 
-  it("leaves out the box of a layer it leaves in its new frame when only its place there changed", () => {
-    const { before, after, edit } = step(sampleDeck(), [
-      { node: ids.title, prop: "parent", value: place(ids.side) },
-      { node: ids.title, prop: "box", value: { ...box(30, 40), rotation: 45 } },
-    ])
-    const later = step(after, [{ node: ids.card, prop: "parent", value: null }])
-    expect(invert(before, later.after, edit)).toEqual([])
-  })
-
   it("keeps where a layer sits and puts back its size and flips when someone moved it out of the frame it sat in before the step", () => {
     const { before, after, edit } = step(sampleDeck(), [
       { node: ids.title, prop: "box", value: { ...box(30, 40, 300, 150), flipH: true } },

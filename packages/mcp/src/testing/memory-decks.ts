@@ -11,10 +11,12 @@ const refusal = (kind: Exclude<DoomRefusal["refusal"], "edit">): DoomRefusal => 
 export function memoryDecks(start: () => doom.Doom, initial: ReadonlyMap<string, doom.Doom> = new Map()): MemoryDecks {
   const decks = new Map<DeckId, doom.Doom>()
   const logs = new Map<DeckId, { edit: unknown; replaced: unknown }[]>()
+  const bases = new Map<DeckId, doom.Doom>()
   for (const [id, fold] of initial) {
     const read = readDeckId(id)
     if (!read.ok) throw new Error(id)
     decks.set(read.deck, fold)
+    bases.set(read.deck, fold)
   }
   const edit: DeckHost["edit"] = async (deck, sent): Promise<Landed | DoomRefusal> => {
     const fold = decks.get(deck)
@@ -41,7 +43,11 @@ export function memoryDecks(start: () => doom.Doom, initial: ReadonlyMap<string,
     create: async (name, once) => {
       const read = readDeckId(`d${shortHash(once)}`)
       if (!read.ok) return refusal("deck")
-      if (!decks.has(read.deck)) decks.set(read.deck, start())
+      if (!decks.has(read.deck)) {
+        const fresh = start()
+        decks.set(read.deck, fresh)
+        bases.set(read.deck, fresh)
+      }
       const present = decks.get(read.deck)!
       if (doom.deckName(present) === name) return { ok: true, deck: read.deck, rev: present.rev, fold: present }
       const named = await edit(read.deck, {
@@ -65,6 +71,11 @@ export function memoryDecks(start: () => doom.Doom, initial: ReadonlyMap<string,
       )
       return { ok: true, edits: rows.map((row) => row.edit), replaced: rows.map((row) => row.replaced) }
     },
+    foldAt: async (deck, rev) =>
+      doom.replayLog(
+        (logs.get(deck) ?? []).map((row) => row.edit).filter((edit) => (edit as { rev: number }).rev <= rev),
+        bases.get(deck),
+      ),
   }
 }
 

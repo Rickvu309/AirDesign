@@ -142,7 +142,7 @@ describe("an undo that leaves a layer in the frame it was moved to", () => {
       ])
   })
 
-  it("leaves a layer where an agent run put it, at its turn, through Undo on the run and the Ctrl+Z presses after it", async () => {
+  it("takes Aira's own turn off a layer it leaves where Aira put it, and the Ctrl+Z presses after Undo on the run keep it there", async () => {
     const { remote, mine } = await tabs()
     const turned = (x: number, w: number, h: number, rotation: number) => ({ ...placed(x), y: x, w, h, rotation })
     expect(
@@ -179,15 +179,16 @@ describe("an undo that leaves a layer in the frame it was moved to", () => {
       expect((await remote.edit({ deck: "left", edit })).ok).toBe(true)
     await mine.catchUp()
     expect(mine.push([{ node: outer, prop: "parent", value: null }]).ok).toBe(true)
-    expect(await mine.undoRun("run-1")).toEqual({ ok: false, reason: "left", kept: [], left: [card], waiting: [] })
+    expect(await mine.undoRun("run-1")).toMatchObject({ ok: true, kept: [], left: [card], waiting: [] })
+    const seen = { ...moved, rotation: 30 }
     const stays = () => [parentOf(mine.view(), card), doom.propOf(mine.view().nodes.get(card), "box")]
-    expect(stays()).toEqual([slide, moved])
+    expect(stays()).toEqual([slide, seen])
     expect(mine.undo().ok).toBe(true)
-    expect(stays()).toEqual([slide, moved])
+    expect(stays()).toEqual([slide, seen])
     expect(mine.undo().ok).toBe(true)
-    expect(stays()).toEqual([slide, moved])
+    expect(stays()).toEqual([slide, seen])
     expect(await mine.sync()).toEqual({ ok: true })
-    expect([parentOf(mine.server(), card), doom.propOf(mine.server().nodes.get(card), "box")]).toEqual([slide, moved])
+    expect([parentOf(mine.server(), card), doom.propOf(mine.server().nodes.get(card), "box")]).toEqual([slide, seen])
   })
 
   it("keeps the end of a line an agent run freed when the person deletes the shape it was attached to and the frame it left, then presses Undo on the run", async () => {

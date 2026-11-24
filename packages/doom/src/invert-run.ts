@@ -118,7 +118,13 @@ function unshownOf(now: Doom, standing: readonly Write[], moved: readonly NodeId
   return new Map([...unshown].map(([node, frames]) => [node, !frames.some((frame) => unshown.has(frame))]))
 }
 
-function settle(now: Doom, edits: readonly RunEdit[], mine: ReadonlySet<Rev>, restored: readonly Restore[]): Undone {
+function settle(
+  now: Doom,
+  edits: readonly RunEdit[],
+  mine: ReadonlySet<Rev>,
+  restored: readonly Restore[],
+  started: Doom | undefined,
+): Undone {
   const kept = keptOf(now, edits, mine)
   const chosen = restored.filter(({ cell }) => !kept.has(cell.node))
   const parents = new Map(
@@ -134,7 +140,8 @@ function settle(now: Doom, edits: readonly RunEdit[], mine: ReadonlySet<Rev>, re
     for (const was of edit.replaced)
       if (was.key === "parent" && !measuredIn.has(was.node))
         measuredIn.set(was.node, (was.value as { readonly id: NodeId } | null)?.id ?? null)
-  const standing = onStandingLayers(now, writes, edits.at(-1)?.rev ?? now.rev, measuredIn)
+  const step = started === undefined ? undefined : { before: started, writes: edits.flatMap((edit) => edit.writes) }
+  const standing = onStandingLayers(now, writes, edits.at(-1)?.rev ?? now.rev, measuredIn, step)
   const left = writes
     .filter((each) => each.prop === "parent" && each.value !== null && !standing.includes(each))
     .map((each) => each.node)
@@ -155,7 +162,12 @@ function writerOf(now: Doom, edits: readonly Landed[], mine: ReadonlySet<Rev>, c
   return edits.findLast((edit) => cellsOf(edit).some((each) => cellName(each) === name))?.rev
 }
 
-export function invertRun(now: Doom, edits: readonly RunEdit[], owned: ReadonlySet<Rev> = new Set()): Undone {
+export function invertRun(
+  now: Doom,
+  edits: readonly RunEdit[],
+  owned: ReadonlySet<Rev> = new Set(),
+  started?: Doom,
+): Undone {
   const mine = new Set<Rev>([...owned, ...edits.map((edit) => edit.rev)])
   const writer = new Map<string, Rev | null | undefined>()
   const restored = new Map<string, Restore>()
@@ -167,7 +179,7 @@ export function invertRun(now: Doom, edits: readonly RunEdit[], owned: ReadonlyS
       restored.set(name, { cell: was, value: was.value, base: now.revs.get(was.node)!.get(was.key)! })
       writer.set(name, was.rev)
     }
-  return settle(now, edits, mine, [...restored.values()])
+  return settle(now, edits, mine, [...restored.values()], started)
 }
 
 export function readRunEdit(raw: unknown, rawReplaced: unknown, doom: Doom): RunEdit | Refusal {
