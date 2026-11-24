@@ -1,3 +1,3 @@
 # One word per idea: a word listed in `tooling/oxlint-plugin-airdesign/glossary.json` is replaced by the word it names
 
-lint: the name scan reads the glossary. A line kept on purpose is listed there with a reason. It warns for now and blocks nothing
+`wordFindings` in `tooling/oxlint-plugin-airdesign/scan-names.js` reads `tooling/oxlint-plugin-airdesign/glossary.json`. `tooling/oxlint-plugin-airdesign/lint-tree.js`, run by `pnpm lint`, prints each hit as a warning and blocks nothing. An allowed line in that file needs a reason: `glossaryFindings` in the same scan is a hit, so the lint exits when the reason is missing. `tooling/oxlint-plugin-airdesign/scan-names.test.js` plants a banned word and an allow entry with an empty reason.
