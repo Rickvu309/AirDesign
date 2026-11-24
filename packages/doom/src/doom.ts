@@ -22,6 +22,7 @@ export type Edit = {
   readonly once: string
   readonly author: Author
   readonly writes: readonly Write[]
+  readonly readBase?: Rev
   readonly phase?: "start" | "stop"
   readonly runUndo?: RunUndo
 }

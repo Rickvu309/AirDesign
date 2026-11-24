@@ -4,13 +4,26 @@ export type Queued = {
   readonly edit: doom.Edit
   readonly after: readonly (string | null)[]
   readonly follows?: string
+  readonly afterRead?: readonly string[]
 }
 
-export const shown = (server: doom.Doom, queue: readonly Queued[]): doom.Doom =>
-  doom.viewOf(
-    server,
-    queue.map((each) => each.edit),
-  )
+export function readGap(fold: doom.Doom, { edit, afterRead }: Queued): string | undefined {
+  if (edit.readBase === undefined || afterRead === undefined) return undefined
+  const base = edit.readBase - afterRead.length
+  return afterRead.find((once, index) => fold.onces.get(once) !== base + index + 1)
+}
+
+export function shown(server: doom.Doom, queue: readonly Queued[], provisional?: Map<doom.Rev, string>): doom.Doom {
+  let view = server
+  for (const each of queue) {
+    if (readGap(view, each) !== undefined) continue
+    const next = appliedOn(view, each.edit)
+    if (doom.isRefusal(next) || next === view) continue
+    provisional?.set(next.rev, each.edit.once)
+    view = next
+  }
+  return view
+}
 
 export function appliedOn(view: doom.Doom, edit: doom.Edit): doom.Doom | doom.Refusal {
   const writes = edit.writes.map(({ base: _sent, ...write }) => {
@@ -18,18 +31,6 @@ export function appliedOn(view: doom.Doom, edit: doom.Edit): doom.Doom | doom.Re
     return was === undefined ? write : { ...write, base: was }
   })
   return doom.applyEdit(view, { ...edit, writes, rev: doom.rev(view.rev + 1) })
-}
-
-export function provisionalRevs(server: doom.Doom, edits: readonly doom.Edit[]): ReadonlyMap<doom.Rev, string> {
-  const revs = new Map<doom.Rev, string>()
-  let view = server
-  for (const edit of edits) {
-    const next = doom.viewOf(view, [edit])
-    if (next === view) continue
-    revs.set(next.rev, edit.once)
-    view = next
-  }
-  return revs
 }
 
 const compareAndSet = (key: doom.WriteKey): boolean =>
@@ -40,11 +41,9 @@ function withoutBase({ base: _base, ...write }: doom.Write): doom.Write {
 }
 
 export function queueEdit(server: doom.Doom, queue: readonly Queued[], edit: doom.Edit): Queued | doom.Refusal {
-  const view = shown(server, queue)
-  const provisional = provisionalRevs(
-    server,
-    queue.map((each) => each.edit),
-  )
+  const provisional = new Map<doom.Rev, string>()
+  const view = shown(server, queue, provisional)
+  if (edit.readBase !== undefined && edit.readBase !== view.rev) return { refused: "stale" }
   const after: (string | null)[] = []
   const writes: doom.Write[] = []
   for (const write of edit.writes) {
@@ -62,7 +61,11 @@ export function queueEdit(server: doom.Doom, queue: readonly Queued[], edit: doo
       writes.push(withoutBase(write))
     }
   }
-  return { edit: { ...edit, writes }, after }
+  return {
+    edit: { ...edit, writes },
+    after,
+    ...(edit.readBase === undefined ? {} : { afterRead: [...provisional.values()] }),
+  }
 }
 
 export function sendable(queued: Queued): doom.Edit {
@@ -153,6 +156,7 @@ export function dropped(
   for (const each of queue)
     if (
       each.after.some((name) => name !== null && gone.has(name)) ||
+      each.afterRead?.some((name) => gone.has(name)) === true ||
       (each.follows !== undefined && gone.has(each.follows))
     )
       gone.add(each.edit.once)
@@ -163,14 +167,7 @@ export function dropped(
 }
 
 export function revIn(server: doom.Doom, queue: readonly Queued[], once: string): doom.Rev | undefined {
-  const landedAt = server.onces.get(once)
-  if (landedAt !== undefined) return landedAt
-  for (const [at, name] of provisionalRevs(
-    server,
-    queue.map((each) => each.edit),
-  ))
-    if (name === once) return at
-  return undefined
+  return server.onces.get(once) ?? shown(server, queue).onces.get(once)
 }
 
 export function ownedIn(server: doom.Doom, queue: readonly Queued[], onces: Iterable<string>): Set<doom.Rev> {

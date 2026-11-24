@@ -18,10 +18,29 @@ const stampLength = 11
 
 function readQueued(raw: unknown): Queued | undefined {
   if (typeof raw !== "object" || raw === null) return undefined
-  const { edit, after, follows } = raw as { edit?: doom.Edit; after?: unknown; follows?: unknown }
+  const { edit, after, follows, afterRead } = raw as {
+    edit?: doom.Edit
+    after?: unknown
+    follows?: unknown
+    afterRead?: unknown
+  }
   if (edit === undefined || typeof edit.once !== "string" || !Array.isArray(edit.writes)) return undefined
-  if (!Array.isArray(after) || after.length !== edit.writes.length) return undefined
-  return { edit, after: after as (string | null)[], ...(typeof follows === "string" ? { follows } : {}) }
+  if (
+    !Array.isArray(after) ||
+    after.length !== edit.writes.length ||
+    !after.every((once): once is string | null => once === null || typeof once === "string")
+  )
+    return undefined
+  const queued = { edit, after, ...(typeof follows === "string" ? { follows } : {}) }
+  if (edit.readBase === undefined) return queued
+  if (
+    !Number.isSafeInteger(edit.readBase) ||
+    !Array.isArray(afterRead) ||
+    edit.readBase < afterRead.length ||
+    !afterRead.every((once): once is string => typeof once === "string")
+  )
+    return undefined
+  return { ...queued, afterRead }
 }
 
 export function deviceStorage(deck: string): DoomStorage {

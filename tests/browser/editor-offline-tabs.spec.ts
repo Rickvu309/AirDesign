@@ -218,3 +218,92 @@ test("an undo of typing in the title, made offline while another tab renames the
   await expect(page.locator("[data-save-status]")).toHaveText(productCopy.saved)
   await other.close()
 })
+
+for (const interleave of [false, true]) {
+  test(`guarded offline replay ${interleave ? "refuses a gap" : "saves consecutive edits after a lost reply"}`, async ({
+    stack,
+  }) => {
+    const { packageBuild } = await import("../../scripts/package-build.mjs")
+    const repo = process.cwd()
+    const catalog: typeof import("../../packages/catalog/src/index.ts") = await packageBuild(repo, "@airdesign/catalog")
+    const { doomRoutes } = catalog
+    const doom: typeof import("../../packages/doom/src/index.ts") = await packageBuild(repo, "@airdesign/doom")
+    const live: typeof import("../../packages/live/src/index.ts") = await packageBuild(repo, "@airdesign/live")
+    const { createDoomDeck, openDoomDeck, memoryStorage } = live
+    const cookie = await stack.signIn()
+    const deck = `guard-${crypto.randomUUID().replaceAll("-", "").slice(0, 12)}`
+    const storage = memoryStorage()
+    let offline = true
+    let lose = !interleave
+    const sent: { readonly edit: import("../../packages/doom/src/index.ts").Edit; readonly reply: unknown }[] = []
+    const remote: import("../../packages/live/src/index.ts").DoomRemote = {
+      create: async (body) => doomRoutes.create.result((await stack.post(doomRoutes.create.path, body, cookie)).json),
+      open: async (body) => doomRoutes.open.result((await stack.post(doomRoutes.open.path, body, cookie)).json),
+      since: async (body) => doomRoutes.since.result((await stack.post(doomRoutes.since.path, body, cookie)).json),
+      async edit(body) {
+        if (offline) throw new TypeError("offline")
+        const reply = (await stack.post(doomRoutes.edit.path, body, cookie)).json
+        sent.push({ edit: body.edit, reply })
+        if (lose) {
+          lose = false
+          throw new TypeError("reply lost")
+        }
+        return doomRoutes.edit.result(reply)
+      },
+    }
+    const opened = await createDoomDeck(remote, deck, { storage })
+    if (!opened.ok) throw new Error(JSON.stringify(opened))
+    const local = opened.deck
+    const node = doom.nodeId("s:1")
+    const rename = (value: string): import("../../packages/doom/src/index.ts").Write[] => [
+      { node, prop: "name", value },
+    ]
+    const first = local.push(rename("First"), interleave ? undefined : { read: local.view() })
+    const second = local.push(rename("Second"), { read: local.view() })
+    expect(first).toMatchObject({ ok: true })
+    expect(second).toMatchObject({ ok: true })
+    if (!first.ok || !("saved" in first) || !second.ok || !("saved" in second)) throw new Error("edits not queued")
+    await second.saved
+    expect(doom.deckName(local.view())).toBe("Second")
+    expect(await local.sync()).toEqual({ ok: false, reason: "offline" })
+    if (interleave) {
+      const other = await stack.post(
+        doomRoutes.edit.path,
+        {
+          deck,
+          edit: {
+            once: "other-tab",
+            author: { kind: "person", id: "other" },
+            writes: [{ node: doom.nodeId("s:3"), prop: "name", value: "Other slide" }],
+          },
+        },
+        cookie,
+      )
+      expect(other.json).toEqual({ ok: true, deck, rev: 2 })
+    }
+    offline = false
+    const reopened = await openDoomDeck(remote, deck, { storage })
+    if (!reopened.ok) throw new Error(JSON.stringify(reopened))
+    const resumed = reopened.deck
+    if (!interleave) expect(await resumed.sync()).toEqual({ ok: false, reason: "offline" })
+    expect(await resumed.sync()).toEqual({ ok: true })
+    const stored = await remote.open({ deck })
+    if (!stored.ok) throw new Error(JSON.stringify(stored))
+    expect(stored.rev).toBe(3)
+    expect(doom.deckName(stored.fold)).toBe(interleave ? "First" : "Second")
+    expect(doom.deckName(resumed.view())).toBe(doom.deckName(stored.fold))
+    expect(resumed.pending()).toEqual([])
+    if (interleave) {
+      expect(sent.map(({ edit }) => edit.once)).toEqual([first.once])
+      expect(resumed.notices()).toEqual([{ once: second.once, refused: "stale", because: first.once }])
+    } else {
+      expect(sent.map(({ edit }) => [edit.once, edit.readBase])).toEqual([
+        [first.once, 1],
+        [first.once, 1],
+        [second.once, 2],
+      ])
+      expect(sent[0]?.reply).toEqual(sent[1]?.reply)
+      expect(resumed.notices()).toEqual([])
+    }
+  })
+}

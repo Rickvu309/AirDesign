@@ -295,6 +295,7 @@ function protect(work: Working, landed: Landed, touched: ReadonlySet<NodeId>): v
 
 export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Refusal {
   if (doom.onces.has(landed.once)) return { doom, delta: noChange }
+  if (landed.readBase !== undefined && landed.readBase !== doom.rev) return refuse("stale")
   const work = open(doom)
   const fenced = guardRun(work, landed)
   if (fenced !== undefined) return fenced

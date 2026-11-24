@@ -69,3 +69,17 @@ No model: a property test drives the editor's writes. `apps/web/src/editor/child
 Leaves out: auto layout (Shift+A, padding, Remove auto layout), a drag into or out of a group, and the read set and counts of the stored deck (structure's `ReadSetHeld`, `AbsentEditLeavesCounts`, `StructuralRecord`), which have no doom code; a frame's backdrop (`BackdropOnlyInFrame`): a doom frame paints its own fills. The run's undo of a group the person moved since (`PersonMoveKeepsAgentGroup`) differs from the stored deck, which refused it: the doom keeps the group with its layers where the person put it, takes back the rest of the run, and names the group as kept (`invertRun` in `packages/doom/src/invert-run.ts`, held by `invert-run.test.ts`, `doom-undo-run.test.ts` and `tests/browser/editor-agent-undo-kept.spec.ts`).
 
 Found: a group around a hugging group jumped on ungroup, by half the difference between the size the inner group stored and the size it showed (#1406).
+
+## Read base
+
+An edit can carry the revision of the whole fold it read. The device remembers every pending edit that contributed to that fold. Those edits must land at consecutive revisions from the authoritative base. The server resolves an accepted `once` after checking ownership, then checks the read base against the head used by its SQL compare-and-swap.
+
+- `ExactBase` holds that a guarded edit can land only immediately after its read base.
+- `Predecessor` holds that the second edit can only land after its predecessor and that a rejected predecessor takes its dependent with it.
+- `Once` and `OneRowPerOnce` hold that an edit with a lost reply is still accepted and retrying it adds no row.
+
+Bounds cover two guarded edits, one lost reply and one interleaving from another writer. Run `pnpm check:specs read-base`. The replay in `tests/read-base-replay.test.ts` drives every edge through `createDoomDeck` and the real Doom fold. It checks the accepted revisions, local view, queue, refusals and the revision returned by a retry. The Postgres test pauses the SQL update and lets another writer win the compare-and-swap. The offline browser suite also uses the real API to cover an unguarded predecessor that lands too late and a consecutive chain after a dropped reply. Component ownership and grouped inverses are outside the model.
+
+The pre-change Postgres tests refused the guarded command as malformed. With the guard removed, the model mutation lets the second edit land at the wrong revision and breaks `ExactBase`.
+
+Sync uses `specs/read-base/covers.json`.

@@ -52,6 +52,9 @@ _Avoid_: batch, transaction, change
 The revision of a property its writer read. A write to text, notes or a list whose base is behind is refused `stale`.
 _Avoid_: readAt, version
 
+**read base**:
+The deck revision an edit read. An edit with a `readBase` is refused `stale` if another edit advances the deck before it lands. When the read included pending edits, those edits must land consecutively before it can be sent.
+
 **layout**:
 How a frame places its children: none, row, column or grid. Laid-out boxes are computed from Doom's nodes, never written.
 _Avoid_: flow, auto layout (in code)

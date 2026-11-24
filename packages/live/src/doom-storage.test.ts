@@ -92,6 +92,32 @@ describe("two tabs on one device", () => {
     await deleteDatabase()
   })
 
+  it("keeps a guarded edit's predecessor through a reopen and refuses it if that predecessor lands late", async () => {
+    const shared = memoryDoomRemote(start)
+    const writer = tab(shared)
+    const deck = named()
+    const created = await createDoomDeck(writer, deck, { once: counter("a"), client: "a" })
+    if (!created.ok) throw new Error("create")
+    const first = created.deck
+    writer.offline = true
+    const before = first.push([{ node: title, prop: "text", value: words("one step") }])
+    const guarded = first.push([{ node: card, prop: "name", value: "prepared" }], { read: first.view() })
+    if (!("saved" in before) || !("saved" in guarded)) throw new Error("not queued")
+    await guarded.saved
+    await first.sync()
+    const other = await opened(shared, deck, "other", memoryStorage())
+    expect(other.push([{ node: slide, prop: "name", value: "new slide name" }]).ok).toBe(true)
+    await other.sync()
+
+    const next = tab(shared)
+    const reopened = await opened(next, deck, "b")
+    expect(nameOf(reopened.view())).toBe("prepared")
+    expect(await reopened.sync()).toEqual({ ok: true })
+    expect(next.sent).toEqual([before.once])
+    expect(reopened.notices()).toEqual([{ once: guarded.once, refused: "stale", because: before.once }])
+    expect(nameOf(reopened.view())).toBe("Card")
+  })
+
   it("keep their unsent edits apart, so the next open paints and sends both tabs' edits, each once", async () => {
     const shared = memoryDoomRemote(start)
     const deck = named()

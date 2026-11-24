@@ -1,17 +1,7 @@
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import {
-  dropped,
-  landed,
-  provisionalRevs,
-  queueEdit,
-  sendable,
-  shown,
-  skipped,
-  trimmed,
-  type Queued,
-} from "./doom-queue.js"
+import { dropped, landed, queueEdit, sendable, shown, skipped, trimmed, type Queued } from "./doom-queue.js"
 
 const person: doom.Author = { kind: "person", id: "tab" }
 const id = doom.nodeId
@@ -100,13 +90,6 @@ describe("queueing an edit on the view", () => {
   it("names the queued edit an undo is built on when it carries that edit's provisional rev", () => {
     const base = server()
     const first = queued(base, [], edit("a", [{ node: title, prop: "box", value: box(5) }]))
-    const provisional = [
-      ...provisionalRevs(
-        base,
-        first.map((each) => each.edit),
-      ),
-    ]
-    expect(provisional).toEqual([[doom.rev(2), "a"]])
     const second = queued(base, first, edit("undo", [{ node: title, prop: "box", value: box(0), base: doom.rev(2) }]))
     expect(second[1]?.after).toEqual(["a"])
   })
