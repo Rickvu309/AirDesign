@@ -4,6 +4,9 @@ import type { Reading } from "./agent-draft.js"
 import { type NodeId, type Doom, type Write, applyEdit, isRefusal, nodeId, rev } from "./index.js"
 import { agent, once, sampleDeck } from "./sample-deck.js"
 import { childrenOf, slidesOf } from "./doom-walk.js"
+import { defaultTheme } from "./default-theme-art.js"
+import { doomFromTree } from "./doom-tree.js"
+import { titleOnlyWrites } from "./slide-placeholders.js"
 
 export const runName = "run-1"
 
@@ -44,3 +47,16 @@ export const agentDeck = (): Doom => started(sampleDeck())
 export const firstSlide = (doom: Doom): NodeId => slidesOf(doom)[0]!.id
 
 export const lastChild = (doom: Doom, parent: NodeId) => childrenOf(doom, parent).at(-1)!
+
+export function titledSlide(size: { readonly w: number; readonly h: number } = { w: 1920, h: 1080 }) {
+  const grown = doomFromTree({ theme: defaultTheme, size, slides: [{ children: [] }] })
+  const on = grown.slides[0]!
+  const next = applyEdit(grown.doom, {
+    once: "title",
+    author: { kind: "person", id: "test" },
+    writes: titleOnlyWrites(on, minter("t"), size),
+    rev: rev(grown.doom.rev + 1),
+  })
+  if (isRefusal(next)) throw new Error(JSON.stringify(next))
+  return { doom: started(next), on }
+}

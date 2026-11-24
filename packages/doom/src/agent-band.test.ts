@@ -1,13 +1,10 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
-import { agentDeck, build, lastChild, minter, started } from "./agent-fixtures.js"
+import { agentDeck, build, lastChild, minter, titledSlide } from "./agent-fixtures.js"
 import { bottomLimitOf } from "./agent-place.js"
-import { defaultTheme } from "./default-theme-art.js"
-import { doomFromTree } from "./doom-tree.js"
 import { childrenOf, propOf } from "./doom-walk.js"
-import { applyEdit, isRefusal, rev, type Doom } from "./index.js"
+import type { Doom } from "./index.js"
 import { ids } from "./sample-deck.js"
-import { titleOnlyWrites } from "./slide-placeholders.js"
 
 const slide = ids.slide
 const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as AgentChange
@@ -20,19 +17,7 @@ const kpiItems = [
 ]
 
 describe("a pattern under a title", () => {
-  const person = { kind: "person", id: "test" } as const
-  const titled = () => {
-    const grown = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
-    const on = grown.slides[0]!
-    const next = applyEdit(grown.doom, {
-      once: "title",
-      author: person,
-      writes: titleOnlyWrites(on, minter("t"), { w: 1920, h: 1080 }),
-      rev: rev(grown.doom.rev + 1),
-    })
-    if (isRefusal(next)) throw new Error(JSON.stringify(next))
-    return { doom: started(next), on }
-  }
+  const titled = () => titledSlide()
 
   it.each(["kpi", "cards"] as const)(
     "keeps %s at content height under the title, short of the bottom margin",
