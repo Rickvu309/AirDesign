@@ -2,6 +2,7 @@ import { readAngle, readRotation } from "./angle.js"
 import { arrowField, startArrowField } from "./agent-arrow.js"
 import { type AgentEnd, endSchema, readEnd } from "./agent-end.js"
 import { type AgentInsert, insertField } from "./agent-insert.js"
+import { type AgentItem, itemSchema, readItem } from "./agent-item.js"
 import { linkField } from "./agent-link.js"
 import { limits } from "./limits.js"
 import { type Field, choice, field, flag, number, string } from "./agent-fields.js"
@@ -53,13 +54,6 @@ export type AgentGradient = {
 }
 export type AgentFill = AgentColor | "none" | { readonly image: string } | AgentGradient
 export type AgentBox = { readonly x: Px; readonly y: Px; readonly w: Px; readonly h: Px }
-export type AgentItem = {
-  readonly title?: string
-  readonly value?: string
-  readonly note?: string
-  readonly points?: readonly string[]
-  readonly icon?: string
-}
 export type AgentChart = {
   readonly kind: "bar" | "column" | "line" | "pie" | "stacked"
   readonly categories: readonly string[]
@@ -154,22 +148,6 @@ const readColor: Reader<AgentColor> = oneOf<AgentColor>(matching(tintedName, 16)
 const id = (description: string) => field<NodeId>({ ...idSchema, description }, readId)
 
 const readNone = literal(["none"] as const)
-
-const itemSchema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    title: { type: "string" },
-    value: { type: "string", description: "A number or a date." },
-    note: { type: "string" },
-    points: { type: "array", items: { type: "string" }, description: "One bullet each." },
-    icon: { type: "string", description: "An icon name." },
-  },
-}
-const readItem = object(
-  {},
-  { title: words(300), value: words(100), note: words(500), points: list(words(500), 12), icon: words(80, 1) },
-)
 
 const chartSchema = {
   type: "object",
