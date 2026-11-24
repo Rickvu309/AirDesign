@@ -57,7 +57,11 @@ export const copyWords = (file, source) => {
   const words = new Map()
   for (const statement of parseSync(file, source).program.body) {
     if (statement.type !== "ExportNamedDeclaration") continue
+    const code = new Set()
     walk(statement.declaration, (node, names) => {
+      if (node.type === "CallExpression" && node.callee.type === "MemberExpression")
+        for (const argument of node.arguments) code.add(argument)
+      if (code.has(node)) return
       const value = valueOf(node)
       if (value && names.length) words.set(value, { file, export: names.join(".") })
     })
