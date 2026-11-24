@@ -3,10 +3,9 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { removeLeftovers } from "./leftovers.mjs"
-import { bringMainUp, readPulls, removeStale, removeStaleBranches, warnStashes } from "./worktrees.mjs"
+import { bringMainUp, readPulls, removeForPull, removeStale, removeStaleBranches, warnStashes } from "./worktrees.mjs"
 
-export const sweepLine =
-  "sweep      pnpm sweep lists finished worktrees, branches and verify leftovers; --apply removes them"
+export const sweepPull = (options) => removeForPull(options)
 
 export const sweep = ({ root, apply, say, pulls = readPulls(root), ...options }) => {
   const lines = []

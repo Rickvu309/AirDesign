@@ -1,0 +1,3 @@
+# Land removes a merged pull request's own worktrees and branch
+
+After `pnpm land` confirms the pull request is merged, it calls `sweepPull` in `scripts/sweep.mjs`. That uses the worktree remover in `scripts/worktrees.mjs` on this pull request only. It removes every worktree on the head branch, that local branch, and a detached verify-airdesign scratch tree whose commit is on that branch and not on main. It leaves the main checkout, the worktree land is running in, a locked worktree, a worktree a process is using, and a worktree with uncommitted changes, and prints the command that removes each. It does not use the idle-with-no-work rule. `scripts/sweep.test.mjs`, `scripts/sweep-pull.test.mjs` and `scripts/land.test.mjs` hold this.

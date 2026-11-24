@@ -1,8 +1,10 @@
 import assert from "node:assert/strict"
+import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { listedRecently, listingMinutes } from "./sweep.mjs"
+import { listedRecently, listingMinutes, sweepPull } from "./sweep.mjs"
+import { findStale, idleBefore } from "./worktrees.mjs"
 
 const folder = fs.mkdtempSync(path.join(os.tmpdir(), "sweep-test-"))
 try {
@@ -23,3 +25,167 @@ try {
 } finally {
   fs.rmSync(folder, { recursive: true, force: true })
 }
+
+const same = (name, actual, expected) => {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(`${name}\n${JSON.stringify(actual)}\n${JSON.stringify(expected)}`)
+  }
+}
+const repo = fs.mkdtempSync(path.join(os.tmpdir(), "sweep-pull-"))
+process.on("exit", () => fs.rmSync(repo, { recursive: true, force: true }))
+const configured = (key) => {
+  try {
+    return execFileSync("git", ["config", key], { encoding: "utf8" }).trim()
+  } catch {
+    return ""
+  }
+}
+const identity =
+  configured("user.email") === "" ? ["-c", "user.name=fixture", "-c", "user.email=fixture@example.com"] : []
+const git = (cwd, ...args) =>
+  execFileSync("git", [...identity, "-c", "commit.gpgsign=false", ...args], {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  })
+const root = path.join(repo, "repo")
+fs.mkdirSync(root)
+git(root, "init", "-q", "-b", "main")
+const commit = (cwd, file, text) => {
+  fs.writeFileSync(path.join(cwd, file), text)
+  git(cwd, "add", file)
+  git(cwd, "commit", "-q", "-m", file)
+  return git(cwd, "rev-parse", "HEAD").trim()
+}
+commit(root, "a.txt", "a")
+const add = (name) => {
+  const where = path.join(repo, name)
+  git(root, "worktree", "add", "-q", "-b", name, where, "main")
+  return where
+}
+const scratchRoot = path.join(repo, "verify-airdesign-scratch")
+fs.mkdirSync(scratchRoot)
+const detach = (name, at) => {
+  const where = path.join(scratchRoot, name)
+  git(root, "worktree", "add", "-q", "--detach", where, at)
+  return where
+}
+const only = add("only")
+commit(only, "only.txt", "only")
+git(root, "worktree", "remove", only)
+const fresh = add("fresh")
+const busy = add("busy")
+const dirty = add("dirty")
+fs.writeFileSync(path.join(dirty, "unsaved.txt"), "unsaved")
+const inside = add("inside")
+const insideHead = commit(inside, "inside.txt", "inside")
+const insideScratch = detach("tree-inside", insideHead)
+const feature = add("feature")
+const mid = commit(feature, "mid.txt", "mid")
+const midScratch = detach("tree-mid", mid)
+commit(feature, "tip.txt", "tip")
+const tipScratch = detach("tree-tip", "feature")
+const sharedScratch = detach("tree-main", "main")
+const other = add("other")
+const otherHead = commit(other, "other.txt", "other")
+const otherScratch = detach("tree-other", otherHead)
+const primary = path.join(repo, "primary")
+fs.mkdirSync(primary)
+git(primary, "init", "-q", "-b", "main")
+commit(primary, "p.txt", "p")
+git(primary, "checkout", "-q", "-b", "held")
+
+const branches = () => git(root, "branch", "--format=%(refname:short)").split("\n").filter(Boolean)
+const later = Date.now() + idleBefore + 60_000
+same(
+  "the full sweep would remove a fresh worktree that sat idle with no work of its own",
+  findStale({ root, base: "main", busy: () => false, now: later, scratchRoot })
+    .map((worktree) => path.basename(worktree.path))
+    .includes("fresh"),
+  true,
+)
+
+const run = (branch, extra = {}) => {
+  const lines = []
+  sweepPull({
+    root,
+    branch,
+    number: extra.number ?? 12,
+    here: extra.here ?? root,
+    base: "main",
+    scratchRoot,
+    busy: extra.busy ?? (() => false),
+    say: (line) => lines.push(line),
+  })
+  return lines
+}
+
+const onlyLines = run("only", { number: 4 })
+same("a merged pull request's branch goes when no worktree holds it", onlyLines, [
+  "deleted branch only, because its pull request 4 is merged",
+])
+same("and the branch ref is gone", branches().includes("only"), false)
+
+const busyLines = run("busy", { busy: (where) => where === busy })
+same("a worktree a process is using stays", fs.existsSync(busy), true)
+same("and one line says why and how to remove it", busyLines, [
+  `left worktree ${busy}, because a process is using it. Remove it with: git -C ${root} worktree remove ${busy} && git -C ${root} branch -D busy`,
+])
+same("its branch stays while the worktree does", branches().includes("busy"), true)
+
+const dirtyLines = run("dirty")
+same("a worktree with uncommitted changes stays", fs.existsSync(dirty), true)
+same("and one line says why and how to remove it", dirtyLines, [
+  `left worktree ${dirty}, because it has uncommitted changes. Remove it with: git -C ${root} worktree remove ${dirty} && git -C ${root} branch -D dirty`,
+])
+
+const insideLines = run("inside", { number: 8, here: inside, busy: (where) => where === inside })
+same("the worktree land is running from stays, even when a process is using it", fs.existsSync(inside), true)
+same("and the line is the one command that removes it", insideLines, [
+  `left worktree ${inside}, because land is running there. Remove it with: git -C ${root} worktree remove ${inside} && git -C ${root} branch -D inside`,
+  `removed worktree ${insideScratch}, because it is a verify-airdesign scratch tree of pull request 8`,
+])
+same("a scratch tree of that same pull request still goes", fs.existsSync(insideScratch), false)
+same("the branch stays while land's worktree holds it", branches().includes("inside"), true)
+
+const heldLines = []
+sweepPull({
+  root: primary,
+  branch: "held",
+  number: 9,
+  here: primary,
+  base: "main",
+  scratchRoot,
+  say: (line) => heldLines.push(line),
+})
+same(
+  "the main checkout stays even when it is on the pull request branch and land is running there",
+  fs.existsSync(primary),
+  true,
+)
+same("and the line names the main checkout", heldLines, [
+  `left worktree ${primary}, because it is the main checkout. Remove it with: git -C ${primary} checkout --detach && git -C ${primary} branch -D held`,
+])
+same("its branch stays", git(primary, "branch", "--format=%(refname:short)").includes("held"), true)
+
+const featureLines = run("feature", { busy: (where) => where === tipScratch })
+same("the pull request worktree is removed", fs.existsSync(feature), false)
+same("a scratch tree of its own commit is removed", fs.existsSync(midScratch), false)
+same("a scratch tree a process is using stays", fs.existsSync(tipScratch), true)
+same("a scratch tree of main stays", fs.existsSync(sharedScratch), true)
+same("another pull request's scratch tree stays", fs.existsSync(otherScratch), true)
+same("another pull request's worktree stays", fs.existsSync(other), true)
+same("a fresh worktree with no work of its own stays", fs.existsSync(fresh), true)
+same("the lines name this pull request and not the idle rule", featureLines, [
+  `removed worktree ${feature}, because its pull request 12 is merged`,
+  `removed worktree ${midScratch}, because it is a verify-airdesign scratch tree of pull request 12`,
+  `left worktree ${tipScratch}, because a process is using it. Remove it with: git -C ${root} worktree remove ${tipScratch}`,
+  "deleted branch feature, because its pull request 12 is merged",
+])
+same("the pull request branch is deleted", branches().includes("feature"), false)
+same("the fresh branch stays", branches().includes("fresh"), true)
+same(
+  "no line tells git to force a removal",
+  featureLines.some((line) => line.includes("--force")),
+  false,
+)

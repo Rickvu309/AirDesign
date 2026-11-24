@@ -117,6 +117,38 @@ export const usedByAProcess = (worktree) => {
 
 const clean = (worktree) => git(worktree, ["status", "--porcelain"]) === ""
 
+const removeWorktree = (root, where) => git(root, ["worktree", "remove", where]) !== undefined
+
+const real = (where) => {
+  try {
+    return fs.realpathSync(where)
+  } catch {
+    return path.resolve(where)
+  }
+}
+
+const inside = (here, where) => {
+  const home = real(here)
+  const tree = real(where)
+  return home === tree || home.startsWith(`${tree}/`)
+}
+
+const ancestor = (root, commit, ref) => git(root, ["merge-base", "--is-ancestor", commit, ref]) !== undefined
+
+const refusal = ({ worktree, main, here, busy }) => {
+  if (worktree.path === main) return "it is the main checkout"
+  if (inside(here, worktree.path)) return "land is running there"
+  if (worktree.locked) return "it is locked"
+  if (busy(worktree.path)) return "a process is using it"
+  if (!clean(worktree.path)) return "it has uncommitted changes"
+  return undefined
+}
+
+const laterCommand = ({ main, where, branch, mainCheckout }) =>
+  mainCheckout
+    ? `git -C ${main} checkout --detach && git -C ${main} branch -D ${branch}`
+    : `git -C ${main} worktree remove ${where}${branch === undefined ? "" : ` && git -C ${main} branch -D ${branch}`}`
+
 const pullReason = (pull) => `its pull request ${pull.number} is ${pull.state.toLowerCase()}`
 
 export const readPulls = (root) => {
@@ -188,11 +220,66 @@ export const removeStale = ({ root, say = console.log, apply = true, ...options 
       say(`would remove worktree ${worktree.path}, because ${worktree.reason}`)
       continue
     }
-    if (git(root, ["worktree", "remove", worktree.path]) === undefined) continue
+    if (!removeWorktree(root, worktree.path)) continue
     if (worktree.branch !== undefined && worktree.landed)
       git(root, ["branch", "-D", worktree.branch.replace("refs/heads/", "")])
     say(`removed worktree ${worktree.path}, because ${worktree.reason}`)
     removed.push(worktree.path)
+  }
+  return removed
+}
+
+export const removeForPull = ({
+  root,
+  branch,
+  number,
+  here = process.cwd(),
+  base = "origin/main",
+  busy = usedByAProcess,
+  scratchRoot = verifyScratch,
+  say = console.log,
+}) => {
+  if (root === undefined) throw new Error("sweepPull needs a repository root")
+  if (branch === undefined || branch === "main" || branch === deployBranch) return []
+  const listed = git(root, ["worktree", "list", "--porcelain"])
+  if (listed === undefined) return []
+  const worktrees = readWorktrees(listed)
+  const main = worktrees[0]?.path
+  if (main === undefined) return []
+  const ref = `refs/heads/${branch}`
+  const owns = (commit) => commit !== undefined && !ancestor(root, commit, base) && ancestor(root, commit, ref)
+  const wanted = worktrees.filter((worktree) => {
+    if (worktree.path === undefined) return false
+    if (worktree.branch === ref) return true
+    return worktree.branch === undefined && path.dirname(worktree.path) === scratchRoot && owns(worktree.head)
+  })
+  const removed = []
+  for (const worktree of wanted) {
+    const why = refusal({ worktree, main, here, busy })
+    const named = worktree.branch === undefined ? undefined : branch
+    if (why !== undefined) {
+      say(
+        `left worktree ${worktree.path}, because ${why}. Remove it with: ${laterCommand({ main, where: worktree.path, branch: named, mainCheckout: worktree.path === main })}`,
+      )
+      continue
+    }
+    const reason =
+      worktree.branch === undefined
+        ? `it is a verify-airdesign scratch tree of pull request ${number}`
+        : `its pull request ${number} is merged`
+    if (!removeWorktree(root, worktree.path)) continue
+    say(`removed worktree ${worktree.path}, because ${reason}`)
+    removed.push(worktree.path)
+  }
+  const again = git(root, ["worktree", "list", "--porcelain"])
+  const held = again !== undefined && readWorktrees(again).some((worktree) => worktree.branch === ref)
+  if (
+    !held &&
+    git(root, ["rev-parse", "--verify", "--quiet", ref]) !== undefined &&
+    git(root, ["branch", "-D", branch]) !== undefined
+  ) {
+    say(`deleted branch ${branch}, because its pull request ${number} is merged`)
+    removed.push(branch)
   }
   return removed
 }
