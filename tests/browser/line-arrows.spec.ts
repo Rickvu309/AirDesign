@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test"
-import { borderCopy } from "../../apps/web/src/copy/border-copy"
+import { borderCopy, borderWords } from "../../apps/web/src/copy/border-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
+import { fillWords } from "../../apps/web/src/copy/fill-copy"
 import { test } from "./api-stack"
 import { accent, clickSlide, landNodes, openEditor, spot } from "./editor-deck"
 import { panel, pick, reloadDesign, saved, undoOnStage } from "./editor-design"
@@ -45,25 +46,29 @@ test("a person sets a line's start and end arrowheads, and a rectangle has neith
   await pick(page, "t:1", 400, 300)
   const end = panel(page).getByRole("combobox", { name: borderCopy.tail, exact: true })
   const start = panel(page).getByRole("combobox", { name: borderCopy.head, exact: true })
-  await expect(end).toContainText("Open")
-  await expect(start).toContainText("None")
+  await expect(end).toContainText(borderWords.arrow)
+  await expect(start).toContainText(fillWords.none)
   await end.click()
-  await page.getByRole("option", { name: "Triangle", exact: true }).click()
+  await page.getByRole("option", { name: borderWords.triangle, exact: true }).click()
   await expect.poll(arrowsOf).toEqual(["none", "triangle"])
   await start.click()
-  await page.getByRole("option", { name: "Circle", exact: true }).click()
+  await page.getByRole("option", { name: fillWords.circle, exact: true }).click()
   await expect.poll(arrowsOf).toEqual(["circle", "triangle"])
 
   await undoOnStage(page)
   await expect.poll(arrowsOf).toEqual(["none", "triangle"])
   await pick(page, "t:1", 400, 300)
   await start.click()
-  await page.getByRole("option", { name: "Circle", exact: true }).click()
+  await page.getByRole("option", { name: fillWords.circle, exact: true }).click()
   await expect.poll(arrowsOf).toEqual(["circle", "triangle"])
   await reloadDesign(page)
   await pick(page, "t:1", 400, 300)
-  await expect(panel(page).getByRole("combobox", { name: borderCopy.head, exact: true })).toContainText("Circle")
-  await expect(panel(page).getByRole("combobox", { name: borderCopy.tail, exact: true })).toContainText("Triangle")
+  await expect(panel(page).getByRole("combobox", { name: borderCopy.head, exact: true })).toContainText(
+    fillWords.circle,
+  )
+  await expect(panel(page).getByRole("combobox", { name: borderCopy.tail, exact: true })).toContainText(
+    borderWords.triangle,
+  )
   await expect.poll(arrowsOf).toEqual(["circle", "triangle"])
 
   await clickSlide(page, 1150, 300)
