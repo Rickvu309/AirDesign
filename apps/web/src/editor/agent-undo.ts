@@ -3,7 +3,7 @@ import type { UndoRun } from "@/aira/aira-undo"
 import { layerLabel } from "./layer-label"
 import type { EditorClient } from "./use-deck"
 
-export function doomAgentUndo(client: Pick<EditorClient, "undoRun" | "view">): UndoRun {
+export function undoAgentRun(client: Pick<EditorClient, "undoRun" | "view">): UndoRun {
   return async (_deck, run) => {
     if (client.view().runs.get(run)?.undone === true) return { kept: [], left: [], waiting: [], undone: true }
     const turned = await client.undoRun(run)
