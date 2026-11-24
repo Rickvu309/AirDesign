@@ -3,7 +3,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Plus, Trash2 } from "lucide-react"
-import { Fragment } from "react"
+import { Fragment, type FocusEvent, type KeyboardEvent } from "react"
+import { cn } from "@/lib/class-names"
 import { editorCopy } from "@/copy/editor-copy"
 import { composing } from "@/lib/composing"
 import { NumberField } from "./number-cell"
@@ -19,26 +20,50 @@ import {
   chartWrites,
 } from "./chart-theme-writes"
 
+const wordsClass =
+  "min-w-0 flex-1 bg-transparent text-[length:var(--type-caption)] leading-[var(--panel-label-leading)] outline-none"
+
+type WordsField = HTMLTextAreaElement | HTMLInputElement
+
 function WordsCell(props: {
   readonly label: string
   readonly value: string
-  readonly onCommit: (words: string, field: HTMLTextAreaElement) => void
+  readonly onCommit: (words: string, field: WordsField) => void
+  readonly truncate?: boolean
+  readonly className?: string
 }) {
+  const onKeyDown = (event: KeyboardEvent<WordsField>) => {
+    if (composing(event)) return
+    if (event.key !== "Enter") return
+    event.preventDefault()
+    event.currentTarget.blur()
+  }
+  const onBlur = (event: FocusEvent<WordsField>) =>
+    props.onCommit(event.currentTarget.value.replaceAll("\n", " "), event.currentTarget)
   return (
-    <div data-focus-ring className="flex min-h-8 min-w-0 items-center rounded-lg bg-muted px-2.5 py-1">
-      <textarea
-        aria-label={props.label}
-        defaultValue={props.value}
-        rows={1}
-        className="min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-[length:var(--type-caption)] leading-[var(--panel-label-leading)] break-words outline-none field-sizing-content"
-        onKeyDown={(event) => {
-          if (composing(event)) return
-          if (event.key !== "Enter") return
-          event.preventDefault()
-          event.currentTarget.blur()
-        }}
-        onBlur={(event) => props.onCommit(event.currentTarget.value.replaceAll("\n", " "), event.currentTarget)}
-      />
+    <div
+      data-focus-ring
+      className={cn("flex min-h-8 min-w-0 items-center rounded-lg bg-muted px-2.5 py-1", props.className)}
+    >
+      {props.truncate === true ? (
+        <input
+          aria-label={props.label}
+          title={props.value}
+          defaultValue={props.value}
+          className={cn(wordsClass, "truncate")}
+          onKeyDown={onKeyDown}
+          onBlur={onBlur}
+        />
+      ) : (
+        <textarea
+          aria-label={props.label}
+          defaultValue={props.value}
+          rows={1}
+          className={cn(wordsClass, "resize-none overflow-hidden break-words field-sizing-content")}
+          onKeyDown={onKeyDown}
+          onBlur={onBlur}
+        />
+      )}
     </div>
   )
 }
@@ -84,11 +109,16 @@ export function ChartSection({
           onCheckedChange={(on) => change({ ...chart, labels: on })}
         />
       </label>
-      <div role="group" aria-label={editorCopy.chartData} className="-m-0.5 min-w-0 p-0.5" data-chart-data="">
+      <div
+        role="group"
+        aria-label={editorCopy.chartData}
+        className="-m-0.5 min-w-0 overflow-x-auto p-0.5"
+        data-chart-data=""
+      >
         <div
-          className="grid min-w-0 items-center gap-1"
+          className="grid items-center gap-1"
           style={{
-            gridTemplateColumns: `repeat(${String(chart.series.length + 1)}, minmax(0, 1fr)) auto`,
+            gridTemplateColumns: `minmax(5rem, 1fr) repeat(${String(chart.series.length)}, minmax(4.5rem, 1fr)) auto`,
           }}
         >
           <span />
@@ -97,6 +127,7 @@ export function ChartSection({
               key={`${String(at)}|${series.name}`}
               label={editorCopy.seriesName(at + 1)}
               value={series.name}
+              truncate={chart.series.length > 1}
               onCommit={(words, field) => {
                 const next = chartSeriesName(chart, at, words)
                 if (next === chart) field.value = series.name
@@ -111,10 +142,11 @@ export function ChartSection({
                 key={category}
                 label={`${editorCopy.chartData} ${String(row + 1)}`}
                 value={category}
+                className="sticky left-0 z-10"
                 onCommit={(words) => words !== category && change(chartRow(chart, row, words))}
               />
               {chart.series.map((series, at) => (
-                <div key={at} className="min-w-0">
+                <div key={at} className="min-w-[4.5rem]">
                   <NumberField
                     label={String(at + 1)}
                     hideLabel

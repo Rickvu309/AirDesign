@@ -54,7 +54,6 @@ const built = doom.doomFromTree({
         { type: "frame", name: "plain", props: { box, fills } },
         {
           type: "frame",
-          name: "chart",
           props: { box: { ...box, y: 300, w: 640, h: 360 }, fills, chart },
         },
       ],
@@ -65,8 +64,9 @@ const built = doom.doomFromTree({
 const theme = doom.defaultTheme
 const slides = built.slides
 const view = built.doom
-const chartId = built.ids.chart!
 const plainId = built.ids.plain!
+const nextId = (id: doom.NodeId) => doom.nodeId(`n:${String(Number(id.slice(2)) + 1)}`)
+const chartId = nextId(plainId)
 
 function modelOf(id: doom.NodeId) {
   return nodeModel({ view, id, theme, slides })
@@ -110,6 +110,7 @@ it("puts the chart's own section before Fill and titles the panel Chart", async 
       onSelection: () => undefined,
       words: null,
       onLinkWords: () => undefined,
+      onCrop: () => undefined,
     }),
   )
   try {
@@ -147,10 +148,40 @@ it("shows a long category and series name in full, wrapping inside the panel", a
       expect(tokens(field)).toEqual(expect.arrayContaining(["break-words", "field-sizing-content"]))
     }
     const data = host.querySelector("[data-chart-data]")
-    expect(data?.className ?? "").not.toContain("overflow-x")
     const grid = data?.querySelector("[style]") ?? data
-    expect(grid?.getAttribute("style") ?? "").toMatch(/minmax\(0(px)?,/)
-    expect(grid?.getAttribute("style") ?? "").not.toContain("5rem")
+    expect(grid?.getAttribute("style") ?? "").toContain("minmax(5rem, 1fr) repeat(1, minmax(4.5rem, 1fr))")
+  } finally {
+    await stop()
+  }
+})
+
+const wide = {
+  kind: "column" as const,
+  categories: ["A very long category name that keeps going", "Second"],
+  series: ["One of the long series names", "Two", "Three", "Four", "Five"].map((name) => ({
+    name,
+    values: [1234.5, 6],
+  })),
+}
+
+it("keeps a minimum width for the labels and numbers, and scrolls sideways with many series", async () => {
+  const grown = doom.doomFromTree({
+    theme: doom.defaultTheme,
+    slides: [{ children: [{ type: "frame", name: "wide", props: { box, fills, chart: wide } }] }],
+  })
+  const wideView = grown.doom
+  const wideId = grown.ids.wide!
+  const { host, stop } = await shown(createElement(ChartSection, { id: wideId, view: wideView, push: () => undefined }))
+  try {
+    const data = host.querySelector("[data-chart-data]")
+    expect(data?.className ?? "").toContain("overflow-x-auto")
+    const columns = data?.querySelector("[style]")?.getAttribute("style") ?? ""
+    expect(columns).toContain("minmax(5rem, 1fr) repeat(5, minmax(4.5rem, 1fr))")
+    const header = host.querySelector(`[aria-label="${editorCopy.seriesName(1)}"]`)
+    expect(header?.tagName).toBe("INPUT")
+    expect(header?.getAttribute("title")).toBe("One of the long series names")
+    const category = host.querySelector(`[aria-label="${editorCopy.chartData} 1"]`)
+    expect(category?.parentElement?.className ?? "").toContain("sticky")
   } finally {
     await stop()
   }
