@@ -12,10 +12,10 @@ import {
   bullets,
   cardOf,
   emit,
-  fitting,
   frameOf,
   heightIn,
   ladderOf,
+  largestFitting,
   partOf,
   sizedPart,
   stylesAt,
@@ -35,6 +35,7 @@ type Scale = {
   readonly styles: Styles
   readonly root: Values
   readonly filled: boolean
+  readonly wrap?: boolean
   readonly axes?: readonly [string, string] | undefined
 }
 type Build = (area: Area, items: readonly AgentItem[], scale: Scale) => Block | undefined
@@ -289,7 +290,9 @@ const timeline: Build = (area, items, scale) => {
   return frameOf({ ...scale.root, box: boxIn(area, spread.high) }, [line, lane])
 }
 
-const flow: Build = (area, items, scale) => {
+const flowSpacing = (scale: Scale) => Math.max(scale.gap * 2, arrowRoom)
+
+const flowDown: Build = (area, items, scale) => {
   const { pad, theme, styles } = scale
   const cardW = Math.min(area.w, Math.max(pad * 8, Math.round(area.w * flowWidthShare)))
   const room = cardW - pad * 2
@@ -305,7 +308,7 @@ const flow: Build = (area, items, scale) => {
   const spread = spreadDown(
     area,
     steps.map((step) => step.high),
-    Math.max(scale.gap * 2, arrowRoom),
+    flowSpacing(scale),
   )
   if (spread === undefined) return undefined
   const lane = frameOf(
@@ -333,7 +336,63 @@ const flow: Build = (area, items, scale) => {
   return frameOf({ ...scale.root, box: boxIn(area, spread.high) }, [lane, ...arrows])
 }
 
-const builders: Readonly<Record<PatternName, Build>> = { kpi, cards, compare, matrix, timeline, flow }
+const flowAcross: Build = (area, items, scale) => {
+  const { pad, theme, styles } = scale
+  const spacing = flowSpacing(scale)
+  const cardW = slotWidth(area, items.length, spacing)
+  const room = cardW - pad * 2
+  if (room <= 0) return undefined
+  const titles = items.flatMap((item) => (item.title === undefined ? [] : [item.title]))
+  const notes = items.flatMap((item) => (item.note === undefined ? [] : [item.note]))
+  const oneLine = widestLine(titles, theme, styles.heading) <= room && widestLine(notes, theme, styles.caption) <= room
+  if (!oneLine && scale.wrap !== true) return undefined
+  const steps = items.map((item, at) =>
+    cardOf(
+      [
+        ...(item.title === undefined ? [] : [sizedPart(partOf(item.title, styles.heading, "text", true), theme, room)]),
+        ...(item.note === undefined ? [] : [sizedPart(partOf(item.note, styles.caption, "text2", true), theme, room)]),
+      ],
+      { pad, gap: scale.gap, fill: "background2", key: `s${at}` },
+    ),
+  )
+  const tallest = Math.max(...steps.map((step) => step.high))
+  if (tallest > area.h) return undefined
+  const high = scale.filled ? area.h : tallest
+  const lane = frameOf(
+    {
+      box: { ...zeroBox, w: area.w, h: high },
+      layout: { mode: "row", gap: spacing, padding: sidesOf(0), align: "top-left" },
+    },
+    steps.map((each) => each.block),
+  )
+  const arrows = items.slice(1).map((_, at): Block => ({
+    type: "shape",
+    values: (ref) => ({
+      box: { ...zeroBox, x: 0, y: 0, w: spacing, h: 0 },
+      geometry: {
+        kind: "line",
+        start: { node: ref(`s${at}`), site: "r" },
+        end: { node: ref(`s${at + 1}`), site: "l" },
+        route: "straight",
+        arrows: ["none", "arrow"],
+      },
+      strokes: [solid("text2")],
+      stroke: strokeOf(connectorWeight),
+    }),
+  }))
+  return frameOf({ ...scale.root, box: boxIn(area, high) }, [lane, ...arrows])
+}
+
+const flowAcrossWrapped: Build = (area, items, scale) => flowAcross(area, items, { ...scale, wrap: true })
+
+const builders: Readonly<Record<PatternName, readonly Build[]>> = {
+  kpi: [kpi],
+  cards: [cards],
+  compare: [compare],
+  matrix: [matrix],
+  timeline: [timeline],
+  flow: [flowAcross, flowDown, flowAcrossWrapped],
+}
 
 export function addPattern(draft: Draft, parent: Node, change: Add): void {
   const kind = change.kind as PatternName
@@ -349,21 +408,26 @@ export function addPattern(draft: Draft, parent: Node, change: Add): void {
     name: change.name ?? names[kind],
     ...(change.hidden === undefined ? {} : { hidden: change.hidden }),
   }
-  const make = (at: Area, styles: Styles) =>
-    builders[kind](at, items, {
-      gap: gapFor(width),
-      pad: padFor(width),
-      theme,
-      styles,
-      root,
-      filled: change.box !== undefined,
-      axes: change.axes,
-    })
-  const start = stylesAt(theme, 0)
-  const first = make(area, start)
-  const borrowed =
-    change.box === undefined && !endsInside(draft, first) ? borrowing(draft, parent, area, make, start) : undefined
-  const block = borrowed ?? first ?? fitting(theme, (styles) => make(area, styles))
+  const place = (way: Build): Block | undefined => {
+    const make = (at: Area, styles: Styles) =>
+      way(at, items, {
+        gap: gapFor(width),
+        pad: padFor(width),
+        theme,
+        styles,
+        root,
+        filled: change.box !== undefined,
+        axes: change.axes,
+      })
+    const start = stylesAt(theme, 0)
+    const first = make(area, start)
+    const borrowed =
+      change.box === undefined && !endsInside(draft, first) ? borrowing(draft, parent, area, make, start) : undefined
+    return borrowed ?? first ?? largestFitting(theme, (styles) => make(area, styles))
+  }
+  const block =
+    builders[kind].reduce<Block | undefined>((got, way) => got ?? place(way), undefined) ??
+    stop("limit", undefined, "items")
   emit(draft, parent.id, block)
 }
 
@@ -385,14 +449,12 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
   const gap = gapFor(slideSize(draft).w)
   const columns = Math.max(...rows.map((row) => row.length))
   const room = Math.floor((area.w - gap * (columns - 1)) / columns)
-  const block = fitting(theme, (styles) => {
+  const ladder = ladderOf(theme)
+  const steps = ladder.slice(ladder.indexOf("heading"), ladder.indexOf("caption") + 1)
+  const attempt = (style: TextStyleName) => {
     const cells = rows.map((row, at) =>
       row.map((cell) =>
-        cell === ""
-          ? undefined
-          : at === 0
-            ? partOf(`**${cell}**`, styles.point, "text2")
-            : partOf(cell, styles.point, "text"),
+        cell === "" ? undefined : at === 0 ? partOf(`**${cell}**`, style, "text2") : partOf(cell, style, "text"),
       ),
     )
     const heights = cells.map((row) =>
@@ -432,6 +494,9 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
         }),
       ),
     )
-  })
+  }
+  const block =
+    steps.reduce<Block | undefined>((got, style) => got ?? attempt(style), undefined) ??
+    stop("limit", undefined, "items")
   emit(draft, parent.id, block)
 }

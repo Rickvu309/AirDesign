@@ -66,7 +66,11 @@ describe("a pattern under a title", () => {
               { value: "Q2", title: "Build" },
               { value: "Q3", title: "Launch" },
             ]
-          : [{ title: "Sign up" }, { title: "Verify" }, { title: "Pay" }]
+          : [
+              { title: "Collect the customer order" },
+              { title: "Check stock in every warehouse" },
+              { title: "Pack and label the parcels" },
+            ]
     const doom = build(
       start,
       {
@@ -81,6 +85,22 @@ describe("a pattern under a title", () => {
     const box = propOf(lastChild(doom, on), "box")!
     expect(box.y + box.h).toBeGreaterThan(bottomLimitOf(1080) - items.length)
     expect(box.y + box.h).toBeLessThanOrEqual(bottomLimitOf(1080))
+  })
+
+  it("keeps a flow that runs across at content height, short of the bottom margin", () => {
+    const { doom: start, on } = titled()
+    const doom = build(
+      start,
+      {
+        op: "add",
+        slide: on,
+        kind: "flow",
+        items: [{ title: "Sign up" }, { title: "Verify" }, { title: "Pay" }],
+      } as AgentChange,
+      minter("p"),
+    )
+    const box = propOf(lastChild(doom, on), "box")!
+    expect(box.y + box.h).toBeLessThan(bottomLimitOf(1080))
   })
 
   it("fills a lone chart down to the bottom margin", () => {
