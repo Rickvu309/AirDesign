@@ -74,6 +74,7 @@ export type Props = {
   readonly text: Text
   readonly layout: Layout
   readonly clip: boolean
+  readonly mask: boolean
   readonly chart: Chart
   readonly link: string | NodeId
   readonly role: "title" | "subtitle" | "body" | "number" | "footer"
@@ -119,6 +120,7 @@ export const accepts = {
     "effects",
     "layout",
     "clip",
+    "mask",
     "chart",
     "link",
     "origin",
@@ -142,6 +144,7 @@ export const accepts = {
     "geometry",
     "text",
     "link",
+    "mask",
     "role",
     "origin",
   ],
@@ -238,6 +241,7 @@ export const props: { readonly [K in PropName]: PropSpec<K> } = {
   text: spec(readText, "text", "The words in the layer, with their styling.", "native", "base"),
   layout: spec(readLayout, "custom", "How a frame lays out what is inside it.", "dropped"),
   clip: spec(boolean, "toggle", null, "dropped"),
+  mask: spec(boolean, "toggle", "Whether this layer masks the layers above it.", "dropped"),
   chart: spec(readChart, "custom", "The data a chart frame draws.", "picture"),
   link: spec(readLink, "text", null, "native"),
   role: spec(literal(["title", "subtitle", "body", "number", "footer"]), "choice", null, "native"),

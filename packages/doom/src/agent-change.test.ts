@@ -146,6 +146,7 @@ describe("the advertised schema", () => {
       "effectOpacity",
       "link",
       "clip",
+      "mask",
       "opacity",
       "text",
       "insert",

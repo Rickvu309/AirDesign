@@ -111,6 +111,7 @@ function resolveFresh(context: Context, node: Node, box: Box, children: readonly
         ? null
         : resolveText(text, theme, textArea(prop(node, "geometry"), box.w, box.h), context.measure),
     clip: prop(node, "clip") ?? false,
+    mask: prop(node, "mask") ?? false,
     children,
     derived: false,
   }

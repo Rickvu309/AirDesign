@@ -50,6 +50,7 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "effectOpacity",
     "innerShadow",
     "clip",
+    "mask",
     "opacity",
     "text",
     "insert",

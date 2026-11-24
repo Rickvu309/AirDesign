@@ -80,6 +80,7 @@ export type AgentLook = {
   readonly effectOpacity?: number
   readonly link?: string | "none"
   readonly clip?: boolean
+  readonly mask?: boolean
   readonly opacity?: number
   readonly text?: string
   readonly insert?: AgentInsert
@@ -251,6 +252,7 @@ const lookFields: LookFields = {
   effectOpacity: number(0, 1, "Shadow strength, 0 to 1."),
   link: linkField,
   clip: flag("Clip a frame's children."),
+  mask: flag("This layer masks the layers above it."),
   opacity: number(0, 1, "0 is clear, 1 is solid."),
   text: string(
     limits.valueBytes,

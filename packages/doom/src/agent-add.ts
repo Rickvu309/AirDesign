@@ -38,6 +38,7 @@ const common = [
   "innerShadow",
   "rotation",
   "flip",
+  "mask",
 ] as const
 const painted = ["fill", "stroke", "strokeWidth", "radius", "dash"] as const
 const words = [

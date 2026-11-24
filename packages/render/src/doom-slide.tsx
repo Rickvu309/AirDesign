@@ -3,6 +3,7 @@ import * as doom from "@airdesign/doom"
 import { useEffect, useMemo, useState } from "react"
 import { useIcons } from "./icon-nodes.js"
 import { type AssetUrl, PaintLayers } from "./node-fills.js"
+import { MaskedChildren } from "./mask-layers.js"
 import { NodeArt, holds, type NodeHost } from "./node-art.js"
 import { measureFaces } from "./doom-widths.js"
 
@@ -66,16 +67,19 @@ export function SlidePaint(props: {
         <div style={{ position: "absolute", inset: 0 }}>
           <PaintLayers fills={props.background} assetUrl={assetUrl} />
         </div>
-        {props.nodes.map((node) => (
-          <NodeArt
-            key={node.id}
-            node={node}
-            assetUrl={assetUrl}
-            {...(waiting === undefined ? {} : { waiting })}
-            host={host !== undefined && holds(node, host.id) ? host : undefined}
-            iconsReady={iconsReady}
-          />
-        ))}
+        <MaskedChildren
+          nodes={props.nodes}
+          render={(node) => (
+            <NodeArt
+              key={node.id}
+              node={node}
+              assetUrl={assetUrl}
+              {...(waiting === undefined ? {} : { waiting })}
+              host={host !== undefined && holds(node, host.id) ? host : undefined}
+              iconsReady={iconsReady}
+            />
+          )}
+        />
       </div>
     </div>
   )
