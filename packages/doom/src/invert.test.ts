@@ -14,8 +14,8 @@ import {
   textOf,
   theme,
   tryLand,
-  valuesOf,
 } from "./sample-deck.js"
+import { valuesOf } from "./testing/values-of.js"
 
 function step(doom: Doom, writes: readonly Write[], by = person) {
   const edit: Landed = { once: once(), author: by, writes, rev: rev(doom.rev + 1) }

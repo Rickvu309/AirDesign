@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
-import { firstAccount, installIndexedDb, installParts, secondAccount, signInAs } from "./browser-fixtures.js"
+import { firstAccount, installIndexedDb, installParts, signInAs } from "./browser-fixtures.js"
+import { secondAccount } from "./testing/browser-shelf.js"
 import { finished, storeName, transaction } from "./device.js"
 import { deleteDatabase, dropAccount, dropDeck, keepMedia, readChats, readMedia, writeChat } from "./index.js"
 import { deviceStorage } from "./doom-storage.js"

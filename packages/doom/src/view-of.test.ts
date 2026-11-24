@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { applyEdit, isRefusal, rev, viewOf, type Edit, type Doom } from "./index.js"
-import { box, ids, once, person, revOf, sampleDeck, textOf, valuesOf } from "./sample-deck.js"
+import { box, ids, once, person, revOf, sampleDeck, textOf } from "./sample-deck.js"
+import { valuesOf } from "./testing/values-of.js"
 
 const edit = (writes: Edit["writes"]): Edit => ({ once: once(), author: person, writes })
 

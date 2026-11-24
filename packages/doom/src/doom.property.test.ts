@@ -15,7 +15,8 @@ import {
   type Doom,
   type Write,
 } from "./index.js"
-import { box, create, ids, once, person, revOf, sampleDeck, textOf, tryLand, valuesOf } from "./sample-deck.js"
+import { box, create, ids, once, person, revOf, sampleDeck, textOf, tryLand } from "./sample-deck.js"
+import { valuesOf } from "./testing/values-of.js"
 
 type Pick = {
   readonly node: NodeId

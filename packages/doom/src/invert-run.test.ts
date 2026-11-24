@@ -15,21 +15,8 @@ import {
   replacedBy,
   rev,
 } from "./index.js"
-import {
-  box,
-  create,
-  hex,
-  ids,
-  once,
-  person,
-  place,
-  revOf,
-  sampleDeck,
-  textOf,
-  theme,
-  tryLand,
-  valuesOf,
-} from "./sample-deck.js"
+import { box, create, hex, ids, once, person, place, revOf, sampleDeck, textOf, theme, tryLand } from "./sample-deck.js"
+import { valuesOf } from "./testing/values-of.js"
 
 const runA: Author = { kind: "agent", id: "aira", run: "a" }
 const runB: Author = { kind: "agent", id: "claude", run: "b" }

@@ -2,7 +2,6 @@ import { accountCookieName } from "@airdesign/catalog"
 import { newPage } from "./device.js"
 
 export const firstAccount = "a".repeat(32)
-export const secondAccount = "b".repeat(32)
 
 export function signInAs(account: string | undefined): void {
   Object.assign(globalThis, { document: { cookie: account === undefined ? "" : `${accountCookieName}=${account}` } })
@@ -22,54 +21,17 @@ export type SlowStore = {
   drop(): void
 }
 
-export function slowStore(): SlowStore {
-  const slow: SlowStore = {
-    closed: false,
-    waiting: [],
-    alive: new Set(),
-    hold: () => {
-      slow.closed = true
-    },
-    release: () => {
-      slow.closed = false
-      for (const run of slow.waiting.splice(0)) run()
-    },
-    drop: () => {
-      slow.closed = false
-      slow.waiting.length = 0
-      for (const drop of [...slow.alive]) drop()
-      slow.alive.clear()
-      newPage()
-    },
-  }
-  return slow
-}
+// beforeEach(installIndexedDb) passes Vitest's hook context as the first argument.
+const isSlowStore = (value: unknown): value is SlowStore =>
+  typeof value === "object" &&
+  value !== null &&
+  "alive" in value &&
+  value.alive instanceof Set &&
+  "waiting" in value &&
+  "closed" in value
 
-export function memoryShelf(
-  held: Map<string, string> = new Map(),
-): Pick<Storage, "getItem" | "setItem" | "removeItem" | "key" | "length"> {
-  return {
-    get length() {
-      return held.size
-    },
-    key: (at) => [...held.keys()][at] ?? null,
-    getItem: (key) => held.get(key) ?? null,
-    setItem: (key, value) => {
-      held.set(key, value)
-    },
-    removeItem: (key) => {
-      held.delete(key)
-    },
-  }
-}
-
-export function installIndexedDb(): void {
-  installStore()
-  signInAs(firstAccount)
-}
-
-export function installSlowIndexedDb(slow: SlowStore): void {
-  installStore(slow)
+export function installIndexedDb(slow?: unknown): void {
+  installStore(isSlowStore(slow) ? slow : undefined)
   signInAs(firstAccount)
 }
 

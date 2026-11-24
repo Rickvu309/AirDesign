@@ -65,5 +65,3 @@ export type Palette = {
   readonly map: { readonly [Slot in MappedSlot]?: TemplateColor }
   readonly fonts?: { readonly [Font in TemplateFont]?: string }
 }
-
-export type Read<Value> = { readonly value: Value; readonly source?: Source }

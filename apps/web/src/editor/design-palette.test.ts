@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { deckTemplates, templateTheme } from "@airdesign/templates"
 import { describe, expect, it } from "vitest"
-import { colorNameOf, swatchesOf } from "./design-palette"
+import { swatchesOf } from "./design-palette"
 import { neutralColorNames } from "./testing/neutral-color-names"
 import { templateNameOf } from "./design-template-name"
 
@@ -65,6 +65,6 @@ describe("neutralColorNames", () => {
   it("are the names a new deck's panel shows", () => {
     const theme = newDeckTheme()
     for (const [name, shown] of Object.entries(neutralColorNames))
-      expect(colorNameOf(theme, name as doom.ColorVar)).toBe(shown)
+      expect(swatchesOf(theme).find((swatch) => swatch.var === name)?.name).toBe(shown)
   })
 })

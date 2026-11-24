@@ -64,6 +64,25 @@ export const roles = (ruleTests) => {
 
 const ts = createRequire(import.meta.url)("typescript-api")
 
+const packagePaths = (root) => {
+  const paths = {}
+  for (const [, folder] of workspaceFolders(root)) {
+    const parsed = JSON.parse(fs.readFileSync(path.join(root, folder, "package.json"), "utf8"))
+    if (typeof parsed.name !== "string") continue
+    for (const [key, value] of Object.entries(parsed.exports ?? {})) {
+      if (!key.startsWith("./") || key.includes("*")) continue
+      const target = typeof value === "string" ? value : value?.import
+      if (typeof target !== "string" || !target.startsWith("./dist/") || !target.endsWith(".js")) continue
+      const stem = target.slice("./dist/".length, -".js".length)
+      const relative = [".ts", ".tsx"]
+        .map((extension) => `${folder}/src/${stem}${extension}`)
+        .find((file) => fs.existsSync(path.join(root, file)))
+      if (relative) paths[`${parsed.name}/${key.slice(2)}`] = [relative]
+    }
+  }
+  return paths
+}
+
 const compilerOptions = (root) => ({
   allowJs: true,
   checkJs: false,
@@ -74,7 +93,7 @@ const compilerOptions = (root) => ({
   lib: ["lib.es2023.d.ts", "lib.dom.d.ts", "lib.dom.iterable.d.ts"],
   baseUrl: root,
   paths: {
-    "@airdesign/mcp/testing/evals": ["packages/mcp/src/testing/evals.ts"],
+    ...packagePaths(root),
     "@airdesign/*": ["packages/*/src/index.ts"],
     "@/*": ["apps/web/src/*"],
   },
@@ -213,20 +232,28 @@ const workspaceFolders = (root) =>
     ),
   )
 
+const readNames = (text) => {
+  const words = new Set()
+  for (const match of text.matchAll(/(?<!\.)\.([A-Za-z_$][A-Za-z0-9_$]*)/g)) words.add(match[1])
+  for (const match of text.matchAll(/\{([^}]+)\}\s*=\s*await\s+packageBuild\(/g))
+    for (const word of match[1].match(/[A-Za-z_$][A-Za-z0-9_$]*/g) ?? []) words.add(word)
+  return words
+}
+
+const modulesIn = (text, folders) => [
+  ...[...text.matchAll(/(packages|apps)\/([a-z-]+)\/dist\/([A-Za-z0-9_./-]+)\.js/g)].map(
+    ([, top, name, rest]) => `${top}/${name}/src/${rest}`,
+  ),
+  ...[...text.matchAll(/packageBuild\([^,()]+,\s*"(@airdesign\/[a-z-]+)"(?:,\s*"([A-Za-z0-9_./-]+)\.js")?/g)]
+    .filter(([, name]) => folders.has(name))
+    .map(([, name, file]) => `${folders.get(name)}/src/${file ?? "index"}`),
+]
+
 const distRootsOf = ({ checker, program, root, files, byFile, unitOf, isScript }) => {
-  const scriptText = files.filter(isScript).map((file) => fs.readFileSync(path.join(root, file), "utf8"))
-  const words = new Set(scriptText.flatMap((text) => text.match(/[A-Za-z_$][A-Za-z0-9_$]*/g) ?? []))
   const folders = workspaceFolders(root)
-  const modules = new Set(
-    scriptText.flatMap((text) => [
-      ...[...text.matchAll(/(packages|apps)\/([a-z-]+)\/dist\/([A-Za-z0-9_./-]+)\.js/g)].map(
-        ([, top, name, rest]) => `${top}/${name}/src/${rest}`,
-      ),
-      ...[...text.matchAll(/packageBuild\([^,()]+,\s*"(@airdesign\/[a-z-]+)"(?:,\s*"([A-Za-z0-9_./-]+)\.js")?/g)]
-        .filter(([, name]) => folders.has(name))
-        .map(([, name, file]) => `${folders.get(name)}/src/${file ?? "index"}`),
-    ]),
-  )
+  const scriptText = files.filter(isScript).map((file) => fs.readFileSync(path.join(root, file), "utf8"))
+  const words = new Set(scriptText.flatMap((text) => [...readNames(text)]))
+  const modules = new Set(scriptText.flatMap((text) => modulesIn(text, folders)))
   const roots = []
   for (const module of modules) {
     const file = [`${module}.ts`, `${module}.tsx`].find((each) => byFile.has(each))

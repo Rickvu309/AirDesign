@@ -123,13 +123,4 @@ export function sampleDeck(): Doom {
   return doom
 }
 
-export function valuesOf(doom: Doom): Record<string, unknown> {
-  return Object.fromEntries(
-    [...doom.nodes].map(([id, node]) => [
-      id,
-      Object.fromEntries(Object.entries(node).filter(([key]) => key !== "rev")),
-    ]),
-  )
-}
-
 export const revOf = (doom: Doom, node: NodeId, prop: string) => doom.revs.get(node)?.get(prop as never)

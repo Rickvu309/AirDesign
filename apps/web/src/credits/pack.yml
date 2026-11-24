@@ -7,6 +7,5 @@ dependencies:
   - apps/web/src/lib
 public:
   - credits-cards.tsx
-  - credits-routes.ts
   - credits-screens.tsx
   - use-credits.ts
