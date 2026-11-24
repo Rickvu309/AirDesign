@@ -1,4 +1,5 @@
 import { readAngle, readRotation } from "./angle.js"
+import { arrowField, startArrowField } from "./agent-arrow.js"
 import { type AgentEnd, endSchema, readEnd } from "./agent-end.js"
 import { type AgentInsert, insertField } from "./agent-insert.js"
 import { linkField } from "./agent-link.js"
@@ -34,7 +35,7 @@ import {
 } from "./read-kit.js"
 import { type Refusal, refuse } from "./refusal.js"
 import { type TextStyleName, textStyleNames } from "./text.js"
-import { type Arrow, lineArrowheads } from "./geometry.js"
+import type { Arrow } from "./geometry.js"
 import { shapeNames } from "./preset-geometry.js"
 import { cropField } from "./agent-crop.js"
 import type { CropSides } from "./picture-crop.js"
@@ -276,14 +277,8 @@ const lookFields: LookFields = {
   gap: number(0, 1_000, "Space between the children of a row or column."),
   padding: number(0, 1_000, "Space between a frame's edge and its children."),
   icon: field({ type: "string", description: "An icon name such as star, arrow-right or trending-up." }, readIconName),
-  arrow: field(
-    {
-      description: "End arrowhead. true is arrow, false is none.",
-      anyOf: [{ type: "boolean" }, { enum: lineArrowheads }],
-    },
-    oneOf<boolean | Arrow>(boolean, literal(lineArrowheads)),
-  ),
-  startArrow: choice(lineArrowheads, "Arrowhead where a line starts."),
+  arrow: arrowField,
+  startArrow: startArrowField,
   from: field(endSchema("Where a line starts: a layer's side, which it then follows, or a point."), readEnd),
   to: field(endSchema("Where a line ends: a layer's side, which it then follows, or a point."), readEnd),
   route: choice(["straight", "elbow", "curve"], "How a line runs between its ends."),
