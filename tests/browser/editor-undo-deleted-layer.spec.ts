@@ -4,7 +4,18 @@ import { airaKeptLayerName } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import * as doom from "../../packages/doom/src/index.ts"
 import { forward, test, type Stack } from "./api-stack"
-import { accent, clickSlide, landNodes, openEditor, savedNode, selectedIds, spot } from "./editor-deck"
+import {
+  accent,
+  clickSlide,
+  landNodes,
+  openEditor,
+  paintedBox,
+  paintedOrder,
+  paintsAs,
+  savedNode,
+  selectedIds,
+  spot,
+} from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -395,11 +406,16 @@ test("Ctrl+Z on a nudge, after another tab grouped the layer and took the group 
   await expect(page.locator(`[data-node="${group}"] [data-node="t:81"]`).first()).toBeAttached()
   const grouped = await boxOf()
 
+  const painted = (tab: Page) => paintedBox(tab, "t:81")
+  const beforeNudge = await painted(other)
   await page.keyboard.press("ArrowRight")
   await expect.poll(async () => (await boxOf()).x).toBe(grouped.x + 1)
+  await expect.poll(() => painted(other)).not.toEqual(beforeNudge)
+  await paintsAs(other, page, painted)
   await other.keyboard.press("ControlOrMeta+z")
   await expect.poll(parentOf).toBe(opened.slide)
   const seen = await boxOf()
+  await paintsAs(page, other, painted)
 
   await page.keyboard.press("ControlOrMeta+z")
   await expect(page.locator("[data-save-status]")).toHaveText(productCopy.saved)
@@ -442,8 +458,11 @@ test("Ctrl+Z on an ungroup, after another tab sent the layer backward on the sli
     })
     .toEqual(["t:92"])
   const order = await orderOf("t:92")
+  const stackedBefore = await paintedOrder(other)
   await other.keyboard.press("ControlOrMeta+[")
   await expect.poll(() => orderOf("t:92")).not.toBe(order)
+  await expect.poll(() => paintedOrder(other)).not.toEqual(stackedBefore)
+  await paintsAs(page, other, paintedOrder)
 
   await page.keyboard.press("ControlOrMeta+z")
   await expect.poll(async () => (await saved("t:91"))?.parent).not.toBeNull()
