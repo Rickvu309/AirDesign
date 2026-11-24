@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { slideAddressOf, slideAddressRead } from "./slide-address"
+import { deckAddressOf, replaceDeckAddress, slideAddressOf, slideAddressRead } from "./slide-address"
 
 describe("the slide in the editor address", () => {
   it("reads the slide id from node-id", () => {
@@ -11,6 +11,25 @@ describe("the slide in the editor address", () => {
     expect(slideAddressRead("")).toBeNull()
     expect(slideAddressRead("?node-id=")).toBeNull()
     expect(slideAddressRead("?other=s3")).toBeNull()
+  })
+
+  it("keeps node-id and the hash when the deck id arrives", () => {
+    expect(deckAddressOf({ search: "?node-id=a%3A3&x=1", hash: "#s" }, "deck")).toBe("/s/deck?node-id=a%3A3&x=1#s")
+    expect(deckAddressOf({ search: "", hash: "" }, "deck")).toBe("/s/deck")
+  })
+
+  it("replaces the address without dropping history state", () => {
+    const history = {
+      state: { step: 1 },
+      url: "",
+      replaceState(state: unknown, _title: string, url: string) {
+        this.state = state as { step: number }
+        this.url = url
+      },
+    }
+    replaceDeckAddress(history, { search: "?node-id=a%3A3", hash: "" }, "deck")
+    expect(history.state).toEqual({ step: 1 })
+    expect(history.url).toBe("/s/deck?node-id=a%3A3")
   })
 
   it("writes node-id and keeps the path, the other parameters and the hash", () => {

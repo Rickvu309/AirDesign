@@ -8,6 +8,7 @@ public:
   - agent-logos.ts
   - danger-dialog.tsx
   - deck-glyph.tsx
+  - discard-opening.ts
   - decks-screens.tsx
   - decks-shell.tsx
   - delete-account.tsx

@@ -1,7 +1,8 @@
-import { act } from "react"
+import { act, StrictMode } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
 import { AiraPanel } from "@/aira/aira-panel"
+import type { UsageLoad } from "@/aira/usage-load"
 
 let host: HTMLDivElement
 let root: Root
@@ -54,33 +55,55 @@ afterAll(() => {
   vi.unstubAllGlobals()
 })
 
-async function open(start: { readonly request?: string; readonly draft?: string }) {
+async function open(
+  start: { readonly request?: string; readonly draft?: string; readonly usage?: () => Promise<UsageLoad> },
+  strict = false,
+) {
   host = document.createElement("div")
   document.body.append(host)
   root = createRoot(host)
-  await act(async () =>
-    root.render(
-      <AiraPanel
-        deck="deck-1"
-        hidden={false}
-        undo={async () => ({ ok: false, reason: "nothing" }) as never}
-        store={{
-          list: async () => [],
-          put: async () => undefined,
-          drop: async () => undefined,
-          take: () => [],
-          shelve: () => undefined,
-        }}
-        start={start}
-      />,
-    ),
+  const panel = (
+    <AiraPanel
+      deck="deck-1"
+      hidden={false}
+      undo={async () => ({ ok: false, reason: "nothing" }) as never}
+      store={{
+        list: async () => [],
+        put: async () => undefined,
+        drop: async () => undefined,
+        take: () => [],
+        shelve: () => undefined,
+      }}
+      start={start}
+    />
   )
+  await act(async () => root.render(strict ? <StrictMode>{panel}</StrictMode> : panel))
   await act(async () => new Promise((resolve) => setTimeout(resolve, 20)))
 }
 
 it("sends the first request once, as the first message of the chat", async () => {
   await open({ request: "A board update on Q3 revenue" })
   expect(host.textContent).toContain("A board update on Q3 revenue")
+  expect(sent.filter((body) => body.includes("A board update on Q3 revenue"))).toHaveLength(1)
+})
+
+it("puts the words in the composer when the week is used up", async () => {
+  const words = "A board update on Q3 revenue"
+  await open({
+    request: words,
+    usage: async () => ({
+      kind: "usage",
+      email: "person@example.com",
+      usage: { used: 2, allowed: 2, resets: "2026-11-30T00:00:00.000Z" },
+      available: false,
+    }),
+  })
+  expect(host.querySelector("textarea")?.value).toBe(words)
+  expect(sent.filter((body) => body.includes(words))).toHaveLength(0)
+})
+
+it("sends the first request once when development mounts the panel twice", async () => {
+  await open({ request: "A board update on Q3 revenue" }, true)
   expect(sent.filter((body) => body.includes("A board update on Q3 revenue"))).toHaveLength(1)
 })
 

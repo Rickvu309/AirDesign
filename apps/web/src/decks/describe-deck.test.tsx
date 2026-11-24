@@ -44,11 +44,11 @@ afterAll(() => {
   vi.unstubAllGlobals()
 })
 
-async function show() {
+async function show(initial = "") {
   host = document.createElement("div")
   document.body.append(host)
   root = createRoot(host)
-  await act(async () => root.render(<DescribeDeck onDescribe={(text) => described.push(text)} />))
+  await act(async () => root.render(<DescribeDeck initial={initial} onDescribe={(text) => described.push(text)} />))
   const field = host.querySelector<HTMLTextAreaElement>(`textarea[aria-label="${productCopy.describeDeck}"]`)
   if (field === null) throw new Error("no describe box")
   return field
@@ -66,6 +66,13 @@ const press = (field: HTMLTextAreaElement, init: { shiftKey?: boolean } = {}) =>
   act(async () => {
     field.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true, ...init }))
   })
+
+it("shows an example in the placeholder and offers words that were already written", async () => {
+  const field = await show("A board update on Q3 revenue")
+  expect(field.placeholder).toBe("A Q3 board update, numbers first")
+  expect(field.getAttribute("aria-label")).toBe(productCopy.describeDeck)
+  expect(field.value).toBe("A board update on Q3 revenue")
+})
 
 it("describes the deck with the trimmed words on Enter", async () => {
   const field = await show()

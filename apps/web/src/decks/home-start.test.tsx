@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client"
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
 import { productCopy } from "@/copy/product-copy"
 import { Home } from "@/decks/home"
+import { clearFirstRequest, handFirstRequest } from "@/lib/first-request"
 
 const listing = {
   ok: true,
@@ -41,6 +42,7 @@ beforeAll(async () => {
 })
 
 afterEach(async () => {
+  clearFirstRequest()
   if (root) await act(async () => root.unmount())
   host?.remove()
   opened.length = 0
@@ -84,6 +86,12 @@ it("offers no deck start on Trash", async () => {
 })
 
 const box = () => host.querySelector(`textarea[aria-label="${productCopy.describeDeck}"]`)
+
+it("offers the words again when the editor was left before it opened", async () => {
+  handFirstRequest("A board update on Q3 revenue, numbers first")
+  await show()
+  expect((box() as HTMLTextAreaElement).value).toBe("A board update on Q3 revenue, numbers first")
+})
 
 it("offers the Describe your deck box on Recents, and on neither All decks nor Trash", async () => {
   await show()

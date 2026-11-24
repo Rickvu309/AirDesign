@@ -17,7 +17,6 @@ test("a reload opens at the slide in the address, and a gone slide opens slide 1
   await expect(entry(page, 3)).toHaveAttribute("aria-current", "true")
   await expect.poll(() => new URL(page.url()).searchParams.get("node-id")).not.toBeNull()
   const third = new URL(page.url()).searchParams.get("node-id") ?? ""
-  await expect.poll(() => page.evaluate(() => window.history.length)).toBeGreaterThan(0)
   const before = await page.evaluate(() => window.history.length)
   await entry(page, 1).click()
   await entry(page, 2).click()

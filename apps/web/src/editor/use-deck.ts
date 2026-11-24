@@ -7,6 +7,8 @@ import {
   type DoomStorage,
 } from "@airdesign/live"
 import { useEffect, useRef, useState, useSyncExternalStore } from "react"
+import { discardOpening } from "@/decks/discard-opening"
+import { clearOpeningDeck, noteOpeningDeck } from "@/lib/first-request"
 
 export type EditorClient = Pick<
   DoomDeck,
@@ -55,14 +57,21 @@ export function useDoomDeck(id: string | null, options: OpenOptions = {}): Openi
     const mint = latest.current.mint ?? crypto.randomUUID.bind(crypto)
     const storage = latest.current.storage
     const deck = id ?? mint()
+    if (fresh) noteOpeningDeck(deck)
     const kept = storage === undefined ? {} : { storage }
     void (fresh ? createDoomDeck(remote, deck, kept) : openDoomDeck(remote, deck, kept)).then((opened) => {
-      if (!current) return
+      if (!current) {
+        if (fresh) void discardOpening(deck)
+        return
+      }
       if (!opened.ok) {
         setOpening({ status: "missing" })
         return
       }
-      if (fresh) latest.current.arrived?.(deck)
+      if (fresh) {
+        latest.current.arrived?.(deck)
+        clearOpeningDeck()
+      }
       void opened.deck.sync()
       void opened.deck.follow(stop.signal).then((followed) => {
         if (current && followed === "gone") setOpening({ status: "missing" })

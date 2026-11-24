@@ -1,6 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { clearFirstRequest, peekFirstRequest } from "@/lib/first-request"
+import { peekFirstRequest } from "@/lib/first-request"
+import { replaceDeckAddress } from "@/editor/slide-address"
 import { NotFoundPage } from "@/decks/not-found-page"
 import { tabTitleOf } from "@/copy/product-copy"
 import { editorCopy } from "@/copy/editor-copy"
@@ -255,11 +256,8 @@ export function Editor({
   readonly start?: EditorStart
 }) {
   const [request] = useState(() => (id === null ? peekFirstRequest() : undefined))
-  useEffect(() => {
-    clearFirstRequest()
-  }, [])
   const opening = useDoomDeck(id, {
-    arrived: (made) => window.history.replaceState(null, "", `/s/${made}`),
+    arrived: (made) => replaceDeckAddress(window.history, window.location, made),
     ...open,
   })
   if (opening.status === "missing") return <NotFoundPage kind="deck" />

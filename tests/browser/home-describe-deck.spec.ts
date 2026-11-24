@@ -1,4 +1,5 @@
-import { expect } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { forward, signInBrowser, test } from "./api-stack"
 
@@ -32,4 +33,66 @@ test("describing a deck on the home makes a deck and sends the words to Aira onc
   await page.locator("[data-editor-ready]").waitFor()
   await expect(log.getByText(words, { exact: true })).toHaveCount(1)
   expect(sent()).toBe(first)
+})
+
+function holdCreate(page: Page) {
+  let release = () => {}
+  const held = new Promise<void>((done) => {
+    release = done
+  })
+  let body: string | null = null
+  const seen = page.route("**/doom/create", async (route) => {
+    body = route.request().postData()
+    await held
+    await route.abort().catch(() => undefined)
+  })
+  return { release, seen, posted: () => body }
+}
+
+const listed = (page: Page) =>
+  page.evaluate(async () => {
+    const response = await fetch("/decks/list", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    })
+    const body = (await response.json()) as { decks?: unknown[]; trash?: unknown[] }
+    return (body.decks?.length ?? 0) + (body.trash?.length ?? 0)
+  })
+
+test("pressing Back while the deck opens puts the words back and leaves no blank deck", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const cookie = await stack.signIn()
+  await signInBrowser(context, cookie)
+  await forward(page, stack)
+  const hold = holdCreate(page)
+  await hold.seen
+  try {
+    await page.goto("/")
+    const box = page.getByRole("textbox", { name: productCopy.describeDeck })
+    await box.fill(words)
+    const asked = page.waitForRequest("**/doom/create")
+    await page.keyboard.press("Enter")
+    await asked
+    await expect(page.getByLabel(editorCopy.loading)).toBeVisible()
+    await page.goBack()
+    await expect(box).toHaveValue(words)
+    await expect(page.locator("[data-loading]")).toHaveCount(0)
+    await expect(page.getByRole("heading", { name: productCopy.blankDeck, exact: true })).toHaveCount(0)
+  } finally {
+    hold.release()
+  }
+  const raw = hold.posted()
+  if (raw === null) throw new Error("the deck was never asked for")
+  expect((await stack.post("/doom/create", JSON.parse(raw) as { deck: string }, cookie)).json).toMatchObject({
+    ok: true,
+  })
+  await expect.poll(() => listed(page)).toBe(1)
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")))
+  await expect.poll(() => listed(page)).toBe(0)
+  await expect(page.getByRole("heading", { name: productCopy.blankDeck, exact: true })).toHaveCount(0)
+  await expect(page.getByRole("textbox", { name: productCopy.describeDeck })).toHaveValue(words)
 })
