@@ -1,0 +1,92 @@
+apps/api/src:
+  apps/api/src/index.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/platform/forward-secret.test.ts
+      - apps/api/src/platform/listen-wake.test.ts
+      - apps/api/src/platform/listen.test.ts
+  apps/api/src/server.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/platform/deck-answer.test.ts
+  apps/api/src/testing/aira-replay.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/platform/forward-secret.test.ts
+  apps/api/src/testing/harness.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/platform/forward-secret.test.ts
+      - apps/api/src/platform/listen-wake.test.ts
+      - apps/api/src/platform/listen.test.ts
+  apps/api/src/testing/held-queries.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/platform/listen-wake.test.ts
+  apps/api/src/testing/postgres-setup.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/platform/migrations.test.ts
+apps/api/src/account:
+  apps/api/src/account/sign-in-mail.ts:
+    violations:
+      - dependency
+      - layer
+      - privacy
+    files:
+      - apps/api/src/platform/listen.test.ts
+  session.access:
+    violations:
+      - table
+    files:
+      - apps/api/src/platform/listen.test.ts
+  session.account:
+    violations:
+      - table
+    files:
+      - apps/api/src/platform/listen.test.ts
+      - apps/api/src/platform/migrations.test.ts
+  session.sent:
+    violations:
+      - table
+    files:
+      - apps/api/src/platform/migrations.test.ts
+apps/api/src/doom:
+  apps/api/src/doom/doom-start.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/platform/listen-wake.test.ts
+  deck.doom:
+    violations:
+      - table
+    files:
+      - apps/api/src/platform/migrations.test.ts
+  deck.doom_edit:
+    violations:
+      - table
+    files:
+      - apps/api/src/platform/migrations.test.ts
+  deck.media:
+    violations:
+      - table
+    files:
+      - apps/api/src/platform/migrations.test.ts
+  deck.original_delete:
+    violations:
+      - table
+    files:
+      - apps/api/src/platform/migrations.test.ts

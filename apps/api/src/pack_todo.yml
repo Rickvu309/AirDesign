@@ -1,0 +1,183 @@
+apps/api/src/account:
+  apps/api/src/account/sign-in-mail.ts:
+    violations:
+      - privacy
+    files:
+      - apps/api/src/account-key.test.ts
+      - apps/api/src/connected-agents.test.ts
+      - apps/api/src/sign-in.test.ts
+      - apps/api/src/sign-out.test.ts
+      - apps/api/src/testing/agents-drive.ts
+      - apps/api/src/testing/filled-account.ts
+      - apps/api/src/testing/harness.ts
+      - apps/api/src/wire-contract.test.ts
+  session.access:
+    violations:
+      - table
+    files:
+      - apps/api/src/delete-account-migration.test.ts
+      - apps/api/src/delete-account.test.ts
+      - apps/api/src/fuzz.test.ts
+      - apps/api/src/oauth.test.ts
+      - apps/api/src/sign-in.test.ts
+      - apps/api/src/sign-out.test.ts
+      - apps/api/src/testing/filled-account.ts
+  session.account:
+    violations:
+      - table
+    files:
+      - apps/api/src/aira-ask-migration.test.ts
+      - apps/api/src/connected-agents-migration.test.ts
+      - apps/api/src/delete-account-migration.test.ts
+      - apps/api/src/delete-account.test.ts
+      - apps/api/src/doom-edit-cost.test.ts
+      - apps/api/src/grant.test.ts
+      - apps/api/src/isolation.test.ts
+      - apps/api/src/migration-account-name.test.ts
+      - apps/api/src/migration-upgrade.test.ts
+      - apps/api/src/setup.test.ts
+      - apps/api/src/sign-in.test.ts
+      - apps/api/src/sign-out.test.ts
+      - apps/api/src/smoke.test.ts
+      - apps/api/src/testing/credits-replay.ts
+      - apps/api/src/testing/filled-account.ts
+  session.caller_log:
+    violations:
+      - table
+    files:
+      - apps/api/src/fuzz.test.ts
+      - apps/api/src/testing/filled-account.ts
+  session.code:
+    violations:
+      - table
+    files:
+      - apps/api/src/sign-in.test.ts
+      - apps/api/src/testing/filled-account.ts
+  session.sent:
+    violations:
+      - table
+    files:
+      - apps/api/src/delete-account.test.ts
+      - apps/api/src/sign-in.test.ts
+      - apps/api/src/testing/filled-account.ts
+apps/api/src/aira:
+  session.aira_ask:
+    violations:
+      - table
+    files:
+      - apps/api/src/aira-ask-migration.test.ts
+      - apps/api/src/aira-stop-order.test.ts
+      - apps/api/src/aira-stop.test.ts
+      - apps/api/src/delete-account.test.ts
+      - apps/api/src/replicas.test.ts
+      - apps/api/src/testing/filled-account.ts
+  session.aira_turn:
+    violations:
+      - table
+    files:
+      - apps/api/src/aira-pictures.test.ts
+      - apps/api/src/aira-stop-order.test.ts
+      - apps/api/src/aira-stop.test.ts
+      - apps/api/src/replicas.test.ts
+      - apps/api/src/testing/filled-account.ts
+apps/api/src/doom:
+  deck.doom:
+    violations:
+      - table
+    files:
+      - apps/api/src/deck-list-doom.test.ts
+      - apps/api/src/delete-account-retry.test.ts
+      - apps/api/src/doom-edit-cost.test.ts
+      - apps/api/src/grant.test.ts
+      - apps/api/src/migration-upgrade.test.ts
+      - apps/api/src/setup.test.ts
+      - apps/api/src/testing/filled-account.ts
+  deck.doom_edit:
+    violations:
+      - table
+    files:
+      - apps/api/src/deck-list-doom.test.ts
+      - apps/api/src/doom-run.test.ts
+      - apps/api/src/grant.test.ts
+      - apps/api/src/testing/filled-account.ts
+  deck.doom_node:
+    violations:
+      - table
+    files:
+      - apps/api/src/migration-upgrade.test.ts
+      - apps/api/src/testing/filled-account.ts
+  deck.media:
+    violations:
+      - table
+    files:
+      - apps/api/src/deck-list-doom.test.ts
+      - apps/api/src/delete-account-retry.test.ts
+      - apps/api/src/testing/filled-account.ts
+      - apps/api/src/web-image.test.ts
+  deck.original_delete:
+    violations:
+      - table
+    files:
+      - apps/api/src/deck-list-doom.test.ts
+      - apps/api/src/delete-account-retry.test.ts
+      - apps/api/src/delete-account.test.ts
+      - apps/api/src/testing/filled-account.ts
+apps/api/src/oauth:
+  session.oauth_client:
+    violations:
+      - table
+    files:
+      - apps/api/src/connected-agents-migration.test.ts
+      - apps/api/src/delete-account-tables.test.ts
+      - apps/api/src/fuzz.test.ts
+      - apps/api/src/oauth.test.ts
+  session.oauth_grant:
+    violations:
+      - table
+    files:
+      - apps/api/src/connected-agents-migration.test.ts
+      - apps/api/src/connected-agents.test.ts
+      - apps/api/src/oauth.test.ts
+      - apps/api/src/owner.test.ts
+      - apps/api/src/testing/filled-account.ts
+  session.oauth_token:
+    violations:
+      - table
+    files:
+      - apps/api/src/oauth.test.ts
+      - apps/api/src/testing/filled-account.ts
+apps/api/src/platform:
+  apps/api/src/platform/migrations.ts:
+    violations:
+      - privacy
+    files:
+      - apps/api/src/aira-ask-migration.test.ts
+      - apps/api/src/connected-agents-migration.test.ts
+      - apps/api/src/delete-account-migration.test.ts
+      - apps/api/src/migration-account-name.test.ts
+      - apps/api/src/migration-upgrade.test.ts
+      - apps/api/src/setup.test.ts
+apps/api/src/usage:
+  session.aira_ledger:
+    violations:
+      - table
+    files:
+      - apps/api/src/aira-stop-order.test.ts
+      - apps/api/src/aira-stop.test.ts
+      - apps/api/src/aira-usage.test.ts
+      - apps/api/src/delete-account-migration.test.ts
+      - apps/api/src/replicas.test.ts
+      - apps/api/src/testing/credits-replay.ts
+      - apps/api/src/testing/filled-account.ts
+  session.credit_history:
+    violations:
+      - table
+    files:
+      - apps/api/src/testing/credits-replay.ts
+      - apps/api/src/testing/filled-account.ts
+  session.credits:
+    violations:
+      - table
+    files:
+      - apps/api/src/testing/credits-replay.ts
+      - apps/api/src/testing/filled-account.ts

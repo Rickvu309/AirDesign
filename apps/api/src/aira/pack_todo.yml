@@ -1,0 +1,57 @@
+apps/api/src:
+  apps/api/src/index.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/aira/aira-closing.test.ts
+      - apps/api/src/aira/aira.test.ts
+  apps/api/src/testing/aira-replay.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/aira/aira-stream.test.ts
+      - apps/api/src/aira/aira.test.ts
+      - apps/api/src/aira/anthropic-transport.test.ts
+  apps/api/src/testing/harness.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/aira/aira-closing.test.ts
+      - apps/api/src/aira/aira.test.ts
+  apps/api/src/testing/held-queries.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/aira/aira-closing.test.ts
+  apps/api/src/testing/spec-graph.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/aira/aira-closing.test.ts
+apps/api/src/account:
+  apps/api/src/account/sign-in-mail.ts:
+    violations:
+      - privacy
+    files:
+      - apps/api/src/aira/aira.test.ts
+  session.account:
+    violations:
+      - table
+    files:
+      - apps/api/src/aira/aira-closing.test.ts
+  session.caller_log:
+    violations:
+      - table
+    files:
+      - apps/api/src/aira/aira.test.ts
+apps/api/src/usage:
+  session.aira_ledger:
+    violations:
+      - table
+    files:
+      - apps/api/src/aira/aira.test.ts

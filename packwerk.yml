@@ -8,6 +8,13 @@ exclude:
   - "**/*.spec.{ts,tsx}"
   - "apps/api/src/testing/**"
   - "apps/web/src/testing/**"
+tests: true
+test_exempt:
+  - "apps/web/src/gesture-keys.test.ts"
+  - "apps/web/src/real-words.test.ts"
+  - "apps/web/src/agent-parity.test.ts"
+  - "apps/web/src/rounded-inputs.test.ts"
+todo_ceiling: 262
 layers:
   - app
   - feature

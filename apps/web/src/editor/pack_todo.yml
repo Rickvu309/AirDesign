@@ -1,0 +1,44 @@
+apps/web/src:
+  apps/web/src/testing/create-writes-art.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/editor/create-writes.test.ts
+  apps/web/src/testing/design-adapter-art.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/editor/chart-theme-writes.test.ts
+      - apps/web/src/editor/design-adapter.test.ts
+  apps/web/src/testing/doom-fixtures.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/editor/arrange-writes.test.ts
+      - apps/web/src/editor/chart-theme-writes.test.ts
+      - apps/web/src/editor/children-keep-place.property.test.ts
+      - apps/web/src/editor/color-parity.test.ts
+      - apps/web/src/editor/create-writes.test.ts
+      - apps/web/src/editor/deck-writes.test.ts
+      - apps/web/src/editor/design-adapter.test.ts
+      - apps/web/src/editor/design-shape-values.test.ts
+      - apps/web/src/editor/hidden-locked.test.ts
+      - apps/web/src/editor/line-end-drag.test.ts
+      - apps/web/src/editor/move-writes.test.ts
+      - apps/web/src/editor/picture-writes.test.ts
+      - apps/web/src/editor/selection.test.ts
+      - apps/web/src/editor/slide-picture-report.test.ts
+      - apps/web/src/editor/slide-signature.test.ts
+      - apps/web/src/editor/slide-writes.test.ts
+      - apps/web/src/editor/text-blank-line.test.ts
+      - apps/web/src/editor/text-leave.test.ts
+      - apps/web/src/editor/transform-drag.test.ts
+  apps/web/src/testing/neutral-color-names.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/web/src/editor/design-palette.test.ts

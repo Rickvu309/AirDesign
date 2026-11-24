@@ -1,0 +1,20 @@
+apps/api/src:
+  apps/api/src/index.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/oauth/discovery.test.ts
+  apps/api/src/testing/harness.ts:
+    violations:
+      - dependency
+      - layer
+    files:
+      - apps/api/src/oauth/discovery.test.ts
+apps/api/src/account:
+  apps/api/src/account/sign-in-mail.ts:
+    violations:
+      - dependency
+      - privacy
+    files:
+      - apps/api/src/oauth/discovery.test.ts
