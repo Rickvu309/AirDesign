@@ -106,7 +106,7 @@ test("Actions, centred over the toolbar, adds an icon from a search and each kin
   await expect.poll(async () => (await picked(page, stack, opened)).node?.geometry.kind).toBe("icon")
   const icon = (await picked(page, stack, opened)).node!
   expect(icon.geometry).toMatchObject({ name: "lucide/rocket" })
-  expect(near(icon.box.x, 900, 1) && near(icon.box.y, 480, 1)).toBe(true)
+  expect(near(icon.box.x, 900, 1) && near(icon.box.y, 827, 1)).toBe(true)
 
   for (const kind of ["column", "bar", "line", "pie", "stacked"] as const) {
     await page.getByRole("button", { name: editorCopy.actions, exact: true }).click()

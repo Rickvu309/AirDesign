@@ -240,6 +240,16 @@ export function DoomCanvas(props: {
     if (client.push(writes).ok) onSelection({ ids: [id], inside: null })
   }
 
+  const pictures = useDoomPictures({
+    deck: props.deck,
+    client,
+    ...props.assets,
+    slide,
+    slideBox,
+    scale,
+    onPlaced: (id) => onSelection({ ids: [id], inside: null }),
+  })
+
   const inserts = {
     icon(name: string) {
       const swapped = iconSwapWrites(view, current.ids, name)
@@ -249,12 +259,15 @@ export function DoomCanvas(props: {
       }
       const { parent, inside } = insertTarget()
       const id = client.mint()
-      inserted(id, iconWrites(id, slotIn(parent), name, inside))
+      inserted(id, iconWrites(view, id, slotIn(parent), name, inside))
     },
     chart(kind: doom.Chart["kind"]) {
       const { parent, inside } = insertTarget()
       const id = client.mint()
       inserted(id, chartWrites(id, slotIn(parent), chartArea(view, parent, inside), kind))
+    },
+    picture(file: File) {
+      pictures.add(file)
     },
   }
 
@@ -270,20 +283,11 @@ export function DoomCanvas(props: {
     () => ({
       chart: (kind: doom.Chart["kind"]) => latestInserts.current.chart(kind),
       icon: (name: string) => latestInserts.current.icon(name),
+      picture: (file: File) => latestInserts.current.picture(file),
       exportPdf: () => latestExport.current(),
     }),
     [],
   )
-
-  const pictures = useDoomPictures({
-    deck: props.deck,
-    client,
-    ...props.assets,
-    slide,
-    slideBox,
-    scale,
-    onPlaced: (id) => onSelection({ ids: [id], inside: null }),
-  })
 
   useSlidePictures(client, pictures.assetUrl)
 

@@ -6,9 +6,11 @@ type FakeInput = {
   accept: string
   files: File[] | null
   clicked: boolean
+  blurred: boolean
   heard: Map<string, () => void>
   addEventListener(name: string, listener: () => void): void
   click(): void
+  blur(): void
 }
 
 function fakeInput(): FakeInput {
@@ -17,12 +19,16 @@ function fakeInput(): FakeInput {
     accept: "",
     files: null,
     clicked: false,
+    blurred: false,
     heard: new Map(),
     addEventListener(name, listener) {
       input.heard.set(name, listener)
     },
     click() {
       input.clicked = true
+    },
+    blur() {
+      input.blurred = true
     },
   }
   return input
@@ -42,4 +48,5 @@ it("opens a picker for PNG, JPEG and GIF and hands over the chosen file", () => 
   input.files = [file]
   input.heard.get("change")?.()
   expect(chosen).toEqual([file])
+  expect(input.blurred).toBe(true)
 })

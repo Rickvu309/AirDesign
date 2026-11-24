@@ -132,13 +132,25 @@ export function centeredIn(inside: Size, size: Size): { readonly x: number; read
   return { x: Math.round((inside.w - size.w) / 2), y: Math.round((inside.h - size.h) / 2) }
 }
 
-export function iconWrites(id: doom.NodeId, parent: Slot, name: string, inside: Size): readonly doom.Write[] {
-  const side = 120
+function openArea(view: doom.Doom, parent: doom.NodeId, inside: Size): Size & { x: number; y: number } {
+  return doom.freeAreaOf(view, parent) ?? { x: 0, y: 0, ...inside }
+}
+
+export function iconWrites(
+  view: doom.Doom,
+  id: doom.NodeId,
+  parent: Slot,
+  name: string,
+  inside: Size,
+): readonly doom.Write[] {
+  const area = openArea(view, parent.id, inside)
+  const side = Math.min(120, area.w, area.h)
+  const at = centeredIn(area, { w: side, h: side })
   return [
     { node: id, prop: "type", value: "shape" },
     { node: id, prop: "parent", value: parent },
     { node: id, prop: "name", value: "Icon" },
-    { node: id, prop: "box", value: { ...centeredIn(inside, { w: side, h: side }), w: side, h: side, ...upright } },
+    { node: id, prop: "box", value: { x: area.x + at.x, y: area.y + at.y, w: side, h: side, ...upright } },
     { node: id, prop: "geometry", value: { kind: "icon", name: `lucide/${name}` } },
     { node: id, prop: "strokes", value: [themed("text")] },
     { node: id, prop: "stroke", value: { weight: side / 12, align: "center", dash: "solid" } },
@@ -160,7 +172,7 @@ export function iconSwapWrites(
 }
 
 export function chartArea(view: doom.Doom, parent: doom.NodeId, inside: Size): Size & { x: number; y: number } {
-  return doom.contentAreaOf(view, parent) ?? { x: 0, y: 0, ...inside }
+  return openArea(view, parent, inside)
 }
 
 export function chartWrites(

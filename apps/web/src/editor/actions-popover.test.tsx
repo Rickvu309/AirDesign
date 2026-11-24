@@ -1,6 +1,14 @@
 import { act, createElement } from "react"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 
+const picked = vi.hoisted(() => ({ current: null as ((file: File) => void) | null }))
+
+vi.mock("./picture-picker", () => ({
+  pickPicture: (onPicture: (file: File) => void) => {
+    picked.current = onPicture
+  },
+}))
+
 let window: Window & typeof globalThis
 let createRoot: typeof import("react-dom/client").createRoot
 let ActionsPanel: typeof import("./actions-popover").ActionsPanel
@@ -35,7 +43,7 @@ async function openPanel() {
   const host = window.document.createElement("div")
   window.document.body.append(host)
   const root = createRoot(host)
-  const run = { chart: vi.fn(), icon: vi.fn(), exportPdf: vi.fn() }
+  const run = { chart: vi.fn(), icon: vi.fn(), picture: vi.fn(), exportPdf: vi.fn() }
   const finish = vi.fn()
   await act(async () => root.render(createElement(ActionsPanel, { run, finish })))
   const input = host.querySelector("input")
@@ -189,6 +197,25 @@ it("moves the one highlight to the row under the pointer", async () => {
     await panel.press("ArrowDown")
     await panel.press("Enter")
     expect(panel.run.chart).toHaveBeenCalledWith("pie")
+  } finally {
+    await act(async () => panel.root.unmount())
+  }
+})
+
+it("offers Place image first and hands the chosen file to the picture insert", async () => {
+  const panel = await openPanel()
+  try {
+    const groups = [...panel.host.querySelectorAll("[data-actions-group]")].map((each) =>
+      each.getAttribute("data-actions-group"),
+    )
+    expect(groups[0]).toBe("image")
+    expect(panel.option(editorCopy.placeImage).textContent).toBe(editorCopy.placeImage)
+    await panel.type("picture")
+    await panel.click(panel.option(editorCopy.placeImage))
+    const file = new window.File(["png"], "picture.png", { type: "image/png" })
+    picked.current?.(file)
+    expect(panel.run.picture).toHaveBeenCalledWith(file)
+    expect(panel.finish).toHaveBeenCalledTimes(1)
   } finally {
     await act(async () => panel.root.unmount())
   }
