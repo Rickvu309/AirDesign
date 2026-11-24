@@ -36,3 +36,13 @@ The historical Han control starts two Linux Chromium processes with private Font
 The suite checks the installed HarfBuzz, ICU and bidi-js package versions, the HarfBuzz runtime version, and the SHA-256 of the ICU WASM and its embedded data. Engine notices are in [HarfBuzz](../../../packages/fonts/licenses/HarfBuzz.txt), [ICU](../../../packages/fonts/licenses/ICU.txt) and [bidi-js](../../../packages/fonts/licenses/bidi-js.txt).
 
 The [Unicode 16.0.0 test data](https://www.unicode.org/Public/16.0.0/ucd/) includes GraphemeBreakTest, LineBreakTest and BidiCharacterTest. ICU runs both break suites. Bidi-js runs BidiCharacterTest. The ICU reference passes explicit UTF-16 lengths to preserve embedded NULs and checks dictionary breaks for Thai, Khmer and Lao.
+
+## Shared engine in comparison mode
+
+The comparison samples styled paragraphs through Doom's existing measure and records advances and line ends. The legacy result still drives geometry. A sample includes up to 512 UTF-16 units and 64 candidate shapes. Each adapter keeps one sample in flight and starts samples at least 250 ms apart.
+
+Set `VITE_COMPARE_FONT_LAYOUT=1` when running the web development server. For the API, set `NODE_ENV=development AIRDESIGN_COMPARE_FONT_LAYOUT=1`. Look for `Served font comparison` in each console. The records contain offsets, advances, cache counts, and elapsed time. Both engines use `und` and automatic direction because deck text has no locale or direction fields.
+
+The shipped ICU module keeps grapheme and line rules, their dictionaries, and the data those operations and script and emoji selection need. To rebuild it, activate Emscripten 4.0.23, check out ICU at `release-77-1`, and run `bash packages/fonts/wasm/build-icu.sh <icu-checkout> <empty-build-directory>` from the repo root. The browser spec checks the WASM hash and its 4.8 MB raw and 2.8 MB gzip budgets. The build copies the licence notices beside the browser assets.
+
+HarfBuzz keeps font files by revision and SHA-256. The cache has a 48 MiB font byte budget. The local binding patch releases font instances, faces, and blobs on eviction. WASM can reuse freed space within its existing memory pages.

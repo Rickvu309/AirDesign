@@ -1,3 +1,4 @@
+import type { LayoutComparison } from "@airdesign/fonts"
 import type { Socket } from "node:net"
 
 import { anthropicTransport } from "./aira/anthropic-transport.js"
@@ -34,6 +35,7 @@ const {
   r2,
   forwardSecret,
   aira,
+  compareFontLayout,
 } = settings
 const session = openPool(sessionUrl, "api-session")
 const deck = openPool(deckUrl, "api-deck")
@@ -56,6 +58,11 @@ const server = createApi({
   ...(smokeToken === undefined ? {} : { smokeToken }),
   ...(forwardSecret === undefined ? {} : { forwardSecret }),
   aira: { ...aira, transport: anthropicTransport() },
+  ...(compareFontLayout
+    ? {
+        recordFontComparison: (result: LayoutComparison) => console.info("Served font comparison", result),
+      }
+    : {}),
 })
 const sockets = new Set<Socket>()
 server.on("connection", (socket) => {

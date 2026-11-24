@@ -254,3 +254,28 @@ it("keeps missing glyphs on the face that lacks them even when another face cove
   expect(measured.missing).toEqual(new Map([[fallbackFont, new Set(["β"])]]))
   expect(doom.unmeasuredTexts(deck.doom, deck.slides, measured.missing)).toEqual([deck.ids.missing])
 })
+
+it("records shared shaping through the Doom measure without changing its result", async () => {
+  const { source } = anyNameIsLiberation()
+  const deck = deckIn({ heading: family, body: family }, "office soft\u00adhyphen").doom
+  const plain = await new FontMetrics(source).measure([deck])
+  const title = [...deck.nodes.values()].find((node) => node.type === "shape")
+  const text = title?.type === "shape" ? title.text : undefined
+  if (text === undefined || typeof plain === "string") throw new Error("Expected a text layer")
+  const { theme } = doom.deckOf(deck)
+  const original = plain.measure(text, theme, null)
+  const record = await new Promise<import("@airdesign/fonts").LayoutComparison>((resolve, reject) => {
+    void new FontMetrics(source, Date.now, resolve)
+      .measure([deck])
+      .then((compared) => {
+        if (typeof compared === "string") throw new Error(compared)
+        expect(compared.measure(text, theme, null)).toEqual(original)
+      })
+      .catch(reject)
+  })
+  expect(record.kind).toBe("measured")
+  if (record.kind !== "measured") throw new Error(record.kind)
+  expect(record.legacy).toEqual(original.lines.map(({ start, end, ink }) => ({ start, end, ink })))
+  expect(record.shared.at(-1)?.end).toBe(text.chars.length)
+  expect(JSON.stringify(record)).not.toContain(text.chars)
+})

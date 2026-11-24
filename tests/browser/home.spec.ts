@@ -20,6 +20,11 @@ test("a new deck opens as a doom deck, and the home lists it with its name and a
   context,
   stack,
 }) => {
+  const fontEngineRequests: string[] = []
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname
+    if (/\.wasm$|\/layout-[\w-]{8}\.js$|font-layout-licenses/.test(path)) fontEngineRequests.push(path)
+  })
   const faults: string[] = []
   page.on("pageerror", (error) => faults.push(error.message))
   const cookie = await stack.signIn()
@@ -50,6 +55,7 @@ test("a new deck opens as a doom deck, and the home lists it with its name and a
   await page.locator("[data-editor-ready]").waitFor()
   await expect(page.locator("[data-slide-box]")).toContainText("Quarterly review")
   expect(faults).toEqual([])
+  expect(fontEngineRequests).toEqual([])
 })
 
 test("a doom deck moves to the Trash and comes back from the home, and its thumbnail paints from the copy on the device", async ({

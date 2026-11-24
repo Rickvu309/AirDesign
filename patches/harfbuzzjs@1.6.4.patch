@@ -1,0 +1,77 @@
+diff --git a/dist/index.d.mts b/dist/index.d.mts
+index e9b0c5c0070638f844f7edc932b165444e2d3d27..42c53de77b35d94a7f6073646a5c2bbe443279ba 100644
+--- a/dist/index.d.mts
++++ b/dist/index.d.mts
+@@ -308,6 +308,7 @@ type GlyphFlag = ValueOf<typeof GlyphFlag>;
+  */
+ declare class Blob {
+   readonly ptr: number;
++  dispose(): void;
+   /**
+    * @param data Binary font data.
+    */
+@@ -330,6 +331,7 @@ type GlyphClass = ValueOf<typeof GlyphClass>;
+  */
+ declare class Face {
+   readonly ptr: number;
++  dispose(): void;
+   readonly upem: number;
+   /**
+    * @param blob A Blob containing font data.
+@@ -1262,6 +1264,7 @@ type MetricsTag = ValueOf<typeof MetricsTag>;
+  */
+ declare class Font {
+   readonly ptr: number;
++  dispose(): void;
+   private _face?;
+   /**
+    * @param face A Face to create the font from.
+diff --git a/dist/index.mjs b/dist/index.mjs
+index ce7304d5c0655d1e1596e768635824b7041e501e..12d083d9f868e33ac40232006e243c520027db48 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -10,7 +10,7 @@ const registry = new FinalizationRegistry((cleanup) => {
+ });
+ function track(obj, destroy) {
+ 	const ptr = obj.ptr;
+-	registry.register(obj, () => destroy(ptr));
++	registry.register(obj, () => destroy(ptr), obj);
+ }
+ /**
+ * Initialize the HarfBuzz module.
+@@ -215,6 +215,11 @@ var Blob = class {
+ 		this.ptr = exports.hb_blob_create(blobPtr, array.byteLength, 2, blobPtr, freeFuncPtr);
+ 		track(this, exports.hb_blob_destroy);
+ 	}
++	dispose() {
++		if (!registry.unregister(this)) return;
++		exports.hb_blob_destroy(this.ptr);
++		this.ptr = 0;
++	}
+ };
+ //#endregion
+ //#region src/face.ts
+@@ -238,6 +243,11 @@ var Face = class {
+ 		this.upem = exports.hb_face_get_upem(this.ptr);
+ 		track(this, exports.hb_face_destroy);
+ 	}
++	dispose() {
++		if (!registry.unregister(this)) return;
++		exports.hb_face_destroy(this.ptr);
++		this.ptr = 0;
++	}
+ 	/**
+ 	* Return the binary contents of an OpenType table.
+ 	* @param table Table name
+@@ -815,6 +825,11 @@ var Font = class Font {
+ 		}
+ 		track(this, exports.hb_font_destroy);
+ 	}
++	dispose() {
++		if (!registry.unregister(this)) return;
++		exports.hb_font_destroy(this.ptr);
++		this.ptr = 0;
++	}
+ 	/** The {@link Face} associated with this font. */
+ 	get face() {
+ 		if (!this._face) this._face = new Face(exports.hb_font_get_face(this.ptr));
