@@ -7,11 +7,9 @@ export {
   familyName,
   holdsWeight,
   namedFace,
-  nearestWeight,
   readStyleName,
   regularWeight,
   styleName,
   stylesHeld,
-  typefaceFor,
   type ServedFace,
 } from "./named-face.js"
