@@ -43,6 +43,7 @@ An edit, from a person or an agent, is read by `catalog` and applied by `doom` t
 1. Production is `studio.airdesign.app`, MCP at `/mcp`. `mcp.airdesign.app` does not resolve.
 2. `/screens/` pages are sample data. The deck home and the editor at `src/editor/` call the API for real.
 3. Every worktree shares one `git stash`. Keep work in progress as a commit.
+4. Never kill processes you did not start, and never by name: agents share this machine. `verify-airdesign stop` touches only your own worktree's stacks.
 
 ## Taste
 

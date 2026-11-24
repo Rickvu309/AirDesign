@@ -23,6 +23,6 @@ export const usage = [
   "                                            the test suites this branch's changes need; --run runs them under the machine lock",
   "verify-airdesign prove [--plan] [--only unit-tests,script-tests,model-check,browser-tests,look,pptx] [--pptx] [--base ref]",
   "                                            run the proof this branch's diff needs; writes proof.md",
-  "verify-airdesign stop <run>                 stop only this run's processes; keeps evidence",
+  "verify-airdesign stop [run]                 stop this worktree's run, or all of its runs; refuses another worktree's run; keeps evidence",
   "",
 ].join("\n")
