@@ -156,7 +156,7 @@ describe("a request Aira's changes were undone from", () => {
   it("names what stays and offers Undo again when the undo landed nothing, as the Agents panel does", () => {
     const markup = offered({ ...exchange(edited, "done", ["r1"]), left: ["“Card”"], waiting: ["“Logo”"] })
     expect(markup).toContain(
-      "“Card” stays where it is, because the frame it came from, or one above it, was deleted or now sits inside it. Put that frame right, then press Undo again. “Logo” can't come back until the frame it was in is back.",
+      "“Card” stays where it is, because the place it came from has changed. “Logo” can't come back until the frame it was in is back.",
     )
     expect(markup).not.toContain(airaCopy.undone)
     expect(markup).not.toContain(airaCopy.undoRefused)
