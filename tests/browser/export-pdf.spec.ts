@@ -92,7 +92,7 @@ test("Export prints every slide on its own 16:9 page under the deck's name, with
 
   await exportButton(page).click()
   await expect(dialog(page).getByRole("button", { name: exportCopy.action })).toBeFocused()
-  await expect(dialog(page).getByRole("combobox", { name: exportCopy.fileType })).toContainText(exportCopy.pdf)
+  await expect(dialog(page).getByRole("combobox")).toHaveCount(1)
   await expect(dialog(page).getByRole("combobox", { name: exportCopy.slides })).toContainText(exportCopy.allSlides)
   await expect(dialog(page)).toContainText(exportCopy.printWindow)
   await page.keyboard.press("Enter")

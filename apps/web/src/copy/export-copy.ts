@@ -1,8 +1,6 @@
 export const exportCopy = {
   title: "Export",
   close: "Close",
-  fileType: "File type",
-  pdf: "PDF",
   slides: "Slides",
   allSlides: "All slides",
   currentSlide: "Current slide",

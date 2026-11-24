@@ -9,7 +9,7 @@ AirDesign's core: a deck as a tree of nodes, each a flat map of properties, chan
 _Avoid_: scene, document model, element tree
 
 **Doom v0.1**:
-The first end-to-end core. A person in the editor at `/s` and an agent over MCP each make a deck of frames, shapes, text, pictures, icons, lines and charts, with undo and reload, stored as Doom decks. Out of v0.1: components and instances, variables with modes, and a style library (next), and PowerPoint import and export (after).
+The first end-to-end core. A person in the editor at `/s` and an agent over MCP each make a deck of frames, shapes, text, pictures, icons, lines and charts, with undo and reload, stored as Doom decks. Out of v0.1: components and instances, variables with modes, and a style library (next). PowerPoint import and export on Doom are planned.
 _Avoid_: the new editor, the rewrite
 
 **node**:
@@ -25,7 +25,7 @@ Anything drawn. Its `geometry` is a rect, ellipse, preset, path, icon or line. A
 _Avoid_: element, primitive, picture node, icon node
 
 **property**:
-One named value a node holds, such as `fills`, `text` or `layout`. Which properties a node type takes is `accepts`; how each is read, shown, described and exported is its entry in `props`.
+One named value a node holds, such as `fills`, `text` or `layout`. Which properties a node type takes is `accepts`; how each is read, shown and described is its entry in `props`.
 _Avoid_: trait, field, attribute
 
 ## Paint and words

@@ -1,18 +1,16 @@
-import type { ExportFormat } from "@/export/export-options"
 import { exportCopy } from "@/copy/export-copy"
 import { slideIndexOf } from "@/lib/slide-numbering"
 
 export type SlideChoice = "all" | "current" | "range"
 
 export type ExportChoice = {
-  readonly format: ExportFormat
   readonly slides: SlideChoice
   readonly from: string
   readonly to: string
 }
 
 export function firstChoice(count: number): ExportChoice {
-  return { format: "pdf", slides: "all", from: "1", to: String(count) }
+  return { slides: "all", from: "1", to: String(count) }
 }
 
 function slideAt(text: string, count: number): number | null {

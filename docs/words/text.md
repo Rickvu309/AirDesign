@@ -17,7 +17,7 @@ How deep a list item sits, from the first level to the fifth as Figma allows. Ta
 _Avoid_: indent level, outline level, nesting
 
 **Auto** (line height):
-A line height of PowerPoint's single line, 100%: the font's own spacing, as Figma's Auto is. The Line height field shows Auto there and reads a typed Auto. Line height and Letter spacing also read a typed `%` or `pt`. In Letter spacing, points turn into the field's percent of the type size; in Line height they make a fixed line height.
+The font's default line spacing at 100%. The Line height field displays Auto and accepts it as input. Line height and Letter spacing also read a typed `%` or `pt`. In Letter spacing, points turn into the field's percent of the type size; in Line height they make a fixed line height.
 
 **fixed line height**:
 A line height in points that stays the same when the type size changes, as Figma's line height in pixels does. Typing `24pt` into Line height sets one, and the field then shows `24 pt` and reads a bare number as points until a `%` or Auto is typed. A paragraph stores it as `lineHeightPoints` in hundredths of a point..

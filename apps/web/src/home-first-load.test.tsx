@@ -18,7 +18,6 @@ const { loadedOnHome } = vi.hoisted(() => {
 
 vi.mock("@/thin-deck", loadedOnHome("the editor"))
 vi.mock("@/screen-routes", loadedOnHome("the design screens"))
-vi.mock("@/editing/import-deck", loadedOnHome("the PowerPoint reader"))
 
 const { default: App } = await import("@/App")
 
@@ -26,6 +25,6 @@ afterAll(() => {
   vi.unstubAllGlobals()
 })
 
-it("paints the deck home without loading the editor, the screens or the PowerPoint reader", () => {
+it("paints the deck home without loading the editor or the design screens", () => {
   expect(renderToStaticMarkup(<App />)).toContain("data-decks-main")
 })
