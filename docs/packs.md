@@ -149,7 +149,7 @@ flowchart TD
 
 | Pack | Layer | Public | Dependencies | Tables |
 | --- | --- | --- | --- | --- |
-| `apps/api/src` | app | index.ts | apps/api/src/account, apps/api/src/aira, apps/api/src/doom, apps/api/src/mcp, apps/api/src/oauth, apps/api/src/platform, apps/api/src/usage | none |
+| `apps/api/src` | app | none | apps/api/src/account, apps/api/src/aira, apps/api/src/doom, apps/api/src/mcp, apps/api/src/oauth, apps/api/src/platform, apps/api/src/usage | none |
 | `apps/api/src/account` | feature | runtime: apps/api/src/account/account-route.ts, apps/api/src/account/account.ts, apps/api/src/account/caller-log.ts, apps/api/src/account/session-cookie.ts; testing: apps/api/src/account/testing/read-sign-in-mail.ts | packages/mcp, apps/api/src/doom, apps/api/src/oauth, apps/api/src/platform | session.account, session.access, session.code, session.sent, session.caller_log |
 | `apps/api/src/aira` | feature | aira-closing.ts, aira-route.ts, aira-usage-route.ts, aira.ts, anthropic-transport.ts | packages/mcp, apps/api/src/account, apps/api/src/doom, apps/api/src/platform, apps/api/src/usage | session.aira_turn, session.aira_ask |
 | `apps/api/src/doom` | feature | deck-followers.ts, deck-list.ts, deck-pictures.ts, doom-deck.ts, doom-route.ts, doom-start.ts, idle-runs.ts, media.ts, original.ts | apps/api/src/platform | deck.doom, deck.doom_edit, deck.doom_node, deck.media, deck.original_delete |
