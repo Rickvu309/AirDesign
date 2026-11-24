@@ -4,6 +4,7 @@ import { expect, type BrowserContext, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { fillCopy } from "../../apps/web/src/copy/fill-copy"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test, type Stack } from "./api-stack"
 import { covers } from "./gesture"
 import { clickSlide, openEditor, savedNode, serveOriginals, slidePoint, type Opened } from "./editor-deck"
@@ -234,7 +235,7 @@ test("undo, redo or delete during a crop drag does not write the crop from befor
     page,
     await centre(page, '[data-crop-handles] rect[data-grip="crop-move"]'),
     { x: 20, y: 0 },
-    "Delete",
+    slideListCopy.deleteKey,
   )
   await expect.poll(async () => (await saved())?.fills?.[0]?.crop?.x).not.toBe(cut.fills[0]?.crop?.x)
   expect((await saved())?.box).toEqual(cut.box)
