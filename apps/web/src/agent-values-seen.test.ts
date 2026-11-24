@@ -44,6 +44,7 @@ const seen: Readonly<Record<string, Seen>> = {
   padding: { declined: "One simple panel. Agents still set auto layout." },
   icon: { person: ["actions:icon#swap"] },
   arrow: { person: ["gesture:tool-arrow", "panel:border.end"] },
+  startArrow: { person: ["panel:border.start"] },
   chart: {
     owedToPerson: "a series colour and a single bar's colour: the chart editor shows names and values only",
     partly: ["panel:chart-data"],
@@ -145,7 +146,8 @@ describe("every value an agent sets names where a person sees it and changes it"
     expect(seen.name).toEqual({ person: ["panel:name"] })
   })
 
-  it("lets a person set a line's end arrowhead, and drawing an arrow still does", () => {
+  it("lets a person set both arrowheads, and drawing an arrow still sets the end", () => {
     expect(seen.arrow).toEqual({ person: ["gesture:tool-arrow", "panel:border.end"] })
+    expect(seen.startArrow).toEqual({ person: ["panel:border.start"] })
   })
 })

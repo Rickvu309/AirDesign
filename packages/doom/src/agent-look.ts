@@ -1,4 +1,5 @@
 import type { AgentChart, AgentColor, AgentFill, AgentLook } from "./agent-change.js"
+import type { Arrow } from "./geometry.js"
 import { shapeGeometry } from "./preset-geometry.js"
 import type { Chart } from "./chart.js"
 import { sameColor as samePaint } from "./color.js"
@@ -34,6 +35,12 @@ export type Now = {
 }
 
 const defaultWeight = 2
+
+export function askedArrow(asked: boolean | Arrow | undefined, kept: Arrow): Arrow {
+  if (asked === undefined) return kept
+  if (typeof asked === "boolean") return asked ? "arrow" : "none"
+  return asked
+}
 
 export function colorOf(color: AgentColor): Color {
   if (color.startsWith("#")) return color as Hex

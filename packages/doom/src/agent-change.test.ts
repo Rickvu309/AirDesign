@@ -82,6 +82,21 @@ describe("readAgentChange", () => {
     })
   })
 
+  it("refuses an arrowhead it does not know, and names the field", () => {
+    expect(readAgentChange({ op: "set", target: "t:3", startArrow: "stealth" })).toMatchObject({
+      refused: "shape",
+      field: "startArrow",
+    })
+    expect(readAgentChange({ op: "set", target: "t:3", arrow: "stealth" })).toMatchObject({
+      refused: "shape",
+      field: "arrow",
+    })
+    expect(readAgentChange({ op: "set", target: "t:3", startArrow: "circle", arrow: "triangle" })).toMatchObject({
+      startArrow: "circle",
+      arrow: "triangle",
+    })
+  })
+
   it("answers limit for a text that is too long", () => {
     expect(readAgentChange({ op: "set", target: "t:3", text: "x".repeat(limits.valueBytes + 1) })).toMatchObject({
       refused: "limit",
@@ -141,6 +156,7 @@ describe("the advertised schema", () => {
       "padding",
       "icon",
       "arrow",
+      "startArrow",
       "from",
       "to",
       "route",

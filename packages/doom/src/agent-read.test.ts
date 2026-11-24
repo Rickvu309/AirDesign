@@ -118,4 +118,11 @@ describe("readForAgent of a line", () => {
     const line = lines(readForAgent(doom, "all")).find((each) => each.includes(more.line))
     expect(line).toContain(`from=${ids.card}:bottom route=curve arrow`)
   })
+
+  it("reads a start arrowhead and a named end arrowhead back as the fields that set them", () => {
+    const doom = build(richDeck(), change({ op: "set", target: more.line, startArrow: "circle", arrow: "triangle" }))
+    const line = lines(readForAgent(doom, "all")).find((each) => each.includes(more.line))
+    expect(line).toContain("startArrow=circle")
+    expect(line).toContain("arrow=triangle")
+  })
 })

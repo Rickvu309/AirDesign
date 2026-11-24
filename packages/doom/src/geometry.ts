@@ -5,7 +5,8 @@ import { type Reader, finite, list, literal, matching, object, oneOf, pair, reje
 export type End =
   | { readonly x: Px; readonly y: Px }
   | { readonly node: NodeId; readonly site: "t" | "r" | "b" | "l" | "c" }
-export type Arrow = "none" | "arrow" | "triangle" | "circle"
+export const lineArrowheads = ["none", "arrow", "triangle", "circle"] as const
+export type Arrow = (typeof lineArrowheads)[number]
 export type Geometry =
   | { readonly kind: "rect" }
   | { readonly kind: "ellipse" }
@@ -28,7 +29,7 @@ const readEnd: Reader<End> = oneOf<End>(
   }),
 )
 
-const readArrow = literal<Arrow>(["none", "arrow", "triangle", "circle"])
+const readArrow = literal<Arrow>(lineArrowheads)
 
 export const readGeometry: Reader<Geometry> = variant("kind", {
   rect: object({}),

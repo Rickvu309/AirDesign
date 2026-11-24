@@ -1,6 +1,6 @@
 import type { AgentChart, AgentColor } from "./agent-change.js"
 import { uniformAlign, uniformColor } from "./agent-look.js"
-import type { End, Geometry } from "./geometry.js"
+import type { Arrow, End, Geometry } from "./geometry.js"
 import type { NodeId } from "./ids.js"
 import type { Layout } from "./layout.js"
 import type { Color, ImagePaint, Paint, Sides } from "./paint.js"
@@ -142,13 +142,20 @@ function looksOf(node: Node): readonly string[] {
 
 const sideWords = { t: "top", r: "right", b: "bottom", l: "left", c: "center" } as const
 
+function shownArrow(name: string, arrow: Arrow): readonly string[] {
+  if (arrow === "none") return []
+  if (name === "arrow" && arrow === "arrow") return ["arrow"]
+  return [`${name}=${arrow}`]
+}
+
 function lineWords(line: Extract<Geometry, { kind: "line" }>): readonly string[] {
   const end = (name: string, at: End) => ("node" in at ? [`${name}=${at.node}:${sideWords[at.site]}`] : [])
   return [
     ...end("from", line.start),
     ...end("to", line.end),
     ...(line.route === "straight" ? [] : [`route=${line.route}`]),
-    ...(line.arrows[1] === "none" ? [] : ["arrow"]),
+    ...shownArrow("startArrow", line.arrows[0]),
+    ...shownArrow("arrow", line.arrows[1]),
   ]
 }
 

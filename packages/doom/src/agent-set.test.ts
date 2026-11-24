@@ -206,6 +206,17 @@ describe("set by node id", () => {
     expect(propOf(doom.nodes.get(more.chart)!, "chart")).toMatchObject({ kind: "line" })
   })
 
+  it("sets the start arrowhead without the end, and a named end without the start", () => {
+    const started = build(richDeck(), set(more.line, { startArrow: "circle" }))
+    expect(propOf(started.nodes.get(more.line)!, "geometry")).toMatchObject({ arrows: ["circle", "none"] })
+    const both = build(started, set(more.line, { arrow: "triangle" }))
+    expect(propOf(both.nodes.get(more.line)!, "geometry")).toMatchObject({ arrows: ["circle", "triangle"] })
+    const cleared = build(both, set(more.line, { startArrow: "none", arrow: false }))
+    expect(propOf(cleared.nodes.get(more.line)!, "geometry")).toMatchObject({ arrows: ["none", "none"] })
+    expect(refusal(richDeck(), set(ids.card, { startArrow: "circle" }))).toMatchObject({ field: "startArrow" })
+    expect(refusal(richDeck(), set(ids.card, { arrow: "triangle" }))).toMatchObject({ field: "arrow" })
+  })
+
   it("refuses a field the node does not take, naming node, field and change", () => {
     expect(refusal(richDeck(), set(ids.card, { text: "x" }))).toEqual({
       refused: "shape",

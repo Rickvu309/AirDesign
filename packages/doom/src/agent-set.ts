@@ -1,7 +1,7 @@
 import type { AgentChange, AgentLook } from "./agent-change.js"
 import { type Draft, type Values, living, put, stop } from "./agent-draft.js"
 import { insertLinkedRun } from "./agent-insert.js"
-import { chartOf, colorOf, iconName, layoutOf, surfaceOf, textOfLook } from "./agent-look.js"
+import { askedArrow, chartOf, colorOf, iconName, layoutOf, surfaceOf, textOfLook } from "./agent-look.js"
 import { lineEnds } from "./agent-line-ends.js"
 import { gapFor, slideSize, themeOf } from "./agent-place.js"
 import { notesText } from "./notes-text.js"
@@ -46,6 +46,7 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "padding",
     "icon",
     "arrow",
+    "startArrow",
     "from",
     "to",
     "route",
@@ -59,6 +60,7 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "textStyle",
     "icon",
     "arrow",
+    "startArrow",
     "from",
     "to",
     "route",
@@ -111,7 +113,7 @@ function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | und
     if (geometry?.kind !== "icon") stop("shape", node.id, "icon")
     return { kind: "icon", name: iconName(change.icon) }
   }
-  const lined = (["arrow", "from", "to", "route"] as const).find((field) => change[field] !== undefined)
+  const lined = (["startArrow", "arrow", "from", "to", "route"] as const).find((field) => change[field] !== undefined)
   if (lined !== undefined && geometry?.kind !== "line") stop("shape", node.id, lined)
   if (geometry?.kind !== "line") return undefined
   const box = change.box
@@ -125,7 +127,7 @@ function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | und
     ...placed,
     ...lineEnds(draft, { self: node.id, slide: slideOf(draft.doom, node.id) }, placed, change),
     ...(change.route === undefined ? {} : { route: change.route }),
-    arrows: [geometry.arrows[0], change.arrow === undefined ? geometry.arrows[1] : change.arrow ? "arrow" : "none"],
+    arrows: [change.startArrow ?? geometry.arrows[0], askedArrow(change.arrow, geometry.arrows[1])],
   }
 }
 

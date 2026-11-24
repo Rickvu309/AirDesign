@@ -19,7 +19,7 @@ export { type LayoutFinding, layoutFindings, touchedSlides, unmeasuredTexts } fr
 export { kindOf as agentKind, readForAgent } from "./agent-read.js"
 export { type Counts, type Known, applyEdit, countsOf, hasDeck, landEdit } from "./apply-edit.js"
 export { foldToJson, readFold, readLanded, readRuns, readStoredNode, revsToJson, runsToJson } from "./fold-json.js"
-export type { Arrow, End, Geometry } from "./geometry.js"
+export { type Arrow, type End, type Geometry, lineArrowheads } from "./geometry.js"
 export { type NodeId, type Rev, nodeId, readNodeId, rev } from "./ids.js"
 export { changingWrites } from "./changing-writes.js"
 export { invert } from "./invert.js"
