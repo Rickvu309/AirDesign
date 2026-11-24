@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { type Chart, type Resolved, deriveChart, nodeId } from "./index.js"
-import { defaultTheme } from "./default-theme-art.js"
+import { defaultTheme } from "./theme.js"
 import { measure, plainTheme, spot, swatches } from "./testing/doom-fixtures-art.js"
 
 const frame = nodeId("t:9")

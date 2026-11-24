@@ -17,7 +17,6 @@
     "@airdesign/live": "workspace:*",
     "@airdesign/pptx": "workspace:*",
     "@airdesign/render": "workspace:*",
-    "@airdesign/templates": "workspace:*",
     "@airdesign/theme": "workspace:*",
     "@base-ui/react": "^1.9.0",
     "@fontsource-variable/geist": "^5.3.0",

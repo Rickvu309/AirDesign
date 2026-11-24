@@ -32,7 +32,6 @@
     { "path": "../../packages/live" },
     { "path": "../../packages/pptx" },
     { "path": "../../packages/render" },
-    { "path": "../../packages/templates" },
     { "path": "../../packages/theme" }
   ]
 }

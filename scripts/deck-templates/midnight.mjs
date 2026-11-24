@@ -1,4 +1,5 @@
-import { templateTheme } from "../../packages/templates/src/index.ts"
+import midnight from "../../packages/doom/src/library/themes/midnight.json" with { type: "json" }
+import { themeSlots } from "./theme-slots.mjs"
 import { layouts, master } from "./deck-layouts.mjs"
 import { boardSlides } from "./board-slides.mjs"
 
@@ -68,7 +69,7 @@ const look = {
 }
 
 export default {
-  ...templateTheme("midnight"),
+  ...themeSlots(midnight),
   scale,
   master: master(look),
   layouts: layouts(look),

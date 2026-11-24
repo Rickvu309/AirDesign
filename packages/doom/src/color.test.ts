@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { readColor, resolveColor, sameColor, tinted } from "./color.js"
-import { defaultTheme } from "./default-theme-art.js"
+import { defaultTheme } from "./theme.js"
 import type { Hex } from "./paint.js"
 
 const hex = (digits: string): Hex => `#${digits}`

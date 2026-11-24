@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { defaultTheme } from "./default-theme-art.js"
+import { defaultTheme } from "./theme.js"
 import { theme } from "./sample-deck.js"
 
 describe("effect styles", () => {

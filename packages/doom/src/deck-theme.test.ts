@@ -1,20 +1,18 @@
 import { describe, expect, it } from "vitest"
 import { deckOf } from "./deck-of.js"
-import { defaultTheme } from "./default-theme-art.js"
+import { defaultTheme, readTheme } from "./theme.js"
 import { measure } from "./testing/doom-fixtures-art.js"
 import { doomFromTree } from "./doom-tree.js"
 import { isRefusal } from "./index.js"
 import { resolveSlide } from "./resolve-slide.js"
 import { ids, sampleDeck, tryLand } from "./sample-deck.js"
-import { slideTextStyles } from "./slide-text-styles.js"
 import { textFromMarkdown } from "./markdown.js"
-import { readTheme } from "./theme.js"
 
-const { display: _, ...beforeDisplay } = slideTextStyles
+const { display: _, ...beforeDisplay } = defaultTheme.textStyles
 const keynote = {
   ...beforeDisplay,
-  title: { ...slideTextStyles.title, size: 88 },
-  body: { ...slideTextStyles.body, size: 48 },
+  title: { ...defaultTheme.textStyles.title, size: 88 },
+  body: { ...defaultTheme.textStyles.body, size: 48 },
 }
 
 describe("a deck's theme", () => {
@@ -32,7 +30,7 @@ describe("a deck's theme", () => {
 
   it("reads a theme stored before a text style existed, taking only that style from the default scale", () => {
     const stored = readTheme({ ...defaultTheme, textStyles: keynote })
-    expect(stored).toMatchObject({ textStyles: { ...keynote, display: slideTextStyles.display } })
+    expect(stored).toMatchObject({ textStyles: { ...keynote, display: defaultTheme.textStyles.display } })
   })
 
   it("refuses to unset a deck's theme, so no deck falls back to the default scale", () => {

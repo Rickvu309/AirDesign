@@ -26,7 +26,7 @@ describe("a new deck's title slide", () => {
   })
 
   it("takes the slide type scale for its text styles, so a person's Text tool and the agent's patterns share it", () => {
-    expect(theme.textStyles).toEqual(doom.slideTextStyles)
+    expect(theme.textStyles).toEqual(doom.defaultTheme.textStyles)
     for (const style of Object.values(theme.textStyles)) expect(style.size).toBeGreaterThanOrEqual(24)
     expect(theme.textStyles.title.size).toBe(56)
   })

@@ -1,7 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { deckTemplates, templateFile } from "../../packages/templates/src/index.ts"
 import { storedZip } from "../stored-zip.mjs"
 import { deckParts } from "./deck-parts.mjs"
 import editorial from "./editorial.mjs"
@@ -14,9 +13,7 @@ export const templateDeck = (spec, options) => storedZip(deckParts(spec, options
 
 export const templatePackage = new URL("../../packages/templates/", import.meta.url)
 
-export const templateCatalog = deckTemplates
-
-export const templateUrl = (id, start = false) => new URL(templateFile(id, start), templatePackage)
+export const templateUrl = (id, start = false) => new URL(`files/${id}${start ? "-start" : ""}.pptx`, templatePackage)
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   fs.mkdirSync(new URL("files/", templatePackage), { recursive: true })

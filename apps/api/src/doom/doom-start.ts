@@ -1,7 +1,6 @@
 import { blankDeckName } from "@airdesign/catalog"
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { templateTheme } from "@airdesign/templates"
 
 export const startIds = {
   deck: doom.nodeId("s:1"),
@@ -14,31 +13,6 @@ export const startIds = {
 export const startAuthor: doom.Author = { kind: "person", id: "airdesign" }
 
 const slide = { w: 1920, h: 1080 } as const
-
-function neutralTheme(): doom.Theme {
-  const neutral = templateTheme("neutral")
-  if (neutral === undefined) throw new Error("neutral template")
-  const { colors, fonts } = neutral
-  const hex = (value: string) => `#${value.toLowerCase()}`
-  return {
-    colors: {
-      text: hex(colors.dk1),
-      background: hex(colors.lt1),
-      text2: hex(colors.dk2),
-      background2: hex(colors.lt2),
-      accent1: hex(colors.accent1),
-      accent2: hex(colors.accent2),
-      accent3: hex(colors.accent3),
-      accent4: hex(colors.accent4),
-      accent5: hex(colors.accent5),
-      accent6: hex(colors.accent6),
-      link: hex(colors.hlink),
-    },
-    fonts: { heading: fonts.major, body: fonts.minor },
-    textStyles: doom.slideTextStyles,
-    effectStyles: doom.defaultTheme.effectStyles,
-  } as doom.Theme
-}
 
 export function startEdit(): doom.Edit {
   const first = orderKeyBetween(null, null)
@@ -56,7 +30,7 @@ export function startEdit(): doom.Edit {
       ...create(deck, "deck", undefined),
       { node: deck, prop: "name", value: blankDeckName },
       { node: deck, prop: "nameFollows", value: true },
-      { node: deck, prop: "theme", value: neutralTheme() },
+      { node: deck, prop: "theme", value: doom.themeLibrary.neutral.theme },
       { node: deck, prop: "size", value: slide },
       ...create(row, "slideRow", deck),
       ...create(first_, "slide", row),

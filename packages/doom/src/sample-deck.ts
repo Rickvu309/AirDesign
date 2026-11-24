@@ -1,4 +1,4 @@
-import { defaultTheme } from "./default-theme-art.js"
+import { defaultTheme } from "./theme.js"
 import { orderKeyBetween, type OrderKey } from "./order-key.js"
 import {
   applyEdit,

@@ -2,7 +2,6 @@ import { randomBytes } from "node:crypto"
 import { doomRoutes } from "@airdesign/catalog"
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { templateTheme } from "@airdesign/templates"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
@@ -114,11 +113,8 @@ describe("creating a doom deck", () => {
     const { fold } = decoded
     const types = [...fold.nodes.values()].map((node) => node.type).sort()
     expect(types).toEqual(["deck", "shape", "shape", "slide", "slideRow"])
-    const neutral = templateTheme("neutral")!
     const theme = (fold.nodes.get(startIds.deck) as { theme: doom.Theme }).theme
-    expect(theme.colors.text).toBe(`#${neutral.colors.dk1.toLowerCase()}`)
-    expect(theme.colors.accent1).toBe(`#${neutral.colors.accent1.toLowerCase()}`)
-    expect(theme.fonts).toEqual({ heading: neutral.fonts.major, body: neutral.fonts.minor })
+    expect(theme).toEqual(doom.themeLibrary.neutral.theme)
     expect(Object.keys(theme.textStyles)).toEqual([
       "display",
       "bigNumber",

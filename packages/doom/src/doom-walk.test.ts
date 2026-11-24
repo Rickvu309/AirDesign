@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import * as doom from "./index.js"
 import { doomFromTree } from "./doom-tree.js"
-import { defaultTheme } from "./default-theme-art.js"
+import { defaultTheme } from "./theme.js"
 
 const box = (x = 0, y = 0, w = 200, h = 100): doom.Box => ({ x, y, w, h, rotation: 0, flipH: false, flipV: false })
 const rowLayout: doom.Layout = {

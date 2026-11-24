@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { applyEdit } from "./apply-edit.js"
 import { deckName } from "./deck-of.js"
-import { defaultTheme } from "./default-theme-art.js"
+import { defaultTheme } from "./theme.js"
 import { doomFromTree } from "./doom-tree.js"
 import { emptyDoom } from "./doom.js"
 import { rev } from "./ids.js"
