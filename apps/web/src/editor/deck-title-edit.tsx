@@ -70,7 +70,7 @@ export function DeckTitleEdit({
           type="button"
           aria-label={`${productCopy.renameDeck}: ${title}`}
           onClick={rename}
-          className="h-8 min-w-0 truncate rounded-md px-1.5 text-[length:var(--type-dense)] font-medium text-foreground hover:bg-black/4"
+          className="h-8 min-w-0 max-w-full truncate rounded-md px-1.5 text-[length:var(--type-dense)] font-medium text-foreground hover:bg-black/4"
         >
           {title}
         </button>

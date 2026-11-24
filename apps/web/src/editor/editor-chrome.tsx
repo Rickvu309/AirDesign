@@ -30,7 +30,7 @@ export function DeckTitle({
     )
   return (
     <span className={cn("flex min-w-0 items-center gap-1", className)}>
-      <span className="truncate text-[length:var(--type-dense)] font-medium text-foreground">{title}</span>
+      <span className="min-w-0 truncate text-[length:var(--type-dense)] font-medium text-foreground">{title}</span>
       <EditorIcon name="chev" size={14} className="text-faint" />
     </span>
   )
@@ -62,39 +62,42 @@ export function SidebarHead({
   save?: SaveStatus | null
 }) {
   return (
-    <div className="group/head grid h-14 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] content-center items-center gap-x-2 pr-2 pl-3">
-      {homeHref === undefined ? (
-        <AirdesignMark size={20} />
-      ) : (
-        <a
-          href={homeHref}
-          aria-label={productCopy.goToDecks}
-          className="flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-black/4"
-        >
+    <div className="flex shrink-0 flex-col pt-2 pr-2 pb-1 pl-3">
+      <div className="flex h-8 items-center justify-between">
+        {homeHref === undefined ? (
           <AirdesignMark size={20} />
-        </a>
-      )}
-      <span className="flex min-w-0 group-has-[[data-deck-name-field]]/head:col-span-2 group-has-[[data-deck-name-field]]/head:mr-1.5">
+        ) : (
+          <a
+            href={homeHref}
+            aria-label={productCopy.goToDecks}
+            className="flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-black/4"
+          >
+            <AirdesignMark size={20} />
+          </a>
+        )}
+        {trailing ?? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-8 rounded-md text-quiet active:translate-y-0"
+            aria-label="Grid"
+            data-keeps-selection
+            disabled={gridOff}
+            {...(onGrid === undefined ? {} : { onClick: onGrid, "aria-pressed": false })}
+          >
+            <EditorIcon name="grid" size={16} />
+          </Button>
+        )}
+      </div>
+      <div className="flex w-full min-w-0">
         <DeckTitle
           title={title}
+          className="min-w-0 flex-1"
           {...(onRename === undefined ? {} : { onRename })}
           {...(onTrash === undefined ? {} : { onTrash })}
         />
-      </span>
-      {trailing ?? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-8 rounded-md text-quiet active:translate-y-0 group-has-[[data-deck-name-field]]/head:hidden"
-          aria-label="Grid"
-          data-keeps-selection
-          disabled={gridOff}
-          {...(onGrid === undefined ? {} : { onClick: onGrid, "aria-pressed": false })}
-        >
-          <EditorIcon name="grid" size={16} />
-        </Button>
-      )}
+      </div>
       {save === null ? null : <SaveStatusLine status={save} />}
     </div>
   )

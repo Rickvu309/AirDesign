@@ -32,3 +32,15 @@ it("offers Trash when its handler is available", () => {
   )
   expect(markup).toContain(productCopy.moveToTrash)
 })
+
+it("puts a normal deck name on its own row, still able to ellipsize", async () => {
+  const { SidebarHead } = await import("./editor-chrome")
+  const title = "Annual strategy review"
+  const markup = renderToStaticMarkup(<SidebarHead title={title} homeHref="/" onRename={() => undefined} />)
+  expect(markup).not.toContain("minmax(0,1fr)")
+  const grid = markup.indexOf('aria-label="Grid"')
+  const name = markup.indexOf(`aria-label="Rename deck: ${title}"`)
+  expect(grid).toBeGreaterThan(-1)
+  expect(name).toBeGreaterThan(grid)
+  expect(markup).toContain("truncate")
+})
