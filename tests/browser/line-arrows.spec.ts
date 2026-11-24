@@ -50,8 +50,8 @@ test("a person sets a line's start and end arrowheads, and a rectangle has neith
   ])
   const arrowsOf = () => saved(stack, opened, "t:1").then((node) => node.geometry.arrows)
   await pick(page, "t:1", 400, 300)
-  const end = panel(page).getByRole("combobox", { name: borderCopy.tail, exact: true })
-  const start = panel(page).getByRole("combobox", { name: borderCopy.head, exact: true })
+  const end = panel(page).getByRole("combobox", { name: borderCopy["End arrow"], exact: true })
+  const start = panel(page).getByRole("combobox", { name: borderCopy["Start arrow"], exact: true })
   await expect(end).toContainText(borderWord("arrow"))
   await expect(start).toContainText(fillWords.none)
   await end.click()
@@ -69,15 +69,15 @@ test("a person sets a line's start and end arrowheads, and a rectangle has neith
   await expect.poll(arrowsOf).toEqual(["circle", "triangle"])
   await reloadDesign(page)
   await pick(page, "t:1", 400, 300)
-  await expect(panel(page).getByRole("combobox", { name: borderCopy.head, exact: true })).toContainText(
+  await expect(panel(page).getByRole("combobox", { name: borderCopy["Start arrow"], exact: true })).toContainText(
     fillWords.circle,
   )
-  await expect(panel(page).getByRole("combobox", { name: borderCopy.tail, exact: true })).toContainText(
+  await expect(panel(page).getByRole("combobox", { name: borderCopy["End arrow"], exact: true })).toContainText(
     borderWord("triangle"),
   )
   await expect.poll(arrowsOf).toEqual(["circle", "triangle"])
 
   await clickSlide(page, 1150, 300)
-  await expect(panel(page).getByRole("combobox", { name: borderCopy.head, exact: true })).toHaveCount(0)
-  await expect(panel(page).getByRole("combobox", { name: borderCopy.tail, exact: true })).toHaveCount(0)
+  await expect(panel(page).getByRole("combobox", { name: borderCopy["Start arrow"], exact: true })).toHaveCount(0)
+  await expect(panel(page).getByRole("combobox", { name: borderCopy["End arrow"], exact: true })).toHaveCount(0)
 })

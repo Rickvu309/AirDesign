@@ -221,6 +221,24 @@ describe("add line", () => {
     expect(propOf(made, "stroke")).toMatchObject({ weight: 3, align: "center" })
   })
 
+  it("sets the start arrowhead and a named end, and refuses the start on a shape", () => {
+    const made = lastChild(
+      build(agentDeck(), {
+        op: "add",
+        kind: "line",
+        slide,
+        startArrow: "circle",
+        arrow: "triangle",
+        box: { x: 10, y: 20, w: 300, h: 0 },
+      }),
+      slide,
+    )
+    expect(propOf(made, "geometry")).toMatchObject({ arrows: ["circle", "triangle"] })
+    expect(
+      compileAgentChange(agentDeck(), { op: "add", kind: "shape", slide, startArrow: "circle" }, minter()),
+    ).toMatchObject({ field: "startArrow" })
+  })
+
   it("runs across the free area, level, when it has no box", () => {
     const made = lastChild(build(agentDeck(), { op: "add", kind: "line", slide }), slide)
     const box = propOf(made, "box")!

@@ -8,8 +8,8 @@ export const borderCopy = {
   cap: "Cap",
   compound: "Compound",
   join: "Join",
-  head: "Start arrow",
-  tail: "End arrow",
+  "Start arrow": "Start arrow",
+  "End arrow": "End arrow",
   route: "Line type",
   reset: {
     fill: "Reset border color",
@@ -18,8 +18,8 @@ export const borderCopy = {
     cap: "Reset cap",
     compound: "Reset compound",
     join: "Reset join",
-    head: "Reset start arrow",
-    tail: "Reset end arrow",
+    "Start arrow": "Reset start arrow",
+    "End arrow": "Reset end arrow",
   },
 } as const
 

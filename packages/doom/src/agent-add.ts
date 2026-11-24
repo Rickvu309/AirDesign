@@ -1,7 +1,7 @@
 import type { AgentAdd, AgentChange, AgentLook } from "./agent-change.js"
 import { shapeGeometry } from "./preset-geometry.js"
 import { type Draft, create, living, put, stop } from "./agent-draft.js"
-import { chartOf, iconName, layoutOf, solid, surfaceOf, textOfLook, turnOf, type Now } from "./agent-look.js"
+import { askedArrow, chartOf, iconName, layoutOf, solid, surfaceOf, textOfLook, turnOf, type Now } from "./agent-look.js"
 import { addGrid, addPattern } from "./agent-patterns.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { placeholderSubtitle } from "./slide-placeholders.js"
@@ -36,7 +36,7 @@ const patternFields = ["box", "name", "hidden", "items"] as const
 const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
   text: [...common, ...painted, ...words, "link"],
   shape: [...common, ...painted, ...words, "shape", "link"],
-  line: [...common, "stroke", "strokeWidth", "arrow", "dash", "from", "to", "route"],
+  line: [...common, "stroke", "strokeWidth", "arrow", "startArrow", "dash", "from", "to", "route"],
   frame: [...common, ...painted, "layout", "gap", "padding", "align", "rows", "clip"],
   picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit", "crop"],
   icon: [...common, "icon", "stroke", "strokeWidth"],
@@ -178,7 +178,7 @@ function addLine(draft: Draft, parent: Node, change: Add): void {
         change,
       ),
       route: change.route ?? "straight",
-      arrows: ["none", change.arrow === true ? "arrow" : "none"],
+      arrows: [change.startArrow ?? "none", askedArrow(change.arrow, "none")],
     },
   })
 }
