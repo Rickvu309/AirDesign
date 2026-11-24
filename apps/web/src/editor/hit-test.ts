@@ -1,4 +1,5 @@
 import * as doom from "@airdesign/doom"
+import { maskSilhouette } from "@airdesign/render"
 import { apply, invert, type Placed, type Point } from "./slide-geometry"
 
 export type Skip = (id: doom.NodeId) => boolean
@@ -29,25 +30,11 @@ function bodyHit(placed: Placed, local: Point, reach: number): boolean {
   return local.x >= 0 && local.y >= 0 && local.x <= w && local.y <= h
 }
 
-function pathHolds(d: string, local: Point): boolean {
-  if (typeof Path2D === "undefined" || typeof document === "undefined") return true
-  const context = document.createElement("canvas").getContext("2d")
-  return context === null ? true : context.isPointInPath(new Path2D(d), local.x, local.y)
-}
-
 function maskHolds(mask: Placed, at: Point): boolean {
   const local = apply(invert(mask.matrix), at)
-  const { node } = mask
-  const { w, h } = node.box
-  const { geometry } = node
-  if (geometry?.kind === "ellipse") {
-    const across = (local.x - w / 2) / Math.max(w / 2, 1e-6)
-    const down = (local.y - h / 2) / Math.max(h / 2, 1e-6)
-    return across * across + down * down <= 1
-  }
-  if (geometry?.kind === "preset") return doom.presetHolds(geometry.name, w, h, geometry.adjust, local, 0)
-  if (geometry?.kind === "path") return pathHolds(geometry.d, local)
-  return local.x >= 0 && local.y >= 0 && local.x <= w && local.y <= h
+  const context = document.createElement("canvas").getContext("2d")
+  if (context === null) return false
+  return context.isPointInPath(new Path2D(maskSilhouette(mask.node)), local.x, local.y)
 }
 
 function maskAbove(nodes: readonly Placed[], index: number): Placed | null {

@@ -1,6 +1,6 @@
 import type * as doom from "@airdesign/doom"
 import { Fragment, type ReactNode, useId } from "react"
-import { outlineOf, roundedRectPath } from "./node-outline.js"
+import { maskSilhouette } from "./node-outline.js"
 
 type Resolved = doom.Resolved
 
@@ -18,10 +18,6 @@ function place(node: Resolved): string {
   const turn = rotation === 0 ? "" : ` rotate(${num(rotation)})`
   const flip = flipH || flipV ? ` scale(${flipH ? -1 : 1} ${flipV ? -1 : 1})` : ""
   return `${moved} translate(${num(w / 2)} ${num(h / 2)})${turn}${flip} translate(${num(-w / 2)} ${num(-h / 2)})`
-}
-
-function silhouette(node: Resolved): string {
-  return outlineOf(node).fill ?? roundedRectPath(node.box.w, node.box.h, node.radius)
 }
 
 type Run = { readonly mask: Resolved | null; readonly nodes: readonly Resolved[] }
@@ -71,7 +67,7 @@ function MaskRun({
         }}
       >
         <mask id={id} maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
-          <path d={silhouette(mask)} fill="white" fillOpacity={reveal(mask)} transform={place(mask)} />
+          <path d={maskSilhouette(mask)} fill="white" fillOpacity={reveal(mask)} transform={place(mask)} />
         </mask>
       </svg>
       <div style={{ position: "absolute", inset: 0, mask: `url(#${id})` }}>{nodes.map(render)}</div>

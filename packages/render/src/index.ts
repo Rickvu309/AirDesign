@@ -1,4 +1,5 @@
 export { Filmstrip } from "./filmstrip.js"
+export { maskSilhouette } from "./node-outline.js"
 export { TextLines } from "./node-text.js"
 export { DoomSlide, SlidePaint, useDoomSlide } from "./doom-slide.js"
 export { measureDoom } from "./doom-widths.js"
