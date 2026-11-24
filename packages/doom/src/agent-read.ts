@@ -67,6 +67,9 @@ function chartWords(node: Node): string | undefined {
       name: series.name,
       values: series.values,
       ...(series.color === undefined ? {} : { color: colorWords(series.color) }),
+      ...(series.points === undefined || series.points.length === 0
+        ? {}
+        : { points: series.points.map((point) => ({ at: point.at, color: colorWords(point.color) })) }),
     })),
     ...(chart.labels === undefined ? {} : { labels: chart.labels }),
     ...(chart.unit === undefined ? {} : { unit: chart.unit }),

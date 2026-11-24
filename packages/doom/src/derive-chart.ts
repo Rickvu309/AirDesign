@@ -1,4 +1,4 @@
-import { type Axis, formatTick, formatValue, niceAxis, seriesPrecision, slug, tickPrecision } from "./chart-axis.js"
+import { type Axis, formatTick, formatValue, niceAxis, seriesPrecision, tickPrecision } from "./chart-axis.js"
 import {
   type Kit,
   type Words,
@@ -34,8 +34,10 @@ const accents = ["accent1", "accent2", "accent3", "accent4", "accent5", "accent6
 const markShare = 0.5
 const legendGap = 28
 
-const dataId = (context: Context, series: string, category: string) =>
-  `${context.frame}#${slug(series)}:${slug(category)}`
+const markId = (context: Context, series: number, category: number) =>
+  `${context.frame}#${String(series)}:${String(category)}`
+const valueId = (context: Context, series: number, category: number) =>
+  `${context.frame}#~value:${String(series)}:${String(category)}`
 
 function axisLabels(
   chart: Chart,
@@ -60,13 +62,12 @@ function seriesColorsOf(chart: Chart, theme: Theme): readonly Hex[] {
   return own.map((color) => color ?? fallback[next++ % fallback.length]!)
 }
 
-const colorAt = (context: Context, index: number, id: string): Hex => {
+function markColor(context: Context, series: number, category: number): Hex {
   const { chart, theme } = context
-  const point = chart.points?.[id]
-  if (point !== undefined) return resolveColor(point, theme)
-  if (chart.kind !== "pie") return context.seriesColors[index] ?? theme.colors.accent1
-  const own = chart.series[index]?.color
-  return own === undefined ? theme.colors[accents[index % accents.length]!] : resolveColor(own, theme)
+  const own = chart.series[series]?.points?.find((point) => point.at === category)
+  if (own !== undefined) return resolveColor(own.color, theme)
+  if (chart.kind === "pie") return theme.colors[accents[category % accents.length]!]
+  return context.seriesColors[series] ?? theme.colors.accent1
 }
 
 const muted = (theme: Theme): Words => ({ style: "caption", color: theme.colors.text2, align: "left" })
@@ -80,13 +81,13 @@ function legendOf(context: Context, entries: readonly Entry[], x: number, y: num
   const swatch = Math.round(context.lineH * markShare)
   const nameRoom = Math.max(0, ...entries.map((entry) => wordsWidth(context, entry.name, look)))
   let at = vertical ? y : x
-  for (const entry of entries) {
+  for (const [index, entry] of entries.entries()) {
     const textW = wordsWidth(context, entry.name, look)
     const left = vertical ? x : at
     const top = vertical ? at : y
     parts.push(
       block(
-        `${context.frame}#~swatch:${slug(entry.name)}`,
+        `${context.frame}#~swatch:${String(index)}`,
         spot(left, top + (context.lineH - swatch) / 2, swatch, swatch),
         entry.color,
         3,
@@ -94,7 +95,7 @@ function legendOf(context: Context, entries: readonly Entry[], x: number, y: num
     )
     parts.push(
       words(
-        `${context.frame}#~legend:${slug(entry.name)}`,
+        `${context.frame}#~legend:${String(index)}`,
         context,
         entry.name,
         spot(left + swatch + 10, top, textW + 2, context.lineH),
@@ -105,7 +106,7 @@ function legendOf(context: Context, entries: readonly Entry[], x: number, y: num
       const noteW = wordsWidth(context, entry.note, noteLook)
       parts.push(
         words(
-          `${context.frame}#~note:${slug(entry.name)}`,
+          `${context.frame}#~note:${String(index)}`,
           context,
           entry.note,
           spot(left + swatch + 10 + nameRoom + noteGap, top, noteW + 2, context.lineH),
@@ -150,7 +151,10 @@ function barChart(context: Context): Resolved[] {
   const look = muted(theme)
   const legend: Entry[] =
     chart.series.length > 1
-      ? chart.series.map((series, index) => ({ name: series.name, color: colorAt(context, index, "") }))
+      ? chart.series.map((series, index) => ({
+          name: series.name,
+          color: context.seriesColors[index] ?? context.theme.colors.accent1,
+        }))
       : []
   const legendH = legend.length > 0 ? context.lineH + 22 : 0
   const labelled = chart.labels === true
@@ -220,8 +224,8 @@ function barChart(context: Context): Resolved[] {
     let down = 0
     chart.series.forEach((series, index) => {
       const value = series.values[at] ?? 0
-      const id = dataId(context, series.name, category)
-      const color = colorAt(context, index, id)
+      const id = markId(context, index, at)
+      const color = markColor(context, index, at)
       const reach = clusters ? 0 : value >= 0 ? up : down
       const from = place(reach)
       const to = place(reach + value)
@@ -241,7 +245,7 @@ function barChart(context: Context): Resolved[] {
         if (length < context.lineH + 6) return
         parts.push(
           words(
-            `${frame}#~value:${slug(series.name)}:${slug(category)}`,
+            valueId(context, index, at),
             context,
             shown,
             spot(box.x + (box.w - w) / 2, box.y + (box.h - context.lineH) / 2, w, context.lineH),
@@ -252,7 +256,7 @@ function barChart(context: Context): Resolved[] {
         const x = value >= 0 ? box.x + box.w + 6 : box.x - 6 - w
         parts.push(
           words(
-            `${frame}#~value:${slug(series.name)}:${slug(category)}`,
+            valueId(context, index, at),
             context,
             shown,
             spot(clamp(x, 0, context.w - w), box.y + (box.h - context.lineH) / 2, w, context.lineH),
@@ -263,7 +267,7 @@ function barChart(context: Context): Resolved[] {
         const y = value >= 0 ? box.y - context.lineH - 2 : box.y + box.h + 2
         parts.push(
           words(
-            `${frame}#~value:${slug(series.name)}:${slug(category)}`,
+            valueId(context, index, at),
             context,
             shown,
             spot(clamp(box.x + (box.w - w) / 2, 0, context.w - w), y, w, context.lineH),
@@ -274,20 +278,17 @@ function barChart(context: Context): Resolved[] {
     })
     if (horizontal)
       chrome.push(
-        words(`${frame}#~category:${slug(category)}`, context, category, spot(0, band, left - 20, bandSize), {
+        words(`${frame}#~category:${String(at)}`, context, category, spot(0, band, left - 20, bandSize), {
           ...look,
           align: "right",
         }),
       )
     else
       chrome.push(
-        words(
-          `${frame}#~category:${slug(category)}`,
-          context,
-          category,
-          spot(band, bottom + 10, bandSize, context.lineH),
-          { ...look, align: "center" },
-        ),
+        words(`${frame}#~category:${String(at)}`, context, category, spot(band, bottom + 10, bandSize, context.lineH), {
+          ...look,
+          align: "center",
+        }),
       )
   })
   const baseline = horizontal
@@ -303,7 +304,10 @@ function lineChart(context: Context): Resolved[] {
   const look = muted(theme)
   const legend: Entry[] =
     chart.series.length > 1
-      ? chart.series.map((series, index) => ({ name: series.name, color: colorAt(context, index, "") }))
+      ? chart.series.map((series, index) => ({
+          name: series.name,
+          color: context.seriesColors[index] ?? context.theme.colors.accent1,
+        }))
       : []
   const legendH = legend.length > 0 ? context.lineH + 22 : 0
   const labelled = chart.labels === true
@@ -339,7 +343,7 @@ function lineChart(context: Context): Resolved[] {
   chart.categories.forEach((category, at) => {
     parts.push(
       words(
-        `${frame}#~category:${slug(category)}`,
+        `${frame}#~category:${String(at)}`,
         context,
         category,
         spot(left + band * at, bottom + 10, band, context.lineH),
@@ -350,7 +354,7 @@ function lineChart(context: Context): Resolved[] {
   const plot = spot(left, top, context.w - left, bottom - top)
   const markerSize = Math.round(context.lineH * markShare)
   chart.series.forEach((series, index) => {
-    const color = colorAt(context, index, "")
+    const color = context.seriesColors[index] ?? context.theme.colors.accent1
     const points = chart.categories.map((category, at) => ({
       category,
       x: left + band * (at + 0.5),
@@ -360,14 +364,13 @@ function lineChart(context: Context): Resolved[] {
     const d = points
       .map((point, at) => `${at === 0 ? "M" : "L"}${(point.x - plot.x).toFixed(2)} ${(point.y - plot.y).toFixed(2)}`)
       .join("")
-    if (points.length > 1) parts.push(stroked(`${frame}#${slug(series.name)}`, plot, d, color, 4))
-    for (const point of points) {
-      const id = dataId(context, series.name, point.category)
+    if (points.length > 1) parts.push(stroked(`${frame}#${String(index)}`, plot, d, color, 4))
+    for (const [pointAt, point] of points.entries()) {
       parts.push(
         disc(
-          id,
+          markId(context, index, pointAt),
           spot(point.x - markerSize / 2, point.y - markerSize / 2, markerSize, markerSize),
-          colorAt(context, index, id),
+          markColor(context, index, pointAt),
           theme.colors.background,
         ),
       )
@@ -376,7 +379,7 @@ function lineChart(context: Context): Resolved[] {
       const w = wordsWidth(context, shown, strong(theme)) + 12
       parts.push(
         words(
-          `${frame}#~value:${slug(series.name)}:${slug(point.category)}`,
+          valueId(context, index, pointAt),
           context,
           shown,
           spot(
@@ -394,7 +397,7 @@ function lineChart(context: Context): Resolved[] {
 }
 
 function pieChart(context: Context): Resolved[] {
-  const { chart, theme, frame } = context
+  const { chart, theme } = context
   const series = chart.series[0]
   if (series === undefined) return []
   const shares = chart.categories.map((category, at) => ({ category, at, value: Math.max(0, series.values[at] ?? 0) }))
@@ -404,7 +407,7 @@ function pieChart(context: Context): Resolved[] {
   const radius = diameter / 2
   const entries: Entry[] = shares.map((share) => ({
     name: share.category,
-    color: colorAt(context, share.at, dataId(context, series.name, share.category)),
+    color: markColor(context, 0, share.at),
     note: total === 0 ? "0%" : `${String(Math.round((share.value / total) * 100))}%`,
   }))
   const rowsH = entries.length * (context.lineH + 18) - 18
@@ -412,7 +415,7 @@ function pieChart(context: Context): Resolved[] {
   const live = shares.filter((share) => share.value > 0)
   let angle = -Math.PI / 2
   for (const share of live) {
-    const id = dataId(context, series.name, share.category)
+    const id = markId(context, 0, share.at)
     const color = entries[share.at]!.color
     if (live.length === 1) {
       parts.push(whole(id, area, color))
@@ -432,7 +435,7 @@ function pieChart(context: Context): Resolved[] {
       const cy = area.y + radius + radius * 0.66 * Math.sin(middle)
       parts.push(
         words(
-          `${frame}#~value:${slug(series.name)}:${slug(share.category)}`,
+          valueId(context, 0, share.at),
           context,
           shown,
           spot(clamp(cx - w / 2, 0, context.w - w), cy - context.lineH / 2, w, context.lineH),

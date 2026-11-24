@@ -1,6 +1,6 @@
 import { readAngle, readRotation } from "./angle.js"
 import { arrowField, startArrowField } from "./agent-arrow.js"
-import { readAxisUnit } from "./chart.js"
+import { type AgentChart, chartField } from "./agent-chart.js"
 import { type WeightName, weightNames } from "./painted-face.js"
 import { type AgentEnd, endSchema, readEnd } from "./agent-end.js"
 import { type AgentInsert, insertField } from "./agent-insert.js"
@@ -29,13 +29,11 @@ import {
   agentColor,
   boolean,
   detailOf,
-  finite,
   formed,
   forms,
   list,
   literal,
   matching,
-  mismatch,
   object,
   pair,
   union,
@@ -62,14 +60,8 @@ export type AgentGradient = {
   readonly radial?: boolean
 }
 export type AgentFill = AgentColor | "none" | { readonly image: string } | AgentGradient
+export type { AgentChart } from "./agent-chart.js"
 export type AgentBox = { readonly x: Px; readonly y: Px; readonly w: Px; readonly h: Px }
-export type AgentChart = {
-  readonly kind: "bar" | "column" | "line" | "pie" | "stacked"
-  readonly categories: readonly string[]
-  readonly series: readonly { readonly name: string; readonly values: readonly number[]; readonly color?: AgentColor }[]
-  readonly labels?: boolean
-  readonly unit?: string
-}
 export type AgentLook = {
   readonly fill?: AgentFill
   readonly stroke?: AgentColor | "none"
@@ -161,44 +153,6 @@ const id = (description: string) => field<NodeId>({ ...idSchema, description }, 
 
 const readNone = literal(["none"] as const)
 
-const chartSchema = {
-  type: "object",
-  additionalProperties: false,
-  required: ["kind", "categories", "series"],
-  properties: {
-    kind: { enum: ["bar", "column", "line", "pie", "stacked"] },
-    categories: { type: "array", items: { type: "string" } },
-    series: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["name", "values"],
-        properties: {
-          name: { type: "string" },
-          values: { type: "array", items: { type: "number" }, description: "One per category." },
-          color: colorSchema,
-        },
-      },
-    },
-    labels: { type: "boolean", description: "Print each value on its bar." },
-    unit: { type: "string", description: "After each axis number, such as $M." },
-  },
-}
-const readChart: Reader<AgentChart> = (raw) => {
-  const chart = object(
-    {
-      kind: literal(["bar", "column", "line", "pie", "stacked"] as const),
-      categories: list(words(200), 200, 1),
-      series: list(object({ name: words(200), values: list(finite(-1e12, 1e12), 200) }, { color: readColor }), 20, 1),
-    },
-    { labels: boolean, unit: readAxisUnit },
-  )(raw)
-  return chart.series.every((series) => series.values.length === chart.categories.length)
-    ? chart
-    : mismatch("series", forms.series)
-}
-
 const readFontName = matching(/^[A-Za-z0-9][A-Za-z0-9 ]{0,99}$/, 100, forms.font)
 const readIconName = matching(/^([a-z0-9-]+\/)?[a-z0-9-]+$/, 80, forms.icon)
 const readAfter = accepting(forms.after, (raw) => (raw === null ? null : readId(raw)))
@@ -276,14 +230,7 @@ const lookFields: LookFields = {
   from: field(endSchema("Where a line starts: a layer's side, which it then follows, or a point."), readEnd),
   to: field(endSchema("Where a line ends: a layer's side, which it then follows, or a point."), readEnd),
   route: choice(["straight", "elbow", "curve"], "How a line runs between its ends."),
-  chart: field(
-    {
-      ...chartSchema,
-      description:
-        "Data for a chart. Axes, gridlines and legend come from the deck. Colour one bar later with set on '<chart>#<series>:<category>'.",
-    },
-    readChart,
-  ),
+  chart: chartField(readColor),
   rows: field(
     {
       type: "array",
@@ -356,8 +303,8 @@ const lookKeys = Object.keys(lookFields) as (keyof AgentLook)[]
 const readSlideAdd = object({}, { after: readId })
 const readSlideMove = object({ slide: readId, after: readAfter })
 const readTarget = matching(
-  /^([a-z0-9]{1,16}:[0-9]{1,12}(\.(title|subtitle|body)|#.{3,240})?|\*\.(title|subtitle|body))$/,
-  280,
+  /^([a-z0-9]{1,16}:[0-9]{1,12}(\.(title|subtitle|body)|#.{3,401})?|\*\.(title|subtitle|body))$/,
+  440,
   forms.target,
 )
 

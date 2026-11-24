@@ -69,13 +69,17 @@ function WordsCell(props: {
   )
 }
 
-const valueColumn = (chart: doom.Chart, at: number) => {
-  const longest = chart.series[at]?.values.reduce(
-    (most, value) => Math.max(most, roundedShown(value, 2).text.length),
-    0,
-  )
-  const digits = (longest ?? 0) + 1
-  return `minmax(4.5rem, min(7.75rem, max(4.5rem, ${String(digits)}ch + 1.75rem)))`
+const valueWidth = (digits: number) => `min(7.75rem, max(4.5rem, ${String(digits + 1)}ch + 1.75rem))`
+
+const digitsOf = (values: readonly number[]) =>
+  values.reduce((most, value) => Math.max(most, roundedShown(value, 2).text.length), 0)
+
+const valueColumn = (chart: doom.Chart, at: number) =>
+  `minmax(4.5rem, ${valueWidth(digitsOf(chart.series[at]?.values ?? []))})`
+
+const categoryColumn = (chart: doom.Chart) => {
+  const word = Math.max(0, ...chart.categories.flatMap((category) => category.split(/\s+/).map((part) => part.length)))
+  return `clamp(5rem, calc(${String(word)}ch + 2.75rem), 8rem)`
 }
 
 const kinds = ["column", "bar", "line", "pie", "stacked"] as const
@@ -92,9 +96,13 @@ export function ChartSection({
   const chart = propOf(view.nodes.get(id), "chart")
   if (chart === undefined) return null
   const change = (next: doom.Chart) => push(chartWrites(id, next))
+  const categoryTrack = categoryColumn(chart)
   return (
     <PanelSection title={null} name="chart">
-      <Select value={chart.kind} onValueChange={(kind) => change({ ...chart, kind: kind as doom.Chart["kind"] })}>
+      <Select
+        value={chart.kind}
+        onValueChange={(kind) => change(doom.chartWithKind(chart, kind as doom.Chart["kind"]))}
+      >
         <SelectTrigger
           aria-label={editorCopy.chartKind}
           className="h-[var(--control-dense)] w-full rounded-[var(--shape-control)] border-0 bg-white text-[length:var(--type-caption)] shadow-[inset_0px_0px_0px_1px_var(--field-edge)] data-[size=default]:h-[var(--control-dense)]"
@@ -122,13 +130,14 @@ export function ChartSection({
       <div
         role="group"
         aria-label={editorCopy.chartData}
-        className="-my-0.5 -mr-0.5 min-w-0 scroll-pl-24 overflow-x-auto py-0.5 pr-0.5"
+        className="-my-0.5 -mr-0.5 min-w-0 overflow-x-auto py-0.5 pr-0.5"
+        style={{ scrollPaddingLeft: `calc(${categoryTrack} + 1rem)` }}
         data-chart-data=""
       >
         <div
           className="grid w-max min-w-full items-center gap-1"
           style={{
-            gridTemplateColumns: `5rem ${chart.series.map((_, at) => valueColumn(chart, at)).join(" ")}`,
+            gridTemplateColumns: `${categoryTrack} ${chart.series.map((_, at) => valueColumn(chart, at)).join(" ")}`,
           }}
         >
           <span />

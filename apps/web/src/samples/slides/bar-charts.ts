@@ -21,17 +21,23 @@ const exhibit = (name: string, heading: string, chart: doom.TreeNode) =>
 
 const segments = ["Enterprise", "Mid-market", "Small business", "Public sector", "Partners"]
 
-const ranking = frame("ranking chart", (ids) => ({
+const ranking = frame("ranking chart", {
   box: box(0, 0, 100, 100),
   sizing: { w: "fill", h: "fill" },
   chart: {
     kind: "bar",
     categories: segments,
-    series: [{ name: "Net new revenue", values: [1.9, 1.2, 0.7, 0.5, 0.3], color: { var: "accent1", tint: 0.62 } }],
+    series: [
+      {
+        name: "Net new revenue",
+        values: [1.9, 1.2, 0.7, 0.5, 0.3],
+        color: { var: "accent1", tint: 0.62 },
+        points: [{ at: 0, color: { var: "accent1" } }],
+      },
+    ],
     labels: true,
-    points: { [`${String(ids["ranking chart"])}#Net-new-revenue:Enterprise`]: { var: "accent1" } },
   },
-}))
+})
 
 const quarters = frame("quarters chart", {
   box: box(0, 0, 100, 100),

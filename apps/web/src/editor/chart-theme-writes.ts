@@ -33,12 +33,7 @@ export function chartAddRow(chart: doom.Chart): doom.Chart {
 }
 
 export function chartDropRow(chart: doom.Chart, category: number): doom.Chart {
-  if (chart.categories.length <= 1) return chart
-  return {
-    ...chart,
-    categories: chart.categories.filter((_, at) => at !== category),
-    series: chart.series.map((each) => ({ ...each, values: each.values.filter((_, at) => at !== category) })),
-  }
+  return chart.categories.length <= 1 ? chart : doom.chartWithoutCategory(chart, category)
 }
 
 export function chartAddSeries(chart: doom.Chart): doom.Chart {

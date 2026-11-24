@@ -33,6 +33,30 @@ describe("chart data", () => {
     ])
   })
 
+  it("keeps each point colour on its own category when a person renames, adds or drops a row", () => {
+    const pointed: doom.Chart = {
+      ...chart,
+      categories: ["a", "b", "c"],
+      series: [
+        {
+          name: "s",
+          values: [1, 2, 3],
+          points: [
+            { at: 0, color: hexes.blue },
+            { at: 2, color: { var: "accent3" } },
+          ],
+        },
+      ],
+    }
+    expect(chartRow(pointed, 2, "z").series[0]?.points).toEqual(pointed.series[0]?.points)
+    expect(chartAddRow(pointed).series[0]?.points).toEqual(pointed.series[0]?.points)
+    expect(chartDropRow(pointed, 0).series[0]?.points).toEqual([{ at: 1, color: { var: "accent3" } }])
+    expect(chartDropRow(pointed, 1).series[0]?.points).toEqual([
+      { at: 0, color: hexes.blue },
+      { at: 1, color: { var: "accent3" } },
+    ])
+  })
+
   it("names a series, and keeps the old name for an empty or unchanged one", () => {
     const two = chartAddSeries(chart)
     expect(chartSeriesName(two, 1, "  Plan  ").series.map((each) => each.name)).toEqual(["s", "Plan"])

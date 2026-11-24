@@ -79,6 +79,9 @@ export const chartOf = (chart: AgentChart): Chart => ({
     name: series.name,
     values: series.values,
     ...(series.color === undefined ? {} : { color: colorOf(series.color) }),
+    ...(series.points === undefined
+      ? {}
+      : { points: series.points.map((point) => ({ at: point.at, color: colorOf(point.color) })) }),
   })),
   ...(chart.labels === undefined ? {} : { labels: chart.labels }),
   ...(chart.unit === undefined ? {} : { unit: chart.unit }),

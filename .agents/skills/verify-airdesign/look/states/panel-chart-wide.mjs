@@ -6,7 +6,7 @@ const wide = {
   categories: ["Current days outstanding", "Q4 target", "Q1 stretch"],
   series: ["Days sales outstanding", "Two", "Three", "Four", "Five"].map((name, at) => ({
     name,
-    values: [52 + at, 44, 31.5],
+    values: [at === 0 ? 123456789.12 : 52 + at, 44, 31.5],
   })),
   labels: true,
 }
