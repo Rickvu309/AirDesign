@@ -68,6 +68,7 @@ function Editing({
   const slides = doom.slidesOf(view).map((each) => each.id)
   const [slide, showSlide] = useCurrentSlide(slides)
   const [selection, setSelection] = useState<Selection>(noSelection)
+  const [cropping, setCropping] = useState<doom.NodeId | null>(null)
   const [tool, setTool] = useState<Tool>(start.tool ?? "move")
   const [panel, setPanel] = useKeptPanel(id, start.panel)
   const [zoom, setZoom] = useState<Zoom>("fit")
@@ -164,6 +165,8 @@ function Editing({
             }}
             onTyping={typing.set}
             onWords={setWords}
+            cropping={cropping}
+            onCropping={setCropping}
             {...(start.editing === undefined ? {} : { editing: start.editing })}
             {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
           />
@@ -215,6 +218,7 @@ function Editing({
             selection={selection}
             onSelection={setSelection}
             words={words}
+            onCrop={setCropping}
             onLinkWords={(link) => commands.current.linkWords(link)}
           />
         ) : null}

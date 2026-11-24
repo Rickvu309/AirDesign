@@ -35,6 +35,8 @@ import {
 import { type Refusal, refuse } from "./refusal.js"
 import { type TextStyleName, textStyleNames } from "./text.js"
 import { shapeNames } from "./preset-geometry.js"
+import { cropField } from "./agent-crop.js"
+import type { CropSides } from "./picture-crop.js"
 
 export const patternNames = ["kpi", "cards", "compare", "matrix", "timeline", "flow"] as const
 export type PatternName = (typeof patternNames)[number]
@@ -101,7 +103,8 @@ export type AgentLook = {
   readonly underline?: boolean
   readonly strike?: boolean
   readonly dash?: "solid" | "dash" | "dot"
-  readonly fit?: "fill" | "fit" | "tile"
+  readonly fit?: "fill" | "fit" | "crop" | "tile"
+  readonly crop?: CropSides
   readonly shape?: string
   readonly rotation?: number
   readonly flip?: "none" | "h" | "v" | "hv"
@@ -339,7 +342,8 @@ const lookFields: LookFields = {
   underline: flag("Underline all the words."),
   strike: flag("Strike through all the words."),
   dash: choice(["solid", "dash", "dot"], "Outline dash."),
-  fit: choice(["fill", "fit", "tile"], "How a picture sits in its layer."),
+  fit: choice(["fill", "fit", "crop", "tile"], "How a picture sits in its layer."),
+  crop: cropField,
   shape: choice(shapeNames, "A shape's outline. Lines and connectors are not shapes: add kind line."),
   rotation: field<number>({ type: "number", description: "Degrees clockwise. Wraps past a full turn." }, readRotation),
   flip: choice(["none", "h", "v", "hv"], "Mirror across, down, or both."),

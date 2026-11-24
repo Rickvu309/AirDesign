@@ -2,13 +2,14 @@ import * as doom from "@airdesign/doom"
 import type { Guide } from "./snapping"
 import type { Rect } from "./selection"
 import { CanvasHandles } from "./canvas-handles"
+import { CropHandles, type CropTarget } from "./crop-handles"
 import { LineHandles } from "./line-handles"
 import { attachedEnds, lineEnds, type Aim } from "./line-end-drag"
 import { framed } from "./selection-frame"
 import { apply, aroundPlaced, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
 
 export type Preview = {
-  readonly kind: "move" | "transform" | "draw" | "end"
+  readonly kind: "move" | "transform" | "draw" | "end" | "crop"
   readonly writes: readonly doom.Write[]
   readonly guides: readonly Guide[]
   readonly label: string | null
@@ -95,17 +96,22 @@ export function CanvasOverlay(props: {
   readonly hovered: doom.NodeId | null
   readonly marquee: Rect | null
   readonly editing: boolean
+  readonly crop: CropTarget | null
+  readonly cropUrl: string | undefined
   readonly scale: number
   readonly size: { readonly w: number; readonly h: number }
 }) {
   const { view, preview, geometry, selected, hovered, marquee, scale, size } = props
   const guides = preview?.guides ?? []
   const frame =
-    preview?.kind === "move" || preview?.kind === "draw" || props.editing ? null : framed(geometry, selected, view)
+    preview?.kind === "move" || preview?.kind === "draw" || props.editing || props.crop !== null
+      ? null
+      : framed(geometry, selected, view)
   const chosen = selected.flatMap((id) => geometry.byId.get(id) ?? [])
   const [lone] = chosen
   const ends =
     chosen.length === 1 && lone !== undefined && preview?.kind !== "move" && !props.editing ? lineEnds(lone) : null
+  const cropped = props.crop === null ? undefined : geometry.byId.get(props.crop.node)
   const all = aroundPlaced(chosen)
   const hover = hovered === null || selected.includes(hovered) ? undefined : geometry.byId.get(hovered)
   return (
@@ -137,6 +143,9 @@ export function CanvasOverlay(props: {
           scale={scale}
           label={preview?.label ?? `${String(Math.round(frame.w))} × ${String(Math.round(frame.h))}`}
         />
+      )}
+      {props.crop === null || cropped === undefined ? null : (
+        <CropHandles placed={cropped} view={view} target={props.crop} url={props.cropUrl} scale={scale} />
       )}
       {ends === null ? null : (
         <LineHandles ends={ends} attached={attachedEnds(view, lone?.id)} aim={preview?.aim ?? null} scale={scale} />

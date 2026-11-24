@@ -9,6 +9,8 @@ import {
 } from "react"
 import type { Preview } from "./canvas-overlay"
 import { hitChain } from "./hit-test"
+import { cropDrag, isCropGrip, type CropGrip } from "./crop-drag"
+import type { CropTarget } from "./crop-handles"
 import { isEndGrip, lineEndDrag, type EndGrip } from "./line-end-drag"
 import { movedBy } from "./move-writes"
 import {
@@ -59,6 +61,9 @@ export type PointerArgs = {
   readonly setPreview: (preview: Preview | null) => void
   readonly setMarquee: (rect: Rect | null) => void
   readonly setHover: (id: doom.NodeId | null) => void
+  readonly crop: CropTarget | null
+  readonly onCrop: (id: doom.NodeId) => void
+  readonly onCropEnd: () => void
 }
 
 type Active =
@@ -94,6 +99,15 @@ type Active =
       moved: boolean
     }
   | {
+      readonly kind: "crop"
+      readonly grip: CropGrip
+      readonly origin: Point
+      readonly target: CropTarget
+      readonly view: doom.Doom
+      readonly geometry: SlideGeometry
+      moved: boolean
+    }
+  | {
       readonly kind: "draw"
       readonly origin: Point
       readonly chain: readonly Placed[] | null
@@ -114,9 +128,17 @@ function inEditor(target: EventTarget | null): boolean {
   return target instanceof Element && target.closest("[data-text-editor]") !== null
 }
 
-function gripOf(target: EventTarget | null): TransformGrip | EndGrip | null {
+function holdsPicture(view: doom.Doom, id: doom.NodeId): boolean {
+  const node = view.nodes.get(id)
+  return (
+    doom.propOf(node, "geometry")?.kind !== "icon" &&
+    (doom.propOf(node, "fills") ?? []).some((paint) => paint.kind === "image" && paint.visible !== false)
+  )
+}
+
+function gripOf(target: EventTarget | null): TransformGrip | EndGrip | CropGrip | null {
   const found = target instanceof Element ? target.closest("[data-grip]")?.getAttribute("data-grip") : null
-  return found === null || found === undefined ? null : (found as TransformGrip | EndGrip)
+  return found === null || found === undefined ? null : (found as TransformGrip | EndGrip | CropGrip)
 }
 
 export function useCanvasPointer(args: PointerArgs) {
@@ -223,6 +245,19 @@ export function useCanvasPointer(args: PointerArgs) {
       a.setPreview({ kind: "end", writes: done.writes, guides: [], label: null, aim: done.aim })
       return
     }
+    if (gesture.kind === "crop") {
+      const writes = cropDrag({
+        view: gesture.view,
+        geometry: gesture.geometry,
+        node: gesture.target.node,
+        grip: gesture.grip,
+        origin: gesture.origin,
+        at,
+        natural: gesture.target.natural,
+      })
+      a.setPreview(writes.length === 0 ? null : { kind: "crop", writes, guides: [], label: null })
+      return
+    }
     if (gesture.kind === "move" || gesture.kind === "transform") {
       const done = evaluate(gesture, event)
       if (gesture.kind === "move" && (done.copies !== null) !== gesture.copying) {
@@ -295,6 +330,21 @@ export function useCanvasPointer(args: PointerArgs) {
       })
       return
     }
+    if (gesture?.kind === "crop") {
+      if (!commit || last === null || !gesture.moved) return
+      a.client.push(
+        cropDrag({
+          view: gesture.view,
+          geometry: gesture.geometry,
+          node: gesture.target.node,
+          grip: gesture.grip,
+          origin: gesture.origin,
+          at: toSlide(last),
+          natural: gesture.target.natural,
+        }),
+      )
+      return
+    }
     if (gesture?.kind === "end") {
       if (!commit || last === null || !gesture.moved) return
       const done = lineEndDrag({
@@ -350,18 +400,31 @@ export function useCanvasPointer(args: PointerArgs) {
         return
       }
       const origin = toSlide(event)
+      const grip = gripOf(event.target)
+      if (a.crop !== null && grip !== null && isCropGrip(grip)) {
+        active.current = {
+          kind: "crop",
+          grip,
+          origin,
+          target: a.crop,
+          view: a.view,
+          geometry: a.geometry,
+          moved: false,
+        }
+        return
+      }
+      if (a.crop !== null) a.onCropEnd()
       if (drawing.includes(a.tool) || a.tool.startsWith("preset:")) {
         stage.setPointerCapture(event.pointerId)
         active.current = { kind: "draw", origin, chain: chainAt(event, a.geometry, a.view), moved: false }
         return
       }
-      const grip = gripOf(event.target)
       const [only] = a.selection.ids
       if (grip !== null && isEndGrip(grip) && only !== undefined && a.selection.ids.length === 1) {
         active.current = { kind: "end", grip, origin, line: only, view: a.view, geometry: a.geometry, moved: false }
         return
       }
-      if (grip !== null && !isEndGrip(grip)) {
+      if (grip !== null && !isEndGrip(grip) && !isCropGrip(grip)) {
         active.current = {
           kind: "transform",
           grip,
@@ -410,6 +473,11 @@ export function useCanvasPointer(args: PointerArgs) {
         return
       }
       const leaf = chain[chain.length - 1]!
+      if (holdsPicture(a.view, leaf.id)) {
+        a.onSelection({ ids: [leaf.id], inside: a.selection.inside })
+        a.onCrop(leaf.id)
+        return
+      }
       if (doom.holdsText(a.view, leaf.id)) {
         a.onSelection({ ids: [leaf.id], inside: a.selection.inside })
         a.onTextEdit(leaf.id, { x: event.clientX, y: event.clientY })

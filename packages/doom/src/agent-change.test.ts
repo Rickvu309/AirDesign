@@ -161,6 +161,7 @@ describe("the advertised schema", () => {
       "strike",
       "dash",
       "fit",
+      "crop",
       "shape",
       "rotation",
       "flip",

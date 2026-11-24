@@ -8,6 +8,8 @@ import { ThinNoticeView, type ThinNotice } from "./thin-notice"
 import { AgentAtWork } from "./agent-at-work"
 import type { AssetUrls } from "./use-asset-urls"
 import { useDoomPictures } from "./use-pictures"
+import { cropModeWrites, croppedPaint } from "./crop-drag"
+import { usePictureNatural } from "./use-picture-natural"
 import { useSlidePictures } from "./use-slide-pictures"
 import { scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
 import { kept, type Rect, type Selection } from "./selection"
@@ -67,6 +69,8 @@ export function DoomCanvas(props: {
   readonly onTyping?: (writes: readonly doom.Write[], slide: doom.NodeId | undefined) => void
   readonly onExport: () => void
   readonly onWords?: (words: CaretWords | null) => void
+  readonly cropping: doom.NodeId | null
+  readonly onCropping: (id: doom.NodeId | null) => void
 }) {
   const { client, view, slide, selection, onSelection, tool, onTool, zoom, scale, room, overlay } = props
   const stage = useRef<HTMLDivElement>(null)
@@ -283,6 +287,20 @@ export function DoomCanvas(props: {
 
   useSlidePictures(client, pictures.assetUrl)
 
+  const { cropping, onCropping } = props
+  const [lone] = current.ids
+  const cropNode =
+    cropping !== null && current.ids.length === 1 && lone === cropping && croppedPaint(view, cropping) !== null
+      ? cropping
+      : null
+  useEffect(() => {
+    if (cropping !== null && cropNode === null) onCropping(null)
+  }, [cropping, cropNode, onCropping])
+  const cropAsset = cropNode === null ? undefined : croppedPaint(view, cropNode)?.asset
+  const cropUrl = cropAsset === undefined ? undefined : pictures.assetUrl(cropAsset)
+  const natural = usePictureNatural(cropUrl)
+  const crop = cropNode === null ? null : { node: cropNode, natural }
+
   const pointer = useCanvasPointer({
     stage,
     slideBox,
@@ -302,6 +320,12 @@ export function DoomCanvas(props: {
     setPreview,
     setMarquee,
     setHover,
+    crop,
+    onCrop: (id) => {
+      client.push(cropModeWrites(view, id))
+      onCropping(id)
+    },
+    onCropEnd: () => onCropping(null),
   })
 
   function onZoomKey(key: ZoomKey) {
@@ -331,6 +355,8 @@ export function DoomCanvas(props: {
     cancelDrag: pointer.cancelDrag,
     onEditText: (id) => text.begin(id, { kind: "all" }),
     onActions: () => setActionsOpen((open) => !open),
+    cropping: cropNode !== null,
+    onCropEnd: () => onCropping(null),
   })
 
   useLayoutEffect(() => {
@@ -429,6 +455,8 @@ export function DoomCanvas(props: {
                 hovered={hover}
                 marquee={marquee}
                 editing={text.session !== null}
+                crop={crop}
+                cropUrl={cropUrl}
                 scale={scale}
                 size={size}
               />

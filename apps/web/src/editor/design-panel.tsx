@@ -38,6 +38,7 @@ type Props = {
   readonly selection: Selection
   readonly onSelection: (selection: Selection) => void
   readonly words: CaretWords | null
+  readonly onCrop: (id: doom.NodeId) => void
   readonly onLinkWords: (link: string | null) => void
 }
 
@@ -167,6 +168,14 @@ export function DesignPanel(props: Props) {
         const link = control.trait === "link" && words !== null ? linkOf(value) : undefined
         if (link !== undefined) return props.onLinkWords(link)
         client.push(changeWrites(context, control, value))
+        if (
+          control.trait === "image" &&
+          control.field === "mode" &&
+          value === "crop" &&
+          only !== undefined &&
+          ids.length === 1
+        )
+          props.onCrop(only)
       }}
     >
       {chart && only !== undefined ? <ChartSection id={only} view={view} push={client.push} /> : null}

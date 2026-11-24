@@ -38,7 +38,7 @@ const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
   shape: [...common, ...painted, ...words, "shape", "link"],
   line: [...common, "stroke", "strokeWidth", "arrow", "dash", "from", "to", "route"],
   frame: [...common, ...painted, "layout", "gap", "padding", "align", "rows", "clip"],
-  picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit"],
+  picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit", "crop"],
   icon: [...common, "icon", "stroke", "strokeWidth"],
   chart: [...common, ...painted, "chart"],
   kpi: patternFields,
