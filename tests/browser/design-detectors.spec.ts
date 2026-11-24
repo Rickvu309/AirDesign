@@ -66,6 +66,61 @@ const cases = [
       '<aside style="width:360px;height:900px;background:white"><div role="log" style="height:860px"><p>Ask Aira to change a slide, check a number or write notes.</p></div></aside>',
   },
   {
+    detector: "empty-region",
+    fires: '<section style="width:1470px;height:2000px;margin:0;background:white"></section>',
+    spares:
+      '<section style="height:799px;margin:0;background:white"><h1 style="margin:0;font-size:56px">The hero above fills the screen with its words.</h1></section><section style="height:1600px;margin:0;background:white"><h2 style="margin:0;font-size:56px">Make slides like magic.</h2></section><section style="position:absolute;top:900px;left:0;width:1470px;height:1600px;margin:0;background:white"></section>',
+  },
+  {
+    detector: "empty-region",
+    fires:
+      '<section style="width:1470px;height:2000px;margin:0;background:white"><div style="height:1100px"></div><p style="margin:0">The words below the fold must not hide a screen that is blank.</p></section>',
+    spares:
+      '<section style="width:1470px;height:2000px;margin:0;background:white"><h2 style="margin:0;font-size:48px">A tall section greets the screen with its own heading on stage.</h2><div style="height:1800px"></div></section>',
+  },
+  {
+    detector: "empty-region",
+    fires:
+      '<section style="height:554px;margin:0;background:white"><h1 style="margin:0">The section above fills the viewport with words.</h1></section><section style="height:1000px;margin:0;background:white"><div style="height:450px"></div><p style="margin:0">Its own words wait below the fold for a person who scrolls.</p></section>',
+    spares:
+      '<section style="height:554px;margin:0;background:white"><h1 style="margin:0">The section above fills the viewport with words.</h1></section><section style="height:1000px;margin:0;background:white"><h2 style="margin:0">The next words sit high enough to show above the fold.</h2><div style="height:900px"></div></section>',
+  },
+  {
+    detector: "empty-region",
+    fires:
+      '<main style="position:relative;margin:-700px 0 0;height:2400px;background:white"><div style="height:600px"><h1 style="margin:0">The top words have scrolled past above the viewport.</h1></div><div style="height:1200px"></div><p style="margin:0">The bottom words wait below the fold as before.</p></main>',
+    spares:
+      '<main style="position:relative;margin:-700px 0 0;height:2400px;background:white"><div style="height:600px"><h1 style="margin:0">The top words have scrolled past above the viewport.</h1></div><div style="height:100px"></div><h2 style="margin:0">The middle words are on screen for the reader now.</h2><div style="height:1600px"></div><p style="margin:0">The bottom words wait below the fold as before.</p></main>',
+  },
+  {
+    detector: "empty-region",
+    fires:
+      '<header style="height:100px;margin:0;background:white"><h1 style="margin:0">Site header</h1></header><section style="position:relative;height:1800px;margin:0;background:white"><button type="button" style="position:absolute;top:1200px">Export</button></section>',
+    spares:
+      '<header style="height:100px;margin:0;background:white"><h1 style="margin:0">Site header</h1></header><section style="position:relative;height:1800px;margin:0;background:white"><h2 style="margin:0">The section holds words on screen while its button waits below.</h2><button type="button" style="position:absolute;top:1200px">Export</button></section>',
+  },
+  {
+    detector: "empty-region",
+    fires:
+      '<section style="position:relative;width:1470px;height:2000px;margin:0;background:white"><div style="position:absolute;top:1500px;width:2px;height:2px;background:rgb(240,240,240)"></div></section>',
+    spares:
+      '<section style="position:relative;width:1470px;height:2000px;margin:0;background:white"><div style="position:absolute;top:200px;width:1000px;height:400px;background:rgb(240,240,240)"></div></section>',
+  },
+  {
+    detector: "empty-region",
+    fires:
+      '<section style="display:flow-root;width:1470px;height:2000px;margin:0;background:white"><div style="opacity:0;margin-top:1100px"><p style="margin:0">Hidden words below the fold inside a wrapper that faded them out.</p></div></section>',
+    spares:
+      '<section style="display:flow-root;width:1470px;height:2000px;margin:0;background:white"><h2 style="margin:0;font-size:32px">The section keeps its words on screen while its faded copy waits.</h2><div style="opacity:0;margin-top:1100px"><p style="margin:0">Hidden words below the fold inside a wrapper that faded them out.</p></div></section>',
+  },
+  {
+    detector: "empty-region",
+    fires:
+      '<section style="position:relative;width:1470px;height:1800px;margin:0;background:white"><div style="position:absolute;top:920px;width:1470px;height:150px;background:rgb(240,240,240)"></div></section>',
+    spares:
+      '<section style="position:relative;width:1470px;height:1800px;margin:0;background:white"><div style="position:absolute;top:100px;width:1470px;height:150px;background:rgb(240,240,240)"></div></section>',
+  },
+  {
     detector: "internal-identifier",
     fires: '<div data-tool-state="done"><span>airdesign_edit_deck</span></div>',
     spares:
