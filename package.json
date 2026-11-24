@@ -9,6 +9,7 @@
     "prepare": "node scripts/install-hooks.mjs",
     "check": "node scripts/check.mjs",
     "land": "node scripts/land.mjs",
+    "pr-body": "node scripts/pr-body-update.mjs",
     "gate": "node scripts/gate.mjs",
     "rules": "node scripts/rules.mjs",
     "sweep": "node scripts/sweep.mjs",

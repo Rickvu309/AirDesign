@@ -223,8 +223,8 @@ export const labelChanges = ({ result, shown, changedFiles, title }) => {
 
 const github = readWithRetry({ run: ghApi })
 
-const rows = (endpoint, shape) =>
-  github(["--paginate", endpoint, "--jq", `.[] | ${shape} | @json`])
+const rows = (endpoint, shape, api = github) =>
+  api(["--paginate", endpoint, "--jq", `.[] | ${shape} | @json`])
     .split("\n")
     .filter((line) => line !== "")
     .map((line) => JSON.parse(line))
@@ -325,24 +325,39 @@ export const readReasons = ({ text, fork, head, listed }) => {
   })
 }
 
-const readPull = (repository, number) => {
-  const pulls = `repos/${repository}/pulls/${number}`
-  const pull = JSON.parse(
-    github([
-      pulls,
+export const readPullMeta = (repository, number, api = github) =>
+  JSON.parse(
+    api([
+      `repos/${repository}/pulls/${number}`,
       "--jq",
       "{head: .head.sha, base: .base.sha, baseRef: .base.ref, files: .changed_files, body: .body, title: .title} | @json",
     ]),
   )
+
+export const readPullHead = (repository, number, api = github) => {
+  const pulls = `repos/${repository}/pulls/${number}`
+  const pull = readPullMeta(repository, number, api)
+  const listed = rows(`${pulls}/files`, "{name: .filename, before: .previous_filename, status, patch}", api)
+  if (listed.length !== pull.files) {
+    throw new Error(`This pull request changes ${pull.files} files and only ${listed.length} can be read. Split it.`)
+  }
+  return { pull, listed }
+}
+
+export const pullBodyFaults = ({ api = github, repository, pull, changedFiles, body }) =>
+  bodyFaults(body, {
+    offBranch: githubOffBranch(githubCompare(api, repository, { head: pull.head, base: pull.baseRef })),
+    changedFiles,
+    repository,
+  })
+
+const readPull = (repository, number) => {
+  const { pull, listed } = readPullHead(repository, number)
   const fork = github([
     `repos/${repository}/compare/${pull.base}...${pull.head}`,
     "--jq",
     ".merge_base_commit.sha",
   ]).trim()
-  const listed = rows(`${pulls}/files`, "{name: .filename, before: .previous_filename, status, patch}")
-  if (listed.length !== pull.files) {
-    throw new Error(`This pull request changes ${pull.files} files and only ${listed.length} can be read. Split it.`)
-  }
   const reasons = readReasons({ text: githubText(repository), fork, head: pull.head, listed })
   const changedFiles = listed.map((file) => file.name)
   return {
@@ -350,19 +365,15 @@ const readPull = (repository, number) => {
     changedFiles,
     title: pull.title,
     shown: beforeAfterNeed({ changedFiles, body: pull.body, repository }),
-    body: bodyFaults(pull.body, {
-      offBranch: githubOffBranch(githubCompare(repository, { head: pull.head, base: pull.baseRef })),
-      changedFiles,
-      repository,
-    }),
+    body: pullBodyFaults({ repository, pull, changedFiles, body: pull.body }),
     wrongBase: baseFault(number, pull.baseRef),
     head: pull.head,
   }
 }
 
-const githubCompare = (repository, sides) => (sha, side) => {
+const githubCompare = (api, repository, sides) => (sha, side) => {
   try {
-    return github([`repos/${repository}/compare/${sha}...${sides[side]}?per_page=1`, "--jq", ".status"]).trim()
+    return api([`repos/${repository}/compare/${sha}...${sides[side]}?per_page=1`, "--jq", ".status"]).trim()
   } catch (error) {
     if (missing(error) || String(error.stderr ?? error.message).includes("HTTP 422")) return undefined
     throw error
@@ -448,7 +459,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self && process.argv[2]
     for (const line of result.lines) console.log(line)
     if (beforeAfterLine(read.shown) && !read.shown.needed) console.log(beforeAfterLine(read.shown))
     for (const fault of read.body) console.log(`Body: ${fault}`)
-    if (read.body.length > 0) process.exitCode = 1
+    if (read.body.length > 0) {
+      console.log(`Set the fixed body with pnpm pr-body ${number} <file>. It runs these checks before it writes.`)
+      process.exitCode = 1
+    }
     const comments = result.lowers ? commentsFrom(github(commentsArgs(repository, number))) : []
     const signed = barSigned({
       lowers: result.lowers,

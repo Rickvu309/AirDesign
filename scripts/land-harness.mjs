@@ -79,6 +79,7 @@ export const harness = (options = {}) => {
     checkRuns = [{ status: 0, output: "ok lint 1s\n" }],
     alone = { status: 0, output: "" },
     changed = "",
+    offBranch = [],
     issues = ok("[]"),
     pushed = ok(),
     merges = [ok()],
@@ -116,7 +117,8 @@ export const harness = (options = {}) => {
     if (name === "cat-file") return ok()
     if (name === "diff")
       return ok(command.includes("--raw") ? staleDiff : command.includes("origin/main...HEAD") ? changed : "")
-    if (name === "merge-base") return ok("base\n")
+    if (name === "merge-base")
+      return command.includes("--is-ancestor") && offBranch.includes(command[2]) ? no("", 1) : ok("base\n")
     if (name === "log" && command.includes("--merges"))
       return ok(mergeSubjects.map((subject, at) => `${String(at + 1).repeat(40)}\0${subject}\n`).join(""))
     if (name === "log" && command.includes("--no-merges")) return ok("Finish the work\n")
