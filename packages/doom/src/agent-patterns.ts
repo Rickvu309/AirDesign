@@ -221,8 +221,28 @@ const timeline: Build = (area, items, scale) => {
   const { gap, pad, theme, styles } = scale
   const dot = Math.round(pad * dotShare)
   const inner = Math.round(gap / 2)
-  const room = area.w - dot - inner
-  if (room <= 0) return undefined
+  const most = (scale.filled ? area.w : Math.min(area.w, Math.round(area.w * flowWidthShare))) - dot - inner
+  if (most <= 0) return undefined
+  const widest = Math.max(
+    widestLine(
+      items.flatMap((item) => (item.value === undefined ? [] : [item.value])),
+      theme,
+      styles.label,
+    ),
+    widestLine(
+      items.flatMap((item) => (item.title === undefined ? [] : [item.title])),
+      theme,
+      styles.heading,
+    ),
+    widestLine(
+      items.flatMap((item) => (item.note === undefined ? [] : [item.note])),
+      theme,
+      styles.caption,
+    ),
+  )
+  const room = scale.filled ? most : Math.min(most, Math.ceil(widest) + pad)
+  const across = dot + inner + room
+  const left = scale.filled ? 0 : Math.round((area.w - across) / 2)
   const steps = items.map((item, at): Sized => {
     const marker: Block = {
       type: "shape",
@@ -282,12 +302,18 @@ const timeline: Build = (area, items, scale) => {
   }
   const lane = frameOf(
     {
-      box: { ...zeroBox, w: area.w, h: spread.high },
+      box: { ...zeroBox, w: across, h: spread.high },
       layout: { mode: "column", gap: spread.gap, padding: sidesOf(0), align: "top-left" },
     },
     steps.map((step) => step.block),
   )
-  return frameOf({ ...scale.root, box: boxIn(area, spread.high) }, [line, lane])
+  return frameOf(
+    {
+      ...scale.root,
+      box: { ...boxIn(area, spread.high), x: area.x + left, w: scale.filled ? area.w : across },
+    },
+    [line, lane],
+  )
 }
 
 const flowSpacing = (scale: Scale) => Math.max(scale.gap * 2, arrowRoom)
