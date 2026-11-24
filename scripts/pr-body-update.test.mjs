@@ -8,20 +8,24 @@ const same = (name, actual, expected) => {
 
 const repository = "Rickvu309/AirDesign"
 const head = "a".repeat(40)
+const base = "b".repeat(40)
 const oldHead = "ed84dea7"
 const proof = `![Annotated](https://github.com/${repository}/releases/download/proof/pr-1-annotated-1-abcdef1234.png)`
 
-const github = ({ files, offBranch = [], heads = [head] }) => {
+const github = ({ files, offBranch = [], heads = [head], bases = [base], baseRefs = ["main"], patchError }) => {
   const patched = []
   const reads = []
+  const comparisons = []
   const api = (args) => {
     const call = args.join(" ")
     if (args.includes("PATCH")) {
       patched.push(args.find((arg) => arg.startsWith("body=")).slice("body=".length))
+      if (patchError && patched.length === 1) throw patchError
       return ""
     }
     if (call.includes("/files")) return files.map((name) => JSON.stringify({ name, status: "modified" })).join("\n")
     if (call.includes("/compare/")) {
+      comparisons.push(call)
       const sha = call.match(/compare\/([0-9a-f]+)\.\.\./)[1]
       return offBranch.includes(sha) ? "diverged" : "ahead"
     }
@@ -29,20 +33,20 @@ const github = ({ files, offBranch = [], heads = [head] }) => {
     const now = heads[Math.min(reads.length - 1, heads.length - 1)]
     return JSON.stringify({
       head: now,
-      base: "b".repeat(40),
-      baseRef: "main",
+      base: bases[Math.min(reads.length - 1, bases.length - 1)],
+      baseRef: baseRefs[Math.min(reads.length - 1, baseRefs.length - 1)],
       files: files.length,
       body: "old",
       title: "T",
     })
   }
-  return { api, patched, reads }
+  return { api, patched, reads, comparisons }
 }
 
 const run = (body, options) => {
   const client = github(options)
   const result = updateBody({ api: client.api, repository, number: 1571, body })
-  return { ...result, patched: client.patched }
+  return { ...result, patched: client.patched, reads: client.reads, comparisons: client.comparisons }
 }
 
 const invisible = { files: ["scripts/land.mjs"] }
@@ -98,9 +102,57 @@ same("and the body was written once", movedAfter.patched, [cleanBody])
 same(
   "and says to run it again",
   movedAfter.lines[0].endsWith(
-    "so the body was not judged against the head it sits on. Run pnpm pr-body 1571 <file> again.",
+    "Judge the body against the new pull request state. Run pnpm pr-body 1571 <file> again.",
   ),
   true,
 )
 
 same("a head that holds is accepted", run(cleanBody, { ...invisible, heads: [head] }).ok, true)
+
+const patchError = new Error("GitHub answered with HTTP 502")
+
+{
+  const failed = run(cleanBody, { ...invisible, heads: [head, head, moved], patchError })
+  same("a failed PATCH is attempted once", failed.patched, [cleanBody])
+  same("a failed PATCH is followed by a metadata read", failed.reads.length, 3)
+  same("a head move during a failed PATCH is reported", failed.ok, false)
+  same("the failure names the new head", failed.lines[0].includes("cccccccc"), true)
+}
+
+{
+  const failed = run(cleanBody, { ...invisible, patchError })
+  same("a failed PATCH is attempted once even if the head holds", failed.patched, [cleanBody])
+  same("metadata is read again even if the head holds", failed.reads.length, 3)
+  same("the PATCH failure is reported", failed.ok, false)
+  same("the failure names the GitHub error", failed.lines[0].includes("HTTP 502"), true)
+}
+
+{
+  const retargeted = run(cleanBody, { ...invisible, baseRefs: ["maintenance", "main"] })
+  same("a same-SHA base retarget is refused without a PATCH", [retargeted.ok, retargeted.patched], [false, []])
+  same(
+    "the refusal names both base refs",
+    retargeted.lines[0].includes("maintenance") && retargeted.lines[0].includes("main"),
+    true,
+  )
+}
+
+{
+  const body = cleanBody.replace("12 tests", `At ${oldHead}, 12 tests`)
+  const checked = run(body, { ...invisible, baseRefs: ["maintenance"], offBranch: [oldHead] })
+  same(
+    "commit comparisons use the captured base SHA",
+    checked.comparisons.some((call) => call.includes(`...${base}?`)),
+    true,
+  )
+}
+
+{
+  const changed = run(cleanBody, { ...invisible, bases: [base, moved] })
+  same("a base SHA move is refused without a PATCH", [changed.ok, changed.patched], [false, []])
+  same(
+    "a base-only move names the base change",
+    changed.lines[0],
+    "Body: pull request 1571 moved from base main@bbbbbbbb to main@cccccccc while the body was judged. Nothing was written. Run pnpm pr-body 1571 <file> again.",
+  )
+}
