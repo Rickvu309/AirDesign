@@ -51,7 +51,7 @@ function WordsCell(props: {
           aria-label={props.label}
           title={props.value}
           defaultValue={props.value}
-          className={cn(wordsClass, "truncate")}
+          className={cn(wordsClass, "w-0 truncate")}
           onKeyDown={onKeyDown}
           onBlur={onBlur}
         />
@@ -124,7 +124,7 @@ export function ChartSection({
       <div
         role="group"
         aria-label={editorCopy.chartData}
-        className="-m-0.5 min-w-0 overflow-x-auto p-0.5"
+        className="-m-0.5 min-w-0 scroll-pl-36 overflow-x-auto p-0.5"
         data-chart-data=""
       >
         <div
