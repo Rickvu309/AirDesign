@@ -3,11 +3,11 @@ import { randomBytes } from "node:crypto"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
-import { Closing, type Followed } from "./aira-closing.js"
-import { postgresInfo } from "../testing/harness.js"
-import { heldQueries, type HeldQueries } from "../testing/held-queries.js"
-import { DeckListen, openPool, type Sql } from "../index.js"
-import { same, specGraph, type Graph, type SpecState } from "../testing/spec-graph.js"
+import { Closing, type Followed } from "./aira/aira-closing.js"
+import { postgresInfo } from "./testing/harness.js"
+import { heldQueries, type HeldQueries } from "./testing/held-queries.js"
+import { DeckListen, openPool, type Sql } from "./index.js"
+import { same, specGraph, type Graph, type SpecState } from "./testing/spec-graph.js"
 
 type Seen = {
   readonly call: string

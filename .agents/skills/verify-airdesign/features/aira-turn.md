@@ -28,7 +28,7 @@ Preconditions:
 
 - **In the browser.** `$V journey <run> aira-panel` sends a turn, its `airdesign_edit_deck` call through `/mcp` and the next turn from the panel. `tests/browser/editor-agent.spec.ts` adds the run's Undo and a Stop before the edit lands.
 - **Over HTTP.** A scratch journey: open a new Doom deck at `/s` and read its revision and first slide with `post(doomRoutes.open, { deck })`. Then `post(airaRoutes.turn, { deck, messages })` with `add-kpi.sse` filled with `deck`, `base` and `slide`: text pieces, one `airdesign_edit_deck` call, and the end line with `stop: "tool_use"`. Post that call to `mcpRoutes.mcp` as `tools/call` with the session cookie and `accept: application/json, text/event-stream`; the answer carries `ok`, the next revision and a `runId`. The next turn, with `added-kpi.sse`, carries the reply content and the tool result and ends `stop: "end_turn"`. `doomRoutes.open` then shows the KPIs.
-- **Refusals, stop and the ledger.** `apps/api/src/aira/aira.test.ts` holds every refusal, the next turn and the weekly charge; `apps/api/src/aira-stop.test.ts` and `apps/api/src/aira-stop-order.test.ts` hold the stop.
+- **Refusals, stop and the ledger.** `apps/api/src/aira.test.ts` holds every refusal, the next turn and the weekly charge; `apps/api/src/aira-stop.test.ts` and `apps/api/src/aira-stop-order.test.ts` hold the stop.
 
 ## Gotchas
 

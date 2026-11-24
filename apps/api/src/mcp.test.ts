@@ -7,9 +7,9 @@ import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/cli
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { sessionRefusal, storeFailure, toolLimit, toolLimited } from "./testing/mcp-expected.js"
 
-import { ask, postgresInfo, serve, signInByCode } from "../testing/harness.js"
-import { DeckListen, openPool, type Mail, type Sql } from "../index.js"
-import { openSql } from "../doom/doom-deck.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
+import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
+import { openSql } from "./doom/doom-deck.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 

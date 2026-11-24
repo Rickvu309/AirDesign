@@ -7,9 +7,9 @@ import os from "node:os"
 import path from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
-import { ask, postgresInfo } from "../testing/harness.js"
-import { openPool } from "../index.js"
-import { readSignInMail } from "../account/sign-in-mail.js"
+import { ask, postgresInfo } from "./testing/harness.js"
+import { openPool } from "./index.js"
+import { readSignInMail } from "./account/sign-in-mail.js"
 
 const entry = path.join(process.cwd(), "apps/api/src/start.ts")
 const sourceHooks = path.join(process.cwd(), "apps/api/src/source-hooks.ts")
