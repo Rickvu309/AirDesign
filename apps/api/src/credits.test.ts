@@ -2,9 +2,9 @@ import { randomBytes } from "node:crypto"
 import { airaRoutes, creditsRoutes, countryHeader, accountRoutes } from "@airdesign/catalog"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import { Replay } from "../testing/aira-replay.js"
-import { ask, postgresInfo, serve, signInByCode } from "../testing/harness.js"
-import { DeckListen, openPool, type Mail } from "../index.js"
+import { Replay } from "./testing/aira-replay.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
+import { DeckListen, openPool, type Mail } from "./index.js"
 
 const mails: Mail[] = []
 const replay = new Replay()

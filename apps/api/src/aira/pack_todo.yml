@@ -1,8 +1,0 @@
-apps/api/src:
-  apps/api/src/testing/aira-replay.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/api/src/aira/aira-stream.test.ts
-      - apps/api/src/aira/anthropic-transport.test.ts

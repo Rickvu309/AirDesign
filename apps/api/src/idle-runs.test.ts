@@ -4,12 +4,12 @@ import * as doom from "@airdesign/doom"
 import { Client } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
 
-import { ask, postgresInfo, serve, signInByCode } from "../testing/harness.js"
-import { DeckListen, openPool, type Mail } from "../index.js"
-import { heldQueries } from "../testing/held-queries.js"
-import { editDoom } from "./doom-deck.js"
-import { endIdleRuns, runIdle } from "./idle-runs.js"
-import { startIds } from "./doom-start.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
+import { DeckListen, openPool, type Mail } from "./index.js"
+import { heldQueries } from "./testing/held-queries.js"
+import { editDoom } from "./doom/doom-deck.js"
+import { endIdleRuns, runIdle } from "./doom/idle-runs.js"
+import { startIds } from "./doom/doom-start.js"
 
 const mails: Mail[] = []
 let base = ""

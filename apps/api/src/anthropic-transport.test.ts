@@ -5,9 +5,9 @@ import type { AddressInfo } from "node:net"
 import { airaTools } from "@airdesign/catalog"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 
-import { airaMaxTokens, airaModel, airaSystem, type ModelCall } from "./aira.js"
-import { failureOf, fixtureText, streamEvents } from "../testing/aira-replay.js"
-import { anthropicTransport } from "./anthropic-transport.js"
+import { airaMaxTokens, airaModel, airaSystem, type ModelCall } from "./aira/aira.js"
+import { failureOf, fixtureText, streamEvents } from "./testing/aira-replay.js"
+import { anthropicTransport } from "./aira/anthropic-transport.js"
 
 const fakeKey = "test-key-not-real"
 const call: ModelCall = {

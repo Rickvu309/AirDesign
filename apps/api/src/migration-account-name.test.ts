@@ -1,9 +1,8 @@
 import { Client } from "pg"
 import { expect, it } from "vitest"
 import { createRole } from "./platform/provision.js"
-import { migrations } from "./platform/migrations.js"
 import { startEmptyCluster } from "./testing/postgres-setup.js"
-import { applySchema } from "./platform/schema.js"
+import { applySchema, migrations } from "./platform/schema.js"
 
 it("keeps existing accounts optional and asks new accounts for a name", async () => {
   const cluster = await startEmptyCluster()

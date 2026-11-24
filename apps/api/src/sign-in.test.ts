@@ -5,8 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
 import { ask, cookieFrom, postgresInfo, serve, testResource } from "./testing/harness.js"
 import { DeckListen, createApi, openPool, sendWithResend, type Mail } from "./index.js"
-import { signInMinutes } from "./account/account.js"
-import { readSignInMail, signInMail } from "./account/sign-in-mail.js"
+import { readSignInMail, signInMail, signInMinutes } from "./account/account.js"
 
 const publicOrigin = "https://app.example"
 const siteOrigin = "https://site.example"

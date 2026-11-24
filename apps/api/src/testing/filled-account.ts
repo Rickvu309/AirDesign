@@ -12,7 +12,7 @@ import {
 import { ask, askForm, cookieFrom, verifierPair } from "./harness.js"
 import type { Mail, OriginalUpload, Sql } from "../index.js"
 import type { LocalOriginalStore } from "../platform/local-original-store.js"
-import { readSignInMail } from "../account/sign-in-mail.js"
+import { readSignInMail } from "../account/account.js"
 
 export type Served = { readonly base: string; readonly mails: readonly Mail[]; readonly store: LocalOriginalStore }
 

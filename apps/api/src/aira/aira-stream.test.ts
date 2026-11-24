@@ -1,7 +1,17 @@
+import { readFileSync } from "node:fs"
+
 import { describe, expect, it } from "vitest"
 
-import { streamEvents } from "../testing/aira-replay.js"
 import { play, type AiraEvent, type Played } from "./aira-stream.js"
+
+function streamEvents(name: string): unknown[] {
+  const text = readFileSync(new URL(`../testing/aira-streams/${name}`, import.meta.url), "utf8")
+  return text
+    .split("\n\n")
+    .map((block) => block.split("\n").find((line) => line.startsWith("data: ")))
+    .filter((line): line is string => line !== undefined)
+    .map((line) => JSON.parse(line.slice("data: ".length)) as unknown)
+}
 
 async function* listed(events: readonly unknown[], breaks = false): AsyncIterable<unknown> {
   for (const event of events) yield event

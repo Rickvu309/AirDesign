@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { accountCookieName, accountRoutes, deckRoutes, signInRoutes, signOutRoutes } from "@airdesign/catalog"
 import { ask, postgresInfo, serve } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
-import { readSignInMail } from "./account/sign-in-mail.js"
+import { readSignInMail } from "./account/account.js"
 
 function address(mark: string): string {
   return `${mark}${randomBytes(4).toString("hex")}@example.com`

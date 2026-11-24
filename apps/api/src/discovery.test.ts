@@ -7,9 +7,9 @@ import {
   extractResourceMetadataUrl,
 } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, expect, it } from "vitest"
-import { ask, askForm, cookieFrom, postgresInfo, serve } from "../testing/harness.js"
-import { DeckListen, openPool, type Mail } from "../index.js"
-import { readSignInMail } from "../account/sign-in-mail.js"
+import { ask, askForm, cookieFrom, postgresInfo, serve } from "./testing/harness.js"
+import { DeckListen, openPool, type Mail } from "./index.js"
+import { readSignInMail } from "./account/account.js"
 
 const resource = "https://resource.example/mcp"
 const publicOrigin = "https://app.example"

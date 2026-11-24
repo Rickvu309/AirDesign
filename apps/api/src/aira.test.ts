@@ -10,7 +10,7 @@ import { airaMaxTokens, airaSystem, settleTurn, staleTurn, type AiraSettings } f
 import { Replay } from "./testing/aira-replay.js"
 import { ask, cookieFrom, postgresInfo, serve } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
-import { readSignInMail } from "./account/sign-in-mail.js"
+import { readSignInMail } from "./account/account.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 const fakeKey = "test-key-not-real"

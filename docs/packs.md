@@ -178,7 +178,7 @@ flowchart TD
 | `packages/doom` | core | src/index.ts | none | none |
 | `packages/fonts` | core | src/index.ts | none | none |
 | `packages/live` | service | src/index.ts | none | none |
-| `packages/mcp` | service | runtime: packages/mcp/src/index.ts | none | none |
+| `packages/mcp` | service | runtime: packages/mcp/src/index.ts; testing: packages/mcp/src/testing/evals.ts | none | none |
 | `packages/oauth` | core | src/index.ts | none | none |
 | `packages/pptx` | model | src/index.ts | none | none |
 | `packages/render` | model | src/index.ts | none | none |

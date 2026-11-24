@@ -2,11 +2,9 @@ import { createHash, randomBytes } from "node:crypto"
 import { Client } from "pg"
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest"
 
-import type { Migration } from "../migration.js"
-import { migrations } from "../migrations.js"
-import { startEmptyCluster, type EmptyCluster } from "../../testing/postgres-setup.js"
-import { createRole, runBootstrap, runSetup, type Environment, type Write } from "../provision.js"
-import { applySchema, migrationLock } from "../schema.js"
+import { applySchema, migrationLock, migrations, type Migration } from "./platform/schema.js"
+import { startEmptyCluster, type EmptyCluster } from "./testing/postgres-setup.js"
+import { createRole, runBootstrap, runSetup, type Environment, type Write } from "./platform/provision.js"
 
 type Outcome = { readonly code: number; readonly stdout: string[]; readonly stderr: string[] }
 

@@ -4,7 +4,7 @@ import { afterAll, beforeAll, expect, it } from "vitest"
 import { ask, cookieFrom, postgresInfo, serve } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
 import { routes } from "./server.js"
-import { readSignInMail } from "./account/sign-in-mail.js"
+import { readSignInMail } from "./account/account.js"
 
 let base = ""
 let cookie = ""

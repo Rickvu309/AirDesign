@@ -2,8 +2,10 @@ import { createHash, randomBytes, randomInt } from "node:crypto"
 import { Pool } from "pg"
 
 import { signLink, type Sender } from "../platform/mail.js"
-import { signInMail } from "./sign-in-mail.js"
+import { readSignInMail, signInMail } from "./sign-in-mail.js"
 import type { Sql } from "../platform/pool.js"
+
+export { readSignInMail, signInMail }
 
 const reserveSql = `
 with recent as (
