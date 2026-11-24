@@ -35,11 +35,11 @@ describe("skip, transition, paragraph spacing, vertical align and blur", () => {
     })
     expect(readAgentChange({ op: "set", target: ids.slide, transition: { kind: "wipe", ms: 200 } })).toMatchObject({
       refused: "shape",
-      field: "kind",
+      field: "transition.kind",
     })
     expect(readAgentChange({ op: "set", target: ids.slide, transition: { kind: "fade", ms: 1.5 } })).toMatchObject({
       refused: "shape",
-      field: "ms",
+      field: "transition.ms",
     })
     expect(readAgentChange({ op: "set", target: ids.slide, transition: "fade" })).toMatchObject({
       refused: "shape",
