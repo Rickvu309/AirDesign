@@ -11,7 +11,7 @@ import {
   type StepStatus,
 } from "@/components/ai-elements/chain-of-thought"
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message"
-import { airaCopy, airaKeptLayers, airaLeftLayers, airaLimitBodyOn } from "@/copy/aira-copy"
+import { airaCopy, airaLimitBodyOn, airaUndoStays } from "@/copy/aira-copy"
 import { productCopy, usageResetsOn } from "@/copy/product-copy"
 import { usageCopy } from "@/copy/usage-copy"
 import { surfaceShadow } from "@/components/ui/shadows"
@@ -122,8 +122,11 @@ function UndoLink({ onUndo }: { onUndo: (() => void) | undefined }) {
   )
 }
 
-function Undone({ kept, left }: { readonly kept: readonly string[]; readonly left: readonly string[] }) {
-  const plain = kept.length === 0 && left.length === 0
+const staysOf = (exchange: AiraExchange) =>
+  airaUndoStays({ kept: exchange.kept ?? [], left: exchange.left ?? [], waiting: exchange.waiting ?? [] })
+
+function Undone({ stays }: { readonly stays: string }) {
+  const plain = stays === ""
   return (
     <p
       className={`flex min-h-6 gap-1.5 text-xs text-muted-foreground ${plain ? "items-center" : "items-start py-1"}`}
@@ -132,8 +135,7 @@ function Undone({ kept, left }: { readonly kept: readonly string[]; readonly lef
       <EditorIcon name="undo" size={13} className={plain ? "shrink-0" : "mt-px shrink-0"} />
       <span>
         {airaCopy.undone}
-        {kept.length === 0 ? null : ` ${airaKeptLayers(kept)}`}
-        {left.length === 0 ? null : ` ${airaLeftLayers(left)}`}
+        {plain ? null : ` ${stays}`}
       </span>
     </p>
   )
@@ -143,6 +145,14 @@ function UndoFailed() {
   return (
     <p className="flex min-h-6 items-center text-xs text-muted-foreground" data-undo-failed>
       {airaCopy.undoFailed}
+    </p>
+  )
+}
+
+function UndoStays({ stays }: { readonly stays: string }) {
+  return (
+    <p className="flex min-h-6 items-center py-1 text-xs text-pretty text-muted-foreground" data-undo-stays>
+      {stays}
     </p>
   )
 }
@@ -294,7 +304,8 @@ function cardOf(
 function undoNoteOf(exchange: AiraExchange): ReactNode | null {
   if (exchange.undoRefused === true) return <UndoRefused />
   if (exchange.undoFailed === true) return <UndoFailed />
-  return null
+  const stays = exchange.end === "undone" ? "" : staysOf(exchange)
+  return stays === "" ? null : <UndoStays stays={stays} />
 }
 
 function endingOf(
@@ -318,7 +329,7 @@ function endingOf(
       </>
     )
   }
-  if (exchange.end === "undone") return <Undone kept={exchange.kept ?? []} left={exchange.left ?? []} />
+  if (exchange.end === "undone") return <Undone stays={staysOf(exchange)} />
   if ((exchange.end === "done" || exchange.end === "stopped") && undoable) {
     if (exchange.undoRefused === true) return note
     if (note === null) return <UndoLink onUndo={onUndo} />

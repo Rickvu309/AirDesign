@@ -1,5 +1,5 @@
 import type { AgentOp, EditRefusal } from "@airdesign/catalog"
-import { agentKeptLayers, agentLeftLayers } from "./agent-runs-copy.ts"
+import { type UndoStays, agentUndoStays } from "./agent-runs-copy.ts"
 import { elementCopy } from "./element-copy.ts"
 import { slideListCopy } from "./slide-list-copy.ts"
 
@@ -85,12 +85,8 @@ export function airaKeptLayerName(name: string): string {
   return `“${name}”`
 }
 
-export function airaKeptLayers(layers: readonly string[]): string {
-  return agentKeptLayers("Aira", layers)
-}
-
-export function airaLeftLayers(layers: readonly string[]): string {
-  return agentLeftLayers(layers)
+export function airaUndoStays(stays: UndoStays): string {
+  return agentUndoStays("Aira", stays)
 }
 
 export function airaBackOn(when: string): string {

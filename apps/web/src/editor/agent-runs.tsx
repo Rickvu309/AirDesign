@@ -2,24 +2,19 @@ import * as doom from "@airdesign/doom"
 import { useState } from "react"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import {
-  agentKeptLayers,
-  agentLeftLayers,
   agentRunStatus,
   agentRunsCopy,
   agentShownName,
+  agentUndoStays,
   type RunPlace,
+  type UndoStays,
 } from "@/copy/agent-runs-copy"
 import { productCopy } from "@/copy/product-copy"
 import { LiveDot, slideNumberOf } from "./agent-at-work"
 import { layerLabel } from "./layer-label"
 import type { EditorClient } from "./use-deck"
 
-type Undoing =
-  | "undoing"
-  | { readonly kept: readonly string[]; readonly left: readonly string[] }
-  | "nothing"
-  | "refused"
-  | "failed"
+type Undoing = "undoing" | (UndoStays & { readonly landed: boolean }) | "nothing" | "refused" | "failed"
 
 const said: Partial<Record<Extract<Undoing, string>, string>> = {
   nothing: agentRunsCopy.nothingLeft,
@@ -53,8 +48,8 @@ export function AgentRuns({
     mark("undoing")
     const turned = await undoRun(run.id)
     const named = (ids: readonly doom.NodeId[]) => ids.map((id) => layerLabel(view, id))
-    if (turned.ok) mark({ kept: named(turned.kept), left: named(turned.left) })
-    else if (turned.reason === "left") mark({ kept: [], left: named(turned.left) })
+    if (turned.ok || turned.reason === "left")
+      mark({ kept: named(turned.kept), left: named(turned.left), waiting: named(turned.waiting), landed: turned.ok })
     else mark(turned.reason === "offline" ? "failed" : turned.reason === "nothing" ? "nothing" : "refused")
   }
 
@@ -71,10 +66,7 @@ export function AgentRuns({
           const status = run.undone ? agentRunsCopy.undone : agentRunStatus(live, placeOf(view, run))
           const note =
             typeof state === "object"
-              ? [
-                  ...(state.kept.length === 0 || !run.undone ? [] : [agentKeptLayers(name, state.kept)]),
-                  ...(state.left.length === 0 ? [] : [agentLeftLayers(state.left)]),
-                ].join(" ") || undefined
+              ? agentUndoStays(name, state.landed && !run.undone ? { ...state, kept: [] } : state) || undefined
               : state === undefined || state === "undoing"
                 ? undefined
                 : said[state]
@@ -100,7 +92,7 @@ export function AgentRuns({
                 )}
               </span>
               {note === undefined ? null : (
-                <p className={`pb-1 text-muted-foreground ${rowText}`} data-agent-run-note="">
+                <p className={`pb-1 text-pretty text-muted-foreground ${rowText}`} data-agent-run-note="">
                   {note}
                 </p>
               )}

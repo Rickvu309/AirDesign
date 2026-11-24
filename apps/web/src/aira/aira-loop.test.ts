@@ -1,6 +1,7 @@
 import { airaRoutes } from "@airdesign/catalog"
 import { describe, expect, it, vi } from "vitest"
-import { airaChat, askAira, retryAira, undoExchange, type AiraChat, type UndoRun } from "./aira-loop"
+import { airaChat, askAira, retryAira, type AiraChat } from "./aira-loop"
+import { type UndoRun, undoExchange } from "./aira-undo"
 import {
   asking,
   call,
@@ -365,7 +366,7 @@ describe("Aira's loop in the browser", () => {
     const asked: string[] = []
     const undo: UndoRun = async (_deck, run) => {
       asked.push(run)
-      return run === "fenced" ? "refused" : { kept: [], left: [] }
+      return run === "fenced" ? "refused" : { kept: [], left: [], waiting: [], undone: true }
     }
     const undone = await undoExchange(done, 0, undo)
     expect(asked).toEqual(["run-1"])
@@ -383,7 +384,7 @@ describe("Aira's loop in the browser", () => {
     const asked: string[] = []
     const undo: UndoRun = async (_deck, run) => {
       asked.push(run)
-      return reachable.has(run) ? { kept: [], left: [] } : "failed"
+      return reachable.has(run) ? { kept: [], left: [], waiting: [], undone: true } : "failed"
     }
     const start: AiraChat = {
       ...airaChat(deck),

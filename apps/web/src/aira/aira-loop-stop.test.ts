@@ -1,6 +1,7 @@
 import { airaRoutes, mcpRoutes, onceMeta, type ReplyBlock } from "@airdesign/catalog"
 import { describe, expect, it, vi } from "vitest"
-import { airaChat, askAira, undoExchange, type AiraChat } from "./aira-loop"
+import { airaChat, askAira, type AiraChat } from "./aira-loop"
+import { undoExchange } from "./aira-undo"
 import { call, deck, edit, editCall, edited, ended, read, scripted, stop } from "@/testing/aira-loop-script"
 
 describe("Aira's loop when Stop comes while a tool call is still waiting for the server", () => {
@@ -56,7 +57,7 @@ describe("Aira's loop when Stop comes while a tool call is still waiting for the
     expect(link.toolsSent()).toEqual([edit, stop])
     const closing = link.sent.at(-1)?.body.params as { arguments: Record<string, unknown> }
     expect(closing.arguments).toEqual({ deck, runId: "run-1" })
-    expect(await undoExchange(done, 0, async () => ({ kept: [], left: [] }))).toMatchObject({
+    expect(await undoExchange(done, 0, async () => ({ kept: [], left: [], waiting: [], undone: true }))).toMatchObject({
       exchanges: [{ end: "undone" }],
     })
   })

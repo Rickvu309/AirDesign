@@ -175,6 +175,18 @@ describe("undoing a run, edit by edit from the values each write replaced", () =
     expect(back.doom.children.get(ids.card)).toEqual([ids.title])
   })
 
+  it("names a layer a run deleted apart from the layers it leaves in place, while the frame it was in is deleted", () => {
+    let world = run(opened(), runA, [
+      { node: ids.title, prop: "parent", value: null },
+      { node: ids.caption, prop: "parent", value: place(ids.slide) },
+    ])
+    world = by(world, person, [
+      { node: ids.card, prop: "parent", value: null },
+      { node: ids.side, prop: "parent", value: null },
+    ])
+    expect(undoRun(world, "a")).toMatchObject({ left: [ids.caption], waiting: [ids.title] })
+  })
+
   it("takes back the whole run when nobody else touched it, and a second undo finds nothing", () => {
     const made = nodeId("a:1")
     let world = run(opened(), runA, create(made, "shape", ids.slide, { node: made, prop: "box", value: box(10) }))
