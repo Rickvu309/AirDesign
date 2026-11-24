@@ -124,6 +124,17 @@ type Active =
 
 const threshold = 3
 
+export function dragButton(event: { readonly button: number; readonly ctrlKey: boolean }): boolean {
+  return event.button === 0 || event.button === 1 || (event.button === 2 && event.ctrlKey)
+}
+
+export function freesAspect(
+  event: { readonly ctrlKey: boolean; getModifierState(name: string): boolean },
+  fnHeld: boolean,
+): boolean {
+  return event.ctrlKey || fnHeld || event.getModifierState("Fn")
+}
+
 function inEditor(target: EventTarget | null): boolean {
   return target instanceof Element && target.closest("[data-text-editor]") !== null
 }
@@ -146,14 +157,34 @@ export function useCanvasPointer(args: PointerArgs) {
   useEffect(() => {
     latest.current = args
   })
-  useEffect(() => {
-    const stage = latest.current.stage.current
-    if (stage === null) return
-    const leave = () => latest.current.setHover(null)
-    stage.addEventListener("pointerleave", leave)
-    return () => stage.removeEventListener("pointerleave", leave)
-  }, [])
   const active = useRef<Active | null>(null)
+  const fnDown = useRef(false)
+  useEffect(() => {
+    const fnKey = (event: KeyboardEvent) => {
+      if (event.type === "keyup" && (event.key === "Fn" || event.code === "Fn")) fnDown.current = false
+      else fnDown.current = event.key === "Fn" || event.code === "Fn" || event.getModifierState("Fn")
+    }
+    window.addEventListener("keydown", fnKey)
+    window.addEventListener("keyup", fnKey)
+    const stage = latest.current.stage.current
+    if (stage === null)
+      return () => {
+        window.removeEventListener("keydown", fnKey)
+        window.removeEventListener("keyup", fnKey)
+      }
+    const leave = () => latest.current.setHover(null)
+    const menu = (event: Event) => {
+      if (event instanceof MouseEvent && event.ctrlKey) event.preventDefault()
+    }
+    stage.addEventListener("pointerleave", leave)
+    stage.addEventListener("contextmenu", menu)
+    return () => {
+      stage.removeEventListener("pointerleave", leave)
+      stage.removeEventListener("contextmenu", menu)
+      window.removeEventListener("keydown", fnKey)
+      window.removeEventListener("keyup", fnKey)
+    }
+  }, [])
   const pending = useRef<PointerEvent | ReactPointerEvent | null>(null)
   const frame = useRef(0)
 
@@ -207,7 +238,7 @@ export function useCanvasPointer(args: PointerArgs) {
       origin: gesture.origin,
       at,
       keepRatio: event.shiftKey,
-      breakAspect: event.ctrlKey || event.getModifierState("Fn"),
+      breakAspect: freesAspect(event, fnDown.current),
       fromCenter: event.altKey,
       snapAngle: event.shiftKey,
       snap: !event.ctrlKey,
@@ -384,7 +415,7 @@ export function useCanvasPointer(args: PointerArgs) {
   return {
     down(event: ReactPointerEvent<HTMLElement>) {
       const a = latest.current
-      if (event.button !== 0 && event.button !== 1) return
+      if (!dragButton(event)) return
       const stage = a.stage.current
       if (stage === null) return
       if (inEditor(event.target)) return
@@ -501,6 +532,9 @@ export function useCanvasPointer(args: PointerArgs) {
     },
     cancel() {
       finish(false, null)
+    },
+    dragging() {
+      return active.current !== null
     },
     cancelDrag() {
       const had = active.current !== null
