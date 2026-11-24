@@ -1,0 +1,3 @@
+# The New slide menu opens from the keyboard, takes focus, and marks itself open so canvas shortcuts stay out
+
+`apps/web/src/editor/new-slide-menu.test.tsx` fails when Enter, Space, ArrowDown or ArrowUp on the trigger does not open the menu on the right row, when a pointer open leaves focus outside the menu, when choosing a row or pressing Tab leaves focus anywhere but the trigger, or when the open menu lacks `data-open`. Without `data-open`, `editorOwnsKey` lets Space, letters and arrows reach the canvas shortcuts. `tests/browser/editor-page.spec.ts` drives the same keys in the real editor and fails when the menu builds pictures before the pointer or focus arrives.

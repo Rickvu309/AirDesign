@@ -51,6 +51,7 @@ const controlKeys: Readonly<Record<string, readonly string[]>> = {
   "apps/web/src/editor/deck-title-edit.tsx": field,
   "apps/web/src/editor/layer-name-edit.tsx": field,
   "apps/web/src/editor/editor-key-ownership.ts": ["Escape"],
+  "apps/web/src/editor/new-slide-menu.tsx": [...upDown, ...field, "Tab"],
   "apps/web/src/editor/notes-bar.tsx": upDown,
   "apps/web/src/editor/resizable-panel.tsx": ["ArrowLeft", "ArrowRight", "End", "Home"],
   "apps/web/src/design/shape-grid.tsx": list,

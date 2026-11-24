@@ -22,6 +22,7 @@ import type { SaveStatus } from "@/editor/save-status"
 import { slideChangeAllowed } from "@/editor/slide-menu"
 import { NewSlideMenu } from "@/editor/new-slide-menu"
 import type { LayoutChoice } from "@/editing/slide-layout"
+import type { LayoutPictureSource } from "@/editor/layout-pictures"
 import { cn } from "@/lib/class-names"
 import { setDropPlace } from "@/editor/slide-list-pick"
 import { useSlideListSet } from "@/editor/use-slide-list-set"
@@ -44,6 +45,7 @@ export type SlideStrip = {
   readonly onSelect: (index: number) => void
   readonly onAdd?: (layoutPart?: string, after?: number) => void
   readonly layouts?: readonly LayoutChoice[]
+  readonly layoutPictures?: LayoutPictureSource
   readonly onClone?: (index: number) => void
   readonly onRemove?: (index: number) => void
   readonly onChangeSet?: (change: "clone" | "remove", indices: readonly number[]) => SetChange | null
@@ -219,6 +221,7 @@ function DeckStrip({
         <div className={cn("flex h-7 flex-1 items-center rounded-lg bg-white", surfaceShadow)}>
           <NewSlideMenu
             layouts={canAdd ? (strip.layouts ?? []) : []}
+            source={strip.layoutPictures}
             onChoose={(part) => {
               strip.onAdd?.(part)
             }}

@@ -104,3 +104,7 @@ export async function measureFaces(doc: Document, needs: doom.FaceNeeds): Promis
   )
   return kept.widths
 }
+
+export async function measureDoom(doc: Document, value: doom.Doom): Promise<doom.Measure> {
+  return doom.measureWith(await measureFaces(doc, doom.doomFaces(value)))
+}

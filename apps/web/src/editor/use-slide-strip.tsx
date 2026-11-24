@@ -14,6 +14,7 @@ import {
   neighbourAfterDelete,
 } from "./slide-writes"
 import type { EditorClient } from "./use-deck"
+import { useLayoutPictures } from "./use-layout-pictures"
 
 const layouts = doom.slideStarts.map((part) => ({ part, name: editorCopy.slideStarts[part] }))
 const isStart = (part: string): part is doom.SlideStart => (doom.slideStarts as readonly string[]).includes(part)
@@ -28,6 +29,7 @@ export function useSlideStrip(props: {
   readonly assetUrl: (asset: string) => string | undefined
 }): SlideStrip {
   const { view, typing, client, slides, current, onCurrent, assetUrl } = props
+  const layoutPictures = useLayoutPictures(view, current)
   const say = useRef<(text: string) => void>(() => undefined)
   const { size } = doom.deckOf(view)
   const index = current === undefined ? 0 : Math.max(0, slides.indexOf(current))
@@ -47,6 +49,7 @@ export function useSlideStrip(props: {
     slideIds: slides,
     current: index,
     layouts,
+    layoutPictures,
     say,
     thumbHeight: Math.round((slideThumbWidth * size.h) / size.w),
     thumb: (at, width) => {
