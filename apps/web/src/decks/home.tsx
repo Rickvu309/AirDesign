@@ -27,7 +27,8 @@ import {
 } from "@/copy/product-copy"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DescribeDeck } from "@/decks/describe-deck"
-import { handFirstRequest } from "@/lib/first-request"
+import { discardOpening } from "@/decks/discard-opening"
+import { handFirstRequest, openingDeck, peekFirstRequest } from "@/lib/first-request"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { clearGridShift, gridShift } from "@/decks/grid-shift"
 import { DeckActions, DeckRowMenu } from "@/decks/deck-menu"
@@ -132,7 +133,17 @@ export function Home({
     try {
       const result = await post(deckRoutes.list.path, {})
       if (result.ok) {
-        const next = await withDevice(result)
+        const noted = openingDeck()
+        if (noted !== undefined) await discardOpening(noted)
+        const visible =
+          noted === undefined
+            ? result
+            : {
+                ...result,
+                decks: result.decks.filter((deck: Deck) => deck.deck !== noted),
+                trash: result.trash.filter((deck: Deck) => deck.deck !== noted),
+              }
+        const next = await withDevice(visible)
         const change = () => setListing(next)
         if (shiftAt === window.location.href && (!listView || trash)) gridShift(() => grid.current, change)
         else {
@@ -261,6 +272,7 @@ export function Home({
     >
       {section === "recents" && (
         <DescribeDeck
+          initial={peekFirstRequest() ?? ""}
           onDescribe={(text) => {
             handFirstRequest(text)
             navigate("/s")

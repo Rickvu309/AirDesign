@@ -6,8 +6,14 @@ import { productCopy } from "@/copy/product-copy"
 import { cn } from "@/lib/class-names"
 import { composing } from "@/lib/composing"
 
-export function DescribeDeck({ onDescribe }: { readonly onDescribe: (text: string) => void }) {
-  const [text, setText] = useState("")
+export function DescribeDeck({
+  initial = "",
+  onDescribe,
+}: {
+  readonly initial?: string
+  readonly onDescribe: (text: string) => void
+}) {
+  const [text, setText] = useState(initial)
   const ready = text.trim() !== ""
   function send() {
     if (ready) onDescribe(text.trim())

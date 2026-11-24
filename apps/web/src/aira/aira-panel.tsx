@@ -19,6 +19,7 @@ import { deviceChats, useChatHistory, type ChatStore } from "@/aira/aira-history
 import { AiraHistoryMenu } from "@/aira/aira-history-menu"
 import { signInAddress } from "@/account/sign-in-address"
 import { useWeekUsage, type UsageLoad } from "@/aira/usage-load"
+import { clearFirstRequest } from "@/lib/first-request"
 
 export type AiraStart = {
   readonly chat?: AiraChat
@@ -67,10 +68,11 @@ export function AiraPanel({
   const panel = useRef<HTMLDivElement>(null)
   const inComposer = useRef(false)
   const returnToComposer = useRef(false)
+  const sentOnce = useRef(false)
   const last = chat.exchanges.at(-1)
   const working = last?.end === "working"
   const busy = working || settling || undoing
-  const { usage, available, refresh: refreshUsage } = useWeekUsage(chat.usage, online, start.usage)
+  const { usage, available, loaded, refresh: refreshUsage } = useWeekUsage(chat.usage, online, start.usage)
   const limit = last?.end === "out-of-usage" && usage !== null ? airaBackOn(resetsWhen(usage.resets)) : undefined
   const notOffered = !available || last?.end === "country"
   const blocked = notOffered ? airaCopy.unavailable : last?.end === "malformed" ? airaCopy.malformedBlocked : limit
@@ -95,15 +97,6 @@ export function AiraPanel({
     },
     [],
   )
-
-  useEffect(() => {
-    const first = start.request
-    if (first === undefined) return
-    const timer = window.setTimeout(() => {
-      if (!ask(first)) setDraft(first)
-    })
-    return () => window.clearTimeout(timer)
-  }, [])
 
   useEffect(() => {
     function moved(event: FocusEvent) {
@@ -186,6 +179,21 @@ export function AiraPanel({
     setQueued([...waiting.current])
     return true
   }
+
+  useEffect(() => {
+    const first = start.request
+    if (first === undefined || sentOnce.current || loaded === undefined) return
+    let live = true
+    queueMicrotask(() => {
+      if (!live || sentOnce.current) return
+      sentOnce.current = true
+      if (!ask(first)) setDraft(first)
+      clearFirstRequest()
+    })
+    return () => {
+      live = false
+    }
+  }, [loaded, start.request])
 
   function retry() {
     if (busy || blocked !== undefined) return
