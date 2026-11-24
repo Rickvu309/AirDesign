@@ -229,10 +229,15 @@ export const removeStale = ({ root, say = console.log, apply = true, ...options 
   return removed
 }
 
+const resolves = (cwd, ref) => git(cwd, ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`]) !== undefined
+
+const containedBy = (cwd, commit, head) => head !== undefined && commit !== undefined && ancestor(cwd, commit, head)
+
 export const removeForPull = ({
   root,
   branch,
   number,
+  head,
   here = process.cwd(),
   base = "origin/main",
   busy = usedByAProcess,
@@ -247,37 +252,55 @@ export const removeForPull = ({
   const main = worktrees[0]?.path
   if (main === undefined) return []
   const ref = `refs/heads/${branch}`
-  const owns = (commit) => commit !== undefined && !ancestor(root, commit, base) && ancestor(root, commit, ref)
+  const merged =
+    head === undefined ? undefined : git(main, ["rev-parse", "--verify", "--quiet", `${head}^{commit}`])?.trim()
+  const contained = (commit) => containedBy(main, commit, merged)
+  const baseOk = resolves(main, base)
+  const scratchOf = (worktree) =>
+    baseOk &&
+    worktree.branch === undefined &&
+    path.dirname(worktree.path) === scratchRoot &&
+    worktree.head !== undefined &&
+    !ancestor(main, worktree.head, base) &&
+    ancestor(main, worktree.head, ref)
   const wanted = worktrees.filter((worktree) => {
     if (worktree.path === undefined) return false
-    if (worktree.branch === ref) return true
-    return worktree.branch === undefined && path.dirname(worktree.path) === scratchRoot && owns(worktree.head)
+    return worktree.branch === ref || scratchOf(worktree)
   })
   const removed = []
-  for (const worktree of wanted) {
-    const why = refusal({ worktree, main, here, busy })
+  const leave = (worktree, why) => {
     const named = worktree.branch === undefined ? undefined : branch
+    say(
+      `left worktree ${worktree.path}, because ${why}. Remove it with: ${laterCommand({ main, where: worktree.path, branch: named, mainCheckout: worktree.path === main })}`,
+    )
+  }
+  for (const worktree of wanted) {
+    if (!contained(worktree.head)) {
+      leave(worktree, "it has unpushed commits")
+      continue
+    }
+    const why = refusal({ worktree, main, here, busy })
     if (why !== undefined) {
-      say(
-        `left worktree ${worktree.path}, because ${why}. Remove it with: ${laterCommand({ main, where: worktree.path, branch: named, mainCheckout: worktree.path === main })}`,
-      )
+      leave(worktree, why)
       continue
     }
     const reason =
       worktree.branch === undefined
         ? `it is a verify-airdesign scratch tree of pull request ${number}`
         : `its pull request ${number} is merged`
-    if (!removeWorktree(root, worktree.path)) continue
+    if (!removeWorktree(main, worktree.path)) continue
     say(`removed worktree ${worktree.path}, because ${reason}`)
     removed.push(worktree.path)
   }
-  const again = git(root, ["worktree", "list", "--porcelain"])
+  const again = git(main, ["worktree", "list", "--porcelain"])
   const held = again !== undefined && readWorktrees(again).some((worktree) => worktree.branch === ref)
-  if (
-    !held &&
-    git(root, ["rev-parse", "--verify", "--quiet", ref]) !== undefined &&
-    git(root, ["branch", "-D", branch]) !== undefined
-  ) {
+  const tip = git(main, ["rev-parse", "--verify", "--quiet", ref])?.trim()
+  if (tip === undefined || held) return removed
+  if (!contained(tip)) {
+    say(`left branch ${branch}, because it has unpushed commits. Remove it with: git -C ${main} branch -D ${branch}`)
+    return removed
+  }
+  if (git(main, ["branch", "-D", branch]) !== undefined) {
     say(`deleted branch ${branch}, because its pull request ${number} is merged`)
     removed.push(branch)
   }

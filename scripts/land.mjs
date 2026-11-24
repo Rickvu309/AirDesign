@@ -134,6 +134,7 @@ export const land = async (ctx) => {
       "could not name the repository",
     ).trim()
   const recheck = (asked) => ctx.recheck({ ...asked, repository })
+  let mergedHead
   const followed = (number, branch) =>
     followPull({
       number,
@@ -149,14 +150,19 @@ export const land = async (ctx) => {
       graceMs: ctx.graceMs,
       limitMs: ctx.limitMs,
       merge: mergeAfterRecheck({ recheck, gh, read, repository, number, say }),
+      onMerged: (sha) => {
+        mergedHead = sha
+      },
     })
   const follow = async (number, branch) => {
+    mergedHead = undefined
     const code = await followed(number, branch)
     if (code === 0)
       (ctx.sweepPull ?? sweepPull)({
         root: ctx.root,
         branch,
         number,
+        head: mergedHead,
         here: ctx.here ?? process.cwd(),
         say,
       })

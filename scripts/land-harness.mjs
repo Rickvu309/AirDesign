@@ -179,7 +179,7 @@ export const harness = (options = {}) => {
     sweepPull:
       options.sweepPull ??
       ((asked) => {
-        swept.push({ branch: asked.branch, number: asked.number })
+        swept.push({ branch: asked.branch, number: asked.number, head: asked.head })
       }),
   }
   const pullReads = () => reads[Math.min(readAt++, reads.length - 1)]

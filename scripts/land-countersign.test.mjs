@@ -32,6 +32,8 @@ same(
   countersigned.said.includes(`bar        Countersigned ${head}: the deck moved.`),
   true,
 )
-same("and sweeps that pull request's leftovers", countersigned.swept, [{ branch: "land-command", number: 394 }])
+same("and sweeps that pull request's leftovers", countersigned.swept, [
+  { branch: "land-command", number: 394, head: "aaaa1111" },
+])
 
 console.log("land countersign tests passed")

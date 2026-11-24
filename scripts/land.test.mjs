@@ -22,7 +22,9 @@ same(
   true,
 )
 
-same("after merged, land sweeps that pull request", clean.swept, [{ branch: "land-command", number: 394 }])
+same("after merged, land sweeps that pull request", clean.swept, [
+  { branch: "land-command", number: 394, head: "aaaa1111" },
+])
 
 const conflicted = harness({ conflicts: "apps/web/src/thin-deck.tsx" })
 same("a branch that conflicts with main stops before the check", await conflicted.run(), 1)
@@ -383,7 +385,7 @@ const watch = harness({ args: ["--watch"], reads: [pullAnswer({ merged: true })]
 same("--watch only follows", await watch.run(), 0)
 same("and checks nothing", watch.log.includes("stamp"), false)
 
-same("--watch sweeps that pull request too", watch.swept, [{ branch: "land-command", number: 394 }])
+same("--watch sweeps that pull request too", watch.swept, [{ branch: "land-command", number: 394, head: "aaaa1111" }])
 
 const status = harness({ args: ["--status"], reads: [pullAnswer({ armed: true })] })
 same("--status changes nothing and exits 0", await status.run(), 0)
