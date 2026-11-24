@@ -18,6 +18,7 @@ import {
   type RotateGrip,
   type TransformGrip,
 } from "./transform-math"
+import { croppedPaint } from "./crop-drag"
 import { isGroup, scaledChildren } from "./group-scale"
 import { memberOf, type Member } from "./selection-frame"
 import { apply, invert, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
@@ -32,6 +33,7 @@ export type TransformInput = {
   readonly origin: Point
   readonly at: Point
   readonly keepRatio: boolean
+  readonly breakAspect?: boolean
   readonly fromCenter: boolean
   readonly snapAngle: boolean
   readonly snap: boolean
@@ -138,11 +140,17 @@ function gripSigns(grip: ResizeGrip): { readonly sx: number; readonly sy: number
   }
 }
 
+function keepsRatio(input: TransformInput, members: readonly Member[]): boolean {
+  const [only] = members
+  const cropped = members.length === 1 && only !== undefined && croppedPaint(input.view, only.id)?.crop !== undefined
+  return cropped ? input.breakAspect !== true : input.keepRatio
+}
+
 function snappedResize(input: TransformInput, members: readonly Member[], grip: ResizeGrip, by: Point) {
-  const modifiers = { keepRatio: input.keepRatio, fromCenter: input.fromCenter }
+  const modifiers = { keepRatio: keepsRatio(input, members), fromCenter: input.fromCenter }
   const base = resized(members, grip, by.x, by.y, modifiers)
   const upright = members.every((member) => normalizeDegrees(member.rotation) === 0)
-  if (!input.snap || input.keepRatio || !upright) return { ...base, guides: [] as readonly Guide[] }
+  if (!input.snap || modifiers.keepRatio || !upright) return { ...base, guides: [] as readonly Guide[] }
   const { sx, sy } = gripSigns(grip)
   const targets = targetsFor(input, members)
   const reach = reachOf(input.size.w * input.scale, input.size.w)

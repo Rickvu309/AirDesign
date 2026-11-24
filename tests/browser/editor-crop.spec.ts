@@ -4,9 +4,9 @@ import { expect, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { fillCopy } from "../../apps/web/src/copy/fill-copy"
-import { test } from "./api-stack"
+import { test, type Stack } from "./api-stack"
 import { covers } from "./gesture"
-import { clickSlide, openEditor, savedNode, serveOriginals, slidePoint } from "./editor-deck"
+import { clickSlide, openEditor, savedNode, serveOriginals, slidePoint, type Opened } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -104,4 +104,66 @@ test("a picture is cropped on the canvas by its handles and by moving it in its 
   await clickSlide(page, 100, 100)
   await expect(page.locator("[data-crop-handles]")).toHaveCount(0)
   await expect(page.locator(`[data-design-panel] [data-design-section="${designCopy.slide(1)}"]`)).toHaveCount(0)
+})
+
+async function cropRead(stack: Stack, opened: Opened) {
+  const blocks = await stack.toolBlocks("airdesign_read_deck", { deck: opened.deck }, opened.cookie)
+  const text = blocks.find((block) => block.type === "text")?.text ?? ""
+  const answer = JSON.parse(text) as { layers?: string }
+  return answer.layers?.match(/\/crop\([^)]*\)/)?.[0] ?? ""
+}
+
+test("an ordinary resize of a cropped picture keeps its aspect, as one undo, and the agent still reads that crop", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("resize", "undo")
+  await serveOriginals(page, stack.originals)
+  const opened = await openEditor(page, context, stack)
+  await drop(page, [...(await readFile(pictureFile))], await slidePoint(page, 960, 540))
+  const picture = page.locator("[data-slide-box] [data-node]").filter({ has: page.locator('[data-paint="image"]') })
+  await expect(picture).toHaveCount(1)
+  const id = (await picture.getAttribute("data-node")) ?? ""
+  const saved = async () => (await savedNode(stack, opened, id)) as unknown as Saved
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
+  await clickSlide(page, 960, 540)
+  const fill = page.locator(`[data-design-panel] [data-design-section="${fillCopy.section}"]`)
+  await fill.getByRole("combobox").click()
+  const { pictureWords } = await import("../../apps/web/src/copy/picture-panel-copy")
+  await page.getByRole("option", { name: pictureWords.crop, exact: true }).click()
+  await expect(page.locator("[data-crop-handles]")).toBeVisible()
+  await dragBy(page, await centre(page, '[data-grip="crop-w"]'), { x: 60, y: 0 })
+  await expect.poll(async () => (await saved()).fills[0]?.crop?.x ?? 0).toBeGreaterThan(0.05)
+  await page.keyboard.press("Enter")
+  await expect(page.locator("[data-crop-handles]")).toHaveCount(0)
+  const cut = await saved()
+  const words = await cropRead(stack, opened)
+  expect(words).toMatch(/^\/crop\(/)
+
+  const right = await centre(page, '[data-grip="right"]')
+  await dragBy(page, right, { x: 80, y: 24 })
+  await expect.poll(async () => (await saved()).box.w).toBeGreaterThan(cut.box.w + 20)
+  const kept = await saved()
+  expect(kept.box.w / kept.box.h).toBeCloseTo(cut.box.w / cut.box.h, 1)
+  expect(kept.fills[0]?.crop).toEqual(cut.fills[0]?.crop)
+  await expect.poll(() => cropRead(stack, opened)).toBe(words)
+
+  await page.keyboard.down("Control")
+  const again = await centre(page, '[data-grip="right"]')
+  await dragBy(page, again, { x: 70, y: 0 })
+  await page.keyboard.up("Control")
+  await expect.poll(async () => (await saved()).box.w).toBeGreaterThan(kept.box.w + 20)
+  const stretched = await saved()
+  expect(stretched.box.h).toBe(kept.box.h)
+  expect(stretched.box.w / stretched.box.h).not.toBeCloseTo(kept.box.w / kept.box.h, 1)
+  expect(stretched.fills[0]?.crop).toEqual(cut.fills[0]?.crop)
+  await expect.poll(() => cropRead(stack, opened)).toBe(words)
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await saved()).box).toEqual(kept.box)
+  expect((await saved()).fills[0]?.crop).toEqual(cut.fills[0]?.crop)
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await saved()).box).toEqual(cut.box)
+  expect(await cropRead(stack, opened)).toBe(words)
 })

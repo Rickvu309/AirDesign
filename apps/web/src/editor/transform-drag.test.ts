@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import * as doom from "@airdesign/doom"
 import { grow, landed, paint, spot } from "@/testing/doom-fixtures"
 import { transformedBy, type TransformInput } from "./transform-drag"
 
@@ -140,6 +141,48 @@ describe("resizing", () => {
     expect(boxOf(moved.writes, group.ids.left!)).toMatchObject({ x: 0, w: 200 })
     expect(boxOf(moved.writes, group.ids.right!)).toMatchObject({ x: 400, w: 200 })
     expect(moved.writes.some((write) => write.prop === "sizing")).toBe(false)
+  })
+
+  it("keeps a cropped picture's aspect on an ordinary resize, and Control is the resize that stretches it", () => {
+    const asset = "a".repeat(64)
+    const crop = { x: 0.1, y: 0, w: 0.6, h: 0.75 }
+    const picture = grow([
+      {
+        type: "shape",
+        name: "photo",
+        props: {
+          box: spot(100, 100, 200, 100),
+          fills: [{ kind: "image", asset, fit: "crop", crop }],
+        },
+      },
+    ])
+    const id = picture.ids.photo!
+    const kept = transformedBy(input(picture, [id], "right", { x: 300, y: 150 }, { x: 380, y: 190 }))
+    expect(boxOf(kept.writes, id)).toEqual(spot(100, 80, 280, 140))
+    expect(kept.writes.map((write) => write.prop)).toEqual(["box"])
+    const read = (writes: typeof kept.writes) => doom.readForAgent(landed(picture.view, writes), picture.slides)
+    expect(read(kept.writes)).toContain(`fill=image:${asset}/crop(10,0,30,25)`)
+
+    const stretched = transformedBy(
+      input(picture, [id], "right", { x: 300, y: 150 }, { x: 380, y: 190 }, { breakAspect: true }),
+    )
+    expect(boxOf(stretched.writes, id)).toEqual(spot(100, 100, 280, 100))
+    expect(read(stretched.writes)).toContain(`fill=image:${asset}/crop(10,0,30,25)`)
+  })
+
+  it("still resizes one edge of a picture that is not cropped", () => {
+    const picture = grow([
+      {
+        type: "shape",
+        name: "photo",
+        props: {
+          box: spot(100, 100, 200, 100),
+          fills: [{ kind: "image", asset: "a".repeat(64), fit: "fill" }],
+        },
+      },
+    ])
+    const moved = transformedBy(input(picture, [picture.ids.photo!], "right", { x: 300, y: 150 }, { x: 380, y: 190 }))
+    expect(boxOf(moved.writes, picture.ids.photo!)).toEqual(spot(100, 100, 280, 100))
   })
 
   it("lands as an edit the doom accepts", () => {
