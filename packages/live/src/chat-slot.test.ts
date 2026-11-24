@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { firstAccount, installIndexedDb, memoryShelf, secondAccount, signInAs } from "./browser-fixtures.js"
+import { firstAccount, installIndexedDb, signInAs } from "./browser-fixtures.js"
+import { memoryShelf, secondAccount } from "./testing/browser-shelf.js"
 import {
   deleteDatabase,
   dropAccount,

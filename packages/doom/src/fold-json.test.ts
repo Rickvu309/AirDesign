@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { applyEdit, foldToJson, isRefusal, readFold, readLanded, rev, type Landed, type Doom } from "./index.js"
-import { agent, box, create, ids, land, once, person, sampleDeck, valuesOf } from "./sample-deck.js"
+import { agent, box, create, ids, land, once, person, sampleDeck } from "./sample-deck.js"
+import { valuesOf } from "./testing/values-of.js"
 
 const wire = (value: unknown): unknown => JSON.parse(JSON.stringify(value))
 

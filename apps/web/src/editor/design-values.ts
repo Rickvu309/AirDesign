@@ -14,10 +14,6 @@ export function emuOf(px: number): number {
   return Math.round(px * pointEmu)
 }
 
-export function pxOf(emu: number): number {
-  return emu / pointEmu
-}
-
 export function panelPaintOf(paint: doom.Paint): PanelPaint {
   if (paint.kind === "solid") return { solid: paint.color }
   if (paint.kind === "image") return { image: paint.asset }

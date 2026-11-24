@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { build, more, richDeck } from "./agent-fixtures.js"
+import { build } from "./agent-fixtures.js"
+import { more, richDeck } from "./testing/rich-deck.js"
 import { readForAgent } from "./agent-read.js"
 import { hex, ids } from "./sample-deck.js"
 import type { AgentChange } from "./agent-change.js"

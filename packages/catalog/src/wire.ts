@@ -39,7 +39,6 @@ type GrantRefusal = { ok: false; refusal: "unsupported_grant_type" }
 
 export const fieldRefusal: FieldRefusal = { ok: false, refusal: "field" }
 const deckRefusal: DeckRefusal = { ok: false, refusal: "deck" }
-export const batchRefusal: BatchRefusal = { ok: false, refusal: "batch" }
 export const baseRefusal: BaseRefusal = { ok: false, refusal: "base" }
 const resourceRefusal: ResourceRefusal = { ok: false, refusal: "resource" }
 const challengeRefusal: ChallengeRefusal = { ok: false, refusal: "challenge" }

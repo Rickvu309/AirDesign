@@ -7,9 +7,6 @@ export function swatchesOf(theme: doom.Theme): readonly Swatch[] {
   return namedByColor(doom.colorVars.map((name) => ({ var: name, css: theme.colors[name].toUpperCase() })))
 }
 
-export const colorNameOf = (theme: doom.Theme, name: doom.ColorVar): string =>
-  swatchesOf(theme).find((swatch) => swatch.var === name)?.name ?? name
-
 function literalHexes(paints: readonly doom.Paint[] | undefined): readonly string[] {
   return (paints ?? []).flatMap((paint) => {
     const colors =

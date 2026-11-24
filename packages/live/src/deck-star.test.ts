@@ -1,6 +1,7 @@
 import { deckRoutes } from "@airdesign/catalog"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
-import { firstAccount, installIndexedDb, secondAccount, signInAs } from "./browser-fixtures.js"
+import { firstAccount, installIndexedDb, signInAs } from "./browser-fixtures.js"
+import { secondAccount } from "./testing/browser-shelf.js"
 import { deleteDatabase, sendQueued, starDeck } from "./index.js"
 
 type Sent = { deck: string; starred: boolean }

@@ -6,7 +6,6 @@ export {
   templateFonts,
   type Design,
   type Palette,
-  type Read,
   type Role,
   type Shown,
   type Source,
@@ -37,8 +36,6 @@ export {
 } from "./trait-border.js"
 export { anchors, mostColumns, verticals } from "./trait-body.js"
 export { adjustLimit, presetAdjusts, presets } from "./trait-geometry.js"
-export { route, routed, type Outline, type Tie } from "./connector.js"
-export { type Spot } from "./preset-sites.js"
 export { alignments } from "./trait-box.js"
 export { type PastedLayers } from "./pasted-layers.js"
 export {

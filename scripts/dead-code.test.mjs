@@ -16,7 +16,10 @@ const write = (file, text) => {
   fs.writeFileSync(path.join(repo, file), text)
 }
 
-write("apps/web/src/main.tsx", `import { used } from "@airdesign/shapes"\nused()\n`)
+write(
+  "apps/web/src/main.tsx",
+  `import { used } from "@airdesign/shapes"\nimport { marks } from "@airdesign/shapes/marks"\nused()\nmarks()\n`,
+)
 write(
   "packages/shapes/src/index.ts",
   `export { used, unused } from "./used.ts"\nexport { onlyTested } from "./only-tested.ts"\n`,
@@ -44,11 +47,30 @@ write(
 )
 write("apps/web/src/shown.ts", `export const shown = () => 5\n`)
 write(".agents/skills/look/states/open.mjs", `import { shown } from "../../../../apps/web/src/shown.ts"\nshown()\n`)
-write("packages/shapes/package.json", `{ "name": "@airdesign/shapes" }\n`)
+write("packages/shapes/src/marks.ts", `export const marks = () => 10\n`)
+write(
+  "packages/shapes/package.json",
+  `{ "name": "@airdesign/shapes", "exports": { ".": { "import": "./dist/index.js" }, "./marks": { "import": "./dist/marks.js" } } }\n`,
+)
 write("packages/shapes/src/export.ts", `export const exported = () => 6\nexport const unread = () => 7\n`)
 write(
   "scripts/export-check.mjs",
   `import { packageBuild } from "./package-build.mjs"\nconst { exported } = await packageBuild(root, "@airdesign/shapes", "export.js")\nexported()\n`,
+)
+write("packages/shapes/src/connector.ts", `export const routed = () => 8\n`)
+write("packages/shapes/src/shared.ts", `export const shared = () => 9\n`)
+write(
+  "packages/shapes/src/index.ts",
+  `export { used, unused } from "./used.ts"\nexport { onlyTested } from "./only-tested.ts"\nexport { routed } from "./connector.ts"\nexport { shared } from "./shared.ts"\n`,
+)
+write(
+  "scripts/planted.mjs",
+  `const routed = (route, describe) => route\nrouted("text replaced")\nconst row = { routed: true }\n`,
+)
+write("scripts/use-shapes.mjs", `export const run = (shapes) => shapes.shared()\n`)
+write(
+  "scripts/load-shapes.mjs",
+  `import { packageBuild } from "./package-build.mjs"\nconst shapes = await packageBuild(root, "@airdesign/shapes")\nshapes.used()\n`,
 )
 execFileSync("git", ["init", "-q"], { cwd: repo })
 
@@ -59,6 +81,7 @@ try {
     "a file only tests use is dead, even when a test loads it by path or a script imports that test",
     dead.deadFiles.map((each) => [each.file, each.tests]),
     [
+      ["packages/shapes/src/connector.ts", []],
       ["packages/shapes/src/lazy.ts", ["packages/shapes/src/lazy.test.ts"]],
       ["packages/shapes/src/only-tested.ts", ["packages/shapes/src/only-tested.test.ts"]],
     ],
@@ -102,13 +125,33 @@ try {
     ],
     [["packages/shapes/src/export.ts:exported"], []],
   )
+  same(
+    "a routed local in another script does not keep an export of a package that script never loads",
+    dead.chainTo("packages/shapes/src/connector.ts", "routed"),
+    [],
+  )
+  same(
+    "a subpath named in package.json exports is a real import",
+    dead.chainTo("packages/shapes/src/marks.ts", "marks"),
+    ["apps/web/src/main.tsx:line 4", "packages/shapes/src/marks.ts:marks"],
+  )
+  same(
+    "a property read in another script keeps an export of a package some script loads",
+    dead.chainTo("packages/shapes/src/shared.ts", "shared"),
+    ["packages/shapes/src/shared.ts:shared"],
+  )
+  same(
+    "that export's file is dead",
+    dead.deadFiles.some((each) => each.file === "packages/shapes/src/connector.ts"),
+    true,
+  )
   same("a dead declaration has no chain", dead.chainTo("packages/shapes/src/only-tested.ts", "onlyTested"), [])
   same(
     "a name the file does not declare has no answer",
     dead.chainTo("packages/shapes/src/used.ts", "missing"),
     undefined,
   )
-  same("the report ends with the counts", report(dead).split("\n").at(-1), "2 dead files, 2 dead declarations")
+  same("the report ends with the counts", report(dead).split("\n").at(-1), "3 dead files, 2 dead declarations")
 } finally {
   fs.rmSync(repo, { recursive: true, force: true })
 }

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { type AgentChange, readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { minter, more, richDeck } from "./agent-fixtures.js"
+import { minter } from "./agent-fixtures.js"
+import { more, richDeck } from "./testing/rich-deck.js"
 import { hex, ids, land } from "./sample-deck.js"
 
 const hiddenCaption = {

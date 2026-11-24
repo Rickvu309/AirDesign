@@ -1,13 +1,7 @@
 import { deckRoutes } from "@airdesign/catalog"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
-import {
-  firstAccount,
-  installSlowIndexedDb,
-  memoryShelf,
-  secondAccount,
-  signInAs,
-  slowStore,
-} from "./browser-fixtures.js"
+import { firstAccount, installIndexedDb, signInAs } from "./browser-fixtures.js"
+import { memoryShelf, secondAccount, slowStore } from "./testing/browser-shelf.js"
 import { deleteDatabase, dropAccount, dropDeck, sendQueued, starDeck } from "./index.js"
 
 const slow = slowStore()
@@ -39,7 +33,7 @@ async function stars(decks: string[]): Promise<[string, boolean][]> {
 }
 
 beforeEach(async () => {
-  installSlowIndexedDb(slow)
+  installIndexedDb(slow)
   shelf = new Map()
   vi.stubGlobal("window", {})
   vi.stubGlobal("localStorage", memoryShelf(shelf))
