@@ -122,6 +122,10 @@ export const land = async (ctx) => {
     for (const each of usage) say(each)
     return 1
   }
+  if (args.watch && !args.follow) {
+    say("STOPPED: --watch and --no-follow cannot be used together.")
+    return 1
+  }
   const line = (step, text) => say(`${step.padEnd(11)}${text}`)
   const stop = (step, why) => {
     throw new Stop(`STOPPED at ${step}: ${why}`)
@@ -308,18 +312,19 @@ export const land = async (ctx) => {
       sleep,
       now,
       say: (text) => line("queue", text),
+      follow: args.follow,
       intervalMs: ctx.checksIntervalMs,
       limitMs: ctx.checksLimitMs,
     })
     if (!ready.ok) stop("queue", ready.message)
-    if (ready.state.hasQueue) {
+    if (args.follow && ready.state.hasQueue) {
       const checked = await recheck({ number: pull.number, head: commit })
       for (const each of checked.lines) line("recheck", each)
       if (!checked.ok) stop("recheck", "nothing was queued.")
       const queued = enqueue({ merge: gh, read, repository, number: pull.number })
       if (!queued.ok) stop("queue", queued.message)
       line("queue", queueLine(queued.state))
-    } else
+    } else if (args.follow)
       line(
         "queue",
         "main has no merge queue: once ci passes, land rechecks this head against the newest main and merges only that head",

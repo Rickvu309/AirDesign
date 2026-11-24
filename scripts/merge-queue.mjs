@@ -142,6 +142,7 @@ export const awaitChecks = async ({
   sleep,
   now,
   say,
+  follow = true,
   intervalMs = 10000,
   limitMs = 180000,
 }) => {
@@ -151,19 +152,23 @@ export const awaitChecks = async ({
     if (state.merged || state.queued || state.armed || checkCount(state) > 0) return { ok: true, state }
     if (now() - started >= limitMs) {
       const seconds = Math.round(limitMs / 1000)
-      const consequence = state.hasQueue
-        ? "Queueing now would enter the merge queue with no check run."
-        : "Land would have no ci run to follow."
+      const consequence = !follow
+        ? ""
+        : state.hasQueue
+          ? "Queueing now would enter the merge queue with no check run. "
+          : "Land would have no ci run to follow. "
       return {
         ok: false,
         state,
-        message: `no check has started on the head of pull request ${number} after ${seconds} seconds. ${consequence} Look at: gh pr checks ${number}, then run pnpm land --watch`,
+        message: `no check has started on the head of pull request ${number} after ${seconds} seconds. ${consequence}Look at: gh pr checks ${number}${follow ? ", then run pnpm land --watch" : ""}`,
       }
     }
     say(
-      state.hasQueue
-        ? "waiting for a ci check to start on the head, so land arms auto-merge on a head with a check and the merge queue takes it once ci passes"
-        : "waiting for a ci check to start on the head. main has no merge queue, so land arms no auto-merge: once ci passes it rechecks this head against the newest main and merges it itself",
+      !follow
+        ? "waiting for a ci check to start on the head"
+        : state.hasQueue
+          ? "waiting for a ci check to start on the head, so land arms auto-merge on a head with a check and the merge queue takes it once ci passes"
+          : "waiting for a ci check to start on the head. main has no merge queue, so land arms no auto-merge: once ci passes it rechecks this head against the newest main and merges it itself",
     )
     await sleep(intervalMs)
   }
