@@ -83,6 +83,7 @@ export function DoomCanvas(props: {
   const [preview, setPreview] = useState<Preview | null>(null)
   const [marquee, setMarquee] = useState<Rect | null>(null)
   const [hover, setHover] = useState<doom.NodeId | null>(null)
+  const [overSource, setOverSource] = useState(false)
   const [actionsOpen, setActionsOpen] = useState(false)
   const anchor = useRef<{ readonly point: Point; readonly at: Point } | null>(null)
 
@@ -111,6 +112,10 @@ export function DoomCanvas(props: {
     return edits.length === 0 ? view : doom.viewOf(view, edits)
   }, [view, preview, text.preview])
   const painted = useDoomSlide(shown, slide)
+  const sourceInk = useMemo(() => {
+    const part = painted.footer.find((each) => each.part === "source")
+    return part === undefined ? null : doom.inkOf(part)
+  }, [painted.footer])
   const geometry = useMemo(() => (painted.nodes === null ? emptyGeometry : geometryOf(painted.nodes)), [painted.nodes])
   const current = kept(selection, geometry)
   const panning = space || tool === "hand"
@@ -340,8 +345,9 @@ export function DoomCanvas(props: {
       onCropping(id)
     },
     onCropEnd: () => onCropping(null),
-    source: painted.footer.find((each) => each.part === "source")?.box ?? null,
+    source: sourceInk,
     onSource: props.onSource,
+    onOverSource: setOverSource,
   })
 
   function onZoomKey(key: ZoomKey) {
@@ -404,7 +410,7 @@ export function DoomCanvas(props: {
         tabIndex={0}
         className="absolute inset-0 touch-none overflow-auto bg-canvas outline-none select-none"
         style={{
-          cursor: panning ? "grab" : "default",
+          cursor: panning ? "grab" : overSource ? "text" : "default",
           ["--focus-ring-offset" as string]: "calc(-1 * var(--focus-ring-width))",
         }}
         onPointerDown={(event) => {

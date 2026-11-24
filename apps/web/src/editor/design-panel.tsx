@@ -43,7 +43,8 @@ type Props = {
   readonly words: CaretWords | null
   readonly onCrop: (id: doom.NodeId) => void
   readonly onLinkWords: (link: string | null) => void
-  readonly askedSource: number
+  readonly askedSource: boolean
+  readonly onSourceTaken: () => void
 }
 
 function backgroundFill(held: PanelPaint): PanelPaint | null {
@@ -124,6 +125,7 @@ export function DesignPanel(props: Props) {
                 key={section}
                 source={doom.propOf(view.nodes.get(slide), "source") ?? ""}
                 asked={props.askedSource}
+                onTaken={props.onSourceTaken}
                 onSource={(source) => client.push([{ node: slide, prop: "source", value: source }])}
               />
             )

@@ -67,7 +67,8 @@ export { chartWithKind, chartWithoutCategory } from "./chart.js"
 export { deriveChart } from "./derive-chart.js"
 export type { Box, Point, Resolved, ResolvedEffect, ResolvedLine, ResolvedPaint, ResolvedRun } from "./resolved.js"
 export { resolveSlide, slideBackground } from "./resolve-slide.js"
-export { type FooterPart, pageOf, resolveFooter } from "./slide-footer.js"
+export { type FooterPart, inkOf, pageOf, resolveFooter } from "./slide-footer.js"
+export { sourceLine } from "./source-line.js"
 export {
   type Site,
   adjustDefaults,

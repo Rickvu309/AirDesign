@@ -42,6 +42,18 @@ export type DrawRequest = {
   readonly commit: boolean
 }
 
+export type SourceInk = { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
+
+export function overSource(at: Point, ink: SourceInk | null, reach: number): boolean {
+  return (
+    ink !== null &&
+    at.x >= ink.x - reach &&
+    at.x <= ink.x + ink.w + reach &&
+    at.y >= ink.y - reach &&
+    at.y <= ink.y + ink.h + reach
+  )
+}
+
 export type PointerArgs = {
   readonly stage: RefObject<HTMLDivElement | null>
   readonly slideBox: RefObject<HTMLDivElement | null>
@@ -64,8 +76,9 @@ export type PointerArgs = {
   readonly crop: CropTarget | null
   readonly onCrop: (id: doom.NodeId) => void
   readonly onCropEnd: () => void
-  readonly source: doom.FooterPart["box"] | null
+  readonly source: SourceInk | null
   readonly onSource: () => void
+  readonly onOverSource: (over: boolean) => void
 }
 
 type Active =
@@ -499,14 +512,12 @@ export function useCanvasPointer(args: PointerArgs) {
     double(event: ReactMouseEvent<HTMLElement>) {
       const a = latest.current
       if (inEditor(event.target)) return
-      const chain = chainAt(event, a.geometry, a.view)
-      if (chain === null) {
-        const at = toSlide(event)
-        const box = a.source
-        if (box !== null && at.x >= box.x && at.x <= box.x + box.w && at.y >= box.y && at.y <= box.y + box.h)
-          a.onSource()
+      if (overSource(toSlide(event), a.source, 4.5 / a.scale)) {
+        a.onSource()
         return
       }
+      const chain = chainAt(event, a.geometry, a.view)
+      if (chain === null) return
       const inside = steppedIn(chain, a.selection)
       if (inside !== null) {
         a.onSelection(inside)
@@ -530,6 +541,7 @@ export function useCanvasPointer(args: PointerArgs) {
         return
       }
       if (a.panning || a.texting) return
+      a.onOverSource(overSource(toSlide(event), a.source, 4.5 / a.scale))
       const chain = chainAt(event, a.geometry, a.view)
       a.setHover(chain === null ? null : unitOf(chain, a.selection.inside, event.metaKey || event.ctrlKey).id)
     },

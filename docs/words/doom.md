@@ -108,7 +108,7 @@ The quiet line at the foot of every slide: its source line on the left and its p
 _Avoid_: footer layer, margin layer
 
 **source line**:
-A slide's `source` words, painted at the left of its footer, and nothing while empty. A person writes it in the slide panel's Source field, or double-clicks it on the slide to reach that field. An agent sets it with `set` on the slide (`source`), and `read` shows it as `source="…"`. Duplicating a slide keeps it.
+A slide's `source` words, painted at the left of its footer, and nothing while empty. One function, `sourceLine`, makes the stored words for a person and an agent alike: line breaks become one space, control characters go, the ends are trimmed, and the words stop at 300 bytes on a whole character. The footer wraps them to two lines at most and ends a longer source in `…`; the field and `read` keep every word, and the canvas, filmstrip, Present, capture and PDF all paint the same cut. A person writes it in the slide panel's Source field, or double-clicks the words on the slide to reach that field (a double-click beside the words does what it does on any canvas). Escape leaves the field for the canvas. An agent sets it with `set` on the slide (`source`), and `read` shows it as `source="…"`. Duplicating a slide keeps it.
 _Avoid_: footer text, caption
 
 **page number**:

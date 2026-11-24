@@ -1,36 +1,34 @@
-import { bytesOf, limits } from "@airdesign/doom"
+import { sourceLine } from "@airdesign/doom"
 import { useEffect, useRef, useState } from "react"
+import { flushSync } from "react-dom"
 import { designCopy } from "@/copy/design-copy"
 import { DesignSection } from "@/editor/design-sections"
 import { composing } from "@/lib/composing"
 
-function fitted(words: string): string {
-  let kept = words.trim()
-  while (bytesOf(kept) > limits.source) kept = kept.slice(0, -1)
-  return kept
-}
-
 export function SlideSource({
   source,
   asked,
+  onTaken,
   onSource,
 }: {
   readonly source: string
-  readonly asked: number
+  readonly asked: boolean
+  readonly onTaken: () => void
   readonly onSource: (source: string) => void
 }) {
   const [draft, setDraft] = useState<string | null>(null)
   const field = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (asked === 0) return
+    if (!asked) return
     field.current?.focus()
     field.current?.select()
-  }, [asked])
+    onTaken()
+  }, [asked, onTaken])
 
   function commit(words: string) {
     setDraft(null)
-    const typed = fitted(words)
+    const typed = sourceLine(words)
     if (typed !== source) onSource(typed)
   }
 
@@ -56,7 +54,11 @@ export function SlideSource({
               event.preventDefault()
               commit(event.currentTarget.value)
             }
-            if (event.key === "Escape") setDraft(null)
+            if (event.key === "Escape") {
+              event.preventDefault()
+              flushSync(() => setDraft(null))
+              document.querySelector<HTMLElement>("[data-canvas-stage]")?.focus()
+            }
           }}
           className="min-w-0 flex-1 bg-transparent text-[length:var(--type-caption)] text-foreground outline-none placeholder:text-quiet"
         />

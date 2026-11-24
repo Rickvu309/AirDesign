@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { useDoomMeasure } from "@airdesign/render"
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react"
 import { peekFirstRequest } from "@/lib/first-request"
 import { replaceDeckAddress } from "@/editor/slide-address"
 import { NotFoundPage } from "@/decks/not-found-page"
@@ -80,7 +80,8 @@ function Editing({
   const [cropping, setCropping] = useState<doom.NodeId | null>(null)
   const [tool, setTool] = useState<Tool>(start.tool ?? "move")
   const [panel, setPanel] = useKeptPanel(id, start.panel)
-  const [askedSource, setAskedSource] = useState(0)
+  const [askedSource, setAskedSource] = useState(false)
+  const takeSource = useCallback(() => setAskedSource(false), [])
   const [zoom, setZoom] = useState<Zoom>("fit")
   const [toolbarHost, setToolbarHost] = useState<HTMLElement | null>(null)
   const idle: CanvasCommands = { zoomTo: setZoom, zoomSelection: null, linkWords: () => undefined }
@@ -163,7 +164,7 @@ function Editing({
             onSource={() => {
               setSelection(noSelection)
               setPanel("design")
-              setAskedSource((asked) => asked + 1)
+              setAskedSource(true)
             }}
             zoom={zoom}
             scale={scale}
@@ -237,6 +238,7 @@ function Editing({
             onCrop={setCropping}
             onLinkWords={(link) => commands.current.linkWords(link)}
             askedSource={askedSource}
+            onSourceTaken={takeSource}
           />
         ) : null}
       </ResizablePanel>

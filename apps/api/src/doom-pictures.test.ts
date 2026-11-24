@@ -82,9 +82,12 @@ describe("an open tab sends the picture of each slide of a Doom deck, and an age
       expect(first.json).toEqual({ ok: true, deck: made.deck, missing: [] })
       const [slide] = slides
       const pending = read(client, made.deck, { slide })
-      await new Promise((resolve) => setTimeout(resolve, 40))
-      const asked = await send(made.deck, rev, { keys, images: [] }, cookie)
-      expect(asked.json).toEqual({ ok: true, deck: made.deck, missing: [slide] })
+      await expect
+        .poll(async () => (await send(made.deck, rev, { keys, images: [] }, cookie)).json, {
+          interval: 5,
+          timeout: 2_000,
+        })
+        .toEqual({ ok: true, deck: made.deck, missing: [slide] })
       const next = await send(
         made.deck,
         rev,

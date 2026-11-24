@@ -1,3 +1,4 @@
+import * as doom from "@airdesign/doom"
 import { act, createElement } from "react"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import { designCopy } from "@/copy/design-copy"
@@ -29,14 +30,22 @@ afterAll(() => {
   window.close()
 })
 
-async function field(source: string, asked = 0) {
+async function field(source: string, asked = false) {
   const saved: string[] = []
+  const taken: boolean[] = []
   const host = window.document.createElement("div")
   window.document.body.append(host)
   const root = createRoot(host)
-  const render = (next: number) =>
+  const render = (next: boolean) =>
     act(async () =>
-      root.render(createElement(SlideSource, { source, asked: next, onSource: (each) => saved.push(each) })),
+      root.render(
+        createElement(SlideSource, {
+          source,
+          asked: next,
+          onTaken: () => taken.push(true),
+          onSource: (each) => saved.push(each),
+        }),
+      ),
     )
   await render(asked)
   const input = host.querySelector<HTMLInputElement>("[data-slide-source]")!
@@ -51,7 +60,7 @@ async function field(source: string, asked = 0) {
       input.dispatchEvent(new window.KeyboardEvent("keydown", { key, bubbles: true }))
     })
   const stop = () => act(async () => root.unmount())
-  return { input, saved, type, press, render, stop }
+  return { input, saved, taken, type, press, render, stop, host }
 }
 
 it("saves the source a person types when they press Enter, trimmed", async () => {
@@ -78,11 +87,49 @@ it("clears the source when a person empties the field, and keeps it on Escape", 
   await kept.stop()
 })
 
-it("takes focus with its words selected when the person double-clicks the source on the slide", async () => {
-  const { input, render, stop } = await field("Source: Filings")
+it("takes focus with its words selected once, when the person double-clicks the source on the slide", async () => {
+  const { input, taken, render, stop } = await field("Source: Filings")
   expect(window.document.activeElement).not.toBe(input)
-  await render(1)
+  await render(true)
   expect(window.document.activeElement).toBe(input)
   expect([input.selectionStart, input.selectionEnd]).toEqual([0, "Source: Filings".length])
+  expect(taken).toEqual([true])
   await stop()
+})
+
+it("leaves the field alone when it shows again with no request, as after the layer selection clears", async () => {
+  const { input, taken, stop } = await field("Source: Filings", false)
+  expect(window.document.activeElement).not.toBe(input)
+  expect(taken).toEqual([])
+  await stop()
+})
+
+it("saves the same words the agent path stores for the same raw input", async () => {
+  const raws = ["  Source: A\n\n B  ", "So\u0000urce", `${"a".repeat(297)}😀`, "é".repeat(500), "x".repeat(400)]
+  for (const raw of raws) {
+    const { saved, type, press, stop } = await field("Source: Old")
+    await type(raw)
+    await press("Enter")
+    const read = doom.readAgentChange({ op: "set", target: "t:1", source: raw })
+    if ("refused" in read) throw new Error(JSON.stringify(read))
+    expect(saved).toEqual([doom.sourceLine(raw)])
+    expect(read).toMatchObject({ source: doom.sourceLine(raw) })
+    await stop()
+  }
+})
+
+it("returns focus to the canvas on Escape, keeping the saved source", async () => {
+  const stage = window.document.createElement("div")
+  stage.tabIndex = 0
+  stage.setAttribute("data-canvas-stage", "")
+  window.document.body.append(stage)
+  const { input, saved, type, press, stop } = await field("Source: Old", true)
+  expect(window.document.activeElement).toBe(input)
+  await type("Source: New")
+  await press("Escape")
+  expect(window.document.activeElement).toBe(stage)
+  expect(input.value).toBe("Source: Old")
+  expect(saved).toEqual([])
+  await stop()
+  stage.remove()
 })
