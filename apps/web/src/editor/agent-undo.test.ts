@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { airaChat, type AiraChat } from "@/aira/aira-loop"
 import { undoExchange } from "@/aira/aira-undo"
-import { doomAgentUndo } from "./agent-undo"
+import { undoAgentRun } from "./agent-undo"
 
 const deck = "deck"
 const done: AiraChat = {
@@ -25,7 +25,7 @@ const kept = grown.doom
 const [named, group] = kept.children.get(grown.slides[0]!) ?? []
 const ids = { named: named!, group: group! }
 
-function client(answers: Record<string, Awaited<ReturnType<Parameters<typeof doomAgentUndo>[0]["undoRun"]>>>) {
+function client(answers: Record<string, Awaited<ReturnType<Parameters<typeof undoAgentRun>[0]["undoRun"]>>>) {
   const asked: string[] = []
   return {
     asked,
@@ -43,7 +43,7 @@ describe("undoing an Aira exchange on a doom deck", () => {
       "run-1": { ok: true, once: "u1", saved, kept: [], left: [], waiting: [] },
       "run-2": { ok: true, once: "u2", saved, kept: [], left: [], waiting: [] },
     })
-    const undone = await undoExchange(done, 0, doomAgentUndo(open))
+    const undone = await undoExchange(done, 0, undoAgentRun(open))
     expect(open.asked).toEqual(["run-2", "run-1"])
     expect(undone?.exchanges[0]?.end).toBe("undone")
     expect(undone?.exchanges[0]?.kept).toBeUndefined()
@@ -54,7 +54,7 @@ describe("undoing an Aira exchange on a doom deck", () => {
       "run-1": { ok: true, once: "u1", saved, kept: [ids.named, ids.group], left: [], waiting: [] },
       "run-2": { ok: true, once: "u2", saved, kept: [ids.named], left: [], waiting: [] },
     })
-    const undone = await undoExchange(done, 0, doomAgentUndo(open))
+    const undone = await undoExchange(done, 0, undoAgentRun(open))
     expect(undone?.exchanges[0]).toMatchObject({ end: "undone", kept: ["“Revenue”", "a group"] })
   })
 
@@ -63,7 +63,7 @@ describe("undoing an Aira exchange on a doom deck", () => {
       "run-1": { ok: true, once: "u1", saved, kept: [], left: [ids.named], waiting: [] },
       "run-2": { ok: true, once: "u2", saved, kept: [], left: [ids.named], waiting: [] },
     })
-    const undone = await undoExchange(done, 0, doomAgentUndo(open))
+    const undone = await undoExchange(done, 0, undoAgentRun(open))
     expect(undone?.exchanges[0]).toMatchObject({ end: "undone", left: ["“Revenue”"] })
     expect(undone?.exchanges[0]?.kept).toBeUndefined()
   })
@@ -73,14 +73,14 @@ describe("undoing an Aira exchange on a doom deck", () => {
       "run-2": { ok: true, once: "u2", saved, kept: [], left: [], waiting: [ids.group] },
       "run-1": { ok: false, reason: "left", kept: [], left: [ids.named], waiting: [] },
     })
-    const stays = await undoExchange(done, 0, doomAgentUndo(open))
+    const stays = await undoExchange(done, 0, undoAgentRun(open))
     expect(stays?.exchanges[0]).toMatchObject({ end: "done", left: ["“Revenue”"], waiting: ["a group"] })
     expect(stays?.exchanges[0]?.undoRefused).toBeUndefined()
   })
 
   it("says the undo is refused when a person's newer write left nothing to take back", async () => {
     const open = client({ "run-2": { ok: false, reason: "nothing" } })
-    const refused = await undoExchange(done, 0, doomAgentUndo(open))
+    const refused = await undoExchange(done, 0, undoAgentRun(open))
     expect(refused?.exchanges[0]).toMatchObject({ end: "done", undoRefused: true })
   })
 
@@ -89,7 +89,7 @@ describe("undoing an Aira exchange on a doom deck", () => {
       "run-2": { ok: true, once: "u2", saved, kept: [], left: [], waiting: [] },
       "run-1": { ok: false, reason: "offline" },
     })
-    const failed = await undoExchange(done, 0, doomAgentUndo(open))
+    const failed = await undoExchange(done, 0, undoAgentRun(open))
     expect(failed?.exchanges[0]).toMatchObject({ end: "done", runs: ["run-1"], undoFailed: true })
   })
 
@@ -112,7 +112,7 @@ describe("undoing an Aira exchange on a doom deck", () => {
         ],
       ]),
     } as doom.Doom
-    const undone = await undoExchange(done, 0, doomAgentUndo({ ...open, view: () => undoneTwo }))
+    const undone = await undoExchange(done, 0, undoAgentRun({ ...open, view: () => undoneTwo }))
     expect(open.asked).toEqual(["run-1"])
     expect(undone?.exchanges[0]?.end).toBe("undone")
   })

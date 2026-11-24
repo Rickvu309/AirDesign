@@ -32,11 +32,11 @@ function AppRoutes() {
   if (path === settingsPaths.account) return <AccountPage navigate={navigate} />
   if (path === settingsPaths.agents) return <AgentsPage navigate={navigate} />
   if (path === settingsPaths.usage) return <UsagePage navigate={navigate} />
-  const doomDeck = /^\/s(?:\/([A-Za-z0-9_-]{1,64}))?$/.exec(path)
-  if (doomDeck !== null)
+  const editorPath = /^\/s(?:\/([A-Za-z0-9_-]{1,64}))?$/.exec(path)
+  if (editorPath !== null)
     return (
       <Suspense>
-        <Editor id={doomDeck[1] ?? null} />
+        <Editor id={editorPath[1] ?? null} />
       </Suspense>
     )
   if (path === "/oauth/authorize") return <OAuthAuthorize />

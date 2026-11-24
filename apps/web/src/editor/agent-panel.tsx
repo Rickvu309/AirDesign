@@ -2,7 +2,7 @@ import type * as doom from "@airdesign/doom"
 import { useMemo } from "react"
 import { AiraPanel, type AiraStart } from "@/aira/aira-panel"
 import { AgentRuns } from "./agent-runs"
-import { doomAgentUndo } from "./agent-undo"
+import { undoAgentRun } from "./agent-undo"
 import type { EditorClient } from "./use-deck"
 
 export function AgentPanel({
@@ -16,7 +16,7 @@ export function AgentPanel({
   readonly editing?: ReadonlySet<string>
   readonly start?: AiraStart
 }) {
-  const undo = useMemo(() => doomAgentUndo(deck), [deck])
+  const undo = useMemo(() => undoAgentRun(deck), [deck])
   return (
     <AiraPanel
       key={deck.deck}
