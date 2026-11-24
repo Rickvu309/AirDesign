@@ -84,7 +84,18 @@ describe("readStartSettings", () => {
       r2: undefined,
       forwardSecret: undefined,
       aira: { on: false, key: undefined, secret: undefined },
+      compareFontLayout: false,
     })
+  })
+
+  it("compares font layout only in development with the flag set", () => {
+    const compare = (NODE_ENV: string | undefined, flag: string | undefined) =>
+      readStartSettings({ ...good, NODE_ENV, AIRDESIGN_COMPARE_FONT_LAYOUT: flag })
+    expect(compare("development", "1")).toMatchObject({ compareFontLayout: true })
+    expect(compare("production", "1")).toMatchObject({ compareFontLayout: false })
+    expect(compare(undefined, "1")).toMatchObject({ compareFontLayout: false })
+    expect(compare("development", "0")).toMatchObject({ compareFontLayout: false })
+    expect(compare("development", undefined)).toMatchObject({ compareFontLayout: false })
   })
 
   it("reads the commit and the smoke token", () => {
