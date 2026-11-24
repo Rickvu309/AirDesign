@@ -105,7 +105,8 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
       ? { ...change, align: change.align ?? "center", ...(ink === undefined ? {} : { color: ink }) }
       : change
   const made = textOfLook(look, undefined, "body")
-  if (change.link !== undefined && change.link !== "none" && made === undefined) stop("shape", undefined, "link")
+  if (change.link !== undefined && change.link !== "none" && made === undefined)
+    stop("shape", undefined, "link", "needs", "a text layer")
   if (kind === "text" && made !== undefined && change.box === undefined && isLaidOut(parent)) {
     create(draft, "shape", parent.id, {
       ...surfaced(draft, change),

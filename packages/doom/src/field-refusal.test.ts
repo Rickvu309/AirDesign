@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { type AgentChange, readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { minter, richDeck } from "./agent-fixtures.js"
+import { minter, more, richDeck } from "./agent-fixtures.js"
 import { hex, ids } from "./sample-deck.js"
 
 const hiddenCaption = {
@@ -154,6 +154,37 @@ const readRows: { readonly raw: unknown; readonly field: string; readonly fault:
     fault: "form",
     form: "A non-empty string.",
   },
+  {
+    raw: { op: "set", target: "t:3", effectOpacity: 2 },
+    field: "effectOpacity",
+    fault: "form",
+    form: "A number from 0 to 1.",
+  },
+  { raw: { op: "set", target: "t:3", clip: "yes" }, field: "clip", fault: "form", form: "true or false." },
+  {
+    raw: { op: "set", target: "t:3", link: "not a link" },
+    field: "link",
+    fault: "form",
+    form: "https, mailto, a slide id, or none.",
+  },
+  {
+    raw: { op: "set", target: "t:3", insert: { text: "a", link: "https://example.com" } },
+    field: "insert.at",
+    fault: "missing",
+    form: "A whole number from 0 to 8000.",
+  },
+  {
+    raw: { op: "set", target: "t:3", insert: { at: 0, text: "a\nb", link: "https://example.com" } },
+    field: "insert.text",
+    fault: "form",
+    form: "One line.",
+  },
+  {
+    raw: { op: "set", target: "t:3", insert: { at: 0, text: "a", link: "not a link" } },
+    field: "insert.link",
+    fault: "form",
+    form: "An https or mailto address, or a slide id.",
+  },
 ]
 
 describe("each refused edit names its own path", () => {
@@ -185,9 +216,29 @@ describe("each refused edit names its own path", () => {
       "layout",
       "rows to place the grid",
     )
+    const linked = { at: 0, text: "a", link: "https://example.com" }
+    needs(set(ids.caption, { link: "https://example.com" }), "link", "a text layer")
+    needs({ op: "add", kind: "shape", slide: ids.slide, link: "https://example.com" }, "link", "a text layer")
+    needs(set(ids.caption, { insert: linked }), "insert", "a text layer")
+    needs(set("*.title", { insert: linked }), "insert", "a text layer")
+    needs(set(`${more.chart}#Plan:Q1`, { insert: linked }), "insert", "a text layer")
+    const both = compileAgentChange(richDeck(), set(ids.title, { text: "A", insert: linked }), minter())
+    expect(both).toMatchObject({
+      refused: "shape",
+      field: "insert",
+      fault: "form",
+      form: "Insert or text, not both.",
+    })
+    expect(both).not.toHaveProperty("needs")
     const text = compileAgentChange(richDeck(), set(ids.card, { text: "Hi" }), minter())
     expect(text).toMatchObject({ refused: "shape", field: "text", fault: "unknown" })
     expect(text).not.toHaveProperty("form")
     expect(text).not.toHaveProperty("needs")
+    const clip = compileAgentChange(richDeck(), set(ids.title, { clip: true }), minter())
+    expect(clip).toMatchObject({ refused: "shape", field: "clip", fault: "unknown" })
+    expect(clip).not.toHaveProperty("form")
+    const strength = compileAgentChange(richDeck(), set(ids.slide, { effectOpacity: 0.4 }), minter())
+    expect(strength).toMatchObject({ refused: "shape", field: "effectOpacity", fault: "unknown" })
+    expect(strength).not.toHaveProperty("form")
   })
 })
