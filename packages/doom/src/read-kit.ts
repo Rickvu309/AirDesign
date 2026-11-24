@@ -312,20 +312,6 @@ export const keyed =
     return read as Readonly<Record<K, T>>
   }
 
-export const dictionary =
-  <T>(key: RegExp, item: Reader<T>, max: number): Reader<Readonly<Record<string, T>>> =>
-  (raw) => {
-    const found = plain(raw)
-    const names = Object.keys(found)
-    if (names.length > max) reject("limit")
-    const read: Record<string, T> = {}
-    for (const name of names) {
-      if (!key.test(name)) reject()
-      read[name] = item(found[name])
-    }
-    return read
-  }
-
 type Variants<Tag extends string> = Readonly<Record<string, Reader<object>>> & { readonly [K in Tag]?: never }
 
 export function variant<const Tag extends string, V extends Variants<Tag>>(

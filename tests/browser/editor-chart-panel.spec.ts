@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test"
+import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { test } from "./api-stack"
 import { clickSlide, landNodes, openEditor, spot } from "./editor-deck"
@@ -42,11 +43,7 @@ async function chartData(
   return data
 }
 
-test("a chart's data shows every value in full, and the category stays at the left edge while the values scroll", async ({
-  page,
-  context,
-  stack,
-}) => {
+test("a chart's data shows every value in full once the values scroll into view", async ({ page, context, stack }) => {
   const data = await chartData(page, context, stack)
   await expect(data.getByLabel("1", { exact: true }).first()).toHaveValue("3021.75")
   const clipped = await data
@@ -59,25 +56,11 @@ test("a chart's data shows every value in full, and the category stays at the le
     return scroller.scrollLeft
   })
   expect(reach).toBeGreaterThan(0)
-  const edges = await data.evaluate((scroller) => {
-    const cell = scroller
-      .querySelector("textarea, input:not([title])")!
-      .closest("[class*=sticky]")!
-      .getBoundingClientRect()
-    return { cell: cell.left, scroller: scroller.getBoundingClientRect().left }
-  })
-  expect(Math.abs(edges.cell - edges.scroller)).toBeLessThan(4)
-
-  const sticky = await data
-    .locator("[class*=sticky]")
-    .first()
-    .evaluate((cell) => cell.getBoundingClientRect().right)
   const lastValue = data.getByLabel("5", { exact: true }).first()
   const box = await lastValue.evaluate((field) => field.getBoundingClientRect().toJSON())
-  const scrollerRight = await data.evaluate((scroller) => scroller.getBoundingClientRect().right)
-  const last = { sticky, left: box.left, right: box.right, scroller: scrollerRight }
-  expect(last.left).toBeGreaterThanOrEqual(last.sticky)
-  expect(last.right).toBeLessThanOrEqual(last.scroller)
+  const scroller = await data.evaluate((each) => each.getBoundingClientRect().toJSON())
+  expect(box.left).toBeGreaterThanOrEqual(scroller.left)
+  expect(box.right).toBeLessThanOrEqual(scroller.right)
   await expect(lastValue).toHaveValue("123456789.12")
 })
 
@@ -103,7 +86,7 @@ test("a category's column grows to its longest word up to a cap, so a word that 
   })
   expect(fits.word).toBeLessThanOrEqual(fits.room)
   const cell = await data
-    .locator("[class*=sticky]")
+    .locator("[data-chart-category]")
     .first()
     .evaluate((sticky) => sticky.getBoundingClientRect().width)
   expect(cell).toBeLessThanOrEqual(8 * 16 + 1)
@@ -111,13 +94,11 @@ test("a category's column grows to its longest word up to a cap, so a word that 
   await data.evaluate((scroller) => {
     scroller.scrollLeft = scroller.scrollWidth
   })
-  const sticky = await data
-    .locator("[class*=sticky]")
-    .nth(2)
-    .evaluate((cell) => cell.getBoundingClientRect().right)
   const lastValue = data.getByLabel("5", { exact: true }).nth(2)
   const box = await lastValue.evaluate((field) => field.getBoundingClientRect().toJSON())
-  expect(box.left).toBeGreaterThanOrEqual(sticky)
+  const scroller = await data.evaluate((each) => each.getBoundingClientRect().toJSON())
+  expect(box.left).toBeGreaterThanOrEqual(scroller.left)
+  expect(box.right).toBeLessThanOrEqual(scroller.right)
   await expect(lastValue).toBeVisible()
 })
 
@@ -145,4 +126,45 @@ test("a normal word in a category never breaks mid-word, even when a wide value 
   await expect(data.getByLabel("1", { exact: true }).first()).toHaveValue("123456789.12")
   const reach = await data.evaluate((scroller) => scroller.scrollWidth - scroller.clientWidth)
   expect(reach).toBeGreaterThan(0)
+})
+
+test("at the narrowest panel, scrolling the values shows every digit of the widest value, and a category keeps its whole words", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const data = await chartData(page, context, stack, ["Days sales outstanding", "Q4 target"], (at, row) =>
+    at === 0 && row === 0 ? 123456789.12 : 52,
+  )
+  await page.getByRole("separator", { name: designCopy.resizePanel }).focus()
+  await page.keyboard.press("Home")
+  await expect(page.getByRole("separator", { name: designCopy.resizePanel })).toHaveAttribute("aria-valuenow", "220")
+
+  const room = await data
+    .locator("textarea")
+    .first()
+    .evaluate((field) => {
+      const style = getComputedStyle(field)
+      const pen = document.createElement("canvas").getContext("2d")!
+      pen.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+      return {
+        word: pen.measureText("outstanding").width,
+        space: field.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+      }
+    })
+  expect(room.word).toBeLessThanOrEqual(room.space)
+
+  const widest = data.getByLabel("1", { exact: true }).first()
+  await expect(widest).toHaveValue("123456789.12")
+  await widest.scrollIntoViewIfNeeded()
+  const seen = await widest.evaluate((field) => {
+    const scroller = field.closest("[data-chart-data]")!.getBoundingClientRect()
+    const box = field.getBoundingClientRect()
+    const input = field as HTMLInputElement
+    return {
+      inside: box.left >= scroller.left && box.right <= scroller.right,
+      clipped: input.scrollWidth > input.clientWidth,
+    }
+  })
+  expect(seen).toEqual({ inside: true, clipped: false })
 })
