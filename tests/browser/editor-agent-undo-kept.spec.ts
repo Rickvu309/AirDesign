@@ -57,7 +57,7 @@ test("Undo of Aira's request keeps the layer the person moved since, says so, an
   await expect(canvas.getByText("Draft note", { exact: true })).toHaveCount(0)
   await expect(canvas.getByText("Q3 summary", { exact: true })).toBeVisible()
   await expect(
-    side.getByText(`${airaCopy.undone} ${agentKeptLayers("Aira", [airaKeptLayerName("Q3 summary")])}`),
+    side.getByText(`${airaCopy.undone} ${agentKeptLayers(productCopy.agentName, [airaKeptLayerName("Q3 summary")])}`),
   ).toBeVisible()
   await expect.poll(async () => textNode(await saved(stack, opened), "Draft note")).toMatchObject({ parent: null })
   const after = await saved(stack, opened)
