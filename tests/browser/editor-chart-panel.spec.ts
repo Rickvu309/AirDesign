@@ -6,7 +6,7 @@ import { clickSlide, landNodes, openEditor, spot } from "./editor-deck"
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 const categories = ["Q1", "Q2", "Q3", "Q4"]
-const series = ["Revenue", "Cost", "Margin", "Units", "Churn"].map((name, at) => ({
+const series = ["Plan", "Actual", "Forecast", "Units", "Churn"].map((name, at) => ({
   name,
   values: categories.map((_, row) => 1000 * at + row * 7.25 + 3021.75),
 }))
