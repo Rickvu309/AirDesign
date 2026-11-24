@@ -123,29 +123,56 @@ function painted(view: doom.Doom, slide: doom.NodeId, line: doom.NodeId, measure
   return { x: found.box.x + found.geometry.from.x, y: found.box.y + found.geometry.from.y }
 }
 
+function connected(grown: ReturnType<typeof drifted>, measureOf: (fold: doom.Doom) => doom.Measure) {
+  const decks = memoryDecks(() => grown.doom)
+  const host = {
+    ...decks,
+    measure: async (fold: doom.Doom) => ({ measure: measureOf(fold), missing: new Set<string>() }),
+  }
+  let calls = 0
+  const session: Session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0 }
+  const call = (op: string, args: unknown) => {
+    session.once = `call${String((calls += 1))}`
+    return callTool(names[op] ?? op, args, session, host)
+  }
+  const made = async () => {
+    const created = await call("create_deck", {})
+    return (created.answer as { deck: string }).deck
+  }
+  const freeEnd = (deck: string) => {
+    const geometry = doom.propOf(decks.decks.get(deck as never)!.nodes.get(grown.ids.l!), "geometry")
+    if (geometry?.kind !== "line" || !("x" in geometry.start)) throw new Error(JSON.stringify(geometry))
+    return { x: geometry.start.x, y: geometry.start.y }
+  }
+  const edit = (deck: string, changes: readonly unknown[]) =>
+    call("edit_deck", { deck, base: decks.decks.get(deck as never)!.rev, changes })
+  return { decks, made, freeEnd, edit }
+}
+
 describe("edit_deck delete", () => {
   it("frees a connector at the point the host's measure painted", async () => {
     const grown = drifted()
-    const decks = memoryDecks(() => grown.doom)
-    const host = { ...decks, measure: async () => ({ measure: wide, missing: new Set<string>() }) }
-    let calls = 0
-    const session: Session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0 }
-    const call = (op: string, args: unknown) => {
-      session.once = `call${String((calls += 1))}`
-      return callTool(names[op] ?? op, args, session, host)
-    }
-    const created = await call("create_deck", {})
-    const deck = (created.answer as { deck: string }).deck
+    const by = connected(grown, () => wide)
+    const deck = await by.made()
     const seen = painted(grown.doom, grown.slides[0]!, grown.ids.l!, wide)
     expect(seen.x).not.toBe(painted(grown.doom, grown.slides[0]!, grown.ids.l!, estimate).x)
-    const deleted = await call("edit_deck", {
-      deck,
-      base: decks.decks.get(deck as never)!.rev,
-      changes: [{ op: "delete", nodes: [grown.ids.t] }],
-    })
+    const deleted = await by.edit(deck, [{ op: "delete", nodes: [grown.ids.t] }])
     expect(deleted.answer).toMatchObject({ ok: true })
-    const geometry = doom.propOf(decks.decks.get(deck as never)!.nodes.get(grown.ids.l!), "geometry")
-    if (geometry?.kind !== "line" || !("x" in geometry.start)) throw new Error(JSON.stringify(geometry))
-    expect({ x: geometry.start.x, y: geometry.start.y }).toEqual(seen)
+    expect(by.freeEnd(deck)).toEqual(seen)
+  })
+
+  it("frees a connector with the widths of text an earlier change in the same batch wrote", async () => {
+    const grown = drifted()
+    const knowsCapital = (fold: doom.Doom) =>
+      [...fold.nodes.values()].some((node) => node.type === "shape" && node.text?.chars.includes("W")) ? wide : estimate
+    const by = connected(grown, knowsCapital)
+    const rewrite = { op: "set", target: grown.ids.words, text: "Hello World hello" }
+    const apart = await by.made()
+    expect((await by.edit(apart, [rewrite])).answer).toMatchObject({ ok: true })
+    const together = await by.made()
+    const batch = await by.edit(together, [rewrite, { op: "delete", nodes: [grown.ids.t] }])
+    expect(batch.answer).toMatchObject({ ok: true })
+    const seen = painted(by.decks.decks.get(apart as never)!, grown.slides[0]!, grown.ids.l!, wide)
+    expect(by.freeEnd(together)).toEqual(seen)
   })
 })
