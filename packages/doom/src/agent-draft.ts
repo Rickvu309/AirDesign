@@ -1,3 +1,4 @@
+import type { Measure } from "./measure.js"
 import { type OrderKey, orderKeyBetween } from "./order-key.js"
 import type { AgentRefusal } from "./agent-change.js"
 import type { NodeId } from "./ids.js"
@@ -14,6 +15,7 @@ export type Reading = {
   readonly read?: Doom
   readonly boxes?: ReadonlyMap<NodeId, Box>
   readonly pictures?: ReadonlyMap<string, Natural>
+  readonly measure?: Measure
 }
 export type Draft = {
   readonly doom: Doom

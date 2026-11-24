@@ -1,6 +1,7 @@
 import type { AgentChange, AgentRefusal } from "./agent-change.js"
 import { compileAgentChange, nameOf } from "./agent-compile.js"
 import type { Reading } from "./agent-draft.js"
+import type { Measure } from "./measure.js"
 import type { NodeId, Rev } from "./ids.js"
 import { rev } from "./ids.js"
 import type { WriteKey } from "./props.js"
@@ -28,6 +29,7 @@ export type EditBy = {
   readonly read?: Doom
   readonly boxes?: Reading["boxes"]
   readonly pictures?: Reading["pictures"]
+  readonly measure?: Measure
 }
 
 export function readingOf(doom: Doom, base: number): Doom {
@@ -51,6 +53,7 @@ export function compileAgentEdit(doom: Doom, changes: readonly AgentChange[], by
     read: by.read ?? doom,
     ...(by.boxes === undefined ? {} : { boxes: by.boxes }),
     ...(by.pictures === undefined ? {} : { pictures: by.pictures }),
+    ...(by.measure === undefined ? {} : { measure: by.measure }),
   }
   const writes: Write[] = []
   const ends: number[] = []

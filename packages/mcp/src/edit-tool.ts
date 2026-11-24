@@ -86,6 +86,16 @@ function unchangedAnswer(deck: string, rev: number, run: string | undefined): To
   })
 }
 
+async function deckMeasure(host: DeckHost, fold: doom.Doom): Promise<doom.Measure | undefined> {
+  if (host.measure === undefined) return undefined
+  try {
+    const read = await host.measure(fold)
+    return typeof read === "string" ? undefined : read.measure
+  } catch {
+    return undefined
+  }
+}
+
 export type Agent = { readonly id: string; readonly name?: string | undefined }
 
 function toldRefusal(refusal: {
@@ -137,6 +147,7 @@ export async function editDeckTool(raw: unknown, agent: Agent, once: string, hos
   const problem = imageProblem(fonts.changes, found)
   if (problem !== undefined) return problem
   const changes = found === undefined ? fonts.changes : withAssets(fonts.changes, found)
+  const measure = changes.some((change) => change.op === "delete") ? await deckMeasure(host, opened.fold) : undefined
   const compiled = doom.compileAgentEdit(opened.fold, changes, {
     author: {
       kind: "agent",
@@ -148,6 +159,7 @@ export async function editDeckTool(raw: unknown, agent: Agent, once: string, hos
     mint: ids.mint,
     read: doom.readingOf(opened.fold, parsed.base),
     ...(found === undefined ? {} : { pictures: pictureSizes(found) }),
+    ...(measure === undefined ? {} : { measure }),
     ...(parsed.runId === undefined ? { phase: "start" as const } : {}),
   })
   if ("refused" in compiled) return doomRefused(compiled, { rev: opened.rev })

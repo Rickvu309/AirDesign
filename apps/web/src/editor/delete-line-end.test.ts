@@ -47,7 +47,7 @@ describe("deleteWrites", () => {
     })
     const slide = grown.slides[0]!
     const seen = paintedStart(grown.doom, slide, grown.ids.l!)
-    const writes = deleteWrites(grown.doom, [grown.ids.t!])
+    const writes = deleteWrites(grown.doom, [grown.ids.t!], estimate)
     expect(writes.map((write) => write.prop)).toEqual(["geometry", "parent"])
     const next = landed(grown.doom, writes)
     expect(doom.parentOf(next.nodes.get(grown.ids.t!))).toBeNull()
@@ -55,10 +55,78 @@ describe("deleteWrites", () => {
     const geometry = doom.propOf(next.nodes.get(grown.ids.l!), "geometry")
     expect(geometry?.kind === "line" && "x" in geometry.start).toBe(true)
   })
+
+  it("frees the end where wider text painted it, not where the estimate put the shape", () => {
+    const grown = drifted()
+    const slide = grown.slides[0]!
+    const seen = paintedStart(grown.doom, slide, grown.ids.l!, wide)
+    const estimated = paintedStart(grown.doom, slide, grown.ids.l!)
+    expect(seen.x).not.toBe(estimated.x)
+    const writes = deleteWrites(grown.doom, [grown.ids.t!], wide)
+    const geometry = writes.find((write) => write.prop === "geometry")?.value
+    if (geometry == null || typeof geometry !== "object" || !("start" in geometry)) throw new Error("no end")
+    const start = geometry.start
+    if (start == null || typeof start !== "object" || !("x" in start) || !("y" in start))
+      throw new Error("still attached")
+    expect({ x: start.x, y: start.y }).toEqual(seen)
+  })
 })
 
-function paintedStart(view: doom.Doom, slide: doom.NodeId, line: doom.NodeId) {
-  const found = place(doom.resolveSlide(view, slide, doom.measureWith({})), line, 0, 0)
+const estimate = doom.measureWith({})
+const wide: doom.Measure = (text, theme, width) => {
+  const measured = estimate(text, theme, width)
+  return { ...measured, w: measured.w * 1.6 }
+}
+
+function drifted() {
+  return doom.doomFromTree({
+    theme: doom.defaultTheme,
+    slides: [
+      {
+        children: [
+          {
+            type: "frame",
+            name: "f",
+            props: {
+              box: box(100, 50, 1, 1),
+              layout: { mode: "row", gap: 10, padding: { t: 20, r: 20, b: 20, l: 20 }, align: "top-left" },
+              sizing: { w: "hug", h: "hug" },
+            },
+            children: [
+              {
+                type: "shape",
+                name: "words",
+                props: {
+                  box: box(0, 0, 200, 100),
+                  sizing: { w: "hug", h: "hug" },
+                  text: { ...doom.textFromMarkdown("Hello world hello", "body"), resize: "widthAndHeight" },
+                },
+              },
+              { type: "shape", name: "t", props: { box: box(0, 0, 100, 50) } },
+            ],
+          },
+          {
+            type: "shape",
+            name: "l",
+            props: (ids) => ({
+              box: box(0, 0, 10, 10),
+              geometry: {
+                kind: "line" as const,
+                start: { node: ids.t!, site: "l" as const },
+                end: { x: 5, y: 5 },
+                route: "straight" as const,
+                arrows: ["none", "none"] as const,
+              },
+            }),
+          },
+        ],
+      },
+    ],
+  })
+}
+
+function paintedStart(view: doom.Doom, slide: doom.NodeId, line: doom.NodeId, measure: doom.Measure = estimate) {
+  const found = place(doom.resolveSlide(view, slide, measure), line, 0, 0)
   if (found?.node.geometry?.kind !== "line") throw new Error("no line")
   return { x: found.x + found.node.geometry.from.x, y: found.y + found.node.geometry.from.y }
 }

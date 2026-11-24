@@ -15,6 +15,7 @@ type Context = {
   readonly theme: Theme
   readonly measure: Measure
   readonly sizes: Map<string, Size>
+  readonly showHidden?: boolean
 }
 type Placed = { readonly id: NodeId; readonly box: Box }
 type Plan = { readonly size: Size; readonly kids: readonly Placed[] }
@@ -41,7 +42,9 @@ function modes(node: Node): { readonly w: Mode; readonly h: Mode } {
 function childrenOf(context: Context, id: NodeId): readonly Node[] {
   return (context.doom.children.get(id) ?? []).flatMap((child) => {
     const node = context.doom.nodes.get(child)
-    return node === undefined || prop(node, "hidden") === true ? [] : [node]
+    if (node === undefined) return []
+    if (context.showHidden !== true && prop(node, "hidden") === true) return []
+    return [node]
   })
 }
 
@@ -298,6 +301,23 @@ function arrange(context: Context, boxes: Map<NodeId, Box>, node: Node, w: numbe
   }
 }
 
+function placeHidden(context: Context, boxes: Map<NodeId, Box>, node: Node): void {
+  const inclusive: Context = { ...context, showHidden: true }
+  const mode = modes(node)
+  const laid = boxes.get(node.id)
+  const w = mode.w === "hug" ? null : (laid?.w ?? null)
+  const h = mode.h === "hug" ? null : (laid?.h ?? null)
+  for (const kid of plan(inclusive, node, w, h).kids) {
+    const child = context.doom.nodes.get(kid.id)
+    if (boxes.has(kid.id)) {
+      if (child?.type === "frame") placeHidden(context, boxes, child)
+      continue
+    }
+    boxes.set(kid.id, kid.box)
+    if (child?.type === "frame") arrange(inclusive, boxes, child, kid.box.w, kid.box.h)
+  }
+}
+
 function lines(context: Context, boxes: Map<NodeId, Box>, id: NodeId): void {
   for (const child of childrenOf(context, id)) {
     if (isLine(child)) {
@@ -323,6 +343,7 @@ export function solveLayout(doom: Doom, root: NodeId, measure: Measure): Readonl
     boxes.set(root, { ...storedBox(node), w: own.w, h: own.h })
     arrange(context, boxes, node, own.w, own.h)
   }
+  placeHidden(context, boxes, node)
   lines(context, boxes, root)
   return boxes
 }

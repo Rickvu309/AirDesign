@@ -93,11 +93,11 @@ describe("solveLayout in a row", () => {
   })
 
   it("leaves a hidden child out of the flow", () => {
-    const { at, boxes, ids } = solved([
+    const { at } = solved([
       rowOf([block("a", 100, 40), block("gone", 100, 40, { hidden: true }), block("c", 100, 40)], { gap: 10 }),
     ])
     expect(at("c").x).toBe(110)
-    expect(boxes.has(ids.gone!)).toBe(false)
+    expect(at("gone")).toMatchObject({ x: 110, w: 100, h: 40 })
   })
 
   it("leaves an absolute child where it was put, outside the flow and the hug size", () => {

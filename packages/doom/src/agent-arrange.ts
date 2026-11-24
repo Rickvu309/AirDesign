@@ -125,6 +125,7 @@ export function compileUnwrap(draft: Draft, change: Op<"unwrap">): void {
 
 export function compileDelete(draft: Draft, change: Op<"delete">): void {
   const nodes = [...new Set(change.nodes)].map((id) => arrangeableNode(draft, id, "nodes").id)
-  for (const write of freedLineEnds(draft.doom, nodes, measureWith({}))) draft.writes.push(write)
+  const measured = draft.reading.measure ?? measureWith({})
+  for (const write of freedLineEnds(draft.doom, nodes, measured)) draft.writes.push(write)
   for (const id of nodes) draft.writes.push({ node: id, prop: "parent", value: null })
 }
