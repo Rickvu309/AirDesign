@@ -1,9 +1,26 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import type { PanelControl } from "@/design/panel"
-import { grow, spot } from "@/testing/doom-fixtures"
 import { changeWrites } from "./design-changes"
 import { nodeModel } from "./design-model"
+import { geometryOf } from "./slide-geometry"
+
+const spot = (x: number, y: number, w: number, h: number, rotation = 0) => ({
+  x,
+  y,
+  w,
+  h,
+  rotation,
+  flipH: false,
+  flipV: false,
+})
+
+function grow(children: readonly doom.TreeNode[]) {
+  const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children }] })
+  const measure = doom.measureWith({})
+  const geometry = geometryOf(doom.resolveSlide(grown.doom, grown.slides[0]!, measure))
+  return { ...grown, view: grown.doom, geometry, measure }
+}
 
 const asset = "a".repeat(64)
 const window = { x: 0.1, y: 0, w: 0.5, h: 1 }
