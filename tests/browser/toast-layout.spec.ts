@@ -23,6 +23,15 @@ test("a normal deck name stays whole on the trash notice", async ({ page }) => {
   await expect(action).toHaveText(" moved to Trash")
   const actionCut = await action.evaluate((element) => element.scrollWidth > element.clientWidth + 1)
   expect(actionCut).toBe(false)
+  const space = await action.evaluate((element) => {
+    const text = element.firstChild
+    if (text === null || text.nodeType !== Node.TEXT_NODE) return 0
+    const range = document.createRange()
+    range.setStart(text, 0)
+    range.setEnd(text, 1)
+    return range.getBoundingClientRect().width
+  })
+  expect(space).toBeGreaterThan(1)
 })
 
 for (const width of [320, 480, 735]) {
