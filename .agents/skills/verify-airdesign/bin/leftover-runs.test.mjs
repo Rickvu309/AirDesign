@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync }
 import os from "node:os"
 import path from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
-import { newRun, removeLeftoverRuns } from "./leftover-runs.mjs"
+import { foreignRun, newRun, removeLeftoverRuns, runsOf } from "./leftover-runs.mjs"
 
 const folders = []
 const children = []
@@ -116,5 +116,19 @@ describe("the leftover verify runs", () => {
   it("does nothing when the scratch root does not exist", async () => {
     const root = path.join(scratchRoot(), "missing")
     expect((await sweep(root)).result).toEqual({ stopped: [], removed: [] })
+  })
+})
+
+describe("the runs of one worktree", () => {
+  it("lists only runs started in this worktree and names the owner of another's", () => {
+    const root = scratchRoot()
+    const [mine, theirs, bare] = Array.from({ length: 3 }, newRun)
+    runFolder(root, mine, { ...stateOf(mine, 1), repo: "/work/a" }, 0)
+    runFolder(root, theirs, { ...stateOf(theirs, 1), repo: "/work/b" }, 0)
+    runFolder(root, bare, undefined, 0)
+    expect(runsOf({ scratchRoot: root, repo: "/work/a" })).toEqual([mine])
+    expect(foreignRun({ scratchRoot: root, repo: "/work/a", run: theirs })).toBe("/work/b")
+    expect(foreignRun({ scratchRoot: root, repo: "/work/a", run: mine })).toBeUndefined()
+    expect(foreignRun({ scratchRoot: root, repo: "/work/a", run: bare })).toBeUndefined()
   })
 })

@@ -51,6 +51,15 @@ function runNames(scratchRoot) {
   }
 }
 
+export function runsOf({ scratchRoot, repo }) {
+  return runNames(scratchRoot).filter((run) => stateIn(path.join(scratchRoot, run))?.repo === repo)
+}
+
+export function foreignRun({ scratchRoot, repo, run }) {
+  const state = stateIn(path.join(scratchRoot, run))
+  return state !== undefined && state.repo !== repo ? state.repo : undefined
+}
+
 export async function removeLeftoverRuns({ scratchRoot, stop, now = Date.now() }) {
   const stopped = []
   const removed = []

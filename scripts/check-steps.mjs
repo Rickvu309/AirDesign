@@ -268,6 +268,7 @@ const rows = [
     gate: { order: 12 },
   },
   { name: "commit-titles", kind: "rule", command: "node", args: ["scripts/commit-titles.mjs"], verdict: "warn" },
+  { name: "broad-kill", kind: "rule", command: "node", args: ["scripts/broad-kill.mjs"] },
   { name: "conflict-markers", kind: "rule", command: "node", args: ["scripts/conflict-markers.mjs"], verdict: "warn" },
   {
     name: "migration-numbers",

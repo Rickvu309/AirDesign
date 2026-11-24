@@ -10,7 +10,7 @@ import { airaArgs, airaChoice, airaFlags } from "./aira-choice.mjs"
 import { serve } from "./serve.mjs"
 import { browserCookies } from "./browser-cookies.mjs"
 import { designContext, openBrowser, settle } from "./browser.mjs"
-import { alive, commandLine, newRun, ownsServe, removeLeftoverRuns } from "./leftover-runs.mjs"
+import { alive, commandLine, foreignRun, newRun, ownsServe, removeLeftoverRuns, runsOf } from "./leftover-runs.mjs"
 import { loadLine } from "./load.mjs"
 import { builtSite, fakeOrigins } from "./site.mjs"
 import { replyRoutes } from "./reply-routes.mjs"
@@ -405,8 +405,15 @@ async function stopRun(run) {
 }
 
 async function stop(run) {
-  if (run === undefined) fail("name the run: verify-airdesign stop <run>")
-  process.stdout.write(`${JSON.stringify(await stopRun(run))}\n`)
+  const runs = run === undefined ? runsOf({ scratchRoot, repo }) : [run]
+  for (const each of runs) {
+    const owner = foreignRun({ scratchRoot, repo, run: each })
+    if (owner !== undefined)
+      fail(`run ${each} was started in ${owner}, not in this worktree (${repo}); only its own worktree stops it`)
+  }
+  for (const each of runs) process.stdout.write(`${JSON.stringify(await stopRun(each))}\n`)
+  if (runs.length === 0)
+    process.stdout.write(`${JSON.stringify({ stopped: [], note: "no run of this worktree is running" })}\n`)
 }
 
 const invoked = process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
