@@ -1,19 +1,19 @@
-import { type Reader, boolean, explain, finite, literal, rememberForm, words } from "./read-kit.js"
+import { type Reader, boolean, explain, finite, formOf, literal, rememberForm, words } from "./read-kit.js"
 
 type JsonSchema = Readonly<Record<string, unknown>>
 export type Field<T> = { readonly schema: JsonSchema; readonly read: Reader<T> }
 
 export const field = <T>(schema: JsonSchema, read: Reader<T>): Field<T> => {
-  const form = typeof schema.description === "string" ? schema.description : undefined
+  const accepted = formOf(read)
   const wrapped: Reader<T> = (raw) => {
     try {
       return read(raw)
     } catch (thrown) {
-      explain(thrown, form)
+      explain(thrown, accepted)
       throw thrown
     }
   }
-  if (form !== undefined) rememberForm(wrapped, form)
+  if (accepted !== undefined) rememberForm(wrapped, accepted)
   return { schema, read: wrapped }
 }
 

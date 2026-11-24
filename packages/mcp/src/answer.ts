@@ -96,7 +96,10 @@ function whereWords(where: Where): string {
   return [change, named].filter((part) => part !== "").join(": ")
 }
 
-function fieldNote(fault: unknown, form: unknown): string | undefined {
+function fieldNote(fault: unknown, form: unknown, needs: unknown): string | undefined {
+  if (fault === "needs" || (typeof needs === "string" && needs !== "")) {
+    return typeof needs === "string" && needs !== "" ? `Needs ${needs}.` : undefined
+  }
   const problem = fault === "missing" || fault === "unknown" ? fault : fault === "form" ? "the wrong form" : undefined
   if (problem === undefined) return undefined
   const sentence = `${problem[0]!.toUpperCase()}${problem.slice(1)}.`
@@ -105,7 +108,8 @@ function fieldNote(fault: unknown, form: unknown): string | undefined {
 
 export function refused(code: Refused, more: Where & Readonly<Record<string, unknown>> = {}): ToolResult {
   const where = whereWords(more)
-  const specific = code === "field" ? fieldNote(more.fault, more.form) : undefined
+  const specific =
+    more.fault !== undefined || more.needs !== undefined ? fieldNote(more.fault, more.form, more.needs) : undefined
   const words = specific ?? refusalWords[code]
   return told(false, {
     ok: false,
@@ -123,6 +127,7 @@ export function doomRefused(refusal: doom.AgentRefusal | doom.Refusal, more: Rea
     ...("field" in refusal && refusal.field !== undefined ? { field: refusal.field } : {}),
     ...("fault" in refusal && refusal.fault !== undefined ? { fault: refusal.fault } : {}),
     ...("form" in refusal && refusal.form !== undefined ? { form: refusal.form } : {}),
+    ...("needs" in refusal && refusal.needs !== undefined ? { needs: refusal.needs } : {}),
     ...(refusal.node === undefined ? {} : { node: refusal.node }),
     ...(refusal.prop === undefined ? {} : { prop: refusal.prop }),
     ...more,

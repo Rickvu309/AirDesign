@@ -20,19 +20,23 @@ import {
 } from "./paint.js"
 import {
   type Reader,
+  accepting,
+  agentColor,
   boolean,
+  detailOf,
   finite,
+  formed,
+  forms,
   list,
   literal,
   matching,
+  mismatch,
   object,
-  oneOf,
   pair,
-  reject,
-  rejected,
-  rejectedField,
+  union,
   variant,
   words,
+  wrongForm,
 } from "./read-kit.js"
 import { type Refusal, refuse } from "./refusal.js"
 import { type TextStyleName, textStyleNames } from "./text.js"
@@ -142,9 +146,9 @@ const idSchema = { $ref: "#/$defs/id" }
 const kindWords =
   "text and shape hold words. line. frame groups children, or rows makes a grid. picture: fill {image}. icon. chart. kpi: title, value, note. cards: title, points, icon. compare: 2 or 3 of title, points. matrix: up to 4, axes. timeline: 2 to 8 of value, title, note. flow: 2 to 6 of title, note."
 const colorSchema = { $ref: "#/$defs/color" }
-const readId: Reader<NodeId> = (raw) => readNodeId(raw) ?? reject()
+const readId = formed(readNodeId, forms.node)
 const tintedName = new RegExp(`^(${colorVars.join("|")})([+-](100|[1-9][0-9]?))?$`)
-const readColor: Reader<AgentColor> = oneOf<AgentColor>(matching(tintedName, 16) as Reader<AgentColor>, readHex)
+const readColor = agentColor(tintedName, 16, forms.color) as Reader<AgentColor>
 const id = (description: string) => field<NodeId>({ ...idSchema, description }, readId)
 
 const readNone = literal(["none"] as const)
@@ -181,12 +185,14 @@ const readChart: Reader<AgentChart> = (raw) => {
     },
     { labels: boolean },
   )(raw)
-  return chart.series.every((series) => series.values.length === chart.categories.length) ? chart : reject()
+  return chart.series.every((series) => series.values.length === chart.categories.length)
+    ? chart
+    : mismatch("series", forms.series)
 }
 
-const readFontName = matching(/^[A-Za-z0-9][A-Za-z0-9 ]{0,99}$/, 100)
-const readIconName = matching(/^([a-z0-9-]+\/)?[a-z0-9-]+$/, 80)
-const readAfter: Reader<NodeId | null> = (raw) => (raw === null ? null : readId(raw))
+const readFontName = matching(/^[A-Za-z0-9][A-Za-z0-9 ]{0,99}$/, 100, forms.font)
+const readIconName = matching(/^([a-z0-9-]+\/)?[a-z0-9-]+$/, 80, forms.icon)
+const readAfter = accepting(forms.after, (raw) => (raw === null ? null : readId(raw)))
 
 type LookFields = { readonly [K in keyof AgentLook]-?: Field<Exclude<AgentLook[K], undefined>> }
 
@@ -216,16 +222,16 @@ const lookFields: LookFields = {
         },
       ],
     },
-    oneOf<AgentFill>(
+    union<AgentFill>(forms.fill, [
       readColor,
       readNone,
       object({ image: words(limits.address, 1) }),
       object({ gradient: list(readColor, 8, 2) }, { angle: readAngle, radial: boolean }),
-    ),
+    ]),
   ),
   stroke: field(
     { description: "Outline colour, or none.", anyOf: [colorSchema, { const: "none" }] },
-    oneOf<AgentColor | "none">(readColor, readNone),
+    union(forms.stroke, [readColor, readNone]),
   ),
   strokeWidth: number(0, 200, "Outline weight in pixels. A stroke colour alone draws a thin one."),
   color: field({ ...colorSchema, description: "Text colour." }, readColor),
@@ -311,7 +317,7 @@ const lookFields: LookFields = {
     { type: "string", description: "Layer name, or with op deck the deck's name. Never empty." },
     (raw) => {
       const name = words(limits.name, 1)(raw)
-      return name.trim() === "" ? reject() : name
+      return name.trim() === "" ? wrongForm(forms.text) : name
     },
   ),
   hidden: flag("Hide the layer."),
@@ -339,6 +345,7 @@ const readSlideMove = object({ slide: readId, after: readAfter })
 const readTarget = matching(
   /^([a-z0-9]{1,16}:[0-9]{1,12}(\.(title|subtitle|body)|#.{3,240})?|\*\.(title|subtitle|body))$/,
   280,
+  forms.target,
 )
 
 const placeFields = {
@@ -433,8 +440,7 @@ export function readAgentChange(raw: unknown): AgentChange | (Refusal & { readon
   try {
     return readChange(raw) as AgentChange
   } catch (thrown) {
-    const field = rejectedField(thrown)
-    return { ...refuse(rejected(thrown)), ...(field === undefined ? {} : { field }) }
+    return detailOf(thrown)
   }
 }
 

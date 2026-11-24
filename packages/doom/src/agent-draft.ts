@@ -38,12 +38,15 @@ export function stop(
   fault?: FieldFault,
   form?: string,
 ): never {
+  const needs = fault === "needs" ? form : undefined
+  const accepted = fault === "needs" ? undefined : form
   throw new Stop({
     refused,
     ...(node === undefined ? {} : { node }),
     ...(field === undefined ? {} : { field }),
     ...(fault === undefined ? {} : { fault }),
-    ...(form === undefined ? {} : { form }),
+    ...(accepted === undefined ? {} : { form: accepted }),
+    ...(needs === undefined ? {} : { needs }),
   })
 }
 

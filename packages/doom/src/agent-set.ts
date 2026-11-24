@@ -50,7 +50,6 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "from",
     "to",
     "route",
-    "chart",
     "box",
   ],
   frame: [
@@ -68,7 +67,7 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "shape",
     ...wordsOnly,
   ],
-  shape: ["layout", "gap", "padding", "chart", "notes", "clip"],
+  shape: ["layout", "gap", "padding", "notes", "clip"],
 }
 const roleTarget = /^([a-z0-9]{1,16}:[0-9]{1,12})\.(title|subtitle|body)$/
 
@@ -118,11 +117,11 @@ function setEverySlide(draft: Draft, change: SetChange, role: string): void {
 function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | undefined {
   const geometry = propOf(node, "geometry")
   if (change.icon !== undefined) {
-    if (geometry?.kind !== "icon") stop("shape", node.id, "icon", "form", "An icon.")
+    if (geometry?.kind !== "icon") stop("shape", node.id, "icon", "needs", "an icon")
     return { kind: "icon", name: iconName(change.icon) }
   }
   const lined = (["startArrow", "arrow", "from", "to", "route"] as const).find((field) => change[field] !== undefined)
-  if (lined !== undefined && geometry?.kind !== "line") stop("shape", node.id, lined, "form", "A line.")
+  if (lined !== undefined && geometry?.kind !== "line") stop("shape", node.id, lined, "needs", "a line")
   if (geometry?.kind !== "line") return undefined
   const box = change.box
   const pointed = "x" in geometry.start && "x" in geometry.end
@@ -149,15 +148,15 @@ export function compileSet(draft: Draft, change: SetChange): void {
   if (node.type !== "slide" && node.type !== "frame" && node.type !== "shape")
     stop("shape", node.id, "target", "form", "A slide, a frame or a shape.")
   for (const field of [...neverOnSet, ...unfit[node.type]])
-    if (change[field] !== undefined) stop("shape", node.id, field, "unknown", `A ${node.type} does not take ${field}.`)
+    if (change[field] !== undefined) stop("shape", node.id, field, "unknown")
   const fitting = change.fit !== undefined || change.crop !== undefined
   if (fitting && !(propOf(node, "fills") ?? []).some((paint) => paint.kind === "image"))
-    stop("shape", node.id, change.crop === undefined ? "fit" : "crop", "form", "A layer whose fill is an image.")
+    stop("shape", node.id, change.crop === undefined ? "fit" : "crop", "needs", "an image fill")
   if (change.crop !== undefined && change.fit !== undefined && change.fit !== "crop")
     stop("shape", node.id, "crop", "form", "fit crop, or no fit.")
   const outline = propOf(node, "geometry")?.kind
   if (change.shape !== undefined && (outline === "line" || outline === "icon" || outline === "path"))
-    stop("shape", node.id, "shape", "form", "A preset outline. A line, an icon or a path does not take one.")
+    stop("shape", node.id, "shape", "needs", "a preset outline")
   if (change.link !== undefined && propOf(node, "text") === undefined) stop("shape", node.id, "link")
   const now = {
     fills: propOf(node, "fills"),
@@ -183,10 +182,9 @@ export function compileSet(draft: Draft, change: SetChange): void {
   const asked = (["layout", "gap", "padding", "align"] as const).find(
     (field) => node.type === "frame" && change[field] !== undefined,
   )
-  if (asked !== undefined && layout === undefined)
-    stop("shape", node.id, asked, "form", "row or column, with gap, padding and left, center or right.")
+  if (asked !== undefined && layout === undefined) stop("shape", node.id, asked, "needs", "a row or column layout")
   if (change.chart !== undefined && propOf(node, "chart") === undefined)
-    stop("shape", node.id, "chart", "form", "A chart layer.")
+    stop("shape", node.id, "chart", "needs", "a chart layer")
   const shaped = geometryOf(draft, node, change)
   const values: Values = {
     ...surfaceOf(change, now, stroked, change.effectOpacity === undefined ? undefined : themeOf(draft)),

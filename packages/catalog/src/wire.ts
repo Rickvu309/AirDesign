@@ -23,9 +23,14 @@ export const sessionCookieName = "airdesign.session"
 export const accountCookieName = "airdesign.account"
 const accountKeyPattern = /^[0-9a-f]{32}$/
 
-export type FieldRefusal = { ok: false; refusal: "field" }
+export type FieldDetail = {
+  readonly field: string
+  readonly fault: "missing" | "unknown" | "form"
+  readonly form?: string
+}
+export type FieldRefusal = { readonly ok: false; readonly refusal: "field" } & Partial<FieldDetail>
 export type DeckRefusal = { ok: false; refusal: "deck" }
-export type BatchRefusal = { ok: false; refusal: "batch" }
+export type BatchRefusal = { readonly ok: false; readonly refusal: "batch" } & Partial<FieldDetail>
 export type BaseRefusal = { ok: false; refusal: "base" }
 type ResourceRefusal = { ok: false; refusal: "resource" }
 type ChallengeRefusal = { ok: false; refusal: "challenge" }
@@ -106,9 +111,12 @@ export const readRun = readInput(
 
 export const readCapture = readInput(z.strictObject({ deck: deckInput }), inputRefusal)
 
+const deckForm = "1 to 64 of letters, digits, _ or -."
+
 export function readNamedDeck(raw: unknown): { ok: true; deck: DeckId } | FieldRefusal | DeckRefusal {
   const body = recordOf(raw)
-  if (body === undefined || !Object.hasOwn(body, "deck")) return fieldRefusal
+  if (body === undefined || !Object.hasOwn(body, "deck"))
+    return { ok: false, refusal: "field", field: "deck", fault: "missing", form: deckForm }
   return readCapture({ deck: body.deck })
 }
 

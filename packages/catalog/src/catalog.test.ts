@@ -104,7 +104,19 @@ it("reads the doom's changes through edit_deck", () => {
   const base = { deck: "d", base: 3 }
   expect(read({ ...base, changes: [{ op: "add", kind: "text", slide: "s:3" }] }).ok).toBe(true)
   expect(read({ ...base, runId: "r1", changes: [{ op: "delete", nodes: ["s:4"] }] }).ok).toBe(true)
-  expect(read({ ...base, changes: [] })).toEqual({ ok: false, refusal: "batch" })
+  expect(read({ ...base, changes: [] })).toEqual({
+    ok: false,
+    refusal: "batch",
+    field: "changes",
+    fault: "form",
+    form: "1 to 100 changes.",
+  })
   expect(read({ deck: "d", changes: [{}] })).toEqual({ ok: false, refusal: "base" })
-  expect(read({ ...base, changes: [{}], actor: "person" })).toEqual({ ok: false, refusal: "field" })
+  expect(read({ ...base, changes: [{}], actor: "person" })).toEqual({
+    ok: false,
+    refusal: "field",
+    field: "actor",
+    fault: "unknown",
+    form: "One of deck, base, runId, changes.",
+  })
 })
