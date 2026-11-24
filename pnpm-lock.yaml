@@ -214,8 +214,8 @@ importers:
         specifier: 3.16.0
         version: 3.16.0
       ts-packwerk:
-        specifier: 0.1.4
-        version: 0.1.4
+        specifier: 0.1.5
+        version: 0.1.5
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -4812,8 +4812,8 @@ packages:
   ts-morph@26.0.0:
     resolution: {integrity: sha512-ztMO++owQnz8c/gIENcM9XfCEzgoGphTv+nKpYNM1bgsdOVC/jRZuEBf6N+mLLDNg68Kl+GgUZfOySaRiG1/Ug==}
 
-  ts-packwerk@0.1.4:
-    resolution: {integrity: sha512-43/q44NXYjINmb6l+AklXl8qBX+5lrEW+rlcMVH14Z2ygnWGSaG7npO8YgjlCWjejfgn1Gr3RbdErfoMqtAyDg==}
+  ts-packwerk@0.1.5:
+    resolution: {integrity: sha512-06k0hDEXrP8xpQE7loqNQYoWZlskhcVitZVA9oHE2zo2xjyRN2/5Mkef8XtZQMQOl/p+vx4FLIKx1CFNmM0G4Q==}
     engines: {node: '>=24'}
     hasBin: true
 
@@ -9199,7 +9199,7 @@ snapshots:
       '@ts-morph/common': 0.27.0
       code-block-writer: 13.0.3
 
-  ts-packwerk@0.1.4:
+  ts-packwerk@0.1.5:
     dependencies:
       oxc-parser: 0.157.0
       oxc-resolver: 11.24.2
