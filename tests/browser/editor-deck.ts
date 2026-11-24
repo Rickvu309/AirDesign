@@ -1,4 +1,4 @@
-import type { BrowserContext, Page } from "@playwright/test"
+import { expect, type BrowserContext, type Page } from "@playwright/test"
 import { orderKeyBetween, type OrderKey } from "../../packages/doom/src/index.ts"
 import * as doom from "../../packages/doom/src/index.ts"
 import { forward, signInBrowser, type Stack } from "./api-stack"
@@ -153,4 +153,13 @@ export async function serveOriginals(page: Page, originals: Stack["originals"]):
       }
     },
   )
+}
+
+export const paintedBox = (tab: Page, id: string) => tab.locator(`[data-slide-box] [data-node="${id}"]`).boundingBox()
+
+export const paintedOrder = (tab: Page) =>
+  tab.locator("[data-slide-box] [data-node]").evaluateAll((all) => all.map((each) => each.getAttribute("data-node")))
+
+export async function paintsAs<T>(tab: Page, other: Page, read: (tab: Page) => Promise<T>): Promise<void> {
+  await expect.poll(() => read(tab)).toEqual(await read(other))
 }

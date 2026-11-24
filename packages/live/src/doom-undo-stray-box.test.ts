@@ -57,6 +57,18 @@ async function open() {
   return { deck: opened.deck, run }
 }
 
+async function joinedAs(remote: ReturnType<typeof memoryDoomRemote>, client: string) {
+  let next = 0
+  const opened = await createDoomDeck(remote, "stray", {
+    once: () => `${client}-${(next += 1)}`,
+    client,
+    storage: memoryStorage(),
+    pause: () => Promise.resolve(),
+  })
+  if (!opened.ok) throw new Error(JSON.stringify(opened))
+  return opened.deck
+}
+
 const cardIn = (view: doom.Doom) => ({
   parent: (view.nodes.get(card) as { parent: { id: doom.NodeId } }).parent.id,
   box: (view.nodes.get(card) as { box: ReturnType<typeof box> }).box,
@@ -149,18 +161,7 @@ describe("an undo that writes a layer's box but not its frame", () => {
 
   it("leaves where the layer sits when two people group it, move it and undo in turn", async () => {
     const remote = memoryDoomRemote(start)
-    const joined = async (client: string) => {
-      let next = 0
-      const opened = await createDoomDeck(remote, "stray", {
-        once: () => `${client}-${(next += 1)}`,
-        client,
-        storage: memoryStorage(),
-        pause: () => Promise.resolve(),
-      })
-      if (!opened.ok) throw new Error(JSON.stringify(opened))
-      return opened.deck
-    }
-    const [a, b] = [await joined("a"), await joined("b")]
+    const [a, b] = [await joinedAs(remote, "a"), await joinedAs(remote, "b")]
     const both = async () => {
       for (const deck of [a, b, a, b]) {
         await deck.sync()
@@ -186,5 +187,52 @@ describe("an undo that writes a layer's box but not its frame", () => {
     a.undo()
     await both()
     expect(cardIn(a.view())).toEqual(seen)
+  })
+
+  it("refuses the group's undo as stale when the tab pressing it has not yet seen the other tab's nudge of the layer", async () => {
+    const remote = memoryDoomRemote(start)
+    const [a, b] = [await joinedAs(remote, "a"), await joinedAs(remote, "b")]
+    const group = doom.nodeId("g:9")
+    expect(
+      b.push([
+        { node: group, prop: "type", value: "frame" },
+        { node: group, prop: "parent", value: at(slide) },
+        { node: group, prop: "box", value: box(300, 200, 400, 300) },
+        { node: card, prop: "parent", value: at(group) },
+        { node: card, prop: "box", value: box(0, 0, 100, 50) },
+      ]).ok,
+    ).toBe(true)
+    await b.sync()
+    await a.catchUp()
+    expect(a.push([{ node: card, prop: "box", value: box(20, 10, 100, 50) }]).ok).toBe(true)
+    await a.sync()
+    expect(b.undo().ok).toBe(true)
+    await b.sync()
+    expect(b.notices()).toMatchObject([{ refused: "stale", node: card, prop: "box" }])
+    expect(cardIn(b.view()).parent).toBe(group)
+  })
+
+  it("lands the group's undo once the tab pressing it has caught up with the other tab's nudge", async () => {
+    const remote = memoryDoomRemote(start)
+    const [a, b] = [await joinedAs(remote, "a"), await joinedAs(remote, "b")]
+    const group = doom.nodeId("g:9")
+    expect(
+      b.push([
+        { node: group, prop: "type", value: "frame" },
+        { node: group, prop: "parent", value: at(slide) },
+        { node: group, prop: "box", value: box(300, 200, 400, 300) },
+        { node: card, prop: "parent", value: at(group) },
+        { node: card, prop: "box", value: box(0, 0, 100, 50) },
+      ]).ok,
+    ).toBe(true)
+    await b.sync()
+    await a.catchUp()
+    expect(a.push([{ node: card, prop: "box", value: box(20, 10, 100, 50) }]).ok).toBe(true)
+    await a.sync()
+    await b.catchUp()
+    expect(b.undo().ok).toBe(true)
+    await b.sync()
+    expect(b.notices()).toEqual([])
+    expect(cardIn(b.view()).parent).toBe(frame)
   })
 })
