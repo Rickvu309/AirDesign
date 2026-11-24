@@ -124,7 +124,7 @@ export function ChartSection({
       <div
         role="group"
         aria-label={editorCopy.chartData}
-        className="-m-0.5 min-w-0 scroll-pl-24 overflow-x-auto p-0.5"
+        className="-my-0.5 -mr-0.5 min-w-0 scroll-pl-24 overflow-x-auto py-0.5 pr-0.5"
         data-chart-data=""
       >
         <div
