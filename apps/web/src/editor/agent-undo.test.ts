@@ -78,10 +78,21 @@ describe("undoing an Aira exchange on a doom deck", () => {
     expect(stays?.exchanges[0]?.undoRefused).toBeUndefined()
   })
 
-  it("says the undo is refused when a person's newer write left nothing to take back", async () => {
+  it("says the undo is refused when a person's newer write left nothing to take back, and lets them try again", async () => {
     const open = client({ "run-2": { ok: false, reason: "nothing" } })
     const refused = await undoExchange(done, 0, undoAgentRun(open))
     expect(refused?.exchanges[0]).toMatchObject({ end: "done", undoRefused: true })
+    const again = await undoExchange(
+      refused!,
+      0,
+      doomAgentUndo(
+        client({
+          "run-2": { ok: true, once: "u2", saved, kept: [], left: [], waiting: [] },
+          "run-1": { ok: true, once: "u1", saved, kept: [], left: [], waiting: [] },
+        }),
+      ),
+    )
+    expect(again?.exchanges[0]).toMatchObject({ end: "undone" })
   })
 
   it("keeps Undo and the runs still left when the deck cannot be reached", async () => {

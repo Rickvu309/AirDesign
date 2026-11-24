@@ -357,7 +357,7 @@ describe("Aira's loop in the browser", () => {
     expect((await asking(airaChat(deck), "Hello", malformed)).done.exchanges[0]?.end).toBe("malformed")
   })
 
-  it("undoes every run an exchange landed, once, and marks an exchange whose run can no longer be undone", async () => {
+  it("undoes every run an exchange landed, once, and marks an exchange whose run was refused, which can be tried again", async () => {
     const link = scripted(
       [{ lines: [ended([editCall])] }, { lines: [ended([{ type: "text", text: "Ok" }])] }],
       [edited],
@@ -375,8 +375,10 @@ describe("Aira's loop in the browser", () => {
     const fenced = { ...done, exchanges: [{ ...done.exchanges[0]!, runs: ["fenced"] }] }
     const refused = await undoExchange(fenced, 0, undo)
     expect(refused?.exchanges[0]).toMatchObject({ end: "done", undoRefused: true })
-    expect(refused === undefined ? "missing" : await undoExchange(refused, 0, undo)).toBeUndefined()
-    expect(asked).toEqual(["run-1", "fenced"])
+    expect(refused === undefined ? "missing" : await undoExchange(refused, 0, undo)).toMatchObject({
+      exchanges: [{ undoRefused: true }],
+    })
+    expect(asked).toEqual(["run-1", "fenced", "fenced"])
   })
 
   it("says an undo failed when the server cannot be reached, and undoes only the runs still left when the person tries again", async () => {

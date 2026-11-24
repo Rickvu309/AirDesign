@@ -6,13 +6,7 @@ export type UndoRun = (deck: string, run: string) => Promise<RunUndone>
 
 export async function undoExchange(chat: AiraChat, exchange: number, undo: UndoRun): Promise<AiraChat | undefined> {
   const found = chat.exchanges[exchange]
-  if (
-    found === undefined ||
-    found.end === "working" ||
-    found.end === "undone" ||
-    found.undoRefused === true ||
-    found.runs.length === 0
-  ) {
+  if (found === undefined || found.end === "working" || found.end === "undone" || found.runs.length === 0) {
     return undefined
   }
   const kept: string[] = []

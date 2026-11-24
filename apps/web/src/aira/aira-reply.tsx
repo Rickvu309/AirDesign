@@ -316,7 +316,7 @@ function endingOf(
   onNewChat: (() => void) | undefined,
 ): ReactNode | null {
   const undoable = exchange.runs.length > 0
-  const undoOffer = undoable && exchange.undoRefused !== true ? onUndo : undefined
+  const undoOffer = undoable ? onUndo : undefined
   const note = undoNoteOf(exchange)
   const card = cardOf(exchange, resets, undoOffer, onRetry, onNewChat)
   if (card !== null) {
@@ -331,7 +331,6 @@ function endingOf(
   }
   if (exchange.end === "undone") return <Undone stays={staysOf(exchange)} />
   if ((exchange.end === "done" || exchange.end === "stopped") && undoable) {
-    if (exchange.undoRefused === true) return note
     if (note === null) return <UndoLink onUndo={onUndo} />
     return (
       <div className="flex flex-col">
