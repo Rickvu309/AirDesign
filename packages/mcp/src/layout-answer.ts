@@ -76,7 +76,7 @@ export async function layoutOf(host: DeckHost, fold: doom.Doom, touched: () => r
   try {
     const slides = touched()
     if (slides.length === 0) return { findings: [], layout: "untouched" }
-    const measured = await host.measure(fold)
+    const measured = await host.measure([fold])
     if (typeof measured === "string") return { findings: [], layout: measured }
     const { measure, missing } = measured
     const boxes = new Map(slides.flatMap((slide) => [...doom.solveLayout(fold, slide, measure)]))

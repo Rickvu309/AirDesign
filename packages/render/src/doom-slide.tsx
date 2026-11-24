@@ -11,7 +11,7 @@ type Resolved = doom.Resolved
 
 const noAssets: AssetUrl = () => undefined
 
-function useDoomMeasure(value: doom.Doom): doom.Measure | null {
+export function useDoomMeasure(value: doom.Doom): doom.Measure | null {
   const needs = useMemo(() => doom.doomFaces(value), [value])
   const key = JSON.stringify(needs)
   const [widths, setWidths] = useState<FontWidths | null>(null)

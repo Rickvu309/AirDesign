@@ -135,6 +135,15 @@ function nodeRows(fold: doom.Doom, ids: Iterable<doom.NodeId>) {
   return rows
 }
 
+function endNodes(value: unknown): readonly string[] {
+  if (typeof value !== "object" || value === null) return []
+  const { start, end } = value as { start?: unknown; end?: unknown }
+  return [start, end].flatMap((each) => {
+    const node = typeof each === "object" && each !== null ? (each as { node?: unknown }).node : undefined
+    return typeof node === "string" ? [node] : []
+  })
+}
+
 function seedsOf(edit: Readonly<Record<string, unknown>>): { readonly seeds: string[]; readonly regrouped: string[] } {
   const seeds = new Set<string>()
   const regrouped = new Set<string>()
@@ -146,6 +155,7 @@ function seedsOf(edit: Readonly<Record<string, unknown>>): { readonly seeds: str
     if (typeof node === "string" && (prop === "parent" || prop === "hidden")) regrouped.add(node)
     const parent = typeof value === "object" && value !== null ? (value as { id?: unknown }).id : undefined
     if (prop === "parent" && typeof parent === "string") seeds.add(parent)
+    if (prop === "geometry") for (const end of endNodes(value)) seeds.add(end)
   }
   return { seeds: [...seeds], regrouped: [...regrouped] }
 }

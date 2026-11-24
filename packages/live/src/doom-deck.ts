@@ -85,6 +85,7 @@ export type DoomOptions = {
   readonly client?: string
   readonly storage?: DoomStorage
   readonly pause?: (ms: number) => Promise<void>
+  readonly measure?: () => doom.Measure | null
 }
 
 type Step = {
@@ -96,6 +97,7 @@ type Step = {
 }
 
 const retryMilliseconds = 2_000
+const estimate = doom.measureWith({})
 
 export type Opened = { readonly ok: true; readonly deck: DoomDeck } | Exclude<DoomRefusal, { readonly refusal: "edit" }>
 
@@ -382,12 +384,13 @@ function connected(
   }
 
   function pushEdit(
-    writes: readonly doom.Write[],
+    asked: readonly doom.Write[],
     by: doom.Author,
     runUndo?: doom.RunUndo,
     follows?: string,
-  ): (Sent & { readonly before: doom.Doom }) | Refused {
+  ): (Sent & { readonly before: doom.Doom; readonly writes: readonly doom.Write[] }) | Refused {
     const before = view()
+    const writes = [...asked, ...doom.freedLineEnds(before, asked, options.measure?.() ?? estimate)]
     const edit: doom.Edit = { once: nextOnce(), author: by, writes, ...(runUndo === undefined ? {} : { runUndo }) }
     const made = queueEdit(server, queue, edit)
     if (doom.isRefusal(made)) return { ok: false, refused: made }
@@ -397,7 +400,7 @@ function connected(
     const saved = save({ queue })
     tell()
     void sync()
-    return { ok: true, once: edit.once, saved, before }
+    return { ok: true, once: edit.once, saved, before, writes }
   }
 
   const revOf = (once: string) => revIn(server, queue, once)
@@ -425,8 +428,13 @@ function connected(
     )
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
     from.pop()
-    to.push({ onces: [pushed.once], before: now, writes, ...(step.run === undefined ? {} : { run: step.run }) })
-    remember(turned, pushed.once, pressedOn(server, now, writes, step.onces))
+    to.push({
+      onces: [pushed.once],
+      before: now,
+      writes: pushed.writes,
+      ...(step.run === undefined ? {} : { run: step.run }),
+    })
+    remember(turned, pushed.once, pressedOn(server, now, pushed.writes, step.onces))
     return { ok: true, once: pushed.once, saved: pushed.saved }
   }
 
@@ -450,8 +458,8 @@ function connected(
         : { ok: false, reason: "left", kept, left, waiting }
     const pushed = pushEdit(writes, author, { run, undone: true })
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
-    redoSteps.push({ onces: [pushed.once], before: now, writes, run })
-    remember(turned, pushed.once, pressedOn(server, now, writes))
+    redoSteps.push({ onces: [pushed.once], before: now, writes: pushed.writes, run })
+    remember(turned, pushed.once, pressedOn(server, now, pushed.writes))
     return { ok: true, once: pushed.once, saved: pushed.saved, kept, left, waiting }
   }
 
@@ -512,7 +520,7 @@ function connected(
       const pushed = pushEdit(own, pushing?.author ?? author)
       if (!pushed.ok) return pushed
       const follow = named.length === 0 ? undefined : pushEdit(named, pushing?.author ?? author, undefined, pushed.once)
-      const writes = follow?.ok === true ? [...own, ...named] : own
+      const writes = follow?.ok === true ? [...pushed.writes, ...follow.writes] : pushed.writes
       const onces = follow?.ok === true ? [pushed.once, follow.once] : [pushed.once]
       const open = undoSteps.at(-1)
       if (pushing?.step !== undefined && open?.key === pushing.step && redoSteps.length === 0)

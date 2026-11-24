@@ -6,6 +6,7 @@ import {
   type DoomRemote,
   type DoomStorage,
 } from "@airdesign/live"
+import type * as doom from "@airdesign/doom"
 import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 import { discardOpening } from "@/decks/discard-opening"
 import { clearOpeningDeck, noteOpeningDeck } from "@/lib/first-request"
@@ -39,6 +40,7 @@ export type OpenOptions = {
   readonly storage?: DoomStorage
   readonly mint?: () => string
   readonly arrived?: (id: string) => void
+  readonly measure?: () => doom.Measure | null
 }
 
 const sharedRemote = httpDoomRemote()
@@ -58,7 +60,10 @@ export function useDoomDeck(id: string | null, options: OpenOptions = {}): Openi
     const storage = latest.current.storage
     const deck = id ?? mint()
     if (fresh) noteOpeningDeck(deck)
-    const kept = storage === undefined ? {} : { storage }
+    const kept = {
+      ...(storage === undefined ? {} : { storage }),
+      measure: () => latest.current.measure?.() ?? null,
+    }
     void (fresh ? createDoomDeck(remote, deck, kept) : openDoomDeck(remote, deck, kept)).then((opened) => {
       if (!current) {
         if (fresh) void discardOpening(deck)

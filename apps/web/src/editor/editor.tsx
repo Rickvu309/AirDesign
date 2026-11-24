@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useDoomMeasure } from "@airdesign/render"
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react"
 import { peekFirstRequest } from "@/lib/first-request"
 import { replaceDeckAddress } from "@/editor/slide-address"
 import { NotFoundPage } from "@/decks/not-found-page"
@@ -59,12 +60,18 @@ function Editing({
   client,
   id,
   start,
+  measuring,
 }: {
   readonly client: EditorClient
   readonly id: string
   readonly start: EditorStart
+  readonly measuring: RefObject<doom.Measure | null>
 }) {
   const view = useDoomView(client)
+  const measure = useDoomMeasure(view)
+  useEffect(() => {
+    measuring.current = measure
+  })
   const saved = useSaveShown(client, start.save)
   const editingRuns = useEditingNow(view, Date.now)
   const slides = doom.slidesOf(view).map((each) => each.id)
@@ -142,6 +149,7 @@ function Editing({
             assets={assets}
             client={client}
             view={view}
+            measure={measure}
             slide={slide}
             editingRuns={editingRuns}
             slideNumber={strip.current + 1}
@@ -256,8 +264,10 @@ export function Editor({
   readonly start?: EditorStart
 }) {
   const [request] = useState(() => (id === null ? peekFirstRequest() : undefined))
+  const measuring = useRef<doom.Measure | null>(null)
   const opening = useDoomDeck(id, {
     arrived: (made) => replaceDeckAddress(window.history, window.location, made),
+    measure: () => measuring.current,
     ...open,
   })
   if (opening.status === "missing") return <NotFoundPage kind="deck" />
@@ -268,5 +278,5 @@ export function Editor({
       </div>
     )
   const started = request === undefined ? start : { ...start, aira: { ...start.aira, request } }
-  return <Editing client={opening.deck} id={opening.id} start={started} />
+  return <Editing client={opening.deck} id={opening.id} start={started} measuring={measuring} />
 }

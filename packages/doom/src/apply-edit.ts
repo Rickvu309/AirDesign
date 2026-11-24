@@ -5,7 +5,8 @@ import { type NodeType, type PropName, type WriteKey, holds, props } from "./pro
 import { readWriteIn } from "./read-write.js"
 import { type Refusal, isRefusal, refuse } from "./refusal.js"
 import type { Landed, Node, Run, Doom, Write } from "./doom.js"
-import { slideOf } from "./doom-walk.js"
+import { onDeck, propOf, slideOf } from "./doom-walk.js"
+import type { End } from "./geometry.js"
 import { type Theme, themeKeys, withThemeValue } from "./theme.js"
 
 type Parent = { readonly id: NodeId; readonly at: string }
@@ -209,6 +210,20 @@ function write(work: Working, doom: Doom, landed: Landed, raw: Write, known: Kno
   return undefined
 }
 
+function keepLiveEnds(work: Working, doom: Doom, landed: Landed): void {
+  for (const id of new Set(landed.writes.flatMap((each) => (each.prop === "geometry" ? [each.node] : [])))) {
+    const node = work.nodes.get(id)
+    const line = propOf(node, "geometry")
+    const was = propOf(doom.nodes.get(id), "geometry")
+    if (node === undefined || line?.kind !== "line" || was?.kind !== "line") continue
+    if (parentOf(node)?.id !== parentOf(doom.nodes.get(id))?.id) continue
+    const kept = (end: End, stored: End) => ("node" in end && !onDeck(work.nodes, end.node) ? stored : end)
+    const start = kept(line.start, was.start)
+    const end = kept(line.end, was.end)
+    if (start !== line.start || end !== line.end) setProp(work, node, "geometry", { ...line, start, end }, landed.rev)
+  }
+}
+
 export type Counts = { readonly elements: number; readonly slides: number }
 export type Known = {
   readonly counts: () => Counts
@@ -285,6 +300,7 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
     const refusal = write(work, doom, landed, each, known)
     if (refusal !== undefined) return refusal
   }
+  keepLiveEnds(work, doom, landed)
   for (const id of work.created) {
     const node = work.nodes.get(id)!
     if (node.type !== "deck" && parentOf(node) === undefined) return refuse("shape", id)

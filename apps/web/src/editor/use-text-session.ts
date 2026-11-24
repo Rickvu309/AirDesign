@@ -2,7 +2,7 @@ import { type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 import { propOf } from "@airdesign/doom"
-import { blankTextFor, holdsPaint, leaveEmptyWrites } from "./text-leave"
+import { blankTextFor, draftWrites, holdsPaint, leaveEmptyWrites } from "./text-leave"
 import {
   insertSlice,
   linkedWords,
@@ -71,6 +71,7 @@ export type TextSession = {
 export type Caret = { readonly anchor: number; readonly focus: number }
 
 const idle = 700
+const estimate = doom.measureWith({})
 
 let sessions = 0
 
@@ -85,7 +86,7 @@ function creationWrites(created: Created, draft: doom.Text): readonly doom.Write
   ]
 }
 
-export function useTextSession(client: EditorClient, view: doom.Doom): TextSession {
+export function useTextSession(client: EditorClient, view: doom.Doom, measure: doom.Measure | null): TextSession {
   const [session, setState] = useState<Session | null>(null)
   const ref = useRef<Session | null>(null)
   const pushed = useRef<string>("")
@@ -235,10 +236,9 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
     refused,
     preview: useMemo(() => {
       if (session === null) return []
-      return session.created === null
-        ? [{ node: session.node, prop: "text" as const, value: session.draft }]
-        : creationWrites(session.created, session.draft)
-    }, [session?.draft, session?.created, session?.node]),
+      if (session.created !== null) return creationWrites(session.created, session.draft)
+      return draftWrites(view, session, measure ?? estimate)
+    }, [session?.draft, session?.created, session?.node, session?.keeps, view, measure]),
     begin,
     beginNew,
     replace(from, to, insert) {

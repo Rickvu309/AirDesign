@@ -15,7 +15,6 @@ export type ArrangeContext = {
   readonly selection: Selection
   readonly slide: doom.NodeId
   readonly onSelection: (next: Selection) => void
-  readonly measure: doom.Measure
 }
 
 let held: doom.Clipboard | null = null
@@ -46,7 +45,7 @@ export function arranged(gesture: GestureId | null, context: ArrangeContext): bo
       const roots = ids.filter((id) => view.nodes.has(id))
       if (roots.length > 0) held = { view, roots }
       if (gesture === "cut") {
-        landed(context, deleteWrites(view, roots, context.measure))
+        landed(context, deleteWrites(view, roots))
         context.onSelection(noSelection)
       }
       return true

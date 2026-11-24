@@ -17,7 +17,7 @@ const start = () =>
 
 it("keeps naming a text its font cannot measure on every read and edit after the first", async () => {
   const metrics = new FontMetrics(new FontSource(undefined))
-  const host = { ...memoryDecks(start), measure: (fold: doom.Doom) => metrics.measure(fold) }
+  const host = { ...memoryDecks(start), measure: (folds: readonly doom.Doom[]) => metrics.measure(folds) }
   let calls = 0
   const session: Session = { agent: "aira", mint: () => `m${String((calls += 1))}`, log: emptyLog(), now: 0 }
   const call = (op: string, args: unknown) => {

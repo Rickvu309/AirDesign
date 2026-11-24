@@ -78,7 +78,7 @@ export {
 } from "./preset-geometry.js"
 export { readLinkAddress } from "./link.js"
 export { routeDistance } from "./line-ends.js"
-export { freedLineEnds } from "./freed-line-ends.js"
+export { freedLineEnds, mayLeaveDeck } from "./freed-line-ends.js"
 export { holdsLineEnd } from "./line-end-holder.js"
 export { defaultTheme } from "./default-theme-art.js"
 export { slideTextStyles } from "./slide-text-styles.js"

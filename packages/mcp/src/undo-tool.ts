@@ -3,6 +3,7 @@ import * as doom from "@airdesign/doom"
 
 import { answered, hostRefused, refused, type ToolResult } from "./answer.js"
 import type { DeckHost, RunLog } from "./deck-host.js"
+import { deckMeasure } from "./deck-measure.js"
 
 const nothingLeft = "Nothing left to undo. Everything it changed was changed or deleted since."
 const undoRefused = "Couldn't undo. Something it changed was changed again after its edit."
@@ -111,12 +112,17 @@ export async function undoRunTool(raw: unknown, agent: string, once: string, hos
     return [...turned.kept, ...turned.left, ...turned.waiting].length === 0
       ? answered(nothingLeft, { ok: false, reason: "nothing", ...empty })
       : answered(note, { ok: false, reason: "left", ...body })
-  const landed = await host.edit(opened.deck, {
+  const edit: doom.Edit = {
     once,
     author: { kind: "agent", id: agent, run: parsed.runId, ...(run.name === "" ? {} : { name: run.name }) },
     writes: turned.writes,
     runUndo: { run: parsed.runId, undone: true },
-  })
+  }
+  const measure = doom.mayLeaveDeck(opened.fold, edit.writes)
+    ? await deckMeasure(host, [opened.fold, doom.viewOf(opened.fold, [edit])])
+    : undefined
+  const freed = doom.freedLineEnds(opened.fold, edit.writes, measure ?? doom.measureWith({}))
+  const landed = await host.edit(opened.deck, { ...edit, writes: [...edit.writes, ...freed] })
   if (!landed.ok) {
     const detail = hostRefused(landed)
     return answered(undoRefused, {
