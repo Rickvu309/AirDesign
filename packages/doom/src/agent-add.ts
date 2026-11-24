@@ -1,7 +1,17 @@
 import type { AgentAdd, AgentChange, AgentLook } from "./agent-change.js"
 import { shapeGeometry } from "./preset-geometry.js"
 import { type Draft, create, living, put, stop } from "./agent-draft.js"
-import { askedArrow, chartOf, iconName, layoutOf, solid, surfaceOf, textOfLook, turnOf, type Now } from "./agent-look.js"
+import {
+  askedArrow,
+  chartOf,
+  iconName,
+  layoutOf,
+  solid,
+  surfaceOf,
+  textOfLook,
+  turnOf,
+  type Now,
+} from "./agent-look.js"
 import { addGrid, addPattern } from "./agent-patterns.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { placeholderSubtitle } from "./slide-placeholders.js"
