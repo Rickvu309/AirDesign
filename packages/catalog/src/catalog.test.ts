@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest"
 import { catalog, projectTools, toolInputSchema } from "./index.js"
 
 describe("run operations in the catalog", () => {
-  it("keeps start_run and undo_run from agents and offers stop_run on the server", () => {
+  it("keeps start_run from agents and offers stop_run and undo_run on the server", () => {
     expect(catalog.start_run).toEqual({ kind: "command", exposure: "web" })
     expect(catalog.stop_run).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
-    expect(catalog.undo_run).toEqual({ kind: "command", exposure: "web" })
+    expect(catalog.undo_run).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
     expect(catalog.list_decks).toMatchObject({ kind: "query", exposure: "agent", runsOn: "server" })
     expect(catalog.read_deck).toMatchObject({ kind: "query", exposure: "agent", runsOn: "server" })
     expect(catalog.create_deck).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
@@ -15,6 +15,7 @@ describe("run operations in the catalog", () => {
       "list_decks",
       "read_deck",
       "stop_run",
+      "undo_run",
     ])
   })
 })
@@ -22,13 +23,14 @@ describe("run operations in the catalog", () => {
 describe("projectTools", () => {
   it("projects the agent tools in name order", () => {
     const tools = projectTools(catalog)
-    expect(tools).toHaveLength(5)
+    expect(tools).toHaveLength(6)
     expect(tools.map((tool) => tool.name)).toEqual([
       "airdesign_create_deck",
       "airdesign_edit_deck",
       "airdesign_list_decks",
       "airdesign_read_deck",
       "airdesign_stop_run",
+      "airdesign_undo_run",
     ])
     expect(tools.every((tool) => tool.runsOn === "server")).toBe(true)
     expect(tools.find((tool) => tool.op === "stop_run")?.destructiveHint).toBe(false)

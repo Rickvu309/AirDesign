@@ -148,6 +148,7 @@ function guardRun(work: Working, landed: Landed): Refusal | undefined {
     })
     return undefined
   }
+  if (landed.runUndo?.run === author.run && run?.agent === author.id) return undefined
   return run?.phase === "running" && run.agent === author.id ? undefined : refuse("run-fenced")
 }
 
@@ -166,7 +167,9 @@ function write(work: Working, doom: Doom, landed: Landed, raw: Write, known: Kno
   }
   const node = work.nodes.get(id)!
   if (key !== "parent" && deleted(node)) return refuse("missing", id, key)
-  if (landed.author.kind === "agent") {
+  const undoingOwn =
+    landed.author.kind === "agent" && landed.runUndo !== undefined && landed.author.run === landed.runUndo.run
+  if (landed.author.kind === "agent" && !undoingOwn) {
     const run = work.runs.get(landed.author.run ?? "")
     if (!work.created.has(id) && run?.guarded.has(id)) return refuse("person", id, key)
   }
@@ -292,7 +295,10 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
   if (known.partial !== true && delta.slides < 0 && known.counts().slides + delta.slides <= 0)
     return refuse("last-slide")
   const turned = landed.runUndo === undefined ? undefined : work.runs.get(landed.runUndo.run)
-  if (landed.runUndo !== undefined && (turned === undefined || landed.author.kind !== "person")) return refuse("shape")
+  const ownUndo =
+    landed.author.kind === "agent" && landed.author.run === landed.runUndo?.run && turned?.agent === landed.author.id
+  if (landed.runUndo !== undefined && (turned === undefined || (landed.author.kind !== "person" && !ownUndo)))
+    return refuse("shape")
   if (landed.runUndo !== undefined && turned !== undefined)
     work.runs.set(landed.runUndo.run, { ...turned, undone: landed.runUndo.undone })
   const name = landed.author.kind === "agent" ? landed.author.run : undefined
@@ -301,7 +307,7 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
     const slide = lastSlide(work, doom, landed)
     work.runs.set(name, {
       ...own,
-      ...(landed.writes.length > 0 ? { wrote: landed.rev, undone: false } : {}),
+      ...(landed.writes.length > 0 && landed.runUndo?.run !== name ? { wrote: landed.rev, undone: false } : {}),
       ...(slide === undefined ? {} : { slide }),
       ...(landed.phase === "stop" ? { phase: "stopped" as const } : {}),
     })

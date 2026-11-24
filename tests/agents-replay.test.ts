@@ -79,6 +79,7 @@ function hosted(server: doom.Doom): { readonly host: DeckHost; readonly now: () 
       fold = next
       return { ok: true, deck, rev: fold.rev }
     },
+    run: async () => ({ ok: true, edits: [], replaced: [] }),
   }
   return { host, now: () => fold }
 }

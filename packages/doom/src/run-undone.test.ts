@@ -40,11 +40,28 @@ describe("a run's undone mark", () => {
     expect(readRuns(JSON.parse(JSON.stringify(runsToJson(undone.runs))))?.get("c1")?.undone).toBe(true)
   })
 
-  it("is the person's to write: an agent's undo mark and a mark on a run that is not there are refused", () => {
+  it("is written by the person, or by the agent of that run, and a mark on a run that is not there is refused", () => {
     const ran = ranAndStopped()
-    expect(isRefusal(turn(ran, true, claude))).toBe(true)
+    const own = turn(ran, true, claude)
+    expect(isRefusal(own)).toBe(false)
+    expect((own as Doom).runs.get("c1")?.undone).toBe(true)
     expect(
       isRefusal(readEdit({ once: "a", author: claude, writes: [], runUndo: { run: "c1", undone: true } }, ran)),
+    ).toBe(false)
+    const other: Author = { kind: "agent", id: "other", run: "c1", name: "Other" }
+    expect(isRefusal(turn(ran, true, other))).toBe(true)
+    expect(
+      isRefusal(
+        readEdit(
+          {
+            once: "b",
+            author: { kind: "agent", id: "claude", run: "c2" },
+            writes: [],
+            runUndo: { run: "c1", undone: true },
+          },
+          ran,
+        ),
+      ),
     ).toBe(true)
     const elsewhere = applyEdit(ran, {
       once: once(),

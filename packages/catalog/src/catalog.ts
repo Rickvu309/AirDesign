@@ -67,7 +67,16 @@ export const catalog = {
     description:
       "Call when your turn is finished, with the runId from airdesign_edit_deck, so a person's changes stop closing layers to you.",
   },
-  undo_run: { kind: "command", exposure: "web" },
+  undo_run: {
+    idempotent: true,
+    destructive: true,
+    kind: "command",
+    exposure: "agent",
+    runsOn: "server",
+    read: readRun,
+    description:
+      "Undo your own run. Send the runId from airdesign_edit_deck. The answer says what came back and what stayed, and why.",
+  },
   watch_deck: { kind: "stream", exposure: "web" },
   edit_deck: {
     kind: "command",
