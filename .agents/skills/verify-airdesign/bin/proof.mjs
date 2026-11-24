@@ -1,9 +1,11 @@
 import { execFileSync, spawn } from "node:child_process"
 import { createHash } from "node:crypto"
+import { once } from "node:events"
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { listenForInterrupt } from "./interruptions.mjs"
 import { openBrowser } from "./browser.mjs"
 import { proofFolder, publish } from "./publish.mjs"
 import { renderBlocks, themeCss } from "../look/annotate.mjs"
@@ -62,10 +64,15 @@ function launchAt(repo, build, cleanup, args = []) {
   return done
 }
 
+async function cleanupCommand(command, args, options = {}) {
+  const child = spawn(command, args, { ...options, detached: true, stdio: "ignore" })
+  const [status] = await once(child, "close")
+  if (status !== 0) throw new Error(`${command} exited ${status}`)
+}
+
 function stopRun(run, repo) {
-  execFileSync(process.execPath, [self, "stop", run], {
+  return cleanupCommand(process.execPath, [self, "stop", run], {
     env: { ...process.env, VERIFY_AIRDESIGN_REPO: repo },
-    stdio: ["ignore", "ignore", "inherit"],
   })
 }
 
@@ -169,6 +176,7 @@ export async function stackFor({
   root = scratchRoot,
   install = installIn,
 }) {
+  if (cleanup.closed) throw new Error("stack cleanup is in progress")
   if (run !== undefined) return run
   if (ref === undefined) return launch(runtime.repo, true, cleanup, args)
   const commit = gitIn(runtime.repo)(["rev-parse", "--verify", `${ref}^{commit}`])
@@ -179,66 +187,65 @@ export async function stackFor({
 }
 
 async function endLaunches(cleanup) {
-  const live = [...cleanup.launching].filter(({ child }) => child.pid !== undefined && child.exitCode === null)
-  const signalGroups = (signal) => {
-    for (const { child } of live) {
-      try {
-        process.kill(-child.pid, signal)
-      } catch {}
+  for (const { child } of cleanup.launching) {
+    if (child.pid === undefined || child.exitCode !== null || child.signalCode !== null) continue
+    try {
+      process.kill(-child.pid, "SIGTERM")
+    } catch (error) {
+      if (error.code !== "ESRCH") throw error
     }
   }
-  signalGroups("SIGTERM")
-  const timer = setTimeout(() => signalGroups("SIGKILL"), 20_000)
   await Promise.all([...cleanup.launching].map(({ ended }) => ended))
-  clearTimeout(timer)
 }
 
-function cleanUp(cleanup, runtime, stop) {
-  const unstopped = cleanup.runs.filter(({ run, repo }) => {
+async function cleanUp(cleanup, runtime, stop) {
+  const unstopped = []
+  for (const { run, repo } of cleanup.runs) {
     try {
-      stop(run, repo)
-      return false
+      await stop(run, repo)
     } catch {
-      return true
+      unstopped.push(run)
     }
-  })
-  const unremoved = cleanup.trees.filter((tree) => {
+  }
+  const unremoved = []
+  for (const tree of cleanup.trees) {
     try {
-      gitIn(runtime.repo)(["worktree", "remove", "--force", tree.dir])
+      await cleanupCommand("git", ["worktree", "remove", "--force", tree.dir], { cwd: runtime.repo })
       rmSync(tree.built, { force: true })
-      return false
     } catch {
-      return true
+      unremoved.push(tree.dir)
     }
-  })
-  if (unstopped.length > 0) throw new Error(`could not stop runs ${unstopped.map(({ run }) => run).join(" ")}`)
-  if (unremoved.length > 0) throw new Error(`could not remove scratch trees ${unremoved.map((t) => t.dir).join(" ")}`)
+  }
+  if (unstopped.length > 0) throw new Error(`could not stop runs ${unstopped.join(" ")}`)
+  if (unremoved.length > 0) throw new Error(`could not remove scratch trees ${unremoved.join(" ")}`)
 }
 
-export const newCleanup = () => ({ runs: [], trees: [], launching: new Set() })
-
-const interruptions = ["SIGINT", "SIGTERM"]
+export const newCleanup = () => ({ runs: [], trees: [], launching: new Set(), closed: false })
 
 export async function cleaning({ cleanup, keep, runtime, body, stop = stopRun }) {
   let interrupt
   const interrupted = new Promise((_, reject) => {
     interrupt = (signal) => reject(new Error(`interrupted by ${signal}`))
   })
-  for (const signal of interruptions) process.once(signal, interrupt)
+  const unlisten = listenForInterrupt(interrupt)
   let finished = false
   try {
     const result = await Promise.race([body(), interrupted])
     finished = true
     return result
   } finally {
-    for (const signal of interruptions) process.off(signal, interrupt)
-    await endLaunches(cleanup)
-    if (finished && keep) {
-      for (const { run, repo } of cleanup.runs)
-        process.stderr.write(
-          `kept run ${run}; stop it with VERIFY_AIRDESIGN_REPO=${repo} verify-airdesign stop ${run}\n`,
-        )
-    } else cleanUp(cleanup, runtime, stop)
+    cleanup.closed = true
+    try {
+      await endLaunches(cleanup)
+      if (finished && keep) {
+        for (const { run, repo } of cleanup.runs)
+          process.stderr.write(
+            `kept run ${run}; stop it with VERIFY_AIRDESIGN_REPO=${repo} verify-airdesign stop ${run}\n`,
+          )
+      } else await cleanUp(cleanup, runtime, stop)
+    } finally {
+      unlisten()
+    }
   }
 }
 

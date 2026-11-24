@@ -35,16 +35,23 @@ const run = (name) => {
 }
 
 const dead = cluster("airdesign-api-dead", deadPid)
+const deadVerify = cluster("verify-airdesign-scratch/2026-11-16T01-00-00-000Z-bbbbbb/airdesign-api-postgres", deadPid)
 const starting = cluster("airdesign-api-starting")
 const liveDir = cluster("airdesign-api-live", 0)
-const postmaster = spawn(process.execPath, ["-e", "setTimeout(() => {}, 60000)", "--", "-D", `${liveDir}/data`], {
-  stdio: "ignore",
-})
+const liveVerify = cluster("verify-airdesign-scratch/2026-11-16T01-00-00-000Z-cccccc/airdesign-api-postgres", 0)
+const postmaster = spawn(
+  process.execPath,
+  ["-e", "setTimeout(() => {}, 60000)", "--", `${liveDir}/data`, `${liveVerify}/data`],
+  { stdio: "ignore" },
+)
 children.push(postmaster)
 while (!fs.readFileSync(`/proc/${String(postmaster.pid)}/cmdline`, "utf8").includes(liveDir)) {
   await new Promise((resolve) => setTimeout(resolve, 10))
 }
-fs.writeFileSync(path.join(liveDir, "data", "postmaster.pid"), `${String(postmaster.pid)}\n`)
+for (const dir of [liveDir, liveVerify])
+  fs.writeFileSync(path.join(dir, "data", "postmaster.pid"), `${String(postmaster.pid)}\n`)
+const outside = cluster("outside/airdesign-api-postgres", deadPid)
+fs.symlinkSync(path.dirname(outside), path.join(tmp, "verify-airdesign-scratch/2026-11-16T01-00-00-000Z-dddddd"))
 const finished = run("2026-11-16T01-00-00-000Z-aaaaaa")
 const kept = run("prove-2026-11-16T01-00-00-000Z")
 const notMine = path.join(tmp, "notes")
@@ -58,18 +65,18 @@ const later = Date.now() + clusterIdle + 60_000
 same(
   "a cluster whose postgres is not running is a leftover after an idle hour, whether it died or never started",
   names(findLeftovers({ home, busy, now: later })),
-  ["airdesign-api-dead", "airdesign-api-starting"],
+  ["airdesign-api-dead", "airdesign-api-postgres", "airdesign-api-starting"],
 )
 const muchLater = Date.now() + evidenceIdle + 60_000
 same(
   "a verify run's evidence is a leftover after 12 idle hours, unless a process uses it",
   names(findLeftovers({ home, busy, now: muchLater })),
-  ["2026-11-16T01-00-00-000Z-aaaaaa", "airdesign-api-dead", "airdesign-api-starting"],
+  ["2026-11-16T01-00-00-000Z-aaaaaa", "airdesign-api-dead", "airdesign-api-postgres", "airdesign-api-starting"],
 )
 same(
   "each says why",
   findLeftovers({ home, busy, now: muchLater }).map((leftover) => leftover.reason),
-  ["its verify run ended 12 hours ago", "its postgres is not running", "its postgres is not running"],
+  ["its verify run ended 12 hours ago", ...Array(3).fill("its postgres is not running")],
 )
 
 const dry = []
@@ -78,7 +85,7 @@ same(
   removeLeftovers({ home, busy, now: muchLater, apply: false, say: (line) => dry.push(line) }),
   [],
 )
-same("and says what would go", dry.length, 3)
+same("and says what would go", dry.length, 4)
 same(
   "with would",
   dry.every((line) => line.startsWith("would remove ")),
@@ -86,19 +93,21 @@ same(
 )
 same(
   "the folders are still there",
-  [dead, starting, finished].every((dir) => fs.existsSync(dir)),
+  [dead, starting, finished, deadVerify].every((dir) => fs.existsSync(dir)),
   true,
 )
 
 const said = []
 same(
   "an applied run removes them",
-  removeLeftovers({ home, busy, now: muchLater, say: (line) => said.push(line) }).map((where) => path.basename(where)),
-  ["2026-11-16T01-00-00-000Z-aaaaaa", "airdesign-api-dead", "airdesign-api-starting"],
+  removeLeftovers({ home, busy, now: muchLater, say: (line) => said.push(line) })
+    .map((where) => path.basename(where))
+    .sort(),
+  ["2026-11-16T01-00-00-000Z-aaaaaa", "airdesign-api-dead", "airdesign-api-postgres", "airdesign-api-starting"],
 )
 same(
   "and keeps the rest",
-  [liveDir, kept, notMine].every((dir) => fs.existsSync(dir)),
+  [liveDir, liveVerify, outside, kept, notMine].every((dir) => fs.existsSync(dir)),
   true,
 )
 same("a live postgres was not signalled", postmaster.exitCode === null && postmaster.signalCode === null, true)

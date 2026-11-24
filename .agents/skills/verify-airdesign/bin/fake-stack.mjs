@@ -2,33 +2,42 @@ import { execFileSync } from "node:child_process"
 import { mkdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
-const pg = `import { spawn } from "node:child_process"
+const pg = `import { execFileSync, spawn } from "node:child_process"
 import { appendFileSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
+import { setTimeout as pause } from "node:timers/promises"
 import path from "node:path"
-export async function startEmptyCluster() {
-  const dir = path.join(os.homedir(), "tmp", "airdesign-api-" + String(process.pid))
+export async function startOwnedEmptyCluster({ dir, signal }) {
   const data = path.join(dir, "data")
   mkdirSync(data, { recursive: true })
-  const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)", "--", data], { detached: true, stdio: "ignore" })
-  child.unref()
-  writeFileSync(path.join(data, "postmaster.pid"), String(child.pid) + "\\n")
+  const fifo = path.join(data, "hold")
+  execFileSync("mkfifo", [fifo])
+  const postgres = path.join(os.homedir(), "postgres")
+  const child = spawn(postgres, ["-c", 'read -r line <> "$1"', "postgres", fifo, "-D", data], { detached: true, stdio: "ignore" })
+  writeFileSync(path.join(data, "postmaster.pid"), String(child.pid) + "\\n" + data + "\\n")
   appendFileSync(path.join(os.homedir(), "fake-postgres.pids"), String(child.pid) + "\\n")
-  globalThis.fakeData = data
-  return {
-    port: 1,
-    admin: "fake",
-    stop: async () => {
-      try { process.kill(child.pid, "SIGINT") } catch {}
-      rmSync(dir, { recursive: true, force: true })
-    },
+  const stop = async () => {
+    if (child.exitCode === null && child.signalCode === null) {
+      const ended = new Promise((resolve) => child.once("exit", resolve))
+      child.kill("SIGINT")
+      await ended
+    }
+    rmSync(dir, { recursive: true, force: true })
   }
+  if (process.env.FAKE_PG_START_MS) await pause(Number(process.env.FAKE_PG_START_MS))
+  if (signal.aborted || process.env.FAKE_STACK === "postgres-starting") {
+    if (!signal.aborted) await new Promise((resolve) => signal.addEventListener("abort", resolve, { once: true }))
+    if (process.env.FAKE_PG_ABORT_MS) await pause(Number(process.env.FAKE_PG_ABORT_MS))
+    await stop()
+    signal.throwIfAborted()
+  }
+  return { port: 1, admin: "fake", stop }
 }
 `
 
 const modules = {
   "testing/postgres-setup.js": pg,
-  "platform/pool.js": `export const openPool = () => ({ query: async () => ({ rows: [{ dir: globalThis.fakeData }] }), end: async () => {} })`,
+  "platform/pool.js": `export const openPool = () => ({ end: async () => {} })`,
   "platform/provision.js": `
 export const runBootstrap = async () => {
   if (process.env.FAKE_STACK === "hang") setInterval(() => {}, 1000), await new Promise(() => {})

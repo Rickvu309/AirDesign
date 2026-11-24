@@ -1,9 +1,17 @@
-import { mkdtemp, rm } from "node:fs/promises"
+import { spawn } from "node:child_process"
+import { once } from "node:events"
+import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { Client } from "pg"
-import { publishCluster, publishedCluster, startEmptyCluster, testWorkerConnections } from "./postgres-setup.js"
+import {
+  publishCluster,
+  publishedCluster,
+  startEmptyCluster,
+  startOwnedEmptyCluster,
+  testWorkerConnections,
+} from "./postgres-setup.js"
 
 const folders: string[] = []
 
@@ -60,3 +68,38 @@ describe("the test cluster", () => {
     }
   }, 120_000)
 })
+
+it("rolls back an owned cluster when the bootstrap connection is rejected", async () => {
+  const dir = path.join(path.dirname(await clusterFile()), "postgres")
+  vi.stubEnv("PGOPTIONS", "-c air_design_test_unknown_option=on")
+  try {
+    await expect(startOwnedEmptyCluster({ dir, signal: new AbortController().signal })).rejects.toThrow(
+      'unrecognized configuration parameter "air_design_test_unknown_option"',
+    )
+    await expect(access(dir)).rejects.toMatchObject({ code: "ENOENT" })
+  } finally {
+    vi.unstubAllEnvs()
+  }
+})
+
+it("keeps its data when the pid file names a non-Postgres process with the same -D argument", async () => {
+  const dir = path.join(path.dirname(await clusterFile()), "postgres")
+  const cluster = await startOwnedEmptyCluster({ dir, signal: new AbortController().signal })
+  const data = path.join(dir, "data")
+  const pidFile = path.join(data, "postmaster.pid")
+  const original = await readFile(pidFile)
+  const other = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)", "--", "-D", data])
+  const ended = once(other, "exit")
+  try {
+    await once(other, "spawn")
+    await writeFile(pidFile, `${String(other.pid)}\n${data}\n`)
+    await expect(cluster.stop()).rejects.toThrow("could not verify the postmaster")
+    expect(other.exitCode).toBeNull()
+    expect(other.signalCode).toBeNull()
+  } finally {
+    await writeFile(pidFile, original)
+    other.kill("SIGKILL")
+    await ended
+    await cluster.stop()
+  }
+}, 30_000)

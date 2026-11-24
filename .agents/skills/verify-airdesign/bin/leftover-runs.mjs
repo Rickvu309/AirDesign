@@ -47,6 +47,11 @@ export function canonical(dir) {
   }
 }
 
+export function runPostgres(dir) {
+  const dataDir = path.join(canonical(path.dirname(dir)), path.basename(dir), "airdesign-api-postgres", "data")
+  return { dataDir, pidFile: path.join(dataDir, "postmaster.pid") }
+}
+
 export const sameWorktree = (owner, repo) => canonical(owner) === canonical(repo)
 
 export function writeOwner(dir, repo) {
@@ -102,8 +107,8 @@ export async function removeLeftoverRuns({ scratchRoot, repo, stop, now = Date.n
     const state = stateIn(dir)
     if (state !== undefined) {
       if (state.run === run && !ownsServe(state)) {
-        await stop(run)
-        stopped.push(run)
+        const result = await stop(run)
+        if (!result?.left?.length) stopped.push(run)
       }
       continue
     }
