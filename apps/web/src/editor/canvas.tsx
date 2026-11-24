@@ -364,6 +364,7 @@ export function DoomCanvas(props: {
     onZoom: onZoomKey,
     onSpace: setSpace,
     cancelDrag: pointer.cancelDrag,
+    dragging: pointer.dragging,
     onEditText: (id) => text.begin(id, { kind: "all" }),
     onActions: () => setActionsOpen((open) => !open),
     cropping: cropNode !== null,

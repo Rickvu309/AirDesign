@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
-import { expect, type Page } from "@playwright/test"
+import { expect, type BrowserContext, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { fillCopy } from "../../apps/web/src/copy/fill-copy"
@@ -166,4 +166,115 @@ test("an ordinary resize of a cropped picture keeps its aspect, as one undo, and
   await page.keyboard.press("ControlOrMeta+z")
   await expect.poll(async () => (await saved()).box).toEqual(cut.box)
   expect(await cropRead(stack, opened)).toBe(words)
+})
+
+async function croppedPicture(page: Page, context: BrowserContext, stack: Stack) {
+  await serveOriginals(page, stack.originals)
+  const opened = await openEditor(page, context, stack)
+  await drop(page, [...(await readFile(pictureFile))], await slidePoint(page, 960, 540))
+  const picture = page.locator("[data-slide-box] [data-node]").filter({ has: page.locator('[data-paint="image"]') })
+  await expect(picture).toHaveCount(1)
+  const id = (await picture.getAttribute("data-node")) ?? ""
+  const saved = async () => (await savedNode(stack, opened, id)) as unknown as Saved | undefined
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
+  await clickSlide(page, 960, 540)
+  const fill = page.locator(`[data-design-panel] [data-design-section="${fillCopy.section}"]`)
+  await fill.getByRole("combobox").click()
+  const { pictureWords } = await import("../../apps/web/src/copy/picture-panel-copy")
+  await page.getByRole("option", { name: pictureWords.crop, exact: true }).click()
+  await expect(page.locator("[data-crop-handles]")).toBeVisible()
+  await dragBy(page, await centre(page, '[data-grip="crop-w"]'), { x: 60, y: 0 })
+  await expect.poll(async () => (await saved())?.fills?.[0]?.crop?.x ?? 0).toBeGreaterThan(0.05)
+  return { opened, saved, cut: await saved() }
+}
+
+async function dragWhile(page: Page, from: { x: number; y: number }, by: { x: number; y: number }, key: string) {
+  await page.mouse.move(from.x, from.y)
+  await page.mouse.down()
+  await page.mouse.move(from.x + by.x, from.y + by.y, { steps: 8 })
+  await page.keyboard.press(key)
+  await page.mouse.up()
+}
+
+test("undo, redo or delete during a crop drag does not write the crop from before the key", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("crop-drag", "undo", "redo", "delete")
+  const { saved, cut } = await croppedPicture(page, context, stack)
+  if (cut === undefined) throw new Error("crop was not saved")
+
+  await dragWhile(
+    page,
+    await centre(page, '[data-crop-handles] rect[data-grip="crop-move"]'),
+    { x: 40, y: 0 },
+    "ControlOrMeta+z",
+  )
+  await expect.poll(async () => (await saved())?.fills?.[0]?.crop?.x).not.toBe(cut.fills[0]?.crop?.x)
+  const moved = await saved()
+  expect(moved?.box).toEqual(cut.box)
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await saved())?.fills?.[0]?.crop).toEqual(cut.fills[0]?.crop)
+  expect((await saved())?.box).toEqual(cut.box)
+
+  await dragWhile(
+    page,
+    await centre(page, '[data-crop-handles] rect[data-grip="crop-move"]'),
+    { x: 28, y: 0 },
+    "ControlOrMeta+Shift+z",
+  )
+  await expect.poll(async () => (await saved())?.fills?.[0]?.crop?.x).not.toBe(cut.fills[0]?.crop?.x)
+  expect((await saved())?.box).toEqual(cut.box)
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await saved())?.fills?.[0]?.crop).toEqual(cut.fills[0]?.crop)
+  expect((await saved())?.box).toEqual(cut.box)
+
+  await dragWhile(
+    page,
+    await centre(page, '[data-crop-handles] rect[data-grip="crop-move"]'),
+    { x: 20, y: 0 },
+    "Delete",
+  )
+  await expect.poll(async () => (await saved())?.fills?.[0]?.crop?.x).not.toBe(cut.fills[0]?.crop?.x)
+  expect((await saved())?.box).toEqual(cut.box)
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await saved())?.fills?.[0]?.crop).toEqual(cut.fills[0]?.crop)
+  expect((await saved())?.box).toEqual(cut.box)
+})
+
+test("Control as a context click, and Fn, free the aspect of a cropped picture", async ({ page, context, stack }) => {
+  covers("resize")
+  const { saved, cut } = await croppedPicture(page, context, stack)
+  if (cut === undefined) throw new Error("crop was not saved")
+  await page.keyboard.press("Enter")
+  await expect(page.locator("[data-crop-handles]")).toHaveCount(0)
+  await page.evaluate(() => {
+    document.addEventListener("contextmenu", (event) => {
+      ;(window as Window & { menuPrevented?: boolean }).menuPrevented = event.defaultPrevented
+    })
+  })
+  await page.keyboard.down("Control")
+  const right = await centre(page, '[data-grip="right"]')
+  await page.mouse.move(right.x, right.y)
+  await page.mouse.down({ button: "right" })
+  await page.mouse.move(right.x + 70, right.y, { steps: 8 })
+  await page.mouse.up({ button: "right" })
+  await page.keyboard.up("Control")
+  await expect.poll(async () => (await saved())?.box?.w ?? 0).toBeGreaterThan(cut.box.w + 20)
+  const stretched = await saved()
+  expect(stretched?.box.h).toBe(cut.box.h)
+  expect(stretched?.fills?.[0]?.crop).toEqual(cut.fills[0]?.crop)
+  expect(await page.evaluate(() => (window as Window & { menuPrevented?: boolean }).menuPrevented)).toBe(true)
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await saved())?.box).toEqual(cut.box)
+  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Fn", bubbles: true })))
+  const again = await centre(page, '[data-grip="right"]')
+  await dragBy(page, again, { x: 70, y: 0 })
+  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent("keyup", { key: "Fn", bubbles: true })))
+  await expect.poll(async () => (await saved())?.box?.w ?? 0).toBeGreaterThan(cut.box.w + 20)
+  const freed = await saved()
+  expect(freed?.box.h).toBe(cut.box.h)
+  expect(freed?.fills?.[0]?.crop).toEqual(cut.fills[0]?.crop)
 })

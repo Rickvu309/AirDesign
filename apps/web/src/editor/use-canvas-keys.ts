@@ -22,6 +22,7 @@ export type KeyArgs = {
   readonly onZoom: (key: ZoomKey) => void
   readonly onSpace: (down: boolean) => void
   readonly cancelDrag: () => boolean
+  readonly dragging: () => boolean
   readonly onEditText: (id: doom.NodeId) => void
   readonly onActions: () => void
   readonly cropping: boolean
@@ -88,6 +89,7 @@ export function useCanvasKeys(args: KeyArgs) {
       }
       if (gesture === "undo" || gesture === "redo") {
         handled()
+        if (a.dragging()) return
         if (gesture === "undo") a.client.undo()
         else a.client.redo()
       } else if (gesture === "pan") {
@@ -115,6 +117,7 @@ export function useCanvasKeys(args: KeyArgs) {
         a.onSelection(steppedOut(a.geometry, a.selection))
       } else if (gesture === "delete") {
         handled()
+        if (a.dragging()) return
         const writes = deleteWrites(a.view, a.selection.ids)
         a.client.push(writes)
         a.onSelection(noSelection)

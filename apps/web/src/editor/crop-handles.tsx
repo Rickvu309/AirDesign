@@ -2,6 +2,7 @@ import { useId } from "react"
 import * as doom from "@airdesign/doom"
 import { cropShown, imageArea, type CropGrip } from "./crop-drag"
 import { apply, type Placed, type Point } from "./slide-geometry"
+import { resizeCursor, type ResizeGrip } from "./transform-math"
 
 export type CropTarget = {
   readonly node: doom.NodeId
@@ -13,6 +14,27 @@ const bar = 22
 const thick = 4
 const leg = 14
 const reach = 12
+
+const resizeGrip = {
+  "crop-n": "top",
+  "crop-s": "bottom",
+  "crop-e": "right",
+  "crop-w": "left",
+  "crop-nw": "top-left",
+  "crop-ne": "top-right",
+  "crop-se": "bottom-right",
+  "crop-sw": "bottom-left",
+} as const satisfies Record<Exclude<CropGrip, "crop-move">, ResizeGrip>
+
+export function cropCursor(grip: Exclude<CropGrip, "crop-move">, rotation: number): string {
+  return resizeCursor(resizeGrip[grip], rotation)
+}
+
+export function cropGripReach(screenWidth: number, screenHeight: number): number {
+  const room = Math.min(screenWidth, screenHeight) / 2 - 1
+  if (!(room >= 4)) return 0
+  return Math.min(reach, room)
+}
 
 const corners = [
   { grip: "crop-nw", x: 0, y: 0 },
@@ -26,17 +48,6 @@ const sides = [
   { grip: "crop-s", x: 0.5, y: 1 },
   { grip: "crop-w", x: 0, y: 0.5 },
 ] as const
-
-const cursors: Readonly<Record<Exclude<CropGrip, "crop-move">, string>> = {
-  "crop-n": "ns-resize",
-  "crop-s": "ns-resize",
-  "crop-e": "ew-resize",
-  "crop-w": "ew-resize",
-  "crop-nw": "nwse-resize",
-  "crop-se": "nwse-resize",
-  "crop-ne": "nesw-resize",
-  "crop-sw": "nesw-resize",
-}
 
 function cornerPath(at: Point, x: number, y: number): string {
   const inward = { x: x === 0 ? 1 : -1, y: y === 0 ? 1 : -1 }
@@ -69,6 +80,8 @@ export function CropHandles({
     return { x: at.x * scale, y: at.y * scale }
   }
   const turn = `rotate(${String(placed.rotation)}`
+  const gripReach = cropGripReach(Math.abs(w * scale), Math.abs(h * scale))
+  const hitShort = Math.min(reach, gripReach * 2)
   return (
     <g data-crop-handles="">
       {url === undefined ? null : (
@@ -105,17 +118,22 @@ export function CropHandles({
         const across = grip === "crop-n" || grip === "crop-s"
         const long = across ? bar : thick
         const short = across ? thick : bar
+        const hitLong = Math.max(long, gripReach)
+        const hitW = across ? hitLong : hitShort
+        const hitH = across ? hitShort : hitLong
         return (
           <g key={grip} transform={`${turn} ${String(at.x)} ${String(at.y)})`}>
-            <rect
-              data-grip={grip}
-              x={at.x - Math.max(long, reach) / 2}
-              y={at.y - Math.max(short, reach) / 2}
-              width={Math.max(long, reach)}
-              height={Math.max(short, reach)}
-              fill="transparent"
-              style={{ pointerEvents: "all", cursor: cursors[grip] }}
-            />
+            {gripReach === 0 ? null : (
+              <rect
+                data-grip={grip}
+                x={at.x - hitW / 2}
+                y={at.y - hitH / 2}
+                width={hitW}
+                height={hitH}
+                fill="transparent"
+                style={{ pointerEvents: "all", cursor: cropCursor(grip, placed.rotation) }}
+              />
+            )}
             <rect
               data-crop-grip={grip}
               x={at.x - long / 2}
@@ -135,14 +153,16 @@ export function CropHandles({
         const at = spot(x, y)
         return (
           <g key={grip} transform={`${turn} ${String(at.x)} ${String(at.y)})`}>
-            <circle
-              data-grip={grip}
-              cx={at.x}
-              cy={at.y}
-              r={reach}
-              fill="transparent"
-              style={{ pointerEvents: "all", cursor: cursors[grip] }}
-            />
+            {gripReach === 0 ? null : (
+              <circle
+                data-grip={grip}
+                cx={at.x}
+                cy={at.y}
+                r={gripReach}
+                fill="transparent"
+                style={{ pointerEvents: "all", cursor: cropCursor(grip, placed.rotation) }}
+              />
+            )}
             <path
               data-crop-grip={grip}
               d={cornerPath(at, x, y)}
