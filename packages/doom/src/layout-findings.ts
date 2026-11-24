@@ -93,8 +93,7 @@ function around(rect: Rect, rotation: number, cx: number, cy: number): Rect {
 
 const written = (line: ResolvedLine) => line.runs.some((run) => run.text.trim() !== "")
 
-const wordless = (node: Resolved): boolean =>
-  (node.text === null || !node.text.lines.some(written)) && node.children.every(wordless)
+const wordless = (node: Resolved): boolean => node.text === null || !node.text.lines.some(written)
 
 function inkOf(line: ResolvedLine, x: number, y: number): Rect {
   const free = Math.max(0, line.w - line.ink)
@@ -212,21 +211,14 @@ function judgeKids(slide: Slide, kids: readonly Placed[]): void {
 
 function coversSlide(slide: Slide, top: Placed): boolean {
   const { box, node } = top
-  if (node.geometry?.kind === "line" || !node.fills.some((paint) => paint.opacity > 0) || !wordless(node)) return false
-  const angle = (-node.box.rotation * Math.PI) / 180
-  const cos = Math.cos(angle)
-  const sin = Math.sin(angle)
-  const cx = box.x + box.w / 2
-  const cy = box.y + box.h / 2
-  const { w, h } = slide.size
-  return [0, w].every((px) =>
-    [0, h].every((py) => {
-      const dx = px - cx
-      const dy = py - cy
-      const x = cx + dx * cos - dy * sin
-      const y = cy + dx * sin + dy * cos
-      return x >= box.x && x <= right(box) && y >= box.y && y <= bottom(box)
-    }),
+  return (
+    node.children.length === 0 &&
+    (node.geometry === null || node.geometry.kind === "rect") &&
+    node.fills.some((paint) => paint.opacity > 0) &&
+    node.opacity > 0 &&
+    wordless(node) &&
+    node.box.rotation % 360 === 0 &&
+    contains(box, { x: 0, y: 0, w: slide.size.w, h: slide.size.h })
   )
 }
 
