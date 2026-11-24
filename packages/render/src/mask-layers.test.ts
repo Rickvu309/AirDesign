@@ -71,7 +71,7 @@ describe("a mask clips the layers above it to its outline and does not paint", (
     expect(html).not.toContain(`data-node="${ids.hole}"`)
     expect(html).not.toContain(swatches.red)
     expect(html).toContain(`d="${roundedRectPath(200, 120, [24, 24, 24, 24])}"`)
-    expect(html).toContain("translate(40 30)")
+    expect(html).toContain('transform="matrix(1 0 0 1 40 30)"')
     const back = html.indexOf(`data-node="${ids.back}"`)
     const clip = html.indexOf("mask:url(#")
     const front = html.indexOf(`data-node="${ids.front}"`)
@@ -128,6 +128,19 @@ describe("a mask clips the layers above it to its outline and does not paint", (
       }),
       shape("front", { box: spot(10, 20, 100, 80), fills: fill(swatches.white) }),
     ])
-    expect(html).toContain("rotate(15)")
+    expect(html).toContain('transform="matrix(0.966 0.259 -0.259 0.966 22.056 8.422)"')
+  })
+
+  it("mirrors the outline with a flipped mask", () => {
+    const { html } = painted([
+      shape("hole", {
+        box: spot(10, 20, 100, 80, { flipH: true }),
+        radius: [40, 0, 0, 0],
+        fills: fill(swatches.red),
+        mask: true,
+      }),
+      shape("front", { box: spot(10, 20, 100, 80), fills: fill(swatches.white) }),
+    ])
+    expect(html).toContain('transform="matrix(-1 0 0 1 110 20)"')
   })
 })

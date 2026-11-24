@@ -60,7 +60,3 @@ export function outlineOf(node: Resolved): Outline {
     stroke: paths.filter((path) => path.stroke).map((path) => path.d),
   }
 }
-
-export function maskSilhouette(node: Resolved): string {
-  return outlineOf(node).fill ?? roundedRectPath(node.box.w, node.box.h, node.radius)
-}
