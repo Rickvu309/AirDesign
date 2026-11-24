@@ -69,6 +69,10 @@ export async function titleSlides(kit, opened, titles) {
     await expect(opened.page.locator("[data-slide-entry]").getByText(chars, { exact: true })).toBeVisible()
 }
 
+export async function hideNode(kit, opened, id) {
+  await editNodes(kit, opened, [{ node: id, prop: "hidden", value: true }])
+}
+
 export async function emptySlide(kit, opened) {
   const { nodes } = (await readDoom(kit, opened)).fold
   const held = Object.values(nodes).filter((node) => node.parent?.id === opened.slide)

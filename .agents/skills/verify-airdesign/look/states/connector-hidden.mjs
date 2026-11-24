@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test"
 import { editor } from "../editor-screen.mjs"
 import { accent, landNodes, node, openDoomDeck, spot } from "../doom-deck.mjs"
-import { emptySlide } from "../doom-slides.mjs"
+import { emptySlide, hideNode } from "../doom-slides.mjs"
 
 const fill = (name) => [{ kind: "solid", color: { var: name } }]
 
@@ -13,7 +13,7 @@ async function drive(kit) {
     {
       id: "w:1",
       type: "frame",
-      props: { name: "Frame", box: spot(200, 150, 900, 600), fills: fill("background2"), radius: 16 },
+      props: { box: spot(200, 150, 900, 600), fills: fill("background2"), radius: 16 },
     },
     {
       id: "w:2",
@@ -23,7 +23,6 @@ async function drive(kit) {
       id: "w:3",
       parent: "w:1",
       props: {
-        name: "Connector",
         box: spot(80, 80, 620, 320),
         strokes: accent,
         stroke: { weight: 8, align: "center", dash: "solid" },
@@ -37,19 +36,7 @@ async function drive(kit) {
       },
     },
   ])
-  const hidden = await kit.post(
-    kit.doomRoutes.edit,
-    {
-      deck: opened.deck,
-      edit: {
-        once: `hide-${String(Date.now())}`,
-        author: { kind: "person", id: "other-tab" },
-        writes: [{ node: "w:2", prop: "hidden", value: true }],
-      },
-    },
-    opened.cookie,
-  )
-  if (hidden.json.ok !== true) throw new Error(`hiding the shape was refused: ${JSON.stringify(hidden.json)}`)
+  await hideNode(kit, opened, "w:2")
   await expect(node(page, "w:2")).toHaveCount(0)
   await expect(node(page, "w:3")).toBeAttached()
 }
