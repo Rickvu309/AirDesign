@@ -28,18 +28,17 @@ same(
   ["scripts/commit-authors.rule.md"],
 )
 
-const pptxRow =
-  "| Untouched PowerPoint content survives byte for byte; edits change only their parts and add no validator error | `pnpm check:pptx`: untouched bytes; Microsoft validator against original. With `ci`, it is the whole merge test: no PowerPoint hand check |"
+const pdfRow = "| PDF pages keep their fonts and text | `pnpm check:pdf` reads the exported file |"
 same(
-  "replaying the CHECKS.md row of PR 912 fails and names the rule file of the script pnpm check:pptx runs",
-  faultFiles(ruleRowFaults(withRow(pptxRow), tracked, commands)),
-  ["scripts/pptx-check.rule.md"],
+  "a PDF check row names the rule file beside the PDF check script",
+  faultFiles(ruleRowFaults(withRow(pdfRow), tracked, commands)),
+  ["scripts/pdf-check.rule.md"],
 )
 
 same(
   "a fault names the line and the rule",
-  ruleRowFaults(withRow(pptxRow), tracked, commands)[0].startsWith(
-    `CHECKS.md:${checks.split("\n").length}: "Untouched PowerPoint content survives byte for byte`,
+  ruleRowFaults(withRow(pdfRow), tracked, commands)[0].startsWith(
+    `CHECKS.md:${checks.split("\n").length}: "PDF pages keep their fonts and text`,
   ),
   true,
 )
@@ -53,7 +52,7 @@ same(
 same(
   "a row kept from before is not refused again",
   ruleRowFaults(
-    { file: "CHECKS.md", before: `${checks}${pptxRow}\n`, after: `${checks}${pptxRow}\n` },
+    { file: "CHECKS.md", before: `${checks}${pdfRow}\n`, after: `${checks}${pdfRow}\n` },
     tracked,
     commands,
   ),

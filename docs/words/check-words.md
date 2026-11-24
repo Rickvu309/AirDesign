@@ -92,7 +92,7 @@ The most seconds a timed step may take.
 _Avoid_: budget, ceiling, threshold
 
 **spec seconds**:
-The seconds one browser spec file took, summed over its tests, as `tests/browser/spec-seconds.json` records them. The browser and corpus shards split files by them.
+The seconds one browser spec file took, summed over its tests, as `tests/browser/spec-seconds.json` records them. The browser shards split files by them.
 _Avoid_: weight, shard weight, timing
 
 **frame time**:
@@ -108,15 +108,15 @@ A test that is skipped, marked to do, expected to fail, or asserts nothing.
 _Avoid_: known fault, known bug, disabled test
 
 **the bar**:
-Every goal, every limit, and every PowerPoint case and deck that is already judged.
+The checks, goals and limits that CI enforces.
 _Avoid_: quality bar, standard, baseline
 
 **lowers the bar**:
-A pull request lowers the bar when it raises a limit, moves a goal, moves a metric away from its goal, removes a metric, check step, job, spec invariant, case, deck or caught break, skips a test, makes a check step a warning or local, or turns down a lint or type rule.
+A pull request lowers the bar when it raises a limit, moves a goal, moves a metric away from its goal, removes a metric, check step, job, spec invariant, skips a test, makes a check step a warning or local, or turns down a lint or type rule.
 _Avoid_: regresses, weakens, loosens
 
 **changes ci**:
-An edit to a file that decides which checks run or how they judge: a workflow, a check step or check script, test selection, the gate, or lint and type config. Tests, cases, fixtures, specs and docs alone do not change ci.
+An edit to a file that decides which checks run or how they judge: a workflow, a check step or check script, test selection, the gate, or lint and type config. Tests, fixtures, specs and docs alone do not change ci.
 _Avoid_: touches infra, tooling change
 
 **countersign**:
@@ -137,22 +137,6 @@ _Avoid_: sleep, allowed timeout
 The commands a builder ran for a change and what they printed.
 _Avoid_: evidence, verification, validation
 
-**judge**:
-To compare an exported PowerPoint file with its original and report every difference no edit asked for.
-_Avoid_: validate, verify
-
-**diff**:
-The parts an exported PowerPoint file changed, added or removed against its original, with each changed XML line and its shape path. It gives no verdict; `--allow` names the parts an edit may change.
-_Avoid_: delta, comparison
-
-**slide-diff**:
-The score of a painted slide against its reference image: the mean similarity, the lowest similarity of any 32 by 32 pixel tile, and the share of pixels that changed. The lowest tile catches one missing element on a mostly white slide.
-_Avoid_: image diff, visual diff, screenshot comparison
-
-**fidelity reference**:
-A picture PowerPoint itself drew of a slide: a page of the PDF PowerPoint saved of a deck, or the thumbnail of slide 1 PowerPoint keeps in a deck. paint-fidelity scores our painted slides against them.
-_Avoid_: golden image, ground truth
-
 **planted fault**:
 A break put into code on purpose, to see whether a check catches it.
 _Avoid_: mutant, planted break, injected bug
@@ -164,5 +148,5 @@ A pull request or commit's first line. Use an imperative verb and one outcome in
 _Avoid_: subject, headline, summary line
 
 **area**:
-The part of AirDesign a pull request touches, named by a label the `bar` check adds from the changed paths in `scripts/areas.json`: `editor`, `aira`, `deck-home`, `sign-in`, `pptx`, `document`, `verify`, `specs` and `tooling`. A pull request may have several.
+The part of AirDesign a pull request touches, named by a label the `bar` check adds from the changed paths in `scripts/areas.json`: `editor`, `aira`, `deck-home`, `sign-in`, `core`, `verify`, `specs` and `tooling`. A pull request may have several.
 _Avoid_: component, scope, module

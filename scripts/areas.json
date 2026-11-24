@@ -63,11 +63,8 @@
     ],
     "except": ["apps/web/src/settings/usage-"]
   },
-  "pptx": {
-    "paths": ["packages/pptx/", "scripts/pptx-"]
-  },
-  "document": {
-    "paths": ["packages/document/", "packages/catalog/", "packages/live/"]
+  "core": {
+    "paths": ["packages/doom/", "packages/catalog/", "packages/live/"]
   },
   "verify": {
     "paths": [".agents/skills/", "tests/journeys/"]

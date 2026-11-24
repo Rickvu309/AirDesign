@@ -32,12 +32,11 @@ runs:
         fi
         if [ -n "$run_id" ]; then passed=true; fi
         needed=true
-        if { [ "$PART" = design ] && [ "$GITHUB_EVENT_NAME" != pull_request ]; } ||
-           { [ "$PART" = pptx ] && [ "$GITHUB_EVENT_NAME" = merge_group ]; }; then
+        if [ "$PART" = design ] && [ "$GITHUB_EVENT_NAME" != pull_request ]; then
           needed=false
         elif [ "$passed" = true ]; then
           case "$PART" in
-            source | scripts | browser | corpus | pptx) needed=false ;;
+            source | scripts | browser | pdf) needed=false ;;
           esac
         fi
         echo "passed=$passed" >> "$GITHUB_OUTPUT"

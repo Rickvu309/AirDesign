@@ -11,7 +11,6 @@ const readOutsideGraph = (file) =>
   file === "pnpm-lock.yaml" ||
   file === "scripts/unit-test-files.mjs" ||
   path.basename(file) === "package.json" ||
-  file.startsWith("scripts/pptx-fixtures/") ||
   (/\.(json|sql)$/.test(file) && /^(apps|packages|tests)\//.test(file))
 
 const unitSource = (file) =>
@@ -130,10 +129,6 @@ export const proofPlan = ({
   rules = [],
 }) => {
   const browserRun = browserStep(changed, browser)
-  const pptx = suitesFor(
-    changed,
-    rules.filter((rule) => rule.name === "pptx"),
-  )[0]
   const note =
     browserRun === undefined && changed.some(appCode)
       ? { kind: "note", text: "App code a person sees changed and no browser spec did. Write the failing spec first." }
@@ -145,7 +140,6 @@ export const proofPlan = ({
     browserRun,
     note,
     lookStep(changed, screens, states),
-    pptx && { kind: "pptx", because: `${pptx.because} is in what ci's pptx job watches` },
     benchStep(changed),
   ].filter(Boolean)
   return { base, head, changed, steps, ciAlso: suitesFor(changed, rules).map((suite) => suite.name) }

@@ -1,9 +1,7 @@
-import { readFileSync } from "node:fs"
 import { readdir, readFile } from "node:fs/promises"
 import { spawnSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { documentReachFaults, repoFiles } from "./document-reach.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const fixturesDir = path.join(root, "tooling/boundary-fixtures")
@@ -43,11 +41,6 @@ for (const name of names) {
   }
   console.log(`${name}: ${code}`)
 }
-
-const documentFaults = documentReachFaults(repoFiles(root), (file) => readFileSync(path.join(root, file), "utf8"))
-for (const fault of documentFaults) console.error(fault)
-if (documentFaults.length > 0) failed = true
-else console.log("document-reach: only packages/pptx reads @airdesign/document")
 
 if (failed) {
   process.exit(1)

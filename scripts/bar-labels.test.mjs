@@ -35,10 +35,10 @@ same(
   labelChanges({
     result: { listed: true, lowers: true },
     shown: { needed: true },
-    changedFiles: ["scripts/land.mjs", "packages/pptx/src/write.ts"],
+    changedFiles: ["scripts/land.mjs", "packages/doom/src/edit.ts"],
     title: `${"A".repeat(80)}`,
   }),
-  { add: ["changes-ci", "lowers-the-bar", "pptx", "tooling", "needs-before-after", "long-title"], remove: [] },
+  { add: ["changes-ci", "lowers-the-bar", "core", "tooling", "needs-before-after", "long-title"], remove: [] },
 )
 
 console.log("bar label tests passed")

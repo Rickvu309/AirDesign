@@ -40,17 +40,15 @@ try {
   write("tests/browser/new.spec.ts", "")
   write("tests/browser/spec-seconds.json", {
     seconds: { "kept.spec.ts": 10, "gone.spec.ts": 3 },
-    export: { "kept.spec.ts": 4, "gone.spec.ts": 1 },
   })
   write(measuredName("tests/browser/spec-seconds.json"), {
     seconds: { "kept.spec.ts": 12, "new.spec.ts": 5 },
-    export: { "kept.spec.ts": null, "new.spec.ts": 2 },
   })
   write(".agents/skills/verify-airdesign/journeys/sign-in.mjs", "")
   write(".agents/skills/verify-airdesign/journeys/new-deck.mjs", "")
   const journeys = JSON.stringify({ "removed-journey": 4, "sign-in": 2 })
   write("tests/journeys/journey-seconds.json", journeys)
-  write(measuredName("tests/journeys/journey-seconds.json"), { seconds: { "new-deck": 6, "sign-in": 2.5 }, export: {} })
+  write(measuredName("tests/journeys/journey-seconds.json"), { seconds: { "new-deck": 6, "sign-in": 2.5 } })
   write("tests/unit-seconds.json", JSON.stringify({ "a.test.ts": 1 }))
 
   assert.deepEqual(foldTimings(folder), [
@@ -60,8 +58,8 @@ try {
   const read = (name) => JSON.parse(fs.readFileSync(path.join(folder, name), "utf8"))
   assert.deepEqual(
     read("tests/browser/spec-seconds.json"),
-    { seconds: { "kept.spec.ts": 10, "new.spec.ts": 5 }, export: { "new.spec.ts": 2 } },
-    "a spec within double keeps its record, a new one is added, a gone one leaves, and one with no export test drops its export seconds",
+    { seconds: { "kept.spec.ts": 10, "new.spec.ts": 5 } },
+    "a spec within double keeps its record, a new one is added, a gone one leaves",
   )
   assert.deepEqual(
     read("tests/journeys/journey-seconds.json"),

@@ -7,7 +7,7 @@ import { openDoomDeck, slidePoint } from "../doom-deck.mjs"
 async function drive(kit) {
   const { page } = kit
   await openDoomDeck(kit)
-  const bytes = [...(await readFile(path.join(kit.repo, "scripts/pptx-fixtures/picture.png")))]
+  const bytes = [...(await readFile(path.join(kit.repo, "tests/browser/fixtures/picture.png")))]
   const at = await slidePoint(page, 1300, 540)
   await page.evaluate(
     ([bytes, at]) => {

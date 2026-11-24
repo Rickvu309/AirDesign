@@ -35,11 +35,10 @@ const cases = [
   ["apps/web/src/connect/approve-agent.tsx", ["sign-in"]],
   ["apps/web/src/settings/agents-page.tsx", ["sign-in"]],
   ["packages/oauth/src/index.ts", ["sign-in"]],
-  ["packages/pptx/src/write.ts", ["pptx"]],
-  ["scripts/pptx-check.mjs", ["pptx", "tooling"]],
-  ["packages/document/src/index.ts", ["document"]],
-  ["packages/catalog/src/ops.ts", ["document"]],
-  ["packages/live/src/sync.ts", ["document"]],
+  ["scripts/pdf-check.mjs", ["tooling"]],
+  ["packages/doom/src/index.ts", ["core"]],
+  ["packages/catalog/src/ops.ts", ["core"]],
+  ["packages/live/src/sync.ts", ["core"]],
   ["tests/journeys/journeys.spec.ts", ["verify"]],
   ["tests/spec-replay.test.ts", ["specs"]],
   [".agents/skills/verify-airdesign/look/states.mjs", ["verify"]],
@@ -62,13 +61,12 @@ same(
 same("no files give no areas", areasOf([]), [])
 
 const names = Object.keys(areaMap)
-same("the map names the nine areas", names, [
+same("the map names the eight areas", names, [
   "editor",
   "aira",
   "deck-home",
   "sign-in",
-  "pptx",
-  "document",
+  "core",
   "verify",
   "specs",
   "tooling",

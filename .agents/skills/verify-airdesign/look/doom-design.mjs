@@ -123,7 +123,7 @@ export async function selectMany(page, ids) {
 
 export async function dropPicture(kit, at = { x: 1300, y: 560 }) {
   const { page } = kit
-  const bytes = [...(await readFile(path.join(kit.repo, "scripts/pptx-fixtures/picture.png")))]
+  const bytes = [...(await readFile(path.join(kit.repo, "tests/browser/fixtures/picture.png")))]
   const point = await slidePoint(page, at.x, at.y)
   await page.evaluate(
     ([bytes, point]) => {

@@ -15,10 +15,8 @@ outputs:
     value: ${{ steps.map.outputs.browser }}
   journeys:
     value: ${{ steps.map.outputs.journeys }}
-  pptx:
-    value: ${{ steps.map.outputs.pptx }}
-  corpus:
-    value: ${{ steps.map.outputs.corpus }}
+  pdf:
+    value: ${{ steps.map.outputs.pdf }}
   model-check:
     value: ${{ steps.map.outputs.model-check }}
   journey-names:

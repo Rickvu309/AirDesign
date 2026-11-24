@@ -14,14 +14,9 @@ export function workspaceDirs(repo, app) {
     .map(([name]) => `packages/${name.replace(/^@airdesign\//, "")}/`)
 }
 
-export function pptxPaths(list) {
-  return list.split("\n").filter(Boolean)
-}
-
 export function suiteRules(repo) {
   const web = workspaceDirs(repo, "apps/web")
   const api = workspaceDirs(repo, "apps/api")
-  const watched = readFileSync(path.join(repo, ".github/actions/ci-changes/pptx-paths.txt"), "utf8")
   return [
     { name: "check", script: ["check"], paths: [""] },
     {
@@ -43,7 +38,6 @@ export function suiteRules(repo) {
         "pnpm-lock.yaml",
       ],
     },
-    { name: "pptx", script: ["check:pptx"], paths: pptxPaths(watched) },
   ]
 }
 

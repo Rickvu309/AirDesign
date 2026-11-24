@@ -3,14 +3,11 @@ dist/
 *.tsbuildinfo
 test-results/
 *.measured.json
-tests/browser/exported-*.pptx
 tests/browser/exported-*.pdf
 tests/browser/exported-*.json
 playwright-report/
 blob-report/
 
-scripts/pptx-judge/bin/
-scripts/pptx-judge/obj/
 
 .stryker-tmp/
 .wrangler

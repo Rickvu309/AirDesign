@@ -66,39 +66,29 @@ export const measuredName = (record) => record.replace(/\.json$/, ".measured.jso
 export const measuredSeconds = ({ scheduled, tests }) => {
   const files = new Map()
   for (const test of tests) {
-    const file = files.get(test.file) ?? { ended: 0, kept: true, seconds: 0, exported: 0 }
+    const file = files.get(test.file) ?? { ended: 0, kept: true, seconds: 0 }
     file.ended += 1
     file.kept &&= test.status === test.expectedStatus
     file.seconds += test.duration
-    if (test.exported) file.exported += test.duration
     files.set(test.file, file)
   }
   const whole = [...files].filter(([name, file]) => file.kept && file.ended === scheduled.get(name))
   return {
     seconds: Object.fromEntries(whole.map(([name, file]) => [name, tenths(file.seconds)])),
-    export: Object.fromEntries(whole.map(([name, file]) => [name, file.exported > 0 ? tenths(file.exported) : null])),
   }
 }
 
 export const keepMeasured = (file, measured) => {
-  const kept = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : { seconds: {}, export: {} }
+  const kept = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : { seconds: {} }
   const merged = {
     seconds: sortedKeys({ ...kept.seconds, ...measured.seconds }),
-    export: sortedKeys({ ...kept.export, ...measured.export }),
   }
   fs.writeFileSync(file, `${JSON.stringify(merged, null, 2)}\n`)
 }
 
 export const foldedSeconds = ({ record, measured, exists }) => {
   const present = (part) => Object.fromEntries(Object.entries(part).filter(([name]) => exists(name)))
-  const measuredExport = Object.entries(measured.export)
-  const exported = refreshed(
-    present(record.export),
-    measuredExport.filter(([, seconds]) => seconds !== null),
-  )
-  for (const [name, seconds] of measuredExport) if (seconds === null) delete exported[name]
   return {
     seconds: sortedKeys(refreshed(present(record.seconds), Object.entries(measured.seconds))),
-    export: sortedKeys(exported),
   }
 }

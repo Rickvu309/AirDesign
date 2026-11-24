@@ -16,8 +16,7 @@ import {
 import { timedMetrics, timedOnCi } from "./metrics.mjs"
 
 const fromUnitMeasures = Object.fromEntries([...readFromUnitRun].map((name) => [name, true]))
-const offline = Object.fromEntries(Object.entries(measures).filter(([name]) => name !== "import-parse"))
-const readMetrics = (at) => readEvery(at, offline)
+const readMetrics = (at) => readEvery(at, measures)
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -40,14 +39,10 @@ const record = (faults, tests = 2) => {
     "metrics.json",
     JSON.stringify({
       "known-failures": { now: faults, goal: 0, better: "lower" },
-      "corpus-size": { now: 1, goal: 20, better: "higher" },
-      "export-coverage": { now: 2, goal: 3, better: "higher" },
-      "fault-detection": { now: 1, goal: 2, better: "higher" },
       "long-titles": { goal: 0, better: "lower" },
       "check-duration": { limit: 40 },
       "gate-duration": { limit: 60 },
       "ci-duration": { limit: 40 },
-      "pptx-check-duration": { limit: 90 },
       "time-to-merge": { limit: 45 },
       "time-to-notice": { limit: 15 },
       "drag-frame": { limit: 20 },
@@ -57,23 +52,6 @@ const record = (faults, tests = 2) => {
 }
 
 write("packages/a/src/a.test.ts", 'it("one", () => {})\nit("two", () => {})\n')
-write(
-  "scripts/pptx-fixtures/cases.json",
-  JSON.stringify([
-    { before: "a.pptx", after: "b.pptx" },
-    { before: "a.pptx", after: "a.pptx" },
-  ]),
-)
-write("scripts/pptx-fixtures/judge-proof.json", JSON.stringify({ "one kind": "caught", "other kind": "missed" }))
-const seedList = (known) => write("scripts/pptx-fixtures/judge-seeds.json", JSON.stringify({ seeds: [1], known }))
-seedList([])
-write("scripts/pptx-fixtures/a.pptx", "x".repeat(100_000))
-write("scripts/pptx-fixtures/b.pptx", "x")
-write(
-  "packages/pptx/package.json",
-  JSON.stringify({ name: "@airdesign/pptx", type: "module", exports: { ".": { import: "./dist/index.js" } } }),
-)
-write("packages/pptx/dist/index.js", 'export const writtenRoutes = { text: "txBody", move: "xfrm", resize: "xfrm" }\n')
 record(1)
 execFileSync("git", ["init", "-q"], { cwd: root })
 execFileSync("git", ["commit", "-q", "--allow-empty", "-m", "Start", "--author", "A <a@b.c>"], {
@@ -116,14 +94,6 @@ if (
 if (steady.rows.find((row) => row.name === "ci-duration")?.limit !== 40)
   throw new Error("a metric timed on ci was not listed with its limit")
 
-const capabilities = steady.rows.find((row) => row.name === "export-coverage")
-if (capabilities?.now !== 2 || capabilities.goal !== 3)
-  throw new Error(`distinct routes were not counted against the recorded goal: ${JSON.stringify(capabilities)}`)
-
-const planted = steady.rows.find((row) => row.name === "fault-detection")
-if (planted?.now !== 1 || planted.goal !== 2)
-  throw new Error(`caught kinds were not counted: ${JSON.stringify(planted)}`)
-
 const slow = overLimit({ name: "check-duration", now: 41.2, limit: 40 })
 if (slow !== "check-duration is 41.2 and its limit is 40. Make it faster.") throw new Error(`${slow}`)
 if (overLimit({ name: "check-duration", now: 40, limit: 40 }) !== undefined)
@@ -165,12 +135,6 @@ write("packages/a/src/a.spec.js", "expect(result.failed).toBe(1)\nexpect.soft(fa
 execFileSync("git", ["add", "-A"], { cwd: root })
 if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 0)
   throw new Error("a passing test was counted as a known failure")
-seedList([{ seed: 1, kind: "one kind", deck: "a.pptx", what: "slide 1" }])
-if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 1)
-  throw new Error("a listed miss must show in the known-failures metric")
-seedList([])
-if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 0)
-  throw new Error("an empty seed list must add no known failure")
 write(
   "tests/journeys/a.spec.ts",
   'test("bug", async () => {\n  test.fail()\n  expect(/x/.test("x")).toBe(true)\n})\ntest("ok", async () => {})\n',
@@ -178,17 +142,10 @@ write(
 if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 1)
   throw new Error("a Playwright test.fail must count as one known failure")
 fs.rmSync(path.join(root, "tests"), { recursive: true })
-fs.rmSync(path.join(root, "scripts/pptx-fixtures/judge-seeds.json"))
-if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 0)
-  throw new Error("a repo with no seed list has no listed miss")
-seedList([])
-
 write(
   "metrics.json",
   JSON.stringify({
     "known-failures": { now: 0, goal: 0 },
-    "export-coverage": { now: 1, goal: 4 },
-    "fault-detection": { now: 1, goal: 3 },
     "nobody measures": { now: 1, goal: 0 },
     "nobody times": { limit: 5 },
     "no direction": { now: 1, goal: 2 },
@@ -196,10 +153,6 @@ write(
   }),
 )
 const loose = (await readMetrics(root)).drift.join("\n")
-if (!loose.includes("export-coverage is 2 and metrics.json says 1. Record 2 in metrics.json.")) throw new Error(loose)
-if (loose.includes("export-coverage has goal")) throw new Error(loose)
-if (!loose.includes("fault-detection has goal 2 and metrics.json says 3. Record goal 2 in metrics.json."))
-  throw new Error(loose)
 if (!loose.includes("nobody times has a limit in metrics.json and no runner times it.")) throw new Error(loose)
 if (!loose.includes("check-duration is timed by scripts/check.mjs and has no limit in metrics.json."))
   throw new Error(loose)
@@ -211,7 +164,6 @@ const needsDirection = (name) =>
 if (!loose.includes(needsDirection("no direction"))) throw new Error(loose)
 if (!loose.includes(needsDirection("odd direction"))) throw new Error(loose)
 if (!loose.includes(needsDirection("known-failures"))) throw new Error(loose)
-if (!loose.includes("corpus-size is measured and missing from metrics.json.")) throw new Error(loose)
 
 const proveVitest = () => {
   const probe = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-vitest-metrics-"))
@@ -302,28 +254,9 @@ if (fewerTests.drift.length !== 0) throw new Error(`a removed test must not fail
 if (fewerTests.rows.some((row) => row.name === "test-count")) throw new Error("the test count is still a metric")
 
 record(1, 2)
-const deckCount = (metrics) => metrics.rows.find((row) => row.name === "corpus-size")?.now
-const withoutList = await readMetrics(root)
-if (deckCount(withoutList) !== 1) throw new Error(`no corpus list must count the case decks: ${deckCount(withoutList)}`)
-write(
-  "scripts/pptx-fixtures/corpus.json",
-  JSON.stringify([
-    { name: "x.pptx", sha256: "0", source: "https://example.gov/x.pptx" },
-    { name: "y.pptx", sha256: "0", source: "https://example.gov/y.pptx" },
-  ]),
-)
-const withList = await readMetrics(root)
-if (deckCount(withList) !== 3) throw new Error(`the corpus list was not counted: ${deckCount(withList)}`)
-if (!withList.drift.includes("corpus-size is 3 and metrics.json says 1. Record 3 in metrics.json.")) {
-  throw new Error(`a longer corpus list must ask for a record\n${withList.drift.join("\n")}`)
-}
-fs.rmSync(path.join(root, "scripts/pptx-fixtures/corpus.json"))
-
 if (measuredHere({}) !== measures || measuredHere({ AIRDESIGN_UNIT_TESTS: "all" }) !== measures)
   throw new Error("a run of every unit test must measure every metric")
-const narrowed = Object.fromEntries(
-  Object.entries(measuredHere({ AIRDESIGN_UNIT_TESTS: '["packages/oauth/"]' })).filter(([name]) => name in offline),
-)
+const narrowed = measuredHere({ AIRDESIGN_UNIT_TESTS: '["packages/oauth/"]' })
 fs.rmSync(path.join(root, "node_modules/.cache/vitest-metrics.json"))
 const fromNarrowRun = await readEvery(root, narrowed)
 const names = fromNarrowRun.rows.map((row) => row.name)
@@ -333,11 +266,9 @@ if (fromNarrowRun.drift.some((line) => /known-failures/.test(line)))
   throw new Error(`a narrowed run must not call the unit run's metrics unmeasured\n${fromNarrowRun.drift.join("\n")}`)
 
 const unitShard = (current) => ({ AIRDESIGN_UNIT_TESTS: "all", AIRDESIGN_UNIT_SHARD: `${current}/3` })
-const inShard = (current) =>
-  Object.fromEntries(Object.entries(measuredHere(unitShard(current))).filter(([name]) => name in offline))
+const inShard = (current) => measuredHere(unitShard(current))
 const unitRow = (read, name) => read.rows.find((row) => row.name === name)
 
-seedList([{ seed: 1, kind: "one kind", deck: "a.pptx", what: "slide 1" }])
 cache(2, 1)
 const secondShard = await readEvery(root, inShard(2))
 const measuredRows = (read) => read.rows.filter((row) => !("limit" in row))
@@ -359,7 +290,7 @@ cache(2, 2)
 const firstShard = await readEvery(root, inShard(1))
 if (measuredRows(firstShard).some((row) => !(row.name in fromUnitMeasures)))
   throw new Error("a shard measures only the unit run's metrics, since another source job measures the rest")
-if (unitRow(firstShard, "known-failures")?.now !== 2 + 1)
+if (unitRow(firstShard, "known-failures")?.now !== 2)
   throw new Error(
     `the first shard adds the repo's static faults to its own: ${unitRow(firstShard, "known-failures")?.now}`,
   )

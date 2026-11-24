@@ -19,7 +19,7 @@ export {
 export { catalog, projectTools, toolInputSchema, type AgentOp } from "./catalog.js"
 export { readAccountName, accountNameLimit } from "./account-name.js"
 export { blankDeckName, readCreateDeck } from "./create-wire.js"
-export { deckName, readDeckName } from "./deck-name.js"
+export { readDeckName } from "./deck-name.js"
 
 export { iconNames } from "./icon-names.js"
 export { webImage } from "./image-address.js"

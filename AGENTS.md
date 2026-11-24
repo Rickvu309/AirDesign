@@ -6,11 +6,9 @@ AirDesign is an omakase deck design service. A person, or their AI agent, asks f
 
 1. **Omakase.** AirDesign makes the design choices, so the deck is good without the person asking. Fewer choices, each with impact.
 2. **Polish before breadth.** Make the small things good before extending a feature. A simple thing done well beats a complex thing done roughly, in code and in design.
-3. **The device does the work.** Painting, import, export and the agent loop run on the person's machine. That keeps AirDesign fast and the server small.
+3. **The device does the work.** Painting, export and the agent loop run on the person's machine. That keeps AirDesign fast and the server small.
 4. **One path for agents.** A person's own agent and Aira use the editor's tools. Anything a person can do, an agent can do the same way.
 5. **An edit paints before the network.** The canvas answers at once, and saving follows.
-
-PowerPoint is an import and an export, not the product. When they pull apart, the product wins and the PR names what the export loses.
 
 ## A note from Quan
 
@@ -18,14 +16,14 @@ Simple over complex. Ship nothing of low quality, in code or in design. Delete w
 
 ## Hit every surface
 
-The common defect is a change that works where you tried it and is missing elsewhere. Before you call it done, say which of these it touched: canvas, design panel, filmstrip and capture, undo and offline replay, the agent tools and Aira, PowerPoint import and export.
+The common defect is a change that works where you tried it and is missing elsewhere. Before you call it done, say which of these it touched: canvas, design panel, filmstrip and capture, undo and offline replay, the agent tools and Aira.
 
 ## How it works
 
-An edit, from a person or an agent, is read by `catalog` and applied by `doom` to the open deck's node tree. `render` paints it at once, then `live` sends it to `apps/api`, which orders everyone's edits as rows. `pptx` turns a PowerPoint file into a deck and back, on the device. `GLOSSARY.md` and the word files in `docs/words/` give one word per idea, for code, test and tool.
+An edit, from a person or an agent, is read by `catalog` and applied by `doom` to the open deck's node tree. `render` paints it at once, then `live` sends it to `apps/api`, which orders everyone's edits as rows. PDF export uses the editor’s painter on the device. PowerPoint import and export are not built yet; they will be rebuilt on Doom. `GLOSSARY.md` and the word files in `docs/words/` give one word per idea, for code, test and tool.
 
 - `apps/web` is the product UI, with designed states at `/screens/<id>-<name>`. `apps/site` is marketing and sign-in. `apps/api` is the server, on Postgres.
-- In `packages/`, `packages/<name>/src/index.ts` is a package's whole interface: `doom` (the core, imports no package), `document` (the slide model the painter still reads), `catalog`, `render`, `live`, `mcp`, `pptx`, plus `templates` (start decks), `theme` (tokens), `fonts`, `oauth`, `usage` (Claude spend).
+- In `packages/`, `packages/<name>/src/index.ts` is a package's whole interface: `doom` (the core, imports no package), `catalog`, `render`, `live`, `mcp`, plus `templates` (start decks), `theme` (tokens), `fonts`, `oauth`, `usage` (Claude spend).
 - A folder with a `pack.yml` is a pack. `packwerk.yml` ranks packs in layers, and `pnpm check:boundaries` fails an import its pack does not allow. Read `pnpm exec ts-packwerk explain <folder>` before you change a pack. Tests are checked too: a test may import its own pack's private files, and `test_exempt` names the source-reading tests that stay unchecked. A `pack_todo.yml` lists known violations: fix them, never add to them. `todo_ceiling` is that list's size, and the check fails when it grows past `origin/main`.
 
 ## Land a change

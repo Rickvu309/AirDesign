@@ -1,11 +1,11 @@
 # Doom words
 
-The words for AirDesign's core, Doom. One word per idea, for code, test and tool. Where a word here differs from `GLOSSARY.md`'s model words, the old word names today's model and goes when Doom replaces it.
+The words for AirDesign's core, Doom. One word per idea, for code, test and tool.
 
 ## Shape of a deck
 
 **Doom**:
-AirDesign's core: a deck as a tree of nodes, each a flat map of properties, changed by property writes the server orders. It is the deck's truth, and everything that edits, paints, stores and syncs it; PowerPoint is an import and an export.
+AirDesign's core: a deck as a tree of nodes, each a flat map of properties, changed by property writes the server orders. The editor and API use Doom to edit, paint, store and sync decks.
 _Avoid_: scene, document model, element tree
 
 **Doom v0.1**:

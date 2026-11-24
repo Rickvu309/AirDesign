@@ -42,8 +42,6 @@ flowchart TD
   end
   subgraph p_layer_model["model"]
     p_packages_catalog["packages/catalog"]
-    p_packages_document["packages/document"]
-    p_packages_pptx["packages/pptx"]
     p_packages_render["packages/render"]
   end
   subgraph p_layer_core["core"]
@@ -175,14 +173,12 @@ flowchart TD
 | `apps/web/src/samples` | feature | sample-screens.tsx, sample-slides.ts | none | none |
 | `apps/web/src/settings` | feature | account-page.tsx, agents-page.tsx, settings-screens.tsx, usage-page.tsx | apps/web/src/account, apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/credits, apps/web/src/decks, apps/web/src/lib | none |
 | `packages/catalog` | model | src/index.ts, src/icon-names.ts | none | none |
-| `packages/document` | model | src/index.ts | none | none |
 | `packages/doom` | core | runtime: packages/doom/src/index.ts; readers: packages/doom/src/read-kit.ts | none | none |
 | `packages/doom/src/component` | core | index.ts | packages/doom | none |
 | `packages/fonts` | core | src/index.ts | none | none |
 | `packages/live` | service | src/index.ts | none | none |
 | `packages/mcp` | service | runtime: packages/mcp/src/index.ts; testing: packages/mcp/src/testing/evals.ts | none | none |
 | `packages/oauth` | core | src/index.ts | none | none |
-| `packages/pptx` | model | src/index.ts | none | none |
 | `packages/render` | model | src/index.ts | none | none |
 | `packages/theme` | core | none | none | none |
 | `packages/usage` | core | src/index.ts | none | none |

@@ -179,7 +179,7 @@ export const freshRunVerdict = ({ gh, repository, number, head, jobs, byMap = fa
   return { take: true, tests: judged.tests }
 }
 
-const testStep = /^Run pnpm (?:check(?:\s|:pptx$)|test:journeys$)/
+const testStep = /^Run pnpm (?:check(?:\s|:(?:pdf|pptx)$)|test:journeys$)/
 
 export const confirmFreshRaces = ({ gh, repository, number, head, runs }) => {
   const after = freshRunState({ gh, repository, number, head })?.after

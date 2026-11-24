@@ -38,7 +38,6 @@ const nameOf = (file) => file.slice(file.lastIndexOf("/") + 1)
 const kinds = [
   ["other", (file) => file.endsWith(".rule.md")],
   ["test", (file) => testFile.test(file)],
-  ["case", (file) => file.startsWith("scripts/pptx-cases/")],
   ["fixture", (file) => /(?:^|\/)[a-z-]*fixtures\//.test(file)],
   ["spec", (file) => file.startsWith("specs/")],
   ["tool", (file) => toolFiles.has(file)],
@@ -197,7 +196,5 @@ export const patchLines = (patch) => {
 }
 
 export const lowerings = (file, read) => {
-  if (kindOf(file.name) === "case" && file.status === "removed")
-    return [`The PowerPoint case ${file.name} was removed.`]
   return detectors.flatMap(([applies, lowers]) => (applies(file.name) ? lowers(file.name, read(file)) : []))
 }

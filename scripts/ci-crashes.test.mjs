@@ -50,12 +50,3 @@ same(
 )
 const crashLog = path.join(root, "scripts/land-fixtures/job-mutation-test-runner-crashed.log")
 same("a first run whose test runner crashed fails its step", printing(crashLog, 1).status, 1)
-
-const paintWorkflow = parse(fs.readFileSync(path.join(root, ".github/workflows/paint-fidelity.yml"), "utf8"))
-const paint = paintWorkflow.jobs["paint-fidelity"].steps.find((step) => step.name === "paint-fidelity")
-same("a paint-fidelity run that fails fails its job", paint["continue-on-error"], undefined)
-same(
-  "a paint-fidelity job that fails fails its workflow",
-  paintWorkflow.jobs["paint-fidelity"]["continue-on-error"],
-  undefined,
-)

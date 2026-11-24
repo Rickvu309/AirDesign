@@ -45,7 +45,7 @@ export const foldTimings = (root) =>
     const before = fs.readFileSync(recordFile, "utf8")
     const kept = JSON.parse(before)
     const folded = foldedSeconds({
-      record: flat ? { seconds: kept, export: {} } : kept,
+      record: flat ? { seconds: kept } : kept,
       measured: JSON.parse(fs.readFileSync(measuredFile, "utf8")),
       exists: exists(root),
     })

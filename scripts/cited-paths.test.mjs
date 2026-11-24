@@ -10,7 +10,6 @@ import {
   coverFaults,
   glossaryFaults,
   markdownFaults,
-  pathListFaults,
   repoIndex,
 } from "./cited-paths.mjs"
 import { drifted } from "./spec-sync.mjs"
@@ -90,18 +89,6 @@ same(
   "an allowed glossary line its file no longer holds is named",
   glossaryFaults({ allowed: [{ file: "package.json", text: '"name": "slides"', reason: "a sample" }] }, read).length,
   1,
-)
-
-same(
-  "replaying pptx-paths.txt before 730385c96 names the deleted export helper",
-  pathListFaults(
-    ".github/actions/ci-changes/pptx-paths.txt",
-    "scripts/pptx-check.mjs\nscripts/blank-export.mjs\n",
-    index,
-  ),
-  [
-    ".github/actions/ci-changes/pptx-paths.txt:2: scripts/blank-export.mjs names no file or folder in the repo. Point it at the file that holds this now, or drop the words that name it.",
-  ],
 )
 
 const folder = fs.mkdtempSync(path.join(os.tmpdir(), "cited-paths-"))

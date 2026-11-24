@@ -6,7 +6,6 @@ This file holds only the rules that review holds: its rows say `review` first. T
 
 | Rule | Enforced by |
 | --- | --- |
-| Elements with no native PowerPoint form export as pictures; AirDesign looks come first | review; exporter and tests pending |
 | An agent's comment or review on a pull request or issue starts with the agent line | review |
 | Set new rules to `warn` in `scripts/check-steps.mjs` until they catch a real fault with no false stop | review |
 | Extend before you build a parallel version, reduced motion shows the finished state | review |

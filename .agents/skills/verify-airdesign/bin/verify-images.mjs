@@ -9,7 +9,7 @@ function fixtureAnswer(repo, url) {
   let body = new Uint8Array()
   let status = 404
   try {
-    body = new Uint8Array(readFileSync(path.join(repo, "scripts/pptx-fixtures", path.basename(url.pathname))))
+    body = new Uint8Array(readFileSync(path.join(repo, "tests/browser/fixtures", path.basename(url.pathname))))
     status = 200
   } catch {
     status = 404

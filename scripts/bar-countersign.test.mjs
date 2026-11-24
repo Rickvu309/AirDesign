@@ -21,14 +21,14 @@ const args = process.argv.slice(2).join(" ")
 if (args.includes("/comments")) process.stdout.write(process.env.FAKE_COMMENTS)
 else if (args.includes("/files")) console.log(JSON.stringify({ name: process.env.FAKE_FILE, status: "removed" }))
 else if (args.includes("/compare/")) console.log("f".repeat(40))
-else if (args.includes("/contents/")) console.log("{}")
+else if (args.includes("/contents/")) console.log(args.includes("/pdf.yml") && args.includes("ref=" + "f".repeat(40)) ? "jobs:\\n  pdf:\\n    steps: []\\n" : "{}")
 else if (args.includes("-X")) process.exit(0)
 else if (args.includes("/pulls/")) console.log(JSON.stringify({ head: "${head}", base: "b", baseRef: "main", files: 1, body: "" }))
 `,
   { mode: 0o755 },
 )
 
-const barOn = ({ file = "scripts/pptx-cases/frame.mjs", comments = [] } = {}) => {
+const barOn = ({ file = ".github/workflows/pdf.yml", comments = [] } = {}) => {
   const result = spawnSync(
     process.execPath,
     [fileURLToPath(new URL("./bar.mjs", import.meta.url)), "Rickvu309/AirDesign", "776"],
@@ -53,7 +53,7 @@ same(
   true,
 )
 
-const reason = "The case moved into frame-stack.mjs, which judges the same layouts."
+const reason = "The PDF assertions moved into the browser spec."
 const signed = barOn({
   comments: [{ body: countersignBody({ head, verdict: "right", reason }), association: "OWNER" }],
 })

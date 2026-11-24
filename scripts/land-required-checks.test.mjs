@@ -263,9 +263,7 @@ const workflow = parse(fs.readFileSync(new URL("../.github/workflows/ci.yml", im
 same("the ci job does not wait for mutation", workflow.jobs.ci.needs.includes("mutation"), false)
 same(
   "and no job that gates ci waits for it either",
-  [workflow.jobs.check, workflow.jobs.corpus, workflow.jobs.journeys].some((job) =>
-    [job.needs].flat().includes("mutation"),
-  ),
+  [workflow.jobs.check, workflow.jobs.journeys].some((job) => [job.needs].flat().includes("mutation")),
   false,
 )
 same("mutation never fails the run", workflow.jobs.mutation["continue-on-error"], true)

@@ -16,32 +16,29 @@ const on = (result) => ciParts.filter((part) => result.parts[part])
 
 const toy = {
   packages: [
-    { name: "@airdesign/document", dir: "packages/document", deps: [] },
-    { name: "@airdesign/pptx", dir: "packages/pptx", deps: ["@airdesign/document"] },
+    { name: "@airdesign/doom", dir: "packages/doom", deps: [] },
     { name: "@airdesign/oauth", dir: "packages/oauth", deps: [] },
-    { name: "@airdesign/api", dir: "apps/api", deps: ["@airdesign/document", "@airdesign/oauth"] },
+    { name: "@airdesign/api", dir: "apps/api", deps: ["@airdesign/doom", "@airdesign/oauth"] },
     { name: "@airdesign/site", dir: "apps/site", deps: [] },
-    { name: "web", dir: "apps/web", deps: ["@airdesign/document", "@airdesign/pptx"] },
+    { name: "web", dir: "apps/web", deps: ["@airdesign/doom"] },
     { name: "@airdesign/boundary-fetch", dir: "tooling/boundary-fixtures/fetch-in-document", deps: [] },
     { name: "checker", dir: "tooling/checker", deps: [] },
   ],
   imports: {
     "vitest.config.mts": ["scripts/vitest-metrics.mjs"],
     "scripts/vitest-metrics.mjs": ["scripts/longest-first.mjs"],
-    "tests/browser/home.spec.ts": ["web", "scripts/slide-export.mjs"],
+    "tests/browser/home.spec.ts": ["web", "scripts/browser-helper.mjs"],
     "tests/browser/design-states.spec.ts": [
       "tests/browser/open-screen.ts",
       ".agents/skills/verify-airdesign/look/scan.mjs",
     ],
     ".agents/skills/verify-airdesign/look/scan.mjs": [".agents/skills/verify-airdesign/look/walk.mjs"],
     ".agents/skills/verify-airdesign/look/walk.mjs": [".agents/skills/verify-airdesign/journeys/theme.mjs"],
-    "tests/edit-replay.test.ts": ["@airdesign/document", "tests/spec-graph.ts"],
+    "tests/edit-replay.test.ts": ["@airdesign/doom", "tests/spec-graph.ts"],
     "unit:apps/web/": ["tests/spec-graph.ts"],
-    "scripts/pptx-check.mjs": ["@airdesign/pptx"],
-    "tests/journeys/journeys.spec.ts": ["gone:scripts/stored-zip"],
+    "tests/journeys/journeys.spec.ts": ["gone:scripts/journey-helper"],
   },
   journeyNames: ["account-name", "theme"],
-  pptxPaths: ["packages/pptx", "packages/document", "scripts/pptx-check.mjs"],
 }
 
 const map = (changed, options) => changeMap(changed, toy, options)
@@ -63,7 +60,7 @@ same(
 same(
   "a file in an app that a script test reads keeps its own parts and adds the script tests",
   on(mapReading(["apps/web/src/thin-deck.tsx"])),
-  ["source", "scripts", "design", "browser", "journeys"],
+  ["source", "scripts", "design", "browser", "journeys", "pdf"],
 )
 same(
   "a file under a folder a script test reads runs the script tests, and its neighbour in another folder does not",
@@ -75,9 +72,9 @@ same(
 )
 
 same(
-  "a change to packages/document runs its own tests and every package that imports it, since document imports nothing and everything imports it",
-  map(["packages/document/src/slide.ts"]).unitTests,
-  ["apps/api/", "apps/web/", "packages/document/", "packages/pptx/", "tests/"],
+  "a change to packages/doom runs its own tests and every package that imports it, since Doom imports nothing and everything imports it",
+  map(["packages/doom/src/slide.ts"]).unitTests,
+  ["apps/api/", "apps/web/", "packages/doom/", "tests/"],
 )
 same(
   "a package nobody imports runs only its own tests and the parts its importers feed",
@@ -87,7 +84,7 @@ same(
 same(
   "the api is served to the browser, design and journeys parts, so a change under a package the api imports runs them",
   on(map(["packages/oauth/src/grant.ts"])),
-  ["source", "design", "browser", "journeys"],
+  ["source", "design", "browser", "journeys", "pdf"],
 )
 same(
   "the site is served only to the browser part and built by the scripts part, since the design scans read web screens",
@@ -106,21 +103,20 @@ same(
 )
 same("a browser spec runs the browser part alone", on(map(["tests/browser/home.spec.ts"])), ["source", "browser"])
 same("a design scan runs the design part alone", on(map(["tests/browser/design-states.spec.ts"])), ["source", "design"])
-same("browser, design and PowerPoint load the browser launch", on(map(["tests/browser/launch.ts"])), [
+same("browser, design and PDF load the browser launch", on(map(["tests/browser/launch.ts"])), [
   "source",
   "design",
   "browser",
-  "pptx",
-  "corpus",
+  "pdf",
 ])
 same(
   "a script a browser spec imports runs the browser part as well as the script tests",
-  on(map(["scripts/slide-export.mjs"])),
+  on(map(["scripts/browser-helper.mjs"])),
   ["source", "scripts", "browser"],
 )
 same(
   "a deleted file reaches the files that still import it, so a dangling import breaks where it shows",
-  on(map(["scripts/stored-zip.mjs"])),
+  on(map(["scripts/journey-helper.mjs"])),
   ["source", "scripts", "journeys"],
 )
 same("a script nothing else imports runs only the script tests", on(map(["scripts/land.mjs"])), ["source", "scripts"])
@@ -162,17 +158,12 @@ same(
 )
 same(
   "a doc is inert to every test part; source and scripts still run, since file-growth, rule-rows and the script tests read docs",
-  [on(map(["GLOSSARY.md"])), on(map(["scripts/land.rule.md"])), on(map(["packages/document/README.md"]))],
+  [on(map(["GLOSSARY.md"])), on(map(["scripts/land.rule.md"])), on(map(["packages/doom/README.md"]))],
   [
     ["source", "scripts"],
     ["source", "scripts"],
-    ["source", "scripts", "pptx", "corpus"],
+    ["source", "scripts"],
   ],
-)
-same(
-  "pptx and corpus follow .github/actions/ci-changes/pptx-paths.txt, the one list",
-  [on(map(["scripts/pptx-check.mjs"])), on(map(["packages/oauth/src/grant.ts"])).includes("pptx")],
-  [["source", "scripts", "pptx", "corpus"], false],
 )
 same(
   "a boundary fixture is a package the script tests read, so it runs scripts and no app part",
@@ -209,24 +200,27 @@ const scope = (changed) =>
     ...toy,
     imports: {
       ...toy.imports,
-      "tests/browser/home.spec.ts": ["tests/browser/fixtures/index.ts"],
+      "tests/browser/export-pdf.spec.ts": ["tests/browser/fixtures/index.ts"],
       "tests/browser/fixtures/index.ts": ["tests/browser/fixtures/sky.ts"],
       "tests/browser/fixtures/sky.ts": ["tests/browser/fixtures/index.ts", "gone:tests/browser/fixtures/removed"],
-      "tests/browser/guest.spec.ts": ["tests/browser/home.spec.ts"],
+      "tests/browser/guest.spec.ts": ["tests/browser/export-pdf.spec.ts"],
     },
-    browserSpecs: ["tests/browser/home.spec.ts", "tests/browser/guest.spec.ts", "tests/browser/unrelated.spec.ts"],
-    browserSeconds: { "home.spec.ts": 70, "guest.spec.ts": 80, "unrelated.spec.ts": 40 },
-    exportSpecs: ["tests/browser/home.spec.ts"],
+    browserSpecs: [
+      "tests/browser/export-pdf.spec.ts",
+      "tests/browser/guest.spec.ts",
+      "tests/browser/unrelated.spec.ts",
+    ],
+    browserSeconds: { "export-pdf.spec.ts": 70, "guest.spec.ts": 80, "unrelated.spec.ts": 40 },
   })
-const homeAndGuest = ["tests/browser/guest.spec.ts", "tests/browser/home.spec.ts"]
+const pdfAndGuest = ["tests/browser/export-pdf.spec.ts", "tests/browser/guest.spec.ts"]
 for (const changed of [
-  "tests/browser/home.spec.ts",
+  "tests/browser/export-pdf.spec.ts",
   "tests/browser/fixtures/sky.ts",
   "tests/browser/fixtures/removed.ts",
 ]) {
   const result = scope([changed])
-  same(`${changed} reaches its direct and transitive importers`, result.browserSpecs, homeAndGuest)
-  same(`${changed} reaches the export spec`, on(result), ["source", "browser", "pptx", "corpus"])
+  same(`${changed} reaches its direct and transitive importers`, result.browserSpecs, pdfAndGuest)
+  same(`${changed} reaches the export spec`, on(result), ["source", "browser", "pdf"])
   same(
     `${changed} fits in two time-weighted jobs`,
     checkJobsFor(
@@ -235,13 +229,13 @@ for (const changed of [
     ),
     [
       { part: "browser", shard: "1/2", browserSpecs: ["tests/browser/guest.spec.ts"] },
-      { part: "browser", shard: "2/2", browserSpecs: ["tests/browser/home.spec.ts"] },
+      { part: "browser", shard: "2/2", browserSpecs: ["tests/browser/export-pdf.spec.ts"] },
     ],
   )
 }
 same(
   "a change to app code alongside a spec runs the full browser suite",
-  scope(["apps/web/src/editor.tsx", "tests/browser/home.spec.ts"]).browserSpecs,
+  scope(["apps/web/src/editor.tsx", "tests/browser/export-pdf.spec.ts"]).browserSpecs,
   "all",
 )
 same(
@@ -251,10 +245,10 @@ same(
 )
 same(
   "an unclaimed browser fixture runs the full browser suite",
-  scope(["tests/browser/fixtures/unknown.pptx"]).browserSpecs,
+  scope(["tests/browser/fixtures/unknown.png"]).browserSpecs,
   "all",
 )
-same("an unrelated spec skips PowerPoint", on(scope(["tests/browser/unrelated.spec.ts"])), ["source", "browser"])
+same("an unrelated spec skips PDF", on(scope(["tests/browser/unrelated.spec.ts"])), ["source", "browser"])
 
 const sourceShards = [1, 2, 3].map((n) => ({
   part: "source",
@@ -303,22 +297,6 @@ same(
   [],
 )
 same(
-  "the real pptx list is the one in .github/actions/ci-changes/pptx-paths.txt",
-  graph.pptxPaths,
-  fs.readFileSync(path.join(root, ".github/actions/ci-changes/pptx-paths.txt"), "utf8").split("\n").filter(Boolean),
-)
-same(
-  "in the repo, a deck template and its generator reach pptx and corpus, since new decks ship those files",
-  ["scripts/deck-templates/files/neutral-start.pptx", "scripts/deck-templates/neutral.mjs"].map((file) => {
-    const parts = real([file]).parts
-    return [parts.pptx, parts.corpus]
-  }),
-  [
-    [true, true],
-    [true, true],
-  ],
-)
-same(
   "in the repo, a look state reaches design, since design-states loads the look scan",
   real([".agents/skills/verify-airdesign/look/scan.mjs"]).parts.design,
   true,
@@ -330,7 +308,6 @@ same(
 )
 same("in the repo, a vitest setup file runs everything", real(["scripts/vitest-metrics.mjs"]).everything, true)
 same("in the repo, the PR body check is a script alone", on(real(["scripts/pr-body.mjs"])), ["source", "scripts"])
-same("in the repo, the oauth package runs no pptx part", real(["packages/oauth/src/index.ts"]).parts.pptx, false)
 same(
   "in the repo, a file a script test reads turns on the script tests even when no import links them",
   [".oxfmtrc.json", ".railway/railway.ts", "specs/doom-runs/DoomRuns.tla", "tests/browser/preview-port.ts"].map(
@@ -363,8 +340,7 @@ same(
     design: "false",
     browser: "true",
     journeys: "false",
-    pptx: "false",
-    corpus: "false",
+    pdf: "false",
     "model-check": "false",
     "journey-names": "",
     "unit-tests": "[]",

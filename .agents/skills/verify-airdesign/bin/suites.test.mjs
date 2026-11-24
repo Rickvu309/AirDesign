@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
-import { failedTests, pptxPaths, rerunCommand, suiteRules, suitesFor } from "./suites.mjs"
+import { failedTests, rerunCommand, suiteRules, suitesFor } from "./suites.mjs"
 
 const repo = execFileSync("git", ["rev-parse", "--show-toplevel"], {
   cwd: path.dirname(fileURLToPath(import.meta.url)),
@@ -13,7 +13,7 @@ const names = (changed) => suitesFor(changed, rules).map((suite) => suite.name)
 
 describe("suitesFor", () => {
   it("runs the browser suite and the journeys for a change to a package the web app imports", () => {
-    expect(names(["packages/render/src/slide-canvas.tsx"])).toEqual(["check", "browser-tests", "journeys", "pptx"])
+    expect(names(["packages/render/src/slide-canvas.tsx"])).toEqual(["check", "browser-tests", "journeys"])
     expect(names(["packages/theme/tokens.css"])).toEqual(["check", "browser-tests", "journeys"])
   })
 
@@ -23,7 +23,7 @@ describe("suitesFor", () => {
   })
 
   it("runs only the check for a change outside the apps", () => {
-    expect(names(["scripts/metrics.mjs"])).toEqual(["check", "pptx"])
+    expect(names(["scripts/metrics.mjs"])).toEqual(["check"])
     expect(names(["GLOSSARY.md"])).toEqual(["check"])
   })
 
@@ -37,12 +37,6 @@ describe("suitesFor", () => {
     ).toMatchObject({
       because: "tests/browser/home.spec.ts",
     })
-  })
-})
-
-describe("pptxPaths", () => {
-  it("reads the paths ci watches for the pptx job and the corpus", () => {
-    expect(pptxPaths("packages/pptx\nscripts/pptx-check.mjs\n")).toEqual(["packages/pptx", "scripts/pptx-check.mjs"])
   })
 })
 

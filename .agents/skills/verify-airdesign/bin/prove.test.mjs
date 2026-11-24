@@ -5,7 +5,6 @@ import { lookResult } from "./prove.mjs"
 const rules = [
   { name: "check", script: ["check"], paths: [""] },
   { name: "browser-tests", script: ["test:browser"], paths: ["apps/web/", "tests/browser/"] },
-  { name: "pptx", script: ["check:pptx"], paths: ["packages/pptx", "scripts/pptx-fixtures"] },
 ]
 
 const facts = {
@@ -64,23 +63,20 @@ describe("proofPlan", () => {
     expect(step(["tests/browser/design-panel.ts"], "browser-tests").specs).toEqual(["tests/browser/color.spec.ts"])
   })
 
-  it("a changed fixture under scripts/pptx-fixtures falls back to every unit test", () => {
-    const fixture = plan(["scripts/pptx-fixtures/clean.pptx"])
-    expect(fixture.steps.find((each) => each.kind === "unit-tests")).toMatchObject({ tests: "all" })
-    expect(fixture.steps.find((each) => each.kind === "pptx")).toBeDefined()
-    expect(step(["packages/document/src/undo.ts"], "unit-tests")).toMatchObject({
+  it("a change to undo selects its unit test and its model when covered", () => {
+    expect(step(["packages/doom/src/undo.ts"], "unit-tests")).toMatchObject({
       tests: "related",
-      files: ["packages/document/src/undo.ts"],
+      files: ["packages/doom/src/undo.ts"],
     })
   })
 
   it("a moved covered name plans that spec's TLC and its replay file", () => {
-    expect(step(["packages/document/src/undo.ts"], "model-check", { moved: ["person-undo"] })).toMatchObject({
+    expect(step(["packages/doom/src/undo.ts"], "model-check", { moved: ["person-undo"] })).toMatchObject({
       topics: ["person-undo"],
       replays: ["tests/spec-replay.test.ts"],
     })
     expect(step(["specs/usage/Usage.tla"], "model-check").replays).toEqual(["packages/usage/src/ledger.test.ts"])
-    expect(step(["packages/document/src/undo.ts"], "model-check")).toBeUndefined()
+    expect(step(["packages/doom/src/undo.ts"], "model-check")).toBeUndefined()
   })
 
   it("app code with no changed spec plans a note asking for the failing spec", () => {

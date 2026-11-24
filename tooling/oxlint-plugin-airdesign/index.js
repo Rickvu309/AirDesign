@@ -2,7 +2,6 @@ import noComments from "./rules/no-comments.js"
 import noBareTest from "./rules/no-bare-test.js"
 import noBlindWait from "./rules/no-blind-wait.js"
 import noByteCounter from "./rules/no-byte-counter.js"
-import noElementIdCast from "./rules/no-element-id-cast.js"
 import noKeyWhileComposing from "./rules/no-key-while-composing.js"
 import noEnvOutsideEntry from "./rules/no-env-outside-entry.js"
 import noFieldEdge from "./rules/no-field-edge.js"
@@ -12,10 +11,8 @@ import noLimitInCopy from "./rules/no-limit-in-copy.js"
 import noRaw from "./rules/no-raw.js"
 import noTestingImport from "./rules/no-testing-import.js"
 import noRouteLiteral from "./rules/no-route-literal.js"
-import noRunLiteral from "./rules/no-run-literal.js"
 import noStampLiteral from "./rules/no-stamp-literal.js"
 import noWallTimeMetrics from "./rules/no-wall-time-metrics.js"
-import noXmlSearch from "./rules/no-xml-search.js"
 
 const plugin = {
   meta: { name: "airdesign" },
@@ -24,7 +21,6 @@ const plugin = {
     "no-blind-wait": noBlindWait,
     "no-comments": noComments,
     "no-byte-counter": noByteCounter,
-    "no-element-id-cast": noElementIdCast,
     "no-key-while-composing": noKeyWhileComposing,
     "no-env-outside-entry": noEnvOutsideEntry,
     "no-field-edge": noFieldEdge,
@@ -34,10 +30,8 @@ const plugin = {
     "no-raw": noRaw,
     "no-testing-import": noTestingImport,
     "no-route-literal": noRouteLiteral,
-    "no-run-literal": noRunLiteral,
     "no-stamp-literal": noStampLiteral,
     "no-wall-time-metrics": noWallTimeMetrics,
-    "no-xml-search": noXmlSearch,
   },
 }
 
