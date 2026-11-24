@@ -32,4 +32,4 @@ Preconditions:
 ## Gotchas
 
 - A new account's week shows `0% used`. To see a full week, drive Aira calls first, or see `tests/browser/usage.spec.ts`.
-- A new account has zero credits and empty reset history. **Add credits** shows the purchase availability notice. For a funded account and reset history, see `tests/browser/credits.spec.ts` and `apps/api/src/usage/credits.test.ts`.
+- A new account has zero credits and empty reset history. **Add credits** shows the purchase availability notice. For a funded account and reset history, see `tests/browser/credits.spec.ts` and `apps/api/src/credits.test.ts`.
