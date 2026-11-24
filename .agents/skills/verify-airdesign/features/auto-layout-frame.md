@@ -24,7 +24,7 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Browser tests.** `pnpm test:browser tests/browser/doom-editor-design.spec.ts`: selecting an auto layout frame and pressing `Remove auto layout` in `[data-auto-layout]` saves `layout.mode` `none`.
+- **Browser tests.** `pnpm test:browser tests/browser/editor-design.spec.ts`: selecting an auto layout frame and pressing `Remove auto layout` in `[data-auto-layout]` saves `layout.mode` `none`.
 - **States for look.** `panel-frame`, `frame-auto-child` (a child picked by double-click), `frame-child` (a child picked after Remove auto layout), `frame-fixed` (a hugging frame's side dragged, saved as `fixed`), `frame-fill-resizing` (the side held with a child set to `fill`), `frame-text-undone` (three typed lines push the next card down, then undo), `frame-nested`. Most open `autoRow` or `nestedFrames` from `../look/doom-canvas.mjs`.
 
 ## Gotchas

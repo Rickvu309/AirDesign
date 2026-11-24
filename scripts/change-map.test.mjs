@@ -356,7 +356,7 @@ const listedIn = (paths) => {
 }
 same(
   "the command prints one line per part, the unit test folders as JSON, and the check jobs whose part runs",
-  said(["--paths", listedIn(["tests/browser/doom-presenting.spec.ts"])]),
+  said(["--paths", listedIn(["tests/browser/editor-presenting.spec.ts"])]),
   {
     source: "true",
     scripts: "false",
@@ -370,7 +370,7 @@ same(
     "unit-tests": "[]",
     check: JSON.stringify([
       { part: "source" },
-      { part: "browser", browserSpecs: ["tests/browser/doom-presenting.spec.ts"] },
+      { part: "browser", browserSpecs: ["tests/browser/editor-presenting.spec.ts"] },
     ]),
   },
 )

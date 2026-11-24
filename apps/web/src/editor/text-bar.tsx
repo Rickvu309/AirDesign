@@ -3,7 +3,7 @@ import { Bold, Italic, List, ListOrdered, Underline } from "lucide-react"
 import { memo, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { doomEditorCopy } from "@/copy/doom-editor-copy"
+import { doomEditorCopy } from "@/copy/editor-copy"
 import { markOn, type Mark } from "./text-edit"
 import type { TextSession } from "./use-text-session"
 

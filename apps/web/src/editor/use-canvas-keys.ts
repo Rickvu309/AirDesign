@@ -9,7 +9,7 @@ import { arranged } from "./arrange-keys"
 import { allIn, noSelection, steppedOut, type Selection } from "./selection"
 import type { SlideGeometry } from "./slide-geometry"
 import type { Tool } from "./use-canvas-pointer"
-import type { EditorClient } from "./use-doom-deck"
+import type { EditorClient } from "./use-deck"
 
 export type KeyArgs = {
   readonly client: EditorClient

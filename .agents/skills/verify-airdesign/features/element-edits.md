@@ -22,7 +22,7 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Browser tests.** `pnpm test:browser tests/browser/doom-editor-text.spec.ts`: the Text tool places a layer, typing and Ctrl+B write it, Escape keeps it through a reload; a drag draws a fixed box and an empty one leaves no layer; a double-click edits where it was clicked, Enter edits with all selected, and emptying removes it in one undo; a double-click on a shape starts words inside it. `tests/browser/doom-editor.spec.ts` deletes the title, polls `doomRoutes.open` for its `parent: null`, and undoes.
+- **Browser tests.** `pnpm test:browser tests/browser/editor-text.spec.ts`: the Text tool places a layer, typing and Ctrl+B write it, Escape keeps it through a reload; a drag draws a fixed box and an empty one leaves no layer; a double-click edits where it was clicked, Enter edits with all selected, and emptying removes it in one undo; a double-click on a shape starts words inside it. `tests/browser/editor.spec.ts` deletes the title, polls `doomRoutes.open` for its `parent: null`, and undoes.
 - **States for look.** `text-tool-placed`, `text-typed-at-once` (typing under CPU throttle 4 keeps every letter), `text-placed-while-storing`, `element-added`, `element-deleted`, `elements-deleted`, `group-deleted`, `empty-text-left`, `emptied-text-left`, `shape-typed`, `shape-text-area`.
 
 ## Gotchas

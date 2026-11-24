@@ -25,9 +25,9 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Browser tests.** `pnpm test:browser tests/browser/doom-editor-select.spec.ts`: a click takes a group whole, a double-click steps in, Shift+Enter and Escape step out; Shift adds and takes away, Cmd/Ctrl reaches inside a frame, a locked layer passes the click through, Ctrl+A; a marquee and Shift+marquee, and a moved group carries what is inside it, read from `doomRoutes.open`. `tests/browser/doom-editor-arrange.spec.ts` locks with Ctrl+Shift+L, finds the click passes through, and hides with Ctrl+Shift+H.
+- **Browser tests.** `pnpm test:browser tests/browser/editor-select.spec.ts`: a click takes a group whole, a double-click steps in, Shift+Enter and Escape step out; Shift adds and takes away, Cmd/Ctrl reaches inside a frame, a locked layer passes the click through, Ctrl+A; a marquee and Shift+marquee, and a moved group carries what is inside it, read from `doomRoutes.open`. `tests/browser/editor-arrange.spec.ts` locks with Ctrl+Shift+L, finds the click passes through, and hides with Ctrl+Shift+H.
 - **States for look.** `canvas-marquee`, `canvas-hover`, `two-selected`, `group-stepped-in`, `group-layer-selected`.
 
 ## Gotchas
 
-- `selectedIds` in `tests/browser/doom-deck.ts` reads the selection from `[data-selection-outline]`, one per selected layer.
+- `selectedIds` in `tests/browser/editor-deck.ts` reads the selection from `[data-selection-outline]`, one per selected layer.

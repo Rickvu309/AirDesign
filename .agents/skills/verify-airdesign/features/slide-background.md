@@ -4,9 +4,9 @@ On an open deck with no layer selected, the Design panel shows the current slide
 
 ## Sub-features
 
-- `background-set` in the **Background** section, `Solid` and `Gradient` switch the fill's kind, and `button "Background color, <colour>"` opens the colour picker with the template's colours. The slide node's `fills[0]` becomes `{ kind: "solid", color: { var: "accent3" } }` for a template colour (`tests/browser/doom-editor-design.spec.ts`). States `panel-slide`, `blank-deck-colors`, `color-picker-background`, `selection-colors-slide`.
-- `background-gradient` a gradient shows only its stops, direction and angle; `From center` saves a radial one (`tests/browser/doom-gradient-fill.spec.ts`). State `slide-line-and-gradient`.
-- `background-picture` an image fill picked from a file fills the slide background (`tests/browser/doom-editor-design.spec.ts`).
+- `background-set` in the **Background** section, `Solid` and `Gradient` switch the fill's kind, and `button "Background color, <colour>"` opens the colour picker with the template's colours. The slide node's `fills[0]` becomes `{ kind: "solid", color: { var: "accent3" } }` for a template colour (`tests/browser/editor-design.spec.ts`). States `panel-slide`, `blank-deck-colors`, `color-picker-background`, `selection-colors-slide`.
+- `background-gradient` a gradient shows only its stops, direction and angle; `From center` saves a radial one (`tests/browser/editor-gradient-fill.spec.ts`). State `slide-line-and-gradient`.
+- `background-picture` an image fill picked from a file fills the slide background (`tests/browser/editor-design.spec.ts`).
 - `background-undo` Ctrl/Cmd+Z on the canvas takes the background back to what it was, and a reload keeps the result.
 - `template-style` the **Template style** card opens the deck's theme; a colour there writes the deck's theme colours and one undo takes it back. State `design-template`.
 - `agent-background` `airdesign_edit_deck` with a `set` whose target is the slide's id and a `fill` paints the slide's background (`packages/doom/src/agent-set.test.ts`, "paints a slide's background"), through the same run as every other agent change. The person's Undo for the run takes it back.
@@ -21,7 +21,7 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Specs.** `pnpm test:browser tests/browser/doom-editor-design.spec.ts tests/browser/doom-gradient-fill.spec.ts` sets a solid, a gradient, a template colour and a picture on the background, reads each from the saved slide node, undoes and reloads.
+- **Specs.** `pnpm test:browser tests/browser/editor-design.spec.ts tests/browser/editor-gradient-fill.spec.ts` sets a solid, a gradient, a template colour and a picture on the background, reads each from the saved slide node, undoes and reloads.
 - **In a scratch journey.** Make a deck with `newDoomDeck`, click `button "Design"`, click the button whose name starts `Background color`, pick a template colour, press Escape, and poll `post(doomRoutes.open, { deck }, cookie)` until the slide node's `fills[0].color` names it. Click the slide, press Ctrl/Cmd+Z, and poll until it does not.
 - **Agent.** Over MCP, `airdesign_read_deck`, then `airdesign_edit_deck` with the change `{ "op": "set", "target": "<slide>", "fill": "#1F4E79" }`. The open editor paints it, and `doomRoutes.open` holds the slide node's new `fills`.
 - **States for look.** The states named above.

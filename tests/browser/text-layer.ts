@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test"
-import { clickSlide, landNodes, savedNode, spot, type Opened } from "./doom-deck"
+import { clickSlide, landNodes, savedNode, spot, type Opened } from "./editor-deck"
 
 export type Stack = Parameters<typeof savedNode>[0]
 

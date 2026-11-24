@@ -22,7 +22,7 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Browser tests.** `pnpm test:browser tests/browser/doom-editor-tools.spec.ts`: R draws a rectangle where it is dragged and the tool goes back to Move, O with Shift keeps it round, one undo takes it away; a click places a default size, F draws a frame that holds what is drawn inside it, L and Shift+L draw a line and an arrow; the tray arms a star preset. Each reads the node from `doomRoutes.open`.
+- **Browser tests.** `pnpm test:browser tests/browser/editor-tools.spec.ts`: R draws a rectangle where it is dragged and the tool goes back to Move, O with Shift keeps it round, one undo takes it away; a click places a default size, F draws a frame that holds what is drawn inside it, L and Shift+L draw a line and an arrow; the tray arms a star preset. Each reads the node from `doomRoutes.open`.
 - **States for look.** `shape-tray`, `shape-grid`, `shape-tray-text-focused`, `shape-drawing`, `shape-added`, `shape-after-line`, `shape-dragged`, `shape-faces`.
 
 ## Gotchas

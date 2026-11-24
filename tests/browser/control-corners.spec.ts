@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test"
 import { geometryCopy } from "../../apps/web/src/copy/geometry-copy"
 import { test } from "./api-stack"
-import { accent, spot } from "./doom-deck"
-import { designDoom, panel, pick, reloadDesign, saved, section, typeInto } from "./doom-design"
+import { accent, spot } from "./editor-deck"
+import { designDoom, panel, pick, reloadDesign, saved, section, typeInto } from "./editor-design"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 

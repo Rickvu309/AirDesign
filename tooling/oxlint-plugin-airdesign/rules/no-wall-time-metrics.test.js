@@ -3,7 +3,7 @@ import { expectAccepts, expectRejects } from "../harness.js"
 const rule = { "airdesign/no-wall-time-metrics": "error" }
 const message =
   'Read the page\'s engine metrics in thread time: send("Performance.enable", { timeDomain: "threadTicks" }).'
-const spec = "tests/browser/doom-speed.spec.ts"
+const spec = "tests/browser/editor-speed.spec.ts"
 
 expectRejects(
   "the wall-time idle reading of doom-speed before 2026-11-23 fails",

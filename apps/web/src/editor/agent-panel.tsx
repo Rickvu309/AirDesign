@@ -2,8 +2,8 @@ import type * as doom from "@airdesign/doom"
 import { useMemo } from "react"
 import { AiraPanel, type AiraStart } from "@/aira/aira-panel"
 import { AgentRuns } from "./agent-runs"
-import { doomAgentUndo } from "./doom-agent-undo"
-import type { EditorClient } from "./use-doom-deck"
+import { doomAgentUndo } from "./agent-undo"
+import type { EditorClient } from "./use-deck"
 
 export function AgentPanel({
   deck,

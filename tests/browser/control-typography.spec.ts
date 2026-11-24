@@ -1,9 +1,9 @@
 import { expect } from "@playwright/test"
-import { doomEditorCopy } from "../../apps/web/src/copy/doom-editor-copy"
+import { doomEditorCopy } from "../../apps/web/src/copy/editor-copy"
 import { textCopy } from "../../apps/web/src/copy/text-copy"
 import { test } from "./api-stack"
-import { spot } from "./doom-deck"
-import { designDoom, panel, pick, saved, undoOnStage, words } from "./doom-design"
+import { spot } from "./editor-deck"
+import { designDoom, panel, pick, saved, undoOnStage, words } from "./editor-design"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 

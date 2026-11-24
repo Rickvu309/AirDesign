@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test"
 import { test } from "./api-stack"
-import { spot } from "./doom-deck"
-import { designDoom, painted, panel, pick, reloadDesign, saved, undoOnStage, words } from "./doom-design"
+import { spot } from "./editor-deck"
+import { designDoom, painted, panel, pick, reloadDesign, saved, undoOnStage, words } from "./editor-design"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 

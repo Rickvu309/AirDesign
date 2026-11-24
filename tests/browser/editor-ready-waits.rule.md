@@ -1,0 +1,3 @@
+# The editor marks a deck ready only once it is opened with the server and its fonts are in, and no filmstrip thumbnail still waits on fonts at that moment
+
+`tests/browser/editor-ready-waits.spec.ts` holds the server's create answer and the font files in turn on the Doom editor. It fails when `data-doom-ready` is set before the deck is opened or while a font is arriving, or when a filmstrip thumbnail still waits on fonts the moment the flag appears. Its first version went with the old editor in `9b0587d26`. The Doom editor's flag reads paint and open only, so the test holds nothing about a settling zoom.

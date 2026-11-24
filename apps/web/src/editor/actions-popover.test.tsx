@@ -4,7 +4,7 @@ import { afterAll, beforeAll, expect, it, vi } from "vitest"
 let window: Window & typeof globalThis
 let createRoot: typeof import("react-dom/client").createRoot
 let ActionsPanel: typeof import("./actions-popover").ActionsPanel
-let doomEditorCopy: typeof import("@/copy/doom-editor-copy").doomEditorCopy
+let doomEditorCopy: typeof import("@/copy/editor-copy").doomEditorCopy
 
 beforeAll(async () => {
   const module = "jsdom"
@@ -23,7 +23,7 @@ beforeAll(async () => {
     vi.stubGlobal(name, value)
   createRoot = (await import("react-dom/client")).createRoot
   ActionsPanel = (await import("./actions-popover")).ActionsPanel
-  doomEditorCopy = (await import("@/copy/doom-editor-copy")).doomEditorCopy
+  doomEditorCopy = (await import("@/copy/editor-copy")).doomEditorCopy
 })
 
 afterAll(() => {

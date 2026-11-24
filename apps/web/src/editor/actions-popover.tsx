@@ -1,7 +1,7 @@
 import { ChartBar, ChartColumn, ChartLine, ChartNoAxesColumn, ChartPie, FileDown, Search } from "lucide-react"
 import { DynamicIcon, type IconName } from "lucide-react/dynamic"
 import { useEffect, useId, useMemo, useRef, useState, type ComponentType, type KeyboardEvent } from "react"
-import { doomEditorCopy } from "@/copy/doom-editor-copy"
+import { doomEditorCopy } from "@/copy/editor-copy"
 import { iconMatches, startingIcons } from "@/design/icon-search"
 import { cn } from "@/lib/class-names"
 import { composing } from "@/lib/composing"

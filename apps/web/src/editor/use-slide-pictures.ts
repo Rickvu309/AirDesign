@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
 import { captureSlide } from "./slide-capture"
 import { reportSlidePictures, unresolvedAssets } from "./slide-picture-report"
-import type { EditorClient } from "./use-doom-deck"
+import type { EditorClient } from "./use-deck"
 
 export const quietFor = 1_000
 export const retryAfter = 5_000

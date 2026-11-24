@@ -109,8 +109,8 @@ export const timedOnCi = {
 export const reportedMetrics = {
   "time-to-merge": "scripts/ci-failure-report.mjs",
   "time-to-notice": "scripts/ci-failure-report.mjs",
-  "drag-frame": "tests/browser/doom-speed.spec.ts",
-  "drag-delay": "tests/browser/doom-speed.spec.ts",
+  "drag-frame": "tests/browser/editor-speed.spec.ts",
+  "drag-delay": "tests/browser/editor-speed.spec.ts",
 }
 
 export const judgedWrites = "export-verified"

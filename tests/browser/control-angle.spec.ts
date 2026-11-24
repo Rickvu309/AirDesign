@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
 import { test } from "./api-stack"
-import { spot } from "./doom-deck"
-import { designDoom, pick, saved, section, typeInto, undoOnStage } from "./doom-design"
+import { spot } from "./editor-deck"
+import { designDoom, pick, saved, section, typeInto, undoOnStage } from "./editor-design"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 

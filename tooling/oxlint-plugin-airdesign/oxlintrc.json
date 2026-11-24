@@ -21,8 +21,8 @@
       {
         "kept": {
           "tests/browser/design-states.spec.ts": 1,
-          "tests/browser/doom-speed.spec.ts": 1,
-          "tests/browser/drag-feel.ts": 1
+          "tests/browser/drag-feel.ts": 1,
+          "tests/browser/editor-speed.spec.ts": 1
         }
       }
     ],

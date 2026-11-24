@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { AiraChat, AiraExchange, AiraStep } from "@/aira/aira-loop"
 import type { AiraStart } from "@/aira/aira-panel"
 import { sampleDeck } from "@/samples/sample-slides"
-import { DoomEditor, type EditorStart } from "./doom-editor"
+import { DoomEditor, type EditorStart } from "./editor"
 import type { Saving } from "./use-save-shown"
 
 const deck = "sample-deck"
