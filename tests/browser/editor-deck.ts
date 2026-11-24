@@ -36,7 +36,12 @@ export async function openEditor(page: Page, context: BrowserContext, stack: Sta
   return { deck, cookie, slide: slide.id, page }
 }
 
-type Made = { readonly id: string; readonly type: "frame" | "shape"; readonly parent: string; readonly props?: object }
+type Made = {
+  readonly id: string
+  readonly type: "frame" | "shape"
+  readonly parent: string
+  readonly props?: Readonly<Record<string, unknown>>
+}
 
 let counter = 0
 
@@ -74,9 +79,12 @@ export async function landOffScreen(stack: Stack, opened: Opened, nodes: readonl
   if (landed.json.ok !== true) throw new Error(JSON.stringify(landed.json))
 }
 
+const paintsItself = (node: Made) => node.props?.mask !== true
+
 export async function landNodes(stack: Stack, opened: Opened, nodes: readonly Made[]): Promise<void> {
   await landOffScreen(stack, opened, nodes)
-  for (const node of reachingSlide(opened, nodes)) await expect(slideBoxNode(opened.page, node.id)).toBeAttached()
+  for (const node of reachingSlide(opened, nodes).filter(paintsItself))
+    await expect(slideBoxNode(opened.page, node.id)).toBeAttached()
 }
 
 export async function clearSubtitle(stack: Stack, opened: Opened): Promise<void> {
