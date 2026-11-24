@@ -182,18 +182,18 @@ export function AiraPanel({
 
   useEffect(() => {
     const first = start.request
-    if (first === undefined || sentOnce.current || loaded === undefined) return
+    if (first === undefined || sentOnce.current || (online && loaded === undefined)) return
     let live = true
     queueMicrotask(() => {
       if (!live || sentOnce.current) return
       sentOnce.current = true
-      if (!ask(first)) setDraft(first)
+      if (!online || !ask(first)) setDraft(first)
       clearFirstRequest()
     })
     return () => {
       live = false
     }
-  }, [loaded, start.request])
+  }, [loaded, online, start.request])
 
   function retry() {
     if (busy || blocked !== undefined) return

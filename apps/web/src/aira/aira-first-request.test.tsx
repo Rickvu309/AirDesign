@@ -58,6 +58,7 @@ afterAll(() => {
 async function open(
   start: { readonly request?: string; readonly draft?: string; readonly usage?: () => Promise<UsageLoad> },
   strict = false,
+  online = true,
 ) {
   host = document.createElement("div")
   document.body.append(host)
@@ -66,6 +67,7 @@ async function open(
     <AiraPanel
       deck="deck-1"
       hidden={false}
+      online={online}
       undo={async () => ({ ok: false, reason: "nothing" }) as never}
       store={{
         list: async () => [],
@@ -85,6 +87,13 @@ it("sends the first request once, as the first message of the chat", async () =>
   await open({ request: "A board update on Q3 revenue" })
   expect(host.textContent).toContain("A board update on Q3 revenue")
   expect(sent.filter((body) => body.includes("A board update on Q3 revenue"))).toHaveLength(1)
+})
+
+it("puts the words in the composer when the deck opens offline", async () => {
+  const words = "A board update on Q3 revenue"
+  await open({ request: words }, false, false)
+  expect(host.querySelector("textarea")?.value).toBe(words)
+  expect(sent.filter((body) => body.includes(words))).toHaveLength(0)
 })
 
 it("puts the words in the composer when the week is used up", async () => {
