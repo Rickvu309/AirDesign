@@ -2,9 +2,12 @@ import { spawnSync } from "node:child_process"
 import path from "node:path"
 import { defineConfig } from "vitest/config"
 import { commitVariable } from "./scripts/property-seed.mjs"
+import { requirePinnedNode } from "./scripts/node-version.mjs"
 import { sourceOnly } from "./scripts/source-only.mjs"
 import LongestFirst from "./scripts/vitest-longest-first.mjs"
 import { testFilesByProject } from "./scripts/unit-test-files.mjs"
+
+requirePinnedNode()
 
 const root = import.meta.dirname
 const testFiles = testFilesByProject(root)
