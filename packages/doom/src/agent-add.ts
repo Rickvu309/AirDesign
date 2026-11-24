@@ -27,7 +27,18 @@ import { textHeight } from "./text-estimate.js"
 
 type Add = Extract<AgentChange, { op: "add" }>
 
-const common = ["box", "name", "hidden", "opacity", "effect", "effectOpacity", "blur", "rotation", "flip"] as const
+const common = [
+  "box",
+  "name",
+  "hidden",
+  "opacity",
+  "effect",
+  "effectOpacity",
+  "blur",
+  "innerShadow",
+  "rotation",
+  "flip",
+] as const
 const painted = ["fill", "stroke", "strokeWidth", "radius", "dash"] as const
 const words = [
   "text",
@@ -69,7 +80,8 @@ const lineWeight = 3
 const iconWeightShare = 12
 
 function surfaced(draft: Draft, look: AgentLook, now: Now = {}, align: StrokeStyle["align"] = "inside") {
-  const themed = look.effectOpacity !== undefined || look.blur !== undefined
+  const themed =
+    look.effectOpacity !== undefined || look.blur !== undefined || look.innerShadow !== undefined
   return surfaceOf(look, now, align, themed ? themeOf(draft) : undefined)
 }
 

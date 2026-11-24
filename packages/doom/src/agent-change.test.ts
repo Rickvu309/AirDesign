@@ -188,6 +188,7 @@ describe("the advertised schema", () => {
       "spaceBefore",
       "spaceAfter",
       "blur",
+      "innerShadow",
       "colors",
       "fonts",
       "nameFollows",
