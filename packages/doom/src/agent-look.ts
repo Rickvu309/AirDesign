@@ -80,6 +80,7 @@ export const chartOf = (chart: AgentChart): Chart => ({
     ...(series.color === undefined ? {} : { color: colorOf(series.color) }),
   })),
   ...(chart.labels === undefined ? {} : { labels: chart.labels }),
+  ...(chart.unit === undefined ? {} : { unit: chart.unit }),
 })
 
 export const iconName = (icon: string): string => (icon.includes("/") ? icon : `lucide/${icon}`)

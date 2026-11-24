@@ -68,6 +68,7 @@ function chartWords(node: Node): string | undefined {
       ...(series.color === undefined ? {} : { color: colorWords(series.color) }),
     })),
     ...(chart.labels === undefined ? {} : { labels: chart.labels }),
+    ...(chart.unit === undefined ? {} : { unit: chart.unit }),
   }
   return `chart=${JSON.stringify(words)}`
 }

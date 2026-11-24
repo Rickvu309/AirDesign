@@ -1,4 +1,4 @@
-import { type Axis, formatValue, niceAxis, slug } from "./chart-axis.js"
+import { type Axis, formatTick, formatValue, niceAxis, seriesPrecision, slug } from "./chart-axis.js"
 import {
   type Kit,
   type Words,
@@ -36,6 +36,17 @@ const legendGap = 28
 
 const dataId = (context: Context, series: string, category: string) =>
   `${context.frame}#${slug(series)}:${slug(category)}`
+
+function axisLabels(chart: Chart): {
+  readonly tick: (value: number) => string
+  readonly value: (value: number) => string
+} {
+  const digits = seriesPrecision(chart.series)
+  return {
+    tick: (value) => formatTick(value, digits, chart.unit),
+    value: (value) => formatValue(value, digits),
+  }
+}
 
 function seriesColorsOf(chart: Chart, theme: Theme): readonly Hex[] {
   const own = chart.series.map((series) => (series.color === undefined ? undefined : resolveColor(series.color, theme)))
@@ -130,7 +141,8 @@ function barChart(context: Context): Resolved[] {
   const { chart, theme, frame } = context
   const horizontal = chart.kind === "bar"
   const axis = valueAxis(context)
-  const tickWords = axis.ticks.map((tick) => formatValue(tick))
+  const labels = axisLabels(chart)
+  const tickWords = axis.ticks.map(labels.tick)
   const look = muted(theme)
   const legend: Entry[] =
     chart.series.length > 1
@@ -138,7 +150,7 @@ function barChart(context: Context): Resolved[] {
       : []
   const legendH = legend.length > 0 ? context.lineH + 22 : 0
   const labelled = chart.labels === true
-  const valueRoom = Math.max(0, ...axis.ticks.map((tick) => wordsWidth(context, formatValue(tick), look))) + 16
+  const valueRoom = Math.max(0, ...tickWords.map((text) => wordsWidth(context, text, look))) + 16
   const categoryRoom = Math.max(0, ...chart.categories.map((name) => wordsWidth(context, name, look))) + 28
   const left = horizontal ? categoryRoom : valueRoom
   const right = horizontal && labelled ? valueRoom + 4 : 2
@@ -219,7 +231,7 @@ function barChart(context: Context): Resolved[] {
       const box = horizontal ? spot(lead, start + offset, length, barSize) : spot(start + offset, lead, barSize, length)
       parts.push(block(id, box, color))
       if (!labelled) return
-      const shown = formatValue(value)
+      const shown = labels.value(value)
       const w = wordsWidth(context, shown, barLook) + 12
       if (!clusters) {
         if (length < context.lineH + 6) return
@@ -283,6 +295,7 @@ function barChart(context: Context): Resolved[] {
 function lineChart(context: Context): Resolved[] {
   const { chart, theme, frame } = context
   const axis = valueAxis(context)
+  const labels = axisLabels(chart)
   const look = muted(theme)
   const legend: Entry[] =
     chart.series.length > 1
@@ -290,7 +303,7 @@ function lineChart(context: Context): Resolved[] {
       : []
   const legendH = legend.length > 0 ? context.lineH + 22 : 0
   const labelled = chart.labels === true
-  const left = Math.max(0, ...axis.ticks.map((tick) => wordsWidth(context, formatValue(tick), look))) + 16
+  const left = Math.max(0, ...axis.ticks.map((tick) => wordsWidth(context, labels.tick(tick), look))) + 16
   const top = legendH + (labelled ? context.lineH + 12 : 14)
   const bottom = context.h - (context.lineH + 14)
   const place = (value: number) => bottom - ((value - axis.lo) / (axis.hi - axis.lo)) * (bottom - top)
@@ -298,7 +311,7 @@ function lineChart(context: Context): Resolved[] {
   const parts: Resolved[] = [...legendOf(context, legend, left, 0, false)]
   axis.ticks.forEach((tick, index) => {
     const at = place(tick)
-    const text = formatValue(tick)
+    const text = labels.tick(tick)
     parts.push(
       rule(
         `${frame}#~grid:${String(index)}`,
@@ -355,7 +368,7 @@ function lineChart(context: Context): Resolved[] {
         ),
       )
       if (!labelled) continue
-      const shown = formatValue(point.value)
+      const shown = labels.value(point.value)
       const w = wordsWidth(context, shown, strong(theme)) + 12
       parts.push(
         words(
