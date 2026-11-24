@@ -421,8 +421,8 @@ describe("layout findings: what a slide paints wrong, measured with the deck's f
       {
         code: "off-slide",
         node: held.ids.holder,
-        past: 40,
-        note: `${held.ids.holder}: it runs 40 px past the slide's edge, where the slide cuts it off.`,
+        past: 80,
+        note: `${held.ids.holder}: it runs 80 px past the slide's edge, where the slide cuts it off.`,
       },
     ])
   })
