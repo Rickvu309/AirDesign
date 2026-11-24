@@ -361,3 +361,94 @@ test("a deck named by its title goes back to the default when the emptied title 
   await expect(shownTitle).toHaveCount(0)
   await expect.poll(deckName).toBe(starting)
 })
+
+test("Ctrl+Z on a nudge, after another tab grouped the layer and took the group back, leaves the layer where it is", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    {
+      id: "t:81",
+      type: "shape",
+      parent: opened.slide,
+      props: { box: spot(300, 300, 200, 100), geometry: { kind: "rect" }, fills: blue },
+    },
+  ])
+  const boxOf = async () => (await savedNode(stack, opened, "t:81"))?.box as Box
+  const parentOf = async () =>
+    ((await savedNode(stack, opened, "t:81"))?.parent as { id: string } | null | undefined)?.id
+  await expect(page.locator('[data-slide-box] [data-node="t:81"]')).toHaveCount(1)
+  const other = await otherTab(context, stack, opened.deck)
+  for (const tab of [page, other]) {
+    await expect
+      .poll(async () => {
+        await clickSlide(tab, 400, 350)
+        return selectedIds(tab)
+      })
+      .toEqual(["t:81"])
+  }
+  await other.keyboard.press("ControlOrMeta+g")
+  await expect.poll(parentOf).not.toBe(opened.slide)
+  const group = (await parentOf())!
+  await expect(page.locator(`[data-node="${group}"] [data-node="t:81"]`).first()).toBeAttached()
+  const grouped = await boxOf()
+
+  await page.keyboard.press("ArrowRight")
+  await expect.poll(async () => (await boxOf()).x).toBe(grouped.x + 1)
+  await other.keyboard.press("ControlOrMeta+z")
+  await expect.poll(parentOf).toBe(opened.slide)
+  const seen = await boxOf()
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(page.locator("[data-save-status]")).toHaveText(productCopy.saved)
+  expect(await parentOf()).toBe(opened.slide)
+  expect(await boxOf()).toEqual(seen)
+  await other.close()
+})
+
+test("Ctrl+Z on an ungroup, after another tab sent the layer backward on the slide, brings the frame back and leaves the layer where it is", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    { id: "t:91", type: "frame", parent: opened.slide, props: { box: spot(200, 200, 600, 400), fills: accent } },
+    {
+      id: "t:92",
+      type: "shape",
+      parent: "t:91",
+      props: { box: spot(50, 50, 100, 100), geometry: { kind: "rect" }, fills: blue },
+    },
+  ])
+  const saved = async (id: string) => savedNode(stack, opened, id)
+  const parentOf = async (id: string) => ((await saved(id))?.parent as { id: string } | null | undefined)?.id ?? null
+  const orderOf = async (id: string) => ((await saved(id))?.parent as { at: string } | null | undefined)?.at
+  await expect(page.locator('[data-slide-box] [data-node="t:92"]')).toHaveCount(1)
+  await clickSlide(page, 700, 500)
+  await expect.poll(() => selectedIds(page)).toEqual(["t:91"])
+  await page.keyboard.press("ControlOrMeta+Shift+g")
+  await expect.poll(() => parentOf("t:92")).toBe(opened.slide)
+  const ungrouped = (await saved("t:92"))?.box as Box
+  expect((await saved("t:91"))?.parent).toBeNull()
+
+  const other = await otherTab(context, stack, opened.deck)
+  await expect
+    .poll(async () => {
+      await clickSlide(other, 300, 300)
+      return selectedIds(other)
+    })
+    .toEqual(["t:92"])
+  const order = await orderOf("t:92")
+  await other.keyboard.press("ControlOrMeta+[")
+  await expect.poll(() => orderOf("t:92")).not.toBe(order)
+
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(async () => (await saved("t:91"))?.parent).not.toBeNull()
+  await expect(page.locator("[data-save-status]")).toHaveText(productCopy.saved)
+  expect(await parentOf("t:92")).toBe(opened.slide)
+  expect((await saved("t:92"))?.box).toEqual(ungrouped)
+  await other.close()
+})
