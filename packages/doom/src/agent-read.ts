@@ -12,7 +12,7 @@ import { paintedFace } from "./painted-face.js"
 import type { Para, Span, Text } from "./text.js"
 
 const quoted = (words: string) => JSON.stringify(words)
-const num = (value: number) => String(Number(value.toFixed(1)))
+const num = (value: number) => String(Number(value.toPrecision(12)))
 const iconWords = (name: string) => (name.startsWith("lucide/") ? name.slice("lucide/".length) : name)
 
 const tintWords = (tint: number) => `${tint > 0 ? "+" : "-"}${String(Math.round(Math.abs(tint) * 100))}`

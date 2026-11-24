@@ -20,6 +20,8 @@ import { ZoomMenu } from "@/editor/zoom-menu"
 import { PresentButton } from "@/present/present-button"
 import { usePresentKeys } from "@/present/present-keys"
 import { PresentLayer } from "@/present/present-layer"
+import { morphPairs } from "@/present/morph-pairs"
+import { showsOf } from "@/present/slide-arrival"
 import { usePresent } from "@/present/use-present"
 import { cn } from "@/lib/class-names"
 import { percentOf, scaleOf, type Zoom } from "./canvas-view"
@@ -40,6 +42,7 @@ import type { Tool } from "./use-canvas-pointer"
 import { useDoomDeck, useDoomView, type EditorClient, type OpenOptions } from "./use-deck"
 import { useSaveShown, type Saving } from "./use-save-shown"
 import { useEditingNow } from "./use-editing-now"
+import { slideNumber } from "@/lib/slide-numbering"
 
 function deckName(view: doom.Doom): string {
   const deck = [...view.nodes.values()].find((node) => node.type === "deck")
@@ -110,6 +113,8 @@ function Editing({
   const present = usePresent({
     count: slides.length,
     current: strip.current,
+    shows: () => showsOf(view, slides),
+    morphOf: (from, to) => morphPairs(view, slides[from], slides[to]),
     onLand: (at) => {
       const landed = slides[at]
       if (landed !== undefined) choose(landed)
@@ -120,7 +125,14 @@ function Editing({
   useSlideStepKeys({ slides, current: slide, selecting: selection.ids.length > 0, onCurrent: choose })
   const title = deckName(view)
   const exporting = useExport(
-    { name: title, view, slides, current: strip.current, assetUrl: assets.assetUrl },
+    {
+      name: title,
+      view,
+      slides,
+      current: strip.current,
+      skipped: strip.skipped ?? [],
+      assetUrl: assets.assetUrl,
+    },
     start.export,
   )
   usePrintKeyHeld()
@@ -152,7 +164,7 @@ function Editing({
             measure={measure}
             slide={slide}
             editingRuns={editingRuns}
-            slideNumber={strip.current + 1}
+            slideNumber={slideNumber(strip.current)}
             selection={selection}
             onSelection={setSelection}
             tool={tool}
@@ -224,7 +236,7 @@ function Editing({
             client={client}
             view={view}
             slide={slide}
-            slideNumber={strip.current + 1}
+            slideNumber={slideNumber(strip.current)}
             selection={selection}
             onSelection={setSelection}
             words={words}

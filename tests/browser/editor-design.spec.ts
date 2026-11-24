@@ -10,7 +10,6 @@ import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { linkCopy } from "../../apps/web/src/copy/link-copy"
 import { selectionColorsCopy } from "../../apps/web/src/copy/selection-colors-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
-import { transitionCopy } from "../../apps/web/src/copy/transition-copy"
 import { test } from "./api-stack"
 import { typeColor } from "./design-panel"
 import { hexes, neutralColorNames } from "./editor-design-art"
@@ -128,7 +127,7 @@ test("with nothing selected the panel is the old slide panel: the head, template
   await expect(panel(page).getByText(designCopy.slide(1), { exact: true })).toBeVisible()
   for (const title of [designCopy.templateStyle, designCopy.background, selectionColorsCopy.section])
     await expect(section(page, title)).toBeVisible()
-  await expect(page.getByRole("tab", { name: transitionCopy.animate })).toHaveCount(0)
+  await expect(page.getByRole("tab", { name: "Animate" })).toHaveCount(0)
 
   const background = section(page, designCopy.background)
   await background.getByRole("button", { name: fillWords.gradient, exact: true }).click()

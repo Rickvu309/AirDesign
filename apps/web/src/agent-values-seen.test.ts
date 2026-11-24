@@ -80,11 +80,11 @@ const seen: Readonly<Record<string, Seen>> = {
   rotation: { person: ["gesture:rotate"] },
   flip: { person: ["gesture:flip-horizontal", "gesture:flip-vertical"] },
   notes: { person: ["notes:slide-notes"] },
-  skipped: { owedToPerson: "skipping a slide in Present: the slide menu does not write it yet" },
-  transition: { owedToPerson: "how a slide arrives in Present: no control" },
-  alignV: { owedToPerson: "where words sit in their box: no control" },
-  spaceBefore: { owedToPerson: "space before a paragraph: no control" },
-  spaceAfter: { owedToPerson: "space after a paragraph: no control" },
+  skipped: { person: ["menu:skip-slide"] },
+  transition: { declined: "One simple panel. Ask the agent how a slide arrives." },
+  alignV: { person: ["panel:text.alignV"] },
+  spaceBefore: { declined: "One simple panel. Ask the agent for space between paragraphs." },
+  spaceAfter: { declined: "One simple panel. Ask the agent for space between paragraphs." },
   blur: { owedToPerson: "a layer blur: its appearance belongs to the deck design" },
   innerShadow: { owedToPerson: "an inner shadow: its appearance belongs to the deck design" },
   colors: { person: ["panel:theme-colors"] },
@@ -99,9 +99,7 @@ const owedToPerson = [
   "padding",
   "chart",
   "rows",
-  "skipped",
   "transition",
-  "alignV",
   "spaceBefore",
   "spaceAfter",
   "blur",
@@ -163,6 +161,13 @@ describe("every value an agent sets names where a person sees it and changes it"
     expect(seen.padding).toEqual({ declined: reason })
     expect(seen.rows).toEqual({ declined: reason, partly: ["gesture:edit-text"] })
     for (const field of ["align", "layout", "gap", "padding", "rows"]) expect(owedToPerson).toContain(field)
+  })
+
+  it("leaves a slide's transition and paragraph spacing to the agent, with the reason", () => {
+    for (const field of ["transition", "spaceBefore", "spaceAfter"]) {
+      expect(seen[field]).toMatchObject({ declined: expect.stringContaining("One simple panel.") })
+      expect(owedToPerson).toContain(field)
+    }
   })
 
   it("lets a person rename a layer from the design panel", () => {

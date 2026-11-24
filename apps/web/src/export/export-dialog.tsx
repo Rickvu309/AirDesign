@@ -2,7 +2,7 @@ import { useId, useRef, type FormEvent, type ReactNode, type RefObject } from "r
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogOverlay, DialogPopup, DialogPortal, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { rangeProblem, type ExportChoice, type SlideChoice } from "@/export/export-choice"
+import { choiceProblem, problemOn, type ExportChoice, type SlideChoice } from "@/export/export-choice"
 import { exportCopy } from "@/copy/export-copy"
 import { formatNames, slideNames, type ExportFormat } from "@/export/export-options"
 
@@ -43,12 +43,14 @@ function OptionSelect<T extends string>({
   value,
   names,
   disabled,
+  problemId,
   onValue,
 }: {
   labelId: string
   value: T
   names: Readonly<Partial<Record<T, string>>>
   disabled: boolean
+  problemId?: string
   onValue: (value: T) => void
 }) {
   const values = Object.keys(names) as T[]
@@ -62,6 +64,8 @@ function OptionSelect<T extends string>({
     >
       <SelectTrigger
         aria-labelledby={labelId}
+        aria-invalid={problemId !== undefined}
+        aria-describedby={problemId}
         className={`h-9 w-full rounded-lg border-0 bg-white pr-3 pl-3 data-[size=default]:h-9 ${fieldEdge} ${fieldText}`}
       >
         <SelectValue>{(selected: T | null) => names[selected ?? value] ?? ""}</SelectValue>
@@ -114,6 +118,7 @@ function SlideNumber({
 export function ExportDialog({
   choice,
   count,
+  skipped = [],
   open = true,
   exporting = false,
   onChoice = () => undefined,
@@ -123,6 +128,7 @@ export function ExportDialog({
 }: {
   choice: ExportChoice
   count: number
+  skipped?: readonly boolean[]
   open?: boolean
   exporting?: boolean
   onChoice?: (choice: ExportChoice) => void
@@ -135,7 +141,8 @@ export function ExportDialog({
   const rangeId = useId()
   const problemId = useId()
   const exportButton = useRef<HTMLButtonElement>(null)
-  const problem = rangeProblem(choice, count)
+  const problem = choiceProblem(choice, count, skipped)
+  const blamed = problemOn(choice, count, skipped)
   const submit = (event: FormEvent) => {
     event.preventDefault()
     if (problem === null && !exporting) onExport()
@@ -184,6 +191,7 @@ export function ExportDialog({
                   value={choice.slides}
                   names={slideNames}
                   disabled={exporting}
+                  {...(blamed === "slides" ? { problemId } : {})}
                   onValue={(slides) => onChoice({ ...choice, slides })}
                 />
               </OptionRow>
@@ -193,7 +201,7 @@ export function ExportDialog({
                     label={exportCopy.from}
                     value={choice.from}
                     count={count}
-                    invalid={problem !== null}
+                    invalid={blamed === "range"}
                     problemId={problemId}
                     disabled={exporting}
                     onValue={(from) => onChoice({ ...choice, from })}
@@ -205,7 +213,7 @@ export function ExportDialog({
                     label={exportCopy.to}
                     value={choice.to}
                     count={count}
-                    invalid={problem !== null}
+                    invalid={blamed === "range"}
                     problemId={problemId}
                     disabled={exporting}
                     onValue={(to) => onChoice({ ...choice, to })}

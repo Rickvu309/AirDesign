@@ -2,12 +2,14 @@ import type * as doom from "@airdesign/doom"
 import { gestureFor } from "@/lib/gestures"
 import { useEffect, useRef, useState } from "react"
 import { chosenSlides, firstChoice, type ExportChoice } from "@/export/export-choice"
+import { pagesToPrint } from "@/export/printed-slides"
 
 export type ExportTarget = {
   readonly name: string
   readonly view: doom.Doom
   readonly slides: readonly doom.NodeId[]
   readonly current: number
+  readonly skipped: readonly boolean[]
   readonly assetUrl: (asset: string) => string | undefined
 }
 
@@ -31,11 +33,13 @@ function useFlowState(target: ExportTarget, start: ExportStart | undefined) {
   function print(next: ExportChoice) {
     const chosen = chosenSlides(next, target.slides.length, target.current)
     if (chosen === null) return
+    const pages = pagesToPrint(target.slides, chosen, target.skipped, next.slides === "current")
+    if (pages === null) return
     runs.current += 1
     setFailed(false)
     setPrinting({
       view: target.view,
-      slides: chosen.flatMap((at) => target.slides[at] ?? []),
+      slides: pages,
       run: runs.current,
     })
   }

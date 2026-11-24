@@ -11,12 +11,13 @@ export const textCopy = {
   font: "Font",
   fonts: "Fonts",
   list: "List",
-  paragraphSpacing: "Paragraph spacing",
-  spaceBefore: "Space before",
-  spaceAfter: "Space after",
+  alignV: "Vertical align",
 } as const
 
 export const textWords = {
+  "alignV.top": "Top",
+  "alignV.center": "Middle",
+  "alignV.bottom": "Bottom",
   "list.none": "No list",
   bullets: "Bulleted list",
   numbers: "Numbered list",

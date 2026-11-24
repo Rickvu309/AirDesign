@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react"
 import type { SlideTransition } from "@airdesign/pptx"
 import { firstShow, showKey, stepShow, type Show, type ShowKey, type ShownDeck } from "@/present/present-steps"
 import type { ShownSlide } from "@/present/slide-shows"
-import type { LayerPairs } from "@/present/use-leaving"
+import type { LayerPairs } from "@/present/morph-pairs"
 import { composing } from "@/lib/composing"
 
 export type PresentDeck = {

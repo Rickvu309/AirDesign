@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { gestureFor } from "@/lib/gestures"
+import { slideNumber } from "@/lib/slide-numbering"
 import { useRef, type KeyboardEvent } from "react"
 import { toast } from "@/components/ui/toast"
 import { editorCopy } from "@/copy/editor-copy"
@@ -13,6 +14,7 @@ import {
   moveSlideWrites,
   neighbourAfterDelete,
 } from "./slide-writes"
+import { skipSaid, skipWrites } from "./slide-skip"
 import type { EditorClient } from "./use-deck"
 import { useLayoutPictures } from "./use-layout-pictures"
 
@@ -89,6 +91,14 @@ export function useSlideStrip(props: {
     },
     onMoveMany: (held, at) => {
       client.push(moveSlideWrites(view, pick(held), at))
+    },
+    skipped: slides.map((id) => doom.propOf(view.nodes.get(id), "skipped") === true),
+    onSkip: (indices, skipping) => {
+      const writes = skipWrites(view, slides, indices, skipping)
+      if (writes.length === 0) return
+      const pushed = client.push(writes)
+      if (!pushed.ok || "unchanged" in pushed) return
+      say.current(skipSaid(skipping, indices.length, slideNumber(indices[0] ?? 0)))
     },
     onChangeSet: (change, held) => {
       if (change === "remove") {

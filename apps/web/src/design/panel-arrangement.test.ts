@@ -20,6 +20,7 @@ it("places size, formatting and paragraph strips in order", () => {
     ["weight", "size"],
     ["bold", "italic", "underline", "strike"],
     ["align", "list"],
+    ["alignV"],
     ["fill"],
   ])
 })

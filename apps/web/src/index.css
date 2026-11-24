@@ -157,24 +157,22 @@ html:has(.reflow-frame) #root {
 [data-slide-skipped] [data-slide-thumb] {
   opacity: var(--slide-skip-opacity);
 }
-[data-slide-skip-mark] {
-  display: inline-block;
-  width: var(--space-12);
-  height: var(--space-12);
-  vertical-align: text-bottom;
-}
-[data-slide-skip-badge] {
+[data-slide-skip-cover] {
   position: absolute;
-  inset: 0 auto auto 0;
-  display: flex;
-  padding: var(--space-4);
+  inset-block: 0.375rem;
+  right: 0.375rem;
+  display: grid;
+  place-items: center;
   pointer-events: none;
-  border-bottom-right-radius: var(--grid-number-tab-radius);
-  background: var(--grid-number-surface);
-  color: var(--grid-number);
 }
-[data-slide-item] [data-slide-skip-mark] {
-  color: var(--quiet);
+[data-slide-skip-mark] {
+  box-sizing: content-box;
+  width: var(--space-16);
+  height: var(--space-16);
+  padding: var(--space-8);
+  border-radius: 50%;
+  background: var(--foreground);
+  color: var(--background);
 }
 .notes-bar[data-settling="true"] {
   transition: height var(--ease-panel);

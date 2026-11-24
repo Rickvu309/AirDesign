@@ -10,6 +10,7 @@ The slide list on the left of an open deck lists every slide. The person adds a 
 - `slide-move` Ctrl/Cmd+[ or Ctrl/Cmd+] on a focused entry moves that slide one place, and the moved slide stays current. Dragging an entry onto another moves it there (`tests/browser/editor-slides-transform.spec.ts`). State `slide-moved-twice`.
 - `slide-delete` Delete or Backspace on a focused entry deletes that slide. The last slide cannot be deleted: the status line says `A deck keeps at least one slide.`
 - `slide-menu` a right-click on an entry, the Menu key or Shift+F10 opens the slide menu with `Duplicate`, `Delete`, `Move up` and `Move down` and their keys; Escape closes it. States `slide-actions-menu`, `slide-deleted`.
+- `slide-skip` the same menu has `Skip slide` (or `Unskip slide` when the entry is already skipped). Choosing it writes the slide's `skipped` prop, one undo step, dims the thumbnail, lays a closed eye on it, and shows a dash where its number was; the slides after it keep their deck numbers. Present and an export of all slides or a range leave that slide out; exporting the current slide keeps it. State `slide-skipped`.
 - `slide-step` ArrowUp, ArrowDown, PageUp and PageDown on a focused entry step through the slides.
 - `slide-undo` each change is one step of the person's undo: Ctrl/Cmd+Z takes back an add, a duplicate, a move or a delete. See `person-undo.md`.
 - `slide-saved` the server's fold holds each slide as a `slide` node; a deleted slide's `parent` is `null`, and the order follows the slides' order keys.
@@ -29,7 +30,8 @@ Preconditions:
 - **Specs.** `pnpm test:browser tests/browser/editor-slides.spec.ts tests/browser/editor-slides-transform.spec.ts tests/browser/editor-presenting.spec.ts`: add, step, drag, move, duplicate, delete, undo and reload, each read from the server's fold with `savedSlides`; the last slide kept; the slide menu from the keyboard; the show and the presenter view.
 - **In a scratch journey.** Make a deck with `newDoomDeck`, click `Add slide` twice, click entry 1, press Ctrl+], then poll `post(doomRoutes.open, { deck }, cookie)` until the slide order in `json.fold` has the first slide second. Reload; the list shows three entries in that order.
 - **Reload.** `tests/browser/editor-slide-address.spec.ts`: the address carries `node-id`, a reload opens that slide, a gone slide opens slide 1, and moving between slides adds no history entry.
-- **States for look.** `slides-several`, `slides-reloaded`, `slide-list-set`, plus the states named above.
+- **Scratch journey, 2026-11-24.** From Home, New deck, then Add slide. Skip slide on entry 2 writes `skipped`, dims that thumbnail, lays a closed eye on it and swaps its number for a dash, and entry 3 still reads 3. One undo clears it. The server fold agrees.
+- **States for look.** `slides-several`, `slides-reloaded`, `slide-list-set`, `slide-skipped`, plus the states named above.
 
 ## Gotchas
 
