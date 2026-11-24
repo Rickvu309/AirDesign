@@ -98,3 +98,28 @@ test("Use as mask clips the layer above on the canvas, takes one Undo, survives 
   await expect.poll(async () => (await masked()).maskOnly).toBe(before.maskOnly)
   expect(await masked()).toEqual(before)
 })
+
+test("a click in a corner a rounded mask's radius cuts away does not select the layer it hides", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("select")
+  const opened = await openEditor(page, context, stack)
+  await clearSubtitle(stack, opened)
+  await landNodes(stack, opened, [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: opened.slide,
+      props: { box: spot(200, 600, 400, 400), fills: accent2, radius: 150, mask: true },
+    },
+    { id: "t:2", type: "shape", parent: opened.slide, props: { box: spot(100, 500, 400, 400), fills: accent1 } },
+  ])
+  await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(3)
+
+  await clickSlide(page, 210, 610)
+  expect(await selectedIds(page)).not.toContain("t:2")
+  await clickSlide(page, 300, 700)
+  expect(await selectedIds(page)).toEqual(["t:2"])
+})
