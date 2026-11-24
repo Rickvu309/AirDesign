@@ -66,7 +66,7 @@ test("the slide strip shows, adds, steps through, reorders, deletes and restores
 
   await entry(page, 2).click()
   await expect(painted(page)).toHaveCount(2)
-  await page.keyboard.press("Alt+ArrowDown")
+  await page.keyboard.press("ControlOrMeta+BracketRight")
   await expect.poll(saved).toEqual([added, order[1], first])
   await page.keyboard.press("ControlOrMeta+d")
   await expect(entries(page)).toHaveCount(4)
