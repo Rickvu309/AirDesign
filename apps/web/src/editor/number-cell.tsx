@@ -41,7 +41,7 @@ export function NumberField(props: {
         {...(props.min === undefined ? {} : { min: props.min })}
         {...(props.max === undefined ? {} : { max: props.max })}
         step={props.step ?? 1}
-        className="min-w-0 flex-1 bg-transparent text-[length:var(--type-caption)] outline-none [appearance:textfield]"
+        className="w-0 min-w-0 flex-1 bg-transparent text-[length:var(--type-caption)] outline-none [appearance:textfield]"
         onKeyDown={(event) => {
           if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return
           event.preventDefault()
