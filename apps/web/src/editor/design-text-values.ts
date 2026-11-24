@@ -1,4 +1,4 @@
-import * as doom from "@airdesign/doom"
+import type { Color, Para, Text, TextStyleName, Theme } from "@airdesign/doom"
 import { hundredths, wholeFraction } from "./design-values"
 
 const boldFrom = 600
@@ -10,12 +10,12 @@ export type TextLook = {
   readonly italic: boolean
   readonly underline: boolean
   readonly strike: boolean
-  readonly color: doom.Color
+  readonly color: Color
   readonly tracking: number
   readonly case: "none" | "upper" | "lower" | "title"
 }
 
-export function looksOf(text: doom.Text, theme: doom.Theme): readonly TextLook[] {
+export function looksOf(text: Text, theme: Theme): readonly TextLook[] {
   const style = theme.textStyles[text.style]
   const base: TextLook = {
     size: style.size,
@@ -43,9 +43,9 @@ export function looksOf(text: doom.Text, theme: doom.Theme): readonly TextLook[]
 }
 
 export type TextShown = {
-  readonly style: doom.TextStyleName
+  readonly style: TextStyleName
   readonly look: { readonly [K in keyof TextLook]: { readonly value: TextLook[K]; readonly mixed: boolean } }
-  readonly align: { readonly value: NonNullable<doom.Para["align"]>; readonly mixed: boolean }
+  readonly align: { readonly value: NonNullable<Para["align"]>; readonly mixed: boolean }
   readonly list: { readonly value: "none" | "bullets" | "numbers"; readonly mixed: boolean }
   readonly lineHeight: { readonly value: number; readonly mixed: boolean }
 }
@@ -57,7 +57,7 @@ function agreed<T>(values: readonly T[]): { readonly value: T; readonly mixed: b
   return { value: first, mixed: values.some((value) => JSON.stringify(value) !== key) }
 }
 
-export function shownText(text: doom.Text, theme: doom.Theme): TextShown {
+export function shownText(text: Text, theme: Theme): TextShown {
   const looks = looksOf(text, theme)
   const pick = <K extends keyof TextLook>(key: K) => agreed(looks.map((look) => look[key]))
   const style = theme.textStyles[text.style]
