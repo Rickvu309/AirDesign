@@ -80,6 +80,10 @@ const runSql =
 
 const runEdits = 500
 
+const logSql = "select rev, edit from deck.doom_edit where deck = $1 and rev <= $2 order by rev limit $3"
+
+const replayedEdits = 20000
+
 const sinceSql = `
 select s.owner, s.rev, s.trashed is not null as trashed,
   case when s.owner = $4 and s.trashed is null then coalesce(
@@ -298,6 +302,14 @@ export async function runDoom(db: Sql, parsed: { readonly deck: DeckId; readonly
   }
   if (bytes > limits.body) return refusal("size")
   return { ok: true, deck: parsed.deck, rev: stored.rev, edits, replaced } as const
+}
+
+export async function foldAtDoom(db: Sql, parsed: { readonly deck: DeckId; readonly rev: number }, email: string) {
+  const stored = await readStored(db, parsed.deck)
+  if (stored === undefined || stored.owner !== email || stored.trashed) return undefined
+  const rows = await db.query<{ rev: number; edit: object }>(logSql, [parsed.deck, parsed.rev, replayedEdits + 1])
+  if (rows.rows.length > replayedEdits) return undefined
+  return doom.replayLog(rows.rows.map((row) => ({ ...row.edit, rev: row.rev })))
 }
 
 export async function doomRev(db: Sql, deck: DeckId, email: string) {

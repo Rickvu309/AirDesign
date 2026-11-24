@@ -122,6 +122,52 @@ describe("undo_run", () => {
     expect(fold.runs.get(runId)?.undone).toBe(true)
   })
 
+  it("takes the agent's own turn off a layer it leaves where the agent put it, and keeps the turn the person saw", async () => {
+    const by = agent()
+    const made = await by.call("create_deck", { name: "Board" })
+    const deck = made.answer.deck as string
+    const slide = (made.answer.slides as string[])[0] as doom.NodeId
+    const [outer, group, card] = [doom.nodeId("g:101"), doom.nodeId("g:102"), doom.nodeId("g:103")]
+    const at = (parent: doom.NodeId) => ({ id: parent, at: doom.orderKeyBetween(null, null) })
+    const turned = (x: number, rotation: number) => ({ x, y: x, w: 100, h: 50, rotation, flipH: false, flipV: false })
+    const person = { kind: "person" as const, id: "quan" }
+    const agentRun = { kind: "agent" as const, id: "aira", run: "run-1", name: "Aira" }
+    const edits = [
+      {
+        once: "setup",
+        author: person,
+        writes: [
+          { node: outer, prop: "type", value: "frame" },
+          { node: outer, prop: "parent", value: at(slide) },
+          { node: outer, prop: "box", value: turned(100, 20) },
+          { node: group, prop: "type", value: "frame" },
+          { node: group, prop: "parent", value: at(outer) },
+          { node: group, prop: "box", value: turned(50, 10) },
+          { node: card, prop: "type", value: "shape" },
+          { node: card, prop: "parent", value: at(group) },
+          { node: card, prop: "box", value: turned(40, 0) },
+        ],
+      },
+      {
+        once: "agent-start",
+        author: agentRun,
+        phase: "start",
+        writes: [
+          { node: card, prop: "parent", value: at(slide) },
+          { node: card, prop: "box", value: turned(190, 0) },
+        ],
+      },
+      { once: "agent-stop", author: agentRun, phase: "stop", writes: [] },
+      { once: "delete-outer", author: person, writes: [{ node: outer, prop: "parent", value: null }] },
+    ]
+    for (const edit of edits) expect((await by.decks.edit(deck as never, edit as never)).ok).toBe(true)
+    const undone = await by.call("undo_run", { deck, runId: "run-1" })
+    expect(undone.answer).toMatchObject({ ok: true, kept: [], left: [card], waiting: [] })
+    const fold = by.decks.decks.get(deck as never)!
+    expect(doom.parentOf(fold.nodes.get(card)!)?.id).toBe(slide)
+    expect(doom.propOf(fold.nodes.get(card), "box")).toEqual(turned(190, 30))
+  })
+
   it("refuses another agent's run, and still undoes a run that has stopped", async () => {
     const { by, deck, runId, title } = await renamed()
     const other = agent(by.decks, "other", "Other")

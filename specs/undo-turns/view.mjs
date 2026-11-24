@@ -1,31 +1,34 @@
 const steps = {
   Step: "the person, or an agent run, moves the card K out of P into frame H, and may turn K or H in the same edit",
-  OtherTurn: "another tab turns frame H by 15 degrees",
-  OtherDelete: "another tab deletes frame P",
-  Undo: "the person presses Ctrl+Z, or Undo on the run",
+  AgentMove: "an agent run moves K from H onto the slide and keeps its turn in its frame",
+  OtherTurn: "another tab turns frame H or frame Q by 15 degrees",
+  OtherDelete: "another tab deletes frame P or frame Q",
+  Undo: "the person presses Ctrl+Z",
+  Redo: "the person presses Ctrl+Y",
+  UndoRun: "the person presses Undo on an agent run",
 }
 
-const frames = { 1: "P", 4: "H" }
-const writers = ["the file", "the step", "the other tab", "the undo"]
+const frames = ["the slide", "P", "H"]
 const degrees = (units) => `${units * 15}°`
+const slide = (v) => (v.kr + (v.kp === 1 ? 2 : v.kp === 2 ? v.hr + v.qr : 0)) % 24
 
 export const state = (v) =>
-  `K is in ${frames[v.pK]} at ${degrees(v.rK)}, H is at ${degrees(v.tH)} (by ${writers[v.wH]})` +
-  `${v.gone ? ", P is deleted" : ""}` +
-  `${v.made ? `; the step was ${v.run ? "an agent run's" : "the person's"}` : ""}` +
-  `${v.dH === 1 ? ", and the other tab turned H after it" : ""}` +
-  `${v.told === "none" ? "" : `; the press: ${v.told}`}`
+  `K is in ${frames[v.kp]} at ${degrees(v.kr)}, ${degrees(slide(v))} on the slide; H is at ${degrees(v.hr)} in Q at ` +
+  `${degrees(v.qr)}` +
+  `${v.pg > 0 ? ", P is deleted" : ""}${v.qg > 0 ? ", Q is deleted" : ""}` +
+  `${v.made === "none" ? "" : `; the move was ${v.made === "run" ? "an agent run's" : "the person's"}`}` +
+  `${v.moved ? ", and an agent moved K onto the slide" : ""}` +
+  `${v.told === "none" ? "" : `; the press: ${v.told === "undone" ? "undone" : "nothing to undo"}`}`
 
 export const step = (action) => steps[action] ?? null
 
 export const group = (v) => {
-  if (v.pressed) return "Pressed"
-  if (v.gone || v.turnedH) return "Other tab"
-  if (v.made) return "Stepped"
+  if (v.presses > 0) return "Pressed"
+  if (v.gone || v.acted || v.moved) return "Others"
+  if (v.made !== "none") return "Moved"
   return "Opened"
 }
 
-export const colors = { Opened: "blue", Stepped: "teal", "Other tab": "red", Pressed: "orange" }
+export const colors = { Opened: "blue", Moved: "teal", Others: "red", Pressed: "orange" }
 
-export const title =
-  "The turn an undo writes for a card it leaves in its new frame, beside another tab's turn of that frame"
+export const title = "The turn an undo leaves on a card it does not put back into its old frame"

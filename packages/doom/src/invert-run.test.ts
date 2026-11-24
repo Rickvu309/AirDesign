@@ -47,6 +47,8 @@ const undoRun = (world: World, name: string): Undone =>
   invertRun(
     world.doom,
     world.log.filter((edit) => edit.author.run === name),
+    new Set(),
+    world.starts.get(name),
   )
 
 function undo(world: World, name = "a"): { readonly world: World; readonly kept: readonly NodeId[] } {
@@ -236,6 +238,24 @@ describe("undoing a run, edit by edit from the values each write replaced", () =
       parent: { id: ids.side },
       geometry: lineOf({ x: 230, y: 90 }),
     })
+  })
+
+  it("takes the run's own turn off a layer it moved out of a frame since deleted, measured on the deck it started on", () => {
+    let world = by(opened(), person, [{ node: ids.card, prop: "box", value: { ...box(100), rotation: 30 } }])
+    world = run(world, runA, [
+      { node: ids.title, prop: "parent", value: place(ids.side) },
+      { node: ids.title, prop: "box", value: box(130) },
+    ])
+    world = by(world, person, [{ node: ids.card, prop: "parent", value: null }])
+    expect(undoRun(world, "a")).toMatchObject({
+      writes: [{ node: ids.title, prop: "box", value: { ...box(130), rotation: 30 } }],
+      left: [ids.title],
+    })
+    const unknown = invertRun(
+      world.doom,
+      world.log.filter((edit) => edit.author.run === "a"),
+    )
+    expect(unknown).toMatchObject({ writes: [], left: [ids.title] })
   })
 
   it("takes back the whole run when nobody else touched it, and a second undo finds nothing", () => {

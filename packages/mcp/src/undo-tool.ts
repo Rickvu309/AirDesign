@@ -92,7 +92,9 @@ export async function undoRunTool(raw: unknown, agent: string, once: string, hos
   const edits = editsOf(opened.fold, logged)
   if (edits === undefined || edits.length === 0)
     return answered(nothingLeft, { ok: false, reason: "nothing", ...empty })
-  const turned = doom.invertRun(opened.fold, edits)
+  const first = edits[0]!.rev
+  const started = await host.foldAt?.(opened.deck, first - 1)
+  const turned = doom.invertRun(opened.fold, edits, undefined, started)
   const who = run.name === "" ? "An agent" : run.name
   const names = (ids: readonly doom.NodeId[]) => ids.map((id) => layerName(opened.fold, id))
   const stays = { kept: names(turned.kept), left: names(turned.left), waiting: names(turned.waiting) }

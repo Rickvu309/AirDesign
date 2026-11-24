@@ -7,7 +7,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
+import { foldAtDoom } from "./doom/doom-deck.js"
 import { startIds } from "./doom/doom-start.js"
+import type { Sql } from "./platform/pool.js"
 
 const mails: Mail[] = []
 let base = ""
@@ -15,6 +17,7 @@ let admin = new Client()
 let owner = { email: "", cookie: "" }
 let stranger = ""
 let close = async () => {}
+let decks: Sql
 
 const agent = (run: string): doom.Author => ({ kind: "agent", id: "aira", run })
 const person: doom.Author = { kind: "person", id: "tab-1" }
@@ -26,6 +29,7 @@ beforeAll(async () => {
   const info = await postgresInfo()
   const session = openPool(info.session, "doom-run-session")
   const deck = openPool(info.deck, "doom-run-deck")
+  decks = deck
   const listen = new DeckListen(info.listen)
   admin = new Client({ connectionString: info.admin })
   await admin.connect()
@@ -130,5 +134,18 @@ describe("a run's edits and the values each one replaced", () => {
       { once: "a2", kept: true },
       { once: "other", kept: true },
     ])
+  })
+})
+
+describe("the deck as it stood after an edit", () => {
+  it("rebuilds the deck at each revision from its log, for the owner alone", async () => {
+    const deck = await deckWithRun()
+    const boxAt = async (rev: number, email = owner.email) =>
+      doom.propOf((await foldAtDoom(decks, { deck: deck as never, rev }, email))?.nodes.get(startIds.title), "box")
+    expect(await boxAt(1)).not.toEqual(box(5))
+    expect(await boxAt(2)).toEqual(box(5))
+    expect(await boxAt(3)).toEqual(box(10))
+    expect(await boxAt(4)).toEqual(box(20))
+    expect(await foldAtDoom(decks, { deck: deck as never, rev: 2 }, "stranger@example.com")).toBeUndefined()
   })
 })

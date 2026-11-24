@@ -12,6 +12,7 @@ import type { DoomRemote } from "./doom-remote.js"
 import { statusOf, type DeckStatus, type Reach } from "./doom-status.js"
 import { deviceStorage, type DoomStorage } from "./doom-storage.js"
 import { runInLog } from "./run-log.js"
+import { watchedRunsOf } from "./watched-runs.js"
 import { catchingUpResolves, onStandingOnly, pressedOn, remember, type Pressed } from "./turn-replay.js"
 
 export type Notice = {
@@ -95,7 +96,6 @@ type Step = {
 }
 
 const retryMilliseconds = 2_000
-const watchedRuns = 20
 
 export type Opened = { readonly ok: true; readonly deck: DoomDeck } | Exclude<DoomRefusal, { readonly refusal: "edit" }>
 
@@ -144,7 +144,7 @@ function connected(
   let link: Reach = "reached"
   let kept = true
   let shownStatus: DeckStatus = { kind: "saved" }
-  const watched = new Map<string, doom.RunEdit[]>()
+  const watched = watchedRunsOf()
   let memo: { readonly server: doom.Doom; readonly queue: readonly Queued[]; readonly view: doom.Doom } | undefined
   let saving: Promise<void> = Promise.resolve()
   let gone = false
@@ -221,17 +221,6 @@ function connected(
   }
   settle()
 
-  function watch(run: string | undefined, read: doom.Landed, before: doom.Doom) {
-    if (run === undefined) return
-    if (read.phase === "start") {
-      watched.delete(run)
-      watched.set(run, [])
-      const oldest = watched.keys().next().value
-      if (watched.size > watchedRuns && oldest !== undefined) watched.delete(oldest)
-    }
-    watched.get(run)?.push({ ...read, replaced: doom.replacedBy(before, read) })
-  }
-
   function adopt(next: doom.Doom) {
     server = next
     settle()
@@ -256,7 +245,7 @@ function connected(
       if (read.rev !== next.rev + 1) return false
       const result = doom.applyEdit(next, read)
       if (doom.isRefusal(result)) return false
-      watch(read.author.run, read, next)
+      watched.watch(read.author.run, read, next)
       next = result
     }
     if (next !== server) adopt(next)
@@ -451,16 +440,18 @@ function connected(
 
   async function undoRun(run: string): Promise<TurnedRun> {
     let edits
+    let started
     try {
       if (!(await catchUp()).ok) return { ok: false, reason: "offline" }
-      edits = watched.get(run) ?? (await runInLog(remote, deck, view(), run))
+      started = watched.get(run)?.started
+      edits = watched.get(run)?.edits ?? (await runInLog(remote, deck, view(), run))
     } catch {
       return { ok: false, reason: "offline" }
     }
     if (edits === undefined || edits.length === 0 || view().runs.get(run)?.undone === true)
       return { ok: false, reason: "nothing" }
     const now = view()
-    const { writes, kept, left, waiting } = doom.invertRun(now, edits, ownedRevs(turned.keys()))
+    const { writes, kept, left, waiting } = doom.invertRun(now, edits, ownedRevs(turned.keys()), started)
     if (writes.length === 0)
       return [...kept, ...left, ...waiting].length === 0
         ? { ok: false, reason: "nothing" }

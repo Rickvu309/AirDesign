@@ -21,6 +21,41 @@ describe("an undo that leaves a layer in its new frame", () => {
     ])
   })
 
+  it("takes back the turn a step gave a layer it leaves in its new frame", () => {
+    const { before, after, edit } = step(sampleDeck(), [
+      { node: ids.title, prop: "parent", value: place(ids.side) },
+      { node: ids.title, prop: "box", value: { ...box(30, 40), rotation: 45 } },
+    ])
+    const later = step(after, [{ node: ids.card, prop: "parent", value: null }])
+    expect(invert(before, later.after, edit)).toEqual([
+      { node: ids.title, prop: "box", value: box(30, 40), base: edit.rev },
+    ])
+  })
+
+  it("takes back only the step's own turn, and keeps a turn someone else gave the new frame after it", () => {
+    const turned = land(sampleDeck(), [{ node: ids.card, prop: "box", value: { ...box(100), rotation: 30 } }])
+    const { before, after, edit } = step(turned, [
+      { node: ids.title, prop: "parent", value: place(ids.side) },
+      { node: ids.title, prop: "box", value: { ...box(130), rotation: 45 } },
+    ])
+    const theirs = step(after, [{ node: ids.side, prop: "box", value: { ...box(400), rotation: 25 } }])
+    const later = step(theirs.after, [{ node: ids.card, prop: "parent", value: null }])
+    expect(invert(before, later.after, edit)).toEqual([
+      { node: ids.title, prop: "box", value: { ...box(130), rotation: 30 }, base: edit.rev },
+    ])
+  })
+
+  it("takes back the step's own turn from a layer someone moved out of the frame the step left it in", () => {
+    const turned = land(sampleDeck(), [{ node: ids.card, prop: "box", value: { ...box(100), rotation: 30 } }])
+    const { before, after, edit } = step(turned, [
+      { node: ids.title, prop: "box", value: { ...box(0, 20), rotation: 15 } },
+    ])
+    const moved = step(after, [{ node: ids.title, prop: "parent", value: place(ids.side) }])
+    expect(invert(before, moved.after, edit)).toEqual([
+      { node: ids.title, prop: "box", value: box(0, 20), base: edit.rev },
+    ])
+  })
+
   it("puts back a turn the step gave the new frame, so the layer it leaves there turns back with it", () => {
     const { before, after, edit } = step(sampleDeck(), [
       { node: ids.title, prop: "parent", value: place(ids.side) },
