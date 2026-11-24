@@ -89,6 +89,59 @@ test.describe("with motion allowed", () => {
   })
 })
 
+const widths = [
+  { width: 1470, height: 923 },
+  { width: 844, height: 390 },
+  { width: 390, height: 844 },
+  { width: 320, height: 568 },
+]
+
+function cutByAClip(page: Page) {
+  return page.evaluate(() => {
+    const cut = (element: Element) => {
+      const found: string[] = []
+      for (const node of element.childNodes) {
+        if (node.nodeType !== Node.TEXT_NODE) continue
+        const quote = (node.textContent ?? "").trim()
+        if (quote === "") continue
+        const range = document.createRange()
+        range.selectNodeContents(node)
+        for (const rect of range.getClientRects()) {
+          if (rect.width <= 0 || rect.height <= 0) continue
+          for (let at = element.parentElement; at && at !== document.body; at = at.parentElement) {
+            const style = getComputedStyle(at)
+            const clipX = style.overflowX === "hidden" || style.overflowX === "clip"
+            const clipY = style.overflowY === "hidden" || style.overflowY === "clip"
+            if (!clipX && !clipY) continue
+            const edge = at.getBoundingClientRect()
+            const left = edge.left + at.clientLeft
+            const top = edge.top + at.clientTop
+            const right = left + at.clientWidth
+            const bottom = top + at.clientHeight
+            const pastX = clipX && (rect.left < left - 1 || rect.right > right + 1)
+            const pastY = clipY && (rect.top < top - 1 || rect.bottom > bottom + 1)
+            if (pastX || pastY) found.push(quote)
+          }
+        }
+      }
+      return found
+    }
+    const bar = document.querySelector(".ticker-bar")
+    const proofs =
+      bar === undefined || bar === null ? [] : [...bar.querySelectorAll("span")].flatMap((span) => cut(span))
+    const headerText: string[] = []
+    for (const link of document.querySelectorAll("header a")) {
+      headerText.push(...cut(link))
+      for (const span of link.querySelectorAll("span")) headerText.push(...cut(span))
+    }
+    const cta = document.querySelector("section a.primary-button")
+    const cluster = bar?.parentElement ?? null
+    const gap =
+      cluster === null || cta === null ? 0 : cluster.getBoundingClientRect().top - cta.getBoundingClientRect().bottom
+    return { proofs: [...new Set(proofs)], headerText: [...new Set(headerText)], gap }
+  })
+}
+
 test.describe("with reduced motion", () => {
   test.use({ reducedMotion: "reduce" })
 
@@ -96,5 +149,32 @@ test.describe("with reduced motion", () => {
     await openHero(page)
     expect(await tickerState(page)).toEqual({ paused: false, playState: [], animationName: "none" })
     await expect(page.getByRole("button", { name: "Pause the ticker" })).toBeHidden()
+  })
+
+  test("every proof on the strip is fully readable", async ({ page }) => {
+    await openHero(page)
+    for (const size of widths) {
+      await page.setViewportSize(size)
+      await page.evaluate(() => document.fonts.ready)
+      await page.locator(".ticker-track").scrollIntoViewIfNeeded()
+      const read = await cutByAClip(page)
+      expect(read.proofs, `${size.width}px`).toEqual([])
+      expect(read.gap, `${size.width}px below the hero link`).toBeGreaterThan(8)
+    }
+  })
+
+  test("the header name stays readable after the hero scrolls away", async ({ page }) => {
+    await openHero(page)
+    for (const size of [
+      { width: 1470, height: 923 },
+      { width: 390, height: 844 },
+      { width: 320, height: 568 },
+    ]) {
+      await page.setViewportSize(size)
+      for (const target of ["#product", "#agents", "#pricing"]) {
+        await page.locator(target).scrollIntoViewIfNeeded()
+        expect((await cutByAClip(page)).headerText, `${size.width}px ${target}`).toEqual([])
+      }
+    }
   })
 })
