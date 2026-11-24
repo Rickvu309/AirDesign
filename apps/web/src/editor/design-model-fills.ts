@@ -50,7 +50,7 @@ const imageControl = (field: string, label: string, desc: Desc, value: unknown) 
 
 function modeList(fit: string): PanelControl {
   const mode = imageControl("mode", pictureCopy.mode, choiceDesc(imageFits), fit)
-  return { ...mode, look: { ...mode.look, name: { show: "hidden" }, form: "list" } }
+  return { ...mode, look: { ...mode.look, name: { show: "above" }, form: "list" } }
 }
 
 const lucideWeight = 24
@@ -87,15 +87,5 @@ export function fillSections(input: ModelInput, kind: PanelKind): PanelSection[]
     strips: [...arrange("fills", [paint]), ...placement],
   }
   if (kind !== "picture") return [fillsSection]
-  const source = imageControl(
-    "source",
-    pictureCopy.source,
-    { kind: "asset" },
-    image?.kind === "image" ? image.asset : undefined,
-  )
-  return [
-    fillsSection,
-    { trait: "pictureFill", label: fillCopy.section, strips: placement },
-    { trait: "image", label: pictureCopy.section, strips: [[source]] },
-  ]
+  return [fillsSection, { trait: "pictureFill", label: fillCopy.section, strips: placement }]
 }

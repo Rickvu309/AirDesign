@@ -5,7 +5,6 @@ import { CornersControl } from "@/design/controls/corners"
 import { ActionControl } from "@/design/controls/action"
 import { AdjustControl } from "@/design/controls/adjust"
 import { AngleControl } from "@/design/controls/angle"
-import { AssetControl } from "@/design/controls/asset"
 import { ChoiceControl } from "@/design/controls/choice"
 import { ColorControl } from "@/design/controls/color"
 import { CountControl } from "@/design/controls/count"
@@ -36,6 +35,5 @@ export const controlViews: Partial<Readonly<Record<ControlKind, ComponentType<Co
   union: UnionControl,
   list: ListControl,
   text: TextControl,
-  asset: AssetControl,
   preset: PresetControl,
 }

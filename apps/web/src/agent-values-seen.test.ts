@@ -21,7 +21,7 @@ const seen: Readonly<Record<string, Seen>> = {
   add: { person: ["gesture:slide-add"] },
   move: { person: ["gesture:slide-up", "gesture:slide-down"] },
   delete: { person: ["gesture:slide-delete"] },
-  fill: { person: ["panel:fills.paint", "panel:image.source", "panel:slide-background"] },
+  fill: { person: ["panel:fills.paint", "panel:slide-background"] },
   stroke: { person: ["panel:border.color", "panel:image.color"] },
   strokeWidth: { person: ["panel:border.width", "panel:image.weight"] },
   color: { person: ["panel:textFill.value", "panel:text.fill"] },

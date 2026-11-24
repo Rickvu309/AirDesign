@@ -161,7 +161,6 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
   image: [
     [placed("mode")],
     [placed("color"), placed("weight", above, { glyph: Minus, steps: iconWeightSteps, unit: "" })],
-    [placed("source")],
   ],
   templateStyle: [[placed("major", inside)], [placed("minor", inside)]],
 }
@@ -224,7 +223,6 @@ export const controlKinds = [
   "list",
   "adjust",
   "text",
-  "asset",
   "preset",
   "link",
 ] as const
@@ -253,8 +251,6 @@ export function controlOf(desc: Desc): ControlKind | null {
       return "list"
     case "named":
       return "adjust"
-    case "asset":
-      return "asset"
     case "link":
       return "link"
   }

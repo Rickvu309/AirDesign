@@ -13,11 +13,6 @@ export const pictureCopy = {
   uploading: "Image is still uploading from another device",
   ...picturePanelCopy,
   addIcon: "Add icon",
-  search: "Search icons",
-  searchHint: "Type a word, such as rocket",
-  noIcons: "No icon matches. Try another word.",
-  current: (name: string) => `Shows the ${name} icon`,
-  raster: "Shows an image file. Pick an icon to replace it.",
 } as const
 
 export { pictureWords } from "./picture-panel-copy"

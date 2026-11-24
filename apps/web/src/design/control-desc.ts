@@ -11,7 +11,6 @@ export type Desc =
   | { readonly kind: "union"; readonly cases: Readonly<Record<string, Desc>>; readonly plain: string | null }
   | { readonly kind: "list"; readonly item: Desc; readonly min: number; readonly max: number }
   | { readonly kind: "named"; readonly item: Desc; readonly max: number }
-  | { readonly kind: "asset" }
   | { readonly kind: "link" }
 
 export function choiceDesc(options: readonly string[]): Desc {

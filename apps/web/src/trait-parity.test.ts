@@ -83,7 +83,7 @@ const size = doom.deckOf(view).size
 const layers = ["words", "card", "rule", "star", "photo", "panel"] as const
 const id = (name: string) => built.ids[name]!
 
-const writesNothingOnDoom: readonly string[] = ["image.source"]
+const writesNothingOnDoom: readonly string[] = []
 const paintsNothing: readonly string[] = ["link.target"]
 const personOnlyOnDoom: readonly string[] = ["link"]
 
@@ -249,6 +249,10 @@ describe("every control of Doom's design panel reaches every layer", () => {
       plain: "preset",
     }
     expect(optionWords(desc)).toEqual(["none", "preset", "dash", "dot"])
+  })
+
+  it("offers no control that writes nothing on Doom", () => {
+    expect(writesNothingOnDoom).toEqual([])
   })
 
   it("names a control as writing nothing on Doom only while it writes nothing", () => {
