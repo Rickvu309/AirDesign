@@ -65,11 +65,12 @@ export function widestLine(chars: readonly string[], theme: Theme, style: Text["
   return Math.max(0, ...chars.map((each) => wordWidth(each, theme.textStyles[style].case === "upper") * size))
 }
 
-export function widestWord(chars: readonly string[], theme: Theme, style: Text["style"]): Px {
+export function widestWord(chars: readonly string[], theme: Theme, style: Text["style"], bold = false): Px {
   const look = theme.textStyles[style]
   const upper = look.case === "upper"
+  const em = emOf(look) * (bold && look.weight < boldWeight ? boldWidening : 1)
   const words = chars.flatMap((each) => each.split(/\s+/).filter((word) => word.length > 0))
-  return Math.max(0, ...words.map((word) => wordWidth(word, upper) * emOf(look)))
+  return Math.max(0, ...words.map((word) => wordWidth(word, upper) * em))
 }
 
 export function widestWhole(chars: readonly string[], theme: Theme, style: Text["style"]): Px {

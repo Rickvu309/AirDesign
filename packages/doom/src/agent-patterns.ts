@@ -22,11 +22,11 @@ import {
   stylesAt,
 } from "./pattern-parts.js"
 import { borrowing, endsInside } from "./pattern-lend.js"
-import { type Build, type Scale, boxIn, slotWidth, spreadDown, strokeOf, wordsOf } from "./pattern-scale.js"
+import { type Build, type Scale, boxIn, slotWidth, spreadDown, strokeOf, wordsFit, wordsOf } from "./pattern-scale.js"
 import { timeline, timelineAcross } from "./pattern-timeline.js"
 import type { Node } from "./doom.js"
 import type { Text, TextStyleName } from "./text.js"
-import { widestLine, widestWhole, widestWord } from "./text-estimate.js"
+import { widestLine, widestWhole } from "./text-estimate.js"
 import { zeroBox } from "./doom-walk.js"
 import type { Theme } from "./theme.js"
 
@@ -198,8 +198,8 @@ const matrix: Build = (area, items, scale) => {
 const flowSpacing = (scale: Scale) => Math.max(scale.gap * 2, arrowRoom)
 
 const flowWordsFit = (items: readonly AgentItem[], scale: Scale, room: Px) =>
-  widestWord(wordsOf(items, "title"), scale.theme, scale.styles.heading) <= room &&
-  widestWord(wordsOf(items, "note"), scale.theme, scale.styles.caption) <= room
+  wordsFit(wordsOf(items, "title"), scale.theme, scale.styles.heading, room) &&
+  wordsFit(wordsOf(items, "note"), scale.theme, scale.styles.caption, room)
 
 const flowDown: Build = (area, items, scale) => {
   const { pad, theme, styles } = scale
@@ -351,10 +351,13 @@ export function addPattern(draft: Draft, parent: Node, change: Add): void {
   emit(draft, parent.id, block)
 }
 
-function weighted(part: Part, bold: boolean): Part {
+function weighted(part: Part, bold: boolean, font: string): Part {
   const { chars, spans } = part.text
   const open = spans.length === 0 ? [{ end: chars.length }] : spans
-  const text: Text = { ...part.text, spans: open.map((span) => ({ ...span, bold: span.bold ?? bold })) }
+  const text: Text = {
+    ...part.text,
+    spans: open.map((span) => ({ ...span, bold: span.bold ?? bold, font: span.font ?? font })),
+  }
   const values = part.block.values as Values
   return { ...part, text, block: { ...part.block, values: { ...values, text } } }
 }
@@ -380,9 +383,16 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
   const ladder = ladderOf(theme)
   const steps = ladder.slice(ladder.indexOf("heading"), ladder.indexOf("caption") + 1)
   const attempt = (style: TextStyleName) => {
+    const labelled = (at: number, col: number) => at === 0 || col === 0
+    const whole = rows.every((row, at) =>
+      row.every((cell, col) => wordsFit([cell], theme, style, room, labelled(at, col))),
+    )
+    if (!whole) return undefined
     const cells = rows.map((row, at) =>
       row.map((cell, col) =>
-        cell === "" ? undefined : weighted(partOf(cell, style, at === 0 ? "text2" : "text"), at === 0 || col === 0),
+        cell === ""
+          ? undefined
+          : weighted(partOf(cell, style, at === 0 ? "text2" : "text"), labelled(at, col), theme.fonts.body),
       ),
     )
     const heights = cells.map((row) =>
@@ -425,6 +435,6 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
   }
   const block =
     steps.reduce<Block | undefined>((got, style) => got ?? attempt(style), undefined) ??
-    stop("limit", undefined, "items")
+    stop("limit", undefined, "items", "needs", "shorter labels, fewer columns or fewer rows")
   emit(draft, parent.id, block)
 }

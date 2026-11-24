@@ -87,8 +87,10 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
         const text = propOf(node, "text")
         if (text === undefined) continue
         expect(textStyleNames).toContain(text.style)
-        for (const span of text.spans)
-          expect(Object.keys(span).filter((key) => ["size", "font", "tracking", "case"].includes(key))).toEqual([])
+        for (const span of text.spans) {
+          expect(Object.keys(span).filter((key) => ["size", "tracking", "case"].includes(key))).toEqual([])
+          if (span.font !== undefined) expect(span.font).toBe(defaultTheme.fonts.body)
+        }
       }
   })
 
