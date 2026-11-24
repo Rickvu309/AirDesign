@@ -43,7 +43,6 @@ const controlKeys: Readonly<Record<string, readonly string[]>> = {
   "apps/web/src/design/controls/alignment-grid.tsx": arrows,
   "apps/web/src/design/controls/link.tsx": field,
   "apps/web/src/design/controls/number.tsx": ["ArrowDown", "ArrowUp", ...field],
-  "apps/web/src/design/controls/text.tsx": field,
   "apps/web/src/design/custom-color.tsx": [...list, ...field],
   "apps/web/src/editor/actions-highlight.ts": arrows,
   "apps/web/src/editor/actions-popover.tsx": [...arrows, "Enter"],

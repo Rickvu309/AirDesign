@@ -1,4 +1,4 @@
-import { catalogFamily, fontCatalog, type FontFamily } from "./catalog.js"
+import { catalogFamily, type FontFamily } from "./catalog.js"
 import { namedFace } from "./named-face.js"
 import twins from "./twins.json" with { type: "json" }
 
@@ -9,5 +9,3 @@ export function resolveFont(name: string): FontFamily | undefined {
   const face = namedFace(name)
   return catalogFamily(twin ?? name) ?? (face === undefined ? undefined : catalogFamily(face.family))
 }
-
-export const fontNames: readonly string[] = fontCatalog.map((font) => font.family)

@@ -58,8 +58,6 @@ const viewOnly = new Set([
 
 const manualPanel = new Set([
   "panel:slide-background",
-  "panel:theme-colors",
-  "panel:theme-fonts",
   "panel:chart-data",
   "panel:remove-auto-layout",
   "panel:show-hidden",

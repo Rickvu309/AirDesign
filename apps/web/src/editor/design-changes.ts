@@ -56,8 +56,6 @@ function textChange(context: ChangeContext, control: PanelControl, value: unknow
       return typeof value === "string"
         ? eachText(context, (text) => doom.styleWrite(text, value as doom.TextStyleName))
         : []
-    case "font":
-      return typeof value === "string" ? look(context, { font: value }) : []
     case "weight": {
       const picked = typeof value === "string" ? readStyleName(value) : undefined
       if (picked === undefined) return []

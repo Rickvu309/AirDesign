@@ -65,26 +65,14 @@ describe("the colour list", () => {
     expect(open).toContain(`value="8FAADC"`)
     expect(open).toContain(colorCopy.moreTints)
 
+    const bare: Palette = { templateColors: [], deck: palette.deck }
     const hexOnly = renderToStaticMarkup(
-      <PickerBody
-        title={colorNameCopy.blue}
-        value={`${hash}1f4e79`}
-        palette={palette}
-        showTemplateColors={false}
-        onPick={() => undefined}
-      />,
+      <PickerBody title={colorNameCopy.blue} value={`${hash}1f4e79`} palette={bare} onPick={() => undefined} />,
     )
     expect(hexOnly).not.toContain(colorCopy.template)
     expect(hexOnly).toContain(colorCopy.add)
     const pickingHex = renderToStaticMarkup(
-      <PickerBody
-        title={colorNameCopy.blue}
-        picking
-        value={`${hash}1f4e79`}
-        palette={palette}
-        showTemplateColors={false}
-        onPick={() => undefined}
-      />,
+      <PickerBody title={colorNameCopy.blue} picking value={`${hash}1f4e79`} palette={bare} onPick={() => undefined} />,
     )
     expect(pickingHex).not.toContain(colorCopy.tints)
     expect(pickingHex).toContain(`value="1F4E79"`)

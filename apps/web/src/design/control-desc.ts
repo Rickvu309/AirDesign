@@ -3,7 +3,6 @@ export type NumberUnit = "emu" | "angle" | "fraction" | "hundredth-point" | "cou
 export type Desc =
   | { readonly kind: "number"; readonly unit: NumberUnit; readonly min: number; readonly max: number }
   | { readonly kind: "flag" }
-  | { readonly kind: "words"; readonly max: number }
   | { readonly kind: "choice"; readonly options: readonly string[] }
   | { readonly kind: "mark" }
   | { readonly kind: "color" }

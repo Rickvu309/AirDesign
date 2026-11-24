@@ -63,7 +63,7 @@ const seen: Readonly<Record<string, Seen>> = {
   hidden: { person: ["gesture:hide", "panel:show-hidden"] },
   locked: { person: ["gesture:lock"] },
   size: { person: ["panel:text.size"] },
-  font: { person: ["panel:text.font"] },
+  font: { declined: "agent-only by the owner's lean workspace direction (2026-11-24)" },
   weight: { person: ["panel:text.weight"] },
   lineHeight: { declined: "Layer styling belongs to the deck design and its agent." },
   letterSpacing: { declined: "Layer styling belongs to the deck design and its agent." },
@@ -85,10 +85,10 @@ const seen: Readonly<Record<string, Seen>> = {
   alignV: { person: ["panel:text.alignV"] },
   spaceBefore: { declined: "One simple panel. Ask the agent for space between paragraphs." },
   spaceAfter: { declined: "One simple panel. Ask the agent for space between paragraphs." },
-  blur: { owedToPerson: "a layer blur: its appearance belongs to the deck design" },
-  innerShadow: { owedToPerson: "an inner shadow: its appearance belongs to the deck design" },
-  colors: { person: ["panel:theme-colors"] },
-  fonts: { person: ["panel:theme-fonts"] },
+  blur: { declined: "agent-only by the owner's lean workspace direction (2026-11-24)" },
+  innerShadow: { declined: "agent-only by the owner's lean workspace direction (2026-11-24)" },
+  colors: { declined: "agent-only by the owner's lean workspace direction (2026-11-24)" },
+  fonts: { declined: "agent-only by the owner's lean workspace direction (2026-11-24)" },
   nameFollows: { person: ["strip:deck-name"] },
 }
 

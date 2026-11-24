@@ -89,7 +89,6 @@ const personOnlyOnDoom: readonly string[] = ["link"]
 
 const kept: Readonly<Record<string, readonly unknown[]>> = {
   "text.style": ["heading", "caption"],
-  "text.font": ["Georgia"],
   "fills.source": ["b".repeat(64)],
   "link.target": [{ kind: "url", url: "https://example.com" }],
 }
