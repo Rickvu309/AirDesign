@@ -28,7 +28,10 @@ const visible = (paint: doom.Paint) => paint.visible !== false
 export function kindOf(view: doom.Doom, id: doom.NodeId): PanelKind {
   const node = view.nodes.get(id)
   if (node === undefined) return "shape"
-  if (node.type === "frame") return isGroup(view, id) ? "group" : "frame"
+  if (node.type === "frame") {
+    if (propOf(node, "chart") !== undefined) return "chart"
+    return isGroup(view, id) ? "group" : "frame"
+  }
   const geometry = propOf(node, "geometry")
   if (geometry?.kind === "line") return "connector"
   if (geometry?.kind === "icon") return "picture"
@@ -97,9 +100,11 @@ function geometrySection(view: doom.Doom, id: doom.NodeId): PanelSection[] {
 export function nodeModel(input: ModelInput): PanelModel {
   const { view, id } = input
   const kind = kindOf(view, id)
+  const surface = kind === "chart" ? "frame" : kind
   const layout = propOf(view.nodes.get(id), "layout")
   const iconed = propOf(view.nodes.get(id), "geometry")?.kind === "icon"
-  const drawn = kind === "shape" || kind === "frame" || kind === "connector" || (kind === "picture" && !iconed)
+  const drawn =
+    surface === "shape" || surface === "frame" || surface === "connector" || (surface === "picture" && !iconed)
   return {
     node: id,
     nodes: [id],
@@ -107,13 +112,15 @@ export function nodeModel(input: ModelInput): PanelModel {
     ...(layout !== undefined && layout.mode !== "none" ? { frame: "auto" as const } : {}),
     sections: [
       alignmentSection(),
-      ...textSections(input, kind),
-      ...fillSections(input, kind),
-      ...(kind === "group" ? [] : opacitySection(input, kind)),
-      ...(kind === "shape" || kind === "frame" || (kind === "picture" && !iconed) ? cornersSection(input) : []),
-      ...(drawn ? borderSections(input, kind) : []),
-      ...(drawn || kind === "picture" ? shadowSection(input) : []),
-      ...(kind === "text" ? linkSection(input) : []),
+      ...textSections(input, surface),
+      ...fillSections(input, surface),
+      ...(surface === "group" ? [] : opacitySection(input, surface)),
+      ...(surface === "shape" || surface === "frame" || (surface === "picture" && !iconed)
+        ? cornersSection(input)
+        : []),
+      ...(drawn ? borderSections(input, surface) : []),
+      ...(drawn || surface === "picture" ? shadowSection(input) : []),
+      ...(surface === "text" ? linkSection(input) : []),
       ...geometrySection(view, id),
     ],
   }
