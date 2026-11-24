@@ -5,7 +5,7 @@ import { markupDocument, type MarkupElement } from "./element-span.js"
 import { slideAddresses } from "./package-address.js"
 import type { ShapeBox } from "./shape-write.js"
 import { shownRunLink, type RelationshipsRead } from "./trait-xml-link.js"
-import { markupChildren, shapeHasText, shapeTextValue } from "./text-value-route.js"
+import { markupChildren, shapeTextValue } from "./text-value-route.js"
 
 export type ReadShape = {
   readonly slide: string
@@ -18,16 +18,6 @@ export type ReadShape = {
   readonly grouped?: true
   readonly group?: string
   readonly frame?: ShapeBox
-}
-
-export type ShapeFact = {
-  readonly slide: string
-  readonly part: string
-  readonly shape: string
-  readonly kind: ShapeKind
-  readonly hasText: boolean
-  readonly locked: boolean
-  readonly grouped?: true
 }
 
 export function shapeKind(shape: Pick<ReadShape, "locked" | "kind">): Kind {
@@ -184,58 +174,6 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
             : {}),
         ...(group === null ? {} : { group }),
         ...(frame === null ? {} : { frame }),
-      })
-    }
-    for (const row of kept) rows.push(fallbackIds.has(row.shape) ? { ...row, locked: true } : row)
-  }
-  return rows
-}
-
-export function readShapeFacts(parts: ReadonlyMap<string, Uint8Array>): readonly ShapeFact[] {
-  const slides = slideByPart(parts)
-  const rows: ShapeFact[] = []
-  for (const [part, bytes] of parts) {
-    if (!slidePart.test(part)) continue
-    const slide = slides.get(part)
-    if (slide === undefined) continue
-    const { elements } = markupDocument(bytes)
-    const children = markupChildren(elements)
-    const stands = standRecords(elements, children)
-    const hidden = new Set<string>()
-    const parentOf = new Map<string, string | null>()
-    for (const record of stands) {
-      if (!record.matched) continue
-      hidden.add(record.group)
-      hidden.add(record.picture)
-      parentOf.set(record.shape, record.parent)
-    }
-    const fallbackIds = new Set<string>()
-    const kept: ShapeFact[] = []
-    const { parts: found, fallback, grouped } = slideShapes(elements)
-    for (const shape of elements) {
-      if (!isShapeTag(shape.kind)) continue
-      const held = found.get(shape.index) ?? emptyParts()
-      const { id } = held
-      if (id === null || hidden.has(id)) continue
-      if (fallback[shape.index] === 1) {
-        fallbackIds.add(id)
-        continue
-      }
-      const stood = parentOf.get(id)
-      kept.push({
-        slide,
-        part,
-        shape: id,
-        kind: shape.kind,
-        hasText: shapeHasText(children, shape),
-        locked: held.holdsTable,
-        ...(stood !== undefined
-          ? stood === null
-            ? {}
-            : { grouped: true as const }
-          : grouped[shape.index] === 1
-            ? { grouped: true as const }
-            : {}),
       })
     }
     for (const row of kept) rows.push(fallbackIds.has(row.shape) ? { ...row, locked: true } : row)

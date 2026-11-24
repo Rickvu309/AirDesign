@@ -147,19 +147,6 @@ function blurOf(list: Held): FieldValue<"effects", "blur"> | null {
   return size === null ? null : { radius: size }
 }
 
-const keptTags = [
-  ["a:fillOverlay", "fillOverlay"],
-  ["a:prstShdw", "presetShadow"],
-  ["a:reflection", "reflection"],
-] as const
-
-export function keptIn(list: Held | undefined, dag: boolean): string | null {
-  if (dag) return "graph"
-  if (list === undefined) return null
-  const names = keptTags.flatMap(([tag, name]) => (child(list, tag) === undefined ? [] : [name]))
-  return names.length === 0 ? null : names.join(" ")
-}
-
 function closed(own: boolean): ShownEffects {
   return {
     shadow: { value: { none: true }, own },

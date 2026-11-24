@@ -1,4 +1,4 @@
-import { fittedPlace, type Place } from "@airdesign/document"
+import { type Place } from "@airdesign/document"
 import { spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { requireMarkup } from "./part-markup.js"
@@ -210,21 +210,6 @@ export function unwrapGroup(bytes: Uint8Array, shape: string): Unwrapped {
   }
 }
 
-export function placeFrame(bytes: Uint8Array, shape: string, box: ShapeBox): Uint8Array {
-  const { elements } = requireMarkup(bytes)
-  const children = markupChildren(elements)
-  const group = shapeById(elements, shape)
-  if (group.kind !== "p:grpSp") throw new Error("p:grpSp")
-  const xfrm = transformOf(children, group)
-  if (xfrm === undefined) throw new Error("a:xfrm")
-  const offset = `x="${box.x}" y="${box.y}"`
-  const extent = `cx="${box.cx}" cy="${box.cy}"`
-  const next = encodeUtf8(
-    `<a:xfrm><a:off ${offset}/><a:ext ${extent}/><a:chOff ${offset}/><a:chExt ${extent}/></a:xfrm>`,
-  )
-  return spliceBytes(bytes, [{ start: xfrm.start, end: xfrm.end, next }])
-}
-
 function slideUnit(elements: readonly MarkupElement[], unit: MarkupElement): MarkupElement {
   let current = unit
   for (let parent = elements[current.parent]; parent?.kind === "p:grpSp"; parent = elements[current.parent])
@@ -256,31 +241,4 @@ export function joinShape(bytes: Uint8Array, shape: string, frame: string | null
     bytes,
     edits.sort((one, other) => one.start - other.start),
   )
-}
-
-export function childSpace(bytes: Uint8Array, shape: string): { readonly box: ShapeBox } | null {
-  const { elements } = requireMarkup(bytes)
-  const children = markupChildren(elements)
-  const xfrm = transformOf(children, shapeById(elements, shape))
-  const box = xfrm === undefined ? null : boxAt(children, xfrm, "a:chOff", "a:chExt")
-  return box === null ? null : { box }
-}
-
-export function fitGroup(bytes: Uint8Array, shape: string, frame: ShapeBox): Uint8Array {
-  const { elements } = requireMarkup(bytes)
-  const children = markupChildren(elements)
-  const group = shapeById(elements, shape)
-  if (group.kind !== "p:grpSp") throw new Error("p:grpSp")
-  const xfrm = transformOf(children, group)
-  const place = placeOfShape(children, group)
-  const space = xfrm === undefined ? null : boxAt(children, xfrm, "a:chOff", "a:chExt")
-  const first = xfrm === undefined ? undefined : children[xfrm.index]?.[0]
-  if (xfrm === undefined || place === null || space === null || first === undefined) throw new Error("a:xfrm")
-  const { box } = fittedPlace(place, space, frame)
-  const next = encodeUtf8(
-    `<a:off x="${box.x}" y="${box.y}"/><a:ext cx="${box.cx}" cy="${box.cy}"/>` +
-      `<a:chOff x="${frame.x}" y="${frame.y}"/><a:chExt cx="${frame.cx}" cy="${frame.cy}"/>`,
-  )
-  const close = xfrm.end - encodeUtf8("</a:xfrm>").byteLength
-  return spliceBytes(bytes, [{ start: first.start, end: close, next }])
 }

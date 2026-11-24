@@ -2,13 +2,11 @@ import { templateColors, type FieldValue, type TemplateColor, type TraitValue } 
 import { decodedXmlText, spliceBytes, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
-import { readSlides } from "./read-shapes.js"
 import { withAttribute } from "./slot-edit.js"
 import { xmlAttribute } from "./shape-write.js"
 import { markupChildren } from "./text-value-route.js"
 import { themeCustomColors, withThemeCustomColors } from "./template-colors.js"
 import { writeTemplateTextEdits } from "./template-text-edit.js"
-import { slideTheme } from "./theme-swatches.js"
 import { whole, type Parts, type PartCodec, type TraitXml } from "./xml-codec.js"
 
 type Font = "major" | "minor"
@@ -131,17 +129,7 @@ export const themeFields: Omit<TraitXml<"templateStyle">["fields"], "id"> = {
   }),
 }
 
-export function slideThemes(parts: Parts): readonly string[] {
-  const themes = readSlides(parts).flatMap(({ part }) => slideTheme(parts, part) ?? [])
-  return [...new Set(themes)]
-}
-
 export type ShownTheme = Partial<TraitValue<"templateStyle">>
-
-export function shownTheme(parts: Parts, slide: string): ShownTheme {
-  const part = slideTheme(parts, slide)
-  return part === null ? {} : themePartValues(parts, part)
-}
 
 export function themeByteValues(bytes: Uint8Array): ShownTheme {
   const shown: Record<string, string> = {}

@@ -238,35 +238,6 @@ function writtenLayout(bytes: Uint8Array, shape: string, level: number, size: nu
   return writtenParagraphs(writtenList(bytes, shape, level, size, font), shape, level, size, font)
 }
 
-function heldAttribute(element: MarkupElement | undefined, name: string): string | null {
-  return element?.attributes.find((attribute) => attribute.name === name)?.value ?? null
-}
-
-export function readTemplateTextEdit(parts: Parts, theme: string, id: string): TemplateTextEdit | null {
-  const master = masterId.exec(id)
-  if (master !== null) {
-    if (masterFor(parts, theme) !== master[1]) return null
-    const bytes = parts.get(master[1] ?? "")
-    if (bytes === undefined || master[2] === undefined || master[3] === undefined) return null
-    const defaults = defaultsElement(bytes, master[2], Number(master[3]))
-    const size = Number(heldAttribute(defaults, "sz"))
-    const latin = defaults === undefined ? undefined : child(parsed(bytes).kids, defaults, "a:latin")
-    const font = heldAttribute(latin, "typeface")
-    return Number.isInteger(size) && size > 0 && font !== null ? { id, size, font } : null
-  }
-  const layout = layoutId.exec(id)
-  if (layout === null || layout[1] === undefined || layout[2] === undefined || layout[3] === undefined) return null
-  const owner = linkedPart(parts, layout[1], "slideMaster")
-  if (owner === null || linkedPart(parts, owner, "theme") !== theme) return null
-  const bytes = parts.get(layout[1])
-  if (bytes === undefined) return null
-  const defaults = listDefaults(bytes, layout[2], Number(layout[3]))
-  const size = Number(heldAttribute(defaults, "sz"))
-  const latin = defaults === undefined ? undefined : child(parsed(bytes).kids, defaults, "a:latin")
-  const font = heldAttribute(latin, "typeface")
-  return Number.isInteger(size) && size > 0 && font !== null ? { id, size, font } : null
-}
-
 export function writeTemplateTextEdits(parts: Parts, theme: string, edits: readonly TemplateTextEdit[]): Parts {
   let next = parts
   const master = masterFor(next, theme)

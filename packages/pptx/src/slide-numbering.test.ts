@@ -1,7 +1,7 @@
 import { plainSlideNumber, writeTextValue, type TextValue } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { applyRoute, oneRunValue, textStorable } from "./slide-route.js"
+import { applyRoute, oneRunValue } from "./slide-route.js"
 
 import { textXml } from "./trait-xml-text.js"
 import { shownLink } from "./trait-xml-link.js"
@@ -83,7 +83,6 @@ describe("writing a slide number", () => {
 
   it("leaves a field box to be refused by the route with its bytes unchanged", () => {
     const box = boxOf(`<a:p><a:fld id="{1}" type="slidenum"><a:rPr/><a:t>7</a:t></a:fld></a:p>`)
-    expect(textStorable(new Map([[part, box]]), part, "2")).toBe(false)
     const saved = Uint8Array.from(box)
     expect(() => oneRunValue(new Map([[part, box]]), part, "2", "8")).toThrow(/text-carried/)
     expect(box).toEqual(saved)

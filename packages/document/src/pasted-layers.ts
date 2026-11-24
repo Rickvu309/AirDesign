@@ -11,10 +11,6 @@ export type PastedLayers = {
   readonly layers: readonly PastedLayer[]
 }
 
-export function pastedMedia(index: number): string {
-  return `pasted${String(index)}`
-}
-
 export function pastedNodes(pasted: PastedLayers | undefined): readonly ElementId[] {
   return (pasted?.layers ?? []).map((layer) => layer.element.node)
 }

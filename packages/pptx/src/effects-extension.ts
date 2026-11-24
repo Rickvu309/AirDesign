@@ -4,7 +4,7 @@ import { colorIn } from "./color-read.js"
 import { colorXml } from "./color-xml.js"
 import type { MarkupElement } from "./element-span.js"
 import { changedPart } from "./fill-host.js"
-import { child, whole, type Held } from "./markup-held.js"
+import { child, whole } from "./markup-held.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { paintAttribute, paintColor, type PaintPalette } from "./paint-color.js"
 import type { PaintInner, PaintShadow } from "./paint-effects.js"
@@ -120,12 +120,6 @@ function ownExtension(children: MarkupChildren, list: MarkupElement | undefined)
   return list === undefined
     ? undefined
     : children[list.index]?.find((each) => paintAttribute(each, "uri") === effectsUri)
-}
-
-export function heldExtras(properties: Held | undefined): ExtraValues {
-  if (properties === undefined) return {}
-  const list = child(properties, "a:extLst")?.element
-  return valuesIn(properties.children, ownExtension(properties.children, list))
 }
 
 function readHeld(parts: Parts, at: HostAt): ExtraValues {

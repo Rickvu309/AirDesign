@@ -97,18 +97,6 @@ export function fadedBytes(fragment: Uint8Array, alpha: Alpha): Uint8Array {
   return edits.length === 0 ? fragment : spliceBytes(fragment, edits)
 }
 
-export function scaledBytes(fragment: Uint8Array, scale: Alpha): Uint8Array {
-  const { elements } = requireMarkup(fragment)
-  const edits: ByteEdit[] = elements
-    .filter((element) => colorKinds.includes(element.kind))
-    .map((element) => {
-      const kids = elements.filter((each) => each.parent === element.index)
-      const alpha = clamped((colorAlpha(kids) * scale) / opaque) as Alpha
-      return { start: element.start, end: element.end, next: encodeUtf8(fadedElement(fragment, element, kids, alpha)) }
-    })
-  return edits.length === 0 ? fragment : spliceBytes(fragment, edits)
-}
-
 export function alphaKept<V>(
   codec: PartCodec<V>,
   alpha: (parts: Parts, at: ElementAt) => Faded,

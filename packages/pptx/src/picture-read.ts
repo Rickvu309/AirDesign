@@ -1,15 +1,10 @@
-import { fillMode } from "./picture-mode.js"
-import { iconWeights, type Color, type CropRead, type FieldValue, type RecolorRead } from "@airdesign/document"
-import { shownLocked } from "./shape-locks.js"
-import { shownMask } from "./mask-extension.js"
+import { type Color, type FieldValue } from "@airdesign/document"
 import { blurPercent } from "./picture-adjust.js"
 import { pictureAt, svgEmbed, linkTarget, embedded, type PictureFill } from "./blip-edit.js"
 import { colorsIn } from "./color-read.js"
 import { decodedXmlText, type MarkupElement } from "./element-span.js"
 import { whole } from "./markup-held.js"
-import { iconInk, iconOfPart, type IconColor, type IconRef } from "./picture-write.js"
-import { requireMarkup } from "./part-markup.js"
-import type { Drawn, Sheet } from "./paint-sheet.js"
+import { iconOfPart, type IconColor, type IconRef } from "./picture-write.js"
 import type { MarkupChildren } from "./text-value-route.js"
 import type { ElementAt, Parts } from "./xml-codec.js"
 
@@ -25,14 +20,6 @@ export type ShownImage = {
   readonly recolor: Recolor
   readonly blur: number | null
   readonly overlay: Overlay | null
-}
-
-export type ShownIdentity = {
-  readonly name: string
-  readonly alt: string
-  readonly hidden: boolean
-  readonly locked: boolean
-  readonly mask: boolean
 }
 
 const opaque = 100_000
@@ -149,66 +136,4 @@ export function nonVisualOf(elements: readonly MarkupElement[], shape: string): 
     known = found
   }
   return known.get(shape)
-}
-
-function text(element: MarkupElement, name: string): string {
-  const found = element.attributes.find((each) => each.name === name)
-  return found === undefined ? "" : decodedXmlText(found.value)
-}
-
-export function shownIdentity(parts: Parts, at: ElementAt): ShownIdentity | null {
-  const bytes = parts.get(at.part)
-  const element = bytes === undefined ? undefined : nonVisualOf(requireMarkup(bytes).elements, at.shape)
-  if (element === undefined) return null
-  const hidden = text(element, "hidden")
-  return {
-    name: text(element, "name"),
-    alt: text(element, "descr"),
-    hidden: hidden === "1" || hidden === "true",
-    locked: shownLocked(parts, at) === true,
-    mask: shownMask(parts, at) === true,
-  }
-}
-
-const altShown = 60
-
-export type PictureReads = {
-  fills?: { readonly value: "image" }
-  "fills.source"?: { readonly value: string }
-  "fills.weight"?: { readonly value: number }
-  "fills.color"?: { readonly value: Color }
-  "fills.mode"?: { readonly value: string }
-  "fills.recolor"?: { readonly value: RecolorRead }
-  "fills.crop"?: { readonly value: CropRead }
-  "identity.alt"?: { readonly value: string }
-  "identity.hidden"?: { readonly value: boolean }
-}
-
-export function pictureReads(parts: Parts, sheet: Sheet, item: Drawn): PictureReads {
-  const reads: PictureReads = {}
-  const alt = text(item.identity, "descr").trim()
-  if (alt !== "") reads["identity.alt"] = { value: alt.length > altShown ? `${alt.slice(0, altShown - 1)}…` : alt }
-  if (text(item.identity, "hidden") === "1" || text(item.identity, "hidden") === "true")
-    reads["identity.hidden"] = { value: true }
-  if (item.kind !== "p:pic") return reads
-  const fill = sheet.children[item.element.index]?.find((each) => each.kind === "p:blipFill")
-  const blip = fill === undefined ? undefined : sheet.children[fill.index]?.find((each) => each.kind === "a:blip")
-  if (fill === undefined || blip === undefined) return reads
-  reads.fills = { value: "image" }
-  const icon = iconOf(parts, sheet.part, sheet.children, blip)
-  if (icon !== null) reads["fills.source"] = { value: icon.name }
-  if (icon !== null && icon.weight !== iconWeights.lucide) reads["fills.weight"] = { value: icon.weight }
-  if (icon !== null && (icon.color.hex !== iconInk.hex || icon.color.scheme !== undefined))
-    reads["fills.color"] = { value: iconColorOf(icon.color) }
-  const found = { bytes: sheet.bytes, elements: sheet.elements, children: sheet.children, fill, blip }
-  const mode = fillMode(found)
-  if (mode !== "stretch") reads["fills.mode"] = { value: mode }
-  const recolor = recolorOf(found, blip)
-  if (recolor !== null && "grayscale" in recolor) reads["fills.recolor"] = { value: "grayscale" }
-  if (recolor !== null && "duotone" in recolor) reads["fills.recolor"] = { value: recolor.duotone }
-  const rect = sheet.children[fill.index]?.find((each) => each.kind === "a:srcRect")
-  const [l, t, r, b] = ["l", "t", "r", "b"].map((name) => side(rect, name))
-  if (l != null && t != null && r != null && b != null && l + t + r + b > 0)
-    reads["fills.crop"] = { value: { l, t, r, b } }
-  return reads
 }

@@ -6,7 +6,7 @@ import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readParts } from "./package-container.js"
 import { readShapes } from "./read-shapes.js"
 import { xmlText } from "./shape-write.js"
-import { applyRoute, oneRunValue, textStorable } from "./slide-route.js"
+import { applyRoute, oneRunValue } from "./slide-route.js"
 import { shapeById } from "./shape-tree.js"
 import { markupChildren, oneRunIn, shapeTextValue } from "./text-value-route.js"
 
@@ -415,30 +415,6 @@ describe("oneRunValue", () => {
     expect(oneRunValue(new Map([[part, boxOf(`<a:p><a:r><a:t>Old</a:t></a:r></a:p>`)]]), part, "2", "New")).toEqual([
       { from: 0, runs: [{ from: 0, text: "New" }] },
     ])
-  })
-
-  it("offers a box exactly when its export would write it", () => {
-    fc.assert(
-      fc.property(
-        fc.oneof(
-          bodyArb,
-          paragraphArb.map((paragraph) => [paragraph]),
-        ),
-        fc.constantFrom("2", "99"),
-        (body, shape) => {
-          const parts = new Map([[part, slideSource(body)]])
-          const offered = textStorable(parts, part, shape)
-          let written = true
-          try {
-            applyRoute(parts, { name: "text", part, shape, value: oneRunValue(parts, part, shape, "typed") })
-          } catch {
-            written = false
-          }
-          expect(offered).toBe(written)
-        },
-      ),
-      { numRuns: 300 },
-    )
   })
 
   it("throws text-shape for anything but one paragraph with one non-empty run", () => {

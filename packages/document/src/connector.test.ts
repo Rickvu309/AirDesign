@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { connectorEnds, elbowClearance, routed, siteTie, sitePoint, type Tie } from "./connector.js"
+import { connectorEnds, elbowClearance, routed, type Tie } from "./connector.js"
+import { sitePoint, siteTie } from "./site-tie.spec.js"
 
 const upright = { rot: 0, flipH: false, flipV: false }
 const picture = { box: { x: 4358398, y: 3042697, cx: 895278, cy: 914400 }, ...upright }

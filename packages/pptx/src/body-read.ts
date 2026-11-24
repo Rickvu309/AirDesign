@@ -99,16 +99,3 @@ export function bodyFieldFrom<F extends BodyField>(levels: readonly BodyLevel[],
   if (name === "vertical") return first(levels, verticalReader, "horz") as ShownBody[F]
   return first(levels, columns, 1) as ShownBody[F]
 }
-
-export function shownBody(parts: ReadonlyMap<string, Uint8Array>, at: BodyAt): ShownBody | null {
-  const levels = bodyLevels(parts, at)
-  if (levels === null) return null
-  return {
-    insets: insetsOf(levels),
-    anchor: first(levels, anchorReader, "t"),
-    wrap: first(levels, wrap, true),
-    autofit: first(levels, autofit, "none"),
-    vertical: first(levels, verticalReader, "horz"),
-    columns: first(levels, columns, 1),
-  }
-}

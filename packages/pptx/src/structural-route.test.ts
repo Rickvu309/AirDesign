@@ -1,4 +1,4 @@
-import { sectionIds } from "./section-ids.js"
+import { sectionIds } from "./ids.spec.js"
 import { describe, expect, it } from "vitest"
 import { markupDocument } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"

@@ -17,15 +17,3 @@ export function onlyKeys(value: Record<string, unknown>, keys: readonly string[]
   }
   return true
 }
-
-export function same(left: unknown, right: unknown): boolean {
-  if (left === right) return true
-  if (Array.isArray(left) && Array.isArray(right)) {
-    return left.length === right.length && left.every((item, n) => same(item, right[n]))
-  }
-  const a = record(left)
-  const b = record(right)
-  if (a === null || b === null) return false
-  const keys = Object.keys(a)
-  return keys.length === Object.keys(b).length && keys.every((key) => Object.hasOwn(b, key) && same(a[key], b[key]))
-}

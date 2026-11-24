@@ -1,14 +1,5 @@
 export { elementId, readElementId, readSlideId, shapeOf, slideId, type ElementId, type SlideId } from "./element-id.js"
-export {
-  appendIndex,
-  indexDue,
-  indexKeys,
-  readIndexPage,
-  type DeckIndex,
-  type IndexElement,
-  type IndexPage,
-  type SlideSize,
-} from "./deck-index.js"
+export { type DeckIndex, type IndexElement, type SlideSize } from "./deck-index.js"
 export {
   designKeys,
   roles,
@@ -16,21 +7,14 @@ export {
   templateFonts,
   type Design,
   type DesignKey,
-  type ElementRead,
-  type FillRead,
-  type GlowRead,
-  type RecolorRead,
-  type CropRead,
   type Palette,
   type Read,
   type Role,
-  type ShadowRead,
   type Shown,
   type Source,
   type TemplateFont,
-  type TraitReads,
 } from "./design.js"
-export { readBox, type Box } from "./box.js"
+export { type Box } from "./box.js"
 export { type FieldEdit, type TraitPatch } from "./trait-patch.js"
 export type { FieldName, FieldValue, TraitName, TraitValue } from "./traits.js"
 export type { Alpha } from "./value-kind.js"
@@ -56,10 +40,10 @@ export {
 } from "./trait-border.js"
 export { anchors, autofits, mostColumns, verticals } from "./trait-body.js"
 export { adjustLimit, presetAdjusts, presets } from "./trait-geometry.js"
-export { outlineOf, route, routed, siteTie, type Outline, type Tie } from "./connector.js"
+export { route, routed, type Outline, type Tie } from "./connector.js"
 export { type Spot } from "./preset-sites.js"
 export { alignments } from "./trait-box.js"
-export { pastedMedia, type PastedLayers } from "./pasted-layers.js"
+export { type PastedLayers } from "./pasted-layers.js"
 export {
   elementCommand,
   openingIcon,
@@ -71,7 +55,6 @@ export {
 export { elementStacks, type ElementStack } from "./element-stack.js"
 export { groupCommand, groupNode, madeGroup, plainGroup, type Member } from "./element-group.js"
 export { openingPlace, throughGroup, type Place } from "./group-place.js"
-export { fittedPlace } from "./group-space.js"
 export { layoutFromFile } from "./frame-marker.js"
 export {
   foldSlides,

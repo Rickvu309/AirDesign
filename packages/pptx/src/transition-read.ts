@@ -1,7 +1,7 @@
 import type { TransitionValue } from "@airdesign/document"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8 } from "./package-bytes.js"
-import { pushSide, sideOf, speedDuration, speeds, type Side } from "./transition-map.js"
+import { pushSide, sideOf, speedDuration, type Side } from "./transition-map.js"
 
 export type Arrival = { readonly state: "value"; readonly value: TransitionValue } | { readonly state: "kept" }
 
@@ -12,8 +12,6 @@ export type PlayedTransition = {
   readonly direction: string | null
   readonly duration: number
 }
-
-export type Playback = { readonly transition: PlayedTransition | null; readonly advance: number | null }
 
 type Advance = { readonly click: true } | { readonly delay: number }
 
@@ -167,57 +165,4 @@ export function readArrival(bytes: Uint8Array | undefined): Arrival {
   if (blocks.length > 1) return { state: "kept" }
   if (block.kind === "mc:AlternateContent") return readMorph(document.elements, block)
   return readEffect(document.elements, block)
-}
-
-function playedKind(kind: string): PlayedKind | null {
-  if (kind === "p:fade") return "fade"
-  if (kind === "p:push") return "push"
-  if (kind === "p:wipe") return "wipe"
-  if (kind === "p:cover") return "cover"
-  if (kind === "p:pull") return "pull"
-  return null
-}
-
-function playedDuration(transition: MarkupElement): number {
-  const exact = Number(attr(transition, "p14:dur"))
-  if (Number.isFinite(exact) && exact > 0) return exact
-  return speeds[attr(transition, "spd") ?? "fast"] ?? speeds.fast!
-}
-
-function playedAdvance(transition: MarkupElement): number | null {
-  const time = whole(attr(transition, "advTm"))
-  return time === null ? null : time
-}
-
-export function readPlayback(bytes: Uint8Array | undefined): Playback {
-  const empty: Playback = { transition: null, advance: null }
-  if (bytes === undefined) return empty
-  const document = markupDocument(bytes)
-  if (!document.wellFormed) return empty
-  const blocks = transitionBlocks(document.elements)
-  const block = blocks[0]
-  if (block === undefined || blocks.length > 1) return empty
-  if (block.kind === "mc:AlternateContent") {
-    const found = morphOf(document.elements, block)
-    if (found === null) return empty
-    const morph = { kind: "morph" as const, direction: null, duration: playedDuration(found.transition) }
-    return { transition: morph, advance: playedAdvance(found.transition) }
-  }
-  if (block.kind !== "p:transition") return empty
-  const effects = children(document.elements, block).flatMap((kid) => {
-    const kind = playedKind(kid.kind)
-    return kind === null ? [] : [{ kind, kid }]
-  })
-  const effect = effects.length === 1 ? effects[0] : undefined
-  const blocked =
-    effect?.kind === "fade" && (attr(effect.kid, "thruBlk") === "1" || attr(effect.kid, "thruBlk") === "true")
-  const transition =
-    effect === undefined || blocked
-      ? null
-      : {
-          kind: effect.kind,
-          direction: effect.kind === "fade" ? null : (attr(effect.kid, "dir") ?? "l"),
-          duration: playedDuration(block),
-        }
-  return { transition, advance: playedAdvance(block) }
 }

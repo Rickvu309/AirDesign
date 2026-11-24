@@ -1,21 +1,12 @@
-import { markupDocument, spliceBytes, type MarkupElement } from "./element-span.js"
+import { spliceBytes, type MarkupElement } from "./element-span.js"
 import { attributeEdit } from "./markup-attribute.js"
 import { partBytes, requireMarkup } from "./part-markup.js"
 import { whole, type TraitXml } from "./xml-codec.js"
-import { slideAddresses } from "./package-address.js"
-import { readPlayback, type PlayedTransition } from "./transition-read.js"
+import { type PlayedTransition } from "./transition-read.js"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
 export type SlideTransition = PlayedTransition
-
-export type SlideShow = {
-  readonly slide: string
-  readonly part: string
-  readonly hidden: boolean
-  readonly transition: SlideTransition | null
-  readonly advance: number | null
-}
 
 function attr(element: MarkupElement, name: string): string | undefined {
   return element.attributes.find((attribute) => attribute.name === name)?.value
@@ -42,22 +33,4 @@ export const showXml: TraitXml<"show"> = {
       write: (parts, at, skipped) => writeSkipped(parts, at.part, skipped),
     }),
   },
-}
-
-export function readShows(parts: Parts): readonly SlideShow[] {
-  return slideAddresses(parts).flatMap(({ slide, part }) => {
-    const bytes = parts.get(part)
-    if (bytes === undefined) return []
-    const document = markupDocument(bytes)
-    const playback = readPlayback(bytes)
-    return [
-      {
-        slide,
-        part,
-        hidden: slideSkipped(document.elements[0]),
-        transition: playback.transition,
-        advance: playback.advance,
-      },
-    ]
-  })
 }

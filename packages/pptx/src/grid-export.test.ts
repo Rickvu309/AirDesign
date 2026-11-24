@@ -7,7 +7,6 @@ import { orderedParts } from "./slide-order-route.js"
 import { sectionListFailures } from "./section-check.js"
 import { readSections } from "./section-read.js"
 import { indexPackage } from "./index-package.js"
-import { slideNumbering } from "./slide-numbering.js"
 
 const heatPumps = () =>
   process.getBuiltinModule("node:fs").readFileSync(process.cwd() + "/scripts/pptx-fixtures/doe-heat-pumps.pptx")
@@ -112,34 +111,4 @@ it("materializes modern anchored births and their guarded undo without grid part
   expect(out.get("ppt/slides/slide3.xml")).toBeDefined()
   expect(out.get("ppt/slides/slide4.xml")).toBeDefined()
   expect([...out.keys()].filter((key) => key.includes("grid"))).toEqual([])
-})
-
-it("numbers each slide within its slide group, across the lines of a wrapped section", async () => {
-  const { parts, file, sections } = await heatPumpDeck()
-  const numbers = slideNumbering(parts)
-  expect(numbers.get(file[11]!)).toEqual({ number: 12, total: 41, groupNumber: 11 })
-  expect(numbers.get(file[29]!)).toEqual({ number: 30, total: 41, groupNumber: 1 })
-  const edit: SlideCommand = { slide: "move-many", grid: 3, ids: [file[29]!], after: file[28]!, row: "same" }
-  const joined = slideNumbering(
-    orderedParts(parts, { file, sectionStarts: sections.map((run) => run[0]!), order: [edit] }),
-  )
-  expect(numbers.get(file[30]!)?.groupNumber).toBe(2)
-  expect(joined.get(file[29]!)?.groupNumber).toBe(29)
-  expect(joined.get(file[30]!)?.groupNumber).toBe(1)
-})
-
-it("numbers slides within their slide groups after a version two edit", async () => {
-  const original = process
-    .getBuiltinModule("node:fs")
-    .readFileSync(process.cwd() + "/scripts/pptx-fixtures/sections-before.pptx")
-  const parts = await readParts(original)
-  const file = [slideId("256"), slideId("257")]
-  const id = slideId("258")
-  const edit = { slide: "add", grid: 2, row: "new", id, after: file[0]!, layout: file[0]! } as const
-  const state = { file, sectionStarts: file, order: [edit] }
-  expect([...slideNumbering(orderedParts(parts, state))]).toEqual([
-    [file[0], { number: 1, total: 3, groupNumber: 1 }],
-    [file[1], { number: 2, total: 3, groupNumber: 1 }],
-    [id, { number: 3, total: 3, groupNumber: 1 }],
-  ])
 })
