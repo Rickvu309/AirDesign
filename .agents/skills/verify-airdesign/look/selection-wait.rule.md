@@ -1,3 +1,3 @@
 # Wait for the new layer when one layer was already selected
 
-Use `toHaveAttribute("data-selection", expectedNode)` when an edit changes the selected layer. A count of one can pass while the previous layer is still selected. The state tests flag repeated counts of one on the canvas selection in the same state.
+When an edit changes the selected layer, wait for that layer. A count of one can pass while the previous layer is still selected. `.agents/skills/verify-airdesign/look/states.test.mjs` fails a state that counts one canvas selection more than once, and its message names toHaveAttribute("data-selection", expectedNode).
