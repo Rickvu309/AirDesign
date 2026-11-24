@@ -377,6 +377,27 @@ describe("timeline", () => {
     const words = childrenOf(doom, childrenOf(doom, childrenOf(doom, lane!.id)[0]!.id)[1]!.id)
     expect(words.map((node) => propOf(node, "text")?.style)).toEqual(["label", "heading"])
   })
+
+  it("sits centred on the slide at the width of its words, not against the left edge", () => {
+    const box = propOf(root, "box")!
+    expect(box.w).toBeLessThan(0.5 * 1920)
+    expect(Math.abs(box.x + box.w / 2 - 960)).toBeLessThanOrEqual(1)
+  })
+
+  it("keeps the explicit box's corner and width", () => {
+    const placed = build(
+      agentDeck(),
+      add({
+        kind: "timeline",
+        box: { x: 200, y: 300, w: 1200, h: 500 },
+        items: [
+          { value: "Q1", title: "Plan" },
+          { value: "Q2", title: "Build" },
+        ],
+      }),
+    )
+    expect(propOf(made(placed), "box")).toMatchObject({ x: 200, y: 300, w: 1200 })
+  })
 })
 
 describe("flow", () => {
