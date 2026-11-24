@@ -5,7 +5,7 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { parse } from "yaml"
-import { ciParts, pptxPathsFile } from "./change-map.mjs"
+import { ciParts } from "./change-map.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const same = (name, actual, expected) => assert.deepEqual(actual, expected, name)
@@ -100,14 +100,21 @@ try {
 
   const spec = pullRequest(["tests/browser/editor-presenting.spec.ts"])
   same(
-    "69807ec35, one browser spec, runs one browser job and skips PowerPoint checks",
+    "69807ec35, one browser spec, runs one browser job and skips the PDF check",
     [partsOn(spec), jobsOf(spec), JSON.parse(spec.check).at(-1).browserSpecs, spec["unit-tests"]],
     [["source", "browser"], ["source", "browser"], ["tests/browser/editor-presenting.spec.ts"], "[]"],
   )
 
+  const pdf = pullRequest(["tests/browser/export-pdf.spec.ts"])
+  same(
+    "a PDF export spec change runs browser tests and checks the exported file",
+    [pdf.browser, pdf.pdf],
+    ["true", "true"],
+  )
+
   const fixture = pullRequest(["tests/browser/font-widths.ts"])
   same(
-    "a browser helper runs its importing specs and skips the other browser and PowerPoint work",
+    "a browser helper runs its importing specs and skips the other browser and PDF work",
     [partsOn(fixture), jobsOf(fixture), JSON.parse(fixture.check).at(-1).browserSpecs],
     [["source", "browser"], ["source", "browser"], ["tests/browser/font-widths.spec.ts"]],
   )
@@ -128,15 +135,15 @@ try {
         "browser 8/8",
       ],
     )
-    same(`${file} also reaches PowerPoint`, [shared.pptx, shared.corpus], ["true", "true"])
+    same(`${file} also reaches PDF`, shared.pdf, "true")
   }
 
   const catalog = pullRequest(["packages/catalog/src/trait-wire-transition.ts"])
   same(
-    "384e45760, a catalog source file, runs its importers' unit tests and the parts the app, api and site feed, and no pptx",
+    "384e45760, a catalog source file, runs its importers' unit tests and the parts the app, api and site feed, and PDF",
     [partsOn(catalog), JSON.parse(catalog["unit-tests"])],
     [
-      ["source", "scripts", "design", "browser", "journeys"],
+      ["source", "scripts", "design", "browser", "journeys", "pdf"],
       [
         ".agents/skills/",
         "apps/api/",
@@ -164,14 +171,14 @@ try {
   )
 
   git(repo, "checkout", "-q", "--detach", start)
-  touch(["packages/oauth/src/index.ts"])
+  touch(["GLOSSARY.md"])
   const pr = git(repo, "rev-parse", "HEAD")
   git(repo, "checkout", "-q", "--detach", start)
-  touch(["packages/pptx/src/index.ts"])
+  touch(["tests/browser/export-pdf.spec.ts"])
   git(repo, "merge", "-q", "--no-ff", "-m", "merge", pr)
   same(
-    "on GitHub's merge commit the base is the first parent, so a pptx change main made since the branch started runs no pptx part",
-    partsOn(step("pull_request")).includes("pptx"),
+    "on GitHub's merge commit the base is the first parent, so a PDF spec change on main alone does not run the PDF job",
+    partsOn(step("pull_request")).includes("pdf"),
     false,
   )
 
@@ -203,7 +210,6 @@ same("the action exposes the same outputs", Object.keys(action.outputs), [
   "unit-tests",
   "check",
 ])
-same("no step reads the old pptx-changed action", JSON.stringify(workflow).includes("pptx-changed"), false)
 same("the workflow keeps no second copy of a path list", JSON.stringify(workflow).includes("git diff --quiet"), false)
 
 const check = workflow.jobs.check
@@ -240,7 +246,6 @@ same(
 )
 
 const gated = {
-  corpus: "${{ !cancelled() && needs.changes.outputs.corpus != 'false' }}",
   journeys: "${{ !cancelled() && github.event_name != 'push' && needs.changes.outputs.journeys != 'false' }}",
   "design-findings":
     "${{ !cancelled() && github.event_name == 'pull_request' && needs.changes.outputs.design != 'false' }}",
@@ -261,24 +266,15 @@ const runs = (condition, said, event = "pull_request") =>
       .replaceAll("github.event_name", JSON.stringify(event))
       .replaceAll(/needs\.changes\.outputs\.([\w-]+)/g, (_, part) => JSON.stringify(said[part] ?? ""))}`,
   )()
-same("a missing corpus output runs the corpus", runs(gated.corpus, {}), true)
-same("corpus false skips the corpus", runs(gated.corpus, { corpus: "false" }), false)
 same("journeys do not run on a push to main", runs(gated.journeys, { journeys: "true" }, "push"), false)
 same("a missing check list does not skip check", runs(check.if, {}), true)
-
-const pptxSteps = check.steps.filter((step) => (step.if ?? "").includes("matrix.part == 'pptx'"))
-same(
-  "the pptx job asks nothing more of the diff, since changes leaves it out when nothing it judges changed",
-  pptxSteps.some((step) => /steps\.pptx/.test(step.if)),
-  false,
-)
 
 const verdict = workflow.jobs.ci.steps.find((step) => step.env?.RESULTS !== undefined)
 same("the verdict reads every result and the event", verdict.env, {
   RESULTS: "${{ toJSON(needs) }}",
   EVENT_NAME: "${{ github.event_name }}",
 })
-same("ci waits for every part", workflow.jobs.ci.needs.toSorted(), ["changes", "check", "corpus", "journeys"])
+same("ci waits for every part", workflow.jobs.ci.needs.toSorted(), ["changes", "check", "journeys"])
 const said = (parts, jobs = checkJobs.filter((job) => parts[job.part] === "true")) => ({
   ...Object.fromEntries(ciParts.map((part) => [part, parts[part] ?? "false"])),
   check: JSON.stringify(jobs),
@@ -294,20 +290,26 @@ const all = Object.fromEntries(ciParts.map((part) => [part, "true"]))
 const ran = (outputs, results = {}) => ({
   changes: { result: "success", outputs },
   check: { result: "success" },
-  corpus: { result: "success" },
   journeys: { result: "success" },
   ...results,
 })
 const docsOnly = said({ source: "true", scripts: "true" })
 same("ci passes when every part ran and passed", passes(ran(said(all))), true)
 same(
-  "ci passes a docs-only change whose corpus and journeys changes skipped",
-  passes(ran(docsOnly, { corpus: { result: "skipped" }, journeys: { result: "skipped" } })),
+  "ci passes a docs-only change whose journeys changes skipped",
+  passes(ran(docsOnly, { journeys: { result: "skipped" } })),
   true,
 )
 same(
-  "ci fails a skipped corpus that changes said must run",
-  passes(ran(said(all), { corpus: { result: "skipped" } })),
+  "ci fails when changes required PDF but omitted the PDF job",
+  passes(
+    ran(
+      said(
+        all,
+        checkJobs.filter(({ part }) => part !== "pdf"),
+      ),
+    ),
+  ),
   false,
 )
 same(
@@ -323,12 +325,8 @@ same(
 same(
   "ci passes a skipped check job only when changes listed no check job",
   [
-    passes(
-      ran(said({}), { check: { result: "skipped" }, corpus: { result: "skipped" }, journeys: { result: "skipped" } }),
-    ),
-    passes(
-      ran(docsOnly, { check: { result: "skipped" }, corpus: { result: "skipped" }, journeys: { result: "skipped" } }),
-    ),
+    passes(ran(said({}), { check: { result: "skipped" }, journeys: { result: "skipped" } })),
+    passes(ran(docsOnly, { check: { result: "skipped" }, journeys: { result: "skipped" } })),
   ],
   [true, false],
 )
@@ -352,15 +350,10 @@ same(
 )
 same("ci fails when changes gave no check list", passes(ran({ ...said(all), check: "" })), false)
 same("ci fails when a check job failed", passes(ran(said(all), { check: { result: "failure" } })), false)
-same("ci fails when the corpus was cancelled", passes(ran(said(all), { corpus: { result: "cancelled" } })), false)
 same(
   "ci fails when the journeys failed or were cancelled",
   ["failure", "cancelled"].map((result) => passes(ran(said(all), { journeys: { result } }))),
   [false, false],
 )
-
-const pathsListed = fs.readFileSync(path.join(root, pptxPathsFile), "utf8").split("\n").filter(Boolean)
-same("the pptx list holds each path once", new Set(pathsListed).size, pathsListed.length)
-for (const entry of pathsListed) same(`${entry} exists`, fs.existsSync(path.join(root, entry)), true)
 
 console.log("ci-changes: all assertions passed")

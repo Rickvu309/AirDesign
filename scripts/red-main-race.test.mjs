@@ -11,15 +11,6 @@ const issueTitles = (fake) =>
   fake.calls
     .filter(({ args }) => args[0] === "issue" && args[1] === "create")
     .map(({ args }) => args[args.indexOf("--title") + 1])
-const redEvent = { id: 44887944405, event: "push", branch: "main", sha: skillsHead, conclusion: "failure" }
-const unreachable = recorder([...mainUpTo(november, skillsHead), raceIssue])
-await redMainBot({ repository, event: redEvent, io: io(unreachable) })
-same(
-  "run 44887944405: a skills and spec-sync commit cannot reach the PowerPoint export job, so control-link is recorded at once",
-  [issueTitles(unreachable), unreachable.calls.some(({ who }) => who === "owner")],
-  [[controlLinkRace], false],
-)
-
 const afterConflict = recorder([...mainWith(november, november.runs), raceIssue])
 await redMainBot({
   repository,

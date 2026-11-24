@@ -1,6 +1,6 @@
 ---
 name: verify-airdesign
-description: "Prove an AirDesign change is right before you hand it over. Drive the real app (apps/web with the real apps/api on its own Postgres) the way a user does and read what saved, attack the bad moment, check the TLA+ rules and their replays, prove a PowerPoint export against its original, judge each screen as a design, and time the editor. Use for any change a person sees or the API answers, and when a change touches edit order, undo, saving and the save status, offline replay, two tabs, agent turns and runs, slides and elements, usage, OAuth or deck ownership, or when a spec or replay fails."
+description: "Prove an AirDesign change is right before you hand it over. Drive the real app (apps/web with the real apps/api on its own Postgres) the way a user does and read what saved, attack the bad moment, check the TLA+ rules and their replays, check the exported PDF, judge each screen as a design, and time the editor. Use for any change a person sees or the API answers, and when a change touches edit order, undo, saving and the save status, offline replay, two tabs, agent turns and runs, slides and elements, usage, OAuth or deck ownership, or when a spec or replay fails."
 ---
 
 # Verify AirDesign
@@ -20,7 +20,7 @@ Is my work right?
 ├─ A. Correct: does it do the right thing?
 │   ├─ Works    use it like a person, read what saved       Works
 │   ├─ Holds    survives bad timing and any event order     Holds, rules/README.md
-│   └─ Exports  the PowerPoint comes out lossless           Exports
+│   └─ Exports  the PDF keeps its pages, fonts and text           Exports
 └─ B. Good to use: would a person want it?
     ├─ Looks    the screen matches its design, no faults    Looks
     └─ Fast     no slower than main                         Fast
@@ -165,8 +165,7 @@ Attack the moment your change could break: a lost or late server answer, a reloa
 
 ### Exports
 
-- Prove an export against its original with `node scripts/deck-diff.mjs original.pptx export.pptx --allow <part>`: it counts the byte-identical parts, shows each changed part's XML lines with their shape paths, and exits 1 when a part outside `--allow` changed, was added or removed, or the part order moved. `--json` prints the same as data. Run `pnpm build` first.
-- Score a painted slide against its reference image with `node scripts/slide-diff.mjs reference.png painted.png [--heatmap out.png] [--json]`: it prints the mean similarity, the worst 32 by 32 tile with its position, and the share of changed pixels, and exits 1 when the slide does not match. The heatmap tints each region red where the paint differs and boxes the worst tile. The painted image is scaled to the reference's size first.
+Run `pnpm check:pdf` to export the sample deck through the editor and check the file with Poppler. See `scripts/pdf-check.rule.md`.
 
 ## B. Good to use
 

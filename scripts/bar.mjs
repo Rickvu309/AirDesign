@@ -12,20 +12,6 @@ import { baseFault } from "./pull-base.mjs"
 import { measuredLive } from "./metrics.mjs"
 import { titleVerdict } from "./title.mjs"
 
-const fixturesFolder = "scripts/pptx-fixtures/"
-const casesFile = "scripts/pptx-fixtures/cases.json"
-const proofFile = "scripts/pptx-fixtures/judge-proof.json"
-const corpusFile = "scripts/pptx-fixtures/corpus.json"
-
-export const replacedFixtures = (files) =>
-  files
-    .filter(
-      (file) =>
-        file.status !== "added" && file.name !== casesFile && file.name !== proofFile && file.name !== corpusFile,
-    )
-    .flatMap((file) => [file.name, file.before].filter((name) => name?.startsWith(fixturesFolder)))
-    .filter((name) => !name.endsWith(".md"))
-
 const withoutReferences = (tsconfig) => JSON.stringify({ ...tsconfig, references: undefined })
 
 export const sameButReferences = (left, right) =>
@@ -57,12 +43,7 @@ export const oldMetricsFile = "sticks.json"
 
 export const oldMetricNames = {
   "known faults": "known-failures",
-  "real decks in the PowerPoint check": "corpus-size",
-  "planted breaks the judge catches": "fault-detection",
-  "routes pptx writes": "export-coverage",
-  "route writes that pass": "export-verified",
   "check seconds": "ci-duration",
-  "PowerPoint check seconds": "pptx-check-duration",
 }
 
 export const metricsFrom = (read) => {
@@ -72,8 +53,6 @@ export const metricsFrom = (read) => {
   if (old === undefined) return undefined
   return Object.fromEntries(Object.entries(old).map(([name, metric]) => [oldMetricNames[name] ?? name, metric]))
 }
-
-const countsProof = new Set(["fault-detection"])
 
 const directionOf = (before, after) => ((before.better ?? after.better) === "lower" ? -1 : 1)
 
@@ -101,7 +80,6 @@ const metricReason = (name, before, after) => {
   if (before.better !== undefined && after.better !== before.better) {
     return `The direction of ${name} went from ${before.better} to ${after.better}.`
   }
-  if (countsProof.has(name)) return undefined
   const direction = directionOf(before, after)
   const ahead = before.goal - before.now
   const metGoal = ahead !== 0 || (after.now - after.goal) * direction >= 0
@@ -119,32 +97,7 @@ const metricReason = (name, before, after) => {
     : `${name} went from ${before.now} to ${after.now}, away from its goal of ${before.goal}.`
 }
 
-export const lostCases = (baseCases, headCases) => {
-  const kept = new Set(headCases.map((row) => JSON.stringify(row)))
-  return baseCases.filter((row) => !kept.has(JSON.stringify(row))).map((row) => String(row.name))
-}
-
-export const lostDecks = (baseCorpus, headCorpus) => {
-  const kept = new Map(headCorpus.map((row) => [row.name, row.sha256]))
-  return baseCorpus.filter((row) => kept.get(row.name) !== row.sha256).map((row) => String(row.name))
-}
-
-export const lostKinds = (baseProof, headProof) =>
-  Object.keys(baseProof).filter(
-    (kind) => headProof[kind] === undefined || (baseProof[kind] === "caught" && headProof[kind] !== "caught"),
-  )
-
-export const ownerReasons = ({
-  baseMetrics,
-  headMetrics,
-  changedFiles,
-  changedScripts,
-  changedCases = [],
-  changedDecks = [],
-  changedFixtures = [],
-  changedKinds = [],
-  lowered = [],
-}) => {
+export const ownerReasons = ({ baseMetrics, headMetrics, changedFiles, changedScripts, lowered = [] }) => {
   const reasons = []
   for (const name of new Set([...Object.keys(baseMetrics), ...Object.keys(headMetrics)])) {
     const text = metricReason(name, baseMetrics[name], headMetrics[name])
@@ -153,30 +106,6 @@ export const ownerReasons = ({
   for (const { file, text } of lowered) reasons.push({ about: `file ${file}`, text, lowers: true })
   for (const file of changedFiles.filter(judges)) {
     reasons.push({ about: `file ${file}`, text: `${file} decides what ci checks.`, lowers: false })
-  }
-  for (const file of changedFixtures) {
-    reasons.push({
-      about: `file ${file}`,
-      text: `${file} is a deck the PowerPoint check already judges.`,
-      lowers: true,
-    })
-  }
-  for (const name of changedCases) {
-    reasons.push({ about: `case ${name}`, text: `The PowerPoint case ${name} was changed or removed.`, lowers: true })
-  }
-  for (const name of changedDecks) {
-    reasons.push({
-      about: `deck ${name}`,
-      text: `The corpus deck ${name} was removed or its sha256 changed.`,
-      lowers: true,
-    })
-  }
-  for (const name of changedKinds) {
-    reasons.push({
-      about: `break ${name}`,
-      text: `The judge proof no longer records ${name} as caught.`,
-      lowers: true,
-    })
   }
   for (const file of changedScripts) {
     reasons.push({
@@ -267,21 +196,6 @@ const reader = (text, fork, head) => (file) => ({
   },
 })
 
-const casesAt = (json, sha) => {
-  const cases = json(sha, casesFile)
-  return Array.isArray(cases) ? cases : []
-}
-
-const corpusAt = (json, sha) => {
-  const corpus = json(sha, corpusFile)
-  return Array.isArray(corpus) ? corpus : []
-}
-
-const proofAt = (json, sha) => {
-  const proof = json(sha, proofFile)
-  return proof !== null && typeof proof === "object" && !Array.isArray(proof) ? proof : {}
-}
-
 const metricsAt = (json, sha) => metricsFrom((file) => json(sha, file))
 
 export const readReasons = ({ text, fork, head, listed }) => {
@@ -289,7 +203,7 @@ export const readReasons = ({ text, fork, head, listed }) => {
   const changedFiles = listed.flatMap((file) => [file.name, file.before].filter((name) => name != null))
   const baseMetrics = metricsAt(json, fork)
   if (baseMetrics === undefined) throw new Error("metrics.json could not be read where this branch left main.")
-  const modelPackage = "packages/document"
+  const modelPackage = "packages/doom"
   const generated = new Set()
   for (const file of listed) {
     const model = `${modelPackage}/${file.name.slice(file.name.lastIndexOf("/") + 1)}`
@@ -311,10 +225,6 @@ export const readReasons = ({ text, fork, head, listed }) => {
     baseMetrics,
     headMetrics: metricsAt(json, head) ?? {},
     changedFiles: changedFiles.filter((file) => !generated.has(file)),
-    changedFixtures: replacedFixtures(listed),
-    changedCases: changedFiles.includes(casesFile) ? lostCases(casesAt(json, fork), casesAt(json, head)) : [],
-    changedDecks: changedFiles.includes(corpusFile) ? lostDecks(corpusAt(json, fork), corpusAt(json, head)) : [],
-    changedKinds: changedFiles.includes(proofFile) ? lostKinds(proofAt(json, fork), proofAt(json, head)) : [],
     lowered: listed.flatMap((file) =>
       lowerings(file, reader(text, fork, head)).map((said) => ({ file: file.name, text: said })),
     ),

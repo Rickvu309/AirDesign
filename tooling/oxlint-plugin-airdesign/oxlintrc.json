@@ -28,7 +28,6 @@
     ],
     "airdesign/no-byte-counter": "error",
     "airdesign/no-comments": "error",
-    "airdesign/no-element-id-cast": "warn",
     "airdesign/no-key-while-composing": "error",
     "airdesign/no-env-outside-entry": "error",
     "airdesign/no-field-edge": "error",
@@ -38,9 +37,7 @@
     "airdesign/no-raw": "error",
     "airdesign/no-testing-import": "error",
     "airdesign/no-route-literal": "error",
-    "airdesign/no-run-literal": "error",
     "airdesign/no-stamp-literal": "error",
-    "airdesign/no-wall-time-metrics": "error",
-    "airdesign/no-xml-search": "error"
+    "airdesign/no-wall-time-metrics": "error"
   }
 }

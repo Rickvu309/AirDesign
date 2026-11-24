@@ -136,13 +136,12 @@ describe("the property list", () => {
       expect(Object.values(accepts).some((own) => (own as readonly string[]).includes(name))).toBe(true)
   })
 
-  it("gives each entry its control, agent description, PowerPoint answer and conflict rule", () => {
+  it("gives each entry its control, agent description and conflict rule", () => {
     for (const name of names) {
       const spec = props[name]
       expect(typeof spec.read).toBe("function")
       expect(["none", "number", "color", "paints", "text", "choice", "toggle", "box", "custom"]).toContain(spec.control)
       expect(spec.describe === null || (typeof spec.describe === "string" && spec.describe.length > 0)).toBe(true)
-      expect(["native", "picture", "dropped"]).toContain(spec.pptx)
       expect(["last", "base"]).toContain(spec.conflict)
     }
   })

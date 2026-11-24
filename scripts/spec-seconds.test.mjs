@@ -55,7 +55,6 @@ const test = (file, duration, more = {}) => ({
   duration,
   status: "passed",
   expectedStatus: "passed",
-  exported: false,
   ...more,
 })
 const measured = measuredSeconds({
@@ -63,7 +62,7 @@ const measured = measuredSeconds({
   tests: [
     test("kept.spec.ts", 15_000),
     test("slower.spec.ts", 25_000),
-    test("new.spec.ts", 3_000, { exported: true }),
+    test("new.spec.ts", 3_000),
     test("new.spec.ts", 1_000),
     test("partial.spec.ts", 1_000),
     test("red.spec.ts", 1_000, { status: "failed" }),
@@ -73,21 +72,18 @@ assert.deepEqual(
   measured,
   {
     seconds: { "kept.spec.ts": 15, "slower.spec.ts": 25, "new.spec.ts": 4 },
-    export: { "kept.spec.ts": null, "slower.spec.ts": null, "new.spec.ts": 3 },
   },
   "only files that ran whole and passed are measured",
 )
 const refreshed = foldedSeconds({
   record: {
     seconds: { "kept.spec.ts": 10, "slower.spec.ts": 10, "partial.spec.ts": 10, "red.spec.ts": 10, "gone.spec.ts": 5 },
-    export: { "kept.spec.ts": 4, "gone.spec.ts": 2 },
   },
   measured,
   exists: (name) => name !== "gone.spec.ts",
 })
 assert.deepEqual(refreshed, {
   seconds: { "kept.spec.ts": 10, "new.spec.ts": 4, "partial.spec.ts": 10, "red.spec.ts": 10, "slower.spec.ts": 25 },
-  export: { "new.spec.ts": 3 },
 })
 
 for (const argv of [["test"], ["test", "tests/browser/home.spec.ts"], ["test", "--workers=2"]]) {

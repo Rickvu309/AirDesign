@@ -99,7 +99,7 @@ const calledParts = fs
   .flatMap((file) => [...read(`.github/workflows/${file}`).matchAll(/pnpm check --part=([\w-]+)$/gm)])
   .map(([, part]) => part)
 const ranParts = [...matrixParts, ...calledParts]
-assert.deepEqual(ranParts.toSorted(), [...checkSteps.parts(), "pptx"].toSorted(), "ci.yml parts")
+assert.deepEqual(ranParts.toSorted(), [...checkSteps.parts(), "pdf"].toSorted(), "ci.yml parts")
 const queueScript = question.run
 const queueCase = queueScript.match(/case "\$PART" in([\s\S]*?)^\s*esac/m)?.[1] ?? ""
 const queueParts = [
@@ -108,7 +108,7 @@ const queueParts = [
     parts.split(/\s*\|\s*/),
   ).flat(),
 ]
-assert.deepEqual([...new Set(queueParts)].toSorted(), [...matrixParts, "corpus"].toSorted(), "queued/action.yml parts")
+assert.deepEqual([...new Set(queueParts)].toSorted(), matrixParts.toSorted(), "queued/action.yml parts")
 
 const ciParts = [...JSON.stringify(workflow).matchAll(/matrix\.part\s*[!=]=\s*'([\w-]+)'|--part=([\w-]+)/g)].map(
   ([, comparison, flag]) => comparison ?? flag,

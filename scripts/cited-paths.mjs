@@ -6,7 +6,6 @@ import { drifted } from "./spec-sync.mjs"
 import { timingRecords } from "./timings.mjs"
 
 export const glossaryFile = "tooling/oxlint-plugin-airdesign/glossary.json"
-export const pathListFiles = [".github/actions/ci-changes/pptx-paths.txt"]
 
 const records = [/(^|\/)[\w-]*fixtures\//, /^docs\/adr\//, /^scripts\/red-main-drill\.mjs$/]
 const measuredRecords = timingRecords.map(({ record }) => record)
@@ -162,14 +161,6 @@ export const glossaryFaults = (glossary, read) =>
         ]
   })
 
-export const pathListFaults = (file, source, index) =>
-  source.split("\n").flatMap((line, at) => {
-    const cited = line.trim()
-    return cited === "" || exists(index, cited)
-      ? []
-      : [`${file}:${at + 1}: ${cited} names no file or folder in the repo. ${fix}.`]
-  })
-
 export const coverFaults = (moved) =>
   moved
     .filter((entry) => entry.reason !== "changed")
@@ -195,7 +186,6 @@ export const citedPathFaults = (root) => {
       .flatMap((file) => codeFaults(file, read(file), index)),
 
     ...glossaryFaults(JSON.parse(read(glossaryFile)), read),
-    ...pathListFiles.flatMap((file) => pathListFaults(file, read(file), index)),
     ...coverFaults(drifted(root)),
   ]
 }

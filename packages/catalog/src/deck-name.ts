@@ -9,8 +9,3 @@ export function readDeckName(raw: unknown): string | undefined {
   if (size < 1 || size > limits.name) return undefined
   return name
 }
-
-export function deckName(fileName: string): string {
-  const stem = fileName.replace(/\.pptx$/i, "").trim()
-  return readDeckName([...stem].slice(0, limits.name).join("")) ?? ""
-}

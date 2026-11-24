@@ -27,8 +27,7 @@ jobs:
       design: ${{ steps.map.outputs.design }}
       browser: ${{ steps.map.outputs.browser }}
       journeys: ${{ steps.map.outputs.journeys }}
-      pptx: ${{ steps.map.outputs.pptx }}
-      corpus: ${{ steps.map.outputs.corpus }}
+      pdf: ${{ steps.map.outputs.pdf }}
       model-check: ${{ steps.map.outputs.model-check }}
       journey-names: ${{ steps.map.outputs.journey-names }}
       unit-tests: ${{ steps.map.outputs.unit-tests }}
@@ -95,7 +94,7 @@ jobs:
           restore-keys: spec-results-
       - if: steps.work.outputs.needed == 'true'
         uses: ./.github/actions/postgres
-      - if: matrix.part != 'pptx' && steps.work.outputs.needed == 'true'
+      - if: matrix.part != 'pdf' && steps.work.outputs.needed == 'true'
         run: pnpm check --part=${{ matrix.part }}${{ matrix.shard && format(' --shard={0}', matrix.shard) || '' }}
         env:
           AIRDESIGN_UNIT_TESTS: ${{ matrix.unitTests || needs.changes.outputs.unit-tests }}
@@ -140,48 +139,14 @@ jobs:
         with:
           path: ~/.cache/airdesign/spec-results
           key: spec-results-${{ hashFiles('specs/**') }}
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        continue-on-error: true
-        id: pptx-tools
-        with:
-          path: ~/.cache/pptx-tools
-          key: pptx-tools-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
-        id: runner-image
-        run: echo "key=pptx-renders-${ImageOS}-${ImageVersion}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5" >> "$GITHUB_OUTPUT"
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        continue-on-error: true
-        with:
-          path: ~/.cache/airdesign/pptx-renders
-          key: ${{ steps.runner-image.outputs.key }}
-          restore-keys: pptx-renders-
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        continue-on-error: true
-        with:
-          path: ~/.cache/airdesign/pptx-validations
-          key: pptx-validations-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-${{ github.run_id }}
-          restore-keys: pptx-validations-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
-        run: pnpm --filter '!@airdesign/site' -r --if-present run build
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx'
-        run: pnpm check:pptx && pnpm check:pdf
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pdf'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends poppler-utils
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pdf'
+        run: pnpm build:browser
+      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pdf'
+        run: pnpm check:pdf
         env:
           AIRDESIGN_WEB_BUILT: "1"
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && !cancelled()
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        continue-on-error: true
-        with:
-          path: ~/.cache/airdesign/pptx-renders
-          key: ${{ steps.runner-image.outputs.key }}
-      - if: steps.work.outputs.needed == 'true' && matrix.part == 'pptx' && !cancelled()
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        continue-on-error: true
-        with:
-          path: ~/.cache/airdesign/pptx-validations
-          key: pptx-validations-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-${{ github.run_id }}
       - if: "!cancelled() && steps.work.outputs.needed == 'true' && (matrix.part == 'browser' || matrix.part == 'design')"
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         continue-on-error: true
@@ -206,110 +171,6 @@ jobs:
     needs: [changes, check]
     if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.changes.outputs.design != 'false' }}
     uses: ./.github/workflows/design-findings.yml
-  corpus:
-    name: corpus (${{ matrix.shard }}/2)
-    needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.corpus != 'false' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          fetch-depth: 0
-      - id: renders
-        run: echo "key=pptx-renders-corpus-${{ matrix.shard }}-${ImageOS}-${ImageVersion}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5" >> "$GITHUB_OUTPUT"
-      - id: work
-        uses: ./.github/actions/queued
-        with:
-          part: corpus
-      - if: steps.work.outputs.needed == 'true'
-        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - if: steps.work.outputs.needed == 'true'
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-      - if: steps.work.outputs.needed == 'true'
-        run: pnpm install --frozen-lockfile
-      - if: steps.work.outputs.needed == 'true'
-        uses: ./.github/actions/playwright
-      - if: steps.work.outputs.needed == 'true'
-        run: pnpm --filter '!@airdesign/site' -r --if-present run build
-      - if: steps.work.outputs.needed == 'true'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        continue-on-error: true
-        with:
-          path: ~/.cache/pptx-tools
-          key: pptx-tools-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-5
-      - if: steps.work.outputs.needed == 'true'
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        continue-on-error: true
-        id: work-cache
-        with:
-          path: ~/.cache/airdesign/pptx-renders
-          key: ${{ steps.renders.outputs.key }}
-          restore-keys: pptx-renders-
-      - id: answers
-        run: echo "prefix=pptx-validations-corpus-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-${{ matrix.shard }}-" >> "$GITHUB_OUTPUT"
-      - if: steps.work.outputs.needed == 'true'
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        continue-on-error: true
-        with:
-          path: ~/.cache/airdesign/pptx-validations
-          key: ${{ steps.answers.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: ${{ steps.answers.outputs.prefix }}
-      - if: steps.work.outputs.needed == 'true'
-        uses: ./.github/actions/postgres
-      - if: steps.work.outputs.needed == 'true'
-        run: pnpm check:pptx:corpus --shard=${{ matrix.shard }}/2
-        env:
-          AIRDESIGN_WEB_BUILT: "1"
-      - if: github.event_name == 'merge_group' && steps.work.outputs.needed == 'true'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        continue-on-error: true
-        timeout-minutes: 2
-        with:
-          name: corpus-validations-${{ matrix.shard }}
-          path: ~/.cache/airdesign/pptx-validations
-          include-hidden-files: true
-          retention-days: 1
-      - if: steps.work.outputs.needed == 'true' && github.event_name != 'merge_group' && !cancelled()
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        continue-on-error: true
-        with:
-          path: ~/.cache/airdesign/pptx-validations
-          key: ${{ steps.answers.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
-      - if: github.event_name == 'push' && steps.work.outputs.passed == 'true'
-        id: validations
-        timeout-minutes: 2
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ steps.work.outputs.run-id }}
-        run: |
-          gh run download "$RUN_ID" -n corpus-validations-${{ matrix.shard }} -D ~/.cache/airdesign/pptx-validations
-          test -n "$(find ~/.cache/airdesign/pptx-validations -type f -print -quit)"
-          echo "files=true" >> "$GITHUB_OUTPUT"
-      - if: steps.validations.outputs.files == 'true'
-        continue-on-error: true
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: ~/.cache/airdesign/pptx-validations
-          key: ${{ steps.answers.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}
-      - if: steps.work.outputs.needed == 'true' && !cancelled()
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        continue-on-error: true
-        with:
-          path: ~/.cache/airdesign/pptx-renders
-          key: ${{ steps.renders.outputs.key }}
-      - if: failure() && github.event_name == 'push'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash scripts/red-main.sh
   journeys:
     name: journeys
     needs: changes
@@ -319,7 +180,7 @@ jobs:
       journey-names: ${{ needs.changes.outputs.journey-names }}
   ci:
     name: ci
-    needs: [check, changes, corpus, journeys]
+    needs: [check, changes, journeys]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -339,9 +200,9 @@ jobs:
           echo "$RESULTS" | jq -e --arg event "$EVENT_NAME" '.changes.outputs as $said
             | (try ($said.check | fromjson) catch null) as $ran
             | .changes.result == "success" and ($ran | type) == "array"
-            and all("source", "scripts", "design", "browser", "pptx"; . as $p | $said[$p] == "false" or any($ran[]; .part == $p))
+            and all("source", "scripts", "design", "browser", "pdf"; . as $p | $said[$p] == "false" or any($ran[]; .part == $p))
             and all(to_entries[]; .value.result == "success" or .value.result == "skipped"
-              and (.key == "check" and $ran == [] or .key == "corpus" and $said.corpus == "false"
+              and (.key == "check" and $ran == []
                 or .key == "journeys" and ($said.journeys == "false" or $event == "push")))' > /dev/null
       - if: github.event_name == 'push'
         continue-on-error: true

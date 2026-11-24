@@ -26,7 +26,7 @@ _Avoid_: text box (as a layer's name)
 
 **image**:
 A paint that shows a photo or an icon. Its source, fill mode, crop and adjustments are fields of fills: `fills.source`, `fills.mode`, `fills.crop`, `fills.recolor` and `fills.blur`. A photo on a slide is a shape whose fills hold an image, and the design panel titles it Image.
-_Avoid_: picture (PowerPoint's word, used only inside `packages/pptx`), image layer
+_Avoid_: picture, image layer
 
 **solid**:
 A fill of one color, the fill kind beside None, Gradient and Image. Its Color row picks the color.
@@ -37,15 +37,11 @@ The shape names Figma's shape tool uses. A PowerPoint shape Figma does not have 
 _Avoid_: oval, five-point star
 
 **slide group**:
-Slides kept together, held by one `slideRow` node. A PowerPoint section is one slide group.
+Slides kept together, held by one `slideRow` node.
 _Avoid_: row, section
 
-**import**:
-To make a deck from a PowerPoint file.
-_Avoid_: upload, open, convert
-
 **export**:
-To save a deck as a PowerPoint or PDF file.
+To save a deck as a PDF file.
 _Avoid_: download, save as
 
 **present**:
@@ -57,7 +53,7 @@ What the person presenting sees: the current slide, the next one, the presenter 
 _Avoid_: speaker view, notes view
 
 **presenter notes**:
-The words a person keeps under a slide for themselves. They are shown in the presenter view and never to the audience, and they export as the slide's PowerPoint notes. The code still says notes (`notes`, `<slide>.notes`) until its rename lands.
+The words a person keeps under a slide for themselves. They are shown in the presenter view and never to the audience. The code still says notes (`notes`, `<slide>.notes`) until its rename lands.
 _Avoid_: speaker notes, notes page, comments
 
 **Trash**:
@@ -93,7 +89,7 @@ Dragging a number control's name left or right to step its value. Shift steps by
 _Avoid_: slider, drag to change
 
 **strikethrough**:
-A line through text. The code calls its run flag `strike`; PowerPoint writes single strikethrough as `sngStrike`.
+A line through text. The code calls its run flag `strike`.
 
 **letter spacing**:
 Space between letters. The panel shows percent of the first run’s size; `letterSpacing` stores native `spc`, hundredths of a point.
@@ -103,7 +99,7 @@ A paragraph’s one choice of No list, Bulleted list or Numbered list. The code 
 _Avoid_: bullets (as the name of the choice)
 
 **line height**:
-The distance from one line of text to the next, in percent of PowerPoint's single line: `text.lineHeight`. PowerPoint writes it as `lnSpc`. A deck or an agent that still says `lineSpacing` is read as line height.
+The distance from one line of text to the next, in percent of PowerPoint's single line: `text.lineHeight`. A deck or an agent that still says `lineSpacing` is read as line height.
 _Avoid_: line spacing
 
 **template style**:
@@ -123,7 +119,7 @@ Where a person picks any color a field takes: a fill, border, effect, text, grad
 _Avoid_: palette, swatches, color menu
 
 **icon**:
-A Lucide drawing a person or an agent adds by its name, such as rocket. It paints as a vector and exports as an SVG with a PNG beside it for older PowerPoint. The code keeps its name in `fills.source`.
+A Lucide drawing a person or an agent adds by its name, such as rocket. It paints as a vector. The code keeps its name in `fills.source`.
 _Avoid_: symbol, glyph, clip art, sticker
 
 **recolor**:
@@ -131,7 +127,7 @@ Repainting an image in gray tones, or in two colors that replace its dark and li
 _Avoid_: tint, filter, colorize
 
 **crop**:
-The part of an image a layer shows, stored on the image paint as `crop`: `x`, `y`, `w` and `h`, fractions of the whole image. PowerPoint's `srcRect` is the same cut by its sides: `l` is `x`, `t` is `y`, `r` is `1 - x - w` and `b` is `1 - y - h`. An agent says it as the percent cut from each side. Dragging a crop handle cuts that side and shrinks the frame by as much, so the picture keeps its scale; dragging the picture moves it in the frame.
+The part of an image a layer shows, stored on the image paint as `crop`: `x`, `y`, `w` and `h`, fractions of the whole image. An agent says it as the percent cut from each side. Dragging a crop handle cuts that side and shrinks the frame by as much, so the picture keeps its scale; dragging the picture moves it in the frame.
 _Avoid_: trim, clip, mask
 
 **alt text**:
@@ -200,46 +196,20 @@ _Avoid_: "Failed to", "Error", "Oops", "Something went wrong"
 
 ## Model words
 
-The words the code and the agent tools use for how a deck is stored and edited. A person never reads them. The code, the test and the tool use the same word, so one search finds all of it.
+See [Doom words](docs/words/doom.md) for the terms used in the core.
 
-**element**:
-One thing on a slide: a shape, connector, group, or a kept part of the file. The code names which one in its `kind`. A person and an agent's tool texts read layer for it until the code's rename lands.
-_Avoid_: object, item, widget
-
-**node**:
-Anything an edit can address that holds its own rows: an element, a slide's own node `<slide>.slide`, a slide's notes `<slide>.notes`, or the template styles, `deck.templateStyles`. An element's id, such as `258.7`, is its node. The code says `node`; the tool texts say "layer id" for the same string.
-_Avoid_: entity, object, item
-
-**trait**:
-A named group of fields that an element takes together: `identity`, `box`, `geometry`, `fills`, `border`, `effects`, `body`, `text`, `connection`, `notes` and `templateStyle`. Each kind of element takes some traits (`kindTraits`), and an agent's `set` names a trait, then its fields.
-_Avoid_: property, attribute, facet, section (a section is a group of slides), group (a group is an element)
-
-**fills**:
-A shape's or a slide background's ordered list of paints, bottom first. The code stores it as the trait `fills`, in four paint slots `p0` to `p3`, and its opacity in `fills.alpha`. An agent and the panel set it with one paint, `fills.paint`, which fills `p0` and clears the slots above. An older build's `fill.value` reads as that paint.
-_Avoid_: fill value, background fill
-
-**paint**:
-One entry of fills: a solid colour, a gradient, a pattern, a group's fill, none, or an image. A hidden paint, `{ hidden: <paint> }`, neither paints nor exports.
-_Avoid_: fill kind, layer (a layer is a thing on a slide)
+## Editor words
 
 **border**:
-The stroke around a shape or image or along a line: its paint, width, dash, cap, join, compound strokes and arrowheads, the trait `border`. The Border section shows none, solid, dashed and dotted, then Color and Border width. An old `line` is read as border. PowerPoint writes `a:ln`.
-_Avoid_: line (as a trait or a panel section), stroke, outline
+The stroke around a shape or image or along a line. The Border section shows none, solid, dashed and dotted, then Color and Border width.
+_Avoid_: line (as a panel section), stroke, outline
 
 **line**:
-A layer drawn as a line. Never the stroke around a shape.
-
-**baked**:
-How a layer's fills export when PowerPoint cannot hold them, such as a gradient over a photo: as one image fill on the same shape, drawn by the same fill plan the canvas paints. The layer's text, border, effects and link stay native. Until the export, the deck keeps the paints in an AirDesign extension of the shape.
-_Avoid_: flattened, rasterized
-
-**field**:
-One value of a trait, written `trait.field`, such as `box.x`, `border.width` or `text.size`. A field is the smallest thing a row sets, a reset returns to inherited, and a refusal names.
-_Avoid_: property, attribute, setting
+A layer drawn as a line.
 
 **control**:
-One field in the design panel: its name, the selection's value, what that value can be (its `Desc`: kind, unit, range and choices), whether mixed or inherited, and the edit a change makes. The design panel owns the `Desc`; the Doom editor builds each control from the Doom property it edits.
-_Avoid_: row (a row is a stored edit), input, widget
+One setting in the design panel. Its `Desc` gives its kind, unit, range and choices. The editor builds the control from the Doom property it edits.
+_Avoid_: row, input, widget
 
 **strip**:
 Controls that share one horizontal line of a panel section, such as X and Y, or bold, italic and underline.
@@ -249,56 +219,11 @@ _Avoid_: line (a line is a layer), row, group
 The untitled section above the design panel title, holding align and distribute.
 
 **panel section**:
-A part of the design panel that holds the controls of one trait, Opacity or Alignment. A section may have no title.
-_Avoid_: section (a section is a group of slides)
-
-**row**:
-One node’s stored edit: format `v` and a `patch`. Each field is set, inherited or returned to `opening`. Rows fold field by field in order.
-_Avoid_: edit record, change record, delta
-
-**format**:
-The one number that says which stored shape a build writes: 1 plus every stamp. A row, an index page and a command carry the format they were written in. A build refuses a stored format newer than its own, and an older tab reloads before it reads one.
-_Avoid_: schema version, migration (a migration changes the API's database)
-
-**stamp**:
-A number that goes up when a stored shape changes. Each trait has one, with a hash of its fields, and the row, the index and the command have one each. The format adds them up, so raising one stamp raises the format. It is not the stamp `pnpm gate` puts on a commit.
-_Avoid_: schema version, migration number
-
-**kept**:
-What the editor leaves exactly as the file has it. A `kept` element, such as a diagram or an embedded object, takes only a name, alt text, hidden, a move and a delete. An element's `kept` list names design fields the editor cannot express, such as a custom shape, and a `set` on one is refused with `kept`.
-_Avoid_: locked, frozen, protected, preserved
-
-**opening**:
-What a node showed when the deck was opened or the element was added: the values the file or the add gave it. A field with no row shows its opening value, and `"opening"` in a row sends a field back to it. It differs from `inherit`: the opening is what the element itself held then.
-_Avoid_: original, initial, baseline, floor (the code's other word for an opening text and box)
-
-**inherit**:
-Clears an `inheritable` field: a row sends `"inherit"`, an agent sends `null`, the panel says Reset. The trait’s `inherits` follows PowerPoint: `own` never, `field` each field, `whole` all fields together, `run` each text run.
-_Avoid_: reset (in code and tools), unset, clear, default
-
-**role**:
-Which placeholder an element fills: `title`, `subtitle`, `body`, `date`, `footer`, `number`, `picture`, `chart` or `object`. An agent targets one with `<slide>.<role>`, or `*.<role>` for every slide.
-_Avoid_: type, placeholder type
-
-**edit**:
-One call to `airdesign_edit_deck`: a deck, the revision it was read at, and up to 100 changes.
-_Avoid_: batch, update, patch (a patch is the part of a row)
-
-**change**:
-One item in an edit's `changes`. Its `op` names it: `set`, `add`, `diagram`, `group` or `ungroup`. A change with no `op` sets one node's text or box.
-_Avoid_: action, command (a command is what the server orders), operation
-
-**set**:
-The change that sets fields on every node its `target` names: an element id, a slide id, `<slide>.<role>`, `*.<role>` or `deck.templateStyles`. Each field it sends becomes a row, and `null` sends it back to inherit. It lands on every node it names or on none.
-_Avoid_: update, modify, write
-
-**add**:
-The change that puts a new element on one slide: a text layer, or with `icon` a shape whose fills hold that icon. Without a `box` it takes the largest free area of the slide, and its id comes back in `elements`.
-_Avoid_: insert, create, new
+A part of the design panel that holds related controls, such as those for opacity or alignment. A section may have no title.
 
 **gesture**:
-One thing a hand does in the editor, a key press or a pointer move, with its keys and where it works. Ctrl+G groups. The Keyboard shortcuts panel, Ctrl+Shift+?, lists them.
-_Avoid_: shortcut (a shortcut is a gesture's keys), hotkey, command
+A key press or pointer move in the editor. Ctrl+G groups. The Keyboard shortcuts panel, Ctrl+Shift+?, lists key presses.
+_Avoid_: shortcut (in code), hotkey, command
 
 ## Findings
 

@@ -10,8 +10,8 @@ import { changedFiles, failedTests, rerunCommand, suiteRules } from "./suites.mj
 const cli = fileURLToPath(new URL("./verify-airdesign.mjs", import.meta.url))
 const vitest = "node_modules/vitest/vitest.mjs"
 const smallUnitLimit = 40
-const kinds = ["unit-tests", "script-tests", "model-check", "browser-tests", "look", "pptx", "bench"]
-const optIn = { pptx: "run it with --pptx, it takes 1 to 2 minutes", bench: "bench suggested: pnpm prove --bench" }
+const kinds = ["unit-tests", "script-tests", "model-check", "browser-tests", "look", "bench"]
+const optIn = { bench: "bench suggested: pnpm prove --bench" }
 
 const git = (repo, args) => execFileSync("git", args, { cwd: repo, encoding: "utf8" }).trim()
 const fromRepo = (repo, file) => import(pathToFileURL(path.join(repo, file)).href)
@@ -253,18 +253,6 @@ export const proveCommand = async (args, { repo, evidenceRoot }) => {
           passed: ran.status === 0,
           result: `${ran.status === 0 ? "no case slower" : said}, ${answer.report ?? log}`,
           rerun: ran.status === 0 ? undefined : "pnpm prove --bench --only bench",
-        }
-      },
-    }),
-    pptx: async (step, log) => ({
-      lane: "full",
-      what: "pnpm check:pptx",
-      go: async () => {
-        const ran = await exec(repo, ["pnpm", ["check:pptx"]], {}, log)
-        return {
-          passed: ran.status === 0,
-          result: ran.status === 0 ? "PASSED" : "FAILED",
-          rerun: ran.status === 0 ? undefined : "pnpm check:pptx",
         }
       },
     }),

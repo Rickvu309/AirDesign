@@ -43,8 +43,7 @@ const partNames = {
   design: "the design scans (2 jobs)",
   browser: "the browser tests (4 jobs)",
   journeys: "the journeys",
-  pptx: "the PowerPoint check",
-  corpus: "the corpus (2 jobs)",
+  pdf: "the PDF check",
   "model-check": "the model check",
 }
 

@@ -4,11 +4,10 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { journeyFolder, journeyNameOf } from "../tests/journeys/journey-shards.mjs"
 import { browserJobs, browserReach, browserSpec, designScans, inBrowser } from "./browser-change-map.mjs"
-import { browserExportTag } from "./pptx-cases.mjs"
 import { readersOf, scriptTestReads } from "./script-test-reads.mjs"
 import { readSpecSeconds } from "./spec-seconds.mjs"
 
-export const ciParts = ["source", "scripts", "design", "browser", "journeys", "pptx", "corpus", "model-check"]
+export const ciParts = ["source", "scripts", "design", "browser", "journeys", "pdf", "model-check"]
 
 const runsEverything = [
   /(^|\/)package\.json$/,
@@ -19,6 +18,8 @@ const runsEverything = [
   /^\.github\//,
   /^scripts\/(check|check-steps|change-map|browser-change-map|spec-seconds)\.mjs$/,
 ]
+
+const pdfSpec = "tests/browser/export-pdf.spec.ts"
 
 const sharedTestSetup = ["vitest.config.mts"]
 
@@ -67,8 +68,6 @@ const nodeOf = (file, packages) => {
   if (!owner) return file
   return testFile.test(file) ? unitNode(owner.dir) : owner.name
 }
-
-const listed = (file, paths) => paths.some((entry) => file === entry || file.startsWith(`${entry}/`))
 
 const walk = (start, next) => {
   const reached = new Set([start])
@@ -130,13 +129,7 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
     turnOn("source", file)
     if (readersOf(graph.reads ?? {}, file).length > 0) turnOn("scripts", file)
     const gone = goneNode(file)
-    if (
-      listed(file, graph.pptxPaths) ||
-      [browser.setup, browser.exports].some((files) => files.has(file) || files.has(gone))
-    ) {
-      turnOn("pptx", file)
-      turnOn("corpus", file)
-    }
+    if (file === pdfSpec || file === "scripts/pdf-check.mjs" || file === "scripts/pdf-sample.mjs") turnOn("pdf", file)
     if (readByChecks.some((pattern) => pattern.test(file))) {
       turnOn("scripts", file)
       continue
@@ -149,6 +142,7 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
     }
     const shared = browser.setup.has(file) || browser.setup.has(gone)
     const specs = [...browser.specs].filter(([, needs]) => needs.has(file) || needs.has(gone)).map(([spec]) => spec)
+    if (shared || specs.includes(pdfSpec)) turnOn("pdf", file)
     const narrowed = inBrowser(file) && !shared && specs.length > 0
     canNarrowBrowser &&= narrowed
     if (shared) {
@@ -173,6 +167,7 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
       if (narrowed && inBrowser(node) && !browserSpec(node)) continue
       const pkg = byName.get(node)
       if (pkg) packages.add(pkg.name)
+      if (pkg?.name === "web" || pkg?.name === "@airdesign/api") turnOn("pdf", file)
       const owned = pkg ? partsOfPackage(pkg) : partsOfFile(node)
       if (owned.includes("journeys")) {
         const name = node.startsWith(journeyFolder) && journeyNameOf(node.slice(journeyFolder.length))
@@ -313,21 +308,12 @@ const readImports = (root, files, packages) => {
   return imports
 }
 
-export const pptxPathsFile = ".github/actions/ci-changes/pptx-paths.txt"
-
 export const readChangeGraph = (root) => {
   const files = execFileSync("git", ["ls-files"], { cwd: root, encoding: "utf8" })
     .split("\n")
     .filter((file) => file && fs.existsSync(path.join(root, file)))
   const packages = readPackages(root)
   const browserSpecs = files.filter(browserSpec)
-  const exportSpecs = new Set(
-    browserSpecs.filter((file) => fs.readFileSync(path.join(root, file), "utf8").includes(browserExportTag)),
-  )
-  for (const file of files.filter((file) => file.startsWith("scripts/pptx-cases/") && file.endsWith(".mjs"))) {
-    for (const [, target] of fs.readFileSync(path.join(root, file), "utf8").matchAll(quotedPath))
-      if (browserSpec(target)) exportSpecs.add(target)
-  }
   return {
     browserSpecs,
     journeyNames: files
@@ -335,11 +321,9 @@ export const readChangeGraph = (root) => {
       .map((file) => journeyNameOf(file.slice(journeyFolder.length)))
       .filter(Boolean),
     browserSeconds: readSpecSeconds(root).seconds,
-    exportSpecs: [...exportSpecs],
     packages,
     imports: readImports(root, files, packages),
     reads: scriptTestReads(root, files),
-    pptxPaths: fs.readFileSync(path.join(root, pptxPathsFile), "utf8").split("\n").filter(Boolean),
   }
 }
 

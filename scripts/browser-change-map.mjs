@@ -20,7 +20,6 @@ export const browserReach = (graph, walk) => {
   return {
     setup: new Set(browserSetup.flatMap((file) => [...closure(file)])),
     specs: new Map((graph.browserSpecs ?? []).map((file) => [file, closure(file)])),
-    exports: new Set((graph.exportSpecs ?? []).flatMap((file) => [...closure(file)])),
   }
 }
 

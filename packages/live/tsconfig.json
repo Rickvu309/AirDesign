@@ -12,5 +12,5 @@
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
-  "references": [{ "path": "../doom" }, { "path": "../document" }, { "path": "../catalog" }]
+  "references": [{ "path": "../doom" }, { "path": "../catalog" }]
 }

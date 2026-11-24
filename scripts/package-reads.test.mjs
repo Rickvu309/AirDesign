@@ -16,27 +16,26 @@ same(
   "replaying look/doom-deck.mjs before 59690055a names the build it reached into by path",
   buildPathFaults(
     ".agents/skills/verify-airdesign/look/doom-deck.mjs",
-    "  const { orderKeyBetween } = await import(pathToFileURL(`${kit.repo}/packages/document/dist/index.js`).href)",
+    "  const { orderKeyBetween } = await import(pathToFileURL(`${kit.repo}/packages/doom/dist/index.js`).href)",
   ).length,
   1,
 )
 
 same(
-  "the same read through the loader names the package that no longer exports it, as Doom's move to its own package left it",
+  "the same read through the loader names the package that no longer exports it, when the loader names the wrong package",
   readFaults(
     "look/doom-deck.mjs",
-    'const { orderKeyBetween } = await packageBuild(kit.repo, "@airdesign/document")',
+    'const { orderKeyBetween } = await packageBuild(kit.repo, "@airdesign/theme")',
     exportsOf,
   ),
   [
-    "look/doom-deck.mjs:1: @airdesign/document's src/index.ts does not export orderKeyBetween. Load the file that exports it now.",
+    "look/doom-deck.mjs:1: @airdesign/theme's src/index.ts does not export orderKeyBetween. Load the file that exports it now.",
   ],
 )
 
 same(
-  "replaying bench/doom.mjs before 59690055a through the loader names the namespace document no longer exports",
-  readFaults("bench/doom.mjs", 'const { doom } = await packageBuild(kit.repo, "@airdesign/document")', exportsOf)
-    .length,
+  "replaying bench/doom.mjs before 59690055a through the loader names the missing namespace",
+  readFaults("bench/doom.mjs", 'const { doom } = await packageBuild(kit.repo, "@airdesign/theme")', exportsOf).length,
   1,
 )
 
@@ -44,19 +43,12 @@ same(
   "a function read off a loaded package by name is checked too, as bench/doom-deck.mjs reads Doom",
   readFaults(
     "bench/doom-deck.mjs",
-    'const doom = await packageBuild(kit.repo, "@airdesign/document")\nconst fold = doom.readFold(json)\n',
+    'const doom = await packageBuild(kit.repo, "@airdesign/theme")\nconst fold = doom.readFold(json)\n',
     exportsOf,
   ),
   [
-    "bench/doom-deck.mjs:2: @airdesign/document's src/index.ts does not export readFold. Load the file that exports it now.",
+    "bench/doom-deck.mjs:2: @airdesign/theme's src/index.ts does not export readFold. Load the file that exports it now.",
   ],
-)
-
-same(
-  "replaying PR 475's fixture through the loader names prepareMarkup, which the PowerPoint package does not export",
-  readFaults("fixture-slides.mjs", 'const { prepareMarkup } = await packageBuild(root, "@airdesign/pptx")', exportsOf)
-    .length,
-  1,
 )
 
 same(
@@ -102,7 +94,8 @@ same(
 )
 
 same(
-  "replaying the loader deck-diff.mjs and metrics.mjs kept for themselves names the build file they joined by hand",
-  buildPathFaults("scripts/deck-diff.mjs", '  const entry = path.join(root, "packages", name, "dist/index.js")').length,
+  "a loader that builds the path by hand is rejected",
+  buildPathFaults("scripts/check-deck.mjs", '  const entry = path.join(root, "packages", name, "dist/index.js")')
+    .length,
   1,
 )

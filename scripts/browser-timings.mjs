@@ -1,7 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
 import { designScans, onCi } from "./check-steps.mjs"
-import { browserExportTag } from "./pptx-cases.mjs"
 import { keepMeasured, measuredName, measuredSeconds, narrowedRun, specSecondsName } from "./spec-seconds.mjs"
 
 const noted = ["metric", "warning"]
@@ -9,7 +8,6 @@ const scans = new Set(designScans.map((file) => path.basename(file)))
 
 export default class BrowserTimings {
   tests = []
-  exported = new Set()
 
   onBegin(config, suite) {
     this.scheduled = suite.allTests().length
@@ -25,7 +23,6 @@ export default class BrowserTimings {
 
   onTestEnd(test, result) {
     const notes = test.annotations.filter(({ type }) => noted.includes(type))
-    if (test.tags.includes(browserExportTag)) this.exported.add(test.id)
     this.tests.push({
       id: test.id,
       file: path.relative(this.root, test.location.file),
@@ -69,9 +66,7 @@ export default class BrowserTimings {
 
   measureSeconds() {
     if (!fs.existsSync(path.join(this.root, specSecondsName))) return
-    const tests = this.tests
-      .filter((test) => !scans.has(test.file))
-      .map((test) => ({ ...test, exported: this.exported.has(test.id) }))
+    const tests = this.tests.filter((test) => !scans.has(test.file))
     if (tests.length === 0) return
     keepMeasured(
       path.join(this.root, measuredName(specSecondsName)),

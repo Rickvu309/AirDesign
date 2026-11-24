@@ -24,16 +24,6 @@ const quiet = { labels: [], lowers: [] }
 const changesCi = { labels: ["changes-ci"], lowers: [] }
 
 same(
-  "PR 935 adds a PowerPoint case module, which changes nothing ci judges by",
-  judged({ listed: [added("scripts/pptx-cases/picture-mode.mjs"), modified("packages/pptx/src/fill.ts")] }),
-  quiet,
-)
-same(
-  "PR 936 adds a case and its test",
-  judged({ listed: [modified("scripts/pptx-cases.test.mjs"), added("scripts/pptx-cases/smart-animate.mjs")] }),
-  quiet,
-)
-same(
   "PR 925 changes a spec, its replay and the code each spec covers",
   judged({
     listed: [
@@ -63,11 +53,6 @@ same(
       modified("scripts/queue-drop.test.mjs"),
     ],
   }),
-  quiet,
-)
-same(
-  "PR 941 rewords a note beside the fixtures, which no check reads",
-  judged({ listed: [modified("scripts/pptx-fixtures/effect-graph.md")] }),
   quiet,
 )
 same(
@@ -105,13 +90,12 @@ for (const file of [
   "scripts/check.mjs",
   "scripts/gate.mjs",
   "scripts/metrics.mjs",
-  "scripts/pptx-check.mjs",
+  "scripts/pdf-check.mjs",
   "scripts/pr-body.mjs",
-  "scripts/pptx-judge/Program.cs",
   ".github/actions/affected-report/action.yml",
   ".github/pull_request_template.md",
   "tooling/oxlint-plugin-airdesign/glossary.json",
-  "packages/pptx/tsconfig.json",
+  "packages/render/tsconfig.json",
   "apps/web/.oxlintrc.json",
   "vitest.config.mts",
 ]) {
@@ -196,16 +180,6 @@ const lowered = (name, change, text) => {
   const result = judged(change)
   same(name, result, { labels: ["changes-ci", "lowers-the-bar"], lowers: [text] })
 }
-lowered(
-  "PR 888 replaces a deck the PowerPoint check judges",
-  { listed: [modified("scripts/pptx-fixtures/picture-png.pptx")] },
-  "scripts/pptx-fixtures/picture-png.pptx is a deck the PowerPoint check already judges.",
-)
-lowered(
-  "a removed case module",
-  { listed: [removed("scripts/pptx-cases/picture-mode.mjs")] },
-  "The PowerPoint case scripts/pptx-cases/picture-mode.mjs was removed.",
-)
 const steps = (rows) =>
   rows.map((row) => `  {\n    name: "${row[0]}",\n    kind: "${row[1]}",${row[2] ?? ""}\n  },`).join("\n")
 lowered(
@@ -308,11 +282,9 @@ for (const file of [
   ".github/workflows/ci.yml",
   "tooling/oxlint-plugin-airdesign/rules/no-raw.js",
   "scripts/metrics.mjs",
-  "scripts/pptx-check.mjs",
-  "scripts/pptx-tools.sh",
-  "scripts/pptx-judge/Program.cs",
+  "scripts/pdf-check.mjs",
   "tsconfig.base.json",
-  "packages/pptx/tsconfig.json",
+  "packages/render/tsconfig.json",
   "apps/web/.oxlintrc.json",
   ".oxfmtrc.json",
   "vitest.config.mts",
@@ -324,14 +296,12 @@ for (const file of [
 }
 for (const file of [
   "apps/web/src/App.tsx",
-  "packages/pptx/src/slide-route.ts",
-  "scripts/pptx-fixtures/cases.json",
+  "packages/render/src/slide-route.ts",
   "metrics.json",
   "AGENTS.md",
   "pnpm-workspace.yaml",
   ".npmrc",
   "specs/edit/Edit.cfg",
-  "scripts/pptx-cases/frame.mjs",
   "scripts/land-report.mjs",
 ]) {
   if (judges(file)) throw new Error(`${file} is product, data, a case, a spec or a doc and is listed`)

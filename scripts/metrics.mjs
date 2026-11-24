@@ -4,17 +4,8 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { changesFrom, unitShardVariable } from "./check-steps.mjs"
 import { knowsMain } from "./checked.mjs"
-import { importParse } from "./import-parse.mjs"
-import { caughtCount, readSeedList } from "./judge-proof.mjs"
-import { judgedDecks } from "./pptx-corpus.mjs"
 import { titleLimit } from "./title.mjs"
 import { readRun } from "./vitest-metrics.mjs"
-import { packageBuild } from "./package-build.mjs"
-
-const seedListFile = (root) => path.join(root, "scripts/pptx-fixtures/judge-seeds.json")
-
-const listedMisses = (root) =>
-  fs.existsSync(seedListFile(root)) ? readSeedList(fs.readFileSync(seedListFile(root), "utf8")).known.length : 0
 
 const browserSpecs = (root) => {
   const tests = path.join(root, "tests")
@@ -31,15 +22,7 @@ export const browserFaults = (root) =>
     0,
   )
 
-const knownFailures = (root) => readRun(root).faults + listedMisses(root) + browserFaults(root)
-
-const realDecks = (root) => judgedDecks(root).length
-
-const capabilitiesExported = async (root) =>
-  new Set(Object.values((await packageBuild(root, "@airdesign/pptx")).writtenRoutes)).size
-
-const plantedBreaks = (root) =>
-  caughtCount(JSON.parse(fs.readFileSync(path.join(root, "scripts/pptx-fixtures/judge-proof.json"), "utf8")))
+const knownFailures = (root) => readRun(root).faults + browserFaults(root)
 
 export const longTitles = (titles) => titles.filter((title) => [...title].length > titleLimit).length
 
@@ -56,11 +39,7 @@ export const mainTitles = (root) => {
 
 export const measures = {
   "known-failures": knownFailures,
-  "corpus-size": realDecks,
-  "export-coverage": capabilitiesExported,
-  "fault-detection": plantedBreaks,
   "long-titles": (root) => longTitles(mainTitles(root)),
-  "import-parse": importParse,
 }
 
 export const measuredLive = new Set(["known-failures", "long-titles"])
@@ -82,10 +61,9 @@ const splitMeasures = ({ current, total }) => {
   const note = `(unit shard ${current}/${total}: this shard's part, and the whole run is the sum of the shards)`
   return {
     ...fromUnitRun,
-    "known-failures": Object.assign(
-      (root) => readRun(root).faults + (current === 1 ? listedMisses(root) + browserFaults(root) : 0),
-      { note },
-    ),
+    "known-failures": Object.assign((root) => readRun(root).faults + (current === 1 ? browserFaults(root) : 0), {
+      note,
+    }),
   }
 }
 
@@ -99,7 +77,6 @@ export const measuredHere = (env) => {
 export const timedMetrics = {
   "check-duration": "scripts/check.mjs",
   "gate-duration": "scripts/gate.mjs",
-  "pptx-check-duration": "scripts/pptx-check.mjs",
 }
 
 export const timedOnCi = {
@@ -113,13 +90,9 @@ export const reportedMetrics = {
   "drag-delay": "tests/browser/editor-speed.spec.ts",
 }
 
-export const judgedWrites = "export-verified"
-
 const judgedBy = {
-  [judgedWrites]: "scripts/pptx-check.mjs",
   "eval-coverage": "tests/eval-coverage.test.ts",
   "design-findings": "scripts/design-findings.mjs",
-  "paint-fidelity": "scripts/paint-fidelity-run.mjs",
 }
 
 const directions = new Set(["higher", "lower"])

@@ -4,23 +4,7 @@ import os from "node:os"
 import path from "node:path"
 import { sampleDeckLines, sampleDeckPdf } from "./pdf-sample.mjs"
 
-const toolRoot = process.env.PPTX_TOOLS ?? path.join(os.homedir(), ".cache/pptx-tools")
-
-function onPath(name) {
-  return (process.env.PATH ?? "")
-    .split(path.delimiter)
-    .some((folder) => folder !== "" && fs.existsSync(path.join(folder, name)))
-}
-
-function poppler(name, args) {
-  if (onPath(name)) return execFileSync(name, args, { encoding: "latin1" })
-  const libs = fs
-    .readdirSync(path.join(toolRoot, "usr/lib"))
-    .filter((folder) => folder.endsWith("-linux-gnu"))
-    .map((folder) => path.join(toolRoot, "usr/lib", folder))
-  const env = { ...process.env, LD_LIBRARY_PATH: [...libs, process.env.LD_LIBRARY_PATH ?? ""].join(":") }
-  return execFileSync(path.join(toolRoot, "usr/bin", name), args, { encoding: "latin1", env })
-}
+const poppler = (name, args) => execFileSync(name, args, { encoding: "latin1" })
 
 export function infoOf(text) {
   const pages = Number(/^Pages:\s+(\d+)/m.exec(text)?.[1])
@@ -76,11 +60,9 @@ export function pdfFaults({ info, fonts, text, lines, reach }) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   if (!process.argv.includes("--no-export")) {
     for (const stale of [sampleDeckPdf, sampleDeckLines]) fs.rmSync(stale, { force: true })
-    execFileSync(
-      "pnpm",
-      ["exec", "playwright", "test", "tests/browser/export-pdf.spec.ts", "--grep", "@pdf", "--workers=1"],
-      { stdio: "inherit" },
-    )
+    execFileSync("pnpm", ["test:browser", "tests/browser/export-pdf.spec.ts", "--grep", "@pdf", "--workers=1"], {
+      stdio: "inherit",
+    })
   }
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "pdf-check-"))
   poppler("pdftoppm", ["-r", "24", "-f", "1", "-l", "1", "-singlefile", sampleDeckPdf, path.join(scratch, "first")])

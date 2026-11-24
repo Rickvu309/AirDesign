@@ -15,7 +15,6 @@
     "@airdesign/doom": "workspace:*",
     "@airdesign/fonts": "workspace:*",
     "@airdesign/live": "workspace:*",
-    "@airdesign/pptx": "workspace:*",
     "@airdesign/render": "workspace:*",
     "@airdesign/theme": "workspace:*",
     "@base-ui/react": "^1.9.0",

@@ -343,7 +343,7 @@ async function heldEdits(page: Page): Promise<() => void> {
   return release
 }
 
-const pictureFile = join(process.cwd(), "scripts/pptx-fixtures/picture.png")
+const pictureFile = join(process.cwd(), "tests/browser/fixtures/picture.png")
 
 test("an image fill is picked from a file for a shape, the slide background and a picture's replace, and shows in the panel", async ({
   page,

@@ -93,7 +93,6 @@ export type PropSpec<K extends PropName> = {
   readonly read: (raw: unknown) => Props[K] | Refusal
   readonly control: "none" | "number" | "color" | "paints" | "text" | "choice" | "toggle" | "box" | "custom"
   readonly describe: string | null
-  readonly pptx: "native" | "picture" | "dropped"
   readonly conflict: "last" | "base"
 }
 
@@ -172,10 +171,9 @@ function spec<K extends PropName>(
   reader: Reader<Props[K]>,
   control: PropSpec<K>["control"],
   describe: string | null,
-  pptx: PropSpec<K>["pptx"],
   conflict: PropSpec<K>["conflict"] = "last",
 ): PropSpec<K> {
-  return { read: refusing(reader), control, describe, pptx, conflict }
+  return { read: refusing(reader), control, describe, conflict }
 }
 
 const readOrder: Reader<OrderKey> = (raw) => readOrderKey(raw) ?? reject()
@@ -202,8 +200,8 @@ const readOrigin = object({
 })
 
 export const props: { readonly [K in PropName]: PropSpec<K> } = {
-  type: spec(literal(nodeTypes), "none", null, "native"),
-  parent: spec(readOptionalParent, "none", null, "native"),
+  type: spec(literal(nodeTypes), "none", null),
+  parent: spec(readOptionalParent, "none", null),
   name: spec(
     (raw) => {
       const name = words(limits.name)(raw)
@@ -211,49 +209,45 @@ export const props: { readonly [K in PropName]: PropSpec<K> } = {
     },
     "text",
     "The layer's name in the layers panel.",
-    "native",
   ),
-  hidden: spec(boolean, "toggle", "Whether the layer is hidden.", "native"),
-  locked: spec(boolean, "toggle", null, "dropped"),
-  box: spec(readBox, "box", "Position, size, rotation and flips on the slide, in pixels.", "native"),
-  sizing: spec(readSizing, "choice", null, "dropped"),
-  cell: spec(readCell, "custom", null, "dropped"),
-  absolute: spec(boolean, "toggle", null, "dropped"),
-  opacity: spec(finite(0, 1), "number", "How see-through the layer is, from 0 to 1.", "native"),
-  fills: spec(list(readPaint, 32), "paints", "What paints inside the layer, bottom first.", "native", "base"),
-  strokes: spec(list(readPaint, 32), "paints", "What paints along the layer's outline.", "native", "base"),
-  stroke: spec(readStrokeStyle, "custom", "Outline weight, alignment and dash.", "native"),
+  hidden: spec(boolean, "toggle", "Whether the layer is hidden."),
+  locked: spec(boolean, "toggle", null),
+  box: spec(readBox, "box", "Position, size, rotation and flips on the slide, in pixels."),
+  sizing: spec(readSizing, "choice", null),
+  cell: spec(readCell, "custom", null),
+  absolute: spec(boolean, "toggle", null),
+  opacity: spec(finite(0, 1), "number", "How see-through the layer is, from 0 to 1."),
+  fills: spec(list(readPaint, 32), "paints", "What paints inside the layer, bottom first.", "base"),
+  strokes: spec(list(readPaint, 32), "paints", "What paints along the layer's outline.", "base"),
+  stroke: spec(readStrokeStyle, "custom", "Outline weight, alignment and dash."),
   radius: spec(
     oneOf<Px | readonly [Px, Px, Px, Px]>(corner, quad(corner)),
     "number",
     "Corner radius: one number, or four.",
-    "native",
   ),
   effects: spec(
     oneOf<readonly Effect[] | EffectStyleName>(readEffectList, literal(effectStyleNames)),
     "choice",
     "An effect style name, or a list of shadows and blurs.",
-    "native",
     "base",
   ),
-  geometry: spec(readGeometry, "custom", null, "native"),
-  text: spec(readText, "text", "The words in the layer, with their styling.", "native", "base"),
-  layout: spec(readLayout, "custom", "How a frame lays out what is inside it.", "dropped"),
-  clip: spec(boolean, "toggle", null, "dropped"),
-  mask: spec(boolean, "toggle", "Whether this layer masks the layers above it.", "dropped"),
-  chart: spec(readChart, "custom", "The data a chart frame draws.", "picture"),
-  link: spec(readLink, "text", null, "native"),
-  role: spec(literal(["title", "subtitle", "body", "number", "footer"]), "choice", null, "native"),
-  notes: spec(readText, "text", "A slide's presenter notes.", "native", "base"),
+  geometry: spec(readGeometry, "custom", null),
+  text: spec(readText, "text", "The words in the layer, with their styling.", "base"),
+  layout: spec(readLayout, "custom", "How a frame lays out what is inside it."),
+  clip: spec(boolean, "toggle", null),
+  mask: spec(boolean, "toggle", "Whether this layer masks the layers above it."),
+  chart: spec(readChart, "custom", "The data a chart frame draws."),
+  link: spec(readLink, "text", null),
+  role: spec(literal(["title", "subtitle", "body", "number", "footer"]), "choice", null),
+  notes: spec(readText, "text", "A slide's presenter notes.", "base"),
   transition: spec(
     object({ kind: literal(["none", "fade", "push", "smartMove"]), ms: integer(0, 60_000) }),
     "choice",
     null,
-    "native",
   ),
-  skipped: spec(boolean, "toggle", null, "native"),
-  theme: spec(readTheme, "custom", null, "native"),
-  size: spec(object({ w: finite(1, 100_000), h: finite(1, 100_000) }), "none", null, "native"),
-  nameFollows: spec(boolean, "none", null, "dropped"),
-  origin: spec(readOrigin, "none", null, "dropped"),
+  skipped: spec(boolean, "toggle", null),
+  theme: spec(readTheme, "custom", null),
+  size: spec(object({ w: finite(1, 100_000), h: finite(1, 100_000) }), "none", null),
+  nameFollows: spec(boolean, "none", null),
+  origin: spec(readOrigin, "none", null),
 }

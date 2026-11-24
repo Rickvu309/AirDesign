@@ -39,7 +39,7 @@ test('passes', async () => {
   test.info().annotations.push({ type: 'metric', description: 'metric demo-time  now 3  limit 2' })
   test.info().annotations.push({ type: 'warning', description: 'demo-time is 3 and its limit is 2. Make it faster.' })
 })
-test('also passes', { tag: '@export' }, async () => { await new Promise((done) => setTimeout(done, 150)) })
+test('also passes', async () => { await new Promise((done) => setTimeout(done, 150)) })
 test('still passes', async () => {})
 test.skip('skips', async () => {})
 `,
@@ -103,7 +103,7 @@ test('expected failure', async () => { test.fail(); throw new Error('known failu
     assert.ok(test.title.length > 0)
   }
   const record = path.join(folder, "spec-seconds.json")
-  const recorded = { seconds: { "a.spec.ts": 9999, "gone.spec.ts": 1 }, export: { "gone.spec.ts": 1 } }
+  const recorded = { seconds: { "a.spec.ts": 9999, "gone.spec.ts": 1 } }
   fs.writeFileSync(record, JSON.stringify(recorded))
   const runAlone = (args) =>
     spawnSync(process.execPath, [path.join(root, "node_modules/@playwright/test/cli.js"), "test", ...args], {
@@ -121,7 +121,6 @@ test('expected failure', async () => { test.fail(); throw new Error('known failu
   const written = foldedSeconds({ record: recorded, measured, exists: (name) => name === "a.spec.ts" })
   assert.deepEqual(Object.keys(written.seconds), ["a.spec.ts"], "a gone file leaves the record")
   assert.ok(written.seconds["a.spec.ts"] < 9999, "a file that ran whole and far from its record is measured again")
-  assert.ok(written.export["a.spec.ts"] >= 0.1, "the seconds of its export tests are kept apart")
   console.log(
     "browser-timings: passing, failing and skipped tests retain timings and metrics across shards, and a local run measures beside the record",
   )

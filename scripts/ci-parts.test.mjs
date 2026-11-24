@@ -27,7 +27,7 @@ const onlyOn = (step, part) => (step.if ?? "").includes(`matrix.part == '${part}
 const checkJobsFile = workflow.jobs.changes.steps.find((step) => step.id === "map").with["check-jobs-file"]
 const entries = JSON.parse(fs.readFileSync(path.join(root, checkJobsFile), "utf8"))
 same(
-  "the check job runs the source part and the browser tests in shards, the scripts and pptx parts, beside the design shards",
+  "the check job runs the source part and the browser tests in shards, the scripts and pdf parts, beside the design shards",
   entries.filter((entry) => entry.part !== "design").map((entry) => [entry.part, entry.shard ?? ""].join(" ").trim()),
   [
     "source",
@@ -42,7 +42,7 @@ same(
     "browser 6/8",
     "browser 7/8",
     "browser 8/8",
-    "pptx",
+    "pdf",
   ],
 )
 same(
@@ -107,7 +107,7 @@ same(
   everyTest.toSorted(),
 )
 same("one failing part does not stop the others", check.strategy["fail-fast"], false)
-same("ci waits for every part, corpus and journeys", workflow.jobs.ci.needs, ["check", "changes", "corpus", "journeys"])
+same("ci waits for every part and journeys", workflow.jobs.ci.needs, ["check", "changes", "journeys"])
 same(
   "the check jobs are the ones changes keeps",
   check.strategy.matrix.include,
@@ -117,9 +117,9 @@ same(
 const partCheck = steps.filter((step) => (step.run ?? "").startsWith("pnpm check --part="))
 same("one step runs pnpm check for a part", partCheck.length, 1)
 same(
-  "the pptx part does not run pnpm check, and other parts run only when needed",
+  "the pdf part does not run pnpm check, and other parts run only when needed",
   partCheck[0].if,
-  "matrix.part != 'pptx' && steps.work.outputs.needed == 'true'",
+  "matrix.part != 'pdf' && steps.work.outputs.needed == 'true'",
 )
 
 const queued = steps.find((step) => step.id === "work")
@@ -132,35 +132,17 @@ same(
 )
 same("the question may read runs", workflow.permissions.actions, "read")
 
-const pptxCheck = steps.filter((step) => step.run === "pnpm check:pptx && pnpm check:pdf")
-same("one step runs the PowerPoint check, then the PDF check", pptxCheck.length, 1)
-same("the PowerPoint and PDF checks run in the pptx part", onlyOn(pptxCheck[0], "pptx"), true)
+const pdfCheck = steps.findIndex((step) => onlyOn(step, "pdf") && step.run === "pnpm check:pdf")
+const pdfBuild = steps.findIndex((step) => onlyOn(step, "pdf") && step.run === "pnpm build:browser")
+const poppler = steps.findIndex((step) => onlyOn(step, "pdf") && step.run?.includes("poppler-utils"))
 same(
-  "the PowerPoint check is a check job of its own, which changes keeps only when its inputs changed",
-  entries.filter((entry) => entry.part === "pptx"),
-  [{ part: "pptx" }],
+  "the PDF job installs Poppler and builds the app before inspecting the export",
+  [poppler < pdfCheck, pdfBuild < pdfCheck, poppler >= 0, pdfBuild >= 0],
+  [true, true, true, true],
 )
-
-const pptxSteps = steps.filter((step) => /pptx/.test(`${step.id ?? ""} ${text(step)}`))
-same(
-  "no PowerPoint step waits behind the source part",
-  pptxSteps.filter((step) => onlyOn(step, "source")).map((step) => step.id ?? step.run ?? step.uses),
-  [],
-)
-
-const build = steps.findIndex((step) => onlyOn(step, "pptx") && /run build$/.test(step.run ?? ""))
-same("the pptx part builds the packages before the PowerPoint check", build !== -1, true)
-same("the build comes before the PowerPoint check", build < steps.indexOf(pptxCheck[0]), true)
 
 const ciSteps = workflow.jobs.ci.steps
 
-const corpus = workflow.jobs.corpus
-same(
-  "the corpus job runs unless changes said nothing it judges changed, and changes runs it in the merge queue and on main",
-  corpus.if,
-  "${{ !cancelled() && needs.changes.outputs.corpus != 'false' }}",
-)
-same("corpus uses two independent runners", corpus.strategy, { "fail-fast": false, matrix: { shard: [1, 2] } })
 const rerunGuard = ciSteps[0]
 const runsGuard = (attempt) =>
   spawnSync("bash", ["-e", "-c", rerunGuard.run], { encoding: "utf8", env: { ...process.env, RUN_ATTEMPT: attempt } })
@@ -177,7 +159,7 @@ same("the rerun guard runs on every event and before every other ci step", workf
 same("the verdict is the second ci step, after the rerun guard", ciSteps[1].env?.RESULTS, "${{ toJSON(needs) }}")
 same(
   "only a failure on main opens the main is red issue",
-  corpus.steps.filter((step) => (step.run ?? "").includes("red-main.sh")).map((step) => step.if),
+  steps.filter((step) => (step.run ?? "").includes("red-main.sh")).map((step) => step.if),
   ["failure() && github.event_name == 'push'"],
 )
 
@@ -248,10 +230,7 @@ for (const answer of ["123", ""]) {
     output: `passed=${Boolean(answer)}\nrun-id=${answer}\nneeded=true`,
   })
 }
-for (const [name, job] of [
-  ["check", check],
-  ["corpus", corpus],
-]) {
+for (const [name, job] of [["check", check]]) {
   const found = job?.steps ?? []
   const work = found.find((step) => step.id === "work")
   const restore = found.find((step) => step.id === "work-cache")
@@ -274,7 +253,7 @@ for (const [name, job] of [
           ["design", "false", "", "false"],
           ["browser", "true", "", "false"],
           ["browser", "false", "", "true"],
-          ["pptx", "", "", "true"],
+          ["pdf", "", "", "true"],
         ]
       : []),
   ]) {
@@ -298,80 +277,7 @@ for (const [name, job] of [
     expensive.length > 0 && expensive.every((step) => step.if?.includes("steps.work.outputs.needed == 'true'")),
     true,
   )
-  if (name !== "check") {
-    same(`${name} uses the shared queue action on push`, work?.uses, "./.github/actions/queued")
-    same(`${name} decides on every event`, work?.if, undefined)
-    same(`${name} runs on queue and push`, job?.if, corpus.if)
-    same(
-      `${name} reports push failures`,
-      found.filter((step) => (step.run ?? "").includes("red-main.sh")).map((step) => step.if),
-      ["failure() && github.event_name == 'push'"],
-    )
-  }
 }
-const answers = corpus.steps.filter(
-  (step) => step.with?.path === "~/.cache/airdesign/pptx-validations" && (step.uses ?? "").startsWith("actions/cache/"),
-)
-same(
-  "validator prefix names the corpus and judge code",
-  corpus.steps.find((step) => step.id === "answers")?.run,
-  "echo \"prefix=pptx-validations-corpus-${{ hashFiles('scripts/pptx-judge/Program.cs', 'scripts/pptx-judge/PptxJudge.csproj') }}-${{ matrix.shard }}-\" >> \"$GITHUB_OUTPUT\"",
-)
-same(
-  "validator restore accepts earlier runs of the same judge",
-  answers[0]?.with["restore-keys"],
-  "${{ steps.answers.outputs.prefix }}",
-)
-const corpusRun = corpus.steps.findIndex((step) => step.run === "pnpm check:pptx:corpus --shard=${{ matrix.shard }}/2")
-same(
-  "the corpus restores the validator's saved answers before it runs and saves them after",
-  answers.slice(0, 2).map((step) => [step.uses.split("@")[0], corpus.steps.indexOf(step) < corpusRun]),
-  [
-    ["actions/cache/restore", true],
-    ["actions/cache/save", false],
-  ],
-)
-same(
-  "the corpus keeps its answers apart from the pptx part's and keys them by the validator's code",
-  answers.slice(0, 2).map((step) => step.with.key),
-  Array(2).fill("${{ steps.answers.outputs.prefix }}${{ github.run_id }}-${{ github.run_attempt }}"),
-)
-same(
-  "a queue run does not save answers, which no later run could read from its branch",
-  answers[1]?.if,
-  "steps.work.outputs.needed == 'true' && github.event_name != 'merge_group' && !cancelled()",
-)
-
-const upload = corpus.steps.find((step) => step.with?.name === "corpus-validations-${{ matrix.shard }}")
-const download = corpus.steps.find((step) => step.id === "validations")
-const handed = answers.find((step) => step.if === "steps.validations.outputs.files == 'true'")
-same(
-  "queue uploads only after the corpus succeeds",
-  upload?.if,
-  "github.event_name == 'merge_group' && steps.work.outputs.needed == 'true'",
-)
-same("upload follows corpus", corpus.steps.indexOf(upload) > corpusRun, true)
-same(
-  "queue artifact uses the pinned uploader",
-  upload?.uses,
-  steps.find((step) => step.with?.name?.startsWith("test-results-check"))?.uses,
-)
-same("queue artifact expires in one day", upload?.with["retention-days"], 1)
-same("queue artifact holds validator answers", upload?.with.path, "~/.cache/airdesign/pptx-validations")
-same(
-  "push downloads answers whenever the exact queue run passed",
-  download?.if,
-  "github.event_name == 'push' && steps.work.outputs.passed == 'true'",
-)
-same("download uses the queue run id", download?.env.RUN_ID, "${{ steps.work.outputs.run-id }}")
-same("download may read actions", download?.env.GH_TOKEN, "${{ github.token }}")
-same(
-  "handoff failures cannot fail main",
-  [download, handed].map((step) => step?.["continue-on-error"]),
-  [true, true],
-)
-same("handoff saves under the same validator key", handed?.with.key, answers[0]?.with.key)
-same("handoff saves only after downloading", corpus.steps.indexOf(handed) > corpus.steps.indexOf(download), true)
 for (const event of ["pull_request", "merge_group"]) {
   same(
     `${event} never skips work or queries queue runs`,
@@ -384,11 +290,11 @@ for (const event of ["pull_request", "merge_group"]) {
   )
 }
 for (const event of ["pull_request", "merge_group", "push"]) {
-  for (const part of ["design", "pptx"]) {
+  for (const part of ["design", "pdf"]) {
     for (const hit of ["true", "false"]) {
       for (const answer of ["123", ""]) {
-        const passed = part === "pptx" && event === "push" && Boolean(answer)
-        const needed = part === "design" ? event === "pull_request" : event !== "merge_group" && !passed
+        const passed = part === "pdf" && event === "push" && Boolean(answer)
+        const needed = part === "design" ? event === "pull_request" : !passed
         same(
           `${event} ${part} hit=${hit} queue=${answer} needed=${needed}`,
           execute(
@@ -408,78 +314,9 @@ for (const event of ["pull_request", "merge_group", "push"]) {
   }
 }
 same(
-  "every pptx step respects the shared decision",
-  steps.filter((step) => onlyOn(step, "pptx")).every((step) => step.if.includes("steps.work.outputs.needed == 'true'")),
+  "every pdf step respects the shared decision",
+  steps.filter((step) => onlyOn(step, "pdf")).every((step) => step.if.includes("steps.work.outputs.needed == 'true'")),
   true,
-)
-same(
-  "ci has no paint job or verdict",
-  [workflow.jobs["paint-fidelity"], ciSteps[1].run.includes("paint-fidelity")],
-  [undefined, false],
-)
-const paintPath = path.join(root, ".github/workflows/paint-fidelity.yml")
-const paintFile = fs.existsSync(paintPath) ? parse(fs.readFileSync(paintPath, "utf8")) : {}
-const paint = paintFile.jobs?.["paint-fidelity"]
-const paintSteps = paint?.steps ?? []
-same("paint runs on main and manual dispatch only", paintFile.on, {
-  push: { branches: ["main"] },
-  workflow_dispatch: null,
-})
-same(
-  "paint never reuses a queue decision",
-  paintSteps.some((step) => step.uses === "./.github/actions/queued" || /steps.work/.test(step.if ?? "")),
-  false,
-)
-same(
-  "paint always runs its metric with a 20 minute limit",
-  paintSteps
-    .filter((step) => step.run === "pnpm metric:paint-fidelity")
-    .map((step) => [step.if, step["timeout-minutes"]]),
-  [[undefined, 20]],
-)
-for (const cache of ["~/.cache/pptx-tools", "~/.cache/airdesign/pptx-renders"]) {
-  same(
-    `paint keeps ${cache}`,
-    paintSteps.some((step) => step.with?.path === cache),
-    true,
-  )
-}
-same(
-  "paint keeps Chromium through the shared Playwright action",
-  paintSteps.some((step) => step.uses === "./.github/actions/playwright"),
-  true,
-)
-same(
-  "the shared Playwright action keeps Chromium",
-  parse(fs.readFileSync(path.join(root, ".github/actions/playwright/action.yml"), "utf8")).runs.steps.some(
-    (step) => step.with?.path === "~/.cache/ms-playwright",
-  ),
-  true,
-)
-same("paint reports a separate main issue", paintSteps.find((step) => (step.run ?? "").includes("red-main.sh"))?.env, {
-  GH_TOKEN: "${{ github.token }}",
-  RED_TITLE: "paint fidelity is red",
-  RED_WHAT: "paint-fidelity",
-})
-same(
-  "paint reports only failures on main",
-  paintSteps.find((step) => (step.run ?? "").includes("red-main.sh"))?.if,
-  "failure() && github.event_name == 'push'",
-)
-const deploy = parse(fs.readFileSync(path.join(root, ".github/workflows/deploy.yml"), "utf8"))
-same("deploy waits only for ci", deploy.on.workflow_run.workflows, ["ci"])
-const cacheKey = (job) => job?.steps.find((step) => step.id === "renders")?.run
-same(
-  "paint and corpus save distinct render keys",
-  cacheKey(paint) !== undefined && cacheKey(paint) !== cacheKey(corpus),
-  true,
-)
-const paintRestore = paintSteps.find((step) => step.id === "work-cache")
-const paintSave = paintSteps.find((step) => (step.uses ?? "").startsWith("actions/cache/save"))
-same(
-  "paint restores and saves its render key",
-  [paintRestore?.with.key, paintSave?.with.key],
-  Array(2).fill("${{ steps.renders.outputs.key }}"),
 )
 if (failures > 0) process.exit(1)
 console.log("ci-parts: all assertions passed")

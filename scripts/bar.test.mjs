@@ -4,11 +4,8 @@ import os from "node:os"
 import path from "node:path"
 import {
   contents,
-  lostCases,
-  lostDecks,
   listedFiles,
   localFork,
-  lostKinds,
   metricsFrom,
   newPackageFile,
   oldMetricNames,
@@ -18,7 +15,6 @@ import {
   packageFile,
   readLocal,
   readReasons,
-  replacedFixtures,
   sameButReferences,
   labelsFor,
   verdict,
@@ -27,7 +23,7 @@ import { workingTree } from "./checked.mjs"
 
 const metrics = {
   "known-failures": { goal: 0 },
-  "corpus-size": { now: 2, goal: 20 },
+  "checked-contracts": { now: 2, goal: 20 },
   "ci-duration": { limit: 40 },
 }
 const same = (name, actual, expected) => {
@@ -40,9 +36,9 @@ const texts = (change) =>
     (reason) => reason.text,
   )
 const withMetric = (name, value) => ({ headMetrics: { ...metrics, [name]: value } })
-const decks = "corpus-size"
+const decks = "checked-contracts"
 
-same("product code alone needs nobody", texts({ changedFiles: ["packages/pptx/src/slide-route.ts"] }), [])
+same("product code alone needs nobody", texts({ changedFiles: ["packages/render/src/slide-route.ts"] }), [])
 same("a pull that changes no metric needs nobody", texts({}), [])
 same("a deck added needs nobody", texts(withMetric(decks, { now: 3, goal: 20 })), [])
 same("a tighter limit needs nobody", texts(withMetric("ci-duration", { limit: 30 })), [])
@@ -92,7 +88,7 @@ same("a malformed new metric needs the owner", texts(withMetric("new one", { now
 
 same(
   "package files are found",
-  ["package.json", "packages/pptx/package.json", "apps/web/src/package.json.ts"].map(packageFile),
+  ["package.json", "packages/render/package.json", "apps/web/src/package.json.ts"].map(packageFile),
   [true, true, false],
 )
 same("changed scripts need the owner", texts({ changedScripts: ["package.json"] }), [
@@ -103,86 +99,6 @@ same("a measured metric with a limit needs the owner", texts(withMetric("known-f
   measuredShape,
 ])
 
-const cases = [
-  { name: "text-page", errors: 0 },
-  { name: "child-order", errors: 1 },
-]
-same("an added case needs nobody", lostCases(cases, [...cases, { name: "new", errors: 0 }]), [])
-same("a changed expectation is named", lostCases(cases, [{ name: "text-page", errors: 3 }, cases[1]]), ["text-page"])
-same("a removed case is named", lostCases(cases, [cases[0]]), ["child-order"])
-same("a changed case needs the owner", texts({ changedCases: ["text-page"] }), [
-  "The PowerPoint case text-page was changed or removed.",
-])
-
-const corpusList = [
-  { name: "a.pptx", sha256: "1" },
-  { name: "b.pptx", sha256: "2" },
-]
-same("an added corpus deck needs nobody", lostDecks(corpusList, [...corpusList, { name: "c.pptx", sha256: "3" }]), [])
-same("a removed corpus deck is named", lostDecks(corpusList, [corpusList[0]]), ["b.pptx"])
-same("a changed corpus sha256 is named", lostDecks(corpusList, [{ name: "a.pptx", sha256: "9" }, corpusList[1]]), [
-  "a.pptx",
-])
-same("a lost corpus deck needs the owner", texts({ changedDecks: ["a.pptx"] }), [
-  "The corpus deck a.pptx was removed or its sha256 changed.",
-])
-same(
-  "the corpus list is judged by its entries, not as a deck",
-  replacedFixtures([{ name: "scripts/pptx-fixtures/corpus.json", status: "modified" }]),
-  [],
-)
-
-const proof = { "duplicate shape id": "caught", "chart data-label range": "missed" }
-same("an unchanged proof needs nobody", lostKinds(proof, proof), [])
-same("a new kind needs nobody", lostKinds(proof, { ...proof, "new caught": "caught", "new missed": "missed" }), [])
-same("a kind now caught needs nobody", lostKinds(proof, { ...proof, "chart data-label range": "caught" }), [])
-same("a kind no longer caught is named", lostKinds(proof, { ...proof, "duplicate shape id": "missed" }), [
-  "duplicate shape id",
-])
-same(
-  "a removed kind is named, caught or missed, so dropping a miss cannot flatter the count",
-  lostKinds(proof, { "another kind": "caught" }),
-  ["duplicate shape id", "chart data-label range"],
-)
-same("dropping only the missed kind is named", lostKinds(proof, { "duplicate shape id": "caught" }), [
-  "chart data-label range",
-])
-same(
-  "one kind gained does not hide one lost",
-  lostKinds(proof, { "duplicate shape id": "missed", "chart data-label range": "caught" }),
-  ["duplicate shape id"],
-)
-same("a lost kind needs the owner", texts({ changedKinds: ["duplicate shape id"] }), [
-  "The judge proof no longer records duplicate shape id as caught.",
-])
-const caughtMetric = "fault-detection"
-const proofMetrics = { baseMetrics: { ...metrics, [caughtMetric]: { now: 9, goal: 10 } } }
-same(
-  "a new kind moves the count of caught kinds and its goal freely",
-  texts({ ...proofMetrics, headMetrics: { ...metrics, [caughtMetric]: { now: 9, goal: 11 } } }),
-  [],
-)
-same("the count of caught kinds cannot be removed", texts({ ...proofMetrics, headMetrics: metrics }), [
-  `The metric ${caughtMetric} was removed.`,
-])
-
-const deck = "scripts/pptx-fixtures/nasa-1d-cnn.pptx"
-same(
-  "a deck already judged that is swapped, removed or moved is named, and a new one is not",
-  replacedFixtures([
-    { name: deck, status: "modified" },
-    { name: "scripts/pptx-fixtures/text.pptx", status: "removed" },
-    { name: "apps/web/moved.pptx", before: "scripts/pptx-fixtures/clean.pptx", status: "renamed" },
-    { name: "scripts/pptx-fixtures/new-deck.pptx", status: "added" },
-    { name: "scripts/pptx-fixtures/cases.json", status: "modified" },
-    { name: "scripts/pptx-fixtures/judge-proof.json", status: "modified" },
-    { name: "packages/pptx/src/slide-route.ts", status: "modified" },
-  ]),
-  [deck, "scripts/pptx-fixtures/text.pptx", "scripts/pptx-fixtures/clean.pptx"],
-)
-same("a swapped deck needs the owner", texts({ changedFixtures: [deck] }), [
-  `${deck} is a deck the PowerPoint check already judges.`,
-])
 same(
   "a path cannot smuggle a query into the address",
   contents("o/r", "abc", "apps/a#b/c?d e.json"),
@@ -208,7 +124,7 @@ same(
   false,
 )
 same("a config that cannot be read is not", sameButReferences(undefined, generatedConfig), false)
-const rootConfig = { files: [], references: [{ path: "./packages/document" }] }
+const rootConfig = { files: [], references: [{ path: "./packages/doom" }] }
 same(
   "the root config may gain a package",
   onlyAddsReferences(rootConfig, { files: [], references: [...rootConfig.references, { path: "./packages/catalog" }] }),
@@ -228,7 +144,7 @@ same(
   "only an added file directly inside a package counts as new",
   [
     { name: "packages/catalog/tsconfig.json", status: "added" },
-    { name: "packages/document/tsconfig.json", status: "modified" },
+    { name: "packages/doom/tsconfig.json", status: "modified" },
     { name: "packages/catalog/deep/tsconfig.json", status: "added" },
     { name: "apps/web/tsconfig.json", status: "added" },
   ].map((file) => newPackageFile(file, "tsconfig.json")),
@@ -240,14 +156,11 @@ const lowersOf = (change) =>
     (reason) => reason.lowers,
   )
 same("a raised limit lowers the bar", lowersOf(withMetric("ci-duration", { limit: 60 })), [true])
-same("a dropped deck count lowers the bar", lowersOf(withMetric(decks, { now: 1, goal: 20 })), [true])
+same("a dropped contract count lowers the bar", lowersOf(withMetric(decks, { now: 1, goal: 20 })), [true])
 same("a moved goal lowers the bar", lowersOf(withMetric("known-failures", { goal: 5 })), [true])
 same("a measured fault is not in metrics.json, so it lowers nothing", lowersOf({}), [])
 same("a changed check file is only listed", lowersOf({ changedFiles: ["scripts/check.mjs"] }), [false])
 same("changed scripts are only listed", lowersOf({ changedScripts: ["package.json"] }), [false])
-same("a changed case lowers the bar", lowersOf({ changedCases: ["text-page"] }), [true])
-same("a swapped deck lowers the bar", lowersOf({ changedFixtures: [deck] }), [true])
-same("a lost kind lowers the bar", lowersOf({ changedKinds: ["duplicate shape id"] }), [true])
 
 const listedOnly = verdict({
   reasons: [{ about: "file AGENTS.md", text: "AGENTS.md decides what ci checks.", lowers: false }],
@@ -318,12 +231,7 @@ same(
 
 const renamed = {
   "known-failures": { goal: 0 },
-  "corpus-size": { now: 2, goal: 20 },
-  "fault-detection": { now: 9, goal: 10 },
-  "export-coverage": { now: 17, goal: 50 },
-  "export-verified": { now: 18, goal: 50 },
   "ci-duration": { limit: 40 },
-  "pptx-check-duration": { limit: 90 },
 }
 const oldFile = Object.fromEntries(Object.entries(oldMetricNames).map(([old, name]) => [old, renamed[name]]))
 const atMergeBase = metricsFrom((file) => (file === oldMetricsFile ? oldFile : undefined))
@@ -425,11 +333,13 @@ same(
 )
 localFile(
   "metrics.json",
-  JSON.stringify({ "ci-duration": { limit: 40 }, "corpus-size": { now: 2, goal: 20 }, "known-failures": { goal: 0 } }),
+  JSON.stringify({
+    "ci-duration": { limit: 40 },
+    "checked-contracts": { now: 2, goal: 20 },
+    "known-failures": { goal: 0 },
+  }),
 )
-localFile("scripts/pptx-fixtures/cases.json", JSON.stringify([{ name: "nasa-1d-cnn" }, { name: "doe-heat-pumps" }]))
-localFile("scripts/pptx-fixtures/corpus.json", JSON.stringify(corpusList))
-localFile("packages/pptx/src/route.test.ts", "case\n")
+localFile("packages/render/src/route.test.ts", "case\n")
 localGit(["add", "--all"])
 const stamp = "proof <proof@example.com> 0 +0000"
 const mainCommit = localGit(
@@ -443,20 +353,19 @@ same("an untouched branch forks where main is", localFork(localRepo).fork, mainC
 same("an untouched branch touches nothing", verdict(readLocal(localRepo)).lines, ["Nothing here touches the bar."])
 localFile(
   "metrics.json",
-  JSON.stringify({ "ci-duration": { limit: 50 }, "corpus-size": { now: 1, goal: 20 }, "known-failures": { goal: 0 } }),
+  JSON.stringify({
+    "ci-duration": { limit: 50 },
+    "checked-contracts": { now: 1, goal: 20 },
+    "known-failures": { goal: 0 },
+  }),
 )
-localFile("scripts/pptx-fixtures/cases.json", JSON.stringify([{ name: "nasa-1d-cnn" }]))
-localFile("scripts/pptx-fixtures/corpus.json", JSON.stringify([{ name: "a.pptx", sha256: "9" }]))
-fs.rmSync(path.join(localRepo, "packages/pptx/src/route.test.ts"))
+fs.rmSync(path.join(localRepo, "packages/render/src/route.test.ts"))
 localFile("scripts/new-check.mjs", "check\n")
 const localVerdict = verdict(readLocal(localRepo))
 same("a lowered bar in the working tree is seen locally", localVerdict.lowers, true)
 same("the local verdict says what ci says", localVerdict.lines, [
   "Lowers the bar: The limit of ci-duration went from 40 to 50.",
-  "Lowers the bar: corpus-size went from 2 to 1, away from its goal of 20.",
-  "Lowers the bar: The PowerPoint case doe-heat-pumps was changed or removed.",
-  "Lowers the bar: The corpus deck a.pptx was removed or its sha256 changed.",
-  "Lowers the bar: The corpus deck b.pptx was removed or its sha256 changed.",
+  "Lowers the bar: checked-contracts went from 2 to 1, away from its goal of 20.",
   "Listed for the owner: scripts/new-check.mjs decides what ci checks.",
 ])
 const localStep = () => {

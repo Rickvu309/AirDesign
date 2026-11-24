@@ -19,13 +19,13 @@ export { compileAgentChange } from "./agent-compile.js"
 export { boardDeckChanges } from "./board-deck.js"
 export { placeholderTitle } from "./placeholder-title.js"
 export { pictureFit } from "./picture-fit.js"
-export { coverCrop, cropSides, type ImageCrop } from "./picture-crop.js"
+export { coverCrop, type ImageCrop } from "./picture-crop.js"
 export { slideKeyText } from "./slide-key.js"
 export { type AddedNode, compileAgentEdit, readingOf } from "./agent-edit.js"
 export type { AgentFinding } from "./agent-findings.js"
 export { type LayoutFinding, layoutFindings, touchedSlides, unmeasuredTexts } from "./layout-findings.js"
 export { kindOf as agentKind, readForAgent } from "./agent-read.js"
-export { type Counts, type Known, applyEdit, countsOf, hasDeck, landEdit } from "./apply-edit.js"
+export { type Counts, applyEdit, countsOf, hasDeck, landEdit } from "./apply-edit.js"
 export { foldToJson, readFold, readLanded, readRuns, readStoredNode, revsToJson, runsToJson } from "./fold-json.js"
 export { type Arrow, type End, type Geometry, lineArrowheads } from "./geometry.js"
 export { type NodeId, type Rev, nodeId, readNodeId, rev } from "./ids.js"
@@ -36,7 +36,7 @@ export { replayLog } from "./replay-log.js"
 export { type Replaced, type RunEdit, type Undone, invertRun, readRunEdit, replacedBy } from "./invert-run.js"
 export type { Align9, Cell, Layout, Sizing, Track } from "./layout.js"
 export type { Chart } from "./chart.js"
-export type { Color, ColorVar, Effect, Hex, ImagePaint, Paint, Sides, StrokeStyle } from "./paint.js"
+export type { Color, ColorVar, Effect, Hex, ImagePaint, Paint, StrokeStyle } from "./paint.js"
 export { colorVars } from "./paint.js"
 export { type NodeType, type Origin, type PropName, type Props, type WriteKey, accepts, holds, props } from "./props.js"
 export { textFromMarkdown, textToMarkdown } from "./markdown.js"
@@ -57,7 +57,7 @@ export type { Para, Span, Text, TextStyleName } from "./text.js"
 export { paragraphAligns, textLimits } from "./text.js"
 export { notesText } from "./notes-text.js"
 export { type TextPatch, lookWrite, paraWrite, styleWrite } from "./text-writes.js"
-export type { TextStyle, Theme } from "./theme.js"
+export type { Theme } from "./theme.js"
 export { viewOf } from "./view-of.js"
 export { readColor, resolveColor, sameColor, tinted } from "./color.js"
 export { type Measure, type Measured, measureWith } from "./measure.js"
@@ -71,7 +71,6 @@ export {
   adjustDefaults,
   presetHolds,
   presetOutline,
-  presetSites,
   shapeNames,
   siteSpot,
   textArea,

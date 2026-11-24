@@ -22,7 +22,7 @@ const queueOnly = (workflow) =>
 
 assert.deepEqual(
   queueOnly(ci),
-  ["check: spec-results", "corpus: corpus-validations-${{ matrix.shard }}"],
+  ["check: spec-results"],
   "a ci step that runs only in the merge queue would stop silently with no queue: give it a push duty below",
 )
 
@@ -40,12 +40,6 @@ assert.equal(
   true,
   "with no queue run, the push run on main saves the spec results the queue used to hand it",
 )
-assert.equal(
-  savesOnPush("corpus", "~/.cache/airdesign/pptx-validations"),
-  true,
-  "with no queue run, the push run on main saves the corpus validations the queue used to hand it",
-)
-
 const timing = ci.jobs.ci.steps.find((step) => step.name === "ci-duration")
 assert.equal(timing.if, "github.event_name != 'pull_request' && needs.changes.outputs.queued != 'true'")
 

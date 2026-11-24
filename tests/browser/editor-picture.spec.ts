@@ -6,7 +6,7 @@ import { openEditor, savedNode, serveOriginals, slidePoint } from "./editor-deck
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
-const pictureFile = join(process.cwd(), "scripts/pptx-fixtures/picture.png")
+const pictureFile = join(process.cwd(), "tests/browser/fixtures/picture.png")
 
 type Sent = "drop" | "paste"
 
