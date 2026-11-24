@@ -15,13 +15,15 @@ import {
   fitting,
   frameOf,
   heightIn,
+  ladderOf,
   partOf,
   sizedPart,
   stylesAt,
 } from "./pattern-parts.js"
 import { borrowing, endsInside } from "./pattern-lend.js"
 import type { Node } from "./doom.js"
-import type { Text } from "./text.js"
+import type { Text, TextStyleName } from "./text.js"
+import { widestLine } from "./text-estimate.js"
 import { zeroBox } from "./doom-walk.js"
 import type { Theme } from "./theme.js"
 
@@ -105,14 +107,26 @@ function iconOf(name: string, side: Px): Sized {
   }
 }
 
+function numberStyle(theme: Theme, start: TextStyleName, values: readonly string[], room: Px): TextStyleName {
+  const ladder = ladderOf(theme)
+  const from = Math.max(0, ladder.indexOf(start))
+  return ladder.slice(from).find((style) => widestLine(values, theme, style) <= room) ?? ladder[ladder.length - 1]!
+}
+
 const kpi: Build = (area, items, scale) => {
   const { gap, pad, theme, styles } = scale
   const room = slotWidth(area, items.length, gap) - pad * 2
+  const number = numberStyle(
+    theme,
+    styles.number,
+    items.map((item) => item.value ?? ""),
+    room,
+  )
   const cards = items.map((item) =>
     cardOf(
       [
         ...(item.title === undefined ? [] : [sizedPart(partOf(item.title, styles.label, "text2"), theme, room)]),
-        ...(item.value === undefined ? [] : [sizedPart(partOf(item.value, "bigNumber"), theme, room)]),
+        ...(item.value === undefined ? [] : [sizedPart(partOf(item.value, number), theme, room)]),
         ...(item.note === undefined ? [] : [sizedPart(partOf(item.note, styles.caption, "text2"), theme, room)]),
       ],
       { pad, gap, fill: "background2" },

@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
+import { gapFor, padFor } from "./agent-place.js"
 import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
 import type { NodeId, Doom } from "./index.js"
-import { ids } from "./sample-deck.js"
-import { childrenOf, descendantsOf, propOf } from "./doom-walk.js"
+import { ids, land } from "./sample-deck.js"
+import { childrenOf, descendantsOf, propOf, slidesOf } from "./doom-walk.js"
+import { ladderOf } from "./pattern-parts.js"
 import { textStyleNames } from "./text.js"
+import { widestLine } from "./text-estimate.js"
 
 const slide = ids.slide
 const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as AgentChange
@@ -19,6 +22,8 @@ const kpiItems = [
   { title: "Margin", value: "31%", note: "+2 pts" },
   { title: "Cash", value: "$9.1M" },
 ]
+const numberStyles = (doom: Doom, row: NodeId) =>
+  childrenOf(doom, row).map((card) => propOf(childrenOf(doom, card.id)[1]!, "text")!.style)
 
 describe.each([
   ["kpi", { items: kpiItems }],
@@ -130,21 +135,56 @@ describe("kpi", () => {
     expect(propOf(made(next), "box")!.y).toBeGreaterThanOrEqual(first.y + first.h)
   })
 
-  it("keeps every number in bigNumber when one value is wider than its card", () => {
-    const narrow = build(
-      agentDeck(),
-      add({
-        kind: "kpi",
-        box: { x: 0, y: 0, w: 600, h: 900 },
-        items: kpiItems.map((item) => ({ ...item, value: "$1,234,567.89" })),
-      }),
+  it("uses one number style on two KPI slides when the values are the same width", () => {
+    const mint = minter("s")
+    const opened = build(build(agentDeck(), { op: "slide", add: {} }, mint), { op: "slide", add: {} }, mint)
+    const slides = slidesOf(opened).slice(-2)
+    const notes = [
+      kpiItems,
+      kpiItems.map((item, at) =>
+        at === 1 ? { ...item, note: "up 3 points since the cost programme started in the first quarter" } : item,
+      ),
+    ]
+    let doom = opened
+    slides.forEach((each, at) => {
+      doom = build(doom, { op: "add", kind: "kpi", slide: each.id, items: notes[at] } as AgentChange, minter(`k${at}`))
+    })
+    const styles = slides.flatMap((each) => numberStyles(doom, lastChild(doom, each.id).id))
+    expect(new Set(styles)).toEqual(new Set(["bigNumber"]))
+  })
+
+  it("keeps wide values on one line at 4:3, in the one largest style that fits the row", () => {
+    const wide = [
+      { title: "Revenue", value: "$1,234,567.89", note: "Q3" },
+      { title: "Costs", value: "$987,654.32", note: "Q3" },
+      { title: "Profit", value: "$246,913.57", note: "Q3" },
+    ]
+    const resized = land(agentDeck(), [{ node: ids.deck, prop: "size", value: { w: 1440, h: 1080 } }])
+    const opened = build(resized, { op: "slide", add: {} }, minter("s"))
+    const on = slidesOf(opened).at(-1)!.id
+    const titled = build(
+      opened,
+      {
+        op: "add",
+        kind: "text",
+        slide: on,
+        text: "Profit holds at a quarter of revenue",
+        textStyle: "title",
+      } as AgentChange,
+      minter("u"),
     )
-    const cards = childrenOf(narrow, made(narrow).id)
-    expect(cards.map((card) => childrenOf(narrow, card.id).map((node) => propOf(node, "text")!.style))).toEqual([
-      ["label", "bigNumber", "caption"],
-      ["label", "bigNumber", "caption"],
-      ["label", "bigNumber"],
-    ])
+    const doom = build(titled, { op: "add", kind: "kpi", slide: on, items: wide } as AgentChange, minter("k"))
+    const row = lastChild(doom, on)
+    const styles = numberStyles(doom, row.id)
+    const theme = propOf(doom.nodes.get(ids.deck)!, "theme")!
+    const box = propOf(row, "box")!
+    const gap = gapFor(1440)
+    const room = Math.floor((box.w - gap * (wide.length - 1)) / wide.length) - padFor(1440) * 2
+    const values = wide.map((item) => item.value)
+    const fitting = ladderOf(theme).find((style) => widestLine(values, theme, style) <= room)
+    expect(new Set(styles)).toEqual(new Set([fitting]))
+    expect(widestLine(values, theme, styles[0]!)).toBeLessThanOrEqual(room)
+    expect(styles[0]).not.toBe("bigNumber")
   })
 
   it("keeps the explicit box's corner and width", () => {
