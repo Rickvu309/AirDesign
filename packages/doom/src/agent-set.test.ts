@@ -71,6 +71,52 @@ describe("set by node id", () => {
     })
   })
 
+  it("inserts a linked run at an offset and leaves the other words and their look", () => {
+    const bold = { ...textOf("Revenue"), spans: [{ end: 7, bold: true, color: { var: "accent2" } }] }
+    const typed = land(sampleDeck(), [
+      { node: ids.title, prop: "text", value: bold, base: revOf(sampleDeck(), ids.title, "text")! },
+    ])
+    const linked = { at: 3, text: "X", link: "https://example.com" }
+    const doom = build(started(typed), set(ids.title, { insert: linked }))
+    expect(propOf(doom.nodes.get(ids.title)!, "text")).toEqual({
+      ...bold,
+      chars: "RevXenue",
+      spans: [
+        { end: 3, bold: true, color: { var: "accent2" } },
+        { end: 4, link: "https://example.com" },
+        { end: 8, bold: true, color: { var: "accent2" } },
+      ],
+    })
+    const end = build(doom, set(ids.title, { insert: { at: 99, text: "!", link: "mailto:a@b.co" } }))
+    expect(propOf(end.nodes.get(ids.title)!, "text")?.chars).toBe("RevXenue!")
+    expect(refusal(agentDeck(), set(ids.title, { text: "A", insert: linked }))).toMatchObject({
+      refused: "shape",
+      field: "insert",
+    })
+    expect(refusal(agentDeck(), set(ids.caption, { insert: linked }))).toMatchObject({
+      refused: "shape",
+      field: "insert",
+    })
+    expect(refusal(agentDeck(), set(ids.card, { insert: linked }))).toMatchObject({
+      refused: "shape",
+      field: "insert",
+    })
+    expect(refusal(richDeck(), set("*.title", { insert: linked }))).toMatchObject({
+      refused: "shape",
+      field: "insert",
+    })
+    expect(refusal(richDeck(), set(`${more.chart}#Plan:Q1`, { insert: linked }))).toMatchObject({
+      refused: "shape",
+      field: "insert",
+    })
+    expect(
+      readAgentChange({ op: "set", target: ids.title, insert: { at: 0, text: "a\nb", link: "https://example.com" } }),
+    ).toMatchObject({ refused: "shape" })
+    expect(
+      refusal(agentDeck(), { op: "add", kind: "text", slide: ids.slide, text: "Hi", insert: linked }),
+    ).toMatchObject({ refused: "shape", field: "insert" })
+  })
+
   it("locks and unlocks a layer, and refuses to lock a slide", () => {
     const locked = build(agentDeck(), set(ids.card, { locked: true }))
     expect(propOf(locked.nodes.get(ids.card)!, "locked")).toBe(true)

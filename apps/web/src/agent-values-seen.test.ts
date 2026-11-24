@@ -28,6 +28,7 @@ const seen: Readonly<Record<string, Seen>> = {
   effect: { person: ["panel:shadow.shadow"] },
   opacity: { person: ["panel:opacity.opacity"] },
   text: { person: ["gesture:edit-text", "panel:link.target#words"] },
+  insert: { person: ["gesture:edit-text"] },
   textStyle: { person: ["panel:text.style"] },
   align: {
     owedToPerson: "where a row or column frame places its children: no auto layout controls",

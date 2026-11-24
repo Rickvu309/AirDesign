@@ -1,5 +1,6 @@
 import { readAngle, readRotation } from "./angle.js"
 import { type AgentEnd, endSchema, readEnd } from "./agent-end.js"
+import { type AgentInsert, insertField } from "./agent-insert.js"
 import { limits } from "./limits.js"
 import { type Field, choice, field, flag, number, string } from "./agent-fields.js"
 import { type NodeId, readNodeId } from "./ids.js"
@@ -69,6 +70,7 @@ export type AgentLook = {
   readonly effect?: EffectStyleName | "none"
   readonly opacity?: number
   readonly text?: string
+  readonly insert?: AgentInsert
   readonly textStyle?: TextStyleName
   readonly align?: "left" | "center" | "right" | "justify"
   readonly layout?: "row" | "column" | "none"
@@ -244,6 +246,7 @@ const lookFields: LookFields = {
     limits.valueBytes,
     "Words as markdown: **bold**, *italic*, [label](url), '- ' bullets, '1. ' numbers, two spaces for each level, a blank line between paragraphs. Replaces all the words in the layer.",
   ),
+  insert: insertField,
   textStyle: choice(
     textStyleNames,
     "A named style from the deck: size, font, weight and spacing together. It clears size, font, lineHeight, letterSpacing and case. The first title text on a slide becomes its title.",
