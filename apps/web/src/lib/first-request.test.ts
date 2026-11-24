@@ -35,7 +35,7 @@ it("keeps the words across a reload and drops them once they are cleared", async
   expect((await fresh()).peekFirstRequest()).toBeUndefined()
 })
 
-it("keeps the words in memory when storage is unavailable", async () => {
+function unavailableStorage() {
   vi.stubGlobal("sessionStorage", {
     getItem() {
       throw new Error("denied")
@@ -47,11 +47,24 @@ it("keeps the words in memory when storage is unavailable", async () => {
       throw new Error("denied")
     },
   })
+}
+
+it("keeps the words in memory when storage is unavailable", async () => {
+  unavailableStorage()
   const api = await fresh()
   expect(() => api.handFirstRequest("kept")).not.toThrow()
   expect(api.peekFirstRequest()).toBe("kept")
   api.clearFirstRequest()
   expect(api.peekFirstRequest()).toBeUndefined()
+})
+
+it("keeps the opening deck in memory when storage is unavailable", async () => {
+  unavailableStorage()
+  const api = await fresh()
+  expect(() => api.noteOpeningDeck("deck")).not.toThrow()
+  expect(api.openingDeck()).toBe("deck")
+  api.clearOpeningDeck()
+  expect(api.openingDeck()).toBeUndefined()
 })
 
 it("remembers one opening deck across a reload and replaces it", async () => {

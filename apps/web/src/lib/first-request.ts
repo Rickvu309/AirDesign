@@ -2,6 +2,7 @@ const requestKey = "airdesign.first-request"
 const openingKey = "airdesign.opening-deck"
 
 let waiting: string | undefined
+let opening: string | undefined
 
 function stored(key: string): string | undefined {
   try {
@@ -36,13 +37,15 @@ export function clearFirstRequest(): void {
 }
 
 export function noteOpeningDeck(deck: string): void {
+  opening = deck
   store(openingKey, deck)
 }
 
 export function openingDeck(): string | undefined {
-  return stored(openingKey)
+  return opening ?? stored(openingKey)
 }
 
 export function clearOpeningDeck(): void {
+  opening = undefined
   store(openingKey, undefined)
 }
