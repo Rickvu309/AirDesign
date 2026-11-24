@@ -1,0 +1,193 @@
+{
+  "version": 1,
+  "name": "Quarterly revenue",
+  "collections": {
+    "rows": {
+      "label": "string",
+      "value": "number?"
+    }
+  },
+  "variants": {
+    "labels": [true, false]
+  },
+  "defaultVariant": {
+    "labels": true
+  },
+  "defaults": {
+    "scale": 1,
+    "digits": 0,
+    "prefix": "$",
+    "suffix": "M",
+    "unitHeader": "$M",
+    "unitPlace": "header",
+    "title": "Revenue",
+    "ink": {
+      "var": "text"
+    },
+    "muted": {
+      "var": "text2"
+    },
+    "rule": "#93A6BA",
+    "accent": {
+      "var": "accent1"
+    },
+    "heading": "label",
+    "label": "label",
+    "caption": "caption"
+  },
+  "let": [
+    ["gutter", 12],
+    ["plotTop", 99],
+    ["plotBottom", ["sub", ["get", "frame.h"], 55]],
+    ["present", ["filter", ["get", "data.rows"], "r", ["if", ["eq", ["get", "r.value"], null], false, true]]],
+    ["values", ["map", ["get", "present"], "r", ["get", "r.value"]]],
+    ["lo", ["min", 0, ["get", "values"]]],
+    ["hi", ["max", 1, ["get", "values"]]],
+    ["zero", ["linear", 0, ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]]
+  ],
+  "parts": [
+    {
+      "emit": {
+        "kind": "text",
+        "key": ["list", "unit"],
+        "x": 0,
+        "y": 0,
+        "w": ["get", "frame.w"],
+        "h": 42,
+        "chars": [
+          "concat",
+          ["get", "token.title"],
+          ["if", ["eq", ["get", "token.unitPlace"], "header"], ["concat", ", ", ["get", "token.unitHeader"]], ""]
+        ],
+        "style": ["get", "token.heading"],
+        "color": ["get", "token.ink"],
+        "align": "left",
+        "alignV": "center"
+      }
+    },
+    {
+      "emit": {
+        "kind": "line",
+        "key": ["list", "zero"],
+        "start": ["point", ["get", "gutter"], ["get", "zero"]],
+        "end": ["point", ["sub", ["get", "frame.w"], ["get", "gutter"]], ["get", "zero"]],
+        "color": ["get", "token.rule"],
+        "width": 2,
+        "route": "straight",
+        "arrow": "none"
+      }
+    },
+    {
+      "repeat": {
+        "over": ["get", "data.rows"],
+        "as": "r"
+      },
+      "let": [
+        [
+          "lane",
+          [
+            "band",
+            ["get", "i"],
+            ["count", ["get", "data.rows"]],
+            ["get", "gutter"],
+            ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]],
+            1
+          ]
+        ],
+        [
+          "mark",
+          [
+            "band",
+            ["get", "i"],
+            ["count", ["get", "data.rows"]],
+            ["get", "gutter"],
+            ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]],
+            0.57
+          ]
+        ]
+      ],
+      "children": [
+        {
+          "emit": {
+            "kind": "text",
+            "key": ["list", "category", ["get", "r.id"]],
+            "x": ["get", "lane.x"],
+            "y": ["add", ["get", "plotBottom"], 17],
+            "w": ["get", "lane.w"],
+            "h": 32,
+            "chars": ["get", "r.label"],
+            "style": ["get", "token.caption"],
+            "color": ["get", "token.muted"],
+            "align": "center",
+            "alignV": "center",
+            "fit": "omit"
+          }
+        },
+        {
+          "when": ["if", ["eq", ["get", "r.value"], null], false, true],
+          "let": [
+            [
+              "edge",
+              [
+                "if",
+                ["eq", ["get", "r.value"], null],
+                ["get", "zero"],
+                ["linear", ["get", "r.value"], ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]
+              ]
+            ]
+          ],
+          "children": [
+            {
+              "emit": {
+                "kind": "rect",
+                "key": ["list", "bar", ["get", "r.id"]],
+                "x": ["get", "mark.x"],
+                "y": ["min", ["get", "zero"], ["get", "edge"]],
+                "w": ["get", "mark.w"],
+                "h": [
+                  "max",
+                  2,
+                  ["sub", ["max", ["get", "zero"], ["get", "edge"]], ["min", ["get", "zero"], ["get", "edge"]]]
+                ],
+                "fill": ["get", "token.accent"]
+              }
+            },
+            {
+              "when": ["get", "variant.labels"],
+              "emit": {
+                "kind": "text",
+                "key": ["list", "value", ["get", "r.id"]],
+                "x": ["get", "lane.x"],
+                "y": ["if", ["lt", ["get", "r.value"], 0], ["add", ["get", "edge"], 5], ["sub", ["get", "edge"], 37]],
+                "w": ["get", "lane.w"],
+                "h": 32,
+                "chars": [
+                  "format",
+                  ["get", "r.value"],
+                  {
+                    "scale": ["get", "token.scale"],
+                    "digits": ["get", "token.digits"],
+                    "prefix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.prefix"], ""],
+                    "suffix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.suffix"], ""],
+                    "sign": "negative"
+                  }
+                ],
+                "style": ["get", "token.label"],
+                "color": ["get", "token.ink"],
+                "align": "center",
+                "alignV": "center",
+                "fit": "omit"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "quantities": {
+    "rows.value": {
+      "baseUnit": "USD",
+      "storedScale": 1000000
+    }
+  }
+}

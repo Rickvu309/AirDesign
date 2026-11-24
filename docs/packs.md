@@ -48,6 +48,7 @@ flowchart TD
   end
   subgraph p_layer_core["core"]
     p_packages_doom["packages/doom"]
+    p_packages_doom_src_component["packages/doom/src/component"]
     p_packages_fonts["packages/fonts"]
     p_packages_oauth["packages/oauth"]
     p_packages_theme["packages/theme"]
@@ -144,6 +145,7 @@ flowchart TD
   p_apps_web_src_settings --> p_apps_web_src_credits
   p_apps_web_src_settings --> p_apps_web_src_decks
   p_apps_web_src_settings --> p_apps_web_src_lib
+  p_packages_doom_src_component --> p_packages_doom
 ```
 
 | Pack | Layer | Public | Dependencies | Tables |
@@ -174,7 +176,8 @@ flowchart TD
 | `apps/web/src/settings` | feature | account-page.tsx, agents-page.tsx, settings-screens.tsx, usage-page.tsx | apps/web/src/account, apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/credits, apps/web/src/decks, apps/web/src/lib | none |
 | `packages/catalog` | model | src/index.ts, src/icon-names.ts | none | none |
 | `packages/document` | model | src/index.ts | none | none |
-| `packages/doom` | core | src/index.ts | none | none |
+| `packages/doom` | core | src/index.ts, src/read-kit.ts | none | none |
+| `packages/doom/src/component` | core | index.ts | packages/doom | none |
 | `packages/fonts` | core | src/index.ts | none | none |
 | `packages/live` | service | src/index.ts | none | none |
 | `packages/mcp` | service | runtime: packages/mcp/src/index.ts; testing: packages/mcp/src/testing/evals.ts | none | none |
