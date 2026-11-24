@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
-import { evalDeck, named, slides } from "./eval-deck.js"
-import { type Task, edit, read, score } from "./score.js"
-import { suite } from "./suite.js"
+import { evalDeck, named, slides } from "./testing/eval-deck.js"
+import { type Task, edit, read, score } from "./testing/score.js"
+import { suite } from "./testing/suite.js"
 
 const aim = `${slides.opening}.title`
 const task: Task = {

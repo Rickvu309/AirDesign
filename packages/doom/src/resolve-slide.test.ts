@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { type Theme, applyEdit, isRefusal, nodeId, resolveSlide, rev, slideBackground } from "./index.js"
-import { block, column, label, measure, plainTheme, row, spot, swatches } from "./doom-fixtures-art.js"
+import { block, column, label, measure, plainTheme, row, spot, swatches } from "./testing/doom-fixtures-art.js"
 import { type TreeNode, doomFromTree } from "./doom-tree.js"
 
 function resolved(children: readonly TreeNode[], theme: Theme = plainTheme, slideProps = {}) {

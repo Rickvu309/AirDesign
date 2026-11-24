@@ -1,6 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
-import { score, suite, type SuiteRow } from "@airdesign/mcp/evals"
+import { score, suite, type SuiteRow } from "@airdesign/mcp/testing/evals"
 import { describe, expect, it } from "vitest"
 
 const recorded = () => {

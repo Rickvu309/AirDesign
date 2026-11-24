@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest"
 
 import { emptyLog, callTool, type DeckHost, type Session } from "./index.js"
 import { layoutOf } from "./layout-answer.js"
-import { memoryDecks } from "./memory-decks.js"
+import { memoryDecks } from "./testing/memory-decks.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { type Doom, type Layout, type NodeId, bakeLayout, solveLayout } from "./index.js"
-import { block, column, label, measure, padding, plainTheme, row, spot } from "./doom-fixtures-art.js"
+import { block, column, label, measure, padding, plainTheme, row, spot } from "./testing/doom-fixtures-art.js"
 import { type TreeNode, doomFromTree } from "./doom-tree.js"
 import { land } from "./sample-deck.js"
 import { propOf } from "./doom-walk.js"

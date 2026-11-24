@@ -1,7 +1,7 @@
 import { catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { callTool, emptyLog, type Session } from "@airdesign/mcp"
-import { memoryDecks } from "@airdesign/mcp/evals"
+import { memoryDecks } from "@airdesign/mcp/testing/evals"
 import { expect, it } from "vitest"
 import { FontMetrics } from "../platform/font-metrics.js"
 import { FontSource } from "../platform/font-source.js"

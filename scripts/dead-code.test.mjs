@@ -27,6 +27,8 @@ write(
   "packages/shapes/src/only-tested.test.ts",
   `import { onlyTested } from "./only-tested.ts"\nexport const checked = () => onlyTested()\n`,
 )
+write("packages/shapes/src/testing/art.ts", `export const art = () => 8\n`)
+write("packages/shapes/src/art-use.test.ts", `import { art } from "./testing/art.ts"\nart()\n`)
 write("packages/shapes/src/lazy.ts", `export const lazy = () => 4\n`)
 write("packages/shapes/src/lazy.test.ts", `const { lazy } = await import("./lazy.ts")\nlazy()\n`)
 write("scripts/runner.mjs", `import { checked } from "../packages/shapes/src/only-tested.test.ts"\nchecked()\n`)
@@ -58,6 +60,11 @@ try {
       ["packages/shapes/src/lazy.ts", ["packages/shapes/src/lazy.test.ts"]],
       ["packages/shapes/src/only-tested.ts", ["packages/shapes/src/only-tested.test.ts"]],
     ],
+  )
+  same(
+    "a helper in src/testing is test support, not a dead product file",
+    dead.deadFiles.some((each) => each.file.includes("/src/testing/")),
+    false,
   )
   same(
     "a declaration no root reaches is dead inside a live file",

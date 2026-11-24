@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 
 import { blank, blankDeck, evalDeck, named, slides } from "./eval-deck.js"
-import { onceIds } from "./once-ids.js"
+import { onceIds } from "../once-ids.js"
 import { swatch } from "./suite-art.js"
 import { heldRun, noteTouched, runningWith, stoppedRun, typedByAPerson } from "./suite-changed-decks.js"
 import { type Attempt, type Reason, type Step, type Task, edit, read, stop } from "./score.js"

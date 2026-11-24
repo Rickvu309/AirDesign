@@ -43,9 +43,7 @@ export const roles = (ruleTests) => {
   const isTest = (file) =>
     !file.startsWith("tests/browser/") &&
     !ruleTests.has(file) &&
-    (/\.(test|spec)\.[a-z]+$/.test(file) ||
-      file.startsWith("apps/web/src/testing/") ||
-      file.startsWith("apps/api/src/testing/"))
+    (/\.(test|spec)\.[a-z]+$/.test(file) || file.includes("/src/testing/"))
   const isProduct = (file) =>
     !isTest(file) &&
     (file.startsWith("apps/") || file.startsWith("packages/")) &&
@@ -76,7 +74,7 @@ const compilerOptions = (root) => ({
   lib: ["lib.es2023.d.ts", "lib.dom.d.ts", "lib.dom.iterable.d.ts"],
   baseUrl: root,
   paths: {
-    "@airdesign/mcp/evals": ["packages/mcp/src/evals.ts"],
+    "@airdesign/mcp/testing/evals": ["packages/mcp/src/testing/evals.ts"],
     "@airdesign/*": ["packages/*/src/index.ts"],
     "@/*": ["apps/web/src/*"],
   },

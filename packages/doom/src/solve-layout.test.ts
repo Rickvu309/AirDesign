@@ -11,7 +11,7 @@ import {
   plainTheme,
   row,
   spot,
-} from "./doom-fixtures-art.js"
+} from "./testing/doom-fixtures-art.js"
 import { type TreeNode, doomFromTree } from "./doom-tree.js"
 
 function solved(slide: readonly TreeNode[], slideProps = {}) {

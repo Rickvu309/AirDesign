@@ -1,8 +1,8 @@
 import { readDeckId, type DeckId, type DoomRefusal } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
-import type { DeckHost, Landed } from "./deck-host.js"
-import { shortHash } from "./once-ids.js"
+import type { DeckHost, Landed } from "../deck-host.js"
+import { shortHash } from "../once-ids.js"
 
 export type MemoryDecks = DeckHost & { readonly decks: Map<DeckId, doom.Doom> }
 

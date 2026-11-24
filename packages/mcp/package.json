@@ -8,9 +8,9 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./evals": {
-      "types": "./dist/evals.d.ts",
-      "import": "./dist/evals.js"
+    "./testing/evals": {
+      "types": "./dist/testing/evals.d.ts",
+      "import": "./dist/testing/evals.js"
     }
   },
   "files": [

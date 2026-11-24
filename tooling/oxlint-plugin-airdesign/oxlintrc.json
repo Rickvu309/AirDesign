@@ -36,6 +36,7 @@
     "airdesign/no-http-outside-server": "error",
     "airdesign/no-limit-in-copy": "error",
     "airdesign/no-raw": "error",
+    "airdesign/no-testing-import": "error",
     "airdesign/no-route-literal": "error",
     "airdesign/no-run-literal": "error",
     "airdesign/no-stamp-literal": "error",
