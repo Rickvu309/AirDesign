@@ -17,7 +17,11 @@ import {
 } from "./index.js"
 import { box, create, ids, once, person, revOf, sampleDeck, textOf, tryLand, valuesOf } from "./sample-deck.js"
 
-type Pick = { readonly node: NodeId; readonly prop: PropName; readonly value: unknown }
+type Pick = {
+  readonly node: NodeId
+  readonly prop: PropName
+  readonly value: unknown
+}
 
 const frames = fc.constantFrom(ids.card, ids.side)
 const shapes = fc.constantFrom(ids.title, ids.caption)
@@ -25,10 +29,26 @@ const words = fc.string({ minLength: 1, maxLength: 12 }).filter((name) => name.t
 
 const picks: fc.Arbitrary<Pick> = fc.oneof(
   fc.record({ node: frames, prop: fc.constant("name" as const), value: words }),
-  fc.record({ node: frames, prop: fc.constant("hidden" as const), value: fc.boolean() }),
-  fc.record({ node: frames, prop: fc.constant("clip" as const), value: fc.boolean() }),
-  fc.record({ node: frames, prop: fc.constant("radius" as const), value: fc.integer({ min: 0, max: 40 }) }),
-  fc.record({ node: frames, prop: fc.constant("opacity" as const), value: fc.double({ min: 0, max: 1, noNaN: true }) }),
+  fc.record({
+    node: frames,
+    prop: fc.constant("hidden" as const),
+    value: fc.boolean(),
+  }),
+  fc.record({
+    node: frames,
+    prop: fc.constant("clip" as const),
+    value: fc.boolean(),
+  }),
+  fc.record({
+    node: frames,
+    prop: fc.constant("radius" as const),
+    value: fc.integer({ min: 0, max: 40 }),
+  }),
+  fc.record({
+    node: frames,
+    prop: fc.constant("opacity" as const),
+    value: fc.double({ min: 0, max: 1, noNaN: true }),
+  }),
   fc.record({
     node: frames,
     prop: fc.constant("fills" as const),
@@ -42,8 +62,16 @@ const picks: fc.Arbitrary<Pick> = fc.oneof(
     prop: fc.constant("box" as const),
     value: fc.integer({ min: 0, max: 1500 }).map((x) => box(x)),
   }),
-  fc.record({ node: shapes, prop: fc.constant("text" as const), value: words.map(textOf) }),
-  fc.record({ node: shapes, prop: fc.constant("opacity" as const), value: fc.double({ min: 0, max: 1, noNaN: true }) }),
+  fc.record({
+    node: shapes,
+    prop: fc.constant("text" as const),
+    value: words.map(textOf),
+  }),
+  fc.record({
+    node: shapes,
+    prop: fc.constant("opacity" as const),
+    value: fc.double({ min: 0, max: 1, noNaN: true }),
+  }),
 )
 
 const keyOf = (pick: { readonly node: NodeId; readonly prop: string }) => `${pick.node}/${pick.prop}`
@@ -51,7 +79,10 @@ const distinct = (max: number) => fc.uniqueArray(picks, { selector: keyOf, minLe
 
 function write(doom: Doom, pick: Pick): Write {
   const base = revOf(doom, pick.node, pick.prop)
-  return { ...pick, ...(base === undefined || !guarded.has(pick.prop) ? {} : { base }) }
+  return {
+    ...pick,
+    ...(base === undefined || !guarded.has(pick.prop) ? {} : { base }),
+  }
 }
 
 const guarded = new Set<PropName>(["text", "fills"])
@@ -62,7 +93,12 @@ const valueOf = (doom: Doom, pick: { readonly node: NodeId; readonly prop: PropN
 function fold(start: Doom, edits: readonly (readonly Write[])[]): Doom {
   let doom = start
   for (const writes of edits) {
-    const next = applyEdit(doom, { once: once(), author: person, writes, rev: rev(doom.rev + 1) })
+    const next = applyEdit(doom, {
+      once: once(),
+      author: person,
+      writes,
+      rev: rev(doom.rev + 1),
+    })
     if (isRefusal(next)) throw new Error(`refused ${JSON.stringify(next)}`)
     doom = next
   }
@@ -105,7 +141,10 @@ it("applies an edit twice to the same doom as once", () => {
       }
       const once1 = applyEdit(start, edit)
       expect(isRefusal(once1)).toBe(false)
-      const twice = applyEdit(once1 as Doom, { ...edit, rev: rev(start.rev + 2) })
+      const twice = applyEdit(once1 as Doom, {
+        ...edit,
+        rev: rev(start.rev + 2),
+      })
       expect(twice).toBe(once1)
       expect(valuesOf(twice as Doom)).toEqual(valuesOf(once1 as Doom))
     }),
@@ -122,6 +161,7 @@ it("never makes a cycle of parents, and refuses exactly the reparents that would
           node: fc.integer({ min: 0, max: 5 }),
           target: fc.integer({ min: -2, max: 5 }),
           restore: fc.boolean(),
+          first: fc.boolean(),
         }),
         {
           maxLength: 30,
@@ -130,7 +170,7 @@ it("never makes a cycle of parents, and refuses exactly the reparents that would
       (steps) => {
         let doom = start
         const parents: (number | "slide" | null)[] = nodes.map(() => "slide")
-        for (const { node, target, restore } of steps) {
+        for (const { node, target, restore, first } of steps) {
           const underNode = (from: number) => {
             for (let at: number | "slide" | null = from; typeof at === "number"; at = parents[at] ?? null)
               if (at === node) return true
@@ -138,12 +178,15 @@ it("never makes a cycle of parents, and refuses exactly the reparents that would
           }
           const parent = target === -2 ? null : target === -1 ? ids.slide : nodes[target]!
           const expected =
-            target >= 0 && parents[target] === null && !(restore && parents[node] === null)
+            target >= 0 &&
+            ((parents[target] === null && !(restore && parents[node] === null)) ||
+              (first && parents[node] !== null && underNode(target)))
               ? "missing"
               : target >= 0 && underNode(target)
                 ? "cycle"
                 : "ok"
           const result = tryLand(doom, [
+            ...(first ? [{ node: nodes[node]!, prop: "parent" as const, value: null }] : []),
             {
               node: nodes[node]!,
               prop: "parent",
@@ -187,9 +230,15 @@ it("never makes a cycle of parents, and refuses exactly the reparents that would
 it("refuses a text write based on an older rev, or on none, and nothing else", () => {
   fc.assert(
     fc.property(
-      fc.array(fc.record({ base: fc.constantFrom("current", "older", "none", "newer"), chars: words }), {
-        maxLength: 15,
-      }),
+      fc.array(
+        fc.record({
+          base: fc.constantFrom("current", "older", "none", "newer"),
+          chars: words,
+        }),
+        {
+          maxLength: 15,
+        },
+      ),
       (steps) => {
         let doom = sampleDeck()
         for (const { base, chars } of steps) {
@@ -205,7 +254,11 @@ it("refuses a text write based on an older rev, or on none, and nothing else", (
             },
           ])
           if (base === "older" || base === "none") {
-            expect(result).toMatchObject({ refused: "stale", node: ids.title, prop: "text" })
+            expect(result).toMatchObject({
+              refused: "stale",
+              node: ids.title,
+              prop: "text",
+            })
           } else {
             expect(isRefusal(result)).toBe(false)
             doom = result as Doom
@@ -256,15 +309,26 @@ it("shows the server's doom with the pending edits folded on top, as the fold it
     fc.property(
       fc.array(distinct(2), { maxLength: 4 }),
       fc.array(
-        fc.record({ items: distinct(2), base: fc.constantFrom("current", "older", "none"), again: fc.boolean() }),
+        fc.record({
+          items: distinct(2),
+          base: fc.constantFrom("current", "older", "none"),
+          again: fc.boolean(),
+        }),
         { maxLength: 6 },
       ),
       (landedBatches, pendingBatches) => {
         let server = sampleDeck()
         const landedEdits: Edit[] = []
         for (const items of landedBatches) {
-          const edit: Edit = { once: once(), author: person, writes: items.map((pick) => write(server, pick)) }
-          server = applyEdit(server, { ...edit, rev: rev(server.rev + 1) }) as Doom
+          const edit: Edit = {
+            once: once(),
+            author: person,
+            writes: items.map((pick) => write(server, pick)),
+          }
+          server = applyEdit(server, {
+            ...edit,
+            rev: rev(server.rev + 1),
+          }) as Doom
           landedEdits.push(edit)
         }
         const pending: Edit[] = pendingBatches.map(({ items, base, again }, index) =>
@@ -292,7 +356,11 @@ it("shows the server's doom with the pending edits folded on top, as the fold it
             const { base: _sent, ...rest } = each
             return was === undefined ? rest : { ...rest, base: was }
           })
-          const next = applyEdit(folded, { ...edit, writes, rev: rev(folded.rev + 1) })
+          const next = applyEdit(folded, {
+            ...edit,
+            writes,
+            rev: rev(folded.rev + 1),
+          })
           if (!isRefusal(next)) folded = next
         }
         expect(view).toEqual(folded)
