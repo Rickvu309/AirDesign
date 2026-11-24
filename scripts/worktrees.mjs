@@ -132,37 +132,34 @@ const midOperation = (worktree) => {
   const gitdir = gitDir(worktree)
   return (
     gitdir !== undefined &&
-    ["rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD", "BISECT_LOG"].some((name) =>
-      fs.existsSync(path.join(gitdir, name)),
+    ["rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD", "BISECT_LOG", "sequencer"].some(
+      (name) => fs.existsSync(path.join(gitdir, name)),
     )
   )
 }
 
-export const usedByAProcess = (worktree) => {
-  const holds = (where) => where === worktree || where.startsWith(`${worktree}/`)
-  let entries
+const readOr = (read, instead) => {
   try {
-    entries = fs.readdirSync("/proc")
+    return read()
   } catch {
-    return false
+    return instead
   }
-  for (const entry of entries) {
+}
+
+export const usedByAProcess = (worktree, proc = "/proc") => {
+  const holds = (where) => where === worktree || where.startsWith(`${worktree}/`)
+  for (const entry of readOr(() => fs.readdirSync(proc), [])) {
     if (!/^\d+$/.test(entry)) continue
-    try {
-      if (holds(fs.readlinkSync(`/proc/${entry}/cwd`))) return true
-      for (const open of fs.readdirSync(`/proc/${entry}/fd`)) {
-        if (holds(fs.readlinkSync(`/proc/${entry}/fd/${open}`))) return true
-      }
-      if (
-        fs
-          .readFileSync(`/proc/${entry}/cmdline`, "utf8")
-          .split("\0")
-          .some((word) => holds(word))
-      )
-        return true
-    } catch {
-      continue
+    if (holds(readOr(() => fs.readlinkSync(`${proc}/${entry}/cwd`), ""))) return true
+    for (const open of readOr(() => fs.readdirSync(`${proc}/${entry}/fd`), [])) {
+      if (holds(readOr(() => fs.readlinkSync(`${proc}/${entry}/fd/${open}`), ""))) return true
     }
+    if (
+      readOr(() => fs.readFileSync(`${proc}/${entry}/cmdline`, "utf8"), "")
+        .split("\0")
+        .some(holds)
+    )
+      return true
   }
   return false
 }
@@ -192,6 +189,7 @@ const refusal = ({ worktree, main, here, busy }) => {
   if (inside(here, worktree.path)) return "land is running there"
   if (worktree.locked) return "it is locked"
   if (busy(worktree.path)) return "a process is using it"
+  if (midOperation(worktree.path)) return "a git operation is in progress"
   if (!clean(worktree.path)) return "it has uncommitted changes"
   return undefined
 }
@@ -244,7 +242,11 @@ export const findStale = ({
   if (listed === undefined) return []
   const [, ...others] = readWorktrees(listed)
   const remote = base.includes("/") ? base.split("/")[0] : undefined
-  const heads = remote === undefined ? new Set() : remoteHeads(root, remote)
+  let heads
+  const lazyHeads = () => {
+    if (heads === undefined) heads = remoteHeads(root, remote) ?? new Set()
+    return heads
+  }
   const stale = []
   for (const worktree of others) {
     if (worktree.locked || worktree.path === undefined || worktree.head === undefined) continue
@@ -261,8 +263,11 @@ export const findStale = ({
       pull,
       scratch: detached && path.dirname(worktree.path) === scratchRoot,
     }
-    const pushed = !facts.recent && onRemote(root, worktree.head, remote, heads)
-    const reason = staleReason(facts) ?? (pushed ? staleReason({ ...facts, pushed: true }) : undefined)
+    const reason =
+      staleReason(facts) ??
+      (remote !== undefined && onRemote(root, worktree.head, remote, lazyHeads())
+        ? staleReason({ ...facts, pushed: true })
+        : undefined)
     if (reason === undefined) continue
     if (busy(worktree.path) || midOperation(worktree.path) || !clean(worktree.path)) continue
     stale.push({ ...worktree, reason, landed: pull !== undefined || (commits !== undefined && commits.unlanded === 0) })
