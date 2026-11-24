@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { FontWidths } from "./line-breaks.js"
 import { type Text, measureWith } from "./index.js"
-import { boldWeightOf, paintedFace, storedFace } from "./painted-face.js"
+import { familyOf, paintedFace, storedFace } from "./painted-face.js"
 import { textOf, theme } from "./sample-deck.js"
 
 const plain = {
@@ -30,13 +30,26 @@ const named = [
 
 describe("paintedFace", () => {
   it("reads a named face as that weight, and Regular or Bold as the family with the bold flag", () => {
-    expect(paintedFace("Inter", 600, false)).toEqual({ family: "Inter", font: "Inter", weight: 400, name: "Regular" })
-    expect(paintedFace("Inter", 400, true)).toEqual({ family: "Inter", font: "Inter", weight: 700, name: "Bold" })
+    expect(paintedFace("Inter", 400, false)).toEqual({
+      family: "Inter",
+      font: "Inter",
+      weight: 400,
+      name: "Regular",
+      bold: false,
+    })
+    expect(paintedFace("Inter", 400, true)).toEqual({
+      family: "Inter",
+      font: "Inter",
+      weight: 700,
+      name: "Bold",
+      bold: true,
+    })
     expect(paintedFace("Inter SemiBold", 400, undefined)).toEqual({
       family: "Inter",
       font: "Inter SemiBold",
       weight: 600,
       name: "SemiBold",
+      bold: false,
     })
     for (const [name, weight] of named) {
       expect(paintedFace(`Inter ${name}`, 400, false)).toMatchObject({
@@ -60,28 +73,53 @@ describe("paintedFace", () => {
         font: "Inter",
         weight: 700,
         name: "Bold",
+        bold: true,
       })
       expect(paintedFace(`Inter ${name}`, 400, false).name).toBe(name)
     }
-    expect(paintedFace("Inter", 600, undefined)).toMatchObject({ font: "Inter", weight: 600, name: "SemiBold" })
   })
 
-  it("picks the bold face within 100 of 700, the heavier one on a tie, and 700 when the family holds it", () => {
-    expect(boldWeightOf([600, 800])).toBe(800)
-    expect(boldWeightOf([600])).toBe(600)
-    expect(boldWeightOf([900])).toBe(700)
-    expect(boldWeightOf([100, 200, 300, 400, 500, 600, 700, 800, 900])).toBe(700)
-    expect(paintedFace("Inter SemiBold", 400, true, [600, 800])).toEqual({
-      family: "Inter",
-      font: "Inter ExtraBold",
-      weight: 800,
-      name: "ExtraBold",
-    })
+  it("paints a plain family at the two weights the canvas has, Regular below a style weight of 600 and Bold from it", () => {
+    const weights = [100, 300, 400, 500, 599, 600, 700, 900]
+    expect(weights.map((weight) => paintedFace("Inter", weight, undefined).name)).toEqual([
+      "Regular",
+      "Regular",
+      "Regular",
+      "Regular",
+      "Regular",
+      "Bold",
+      "Bold",
+      "Bold",
+    ])
+    expect(paintedFace("Inter", 700, false)).toMatchObject({ name: "Regular", bold: false })
+    expect(paintedFace("Inter", 400, true)).toMatchObject({ name: "Bold", bold: true })
+    expect(paintedFace("Inter SemiBold", 700, undefined)).toMatchObject({ name: "SemiBold", bold: false })
+  })
+
+  it("says which face to paint as a family at 700, and is the one rule measure uses", () => {
+    for (const style of [400, 500, 600, 700])
+      for (const bold of [undefined, false, true]) {
+        for (const font of ["Inter", "Inter SemiBold", "Inter Medium"]) {
+          const painted = paintedFace(font, style, bold)
+          const run = measure(
+            words("M", {
+              spans: [{ end: 1, ...(font === "Inter" ? {} : { font }), ...(bold === undefined ? {} : { bold }) }],
+            }),
+            {
+              ...plain,
+              fonts: { heading: font, body: font },
+              textStyles: { ...plain.textStyles, body: { ...plain.textStyles.body, weight: style } },
+            },
+            null,
+          ).lines[0]?.runs[0]
+          expect(run).toMatchObject({ font: painted.font, bold: painted.bold })
+        }
+      }
   })
 
   it("does not split a catalog family whose name ends in a weight", () => {
     for (const family of ["Archivo Black", "Love Light", "Shadows Into Light"]) {
-      expect(paintedFace(family, 400, false).family).toBe(family)
+      expect(familyOf(family)).toBe(family)
       expect(paintedFace(family, 400, true)).toMatchObject({ family, font: family, weight: 700, name: "Bold" })
     }
   })
@@ -112,5 +150,16 @@ describe("measure of a named face", () => {
     expect(heavy.lines[0]?.runs[0]).toMatchObject({ font: "Inter", bold: true })
     expect(heavy.w).toBeGreaterThan(released.w)
     expect(released.lines[0]?.runs[0]).toMatchObject({ font: "Inter ExtraBold", bold: false })
+  })
+
+  it("measures a style weight of 600 on a plain family as Bold, and bold:false on it as Regular", () => {
+    const label = { ...plain, textStyles: { ...plain.textStyles, label: { ...plain.textStyles.label, weight: 600 } } }
+    const resting = measure(words("M", { style: "label" }), label, null)
+    const released = measure(words("M", { style: "label", spans: [{ end: 1, bold: false }] }), label, null)
+    const medium = { ...plain, textStyles: { ...plain.textStyles, label: { ...plain.textStyles.label, weight: 500 } } }
+    expect(resting.lines[0]?.runs[0]).toMatchObject({ font: "Inter", bold: true })
+    expect(released.lines[0]?.runs[0]).toMatchObject({ font: "Inter", bold: false })
+    expect(measure(words("M", { style: "label" }), medium, null).lines[0]?.runs[0]).toMatchObject({ bold: false })
+    expect(resting.w).toBeGreaterThan(released.w)
   })
 })

@@ -6,16 +6,19 @@ import {
   insertSlice,
   linkedWords,
   linkWords,
+  baseOf,
   markOn,
   replaceRange,
   sliceText,
   toggleMark,
+  withMark,
   toggledList,
   withParagraphs,
   wordAfter,
   wordBefore,
 } from "./text-edit"
 
+const regular = { font: "Inter", weight: 400 }
 const plain = (chars: string): doom.Text => doom.textFromMarkdown(chars, "body")
 function valid(text: doom.Text): doom.Text {
   expect(text.paras).toHaveLength(text.chars.split("\n").length)
@@ -41,13 +44,13 @@ describe("replaceRange", () => {
   })
 
   it("gives typed characters the style of the character before them", () => {
-    const bold = toggleMark(plain("Hello"), 0, 5, "bold")
+    const bold = toggleMark(plain("Hello"), 0, 5, "bold", regular)
     const typed = valid(replaceRange(bold, 5, 5, "!"))
     expect(typed.spans).toEqual([{ end: 6, bold: true }])
   })
 
   it("gives words typed over a selection the style of its first character", () => {
-    const styled = toggleMark(plain("Hello world"), 6, 11, "bold")
+    const styled = toggleMark(plain("Hello world"), 6, 11, "bold", regular)
     const typed = valid(replaceRange(styled, 6, 11, "all"))
     expect(typed.chars).toBe("Hello all")
     expect(typed.spans).toEqual([{ end: 6 }, { end: 9, bold: true }])
@@ -76,27 +79,27 @@ describe("replaceRange", () => {
 
 describe("marks", () => {
   it("turns a mark on for a range and off again when the whole range has it", () => {
-    const on = valid(toggleMark(plain("Hello world"), 0, 5, "bold"))
+    const on = valid(toggleMark(plain("Hello world"), 0, 5, "bold", regular))
     expect(on.spans).toEqual([{ end: 5, bold: true }, { end: 11 }])
-    expect(markOn(on, 0, 5, "bold")).toBe(true)
-    expect(markOn(on, 0, 11, "bold")).toBe(false)
-    const off = valid(toggleMark(on, 0, 5, "bold"))
+    expect(markOn(on, 0, 5, "bold", regular)).toBe(true)
+    expect(markOn(on, 0, 11, "bold", regular)).toBe(false)
+    const off = valid(toggleMark(on, 0, 5, "bold", regular))
     expect(off.spans).toEqual([])
   })
 
   it("adds to the rest when only part of the range has the mark", () => {
-    const part = toggleMark(plain("Hello world"), 0, 5, "bold")
-    expect(valid(toggleMark(part, 0, 11, "bold")).spans).toEqual([{ end: 11, bold: true }])
+    const part = toggleMark(plain("Hello world"), 0, 5, "bold", regular)
+    expect(valid(toggleMark(part, 0, 11, "bold", regular)).spans).toEqual([{ end: 11, bold: true }])
   })
 
   it("combines marks in one span", () => {
-    const both = toggleMark(toggleMark(plain("Hello"), 0, 5, "bold"), 0, 5, "italic")
+    const both = toggleMark(toggleMark(plain("Hello"), 0, 5, "bold", regular), 0, 5, "italic", regular)
     expect(both.spans).toEqual([{ end: 5, bold: true, italic: true }])
   })
 
   it("leaves a collapsed range alone", () => {
     const text = plain("Hello")
-    expect(toggleMark(text, 2, 2, "bold")).toBe(text)
+    expect(toggleMark(text, 2, 2, "bold", regular)).toBe(text)
   })
 })
 
@@ -144,10 +147,10 @@ describe("linked words", () => {
   it("changes or removes the link on those words and keeps their other looks", () => {
     const changed = valid(linkWords(linked(), report.from, report.to, "https://b.example"))
     expect(linkedWords(changed, 12, 12)).toEqual({ ...report, link: "https://b.example", mixed: false })
-    expect(markOn(changed, 9, 20, "bold")).toBe(true)
+    expect(markOn(changed, 9, 20, "bold", regular)).toBe(true)
     const removed = valid(linkWords(linked(), report.from, report.to, null))
     expect(linkedWords(removed, 12, 12)).toBeNull()
-    expect(markOn(removed, 9, 20, "bold")).toBe(true)
+    expect(markOn(removed, 9, 20, "bold", regular)).toBe(true)
     const added = valid(linkWords(plain("Read the report"), 9, 15, "https://c.example"))
     expect(linkedWords(added, 11, 11)).toEqual({ from: 9, to: 15, link: "https://c.example", mixed: false })
   })
@@ -220,5 +223,57 @@ describe("moving over characters", () => {
     expect(wordAfter(chars, 0)).toBe(3)
     expect(wordAfter(chars, 3)).toBe(7)
     expect(wordAfter(chars, 14)).toBe(14)
+  })
+})
+
+describe("bold as the canvas paints it", () => {
+  const theme = (weight: number, fonts = { heading: "Inter", body: "Inter" }): doom.Theme => {
+    const base = doom.defaultTheme
+    const label = { ...base.textStyles.label, weight }
+    return { ...base, fonts, textStyles: { ...base.textStyles, label } }
+  }
+  const labelText = (spans: doom.Text["spans"] = []): doom.Text => ({ ...plain("Hello"), style: "label", spans })
+  const painted = (text: doom.Text, shown: doom.Theme) => {
+    const style = shown.textStyles[text.style]
+    return doom.paintedFace(shown.fonts[style.font], style.weight, text.spans[0]?.bold).bold
+  }
+
+  it("reads a style weight of 600 on a plain family as Bold, and turns it off by writing bold:false", () => {
+    const shown = theme(600)
+    const base = baseOf(labelText(), shown)
+    const text = labelText()
+    expect(painted(text, shown)).toBe(true)
+    expect(markOn(text, 0, 5, "bold", base)).toBe(true)
+    const off = valid(toggleMark(text, 0, 5, "bold", base))
+    expect(off.spans).toEqual([{ end: 5, bold: false }])
+    expect(painted(off, shown)).toBe(false)
+    expect(markOn(off, 0, 5, "bold", base)).toBe(false)
+    const back = valid(toggleMark(off, 0, 5, "bold", base))
+    expect(back.spans).toEqual([{ end: 5, bold: true }])
+    expect(painted(back, shown)).toBe(true)
+  })
+
+  it("flips a Bold heading to Regular and back, in step with the paint", () => {
+    const shown = theme(600, { heading: "Inter SemiBold", body: "Inter" })
+    const base = baseOf({ ...labelText(), style: "heading" }, shown)
+    const bold = { ...labelText([{ end: 5, bold: true }]), style: "heading" as const }
+    expect(markOn(bold, 0, 5, "bold", base)).toBe(true)
+    const released = valid(toggleMark(bold, 0, 5, "bold", base))
+    expect(released.spans).toEqual([])
+    expect(markOn(released, 0, 5, "bold", base)).toBe(false)
+    expect(painted(released, shown)).toBe(false)
+  })
+
+  it("keeps a plain-family Bold heading lit until it is turned off, and Regular after", () => {
+    const shown = theme(700)
+    const base = baseOf(labelText(), shown)
+    const bold = labelText([{ end: 5, bold: true }])
+    expect(markOn(bold, 0, 5, "bold", base)).toBe(true)
+    const off = valid(toggleMark(bold, 0, 5, "bold", base))
+    expect(off.spans).toEqual([{ end: 5, bold: false }])
+    expect(markOn(off, 0, 5, "bold", base)).toBe(false)
+    expect(painted(off, shown)).toBe(false)
+    expect(withMark({ bold: true }, "bold", false, base)).toEqual({ bold: false })
+    expect(withMark({ bold: true }, "bold", false, regular)).toEqual({})
   })
 })

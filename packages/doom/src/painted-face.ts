@@ -17,6 +17,7 @@ export type PaintedFace = {
   readonly font: string
   readonly weight: number
   readonly name: WeightName
+  readonly bold: boolean
 }
 
 const weights: readonly { readonly name: WeightName; readonly weight: number }[] = [
@@ -31,32 +32,11 @@ const weights: readonly { readonly name: WeightName; readonly weight: number }[]
   { name: "Black", weight: 900 },
 ]
 
-const steps = weights.map((each) => each.weight)
 const regularWeight = 400
 const boldWeight = 700
+const boldFromStyleWeight = 600
 const wholeFamilies = new Set(["Archivo Black", "Love Light", "Shadows Into Light"])
 const faceSuffix = / (thin|extra ?light|light|medium|semi ?bold|extra ?bold|black)$/i
-
-function nearest(weight: number): number {
-  let best = regularWeight
-  let gap = Math.abs(regularWeight - weight)
-  for (const each of weights) {
-    const next = Math.abs(each.weight - weight)
-    if (next < gap) {
-      gap = next
-      best = each.weight
-    }
-  }
-  return best
-}
-
-function nameOf(weight: number): WeightName {
-  return (
-    weights.find((each) => each.weight === weight)?.name ??
-    weights.find((each) => each.weight === nearest(weight))?.name ??
-    "Regular"
-  )
-}
 
 function namedWeight(
   font: string,
@@ -71,33 +51,18 @@ function namedWeight(
   return family.length === 0 ? undefined : { family, name: match.name, weight: match.weight }
 }
 
-export function boldWeightOf(held: readonly number[]): number {
-  const near = held.filter((weight) => Math.abs(weight - boldWeight) <= 100)
-  if (near.length === 0) return boldWeight
-  return near.reduce((best, weight) => {
-    const gap = Math.abs(weight - boldWeight)
-    const bestGap = Math.abs(best - boldWeight)
-    return gap < bestGap || (gap === bestGap && weight > best) ? weight : best
-  })
+export function familyOf(font: string): string {
+  return namedWeight(font)?.family ?? font
 }
 
-export function paintedFace(
-  font: string,
-  styleWeight: number,
-  bold: boolean | undefined,
-  held: readonly number[] = steps,
-): PaintedFace {
+export function paintedFace(font: string, styleWeight: number, bold: boolean | undefined): PaintedFace {
   const named = namedWeight(font)
   const family = named?.family ?? font
-  if (bold === true) {
-    const weight = boldWeightOf(held)
-    const name = nameOf(weight)
-    return weight === boldWeight
-      ? { family, font: family, weight, name }
-      : { family, font: `${family} ${name}`, weight, name }
-  }
-  const weight = named !== undefined ? named.weight : bold === false ? regularWeight : nearest(styleWeight)
-  return { family, font: named !== undefined ? font : family, weight, name: named?.name ?? nameOf(weight) }
+  if (bold !== true && named !== undefined) return { family, font, weight: named.weight, name: named.name, bold: false }
+  const flagged = bold ?? styleWeight >= boldFromStyleWeight
+  return flagged
+    ? { family, font: family, weight: boldWeight, name: "Bold", bold: true }
+    : { family, font: family, weight: regularWeight, name: "Regular", bold: false }
 }
 
 export function storedFace(

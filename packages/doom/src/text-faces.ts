@@ -1,6 +1,6 @@
 import { deckOf } from "./deck-of.js"
 import type { Doom } from "./doom.js"
-import { paintedFace } from "./painted-face.js"
+import { familyOf } from "./painted-face.js"
 
 export type Face = { readonly font: string; readonly bold: boolean; readonly italic: boolean }
 export type FaceNeeds = { readonly faces: readonly Face[]; readonly texts: readonly string[] }
@@ -26,7 +26,7 @@ export function doomFaces(doom: Doom): FaceNeeds {
       for (const name of [...chart.categories, ...chart.series.map((series) => series.name)]) texts.add(name)
   }
   for (const font of fonts) {
-    const family = paintedFace(font, 400, false).family
+    const family = familyOf(font)
     if (family !== font) fonts.add(family)
   }
   const faces = [...fonts].flatMap((font) => [

@@ -61,30 +61,6 @@ export function holdsWeight(face: ServedFace, weight: number): boolean {
   return low !== undefined && high !== undefined && weight >= low && weight <= high
 }
 
-export function familyName(typeface: string): string {
-  return namedFace(typeface)?.family ?? typeface
-}
-
-export function typefaceFor(family: string, weight: number): { readonly font: string; readonly bold: boolean } {
-  if (weight === boldWeight) return { font: family, bold: true }
-  const name = fontWeights.find((each) => each.weight === weight)?.name
-  if (name === undefined || weight === regularWeight) return { font: family, bold: false }
-  return { font: `${family} ${name}`, bold: false }
-}
-
-export function nearestWeight(weight: number): number {
-  let best = regularWeight
-  let gap = Math.abs(regularWeight - weight)
-  for (const each of fontWeights) {
-    const next = Math.abs(each.weight - weight)
-    if (next < gap) {
-      gap = next
-      best = each.weight
-    }
-  }
-  return best
-}
-
 export function stylesHeld(faces: readonly ServedFace[] | undefined): readonly FontStyle[] {
   return fontWeights.flatMap((each) =>
     ([false, true] as const).flatMap((italic) => {

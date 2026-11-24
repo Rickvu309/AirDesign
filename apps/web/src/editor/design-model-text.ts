@@ -1,6 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { fontFamily, namedFace, styleName, stylesHeld, type ServedFace } from "@airdesign/fonts"
-import { fontsFor } from "@airdesign/render"
+import { fontFamily, styleName, stylesHeld } from "@airdesign/fonts"
 import { fillCopy } from "@/copy/fill-copy"
 import { formatCopy } from "@/copy/format-copy"
 import { editorCopy } from "@/copy/editor-copy"
@@ -10,10 +9,11 @@ import type { PanelKind } from "@/design/panel-order"
 import { arrange, resolveControl } from "@/design/panel-arrangement"
 import { spacingUnits } from "@/design/spacing-units"
 import { choiceDesc, type Desc } from "@/design/control-desc"
+import { servedFaces } from "@/design/served-faces"
 import { doomControl, flagDesc, fontDesc, type Held } from "./design-controls"
 import { lineToFraction, shownText, sizeToHundredths, type TextShown } from "./design-text-values"
 import type { ModelInput } from "./design-model"
-import { propOf } from "@airdesign/doom"
+import { paintedFace, propOf } from "@airdesign/doom"
 
 const casings = ["none", "upper", "lower", "title"]
 const lists = ["none", "bullets", "numbers"]
@@ -42,16 +42,8 @@ const lineDesc: Desc = {
 const textControl = (field: string, label: string, desc: Desc, held: Held, extra: Partial<PanelControl> = {}) =>
   doomControl({ trait: "text", field }, label, desc, held, extra)
 
-function familyFaces(family: string): readonly ServedFace[] | undefined {
-  if (typeof document === "undefined") return undefined
-  const fonts = fontsFor(document)
-  if (fonts === undefined) return undefined
-  if (!fonts.ready(family)) queueMicrotask(() => void fonts.load(family))
-  return fonts.faces(family)
-}
-
 function weightChoices(family: string, current: { readonly weight: number; readonly italic: boolean }) {
-  const styles = stylesHeld(familyFaces(family))
+  const styles = stylesHeld(servedFaces(family))
   const listed = styles.some((style) => style.weight === current.weight && style.italic === current.italic)
   return (listed ? styles : [...styles, current]).map((style) => ({ value: styleName(style), label: styleName(style) }))
 }
@@ -61,16 +53,16 @@ function typography(control: PanelControl, theme: doom.Theme, current: doom.Text
   const choices = names.map((name) => {
     const style = theme.textStyles[name]
     const font = theme.fonts[style.font]
-    const face = namedFace(font)
+    const painted = paintedFace(font, style.weight, undefined)
     return {
       value: name,
       label: editorCopy.textStyles[name],
       font,
       detail: String(style.size),
       appearance: {
-        fontFamily: fontFamily(face?.family ?? font),
+        fontFamily: fontFamily(painted.family),
         fontSize: Math.max(12, Math.min(28, style.size / 3)),
-        fontWeight: face?.weight ?? style.weight,
+        fontWeight: painted.weight,
       },
     }
   })

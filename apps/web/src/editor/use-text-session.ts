@@ -7,10 +7,12 @@ import {
   insertSlice,
   linkedWords,
   linkWords,
+  baseOf,
   lookAt,
   markOn,
   replaceRange,
   toggleMark,
+  withMark,
   toggledList,
   withParagraphs,
   type Look,
@@ -46,6 +48,7 @@ export type Session = {
 
 export type TextSession = {
   readonly session: Session | null
+  readonly theme: doom.Theme
   readonly refused: boolean
   readonly preview: readonly doom.Write[]
   begin(node: doom.NodeId, entry: Entry): void
@@ -228,6 +231,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
 
   const sessionApi: TextSession = {
     session,
+    theme: doom.deckOf(view).theme,
     refused,
     preview: useMemo(() => {
       if (session === null) return []
@@ -258,12 +262,12 @@ export function useTextSession(client: EditorClient, view: doom.Doom): TextSessi
       const [low, high] = [Math.min(now.anchor, now.focus), Math.max(now.anchor, now.focus)]
       if (low === high) {
         const base = now.pending ?? lookAt(now.draft, low)
-        const on = markOn(now.draft, low, high, mark, now.pending ?? undefined)
-        const { [mark]: _was, ...rest } = base
-        change({ draft: now.draft, pending: on ? rest : { ...base, [mark]: true } })
+        const face = baseOf(now.draft, doom.deckOf(viewRef.current).theme)
+        const on = markOn(now.draft, low, high, mark, face, now.pending ?? undefined)
+        change({ draft: now.draft, pending: withMark(base, mark, !on, face) })
         return
       }
-      change({ draft: toggleMark(now.draft, low, high, mark) })
+      change({ draft: toggleMark(now.draft, low, high, mark, baseOf(now.draft, doom.deckOf(viewRef.current).theme)) })
     },
     link(link) {
       const now = live()

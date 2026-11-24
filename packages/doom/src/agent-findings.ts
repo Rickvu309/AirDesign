@@ -4,6 +4,7 @@ import type { Doom, Write } from "./doom.js"
 import type { NodeId } from "./ids.js"
 import { type Color, type ColorVar, type Hex, type Paint, colorVars } from "./paint.js"
 import { type Text, type TextStyleName, textStyleNames } from "./text.js"
+import { familyOf } from "./painted-face.js"
 import type { Theme } from "./theme.js"
 
 export type AgentFinding = { readonly node: NodeId; readonly note: string } & (
@@ -66,6 +67,7 @@ export function agentFindings(after: Doom, writes: readonly Write[]): readonly A
   const scale = new Set(textStyleNames.map((name) => theme.textStyles[name].size))
   const palette = new Set(colorVars.map((name) => theme.colors[name].toLowerCase()))
   const families = new Set([theme.fonts.heading, theme.fonts.body])
+  const ownFamilies = new Set([...families].map(familyOf))
   const found = new Map<string, AgentFinding>()
   const note = (key: string, finding: AgentFinding) => {
     if (after.nodes.has(finding.node) && !found.has(key)) found.set(key, finding)
@@ -90,7 +92,7 @@ export function agentFindings(after: Doom, writes: readonly Write[]): readonly A
           note: sizeNote(node, span.size, style, to),
         })
       }
-      if (span.font !== undefined && !families.has(span.font))
+      if (span.font !== undefined && !ownFamilies.has(familyOf(span.font)))
         note(`${node}|font|${span.font}`, {
           code: "off-font",
           node,

@@ -1,7 +1,6 @@
 import { readAngle, readRotation } from "./angle.js"
 import { arrowField, startArrowField } from "./agent-arrow.js"
 import { readAxisUnit } from "./chart.js"
-import { kindWords } from "./agent-kind-words.js"
 import { type WeightName, weightNames } from "./painted-face.js"
 import { type AgentEnd, endSchema, readEnd } from "./agent-end.js"
 import { type AgentInsert, insertField } from "./agent-insert.js"

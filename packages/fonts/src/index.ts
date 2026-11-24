@@ -4,7 +4,6 @@ export { fontFamily, fontRoutes } from "./family.js"
 
 export {
   boldWeight,
-  familyName,
   holdsWeight,
   namedFace,
   readStyleName,

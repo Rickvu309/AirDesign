@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { familyName, namedFace, readStyleName, styleName, typefaceFor } from "./named-face.js"
+import { namedFace, readStyleName, styleName } from "./named-face.js"
 import { resolveFont } from "./source.js"
 
 it("reads a weight from any served family's named face and keeps the stored typeface", () => {
@@ -35,13 +35,4 @@ it("names each style as a font names it and reads the name back", () => {
   for (const weight of [100, 200, 300, 400, 500, 600, 700, 800, 900])
     for (const italic of [false, true]) expect(readStyleName(styleName({ weight, italic }))).toEqual({ weight, italic })
   expect(readStyleName("Heavy")).toBeUndefined()
-})
-
-it("splits a named face into its family and stores only Regular and Bold on the bold flag", () => {
-  expect(familyName("Inter SemiBold")).toBe("Inter")
-  expect(familyName("Inter")).toBe("Inter")
-  expect(typefaceFor("Inter", 600)).toEqual({ font: "Inter SemiBold", bold: false })
-  expect(typefaceFor("Inter", 400)).toEqual({ font: "Inter", bold: false })
-  expect(typefaceFor("Inter", 700)).toEqual({ font: "Inter", bold: true })
-  expect(typefaceFor("Lato", 300)).toEqual({ font: "Lato Light", bold: false })
 })
