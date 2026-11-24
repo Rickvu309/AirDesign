@@ -50,5 +50,3 @@ export function formatTick(value: number, digits: number, unit?: string): string
   const shown = formatValue(value, digits)
   return unit === undefined ? shown : `${shown} ${unit}`
 }
-
-export const slug = (name: string): string => name.trim().replace(/\s+/g, "-")

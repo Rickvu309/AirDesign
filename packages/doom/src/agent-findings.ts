@@ -50,7 +50,10 @@ function colorsOf(write: Write): readonly Color[] {
   if (write.prop === "text") return (write.value as Text).spans.flatMap((span) => span.color ?? [])
   if (write.prop !== "chart") return []
   const chart = write.value as Chart
-  return [...chart.series.flatMap((series) => series.color ?? []), ...Object.values(chart.points ?? {})]
+  return chart.series.flatMap((series) => [
+    ...(series.color === undefined ? [] : [series.color]),
+    ...(series.points ?? []).map((point) => point.color),
+  ])
 }
 
 const sizeNote = (node: NodeId, size: number, style: TextStyleName, to: number) =>

@@ -100,6 +100,8 @@ export const forms = {
   stroke: "A theme colour, lighter or darker by a percent, #rrggbb, or none.",
   fill: "A colour, none, {image} or {gradient}.",
   series: "One value per category.",
+  points: "At most one colour for each category's place.",
+  pieColor: "A pie colours each slice; set the slice with points or #series:category, not the series.",
   text: "A non-empty string.",
 } as const
 

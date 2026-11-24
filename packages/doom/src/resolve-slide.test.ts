@@ -157,7 +157,7 @@ describe("resolveSlide", () => {
       },
     ])
     const children = parts[0]?.children ?? []
-    expect(children.some((child) => child.id === `${ids.chart}#S:A` && child.derived)).toBe(true)
+    expect(children.some((child) => child.id === `${ids.chart}#0:0` && child.derived)).toBe(true)
     expect(children[children.length - 1]).toMatchObject({ id: ids.note, derived: false })
   })
 

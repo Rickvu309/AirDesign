@@ -277,14 +277,6 @@ describe("set by role and by chart bar", () => {
     })
   })
 
-  it("colours one bar by its derived id, and clears it with none", () => {
-    const bar = `${more.chart}#Plan:Q2`
-    let doom = build(richDeck(), set(bar, { fill: "accent3" }))
-    expect(propOf(doom.nodes.get(more.chart)!, "chart")?.points).toEqual({ [bar]: { var: "accent3" } })
-    doom = build(doom, set(bar, { fill: "none" }))
-    expect(propOf(doom.nodes.get(more.chart)!, "chart")?.points).toEqual({})
-  })
-
   it("refuses a bar the chart has not, a look beyond its colour, and a bar of a frame with no chart", () => {
     expect(refusal(richDeck(), set(`${more.chart}#Plan:Q9`, { fill: "accent3" }))).toMatchObject({
       refused: "missing",

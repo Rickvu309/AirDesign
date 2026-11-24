@@ -8,6 +8,7 @@ import { notesText } from "./notes-text.js"
 import { resizedBy } from "./agent-resize.js"
 import { bakeLayout } from "./bake-layout.js"
 import { measureWith } from "./measure.js"
+import { chartKeepingPoints, chartWithPointColor } from "./chart.js"
 import { type NodeId, readNodeId } from "./ids.js"
 import type { Geometry } from "./geometry.js"
 import type { Node } from "./doom.js"
@@ -110,16 +111,25 @@ function setBar(draft: Draft, change: SetChange, at: number): void {
   const chart =
     propOf(frame, "chart") ?? stop("shape", frame.id, "target", "form", "A chart id, then #series:category.")
   const bar = change.target.slice(at + 1)
-  const known = chart.series.some((series) => chart.categories.some((category) => bar === `${series.name}:${category}`))
-  if (!known) stop("missing", frame.id, "target")
+  const found = chart.series.flatMap((series, index) =>
+    chart.categories.flatMap((category, place) => (bar === `${series.name}:${category}` ? [{ index, place }] : [])),
+  )
+  const mark = found[0] ?? stop("missing", frame.id, "target")
+  if (found.length > 1)
+    stop(
+      "shape",
+      frame.id,
+      "target",
+      "form",
+      "Names one bar. To colour bars that share names, set chart with series points.",
+    )
   for (const [key, value] of Object.entries(change))
     if (value !== undefined && key !== "op" && key !== "target" && key !== "fill")
       stop("shape", frame.id, key, "unknown", "fill.")
   const fill = change.fill ?? stop("shape", frame.id, "fill", "missing", "A theme colour, a hex or none.")
   if (typeof fill === "object") stop("shape", frame.id, "fill", "form", "A theme colour, a hex or none.")
-  const { [change.target]: _was, ...others } = chart.points ?? {}
   put(draft, frame.id, {
-    chart: { ...chart, points: fill === "none" ? others : { ...others, [change.target]: colorOf(fill) } },
+    chart: chartWithPointColor(chart, mark.index, mark.place, fill === "none" ? null : colorOf(fill)),
   })
 }
 
@@ -217,7 +227,7 @@ export function compileSet(draft: Draft, change: SetChange): void {
     ...(text === undefined ? {} : { text }),
     ...(layout === undefined ? {} : { layout }),
     ...(shaped === undefined ? {} : { geometry: shaped }),
-    ...(change.chart === undefined ? {} : { chart: chartOf(change.chart) }),
+    ...(change.chart === undefined ? {} : { chart: chartKeepingPoints(propOf(node, "chart"), chartOf(change.chart)) }),
     ...(change.notes === undefined ? {} : { notes: notesText(change.notes) }),
     ...(change.skipped === undefined ? {} : { skipped: change.skipped }),
     ...(change.transition === undefined ? {} : { transition: change.transition }),
