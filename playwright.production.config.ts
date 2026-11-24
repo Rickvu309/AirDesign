@@ -1,5 +1,8 @@
+import { requirePinnedNode } from "./scripts/node-version.mjs"
 import { defineConfig } from "@playwright/test"
 import { deployed, type Production } from "./tests/browser/production.ts"
+
+requirePinnedNode()
 
 export default defineConfig<object, { production: Production | undefined }>({
   testDir: "tests/browser",
