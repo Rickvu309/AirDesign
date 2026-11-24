@@ -169,10 +169,6 @@ test("text in the real app meets WCAG AA contrast", () => {
 
 test("the landing header keeps its name clear beside the product demo", () => {
   const landing = ["landing-product-playing", "landing-product-paused", "landing-product-reduced"]
-  test.fail(
-    landing.some((name) => ours.has(name)),
-    "the fixed header name is flagged as clipped beside the product demo",
-  )
   expect(
     seen(landing, "overflowing-text"),
     "the fixed header name is flagged as clipped beside the product demo",
