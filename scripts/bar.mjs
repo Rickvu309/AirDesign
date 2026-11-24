@@ -346,7 +346,7 @@ export const readPullHead = (repository, number, api = github) => {
 
 export const pullBodyFaults = ({ api = github, repository, pull, changedFiles, body }) =>
   bodyFaults(body, {
-    offBranch: githubOffBranch(githubCompare(api, repository, { head: pull.head, base: pull.baseRef })),
+    offBranch: githubOffBranch(githubCompare(api, repository, { head: pull.head, base: pull.base })),
     changedFiles,
     repository,
   })

@@ -10,33 +10,42 @@ import { ghApi, readWithRetry } from "./github-read.mjs"
 export const usage = "usage: pnpm pr-body <pull request number> <body file>"
 
 export const updateBody = ({ api, repository, number, body }) => {
-  const { pull, listed } = readPullHead(repository, number, api)
+  const read = readWithRetry({ run: api })
+  const { pull, listed } = readPullHead(repository, number, read)
   const changedFiles = listed.map((file) => file.name)
   const attribution = attributionLine(body)
   const faults = [
     ...(attribution === undefined ? [] : [`the body has the attribution line "${attribution}". Delete that line.`]),
-    ...pullBodyFaults({ api, repository, pull, changedFiles, body }),
+    ...pullBodyFaults({ api: read, repository, pull, changedFiles, body }),
   ]
   if (faults.length > 0) return { ok: false, lines: faults.map((fault) => `Body: ${fault}`) }
-  const moved = (now) => now.head !== pull.head || now.base !== pull.base
-  const before = readPullMeta(repository, number, api)
-  if (moved(before)) {
-    return {
-      ok: false,
-      lines: [
-        `Body: pull request ${number} moved from head ${pull.head.slice(0, 8)} to ${before.head.slice(0, 8)} while the body was judged. Nothing was written. Run pnpm pr-body ${number} <file> again.`,
-      ],
-    }
+  const movement = (now) =>
+    [
+      ...(now.head === pull.head ? [] : [`from head ${pull.head.slice(0, 8)} to ${now.head.slice(0, 8)}`]),
+      ...(now.base === pull.base && now.baseRef === pull.baseRef
+        ? []
+        : [`from base ${pull.baseRef}@${pull.base.slice(0, 8)} to ${now.baseRef}@${now.base.slice(0, 8)}`]),
+    ].join(" and ")
+  const retry = `Run pnpm pr-body ${number} <file> again.`
+  const refuse = (reason) => ({ ok: false, lines: [`Body: ${reason} ${retry}`] })
+  const before = movement(readPullMeta(repository, number, read))
+  if (before) {
+    return refuse(`pull request ${number} moved ${before} while the body was judged. Nothing was written.`)
   }
-  api(["-X", "PATCH", `repos/${repository}/pulls/${number}`, "-f", `body=${body}`])
-  const after = readPullMeta(repository, number, api)
-  if (moved(after)) {
-    return {
-      ok: false,
-      lines: [
-        `Body: pull request ${number} moved from head ${pull.head.slice(0, 8)} to ${after.head.slice(0, 8)} as the body was written, so the body was not judged against the head it sits on. Run pnpm pr-body ${number} <file> again.`,
-      ],
-    }
+  let failure
+  try {
+    api(["-X", "PATCH", `repos/${repository}/pulls/${number}`, "-f", `body=${body}`])
+  } catch (error) {
+    failure = `GitHub did not confirm the write (${String(error.stderr || error.message).trim()}).`
+  }
+  const after = movement(readPullMeta(repository, number, read))
+  if (failure) {
+    return refuse(after ? `pull request ${number} moved ${after} during the write. ${failure}` : failure)
+  }
+  if (after) {
+    return refuse(
+      `pull request ${number} moved ${after} as the body was written. Judge the body against the new pull request state.`,
+    )
   }
   const shown = beforeAfterNeed({ changedFiles, body, repository })
   return {
@@ -61,7 +70,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
       encoding: "utf8",
     }).trim()
     const result = updateBody({
-      api: readWithRetry({ run: ghApi }),
+      api: ghApi,
       repository,
       number,
       body: fs.readFileSync(file, "utf8"),
