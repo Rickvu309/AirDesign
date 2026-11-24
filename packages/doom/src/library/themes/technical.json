@@ -9,7 +9,7 @@
     "accent1": "#244f9f",
     "accent2": "#006661",
     "accent3": "#633ca0",
-    "accent4": "#83501d",
+    "accent4": "#7d4c1b",
     "accent5": "#8e3858",
     "accent6": "#475673",
     "link": "#244f9f"
@@ -62,7 +62,7 @@
       "tracking": 0
     },
     "caption": {
-      "size": 23,
+      "size": 24,
       "font": "body",
       "weight": 400,
       "lineHeight": 1.24,
