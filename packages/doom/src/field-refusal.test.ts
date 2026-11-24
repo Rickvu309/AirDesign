@@ -198,6 +198,18 @@ const readRows: { readonly raw: unknown; readonly field: string; readonly fault:
     form: "A number from 0 to 99.",
   },
   {
+    raw: { op: "set", target: "t:3", arrow: "big" },
+    field: "arrow",
+    fault: "form",
+    form: "true, false, or one of none, arrow, triangle, circle.",
+  },
+  {
+    raw: { op: "set", target: "t:3", startArrow: "big" },
+    field: "startArrow",
+    fault: "form",
+    form: "One of none, arrow, triangle, circle.",
+  },
+  {
     raw: { op: "set", target: "t:3", crop: { sideways: 4 } },
     field: "crop.sideways",
     fault: "unknown",
@@ -226,6 +238,7 @@ describe("each refused edit names its own path", () => {
     }
     needs(set(ids.title, { icon: "star" }), "icon", "an icon")
     needs(set(ids.title, { arrow: true }), "arrow", "a line")
+    needs(set(ids.title, { startArrow: "arrow" }), "startArrow", "a line")
     needs(set(ids.title, { fit: "fill" }), "fit", "an image fill")
     needs(set(ids.card, { crop: { left: 10 } }), "crop", "an image fill")
     needs(set(ids.title, { chart }), "chart", "a chart layer")
