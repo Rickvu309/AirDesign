@@ -1,0 +1,35 @@
+{
+  "check": "checks-doom.md#read-base",
+  "covers": [
+    {
+      "file": "packages/doom/src/apply-edit.ts",
+      "names": ["landEdit"],
+      "digest": "14a881a3b8f7",
+      "blob": "d33a4ef6972695f0eadfaa5f5647c40d07d2e553"
+    },
+    {
+      "file": "packages/doom/src/read-write.ts",
+      "names": ["readEdit"],
+      "digest": "b3e7759f8578",
+      "blob": "771834f05d08a70ae55f02d8c72e6f2669e0443f"
+    },
+    {
+      "file": "packages/live/src/doom-deck.ts",
+      "names": ["connected"],
+      "digest": "dd6960474ebf",
+      "blob": "0858f87a36bf35a40241dcaae43425ac4b96108a"
+    },
+    {
+      "file": "packages/live/src/doom-queue.ts",
+      "names": ["readGap", "shown", "queueEdit", "dropped"],
+      "digest": "3c618e4d9ac8",
+      "blob": "2f51bb6fb5614e40611ec335ef18096af990be9c"
+    },
+    {
+      "file": "apps/api/src/doom/doom-deck.ts",
+      "names": ["editDoom", "updateSql"],
+      "digest": "0821b50c6313",
+      "blob": "09480a9afbf1c4de971261f3890b5552a966b9bf"
+    }
+  ]
+}

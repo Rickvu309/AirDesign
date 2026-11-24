@@ -78,7 +78,7 @@ const readAuthor = object(
 
 const readRunUndo = object({ run: words(limits.clientName, 1), undone: boolean })
 
-const editKeys = new Set(["once", "author", "writes", "phase", "runUndo"])
+const editKeys = new Set(["once", "author", "writes", "readBase", "phase", "runUndo"])
 
 export function readEdit(raw: unknown, doom: Doom): Edit | Refusal {
   const found = plain(raw)
@@ -93,6 +93,8 @@ export function readEdit(raw: unknown, doom: Doom): Edit | Refusal {
   } catch (thrown) {
     return refuse(rejected(thrown))
   }
+  const readBase = readRev(found.readBase)
+  if (Object.hasOwn(found, "readBase") && readBase === undefined) return refuse("shape")
   const phase = found.phase
   if (phase !== undefined && phase !== "start" && phase !== "stop") return refuse("shape")
   if (!Array.isArray(found.writes) || (author.kind === "person" && (author.run ?? author.name) !== undefined))
@@ -116,6 +118,7 @@ export function readEdit(raw: unknown, doom: Doom): Edit | Refusal {
     once,
     author,
     writes,
+    ...(readBase === undefined ? {} : { readBase }),
     ...(phase === undefined ? {} : { phase }),
     ...(runUndo === undefined ? {} : { runUndo }),
   }

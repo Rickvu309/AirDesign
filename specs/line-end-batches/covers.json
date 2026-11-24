@@ -10,8 +10,8 @@
     {
       "file": "apps/api/src/doom/doom-deck.ts",
       "names": ["partSql", "seedsOf", "editDoom"],
-      "digest": "09cf748e8c0c",
-      "blob": "420f8f62388a10ba57920cee1dcf5af21ed8d45c"
+      "digest": "9b4f9af45e27",
+      "blob": "09480a9afbf1c4de971261f3890b5552a966b9bf"
     }
   ]
 }

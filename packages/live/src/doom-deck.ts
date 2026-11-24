@@ -1,108 +1,49 @@
-import {
-  picturesWantedMilliseconds,
-  readDeckId,
-  type DeckId,
-  type DoomPictured,
-  type DoomRefusal,
-  type SlidePictures,
-} from "@airdesign/catalog"
+import { picturesWantedMilliseconds, readDeckId, type DeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
-import { appliedOn, dropped, landed, ownedIn, queueEdit, revIn, sendable, shown, type Queued } from "./doom-queue.js"
+import {
+  appliedOn,
+  dropped,
+  landed,
+  ownedIn,
+  queueEdit,
+  readGap,
+  revIn,
+  sendable,
+  shown,
+  type Queued,
+} from "./doom-queue.js"
 import type { DoomRemote } from "./doom-remote.js"
+import type {
+  DoomDeck,
+  DoomOptions,
+  Followed,
+  Notice,
+  Opened,
+  Refused,
+  Sent,
+  Synced,
+  Turned,
+  TurnedRun,
+} from "./doom-deck-types.js"
 import { statusOf, type DeckStatus, type Reach } from "./doom-status.js"
 import { deviceStorage, type DoomStorage } from "./doom-storage.js"
 import { runInLog } from "./run-log.js"
 import { watchedRunsOf } from "./watched-runs.js"
 import { catchingUpResolves, onStanding, pressedOn, remember, type Pressed } from "./turn-replay.js"
 
-export type Notice = {
-  readonly once: string
-  readonly refused: doom.Refusal["refused"]
-  readonly node?: doom.NodeId
-  readonly prop?: doom.WriteKey
-  readonly because?: string
-}
-
-type Sent = { readonly ok: true; readonly once: string; readonly saved: Promise<void> }
-type Refused = { readonly ok: false; readonly refused: doom.Refusal }
-
-export type Pushed = Sent | { readonly ok: true; readonly unchanged: true } | Refused
-
-export type Turned =
-  | { readonly ok: true; readonly once: string; readonly saved: Promise<void> }
-  | { readonly ok: false; readonly reason: "nothing" }
-  | { readonly ok: false; readonly reason: "refused"; readonly refused: doom.Refusal }
-
-export type TurnedRun =
-  | {
-      readonly ok: true
-      readonly once: string
-      readonly saved: Promise<void>
-      readonly kept: readonly doom.NodeId[]
-      readonly left: readonly doom.NodeId[]
-      readonly waiting: readonly doom.NodeId[]
-    }
-  | {
-      readonly ok: false
-      readonly reason: "left"
-      readonly kept: readonly doom.NodeId[]
-      readonly left: readonly doom.NodeId[]
-      readonly waiting: readonly doom.NodeId[]
-    }
-  | Exclude<Turned, { readonly ok: true }>
-  | { readonly ok: false; readonly reason: "offline" }
-
-export type Synced =
-  | { readonly ok: true }
-  | { readonly ok: false; readonly reason: "offline" }
-  | { readonly ok: false; readonly reason: "blocked"; readonly refusal: DoomRefusal["refusal"] }
-
-export type DoomDeck = {
-  readonly deck: DeckId
-  view(): doom.Doom
-  server(): doom.Doom
-  pending(): readonly doom.Edit[]
-  notices(): readonly Notice[]
-  clearNotices(): void
-  status(): DeckStatus
-  mint(): doom.NodeId
-  push(
-    writes: readonly doom.Write[],
-    options?: { readonly author?: doom.Author; readonly step?: string; readonly seen?: doom.Doom },
-  ): Pushed
-  undo(): Turned
-  redo(): Turned
-  undoRun(run: string): Promise<TurnedRun>
-  sync(): Promise<Synced>
-  catchUp(): Promise<{ readonly ok: boolean }>
-  follow(signal: AbortSignal): Promise<Followed>
-  reportPictures(rev: number, pictures: SlidePictures): Promise<DoomPictured>
-  picturesWanted(): boolean
-  subscribe(listener: () => void): () => void
-}
-
-export type Followed = "stopped" | "gone"
-
-export type DoomOptions = {
-  readonly once?: () => string
-  readonly client?: string
-  readonly storage?: DoomStorage
-  readonly pause?: (ms: number) => Promise<void>
-  readonly measure?: () => doom.Measure | null
-}
+export type { DoomDeck } from "./doom-deck-types.js"
 
 type Step = {
   readonly onces: readonly string[]
   readonly before: doom.Doom
   readonly writes: readonly doom.Write[]
   readonly key?: string
+  readonly guarded?: true
   readonly run?: string
 }
 
 const retryMilliseconds = 2_000
 const estimate = doom.measureWith({})
-
-export type Opened = { readonly ok: true; readonly deck: DoomDeck } | Exclude<DoomRefusal, { readonly refusal: "edit" }>
 
 export async function createDoomDeck(remote: DoomRemote, deck: string, options: DoomOptions = {}): Promise<Opened> {
   return start(remote, deck, "create", options)
@@ -284,6 +225,11 @@ function connected(
     if (kept === undefined) return false
     queue = kept.queue
     forget(kept.gone)
+    const changed = new Set([...kept.gone, ...kept.steps.keys()])
+    for (const each of queue) {
+      const because = each.afterRead?.find((name) => changed.has(name))
+      if (because !== undefined) drop(each.edit.once, { refused: "stale", because })
+    }
     const again = (steps: Step[]) =>
       steps.map((step) => {
         const relaid = kept.steps.get(step.onces[0]!)
@@ -300,7 +246,7 @@ function connected(
       const head = queue[0]
       if (head === undefined) return { ok: true }
       const once = head.edit.once
-      const built = head.after.find((name) => name !== null)
+      const built = readGap(server, head) ?? head.after.find((name) => name !== null)
       if (built !== undefined && built !== null) {
         try {
           if (!(await catchUp()).ok) return { ok: false, reason: "offline" }
@@ -339,7 +285,12 @@ function connected(
       }
       const { refusal } = answer
       const pressed = turned.get(once)
-      if (refusal === "edit" && catchingUpResolves(answer.refused) && pressed !== undefined) {
+      if (
+        refusal === "edit" &&
+        head.edit.readBase === undefined &&
+        catchingUpResolves(answer.refused) &&
+        pressed !== undefined
+      ) {
         if (!(await catchUp().catch(() => ({ ok: false }))).ok) return { ok: false, reason: "offline" }
         if (queue[0] !== head || standOnly(once)) {
           await save({ queue })
@@ -389,14 +340,29 @@ function connected(
   function pushEdit(
     asked: readonly doom.Write[],
     by: doom.Author,
-    runUndo?: doom.RunUndo,
-    follows?: string,
-    seen?: doom.Doom,
-    last?: doom.Doom,
+    {
+      runUndo,
+      follows,
+      readBase,
+      seen,
+      last,
+    }: {
+      runUndo?: doom.RunUndo
+      follows?: string
+      readBase?: doom.Rev
+      seen?: doom.Doom | undefined
+      last?: doom.Doom
+    } = {},
   ): (Sent & { readonly before: doom.Doom; readonly writes: readonly doom.Write[] }) | Refused {
     const before = view()
     const writes = doom.freeLineEnds(before, asked, options.measure?.() ?? estimate, seen, last)
-    const edit: doom.Edit = { once: nextOnce(), author: by, writes, ...(runUndo === undefined ? {} : { runUndo }) }
+    const edit: doom.Edit = {
+      once: nextOnce(),
+      author: by,
+      writes,
+      ...(runUndo === undefined ? {} : { runUndo }),
+      ...(readBase === undefined ? {} : { readBase }),
+    }
     const made = queueEdit(server, queue, edit)
     if (doom.isRefusal(made)) return { ok: false, refused: made }
     const trial = appliedOn(before, made.edit)
@@ -426,14 +392,11 @@ function connected(
       from.pop()
       return { ok: false, reason: "nothing" }
     }
-    const pushed = pushEdit(
-      writes,
-      author,
-      step.run === undefined ? undefined : { run: step.run, undone: to === redoSteps },
-      undefined,
-      undefined,
-      step.before,
-    )
+    const pushed = pushEdit(writes, author, {
+      ...(step.run === undefined ? {} : { runUndo: { run: step.run, undone: to === redoSteps } }),
+      ...(step.guarded === true ? { readBase: now.rev } : {}),
+      last: step.before,
+    })
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
     from.pop()
     to.push({
@@ -441,6 +404,7 @@ function connected(
       before: now,
       writes: pushed.writes,
       ...(step.run === undefined ? {} : { run: step.run }),
+      ...(step.guarded === true ? { guarded: true } : {}),
     })
     remember(turned, pushed.once, pressedOn(server, now, pushed.writes, step.onces))
     return { ok: true, once: pushed.once, saved: pushed.saved }
@@ -464,7 +428,7 @@ function connected(
       return [...kept, ...left, ...waiting].length === 0
         ? { ok: false, reason: "nothing" }
         : { ok: false, reason: "left", kept, left, waiting }
-    const pushed = pushEdit(writes, author, { run, undone: true })
+    const pushed = pushEdit(writes, author, { runUndo: { run, undone: true } })
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
     redoSteps.push({ onces: [pushed.once], before: now, writes: pushed.writes, run })
     remember(turned, pushed.once, pressedOn(server, now, pushed.writes))
@@ -519,19 +483,34 @@ function connected(
     status: () => (shownStatus = statusOf({ unsent: queue.length, reach: link, kept, aside: notices }, shownStatus)),
     mint: () => doom.nodeId(`${client}:${(counter += 1)}`),
     push(asked, pushing) {
-      const given = doom.changingWrites(view(), asked)
-      if (given.length === 0) return { ok: true, unchanged: true }
-      const derived = doom.nameFromTitleWrites(view(), given)
-      const fromTitle = derived.some((write) => write.prop === "name")
+      const now = view()
+      const read = pushing?.read
+      if (read !== undefined && read !== now) return { ok: false, refused: { refused: "stale" } }
+      const given = doom.changingWrites(now, asked)
+      if (given.length === 0 && read === undefined) return { ok: true, unchanged: true }
+      const derived = doom.nameFromTitleWrites(now, given)
+      const fromTitle = read === undefined && derived.some((write) => write.prop === "name")
       const own = fromTitle ? given : [...given, ...derived]
       const named = fromTitle ? derived : []
-      const pushed = pushEdit(own, pushing?.author ?? author, undefined, undefined, pushing?.seen)
+      const pushed = pushEdit(own, pushing?.author ?? author, {
+        seen: pushing?.seen,
+        ...(read === undefined ? {} : { readBase: read.rev }),
+      })
       if (!pushed.ok) return pushed
-      const follow = named.length === 0 ? undefined : pushEdit(named, pushing?.author ?? author, undefined, pushed.once)
+      const follow =
+        named.length === 0 ? undefined : pushEdit(named, pushing?.author ?? author, { follows: pushed.once })
       const writes = follow?.ok === true ? [...pushed.writes, ...follow.writes] : pushed.writes
       const onces = follow?.ok === true ? [pushed.once, follow.once] : [pushed.once]
+      const sent = { ok: true, once: pushed.once, saved: pushed.saved } as const
+      if (writes.length === 0) return sent
       const open = undoSteps.at(-1)
-      if (pushing?.step !== undefined && open?.key === pushing.step && redoSteps.length === 0)
+      if (
+        read === undefined &&
+        open?.guarded !== true &&
+        pushing?.step !== undefined &&
+        open?.key === pushing.step &&
+        redoSteps.length === 0
+      )
         undoSteps[undoSteps.length - 1] = {
           ...open,
           onces: [...open.onces, ...onces],
@@ -543,9 +522,10 @@ function connected(
           before: pushed.before,
           writes,
           ...(pushing?.step === undefined ? {} : { key: pushing.step }),
+          ...(read === undefined ? {} : { guarded: true }),
         })
       redoSteps = []
-      return { ok: true, once: pushed.once, saved: pushed.saved }
+      return sent
     },
     undo: () => turn(undoSteps, redoSteps),
     redo: () => turn(redoSteps, undoSteps),

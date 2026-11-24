@@ -204,7 +204,7 @@ function seedsOf(edit: Readonly<Record<string, unknown>>): Seeds {
   return { seeds: [...seeds], regrouped: [...regrouped], removed: [...removed] }
 }
 
-function partOf(part: Part, once: string): doom.Doom | undefined {
+function partOf(part: Part): doom.Doom | undefined {
   const nodes = new Map<doom.NodeId, doom.Node>()
   const revs = new Map<doom.NodeId, ReadonlyMap<doom.WriteKey, doom.Rev>>()
   const children = new Map<doom.NodeId, doom.NodeId[]>()
@@ -221,8 +221,7 @@ function partOf(part: Part, once: string): doom.Doom | undefined {
   }
   const runs = doom.readRuns(part.runs)
   if (runs === undefined) return undefined
-  const onces = new Map<string, doom.Rev>(part.landed === null ? [] : [[once, doom.rev(part.landed)]])
-  return { nodes, revs, children, rev: doom.rev(part.rev), onces, runs }
+  return { nodes, revs, children, rev: doom.rev(part.rev), onces: new Map(), runs }
 }
 
 export async function createDoom(db: Sql, parsed: { readonly deck: DeckId }, email: string) {
@@ -274,7 +273,8 @@ export async function editDoom(
     if (stored === undefined) return refusal("deck")
     if (stored.owner !== email) return refusal("owner")
     if (stored.trashed) return refusal("deck")
-    const part = partOf(stored, once)
+    if (stored.landed !== null) return { ok: true, deck: parsed.deck, rev: stored.landed } as const
+    const part = partOf(stored)
     if (part === undefined) return refusal("payload")
     if (!still(part)) return refusal("stale")
     const read = doom.readEdit(parsed.edit, part)
@@ -296,8 +296,6 @@ export async function editDoom(
       back = [...back, ...unreadBack]
       continue
     }
-    if (landing.doom === part)
-      return { ok: true, deck: parsed.deck, rev: part.onces.get(read.once) ?? part.rev } as const
     const next = landing.doom
     const touched = nodeRows(next, changedNodes(part, next))
     const deck = touched.find((row) => row.type === "deck")

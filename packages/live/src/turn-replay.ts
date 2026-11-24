@@ -100,7 +100,13 @@ export function onStanding(
   for (const { edit } of queue) {
     const over = turned.get(edit.once)
     const inverted = over?.owned.at(-1)
-    if (over === undefined || inverted === undefined || !over.owned.some((name) => changed.has(name))) continue
+    if (
+      edit.readBase !== undefined ||
+      over === undefined ||
+      inverted === undefined ||
+      !over.owned.some((name) => changed.has(name))
+    )
+      continue
     changed.add(edit.once)
     const at = next.findIndex((each) => each.edit.once === edit.once)
     const prior = next.findIndex((each) => each.edit.once === inverted)

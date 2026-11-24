@@ -105,13 +105,13 @@ export function memoryDoomRemote(start: doom.Edit): DoomRemote {
       const id = readDeckId(body.deck)
       const stored = id.ok ? decks.get(id.deck) : undefined
       if (!id.ok || stored === undefined) return refusal("deck")
+      const accepted = stored.fold.onces.get(body.edit.once)
+      if (accepted !== undefined) return { ok: true, deck: id.deck, rev: accepted }
       const read = doom.readEdit(wire(body.edit), stored.fold)
       if (doom.isRefusal(read)) return { ok: false, refusal: "edit", ...read }
       const landed = { ...read, rev: doom.rev(stored.fold.rev + 1) }
       const next = doom.applyEdit(stored.fold, landed)
       if (doom.isRefusal(next)) return { ok: false, refusal: "edit", ...next }
-      if (next === stored.fold)
-        return { ok: true, deck: id.deck, rev: stored.fold.onces.get(read.once) ?? stored.fold.rev }
       if (read.author.kind === "agent" && read.author.run !== undefined)
         stored.replaced.set(landed.rev, doom.replacedBy(stored.fold, landed))
       stored.fold = next

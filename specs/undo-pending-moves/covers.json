@@ -5,19 +5,19 @@
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["takesBackDelete", "write"],
       "digest": "5e1f3e79f994",
-      "blob": "e867e3f70dcb5d6be2b4dcfbd10f0c8b3e470aee"
+      "blob": "d33a4ef6972695f0eadfaa5f5647c40d07d2e553"
     },
     {
       "file": "packages/live/src/doom-queue.ts",
       "names": ["queueEdit"],
-      "digest": "ce6deb9a803a",
-      "blob": "1f65fdddf8679807d4524491174ea23c712ab259"
+      "digest": "c517f4db0c4b",
+      "blob": "2f51bb6fb5614e40611ec335ef18096af990be9c"
     },
     {
       "file": "packages/doom/src/invert.ts",
       "names": ["invert"],
-      "digest": "15e947443c85",
-      "blob": "354705b320b3c5961e3ad4625d4c931830c7eb26"
+      "digest": "f7f1cffe1da1",
+      "blob": "96a8c4b1abad68626dc832271996e66db4300a85"
     }
   ]
 }
