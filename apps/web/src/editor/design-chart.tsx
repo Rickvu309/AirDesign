@@ -44,7 +44,7 @@ function WordsCell(props: {
   return (
     <div
       data-focus-ring
-      className={cn("flex min-h-8 min-w-0 items-center rounded-lg bg-muted px-2.5 py-1", props.className)}
+      className={cn("flex min-h-8 min-w-0 items-center rounded-lg bg-muted px-2.5 py-1", props.className ?? "max-w-56")}
     >
       {props.truncate === true ? (
         <input
@@ -154,7 +154,7 @@ export function ChartSection({
                 key={category}
                 label={`${editorCopy.chartData} ${String(row + 1)}`}
                 value={category}
-                className="sticky left-0 z-10 bg-muted"
+                className="sticky left-0 z-10 max-w-32 bg-muted"
                 onCommit={(words) => words !== category && change(chartRow(chart, row, words))}
               />
               {chart.series.map((series, at) => (
