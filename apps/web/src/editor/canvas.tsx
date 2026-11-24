@@ -30,6 +30,7 @@ import { slideFrame } from "@/editor/slide-frame"
 import { pictureCopy } from "@/copy/picture-copy"
 import { editorCopy } from "@/copy/editor-copy"
 
+const estimate = doom.measureWith({})
 const author: doom.Author = { kind: "person", id: "preview" }
 const emptyGeometry: SlideGeometry = { roots: [], byId: new Map() }
 
@@ -369,6 +370,7 @@ export function DoomCanvas(props: {
     onActions: () => setActionsOpen((open) => !open),
     cropping: cropNode !== null,
     onCropEnd: () => onCropping(null),
+    measure: painted.measure ?? estimate,
   })
 
   useLayoutEffect(() => {

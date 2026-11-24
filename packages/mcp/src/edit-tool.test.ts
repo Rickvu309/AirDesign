@@ -46,3 +46,106 @@ describe("edit_deck refusals", () => {
     expect(rev()).toBe(base)
   })
 })
+
+const box = (x: number, y: number, w: number, h: number) => ({
+  x,
+  y,
+  w,
+  h,
+  rotation: 0,
+  flipH: false,
+  flipV: false,
+})
+const estimate = doom.measureWith({})
+const wide: doom.Measure = (text, theme, width) => {
+  const measured = estimate(text, theme, width)
+  return { ...measured, w: measured.w * 1.6 }
+}
+
+function drifted() {
+  return doom.doomFromTree({
+    theme: doom.defaultTheme,
+    slides: [
+      {
+        children: [
+          {
+            type: "frame",
+            name: "f",
+            props: {
+              box: box(100, 50, 1, 1),
+              layout: { mode: "row", gap: 10, padding: { t: 20, r: 20, b: 20, l: 20 }, align: "top-left" },
+              sizing: { w: "hug", h: "hug" },
+            },
+            children: [
+              {
+                type: "shape",
+                name: "words",
+                props: {
+                  box: box(0, 0, 200, 100),
+                  sizing: { w: "hug", h: "hug" },
+                  text: { ...doom.textFromMarkdown("Hello world hello", "body"), resize: "widthAndHeight" },
+                },
+              },
+              { type: "shape", name: "t", props: { box: box(0, 0, 100, 50) } },
+            ],
+          },
+          {
+            type: "shape",
+            name: "l",
+            props: (ids) => ({
+              box: box(0, 0, 10, 10),
+              geometry: {
+                kind: "line" as const,
+                start: { node: ids.t!, site: "l" as const },
+                end: { x: 5, y: 5 },
+                route: "straight" as const,
+                arrows: ["none", "none"] as const,
+              },
+            }),
+          },
+        ],
+      },
+    ],
+  })
+}
+
+function painted(view: doom.Doom, slide: doom.NodeId, line: doom.NodeId, measure: doom.Measure) {
+  const nodes = doom.resolveSlide(view, slide, measure)
+  let found: doom.Resolved | undefined
+  const walk = (list: readonly doom.Resolved[]) => {
+    for (const node of list) {
+      if (node.id === line) found = node
+      walk(node.children)
+    }
+  }
+  walk(nodes)
+  if (found?.geometry?.kind !== "line") throw new Error("no line")
+  return { x: found.box.x + found.geometry.from.x, y: found.box.y + found.geometry.from.y }
+}
+
+describe("edit_deck delete", () => {
+  it("frees a connector at the point the host's measure painted", async () => {
+    const grown = drifted()
+    const decks = memoryDecks(() => grown.doom)
+    const host = { ...decks, measure: async () => ({ measure: wide, missing: new Set<string>() }) }
+    let calls = 0
+    const session: Session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0 }
+    const call = (op: string, args: unknown) => {
+      session.once = `call${String((calls += 1))}`
+      return callTool(names[op] ?? op, args, session, host)
+    }
+    const created = await call("create_deck", {})
+    const deck = (created.answer as { deck: string }).deck
+    const seen = painted(grown.doom, grown.slides[0]!, grown.ids.l!, wide)
+    expect(seen.x).not.toBe(painted(grown.doom, grown.slides[0]!, grown.ids.l!, estimate).x)
+    const deleted = await call("edit_deck", {
+      deck,
+      base: decks.decks.get(deck as never)!.rev,
+      changes: [{ op: "delete", nodes: [grown.ids.t] }],
+    })
+    expect(deleted.answer).toMatchObject({ ok: true })
+    const geometry = doom.propOf(decks.decks.get(deck as never)!.nodes.get(grown.ids.l!), "geometry")
+    if (geometry?.kind !== "line" || !("x" in geometry.start)) throw new Error(JSON.stringify(geometry))
+    expect({ x: geometry.start.x, y: geometry.start.y }).toEqual(seen)
+  })
+})

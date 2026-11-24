@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { compiled } from "./agent-fixtures.js"
+import { compileAgentEdit } from "./agent-edit.js"
+import { compiled, minter, runName, started } from "./agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
 import { propOf } from "./doom-walk.js"
 import type { End } from "./geometry.js"
@@ -14,10 +15,12 @@ import {
   rev,
   type Doom,
   type Landed,
+  type Measure,
   type Write,
 } from "./index.js"
 import type { Point, Resolved } from "./resolved.js"
-import { measure, plainTheme, spot } from "./testing/doom-fixtures-art.js"
+import { agent, once } from "./sample-deck.js"
+import { block, label, measure, padding, plainTheme, row, spot } from "./testing/doom-fixtures-art.js"
 
 const person = { kind: "person" as const, id: "p" }
 
@@ -36,8 +39,8 @@ function placed(
   return null
 }
 
-function startOf(doom: Doom, slide: NodeId, line: NodeId): Point {
-  const found = placed(resolveSlide(doom, slide, measure), line)
+function startOf(doom: Doom, slide: NodeId, line: NodeId, by: Measure = measure): Point {
+  const found = placed(resolveSlide(doom, slide, by), line)
   if (found?.node.geometry?.kind !== "line") throw new Error("no line")
   return { x: found.x + found.node.geometry.from.x, y: found.y + found.node.geometry.from.y }
 }
@@ -150,6 +153,117 @@ describe("a line end whose shape is not on the laid-out slide", () => {
     ]).after
     expect(startOf(moved, grown.slides[0]!, grown.ids.l!)).toEqual(seen)
     expect(lineOf(moved, grown.ids.l!).start).toEqual({ node: grown.ids.t, site: "r" })
+  })
+})
+
+const wide: Measure = (text, theme, width) => {
+  const measured = measure(text, theme, width)
+  return { ...measured, w: measured.w * 1.6 }
+}
+
+function drifted() {
+  return doomFromTree({
+    theme: plainTheme,
+    slides: [
+      {
+        children: [
+          {
+            type: "frame",
+            name: "f",
+            props: {
+              box: spot(100, 50, 1, 1),
+              layout: row({}, 10, padding(20)),
+              sizing: { w: "hug", h: "hug" },
+            },
+            children: [
+              label("words", "Hello world hello", { sizing: { w: "hug", h: "hug" } }, { resize: "widthAndHeight" }),
+              block("t", 100, 50),
+            ],
+          },
+          {
+            type: "shape",
+            name: "l",
+            props: (ids) => ({
+              box: spot(0, 0, 10, 10),
+              geometry: {
+                kind: "line" as const,
+                start: { node: ids.t!, site: "l" as const },
+                end: { x: 5, y: 5 },
+                route: "straight" as const,
+                arrows: ["none", "none"] as const,
+              },
+            }),
+          },
+        ],
+      },
+    ],
+  })
+}
+
+describe("a connector whose place depends on text width", () => {
+  it("frees the end where the real widths painted it, on the person path and the agent path", () => {
+    const grown = drifted()
+    const slide = grown.slides[0]!
+    const line = grown.ids.l!
+    const seen = startOf(grown.doom, slide, line, wide)
+    expect(seen.x).not.toBe(startOf(grown.doom, slide, line).x)
+    const gone = [{ node: grown.ids.t!, prop: "parent" as const, value: null }]
+    const person = step(grown.doom, "person", [...freedLineEnds(grown.doom, [grown.ids.t!], wide), ...gone]).after
+    const agentWrites = compiled(grown.doom, { op: "delete", nodes: [grown.ids.t!] }, minter(), { measure: wide })
+    const edited = compileAgentEdit(started(grown.doom), [{ op: "delete", nodes: [grown.ids.t!] }], {
+      author: agent(runName),
+      once: once(),
+      mint: minter(),
+      measure: wide,
+    })
+    if ("refused" in edited) throw new Error(JSON.stringify(edited))
+    const byAgent = step(grown.doom, "agent", agentWrites).after
+    const byEdit = step(grown.doom, "edit", edited.edit.writes).after
+    expect(freePoint(lineOf(person, line).start)).toEqual(seen)
+    expect(freePoint(lineOf(byAgent, line).start)).toEqual(seen)
+    expect(freePoint(lineOf(byEdit, line).start)).toEqual(seen)
+  })
+})
+
+describe("a hidden child of an auto-layout frame", () => {
+  it("paints the connector at the child's flow position", () => {
+    const grown = doomFromTree({
+      theme: plainTheme,
+      slides: [
+        {
+          children: [
+            {
+              type: "frame",
+              name: "f",
+              props: {
+                box: spot(100, 50, 10, 10),
+                layout: row({}, 10, padding(20)),
+                sizing: { w: "hug", h: "hug" },
+              },
+              children: [block("a", 80, 40), { type: "shape", name: "h", props: { box: spot(0, 0, 100, 50) } }],
+            },
+            {
+              type: "shape",
+              name: "l",
+              props: (ids) => ({
+                box: spot(0, 0, 10, 10),
+                geometry: {
+                  kind: "line" as const,
+                  start: { node: ids.h!, site: "l" as const },
+                  end: { x: 5, y: 5 },
+                  route: "straight" as const,
+                  arrows: ["none", "none"] as const,
+                },
+              }),
+            },
+          ],
+        },
+      ],
+    })
+    const seen = startOf(grown.doom, grown.slides[0]!, grown.ids.l!)
+    const hidden = step(grown.doom, "hide", [{ node: grown.ids.h!, prop: "hidden", value: true }]).after
+    expect(startOf(hidden, grown.slides[0]!, grown.ids.l!)).toEqual(seen)
+    expect(lineOf(hidden, grown.ids.l!).start).toEqual({ node: grown.ids.h, site: "l" })
   })
 })
 

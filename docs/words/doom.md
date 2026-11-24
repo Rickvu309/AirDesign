@@ -56,6 +56,10 @@ _Avoid_: readAt, version
 How a frame places its children: none, row, column or grid. Laid-out boxes are computed from Doom's nodes, never written.
 _Avoid_: flow, auto layout (in code)
 
+**measure**:
+The function that gives a text its width and height. The canvas and PDF export build it from the fonts on the page (`useDoomSlide`). Layout findings build it from the same font files on the server (`servedFontMetrics`, handed in as `host.measure`). A delete that frees a connector end uses that measure, so the stored point is the one that was painted. `measureWith({})` is only an estimate, and a freed end that used it is exact only when the shape's place does not depend on text width.
+_Avoid_: font metrics, text measurement, fallback width
+
 **fold**:
 The deck after every landed edit is applied in server order. The server stores it beside the log of landed edits; a tab keeps its own copy and brings it forward by catch-up.
 _Avoid_: snapshot, state
