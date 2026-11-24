@@ -4,7 +4,7 @@ import { memo, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { editorCopy } from "@/copy/editor-copy"
-import { markOn, type Mark } from "./text-edit"
+import { baseOf, markOn, type Mark } from "./text-edit"
 import type { TextSession } from "./use-text-session"
 
 const marks = [
@@ -35,7 +35,8 @@ export function TextBar({ api }: { readonly api: TextSession }) {
   const session = api.session
   if (session === null) return null
   const { draft, anchor, focus, pending } = session
-  const on = (mark: Mark) => markOn(draft, anchor, focus, mark, pending ?? undefined)
+  const face = baseOf(draft, api.theme)
+  const on = (mark: Mark) => markOn(draft, anchor, focus, mark, face, pending ?? undefined)
   const first = draft.paras[draft.chars.slice(0, Math.min(anchor, focus)).split("\n").length - 1]
   return (
     <TextBarView

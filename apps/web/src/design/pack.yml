@@ -23,6 +23,7 @@ public:
   - panel.ts
   - preset-icons.ts
   - shape-grid.tsx
+  - served-faces.ts
   - shape-marks.tsx
   - shown-number.ts
   - spacing-units.ts

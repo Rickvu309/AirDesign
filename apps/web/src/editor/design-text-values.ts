@@ -1,4 +1,5 @@
 import {
+  familyOf,
   paintedFace,
   storedFace,
   type Color,
@@ -23,17 +24,13 @@ export type TextLook = {
   readonly case: "none" | "upper" | "lower" | "title"
 }
 
-export function weightOf(font: string, styleWeight: number, bold: boolean | undefined): number {
-  return paintedFace(font, styleWeight, bold).weight
-}
-
 function lookFrom(font: string, style: Theme["textStyles"][TextStyleName], span: Span | undefined): TextLook {
   const painted = paintedFace(font, style.weight, span?.bold)
   return {
     size: span?.size ?? style.size,
     font: painted.family,
     weight: painted.weight,
-    bold: painted.name === "Bold",
+    bold: painted.bold,
     italic: span?.italic ?? false,
     underline: span?.underline ?? false,
     strike: span?.strike ?? false,
@@ -67,7 +64,7 @@ export function textWithWeight(
   return {
     ...text,
     spans: base.map((span) => {
-      const stored = storedFace(paintedFace(span.font ?? themeFont, 400, false).family, picked.weight)
+      const stored = storedFace(familyOf(span.font ?? themeFont), picked.weight)
       const next = { ...span, bold: stored.bold, italic: picked.italic }
       return stored.font === themeFont ? spanWithoutFont(next) : { ...next, font: stored.font }
     }),

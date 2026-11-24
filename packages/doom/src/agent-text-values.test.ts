@@ -69,6 +69,15 @@ describe("raw text values: an agent sets what the panel's text controls set", ()
     expect(readForAgent(overlaid, [ids.slide])).not.toContain("SemiBold")
   })
 
+  it("reads weight=Regular when an agent sets Regular on a style that rests bold", () => {
+    let doom = build(agentDeck(), set(ids.title, { textStyle: "title" }))
+    doom = build(doom, set(ids.title, { weight: "Bold" }))
+    expect(readForAgent(doom, [ids.slide])).toContain("weight=Bold")
+    doom = build(doom, set(ids.title, { weight: "Regular" }))
+    expect(textAt(doom).spans[0]).toMatchObject({ bold: false })
+    expect(readForAgent(doom, [ids.slide])).toContain("weight=Regular")
+  })
+
   it("refuses a value past what the panel takes, before anything compiles", () => {
     for (const look of [
       { size: 5000 },

@@ -184,12 +184,10 @@ function uniformPara<K extends keyof Para>(text: Text, key: K): Para[K] | undefi
 }
 
 function faceWords(font: string | undefined, bold: boolean | undefined): readonly string[] {
-  if (font === undefined && bold !== true) return []
-  if (font === undefined) return ["weight=Bold"]
-  const resting = paintedFace(font, 400, false)
-  if (resting.family === font && bold !== true) return [`font=${quoted(font)}`]
+  if (font === undefined) return bold === undefined ? [] : [`weight=${bold ? "Bold" : "Regular"}`]
   const painted = paintedFace(font, 400, bold)
-  return [`font=${quoted(painted.family)}`, `weight=${painted.name}`]
+  const resting = bold === undefined && painted.family === font
+  return [`font=${quoted(painted.family)}`, ...(resting ? [] : [`weight=${painted.name}`])]
 }
 
 function overrideWords(text: Text): readonly string[] {

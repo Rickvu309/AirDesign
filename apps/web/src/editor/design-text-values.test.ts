@@ -83,11 +83,11 @@ describe("named font weights", () => {
     expect(find(modelOf(titled), "bold").value).toBe(true)
   })
 
-  it("names a style weight of 600 SemiBold and lists the weights a font has", () => {
+  it("names a style weight of 600 on a plain family Bold, as the canvas paints it, and lists the weights a font has", () => {
     const headed = write(find(model, "style"), "heading")
     const weight = find(modelOf(headed), "weight")
-    expect(weight.value).toBe("SemiBold")
-    expect(find(modelOf(headed), "bold").value).toBe(false)
+    expect(weight.value).toBe("Bold")
+    expect(find(modelOf(headed), "bold").value).toBe(true)
     expect(weight.choices?.map((choice) => choice.value)).toEqual(
       expect.arrayContaining(["Regular", "Medium", "SemiBold", "Bold", "Black"]),
     )

@@ -76,6 +76,26 @@ describe("a raw size and font over the protocol", () => {
     expect(String(read.answer.layers)).not.toContain("Inter ExtraBold")
   })
 
+  it("names no off-font finding for a weight set on the deck's own family", async () => {
+    const call = agent()
+    const { deck, rev, slides } = (await call("create_deck", {})).answer as {
+      deck: string
+      rev: number
+      slides: string[]
+    }
+    let base = rev
+    for (const weight of ["Medium", "ExtraBold", "Regular", "Bold"]) {
+      const landed = await call("edit_deck", {
+        deck,
+        base,
+        changes: [{ op: "set", target: `${slides[0]!}.title`, weight }],
+      })
+      expect(landed.ok).toBe(true)
+      expect(JSON.stringify(landed.answer)).not.toContain("off-font")
+      base += 1
+    }
+  })
+
   it("refuses a font the catalog does not serve, and lands nothing", async () => {
     const call = agent()
     const { deck, rev, slides } = (await call("create_deck", {})).answer as {

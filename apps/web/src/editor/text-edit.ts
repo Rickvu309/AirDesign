@@ -3,6 +3,21 @@ import * as doom from "@airdesign/doom"
 export type Mark = "bold" | "italic" | "underline" | "strike"
 export type Look = Omit<doom.Span, "end">
 type Run = { readonly start: number; readonly end: number; readonly look: Look }
+export type Base = { readonly font: string; readonly weight: number }
+
+export function baseOf(text: doom.Text, theme: doom.Theme): Base {
+  const style = theme.textStyles[text.style]
+  return { font: theme.fonts[style.font], weight: style.weight }
+}
+
+const lit = (look: Look, mark: Mark, base: Base): boolean =>
+  mark === "bold" ? doom.paintedFace(look.font ?? base.font, base.weight, look.bold).bold : look[mark] === true
+
+export function withMark(look: Look, mark: Mark, on: boolean, base: Base): Look {
+  if (on) return { ...look, [mark]: true }
+  const { [mark]: _was, ...rest } = look
+  return lit(rest, mark, base) ? { ...rest, [mark]: false } : rest
+}
 
 const sameLook = (one: Look, two: Look): boolean => {
   const keys = new Set([...Object.keys(one), ...Object.keys(two)])
@@ -82,21 +97,20 @@ export function replaceRange(text: doom.Text, from: number, to: number, insert: 
   return { ...text, chars, spans: spansFrom(next), paras: paras.slice(0, breaksIn(chars) + 1) }
 }
 
-export function toggleMark(text: doom.Text, from: number, to: number, mark: Mark): doom.Text {
+export function toggleMark(text: doom.Text, from: number, to: number, mark: Mark, base: Base): doom.Text {
   const low = Math.min(from, to)
   const high = Math.max(from, to)
   if (low === high) return text
   const inside = runsOf(text).filter((run) => run.end > low && run.start < high)
-  const on = inside.every((run) => run.look[mark] === true)
+  const on = inside.every((run) => lit(run.look, mark, base))
   const runs = runsOf(text).flatMap((run): Run[] => {
     if (run.end <= low || run.start >= high) return [run]
     const parts: Run[] = []
     if (run.start < low) parts.push({ start: run.start, end: low, look: run.look })
-    const { [mark]: _was, ...rest } = run.look
     parts.push({
       start: Math.max(run.start, low),
       end: Math.min(run.end, high),
-      look: on ? rest : { ...run.look, [mark]: true },
+      look: withMark(run.look, mark, !on, base),
     })
     if (run.end > high) parts.push({ start: high, end: run.end, look: run.look })
     return parts
@@ -104,10 +118,10 @@ export function toggleMark(text: doom.Text, from: number, to: number, mark: Mark
   return { ...text, spans: spansFrom(runs) }
 }
 
-export function markOn(text: doom.Text, from: number, to: number, mark: Mark, pending?: Look): boolean {
-  if (from === to) return (pending ?? lookBefore(runsOf(text), from))[mark] === true
+export function markOn(text: doom.Text, from: number, to: number, mark: Mark, base: Base, pending?: Look): boolean {
+  if (from === to) return lit(pending ?? lookBefore(runsOf(text), from), mark, base)
   const inside = runsOf(text).filter((run) => run.end > Math.min(from, to) && run.start < Math.max(from, to))
-  return inside.length > 0 && inside.every((run) => run.look[mark] === true)
+  return inside.length > 0 && inside.every((run) => lit(run.look, mark, base))
 }
 
 export type LinkedWords =

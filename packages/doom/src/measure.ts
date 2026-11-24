@@ -10,19 +10,21 @@ export type Measured = { readonly w: Px; readonly h: Px; readonly lines: readonl
 export type Measure = (text: Text, theme: Theme, width: Px | null) => Measured
 
 const fallbackAdvance = 0.55
-const boldFrom = 600
 const listStep = 1.2
 const space = " "
 
 type Look = Omit<ResolvedRun, "text">
 type Cased = "upper" | "lower" | "title" | null
 
-const baseLook = (text: Text, theme: Theme): Look & { readonly case: Cased; readonly lineHeight: number } => {
+type Base = Look & { readonly case: Cased; readonly lineHeight: number; readonly styleWeight: number }
+
+const baseLook = (text: Text, theme: Theme): Base => {
   const style = theme.textStyles[text.style]
+  const painted = paintedFace(theme.fonts[style.font], style.weight, undefined)
   return {
     size: style.size,
-    font: theme.fonts[style.font],
-    bold: style.weight >= boldFrom,
+    font: painted.font,
+    bold: painted.bold,
     italic: false,
     underline: false,
     strike: false,
@@ -30,22 +32,22 @@ const baseLook = (text: Text, theme: Theme): Look & { readonly case: Cased; read
     tracking: style.tracking,
     case: style.case ?? null,
     lineHeight: style.lineHeight,
+    styleWeight: style.weight,
   }
 }
 
-function lookOf(span: Span | undefined, base: ReturnType<typeof baseLook>, theme: Theme): Look & { case: Cased } {
-  const { lineHeight: _lineHeight, ...look } = base
+function lookOf(span: Span | undefined, base: Base, theme: Theme): Look & { case: Cased } {
+  const { lineHeight: _lineHeight, styleWeight, ...look } = base
   if (span === undefined) return look
-  const font = span.font ?? look.font
-  const painted = span.bold === true ? paintedFace(font, 400, true) : undefined
+  const painted = paintedFace(span.font ?? look.font, styleWeight, span.bold)
   return {
     ...look,
-    bold: painted !== undefined ? painted.font === painted.family && painted.weight >= 700 : (span.bold ?? look.bold),
+    bold: painted.bold,
     ...(span.italic === undefined ? {} : { italic: span.italic }),
     ...(span.underline === undefined ? {} : { underline: span.underline }),
     ...(span.strike === undefined ? {} : { strike: span.strike }),
     ...(span.size === undefined ? {} : { size: span.size }),
-    font: painted?.font ?? font,
+    font: painted.font,
     ...(span.color === undefined ? {} : { color: resolveColor(span.color, theme) }),
     ...(span.tracking === undefined ? {} : { tracking: span.tracking }),
     ...(span.case === undefined ? {} : { case: span.case }),
@@ -159,7 +161,7 @@ function measureOnce(widths: FontWidths): Measure {
         const h = size * lineScale
         const start = chars[span.start]?.at ?? paragraphEnd
         const end = chars[span.end]?.at ?? paragraphEnd
-        const { case: _case, lineHeight: _lineHeight, ...labelLook } = base
+        const { case: _case, lineHeight: _lineHeight, styleWeight: _styleWeight, ...labelLook } = base
         lines.push({
           start,
           end,
