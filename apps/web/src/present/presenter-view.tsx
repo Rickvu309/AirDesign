@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import type { SlideSize } from "@/editing/canvas-zoom"
 import { presentCopy } from "@/copy/present-copy"
+import { slideNumber } from "@/lib/slide-numbering"
 import { clockText } from "@/present/present-clock"
 import { focusOnOpen } from "@/present/present-focus"
 import { EndOfDeck } from "@/present/present-show"
@@ -33,7 +34,7 @@ function on(handler: (() => void) | undefined) {
 }
 
 export function PresenterView(props: PresenterViewProps) {
-  const position = presentCopy.position(props.at + 1, props.count)
+  const position = presentCopy.position(slideNumber(props.at), props.count)
   return (
     <section
       aria-label={presentCopy.presenter}

@@ -84,7 +84,7 @@ const layers = ["words", "card", "rule", "star", "photo", "panel"] as const
 const id = (name: string) => built.ids[name]!
 
 const writesNothingOnDoom: readonly string[] = []
-const paintsNothing: readonly string[] = ["link.target"]
+const paintsNothing: readonly string[] = ["link.target", "text.alignV"]
 const personOnlyOnDoom: readonly string[] = ["link"]
 
 const kept: Readonly<Record<string, readonly unknown[]>> = {

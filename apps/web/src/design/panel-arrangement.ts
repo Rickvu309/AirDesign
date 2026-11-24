@@ -3,6 +3,9 @@ import {
   AlignCenter,
   AlignRight,
   AlignJustify,
+  AlignVerticalJustifyStart,
+  AlignVerticalJustifyCenter,
+  AlignVerticalJustifyEnd,
   Bold,
   Italic,
   List,
@@ -79,6 +82,16 @@ export const sectionStrips: Readonly<Record<SectionName, readonly Strip[]>> = {
         options: { left: AlignLeft, center: AlignCenter, right: AlignRight, justify: AlignJustify },
       }),
       placed("list", hidden, { form: "segments", options: { none: Minus, bullets: List, numbers: ListOrdered } }),
+    ],
+    [
+      placed("alignV", hidden, {
+        form: "segments",
+        options: {
+          top: AlignVerticalJustifyStart,
+          center: AlignVerticalJustifyCenter,
+          bottom: AlignVerticalJustifyEnd,
+        },
+      }),
     ],
     [placed("fill", hidden, { options: fills })],
   ],

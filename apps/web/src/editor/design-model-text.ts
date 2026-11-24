@@ -15,6 +15,8 @@ import type { ModelInput } from "./design-model"
 import { paintedFace, propOf } from "@airdesign/doom"
 
 const lists = ["none", "bullets", "numbers"]
+const vertical = ["top", "center", "bottom"]
+const heightHeld = new Set<doom.Text["resize"]>(["fixed", "truncate"])
 const fillDesc: Desc = { kind: "union", plain: "solid", cases: { solid: { kind: "color" } } }
 const styleDesc: Desc = { kind: "words", max: 200 }
 const sizeLimit = doom.textLimits.size
@@ -91,6 +93,9 @@ export function textSections(input: ModelInput, kind: PanelKind): PanelSection[]
     textControl("strike", formatCopy.named.strike, flagDesc, look.strike),
     textControl("align", formatCopy.alignGroup, choiceDesc(doom.paragraphAligns), shown.align),
     textControl("list", textCopy.list, choiceDesc(lists), shown.list),
+    ...(heightHeld.has(text.resize)
+      ? [textControl("alignV", textCopy.alignV, choiceDesc(vertical), shown.alignV)]
+      : []),
     fill,
   ]
   const named = kind === "text" ? controls.filter((control) => control !== fill) : controls

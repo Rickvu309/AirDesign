@@ -29,6 +29,10 @@ export const slideListCopy = {
   skipSet: (count: number) => `Skip ${slidesOf(count)}`,
   unskipSet: (count: number) => `Unskip ${slidesOf(count)}`,
   skipped: "Skipped in Present",
+  skippedInPresent: (count: number, number: number) =>
+    count === 1 ? `Skipped slide ${String(number)} in Present` : `Skipped ${slidesOf(count)} in Present`,
+  shownInPresent: (count: number, number: number) =>
+    count === 1 ? `Slide ${String(number)} shows in Present` : `${slidesOf(count)} show in Present`,
   duplicate: "Duplicate",
   delete: "Delete",
   setActions: (count: number) => ({

@@ -14,6 +14,7 @@ import { SlideMenu, type SlideMenuSet } from "@/editor/slide-menu"
 import { slidePress, type SlidePress } from "@/editor/slide-list-pick"
 import { SkippedSlide } from "@/editor/skipped-slide"
 import { cn } from "@/lib/class-names"
+import { slideNumberLabel } from "@/lib/slide-numbering"
 
 export function SlideItem({
   index,
@@ -23,6 +24,7 @@ export function SlideItem({
   menuSet,
   reachable = true,
   skipped = false,
+  markWidth,
   onSkip,
   onSelect,
   onChoose,
@@ -39,6 +41,7 @@ export function SlideItem({
   menuSet?: SlideMenuSet | undefined
   reachable?: boolean
   skipped?: boolean
+  markWidth?: number
   onSkip?: ((skipped: boolean) => void) | undefined
   onSelect?: (press: SlidePress) => void
   onChoose?: (change: SlideKey) => void
@@ -65,9 +68,10 @@ export function SlideItem({
     active || picked ? "bg-[var(--row)]" : onSelect !== undefined && "hover:bg-black/4",
   )
   const number = (
-    <span className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
-      <span className={cn("text-xs", active ? "font-medium text-index" : "text-quiet")}>{index}</span>
-      {skipped ? <SkippedSlide /> : null}
+    <span aria-hidden className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
+      <span data-slide-number className={cn("text-xs", active ? "font-medium text-index" : "text-quiet")}>
+        {slideNumberLabel(index - 1, skipped)}
+      </span>
     </span>
   )
   if (onSelect === undefined) {
@@ -121,6 +125,7 @@ export function SlideItem({
       >
         {number}
         {children}
+        {skipped ? <SkippedSlide width={markWidth} /> : null}
       </button>
       {onChoose === undefined ? null : (
         <SlideMenu

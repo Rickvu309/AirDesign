@@ -29,6 +29,7 @@ export function ExportControl({ flow }: { readonly flow: ExportFlow }) {
         open={open}
         choice={choice}
         count={target.slides.length}
+        skipped={target.skipped}
         exporting={open && printing !== null}
         finalFocus={button}
         onChoice={flow.control.setChoice}

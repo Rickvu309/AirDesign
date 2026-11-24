@@ -1,4 +1,5 @@
 import { gestureFor, type GestureId, type KeyLike } from "@/lib/gestures"
+import { slideIndexOf } from "@/lib/slide-numbering"
 
 export type ShowView = "audience" | "presenter"
 
@@ -64,8 +65,8 @@ function previous(show: Show, deck: ShownDeck): Show {
 
 function go(show: Show, deck: ShownDeck): Show | null {
   if (show.typed === "") return next(show, deck)
-  const asked = Number(show.typed) - 1
-  if (asked < 0 || asked >= deck.count) return { ...show, typed: "" }
+  const asked = slideIndexOf(Number(show.typed), deck.count)
+  if (asked === null) return { ...show, typed: "" }
   return { ...show, typed: "", ended: false, at: asked }
 }
 

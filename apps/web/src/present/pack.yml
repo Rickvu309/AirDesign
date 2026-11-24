@@ -5,8 +5,10 @@ dependencies:
   - apps/web/src/editing
   - apps/web/src/lib
 public:
+  - morph-pairs.ts
   - present-button.tsx
   - present-keys.ts
   - present-layer.tsx
   - present-screens.tsx
+  - slide-arrival.ts
   - use-present.ts

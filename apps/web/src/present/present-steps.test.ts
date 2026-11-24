@@ -59,6 +59,8 @@ it("goes to the slide number a person types", () => {
 
 it("shows a hidden slide a person asks for by number", () => {
   expect(stepShow({ ...at(0), typed: "3" }, "go", deck(5, [2]))).toMatchObject({ at: 2 })
+  expect(stepShow({ ...at(0), typed: "3" }, "go", deck(3, [1]))).toMatchObject({ at: 2 })
+  expect(stepShow({ ...at(0), typed: "2" }, "go", deck(3, [1]))).toMatchObject({ at: 1 })
 })
 
 it("steps on Enter and back on Backspace when nothing is typed", () => {

@@ -71,6 +71,7 @@ export type TextShown = {
   readonly style: TextStyleName
   readonly look: { readonly [K in keyof TextLook]: { readonly value: TextLook[K]; readonly mixed: boolean } }
   readonly align: { readonly value: NonNullable<Para["align"]>; readonly mixed: boolean }
+  readonly alignV: { readonly value: Text["alignV"]; readonly mixed: boolean }
   readonly list: { readonly value: "none" | "bullets" | "numbers"; readonly mixed: boolean }
 }
 
@@ -97,6 +98,7 @@ export function shownText(text: Text, theme: Theme): TextShown {
       color: pick("color"),
     },
     align: agreed(text.paras.map((para) => para.align ?? "left")),
+    alignV: { value: text.alignV, mixed: false },
     list: agreed(
       text.paras.map((para) => (para.list === "bullet" ? "bullets" : para.list === "number" ? "numbers" : "none")),
     ),

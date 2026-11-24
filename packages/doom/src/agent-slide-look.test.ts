@@ -69,6 +69,31 @@ describe("skip, transition, paragraph spacing, vertical align and blur", () => {
     })
   })
 
+  it("keeps fractions of a pixel in paragraph spacing, so a deck holding 2.5 can be set to it again", () => {
+    expect(readAgentChange({ op: "set", target: ids.title, spaceBefore: 2.5, spaceAfter: 0.25 })).not.toHaveProperty(
+      "refused",
+    )
+    const doom = build(agentDeck(), set(ids.title, { spaceBefore: 2.5, spaceAfter: 0.25 }))
+    expect(propOf(doom.nodes.get(ids.title)!, "text")).toMatchObject({
+      paras: [{ spaceBefore: 2.5, spaceAfter: 0.25 }],
+    })
+    expect(readForAgent(doom, [ids.slide])).toContain("spaceBefore=2.5 spaceAfter=0.25")
+  })
+
+  it("reads back each fraction an agent saved exactly, and not the float noise around it", () => {
+    const doom = build(
+      agentDeck(),
+      set(ids.title, { spaceBefore: 0.125, lineHeight: 1.15, letterSpacing: -0.25, opacity: 0.25 }),
+    )
+    const read = readForAgent(doom, [ids.slide])
+    expect(read).toContain("spaceBefore=0.125")
+    expect(read).toContain("lineHeight=1.15")
+    expect(read).toContain("letterSpacing=-0.25")
+    expect(read).toContain("opacity=0.25")
+    const noisy = build(agentDeck(), set(ids.title, { spaceBefore: 0.1 + 0.2 }))
+    expect(readForAgent(noisy, [ids.slide])).toContain("spaceBefore=0.3 ")
+  })
+
   it("blurs a layer without dropping its shadow, reads the radius, and refuses a blur on a slide", () => {
     const shadowed = build(agentDeck(), set(ids.card, { effect: "lifted" }))
     const doom = build(shadowed, set(ids.card, { blur: 8 }))

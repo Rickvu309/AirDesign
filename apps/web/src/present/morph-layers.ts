@@ -1,5 +1,5 @@
 import { layerFrames, type LayerBox } from "@/present/slide-transition"
-import type { LayerPairs } from "@/present/use-leaving"
+import type { LayerPairs } from "@/present/morph-pairs"
 
 function boxIn(node: HTMLElement, root: HTMLElement): LayerBox {
   let x = 0
@@ -14,7 +14,7 @@ function boxIn(node: HTMLElement, root: HTMLElement): LayerBox {
 }
 
 function layerIn(root: HTMLElement, node: string): HTMLElement | null {
-  return root.querySelector<HTMLElement>(`[data-thumb-node="${CSS.escape(node)}"]`)
+  return root.querySelector<HTMLElement>(`[data-node="${CSS.escape(node)}"]`)
 }
 
 export function morphLayers(
@@ -40,7 +40,7 @@ export function morphLayers(
       position: "absolute",
       pointerEvents: "none",
     })
-    copy.removeAttribute("data-thumb-node")
+    copy.removeAttribute("data-node")
     copy.setAttribute("data-present-moving", to)
     above.append(copy)
     for (const each of [before, after]) {

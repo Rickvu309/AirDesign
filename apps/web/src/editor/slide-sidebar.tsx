@@ -1,6 +1,7 @@
 import { SlideItem } from "@/editor/slide-list-item"
 import { Filmstrip } from "@airdesign/render"
 import { gestureFor } from "@/lib/gestures"
+import { slideNumber } from "@/lib/slide-numbering"
 import type { NodeId } from "@airdesign/doom"
 import {
   useCallback,
@@ -166,12 +167,13 @@ function DeckStrip({
   const item = (index: number) => (
     <SlideItem
       key={index}
-      index={index + 1}
+      index={slideNumber(index)}
       count={strip.count}
       active={index === strip.current}
       picked={inSet(index)}
       menuSet={inSet(index) ? menuSet : undefined}
       skipped={strip.skipped?.[index] === true}
+      markWidth={thumbWidth}
       onSkip={
         strip.onSkip === undefined ? undefined : (skipped) => strip.onSkip?.(inSet(index) ? held : [index], skipped)
       }
@@ -198,7 +200,7 @@ function DeckStrip({
           if (at !== null) moveSlides(held, at)
           return
         }
-        announce(slideListCopy.moved(from + 1, index + 1))
+        announce(slideListCopy.moved(slideNumber(from), slideNumber(index)))
         strip.onMove?.(from, index)
       }}
     >
@@ -273,7 +275,7 @@ function DeckStrip({
 
 function runSlideChange(strip: SlideStrip, index: number, change: SlideKey, announce: (text: string) => void): void {
   if (!slideChangeAllowed(change, index, strip.count)) return
-  const number = index + 1
+  const number = slideNumber(index)
   if (change === "remove") {
     strip.onRemove?.(index)
     announce(slideListCopy.deleted(number))

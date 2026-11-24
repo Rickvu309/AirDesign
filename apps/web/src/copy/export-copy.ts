@@ -10,6 +10,8 @@ export const exportCopy = {
   from: "First slide",
   to: "Last slide",
   rangeOf: (count: number) => `Choose slides from 1 to ${count}, first slide before last.`,
+  allSkipped: "Every slide is skipped. Unskip a slide to export.",
+  rangeSkipped: "Every slide in this range is skipped. Choose another range or unskip a slide.",
   printWindow: "In the print window, set Destination to Save as PDF, then click Save.",
   action: "Export",
   exporting: "Exporting…",

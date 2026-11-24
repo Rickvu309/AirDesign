@@ -6,7 +6,7 @@ import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { accent, landOffScreen, openEditor, savedNode, savedSlides, spot, type Opened } from "./editor-deck"
+import { accent, landOffScreen, landProps, openEditor, savedNode, savedSlides, spot, type Opened } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -245,4 +245,218 @@ test("a click on a linked layer or linked words in the show follows the link, an
     .filter({ visible: true })
     .click({ position: { x: 5, y: 5 }, force: true })
   await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
+})
+
+type Rect = { readonly x: number; readonly y: number; readonly w: number }
+
+async function slideWithCard(
+  page: Page,
+  context: Parameters<typeof openEditor>[1],
+  stack: Parameters<typeof openEditor>[2],
+  transition: { readonly kind: string; readonly ms: number },
+) {
+  const opened = await deckOfSlides(page, context, stack, 2)
+  const [first, second] = await savedSlides(stack, opened)
+  await landOffScreen(stack, opened, [
+    { id: "k:1", type: "shape", parent: first!, props: { name: "Card", box: spot(200, 700, 400, 200), fills: accent } },
+    {
+      id: "k:2",
+      type: "shape",
+      parent: second!,
+      props: { name: "Card", box: spot(1300, 700, 400, 200), fills: accent },
+    },
+  ])
+  await landProps(stack, opened, second!, { transition })
+  await page.locator('[data-slide-entry="1"]').click()
+  return opened
+}
+
+async function holdAt(page: Page, ms: number) {
+  return page.evaluate((at) => {
+    const rect = (node: Element | null) => {
+      const box = node?.getBoundingClientRect()
+      return box === undefined ? null : { x: box.x, y: box.y, w: box.width }
+    }
+    const running = document.getAnimations()
+    for (const each of running) {
+      each.pause()
+      each.currentTime = at
+    }
+    const copy = document.querySelector('[data-present-moving="k:2"]')
+    const progress = copy?.getAnimations()[0]?.effect?.getComputedTiming().progress ?? null
+    return {
+      copy: rect(copy),
+      progress,
+      from: rect(document.querySelector('[data-present-leaving] [data-node="k:1"]')),
+      to: rect(document.querySelector('[data-present-show] [data-node="k:2"]')),
+      frame: rect(document.querySelector("[data-present-slide]")),
+      animations: running.length,
+    }
+  }, ms)
+}
+
+const near = (found: Rect | null, wanted: Rect | null) => {
+  expect(found).not.toBeNull()
+  expect(wanted).not.toBeNull()
+  expect(Math.abs(found!.x - wanted!.x)).toBeLessThanOrEqual(1)
+  expect(Math.abs(found!.y - wanted!.y)).toBeLessThanOrEqual(1)
+  expect(Math.abs(found!.w - wanted!.w)).toBeLessThanOrEqual(1)
+}
+
+test.describe("on a screen smaller than the deck", () => {
+  test.use({ viewport: { width: 1280, height: 820 } })
+
+  test("Smart animate moves a layer two slides share from its painted place to its painted place, at the start, the middle and the end", async ({
+    page,
+    context,
+    stack,
+  }) => {
+    covers("present", "show-next", "show-stop")
+    const faults: string[] = []
+    page.on("pageerror", (error) => faults.push(error.message))
+    await slideWithCard(page, context, stack, { kind: "smartMove", ms: 3000 })
+    await page.keyboard.press("F5")
+    await expect(shown(page)).toHaveAttribute("data-present-slide", "1")
+    await page.keyboard.press("ArrowRight")
+    await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
+    await expect(page.locator('[data-present-morph] [data-present-moving="k:2"]')).toHaveCount(1)
+
+    const first = await holdAt(page, 0)
+    expect(first.animations).toBeGreaterThan(0)
+    expect(first.frame?.w).toBeLessThan(1920)
+    expect(first.from!.x).toBeLessThan(first.to!.x)
+    near(first.copy, first.from)
+    const middle = await holdAt(page, 1500)
+    const share = middle.progress!
+    expect(share).toBeGreaterThan(0.2)
+    expect(share).toBeLessThan(0.8)
+    near(middle.copy, {
+      x: first.from!.x + (first.to!.x - first.from!.x) * share,
+      y: first.from!.y + (first.to!.y - first.from!.y) * share,
+      w: first.from!.w + (first.to!.w - first.from!.w) * share,
+    })
+    const last = await holdAt(page, 3000)
+    near(last.copy, last.to)
+    expect(last.copy!.x + last.copy!.w).toBeLessThanOrEqual(last.frame!.x + last.frame!.w + 1)
+    await page.keyboard.press("Escape")
+    expect(faults).toEqual([])
+  })
+
+  for (const [name, transition] of [
+    ["Fade", { kind: "fade", ms: 3000 }],
+    ["Push", { kind: "push", ms: 3000 }],
+  ] as const) {
+    test(`${name} starts over the outgoing slide's own paint`, async ({ page, context, stack }) => {
+      covers("present", "show-next", "show-stop")
+      await slideWithCard(page, context, stack, transition)
+      await page.keyboard.press("F5")
+      await expect(shown(page)).toHaveAttribute("data-present-slide", "1")
+      await page.keyboard.press("ArrowRight")
+      await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
+      const first = await page.evaluate(() => {
+        for (const each of document.getAnimations()) {
+          each.pause()
+          each.currentTime = 0
+        }
+        const layer = document.querySelector("[data-present-leaving]")
+        const frame = document.querySelector("[data-present-slide]")!.getBoundingClientRect()
+        const incoming = document.querySelector("[data-present-incoming]")
+        return {
+          outgoingNodes: layer?.querySelectorAll("[data-node]").length ?? 0,
+          outgoingX: layer?.getBoundingClientRect().x ?? null,
+          incomingX: incoming?.getBoundingClientRect().x ?? null,
+          incomingOpacity: incoming === null ? null : getComputedStyle(incoming).opacity,
+          frameX: frame.x,
+          frameW: frame.width,
+        }
+      })
+      expect(first.outgoingNodes).toBeGreaterThan(0)
+      expect(Math.abs(first.outgoingX! - first.frameX)).toBeLessThanOrEqual(1)
+      if (name === "Fade") {
+        expect(first.incomingOpacity).toBe("0")
+        expect(Math.abs(first.incomingX! - first.frameX)).toBeLessThanOrEqual(1)
+      } else {
+        expect(Math.abs(Math.abs(first.incomingX! - first.frameX) - first.frameW)).toBeLessThanOrEqual(1)
+      }
+      await page.keyboard.press("Escape")
+    })
+  }
+  for (const [style, transition] of [
+    ["Fade", { kind: "fade", ms: 3000 }],
+    ["Smart animate", { kind: "smartMove", ms: 3000 }],
+  ] as const) {
+    test(`${style} holds on the painted slide until a font another writer added has painted the next one, then plays from the painted layers`, async ({
+      page,
+      context,
+      stack,
+    }) => {
+      covers("present", "show-next", "show-stop")
+      const second = "t:2"
+      const opened = await slideWithCard(page, context, stack, transition)
+      const [, secondSlide] = await savedSlides(stack, opened)
+      await page.keyboard.press("F5")
+      await expect(shown(page)).toHaveAttribute("data-present-slide", "1")
+      await expect(page.locator('[data-present-show] [data-node="k:1"]')).toBeVisible()
+      let release = () => {}
+      const held = new Promise<void>((done) => {
+        release = done
+      })
+      const asked: string[] = []
+      await page.route("**/fonts/file**", async (route) => {
+        asked.push(route.request().url())
+        await held
+        await route.fallback().catch(() => undefined)
+      })
+      await landOffScreen(stack, opened, [
+        {
+          id: second,
+          type: "shape",
+          parent: secondSlide!,
+          props: {
+            name: "Words",
+            box: spot(200, 200, 900, 120),
+            text: {
+              chars: "Quarterly revenue",
+              spans: [{ end: 17, font: "Lora" }],
+              paras: [{}],
+              style: "body",
+              resize: "fixed",
+              alignV: "top",
+            },
+          },
+        },
+      ])
+      await expect.poll(() => asked.length).toBeGreaterThan(0)
+      await expect(page.locator("[data-present-show] [data-fonts-pending]")).toHaveCount(0)
+      await expect(page.locator('[data-present-show] [data-node="k:1"]')).toBeVisible()
+      await page.keyboard.press("ArrowRight")
+      await expect(shown(page)).toHaveAttribute("data-present-slide", "2")
+      await expect(page.locator("[data-present-incoming] [data-fonts-pending]")).toHaveCount(1)
+      await expect(page.locator("[data-present-leaving]")).toHaveCount(1)
+      const waiting = await page.evaluate(() => ({
+        incomingShown: getComputedStyle(document.querySelector("[data-present-incoming]")!).visibility === "visible",
+        playing: document
+          .getAnimations()
+          .filter((each) => (each.effect as KeyframeEffect).target?.closest("[data-present-slide]") !== null).length,
+        moving: document.querySelectorAll("[data-present-moving]").length,
+      }))
+      expect(waiting).toEqual({ incomingShown: false, playing: 0, moving: 0 })
+      release()
+      await expect(page.locator("[data-present-show] [data-fonts-pending]")).toHaveCount(0)
+      await expect(page.locator(`[data-present-show] [data-node="${second}"]`)).toBeVisible()
+      if (transition.kind === "smartMove")
+        await expect(page.locator('[data-present-morph] [data-present-moving="k:2"]')).toHaveCount(1)
+      else
+        await expect
+          .poll(() =>
+            page.evaluate(() => document.getAnimations().filter((each) => each.playState === "running").length),
+          )
+          .toBeGreaterThan(0)
+      const played = await holdAt(page, 0)
+      expect(played.animations).toBeGreaterThan(0)
+      expect(await page.locator("[data-present-leaving] [data-node]").count()).toBeGreaterThan(0)
+      if (transition.kind === "smartMove") near(played.copy, played.from)
+      await page.keyboard.press("Escape")
+    })
+  }
 })

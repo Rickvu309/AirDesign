@@ -87,6 +87,15 @@ export async function landNodes(stack: Stack, opened: Opened, nodes: readonly Ma
     await expect(slideBoxNode(opened.page, node.id)).toBeAttached()
 }
 
+export async function landProps(stack: Stack, opened: Opened, node: string, props: Readonly<Record<string, unknown>>) {
+  counter += 1
+  const { doomRoutes } = await catalog()
+  const writes = Object.entries(props).map(([prop, value]) => ({ node, prop, value }))
+  const edit = { once: `test-${String(counter)}`, author: { kind: "person", id: "other-tab" }, writes }
+  const landed = await stack.post(doomRoutes.edit.path, { deck: opened.deck, edit }, opened.cookie)
+  if (landed.json.ok !== true) throw new Error(JSON.stringify(landed.json))
+}
+
 export async function clearSubtitle(stack: Stack, opened: Opened): Promise<void> {
   counter += 1
   const { doomRoutes } = await catalog()

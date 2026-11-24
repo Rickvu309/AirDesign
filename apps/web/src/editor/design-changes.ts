@@ -75,6 +75,10 @@ function textChange(context: ChangeContext, control: PanelControl, value: unknow
       return typeof value === "string"
         ? eachText(context, (text) => doom.paraWrite(text, { align: value as NonNullable<doom.Para["align"]> }))
         : []
+    case "alignV":
+      return value === "top" || value === "center" || value === "bottom"
+        ? eachText(context, (text) => ({ ...text, alignV: value }))
+        : []
     case "list":
       return eachText(context, (text) => ({
         ...text,

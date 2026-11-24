@@ -3,10 +3,11 @@ import type { SlideTransition } from "@airdesign/pptx"
 import type { SlideSize } from "@/editing/canvas-zoom"
 import { presentCopy } from "@/copy/present-copy"
 import { cn } from "@/lib/class-names"
+import { slideNumber } from "@/lib/slide-numbering"
 import { focusOnOpen } from "@/present/present-focus"
 import { FittedSlide, StageButton, type SlidePaint } from "@/present/present-stage"
 import { TransitionLayers } from "@/present/transition-layers"
-import { useLeaving, type LayerPairs } from "@/present/use-leaving"
+import type { LayerPairs } from "@/present/morph-pairs"
 
 export type PresentShowProps = {
   readonly title: string
@@ -69,7 +70,7 @@ function ShowControls(props: PresentShowProps) {
         aria-hidden
         className="min-w-14 px-1 text-center text-[length:var(--type-dense)] text-[var(--white-80)] tabular-nums"
       >
-        {props.at + 1} / {props.count}
+        {slideNumber(props.at)} / {props.count}
       </span>
       <StageButton
         icon="chevr"
@@ -112,8 +113,11 @@ function none() {
   return null
 }
 
+function noPairs(): LayerPairs {
+  return []
+}
+
 export function PresentShow(props: PresentShowProps) {
-  const { leaving, done } = useLeaving(props.at, props.transitionOf ?? none, props.morphOf)
   const step = props.ended ? props.onStop : props.onNext
   const onStage =
     step === undefined
@@ -123,7 +127,7 @@ export function PresentShow(props: PresentShowProps) {
           if (!props.ended && props.onFollow?.(point) === true) return
           step()
         }
-  const said = props.ended ? presentCopy.end : presentCopy.position(props.at + 1, props.count)
+  const said = props.ended ? presentCopy.end : presentCopy.position(slideNumber(props.at), props.count)
   return (
     <section
       aria-label={props.title}
@@ -146,7 +150,14 @@ export function PresentShow(props: PresentShowProps) {
           paint={props.paint}
           className="size-full"
           layers={(width) => (
-            <TransitionLayers at={props.at} width={width} paint={props.paint} leaving={leaving} onDone={done} />
+            <TransitionLayers
+              at={props.at}
+              width={width}
+              size={props.size}
+              paint={props.paint}
+              transitionOf={props.transitionOf ?? none}
+              morphOf={props.morphOf ?? noPairs}
+            />
           )}
         >
           {props.typed === "" ? null : <GoTo typed={props.typed} />}
