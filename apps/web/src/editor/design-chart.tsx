@@ -9,6 +9,7 @@ import { editorCopy } from "@/copy/editor-copy"
 import { composing } from "@/lib/composing"
 import { NumberField } from "./number-cell"
 import { PanelSection } from "./panel-fields"
+import { roundedShown } from "@/design/shown-number"
 import { propOf } from "@airdesign/doom"
 import {
   chartAddRow,
@@ -68,6 +69,17 @@ function WordsCell(props: {
   )
 }
 
+const valueColumnCap = 14
+
+const valueColumn = (chart: doom.Chart, at: number) => {
+  const longest = chart.series[at]?.values.reduce(
+    (most, value) => Math.max(most, roundedShown(value, 2).text.length),
+    0,
+  )
+  const digits = Math.min(valueColumnCap, (longest ?? 0) + 1)
+  return `minmax(max(4.5rem, ${String(digits)}ch + 1.75rem), 1fr)`
+}
+
 const kinds = ["column", "bar", "line", "pie", "stacked"] as const
 
 export function ChartSection({
@@ -116,9 +128,9 @@ export function ChartSection({
         data-chart-data=""
       >
         <div
-          className="grid items-center gap-1"
+          className="grid w-max min-w-full items-center gap-1"
           style={{
-            gridTemplateColumns: `minmax(5rem, 1fr) repeat(${String(chart.series.length)}, minmax(4.5rem, 1fr)) auto`,
+            gridTemplateColumns: `minmax(5rem, 1fr) ${chart.series.map((_, at) => valueColumn(chart, at)).join(" ")} auto`,
           }}
         >
           <span />
@@ -142,11 +154,11 @@ export function ChartSection({
                 key={category}
                 label={`${editorCopy.chartData} ${String(row + 1)}`}
                 value={category}
-                className="sticky left-0 z-10"
+                className="sticky left-0 z-10 bg-muted"
                 onCommit={(words) => words !== category && change(chartRow(chart, row, words))}
               />
               {chart.series.map((series, at) => (
-                <div key={at} className="min-w-[4.5rem]">
+                <div key={at} className="min-w-0">
                   <NumberField
                     label={String(at + 1)}
                     hideLabel

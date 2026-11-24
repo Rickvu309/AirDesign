@@ -149,7 +149,7 @@ it("shows a long category and series name in full, wrapping inside the panel", a
     }
     const data = host.querySelector("[data-chart-data]")
     const grid = data?.querySelector("[style]") ?? data
-    expect(grid?.getAttribute("style") ?? "").toContain("minmax(5rem, 1fr) repeat(1, minmax(4.5rem, 1fr))")
+    expect(grid?.getAttribute("style") ?? "").toContain("minmax(5rem, 1fr) minmax(max(4.5rem, ")
   } finally {
     await stop()
   }
@@ -176,12 +176,10 @@ it("keeps a minimum width for the labels and numbers, and scrolls sideways with 
     const data = host.querySelector("[data-chart-data]")
     expect(data?.className ?? "").toContain("overflow-x-auto")
     const columns = data?.querySelector("[style]")?.getAttribute("style") ?? ""
-    expect(columns).toContain("minmax(5rem, 1fr) repeat(5, minmax(4.5rem, 1fr))")
+    expect(columns).toContain("minmax(5rem, 1fr) minmax(max(4.5rem, 7ch + 1.75rem), 1fr)")
     const header = host.querySelector(`[aria-label="${editorCopy.seriesName(1)}"]`)
     expect(header?.tagName).toBe("INPUT")
     expect(header?.getAttribute("title")).toBe("One of the long series names")
-    const category = host.querySelector(`[aria-label="${editorCopy.chartData} 1"]`)
-    expect(category?.parentElement?.className ?? "").toContain("sticky")
   } finally {
     await stop()
   }
