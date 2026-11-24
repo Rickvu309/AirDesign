@@ -124,7 +124,9 @@ test("Undo on Aira's request whose frame now holds the person's layer names the 
   await expect(page.locator('[data-slide-box] [data-node="t:97"]')).toHaveCount(1)
 
   await side.getByRole("log").getByRole("button", { name: productCopy.undo, exact: true }).click()
-  await expect(side.locator("[data-undo-stays]")).toHaveText(agentKeptLayers("Aira", [airaKeptLayerName("Panel")]))
+  await expect(side.locator("[data-undo-stays]")).toHaveText(
+    agentKeptLayers(productCopy.agentName, [airaKeptLayerName("Panel")]),
+  )
   await expect(side.getByRole("log").getByRole("button", { name: productCopy.undo, exact: true })).toBeVisible()
   expect(((await savedNode(stack, opened, "t:97"))?.parent as { id: string }).id).toBe(panel)
 })
