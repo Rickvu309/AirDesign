@@ -3,9 +3,9 @@ import { colorCopy } from "../../apps/web/src/copy/color-copy"
 import { fillCopy, fillWords } from "../../apps/web/src/copy/fill-copy"
 import { test } from "./api-stack"
 import { picker, shownColor, typeColor } from "./design-panel"
-import { accent, spot } from "./doom-deck"
-import { hexes, neutralColorNames } from "./doom-editor-design-art"
-import { designDoom, painted, pick, saved, section, undoOnStage } from "./doom-design"
+import { accent, spot } from "./editor-deck"
+import { hexes, neutralColorNames } from "./editor-design-art"
+import { designDoom, painted, pick, saved, section, undoOnStage } from "./editor-design"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 

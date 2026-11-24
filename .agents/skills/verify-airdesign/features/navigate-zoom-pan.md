@@ -22,7 +22,7 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Browser tests.** `pnpm test:browser tests/browser/doom-editor-view.spec.ts` drives the zoom keys, Shift+2 on a selected layer, the hand tool from the Move menu, V and a Ctrl+wheel zoom, reading `[data-zoom-readout]` and the scroll of `[data-doom-stage]`. `tests/browser/doom-editor-page.spec.ts` picks 100% and Fit from the zoom menu and checks Agent and Design keep one zoom.
+- **Browser tests.** `pnpm test:browser tests/browser/editor-view.spec.ts` drives the zoom keys, Shift+2 on a selected layer, the hand tool from the Move menu, V and a Ctrl+wheel zoom, reading `[data-zoom-readout]` and the scroll of `[data-doom-stage]`. `tests/browser/editor-page.spec.ts` picks 100% and Fit from the zoom menu and checks Agent and Design keep one zoom.
 - **States for look.** `zoom-selection` (a text box after Shift+2) and `zoom-menu` (the menu open).
 
 ## Gotchas

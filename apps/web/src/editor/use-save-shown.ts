@@ -2,7 +2,7 @@ import type { DeckStatus } from "@airdesign/live"
 import { useEffect, useSyncExternalStore } from "react"
 import type { SaveStatus } from "@/editor/save-status"
 import type { ThinNotice } from "./thin-notice"
-import type { EditorClient } from "./use-doom-deck"
+import type { EditorClient } from "./use-deck"
 
 export type Saving = { readonly status: DeckStatus; readonly online: boolean }
 export type SaveShown = { readonly notice: ThinNotice | null; readonly save: SaveStatus }

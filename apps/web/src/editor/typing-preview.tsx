@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { useMemo, useSyncExternalStore } from "react"
-import { DoomThumb } from "./doom-thumb"
+import { DoomThumb } from "./thumb"
 
 export type TypingPreview = {
   readonly writesOn: (slide: doom.NodeId) => readonly doom.Write[]

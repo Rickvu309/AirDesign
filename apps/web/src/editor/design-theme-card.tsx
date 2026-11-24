@@ -13,7 +13,7 @@ import { doomControl, fontDesc } from "./design-controls"
 import { swatchesOf } from "./design-palette"
 import { templateNameOf } from "./design-template-name"
 import { themeColorWrites } from "./chart-theme-writes"
-import type { EditorClient } from "./use-doom-deck"
+import type { EditorClient } from "./use-deck"
 
 const fontName = (name: "heading" | "body") => name
 

@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test"
 import { opacityCopy } from "../../apps/web/src/copy/opacity-copy"
 import { test } from "./api-stack"
-import { accent, spot } from "./doom-deck"
-import { designDoom, painted, pick, saved, section, typeInto, undoOnStage } from "./doom-design"
+import { accent, spot } from "./editor-deck"
+import { designDoom, painted, pick, saved, section, typeInto, undoOnStage } from "./editor-design"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 

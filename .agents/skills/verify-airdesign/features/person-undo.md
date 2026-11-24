@@ -21,7 +21,7 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Browser tests.** `pnpm test:browser tests/browser/doom-editor.spec.ts` undoes and redoes a nudge, read from `doomRoutes.open`, and undoes a delete. `tests/browser/doom-editor-transform.spec.ts` undoes two resizes one step each. `tests/browser/doom-editor-text.spec.ts` undoes an emptied text and typing while editing. `tests/browser/doom-arrange.spec.ts` undoes an ungroup and a frame. `tests/browser/doom-editor-picture.spec.ts` undoes and redoes a dropped picture. `tests/browser/doom-agent-undo-reload.spec.ts` undoes an agent's run after a reload.
+- **Browser tests.** `pnpm test:browser tests/browser/editor.spec.ts` undoes and redoes a nudge, read from `doomRoutes.open`, and undoes a delete. `tests/browser/editor-transform.spec.ts` undoes two resizes one step each. `tests/browser/editor-text.spec.ts` undoes an emptied text and typing while editing. `tests/browser/editor-arrange-keys.spec.ts` undoes an ungroup and a frame. `tests/browser/editor-picture.spec.ts` undoes and redoes a dropped picture. `tests/browser/editor-agent-undo-reload.spec.ts` undoes an agent's run after a reload.
 - **Unit tests.** `packages/live/src/doom-deck.test.ts`, `doom-undo-chain.test.ts` and `doom-undo-run.test.ts`; `tests/doom-replay.test.ts` drives a person's step, undo and redo against an agent's run through the Doom core.
 - **States for look.** `text-undone`, `text-undone-in-box`, `three-undone`, `notes-then-text-undone`, `frame-text-undone`.
 

@@ -5,7 +5,7 @@ import { readPicture } from "@/editing/picture-file"
 import type { ThinNotice } from "./thin-notice"
 import { pictureWrites } from "./picture-writes"
 import type { Point } from "./slide-geometry"
-import type { EditorClient } from "./use-doom-deck"
+import type { EditorClient } from "./use-deck"
 
 function typing(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && (target.isContentEditable || target.closest("input, textarea") !== null)

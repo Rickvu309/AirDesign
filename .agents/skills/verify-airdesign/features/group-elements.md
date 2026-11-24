@@ -24,7 +24,7 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Browser tests.** `pnpm test:browser tests/browser/doom-arrange.spec.ts`: Ctrl+G groups two of three boxes (the group's box is their bounds and both are its children), Ctrl+Shift+G and Ctrl+Backspace ungroup, Ctrl+Z after an ungroup brings the group back and a second takes it away, and Ctrl+Alt+G wraps the selection in a clipping frame that one undo takes away. `tests/browser/doom-editor-arrange.spec.ts` groups, ungroups and frames from the keys. `tests/browser/doom-editor-select.spec.ts` steps into a group and moves a group with what is inside it. `tests/browser/doom-editor-transform.spec.ts` scales a group's layers by its side grip.
+- **Browser tests.** `pnpm test:browser tests/browser/editor-arrange-keys.spec.ts`: Ctrl+G groups two of three boxes (the group's box is their bounds and both are its children), Ctrl+Shift+G and Ctrl+Backspace ungroup, Ctrl+Z after an ungroup brings the group back and a second takes it away, and Ctrl+Alt+G wraps the selection in a clipping frame that one undo takes away. `tests/browser/editor-arrange.spec.ts` groups, ungroups and frames from the keys. `tests/browser/editor-select.spec.ts` steps into a group and moves a group with what is inside it. `tests/browser/editor-transform.spec.ts` scales a group's layers by its side grip.
 - **States for look.** `two-selected`, `group-stepped-in`, `group-layer-selected`, `group-layer-moved`, `group-layer-turned`, `group-fits`, `group-deleted`, `group-text-copy`, `ungrouped-copy-add`, `frame-group-layer-moved`.
 
 ## Gotchas

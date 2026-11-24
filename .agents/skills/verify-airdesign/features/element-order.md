@@ -18,7 +18,7 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Browser tests.** `pnpm test:browser tests/browser/doom-editor-arrange.spec.ts` presses `]`, `[`, Ctrl+] twice and Ctrl+[ on one of three boxes and reads each order key from `doomRoutes.open`. `tests/browser/doom-arrange.spec.ts` steps a layer with Ctrl+] and Ctrl+[ and sends it to the front and the back with `]` and `[`.
+- **Browser tests.** `pnpm test:browser tests/browser/editor-arrange.spec.ts` presses `]`, `[`, Ctrl+] twice and Ctrl+[ on one of three boxes and reads each order key from `doomRoutes.open`. `tests/browser/editor-arrange-keys.spec.ts` steps a layer with Ctrl+] and Ctrl+[ and sends it to the front and the back with `]` and `[`.
 - **State for look.** `element-ordered` (the back card brought in front of the badge).
 
 ## Gotchas

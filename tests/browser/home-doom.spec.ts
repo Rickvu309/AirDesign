@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { test, forward, signInBrowser } from "./api-stack"
 import { newDoomDeck } from "./new-deck"
-import { clickSlide, savedNode } from "./doom-deck"
+import { clickSlide, savedNode } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 

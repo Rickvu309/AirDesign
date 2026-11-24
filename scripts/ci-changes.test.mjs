@@ -98,11 +98,11 @@ try {
     [ciParts, everyJob],
   )
 
-  const spec = pullRequest(["tests/browser/doom-presenting.spec.ts"])
+  const spec = pullRequest(["tests/browser/editor-presenting.spec.ts"])
   same(
     "69807ec35, one browser spec, runs one browser job and skips PowerPoint checks",
     [partsOn(spec), jobsOf(spec), JSON.parse(spec.check).at(-1).browserSpecs, spec["unit-tests"]],
-    [["source", "browser"], ["source", "browser"], ["tests/browser/doom-presenting.spec.ts"], "[]"],
+    [["source", "browser"], ["source", "browser"], ["tests/browser/editor-presenting.spec.ts"], "[]"],
   )
 
   const fixture = pullRequest(["tests/browser/font-widths.ts"])

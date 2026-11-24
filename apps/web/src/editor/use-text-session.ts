@@ -17,7 +17,7 @@ import {
   type Mark,
   type TextSlice,
 } from "./text-edit"
-import type { EditorClient } from "./use-doom-deck"
+import type { EditorClient } from "./use-deck"
 import { refusedText, type Sent } from "./text-refused"
 
 export type Created = {

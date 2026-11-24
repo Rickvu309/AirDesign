@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test"
 import { linkCopy } from "../../apps/web/src/copy/link-copy"
 import { test } from "./api-stack"
-import { spot } from "./doom-deck"
-import { designDoom, pick, reloadDesign, saved, section, typeInto, words } from "./doom-design"
+import { spot } from "./editor-deck"
+import { designDoom, pick, reloadDesign, saved, section, typeInto, words } from "./editor-design"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 

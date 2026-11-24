@@ -12,7 +12,7 @@ import {
 import { productCopy } from "@/copy/product-copy"
 import { LiveDot, slideNumberOf } from "./agent-at-work"
 import { layerLabel } from "./layer-label"
-import type { EditorClient } from "./use-doom-deck"
+import type { EditorClient } from "./use-deck"
 
 type Undoing =
   | "undoing"

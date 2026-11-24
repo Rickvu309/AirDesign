@@ -3,7 +3,7 @@ import type { Palette } from "@/design/color-choices"
 import { SelectionColorRows } from "@/editor/selection-colors-section"
 import { colorRows, idsWithColor, replaceColorWrites } from "./design-selection-colors"
 import type { Selection } from "./selection"
-import type { EditorClient } from "./use-doom-deck"
+import type { EditorClient } from "./use-deck"
 
 export function DoomSelectionColors(props: {
   readonly client: EditorClient

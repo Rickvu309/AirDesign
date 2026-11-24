@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { gestureFor } from "@/lib/gestures"
 import { useRef, type KeyboardEvent } from "react"
 import { toast } from "@/components/ui/toast"
-import { doomEditorCopy } from "@/copy/doom-editor-copy"
+import { doomEditorCopy } from "@/copy/editor-copy"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { slideThumbWidth, type SlideStrip } from "@/editor/slide-sidebar"
 import { TypedThumb, type TypingPreview } from "./typing-preview"
@@ -13,7 +13,7 @@ import {
   moveSlideWrites,
   neighbourAfterDelete,
 } from "./slide-writes"
-import type { EditorClient } from "./use-doom-deck"
+import type { EditorClient } from "./use-deck"
 
 const layouts = doom.slideStarts.map((part) => ({ part, name: doomEditorCopy.slideStarts[part] }))
 const isStart = (part: string): part is doom.SlideStart => (doom.slideStarts as readonly string[]).includes(part)

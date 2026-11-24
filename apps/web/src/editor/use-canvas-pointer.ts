@@ -23,7 +23,7 @@ import {
 } from "./selection"
 import type { Placed, Point, SlideGeometry } from "./slide-geometry"
 import { transformedBy } from "./transform-drag"
-import type { EditorClient } from "./use-doom-deck"
+import type { EditorClient } from "./use-deck"
 
 import type { Drawn } from "./create-writes"
 

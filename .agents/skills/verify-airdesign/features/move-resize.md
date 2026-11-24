@@ -13,7 +13,7 @@ A person clicks a layer on the slide to select it. A frame with corner and side 
 - `paste` Ctrl/Cmd+C copies the selection and Ctrl/Cmd+X cuts it. Ctrl/Cmd+V pastes a copy into the selected frame, beside the selected layer, or on the slide in view, and selects it. A duplicate keeps lines joined to the duplicated shapes. One undo takes a paste away (`packages/doom/src/copy-writes.ts`, which an agent's duplicate shares).
 - `nudge` with a layer selected and not in its text, the arrows move it 1 px and Shift+arrow 10 px of the 1920 px slide.
 - `kept` the server copy, read with `doomRoutes.open`, holds the moved box on the layer's node, and a reload paints it there.
-- `busy` on a 40-slide deck a drag's main-thread work stays inside one frame, with no frame past 50 ms (`tests/browser/doom-speed.spec.ts`).
+- `busy` on a 40-slide deck a drag's main-thread work stays inside one frame, with no frame past 50 ms (`tests/browser/editor-speed.spec.ts`).
 
 ## How to get to it (user POV)
 
@@ -26,12 +26,12 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 
-- **Browser tests.** `pnpm test:browser tests/browser/doom-editor.spec.ts` selects the title, drags it, nudges it, undoes, redoes, reloads and deletes it, reading the box from `doomRoutes.open`. `tests/browser/doom-editor-transform.spec.ts` resizes by a corner and a side with one undo each, from the centre with Alt and with Shift, turns by a rotate zone in 15-degree steps, scales a group's layers, and drags an Alt copy and drops it with Escape. `tests/browser/doom-editor-arrange.spec.ts` covers Ctrl+D, Ctrl+C and Ctrl+V and Shift+H; `tests/browser/doom-arrange.spec.ts` covers Ctrl+X and Ctrl+V; `tests/browser/doom-slides-transform.spec.ts` covers Shift+V.
+- **Browser tests.** `pnpm test:browser tests/browser/editor.spec.ts` selects the title, drags it, nudges it, undoes, redoes, reloads and deletes it, reading the box from `doomRoutes.open`. `tests/browser/editor-transform.spec.ts` resizes by a corner and a side with one undo each, from the centre with Alt and with Shift, turns by a rotate zone in 15-degree steps, scales a group's layers, and drags an Alt copy and drops it with Escape. `tests/browser/editor-arrange.spec.ts` covers Ctrl+D, Ctrl+C and Ctrl+V and Shift+H; `tests/browser/editor-arrange-keys.spec.ts` covers Ctrl+X and Ctrl+V; `tests/browser/editor-slides-transform.spec.ts` covers Shift+V.
 - **States for look.** `editor-selected` (a text box resized by its corner), `two-selected`, `three-moved` and `three-undone`, `canvas-drag-held` and `canvas-drag-landed` (six cards with the Design panel open), `layer-snap-held`, `layer-spacing-held`, `layer-resize-held`, `layer-resize-bar-held`, `layer-resize-centre-snap-held`, `layer-resize-turned-snap-held`, `layers-resize-snap-held`, `layer-rotate-held`, `layer-duplicate-held`, `layer-duplicated`, `layer-duplicated-group`, `layer-pasted`.
 
 ## Gotchas
 
 - A press inside a text that is being edited places the caret; press Escape first, then drag.
-- Slide units are 1920 to the slide's width: `slidePoint` in `tests/browser/doom-deck.ts` turns them into page pixels at any zoom.
+- Slide units are 1920 to the slide's width: `slidePoint` in `tests/browser/editor-deck.ts` turns them into page pixels at any zoom.
 - Undo and redo are in `person-undo.md`; adding and deleting layers are in `element-edits.md`.
 - The box paints before the network. A moved screen is not proof of a save: poll `doomRoutes.open`.

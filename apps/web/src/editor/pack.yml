@@ -11,6 +11,6 @@ dependencies:
   - apps/web/src/present
   - apps/web/src/samples
 public:
-  - doom-editor.tsx
+  - editor.tsx
   - editor-sample.tsx
   - editor-screens.tsx
