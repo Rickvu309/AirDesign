@@ -3,7 +3,7 @@ import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 
 import { createServer, emptyLog, type Host, type Session } from "./index.js"
-import { memoryDecks } from "./memory-decks.js"
+import { memoryDecks } from "./testing/memory-decks.js"
 
 function started(): doom.Doom {
   return doom.doomFromTree({
