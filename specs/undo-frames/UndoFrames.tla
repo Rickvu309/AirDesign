@@ -17,7 +17,8 @@
 \* An undo writes each part of the top step whose parent was last written by the step or a turn that landed
 \* (`invert`), and leaves out (`onStandingLayers` in packages/doom/src/standing-layers.ts) a move whose frame is
 \* deleted, or, while the layer shows, a frame above it, and the delete of a frame that would still hold a layer.
-\* A layer that does not show goes back under a deleted frame and comes back with it. With nothing left it takes
+\* A layer that does not show goes back under a deleted frame and comes back with it, and a deleted layer goes
+\* back even into the deleted frame itself (`write` in packages/doom/src/apply-edit.ts). With nothing left it takes
 \* the step off and answers nothing. A turn that lands takes the step off and pushes on the other stack the step
 \* that puts back what it wrote.
 EXTENDS Integers
@@ -49,9 +50,11 @@ Into(t, x, px, d) ==
 Shows(x) == Par(x) # -1 /\ Into(Par(x), x, pX, 6) = "lands"
 Lands(x, t) == Into(t, x, pX, 6) = "lands"
 \* Where the undo may put x back into t when X's parent is px: where x shows, or, while x does not show, into a
-\* frame that stands itself, though a frame above it is deleted.
+\* frame that stands itself, though a frame above it is deleted, and, while x is deleted, into a deleted frame too.
 Back(x, t, px) ==
-  IF Shows(x) THEN Into(t, x, px, 6) = "lands" ELSE Into(t, x, px, 6) # "cycle" /\ (IF t = 5 /\ gone # 5 THEN px ELSE Par(t)) # -1
+  IF Shows(x)
+  THEN Into(t, x, px, 6) = "lands"
+  ELSE Into(t, x, px, 6) # "cycle" /\ (Par(x) = -1 \/ (IF t = 5 /\ gone # 5 THEN px ELSE Par(t)) # -1)
 
 Mine(w, k) == w = Edit(k) \/ In(turned, w)
 \* The parts of slot k an undo writes, and of those the parts it leaves out.

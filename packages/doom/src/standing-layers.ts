@@ -28,7 +28,7 @@ function landingMoves(now: Doom, moves: ReadonlyMap<NodeId, NodeId>): ReadonlySe
       if (at === node) return false
       if (moves.has(at) && !lands.has(at) && !stays.has(at)) return undefined
       const parent = lands.has(at) ? { id: moves.get(at)! } : parentIn(now, at)
-      if (parent === null) return hidden && at !== into
+      if (parent === null) return hidden && (at !== into || parentIn(now, node) === null)
       if (parent === undefined) return true
       at = parent.id
     }

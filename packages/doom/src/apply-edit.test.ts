@@ -107,6 +107,77 @@ describe("delete and missing", () => {
     refusedWith(tryLand(gone, [{ node: ids.title, prop: "parent", value: place(ids.card) }]), "missing")
   })
 
+  it("puts a deleted layer back into a deleted frame when the write takes back its delete, so it shows once the frame is back", () => {
+    const doom = sampleDeck()
+    const slot = (doom.nodes.get(ids.card) as { parent: unknown }).parent
+    const gone = land(doom, [{ node: ids.title, prop: "parent", value: null }])
+    const both = land(gone, [{ node: ids.card, prop: "parent", value: null }])
+    const restore = {
+      node: ids.title,
+      prop: "parent" as const,
+      value: place(ids.card),
+      base: revOf(gone, ids.title, "parent")!,
+    }
+    const restored = land(both, [restore])
+    expect(restored.children.get(ids.card)).toEqual([ids.title])
+    expect(land(restored, [{ node: ids.card, prop: "parent", value: slot }]).children.get(ids.card)).toEqual([
+      ids.title,
+    ])
+  })
+
+  it("refuses a move of a deleted layer into a deleted frame that takes back no delete, as a tab that has not caught up sends", () => {
+    const gone = land(sampleDeck(), [{ node: ids.title, prop: "parent", value: null }])
+    const both = land(gone, [{ node: ids.card, prop: "parent", value: null }])
+    refusedWith(tryLand(both, [{ node: ids.title, prop: "parent", value: place(ids.card) }]), "missing", ids.title)
+  })
+
+  it("refuses a move into a deleted frame of a layer that was not deleted before the edit, even one the edit deletes first", () => {
+    const gone = land(sampleDeck(), [{ node: ids.card, prop: "parent", value: null }])
+    const base = revOf(gone, ids.caption, "parent")!
+    for (const writes of [
+      [{ node: ids.caption, prop: "parent" as const, value: place(ids.card), base }],
+      [
+        { node: ids.caption, prop: "parent" as const, value: null },
+        { node: ids.caption, prop: "parent" as const, value: place(ids.card), base },
+      ],
+      [
+        { node: ids.caption, prop: "parent" as const, value: null },
+        { node: ids.caption, prop: "parent" as const, value: place(ids.card) },
+      ],
+    ])
+      refusedWith(tryLand(gone, writes), "missing", ids.caption)
+  })
+
+  it("refuses a move into a deleted frame of a layer that is hidden under a deleted frame but not deleted itself", () => {
+    const gone = land(sampleDeck(), [{ node: ids.card, prop: "parent", value: null }])
+    const both = land(gone, [{ node: ids.side, prop: "parent", value: null }])
+    const move = {
+      node: ids.caption,
+      prop: "parent" as const,
+      value: place(ids.card),
+      base: revOf(both, ids.caption, "parent")!,
+    }
+    refusedWith(tryLand(both, [move]), "missing", ids.caption)
+  })
+
+  it("refuses a new layer in a deleted frame, even one the edit makes deleted first", () => {
+    const gone = land(sampleDeck(), [{ node: ids.card, prop: "parent", value: null }])
+    const made = nodeId("t:20")
+    refusedWith(tryLand(gone, create(made, "shape", ids.card)), "missing", made)
+    const [type] = create(made, "shape", null)
+    for (const base of [{}, { base: gone.rev }])
+      refusedWith(
+        tryLand(gone, [
+          type!,
+          { node: made, prop: "parent", value: null },
+          { node: made, prop: "parent", value: place(ids.card), ...base },
+          { node: made, prop: "box", value: box(0) },
+        ]),
+        "missing",
+        made,
+      )
+  })
+
   it("refuses a move into a layer under a frame the same edit deleted before it", () => {
     const [inner, innermost] = [nodeId("t:10"), nodeId("t:11")]
     const nested = land(sampleDeck(), [...create(inner, "frame", ids.card), ...create(innermost, "frame", inner)])

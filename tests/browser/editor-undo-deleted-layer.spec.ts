@@ -1,6 +1,7 @@
 import { expect, type BrowserContext, type Page } from "@playwright/test"
 import { agentLeftLayers } from "../../apps/web/src/copy/agent-runs-copy.ts"
 import { airaKeptLayerName } from "../../apps/web/src/copy/aira-copy.ts"
+import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import * as doom from "../../packages/doom/src/index.ts"
 import { forward, test, type Stack } from "./api-stack"
 import { accent, clickSlide, landNodes, openDoomEditor, savedNode, selectedIds, spot } from "./editor-deck"
@@ -126,46 +127,118 @@ for (const above of [true, false])
     await other.close()
   })
 
-test("an undo of deleting a layer whose frame's frame another tab deleted puts it back, so their undo brings it back with the frames", async ({
+for (const [whose, frame] of [
+  ["frame's frame", "t:71"],
+  ["own frame", "t:72"],
+] as const)
+  test(`an undo of deleting a layer whose ${whose} another tab deleted puts it back, so their undo brings it back with the frames`, async ({
+    page,
+    context,
+    stack,
+  }) => {
+    const opened = await openDoomEditor(page, context, stack)
+    await landNodes(stack, opened, [
+      { id: "t:71", type: "frame", parent: opened.slide, props: { box: spot(200, 200, 900, 600), fills: accent } },
+      { id: "t:72", type: "frame", parent: "t:71", props: { box: spot(100, 100, 600, 400), fills: blue } },
+      {
+        id: "t:73",
+        type: "shape",
+        parent: "t:72",
+        props: { box: spot(100, 100, 200, 100), geometry: { kind: "rect" }, fills: blue },
+      },
+    ])
+    const shownCard = (tab: Page) => tab.locator('[data-slide-box] [data-node="t:73"]')
+    await expect(shownCard(page)).toHaveCount(1)
+    await page.keyboard.down("Control")
+    await clickSlide(page, 500, 450)
+    await page.keyboard.up("Control")
+    await expect.poll(() => selectedIds(page)).toEqual(["t:73"])
+    await page.keyboard.press("Delete")
+    await expect.poll(async () => (await savedNode(stack, opened, "t:73"))?.parent).toBeNull()
+
+    const other = await otherTab(context, stack, opened.deck)
+    if (frame === "t:72") await other.keyboard.down("Control")
+    await clickSlide(other, 330, 330)
+    await other.keyboard.up("Control")
+    await expect.poll(() => selectedIds(other)).toEqual([frame])
+    await other.keyboard.press("Delete")
+    await expect.poll(async () => (await savedNode(stack, opened, frame))?.parent).toBeNull()
+
+    await page.keyboard.press("ControlOrMeta+z")
+    await expect
+      .poll(async () => ((await savedNode(stack, opened, "t:73"))?.parent as { id: string } | null)?.id)
+      .toBe("t:72")
+    await expect(shownCard(page)).toHaveCount(0)
+    await other.keyboard.press("ControlOrMeta+z")
+    await expect.poll(async () => (await savedNode(stack, opened, frame))?.parent).not.toBeNull()
+    await expect(shownCard(page)).toHaveCount(1)
+    await expect(shownCard(other)).toHaveCount(1)
+    await other.close()
+  })
+
+test("a reorder made offline of a layer another tab deleted, from the frame they deleted after it, is set aside, so each of their undos brings back one", async ({
   page,
   context,
   stack,
 }) => {
   const opened = await openDoomEditor(page, context, stack)
   await landNodes(stack, opened, [
-    { id: "t:71", type: "frame", parent: opened.slide, props: { box: spot(200, 200, 900, 600), fills: accent } },
-    { id: "t:72", type: "frame", parent: "t:71", props: { box: spot(100, 100, 600, 400) } },
+    { id: "t:91", type: "frame", parent: opened.slide, props: { box: spot(200, 200, 900, 600), fills: accent } },
     {
-      id: "t:73",
+      id: "t:92",
       type: "shape",
-      parent: "t:72",
-      props: { box: spot(100, 100, 200, 100), geometry: { kind: "rect" }, fills: blue },
+      parent: "t:91",
+      props: { box: spot(100, 100, 300, 200), geometry: { kind: "rect" }, fills: blue },
+    },
+    {
+      id: "t:93",
+      type: "shape",
+      parent: "t:91",
+      props: { box: spot(300, 200, 300, 200), geometry: { kind: "rect" }, fills: accent },
     },
   ])
-  const shownCard = (tab: Page) => tab.locator('[data-slide-box] [data-node="t:73"]')
+  const parentId = async (id: string) =>
+    ((await savedNode(stack, opened, id))?.parent as { id: string } | null | undefined)?.id ?? null
+  const shownCard = (tab: Page) => tab.locator('[data-slide-box] [data-node="t:92"]')
   await expect(shownCard(page)).toHaveCount(1)
-  await page.keyboard.down("Control")
-  await clickSlide(page, 500, 450)
-  await page.keyboard.up("Control")
-  await expect.poll(() => selectedIds(page)).toEqual(["t:73"])
-  await page.keyboard.press("Delete")
-  await expect.poll(async () => (await savedNode(stack, opened, "t:73"))?.parent).toBeNull()
-
   const other = await otherTab(context, stack, opened.deck)
-  await clickSlide(other, 230, 230)
-  await expect.poll(() => selectedIds(other)).toEqual(["t:71"])
-  await other.keyboard.press("Delete")
-  await expect.poll(async () => (await savedNode(stack, opened, "t:71"))?.parent).toBeNull()
 
-  await page.keyboard.press("ControlOrMeta+z")
-  await expect
-    .poll(async () => ((await savedNode(stack, opened, "t:73"))?.parent as { id: string } | null)?.id)
-    .toBe("t:72")
+  let offline = true
+  await page.route(
+    (url) => url.pathname.startsWith("/doom/"),
+    (route) => (offline ? route.abort("internetdisconnected") : route.fallback()),
+  )
+  await page.keyboard.down("Control")
+  await clickSlide(page, 350, 350)
+  await page.keyboard.up("Control")
+  await expect.poll(() => selectedIds(page)).toEqual(["t:92"])
+  await page.keyboard.press("BracketRight")
+  await expect(page.locator("[data-save-status]")).not.toHaveText(productCopy.saved)
+
+  await other.keyboard.down("Control")
+  await clickSlide(other, 350, 350)
+  await other.keyboard.up("Control")
+  await expect.poll(() => selectedIds(other)).toEqual(["t:92"])
+  await other.keyboard.press("Delete")
+  await expect.poll(() => parentId("t:92")).toBeNull()
+  await clickSlide(other, 1000, 700)
+  await expect.poll(() => selectedIds(other)).toEqual(["t:91"])
+  await other.keyboard.press("Delete")
+  await expect.poll(() => parentId("t:91")).toBeNull()
+
+  offline = false
+  await expect(page.getByText(productCopy.editSetAside, { exact: true })).toBeVisible({ timeout: 15_000 })
+  expect(await parentId("t:92")).toBeNull()
+
+  await other.keyboard.press("ControlOrMeta+z")
+  await expect.poll(() => parentId("t:91")).toBe(opened.slide)
+  expect(await parentId("t:92")).toBeNull()
+  await expect(shownCard(other)).toHaveCount(0)
   await expect(shownCard(page)).toHaveCount(0)
   await other.keyboard.press("ControlOrMeta+z")
-  await expect.poll(async () => (await savedNode(stack, opened, "t:71"))?.parent).not.toBeNull()
-  await expect(shownCard(page)).toHaveCount(1)
+  await expect.poll(() => parentId("t:92")).toBe("t:91")
   await expect(shownCard(other)).toHaveCount(1)
+  await expect(shownCard(page)).toHaveCount(1)
   await other.close()
 })
 
