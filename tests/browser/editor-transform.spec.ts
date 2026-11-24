@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
+import { sizeLabelGap } from "../../apps/web/src/editor/size-label-place"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
 import { accent, clickSlide, landNodes, openEditor, savedNode, selectedIds, slidePoint, spot } from "./editor-deck"
@@ -37,6 +38,9 @@ test("a corner handle resizes, a side handle moves one edge, and one undo takes 
   await clickSlide(page, 350, 675)
   expect(await selectedIds(page)).toEqual(["t:1"])
   await expect(page.locator("[data-size-label]")).toContainText("300")
+  const bottom = await gripCentre(page, "bottom-right")
+  const label = await page.locator("[data-size-label] rect").boundingBox()
+  expect(label!.y - bottom.y).toBeCloseTo(sizeLabelGap, 0)
 
   const corner = await gripCentre(page, "bottom-right")
   await dragFrom(page, corner, { x: corner.x + 80, y: corner.y + 40 })

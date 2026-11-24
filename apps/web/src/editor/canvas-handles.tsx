@@ -1,5 +1,6 @@
 import { resizeCursor, rotateCursor, type ResizeGrip } from "./transform-math"
 import type { Frame } from "./selection-frame"
+import { sizeLabelCentre, sizeLabelHeight } from "./size-label-place"
 import type { Point } from "./slide-geometry"
 
 const corners = ["top-left", "top-right", "bottom-right", "bottom-left"] as const
@@ -35,11 +36,7 @@ export function CanvasHandles({
     Point,
   ]
   const middle = { x: frame.center.x * scale, y: frame.center.y * scale }
-  const below = toward(
-    { x: (screen[2].x + screen[3].x) / 2, y: (screen[2].y + screen[3].y) / 2 },
-    { x: (screen[2].x + screen[3].x) / 1 - middle.x, y: (screen[2].y + screen[3].y) / 1 - middle.y },
-    22,
-  )
+  const below = sizeLabelCentre(screen, middle)
   const pill = label.length * 6.4 + 14
   return (
     <g data-handles="">
@@ -94,7 +91,7 @@ export function CanvasHandles({
         )
       })}
       <g data-size-label="" transform={`translate(${String(below.x)} ${String(below.y)})`}>
-        <rect x={-pill / 2} y={-9} width={pill} height={18} rx={4} fill={edge} />
+        <rect x={-pill / 2} y={-sizeLabelHeight / 2} width={pill} height={sizeLabelHeight} rx={4} fill={edge} />
         <text x={0} y={4} textAnchor="middle" fontSize={11} fill="white">
           {label}
         </text>
