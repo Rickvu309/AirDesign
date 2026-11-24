@@ -7,7 +7,7 @@ import { namedByColor } from "../design/color-names"
 import { changeWrites } from "./design-changes"
 import { nodeModel } from "./design-model"
 import { swatchesOf } from "./design-palette"
-import { grow, landed, spot } from "@/testing/doom-fixtures"
+import { grow, landed, spot } from "./testing/doom-fixtures"
 
 const hash = "#"
 const theme = doom.defaultTheme

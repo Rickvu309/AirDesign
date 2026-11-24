@@ -1,13 +1,13 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import type { Desc } from "./design/control-desc"
-import { optionWord } from "./copy/option-copy"
-import { choiceLayout, controlKinds, controlOf } from "./design/panel-arrangement"
-import { controlViews } from "./design/control-views"
-import { nodeModel } from "./editor/design-model"
-import { grow, spot } from "@/testing/doom-fixtures"
+import type { Desc } from "../design/control-desc"
+import { optionWord } from "../copy/option-copy"
+import { choiceLayout, controlKinds, controlOf } from "../design/panel-arrangement"
+import { controlViews } from "../design/control-views"
+import { nodeModel } from "./design-model"
+import { grow, spot } from "./testing/doom-fixtures"
 
-const specs = Object.keys(import.meta.glob("../../../tests/browser/control-*.spec.ts")).map(
+const specs = Object.keys(import.meta.glob("../../../../tests/browser/control-*.spec.ts")).map(
   (path) => /control-([a-z]+)\.spec\.ts$/.exec(path)?.[1] ?? path,
 )
 

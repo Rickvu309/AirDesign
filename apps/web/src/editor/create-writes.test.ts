@@ -1,8 +1,8 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { chartArea, chartWrites, drawWrites, iconSwapWrites, iconWrites, type Drawing } from "./create-writes"
-import { darkTheme } from "@/testing/create-writes-art"
-import { grow, landed } from "@/testing/doom-fixtures"
+import { darkTheme } from "./testing/create-writes-art"
+import { grow, landed } from "./testing/doom-fixtures"
 
 const quiet = { var: "background2", tint: -0.06 }
 const ink = { var: "text" }

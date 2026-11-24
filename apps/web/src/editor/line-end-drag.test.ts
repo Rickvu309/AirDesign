@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { grow, paint, spot } from "@/testing/doom-fixtures"
+import { grow, paint, spot } from "./testing/doom-fixtures"
 import { lineEndDrag } from "./line-end-drag"
 
 const line = (start: unknown, end: unknown) => ({

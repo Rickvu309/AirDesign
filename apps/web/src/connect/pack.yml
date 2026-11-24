@@ -5,3 +5,4 @@ dependencies:
 public:
   - connect-screens.tsx
   - oauth-authorize.tsx
+  - oauth-consent-path.ts

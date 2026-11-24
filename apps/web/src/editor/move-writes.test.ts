@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { movable, movedBy, moveWrites } from "./move-writes"
-import { grow, landed, paint, spot } from "@/testing/doom-fixtures"
+import { grow, landed, paint, spot } from "./testing/doom-fixtures"
 
 const size = { w: 1920, h: 1080 }
 

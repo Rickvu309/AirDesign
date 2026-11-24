@@ -2,7 +2,7 @@ import { airaRoutes, mcpRoutes, onceMeta, type ReplyBlock } from "@airdesign/cat
 import { describe, expect, it, vi } from "vitest"
 import { airaChat, askAira, type AiraChat } from "./aira-loop"
 import { undoExchange } from "./aira-undo"
-import { call, deck, edit, editCall, edited, ended, read, scripted, stop } from "@/testing/aira-loop-script"
+import { call, deck, edit, editCall, edited, ended, read, scripted, stop } from "./testing/aira-loop-script"
 
 describe("Aira's loop when Stop comes while a tool call is still waiting for the server", () => {
   async function stoppedInFlight(calls: readonly ReplyBlock[]) {

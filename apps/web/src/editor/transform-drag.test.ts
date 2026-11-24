@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import * as doom from "@airdesign/doom"
-import { grow, landed, paint, spot } from "@/testing/doom-fixtures"
+import { grow, landed, paint, spot } from "./testing/doom-fixtures"
 import { transformedBy, type TransformInput } from "./transform-drag"
 
 const size = { w: 1920, h: 1080 }

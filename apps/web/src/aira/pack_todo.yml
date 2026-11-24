@@ -1,9 +1,0 @@
-apps/web/src:
-  apps/web/src/testing/aira-loop-script.ts:
-    violations:
-      - dependency
-      - layer
-    files:
-      - apps/web/src/aira/aira-loop-stop.test.ts
-      - apps/web/src/aira/aira-loop.test.ts
-      - apps/web/src/aira/aira-pictures.test.ts

@@ -1,11 +1,11 @@
 import * as doom from "@airdesign/doom"
-import type { Desc } from "./design/control-desc"
+import type { Desc } from "../design/control-desc"
 import { describe, expect, it } from "vitest"
-import { optionCopy } from "./copy/option-copy"
-import type { PanelControl } from "./design/panel"
-import { changeWrites } from "./editor/design-changes"
-import { nodeModel } from "./editor/design-model"
-import { grow, spot } from "@/testing/doom-fixtures"
+import { optionCopy } from "../copy/option-copy"
+import type { PanelControl } from "../design/panel"
+import { changeWrites } from "./design-changes"
+import { nodeModel } from "./design-model"
+import { grow, spot } from "./testing/doom-fixtures"
 
 type Problem = { readonly control: string; readonly missing: "label" | "copy" | "write" | "paint" | "undo" | "agent" }
 
