@@ -1,6 +1,8 @@
 import { readAngle, readRotation } from "./angle.js"
 import { arrowField, startArrowField } from "./agent-arrow.js"
 import { readAxisUnit } from "./chart.js"
+import { kindWords } from "./agent-kind-words.js"
+import { type WeightName, weightNames } from "./painted-face.js"
 import { type AgentEnd, endSchema, readEnd } from "./agent-end.js"
 import { type AgentInsert, insertField } from "./agent-insert.js"
 import { type AgentItem, itemSchema, readItem } from "./agent-item.js"
@@ -103,6 +105,7 @@ export type AgentLook = {
   readonly locked?: boolean
   readonly size?: Px
   readonly font?: string
+  readonly weight?: WeightName
   readonly lineHeight?: number
   readonly letterSpacing?: Px
   readonly case?: "none" | "upper" | "lower" | "title"
@@ -330,6 +333,7 @@ const lookFields: LookFields = {
   locked: flag("Lock the layer against selection and moves."),
   size: number(1, 2_000, "Text size in pixels."),
   font: field({ type: "string", description: "A font family, such as Inter." }, readFontName),
+  weight: choice(weightNames, "Thin, ExtraLight, Light, Regular, Medium, SemiBold, Bold, ExtraBold or Black."),
   lineHeight: number(0.5, 5, "Line height as a multiple of the size."),
   letterSpacing: number(-100, 100, "Letter spacing in pixels."),
   case: choice(["none", "upper", "lower", "title"], "Letter case."),

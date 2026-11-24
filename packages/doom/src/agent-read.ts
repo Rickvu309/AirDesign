@@ -8,6 +8,7 @@ import { cropSides } from "./picture-crop.js"
 import type { Node, Doom } from "./doom.js"
 import { type Box, childrenOf, isLaidOut, isLive, parentOf, propOf, slidesOf } from "./doom-walk.js"
 import { textToMarkdown } from "./markdown.js"
+import { paintedFace } from "./painted-face.js"
 import type { Para, Span, Text } from "./text.js"
 
 const quoted = (words: string) => JSON.stringify(words)
@@ -182,6 +183,15 @@ function uniformPara<K extends keyof Para>(text: Text, key: K): Para[K] | undefi
   return text.paras.every((para) => para[key] === first) ? first : undefined
 }
 
+function faceWords(font: string | undefined, bold: boolean | undefined): readonly string[] {
+  if (font === undefined && bold !== true) return []
+  if (font === undefined) return ["weight=Bold"]
+  const resting = paintedFace(font, 400, false)
+  if (resting.family === font && bold !== true) return [`font=${quoted(font)}`]
+  const painted = paintedFace(font, 400, bold)
+  return [`font=${quoted(painted.family)}`, `weight=${painted.name}`]
+}
+
 function overrideWords(text: Text): readonly string[] {
   const same = <K extends keyof Span>(key: K): Span[K] | undefined => {
     const first = text.spans[0]?.[key]
@@ -189,12 +199,13 @@ function overrideWords(text: Text): readonly string[] {
   }
   const size = same("size")
   const font = same("font")
+  const bold = same("bold")
   const tracking = same("tracking")
   const letterCase = same("case")
   const line = text.paras[0]?.lineHeight
   return [
     ...(size === undefined ? [] : [`size=${num(size)}`]),
-    ...(font === undefined ? [] : [`font=${quoted(font)}`]),
+    ...faceWords(font, bold),
     ...(tracking === undefined ? [] : [`letterSpacing=${num(tracking)}`]),
     ...(letterCase === undefined ? [] : [`case=${letterCase}`]),
     ...(same("underline") === true ? ["underline"] : []),

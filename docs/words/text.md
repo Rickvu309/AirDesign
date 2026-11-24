@@ -5,7 +5,7 @@ How a person sets the look of letters and lists. Figma Slides' words.
 ## Language
 
 **weight**:
-How heavy a family's letters are, from Thin (100) to Black (900), each upright or italic, as the Weight list in the design panel names them. The list shows only the weights the family's files on our server hold. Regular and Bold are the family itself with the run's `bold` flag off or on; every other weight is its named face. Option Command > and < (Ctrl Alt > and < elsewhere) step a layer, or the selected words while typing, to the next weight. While typing, the Weight field shows and sets the selected words' weight. A family picked before its files load keeps the weight once they load when it holds it, and falls back to Regular when it does not.
+How heavy a family's letters are, from Thin (100) to Black (900), each upright or italic, as the Weight list in the design panel names them. The list shows only the weights the family's files on our server hold. Regular and Bold are the family itself with the run's `bold` flag off or on; every other weight is its named face. Option Command > and < (Ctrl Alt > and < elsewhere) step a layer, or the selected words while typing, to the next weight. While typing, the Weight field shows and sets the selected words' weight. Ctrl+B on a named face paints Bold, that family's bold face, and a second press returns to the named face. A family picked before its files load keeps the weight once they load when it holds it, and falls back to Regular when it does not.
 _Avoid_: font style, boldness
 
 **named face**:

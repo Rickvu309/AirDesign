@@ -86,5 +86,13 @@ export { blankDeckName, deckNameFollows, nameFromTitleWrites } from "./deck-name
 export { bytesOf, limits } from "./limits.js"
 export { type MediaType, mediaSize, mediaTypeOf, mediaTypes, overPixelLimit } from "./media-bytes.js"
 export { type FontFace, type FontWidths, type Glyph, fontFace } from "./line-breaks.js"
+export {
+  type PaintedFace,
+  type WeightName,
+  boldWeightOf,
+  paintedFace,
+  storedFace,
+  weightNames,
+} from "./painted-face.js"
 export { type OrderKey, orderKeyBetween } from "./order-key.js"
 export { type Clipboard, type Copies, copiedMove, duplicateWrites, pasteWrites } from "./copy-writes.js"

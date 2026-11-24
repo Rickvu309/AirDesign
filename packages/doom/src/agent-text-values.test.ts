@@ -44,6 +44,31 @@ describe("raw text values: an agent sets what the panel's text controls set", ()
     expect(textAt(cased).spans).toEqual([{ end: 7, underline: true }])
   })
 
+  it("reads a named face as the family's weight, and sets that weight back", () => {
+    const before = sampleDeck()
+    const held = { ...textOf("Revenue"), spans: [{ end: 7, font: "Inter SemiBold", bold: false as const }] }
+    const seeded = started(
+      land(before, [{ node: ids.title, prop: "text", value: held, base: revOf(before, ids.title, "text")! }]),
+    )
+    const read = readForAgent(seeded, [ids.slide])
+    expect(read).toContain('font="Inter"')
+    expect(read).toContain("weight=SemiBold")
+    expect(read).not.toContain("Inter SemiBold")
+    const bold = build(seeded, set(ids.title, { weight: "Bold" }))
+    expect(textAt(bold).spans[0]).toMatchObject({ bold: true })
+    expect(textAt(bold).spans[0]?.font).toBeUndefined()
+    expect(readForAgent(bold, [ids.slide])).toContain("weight=Bold")
+    expect(readForAgent(bold, [ids.slide])).not.toContain("weight=SemiBold")
+    const again = build(bold, set(ids.title, { weight: "SemiBold" }))
+    expect(textAt(again).spans).toEqual([{ end: 7, font: "Inter SemiBold", bold: false }])
+    const flagged = { ...held, spans: [{ end: 7, font: "Inter SemiBold", bold: true as const }] }
+    const overlaid = started(
+      land(before, [{ node: ids.title, prop: "text", value: flagged, base: revOf(before, ids.title, "text")! }]),
+    )
+    expect(readForAgent(overlaid, [ids.slide])).toContain("weight=Bold")
+    expect(readForAgent(overlaid, [ids.slide])).not.toContain("SemiBold")
+  })
+
   it("refuses a value past what the panel takes, before anything compiles", () => {
     for (const look of [
       { size: 5000 },

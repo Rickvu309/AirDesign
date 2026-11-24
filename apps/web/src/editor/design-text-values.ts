@@ -1,5 +1,13 @@
-import type { Color, Para, Span, Text, TextStyleName, Theme } from "@airdesign/doom"
-import { boldWeight, familyName, namedFace, nearestWeight, regularWeight, typefaceFor } from "@airdesign/fonts"
+import {
+  paintedFace,
+  storedFace,
+  type Color,
+  type Para,
+  type Span,
+  type Text,
+  type TextStyleName,
+  type Theme,
+} from "@airdesign/doom"
 import { hundredths, wholeFraction } from "./design-values"
 
 export type TextLook = {
@@ -16,10 +24,7 @@ export type TextLook = {
 }
 
 export function weightOf(font: string, styleWeight: number, bold: boolean | undefined): number {
-  if (bold === true) return boldWeight
-  const face = namedFace(font)
-  if (bold === false && face === undefined) return regularWeight
-  return nearestWeight(face?.weight ?? styleWeight)
+  return paintedFace(font, styleWeight, bold).weight
 }
 
 function lookFrom(
@@ -27,12 +32,12 @@ function lookFrom(
   style: Theme["textStyles"][TextStyleName],
   span: Span | undefined,
 ): TextLook {
-  const weight = weightOf(font, style.weight, span?.bold)
+  const painted = paintedFace(font, style.weight, span?.bold)
   return {
     size: span?.size ?? style.size,
-    font: familyName(font),
-    weight,
-    bold: weight === boldWeight,
+    font: painted.family,
+    weight: painted.weight,
+    bold: painted.name === "Bold",
     italic: span?.italic ?? false,
     underline: span?.underline ?? false,
     strike: span?.strike ?? false,
@@ -66,7 +71,7 @@ export function textWithWeight(
   return {
     ...text,
     spans: base.map((span) => {
-      const stored = typefaceFor(familyName(span.font ?? themeFont), picked.weight)
+      const stored = storedFace(paintedFace(span.font ?? themeFont, 400, false).family, picked.weight)
       const next = { ...span, bold: stored.bold, italic: picked.italic }
       return stored.font === themeFont ? spanWithoutFont(next) : { ...next, font: stored.font }
     }),

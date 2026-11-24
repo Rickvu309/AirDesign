@@ -170,6 +170,7 @@ describe("the advertised schema", () => {
       "locked",
       "size",
       "font",
+      "weight",
       "lineHeight",
       "letterSpacing",
       "case",
