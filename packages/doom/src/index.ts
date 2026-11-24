@@ -10,6 +10,7 @@ export { wrapDegrees, wrapRotation } from "./angle.js"
 export {
   type Matrix,
   apply as applyMatrix,
+  artMatrix,
   boxMatrix,
   identity as identityMatrix,
   invert as invertMatrix,

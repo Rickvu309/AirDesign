@@ -6,6 +6,7 @@ import {
   identityMatrix as identity,
   invertMatrix as invert,
 } from "@airdesign/doom"
+import { masksOf, type Silhouette, silhouetteIn } from "@airdesign/render"
 import type { Bounds } from "./snapping"
 
 export { apply, invert }
@@ -21,6 +22,8 @@ export type Placed = {
   readonly corners: Corners
   readonly bounds: Bounds
   readonly rotation: number
+  readonly reveals: Silhouette | null
+  readonly maskedBy: Silhouette | null
   readonly children: readonly Placed[]
 }
 
@@ -40,7 +43,28 @@ function boundsOf(corners: Corners): Bounds {
   return { left: Math.min(...xs), top: Math.min(...ys), right: Math.max(...xs), bottom: Math.max(...ys) }
 }
 
-function place(node: doom.Resolved, parent: Placed | null, byId: Map<doom.NodeId, Placed>): Placed {
+function placeAll(
+  nodes: readonly doom.Resolved[],
+  parent: Placed | null,
+  byId: Map<doom.NodeId, Placed>,
+): readonly Placed[] {
+  const within = parent?.matrix ?? identity
+  const masks = masksOf(nodes)
+  const outlines = new Map(nodes.filter((node) => node.mask).map((node) => [node, silhouetteIn(node, within)]))
+  return nodes.flatMap((node, index) => {
+    if (node.derived) return []
+    const mask = masks[index]
+    const masking = { reveals: outlines.get(node) ?? null, maskedBy: (mask && outlines.get(mask)) ?? null }
+    return [place(node, parent, masking, byId)]
+  })
+}
+
+function place(
+  node: doom.Resolved,
+  parent: Placed | null,
+  { reveals, maskedBy }: Pick<Placed, "reveals" | "maskedBy">,
+  byId: Map<doom.NodeId, Placed>,
+): Placed {
   const matrix = boxMatrix(parent?.matrix ?? identity, node.box)
   const { w, h } = node.box
   const corners: Corners = [
@@ -58,16 +82,18 @@ function place(node: doom.Resolved, parent: Placed | null, byId: Map<doom.NodeId
     corners,
     bounds: boundsOf(corners),
     rotation: (parent?.rotation ?? 0) + node.box.rotation,
+    reveals,
+    maskedBy,
     children,
   }
   byId.set(placed.id, placed)
-  for (const child of node.children) if (!child.derived) children.push(place(child, placed, byId))
+  children.push(...placeAll(node.children, placed, byId))
   return placed
 }
 
 export function geometryOf(nodes: readonly doom.Resolved[]): SlideGeometry {
   const byId = new Map<doom.NodeId, Placed>()
-  const roots = nodes.map((node) => place(node, null, byId))
+  const roots = placeAll(nodes, null, byId)
   return { roots, byId }
 }
 

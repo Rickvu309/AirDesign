@@ -78,7 +78,7 @@ test("Use as mask clips the layer above on the canvas, takes one Undo, survives 
   expect(after.maskOnly).toBe(after.clipped)
 
   await clickSlide(page, ...clipped)
-  expect(await selectedIds(page)).not.toContain("t:2")
+  expect(await selectedIds(page)).toEqual([])
   await clickSlide(page, ...inside)
   expect(await selectedIds(page)).toEqual(["t:2"])
 
@@ -119,7 +119,7 @@ test("a click in a corner a rounded mask's radius cuts away does not select the 
   await expect(page.locator("[data-slide-box] [data-node]")).toHaveCount(2)
 
   await clickSlide(page, 210, 610)
-  expect(await selectedIds(page)).not.toContain("t:2")
+  expect(await selectedIds(page)).toEqual([])
   await clickSlide(page, 300, 700)
   expect(await selectedIds(page)).toEqual(["t:2"])
 })

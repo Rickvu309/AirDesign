@@ -37,3 +37,8 @@ export function boxMatrix(parent: Matrix, box: Box): Matrix {
   ]
   return multiply(parent, turn)
 }
+
+export function artMatrix(parent: Matrix, box: Box): Matrix {
+  const flip: Matrix = [box.flipH ? -1 : 1, 0, 0, box.flipV ? -1 : 1, box.flipH ? box.w : 0, box.flipV ? box.h : 0]
+  return multiply(boxMatrix(parent, box), flip)
+}

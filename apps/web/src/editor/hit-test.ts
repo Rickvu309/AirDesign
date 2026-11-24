@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { maskSilhouette } from "@airdesign/render"
+import type { Silhouette } from "@airdesign/render"
 import { apply, invert, type Placed, type Point } from "./slide-geometry"
 
 export type Skip = (id: doom.NodeId) => boolean
@@ -30,16 +30,16 @@ function bodyHit(placed: Placed, local: Point, reach: number): boolean {
   return local.x >= 0 && local.y >= 0 && local.x <= w && local.y <= h
 }
 
-function maskHolds(mask: Placed, at: Point): boolean {
-  const local = apply(invert(mask.matrix), at)
-  const context = document.createElement("canvas").getContext("2d")
-  if (context === null) return false
-  return context.isPointInPath(new Path2D(maskSilhouette(mask.node)), local.x, local.y)
-}
+let scratch: CanvasRenderingContext2D | null = null
+const paths = new WeakMap<Silhouette, Path2D>()
 
-function maskAbove(nodes: readonly Placed[], index: number): Placed | null {
-  for (let at = index - 1; at >= 0; at -= 1) if (nodes[at]!.node.mask) return nodes[at]!
-  return null
+function holds(shape: Silhouette, at: Point): boolean {
+  scratch ??= document.createElement("canvas").getContext("2d")
+  if (scratch === null) return false
+  const path = paths.get(shape) ?? new Path2D(shape.d)
+  paths.set(shape, path)
+  scratch.setTransform(...shape.matrix)
+  return scratch.isPointInPath(path, at.x, at.y)
 }
 
 export function hitChain(
@@ -51,8 +51,11 @@ export function hitChain(
   for (let index = nodes.length - 1; index >= 0; index -= 1) {
     const placed = nodes[index]!
     if (skip(placed.id)) continue
-    const mask = maskAbove(nodes, index)
-    if (mask !== null && !maskHolds(mask, at)) continue
+    if (placed.maskedBy !== null && !holds(placed.maskedBy, at)) continue
+    if (placed.reveals !== null) {
+      if (holds(placed.reveals, at)) return [placed]
+      continue
+    }
     const local = apply(invert(placed.matrix), at)
     const { w, h } = placed.node.box
     const reachable = !placed.node.clip || (local.x >= 0 && local.y >= 0 && local.x <= w && local.y <= h)
