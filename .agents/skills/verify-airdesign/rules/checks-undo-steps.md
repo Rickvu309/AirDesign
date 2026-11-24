@@ -53,3 +53,24 @@ Planted faults, each put in the model and then in the code:
 | a78b019: every frame above is checked for a layer that does not show too           | passes here, 402 states; undo-deleted-frames holds `NeverLosesALayer` for it                                                                                                               | `landingMoves` returns false at any deleted frame: 6 of 403 edges disagree                                                                                                                             |
 
 Sync: `specs/undo-moves/covers.json`.
+
+## undo-strays
+
+One device's undo and redo stacks over steps on the card K's place, beside a move by another writer. The slide holds frame F, and K is in F or on the slide. K's x is measured in its parent, so the same numbers are two places in two parents. Before the first press the person makes two steps: a nudge, which writes x, or a drag into the other parent, which writes the parent and x. Once the person has a step, another writer may act once: move K to the other parent and write no x, as an agent's `move` does, or write x. An undo writes x when its step or a press that landed wrote it last (`invert`), and the parent for a drag that wrote it last. When it writes x but not the parent, and K no longer sits in the frame the step left it in, `onStandingLayers` treats x as for a move it leaves out: K keeps its x, y and turn, and the rest of the box comes back. With nothing to write the press takes the step off and answers `nothing`. Up to three presses.
+
+- `PutsBackWhereSeen`: a press that lands moves K away from where the person saw it only when it writes K's parent or K still sits in the frame the step left it in. Harm if broken: the person resizes a card in a frame, an agent run moves it onto the slide, and Ctrl+Z writes the frame's x and y onto the slide, so the card jumps across it (verdict 1532-cfcc610, finding 1).
+- `NeverCoversTheirs`: a press never writes the x the other writer wrote last.
+- `NeverStuck`: every press takes a step off its stack.
+- The replay reads, at every edge, K's parent and x, the edit that wrote each last and what the press answered from the real device deck, and that the server holds what the tab shows.
+
+Bounds: x is 0 or 1, two steps before the first press, one action by the other writer at any time after the person's first step, three presses. 231 states. Run: `pnpm check:specs undo-strays`. Replay: `tests/undo-strays-replay.test.ts` drives all 230 edges through the real `createDoomDeck`, `openDoomDeck` and `memoryDoomRemote`, the person's tab and another tab on one server. `packages/live/src/doom-undo-stray-box.test.ts` holds the cases beside it: the size and flip that come back, a run's undo, and the chain through a deleted frame.
+
+Leaves out: deleted frames (undo-deleted-frames), a line's point ends, which follow the same rule in `leftInPlace`, turns of the frame (K's turn is kept as x and y are), and a step that moves several layers.
+
+Planted faults, each put in the model and then in the code:
+
+| Fault                                                          | TLC on the planted model                                                                                                        | Replay on the planted code                                         |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `main`: an undo that owns x writes it whatever frame K sits in | 22 states, `PutsBackWhereSeen`: nudge K, the other writer moves it onto the slide, Ctrl+Z writes F's x and K jumps on the slide | `onStandingLayers` without `strayedFrom`: 44 of 230 edges disagree |
+
+Sync: `specs/undo-strays/covers.json`.

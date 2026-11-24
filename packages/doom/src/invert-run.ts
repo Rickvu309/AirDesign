@@ -129,7 +129,11 @@ function settle(now: Doom, edits: readonly Landed[], mine: ReadonlySet<Rev>, res
     .filter(({ cell }) => cell.key === "parent" || !gone(cell.node))
     .map(({ cell, value, base }) => ({ node: cell.node, prop: cell.key, value, base }))
   const roots = [...kept].filter((node) => !kept.has(parentIn(now, node) as NodeId))
-  const standing = onStandingLayers(now, writes, edits.at(-1)?.rev ?? now.rev)
+  const leftIn = new Map<NodeId, NodeId | null>()
+  for (const edit of edits)
+    for (const each of edit.writes)
+      if (each.prop === "parent") leftIn.set(each.node, (each.value as { readonly id: NodeId } | null)?.id ?? null)
+  const standing = onStandingLayers(now, writes, edits.at(-1)?.rev ?? now.rev, leftIn)
   const left = writes
     .filter((each) => each.prop === "parent" && each.value !== null && !standing.includes(each))
     .map((each) => each.node)
