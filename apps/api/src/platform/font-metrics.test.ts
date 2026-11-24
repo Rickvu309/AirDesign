@@ -1,4 +1,5 @@
 import * as doom from "@airdesign/doom"
+import { fallbackFont } from "@airdesign/fonts"
 import { expect, it } from "vitest"
 import { FontMetrics, servedFontMetrics } from "./font-metrics.js"
 import { FontSource } from "./font-source.js"
@@ -41,6 +42,7 @@ function anyNameIsLiberation() {
       family: async (name: string) => {
         calls.push(name)
         if (name === "Never") return { ok: false, refusal: "unknown", family: name } as const
+        if (name === "Broken") throw new Error("font download")
         if (name === "Slow") return new Promise<never>(() => undefined)
         return local.family(family)
       },
@@ -75,12 +77,12 @@ it("measures a deck's words with its theme fonts, so a fixed box too short for t
   ])
 })
 
-it("answers fonts when a deck's font cannot be served, and asks again only after a minute", async () => {
+it("answers fonts when a deck's font fails to download, and asks again only after a minute", async () => {
   const { calls, source } = anyNameIsLiberation()
   let now = 0
   const metrics = new FontMetrics(source, () => now)
-  const deck = deckIn({ heading: "Never", body: family }).doom
-  const asked = () => calls.filter((name) => name === "Never").length
+  const deck = deckIn({ heading: "Broken", body: family }).doom
+  const asked = () => calls.filter((name) => name === "Broken").length
   expect(await metrics.measure([deck])).toBe("fonts")
   const first = asked()
   now = 30_000
@@ -96,10 +98,73 @@ it("names the characters a deck's font has no letters for, and only those", asyn
   const read = async (words: string) => {
     const measured = await metrics.measure([deckIn({ heading: family, body: family }, words).doom])
     if (typeof measured === "string") throw new Error(measured)
-    return [...measured.missing]
+    return [...measured.missing.values()].flatMap((chars) => [...chars])
   }
-  expect(await read("Doanh thu quý 3 tăng")).toEqual([])
-  expect(await read("収益 grew 12%")).toEqual(["収", "益"])
+  expect(await read("Doanh thu quý 3 tăng, lợi nhuận giữ ở mức 31%")).toEqual([])
+  expect(await read("収益 grew 12% نمت")).toEqual(["収", "益", "ن", "م", "ت"])
+})
+
+it("names a letter only when the face that paints it lacks it, not when another face on the deck does", async () => {
+  const made = doom.doomFromTree({
+    theme: { ...doom.defaultTheme, fonts: { heading: family, body: family } },
+    slides: [
+      {
+        children: [
+          { type: "shape", props: { text: doom.textFromMarkdown("Beta β", "body") } },
+          {
+            type: "shape",
+            props: { text: { ...doom.textFromMarkdown("Revenue", "body"), spans: [{ end: 7, font: fallbackFont }] } },
+          },
+        ],
+      },
+    ],
+  })
+  const measured = await new FontMetrics(new FontSource(undefined)).measure([made.doom])
+  if (typeof measured === "string") throw new Error(measured)
+  expect([...measured.missing.values()].flatMap((chars) => [...chars])).toEqual([])
+  const own = await new FontMetrics(new FontSource(undefined)).measure([
+    deckIn({ heading: fallbackFont, body: fallbackFont }, "Beta β").doom,
+  ])
+  expect(typeof own === "string" ? own : [...own.missing.values()].flatMap((chars) => [...chars])).toEqual(["β"])
+})
+
+const served = new FontSource(undefined)
+const face = (font: string) => ({ font, bold: false, italic: false })
+const widthsOf = async (font: string, texts: readonly string[]) => {
+  const read = await new FontMetrics(served).widths({ faces: [face(font)], texts })
+  if (typeof read === "string") throw new Error(read)
+  return read.widths[doom.fontFace(font, false, false)]!
+}
+
+it("measures a family no one serves with the painter's fallback font, as the canvas stack falls to it", async () => {
+  const words = ["Wiggle waves AVAVA", "illi MMMM ... WWW"]
+  expect(await widthsOf("AirDesign Missing Face", words)).toEqual(await widthsOf(fallbackFont, words))
+})
+
+it("measures a letter the font lacks from the fallback font, and kerns only letters of one font", async () => {
+  const words = ["lợi Wợ"]
+  const narrow = await widthsOf(family, words)
+  const fallback = await widthsOf(fallbackFont, words)
+  expect(narrow.advances["ợ"]).toBe(fallback.advances["ợ"])
+  expect(narrow.advances.l).not.toBe(fallback.advances.l)
+  expect(narrow.kerning?.["lợ"]).toBeUndefined()
+  expect(fallback.kerning?.["Wợ"]).toBeDefined()
+  expect(narrow.kerning?.["Wợ"]).toBeUndefined()
+})
+
+it("measures a face no one serves in bold and italic with the fallback's bold and italic", async () => {
+  const read = await new FontMetrics(served).widths({
+    faces: [{ font: "Never Served", bold: true, italic: true }],
+    texts: ["Bold italic"],
+  })
+  const own = await new FontMetrics(served).widths({
+    faces: [{ font: fallbackFont, bold: true, italic: true }],
+    texts: ["Bold italic"],
+  })
+  if (typeof read === "string" || typeof own === "string") throw new Error("fonts")
+  expect(read.widths[doom.fontFace("Never Served", true, true)]).toEqual(
+    own.widths[doom.fontFace(fallbackFont, true, true)],
+  )
 })
 
 it("names a missing character on every measure, not only the first", async () => {
@@ -108,7 +173,7 @@ it("names a missing character on every measure, not only the first", async () =>
   for (let time = 0; time < 3; time += 1) {
     const measured = await metrics.measure([deck])
     if (typeof measured === "string") throw new Error(measured)
-    expect([...measured.missing]).toEqual(["🚀"])
+    expect([...measured.missing.values()].flatMap((chars) => [...chars])).toEqual(["🚀"])
   }
 })
 
@@ -144,7 +209,7 @@ it("asks for every face of a deck at once, not one after another", async () => {
     texts: ["a"],
   })
   await Promise.resolve()
-  expect(asked).toEqual(["One", "Two"])
+  expect(asked).toEqual(["One", fallbackFont, "Two"])
   open()
   expect(typeof (await pending)).toBe("object")
 })
@@ -165,5 +230,27 @@ it("measures with the fonts the API serves, one measurer for each", async () => 
   const metrics = servedFontMetrics(source)
   expect(servedFontMetrics(source)).toBe(metrics)
   await metrics.widths({ faces: [{ font: "Lora", bold: false, italic: false }], texts: ["a"] })
-  expect(calls).toEqual(["Lora"])
+  expect(calls).toEqual(["Lora", fallbackFont])
+})
+
+it("keeps missing glyphs on the face that lacks them even when another face covers them", async () => {
+  const deck = doom.doomFromTree({
+    theme: { ...doom.defaultTheme, fonts: { heading: family, body: family } },
+    slides: [
+      {
+        children: [
+          { type: "shape", name: "covered", props: { text: doom.textFromMarkdown("β", "body") } },
+          {
+            type: "shape",
+            name: "missing",
+            props: { text: { ...doom.textFromMarkdown("β", "body"), spans: [{ end: 1, font: fallbackFont }] } },
+          },
+        ],
+      },
+    ],
+  })
+  const measured = await new FontMetrics(served).measure([deck.doom])
+  if (typeof measured === "string") throw new Error(measured)
+  expect(measured.missing).toEqual(new Map([[fallbackFont, new Set(["β"])]]))
+  expect(doom.unmeasuredTexts(deck.doom, deck.slides, measured.missing)).toEqual([deck.ids.missing])
 })

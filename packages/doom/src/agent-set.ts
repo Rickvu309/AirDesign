@@ -234,7 +234,9 @@ export function compileSet(draft: Draft, change: SetChange): void {
   }
   if (layout?.mode === "none" && now.layout !== undefined && now.layout.mode !== "none")
     draft.writes.push(
-      ...bakeLayout(draft.doom, node.id, estimate).filter((write) => write.node !== node.id || !(write.prop in values)),
+      ...(draft.reading.bake?.(node.id) ?? bakeLayout(draft.doom, node.id, draft.reading.measure ?? estimate)).filter(
+        (write) => write.node !== node.id || !(write.prop in values),
+      ),
     )
   put(draft, node.id, values)
   if (change.link === "none") draft.writes.push({ node: node.id, prop: "link", value: null })

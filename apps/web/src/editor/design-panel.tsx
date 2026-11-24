@@ -1,6 +1,8 @@
+import { bakeFontState, fontsFor } from "@airdesign/render"
+import { toast } from "@/components/ui/toast"
 import * as doom from "@airdesign/doom"
 import { useDoomSlide } from "@airdesign/render"
-import { useMemo } from "react"
+import { useMemo, useSyncExternalStore } from "react"
 import { designCopy } from "@/copy/design-copy"
 import { editorCopy } from "@/copy/editor-copy"
 import { panelOfMany, type PanelModel, type PanelPaint } from "@/design/panel"
@@ -28,8 +30,6 @@ import { geometryOf } from "./slide-geometry"
 import type { EditorClient } from "./use-deck"
 import type { CaretWords } from "./canvas"
 
-const estimate = doom.measureWith({})
-
 type Props = {
   readonly deck: string
   readonly client: EditorClient
@@ -51,6 +51,9 @@ function backgroundFill(held: PanelPaint): PanelPaint | null {
 function isImagePick(value: unknown): boolean {
   return typeof value === "object" && value !== null && "image" in value && value.image === true
 }
+
+const subscribeToFonts = (listener: () => void) => fontsFor(document)?.subscribe(listener) ?? (() => undefined)
+const readyFonts = () => "ready" as const
 
 export function DesignPanel(props: Props) {
   useServedFaces()
@@ -75,6 +78,13 @@ export function DesignPanel(props: Props) {
     })
   }
   const [only] = ids
+  const layout = only === undefined || ids.length !== 1 ? undefined : doom.propOf(view.nodes.get(only), "layout")
+  const autoLayout = layout !== undefined && layout.mode !== "none"
+  const fonts = useSyncExternalStore(
+    subscribeToFonts,
+    () => (autoLayout && only !== undefined ? bakeFontState(document, view, only) : "ready"),
+    readyFonts,
+  )
   const pictured =
     only === undefined
       ? undefined
@@ -146,7 +156,7 @@ export function DesignPanel(props: Props) {
   const [first, ...rest] = models
   if (first === undefined) return null
   const model: PanelModel = rest.length === 0 ? first : panelOfMany([first, ...rest])
-  const autoLayout = ids.length === 1 && model.frame === "auto"
+  const measure = painted.measure
   const storedName = only === undefined ? undefined : doom.propOf(view.nodes.get(only), "name")
   const layerName =
     ids.length === 1
@@ -171,7 +181,22 @@ export function DesignPanel(props: Props) {
       afterTitle={
         autoLayout && only !== undefined ? (
           <RemoveAutoLayoutButton
-            onRemove={() => client.push(doom.bakeLayout(view, only, painted.measure ?? estimate))}
+            reason={
+              fonts === "pending"
+                ? designCopy.layoutFontPending
+                : measure === null
+                  ? designCopy.layoutMeasuring
+                  : undefined
+            }
+            onRemove={
+              measure === null || fonts === "pending"
+                ? undefined
+                : () => {
+                    const fonts = bakeFontState(document, view, only)
+                    if (fonts === "failed") toast.error(designCopy.layoutFontFailed)
+                    if (fonts === "ready") client.push(doom.bakeLayout(view, only, measure))
+                  }
+            }
           />
         ) : null
       }

@@ -1,4 +1,5 @@
 import type * as doom from "@airdesign/doom"
+import { pendingDoomFonts } from "@airdesign/render"
 import { useMemo } from "react"
 import { AiraPanel, type AiraStart } from "@/aira/aira-panel"
 import { AgentRuns } from "./agent-runs"
@@ -23,6 +24,7 @@ export function AgentPanel({
       deck={deck.deck}
       hidden={false}
       undo={undo}
+      pendingFonts={() => pendingDoomFonts(document, deck.view())}
       runs={<AgentRuns view={view} editing={editing} undoRun={deck.undoRun} />}
       undoneRun={(run) => view.runs.get(run)?.undone}
       {...(start === undefined ? {} : { start })}

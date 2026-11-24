@@ -9,6 +9,7 @@ type Shots = {
   readonly revision: number
   readonly keys: ReadonlyMap<NodeId, string>
   readonly held: Map<NodeId, Held>
+  readonly fontFailures: ReadonlyMap<NodeId, SlidePictures["keys"][number]>
 }
 
 function heldBytes(shots: Shots): number {
@@ -85,7 +86,12 @@ export class DeckPictures {
     const held = new Map<NodeId, Held>()
     for (const [slide, each] of was?.held ?? []) if (keys.get(slide) === each.key) held.set(slide, each)
     for (const { slide, key, data } of pictures.images) held.set(slide, { key, data })
-    const next: Shots = { revision, keys, held }
+    const fontFailures = new Map(
+      [...(was?.fontFailures ?? [])].filter(([slide, failure]) => keys.get(slide) === failure.key && !held.has(slide)),
+    )
+    for (const failure of pictures.fontFailures ?? [])
+      if (!held.has(failure.slide)) fontFailures.set(failure.slide, failure)
+    const next: Shots = { revision, keys, held, fontFailures }
     if (was !== undefined) this.bytes -= heldBytes(was)
     this.decks.delete(deck)
     this.decks.set(deck, next)
@@ -102,6 +108,11 @@ export class DeckPictures {
     this.decks.delete(deck)
     this.decks.set(deck, shots)
     return held.data
+  }
+
+  fontFailure(deck: DeckId, slide: NodeId, key: string): SlidePictures["keys"][number] | undefined {
+    const failure = this.decks.get(deck)?.fontFailures.get(slide)
+    return failure?.key === key ? failure : undefined
   }
 
   revision(deck: DeckId): number | undefined {

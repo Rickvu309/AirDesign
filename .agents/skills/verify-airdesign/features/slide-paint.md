@@ -1,13 +1,13 @@
 # Slide paint
 
-An opened deck shows its current slide on the canvas at the deck's own size and aspect ratio, and a painted thumbnail of every slide in the slide list and on the deck's Home card. Each layer paints at its box from the deck: shapes and their fills, gradients, pictures, strokes and line ends, text broken into lines with each run's look, frames with their children, icons, charts, effects, rotation and flips. Text waits for its font face, loaded by name from AirDesign's font server, so lines break where they will stay.
+An opened deck shows its current slide on the canvas at the deck's own size and aspect ratio, and a painted thumbnail of every slide in the slide list and on the deck's Home card. Each layer paints at its box from the deck: shapes and their fills, gradients, pictures, strokes and line ends, text broken into lines with each run's look, frames with their children, icons, charts, effects, rotation and flips. The editor can paint with a fallback while the face loads. It repaints with the served face when it arrives.
 
 ## Sub-features
 
 - `paint-canvas` `[data-slide-box]` holds the slide inside `[data-editor-stage]`; the painted slide is `[data-doom-slide][data-slide-paint]`, scaled from the deck's size to the width it is given (`DoomSlide` in `packages/render/src/doom-slide.tsx`).
 - `paint-place` each layer is `[data-slide-box] [data-node="<id>"]`, placed by its box, turned by its rotation and mirrored by its flips; `data-geometry` names its shape (`packages/render/src/node-art.tsx`).
 - `paint-kinds` fills in order (solid, gradient, image), a PowerPoint preset's outline, strokes inside, centred or outside with dashes and arrow ends, lines along their route, text lines (`[data-line]`) of runs (`[data-run]`), frames that nest and clip their children, Lucide icons, charts from their data, shadows and layer blur (`packages/render/src/node-art.test.ts`). States `slide-effects`, `slide-group-effects`, `slide-line-styles`, `slide-line-and-gradient`, `slide-text-fit`, `slide-chart`, `shape-faces`.
-- `paint-fonts` a text's faces come from `fontRoutes.family` and `fontRoutes.file`; while a slide's face loads, the slide holds `[data-fonts-pending]`, and print and capture wait for it. An unknown name or a failed load falls back and is reported (`packages/render/src/font-load.test.ts`, `font-wait.test.ts`). State `font-catalog`.
+- `paint-fonts` a text's faces come from `fontRoutes.family` and `fontRoutes.file`; the editor can paint text with `[data-font-pending]` while its face loads. PDF export and agent captures wait for fonts for up to ten seconds. A failed load stops PDF export with a notice and returns a structured `pictureFailures` reason for an agent capture (`packages/render/src/font-load.test.ts`, `font-wait.test.ts`). State `font-catalog`.
 - `paint-waiting` a picture whose bytes this device does not hold yet says it is still uploading in its box (`[data-unshown-label]`); a thumbnail says nothing. State `picture-uploading`, spec `tests/browser/editor-slide-picture.spec.ts`.
 - `paint-slides` `[data-slide-entry="<n>"]` in the slide list switches the open slide (`aria-current="true"`); only that slide's layers are in `[data-slide-box]`. Thumbnails paint only while the list can see them (`packages/render/src/filmstrip.test.ts`).
 - `paint-device` a deck this browser opened before paints from the device copy before the server answers. See `keep-typed-text.md`.
@@ -31,5 +31,5 @@ Preconditions:
 ## Gotchas
 
 - A screenshot shows the paint but not the places. Assert boxes, then capture.
-- Wait for `[data-fonts-pending]` to leave before you measure text or capture.
+- Wait for `[data-font-pending]` to leave before you measure text for a font comparison.
 - The canvas width depends on the viewport. `$V journey` uses the design's 1470x923; the repo's browser tests use 1600x1000.

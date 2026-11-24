@@ -70,6 +70,7 @@ export const airaRefusalWords: Readonly<Record<EditRefusal | "unreached", string
   field: oddForm,
   payload: unsaved,
   store: unsaved,
+  fonts: "Aira couldn’t remove auto layout until the text could be measured.",
   unreached: "Aira lost its connection during this step. Check your connection and try again.",
 }
 
@@ -115,6 +116,10 @@ export const airaCopy = {
   failedKept: "Aira's reply didn't come through. Its changes so far are kept. Try again, or undo them.",
   failedNothing: "Aira's reply didn't come through. Nothing in your deck changed. Check your connection and try again.",
   retry: "Try again",
+  fixFonts: "Fix fonts",
+  missingFontTitle: "Some characters have no matching font",
+  shapingTitle: "Auto layout is still on",
+  pendingFontTitle: "A font hasn’t loaded",
   offTitle: "Aira is switched off right now",
   offBody: "Asking again won't change that. You can keep editing this deck yourself.",
   malformedTitle: "Aira couldn't take this chat",
@@ -140,3 +145,31 @@ export const airaCopy = {
   chatsTitle: "Chats on this deck",
   chatsEmpty: "Your chats with Aira on this deck show here.",
 } as const
+
+export function airaFontIssue(issue: {
+  kind: "coverage" | "shaping" | "pending"
+  characters: string
+  layers: readonly string[]
+  layerNames: readonly string[]
+  shaping?: readonly string[]
+}): string {
+  const count = issue.layers.length
+  const names =
+    issue.layerNames.length === count && issue.layerNames.every((name) => name.trim() !== "")
+      ? new Intl.ListFormat("en").format(issue.layerNames.map((name) => `“${name}”`))
+      : count === 1
+        ? "1 text layer"
+        : `${new Intl.NumberFormat("en").format(count)} text layers`
+  if (issue.kind === "shaping") {
+    const found = issue.shaping?.length ? new Intl.ListFormat("en").format(issue.shaping) : "the text"
+    return `Aira can’t measure ${found} in ${names}. None of the changes in this edit were applied. You can remove auto layout in the Design panel.`
+  }
+  if (issue.kind === "pending")
+    return `The slide updates when the font for ${names} loads. Try again when the text updates.`
+  if (count === 1 && issue.characters !== "")
+    return `Aira can switch the font for “${issue.characters}” in ${names} and finish removing auto layout.`
+  return `Aira can switch fonts for ${names} and finish removing auto layout.`
+}
+
+export const airaFontRequest = (layers: readonly string[], frame: string | undefined) =>
+  `The Fix fonts button was clicked. Retry the whole refused edit_deck batch with fonts that cover the text on ${layers.join(", ")}. Include every other change in the batch, including removing auto layout${frame === undefined ? "" : ` from frame ${frame}`}. None of that batch landed. Keep the existing edits and the text on layers you are only changing the font for.`

@@ -26,5 +26,9 @@ export async function jpegOf(image: CanvasImageSource, width: number, height: nu
   context.fillStyle = "white"
   context.fillRect(0, 0, width, height)
   context.drawImage(image, 0, 0, width, height)
+  context.getImageData(0, 0, 1, 1)
+  await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+  context.fillRect(0, 0, width, height)
+  context.drawImage(image, 0, 0, width, height)
   return encoded(canvas)
 }

@@ -26,12 +26,12 @@ export function unresolvedAssets(
   return [...found]
 }
 
-type Pictures = SlidePictures
+export type SlideCapture = string | { readonly failure: "fonts" } | null
 
 export async function reportSlidePictures(args: {
   readonly view: doom.Doom
-  readonly send: (pictures: Pictures) => Promise<readonly doom.NodeId[] | null>
-  readonly capture: (slide: doom.NodeId) => Promise<string | null>
+  readonly send: (pictures: SlidePictures) => Promise<readonly doom.NodeId[] | null>
+  readonly capture: (slide: doom.NodeId) => Promise<SlideCapture>
   readonly ready: (slide: doom.NodeId) => boolean
   readonly current: () => boolean
 }): Promise<boolean> {
@@ -39,16 +39,21 @@ export async function reportSlidePictures(args: {
   const slides = doom.slidesOf(view).map((slide) => slide.id)
   const keys = await Promise.all(slides.map(async (slide) => ({ slide, key: await slideKey(view, slide) })))
   const asked = new Set<doom.NodeId>()
+  let fontFailed = false
   let missing = await send({ keys, images: [] })
   while (missing !== null && current()) {
     const slide = missing.find((each) => !asked.has(each) && ready(each))
-    if (slide === undefined) return true
+    if (slide === undefined) return !fontFailed
     asked.add(slide)
     const data = await capture(slide)
     if (data === null || !current()) continue
     const key = keys.find((each) => each.slide === slide)?.key
     if (key === undefined) continue
-    missing = await send({ keys, images: [{ slide, key, type: pictureType, data }] })
+    if (typeof data === "string") missing = await send({ keys, images: [{ slide, key, type: pictureType, data }] })
+    else {
+      fontFailed = true
+      missing = await send({ keys, images: [], fontFailures: [{ slide, key }] })
+    }
   }
   return missing !== null
 }

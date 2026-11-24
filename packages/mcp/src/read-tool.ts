@@ -12,21 +12,27 @@ const picturesPerRead = 10
 const pictureWords = {
   none: (slides: readonly string[], rev: number) =>
     `No current picture of ${slides.length === 1 ? "slide" : "slides"} ${slides.join(", ")} at rev ${String(rev)} yet. The owner's open AirDesign tab paints a slide a moment after it changes and none has sent it. Read again in a few seconds, or ask the owner to open the deck.`,
+  fonts: (slides: readonly string[]) =>
+    `A font couldn’t load for ${slides.length === 1 ? "slide" : "slides"} ${slides.join(", ")}. Read again when the fonts are available.`,
   more: (shown: number, total: number) =>
     `Pictures of the first ${String(shown)} of ${String(total)} slides. Read with slide and picture for another.`,
 } as const
 
 async function withPictures(read: ToolResult, opened: Opened, slides: readonly doom.NodeId[], host: DeckHost) {
   const wanted = slides.slice(0, picturesPerRead)
-  const shots: ReadonlyMap<string, string> =
-    host.pictures === undefined ? new Map() : await host.pictures(opened.deck, opened.fold, wanted)
+  const shots = await host.pictures?.(opened.deck, opened.fold, wanted)
   const images: ToolImage[] = []
   const pictures: string[] = []
   const waiting: string[] = []
+  const fontFailures: string[] = []
   for (const id of wanted) {
-    const data = shots.get(id)
+    const data = shots?.get(id)
     if (data === undefined) {
       waiting.push(id)
+      continue
+    }
+    if (typeof data !== "string") {
+      fontFailures.push(id)
       continue
     }
     images.push({ type: "image", data, mimeType: "image/jpeg" })
@@ -34,10 +40,18 @@ async function withPictures(read: ToolResult, opened: Opened, slides: readonly d
   }
   const note = [
     read.answer.note,
+    ...(fontFailures.length > 0 ? [pictureWords.fonts(fontFailures)] : []),
     ...(waiting.length > 0 ? [pictureWords.none(waiting, opened.rev)] : []),
     ...(slides.length > wanted.length ? [pictureWords.more(wanted.length, slides.length)] : []),
   ].join(" ")
-  const result = told(true, { ...read.answer, note, ...(pictures.length === 0 ? {} : { pictures }) })
+  const result = told(true, {
+    ...read.answer,
+    note,
+    ...(pictures.length === 0 ? {} : { pictures }),
+    ...(fontFailures.length === 0
+      ? {}
+      : { pictureFailures: fontFailures.map((slide) => ({ slide, reason: "fonts" })) }),
+  })
   return { ...result, content: [...images, ...result.content] }
 }
 

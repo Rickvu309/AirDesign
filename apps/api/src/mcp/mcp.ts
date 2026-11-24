@@ -3,7 +3,15 @@ import type { IncomingMessage, ServerResponse } from "node:http"
 
 import { type DeckId, type DoomRefusal, readDeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
-import { emptyLog, createServer, type DeckHost, type Host, type NamedImage, type Session } from "@airdesign/mcp"
+import {
+  emptyLog,
+  createServer,
+  type DeckHost,
+  type Host,
+  type NamedImage,
+  type Session,
+  type SlideShot,
+} from "@airdesign/mcp"
 import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node"
 import { createMcpHandler } from "@modelcontextprotocol/server"
 
@@ -106,14 +114,17 @@ async function slidePictures(
   deck: DeckId,
   fold: doom.Doom,
   slides: readonly doom.NodeId[],
-): Promise<ReadonlyMap<doom.NodeId, string>> {
+): Promise<ReadonlyMap<doom.NodeId, SlideShot>> {
   const keys = slides.map((slide) => [slide, slideKey(fold, slide)] as const)
+  const previousFailures = keys.map(([slide, key]) => pictures.fontFailure(deck, slide, key))
   pictures.want(deck, slides)
   const current = () =>
-    new Map(
-      keys.flatMap(([slide, key]) => {
+    new Map<doom.NodeId, SlideShot>(
+      keys.flatMap(([slide, key], at): (readonly [doom.NodeId, SlideShot])[] => {
         const data = pictures.fresh(deck, slide, key)
-        return data === undefined ? [] : [[slide, data] as const]
+        if (data !== undefined) return [[slide, data]]
+        const failure = pictures.fontFailure(deck, slide, key)
+        return failure !== undefined && failure !== previousFailures[at] ? [[slide, { failure: "fonts" }]] : []
       }),
     )
   let shots = current()
@@ -170,7 +181,7 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured, fo
       return decoded(named) ?? opened(id.deck, await openDoom(db, { deck: id.deck }, email))
     }),
     images: async (deck, names) => storedImages(db, deck, email, names, images),
-    measure: (folds) => servedFontMetrics(fonts).measure(folds, measureBudget),
+    measure: (folds, layers) => servedFontMetrics(fonts).measure(folds, measureBudget, layers),
     ...(shots === undefined
       ? {}
       : { pictures: (deck, fold, slides) => slidePictures(shots, seen.wait, deck, fold, slides) }),
@@ -219,7 +230,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       host.deck,
       host.email,
       { originals: host.originals, net: host.imageNet },
-      { pictures: host.pictures, wait: host.pictureWait ?? 4_000 },
+      { pictures: host.pictures, wait: host.pictureWait ?? 15_000 },
       host.fonts,
     ),
     admit: (called) => admitCaller(host.session, host.email, "tool", called.now, host.agentKey),

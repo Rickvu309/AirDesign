@@ -2,6 +2,7 @@ import { useEffect, useRef, type CSSProperties } from "react"
 import { toast } from "@/components/ui/toast"
 import { Toaster } from "@/components/ui/sonner"
 import { ActionPill } from "@/components/ui/action-pill"
+import { fontLoadFailed } from "@/copy/design-copy"
 import { productCopy } from "@/copy/product-copy"
 import { EditorToast, EditorToaster } from "@/editor/editor-toast"
 import { pictureCopy } from "@/copy/picture-copy"
@@ -13,6 +14,7 @@ export type ThinNotice =
   | "unreached"
   | "import-failed"
   | "export-failed"
+  | "export-fonts"
   | "picture-type"
   | "picture-size"
   | "picture-unread"
@@ -152,7 +154,7 @@ function NoticeContent({
   return (
     <FailureNotice
       error
-      text={productCopy.exportFailed}
+      text={notice === "export-fonts" ? fontLoadFailed("these slides") : productCopy.exportFailed}
       action={exportCopy.tryAgain}
       onAct={() => onTryAgain(notice)}
     />

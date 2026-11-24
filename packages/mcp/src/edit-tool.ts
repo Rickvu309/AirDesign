@@ -1,4 +1,4 @@
-import { readDeckEdit, readNamedDeck } from "@airdesign/catalog"
+import { fallbackFont, readDeckEdit, readNamedDeck, servedFontName } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import { answered, hostRefused, refused, doomRefused, type ToolResult } from "./answer.js"
@@ -57,6 +57,7 @@ function landedAnswer(
   run: string,
   added: readonly Added[],
   findings: Findings = { findings: [], layout: "untouched" },
+  bakedLayouts: readonly doom.NodeId[] = [],
 ): ToolResult {
   const words = added.map(
     (each) => `${each.id} ${each.kind}${each.change === undefined ? "" : ` (change ${String(each.change)})`}`,
@@ -69,6 +70,7 @@ function landedAnswer(
     rev,
     runId: run,
     added,
+    ...(bakedLayouts.length === 0 ? {} : { bakedLayouts }),
     ...found,
   })
 }
@@ -102,7 +104,172 @@ function toldRefusal(refusal: {
   })
 }
 
-export async function editDeckTool(raw: unknown, agent: Agent, once: string, host: DeckHost): Promise<ToolResult> {
+const shapingScripts = [
+  "Arabic",
+  "Syriac",
+  "Thaana",
+  "Nko",
+  "Mongolian",
+  "Phags_Pa",
+  "Mandaic",
+  "Manichaean",
+  "Psalter_Pahlavi",
+  "Adlam",
+  "Hanifi_Rohingya",
+  "Sogdian",
+  "Old_Uyghur",
+  "Devanagari",
+  "Bengali",
+  "Gurmukhi",
+  "Gujarati",
+  "Oriya",
+  "Tamil",
+  "Telugu",
+  "Kannada",
+  "Malayalam",
+  "Sinhala",
+  "Myanmar",
+  "Khmer",
+  "Tibetan",
+  "Thai",
+  "Lao",
+  "Hangul",
+].map((script) => ({
+  pattern: new RegExp(`\\p{Script=${script}}`, "u"),
+  name: `${script.replaceAll("_", " ")} text`,
+}))
+
+const shapingPatterns = [
+  {
+    pattern:
+      /[\u20e3\ufe0f\p{Regional_Indicator}\p{Emoji_Modifier}\u{e0020}-\u{e007f}]|\p{Emoji}\u200d|\u200d\p{Emoji}/u,
+    name: "a color emoji sequence",
+  },
+  ...shapingScripts,
+]
+
+function shapingIn(chars: string): readonly string[] {
+  const selected = chars.includes("\ufe0e")
+    ? [...doom.graphemes(chars)].flatMap(({ segment }) =>
+        segment.includes("\ufe0e") ? [segment === "\ufe0e" ? "U+FE0E" : `“${segment}”`] : [],
+      )
+    : []
+  const found = [...selected, ...shapingPatterns.filter(({ pattern }) => pattern.test(chars)).map(({ name }) => name)]
+  if (found.length === 0 && /[\u200c\u200d]/u.test(chars)) return ["a character that changes how letters join"]
+  return found
+}
+
+function bakeRefusal(
+  bake: { readonly fold: doom.Doom; readonly frame: doom.NodeId },
+  layers: readonly doom.NodeId[],
+  issue:
+    | { readonly reason: "pending" }
+    | { readonly reason: "coverage"; readonly characters: string }
+    | { readonly reason: "shaping"; readonly shaping: readonly string[] },
+): ToolResult {
+  const layerNames = layers.map((layer) => doom.propOf(bake.fold.nodes.get(layer), "name") ?? "")
+  const named = layerNames.every((name) => name !== "")
+    ? new Intl.ListFormat("en", { style: "long", type: "conjunction" }).format(layerNames.map((name) => `“${name}”`))
+    : layers.length === 1
+      ? "1 text layer"
+      : `${layers.length} text layers`
+  const list = new Intl.ListFormat("en")
+  const why = {
+    pending: `Fonts for ${named} are unavailable. Resend the batch when the fonts load, switch to an available served font, or resend the other changes with auto layout still on.`,
+    shaping:
+      issue.reason === "shaping"
+        ? `Unable to measure ${list.format(issue.shaping)} in ${named}. Keep the frame in auto layout when resending the other changes.`
+        : "",
+    coverage: `The current fonts are missing letters or symbols in ${named}. Choose a served font that covers the text and resend the batch, or resend the other changes with auto layout still on.`,
+  }
+  return refused("fonts", {
+    ...issue,
+    target: bake.frame,
+    layers,
+    layerNames,
+    note: `None of the changes in this batch were applied. ${why[issue.reason]}`,
+  })
+}
+
+const estimate = doom.measureWith({})
+
+async function compileMeasured(
+  fold: doom.Doom,
+  changes: readonly doom.AgentChange[],
+  by: doom.EditBy,
+  host: DeckHost,
+  pendingFonts: ReadonlySet<string>,
+): Promise<doom.AgentEdit | doom.AgentRefusal | ToolResult> {
+  const steps = doom.agentEditSteps(fold, changes, by)
+  let step = steps.next()
+  while (!step.done) {
+    const bake = step.value
+    const { required, measured: context } = doom.bakeTextLayers(bake.fold, bake.frame)
+    if (context.length === 0) {
+      step = steps.next(estimate)
+      continue
+    }
+    const shaped = required.flatMap((layer) => {
+      const chars = doom.propOf(bake.fold.nodes.get(layer), "text")?.chars ?? ""
+      const shaping = shapingIn(chars)
+      return shaping.length === 0 ? [] : [{ layer, shaping }]
+    })
+    if (shaped.length > 0)
+      return bakeRefusal(
+        bake,
+        shaped.map(({ layer }) => layer),
+        {
+          reason: "shaping",
+          shaping: [...new Set(shaped.flatMap(({ shaping }) => shaping))],
+        },
+      )
+    const theme = doom.deckOf(bake.fold).theme
+    const withPendingFace = (faces: ReadonlySet<string> | undefined) =>
+      required.filter((layer) => {
+        const text = doom.propOf(bake.fold.nodes.get(layer), "text")
+        return text !== undefined && [...doom.charsByFace(text, theme).keys()].some((face) => faces?.has(face))
+      })
+    if (pendingFonts.size > 0) {
+      const waiting = new Set(
+        doom.doomFaces(bake.fold, required).faces.flatMap((face) => {
+          const primary = servedFontName(face.font) ?? fallbackFont
+          return pendingFonts.has(primary.toLowerCase()) || pendingFonts.has(fallbackFont.toLowerCase())
+            ? [doom.fontFace(face.font, face.bold, face.italic)]
+            : []
+        }),
+      )
+      const pending = withPendingFace(waiting)
+      if (pending.length > 0) return bakeRefusal(bake, pending, { reason: "pending" })
+    }
+    const measured = await deckMeasure(host, [bake.fold], context)
+    if (measured === undefined) return bakeRefusal(bake, required, { reason: "pending" })
+    const pending = withPendingFace(measured.pending)
+    if (pending.length > 0) return bakeRefusal(bake, pending, { reason: "pending" })
+    const unread = required.flatMap((layer) => {
+      const chars = doom.missingGlyphsIn(bake.fold, layer, measured.missing)
+      return chars.length === 0 ? [] : [{ layer, chars }]
+    })
+    if (unread.length > 0)
+      return bakeRefusal(
+        bake,
+        unread.map(({ layer }) => layer),
+        {
+          reason: "coverage",
+          characters: [...new Set(unread.flatMap(({ chars }) => chars))].join(""),
+        },
+      )
+    step = steps.next(measured.measure)
+  }
+  return step.value
+}
+
+export async function editDeckTool(
+  raw: unknown,
+  agent: Agent,
+  once: string,
+  host: DeckHost,
+  pendingFonts: ReadonlySet<string>,
+): Promise<ToolResult> {
   const named = readNamedDeck(raw)
   if (!named.ok) return toldRefusal(named)
   const opened = await host.open(named.deck)
@@ -139,25 +306,33 @@ export async function editDeckTool(raw: unknown, agent: Agent, once: string, hos
   if (problem !== undefined) return problem
   const changes = found === undefined ? fonts.changes : withAssets(fonts.changes, found)
   const compile = (measure?: doom.Measure) =>
-    doom.compileAgentEdit(opened.fold, changes, {
-      author: {
-        kind: "agent",
-        id: agent.id,
-        run,
-        ...(parsed.runId === undefined && agent.name !== undefined ? { name: agent.name } : {}),
+    compileMeasured(
+      opened.fold,
+      changes,
+      {
+        author: {
+          kind: "agent",
+          id: agent.id,
+          run,
+          ...(parsed.runId === undefined && agent.name !== undefined ? { name: agent.name } : {}),
+        },
+        once,
+        mint: onceIds(once).mint,
+        read: doom.readingOf(opened.fold, parsed.base),
+        ...(found === undefined ? {} : { pictures: pictureSizes(found) }),
+        ...(measure === undefined ? {} : { measure }),
+        ...(parsed.runId === undefined ? { phase: "start" as const } : {}),
       },
-      once,
-      mint: onceIds(once).mint,
-      read: doom.readingOf(opened.fold, parsed.base),
-      ...(found === undefined ? {} : { pictures: pictureSizes(found) }),
-      ...(measure === undefined ? {} : { measure }),
-      ...(parsed.runId === undefined ? { phase: "start" as const } : {}),
-    })
-  let compiled = compile()
+      host,
+      pendingFonts,
+    )
+  let compiled = await compile()
+  if ("answer" in compiled) return compiled
   if (!("refused" in compiled) && doom.mayLeaveDeck(opened.fold, compiled.edit.writes)) {
-    const measure = await deckMeasure(host, [opened.fold, compiled.after])
-    if (measure !== undefined) compiled = compile(measure)
+    const measured = await deckMeasure(host, [opened.fold, compiled.after])
+    if (measured !== undefined) compiled = await compile(measured.measure)
   }
+  if ("answer" in compiled) return compiled
   if ("refused" in compiled) return doomRefused(compiled, { rev: opened.rev })
   if (compiled.edit.writes.length === 0) return unchangedAnswer(opened.deck, opened.rev, parsed.runId)
   const landed = await host.edit(parsed.deck, compiled.edit)
@@ -165,9 +340,20 @@ export async function editDeckTool(raw: unknown, agent: Agent, once: string, hos
   const laid = await layoutOf(host, compiled.after, () =>
     doom.touchedSlides(opened.fold, compiled.after, compiled.edit.writes),
   )
-  return landedAnswer(landed.deck, landed.rev, run, rootsOfEdit(compiled.edit, compiled.added), {
-    findings: [...compiled.findings, ...laid.findings],
-    layout: laid.layout,
-    ...(laid.unread === undefined ? {} : { unread: laid.unread }),
-  })
+  return landedAnswer(
+    landed.deck,
+    landed.rev,
+    run,
+    rootsOfEdit(compiled.edit, compiled.added),
+    {
+      findings: [...compiled.findings, ...laid.findings],
+      layout: laid.layout,
+      ...(laid.unread === undefined ? {} : { unread: laid.unread }),
+    },
+    compiled.edit.writes.flatMap((write) =>
+      write.prop === "layout" && doom.propOf(compiled.after.nodes.get(write.node), "layout")?.mode === "none"
+        ? [write.node]
+        : [],
+    ),
+  )
 }

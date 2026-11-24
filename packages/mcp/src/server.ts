@@ -1,4 +1,4 @@
-import { catalog, projectTools, readOnce, toolInputSchema } from "@airdesign/catalog"
+import { catalog, pendingFontsMeta, projectTools, readOnce, toolInputSchema } from "@airdesign/catalog"
 import { McpServer } from "@modelcontextprotocol/server"
 
 import { type Admission, admit } from "./admit.js"
@@ -56,7 +56,13 @@ export function createServer(session: Session, host: Host): McpServer {
         }
         if (!admitted.ok) return mcpResult(limited(admitted.text))
         session.log = admitted.log
-        return mcpResult(await callTool(tool.name, args, session, host))
+        const claimed = ctx.mcpReq._meta?.[pendingFontsMeta]
+        const pendingFonts = new Set<string>(
+          Array.isArray(claimed)
+            ? claimed.filter((name): name is string => typeof name === "string").map((name) => name.toLowerCase())
+            : [],
+        )
+        return mcpResult(await callTool(tool.name, args, session, host, pendingFonts))
       },
     )
   }

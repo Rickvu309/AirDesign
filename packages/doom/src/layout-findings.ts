@@ -1,3 +1,4 @@
+import { charsByFace } from "./measure.js"
 import { deckOf } from "./deck-of.js"
 import type { Doom, Write } from "./doom.js"
 import { descendantsOf, propOf, slideOf, slidesOf } from "./doom-walk.js"
@@ -37,7 +38,7 @@ type Slide = {
   readonly measure: Measure
   readonly size: { readonly w: number; readonly h: number }
   readonly found: LayoutFinding[]
-  readonly missing: ReadonlySet<string>
+  readonly missing: MissingGlyphs
 }
 
 const right = (rect: Rect) => rect.x + rect.w
@@ -127,13 +128,20 @@ function place(slide: Slide, node: Resolved, x: number, y: number, ancestors: re
   return { node, box, inks, content, bounds }
 }
 
-function holdsMissing(doom: Doom, id: NodeId, missing: ReadonlySet<string>): boolean {
-  const node = doom.nodes.get(id)
-  const text = node === undefined ? undefined : propOf(node, "text")
-  return missing.size > 0 && text !== undefined && [...text.chars].some((char) => missing.has(char))
+export type MissingGlyphs = ReadonlyMap<string, ReadonlySet<string>>
+
+export function missingGlyphsIn(doom: Doom, id: NodeId, missing: MissingGlyphs): readonly string[] {
+  const text = propOf(doom.nodes.get(id), "text")
+  if (missing.size === 0 || text === undefined) return []
+  const chars = new Set<string>()
+  for (const [face, letters] of charsByFace(text, deckOf(doom).theme)) {
+    const absent = missing.get(face)
+    for (const letter of letters) if (absent?.has(letter)) chars.add(letter)
+  }
+  return [...chars]
 }
 
-const unread = (slide: Slide, id: string) => holdsMissing(slide.doom, id as NodeId, slide.missing)
+const unread = (slide: Slide, id: string) => missingGlyphsIn(slide.doom, id as NodeId, slide.missing).length > 0
 
 function judgeOwn(slide: Slide, node: Resolved, box: Rect): void {
   const stored = slide.doom.nodes.get(node.id as NodeId)
@@ -241,7 +249,7 @@ export function layoutFindings(
   doom: Doom,
   slides: readonly NodeId[],
   measure: Measure,
-  missing: ReadonlySet<string> = new Set(),
+  missing: MissingGlyphs = new Map(),
 ): readonly LayoutFinding[] {
   const { theme, size } = deckOf(doom)
   const found: LayoutFinding[] = []
@@ -255,14 +263,10 @@ export function layoutFindings(
   return found
 }
 
-export function unmeasuredTexts(
-  doom: Doom,
-  slides: readonly NodeId[],
-  missing: ReadonlySet<string>,
-): readonly NodeId[] {
+export function unmeasuredTexts(doom: Doom, slides: readonly NodeId[], missing: MissingGlyphs): readonly NodeId[] {
   if (missing.size === 0) return []
   return slides.flatMap((slide) =>
-    descendantsOf(doom, slide).flatMap((node) => (holdsMissing(doom, node.id, missing) ? [node.id] : [])),
+    descendantsOf(doom, slide).flatMap((node) => (missingGlyphsIn(doom, node.id, missing).length > 0 ? [node.id] : [])),
   )
 }
 

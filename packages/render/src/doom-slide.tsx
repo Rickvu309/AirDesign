@@ -5,7 +5,8 @@ import { useIcons } from "./icon-nodes.js"
 import { type AssetUrl, PaintLayers } from "./node-fills.js"
 import { MaskedChildren } from "./mask-layers.js"
 import { NodeArt, holds, type NodeHost } from "./node-art.js"
-import { measureFaces } from "./doom-widths.js"
+import { fontsFor } from "./font-load.js"
+import { measureFaces, measureReady } from "./doom-widths.js"
 
 type Resolved = doom.Resolved
 
@@ -17,11 +18,42 @@ export function useDoomMeasure(value: doom.Doom): doom.Measure | null {
   const [widths, setWidths] = useState<FontWidths | null>(null)
   useEffect(() => {
     let current = true
-    void measureFaces(document, needs).then((measured) => {
-      if (current) setWidths(measured)
+    let retry: ReturnType<typeof setTimeout> | undefined
+    let delay = 500
+    let measuring = false
+    let refresh = false
+    const measure = async () => {
+      if (measuring) {
+        refresh = true
+        return
+      }
+      measuring = true
+      clearTimeout(retry)
+      const measured = await measureFaces(document, needs)
+      measuring = false
+      if (!current) return
+      if (measured !== null) setWidths(measured)
+      if (refresh) {
+        refresh = false
+        void measure()
+      } else if (measured === null || !measureReady(document, needs)) {
+        retry = setTimeout(() => void measure(), delay)
+        delay = Math.min(delay * 2, 8_000)
+      }
+    }
+    const loader = fontsFor(document)
+    let settled = loader?.settledCount()
+    const unsubscribe = loader?.subscribe(() => {
+      const next = loader.settledCount()
+      if (next === settled) return
+      settled = next
+      void measure()
     })
+    void measure()
     return () => {
       current = false
+      unsubscribe?.()
+      clearTimeout(retry)
     }
   }, [key])
   return useMemo(() => (widths === null ? null : doom.measureWith(widths)), [widths])

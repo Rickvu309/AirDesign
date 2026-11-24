@@ -21,9 +21,23 @@ export { placeholderTitle } from "./placeholder-title.js"
 export { pictureFit } from "./picture-fit.js"
 export { coverCrop, type ImageCrop } from "./picture-crop.js"
 export { slideKeyText } from "./slide-key.js"
-export { type AddedNode, compileAgentEdit, readingOf } from "./agent-edit.js"
+export {
+  type AddedNode,
+  type AgentEdit,
+  type EditBy,
+  agentEditSteps,
+  compileAgentEdit,
+  readingOf,
+} from "./agent-edit.js"
 export type { AgentFinding } from "./agent-findings.js"
-export { type LayoutFinding, layoutFindings, touchedSlides, unmeasuredTexts } from "./layout-findings.js"
+export {
+  type LayoutFinding,
+  type MissingGlyphs,
+  layoutFindings,
+  missingGlyphsIn,
+  touchedSlides,
+  unmeasuredTexts,
+} from "./layout-findings.js"
 export { kindOf as agentKind, readForAgent } from "./agent-read.js"
 export { type Counts, applyEdit, countsOf, hasDeck, landEdit } from "./apply-edit.js"
 export { foldToJson, readFold, readLanded, readRuns, readStoredNode, revsToJson, runsToJson } from "./fold-json.js"
@@ -60,9 +74,10 @@ export { type TextPatch, lookWrite, paraWrite, styleWrite } from "./text-writes.
 export type { Theme } from "./theme.js"
 export { viewOf } from "./view-of.js"
 export { readColor, resolveColor, sameColor, tinted } from "./color.js"
-export { type Measure, type Measured, measureWith } from "./measure.js"
+export { type Measure, type Measured, charsByFace, measureWith } from "./measure.js"
 export { solveLayout } from "./solve-layout.js"
-export { bakeLayout } from "./bake-layout.js"
+export { fontSamples, graphemes } from "./graphemes.js"
+export { bakeLayout, bakeTextLayers } from "./bake-layout.js"
 export { deriveChart } from "./derive-chart.js"
 export type { Box, Point, Resolved, ResolvedEffect, ResolvedLine, ResolvedPaint, ResolvedRun } from "./resolved.js"
 export { resolveSlide, slideBackground } from "./resolve-slide.js"
@@ -85,7 +100,17 @@ export { libraryThemeOf } from "./library-theme-of.js"
 export { defaultTheme, themeLibrary } from "./theme.js"
 export { type Grown, type Tree, type TreeNode, type TreeSlide, doomFromTree } from "./doom-tree.js"
 export { deckName, deckOf } from "./deck-of.js"
-export { childrenOf, flows, holdsText, lockedIn, parentOf, propOf, slideOf, slidesOf } from "./doom-walk.js"
+export {
+  childrenOf,
+  descendantsOf,
+  flows,
+  holdsText,
+  lockedIn,
+  parentOf,
+  propOf,
+  slideOf,
+  slidesOf,
+} from "./doom-walk.js"
 export { type ListedRun, liveRuns, runsOf } from "./live-runs.js"
 export { type Face, type FaceNeeds, doomFaces } from "./text-faces.js"
 export { contentAreaOf, gapFor } from "./agent-place.js"

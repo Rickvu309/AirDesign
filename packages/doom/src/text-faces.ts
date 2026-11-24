@@ -1,4 +1,5 @@
 import { deckOf } from "./deck-of.js"
+import type { NodeId } from "./ids.js"
 import type { Doom } from "./doom.js"
 import { familyOf } from "./painted-face.js"
 
@@ -7,12 +8,14 @@ export type FaceNeeds = { readonly faces: readonly Face[]; readonly texts: reado
 
 const alphabet = Array.from({ length: 95 }, (_, at) => String.fromCharCode(32 + at)).join("") + "•–—…’‘“”°%€£¥×÷·"
 
-export function doomFaces(doom: Doom): FaceNeeds {
+export function doomFaces(doom: Doom, layers?: readonly NodeId[]): FaceNeeds {
   const { theme } = deckOf(doom)
   const fonts = new Set([theme.fonts.heading, theme.fonts.body])
   const texts = new Set([alphabet])
   let italic = false
-  for (const node of doom.nodes.values()) {
+  const nodes = layers === undefined ? doom.nodes.values() : layers.map((id) => doom.nodes.get(id))
+  for (const node of nodes) {
+    if (node === undefined) continue
     const text = node.type === "shape" ? node.text : undefined
     if (text !== undefined) {
       texts.add(text.chars)

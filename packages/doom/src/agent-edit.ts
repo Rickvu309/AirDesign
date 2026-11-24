@@ -40,7 +40,20 @@ export function readingOf(doom: Doom, base: number): Doom {
   return { ...doom, revs }
 }
 
+type Bake = { readonly fold: Doom; readonly frame: NodeId }
+
 export function compileAgentEdit(doom: Doom, changes: readonly AgentChange[], by: EditBy): AgentEdit | AgentRefusal {
+  const compiled = agentEditSteps(doom, changes, by, false).next()
+  if (!compiled.done) throw new Error("unexpected bake")
+  return compiled.value
+}
+
+export function* agentEditSteps(
+  doom: Doom,
+  changes: readonly AgentChange[],
+  by: EditBy,
+  pauseForBake = true,
+): Generator<Bake, AgentEdit | AgentRefusal, Measure> {
   if (changes.length === 0)
     return {
       refused: "shape",
@@ -60,7 +73,21 @@ export function compileAgentEdit(doom: Doom, changes: readonly AgentChange[], by
   let view = doom
   let emptied = 0
   for (const [at, change] of changes.entries()) {
-    const compiled = compileAgentChange(view, change, by.mint, reading)
+    let frame: NodeId | undefined
+    const beforeBake: Reading = pauseForBake
+      ? {
+          ...reading,
+          bake: (target) => {
+            frame = target
+            return []
+          },
+        }
+      : reading
+    let compiled = compileAgentChange(view, change, by.mint, beforeBake)
+    if (frame !== undefined && !("refused" in compiled)) {
+      const measure = yield { fold: view, frame }
+      compiled = compileAgentChange(view, change, by.mint, { ...reading, measure })
+    }
     if ("refused" in compiled) return { ...compiled, at }
     const next = applyStep(view, {
       ...onTop(view, {

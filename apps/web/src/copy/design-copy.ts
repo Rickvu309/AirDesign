@@ -4,6 +4,9 @@ import { frameCopy } from "./frame-copy"
 const layerCount = (count: number, kind: string) =>
   `${new Intl.NumberFormat("en").format(count)} ${kind} ${count === 1 ? "layer" : "layers"}`
 
+export const fontLoadFailed = (where: "this frame" | "these slides") =>
+  `A font in ${where} couldn’t load. Try again when it’s available.`
+
 export const designCopy = {
   slide: (number: number) => `Slide ${String(number)}`,
   background: "Background",
@@ -24,6 +27,9 @@ export const designCopy = {
   selectMatching: "Select matching layers",
   titles: { text: "Text", picture: "Image", icon: "Icon" },
   autoFrame: frameCopy.autoFrame,
+  layoutFontFailed: fontLoadFailed("this frame"),
+  layoutMeasuring: "Measuring text…",
+  layoutFontPending: "Fonts are still loading.",
   removeAutoLayout: frameCopy.removeAutoLayout,
   square: "Rectangle",
   layerName: "Layer name",

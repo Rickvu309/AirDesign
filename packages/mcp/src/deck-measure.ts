@@ -1,12 +1,16 @@
-import * as doom from "@airdesign/doom"
+import type * as doom from "@airdesign/doom"
 
-import type { DeckHost } from "./deck-host.js"
+import type { DeckHost, Measured } from "./deck-host.js"
 
-export async function deckMeasure(host: DeckHost, folds: readonly doom.Doom[]): Promise<doom.Measure | undefined> {
+export async function deckMeasure(
+  host: DeckHost,
+  folds: readonly doom.Doom[],
+  layers?: readonly doom.NodeId[],
+): Promise<Measured | undefined> {
   if (host.measure === undefined) return undefined
   try {
-    const read = await host.measure(folds)
-    return typeof read === "string" ? undefined : read.measure
+    const read = await host.measure(folds, layers)
+    return typeof read === "string" ? undefined : read
   } catch {
     return undefined
   }

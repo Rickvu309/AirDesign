@@ -42,19 +42,19 @@ describe("measuring the faces a deck's text needs", () => {
     const first = await measureFaces(doc, needs("ab"))
     const spent = measured.length
     const next = await measureFaces(doc, needs("abz"))
-    const key = Object.keys(first)[0]!
-    expect(next[key]?.advances.a).toBe(first[key]?.advances.a)
-    expect(next[key]?.advances.z).toBe(10 / 32)
+    const key = Object.keys(first ?? {})[0]!
+    expect(next?.[key]?.advances.a).toBe(first?.[key]?.advances.a)
+    expect(next?.[key]?.advances.z).toBe(10 / 32)
     expect(measured.slice(spent).sort()).toEqual(["bz", "z"])
   })
 
   it("measures a face again once it has loaded, when it was not there the first time", async () => {
     let ready = false
     const { doc, measured } = fakeDocument(() => ready)
-    expect(await measureFaces(doc, needs("ab"))).toEqual({})
+    expect(await measureFaces(doc, needs("ab"))).toBeNull()
     expect(measured).toEqual([])
     ready = true
     const widths = await measureFaces(doc, needs("ab"))
-    expect(Object.keys(widths)).toHaveLength(1)
+    expect(Object.keys(widths ?? {})).toHaveLength(1)
   })
 })

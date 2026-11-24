@@ -127,7 +127,7 @@ function connected(grown: ReturnType<typeof drifted>, measureOf: (folds: readonl
   const decks = memoryDecks(() => grown.doom)
   const host = {
     ...decks,
-    measure: async (folds: readonly doom.Doom[]) => ({ measure: measureOf(folds), missing: new Set<string>() }),
+    measure: async (folds: readonly doom.Doom[]) => ({ measure: measureOf(folds), missing: new Map() }),
   }
   let calls = 0
   const session: Session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0 }
@@ -176,6 +176,21 @@ describe("edit_deck takes a shape off the deck", () => {
     ])
     expect(batch.answer).toMatchObject({ ok: true })
     expect(by.freeEnd(deck)).toEqual(seen)
+  })
+})
+
+describe("edit_deck set layout none", () => {
+  it("keeps the children where the host's measure painted them", async () => {
+    const grown = drifted()
+    const by = connected(grown, () => wide)
+    const deck = await by.made()
+    const seen = doom.solveLayout(grown.doom, grown.slides[0]!, wide).get(grown.ids.t!)
+    expect(seen?.x).not.toBe(doom.solveLayout(grown.doom, grown.slides[0]!, estimate).get(grown.ids.t!)?.x)
+    expect((await by.edit(deck, [{ op: "set", target: grown.ids.f, layout: "none" }])).answer).toMatchObject({
+      ok: true,
+    })
+    const saved = by.decks.decks.get(deck as never)!
+    expect(doom.propOf(saved.nodes.get(grown.ids.t!), "box")).toMatchObject({ x: seen?.x, y: seen?.y })
   })
 })
 

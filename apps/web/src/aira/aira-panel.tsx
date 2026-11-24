@@ -34,6 +34,7 @@ export function AiraPanel({
   deck,
   hidden,
   opened,
+  pendingFonts,
   undo: undoRun,
   online = true,
   now = Date.now,
@@ -46,6 +47,7 @@ export function AiraPanel({
   deck: string
   hidden: boolean
   opened?: () => Promise<unknown>
+  pendingFonts?: () => readonly string[]
   undo: UndoRun
   online?: boolean
   now?: () => number
@@ -148,6 +150,7 @@ export function AiraPanel({
       added: takeQueued,
       after: finishing.current,
       ...(opened === undefined ? {} : { opened: opened() }),
+      ...(pendingFonts === undefined ? {} : { pendingFonts }),
     })
     finishing.current = asking
     const done = await asking
@@ -195,10 +198,10 @@ export function AiraPanel({
     }
   }, [loaded, online, start.request])
 
-  function retry() {
+  function retry(request?: string) {
     if (busy || blocked !== undefined) return
     toLatest()
-    void run(retryAira)
+    void run((chat, options) => retryAira(chat, options, request))
   }
 
   function send() {

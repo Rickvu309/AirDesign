@@ -4,14 +4,14 @@
     {
       "file": "packages/mcp/src/edit-tool.ts",
       "names": ["editDeckTool"],
-      "digest": "1c1d9de79ade",
-      "blob": "bfaff3fd54afec7a2456a27fe6e9e425a32f2ed1"
+      "digest": "82ef45072e1c",
+      "blob": "589e04177525981eb761a3b9bc2c06011a0d9637"
     },
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["guardRun", "protect"],
-      "digest": "6449b94922f0",
-      "blob": "4c3815f1225ca49040369277dd778885efad3f3d"
+      "digest": "be43bc4f7607",
+      "blob": "d33a4ef6972695f0eadfaa5f5647c40d07d2e553"
     }
   ]
 }

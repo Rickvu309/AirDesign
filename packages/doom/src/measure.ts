@@ -1,3 +1,4 @@
+import { graphemes } from "./graphemes.js"
 import { type FontWidths, type Glyph, fontFace, spansOf } from "./line-breaks.js"
 import { paintedFace } from "./painted-face.js"
 import { resolveColor } from "./color.js"
@@ -64,19 +65,17 @@ function cased(char: string, mode: Cased, after: string | undefined): string {
         : mode === "title" && (after === undefined || after === space)
           ? char.toUpperCase()
           : char
-  return [...turned].length === 1 ? turned : char
+  return [...turned].length === [...char].length ? turned : char
 }
 
-type Styled = { readonly char: string; readonly at: number; readonly run: number }
+type Styled = { readonly char: string; readonly at: number; readonly end: number; readonly run: number }
 
 function styledChars(text: Text): readonly (Styled | "break")[] {
   const out: (Styled | "break")[] = []
   let run = 0
-  let at = 0
-  for (const char of text.chars) {
+  for (const { segment, index: at } of graphemes(text.chars)) {
     while (text.spans[run] !== undefined && at >= text.spans[run]!.end) run += 1
-    out.push(char === "\n" ? "break" : { char, at, run })
-    at += char.length
+    out.push(segment === "\n" ? "break" : { char: segment, at, end: at + segment.length, run })
   }
   return out
 }
@@ -102,6 +101,21 @@ const trimmedWidth = (glyphs: readonly Glyph[], from: number, to: number): numbe
 }
 
 const alignOf = (para: Para | undefined) => para?.align ?? "left"
+
+export function charsByFace(text: Text, theme: Theme): ReadonlyMap<string, ReadonlySet<string>> {
+  const base = baseLook(text, theme)
+  const looks = (text.spans.length === 0 ? [undefined] : text.spans).map((span) => lookOf(span, base, theme))
+  const found = new Map<string, Set<string>>()
+  for (const item of styledChars(text)) {
+    if (item === "break") continue
+    const look = looks[item.run] ?? looks[looks.length - 1]!
+    const face = fontFace(look.font, look.bold, look.italic)
+    let chars = found.get(face)
+    if (chars === undefined) found.set(face, (chars = new Set()))
+    chars.add(item.char.normalize("NFC"))
+  }
+  return found
+}
 
 function measureOnce(widths: FontWidths): Measure {
   return (text, theme, width) => {
@@ -130,10 +144,13 @@ function measureOnce(widths: FontWidths): Measure {
         const look = looks[item.run]!
         const face = faces[item.run]
         const shown = cased(item.char, look.case, previous?.char)
-        const kern = previous?.run === item.run ? (face?.kerning?.[previous.char + item.char] ?? 0) : 0
+        const kern =
+          previous?.run === item.run
+            ? (face?.kerning?.[previous.char.normalize("NFC") + item.char.normalize("NFC")] ?? 0)
+            : 0
         glyphs.push({
           char: shown,
-          width: ((face?.advances[item.char] ?? fallbackAdvance) + kern) * look.size + look.tracking,
+          width: ((face?.advances[item.char.normalize("NFC")] ?? fallbackAdvance) + kern) * look.size + look.tracking,
           run: item.run,
         })
         previous = item
@@ -142,7 +159,7 @@ function measureOnce(widths: FontWidths): Measure {
       const before = first ? 0 : (para?.spaceBefore ?? 0)
       y += before
       const lineScale = para?.lineHeight ?? base.lineHeight
-      const paragraphEnd = paragraphStart + chars.reduce((sum, item) => sum + item.char.length, 0)
+      const paragraphEnd = chars.at(-1)?.end ?? paragraphStart
       for (const [spanIndex, span] of spansOf(glyphs, inner - indent, inner - indent).entries()) {
         const runs: ResolvedRun[] = []
         let size = base.size

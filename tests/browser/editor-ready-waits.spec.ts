@@ -47,44 +47,25 @@ test("the editor is not ready while the server has not opened the deck, and is r
   expect(page.url()).toContain(await page.locator("[data-editor-ready]").getAttribute("data-editor-ready"))
 })
 
-test("the editor is not ready while a font is still arriving, and the filmstrip has none pending the moment it is", async ({
+test("the editor and filmstrip paint while fonts arrive and clear their pending text once fonts load", async ({
   page,
   context,
   stack,
 }) => {
   await signedIn(page, context, stack)
-  await page.addInitScript(() => {
-    const seen: { pendingInStrip: number; fontsLoading: number }[] = []
-    Object.assign(window, { readySeen: seen })
-    const watch = new MutationObserver(() => {
-      const stage = document.querySelector("[data-editor-stage]")
-      if (stage?.hasAttribute("data-editor-ready") !== true) return
-      watch.disconnect()
-      seen.push({
-        pendingInStrip: document.querySelectorAll("[data-editor-sidebar] [data-fonts-pending]").length,
-        fontsLoading: [...document.fonts].filter((face) => face.status === "loading").length,
-      })
-    })
-    watch.observe(document, {
-      subtree: true,
-      childList: true,
-      attributes: true,
-      attributeFilter: ["data-editor-ready"],
-    })
-  })
   const hold = holdOn(page, "**/fonts/**")
   await hold.seen
+  const canvas = page.locator("[data-slide-box] [data-font-pending]")
+  const filmstrip = page.locator("[data-slide-thumb] [data-font-pending]")
   try {
     await page.goto("/s")
     await expect.poll(() => hold.asked.length).toBeGreaterThan(0)
-    await expect(page.locator("[data-editor-stage]")).toBeVisible()
-    await expect(page.locator("[data-editor-ready]")).toHaveCount(0)
+    await expect(page.locator("[data-editor-ready]")).toHaveCount(1)
+    await expect(canvas.first()).toBeVisible()
+    await expect(filmstrip.first()).toBeVisible()
   } finally {
     hold.release()
   }
-  await expect(page.locator("[data-editor-ready]")).toHaveCount(1)
-  const atReady = await page.evaluate(() => (window as unknown as { readySeen: unknown[] }).readySeen)
-  expect(atReady, "the filmstrip's pending fonts and loading faces at the moment of ready").toEqual([
-    { pendingInStrip: 0, fontsLoading: 0 },
-  ])
+  await expect(canvas).toHaveCount(0)
+  await expect(filmstrip).toHaveCount(0)
 })

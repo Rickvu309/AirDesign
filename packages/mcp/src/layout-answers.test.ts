@@ -30,7 +30,10 @@ const titled = () =>
   }).doom
 
 const estimate = doom.measureWith({})
-const measured = (missing: readonly string[] = []) => ({ measure: estimate, missing: new Set(missing) })
+const measured = (missing: readonly string[] = []) => ({
+  measure: estimate,
+  missing: new Map([[doom.defaultTheme.fonts.body, new Set(missing)]]),
+})
 
 function agent(measure: DeckHost["measure"] = async () => measured()) {
   const host = { ...memoryDecks(titled), measure }
@@ -133,7 +136,7 @@ describe("layout findings in the answers, measured by the host with the deck's f
         measure: () => {
           throw new Error("measure broke")
         },
-        missing: new Set<string>(),
+        missing: new Map(),
       })),
     ).toContain("The layout went unchecked: it could not be worked out")
   })

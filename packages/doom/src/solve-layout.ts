@@ -8,12 +8,14 @@ import type { Box } from "./resolved.js"
 import type { Node, Doom } from "./doom.js"
 import type { Theme } from "./theme.js"
 
+type LayoutMeasure = (...args: [...Parameters<Measure>, NodeId]) => ReturnType<Measure>
+
 type Size = { readonly w: number; readonly h: number }
 type Mode = Sizing["w"]
 type Context = {
   readonly doom: Doom
   readonly theme: Theme
-  readonly measure: Measure
+  readonly measure: LayoutMeasure
   readonly sizes: Map<string, Size>
   readonly showHidden?: NodeId
 }
@@ -62,11 +64,11 @@ function measuredSize(context: Context, node: Node, forcedW: number | null, forc
   const stored = storedBox(node)
   const w = forcedW ?? (mode.w === "fixed" ? stored.w : null)
   const h = forcedH ?? (mode.h === "fixed" ? stored.h : null)
-  if (w !== null && h !== null && node.type !== "frame") return { w, h }
+  if (w !== null && h !== null) return { w, h }
   if (node.type === "frame") return plan(context, node, w, h).size
   const text = prop(node, "text")
   if (text === undefined) return { w: w ?? stored.w, h: h ?? stored.h }
-  const measured = context.measure(text, context.theme, w)
+  const measured = context.measure(text, context.theme, w, node.id)
   return { w: w ?? measured.w, h: h ?? measured.h }
 }
 
@@ -293,11 +295,19 @@ function plan(context: Context, container: Node, w: number | null, h: number | n
   return { size: own, kids: [...arranged.kids, ...freed] }
 }
 
-function arrange(context: Context, boxes: Map<NodeId, Box>, node: Node, w: number, h: number): void {
+function arrange(
+  context: Context,
+  boxes: Map<NodeId, Box>,
+  node: Node,
+  w: number,
+  h: number,
+  path?: readonly NodeId[],
+): void {
   for (const kid of plan(context, node, w, h).kids) {
     boxes.set(kid.id, kid.box)
     const child = context.doom.nodes.get(kid.id)
-    if (child?.type === "frame") arrange(context, boxes, child, kid.box.w, kid.box.h)
+    if (child?.type === "frame" && (path === undefined || path[0] === kid.id))
+      arrange(context, boxes, child, kid.box.w, kid.box.h, path?.slice(1))
   }
 }
 
@@ -328,7 +338,12 @@ function lines(context: Context, boxes: Map<NodeId, Box>, id: NodeId): void {
   }
 }
 
-export function solveLayout(doom: Doom, root: NodeId, measure: Measure): ReadonlyMap<NodeId, Box> {
+export function solveLayout(
+  doom: Doom,
+  root: NodeId,
+  measure: LayoutMeasure,
+  path?: readonly NodeId[],
+): ReadonlyMap<NodeId, Box> {
   const node = doom.nodes.get(root)
   const boxes = new Map<NodeId, Box>()
   if (node === undefined) return boxes
@@ -336,13 +351,15 @@ export function solveLayout(doom: Doom, root: NodeId, measure: Measure): Readonl
   const context = { doom, theme, measure, sizes: new Map<string, Size>() }
   if (node.type === "slide") {
     boxes.set(root, { ...nothing, w: size.w, h: size.h })
-    arrange(context, boxes, node, size.w, size.h)
+    arrange(context, boxes, node, size.w, size.h, path)
   } else {
     const own = sizeOf(context, node, null, null)
     boxes.set(root, { ...storedBox(node), w: own.w, h: own.h })
-    arrange(context, boxes, node, own.w, own.h)
+    arrange(context, boxes, node, own.w, own.h, path)
   }
-  placeHidden(context, boxes, node)
-  lines(context, boxes, root)
+  if (path === undefined) {
+    placeHidden(context, boxes, node)
+    lines(context, boxes, root)
+  }
   return boxes
 }

@@ -1,3 +1,4 @@
+import { airaFontRequest } from "@/copy/aira-copy"
 import { catalog, projectTools } from "@airdesign/catalog"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
@@ -175,4 +176,104 @@ describe("a request Aira's changes were undone from", () => {
     expect(markup).toContain(productCopy.undo)
     expect(markup).not.toMatch(/<button[^>]*\sdisabled=""/u)
   })
+})
+
+it("names the missing glyphs and layers and offers a font fix instead of a plain retry", () => {
+  const refused = exchange([
+    {
+      kind: "tool",
+      id: "t1",
+      name: "airdesign_edit_deck",
+      state: "refused",
+      refusal: "fonts",
+      fontIssue: { kind: "coverage", characters: "収益", layers: ["t:2", "t:3"], layerNames: [] },
+    },
+  ])
+  const markup = view(refused, () => undefined)
+  expect(markup).not.toContain("t:2")
+  expect(markup).not.toContain("t:3")
+  expect(markup).toContain("2 text layers")
+  expect(markup).toContain(airaCopy.fixFonts)
+  expect(markup).not.toContain(airaCopy.retry)
+})
+
+it("clears the font refusal after the same bake succeeds in the turn", () => {
+  const markup = view(
+    exchange([
+      {
+        kind: "tool",
+        id: "t1",
+        name: "airdesign_edit_deck",
+        state: "refused",
+        refusal: "fonts",
+        fontIssue: { kind: "coverage", characters: "収益", layers: ["t:2"], layerNames: [], target: "t:1" },
+      },
+      { kind: "tool", id: "t2", name: "airdesign_edit_deck", state: "done", bakedLayouts: ["t:1"] },
+    ]),
+    () => undefined,
+  )
+  expect(markup).not.toContain(airaCopy.fixFonts)
+  expect(markup).not.toContain("Auto layout is still on")
+})
+
+it("shows only the latest reason for a frame Aira tried twice", () => {
+  const issue = { characters: "", layers: ["t:2"], layerNames: ["Revenue"], target: "t:1" }
+  const markup = view(
+    exchange([
+      {
+        kind: "tool",
+        id: "t1",
+        name: "airdesign_edit_deck",
+        state: "refused",
+        refusal: "fonts",
+        fontIssue: { ...issue, kind: "coverage" },
+      },
+      {
+        kind: "tool",
+        id: "t2",
+        name: "airdesign_edit_deck",
+        state: "refused",
+        refusal: "fonts",
+        fontIssue: { ...issue, kind: "pending" },
+      },
+    ]),
+    () => undefined,
+  )
+  expect(markup).toContain("A font hasn’t loaded")
+  expect(markup).toContain("Try again when the text updates.")
+  expect(markup).not.toContain("Aira can switch fonts")
+  expect(markup).not.toContain("Couldn't edit slides")
+})
+
+it("asks Aira to retry every change in the refused batch with the fonts fixed", () => {
+  const request = airaFontRequest(["t:2"], "t:1")
+  expect(request).toContain("Retry the whole refused edit_deck batch")
+  expect(request).toContain("Include every other change in the batch")
+  expect(request).toContain("None of that batch landed")
+})
+
+it("names the text Aira cannot shape and offers the Design panel", () => {
+  const markup = view(
+    exchange([
+      {
+        kind: "tool",
+        id: "t1",
+        name: "airdesign_edit_deck",
+        state: "refused",
+        refusal: "fonts",
+        fontIssue: {
+          kind: "shaping",
+          characters: "",
+          layers: ["t:2"],
+          layerNames: ["Greeting"],
+          shaping: ["Arabic text"],
+        },
+      },
+    ]),
+    () => undefined,
+  )
+  expect(markup).toContain("Arabic text in “Greeting”")
+  expect(markup).toContain("None of the changes in this edit were applied.")
+  expect(markup).toContain("You can remove auto layout in the Design panel.")
+  expect(markup).not.toContain(airaCopy.retry)
 })

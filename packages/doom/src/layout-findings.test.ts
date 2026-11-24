@@ -335,7 +335,9 @@ describe("layout findings: what a slide paints wrong, measured with the deck's f
         },
       ],
     })
-    expect(layoutFindings(grown.doom, grown.slides, measure, new Set(["🚀"]))).toEqual([
+    expect(
+      layoutFindings(grown.doom, grown.slides, measure, new Map([[plainTheme.fonts.body, new Set(["🚀"])]])),
+    ).toEqual([
       {
         code: "off-slide",
         node: grown.ids.cover,
@@ -474,12 +476,20 @@ describe("layout findings: what a slide paints wrong, measured with the deck's f
         },
       ],
     })
-    const findings = layoutFindings(grown.doom, grown.slides, measure, new Set(["🚀"]))
+    const findings = layoutFindings(
+      grown.doom,
+      grown.slides,
+      measure,
+      new Map([[plainTheme.fonts.body, new Set(["🚀"])]]),
+    )
     expect(findings.map((found) => [found.code, found.node])).toEqual([
       ["small-text", grown.ids.edge],
       ["overflow", grown.ids.plain],
       ["off-slide", grown.ids.edge],
     ])
-    expect(unmeasuredTexts(grown.doom, grown.slides, new Set(["🚀"]))).toEqual([grown.ids.emoji, grown.ids.edge])
+    expect(unmeasuredTexts(grown.doom, grown.slides, new Map([[plainTheme.fonts.body, new Set(["🚀"])]]))).toEqual([
+      grown.ids.emoji,
+      grown.ids.edge,
+    ])
   })
 })

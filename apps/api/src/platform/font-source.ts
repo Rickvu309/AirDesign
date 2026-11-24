@@ -16,12 +16,18 @@ export type FontStore = Pick<OriginalStore, "read" | "write">
 const upstream = `https://raw.githubusercontent.com/google/fonts/${fontRevision}`
 const prefix = `fonts/${fontRevision}`
 const maximumFile = 32 * 1024 * 1024
-const localFaces: readonly FontFile[] = [
-  { file: "LiberationSansNarrow-Regular.ttf", style: "normal", weight: "400" },
-  { file: "LiberationSansNarrow-Italic.ttf", style: "italic", weight: "400" },
-  { file: "LiberationSansNarrow-Bold.ttf", style: "normal", weight: "700" },
-  { file: "LiberationSansNarrow-BoldItalic.ttf", style: "italic", weight: "700" },
-]
+const localFaces: Readonly<Record<string, readonly FontFile[]>> = {
+  "Liberation Sans Narrow": [
+    { file: "LiberationSansNarrow-Regular.ttf", style: "normal", weight: "400" },
+    { file: "LiberationSansNarrow-Italic.ttf", style: "italic", weight: "400" },
+    { file: "LiberationSansNarrow-Bold.ttf", style: "normal", weight: "700" },
+    { file: "LiberationSansNarrow-BoldItalic.ttf", style: "italic", weight: "700" },
+  ],
+  Geist: [
+    { file: "Geist[wght].ttf", style: "normal", weight: "100 900" },
+    { file: "Geist-Italic[wght].ttf", style: "italic", weight: "100 900" },
+  ],
+}
 
 export class FontSource {
   private readonly pending = new Map<string, Promise<readonly FontFile[]>>()
@@ -67,7 +73,7 @@ export class FontSource {
   }
 
   private async prepare(family: FontFamily): Promise<readonly FontFile[]> {
-    if (family.folder === "local") return localFaces
+    if (family.folder === "local") return localFaces[family.family] ?? []
     const metadata = (await this.asset(family, "METADATA.pb")).toString("utf8")
     const faces = fontFaces(family, metadata)
     await this.asset(family, family.notice)

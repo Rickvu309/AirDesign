@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { SlidePaint, useDoomSlide, waitForFonts } from "@airdesign/render"
+import { SlidePaint, useDoomSlide, waitForDoomFonts } from "@airdesign/render"
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { propOf } from "@airdesign/doom"
@@ -125,11 +125,12 @@ export function PrintSheet({
   readonly assetUrl: AssetUrl
   readonly onReady: () => boolean
   readonly onPrinted: () => void
-  readonly onFailed: () => void
+  readonly onFailed: (reason: "paint" | "fonts") => void
 }) {
   const sheet = useRef<HTMLDivElement>(null)
   const failing = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const calls = useRef({ onReady, onPrinted, onFailed, name, urls: [] as readonly string[] })
+  const [fontsReady, setFontsReady] = useState(false)
   const [painted, setPainted] = useState<ReadonlyMap<doom.NodeId, Painted>>(new Map())
   const [links, setLinks] = useState<ReadonlyMap<string, readonly LinkBox[]> | null>(null)
   const [onPainted] = useState(
@@ -143,9 +144,23 @@ export function PrintSheet({
   })
 
   useEffect(() => {
-    failing.current = setTimeout(() => calls.current.onFailed(), paintLimit)
-    return () => clearTimeout(failing.current)
-  }, [])
+    failing.current = setTimeout(() => calls.current.onFailed("paint"), paintLimit)
+    let live = true
+    void waitForDoomFonts(document, view, slides).then(
+      (ready) => {
+        if (!live) return
+        if (ready) setFontsReady(true)
+        else calls.current.onFailed("fonts")
+      },
+      () => {
+        if (live) calls.current.onFailed("fonts")
+      },
+    )
+    return () => {
+      live = false
+      clearTimeout(failing.current)
+    }
+  }, [view, slides])
 
   useEffect(() => {
     const host = sheet.current
@@ -175,7 +190,6 @@ export function PrintSheet({
     }
     window.addEventListener("afterprint", after, { once: true })
     void (async () => {
-      await waitForFonts(document)
       await decoded(calls.current.urls)
       await nextFrame()
     })().then(
@@ -187,7 +201,7 @@ export function PrintSheet({
         window.print()
       },
       () => {
-        if (live) calls.current.onFailed()
+        if (live) calls.current.onFailed("paint")
       },
     )
     return () => {
@@ -200,16 +214,17 @@ export function PrintSheet({
   return createPortal(
     <div ref={sheet} data-print-sheet="" aria-hidden="true" inert>
       <style>{pageRule(doom.deckOf(view).size)}</style>
-      {slides.map((slide) => (
-        <PrintSlide
-          key={slide}
-          view={view}
-          slide={slide}
-          assetUrl={assetUrl}
-          links={links?.get(slide) ?? []}
-          onPainted={onPainted}
-        />
-      ))}
+      {fontsReady &&
+        slides.map((slide) => (
+          <PrintSlide
+            key={slide}
+            view={view}
+            slide={slide}
+            assetUrl={assetUrl}
+            links={links?.get(slide) ?? []}
+            onPainted={onPainted}
+          />
+        ))}
     </div>,
     document.body,
   )

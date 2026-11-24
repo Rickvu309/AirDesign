@@ -1,6 +1,8 @@
-import { installedFaces, waitForFonts } from "@airdesign/render"
+import { installedFaces } from "@airdesign/render"
 import { type ReactElement } from "react"
 import { createRoot } from "react-dom/client"
+
+export class PictureFontError extends Error {}
 
 export type PaintedPicture = { readonly image: HTMLImageElement; readonly width: number; readonly height: number }
 
@@ -18,7 +20,13 @@ function blobDataUrl(blob: Blob): Promise<string> {
 }
 
 async function dataUrl(url: string): Promise<string> {
-  return blobDataUrl(await (await fetch(url)).blob())
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+    if (!response.ok) throw new Error("Font file unavailable")
+    return await blobDataUrl(await response.blob())
+  } catch (cause) {
+    throw new PictureFontError("Unable to embed slide font", { cause })
+  }
 }
 
 async function shrunkUrl(url: string, longest: number): Promise<string> {
@@ -58,7 +66,7 @@ type Face = ReturnType<typeof installedFaces>[number]
 
 type UsedFaces = { readonly families: ReadonlySet<string>; readonly looks: ReadonlySet<string> }
 
-const faceSources = new Map<string, Promise<string | null>>()
+const faceSources = new Map<string, Promise<string>>()
 
 function familyName(name: string): string {
   return name.trim().replace(/^["']|["']$/g, "")
@@ -72,18 +80,18 @@ export function usedFaces(root: Element, installed: ReadonlySet<string>): UsedFa
   const families = new Set<string>()
   const looks = new Set<string>()
   const view = root.ownerDocument.defaultView
-  const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  if (view === null) return { families, looks }
+  const walker = root.ownerDocument.createTreeWalker(root, view.NodeFilter.SHOW_TEXT)
   for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
     const parent = node.parentElement
-    if (parent === null || view === null || (node.textContent ?? "").trim() === "") continue
+    if (parent === null || (node.textContent ?? "").trim() === "") continue
     const style = view.getComputedStyle(parent)
-    const family = style.fontFamily
-      .split(",")
-      .map(familyName)
-      .find((name) => installed.has(name))
-    if (family === undefined) continue
-    families.add(family)
-    looks.add(lookOf(family, style.fontWeight, style.fontStyle))
+    for (const name of style.fontFamily.split(",")) {
+      const family = familyName(name)
+      if (!installed.has(family)) continue
+      families.add(family)
+      looks.add(lookOf(family, style.fontWeight, style.fontStyle))
+    }
   }
   return { families, looks }
 }
@@ -121,13 +129,14 @@ async function fontRules(root: Element): Promise<string> {
     neededFaces(faces, used).map(async (face) => {
       let pending = faceSources.get(face.url)
       if (pending === undefined) {
-        pending = dataUrl(face.url).catch(() => null)
+        pending = dataUrl(face.url).catch((error: unknown) => {
+          faceSources.delete(face.url)
+          throw error
+        })
         faceSources.set(face.url, pending)
       }
       const source = await pending
-      return source === null
-        ? ""
-        : `@font-face{font-family:${JSON.stringify(familyName(face.family))};font-style:${face.style};font-weight:${face.weight};src:url(${source})}`
+      return `@font-face{font-family:${JSON.stringify(familyName(face.family))};font-style:${face.style};font-weight:${face.weight};src:url(${source})}`
     }),
   )
   return rules.join("")
@@ -185,7 +194,6 @@ export async function paintedElement(
     root.render(element)
     await frames()
     await settled(host, ready)
-    await waitForFonts(document)
     await Promise.all([...host.querySelectorAll("img")].map((image) => image.decode().catch(() => undefined)))
     await frames()
     const painted = host.firstElementChild

@@ -6,7 +6,10 @@ it("resolves catalog families exactly without guessing and keeps the chosen name
   expect(resolveFont("montserrat")).toEqual(resolveFont("Montserrat"))
   expect(resolveFont("Montserat")).toBeUndefined()
   expect(resolveFont("../montserrat")).toBeUndefined()
-  expect(fontFamily("Calibri")).toBe('"Calibri", "Carlito", var(--font-sans)')
+  expect(fontFamily("Calibri")).toBe(fontFamily("Carlito"))
+  expect(fontFamily("Calibri")).not.toContain('"Calibri"')
+  expect(fontFamily("DejaVu Serif")).toBe(fontFamily(null))
+  expect(fontFamily(null)).not.toContain('"Geist"')
   expect(resolveFont("Arial Narrow")).toMatchObject({
     family: "Liberation Sans Narrow",
     license: "GPL-2.0-with-font-exception",

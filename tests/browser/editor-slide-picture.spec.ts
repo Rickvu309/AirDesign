@@ -1,8 +1,10 @@
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
+import { fontRoutes } from "../../packages/fonts/src/index.ts"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { expect, type Page } from "@playwright/test"
 import { test, type Stack } from "./api-stack"
-import { accent, landNodes, openEditor, serveOriginals, spot, type Opened } from "./editor-deck"
+import { accent, landNodes, openEditor, savedSlides, serveOriginals, spot, type Opened } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -129,4 +131,79 @@ test("a picture whose bytes this device does not hold says it is still uploading
   const { pictureCopy } = await import("../../apps/web/src/copy/picture-copy.ts")
   const label = page.locator("[data-slide-box] [data-unshown-label]")
   await expect(label).toHaveText(pictureCopy.uploading)
+})
+
+test("the first agent picture includes text in a freshly loaded font", async ({ page, context, stack }) => {
+  const opened = await openEditor(page, context, stack)
+  const chars = "lợi nhuận quý".normalize("NFD")
+  await landNodes(stack, opened, [
+    {
+      id: "w:4",
+      parent: opened.slide,
+      type: "shape",
+      props: {
+        box: spot(190, 140, 460, 100),
+        text: { ...words(chars), spans: [{ end: chars.length, font: "Liberation Sans Narrow", size: 44 }] },
+      },
+    },
+  ])
+  await expect(page.locator('[data-slide-box] [data-node="w:4"] [data-run]')).toBeVisible()
+  let image: string | undefined
+  await expect
+    .poll(async () => {
+      const picture = await read(stack, opened, { slide: opened.slide })
+      image = picture.images[0]?.data
+      return image?.length ?? 0
+    })
+    .toBeGreaterThan(0)
+  const ink = await page.evaluate(async (data) => {
+    const picture = await createImageBitmap(await (await fetch(`data:image/jpeg;base64,${data}`)).blob())
+    const reader = new OffscreenCanvas(picture.width, picture.height).getContext("2d")
+    if (reader === null) throw new Error("Unable to inspect the slide picture")
+    reader.drawImage(picture, 0, 0)
+    const pixels = reader.getImageData(126, 93, 308, 67).data
+    return pixels.filter((ink, position) => position % 4 === 0 && ink < 100).length
+  }, image)
+  expect(ink).toBeGreaterThan(100)
+})
+
+test("a font failure is reported only for the requested slide using that font", async ({ page, context, stack }) => {
+  const opened = await openEditor(page, context, stack)
+  await page.getByRole("button", { name: slideListCopy.addSlide }).click()
+  await expect.poll(async () => (await savedSlides(stack, opened)).length).toBe(2)
+  const [, other] = await savedSlides(stack, opened)
+  if (other === undefined) throw new Error("Missing second slide")
+  await page.route(
+    (url) => url.pathname === fontRoutes.family.path && url.searchParams.get("family") === "Montserrat",
+    (route) => route.fulfill({ status: 503 }),
+  )
+  await page.locator('[data-slide-entry="1"]').click()
+  await landNodes(stack, opened, [
+    {
+      id: "w:5",
+      parent: opened.slide,
+      type: "shape",
+      props: {
+        box: spot(160, 120, 1200, 120),
+        text: { ...words("Healthy slide"), spans: [{ end: 13, font: "Lora" }] },
+      },
+    },
+    {
+      id: "w:6",
+      parent: other,
+      type: "shape",
+      props: {
+        box: spot(160, 120, 1200, 120),
+        text: { ...words("Missing font"), spans: [{ end: 12, font: "Montserrat" }] },
+      },
+    },
+  ])
+  await expect(page.locator('[data-slide-entry="2"] [data-node="w:6"] [data-font-pending]')).toBeVisible()
+
+  const failed = await read(stack, opened, { slide: other })
+  expect(failed.images).toHaveLength(0)
+  expect(failed.answer.note).toContain(`A font couldn’t load for slide ${other}.`)
+  const captured = await read(stack, opened, { slide: opened.slide })
+  expect(captured.answer.pictures).toEqual([opened.slide])
+  expect(jpeg(captured.images[0]?.data)).toBe(true)
 })
