@@ -108,7 +108,7 @@ describe("kpi", () => {
   const doom = build(agentDeck(), add({ kind: "kpi", items: kpiItems }))
   const root = made(doom)
 
-  it("is a row of cards, each a column of label, number and note in the named styles", () => {
+  it("is a row of top-aligned cards, each a column of label, number and note in bigNumber", () => {
     expect(propOf(root, "name")).toBe("KPI")
     expect(propOf(root, "layout")).toMatchObject({ mode: "row" })
     const cards = childrenOf(doom, root.id)
@@ -121,6 +121,7 @@ describe("kpi", () => {
       "caption",
     ])
     expect(childrenOf(doom, cards[2]!.id).map((node) => propOf(node, "text")!.style)).toEqual(["label", "bigNumber"])
+    for (const card of cards) expect(propOf(card, "layout")).toMatchObject({ align: "top-left" })
   })
 
   it("hugs the tallest card, so the next add takes the area below", () => {
@@ -129,20 +130,20 @@ describe("kpi", () => {
     expect(propOf(made(next), "box")!.y).toBeGreaterThanOrEqual(first.y + first.h)
   })
 
-  it("steps the number down to the heading size and no further when a value is too wide for its card", () => {
+  it("keeps every number in bigNumber when one value is wider than its card", () => {
     const narrow = build(
       agentDeck(),
       add({
         kind: "kpi",
-        box: { x: 0, y: 0, w: 600, h: 400 },
+        box: { x: 0, y: 0, w: 600, h: 900 },
         items: kpiItems.map((item) => ({ ...item, value: "$1,234,567.89" })),
       }),
     )
     const cards = childrenOf(narrow, made(narrow).id)
-    expect(childrenOf(narrow, cards[0]!.id).map((node) => propOf(node, "text")!.style)).toEqual([
-      "label",
-      "heading",
-      "caption",
+    expect(cards.map((card) => childrenOf(narrow, card.id).map((node) => propOf(node, "text")!.style))).toEqual([
+      ["label", "bigNumber", "caption"],
+      ["label", "bigNumber", "caption"],
+      ["label", "bigNumber"],
     ])
   })
 
