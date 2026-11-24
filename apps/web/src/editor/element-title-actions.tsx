@@ -19,7 +19,12 @@ export function ElementTitleActions({
   const canReplace =
     model?.kind === "picture" &&
     model.sections.some((section) =>
-      section.strips.some((strip) => strip.some(({ trait, field }) => trait === "image" && field === "source")),
+      section.strips.some((strip) =>
+        strip.some(
+          ({ trait, field, value }) =>
+            trait === "fills" && field === "paint" && typeof value === "object" && value !== null && "image" in value,
+        ),
+      ),
     )
   return (
     <div className="flex items-center gap-1">

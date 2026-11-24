@@ -148,7 +148,6 @@ export const reach: Readonly<Record<string, Entry>> = {
   "panel:image.color": { agent: "set.stroke", writes: "strokes", on: "star", props: ["strokes"] },
   "panel:image.weight": { agent: "set.strokeWidth", writes: "stroke", on: "star", props: ["stroke"] },
   "panel:image.mode": { agent: "set.fit", writes: "fills", on: "photo", props: ["fills"] },
-  "panel:image.source": { agent: "set.fill", writes: "fills", on: "photo", props: ["fills"] },
   "panel:shadow.shadow": { agent: "set.effect", writes: "effects", on: "card", props: ["effects"] },
   "panel:shadow.opacity": { agent: "set.effectOpacity", writes: "effects", on: "card", props: ["effects"] },
   "panel:link.target": { agent: "set.link", writes: "link", on: "words", props: ["link"] },
