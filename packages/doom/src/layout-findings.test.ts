@@ -182,6 +182,78 @@ describe("layout findings: what a slide paints wrong, measured with the deck's f
     expect(turned(-90).findings).toEqual([])
   })
 
+  it("names words a turned frame carries onto a layer, where that turn paints an off-centre child", () => {
+    const frame = (rotation: number) => ({
+      type: "frame" as const,
+      name: "card",
+      props: { box: { ...spot(300, 200, 400, 200), rotation } },
+      children: [label("title", "aaaa bbbb", { box: spot(20, 20, 220, 30) })],
+    })
+    const chart = (at: ReturnType<typeof spot>) => block("chart", at.w, at.h, { box: at, ...filled })
+    const flat = found([frame(0), chart(spot(555, 120, 40, 40))])
+    expect(flat.findings).toEqual([])
+    const carried = found([frame(90), chart(spot(555, 120, 40, 40))])
+    expect(carried.findings).toEqual([
+      {
+        code: "overlap",
+        node: carried.ids.card,
+        with: carried.ids.chart,
+        area: { x: 555, y: 120, w: 20, h: 40 },
+        note: `${carried.ids.card}: its words and ${carried.ids.chart} overlap over 20x40 px at 555,120; move one clear of the other.`,
+      },
+    ])
+    const stayed = found([frame(0), chart(spot(320, 225, 40, 20))])
+    expect(stayed.findings).toEqual([
+      {
+        code: "overlap",
+        node: stayed.ids.card,
+        with: stayed.ids.chart,
+        area: { x: 320, y: 225, w: 40, h: 20 },
+        note: `${stayed.ids.card}: its words and ${stayed.ids.chart} overlap over 40x20 px at 320,225; move one clear of the other.`,
+      },
+    ])
+    expect(found([frame(90), chart(spot(320, 225, 40, 20))]).findings).toEqual([])
+  })
+
+  it("names an overlap inside a frame where that frame's parent turn paints it", () => {
+    const frame = (rotation: number) => ({
+      type: "frame" as const,
+      name: "card",
+      props: { box: { ...spot(300, 200, 400, 200), rotation } },
+      children: [
+        {
+          type: "frame" as const,
+          name: "holder",
+          props: { box: spot(0, 0, 400, 200) },
+          children: [
+            label("title", "aaaa bbbb", { box: spot(20, 20, 220, 30) }),
+            block("chart", 40, 20, { box: spot(20, 25, 40, 20), ...filled }),
+          ],
+        },
+      ],
+    })
+    const flat = found([frame(0)])
+    expect(flat.findings).toEqual([
+      {
+        code: "overlap",
+        node: flat.ids.title,
+        with: flat.ids.chart,
+        area: { x: 320, y: 225, w: 40, h: 20 },
+        note: `${flat.ids.title}: its words and ${flat.ids.chart} overlap over 40x20 px at 320,225; move one clear of the other.`,
+      },
+    ])
+    const turned = found([frame(90)])
+    expect(turned.findings).toEqual([
+      {
+        code: "overlap",
+        node: turned.ids.title,
+        with: turned.ids.chart,
+        area: { x: 555, y: 120, w: 20, h: 40 },
+        note: `${turned.ids.title}: its words and ${turned.ids.chart} overlap over 20x40 px at 555,120; move one clear of the other.`,
+      },
+    ])
+  })
+
   it("names a layer that runs past the slide's edge, by how far", () => {
     const { ids, findings } = found([block("photo", 200, 100, { box: spot(1850, 500, 200, 100), ...filled })])
     expect(findings).toEqual([
