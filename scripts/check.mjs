@@ -15,7 +15,7 @@ const isLane = (entry) => Array.isArray(entry[0])
 
 export const stepsOf = (entry) => (isLane(entry) ? entry : [entry])
 
-const keepSteps = (chosen, keep) =>
+export const keepSteps = (chosen, keep) =>
   chosen
     .map((stage) =>
       stage
@@ -34,11 +34,12 @@ export const runCheck = async ({ chosen, lock, run, all = false, eventName = "",
       failed.push(step[0])
     } else if (status !== 0 && !checkSteps.warns(step[0], eventName)) failed.push(step[0])
   }
-  const cheap = chosen.flatMap((stage) => stage.flatMap(stepsOf)).filter(([name]) => checkSteps.isPreflight(name))
+  const beforeLine = ([name]) => lock !== undefined && checkSteps.isPreflight(name)
+  const cheap = chosen.flatMap((stage) => stage.flatMap(stepsOf)).filter(beforeLine)
   await Promise.all(cheap.map(runStep))
   if (failed.length > 0 && !all) return { failed, ranSteps: false, early: true }
-  const remaining = keepSteps(chosen, ([name]) => !checkSteps.isPreflight(name))
-  const release = await lock()
+  const remaining = keepSteps(chosen, (step) => !beforeLine(step))
+  const release = await lock?.()
   let ranSteps = true
   try {
     const runLane = async (entry) => {
@@ -57,7 +58,7 @@ export const runCheck = async ({ chosen, lock, run, all = false, eventName = "",
     }
     return { failed, ranSteps }
   } finally {
-    await release({
+    await release?.({
       status: failed.length === 0 ? "passed" : `failed ${failed.join(" ")}`,
       tree,
       files: failed.length === 0 || failedFiles.size === 0 ? undefined : [...failedFiles].join(" "),
