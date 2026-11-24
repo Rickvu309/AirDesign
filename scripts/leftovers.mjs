@@ -1,6 +1,7 @@
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
+import { ownsServe, stateIn } from "../.agents/skills/verify-airdesign/bin/leftover-runs.mjs"
 import { usedByAProcess } from "./worktrees.mjs"
 
 const hours = 60 * 60 * 1000
@@ -36,6 +37,25 @@ const postgresRuns = (dir) => {
   }
 }
 
+const realDirectory = (dir) => {
+  try {
+    return fs.lstatSync(dir).isDirectory()
+  } catch {
+    return false
+  }
+}
+
+function verifyClusters(scratch) {
+  return listed(scratch)
+    .map((run) => path.join(scratch, run))
+    .filter(realDirectory)
+    .filter((dir) => {
+      const state = stateIn(dir)
+      return state === undefined || !ownsServe(state)
+    })
+    .map((dir) => path.join(dir, "airdesign-api-postgres"))
+}
+
 export const findLeftovers = ({ home = os.homedir(), now = Date.now(), busy = usedByAProcess }) => {
   const tmp = path.join(home, "tmp")
   const evidence = path.join(tmp, "verify-airdesign")
@@ -45,9 +65,11 @@ export const findLeftovers = ({ home = os.homedir(), now = Date.now(), busy = us
     .filter((dir) => fs.statSync(dir).isDirectory())
     .filter((dir) => now - touchedAt(dir, path.join(dir, "proof.md")) > evidenceIdle && !busy(dir))
     .map((dir) => ({ path: dir, reason: "its verify run ended 12 hours ago" }))
-  const clusters = listed(tmp)
+  const legacyClusters = listed(tmp)
     .filter((name) => name.startsWith("airdesign-api-"))
     .map((name) => path.join(tmp, name))
+  const clusters = [...legacyClusters, ...verifyClusters(path.join(tmp, "verify-airdesign-scratch"))]
+    .filter(realDirectory)
     .filter((dir) => now - touchedAt(dir, path.join(dir, "server.log")) > clusterIdle)
     .filter((dir) => !postgresRuns(dir) && !busy(dir))
     .map((dir) => ({ path: dir, reason: "its postgres is not running" }))

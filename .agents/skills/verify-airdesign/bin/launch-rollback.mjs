@@ -9,17 +9,25 @@ async function endChild(child) {
   const ended = once(child, "exit")
   child.kill("SIGTERM")
   const timer = setTimeout(() => child.kill("SIGKILL"), patienceMs)
-  await ended
-  clearTimeout(timer)
+  try {
+    await ended
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 export async function rollbackLaunch(child, teardown, scratch, evidenceLog) {
   try {
     if (child !== undefined) await endChild(child)
-    await teardown()
   } finally {
-    const scratchLog = path.join(scratch, "stack.log")
-    if (existsSync(scratchLog)) copyFileSync(scratchLog, evidenceLog)
+    let result
+    try {
+      result = await teardown()
+    } finally {
+      const scratchLog = path.join(scratch, "stack.log")
+      if (existsSync(scratchLog)) copyFileSync(scratchLog, evidenceLog)
+    }
+    if (result.left?.length > 0) throw new Error(result.left.join("; "))
     rmSync(scratch, { recursive: true, force: true })
   }
 }

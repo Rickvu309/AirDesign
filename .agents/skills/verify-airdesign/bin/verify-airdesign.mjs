@@ -1,27 +1,15 @@
 #!/usr/bin/env node
 import { execFileSync, spawn } from "node:child_process"
 import { randomBytes } from "node:crypto"
-import {
-  appendFileSync,
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs"
+import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
-import { expect } from "@playwright/test"
 import { airaArgs, airaChoice, airaFlags } from "./aira-choice.mjs"
 import { serve } from "./serve.mjs"
 import { browserCookies } from "./browser-cookies.mjs"
-import { designContext, openBrowser, settle } from "./browser.mjs"
 import {
   alive,
-  commandLine,
   foreignRun,
   newRun,
   ownerOf,
@@ -32,7 +20,9 @@ import {
   writeOwner,
 } from "./leftover-runs.mjs"
 import { buildStack } from "./launch-build.mjs"
+import { listenForInterrupt } from "./interruptions.mjs"
 import { rollbackLaunch } from "./launch-rollback.mjs"
+import { postgresPid, stopStack } from "./stop-stack.mjs"
 import { loadLine } from "./load.mjs"
 import { call } from "./api-call.mjs"
 import { builtSite, fakeOrigins } from "./site.mjs"
@@ -41,6 +31,7 @@ import { usage } from "./usage.mjs"
 import { packageBuild, packageEntry } from "../../../../scripts/package-build.mjs"
 
 const skill = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+const toolRepo = realpathSync(path.resolve(skill, "../../.."))
 const repo = realpathSync(
   process.env.VERIFY_AIRDESIGN_REPO
     ? path.resolve(process.env.VERIFY_AIRDESIGN_REPO)
@@ -79,10 +70,6 @@ function readState(run) {
   return JSON.parse(readFileSync(statePath(run), "utf8"))
 }
 
-function ownsPostgres(state) {
-  return alive(state.postgres.pid) && commandLine(state.postgres.pid).includes(state.postgres.dataDir)
-}
-
 function head() {
   return execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo, encoding: "utf8" }).trim()
 }
@@ -95,8 +82,6 @@ function pause(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-const interruptions = ["SIGINT", "SIGTERM"]
-
 async function launch(args) {
   const leftover = await removeLeftoverRuns({ scratchRoot, repo, stop: stopRun })
   if (leftover.stopped.length + leftover.removed.length > 0) process.stderr.write(`${JSON.stringify({ leftover })}\n`)
@@ -106,8 +91,7 @@ async function launch(args) {
   writeOwner(scratchDir(run), repo)
   const stackLog = path.join(evidenceDir(run), "stack.log")
   const interrupted = new AbortController()
-  const interrupt = (signal) => interrupted.abort(new Error(`launch interrupted by ${signal}`))
-  for (const signal of interruptions) process.once(signal, interrupt)
+  const unlisten = listenForInterrupt((signal) => interrupted.abort(new Error(`launch interrupted by ${signal}`)))
   let child
   try {
     if (!args.includes("--no-build")) {
@@ -129,12 +113,12 @@ async function launch(args) {
       stdio: ["ignore", "ignore", "ignore"],
       env: { ...process.env, VERIFY_AIRDESIGN_LOG: log, VERIFY_AIRDESIGN_SITE: site.dist },
     })
-    child.unref()
     for (let waited = 0; waited < 120_000; waited += 500) {
       interrupted.signal.throwIfAborted()
       if (existsSync(statePath(run))) {
         const state = readState(run)
         if (state.ready) {
+          child.unref()
           proof(
             run,
             `# verify-airdesign run ${run}\n\n- commit ${state.commit}\n- origin ${state.origin}\n- site origin ${state.siteOrigin}, build ${site.built ? "made" : "reused"} at ${site.dist}\n- Aira: ${state.aira.streams} streams, ${state.aira.model} at ${state.aira.effort} effort\n- launched at ${loadLine()}`,
@@ -151,9 +135,9 @@ async function launch(args) {
     throw new Error(`stack not ready after 120 s. Log: ${stackLog}`)
   } catch (error) {
     await rollbackLaunch(child, () => teardownRun(run), scratchDir(run), stackLog)
-    fail(String(error.message ?? error))
+    throw error
   } finally {
-    for (const signal of interruptions) process.off(signal, interrupt)
+    unlisten()
   }
 }
 
@@ -167,7 +151,7 @@ async function doctor(run) {
   const { deckRoutes } = await catalog(state)
   const checks = {
     serveOwned: ownsServe(state),
-    postgresOwned: ownsPostgres(state),
+    postgresOwned: postgresPid(state, scratchDir(run)) !== undefined,
     ready: state.ready === true,
   }
   if (state.ready) {
@@ -240,6 +224,8 @@ export function productionStandIn(url) {
 
 export async function journeyKit({ run, name, page, context }) {
   const state = readState(run)
+  const { expect } = await import("@playwright/test")
+  const { settle } = await import("./browser.mjs")
   const {
     deckRoutes,
     doomRoutes,
@@ -358,6 +344,7 @@ async function journey(run, given) {
   const file = journeyFile(given)
   const name = journeyName(given)
   if (!existsSync(file)) fail(`no journey ${given}: ${file} is missing`)
+  const { designContext, openBrowser } = await import("./browser.mjs")
   const browser = await openBrowser()
   const context = await browser.newContext({ baseURL: state.origin, ...designContext })
   const page = await context.newPage()
@@ -382,34 +369,7 @@ async function journey(run, given) {
   if (!passed) process.exit(1)
 }
 
-async function teardownRun(run) {
-  const stateFile = statePath(run)
-  if (!existsSync(stateFile)) return { run, stopped: [], note: "no state; nothing of this run is running" }
-  const state = JSON.parse(readFileSync(stateFile, "utf8"))
-  const stopped = []
-  if (ownsServe(state)) {
-    process.kill(state.pid, "SIGTERM")
-    for (let waited = 0; waited < 15_000 && alive(state.pid); waited += 250) await pause(250)
-    if (alive(state.pid)) process.kill(state.pid, "SIGKILL")
-    stopped.push(`serve ${String(state.pid)}`)
-  }
-  if (ownsPostgres(state)) {
-    process.kill(state.postgres.pid, "SIGINT")
-    for (let waited = 0; waited < 15_000 && alive(state.postgres.pid); waited += 250) await pause(250)
-    stopped.push(`postgres ${String(state.postgres.pid)}`)
-  }
-  const left = [state.pid, state.postgres.pid].filter((pid) => alive(pid) && commandLine(pid).includes(run))
-  const clusterDir = path.dirname(state.postgres.dataDir)
-  if (path.basename(clusterDir).startsWith("airdesign-api-") && !ownsPostgres(state)) {
-    rmSync(clusterDir, { recursive: true, force: true })
-  }
-  const stackLog = path.join(scratchDir(run), "stack.log")
-  if (existsSync(stackLog) && existsSync(evidenceDir(run)))
-    copyFileSync(stackLog, path.join(evidenceDir(run), "stack.log"))
-  rmSync(scratchDir(run), { recursive: true, force: true })
-  if (existsSync(evidenceDir(run))) proof(run, `- stopped: ${stopped.join(", ") || "nothing was running"}`)
-  return { run, stopped, left, evidence: evidenceDir(run), evidenceKept: existsSync(evidenceDir(run)) }
-}
+const teardownRun = (run) => stopStack({ run, scratch: scratchDir(run), evidence: evidenceDir(run) })
 
 async function stopRun(run) {
   const stateFile = statePath(run)
@@ -433,7 +393,11 @@ async function stop(run) {
     if (owner !== undefined)
       fail(`run ${each} was started in ${owner}, not in this worktree (${repo}); only its own worktree stops it`)
   }
-  for (const each of runs) process.stdout.write(`${JSON.stringify(await stopRun(each))}\n`)
+  for (const each of runs) {
+    const result = await stopRun(each)
+    process.stdout.write(`${JSON.stringify(result)}\n`)
+    if (result.left?.length > 0) process.exitCode = 1
+  }
   if (runs.length === 0)
     process.stdout.write(`${JSON.stringify({ stopped: [], note: "no run of this worktree is running" })}\n`)
 }
@@ -472,6 +436,7 @@ try {
   else if (command === "serve")
     await serve(rest[0], {
       repo,
+      toolRepo,
       apiDist,
       webDist,
       siteDist: process.env.VERIFY_AIRDESIGN_SITE,

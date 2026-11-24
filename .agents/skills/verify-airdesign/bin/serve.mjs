@@ -1,14 +1,16 @@
 import { appendFileSync, createReadStream, existsSync, readFileSync, statSync } from "node:fs"
 import { request as httpRequest, createServer } from "node:http"
 import path from "node:path"
-import { writeAtomic } from "./leftover-runs.mjs"
+import { buildApi } from "./launch-build.mjs"
+import { runPostgres, writeAtomic } from "./leftover-runs.mjs"
 import { randomBytes } from "node:crypto"
 import { fontShelf, shelfFolder, shelveFonts } from "../../../../scripts/font-shelf.mjs"
 import { countedTransport } from "./aira-counts.mjs"
 import { scriptedAira } from "./scripted-aira.mjs"
 import { verifyImages } from "./verify-images.mjs"
 import { fakeOrigins, moveLocation, siteFile, withAppOrigin } from "./site.mjs"
-import { packageBuild } from "../../../../scripts/package-build.mjs"
+import { pathToFileURL } from "node:url"
+import { packageBuild, packageEntry } from "../../../../scripts/package-build.mjs"
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -90,19 +92,31 @@ function closeServer(server) {
 export async function serve(run, parts) {
   const log = (line) => appendFileSync(process.env.VERIFY_AIRDESIGN_LOG ?? "/dev/null", `${line}\n`)
   const open = []
+  const startup = new AbortController()
   let stopping = false
   const stop = async (why, status = 0) => {
     if (stopping) return
     stopping = true
-    log(`stopping: ${String(why)} at ${new Date().toISOString()}`)
-    for (const close of open.toReversed()) await Promise.resolve(close()).catch(() => undefined)
+    startup.abort(new Error(String(why)))
+    try {
+      log(`stopping: ${String(why)} at ${new Date().toISOString()}`)
+    } catch (error) {
+      if (error.code !== "ENOENT") process.stderr.write(`${String(error)}\n`)
+    }
+    for (const close of open.toReversed()) {
+      try {
+        await close()
+      } catch (error) {
+        process.stderr.write(`${String(error)}\n`)
+      }
+    }
     process.exit(status)
   }
   for (const signal of ["SIGTERM", "SIGINT", "SIGHUP"]) process.on(signal, () => stop(signal))
   process.on("uncaughtException", (error) => stop(`uncaught ${String(error?.stack ?? error)}`, 1))
   process.on("unhandledRejection", (error) => stop(`unhandled ${String(error?.stack ?? error)}`, 1))
   try {
-    await startStack(run, parts, open, log)
+    await startStack(run, parts, open, log, startup.signal)
   } catch (error) {
     await stop(`startup failed ${String(error?.stack ?? error)}`, 1)
   }
@@ -110,11 +124,11 @@ export async function serve(run, parts) {
 
 async function startStack(
   run,
-  { repo, apiDist, webDist, siteDist, catalogDist, scratchDir, statePath, airaPath, head, choice },
+  { repo, toolRepo, apiDist, webDist, siteDist, scratchDir, statePath, airaPath, head, choice },
   open,
   log,
+  signal,
 ) {
-  const { startEmptyCluster } = await packageBuild(repo, "@airdesign/api", "testing/postgres-setup.js")
   const { runBootstrap, runSetup } = await packageBuild(repo, "@airdesign/api", "platform/provision.js")
   const { openPool } = await packageBuild(repo, "@airdesign/api", "platform/pool.js")
   const { DeckListen } = await packageBuild(repo, "@airdesign/api", "platform/listen.js")
@@ -129,22 +143,9 @@ async function startStack(
   const imageNet = existsSync(path.join(apiDist, "platform/image-fetch.js"))
     ? verifyImages(repo, (await packageBuild(repo, "@airdesign/api", "platform/image-fetch.js")).nodeNet)
     : undefined
-  const cluster = await startEmptyCluster()
-  open.push(() => cluster.stop())
-  const role = (name) => `postgres://${name}:${randomBytes(18).toString("hex")}@127.0.0.1:${String(cluster.port)}/api`
-  const environment = {
-    ADMIN_DATABASE_URL: cluster.admin,
-    SESSION_DATABASE_URL: role("session"),
-    DECK_DATABASE_URL: role("deck"),
-    LISTEN_DATABASE_URL: role("listen"),
-    MIGRATOR_DATABASE_URL: role("migrator"),
-  }
-  const write = (_, line) => log(line)
-  const admin = openPool(cluster.admin, "verify-admin")
-  open.push(() => admin.end())
-  const found = await admin.query("select current_setting('data_directory') as dir")
-  const dataDir = found.rows[0].dir
-  const postgresPid = Number(readFileSync(path.join(dataDir, "postmaster.pid"), "utf8").split("\n")[0])
+  const startCluster = await clusterStarter(repo, toolRepo)
+  signal.throwIfAborted()
+  const postgres = runPostgres(scratchDir(run))
   const state = {
     run,
     pid: process.pid,
@@ -155,12 +156,31 @@ async function startStack(
       model: choice.model ?? airaModel,
       effort: choice.effort ?? airaEffort,
     },
-    postgres: { pid: postgresPid, dataDir, port: cluster.port },
+    postgres,
     ready: false,
   }
-  writeAtomic(statePath(run), JSON.stringify(state, null, 2))
+  const saveState = (value) => writeAtomic(statePath(run), JSON.stringify(value, null, 2))
+  saveState(state)
+  const starting = startCluster({ dir: path.dirname(postgres.dataDir), signal })
+  open.push(async () => {
+    const cluster = await starting.catch(() => undefined)
+    await cluster?.stop()
+  })
+  const cluster = await starting
+  signal.throwIfAborted()
+  const role = (name) => `postgres://${name}:${randomBytes(18).toString("hex")}@127.0.0.1:${String(cluster.port)}/api`
+  const environment = {
+    ADMIN_DATABASE_URL: cluster.admin,
+    SESSION_DATABASE_URL: role("session"),
+    DECK_DATABASE_URL: role("deck"),
+    LISTEN_DATABASE_URL: role("listen"),
+    MIGRATOR_DATABASE_URL: role("migrator"),
+  }
+  const write = (_, line) => log(line)
   if ((await runBootstrap(environment, write)) !== 0) throw new Error("bootstrap")
+  signal.throwIfAborted()
   if ((await runSetup(environment, write)) !== 0) throw new Error("setup")
+  signal.throwIfAborted()
   const session = openPool(environment.SESSION_DATABASE_URL, "verify-session")
   open.push(() => session.end())
   const deck = openPool(environment.DECK_DATABASE_URL, "verify-deck")
@@ -234,13 +254,24 @@ async function startStack(
   origins.site = `http://127.0.0.1:${String(site.address().port)}`
   const origin = `http://127.0.0.1:${String(front.address().port)}`
   origins.app = origin
-  writeAtomic(
-    statePath(run),
-    JSON.stringify(
-      { ...state, apiPort, origin, siteOrigin: origins.site, mail: mailFile, airaCounts, ready: true },
-      null,
-      2,
-    ),
-  )
+  signal.throwIfAborted()
+  saveState({ ...state, apiPort, origin, siteOrigin: origins.site, mail: mailFile, airaCounts, ready: true })
   log(`ready ${origin}`)
+}
+
+async function clusterStarter(repo, toolRepo) {
+  const fromRepo = await packageBuild(repo, "@airdesign/api", "testing/postgres-setup.js")
+  if (fromRepo.startOwnedEmptyCluster !== undefined) return fromRepo.startOwnedEmptyCluster
+  if (repo === toolRepo) throw new Error("rebuild the API to start a run-owned Postgres cluster")
+  const entry = path.join(path.dirname(packageEntry(toolRepo, "@airdesign/api")), "testing/postgres-setup.js")
+  const url = pathToFileURL(entry)
+  if (existsSync(entry)) {
+    const { startOwnedEmptyCluster } = await import(url.href)
+    if (startOwnedEmptyCluster !== undefined) return startOwnedEmptyCluster
+  }
+  buildApi(toolRepo)
+  url.searchParams.set("rebuilt", "1")
+  const { startOwnedEmptyCluster } = await import(url.href)
+  if (startOwnedEmptyCluster === undefined) throw new Error("rebuild the API to start a run-owned Postgres cluster")
+  return startOwnedEmptyCluster
 }
