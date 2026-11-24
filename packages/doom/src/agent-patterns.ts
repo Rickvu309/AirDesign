@@ -1,4 +1,5 @@
-import type { AgentChange, AgentItem, PatternName } from "./agent-change.js"
+import type { AgentChange, PatternName } from "./agent-change.js"
+import type { AgentItem } from "./agent-item.js"
 import { type Draft, type Values, stop } from "./agent-draft.js"
 import { iconName, sidesOf, solid, surfaceOf, turnOf } from "./agent-look.js"
 import { wrapRotation } from "./angle.js"
