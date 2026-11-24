@@ -294,6 +294,24 @@ describe("invert", () => {
     expect(invert(before, later.after, edit)).toEqual([])
   })
 
+  it("keeps where a layer sits and puts back its size and flips when someone moved it out of the frame the step left it in", () => {
+    const { before, after, edit } = step(sampleDeck(), [
+      { node: ids.title, prop: "box", value: { ...box(30, 40, 300, 150), flipH: true } },
+    ])
+    const theirs = step(after, [{ node: ids.title, prop: "parent", value: place(ids.side) }])
+    const writes = invert(before, theirs.after, edit)
+    expect(writes).toEqual([
+      {
+        node: ids.title,
+        prop: "box",
+        value: { ...(before.nodes.get(ids.title) as { box: object }).box, x: 30, y: 40 },
+        base: edit.rev,
+      },
+    ])
+    const undone = tryLand(theirs.after, writes) as Doom
+    expect(undone.nodes.get(ids.title)).toMatchObject({ parent: place(ids.side), box: { x: 30, y: 40, flipH: false } })
+  })
+
   it("puts a deleted layer back into its frame though a frame above it was deleted since, so it comes back with that frame", () => {
     const inner = nodeId("t:10")
     const nested = land(sampleDeck(), [

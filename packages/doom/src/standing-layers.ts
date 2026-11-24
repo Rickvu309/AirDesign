@@ -72,8 +72,13 @@ function heldFrames(
 }
 
 const measuredInFrame = { box: ["x", "y", "rotation", "flipH", "flipV"], geometry: ["start", "end"] } as const
+const placedInFrame = { box: ["x", "y", "rotation"], geometry: ["start", "end"] } as const
 
-function leftInPlace(now: Doom, write: Write): Write | undefined {
+function leftInPlace(
+  now: Doom,
+  write: Write,
+  measured: typeof measuredInFrame | typeof placedInFrame,
+): Write | undefined {
   if (write.prop !== "box" && write.prop !== "geometry") return write
   const here = (now.nodes.get(write.node) as Record<string, unknown> | undefined)?.[write.prop] as
     | Record<string, unknown>
@@ -81,18 +86,35 @@ function leftInPlace(now: Doom, write: Write): Write | undefined {
   const was = write.value as Record<string, unknown> | null
   if (here === undefined || was === null) return undefined
   if (write.prop === "geometry" && (here.kind !== "line" || was.kind !== "line")) return write
-  const value = { ...was, ...Object.fromEntries(measuredInFrame[write.prop].map((key) => [key, here[key]])) }
+  const value = { ...was, ...Object.fromEntries(measured[write.prop].map((key) => [key, here[key]])) }
   return sameValue(value, here) ? undefined : { ...write, value }
 }
 
-export function onStandingLayers(now: Doom, writes: readonly Write[], since: Rev): readonly Write[] {
+export type LeftIn = ReadonlyMap<NodeId, NodeId | null>
+
+function strayedFrom(now: Doom, node: NodeId, leftIn: LeftIn, since: Rev): boolean {
+  const here = parentIn(now, node)?.id ?? null
+  if (leftIn.has(node)) return leftIn.get(node) !== here
+  return (now.revs.get(node)?.get("parent") ?? 0) > since
+}
+
+export function onStandingLayers(
+  now: Doom,
+  writes: readonly Write[],
+  since: Rev,
+  leftIn: LeftIn = new Map(),
+): readonly Write[] {
   const moves = movesIn(writes)
+  const wroteParent = new Set(writes.flatMap((each) => (each.prop === "parent" ? [each.node] : [])))
   const lands = landingMoves(now, moves)
   const held = heldFrames(now, writes, moves, lands, since)
   return writes.flatMap((each) => {
     if (each.prop === "parent") return (each.value === null ? !held.has(each.node) : lands.has(each.node)) ? [each] : []
     if (lands.has(each.node)) return [each]
     if (parentIn(now, each.node) === null) return []
-    return (moves.has(each.node) ? leftInPlace(now, each) : each) ?? []
+    if (moves.has(each.node)) return leftInPlace(now, each, measuredInFrame) ?? []
+    if (!wroteParent.has(each.node) && strayedFrom(now, each.node, leftIn, since))
+      return leftInPlace(now, each, placedInFrame) ?? []
+    return [each]
   })
 }
