@@ -120,14 +120,8 @@ export default async function drive(kit) {
     checkFrame(box)
     const opened = await openDoomDeck(kit)
     await emptySlide(kit, opened)
-    await landNodes(kit, opened, [{ id: "legacy:1", type: "frame", props: { name: title, box, chart } }])
-    const before = await capture(`${slug}-before`)
-    const evidence = dirname(before)
     const canvas = page.locator("[data-slide-box]")
     const thumb = page.locator("[data-slide-thumb]").first()
-    const beforeImage = join(evidence, `${slug}-before-canvas.png`)
-    await canvas.screenshot({ path: beforeImage })
-    await emptySlide(kit, opened)
 
     const { theme } = doom.deckOf(doom.readFold((await readDoom(kit, opened)).fold))
     const options = {
@@ -203,7 +197,7 @@ export default async function drive(kit) {
         )
         .toEqual(ids)
     }
-    await capture(`${slug}-after`)
+    const evidence = dirname(await capture(`${slug}-after`))
     const afterImage = join(evidence, `${slug}-after-canvas.png`)
     const filmstripImage = join(evidence, `${slug}-filmstrip.png`)
     const marks = tree.children.filter(
