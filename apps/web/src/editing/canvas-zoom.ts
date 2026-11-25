@@ -36,6 +36,10 @@ export function fitWidth(room: SlideSize, slide: SlideSize): number {
   return Math.floor(Math.min(room.width, (room.height * slide.width) / slide.height))
 }
 
+export function notesWidth(room: SlideSize, painted: SlideSize): number {
+  return Math.min(room.width, Math.max(painted.width, fitWidth(room, painted)))
+}
+
 export type ZoomKey = "in" | "out" | "fit" | "selection" | "actual"
 
 export function zoomKey(event: {

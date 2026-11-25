@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest"
-import { canvasRoom, slideTop, fitWidth, slideRoom, steppedZoom, typedZoom, zoomKey } from "@/editing/canvas-zoom"
+import {
+  canvasRoom,
+  slideTop,
+  fitWidth,
+  notesWidth,
+  slideRoom,
+  steppedZoom,
+  typedZoom,
+  zoomKey,
+} from "@/editing/canvas-zoom"
 
 const wide = { width: 12_192_000, height: 6_858_000 }
 const standard = { width: 9_144_000, height: 6_858_000 }
@@ -44,6 +53,16 @@ describe("canvas zoom", () => {
     expect(fitWidth(canvasRoom({ width: 1312, height: 1080 }, 152), wide)).toBe(1250)
     expect(fitWidth(canvasRoom({ width: 1312, height: 600 }, 152), wide)).toBe(654)
     expect(fitWidth(canvasRoom({ width: 0, height: 0 }, 152), wide)).toBe(0)
+  })
+
+  it("keeps presenter notes as wide as the fitted slide when the slide is zoomed out", () => {
+    expect(notesWidth(room, { width: 400, height: 225 })).toBe(800)
+    expect(notesWidth(room, { width: 300, height: 300 })).toBe(600)
+  })
+
+  it("widens presenter notes with a zoomed-in slide up to the room's width", () => {
+    expect(notesWidth(room, { width: 700, height: 700 })).toBe(700)
+    expect(notesWidth(room, { width: 1600, height: 900 })).toBe(800)
   })
 })
 

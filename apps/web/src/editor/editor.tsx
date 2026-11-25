@@ -6,7 +6,7 @@ import { replaceDeckAddress } from "@/editor/slide-address"
 import { NotFoundPage } from "@/decks/not-found-page"
 import { tabTitleOf } from "@/copy/product-copy"
 import { editorCopy } from "@/copy/editor-copy"
-import { slideRoom } from "@/editing/canvas-zoom"
+import { notesWidth, slideRoom } from "@/editing/canvas-zoom"
 import { PanelHead } from "@/editor/editor-chrome"
 import { ExportControl } from "@/export/export-control"
 import { useExport, usePrintKeyHeld, type ExportStart } from "@/export/export-flow"
@@ -210,7 +210,10 @@ function Editing({
         >
           {slide === undefined ? null : (
             <>
-              <div data-notes-width style={{ width: Math.min(size.w * scale, room.width) }}>
+              <div
+                data-notes-width
+                style={{ width: notesWidth(room, { width: size.w * scale, height: size.h * scale }) }}
+              >
                 <DoomNotes client={client} view={view} slide={slide} />
               </div>
               <span className="block h-3" />
