@@ -1,21 +1,11 @@
 import * as doom from "@airdesign/doom"
 import { useId } from "react"
-import { ArrowMarker, type Arrowhead } from "./arrow-marker.js"
+import { ArrowMarker } from "./arrow-marker.js"
 import { type Outline } from "./node-outline.js"
 import { strokeDash } from "./stroke-dash.js"
 
 type Resolved = doom.Resolved
 type Paint = doom.ResolvedPaint
-type Arrow = "none" | "arrow" | "triangle" | "circle"
-
-const heads: Readonly<Record<Exclude<Arrow, "none">, Arrowhead>> = {
-  arrow: "arrow",
-  triangle: "triangle",
-  circle: "oval",
-}
-
-const headSize = { length: 4.5, width: 4 }
-
 function strokeRef(paint: Paint, id: string): string {
   if (paint.kind === "solid") return paint.color
   if (paint.kind === "gradient") return `url(#${id})`
@@ -108,22 +98,10 @@ export function NodeStrokes({ node, outline }: { readonly node: Resolved; readon
           </mask>
         ) : null}
         {arrows[0] === "none" ? null : (
-          <ArrowMarker
-            id={`${id}-start`}
-            kind={heads[arrows[0]]}
-            color={lineColor}
-            weight={stroke.weight}
-            size={headSize}
-          />
+          <ArrowMarker id={`${id}-start`} kind={arrows[0]} color={lineColor} weight={stroke.weight} />
         )}
         {arrows[1] === "none" ? null : (
-          <ArrowMarker
-            id={`${id}-end`}
-            kind={heads[arrows[1]]}
-            color={lineColor}
-            weight={stroke.weight}
-            size={headSize}
-          />
+          <ArrowMarker id={`${id}-end`} kind={arrows[1]} color={lineColor} weight={stroke.weight} />
         )}
       </defs>
       <g
