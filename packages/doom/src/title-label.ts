@@ -13,6 +13,11 @@ const verbs = new Set(
     " ",
   ),
 )
+const imperativeVerbs = new Set(
+  "adopt approve expand hire invest narrow rebuild refresh reprice rework sharpen trim".split(" "),
+)
+const contextualCommand =
+  /^(?:(?:exit from|shift (?:away from|from|into|to|toward|towards)) \S|(?:delay|fund|pause) \S+ \S)/
 const connectors = new Set("by of per in for and or vs & to from at on with through across over under".split(" "))
 
 export const normalizeTitle = (title: string) => title.trim().replace(/\s+/g, " ").replace(/\.$/, "").toLowerCase()
@@ -26,6 +31,7 @@ export function isTitleLabel(title: string): boolean {
   const [first = ""] = words
   const last = words.at(-1) ?? ""
   if (words.length > 6 || (!topicNouns.has(last) && !dimension.test(normalized))) return false
+  if (imperativeVerbs.has(first) || contextualCommand.test(normalized)) return false
   if (words.length > 1 && /(?:ize|ise|ify|ate)$/.test(first)) return false
   return !words.some((word, index) => {
     const next = words[index + 1]

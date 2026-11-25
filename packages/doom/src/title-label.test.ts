@@ -25,6 +25,11 @@ describe("title-label precision", () => {
     expect(takeaways.filter(isTitleLabel)).toEqual([])
   })
 
+  it("keeps noun uses of ambiguous action words eligible for advice", () => {
+    const topics = ["Shift performance", "Exit strategy", "Launch timeline", "Fund performance", "Delay analysis"]
+    expect(topics.filter(isTitleLabel)).toEqual(topics)
+  })
+
   it("identifies the topics supported by the head nouns and dimensions", () => {
     expect(consultingTopics.filter((title) => !isTitleLabel(title))).toEqual([
       "Market size and growth",
