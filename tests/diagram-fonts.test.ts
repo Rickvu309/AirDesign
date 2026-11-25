@@ -13,29 +13,81 @@ const technical = themeLibrary.technical
 if (technical === undefined) throw new Error("Missing Technical theme")
 const theme = technical.theme
 
-it.each([7, 8])("fits realistic descriptions in a %i-step process using served Geist", async (count) => {
-  const descriptions = [
-    "Align stakeholders on scope",
-    "Embed new ways of working",
-    "Diagnose the current state",
-    "Prioritize initiatives",
-    "Design the target model",
-    "Plan the transition",
-    "Launch the first pilot",
-    "Track benefits monthly",
-  ]
-  const input = {
-    frame: process.frame,
-    theme,
-    data: {
-      steps: descriptions.slice(0, count).map((description, i) => ({
-        id: String(i),
-        label: ["Align", "Embed", "Diagnose", "Prioritize", "Design", "Plan", "Launch", "Track"][i],
-        description,
-        note: "2 weeks",
-      })),
-    },
+const columnCases = [7, 8].flatMap((count) =>
+  [false, true].flatMap((descriptions) =>
+    [false, true].map((durations) => ({ count, direction: "column", descriptions, durations })),
+  ),
+)
+
+it.each([...[7, 8].map((count) => ({ count, direction: "row", descriptions: true, durations: true })), ...columnCases])(
+  "fits a $count-step $direction with descriptions=$descriptions and durations=$durations using served Geist",
+  async ({ count, direction, descriptions: withDescriptions, durations }) => {
+    const descriptions = [
+      "Align stakeholders on scope",
+      "Embed new ways of working",
+      "Diagnose the current state",
+      "Prioritize initiatives",
+      "Design the target model",
+      "Plan the transition",
+      "Launch the first pilot",
+      "Track benefits monthly",
+    ]
+    const input = {
+      frame: direction === "row" ? process.frame : { x: 600, y: 160, w: 720, h: 800 },
+      variant: { direction },
+      theme,
+      data: {
+        steps: descriptions.slice(0, count).map((description, i) => ({
+          id: String(i),
+          label: ["Align", "Embed", "Diagnose", "Prioritize", "Design", "Plan", "Launch", "Track"][i],
+          ...(withDescriptions ? { description } : {}),
+          ...(durations ? { note: "2 weeks" } : {}),
+        })),
+      },
+    }
+    const { tree, cards, resolved } = await servedProcess(input)
+    expect(tree.findings.filter(({ kind }) => kind === "text-fit")).toEqual([])
+    expect(cards).toHaveLength(count)
+    if (direction === "row") expect(new Set(cards.map((card) => card.box.h)).size).toBe(1)
+    for (const [i, card] of cards.entries()) {
+      const title = input.data.steps[i]?.label
+      const lines = card.text?.lines ?? []
+      const runs = lines.flatMap((line) => line.runs)
+      const words = runs.map((run) => run.text.trim()).join(" ")
+      expect(words).toContain(title)
+      expect(words).not.toContain("…")
+      if (withDescriptions) expect(words).toContain(descriptions[i])
+      const durationPart = role(tree, "duration").find((part) => part.key[1] === String(i))
+      const duration = durationPart === undefined ? card : resolved.get(durationPart.id)
+      const durationLine = duration?.text?.lines.find((line) => line.runs.some((run) => run.text === "2 weeks"))
+      if (!durations) {
+        expect(durationLine).toBeUndefined()
+        continue
+      }
+      expect(durationLine?.runs.find((run) => run.text === "2 weeks")?.size).toBeGreaterThanOrEqual(20)
+      if (direction === "column") {
+        const titleLine = lines.find((line) => line.runs.some((run) => run.text === title))
+        expect(Math.abs(duration!.box.y + durationLine!.y - card.box.y - titleLine!.y)).toBeLessThanOrEqual(1)
+        expect(durationLine?.align).toBe("right")
+      }
+    }
+  },
+)
+
+it.each([3, 4, 5, 6, 7, 8])("aligns the titles of a %i-step row with focus on any step", async (count) => {
+  const steps = Array.from({ length: count }, (_, i) => ({ id: String(i), label: `Step ${i + 1}` }))
+  for (const { id: focus } of steps) {
+    const { cards } = await servedProcess({ frame: process.frame, theme, data: { steps }, tokens: { focus } })
+    const titles = cards.map((card, i) =>
+      card.text?.lines.find((line) => line.runs.map((run) => run.text).join("") === steps[i]?.label),
+    )
+    expect(titles.every((line) => line !== undefined)).toBe(true)
+    expect(new Set(titles.map((line) => line?.y)).size).toBe(1)
+    expect(new Set(cards.map((card) => card.text?.lines[0]?.runs[0]?.size)).size).toBe(1)
   }
+})
+
+async function servedProcess(input: Omit<Parameters<typeof expandComponent>[1], "measure">) {
   const estimate = expandComponent(processComponent, { ...input, measure: measureWith({}) })
   if (isRefusal(estimate)) throw new Error(JSON.stringify(estimate))
   const fonts = await metrics.measure([landTree(estimate, theme).doom])
@@ -43,20 +95,10 @@ it.each([7, 8])("fits realistic descriptions in a %i-step process using served G
   expect([...fonts.pending, ...fonts.missing]).toEqual([])
   const tree = expandComponent(processComponent, { ...input, measure: fonts.measure })
   if (isRefusal(tree)) throw new Error(JSON.stringify(tree))
-  expect(tree.findings.filter(({ kind }) => kind === "text-fit")).toEqual([])
   const { doom, slide } = landTree(tree, theme)
-  const cards = resolveSlide(doom, slide, fonts.measure)
-    .flatMap((frame) => frame.children)
-    .filter((card) => card.text)
-  expect(cards).toHaveLength(count)
-  expect(new Set(cards.map((card) => card.box.h)).size).toBe(1)
-  for (const [i, card] of cards.entries()) {
-    const runs = card.text?.lines.flatMap((line) => line.runs) ?? []
-    expect(runs.map((run) => run.text.trim()).join(" ")).toContain(descriptions[i])
-    expect(runs.at(-1)?.text).toBe("2 weeks")
-    expect(runs.at(-1)?.size).toBeGreaterThanOrEqual(20)
-  }
-})
+  const resolved = resolvedById(resolveSlide(doom, slide, fonts.measure))
+  return { tree, resolved, cards: role(tree, "step").map(({ id }) => resolved.get(id)!) }
+}
 
 async function servedMeasure() {
   const tree = expandComponent(architectureComponent, { ...architecture, theme, measure: measureWith({}) })

@@ -1,6 +1,6 @@
 import type { Color } from "../paint.js"
 import { boolean, finite, integer, list, literal, object } from "../read-kit.js"
-import type { Para, Span } from "../text.js"
+import { type Para, type Span, textLimits } from "../text.js"
 import { color, isList, string, type Charge, type Value } from "./values.js"
 
 const paragraph = object(
@@ -11,6 +11,7 @@ const paragraph = object(
     bold: boolean,
     wrap: literal(["none"]),
     maxLines: integer(1, 16),
+    lineHeight: finite(textLimits.lineHeight.min, textLimits.lineHeight.max),
     spaceBefore: finite(0, 1_000),
   },
 )

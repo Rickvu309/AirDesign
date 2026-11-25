@@ -89,6 +89,7 @@ function emission(read: (raw: unknown) => Expr) {
     { ...position, chars: read, style: read, color: read, align: read, alignV: read },
     {
       ...surface,
+      absolute: boolean,
       fill: read,
       padding: read,
       size: read,

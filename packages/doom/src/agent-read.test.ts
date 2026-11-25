@@ -132,6 +132,25 @@ describe("readForAgent of a line", () => {
     expect(line).toContain(`from=${ids.card}:bottom route=curve arrow`)
   })
 
+  it("rounds fractional attachments and omits a centered attachment", () => {
+    const doom = apply(richDeck(), [
+      {
+        node: more.line,
+        prop: "geometry",
+        value: {
+          kind: "line",
+          start: { node: ids.card, site: "b", along: 0.5205479452054794 },
+          end: { node: ids.title, site: "t", along: 0.5 },
+          route: "straight",
+          arrows: ["none", "none"],
+        },
+      },
+    ])
+    const line = lines(readForAgent(doom, "all")).find((each) => each.includes(more.line))
+    expect(line).toContain(`from=${ids.card}:bottom@0.52 to=${ids.title}:top`)
+    expect(line).not.toContain(`to=${ids.title}:top@`)
+  })
+
   it("reads a start arrowhead and a named end arrowhead back as the fields that set them", () => {
     const doom = build(richDeck(), change({ op: "set", target: more.line, startArrow: "circle", arrow: "triangle" }))
     const line = lines(readForAgent(doom, "all")).find((each) => each.includes(more.line))
