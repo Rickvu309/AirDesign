@@ -7,6 +7,7 @@ import type { DeckHost } from "./deck-host.js"
 import { deckMeasure } from "./deck-measure.js"
 import { imageNames, imageProblem, imagesPerCall, pictureSizes, withAssets, type NamedImages } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
+import { componentFindings, componentFindingsNote, type ComponentReadFinding } from "./component-answer.js"
 import { withCatalogFonts } from "./font-names.js"
 
 type Read =
@@ -58,13 +59,14 @@ function landedAnswer(
   added: readonly Added[],
   findings: Findings = { findings: [], layout: "untouched" },
   bakedLayouts: readonly doom.NodeId[] = [],
+  components: readonly ComponentReadFinding[] = [],
 ): ToolResult {
   const words = added.map(
     (each) => `${each.id} ${each.kind}${each.change === undefined ? "" : ` (change ${String(each.change)})`}`,
   )
   const lead = `Landed at rev ${String(rev)}${added.length === 0 ? "" : `, adding ${words.join(", ")}`}. Send runId with your next edits, and to airdesign_stop_run when done.`
   const found = findings.findings.length === 0 ? {} : { findings: listed(findings.findings) }
-  return answered([lead, ...findingsNote(findings)].join(" "), {
+  return answered([lead, ...componentFindingsNote(components), ...findingsNote(findings)].join(" "), {
     ok: true,
     deck,
     rev,
@@ -72,6 +74,7 @@ function landedAnswer(
     added,
     ...(bakedLayouts.length === 0 ? {} : { bakedLayouts }),
     ...found,
+    ...(components.length === 0 ? {} : { componentFindings: components }),
   })
 }
 
@@ -328,6 +331,7 @@ export async function editDeckTool(
       host,
       pendingFonts,
     )
+  let measure: doom.Measure | undefined
   let compiled = await compile(undefined, true)
   if ("answer" in compiled) return compiled
   if (samples.length > 0) {
@@ -339,10 +343,18 @@ export async function editDeckTool(
     )
     if (measured === undefined)
       return refused("fonts", { note: "Unable to measure the linked chart. Try again when its fonts are available." })
-    compiled = await compile(measured.measure)
-  } else if (!("refused" in compiled) && doom.mayLeaveDeck(opened.fold, compiled.edit.writes)) {
-    const measured = await deckMeasure(host, [opened.fold, compiled.after])
-    if (measured !== undefined) compiled = await compile(measured.measure)
+    measure = measured.measure
+    compiled = await compile(measure)
+  }) => prop === "instance" && value !== null)
+    if (instanceWrites || doom.mayLeaveDeck(opened.fold, compiled.edit.writes)) {
+      const measured = await deckMeasure(host, [opened.fold, compiled.after])
+      if (instanceWrites && host.measure !== undefined && measured === undefined)
+        return refused("fonts", {
+          note: "The deck fonts are unavailable. Read the deck again and resend when they load.",
+        })
+      measure = measured?.measure
+      if (measure !== undefined) compiled = await compile(measure)
+    }
   }
   if ("answer" in compiled) return compiled
   if ("refused" in compiled) return doomRefused(compiled, { rev: opened.rev })
@@ -367,6 +379,11 @@ export async function editDeckTool(
       write.prop === "layout" && doom.propOf(compiled.after.nodes.get(write.node), "layout")?.mode === "none"
         ? [write.node]
         : [],
+    ),
+    componentFindings(
+      compiled.after,
+      compiled.edit.writes.flatMap(({ node, prop, value }) => (prop === "instance" && value !== null ? [node] : [])),
+      measure,
     ),
   )
 }

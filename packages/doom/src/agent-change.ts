@@ -1,16 +1,20 @@
+import type { AgentColor, AgentFill, AgentLook } from "./agent-look-types.js"
+import { linkedComponentsEnabled } from "./component-rollout.js"
+import { tokenRecord, variantRecord } from "./component/spec.js"
+import { id as componentId, record } from "./component/values.js"
 import { readAngle, readRotation } from "./angle.js"
 import { arrowField, startArrowField } from "./agent-arrow.js"
-import { type AgentChart, chartField } from "./agent-chart.js"
-import { type WeightName, weightNames } from "./painted-face.js"
-import { type AgentEnd, endSchema, readEnd } from "./agent-end.js"
-import { type AgentInsert, insertField } from "./agent-insert.js"
-import { type AgentItem, itemSchema, readItem } from "./agent-item.js"
+import { chartField } from "./agent-chart.js"
+import { weightNames } from "./painted-face.js"
+import { endSchema, readEnd } from "./agent-end.js"
+import { insertField } from "./agent-insert.js"
+import { itemSchema, readItem } from "./agent-item.js"
 import { kindWords } from "./agent-kind-words.js"
 import { linkField } from "./agent-link.js"
 import { limits } from "./limits.js"
 import { type Field, choice, field, flag, number, string } from "./agent-fields.js"
-import { type InnerLook, innerShadowFields } from "./agent-inner-shadow.js"
-import { type SlideLook, slideLookFields } from "./agent-slide-look.js"
+import { innerShadowFields } from "./agent-inner-shadow.js"
+import { slideLookFields } from "./agent-slide-look.js"
 import { type NodeId, readNodeId } from "./ids.js"
 import {
   type ColorVar,
@@ -44,79 +48,20 @@ import {
   wrongForm,
 } from "./read-kit.js"
 import { type Refusal, refuse } from "./refusal.js"
-import { type TextStyleName, textStyleNames } from "./text.js"
+import { textStyleNames } from "./text.js"
 import { themeLibrary } from "./theme.js"
-import { type Arrow, pathLimit, readPathData } from "./geometry.js"
+import { pathLimit, readPathData } from "./geometry.js"
 import { shapeNames } from "./preset-geometry.js"
 import { cropField } from "./agent-crop.js"
-import type { CropSides } from "./picture-crop.js"
 
 export const patternNames = ["kpi", "cards", "compare", "matrix", "timeline", "flow"] as const
 export type PatternName = (typeof patternNames)[number]
-export const addKinds = ["text", "shape", "line", "path", "frame", "picture", "icon", "chart", ...patternNames] as const
+const ordinaryKinds = ["text", "shape", "line", "path", "frame", "picture", "icon", "chart", ...patternNames] as const
+export const addKinds = [...ordinaryKinds, "component"] as const
 export type AgentAdd = (typeof addKinds)[number]
 
-export type AgentColor = ColorVar | `${ColorVar}${"+" | "-"}${number}` | Hex
-export type AgentGradient = {
-  readonly gradient: readonly AgentColor[]
-  readonly angle?: number
-  readonly radial?: boolean
-}
-export type AgentFill = AgentColor | "none" | { readonly image: string } | AgentGradient
 export type { AgentChart } from "./agent-chart.js"
-export type AgentBox = { readonly x: Px; readonly y: Px; readonly w: Px; readonly h: Px }
-export type AgentLook = {
-  readonly d?: string
-  readonly fillStroke?: boolean
-  readonly fill?: AgentFill
-  readonly stroke?: AgentColor | "none"
-  readonly strokeWidth?: Px
-  readonly color?: AgentColor
-  readonly radius?: Px
-  readonly effect?: EffectStyleName | "none"
-  readonly effectOpacity?: number
-  readonly link?: string | "none"
-  readonly clip?: boolean
-  readonly mask?: boolean
-  readonly opacity?: number
-  readonly text?: string
-  readonly insert?: AgentInsert
-  readonly textStyle?: TextStyleName
-  readonly align?: "left" | "center" | "right" | "justify"
-  readonly layout?: "row" | "column" | "none"
-  readonly gap?: Px
-  readonly padding?: Px | Sides
-  readonly icon?: string
-  readonly arrow?: boolean | Arrow
-  readonly startArrow?: Arrow
-  readonly from?: AgentEnd
-  readonly to?: AgentEnd
-  readonly route?: "straight" | "elbow" | "curve"
-  readonly chart?: AgentChart
-  readonly rows?: readonly (readonly string[])[]
-  readonly items?: readonly AgentItem[]
-  readonly axes?: readonly [string, string]
-  readonly box?: AgentBox
-  readonly name?: string
-  readonly hidden?: boolean
-  readonly locked?: boolean
-  readonly size?: Px
-  readonly font?: string
-  readonly weight?: WeightName
-  readonly lineHeight?: number
-  readonly letterSpacing?: Px
-  readonly case?: "none" | "upper" | "lower" | "title"
-  readonly underline?: boolean
-  readonly strike?: boolean
-  readonly dash?: "solid" | "dash" | "dot"
-  readonly fit?: "fill" | "fit" | "crop" | "tile"
-  readonly crop?: CropSides
-  readonly shape?: string
-  readonly rotation?: number
-  readonly flip?: "none" | "h" | "v" | "hv"
-  readonly notes?: string
-} & SlideLook &
-  InnerLook
+export type { AgentBox, AgentColor, AgentFill, AgentGradient, AgentLook } from "./agent-look-types.js"
 
 export type DeckLook = {
   readonly name?: string
@@ -138,6 +83,7 @@ export type AgentChange =
       readonly clip?: boolean
     }
   | { readonly op: "unwrap"; readonly node: NodeId }
+  | { readonly op: "detach"; readonly target: NodeId }
   | { readonly op: "delete"; readonly nodes: readonly NodeId[] }
   | { readonly op: "duplicate"; readonly nodes: readonly NodeId[] }
   | ({ readonly op: "deck" } & DeckLook)
@@ -265,6 +211,10 @@ const lookFields: LookFields = {
   from: field(endSchema("Where a line starts: a layer's side, which it then follows, or a point."), readEnd),
   to: field(endSchema("Where a line ends: a layer's side, which it then follows, or a point."), readEnd),
   route: choice(["straight", "elbow", "curve"], "How a line runs between its ends."),
+  component: field({ type: "string", description: "Template id from read_deck." }, componentId),
+  data: field({ type: "object", description: "Rows by collection. Omit on add to use the sample." }, record),
+  variant: field({ type: "object", description: "Template variant choices." }, variantRecord),
+  tokens: field({ type: "object", description: "Template token overrides." }, tokenRecord),
   chart: chartField(readColor),
   rows: field(
     {
@@ -332,8 +282,6 @@ const lookFields: LookFields = {
   ...slideLookFields,
   ...innerShadowFields(readColor),
 }
-
-const lookKeys = Object.keys(lookFields) as (keyof AgentLook)[]
 
 const readSlideAdd = object({}, { after: readId })
 const readSlideMove = object({ slide: readId, after: readAfter })
@@ -418,26 +366,41 @@ const pickFrom = <T extends { readonly [P in keyof T]: Field<unknown> }, K exten
     [P in K]: T[P] extends Field<infer V> ? Reader<V> : never
   }
 
-const lookReaders = pickFrom(lookFields, lookKeys)
+const { component, data, tokens, variant: componentVariant, ...ordinaryLook } = lookFields
+const componentLook = { component, data, variant: componentVariant, tokens }
 
-const readChange = variant("op", {
-  add: object(pickFrom(placeFields, ["kind", "slide"]), { ...pickFrom(placeFields, ["into"]), ...lookReaders }),
-  set: object(pickFrom(placeFields, ["target"]), lookReaders),
-  move: object(pickFrom(placeFields, ["node"]), pickFrom(placeFields, ["into", "after"])),
-  wrap: object(pickFrom(placeFields, ["nodes"]), pickFrom(lookFields, ["layout", "clip"])),
-  unwrap: object(pickFrom(placeFields, ["node"])),
-  delete: object(pickFrom(placeFields, ["nodes"])),
-  slide: object({}, pickFrom(placeFields, ["add", "move", "delete"])),
-  duplicate: object(pickFrom(placeFields, ["nodes"])),
-  deck: object(
-    {},
-    { ...pickFrom(lookFields, ["name"]), ...pickFrom(placeFields, ["theme", "colors", "fonts", "nameFollows"]) },
-  ),
-})
+function changeReader(components: boolean) {
+  const look = components ? lookFields : ordinaryLook
+  const lookReaders = pickFrom(look, Object.keys(look) as (keyof typeof look)[])
+  return variant("op", {
+    add: object(
+      { kind: literal(components ? addKinds : ordinaryKinds), slide: readId },
+      { ...pickFrom(placeFields, ["into"]), ...lookReaders },
+    ),
+    set: object(pickFrom(placeFields, ["target"]), lookReaders),
+    move: object(pickFrom(placeFields, ["node"]), pickFrom(placeFields, ["into", "after"])),
+    wrap: object(pickFrom(placeFields, ["nodes"]), pickFrom(lookFields, ["layout", "clip"])),
+    unwrap: object(pickFrom(placeFields, ["node"])),
+    ...(components ? { detach: object({ target: readId }) } : {}),
+    delete: object(pickFrom(placeFields, ["nodes"])),
+    slide: object({}, pickFrom(placeFields, ["add", "move", "delete"])),
+    duplicate: object(pickFrom(placeFields, ["nodes"])),
+    deck: object(
+      {},
+      { ...pickFrom(lookFields, ["name"]), ...pickFrom(placeFields, ["theme", "colors", "fonts", "nameFollows"]) },
+    ),
+  })
+}
 
-export function readAgentChange(raw: unknown): AgentChange | (Refusal & { readonly field?: string }) {
+const readWithComponents = changeReader(true)
+const readWithoutComponents = changeReader(false)
+
+export function readAgentChange(
+  raw: unknown,
+  components = linkedComponentsEnabled,
+): AgentChange | (Refusal & { readonly field?: string }) {
   try {
-    return readChange(raw) as AgentChange
+    return (components ? readWithComponents : readWithoutComponents)(raw) as AgentChange
   } catch (thrown) {
     return detailOf(thrown)
   }
@@ -486,12 +449,31 @@ export const agentChangesSchema = {
       required: ["op"],
       properties: {
         op: {
-          enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck"],
+          enum: [
+            "add",
+            "set",
+            "move",
+            "wrap",
+            "unwrap",
+            "delete",
+            "slide",
+            "duplicate",
+            "deck",
+            ...(linkedComponentsEnabled ? ["detach"] : []),
+          ],
           description:
+            (linkedComponentsEnabled
+              ? "component add: component, data?, variant?, tokens?, box?. detach: target. "
+              : "") +
             "add: kind, slide, into?, look. set: target, look. move: node, into?, after?. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
         },
         ...schemasOf(placeFields),
-        ...schemasOf(lookFields),
+        kind: choice(
+          linkedComponentsEnabled ? addKinds : ordinaryKinds,
+          linkedComponentsEnabled ? `${kindWords} component: a linked template.` : kindWords,
+        ).schema,
+        ...schemasOf(ordinaryLook),
+        ...(linkedComponentsEnabled ? schemasOf(componentLook) : {}),
       },
     },
   },

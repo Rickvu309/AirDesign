@@ -2,6 +2,8 @@ import { readDeckQuery, readNamedDeck } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import { answered, hostRefused, refused, told, type ToolImage, type ToolResult } from "./answer.js"
+import { componentFindings, componentFindingsNote, componentSignature } from "./component-answer.js"
+import { deckMeasure } from "./deck-measure.js"
 import type { DeckHost, Opened } from "./deck-host.js"
 import { type Laid, layoutOf, listed, readFindingsNote } from "./layout-answer.js"
 import { withOtherRuns } from "./other-runs.js"
@@ -96,6 +98,7 @@ type Query = {
   readonly slide?: string | undefined
   readonly cursor?: string | undefined
   readonly find?: string | undefined
+  readonly component?: string | undefined
 }
 
 type Chosen =
@@ -142,14 +145,78 @@ export function readAnswer(opened: Opened, query: Query, laid?: Laid): ToolResul
     theme: themeOf(opened.fold),
     ...found,
   }
-  const note = [lead(opened, slides.length), ...(laid === undefined ? [] : readFindingsNote(laid))].join(" ")
-  return answered(note, { ...answer, layers: doom.readForAgent(opened.fold, chosen, laid?.boxes, detail) })
+  const components = doom.linkedComponentsEnabled ? [...doom.componentLibrary.keys()] : []
+  const note = [
+    lead(opened, slides.length),
+    ...(components.length === 0
+      ? []
+      : ["Read with component to see a template's sample or detail for a placed instance."]),
+    ...(laid === undefined ? [] : readFindingsNote(laid)),
+  ].join(" ")
+  return answered(note, {
+    ...answer,
+    ...(components.length === 0 ? {} : { components }),
+    layers: doom.readForAgent(opened.fold, chosen, laid?.boxes, detail),
+  })
 }
 
 async function laidRead(opened: Opened, query: Query, host: DeckHost): Promise<Laid | undefined> {
   if (query.find !== undefined) return undefined
   const picked = chosenSlides(opened, query)
   return picked.ok ? layoutOf(host, opened.fold, () => picked.chosen) : undefined
+}
+
+async function componentRead(opened: Opened, query: Query, host: DeckHost): Promise<ToolResult | undefined> {
+  if (!doom.linkedComponentsEnabled) return undefined
+  if (query.component !== undefined) {
+    const signature = componentSignature(query.component)
+    if (signature === undefined)
+      return refused("dead", { field: "component", note: "Read the deck for available template ids." })
+    return answered(
+      `Template ${signature.id} r${signature.revision}. Add kind component with this id, or set data, variant and tokens on an instance.`,
+      {
+        ok: true,
+        deck: opened.deck,
+        rev: opened.rev,
+        signature,
+      },
+    )
+  }
+  if (query.find !== undefined) return undefined
+  const id = doom.readNodeId(query.detail)
+  if (id === undefined) return undefined
+  const node = opened.fold.nodes.get(id)
+  if (node?.type !== "frame" || node.instance === undefined) return undefined
+  const slide = doom.slideOf(opened.fold, id)
+  if (slide === undefined || (query.slide !== undefined && query.slide !== slide)) return refused("dead", { node: id })
+  const { component, data, tokens, variant, parts, suppressed } = node.instance
+  const signature = componentSignature(component.id)
+  const layers = parts.map(({ node }) => node)
+  const measured = await deckMeasure(host, [opened.fold], layers)
+  const findings = componentFindings(opened.fold, [id], measured?.measure)
+  const note = [
+    `${id} component ${component.id} r${component.revision} on slide ${slide}, at rev ${opened.rev}.`,
+    "Use a slide read for layer ids, or send this rev as base to edit the instance.",
+    ...componentFindingsNote(findings),
+  ].join(" ")
+  return answered(note, {
+    ok: true,
+    deck: opened.deck,
+    rev: opened.rev,
+    instance: {
+      id,
+      slide,
+      component,
+      box: node.box,
+      data,
+      tokens,
+      variant: { ...signature?.defaultVariant, ...variant },
+      parts: parts.length,
+      suppressed: suppressed.length,
+    },
+    signature,
+    findings,
+  })
 }
 
 export async function readDeckTool(raw: unknown, agent: string, host: DeckHost): Promise<ToolResult> {
@@ -159,8 +226,14 @@ export async function readDeckTool(raw: unknown, agent: string, host: DeckHost):
   if (!opened.ok) return hostRefused(opened)
   const parsed = readDeckQuery(raw)
   if (!parsed.ok) return refused(parsed.refusal)
-  const read = withOtherRuns(readAnswer(opened, parsed, await laidRead(opened, parsed, host)), opened.fold, agent)
-  if (parsed.picture !== true || !read.ok || parsed.find !== undefined) return read
+  const query = { ...parsed, component: typeof parsed.component === "string" ? parsed.component : undefined }
+  const component = await componentRead(opened, query, host)
+  const read = withOtherRuns(
+    component ?? readAnswer(opened, query, await laidRead(opened, query, host)),
+    opened.fold,
+    agent,
+  )
+  if (parsed.picture !== true || !read.ok || parsed.find !== undefined || parsed.component !== undefined) return read
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
   const detail = doom.readNodeId(parsed.detail)
   const slide = parsed.slide ?? (detail === undefined ? undefined : doom.slideOf(opened.fold, detail))

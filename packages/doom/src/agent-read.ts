@@ -1,3 +1,4 @@
+import { resolveComponent } from "./component/library.js"
 import type { AgentChart, AgentColor } from "./agent-change.js"
 import { uniformAlign, uniformColor } from "./agent-look.js"
 import type { Arrow, End, Geometry } from "./geometry.js"
@@ -79,7 +80,10 @@ function chartWords(node: Node): string | undefined {
 
 export function kindOf(node: Node): string {
   if (node.type === "slide" || node.type === "slideRow") return node.type
-  if (node.type === "frame") return propOf(node, "chart") === undefined ? "frame" : "chart"
+  if (node.type === "frame") {
+    if (node.instance !== undefined) return "component"
+    return node.chart === undefined ? "frame" : "chart"
+  }
   const kind = propOf(node, "geometry")?.kind
   if (kind === "line" || kind === "icon" || kind === "path") return kind
   const fills = propOf(node, "fills") ?? []
@@ -230,8 +234,20 @@ function lineOf(
 ): string {
   const role = propOf(node, "role")
   const kind = `${kindOf(node)}${role === undefined ? "" : `:${role}`}`
+  const instance = propOf(node, "instance")
+  const defaults = instance === undefined ? undefined : resolveComponent(instance.component)?.spec.defaultVariant
+  const component =
+    instance === undefined
+      ? []
+      : [
+          instance.component.id,
+          `r${instance.component.revision}`,
+          `variant=${JSON.stringify({ ...defaults, ...instance.variant })}`,
+          `rows=${Object.values(instance.data).reduce((count, rows) => count + rows.length, 0)}`,
+          `parts=${instance.parts.length}`,
+        ]
   const place = placeWords(doom, node, boxes)
-  return `${"  ".repeat(depth)}${[node.id, kind, ...(place === undefined ? [] : [place]), ...looksOf(node, node.id === detail)].join(" ")}`
+  return `${"  ".repeat(depth)}${[node.id, kind, ...component, ...(place === undefined ? [] : [place]), ...looksOf(node, node.id === detail)].join(" ")}`
 }
 
 function walk(

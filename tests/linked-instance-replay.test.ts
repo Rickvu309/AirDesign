@@ -61,7 +61,7 @@ async function replay(scenario: State[string], actions: readonly string[]) {
     measure: doom.measureWith({}),
     mint: deck.mint,
   }
-  const placed = doom.placeComponent(deck.view(), options)
+  const placed = doom.placeComponent(deck.view(), doom.columnDefinition, options)
   if (doom.isRefusal(placed)) throw new Error(JSON.stringify(placed))
   expect(deck.push(placed, { read: deck.view() }).ok).toBe(true)
   await deck.sync()
@@ -249,7 +249,7 @@ async function suppressionReplay(graph: Graph, path: readonly Edge[]) {
     if (!answer.ok) throw new Error(JSON.stringify(answer))
     return answer
   }
-  const place = doom.placeComponent(await saved(), {
+  const place = doom.placeComponent(await saved(), doom.columnDefinition, {
     frame,
     parent: { id: slide, at },
     box: { x: 20, y: 30, w: 1200, h: 600, flipH: false, flipV: false, rotation: 0 },

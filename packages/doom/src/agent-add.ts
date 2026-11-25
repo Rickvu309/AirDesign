@@ -1,6 +1,6 @@
 import type { AgentAdd, AgentChange, AgentLook } from "./agent-change.js"
 import { shapeGeometry } from "./preset-geometry.js"
-import { type Draft, create, living, put, stop } from "./agent-draft.js"
+import { type Draft, Stop, create, living, nextKey, put, stop } from "./agent-draft.js"
 import {
   askedArrow,
   chartOf,
@@ -15,7 +15,7 @@ import {
 import { addGrid, addPattern } from "./agent-patterns.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { placeholderSubtitle } from "./slide-placeholders.js"
-import { type Area, areaFor, cardRadiusFor, gapFor, patternArea, slideSize, themeOf } from "./agent-place.js"
+import { type Area, areaFor, cardRadiusFor, gapFor, patternArea, sizeOf, slideSize, themeOf } from "./agent-place.js"
 import { lineEnds } from "./agent-line-ends.js"
 import { pictureFit } from "./picture-fit.js"
 import type { StrokeStyle } from "./paint.js"
@@ -23,6 +23,10 @@ import type { Box } from "./doom-walk.js"
 import { descendantsOf, isLaidOut, propOf, slideOf, zeroBox } from "./doom-walk.js"
 import type { Node } from "./doom.js"
 import type { Text } from "./text.js"
+import { componentLibrary } from "./component/library.js"
+import { placeComponent } from "./component/join-instance.js"
+import { isRefusal } from "./refusal.js"
+import { measureWith } from "./measure.js"
 import { textHeight } from "./text-estimate.js"
 
 type Add = Extract<AgentChange, { op: "add" }>
@@ -70,6 +74,7 @@ const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
   picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit", "crop"],
   icon: [...common, "icon", "stroke", "strokeWidth"],
   chart: [...common, ...painted, "chart"],
+  component: ["component", "box", "data", "variant", "tokens"],
   kpi: patternFields,
   cards: patternFields,
   compare: patternFields,
@@ -289,6 +294,31 @@ function addChart(draft: Draft, parent: Node, change: Add): void {
   })
 }
 
+const estimate = measureWith({})
+
+function addComponent(draft: Draft, parent: Node, change: Add): void {
+  const id = change.component ?? stop("shape", undefined, "component", "missing", "A template id from read_deck.")
+  const definition = componentLibrary.get(id)
+  if (definition === undefined) stop("shape", undefined, "component", "form", "A template id from read_deck.")
+  const { sample } = definition.spec
+  const data = change.data ?? sample?.data ?? stop("shape", undefined, "data", "missing", "Rows by collection.")
+  const available = sizeOf(draft, parent)
+  const size =
+    sample === undefined ? available : { w: Math.min(sample.w, available.w), h: Math.min(sample.h, available.h) }
+  const box = change.box ?? centred({ x: 0, y: 0, ...available }, size)
+  const placed = placeComponent(draft.doom, definition, {
+    frame: draft.mint(),
+    parent: { id: parent.id, at: nextKey(draft, parent.id) },
+    box: { ...zeroBox, ...box },
+    data,
+    ...(change.variant === undefined ? {} : { variant: change.variant }),
+    ...(change.tokens === undefined ? {} : { tokens: change.tokens }),
+    measure: draft.reading.measure ?? estimate,
+  })
+  if (isRefusal(placed)) throw new Stop(placed)
+  draft.writes.push(...placed)
+}
+
 export function compileAdd(draft: Draft, change: Add): void {
   const slide = living(draft, change.slide, "slide")
   if (slide.type !== "slide") stop("shape", slide.id, "slide", "form", "A slide id.")
@@ -316,6 +346,8 @@ function compileKind(draft: Draft, parent: Node, slide: Node, change: Add): void
       return addIcon(draft, parent, change)
     case "chart":
       return addChart(draft, parent, change)
+    case "component":
+      return addComponent(draft, parent, change)
     default:
       return addPattern(draft, parent, change)
   }

@@ -157,7 +157,7 @@ it("takes back an agent's update and its new chart, then redoes both", async () 
   await agentUpdate(deck.deck, shared, deck.server(), run)
   await deck.catchUp()
   const newFrame = doom.nodeId("frame:2")
-  const place = doom.placeComponent(deck.server(), {
+  const place = doom.placeComponent(deck.server(), doom.columnDefinition, {
     frame: newFrame,
     parent: { id: slide, at: doom.orderKeyBetween(null, null) },
     box: { x: 500, y: 400, w: 1200, h: 600, rotation: 0, flipH: false, flipV: false },
@@ -199,7 +199,7 @@ it.each(["online", "offline after reload"])(
     const run = "place-for-redo"
     const root = doom.nodeId("frame:2")
     const before = deck.server()
-    const writes = doom.placeComponent(before, {
+    const writes = doom.placeComponent(before, doom.columnDefinition, {
       frame: root,
       parent: { id: slide, at: doom.orderKeyBetween(null, null) },
       box: { x: 500, y: 400, w: 1200, h: 600, rotation: 0, flipH: false, flipV: false },

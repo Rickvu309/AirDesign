@@ -49,7 +49,7 @@ it("replays linked run undo and redo through the editor", async () => {
     const opened = await createDoomDeck(remote, "linked-order", { storage: memoryStorage() })
     if (!opened.ok) throw new Error(JSON.stringify(opened))
     const { deck } = opened
-    const place = doom.placeComponent(deck.view(), {
+    const place = doom.placeComponent(deck.view(), doom.columnDefinition, {
       frame,
       parent: { id: slide, at },
       box: { x: 20, y: 30, w: 1200, h: 600, flipH: false, flipV: false, rotation: 0 },

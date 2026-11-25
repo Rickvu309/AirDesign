@@ -1,10 +1,9 @@
 import { readNodeId } from "../ids.js"
 import { readPaint } from "../paint.js"
-import { Reject, formed, list, literal, object, reject, variant } from "../read-kit.js"
+import { Reject, formed, integer, list, literal, object, reject, variant } from "../read-kit.js"
 import { textStyleNames } from "../text.js"
-import { readData } from "./collections.js"
-import { columnComponent } from "./library.js"
-import { readChoices, readTokens, tokenRecord, variantRecord } from "./spec.js"
+import { resolveComponent } from "./library.js"
+import { readChoices, readComponentData, readTokens, tokenRecord, variantRecord } from "./spec.js"
 import { budget, id, isList } from "./values.js"
 
 export type PartKey = readonly [string, ...string[]]
@@ -28,31 +27,43 @@ export const keyString = (key: PartKey): string => JSON.stringify(key)
 
 const baseline = variant("kind", {
   rect: object({ fills: list(readPaint, 16) }),
+  path: object({ fills: list(readPaint, 16) }),
   text: object({ style: literal(textStyleNames) }),
   line: object({}),
 })
 
 const node = formed(readNodeId, "A node ID.")
-const instance = object({
+const storedInstance = object({
   component: object({
-    id: literal(["column"]),
-    revision: formed((raw) => (raw === 1 ? raw : undefined), "Column component revision 1."),
+    id,
+    revision: integer(1, Number.MAX_SAFE_INTEGER),
   }),
   variant: variantRecord,
   tokens: tokenRecord,
-  data: (raw) => readData(columnComponent.collections, raw, budget(80_000, "At most 80,000 work units.")),
+  data: (raw) => raw,
   generated: node,
   parts: list(object({ key: keyOf, node, baseline }), 499),
   suppressed: list(object({ key: keyOf, reason: literal(["delete"]) }), 499),
 })
 
-export type Instance = ReturnType<typeof instance>
+export type Instance = Omit<ReturnType<typeof storedInstance>, "data"> & {
+  readonly data: ReturnType<typeof readComponentData>
+}
 export type PartBaseline = ReturnType<typeof baseline>
 
+export const hasBaselineFill = (
+  baseline: PartBaseline | undefined,
+): baseline is Extract<PartBaseline, { kind: "rect" | "path" }> =>
+  baseline?.kind === "rect" || baseline?.kind === "path"
+
 export function readInstance(raw: unknown): Instance {
-  const found = instance(raw)
-  readChoices(columnComponent, found.variant)
-  readTokens(columnComponent, {}, found.tokens)
+  const found = storedInstance(raw)
+  const definition = resolveComponent(found.component)
+  if (definition === undefined) return reject("shape", "A component ID and revision from the library.")
+  const { spec } = definition
+  const data = readComponentData(spec, found.data, budget(80_000, "At most 80,000 work units."))
+  readChoices(spec, found.variant)
+  readTokens(spec, {}, found.tokens)
   if (found.parts.length + found.suppressed.length > 499) return reject("limit")
   const ids = new Set([found.generated])
   const keys = new Set([keyString(["root"])])
@@ -65,7 +76,7 @@ export function readInstance(raw: unknown): Instance {
       ids.add(part.node)
     }
   }
-  return found
+  return { ...found, data }
 }
 
 export const instanceFields = ["data", "tokens", "variant"] as const

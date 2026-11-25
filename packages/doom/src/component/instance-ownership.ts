@@ -15,6 +15,7 @@ type Kind = Instance["parts"][number]["baseline"]["kind"]
 function kindOf(node: Node | undefined): Kind | undefined {
   if (node?.type !== "shape") return undefined
   if (node.geometry?.kind === "line") return "line"
+  if (node.geometry?.kind === "path") return "path"
   if (node.geometry?.kind !== "rect") return undefined
   return node.text === undefined ? "rect" : "text"
 }
@@ -132,12 +133,15 @@ export function linkedOverride(nodes: Tree["nodes"], write: Write): boolean {
   if (write.prop !== "fills" && write.prop !== "text") return false
   const node = nodes.get(write.node)
   const kind = kindOf(node)
-  return linkedOwner(nodes, write.node) !== undefined && (write.prop === "fills" ? kind === "rect" : kind === "text")
+  return (
+    linkedOwner(nodes, write.node) !== undefined &&
+    (write.prop === "fills" ? kind === "rect" || kind === "path" : kind === "text")
+  )
 }
 
 function editable(write: Write, before: Node | undefined, after: Node | undefined): boolean {
   if (write.prop === "name" || write.prop === "link") return true
-  if (write.prop === "fills") return kindOf(before) === "rect"
+  if (write.prop === "fills") return kindOf(before) === "rect" || kindOf(before) === "path"
   if (
     write.prop !== "text" ||
     before?.type !== "shape" ||

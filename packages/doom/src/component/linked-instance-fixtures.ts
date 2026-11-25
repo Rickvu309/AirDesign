@@ -1,3 +1,4 @@
+import { columnDefinition } from "./library.js"
 import {
   type Doom,
   type Edit,
@@ -31,7 +32,13 @@ export const measure = measureWith({})
 
 export function placed() {
   const { doom: before, slides } = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
-  const writes = placeComponent(before, { frame, parent: { id: slides[0]!, at }, box, data: data(1, 2), measure })
+  const writes = placeComponent(before, columnDefinition, {
+    frame,
+    parent: { id: slides[0]!, at },
+    box,
+    data: data(1, 2),
+    measure,
+  })
   if (isRefusal(writes)) throw new Error(JSON.stringify(writes))
   return land(before, writes, true)
 }

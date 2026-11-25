@@ -1,3 +1,4 @@
+import { columnDefinition } from "./library.js"
 import { expect, it } from "vitest"
 
 import {
@@ -124,7 +125,13 @@ it("restores a full generation during run undo and keeps an independent fill ove
 
 it("keeps the linked creation when a later edit adds a manual child", () => {
   const { doom: before, slides } = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
-  const writes = placeComponent(before, { frame, parent: { id: slides[0]!, at }, box, data: data(1, 2), measure })
+  const writes = placeComponent(before, columnDefinition, {
+    frame,
+    parent: { id: slides[0]!, at },
+    box,
+    data: data(1, 2),
+    measure,
+  })
   if (isRefusal(writes)) throw new Error(JSON.stringify(writes))
   const after = land(before, writes, true)
   const generation = { once: "place", author: person, rev: after.rev, readBase: before.rev, writes }
@@ -410,7 +417,13 @@ it("restores an explicit fill when a run changes the inherited fill and resets t
 it("keeps a placed chart whose parent was written by another writer", () => {
   const { doom: before, slides } = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
   const slide = slides[0]!
-  const writes = placeComponent(before, { frame, parent: { id: slide, at }, box, data: data(1, 2), measure })
+  const writes = placeComponent(before, columnDefinition, {
+    frame,
+    parent: { id: slide, at },
+    box,
+    data: data(1, 2),
+    measure,
+  })
   if (isRefusal(writes)) throw new Error(JSON.stringify(writes))
   const after = land(before, writes, true)
   const later = land(after, [{ node: frame, prop: "parent", value: { id: slide, at: orderKeyBetween(at, null) } }])

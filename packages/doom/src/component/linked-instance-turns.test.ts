@@ -1,3 +1,4 @@
+import { columnDefinition } from "./library.js"
 import { expect, it } from "vitest"
 
 import {
@@ -32,7 +33,13 @@ import {
 
 it("inverts chart placement for a person and for a run", () => {
   const { doom: before, slides } = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
-  const writes = placeComponent(before, { frame, parent: { id: slides[0]!, at }, box, data: data(1, 2), measure })
+  const writes = placeComponent(before, columnDefinition, {
+    frame,
+    parent: { id: slides[0]!, at },
+    box,
+    data: data(1, 2),
+    measure,
+  })
   if (isRefusal(writes)) throw new Error(JSON.stringify(writes))
   const edit: Landed = { once: "place", author: person, writes, readBase: before.rev, rev: rev(before.rev + 1) }
   const after = land(before, writes, true)

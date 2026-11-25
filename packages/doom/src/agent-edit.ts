@@ -4,6 +4,7 @@ import { compileAgentChange, nameOf } from "./agent-compile.js"
 import type { Reading } from "./agent-draft.js"
 import type { Measure } from "./measure.js"
 import type { NodeId, Rev } from "./ids.js"
+import { linkedOwner } from "./component/instance-ownership.js"
 import { rev } from "./ids.js"
 import { kindOf } from "./agent-read.js"
 import { applyEdit, applyStep, countsOf } from "./apply-edit.js"
@@ -38,7 +39,7 @@ export function readingOf(doom: Doom, base: number): Doom {
   const revs = new Map<NodeId, ReadonlyMap<RevisionKey, Rev>>()
   for (const [node, props] of doom.revs)
     revs.set(node, new Map([...props].map(([key, was]) => [key, was > at ? at : was])))
-  return { ...doom, revs }
+  return { ...doom, rev: at, revs }
 }
 
 type Bake = { readonly fold: Doom; readonly frame: NodeId }
@@ -74,6 +75,7 @@ export function* agentEditSteps(
   const ends: number[] = []
   let view = doom
   let emptied = 0
+  let guarded = false
   for (const [at, change] of changes.entries()) {
     let frame: NodeId | undefined
     const beforeBake: Reading = pauseForBake
@@ -91,12 +93,14 @@ export function* agentEditSteps(
       compiled = compileAgentChange(view, change, by.mint, { ...reading, measure })
     }
     if ("refused" in compiled) return { ...compiled, at }
+    const strict = compiled.some(({ node, prop }) => prop === "instance" || linkedOwner(view.nodes, node) !== undefined)
+    guarded ||= strict
     const next = applyStep(view, {
       ...onTop(view, {
         once: `${by.once}#${at}`,
         author: by.author,
         writes: compiled,
-        ...(compiled.some(({ prop }) => prop === "instance") ? { readBase: view.rev } : {}),
+        ...(strict ? { readBase: view.rev } : {}),
         ...(by.phase !== undefined && at === 0 ? { phase: by.phase } : {}),
       }),
       rev: rev(view.rev + 1),
@@ -114,7 +118,7 @@ export function* agentEditSteps(
     once: by.once,
     author: by.author,
     writes: changing,
-    ...(changing.some(({ prop }) => prop === "instance") ? { readBase: doom.rev } : {}),
+    ...(guarded ? { readBase: (by.read ?? doom).rev } : {}),
     ...(by.phase === undefined ? {} : { phase: by.phase }),
   }
   const landed = applyEdit(doom, { ...edit, rev: rev(doom.rev + 1) })

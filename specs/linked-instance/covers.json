@@ -4,14 +4,14 @@
     {
       "file": "packages/doom/src/component/join-instance.ts",
       "names": ["join", "regenerateComponent", "restoreComponent"],
-      "digest": "20b57af6732d",
-      "blob": "3bfee8324a9bd2ee2514723bf16c6dd45130483a"
+      "digest": "2ad99a358b4d",
+      "blob": "7a912eb59f72b3b1f8d21f938ab7dbbeb1a967c9"
     },
     {
       "file": "packages/doom/src/component/instance-ownership.ts",
       "names": ["partDeletes", "suppressKeys", "withPartDeletes", "guardInstances", "suppressionChanges"],
       "digest": "11799748d0f7",
-      "blob": "2f47f3123b898f1ecb304c53a307a7a7543282ff"
+      "blob": "319bf0545edcbc5fddedd6f3b35c45985887c260"
     },
     {
       "file": "packages/doom/src/invert.ts",
@@ -53,13 +53,13 @@
       "file": "packages/doom/src/component/instance-inverse.ts",
       "names": ["instanceTransition", "restoreInstance"],
       "digest": "f63231ec9c13",
-      "blob": "939d7c2a155c16412dc3c8c91075485888d26a3f"
+      "blob": "943bbfea8da2cc157973ceb8fb8333f927a76f9d"
     },
     {
       "file": "packages/doom/src/invert-run.ts",
       "names": ["invertRun", "linkedEdits"],
       "digest": "f7ba80aee262",
-      "blob": "a4854552e1f89cfd8a834143bc8980ab36877447"
+      "blob": "2344a83daaa3c84b642b4d93950feac769f2b2ac"
     },
     {
       "file": "packages/mcp/src/undo-tool.ts",
@@ -77,7 +77,7 @@
       "file": "packages/doom/src/invert-run.ts",
       "names": ["undoSourceOf", "withoutGenerated"],
       "digest": "d1628ca439ec",
-      "blob": "a4854552e1f89cfd8a834143bc8980ab36877447"
+      "blob": "2344a83daaa3c84b642b4d93950feac769f2b2ac"
     }
   ]
 }

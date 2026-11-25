@@ -165,7 +165,7 @@ it("stores a linked join, suppression and detach, then replays a guarded inverse
   }
   await guarded(
     before,
-    doom.placeComponent(before, {
+    doom.placeComponent(before, doom.columnDefinition, {
       frame,
       parent: { id: startIds.slide, at },
       box: { x: 20, y: 30, w: 1200, h: 600, flipH: false, flipV: false, rotation: 0 },
@@ -237,7 +237,7 @@ it("undoes a generation from replaced rows and keeps a later fill", async () => 
   const frame = doom.nodeId("runproof:1")
   const measure = doom.measureWith({})
   const rows = [{ id: "a", label: "Alpha", value: 10 }]
-  const place = doom.placeComponent(before, {
+  const place = doom.placeComponent(before, doom.columnDefinition, {
     frame,
     parent: { id: startIds.slide, at: doom.orderKeyBetween(null, null) },
     box: { x: 20, y: 30, w: 1200, h: 600, flipH: false, flipV: false, rotation: 0 },

@@ -38,7 +38,7 @@ export async function placed(extra: readonly doom.Write[] = []) {
   const first = await createDoomDeck(remote, "linked", { client: "first" })
   if (!first.ok) throw new Error(JSON.stringify(first))
   const { deck } = first
-  const writes = doom.placeComponent(deck.view(), {
+  const writes = doom.placeComponent(deck.view(), doom.columnDefinition, {
     frame,
     parent: { id: slide, at },
     box: { x: 10, y: 10, w: 1200, h: 600, rotation: 0, flipH: false, flipV: false },
@@ -77,7 +77,7 @@ export function barFor(view: doom.Doom, row: string) {
   return bar.node
 }
 
-export const instance = (fold: doom.Doom) => doom.propOf(fold.nodes.get(frame), "instance")
+export const instance = (fold: doom.Doom): doom.Instance | undefined => doom.propOf(fold.nodes.get(frame), "instance")
 export const agent = (run: string): doom.Author => ({ kind: "agent", id: "agent", run })
 
 export async function agentUpdate(deck: string, remote: DoomRemote, fold: doom.Doom, run: string) {
