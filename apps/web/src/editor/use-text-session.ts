@@ -131,7 +131,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
     const now = ref.current
     if (now === null) return
     const json = JSON.stringify(now.draft)
-    if (json === pushed.current || now.draft.chars === "") return
+    if (json === pushed.current || (now.created !== null && now.draft.chars === "")) return
     const writes =
       now.created === null
         ? [{ node: now.node, prop: "text" as const, value: now.draft }]
@@ -169,7 +169,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
     const now = ref.current
     if (now === null) return
     if (refused) pushed.current = ""
-    flush()
+    if (now.keeps || now.draft.chars !== "") flush()
     if (now.created === null) {
       const { writes, seen } = leaveWrites(viewRef.current, {
         node: now.node,
@@ -339,11 +339,10 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
     flush,
     finish,
     step(kind) {
-      if (turnText(kind)) return
+      if (turnText(kind) || kind === "redo") return
       flush()
       set(null)
-      if (kind === "undo") client.undo()
-      else client.redo()
+      client.undo()
     },
   }
   return sessionApi

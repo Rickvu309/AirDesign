@@ -166,3 +166,99 @@ test("undo inside the text while offline keeps the next key once the deck reconn
   offline = false
   await expect.poll(() => charsOf(stack, opened, id ?? "")).toBe("Costs fall Z")
 })
+
+async function editTitle(page: Page) {
+  await clickSlide(page, 600, 420)
+  await page.keyboard.press("Enter")
+  await expect(page.locator("[data-text-editor]")).toBeFocused()
+}
+
+test("undo during an IME composition is ignored, so the committed text saves as the screen shows it", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("edit-text", "undo")
+  const opened = await openEditor(page, context, stack)
+  await editTitle(page)
+  await page.keyboard.type("Local ", { delay: 10 })
+  const ime = await context.newCDPSession(page)
+  await ime.send("Input.imeSetComposition", { text: "とう", selectionStart: 2, selectionEnd: 2 })
+  await page.keyboard.press("ControlOrMeta+z")
+  await ime.send("Input.insertText", { text: "東京" })
+  await page.keyboard.type("Z", { delay: 10 })
+  await expect(page.locator("[data-text-editor]")).toHaveText("Local 東京Z")
+  await page.keyboard.press("Escape")
+  await expect.poll(() => charsOf(stack, opened, "s:4")).toBe("Local 東京Z")
+})
+
+test("redo with nothing left to redo inside the text keeps the text open, and the next key lands", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("edit-text", "undo", "redo")
+  const opened = await openEditor(page, context, stack)
+  await editTitle(page)
+  await page.keyboard.type("One", { delay: 10 })
+  await page.keyboard.press("ControlOrMeta+z")
+  await page.keyboard.type("Two", { delay: 10 })
+  await page.keyboard.press("ControlOrMeta+Shift+z")
+  await expect(page.locator("[data-text-editor]")).toBeFocused()
+  await page.keyboard.type("Z", { delay: 10 })
+  await expect(page.locator("[data-text-editor]")).toHaveText("TwoZ")
+  await page.keyboard.press("Escape")
+  await expect.poll(() => charsOf(stack, opened, "s:4")).toBe("TwoZ")
+})
+
+test("undo back to an empty text saves it empty while the text stays open, and leaving deletes the layer", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("tool-text", "undo")
+  await page.clock.install()
+  const opened = await openEditor(page, context, stack)
+  await page.keyboard.press("t")
+  await clickSlide(page, 300, 700)
+  const editor = page.locator("[data-text-editor]")
+  await expect(editor).toBeFocused()
+  await page.keyboard.type("Temporary", { delay: 10 })
+  const id = (await editor.evaluate((element) => element.closest("[data-node]")?.getAttribute("data-node"))) ?? ""
+  await page.clock.runFor(1000)
+  await expect.poll(() => charsOf(stack, opened, id)).toBe("Temporary")
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(editor).toBeFocused()
+  await expect(editor).toHaveText("")
+  await page.clock.runFor(1000)
+  await expect.poll(() => charsOf(stack, opened, id)).toBe("")
+  await page.keyboard.press("Escape")
+  await expect.poll(async () => (await savedNode(stack, opened, id))?.parent).toBeNull()
+})
+
+test("a text edit fully undone inside the text leaves no deck undo step behind", async ({ page, context, stack }) => {
+  covers("edit-text", "undo")
+  await page.clock.install()
+  const opened = await openEditor(page, context, stack)
+  const subtitle = async () =>
+    (await savedNode(stack, opened, "s:5"))?.box as { x: number; y: number; w: number; h: number }
+  const subtitleX = async () => (await subtitle()).x
+  const box = await subtitle()
+  const before = box.x
+  const title = await charsOf(stack, opened, "s:4")
+  await clickSlide(page, box.x + box.w / 2, box.y + box.h / 2)
+  await page.keyboard.press("ArrowRight")
+  await expect.poll(subtitleX).toBe(before + 1)
+  await editTitle(page)
+  await page.keyboard.type("Temporary", { delay: 10 })
+  await page.clock.runFor(1000)
+  await expect.poll(() => charsOf(stack, opened, "s:4")).toBe("Temporary")
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(page.locator("[data-text-editor]")).toHaveText(title ?? "")
+  await page.clock.runFor(1000)
+  await expect.poll(() => charsOf(stack, opened, "s:4")).toBe(title)
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(page.locator("[data-text-editor]")).toHaveCount(0)
+  await expect.poll(subtitleX).toBe(before)
+  await expect.poll(() => charsOf(stack, opened, "s:4")).toBe(title)
+})
