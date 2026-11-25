@@ -47,8 +47,7 @@
     "digits": "auto",
     "lineWidth": 4,
     "markerRadius": 5,
-    "captionSmall": 18,
-    "focus": ""
+    "captionSmall": 18
   },
   "let": [
     [
@@ -68,71 +67,50 @@
       ]
     ],
     [
-      "seriesColors",
+      "plotted",
       [
-        "palette",
-        ["list", ["grayscale", ["get", "token.muted"]]],
+        "if",
+        ["get", "valid"],
         [
-          "map",
+          "filter",
           ["get", "data.series"],
           "row",
-          [
-            "if",
-            ["eq", ["get", "row.color"], null],
-            [
-              "if",
-              [
-                "if",
-                ["eq", ["get", "token.focus"], ""],
-                ["eq", ["get", "i"], 0],
-                ["eq", ["get", "row.id"], ["get", "token.focus"]]
-              ],
-              ["get", "token.accent1"],
-              null
-            ],
-            ["get", "row.color"]
-          ]
-        ]
+          ["lt", 0, ["count", ["filter", ["get", "row.values"], "v", ["if", ["eq", ["get", "v"], null], false, true]]]]
+        ],
+        ["list"]
       ]
     ],
+    ["colorSlots", ["rampSlots", ["get", "plotted"], ["matchingFocus", ["get", "focus"], ["get", "plotted"], "id"]]],
     [
-      "seriesRows",
+      "active",
       [
         "map",
-        ["get", "data.series"],
+        ["get", "plotted"],
         "series",
         {
           "id": ["get", "series.id"],
           "label": ["get", "series.label"],
           "values": ["get", "series.values"],
           "markers": ["get", "series.markers"],
-          "color": ["at", ["get", "seriesColors"], ["get", "i"]],
+          "color": [
+            "coalesce",
+            ["get", "series.color"],
+            [
+              "paletteRamp",
+              ["at", ["get", "colorSlots.indices"], ["get", "i"]],
+              ["get", "colorSlots.count"],
+              ["get", "token.accent1"],
+              ["get", "token.muted"],
+              false
+            ]
+          ],
           "width": [
             "if",
-            [
-              "if",
-              ["eq", ["get", "token.focus"], ""],
-              ["eq", ["get", "i"], 0],
-              ["eq", ["get", "series.id"], ["get", "token.focus"]]
-            ],
+            ["eq", ["at", ["get", "colorSlots.indices"], ["get", "i"]], 0],
             ["get", "token.lineWidth"],
             ["mul", 0.5, ["get", "token.lineWidth"]]
           ]
         }
-      ]
-    ],
-    [
-      "active",
-      [
-        "if",
-        ["get", "valid"],
-        [
-          "filter",
-          ["get", "seriesRows"],
-          "row",
-          ["lt", 0, ["count", ["filter", ["get", "row.values"], "v", ["if", ["eq", ["get", "v"], null], false, true]]]]
-        ],
-        ["list"]
       ]
     ],
     ["rowCount", ["count", ["get", "data.categories"]]],
@@ -554,10 +532,17 @@
             "key": ["list", "repeated-colors"],
             "message": "Some lines share an assigned colour. Use distinct colours."
           },
-          "when": [
-            "lt",
-            ["count", ["unique-colors", ["map", ["get", "active"], "row", ["get", "row.color"]]]],
-            ["count", ["get", "active"]]
+          "when": ["lt", ["count", ["unique-colors", ["get", "explicitColors"]]], ["count", ["get", "explicitColors"]]],
+          "let": [
+            [
+              "explicitColors",
+              [
+                "map",
+                ["filter", ["get", "plotted"], "r", ["if", ["eq", ["get", "r.color"], null], false, true]],
+                "r",
+                ["get", "r.color"]
+              ]
+            ]
           ]
         },
         {

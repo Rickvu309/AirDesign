@@ -22,12 +22,6 @@ export function tinted(hex: Hex, tint: number): Hex {
   return hexOf(channels(hex).map((part) => part + (towards - part) * share))
 }
 
-export function grayscale(hex: Hex): Hex {
-  const [r, g, b] = channels(hex)
-  const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b
-  return hexOf([gray, gray, gray])
-}
-
 export function resolveColor(color: Color, theme: Theme): Hex {
   if (typeof color === "string") return color
   const base = theme.colors[color.var]

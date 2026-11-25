@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { defaultTheme, isRefusal, measureWith } from "../index.js"
+import { defaultTheme, fontFace, isRefusal, measureWith } from "../index.js"
 import { columnComponent, expandComponent, type ComponentInput, type ComponentNode, type PartKey } from "./index.js"
 import column from "./testing/column.json" with { type: "json" }
 
@@ -52,14 +52,14 @@ describe("column chart precision and legends", () => {
     [12, -8],
   ])("keeps plain data in the series color (%s, %s)", (...values) => {
     const rows = values.map((value, index) => ({ id: `r${index}`, label: `Q${index}`, value }))
-    const tree = expand({ ...inputs, data: { rows }, variant: { legend: true } })
+    const tree = expand({ ...inputs, data: { rows }, variant: { legend: true }, tokens: { seriesLabel: "Profit" } })
     expect(tree.children.filter(({ key }) => key[0] === "bar").map(({ props }) => props.fills)).toEqual(
       rows.map(() => [{ kind: "solid", color: { var: "accent1" } }]),
     )
     expect(part(tree.children, "legend-swatch", "series")?.props.fills).toEqual([
       { kind: "solid", color: { var: "accent1" } },
     ])
-    expect(part(tree.children, "legend-label", "series")?.props.text?.chars).toBe("Series")
+    expect(part(tree.children, "legend-label", "series")?.props.text?.chars).toBe("Profit")
   })
 
   it.each([
@@ -216,4 +216,85 @@ it("keeps the widest axis tick when its measured width falls between pixels", ()
     "10",
   ])
   expect(tree.findings).toEqual([])
+})
+
+it("accents focused category IDs and keeps every other column in one neutral", () => {
+  const tree = expand({
+    ...inputs,
+    focus: ["message"],
+    data: {
+      rows: [
+        { id: "first", label: "Message", value: 4 },
+        { id: "message", label: "Message", value: -2 },
+        { id: "last", label: "Last", value: 3 },
+      ],
+    },
+    tokens: { seriesLabel: "Profit" },
+    variant: { legend: true, signed: true },
+  })
+  expect(part(tree.children, "bar", "message")?.props.fills).toEqual([{ kind: "solid", color: { var: "accent1" } }])
+  expect(tree.children.filter(({ key }) => key[0] === "legend-swatch").map(({ props }) => props.fills)).toEqual([
+    [{ kind: "solid", color: { var: "accent1" } }],
+  ])
+  const muted = part(tree.children, "bar", "first")?.props.fills
+  expect(muted).toEqual([{ kind: "solid", color: { var: "text2", tint: expect.any(Number) } }])
+  expect(part(tree.children, "bar", "last")?.props.fills).toEqual(muted)
+})
+
+it("reports an omitted legend when the series has no label", () => {
+  const tree = expand({ ...inputs, variant: { legend: true } })
+  expect(part(tree.children, "legend-label", "series")).toBeUndefined()
+  expect(tree.findings).toContainEqual(expect.objectContaining({ kind: "flow-omitted", omitted: [0] }))
+})
+
+it("reports unknown focus and paints the ordinary accent", () => {
+  const tree = expand({ ...inputs, focus: ["missing"], data: { rows: [{ id: "a", label: "A", value: 3 }] } })
+  expect(part(tree.children, "bar", "a")?.props.fills).toEqual([{ kind: "solid", color: { var: "accent1" } }])
+  expect(tree.findings).toContainEqual(
+    expect.objectContaining({ kind: "focus-missing", unknown: ["missing"], available: ["a"] }),
+  )
+})
+
+it("fits 100 focused categories when the last label triggers a shared size change", () => {
+  const rows = Array.from({ length: 100 }, (_, i) => ({
+    id: `r${i}`,
+    label: (i === 99 ? "WWWWWWWWW WWWWWWWW" : "i".repeat(18)) + String(i).padStart(2, "0"),
+    value: i - 12345,
+  }))
+  const face = "DejaVu Sans"
+  const metrics = (advances: Readonly<Record<string, number>>) => ({ ascent: 0.93, descent: 0.24, advances })
+  const measure = measureWith({
+    [fontFace(face, false, false)]: metrics({ W: 2025 / 2048, i: 569 / 2048, " ": 651 / 2048 }),
+    [fontFace(face, true, false)]: metrics({ "−": 1716 / 2048, ".": 778 / 2048 }),
+  })
+  const tree = expand({
+    ...inputs,
+    theme: { ...defaultTheme, fonts: { heading: face, body: face } },
+    tokens: { captionSmall: 18 },
+    measure,
+    frame: { ...column.frame, w: 18_000 },
+    data: { rows },
+    focus: rows.map(({ id }) => id),
+  })
+  const categories = tree.children.filter(({ key }) => key[0] === "category")
+  expect(categories).toHaveLength(100)
+  expect(new Set(categories.map(({ props }) => props.text?.spans[0]?.size))).toEqual(new Set([18]))
+})
+
+it("keeps sign colours when the only focused row has no mark", () => {
+  const tree = expand({
+    ...inputs,
+    focus: ["gap"],
+    variant: { signed: true },
+    data: {
+      rows: [
+        { id: "gap", label: "Gap", value: null },
+        { id: "loss", label: "Loss", value: -3 },
+      ],
+    },
+  })
+  expect(part(tree.children, "bar", "loss")?.props.fills).toEqual([{ kind: "solid", color: { var: "negative" } }])
+  expect(tree.findings).toContainEqual(
+    expect.objectContaining({ kind: "focus-missing", unknown: ["gap"], available: ["loss"] }),
+  )
 })

@@ -45,6 +45,7 @@ const seen: Readonly<Record<string, Seen>> = {
   icon: { person: ["actions:icon#swap"] },
   arrow: { person: ["gesture:tool-arrow", "panel:border.end"] },
   startArrow: { person: ["panel:border.start"] },
+  focus: { declined: "The agent selects which categories or series tell the slide’s story." },
   chart: { declined: "agent-only; charts become components (owner 2026-11-24)" },
   rows: {
     declined: "One simple panel. Agents still set auto layout.",

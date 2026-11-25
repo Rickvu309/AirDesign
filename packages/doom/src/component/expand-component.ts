@@ -10,7 +10,7 @@ import { type Bindings, type Expr, type Scope, childScope, evaluator, valuesOf }
 import { type ComponentTree, type PreparedPart, preparePart, readFrame, readLayout, treeOf } from "./nodes.js"
 import { numberFormat } from "./operators.js"
 import { type ComponentSpec, type Part, readChoices, readTokens } from "./spec.js"
-import { type Value, budget, componentRefusal } from "./values.js"
+import { type Value, budget, componentRefusal, readFocus } from "./values.js"
 
 export type ComponentInput = {
   readonly data: unknown
@@ -20,6 +20,7 @@ export type ComponentInput = {
   readonly themeTokens?: unknown
   readonly tokens?: unknown
   readonly variant?: unknown
+  readonly focus?: unknown
   readonly styleFor?: (key: PartKey) => TextStyleName | undefined
 }
 
@@ -44,6 +45,7 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
         frame,
         data: naming("data", () => readExpansionData(spec.collections, input.data, charge, spec.collectionLimits)),
         token,
+        focus: naming("focus", () => readFocus(input.focus === undefined ? [] : input.focus)),
         variant: naming("variant", () => readChoices(spec, input.variant ?? {})),
       },
     }

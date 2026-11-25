@@ -267,12 +267,14 @@ function compactInstances({ before, after, overrides }: InstanceTransition) {
     data: sameValue(before.data, after.data),
     tokens: sameValue(before.tokens, after.tokens),
     variant: sameValue(before.variant, after.variant),
+    focus: sameValue(before.focus, after.focus),
   }
   const prior: Instance = {
     ...before,
     data: unchanged.data ? { rows: [] } : before.data,
     tokens: unchanged.tokens ? {} : before.tokens,
     variant: unchanged.variant ? {} : before.variant,
+    focus: unchanged.focus ? [] : before.focus,
     parts: before.parts.filter(({ key, node }) => afterSuppressed.has(keyString(key)) || overridden.has(node)),
     suppressed: before.suppressed.filter(({ key }) => !afterSuppressed.has(keyString(key))),
   }
@@ -281,6 +283,7 @@ function compactInstances({ before, after, overrides }: InstanceTransition) {
     data: unchanged.data ? { rows: [] } : after.data,
     tokens: unchanged.tokens ? {} : after.tokens,
     variant: unchanged.variant ? {} : after.variant,
+    focus: unchanged.focus ? [] : after.focus,
     parts: after.parts.filter(({ key }) => beforeSuppressed.has(keyString(key))),
     suppressed: after.suppressed.filter(({ key }) => !beforeSuppressed.has(keyString(key))),
   }

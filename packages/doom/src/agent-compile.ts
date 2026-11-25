@@ -1,4 +1,3 @@
-import { propOf } from "./doom-walk.js"
 import { compileAdd } from "./agent-add.js"
 import { compileDelete, compileMove, compileUnwrap, compileWrap } from "./agent-arrange.js"
 import { compileSet } from "./agent-set.js"
@@ -7,13 +6,14 @@ import { compileDeck, compileDuplicate } from "./agent-copy.js"
 import type { AgentChange, AgentRefusal } from "./agent-change.js"
 import { detachComponent } from "./component/join-instance.js"
 import { type Reading, Stop, draftOf, living, stop } from "./agent-draft.js"
-import type { NodeId } from "./ids.js"
+import { readNodeId, type NodeId } from "./ids.js"
 import type { Write } from "./doom.js"
 import type { Doom } from "./doom.js"
 import { freeLineEnds } from "./freed-line-ends.js"
 import { measureWith } from "./measure.js"
 import { prepareComponentEdit, sampleComponentEdit } from "./component/component-edit.js"
 import { isRefusal } from "./refusal.js"
+import { propOf } from "./doom-walk.js"
 
 const estimate = measureWith({})
 
@@ -46,6 +46,13 @@ export function compileAgentChange(
 ): readonly Write[] | AgentRefusal {
   const draft = draftOf(doom, mint, reading)
   try {
+    const focus = change.op === "set" ? change.focus : undefined
+    const focusEdit =
+      focus !== undefined && change.op === "set"
+        ? { node: readNodeId(change.target) ?? stop("shape", undefined, "focus", "needs", "a linked component"), focus }
+        : undefined
+    if (focusEdit !== undefined && propOf(doom.nodes.get(focusEdit.node), "instance") === undefined)
+      stop("shape", focusEdit.node, "focus", "needs", "a linked component")
     if (change.op === "add") compileAdd(draft, change)
     if (change.op === "set") compileSet(draft, change)
     if (change.op === "detach") {
@@ -70,12 +77,12 @@ export function compileAgentChange(
     if (change.op === "delete") compileDelete(draft, change)
     if (change.op === "slide") compileSlide(draft, change)
     if (reading.componentSample !== undefined) {
-      const sample = sampleComponentEdit(doom, draft.writes, reading.batchStart)
+      const sample = sampleComponentEdit(doom, draft.writes, reading.batchStart, focusEdit)
       if (isRefusal(sample)) return { ...sample, change: nameOf(change) }
       if (sample !== null) reading.componentSample(sample)
     }
     const measure = reading.measure ?? estimate
-    const writes = prepareComponentEdit(doom, draft.writes, measure, reading.batchStart)
+    const writes = prepareComponentEdit(doom, draft.writes, measure, reading.batchStart, focusEdit)
     return isRefusal(writes) ? { ...writes, change: nameOf(change) } : freeLineEnds(doom, writes, measure)
   } catch (thrown) {
     if (thrown instanceof Stop) return { ...thrown.refusal, change: nameOf(change) }

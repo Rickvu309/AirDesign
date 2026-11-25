@@ -38,9 +38,22 @@ When an axis uses a whole step in display units, use zero decimals for its ticks
 
 `format` emits a `rounded-to-zero` finding when a nonzero input becomes zero at the selected scale and digits. The finding records the source value, scale, and digits. Expression findings name their spec field and use the emitting part's key when evaluated inside an emission. Other expressions use the root key.
 
+## Focus and series colors
+
+The optional instance property `focus` holds up to 100 category or series IDs. Omission and an empty list both give the default colors. Use stable data IDs as keys. Duplicate IDs collapse. A focus that matches no plotted mark keeps the default colors and reports a `focus-missing` finding. A linked instance retains focus when its data changes, and undo can restore it. In MCP, set focus on the linked frame with `{"op":"set","target":"<frame id>","focus":["<category id>"]}`. Send an empty list to clear it.
+
+| Expression                                                           | Result                                                                                                                                 |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `["focusColor", focus, keys, accent, neutral]`                       | Accent when the focus list is empty or when at least one key matches. Neutral otherwise.                                               |
+| `["matchingFocus", requested, markIdsOrRows, idField?, valueField?]` | Matches requested IDs with plotted marks. An optional value field excludes rows with missing values. Reports missing IDs.              |
+| `["rampSlots", rows, focus]`                                         | Maps rows to an accent or grey slot for marks and legend swatches. Reports when the ramp must reuse shades.                            |
+| `["paletteRamp", index, count, accent, neutral, labelled?]`          | Accent at index zero, followed by neutral shades stepping away from the background. The count is 1 to 100 and the index is zero-based. |
+
+Read the instance property with `["get", "focus"]`. Pass the mark's category, its series or both as a list of keys. Column passes each plotted row ID and uses a single ramp shade for every muted mark. The neutral base is `text2`, and the main accent is `accent1`. Theme references follow the deck's theme. The ramp tints toward white on light backgrounds and shades toward black on dark backgrounds. The first neutral targets 3:1 against the background, or 2.2:1 when the optional fifth argument is true for direct labels. The second neutral is at least 0.06 OKLCH lightness away. The ramp reuses its two greys beyond three slots and reports a `many-series` finding. Multi-series specs can use the same ramp for the marks and the legend.
+
 ## Signed color roles
 
-Theme colors `positive`, `negative`, and `total` are available as ordinary theme color references, such as `{ "var": "positive" }`. Put the sign or meaning in text or geometry as well. Column uses the series accent by default. Set the `legend` variant to show a series key labeled by `seriesLabel`. Set `signed` to enable sign colors and key entries for the signs present, with labels from `positiveLabel` and `negativeLabel`. Waterfall specs can use `total` for a balance bar. The color picker lists the palette colors.
+Theme colors `positive`, `negative`, and `total` are available as ordinary theme color references, such as `{ "var": "positive" }`. Put the sign or meaning in text or geometry as well. Column uses the series accent by default. Set the `legend` variant and supply `seriesLabel` to show a series key. A missing label produces a `flow-omitted` finding. Set `signed` to enable sign colors and key entries for the signs present, with labels from `positiveLabel` and `negativeLabel`. A focus that matches a plotted mark takes precedence over the signed variant. Waterfall specs can use `total` for a balance bar. The color picker lists the palette colors.
 
 ## Paint check
 

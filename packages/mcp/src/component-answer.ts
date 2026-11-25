@@ -16,6 +16,10 @@ function findingMessage(finding: doom.ComponentFinding, categoryCount: number): 
         : `omitted ${finding.omitted.length} items that did not fit.`
     case "rounded-to-zero":
       return `rounds ${finding.value} to zero at the current precision.`
+    case "focus-missing":
+      return `could not focus ${finding.unknown.join(", ")}. ${finding.available.length ? `Use one of ${finding.available.join(", ")}.` : "Clear focus with []."}`
+    case "many-series":
+      return `needs ${finding.count} distinct colours. Use at most ${finding.capacity} colour groups or split the chart.`
     case "text-fit": {
       const { neededWidth, availableWidth, thinned } = finding
       const guidance =

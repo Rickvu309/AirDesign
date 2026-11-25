@@ -1,7 +1,7 @@
 import type { AgentColor, AgentFill, AgentLook } from "./agent-look-types.js"
 import { linkedComponentsEnabled } from "./component-rollout.js"
 import { tokenRecord, variantRecord } from "./component/spec.js"
-import { id as componentId, record } from "./component/values.js"
+import { id as componentId, record, readFocus } from "./component/values.js"
 import { readAngle, readRotation } from "./angle.js"
 import { arrowField, startArrowField } from "./agent-arrow.js"
 import { chartField } from "./agent-chart.js"
@@ -74,7 +74,7 @@ export type SlideAdd = { readonly after?: NodeId }
 export type SlideMove = { readonly slide: NodeId; readonly after: NodeId | null }
 export type AgentChange =
   | ({ readonly op: "add"; readonly kind: AgentAdd; readonly slide: NodeId; readonly into?: NodeId } & AgentLook)
-  | ({ readonly op: "set"; readonly target: string } & AgentLook)
+  | ({ readonly op: "set"; readonly target: string; readonly focus?: readonly string[] } & AgentLook)
   | { readonly op: "move"; readonly node: NodeId; readonly into?: NodeId; readonly after?: NodeId | null }
   | {
       readonly op: "wrap"
@@ -303,6 +303,15 @@ const placeFields = {
     },
     readTarget,
   ),
+  focus: field(
+    {
+      type: "array",
+      items: { type: "string" },
+      maxItems: 100,
+      description: "Set on a linked component. Category or series IDs to accent. [] clears focus.",
+    },
+    readFocus,
+  ),
   node: id("The node."),
   nodes: field(
     { type: "array", items: idSchema, minItems: 1, maxItems: limits.delete, description: "Node ids." },
@@ -377,7 +386,7 @@ function changeReader(components: boolean) {
       { kind: literal(components ? addKinds : ordinaryKinds), slide: readId },
       { ...pickFrom(placeFields, ["into"]), ...lookReaders },
     ),
-    set: object(pickFrom(placeFields, ["target"]), lookReaders),
+    set: object(pickFrom(placeFields, ["target"]), { ...lookReaders, ...pickFrom(placeFields, ["focus"]) }),
     move: object(pickFrom(placeFields, ["node"]), pickFrom(placeFields, ["into", "after"])),
     wrap: object(pickFrom(placeFields, ["nodes"]), pickFrom(lookFields, ["layout", "clip"])),
     unwrap: object(pickFrom(placeFields, ["node"])),

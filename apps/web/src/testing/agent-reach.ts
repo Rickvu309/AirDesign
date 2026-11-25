@@ -90,6 +90,7 @@ export const idOf = (probe: Probe): doom.NodeId => (probe === "slide" ? slide : 
 export const layers = ["words", "card", "rule", "star", "photo", "panel"] as const
 
 export const sample: Readonly<Record<string, unknown>> = {
+  focus: ["category"],
   fill: "accent2",
   stroke: "accent2",
   strokeWidth: 3,

@@ -1,7 +1,7 @@
 import { readColor } from "../color.js"
 import type { Color } from "../paint.js"
 import type { Refusal } from "../refusal.js"
-import { boolean, detailOf, finite, matching, reject, words } from "../read-kit.js"
+import { boolean, detailOf, finite, list, matching, reject, words } from "../read-kit.js"
 
 export type Scalar = boolean | number | string | null
 export type Value = Scalar | ValueRecord | Values
@@ -32,6 +32,8 @@ export const name = matching(
   "A name of up to 32 letters, digits, underscores or dashes, starting with a letter.",
 )
 export const id = matching(/^[\w-]+$/, 32, "An ID of up to 32 letters, digits, underscores or dashes.")
+const focusIds = list(id, 100)
+export const readFocus = (raw: unknown) => [...new Set(focusIds(raw))]
 export const path = matching(
   /^[A-Za-z][\w-]*(?:\.[A-Za-z][\w-]*)*$/,
   256,

@@ -1,9 +1,9 @@
-import { grayscale, resolveColor } from "../color.js"
 import { finite, integer, literal, object, reject } from "../read-kit.js"
 import type { ReportFinding } from "./findings.js"
 import { axis } from "./numeric-axis.js"
 import { sortBy, startsWithWordIgnoreCase } from "./order-values.js"
 import { linkChannels } from "./link-channels.js"
+import { colorSelection, matchingFocus, paletteRamp, rampSlots } from "./palette-ramp.js"
 import { textExtent } from "./text-extent.js"
 import { contrastInk, type FittingContext } from "./fit-text.js"
 import { allocate } from "./allocate.js"
@@ -21,7 +21,7 @@ import {
   sample,
   splitRanked,
 } from "./list-operators.js"
-import { palette, uniqueColors } from "./palette.js"
+import { uniqueColors } from "./unique-colors.js"
 import { decimals, positiveScale } from "./precision.js"
 import { flowText, textMetrics, textWidth } from "./text-operators.js"
 import { polar } from "./polar.js"
@@ -32,7 +32,6 @@ import {
   type Value,
   type ValueRecord,
   type Values,
-  color,
   isList,
   name,
   numeric,
@@ -140,6 +139,18 @@ const operators: Readonly<Record<string, Operation>> = {
   contrastTint: fixed(3, (args, charge, _format, { theme }) => contrastTint(args, theme, charge)),
   contrastGrey: fixed(5, (args, charge, _format, { theme }) => contrastGrey(args, theme, charge)),
   readableInk: fixed(1, (args, _charge, _format, { theme }) => readableInk(args, theme)),
+  focusColor: fixed(4, colorSelection),
+  rampSlots: fixed(2, (args, charge, _format, _context, report) => rampSlots(args, charge, report)),
+  matchingFocus: {
+    min: 2,
+    max: 4,
+    run: (args, charge, _format, _context, report) => matchingFocus(args, charge, report),
+  },
+  paletteRamp: {
+    min: 4,
+    max: 5,
+    run: (args, _charge, _format, context, report) => paletteRamp(args, context.theme, report),
+  },
   eq: fixed(2, ([a, b], charge) => {
     if (typeof a === "string" && typeof b === "string" && a.length === b.length) charge(a.length)
     return a === b
@@ -252,11 +263,7 @@ const operators: Readonly<Record<string, Operation>> = {
   "split-ranked": fixed(3, ([values, field, count], charge) =>
     splitRanked(list(values), string(field), integer(0, 100)(count), charge),
   ),
-  grayscale: fixed(1, ([paint], _charge, _format, context) => grayscale(resolveColor(color(paint), context.theme))),
   "unique-colors": fixed(1, ([values], charge, _format, context) => uniqueColors(list(values), context.theme, charge)),
-  palette: fixed(2, ([values, requested], charge, _format, context) =>
-    palette(list(values), list(requested), context.theme, charge),
-  ),
   "index-by": fixed(2, ([values, field], charge) => indexBy(list(values), string(field), charge)),
   lookup: { min: 2, max: 3, run: lookup },
   sample: fixed(2, ([values, size], charge) => sample(list(values), positiveInteger(size), charge)),
