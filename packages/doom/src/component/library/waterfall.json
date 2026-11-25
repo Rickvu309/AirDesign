@@ -10,14 +10,16 @@
     }
   },
   "variants": {
-    "labels": [true, false]
+    "labels": [true, false],
+    "signed": [true, false]
   },
   "defaultVariant": {
-    "labels": true
+    "labels": true,
+    "signed": false
   },
   "defaults": {
     "scale": 1,
-    "digits": 0,
+    "digits": "auto",
     "unitHeader": "",
     "title": "",
     "ink": {
@@ -32,42 +34,57 @@
     "caption": "caption",
     "captionSmall": 18,
     "up": {
-      "var": "accent2"
+      "var": "positive"
     },
     "down": {
-      "var": "accent5"
+      "var": "negative"
     },
     "total": {
+      "var": "total"
+    },
+    "focus": "",
+    "neutral": {
+      "var": "text2"
+    },
+    "highlight": {
       "var": "accent1"
-    }
+    },
+    "source": ""
   },
   "let": [
     ["headerUnit", ["get", "token.unitHeader"]],
-    [
-      "header",
-      [
-        "if",
-        ["eq", ["get", "token.title"], ""],
-        ["get", "headerUnit"],
-        [
-          "if",
-          ["eq", ["get", "headerUnit"], ""],
-          ["get", "token.title"],
-          ["concat", ["get", "token.title"], ", ", ["get", "headerUnit"]]
-        ]
-      ]
-    ],
     ["gutter", ["min", 12, ["div", ["get", "frame.w"], 4]]],
     ["rowCount", ["count", ["get", "data.rows"]]],
-    ["plotWidth", ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]]],
-    ["categoryTop", ["max", 0, ["sub", ["get", "frame.h"], 56]]],
+    ["availableWidth", ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]]],
+    ["plotWidth", ["get", "availableWidth"]],
+    ["categoryTop", ["max", 0, ["sub", ["get", "frame.h"], ["if", ["eq", ["get", "token.source"], ""], 56, 98]]]],
     ["plotBottom", ["max", 0, ["sub", ["get", "categoryTop"], 12]]],
     ["plotTop", ["min", ["div", ["get", "plotBottom"], 2], ["if", ["get", "variant.labels"], 90, 60]]],
+    [
+      "rows",
+      [
+        "map",
+        ["get", "data.rows"],
+        "r",
+        {
+          "id": ["get", "r.id"],
+          "label": ["get", "r.label"],
+          "after": ["get", "r.after"],
+          "value": ["get", "r.value"],
+          "mode": [
+            "if",
+            ["if", ["eq", ["get", "i"], 0], true, ["eq", ["get", "i"], ["sub", ["get", "rowCount"], 1]]],
+            "total",
+            ["get", "r.mode"]
+          ]
+        }
+      ]
+    ],
     [
       "steps",
       [
         "scan",
-        ["get", "data.rows"],
+        ["get", "rows"],
         "r",
         0,
         [
@@ -98,7 +115,8 @@
             ["eq", ["get", "i"], 0],
             ["get", "r.value"],
             ["if", ["eq", ["get", "r.mode"], "total"], ["get", "acc"], ["get", "r.value"]]
-          ]
+          ],
+          "given": ["get", "r.value"]
         }
       ]
     ],
@@ -109,10 +127,28 @@
     ["hi", ["if", ["eq", ["get", "upper"], ["get", "lo"]], 1, ["get", "upper"]]],
     ["zero", ["linear", 0, ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]],
     [
+      "digits",
+      [
+        "if",
+        ["eq", ["get", "token.digits"], "auto"],
+        ["decimals", ["map", ["get", "steps"], "r", ["get", "r.value"]], ["get", "token.scale"]],
+        ["get", "token.digits"]
+      ]
+    ],
+    [
+      "stepDensity",
+      [
+        "if",
+        ["lt", 8, ["count", ["filter", ["get", "steps"], "r", ["eq", ["get", "r.mode"], "delta"]]]],
+        ["advise", "many-steps", "Group small steps as Other to keep the main drivers readable."],
+        false
+      ]
+    ],
+    [
       "deltaFormat",
       {
         "scale": ["get", "token.scale"],
-        "digits": ["get", "token.digits"],
+        "digits": ["get", "digits"],
         "prefix": "",
         "suffix": "",
         "sign": "always"
@@ -122,7 +158,7 @@
       "totalFormat",
       {
         "scale": ["get", "token.scale"],
-        "digits": ["get", "token.digits"],
+        "digits": ["get", "digits"],
         "prefix": "",
         "suffix": "",
         "sign": "negative"
@@ -131,17 +167,51 @@
   ],
   "parts": [
     {
-      "when": ["if", ["eq", ["get", "header"], ""], false, true],
+      "when": ["if", ["eq", ["get", "token.title"], ""], false, true],
+      "emit": {
+        "kind": "text",
+        "key": ["list", "title"],
+        "x": ["get", "gutter"],
+        "y": 0,
+        "w": ["get", "availableWidth"],
+        "h": 38,
+        "chars": ["get", "token.title"],
+        "style": ["get", "token.heading"],
+        "color": ["get", "token.ink"],
+        "align": "left",
+        "alignV": "center",
+        "fit": "omit"
+      }
+    },
+    {
+      "when": ["if", ["eq", ["get", "headerUnit"], ""], false, true],
       "emit": {
         "kind": "text",
         "key": ["list", "unit"],
         "x": ["get", "gutter"],
-        "y": 0,
-        "w": ["get", "plotWidth"],
-        "h": 42,
-        "chars": ["get", "header"],
-        "style": ["get", "token.heading"],
-        "color": ["get", "token.ink"],
+        "y": ["if", ["eq", ["get", "token.title"], ""], 0, 36],
+        "w": ["get", "availableWidth"],
+        "h": 38,
+        "chars": ["get", "headerUnit"],
+        "style": ["get", "token.caption"],
+        "color": ["get", "token.muted"],
+        "align": "left",
+        "alignV": "center",
+        "fit": "omit"
+      }
+    },
+    {
+      "when": ["if", ["eq", ["get", "token.source"], ""], false, true],
+      "emit": {
+        "kind": "text",
+        "key": ["list", "source"],
+        "x": ["get", "gutter"],
+        "y": ["max", 0, ["sub", ["get", "frame.h"], 38]],
+        "w": ["get", "availableWidth"],
+        "h": 38,
+        "chars": ["get", "token.source"],
+        "style": ["get", "token.caption"],
+        "color": ["get", "token.muted"],
         "align": "left",
         "alignV": "center",
         "fit": "omit"
@@ -172,7 +242,25 @@
         ["top", ["min", ["get", "a"], ["get", "b"]]],
         ["height", ["sub", ["max", ["get", "a"], ["get", "b"]], ["get", "top"]]],
         ["isTotal", ["eq", ["get", "r.mode"], "total"]],
-        ["prev", ["at", ["get", "steps"], ["sub", ["get", "i"], 1]]]
+        ["prev", ["at", ["get", "steps"], ["sub", ["get", "i"], 1]]],
+        [
+          "mismatch",
+          [
+            "if",
+            ["if", ["get", "isTotal"], ["lt", 0, ["get", "i"]], false],
+            [
+              "if",
+              [
+                "eq",
+                ["round", ["div", ["get", "r.given"], ["get", "token.scale"]], ["get", "digits"]],
+                ["round", ["div", ["get", "r.value"], ["get", "token.scale"]], ["get", "digits"]]
+              ],
+              false,
+              ["advise", "total-mismatch", "Use the running balance for this total.", ["get", "r.id"]]
+            ],
+            false
+          ]
+        ]
       ],
       "children": [
         {
@@ -195,9 +283,10 @@
             "start": ["point", ["add", ["get", "previous.start"], ["get", "previous.size"]], ["get", "level"]],
             "end": ["point", ["get", "mark.start"], ["get", "level"]],
             "color": ["get", "token.rule"],
-            "width": 2,
+            "width": 1,
             "route": "straight",
-            "arrow": "none"
+            "arrow": "none",
+            "dash": "dot"
           }
         },
         {
@@ -212,7 +301,22 @@
               "if",
               ["get", "isTotal"],
               ["get", "token.total"],
-              ["if", ["lt", ["get", "r.value"], 0], ["get", "token.down"], ["get", "token.up"]]
+              [
+                "if",
+                ["eq", ["get", "r.id"], ["get", "token.focus"]],
+                ["get", "token.highlight"],
+                [
+                  "if",
+                  ["get", "variant.signed"],
+                  [
+                    "if",
+                    ["eq", ["get", "r.value"], 0],
+                    ["get", "token.neutral"],
+                    ["if", ["lt", ["get", "r.value"], 0], ["get", "token.down"], ["get", "token.up"]]
+                  ],
+                  ["get", "token.neutral"]
+                ]
+              ]
             ]
           }
         },

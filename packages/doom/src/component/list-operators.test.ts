@@ -17,6 +17,7 @@ it("groups rows in encounter order and reads only own keys", () => {
   expect(lookup([groups, "constructor"], charge)).toEqual([rows[1]])
   expect(lookup([groups, "toString"], charge)).toBeNull()
   expect(lookup([groups, "missing"], charge)).toBeNull()
+  expect(lookup([groups, "missing", []], charge)).toEqual([])
 })
 
 it("cycles through a list without changing its order", () => {
