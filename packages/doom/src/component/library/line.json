@@ -1,0 +1,1088 @@
+{
+  "version": 1,
+  "name": "Line chart",
+  "chart": "cartesian",
+  "collections": {
+    "categories": {
+      "label": "string"
+    },
+    "series": {
+      "label": "string",
+      "values": {
+        "list": "number?"
+      },
+      "color": "color?",
+      "markers": {
+        "optional": {
+          "list": "color?"
+        }
+      }
+    }
+  },
+  "variants": {
+    "labels": [true, false]
+  },
+  "defaultVariant": {
+    "labels": false
+  },
+  "defaults": {
+    "accent1": {
+      "var": "accent1"
+    },
+    "ink": {
+      "var": "text"
+    },
+    "muted": {
+      "var": "text2"
+    },
+    "rule": {
+      "var": "text2"
+    },
+    "caption": "caption",
+    "heading": "label",
+    "title": "",
+    "prefix": "",
+    "suffix": "",
+    "scale": 1,
+    "digits": "auto",
+    "lineWidth": 4,
+    "markerRadius": 5,
+    "captionSmall": 18,
+    "focus": ""
+  },
+  "let": [
+    [
+      "valid",
+      [
+        "eq",
+        [
+          "count",
+          [
+            "filter",
+            ["get", "data.series"],
+            "row",
+            ["if", ["eq", ["count", ["get", "row.values"]], ["count", ["get", "data.categories"]]], false, true]
+          ]
+        ],
+        0
+      ]
+    ],
+    [
+      "seriesColors",
+      [
+        "palette",
+        ["list", ["grayscale", ["get", "token.muted"]]],
+        [
+          "map",
+          ["get", "data.series"],
+          "row",
+          [
+            "if",
+            ["eq", ["get", "row.color"], null],
+            [
+              "if",
+              [
+                "if",
+                ["eq", ["get", "token.focus"], ""],
+                ["eq", ["get", "i"], 0],
+                ["eq", ["get", "row.id"], ["get", "token.focus"]]
+              ],
+              ["get", "token.accent1"],
+              null
+            ],
+            ["get", "row.color"]
+          ]
+        ]
+      ]
+    ],
+    [
+      "seriesRows",
+      [
+        "map",
+        ["get", "data.series"],
+        "series",
+        {
+          "id": ["get", "series.id"],
+          "label": ["get", "series.label"],
+          "values": ["get", "series.values"],
+          "markers": ["get", "series.markers"],
+          "color": ["at", ["get", "seriesColors"], ["get", "i"]],
+          "width": [
+            "if",
+            [
+              "if",
+              ["eq", ["get", "token.focus"], ""],
+              ["eq", ["get", "i"], 0],
+              ["eq", ["get", "series.id"], ["get", "token.focus"]]
+            ],
+            ["get", "token.lineWidth"],
+            ["mul", 0.5, ["get", "token.lineWidth"]]
+          ]
+        }
+      ]
+    ],
+    [
+      "active",
+      [
+        "if",
+        ["get", "valid"],
+        [
+          "filter",
+          ["get", "seriesRows"],
+          "row",
+          ["lt", 0, ["count", ["filter", ["get", "row.values"], "v", ["if", ["eq", ["get", "v"], null], false, true]]]]
+        ],
+        ["list"]
+      ]
+    ],
+    ["rowCount", ["count", ["get", "data.categories"]]],
+    [
+      "numbers",
+      [
+        "flatten",
+        [
+          "map",
+          ["get", "active"],
+          "row",
+          ["filter", ["get", "row.values"], "v", ["if", ["eq", ["get", "v"], null], false, true]]
+        ]
+      ]
+    ],
+    ["observationCount", ["count", ["get", "numbers"]]],
+    ["lo", ["min", 0, ["get", "numbers"]]],
+    ["hi", ["if", ["eq", ["get", "lo"], ["max", 0, ["get", "numbers"]]], 1, ["max", 0, ["get", "numbers"]]]],
+    [
+      "digits",
+      [
+        "if",
+        ["eq", ["get", "token.digits"], "auto"],
+        ["decimals", ["get", "numbers"], ["get", "token.scale"]],
+        ["get", "token.digits"]
+      ]
+    ],
+    [
+      "valueFormat",
+      {
+        "scale": ["get", "token.scale"],
+        "digits": ["get", "digits"],
+        "prefix": ["get", "token.prefix"],
+        "suffix": ["get", "token.suffix"],
+        "sign": "negative"
+      }
+    ],
+    [
+      "top",
+      [
+        "if",
+        ["eq", ["get", "token.title"], ""],
+        ["max", 20, ["min", 46, ["div", ["get", "frame.h"], 5]]],
+        ["max", 48, ["min", 86, ["div", ["get", "frame.h"], 4]]]
+      ]
+    ],
+    [
+      "baseBottom",
+      ["max", ["get", "top"], ["sub", ["get", "frame.h"], ["max", 58, ["min", 108, ["div", ["get", "frame.h"], 4]]]]]
+    ],
+    [
+      "axisWidth",
+      [
+        "min",
+        ["max", 42, ["mul", ["get", "frame.w"], 0.18]],
+        [
+          "max",
+          49,
+          [
+            "add",
+            2,
+            [
+              "max",
+              ["textWidth", ["format", ["get", "lo"], ["get", "valueFormat"]], ["get", "token.caption"]],
+              ["textWidth", ["format", ["get", "hi"], ["get", "valueFormat"]], ["get", "token.caption"]]
+            ]
+          ]
+        ]
+      ]
+    ],
+    ["axisX", ["min", ["div", ["get", "frame.w"], 4], ["add", ["get", "axisWidth"], 8]]],
+    ["left", ["min", ["div", ["get", "frame.w"], 3], ["add", ["get", "axisX"], 32]]],
+    [
+      "labelX",
+      [
+        "if",
+        ["eq", ["get", "rowCount"], 1],
+        ["add", ["get", "left"], 12],
+        ["sub", ["get", "frame.w"], ["min", ["mul", ["get", "frame.w"], 0.25], 240]]
+      ]
+    ],
+    [
+      "endMetrics",
+      [
+        "map",
+        ["get", "active"],
+        "series",
+        {
+          "id": ["get", "series.id"],
+          "color": ["get", "series.color"],
+          "chars": ["get", "series.label"],
+          "size": ["textMetrics", ["get", "series.label"], ["get", "token.caption"]],
+          "val": [
+            "at",
+            ["filter", ["get", "series.values"], "v", ["if", ["eq", ["get", "v"], null], false, true]],
+            [
+              "sub",
+              ["count", ["filter", ["get", "series.values"], "v", ["if", ["eq", ["get", "v"], null], false, true]]],
+              1
+            ]
+          ]
+        }
+      ]
+    ],
+    [
+      "endLabels",
+      [
+        "map",
+        ["get", "endMetrics"],
+        "end",
+        {
+          "id": ["get", "end.id"],
+          "color": ["get", "end.color"],
+          "chars": ["get", "end.chars"],
+          "box": {
+            "x": ["get", "labelX"],
+            "y": [
+              "max",
+              0,
+              [
+                "min",
+                [
+                  "sub",
+                  ["linear", ["get", "end.val"], ["get", "lo"], ["get", "hi"], ["get", "baseBottom"], ["get", "top"]],
+                  ["div", ["get", "end.size.h"], 2]
+                ],
+                ["max", 0, ["sub", ["get", "frame.h"], ["get", "end.size.h"]]]
+              ]
+            ],
+            "w": ["max", 1, ["add", ["get", "end.size.w"], 26]],
+            "h": ["max", 1, ["add", ["get", "end.size.h"], 1]]
+          }
+        }
+      ]
+    ],
+    [
+      "direct",
+      [
+        "if",
+        ["lt", 3, ["count", ["get", "active"]]],
+        [
+          "if",
+          [
+            "eq",
+            0,
+            [
+              "count",
+              [
+                "filter",
+                ["get", "active"],
+                "p",
+                ["eq", ["at", ["get", "p.values"], ["sub", ["get", "rowCount"], 1]], null]
+              ]
+            ]
+          ],
+          [
+            "if",
+            ["lt", 180, ["get", "frame.w"]],
+            [
+              "if",
+              ["eq", ["count", ["get", "endLabels"]], ["count", ["nonoverlap", ["get", "endLabels"]]]],
+              [
+                "eq",
+                0,
+                [
+                  "count",
+                  [
+                    "filter",
+                    ["get", "endLabels"],
+                    "p",
+                    ["lt", ["sub", ["get", "frame.w"], ["get", "labelX"]], ["get", "p.box.w"]]
+                  ]
+                ]
+              ],
+              false
+            ],
+            false
+          ],
+          false
+        ],
+        true
+      ]
+    ],
+    [
+      "placedEnds",
+      [
+        "if",
+        ["lt", 3, ["count", ["get", "active"]]],
+        ["get", "endLabels"],
+        [
+          "place-boxes",
+          [
+            "map",
+            ["get", "endLabels"],
+            "p",
+            {
+              "id": ["get", "p.id"],
+              "color": ["get", "p.color"],
+              "chars": ["get", "p.chars"],
+              "boxes": [
+                "list",
+                ["get", "p.box"],
+                {
+                  "x": ["get", "p.box.x"],
+                  "y": ["add", ["get", "p.box.y"], ["mul", -1, ["add", ["get", "p.box.h"], 4]]],
+                  "w": ["get", "p.box.w"],
+                  "h": ["get", "p.box.h"]
+                },
+                {
+                  "x": ["get", "p.box.x"],
+                  "y": ["add", ["get", "p.box.y"], ["mul", 1, ["add", ["get", "p.box.h"], 4]]],
+                  "w": ["get", "p.box.w"],
+                  "h": ["get", "p.box.h"]
+                },
+                {
+                  "x": ["get", "p.box.x"],
+                  "y": ["add", ["get", "p.box.y"], ["mul", -2, ["add", ["get", "p.box.h"], 4]]],
+                  "w": ["get", "p.box.w"],
+                  "h": ["get", "p.box.h"]
+                },
+                {
+                  "x": ["get", "p.box.x"],
+                  "y": ["add", ["get", "p.box.y"], ["mul", 2, ["add", ["get", "p.box.h"], 4]]],
+                  "w": ["get", "p.box.w"],
+                  "h": ["get", "p.box.h"]
+                },
+                {
+                  "x": ["get", "p.box.x"],
+                  "y": ["add", ["get", "p.box.y"], ["mul", -3, ["add", ["get", "p.box.h"], 4]]],
+                  "w": ["get", "p.box.w"],
+                  "h": ["get", "p.box.h"]
+                },
+                {
+                  "x": ["get", "p.box.x"],
+                  "y": ["add", ["get", "p.box.y"], ["mul", 3, ["add", ["get", "p.box.h"], 4]]],
+                  "w": ["get", "p.box.w"],
+                  "h": ["get", "p.box.h"]
+                }
+              ]
+            }
+          ],
+          ["list"],
+          {
+            "x": 0,
+            "y": 0,
+            "w": ["get", "frame.w"],
+            "h": ["get", "frame.h"]
+          }
+        ]
+      ]
+    ],
+    [
+      "legend",
+      [
+        "if",
+        ["lt", 3, ["count", ["get", "active"]]],
+        [
+          "if",
+          ["get", "direct"],
+          {
+            "size": ["get", "token.captionSmall"],
+            "rows": 0,
+            "items": ["list"]
+          },
+          [
+            "flowText",
+            [
+              "map",
+              ["get", "active"],
+              "srs",
+              {
+                "id": ["get", "srs.id"],
+                "color": ["get", "srs.color"],
+                "chars": ["get", "srs.label"]
+              }
+            ],
+            {
+              "width": ["max", 0, ["sub", ["get", "frame.w"], 24]],
+              "rows": ["if", ["lt", ["get", "frame.h"], 360], 1, 2],
+              "rowHeight": 32,
+              "leading": 30,
+              "gap": 22,
+              "style": ["get", "token.caption"],
+              "smaller": ["get", "token.captionSmall"]
+            }
+          ]
+        ],
+        {
+          "size": ["get", "token.captionSmall"],
+          "rows": 0,
+          "items": ["list"]
+        }
+      ]
+    ],
+    ["legendTop", ["sub", ["get", "frame.h"], ["mul", 32, ["get", "legend.rows"]]]],
+    [
+      "bottom",
+      [
+        "if",
+        ["eq", ["get", "legend.rows"], 0],
+        ["get", "baseBottom"],
+        [
+          "max",
+          ["get", "top"],
+          [
+            "min",
+            ["get", "baseBottom"],
+            ["sub", ["get", "legendTop"], ["add", ["if", ["get", "variant.labels"], 38, 10], 36, 12]]
+          ]
+        ]
+      ]
+    ],
+    ["categoryY", ["add", ["get", "bottom"], ["if", ["get", "variant.labels"], 38, 10]]],
+    ["right", ["max", ["get", "left"], ["sub", ["if", ["get", "direct"], ["get", "labelX"], ["get", "frame.w"]], 14]]],
+    ["step", ["div", ["sub", ["get", "right"], ["get", "left"]], ["max", 1, ["sub", ["get", "rowCount"], 1]]]],
+    [
+      "lane",
+      ["max", 1, ["min", 135, ["if", ["eq", ["get", "rowCount"], 1], ["div", ["get", "frame.w"], 3], ["get", "step"]]]]
+    ],
+    ["canvas", ["max", 1, ["get", "frame.w"], ["get", "frame.h"]]],
+    [
+      "dot",
+      ["div", ["min", ["get", "token.markerRadius"], ["max", 2, ["mul", ["get", "lane"], 0.3]]], ["get", "canvas"]]
+    ],
+    [
+      "canDraw",
+      [
+        "if",
+        ["lt", 100, ["get", "frame.w"]],
+        ["if", ["lt", ["get", "top"], ["get", "bottom"]], ["lt", 0, ["get", "observationCount"]], false],
+        false
+      ]
+    ],
+    [
+      "positionRows",
+      [
+        "map",
+        ["get", "active"],
+        "srs",
+        {
+          "id": ["get", "srs.id"],
+          "color": ["get", "srs.color"],
+          "positions": [
+            "map",
+            ["get", "srs.values"],
+            "v",
+            [
+              "if",
+              ["eq", ["get", "v"], null],
+              null,
+              {
+                "id": ["field", ["at", ["get", "data.categories"], ["get", "i"]], "id"],
+                "x": ["add", ["get", "left"], ["mul", ["get", "step"], ["get", "i"]]],
+                "y": ["linear", ["get", "v"], ["get", "lo"], ["get", "hi"], ["get", "bottom"], ["get", "top"]],
+                "value": ["get", "v"],
+                "color": [
+                  "if",
+                  ["eq", ["get", "srs.markers"], null],
+                  ["get", "srs.color"],
+                  [
+                    "if",
+                    ["eq", ["at", ["get", "srs.markers"], ["get", "i"]], null],
+                    ["get", "srs.color"],
+                    ["at", ["get", "srs.markers"], ["get", "i"]]
+                  ]
+                ]
+              }
+            ]
+          ],
+          "width": ["get", "srs.width"]
+        }
+      ]
+    ]
+  ],
+  "parts": [
+    {
+      "let": [
+        [
+          "seriesPoints",
+          [
+            "map",
+            ["get", "positionRows"],
+            "srs",
+            {
+              "id": ["get", "srs.id"],
+              "color": ["get", "srs.color"],
+              "positions": ["get", "srs.positions"],
+              "markers": ["filter", ["get", "srs.positions"], "pos", ["if", ["eq", ["get", "pos"], null], false, true]],
+              "width": ["get", "srs.width"]
+            }
+          ]
+        ]
+      ],
+      "children": [
+        {
+          "emit": {
+            "kind": "notice",
+            "key": ["list", "end-labels"],
+            "message": "Widen the chart to fit every line name at its endpoint."
+          },
+          "when": [
+            "if",
+            ["lt", 3, ["count", ["get", "active"]]],
+            false,
+            ["lt", ["count", ["get", "placedEnds"]], ["count", ["get", "endLabels"]]]
+          ]
+        },
+        {
+          "emit": {
+            "kind": "notice",
+            "key": ["list", "series-density"],
+            "message": "Use small multiples or highlight a series to make more than five lines easier to read."
+          },
+          "when": ["lt", 5, ["count", ["get", "active"]]]
+        },
+        {
+          "emit": {
+            "kind": "notice",
+            "key": ["list", "repeated-colors"],
+            "message": "Some lines share an assigned colour. Use distinct colours."
+          },
+          "when": [
+            "lt",
+            ["count", ["unique-colors", ["map", ["get", "active"], "row", ["get", "row.color"]]]],
+            ["count", ["get", "active"]]
+          ]
+        },
+        {
+          "emit": {
+            "kind": "notice",
+            "key": ["list", "series-length"],
+            "message": "Each line series needs one value per category. Use null for a missing observation."
+          },
+          "when": ["if", ["get", "valid"], false, true]
+        },
+        {
+          "emit": {
+            "kind": "notice",
+            "key": ["list", "no-values"],
+            "message": "Add a numeric observation to draw the line chart."
+          },
+          "when": ["if", ["get", "valid"], ["eq", ["get", "observationCount"], 0], false]
+        },
+        {
+          "emit": {
+            "kind": "notice",
+            "key": ["list", "plot"],
+            "message": "The chart frame is too small to place the axes."
+          },
+          "when": ["if", ["lt", 0, ["get", "observationCount"]], ["if", ["get", "canDraw"], false, true], false]
+        },
+        {
+          "when": ["get", "canDraw"],
+          "children": [
+            {
+              "emit": {
+                "kind": "text",
+                "key": ["list", "title"],
+                "x": 0,
+                "y": 0,
+                "w": ["get", "frame.w"],
+                "h": 42,
+                "chars": ["get", "token.title"],
+                "style": ["get", "token.heading"],
+                "color": ["get", "token.ink"],
+                "align": "left",
+                "alignV": "center",
+                "fit": "omit"
+              },
+              "when": ["if", ["eq", ["get", "token.title"], ""], false, true]
+            },
+            {
+              "emit": {
+                "kind": "line",
+                "key": ["list", "axis"],
+                "start": ["point", ["get", "axisX"], ["get", "top"]],
+                "end": ["point", ["get", "axisX"], ["get", "bottom"]],
+                "color": ["get", "token.rule"],
+                "width": 1.5,
+                "route": "straight",
+                "arrow": "none"
+              },
+              "when": ["if", ["get", "variant.labels"], false, true]
+            },
+            {
+              "emit": {
+                "kind": "line",
+                "key": ["list", "zero"],
+                "start": [
+                  "point",
+                  ["get", "axisX"],
+                  ["linear", 0, ["get", "lo"], ["get", "hi"], ["get", "bottom"], ["get", "top"]]
+                ],
+                "end": [
+                  "point",
+                  ["get", "right"],
+                  ["linear", 0, ["get", "lo"], ["get", "hi"], ["get", "bottom"], ["get", "top"]]
+                ],
+                "color": ["get", "token.rule"],
+                "width": 2,
+                "route": "straight",
+                "arrow": "none"
+              }
+            },
+            {
+              "repeat": {
+                "over": ["list", ["get", "lo"], 0, ["get", "hi"]],
+                "as": "tick"
+              },
+              "when": [
+                "if",
+                ["get", "variant.labels"],
+                false,
+                ["if", ["eq", ["get", "tick"], 0], ["eq", ["get", "i"], 1], true]
+              ],
+              "children": [
+                {
+                  "emit": {
+                    "kind": "text",
+                    "key": ["list", "tick", ["index-key", ["get", "i"]]],
+                    "x": 0,
+                    "y": [
+                      "sub",
+                      ["linear", ["get", "tick"], ["get", "lo"], ["get", "hi"], ["get", "bottom"], ["get", "top"]],
+                      16
+                    ],
+                    "w": ["get", "axisWidth"],
+                    "h": 32,
+                    "chars": ["format", ["get", "tick"], ["get", "valueFormat"]],
+                    "style": ["get", "token.caption"],
+                    "color": ["get", "token.muted"],
+                    "align": "right",
+                    "alignV": "center",
+                    "fit": "omit"
+                  }
+                }
+              ]
+            },
+            {
+              "repeat": {
+                "over": ["get", "seriesPoints"],
+                "as": "srs"
+              },
+              "children": [
+                {
+                  "repeat": {
+                    "over": ["runs", ["get", "srs.positions"]],
+                    "as": "run"
+                  },
+                  "let": [["first", ["at", ["get", "run"], 0]]],
+                  "when": ["lt", 1, ["count", ["get", "run"]]],
+                  "children": [
+                    {
+                      "emit": {
+                        "kind": "path",
+                        "key": ["list", "trace", ["get", "srs.id"], ["get", "first.id"]],
+                        "x": 0,
+                        "y": 0,
+                        "w": ["get", "canvas"],
+                        "h": ["get", "canvas"],
+                        "d": [
+                          "polyline",
+                          [
+                            "map",
+                            ["get", "run"],
+                            "xy",
+                            [
+                              "point",
+                              ["div", ["get", "xy.x"], ["get", "canvas"]],
+                              ["div", ["get", "xy.y"], ["get", "canvas"]]
+                            ]
+                          ]
+                        ],
+                        "stroke": {
+                          "color": ["get", "srs.color"],
+                          "width": ["get", "srs.width"]
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "repeat": {
+                    "over": ["group-by", ["get", "srs.markers"], "color"],
+                    "as": "marks"
+                  },
+                  "children": [
+                    {
+                      "repeat": {
+                        "over": ["partition", ["get", "marks.items"], 24],
+                        "as": "chunk"
+                      },
+                      "let": [["anchor", ["at", ["get", "chunk"], 0]]],
+                      "children": [
+                        {
+                          "emit": {
+                            "kind": "path",
+                            "key": ["list", "markers", ["get", "srs.id"], ["get", "anchor.id"]],
+                            "x": 0,
+                            "y": 0,
+                            "w": ["get", "canvas"],
+                            "h": ["get", "canvas"],
+                            "d": [
+                              "discs",
+                              [
+                                "map",
+                                ["get", "chunk"],
+                                "xy",
+                                [
+                                  "point",
+                                  ["div", ["get", "xy.x"], ["get", "canvas"]],
+                                  ["div", ["get", "xy.y"], ["get", "canvas"]]
+                                ]
+                              ],
+                              ["get", "dot"],
+                              ["get", "dot"]
+                            ],
+                            "fill": ["get", "anchor.color"]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "repeat": {
+                "over": ["get", "data.categories"],
+                "as": "c"
+              },
+              "children": [
+                {
+                  "emit": {
+                    "kind": "text",
+                    "key": ["list", "category", ["get", "c.id"]],
+                    "x": ["sub", ["get", "centerX"], ["div", ["get", "width"], 2]],
+                    "y": ["get", "categoryY"],
+                    "w": ["get", "width"],
+                    "h": 36,
+                    "chars": ["get", "c.label"],
+                    "style": ["get", "token.caption"],
+                    "color": ["get", "token.muted"],
+                    "align": "center",
+                    "alignV": "center",
+                    "fit": {
+                      "smaller": ["get", "token.captionSmall"],
+                      "group": "categories",
+                      "thin": 4
+                    }
+                  }
+                }
+              ],
+              "let": [
+                ["centerX", ["add", ["get", "left"], ["mul", ["get", "step"], ["get", "i"]]]],
+                [
+                  "width",
+                  [
+                    "max",
+                    0,
+                    [
+                      "min",
+                      ["get", "lane"],
+                      ["mul", 2, ["get", "centerX"]],
+                      ["mul", 2, ["sub", ["get", "frame.w"], ["get", "centerX"]]]
+                    ]
+                  ]
+                ]
+              ]
+            },
+            {
+              "repeat": {
+                "over": ["get", "placedEnds"],
+                "as": "p"
+              },
+              "when": ["get", "direct"],
+              "children": [
+                {
+                  "emit": {
+                    "kind": "line",
+                    "key": ["list", "end-swatch", ["get", "p.id"]],
+                    "start": ["point", ["get", "p.box.x"], ["add", ["get", "p.box.y"], ["div", ["get", "p.box.h"], 2]]],
+                    "end": [
+                      "point",
+                      ["add", ["get", "p.box.x"], 16],
+                      ["add", ["get", "p.box.y"], ["div", ["get", "p.box.h"], 2]]
+                    ],
+                    "color": ["get", "p.color"],
+                    "width": 3,
+                    "route": "straight",
+                    "arrow": "none"
+                  }
+                },
+                {
+                  "emit": {
+                    "kind": "text",
+                    "key": ["list", "end-label", ["get", "p.id"]],
+                    "x": ["add", ["get", "p.box.x"], 24],
+                    "y": ["get", "p.box.y"],
+                    "w": ["sub", ["get", "p.box.w"], 24],
+                    "h": ["get", "p.box.h"],
+                    "chars": ["get", "p.chars"],
+                    "style": ["get", "token.caption"],
+                    "color": ["get", "token.ink"],
+                    "align": "left",
+                    "alignV": "center"
+                  }
+                }
+              ]
+            },
+            {
+              "repeat": {
+                "over": ["get", "legend.items"],
+                "as": "item"
+              },
+              "let": [
+                ["lx", ["add", 12, ["get", "item.x"]]],
+                ["ly", ["add", ["get", "legendTop"], ["mul", ["get", "item.row"], 32]]]
+              ],
+              "children": [
+                {
+                  "emit": {
+                    "kind": "line",
+                    "key": ["list", "legend-swatch", ["get", "item.item.id"]],
+                    "start": ["point", ["get", "lx"], ["add", ["get", "ly"], 16]],
+                    "end": ["point", ["add", ["get", "lx"], 22], ["add", ["get", "ly"], 16]],
+                    "color": ["get", "item.item.color"],
+                    "width": 3,
+                    "route": "straight",
+                    "arrow": "none"
+                  }
+                },
+                {
+                  "emit": {
+                    "kind": "text",
+                    "key": ["list", "legend", ["get", "item.item.id"]],
+                    "x": ["add", ["get", "lx"], 30],
+                    "y": ["get", "ly"],
+                    "w": ["get", "item.w"],
+                    "h": 32,
+                    "chars": ["get", "item.item.chars"],
+                    "size": ["get", "legend.size"],
+                    "style": ["get", "token.caption"],
+                    "color": ["get", "token.ink"],
+                    "align": "left",
+                    "alignV": "center"
+                  }
+                }
+              ]
+            },
+            {
+              "let": [
+                [
+                  "labelLimit",
+                  ["max", 1, ["min", 12, ["floor", ["div", 48, ["max", 1, ["count", ["get", "active"]]]]]]]
+                ],
+                [
+                  "labelRows",
+                  [
+                    "flatten",
+                    [
+                      "map",
+                      ["get", "seriesPoints"],
+                      "srs",
+                      [
+                        "map",
+                        ["sample", ["get", "srs.markers"], ["get", "labelLimit"]],
+                        "obs",
+                        {
+                          "id": ["get", "obs.id"],
+                          "series": ["get", "srs.id"],
+                          "x": ["get", "obs.x"],
+                          "y": ["get", "obs.y"],
+                          "value": ["get", "obs.value"],
+                          "chars": ["format", ["get", "obs.value"], ["get", "valueFormat"]]
+                        }
+                      ]
+                    ]
+                  ]
+                ],
+                [
+                  "placed",
+                  [
+                    "place-boxes",
+                    [
+                      "map",
+                      [
+                        "map",
+                        ["get", "labelRows"],
+                        "p",
+                        {
+                          "id": ["get", "p.id"],
+                          "series": ["get", "p.series"],
+                          "x": ["get", "p.x"],
+                          "y": ["get", "p.y"],
+                          "value": ["get", "p.value"],
+                          "chars": ["get", "p.chars"],
+                          "size": ["textMetrics", ["get", "p.chars"], ["get", "token.caption"]]
+                        }
+                      ],
+                      "p",
+                      {
+                        "id": ["get", "p.id"],
+                        "series": ["get", "p.series"],
+                        "chars": ["get", "p.chars"],
+                        "boxes": [
+                          "if",
+                          ["lt", ["get", "p.value"], 0],
+                          [
+                            "list",
+                            {
+                              "x": [
+                                "max",
+                                0,
+                                [
+                                  "min",
+                                  ["sub", ["get", "p.x"], ["div", ["get", "p.size.w"], 2]],
+                                  ["max", 0, ["sub", ["get", "frame.w"], ["add", ["get", "p.size.w"], 4]]]
+                                ]
+                              ],
+                              "y": ["add", ["get", "p.y"], 9],
+                              "w": ["add", ["get", "p.size.w"], 4],
+                              "h": ["add", ["get", "p.size.h"], 2]
+                            },
+                            {
+                              "x": [
+                                "max",
+                                0,
+                                [
+                                  "min",
+                                  ["sub", ["get", "p.x"], ["div", ["get", "p.size.w"], 2]],
+                                  ["max", 0, ["sub", ["get", "frame.w"], ["add", ["get", "p.size.w"], 4]]]
+                                ]
+                              ],
+                              "y": ["sub", ["get", "p.y"], ["add", ["get", "p.size.h"], 11]],
+                              "w": ["add", ["get", "p.size.w"], 4],
+                              "h": ["add", ["get", "p.size.h"], 2]
+                            }
+                          ],
+                          [
+                            "list",
+                            {
+                              "x": [
+                                "max",
+                                0,
+                                [
+                                  "min",
+                                  ["sub", ["get", "p.x"], ["div", ["get", "p.size.w"], 2]],
+                                  ["max", 0, ["sub", ["get", "frame.w"], ["add", ["get", "p.size.w"], 4]]]
+                                ]
+                              ],
+                              "y": ["sub", ["get", "p.y"], ["add", ["get", "p.size.h"], 11]],
+                              "w": ["add", ["get", "p.size.w"], 4],
+                              "h": ["add", ["get", "p.size.h"], 2]
+                            },
+                            {
+                              "x": [
+                                "max",
+                                0,
+                                [
+                                  "min",
+                                  ["sub", ["get", "p.x"], ["div", ["get", "p.size.w"], 2]],
+                                  ["max", 0, ["sub", ["get", "frame.w"], ["add", ["get", "p.size.w"], 4]]]
+                                ]
+                              ],
+                              "y": ["add", ["get", "p.y"], 9],
+                              "w": ["add", ["get", "p.size.w"], 4],
+                              "h": ["add", ["get", "p.size.h"], 2]
+                            }
+                          ]
+                        ]
+                      }
+                    ],
+                    [
+                      "flatten",
+                      [
+                        "list",
+                        [
+                          "map",
+                          ["flatten", ["map", ["get", "seriesPoints"], "srs", ["get", "srs.markers"]]],
+                          "m",
+                          {
+                            "x": ["sub", ["get", "m.x"], 7],
+                            "y": ["sub", ["get", "m.y"], 7],
+                            "w": 14,
+                            "h": 14
+                          }
+                        ],
+                        [
+                          "list",
+                          {
+                            "x": ["get", "left"],
+                            "y": [
+                              "sub",
+                              ["linear", 0, ["get", "lo"], ["get", "hi"], ["get", "bottom"], ["get", "top"]],
+                              3
+                            ],
+                            "w": ["sub", ["get", "right"], ["get", "left"]],
+                            "h": 6
+                          }
+                        ]
+                      ]
+                    ],
+                    {
+                      "x": 0,
+                      "y": ["if", ["eq", ["get", "token.title"], ""], 0, 43],
+                      "w": ["get", "frame.w"],
+                      "h": ["max", 0, ["sub", ["get", "categoryY"], ["if", ["eq", ["get", "token.title"], ""], 0, 43]]]
+                    }
+                  ]
+                ]
+              ],
+              "when": ["get", "variant.labels"],
+              "children": [
+                {
+                  "repeat": {
+                    "over": ["get", "placed"],
+                    "as": "p"
+                  },
+                  "children": [
+                    {
+                      "emit": {
+                        "kind": "text",
+                        "key": ["list", "value", ["get", "p.series"], ["get", "p.id"]],
+                        "x": ["get", "p.box.x"],
+                        "y": ["get", "p.box.y"],
+                        "w": ["get", "p.box.w"],
+                        "h": ["get", "p.box.h"],
+                        "chars": ["get", "p.chars"],
+                        "style": ["get", "token.caption"],
+                        "color": ["get", "token.ink"],
+                        "align": "center",
+                        "alignV": "center"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "emit": {
+                    "kind": "notice",
+                    "key": ["list", "value-density"],
+                    "message": "Some value labels were omitted because there was not enough room."
+                  },
+                  "when": ["lt", ["count", ["get", "placed"]], ["get", "observationCount"]]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

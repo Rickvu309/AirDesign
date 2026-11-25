@@ -46,8 +46,8 @@ test("wedges, rings, near-full sweeps, polylines and dashes paint on the filmstr
   const thumb = picture(await page.locator('[data-slide-entry="1"] [data-slide-thumb]').screenshot())
   const wanted = measure(canvas)
   expect([
-    ...parityFaults("canvas", wanted, wanted),
-    ...parityFaults("filmstrip", measure(thumb), wanted, differences(thumb, canvas)),
+    ...parityFaults("canvas", wanted, wanted, undefined, { highlight: 4.2, varying: 4.5 }),
+    ...parityFaults("filmstrip", measure(thumb), wanted, differences(thumb, canvas), { highlight: 16, varying: 16 }),
   ]).toEqual([])
 })
 

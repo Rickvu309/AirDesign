@@ -53,6 +53,8 @@ for (const name of [
   "clustered-charts",
   "diagram-templates",
   "path-paint",
+  "path-seams",
+  "line-pie-donut",
   "usage-page",
   "account-name",
   "sign-in-mail",

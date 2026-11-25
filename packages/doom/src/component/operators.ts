@@ -1,19 +1,25 @@
+import { grayscale, resolveColor } from "../color.js"
 import { finite, integer, literal, object, reject } from "../read-kit.js"
 import type { ReportFinding } from "./findings.js"
-import type { FittingContext } from "./fit-text.js"
 import { axis } from "./numeric-axis.js"
 import { sortBy, startsWithWordIgnoreCase } from "./order-values.js"
-import { decimals, positiveScale } from "./precision.js"
-import { flowText, textWidth } from "./text-operators.js"
 import { linkChannels } from "./link-channels.js"
-import { polyline, wedge } from "./path-operators.js"
-import { polar } from "./polar.js"
 import { textExtent } from "./text-extent.js"
+import { contrastInk, type FittingContext } from "./fit-text.js"
+import { allocate } from "./allocate.js"
+import { flatten, groupBy, indexBy, partition, positiveInteger, runs, sample, splitRanked } from "./list-operators.js"
+import { palette, uniqueColors } from "./palette.js"
+import { decimals, positiveScale } from "./precision.js"
+import { flowText, textMetrics, textWidth } from "./text-operators.js"
+import { polar } from "./polar.js"
+import { nonoverlap, placeBoxes, sectorSpace } from "./placement-operators.js"
+import { discs, polyline, wedge } from "./path-operators.js"
 import {
   type Charge,
   type Value,
   type ValueRecord,
   type Values,
+  color,
   isList,
   numeric,
   string,
@@ -112,16 +118,6 @@ const operators: Readonly<Record<string, Operation>> = {
     return values.reduce<number>((total, value) => total + number(value), 0)
   }),
   count: fixed(1, ([source]) => list(source).length),
-  flatten: fixed(1, ([source], charge) => {
-    const lists = list(source)
-    charge(lists.length)
-    const nested = lists.map((value) => {
-      const values = list(value)
-      charge(values.length)
-      return values
-    })
-    return nested.flat()
-  }),
   coalesce: fixed(2, ([value, fallback]) => value ?? fallback ?? null),
   eq: fixed(2, ([a, b], charge) => {
     if (typeof a === "string" && typeof b === "string" && a.length === b.length) charge(a.length)
@@ -139,6 +135,13 @@ const operators: Readonly<Record<string, Operation>> = {
       return string(value)
     })
     return string(strings.join(""))
+  }),
+  field: fixed(2, ([value, key]) => {
+    if (value === null || typeof value !== "object" || isList(value)) return reject("shape", "An object.")
+    const fields = value
+    const name = string(key)
+    if (!Object.hasOwn(fields, name)) return reject("shape", `No field "${name}".`)
+    return fields[name] ?? null
   }),
   at: fixed(2, ([source, i]) => list(source)[index(i)] ?? null),
   linear: fixed(5, ([value, lo, hi, a, b]) => {
@@ -172,6 +175,10 @@ const operators: Readonly<Record<string, Operation>> = {
   }),
   isInteger: fixed(1, ([value]) => Number.isInteger(number(value))),
   textWidth: { min: 2, max: 3, run: (args, _charge, _format, context) => textWidth(args, context) },
+  textMetrics: fixed(2, (args, _charge, _format, context) => textMetrics(args, context)),
+  "contrast-ink": fixed(3, ([fill, first, second], _charge, _format, context) =>
+    contrastInk(fill, first, second, context.theme),
+  ),
   flowText: fixed(2, (args, _charge, _format, context, report) => flowText(args, context, report)),
   format: fixed(2, ([value, options], charge, format, _context, report) => {
     if (options !== null && typeof options === "object" && !isList(options)) {
@@ -185,6 +192,37 @@ const operators: Readonly<Record<string, Operation>> = {
     const lead = rounded < 0 ? "−" : rounded > 0 && sign === "always" ? "+" : ""
     return string(lead + prefix + format(Math.abs(rounded), digits) + suffix)
   }),
+  floor: fixed(1, ([value]) => Math.floor(number(value))),
+  hypot: fixed(2, ([x, y]) => Math.hypot(number(x), number(y))),
+  pow10: fixed(1, ([digits]) => 10 ** integer(-12, 12)(digits)),
+  "index-key": fixed(1, ([i]) => String(index(i))),
+  flatten: fixed(1, ([values], charge) => flatten(list(values), charge)),
+  partition: fixed(2, ([values, size], charge) => partition(list(values), positiveInteger(size), charge)),
+  runs: fixed(1, ([values], charge) => runs(list(values), charge)),
+  "group-by": fixed(2, ([values, key], charge) => groupBy(list(values), string(key), charge)),
+  allocate: fixed(2, ([values, total], charge) => allocate(list(values), total, charge)),
+  "split-ranked": fixed(3, ([values, field, count], charge) =>
+    splitRanked(list(values), string(field), integer(0, 100)(count), charge),
+  ),
+  grayscale: fixed(1, ([paint], _charge, _format, context) => grayscale(resolveColor(color(paint), context.theme))),
+  "unique-colors": fixed(1, ([values], charge, _format, context) => uniqueColors(list(values), context.theme, charge)),
+  palette: fixed(2, ([values, requested], charge, _format, context) =>
+    palette(list(values), list(requested), context.theme, charge),
+  ),
+  "index-by": fixed(2, ([values, field], charge) => indexBy(list(values), string(field), charge)),
+  lookup: fixed(2, ([value, key], charge) => {
+    if (value === null || typeof value !== "object" || isList(value)) return reject("shape", "An object.")
+    const name = string(key)
+    charge(name.length)
+    return Object.hasOwn(value, name) ? (value[name] ?? null) : null
+  }),
+  sample: fixed(2, ([values, size], charge) => sample(list(values), positiveInteger(size), charge)),
+  "place-boxes": fixed(3, ([rows, obstacles, bounds], charge) =>
+    placeBoxes(list(rows), list(obstacles), bounds, charge),
+  ),
+  nonoverlap: fixed(1, ([values], charge) => nonoverlap(list(values), charge)),
+  "sector-space": fixed(4, ([r, inner, outer, span]) => sectorSpace(r, inner, outer, span)),
+  discs: fixed(3, ([points, rx, ry], charge) => discs(list(points), number(rx), number(ry), charge)),
   polyline: fixed(1, ([points], charge) => polyline(list(points), charge)),
   wedge: fixed(5, wedge),
   polar: fixed(3, polar),

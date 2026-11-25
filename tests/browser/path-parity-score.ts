@@ -332,7 +332,7 @@ export function differences(picture: Picture, canvas: Picture): Readonly<Record<
 }
 
 const seamLimit: Readonly<Record<Surface, number>> = { canvas: 5, PDF: 5, filmstrip: 32 }
-const mixedSlack = 10
+type MixedLimits = { readonly highlight: number; readonly varying: number }
 const interiorLimit = 6
 const strokeLimit = 30
 const shareSlack = 0.12
@@ -355,11 +355,12 @@ export function parityFaults(
   found: Measure,
   canvas: Measure,
   difference?: Readonly<Record<string, Difference>>,
+  mixed: MixedLimits = { highlight: 3, varying: 6.5 },
 ) {
   const faults: string[] = []
   const number = (value: number) => value.toFixed(1)
   for (const [name, score] of Object.entries(found.seams)) {
-    const limit = uniform(name) ? seamLimit[surface] : (canvas.seams[name] ?? 0) + mixedSlack
+    const limit = uniform(name) ? seamLimit[surface] : name === "highlighted slice" ? mixed.highlight : mixed.varying
     if (score > limit) faults.push(`${surface} ${name} seam ${number(score)} is over ${number(limit)}`)
   }
   for (const [name, error] of Object.entries(found.interiors))

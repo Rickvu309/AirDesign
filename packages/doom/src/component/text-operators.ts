@@ -19,11 +19,20 @@ export function naturalText(chars: string, style: Text["style"], size: number): 
   }
 }
 
-export function textWidth([raw, styleArg, sizeArg]: Values, context: FittingContext): number {
+function measureNatural([raw, styleArg, sizeArg]: Values, context: FittingContext) {
   const chars = naming("[1]", () => string(raw))
   const style = naming("[2]", () => styleOf(styleArg))
   const size = sizeArg === undefined ? context.theme.textStyles[style].size : naming("[3]", () => textSize(sizeArg))
-  return numeric(measureText(naturalText(chars, style, size), context).w)
+  return measureText(naturalText(chars, style, size), context)
+}
+
+export function textWidth(args: Values, context: FittingContext): number {
+  return numeric(measureNatural(args, context).w)
+}
+
+export function textMetrics(args: Values, context: FittingContext): Value {
+  const { w, h } = measureNatural(args, context)
+  return { w: numeric(w), h: numeric(h) }
 }
 
 const flowOptions = object({

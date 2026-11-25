@@ -5,6 +5,9 @@ export {
   clusteredChartComponent,
   columnComponent,
   cycleComponent,
+  donutComponent,
+  lineComponent,
+  pieComponent,
   processComponent,
 } from "./library.js"
 export type { ComponentFinding } from "./findings.js"

@@ -108,6 +108,7 @@ function emission(read: (raw: unknown) => Expr) {
     },
   )
   return variant("kind", {
+    notice: object({ key: read, message: read }),
     rect: object({ ...position, fill: read }, surface),
     finding: object({ key: read, message: read }),
     path: object({ ...position, d: read }, { fill: read, fillStroke: boolean, stroke }),
@@ -236,12 +237,7 @@ export function readComponentSpec(raw: unknown): ComponentSpec | Refusal {
       if (
         extra !== undefined ||
         type === undefined ||
-        type.kind === "enum" ||
-        type.kind === "ref" ||
-        type.kind === "string" ||
-        type.kind === "string?" ||
-        type.kind === "color?" ||
-        type.kind === "list"
+        !["number", "number?", "positive", "nonnegative"].includes(type.kind)
       )
         return naming(`quantities.${key}`, () => reject("shape", "The quantity must name a numeric collection field."))
     }

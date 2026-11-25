@@ -10,6 +10,7 @@ export type ComponentFinding = { readonly key: PartKey; readonly field: string }
   | ExpressionFinding
   | { readonly kind: "advice"; readonly code: string; readonly note: string }
   | { readonly kind: "check"; readonly message: string }
+  | { readonly kind: "notice"; readonly message: string }
   | {
       readonly kind: "text-fit"
       readonly size: number

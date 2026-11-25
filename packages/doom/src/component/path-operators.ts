@@ -49,3 +49,17 @@ export function wedge([origin, inner, outer, from, to]: Values, charge: Charge):
   const inside = r0 === 0 ? `L${spot(center)}` : `L${at(r0, end)}${curved(r0, end, start, -sweep)}`
   return `${outside}${inside}Z`
 }
+
+export function discs(points: Values, rx: number, ry: number, charge: Charge): string {
+  charge(points.length)
+  const compact = (value: number) => String(Number(value.toFixed(6)))
+  const radii = `${compact(rx)} ${compact(ry)}`
+  return points
+    .map((raw) => {
+      const { x, y } = readPoint(raw)
+      const a = `${compact(x - rx)} ${compact(y)}`
+      const b = `${compact(x + rx)} ${compact(y)}`
+      return `M${a}A${radii} 0 0 1 ${b}A${radii} 0 0 1 ${a}Z`
+    })
+    .join("")
+}
