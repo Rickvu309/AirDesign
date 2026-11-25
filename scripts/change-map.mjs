@@ -97,11 +97,12 @@ const setupFiles = (graph) =>
     ]),
   )
 
-const runEverything = (because) => ({
+const runEverything = (because, readers = []) => ({
   everything: true,
   because,
   parts: Object.fromEntries(ciParts.map((part) => [part, true])),
   unitTests: "all",
+  readers,
   packages: "all",
   browserSpecs: "all",
   journeyNames: "all",
@@ -110,6 +111,14 @@ const runEverything = (because) => ({
 export const changeMap = (changed, graph, { full = false } = {}) => {
   if (full) return runEverything("--full runs every part")
   if (changed === null) return runEverything("the diff could not be read")
+  const readers = [
+    ...new Set(
+      changed
+        .filter((file) => !inert.some((pattern) => pattern.test(file)))
+        .flatMap((file) => readersOf(graph.reads ?? {}, file))
+        .filter((reader) => !scriptTest.test(reader)),
+    ),
+  ].sort()
   const importers = importersOf(graph)
   const byName = new Map(graph.packages.map((pkg) => [pkg.name, pkg]))
   const setup = setupFiles(graph)
@@ -125,8 +134,8 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
   for (const file of changed) {
     if (inert.some((pattern) => pattern.test(file))) continue
     if (runsEverything.some((pattern) => pattern.test(file)))
-      return runEverything(`${file} changes how every part runs`)
-    if (setup.has(file)) return runEverything(`${file} is shared test setup`)
+      return runEverything(`${file} changes how every part runs`, readers)
+    if (setup.has(file)) return runEverything(`${file} is shared test setup`, readers)
     turnOn("source", file)
     for (const reader of readersOf(graph.reads ?? {}, file))
       turnOn(scriptTest.test(reader) ? "scripts" : `unit:${reader}`, file)
@@ -161,7 +170,7 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
     }
     const start = nodeOf(file, graph.packages)
     if (start === file && partsOfFile(file).length === 0 && !(file in graph.imports))
-      return runEverything(`no part owns ${file}`)
+      return runEverything(`no part owns ${file}`, readers)
     const directJourney =
       file.startsWith(journeyFolder) && knownJourneys.has(journeyNameOf(file.slice(journeyFolder.length)))
     if (file.startsWith("apps/")) canNarrowJourneys = false
@@ -188,6 +197,7 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
       .filter((part) => part.startsWith("unit:"))
       .map((part) => part.slice("unit:".length))
       .sort(),
+    readers,
     packages: [...packages].sort(),
     browserSpecs: canNarrowBrowser ? [...selected].sort() : "all",
     browserSeconds: graph.browserSeconds,

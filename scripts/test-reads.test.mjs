@@ -57,11 +57,20 @@ try {
   put("apps/web/src/favicon.test.ts", "readFileSync(new URL(`../public/${name}`, import.meta.url))\n")
   put("apps/site/src/other-app.test.ts", 'readdirSync("packages/doom/src/library/themes")\n')
   put("scripts/shards.test.mjs", 'const files = names.map((name) => `tests/browser/${name}`).join(" ")\n')
+  put("tests/journeys/journeys.spec.ts")
+  put(
+    "apps/web/src/journey-names.test.ts",
+    'const suite = readFileSync(new URL("../../../tests/journeys/journeys.spec.ts", import.meta.url), "utf8")\n',
+  )
+  put("apps/site/public/favicon-art.svg")
+  put("apps/web/src/site-favicon.test.ts", "readFileSync(new URL(`../../site/public/${name}`, import.meta.url))\n")
+  put("apps/web/src/whole-app.test.ts", 'readdirSync(new URL("../../site/", import.meta.url))\n')
+  put("apps/site/src/access/sign-in.test.ts", 'readFileSync(new URL("./sign-in/form.astro", import.meta.url))\n')
   const tracked = execFileSync("find", [".", "-type", "f"], { cwd: folder, encoding: "utf8" })
     .split("\n")
     .filter(Boolean)
     .map((file) => file.slice(2))
-  const reads = testReads(folder, tracked)
+  const reads = testReads(folder, [...tracked, "apps/site/src/unstaged-removal.test.ts"])
 
   same("a test that reads a root file by name is linked to it", readersOf(reads, "AGENTS.md"), [
     "scripts/limit.test.mjs",
@@ -107,9 +116,34 @@ try {
     [[], []],
   )
   same(
-    "a unit test reads a folder of its own package, and a test outside that package does not link it",
+    "a unit test reads a folder of its own package, and a test outside that package that names it from the root does not link it",
     readersOf(reads, "packages/doom/src/library/themes/new.json"),
     ["packages/doom/src/themes.test.ts"],
+  )
+  same(
+    "a relative template path into another app links that folder, as the studio favicon test reads the site's icons",
+    readersOf(reads, "apps/site/public/favicon-art.svg"),
+    ["apps/web/src/site-favicon.test.ts"],
+  )
+  same(
+    "a relative path to a whole app or package links nothing, or every change in it would select the test",
+    readersOf(reads, "apps/site/src/pages/index.astro").includes("apps/web/src/whole-app.test.ts"),
+    false,
+  )
+  same(
+    "a spec file a test reads with fs is linked, as the feature map test reads the journeys suite",
+    readersOf(reads, "tests/journeys/journeys.spec.ts"),
+    ["apps/web/src/journey-names.test.ts"],
+  )
+  same(
+    "a relative file a test reads stays linked after it is deleted, so its deletion selects the test",
+    readersOf(reads, "apps/site/src/access/sign-in/form.astro"),
+    ["apps/site/src/access/sign-in.test.ts"],
+  )
+  same(
+    "a test file deleted from the working tree but still tracked is not scanned",
+    Object.keys(reads).includes("apps/site/src/unstaged-removal.test.ts"),
+    false,
   )
   same(
     "a relative template path that ends in a folder links that folder, and a template that only builds names does not",
@@ -151,6 +185,18 @@ same(
   [true, true],
 )
 same("no test reads a path nobody wrote", readersOf(real, "no/such/file.txt"), [])
+same(
+  "the feature map test reads the journeys suite, whose names PR 1666 broke",
+  readersOf(real, "tests/journeys/journeys.spec.ts").includes(
+    ".agents/skills/verify-airdesign/features/features.test.mjs",
+  ),
+  true,
+)
+same(
+  "the studio favicon test reads the site's icons",
+  readersOf(real, "apps/site/public/favicon-art.svg").includes("apps/web/worker/favicon.test.ts"),
+  true,
+)
 
 const toolingFor = (changed) =>
   proofPlan({ base: "main", head: "head", changed, reads: real }).steps.find((step) => step.kind === "script-tests")

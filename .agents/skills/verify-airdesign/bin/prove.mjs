@@ -49,7 +49,7 @@ const movedSpecs = (repo, base) => {
     .filter(Boolean)
 }
 
-export const readFacts = async (repo, against) => {
+export const readFacts = async (repo, against, { reads } = {}) => {
   const base = git(repo, ["merge-base", against, "HEAD"])
   const { states } = await import("../look/states.mjs")
   const { replays } = await fromRepo(repo, "scripts/spec-replays.mjs")
@@ -63,7 +63,7 @@ export const readFacts = async (repo, against) => {
     states: states.map(({ name, design }) => ({ name, design: design ?? null })),
     replays: replays(repo),
     scripts: importGraph(repo, "scripts", /\.mjs$/),
-    reads: testReads(repo, git(repo, ["ls-files"]).split("\n")),
+    reads: reads ?? testReads(repo, git(repo, ["ls-files"]).split("\n")),
     browser: importGraph(repo, "tests/browser", /\.(ts|mts)$/),
     rules: suiteRules(repo),
   }
@@ -103,7 +103,8 @@ export const lookResult = ({ status, output }, sheet, log) => {
 
 export const proveCommand = async (args, { repo, evidenceRoot }) => {
   const flag = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined)
-  const plan = proofPlan(await readFacts(repo, flag("--base") ?? "origin/main"))
+  const reads = flag("--reads") && JSON.parse(readFileSync(flag("--reads"), "utf8"))
+  const plan = proofPlan(await readFacts(repo, flag("--base") ?? "origin/main", { reads }))
   if (args.includes("--plan")) return plan
   const only = flag("--only")?.split(",") ?? kinds
   const out = path.join(evidenceRoot, `prove-${new Date().toISOString().replace(/[:.]/g, "-")}`)

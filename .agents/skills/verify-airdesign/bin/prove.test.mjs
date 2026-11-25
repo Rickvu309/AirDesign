@@ -1,6 +1,7 @@
+import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
 import { proofPlan } from "./prove-plan.mjs"
-import { lookResult } from "./prove.mjs"
+import { lookResult, readFacts } from "./prove.mjs"
 
 const rules = [
   { name: "check", script: ["check"], paths: [""] },
@@ -168,6 +169,14 @@ describe("proofPlan", () => {
     expect(words.steps).toEqual([])
     expect(words.ciAlso).toEqual(["check"])
     expect(plan(["tests/browser/home.spec.ts"]).ciAlso).toEqual(["check", "browser-tests"])
+  })
+})
+
+describe("readFacts", () => {
+  it("takes the reads the gate already scanned, so one gate run scans the tests once", async () => {
+    const reads = { "scripts/rule-table.test.mjs": ["AGENTS.md"] }
+    const facts = await readFacts(fileURLToPath(new URL("../../../../", import.meta.url)), "HEAD", { reads })
+    expect(facts.reads).toBe(reads)
   })
 })
 

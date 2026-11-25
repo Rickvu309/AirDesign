@@ -28,22 +28,28 @@ const placesOf = (name, from) => {
     : [normal]
 }
 
-const readableFolder = (folder, from) => {
+const readableFolder = (folder, { name, from }) => {
   const owner = packageOf(`${folder}/`)
-  return owner === undefined || from.startsWith(owner)
+  return owner === undefined || from.startsWith(owner) || (relative.test(name) && `${folder}/` !== owner)
 }
 
-const linksFor = (name, from, tracked, inFolder) =>
-  placesOf(name, from).flatMap((place) => {
-    if (testOrSpec.test(place) || (relative.test(name) && importedScript.test(place))) return []
+const linksFor = (found, tracked, inFolder) => {
+  const { name, from, direct } = found
+  const places = placesOf(name, from)
+  return places.flatMap((place) => {
+    if ((testOrSpec.test(place) && !direct) || (relative.test(name) && importedScript.test(place))) return []
     if (tracked.has(place)) return [place]
     const folder = place.replace(/\/$/, "")
-    if (inFolder.has(folder) && folder.includes("/") && readableFolder(folder, from)) return [`${folder}/`]
-    return withExtension.test(place) && !relative.test(name) ? [place] : []
+    if (inFolder.has(folder) && folder.includes("/") && readableFolder(folder, found)) return [`${folder}/`]
+    const resolved = place === places.at(-1) && !relative.test(place)
+    return withExtension.test(place) && resolved && (direct || !relative.test(name)) ? [place] : []
   })
+}
 
 const readsAFile =
   /\b(?:readFileSync|readFile|readdirSync|readdir|statSync|lstatSync|existsSync|globSync|createReadStream|read|readText|readJson|readRule|import|join|resolve|URL|pathToFileURL|fileURLToPath)\s*\(/
+const readsFromDisk =
+  /\b(?:readFileSync|readFile|readdirSync|readdir|statSync|lstatSync|existsSync|globSync|createReadStream)\s*\(/
 const linesBefore = 3
 
 const namesIn = (text) => {
@@ -61,13 +67,15 @@ const namesIn = (text) => {
   }
   const nearARead = (at) =>
     readsAFile.test(lines.slice(Math.max(0, lineOf(at) - linesBefore), lineOf(at) + 1).join("\n")) || usedInARead(at)
+  const direct = (at) => readsFromDisk.test(lines[lineOf(at)])
   const names = [...text.matchAll(single), ...text.matchAll(templateFolder)]
     .filter((match) => nearARead(match.index))
-    .map((match) => match[1])
+    .map((match) => ({ name: match[1], direct: direct(match.index) }))
   for (const run of text.matchAll(joined)) {
     if (!nearARead(run.index)) continue
     const parts = [...run[0].matchAll(single)].map((match) => match[1])
-    for (let start = 0; start < parts.length - 1; start++) names.push(parts.slice(start).join("/"))
+    for (let start = 0; start < parts.length - 1; start++)
+      names.push({ name: parts.slice(start).join("/"), direct: direct(run.index) })
   }
   return names
 }
@@ -77,10 +85,12 @@ export const testReads = (root, files) => {
   const inFolder = folders(files)
   return Object.fromEntries(
     files
-      .filter((file) => testFile.test(file))
+      .filter((file) => testFile.test(file) && fs.existsSync(path.join(root, file)))
       .map((test) => {
         const names = namesIn(fs.readFileSync(path.join(root, test), "utf8"))
-        const links = names.flatMap((name) => linksFor(name, test, tracked, inFolder)).filter((link) => link !== test)
+        const links = names
+          .flatMap((found) => linksFor({ ...found, from: test }, tracked, inFolder))
+          .filter((link) => link !== test)
         return [test, [...new Set(links)].sort()]
       }),
   )
