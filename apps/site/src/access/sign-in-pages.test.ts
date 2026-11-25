@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
-const pages = ["../pages/sign-in.astro", "../pages/sign-in/check.astro", "../pages/sign-in/expired.astro"]
+const pages = ["sign-in.astro", "sign-in/check.astro", "sign-in/expired.astro"]
 
 function source(page: string): string {
-  return readFileSync(new URL(page, import.meta.url), "utf8")
+  return readFileSync(new URL(`../pages/${page}`, import.meta.url), "utf8")
 }
 
 describe("sign-in pages", () => {
@@ -17,7 +17,7 @@ describe("sign-in pages", () => {
   })
 
   it("keeps the expired page's copy free of blame and says what to do", () => {
-    const text = source("../pages/sign-in/expired.astro")
+    const text = source("sign-in/expired.astro")
     expect(text).toContain("Get a new link")
     expect(text).not.toMatch(/oops|sorry|invalid|your fault/i)
   })

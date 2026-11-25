@@ -26,7 +26,7 @@ export const testsFor = ({ map, related, inventory, changed, seconds = {}, dista
   const reach = unitTestsIn(map.unitTests, inventory)
   const reached = new Set(reach)
   const weight = (file) => secondsPerFile + (seconds[file] ?? 0) / 2
-  const mustRun = changed.filter((file) => reached.has(file))
+  const mustRun = [...new Set([...changed, ...map.unitTests])].filter((file) => reached.has(file))
   const near = map.unitTests === "all" ? [] : related.filter((file) => reached.has(file) && !mustRun.includes(file))
   const files = [...mustRun]
   let spent = files.reduce((sum, file) => sum + weight(file), 0)

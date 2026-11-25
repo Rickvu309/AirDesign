@@ -3,6 +3,7 @@ import { suitesFor } from "./suites.mjs"
 
 const skillPath = ".agents/skills/verify-airdesign/"
 const code = /\.(ts|tsx|mts|mjs|js)$/
+const scriptTest = /^scripts\/[^/]+\.test\.mjs$/
 const testFile = (file) => /\.(test|spec)\.[a-z]+$/.test(file)
 export const repeatLimit = 6
 
@@ -68,8 +69,9 @@ const readBy = (reads, file) =>
 const toolingStep = (changed, scripts, reads) => {
   const touched = changed.filter((file) => /^scripts\/[^/]+\.mjs$/.test(file))
   const imported = importersOf(scripts, touched).filter((file) => file.endsWith(".test.mjs") && file in scripts)
-  const read = changed.filter((file) => readBy(reads, file).length > 0)
-  const files = [...new Set([...imported, ...read.flatMap((file) => readBy(reads, file))])].sort()
+  const readers = (file) => readBy(reads, file).filter((test) => scriptTest.test(test))
+  const read = changed.filter((file) => readers(file).length > 0)
+  const files = [...new Set([...imported, ...read.flatMap(readers)])].sort()
   if (files.length === 0) return undefined
   return { kind: "script-tests", files, because: `${[...new Set([...touched, ...read])].join(", ")} changed` }
 }

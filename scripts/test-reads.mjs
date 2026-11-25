@@ -5,11 +5,12 @@ const piece = String.raw`[\w@.-]+(?:\/[\w@.-]+)*\/?`
 const quote = "[\"'`]"
 const single = new RegExp(`${quote}((?:\\.{1,2}\\/)*${piece})${quote}`, "g")
 const joined = new RegExp(`(?:${quote}${piece}${quote}\\s*,\\s*)+${quote}${piece}${quote}`, "g")
-const scriptTest = /^scripts\/[^/]+\.test\.mjs$/
+const templateFolder = /`((?:\.{1,2}\/)+[\w@.-]+(?:\/[\w@.-]+)*\/)\$\{/g
+const testFile = /\.test\.(mjs|mts|ts|tsx)$/
 const importedScript = /^scripts\/[^/]+\.mjs$/
 const testOrSpec = /\.(test|spec)\.[a-z]+$/
 const withExtension = /\.[a-z]+$/i
-const insidePackage = /^(apps|packages)\//
+const packageOf = (file) => /^(?:apps|packages)\/[^/]+\//.exec(file)?.[0]
 
 const folders = (files) => {
   const found = new Set()
@@ -27,12 +28,17 @@ const placesOf = (name, from) => {
     : [normal]
 }
 
+const readableFolder = (folder, from) => {
+  const owner = packageOf(`${folder}/`)
+  return owner === undefined || from.startsWith(owner)
+}
+
 const linksFor = (name, from, tracked, inFolder) =>
   placesOf(name, from).flatMap((place) => {
     if (testOrSpec.test(place) || (relative.test(name) && importedScript.test(place))) return []
     if (tracked.has(place)) return [place]
     const folder = place.replace(/\/$/, "")
-    if (inFolder.has(folder) && folder.includes("/") && !insidePackage.test(folder)) return [`${folder}/`]
+    if (inFolder.has(folder) && folder.includes("/") && readableFolder(folder, from)) return [`${folder}/`]
     return withExtension.test(place) && !relative.test(name) ? [place] : []
   })
 
@@ -55,7 +61,9 @@ const namesIn = (text) => {
   }
   const nearARead = (at) =>
     readsAFile.test(lines.slice(Math.max(0, lineOf(at) - linesBefore), lineOf(at) + 1).join("\n")) || usedInARead(at)
-  const names = [...text.matchAll(single)].filter((match) => nearARead(match.index)).map((match) => match[1])
+  const names = [...text.matchAll(single), ...text.matchAll(templateFolder)]
+    .filter((match) => nearARead(match.index))
+    .map((match) => match[1])
   for (const run of text.matchAll(joined)) {
     if (!nearARead(run.index)) continue
     const parts = [...run[0].matchAll(single)].map((match) => match[1])
@@ -64,12 +72,12 @@ const namesIn = (text) => {
   return names
 }
 
-export const scriptTestReads = (root, files) => {
+export const testReads = (root, files) => {
   const tracked = new Set(files)
   const inFolder = folders(files)
   return Object.fromEntries(
     files
-      .filter((file) => scriptTest.test(file))
+      .filter((file) => testFile.test(file))
       .map((test) => {
         const names = namesIn(fs.readFileSync(path.join(root, test), "utf8"))
         const links = names.flatMap((name) => linksFor(name, test, tracked, inFolder)).filter((link) => link !== test)

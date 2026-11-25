@@ -71,6 +71,17 @@ same(
   ["packages/document/src/t299.test.ts"],
 )
 same(
+  "a test file the map names, because it reads a changed file, always runs, though Vitest does not relate it and the budget is spent",
+  testsFor({
+    map: mapOf(["packages/document/", "tests/edit-replay.test.ts"]),
+    related: document,
+    inventory,
+    changed: ["tests/journeys/new-journey.mjs"],
+    seconds: { "tests/edit-replay.test.ts": 99 },
+  }).files.includes("tests/edit-replay.test.ts"),
+  true,
+)
+same(
   "when the map runs everything, the gate runs the changed test files and leaves the suite to ci",
   testsFor({
     map: mapOf("all"),

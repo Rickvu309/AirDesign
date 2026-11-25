@@ -40,6 +40,7 @@ const facts = {
     "scripts/affected-report.test.mjs": [".github/workflows/ci.yml"],
     "scripts/ci-queued.test.mjs": [".github/workflows/ci.yml", ".github/actions/queued/action.yml"],
     "scripts/check-specs.test.mjs": ["specs/edit/"],
+    ".agents/skills/verify-airdesign/features/features.test.mjs": [".agents/skills/verify-airdesign/journeys/"],
   },
   browser: {
     "tests/browser/design-panel.ts": [],
@@ -102,6 +103,10 @@ describe("proofPlan", () => {
     expect(step(["specs/edit/Edit.tla"], "script-tests").files).toEqual(["scripts/check-specs.test.mjs"])
     expect(step(["specs/run/Run.tla"], "script-tests")).toBeUndefined()
     expect(step(["README.md"], "script-tests")).toBeUndefined()
+  })
+
+  it("leaves a unit test that reads a changed file to the unit tests", () => {
+    expect(step([".agents/skills/verify-airdesign/journeys/theme.mjs"], "script-tests")).toBeUndefined()
   })
 
   it("joins the tests that import a changed script with the tests that read a changed file", () => {
