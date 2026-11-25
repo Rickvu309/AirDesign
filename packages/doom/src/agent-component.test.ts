@@ -4,10 +4,13 @@ import { compileAgentEdit, readingOf } from "./agent-edit.js"
 import { readAgentChange } from "./agent-change.js"
 import { firstSlide, minter } from "./agent-fixtures.js"
 import { readForAgent } from "./agent-read.js"
-import { propOf } from "./doom-walk.js"
+import { childrenOf, propOf } from "./doom-walk.js"
 import { isRefusal } from "./refusal.js"
 import { applyEdit } from "./apply-edit.js"
 import { rev } from "./ids.js"
+import { defaultTheme } from "./theme.js"
+import { doomFromTree } from "./doom-tree.js"
+import { titleSlideWrites } from "./slide-placeholders.js"
 import { sampleDeck } from "./sample-deck.js"
 
 function compile(fold: ReturnType<typeof sampleDeck>, raw: unknown, once: string) {
@@ -45,6 +48,36 @@ describe("linked components in agent edits", () => {
     expect(detached.edit.readBase).toBe(updated.after.rev)
     expect(propOf(detached.after.nodes.get(instance), "instance")).toBeUndefined()
     expect(detached.after.nodes.size).toBe(updated.after.nodes.size)
+  })
+
+  it("centres a sample in free space on a slide with a title", () => {
+    const size = { w: 1920, h: 1080 }
+    const {
+      doom,
+      slides: [slide],
+    } = doomFromTree({ theme: defaultTheme, size, slides: [{ children: [] }] })
+    if (slide === undefined) throw new Error("No slide")
+    const before = applyEdit(doom, {
+      once: "title",
+      rev: rev(doom.rev + 1),
+      author: { kind: "person", id: "person" },
+      writes: titleSlideWrites(slide, minter("title"), size),
+    })
+    if (isRefusal(before)) throw new Error(JSON.stringify(before))
+    const placed = compile(before, { op: "add", kind: "component", component: "column", slide }, "place")
+    const root = placed.added.find(({ kind }) => kind === "component")?.id
+    const box = root === undefined ? undefined : propOf(placed.after.nodes.get(root), "box")
+    if (box === undefined) throw new Error("No component box")
+    for (const kid of childrenOf(before, slide)) {
+      const occupied = propOf(kid, "box")
+      if (occupied === undefined) continue
+      expect(
+        box.x + box.w <= occupied.x ||
+          occupied.x + occupied.w <= box.x ||
+          box.y + box.h <= occupied.y ||
+          occupied.y + occupied.h <= box.y,
+      ).toBe(true)
+    }
   })
 
   it("refuses stale preparations and protects a label changed by a person in the same run", () => {
