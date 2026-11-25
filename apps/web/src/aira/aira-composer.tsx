@@ -44,7 +44,6 @@ export function AiraComposer({
     >
       <PromptInput
         data-waiting={waiting}
-        {...(waiting ? {} : { "data-focus-ring": true })}
         className={cn("min-h-12 cursor-text items-end gap-2 py-2 pr-2 pl-3", waiting && "cursor-not-allowed")}
         onClick={() => field.current?.focus()}
       >
@@ -54,6 +53,7 @@ export function AiraComposer({
           placeholder={hint}
           value={draft}
           disabled={waiting}
+          data-focus-edge
           className="py-1.5 outline-hidden placeholder:text-muted-foreground"
           onChange={(event) => onDraft(event.target.value)}
           onKeyDown={onKey}
