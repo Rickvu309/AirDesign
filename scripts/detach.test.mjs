@@ -11,8 +11,20 @@ const same = (name, actual, expected) => {
 }
 
 const folder = fs.mkdtempSync(path.join(os.tmpdir(), "detach-"))
-process.on("exit", () => fs.rmSync(folder, { recursive: true, force: true }))
 const root = path.join(folder, "worktree")
+let runFile
+process.on("exit", () => {
+  if (runFile && !fs.existsSync(path.join(path.dirname(runFile), "status"))) {
+    const { pid } = JSON.parse(fs.readFileSync(runFile, "utf8"))
+    try {
+      process.kill(-pid, "SIGKILL")
+    } catch {}
+  }
+  fs.rmSync(folder, { recursive: true, force: true })
+})
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.on(signal, () => process.exit(128 + os.constants.signals[signal]))
+}
 fs.mkdirSync(root)
 const node = (script) => [process.execPath, "-e", script]
 
@@ -34,16 +46,12 @@ same(
 )
 same("naming the wait", said.at(-1).includes("pnpm detach --wait"), true)
 
-const record = JSON.parse(
-  fs.readFileSync(
-    path.join(
-      folder,
-      fs.readdirSync(folder).find((name) => name !== "worktree"),
-      "run.json",
-    ),
-    "utf8",
-  ),
+runFile = path.join(
+  folder,
+  fs.readdirSync(folder).find((name) => name !== "worktree"),
+  "run.json",
 )
+const record = JSON.parse(fs.readFileSync(runFile, "utf8"))
 same(
   "the run sits in its own session, so the end of the call that started it does not end it",
   spawnSync("ps", ["-o", "sid=", "-p", String(record.pid)], { encoding: "utf8" }).stdout.trim(),
@@ -112,6 +120,7 @@ same(
 same("a partial UTF-8 line survives between waits", completed.includes("héllo"), true)
 
 same("a finished run lets the next start", startDetached({ folder, root, command: node(""), say: () => {} }), 0)
+same("the last detached run finishes", await waitDetached({ folder, root, limitMs: 20000, say: () => {} }), 0)
 same(
   "a worktree with no run has nothing to wait for",
   await waitDetached({ folder, root: path.join(folder, "other"), limitMs: 100, say: () => {} }),

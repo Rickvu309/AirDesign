@@ -204,7 +204,7 @@ const gateOf = async (failing, all = false) => {
     all,
     run: async ([name]) => {
       events.push(name)
-      return name === failing ? 1 : 0
+      return failing.includes(name) ? 1 : 0
     },
     stamp: () => {
       stamped += 1
@@ -212,7 +212,7 @@ const gateOf = async (failing, all = false) => {
   })
   return { events, stamped, failed: result.failed }
 }
-const passed = await gateOf(undefined)
+const passed = await gateOf([])
 same("a passing gate stamps the commit once", passed.stamped, 1)
 same("the gate starts choosing its tests before the cheap checks run, so the two overlap", passed.events[0], "choose")
 same(
@@ -256,7 +256,7 @@ same("the build can run while sweep lists worktrees, and the stamp waits for swe
 })
 
 for (const failing of ["format", "lint", "file-growth", "package-boundaries", "typecheck"]) {
-  const early = await gateOf(failing)
+  const early = await gateOf([failing])
   same(`a ${failing} failure stamps nothing`, early.stamped, 0)
   same(
     `and runs no affected steps after ${failing}`,
@@ -265,13 +265,43 @@ for (const failing of ["format", "lint", "file-growth", "package-boundaries", "t
   )
 }
 for (const failing of ["build", "unit-tests", "actionlint", "copy-in-tests", "sweep-list"]) {
-  const late = await gateOf(failing)
+  const late = await gateOf([failing])
   same(`a ${failing} failure stamps nothing`, [late.stamped, late.failed], [0, [failing]])
 }
+const stalled = Promise.withResolvers()
+const started = []
+let failure
+const failingGate = runGate({
+  later: async () => full,
+  run: async ([name]) => {
+    started.push(name)
+    if (name === "sweep-list" || name === "typecheck") await stalled.promise
+    return name === "lint" ? 1 : 0
+  },
+  stamp: () => {
+    throw new Error("a failed gate stamped")
+  },
+}).then((result) => {
+  failure = result.failed
+})
+await new Promise(setImmediate)
+stalled.resolve()
+same("lint fails the gate while the sweep and typecheck are still running", failure, ["lint"])
+await failingGate
 same(
-  "--all runs every step after a cheap failure and still stamps nothing",
-  await gateOf("format", true).then(({ events, stamped }) => [events.includes("unit-tests"), stamped]),
-  [true, 0],
+  "the stalled sweep and typecheck both started",
+  [started.includes("sweep-list"), started.includes("typecheck")],
+  [true, true],
+)
+
+same(
+  "--all reaches the affected steps and reports every failure without stamping",
+  await gateOf(["lint", "sweep-list", "unit-tests"], true).then(({ events, failed, stamped }) => [
+    events.includes("build"),
+    failed,
+    stamped,
+  ]),
+  [true, ["lint", "unit-tests", "sweep-list"], 0],
 )
 
 let unchosen = ""

@@ -1,12 +1,13 @@
-import { execFile, execFileSync } from "node:child_process"
+import { execFileSync } from "node:child_process"
+import { randomUUID } from "node:crypto"
+import { once } from "node:events"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { promisify } from "node:util"
 import { requirePinnedNode } from "./node-version.cjs"
 import { changeMap, readChangeGraph } from "./change-map.mjs"
-import { keepSteps, run, runCheck } from "./check.mjs"
+import { keepSteps, run, runCheck, spawnGroup, stopEveryGroup } from "./check.mjs"
 import { checkSteps, unitTestsIn } from "./check-steps.mjs"
 import { stampChecked, workingTree } from "./checked.mjs"
 import { timeMetric } from "./metrics.mjs"
@@ -79,7 +80,6 @@ const runGateChecks = async ({ later, run: runStep, all, cheap, report }) => {
     (error) => ({ error }),
   )
   const first = await runCheck({ chosen: cheap, run: runStep, all })
-  if (first.failed.length > 0 && !all) return first
   const picked = await choosing
   if (picked.error !== undefined) throw picked.error
   try {
@@ -93,6 +93,8 @@ const runGateChecks = async ({ later, run: runStep, all, cheap, report }) => {
 
 const isReport = ([name]) => checkSteps.kindOf(name) === "report"
 
+class GateFailure extends Error {}
+
 export const runGate = async ({
   later,
   run: runStep,
@@ -101,19 +103,72 @@ export const runGate = async ({
   cheap = checkSteps.cheapGateStages(),
   report = async () => {},
 }) => {
-  const [checked, listed] = await Promise.allSettled([
-    runGateChecks({ later, run: runStep, all, cheap: keepSteps(cheap, (step) => !isReport(step)), report }),
-    runCheck({ chosen: keepSteps(cheap, isReport), run: runStep, all }),
-  ])
-  if (checked.status === "rejected") throw checked.reason
-  if (listed.status === "rejected") throw listed.reason
-  const failed = [...checked.value.failed, ...listed.value.failed]
-  const ranSteps = checked.value.ranSteps && listed.value.ranSteps
-  if (checkSteps.stampable(failed, ranSteps)) stamp()
-  return { failed, ranSteps }
+  const runGateStep = async (step) => {
+    const status = await runStep(step)
+    if (!all && status !== 0 && (status === "hung" || !checkSteps.warns(step[0], ""))) {
+      throw new GateFailure(step[0])
+    }
+    return status
+  }
+  const checks = [
+    runGateChecks({ later, run: runGateStep, all, cheap: keepSteps(cheap, (step) => !isReport(step)), report }),
+    runCheck({ chosen: keepSteps(cheap, isReport), run: runGateStep, all }),
+  ]
+  try {
+    const [checked, listed] = all
+      ? (await Promise.allSettled(checks)).map((check) => {
+          if (check.status === "rejected") throw check.reason
+          return check.value
+        })
+      : await Promise.all(checks)
+    const failed = [...checked.failed, ...listed.failed]
+    const ranSteps = checked.ranSteps && listed.ranSteps
+    if (checkSteps.stampable(failed, ranSteps)) stamp()
+    return { failed, ranSteps }
+  } catch (error) {
+    if (!(error instanceof GateFailure)) throw error
+    return { failed: [error.message], ranSteps: false }
+  }
 }
 
-const node = (args) => promisify(execFile)(process.execPath, args, { cwd: root, maxBuffer: 64 * 2 ** 20 })
+const killTagged = (entry) => {
+  let killed = 0
+  for (const name of fs.readdirSync("/proc")) {
+    const pid = Number(name)
+    if (!Number.isInteger(pid) || pid === process.pid) continue
+    try {
+      if (fs.readFileSync(`/proc/${pid}/environ`, "latin1").split("\0").includes(entry)) {
+        process.kill(pid, "SIGKILL")
+        killed += 1
+      }
+    } catch {}
+  }
+  return killed
+}
+
+const stopGate = (token) => {
+  stopEveryGroup("SIGTERM")
+  if (process.platform === "linux" && fs.existsSync("/proc")) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 300)
+    while (killTagged(`${token}=1`) > 0) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20)
+  }
+  stopEveryGroup()
+}
+
+const node = async (args) => {
+  const child = spawnGroup("plan", process.execPath, args, { cwd: root, stdio: ["ignore", "pipe", "pipe"] })
+  let stdout = ""
+  let stderr = ""
+  child.stdout.setEncoding("utf8").on("data", (chunk) => {
+    stdout += chunk
+  })
+  child.stderr.setEncoding("utf8").on("data", (chunk) => {
+    stderr += chunk
+  })
+  const [status, signal] = await once(child, "close")
+  if (status !== 0) throw new Error(`${args[0]} stopped with ${signal ?? status}: ${stderr.trim()}`)
+  return stdout
+}
 
 const relatedTests = async (base, folder) => {
   const listed = path.join(folder, "related.json")
@@ -123,12 +178,29 @@ const relatedTests = async (base, folder) => {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   requirePinnedNode()
+  const token = `AIRDESIGN_GATE_RUN_${randomUUID().replaceAll("-", "")}`
+  process.env[token] = "1"
   const started = Date.now()
   const loadAtStart = os.loadavg()[0]
   const at = process.argv.indexOf("--base")
   const against = at === -1 ? "origin/main" : process.argv[at + 1]
+  let ownTemp
+  process.on("exit", (code) => {
+    if (code === 0) stopEveryGroup()
+    else stopGate(token)
+    if (ownTemp !== undefined) fs.rmSync(ownTemp, { recursive: true, force: true })
+  })
+  let interrupted = false
+  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+    process.on(signal, () => {
+      if (interrupted) return
+      interrupted = true
+      fs.writeSync(2, `\ngate stopped by ${signal}\n`)
+      process.exit(128 + os.constants.signals[signal])
+    })
+  }
   const tree = workingTree(root)
-  const ownTemp = fs.mkdtempSync(path.join(os.tmpdir(), "gate-"))
+  ownTemp = fs.mkdtempSync(path.join(os.tmpdir(), "gate-"))
   const previousTemp = process.env.TMPDIR
   process.env.TMPDIR = ownTemp
   let left
@@ -140,7 +212,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       run,
       later: async () => {
         const base = execFileSync("git", ["merge-base", against, "HEAD"], { cwd: root, encoding: "utf8" }).trim()
-        const plan = JSON.parse((await node([prove, "prove", "--plan", "--base", against])).stdout)
+        const plan = JSON.parse(await node([prove, "prove", "--plan", "--base", against]))
         const map = changeMap(plan.changed, readChangeGraph(root))
         const inventory = Object.values(testFilesByProject(root)).flat().sort()
         const related = map.unitTests === "all" || map.unitTests.length === 0 ? [] : await relatedTests(base, ownTemp)
@@ -191,16 +263,17 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.error(`the gate could not plan what to run: ${error.message}`)
     result = { failed: ["plan"] }
   } finally {
-    fs.rmSync(ownTemp, { recursive: true, force: true })
     if (previousTemp === undefined) delete process.env.TMPDIR
     else process.env.TMPDIR = previousTemp
   }
   const seconds = timeMetric(root, "gate-duration", started)
   console.log(seconds.line)
-  console.log(
-    `gate load: 1-minute average ${loadAtStart.toFixed(1)} → ${os.loadavg()[0].toFixed(1)} on ${String(os.availableParallelism())} cores`,
-  )
-  if (seconds.over !== undefined) console.error(seconds.over)
+  if (seconds.over !== undefined) {
+    console.log(
+      `gate load: 1-minute average ${loadAtStart.toFixed(1)} → ${os.loadavg()[0].toFixed(1)} on ${String(os.availableParallelism())} cores`,
+    )
+    console.error(seconds.over)
+  }
   if (left !== undefined)
     console.log(left.length === 0 ? "CI will also run: nothing more" : `CI will also run: ${left.join(", ")}`)
   if (result.failed.length > 0) {
