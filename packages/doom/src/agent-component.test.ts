@@ -8,7 +8,10 @@ import { childrenOf, propOf } from "./doom-walk.js"
 import { isRefusal } from "./refusal.js"
 import { applyEdit } from "./apply-edit.js"
 import { rev } from "./ids.js"
-import { defaultTheme } from "./theme.js"
+import { componentLibrary, columnDefinition } from "./component/library.js"
+import { componentTree } from "./component/join-instance.js"
+import { measureWith } from "./measure.js"
+import { defaultTheme, themeLibrary } from "./theme.js"
 import { doomFromTree } from "./doom-tree.js"
 import { titleSlideWrites } from "./slide-placeholders.js"
 import { sampleDeck } from "./sample-deck.js"
@@ -68,6 +71,9 @@ describe("linked components in agent edits", () => {
     const root = placed.added.find(({ kind }) => kind === "component")?.id
     const box = root === undefined ? undefined : propOf(placed.after.nodes.get(root), "box")
     if (box === undefined) throw new Error("No component box")
+    const sample = columnDefinition.spec.sample
+    if (sample === undefined) throw new Error("No column sample")
+    expect(Math.abs(box.w - (box.h * sample.w) / sample.h)).toBeLessThanOrEqual(2)
     for (const kid of childrenOf(before, slide)) {
       const occupied = propOf(kid, "box")
       if (occupied === undefined) continue
@@ -78,6 +84,21 @@ describe("linked components in agent edits", () => {
           occupied.y + occupied.h <= box.y,
       ).toBe(true)
     }
+  })
+
+  const themes = [{ id: "fallback", theme: defaultTheme }, ...Object.values(themeLibrary)]
+  const defaults = [...componentLibrary.keys()].flatMap((component) =>
+    themes.map(({ id, theme }) => ({ component, id, theme })),
+  )
+  it.each(defaults)("places default $component on $id without findings", ({ component, theme }) => {
+    const { doom } = doomFromTree({ theme, size: { w: 1920, h: 1080 }, slides: [{ children: [] }] })
+    const placed = compile(doom, { op: "add", kind: "component", component, slide: firstSlide(doom) }, "default")
+    const root = placed.added.find(({ kind }) => kind === "component")?.id
+    if (root === undefined) throw new Error("No component was added")
+    const tree = componentTree(placed.after, root, measureWith({}))
+    if (isRefusal(tree)) throw new Error(JSON.stringify(tree))
+    expect(tree.findings).toEqual([])
+    expect(placed.findings).toEqual([])
   })
 
   it("refuses stale preparations and protects a label changed by a person in the same run", () => {

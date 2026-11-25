@@ -129,19 +129,35 @@ function linkedRefusal(write: Pick<Write, "node" | "prop">): Refusal {
   }
 }
 
+const styledFields = {
+  rect: { fill: "fills" },
+  path: { fill: "fills" },
+  text: { textStyle: "text" },
+  line: {},
+} as const satisfies Readonly<Record<Kind, Readonly<Record<string, Write["prop"]>>>>
+
+function styleProps(kind: Kind | undefined): readonly Write["prop"][] {
+  return kind === undefined ? [] : Object.values(styledFields[kind])
+}
+
+const sharedOverrides = ["name", "link"] as const
+
+export const linkedPartOverrides: { readonly text: readonly string[]; readonly shapes: readonly string[] } = {
+  text: [...Object.keys(styledFields.text), ...sharedOverrides],
+  shapes: [
+    ...new Set([...Object.keys(styledFields.rect), ...Object.keys(styledFields.path)]),
+    ...sharedOverrides.filter((field) => field !== "link"),
+  ],
+}
+
 export function linkedOverride(nodes: Tree["nodes"], write: Write): boolean {
-  if (write.prop !== "fills" && write.prop !== "text") return false
-  const node = nodes.get(write.node)
-  const kind = kindOf(node)
-  return (
-    linkedOwner(nodes, write.node) !== undefined &&
-    (write.prop === "fills" ? kind === "rect" || kind === "path" : kind === "text")
-  )
+  return linkedOwner(nodes, write.node) !== undefined && styleProps(kindOf(nodes.get(write.node))).includes(write.prop)
 }
 
 function editable(write: Write, before: Node | undefined, after: Node | undefined): boolean {
-  if (write.prop === "name" || write.prop === "link") return true
-  if (write.prop === "fills") return kindOf(before) === "rect" || kindOf(before) === "path"
+  if (sharedOverrides.some((prop) => prop === write.prop)) return true
+  if (!styleProps(kindOf(before)).includes(write.prop)) return false
+  if (write.prop === "fills") return true
   if (
     write.prop !== "text" ||
     before?.type !== "shape" ||

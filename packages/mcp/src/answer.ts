@@ -26,8 +26,7 @@ export const refusalWords = {
   limit: "A value, the deck or a slide is over its limit: the words of a layer, the layers of the deck, or its slides.",
   kind: "A change moves a layer into itself or into a layer that cannot hold it.",
   dead: "A layer or slide you named is not in the deck, or an earlier change in this edit deleted it. For a move, that includes a frame above the frame you move the layer into. airdesign_read_deck lists the ids.",
-  stale:
-    "A person changed those words or list after you read them, and nothing landed. Read the deck, then send the change again with the new rev as base.",
+  stale: "The deck changed since your last read. Read the deck again and resend the change with the new rev as base.",
   "person-protected":
     "A person changed this layer during your run, so it is closed to you, and nothing landed. Leave it, or send the edit without runId to start a new run.",
   "run-fenced":

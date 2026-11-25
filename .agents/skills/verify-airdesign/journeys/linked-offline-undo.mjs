@@ -38,7 +38,7 @@ export default async function drive(kit) {
       .suppressed.map(({ key }) => key.join("/"))
       .sort()
   const f0 = await read()
-  const placed = doom.placeComponent(f0, {
+  const placed = doom.placeComponent(f0, doom.columnDefinition, {
     frame,
     parent: { id: slide, at: doom.orderKeyBetween(null, null) },
     box: { x: 240, y: 180, w: 1440, h: 720, rotation: 0, flipH: false, flipV: false },

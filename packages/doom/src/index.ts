@@ -155,6 +155,6 @@ export {
 export { linkedComponentsEnabled } from "./component-rollout.js"
 export { type ComponentDefinition, columnDefinition, componentLibrary } from "./component/library.js"
 export { type Instance, type PartKey, readPartKey } from "./component/instance.js"
-export { partDeletes, suppressKeys } from "./component/instance-ownership.js"
+export { linkedPartOverrides, partDeletes, suppressKeys } from "./component/instance-ownership.js"
 
 export type { LayerPositions } from "./standing-layers.js"

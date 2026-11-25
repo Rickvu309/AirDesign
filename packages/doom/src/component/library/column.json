@@ -44,7 +44,9 @@
     "muted": {
       "var": "text2"
     },
-    "rule": "#93A6BA",
+    "rule": {
+      "var": "text2"
+    },
     "accent": {
       "var": "accent1"
     },

@@ -1,3 +1,4 @@
+import { propOf } from "./doom-walk.js"
 import { compileAdd } from "./agent-add.js"
 import { compileDelete, compileMove, compileUnwrap, compileWrap } from "./agent-arrange.js"
 import { compileSet } from "./agent-set.js"
@@ -6,7 +7,7 @@ import { compileDeck, compileDuplicate } from "./agent-copy.js"
 import type { AgentChange, AgentRefusal } from "./agent-change.js"
 import { detachComponent } from "./component/join-instance.js"
 import { isRefusal } from "./refusal.js"
-import { type Reading, Stop, draftOf } from "./agent-draft.js"
+import { type Reading, Stop, draftOf, living, stop } from "./agent-draft.js"
 import type { NodeId } from "./ids.js"
 import type { Write } from "./doom.js"
 import type { Doom } from "./doom.js"
@@ -49,6 +50,15 @@ export function compileAgentChange(
     if (change.op === "add") compileAdd(draft, change)
     if (change.op === "set") compileSet(draft, change)
     if (change.op === "detach") {
+      const target = living(draft, change.target, "target")
+      if (propOf(target, "instance") === undefined)
+        stop(
+          "shape",
+          target.id,
+          "target",
+          undefined,
+          "This layer is not a linked template. Read the deck for a linked template id.",
+        )
       const detached = detachComponent(doom, change.target)
       if (isRefusal(detached)) throw new Stop(detached)
       draft.writes.push(...detached)
