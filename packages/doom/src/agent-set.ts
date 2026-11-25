@@ -181,7 +181,7 @@ function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | und
 const componentFields = ["data", "variant", "tokens"] as const
 
 function setComponent(draft: Draft, change: SetChange, field: (typeof componentFields)[number]): void {
-  const { target, data, variant, tokens, op: _op, ...other } = change
+  const { target, data, variant, tokens, focus, op: _op, ...other } = change
   const extra = Object.entries(other).find(([, value]) => value !== undefined)
   if (extra !== undefined)
     stop(
@@ -203,6 +203,7 @@ function setComponent(draft: Draft, change: SetChange, field: (typeof componentF
       ...(data === undefined ? {} : { data }),
       ...(variant === undefined ? {} : { variant }),
       ...(tokens === undefined ? {} : { tokens }),
+      ...(focus === undefined ? {} : { focus }),
     },
     draft.reading.measure ?? estimate,
     definition,

@@ -43,8 +43,7 @@
     "lightInk": {
       "var": "background"
     },
-    "captionSmall": 18,
-    "focus": ""
+    "captionSmall": 18
   },
   "let": [
     ["values", ["map", ["get", "data.rows"], "row", ["get", "row.value"]]],
@@ -110,35 +109,40 @@
         ["at", ["get", "selected"], 0]
       ]
     ],
+    ["total", ["sum", ["map", ["get", "displayRows"], "r", ["get", "r.value"]]]],
+    [
+      "colorSlots",
+      [
+        "rampSlots",
+        ["get", "displayRows"],
+        [
+          "matchingFocus",
+          ["get", "focus"],
+          ["filter", ["at", ["get", "selected"], 0], "r", ["lt", ["mul", 1e-6, ["get", "total"]], ["get", "r.value"]]],
+          "id"
+        ]
+      ]
+    ],
     [
       "colors",
       [
-        "palette",
-        ["list", ["get", "token.accent1"]],
+        "map",
+        ["get", "displayRows"],
+        "r",
         [
-          "map",
-          ["get", "displayRows"],
-          "r",
+          "coalesce",
+          ["get", "r.color"],
           [
-            "if",
-            ["eq", ["get", "r.color"], null],
-            [
-              "if",
-              [
-                "if",
-                ["eq", ["get", "token.focus"], ""],
-                ["eq", ["get", "i"], 0],
-                ["eq", ["get", "r.id"], ["get", "token.focus"]]
-              ],
-              ["get", "token.accent1"],
-              null
-            ],
-            ["get", "r.color"]
+            "paletteRamp",
+            ["at", ["get", "colorSlots.indices"], ["get", "i"]],
+            ["get", "colorSlots.count"],
+            ["get", "token.accent1"],
+            ["get", "token.muted"],
+            false
           ]
         ]
       ]
     ],
-    ["total", ["sum", ["map", ["get", "displayRows"], "r", ["get", "r.value"]]]],
     [
       "digits",
       [
@@ -344,7 +348,18 @@
         "key": ["list", "repeated-colors"],
         "message": "Some slices share an assigned colour. Use distinct colours."
       },
-      "when": ["lt", ["count", ["unique-colors", ["get", "colors"]]], ["count", ["get", "colors"]]]
+      "when": ["lt", ["count", ["unique-colors", ["get", "explicitColors"]]], ["count", ["get", "explicitColors"]]],
+      "let": [
+        [
+          "explicitColors",
+          [
+            "map",
+            ["filter", ["get", "displayRows"], "r", ["if", ["eq", ["get", "r.color"], null], false, true]],
+            "r",
+            ["get", "r.color"]
+          ]
+        ]
+      ]
     },
     {
       "when": ["get", "canDraw"],

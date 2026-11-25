@@ -3,6 +3,7 @@ import { expect, it } from "vitest"
 
 import {
   compileAgentEdit,
+  componentTree,
   defaultTheme,
   doomFromTree,
   invertRun,
@@ -122,4 +123,41 @@ it("lets an agent override a fitted chart label and keeps the style on the next 
     true,
   )
   expect(propOf(next.nodes.get(label), "text")?.style).toBe("title")
+})
+
+it("keeps category focus through a row join and undoes a focus edit", () => {
+  const before = placed()
+  const bar = part(before, "bar", "b")
+  const writes = refresh(before, { focus: ["a"] })
+  const edit: Landed = { once: "focus", author: person, writes, readBase: before.rev, rev: rev(before.rev + 1) }
+  const focused = land(before, writes, true)
+  expect(instance(focused).focus).toEqual(["a"])
+  expect(propOf(focused.nodes.get(bar), "fills")).toEqual([
+    { kind: "solid", color: { var: "text2", tint: expect.any(Number) } },
+  ])
+  const refreshed = land(focused, refresh(focused, { data: data(7, 9) }), true)
+  expect(part(refreshed, "bar", "b")).toBe(bar)
+  expect(instance(refreshed).focus).toEqual(["a"])
+  for (const [current, inverse] of [
+    [focused, invertStep(before, focused, edit)],
+    [refreshed, invertRun(refreshed, [undoSourceOf(before, edit)]).writes],
+  ] as const) {
+    if (isRefusal(inverse)) throw new Error(JSON.stringify(inverse))
+    const restored = land(current, inverse, true)
+    expect(instance(restored).focus).toEqual([])
+    expect(instance(restored).data).toEqual(instance(current).data)
+    expect(propOf(restored.nodes.get(bar), "fills")).toEqual([{ kind: "solid", color: { var: "accent1" } }])
+  }
+})
+
+it("restores ordinary fills when a data join removes the focused row", () => {
+  const before = placed()
+  const focused = land(before, refresh(before, { focus: ["b"] }), true)
+  const joined = land(focused, refresh(focused, { data: { rows: [{ id: "a", label: "A", value: 5 }] } }), true)
+  expect(propOf(joined.nodes.get(part(joined, "bar", "a")), "fills")).toEqual([
+    { kind: "solid", color: { var: "accent1" } },
+  ])
+  const tree = componentTree(joined, frame, measure)
+  if (isRefusal(tree)) throw new Error(JSON.stringify(tree))
+  expect(tree.findings).toContainEqual(expect.objectContaining({ kind: "focus-missing", unknown: ["b"] }))
 })

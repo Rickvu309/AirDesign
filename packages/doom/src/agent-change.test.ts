@@ -7,6 +7,7 @@ import { agentChangesSchema, readAgentChange, readAgentChanges, type AgentChange
 const json = (value: unknown) => JSON.parse(JSON.stringify(value))
 
 const valid: readonly AgentChange[] = [
+  { op: "set", target: "t:3", focus: ["category"] },
   {
     op: "add",
     kind: "text",
@@ -145,6 +146,7 @@ describe("the advertised schema", () => {
       "slide",
       "into",
       "target",
+      "focus",
       "node",
       "nodes",
       "after",

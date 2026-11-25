@@ -32,7 +32,7 @@ export type ComponentUpdate = {
   readonly findings: readonly ComponentUpdateFinding[]
 }
 
-type Inputs = Pick<ComponentInput, "variant" | "tokens" | "data">
+type Inputs = Pick<ComponentInput, "variant" | "tokens" | "data" | "focus">
 export type ComponentPatch = Partial<Inputs>
 
 type InstanceFrame = Extract<Node, { type: "frame" }> & { instance: Instance }
@@ -219,6 +219,7 @@ export function placeComponent(
     data,
     tokens = {},
     variant = {},
+    focus = [],
     measure,
   }: Inputs & {
     readonly frame: NodeId
@@ -234,6 +235,7 @@ export function placeComponent(
     data,
     tokens,
     variant,
+    focus,
     measure,
     theme: deckOf(doom).theme,
   })
@@ -250,7 +252,7 @@ export function placeComponent(
   const placed = join(
     doom,
     frame,
-    { component: { id, revision }, generated, data, tokens, variant, suppressed: [] },
+    { component: { id, revision }, generated, data, tokens, variant, focus, suppressed: [] },
     undefined,
     tree,
     create,
@@ -338,6 +340,7 @@ function expandInstance(
     data: proposed.data,
     tokens: proposed.tokens,
     variant: proposed.variant,
+    focus: proposed.focus,
     theme: deckOf(input).theme,
     measure,
     styleFor: (key) => styles.get(keyString(key)),

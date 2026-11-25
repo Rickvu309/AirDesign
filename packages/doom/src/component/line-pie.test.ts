@@ -20,8 +20,6 @@ function lineData(series: number, points: number) {
   }
 }
 
-const grayHex = /^#([0-9a-f]{2})\1\1$/
-
 describe("line component", () => {
   it.each([1, 3, 8].flatMap((series) => [2, 12, 100].map((points) => [series, points])))(
     "paints %i series of %i points on the shared scale",
@@ -97,15 +95,16 @@ describe("line component", () => {
     )
   })
 
-  it("uses one accent and distinct greys and flags dense lines", () => {
+  it("uses one accent and a bounded grey ramp and flags dense lines", () => {
     const { children, findings } = expand(lineComponent, lineData(8, 12))
     const colors = children.flatMap(({ key, props }) => {
       const stroke = props.strokes?.[0]
       return key[0] === "trace" && stroke?.kind === "solid" ? [resolveColor(stroke.color, defaultTheme)] : []
     })
-    expect(new Set(colors).size).toBe(8)
+    expect(new Set(colors).size).toBe(3)
     expect(colors[0]).toBe(defaultTheme.colors.accent1)
-    expect(colors.slice(1)).toEqual(Array.from({ length: 7 }, () => expect.stringMatching(grayHex)))
+    expect(colors.slice(1)).toEqual([colors[1], colors[2], colors[1], colors[2], colors[1], colors[2], colors[1]])
+    expect(findings).toContainEqual(expect.objectContaining({ kind: "many-series", count: 8, capacity: 3 }))
     expect(findings).toContainEqual(expect.objectContaining({ key: ["series-density"] }))
   })
 
@@ -113,7 +112,7 @@ describe("line component", () => {
     const tree = expandComponent(lineComponent, {
       data: lineData(3, 4),
       frame: { x: 0, y: 0, w: 1100, h: 620 },
-      tokens: { focus: "s1" },
+      focus: ["s1"],
       theme: defaultTheme,
       measure: measureWith({}),
     })
@@ -121,8 +120,8 @@ describe("line component", () => {
     const colorOf = (series: string) =>
       tree.children.find(({ key }) => key[0] === "trace" && key[1] === series)?.props.strokes?.[0]
     expect(colorOf("s1")).toMatchObject({ color: { var: "accent1" } })
-    expect(colorOf("s0")).toMatchObject({ color: expect.stringMatching(grayHex) })
-    expect(colorOf("s2")).toMatchObject({ color: expect.stringMatching(grayHex) })
+    expect(colorOf("s0")).toMatchObject({ color: { var: "text2", tint: expect.any(Number) } })
+    expect(colorOf("s2")).toMatchObject({ color: { var: "text2", tint: expect.any(Number) } })
   })
 
   it("reports density when optional values are enabled on all 800 points", () => {
@@ -178,7 +177,7 @@ describe.each([
   ["donut", donutComponent],
 ] as const)("%s component", (_, spec) => {
   it.each(Array.from({ length: 12 }, (_, i) => i + 1))(
-    "draws %i ungrouped wedges with unique fills and percentages that sum to 100",
+    "draws %i ungrouped wedges with a bounded palette and percentages that sum to 100",
     (count) => {
       const { children } = expand(spec, mix(Array.from({ length: count }, () => 10)), { groupSmall: false })
       const slices = children.filter(({ key }) => key[0] === "slice")
@@ -188,7 +187,7 @@ describe.each([
         const fill = props.fills?.[0]
         return fill?.kind === "solid" ? [resolveColor(fill.color, defaultTheme)] : []
       })
-      expect(new Set(colors).size).toBe(count)
+      expect(new Set(colors).size).toBe(Math.min(count, 4))
       if (count > 1) expect(slices[1]?.props.fills?.[0]).toMatchObject({ color: { var: "accent6" } })
       const labels = children.filter(({ key }) => key[0] === "legend")
       expect(labels).toHaveLength(count)
@@ -252,13 +251,16 @@ describe.each([
     expect(children.filter(({ key }) => key[0] === "slice").map(({ key }) => key[1])).toEqual(["r0", "r1", "r3", "r2"])
   })
 
-  it("paints a single colour family by default and flags seven separate slices", () => {
+  it("paints one accent and a grey ramp by default and flags seven separate slices", () => {
     const data = mix([8, 7, 6, 5, 4, 3, 2])
     const rows = data.rows.map(({ id, label, value }) => ({ id, label, value }))
     const { children, findings } = expand(spec, { ...data, rows }, { groupSmall: false })
     const slices = children.filter(({ key }) => key[0] === "slice")
     expect(slices).toHaveLength(7)
-    for (const { props } of slices) expect(props.fills?.[0]).toMatchObject({ color: { var: "accent1" } })
+    expect(slices[0]?.props.fills?.[0]).toMatchObject({ color: { var: "accent1" } })
+    for (const { props } of slices.slice(1))
+      expect(props.fills?.[0]).toMatchObject({ color: { var: "text2", tint: expect.any(Number) } })
+    expect(findings).toContainEqual(expect.objectContaining({ kind: "many-series", count: 7, capacity: 3 }))
     expect(findings).toContainEqual(expect.objectContaining({ key: ["many-slices"] }))
   })
 
@@ -276,13 +278,35 @@ describe.each([
     ])
     expect(children.find(({ key }) => key[0] === "legend" && key[1] === "other")?.props.text?.chars).toContain("Other")
     expect(findings).toContainEqual(expect.objectContaining({ key: ["grouped"] }))
+    const other = children.find(({ key }) => key[0] === "slice" && key[1] === "other")
+    expect(other?.props.fills?.[0]).toMatchObject({ color: { var: "text2", tint: expect.any(Number) } })
     const ungrouped = expand(spec, data, { groupSmall: false })
     const colors = ungrouped.children.flatMap(({ key, props }) => {
       const fill = props.fills?.[0]
       return key[0] === "slice" && fill?.kind === "solid" ? [resolveColor(fill.color, defaultTheme)] : []
     })
     expect(colors).toHaveLength(100)
-    expect(new Set(colors).size).toBe(100)
+    expect(new Set(colors).size).toBe(4)
+  })
+
+  it("focuses a plotted slice and leaves grouped Other muted", () => {
+    const data = mix([8, 7, 6, 5, 4, 3, 2, 1])
+    const rows = data.rows.map(({ id, label, value }) => ({ id, label, value }))
+    const inputs = {
+      data: { ...data, rows },
+      frame: { x: 0, y: 0, w: 1100, h: 620 },
+      theme: defaultTheme,
+      measure: measureWith({}),
+    }
+    const focused = expandComponent(spec, { ...inputs, focus: ["r2", "r7"] })
+    if (isRefusal(focused)) throw new Error(JSON.stringify(focused))
+    const fillOf = (id: string) =>
+      focused.children.find(({ key }) => key[0] === "slice" && key[1] === id)?.props.fills?.[0]
+    expect(fillOf("r2")).toMatchObject({ color: { var: "accent1" } })
+    expect(fillOf("other")).toMatchObject({ color: { var: "text2", tint: expect.any(Number) } })
+    expect(focused.findings).toContainEqual(
+      expect.objectContaining({ kind: "focus-missing", unknown: ["r7"], available: ["r0", "r1", "r2", "r3", "r4"] }),
+    )
   })
 
   it("reports repeated explicit colours", () => {

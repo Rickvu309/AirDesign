@@ -72,7 +72,10 @@
     "negative": {
       "var": "negative"
     },
-    "seriesLabel": "Series",
+    "seriesLabel": "",
+    "neutral": {
+      "var": "text2"
+    },
     "positiveLabel": "Positive",
     "negativeLabel": "Negative",
     "heading": "label",
@@ -82,6 +85,10 @@
   },
   "let": [
     ["gutter", 12],
+    ["seriesAccent", ["paletteRamp", 0, 1, ["get", "token.accent"], ["get", "token.neutral"]]],
+    ["activeFocus", ["matchingFocus", ["get", "focus"], ["get", "data.rows"], "id", "value"]],
+    ["hasFocus", ["lt", 0, ["count", ["get", "activeFocus"]]]],
+    ["signColors", ["if", ["get", "hasFocus"], false, ["get", "variant.signed"]]],
     ["captionSmall", ["fitSize", ["get", "token.captionSmall"]]],
     ["rowCount", ["count", ["get", "data.rows"]]],
     ["values", ["map", ["get", "data.rows"], "r", ["if", ["eq", ["get", "r.value"], null], 0, ["get", "r.value"]]]],
@@ -212,8 +219,6 @@
     ],
     ["plotWidth", ["sub", ["get", "frame.w"], ["add", ["get", "plotLeft"], ["get", "gutter"]]]],
     ["laneWidth", ["div", ["get", "plotWidth"], ["max", 1, ["get", "rowCount"]]]],
-    ["markWidth", ["mul", ["get", "laneWidth"], 0.57]],
-    ["markInset", ["div", ["sub", ["get", "laneWidth"], ["get", "markWidth"]], 2]],
     ["plotTop", 99],
     ["categorySpace", 62],
     ["valueSpace", ["if", ["get", "showValues"], ["if", ["lt", ["get", "lo"], 0], 44, 12], 12]],
@@ -232,7 +237,7 @@
           "flowText",
           [
             "if",
-            ["get", "variant.signed"],
+            ["get", "signColors"],
             [
               "filter",
               [
@@ -258,7 +263,7 @@
               {
                 "id": "series",
                 "chars": ["get", "token.seriesLabel"],
-                "fill": ["get", "token.accent"]
+                "fill": ["get", "seriesAccent"]
               }
             ]
           ],
@@ -286,21 +291,6 @@
     ["legendTop", ["sub", ["get", "frame.h"], ["mul", ["get", "legend.rows"], ["get", "legendRowHeight"]]]],
     ["categoryTop", ["sub", ["get", "legendTop"], ["get", "categorySpace"]]],
     ["plotBottom", ["sub", ["get", "categoryTop"], ["get", "valueSpace"]]],
-    ["headerUnit", ["if", ["eq", ["get", "token.unitPlace"], "header"], ["get", "token.unitHeader"], ""]],
-    [
-      "header",
-      [
-        "if",
-        ["eq", ["get", "token.title"], ""],
-        ["get", "headerUnit"],
-        [
-          "if",
-          ["eq", ["get", "headerUnit"], ""],
-          ["get", "token.title"],
-          ["concat", ["get", "token.title"], ", ", ["get", "headerUnit"]]
-        ]
-      ]
-    ],
     ["zero", ["linear", 0, ["get", "axis.lo"], ["get", "axis.hi"], ["get", "plotBottom"], ["get", "plotTop"]]]
   ],
   "parts": [
@@ -318,7 +308,24 @@
         "color": ["get", "token.ink"],
         "align": "left",
         "alignV": "center"
-      }
+      },
+      "let": [
+        ["headerUnit", ["if", ["eq", ["get", "token.unitPlace"], "header"], ["get", "token.unitHeader"], ""]],
+        [
+          "header",
+          [
+            "if",
+            ["eq", ["get", "token.title"], ""],
+            ["get", "headerUnit"],
+            [
+              "if",
+              ["eq", ["get", "headerUnit"], ""],
+              ["get", "token.title"],
+              ["concat", ["get", "token.title"], ", ", ["get", "headerUnit"]]
+            ]
+          ]
+        ]
+      ]
     },
     {
       "repeat": {
@@ -386,49 +393,60 @@
       }
     },
     {
-      "repeat": {
-        "over": ["get", "data.rows"],
-        "as": "r"
-      },
-      "let": [["laneStart", ["add", ["get", "plotLeft"], ["mul", ["get", "i"], ["get", "laneWidth"]]]]],
+      "let": [
+        ["markWidth", ["mul", ["get", "laneWidth"], 0.57]],
+        ["markInset", ["div", ["sub", ["get", "laneWidth"], ["get", "markWidth"]], 2]],
+        ["neutralMark", ["paletteRamp", 1, 2, ["get", "token.accent"], ["get", "token.neutral"], ["get", "showValues"]]]
+      ],
       "children": [
         {
-          "emit": {
-            "kind": "text",
-            "key": ["list", "category", ["get", "r.id"]],
-            "x": ["get", "laneStart"],
-            "y": ["get", "categoryTop"],
-            "w": ["get", "laneWidth"],
-            "h": 56,
-            "chars": ["get", "r.label"],
-            "style": ["get", "token.caption"],
-            "color": ["get", "token.muted"],
-            "align": "center",
-            "alignV": "center",
-            "fit": {
-              "smaller": ["get", "captionSmall"],
-              "group": "categories",
-              "thin": 4
-            }
-          }
-        },
-        {
-          "when": ["if", ["eq", ["get", "r.value"], null], false, true],
+          "repeat": {
+            "over": ["get", "data.rows"],
+            "as": "r"
+          },
+          "let": [
+            ["laneStart", ["add", ["get", "plotLeft"], ["mul", ["get", "i"], ["get", "laneWidth"]]]],
+            ["hasValue", ["if", ["eq", ["get", "r.value"], null], false, true]],
+            [
+              "edge",
+              [
+                "if",
+                ["get", "hasValue"],
+                [
+                  "linear",
+                  ["get", "r.value"],
+                  ["get", "axis.lo"],
+                  ["get", "axis.hi"],
+                  ["get", "plotBottom"],
+                  ["get", "plotTop"]
+                ],
+                0
+              ]
+            ]
+          ],
           "children": [
             {
-              "let": [
-                [
-                  "edge",
-                  [
-                    "linear",
-                    ["get", "r.value"],
-                    ["get", "axis.lo"],
-                    ["get", "axis.hi"],
-                    ["get", "plotBottom"],
-                    ["get", "plotTop"]
-                  ]
-                ]
-              ],
+              "emit": {
+                "kind": "text",
+                "key": ["list", "category", ["get", "r.id"]],
+                "x": ["get", "laneStart"],
+                "y": ["get", "categoryTop"],
+                "w": ["get", "laneWidth"],
+                "h": 56,
+                "chars": ["get", "r.label"],
+                "style": ["get", "token.caption"],
+                "color": ["get", "token.muted"],
+                "align": "center",
+                "alignV": "center",
+                "fit": {
+                  "smaller": ["get", "captionSmall"],
+                  "group": "categories",
+                  "thin": 4
+                }
+              }
+            },
+            {
+              "when": ["get", "hasValue"],
               "children": [
                 {
                   "emit": {
@@ -445,14 +463,25 @@
                     ],
                     "fill": [
                       "if",
-                      ["get", "variant.signed"],
+                      ["get", "hasFocus"],
+                      [
+                        "focusColor",
+                        ["get", "activeFocus"],
+                        ["list", ["get", "r.id"]],
+                        ["get", "seriesAccent"],
+                        ["get", "neutralMark"]
+                      ],
                       [
                         "if",
-                        ["lt", ["get", "r.value"], 0],
-                        ["get", "token.negative"],
-                        ["if", ["lt", 0, ["get", "r.value"]], ["get", "token.positive"], ["get", "token.accent"]]
-                      ],
-                      ["get", "token.accent"]
+                        ["get", "signColors"],
+                        [
+                          "if",
+                          ["lt", ["get", "r.value"], 0],
+                          ["get", "token.negative"],
+                          ["if", ["lt", 0, ["get", "r.value"]], ["get", "token.positive"], ["get", "seriesAccent"]]
+                        ],
+                        ["get", "seriesAccent"]
+                      ]
                     ]
                   }
                 },

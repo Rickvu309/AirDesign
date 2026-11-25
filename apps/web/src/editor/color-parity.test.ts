@@ -6,7 +6,7 @@ import * as doom from "@airdesign/doom"
 import type { Desc } from "../design/control-desc"
 import { describe, expect, it } from "vitest"
 import type { PanelControl } from "../design/panel"
-import { templateColorColumns, typedColor } from "../design/color-choices"
+import { pickerSwatches, templateColorColumns, typedColor } from "../design/color-choices"
 import { namedByColor } from "../design/color-names"
 import { changeWrites } from "./design-changes"
 import { nodeModel } from "./design-model"
@@ -87,7 +87,8 @@ const propOfField: Readonly<Record<Field, "fills" | "strokes" | "text">> = {
   stroke: "strokes",
   color: "text",
 }
-const agentColors: readonly doom.AgentColor[] = [...doom.colorVars, `${hash}1f4e79`]
+const displayOnly = ["positive", "negative", "total"] as const
+const agentColors: readonly doom.AgentColor[] = [...doom.paletteColorVars, `${hash}1f4e79`]
 
 function colored(desc: Desc): boolean {
   switch (desc.kind) {
@@ -114,7 +115,7 @@ function colorControls(name: string): readonly PanelControl[] {
 const sent = (control: PanelControl, color: doom.Color) => (control.desc.kind === "color" ? color : { solid: color })
 
 function personColors(): readonly doom.Color[] {
-  const columns = templateColorColumns(paletteOf(view, theme).templateColors)
+  const columns = templateColorColumns(pickerSwatches(paletteOf(view, theme).templateColors))
   const tint = columns
     .flatMap((column) => column.shades)
     .find((shade) => typeof shade.color !== "string" && (shade.color.tint ?? 0) > 0)
@@ -156,7 +157,7 @@ describe("colour controls and agent colours", () => {
     expect(missed).toEqual([])
   })
 
-  it("lands every agent colour through both edit paths", () => {
+  it("a person reaches every palette colour an agent can send", () => {
     const missed: string[] = []
     let next = 0
     const mint = () => doom.nodeId(`m:${String((next += 1))}`)
@@ -183,6 +184,14 @@ describe("colour controls and agent colours", () => {
     expect(missed).toEqual([])
   })
 
+  it("shows sign roles on existing layers and excludes them from the picker grid", () => {
+    const { templateColors } = paletteOf(view, theme)
+    const offered = pickerSwatches(templateColors)
+    expect(templateColors.filter((swatch) => !offered.includes(swatch)).map((swatch) => swatch.var)).toEqual(
+      displayOnly,
+    )
+  })
+
   it.each(doom.colorVars)("shows an agent's %s fill by name and renders its actual colour", (role) => {
     const theme = doom.themeLibrary.neutral.theme
     for (const tint of [undefined, 0.2]) {
@@ -200,7 +209,7 @@ describe("colour controls and agent colours", () => {
       const css = doom.resolveColor(color, theme)
       const baseName =
         Object.entries(neutralColorNames).find(([name]) => name === role)?.[1] ??
-        namedByColor([{ css: theme.colors[role] }])[0]!.name
+        paletteOf(after, theme).templateColors.find((swatch) => swatch.var === role)!.name
       const markup = renderToStaticMarkup(
         createElement(UnionControl, {
           control,
@@ -219,4 +228,18 @@ describe("colour controls and agent colours", () => {
     const [tint] = templateColorColumns(templateColors).flatMap((column) => column.shades)
     expect(tint?.color).toEqual({ var: "accent1", tint: 0.8 })
   })
+})
+
+it.each(Object.entries(doom.themeLibrary))("gives different colours different names in %s", (_id, { theme }) => {
+  const colors = paletteOf(view, theme).templateColors
+  expect(colors).toHaveLength(14)
+  expect(pickerSwatches(colors)).toEqual(
+    namedByColor(doom.paletteColorVars.map((role) => ({ var: role, css: theme.colors[role].toUpperCase() }))),
+  )
+  const accent = colors.find(({ var: role }) => role === "accent1")
+  const total = colors.find(({ var: role }) => role === "total")
+  if (accent?.css === total?.css) expect(total?.name).toBe(accent?.name)
+  for (const swatch of colors) {
+    expect(colors.filter(({ name }) => name === swatch.name).every(({ css }) => css === swatch.css)).toBe(true)
+  }
 })

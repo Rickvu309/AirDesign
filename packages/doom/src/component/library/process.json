@@ -96,7 +96,7 @@
     ],
     ["first", ["at", ["get", "data.steps"], 0]],
     [
-      "focus",
+      "activeStep",
       [
         "if",
         [
@@ -127,7 +127,7 @@
         "as": "s"
       },
       "let": [
-        ["focused", ["eq", ["get", "s.id"], ["get", "focus"]]],
+        ["focused", ["eq", ["get", "s.id"], ["get", "activeStep"]]],
         [
           "stepNumber",
           [

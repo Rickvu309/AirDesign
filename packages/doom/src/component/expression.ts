@@ -35,7 +35,7 @@ export type Expr =
 
 export type Bindings = readonly (readonly [string, Expr])[]
 
-const reserved = new Set(["data", "token", "frame", "variant", "i", "acc", "next"])
+const reserved = new Set(["data", "token", "frame", "variant", "focus", "i", "acc", "next"])
 export const binding = (raw: unknown): string => {
   const bind = name(raw)
   return reserved.has(bind) ? reject("shape", `The name "${bind}" is reserved.`) : bind

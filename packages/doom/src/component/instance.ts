@@ -4,7 +4,7 @@ import { Reject, formed, integer, list, literal, object, reject, variant } from 
 import { textStyleNames } from "../text.js"
 import { resolveComponent } from "./library.js"
 import { readChoices, readComponentData, readTokens, tokenRecord, variantRecord } from "./spec.js"
-import { budget, id, isList } from "./values.js"
+import { budget, id, isList, readFocus } from "./values.js"
 
 export type PartKey = readonly [string, ...string[]]
 
@@ -33,20 +33,24 @@ const baseline = variant("kind", {
 })
 
 const node = formed(readNodeId, "A node ID.")
-const storedInstance = object({
-  component: object({
-    id,
-    revision: integer(1, Number.MAX_SAFE_INTEGER),
-  }),
-  variant: variantRecord,
-  tokens: tokenRecord,
-  data: (raw) => raw,
-  generated: node,
-  parts: list(object({ key: keyOf, node, baseline }), 499),
-  suppressed: list(object({ key: keyOf, reason: literal(["delete"]) }), 499),
-})
+const storedInstance = object(
+  {
+    component: object({
+      id,
+      revision: integer(1, Number.MAX_SAFE_INTEGER),
+    }),
+    variant: variantRecord,
+    tokens: tokenRecord,
+    data: (raw) => raw,
+    generated: node,
+    parts: list(object({ key: keyOf, node, baseline }), 499),
+    suppressed: list(object({ key: keyOf, reason: literal(["delete"]) }), 499),
+  },
+  { focus: readFocus },
+)
 
-export type Instance = Omit<ReturnType<typeof storedInstance>, "data"> & {
+export type Instance = Omit<ReturnType<typeof storedInstance>, "data" | "focus"> & {
+  readonly focus: readonly string[]
   readonly data: ReturnType<typeof readComponentData>
 }
 export type PartBaseline = ReturnType<typeof baseline>
@@ -76,10 +80,10 @@ export function readInstance(raw: unknown): Instance {
       ids.add(part.node)
     }
   }
-  return { ...found, data }
+  return { ...found, data, focus: found.focus ?? [] }
 }
 
-export const instanceFields = ["data", "tokens", "variant"] as const
+export const instanceFields = ["data", "tokens", "variant", "focus"] as const
 export type InstanceField = (typeof instanceFields)[number]
 export type InstanceFieldKey = `instance.${InstanceField}`
 export const instanceFieldKey = (field: InstanceField): InstanceFieldKey => `instance.${field}`

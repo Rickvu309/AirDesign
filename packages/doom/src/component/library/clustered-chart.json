@@ -44,7 +44,6 @@
     "captionSmall": 18,
     "valueLaneMin": 26,
     "minMark": 2,
-    "focus": "",
     "positive": {
       "var": "positive"
     },
@@ -103,8 +102,15 @@
     ["nCategories", ["count", ["get", "data.categories"]]],
     ["hasLegend", ["lt", 1, ["get", "nSeries"]]],
     ["lead", ["at", ["get", "series"], 0]],
-    ["focusChoices", ["filter", ["get", "series"], "s", ["eq", ["get", "s.id"], ["get", "token.focus"]]]],
-    ["rankSeries", ["coalesce", ["at", ["get", "focusChoices"], 0], ["get", "lead"]]],
+    ["colorSlots", ["rampSlots", ["get", "series"], ["matchingFocus", ["get", "focus"], ["get", "series"], "id"]]],
+    [
+      "rankSeries",
+      [
+        "coalesce",
+        ["at", ["filter", ["get", "series"], "s", ["eq", ["at", ["get", "colorSlots.indices"], ["get", "i"]], 0]], 0],
+        ["get", "lead"]
+      ]
+    ],
     [
       "orderedByValue",
       ["if", ["eq", ["get", "variant.sort"], "auto"], ["get", "horizontal"], ["eq", ["get", "variant.sort"], "value"]]
@@ -148,26 +154,12 @@
           "coalesce",
           ["get", "s.fill"],
           [
-            "if",
-            ["eq", ["get", "s.id"], ["get", "rankSeries.id"]],
+            "paletteRamp",
+            ["at", ["get", "colorSlots.indices"], ["get", "i"]],
+            ["get", "colorSlots.count"],
             ["get", "token.accent1"],
-            [
-              "if",
-              [
-                "if",
-                ["eq", ["get", "i"], 0],
-                true,
-                ["if", ["eq", ["get", "i"], 1], ["eq", ["get", "rankSeries.id"], ["get", "lead.id"]], false]
-              ],
-              {
-                "var": "text2",
-                "tint": 0.24
-              },
-              {
-                "var": "text2",
-                "tint": 0.56
-              }
-            ]
+            ["get", "token.muted"],
+            false
           ]
         ]
       ]
@@ -273,19 +265,6 @@
         "kind": "finding",
         "key": ["list", "signed"],
         "message": "Sign colours need one series. Use separate charts for signed comparisons."
-      }
-    },
-    {
-      "when": [
-        "if",
-        ["if", ["eq", ["get", "token.focus"], ""], false, true],
-        ["eq", ["count", ["get", "focusChoices"]], 0],
-        false
-      ],
-      "emit": {
-        "kind": "finding",
-        "key": ["list", "focus"],
-        "message": "Choose a focus from the series shown in the chart."
       }
     },
     {

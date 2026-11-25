@@ -167,8 +167,8 @@ async function laidRead(opened: Opened, query: Query, host: DeckHost): Promise<L
 }
 
 async function componentRead(opened: Opened, query: Query, host: DeckHost): Promise<ToolResult | undefined> {
-  if (!doom.linkedComponentsEnabled) return undefined
   if (query.component !== undefined) {
+    if (!doom.linkedComponentsEnabled) return undefined
     const signature = componentSignature(query.component)
     if (signature === undefined)
       return refused("dead", { field: "component", note: "Read the deck for available template ids." })
@@ -189,7 +189,7 @@ async function componentRead(opened: Opened, query: Query, host: DeckHost): Prom
   if (node?.type !== "frame" || node.instance === undefined) return undefined
   const slide = doom.slideOf(opened.fold, id)
   if (slide === undefined || (query.slide !== undefined && query.slide !== slide)) return refused("dead", { node: id })
-  const { component, data, tokens, variant, parts, suppressed } = node.instance
+  const { component, data, tokens, variant, focus, parts, suppressed } = node.instance
   const signature = componentSignature(component.id)
   const layers = parts.map(({ node }) => node)
   const measured = await deckMeasure(host, [opened.fold], layers)
@@ -209,6 +209,7 @@ async function componentRead(opened: Opened, query: Query, host: DeckHost): Prom
       component,
       box: node.box,
       data,
+      focus,
       tokens,
       variant: { ...signature?.defaultVariant, ...variant },
       parts: parts.length,
