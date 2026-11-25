@@ -1,0 +1,402 @@
+{
+  "version": 1,
+  "name": "Stacked column",
+  "collections": {
+    "categories": {
+      "label": "string"
+    },
+    "series": {
+      "label": "string",
+      "color": "color?"
+    },
+    "segments": {
+      "category": "ref:categories",
+      "series": "ref:series",
+      "value": "number",
+      "color": "color?"
+    }
+  },
+  "variants": {
+    "labels": [true, false],
+    "totals": [true, false]
+  },
+  "defaultVariant": {
+    "labels": true,
+    "totals": false
+  },
+  "defaults": {
+    "scale": 1,
+    "digits": 0,
+    "prefix": "",
+    "suffix": "",
+    "unitHeader": "",
+    "unitPlace": "header",
+    "title": "",
+    "ink": {
+      "var": "text"
+    },
+    "muted": {
+      "var": "text2"
+    },
+    "rule": "#93A6BA",
+    "heading": "label",
+    "label": "label",
+    "caption": "caption",
+    "captionSmall": 18,
+    "totalPrefix": "Net ",
+    "accent1": {
+      "var": "accent1"
+    },
+    "accent2": {
+      "var": "accent2"
+    },
+    "accent3": {
+      "var": "accent3"
+    },
+    "accent4": {
+      "var": "accent4"
+    },
+    "accent5": {
+      "var": "accent5"
+    },
+    "accent6": {
+      "var": "accent6"
+    }
+  },
+  "let": [
+    ["legend", ["lt", 1, ["count", ["get", "data.series"]]]],
+    ["headerUnit", ["if", ["eq", ["get", "token.unitPlace"], "header"], ["get", "token.unitHeader"], ""]],
+    [
+      "header",
+      [
+        "if",
+        ["eq", ["get", "token.title"], ""],
+        ["get", "headerUnit"],
+        [
+          "if",
+          ["eq", ["get", "headerUnit"], ""],
+          ["get", "token.title"],
+          ["concat", ["get", "token.title"], ", ", ["get", "headerUnit"]]
+        ]
+      ]
+    ],
+    ["gutter", ["min", 12, ["div", ["get", "frame.w"], 4]]],
+    ["rowCount", ["count", ["get", "data.categories"]]],
+    ["plotWidth", ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]]],
+    ["categoryTop", ["max", 0, ["sub", ["get", "frame.h"], 56]]],
+    ["plotBottom", ["max", 0, ["sub", ["get", "categoryTop"], 10]]],
+    [
+      "plotTop",
+      [
+        "min",
+        ["div", ["get", "plotBottom"], 2],
+        ["if", ["get", "legend"], 130, ["if", ["get", "variant.totals"], 92, 66]]
+      ]
+    ],
+    [
+      "seriesColors",
+      [
+        "groupBy",
+        [
+          "map",
+          ["get", "data.series"],
+          "s",
+          {
+            "id": ["get", "s.id"],
+            "fill": [
+              "if",
+              ["eq", ["get", "s.color"], null],
+              [
+                "cycle",
+                [
+                  "list",
+                  ["get", "token.accent1"],
+                  ["get", "token.accent2"],
+                  ["get", "token.accent3"],
+                  ["get", "token.accent4"],
+                  ["get", "token.accent5"],
+                  ["get", "token.accent6"]
+                ],
+                ["get", "i"]
+              ],
+              ["get", "s.color"]
+            ]
+          }
+        ],
+        "id"
+      ]
+    ],
+    ["segmentsByCategory", ["groupBy", ["get", "data.segments"], "category"]],
+    [
+      "groups",
+      [
+        "map",
+        ["get", "data.categories"],
+        "c",
+        {
+          "id": ["get", "c.id"],
+          "label": ["get", "c.label"],
+          "segments": [
+            "if",
+            ["eq", ["lookup", ["get", "segmentsByCategory"], ["get", "c.id"]], null],
+            ["list"],
+            ["lookup", ["get", "segmentsByCategory"], ["get", "c.id"]]
+          ]
+        }
+      ]
+    ],
+    [
+      "lo",
+      [
+        "min",
+        0,
+        [
+          "map",
+          ["get", "groups"],
+          "group",
+          ["sum", ["map", ["get", "group.segments"], "s", ["min", 0, ["get", "s.value"]]]]
+        ]
+      ]
+    ],
+    [
+      "upper",
+      [
+        "max",
+        0,
+        [
+          "map",
+          ["get", "groups"],
+          "group",
+          ["sum", ["map", ["get", "group.segments"], "s", ["max", 0, ["get", "s.value"]]]]
+        ]
+      ]
+    ],
+    ["hi", ["if", ["eq", ["get", "upper"], ["get", "lo"]], 1, ["get", "upper"]]],
+    ["zero", ["linear", 0, ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]],
+    [
+      "valueFormat",
+      {
+        "scale": ["get", "token.scale"],
+        "digits": ["get", "token.digits"],
+        "prefix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.prefix"], ""],
+        "suffix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.suffix"], ""],
+        "sign": "negative"
+      }
+    ],
+    ["legendWidth", ["min", 210, ["div", ["get", "plotWidth"], ["max", 1, ["count", ["get", "data.series"]]]]]]
+  ],
+  "parts": [
+    {
+      "when": ["if", ["eq", ["get", "header"], ""], false, true],
+      "emit": {
+        "kind": "text",
+        "key": ["list", "unit"],
+        "x": ["get", "gutter"],
+        "y": 0,
+        "w": ["get", "plotWidth"],
+        "h": 42,
+        "chars": ["get", "header"],
+        "style": ["get", "token.heading"],
+        "color": ["get", "token.ink"],
+        "align": "left",
+        "alignV": "center",
+        "fit": "omit"
+      }
+    },
+    {
+      "repeat": {
+        "over": ["get", "data.series"],
+        "as": "series"
+      },
+      "when": ["get", "legend"],
+      "let": [
+        ["legendLeft", ["add", ["get", "gutter"], ["mul", ["get", "i"], ["get", "legendWidth"]]]],
+        ["seriesPaint", ["at", ["lookup", ["get", "seriesColors"], ["get", "series.id"]], 0]],
+        ["chip", ["min", 18, ["div", ["get", "legendWidth"], 3]]]
+      ],
+      "children": [
+        {
+          "emit": {
+            "kind": "rect",
+            "key": ["list", "legend-swatch", ["get", "series.id"]],
+            "x": ["get", "legendLeft"],
+            "y": ["if", ["eq", ["get", "header"], ""], 14, 56],
+            "w": ["get", "chip"],
+            "h": ["get", "chip"],
+            "fill": ["get", "seriesPaint.fill"]
+          }
+        },
+        {
+          "emit": {
+            "kind": "text",
+            "key": ["list", "legend-label", ["get", "series.id"]],
+            "x": ["add", ["get", "legendLeft"], ["get", "chip"], 8],
+            "y": ["if", ["eq", ["get", "header"], ""], 4, 46],
+            "w": ["max", 0, ["sub", ["get", "legendWidth"], ["add", ["get", "chip"], 18]]],
+            "h": 38,
+            "chars": ["get", "series.label"],
+            "style": ["get", "token.caption"],
+            "color": ["get", "token.muted"],
+            "align": "left",
+            "alignV": "center",
+            "fit": "omit"
+          }
+        }
+      ]
+    },
+    {
+      "emit": {
+        "kind": "line",
+        "key": ["list", "zero"],
+        "start": ["point", ["get", "gutter"], ["get", "zero"]],
+        "end": ["point", ["sub", ["get", "frame.w"], ["get", "gutter"]], ["get", "zero"]],
+        "color": ["get", "token.rule"],
+        "width": 2,
+        "route": "straight",
+        "arrow": "none"
+      }
+    },
+    {
+      "repeat": {
+        "over": ["get", "groups"],
+        "as": "group"
+      },
+      "let": [
+        ["lane", ["band", ["get", "i"], ["get", "rowCount"], ["get", "gutter"], ["get", "plotWidth"], 1]],
+        ["mark", ["band", ["get", "i"], ["get", "rowCount"], ["get", "gutter"], ["get", "plotWidth"], 0.57]],
+        [
+          "stack",
+          [
+            "scan",
+            ["get", "group.segments"],
+            "s",
+            {
+              "positive": 0,
+              "negative": 0
+            },
+            {
+              "positive": ["add", ["get", "acc.positive"], ["max", 0, ["get", "s.value"]]],
+              "negative": ["add", ["get", "acc.negative"], ["min", 0, ["get", "s.value"]]]
+            },
+            {
+              "id": ["get", "s.id"],
+              "value": ["get", "s.value"],
+              "start": ["if", ["lt", ["get", "s.value"], 0], ["get", "acc.negative"], ["get", "acc.positive"]],
+              "end": ["if", ["lt", ["get", "s.value"], 0], ["get", "next.negative"], ["get", "next.positive"]],
+              "series": ["get", "s.series"],
+              "color": ["get", "s.color"]
+            }
+          ]
+        ]
+      ],
+      "children": [
+        {
+          "repeat": {
+            "over": ["get", "stack"],
+            "as": "s"
+          },
+          "when": ["if", ["eq", ["get", "s.value"], 0], false, true],
+          "let": [
+            [
+              "a",
+              ["linear", ["get", "s.start"], ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]
+            ],
+            [
+              "b",
+              ["linear", ["get", "s.end"], ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]
+            ],
+            ["top", ["min", ["get", "a"], ["get", "b"]]],
+            ["height", ["sub", ["max", ["get", "a"], ["get", "b"]], ["get", "top"]]],
+            ["seriesPaint", ["at", ["lookup", ["get", "seriesColors"], ["get", "s.series"]], 0]],
+            ["fill", ["if", ["eq", ["get", "s.color"], null], ["get", "seriesPaint.fill"], ["get", "s.color"]]]
+          ],
+          "children": [
+            {
+              "emit": {
+                "kind": "rect",
+                "key": ["list", "segment", ["get", "group.id"], ["get", "s.id"]],
+                "x": ["get", "mark.start"],
+                "y": ["get", "top"],
+                "w": ["get", "mark.size"],
+                "h": ["get", "height"],
+                "fill": ["get", "fill"]
+              }
+            },
+            {
+              "when": ["get", "variant.labels"],
+              "emit": {
+                "kind": "text",
+                "key": ["list", "value", ["get", "group.id"], ["get", "s.id"]],
+                "x": ["add", ["get", "mark.start"], ["min", 4, ["div", ["get", "mark.size"], 2]]],
+                "y": ["get", "top"],
+                "w": ["max", 0, ["sub", ["get", "mark.size"], 8]],
+                "h": ["get", "height"],
+                "chars": ["format", ["get", "s.value"], ["get", "valueFormat"]],
+                "style": ["get", "token.label"],
+                "color": ["readableInk", ["get", "fill"]],
+                "align": "center",
+                "alignV": "center",
+                "fit": {
+                  "minWidth": 24
+                }
+              }
+            }
+          ]
+        },
+        {
+          "when": ["get", "variant.totals"],
+          "let": [
+            [
+              "top",
+              [
+                "linear",
+                ["sum", ["map", ["get", "group.segments"], "s", ["max", 0, ["get", "s.value"]]]],
+                ["get", "lo"],
+                ["get", "hi"],
+                ["get", "plotBottom"],
+                ["get", "plotTop"]
+              ]
+            ],
+            ["net", ["sum", ["map", ["get", "group.segments"], "s", ["get", "s.value"]]]]
+          ],
+          "emit": {
+            "kind": "text",
+            "key": ["list", "total", ["get", "group.id"]],
+            "x": ["get", "lane.start"],
+            "y": ["sub", ["get", "top"], 37],
+            "w": ["get", "lane.size"],
+            "h": 32,
+            "chars": ["concat", ["get", "token.totalPrefix"], ["format", ["get", "net"], ["get", "valueFormat"]]],
+            "style": ["get", "token.label"],
+            "color": ["get", "token.ink"],
+            "align": "center",
+            "alignV": "center",
+            "fit": {
+              "minWidth": 48
+            }
+          }
+        },
+        {
+          "emit": {
+            "kind": "text",
+            "key": ["list", "category", ["get", "group.id"]],
+            "x": ["get", "lane.start"],
+            "y": ["get", "categoryTop"],
+            "w": ["get", "lane.size"],
+            "h": 56,
+            "chars": ["get", "group.label"],
+            "style": ["get", "token.caption"],
+            "color": ["get", "token.muted"],
+            "align": "center",
+            "alignV": "center",
+            "fit": {
+              "smaller": ["get", "token.captionSmall"],
+              "group": "categories",
+              "thin": 4
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

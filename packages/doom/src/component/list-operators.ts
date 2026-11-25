@@ -5,6 +5,7 @@ import {
   type ValueRecord,
   type Values,
   isList,
+  name,
   numeric,
   record,
   string,
@@ -89,4 +90,35 @@ export function indexBy(values: Values, field: string, charge: Charge): ValueRec
       return [key, value]
     }),
   )
+}
+
+function ownField(record: Value | undefined, key: string): Value | undefined {
+  if (record === null || typeof record !== "object" || isList(record)) return undefined
+  return Object.hasOwn(record, key) ? record[key] : undefined
+}
+
+export function groupIndex([source, field]: Values, charge: Charge): Value {
+  const key = name(field)
+  const groups = new Map<string, Value[]>()
+  for (const row of valueList(source)) {
+    const member = string(ownField(row, key))
+    charge(1 + member.length)
+    const group = groups.get(member)
+    if (group === undefined) groups.set(member, [row])
+    else group.push(row)
+  }
+  return Object.fromEntries(groups)
+}
+
+export function lookup([record, key]: Values, charge: Charge): Value {
+  if (record === null || typeof record !== "object" || isList(record)) return reject("shape", "An object.")
+  const member = string(key)
+  charge(member.length)
+  return ownField(record, member) ?? null
+}
+
+export function cycle([source, index]: Values): Value {
+  const values = valueList(source)
+  const i = integer(0, 1e15)(index)
+  return values[i % values.length] ?? null
 }

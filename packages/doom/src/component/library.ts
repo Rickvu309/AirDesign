@@ -6,6 +6,8 @@ import cycle from "./library/cycle.json" with { type: "json" }
 import line from "./library/line.json" with { type: "json" }
 import pie from "./library/pie.json" with { type: "json" }
 import process from "./library/process.json" with { type: "json" }
+import stacked from "./library/stacked.json" with { type: "json" }
+import waterfall from "./library/waterfall.json" with { type: "json" }
 import { type ComponentSpec, readComponentSpec } from "./spec.js"
 
 export type ComponentDefinition = ComponentRef & { readonly spec: ComponentSpec }
@@ -50,6 +52,8 @@ export const donutComponent: ComponentSpec = {
   }).spec,
   workLimit: 400_000,
 }
+export const stackedComponent: ComponentSpec = builtIn("stacked", stacked).spec
+export const waterfallComponent: ComponentSpec = builtIn("waterfall", waterfall).spec
 
 export const clusteredChartComponent: ComponentSpec = {
   ...builtIn("clustered-chart", clusteredChart).spec,
@@ -66,4 +70,6 @@ const components = new Map<string, ComponentSpec>([
   ["line", lineComponent],
   ["pie", pieComponent],
   ["donut", donutComponent],
+  ["stacked", stackedComponent],
+  ["waterfall", waterfallComponent],
 ])

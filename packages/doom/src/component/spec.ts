@@ -1,6 +1,6 @@
 import { readColor } from "../color.js"
 import type { Refusal } from "../refusal.js"
-import { boolean, finite, integer, list, literal, naming, object, reject, variant } from "../read-kit.js"
+import { boolean, finite, integer, list, literal, naming, object, oneOf, reject, variant } from "../read-kit.js"
 import { readCollections, readData } from "./collections.js"
 import { type Bindings, type Expr, binding, readExpr } from "./expression.js"
 import { defaultNumberTokens, readLocale } from "./operators.js"
@@ -95,6 +95,8 @@ function emission(read: (raw: unknown) => Expr) {
   }
   const stroke = object({ color: read, width: read })
   const surface = { stroke, radius: read }
+  const fitWithin = object({ minWidth: read })
+  const textFit = oneOf<ReturnType<typeof fitText> | ReturnType<typeof fitWithin>>(fitText, fitWithin)
   const readTextPart = object(
     { ...position, chars: read, style: read, color: read, align: read, alignV: read },
     {
@@ -104,7 +106,7 @@ function emission(read: (raw: unknown) => Expr) {
       padding: read,
       size: read,
       overflow: literal(["ellipsis"]),
-      fit: (raw: unknown) => (raw === "omit" ? raw : fitText(raw)),
+      fit: (raw: unknown) => (raw === "omit" ? raw : textFit(raw)),
     },
   )
   return variant("kind", {
