@@ -8,6 +8,7 @@ import { ladderOf } from "./pattern-parts.js"
 import { type Doom, type NodeId } from "./index.js"
 import { widestWord } from "./text-estimate.js"
 import { ids, land } from "./sample-deck.js"
+import { slideFindings } from "./slide-findings.js"
 
 const slide = ids.slide
 const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as AgentChange
@@ -26,7 +27,7 @@ describe("a grid of words fills the band with its text size", () => {
     return { doom, root: made(doom), box: propOf(made(doom), "box")! }
   }
   const styleOf = (doom: Doom, root: NodeId) =>
-    new Set(childrenOf(doom, root).map((cell) => propOf(cell, "text")!.style))
+    new Set(childrenOf(doom, root).flatMap((cell) => propOf(cell, "text")?.style ?? []))
   const sizeOfStyle = (name: string) => ladderOf(defaultTheme).indexOf(name as never)
 
   it("sets header and body in one style, the largest the heading allows when the rows are few", () => {
@@ -51,11 +52,17 @@ describe("a grid of words fills the band with its text size", () => {
   }
   const weights = (count: number) => {
     const { doom, root } = gridOf(count)
-    return childrenOf(doom, root.id).map((cell) => ({
-      cell: propOf(cell, "cell")!,
-      label: propOf(cell, "text")!.chars,
-      bold: boldOf(doom, cell.id),
-    }))
+    return childrenOf(doom, root.id).flatMap((cell) =>
+      propOf(cell, "text") === undefined
+        ? []
+        : [
+            {
+              cell: propOf(cell, "cell")!,
+              label: propOf(cell, "text")!.chars,
+              bold: boldOf(doom, cell.id),
+            },
+          ],
+    )
   }
 
   it.each([4, 11])("sets headers and row labels semibold and every value regular, in a %i row grid", (count) => {
@@ -63,11 +70,11 @@ describe("a grid of words fills the band with its text size", () => {
       expect(bold, `${label} at ${cell.row},${cell.col}`).toBe(cell.row === 0 || cell.col === 0)
   })
 
-  it("keeps rows at the height of their words, the theme gap between them, from the top of the band", () => {
+  it("keeps rows at the height of their words, from the top of the band", () => {
     const { doom, root, box } = gridOf(4)
     const kpi = build(agentDeck(), add({ kind: "kpi", items: kpiItems }))
     expect(box.y).toBe(propOf(made(kpi), "box")!.y)
-    expect(propOf(root, "layout")).toMatchObject({ rows: ["hug", "hug", "hug", "hug"], gap: gapFor(1920) })
+    expect(propOf(root, "layout")).toMatchObject({ rows: ["hug", "hug", "hug", "hug"], gap: 0 })
     expect(childrenOf(doom, root.id).length).toBeGreaterThan(0)
   })
 })
@@ -82,7 +89,7 @@ describe("a grid sets its values in the body face and keeps every word whole", (
       ["Revenue", "3.0", "3.4"],
     ]
     const doom = build(themed, add({ kind: "frame", rows }))
-    const cells = childrenOf(doom, made(doom).id).map((cell) => propOf(cell, "text")!)
+    const cells = childrenOf(doom, made(doom).id).flatMap((cell) => propOf(cell, "text") ?? [])
     expect(cells.length).toBeGreaterThan(0)
     for (const text of cells)
       expect(
@@ -103,9 +110,9 @@ describe("a grid sets its values in the body face and keeps every word whole", (
     const layout = propOf(doom.nodes.get(root)!, "layout")!
     const width = propOf(doom.nodes.get(root)!, "box")!.w
     if (layout.mode !== "grid") throw new Error("grid")
-    const room = (width - layout.gap * (layout.columns.length - 1)) / layout.columns.length
+    const column = (width - layout.gap * (layout.columns.length - 1)) / layout.columns.length
     return childrenOf(doom, root)
-      .map((cell) => propOf(cell, "text")!)
+      .flatMap((cell) => propOf(cell, "text") ?? [])
       .filter(
         (text) =>
           widestWord(
@@ -113,7 +120,8 @@ describe("a grid sets its values in the body face and keeps every word whole", (
             defaultTheme,
             text.style,
             text.spans.some((span) => span.bold),
-          ) > room,
+          ) >
+          column - (text.padding?.l ?? 0) - (text.padding?.r ?? 0),
       )
       .map((text) => text.chars)
   }
@@ -133,5 +141,163 @@ describe("a grid sets its values in the body face and keeps every word whole", (
     expect(() => build(agentDeck(), add({ kind: "frame", rows }))).toThrow(
       /shorter labels, fewer columns or fewer rows/,
     )
+  })
+})
+
+describe("a grid of words is set as a consulting table", () => {
+  const segments = [
+    ["", "Q3 FY25", "Q3 FY26", "Note"],
+    ["Enterprise", "15.2", "$18.6M", "Grew"],
+    ["Mid-market", "(13.1)", "−14.9", "Flat"],
+    ["SMB", "7.9", "n/a", "Fell"],
+    ["Total", "37.6", "43.4", ""],
+  ]
+  const tableOf = (rows: readonly (readonly string[])[]) => {
+    const doom = build(agentDeck(), add({ kind: "frame", rows }))
+    const root = made(doom)
+    const children = childrenOf(doom, root.id)
+    const words = new Map(
+      children.flatMap((cell) => {
+        const { row, col } = propOf(cell, "cell")!
+        return propOf(cell, "text") === undefined ? [] : [[`${String(row)},${String(col)}`, cell] as const]
+      }),
+    )
+    const at = (row: number, col: number) => words.get(`${String(row)},${String(col)}`)
+    const rules = children.filter((node) => propOf(node, "text") === undefined)
+    const ruleAt = (row: number) => {
+      const rule = rules.find((node) => propOf(node, "cell")!.row === row)
+      if (rule === undefined) return undefined
+      const paint = propOf(rule, "strokes")?.[0]
+      return {
+        cell: propOf(rule, "cell"),
+        sides: propOf(rule, "stroke")?.sides,
+        color: paint?.kind === "solid" ? paint.color : undefined,
+      }
+    }
+    return { doom, root, children, words, at, rules, ruleAt }
+  }
+
+  it("rules the header in dark ink and each row in a thin light line across the whole grid", () => {
+    const { ruleAt, rules, root } = tableOf(segments.slice(0, 4))
+    expect(propOf(root, "layout")).toMatchObject({ gap: 0 })
+    expect(ruleAt(0)).toEqual({ cell: { row: 0, col: 0, colSpan: 4 }, sides: { b: 2 }, color: { var: "text" } })
+    for (const row of [1, 2])
+      expect(ruleAt(row), `row ${String(row)}`).toEqual({
+        cell: { row, col: 0, colSpan: 4 },
+        sides: { b: 1 },
+        color: { var: "text", tint: 0.8 },
+      })
+    expect(ruleAt(3)).toBeUndefined()
+    expect(rules).toHaveLength(3)
+  })
+
+  it("keeps the cells free of fills and outlines, each filling its column", () => {
+    const { words } = tableOf(segments)
+    for (const cell of words.values()) {
+      expect(propOf(cell, "fills") ?? []).toEqual([])
+      expect(propOf(cell, "strokes") ?? []).toEqual([])
+      expect(propOf(cell, "sizing")).toEqual({ w: "fill", h: "fill" })
+    }
+  })
+
+  it("paints each rule under the words of its row", () => {
+    const { children } = tableOf(segments.slice(0, 4))
+    const firstText = children.findIndex((node) => propOf(node, "text") !== undefined)
+    expect(propOf(children[0]!, "text")).toBeUndefined()
+    expect(firstText).toBe(1)
+  })
+
+  it("keeps each row's words one theme gap from the next, the rules halfway between", () => {
+    const { at } = tableOf(segments.slice(0, 4))
+    const gap = gapFor(1920)
+    const padding = (row: number, col: number) => propOf(at(row, col), "text")!.padding
+    expect(padding(0, 1)).toEqual({ t: 0, r: Math.floor(gap / 2), b: gap - Math.floor(gap / 2), l: Math.ceil(gap / 2) })
+    expect(padding(1, 0)).toMatchObject({ t: Math.floor(gap / 2), b: gap - Math.floor(gap / 2), l: 0 })
+    expect(padding(3, 3)).toMatchObject({ b: 0, r: 0 })
+  })
+
+  it("right-aligns a column of numbers, its header included, in tabular figures", () => {
+    const { at } = tableOf(segments)
+    const text = (row: number, col: number) => propOf(at(row, col), "text")!
+    for (const col of [1, 2])
+      for (const row of [0, 1, 2, 3, 4])
+        expect(text(row, col).paras[0]!.align, `${String(row)},${String(col)}`).toBe("right")
+    for (const row of [1, 2, 4]) expect(text(row, 1).spans.every((span) => span.figures === "tabular")).toBe(true)
+    for (const row of [1, 2, 3, 4]) expect(text(row, 0).paras[0]!.align ?? "left").toBe("left")
+    for (const row of [0, 1, 2, 3]) expect(text(row, 3).paras[0]!.align ?? "left").toBe("left")
+    expect(text(1, 3).spans.some((span) => span.figures !== undefined)).toBe(false)
+  })
+
+  it("reads a number through its markdown and its unit when it aligns a column", () => {
+    const { at } = tableOf([
+      ["KPI", "Q3 FY26", "vs target"],
+      ["ARR ($M)", "**158.4**", "−1.0%"],
+      ["CAC payback", "**24**", "+4 mo"],
+    ])
+    for (const col of [1, 2])
+      for (const row of [0, 1, 2])
+        expect(propOf(at(row, col), "text")!.paras[0]!.align, `${String(row)},${String(col)}`).toBe("right")
+    expect(propOf(at(1, 1), "text")!.spans.every((span) => span.figures === "tabular" && span.bold === true)).toBe(true)
+  })
+
+  it("sets a last Total row bold under a dark rule, with no light rule above it", () => {
+    const { at, ruleAt } = tableOf(segments)
+    const bold = (row: number, col: number) => propOf(at(row, col), "text")!.spans.every((span) => span.bold === true)
+    for (const col of [0, 1, 2]) expect(bold(4, col), `total ${String(col)}`).toBe(true)
+    expect(ruleAt(4)).toEqual({ cell: { row: 4, col: 0, colSpan: 4 }, sides: { t: 2 }, color: { var: "text" } })
+    expect(ruleAt(3)).toBeUndefined()
+    expect(bold(1, 1)).toBe(false)
+  })
+
+  it("reads a Total label through its markdown", () => {
+    const { at, ruleAt } = tableOf([...segments.slice(0, 4), ["**Total**", "37.6", "43.4", ""]])
+    expect(propOf(at(4, 1), "text")!.spans.every((span) => span.bold === true)).toBe(true)
+    expect(ruleAt(4)).toMatchObject({ sides: { t: 2 } })
+  })
+
+  it("finds a Total the agent wrote that does not equal its column's sum", () => {
+    const { doom, at } = tableOf([
+      ["Segment ($M)", "Q3 FY25", "Q3 FY26"],
+      ["Enterprise", "15.2", "18.6"],
+      ["Mid-market", "13.1", "14.9"],
+      ["SMB", "7.9", "8.0"],
+      ["Services", "1.4", "1.6"],
+      ["Total", "37.6", "43.4"],
+    ])
+    const found = slideFindings(doom, [slide]).filter(({ code }) => code === "total-mismatch")
+    expect(found.map(({ node }) => node)).toEqual([at(5, 2)!.id])
+  })
+
+  describe("an agent's edit of a cell's words", () => {
+    const edited = (row: number, col: number, change: Record<string, unknown>) => {
+      const { doom, at } = tableOf(segments)
+      const target = at(row, col)!.id
+      return propOf(build(doom, { op: "set", target, ...change } as AgentChange).nodes.get(target), "text")!
+    }
+    const look = (text: ReturnType<typeof edited>) => ({
+      bold: text.spans.every((span) => span.bold === true),
+      tabular: text.spans.every((span) => span.figures === "tabular"),
+      align: text.paras.map((para) => para.align),
+    })
+
+    it("keeps a Total's weight, tabular figures and right alignment", () => {
+      expect(look(edited(4, 2, { text: "43.1" }))).toEqual({ bold: true, tabular: true, align: ["right"] })
+      expect(look(edited(4, 0, { text: "Total revenue" }))).toMatchObject({ bold: true })
+    })
+
+    it("keeps a body number's tabular figures and right alignment in the body's weight", () => {
+      expect(look(edited(1, 1, { text: "15.3" }))).toEqual({ bold: false, tabular: true, align: ["right"] })
+      expect(look(edited(1, 1, { text: "15.3", textStyle: "caption" }))).toMatchObject({ tabular: true })
+    })
+
+    it("takes the weight the agent sets over the cell's own", () => {
+      expect(look(edited(4, 2, { text: "43.1", weight: "regular" }))).toMatchObject({ bold: false, tabular: true })
+      expect(look(edited(1, 1, { text: "**15.3**" }))).toMatchObject({ bold: true, tabular: true })
+    })
+  })
+
+  it("leaves a last row that is not a total in the body's weight", () => {
+    const { at } = tableOf(segments.slice(0, 4))
+    expect(propOf(at(3, 1), "text")!.spans.every((span) => span.bold === true)).toBe(false)
   })
 })

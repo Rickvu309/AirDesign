@@ -97,6 +97,18 @@ export function replaceRange(text: doom.Text, from: number, to: number, insert: 
   return { ...text, chars, spans: spansFrom(next), paras: paras.slice(0, breaksIn(chars) + 1) }
 }
 
+export function typeInto(
+  text: doom.Text,
+  from: number,
+  to: number,
+  insert: string,
+  pending: Look | null,
+): { readonly text: doom.Text; readonly pending: Look | null } {
+  const next = replaceRange(text, from, to, insert, from === to ? (pending ?? undefined) : undefined)
+  if (next.chars !== "") return { text: next, pending: null }
+  return { text: next, pending: text.chars === "" ? pending : lookAt(text, Math.min(from, to)) }
+}
+
 export function toggleMark(text: doom.Text, from: number, to: number, mark: Mark, base: Base): doom.Text {
   const low = Math.min(from, to)
   const high = Math.max(from, to)

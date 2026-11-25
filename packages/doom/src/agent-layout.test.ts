@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
 import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
-import { bottomLimitOf, gapFor } from "./agent-place.js"
+import { bottomLimitOf } from "./agent-place.js"
 import { ids } from "./sample-deck.js"
 import { measureWith, solveLayout } from "./index.js"
 
@@ -30,7 +30,7 @@ describe("a grid given a height keeps it", () => {
     const doom = build(agentDeck(), add({ kind: "frame", rows, box: { ...box, h: 600 } }))
     const grid = lastChild(doom, slide)
     expect(propOf(grid, "box")).toMatchObject({ h: 600 })
-    expect(propOf(grid, "layout")).toMatchObject({ mode: "grid", rows: ["hug", "hug", "hug"], gap: gapFor(1920) })
+    expect(propOf(grid, "layout")).toMatchObject({ mode: "grid", rows: ["hug", "hug", "hug"], gap: 0 })
   })
 })
 
@@ -46,7 +46,7 @@ describe("a grid header reads as a header", () => {
         ],
       }),
     )
-    const [header, , body] = childrenOf(doom, lastChild(doom, slide).id).map((node) => propOf(node, "text")!)
+    const [header, , body] = childrenOf(doom, lastChild(doom, slide).id).flatMap((node) => propOf(node, "text") ?? [])
     expect(header!.style).toBe(body!.style)
     expect(header!.spans).toMatchObject([{ end: 2, bold: true }])
   })
@@ -80,7 +80,7 @@ describe("content with no box uses the slide well", () => {
     const node = lastChild(doom, on)
     const box = propOf(node, "box")!
     expect(box.y + box.h).toBeLessThan(bottomLimitOf(1080))
-    expect(propOf(node, "layout")).toMatchObject({ rows: ["hug", "hug"], gap: gapFor(1920) })
+    expect(propOf(node, "layout")).toMatchObject({ rows: ["hug", "hug"], gap: 0 })
   })
 })
 

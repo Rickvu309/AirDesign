@@ -86,7 +86,7 @@ The choices an agent names for a layer: a theme colour, a text style name, an ef
 _Avoid_: style, traits, fields
 
 **pattern**:
-An agent change that adds a frame tree of text and shapes for one idea: `kpi`, `cards`, `compare`, `matrix`, `timeline` or `flow`. A frame with `rows` is a grid of words, not a pattern. A pattern writes only the text styles the deck names and steps down to the next named size, never to one between, until its words fit.
+An agent change that adds a frame tree of text and shapes for one idea: `kpi`, `cards`, `compare`, `matrix`, `timeline` or `flow`. A frame with `rows` is a grid of words, not a pattern, set as a consulting table: a dark rule under the header, a thin light rule between rows, number columns right-aligned in tabular figures, and a last row that starts with "Total" in bold under a dark rule. A pattern writes only the text styles the deck names and steps down to the next named size, never to one between, until its words fit.
 _Avoid_: diagram, template, smart art
 
 **slide start**:

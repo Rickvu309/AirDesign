@@ -23,6 +23,7 @@ export type ResolvedRun = {
   readonly strike: boolean
   readonly color: Hex
   readonly tracking: Px
+  readonly figures?: "tabular"
   readonly link?: string
   readonly face?: ResolvedFace
   readonly display?: string

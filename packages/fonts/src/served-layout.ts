@@ -8,7 +8,7 @@ export type LayoutRequest = { readonly family: string; readonly weight: number; 
 type Input = Parameters<FontLayoutEngine["flow"]>[0]
 type Paragraph = Omit<Input, "paragraph" | "missingFace"> & {
   readonly text: string
-  readonly runs: readonly (Pick<LayoutParagraph["runs"][number], "range" | "size" | "tracking"> & {
+  readonly runs: readonly (Pick<LayoutParagraph["runs"][number], "range" | "size" | "tracking" | "figures"> & {
     readonly font: string
     readonly bold: boolean
     readonly italic: boolean

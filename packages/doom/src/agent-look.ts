@@ -278,6 +278,23 @@ function keptLook(now: Text): TextPatch {
   return Object.fromEntries(Object.entries({ ...kept, ...marks }).filter(([, value]) => value !== undefined))
 }
 
+function keptMarks(text: Text, now: Text, keeping: boolean): Text {
+  const kept = {
+    ...(keeping ? { bold: same(now, "bold"), italic: same(now, "italic") } : {}),
+    figures: same(now, "figures"),
+  }
+  const marks = Object.entries(kept).filter(([, value]) => value !== undefined)
+  if (marks.length === 0 || text.chars === "") return text
+  const spans = text.spans.length === 0 ? [{ end: text.chars.length }] : text.spans
+  return {
+    ...text,
+    spans: spans.map((span) => ({
+      ...span,
+      ...Object.fromEntries(marks.filter(([key]) => span[key as keyof Span] === undefined)),
+    })),
+  }
+}
+
 function keptLineHeight(now: Text): number | undefined {
   const first = now.paras[0]?.lineHeight
   return first !== undefined && now.paras.every((para) => para.lineHeight === first) ? first : undefined
@@ -328,6 +345,7 @@ export function textOfLook(
   if (align !== undefined) text = { ...text, paras: text.paras.map((para) => ({ ...para, align })) }
   const color = look.color !== undefined ? colorOf(look.color) : replacing ? uniformColor(now) : undefined
   if (color !== undefined) text = coloured(text, color)
+  if (replacing) text = keptMarks(text, now, keeping)
   const patch = { ...(keeping ? keptLook(now) : {}), ...askedLook(look) }
   if (Object.keys(patch).length > 0) text = lookWrite(text, patch)
   const lineHeight = look.lineHeight ?? (keeping ? keptLineHeight(now) : undefined)

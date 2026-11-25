@@ -20,6 +20,7 @@ export type Span = {
   readonly color?: Color
   readonly tracking?: Px
   readonly case?: "upper" | "lower" | "title"
+  readonly figures?: "tabular"
   readonly link?: string | NodeId
 }
 export type Para = {
@@ -65,6 +66,7 @@ const readSpan = object(
     color: readColor,
     tracking: px(textLimits.tracking.min, textLimits.tracking.max),
     case: literal(["upper", "lower", "title"]),
+    figures: literal(["tabular"]),
     link: readLink,
   },
 )

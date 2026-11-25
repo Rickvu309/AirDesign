@@ -72,7 +72,7 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
     )
     const roadmap = childrenOf(doom, slides[4]!)[1]!
     expect(propOf(roadmap, "layout")).toMatchObject({ mode: "grid" })
-    expect(childrenOf(doom, roadmap.id)).toHaveLength(19)
+    expect(childrenOf(doom, roadmap.id).filter((node) => propOf(node, "text") !== undefined)).toHaveLength(19)
   })
 
   it("keeps the KPI row at content height and the decision card under it, inside the slide", () => {

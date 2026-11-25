@@ -2,9 +2,10 @@ import { linkedOwner } from "./component/instance-ownership.js"
 import { componentSpec } from "./component/library.js"
 import { deckOf } from "./deck-of.js"
 import type { Doom, Node } from "./doom.js"
-import { boxOf, childrenOf, propOf, slidesOf } from "./doom-walk.js"
+import { boxOf, childrenOf, parentOf, propOf, slidesOf } from "./doom-walk.js"
 import type { NodeId } from "./ids.js"
 import type { Measure } from "./measure.js"
+import { dataValuesIn, isDataValue, numberValue } from "./number-values.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { textArea } from "./preset-geometry.js"
 import type { Box } from "./resolved.js"
@@ -21,6 +22,9 @@ const fixes = {
   "placeholder-text": "Replace the placeholder with the final text.",
   "pie-compare": "Use a bar chart to compare the shares on a common scale.",
   "empty-card": "Make the cards, or the row that holds them, only as tall as their words.",
+  "no-unit": "Name the unit in the chart's unitHeader, prefix or suffix, such as $M or %.",
+  "total-mismatch":
+    "Make the total equal the sum of the rows above, or add a note that figures may not sum due to rounding.",
 } as const
 
 export type SlideFinding = {
@@ -76,18 +80,86 @@ function titleLines(doom: Doom, slide: NodeId, title: Title, measurement: Measur
   return measure(title.text, deckOf(doom).theme, area.w).lines.length
 }
 
-const dataValue = /^[(\-−+]?[$€£¥]?\d[\d,.]*\s*(?:%|x|[kmb]n?|pts?)?\)?$/i
-const year = /^(?:19|20)\d{2}$/
 const sourceLabel = /\bsources?\s*(?::|[-–]\s)/i
+const roundingNote = /\bround(?:ed|ing)\b|\bmay not (?:sum|add)\b/i
+const rateHeader = /%|\b(?:pp|pts?|bps|yoy|cagr|x)\b/i
+const totalLabel = /^(?:grand\s+)?total\b/i
+const anyTotal = /total/i
+const enoughData = 3
 
 function dataGrid(doom: Doom, node: Node): boolean {
   if (propOf(node, "layout")?.mode !== "grid") return false
   return (
-    childrenOf(doom, node.id).filter((cell) => {
-      const text = propOf(cell, "text")?.chars.trim() ?? ""
-      return propOf(cell, "hidden") !== true && dataValue.test(text) && !year.test(text)
-    }).length >= 3
+    childrenOf(doom, node.id).filter(
+      (cell) => propOf(cell, "hidden") !== true && isDataValue(propOf(cell, "text")?.chars ?? ""),
+    ).length >= enoughData
   )
+}
+
+function inCard(doom: Doom, node: Node, slide: NodeId): boolean {
+  for (let at = parentOf(node)?.id; at !== undefined && at !== slide;) {
+    const holder = doom.nodes.get(at)
+    if ((propOf(holder, "fills")?.length ?? 0) > 0) return true
+    at = parentOf(holder)?.id
+  }
+  return false
+}
+
+function cardData(doom: Doom, slide: NodeId, layers: readonly Node[]): number {
+  return layers.reduce((count, node) => {
+    const text = propOf(node, "text")
+    return text === undefined || !inCard(doom, node, slide) ? count : count + dataValuesIn(text.chars)
+  }, 0)
+}
+
+function totalMismatches(doom: Doom, grid: Node): readonly NodeId[] {
+  if (propOf(grid, "layout")?.mode !== "grid") return []
+  const table = new Map<string, Node>()
+  let last = 0
+  let columns = 0
+  for (const cell of childrenOf(doom, grid.id)) {
+    const at = propOf(cell, "cell")
+    if (at === undefined || propOf(cell, "hidden") === true || propOf(cell, "text") === undefined) continue
+    table.set(`${String(at.row)},${String(at.col)}`, cell)
+    last = Math.max(last, at.row)
+    columns = Math.max(columns, at.col)
+  }
+  const words = (row: number, col: number) => propOf(table.get(`${String(row)},${String(col)}`), "text")?.chars ?? ""
+  if (last < 2 || !totalLabel.test(words(last, 0).trim())) return []
+  const body = Array.from({ length: last - 1 }, (_, at) => at + 1)
+  if (body.some((row) => anyTotal.test(words(row, 0)))) return []
+  return Array.from({ length: columns }, (_, at) => at + 1).flatMap((col) => {
+    const total = numberValue(words(last, col))
+    const parts = body.flatMap((row) => {
+      const part = numberValue(words(row, col))
+      return part === undefined ? [] : [part]
+    })
+    if (
+      rateHeader.test(words(0, col)) ||
+      total === undefined ||
+      !total.summable ||
+      parts.length < body.length ||
+      parts.some((part) => part.unit !== total.unit)
+    )
+      return []
+    const decimals = Math.max(total.decimals, ...parts.map((part) => part.decimals))
+    const slack = (parts.length + 1) * 0.5 * 10 ** -decimals + 1e-9
+    const sum = parts.reduce((add, part) => add + part.value, 0)
+    const cell = table.get(`${String(last)},${String(col)}`)
+    return Math.abs(sum - total.value) > slack && cell !== undefined ? [cell.id] : []
+  })
+}
+
+const unitTokens = ["unitHeader", "prefix", "suffix"] as const
+
+function unnamedUnit(node: Node): boolean {
+  const instance = propOf(node, "instance")
+  const spec = instance?.component.id === undefined ? undefined : componentSpec(instance.component.id)
+  if (instance === undefined || spec?.chart === undefined) return false
+  const defaults = spec.defaults ?? {}
+  const tokens: Readonly<Record<string, unknown>> = { ...defaults, ...instance.tokens }
+  const named = unitTokens.filter((token) => Object.hasOwn(defaults, token))
+  return named.length > 0 && named.every((token) => tokens[token] === "")
 }
 
 function slideCharts(layers: readonly Node[], boxes?: ReadonlyMap<NodeId, Box>) {
@@ -163,10 +235,14 @@ function onSlide(
     return text === undefined ? [] : [{ node: node.id, text }]
   })
   if (
-    (charts.length > 0 || layers.some((node) => dataGrid(doom, node))) &&
+    (charts.length > 0 || layers.some((node) => dataGrid(doom, node)) || cardData(doom, slide, layers) >= enoughData) &&
     !texts.some(({ text }) => sourceLabel.test(text.chars))
   )
     found.push(finding("no-source", slide))
+  for (const node of layers) if (unnamedUnit(node)) found.push(finding("no-unit", slide, node.id))
+  if (!texts.some(({ text }) => roundingNote.test(text.chars)))
+    for (const grid of layers)
+      for (const cell of totalMismatches(doom, grid)) found.push(finding("total-mismatch", slide, cell))
   const largest = Math.max(...charts.map(({ area }) => area))
   if (charts.filter(({ kind }) => kind === "pie").length > 1) found.push(finding("pie-compare", slide))
   else if (charts.filter(({ area }) => area >= largest / 4).length > 1) found.push(finding("two-charts", slide))

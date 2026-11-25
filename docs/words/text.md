@@ -43,6 +43,10 @@ _Avoid_: blank text, cleared text
 The room between a text layer's box and its words. Text a person or an agent adds in AirDesign has none by default.
 _Avoid_: padding, margin (the design panel's Margins fields set it)
 
+**tabular figures**:
+Digits that all take the width of a zero, so numbers in a column line up digit under digit, as Figma's Tabular number spacing and CSS's `tabular-nums` set them. A run stores it as `figures: "tabular"`. A grid of words sets it on every number in a number column. A font with no tabular figures keeps its own digits. PowerPoint has no setting for it, so an export keeps the font's default figures.
+_Avoid_: monospaced numbers, fixed-width digits
+
 **fallback font**:
 Geist, the family that paints grapheme clusters the run’s font lacks and clusters in a family the server does not serve. The canvas, the filmstrip and the server’s measure use the same stack, with text normalized to NFC for measuring. The canvas can paint clusters from a system font when the stack cannot cover them. An agent’s layout none refuses to bake measured text inside the frame when the fonts are pending, the stack cannot cover it or the text needs contextual shaping, including Hangul and emoji sequences. Text with the U+FE0E text-presentation selector is also refused.
 _Avoid_: default font, system font (the machine's own fonts, which nothing measures)
