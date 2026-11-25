@@ -439,7 +439,7 @@ function connected(
       return [...stays.kept, ...stays.left, ...stays.waiting].length === 0
         ? { ok: false, reason: "nothing" }
         : { ok: false, reason: "left", ...stays }
-    const guarded = writes.some(({ prop }) => prop === "instance") || doom.returningInstances(now, writes).length > 0
+    const guarded = writes.some(({ prop }) => prop === "instance") || doom.rebuildsLinks(now, writes)
     if (guarded) remember(runUndoSources, run, { edits, ...(started === undefined ? {} : { started }) })
     const pushed = pushEdit(writes, author, {
       runUndo: { run, undone: true },

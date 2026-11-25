@@ -2,8 +2,9 @@ import * as doom from "@airdesign/doom"
 import { afterEach, beforeEach, expect, it } from "vitest"
 import { installIndexedDb } from "./browser-fixtures.js"
 import { deleteDatabase } from "./device.js"
-import { createDoomDeck } from "./doom-deck.js"
+import { createDoomDeck, openDoomDeck } from "./doom-deck.js"
 import { memoryDoomRemote, type DoomRemote } from "./doom-remote.js"
+import { memoryStorage } from "./doom-storage.js"
 
 beforeEach(installIndexedDb)
 afterEach(deleteDatabase)
@@ -26,7 +27,7 @@ const spec = (width: number) => ({
   sample: { w: 300, h: 100, data: {} },
 })
 
-async function onSlideTwo(beforeDelete?: (shared: DoomRemote, fold: doom.Doom) => Promise<void>) {
+async function tiled() {
   const shared = memoryDoomRemote({
     once: "start",
     author: person,
@@ -65,6 +66,19 @@ async function onSlideTwo(beforeDelete?: (shared: DoomRemote, fold: doom.Doom) =
   )
   if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
   expect(deck.push(writes, { read: deck.view() }).ok).toBe(true)
+  await deck.sync()
+  return {
+    deck,
+    shared,
+    tile: doom.propOf(deck.server().nodes.get(frame), "instance")!.parts[0]!.node,
+    offline: (value: boolean) => {
+      offline = value
+    },
+  }
+}
+
+async function onSlideTwo(beforeDelete?: (shared: DoomRemote, fold: doom.Doom) => Promise<void>) {
+  const { deck, shared, tile, offline } = await tiled()
   if (beforeDelete !== undefined) {
     await deck.sync()
     await beforeDelete(shared, deck.server())
@@ -72,15 +86,7 @@ async function onSlideTwo(beforeDelete?: (shared: DoomRemote, fold: doom.Doom) =
   }
   expect(deck.push([{ node: slide, prop: "parent", value: null }]).ok).toBe(true)
   await deck.sync()
-  const tile = doom.propOf(deck.server().nodes.get(frame), "instance")!.parts[0]!.node
-  return {
-    deck,
-    shared,
-    tile,
-    offline: (value: boolean) => {
-      offline = value
-    },
-  }
+  return { deck, shared, tile, offline }
 }
 
 async function elsewhere(
@@ -252,4 +258,157 @@ it("rebuilds a slide undo at the current spec after the template update its laye
   expect(doom.propOf(back.nodes.get(tile), "box")?.w).toBe(300)
   expect(deck.view()).toEqual(back)
   expect(deck.notices()).toEqual([])
+})
+
+const later = doom.nodeId("frame:2")
+
+async function placedElsewhere(shared: DoomRemote, fold: doom.Doom, writes: readonly doom.Write[]) {
+  const landed = await shared.edit({
+    deck: "templates",
+    edit: { once: crypto.randomUUID(), author: person, readBase: fold.rev, writes },
+  })
+  expect(landed).toMatchObject({ ok: true })
+}
+
+function templateUpdate(fold: doom.Doom, value: unknown, revision: number): readonly doom.Write[] {
+  const base = (prop: "spec" | "revision") => fold.revs.get(component)!.get(prop)!
+  const writes = doom.prepareComponentEdit(
+    fold,
+    [
+      { node: component, prop: "spec", value, base: base("spec") },
+      { node: component, prop: "revision", value: revision, base: base("revision") },
+    ],
+    measure,
+  )
+  if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
+  return writes
+}
+
+function placing(fold: doom.Doom, revision: number, data: object = {}, parent = slide): readonly doom.Write[] {
+  const box = { x: 10, y: 200, w: 300, h: 100, rotation: 0, flipH: false, flipV: false }
+  const writes = doom.placeComponent(
+    fold,
+    { node: component, revision },
+    { frame: later, parent: { id: parent, at }, box, data, measure },
+  )
+  if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
+  return writes
+}
+
+function expectTiles(fold: doom.Doom, revision: number, width: number) {
+  expect(doom.propOf(fold.nodes.get(component), "revision")).toBe(revision)
+  for (const root of [frame, later]) {
+    const instance = doom.propOf(fold.nodes.get(root), "instance")
+    expect(instance?.component).toEqual({ node: component, revision })
+    expect(doom.propOf(fold.nodes.get(instance!.parts[0]!.node), "box")?.w).toBe(width)
+  }
+}
+
+it("undoes and redoes a template update after another tab placed an instance of it", async () => {
+  const { deck, shared } = await tiled()
+  expect(deck.push(templateUpdate(deck.view(), spec(200), 2), { read: deck.view() }).ok).toBe(true)
+  await deck.sync()
+  await placedElsewhere(shared, deck.server(), placing(deck.server(), 2))
+  await deck.catchUp()
+  expect(deck.undo()).toMatchObject({ ok: true })
+  await deck.sync()
+  expectTiles(deck.server(), 3, 100)
+  expect(doom.propOf(deck.server().nodes.get(component), "spec")).toEqual(spec(100))
+  expect(deck.view()).toEqual(deck.server())
+  expect(deck.redo()).toMatchObject({ ok: true })
+  await deck.sync()
+  expectTiles(deck.server(), 4, 200)
+  expect(deck.view()).toEqual(deck.server())
+  expect(deck.notices()).toEqual([])
+})
+
+it("prepares a template undo queued offline again when another tab placed an instance before it was sent", async () => {
+  const { deck, shared, offline } = await tiled()
+  expect(deck.push(templateUpdate(deck.view(), spec(200), 2), { read: deck.view() }).ok).toBe(true)
+  await deck.sync()
+  offline(true)
+  expect(deck.undo()).toMatchObject({ ok: true })
+  await deck.sync()
+  await placedElsewhere(shared, deck.server(), placing(deck.server(), 2))
+  offline(false)
+  await deck.sync()
+  expectTiles(deck.server(), 3, 100)
+  expect(deck.view()).toEqual(deck.server())
+  expect(deck.notices()).toEqual([])
+})
+
+it("undoes an agent's template update by run after a person placed an instance of it", async () => {
+  const { deck, shared } = await tiled()
+  await updateElsewhere(shared, deck.server())
+  await deck.catchUp()
+  await placedElsewhere(shared, deck.server(), placing(deck.server(), 2))
+  await deck.catchUp()
+  expect(await deck.undoRun("template")).toMatchObject({ ok: true, kept: [], left: [], waiting: [] })
+  await deck.sync()
+  expectTiles(deck.server(), 3, 100)
+  expect(deck.view()).toEqual(deck.server())
+})
+
+it("keeps two tabs identical when one undoes a template update the other placed an instance of", async () => {
+  const { deck, shared } = await tiled()
+  const second = await openDoomDeck(shared, "templates", { client: "second", storage: memoryStorage() })
+  if (!second.ok) throw new Error(JSON.stringify(second))
+  const tab = second.deck
+  expect(deck.push(templateUpdate(deck.view(), spec(200), 2), { read: deck.view() }).ok).toBe(true)
+  await deck.sync()
+  await tab.catchUp()
+  expect(tab.push(placing(tab.view(), 2), { read: tab.view() }).ok).toBe(true)
+  await tab.sync()
+  await deck.catchUp()
+  expect(deck.undo()).toMatchObject({ ok: true })
+  await deck.sync()
+  await tab.catchUp()
+  expectTiles(deck.server(), 3, 100)
+  expect(deck.view()).toEqual(deck.server())
+  expect(tab.view()).toEqual(deck.server())
+  expect(tab.undo()).toMatchObject({ ok: true })
+  await tab.sync()
+  await deck.catchUp()
+  expect(doom.onDeck(deck.server().nodes, later)).toBe(false)
+  expect(tab.view()).toEqual(deck.server())
+  expect(deck.view()).toEqual(deck.server())
+  expect([...deck.notices(), ...tab.notices()]).toEqual([])
+})
+
+it("undoes a template update and detaches only the instance placed since that the old spec cannot build", async () => {
+  const { deck, shared, tile } = await onSlideTwo()
+  expect(deck.push(templateUpdate(deck.view(), requiringRows, 2), { read: deck.view() }).ok).toBe(true)
+  await deck.sync()
+  const writes = placing(deck.server(), 2, { rows: [{ id: "a", note: "later" }] }, doom.nodeId("s:3"))
+  await placedElsewhere(shared, deck.server(), writes)
+  await deck.catchUp()
+  const placed = deck.server().nodes.get(doom.propOf(deck.server().nodes.get(later), "instance")!.parts[0]!.node)
+  expect(deck.undo()).toMatchObject({ ok: true })
+  await deck.sync()
+  expect(doom.propOf(deck.server().nodes.get(component), "revision")).toBe(3)
+  expect(deck.server().nodes.get(later)).not.toHaveProperty("instance")
+  expect(deck.server().nodes.get(placed!.id)).toEqual(placed)
+  expect(deck.undo()).toMatchObject({ ok: true })
+  await deck.sync()
+  const back = deck.server()
+  expect(doom.propOf(back.nodes.get(frame), "instance")?.component).toEqual({ node: component, revision: 3 })
+  expect(doom.propOf(back.nodes.get(tile), "box")?.w).toBe(100)
+  expect(deck.view()).toEqual(back)
+  expect(deck.notices()).toEqual([])
+})
+
+it("refuses a template update that skips a revision", async () => {
+  const { deck, shared } = await tiled()
+  const fold = deck.server()
+  const base = (prop: "spec" | "revision") => fold.revs.get(component)!.get(prop)!
+  const skipping: doom.Write[] = [
+    { node: component, prop: "spec", value: spec(200), base: base("spec") },
+    { node: component, prop: "revision", value: Number.MAX_SAFE_INTEGER, base: base("revision") },
+  ]
+  expect(
+    await shared.edit({
+      deck: "templates",
+      edit: { once: "skip", author: person, readBase: fold.rev, writes: skipping },
+    }),
+  ).toMatchObject({ ok: false, refused: "shape", node: component, prop: "revision" })
 })

@@ -42,7 +42,7 @@ function agent(decks: MemoryDecks = memoryDecks(start), id = "aira", name = "Air
   }
 }
 
-it("undoes an agent's template update except on an instance a person deleted since, and says so", async () => {
+it("undoes an agent's template update as a fresh update, and rebuilds an instance a person deleted since when it returns", async () => {
   const by = agent()
   const made = await by.call("create_deck", { name: "Board" })
   const deck = made.answer.deck as never
@@ -100,23 +100,36 @@ it("undoes an agent's template update except on an instance a person deleted sin
       .ok,
   ).toBe(true)
   const deleted = frames[1]!
-  expect(
-    (
-      await by.decks.edit(deck, {
-        once: "delete",
-        author: person,
-        writes: [{ node: deleted, prop: "parent", value: null }],
-      })
-    ).ok,
-  ).toBe(true)
+  const deleting = {
+    once: "delete",
+    author: person,
+    writes: [{ node: deleted, prop: "parent", value: null }] as doom.Write[],
+  }
+  const restyled = fold()
+  expect((await by.decks.edit(deck, deleting)).ok).toBe(true)
   const undone = await by.call("undo_run", { deck, runId: "restyle" })
-  expect(undone.answer).toMatchObject({ ok: true, kept: [deleted], note: "Undone. Later changes to “Tile” were kept." })
+  expect(undone.answer).toMatchObject({ ok: true, kept: [], left: [], waiting: [], note: "Undone" })
   expect(doom.propOf(fold().nodes.get(component), "revision")).toBe(3)
   expect(doom.propOf(fold().nodes.get(frames[0]!), "instance")).toEqual({
     ...doom.propOf(before.nodes.get(frames[0]!), "instance"),
     component: { node: component, revision: 3 },
   })
   expect(doom.propOf(fold().nodes.get(deleted), "instance")?.component).toEqual({ node: component, revision: 2 })
+  const now = fold()
+  const back = doom.invert(
+    restyled,
+    now,
+    { ...deleting, rev: now.onces.get("delete")! },
+    new Set(),
+    doom.measureWith({}),
+  )
+  expect((await by.decks.edit(deck, { once: "undelete", author: person, readBase: now.rev, writes: back })).ok).toBe(
+    true,
+  )
+  expect(doom.propOf(fold().nodes.get(deleted), "instance")).toEqual({
+    ...doom.propOf(before.nodes.get(deleted), "instance"),
+    component: { node: component, revision: 3 },
+  })
 })
 
 async function nestedTemplate() {
@@ -219,4 +232,34 @@ it("rebuilds a slide brought back by undo_run at the current spec after a templa
   expect(doom.onDeck(fold().nodes, slide)).toBe(true)
   expect(doom.propOf(fold().nodes.get(frame), "instance")?.component).toEqual({ node: component, revision: 4 })
   expect(doom.propOf(fold().nodes.get(part), "box")?.w).toBe(300)
+})
+
+it("undoes an agent's template update by undo_run after a person placed another instance of it", async () => {
+  const { by, deck, fold, component, frame, person, edit, update } = await nestedTemplate()
+  await update("widen", aira("widen"), tile(200), 2)
+  const later = doom.nodeId("tile:2")
+  const box = { x: 0, y: 200, w: 300, h: 100, rotation: 0, flipH: false, flipV: false }
+  const group = doom.nodeId("group:1")
+  const placed = doom.placeComponent(
+    fold(),
+    { node: component, revision: 2 },
+    {
+      frame: later,
+      parent: { id: group, at: doom.orderKeyBetween(null, null) },
+      box,
+      data: {},
+      measure: doom.measureWith({}),
+    },
+  )
+  if (doom.isRefusal(placed)) throw new Error(JSON.stringify(placed))
+  await edit("later", person, placed)
+  const undone = await by.call("undo_run", { deck, runId: "widen" })
+  expect(undone.answer).toMatchObject({ ok: true, kept: [], left: [], waiting: [] })
+  expect(doom.propOf(fold().nodes.get(component), "revision")).toBe(3)
+  expect(doom.propOf(fold().nodes.get(component), "spec")).toEqual(tile(100))
+  for (const root of [frame, later]) {
+    const instance = doom.propOf(fold().nodes.get(root), "instance")!
+    expect(instance.component).toEqual({ node: component, revision: 3 })
+    expect(doom.propOf(fold().nodes.get(instance.parts[0]!.node), "box")?.w).toBe(100)
+  }
 })

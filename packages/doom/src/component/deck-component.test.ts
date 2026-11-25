@@ -1,18 +1,5 @@
 import { expect, it } from "vitest"
-import {
-  applyEdit,
-  defaultTheme,
-  doomFromTree,
-  invert,
-  isRefusal,
-  rev,
-  type Doom,
-  type Landed,
-  type NodeId,
-  type Write,
-  type Refusal,
-} from "../index.js"
-import { invertStep } from "../invert.js"
+import { applyEdit, invert, isRefusal, rev, type Landed, type Write } from "../index.js"
 import { invertRun, undoSourceOf } from "../invert-run.js"
 import { viewOf } from "../view-of.js"
 import { onDeck, propOf } from "../doom-walk.js"
@@ -20,36 +7,18 @@ import { at, box, frame, instance, measure, mint, person } from "./testing/linke
 import { placeComponent } from "./join-instance.js"
 import { prepareComponentEdit } from "./component-edit.js"
 import { foldToJson, readFold, readLanded } from "../fold-json.js"
-
-function accepted<T>(value: T | Refusal): T {
-  if (isRefusal(value)) throw new Error(JSON.stringify(value))
-  return value
-}
-
-const setup = () => {
-  const { doom, slides } = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
-  const deck = [...doom.nodes.values()].find(({ type }) => type === "deck")!.id
-  const node = mint()
-  return { doom, deck, node, slide: slides[0]! }
-}
-
-const spec = (width: number) => ({
-  version: 1,
-  name: "Tile",
-  collections: {},
-  parts: [{ emit: { kind: "rect", key: ["list", "tile"], x: 0, y: 0, w: width, h: 100, fill: { var: "accent1" } } }],
-  sample: { w: 300, h: 100, data: {} },
-})
-
-function create(deck: ReturnType<typeof mint>, node: ReturnType<typeof mint>, raw: unknown): Write[] {
-  return [
-    { node, prop: "type", value: "component" },
-    { node, prop: "parent", value: { id: deck, at } },
-    { node, prop: "name", value: "Tile" },
-    { node, prop: "spec", value: raw },
-    { node, prop: "revision", value: 1 },
-  ]
-}
+import {
+  accepted,
+  create,
+  onSlideTwo,
+  requiringRows,
+  setup,
+  spec,
+  step,
+  undone,
+  updated,
+  updating,
+} from "./testing/deck-component-fixtures.js"
 
 it("places, rebuilds and detaches a deck component, with replay and undo", () => {
   const { doom, deck, node, slide } = setup()
@@ -160,45 +129,6 @@ it("scopes component byte and count refusals to the offending fields", () => {
   ).toMatchObject({ refused: "limit", node: nodes[5], prop: "parent" })
 })
 
-function onSlideTwo() {
-  const { doom, slides } = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }, { children: [] }] })
-  const deck = [...doom.nodes.values()].find(({ type }) => type === "deck")!.id
-  const node = mint()
-  const authored = accepted(applyEdit(doom, step(doom, create(deck, node, spec(100)))))
-  const placing = placeComponent(
-    authored,
-    { node, revision: 1 },
-    { frame, parent: { id: slides[1]!, at }, box, data: {}, measure },
-  )
-  const linked = accepted(applyEdit(authored, step(authored, accepted(placing))))
-  return { linked, node, slide: slides[1]!, part: instance(linked).parts[0]!.node }
-}
-
-function step(base: Doom, writes: readonly Write[]): Landed {
-  return { once: `step-${base.rev + 1}`, rev: rev(base.rev + 1), readBase: base.rev, author: person, writes }
-}
-
-function updating(fold: Doom, node: NodeId, width: number, revision: number): Landed {
-  const base = (prop: "spec" | "revision") => fold.revs.get(node)!.get(prop)!
-  const writes = prepareComponentEdit(
-    fold,
-    [
-      { node, prop: "spec", value: spec(width), base: base("spec") },
-      { node, prop: "revision", value: revision, base: base("revision") },
-    ],
-    measure,
-  )
-  return step(fold, accepted(writes))
-}
-
-const updated = (fold: Doom, node: NodeId, width: number, revision: number) =>
-  accepted(applyEdit(fold, updating(fold, node, width, revision)))
-
-function undone(before: Doom, landed: Landed, now: Doom): Doom {
-  const writes = invertStep(before, now, landed, new Set(), measure)
-  return accepted(applyEdit(now, step(now, accepted(writes))))
-}
-
 it("rebuilds an instance at the current spec when a slide delete is undone after its component changed", () => {
   const { linked, node, slide, part } = onSlideTwo()
   const deleting = step(linked, [{ node: slide, prop: "parent", value: null }])
@@ -254,7 +184,7 @@ it("undoes the rest of a spec update when one of its instances was deleted since
   expect(propOf(reverted.nodes.get(other), "instance")).toEqual(kept)
 
   const run = invertRun(deleted, [undoSourceOf(linked, update)], new Set(), undefined, measure)
-  expect(run.kept).toEqual([other])
+  expect(run.kept).toEqual([])
   expect(accepted(applyEdit(deleted, step(deleted, run.writes))).nodes.get(node)).toEqual(reverted.nodes.get(node))
 
   const back = undone(rebuilt, deleting, reverted)
@@ -262,12 +192,6 @@ it("undoes the rest of a spec update when one of its instances was deleted since
   const part = propOf(back.nodes.get(other), "instance")!.parts[0]!.node
   expect(back.nodes.get(part)).toMatchObject({ box: { w: 100 } })
 })
-
-const requiringRows = {
-  ...spec(200),
-  collections: { rows: { note: "string" } },
-  sample: { w: 300, h: 100, data: { rows: [{ id: "a", note: "sample" }] } },
-}
 
 it("brings an instance back detached with its layers when its changed component can no longer build it", () => {
   const { linked: one, node, slide, part } = onSlideTwo()
@@ -318,7 +242,7 @@ it("never lets a reused revision number match layers built from an older spec", 
   expect(propOf(rolledBack.nodes.get(node), "spec")).toEqual(spec(100))
   expect(propOf(rolledBack.nodes.get(node), "revision")).toBe(3)
   expect(propOf(rolledBack.nodes.get(frame), "instance")?.component).toEqual({ node, revision: 2 })
-  for (const reused of [1, 2, 3])
+  for (const reused of [1, 2, 3, 5])
     expect(applyEdit(rolledBack, updating(rolledBack, node, 300, reused))).toMatchObject({
       refused: "shape",
       node,

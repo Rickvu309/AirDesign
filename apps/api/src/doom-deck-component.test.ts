@@ -257,6 +257,7 @@ async function nestedTile(width: (w: number) => unknown) {
   const part = doom.propOf((await foldOf(deck)).nodes.get(frame), "instance")!.parts[0]!.node
   const removeSlide = () => landed("remove", [{ node: second, prop: "parent", value: null }])
   return {
+    deck,
     component: component,
     second: second,
     frame: frame,
@@ -309,4 +310,54 @@ it("refuses a reused component revision and rebuilds a returning instance at the
   const back = await undo("restore", removal)
   expect(doom.propOf(back.nodes.get(frame), "instance")?.component).toEqual({ node: component, revision: 4 })
   expect(doom.propOf(back.nodes.get(part), "box")?.w).toBe(300)
+})
+
+it("undoes and redoes a template update after another writer placed an instance, and the server matches the device", async () => {
+  const { deck, component, frame, landed, update, undo, foldOf } = await nestedTile(tileSpec)
+  const widened = await update("widen", tileSpec(200), 2)
+  const later = doom.nodeId("kept:5")
+  const box = { x: 0, y: 200, w: 300, h: 100, rotation: 0, flipH: false, flipV: false }
+  const placed = doom.placeComponent(
+    await foldOf(),
+    { node: component, revision: 2 },
+    {
+      frame: later,
+      parent: { id: doom.nodeId("kept:3"), at: doom.orderKeyBetween(null, null) },
+      box,
+      data: {},
+      measure: doom.measureWith({}),
+    },
+  )
+  if (doom.isRefusal(placed)) throw new Error(JSON.stringify(placed))
+  expect((await landed("later", placed)).answer).toMatchObject({ ok: true })
+  const tiles = (fold: doom.Doom, revision: number, width: number) => {
+    expect(doom.propOf(fold.nodes.get(component), "revision")).toBe(revision)
+    for (const root of [frame, later]) {
+      const instance = doom.propOf(fold.nodes.get(root), "instance")!
+      expect(instance.component).toEqual({ node: component, revision })
+      expect(doom.propOf(fold.nodes.get(instance.parts[0]!.node), "box")?.w).toBe(width)
+    }
+  }
+  const beforeUndo = await foldOf()
+  const reverted = await undo("revert", widened)
+  tiles(reverted, 3, 100)
+  const reverting = doom.readLanded((await logOf(deck)).edits.at(-1), beforeUndo)
+  if (doom.isRefusal(reverting)) throw new Error(JSON.stringify(reverting))
+  const redone = await undo("redo", { answer: {}, before: beforeUndo, after: reverted, edit: reverting })
+  tiles(redone, 4, 200)
+})
+
+it("refuses a template revision that skips ahead through the edit route", async () => {
+  const { component, landed, foldOf } = await nestedTile(tileSpec)
+  const fold = await foldOf()
+  const base = (prop: "spec" | "revision") => fold.revs.get(component)!.get(prop)!
+  for (const revision of [Number.MAX_SAFE_INTEGER, 3])
+    expect(
+      (
+        await landed(`skip-${revision}`, [
+          { node: component, prop: "spec", value: tileSpec(200), base: base("spec") },
+          { node: component, prop: "revision", value: revision, base: base("revision") },
+        ])
+      ).answer,
+    ).toMatchObject({ ok: false, refused: "shape", node: component, prop: "revision" })
 })
