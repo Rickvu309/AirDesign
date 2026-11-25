@@ -44,13 +44,6 @@ export const editorCopy = {
   },
   panelAgent: "Agent",
   panelDesign: "Design",
-  textBar: "Text formatting",
-  textStyle: "Text style",
-  bold: "Bold",
-  italic: "Italic",
-  underline: "Underline",
-  bullets: "Bulleted list",
-  numbers: "Numbered list",
   textStyles: {
     display: "Display",
     bigNumber: "Big number",

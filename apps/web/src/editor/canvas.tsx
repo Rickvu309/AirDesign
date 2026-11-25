@@ -14,7 +14,6 @@ import { useSlidePictures } from "./use-slide-pictures"
 import { scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
 import { kept, type Rect, type Selection } from "./selection"
 import { aroundPlaced, apply, geometryOf, invert, type Point, type SlideGeometry } from "./slide-geometry"
-import { TextBar } from "./text-bar"
 import { TextHost } from "./text-host"
 import { linkedWords, type LinkedWords } from "./text-edit"
 import { useTextSession } from "./use-text-session"
@@ -504,7 +503,6 @@ export function DoomCanvas(props: {
         notice={pictures.notice ?? (text.refused ? "text-refused" : props.notice)}
         onTryAgain={props.onTryAgain}
       />
-      <TextBar api={text} />
       {props.toolbarHost === null
         ? null
         : createPortal(
