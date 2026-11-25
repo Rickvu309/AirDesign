@@ -83,11 +83,19 @@ export function memoryDecks(start: () => doom.Doom, initial: ReadonlyMap<string,
       )
       return { ok: true, edits: rows.map((row) => row.edit), replaced: rows.map((row) => row.replaced) }
     },
-    positionsAt: async (deck, rev) =>
-      doom.replayLog(
-        (logs.get(deck) ?? []).map((row) => row.edit).filter((edit) => (edit as { rev: number }).rev <= rev),
-        bases.get(deck),
-      ),
+    positionsAt: async (deck, rev) => {
+      let fold = bases.get(deck)
+      if (fold === undefined) return undefined
+      for (const { edit } of logs.get(deck) ?? []) {
+        if (edit.rev > rev) break
+        const landed = doom.readLanded(edit, fold)
+        if (doom.isRefusal(landed)) return undefined
+        const next = doom.applyEdit(fold, landed)
+        if (doom.isRefusal(next)) return undefined
+        fold = next
+      }
+      return fold
+    },
   }
   return host
 }

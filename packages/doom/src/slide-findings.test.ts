@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { placed } from "./component/linked-instance-fixtures.js"
+import { placed } from "./component/testing/linked-instance-fixtures.js"
 import { slidesOf } from "./doom-walk.js"
 import { doomFromTree, type TreeNode } from "./doom-tree.js"
 import { textFromMarkdown } from "./markdown.js"

@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
-import { createDoomDeck } from "./doom-deck.js"
-import { memoryDoomRemote, type DoomRemote } from "./doom-remote.js"
+import { createDoomDeck } from "../doom-deck.js"
+import { memoryDoomRemote, type DoomRemote } from "../doom-remote.js"
 
 export const frame = doom.nodeId("frame:1")
 export const slide = doom.nodeId("s:3")

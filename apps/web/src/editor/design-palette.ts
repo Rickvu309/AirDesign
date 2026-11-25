@@ -1,12 +1,8 @@
 import * as doom from "@airdesign/doom"
-import { pickerSwatches, type Palette, type Swatch } from "@/design/color-choices"
+import { type Palette, type Swatch } from "@/design/color-choices"
 import { namedByColor } from "@/design/color-names"
 import { propOf } from "@airdesign/doom"
 import { colorNameCopy } from "@/copy/color-name-copy"
-
-export function swatchesOf(theme: doom.Theme): readonly Swatch[] {
-  return pickerSwatches(templateColors(theme))
-}
 
 function templateColors(theme: doom.Theme): readonly Swatch[] {
   const swatch = (role: doom.ColorVar) => ({ var: role, css: theme.colors[role].toUpperCase() })

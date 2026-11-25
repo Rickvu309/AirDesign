@@ -10,7 +10,18 @@ import {
   undoSourceOf,
   type Write,
 } from "../index.js"
-import { box, data, frame, instance, land, measure, part, person, placed, refresh } from "./linked-instance-fixtures.js"
+import {
+  box,
+  data,
+  frame,
+  instance,
+  land,
+  measure,
+  part,
+  person,
+  placed,
+  refresh,
+} from "./testing/linked-instance-fixtures.js"
 import { prepareComponentEdit } from "./component-edit.js"
 
 it.each(["resize", "theme", "font", "label style"])(

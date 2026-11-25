@@ -221,10 +221,6 @@ export function dropped(
   }
 }
 
-export function revIn(server: doom.Doom, queue: readonly Queued[], once: string): doom.Rev | undefined {
-  return server.onces.get(once) ?? shown(server, queue).onces.get(once)
-}
-
 export function ownedAt(view: doom.Doom, onces: Iterable<string>): Set<doom.Rev> {
   const owned = new Set<doom.Rev>()
   for (const once of onces) {

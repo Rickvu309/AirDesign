@@ -18,7 +18,7 @@ import {
   placed,
   slide,
   two,
-} from "./doom-component-fixtures.js"
+} from "./testing/doom-component-fixtures.js"
 
 beforeEach(installIndexedDb)
 afterEach(deleteDatabase)

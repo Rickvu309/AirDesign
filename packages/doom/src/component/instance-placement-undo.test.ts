@@ -12,7 +12,7 @@ import {
   type Write,
 } from "../index.js"
 import { onDeck, propOf } from "../doom-walk.js"
-import { at, box, data, frame, land, measure, mint, person } from "./linked-instance-fixtures.js"
+import { at, box, data, frame, land, measure, mint, person } from "./testing/linked-instance-fixtures.js"
 
 it("keeps the entire placement if removing it would drop a later move of its manual child", () => {
   const { doom: before, slides } = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
