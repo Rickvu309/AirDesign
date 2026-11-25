@@ -1,7 +1,8 @@
 import { readFile } from "node:fs/promises"
 import { expect, test, vi } from "vitest"
+import { createFontLayout } from "./layout.js"
 import { LayoutFaces } from "./layout-faces.js"
-import { fontRevision, loadFontLayout, servedFontName } from "./index.js"
+import { fontRevision, loadFontLayout, servedFontName, servedLayout } from "./index.js"
 
 const narrow = new URL("../../../apps/api/fonts/LiberationSansNarrow-Regular.ttf", import.meta.url)
 
@@ -293,5 +294,55 @@ test("looks up a ready face once while shaping a line", async () => {
     expect(lookup).toHaveBeenCalledTimes(1)
   } finally {
     lookup.mockRestore()
+  }
+})
+
+test("a waiting face preserves the served runs in the same paragraph", async () => {
+  const layout = await loadFontLayout()
+  const ready = await layout.prepareFace({
+    revision: fontRevision,
+    key: "geist-for-pending",
+    axes: { wght: 600 },
+    read: () => readFile(new URL("../../../apps/api/fonts/Geist[wght].ttf", import.meta.url)),
+  })
+  const fallback = await layout.prepareFace({
+    revision: fontRevision,
+    key: "narrow-for-pending",
+    axes: {},
+    read: () => readFile(narrow),
+  })
+  const measure = (text: string, italic: boolean) =>
+    servedLayout(
+      layout,
+      {
+        text,
+        runs: [
+          { range: { start: 0, end: 6 }, font: "Inter", size: 40, tracking: 0, bold: false, italic: false },
+          { range: { start: 6, end: text.length }, font: "Inter", size: 40, tracking: 0, bold: false, italic },
+        ],
+        width: Infinity,
+        emergency: false,
+        twoLines: false,
+      },
+      "ja",
+      (request) => {
+        if (request.italic || request.family === "Noto Sans JP") return undefined
+        return request.family === "Inter" ? ready : fallback
+      },
+    )
+
+  for (const result of [measure("Hello X", true), measure("Hello 東京", false)]) {
+    expect(result).toMatchObject({
+      pending: true,
+      lines: [
+        {
+          faces: [
+            { range: { start: 0, end: 6 }, face: ready },
+            { range: { start: 6, end: expect.any(Number) }, face: fallback },
+          ],
+        },
+      ],
+    })
+    expect(result?.lines[0]?.display).toBeUndefined()
   }
 })

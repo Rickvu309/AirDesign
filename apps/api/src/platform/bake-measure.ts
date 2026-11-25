@@ -32,13 +32,14 @@ export async function bakeMeasure(
       if (face === undefined) queued.set(key, request)
       return face
     })
-    pending ||= shaped === undefined
-    return shaped === undefined
-      ? undefined
-      : {
-          ...shaped,
-          lines: shaped.lines.map((line) => ({ ...line.range, advance: line.advance, faces: [] })),
-        }
+    if (shaped === undefined || shaped.pending) {
+      pending = true
+      return undefined
+    }
+    return {
+      ...shaped,
+      lines: shaped.lines.map((line) => ({ ...line.range, advance: line.advance, faces: [] })),
+    }
   })
   try {
     while (!stopped()) {

@@ -1,7 +1,7 @@
 import type { AgentColor, AgentFill, AgentLook } from "./agent-look-types.js"
 import { tokenRecord, variantRecord } from "./component/spec.js"
 import { id as componentId, record, readFocus } from "./component/values.js"
-import { languagePattern, readLanguage } from "./language.js"
+import { languageField } from "./language.js"
 import { readAngle, readRotation } from "./angle.js"
 import { arrowField, startArrowField } from "./agent-arrow.js"
 import { weightNames } from "./painted-face.js"
@@ -120,15 +120,7 @@ const readAfter = accepting(forms.after, (raw) => (raw === null ? null : readId(
 type LookFields = { readonly [K in keyof AgentLook]-?: Field<Exclude<AgentLook[K], undefined>> }
 
 const lookFields: LookFields = {
-  language: field(
-    {
-      type: "string",
-      pattern: languagePattern.source,
-      maxLength: 63,
-      description: "Deck or text language as a BCP 47 tag, for example ja or zh-Hant. Use und to infer it.",
-    },
-    readLanguage,
-  ),
+  language: languageField,
   d: field(
     {
       type: "string",
@@ -405,7 +397,10 @@ const readChange = variant("op", {
   duplicate: object(pickFrom(placeFields, ["nodes"])),
   deck: object(
     {},
-    { ...pickFrom(lookFields, ["name", "language"]), ...pickFrom(placeFields, ["theme", "colors", "fonts", "nameFollows"]) },
+    {
+      ...pickFrom(lookFields, ["name", "language"]),
+      ...pickFrom(placeFields, ["theme", "colors", "fonts", "nameFollows"]),
+    },
   ),
 })
 

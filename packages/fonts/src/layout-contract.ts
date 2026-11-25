@@ -24,7 +24,7 @@ type LayoutRun = {
   readonly tracking: number
   readonly faces: readonly [LayoutFace, ...LayoutFace[]]
   readonly stack?: string
-  readonly fallback?: (cluster: string, presentation: "text" | "color" | undefined) => Iterable<LayoutFace>
+  readonly fallback?: (cluster: string, presentation: "text" | "color" | undefined) => Iterable<LayoutFace | "loading">
 }
 
 export type LayoutParagraph = {

@@ -18,6 +18,7 @@ type Item = {
   readonly run: Run
   readonly level: number
   readonly face: LayoutFace
+  readonly provisional?: true
   script: string | undefined
   trackedClusters: number
 }
@@ -250,10 +251,24 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
           yield* fallback()
           yield* ordered
         }
-        let offered: Iterable<LayoutFace> =
+        let offered: Iterable<LayoutFace | "loading"> =
           wanted === "color" && !ordered.some((face) => face.presentation === "color") ? colorFirst() : ordered
         for (let attempt = 0; attempt < 2; attempt++) {
           for (const face of offered) {
+            if (face === "loading") {
+              if (missingFace !== undefined)
+                selected = {
+                  start: from,
+                  end: to,
+                  run,
+                  level,
+                  script,
+                  face: missingFace,
+                  trackedClusters,
+                  provisional: true,
+                }
+              break
+            }
             if (
               (wanted === "text" && face.presentation === "color") ||
               ((flags & emoji) !== 0 && points.includes(0xfe0f) && face.presentation !== "color")
@@ -309,6 +324,7 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
         if (
           last !== undefined &&
           sameFace(last.face, selected.face) &&
+          last.provisional === selected.provisional &&
           sameMetrics(last.run, run) &&
           last.level === level &&
           (last.script === script || last.script === undefined)
@@ -333,7 +349,7 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
       if (font === undefined) return { kind: "pending", range: sourceRange(item.start, item.end), face: item.face }
       const shaped = shape(font, item, shown, range.start, locale, contextualSpacing)
       const missing = shaped.find((glyph) => glyph.codepoint === 0)
-      if (missing !== undefined) {
+      if (missing !== undefined && !item.provisional) {
         const endAt = firstAfter(graphemes, range.start + missing.cluster)
         return {
           kind: "unserved",

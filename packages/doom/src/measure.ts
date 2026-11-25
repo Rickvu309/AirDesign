@@ -38,6 +38,7 @@ export type MeasureProbe = (
 type ShapedParagraph = {
   readonly locale?: string
   readonly direction: "ltr" | "rtl"
+  readonly pending?: true
   readonly twoLineWidth?: number
   readonly lines: readonly {
     readonly start: number
@@ -382,11 +383,15 @@ function measureOnce(widths: FontWidths, probe: MeasureProbe | undefined, layout
           align: alignOf(para),
           runs,
           ...(shaped === undefined
-            ? layout !== undefined && chars.length > 0
-              ? { pending: true }
-              : {}
+            ? {}
             : { direction: shaped.direction, ...(shaped.locale === undefined ? {} : { locale: shaped.locale }) }),
-          ...(spanIndex === 0 && label !== undefined && layout !== undefined && labelLayout === undefined
+          ...(shaped?.pending || (shaped === undefined && layout !== undefined && chars.length > 0)
+            ? { pending: true }
+            : {}),
+          ...(spanIndex === 0 &&
+          label !== undefined &&
+          layout !== undefined &&
+          (labelLayout === undefined || labelLayout.pending)
             ? { pending: true }
             : {}),
           ...(spanIndex === 0 && label !== undefined

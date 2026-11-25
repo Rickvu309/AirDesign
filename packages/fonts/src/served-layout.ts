@@ -22,7 +22,7 @@ export function servedLayout(
   { text, runs, width, emergency, twoLines }: Paragraph,
   locale: string,
   get: (request: LayoutRequest) => LayoutFace | null | undefined,
-): ReturnType<FontLayoutEngine["flow"]> {
+): (NonNullable<ReturnType<FontLayoutEngine["flow"]>> & { readonly pending?: true }) | undefined {
   let waiting = false
   const faceFor = (request: LayoutRequest) => {
     const face = get(request)
@@ -33,15 +33,15 @@ export function servedLayout(
   const shaped = runs.flatMap((run): LayoutParagraph["runs"][number][] => {
     const primary = servedFontName(run.font) ?? fallbackFont
     const look = { weight: run.bold ? boldWeight : regularWeight, italic: run.italic }
-    const [first, ...rest] = [...new Set([primary, fallbackFont])].flatMap(
-      (family) => faceFor({ family, ...look }) ?? [],
-    )
+    const preferred = faceFor({ family: primary, ...look })
+    const fallback = primary === fallbackFont ? undefined : faceFor({ family: fallbackFont, ...look })
+    const first = preferred ?? fallback ?? missingFace
     if (first === undefined) return []
     return [
       {
         ...run,
-        faces: [first, ...rest],
-        stack: primary,
+        faces: preferred !== undefined && fallback !== undefined ? [first, fallback] : [first],
+        stack: preferred === undefined ? `${primary}|${String(look.weight)}|${String(look.italic)}` : primary,
         *fallback(cluster, presentation) {
           const script = scriptFonts(cluster, locale)
           const names =
@@ -52,15 +52,19 @@ export function servedLayout(
                 : script
           for (const family of names) {
             if (family === primary) continue
-            const face = faceFor({ family, ...look })
-            if (face !== undefined) yield face
-            else if (waiting) break
+            const face = get({ family, ...look })
+            if (face === undefined) {
+              waiting = true
+              yield "loading"
+              break
+            }
+            if (face !== null) yield face
           }
         },
       },
     ]
   })
-  if (waiting || missingFace === undefined) return undefined
+  if (missingFace === undefined) return undefined
   const result = engine.flow({
     paragraph: { text, locale, direction: "auto", runs: shaped, sourceOffsetByTextOffset: [] },
     width,
@@ -68,5 +72,5 @@ export function servedLayout(
     twoLines,
     missingFace,
   })
-  return waiting ? undefined : result
+  return result === undefined || !waiting ? result : { ...result, pending: true }
 }
