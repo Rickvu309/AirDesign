@@ -102,9 +102,15 @@ it("places, rebuilds and detaches a deck component, with replay and undo", () =>
   const rebuilt = accepted(applyEdit(linked, updated))
   expect(instance(rebuilt).component).toEqual({ node, revision: 2 })
   expect(rebuilt.nodes.get(part)).toMatchObject({ box: { w: 200 } })
-  const restored = undo(linked, rebuilt, updated)
-  expect(instance(restored)).toEqual(instance(linked))
+  const undoing = edit(rebuilt, invert(linked, rebuilt, updated))
+  const restored = accepted(applyEdit(rebuilt, undoing))
+  expect(propOf(restored.nodes.get(node), "revision")).toBe(3)
+  expect(instance(restored)).toEqual({ ...instance(linked), component: { node, revision: 3 } })
   expect(restored.nodes.get(part)).toMatchObject({ box: { w: 100 } })
+  const redone = undo(rebuilt, restored, undoing)
+  expect(propOf(redone.nodes.get(node), "revision")).toBe(4)
+  expect(instance(redone)).toEqual({ ...instance(rebuilt), component: { node, revision: 4 } })
+  expect(redone.nodes.get(part)).toMatchObject({ box: { w: 200 } })
 
   const reopened = readFold(JSON.parse(JSON.stringify(foldToJson(linked))))!
   const queued = accepted(readLanded(JSON.parse(JSON.stringify(updated)), reopened))
@@ -243,8 +249,8 @@ it("undoes the rest of a spec update when one of its instances was deleted since
   const kept = propOf(deleted.nodes.get(other), "instance")
 
   const reverted = undone(linked, update, deleted)
-  expect(propOf(reverted.nodes.get(node), "revision")).toBe(1)
-  expect(instance(reverted)).toEqual(instance(linked))
+  expect(propOf(reverted.nodes.get(node), "revision")).toBe(3)
+  expect(instance(reverted)).toEqual({ ...instance(linked), component: { node, revision: 3 } })
   expect(propOf(reverted.nodes.get(other), "instance")).toEqual(kept)
 
   const run = invertRun(deleted, [undoSourceOf(linked, update)], new Set(), undefined, measure)
@@ -252,7 +258,89 @@ it("undoes the rest of a spec update when one of its instances was deleted since
   expect(accepted(applyEdit(deleted, step(deleted, run.writes))).nodes.get(node)).toEqual(reverted.nodes.get(node))
 
   const back = undone(rebuilt, deleting, reverted)
-  expect(propOf(back.nodes.get(other), "instance")?.component).toEqual({ node, revision: 1 })
+  expect(propOf(back.nodes.get(other), "instance")?.component).toEqual({ node, revision: 3 })
   const part = propOf(back.nodes.get(other), "instance")!.parts[0]!.node
   expect(back.nodes.get(part)).toMatchObject({ box: { w: 100 } })
+})
+
+const requiringRows = {
+  ...spec(200),
+  collections: { rows: { note: "string" } },
+  sample: { w: 300, h: 100, data: { rows: [{ id: "a", note: "sample" }] } },
+}
+
+it("brings an instance back detached with its layers when its changed component can no longer build it", () => {
+  const { linked: one, node, slide, part } = onSlideTwo()
+  const deck = [...one.nodes.values()].find(({ type }) => type === "deck")!.id
+  const tile = mint()
+  const other = mint()
+  const authored = accepted(applyEdit(one, step(one, create(deck, tile, spec(100)))))
+  const placing = placeComponent(
+    authored,
+    { node: tile, revision: 1 },
+    { frame: other, parent: { id: slide, at }, box, data: {}, measure },
+  )
+  const linked = accepted(applyEdit(authored, step(authored, accepted(placing))))
+  const deleting = step(linked, [{ node: slide, prop: "parent", value: null }])
+  const gone = accepted(applyEdit(linked, deleting))
+  const base = (prop: "spec" | "revision") => gone.revs.get(node)!.get(prop)!
+  const required = accepted(
+    prepareComponentEdit(
+      gone,
+      [
+        { node, prop: "spec", value: requiringRows, base: base("spec") },
+        { node, prop: "revision", value: 2, base: base("revision") },
+      ],
+      measure,
+    ),
+  )
+  const changed = updated(accepted(applyEdit(gone, step(gone, required))), tile, 200, 2)
+
+  const back = undone(linked, deleting, changed)
+  const run = invertRun(changed, [undoSourceOf(linked, deleting)], new Set(), undefined, measure)
+  expect(run.refused).toBeUndefined()
+  expect(accepted(applyEdit(changed, step(changed, run.writes))).nodes).toEqual(back.nodes)
+  expect(onDeck(back.nodes, slide)).toBe(true)
+  expect(back.nodes.get(frame)).not.toHaveProperty("instance")
+  expect(back.nodes.get(part)).toEqual(linked.nodes.get(part))
+  const returned = propOf(back.nodes.get(other), "instance")!
+  expect(returned.component).toEqual({ node: tile, revision: 2 })
+  expect(back.nodes.get(returned.parts[0]!.node)).toMatchObject({ box: { w: 200 } })
+})
+
+it("never lets a reused revision number match layers built from an older spec", () => {
+  const { linked, node, slide, part } = onSlideTwo()
+  const first = updating(linked, node, 200, 2)
+  const two = accepted(applyEdit(linked, first))
+  const deleting = step(two, [{ node: slide, prop: "parent", value: null }])
+  const gone = accepted(applyEdit(two, deleting))
+  const rolledBack = undone(linked, first, gone)
+  expect(propOf(rolledBack.nodes.get(node), "spec")).toEqual(spec(100))
+  expect(propOf(rolledBack.nodes.get(node), "revision")).toBe(3)
+  expect(propOf(rolledBack.nodes.get(frame), "instance")?.component).toEqual({ node, revision: 2 })
+  for (const reused of [1, 2, 3])
+    expect(applyEdit(rolledBack, updating(rolledBack, node, 300, reused))).toMatchObject({
+      refused: "shape",
+      node,
+      prop: "revision",
+    })
+
+  for (const parent of [null, propOf(rolledBack.nodes.get(node), "parent")])
+    for (const revision of [null, 1, 3])
+      expect(
+        applyEdit(
+          rolledBack,
+          step(rolledBack, [
+            { node, prop: "spec", value: spec(300), base: rolledBack.revs.get(node)!.get("spec")! },
+            { node, prop: "revision", value: revision, base: rolledBack.revs.get(node)!.get("revision")! },
+            { node, prop: "parent", value: parent },
+          ]),
+        ),
+      ).toMatchObject({ refused: "shape", node, prop: "revision" })
+
+  const latest = updated(rolledBack, node, 300, 4)
+  const back = undone(two, deleting, latest)
+  expect(onDeck(back.nodes, slide)).toBe(true)
+  expect(instance(back).component).toEqual({ node, revision: 4 })
+  expect(back.nodes.get(part)).toMatchObject({ box: { w: 300 } })
 })

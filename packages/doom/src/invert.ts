@@ -1,6 +1,6 @@
 import { componentWrites } from "./component/deck-component.js"
 import { deletedInstances } from "./component/deleted-instances.js"
-import { withReturningRebuilt } from "./component/component-edit.js"
+import { withCurrentComponents } from "./component/component-edit.js"
 import { applyBeforeFreeing } from "./apply-edit.js"
 import {
   derivedCells,
@@ -201,7 +201,7 @@ export function invertStep(
     ],
     rebuilt,
   )
-  const inverse = withReturningRebuilt(after, reversed, measure)
+  const inverse = withCurrentComponents(after, reversed, measure)
   if (isRefusal(inverse)) return inverse
   if (grouped || rebuilt.length > 0 || inverse !== reversed) {
     const trial = applyBeforeFreeing(after, {
