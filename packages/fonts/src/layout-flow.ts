@@ -1,6 +1,7 @@
 import type { FontLayout, FontLayoutEngine, ShapedLine } from "./layout-contract.js"
 
 const trailing = / +$/u
+const printableAscii = /^[ -~]*$/u
 const url = /https?:\/\/[^\s]+/giu
 
 function firstAfter(offsets: readonly number[], target: number): number {
@@ -28,9 +29,10 @@ export function flowWith(layout: FontLayout, directionOf: (text: string) => "ltr
       if (line.kind !== "shaped") return undefined
       return { ...line, range: { start: atSource(start), end: atSource(end) } }
     }
-    if (width === Infinity && !twoLines) {
+    if (!twoLines && (width === Infinity || printableAscii.test(text))) {
       const line = shape(0, text.length)
-      return line === undefined ? undefined : { direction, lines: [line] }
+      if (width === Infinity || (line !== undefined && line.advance <= width))
+        return line === undefined ? undefined : { direction, lines: [line] }
     }
     const { opportunities, graphemes } = layout.breaks(paragraph)
     const boundaries = new Set(graphemes)
