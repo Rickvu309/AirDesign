@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { chartArea, chartWrites, drawWrites, iconSwapWrites, iconWrites, type Drawing } from "./create-writes"
+import { chartArea, componentInsertWrites, drawWrites, iconSwapWrites, iconWrites, type Drawing } from "./create-writes"
 import { darkTheme } from "./testing/create-writes-art"
 import { grow, landed } from "./testing/doom-fixtures"
 
@@ -167,13 +167,21 @@ describe("inserting", () => {
     expect(iconSwapWrites(icons, [two], "star")).toBeNull()
   })
 
-  it("inserts a column chart with data a person can edit, in the area it is given", () => {
+  it("inserts a column component instance in the area it is given", () => {
     const area = { x: 160, y: 229, w: 1600, h: 771 }
-    const after = landed(built.view, chartWrites(id, slot, area))
+    const inserted = componentInsertWrites(built.view, {
+      parent: slide,
+      area,
+      component: "column",
+      mint: () => id,
+      measure: doom.measureWith({}),
+    })
+    expect(inserted).not.toBeNull()
+    const after = landed(built.view, inserted!.writes)
     expect(after.nodes.get(id)).toMatchObject({
       type: "frame",
       box: area,
-      chart: { kind: "column", categories: ["Q1", "Q2", "Q3", "Q4"] },
+      instance: { component: { id: "column" }, parts: expect.any(Array) },
     })
   })
 

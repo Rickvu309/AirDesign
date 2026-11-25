@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { build } from "./agent-fixtures.js"
 import { readChart } from "./chart.js"
-import { propOf, readForAgent } from "./index.js"
-import { more, richDeck } from "./testing/rich-deck.js"
 import { swatches } from "./testing/doom-fixtures-art.js"
 
 const largest = {
@@ -52,13 +49,5 @@ describe("readChart", () => {
       points: [{ at: 1, color: swatches.recoloured }],
     })
     expect(readChart({ ...pie, kind: "column" }).series[0]?.color).toEqual(swatches.custom)
-  })
-
-  it("shows an agent each point colour where it reads the chart", () => {
-    const doom = build(richDeck(), { op: "set", target: `${more.chart}#Actual:Q2`, fill: "accent3" })
-    expect(propOf(doom.nodes.get(more.chart)!, "chart")?.series[1]?.points).toEqual([
-      { at: 1, color: { var: "accent3" } },
-    ])
-    expect(readForAgent(doom, "all")).toContain('"name":"Actual","values":[2,5],"points":[{"at":1,"color":"accent3"}]')
   })
 })

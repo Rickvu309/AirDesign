@@ -1,6 +1,91 @@
 {
   "version": 1,
   "name": "Stacked column",
+  "chart": "cartesian",
+  "sample": {
+    "w": 1540,
+    "h": 650,
+    "data": {
+      "categories": [
+        {
+          "id": "c1",
+          "label": "Q1"
+        },
+        {
+          "id": "c2",
+          "label": "Q2"
+        },
+        {
+          "id": "c3",
+          "label": "Q3"
+        },
+        {
+          "id": "c4",
+          "label": "Q4"
+        }
+      ],
+      "series": [
+        {
+          "id": "existing",
+          "label": "Existing"
+        },
+        {
+          "id": "new",
+          "label": "New"
+        }
+      ],
+      "segments": [
+        {
+          "id": "1-existing",
+          "category": "c1",
+          "series": "existing",
+          "value": 12
+        },
+        {
+          "id": "1-new",
+          "category": "c1",
+          "series": "new",
+          "value": 8
+        },
+        {
+          "id": "2-existing",
+          "category": "c2",
+          "series": "existing",
+          "value": 14
+        },
+        {
+          "id": "2-new",
+          "category": "c2",
+          "series": "new",
+          "value": 9
+        },
+        {
+          "id": "3-existing",
+          "category": "c3",
+          "series": "existing",
+          "value": 16
+        },
+        {
+          "id": "3-new",
+          "category": "c3",
+          "series": "new",
+          "value": 9
+        },
+        {
+          "id": "4-existing",
+          "category": "c4",
+          "series": "existing",
+          "value": 18
+        },
+        {
+          "id": "4-new",
+          "category": "c4",
+          "series": "new",
+          "value": 10
+        }
+      ]
+    }
+  },
   "collections": {
     "categories": {
       "label": "string"

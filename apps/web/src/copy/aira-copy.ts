@@ -133,7 +133,6 @@ export const airaCopy = {
     connector: "a line",
     group: "a group",
     frame: "a frame",
-    chart: "a chart",
   },
   undoFailed: "Unable to undo. Check your connection and try again.",
   unavailable: "Unavailable in your region",

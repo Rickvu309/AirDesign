@@ -48,16 +48,16 @@ export function boardDeckChanges(slides: readonly NodeId[]): readonly (readonly 
       title(three, "Revenue ran ahead of plan"),
       {
         op: "add",
-        kind: "chart",
+        kind: "component",
+        component: "clustered-chart",
+        variant: { orientation: "column" },
         slide: three,
-        chart: {
-          kind: "bar",
-          categories: ["Q1", "Q2", "Q3", "Q4"],
+        data: {
+          categories: ["Q1", "Q2", "Q3", "Q4"].map((label) => ({ id: label.toLowerCase(), label })),
           series: [
-            { name: "Plan", values: [3.1, 3.4, 3.8, 4.1], color: "accent2" },
-            { name: "Actual", values: [3.3, 3.7, 4.2, 4.6] },
+            { id: "plan", label: "Plan", values: [3.1, 3.4, 3.8, 4.1], fill: "accent2" },
+            { id: "actual", label: "Actual", values: [3.3, 3.7, 4.2, 4.6] },
           ],
-          labels: true,
         },
       },
     ],

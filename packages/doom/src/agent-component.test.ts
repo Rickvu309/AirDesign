@@ -27,7 +27,7 @@ function compile(fold: ReturnType<typeof sampleDeck>, raw: unknown, once: string
 
 function attempt(fold: ReturnType<typeof sampleDeck>, edits: readonly unknown[], once: string) {
   const changes = edits.map((raw) => {
-    const change = readAgentChange(raw, true)
+    const change = readAgentChange(raw)
     if (isRefusal(change)) throw new Error(JSON.stringify(change))
     return change
   })
@@ -83,7 +83,7 @@ describe("linked components in agent edits", () => {
       { op: "set", target: root, data: { rows: [{ id: "q1", label: "New quarter", value: 10 }] } },
       { op: "set", target: label, textStyle: "body" },
     ].map((raw) => {
-      const change = readAgentChange(raw, true)
+      const change = readAgentChange(raw)
       if (isRefusal(change)) throw new Error(JSON.stringify(change))
       return change
     })
@@ -299,10 +299,11 @@ describe("linked components in agent edits", () => {
       writes: [{ node: label, prop: "name", value: "Person label" }],
     })
     if (isRefusal(person)) throw new Error(JSON.stringify(person))
-    const change = readAgentChange(
-      { op: "set", target: root, data: { rows: [{ id: "q1", label: "Different", value: 24 }] } },
-      true,
-    )
+    const change = readAgentChange({
+      op: "set",
+      target: root,
+      data: { rows: [{ id: "q1", label: "Different", value: 24 }] },
+    })
     if (isRefusal(change)) throw new Error(JSON.stringify(change))
     const by = { author: placed.edit.author, once: "attempt", mint: minter("attempt") }
     expect(compileAgentEdit(person, [change], by)).toMatchObject({ refused: "person", node: label })
@@ -315,10 +316,23 @@ describe("linked components in agent edits", () => {
     expect(propOf(person.nodes.get(label), "name")).toBe("Person label")
   })
 
-  it("keeps component inputs out of the closed rollout's reader", () => {
-    const slide = firstSlide(sampleDeck())
-    expect(readAgentChange({ op: "add", kind: "component", slide }, false)).toMatchObject({ field: "kind" })
-    expect(readAgentChange({ op: "set", target: slide, data: {} }, false)).toMatchObject({ field: "data" })
-    expect(readAgentChange({ op: "detach", target: slide }, false)).toMatchObject({ field: "op" })
+  it.each([
+    ["column", {}],
+    ["clustered-chart", { orientation: "bar" }],
+    ["clustered-chart", { orientation: "column" }],
+    ["stacked", {}],
+    ["waterfall", {}],
+    ["line", {}],
+    ["pie", { shape: "pie" }],
+    ["pie", { shape: "donut" }],
+  ])("places the %s sample without layout findings", (component, variant) => {
+    const {
+      doom,
+      slides: [slide],
+    } = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
+    const result = compile(doom, { op: "add", kind: "component", slide, component, variant }, "sample")
+    const added = result.added.find(({ kind }) => kind === "component")
+    expect(added).toBeDefined()
+    expect(layoutFindings(result.after, [slide!], measureWith({}))).toEqual([])
   })
 })

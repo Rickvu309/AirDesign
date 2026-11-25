@@ -1,16 +1,25 @@
-import { ChartBar, ChartColumn, ChartLine, ChartNoAxesColumn, ChartPie, FileDown, Image, Search } from "lucide-react"
+import {
+  ChartBar,
+  ChartColumn,
+  ChartGantt,
+  ChartLine,
+  ChartNoAxesColumn,
+  ChartPie,
+  FileDown,
+  Image,
+  Search,
+} from "lucide-react"
 import { DynamicIcon, type IconName } from "lucide-react/dynamic"
 import { useEffect, useId, useMemo, useRef, useState, type ComponentType, type KeyboardEvent } from "react"
 import { editorCopy } from "@/copy/editor-copy"
 import { iconMatches, startingIcons } from "@/design/icon-search"
 import { cn } from "@/lib/class-names"
 import { composing } from "@/lib/composing"
-import type { Chart } from "@airdesign/doom"
 import { stepHighlight, type HighlightKey } from "./actions-highlight"
 import { pickPicture } from "./picture-picker"
 
 export type ActionRun = {
-  readonly chart: (kind: Chart["kind"]) => void
+  readonly chart: ((chart: ChartInsert) => void) | null
   readonly icon: (name: string) => void
   readonly picture: (file: File) => void
   readonly exportPdf: () => void
@@ -20,6 +29,7 @@ type Action = {
   readonly key: string
   readonly label: string
   readonly glyph: ComponentType<{ className?: string }>
+  readonly needsMeasure?: boolean
   readonly run: (run: ActionRun, finish: () => void) => void
 }
 
@@ -29,13 +39,22 @@ type Group = {
   readonly find: (words: string) => readonly Action[]
 }
 
-const charts: readonly { readonly kind: Chart["kind"]; readonly glyph: ComponentType<{ className?: string }> }[] = [
-  { kind: "column", glyph: ChartColumn },
-  { kind: "bar", glyph: ChartBar },
-  { kind: "line", glyph: ChartLine },
-  { kind: "pie", glyph: ChartPie },
-  { kind: "stacked", glyph: ChartNoAxesColumn },
-]
+const chartInserts = [
+  { id: "column", component: "column", label: editorCopy.chartKinds.column, glyph: ChartColumn },
+  {
+    id: "bar",
+    component: "clustered-chart",
+    variant: { orientation: "bar" },
+    label: editorCopy.chartKinds.bar,
+    glyph: ChartBar,
+  },
+  { id: "stacked", component: "stacked", label: editorCopy.chartKinds.stacked, glyph: ChartNoAxesColumn },
+  { id: "waterfall", component: "waterfall", label: editorCopy.chartKinds.waterfall, glyph: ChartGantt },
+  { id: "line", component: "line", label: editorCopy.chartKinds.line, glyph: ChartLine },
+  { id: "pie", component: "pie", label: editorCopy.chartKinds.pie, glyph: ChartPie },
+] as const
+
+export type ChartInsert = (typeof chartInserts)[number]
 
 const imageGroup: Group = {
   id: "image",
@@ -60,19 +79,18 @@ const chartsGroup: Group = {
   id: "charts",
   title: editorCopy.chartsGroup,
   find: (words) =>
-    charts
+    chartInserts
       .filter(
-        ({ kind }) =>
-          words === "" ||
-          editorCopy.chartKinds[kind].toLowerCase().includes(words) ||
-          editorCopy.chartsGroup.toLowerCase().includes(words),
+        ({ label }) =>
+          words === "" || label.toLowerCase().includes(words) || editorCopy.chartsGroup.toLowerCase().includes(words),
       )
-      .map(({ kind, glyph }) => ({
-        key: kind,
-        label: editorCopy.chartKinds[kind],
-        glyph,
+      .map((chart) => ({
+        key: chart.id,
+        label: chart.label,
+        glyph: chart.glyph,
+        needsMeasure: true,
         run(run, finish) {
-          run.chart(kind)
+          run.chart?.(chart)
           finish()
         },
       })),
@@ -135,7 +153,10 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
 
   const choose = (index: number) => {
     const row = rows[index]
-    if (row !== undefined) return row.run(props.run, props.finish)
+    if (row !== undefined) {
+      if (!row.needsMeasure || props.run.chart !== null) row.run(props.run, props.finish)
+      return
+    }
     const name = iconNames[index - rows.length]
     if (name === undefined) return
     props.run.icon(name)
@@ -206,7 +227,12 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
               {group.title}
             </p>
             {actions.map((action) => (
-              <div key={action.key} className={rowClass} {...option(rows.indexOf(action))}>
+              <div
+                key={action.key}
+                className={cn(rowClass, "aria-disabled:opacity-50")}
+                aria-disabled={action.needsMeasure && props.run.chart === null ? true : undefined}
+                {...option(rows.indexOf(action))}
+              >
                 <action.glyph className="size-4" />
                 {action.label}
               </div>

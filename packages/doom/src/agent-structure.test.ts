@@ -52,10 +52,7 @@ describe("rotation and flips land on the box the canvas's rotate and flip write"
       { kind: "icon", icon: "star" },
       { kind: "text", text: "Note" },
       { kind: "picture", fill: { image: "https://x.test/a.png" } },
-      {
-        kind: "chart",
-        chart: { kind: "bar", categories: ["Q1"], series: [{ name: "Plan", values: [3] }] },
-      },
+      { kind: "component", component: "column" },
     ]
     for (const made of kinds) {
       const read = readAgentChange({ op: "add", slide: ids.slide, rotation: -90, flip: "v", ...made })

@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test"
-import { editorCopy } from "../../bin/product-copy.mjs"
-import { landNodes, openDesign, openDoomDeck, selectNode, spot, words } from "../doom-deck.mjs"
+import { connectOutsideAgent } from "../../journeys/aira-panel.mjs"
+import { landNodes, openDesign, openDoomDeck, readDoom, spot, words } from "../doom-deck.mjs"
 import { emptySlide } from "../doom-slides.mjs"
 
 async function drive(kit) {
@@ -15,23 +15,33 @@ async function drive(kit) {
         text: words("Quarterly revenue", { style: "title" }),
       },
     },
-    {
-      id: "c:1",
-      type: "frame",
-      props: {
-        name: editorCopy.chart,
-        box: spot(350, 410, 1250, 505),
-        chart: {
-          kind: "column",
-          categories: ["Q1", "Q2", "Q3", "Q4"],
-          series: [{ name: "Revenue", values: [24, 37, 31, 48] }],
-          labels: true,
-        },
-      },
-    },
   ])
+  const call = await connectOutsideAgent(kit, opened.cookie, "Chart sample")
+  const { rev: base } = await readDoom(kit, opened)
+  const landed = await call("edit_deck", {
+    deck: opened.deck,
+    base,
+    changes: [
+      {
+        op: "add",
+        kind: "component",
+        component: "column",
+        slide: opened.slide,
+        box: { x: 350, y: 410, w: 1250, h: 505 },
+        data: { rows: [24, 37, 31, 48].map((value, i) => ({ id: `q${i + 1}`, label: `Q${i + 1}`, value })) },
+      },
+    ],
+  })
+  expect(landed.ok).toBe(true)
+  const chart = landed.added.find(({ kind }) => kind === "component").id
+  await expect(page.locator(`[data-slide-box] [data-node="${chart}"]`)).toBeAttached()
   await openDesign(page)
-  await selectNode(page, "c:1", { position: { x: 16, y: 16 } })
+  const bar = (await readDoom(kit, opened)).fold.nodes[chart].instance.parts.find(({ key }) => key[0] === "bar").node
+  const mark = page.locator(`[data-slide-box] [data-node="${bar}"]`)
+  const bounds = await mark.boundingBox()
+  if (bounds === null) throw new Error("chart bar did not paint")
+  await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+  await expect(page.locator(`[data-selection-outline="${chart}"]`)).toBeAttached()
   await expect(page.locator('[data-grip="bottom-right"]')).toBeVisible()
   await page.mouse.move(4, 4)
 }

@@ -18,6 +18,7 @@ export function addSlideWrites(
   after: doom.NodeId | null,
   mint: Mint,
   start: doom.SlideStart = "titleOnly",
+  measure?: doom.Measure,
 ): Added {
   const slides = doom.slidesOf(view).map((each) => each.id)
   const slide = mint()
@@ -53,7 +54,7 @@ export function addSlideWrites(
     writes,
     rev: doom.rev(view.rev + 1),
   })
-  if (!doom.isRefusal(withSlide)) writes.push(...doom.slideStartWrites(withSlide, slide, mint, start))
+  if (!doom.isRefusal(withSlide)) writes.push(...doom.slideStartWrites(withSlide, slide, mint, start, measure))
   return { slide, writes }
 }
 

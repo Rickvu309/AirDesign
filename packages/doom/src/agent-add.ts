@@ -1,17 +1,7 @@
 import type { AgentAdd, AgentChange, AgentLook } from "./agent-change.js"
 import { shapeGeometry } from "./preset-geometry.js"
 import { type Draft, Stop, create, living, nextKey, put, stop } from "./agent-draft.js"
-import {
-  askedArrow,
-  chartOf,
-  iconName,
-  layoutOf,
-  solid,
-  surfaceOf,
-  textOfLook,
-  turnOf,
-  type Now,
-} from "./agent-look.js"
+import { askedArrow, iconName, layoutOf, solid, surfaceOf, textOfLook, turnOf, type Now } from "./agent-look.js"
 import { addGrid, addPattern } from "./agent-patterns.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { placeholderSubtitle } from "./slide-placeholders.js"
@@ -23,7 +13,6 @@ import {
   fitScale,
   freeArea,
   gapFor,
-  patternArea,
   slideSize,
   themeOf,
 } from "./agent-place.js"
@@ -35,6 +24,7 @@ import { descendantsOf, isLaidOut, propOf, slideOf, zeroBox } from "./doom-walk.
 import type { Node } from "./doom.js"
 import type { Text } from "./text.js"
 import { componentLibrary } from "./component/library.js"
+import { linkedOwner } from "./component/instance-ownership.js"
 import { placeComponent } from "./component/join-instance.js"
 import { isRefusal } from "./refusal.js"
 import { measureWith } from "./measure.js"
@@ -84,8 +74,7 @@ const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
   frame: [...common, ...painted, "layout", "gap", "padding", "align", "rows", "clip"],
   picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit", "crop"],
   icon: [...common, "icon", "stroke", "strokeWidth"],
-  chart: [...common, ...painted, "chart"],
-  component: ["component", "box", "data", "variant", "tokens"],
+  component: ["component", "box", "data", "variant", "tokens", "rotation", "flip"],
   kpi: patternFields,
   cards: patternFields,
   compare: patternFields,
@@ -294,17 +283,6 @@ function addIcon(draft: Draft, parent: Node, change: Add): void {
   })
 }
 
-function addChart(draft: Draft, parent: Node, change: Add): void {
-  if (change.chart === undefined)
-    stop("shape", undefined, "chart", "missing", "An object with kind, categories and series.")
-  const area = patternArea(draft, parent, change.box)
-  create(draft, "frame", parent.id, {
-    ...surfaced(draft, change),
-    box: givenBox(change, area),
-    chart: chartOf(change.chart),
-  })
-}
-
 const estimate = measureWith({})
 
 const maxComponentScale = 2
@@ -326,7 +304,7 @@ function addComponent(draft: Draft, parent: Node, change: Add): void {
   const placed = placeComponent(draft.doom, definition, {
     frame: draft.mint(),
     parent: { id: parent.id, at: nextKey(draft, parent.id) },
-    box: { ...zeroBox, ...box },
+    box: givenBox(change, box),
     data,
     ...(change.variant === undefined ? {} : { variant: change.variant }),
     ...(change.tokens === undefined ? {} : { tokens: change.tokens }),
@@ -343,6 +321,8 @@ export function compileAdd(draft: Draft, change: Add): void {
   if (change.into !== undefined && (parent.type !== "frame" || slideOf(draft.doom, parent.id) !== slide.id))
     stop("missing", parent.id, "into")
   if (propOf(parent, "chart") !== undefined) stop("shape", parent.id, "into", "form", "A frame that is not a chart.")
+  if (linkedOwner(draft.doom.nodes, parent.id) !== undefined)
+    stop("shape", parent.id, "into", "form", "This layer is linked. Use detach to make it a plain layer.")
   checkFields(change)
   compileKind(draft, parent, slide, change)
 }
@@ -361,8 +341,6 @@ function compileKind(draft: Draft, parent: Node, slide: Node, change: Add): void
       return addPicture(draft, parent, change)
     case "icon":
       return addIcon(draft, parent, change)
-    case "chart":
-      return addChart(draft, parent, change)
     case "component":
       return addComponent(draft, parent, change)
     default:

@@ -1,4 +1,3 @@
-import type { AgentChart } from "./agent-chart.js"
 import type { AgentEnd } from "./agent-end.js"
 import type { AgentInsert } from "./agent-insert.js"
 import type { AgentItem } from "./agent-item.js"
@@ -49,7 +48,6 @@ export type AgentLook = {
   readonly data?: ReturnType<typeof import("./component/values.js").record>
   readonly variant?: ReturnType<typeof import("./component/spec.js").variantRecord>
   readonly tokens?: ReturnType<typeof import("./component/spec.js").tokenRecord>
-  readonly chart?: AgentChart
   readonly rows?: readonly (readonly string[])[]
   readonly items?: readonly AgentItem[]
   readonly axes?: readonly [string, string]

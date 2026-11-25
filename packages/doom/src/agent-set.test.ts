@@ -119,10 +119,6 @@ describe("set by node id", () => {
       refused: "shape",
       field: "insert",
     })
-    expect(refusal(richDeck(), set(`${more.chart}#Plan:Q1`, { insert: linked }))).toMatchObject({
-      refused: "shape",
-      field: "insert",
-    })
     expect(
       readAgentChange({ op: "set", target: ids.title, insert: { at: 0, text: "a\nb", link: "https://example.com" } }),
     ).toMatchObject({ refused: "shape" })
@@ -188,13 +184,10 @@ describe("set by node id", () => {
     expect(refusal(agentDeck(), set(ids.side, { gap: 5 }))).toMatchObject({ refused: "shape", field: "gap" })
   })
 
-  it("changes an icon's name, a line's arrowhead and ends, and a chart's data", () => {
+  it("changes an icon's name and a line's arrowhead and ends", () => {
     const doom = build(
-      build(
-        build(richDeck(), set(more.icon, { icon: "check", stroke: "accent2" })),
-        set(more.line, { arrow: true, box: { x: 0, y: 0, w: 50, h: 50 } }),
-      ),
-      set(more.chart, { chart: { kind: "line", categories: ["a"], series: [{ name: "s", values: [1] }] } }),
+      build(richDeck(), set(more.icon, { icon: "check", stroke: "accent2" })),
+      set(more.line, { arrow: true, box: { x: 0, y: 0, w: 50, h: 50 } }),
     )
     expect(propOf(doom.nodes.get(more.icon)!, "geometry")).toEqual({ kind: "icon", name: "lucide/check" })
     expect(propOf(doom.nodes.get(more.line)!, "geometry")).toEqual({
@@ -204,7 +197,6 @@ describe("set by node id", () => {
       route: "straight",
       arrows: ["none", "arrow"],
     })
-    expect(propOf(doom.nodes.get(more.chart)!, "chart")).toMatchObject({ kind: "line" })
   })
 
   it("sets the start arrowhead without the end, and a named end without the start", () => {
@@ -227,12 +219,6 @@ describe("set by node id", () => {
       change: `set ${ids.card}`,
     })
     expect(refusal(richDeck(), set(ids.title, { icon: "x" }))).toMatchObject({ field: "icon" })
-    expect(
-      refusal(
-        richDeck(),
-        set(ids.title, { chart: { kind: "bar", categories: ["a"], series: [{ name: "s", values: [1] }] } }),
-      ),
-    ).toMatchObject({ field: "chart" })
     expect(refusal(richDeck(), set(ids.title, { layout: "row" }))).toMatchObject({ field: "layout" })
     expect(refusal(richDeck(), set(ids.slide, { opacity: 0.5 }))).toMatchObject({ field: "opacity" })
     for (const field of ["rows", "items", "axes"])
@@ -258,7 +244,7 @@ describe("set by node id", () => {
   })
 })
 
-describe("set by role and by chart bar", () => {
+describe("set by role", () => {
   it("finds a slide's title by its role", () => {
     const doom = build(richDeck(), set(`${more.slide2}.title`, { text: "New title" }))
     expect(propOf(doom.nodes.get(more.titled)!, "text")?.chars).toBe("New title")
@@ -272,24 +258,6 @@ describe("set by role and by chart bar", () => {
       change: `set ${more.slide2}.body`,
     })
     expect(refusal(richDeck(), set(`${ids.card}.title`, { text: "x" }))).toMatchObject({
-      refused: "shape",
-      field: "target",
-    })
-  })
-
-  it("refuses a bar the chart has not, a look beyond its colour, and a bar of a frame with no chart", () => {
-    expect(refusal(richDeck(), set(`${more.chart}#Plan:Q9`, { fill: "accent3" }))).toMatchObject({
-      refused: "missing",
-      field: "target",
-    })
-    expect(refusal(richDeck(), set(`${more.chart}#Plan:Q1`, { opacity: 0.5 }))).toMatchObject({
-      refused: "shape",
-      field: "opacity",
-    })
-    expect(
-      refusal(richDeck(), set(`${more.chart}#Plan:Q1`, { fill: { image: "https://x.test/a.png" } })),
-    ).toMatchObject({ field: "fill" })
-    expect(refusal(richDeck(), set(`${ids.card}#Plan:Q1`, { fill: "accent3" }))).toMatchObject({
       refused: "shape",
       field: "target",
     })

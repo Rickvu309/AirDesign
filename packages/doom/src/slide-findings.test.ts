@@ -4,7 +4,6 @@ import { placed } from "./component/testing/linked-instance-fixtures.js"
 import { slidesOf } from "./doom-walk.js"
 import { doomFromTree, type TreeNode } from "./doom-tree.js"
 import { textFromMarkdown } from "./markdown.js"
-import { sampleChart } from "./sample-charts.js"
 import { slideFindings } from "./slide-findings.js"
 import { defaultTheme } from "./theme.js"
 import { measure, spot } from "./testing/doom-fixtures-art.js"
@@ -20,7 +19,10 @@ const text = (chars: string, style: "title" | "display" | "body" = "body", width
 
 const chart = (kind: "column" | "pie" = "column"): TreeNode => ({
   type: "frame",
-  props: { chart: sampleChart(kind), box: spot(0, 200, 600, 500) },
+  props: {
+    chart: { kind, categories: ["Q1", "Q2", "Q3"], series: [{ name: "Revenue", values: [2, 3, 4] }] },
+    box: spot(0, 200, 600, 500),
+  },
 })
 
 function findings(slides: readonly (readonly TreeNode[])[], count = slides.length) {
@@ -153,7 +155,7 @@ describe("slide findings", () => {
   })
 
   it("leaves a full-size chart with a small companion clear", () => {
-    const small: TreeNode = { ...chart(), props: { chart: sampleChart("column"), box: spot(620, 200, 200, 100) } }
+    const small: TreeNode = { ...chart(), props: { ...chart().props, box: spot(620, 200, 200, 100) } }
     expect(codes([[small, chart(), text("Source: Annual report")]])).toEqual([])
   })
 

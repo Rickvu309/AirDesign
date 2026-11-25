@@ -304,11 +304,7 @@ export default async function drive(kit) {
         await page.locator("[data-slide-box]").screenshot(),
       )
       const response = await mcp(kit, opened, "read_deck", { deck: opened.deck })
-      if (doom.linkedComponentsEnabled) {
-        expect(response.components).toEqual(expect.arrayContaining(["matrix", "tree"]))
-      } else {
-        expect(response.components).toBeUndefined()
-      }
+      expect(response.components).toEqual(expect.arrayContaining(["matrix", "tree"]))
     }
     await landNodes(kit, opened, [
       {

@@ -1,3 +1,4 @@
+import { linkedOwner } from "./component/instance-ownership.js"
 import { describe, expect, it } from "vitest"
 import { bytesOf } from "./limits.js"
 import type { AgentChange } from "./agent-change.js"
@@ -5,8 +6,6 @@ import { compileAgentEdit } from "./agent-edit.js"
 import { boardDeckChanges } from "./board-deck.js"
 import { agentDeck, apply, minter, runName } from "./agent-fixtures.js"
 import { defaultTheme } from "./theme.js"
-import { deriveChart } from "./derive-chart.js"
-import { measure } from "./testing/doom-fixtures-art.js"
 import { readForAgent } from "./agent-read.js"
 import { type NodeId, applyEdit, isRefusal, rev } from "./index.js"
 import { agent, ids } from "./sample-deck.js"
@@ -64,7 +63,9 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
   it("holds the KPI row with a decision card under it, the chart, three icon cards and the roadmap grid", () => {
     const names = (slide: NodeId) => childrenOf(doom, slide).map((node) => propOf(node, "name"))
     expect(names(slides[1]!)).toEqual([undefined, "KPI", "Decision"])
-    expect(childrenOf(doom, slides[2]!).some((node) => propOf(node, "chart")?.kind === "bar")).toBe(true)
+    expect(
+      childrenOf(doom, slides[2]!).some((node) => propOf(node, "instance")?.component.id === "clustered-chart"),
+    ).toBe(true)
     const priorities = childrenOf(doom, slides[3]!)[1]!
     expect(descendantsOf(doom, priorities.id).filter((node) => propOf(node, "geometry")?.kind === "icon")).toHaveLength(
       3,
@@ -84,6 +85,7 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
   it("uses the deck's named text styles and no size of its own anywhere", () => {
     for (const slide of slides)
       for (const node of descendantsOf(doom, slide)) {
+        if (linkedOwner(doom.nodes, node.id) !== undefined) continue
         const text = propOf(node, "text")
         if (text === undefined) continue
         expect(textStyleNames).toContain(text.style)
@@ -169,9 +171,9 @@ describe("the board deck on the slide type scale", () => {
   })
 
   it("sets a chart's words, value labels included, at 24 px or more", () => {
-    const chart = childrenOf(doom, slides[2]!).find((node) => propOf(node, "chart") !== undefined)!
-    const words = deriveChart(chart.id, propOf(chart, "chart")!, propOf(chart, "box")!, defaultTheme, measure).flatMap(
-      (part) => part.text?.lines.flatMap((line) => line.runs.map((run) => run.size)) ?? [],
+    const chart = childrenOf(doom, slides[2]!).find((node) => propOf(node, "instance") !== undefined)!
+    const words = descendantsOf(doom, chart.id).flatMap(
+      (part) => propOf(part, "text")?.spans.flatMap((span) => span.size ?? []) ?? [],
     )
     expect(words.length).toBeGreaterThan(0)
     expect(Math.min(...words)).toBeGreaterThanOrEqual(24)

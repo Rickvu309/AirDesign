@@ -83,7 +83,7 @@ export {
 } from "./wire.js"
 
 export { readDeckEdit } from "./deck-edit-wire.js"
-export { readDeckQuery, readDeckQueryFor, readListDecks } from "./read-wire.js"
+export { readDeckQuery, readListDecks } from "./read-wire.js"
 export { pictureBytes, pictureType, type SlidePictures } from "./slide-pictures-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, pendingFontsMeta, readOnce } from "./mcp-routes.js"

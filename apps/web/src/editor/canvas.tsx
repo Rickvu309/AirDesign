@@ -22,7 +22,15 @@ import { useTextSession } from "./use-text-session"
 import { propOf } from "@airdesign/doom"
 import { useCanvasKeys } from "./use-canvas-keys"
 import { useCanvasPointer, type DrawRequest, type Tool } from "./use-canvas-pointer"
-import { chartArea, chartWrites, drawWrites, iconSwapWrites, iconWrites } from "./create-writes"
+import type { ChartInsert } from "./actions-popover"
+import {
+  chartArea,
+  componentInsertWrites,
+  insertionTarget,
+  drawWrites,
+  iconSwapWrites,
+  iconWrites,
+} from "./create-writes"
 import { EditorToolbar, type RightPanel } from "./editor-toolbar"
 import { LayerMenu } from "./layer-menu"
 import type { ShapesShown } from "@/editor/shape-tool"
@@ -238,21 +246,6 @@ export function DoomCanvas(props: {
     return null
   }
 
-  function insertTarget() {
-    const [only] = current.ids
-    const placed = current.ids.length === 1 && only !== undefined ? geometry.byId.get(only) : undefined
-    if (placed !== undefined && view.nodes.get(placed.id)?.type === "frame")
-      return { parent: placed.id, inside: { w: placed.node.box.w, h: placed.node.box.h } }
-    return { parent: slide, inside: size }
-  }
-
-  function anchorOf(parent: doom.NodeId) {
-    const [only] = current.ids
-    const box =
-      parent === slide && current.ids.length === 1 && only !== undefined ? geometry.byId.get(only)?.node.box : undefined
-    return box === undefined ? undefined : { x: box.x, y: box.y, w: box.w, h: box.h }
-  }
-
   function inserted(id: doom.NodeId, writes: readonly doom.Write[]) {
     if (client.push(writes).ok) onSelection({ ids: [id], inside: null })
   }
@@ -274,14 +267,28 @@ export function DoomCanvas(props: {
         client.push(swapped)
         return
       }
-      const { parent, inside } = insertTarget()
+      const { parent, inside, anchor } = insertionTarget(view, { slide, size, geometry, selected: current.ids })
       const id = client.mint()
-      inserted(id, iconWrites(view, id, slotIn(parent), name, inside, anchorOf(parent)))
+      inserted(id, iconWrites(view, id, slotIn(parent), name, inside, anchor))
     },
-    chart(kind: doom.Chart["kind"]) {
-      const { parent, inside } = insertTarget()
-      const id = client.mint()
-      inserted(id, chartWrites(id, slotIn(parent), chartArea(view, parent, inside, anchorOf(parent)), kind))
+    chart(chart: ChartInsert) {
+      if (props.measure === null) return
+      const { parent, inside, anchor } = insertionTarget(view, {
+        slide,
+        size,
+        geometry,
+        selected: current.ids,
+        chart: true,
+      })
+      const made = componentInsertWrites(view, {
+        parent,
+        area: chartArea(view, parent, inside, anchor),
+        component: chart.component,
+        ...("variant" in chart ? { variant: chart.variant } : {}),
+        mint: () => client.mint(),
+        measure: props.measure,
+      })
+      if (made !== null && client.push(made.writes, { read: view }).ok) onSelection({ ids: [made.id], inside: null })
     },
     picture(file: File) {
       pictures.add(file)
@@ -298,12 +305,12 @@ export function DoomCanvas(props: {
   })
   const run = useMemo(
     () => ({
-      chart: (kind: doom.Chart["kind"]) => latestInserts.current.chart(kind),
+      chart: props.measure === null ? null : (chart: ChartInsert) => latestInserts.current.chart(chart),
       icon: (name: string) => latestInserts.current.icon(name),
       picture: (file: File) => latestInserts.current.picture(file),
       exportPdf: () => latestExport.current(),
     }),
-    [],
+    [props.measure === null],
   )
 
   useSlidePictures(client, pictures.assetUrl)

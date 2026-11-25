@@ -28,7 +28,13 @@ export function started(doom: Doom, run = runName): Doom {
 }
 
 export function apply(doom: Doom, writes: readonly Write[], run = runName): Doom {
-  const result = applyEdit(doom, { once: once(), author: agent(run), writes, rev: rev(doom.rev + 1) })
+  const result = applyEdit(doom, {
+    once: once(),
+    author: agent(run),
+    writes,
+    ...(writes.some(({ prop }) => prop === "instance") ? { readBase: doom.rev } : {}),
+    rev: rev(doom.rev + 1),
+  })
   if (isRefusal(result)) throw new Error(`refused ${JSON.stringify(result)}`)
   return result
 }

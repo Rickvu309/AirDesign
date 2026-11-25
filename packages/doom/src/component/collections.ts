@@ -127,10 +127,6 @@ function readValue(field: Field, raw: unknown, charge: Charge): Value {
 type Row<T> = Readonly<Record<string, T | string>> & { readonly id: string }
 type Data<T> = Readonly<Record<string, readonly Row<T>[]>>
 
-export function readData(schema: Collections, raw: unknown, charge: Charge) {
-  return readTables(schema, raw, charge, readScalarValue, {})
-}
-
 export function readExpansionData(
   schema: Collections,
   raw: unknown,

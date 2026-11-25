@@ -1,6 +1,43 @@
 {
   "version": 1,
   "name": "Waterfall",
+  "chart": "cartesian",
+  "sample": {
+    "w": 1540,
+    "h": 650,
+    "data": {
+      "rows": [
+        {
+          "id": "s0",
+          "label": "Start",
+          "value": 24,
+          "mode": "total",
+          "after": "carry"
+        },
+        {
+          "id": "s1",
+          "label": "Growth",
+          "value": 8,
+          "mode": "delta",
+          "after": "carry"
+        },
+        {
+          "id": "s2",
+          "label": "Costs",
+          "value": -3,
+          "mode": "delta",
+          "after": "carry"
+        },
+        {
+          "id": "s3",
+          "label": "End",
+          "value": 29,
+          "mode": "total",
+          "after": "carry"
+        }
+      ]
+    }
+  },
   "collections": {
     "rows": {
       "label": "string",

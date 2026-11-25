@@ -1,7 +1,7 @@
 import { readColor } from "../color.js"
-import type { Color } from "../paint.js"
+import { colorVars, type Color } from "../paint.js"
 import type { Refusal } from "../refusal.js"
-import { boolean, detailOf, finite, list, matching, reject, words } from "../read-kit.js"
+import { agentColor, boolean, detailOf, finite, list, matching, reject, words } from "../read-kit.js"
 
 export type Scalar = boolean | number | string | null
 export type Value = Scalar | ValueRecord | Values
@@ -53,7 +53,19 @@ export const wordsWithin = (max: number) => {
   }
 }
 export const string = wordsWithin(512)
-export const color = (raw: unknown): Color => readColor(raw) ?? reject("shape", "A hex or theme colour.")
+const themeColor = agentColor(new RegExp(`^(${colorVars.join("|")})([+-](100|[1-9][0-9]?))?$`), 16, "A theme colour.")
+export function color(raw: unknown): Color {
+  const parsed = readColor(raw)
+  if (parsed !== undefined) return parsed
+  if (typeof raw !== "string") return reject("shape", "A hex or theme colour.")
+  const named = themeColor(raw)
+  const base = colorVars.find(
+    (entry) => entry === named || named.startsWith(`${entry}+`) || named.startsWith(`${entry}-`),
+  )
+  if (base === undefined) return reject("shape", "A hex or theme colour.")
+  const tint = Number(named.slice(base.length)) / 100
+  return tint === 0 ? { var: base } : { var: base, tint }
+}
 
 export const scalar = (raw: unknown): Scalar => {
   if (raw === null) return null

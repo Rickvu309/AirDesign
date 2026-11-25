@@ -95,7 +95,7 @@ export const forms = {
   color: "A theme colour, lighter or darker by a percent, or #rrggbb.",
   font: "A letter or digit, then up to 99 letters, digits or spaces.",
   icon: "Letters, digits and dashes, or group/name.",
-  target: "A node id, <slide>.title, *.title, or <chart>#<series>:<category>.",
+  target: "A node id, <slide>.title, or *.title.",
   hex: "#rrggbb.",
   stroke: "A theme colour, lighter or darker by a percent, #rrggbb, or none.",
   fill: "A colour, none, {image} or {gradient}.",

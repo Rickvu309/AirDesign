@@ -38,7 +38,7 @@ describe("the sample slides", () => {
     it(`${route} keeps every drawn part inside its frame, and every frame inside the slide`, () => {
       const outside = nodes.filter(({ node, parent, x, y }) => {
         const ring = node.geometry?.kind === "ellipse" && node.fills.length === 0
-        if (ring || node.derived) return false
+        if (ring) return false
         const room =
           parent === null
             ? { x: 0, y: 0, w: slideSize.w, h: slideSize.h }
@@ -55,7 +55,7 @@ describe("the sample slides", () => {
       expect(wide.map(({ node }) => node.id)).toEqual([])
     })
 
-    it(`${route} names every derived part once`, () => {
+    it(`${route} names every part once`, () => {
       const ids = nodes.map(({ node }) => node.id)
       expect(new Set(ids).size).toBe(ids.length)
     })

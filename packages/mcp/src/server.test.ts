@@ -93,7 +93,7 @@ describe("createServer", () => {
         "slide",
         "duplicate",
         "deck",
-        ...(doom.linkedComponentsEnabled ? ["detach"] : []),
+        "detach",
       ])
       expect(advertisedTokens).toBeLessThanOrEqual(8000)
       expect(listedTokens).toBeLessThanOrEqual(8000)
@@ -157,9 +157,9 @@ describe("createServer", () => {
           { op: "add", kind: "kpi", slide: two, items: [{ title: "Revenue", value: "$4.2M" }] },
           {
             op: "add",
-            kind: "chart",
+            kind: "component",
             slide: three,
-            chart: { kind: "bar", categories: ["Q1"], series: [{ name: "Plan", values: [3] }] },
+            component: "column",
           },
           {
             op: "add",

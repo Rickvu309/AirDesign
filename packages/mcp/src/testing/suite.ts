@@ -247,17 +247,21 @@ export const suite: readonly SuiteRow[] = [
     "add-chart",
     "Add a bar chart of Plan against Actual for Q1 and Q2 to the roadmap slide.",
     {
-      kind: "chart",
-      chart: {
-        kind: "bar",
-        categories: ["Q1", "Q2"],
+      kind: "component",
+      component: "clustered-chart",
+      variant: { orientation: "bar" },
+      data: {
+        categories: [
+          { id: "q1", label: "Q1" },
+          { id: "q2", label: "Q2" },
+        ],
         series: [
-          { name: "Plan", values: [3, 4] },
-          { name: "Actual", values: [3.5, 4.5] },
+          { id: "plan", label: "Plan", values: [3, 4] },
+          { id: "actual", label: "Actual", values: [3.5, 4.5] },
         ],
       },
     },
-    "chart=",
+    "component clustered-chart r1",
   ),
   placed(
     "add-picture",
@@ -515,7 +519,7 @@ export const suite: readonly SuiteRow[] = [
             made.length === 5 &&
             has(end, 'name="KPI"') &&
             has(end, 'name="Decision"') &&
-            has(end, "chart=") &&
+            has(end, "component clustered-chart r1") &&
             lines(end)
               .split("\n")
               .filter((line) => line.includes("icon=")).length === 3 &&
@@ -570,14 +574,18 @@ function boardAttempt(withChart: boolean): Attempt {
           ? [
               {
                 op: "add",
-                kind: "chart",
+                kind: "component",
                 slide: three,
-                chart: {
-                  kind: "bar",
-                  categories: ["Q1", "Q2"],
+                component: "clustered-chart",
+                variant: { orientation: "bar" },
+                data: {
+                  categories: [
+                    { id: "q1", label: "Q1" },
+                    { id: "q2", label: "Q2" },
+                  ],
                   series: [
-                    { name: "Plan", values: [3.1, 3.4] },
-                    { name: "Actual", values: [3.3, 3.7] },
+                    { id: "plan", label: "Plan", values: [3, 4] },
+                    { id: "actual", label: "Actual", values: [3.5, 4.5] },
                   ],
                 },
               },

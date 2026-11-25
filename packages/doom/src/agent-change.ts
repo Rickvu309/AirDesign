@@ -1,10 +1,8 @@
 import type { AgentColor, AgentFill, AgentLook } from "./agent-look-types.js"
-import { linkedComponentsEnabled } from "./component-rollout.js"
 import { tokenRecord, variantRecord } from "./component/spec.js"
 import { id as componentId, record, readFocus } from "./component/values.js"
 import { readAngle, readRotation } from "./angle.js"
 import { arrowField, startArrowField } from "./agent-arrow.js"
-import { chartField } from "./agent-chart.js"
 import { weightNames } from "./painted-face.js"
 import { endSchema, readEnd } from "./agent-end.js"
 import { insertField } from "./agent-insert.js"
@@ -56,11 +54,19 @@ import { cropField } from "./agent-crop.js"
 
 export const patternNames = ["kpi", "cards", "compare", "matrix", "timeline", "flow"] as const
 export type PatternName = (typeof patternNames)[number]
-const ordinaryKinds = ["text", "shape", "line", "path", "frame", "picture", "icon", "chart", ...patternNames] as const
-export const addKinds = [...ordinaryKinds, "component"] as const
+export const addKinds = [
+  "text",
+  "shape",
+  "line",
+  "path",
+  "frame",
+  "picture",
+  "icon",
+  ...patternNames,
+  "component",
+] as const
 export type AgentAdd = (typeof addKinds)[number]
 
-export type { AgentChart } from "./agent-chart.js"
 export type { AgentBox, AgentColor, AgentFill, AgentGradient, AgentLook } from "./agent-look-types.js"
 
 export type DeckLook = {
@@ -215,7 +221,6 @@ const lookFields: LookFields = {
   data: field({ type: "object", description: "Rows by collection. Omit on add to use the sample." }, record),
   variant: field({ type: "object", description: "Template variant choices." }, variantRecord),
   tokens: field({ type: "object", description: "Template token overrides." }, tokenRecord),
-  chart: chartField(readColor),
   rows: field(
     {
       type: "array",
@@ -286,7 +291,7 @@ const lookFields: LookFields = {
 const readSlideAdd = object({}, { after: readId })
 const readSlideMove = object({ slide: readId, after: readAfter })
 const readTarget = matching(
-  /^([a-z0-9]{1,16}:[0-9]{1,12}(\.(title|subtitle|body)|#.{3,401})?|\*\.(title|subtitle|body))$/,
+  /^([a-z0-9]{1,16}:[0-9]{1,12}(\.(title|subtitle|body))?|\*\.(title|subtitle|body))$/,
   440,
   forms.target,
 )
@@ -299,7 +304,7 @@ const placeFields = {
     {
       type: "string",
       description:
-        "A node id; '<slide>.title', '<slide>.subtitle' or '<slide>.body', the node with that role; '*.title' and the like, that role on every slide; or a chart bar '<chart>#<series>:<category>', which takes only fill.",
+        "A node id; '<slide>.title', '<slide>.subtitle' or '<slide>.body', the node with that role; '*.title' and the like, that role on every slide.",
     },
     readTarget,
   ),
@@ -366,8 +371,6 @@ const pickFrom = <T extends { readonly [P in keyof T]: Field<unknown> }, K exten
     [P in K]: T[P] extends Field<infer V> ? Reader<V> : never
   }
 
-const { component, data, tokens, variant: componentVariant, ...ordinaryLook } = lookFields
-const componentLook = { component, data, variant: componentVariant, tokens }
 const focus = field(
   {
     type: "array",
@@ -378,38 +381,26 @@ const focus = field(
   readFocus,
 )
 
-function changeReader(components: boolean) {
-  const look = components ? lookFields : ordinaryLook
-  const lookReaders = pickFrom(look, Object.keys(look) as (keyof typeof look)[])
-  return variant("op", {
-    add: object(
-      { kind: literal(components ? addKinds : ordinaryKinds), slide: readId },
-      { ...pickFrom(placeFields, ["into"]), ...lookReaders },
-    ),
-    set: object(pickFrom(placeFields, ["target"]), { ...lookReaders, ...(components ? { focus: focus.read } : {}) }),
-    move: object(pickFrom(placeFields, ["node"]), pickFrom(placeFields, ["into", "after"])),
-    wrap: object(pickFrom(placeFields, ["nodes"]), pickFrom(lookFields, ["layout", "clip"])),
-    unwrap: object(pickFrom(placeFields, ["node"])),
-    ...(components ? { detach: object({ target: readId }) } : {}),
-    delete: object(pickFrom(placeFields, ["nodes"])),
-    slide: object({}, pickFrom(placeFields, ["add", "move", "delete"])),
-    duplicate: object(pickFrom(placeFields, ["nodes"])),
-    deck: object(
-      {},
-      { ...pickFrom(lookFields, ["name"]), ...pickFrom(placeFields, ["theme", "colors", "fonts", "nameFollows"]) },
-    ),
-  })
-}
+const lookReaders = pickFrom(lookFields, Object.keys(lookFields) as (keyof typeof lookFields)[])
+const readChange = variant("op", {
+  add: object({ kind: literal(addKinds), slide: readId }, { ...pickFrom(placeFields, ["into"]), ...lookReaders }),
+  set: object(pickFrom(placeFields, ["target"]), { ...lookReaders, focus: focus.read }),
+  move: object(pickFrom(placeFields, ["node"]), pickFrom(placeFields, ["into", "after"])),
+  wrap: object(pickFrom(placeFields, ["nodes"]), pickFrom(lookFields, ["layout", "clip"])),
+  unwrap: object(pickFrom(placeFields, ["node"])),
+  detach: object({ target: readId }),
+  delete: object(pickFrom(placeFields, ["nodes"])),
+  slide: object({}, pickFrom(placeFields, ["add", "move", "delete"])),
+  duplicate: object(pickFrom(placeFields, ["nodes"])),
+  deck: object(
+    {},
+    { ...pickFrom(lookFields, ["name"]), ...pickFrom(placeFields, ["theme", "colors", "fonts", "nameFollows"]) },
+  ),
+})
 
-const readWithComponents = changeReader(true)
-const readWithoutComponents = changeReader(false)
-
-export function readAgentChange(
-  raw: unknown,
-  components = linkedComponentsEnabled,
-): AgentChange | (Refusal & { readonly field?: string }) {
+export function readAgentChange(raw: unknown): AgentChange | (Refusal & { readonly field?: string }) {
   try {
-    return (components ? readWithComponents : readWithoutComponents)(raw) as AgentChange
+    return readChange(raw) as AgentChange
   } catch (thrown) {
     return detailOf(thrown)
   }
@@ -458,31 +449,15 @@ export const agentChangesSchema = {
       required: ["op"],
       properties: {
         op: {
-          enum: [
-            "add",
-            "set",
-            "move",
-            "wrap",
-            "unwrap",
-            "delete",
-            "slide",
-            "duplicate",
-            "deck",
-            ...(linkedComponentsEnabled ? ["detach"] : []),
-          ],
+          enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck", "detach"],
           description:
-            (linkedComponentsEnabled
-              ? "component add: component, data?, variant?, tokens?, box?. detach: target. "
-              : "") +
+            "component add: component, data?, variant?, tokens?, box?. detach: target. " +
             "add: kind, slide, into?, look. set: target, look. move: node, into?, after?. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
         },
         ...schemasOf(placeFields),
-        kind: choice(
-          linkedComponentsEnabled ? addKinds : ordinaryKinds,
-          linkedComponentsEnabled ? `${kindWords} component: a linked template.` : kindWords,
-        ).schema,
-        ...schemasOf(ordinaryLook),
-        ...(linkedComponentsEnabled ? { ...schemasOf(componentLook), focus: focus.schema } : {}),
+        kind: choice(addKinds, `${kindWords} component: a linked template.`).schema,
+        ...schemasOf(lookFields),
+        focus: focus.schema,
       },
     },
   },

@@ -1,5 +1,5 @@
 import { resolveComponent } from "./component/library.js"
-import type { AgentChart, AgentColor } from "./agent-change.js"
+import type { AgentColor } from "./agent-change.js"
 import { uniformAlign, uniformColor } from "./agent-look.js"
 import type { Arrow, End, Geometry } from "./geometry.js"
 import type { NodeId } from "./ids.js"
@@ -58,31 +58,11 @@ function layoutWords(layout: Layout): readonly string[] {
   return [`layout=${layout.mode}`, `gap=${num(layout.gap)}`, ...(padding === "0" ? [] : [`padding=${padding}`])]
 }
 
-function chartWords(node: Node): string | undefined {
-  const chart = propOf(node, "chart")
-  if (chart === undefined) return undefined
-  const words: AgentChart = {
-    kind: chart.kind,
-    categories: chart.categories,
-    series: chart.series.map((series) => ({
-      name: series.name,
-      values: series.values,
-      ...(series.color === undefined ? {} : { color: colorWords(series.color) }),
-      ...(series.points === undefined || series.points.length === 0
-        ? {}
-        : { points: series.points.map((point) => ({ at: point.at, color: colorWords(point.color) })) }),
-    })),
-    ...(chart.labels === undefined ? {} : { labels: chart.labels }),
-    ...(chart.unit === undefined ? {} : { unit: chart.unit }),
-  }
-  return `chart=${JSON.stringify(words)}`
-}
-
 export function kindOf(node: Node): string {
   if (node.type === "slide" || node.type === "slideRow") return node.type
   if (node.type === "frame") {
     if (node.instance !== undefined) return "component"
-    return node.chart === undefined ? "frame" : "chart"
+    return "frame"
   }
   const kind = propOf(node, "geometry")?.kind
   if (kind === "line" || kind === "icon" || kind === "path") return kind
@@ -166,8 +146,6 @@ function looksOf(node: Node, detail: boolean): readonly string[] {
     if (detail) out.push(`d=${quoted(geometry.d)}`)
   }
   if (geometry?.kind === "line") out.push(...lineWords(geometry))
-  const chart = chartWords(node)
-  if (chart !== undefined) out.push(chart)
   if (text !== undefined) out.push(`text=${quoted(textToMarkdown(text))}`)
   return out
 }

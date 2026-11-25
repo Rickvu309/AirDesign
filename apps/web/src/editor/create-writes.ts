@@ -1,6 +1,6 @@
 import { type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import type { Point } from "./slide-geometry"
+import type { Point, SlideGeometry } from "./slide-geometry"
 import { propOf } from "@airdesign/doom"
 
 export type Drawn = "frame" | "rectangle" | "ellipse" | "line" | "arrow" | `preset:${string}`
@@ -197,21 +197,70 @@ export function iconSwapWrites(
   return ids.length === 0 || swaps.length !== ids.length ? null : swaps
 }
 
+export function insertionTarget(
+  view: doom.Doom,
+  {
+    slide,
+    size,
+    geometry,
+    selected,
+    chart = false,
+  }: {
+    readonly slide: doom.NodeId
+    readonly size: Size
+    readonly geometry: SlideGeometry
+    readonly selected: readonly doom.NodeId[]
+    readonly chart?: boolean
+  },
+) {
+  const [only] = selected
+  const placed = selected.length === 1 && only !== undefined ? geometry.byId.get(only) : undefined
+  const stored = placed === undefined ? undefined : view.nodes.get(placed.id)
+  if (placed !== undefined && stored?.type === "frame" && (!chart || stored.instance === undefined)) {
+    return { parent: placed.id, inside: placed.node.box, anchor: undefined }
+  }
+  return { parent: slide, inside: size, anchor: placed?.node.box }
+}
+
 export function chartArea(view: doom.Doom, parent: doom.NodeId, inside: Size, anchor?: Box): Box {
   return openArea(view, parent, inside, chartLeast, anchor)
 }
 
-export function chartWrites(
-  id: doom.NodeId,
-  parent: Slot,
-  area: Size & { x: number; y: number },
-  kind: doom.Chart["kind"] = "column",
-): readonly doom.Write[] {
-  return [
-    { node: id, prop: "type", value: "frame" },
-    { node: id, prop: "parent", value: parent },
-    { node: id, prop: "name", value: "Chart" },
-    { node: id, prop: "box", value: { x: area.x, y: area.y, w: area.w, h: area.h, ...upright } },
-    { node: id, prop: "chart", value: doom.sampleChart(kind) },
-  ]
+export function componentInsertWrites(
+  view: doom.Doom,
+  pick: {
+    readonly parent: doom.NodeId
+    readonly area: Box
+    readonly component: string
+    readonly variant?: NonNullable<Extract<doom.AgentChange, { op: "add" }>["variant"]>
+    readonly mint: () => doom.NodeId
+    readonly measure: doom.Measure
+  },
+) {
+  const slide = doom.slideOf(view, pick.parent)
+  if (slide === undefined) return null
+  const built = doom.compileAgentEdit(
+    view,
+    [
+      {
+        op: "add",
+        kind: "component",
+        component: pick.component,
+        slide,
+        ...(slide === pick.parent ? {} : { into: pick.parent }),
+        ...(pick.variant === undefined ? {} : { variant: pick.variant }),
+        box: pick.area,
+      },
+    ],
+    {
+      author: { kind: "person", id: "component-insert" },
+      once: "component-insert",
+      mint: pick.mint,
+      measure: pick.measure,
+    },
+  )
+  if ("refused" in built) return null
+  const writes = built.edit.writes
+  const root = writes.find((write) => write.prop === "instance")
+  return root === undefined ? null : { id: root.node, writes }
 }

@@ -90,7 +90,7 @@ it("runs the top match when Enter is pressed in the search", async () => {
   try {
     await panel.type("pie")
     await panel.press("Enter")
-    expect(panel.run.chart).toHaveBeenCalledWith("pie")
+    expect(panel.run.chart).toHaveBeenCalledWith(expect.objectContaining({ id: "pie" }))
     expect(panel.finish).toHaveBeenCalledTimes(1)
   } finally {
     await act(async () => panel.root.unmount())
@@ -105,7 +105,7 @@ it("moves the highlight through the results with the arrow keys and runs the hig
     await panel.press("ArrowDown")
     await panel.press("ArrowUp")
     await panel.press("Enter")
-    expect(panel.run.chart).toHaveBeenCalledWith("bar")
+    expect(panel.run.chart).toHaveBeenCalledWith(expect.objectContaining({ id: "bar" }))
   } finally {
     await act(async () => panel.root.unmount())
   }
@@ -117,7 +117,7 @@ it("keeps the highlight on the first result instead of wrapping", async () => {
     await panel.type("column")
     await panel.press("ArrowUp")
     await panel.press("Enter")
-    expect(panel.run.chart).toHaveBeenCalledWith("column")
+    expect(panel.run.chart).toHaveBeenCalledWith(expect.objectContaining({ id: "column" }))
   } finally {
     await act(async () => panel.root.unmount())
   }
@@ -148,7 +148,7 @@ it("finds every chart by the Charts group title", async () => {
   const panel = await openPanel()
   try {
     await panel.type("charts")
-    expect(panel.host.querySelectorAll("[data-actions-group='charts'] [role='option']").length).toBe(5)
+    expect(panel.host.querySelectorAll("[data-actions-group='charts'] [role='option']").length).toBe(6)
   } finally {
     await act(async () => panel.root.unmount())
   }
@@ -196,7 +196,7 @@ it("moves the one highlight to the row under the pointer", async () => {
     expect(panel.host.querySelectorAll("[aria-selected='true']")).toHaveLength(1)
     await panel.press("ArrowDown")
     await panel.press("Enter")
-    expect(panel.run.chart).toHaveBeenCalledWith("pie")
+    expect(panel.run.chart).toHaveBeenCalledWith(expect.objectContaining({ id: "pie" }))
   } finally {
     await act(async () => panel.root.unmount())
   }

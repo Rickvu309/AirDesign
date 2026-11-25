@@ -71,7 +71,7 @@ describe("layout pictures", () => {
     await expect(warmLayoutPictures(fresh, wide, undefined, async () => measure)).resolves.toBe(warmed)
   })
 
-  it("warms in slices: one pause to start, one per layout to grow, one to measure, one per layout to resolve", async () => {
+  it("warms in slices: pauses before measuring, then grows and resolves each layout in slices", async () => {
     const sliced: Theme = { ...rose, colors: { ...rose.colors, accent2: color(0x654321) } }
     let pauses = 0
     let measuredAfter = -1
@@ -88,7 +88,7 @@ describe("layout pictures", () => {
         expect(readLayoutPictures(sliced, wide, undefined)).toBeNull()
       },
     )
-    expect(measuredAfter).toBe(slideStarts.length + 2)
+    expect(measuredAfter).toBe(1)
     expect(pauses).toBe(slideStarts.length * 2 + 2)
     expect(readLayoutPictures(sliced, wide, undefined)).toBe(warmed)
   })

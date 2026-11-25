@@ -319,7 +319,13 @@ describe("picture, icon, frame and line", () => {
   })
 
   it("gives a chart the same design panel as its frame", () => {
-    const chart = landed(view, [{ node: id("panel"), prop: "chart", value: doom.sampleChart("column") }])
+    const chart = landed(view, [
+      {
+        node: id("panel"),
+        prop: "chart",
+        value: { kind: "column", categories: ["Q1"], series: [{ name: "Revenue", values: [12] }] },
+      },
+    ])
     expect(modelOf("panel", chart)).toEqual(modelOf("panel"))
   })
 

@@ -37,12 +37,13 @@ export function casesFor(given, repo) {
   })
 }
 
-async function measureOnce({ browser, bench, run, origin, runtime }) {
-  const context = await browser.newContext({ baseURL: origin, ...designContext })
+async function measureOnce({ browser, bench, run, state, runtime }) {
+  const context = await browser.newContext({ baseURL: state.origin, ...designContext })
   try {
     const page = await context.newPage()
     page.setDefaultTimeout(caseLimit)
-    const { kit } = await runtime.journeyKit({ run, name: `bench-${bench.name}`, page, context })
+    const { kit: journey } = await runtime.journeyKit({ run, name: `bench-${bench.name}`, page, context })
+    const kit = { ...journey, repo: state.repo }
     const prepared = await bench.setup(kit)
     const device = await context.newCDPSession(page)
     await device.send("Emulation.setCPUThrottlingRate", { rate: throttle })
@@ -88,7 +89,7 @@ export async function benchCommand(args, runtime) {
       const before = load()
       let ms
       try {
-        ms = await measureOnce({ browser, bench, run: stacks[slot.side], origin: states[slot.side].origin, runtime })
+        ms = await measureOnce({ browser, bench, run: stacks[slot.side], state: states[slot.side], runtime })
       } catch (error) {
         throw new Error(
           `${slot.case} on ${slot.side}, run ${String(slot.run)}: ${String(error?.message ?? error).split("\n")[0]}`,

@@ -4,7 +4,7 @@ import { compileAgentChange } from "./agent-compile.js"
 import { compileAgentEdit } from "./agent-edit.js"
 import { agentDeck, apply, build, compiled, firstSlide, lastChild, minter, runName } from "./agent-fixtures.js"
 import { placeholderTitle } from "./placeholder-title.js"
-import { agent, create, hex, ids } from "./sample-deck.js"
+import { agent, create, ids } from "./sample-deck.js"
 import { childrenOf, propOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { nodeId } from "./ids.js"
@@ -367,43 +367,6 @@ describe("add picture and icon", () => {
   })
 })
 
-describe("add chart", () => {
-  it("makes a frame that holds the data, with colours as theme variables", () => {
-    const doom = build(agentDeck(), {
-      op: "add",
-      kind: "chart",
-      slide,
-      chart: {
-        kind: "bar",
-        categories: ["Q1", "Q2"],
-        series: [
-          { name: "Plan", values: [3, 4], color: "accent2" },
-          { name: "Actual", values: [2, 5], color: hex(0x112233) },
-        ],
-        labels: true,
-      },
-    })
-    const made = lastChild(doom, slide)
-    expect(made.type).toBe("frame")
-    expect(propOf(made, "chart")).toEqual({
-      kind: "bar",
-      categories: ["Q1", "Q2"],
-      series: [
-        { name: "Plan", values: [3, 4], color: { var: "accent2" } },
-        { name: "Actual", values: [2, 5], color: hex(0x112233) },
-      ],
-      labels: true,
-    })
-    expect(propOf(made, "box")!.w).toBeGreaterThan(1000)
-  })
-
-  it("refuses a chart with no data", () => {
-    expect(compileAgentChange(agentDeck(), { op: "add", kind: "chart", slide }, minter())).toMatchObject({
-      field: "chart",
-    })
-  })
-})
-
 describe("where an add lands", () => {
   const frame: AgentChange = {
     op: "add",
@@ -446,18 +409,23 @@ describe("where an add lands", () => {
     expect(propOf(lastChild(words, card.id), "text")?.chars).toBe("Extra")
   })
 
-  it("refuses to add into a chart, which draws its own", () => {
+  it("allows a manual chart child and refuses add into the generated frame", () => {
     const doom = build(
       agentDeck(),
       {
         op: "add",
-        kind: "chart",
+        kind: "component",
         slide,
-        chart: { kind: "bar", categories: ["a"], series: [{ name: "s", values: [1] }] },
+        component: "column",
       },
       minter("a"),
     )
-    expect(compileAgentChange(doom, text({ into: lastChild(doom, slide).id }), minter("b"))).toMatchObject({
+    const chart = lastChild(doom, slide)
+    const generated = propOf(chart, "instance")!.generated
+    expect(compiled(doom, text({ into: chart.id, box: { x: 0, y: 0, w: 300, h: 60 } }), minter("b"))).toContainEqual(
+      expect.objectContaining({ prop: "parent", value: expect.objectContaining({ id: chart.id }) }),
+    )
+    expect(compileAgentChange(doom, text({ into: generated }), minter("b"))).toMatchObject({
       refused: "shape",
       field: "into",
     })
