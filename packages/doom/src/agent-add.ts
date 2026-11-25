@@ -15,7 +15,17 @@ import {
 import { addGrid, addPattern } from "./agent-patterns.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { placeholderSubtitle } from "./slide-placeholders.js"
-import { type Area, areaFor, cardRadiusFor, freeArea, gapFor, patternArea, slideSize, themeOf } from "./agent-place.js"
+import {
+  type Area,
+  areaFor,
+  cardRadiusFor,
+  fitScale,
+  freeArea,
+  gapFor,
+  patternArea,
+  slideSize,
+  themeOf,
+} from "./agent-place.js"
 import { lineEnds } from "./agent-line-ends.js"
 import { pictureFit } from "./picture-fit.js"
 import type { StrokeStyle } from "./paint.js"
@@ -296,16 +306,20 @@ function addChart(draft: Draft, parent: Node, change: Add): void {
 
 const estimate = measureWith({})
 
+const maxComponentScale = 2
+
 function addComponent(draft: Draft, parent: Node, change: Add): void {
   const id = change.component ?? stop("shape", undefined, "component", "missing", "A template id from read_deck.")
   const definition = componentLibrary.get(id)
   if (definition === undefined) stop("shape", undefined, "component", "form", "A template id from read_deck.")
   const { sample } = definition.spec
   const data = change.data ?? sample?.data ?? stop("shape", undefined, "data", "missing", "Rows by collection.")
-  const available = change.box ?? freeArea(draft, parent) ?? stop("limit", parent.id, "box")
+  const natural = sample === undefined ? undefined : { width: sample.w, height: sample.h }
+  const available = change.box ?? freeArea(draft, parent, natural) ?? stop("limit", parent.id, "box")
+  const scale = natural === undefined ? 1 : Math.min(maxComponentScale, fitScale(natural, available))
   const box =
-    change.box === undefined && sample !== undefined
-      ? centred(available, pictureFit({ width: sample.w, height: sample.h }, available))
+    change.box === undefined && natural !== undefined
+      ? centred(available, { w: Math.round(natural.width * scale), h: Math.round(natural.height * scale) })
       : available
   const placed = placeComponent(draft.doom, definition, {
     frame: draft.mint(),

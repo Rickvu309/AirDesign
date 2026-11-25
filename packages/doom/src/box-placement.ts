@@ -40,12 +40,6 @@ function freeAreas(usable: Box, taken: readonly Box[]): readonly Box[] {
   return areas
 }
 
-function larger(left: Box, right: Box): number {
-  const byArea = right.cx * right.cy - left.cx * left.cy
-  if (byArea !== 0) return byArea
-  return left.y - right.y || left.x - right.x
-}
-
 function reaching(box: Box, reach: number): Box {
   const cx = Math.max(box.cx, reach)
   const cy = Math.max(box.cy, reach)
@@ -61,9 +55,25 @@ function clearAreas(area: PlacementArea, taken: readonly Box[]): readonly Box[] 
   const marginX = Math.round(area.width * marginShare)
   const marginY = Math.round(area.height * marginShare)
   const usable = { x: marginX, y: marginY, cx: area.width - 2 * marginX, cy: area.height - 2 * marginY }
-  return [...freeAreas(usable, present(area, taken))].sort(larger)
+  return freeAreas(usable, present(area, taken))
 }
 
-export function largestFreeBox(area: PlacementArea, taken: readonly Box[]): Box | undefined {
-  return clearAreas(area, taken)[0]
+export function largestFreeBox(
+  area: PlacementArea,
+  taken: readonly Box[],
+  score: (box: Box) => number = ({ cx, cy }) => cx * cy,
+): Box | undefined {
+  let best: Box | undefined
+  let high = -Infinity
+  for (const box of clearAreas(area, taken)) {
+    const next = score(box)
+    if (
+      next > high ||
+      (next === high && best !== undefined && (box.y < best.y || (box.y === best.y && box.x < best.x)))
+    ) {
+      best = box
+      high = next
+    }
+  }
+  return best
 }

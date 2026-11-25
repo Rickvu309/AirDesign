@@ -4,16 +4,19 @@ import { compileAgentEdit, readingOf } from "./agent-edit.js"
 import { readAgentChange } from "./agent-change.js"
 import { firstSlide, minter } from "./agent-fixtures.js"
 import { readForAgent } from "./agent-read.js"
-import { childrenOf, propOf } from "./doom-walk.js"
+import { childrenOf, propOf, zeroBox } from "./doom-walk.js"
 import { isRefusal } from "./refusal.js"
 import { applyEdit } from "./apply-edit.js"
 import { rev } from "./ids.js"
 import { componentLibrary, columnDefinition } from "./component/library.js"
+import { linkedPartOverrides } from "./component/instance-ownership.js"
 import { componentTree } from "./component/join-instance.js"
+import { layoutFindings } from "./layout-findings.js"
 import { measureWith } from "./measure.js"
 import { defaultTheme, themeLibrary } from "./theme.js"
 import { doomFromTree } from "./doom-tree.js"
 import { titleSlideWrites } from "./slide-placeholders.js"
+import { textFromMarkdown } from "./markdown.js"
 import { sampleDeck } from "./sample-deck.js"
 
 function compile(fold: ReturnType<typeof sampleDeck>, raw: unknown, once: string) {
@@ -88,20 +91,44 @@ describe("linked components in agent edits", () => {
     expect(propOf(edited.after.nodes.get(label), "text")).toMatchObject({ chars: "New quarter", style: "body" })
   })
 
-  it("centres a sample in free space on a slide with a title", () => {
+  it.each([
+    { layout: "title", width: 713 },
+    { layout: "blank", width: 1766 },
+    { layout: "body", width: 734 },
+  ])("fills the free area and preserves proportions on a $layout slide", ({ layout, width }) => {
     const size = { w: 1920, h: 1080 }
     const {
       doom,
       slides: [slide],
-    } = doomFromTree({ theme: defaultTheme, size, slides: [{ children: [] }] })
+    } = doomFromTree({
+      theme: defaultTheme,
+      size,
+      slides: [
+        {
+          children:
+            layout === "body"
+              ? [
+                  {
+                    type: "shape",
+                    props: {
+                      box: { ...zeroBox, x: 755, y: 382, w: 1100, h: 650 },
+                      text: { ...textFromMarkdown("Body text", "body"), resize: "fixed" },
+                    },
+                  },
+                ]
+              : [],
+        },
+      ],
+    })
     if (slide === undefined) throw new Error("No slide")
-    const before = applyEdit(doom, {
+    const titled = applyEdit(doom, {
       once: "title",
       rev: rev(doom.rev + 1),
       author: { kind: "person", id: "person" },
       writes: titleSlideWrites(slide, minter("title"), size),
     })
-    if (isRefusal(before)) throw new Error(JSON.stringify(before))
+    if (isRefusal(titled)) throw new Error(JSON.stringify(titled))
+    const before = layout === "title" ? titled : doom
     const placed = compile(before, { op: "add", kind: "component", component: "column", slide }, "place")
     const root = placed.added.find(({ kind }) => kind === "component")?.id
     const box = root === undefined ? undefined : propOf(placed.after.nodes.get(root), "box")
@@ -109,6 +136,7 @@ describe("linked components in agent edits", () => {
     const sample = columnDefinition.spec.sample
     if (sample === undefined) throw new Error("No column sample")
     expect(Math.abs(box.w - (box.h * sample.w) / sample.h)).toBeLessThanOrEqual(2)
+    expect(box.w).toBe(width)
     for (const kid of childrenOf(before, slide)) {
       const occupied = propOf(kid, "box")
       if (occupied === undefined) continue
@@ -134,6 +162,34 @@ describe("linked components in agent edits", () => {
     if (isRefusal(tree)) throw new Error(JSON.stringify(tree))
     expect(tree.findings).toEqual([])
     expect(placed.findings).toEqual([])
+  })
+
+  it.each(themes)("updates a crowded column on $id without off-scale findings", ({ theme }) => {
+    const { doom } = doomFromTree({ theme, size: { w: 1920, h: 1080 }, slides: [{ children: [] }] })
+    const placed = compile(
+      doom,
+      { op: "add", kind: "component", component: "column", slide: firstSlide(doom) },
+      "place",
+    )
+    const root = placed.added.find(({ kind }) => kind === "component")?.id
+    if (root === undefined) throw new Error("No component was added")
+    const rows = Array.from({ length: 40 }, (_, index) => ({
+      id: `row-${index}`,
+      label: `Region ${index + 1}`,
+      value: index + 1,
+    }))
+    const updated = compile(placed.after, { op: "set", target: root, data: { rows } }, "crowd")
+    expect(updated.findings).toEqual([])
+    const layout = layoutFindings(updated.after, [firstSlide(doom)], measureWith({}))
+    expect(layout.map(({ code }) => code)).not.toContain("small-text")
+  })
+
+  it("advertises only fields each generated part can edit", () => {
+    expect(linkedPartOverrides).toEqual({
+      text: ["textStyle", "name", "link"],
+      shapes: ["fill", "name"],
+      lines: ["name"],
+    })
   })
 
   it("refuses stale preparations and protects a label changed by a person in the same run", () => {

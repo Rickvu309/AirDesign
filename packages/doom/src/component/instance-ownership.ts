@@ -3,6 +3,7 @@ import type { Doom, Landed, Node, Write } from "../doom.js"
 import { parentOf, propOf } from "../doom-walk.js"
 import { props } from "../props.js"
 import { styleWrite } from "../text-writes.js"
+import { agentLinkTarget } from "../link.js"
 import type { NodeId } from "../ids.js"
 import { isRefusal, refuse, type Refusal } from "../refusal.js"
 import { keyString, type Instance, type PartKey } from "./instance.js"
@@ -142,12 +143,21 @@ function styleProps(kind: Kind | undefined): readonly Write["prop"][] {
 
 const sharedOverrides = ["name", "link"] as const
 
-export const linkedPartOverrides: { readonly text: readonly string[]; readonly shapes: readonly string[] } = {
-  text: [...Object.keys(styledFields.text), ...sharedOverrides],
-  shapes: [
-    ...new Set([...Object.keys(styledFields.rect), ...Object.keys(styledFields.path)]),
-    ...sharedOverrides.filter((field) => field !== "link"),
-  ],
+function agentOverrides(kind: Kind): readonly string[] {
+  return [
+    ...Object.keys(styledFields[kind]),
+    ...sharedOverrides.filter((field) => field !== "link" || kind === agentLinkTarget),
+  ]
+}
+
+export const linkedPartOverrides: {
+  readonly text: readonly string[]
+  readonly shapes: readonly string[]
+  readonly lines: readonly string[]
+} = {
+  text: agentOverrides("text"),
+  shapes: agentOverrides("rect").filter((field) => agentOverrides("path").includes(field)),
+  lines: agentOverrides("line"),
 }
 
 export function linkedOverride(nodes: Tree["nodes"], write: Write): boolean {

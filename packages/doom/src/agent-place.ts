@@ -1,5 +1,5 @@
 import { largestFreeBox } from "./box-placement.js"
-import { type Draft, Stop, draftOf, stop } from "./agent-draft.js"
+import { type Draft, type Natural, Stop, draftOf, stop } from "./agent-draft.js"
 import type { NodeId } from "./ids.js"
 import type { Px } from "./paint.js"
 import type { Doom, Node } from "./doom.js"
@@ -33,7 +33,10 @@ export function sizeOf(draft: Draft, parent: Node): { readonly w: Px; readonly h
   return { w: box.w, h: box.h }
 }
 
-export function freeArea(draft: Draft, parent: Node): Area | undefined {
+export const fitScale = (natural: Natural, room: Pick<Area, "w" | "h">): number =>
+  Math.min(room.w / natural.width, room.h / natural.height)
+
+export function freeArea(draft: Draft, parent: Node, natural?: Natural): Area | undefined {
   const { w, h } = sizeOf(draft, parent)
   if (w <= 0 || h <= 0) return undefined
   if (isLaidOut(parent)) return { x: 0, y: 0, w, h }
@@ -42,7 +45,11 @@ export function freeArea(draft: Draft, parent: Node): Area | undefined {
     .filter((child) => propOf(child, "hidden") !== true)
     .map((child) => boxOf(child, draft.reading.boxes))
     .map((box) => ({ x: box.x - clear, y: box.y - clear, cx: box.w + 2 * clear, cy: box.h + 2 * clear }))
-  const best = largestFreeBox({ width: w, height: h }, taken)
+  const best = largestFreeBox(
+    { width: w, height: h },
+    taken,
+    natural === undefined ? undefined : ({ cx, cy }) => fitScale(natural, { w: cx, h: cy }),
+  )
   if (best === undefined || best.cx < w * smallestWidthShare || best.cy < h * smallestHeightShare) return undefined
   return { x: best.x, y: best.y, w: best.cx, h: best.cy }
 }

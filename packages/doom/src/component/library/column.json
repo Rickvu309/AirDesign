@@ -62,7 +62,7 @@
     "heading": "label",
     "label": "label",
     "caption": "caption",
-    "captionSmall": 18
+    "captionSmall": 20
   },
   "let": [
     ["gutter", 12],
