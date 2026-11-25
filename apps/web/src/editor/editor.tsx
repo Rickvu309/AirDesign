@@ -71,14 +71,14 @@ function Editing({
   readonly measuring: RefObject<doom.Measure | null>
 }) {
   const view = useDoomView(client)
-  const measure = useDoomMeasure(view)
-  useEffect(() => {
-    measuring.current = measure
-  })
   const saved = useSaveShown(client, start.save)
   const editingRuns = useEditingNow(view, Date.now)
   const slides = doom.slidesOf(view).map((each) => each.id)
   const [slide, showSlide] = useCurrentSlide(slides)
+  const measure = useDoomMeasure(view)
+  useEffect(() => {
+    measuring.current = measure
+  })
   const [selection, setSelection] = useState<Selection>(noSelection)
   const [cropping, setCropping] = useState<doom.NodeId | null>(null)
   const [tool, setTool] = useState<Tool>(start.tool ?? "move")
@@ -181,9 +181,18 @@ function Editing({
               commands.current = next ?? idle
             }}
             toolbarHost={toolbarHost}
-            notice={exporting.failed === "fonts" ? "export-fonts" : exporting.failed ? "export-failed" : saved.notice}
+            notice={
+              exporting.failed === "capacity"
+                ? "export-capacity"
+                : exporting.failed === "fonts"
+                  ? "export-fonts"
+                  : exporting.failed
+                    ? "export-failed"
+                    : saved.notice
+            }
             onExport={exporting.control.openDialog}
             onTryAgain={(notice) => {
+              if (notice === "export-capacity") exporting.control.openDialog()
               if (notice === "export-failed" || notice === "export-fonts") exporting.tryAgain()
             }}
             onTyping={typing.set}

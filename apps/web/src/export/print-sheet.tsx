@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { SlidePaint, useDoomSlide, waitForDoomFonts } from "@airdesign/render"
+import { prepareDoomFonts, SlidePaint, useDoomSlide } from "@airdesign/render"
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { propOf } from "@airdesign/doom"
@@ -79,11 +79,11 @@ function PrintSlide({
   readonly links: readonly LinkBox[]
   readonly onPainted: (slide: doom.NodeId, painted: Painted) => void
 }) {
-  const { nodes, background, ready } = useDoomSlide(view, slide)
+  const { nodes, background, ready, fontsReady } = useDoomSlide(view, slide, 2)
   const { size } = doom.deckOf(view)
   useEffect(() => {
-    if (ready && nodes !== null) onPainted(slide, { nodes, background })
-  }, [ready, nodes, background, slide, onPainted])
+    if (ready && fontsReady && nodes !== null) onPainted(slide, { nodes, background })
+  }, [ready, fontsReady, nodes, background, slide, onPainted])
   return (
     <div
       id={pageAnchor(slide)}
@@ -125,7 +125,7 @@ export function PrintSheet({
   readonly assetUrl: AssetUrl
   readonly onReady: () => boolean
   readonly onPrinted: () => void
-  readonly onFailed: (reason: "paint" | "fonts") => void
+  readonly onFailed: (reason: "paint" | "fonts" | "capacity") => void
 }) {
   const sheet = useRef<HTMLDivElement>(null)
   const failing = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -146,11 +146,18 @@ export function PrintSheet({
   useEffect(() => {
     failing.current = setTimeout(() => calls.current.onFailed("paint"), paintLimit)
     let live = true
-    void waitForDoomFonts(document, view, slides).then(
+    let release: (() => void) | undefined
+    void prepareDoomFonts(document, view, slides).then(
       (ready) => {
-        if (!live) return
-        if (ready) setFontsReady(true)
-        else calls.current.onFailed("fonts")
+        if (typeof ready === "string") {
+          if (live) calls.current.onFailed(ready)
+          return
+        }
+        if (!live) ready.release()
+        else {
+          release = ready.release
+          setFontsReady(true)
+        }
       },
       () => {
         if (live) calls.current.onFailed("fonts")
@@ -158,6 +165,7 @@ export function PrintSheet({
     )
     return () => {
       live = false
+      release?.()
       clearTimeout(failing.current)
     }
   }, [view, slides])

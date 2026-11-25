@@ -147,7 +147,9 @@ test("the first agent picture includes text in a freshly loaded font", async ({ 
       },
     },
   ])
-  await expect(page.locator('[data-slide-box] [data-node="w:4"] [data-run]')).toBeVisible()
+  const layer = page.locator('[data-slide-box] [data-node="w:4"]')
+  await expect(layer).toBeVisible()
+  await expect(layer).toHaveText(chars)
   let image: string | undefined
   await expect
     .poll(async () => {

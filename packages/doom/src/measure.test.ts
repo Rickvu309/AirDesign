@@ -116,3 +116,24 @@ describe("measureWith", () => {
     expect(measure(text, plain, 150)).toEqual(measure(text, plain, 150))
   })
 })
+
+it("kerns across colour spans with the same metrics", () => {
+  const width = measureWith({
+    Inter: { ascent: 1, descent: 0, advances: { A: 0.5, V: 0.5 }, kerning: { AV: -0.1 } },
+  })
+  const text = words("AV", { spans: [{ end: 1, color: { var: "accent1" } }, { end: 2 }] })
+  expect(width(text, plain, null).w).toBe(18)
+  expect(width({ ...text, spans: [text.spans[0]!, { end: 2, size: 22 }] }, plain, null).w).toBe(21)
+})
+
+it("counts a discretionary hyphen only when that mark ends the line", () => {
+  const width = measureWith({
+    Inter: { ascent: 1, descent: 0, advances: { a: 0.5, b: 0.5, "‐": 0.3 } },
+  })
+  const text = words("aa\u00adbb", { wrap: "words" })
+  expect(width(text, plain, null).w).toBe(40)
+  expect(width(text, plain, 30).lines.map(({ end, ink }) => [end, ink])).toEqual([
+    [3, 26],
+    [5, 20],
+  ])
+})

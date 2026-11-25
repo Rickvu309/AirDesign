@@ -15,6 +15,7 @@ export type ThinNotice =
   | "import-failed"
   | "export-failed"
   | "export-fonts"
+  | "export-capacity"
   | "picture-type"
   | "picture-size"
   | "picture-unread"
@@ -155,6 +156,15 @@ function NoticeContent({
       />
     )
   }
+  if (notice === "export-capacity")
+    return (
+      <FailureNotice
+        error
+        text={exportCopy.fontCapacity}
+        action={exportCopy.chooseSlides}
+        onAct={() => onTryAgain(notice)}
+      />
+    )
   return (
     <FailureNotice
       error

@@ -279,3 +279,25 @@ it("records shared shaping through the Doom measure without changing its result"
   expect(record.shared.at(-1)?.end).toBe(text.chars.length)
   expect(JSON.stringify(record)).not.toContain(text.chars)
 })
+
+it("evicts old faces when their bytes reach 48 MiB even below twenty faces", async () => {
+  const { calls, source } = anyNameIsLiberation()
+  const metrics = new FontMetrics({
+    family: source.family,
+    async file(name, file) {
+      const bytes = await source.file(name, file)
+      if (bytes === undefined || name === fallbackFont) return bytes
+      const padded = Buffer.alloc(20 * 1024 * 1024)
+      bytes.copy(padded)
+      return padded
+    },
+  })
+  const load = (font: string) => metrics.widths({ faces: [{ font, bold: false, italic: false }], texts: ["a"] })
+  await load("One")
+  await load("Two")
+  await load("Three")
+  await load("Three")
+  expect(calls.filter((name) => name === "Three")).toHaveLength(1)
+  await load("One")
+  expect(calls.filter((name) => name === "One")).toHaveLength(2)
+})

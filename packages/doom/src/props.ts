@@ -1,4 +1,5 @@
 import { type Instance, readInstance } from "./component/instance.js"
+import { readLanguage } from "./language.js"
 import { limits } from "./limits.js"
 import { type OrderKey, readOrderKey } from "./order-key.js"
 import { type Chart, readChart } from "./chart.js"
@@ -86,6 +87,7 @@ export type Props = {
   readonly theme: Theme
   readonly size: { readonly w: Px; readonly h: Px }
   readonly nameFollows: boolean
+  readonly language: string
   readonly origin: Origin
 }
 export type PropName = keyof Props
@@ -99,7 +101,7 @@ export type PropSpec<K extends PropName> = {
 }
 
 export const accepts = {
-  deck: ["type", "name", "theme", "size", "nameFollows"],
+  deck: ["type", "name", "theme", "size", "nameFollows", "language"],
   slideRow: ["type", "parent", "name", "hidden"],
   slide: ["type", "parent", "name", "hidden", "fills", "layout", "notes", "transition", "skipped"],
   frame: [
@@ -253,5 +255,6 @@ export const props: { readonly [K in PropName]: PropSpec<K> } = {
   theme: spec(readTheme, "custom", null),
   size: spec(object({ w: finite(1, 100_000), h: finite(1, 100_000) }), "none", null),
   nameFollows: spec(boolean, "none", null),
+  language: spec(readLanguage, "none", null),
   origin: spec(readOrigin, "none", null),
 }

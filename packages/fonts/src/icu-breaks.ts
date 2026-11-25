@@ -71,10 +71,11 @@ export async function loadBreaker(): Promise<Breaker> {
   }
 
   return {
-    breaks: ({ text, locale }: { readonly text: string; readonly locale: string }) => ({
-      graphemes: breaks(character, text, "und"),
-      opportunities: breaks(line, text, locale),
-    }),
+    breaks: ({ text, locale }) => {
+      if (/(?:^|[@;])\s*lw=phrase(?:;|$)/iu.test(locale) || /-u(?:-[a-z0-9]{2,8})*-lw-phrase(?:-|$)/iu.test(locale))
+        throw new Error("Phrase line breaking is unavailable")
+      return { graphemes: breaks(character, text, "und"), opportunities: breaks(line, text, locale) }
+    },
     script(codepoint: number) {
       const tag = Number(script(codepoint))
       return tag === 0 ? undefined : String.fromCharCode(tag >>> 24, (tag >>> 16) & 255, (tag >>> 8) & 255, tag & 255)

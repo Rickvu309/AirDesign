@@ -108,11 +108,13 @@ async function openHeldThreeSlideShow(page: Page, context: BrowserContext, stack
     await held
     await route.fallback().catch(() => undefined)
   })
-  await landOffScreen(stack, opened, [
-    {
-      id: "t:2",
+  await landOffScreen(
+    stack,
+    opened,
+    [second!, third!].map((slide, at) => ({
+      id: at === 0 ? "t:2" : "t:3",
       type: "shape",
-      parent: second!,
+      parent: slide,
       props: {
         name: "Words",
         box: spot(200, 200, 900, 120),
@@ -125,8 +127,8 @@ async function openHeldThreeSlideShow(page: Page, context: BrowserContext, stack
           alignV: "top",
         },
       },
-    },
-  ])
+    })),
+  )
   await expect.poll(() => asked.length).toBeGreaterThan(0)
   await expect(page.locator('[data-present-show] [data-node="k:1"]')).toBeVisible()
   await page.evaluate(() => {

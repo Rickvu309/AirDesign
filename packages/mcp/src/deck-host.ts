@@ -18,6 +18,7 @@ export type Measured = {
   readonly measure: doom.Measure
   readonly missing: doom.MissingGlyphs
   readonly pending?: ReadonlySet<string>
+  readonly shared?: (fold: doom.Doom, frame: doom.NodeId) => Promise<doom.Measure | Unmeasured>
 }
 
 export type RunLog = {

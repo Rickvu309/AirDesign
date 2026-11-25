@@ -33,6 +33,7 @@ export type AgentLook = {
   readonly opacity?: number
   readonly text?: string
   readonly insert?: AgentInsert
+  readonly language?: string
   readonly textStyle?: TextStyleName
   readonly align?: "left" | "center" | "right" | "justify"
   readonly layout?: "row" | "column" | "none"

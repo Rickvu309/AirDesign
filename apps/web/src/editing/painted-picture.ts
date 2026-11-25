@@ -196,6 +196,7 @@ export async function paintedElement(
     await settled(host, ready)
     await Promise.all([...host.querySelectorAll("img")].map((image) => image.decode().catch(() => undefined)))
     await frames()
+    if (!ready(host)) throw new PictureFontError()
     const painted = host.firstElementChild
     if (painted === null) throw new Error("painted-picture")
     return { image: await drawn(await svgOf(painted, width, height, background)), width, height }

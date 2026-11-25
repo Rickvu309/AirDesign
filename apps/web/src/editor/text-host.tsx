@@ -194,7 +194,13 @@ export function TextHost(props: {
     if (cut) current.replace(from, to, "")
   }
 
-  const lines = node.text?.sourceLines ?? node.text?.lines ?? [blankLine(session.draft, theme, node)]
+  const [painted, paint] = useState(() => ({
+    draft: session.draft,
+    lines: node.text?.lines ?? [blankLine(session.draft, theme, node)],
+  }))
+  if (painted.draft !== session.draft && marked.current === null) {
+    paint({ draft: session.draft, lines: node.text?.lines ?? [blankLine(session.draft, theme, node)] })
+  }
   return (
     <div
       key={fresh}
@@ -239,7 +245,7 @@ export function TextHost(props: {
         setFresh((value) => value + 1)
       }}
     >
-      <TextLines lines={lines} editing />
+      <TextLines lines={painted.lines} editing />
     </div>
   )
 }

@@ -11,23 +11,25 @@ The Playwright action fills the shelf in CI before the spec runs. The cache key 
 
 ## Geometry baseline
 
-The differential uses the six fixed widths plus probes 0.5 CSS px above and below the candidate advances from the beginning of each paragraph. Each later start reached by an ICU wrap contributes the same threshold probes from that line's start. The suite pins every shared and Chromium line range across 3,372 probes for 97 cases.
+The differential uses the six fixed widths plus probes 0.5 CSS px above and below the candidate advances from the beginning of each paragraph. Each later start reached by the step 1 reference contributes threshold probes. The differential runs the shipped engine at those same widths. The suite pins every shared and Chromium line range across 3,372 probes for 97 cases.
 
 Each probe in `line-ends.json` has a width in CSS pixels, shared UTF-16 ranges, native UTF-16 ranges, and any geometry differences. A vertical bar separates ranges. Each range uses an exclusive end. The `line-count` flag means the engines produced different row counts. The `overflow` flag means only one engine had a row wider than the probe by more than one Chromium layout unit (1/64 px). A row may overflow in both engines by different amounts. The report preserves those widths.
 
 `parity.json` keeps the original prototype widths. Cases added after the prototype record their widths in `line-ends.json`. Unwrapped advances have a tolerance of 0.0001 px. The 0.5 px tolerance applies to the comparison with controlled Chromium paint using assigned served faces and full-width punctuation, and to the historical #1625 measurements.
 
-Each case with a line-end difference names its policy in `line-ends.json`. The original widths produce 123 differences and the later starts add 159, for a total of 282. When Chromium reports a local Noto Color Emoji face in the Geist-only ZWJ case, its separately pinned result adds two differences at the original widths and one at a later-line width. All 96 `punctuation-glue` probes agree. The soft-hyphen regression checks that Chromium's generated hyphen counts toward the first row's width and the following letter starts the second row.
+The shipped line breaker agrees with Chromium on 3,225 of 3,372 Linux probes. Each remaining line-end difference has a policy in `line-ends.json`. The alternate native Noto Color Emoji result is pinned separately.
 
-| Category                              | Original | Later starts | Policy before switching paint                                                                           |
-| ------------------------------------- | -------: | -----------: | ------------------------------------------------------------------------------------------------------- |
-| Native paint used an OS face          |       51 |          121 | Refuse geometry-changing edits that require an unserved cluster. These controls can continue to differ. |
-| CJK punctuation trim                  |       16 |            5 | Match line-sensitive OpenType `halt` and `chws`, including fallback.                                    |
-| Space after an emoji or RTL run       |       30 |           16 | Decide when a space hangs and when it moves to the next line.                                           |
-| URL and slash breaks                  |       13 |           12 | Choose Blink's unbroken URL or ICU's slash breaks and pin the overflow behavior.                        |
-| Break before an ellipsis              |        6 |            3 | Choose Blink's break after a space or the UAX #14 LB13 rule.                                            |
-| Chromium used a different served face |        5 |            1 | Assign the served emoji face explicitly and check its keycap width.                                     |
-| Line-edge shaping                     |        2 |            1 | Shape the final line in context and decide the wrap tolerance.                                          |
+| Category                          | Shipped rule                                                                              |
+| --------------------------------- | ----------------------------------------------------------------------------------------- |
+| Trailing space after emoji or RTL | Hang trailing spaces on the preceding line.                                               |
+| Break before ellipsis             | Use ICU's break opportunities, including its prohibition before infix punctuation.        |
+| Different served face             | Choose the served emoji face for color presentation and keycaps.                          |
+| Line-edge shaping                 | Reshape each chosen line with its own context.                                            |
+| Native paint used an OS face      | Use the supplied served stack. Paint a question mark in Geist if it has no covering face. |
+
+HTTP URLs stay together and can overflow, as in Chromium. CJK uses contextual `halt` and `chws` without fitting a closer by trimming the line end. Both policies agree with Chromium on this corpus.
+
+The bake parity suite loads the pinned font bytes through the editor's measure adapter and the API's legacy cache. Each fixture puts text and a sibling in an auto-layout row and checks that an agent's saved boxes are within 0.5 slide px of the painted boxes or that the tool refuses the batch. The suite tests intrinsic and fixed text widths. With both measures available, the API declines a bake if any saved box differs from the shared engine's box by more than 0.5 slide px. The suite also checks the English business sample in each built-in theme and the Japanese sample in Noto Sans JP.
 
 The historical Han control starts two Linux Chromium processes with private Fontconfig profiles. It checks that only the profile with the pinned Noto Sans JP face uses a local font for the two uncovered glyphs in `Geist 収益 uncovered`. The expected selection width grows from 389.45 px to 424.66 px. The main baseline records the Linux font inventories observed locally and in CI. Windows and macOS face inventories remain part of step 3.
 
@@ -37,14 +39,20 @@ The suite checks the installed HarfBuzz, ICU and bidi-js package versions, the H
 
 The [Unicode 16.0.0 test data](https://www.unicode.org/Public/16.0.0/ucd/) includes GraphemeBreakTest, LineBreakTest and BidiCharacterTest. ICU runs both break suites. Bidi-js runs BidiCharacterTest. The ICU reference passes explicit UTF-16 lengths to preserve embedded NULs and checks dictionary breaks for Thai, Khmer and Lao.
 
-## Shared engine in comparison mode
+## Shared line layout
 
-The comparison samples styled paragraphs through Doom's existing measure and records advances and line ends. The legacy result still drives geometry. A sample includes up to 512 UTF-16 units and 64 candidate shapes. Each adapter keeps one sample in flight and starts samples at least 250 ms apart.
+The editor, filmstrip, slide capture, and PDF use the shared engine's line ends and face assignments. Paragraph direction is automatic. A text layer can set its language or inherit the deck's language.
 
-Set `VITE_COMPARE_FONT_LAYOUT=1` when running the web development server. For the API, set `NODE_ENV=development AIRDESIGN_COMPARE_FONT_LAYOUT=1`. Look for `Served font comparison` in each console. The records contain offsets, advances, cache counts, and elapsed time. Both engines use `und` and automatic direction because deck text has no locale or direction fields.
+The engine keeps HTTP URLs together and attaches trailing spaces to the preceding line. Other opportunities, including breaks around ellipses, come from ICU. A displayed discretionary hyphen keeps its original source offset. HarfBuzz reshapes each chosen line and applies contextual CJK punctuation spacing. The engine requests script faces when the primary served stack lacks a cluster. Without a set language, Han fallback uses one result for the deck. Kana selects Japanese, Hangul selects Korean, and Traditional-only ideographs or Bopomofo select Traditional Chinese, in that order. The default is Simplified Chinese. An uncovered cluster paints a question mark in served Geist. Editing preserves grapheme navigation and copying retains the source text.
+
+For the legacy API comparison, start the API with `NODE_ENV=development AIRDESIGN_COMPARE_FONT_LAYOUT=1`. Look for `Served font comparison` in the API console. Each adapter samples up to 512 UTF-16 units and 64 candidate shapes at a time, at least 250 ms apart.
 
 The shipped ICU module keeps grapheme and line rules and the Thai, Lao, Khmer, and Burmese dictionaries. Its budgets are 2.7 MB raw and 1.2 MB gzip. The browser spec verifies the WASM hash and compares its break offsets with the pinned ICU reference and the Unicode suites. The build copies the licence notices beside the browser assets.
 
 To rebuild the ICU module, activate Emscripten 4.0.23 and check out ICU at `release-77-1`. Run `bash packages/fonts/wasm/build-icu.sh <icu-checkout> <empty-build-directory>` from the repo root.
 
-Each Node process or browser JavaScript context shares one engine with a 48 MiB font byte budget. HarfBuzz keeps font files by revision and SHA-256. Face reads run concurrently and share a read in flight for the same revision and key. Three failed reads exhaust the attempts for that key and revision. The binding patch releases font instances, faces, and blobs so WASM can reuse their space.
+Each Node process or browser JavaScript context shares one engine with a 48 MiB font byte budget. Visible surfaces pin the files their text needs. The budget can grow to 128 MiB to hold pinned files. Export and the visible slide can displace filmstrip faces. If the selected slides exceed the hard cap, export asks you to choose fewer slides or use fewer fonts. HarfBuzz keeps font files by revision and SHA-256. Face reads run concurrently and share a read in flight for the same revision and key. After three failures, a face can be read again 60 seconds after the last failure. The binding patch releases font instances, faces, and blobs so WASM can reuse their space.
+
+For ASCII ellipses after a space, shared wrapping follows ICU's infix-punctuation rule. In a narrow `MMMM ... WWW` line, ICU keeps the ellipsis with the preceding word, while Chromium can break before the ellipsis. The differential pins both sets of line ends.
+
+Deck language inference uses Unicode 16.0.0 Unihan. A Traditional-only ideograph has a `kSimplifiedVariant` different from itself and has no `kTraditionalVariant` entry. The Unicode data notice ships with the [ICU license](../../../packages/fonts/licenses/ICU.txt).

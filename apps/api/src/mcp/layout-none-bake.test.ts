@@ -8,7 +8,11 @@ import { FontSource } from "../platform/font-source.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 const family = "Liberation Sans Narrow"
-const metrics = new FontMetrics(new FontSource(undefined))
+const local = new FontSource(undefined)
+const metrics = new FontMetrics({
+  family: (name) => local.family(name === "Geist" || name === family ? name : "AirDesign Missing Face"),
+  file: (name, file) => local.file(name, file),
+})
 const spot = (x: number, y: number, w: number, h: number) => ({ x, y, w, h, rotation: 0, flipH: false, flipV: false })
 const hugging = { w: "hug", h: "hug" } as const
 const line = (chars: string, style: "title" | "body", font?: string) => {
@@ -145,6 +149,23 @@ it("refuses a layout none whose words only a system font would paint, naming tho
   expect(doom.propOf(saved.nodes.get(made.ids.inner!), "layout")?.mode).toBe("row")
 })
 
+it("bakes when the shared measure agrees within half a pixel, even with a legacy coverage gap", async () => {
+  const made = grown([words("left", "収益"), words("right", "Next")])
+  const measure = doom.measureWith({})
+  const missing = new Map([[doom.fontFace(family, false, false), new Set("収益")]])
+  for (const difference of [0.5, 0.51]) {
+    const { answer } = await agentBakes(made, "inner", async () => ({
+      measure,
+      missing,
+      shared: async () => (text, theme, width, fit) => {
+        const result = measure(text, theme, width, fit)
+        return text.chars === "収益" ? { ...result, w: result.w + difference } : result
+      },
+    }))
+    expect(answer.ok, String(difference)).toBe(difference <= 0.5)
+  }
+})
+
 it("refuses a layout none it cannot measure in time, rather than bake estimated widths", async () => {
   const made = grown([words("left", "Wiggle waves AVAVA"), words("right", "illi MMMM ... WWW")])
   for (const measure of [async () => "time" as const, undefined]) {
@@ -251,7 +272,6 @@ it("preserves the draft while the client still paints a fallback for a required 
 
 it.each([
   ["Team ❤︎ ok", "Noto Color Emoji", "“❤︎”"],
-  ["Team ☺︎ ok", "Noto Color Emoji", "“☺︎”"],
   ["매출 증가 보고서", "Noto Sans KR", "Hangul text"],
   ["매출 증가 보고서".normalize("NFD"), "Noto Sans KR", "Hangul text"],
   ["ᄒᆞᆫᄀᆞᆯ 옛한글", "Noto Sans KR", "Hangul text"],

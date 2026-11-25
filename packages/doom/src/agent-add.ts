@@ -49,6 +49,7 @@ const painted = ["fill", "stroke", "strokeWidth", "radius", "dash"] as const
 const words = [
   "text",
   "textStyle",
+  "language",
   "align",
   "color",
   "size",

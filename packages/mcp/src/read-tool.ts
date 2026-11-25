@@ -143,6 +143,7 @@ export function readAnswer(opened: Opened, query: Query, laid?: Laid): ToolResul
     slides,
     ...(next === undefined ? {} : { next }),
     theme: themeOf(opened.fold),
+    ...(doom.deckOf(opened.fold).language === undefined ? {} : { language: doom.deckOf(opened.fold).language }),
     ...found,
   }
   const components = [...doom.componentLibrary.keys()]

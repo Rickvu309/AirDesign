@@ -9,8 +9,9 @@ async function loadReference() {
     "@airdesign/fonts",
     "layout-contract.js",
   )
+  const { loadFontLayout }: typeof FontExports = await packageBuild(process.cwd(), "@airdesign/fonts")
   const { loadIcu } = await import("./font-layout/icu.mjs")
-  return { fontLayoutRevision, icu: await loadIcu(fontLayoutRevision) }
+  return { fontLayoutRevision, icu: await loadIcu(fontLayoutRevision), loadFontLayout }
 }
 
 test("native rows include the discretionary hyphen and keep the following letter on its own row", async ({ page }) => {
@@ -37,20 +38,6 @@ test("native rows include the discretionary hyphen and keep the following letter
       { start: 5, end: 7, width: 47.703125 },
     ],
   ])
-})
-
-test("records native faces and compares served shaping at CSS line breaks", async ({ page }, info) => {
-  const { fontLayoutRevision, icu } = await loadReference()
-  const { compareLayout } = await import("./font-layout/differential.mjs")
-  const report = await compareLayout(page, icu, fontLayoutRevision)
-  console.log(`Font layout spec external network requests: ${report.externalRequests.length}`)
-  const evidence = info.outputPath("font-layout.json")
-  await writeFile(evidence, JSON.stringify(report, null, 2))
-  await info.attach("font layout differential", {
-    path: evidence,
-    contentType: "application/json",
-  })
-  expect(report.failures).toEqual([])
 })
 
 test("runs Unicode 16 grapheme, line break and BiDi conformance", async ({}, info) => {
@@ -92,6 +79,48 @@ test("an installed CJK face paints Han that served Geist cannot cover", async ({
   ])
   expect(Math.abs(report.withoutLocal.width - 389.45)).toBeLessThan(0.5)
   expect(Math.abs(report.withLocal.width - 424.66)).toBeLessThan(0.5)
+})
+
+test("shared lines preserve Chromium's default CJK punctuation spacing", async ({ page }) => {
+  const { packageBuild } = await import("../../scripts/package-build.mjs")
+  const { loadFontLayout, fontRevision }: typeof FontExports = await packageBuild(process.cwd(), "@airdesign/fonts")
+  const { fixtureBytes, manifest } = await import("./font-layout/fixture-faces.mjs")
+  const bytes = await fixtureBytes(manifest.JP)
+  const layout = await loadFontLayout()
+  const face = await layout.prepareFace({
+    revision: fontRevision,
+    key: "jp-spacing",
+    axes: { wght: 400 },
+    read: async () => new Uint8Array(bytes),
+  })
+  const text = "「東、。」を"
+  const range = { start: 0, end: text.length }
+  const paragraph = {
+    text,
+    direction: "ltr",
+    locale: "ja",
+    sourceOffsetByTextOffset: [],
+    runs: [{ range, faces: [face], size: 44, tracking: 0 }],
+  } satisfies Parameters<FontExports.FontLayoutEngine["shapeLine"]>[0]["paragraph"]
+  const shared = layout.flow({ paragraph, width: Infinity, emergency: false, twoLines: false, missingFace: face })
+  const native = await page.evaluate(
+    async ({ base64, text }) => {
+      const face = await new FontFace("AD-JP", `url(data:font/ttf;base64,${base64})`, { weight: "100 900" }).load()
+      document.fonts.add(face)
+      const line = document.createElement("span")
+      line.lang = "ja"
+      line.style.cssText = "white-space:pre;font:44px AD-JP;text-rendering:geometricPrecision"
+      line.textContent = text
+      document.body.append(line)
+      const normal = line.getBoundingClientRect().width
+      line.style.setProperty("text-spacing-trim", "space-all")
+      return { normal, untrimmed: line.getBoundingClientRect().width }
+    },
+    { base64: bytes.toString("base64"), text },
+  )
+  expect(shared).toBeDefined()
+  expect(Math.abs((shared?.lines[0]?.advance ?? Infinity) - native.normal)).toBeLessThan(0.5)
+  expect(native.untrimmed - native.normal).toBeGreaterThan(20)
 })
 
 test("the shipped Node and Chromium engines agree on styled glyphs and line offsets", async ({ page }, info) => {
@@ -359,4 +388,70 @@ test("the shipped Node and Chromium engines agree on styled glyphs and line offs
     }),
     contentType: "application/json",
   })
+})
+
+test("records native faces and compares served shaping at CSS line breaks", async ({ page }, info) => {
+  const { fontLayoutRevision, icu, loadFontLayout } = await loadReference()
+  const { compareLayout } = await import("./font-layout/differential.mjs")
+  const report = await compareLayout(page, icu, fontLayoutRevision, await loadFontLayout())
+  console.log(`Font layout spec external network requests: ${report.externalRequests.length}`)
+  const evidence = info.outputPath("font-layout.json")
+  await writeFile(evidence, JSON.stringify(report, null, 2))
+  await info.attach("font layout differential", {
+    path: evidence,
+    contentType: "application/json",
+  })
+  expect(report.failures).toEqual([])
+})
+
+test("each corpus bake agrees with the canvas within half a slide pixel or is refused", async ({}, info) => {
+  const { bakeParity } = await import("./font-layout/bake-parity.mjs")
+  const results: readonly {
+    id: string
+    width: number | null
+    difference: number
+    savedDifference: number | undefined
+    answer: { ok: boolean; reason?: string }
+  }[] = await bakeParity()
+  await info.attach("Canvas and agent bake parity", { body: JSON.stringify(results), contentType: "application/json" })
+  expect(results).toHaveLength(410)
+  expect(
+    results
+      .filter(({ id }) => id === "legacy-soft-hyphens" || id.startsWith("latin-color-kerning"))
+      .every(({ answer, savedDifference }) => answer.ok && (savedDifference ?? Infinity) <= 0.5),
+  ).toBe(true)
+  for (const result of results) {
+    const label = `${result.id} at ${String(result.width)}`
+    if (result.answer.ok) expect(result.savedDifference, label).toBeLessThanOrEqual(0.5)
+    else {
+      expect(result.answer.reason, label).toMatch(/^(shaping|coverage)$/)
+      expect(result.difference, label).toBeGreaterThan(0.5)
+    }
+  }
+})
+
+test("business titles and Japanese text with isolated punctuation bake in the served fonts", async ({}, info) => {
+  const { bakeParity } = await import("./font-layout/bake-parity.mjs")
+  const rows: readonly {
+    group: string
+    id: string
+    savedDifference: number | undefined
+    answer: { ok: boolean; reason?: string }
+  }[] = await bakeParity(true)
+  const shares = [...new Set(rows.map(({ group }) => group))].map((group) => {
+    const samples = rows.filter((row) => row.group === group)
+    return { group, total: samples.length, refused: samples.filter(({ answer }) => !answer.ok).length }
+  })
+  await info.attach("Refusals by theme", {
+    body: JSON.stringify({ shares, rows }, null, 2),
+    contentType: "application/json",
+  })
+  for (const { group, id, answer, savedDifference } of rows) {
+    if (group === "japanese-inter" && !answer.ok) {
+      expect(answer.reason, id).toMatch(/^coverage$/)
+      continue
+    }
+    expect(answer.ok, `${group}: ${id}`).toBe(true)
+    expect(savedDifference, id).toBeLessThanOrEqual(0.5)
+  }
 })
