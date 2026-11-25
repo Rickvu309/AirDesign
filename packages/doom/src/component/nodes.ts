@@ -7,8 +7,8 @@ import { type Text, type TextStyleName, textStyleNames } from "../text.js"
 import { textContent } from "./text-content.js"
 import { keyOf, keyString, type PartKey } from "./instance.js"
 import { type Reader, boolean, finite, list, literal, naming, object, reject } from "../read-kit.js"
-import { type FittingContext, fitGroups, fitOne, textSize } from "./fit-text.js"
-import type { ComponentFinding, TextFitFinding } from "./findings.js"
+import { type FittingContext, fitGroups, fitOne, overflowing, textSize } from "./fit-text.js"
+import type { ComponentFinding, TextFitFinding, TextOverflowFinding } from "./findings.js"
 import type { Expr } from "./expression.js"
 import type { Emission } from "./spec.js"
 import { type ComponentGroup, type Grouping, groupsOf } from "./groups.js"
@@ -99,7 +99,11 @@ export type GroupedText = {
   readonly laneWidth: number
   readonly axis: "horizontal" | "vertical"
 }
-export type Kept = { readonly kind: "kept"; readonly part: TextPart; readonly finding: TextFitFinding }
+export type Kept = {
+  readonly kind: "kept"
+  readonly part: TextPart
+  readonly finding: TextFitFinding | TextOverflowFinding
+}
 export type PreparedPart =
   | PlacedPart
   | GroupedText
@@ -266,7 +270,7 @@ export function preparePart(
     props: { ...shared, ...filled(emit.fill), ...surface(emit), ...(emit.absolute ? { absolute: true } : {}), text },
     ...(style === undefined ? {} : { generatedStyle: generated.style }),
   }
-  if (fit === undefined) return part
+  if (fit === undefined) return overflowing(part, context)
   if (fit === "omit" || "minWidth" in fit) return fitOne(part, undefined, context)
   const smaller = Math.min(
     readField("fit.smaller", fit.smaller, smallerSize),
@@ -342,9 +346,15 @@ export function treeOf(
   }
 
   const children: ComponentNode[] = []
+  const edge = { w: Math.round(frame.w), h: Math.round(frame.h) }
+  const outside = (part: PlacedPart, { x, y, w, h }: Props["box"]) => {
+    if (x >= 0 && y >= 0 && x + w <= edge.w && y + h <= edge.h) return
+    findings.push({ kind: "outside-frame", key: part.key, field: part.field, box: { x, y, w, h }, frame: edge })
+  }
   for (const { id, part } of seen.values()) {
     const node = { type: "shape", id, key: part.key } as const
     if (part.kind === "shape") {
+      outside(part, part.props.box)
       children.push({
         ...node,
         props: part.props,
@@ -355,18 +365,20 @@ export function treeOf(
     const { start, end, route, arrow, strokes, stroke, channels } = part.line
     const a = naming(`${part.field}.start`, () => resolve(start))
     const b = naming(`${part.field}.end`, () => resolve(end))
+    const lineBox = naming(part.field, () =>
+      box(
+        coordinate(Math.min(a.x, b.x)),
+        coordinate(Math.min(a.y, b.y)),
+        size(Math.abs(a.x - b.x)),
+        size(Math.abs(a.y - b.y)),
+      ),
+    )
+    outside(part, lineBox)
     children.push({
       ...node,
       props: {
         name: part.key.join(" / "),
-        box: naming(part.field, () =>
-          box(
-            coordinate(Math.min(a.x, b.x)),
-            coordinate(Math.min(a.y, b.y)),
-            size(Math.abs(a.x - b.x)),
-            size(Math.abs(a.y - b.y)),
-          ),
-        ),
+        box: lineBox,
         geometry: {
           kind: "line",
           start: a.end,

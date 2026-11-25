@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "name": "Progress bars",
+  "collections": {
+    "rows": {
+      "label": "string",
+      "share": "nonnegative"
+    }
+  },
+  "defaults": {
+    "bar": {
+      "var": "accent1"
+    },
+    "track": {
+      "var": "background2"
+    },
+    "ink": {
+      "var": "text"
+    }
+  },
+  "variants": {
+    "values": [true, false]
+  },
+  "defaultVariant": {
+    "values": true
+  },
+  "let": [
+    ["rowH", ["div", ["get", "frame.h"], ["max", 1, ["count", ["get", "data.rows"]]]]],
+    ["barX", 380],
+    ["barW", ["sub", ["get", "frame.w"], 460]]
+  ],
+  "parts": [
+    {
+      "repeat": {
+        "over": ["get", "data.rows"],
+        "as": "r"
+      },
+      "let": [["top", ["mul", ["get", "i"], ["get", "rowH"]]]],
+      "emit": {
+        "kind": "text",
+        "key": ["list", "label", ["get", "r.id"]],
+        "x": 0,
+        "y": ["get", "top"],
+        "w": 360,
+        "h": ["get", "rowH"],
+        "chars": ["get", "r.label"],
+        "style": "body",
+        "color": ["get", "token.ink"],
+        "align": "left",
+        "alignV": "center",
+        "fit": {
+          "smaller": 20
+        }
+      }
+    },
+    {
+      "repeat": {
+        "over": ["get", "data.rows"],
+        "as": "r"
+      },
+      "let": [["mid", ["mul", ["add", ["get", "i"], 0.5], ["get", "rowH"]]]],
+      "emit": {
+        "kind": "rect",
+        "key": ["list", "track", ["get", "r.id"]],
+        "x": ["get", "barX"],
+        "y": ["sub", ["get", "mid"], 8],
+        "w": ["get", "barW"],
+        "h": 16,
+        "fill": ["get", "token.track"]
+      }
+    },
+    {
+      "repeat": {
+        "over": ["get", "data.rows"],
+        "as": "r"
+      },
+      "let": [["mid", ["mul", ["add", ["get", "i"], 0.5], ["get", "rowH"]]]],
+      "emit": {
+        "kind": "rect",
+        "key": ["list", "bar", ["get", "r.id"]],
+        "x": ["get", "barX"],
+        "y": ["sub", ["get", "mid"], 8],
+        "w": ["mul", ["get", "barW"], ["min", 1, ["get", "r.share"]]],
+        "h": 16,
+        "fill": ["get", "token.bar"]
+      }
+    },
+    {
+      "repeat": {
+        "over": ["get", "data.rows"],
+        "as": "r"
+      },
+      "when": ["get", "variant.values"],
+      "let": [["top", ["mul", ["get", "i"], ["get", "rowH"]]]],
+      "emit": {
+        "kind": "text",
+        "key": ["list", "value", ["get", "r.id"]],
+        "x": ["sub", ["get", "frame.w"], 64],
+        "y": ["get", "top"],
+        "w": 64,
+        "h": ["get", "rowH"],
+        "chars": [
+          "format",
+          ["get", "r.share"],
+          {
+            "scale": 0.01,
+            "digits": 0,
+            "prefix": "",
+            "suffix": "%",
+            "sign": "negative"
+          }
+        ],
+        "style": "label",
+        "color": ["get", "token.ink"],
+        "align": "right",
+        "alignV": "center",
+        "fit": "omit"
+      }
+    }
+  ],
+  "sample": {
+    "w": 1200,
+    "h": 360,
+    "data": {
+      "rows": [
+        {
+          "id": "a",
+          "label": "Design",
+          "share": 0.8
+        },
+        {
+          "id": "b",
+          "label": "Build",
+          "share": 0.45
+        }
+      ]
+    }
+  }
+}

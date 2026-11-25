@@ -1,4 +1,4 @@
-import { naming, reject } from "../read-kit.js"
+import { Reject, naming, reject } from "../read-kit.js"
 import { type Charge, type Value, color, entries, id, isList, name, numeric, wordsWithin } from "./values.js"
 
 type Field =
@@ -163,14 +163,21 @@ function readTables<T extends Value>(
             const value = id(Object.hasOwn(row, "id") ? row.id : undefined)
             return rowIds.has(value) ? reject("shape", `Duplicate row ID "${value}".`) : value
           })
-          if (Object.keys(row).some((key) => key !== "id" && !Object.hasOwn(fields, key)))
-            return reject("shape", "A row must contain exactly the declared collection fields and an ID.")
+          const extra = Object.keys(row).find((key) => key !== "id" && !Object.hasOwn(fields, key))
+          if (extra !== undefined)
+            throw new Reject("shape", extra, "unknown", `One of ${["id", ...Object.keys(fields)].join(", ")}.`)
           rowIds.add(rowId)
           const values = fieldEntries.map(([name, field]) => {
             const value = naming(name, () => {
-              const raw = Object.hasOwn(row, name) ? row[name] : undefined
+              const present = Object.hasOwn(row, name)
+              const raw = present ? row[name] : undefined
               charge(typeof raw === "string" ? 1 + raw.length : 1)
-              return readCell(field, raw, charge)
+              try {
+                return readCell(field, raw, charge)
+              } catch (thrown) {
+                if (!present && thrown instanceof Reject && thrown.field === undefined) thrown.fault = "missing"
+                throw thrown
+              }
             })
             if (field.kind === "ref" && typeof value === "string")
               references.push({ table: field.table, value, path: `${table}[${i}].${name}` })

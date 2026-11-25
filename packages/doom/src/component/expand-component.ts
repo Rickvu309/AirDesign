@@ -3,7 +3,7 @@ import type { Refusal } from "../refusal.js"
 import type { TextStyleName } from "../text.js"
 import type { Theme } from "../theme.js"
 import { keyOf, keyString, type PartKey } from "./instance.js"
-import { boolean, integer, naming, reject } from "../read-kit.js"
+import { integer, naming, reject } from "../read-kit.js"
 import { readExpansionData } from "./collections.js"
 import type { ComponentFinding } from "./findings.js"
 import { type Bindings, type Expr, type Scope, childScope, evaluator, valuesOf } from "./expression.js"
@@ -11,7 +11,7 @@ import { type ComponentTree, type PreparedPart, preparePart, readFrame, readLayo
 import type { Grouping } from "./groups.js"
 import { numberFormat } from "./operators.js"
 import { type ComponentSpec, type Part, readChoices, readTokens } from "./spec.js"
-import { type Value, budget, componentRefusal, readFocus } from "./values.js"
+import { type Charge, type Value, budget, componentRefusal, condition, readFocus } from "./values.js"
 
 export type ComponentInput = {
   readonly data: unknown
@@ -23,13 +23,22 @@ export type ComponentInput = {
   readonly variant?: unknown
   readonly focus?: unknown
   readonly styleFor?: (key: PartKey) => TextStyleName | undefined
+  readonly work?: Charge
 }
 
 export function expandComponent(spec: ComponentSpec, input: ComponentInput): ComponentTree | Refusal {
   try {
     const workLimit = integer(1, 1_000_000)(spec.workLimit ?? 80_000)
     const partLimit = integer(1, 4_500)(spec.partLimit ?? 499)
-    const charge = budget(workLimit, `An expansion may use at most ${workLimit} work units.`)
+    const own = budget(workLimit, `An expansion may use at most ${workLimit} work units.`)
+    const { work } = input
+    const charge: Charge =
+      work === undefined
+        ? own
+        : (cost) => {
+            own(cost)
+            work(cost)
+          }
     const { theme, measure } = input
     const frame = naming("frame", () => readFrame(input.frame))
     const token = readTokens(spec, input.themeTokens ?? {}, input.tokens ?? {})
@@ -73,7 +82,7 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
         naming(field, () => charge())
         const local = bind(part.let, scope, `${field}.let`)
         const when = part.when
-        if (when !== undefined && !naming(`${field}.when`, () => boolean(evaluate(when, local, `${field}.when`))))
+        if (when !== undefined && !naming(`${field}.when`, () => condition(evaluate(when, local, `${field}.when`))))
           return
         if ("children" in part) {
           const group = part.group

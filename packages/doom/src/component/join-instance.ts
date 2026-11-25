@@ -7,6 +7,7 @@ import type { End } from "../geometry.js"
 import { type NodeId, type Rev } from "../ids.js"
 import { bytesOf, limits } from "../limits.js"
 import type { Measure } from "../measure.js"
+import type { Charge } from "./values.js"
 import { orderKeyBetween } from "../order-key.js"
 import { siteSpot } from "../preset-geometry.js"
 import { props, type Props } from "../props.js"
@@ -281,7 +282,8 @@ export function regenerateComponent(
   measure: Measure,
   definition?: ReturnType<typeof resolveComponentInFold>,
 ): ComponentUpdate | Refusal {
-  return updateComponent(doom, frame, patch, measure, definition)
+  const rebuilt = rebuild(doom, frame, patch, measure, { definition })
+  return isRefusal(rebuilt) ? rebuilt : rebuilt.update
 }
 
 export function refreshComponent(
@@ -289,20 +291,28 @@ export function refreshComponent(
   proposed: Doom,
   frame: NodeId,
   measure: Measure,
-): ComponentUpdate | Refusal {
-  return updateComponent(doom, frame, {}, measure, undefined, undefined, undefined, proposed)
+  work?: Charge,
+): Rebuilt | Refusal {
+  return rebuild(doom, frame, {}, measure, { input: proposed, work })
 }
 
-function updateComponent(
+type Rebuilt = { readonly update: ComponentUpdate; readonly tree: ComponentTree }
+
+type Rebuild = {
+  readonly definition?: ReturnType<typeof resolveComponentInFold> | undefined
+  readonly returning?: ReadonlyMap<string, Instance["parts"][number]> | undefined
+  readonly restored?: ReadonlyMap<NodeId, readonly Write[]> | undefined
+  readonly input?: Doom
+  readonly work?: Charge | undefined
+}
+
+function rebuild(
   doom: Doom,
   frame: NodeId,
   patch: ComponentPatch & Partial<Pick<Instance, "suppressed">>,
   measure: Measure,
-  definition?: ReturnType<typeof resolveComponentInFold>,
-  returning?: ReadonlyMap<string, Instance["parts"][number]>,
-  restored?: ReadonlyMap<NodeId, readonly Write[]>,
-  input: Doom = doom,
-): ComponentUpdate | Refusal {
+  { definition, returning, restored, input = doom, work }: Rebuild,
+): Rebuilt | Refusal {
   const root = linked(input, frame)
   if (root === undefined) return refuse("missing", frame, "instance")
   const { instance } = root
@@ -310,15 +320,16 @@ function updateComponent(
   const component =
     resolved?.node === undefined ? instance.component : { node: resolved.node, revision: resolved.revision }
   const proposed = { ...instance, ...patch, component }
-  const tree = expandInstance(doom, root, proposed, measure, resolved, returning, restored, input)
+  const tree = expandInstance(doom, root, proposed, measure, { definition: resolved, returning, restored, input, work })
   if (isRefusal(tree)) return tree
-  return join(doom, frame, proposed, instance, tree, [], measure, returning, restored)
+  const update = join(doom, frame, proposed, instance, tree, [], measure, returning, restored)
+  return isRefusal(update) ? update : { update, tree }
 }
 
 export function componentTree(doom: Doom, frame: NodeId, measure: Measure): ComponentTree | Refusal {
   const root = linked(doom, frame)
   if (root === undefined) return refuse("missing", frame, "instance")
-  return expandInstance(doom, root, root.instance, measure)
+  return expandInstance(doom, root, root.instance, measure, {})
 }
 
 export function resolveComponentInFold(
@@ -333,10 +344,7 @@ function expandInstance(
   { id, instance, box }: InstanceFrame,
   proposed: Inputs,
   measure: Measure,
-  definition: ReturnType<typeof resolveComponentInFold> = resolveComponentInFold(doom, instance.component),
-  returning?: ReadonlyMap<string, Instance["parts"][number]>,
-  restored?: ReadonlyMap<NodeId, readonly Write[]>,
-  input: Doom = doom,
+  { definition = resolveComponentInFold(doom, instance.component), returning, restored, input = doom, work }: Rebuild,
 ): ComponentTree | Refusal {
   if (box === undefined) return refuse("shape", id, "box")
   if (
@@ -367,6 +375,7 @@ function expandInstance(
     theme: deckOf(input).theme,
     measure,
     styleFor: (key) => styles.get(keyString(key)),
+    ...(work === undefined ? {} : { work }),
   })
 }
 
@@ -427,17 +436,12 @@ export function restoreComponent(
     returning.set(key, part)
     overrides.set(part.node, saved)
   }
-  return changed
-    ? updateComponent(
-        doom,
-        frame,
-        { ...patch, suppressed: [...suppressed.values()] },
-        measure,
-        undefined,
-        returning,
-        overrides,
-      )
-    : { writes: [], findings: [] }
+  if (!changed) return { writes: [], findings: [] }
+  const rebuilt = rebuild(doom, frame, { ...patch, suppressed: [...suppressed.values()] }, measure, {
+    returning,
+    restored: overrides,
+  })
+  return isRefusal(rebuilt) ? rebuilt : rebuilt.update
 }
 
 export function detachComponent(doom: Doom, frame: NodeId): readonly Write[] | Refusal {
