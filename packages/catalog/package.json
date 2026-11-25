@@ -8,6 +8,10 @@
       "types": "./dist/icon-names.d.ts",
       "import": "./dist/icon-names.js"
     },
+    "./undo-copy": {
+      "types": "./dist/undo-copy.d.ts",
+      "import": "./dist/undo-copy.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"

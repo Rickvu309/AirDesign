@@ -1,4 +1,4 @@
-import { undoRebuildFailed, undoStaysNote, type UndoStays } from "@airdesign/catalog"
+import { undoRebuildFailed, undoStaysNote, type UndoStays } from "@airdesign/catalog/undo-copy"
 import * as doom from "@airdesign/doom"
 import { useRef, useState } from "react"
 import { EditorIcon } from "@/components/ui/editor-icons"
