@@ -2,6 +2,7 @@ import type { AgentChange, AgentLook } from "./agent-change.js"
 import { type Draft, type Values, Stop, living, put, stop } from "./agent-draft.js"
 import { insertLinkedRun } from "./agent-insert.js"
 import { askedArrow, chartOf, colorOf, iconName, layoutOf, surfaceOf, textOfLook } from "./agent-look.js"
+import { agentLinkTarget } from "./link.js"
 import { lineEnds } from "./agent-line-ends.js"
 import { gapFor, slideSize, themeOf } from "./agent-place.js"
 import { notesText } from "./notes-text.js"
@@ -233,7 +234,7 @@ export function compileSet(draft: Draft, change: SetChange): void {
   const outline = propOf(node, "geometry")?.kind
   if (change.shape !== undefined && (outline === "line" || outline === "icon" || outline === "path"))
     stop("shape", node.id, "shape", "needs", "a preset outline")
-  if (change.link !== undefined && propOf(node, "text") === undefined)
+  if (change.link !== undefined && propOf(node, agentLinkTarget) === undefined)
     stop("shape", node.id, "link", "needs", "a text layer")
   const now = {
     fills: propOf(node, "fills"),

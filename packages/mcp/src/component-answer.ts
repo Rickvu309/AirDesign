@@ -50,7 +50,7 @@ type Signature = Pick<Spec, "name" | "collections" | "sample"> & {
   readonly variants: NonNullable<Spec["variants"]>
   readonly defaultVariant: NonNullable<Spec["defaultVariant"]>
   readonly tokens: NonNullable<Spec["defaults"]>
-  readonly overrides: { readonly text: readonly string[]; readonly shapes: readonly string[] }
+  readonly overrides: typeof doom.linkedPartOverrides
 }
 
 export function componentSignature(id: string): Signature | undefined {

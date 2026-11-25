@@ -109,7 +109,7 @@ describe("component text fitting", () => {
   })
 
   it("shrinks categories to one size before wrapping and reports labels that cannot fit", () => {
-    const frame = { ...column.frame, w: 186 }
+    const frame = { ...column.frame, w: 192 }
     const rows = [
       { id: "shorter", label: "Wi", value: 12 },
       { id: "wrapped", label: "WWWW WWWW", value: 12 },
@@ -119,9 +119,9 @@ describe("component text fitting", () => {
     expect(part(wide, "category", "shorter")?.props.text?.spans[0]?.size).toBeUndefined()
     const tree = expand(columnComponent, input)
     const shorter = part(tree.children, "category", "shorter")
-    expect(shorter?.props.text).toMatchObject({ chars: "Wi", spans: [{ size: 18 }] })
+    expect(shorter?.props.text).toMatchObject({ chars: "Wi", spans: [{ size: 20 }] })
     const wrapped = part(tree.children, "category", "wrapped")
-    expect(wrapped?.props.text).toMatchObject({ chars: "WWWW WWWW", wrap: "words", spans: [{ size: 18 }] })
+    expect(wrapped?.props.text).toMatchObject({ chars: "WWWW WWWW", wrap: "words", spans: [{ size: 20 }] })
     expect(exact(wrapped!.props.text!, dejavu, wrapped!.props.box.w).lines).toHaveLength(2)
     expect(tree.findings).toEqual([])
     const crowded = expand(columnComponent, { ...input, frame: { ...frame, w: 100 } })
@@ -213,11 +213,11 @@ describe("component text fitting", () => {
 
   it("uses the smallest spacing that fits and keeps the ends when there is room", () => {
     const rows = Array.from({ length: 7 }, (_, i) => ({ id: `r${i}`, label: "EMEA", value: i + 1 }))
-    const tree = expand(columnComponent, { ...inputs, frame: { ...inputs.frame, w: 242 }, data: { rows } })
+    const tree = expand(columnComponent, { ...inputs, frame: { ...inputs.frame, w: 276 }, data: { rows } })
     const categories = tree.children.filter((node) => node.key[0] === "category")
     expect(categories.map((node) => node.key[1])).toEqual(["r0", "r2", "r4", "r6"])
     expect(tree.findings.filter((finding) => finding.key[0] === "categories")).toEqual([
-      expect.objectContaining({ kind: "text-fit", thinned: 3, neededWidth: 54, size: 18 }),
+      expect.objectContaining({ kind: "text-fit", thinned: 3, neededWidth: 60, size: 20 }),
     ])
     for (const { key, props } of categories) {
       const bar = part(tree.children, "bar", key[1]!)!.props.box
@@ -227,7 +227,7 @@ describe("component text fitting", () => {
 
   it("starts at row zero and keeps an exact stride when the last lane falls between strides", () => {
     const rows = Array.from({ length: 8 }, (_, i) => ({ id: `r${i}`, label: "EMEA", value: i + 1 }))
-    const width = 270
+    const width = 312
     const lane = (width - 24) / rows.length
     const tree = expand(columnComponent, { ...inputs, frame: { ...inputs.frame, w: width }, data: { rows } })
     const categories = tree.children.filter((node) => node.key[0] === "category")
@@ -287,7 +287,7 @@ describe("component text fitting", () => {
       },
     ] of categories.entries()) {
       expect(box.x + box.w).toBeLessThanOrEqual(width)
-      expect(text?.spans[0]?.size).toBe(18)
+      expect(text?.spans[0]?.size).toBe(20)
       if (i > 0) {
         const previous = categories[i - 1]!.props.box
         expect(box.x - (previous.x + previous.w)).toBeGreaterThanOrEqual(4 - 1e-6)
@@ -300,7 +300,7 @@ describe("component text fitting", () => {
 
   it("increases the stride when clamped edge labels collide with a neighbour", () => {
     const rows = Array.from({ length: 5 }, (_, i) => ({ id: `r${i}`, label: "EMEA", value: i }))
-    const width = 169.25
+    const width = 184.25
     const tree = expand(columnComponent, { ...inputs, frame: { ...inputs.frame, w: width }, data: { rows } })
     const categories = tree.children.filter((node) => node.key[0] === "category")
     expect(categories.map(({ key }) => key[1])).toEqual(["r0", "r3"])
@@ -309,7 +309,7 @@ describe("component text fitting", () => {
 
   it("clamps both edges and leaves the interior label centered", () => {
     const rows = Array.from({ length: 5 }, (_, i) => ({ id: `r${i}`, label: "EMEA", value: i }))
-    const width = 171
+    const width = 190
     const tree = expand(columnComponent, { ...inputs, frame: { ...inputs.frame, w: width }, data: { rows } })
     const categories = tree.children.filter((node) => node.key[0] === "category")
     expect(categories.map(({ key }) => key[1])).toEqual(["r0", "r2", "r4"])
@@ -330,7 +330,7 @@ describe("component text fitting", () => {
     const empty = expand(columnComponent, { ...input, frame: { ...input.frame, w: 50 } })
     expect(empty.children.filter(({ key }) => key[0] === "category")).toHaveLength(0)
     expect(empty.findings.filter(({ key }) => key[0] === "categories")).toEqual([
-      expect.objectContaining({ kind: "text-fit", size: 18, neededWidth: 54, availableWidth: 50, thinned: 2 }),
+      expect.objectContaining({ kind: "text-fit", size: 20, neededWidth: 60, availableWidth: 50, thinned: 2 }),
     ])
   })
 
@@ -502,6 +502,6 @@ describe("component text fitting", () => {
     })
     const categories = tree.children.filter((node) => node.key[0] === "category")
     expect(categories).toHaveLength(rows.length)
-    expect(new Set(categories.map((node) => node.props.text?.spans[0]?.size))).toEqual(new Set([18]))
+    expect(new Set(categories.map((node) => node.props.text?.spans[0]?.size))).toEqual(new Set([20]))
   })
 })

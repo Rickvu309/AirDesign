@@ -2,6 +2,8 @@ import { readNodeId } from "./ids.js"
 import { limits } from "./limits.js"
 import { type Reader, Reject, accepting, oneOf, reject, words } from "./read-kit.js"
 
+export const agentLinkTarget = "text"
+
 const address = /^(https?:\/\/[^\s/?#]+[^\s]*|mailto:[^\s?]+(?:\?[^\s]*)?)$/i
 const scheme = /^[a-z][a-z0-9+.-]*:/i
 

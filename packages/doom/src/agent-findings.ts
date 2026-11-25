@@ -63,7 +63,11 @@ const colorNote = (node: NodeId, color: Hex, to: ColorVar, theme: Theme) =>
 const fontNote = (node: NodeId, font: string, families: readonly string[]) =>
   `${node}: ${font} is not the deck's heading or body font (${families.join(", ")}).`
 
-export function agentFindings(after: Doom, writes: readonly Write[]): readonly AgentFinding[] {
+export function agentFindings(
+  after: Doom,
+  writes: readonly Write[],
+  templateText?: ReadonlySet<Write>,
+): readonly AgentFinding[] {
   const deck = deckOf(after)
   const theme = deck === undefined ? undefined : propOf(deck, "theme")
   if (theme === undefined) return []
@@ -75,15 +79,17 @@ export function agentFindings(after: Doom, writes: readonly Write[]): readonly A
   const note = (key: string, finding: AgentFinding) => {
     if (after.nodes.has(finding.node) && !found.has(key)) found.set(key, finding)
   }
-  for (const { node, prop, value } of writes) {
+  for (const write of writes) {
+    const { node, prop, value } = write
     for (const color of colorsOf({ node, prop, value }))
       if (typeof color === "string" && !palette.has(color.toLowerCase())) {
         const to = nearestColor(theme, color)
         note(`${node}|${color}`, { code: "off-palette", node, color, to, note: colorNote(node, color, to, theme) })
       }
     if (prop !== "text" || value === null) continue
+    const generated = templateText?.has(write) === true
     for (const span of (value as Text).spans) {
-      if (span.size !== undefined && !scale.has(span.size)) {
+      if (span.size !== undefined && !generated && !scale.has(span.size)) {
         const style = nearestStyle(theme, span.size)
         const to = theme.textStyles[style].size
         note(`${node}|size|${String(span.size)}`, {
