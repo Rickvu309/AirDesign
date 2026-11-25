@@ -135,7 +135,7 @@ type Scope = {
   readonly let?: Bindings
   readonly when?: Expr
 }
-export type Part = Scope & ({ readonly emit: Emission } | { readonly children: readonly Part[] })
+export type Part = Scope & ({ readonly emit: Emission } | { readonly children: readonly Part[]; readonly group?: Expr })
 
 function specReader() {
   const charge = budget(12_000, "A spec may contain at most 12,000 parts and expression terms.")
@@ -164,7 +164,10 @@ function specReader() {
     checkDepth(depth)
     if (!isList(raw)) return reject("shape", "A list of parts.")
     if (raw.length > 64) return reject("limit", "At most 64 parts at one level.")
-    const readGroup = object({ children: (children) => readParts(children, depth + 1) }, scope)
+    const readGroup = object(
+      { children: (children) => readParts(children, depth + 1) },
+      { ...scope, group: expression },
+    )
     return Array.from(raw, (part, i) =>
       naming(`[${i}]`, () => {
         charge()

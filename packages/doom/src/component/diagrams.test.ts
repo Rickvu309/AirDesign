@@ -1,9 +1,20 @@
 import { describe, expect, it } from "vitest"
-import { defaultTheme, resolveSlide, solveLayout } from "../index.js"
+import { bakeLayout, defaultTheme, resolveSlide, solveLayout } from "../index.js"
 import architecture from "./testing/architecture.json" with { type: "json" }
 import cycle from "./testing/cycle.json" with { type: "json" }
-import { ends, expand, keyed, librarySpec, measure, resolvedById, role } from "./testing/diagram-tree.js"
-import { landTree } from "./testing/land-tree.js"
+import {
+  dragHolder,
+  ends,
+  expand,
+  keyed,
+  librarySpec,
+  measure,
+  painted,
+  resolvedById,
+  role,
+  shifts,
+} from "./testing/diagram-tree.js"
+import { landTree, writeProps } from "./testing/land-tree.js"
 import process from "./testing/process.json" with { type: "json" }
 
 const processComponent = librarySpec("process")
@@ -15,7 +26,7 @@ const steps = (count: number, label = (i: number) => `Step ${i + 1}`) => ({
 describe("process diagram", () => {
   it.each([3, 4, 5, 6, 7, 8])("lays %i steps in an auto layout row joined by attached connectors", (count) => {
     const tree = expand(processComponent, { frame: process.frame, data: steps(count) })
-    const cards = role(tree, "step")
+    const cards = role(tree, "card")
     expect(cards).toHaveLength(count)
     expect(role(tree, "connector")).toHaveLength(count - 1)
     expect(tree.props.layout).toMatchObject({ mode: "row", align: "center-center" })
@@ -35,7 +46,7 @@ describe("process diagram", () => {
       frame: process.frame,
       data: { steps: steps(8).steps.map((step, i) => (i === 0 ? { ...step, description, note: "2 weeks" } : step)) },
     })
-    const card = keyed(tree, "step", "s0")
+    const card = keyed(tree, "card", "s0")
     const { doom, slide } = landTree(tree)
     const lines = resolvedById(resolveSlide(doom, slide, measure))
       .get(card.id)!
@@ -63,7 +74,7 @@ describe("process diagram", () => {
       const tree = expand(processComponent, { frame, data: steps(5), variant })
       const { doom, slide } = landTree(tree)
       const boxes = solveLayout(doom, slide, measure)
-      for (const card of role(tree, "step")) {
+      for (const card of role(tree, "card")) {
         const solved = boxes.get(card.id)
         const stored = card.props.box
         expect(Math.abs((solved?.x ?? NaN) - stored.x)).toBeLessThanOrEqual(1)
@@ -79,7 +90,7 @@ describe("process diagram", () => {
       data: steps(4),
       variant: { direction: "column" },
     })
-    const [first, second] = role(tree, "step")
+    const [first, second] = role(tree, "card")
     expect(tree.props.layout).toMatchObject({ mode: "column" })
     expect(ends(keyed(tree, "connector", "s0"))).toMatchObject({
       start: { node: first!.id, site: "b" },
@@ -93,7 +104,7 @@ describe("process diagram", () => {
       frame: process.frame,
       data: steps(6, (i) => (i === 2 ? "Validate the operating model" : `Step ${i + 1}`)),
     })
-    const cards = role(tree, "step")
+    const cards = role(tree, "card")
     expect(cards).toHaveLength(6)
     expect(new Set(cards.map((card) => card.props.text?.spans[1]?.size))).toEqual(new Set([26]))
     expect(tree.findings.filter(({ kind }) => kind === "text-fit")).toEqual([])
@@ -106,7 +117,7 @@ describe("process diagram", () => {
       variant: { direction: "column" },
     })
     expect(tree.findings.filter(({ kind }) => kind === "text-fit")).toEqual([])
-    expect(role(tree, "step")).toHaveLength(count)
+    expect(role(tree, "card")).toHaveLength(count)
   })
 
   it("accents only the first step and shows a duration when provided", () => {
@@ -114,7 +125,7 @@ describe("process diagram", () => {
       frame: process.frame,
       data: { steps: steps(3).steps.map((step, i) => (i === 0 ? { ...step, note: "2 weeks" } : step)) },
     })
-    const [first, ...rest] = role(tree, "step")
+    const [first, ...rest] = role(tree, "card")
     expect(first?.props.text?.chars).toBe("01\nStep 1\n2 weeks")
     expect(first?.props.text?.spans[0]?.color).toEqual({ var: "accent1" })
     expect(rest.map((card) => card.props.text?.spans[0]?.color)).toEqual([{ var: "text2" }, { var: "text2" }])
@@ -122,7 +133,7 @@ describe("process diagram", () => {
 
   it("moves the accent to the focused step", () => {
     const tree = expand(processComponent, { frame: process.frame, data: steps(4), tokens: { focus: "s2" } })
-    const cards = role(tree, "step")
+    const cards = role(tree, "card")
     expect(cards.map((card) => card.props.text?.spans[0]?.color)).toEqual([
       { var: "text2" },
       { var: "text2" },
@@ -134,7 +145,7 @@ describe("process diagram", () => {
 
   it("suggests two diagrams for a six-step process while keeping all six cards", () => {
     const tree = expand(processComponent, { frame: process.frame, data: steps(6) })
-    expect(role(tree, "step")).toHaveLength(6)
+    expect(role(tree, "card")).toHaveLength(6)
     expect(tree.findings).toEqual([
       expect.objectContaining({
         kind: "advice",
@@ -155,8 +166,8 @@ describe("process diagram", () => {
         ],
       },
     })
-    expect(keyed(tree, "step", "first").props.text?.chars).toBe("01\nDiscover\nMap needs")
-    expect(keyed(tree, "step", "next").props.text?.chars).toBe("02\nDefine")
+    expect(keyed(tree, "card", "first").props.text?.chars).toBe("01\nDiscover\nMap needs")
+    expect(keyed(tree, "card", "next").props.text?.chars).toBe("02\nDefine")
   })
 
   it.each(["process", "cycle", "architecture"])(
@@ -179,7 +190,7 @@ describe("process diagram", () => {
           : name === "process"
             ? [
                 expand(processComponent, { frame: process.frame, data: steps(8, (i) => (i === 4 ? label : "Step")) }),
-                ["step", "s4"],
+                ["card", "s4"],
                 7,
               ]
             : [
@@ -206,6 +217,21 @@ describe("process diagram", () => {
       expect(tree.findings.filter(({ kind }) => kind === "text-fit")).toMatchObject([{ kind: "text-fit", key }])
     },
   )
+
+  it("moves a column step's duration with its card after Remove auto layout", () => {
+    const tree = expand(processComponent, {
+      frame: { x: 600, y: 160, w: 720, h: 800 },
+      data: { steps: steps(4).steps.map((step) => ({ ...step, note: "2 weeks" })) },
+      variant: { direction: "column" },
+    })
+    const landed = landTree(tree)
+    const baked = writeProps(landed.doom, bakeLayout(landed.doom, tree.id, measure))
+    const before = painted(baked, landed.slide)
+    const card = [...before].find(([, { text }]) => text?.includes("Step 2") === true)![0]
+    const duration = [...before].filter(([, { text }]) => text?.startsWith("2 we") === true)[1]![0]
+    const after = painted(dragHolder(baked, tree.id, card, { x: 40, y: 120 }), landed.slide)
+    expect(shifts(before, after, [card, duration])).toEqual(Array(2).fill({ x: 40, y: 120 }))
+  })
 
   it("draws nothing for an empty process", () => {
     expect(expand(processComponent, { frame: process.frame, data: steps(0) }).children).toEqual([])

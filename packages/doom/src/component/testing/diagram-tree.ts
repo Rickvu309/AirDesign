@@ -1,4 +1,16 @@
-import { componentLibrary, defaultTheme, isRefusal, measureWith, type Resolved } from "../../index.js"
+import {
+  componentLibrary,
+  defaultTheme,
+  isRefusal,
+  measureWith,
+  parentOf,
+  propOf,
+  resolveSlide,
+  type Doom,
+  type NodeId,
+  type Resolved,
+} from "../../index.js"
+import { writeProps } from "./land-tree.js"
 import {
   expandComponent,
   type ComponentInput,
@@ -40,4 +52,29 @@ export function resolvedById(doomTree: readonly Resolved[]): ReadonlyMap<string,
   }
   walk(doomTree)
   return found
+}
+
+export function painted(doom: Doom, slide: NodeId) {
+  const spots = new Map<string, { readonly x: number; readonly y: number; readonly text: string | undefined }>()
+  const walk = (nodes: readonly Resolved[], x: number, y: number) => {
+    for (const node of nodes) {
+      const at = { x: x + node.box.x, y: y + node.box.y }
+      const text = node.text?.lines.map(({ runs }) => runs.map(({ text }) => text).join("")).join("\n")
+      spots.set(node.id, { ...at, text })
+      walk(node.children, at.x, at.y)
+    }
+  }
+  walk(resolveSlide(doom, slide, measure), 0, 0)
+  return spots
+}
+
+export function dragHolder(doom: Doom, frame: string, node: string, by: { readonly x: number; readonly y: number }) {
+  let picked = node as NodeId
+  while (parentOf(doom.nodes.get(picked))?.id !== frame) picked = parentOf(doom.nodes.get(picked))!.id
+  const box = propOf(doom.nodes.get(picked), "box")!
+  return writeProps(doom, [{ node: picked, prop: "box", value: { ...box, x: box.x + by.x, y: box.y + by.y } }], 4)
+}
+
+export function shifts(before: ReturnType<typeof painted>, after: ReturnType<typeof painted>, ids: readonly string[]) {
+  return ids.map((id) => ({ x: after.get(id)!.x - before.get(id)!.x, y: after.get(id)!.y - before.get(id)!.y }))
 }
