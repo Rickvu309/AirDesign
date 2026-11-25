@@ -91,7 +91,7 @@ function numberStyle(theme: Theme, start: TextStyleName, values: readonly string
 }
 
 const kpi: Build = (area, items, scale) => {
-  const { gap, pad, theme, styles } = scale
+  const { gap, pad, theme, styles, measure } = scale
   const room = slotWidth(area, items.length, gap) - pad * 2
   const number = numberStyle(
     theme,
@@ -102,9 +102,13 @@ const kpi: Build = (area, items, scale) => {
   const cards = items.map((item) =>
     cardOf(
       [
-        ...(item.title === undefined ? [] : [sizedPart(partOf(item.title, styles.label, "text2"), theme, room)]),
-        ...(item.value === undefined ? [] : [sizedPart(partOf(item.value, number), theme, room)]),
-        ...(item.note === undefined ? [] : [sizedPart(partOf(item.note, styles.caption, "text2"), theme, room)]),
+        ...(item.title === undefined
+          ? []
+          : [sizedPart(partOf(item.title, styles.label, "text2"), theme, room, measure)]),
+        ...(item.value === undefined ? [] : [sizedPart(partOf(item.value, number), theme, room, measure)]),
+        ...(item.note === undefined
+          ? []
+          : [sizedPart(partOf(item.note, styles.caption, "text2"), theme, room, measure)]),
       ],
       { pad, gap, fill: "background2" },
     ),
@@ -114,7 +118,7 @@ const kpi: Build = (area, items, scale) => {
 
 function cardsLike(spacing: number, headingColor: "text" | "accent1", icons: boolean): Build {
   return (area, items, scale) => {
-    const { pad, theme, styles } = scale
+    const { pad, theme, styles, measure } = scale
     const gap = scale.gap * spacing
     const room = slotWidth(area, items.length, gap) - pad * 2
     const cards = items.map((item) =>
@@ -123,8 +127,10 @@ function cardsLike(spacing: number, headingColor: "text" | "accent1", icons: boo
           ...(icons && item.icon !== undefined ? [iconOf(item.icon, Math.round(pad * iconShare))] : []),
           ...(item.title === undefined
             ? []
-            : [sizedPart(partOf(item.title, styles.heading, headingColor), theme, room)]),
-          ...(item.points === undefined ? [] : [sizedPart(partOf(bullets(item.points), styles.point), theme, room)]),
+            : [sizedPart(partOf(item.title, styles.heading, headingColor), theme, room, measure)]),
+          ...(item.points === undefined
+            ? []
+            : [sizedPart(partOf(bullets(item.points), styles.point), theme, room, measure)]),
         ],
         { pad, gap: scale.gap, fill: "background2" },
       ),
@@ -309,6 +315,10 @@ const builders: Readonly<Record<PatternName, readonly Way[]>> = {
   flow: [fixed(flowAcrossOneLine), fixed(flowDown), stepped(flowAcrossWrapped)],
 }
 
+const cardRows: ReadonlySet<string> = new Set<PatternName>(["kpi", "cards", "compare"])
+
+export const addsCardRow = (change: AgentChange): boolean => change.op === "add" && cardRows.has(change.kind)
+
 const tooMuch: Readonly<Partial<Record<PatternName, string>>> = {
   timeline: "shorter labels or fewer steps",
   flow: "shorter labels or fewer steps",
@@ -337,6 +347,7 @@ export function addPattern(draft: Draft, parent: Node, change: Add): void {
         styles,
         root,
         filled: change.box !== undefined,
+        measure: draft.reading.measure,
         axes: change.axes,
       })
     const start = stylesAt(theme, 0)

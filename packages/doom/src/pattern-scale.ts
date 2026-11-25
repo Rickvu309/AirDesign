@@ -1,6 +1,7 @@
 import type { AgentItem } from "./agent-item.js"
 import type { Values } from "./agent-draft.js"
 import type { Area } from "./agent-place.js"
+import type { Measure } from "./measure.js"
 import type { Px } from "./paint.js"
 import type { Block, Styles } from "./pattern-parts.js"
 import type { TextStyleName } from "./text.js"
@@ -15,6 +16,7 @@ export type Scale = {
   readonly styles: Styles
   readonly root: Values
   readonly filled: boolean
+  readonly measure?: Measure | undefined
   readonly axes?: readonly [string, string] | undefined
 }
 export type Build = (area: Area, items: readonly AgentItem[], scale: Scale) => Block | undefined

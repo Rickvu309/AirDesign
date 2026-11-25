@@ -407,7 +407,7 @@ export async function editDeckTool(
     compiled = await compile(measure)
   } else if (!("refused" in compiled)) {
     const instanceWrites = compiled.edit.writes.some(({ prop, value }) => prop === "instance" && value !== null)
-    if (instanceWrites || doom.mayLeaveDeck(opened.fold, compiled.edit.writes)) {
+    if (instanceWrites || doom.mayLeaveDeck(opened.fold, compiled.edit.writes) || changes.some(doom.addsCardRow)) {
       const measured = await deckMeasure(host, [opened.fold, compiled.after])
       if (instanceWrites && host.measure !== undefined && measured === undefined)
         return refused("fonts", {

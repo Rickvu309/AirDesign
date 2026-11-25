@@ -2,6 +2,7 @@ import type { AgentColor } from "./agent-change.js"
 import { type Draft, type Values, add, stop } from "./agent-draft.js"
 import { solid, textOfLook } from "./agent-look.js"
 import type { NodeId } from "./ids.js"
+import type { Measure } from "./measure.js"
 import type { Align9, Cell } from "./layout.js"
 import type { Px } from "./paint.js"
 import type { Text, TextStyleName } from "./text.js"
@@ -85,7 +86,10 @@ export function partOf(markdown: string, style: TextStyleName, color: AgentColor
   return { text, block, high: 0 }
 }
 
-export const heightIn = (part: Part, theme: Theme, width: Px): Px => Math.round(textHeight(part.text, theme, width))
+export const heightIn = (part: Part, theme: Theme, width: Px, measure?: Measure): Px =>
+  measure === undefined
+    ? Math.round(textHeight(part.text, theme, width))
+    : Math.ceil(measure(part.text, theme, width).h)
 
 export const bullets = (points: readonly string[]): string => points.map((point) => `- ${point}`).join("\n")
 
@@ -126,7 +130,7 @@ export function cardOf(
   return { block: look.key === undefined ? framed : { ...framed, key: look.key }, high }
 }
 
-export const sizedPart = (part: Part, theme: Theme, width: Px): Sized => ({
+export const sizedPart = (part: Part, theme: Theme, width: Px, measure?: Measure): Sized => ({
   block: part.block,
-  high: heightIn(part, theme, width),
+  high: heightIn(part, theme, width, measure),
 })

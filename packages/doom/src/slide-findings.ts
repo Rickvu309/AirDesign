@@ -2,7 +2,7 @@ import { linkedOwner } from "./component/instance-ownership.js"
 import { componentSpec } from "./component/library.js"
 import { deckOf } from "./deck-of.js"
 import type { Doom, Node } from "./doom.js"
-import { boxOf, childrenOf, parentOf, propOf, slidesOf } from "./doom-walk.js"
+import { boxOf, childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import type { NodeId } from "./ids.js"
 import type { Measure } from "./measure.js"
 import { placeholderTitle } from "./placeholder-title.js"
@@ -115,16 +115,27 @@ function wordsShare(doom: Doom, card: Node, boxes: ReadonlyMap<NodeId, Box>): nu
   return (end - top + layout.padding.t + layout.padding.b) / boxOf(card, boxes).h
 }
 
+function connectedNodes(layers: readonly Node[]): ReadonlySet<NodeId> {
+  return new Set(
+    layers.flatMap((layer) => {
+      const geometry = propOf(layer, "geometry")
+      if (geometry?.kind !== "line") return []
+      return [geometry.start, geometry.end].flatMap((end) => ("node" in end ? [end.node] : []))
+    }),
+  )
+}
+
 function emptyCards(doom: Doom, layers: readonly Node[], boxes: ReadonlyMap<NodeId, Box>): readonly NodeId[] {
-  const fullest = new Map<NodeId, number>()
-  for (const card of layers) {
-    const row = parentOf(card)?.id
-    const mode = propOf(row === undefined ? undefined : doom.nodes.get(row), "layout")?.mode
-    if (row === undefined || card.type !== "frame" || (mode !== "row" && mode !== "column") || !painted(card)) continue
-    if (linkedOwner(doom.nodes, card.id) !== undefined) continue
-    fullest.set(row, Math.max(fullest.get(row) ?? 0, wordsShare(doom, card, boxes)))
-  }
-  return [...fullest].flatMap(([row, share]) => (share < filledShare ? [row] : []))
+  const connected = connectedNodes(layers)
+  const isCard = (node: Node) =>
+    node.type === "frame" && painted(node) && propOf(node, "layout") !== undefined && !connected.has(node.id)
+  return layers.flatMap((row) => {
+    if (row.type !== "frame" || propOf(row, "layout")?.mode !== "row") return []
+    if (linkedOwner(doom.nodes, row.id) !== undefined) return []
+    const cards = childrenOf(doom, row.id).filter((card) => propOf(card, "hidden") !== true)
+    if (cards.length === 0 || !cards.every(isCard)) return []
+    return Math.max(...cards.map((card) => wordsShare(doom, card, boxes))) < filledShare ? [row.id] : []
+  })
 }
 
 function onSlide(
