@@ -20,14 +20,14 @@ const titled = () =>
     ],
   }).doom
 
-function agent() {
+function agent(components = false) {
   const decks = memoryDecks(titled)
   let minted = 0
   let calls = 0
   const session: Session = { agent: "aira", mint: () => `minted${String((minted += 1))}`, log: emptyLog(), now: 0 }
   return (op: string, args: unknown) => {
     session.once = `call${String((calls += 1))}`
-    return callTool(names[op] ?? op, args, session, decks)
+    return callTool(names[op] ?? op, args, session, decks, new Set(), components)
   }
 }
 
@@ -70,4 +70,60 @@ describe("read_deck's theme", () => {
       },
     })
   })
+})
+
+it("omits templates when placement is disabled", async () => {
+  const call = agent(false)
+  const { answer } = await call("create_deck", {})
+  expect((await call("read_deck", { deck: answer.deck })).answer).not.toHaveProperty("components")
+})
+
+it("advertises and places every template when placement is enabled", async () => {
+  const call = agent(true)
+  const { answer } = await call("create_deck", { name: "Consulting" })
+  const { deck, slides } = answer
+  let rev = answer.rev
+  if (typeof deck !== "string" || !Array.isArray(slides)) throw new Error("Expected a created deck")
+  const read = await call("read_deck", { deck })
+
+  const components = read.answer.components
+  if (!Array.isArray(components)) throw new Error("Expected advertised templates")
+  expect(components).toEqual(["column", "architecture", "cycle", "matrix", "process", "tree"])
+  for (const component of components) {
+    const signature = await call("read_deck", { deck, component })
+    expect(signature.answer).toMatchObject({
+      ok: true,
+      signature: { id: component, sample: { data: expect.any(Object) } },
+    })
+    const placed = await call("edit_deck", {
+      deck,
+      base: rev,
+      changes: [
+        { op: "add", slide: slides[0], kind: "component", component, box: { x: 160, y: 220, w: 1600, h: 700 } },
+      ],
+    })
+    expect(placed.answer, component).toMatchObject({ ok: true })
+    expect(placed.answer.findings ?? []).not.toContainEqual(expect.objectContaining({ code: "off-scale" }))
+    const sample = doom.componentLibrary.get(component)?.spec.sample
+    if (sample === undefined) throw new Error(`Missing sample for ${component}`)
+    const data = Object.fromEntries(
+      Object.entries(sample.data).map(([collection, rows]) => [
+        collection,
+        rows.map((row) => ({
+          ...row,
+          ...(typeof row.label === "string" ? { label: `${row.label} across every region and channel` } : {}),
+        })),
+      ]),
+    )
+    const fitted = await call("edit_deck", {
+      deck,
+      base: placed.answer.rev,
+      changes: [
+        { op: "add", slide: slides[0], kind: "component", component, data, box: { x: 160, y: 220, w: 1600, h: 700 } },
+      ],
+    })
+    expect(fitted.answer, component).toMatchObject({ ok: true })
+    expect(fitted.answer.findings ?? [], component).not.toContainEqual(expect.objectContaining({ code: "off-scale" }))
+    rev = fitted.answer.rev
+  }
 })

@@ -1,3 +1,4 @@
+import { hierarchy } from "./hierarchy.js"
 import { finite, integer, literal, object, reject } from "../read-kit.js"
 import type { ReportFinding } from "./findings.js"
 import { axis } from "./numeric-axis.js"
@@ -27,6 +28,7 @@ import { flowText, textMetrics, textWidth } from "./text-operators.js"
 import { polar } from "./polar.js"
 import { nonoverlap, placeBoxes, sectorSpace } from "./placement-operators.js"
 import { discs, polyline, wedge } from "./path-operators.js"
+import { squareRoot } from "./square-root.js"
 import {
   type Charge,
   type Value,
@@ -127,6 +129,7 @@ const operators: Readonly<Record<string, Operation>> = {
   }),
   min: extreme(Math.min, Infinity),
   max: extreme(Math.max, -Infinity),
+  sqrt: fixed(1, ([value]) => squareRoot(value)),
   sum: fixed(1, ([source], charge) => {
     const values = list(source)
     charge(values.length)
@@ -276,6 +279,7 @@ const operators: Readonly<Record<string, Operation>> = {
   polyline: fixed(1, ([points], charge) => polyline(list(points), charge)),
   wedge: fixed(5, wedge),
   polar: fixed(3, polar),
+  hierarchy: fixed(2, ([rows, focus], charge) => hierarchy(list(rows), string(focus), charge)),
   "link-channels": fixed(3, ([cards, links, bounds], charge) => linkChannels(cards, links, bounds, charge)),
   point: fixed(2, ([x, y]) => ({ x: number(x), y: number(y) })),
   site: fixed(2, ([key, site]) => ({ key: list(key), site: literal(["t", "r", "b", "l", "c"])(site) })),

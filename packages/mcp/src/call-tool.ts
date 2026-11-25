@@ -1,3 +1,4 @@
+import { linkedComponentsEnabled } from "@airdesign/doom"
 import { catalog, projectTools, type AgentOp } from "@airdesign/catalog"
 
 import { type CallerLog } from "./admit.js"
@@ -29,6 +30,7 @@ export async function callTool(
   session: Session,
   host: DeckHost,
   pendingFonts: ReadonlySet<string> = new Set(),
+  components = linkedComponentsEnabled,
 ): Promise<ToolResult> {
   const op = opOf(name)
   if (op === undefined) return refused("field")
@@ -39,9 +41,9 @@ export async function callTool(
     case "create_deck":
       return createDeckTool(raw, once, host)
     case "read_deck":
-      return readDeckTool(raw, session.agent, host)
+      return readDeckTool(raw, session.agent, host, components)
     case "edit_deck":
-      return editDeckTool(raw, { id: session.agent, name: session.name }, once, host, pendingFonts)
+      return editDeckTool(raw, { id: session.agent, name: session.name }, once, host, pendingFonts, components)
     case "stop_run":
       return stopRunTool(raw, session.agent, once, host)
     case "undo_run":

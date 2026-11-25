@@ -1,0 +1,254 @@
+{
+  "version": 1,
+  "name": "Issue Tree",
+  "collections": {
+    "nodes": {
+      "label": "string",
+      "parent": "string?"
+    }
+  },
+  "sample": {
+    "w": 1600,
+    "h": 700,
+    "data": {
+      "nodes": [
+        {
+          "id": "root",
+          "label": "Where did conversion fall?"
+        },
+        {
+          "id": "new",
+          "parent": "root",
+          "label": "Among new customers\u2026"
+        },
+        {
+          "id": "existing",
+          "parent": "root",
+          "label": "Among existing customers\u2026"
+        },
+        {
+          "id": "mobile",
+          "parent": "new",
+          "label": "\u2026on mobile checkout"
+        },
+        {
+          "id": "desktop",
+          "parent": "new",
+          "label": "\u2026on desktop checkout"
+        },
+        {
+          "id": "renewals",
+          "parent": "existing",
+          "label": "\u2026at renewal"
+        },
+        {
+          "id": "expansion",
+          "parent": "existing",
+          "label": "\u2026during an upgrade"
+        }
+      ]
+    }
+  },
+  "defaults": {
+    "ink": { "var": "text" },
+    "muted": {
+      "var": "text2"
+    },
+    "accent": {
+      "var": "accent1"
+    },
+    "focus": "",
+    "card": {
+      "var": "background"
+    }
+  },
+  "let": [
+    [
+      "tree",
+      [
+        "hierarchy",
+        [
+          "map",
+          ["get", "data.nodes"],
+          "node",
+          {
+            "id": ["get", "node.id"],
+            "parent": ["get", "node.parent"]
+          }
+        ],
+        ["get", "token.focus"]
+      ]
+    ],
+    ["focusMatches", ["count", ["filter", ["get", "tree.rows"], "node", ["get", "node.focused"]]]],
+    ["minimumLabel", ["textExtent", "…in the recurring\nrevenue segment", "label", 18]],
+    ["colW", ["div", ["get", "frame.w"], ["max", 1, ["get", "tree.levels"]]]],
+    ["rowH", ["div", ["get", "frame.h"], ["max", 1, ["get", "tree.leaves"]]]],
+    ["cardH", ["min", 112, ["mul", ["get", "rowH"], 0.78]]],
+    [
+      "focusMissing",
+      [
+        "if",
+        ["if", ["eq", ["get", "token.focus"], ""], false, ["eq", ["get", "focusMatches"], 0]],
+        ["advise", "focus-missing", "Set focus to a node ID."],
+        false
+      ]
+    ],
+    [
+      "manyLeaves",
+      [
+        "if",
+        [
+          "if",
+          ["lt", 1, ["get", "tree.leaves"]],
+          ["lt", ["mul", ["get", "cardH"], 0.8], ["get", "minimumLabel.h"]],
+          false
+        ],
+        ["advise", "many-leaves", "Move a branch to its own slide."],
+        false
+      ]
+    ],
+    [
+      "oneRoot",
+      [
+        "if",
+        ["if", ["eq", ["get", "tree.roots"], 1], false, true],
+        ["advise", "one-root", "Use one root question."],
+        false
+      ]
+    ],
+    [
+      "brokenParent",
+      [
+        "if",
+        ["lt", 0, ["get", "tree.broken"]],
+        ["advise", "broken-parent", "Give each branch an existing parent and remove cycles."],
+        false
+      ]
+    ],
+    [
+      "manyLevels",
+      [
+        "if",
+        ["lt", 4, ["get", "tree.levels"]],
+        ["advise", "many-levels", "Move deeper branches to a second slide."],
+        false
+      ]
+    ],
+    [
+      "fewLevels",
+      ["if", ["lt", ["get", "tree.levels"], 2], ["advise", "few-levels", "Add a first split below the root."], false]
+    ],
+    [
+      "manyChildren",
+      [
+        "if",
+        ["lt", 0, ["count", ["filter", ["get", "tree.rows"], "node", ["lt", 4, ["get", "node.children"]]]]],
+        ["advise", "many-children", "Group sibling branches into two to four issues."],
+        false
+      ]
+    ],
+    [
+      "firstSplit",
+      [
+        "if",
+        [
+          "lt",
+          0,
+          [
+            "count",
+            [
+              "filter",
+              ["get", "tree.rows"],
+              "node",
+              ["if", ["eq", ["get", "node.depth"], 0], ["if", ["lt", 2, ["get", "node.children"]], true, false], false]
+            ]
+          ]
+        ],
+        ["advise", "first-split", "Start with two mutually exclusive branches."],
+        false
+      ]
+    ],
+    [
+      "singleChild",
+      [
+        "if",
+        ["lt", 0, ["count", ["filter", ["get", "tree.rows"], "node", ["eq", ["get", "node.children"], 1]]]],
+        ["advise", "single-child", "Combine a single child with its parent or add a sibling."],
+        false
+      ]
+    ]
+  ],
+  "parts": [
+    {
+      "repeat": {
+        "over": ["list", false, true],
+        "as": "focused"
+      },
+      "children": [
+        {
+          "repeat": {
+            "over": [
+              "filter",
+              ["get", "tree.rows"],
+              "node",
+              ["if", ["eq", ["get", "node.parent"], ""], false, ["eq", ["get", "node.focused"], ["get", "focused"]]]
+            ],
+            "as": "node"
+          },
+          "emit": {
+            "kind": "line",
+            "key": ["list", "connector", ["get", "node.id"]],
+            "start": ["site", ["list", "node", ["get", "node.parent"]], "r"],
+            "end": ["site", ["list", "node", ["get", "node.id"]], "l"],
+            "color": ["if", ["get", "focused"], ["get", "token.accent"], ["get", "token.muted"]],
+            "width": ["if", ["get", "focused"], 5, 2],
+            "route": "elbow",
+            "arrow": "none"
+          }
+        }
+      ]
+    },
+    {
+      "repeat": {
+        "over": ["get", "tree.rows"],
+        "as": "node"
+      },
+      "let": [
+        ["record", ["at", ["get", "data.nodes"], ["get", "node.index"]]],
+        ["cardW", ["mul", ["get", "colW"], 0.8]],
+        ["x", ["mul", ["get", "node.depth"], ["get", "colW"]]],
+        ["y", ["sub", ["mul", ["add", ["get", "node.slot"], 0.5], ["get", "rowH"]], ["div", ["get", "cardH"], 2]]]
+      ],
+      "emit": {
+        "kind": "text",
+        "key": ["list", "node", ["get", "node.id"]],
+        "x": ["get", "x"],
+        "y": ["get", "y"],
+        "w": ["get", "cardW"],
+        "h": ["get", "cardH"],
+        "chars": ["get", "record.label"],
+        "style": "label",
+        "color": [
+          "if",
+          ["get", "node.focused"],
+          ["get", "token.accent"],
+          ["if", ["eq", ["get", "focusMatches"], 0], ["get", "token.ink"], ["get", "token.muted"]]
+        ],
+        "align": "center",
+        "alignV": "center",
+        "overflow": "ellipsis",
+        "fill": ["get", "token.card"],
+        "stroke": {
+          "color": ["if", ["get", "node.focused"], ["get", "token.accent"], ["get", "token.muted"]],
+          "width": ["if", ["get", "node.focused"], 4, 2]
+        },
+        "radius": 8,
+        "padding": ["min", 16, ["mul", ["get", "cardW"], 0.1], ["mul", ["get", "cardH"], 0.1]],
+        "fit": {
+          "smaller": 18,
+          "group": "nodes"
+        }
+      }
+    }
+  ]
+}

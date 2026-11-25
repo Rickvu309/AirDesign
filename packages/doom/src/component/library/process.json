@@ -8,6 +8,39 @@
       "note": "string?"
     }
   },
+  "sample": {
+    "w": 1600,
+    "h": 320,
+    "data": {
+      "steps": [
+        {
+          "id": "discover",
+          "label": "Discover",
+          "description": "Map needs"
+        },
+        {
+          "id": "define",
+          "label": "Define",
+          "description": "Set success criteria"
+        },
+        {
+          "id": "design",
+          "label": "Design",
+          "description": "Validate a direction"
+        },
+        {
+          "id": "build",
+          "label": "Build",
+          "description": "Ship a pilot"
+        },
+        {
+          "id": "launch",
+          "label": "Launch",
+          "description": "Measure adoption"
+        }
+      ]
+    }
+  },
   "variants": {
     "direction": ["row", "column"]
   },

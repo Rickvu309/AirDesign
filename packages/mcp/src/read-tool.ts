@@ -1,4 +1,4 @@
-import { readDeckQuery, readNamedDeck } from "@airdesign/catalog"
+import { readDeckQueryFor, readNamedDeck } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import { answered, hostRefused, refused, told, type ToolImage, type ToolResult } from "./answer.js"
@@ -127,7 +127,12 @@ function chosenSlides(opened: Opened, query: Query): Chosen {
   return { ok: true, chosen, next: wanted[chosen.length] }
 }
 
-export function readAnswer(opened: Opened, query: Query, laid?: Laid): ToolResult {
+export function readAnswer(
+  opened: Opened,
+  query: Query,
+  laid?: Laid,
+  linkedComponents = doom.linkedComponentsEnabled,
+): ToolResult {
   const detail = doom.readNodeId(query.detail)
   if (query.find !== undefined) return foundAnswer(opened, query.find, detail)
   const picked = chosenSlides(opened, query)
@@ -145,7 +150,7 @@ export function readAnswer(opened: Opened, query: Query, laid?: Laid): ToolResul
     theme: themeOf(opened.fold),
     ...found,
   }
-  const components = doom.linkedComponentsEnabled ? [...doom.componentLibrary.keys()] : []
+  const components = linkedComponents ? [...doom.componentLibrary.keys()] : []
   const note = [
     lead(opened, slides.length),
     ...(components.length === 0
@@ -220,17 +225,22 @@ async function componentRead(opened: Opened, query: Query, host: DeckHost): Prom
   })
 }
 
-export async function readDeckTool(raw: unknown, agent: string, host: DeckHost): Promise<ToolResult> {
+export async function readDeckTool(
+  raw: unknown,
+  agent: string,
+  host: DeckHost,
+  components: boolean,
+): Promise<ToolResult> {
   const named = readNamedDeck(raw)
   if (!named.ok) return refused(named.refusal)
   const opened = await host.open(named.deck)
   if (!opened.ok) return hostRefused(opened)
-  const parsed = readDeckQuery(raw)
+  const parsed = readDeckQueryFor(components)(raw)
   if (!parsed.ok) return refused(parsed.refusal)
   const query = { ...parsed, component: typeof parsed.component === "string" ? parsed.component : undefined }
-  const component = await componentRead(opened, query, host)
+  const component = components ? await componentRead(opened, query, host) : undefined
   const read = withOtherRuns(
-    component ?? readAnswer(opened, query, await laidRead(opened, query, host)),
+    component ?? readAnswer(opened, query, await laidRead(opened, query, host), components),
     opened.fold,
     agent,
   )

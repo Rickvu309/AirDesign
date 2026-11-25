@@ -88,7 +88,7 @@ function readScalarValue(field: Field, raw: unknown): string | number | null {
     case "number":
       return numeric(raw)
     case "number?":
-      return raw === null ? null : numeric(raw)
+      return raw === undefined || raw === null ? null : numeric(raw)
     case "positive": {
       const value = numeric(raw)
       return value > 0 ? value : reject("shape", "A positive number.")

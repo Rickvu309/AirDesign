@@ -1,6 +1,30 @@
 {
   "version": 1,
   "name": "Cycle",
+  "sample": {
+    "w": 1400,
+    "h": 700,
+    "data": {
+      "steps": [
+        {
+          "id": "plan",
+          "label": "Plan"
+        },
+        {
+          "id": "build",
+          "label": "Build"
+        },
+        {
+          "id": "measure",
+          "label": "Measure"
+        },
+        {
+          "id": "learn",
+          "label": "Learn"
+        }
+      ]
+    }
+  },
   "collections": {
     "steps": {
       "label": "string"

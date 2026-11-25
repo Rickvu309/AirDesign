@@ -1,6 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { PNG } from "pngjs"
+import { fontShelf, shelfFolder } from "../../../../scripts/font-shelf.mjs"
 import { packageBuild } from "../../../../scripts/package-build.mjs"
 import { exportCopy, frameCopy, productCopy } from "../bin/product-copy.mjs"
 import {
@@ -30,6 +31,16 @@ const diagrams = [
   { name: "architecture", prefix: "arch", title: "Mobile can send events directly" },
   { name: "process", prefix: "proc", title: "Eight steps take an idea to launch" },
   { name: "cycle", prefix: "loop", title: "Each release feeds the next plan" },
+  ...["technical", "midnight"].flatMap((theme) => [
+    {
+      name: "matrix",
+      prefix: "matrix",
+      title: "Invest in the platforms with room to grow",
+      theme,
+      focus: "upper-right",
+    },
+    { name: "tree", prefix: "tree", title: "Mobile checkout explains the conversion decline", theme, focus: "mobile" },
+  ]),
 ]
 
 function withExtraLinks(fixture) {
@@ -92,7 +103,7 @@ function lineEnds(saved, line) {
   return [start.node, end.node]
 }
 
-async function exportPdf(kit, out, name) {
+async function exportPdf(kit, out, name, expectedText) {
   const { page, expect } = kit
   await page.getByRole("button", { name: productCopy.exportDeck, exact: true }).click()
   await page
@@ -101,7 +112,8 @@ async function exportPdf(kit, out, name) {
     .click()
   const printed = page.locator("[data-print-page]")
   await expect(printed).toHaveCount(1)
-  await expect(printed).not.toContainText("…")
+  if (expectedText === undefined) await expect(printed).not.toContainText("…")
+  else await expect(printed).toContainText(expectedText)
   await writeFile(join(out, `${name}-print.png`), await printed.screenshot())
   const pdf = await page.pdf({ preferCSSPageSize: true })
   const { pdfPages } = await import("../../../../tests/browser/pdf-file.ts")
@@ -126,13 +138,12 @@ export default async function drive(kit) {
   const { page, expect, repo, capture, note } = kit
   const doom = await packageBuild(repo, "@airdesign/doom")
   const component = await packageBuild(repo, "@airdesign/doom", "component/index.js")
-  const theme = doom.themeLibrary.technical.theme
   const { FontMetrics } = await packageBuild(repo, "@airdesign/api", "platform/font-metrics.js")
   const { FontSource } = await packageBuild(repo, "@airdesign/api", "platform/font-source.js")
-  const fonts = new FontMetrics(new FontSource(undefined))
+  const fonts = new FontMetrics(new FontSource(fontShelf(shelfFolder)))
   const { landTree } = await packageBuild(repo, "@airdesign/doom", "component/testing/land-tree.js")
   const estimate = doom.measureWith({})
-  async function expand(name, fixture) {
+  async function expand(name, fixture, theme) {
     const spec = component[`${name}Component`]
     const estimated = component.expandComponent(spec, { ...fixture, theme, measure: estimate })
     expect(doom.isRefusal(estimated), JSON.stringify(estimated)).toBe(false)
@@ -150,9 +161,47 @@ export default async function drive(kit) {
     window.print = () => {}
   })
   for (const diagram of diagrams) {
-    let fixture = JSON.parse(
-      await readFile(join(repo, `packages/doom/src/component/testing/${diagram.name}.json`), "utf8"),
-    )
+    const themeId = diagram.theme ?? "technical"
+    const theme = doom.themeLibrary[themeId].theme
+    const artifact = diagram.theme === undefined ? diagram.name : `${diagram.name}-${themeId}`
+    const sample = component[`${diagram.name}Component`].sample
+    let fixture =
+      diagram.theme === undefined
+        ? JSON.parse(await readFile(join(repo, `packages/doom/src/component/testing/${diagram.name}.json`), "utf8"))
+        : { frame: { x: 160, y: 220, w: sample.w, h: sample.h }, data: sample.data, tokens: { focus: diagram.focus } }
+    const expectedText =
+      diagram.name === "matrix" ? "Core platform" : diagram.name === "tree" ? "on mobile checkout" : undefined
+    if (diagram.name === "tree") {
+      const nodes = sample.data.nodes.map((node) => (node.id === "mobile" ? { ...node, label: "W".repeat(120) } : node))
+      const { tree, measure } = await expand("tree", { ...fixture, data: { nodes } }, theme)
+      const part = tree.children.find(({ key }) => key.join("/") === "node/mobile")
+      expect(part.props.text.chars).toBe("W".repeat(120))
+      expect(tree.findings).toMatchObject([{ kind: "text-fit", key: ["node", "mobile"] }])
+      const { doom: fold, slide } = landTree(tree, theme)
+      const { lines } = doom.resolveSlide(fold, slide, measure)[0].children.find(({ id }) => id === part.id).text
+      expect(
+        lines
+          .at(-1)
+          .runs.map(({ text }) => text)
+          .join(""),
+      ).toMatch(/…$/)
+      note(
+        `Issue tree overflow: the served ${themeId} font measure reports the finding and resolves the label with an ellipsis.`,
+      )
+    }
+    if (diagram.name === "matrix") {
+      fixture = {
+        ...fixture,
+        data: {
+          ...fixture.data,
+          items: fixture.data.items.map((item, index) => ({
+            ...item,
+            size: [15, 75, 900, 360, 40, 120, 240, 60][index],
+          })),
+        },
+        tokens: { ...fixture.tokens, sizeLabel: "Revenue" },
+      }
+    }
     if (diagram.name === "architecture") fixture = withExtraLinks(fixture)
     if (diagram.name === "process") {
       for (const direction of ["row", "column"]) {
@@ -164,7 +213,7 @@ export default async function drive(kit) {
             description: descriptionExamples[i],
             ...(direction === "column" ? { note: "2 weeks" } : {}),
           }))
-          const { tree } = await expand("process", { frame, data: { steps }, variant: { direction } })
+          const { tree } = await expand("process", { frame, data: { steps }, variant: { direction } }, theme)
           expect(tree.children).toHaveLength((direction === "column" ? 3 : 2) * count - 1)
           expect(
             tree.findings.filter(({ kind }) => kind === "text-fit"),
@@ -177,7 +226,7 @@ export default async function drive(kit) {
         id: `s${i}`,
         label: i === 4 ? "W".repeat(120) : `Step ${i + 1}`,
       }))
-      const { tree, measure } = await expand("process", { ...fixture, data: { steps } })
+      const { tree, measure } = await expand("process", { ...fixture, data: { steps } }, theme)
       expect(tree.findings.filter(({ kind }) => kind === "text-fit")).toMatchObject([
         { kind: "text-fit", key: ["step", "s4"] },
       ])
@@ -202,7 +251,7 @@ export default async function drive(kit) {
       const labels = [...fixture.data.steps.map(({ label }) => label), "Review", "Refine", "Track"]
       fixture.data.steps = labels.map((label, i) => ({ id: `s${i}`, label, description: descriptionExamples[i] }))
     }
-    const { tree: expanded } = await expand(diagram.name, fixture)
+    const { tree: expanded } = await expand(diagram.name, fixture, theme)
     expect(expanded.findings.filter(({ kind }) => kind === "text-fit")).toEqual([])
     const tree = remap(expanded, diagram.prefix)
 
@@ -231,6 +280,19 @@ export default async function drive(kit) {
         Object.values((await readDoom(kit, opened)).fold.nodes).filter((each) => each.parent?.id === opened.slide),
       )
       .toHaveLength(0)
+    if (artifact === "matrix-technical") {
+      const before = await capture("frameworks-before")
+      await writeFile(
+        join(dirname(before), "frameworks-before-slide.png"),
+        await page.locator("[data-slide-box]").screenshot(),
+      )
+      const response = await mcp(kit, opened, "read_deck", { deck: opened.deck })
+      if (doom.linkedComponentsEnabled) {
+        expect(response.components).toEqual(expect.arrayContaining(["matrix", "tree"]))
+      } else {
+        expect(response.components).toBeUndefined()
+      }
+    }
     await landNodes(kit, opened, [
       {
         id: `${diagram.prefix}:900`,
@@ -252,15 +314,40 @@ export default async function drive(kit) {
       await expect(slide).not.toContainText("…")
       await expect(page.locator("[data-slide-thumb]").first()).not.toContainText("…")
     }
-    const shot = await capture(`${diagram.name}-canvas`)
+    if (expectedText !== undefined) {
+      await expect(page.locator("[data-slide-box]")).toContainText(expectedText)
+      await expect(page.locator("[data-slide-thumb]").first()).toContainText(expectedText)
+    }
+    if (diagram.name === "matrix") {
+      await expect(page.locator("[data-slide-box]")).toContainText("Bubble size: Revenue")
+      await expect(page.locator("[data-slide-thumb]").first()).toContainText("Bubble size: Revenue")
+    }
+    const shot = await capture(`${artifact}-canvas`)
     out = dirname(shot)
-    await writeFile(join(out, `${diagram.name}-slide.png`), await page.locator("[data-slide-box]").screenshot())
+    await writeFile(join(out, `${artifact}-slide.png`), await page.locator("[data-slide-box]").screenshot())
     await writeFile(
-      join(out, `${diagram.name}-filmstrip.png`),
+      join(out, `${artifact}-filmstrip.png`),
       PNG.sync.write(PNG.sync.read(await page.locator("[data-slide-thumb]").first().screenshot())),
     )
-    await exportPdf(kit, out, diagram.name)
-    note(`${diagram.name}: saved rows match the expansion; canvas, filmstrip and PDF painted on the Technical theme.`)
+    await exportPdf(kit, out, artifact, expectedText)
+    note(`${artifact}: saved rows matched the expansion and canvas, filmstrip and PDF painted in ${themeId}.`)
+
+    if (artifact === "tree-technical") {
+      const card = tree.children.find(({ key }) => key.join("/") === "node/new")
+      const connectors = tree.children.filter(({ key }) => key[0] === "connector")
+      const from = await center(page, card.id)
+      await page.keyboard.press("Escape")
+      await clickSlide(page, from.x, from.y, { modifiers: ["ControlOrMeta"] })
+      await expect(page.locator("[data-selection-outline]")).toHaveAttribute("data-selection-outline", card.id)
+      await dragSlide(page, from, { x: from.x + 45, y: from.y + 50 })
+      await expect
+        .poll(async () => (await readDoom(kit, opened)).fold.nodes[card.id].box.x, slowPaint)
+        .toBeGreaterThan(card.props.box.x + 20)
+      const after = (await readDoom(kit, opened)).fold
+      for (const connector of connectors) expect(lineEnds(after, connector)).toEqual(lineEnds(saved, connector))
+      await capture("tree-card-moved")
+      note("Issue tree: dragging a branch preserves its parent and child attachments.")
+    }
 
     if (diagram.name === "process") {
       const steps = tree.children.filter(({ key }) => key[0] === "step")
