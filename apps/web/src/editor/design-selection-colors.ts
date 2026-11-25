@@ -35,9 +35,15 @@ function textColors(text: doom.Text | undefined): readonly doom.Color[] {
   return text.spans.map((span) => span.color ?? { var: "text" })
 }
 
+function linkedFill(view: doom.Doom, node: doom.NodeId): boolean {
+  return doom.linkedOverride(view.nodes, { node, prop: "fills", value: [] })
+}
+
 function colorsOf(view: doom.Doom, id: doom.NodeId): readonly doom.Color[] {
   const node = view.nodes.get(id)
   if (node === undefined) return []
+  if (doom.linkedOwner(view.nodes, id) !== undefined)
+    return linkedFill(view, id) ? paintColors(propOf(node, "fills")) : []
   return [
     ...paintColors(propOf(node, "fills")),
     ...paintColors(propOf(node, "strokes")),
@@ -109,9 +115,11 @@ export function replaceColorWrites(
   return nodesInScope(view, scope).flatMap((node): doom.Write[] => {
     const held = view.nodes.get(node)
     if (held === undefined) return []
+    const linked = doom.linkedOwner(view.nodes, node) !== undefined
+    if (linked && !linkedFill(view, node)) return []
     const fills = swapPaints(propOf(held, "fills"), theme, hex, to)
-    const strokes = swapPaints(propOf(held, "strokes"), theme, hex, to)
-    const text = swapText(propOf(held, "text"), theme, hex, to)
+    const strokes = linked ? null : swapPaints(propOf(held, "strokes"), theme, hex, to)
+    const text = linked ? null : swapText(propOf(held, "text"), theme, hex, to)
     return [
       ...(fills === null ? [] : [{ node, prop: "fills" as const, value: fills }]),
       ...(strokes === null ? [] : [{ node, prop: "strokes" as const, value: strokes }]),

@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto"
+import { createHash, randomBytes, randomUUID } from "node:crypto"
 import { expect } from "@playwright/test"
 import { agentRunsCopy, airaCopy, airaStepWords, undoCopy } from "../bin/product-copy.mjs"
 
@@ -138,4 +138,33 @@ export default async function drive(kit) {
   note(`signed in as ${email} through the emailed code`)
   const opened = await doomAgent(kit, cookie)
   await outsideAgent(kit, cookie, opened)
+  const { page, post, capture, doomRoutes } = kit
+  const { deck } = opened
+  const saved = (await post(doomRoutes.open, { deck }, cookie)).json
+  const nodes = new Map(Object.values(saved.fold.nodes).map((node) => [node.id, node]))
+  let revenue = [...nodes.values()].find((node) => node.text?.chars === "$4.2M")
+  expect(revenue).toBeDefined()
+  while (revenue.parent?.id !== opened.slide) {
+    revenue = nodes.get(revenue.parent?.id)
+    expect(revenue).toBeDefined()
+  }
+  const changed = await post(
+    doomRoutes.edit,
+    {
+      deck,
+      edit: {
+        once: randomUUID(),
+        author: { kind: "person", id: "another-tab" },
+        writes: [{ node: revenue.id, prop: "name", value: "Revenue panel" }],
+      },
+    },
+    cookie,
+  )
+  expect(changed.json).toMatchObject({ ok: true })
+  const log = page.locator("[data-editor-panel]").getByRole("log")
+  await log.getByRole("button", { name: undoCopy.undo }).click()
+  await expect(log.getByText(/“Revenue panel”/)).toBeVisible()
+  await capture("aira-undo-kept-layer")
+  await expect(log).toContainText("“Revenue panel” stays because it was changed after Aira made it.")
+  await expect(page.locator("[data-slide-box]").getByText("$4.2M", { exact: true })).toBeVisible()
 }

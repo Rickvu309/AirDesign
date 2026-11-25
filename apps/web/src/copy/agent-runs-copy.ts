@@ -7,7 +7,6 @@ export const agentRunsCopy = {
   undoRefused: "Unable to undo. Something it changed was changed again after its edit.",
   nothingLeft: "Unable to undo. Everything it changed was changed or deleted since.",
   undoTooLarge: "Unable to undo. This run made too many changes.",
-  undoRebuildFailed: "Unable to undo. The chart can't be restored.",
   undoFailed: "Unable to undo. Check your connection and try again.",
 } as const
 
@@ -30,39 +29,4 @@ export function agentRunStatus(live: boolean, place: RunPlace): string {
   if (place === "deck") return live ? "Editing the deck" : "Last edited the deck"
   if (place === "gone") return live ? "Editing a deleted slide" : "Last edited a slide since deleted"
   return live ? `Editing slide ${String(place.slide)}` : `Last edited slide ${String(place.slide)}`
-}
-
-function opening(layers: readonly string[]): string {
-  const named = listed(layers)
-  return `${named.charAt(0).toUpperCase()}${named.slice(1)}`
-}
-
-export function agentLeftLayers(layers: readonly string[]): string {
-  return layers.length === 1
-    ? `${opening(layers)} stays where it is, because the place it came from has changed.`
-    : `${opening(layers)} stay where they are, because the places they came from have changed.`
-}
-
-export function agentWaitingLayers(layers: readonly string[]): string {
-  return layers.length === 1
-    ? `${opening(layers)} can't come back until the frame it was in is back.`
-    : `${opening(layers)} can't come back until the frames they were in are back.`
-}
-
-export type UndoStays = {
-  readonly kept: readonly string[]
-  readonly left: readonly string[]
-  readonly waiting: readonly string[]
-}
-
-export function agentUndoStays(agent: string, stays: UndoStays): string {
-  return [
-    ...(stays.kept.length === 0 ? [] : [agentKeptLayers(agent, stays.kept)]),
-    ...(stays.left.length === 0 ? [] : [agentLeftLayers(stays.left)]),
-    ...(stays.waiting.length === 0 ? [] : [agentWaitingLayers(stays.waiting)]),
-  ].join(" ")
-}
-
-export function agentKeptLayers(agent: string, layers: readonly string[]): string {
-  return `Changes made to ${listed(layers)} after ${agent}’s edit were kept.`
 }

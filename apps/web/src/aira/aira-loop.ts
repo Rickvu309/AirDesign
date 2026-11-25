@@ -11,7 +11,7 @@ import {
 } from "@airdesign/catalog"
 import { cappedPictures, readFontIssue, stringList, toolAnswer, type FontIssue } from "@/aira/aira-answers"
 import { airaLine, bodyLines, sendTool, weekUsage, type WeekUsage } from "@/aira/aira-wire"
-import type { UndoStays } from "@/copy/agent-runs-copy"
+import type { UndoStays } from "@airdesign/catalog"
 import { fieldsOf } from "@/lib/fields-of"
 
 export type ToolState = "working" | "done" | "refused" | "stopped"
@@ -50,6 +50,7 @@ export type AiraExchange = {
   readonly undoRefused?: true
   readonly undoFailed?: true | "size" | "rebuild"
   readonly kept?: readonly string[]
+  readonly later?: readonly string[]
   readonly left?: readonly string[]
   readonly waiting?: readonly string[]
 }
@@ -237,6 +238,7 @@ export function airaStep(chat: AiraChat, event: AiraEvent): AiraChat {
         ...withoutFailure(exchange),
         ...(event.type === "undone" ? { end: "undone" as const } : {}),
         ...(event.kept.length === 0 ? {} : { kept: event.kept }),
+        ...(event.later === undefined || event.later.length === 0 ? {} : { later: event.later }),
         ...(event.left.length === 0 ? {} : { left: event.left }),
         ...(event.waiting.length === 0 ? {} : { waiting: event.waiting }),
       }))
@@ -508,6 +510,7 @@ export function settledByRuns(exchange: AiraExchange, undoneRun: (run: string) =
     undoRefused: _refused,
     undoFailed: _failed,
     kept: _kept,
+    later: _later,
     left: _left,
     waiting: _waiting,
     ...settled

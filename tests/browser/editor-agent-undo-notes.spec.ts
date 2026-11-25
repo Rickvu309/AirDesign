@@ -1,5 +1,4 @@
 import { expect, type BrowserContext, type Page } from "@playwright/test"
-import { agentKeptLayers, agentWaitingLayers } from "../../apps/web/src/copy/agent-runs-copy.ts"
 import { airaCopy, airaKeptLayerName } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import * as doom from "../../packages/doom/src/index.ts"
@@ -33,6 +32,7 @@ test("Undo on an agent run that deleted a layer from a frame another tab deleted
   context,
   stack,
 }) => {
+  const { undoStaysNote } = await import("../../packages/catalog/src/index.ts")
   const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [
     { id: "t:91", type: "frame", parent: opened.slide, props: { box: spot(100, 200, 500, 500), fills: accent } },
@@ -54,7 +54,9 @@ test("Undo on an agent run that deleted a layer from a frame another tab deleted
 
   const row = page.locator('[data-agent-run="run-notes"]')
   await row.locator("[data-agent-run-undo]").click()
-  await expect(row.locator("[data-agent-run-note]")).toHaveText(agentWaitingLayers([airaKeptLayerName("Card")]))
+  await expect(row.locator("[data-agent-run-note]")).toHaveText(
+    undoStaysNote("Helper", { kept: [], left: [], waiting: [airaKeptLayerName("Card")] }),
+  )
   await expect(page.locator('[data-slide-box] [data-node="t:92"]')).toHaveCount(0)
   await other.close()
 })
@@ -64,6 +66,7 @@ test("Undo on an agent run whose frame now holds the person's layer names the fr
   context,
   stack,
 }) => {
+  const { undoStaysNote } = await import("../../packages/catalog/src/index.ts")
   const opened = await openEditor(page, context, stack)
   const { orderKeyBetween } = doom
   await runOf(stack, opened, [
@@ -86,7 +89,9 @@ test("Undo on an agent run whose frame now holds the person's layer names the fr
   const row = page.locator('[data-agent-run="run-notes"]')
   await expect(page.locator('[data-slide-box] [data-node="t:96"]')).toHaveCount(1)
   await row.locator("[data-agent-run-undo]").click()
-  await expect(row.locator("[data-agent-run-note]")).toHaveText(agentKeptLayers("Helper", [airaKeptLayerName("Panel")]))
+  await expect(row.locator("[data-agent-run-note]")).toHaveText(
+    undoStaysNote("Helper", { kept: [airaKeptLayerName("Panel")], left: [], waiting: [] }),
+  )
   expect(((await savedNode(stack, opened, "t:96"))?.parent as { id: string }).id).toBe("t:95")
 })
 
@@ -96,7 +101,7 @@ test("Undo on Aira's request whose frame now holds the person's layer names the 
   stack,
 }) => {
   const opened = await openEditor(page, context, stack)
-  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+  const { doomRoutes, undoStaysNote } = await import("../../packages/catalog/src/index.ts")
   const saved = async () => {
     const answer = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
     const fold = doom.readFold(answer.json.fold)
@@ -125,7 +130,7 @@ test("Undo on Aira's request whose frame now holds the person's layer names the 
 
   await side.getByRole("log").getByRole("button", { name: productCopy.undo, exact: true }).click()
   await expect(side.locator("[data-undo-stays]")).toHaveText(
-    agentKeptLayers(productCopy.agentName, [airaKeptLayerName("Panel")]),
+    undoStaysNote(productCopy.agentName, { kept: [airaKeptLayerName("Panel")], left: [], waiting: [] }),
   )
   await expect(side.getByRole("log").getByRole("button", { name: productCopy.undo, exact: true })).toBeVisible()
   expect(((await savedNode(stack, opened, "t:97"))?.parent as { id: string }).id).toBe(panel)

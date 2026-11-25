@@ -164,11 +164,22 @@ export function DesignPanel(props: Props) {
   if (first === undefined) return null
   const model: PanelModel = rest.length === 0 ? first : panelOfMany([first, ...rest])
   const measure = painted.measure
-  const storedName = only === undefined ? undefined : doom.propOf(view.nodes.get(only), "name")
+  const selected = only === undefined ? undefined : view.nodes.get(only)
+  const storedName = doom.propOf(selected, "name")
+  const owner = only === undefined ? undefined : doom.linkedOwner(view.nodes, only)
+  const key =
+    owner === undefined
+      ? undefined
+      : doom.propOf(view.nodes.get(owner), "instance")?.parts.find(({ node }) => node === only)?.key
+  const text = doom.propOf(selected, "text")
+  const displayName =
+    text !== undefined && key !== undefined && storedName === key.join(" / ")
+      ? text.chars.split("\n")[0]?.trim()
+      : storedName
   const layerName =
     ids.length === 1
-      ? typeof storedName === "string" && storedName !== ""
-        ? storedName
+      ? typeof displayName === "string" && displayName !== ""
+        ? displayName
         : panelTitle(model)
       : undefined
   return (
@@ -176,6 +187,7 @@ export function DesignPanel(props: Props) {
       model={model}
       palette={palette}
       layerName={layerName}
+      showTextHeading={linkedPart}
       onLayerName={
         only === undefined || ids.length !== 1
           ? undefined

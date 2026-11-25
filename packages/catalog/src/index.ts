@@ -98,3 +98,5 @@ export {
   readAutoReset,
   type Credits,
 } from "./credits-routes.js"
+export { undoStaysNote, undoRebuildFailed, type UndoStays } from "./undo-copy.js"
+export { runUndoStays } from "./run-undo-stays.js"

@@ -1,6 +1,5 @@
 import { expect, type Page } from "@playwright/test"
 import * as doom from "../../packages/doom/src/index.ts"
-import { agentKeptLayers } from "../../apps/web/src/copy/agent-runs-copy.ts"
 import { airaKeptLayerName, airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { test, type Stack } from "./api-stack"
@@ -29,6 +28,7 @@ test("Undo of Aira's request keeps the layer the person moved since, says so, an
   context,
   stack,
 }) => {
+  const { undoStaysNote } = await import("../../packages/catalog/src/index.ts")
   const opened = await openEditor(page, context, stack)
   const base = (await saved(stack, opened)).rev
   const side = page.locator("[data-editor-panel]")
@@ -57,7 +57,9 @@ test("Undo of Aira's request keeps the layer the person moved since, says so, an
   await expect(canvas.getByText("Draft note", { exact: true })).toHaveCount(0)
   await expect(canvas.getByText("Q3 summary", { exact: true })).toBeVisible()
   await expect(
-    side.getByText(`${airaCopy.undone} ${agentKeptLayers(productCopy.agentName, [airaKeptLayerName("Q3 summary")])}`),
+    side.getByText(
+      `${airaCopy.undone} ${undoStaysNote(productCopy.agentName, { kept: [airaKeptLayerName("Q3 summary")], left: [], waiting: [] })}`,
+    ),
   ).toBeVisible()
   await expect.poll(async () => textNode(await saved(stack, opened), "Draft note")).toMatchObject({ parent: null })
   const after = await saved(stack, opened)

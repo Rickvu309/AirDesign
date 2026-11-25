@@ -1,4 +1,4 @@
-import type { UndoStays } from "@/copy/agent-runs-copy"
+import type { UndoStays } from "@airdesign/catalog"
 import { type AiraChat, airaStep } from "./aira-loop"
 
 export type RunUndone = (UndoStays & { readonly undone: boolean }) | "refused" | "failed" | "size" | "rebuild"
@@ -10,6 +10,7 @@ export async function undoExchange(chat: AiraChat, exchange: number, undo: UndoR
     return undefined
   }
   const kept: string[] = []
+  const later: string[] = []
   const left: string[] = []
   const waiting: string[] = []
   let undone = true
@@ -24,9 +25,10 @@ export async function undoExchange(chat: AiraChat, exchange: number, undo: UndoR
         ...(result === "failed" ? {} : { reason: result }),
       })
     kept.push(...result.kept.filter((layer) => !kept.includes(layer)))
+    later.push(...(result.later ?? []).filter((layer) => !later.includes(layer)))
     left.push(...result.left.filter((layer) => !left.includes(layer)))
     waiting.push(...result.waiting.filter((layer) => !waiting.includes(layer)))
     undone &&= result.undone
   }
-  return airaStep(chat, { type: undone ? "undone" : "undo-stays", exchange, kept, left, waiting })
+  return airaStep(chat, { type: undone ? "undone" : "undo-stays", exchange, kept, later, left, waiting })
 }

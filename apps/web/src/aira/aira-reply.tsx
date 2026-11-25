@@ -1,3 +1,4 @@
+import { undoRebuildFailed, undoStaysNote } from "@airdesign/catalog"
 import { agentRunsCopy } from "@/copy/agent-runs-copy"
 import { cn } from "@/lib/class-names"
 import { servedFontAlias } from "@airdesign/fonts"
@@ -14,7 +15,7 @@ import {
   type StepStatus,
 } from "@/components/ai-elements/chain-of-thought"
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message"
-import { airaFontIssue, airaFontRequest, airaCopy, airaLimitBodyOn, airaUndoStays } from "@/copy/aira-copy"
+import { airaFontIssue, airaFontRequest, airaCopy, airaLimitBodyOn } from "@/copy/aira-copy"
 import { productCopy, usageResetsOn } from "@/copy/product-copy"
 import { usageCopy } from "@/copy/usage-copy"
 import { surfaceShadow } from "@/components/ui/shadows"
@@ -150,7 +151,12 @@ function UndoLink({ onUndo }: { onUndo: (() => void) | undefined }) {
 }
 
 const staysOf = (exchange: AiraExchange) =>
-  airaUndoStays({ kept: exchange.kept ?? [], left: exchange.left ?? [], waiting: exchange.waiting ?? [] })
+  undoStaysNote("Aira", {
+    kept: exchange.kept ?? [],
+    later: exchange.later ?? [],
+    left: exchange.left ?? [],
+    waiting: exchange.waiting ?? [],
+  })
 
 function Undone({ stays }: { readonly stays: string }) {
   const plain = stays === ""
@@ -171,11 +177,7 @@ function Undone({ stays }: { readonly stays: string }) {
 function UndoFailed({ reason }: { readonly reason: NonNullable<AiraExchange["undoFailed"]> }) {
   return (
     <p className="flex min-h-6 items-center text-xs text-muted-foreground" data-undo-failed>
-      {reason === "size"
-        ? agentRunsCopy.undoTooLarge
-        : reason === "rebuild"
-          ? agentRunsCopy.undoRebuildFailed
-          : airaCopy.undoFailed}
+      {reason === "size" ? agentRunsCopy.undoTooLarge : reason === "rebuild" ? undoRebuildFailed : airaCopy.undoFailed}
     </p>
   )
 }

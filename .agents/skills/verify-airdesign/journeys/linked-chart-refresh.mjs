@@ -1,9 +1,10 @@
+import { colorNameCopy } from "../../../../apps/web/src/copy/color-name-copy.ts"
 import { createHash, randomUUID } from "node:crypto"
 import { writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { packageBuild } from "../../../../scripts/package-build.mjs"
 import { designCopy, exportCopy, productCopy, textCopy } from "../bin/product-copy.mjs"
-import { clickSlide, dragSlide, node, openDesign, openDoomDeck, readDoom, spot } from "../look/doom-deck.mjs"
+import { clickSlide, node, openDesign, openDoomDeck, readDoom, slidePoint, spot } from "../look/doom-deck.mjs"
 
 const frame = "refreshchart:1"
 const rows = [
@@ -80,6 +81,17 @@ export default async function drive(kit) {
   const detach = page.getByRole("button", { name: designCopy.detachInstance, exact: true })
   await expect(detach).toBeVisible()
   await capture("linked-chart-design")
+  const colors = page.locator("[data-selection-colors]")
+  await expect(colors.getByRole("button")).toHaveCount(2)
+  await colors.getByRole("button", { name: colorNameCopy.blue, exact: true }).click()
+  await page.getByRole("button", { name: colorNameCopy.purple, exact: true }).first().click()
+  await page.keyboard.press("Escape")
+  await expect
+    .poll(async () => {
+      const fold = await read()
+      return doom.propOf(fold.nodes.get(part(fold, "bar", "a")), "fills")
+    })
+    .toEqual([{ kind: "solid", color: { var: "accent4" } }])
 
   const settled = () => expect(page.locator('[data-save-status="saved"]')).toBeAttached({ timeout: 20_000 })
   const readUntil = (check) => expect.poll(async () => check(await read()), { timeout: 20_000 })
@@ -112,10 +124,26 @@ export default async function drive(kit) {
   await expect(node(tab, oldBar)).toBeAttached()
   const oldWidth = (await node(tab, oldBar).boundingBox()).width
   await selectChart()
-  await dragSlide(page, { x: 1675, y: 870 }, { x: 1180, y: 760 })
+  const start = await slidePoint(page, 1675, 870)
+  const end = await slidePoint(page, 1180, 760)
+  await page.mouse.move(start.x, start.y)
+  await page.mouse.down()
+  await page.mouse.move(end.x, end.y, { steps: 5 })
+  const received = page.waitForResponse(async (response) => {
+    if (new URL(response.url()).pathname !== kit.doomRoutes.since.path) return false
+    const body = await response.json().catch(() => undefined)
+    return body?.edits?.some((edit) =>
+      edit.writes.some((write) => write.node === slide && write.prop === "name" && write.value === "Concurrent rename"),
+    )
+  })
+  await send(themed, [{ node: slide, prop: "name", value: "Concurrent rename" }])
+  await received
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  await page.mouse.up()
   await readUntil((fold) => doom.propOf(fold.nodes.get(frame), "box").w).toBeLessThan(1200)
   const resized = await read()
-  expect(resized.rev).toBe(themed.rev + 1)
+  expect(resized.rev).toBe(themed.rev + 2)
+  expect(doom.propOf(resized.nodes.get(slide), "name")).toBe("Concurrent rename")
   expect(doom.propOf(resized.nodes.get(chart(resized).generated), "box").w).toBe(
     doom.propOf(resized.nodes.get(frame), "box").w,
   )
@@ -128,7 +156,11 @@ export default async function drive(kit) {
   await page.keyboard.down("ControlOrMeta")
   await page.mouse.click(labelBox.x + labelBox.width / 2, labelBox.y + labelBox.height / 2)
   await page.keyboard.up("ControlOrMeta")
-  await page.getByRole("combobox", { name: textCopy.style, exact: true }).click()
+  await capture("linked-chart-label-panel")
+  await expect(page.getByRole("button", { name: "Rename layer: North America" })).toBeVisible()
+  const text = page.locator(`[data-design-section="${textCopy.section}"]`)
+  await expect(text.getByRole("heading", { name: textCopy.section, exact: true })).toBeVisible()
+  await text.getByRole("combobox", { name: textCopy.style, exact: true }).click()
   await page
     .getByRole("option", { name: /^Body(?: ·|$)/ })
     .first()
@@ -221,6 +253,6 @@ export default async function drive(kit) {
   await writeFile(join(dirname(overview), "linked-chart.pdf"), pdf)
   await tab.close()
   note(
-    "Theme painted before a held save. The second tab received the resize, detach and undo replayed after reconnect, and a 100-row refresh survived reopen, filmstrip, JPEG capture and PDF.",
+    "The available chart color saved and the theme painted before a held save. The resize landed after a concurrent slide rename, detach and undo replayed after reconnect, and a 100-row refresh survived reopen, filmstrip, JPEG capture and PDF.",
   )
 }
