@@ -1,7 +1,8 @@
+import { linkedOwner } from "./component/instance-ownership.js"
 import { componentSpec } from "./component/library.js"
 import { deckOf } from "./deck-of.js"
 import type { Doom, Node } from "./doom.js"
-import { boxOf, childrenOf, propOf, slidesOf } from "./doom-walk.js"
+import { boxOf, childrenOf, parentOf, propOf, slidesOf } from "./doom-walk.js"
 import type { NodeId } from "./ids.js"
 import type { Measure } from "./measure.js"
 import { placeholderTitle } from "./placeholder-title.js"
@@ -19,6 +20,7 @@ const fixes = {
   "many-bullets": "Keep the five most important bullets or split the list across slides.",
   "placeholder-text": "Replace the placeholder with the final text.",
   "pie-compare": "Use a bar chart to compare the shares on a common scale.",
+  "empty-card": "Make the cards, or the row that holds them, only as tall as their words.",
 } as const
 
 export type SlideFinding = {
@@ -98,6 +100,33 @@ function slideCharts(layers: readonly Node[], boxes?: ReadonlyMap<NodeId, Box>) 
   })
 }
 
+const filledShare = 0.6
+
+const painted = (node: Node) =>
+  (propOf(node, "fills") ?? []).some((paint) => paint.visible !== false && (paint.opacity ?? 1) > 0)
+
+function wordsShare(doom: Doom, card: Node, boxes: ReadonlyMap<NodeId, Box>): number {
+  const layout = propOf(card, "layout")
+  const kids = childrenOf(doom, card.id).filter((kid) => propOf(kid, "hidden") !== true)
+  if (layout === undefined || layout.mode === "none" || kids.length === 0) return 1
+  const placed = kids.map((kid) => boxOf(kid, boxes))
+  const top = Math.min(...placed.map((box) => box.y))
+  const end = Math.max(...placed.map((box) => box.y + box.h))
+  return (end - top + layout.padding.t + layout.padding.b) / boxOf(card, boxes).h
+}
+
+function emptyCards(doom: Doom, layers: readonly Node[], boxes: ReadonlyMap<NodeId, Box>): readonly NodeId[] {
+  const fullest = new Map<NodeId, number>()
+  for (const card of layers) {
+    const row = parentOf(card)?.id
+    const mode = propOf(row === undefined ? undefined : doom.nodes.get(row), "layout")?.mode
+    if (row === undefined || card.type !== "frame" || (mode !== "row" && mode !== "column") || !painted(card)) continue
+    if (linkedOwner(doom.nodes, card.id) !== undefined) continue
+    fullest.set(row, Math.max(fullest.get(row) ?? 0, wordsShare(doom, card, boxes)))
+  }
+  return [...fullest].flatMap(([row, share]) => (share < filledShare ? [row] : []))
+}
+
 function onSlide(
   doom: Doom,
   slide: NodeId,
@@ -112,6 +141,10 @@ function onSlide(
     const lines = measurement === undefined ? undefined : titleLines(doom, slide, title, measurement)
     if (lines === undefined ? title.title.split(/\s+/).length > 25 : lines > 2)
       found.push(finding("title-long", slide, title.node.id))
+  }
+  if (measurement !== undefined) {
+    const boxes = measurement.boxes ?? solveLayout(doom, slide, measurement.measure)
+    for (const row of emptyCards(doom, layers, boxes)) found.push(finding("empty-card", slide, row))
   }
   const charts = slideCharts(layers, measurement?.boxes)
   const texts = layers.flatMap((node) => {

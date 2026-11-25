@@ -55,13 +55,13 @@ const arrowRoom = 48
 const flowWidthShare = 0.46
 const connectorWeight = 3
 
-function rowOf(area: Area, cards: readonly Sized[], gap: Px, filled: boolean, root: Values): Block | undefined {
+function rowOf(area: Area, cards: readonly Sized[], gap: Px, root: Values): Block | undefined {
   const tallest = Math.max(...cards.map((card) => card.high))
   if (tallest > area.h) return undefined
   return frameOf(
     {
       ...root,
-      box: boxIn(area, filled ? area.h : tallest),
+      box: boxIn(area, tallest),
       layout: { mode: "row", gap, padding: sidesOf(0), align: "top-left" },
     },
     cards.map((card) => card.block),
@@ -108,7 +108,7 @@ const kpi: Build = (area, items, scale) => {
       { pad, gap, fill: "background2" },
     ),
   )
-  return rowOf(area, cards, gap, scale.filled, scale.root)
+  return rowOf(area, cards, gap, scale.root)
 }
 
 function cardsLike(spacing: number, headingColor: "text" | "accent1", icons: boolean): Build {
@@ -128,7 +128,7 @@ function cardsLike(spacing: number, headingColor: "text" | "accent1", icons: boo
         { pad, gap: scale.gap, fill: "background2" },
       ),
     )
-    return rowOf(area, cards, gap, scale.filled, scale.root)
+    return rowOf(area, cards, gap, scale.root)
   }
 }
 

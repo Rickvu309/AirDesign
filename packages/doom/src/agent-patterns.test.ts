@@ -216,7 +216,7 @@ describe("kpi", () => {
 })
 
 describe("cards and compare", () => {
-  it("puts an icon, a heading and bullet points in each card, filling the area's height", () => {
+  it("puts an icon, a heading and bullet points in each card, as tall as its words", () => {
     const doom = build(
       agentDeck(),
       add({
@@ -226,7 +226,7 @@ describe("cards and compare", () => {
       }),
     )
     const root = made(doom)
-    expect(propOf(root, "box")).toMatchObject({ h: 500 })
+    expect(propOf(root, "box")!.h).toBeLessThan(500)
     const first = childrenOf(doom, childrenOf(doom, root.id)[0]!.id)
     expect(first.map((node) => propOf(node, "geometry")?.kind)).toEqual(["icon", "rect", "rect"])
     expect(propOf(first[0]!, "geometry")).toEqual({ kind: "icon", name: "lucide/star" })
@@ -237,16 +237,14 @@ describe("cards and compare", () => {
     })
   })
 
-  it("fills the box it was given", () => {
+  it("hugs its tallest card at the top of the box it was given", () => {
     const items = [
       { title: "Grow", points: ["One"] },
       { title: "Hold", points: ["Two"] },
     ]
-    const filling = propOf(
-      made(build(agentDeck(), add({ kind: "cards", items, box: { x: 0, y: 0, w: 1000, h: 700 } }))),
-      "box",
-    )!
-    expect(filling.h).toBe(700)
+    const row = made(build(agentDeck(), add({ kind: "cards", items, box: { x: 0, y: 40, w: 1000, h: 700 } })))
+    expect(propOf(row, "box")).toMatchObject({ y: 40, w: 1000 })
+    expect(propOf(row, "box")!.h).toBeLessThan(350)
   })
 
   it("steps the bullets down from body to caption as the area shrinks, never lower, then refuses", () => {
