@@ -16,7 +16,7 @@ export type ComponentDefinition = ComponentRef & {
   readonly spec: ComponentSpec
   readonly sizeTokens: readonly string[]
 }
-type ComponentRef = { readonly id: string; readonly revision: number }
+type ComponentRef = { readonly id: string; readonly node?: never; readonly revision: number }
 
 function builtIn(id: string, raw: unknown, sizeTokens: readonly string[] = []): ComponentDefinition {
   const spec = readComponentSpec(raw)

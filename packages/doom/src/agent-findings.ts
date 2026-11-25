@@ -100,7 +100,8 @@ export function agentFindings(after: Doom, writes: readonly Write[]): readonly A
     if (prop === "instance" && value !== null) {
       const instance = propOf(after.nodes.get(node), "instance")
       if (instance !== undefined) {
-        for (const name of resolveComponent(instance.component)?.sizeTokens ?? []) {
+        for (const name of (instance.component.node === undefined ? resolveComponent(instance.component) : undefined)
+          ?.sizeTokens ?? []) {
           const size = instance.tokens[name]
           if (typeof size === "number") checkSize(node, size)
         }

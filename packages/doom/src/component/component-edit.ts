@@ -1,3 +1,4 @@
+import { componentWrites } from "./deck-component.js"
 import { applyBeforeFreeing } from "../apply-edit.js"
 import { changingWrites, sameValue } from "../changing-writes.js"
 import type { Doom, Landed, Write } from "../doom.js"
@@ -34,7 +35,9 @@ export function componentEditPreview(
   batchStart = view.rev,
   focusEdit?: FocusEdit,
 ): Preview | null | Refusal {
+  const components = componentWrites(view, asked)
   if (
+    components.size === 0 &&
     focusEdit === undefined &&
     !asked.some((write) => writesTheme(write) || write.prop === "box" || write.prop === "text")
   )
@@ -45,6 +48,16 @@ export function componentEditPreview(
   if (asked.some(writesTheme)) {
     for (const node of view.nodes.values())
       if (node.type === "frame" && node.instance !== undefined && onDeck(view.nodes, node.id)) roots.add(node.id)
+  }
+  if (components.size > 0) {
+    const removed = new Set(
+      asked.filter(({ prop, value }) => prop === "parent" && value === null).map(({ node }) => node),
+    )
+    for (const node of view.nodes.values()) {
+      const source = propOf(node, "instance")?.component.node
+      if (source !== undefined && components.has(source) && !removed.has(source) && onDeck(view.nodes, node.id))
+        roots.add(node.id)
+    }
   }
   for (const write of asked) {
     const node = view.nodes.get(write.node)
@@ -92,7 +105,7 @@ export function componentEditPreview(
       })),
     ],
   }
-  const next = applyBeforeFreeing({ ...view, onces: new Map() }, edit)
+  const next = applyBeforeFreeing({ ...view, onces: new Map() }, edit, true)
   if (isRefusal(next)) return next
   const refused = guardInstances(view, next, { ...edit, writes: asked.filter((write) => !sizes.has(write)) }, false)
   if (refused !== undefined) return refused

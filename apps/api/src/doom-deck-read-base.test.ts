@@ -297,3 +297,81 @@ it("undoes a generation from replaced rows and keeps a later fill", async () => 
   expect(doom.propOf(restored.nodes.get(frame), "instance")).toEqual(doom.propOf(started.nodes.get(frame), "instance"))
   expect(restored.nodes.get(bar.node)).toMatchObject({ fills })
 })
+
+it("validates and replays a deck component through the ordinary edit routes", async () => {
+  const deck = await made()
+  const component = doom.nodeId("authored:1")
+  const frame = doom.nodeId("authored:2")
+  const at = doom.orderKeyBetween(null, null)
+  const spec = (w: number) => ({
+    version: 1,
+    name: "Tile",
+    collections: {},
+    parts: [{ emit: { kind: "rect", key: ["list", "tile"], x: 0, y: 0, w, h: 100, fill: { var: "accent1" } } }],
+    sample: { w: 300, h: 100, data: {} },
+  })
+  const initial = await foldOf(deck)
+  const create: doom.Write[] = [
+    { node: component, prop: "type", value: "component" },
+    { node: component, prop: "parent", value: { id: startIds.deck, at } },
+    { node: component, prop: "name", value: "Tile" },
+    { node: component, prop: "spec", value: spec(100) },
+    { node: component, prop: "revision", value: 1 },
+  ]
+  expect(
+    (
+      await send(
+        deck,
+        create.map((write) =>
+          write.prop === "spec" ? { ...write, value: { ...spec(100), sample: { w: 0, h: 100, data: {} } } } : write,
+        ),
+      )
+    ).json,
+  ).toMatchObject({ ok: false, refused: "shape", node: component, prop: "spec" })
+  expect((await send(deck, create)).json).toMatchObject({ ok: true })
+  const authored = await foldOf(deck)
+  const measure = doom.measureWith({})
+  const placed = doom.placeComponent(
+    authored,
+    { node: component, revision: 1 },
+    {
+      frame,
+      parent: { id: startIds.slide, at },
+      box: { x: 0, y: 0, w: 300, h: 100, rotation: 0, flipH: false, flipV: false },
+      data: {},
+      measure,
+    },
+  )
+  if (doom.isRefusal(placed)) throw new Error(JSON.stringify(placed))
+  const guarded = (writes: readonly doom.Write[], readBase: doom.Rev) =>
+    post("edit", { deck, edit: { ...edit(writes), readBase } })
+  expect((await guarded(placed, authored.rev)).json).toMatchObject({ ok: true })
+  const linked = await foldOf(deck)
+  const update: doom.Write[] = [
+    { node: component, prop: "spec", value: spec(200), base: authored.rev },
+    { node: component, prop: "revision", value: 2, base: authored.rev },
+  ]
+  expect((await guarded(update, linked.rev)).json).toMatchObject({
+    ok: false,
+    refused: "shape",
+    node: frame,
+    prop: "instance",
+  })
+  const prepared = doom.prepareComponentEdit(linked, update, measure)
+  if (doom.isRefusal(prepared)) throw new Error(JSON.stringify(prepared))
+  expect((await guarded(prepared, linked.rev)).json).toMatchObject({ ok: true })
+  const updated = await foldOf(deck)
+  expect(updated.nodes.get(frame)).toMatchObject({ instance: { component: { node: component, revision: 2 } } })
+  expect((await send(deck, [{ node: component, prop: "parent", value: null }])).json).toMatchObject({ ok: true })
+  const detached = await foldOf(deck)
+  expect(detached.nodes.get(frame)).not.toHaveProperty("instance")
+  let replay = initial
+  for (const landed of (await logOf(deck)).edits) {
+    const read = doom.readLanded(landed, replay)
+    if (doom.isRefusal(read)) throw new Error(JSON.stringify(read))
+    const next = doom.applyEdit(replay, read)
+    if (doom.isRefusal(next)) throw new Error(JSON.stringify(next))
+    replay = next
+  }
+  expect(replay.nodes).toEqual(detached.nodes)
+})

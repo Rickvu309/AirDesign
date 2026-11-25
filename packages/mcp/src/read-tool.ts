@@ -190,12 +190,12 @@ async function componentRead(opened: Opened, query: Query, host: DeckHost): Prom
   const slide = doom.slideOf(opened.fold, id)
   if (slide === undefined || (query.slide !== undefined && query.slide !== slide)) return refused("dead", { node: id })
   const { component, data, tokens, variant, focus, parts, suppressed } = node.instance
-  const signature = componentSignature(component.id)
+  const signature = component.id === undefined ? undefined : componentSignature(component.id)
   const layers = parts.map(({ node }) => node)
   const measured = await deckMeasure(host, [opened.fold], layers)
   const findings = componentFindings(opened.fold, [id], measured?.measure)
   const note = [
-    `${id} component ${component.id} r${component.revision} on slide ${slide}, at rev ${opened.rev}.`,
+    `${id} component ${component.id ?? component.node} r${component.revision} on slide ${slide}, at rev ${opened.rev}.`,
     "Use a slide read for layer ids, or send this rev as base to edit the instance.",
     ...componentFindingsNote(findings),
   ].join(" ")

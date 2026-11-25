@@ -12,7 +12,7 @@ it("hands the doom core to callers through the package index as one namespace", 
   expect(isRefusal({ refused: "shape" })).toBe(true)
   expect(isRefusal(emptyDoom)).toBe(false)
   expect(nodeId("c:1")).toBe("c:1")
-  expect(Object.keys(accepts)).toEqual(["deck", "slideRow", "slide", "frame", "shape"])
+  expect(Object.keys(accepts)).toEqual(["deck", "component", "slideRow", "slide", "frame", "shape"])
   expect(Object.keys(props)).toContain("box")
 })
 

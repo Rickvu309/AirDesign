@@ -91,7 +91,7 @@ function dataGrid(doom: Doom, node: Node): boolean {
 function slideCharts(layers: readonly Node[], boxes?: ReadonlyMap<NodeId, Box>) {
   return layers.flatMap((node) => {
     const instance = propOf(node, "instance")
-    const kind = instance === undefined ? undefined : componentSpec(instance.component.id)?.chart
+    const kind = instance?.component.id === undefined ? undefined : componentSpec(instance.component.id)?.chart
     if (kind === undefined) return []
     const { w, h } = boxOf(node, boxes)
     return [{ kind, area: w * h }]

@@ -7,8 +7,7 @@ import { lineEnds } from "./agent-line-ends.js"
 import { gapFor, slideSize, themeOf } from "./agent-place.js"
 import { notesText } from "./notes-text.js"
 import { resizedBy } from "./agent-resize.js"
-import { regenerateComponent } from "./component/join-instance.js"
-import { resolveComponent } from "./component/library.js"
+import { regenerateComponent, resolveComponentInFold } from "./component/join-instance.js"
 import { isRefusal } from "./refusal.js"
 import { bakeLayout } from "./bake-layout.js"
 import { measureWith } from "./measure.js"
@@ -167,7 +166,7 @@ function setComponent(draft: Draft, change: SetChange, field: (typeof componentF
   const id = readNodeId(target) ?? stop("shape", undefined, "target", "form", "A linked component instance id.")
   const node = living(draft, id, "target")
   const instance = propOf(node, "instance") ?? stop("shape", id, field, "needs", "a linked component instance")
-  const definition = resolveComponent(instance.component)
+  const definition = resolveComponentInFold(draft.doom, instance.component)
   if (definition === undefined) stop("shape", id, "target", "form", "A component available in this build.")
   const updated = regenerateComponent(
     draft.doom,

@@ -1,3 +1,4 @@
+import { componentWrites } from "./component/deck-component.js"
 import { applyBeforeFreeing } from "./apply-edit.js"
 import {
   derivedCells,
@@ -99,12 +100,14 @@ export function invertStep(
     )
     return change === undefined ? [] : [change]
   })
-  const measured = joined.some((change) =>
-    measuredInstanceEdit(change, edit.writes, (write) => {
-      if (write.prop === "box" || write.prop === "text") return propOf(before.nodes.get(write.node), write.prop)
-      return undefined
-    }),
-  )
+  const measured =
+    componentWrites(before, expanded).size > 0 ||
+    joined.some((change) =>
+      measuredInstanceEdit(change, edit.writes, (write) => {
+        if (write.prop === "box" || write.prop === "text") return propOf(before.nodes.get(write.node), write.prop)
+        return undefined
+      }),
+    )
   const transitions = measured ? [] : joined
   const derived = derivedCells(transitions, edit.writes, (node, key) => propOf(before.nodes.get(node), key))
   const structural = { ...edit, writes: edit.writes.filter(({ node, prop }) => !derived({ node, key: prop })) }
