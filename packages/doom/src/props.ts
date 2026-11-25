@@ -1,3 +1,4 @@
+import { type StoredSpec, readStoredSpec } from "./component/stored-spec.js"
 import { type Instance, readInstance } from "./component/instance.js"
 import { readLanguage } from "./language.js"
 import { limits } from "./limits.js"
@@ -37,7 +38,7 @@ import type { Refusal } from "./refusal.js"
 import { type Text, readText } from "./text.js"
 import { type Theme, type ThemeKey, readTheme } from "./theme.js"
 
-export const nodeTypes = ["deck", "slideRow", "slide", "frame", "shape"] as const
+export const nodeTypes = ["deck", "slideRow", "slide", "frame", "shape", "component"] as const
 export type NodeType = (typeof nodeTypes)[number]
 
 export type Origin = {
@@ -76,6 +77,8 @@ export type Props = {
   readonly layout: Layout
   readonly clip: boolean
   readonly mask: boolean
+  readonly spec: StoredSpec
+  readonly revision: number
   readonly instance: Instance
   readonly link: string | NodeId
   readonly role: "title" | "subtitle" | "body" | "number" | "footer"
@@ -100,6 +103,7 @@ export type PropSpec<K extends PropName> = {
 
 export const accepts = {
   deck: ["type", "name", "theme", "size", "nameFollows", "language"],
+  component: ["type", "parent", "name", "spec", "revision"],
   slideRow: ["type", "parent", "name", "hidden"],
   slide: ["type", "parent", "name", "hidden", "fills", "layout", "notes", "transition", "skipped"],
   frame: [
@@ -151,7 +155,8 @@ export const accepts = {
 } as const satisfies Readonly<Record<NodeType, readonly PropName[]>>
 
 export const holds = {
-  deck: ["slideRow"],
+  deck: ["slideRow", "component"],
+  component: [],
   slideRow: ["slide"],
   slide: ["frame", "shape"],
   frame: ["frame", "shape"],
@@ -238,6 +243,8 @@ export const props: { readonly [K in PropName]: PropSpec<K> } = {
   layout: spec(readLayout, "custom", "How a frame lays out what is inside it."),
   clip: spec(boolean, "toggle", null),
   mask: spec(boolean, "toggle", "Whether this layer masks the layers above it."),
+  spec: spec(readStoredSpec, "none", null, "base"),
+  revision: spec(integer(1, Number.MAX_SAFE_INTEGER), "none", null, "base"),
   instance: spec(readInstance, "none", null),
   link: spec(readLink, "text", null),
   role: spec(literal(["title", "subtitle", "body", "number", "footer"]), "choice", null),

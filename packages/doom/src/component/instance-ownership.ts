@@ -1,3 +1,4 @@
+import { withComponentDeletes } from "./deck-component.js"
 import { sameValue } from "../changing-writes.js"
 import type { Doom, Landed, Node, Write } from "../doom.js"
 import { parentOf, propOf } from "../doom-walk.js"
@@ -82,6 +83,7 @@ export function suppressKeys(tree: Tree, root: NodeId, keys: readonly PartKey[])
 }
 
 export function withPartDeletes(tree: Tree, writes: readonly Write[]): readonly Write[] | Refusal {
+  writes = withComponentDeletes(tree, writes)
   const deletes = partDeletes(tree, writes)
   if (deletes.size === 0) return writes
   const parents = new Set<NodeId>()

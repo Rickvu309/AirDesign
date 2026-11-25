@@ -11,8 +11,16 @@ import { orderKeyBetween } from "../order-key.js"
 import { siteSpot } from "../preset-geometry.js"
 import { props, type Props } from "../props.js"
 import { isRefusal, refuse, type Refusal } from "../refusal.js"
+import { deckComponent, sameComponent } from "./deck-component.js"
 import { expandComponent, type ComponentInput } from "./expand-component.js"
-import { hasBaselineFill, keyString, type Instance, type PartBaseline, type PartKey } from "./instance.js"
+import {
+  hasBaselineFill,
+  keyString,
+  type ComponentRef,
+  type Instance,
+  type PartBaseline,
+  type PartKey,
+} from "./instance.js"
 import { type ComponentDefinition, resolveComponent } from "./library.js"
 import type { ComponentNode, ComponentTree } from "./nodes.js"
 import { partId } from "./part-id.js"
@@ -211,7 +219,7 @@ function join(
 
 export function placeComponent(
   doom: Doom,
-  { id, revision, spec }: ComponentDefinition,
+  source: ComponentDefinition | ComponentRef,
   {
     frame,
     parent,
@@ -228,6 +236,11 @@ export function placeComponent(
     readonly measure: Measure
   },
 ): readonly Write[] | Refusal {
+  const definition = "spec" in source ? source : resolveComponentInFold(doom, source)
+  if (definition === undefined || definition.revision !== source.revision) return refuse("shape", frame, "instance")
+  const { spec, revision } = definition
+  const reference =
+    definition.node === undefined ? { id: definition.id, revision } : { node: definition.node, revision }
   const generated = partId(frame, ["root"])
   if (frame === generated || doom.nodes.has(frame) || doom.nodes.has(generated)) return refuse("shape", frame, "type")
   const tree = expandComponent(spec, {
@@ -252,7 +265,7 @@ export function placeComponent(
   const placed = join(
     doom,
     frame,
-    { component: { id, revision }, generated, data, tokens, variant, focus, suppressed: [] },
+    { component: reference, generated, data, tokens, variant, focus, suppressed: [] },
     undefined,
     tree,
     create,
@@ -266,7 +279,7 @@ export function regenerateComponent(
   frame: NodeId,
   patch: ComponentPatch,
   measure: Measure,
-  definition?: ComponentDefinition,
+  definition?: ReturnType<typeof resolveComponentInFold>,
 ): ComponentUpdate | Refusal {
   return updateComponent(doom, frame, patch, measure, definition)
 }
@@ -285,7 +298,7 @@ function updateComponent(
   frame: NodeId,
   patch: ComponentPatch & Partial<Pick<Instance, "suppressed">>,
   measure: Measure,
-  definition?: ComponentDefinition,
+  definition?: ReturnType<typeof resolveComponentInFold>,
   returning?: ReadonlyMap<string, Instance["parts"][number]>,
   restored?: ReadonlyMap<NodeId, readonly Write[]>,
   input: Doom = doom,
@@ -293,8 +306,11 @@ function updateComponent(
   const root = linked(input, frame)
   if (root === undefined) return refuse("missing", frame, "instance")
   const { instance } = root
-  const proposed = { ...instance, ...patch }
-  const tree = expandInstance(doom, root, proposed, measure, definition, returning, restored, input)
+  const resolved = definition ?? resolveComponentInFold(input, instance.component)
+  const component =
+    resolved?.node === undefined ? instance.component : { node: resolved.node, revision: resolved.revision }
+  const proposed = { ...instance, ...patch, component }
+  const tree = expandInstance(doom, root, proposed, measure, resolved, returning, restored, input)
   if (isRefusal(tree)) return tree
   return join(doom, frame, proposed, instance, tree, [], measure, returning, restored)
 }
@@ -305,12 +321,19 @@ export function componentTree(doom: Doom, frame: NodeId, measure: Measure): Comp
   return expandInstance(doom, root, root.instance, measure)
 }
 
+export function resolveComponentInFold(
+  doom: Doom,
+  reference: ComponentRef,
+): (ComponentRef & Pick<ComponentDefinition, "spec">) | undefined {
+  return reference.node === undefined ? resolveComponent(reference) : deckComponent(doom, reference.node)
+}
+
 function expandInstance(
   doom: Doom,
   { id, instance, box }: InstanceFrame,
   proposed: Inputs,
   measure: Measure,
-  definition = resolveComponent(instance.component),
+  definition: ReturnType<typeof resolveComponentInFold> = resolveComponentInFold(doom, instance.component),
   returning?: ReadonlyMap<string, Instance["parts"][number]>,
   restored?: ReadonlyMap<NodeId, readonly Write[]>,
   input: Doom = doom,
@@ -318,8 +341,8 @@ function expandInstance(
   if (box === undefined) return refuse("shape", id, "box")
   if (
     definition === undefined ||
-    definition.id !== instance.component.id ||
-    definition.revision !== instance.component.revision
+    !sameComponent(definition, instance.component) ||
+    (definition.node === undefined && definition.revision !== instance.component.revision)
   )
     return refuse("shape", id, "instance")
   const styles = new Map(

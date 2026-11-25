@@ -87,7 +87,7 @@ export function measuredInstanceEdit(
     (write) =>
       writesTheme(write) || (write.node === root && write.prop === "box" && changesBoxSize(write.value, prior(write))),
   )
-  if (changesLayout) return true
+  if (changesLayout || !sameValue(before.component, after.component)) return true
   const text = writes.filter(({ prop }) => prop === "text")
   if (text.length === 0) return false
   const styles = (instance: Instance) =>

@@ -9,9 +9,15 @@
     },
     {
       "file": "apps/api/src/doom/doom-deck.ts",
-      "names": ["partSql", "seedsOf", "editDoom"],
-      "digest": "b979e265372a",
-      "blob": "250c90303aeef80c5cda540f22a65c8ef8e980cc"
+      "names": ["editDoom"],
+      "digest": "591c5b6391be",
+      "blob": "8a29f019e723c01a44fabdcbfa48d38e84c9509e"
+    },
+    {
+      "file": "apps/api/src/doom/doom-edit-part.ts",
+      "names": ["partSql", "seedsOf"],
+      "digest": "94e7d2ce9b43",
+      "blob": "861f1277271d61752b22ec3cf70f8e509aa15fa2"
     }
   ]
 }
