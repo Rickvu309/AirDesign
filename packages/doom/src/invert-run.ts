@@ -15,6 +15,8 @@ import {
 import { type Instance, instanceFields, keyString } from "./component/instance.js"
 import { sameValue } from "./changing-writes.js"
 import { withPartDeletes } from "./component/instance-ownership.js"
+import { withReturningRebuilt } from "./component/component-edit.js"
+import { withoutDeletedInstances } from "./component/deleted-instances.js"
 import { onDeck } from "./doom-walk.js"
 import type { Doom, Landed, Node, Write } from "./doom.js"
 import { readLanded } from "./fold-json.js"
@@ -320,11 +322,12 @@ export function undoSourceOf(before: Doom, edit: Landed): RunEdit {
 
 export function invertRun(
   now: Doom,
-  edits: readonly RunEdit[],
+  asked: readonly RunEdit[],
   owned: ReadonlySet<Rev> = new Set(),
   started?: LayerPositions | Doom,
   measure: Measure = measureWith({}),
 ): Undone {
+  const { edits, skipped } = withoutDeletedInstances(now, asked)
   const mine = new Set<Rev>([...owned, ...edits.map((edit) => edit.rev)])
   const writer = new Map<string, Rev | null | undefined>()
   const restored = new Map<string, Restore>()
@@ -407,10 +410,12 @@ export function invertRun(
     }
   }
   const result = settle(now, chosen.reverse(), kept, [...restored.values()], started)
+  const writes = withReturningRebuilt(now, withRegenerated(result.writes, rebuilt), measure)
+  if (isRefusal(writes)) return { writes: [], kept: [], left: [], waiting: [], refused: writes }
   return {
     ...result,
-    kept: [...new Set([...result.kept, ...keptInstances])],
-    writes: withRegenerated(result.writes, rebuilt),
+    kept: [...new Set([...result.kept, ...keptInstances, ...skipped])],
+    writes,
     left: [...new Set([...result.left, ...blocked])],
   }
 }

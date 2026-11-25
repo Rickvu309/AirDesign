@@ -99,11 +99,15 @@ async function turnRun(
     return answered(nothingLeft, { ok: false, reason: "nothing", ...empty })
   const nodes = positionNodes(opened.fold, edits)
   const started = nodes.length === 0 ? undefined : await host.positionsAt?.(opened.deck, edits[0]!.rev - 1, nodes)
-  const measure = edits.some(({ replaced }) => replaced.some(({ key }) => key === "instance"))
+  let measure = edits.some(({ replaced }) => replaced.some(({ key }) => key === "instance"))
     ? await deckMeasure(host, [opened.fold])
     : undefined
   const owned = await host.undoRevs(opened.deck, agent)
-  const turned = doom.invertRun(opened.fold, edits, owned, started, measure?.measure)
+  let turned = doom.invertRun(opened.fold, edits, owned, started, measure?.measure)
+  if (measure === undefined && turned.writes.some(({ prop }) => prop === "instance")) {
+    measure = await deckMeasure(host, [opened.fold])
+    if (measure !== undefined) turned = doom.invertRun(opened.fold, edits, owned, started, measure.measure)
+  }
   if (turned.refused !== undefined)
     return answered(undoRebuildFailed, {
       ok: false,
@@ -137,7 +141,10 @@ async function turnRun(
     once,
     author: { kind: "agent", id: agent, run: runId, ...(run.name === "" ? {} : { name: run.name }) },
     writes: turned.writes,
-    ...(turned.writes.some(({ prop }) => prop === "instance") ? { readBase: opened.fold.rev } : {}),
+    ...(turned.writes.some(({ prop }) => prop === "instance") ||
+    doom.returningInstances(opened.fold, turned.writes).length > 0
+      ? { readBase: opened.fold.rev }
+      : {}),
     runUndo: { run: runId, undone: true },
   }
   const lineMeasure = doom.mayLeaveDeck(opened.fold, edit.writes)

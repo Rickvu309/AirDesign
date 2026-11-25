@@ -7,11 +7,16 @@ with recursive gone(id) as (
   select n.id from gone
   cross join lateral (select n.id from deck.doom_node n where n.deck = $1 and n.parent = gone.id offset 0) n
 ),
-back(id, node) as (
-  select n.id, n.node from deck.doom_node n where n.deck = $1 and n.id = any($6::text[])
+back(id, node, parent) as (
+  select n.id, n.node, n.parent from deck.doom_node n where n.deck = $1 and n.id = any($6::text[])
   union
-  select n.id, n.node from back
-  cross join lateral (select n.id, n.node from deck.doom_node n where n.deck = $1 and n.parent = back.id offset 0) n
+  select n.id, n.node, n.parent from back
+  cross join lateral (select n.id, n.node, n.parent from deck.doom_node n where n.deck = $1 and n.parent = back.id offset 0) n
+),
+linked_back(id, parent) as (
+  select id, parent from back where node #>> '{instance,component,node}' is not null
+  union
+  select back.id, back.parent from linked_back join back on back.id = linked_back.parent
 ),
 changed_components as (
   select id from deck.doom_node where deck = $1 and type = 'component' and id = any($2::text[])
@@ -59,7 +64,7 @@ generated as (
 ),
 sources as (
   select n.node #>> '{instance,component,node}' as id
-  from chain join deck.doom_node n on n.deck = $1 and n.id = chain.id
+  from chain cross join lateral (select n.node from deck.doom_node n where n.deck = $1 and n.id = chain.id offset 0) n
   where n.node #>> '{instance,component,node}' is not null
   union
   select node #>> '{instance,component,node}' from back where node #>> '{instance,component,node}' is not null
@@ -67,16 +72,19 @@ sources as (
   select unnest($8::text[])
 ),
 components as (
-  select id, parent from deck.doom_node
-  where deck = $1 and type = 'component'
-    and (id in (select id from sources) or (parent is not null and ($9::boolean or exists (select 1 from changed_components))))
+  select n.id, n.parent from deck.doom_node n
+  where n.deck = $1 and n.id = any(array(select id from sources)) and n.type = 'component'
+  union
+  select n.id, n.parent from deck.doom_node n
+  where ($9::boolean or exists (select 1 from changed_components))
+    and n.deck = $1 and n.type = 'component' and n.parent is not null
 ),
 wanted as (
   select id from components
   union
   select parent from components where parent is not null
   union
-  select id from back where node #>> '{instance,component,node}' is not null
+  select id from linked_back
   union
   select id from chain
   union

@@ -4,20 +4,20 @@
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["applyEdit", "landEdit", "guardRun", "write", "protect"],
-      "digest": "c6aaa8b9b431",
-      "blob": "4f3249169a85a8fdb3a255a285d094e7f7c3ea2e"
+      "digest": "8fa461ba6429",
+      "blob": "5d7ef9dcb36a368e0aa4683eab9bca5e111e72dd"
     },
     {
       "file": "packages/doom/src/invert-run.ts",
       "names": ["invertRun", "replacedBy"],
-      "digest": "56097333457b",
-      "blob": "a4854552e1f89cfd8a834143bc8980ab36877447"
+      "digest": "d94b6da95589",
+      "blob": "4bede352c416748d9aa87f18d44e3a068cdadd0a"
     },
     {
       "file": "packages/live/src/doom-deck.ts",
       "names": ["createDoomDeck"],
       "digest": "c636c91ff4bb",
-      "blob": "ad4339b1f8206858f09acdcded81d1d092c3ba56"
+      "blob": "031797ecfdc3836b597a4025caf23f16c9ad6b3a"
     }
   ]
 }

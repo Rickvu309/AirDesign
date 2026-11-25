@@ -44,6 +44,7 @@ import { deviceStorage, keepDoom, type DoomStorage } from "./doom-storage.js"
 import { runInLog } from "./run-log.js"
 import { watchedRunsOf } from "./watched-runs.js"
 import { catchingUpResolves, onStanding, pressedOn, remember, type Pressed } from "./turn-replay.js"
+import { turnGuard } from "./turn-guard.js"
 
 export type { DoomDeck } from "./doom-deck-types.js"
 
@@ -397,16 +398,10 @@ function connected(
       from.pop()
       return { ok: false, reason: "nothing" }
     }
-    const linked = step.writes.some(({ prop }) => prop === "instance")
+    const { guarded, replay } = turnGuard(now, writes, step, source, turned.keys())
     const pushed = pushEdit(writes, author, {
       ...(step.run === undefined ? {} : { runUndo: { run: step.run, undone: to === redoSteps } }),
-      ...(step.guarded === true ? { readBase: now.rev } : {}),
-      ...(linked
-        ? {
-            turnFrom: [...new Set([...turned.keys(), ...step.onces.filter((once) => once !== last)]), last],
-            turnSource: doom.undoSourceOf(step.before, source),
-          }
-        : {}),
+      ...replay,
       last: step.before,
     })
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
@@ -417,7 +412,7 @@ function connected(
       before: now,
       writes: pushed.writes,
       ...(step.run === undefined ? {} : { run: step.run }),
-      ...(step.guarded === true ? { guarded: true } : {}),
+      ...(guarded ? { guarded: true } : {}),
     })
     remember(turned, pushed.once, pressedOn(server, now, pushed.writes, step.onces))
     return { ok: true, once: pushed.once, saved: pushed.saved }
@@ -444,7 +439,7 @@ function connected(
       return [...stays.kept, ...stays.left, ...stays.waiting].length === 0
         ? { ok: false, reason: "nothing" }
         : { ok: false, reason: "left", ...stays }
-    const guarded = writes.some(({ prop }) => prop === "instance")
+    const guarded = writes.some(({ prop }) => prop === "instance") || doom.returningInstances(now, writes).length > 0
     if (guarded) remember(runUndoSources, run, { edits, ...(started === undefined ? {} : { started }) })
     const pushed = pushEdit(writes, author, {
       runUndo: { run, undone: true },

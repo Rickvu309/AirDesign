@@ -6,12 +6,16 @@ import {
   invert,
   isRefusal,
   rev,
+  type Doom,
   type Landed,
+  type NodeId,
   type Write,
   type Refusal,
 } from "../index.js"
+import { invertStep } from "../invert.js"
+import { invertRun, undoSourceOf } from "../invert-run.js"
 import { viewOf } from "../view-of.js"
-import { onDeck } from "../doom-walk.js"
+import { onDeck, propOf } from "../doom-walk.js"
 import { at, box, frame, instance, measure, mint, person } from "./testing/linked-instance-fixtures.js"
 import { placeComponent } from "./join-instance.js"
 import { prepareComponentEdit } from "./component-edit.js"
@@ -142,4 +146,113 @@ it("scopes component byte and count refusals to the offending fields", () => {
     node: nodes[32],
     prop: "parent",
   })
+  const full = accepted(apply(nodes.slice(0, 32).flatMap((id) => create(deck, id, spec(100)))))
+  const removed = accepted(applyEdit(full, step(full, [{ node: nodes[5]!, prop: "parent", value: null }])))
+  const refilled = accepted(applyEdit(removed, step(removed, create(deck, nodes[32]!, spec(100)))))
+  expect(
+    applyEdit(refilled, step(refilled, [{ node: nodes[5]!, prop: "parent", value: { id: deck, at } }])),
+  ).toMatchObject({ refused: "limit", node: nodes[5], prop: "parent" })
+})
+
+function onSlideTwo() {
+  const { doom, slides } = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }, { children: [] }] })
+  const deck = [...doom.nodes.values()].find(({ type }) => type === "deck")!.id
+  const node = mint()
+  const authored = accepted(applyEdit(doom, step(doom, create(deck, node, spec(100)))))
+  const placing = placeComponent(
+    authored,
+    { node, revision: 1 },
+    { frame, parent: { id: slides[1]!, at }, box, data: {}, measure },
+  )
+  const linked = accepted(applyEdit(authored, step(authored, accepted(placing))))
+  return { linked, node, slide: slides[1]!, part: instance(linked).parts[0]!.node }
+}
+
+function step(base: Doom, writes: readonly Write[]): Landed {
+  return { once: `step-${base.rev + 1}`, rev: rev(base.rev + 1), readBase: base.rev, author: person, writes }
+}
+
+function updating(fold: Doom, node: NodeId, width: number, revision: number): Landed {
+  const base = (prop: "spec" | "revision") => fold.revs.get(node)!.get(prop)!
+  const writes = prepareComponentEdit(
+    fold,
+    [
+      { node, prop: "spec", value: spec(width), base: base("spec") },
+      { node, prop: "revision", value: revision, base: base("revision") },
+    ],
+    measure,
+  )
+  return step(fold, accepted(writes))
+}
+
+const updated = (fold: Doom, node: NodeId, width: number, revision: number) =>
+  accepted(applyEdit(fold, updating(fold, node, width, revision)))
+
+function undone(before: Doom, landed: Landed, now: Doom): Doom {
+  const writes = invertStep(before, now, landed, new Set(), measure)
+  return accepted(applyEdit(now, step(now, accepted(writes))))
+}
+
+it("rebuilds an instance at the current spec when a slide delete is undone after its component changed", () => {
+  const { linked, node, slide, part } = onSlideTwo()
+  const deleting = step(linked, [{ node: slide, prop: "parent", value: null }])
+  const gone = accepted(applyEdit(linked, deleting))
+  const changed = updated(gone, node, 200, 2)
+  const back = undone(linked, deleting, changed)
+  expect(onDeck(back.nodes, frame)).toBe(true)
+  expect(instance(back).component).toEqual({ node, revision: 2 })
+  expect(back.nodes.get(part)).toMatchObject({ box: { w: 200 } })
+})
+
+it("brings an instance back detached when a slide delete is undone after its component was deleted", () => {
+  const { linked, node, slide, part } = onSlideTwo()
+  const deleting = step(linked, [{ node: slide, prop: "parent", value: null }])
+  const gone = accepted(applyEdit(linked, deleting))
+  const removed = accepted(applyEdit(gone, step(gone, [{ node, prop: "parent", value: null }])))
+  const back = undone(linked, deleting, removed)
+  expect(onDeck(back.nodes, frame)).toBe(true)
+  expect(back.nodes.get(frame)).not.toHaveProperty("instance")
+  expect(onDeck(back.nodes, part)).toBe(true)
+  expect(back.nodes.get(part)).toEqual(linked.nodes.get(part))
+})
+
+it("rebuilds an instance at the current spec when its own delete is undone after its component changed", () => {
+  const { linked, node, part } = onSlideTwo()
+  const deleting = step(linked, [{ node: frame, prop: "parent", value: null }])
+  const gone = accepted(applyEdit(linked, deleting))
+  const changed = updated(gone, node, 200, 2)
+  const back = undone(linked, deleting, changed)
+  expect(onDeck(back.nodes, frame)).toBe(true)
+  expect(instance(back).component).toEqual({ node, revision: 2 })
+  expect(back.nodes.get(part)).toMatchObject({ box: { w: 200 } })
+})
+
+it("undoes the rest of a spec update when one of its instances was deleted since, and rebuilds that one when it returns", () => {
+  const { linked: one, node, slide } = onSlideTwo()
+  const other = mint()
+  const placing = placeComponent(
+    one,
+    { node, revision: 1 },
+    { frame: other, parent: { id: slide, at }, box, data: {}, measure },
+  )
+  const linked = accepted(applyEdit(one, step(one, accepted(placing))))
+  const update = updating(linked, node, 200, 2)
+  const rebuilt = accepted(applyEdit(linked, update))
+  const deleting = step(rebuilt, [{ node: other, prop: "parent", value: null }])
+  const deleted = accepted(applyEdit(rebuilt, deleting))
+  const kept = propOf(deleted.nodes.get(other), "instance")
+
+  const reverted = undone(linked, update, deleted)
+  expect(propOf(reverted.nodes.get(node), "revision")).toBe(1)
+  expect(instance(reverted)).toEqual(instance(linked))
+  expect(propOf(reverted.nodes.get(other), "instance")).toEqual(kept)
+
+  const run = invertRun(deleted, [undoSourceOf(linked, update)], new Set(), undefined, measure)
+  expect(run.kept).toEqual([other])
+  expect(accepted(applyEdit(deleted, step(deleted, run.writes))).nodes.get(node)).toEqual(reverted.nodes.get(node))
+
+  const back = undone(rebuilt, deleting, reverted)
+  expect(propOf(back.nodes.get(other), "instance")?.component).toEqual({ node, revision: 1 })
+  const part = propOf(back.nodes.get(other), "instance")!.parts[0]!.node
+  expect(back.nodes.get(part)).toMatchObject({ box: { w: 100 } })
 })

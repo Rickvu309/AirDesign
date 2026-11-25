@@ -1,4 +1,4 @@
-import { guardDeckComponents } from "./component/deck-component.js"
+import { guardComponents, guardDeckLinks } from "./component/deck-component.js"
 import { sameValue } from "./changing-writes.js"
 import { instanceFieldKey, instanceFields } from "./component/instance.js"
 import type { RevisionKey } from "./doom.js"
@@ -247,7 +247,7 @@ export type Known = {
   readonly deck: () => boolean
   readonly partial?: true
   readonly freeing?: true
-  readonly componentPreview?: boolean
+  readonly rebuilding?: true
 }
 export type Landing = { readonly doom: Doom; readonly delta: Counts }
 
@@ -338,13 +338,9 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
     writes !== landed.writes && instanceRoots(landed.writes).length === 0,
   )
   if (ownership !== undefined) return ownership
-  const components = guardDeckComponents(
-    doom,
-    work,
-    expanded.writes,
-    instanceRoots(expanded.writes),
-    known.componentPreview === true,
-  )
+  const components =
+    guardComponents(doom, work, expanded.writes) ??
+    (known.rebuilding === true ? undefined : guardDeckLinks(doom, work, expanded.writes))
   if (components !== undefined) return components
   for (const root of instanceRoots(expanded.writes)) {
     const before = propOf(doom.nodes.get(root), "instance")
@@ -409,12 +405,17 @@ export function applyEdit(doom: Doom, landed: Landed): Doom | Refusal {
   return isRefusal(landing) ? landing : landing.doom
 }
 
-export function applyBeforeFreeing(doom: Doom, landed: Landed, componentPreview = false): Doom | Refusal {
+export function applyBeforeFreeing(doom: Doom, landed: Landed): Doom | Refusal {
+  const landing = landEdit(doom, landed, { counts: () => countsOf(doom), deck: () => hasDeck(doom), freeing: true })
+  return isRefusal(landing) ? landing : landing.doom
+}
+
+export function applyBeforeRebuild(doom: Doom, landed: Landed): Doom | Refusal {
   const landing = landEdit(doom, landed, {
     counts: () => countsOf(doom),
     deck: () => hasDeck(doom),
     freeing: true,
-    componentPreview,
+    rebuilding: true,
   })
   return isRefusal(landing) ? landing : landing.doom
 }
