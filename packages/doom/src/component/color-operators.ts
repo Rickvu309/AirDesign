@@ -12,6 +12,26 @@ function luminance(hex: string): number {
   return 0.2126 * linear(1) + 0.7152 * linear(3) + 0.0722 * linear(5)
 }
 
+function contrast(first: number, second: number): number {
+  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05)
+}
+
+export function contrastingAccent([preferred, first, second]: Values, theme: Theme): Color {
+  const requested = color(preferred)
+  if (typeof requested === "string" || requested.var !== "accent1" || requested.tint !== 0) return requested
+  const firstLevel = luminance(resolveColor(color(first), theme))
+  const secondLevel = luminance(resolveColor(color(second), theme))
+  const score = (accent: Hex) => {
+    const level = luminance(accent)
+    return Math.min(contrast(level, firstLevel), contrast(level, secondLevel))
+  }
+  const accents = ["accent1", "accent2", "accent3", "accent4", "accent5", "accent6"] as const
+  const strongest = accents.reduce((best, accent) =>
+    score(theme.colors[accent]) > score(theme.colors[best]) ? accent : best,
+  )
+  return { var: strongest }
+}
+
 export function readableInk([fill]: Values, theme: Theme): Color {
   const level = luminance(resolveColor(color(fill), theme))
   const black = (level + 0.05) / 0.05
@@ -25,11 +45,8 @@ export function contrastTint([fill, backdrop, minimum]: Values, theme: Theme, ch
   const background = resolveColor(color(backdrop), theme)
   const target = finite(1, 21)(minimum)
   const level = luminance(background)
-  const contrast = (hex: Hex) => {
-    const other = luminance(hex)
-    return (Math.max(level, other) + 0.05) / (Math.min(level, other) + 0.05)
-  }
-  if (contrast(source) <= target) return original
+  const ratio = (hex: Hex) => contrast(level, luminance(hex))
+  if (ratio(source) <= target) return original
 
   const mix = (share: number): Hex =>
     `#${[1, 3, 5]
@@ -47,7 +64,7 @@ export function contrastTint([fill, backdrop, minimum]: Values, theme: Theme, ch
   for (let i = 0; i < 10; i++) {
     charge()
     const middle = (low + high) / 2
-    if (contrast(mix(middle)) >= target) low = middle
+    if (ratio(mix(middle)) >= target) low = middle
     else high = middle
   }
   return mix(low)

@@ -7,9 +7,19 @@ import { linkChannels } from "./link-channels.js"
 import { textExtent } from "./text-extent.js"
 import { contrastInk, type FittingContext } from "./fit-text.js"
 import { allocate } from "./allocate.js"
-import { readableInk } from "./color-operators.js"
+import { contrastTint, contrastingAccent, readableInk } from "./color-operators.js"
 import {
-  cycle, flatten, groupBy, groupIndex, indexBy, lookup, partition, positiveInteger, runs, sample, splitRanked,
+  cycle,
+  flatten,
+  groupBy,
+  groupIndex,
+  indexBy,
+  lookup,
+  partition,
+  positiveInteger,
+  runs,
+  sample,
+  splitRanked,
 } from "./list-operators.js"
 import { palette, uniqueColors } from "./palette.js"
 import { decimals, positiveScale } from "./precision.js"
@@ -127,6 +137,8 @@ const operators: Readonly<Record<string, Operation>> = {
   coalesce: fixed(2, ([value, fallback]) => value ?? fallback ?? null),
   groupBy: fixed(2, groupIndex),
   cycle: fixed(2, cycle),
+  contrastTint: fixed(3, (args, charge, _format, { theme }) => contrastTint(args, theme, charge)),
+  contrastingAccent: fixed(3, (args, _charge, _format, { theme }) => contrastingAccent(args, theme)),
   readableInk: fixed(1, (args, _charge, _format, { theme }) => readableInk(args, theme)),
   eq: fixed(2, ([a, b], charge) => {
     if (typeof a === "string" && typeof b === "string" && a.length === b.length) charge(a.length)
