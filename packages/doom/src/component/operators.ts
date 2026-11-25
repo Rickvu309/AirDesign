@@ -24,6 +24,7 @@ import {
   type Values,
   color,
   isList,
+  name,
   numeric,
   string,
   valueList,
@@ -33,9 +34,11 @@ import {
 const list = valueList
 const number = numeric
 const index = integer(-1e15, 1e15)
+const digitsOf = integer(0, 12)
+const round = (value: number, digits: number): number => number(Number(value.toFixed(digits)))
 const readFormat = object({
   scale: positiveScale,
-  digits: integer(0, 12),
+  digits: digitsOf,
   prefix: string,
   suffix: string,
   sign: literal(["negative", "always"]),
@@ -189,6 +192,17 @@ const operators: Readonly<Record<string, Operation>> = {
   fitSize: fixed(1, ([value], _charge, _format, { theme }) =>
     value === "auto" ? Math.min(...Object.values(theme.textStyles).map(({ size }) => size)) : number(value),
   ),
+  round: fixed(2, ([value, digits]) => round(number(value), digitsOf(digits))),
+  advise: {
+    min: 2,
+    max: 3,
+    run: ([code, message, about], charge, _format, _context, report) => {
+      const note = about === undefined ? string(message) : string(string(about) + ": " + string(message))
+      charge(note.length)
+      report({ kind: "advice", code: name(code), note })
+      return true
+    },
+  },
   isInteger: fixed(1, ([value]) => Number.isInteger(number(value))),
   textWidth: { min: 2, max: 3, run: (args, _charge, _format, context) => textWidth(args, context) },
   textMetrics: fixed(2, (args, _charge, _format, context) => textMetrics(args, context)),
@@ -232,7 +246,7 @@ const operators: Readonly<Record<string, Operation>> = {
     palette(list(values), list(requested), context.theme, charge),
   ),
   "index-by": fixed(2, ([values, field], charge) => indexBy(list(values), string(field), charge)),
-  lookup: fixed(2, lookup),
+  lookup: { min: 2, max: 3, run: lookup },
   sample: fixed(2, ([values, size], charge) => sample(list(values), positiveInteger(size), charge)),
   "place-boxes": fixed(3, ([rows, obstacles, bounds], charge) =>
     placeBoxes(list(rows), list(obstacles), bounds, charge),

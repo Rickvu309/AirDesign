@@ -110,11 +110,11 @@ export function groupIndex([source, field]: Values, charge: Charge): Value {
   return Object.fromEntries(groups)
 }
 
-export function lookup([record, key]: Values, charge: Charge): Value {
+export function lookup([record, key, fallback]: Values, charge: Charge): Value {
   if (record === null || typeof record !== "object" || isList(record)) return reject("shape", "An object.")
   const member = string(key)
   charge(member.length)
-  return ownField(record, member) ?? null
+  return ownField(record, member) ?? fallback ?? null
 }
 
 export function cycle([source, index]: Values): Value {

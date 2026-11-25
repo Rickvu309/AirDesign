@@ -18,15 +18,17 @@
   },
   "variants": {
     "labels": [true, false],
-    "totals": [true, false]
+    "totals": [true, false],
+    "legend": [true, false]
   },
   "defaultVariant": {
     "labels": true,
-    "totals": false
+    "totals": true,
+    "legend": false
   },
   "defaults": {
     "scale": 1,
-    "digits": 0,
+    "digits": "auto",
     "prefix": "",
     "suffix": "",
     "unitHeader": "",
@@ -43,75 +45,82 @@
     "label": "label",
     "caption": "caption",
     "captionSmall": 18,
-    "totalPrefix": "Net ",
     "accent1": {
       "var": "accent1"
     },
     "accent2": {
-      "var": "accent2"
+      "var": "text2"
     },
     "accent3": {
-      "var": "accent3"
+      "var": "text2",
+      "tint": 0.17
     },
     "accent4": {
-      "var": "accent4"
+      "var": "text2",
+      "tint": 0.34
     },
     "accent5": {
-      "var": "accent5"
+      "var": "text2",
+      "tint": 0.51
     },
     "accent6": {
-      "var": "accent6"
-    }
+      "var": "text2",
+      "tint": 0.68
+    },
+    "focus": "",
+    "source": ""
   },
   "let": [
-    ["legend", ["lt", 1, ["count", ["get", "data.series"]]]],
+    ["multipleSeries", ["lt", 1, ["count", ["get", "data.series"]]]],
     ["headerUnit", ["if", ["eq", ["get", "token.unitPlace"], "header"], ["get", "token.unitHeader"], ""]],
-    [
-      "header",
-      [
-        "if",
-        ["eq", ["get", "token.title"], ""],
-        ["get", "headerUnit"],
-        [
-          "if",
-          ["eq", ["get", "headerUnit"], ""],
-          ["get", "token.title"],
-          ["concat", ["get", "token.title"], ", ", ["get", "headerUnit"]]
-        ]
-      ]
-    ],
     ["gutter", ["min", 12, ["div", ["get", "frame.w"], 4]]],
     ["rowCount", ["count", ["get", "data.categories"]]],
-    ["plotWidth", ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]]],
-    ["categoryTop", ["max", 0, ["sub", ["get", "frame.h"], 56]]],
+    ["availableWidth", ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]]],
+    ["categoryTop", ["max", 0, ["sub", ["get", "frame.h"], ["if", ["eq", ["get", "token.source"], ""], 56, 98]]]],
     ["plotBottom", ["max", 0, ["sub", ["get", "categoryTop"], 10]]],
     [
       "plotTop",
       [
         "min",
         ["div", ["get", "plotBottom"], 2],
-        ["if", ["get", "legend"], 130, ["if", ["get", "variant.totals"], 92, 66]]
+        [
+          "if",
+          ["get", "multipleSeries"],
+          [
+            "if",
+            ["if", ["eq", ["get", "token.title"], ""], false, ["if", ["eq", ["get", "headerUnit"], ""], false, true]],
+            164,
+            130
+          ],
+          ["if", ["get", "variant.totals"], 92, 66]
+        ]
       ]
     ],
     [
-      "seriesColors",
+      "seriesItems",
       [
-        "groupBy",
-        [
-          "map",
-          ["get", "data.series"],
-          "s",
-          {
-            "id": ["get", "s.id"],
-            "order": ["get", "i"],
-            "fill": [
+        "map",
+        ["get", "data.series"],
+        "s",
+        {
+          "id": ["get", "s.id"],
+          "order": ["get", "i"],
+          "fill": [
+            "if",
+            ["eq", ["get", "s.color"], null],
+            [
               "if",
-              ["eq", ["get", "s.color"], null],
+              [
+                "if",
+                ["eq", ["get", "token.focus"], ""],
+                ["eq", ["get", "i"], 0],
+                ["eq", ["get", "s.id"], ["get", "token.focus"]]
+              ],
+              ["get", "token.accent1"],
               [
                 "cycle",
                 [
                   "list",
-                  ["get", "token.accent1"],
                   ["get", "token.accent2"],
                   ["get", "token.accent3"],
                   ["get", "token.accent4"],
@@ -119,21 +128,22 @@
                   ["get", "token.accent6"]
                 ],
                 ["get", "i"]
-              ],
-              ["get", "s.color"]
-            ]
-          }
-        ],
-        "id"
+              ]
+            ],
+            ["get", "s.color"]
+          ],
+          "chars": ["get", "s.label"]
+        }
       ]
     ],
+    ["seriesColors", ["groupBy", ["get", "seriesItems"], "id"]],
     [
       "segmentsByCategory",
       [
         "groupBy",
         [
           "if",
-          ["get", "legend"],
+          ["get", "multipleSeries"],
           [
             "sortBy",
             ["get", "data.segments"],
@@ -154,12 +164,7 @@
         {
           "id": ["get", "c.id"],
           "label": ["get", "c.label"],
-          "segments": [
-            "if",
-            ["eq", ["lookup", ["get", "segmentsByCategory"], ["get", "c.id"]], null],
-            ["list"],
-            ["lookup", ["get", "segmentsByCategory"], ["get", "c.id"]]
-          ]
+          "segments": ["lookup", ["get", "segmentsByCategory"], ["get", "c.id"], ["list"]]
         }
       ]
     ],
@@ -190,30 +195,182 @@
       ]
     ],
     ["hi", ["if", ["eq", ["get", "upper"], ["get", "lo"]], 1, ["get", "upper"]]],
+    [
+      "lastGroup",
+      [
+        "if",
+        [
+          "if",
+          ["get", "multipleSeries"],
+          ["if", ["lt", ["count", ["get", "data.series"]], 6], ["eq", ["get", "variant.legend"], false], false],
+          false
+        ],
+        ["at", ["get", "groups"], ["sub", ["get", "rowCount"], 1]],
+        null
+      ]
+    ],
+    [
+      "eligible",
+      [
+        "if",
+        ["eq", ["get", "lastGroup"], null],
+        ["list"],
+        [
+          "filter",
+          ["get", "lastGroup.segments"],
+          "s",
+          [
+            "lt",
+            38,
+            [
+              "mul",
+              ["max", ["get", "s.value"], ["sub", 0, ["get", "s.value"]]],
+              ["div", ["sub", ["get", "plotBottom"], ["get", "plotTop"]], ["sub", ["get", "hi"], ["get", "lo"]]]
+            ]
+          ]
+        ]
+      ]
+    ],
+    ["lastBySeries", ["groupBy", ["get", "eligible"], "series"]],
+    [
+      "directLabels",
+      [
+        "filter",
+        ["get", "seriesItems"],
+        "s",
+        [
+          "if",
+          ["eq", ["get", "s.chars"], ""],
+          false,
+          ["if", ["eq", ["lookup", ["get", "lastBySeries"], ["get", "s.id"]], null], false, true]
+        ]
+      ]
+    ],
+    [
+      "directWidth",
+      [
+        "if",
+        [
+          "if",
+          ["get", "multipleSeries"],
+          [
+            "if",
+            ["eq", ["count", ["get", "eligible"]], ["count", ["get", "data.series"]]],
+            [
+              "if",
+              ["eq", ["count", ["get", "lastGroup.segments"]], ["count", ["get", "data.series"]]],
+              ["eq", ["count", ["get", "directLabels"]], ["count", ["get", "data.series"]]],
+              false
+            ],
+            false
+          ],
+          false
+        ],
+        [
+          "add",
+          18,
+          ["max", 0, ["map", ["get", "directLabels"], "s", ["textWidth", ["get", "s.chars"], ["get", "token.caption"]]]]
+        ],
+        0
+      ]
+    ],
+    [
+      "direct",
+      [
+        "if",
+        ["lt", 0, ["get", "directWidth"]],
+        ["lt", ["get", "directWidth"], ["mul", 0.3, ["get", "availableWidth"]]],
+        false
+      ]
+    ],
+    ["plotWidth", ["sub", ["get", "availableWidth"], ["if", ["get", "direct"], ["get", "directWidth"], 0]]],
+    [
+      "density",
+      [
+        "if",
+        ["lt", 5, ["max", 0, ["map", ["get", "groups"], "c", ["count", ["get", "c.segments"]]]]],
+        ["advise", "many-segments", "Group smaller segments as Other to keep each column to five segments."],
+        false
+      ]
+    ],
     ["zero", ["linear", 0, ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]],
+    [
+      "digits",
+      [
+        "if",
+        ["eq", ["get", "token.digits"], "auto"],
+        ["decimals", ["map", ["get", "data.segments"], "s", ["get", "s.value"]], ["get", "token.scale"]],
+        ["get", "token.digits"]
+      ]
+    ],
     [
       "valueFormat",
       {
         "scale": ["get", "token.scale"],
-        "digits": ["get", "token.digits"],
+        "digits": ["get", "digits"],
         "prefix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.prefix"], ""],
         "suffix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.suffix"], ""],
         "sign": "negative"
       }
     ],
-    ["legendWidth", ["min", 210, ["div", ["get", "plotWidth"], ["max", 1, ["count", ["get", "data.series"]]]]]]
+    [
+      "legendTop",
+      [
+        "if",
+        ["eq", ["get", "token.title"], ""],
+        ["if", ["eq", ["get", "headerUnit"], ""], 44, 38],
+        ["if", ["eq", ["get", "headerUnit"], ""], 46, 78]
+      ]
+    ],
+    [
+      "legendHeight",
+      [
+        "min",
+        38,
+        [
+          "max",
+          0,
+          ["sub", ["sub", ["get", "plotTop"], ["get", "legendTop"]], ["if", ["get", "variant.totals"], 45, 16]]
+        ]
+      ]
+    ],
+    ["chip", ["min", 18, ["get", "legendHeight"]]],
+    ["legendLeading", ["add", ["get", "chip"], 8]],
+    [
+      "legend",
+      [
+        "if",
+        ["if", ["get", "multipleSeries"], ["eq", ["get", "direct"], false], false],
+        [
+          "flowText",
+          ["get", "seriesItems"],
+          {
+            "width": ["get", "plotWidth"],
+            "rows": 1,
+            "rowHeight": ["get", "legendHeight"],
+            "leading": ["get", "legendLeading"],
+            "gap": 22,
+            "style": ["get", "token.caption"],
+            "smaller": ["get", "token.captionSmall"]
+          }
+        ],
+        {
+          "items": ["list"]
+        }
+      ]
+    ]
   ],
   "parts": [
     {
-      "when": ["if", ["eq", ["get", "header"], ""], false, true],
+      "when": ["if", ["eq", ["get", "token.title"], ""], false, true],
       "emit": {
         "kind": "text",
-        "key": ["list", "unit"],
+        "key": ["list", "title"],
         "x": ["get", "gutter"],
         "y": 0,
-        "w": ["get", "plotWidth"],
-        "h": 42,
-        "chars": ["get", "header"],
+        "w": ["get", "availableWidth"],
+        "h": 38,
+        "chars": ["get", "token.title"],
         "style": ["get", "token.heading"],
         "color": ["get", "token.ink"],
         "align": "left",
@@ -222,42 +379,71 @@
       }
     },
     {
+      "when": ["if", ["eq", ["get", "headerUnit"], ""], false, true],
+      "emit": {
+        "kind": "text",
+        "key": ["list", "unit"],
+        "x": ["get", "gutter"],
+        "y": ["if", ["eq", ["get", "token.title"], ""], 0, 36],
+        "w": ["get", "availableWidth"],
+        "h": 38,
+        "chars": ["get", "headerUnit"],
+        "style": ["get", "token.caption"],
+        "color": ["get", "token.muted"],
+        "align": "left",
+        "alignV": "center",
+        "fit": "omit"
+      }
+    },
+    {
+      "when": ["if", ["eq", ["get", "token.source"], ""], false, true],
+      "emit": {
+        "kind": "text",
+        "key": ["list", "source"],
+        "x": ["get", "gutter"],
+        "y": ["max", 0, ["sub", ["get", "frame.h"], 38]],
+        "w": ["get", "availableWidth"],
+        "h": 38,
+        "chars": ["get", "token.source"],
+        "style": ["get", "token.caption"],
+        "color": ["get", "token.muted"],
+        "align": "left",
+        "alignV": "center",
+        "fit": "omit"
+      }
+    },
+    {
       "repeat": {
-        "over": ["get", "data.series"],
-        "as": "series"
+        "over": ["get", "legend.items"],
+        "as": "placed"
       },
-      "when": ["get", "legend"],
-      "let": [
-        ["legendLeft", ["add", ["get", "gutter"], ["mul", ["get", "i"], ["get", "legendWidth"]]]],
-        ["seriesPaint", ["at", ["lookup", ["get", "seriesColors"], ["get", "series.id"]], 0]],
-        ["chip", ["min", 18, ["div", ["get", "legendWidth"], 3]]]
-      ],
+      "let": [["legendLeft", ["add", ["get", "gutter"], ["get", "placed.x"]]]],
       "children": [
         {
           "emit": {
             "kind": "rect",
-            "key": ["list", "legend-swatch", ["get", "series.id"]],
+            "key": ["list", "legend-swatch", ["get", "placed.item.id"]],
             "x": ["get", "legendLeft"],
-            "y": ["if", ["eq", ["get", "header"], ""], 14, 56],
+            "y": ["add", ["get", "legendTop"], ["div", ["sub", ["get", "legendHeight"], ["get", "chip"]], 2]],
             "w": ["get", "chip"],
             "h": ["get", "chip"],
-            "fill": ["get", "seriesPaint.fill"]
+            "fill": ["get", "placed.item.fill"]
           }
         },
         {
           "emit": {
             "kind": "text",
-            "key": ["list", "legend-label", ["get", "series.id"]],
-            "x": ["add", ["get", "legendLeft"], ["get", "chip"], 8],
-            "y": ["if", ["eq", ["get", "header"], ""], 4, 46],
-            "w": ["max", 0, ["sub", ["get", "legendWidth"], ["add", ["get", "chip"], 18]]],
-            "h": 38,
-            "chars": ["get", "series.label"],
+            "key": ["list", "legend-label", ["get", "placed.item.id"]],
+            "x": ["add", ["get", "legendLeft"], ["get", "legendLeading"]],
+            "y": ["get", "legendTop"],
+            "w": ["get", "placed.w"],
+            "h": ["get", "legendHeight"],
+            "chars": ["get", "placed.item.chars"],
             "style": ["get", "token.caption"],
+            "size": ["get", "legend.size"],
             "color": ["get", "token.muted"],
             "align": "left",
-            "alignV": "center",
-            "fit": "omit"
+            "alignV": "center"
           }
         }
       ]
@@ -267,7 +453,7 @@
         "kind": "line",
         "key": ["list", "zero"],
         "start": ["point", ["get", "gutter"], ["get", "zero"]],
-        "end": ["point", ["sub", ["get", "frame.w"], ["get", "gutter"]], ["get", "zero"]],
+        "end": ["point", ["add", ["get", "gutter"], ["get", "plotWidth"]], ["get", "zero"]],
         "color": ["get", "token.rule"],
         "width": 2,
         "route": "straight",
@@ -358,6 +544,23 @@
                   "minWidth": 24
                 }
               }
+            },
+            {
+              "when": ["if", ["get", "direct"], ["eq", ["get", "group.id"], ["get", "lastGroup.id"]], false],
+              "emit": {
+                "kind": "text",
+                "key": ["list", "series-label", ["get", "s.series"]],
+                "x": ["add", ["add", ["get", "mark.start"], ["get", "mark.size"]], 12],
+                "y": ["get", "top"],
+                "w": ["sub", ["get", "directWidth"], 10],
+                "h": ["get", "height"],
+                "chars": ["get", "seriesPaint.chars"],
+                "style": ["get", "token.caption"],
+                "color": ["get", "token.ink"],
+                "align": "left",
+                "alignV": "center",
+                "fit": "omit"
+              }
             }
           ]
         },
@@ -384,7 +587,7 @@
             "y": ["sub", ["get", "top"], 37],
             "w": ["get", "lane.size"],
             "h": 32,
-            "chars": ["concat", ["get", "token.totalPrefix"], ["format", ["get", "net"], ["get", "valueFormat"]]],
+            "chars": ["format", ["get", "net"], ["get", "valueFormat"]],
             "style": ["get", "token.label"],
             "color": ["get", "token.ink"],
             "align": "center",
