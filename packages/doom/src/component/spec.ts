@@ -214,10 +214,10 @@ export type ComponentSpec = ReturnType<ReturnType<typeof specReader>> & {
 }
 
 export const readComponentData = (
-  spec: { readonly collections: Parameters<typeof readData>[0]; readonly collectionLimits?: Parameters<typeof readData>[3] },
+  spec: { readonly collections: Parameters<typeof readData>[0] },
   raw: unknown,
   charge: Charge,
-) => readData(spec.collections, raw, charge, spec.collectionLimits)
+) => readData(spec.collections, raw, charge)
 
 export function readComponentSpec(raw: unknown): ComponentSpec | Refusal {
   try {

@@ -179,7 +179,7 @@ export default async function drive(kit) {
       expect(tree.findings).toContainEqual(
         expect.objectContaining({ key: ["categories"], thinned: expect.any(Number) }),
       )
-      expect(tree.findings).toContainEqual(expect.objectContaining({ key: ["values"], kind: "check" }))
+      expect(tree.findings).toContainEqual(expect.objectContaining({ key: ["value-label-space"], kind: "check" }))
     }
 
     const root = { ...tree, props: { ...tree.props, box } }

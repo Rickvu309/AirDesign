@@ -2,7 +2,7 @@ import { finite, integer, literal, object, reject } from "../read-kit.js"
 import type { ReportFinding } from "./findings.js"
 import type { FittingContext } from "./fit-text.js"
 import { axis } from "./numeric-axis.js"
-import { sortBy, startsWithIgnoreCase } from "./order-values.js"
+import { sortBy, startsWithWordIgnoreCase } from "./order-values.js"
 import { decimals, positiveScale } from "./precision.js"
 import { flowText, textWidth } from "./text-operators.js"
 import { linkChannels } from "./link-channels.js"
@@ -157,12 +157,19 @@ const operators: Readonly<Record<string, Operation>> = {
     return { start: number(number(start) + step * index(i) + (step - size) / 2), size }
   }),
   sortBy: { min: 2, max: 5, run: sortBy },
-  startsWithIgnoreCase: fixed(2, startsWithIgnoreCase),
+  startsWithWordIgnoreCase: fixed(2, startsWithWordIgnoreCase),
   axis: fixed(3, ([lo, hi, target], charge) => axis(lo, hi, target, charge)),
-  textExtent: fixed(2, ([chars, style], charge, _format, { theme, measure }) =>
-    textExtent(chars, style, theme, measure, charge),
-  ),
+  textExtent: {
+    min: 2,
+    max: 3,
+    run: ([chars, style, size], charge, _format, { theme, measure }) =>
+      textExtent(chars, style, size, theme, measure, charge),
+  },
   decimals: fixed(2, decimals),
+  resolutionDigits: fixed(1, ([value]) => {
+    const resolution = Math.abs(number(value))
+    return resolution === 0 ? 0 : Math.min(12, Math.max(0, -Math.floor(Math.log10(resolution))))
+  }),
   isInteger: fixed(1, ([value]) => Number.isInteger(number(value))),
   textWidth: { min: 2, max: 3, run: (args, _charge, _format, context) => textWidth(args, context) },
   flowText: fixed(2, (args, _charge, _format, context, report) => flowText(args, context, report)),
