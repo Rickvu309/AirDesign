@@ -7,7 +7,10 @@ import { linkChannels } from "./link-channels.js"
 import { textExtent } from "./text-extent.js"
 import { contrastInk, type FittingContext } from "./fit-text.js"
 import { allocate } from "./allocate.js"
-import { flatten, groupBy, indexBy, partition, positiveInteger, runs, sample, splitRanked } from "./list-operators.js"
+import { readableInk } from "./color-operators.js"
+import {
+  cycle, flatten, groupBy, groupIndex, indexBy, lookup, partition, positiveInteger, runs, sample, splitRanked,
+} from "./list-operators.js"
 import { palette, uniqueColors } from "./palette.js"
 import { decimals, positiveScale } from "./precision.js"
 import { flowText, textMetrics, textWidth } from "./text-operators.js"
@@ -119,6 +122,9 @@ const operators: Readonly<Record<string, Operation>> = {
   }),
   count: fixed(1, ([source]) => list(source).length),
   coalesce: fixed(2, ([value, fallback]) => value ?? fallback ?? null),
+  groupBy: fixed(2, groupIndex),
+  cycle: fixed(2, cycle),
+  readableInk: fixed(1, (args, _charge, _format, { theme }) => readableInk(args, theme)),
   eq: fixed(2, ([a, b], charge) => {
     if (typeof a === "string" && typeof b === "string" && a.length === b.length) charge(a.length)
     return a === b
@@ -226,12 +232,7 @@ const operators: Readonly<Record<string, Operation>> = {
     palette(list(values), list(requested), context.theme, charge),
   ),
   "index-by": fixed(2, ([values, field], charge) => indexBy(list(values), string(field), charge)),
-  lookup: fixed(2, ([value, key], charge) => {
-    if (value === null || typeof value !== "object" || isList(value)) return reject("shape", "An object.")
-    const name = string(key)
-    charge(name.length)
-    return Object.hasOwn(value, name) ? (value[name] ?? null) : null
-  }),
+  lookup: fixed(2, lookup),
   sample: fixed(2, ([values, size], charge) => sample(list(values), positiveInteger(size), charge)),
   "place-boxes": fixed(3, ([rows, obstacles, bounds], charge) =>
     placeBoxes(list(rows), list(obstacles), bounds, charge),

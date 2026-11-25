@@ -214,12 +214,26 @@ export function preparePart(
     }
   }
 
+  const textStyle = readField("style", emit.style, literal(textStyleNames))
+  const fit = emit.fit
+  const style = context.styleFor?.(key)
+  if (fit !== undefined && fit !== "omit" && "minWidth" in fit) {
+    const neededWidth = readField("fit.minWidth", fit.minWidth, size)
+    if (position.w < neededWidth) {
+      return {
+        kind: "text-fit",
+        key,
+        field: `${field}.chars`,
+        size: context.theme.textStyles[style ?? textStyle].size,
+        neededWidth,
+        availableWidth: position.w,
+      }
+    }
+  }
   const alignment = readField("align", emit.align, align)
   const ink = readField("color", emit.color, color)
-  const textStyle = readField("style", emit.style, literal(textStyleNames))
   const explicitSize = emit.size === undefined ? undefined : readField("size", emit.size, textSize)
   const alignV = readField("alignV", emit.alignV, vertical)
-  const fit = emit.fit
   const content = readField("chars", emit.chars, (raw) =>
     textContent(raw, ink, alignment, explicitSize ?? context.theme.textStyles[textStyle].size, charge),
   )
@@ -240,7 +254,6 @@ export function preparePart(
       ...(emit.padding === undefined ? {} : { padding: readField("padding", emit.padding, sides) }),
     }),
   )
-  const style = context.styleFor?.(key)
   const text = style === undefined ? generated : { ...generated, style }
   const part: TextPart = {
     key,
@@ -250,7 +263,7 @@ export function preparePart(
     ...(style === undefined ? {} : { generatedStyle: generated.style }),
   }
   if (fit === undefined) return part
-  if (fit === "omit") return fitOne(part, undefined, context)
+  if (fit === "omit" || "minWidth" in fit) return fitOne(part, undefined, context)
   const smaller = Math.min(
     readField("fit.smaller", fit.smaller, smallerSize),
     context.theme.textStyles[text.style].size,

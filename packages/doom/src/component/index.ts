@@ -9,6 +9,8 @@ export {
   lineComponent,
   pieComponent,
   processComponent,
+  stackedComponent,
+  waterfallComponent,
 } from "./library.js"
 export type { ComponentFinding } from "./findings.js"
 export type { ComponentNode, ComponentTree } from "./nodes.js"
