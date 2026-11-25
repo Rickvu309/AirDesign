@@ -4,7 +4,7 @@ import type { ReportFinding } from "./findings.js"
 import { axis } from "./numeric-axis.js"
 import { sortBy, startsWithWordIgnoreCase } from "./order-values.js"
 import { linkChannels } from "./link-channels.js"
-import { colorSelection, matchingFocus, paletteRamp, rampSlots } from "./palette-ramp.js"
+import { containsValue, matchingFocus, paletteRamp, rampCapacity, rampFold, rampSlots } from "./palette-ramp.js"
 import { textExtent } from "./text-extent.js"
 import { contrastInk, type FittingContext } from "./fit-text.js"
 import { allocate } from "./allocate.js"
@@ -142,8 +142,14 @@ const operators: Readonly<Record<string, Operation>> = {
   contrastTint: fixed(3, (args, charge, _format, { theme }) => contrastTint(args, theme, charge)),
   contrastGrey: fixed(5, (args, charge, _format, { theme }) => contrastGrey(args, theme, charge)),
   readableInk: fixed(1, (args, _charge, _format, { theme }) => readableInk(args, theme)),
-  focusColor: fixed(4, colorSelection),
-  rampSlots: fixed(2, (args, charge, _format, _context, report) => rampSlots(args, charge, report)),
+  includes: fixed(2, containsValue),
+  rampCapacity: fixed(0, (_args, _charge, _format, { theme }) => rampCapacity(theme)),
+  rampFold: fixed(3, (args, charge, _format, { theme }, report) => rampFold(args, charge, report, theme)),
+  rampSlots: {
+    min: 2,
+    max: 3,
+    run: (args, charge, _format, { theme }, report) => rampSlots(args, charge, report, theme),
+  },
   matchingFocus: {
     min: 2,
     max: 4,

@@ -196,6 +196,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
   )
 
   function begin(node: doom.NodeId, entry: Entry) {
+    if (doom.linkedOwner(viewRef.current.nodes, node) !== undefined) return
     const keeps = holdsPaint(viewRef.current, node)
     const text = propOf(viewRef.current.nodes.get(node), "text") ?? blankTextFor(keeps)
     pushed.current = JSON.stringify(text)

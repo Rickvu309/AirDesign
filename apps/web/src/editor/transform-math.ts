@@ -84,8 +84,12 @@ function gripSigns(grip: ResizeGrip): { readonly sx: -1 | 0 | 1; readonly sy: -1
   return { sx, sy }
 }
 
-function clampedSide(size: number, delta: number): number {
-  return Math.max(size + delta, 0)
+type Size = { readonly w: number; readonly h: number }
+
+const noMinimum: Size = { w: 0, h: 0 }
+
+function clampedSide(size: number, delta: number, least: number): number {
+  return Math.max(size + delta, least)
 }
 
 function constrainedSize(
@@ -94,13 +98,14 @@ function constrainedSize(
   freeH: number,
   sx: -1 | 0 | 1,
   sy: -1 | 0 | 1,
-): { readonly w: number; readonly h: number } {
+  minimum: Size,
+): Size {
   if (start.w <= 0 || start.h <= 0) return { w: freeW, h: freeH }
   const across = freeW / start.w
   const down = freeH / start.h
   const chosen =
     sx !== 0 && sy !== 0 ? (Math.abs(across - 1) >= Math.abs(down - 1) ? across : down) : sx !== 0 ? across : down
-  const scale = Math.max(chosen, 0)
+  const scale = Math.max(chosen, minimum.w / start.w, minimum.h / start.h, 0)
   return { w: Math.round(start.w * scale), h: Math.round(start.h * scale) }
 }
 
@@ -111,15 +116,16 @@ export function resizeBox(
   dy: number,
   modifiers: ResizeModifiers,
   rotation = 0,
+  minimum = noMinimum,
 ): Box {
   const own = rotation === 0 ? { x: dx, y: dy } : rotatePoint({ x: dx, y: dy }, -rotation)
   const ldx = Math.round(own.x)
   const ldy = Math.round(own.y)
   const { sx, sy } = gripSigns(grip)
   const factor = modifiers.fromCenter ? 2 : 1
-  const freeW = sx === 0 ? start.w : clampedSide(start.w, sx * ldx * factor)
-  const freeH = sy === 0 ? start.h : clampedSide(start.h, sy * ldy * factor)
-  const { w, h } = modifiers.keepRatio ? constrainedSize(start, freeW, freeH, sx, sy) : { w: freeW, h: freeH }
+  const freeW = sx === 0 ? start.w : clampedSide(start.w, sx * ldx * factor, minimum.w)
+  const freeH = sy === 0 ? start.h : clampedSide(start.h, sy * ldy * factor, minimum.h)
+  const { w, h } = modifiers.keepRatio ? constrainedSize(start, freeW, freeH, sx, sy, minimum) : { w: freeW, h: freeH }
   const ax = modifiers.fromCenter ? 0 : -sx
   const ay = modifiers.fromCenter ? 0 : -sy
   const oldAnchor = { x: (ax * start.w) / 2, y: (ay * start.h) / 2 }

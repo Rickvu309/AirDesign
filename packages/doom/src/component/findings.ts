@@ -19,6 +19,7 @@ export type ComponentFinding = { readonly key: PartKey; readonly field: string }
       readonly neededWidth: number
       readonly availableWidth: number
       readonly thinned?: number
+      readonly advice?: string
     }
   | {
       readonly kind: "text-overflow"

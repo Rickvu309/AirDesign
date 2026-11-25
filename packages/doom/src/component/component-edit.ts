@@ -10,6 +10,7 @@ import { props } from "../props.js"
 import { isRefusal, refuse, type Refusal } from "../refusal.js"
 import { guardInstances, instanceRoots, linkedOwner } from "./instance-ownership.js"
 import { refreshComponent } from "./join-instance.js"
+import { belowMinimum, componentMinimum } from "./minimum-frame.js"
 
 export const writesTheme = ({ prop }: Pick<Write, "prop">): boolean => prop === "theme" || prop.startsWith("theme.")
 
@@ -66,6 +67,9 @@ export function componentEditPreview(
       propOf(node, "instance") !== undefined &&
       changesBoxSize(write.value, propOf(node, "box"))
     ) {
+      const size = props.box.read(write.value)
+      const small = isRefusal(size) ? undefined : belowMinimum(componentMinimum(view, write.node), size, write.node)
+      if (small !== undefined) return small
       roots.add(write.node)
       sizes.add(write)
     }

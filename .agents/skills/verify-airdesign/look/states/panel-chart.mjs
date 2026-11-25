@@ -33,6 +33,8 @@ async function drive(kit) {
     ],
   })
   expect(landed.ok).toBe(true)
+  expect((await call("stop_run", { deck: opened.deck, runId: landed.runId })).ok).toBe(true)
+  await expect(page.getByText("Chart sample is editing this slide")).toHaveCount(0)
   const chart = landed.added.find(({ kind }) => kind === "component").id
   await expect(page.locator(`[data-slide-box] [data-node="${chart}"]`)).toBeAttached()
   await openDesign(page)

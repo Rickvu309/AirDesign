@@ -167,5 +167,6 @@ export { linkedPartOverrides, partDeletes, suppressKeys } from "./component/inst
 
 export type { LayerPositions } from "./standing-layers.js"
 
+export { componentMinimum } from "./component/minimum-frame.js"
 export { reservedPartId } from "./component/part-id.js"
 export { deckTexts } from "./deck-of.js"

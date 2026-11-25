@@ -182,7 +182,7 @@ describe("slide findings", () => {
   })
 
   it("leaves a full-size chart with a small companion clear", () => {
-    const small = chart("column", spot(620, 200, 200, 100))
+    const small = chart("column", spot(620, 200, 200, 160))
     expect(codes([[small, chart(), text("Source: Annual report")]])).toEqual([])
   })
 

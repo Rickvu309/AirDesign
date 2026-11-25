@@ -83,7 +83,13 @@ function emission(read: (raw: unknown) => Expr) {
   const position = { key: read, x: read, y: read, w: read, h: read }
   const readFit = object(
     { smaller: read },
-    { group: name, thin: finite(0, 1_000), axis: literal(["horizontal", "vertical"]), keep: read },
+    {
+      group: name,
+      thin: finite(0, 1_000),
+      axis: literal(["horizontal", "vertical"]),
+      keep: read,
+      advise: wordsWithin(200),
+    },
   )
   const fitText = (raw: unknown) => {
     const fit = readFit(raw)
@@ -93,6 +99,8 @@ function emission(read: (raw: unknown) => Expr) {
       naming("axis", () => reject("shape", "A fit axis requires thinning."))
     if (fit.keep !== undefined && fit.thin === undefined)
       naming("keep", () => reject("shape", "Keeping a label requires thinning."))
+    if (fit.advise !== undefined && fit.thin === undefined)
+      naming("advise", () => reject("shape", "Advice for thinned labels requires thinning."))
     return fit
   }
   const stroke = object({ color: read, width: read })
@@ -197,6 +205,7 @@ function specReader() {
       chart: literal(["cartesian", "pie"]),
       sample: (raw: unknown) => raw,
       collectionLimits,
+      minFrame: object({ w: integer(1, 20_000), h: integer(1, 20_000) }),
     },
   )
   return (raw: unknown) => {
@@ -288,7 +297,7 @@ export function readTokens(
       if (value !== "auto") naming("tokens.digits", () => integer(0, 12)(value))
       continue
     }
-    if (name === "captionSmall" && initial === "auto" && typeof value === "number") continue
+    if (initial === "auto" && typeof value === "number") continue
     if (readColor(initial) !== undefined ? readColor(value) === undefined : typeof initial !== typeof value)
       return naming(`tokens.${name}`, () => reject("shape", "The token must match its default value's type."))
   }

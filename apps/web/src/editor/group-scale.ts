@@ -40,12 +40,13 @@ export function scaledChildren(
         },
       ]
     const stored = propOf(node, "box") ?? placed.node.box
+    const least = doom.componentMinimum(view, child) ?? { w: 1, h: 1 }
     const box = {
       ...stored,
       x: Math.round(stored.x * across),
       y: Math.round(stored.y * down),
-      w: Math.max(1, Math.round(stored.w * across)),
-      h: Math.max(1, Math.round(stored.h * down)),
+      w: Math.max(least.w, Math.round(stored.w * across)),
+      h: Math.max(least.h, Math.round(stored.h * down)),
     }
     return [
       { node: child, prop: "box", value: box },

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import * as doom from "@airdesign/doom"
+import { geometryOf } from "./slide-geometry"
 import { grow, landed, paint, spot } from "./testing/doom-fixtures"
 import { transformedBy, type TransformInput } from "./transform-drag"
 
@@ -188,6 +189,108 @@ describe("resizing", () => {
   it("lands as an edit the doom accepts", () => {
     const moved = transformedBy(input(built, [ids.a!], "bottom-right", { x: 300, y: 200 }, { x: 340, y: 230 }))
     expect(landed(built.view, moved.writes).nodes.get(ids.a!)).toMatchObject({ box: spot(100, 100, 240, 130) })
+  })
+})
+
+describe("resizing a linked chart", () => {
+  const minimum = doom.columnDefinition.spec.minFrame!
+  const start = spot(200, 200, 800, 500)
+  const placedChart = () => {
+    const before = grow([])
+    const frame = doom.nodeId("chart:1")
+    const writes = doom.placeComponent(before.view, doom.columnDefinition, {
+      frame,
+      parent: { id: before.slides[0]!, at: doom.orderKeyBetween(null, null) },
+      box: start,
+      data: { rows: [{ id: "a", label: "Europe", value: 12 }] },
+      measure: before.measure,
+    })
+    if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
+    const view = landed(before.view, writes)
+    const geometry = geometryOf(doom.resolveSlide(view, before.slides[0]!, before.measure))
+    return { ...before, view, geometry, frame }
+  }
+  const chart = placedChart()
+
+  it.each([
+    { grip: "bottom-right", from: { x: 1000, y: 700 }, to: { x: 0, y: 0 }, box: spot(200, 200, minimum.w, minimum.h) },
+    {
+      grip: "top-left",
+      from: { x: 200, y: 200 },
+      to: { x: 1900, y: 1000 },
+      box: spot(1000 - minimum.w, 700 - minimum.h, minimum.w, minimum.h),
+    },
+    {
+      grip: "left",
+      from: { x: 200, y: 450 },
+      to: { x: 1900, y: 450 },
+      box: spot(1000 - minimum.w, 200, minimum.w, 500),
+    },
+    { grip: "bottom", from: { x: 600, y: 700 }, to: { x: 600, y: 0 }, box: spot(200, 200, 800, minimum.h) },
+  ] as const)("stops the $grip handle at the chart's minimum size", ({ grip, from, to, box }) => {
+    const moved = transformedBy(input(chart, [chart.frame], grip, from, to))
+    expect(boxOf(moved.writes, chart.frame)).toEqual(box)
+    expect(doom.isRefusal(doom.prepareComponentEdit(chart.view, moved.writes, chart.measure))).toBe(false)
+  })
+
+  const legacy = (() => {
+    const box = spot(500, 300, 110, 380)
+    const instance = doom.propOf(chart.view.nodes.get(chart.frame), "instance")
+    const view = landed(chart.view, [
+      { node: chart.frame, prop: "box", value: box },
+      { node: chart.frame, prop: "instance", value: instance },
+    ])
+    return { ...chart, view, geometry: geometryOf(doom.resolveSlide(view, chart.slides[0]!, chart.measure)) }
+  })()
+
+  it.each([
+    { grip: "bottom", from: { x: 570, y: 680 }, to: { x: 570, y: 735 }, box: spot(500, 300, minimum.w, 435) },
+    { grip: "top", from: { x: 570, y: 300 }, to: { x: 570, y: 245 }, box: spot(500, 245, minimum.w, 435) },
+    { grip: "right", from: { x: 640, y: 490 }, to: { x: 695, y: 490 }, box: spot(500, 300, 195, 380) },
+    { grip: "left", from: { x: 500, y: 490 }, to: { x: 445, y: 490 }, box: spot(445, 300, 195, 380) },
+    { grip: "bottom-right", from: { x: 640, y: 680 }, to: { x: 650, y: 690 }, box: spot(500, 300, 150, 390) },
+    { grip: "top-left", from: { x: 500, y: 300 }, to: { x: 490, y: 290 }, box: spot(490, 290, 150, 390) },
+  ] as const)(
+    "resizes a chart saved below its minimum from the size it paints, and stores at least the minimum, from the $grip handle",
+    ({ grip, from, to, box }) => {
+      expect(legacy.geometry.byId.get(legacy.frame)?.node.box).toMatchObject({ x: 500, y: 300, w: minimum.w, h: 380 })
+      const moved = transformedBy(input(legacy, [legacy.frame], grip, from, to))
+      expect(boxOf(moved.writes, legacy.frame)).toEqual(box)
+      expect(doom.isRefusal(doom.prepareComponentEdit(legacy.view, moved.writes, legacy.measure))).toBe(false)
+    },
+  )
+
+  it("keeps the proportions at the minimum with Shift", () => {
+    const moved = transformedBy(
+      input(chart, [chart.frame], "bottom-right", { x: 1000, y: 700 }, { x: 0, y: 0 }, { keepRatio: true }),
+    )
+    const box = boxOf(moved.writes, chart.frame) as { w: number; h: number }
+    expect(box.w).toBeGreaterThanOrEqual(minimum.w)
+    expect(box.h).toBeGreaterThanOrEqual(minimum.h)
+    expect(box.w / box.h).toBeCloseTo(800 / 500, 1)
+  })
+
+  it("keeps a chart at its minimum inside a scaled selection", () => {
+    const withShape = landed(chart.view, [
+      { node: doom.nodeId("shape:9"), prop: "type", value: "shape" },
+      {
+        node: doom.nodeId("shape:9"),
+        prop: "parent",
+        value: { id: chart.slides[0]!, at: doom.orderKeyBetween(null, null) },
+      },
+      { node: doom.nodeId("shape:9"), prop: "box", value: spot(1100, 200, 200, 100) },
+    ])
+    const geometry = geometryOf(doom.resolveSlide(withShape, chart.slides[0]!, chart.measure))
+    const moved = transformedBy(
+      input(
+        { ...chart, view: withShape, geometry },
+        [chart.frame, "shape:9"],
+        "right",
+        { x: 1300, y: 450 },
+        { x: 300, y: 450 },
+      ),
+    )
+    expect(boxOf(moved.writes, chart.frame)).toMatchObject({ w: minimum.w })
   })
 })
 

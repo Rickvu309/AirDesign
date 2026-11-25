@@ -23,6 +23,9 @@ import { isGroup, scaledChildren } from "./group-scale"
 import { memberOf, type Member } from "./selection-frame"
 import { apply, invert, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
 
+type Box = { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
+type Size = { readonly w: number; readonly h: number }
+
 type Tilted = { readonly center: Point; readonly w: number; readonly h: number; readonly rotation: number }
 
 export type TransformInput = {
@@ -90,7 +93,16 @@ const startBox = (member: Member) => ({
 
 type Resized = { readonly frames: ReadonlyMap<doom.NodeId, Tilted>; readonly bounds: Bounds }
 
+function atLeast(box: Box, minimum: Size | undefined, grip: ResizeGrip): Box {
+  if (minimum === undefined) return box
+  const w = Math.max(box.w, minimum.w)
+  const h = Math.max(box.h, minimum.h)
+  const { sx, sy } = gripSigns(grip)
+  return { x: sx < 0 ? box.x + box.w - w : box.x, y: sy < 0 ? box.y + box.h - h : box.y, w, h }
+}
+
 function resized(
+  view: doom.Doom,
   members: readonly Member[],
   grip: ResizeGrip,
   dx: number,
@@ -100,7 +112,8 @@ function resized(
   const frames = new Map<doom.NodeId, Tilted>()
   const [only] = members
   if (members.length === 1 && only !== undefined) {
-    const box = resizeBox(startBox(only), grip, dx, dy, modifiers, only.rotation)
+    const minimum = doom.componentMinimum(view, only.id)
+    const box = resizeBox(startBox(only), grip, dx, dy, modifiers, only.rotation, minimum)
     frames.set(only.id, {
       center: { x: box.x + box.w / 2, y: box.y + box.h / 2 },
       w: box.w,
@@ -109,8 +122,9 @@ function resized(
     })
   } else {
     const starts = new Map(members.map((member) => [member.id, { box: startBox(member), rotation: member.rotation }]))
-    for (const [id, box] of resizeSelection(starts, grip, dx, dy, modifiers).boxes) {
+    for (const [id, scaled] of resizeSelection(starts, grip, dx, dy, modifiers).boxes) {
       const member = members.find((each) => each.id === id)!
+      const box = atLeast(scaled, doom.componentMinimum(view, id), grip)
       frames.set(id, {
         center: { x: box.x + box.w / 2, y: box.y + box.h / 2 },
         w: box.w,
@@ -148,7 +162,7 @@ function keepsRatio(input: TransformInput, members: readonly Member[]): boolean 
 
 function snappedResize(input: TransformInput, members: readonly Member[], grip: ResizeGrip, by: Point) {
   const modifiers = { keepRatio: keepsRatio(input, members), fromCenter: input.fromCenter }
-  const base = resized(members, grip, by.x, by.y, modifiers)
+  const base = resized(input.view, members, grip, by.x, by.y, modifiers)
   const upright = members.every((member) => normalizeDegrees(member.rotation) === 0)
   if (!input.snap || modifiers.keepRatio || !upright) return { ...base, guides: [] as readonly Guide[] }
   const { sx, sy } = gripSigns(grip)
@@ -162,13 +176,20 @@ function snappedResize(input: TransformInput, members: readonly Member[], grip: 
     const lines = watching(axis === "x" ? sx : sy)
     const found = nearestLine(base.bounds, targets, axis, lines, reach)
     if (found === null) continue
-    const probe = resized(members, grip, by.x + (axis === "x" ? 1 : 0), by.y + (axis === "y" ? 1 : 0), modifiers)
+    const probe = resized(
+      input.view,
+      members,
+      grip,
+      by.x + (axis === "x" ? 1 : 0),
+      by.y + (axis === "y" ? 1 : 0),
+      modifiers,
+    )
     const slope = lineAt(probe.bounds, axis, found.line) - lineAt(base.bounds, axis, found.line)
     if (slope === 0) continue
     next = { ...next, [axis]: next[axis] + found.offset / slope }
     held[axis].push(found.line)
   }
-  const final = resized(members, grip, next.x, next.y, modifiers)
+  const final = resized(input.view, members, grip, next.x, next.y, modifiers)
   return { ...final, guides: guidesAt(final.bounds, targets, { x: held.x, y: held.y, spacing: false }) }
 }
 

@@ -32,6 +32,7 @@ export type ComponentTree = {
   readonly children: readonly ComponentNode[]
   readonly groups: readonly ComponentGroup[]
   readonly findings: readonly ComponentFinding[]
+  readonly unfitted: readonly PartKey[]
 }
 
 const prop = <K extends keyof typeof props>(key: K, raw: unknown): Props[K] => {
@@ -98,6 +99,7 @@ export type GroupedText = {
   readonly keep: boolean
   readonly laneWidth: number
   readonly axis: "horizontal" | "vertical"
+  readonly advice: string | undefined
 }
 export type Kept = {
   readonly kind: "kept"
@@ -296,6 +298,7 @@ export function preparePart(
     laneWidth: fit.thin === undefined ? position.w : w,
     axis,
     keep,
+    advice: fit.advise,
   }
 }
 
@@ -406,5 +409,9 @@ export function treeOf(
     }),
     groups: grouped.groups,
     findings,
+    unfitted: parts.flatMap((entry) => {
+      const key = entry.kind === "grouped-text" ? entry.part.key : entry.kind === "text-fit" ? entry.key : undefined
+      return key === undefined || seen.has(keyString(key)) ? [] : [key]
+    }),
   }
 }

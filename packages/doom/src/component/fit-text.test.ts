@@ -125,7 +125,11 @@ describe("component text fitting", () => {
     expect(wrapped?.props.text).toMatchObject({ chars: "WWWW WWWW", wrap: "words", spans: [{ size: 20 }] })
     expect(exact(wrapped!.props.text!, dejavu, wrapped!.props.box.w).lines).toHaveLength(2)
     expect(tree.findings).toEqual([])
-    const crowded = expand(columnComponent, { ...input, frame: { ...frame, w: 100 } })
+    const crowded = expand(columnComponent, {
+      ...input,
+      frame: { ...frame, w: 140 },
+      data: { rows: [...rows, { id: "third", label: "Wi", value: 12 }] },
+    })
     expect(part(crowded.children, "bar", "wrapped")).toBeDefined()
     expect(crowded.findings).toContainEqual(
       expect.objectContaining({
@@ -325,13 +329,14 @@ describe("component text fitting", () => {
       { id: "r0", label: "W".repeat(20), value: 12 },
       { id: "r1", label: "EMEA", value: 12 },
     ]
-    const input = { ...columnInputs, frame: { ...columnInputs.frame, w: 100 }, data: { rows } }
+    const input = { ...columnInputs, frame: { ...columnInputs.frame, w: 140 }, data: { rows } }
     const tree = expand(columnComponent, input)
     expect(tree.children.filter(({ key }) => key[0] === "category").map(({ key }) => key[1])).toEqual(["r1"])
-    const empty = expand(columnComponent, { ...input, frame: { ...input.frame, w: 50 } })
+    const wide = { ...input, data: { rows: [rows[0], { ...rows[1], label: "EMEA".repeat(3) }] } }
+    const empty = expand(columnComponent, wide)
     expect(empty.children.filter(({ key }) => key[0] === "category")).toHaveLength(0)
     expect(empty.findings.filter(({ key }) => key[0] === "categories")).toEqual([
-      expect.objectContaining({ kind: "text-fit", size: 20, neededWidth: 60, availableWidth: 50, thinned: 2 }),
+      expect.objectContaining({ kind: "text-fit", size: 20, neededWidth: 180, availableWidth: 140, thinned: 2 }),
     ])
   })
 

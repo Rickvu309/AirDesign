@@ -2,6 +2,7 @@
   "version": 1,
   "name": "Stacked column",
   "chart": "cartesian",
+  "minFrame": { "w": 160, "h": 180 },
   "sample": {
     "w": 1540,
     "h": 650,
@@ -169,28 +170,38 @@
       ]
     ],
     [
-      "colorSlots",
-      ["rampSlots", ["get", "data.series"], ["matchingFocus", ["get", "focus"], ["get", "data.series"], "id"]]
+      "fold",
+      [
+        "rampFold",
+        ["get", "data.series"],
+        ["matchingFocus", ["get", "focus"], ["get", "data.series"], "id"],
+        {
+          "id": "other aggregate",
+          "label": "Other",
+          "color": null
+        }
+      ]
     ],
     [
       "seriesItems",
       [
         "map",
-        ["get", "data.series"],
+        ["get", "fold.rows"],
         "s",
         {
           "id": ["get", "s.id"],
           "order": ["get", "i"],
           "fill": [
-            "coalesce",
-            ["get", "s.color"],
+            "if",
+            ["eq", ["get", "s.color"], null],
             [
               "paletteRamp",
-              ["at", ["get", "colorSlots.indices"], ["get", "i"]],
-              ["get", "colorSlots.count"],
+              ["at", ["get", "fold.slots"], ["get", "i"]],
+              ["get", "fold.count"],
               ["get", "token.accent1"],
               ["get", "token.neutral"]
-            ]
+            ],
+            ["get", "s.color"]
           ],
           "chars": ["get", "s.label"]
         }
@@ -208,7 +219,12 @@
             "sortBy",
             [
               "map",
-              ["get", "data.segments"],
+              [
+                "filter",
+                ["get", "data.segments"],
+                "s",
+                ["if", ["includes", ["get", "fold.folded"], ["get", "s.series"]], false, true]
+              ],
               "s",
               {
                 "id": ["get", "s.id"],
@@ -235,7 +251,46 @@
         {
           "id": ["get", "c.id"],
           "label": ["get", "c.label"],
-          "segments": ["lookup", ["get", "segmentsByCategory"], ["get", "c.id"], ["list"]]
+          "segments": [
+            "flatten",
+            [
+              "list",
+              ["lookup", ["get", "segmentsByCategory"], ["get", "c.id"], ["list"]],
+              [
+                "if",
+                ["lt", 0, ["count", ["get", "fold.folded"]]],
+                [
+                  "list",
+                  {
+                    "id": "other aggregate",
+                    "category": ["get", "c.id"],
+                    "series": "other aggregate",
+                    "value": [
+                      "sum",
+                      [
+                        "map",
+                        [
+                          "filter",
+                          ["get", "data.segments"],
+                          "s",
+                          [
+                            "if",
+                            ["eq", ["get", "s.category"], ["get", "c.id"]],
+                            ["includes", ["get", "fold.folded"], ["get", "s.series"]],
+                            false
+                          ]
+                        ],
+                        "s",
+                        ["get", "s.value"]
+                      ]
+                    ],
+                    "color": null
+                  }
+                ],
+                ["list"]
+              ]
+            ]
+          ]
         }
       ]
     ],
@@ -273,7 +328,7 @@
         [
           "if",
           ["get", "multipleSeries"],
-          ["if", ["lt", ["count", ["get", "data.series"]], 6], ["eq", ["get", "variant.legend"], false], false],
+          ["if", ["lt", ["count", ["get", "fold.rows"]], 6], ["eq", ["get", "variant.legend"], false], false],
           false
         ],
         ["at", ["get", "groups"], ["sub", ["get", "rowCount"], 1]],
@@ -326,11 +381,11 @@
           ["get", "multipleSeries"],
           [
             "if",
-            ["eq", ["count", ["get", "eligible"]], ["count", ["get", "data.series"]]],
+            ["eq", ["count", ["get", "eligible"]], ["count", ["get", "fold.rows"]]],
             [
               "if",
-              ["eq", ["count", ["get", "lastGroup.segments"]], ["count", ["get", "data.series"]]],
-              ["eq", ["count", ["get", "directLabels"]], ["count", ["get", "data.series"]]],
+              ["eq", ["count", ["get", "lastGroup.segments"]], ["count", ["get", "fold.rows"]]],
+              ["eq", ["count", ["get", "directLabels"]], ["count", ["get", "fold.rows"]]],
               false
             ],
             false
@@ -498,7 +553,12 @@
         {
           "emit": {
             "kind": "rect",
-            "key": ["list", "legend-swatch", ["get", "placed.item.id"]],
+            "key": [
+              "if",
+              ["eq", ["get", "placed.item.id"], "other aggregate"],
+              ["list", "legend-swatch", "other", "aggregate"],
+              ["list", "legend-swatch", ["get", "placed.item.id"]]
+            ],
             "x": ["get", "legendLeft"],
             "y": ["add", ["get", "legendTop"], ["div", ["sub", ["get", "legendHeight"], ["get", "chip"]], 2]],
             "w": ["get", "chip"],
@@ -509,7 +569,12 @@
         {
           "emit": {
             "kind": "text",
-            "key": ["list", "legend-label", ["get", "placed.item.id"]],
+            "key": [
+              "if",
+              ["eq", ["get", "placed.item.id"], "other aggregate"],
+              ["list", "legend-label", "other", "aggregate"],
+              ["list", "legend-label", ["get", "placed.item.id"]]
+            ],
             "x": ["add", ["get", "legendLeft"], ["add", ["get", "chip"], 8]],
             "y": ["get", "legendTop"],
             "w": ["get", "placed.w"],
@@ -552,17 +617,22 @@
             "s",
             {
               "positive": 0,
-              "negative": 0
+              "negative": 0,
+              "up": 0,
+              "down": 0
             },
             {
               "positive": ["add", ["get", "acc.positive"], ["max", 0, ["get", "s.value"]]],
-              "negative": ["add", ["get", "acc.negative"], ["min", 0, ["get", "s.value"]]]
+              "negative": ["add", ["get", "acc.negative"], ["min", 0, ["get", "s.value"]]],
+              "up": ["if", ["lt", 0, ["get", "s.value"]], ["get", "s.value"], ["get", "acc.up"]],
+              "down": ["if", ["lt", ["get", "s.value"], 0], ["sub", 0, ["get", "s.value"]], ["get", "acc.down"]]
             },
             {
               "id": ["get", "s.id"],
               "value": ["get", "s.value"],
               "start": ["if", ["lt", ["get", "s.value"], 0], ["get", "acc.negative"], ["get", "acc.positive"]],
               "end": ["if", ["lt", ["get", "s.value"], 0], ["get", "next.negative"], ["get", "next.positive"]],
+              "below": ["if", ["lt", ["get", "s.value"], 0], ["get", "acc.down"], ["get", "acc.up"]],
               "series": ["get", "s.series"],
               "color": ["get", "s.color"]
             }
@@ -589,6 +659,27 @@
             ],
             ["top", ["min", ["get", "a"], ["get", "b"]]],
             ["height", ["sub", ["max", ["get", "a"], ["get", "b"]], ["get", "top"]]],
+            [
+              "seam",
+              [
+                "if",
+                [
+                  "lt",
+                  [
+                    "min",
+                    ["get", "height"],
+                    [
+                      "mul",
+                      ["get", "s.below"],
+                      ["div", ["sub", ["get", "plotBottom"], ["get", "plotTop"]], ["sub", ["get", "hi"], ["get", "lo"]]]
+                    ]
+                  ],
+                  4
+                ],
+                0,
+                2
+              ]
+            ],
             ["seriesPaint", ["at", ["lookup", ["get", "seriesColors"], ["get", "s.series"]], 0]],
             ["fill", ["if", ["eq", ["get", "s.color"], null], ["get", "seriesPaint.fill"], ["get", "s.color"]]]
           ],
@@ -596,11 +687,21 @@
             {
               "emit": {
                 "kind": "rect",
-                "key": ["list", "segment", ["get", "group.id"], ["get", "s.id"]],
+                "key": [
+                  "if",
+                  ["eq", ["get", "s.id"], "other aggregate"],
+                  ["list", "segment", ["get", "group.id"], "other", "aggregate"],
+                  ["list", "segment", ["get", "group.id"], ["get", "s.id"]]
+                ],
                 "x": ["get", "mark.start"],
-                "y": ["get", "top"],
+                "y": [
+                  "if",
+                  ["lt", ["get", "a"], ["get", "b"]],
+                  ["add", ["get", "top"], ["get", "seam"]],
+                  ["get", "top"]
+                ],
                 "w": ["get", "mark.size"],
-                "h": ["get", "height"],
+                "h": ["max", 1, ["sub", ["get", "height"], ["get", "seam"]]],
                 "fill": ["get", "fill"]
               }
             },
@@ -608,7 +709,12 @@
               "when": ["if", ["get", "narrowValues"], false, ["get", "variant.labels"]],
               "emit": {
                 "kind": "text",
-                "key": ["list", "value", ["get", "group.id"], ["get", "s.id"]],
+                "key": [
+                  "if",
+                  ["eq", ["get", "s.id"], "other aggregate"],
+                  ["list", "value", ["get", "group.id"], "other", "aggregate"],
+                  ["list", "value", ["get", "group.id"], ["get", "s.id"]]
+                ],
                 "x": ["add", ["get", "mark.start"], ["min", 4, ["div", ["get", "mark.size"], 2]]],
                 "y": ["get", "top"],
                 "w": ["max", 0, ["sub", ["get", "mark.size"], 8]],
@@ -627,7 +733,12 @@
               "when": ["if", ["get", "direct"], ["eq", ["get", "group.id"], ["get", "lastGroup.id"]], false],
               "emit": {
                 "kind": "text",
-                "key": ["list", "series-label", ["get", "s.series"]],
+                "key": [
+                  "if",
+                  ["eq", ["get", "s.series"], "other aggregate"],
+                  ["list", "series-label", "other", "aggregate"],
+                  ["list", "series-label", ["get", "s.series"]]
+                ],
                 "x": ["add", ["add", ["get", "mark.start"], ["get", "mark.size"]], 12],
                 "y": ["get", "top"],
                 "w": ["sub", ["get", "directWidth"], 10],
@@ -694,7 +805,8 @@
             "fit": {
               "smaller": ["get", "token.captionSmall"],
               "group": "categories",
-              "thin": 4
+              "thin": 4,
+              "advise": "Show fewer categories or widen the frame."
             }
           }
         }

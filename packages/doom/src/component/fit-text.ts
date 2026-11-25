@@ -178,6 +178,7 @@ type Group = {
   readonly smaller: number
   readonly thin: number | undefined
   readonly axis: GroupedText["axis"]
+  readonly advice: string | undefined
   shrink: boolean
 }
 
@@ -323,11 +324,17 @@ export function* fitGroups(
   const naturalFits = new Set<TextPart>()
   for (const entry of parts) {
     if (entry.kind !== "grouped-text") continue
-    const { part, group, smaller, thin, axis } = entry
+    const { part, group, smaller, thin, axis, advice } = entry
     const { text } = part.props
     const fullSize = context.theme.textStyles[text.style].size
-    const shared = groups.get(group) ?? { entries: [], fullSize, smaller, thin, axis, shrink: false }
-    if (shared.fullSize !== fullSize || shared.smaller !== smaller || shared.thin !== thin || shared.axis !== axis)
+    const shared = groups.get(group) ?? { entries: [], fullSize, smaller, thin, axis, advice, shrink: false }
+    if (
+      shared.fullSize !== fullSize ||
+      shared.smaller !== smaller ||
+      shared.thin !== thin ||
+      shared.axis !== axis ||
+      shared.advice !== advice
+    )
       naming(`${part.field}.fit.group`, () => reject("shape", "A fit group must share sizes and thinning settings."))
     if (thin !== undefined && part.props.fills !== undefined)
       naming(`${part.field}.fit.thin`, () => reject("shape", "A filled text is never thinned."))
@@ -399,6 +406,7 @@ export function* fitGroups(
         ),
         key: [name],
         thinned: thinned.length,
+        ...(group.advice === undefined ? {} : { advice: group.advice }),
       }
     }
   }

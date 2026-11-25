@@ -2,6 +2,7 @@
   "version": 1,
   "name": "Clustered chart",
   "chart": "cartesian",
+  "minFrame": { "w": 140, "h": 160 },
   "sample": {
     "w": 1540,
     "h": 650,
@@ -129,7 +130,7 @@
     ["sourceH", ["if", ["get", "hasSource"], ["get", "noteH"], 0]],
     ["contentH", ["sub", ["get", "frame.h"], ["get", "sourceH"]]],
     ["requestedSeries", ["count", ["get", "data.series"]]],
-    ["series", ["filter", ["get", "data.series"], "s", ["lt", ["get", "i"], 3]]],
+    ["series", ["filter", ["get", "data.series"], "s", ["lt", ["get", "i"], ["min", 3, ["rampCapacity"]]]]],
     ["nSeries", ["count", ["get", "series"]]],
     ["nCategories", ["count", ["get", "data.categories"]]],
     ["hasLegend", ["lt", 1, ["get", "nSeries"]]],
@@ -284,11 +285,16 @@
       }
     },
     {
-      "when": ["lt", 3, ["get", "requestedSeries"]],
+      "when": ["lt", ["get", "nSeries"], ["get", "requestedSeries"]],
       "emit": {
         "kind": "finding",
         "key": ["list", "many-series"],
-        "message": "This chart supports three series. Split the comparison across charts to show the rest."
+        "message": [
+          "if",
+          ["eq", ["get", "nSeries"], 3],
+          "This chart supports three series. Split the comparison across charts to show the rest.",
+          "This theme tells two series apart. Split the comparison across charts to show the rest."
+        ]
       }
     },
     {
@@ -1005,7 +1011,8 @@
                       "smaller": ["get", "token.captionSmall"],
                       "group": "categories",
                       "thin": 5,
-                      "axis": "vertical"
+                      "axis": "vertical",
+                      "advise": "Show fewer categories or make the frame taller."
                     }
                   },
                   "when": ["get", "horizontal"]
@@ -1026,7 +1033,8 @@
                     "fit": {
                       "smaller": ["get", "token.captionSmall"],
                       "group": "categories",
-                      "thin": 5
+                      "thin": 5,
+                      "advise": "Show fewer categories or widen the frame."
                     }
                   },
                   "when": ["if", ["get", "horizontal"], false, true]

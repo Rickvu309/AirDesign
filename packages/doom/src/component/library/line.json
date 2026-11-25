@@ -2,6 +2,7 @@
   "version": 1,
   "name": "Line chart",
   "chart": "cartesian",
+  "minFrame": { "w": 160, "h": 150 },
   "sample": {
     "w": 1540,
     "h": 650,
@@ -111,7 +112,10 @@
         ["list"]
       ]
     ],
-    ["colorSlots", ["rampSlots", ["get", "plotted"], ["matchingFocus", ["get", "focus"], ["get", "plotted"], "id"]]],
+    [
+      "colorSlots",
+      ["rampSlots", ["get", "plotted"], ["matchingFocus", ["get", "focus"], ["get", "plotted"], "id"], "labelled"]
+    ],
     [
       "active",
       [
@@ -753,7 +757,8 @@
                     "fit": {
                       "smaller": ["get", "token.captionSmall"],
                       "group": "categories",
-                      "thin": 4
+                      "thin": 4,
+                      "advise": "Show fewer categories or widen the frame."
                     }
                   }
                 }

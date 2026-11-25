@@ -3,7 +3,7 @@ import { useId } from "react"
 import type * as doom from "@airdesign/doom"
 import { Button } from "@/components/ui/button"
 import { selectionColorsCopy } from "@/copy/selection-colors-copy"
-import { shownName, type Palette } from "@/design/color-choices"
+import type { Palette } from "@/design/color-choices"
 import { ColorPicker } from "@/design/color-picker"
 import { ColorField, fieldLook } from "@/design/controls/color"
 import { DesignSection } from "./design-sections"
@@ -14,7 +14,7 @@ export function SelectionColorRows({
   onPick,
   onSelect,
 }: {
-  rows: readonly { readonly hex: string; readonly color: doom.Color }[]
+  rows: readonly { readonly hex: string; readonly color: doom.Color; readonly name: string }[]
   palette: Palette
   onPick: (hex: string, color: doom.Color) => void
   onSelect: (hex: string) => void
@@ -24,7 +24,7 @@ export function SelectionColorRows({
   return (
     <DesignSection title={selectionColorsCopy.section}>
       <div className="flex flex-col gap-2" data-selection-colors>
-        {rows.map(({ hex, color }) => (
+        {rows.map(({ hex, color, name }) => (
           <div key={hex} className="grid grid-cols-[minmax(0,1fr)_max-content] items-center gap-1">
             <ColorPicker
               title={selectionColorsCopy.section}
@@ -33,20 +33,15 @@ export function SelectionColorRows({
               onPick={(picked) => onPick(hex, picked)}
               trigger={<Button type="button" variant="ghost" aria-labelledby={`${id}-${hex}`} className={fieldLook} />}
             >
-              <ColorField
-                id={`${id}-${hex}`}
-                css={`#${hex}`}
-                name={shownName(color, palette.templateColors)}
-                disclosure={false}
-              />
+              <ColorField id={`${id}-${hex}`} css={`#${hex}`} name={name} disclosure={false} />
             </ColorPicker>
             <Button
               type="button"
               variant="ghost"
               size="icon"
               className="size-[var(--control-dense)] shrink-0"
-              aria-label={selectionColorsCopy.select(shownName(color, palette.templateColors))}
-              title={selectionColorsCopy.select(shownName(color, palette.templateColors))}
+              aria-label={selectionColorsCopy.select(name)}
+              title={selectionColorsCopy.select(name)}
               onClick={() => onSelect(hex)}
             >
               <Target />

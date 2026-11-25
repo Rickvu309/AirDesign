@@ -23,6 +23,7 @@ import {
   refresh,
 } from "./testing/linked-instance-fixtures.js"
 import { prepareComponentEdit } from "./component-edit.js"
+import { columnDefinition } from "./library.js"
 
 it.each(["resize", "theme", "font", "label style"])(
   "refreshes a linked chart through %s with one exact inverse",
@@ -91,4 +92,116 @@ it("keeps a measured resize and its generated geometry together when another tab
   const edit = { once: "resize", rev: resized.rev, writes, author: person }
   expect(invertStep(before, current, edit)).toMatchObject({ refused: "stale" })
   expect(invertRun(current, [undoSourceOf(before, edit)])).toMatchObject({ writes: [], kept: [frame] })
+})
+
+const resized = (before: ReturnType<typeof placed>, size: { readonly w: number; readonly h: number }) => {
+  const writes = prepareComponentEdit(before, [{ node: frame, prop: "box", value: { ...box, ...size } }], measure)
+  if (isRefusal(writes)) throw new Error(JSON.stringify(writes))
+  return land(before, writes, true)
+}
+
+it("keeps a deleted bar and a restyled label through a shrink to the minimum and back", () => {
+  const first = placed()
+  const minimum = columnDefinition.spec.minFrame!
+  const bar = part(first, "bar", "a")
+  const label = part(first, "category", "b")
+  const text = propOf(first.nodes.get(label), "text")!
+  const edited = land(land(first, [{ node: bar, prop: "parent", value: null }]), [
+    { node: label, prop: "text", value: styleWrite(text, "body") },
+  ])
+  const small = resized(edited, minimum)
+  const back = resized(small, box)
+  for (const fold of [small, back]) {
+    expect(instance(fold).suppressed).toEqual([{ key: ["bar", "a"], reason: "delete" }])
+    expect(instance(fold).parts.some(({ key }) => key[0] === "bar" && key[1] === "a")).toBe(false)
+    expect(propOf(fold.nodes.get(part(fold, "category", "b")), "text")?.style).toBe("body")
+  }
+})
+
+const eight = {
+  rows: Array.from({ length: 8 }, (_, i) => ({ id: String(i), label: `Region ${String(i)}`, value: i + 1 })),
+}
+
+function eightEdited() {
+  const first = land(placed(), refresh(placed(), { data: eight }), true)
+  const label = part(first, "category", "3")
+  const text = propOf(first.nodes.get(label), "text")!
+  const edited = land(land(first, [{ node: part(first, "category", "4"), prop: "parent", value: null }]), [
+    { node: label, prop: "text", value: styleWrite(text, "body") },
+  ])
+  return { edited, label }
+}
+
+it.each([columnDefinition.spec.minFrame!, { w: 332, h: 160 }])(
+  "keeps a deleted label and a restyled label that a resize to $w × $h thins away",
+  (size) => {
+    const { edited, label } = eightEdited()
+    const small = resized(edited, size)
+    expect(instance(small).parts.some(({ node }) => node === label)).toBe(false)
+    expect(instance(small).suppressed).toEqual([{ key: ["category", "4"], reason: "delete" }])
+    const back = resized(small, box)
+    expect(instance(back).suppressed).toEqual([{ key: ["category", "4"], reason: "delete" }])
+    expect(instance(back).parts.some(({ key }) => key[0] === "category" && key[1] === "4")).toBe(false)
+    expect(propOf(back.nodes.get(part(back, "category", "3")), "text")?.style).toBe("body")
+    expect(instance(back).parts).toEqual(instance(edited).parts)
+  },
+)
+
+it("undoes a shrink that thinned an edited label back to the edited chart", () => {
+  const { edited } = eightEdited()
+  const writes = prepareComponentEdit(
+    edited,
+    [{ node: frame, prop: "box", value: { ...box, ...columnDefinition.spec.minFrame! } }],
+    measure,
+  )
+  if (isRefusal(writes)) throw new Error(JSON.stringify(writes))
+  const small = land(edited, writes, true)
+  const reverse = invertStep(edited, small, { author: person, once: "shrink", rev: small.rev, writes })
+  if (isRefusal(reverse)) throw new Error(JSON.stringify(reverse))
+  const restored = land(small, reverse, true)
+  expect(instance(restored)).toEqual(instance(edited))
+  for (const { node } of instance(edited).parts)
+    expect(propOf(restored.nodes.get(node), "text")).toEqual(propOf(edited.nodes.get(node), "text"))
+})
+
+it("drops a thinned label's edits once its row leaves the data", () => {
+  const { edited } = eightEdited()
+  const small = resized(edited, columnDefinition.spec.minFrame!)
+  const fewer = land(
+    small,
+    refresh(small, { data: { rows: eight.rows.filter(({ id }) => id !== "3" && id !== "4") } }),
+    true,
+  )
+  const again = land(fewer, refresh(fewer, { data: eight }), true)
+  const back = resized(again, box)
+  expect(instance(back).suppressed).toEqual([])
+  expect(propOf(back.nodes.get(part(back, "category", "3")), "text")?.style).toBe("caption")
+})
+
+it("brings a thinned label's edits back when a data change that dropped its row is undone", () => {
+  const { edited } = eightEdited()
+  const small = resized(edited, columnDefinition.spec.minFrame!)
+  const writes = refresh(small, { data: { rows: eight.rows.filter(({ id }) => id !== "3") } })
+  const fewer = land(small, writes, true)
+  const reverse = invertStep(small, fewer, { author: person, once: "fewer", rev: fewer.rev, writes })
+  if (isRefusal(reverse)) throw new Error(JSON.stringify(reverse))
+  const back = resized(land(fewer, reverse, true), box)
+  expect(propOf(back.nodes.get(part(back, "category", "3")), "text")?.style).toBe("body")
+  expect(instance(back).suppressed).toEqual([{ key: ["category", "4"], reason: "delete" }])
+})
+
+it.each([
+  { w: 600, h: 159 },
+  { w: 47, h: 400 },
+])("refuses a resize to $w × $h below the chart's minimum and names the minimum", (size) => {
+  const before = placed()
+  const { w, h } = columnDefinition.spec.minFrame!
+  const writes = prepareComponentEdit(before, [{ node: frame, prop: "box", value: { ...box, ...size } }], measure)
+  expect(writes).toEqual({
+    refused: "shape",
+    node: frame,
+    prop: "box",
+    fault: "needs",
+    needs: `a size of at least ${w} × ${h} px`,
+  })
 })
