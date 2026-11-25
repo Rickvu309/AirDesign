@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { flushSync } from "react-dom"
 import { blankLine } from "./text-blank-line"
 import { offsetOfPlace, placeOfOffset, type Place } from "./text-caret"
+import { highlightsOf, sameHighlights, type Highlight } from "./text-highlight"
 import { readTextClipboard, writeTextClipboard } from "./text-clipboard"
 import { graphemeAfter, graphemeBefore, sliceText, wordAfter, wordBefore } from "./text-edit"
 import type { TextSession } from "./use-text-session"
@@ -57,6 +58,7 @@ export function TextHost(props: {
   const latest = useRef({ api, session, deck, slides, onLeave: props.onLeave })
   const marked = useRef<{ readonly from: number; readonly to: number } | null>(null)
   const [fresh, setFresh] = useState(0)
+  const [highlights, setHighlights] = useState<readonly Highlight[]>([])
   const painted = useRef<{
     readonly draft: doom.Text
     readonly lines: readonly doom.ResolvedLine[]
@@ -100,6 +102,12 @@ export function TextHost(props: {
     const shown = sync || held === null ? session : held
     showSelection(element, shown.anchor, shown.focus)
   }, [session.sync, fresh, session.draft, lines, followFormatting])
+
+  useLayoutEffect(() => {
+    const element = host.current
+    const next = element === null ? [] : highlightsOf(element, session.anchor, session.focus)
+    setHighlights((now) => (sameHighlights(now, next) ? now : next))
+  })
 
   useEffect(() => {
     const element = host.current
@@ -223,52 +231,64 @@ export function TextHost(props: {
   }
 
   return (
-    <div
-      key={fresh}
-      ref={host}
-      data-text-editor=""
-      contentEditable
-      suppressContentEditableWarning
-      spellCheck={false}
-      style={{
-        position: "absolute",
-        inset: 0,
-        pointerEvents: "auto",
-        outline: "none",
-        cursor: "text",
-        userSelect: "text",
-        minWidth: 2,
-        ...(session.draft.overflow === "ellipsis" ? { overflow: "auto", scrollbarWidth: "none" } : {}),
-      }}
-      onKeyDown={keys}
-      onCopy={(event) => copy(event, false)}
-      onCut={(event) => copy(event, true)}
-      onPaste={(event) => {
-        event.preventDefault()
-        const { session: now } = latest.current
-        const at = (host.current === null ? null : selectionOf(host.current)) ?? {
-          anchor: now.anchor,
-          focus: now.focus,
-        }
-        pasteFrom(event.clipboardData, Math.min(at.anchor, at.focus), Math.max(at.anchor, at.focus))
-      }}
-      onCompositionStart={() => {
-        const found = host.current === null ? null : selectionOf(host.current)
-        const now = latest.current.session
-        const at = found ?? { anchor: now.anchor, focus: now.focus }
-        marked.current = { from: Math.min(at.anchor, at.focus), to: Math.max(at.anchor, at.focus) }
-      }}
-      onCompositionEnd={(event) => {
-        const range = marked.current
-        if (range === null) return
-        flushSync(() => {
-          latest.current.api.replace(range.from, range.to, event.data)
-          marked.current = null
-          setFresh((value) => value + 1)
-        })
-      }}
-    >
-      <TextLines lines={lines} editing />
-    </div>
+    <>
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        {highlights.map((each, at) => (
+          <div
+            key={at}
+            data-text-highlight=""
+            className="absolute"
+            style={{ left: each.x, top: each.y, width: each.w, height: each.h, background: "var(--primary-35)" }}
+          />
+        ))}
+      </div>
+      <div
+        key={fresh}
+        ref={host}
+        data-text-editor=""
+        contentEditable
+        suppressContentEditableWarning
+        spellCheck={false}
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "auto",
+          outline: "none",
+          cursor: "text",
+          userSelect: "text",
+          minWidth: 2,
+          ...(session.draft.overflow === "ellipsis" ? { overflow: "auto", scrollbarWidth: "none" } : {}),
+        }}
+        onKeyDown={keys}
+        onCopy={(event) => copy(event, false)}
+        onCut={(event) => copy(event, true)}
+        onPaste={(event) => {
+          event.preventDefault()
+          const { session: now } = latest.current
+          const at = (host.current === null ? null : selectionOf(host.current)) ?? {
+            anchor: now.anchor,
+            focus: now.focus,
+          }
+          pasteFrom(event.clipboardData, Math.min(at.anchor, at.focus), Math.max(at.anchor, at.focus))
+        }}
+        onCompositionStart={() => {
+          const found = host.current === null ? null : selectionOf(host.current)
+          const now = latest.current.session
+          const at = found ?? { anchor: now.anchor, focus: now.focus }
+          marked.current = { from: Math.min(at.anchor, at.focus), to: Math.max(at.anchor, at.focus) }
+        }}
+        onCompositionEnd={(event) => {
+          const range = marked.current
+          if (range === null) return
+          flushSync(() => {
+            latest.current.api.replace(range.from, range.to, event.data)
+            marked.current = null
+            setFresh((value) => value + 1)
+          })
+        }}
+      >
+        <TextLines lines={lines} editing />
+      </div>
+    </>
   )
 }

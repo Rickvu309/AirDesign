@@ -207,3 +207,7 @@ html:has(.reflow-frame) #root {
   visibility: hidden;
   pointer-events: none;
 }
+[data-text-editor]::selection,
+[data-text-editor] ::selection {
+  background: transparent;
+}

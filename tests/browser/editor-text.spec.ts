@@ -397,3 +397,43 @@ test("the filmstrip and canvas use Japanese for a Han-only title when another sl
   await expect(thumb).toHaveAttribute("style", /Noto%2520Sans%2520KR/i)
   await expect.poll(async () => (await savedNode(stack, opened, id))?.text).toMatchObject({ language: "ko" })
 })
+
+test("selected words are highlighted at the height of their line, inside the text box, and only as wide as the words", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await openEditor(page, context, stack)
+  await clickSlide(page, 600, 410)
+  await page.keyboard.press("Enter")
+  await expect(editor(page)).toBeFocused()
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.type("Hello world")
+  for (let step = 0; step < 5; step++) await page.keyboard.press("Shift+ArrowLeft")
+  const read = () =>
+    page.evaluate(() => {
+      const box = (rect: DOMRect) => ({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom })
+      const host = document.querySelector("[data-text-editor]")!
+      const selection = getSelection()!
+      return {
+        highlights: [...document.querySelectorAll("[data-text-highlight]")].map((each) =>
+          box(each.getBoundingClientRect()),
+        ),
+        line: box(host.querySelector("[data-line]")!.getBoundingClientRect()),
+        frame: box(host.getBoundingClientRect()),
+        words: box(selection.getRangeAt(0).getBoundingClientRect()),
+        native: getComputedStyle(host.querySelector("[data-run]")!, "::selection").backgroundColor,
+      }
+    })
+  await expect.poll(async () => (await read()).highlights.length).toBe(1)
+  const { highlights, line, frame, words, native } = await read()
+  const [highlight] = highlights
+  expect(Math.abs(highlight!.top - line.top)).toBeLessThan(0.5)
+  expect(Math.abs(highlight!.bottom - line.bottom)).toBeLessThan(0.5)
+  expect(highlight!.bottom).toBeLessThanOrEqual(frame.bottom + 0.5)
+  expect(Math.abs(highlight!.left - words.left)).toBeLessThan(1)
+  expect(Math.abs(highlight!.right - words.right)).toBeLessThan(1)
+  expect(native).toBe("rgba(0, 0, 0, 0)")
+  await page.keyboard.press("ArrowRight")
+  await expect(page.locator("[data-text-highlight]")).toHaveCount(0)
+})
