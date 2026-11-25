@@ -7,7 +7,7 @@ import { type Value, type Values, numeric, record, string, valueList } from "./v
 const styleOf = literal(textStyleNames)
 const dimension = finite(0, 1_000_000)
 
-function naturalText(chars: string, style: Text["style"], size: number): Text {
+export function naturalText(chars: string, style: Text["style"], size: number): Text {
   return {
     chars,
     style,

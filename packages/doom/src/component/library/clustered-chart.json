@@ -104,15 +104,7 @@
     ["hasLegend", ["lt", 1, ["get", "nSeries"]]],
     ["lead", ["at", ["get", "series"], 0]],
     ["focusChoices", ["filter", ["get", "series"], "s", ["eq", ["get", "s.id"], ["get", "token.focus"]]]],
-    [
-      "focus",
-      [
-        "if",
-        ["eq", ["count", ["get", "focusChoices"]], 1],
-        ["get", "token.focus"],
-        ["if", ["lt", 0, ["get", "nSeries"]], ["get", "lead.id"], ""]
-      ]
-    ],
+    ["rankSeries", ["coalesce", ["at", ["get", "focusChoices"], 0], ["get", "lead"]]],
     [
       "orderedByValue",
       ["if", ["eq", ["get", "variant.sort"], "auto"], ["get", "horizontal"], ["eq", ["get", "variant.sort"], "value"]]
@@ -127,11 +119,11 @@
           "id": ["get", "c.id"],
           "label": ["get", "c.label"],
           "index": ["get", "i"],
-          "other": ["if", ["startsWithIgnoreCase", ["get", "c.label"], "Other"], 1, 0],
+          "other": ["if", ["startsWithWordIgnoreCase", ["get", "c.label"], "Other"], 1, 0],
           "rank": [
             "if",
             ["lt", 0, ["get", "nSeries"]],
-            ["sub", 0, ["coalesce", ["at", ["get", "lead.values"], ["get", "i"]], 0]],
+            ["sub", 0, ["coalesce", ["at", ["get", "rankSeries.values"], ["get", "i"]], 0]],
             0
           ]
         }
@@ -157,7 +149,7 @@
           ["get", "s.fill"],
           [
             "if",
-            ["eq", ["get", "s.id"], ["get", "focus"]],
+            ["eq", ["get", "s.id"], ["get", "rankSeries.id"]],
             ["get", "token.accent1"],
             [
               "if",
@@ -165,7 +157,7 @@
                 "if",
                 ["eq", ["get", "i"], 0],
                 true,
-                ["if", ["eq", ["get", "i"], 1], ["eq", ["get", "focus"], ["get", "lead.id"]], false]
+                ["if", ["eq", ["get", "i"], 1], ["eq", ["get", "rankSeries.id"], ["get", "lead.id"]], false]
               ],
               {
                 "var": "text2",
@@ -437,7 +429,12 @@
           "tickFormat",
           {
             "scale": ["get", "token.scale"],
-            "digits": ["if", ["isInteger", ["get", "tickStep"]], 0, 1],
+            "digits": [
+              "if",
+              ["lt", ["get", "tickStep"], 0.1],
+              ["resolutionDigits", ["get", "tickStep"]],
+              ["if", ["isInteger", ["get", "tickStep"]], 0, 1]
+            ],
             "prefix": "",
             "suffix": "",
             "sign": "negative"
@@ -458,27 +455,125 @@
         ],
         ["signed", ["if", ["get", "variant.signed"], ["eq", ["get", "nSeries"], 1], false]],
         [
+          "plotTop",
+          [
+            "add",
+            ["get", "headerH"],
+            ["mul", ["get", "legend.rows"], ["get", "legendRowH"]],
+            ["min", 12, ["mul", ["get", "frame.h"], 0.06]]
+          ]
+        ],
+        ["slots", ["max", 1, ["mul", ["get", "nSeries"], ["get", "nCategories"]]]],
+        [
+          "labelBand",
+          [
+            "if",
+            ["get", "horizontal"],
+            ["max", 0, ["sub", ["get", "contentH"], ["add", ["get", "plotTop"], ["get", "labelGap"]]]],
+            ["get", "innerW"]
+          ]
+        ],
+        ["openLane", ["mul", ["div", ["get", "labelBand"], ["get", "slots"]], ["get", "token.categoryShare"]]],
+        [
+          "labelSmallExtent",
+          [
+            "if",
+            ["get", "horizontal"],
+            ["textExtent", "0", ["get", "token.label"], ["get", "token.captionSmall"]],
+            {
+              "h": 0
+            }
+          ]
+        ],
+        [
+          "labelLane",
+          [
+            "if",
+            ["lt", ["mul", ["get", "openLane"], ["get", "token.seriesShare"]], ["max", 2, ["get", "token.minMark"]]],
+            ["div", ["get", "labelBand"], ["get", "slots"]],
+            ["get", "openLane"]
+          ]
+        ],
+        ["smallLabelHeight", ["if", ["get", "horizontal"], ["get", "labelSmallExtent.h"], 0]],
+        [
           "hasDirectLabels",
           [
             "if",
             ["get", "variant.labels"],
             [
-              "lt",
-              ["mul", ["mul", ["get", "token.valueLaneMin"], ["get", "nSeries"]], ["get", "nCategories"]],
+              "if",
+              ["lt", ["get", "labelLane"], ["get", "token.valueLaneMin"]],
+              false,
               [
-                "mul",
+                "if",
+                ["get", "horizontal"],
                 [
-                  "mul",
-                  ["if", ["get", "horizontal"], ["get", "contentH"], ["get", "frame.w"]],
-                  ["get", "token.categoryShare"]
+                  "if",
+                  ["lt", ["get", "labelLane"], ["add", ["get", "smallLabelHeight"], 8]],
+                  false,
+                  [
+                    "if",
+                    [
+                      "lt",
+                      ["mul", ["get", "innerW"], 0.18],
+                      [
+                        "add",
+                        [
+                          "max",
+                          0,
+                          [
+                            "map",
+                            ["get", "numbers"],
+                            "v",
+                            [
+                              "textWidth",
+                              ["format", ["get", "v"], ["get", "valueFormat"]],
+                              ["get", "token.label"],
+                              ["get", "token.captionSmall"]
+                            ]
+                          ]
+                        ],
+                        2
+                      ]
+                    ],
+                    false,
+                    true
+                  ]
                 ],
-                0.68
+                [
+                  "if",
+                  [
+                    "lt",
+                    ["get", "labelLane"],
+                    [
+                      "add",
+                      [
+                        "max",
+                        0,
+                        [
+                          "map",
+                          ["get", "numbers"],
+                          "v",
+                          [
+                            "textWidth",
+                            ["format", ["get", "v"], ["get", "valueFormat"]],
+                            ["get", "token.label"],
+                            ["get", "token.captionSmall"]
+                          ]
+                        ]
+                      ],
+                      8
+                    ]
+                  ],
+                  false,
+                  true
+                ]
               ]
             ],
             false
           ]
         ],
-        ["hasAxis", ["if", ["get", "hasDirectLabels"], false, ["if", ["lt", ["get", "tickStep"], 0.1], false, true]]],
+        ["hasAxis", ["if", ["get", "hasDirectLabels"], false, true]],
         [
           "tickWidths",
           [
@@ -499,12 +594,21 @@
             "if",
             ["get", "hasDirectLabels"],
             [
-              "map",
-              ["list", ["get", "minValue"], ["get", "maxValue"]],
-              "v",
-              ["textWidth", ["format", ["get", "v"], ["get", "valueFormat"]], ["get", "token.label"]]
+              "if",
+              ["get", "horizontal"],
+              [
+                "max",
+                0,
+                [
+                  "map",
+                  ["get", "numbers"],
+                  "v",
+                  ["textWidth", ["format", ["get", "v"], ["get", "valueFormat"]], ["get", "token.label"]]
+                ]
+              ],
+              0
             ],
-            ["list"]
+            0
           ]
         ],
         [
@@ -530,7 +634,7 @@
                 ["add", ["get", "labelGap"], ["max", 0, ["get", "tickWidths"]], 4]
               ]
             ],
-            ["valueWidth", ["min", ["mul", ["get", "innerW"], 0.18], ["add", ["max", 0, ["get", "valueWidths"]], 6]]],
+            ["valueWidth", ["min", ["mul", ["get", "innerW"], 0.18], ["add", ["get", "valueWidths"], 6]]],
             ["hasNegative", ["lt", ["get", "minValue"], 0]],
             ["hasPositive", ["lt", 0, ["get", "maxValue"]]],
             [
@@ -604,9 +708,7 @@
               "top",
               [
                 "add",
-                ["get", "headerH"],
-                ["mul", ["get", "legend.rows"], ["get", "legendRowH"]],
-                ["min", 12, ["mul", ["get", "frame.h"], 0.06]],
+                ["get", "plotTop"],
                 [
                   "if",
                   ["get", "horizontal"],
@@ -646,24 +748,19 @@
             ["plotH", ["sub", ["get", "bottom"], ["get", "top"]]],
             ["lowEdge", ["if", ["get", "horizontal"], ["get", "left"], ["get", "bottom"]]],
             ["highEdge", ["if", ["get", "horizontal"], ["get", "right"], ["get", "top"]]],
-            [
-              "zero",
-              ["linear", 0, ["get", "domain.lo"], ["get", "domain.hi"], ["get", "lowEdge"], ["get", "highEdge"]]
-            ],
+            ["scaleLo", ["if", ["get", "hasDirectLabels"], ["get", "minValue"], ["get", "domain.lo"]]],
+            ["scaleHi", ["if", ["get", "hasDirectLabels"], ["get", "maxValue"], ["get", "domain.hi"]]],
+            ["zero", ["linear", 0, ["get", "scaleLo"], ["get", "scaleHi"], ["get", "lowEdge"], ["get", "highEdge"]]],
             ["bandStart", ["if", ["get", "horizontal"], ["get", "top"], ["get", "left"]]],
             ["bandSize", ["if", ["get", "horizontal"], ["get", "plotH"], ["get", "plotW"]]],
-            ["markCount", ["mul", ["get", "requestedSeries"], ["get", "nCategories"]]],
+            ["markCount", ["mul", ["get", "nSeries"], ["get", "nCategories"]]],
             ["markSpace", ["div", ["get", "bandSize"], ["max", 1, ["get", "markCount"]]]],
             ["minMark", ["max", 2, ["get", "token.minMark"]]],
             [
               "closeGaps",
               [
                 "lt",
-                [
-                  "mul",
-                  ["div", ["get", "bandSize"], ["max", 1, ["mul", ["get", "nSeries"], ["get", "nCategories"]]]],
-                  ["mul", ["get", "token.categoryShare"], ["get", "token.seriesShare"]]
-                ],
+                ["mul", ["get", "markSpace"], ["mul", ["get", "token.categoryShare"], ["get", "token.seriesShare"]]],
                 ["get", "minMark"]
               ]
             ],
@@ -683,7 +780,7 @@
               "emit": {
                 "kind": "finding",
                 "key": ["list", "ticks"],
-                "message": "Use a smaller display scale so axis values differ at one decimal place."
+                "message": "Use a smaller display scale to shorten the value axis labels."
               }
             },
             {
@@ -716,7 +813,7 @@
               ],
               "emit": {
                 "kind": "finding",
-                "key": ["list", "values"],
+                "key": ["list", "value-label-space"],
                 "message": "Value labels need more room. Show fewer series or categories, or make the chart larger."
               }
             },
@@ -955,8 +1052,8 @@
                           [
                             "linear",
                             ["get", "value"],
-                            ["get", "domain.lo"],
-                            ["get", "domain.hi"],
+                            ["get", "scaleLo"],
+                            ["get", "scaleHi"],
                             ["get", "lowEdge"],
                             ["get", "highEdge"]
                           ]
@@ -1047,8 +1144,7 @@
                             "alignV": "center",
                             "fit": {
                               "smaller": ["get", "token.captionSmall"],
-                              "group": "values",
-                              "thin": 8
+                              "group": "values"
                             }
                           },
                           "when": ["if", ["get", "horizontal"], false, ["get", "hasDirectLabels"]]
@@ -1073,9 +1169,7 @@
                             "alignV": "center",
                             "fit": {
                               "smaller": ["get", "token.captionSmall"],
-                              "group": "values",
-                              "thin": 8,
-                              "axis": "vertical"
+                              "group": "values"
                             }
                           },
                           "when": ["if", ["get", "horizontal"], ["get", "hasDirectLabels"], false]

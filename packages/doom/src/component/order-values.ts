@@ -16,9 +16,9 @@ export function sortBy([source, ...fields]: Values, charge: Charge): Values {
     .map(({ value }) => value)
 }
 
-export function startsWithIgnoreCase([value, prefix]: Values, charge: Charge): boolean {
+export function startsWithWordIgnoreCase([value, prefix]: Values, charge: Charge): boolean {
   const chars = string(value)
   const start = string(prefix)
   charge(chars.length + start.length)
-  return chars.toLowerCase().startsWith(start.toLowerCase())
+  return chars.toLowerCase().startsWith(start.toLowerCase()) && !/^[\p{L}\p{M}\p{N}_]/u.test(chars.slice(start.length))
 }

@@ -41,13 +41,12 @@ describe.each(orientations)("%s chart", (orientation) => {
     const chart = expand(options)
     const parts = chart.children
     const marks = parts.filter(({ key }) => key[0] === "bar")
-    const tooDense = series === 20 && categories === 100
     const shown = Math.min(3, series)
     const nonZero = options.data.series
       .slice(0, shown)
       .flatMap(({ values }) => values)
       .filter((value) => value !== 0)
-    expect(marks).toHaveLength(tooDense ? 0 : nonZero.length)
+    expect(marks).toHaveLength(nonZero.length)
     expect(new Set(marks.map(({ key }) => JSON.stringify(key))).size).toBe(marks.length)
     expect(parts.filter(({ key }) => key[0] === "legend-label")).toHaveLength(shown > 1 ? shown : 0)
     expect(parts.filter(({ props }) => props.text?.chars.includes("%")).map(({ props }) => props.text?.chars)).toEqual([
@@ -255,7 +254,12 @@ it("right-aligns the bar categories in a gutter sized to their actual text", () 
 })
 
 it.each(orientations)("finds %s density before painting marks too thin to see", (orientation) => {
-  const chart = expand({ ...input, data: dataOf(20, orientation === "bar" ? 33 : 100), variant: { orientation } })
+  const chart = expand({
+    ...input,
+    frame: { x: 0, y: 0, w: 420, h: 180 },
+    data: dataOf(20, 100),
+    variant: { orientation },
+  })
   expect(chart.children.filter(({ key }) => key[0] === "bar")).toHaveLength(0)
   expect(chart.findings).toContainEqual(expect.objectContaining({ key: ["marks"], kind: "check" }))
 })
@@ -266,37 +270,27 @@ it("reports when horizontal density hides value labels", () => {
   expect(marks).toHaveLength(24)
   expect(marks.every(({ props }) => props.box.h >= 2)).toBe(true)
   expect(chart.children.filter(({ key }) => key[0] === "value")).toHaveLength(0)
-  expect(chart.findings.filter(({ key }) => key[0] === "values")).toEqual([expect.objectContaining({ kind: "check" })])
+  expect(chart.findings.filter(({ key }) => key[0] === "value-label-space")).toEqual([
+    expect.objectContaining({ kind: "check" }),
+  ])
   const labelsOff = expand({ ...input, data: dataOf(20, 12), variant: { orientation: "bar", labels: false } })
-  expect(labelsOff.findings.some(({ key }) => key[0] === "values")).toBe(false)
+  expect(labelsOff.findings.some(({ key }) => key[0] === "value-label-space")).toBe(false)
 })
 
-it.each(orientations)("keeps one size and 8 px clearance in a crowded %s value-label group", (orientation) => {
+it.each(orientations)("shows every value or a value axis in a crowded %s chart", (orientation) => {
   const data = dataOf(3, 4)
-  const vertical = orientation === "bar"
-  const chart = expand({
+  const options = {
     ...input,
-    frame: { ...input.frame, w: 650, h: 430 },
-    tokens: { valueLaneMin: 12, digits: 2 },
+    tokens: { digits: 2 },
     data: { ...data, series: data.series.map((series) => ({ ...series, values: [1250.25, 1086, 1310, 1250] })) },
     variant: { orientation },
-  })
-  const labels = chart.children
-    .flatMap(({ key, props: { box, text } }) => {
-      if (key[0] !== "value" || text === undefined) return []
-      const measured = input.measure(text, input.theme, null)
-      const span = vertical ? measured.h : measured.w
-      const center = vertical ? box.y + box.h / 2 : box.x + box.w / 2
-      return [{ start: center - span / 2, end: center + span / 2, size: text.spans[0]?.size }]
-    })
-    .sort((a, b) => a.start - b.start)
-  expect(labels.length).toBeGreaterThan(1)
-  expect(labels.length).toBeLessThan(12)
-  expect(new Set(labels.map(({ size }) => size))).toEqual(new Set([18]))
-  labels.slice(1).forEach(({ start }, i) => expect(start - labels[i]!.end).toBeGreaterThanOrEqual(8 - 1e-6))
-  expect(chart.findings.filter(({ key }) => key[0] === "values")).toEqual([
-    expect.objectContaining({ kind: "text-fit", thinned: 12 - labels.length }),
-  ])
+  }
+  const wide = expand(options)
+  expect(wide.children.filter(({ key }) => key[0] === "value")).toHaveLength(12)
+  const narrow = expand({ ...options, frame: { ...input.frame, w: 650, h: 430 } })
+  expect(narrow.children.filter(({ key }) => key[0] === "value")).toHaveLength(0)
+  expect(narrow.children.some(({ key }) => key[0] === "tick")).toBe(true)
+  expect(narrow.findings).toContainEqual(expect.objectContaining({ key: ["value-label-space"] }))
 })
 
 it("closes both gaps to keep all 300 marks visible in a crowded column chart", () => {
@@ -405,13 +399,73 @@ it("derives scaled tick digits from the axis and applies the shared label defaul
   expect(labels(expand(options), "value")).toEqual(["0.3", "0.5", "0.9"])
 })
 
-it("reports a tiny axis whose ticks would round to duplicate labels", () => {
+it("shows distinct small tick values on a tiny axis", () => {
   const data = dataOf(1, 3)
   const chart = expand({
     ...input,
     data: { ...data, series: data.series.map((series) => ({ ...series, values: [0.01, 0.02, 0.03] })) },
     variant: { labels: false },
   })
-  expect(chart.children.some(({ key }) => key[0] === "tick")).toBe(false)
-  expect(chart.findings).toContainEqual(expect.objectContaining({ kind: "check", key: ["ticks"] }))
+  const ticks = chart.children.filter(({ key }) => key[0] === "tick").map(({ props }) => props.text?.chars)
+  expect(ticks).toEqual(["0.00", "0.01", "0.02", "0.03"])
+})
+
+it.each([
+  [3, 6, 1200, 620],
+  [2, 8, 1000, 560],
+])("shows an axis when wide values cannot fit in %i × %i series lanes", (series, categories, w, h) => {
+  const base = dataOf(series, categories)
+  const data = {
+    categories: base.categories.map((category, i) => ({ ...category, label: `Q${i + 1}` })),
+    series: base.series.map((row, i) => ({
+      ...row,
+      values: row.values.map((_, j) => 12000 + i * 9111 + j * 4321),
+    })),
+  }
+  const chart = expand({
+    ...input,
+    data,
+    frame: { x: 0, y: 0, w, h },
+    tokens: { title: "Revenue by quarter", unitHeader: "$ thousands", source: "Demo figures" },
+  })
+  expect(chart.children.filter(({ key }) => key[0] === "value")).toHaveLength(0)
+  expect(chart.children.some(({ key }) => key[0] === "tick")).toBe(true)
+  expect(chart.findings).toContainEqual(expect.objectContaining({ key: ["value-label-space"] }))
+})
+
+it("sorts bars by the focus series and recognizes Other as a whole word", () => {
+  const base = dataOf(2, 4)
+  const chart = expand({
+    ...input,
+    data: {
+      categories: base.categories.map((row, i) => ({
+        ...row,
+        label: ["Small", "Other markets", "Otherside Ltd", "Middle"][i],
+      })),
+      series: base.series.map((row, i) => ({ ...row, values: i === 0 ? [5, 6, 8, 9] : [1, 100, 9, 5] })),
+    },
+    variant: { orientation: "bar" },
+    tokens: { focus: "s1" },
+  })
+  expect(chart.children.filter(({ key }) => key[0] === "category").map(({ key }) => key[1])).toEqual([
+    "c2",
+    "c3",
+    "c0",
+    "c1",
+  ])
+})
+
+it("fits the directly labeled vertical scale to the signed data extent", () => {
+  const base = dataOf(1, 3)
+  const draw = (values: number[]) =>
+    expand({
+      ...input,
+      data: { ...base, series: base.series.map((row) => ({ ...row, values })) },
+    })
+  const zero = draw([0, 3, 13]).children.find(({ key }) => key[0] === "zero")!.props.box.y
+  const signed = draw([-2, 3, 13])
+  const low = signed.children.find(({ key }) => key[0] === "bar" && key[1] === "c0")!.props.box
+  const label = signed.children.find(({ key }) => key[0] === "value" && key[1] === "c0")!.props.box
+  expect(low.y + low.h + 7).toBe(label.y)
+  expect(label.y + label.h).toBe(zero)
 })
