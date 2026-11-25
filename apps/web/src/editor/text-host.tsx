@@ -56,8 +56,18 @@ export function TextHost(props: {
   const latest = useRef({ api, session, deck, slides, onLeave: props.onLeave })
   const marked = useRef<{ readonly from: number; readonly to: number } | null>(null)
   const [fresh, setFresh] = useState(0)
-  const [composingLines, setComposingLines] = useState<readonly doom.ResolvedLine[] | null>(null)
-  const lines = composingLines ?? node.text?.sourceLines ?? node.text?.lines ?? [blankLine(session.draft, theme, node)]
+  const painted = useRef<{
+    readonly draft: doom.Text
+    readonly lines: readonly doom.ResolvedLine[]
+    readonly followFormatting: boolean
+  } | null>(null)
+  const previous = painted.current
+  const sameDraft = session.draft === previous?.draft
+  const followFormatting = sameDraft ? previous.followFormatting : session.draft.chars === previous?.draft.chars
+  const lines =
+    previous !== null && (marked.current !== null || (sameDraft && !followFormatting))
+      ? previous.lines
+      : (node.text?.sourceLines ?? node.text?.lines ?? [blankLine(session.draft, theme, node)])
   const focused = useRef<{ readonly element: HTMLDivElement; readonly sync: number } | null>(null)
   useEffect(() => {
     latest.current = { api, session, deck, slides, onLeave: props.onLeave }
@@ -66,6 +76,7 @@ export function TextHost(props: {
   useLayoutEffect(() => {
     const element = host.current
     if (element === null || marked.current !== null) return
+    painted.current = { draft: session.draft, lines, followFormatting }
     const sync = focused.current?.element !== element || focused.current.sync !== session.sync
     if (sync) {
       focused.current = { element, sync: session.sync }
@@ -80,7 +91,7 @@ export function TextHost(props: {
       return
     }
     showSelection(element, session.anchor, session.focus)
-  }, [session.sync, fresh, lines])
+  }, [session.sync, fresh, session.draft, lines, followFormatting])
 
   useEffect(() => {
     const element = host.current
@@ -236,14 +247,12 @@ export function TextHost(props: {
         const now = latest.current.session
         const at = found ?? { anchor: now.anchor, focus: now.focus }
         marked.current = { from: Math.min(at.anchor, at.focus), to: Math.max(at.anchor, at.focus) }
-        setComposingLines(lines)
       }}
       onCompositionEnd={(event) => {
         const range = marked.current
         marked.current = null
         if (range === null) return
         latest.current.api.replace(range.from, range.to, event.data)
-        setComposingLines(null)
         setFresh((value) => value + 1)
       }}
     >
