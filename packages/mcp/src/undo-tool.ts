@@ -1,4 +1,4 @@
-import { readNamedDeck, readRun } from "@airdesign/catalog"
+import { readNamedDeck, readRun, runUndoStays, undoStaysNote, undoRebuildFailed } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import { answered, hostRefused, refused, type ToolResult } from "./answer.js"
@@ -11,44 +11,6 @@ const undoFailed = "Unable to undo. Check your connection and try again."
 const undoTooLarge = "Unable to undo. This run made too many changes."
 const undoneWord = "Undone"
 const wordsShown = 40
-
-const listed = (names: readonly string[]) => new Intl.ListFormat("en", { type: "conjunction" }).format(names)
-
-function opening(layers: readonly string[]): string {
-  const named = listed(layers)
-  return `${named.charAt(0).toUpperCase()}${named.slice(1)}`
-}
-
-function staysNote(
-  agent: string,
-  stays: { readonly kept: readonly string[]; readonly left: readonly string[]; readonly waiting: readonly string[] },
-): string {
-  const kept =
-    stays.kept.length === 0
-      ? []
-      : [
-          stays.kept.length === 1
-            ? `${opening(stays.kept)} stays, because it was changed after ${agent} made it.`
-            : `${opening(stays.kept)} stay, because they were changed after ${agent} made them.`,
-        ]
-  const left =
-    stays.left.length === 0
-      ? []
-      : [
-          stays.left.length === 1
-            ? `${opening(stays.left)} stays where it is, because the frame it came from was deleted or moved since.`
-            : `${opening(stays.left)} stay where they are, because the frames they came from were deleted or moved since.`,
-        ]
-  const waiting =
-    stays.waiting.length === 0
-      ? []
-      : [
-          stays.waiting.length === 1
-            ? `${opening(stays.waiting)} can't come back until the frame it was in is back.`
-            : `${opening(stays.waiting)} can't come back until the frames they were in are back.`,
-        ]
-  return [...kept, ...left, ...waiting].join(" ")
-}
 
 function shown(name: string): string {
   const trimmed = name.trim()
@@ -143,7 +105,7 @@ async function turnRun(
   const owned = await host.undoRevs(opened.deck, agent)
   const turned = doom.invertRun(opened.fold, edits, owned, started, measure?.measure)
   if (turned.refused !== undefined)
-    return answered("Unable to undo. The chart can't be restored.", {
+    return answered(undoRebuildFailed, {
       ok: false,
       reason: "refused",
       refusal: turned.refused.refused,
@@ -151,18 +113,14 @@ async function turnRun(
     })
   const who = run.name === "" ? "An agent" : run.name
   const names = (ids: readonly doom.NodeId[]) => ids.map((id) => layerName(opened.fold, id))
-  const created = new Set(
-    edits.flatMap(({ writes }) => writes.flatMap(({ node, prop }) => (prop === "type" ? [node] : []))),
-  )
-  const later = names(turned.kept.filter((node) => !created.has(node)))
-  const stays = {
-    kept: names(turned.kept.filter((node) => created.has(node))),
+  const { later = [] } = runUndoStays(edits, turned)
+  const kept = names(turned.kept.filter((node) => !later.includes(node)))
+  const note = undoStaysNote(who, {
+    kept,
+    later: names(later),
     left: names(turned.left),
     waiting: names(turned.waiting),
-  }
-  const note = [staysNote(who, stays), later.length === 0 ? "" : `Later changes to ${listed(later)} were kept.`]
-    .filter(Boolean)
-    .join(" ")
+  })
   const body = {
     deck: opened.deck,
     rev: opened.rev,

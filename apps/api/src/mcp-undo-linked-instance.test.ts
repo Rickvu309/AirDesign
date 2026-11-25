@@ -32,6 +32,7 @@ it.each([
   "a linked update and detach after consecutive suppressions",
   "a linked update and detach after another run updated the chart",
   "a later person update",
+  "a data update followed by a measured label style",
   "a body font change",
   "placing a chart",
   "placing a chart that another device recolours",
@@ -101,7 +102,7 @@ it.each([
       const person: Edit["author"] = { kind: "person", id: "other-device" }
       const opened = await fold()
       const seedFont: Edit["writes"] =
-        scenario === "a body font change"
+        scenario === "a body font change" || scenario.includes("measured label style")
           ? [
               { node: startIds.deck, prop: "theme.fonts.heading", value: "Liberation Sans Narrow" },
               { node: startIds.deck, prop: "theme.fonts.body", value: "Liberation Sans Narrow" },
@@ -151,6 +152,31 @@ it.each([
           readBase: current.rev,
         })
         return runId
+      }
+      if (scenario.includes("measured label style")) {
+        const before = await fold()
+        const instance = propOf(before.nodes.get(frame), "instance")!
+        const label = instance.parts.find(({ key }) => key[0] === "category")!.node
+        const runId = await update(2)
+        await call("edit_deck", {
+          deck: id,
+          base: (await fold()).rev,
+          runId,
+          changes: [{ op: "set", target: label, textStyle: "body" }],
+        })
+        const result = await ask(server.base, "POST", doomRoutes.run.path, { deck: id, run: runId }, cookie)
+        const log = doomRoutes.run.result(result.json)
+        expect(log).toMatchObject({
+          ok: true,
+          replaced: expect.arrayContaining([
+            expect.arrayContaining([expect.objectContaining({ node: frame, key: "instance", value: instance })]),
+          ]),
+        })
+        expect(await call("undo_run", { deck: id, runId })).toMatchObject({ ok: true, kept: [], note: "Undone" })
+        const restored = await fold()
+        expect(propOf(restored.nodes.get(frame), "instance")).toEqual(instance)
+        expect(propOf(restored.nodes.get(label), "text")).toEqual(propOf(before.nodes.get(label), "text"))
+        return
       }
       if (scenario === "a later person update") {
         const runId = await update(2)
@@ -223,7 +249,7 @@ it.each([
           const fills = [{ kind: "solid", color: { var: "accent2" } }]
           await send({ once: "other-colour", author: person, writes: [{ node: bar, prop: "fills", value: fills }] })
           expect(await call("undo_run", { deck: id, runId })).toMatchObject({
-            note: "Undone. “Chart” stays, because it was changed after Aira made it.",
+            note: "Undone. “Chart” stays because it was changed after Aira made it.",
             kept: [placedFrame],
             left: [],
           })

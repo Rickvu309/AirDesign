@@ -1,14 +1,8 @@
+import { undoRebuildFailed, undoStaysNote, type UndoStays } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { useRef, useState } from "react"
 import { EditorIcon } from "@/components/ui/editor-icons"
-import {
-  agentRunStatus,
-  agentRunsCopy,
-  agentShownName,
-  agentUndoStays,
-  type RunPlace,
-  type UndoStays,
-} from "@/copy/agent-runs-copy"
+import { agentRunStatus, agentRunsCopy, agentShownName, type RunPlace } from "@/copy/agent-runs-copy"
 import { productCopy } from "@/copy/product-copy"
 import { LiveDot, slideNumberOf } from "./agent-at-work"
 import { layerLabel } from "./layer-label"
@@ -28,7 +22,7 @@ const said: Partial<Record<Extract<Undoing, string>, string>> = {
   refused: agentRunsCopy.undoRefused,
   failed: agentRunsCopy.undoFailed,
   size: agentRunsCopy.undoTooLarge,
-  rebuild: agentRunsCopy.undoRebuildFailed,
+  rebuild: undoRebuildFailed,
 }
 
 function placeOf(view: doom.Doom, run: doom.ListedRun): RunPlace {
@@ -64,7 +58,13 @@ export function AgentRuns({
     const turned = await undoRun(run.id)
     const named = (ids: readonly doom.NodeId[]) => ids.map((id) => layerLabel(view, id))
     if (turned.ok || turned.reason === "left")
-      mark({ kept: named(turned.kept), left: named(turned.left), waiting: named(turned.waiting), landed: turned.ok })
+      mark({
+        kept: named(turned.kept.filter((id) => !turned.later?.includes(id))),
+        ...(turned.later === undefined ? {} : { later: named(turned.later) }),
+        left: named(turned.left),
+        waiting: named(turned.waiting),
+        landed: turned.ok,
+      })
     else if (turned.reason === "refused") mark(turned.refused.prop === "instance" ? "rebuild" : "refused")
     else mark(turned.reason === "offline" ? "failed" : turned.reason)
   }
@@ -85,7 +85,8 @@ export function AgentRuns({
           const status = run.undone ? agentRunsCopy.undone : agentRunStatus(live, placeOf(view, run))
           const note =
             typeof state === "object"
-              ? agentUndoStays(name, state.landed && !run.undone ? { ...state, kept: [] } : state) || undefined
+              ? undoStaysNote(name, state.landed && !run.undone ? { ...state, kept: [], later: [] } : state) ||
+                undefined
               : state === undefined || state === "undoing"
                 ? undefined
                 : said[state]

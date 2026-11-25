@@ -1,5 +1,4 @@
 import { expect, type BrowserContext, type Page } from "@playwright/test"
-import { agentLeftLayers } from "../../apps/web/src/copy/agent-runs-copy.ts"
 import { airaKeptLayerName } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import * as doom from "../../packages/doom/src/index.ts"
@@ -269,7 +268,7 @@ test("Undo on an agent run puts back the colour of a layer it leaves in the fram
       props: { box: spot(100, 100, 200, 100), geometry: { kind: "rect" }, fills: blue, name: "Card" },
     },
   ])
-  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+  const { doomRoutes, undoStaysNote } = await import("../../packages/catalog/src/index.ts")
   const opening = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
   const base = doom.readFold(opening.json.fold)?.revs.get(doom.nodeId("t:83"))?.get("fills")
   const author = { kind: "agent", id: "helper", run: "run-card" }
@@ -299,7 +298,9 @@ test("Undo on an agent run puts back the colour of a layer it leaves in the fram
   await row.locator("[data-agent-run-undo]").click()
   await expect.poll(async () => (await savedNode(stack, opened, "t:83"))?.fills).toEqual(blue)
   expect(((await savedNode(stack, opened, "t:83"))?.parent as { id: string }).id).toBe("t:82")
-  await expect(row.locator("[data-agent-run-note]")).toHaveText(agentLeftLayers([airaKeptLayerName("Card")]))
+  await expect(row.locator("[data-agent-run-note]")).toHaveText(
+    undoStaysNote(author.id, { kept: [], left: [airaKeptLayerName("Card")], waiting: [] }),
+  )
   await other.close()
 })
 

@@ -44,7 +44,7 @@ export { type Counts, applyEdit, countsOf, hasDeck, landEdit } from "./apply-edi
 export { foldToJson, readFold, readLanded, readRuns, readStoredNode, revsToJson, runsToJson } from "./fold-json.js"
 export { type Arrow, type End, type Geometry, lineArrowheads } from "./geometry.js"
 export { type NodeId, type Rev, nodeId, readNodeId, rev } from "./ids.js"
-export { changingWrites } from "./changing-writes.js"
+export { changingWrites, sameValue } from "./changing-writes.js"
 export { invert, invertStep, removePlacedInstance } from "./invert.js"
 export { onStandingLayers } from "./standing-layers.js"
 export { replayLog } from "./replay-log.js"
@@ -82,7 +82,7 @@ export type { Para, Span, Text, TextStyleName } from "./text.js"
 export { paragraphAligns, textLimits, textStyleNames } from "./text.js"
 export { notesText } from "./notes-text.js"
 export { type TextPatch, lookWrite, paraWrite, styleWrite } from "./text-writes.js"
-export { linkedOwner } from "./component/instance-ownership.js"
+export { linkedOwner, linkedOverride } from "./component/instance-ownership.js"
 export {
   type ComponentEditSample,
   componentEditPreview,

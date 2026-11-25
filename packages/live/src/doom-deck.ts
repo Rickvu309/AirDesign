@@ -1,4 +1,4 @@
-import { readDeckId, type DeckId } from "@airdesign/catalog"
+import { readDeckId, runUndoStays, type DeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import {
   acceptedWithoutRow,
@@ -437,18 +437,13 @@ function connected(
     if (edits === undefined || edits.length === 0 || view().runs.get(run)?.undone === true)
       return { ok: false, reason: "nothing" }
     const now = view()
-    const { writes, kept, left, waiting, refused } = doom.invertRun(
-      now,
-      edits,
-      ownedRevs(turned.keys()),
-      started,
-      measure(),
-    )
+    const { writes, refused, ...turnedRun } = doom.invertRun(now, edits, ownedRevs(turned.keys()), started, measure())
     if (refused !== undefined) return { ok: false, reason: "refused", refused }
+    const stays = runUndoStays(edits, turnedRun)
     if (writes.length === 0)
-      return [...kept, ...left, ...waiting].length === 0
+      return [...stays.kept, ...stays.left, ...stays.waiting].length === 0
         ? { ok: false, reason: "nothing" }
-        : { ok: false, reason: "left", kept, left, waiting }
+        : { ok: false, reason: "left", ...stays }
     const guarded = writes.some(({ prop }) => prop === "instance")
     if (guarded) remember(runUndoSources, run, { edits, ...(started === undefined ? {} : { started }) })
     const pushed = pushEdit(writes, author, {
@@ -464,7 +459,7 @@ function connected(
       ...(guarded ? { guarded: true } : {}),
     })
     remember(turned, pushed.once, pressedOn(server, now, pushed.writes))
-    return { ok: true, once: pushed.once, saved: pushed.saved, kept, left, waiting }
+    return { ok: true, once: pushed.once, saved: pushed.saved, ...stays }
   }
 
   function push(

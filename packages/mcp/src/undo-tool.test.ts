@@ -114,7 +114,7 @@ describe("undo_run", () => {
       kept: [hello],
       left: [],
       waiting: [],
-      note: "Undone. “Mine” stays, because it was changed after Aira made it.",
+      note: "Undone. “Mine” stays because it was changed after Aira made it.",
     })
     const fold = by.decks.decks.get(deck as never)!
     expect(doom.propOf(fold.nodes.get(hello as never), "name")).toBe("Mine")

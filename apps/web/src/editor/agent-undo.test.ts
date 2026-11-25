@@ -58,6 +58,15 @@ describe("undoing an Aira exchange on a doom deck", () => {
     expect(undone?.exchanges[0]).toMatchObject({ end: "undone", kept: ["“Revenue”", "a group"] })
   })
 
+  it("names an earlier layer separately when only its later changes were kept", async () => {
+    const open = client({
+      "run-1": { ok: true, once: "u1", saved, kept: [ids.named, ids.group], later: [ids.named], left: [], waiting: [] },
+      "run-2": { ok: true, once: "u2", saved, kept: [], left: [], waiting: [] },
+    })
+    const undone = await undoExchange(done, 0, undoAgentRun(open))
+    expect(undone?.exchanges[0]).toMatchObject({ end: "undone", kept: ["a group"], later: ["“Revenue”"] })
+  })
+
   it("names the layers a run's undo leaves where they are because the frame they came from is gone", async () => {
     const open = client({
       "run-1": { ok: true, once: "u1", saved, kept: [], left: [ids.named], waiting: [] },

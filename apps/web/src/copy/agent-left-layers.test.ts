@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { agentLeftLayers } from "./agent-runs-copy"
+import { undoStaysNote } from "@airdesign/catalog"
 import { airaKeptLayerName } from "./aira-copy"
 
 const stays = "“Title” stays where it is, because the place it came from has changed."
@@ -49,11 +49,13 @@ function undoneOf(world: World, run: string): doom.Undone {
 }
 
 function said(world: World, run: string): string {
-  return agentLeftLayers(
-    undoneOf(world, run).left.map((id) =>
+  return undoStaysNote("Aira", {
+    kept: [],
+    waiting: [],
+    left: undoneOf(world, run).left.map((id) =>
       airaKeptLayerName((world.doom.nodes.get(id) as { readonly name?: string } | undefined)?.name ?? ""),
     ),
-  )
+  })
 }
 
 const theme = doom.defaultTheme

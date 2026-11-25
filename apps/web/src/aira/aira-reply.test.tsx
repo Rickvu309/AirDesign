@@ -145,9 +145,9 @@ describe("a request Aira's changes were undone from", () => {
 
   it("names the layers the undo kept because they were changed after Aira made them", () => {
     const one = offered({ ...exchange(edited, "undone", ["r1"]), kept: ["“Revenue”"] })
-    expect(one).toContain(`${airaCopy.undone} Changes made to “Revenue” after Aira’s edit were kept.`)
+    expect(one).toContain(`${airaCopy.undone} “Revenue” stays because it was changed after Aira made it.`)
     const two = offered({ ...exchange(edited, "undone", ["r1"]), kept: ["a group", "“Revenue”"] })
-    expect(two).toContain("Changes made to a group and “Revenue” after Aira’s edit were kept.")
+    expect(two).toContain("A group and “Revenue” stay because they were changed after Aira made them.")
   })
 
   it("names what stays and offers Undo again when the undo landed nothing, as the Agents panel does", () => {

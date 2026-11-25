@@ -229,6 +229,7 @@ export function ElementDesign({
   selectionColors = null,
   layerName,
   onLayerName,
+  showTextHeading = false,
 }: {
   model: PanelModel
   picture?: ReactNode
@@ -239,6 +240,7 @@ export function ElementDesign({
   palette: Palette
   onChange: (control: PanelControl, value: unknown) => void
   layerName?: string
+  showTextHeading?: boolean
   onLayerName?: (name: string) => void
 }) {
   const folds = useFolds()
@@ -315,7 +317,7 @@ export function ElementDesign({
         return (
           <DesignSection
             key={section.trait}
-            title={section.trait === "text" && kind === "text" ? null : section.label}
+            title={section.trait === "text" && kind === "text" && !showTextHeading ? null : section.label}
             last={at === last}
             action={
               section.trait === "link" ? (

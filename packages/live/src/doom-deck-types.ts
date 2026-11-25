@@ -28,6 +28,7 @@ export type TurnedRun =
       readonly once: string
       readonly saved: Promise<void>
       readonly kept: readonly doom.NodeId[]
+      readonly later?: readonly doom.NodeId[]
       readonly left: readonly doom.NodeId[]
       readonly waiting: readonly doom.NodeId[]
     }
@@ -35,6 +36,7 @@ export type TurnedRun =
       readonly ok: false
       readonly reason: "left"
       readonly kept: readonly doom.NodeId[]
+      readonly later?: readonly doom.NodeId[]
       readonly left: readonly doom.NodeId[]
       readonly waiting: readonly doom.NodeId[]
     }

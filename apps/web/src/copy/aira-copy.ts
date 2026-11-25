@@ -1,5 +1,4 @@
 import type { AgentOp, EditRefusal } from "@airdesign/catalog"
-import { type UndoStays, agentUndoStays } from "./agent-runs-copy.ts"
 import { slideListCopy } from "./slide-list-copy.ts"
 
 export type StepWords = {
@@ -82,10 +81,6 @@ export function airaStepsSummary(said: readonly string[]): string {
 
 export function airaKeptLayerName(name: string): string {
   return `“${name}”`
-}
-
-export function airaUndoStays(stays: UndoStays): string {
-  return agentUndoStays("Aira", stays)
 }
 
 export function airaBackOn(when: string): string {
