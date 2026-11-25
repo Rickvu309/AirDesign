@@ -14,10 +14,10 @@ type Read =
   | { readonly ok: true; readonly changes: readonly doom.AgentChange[] }
   | { readonly ok: false; readonly result: ToolResult }
 
-function readChanges(raw: readonly unknown[]): Read {
+function readChanges(raw: readonly unknown[], components: boolean): Read {
   const changes: doom.AgentChange[] = []
   for (const [at, each] of raw.entries()) {
-    const read = doom.readAgentChange(each)
+    const read = doom.readAgentChange(each, components)
     if ("refused" in read) {
       const op = typeof each === "object" && each !== null ? (each as { op?: unknown }).op : undefined
       return { ok: false, result: doomRefused({ ...read, change: typeof op === "string" ? op : "change", at }) }
@@ -279,6 +279,7 @@ export async function editDeckTool(
   once: string,
   host: DeckHost,
   pendingFonts: ReadonlySet<string>,
+  components: boolean,
 ): Promise<ToolResult> {
   const named = readNamedDeck(raw)
   if (!named.ok) return toldRefusal(named)
@@ -286,7 +287,7 @@ export async function editDeckTool(
   if (!opened.ok) return hostRefused(opened)
   const parsed = readDeckEdit(raw)
   if (!parsed.ok) return toldRefusal(parsed)
-  const read = readChanges(parsed.changes)
+  const read = readChanges(parsed.changes, components)
   if (!read.ok) return read.result
   const fonts = withCatalogFonts(read.changes)
   if (!fonts.ok) return fonts.result

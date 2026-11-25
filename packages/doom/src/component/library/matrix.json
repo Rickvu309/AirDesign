@@ -1,0 +1,490 @@
+{
+  "version": 1,
+  "name": "2\u00d72 Matrix",
+  "collections": {
+    "axes": {
+      "label": "string"
+    },
+    "quadrants": {
+      "label": "string"
+    },
+    "items": {
+      "label": "string",
+      "quadrant": "ref:quadrants",
+      "size": "number?"
+    }
+  },
+  "sample": {
+    "w": 1600,
+    "h": 700,
+    "data": {
+      "axes": [
+        {
+          "id": "x",
+          "label": "Current size"
+        },
+        {
+          "id": "y",
+          "label": "Future growth"
+        }
+      ],
+      "quadrants": [
+        {
+          "id": "upper-left",
+          "label": "Nurture"
+        },
+        {
+          "id": "upper-right",
+          "label": "Invest"
+        },
+        {
+          "id": "lower-left",
+          "label": "Automate"
+        },
+        {
+          "id": "lower-right",
+          "label": "Maintain"
+        }
+      ],
+      "items": [
+        {
+          "id": "item1",
+          "label": "Partner marketplace",
+          "quadrant": "upper-left"
+        },
+        {
+          "id": "item2",
+          "label": "Managed services",
+          "quadrant": "upper-left"
+        },
+        {
+          "id": "item3",
+          "label": "Core platform",
+          "quadrant": "upper-right"
+        },
+        {
+          "id": "item4",
+          "label": "Data products",
+          "quadrant": "upper-right"
+        },
+        {
+          "id": "item5",
+          "label": "Invoice processing",
+          "quadrant": "lower-left"
+        },
+        {
+          "id": "item6",
+          "label": "Standard reporting",
+          "quadrant": "lower-left"
+        },
+        {
+          "id": "item7",
+          "label": "Training",
+          "quadrant": "lower-right"
+        },
+        {
+          "id": "item8",
+          "label": "Customer support",
+          "quadrant": "lower-right"
+        }
+      ]
+    }
+  },
+  "defaults": {
+    "ink": { "var": "text" },
+    "muted": {
+      "var": "text2"
+    },
+    "accent": {
+      "var": "accent1"
+    },
+    "focus": "",
+    "sizeLabel": "Item value",
+    "tile": {
+      "var": "background2"
+    },
+    "axis": {
+      "var": "text2"
+    }
+  },
+  "let": [
+    [
+      "quadrants",
+      [
+        "filter",
+        ["get", "data.quadrants"],
+        "q",
+        [
+          "if",
+          ["eq", ["get", "q.id"], "upper-left"],
+          true,
+          [
+            "if",
+            ["eq", ["get", "q.id"], "upper-right"],
+            true,
+            ["if", ["eq", ["get", "q.id"], "lower-left"], true, ["eq", ["get", "q.id"], "lower-right"]]
+          ]
+        ]
+      ]
+    ],
+    [
+      "axes",
+      [
+        "filter",
+        ["get", "data.axes"],
+        "axis",
+        ["if", ["eq", ["get", "axis.id"], "x"], true, ["eq", ["get", "axis.id"], "y"]]
+      ]
+    ],
+    ["focusMatches", ["count", ["filter", ["get", "quadrants"], "q", ["eq", ["get", "q.id"], ["get", "token.focus"]]]]],
+    ["sizes", ["filter", ["get", "data.items"], "item", ["if", ["eq", ["get", "item.size"], null], false, true]]],
+    ["hasSizes", ["lt", 0, ["count", ["get", "sizes"]]]],
+    ["maxSize", ["max", 0, ["map", ["get", "sizes"], "item", ["get", "item.size"]]]],
+    ["left", ["min", 28, ["mul", ["get", "frame.w"], 0.04]]],
+    ["top", ["min", 62, ["mul", ["get", "frame.h"], 0.14]]],
+    ["bottom", ["max", ["get", "top"], ["sub", ["get", "frame.h"], ["get", "top"]]]],
+    ["footerH", ["if", ["get", "hasSizes"], ["div", ["get", "top"], 2], ["get", "top"]]],
+    ["right", ["max", ["get", "left"], ["sub", ["get", "frame.w"], ["get", "left"]]]],
+    ["gap", ["min", 8, ["mul", ["get", "frame.w"], 0.01], ["mul", ["get", "frame.h"], 0.01]]],
+    ["tileW", ["max", 0, ["sub", ["div", ["sub", ["get", "right"], ["get", "left"]], 2], ["get", "gap"]]]],
+    ["tileH", ["max", 0, ["sub", ["div", ["sub", ["get", "bottom"], ["get", "top"]], 2], ["get", "gap"]]]],
+    ["inset", ["min", 28, ["mul", ["get", "tileW"], 0.07]]],
+    ["labelH", ["min", 64, ["mul", ["get", "tileH"], 0.32]]],
+    ["origin", ["point", ["get", "left"], ["get", "bottom"]]],
+    [
+      "focusMissing",
+      [
+        "if",
+        ["if", ["eq", ["get", "token.focus"], ""], false, ["eq", ["get", "focusMatches"], 0]],
+        ["advise", "focus-missing", "Set focus to a quadrant ID."],
+        false
+      ]
+    ],
+    [
+      "partialSizes",
+      [
+        "if",
+        [
+          "if",
+          ["lt", 0, ["count", ["get", "sizes"]]],
+          ["lt", ["count", ["get", "sizes"]], ["count", ["get", "data.items"]]],
+          false
+        ],
+        ["advise", "partial-sizes", "Give every item a bubble size or omit all sizes."],
+        false
+      ]
+    ],
+    [
+      "matrixAxes",
+      [
+        "if",
+        [
+          "if",
+          ["eq", ["count", ["get", "axes"]], 2],
+          ["if", ["eq", ["count", ["get", "data.axes"]], 2], false, true],
+          true
+        ],
+        ["advise", "matrix-axes", "Name the x and y axes."],
+        false
+      ]
+    ],
+    [
+      "matrixQuadrants",
+      [
+        "if",
+        [
+          "if",
+          ["eq", ["count", ["get", "quadrants"]], 4],
+          ["if", ["eq", ["count", ["get", "data.quadrants"]], 4], false, true],
+          true
+        ],
+        ["advise", "matrix-quadrants", "Name all four quadrants with short action labels."],
+        false
+      ]
+    ],
+    [
+      "negativeSize",
+      [
+        "if",
+        [
+          "lt",
+          0,
+          [
+            "count",
+            [
+              "filter",
+              ["get", "data.items"],
+              "item",
+              ["if", ["eq", ["get", "item.size"], null], false, ["lt", ["get", "item.size"], 0]]
+            ]
+          ]
+        ],
+        ["advise", "negative-size", "Use a nonnegative bubble size or omit it."],
+        false
+      ]
+    ],
+    [
+      "manyItems",
+      [
+        "if",
+        [
+          "lt",
+          0,
+          [
+            "count",
+            [
+              "filter",
+              ["get", "data.quadrants"],
+              "q",
+              [
+                "lt",
+                2,
+                ["count", ["filter", ["get", "data.items"], "item", ["eq", ["get", "item.quadrant"], ["get", "q.id"]]]]
+              ]
+            ]
+          ]
+        ],
+        ["advise", "many-items", "Keep about two items in each quadrant."],
+        false
+      ]
+    ]
+  ],
+  "parts": [
+    {
+      "repeat": {
+        "over": ["get", "quadrants"],
+        "as": "q"
+      },
+      "let": [
+        [
+          "x",
+          [
+            "add",
+            ["get", "left"],
+            ["get", "gap"],
+            [
+              "if",
+              ["if", ["eq", ["get", "q.id"], "upper-left"], true, ["eq", ["get", "q.id"], "lower-left"]],
+              0,
+              ["add", ["get", "tileW"], ["get", "gap"]]
+            ]
+          ]
+        ],
+        [
+          "y",
+          [
+            "add",
+            ["get", "top"],
+            [
+              "if",
+              ["if", ["eq", ["get", "q.id"], "upper-left"], true, ["eq", ["get", "q.id"], "upper-right"]],
+              0,
+              ["add", ["get", "tileH"], ["get", "gap"]]
+            ]
+          ]
+        ],
+        ["members", ["filter", ["get", "data.items"], "item", ["eq", ["get", "item.quadrant"], ["get", "q.id"]]]],
+        [
+          "rowH",
+          ["min", 56, ["div", ["sub", ["get", "tileH"], ["get", "labelH"]], ["max", 1, ["count", ["get", "members"]]]]]
+        ],
+        ["labelX", ["add", ["get", "x"], ["get", "inset"]]],
+        ["markerW", ["min", 24, ["mul", ["get", "inset"], 0.75]]],
+        [
+          "labelY",
+          [
+            "add",
+            ["get", "y"],
+            [
+              "div",
+              [
+                "sub",
+                ["get", "tileH"],
+                ["add", ["get", "labelH"], ["mul", ["count", ["get", "members"]], ["get", "rowH"]]]
+              ],
+              2
+            ]
+          ]
+        ]
+      ],
+      "children": [
+        {
+          "emit": {
+            "kind": "rect",
+            "key": ["list", "tile", ["get", "q.id"]],
+            "x": ["get", "x"],
+            "y": ["get", "y"],
+            "w": ["get", "tileW"],
+            "h": ["get", "tileH"],
+            "fill": ["get", "token.tile"]
+          }
+        },
+        {
+          "emit": {
+            "kind": "text",
+            "key": ["list", "quadrant", ["get", "q.id"]],
+            "x": ["get", "labelX"],
+            "y": ["get", "labelY"],
+            "w": ["max", 0, ["sub", ["get", "tileW"], ["mul", 2, ["get", "inset"]]]],
+            "h": ["get", "labelH"],
+            "chars": ["get", "q.label"],
+            "style": "heading",
+            "color": [
+              "if",
+              ["eq", ["get", "q.id"], ["get", "token.focus"]],
+              ["get", "token.accent"],
+              ["if", ["eq", ["get", "focusMatches"], 0], ["get", "token.ink"], ["get", "token.muted"]]
+            ],
+            "align": "left",
+            "alignV": "center",
+            "overflow": "ellipsis",
+            "fit": {
+              "smaller": 20
+            }
+          }
+        },
+        {
+          "repeat": {
+            "over": ["get", "members"],
+            "as": "item"
+          },
+          "let": [
+            ["rowY", ["add", ["get", "labelY"], ["get", "labelH"], ["mul", ["get", "i"], ["get", "rowH"]]]],
+            [
+              "dotW",
+              [
+                "min",
+                ["get", "rowH"],
+                ["get", "markerW"],
+                [
+                  "if",
+                  ["eq", ["get", "item.size"], null],
+                  10,
+                  [
+                    "max",
+                    6,
+                    [
+                      "if",
+                      ["lt", 0, ["get", "maxSize"]],
+                      [
+                        "mul",
+                        ["get", "markerW"],
+                        ["sqrt", ["div", ["max", 0, ["get", "item.size"]], ["get", "maxSize"]]]
+                      ],
+                      0
+                    ]
+                  ]
+                ]
+              ]
+            ],
+            ["itemX", ["add", ["get", "labelX"], ["mul", 1.2, ["get", "inset"]]]]
+          ],
+          "children": [
+            {
+              "emit": {
+                "kind": "rect",
+                "key": ["list", "dot", ["get", "item.id"]],
+                "x": ["add", ["get", "labelX"], ["div", ["sub", ["get", "markerW"], ["get", "dotW"]], 2]],
+                "y": ["add", ["get", "rowY"], ["div", ["sub", ["get", "rowH"], ["get", "dotW"]], 2]],
+                "w": ["get", "dotW"],
+                "h": ["get", "dotW"],
+                "fill": [
+                  "if",
+                  ["eq", ["get", "q.id"], ["get", "token.focus"]],
+                  ["get", "token.accent"],
+                  ["get", "token.muted"]
+                ],
+                "radius": ["div", ["get", "dotW"], 2]
+              }
+            },
+            {
+              "emit": {
+                "kind": "text",
+                "key": ["list", "item", ["get", "item.id"]],
+                "x": ["get", "itemX"],
+                "y": ["get", "rowY"],
+                "w": ["max", 0, ["sub", ["get", "tileW"], ["mul", 3.2, ["get", "inset"]]]],
+                "h": ["get", "rowH"],
+                "chars": ["get", "item.label"],
+                "style": "label",
+                "color": ["get", "token.muted"],
+                "align": "left",
+                "alignV": "center",
+                "overflow": "ellipsis",
+                "fit": {
+                  "smaller": 16
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "emit": {
+        "kind": "line",
+        "key": ["list", "axis", "x"],
+        "start": ["get", "origin"],
+        "end": ["point", ["get", "frame.w"], ["get", "bottom"]],
+        "color": ["get", "token.axis"],
+        "width": 3,
+        "route": "straight",
+        "arrow": "triangle"
+      }
+    },
+    {
+      "emit": {
+        "kind": "line",
+        "key": ["list", "axis", "y"],
+        "start": ["get", "origin"],
+        "end": ["point", ["get", "left"], 0],
+        "color": ["get", "token.axis"],
+        "width": 3,
+        "route": "straight",
+        "arrow": "triangle"
+      }
+    },
+    {
+      "repeat": {
+        "over": ["get", "axes"],
+        "as": "axis"
+      },
+      "let": [["isX", ["eq", ["get", "axis.id"], "x"]]],
+      "emit": {
+        "kind": "text",
+        "key": ["list", "axis-title", ["get", "axis.id"]],
+        "x": ["add", ["get", "left"], ["get", "gap"]],
+        "y": ["if", ["get", "isX"], ["get", "bottom"], 0],
+        "w": ["max", 0, ["sub", ["sub", ["get", "frame.w"], ["get", "left"]], ["get", "gap"]]],
+        "h": ["if", ["get", "isX"], ["get", "footerH"], ["get", "top"]],
+        "chars": ["get", "axis.label"],
+        "style": "label",
+        "color": ["get", "token.axis"],
+        "align": ["if", ["get", "isX"], "right", "left"],
+        "alignV": ["if", ["get", "isX"], "center", "top"],
+        "overflow": "ellipsis",
+        "fit": {
+          "smaller": 16
+        }
+      }
+    },
+    {
+      "when": ["get", "hasSizes"],
+      "emit": {
+        "kind": "text",
+        "key": ["list", "size-key"],
+        "x": ["get", "left"],
+        "y": ["add", ["get", "bottom"], ["get", "footerH"]],
+        "w": ["sub", ["get", "right"], ["get", "left"]],
+        "h": ["get", "footerH"],
+        "chars": ["concat", "Bubble size: ", ["get", "token.sizeLabel"]],
+        "style": "caption",
+        "align": "left",
+        "color": ["get", "token.axis"],
+        "alignV": "center",
+        "overflow": "ellipsis",
+        "fit": { "smaller": 16 }
+      }
+    }
+  ]
+}

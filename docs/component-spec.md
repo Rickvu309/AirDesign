@@ -69,11 +69,20 @@ Structured copy accepts a list of paragraph records. A paragraph can set `maxLin
 
 A connector endpoint can use `["site", partKey, side]` to attach to the default site. An endpoint record with `key`, `site`, and an optional `along` fraction can attach anywhere along a rectangular edge. Fractions run from left to right on top and bottom edges and from top to bottom on left and right edges. Channel coordinates are relative to the component frame.
 
-The process template accepts an optional `tokens.focus` step ID. The first step carries the accent when the ID is omitted or does not match a step.
-
 ## Advice
 
 Use `["advise", code, note]` to report advice while evaluating an expression. An optional fourth item prefixes the note with the affected data row. Put the expression inside an `if` to report only when the condition holds.
+
+The process template accepts an optional `tokens.focus` step ID. The first step carries the accent when the ID is omitted or does not match a step.
+
+## Hierarchies
+
+`["hierarchy", rows, focus]` lays out a list of records with `id` and `parent`. A blank parent denotes a root. The result has `rows` in depth-first order and totals for `levels`, `leaves`, `roots`, and `broken` relationships. Each placed row carries its original `index`, zero-based `depth`, centered leaf `slot`, immediate `children` count, and `focused` flag. Focus includes the named row and its ancestors. Unknown parents and cycles create roots and increment `broken` so a spec can suggest a fix while drawing the remaining relationships.
+
+## Consulting diagrams
+
+- `matrix` takes titled axes with IDs `x` and `y`. Use the quadrant IDs `upper-left`, `upper-right`, `lower-left`, and `lower-right`, each with a short action label. Items take a quadrant ID and an optional nonnegative `size`. Bubble area follows size within a bounded range for legibility. Set `tokens.sizeLabel` to the metric shown by bubble size, such as `Revenue`. Set `tokens.focus` to the quadrant ID to emphasize it.
+- `tree` takes nodes with a label and an optional parent ID. Start with one root and a binary first split. Set `tokens.focus` to the node at the end of the path to emphasize. Child cards stay attached to their parent. Crowded, deep, and overflowing branches generate findings.
 
 ## Lists and colors
 

@@ -1,3 +1,5 @@
+import { linkedOwner } from "./component/instance-ownership.js"
+import { resolveComponent } from "./component/library.js"
 import type { Chart } from "./chart.js"
 import { deckOf, propOf } from "./doom-walk.js"
 import type { Doom, Write } from "./doom.js"
@@ -75,6 +77,19 @@ export function agentFindings(after: Doom, writes: readonly Write[]): readonly A
   const note = (key: string, finding: AgentFinding) => {
     if (after.nodes.has(finding.node) && !found.has(key)) found.set(key, finding)
   }
+  const checkSize = (node: NodeId, size: number) => {
+    if (scale.has(size)) return
+    const style = nearestStyle(theme, size)
+    const to = theme.textStyles[style].size
+    note(`${node}|size|${String(size)}`, {
+      code: "off-scale",
+      node,
+      size,
+      style,
+      to,
+      note: sizeNote(node, size, style, to),
+    })
+  }
   for (const write of writes) {
     const { node, prop, value } = write
     for (const color of colorsOf({ node, prop, value }))
@@ -82,20 +97,18 @@ export function agentFindings(after: Doom, writes: readonly Write[]): readonly A
         const to = nearestColor(theme, color)
         note(`${node}|${color}`, { code: "off-palette", node, color, to, note: colorNote(node, color, to, theme) })
       }
+    if (prop === "instance" && value !== null) {
+      const instance = propOf(after.nodes.get(node), "instance")
+      if (instance !== undefined) {
+        for (const name of resolveComponent(instance.component)?.sizeTokens ?? []) {
+          const size = instance.tokens[name]
+          if (typeof size === "number") checkSize(node, size)
+        }
+      }
+    }
     if (prop !== "text" || value === null) continue
     for (const span of (value as Text).spans) {
-      if (span.size !== undefined && !scale.has(span.size)) {
-        const style = nearestStyle(theme, span.size)
-        const to = theme.textStyles[style].size
-        note(`${node}|size|${String(span.size)}`, {
-          code: "off-scale",
-          node,
-          size: span.size,
-          style,
-          to,
-          note: sizeNote(node, span.size, style, to),
-        })
-      }
+      if (span.size !== undefined && linkedOwner(after.nodes, node) === undefined) checkSize(node, span.size)
       if (span.font !== undefined && !ownFamilies.has(familyOf(span.font)))
         note(`${node}|font|${span.font}`, {
           code: "off-font",

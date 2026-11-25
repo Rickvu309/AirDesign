@@ -8,7 +8,9 @@ export {
   donutComponent,
   lineComponent,
   pieComponent,
+  matrixComponent,
   processComponent,
+  treeComponent,
   stackedComponent,
   waterfallComponent,
 } from "./library.js"
