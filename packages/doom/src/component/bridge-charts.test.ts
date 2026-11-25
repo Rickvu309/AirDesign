@@ -211,12 +211,11 @@ describe("waterfall library", () => {
     const total = paintFor("Open")
     const focus = paintFor("Price")
     const stepGrey = paintFor("Volume")
+    expect.soft(focus).toBe(theme.colors.accent1)
     expect.soft(contrast(focus, total)).toBeGreaterThanOrEqual(1.5)
-    expect.soft(contrast(focus, stepGrey)).toBeGreaterThanOrEqual(1.5)
-    expect.soft(contrast(total, theme.colors.background)).toBeCloseTo(11.7, 0)
-    const score = (accent: string) => Math.min(contrast(accent, total), contrast(accent, stepGrey))
-    const { accent1, accent2, accent3, accent4, accent5, accent6 } = theme.colors
-    expect(score(focus)).toBe(Math.max(...[accent1, accent2, accent3, accent4, accent5, accent6].map(score)))
+    expect.soft(contrast(total, stepGrey)).toBeGreaterThanOrEqual(1.5)
+    expect.soft(total.slice(1, 3)).toBe(total.slice(3, 5))
+    expect.soft(total.slice(3, 5)).toBe(total.slice(5, 7))
   })
 
   it("keeps an explicitly requested focus color", () => {

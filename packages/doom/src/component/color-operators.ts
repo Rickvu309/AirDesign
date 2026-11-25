@@ -2,7 +2,7 @@ import { resolveColor } from "../color.js"
 import type { Color, Hex } from "../paint.js"
 import type { Theme } from "../theme.js"
 import { finite } from "../read-kit.js"
-import { type Charge, type Values, color } from "./values.js"
+import { type Charge, type Value, type Values, color } from "./values.js"
 
 function luminance(hex: string): number {
   const linear = (start: number) => {
@@ -16,20 +16,32 @@ function contrast(first: number, second: number): number {
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05)
 }
 
-export function contrastingAccent([preferred, first, second]: Values, theme: Theme): Color {
-  const requested = color(preferred)
-  if (typeof requested === "string" || requested.var !== "accent1" || requested.tint !== 0) return requested
-  const firstLevel = luminance(resolveColor(color(first), theme))
-  const secondLevel = luminance(resolveColor(color(second), theme))
-  const score = (accent: Hex) => {
-    const level = luminance(accent)
-    return Math.min(contrast(level, firstLevel), contrast(level, secondLevel))
+export function contrastGrey([backdrop, accent, step, preferred, minimum]: Values, theme: Theme, charge: Charge): Hex {
+  const level = (value: Value | undefined) => luminance(resolveColor(color(value), theme))
+  const background = level(backdrop)
+  const focus = level(accent)
+  const driver = level(step)
+  const target = finite(1, 21)(preferred)
+  const separation = finite(1, 21)(minimum)
+  const greyAt = (channel: number): Hex => {
+    const byte = channel.toString(16).padStart(2, "0")
+    return `#${byte}${byte}${byte}`
   }
-  const accents = ["accent1", "accent2", "accent3", "accent4", "accent5", "accent6"] as const
-  const strongest = accents.reduce((best, accent) =>
-    score(theme.colors[accent]) > score(theme.colors[best]) ? accent : best,
-  )
-  return { var: strongest }
+  const stepContrast = contrast(driver, background)
+  let best = background > 0.18 ? 0 : 255
+  let distance = Infinity
+  for (let channel = 0; channel <= 255; channel++) {
+    charge()
+    const greyLevel = luminance(greyAt(channel))
+    const ratio = contrast(greyLevel, background)
+    if (ratio <= stepContrast) continue
+    if (contrast(greyLevel, focus) < separation || contrast(greyLevel, driver) < separation) continue
+    const difference = Math.abs(ratio - target)
+    if (difference >= distance) continue
+    best = channel
+    distance = difference
+  }
+  return greyAt(best)
 }
 
 export function readableInk([fill]: Values, theme: Theme): Color {
