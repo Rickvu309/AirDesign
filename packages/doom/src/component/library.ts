@@ -20,7 +20,9 @@ export const componentLibrary: ReadonlyMap<string, ComponentDefinition> = new Ma
   [columnDefinition].map((definition) => [definition.id, definition]),
 )
 
-export const componentSpec = (id: string) => components.get(id)
+export function componentSpec(id: string): ComponentSpec | undefined {
+  return components.get(id)
+}
 
 export function resolveComponent({ id, revision }: ComponentRef): ComponentDefinition | undefined {
   const found = componentLibrary.get(id)
