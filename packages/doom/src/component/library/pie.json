@@ -221,7 +221,7 @@
     ],
     ["valid", ["if", ["get", "oneSeries"], ["if", ["get", "nonnegative"], ["lt", 0, ["get", "total"]], false], false]],
     [
-      "legend",
+      "legendSpace",
       [
         "if",
         ["get", "valid"],
@@ -254,7 +254,7 @@
         }
       ]
     ],
-    ["legendTop", ["sub", ["get", "frame.h"], ["mul", 32, ["get", "legend.rows"]]]],
+    ["legendTop", ["sub", ["get", "frame.h"], ["mul", 32, ["get", "legendSpace.rows"]]]],
     ["titleH", ["if", ["eq", ["get", "token.title"], ""], 0, 48]],
     ["plotH", ["max", 0, ["sub", ["get", "legendTop"], ["get", "titleH"]]]],
     ["cx", ["div", ["get", "frame.w"], 2]],
@@ -632,15 +632,56 @@
                 ]
               ]
             ],
-            ["placedIds", ["index-by", ["get", "placed"], "id"]]
+            ["placedIds", ["index-by", ["get", "placed"], "id"]],
+            ["insideIds", ["index-by", ["get", "inside"], "id"]],
+            [
+              "legend",
+              [
+                "if",
+                ["get", "variant.labels"],
+                [
+                  "flowText",
+                  [
+                    "map",
+                    [
+                      "filter",
+                      ["get", "rows"],
+                      "r",
+                      [
+                        "if",
+                        ["eq", ["lookup", ["get", "insideIds"], ["get", "r.id"]], null],
+                        ["eq", ["lookup", ["get", "placedIds"], ["get", "r.id"]], null],
+                        false
+                      ]
+                    ],
+                    "r",
+                    {
+                      "id": ["get", "r.id"],
+                      "color": ["get", "r.color"],
+                      "chars": ["concat", ["get", "r.label"], "  ·  ", ["get", "r.percent"]]
+                    }
+                  ],
+                  {
+                    "width": ["max", 0, ["sub", ["get", "frame.w"], 24]],
+                    "rows": ["max", 0, ["min", 4, ["floor", ["div", ["get", "frame.h"], 100]]]],
+                    "rowHeight": 32,
+                    "leading": 22,
+                    "gap": 22,
+                    "style": ["get", "token.caption"],
+                    "smaller": ["get", "token.captionSmall"]
+                  }
+                ],
+                ["get", "legendSpace"]
+              ]
+            ]
           ],
-          "when": ["get", "variant.labels"],
           "children": [
             {
               "repeat": {
                 "over": ["get", "inside"],
                 "as": "p"
               },
+              "when": ["get", "variant.labels"],
               "children": [
                 {
                   "emit": {
@@ -669,7 +710,12 @@
                 "over": ["get", "outside"],
                 "as": "p"
               },
-              "when": ["if", ["eq", ["lookup", ["get", "placedIds"], ["get", "p.id"]], null], false, true],
+              "when": [
+                "if",
+                ["get", "variant.labels"],
+                ["if", ["eq", ["lookup", ["get", "placedIds"], ["get", "p.id"]], null], false, true],
+                false
+              ],
               "children": [
                 {
                   "emit": {
@@ -769,56 +815,61 @@
                   }
                 }
               ],
-              "when": ["eq", ["lookup", ["get", "placedIds"], ["get", "p.id"]], null]
-            }
-          ]
-        },
-        {
-          "repeat": {
-            "over": ["get", "legend.items"],
-            "as": "item"
-          },
-          "let": [
-            ["lx", ["add", 12, ["get", "item.x"]]],
-            ["ly", ["add", ["get", "legendTop"], ["mul", ["get", "item.row"], 32]]]
-          ],
-          "children": [
-            {
-              "emit": {
-                "kind": "rect",
-                "key": [
-                  "if",
-                  ["eq", ["get", "item.item.id"], "other aggregate"],
-                  ["list", "swatch", "other", "aggregate"],
-                  ["list", "swatch", ["get", "item.item.id"]]
-                ],
-                "x": ["get", "lx"],
-                "y": ["add", ["get", "ly"], 10],
-                "w": 12,
-                "h": 12,
-                "fill": ["get", "item.item.color"]
-              }
+              "when": [
+                "if",
+                ["get", "variant.labels"],
+                ["eq", ["lookup", ["get", "placedIds"], ["get", "p.id"]], null],
+                false
+              ]
             },
             {
-              "emit": {
-                "kind": "text",
-                "key": [
-                  "if",
-                  ["eq", ["get", "item.item.id"], "other aggregate"],
-                  ["list", "legend", "other", "aggregate"],
-                  ["list", "legend", ["get", "item.item.id"]]
-                ],
-                "x": ["add", ["get", "lx"], 22],
-                "y": ["get", "ly"],
-                "w": ["get", "item.w"],
-                "h": 32,
-                "chars": ["get", "item.item.chars"],
-                "size": ["get", "legend.size"],
-                "style": ["get", "token.caption"],
-                "color": ["get", "token.ink"],
-                "align": "left",
-                "alignV": "center"
-              }
+              "repeat": {
+                "over": ["get", "legend.items"],
+                "as": "item"
+              },
+              "let": [
+                ["lx", ["add", 12, ["get", "item.x"]]],
+                ["ly", ["add", ["get", "legendTop"], ["mul", ["get", "item.row"], 32]]]
+              ],
+              "children": [
+                {
+                  "emit": {
+                    "kind": "rect",
+                    "key": [
+                      "if",
+                      ["eq", ["get", "item.item.id"], "other aggregate"],
+                      ["list", "swatch", "other", "aggregate"],
+                      ["list", "swatch", ["get", "item.item.id"]]
+                    ],
+                    "x": ["get", "lx"],
+                    "y": ["add", ["get", "ly"], 10],
+                    "w": 12,
+                    "h": 12,
+                    "fill": ["get", "item.item.color"]
+                  }
+                },
+                {
+                  "emit": {
+                    "kind": "text",
+                    "key": [
+                      "if",
+                      ["eq", ["get", "item.item.id"], "other aggregate"],
+                      ["list", "legend", "other", "aggregate"],
+                      ["list", "legend", ["get", "item.item.id"]]
+                    ],
+                    "x": ["add", ["get", "lx"], 22],
+                    "y": ["get", "ly"],
+                    "w": ["get", "item.w"],
+                    "h": 32,
+                    "chars": ["get", "item.item.chars"],
+                    "size": ["get", "legend.size"],
+                    "style": ["get", "token.caption"],
+                    "color": ["get", "token.ink"],
+                    "align": "left",
+                    "alignV": "center"
+                  }
+                }
+              ]
             }
           ]
         },

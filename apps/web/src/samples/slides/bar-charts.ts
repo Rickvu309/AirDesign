@@ -51,10 +51,10 @@ export const barChartComponents = [
       categories: categories(["Q1", "Q2", "Q3", "Q4"]),
       series,
       segments: [
-        [0.72, 0.2],
-        [0.8, 0.24],
-        [0.88, 0.29],
-        [0.97, 0.34],
+        [720, 200],
+        [800, 240],
+        [880, 290],
+        [970, 340],
       ].flatMap((values, index) =>
         series.map(({ id: seriesId }, at) => ({
           id: `c${index + 1}-${seriesId}`,
@@ -75,7 +75,7 @@ export function barCharts(): doom.TreeSlide {
       slideTitle("Enterprise leads every segment in net new revenue"),
       frame("exhibits", { box: box(margin, 288, contentWidth, 660), layout: rowOf(96) }, [
         exhibit("ranking", "Net new revenue by segment, 2025, $M"),
-        exhibit("quarterly", "Revenue by quarter, 2025, $M"),
+        exhibit("quarterly", "Revenue by quarter, 2025, $K"),
       ]),
       ...footer("Source: Company finance, fiscal year 2025", "9"),
     ],

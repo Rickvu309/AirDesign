@@ -38,6 +38,16 @@ describe("line component", () => {
     },
   )
 
+  it("shows the last observed value beside each series name with only the zero rule by default", () => {
+    const { children } = expand(lineComponent, {
+      ...lineData(1, 3),
+      series: [{ id: "studio", label: "Studio", values: [11, 94, null] }],
+    })
+    expect(children.find(({ key }) => key[0] === "end-label")?.props.text?.chars).toBe("Studio 94")
+    expect(children.some(({ key }) => key[0] === "zero")).toBe(true)
+    expect(children.some(({ key }) => key[0] === "axis" || key[0] === "tick")).toBe(false)
+  })
+
   it("labels two series at their endpoints even when they coincide", () => {
     const data = lineData(2, 4)
     const marker = { var: "accent5", tint: 0.25 }
@@ -53,8 +63,8 @@ describe("line component", () => {
     ]
     const { children } = expand(lineComponent, { ...data, series }, { labels: true })
     expect(children.filter(({ key }) => key[0] === "end-label").map(({ props }) => props.text?.chars)).toEqual([
-      "Forecast",
-      "Measured",
+      "Forecast 10",
+      "Measured 8",
     ])
     expect(children.find(({ key }) => key[0] === "end-label")?.props.text?.spans[0]?.color).toEqual({ var: "text" })
     expect(children.find(({ key }) => key[0] === "end-swatch")?.props.strokes?.[0]).toMatchObject({
@@ -176,10 +186,19 @@ describe.each([
   ["pie", pieComponent],
   ["donut", donutComponent],
 ] as const)("%s component", (_, spec) => {
+  it("shows each category once when a direct label fits", () => {
+    const { children } = expand(spec, mix([6, 4, 2]))
+    expect(children.filter(({ key }) => key[0] === "percentage")).toHaveLength(3)
+    expect(children.filter(({ key }) => key[0] === "legend" || key[0] === "swatch")).toHaveLength(0)
+  })
+
   it.each(Array.from({ length: 12 }, (_, i) => i + 1))(
     "draws %i ungrouped wedges with a bounded palette and percentages that sum to 100",
     (count) => {
-      const { children } = expand(spec, mix(Array.from({ length: count }, () => 10)), { groupSmall: false })
+      const { children } = expand(spec, mix(Array.from({ length: count }, () => 10)), {
+        groupSmall: false,
+        labels: false,
+      })
       const slices = children.filter(({ key }) => key[0] === "slice")
       expect(slices).toHaveLength(count)
       expect(slices.every(({ props }) => props.geometry.kind === "path" && props.geometry.fillStroke)).toBe(true)
@@ -201,7 +220,7 @@ describe.each([
     const { children, findings } = expand(
       spec,
       mix([30, 28, 26, 24, 22, 20, 18, 16, 14, 12, 10, 8]),
-      {},
+      { labels: false },
       {
         x: 0,
         y: 0,
@@ -220,13 +239,13 @@ describe.each([
   it("omits a swatch when its legend label cannot fit", () => {
     const data = mix([6, 4, 2])
     data.rows[0]!.label = "W".repeat(120)
-    const { children, findings } = expand(spec, data, {}, { x: 0, y: 0, w: 700, h: 480 })
+    const { children, findings } = expand(spec, data, { labels: false }, { x: 0, y: 0, w: 700, h: 480 })
     expect(children.filter(({ key }) => key[0] === "legend").map(({ key }) => key[1])).toEqual(["r1", "r2"])
     expect(children.filter(({ key }) => key[0] === "swatch").map(({ key }) => key[1])).toEqual(["r1", "r2"])
     expect(findings).toContainEqual(expect.objectContaining({ kind: "flow-omitted", omitted: [0] }))
   })
 
-  it("uses the configured precision for both wedges and legend", () => {
+  it("uses the configured precision for direct labels and legend entries", () => {
     const tree = expandComponent(spec, {
       data: mix([1, 1, 1]),
       frame: { x: 0, y: 0, w: 1250, h: 650 },
@@ -239,8 +258,10 @@ describe.each([
     expect(labels).toContain("Category 1  ·  33.4%")
     expect(
       tree.children
-        .filter(({ key }) => key[0] === "legend")
-        .map(({ props }) => props.text?.chars.split("·")[1]?.trim()),
+        .filter(({ key }) => key[0] === "legend" || key[0] === "percentage")
+        .map(({ props }) => props.text?.chars.split("·")[1]?.trim())
+        .sort()
+        .reverse(),
     ).toEqual(["33.4%", "33.3%", "33.3%"])
   })
 
@@ -276,7 +297,10 @@ describe.each([
       ["slice", "r95"],
       ["slice", "other", "aggregate"],
     ])
-    expect(children.find(({ key }) => key[0] === "legend" && key[1] === "other")?.props.text?.chars).toContain("Other")
+    expect(
+      children.find(({ key }) => (key[0] === "legend" || key[0] === "percentage") && key[1] === "other")?.props.text
+        ?.chars,
+    ).toContain("Other")
     expect(findings).toContainEqual(expect.objectContaining({ key: ["grouped"] }))
     const other = children.find(({ key }) => key[0] === "slice" && key[1] === "other")
     expect(other?.props.fills?.[0]).toMatchObject({ color: { var: "text2", tint: expect.any(Number) } })

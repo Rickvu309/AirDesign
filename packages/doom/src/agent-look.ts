@@ -1,7 +1,7 @@
 import type { AgentColor, AgentFill, AgentLook } from "./agent-change.js"
 import type { Arrow } from "./geometry.js"
 import { shapeGeometry } from "./preset-geometry.js"
-import { sameColor as samePaint } from "./color.js"
+import { namedColor, sameColor as samePaint } from "./color.js"
 import type { Values } from "./agent-draft.js"
 import type { Align9, Layout } from "./layout.js"
 import { withScheme } from "./link.js"
@@ -9,14 +9,13 @@ import { textFromMarkdown } from "./markdown.js"
 import { cropWindow } from "./picture-crop.js"
 import {
   type Color,
-  type ColorVar,
   type Effect,
   type EffectStyleName,
-  type Hex,
   type Paint,
   type Sides,
   type StrokeStyle,
   effectStyleNames,
+  readHex,
 } from "./paint.js"
 import { type Theme, defaultTheme } from "./theme.js"
 import type { Box } from "./doom-walk.js"
@@ -43,10 +42,10 @@ export function askedArrow(asked: boolean | Arrow | undefined, kept: Arrow): Arr
 }
 
 export function colorOf(color: AgentColor): Color {
-  if (color.startsWith("#")) return color as Hex
-  const [, name, step] = /^([a-z0-9]+)([+-]\d+)?$/.exec(color) ?? []
-  const tint = step === undefined ? 0 : Number(step) / 100
-  return tint === 0 ? { var: name as ColorVar } : { var: name as ColorVar, tint }
+  if (color.startsWith("#")) return readHex(color)
+  const parsed = namedColor(color)
+  if (parsed === undefined) throw new Error(`Invalid agent colour ${color}`)
+  return parsed
 }
 export const solid = (color: AgentColor): Paint => ({ kind: "solid", color: colorOf(color) })
 
