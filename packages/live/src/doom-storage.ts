@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { componentFields, type Queued, type Regeneration, type Suppression } from "./doom-queue.js"
 import { dropDeck } from "./device-sweep.js"
 import { accountKey, finished, scoped, storeName, transaction } from "./device.js"
-import { readFoldRows, writeFoldRows } from "./fold-rows.js"
+import { readFoldRows, writeFoldRows, type Written } from "./fold-rows.js"
 import { readRange, signedIn } from "./store.js"
 
 export type Saved = { readonly fold?: doom.Doom; readonly queue: readonly Queued[] }
@@ -115,7 +115,7 @@ export function deviceStorage(deck: string): DoomStorage {
   const prefix = doomQueuePrefix(deck)
   const rows = new Map<string, { readonly key: string; readonly queued: Queued }>()
   let latest = 0
-  let written: doom.Doom | undefined
+  let written: Written | undefined
 
   const keyFor = (once: string): string => {
     latest = Math.max(Date.now(), latest + 1)
@@ -126,8 +126,9 @@ export function deviceStorage(deck: string): DoomStorage {
     async read() {
       const account = accountKey()
       if (account === undefined) return undefined
-      const [fold, kept] = await Promise.all([readFoldRows(account, deck), readRange(prefix)])
-      written = fold
+      const [copy, kept] = await Promise.all([readFoldRows(account, deck), readRange(prefix)])
+      written = copy
+      const fold = copy?.fold
       const queue: Queued[] = []
       for (const { key, value } of kept) {
         latest = Math.max(latest, Number.parseInt(key.slice(prefix.length, prefix.length + stampLength), 36) || 0)
@@ -164,9 +165,9 @@ export function deviceStorage(deck: string): DoomStorage {
       const store = writing.objectStore(storeName)
       for (const key of drops) store.delete(scoped(account, key))
       for (const { key, value } of puts) store.put(value, scoped(account, key))
-      if (fold !== undefined) writeFoldRows(store, account, deck, written, fold)
+      const kept = fold === undefined ? undefined : writeFoldRows(store, account, deck, written, fold)
       await finished(writing, () => undefined)
-      if (fold !== undefined) written = fold
+      if (kept !== undefined) written = kept()
       rows.clear()
       for (const [once, row] of next) rows.set(once, row)
     },

@@ -14,7 +14,7 @@ Run `pnpm check:specs linked-instance`. The model interleaves data edits, each o
 
 Run `pnpm check:specs linked-turn-reload`. The model holds one queued undo or redo and one later edit. Reload keeps the persisted queue and its linked turn intent. Reconnect restores any input still owned by the turn and keeps the later writer's input or suppression. The model checks data, variant and tokens individually. Turning off `PersistIntent` reproduces the round-four loss after reload. Turning on `ClobberLater` violates the later-writer invariant.
 
-`tests/linked-turn-reload-replay.test.ts` drives the queued cases through the device and remote. The linked offline undo journey deletes Beta via the editor, undoes it offline, reloads, deletes Alpha from another device and checks the saved deck after reconnect.
+`tests/linked-turn-reload-replay.test.ts` drives the queued cases through the device and remote. The model and its replay assume the device hands back the fold and the queue it was given. `packages/live/src/fold-rows.test.ts` checks that at the device: a row set that does not add up to its head is no copy, and the queue is still read. The linked offline undo journey deletes Beta via the editor, undoes it offline, reloads, deletes Alpha from another device and checks the saved deck after reconnect.
 
 ## Linked run order
 
