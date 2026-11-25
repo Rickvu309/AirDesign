@@ -7,7 +7,6 @@ import { agentChangesSchema, readAgentChange, readAgentChanges, type AgentChange
 const json = (value: unknown) => JSON.parse(JSON.stringify(value))
 
 const valid: readonly AgentChange[] = [
-  { op: "set", target: "t:3", focus: ["category"] },
   {
     op: "add",
     kind: "text",
@@ -146,7 +145,6 @@ describe("the advertised schema", () => {
       "slide",
       "into",
       "target",
-      "focus",
       "node",
       "nodes",
       "after",
@@ -213,7 +211,7 @@ describe("the advertised schema", () => {
       "colors",
       "fonts",
       "nameFollows",
-      ...(linkedComponentsEnabled ? ["component", "data", "variant", "tokens"] : []),
+      ...(linkedComponentsEnabled ? ["component", "data", "variant", "tokens", "focus"] : []),
     ]
     expect(Object.keys(change).sort()).toEqual([...named].sort())
     const used = new Set(valid.flatMap((each) => Object.keys(each)))
@@ -231,6 +229,13 @@ describe("the advertised schema", () => {
       for (const value of schema.enum) expect(readAgentChange(changeWith(value))).not.toHaveProperty("refused")
       expect(readAgentChange(changeWith("nope"))).toMatchObject({ refused: "shape" })
     }
+  })
+
+  it("reads focus only during the linked template rollout", () => {
+    const focus = { op: "set", target: "t:3", focus: ["category"] }
+    expect(readAgentChange(focus, true)).toMatchObject(focus)
+    expect(readAgentChange(focus, false)).toMatchObject({ refused: "shape" })
+    expect(Object.keys(change).includes("focus")).toBe(linkedComponentsEnabled)
   })
 
   it("advertises detach only during the linked template rollout", () => {
