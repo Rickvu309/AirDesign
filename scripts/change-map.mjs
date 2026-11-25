@@ -19,7 +19,7 @@ const runsEverything = [
   /^scripts\/(check|check-steps|change-map|browser-change-map|spec-seconds)\.mjs$/,
 ]
 
-const pdfSpec = "tests/browser/export-pdf.spec.ts"
+const pdfSpecs = ["tests/browser/export-pdf.spec.ts", "tests/browser/path-parity.spec.ts"]
 
 const sharedTestSetup = ["vitest.config.mts"]
 
@@ -129,7 +129,8 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
     turnOn("source", file)
     if (readersOf(graph.reads ?? {}, file).length > 0) turnOn("scripts", file)
     const gone = goneNode(file)
-    if (file === pdfSpec || file === "scripts/pdf-check.mjs" || file === "scripts/pdf-sample.mjs") turnOn("pdf", file)
+    if (pdfSpecs.includes(file) || file === "scripts/pdf-check.mjs" || file === "scripts/pdf-sample.mjs")
+      turnOn("pdf", file)
     if (readByChecks.some((pattern) => pattern.test(file))) {
       turnOn("scripts", file)
       continue
@@ -142,7 +143,7 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
     }
     const shared = browser.setup.has(file) || browser.setup.has(gone)
     const specs = [...browser.specs].filter(([, needs]) => needs.has(file) || needs.has(gone)).map(([spec]) => spec)
-    if (shared || specs.includes(pdfSpec)) turnOn("pdf", file)
+    if (shared || specs.some((spec) => pdfSpecs.includes(spec))) turnOn("pdf", file)
     const narrowed = inBrowser(file) && !shared && specs.length > 0
     canNarrowBrowser &&= narrowed
     if (shared) {

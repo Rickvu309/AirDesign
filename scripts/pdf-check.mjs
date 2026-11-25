@@ -2,7 +2,9 @@ import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { sampleDeckLines, sampleDeckPdf } from "./pdf-sample.mjs"
+import { PNG } from "pngjs"
+import { differences, measure, parityFaults } from "../tests/browser/path-parity-score.ts"
+import { pathParityCanvas, pathParityPdf, sampleDeckLines, sampleDeckPdf } from "./pdf-sample.mjs"
 
 const poppler = (name, args) => execFileSync(name, args, { encoding: "latin1" })
 
@@ -57,12 +59,40 @@ export function pdfFaults({ info, fonts, text, lines, reach }) {
   return faults
 }
 
+export function pathParityPdfFaults(canvasFile, pdfFile, scratch) {
+  const canvas = PNG.sync.read(fs.readFileSync(canvasFile))
+  const raster = path.join(scratch, "path-parity")
+  poppler("pdftoppm", [
+    "-scale-to-x",
+    String(canvas.width),
+    "-scale-to-y",
+    String(canvas.height),
+    "-png",
+    "-singlefile",
+    pdfFile,
+    raster,
+  ])
+  const printed = PNG.sync.read(fs.readFileSync(`${raster}.png`))
+  const wanted = measure(canvas)
+  return parityFaults("PDF", measure(printed), wanted, differences(printed, canvas))
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   if (!process.argv.includes("--no-export")) {
-    for (const stale of [sampleDeckPdf, sampleDeckLines]) fs.rmSync(stale, { force: true })
-    execFileSync("pnpm", ["test:browser", "tests/browser/export-pdf.spec.ts", "--grep", "@pdf", "--workers=1"], {
-      stdio: "inherit",
-    })
+    for (const stale of [sampleDeckPdf, sampleDeckLines, pathParityPdf, pathParityCanvas])
+      fs.rmSync(stale, { force: true })
+    execFileSync(
+      "pnpm",
+      [
+        "test:browser",
+        "tests/browser/export-pdf.spec.ts",
+        "tests/browser/path-parity.spec.ts",
+        "--grep",
+        "@pdf",
+        "--workers=1",
+      ],
+      { stdio: "inherit" },
+    )
   }
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "pdf-check-"))
   poppler("pdftoppm", ["-r", "24", "-f", "1", "-l", "1", "-singlefile", sampleDeckPdf, path.join(scratch, "first")])
@@ -73,10 +103,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     lines: JSON.parse(fs.readFileSync(sampleDeckLines, "utf8")),
     reach: inkReach(fs.readFileSync(path.join(scratch, "first.ppm"))),
   })
+  faults.push(...pathParityPdfFaults(pathParityCanvas, pathParityPdf, scratch))
   fs.rmSync(scratch, { recursive: true, force: true })
   if (faults.length > 0) {
-    console.error(["The sample deck's PDF is wrong:", ...faults.map((fault) => `- ${fault}`)].join("\n"))
+    console.error(["The PDF export is wrong:", ...faults.map((fault) => `- ${fault}`)].join("\n"))
     process.exit(1)
   }
-  console.log("The sample deck's PDF has every slide on a 16:9 page, embedded fonts and readable text.")
+  console.log(
+    "The sample deck's PDF has every slide on a 16:9 page, embedded fonts and readable text, and the wedges, rings, polylines and dashes of the path scene paint as they do on the canvas.",
+  )
 }

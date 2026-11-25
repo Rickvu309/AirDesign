@@ -5,6 +5,7 @@ test-results/
 *.measured.json
 tests/browser/exported-*.pdf
 tests/browser/exported-*.json
+tests/browser/exported-*.png
 playwright-report/
 blob-report/
 

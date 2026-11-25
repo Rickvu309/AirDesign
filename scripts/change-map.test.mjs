@@ -103,6 +103,11 @@ same(
 )
 same("a browser spec runs the browser part alone", on(map(["tests/browser/home.spec.ts"])), ["source", "browser"])
 same("a design scan runs the design part alone", on(map(["tests/browser/design-states.spec.ts"])), ["source", "design"])
+same(
+  "the path parity spec runs the browser part and the PDF check that reads its export",
+  on(map(["tests/browser/path-parity.spec.ts"])),
+  ["source", "browser", "pdf"],
+)
 same("browser, design and PDF load the browser launch", on(map(["tests/browser/launch.ts"])), [
   "source",
   "design",
