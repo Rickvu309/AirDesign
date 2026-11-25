@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 
 import type { DeckHost, Unmeasured } from "./deck-host.js"
 
-export type Finding = doom.AgentFinding | doom.LayoutFinding
+export type Finding = doom.AgentFinding | doom.LayoutFinding | doom.SlideFinding
 export type Layout = "measured" | "untouched" | "fault" | Unmeasured
 export type Findings = {
   readonly findings: readonly Finding[]
@@ -72,21 +72,26 @@ export function listed(
 }
 
 export async function layoutOf(host: DeckHost, fold: doom.Doom, touched: () => readonly doom.NodeId[]): Promise<Laid> {
-  if (host.measure === undefined) return { findings: [], layout: "untouched" }
+  let slides: readonly doom.NodeId[] = []
   try {
-    const slides = touched()
+    slides = touched()
     if (slides.length === 0) return { findings: [], layout: "untouched" }
+    if (host.measure === undefined) return { findings: doom.slideFindings(fold, slides), layout: "untouched" }
     const measured = await host.measure([fold])
-    if (typeof measured === "string") return { findings: [], layout: measured }
+    if (typeof measured === "string") return { findings: doom.slideFindings(fold, slides), layout: measured }
     const { measure, missing } = measured
     const boxes = new Map(slides.flatMap((slide) => [...doom.solveLayout(fold, slide, measure)]))
+    const unread = doom.unmeasuredTexts(fold, slides, missing)
     return {
-      findings: doom.layoutFindings(fold, slides, measure, missing),
+      findings: [
+        ...doom.layoutFindings(fold, slides, measure, missing),
+        ...doom.slideFindings(fold, slides, { measure, boxes, unread: new Set(unread) }),
+      ],
       layout: "measured",
       boxes,
-      unread: doom.unmeasuredTexts(fold, slides, missing),
+      unread,
     }
   } catch {
-    return { findings: [], layout: "fault" }
+    return { findings: doom.slideFindings(fold, slides), layout: "fault" }
   }
 }
