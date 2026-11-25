@@ -156,6 +156,7 @@ const staysOf = (exchange: AiraExchange) =>
     later: exchange.later ?? [],
     left: exchange.left ?? [],
     waiting: exchange.waiting ?? [],
+    skipped: exchange.skipped ?? [],
   })
 
 function Undone({ stays }: { readonly stays: string }) {

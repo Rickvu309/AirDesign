@@ -361,3 +361,45 @@ it("refuses a template revision that skips ahead through the edit route", async 
       ).answer,
     ).toMatchObject({ ok: false, refused: "shape", node: component, prop: "revision" })
 })
+
+it("skips a template update another writer deleted the template of, undoes the rest, and the server matches the device", async () => {
+  const { component, second, frame, landed, foldOf } = await nestedTile(tileSpec)
+  const fold = await foldOf()
+  const base = (prop: "spec" | "revision") => fold.revs.get(component)!.get(prop)!
+  const measure = doom.measureWith({})
+  const prepared = doom.prepareComponentEdit(
+    fold,
+    [
+      { node: component, prop: "spec", value: tileSpec(200), base: base("spec") },
+      { node: component, prop: "revision", value: 2, base: base("revision") },
+    ],
+    measure,
+  )
+  if (doom.isRefusal(prepared)) throw new Error(JSON.stringify(prepared))
+  const widened = await landed("widen", [...prepared, { node: second, prop: "name", value: "Tiles" }])
+  const deleting = await landed("delete", [{ node: component, prop: "parent", value: null }])
+  const gone = await foldOf()
+  expect(doom.skippedTemplates(widened.before, gone, widened.edit.writes)).toEqual([component])
+  const writes = doom.invertStep(widened.before, gone, widened.edit, new Set(), measure)
+  if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
+  const device = doom.applyEdit(gone, {
+    once: "undo",
+    author: person,
+    writes,
+    readBase: gone.rev,
+    rev: doom.rev(gone.rev + 1),
+  })
+  if (doom.isRefusal(device)) throw new Error(JSON.stringify(device))
+  expect((await landed("undo", writes)).answer).toMatchObject({ ok: true })
+  const undone = await foldOf()
+  expect(undone.nodes).toEqual(device.nodes)
+  expect(doom.propOf(undone.nodes.get(second), "name")).toBeUndefined()
+  expect(doom.propOf(undone.nodes.get(component), "revision")).toBe(2)
+
+  const restore = doom.invertStep(deleting.before, undone, deleting.edit, new Set(), measure)
+  if (doom.isRefusal(restore)) throw new Error(JSON.stringify(restore))
+  expect((await landed("restore", restore)).answer).toMatchObject({ ok: true })
+  const restored = await foldOf()
+  expect(doom.propOf(restored.nodes.get(frame), "instance")?.component).toEqual({ node: component, revision: 2 })
+  expect(doom.propOf(restored.nodes.get(component), "spec")).toEqual(tileSpec(200))
+})

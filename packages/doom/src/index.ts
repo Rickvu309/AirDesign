@@ -82,6 +82,7 @@ export { notesText } from "./notes-text.js"
 export { type TextPatch, lookWrite, paraWrite, styleWrite } from "./text-writes.js"
 export { linkedOwner, linkedOverride } from "./component/instance-ownership.js"
 export { rebuildsLinks } from "./component/deck-component.js"
+export { skippedTemplates } from "./component/update-rebuild.js"
 export {
   type ComponentEditSample,
   componentEditPreview,

@@ -1,5 +1,5 @@
 import { componentWrites } from "./component/deck-component.js"
-import { rebuiltByUpdate } from "./component/update-rebuild.js"
+import { rebuiltByUpdate, skippedTemplates } from "./component/update-rebuild.js"
 import { withCurrentComponents } from "./component/component-edit.js"
 import { applyBeforeFreeing } from "./apply-edit.js"
 import {
@@ -88,9 +88,10 @@ export function invertStep(
   measure: Measure = measureWith({}),
 ): readonly Write[] | Refusal {
   const fromUpdate = rebuiltByUpdate(asked.writes, (node, key) => propOf(before.nodes.get(node), key))
+  const skipped = new Set(skippedTemplates(before, after, asked.writes))
   const expanded = withPartDeletes(
     before,
-    asked.writes.filter(({ node, prop }) => !fromUpdate(node, prop)),
+    asked.writes.filter(({ node, prop }) => !fromUpdate(node, prop) && !skipped.has(node)),
   )
   if (isRefusal(expanded)) return []
   const edit = { ...asked, writes: expanded }

@@ -38,13 +38,14 @@ import {
   loadRunUndos,
   type RunUndoSource,
 } from "./doom-set-aside.js"
-import { forgetSteps, recordStep, relaySteps, type Step } from "./doom-steps.js"
+import { forgetSteps, recordStep, relaySteps, turnOf, type Step } from "./doom-steps.js"
 import { statusOf, type DeckStatus, type Reach } from "./doom-status.js"
 import { deviceStorage, keepDoom, type DoomStorage } from "./doom-storage.js"
 import { runInLog } from "./run-log.js"
 import { watchedRunsOf } from "./watched-runs.js"
 import { catchingUpResolves, onStanding, pressedOn, remember, type Pressed } from "./turn-replay.js"
 import { turnGuard } from "./turn-guard.js"
+import { turnSkips } from "./turn-skips.js"
 
 export type { DoomDeck } from "./doom-deck-types.js"
 
@@ -141,7 +142,15 @@ function connected(
     if (result.gone.length === 0) return
     const head = before.find((each) => each.edit.once === once)
     if (refusal.refused === "stale" && head !== undefined && rebuilds(head)) {
-      const rebuilt = replayLinked(server, before, result.gone, measure(), turned.keys(), runUndoSources)
+      const rebuilt = replayLinked(
+        server,
+        before,
+        result.gone,
+        measure(),
+        turned.keys(),
+        runUndoSources,
+        turnOf(undoSteps, redoSteps),
+      )
       queue = rebuilt.queue
       forget(rebuilt.gone)
       undoSteps = relaySteps(undoSteps, rebuilt.steps)
@@ -385,8 +394,8 @@ function connected(
     const owned = ownedRevs([...turned.keys(), ...step.onces])
     const source = { once: last, author, writes: step.writes, rev: at }
     const writes = doom.invertStep(step.before, now, source, owned, measure())
+    const turn = to === redoSteps ? "undo" : "redo"
     if (doom.isRefusal(writes)) {
-      const turn = to === redoSteps ? "undo" : "redo"
       notices = [
         ...notices.filter((notice) => notice.once !== last || notice.turn !== turn),
         { ...writes, once: last, turn },
@@ -394,9 +403,14 @@ function connected(
       tell()
       return { ok: false, reason: "refused", refused: writes }
     }
+    const skips = turnSkips(step, now, last, turn)
     if (writes.length === 0) {
       from.pop()
-      return { ok: false, reason: "nothing" }
+      if ("skipped" in skips.named) {
+        notices = skips.noticed(notices)
+        tell()
+      }
+      return { ok: false, reason: "nothing", ...skips.named }
     }
     const { guarded, replay } = turnGuard(now, writes, step, source, turned.keys())
     const pushed = pushEdit(writes, author, {
@@ -405,7 +419,7 @@ function connected(
       last: step.before,
     })
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
-    notices = notices.filter((notice) => notice.once !== last || notice.turn === undefined)
+    notices = skips.noticed(notices)
     from.pop()
     to.push({
       onces: [pushed.once],
@@ -415,7 +429,7 @@ function connected(
       ...(guarded ? { guarded: true } : {}),
     })
     remember(turned, pushed.once, pressedOn(server, now, pushed.writes, step.onces))
-    return { ok: true, once: pushed.once, saved: pushed.saved }
+    return { ok: true, once: pushed.once, saved: pushed.saved, ...skips.named }
   }
 
   async function undoRun(run: string): Promise<TurnedRun> {
@@ -436,7 +450,7 @@ function connected(
     if (refused !== undefined) return { ok: false, reason: "refused", refused }
     const stays = runUndoStays(edits, turnedRun)
     if (writes.length === 0)
-      return [...stays.kept, ...stays.left, ...stays.waiting].length === 0
+      return [...stays.kept, ...stays.left, ...stays.waiting, ...(stays.skipped ?? [])].length === 0
         ? { ok: false, reason: "nothing" }
         : { ok: false, reason: "left", ...stays }
     const guarded = writes.some(({ prop }) => prop === "instance") || doom.rebuildsLinks(now, writes)

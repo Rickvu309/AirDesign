@@ -16,7 +16,7 @@ import { type Instance, instanceFields, keyString } from "./component/instance.j
 import { sameValue } from "./changing-writes.js"
 import { withPartDeletes } from "./component/instance-ownership.js"
 import { withCurrentComponents } from "./component/component-edit.js"
-import { rebuiltByUpdate } from "./component/update-rebuild.js"
+import { withoutTemplateUpdate } from "./component/update-rebuild.js"
 import { onDeck } from "./doom-walk.js"
 import type { Doom, Landed, Node, Write } from "./doom.js"
 import { readLanded } from "./fold-json.js"
@@ -44,6 +44,7 @@ export type Undone = {
   readonly kept: readonly NodeId[]
   readonly left: readonly NodeId[]
   readonly waiting: readonly NodeId[]
+  readonly skipped: readonly NodeId[]
 }
 
 type Cell = { readonly node: NodeId; readonly key: WriteKey }
@@ -157,7 +158,7 @@ function settle(
   kept: ReadonlySet<NodeId>,
   restored: readonly Restore[],
   started: LayerPositions | Doom | undefined,
-): Undone {
+): Omit<Undone, "skipped"> {
   const parents = new Map(
     restored.filter(({ cell }) => cell.key === "parent").map(({ cell, value }) => [cell.node, value]),
   )
@@ -320,18 +321,6 @@ export function undoSourceOf(before: Doom, edit: Landed): RunEdit {
   }
 }
 
-function withoutUpdateRebuild(edit: RunEdit): RunEdit {
-  const rebuilt = rebuiltByUpdate(
-    edit.writes,
-    (node, key) => edit.replaced.find((cell) => cell.node === node && cell.key === key)?.value,
-  )
-  return {
-    ...edit,
-    writes: edit.writes.filter(({ node, prop }) => !rebuilt(node, prop)),
-    replaced: edit.replaced.filter(({ node, key }) => !rebuilt(node, key)),
-  }
-}
-
 export function invertRun(
   now: Doom,
   asked: readonly RunEdit[],
@@ -339,7 +328,9 @@ export function invertRun(
   started?: LayerPositions | Doom,
   measure: Measure = measureWith({}),
 ): Undone {
-  const edits = asked.map(withoutUpdateRebuild)
+  const trimmed = asked.map((edit) => withoutTemplateUpdate(now, edit))
+  const skipped = [...new Set(trimmed.flatMap((edit) => edit.skipped))]
+  const edits = trimmed.map(({ skipped: _skipped, ...edit }) => edit)
   const mine = new Set<Rev>([...owned, ...edits.map((edit) => edit.rev)])
   const writer = new Map<string, Rev | null | undefined>()
   const restored = new Map<string, Restore>()
@@ -354,7 +345,7 @@ export function invertRun(
   const keptInstances: NodeId[] = []
   for (const transitions of byRoot.values()) {
     const restored = restoreInstance(now, transitions, owned, measure)
-    if (isRefusal(restored)) return { writes: [], kept: [], left: [], waiting: [], refused: restored }
+    if (isRefusal(restored)) return { writes: [], kept: [], left: [], waiting: [], skipped: [], refused: restored }
     rebuilt.push(...restored.writes)
     if (restored.kept) keptInstances.push(transitions[0].root)
   }
@@ -423,12 +414,13 @@ export function invertRun(
   }
   const result = settle(now, chosen.reverse(), kept, [...restored.values()], started)
   const writes = withCurrentComponents(now, withRegenerated(result.writes, rebuilt), measure)
-  if (isRefusal(writes)) return { writes: [], kept: [], left: [], waiting: [], refused: writes }
+  if (isRefusal(writes)) return { writes: [], kept: [], left: [], waiting: [], skipped: [], refused: writes }
   return {
     ...result,
     kept: [...new Set([...result.kept, ...keptInstances])],
     writes,
     left: [...new Set([...result.left, ...blocked])],
+    skipped,
   }
 }
 

@@ -21,8 +21,8 @@ export type ThinNotice =
   | "picture-unread"
   | "undo-refused"
   | "redo-refused"
-  | "undo-changed"
-  | "redo-changed"
+  | "undo-skipped"
+  | "redo-skipped"
   | "set-aside"
   | "set-aside-one"
   | "text-refused"
@@ -132,8 +132,8 @@ function NoticeContent({
     )
   if (notice === "undo-refused") return <StatusNotice kind="error" text={undoCopy.undoRefused} />
   if (notice === "redo-refused") return <StatusNotice kind="error" text={undoCopy.redoRefused} />
-  if (notice === "undo-changed") return <StatusNotice still text={undoCopy.undoChanged} />
-  if (notice === "redo-changed") return <StatusNotice still text={undoCopy.redoChanged} />
+  if (notice === "undo-skipped") return <StatusNotice still text={undoCopy.undoSkipped} />
+  if (notice === "redo-skipped") return <StatusNotice still text={undoCopy.redoSkipped} />
   if (notice === "picture-type" || notice === "picture-size" || notice === "picture-unread")
     return <StatusNotice text={pictureCopy[notice]} />
   if (notice === "newer") {

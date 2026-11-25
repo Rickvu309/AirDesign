@@ -77,6 +77,15 @@ describe("undoing an Aira exchange on a doom deck", () => {
     expect(undone?.exchanges[0]?.kept).toBeUndefined()
   })
 
+  it("names a component whose update a run's undo skipped because the component was deleted", async () => {
+    const open = client({
+      "run-2": { ok: true, once: "u2", saved, kept: [], left: [], waiting: [], skipped: [ids.named] },
+      "run-1": { ok: true, once: "u1", saved, kept: [], left: [], waiting: [] },
+    })
+    const undone = await undoExchange(done, 0, undoAgentRun(open))
+    expect(undone?.exchanges[0]).toMatchObject({ end: "undone", skipped: ["“Revenue”"] })
+  })
+
   it("names what stays and keeps Undo when a run's undo lands nothing, instead of saying it was refused", async () => {
     const open = client({
       "run-2": { ok: true, once: "u2", saved, kept: [], left: [], waiting: [ids.group] },

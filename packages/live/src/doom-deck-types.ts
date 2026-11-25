@@ -17,29 +17,24 @@ export type Refused = { readonly ok: false; readonly refused: doom.Refusal }
 
 export type Pushed = Sent | { readonly ok: true; readonly unchanged: true } | Refused
 
+type Skipped = { readonly skipped?: readonly doom.NodeId[] }
+
 export type Turned =
-  | { readonly ok: true; readonly once: string; readonly saved: Promise<void> }
-  | { readonly ok: false; readonly reason: "nothing" }
+  | ({ readonly ok: true; readonly once: string; readonly saved: Promise<void> } & Skipped)
+  | ({ readonly ok: false; readonly reason: "nothing" } & Skipped)
   | { readonly ok: false; readonly reason: "refused"; readonly refused: doom.Refusal }
 
+type RunStays = {
+  readonly kept: readonly doom.NodeId[]
+  readonly later?: readonly doom.NodeId[]
+  readonly left: readonly doom.NodeId[]
+  readonly waiting: readonly doom.NodeId[]
+  readonly skipped?: readonly doom.NodeId[]
+}
+
 export type TurnedRun =
-  | {
-      readonly ok: true
-      readonly once: string
-      readonly saved: Promise<void>
-      readonly kept: readonly doom.NodeId[]
-      readonly later?: readonly doom.NodeId[]
-      readonly left: readonly doom.NodeId[]
-      readonly waiting: readonly doom.NodeId[]
-    }
-  | {
-      readonly ok: false
-      readonly reason: "left"
-      readonly kept: readonly doom.NodeId[]
-      readonly later?: readonly doom.NodeId[]
-      readonly left: readonly doom.NodeId[]
-      readonly waiting: readonly doom.NodeId[]
-    }
+  | ({ readonly ok: true; readonly once: string; readonly saved: Promise<void> } & RunStays)
+  | ({ readonly ok: false; readonly reason: "left" } & RunStays)
   | Exclude<Turned, { readonly ok: true }>
   | { readonly ok: false; readonly reason: "offline" | "size" }
 

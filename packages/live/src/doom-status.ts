@@ -11,6 +11,7 @@ type SaveState =
 export type DeckStatus =
   | SaveState
   | { readonly kind: "turn-refused"; readonly turn: "undo" | "redo"; readonly save: SaveState }
+  | { readonly kind: "turn-skipped"; readonly turn: "undo" | "redo"; readonly save: SaveState }
 
 export type Reach = "reached" | "offline" | "blocked"
 
@@ -31,12 +32,12 @@ export function statusOf(
   },
   last: DeckStatus,
 ): DeckStatus {
-  const turn = shown.aside.findLast((notice) => notice.turn !== undefined)?.turn
-  const save = saveState(shown, last.kind === "turn-refused" ? last.save : last)
-  if (turn === undefined) return save
-  return last.kind === "turn-refused" && last.turn === turn && last.save === save
-    ? last
-    : { kind: "turn-refused", turn, save }
+  const turned = shown.aside.findLast((notice) => notice.turn !== undefined)
+  const save = saveState(shown, "save" in last ? last.save : last)
+  if (turned?.turn === undefined) return save
+  const { turn } = turned
+  const kind = turned.refused === "missing" ? "turn-skipped" : "turn-refused"
+  return last.kind === kind && last.turn === turn && last.save === save ? last : { kind, turn, save }
 }
 
 function saveState(shown: Parameters<typeof statusOf>[0], last: SaveState): SaveState {

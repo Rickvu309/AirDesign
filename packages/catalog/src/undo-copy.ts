@@ -23,10 +23,11 @@ export type UndoStays = {
   readonly later?: readonly string[]
   readonly left: readonly string[]
   readonly waiting: readonly string[]
+  readonly skipped?: readonly string[]
 }
 
 export function undoStaysNote(agent: string, stays: UndoStays): string {
-  const { kept, later, left, waiting } = stays
+  const { kept, later, left, waiting, skipped = [] } = stays
   const leftNote =
     left.length === 0
       ? ""
@@ -39,5 +40,11 @@ export function undoStaysNote(agent: string, stays: UndoStays): string {
       : waiting.length === 1
         ? `${opening(waiting)} can't come back until the frame it was in is back.`
         : `${opening(waiting)} can't come back until the frames they were in are back.`
-  return [undoKeptNote(agent, kept, later ?? []), leftNote, waitingNote].filter(Boolean).join(" ")
+  const skippedNote =
+    skipped.length === 0
+      ? ""
+      : skipped.length === 1
+        ? `The component ${listed(skipped)} was deleted, so its update wasn't undone.`
+        : `The components ${listed(skipped)} were deleted, so their updates weren't undone.`
+  return [undoKeptNote(agent, kept, later ?? []), leftNote, waitingNote, skippedNote].filter(Boolean).join(" ")
 }
