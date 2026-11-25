@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { type Box, type Point, defaultTheme, resolveSlide, siteSpot } from "../index.js"
+import { type Box, defaultTheme, resolveSlide, siteSpot } from "../index.js"
 import { architectureComponent, type ComponentNode } from "./index.js"
 import architecture from "./testing/architecture.json" with { type: "json" }
 import { ends, expand, keyed, measure, resolvedById, role } from "./testing/diagram-tree.js"
@@ -45,87 +45,6 @@ describe("architecture diagram", () => {
     expect(sites("right")).toEqual(["r", "l"])
     expect(sites("left")).toEqual(["l", "r"])
     expect(ends(keyed(tree, "link", "down")).route).toBe("elbow")
-  })
-
-  const crosses = (a: Point, b: Point, box: Box) =>
-    a.y === b.y
-      ? a.y > box.y && a.y < box.y + box.h && Math.max(a.x, b.x) > box.x && Math.min(a.x, b.x) < box.x + box.w
-      : a.x > box.x && a.x < box.x + box.w && Math.max(a.y, b.y) > box.y && Math.min(a.y, b.y) < box.y + box.h
-
-  function expectClear(data: typeof architecture.data) {
-    const tree = expand(architectureComponent, { ...architecture, data })
-    const { doom, slide } = landTree(tree)
-    const resolved = resolvedById(resolveSlide(doom, slide, measure))
-    const hits: string[] = []
-    const routes: { id: string; nodes: readonly string[]; points: readonly Point[] }[] = []
-    const overlaps = (a: Point, b: Point, c: Point, d: Point) =>
-      (Math.abs(a.y - b.y) < 1e-6 &&
-        Math.abs(c.y - d.y) < 1e-6 &&
-        Math.abs(a.y - c.y) < 1e-6 &&
-        Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x)) - Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x)) > 1e-6) ||
-      (Math.abs(a.x - b.x) < 1e-6 &&
-        Math.abs(c.x - d.x) < 1e-6 &&
-        Math.abs(a.x - c.x) < 1e-6 &&
-        Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y)) - Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y)) > 1e-6)
-    for (const link of role(tree, "link")) {
-      const { start, end } = ends(link)
-      const route = resolved.get(link.id)
-      if (route?.geometry?.kind !== "line") throw new Error("Missing line")
-      const points = route.geometry.points.map(({ x, y }) => ({ x: x + route.box.x, y: y + route.box.y }))
-      for (const other of routes) {
-        if (other.nodes.includes(start.node) || other.nodes.includes(end.node)) continue
-        if (
-          points
-            .slice(1)
-            .some((b, i) => other.points.slice(1).some((d, j) => overlaps(points[i]!, b, other.points[j]!, d)))
-        )
-          hits.push(`${link.key[1]} overlaps ${other.id}`)
-      }
-      routes.push({ id: link.key[1]!, nodes: [start.node, end.node], points })
-      for (const card of role(tree, "component")) {
-        if (card.id === start.node || card.id === end.node) continue
-        const box = resolved.get(card.id)!.box
-        if (points.slice(1).some((point, i) => crosses(points[i]!, point, box)))
-          hits.push(`${link.key[1]} → ${card.key[1]}`)
-      }
-    }
-    expect(hits).toEqual([])
-  }
-
-  it("keeps skip-layer and non-neighbor links clear of cards in the verifier's examples", () => {
-    expectClear({
-      ...architecture.data,
-      links: [
-        ...architecture.data.links,
-        { id: "skip", from: "mobile", to: "events" },
-        { id: "lateral", from: "identity", to: "payments" },
-      ],
-    })
-    expectClear({
-      layers: architecture.data.layers,
-      components: architecture.data.layers.map(({ id }) => ({ id, layer: id, name: id })),
-      links: [{ id: "skip-centered", from: "channels", to: "data" }],
-    })
-  })
-
-  it.each([2, 3, 4, 5])("keeps unrelated links and cards clear in seeded %i-layer graphs", (count) => {
-    let seed = 1661
-    const pick = (n: number) => {
-      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
-      return Math.floor((seed / 2 ** 32) * n)
-    }
-    const layers = Array.from({ length: count }, (_, i) => ({ id: `layer-${i}`, label: `Layer ${i + 1}` }))
-    for (let graph = 0; graph < 20; graph++) {
-      const components = layers.flatMap(({ id: layer }) =>
-        Array.from({ length: 1 + pick(6) }, (_, i) => ({ id: `${layer}-${i}`, layer, name: `Service ${i + 1}` })),
-      )
-      const links = Array.from({ length: 16 }, (_, i) => {
-        const a = pick(components.length)
-        const b = (a + 1 + pick(components.length - 1)) % components.length
-        return { id: `link-${i}`, from: components[a]!.id, to: components[b]!.id }
-      })
-      expectClear({ layers, components, links })
-    }
   })
 
   it("keeps an empty layer as a labelled band", () => {

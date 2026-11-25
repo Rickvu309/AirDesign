@@ -4,8 +4,8 @@ Process, architecture and cycle are library specs. The interpreter expands them 
 
 ## Sub-features
 
-- Process lays 3 to 8 numbered cards in an auto layout row or column. Each card has a title, an optional description and an optional duration. Row descriptions can wrap to two lines. The first step carries the accent, and a process with more than five steps suggests grouping them into phases.
-- Architecture draws one band per layer. Adjacent-layer links use the gap between bands. Skip-layer links use separate lanes through both gaps and the side gutter. Links over intervening cards in the same band use the space above the cards.
+- Process lays 3 to 8 numbered cards in an auto layout row or column. Each card has a title, an optional description and an optional duration. Row descriptions can wrap to three lines. The focus step carries the accent and defaults to step one. A process with more than five steps suggests using two diagrams.
+- Architecture draws one band per layer. Adjacent-layer links use the gap between bands. Skip-layer links use the band gaps and side gutters. Links can share a line into or out of a card. Unrelated links use separate lanes where the diagram has room.
 - Cycle places 3 to 6 steps on an ellipse with curved or straight connectors.
 - Cards in a fit group shrink together. Labels wrap and finish with an ellipsis when needed. The source text stays editable and the expansion reports one finding for each label that cannot fit.
 
@@ -19,6 +19,6 @@ Run the `diagram-templates` journey on an isolated stack. It expands with served
 
 ## Gotchas
 
-- Descriptions that exceed two lines in a row or one line in a column end with an ellipsis.
+- Descriptions that exceed three lines in a row or one line in a column end with an ellipsis.
 - Cmd/Ctrl-click a card and press Enter to edit its full text. The spec opts into shortening with `overflow: "ellipsis"`. Width and height can both shorten a label and raise a finding.
 - Inspect routes on the canvas. The saved rows store attachment sites and channels. If a card moves past its channel, the elbow router still follows the card.

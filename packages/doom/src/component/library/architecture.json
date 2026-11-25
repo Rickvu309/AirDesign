@@ -39,12 +39,12 @@
     "layerLabel": "label",
     "layerSmall": 16,
     "radius": 8,
-    "lineWidth": 2
+    "lineWidth": 3
   },
   "let": [
     ["layerGap", 48],
     ["inset", 24],
-    ["gutter", 36],
+    ["gutter", 96],
     ["labelW", ["min", 240, ["mul", ["get", "frame.w"], 0.2]]],
     ["cardGap", 32],
     ["layerCount", ["count", ["get", "data.layers"]]],
@@ -98,7 +98,8 @@
         {
           "id": ["get", "c.id"],
           "layer": ["get", "c.layer"],
-          "at": ["get", "i"]
+          "at": ["get", "i"],
+          "name": ["get", "c.name"]
         }
       ]
     ],
@@ -122,7 +123,63 @@
               "o",
               ["if", ["eq", ["get", "o.layer"], ["get", "c.layer"]], ["lt", ["get", "o.at"], ["get", "c.at"]], false]
             ]
-          ]
+          ],
+          "name": ["get", "c.name"]
+        }
+      ]
+    ],
+    [
+      "cards",
+      [
+        "map",
+        ["get", "placed"],
+        "p",
+        {
+          "id": ["get", "p.id"],
+          "row": ["get", "p.layer"],
+          "x": [
+            "add",
+            ["get", "contentX"],
+            [
+              "div",
+              [
+                "sub",
+                ["get", "contentW"],
+                [
+                  "sub",
+                  [
+                    "mul",
+                    ["count", ["filter", ["get", "placed"], "q", ["eq", ["get", "p.layer"], ["get", "q.layer"]]]],
+                    ["add", ["get", "cardW"], ["get", "cardGap"]]
+                  ],
+                  ["get", "cardGap"]
+                ]
+              ],
+              2
+            ],
+            ["mul", ["get", "p.slot"], ["add", ["get", "cardW"], ["get", "cardGap"]]]
+          ],
+          "y": [
+            "add",
+            ["mul", ["get", "p.layer"], ["get", "bandStep"]],
+            ["div", ["sub", ["get", "bandH"], ["get", "cardH"]], 2]
+          ],
+          "w": ["get", "cardW"],
+          "h": ["get", "cardH"],
+          "name": ["get", "p.name"]
+        }
+      ]
+    ],
+    [
+      "routes",
+      [
+        "link-channels",
+        ["get", "cards"],
+        ["get", "data.links"],
+        {
+          "left": ["sub", ["get", "labelW"], ["get", "inset"]],
+          "right": ["sub", ["get", "frame.w"], 12],
+          "bottom": ["get", "frame.h"]
         }
       ]
     ]
@@ -135,16 +192,8 @@
       },
       "let": [
         ["bandY", ["mul", ["get", "i"], ["get", "bandStep"]]],
-        ["members", ["filter", ["get", "data.components"], "c", ["eq", ["get", "c.layer"], ["get", "l.id"]]]],
-        [
-          "span",
-          [
-            "sub",
-            ["mul", ["count", ["get", "members"]], ["add", ["get", "cardW"], ["get", "cardGap"]]],
-            ["get", "cardGap"]
-          ]
-        ],
-        ["firstX", ["add", ["get", "contentX"], ["div", ["sub", ["get", "contentW"], ["get", "span"]], 2]]]
+        ["row", ["get", "i"]],
+        ["members", ["filter", ["get", "cards"], "c", ["eq", ["get", "c.row"], ["get", "row"]]]]
       ],
       "children": [
         {
@@ -186,10 +235,10 @@
           "emit": {
             "kind": "text",
             "key": ["list", "component", ["get", "c.id"]],
-            "x": ["add", ["get", "firstX"], ["mul", ["get", "i"], ["add", ["get", "cardW"], ["get", "cardGap"]]]],
-            "y": ["add", ["get", "bandY"], ["div", ["sub", ["get", "bandH"], ["get", "cardH"]], 2]],
-            "w": ["get", "cardW"],
-            "h": ["get", "cardH"],
+            "x": ["get", "c.x"],
+            "y": ["get", "c.y"],
+            "w": ["get", "c.w"],
+            "h": ["get", "c.h"],
             "chars": ["get", "c.name"],
             "style": ["get", "token.label"],
             "color": ["get", "token.ink"],
@@ -216,137 +265,25 @@
         "over": ["get", "data.links"],
         "as": "k"
       },
-      "let": [
-        ["a", ["at", ["filter", ["get", "placed"], "p", ["eq", ["get", "p.id"], ["get", "k.from"]]], 0]],
-        ["b", ["at", ["filter", ["get", "placed"], "p", ["eq", ["get", "p.id"], ["get", "k.to"]]], 0]],
-        ["lane", ["div", ["add", ["get", "i"], 1], ["add", ["count", ["get", "data.links"]], 1]]],
-        ["down", ["lt", ["get", "a.layer"], ["get", "b.layer"]]],
-        ["up", ["lt", ["get", "b.layer"], ["get", "a.layer"]]],
-        ["right", ["lt", ["get", "a.slot"], ["get", "b.slot"]]],
-        ["same", ["eq", ["get", "a.layer"], ["get", "b.layer"]]],
-        [
-          "skip",
-          [
-            "lt",
-            1,
-            ["sub", ["max", ["get", "a.layer"], ["get", "b.layer"]], ["min", ["get", "a.layer"], ["get", "b.layer"]]]
-          ]
-        ],
-        [
-          "lateral",
-          [
-            "if",
-            ["get", "same"],
-            [
-              "lt",
-              1,
-              ["sub", ["max", ["get", "a.slot"], ["get", "b.slot"]], ["min", ["get", "a.slot"], ["get", "b.slot"]]]
-            ],
-            false
-          ]
-        ],
-        [
-          "fromY",
-          [
-            "sub",
-            ["mul", ["add", ["get", "a.layer"], ["if", ["get", "down"], 1, 0]], ["get", "bandStep"]],
-            ["mul", ["get", "layerGap"], ["get", "lane"]]
-          ]
-        ],
-        [
-          "toY",
-          [
-            "sub",
-            ["mul", ["add", ["get", "b.layer"], ["if", ["get", "up"], 1, 0]], ["get", "bandStep"]],
-            ["mul", ["get", "layerGap"], ["get", "lane"]]
-          ]
-        ],
-        [
-          "above",
-          [
-            "add",
-            ["mul", ["get", "a.layer"], ["get", "bandStep"]],
-            ["mul", ["get", "lane"], ["div", ["sub", ["get", "bandH"], ["get", "cardH"]], 2]]
-          ]
-        ]
-      ],
+      "let": [["path", ["at", ["get", "routes"], ["get", "i"]]]],
       "emit": {
         "kind": "line",
         "key": ["list", "link", ["get", "k.id"]],
-        "start": [
-          "if",
-          ["get", "same"],
-          [
-            "site",
-            ["list", "component", ["get", "k.from"]],
-            ["if", ["get", "lateral"], "t", ["if", ["get", "right"], "r", "l"]]
-          ],
-          {
-            "key": ["list", "component", ["get", "k.from"]],
-            "site": ["if", ["get", "down"], "b", "t"],
-            "along": ["if", ["get", "down"], 0.65, 0.35]
-          }
-        ],
-        "end": [
-          "if",
-          ["get", "same"],
-          [
-            "site",
-            ["list", "component", ["get", "k.to"]],
-            ["if", ["get", "lateral"], "t", ["if", ["get", "right"], "l", "r"]]
-          ],
-          {
-            "key": ["list", "component", ["get", "k.to"]],
-            "site": ["if", ["get", "down"], "t", "b"],
-            "along": ["if", ["get", "down"], 0.35, 0.65]
-          }
-        ],
+        "start": {
+          "key": ["list", "component", ["get", "k.from"]],
+          "site": ["get", "path.start.site"],
+          "along": ["get", "path.start.along"]
+        },
+        "end": {
+          "key": ["list", "component", ["get", "k.to"]],
+          "site": ["get", "path.end.site"],
+          "along": ["get", "path.end.along"]
+        },
         "color": ["get", "token.connector"],
         "width": ["get", "token.lineWidth"],
         "route": "elbow",
         "arrow": "triangle",
-        "channels": [
-          "if",
-          ["get", "same"],
-          [
-            "if",
-            ["get", "lateral"],
-            [
-              "list",
-              {
-                "axis": "y",
-                "at": ["get", "above"]
-              }
-            ],
-            ["list"]
-          ],
-          [
-            "if",
-            ["get", "skip"],
-            [
-              "list",
-              {
-                "axis": "y",
-                "at": ["get", "fromY"]
-              },
-              {
-                "axis": "x",
-                "at": ["sub", ["get", "frame.w"], ["mul", ["get", "gutter"], ["get", "lane"]]]
-              },
-              {
-                "axis": "y",
-                "at": ["get", "toY"]
-              }
-            ],
-            [
-              "list",
-              {
-                "axis": "y",
-                "at": ["get", "fromY"]
-              }
-            ]
-          ]
-        ]
+        "channels": ["get", "path.channels"]
       }
     }
   ]

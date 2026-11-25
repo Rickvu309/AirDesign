@@ -50,7 +50,7 @@ Run the `component-column` journey with `verify-airdesign` to check saved parts,
 
 Set `overflow: "ellipsis"` on a text emit to paint an ellipsis when its text exceeds the available width or height. The saved shape keeps all its text. A fit rule still reports a `text-fit` finding when the label cannot fit at its configured size. If the emit omits `overflow`, a failed fit rule omits the text part. Fill controls the shape’s appearance.
 
-Structured copy accepts a list of paragraph records. A paragraph can set `maxLines` from 1 to 16 on an ellipsis text part. When the paragraph exceeds that limit, its last visible line ends in an ellipsis and later paragraphs keep their place in the flow. Use `wrap: "none"` for a paragraph that must stay on one line.
+Structured copy accepts a list of paragraph records. A paragraph can set `maxLines` from 1 to 16 on an ellipsis text part. It treats line breaks inside that paragraph as spaces. Text parts without ellipsis ignore the line limit. When the paragraph exceeds that limit, its last visible line ends in an ellipsis and later paragraphs keep their place in the flow. Use `wrap: "none"` for a paragraph that must stay on one line.
 
 ## Connector attachments
 
@@ -59,3 +59,5 @@ A connector endpoint can use `["site", partKey, side]` to attach to the default 
 ## Advice
 
 The optional top-level `advice` list contains records with a `code`, a `when` expression, and a `note` that gives the reader a fix. A matching record adds a finding to the root and expansion proceeds.
+
+The process template accepts an optional `tokens.focus` step ID. The first step carries the accent when the ID is omitted or does not match a step.

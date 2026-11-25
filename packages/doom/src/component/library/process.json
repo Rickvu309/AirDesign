@@ -29,7 +29,7 @@
       "var": "text2"
     },
     "label": "heading",
-    "labelSmall": 18,
+    "labelSmall": 20,
     "gap": 64,
     "radius": 8,
     "lineWidth": 2,
@@ -42,7 +42,8 @@
     "columnLabel": "label",
     "columnGap": 16,
     "cardHeight": 240,
-    "rowLabelSmall": 26
+    "rowLabelSmall": 26,
+    "focus": ""
   },
   "let": [
     ["row", ["eq", ["get", "variant.direction"], "row"]],
@@ -92,6 +93,20 @@
         ["sub", ["get", "frame.h"], ["add", ["get", "cardH"], ["mul", ["get", "stepY"], ["sub", ["get", "count"], 1]]]],
         2
       ]
+    ],
+    ["first", ["at", ["get", "data.steps"], 0]],
+    [
+      "focus",
+      [
+        "if",
+        [
+          "lt",
+          0,
+          ["count", ["filter", ["get", "data.steps"], "step", ["eq", ["get", "step.id"], ["get", "token.focus"]]]]
+        ],
+        ["get", "token.focus"],
+        ["if", ["lt", 0, ["count", ["get", "data.steps"]]], ["get", "first.id"], ""]
+      ]
     ]
   ],
   "layout": {
@@ -109,7 +124,7 @@
     {
       "code": "many-steps",
       "when": ["lt", 5, ["get", "count"]],
-      "note": "Group the steps into phases to make the process easier to follow."
+      "note": "Split the steps across two process diagrams."
     }
   ],
   "parts": [
@@ -138,7 +153,7 @@
         "fill": ["get", "token.card"],
         "overflow": "ellipsis",
         "stroke": {
-          "color": ["get", "token.edge"],
+          "color": ["if", ["get", "focused"], ["get", "token.number"], ["get", "token.edge"]],
           "width": 2
         },
         "radius": ["get", "token.radius"],
@@ -146,7 +161,7 @@
           "if",
           ["get", "row"],
           {
-            "t": 36,
+            "t": 24,
             "r": 16,
             "b": 24,
             "l": 16
@@ -164,6 +179,7 @@
         }
       },
       "let": [
+        ["focused", ["eq", ["get", "s.id"], ["get", "focus"]]],
         [
           "stepNumber",
           [
@@ -182,8 +198,8 @@
           "number",
           {
             "chars": ["if", ["lt", ["get", "i"], 9], ["concat", "0", ["get", "stepNumber"]], ["get", "stepNumber"]],
-            "color": ["if", ["eq", ["get", "i"], 0], ["get", "token.number"], ["get", "token.description"]],
-            "scale": ["if", ["get", "row"], 0.68, 0.65],
+            "color": ["if", ["get", "focused"], ["get", "token.number"], ["get", "token.description"]],
+            "scale": ["if", ["get", "focused"], 1, 0.8],
             "bold": true,
             "wrap": "none"
           }
@@ -203,7 +219,7 @@
             "color": ["get", "token.description"],
             "scale": ["if", ["get", "row"], 0.77, 0.72],
             "bold": false,
-            "maxLines": ["if", ["get", "row"], 2, 1],
+            "maxLines": ["if", ["get", "row"], 3, 1],
             "spaceBefore": ["if", ["get", "row"], 6, 2]
           }
         ],
@@ -212,7 +228,7 @@
           {
             "chars": ["get", "s.note"],
             "color": ["get", "token.description"],
-            "scale": 0.65,
+            "scale": ["if", ["get", "row"], 0.8, 1],
             "bold": false,
             "wrap": "none",
             "spaceBefore": ["if", ["get", "row"], 8, 2]

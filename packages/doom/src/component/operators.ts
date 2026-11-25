@@ -3,6 +3,7 @@ import type { ReportFinding } from "./findings.js"
 import type { FittingContext } from "./fit-text.js"
 import { decimals, positiveScale } from "./precision.js"
 import { flowText, textWidth } from "./text-operators.js"
+import { linkChannels } from "./link-channels.js"
 import { polyline, wedge } from "./path-operators.js"
 import { polar } from "./polar.js"
 import {
@@ -160,6 +161,7 @@ const operators: Readonly<Record<string, Operation>> = {
   polyline: fixed(1, ([points], charge) => polyline(list(points), charge)),
   wedge: fixed(5, wedge),
   polar: fixed(3, polar),
+  "link-channels": fixed(3, ([cards, links, bounds], charge) => linkChannels(cards, links, bounds, charge)),
   point: fixed(2, ([x, y]) => ({ x: number(x), y: number(y) })),
   site: fixed(2, ([key, site]) => ({ key: list(key), site: literal(["t", "r", "b", "l", "c"])(site) })),
 }

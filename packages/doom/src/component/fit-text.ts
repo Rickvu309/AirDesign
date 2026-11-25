@@ -84,6 +84,19 @@ function prepareFit(part: TextPart, size: number, context: FittingContext, wrap:
   return { part, text: resized, size, single, split, neededWidth: Math.min(single.w, split?.w ?? Infinity) }
 }
 
+function requiredWidth(fit: Fit, context: FittingContext): number {
+  if (fit.wrapped === undefined || paragraphCuts(fit.text, fit.wrapped.lines).size === 0) return fit.neededWidth
+  let narrow = Math.floor(fit.part.props.box.w)
+  let wide = Math.ceil(fit.single.w)
+  while (wide - narrow > 1) {
+    const width = Math.floor((narrow + wide) / 2)
+    const { lines } = measurePart(fit.part, fit.text, context, undefined, width)
+    if (paragraphCuts(fit.text, lines).size === 0 && lines.every((line) => line.ink <= line.w + tolerance)) wide = width
+    else narrow = width
+  }
+  return wide
+}
+
 function withWidth(fit: Fit, part: TextPart): TextPart | undefined {
   if (fits(part, fit.single, 2)) return withText(part, fit.text)
   if (
@@ -121,7 +134,7 @@ export function fitOne(
   if (smaller === undefined)
     return missed(part, part.props.text, finding(part, context.theme.textStyles[part.props.text.style].size, natural.w))
   const fit = prepareFit(part, smaller, context, true)
-  return withWidth(fit, part) ?? missed(part, fit.text, finding(part, smaller, fit.neededWidth))
+  return withWidth(fit, part) ?? missed(part, fit.text, finding(part, smaller, requiredWidth(fit, context)))
 }
 
 type Group = {
@@ -250,7 +263,7 @@ export function* fitGroups(
     if (omitted.length === 0) continue
     if (group.thin === undefined) {
       for (const fit of omitted)
-        fitted.set(fit.part, missed(fit.part, fit.text, finding(fit.part, fit.size, fit.neededWidth)))
+        fitted.set(fit.part, missed(fit.part, fit.text, finding(fit.part, fit.size, requiredWidth(fit, context))))
       continue
     }
 

@@ -16,14 +16,14 @@ import {
 } from "../look/doom-deck.mjs"
 
 const descriptionExamples = [
-  "Map customer needs",
+  "Align stakeholders on scope",
   "Set success criteria",
   "Validate a direction",
   "Ship a pilot",
   "Measure adoption",
   "Review feedback",
   "Refine the rollout",
-  "Track the impact",
+  "Embed new ways of working",
 ]
 
 const diagrams = [
