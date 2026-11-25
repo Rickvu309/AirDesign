@@ -1,6 +1,6 @@
 import { flushSync } from "react-dom"
 import { useLayoutEffect, useState } from "react"
-import { canvasRoom, fitWidth, slideTop, type SlideSize } from "@/editing/canvas-zoom"
+import { canvasRoom, fitWidth, notesWidth as widthOfNotes, slideTop, type SlideSize } from "@/editing/canvas-zoom"
 
 export function useCanvasRoom(): {
   readonly room: SlideSize | null
@@ -32,7 +32,8 @@ export function useCanvasRoom(): {
         const scale = fitted ? fitWidth(next, { width, height }) / width : 1
         const top = slideTop({ height: canvas.clientHeight, overlay: bottom, slide: height * scale })
         wrapper.style.transform = `translateY(${top - wrapper.offsetTop - (height * (1 - scale)) / 2}px) scale(${scale})`
-        if (notesWidth) notesWidth.style.width = `${Math.min(width * scale, next.width)}px`
+        if (notesWidth)
+          notesWidth.style.width = `${widthOfNotes(next, { width: width * scale, height: height * scale })}px`
         return
       }
       if (wrapper) wrapper.style.transform = ""
