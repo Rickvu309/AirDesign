@@ -30,11 +30,11 @@ export default async function drive({ signIn, post, mcpRoutes, expect, note }) {
   expect(slides).toHaveLength(5)
   const labels = ["Revenue by region", "Market overview", "Q3 results", "Profit by year", "Volume by segment"]
   const conclusions = [
-    "Northern revenue leads by 40%",
-    "Southern revenue is catching up",
-    "Third-quarter revenue doubled",
+    "Rework pricing strategy",
+    "Approve phase 2 budget",
+    "Adopt new operating model",
     "Profit grew across all regions",
-    "Volume is highest in the North",
+    "Retiree Health Benefit funding requirements are a significant burden, equal to 12% of total revenue in 2010",
   ]
   const changes = slides.flatMap((slide, index) => [
     {
@@ -91,7 +91,10 @@ export default async function drive({ signIn, post, mcpRoutes, expect, note }) {
     expect(answer.layers).toContain(conclusions[index])
     expect(answer.layers).toContain("Source: Quarterly management accounts")
   }
+  const measured = await call("read_deck", { deck, slide: slides[4] })
+  expect(measured.layers).toMatch(/1600x123\.2 style=title/)
+  note("The 17-word title wrapped to two measured lines at the default 56 px.")
   note(
-    "One edit fixed all five slides. Fresh reads confirmed the saved titles and sources, and the consulting findings cleared.",
+    "One edit fixed all five slides. Fresh reads confirmed the saved command titles and sources, and the consulting findings cleared.",
   )
 }

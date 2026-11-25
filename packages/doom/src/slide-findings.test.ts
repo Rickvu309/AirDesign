@@ -7,7 +7,6 @@ import { textFromMarkdown } from "./markdown.js"
 import { sampleChart } from "./sample-charts.js"
 import { slideFindings } from "./slide-findings.js"
 import { defaultTheme } from "./theme.js"
-import { actionTitles } from "./testing/slide-titles.js"
 import { measure, spot } from "./testing/doom-fixtures-art.js"
 
 const text = (chars: string, style: "title" | "display" | "body" = "body", width = 1600): TreeNode => ({
@@ -24,8 +23,8 @@ const chart = (kind: "column" | "pie" = "column"): TreeNode => ({
   props: { chart: sampleChart(kind), box: spot(0, 200, 600, 500) },
 })
 
-function findings(slides: readonly (readonly TreeNode[])[], count = slides.length, theme = defaultTheme) {
-  const grown = doomFromTree({ theme, slides: slides.map((children) => ({ children })) })
+function findings(slides: readonly (readonly TreeNode[])[], count = slides.length) {
+  const grown = doomFromTree({ theme: defaultTheme, slides: slides.map((children) => ({ children })) })
   return slideFindings(grown.doom, grown.slides.slice(0, count), { measure })
 }
 
@@ -51,22 +50,7 @@ describe("slide findings", () => {
     ).toEqual([])
   })
 
-  it("uses measured lines in preference to word count", () => {
-    const longTitles = Object.values(actionTitles)
-      .flat()
-      .filter((title) => title.split(/\s+/).length >= 16)
-    expect(longTitles).toHaveLength(15)
-    const theme = {
-      ...defaultTheme,
-      textStyles: { ...defaultTheme.textStyles, title: { ...defaultTheme.textStyles.title, size: 36 } },
-    }
-    expect(
-      findings(
-        longTitles.map((title) => [text(title, "title")]),
-        longTitles.length,
-        theme,
-      ),
-    ).toEqual([])
+  it("flags a short title when it wraps beyond two measured lines", () => {
     expect(codes([[text("Demand is rising across markets", "title", 140)]])).toEqual(["title-long"])
     expect(codes([[text("Demand is rising across markets", "title")]])).toEqual([])
   })
