@@ -1,7 +1,7 @@
-import { expect, type Page } from "@playwright/test"
+import { expect, type BrowserContext, type Page } from "@playwright/test"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { clickSlide, openEditor, savedNode, type Opened } from "./editor-deck"
+import { clickSlide, openEditor, savedNode, selectedIds, type Opened } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -76,4 +76,93 @@ test("presenter notes typed with pauses are one undo step once the notes lose fo
   await page.keyboard.press("ControlOrMeta+z")
   await expect.poll(saved).toBe("")
   await expect(notes).toHaveValue("")
+})
+
+async function commitTokyo(page: Page, context: BrowserContext) {
+  await page.keyboard.press("t")
+  await clickSlide(page, 300, 700)
+  await expect(page.locator("[data-text-editor]")).toBeFocused()
+  await page.keyboard.type("Costs fall ", { delay: 10 })
+  const ime = await context.newCDPSession(page)
+  await ime.send("Input.imeSetComposition", { text: "と", selectionStart: 1, selectionEnd: 1 })
+  await ime.send("Input.imeSetComposition", { text: "とうきょう", selectionStart: 5, selectionEnd: 5 })
+  await ime.send("Input.insertText", { text: "東京" })
+  await expect(page.locator("[data-text-editor]")).toHaveText("Costs fall 東京")
+}
+
+async function savedAfterLeaving(page: Page, stack: Stack, opened: Opened) {
+  await page.keyboard.press("Escape")
+  const [id] = await selectedIds(page)
+  return expect.poll(() => charsOf(stack, opened, id ?? ""))
+}
+
+for (const held of [false, true])
+  test(`undo right after an IME commit takes the commit back inside the text and the next key lands${held ? " while fonts are held" : ""}`, async ({
+    page,
+    context,
+    stack,
+  }) => {
+    covers("edit-text", "undo")
+    let release = () => {}
+    const fonts = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    if (held)
+      await page.route(
+        (url) => url.pathname.endsWith(".wasm") || url.pathname.includes("/fonts/"),
+        async (route) => {
+          await fonts
+          await route.continue()
+        },
+      )
+    try {
+      const opened = await openEditor(page, context, stack)
+      await commitTokyo(page, context)
+      await page.keyboard.press("ControlOrMeta+z")
+      await expect(page.locator("[data-text-editor]")).toBeFocused()
+      await expect(page.locator("[data-text-editor]")).toHaveText("Costs fall")
+      await page.keyboard.type("Z", { delay: 10 })
+      await expect(page.locator("[data-text-editor]")).toHaveText("Costs fall Z")
+      release()
+      await (await savedAfterLeaving(page, stack, opened)).toBe("Costs fall Z")
+    } finally {
+      release()
+    }
+  })
+
+test("redo inside the text puts an undone IME commit back, and the next key lands after it", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("edit-text", "undo", "redo")
+  const opened = await openEditor(page, context, stack)
+  await commitTokyo(page, context)
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect(page.locator("[data-text-editor]")).toHaveText("Costs fall")
+  await page.keyboard.press("ControlOrMeta+Shift+z")
+  await expect(page.locator("[data-text-editor]")).toHaveText("Costs fall 東京")
+  await page.keyboard.type("Z", { delay: 10 })
+  await (await savedAfterLeaving(page, stack, opened)).toBe("Costs fall 東京Z")
+})
+
+test("undo inside the text while offline keeps the next key once the deck reconnects", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openEditor(page, context, stack)
+  let offline = true
+  await page.route(
+    (url) => url.pathname.startsWith("/doom/"),
+    (route) => (offline ? route.abort("internetdisconnected") : route.fallback()),
+  )
+  await commitTokyo(page, context)
+  await page.keyboard.press("ControlOrMeta+z")
+  await page.keyboard.type("Z", { delay: 10 })
+  await expect(page.locator("[data-text-editor]")).toHaveText("Costs fall Z")
+  await page.keyboard.press("Escape")
+  const [id] = await selectedIds(page)
+  offline = false
+  await expect.poll(() => charsOf(stack, opened, id ?? "")).toBe("Costs fall Z")
 })

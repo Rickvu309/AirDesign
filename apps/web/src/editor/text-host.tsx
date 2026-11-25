@@ -116,7 +116,7 @@ export function TextHost(props: {
       const type = event.inputType
       if (type === "insertText" || type === "insertReplacementText") {
         const data = event.data ?? event.dataTransfer?.getData("text/plain") ?? ""
-        if (data !== "") current.replace(from, to, data)
+        if (data !== "") current.replace(from, to, data, type === "insertText" ? "typing" : undefined)
       } else if (type === "insertParagraph" || type === "insertLineBreak") {
         const para = now.draft.paras[chars.slice(0, from).split("\n").length - 1]
         const lineStart = chars.lastIndexOf("\n", from - 1) + 1
@@ -124,9 +124,9 @@ export function TextHost(props: {
         if (collapsed && para?.list !== undefined && lineStart === lineEnd) current.list(para.list)
         else current.replace(from, to, "\n")
       } else if (type === "deleteContentBackward") {
-        current.replace(collapsed ? graphemeBefore(chars, from) : from, to, "")
+        current.replace(collapsed ? graphemeBefore(chars, from) : from, to, "", "deleting")
       } else if (type === "deleteContentForward") {
-        current.replace(from, collapsed ? graphemeAfter(chars, to) : to, "")
+        current.replace(from, collapsed ? graphemeAfter(chars, to) : to, "", "deleting")
       } else if (type === "deleteWordBackward") {
         current.replace(collapsed ? wordBefore(chars, from) : from, to, "")
       } else if (type === "deleteWordForward") {
