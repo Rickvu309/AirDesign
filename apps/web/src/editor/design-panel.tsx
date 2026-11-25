@@ -1,9 +1,9 @@
-import { bakeFontState, fontsFor } from "@airdesign/render"
+import { bakeFontState } from "@airdesign/render"
 import { toast } from "@/components/ui/toast"
 import { Button } from "@/components/ui/button"
 import * as doom from "@airdesign/doom"
 import { useDoomSlide } from "@airdesign/render"
-import { useMemo, useSyncExternalStore } from "react"
+import { useMemo } from "react"
 import { designCopy } from "@/copy/design-copy"
 import { editorCopy } from "@/copy/editor-copy"
 import { panelOfMany, type PanelModel, type PanelPaint } from "@/design/panel"
@@ -54,9 +54,6 @@ function isImagePick(value: unknown): boolean {
   return typeof value === "object" && value !== null && "image" in value && value.image === true
 }
 
-const subscribeToFonts = (listener: () => void) => fontsFor(document)?.subscribe(listener) ?? (() => undefined)
-const readyFonts = () => "ready" as const
-
 export function DesignPanel(props: Props) {
   useServedFaces()
   const { deck, client, view, slide, selection, onSelection } = props
@@ -67,7 +64,7 @@ export function DesignPanel(props: Props) {
       ? doom.linkedOwner(view.nodes, picked)
       : undefined
   const ids = ownerFrame === undefined ? selectedIds : [ownerFrame]
-  const painted = useDoomSlide(view, slide)
+  const painted = useDoomSlide(view, slide, 1)
   const geometry = useMemo(() => geometryOf(painted.nodes ?? []), [painted.nodes])
   const theme = doom.deckOf(view).theme
   const palette = useMemo(() => paletteOf(view, theme), [view, theme])
@@ -90,11 +87,7 @@ export function DesignPanel(props: Props) {
   const linkedPart = ids.some((id) => doom.linkedOwner(view.nodes, id) !== undefined)
   const layout = only === undefined || ids.length !== 1 ? undefined : doom.propOf(view.nodes.get(only), "layout")
   const autoLayout = layout !== undefined && layout.mode !== "none"
-  const fonts = useSyncExternalStore(
-    subscribeToFonts,
-    () => (autoLayout && only !== undefined ? bakeFontState(document, view, only) : "ready"),
-    readyFonts,
-  )
+  const fonts = autoLayout && only !== undefined ? bakeFontState(document, view, only) : "ready"
   const pictured =
     only === undefined
       ? undefined
@@ -170,6 +163,7 @@ export function DesignPanel(props: Props) {
   if (first === undefined) return null
   const model: PanelModel = rest.length === 0 ? first : panelOfMany([first, ...rest])
   const measure = painted.measure
+  const selectedText = only === undefined ? undefined : doom.propOf(view.nodes.get(only), "text")
   const selected = only === undefined ? undefined : view.nodes.get(only)
   const storedName = doom.propOf(selected, "name")
   const owner = only === undefined ? undefined : doom.linkedOwner(view.nodes, only)

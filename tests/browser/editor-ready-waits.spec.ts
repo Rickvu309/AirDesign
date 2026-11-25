@@ -69,3 +69,32 @@ test("the editor and filmstrip paint while fonts arrive and clear their pending 
   await expect(canvas).toHaveCount(0)
   await expect(filmstrip).toHaveCount(0)
 })
+
+test("the editor recovers a cold font engine without reopening the deck", async ({ page, context, stack }) => {
+  await signedIn(page, context, stack)
+  let attempts = 0
+  let release = () => {}
+  const held = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.route("**/assets/icu-breaks-*.wasm", async (route) => {
+    if (++attempts === 1) {
+      await route.abort()
+      return
+    }
+    await held
+    await route.fallback()
+  })
+  const canvas = page.locator("[data-slide-box] [data-font-pending]")
+  const filmstrip = page.locator("[data-slide-thumb] [data-font-pending]")
+  try {
+    await page.goto("/s")
+    await expect.poll(() => attempts).toBe(2)
+    await expect(canvas.first()).toBeVisible()
+    await expect(filmstrip.first()).toBeVisible()
+  } finally {
+    release()
+  }
+  await expect(canvas).toHaveCount(0)
+  await expect(filmstrip).toHaveCount(0)
+})

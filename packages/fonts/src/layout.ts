@@ -9,6 +9,7 @@ import {
   fontLayoutRevision,
 } from "./layout-contract.js"
 import { LayoutFaces } from "./layout-faces.js"
+import { flowWith } from "./layout-flow.js"
 
 type Run = LayoutParagraph["runs"][number]
 type Item = {
@@ -22,6 +23,7 @@ type Item = {
 }
 
 const faceBudget = 48 * 1024 * 1024
+const pinnedFaceCap = 128 * 1024 * 1024
 const scalePerPx = 65536
 const ignorable = 1
 const emoji = 2
@@ -55,20 +57,20 @@ function sameFace(a: LayoutFace, b: LayoutFace): boolean {
 }
 
 function sameMetrics(a: Run, b: Run): boolean {
-  return a.size === b.size && a.tracking === b.tracking
+  return (
+    a.size === b.size &&
+    a.tracking === b.tracking &&
+    a.stack === b.stack &&
+    a.faces.length === b.faces.length &&
+    a.faces.every((face, index) => sameFace(face, b.faces[index]!))
+  )
 }
 
 function shapingRuns(runs: LayoutParagraph["runs"]): readonly Run[] {
   const joined: Run[] = []
   for (const run of runs) {
     const previous = joined.at(-1)
-    if (
-      previous !== undefined &&
-      previous.range.end === run.range.start &&
-      sameMetrics(previous, run) &&
-      previous.faces.length === run.faces.length &&
-      previous.faces.every((face, index) => sameFace(face, run.faces[index]!))
-    ) {
+    if (previous !== undefined && previous.range.end === run.range.start && sameMetrics(previous, run)) {
       joined[joined.length - 1] = { ...previous, range: { start: previous.range.start, end: run.range.end } }
     } else joined.push(run)
   }
@@ -76,15 +78,20 @@ function shapingRuns(runs: LayoutParagraph["runs"]): readonly Run[] {
 }
 
 export function createFontLayout(): Promise<FontLayoutEngine> {
-  return (engine ??= initializeLayout())
+  return (engine ??= initializeLayout().catch((error: unknown) => {
+    engine = undefined
+    throw error
+  }))
 }
 
 async function initializeLayout(): Promise<FontLayoutEngine> {
   const [, breaker] = await Promise.all([hb.initialize(), loadBreaker()])
   if (hb.versionString() !== fontLayoutRevision.harfBuzz) throw new Error("HarfBuzz revision changed")
-  const faces = new LayoutFaces(faceBudget)
+  const faces = new LayoutFaces(faceBudget, pinnedFaceCap)
   const buffer = new hb.Buffer()
   const noLigatures = ["liga", "clig"].map((tag) => new hb.Feature(tag, 0, 0, 0xffffffff))
+  const contextualSpacing = new hb.Feature("chws", 1, 0, 0xffffffff)
+  const spacingFeatures = new WeakMap<hb.Font, ReadonlySet<string>>()
   const paragraphs = new WeakMap<
     LayoutParagraph,
     {
@@ -94,7 +101,7 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
     }
   >()
 
-  function shape(font: hb.Font, item: Item, line: string, start: number, locale: string) {
+  function shape(font: hb.Font, item: Item, line: string, start: number, locale: string, spacing = false) {
     buffer.reset()
     buffer.addText(line, item.start - start, item.end - item.start)
     buffer.setDirection(item.level % 2 === 0 ? hb.Direction.LTR : hb.Direction.RTL)
@@ -103,7 +110,34 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
     buffer.guessSegmentProperties()
     const scale = Math.round(item.run.size * scalePerPx)
     font.setScale(scale, scale)
-    hb.shape(font, buffer, item.run.tracking === 0 ? [] : noLigatures)
+    const features = item.run.tracking === 0 ? [] : [...noLigatures]
+    if (spacing && /[\u2018-\u201f\u3000-\u303f\uff00-\uffef]/u.test(line)) {
+      let supported = spacingFeatures.get(font)
+      if (supported === undefined) {
+        supported = new Set(font.face.getTableFeatureTags("GPOS"))
+        spacingFeatures.set(font, supported)
+      }
+      if (supported.has("halt")) {
+        if (supported.has("chws")) features.push(contextualSpacing)
+        const open = /[（［｛〔〈《「『【〘〖〝]/u
+        const close = /[、。，．！？：；）］｝〕〉》」』】〙〗〟]/u
+        const from = item.start - start
+        const end = item.end - start
+        for (let at = from; at < end; at++) {
+          const char = line[at]!
+          const previous = line[at - 1] ?? ""
+          const next = line[at + 1] ?? ""
+          if (
+            (open.test(char) &&
+              (at === from || !supported.has("chws")) &&
+              (open.test(previous) || close.test(previous))) ||
+            (close.test(char) && (at === end - 1 || !supported.has("chws")) && close.test(next))
+          )
+            features.push(new hb.Feature("halt", 1, at, at + 1))
+        }
+      }
+    }
+    hb.shape(font, buffer, features)
     return buffer.getGlyphInfos()
   }
 
@@ -118,7 +152,13 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
     return undefined
   }
 
-  const shapeLine: FontLayoutEngine["shapeLine"] = ({ paragraph, range, lineEnding }) => {
+  const shapeLine: FontLayoutEngine["shapeLine"] = ({
+    paragraph,
+    range,
+    lineEnding,
+    missingFace,
+    contextualSpacing,
+  }) => {
     const { text, locale, sourceOffsetByTextOffset: source } = paragraph
     const sourceRange = (start: number, end: number) => ({ start: source[start] ?? start, end: source[end] ?? end })
     let prepared = paragraphs.get(paragraph)
@@ -133,6 +173,7 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
     const { graphemes, levels, runs } = prepared
     const items: Item[] = []
     const line = text.slice(range.start, range.end)
+    let display = line
     let runAt = 0
     let script: string | undefined
     for (let at = firstAfter(graphemes, range.start); at < graphemes.length; at++) {
@@ -153,6 +194,7 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
         const visible = points.some((cp) => (breaker.properties(cp) & ignorable) === 0)
         const trackedClusters = visible && from === start ? 1 : 0
         const level = levels[from] ?? 0
+        const fallback = () => run.fallback?.(text.slice(from, to), wanted) ?? []
         const ordered =
           wanted === "color"
             ? [
@@ -161,47 +203,65 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
               ]
             : run.faces
         let selected: Item | undefined
-        for (const face of ordered) {
-          if (
-            (wanted === "text" && face.presentation === "color") ||
-            ((flags & emoji) !== 0 && points.includes(0xfe0f) && face.presentation !== "color")
-          )
-            continue
-          const font = faces.font(face)
-          if (font === undefined) return { kind: "pending", range: sourceRange(start, end), face }
-          const item = { start: from, end: to, run, level, script, face, trackedClusters }
-          const variationMissing = points.some((cp, index) => {
-            const selector = (cp >= 0xfe00 && cp <= 0xfe0f) || (cp >= 0xe0100 && cp <= 0xe01ef)
-            if (!selector || index === 0 || (wanted !== undefined && (cp === 0xfe0e || cp === 0xfe0f))) return false
-            return !font.variationGlyph(points[index - 1]!, cp)
-          })
-          if (variationMissing) continue
-          const explicitSequence =
-            wanted === "color" &&
-            points.length > 1 &&
-            (points.includes(0x200d) ||
-              points.includes(0x20e3) ||
-              points.some(
-                (cp) =>
-                  (cp >= 0x1f1e6 && cp <= 0x1f1ff) ||
-                  (cp >= 0x1f3fb && cp <= 0x1f3ff) ||
-                  (cp >= 0xe0020 && cp <= 0xe007f),
-              ))
-          if (explicitSequence && face.presentation !== "color") continue
-          const mapped = points.every((cp) => (breaker.properties(cp) & ignorable) !== 0 || font.nominalGlyph(cp))
-          if (!mapped || explicitSequence) {
-            const probe = shape(font, item, line, range.start, locale)
+        function* colorFirst() {
+          yield* fallback()
+          yield* ordered
+        }
+        let offered: Iterable<LayoutFace> =
+          wanted === "color" && !ordered.some((face) => face.presentation === "color") ? colorFirst() : ordered
+        for (let attempt = 0; attempt < 2; attempt++) {
+          for (const face of offered) {
             if (
-              probe.length === 0 ||
-              probe.some((glyph) => glyph.codepoint === 0) ||
-              (explicitSequence && probe.length !== 1)
+              (wanted === "text" && face.presentation === "color") ||
+              ((flags & emoji) !== 0 && points.includes(0xfe0f) && face.presentation !== "color")
             )
               continue
+            const font = faces.font(face)
+            if (font === undefined) return { kind: "pending", range: sourceRange(start, end), face }
+            const item = { start: from, end: to, run, level, script, face, trackedClusters }
+            const variationMissing = points.some((cp, index) => {
+              const selector = (cp >= 0xfe00 && cp <= 0xfe0f) || (cp >= 0xe0100 && cp <= 0xe01ef)
+              if (!selector || index === 0 || (wanted !== undefined && (cp === 0xfe0e || cp === 0xfe0f))) return false
+              return !font.variationGlyph(points[index - 1]!, cp)
+            })
+            if (variationMissing) continue
+            const explicitSequence =
+              wanted === "color" &&
+              points.length > 1 &&
+              (points.includes(0x200d) ||
+                points.includes(0x20e3) ||
+                points.some(
+                  (cp) =>
+                    (cp >= 0x1f1e6 && cp <= 0x1f1ff) ||
+                    (cp >= 0x1f3fb && cp <= 0x1f3ff) ||
+                    (cp >= 0xe0020 && cp <= 0xe007f),
+                ))
+            if (explicitSequence && face.presentation !== "color") continue
+            const mapped = points.every((cp) => (breaker.properties(cp) & ignorable) !== 0 || font.nominalGlyph(cp))
+            if (!mapped || explicitSequence) {
+              const probe = shape(font, item, line, range.start, locale)
+              if (
+                probe.length === 0 ||
+                probe.some((glyph) => glyph.codepoint === 0) ||
+                (explicitSequence && probe.length !== 1)
+              )
+                continue
+            }
+            selected = item
+            break
           }
-          selected = item
-          break
+          if (selected !== undefined || wanted === "color" || run.fallback === undefined) break
+          offered = fallback()
         }
-        if (selected === undefined) return { kind: "unserved", range: sourceRange(start, end) }
+        if (selected === undefined) {
+          if (missingFace === undefined) return { kind: "unserved", range: sourceRange(start, end) }
+          display =
+            display.slice(0, from - range.start) +
+            "?" +
+            "\u2060".repeat(to - from - 1) +
+            display.slice(to - range.start)
+          selected = { start: from, end: to, run, level, script, face: missingFace, trackedClusters }
+        }
         const last = items.at(-1)
         if (
           last !== undefined &&
@@ -219,16 +279,16 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
     }
     const last = items.at(-1)
     const shown =
-      lineEnding === "discretionary-hyphen" && line.endsWith("\u00ad") && last !== undefined
-        ? line.slice(0, -1) + (faces.font(last.face)?.nominalGlyph(0x2010) ? "‐" : "-")
-        : line
+      lineEnding === "discretionary-hyphen" && display.endsWith("\u00ad") && last !== undefined
+        ? display.slice(0, -1) + (faces.font(last.face)?.nominalGlyph(0x2010) ? "‐" : "-")
+        : display
     const glyphs: LayoutGlyph[] = []
     const intervals: { range: { start: number; end: number }; face: LayoutFace }[] = []
     let advance = 0
     for (const item of items) {
       const font = faces.font(item.face)
       if (font === undefined) return { kind: "pending", range: sourceRange(item.start, item.end), face: item.face }
-      const shaped = shape(font, item, shown, range.start, locale)
+      const shaped = shape(font, item, shown, range.start, locale, contextualSpacing)
       const missing = shaped.find((glyph) => glyph.codepoint === 0)
       if (missing !== undefined) {
         const endAt = firstAfter(graphemes, range.start + missing.cluster)
@@ -251,13 +311,25 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
       advance += buffer.getGlyphPositions().reduce((sum, position) => sum + position.xAdvance, 0) / scalePerPx
       advance += item.trackedClusters * item.run.tracking
     }
-    return { kind: "shaped", range: sourceRange(range.start, range.end), advance, faces: intervals, glyphs }
+    return {
+      kind: "shaped",
+      range: sourceRange(range.start, range.end),
+      advance,
+      faces: intervals,
+      glyphs,
+      ...(shown === line ? {} : { display: shown }),
+    }
   }
 
   return {
     breaks: breaker.breaks,
     shapeLine,
     prepareFace: (asset) => faces.prepare(asset),
+    pinFace: (revision, key, priority) => faces.pin(revision, key, priority),
+    hasFace: (face) => faces.has(face),
     cache: () => faces.cache(),
+    flow: flowWith({ breaks: breaker.breaks, shapeLine }, (text) =>
+      (bidi.getEmbeddingLevels(text).paragraphs[0]?.level ?? 0) === 1 ? "rtl" : "ltr",
+    ),
   }
 }

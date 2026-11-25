@@ -249,6 +249,7 @@ function coloured(text: Text, color: Color): Text {
 }
 
 const textKeys = [
+  "language",
   "text",
   "textStyle",
   "align",
@@ -316,6 +317,7 @@ export function textOfLook(
         : {
             ...made,
             resize: now.resize,
+            ...(now.language === undefined ? {} : { language: now.language }),
             alignV: now.alignV,
             ...(now.wrap === "words" ? { wrap: now.wrap } : {}),
             ...(now.padding === undefined ? {} : { padding: now.padding }),
@@ -337,6 +339,7 @@ export function textOfLook(
   if (Object.keys(para).length > 0) text = paraWrite(text, para)
   if (look.weight !== undefined) text = weightOn(text, look.weight, look.font, theme)
   if (look.padding !== undefined) text = { ...text, padding: sidesOf(look.padding) }
+  if (look.language !== undefined) text = { ...text, language: look.language }
   return look.alignV === undefined ? text : { ...text, alignV: look.alignV }
 }
 

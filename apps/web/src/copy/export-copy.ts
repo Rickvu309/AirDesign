@@ -14,5 +14,8 @@ export const exportCopy = {
   action: "Export",
   exporting: "Exporting…",
   cancel: "Cancel",
+  fontCapacity:
+    "These slides use more font data than AirDesign can export at once. Export fewer slides at a time or use fewer fonts.",
+  chooseSlides: "Choose slides",
   tryAgain: "Try again",
 } as const

@@ -20,3 +20,5 @@ export type { FontLayoutEngine, LayoutFace } from "./layout-contract.js"
 
 export { pickServedFace, weightRange } from "./served-face.js"
 export { createLayoutProbe, type LayoutComparison } from "./layout-probe.js"
+export { hanLanguage } from "./script-fonts.js"
+export { missingFaceRequest, servedLayout, type LayoutRequest } from "./served-layout.js"

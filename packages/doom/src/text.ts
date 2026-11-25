@@ -32,8 +32,11 @@ export type Para = {
   readonly wrap?: "none"
   readonly maxLines?: number
 }
+import { readLanguage } from "./language.js"
+
 export type Text = {
   readonly chars: string
+  readonly language?: string
   readonly spans: readonly Span[]
   readonly paras: readonly Para[]
   readonly style: TextStyleName
@@ -89,7 +92,7 @@ const readFrame = object(
     resize: literal(["fixed", "height", "widthAndHeight", "truncate"]),
     alignV: literal(["top", "center", "bottom"]),
   },
-  { padding: readSides, wrap: literal(["none", "words"]), overflow: literal(["ellipsis"]) },
+  { language: readLanguage, padding: readSides, wrap: literal(["none", "words"]), overflow: literal(["ellipsis"]) },
 )
 
 export const readText: Reader<Text> = (raw) => {

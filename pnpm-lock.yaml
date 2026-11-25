@@ -171,7 +171,7 @@ catalogs:
 packageExtensionsChecksum: sha256-gyhCCEB/XsWNFizchmxy4+po06vX1bEKTS1zsCDMPlU=
 
 patchedDependencies:
-  harfbuzzjs@1.6.4: c8fe8fb1dcdada390507682480bb9a397784925604ba7440f3ca6d32c7c967b6
+  harfbuzzjs@1.6.4: a2c1f7c2b6837155a3e9972ca770ec78c73f95c0558beb8da517820d085b3651
 
 importers:
 
@@ -203,7 +203,7 @@ importers:
         version: 4.10.2
       harfbuzzjs:
         specifier: 1.6.4
-        version: 1.6.4(patch_hash=c8fe8fb1dcdada390507682480bb9a397784925604ba7440f3ca6d32c7c967b6)
+        version: 1.6.4(patch_hash=a2c1f7c2b6837155a3e9972ca770ec78c73f95c0558beb8da517820d085b3651)
       jsdom:
         specifier: ^31.0.0
         version: 31.0.0
@@ -275,7 +275,7 @@ importers:
         version: 1.0.20
       harfbuzzjs:
         specifier: 1.6.4
-        version: 1.6.4(patch_hash=c8fe8fb1dcdada390507682480bb9a397784925604ba7440f3ca6d32c7c967b6)
+        version: 1.6.4(patch_hash=a2c1f7c2b6837155a3e9972ca770ec78c73f95c0558beb8da517820d085b3651)
       pg:
         specifier: ^8.16.3
         version: 8.23.1
@@ -462,7 +462,7 @@ importers:
         version: 1.1.0
       harfbuzzjs:
         specifier: 1.6.4
-        version: 1.6.4(patch_hash=c8fe8fb1dcdada390507682480bb9a397784925604ba7440f3ca6d32c7c967b6)
+        version: 1.6.4(patch_hash=a2c1f7c2b6837155a3e9972ca770ec78c73f95c0558beb8da517820d085b3651)
     devDependencies:
       oxlint:
         specifier: ^1.90.0
@@ -8054,7 +8054,7 @@ snapshots:
       ufo: 1.6.4
       uncrypto: 0.1.3
 
-  harfbuzzjs@1.6.4(patch_hash=c8fe8fb1dcdada390507682480bb9a397784925604ba7440f3ca6d32c7c967b6): {}
+  harfbuzzjs@1.6.4(patch_hash=a2c1f7c2b6837155a3e9972ca770ec78c73f95c0558beb8da517820d085b3651): {}
 
   has-symbols@1.1.0: {}
 

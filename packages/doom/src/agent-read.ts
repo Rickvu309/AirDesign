@@ -197,6 +197,7 @@ function overrideWords(text: Text): readonly string[] {
   const letterCase = same("case")
   const line = text.paras[0]?.lineHeight
   return [
+    ...(text.language === undefined ? [] : [`language=${text.language}`]),
     ...(size === undefined ? [] : [`size=${num(size)}`]),
     ...faceWords(font, bold),
     ...(tracking === undefined ? [] : [`letterSpacing=${num(tracking)}`]),

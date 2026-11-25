@@ -10,30 +10,59 @@ type Parsed = {
 
 type File = {
   readonly size: number
-  readonly keys: Set<string>
+  readonly keys: Map<string, (() => void) | undefined>
   readonly parsed: Map<number, Parsed>
   readonly bytes: hb.Blob
 }
 
 const instanceLimit = 16
 const readLimit = 3
+const retryAfter = 60_000
+class FontBudgetError extends Error {
+  override readonly name = "FontBudgetError"
+}
+
 type FaceBytes = { readonly bytes: Uint8Array<ArrayBuffer>; readonly hash: string }
 
 export class LayoutFaces {
   private readonly files = new Map<string, File>()
   private readonly hashes = new Map<string, string>()
   private readonly pending = new Map<string, Promise<FaceBytes>>()
-  private readonly failures = new Map<string, number>()
+  private readonly failures = new Map<string, { readonly count: number; readonly until: number }>()
+  private readonly pins = new Map<string, Set<{ readonly priority: number }>>()
   private bytes = 0
   private evictions = 0
   private readonly budget: number
 
-  constructor(budget: number) {
+  private readonly hardCap: number
+
+  constructor(budget: number, hardCap: number) {
     this.budget = budget
+    this.hardCap = hardCap
+  }
+
+  pin(revision: string, key: string, priority = 0): () => void {
+    const id = JSON.stringify([revision, key])
+    let pins = this.pins.get(id)
+    if (pins === undefined) this.pins.set(id, (pins = new Set()))
+    const pin = { priority }
+    pins.add(pin)
+    return () => {
+      pins.delete(pin)
+      if (pins.size === 0) this.pins.delete(id)
+    }
+  }
+
+  private priority(key: string): number {
+    return Math.max(-1, ...[...(this.pins.get(key) ?? [])].map((pin) => pin.priority))
   }
 
   cache(): { readonly bytes: number; readonly faces: number; readonly evictions: number } {
     return { bytes: this.bytes, faces: this.files.size, evictions: this.evictions }
+  }
+
+  has(face: LayoutFace): boolean {
+    return this.files.has(JSON.stringify([face.revision, face.sha256]))
   }
 
   private hold(id: string): File | undefined {
@@ -46,44 +75,62 @@ export class LayoutFaces {
   }
 
   private async read(asset: FaceAsset, key: string): Promise<FaceBytes> {
-    const failures = this.failures.get(key) ?? 0
+    const recent = this.failures.get(key)
+    const failures = recent !== undefined && recent.until > Date.now() ? recent.count : 0
     if (failures >= readLimit) throw new Error("Served face reached its read limit")
     try {
       const bytes = await Promise.resolve().then(() => asset.read())
-      if (bytes.byteLength === 0 || bytes.byteLength > this.budget)
-        throw new Error("Served face exceeds its byte budget")
+      if (bytes.byteLength === 0 || bytes.byteLength > this.hardCap)
+        throw new FontBudgetError("Served face exceeds its byte budget")
       const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), (byte) =>
         byte.toString(16).padStart(2, "0"),
       ).join("")
       this.failures.delete(key)
       return { bytes, hash }
     } catch (error) {
-      this.failures.set(key, failures + 1)
+      this.failures.set(key, { count: failures + 1, until: Date.now() + retryAfter })
       throw error
     }
   }
 
-  private store(revision: string, key: string, { bytes, hash }: FaceBytes): string {
-    const id = JSON.stringify([revision, hash])
+  private store(asset: FaceAsset, key: string, { bytes, hash }: FaceBytes): string {
+    const id = JSON.stringify([asset.revision, hash])
     let file = this.hold(id)
     if (file === undefined) {
-      for (const [oldId, old] of this.files) {
-        if (this.bytes + bytes.byteLength <= this.budget) break
+      const priority = this.priority(key)
+      const limit = priority < 0 ? this.budget : this.hardCap
+      const candidates = [...this.files]
+        .map(([oldId, old]) => ({
+          oldId,
+          old,
+          priority: Math.max(-1, ...[...old.keys.keys()].map((alias) => this.priority(alias))),
+        }))
+        .sort((a, b) => a.priority - b.priority)
+      for (const { oldId, old, priority: pinned } of candidates) {
+        if (pinned >= priority && pinned >= 0) break
+        if (this.bytes + bytes.byteLength <= (pinned < 0 ? this.budget : limit)) break
         for (const parsed of old.parsed.values()) {
           for (const font of parsed.instances.values()) font.dispose()
           parsed.face.dispose()
         }
         old.bytes.dispose()
         this.files.delete(oldId)
-        for (const alias of old.keys) this.hashes.delete(alias)
+        for (const [alias, onEvict] of old.keys) {
+          this.hashes.delete(alias)
+          onEvict?.()
+        }
         this.bytes -= old.size
         this.evictions++
       }
-      file = { size: bytes.byteLength, bytes: new hb.Blob(bytes), parsed: new Map(), keys: new Set() }
+      if (this.bytes + bytes.byteLength > limit) {
+        asset.onEvict?.()
+        throw new FontBudgetError("Pinned faces exceed the hard cap")
+      }
+      file = { size: bytes.byteLength, bytes: new hb.Blob(bytes), parsed: new Map(), keys: new Map() }
       this.files.set(id, file)
       this.bytes += bytes.byteLength
     }
-    file.keys.add(key)
+    file.keys.set(key, asset.onEvict)
     this.hashes.set(key, hash)
     return hash
   }
@@ -111,7 +158,7 @@ export class LayoutFaces {
         this.pending.set(key, pending)
       }
       try {
-        hash = this.store(asset.revision, key, await pending)
+        hash = this.store(asset, key, await pending)
       } finally {
         if (this.pending.get(key) === pending) this.pending.delete(key)
       }

@@ -173,7 +173,7 @@ test("an agent's layout none keeps Latin, Vietnamese and Japanese lines where th
   expectSameBoxes(person, agent)
 })
 
-test("an agent's layout none refuses Japanese lines that only a system font would paint, and leaves the frame laid out", async ({
+test("an agent's layout none refuses Japanese lines whose fallback the legacy measure lacks, and leaves the frame laid out", async ({
   page,
   context,
   stack,
@@ -190,6 +190,60 @@ test("an agent's layout none refuses Japanese lines that only a system font woul
   expect((await saved(stack, opened, "a:1")).layout?.mode).toBe("column")
 })
 
+test("the person and agent bake the same box across a colour span and wrapped discretionary hyphens", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const words = [
+    ["AVATAR office", narrow],
+    ["soft\u00adhy\u00adphen\u00adated wordy\u00adwords", narrow],
+  ] as const
+  const opened = await designDoom(page, context, stack, (slide) =>
+    twins(slide, "column", words).map((node) => {
+      if (node.type !== "shape") return node
+      const { props } = node
+      if (node.id.endsWith("2")) {
+        return {
+          ...node,
+          props: {
+            ...props,
+            text: {
+              ...props.text,
+              spans: [{ end: 1, font: narrow, size: 44, color: { var: "accent1" } }, ...props.text.spans],
+            },
+          },
+        }
+      }
+      return {
+        ...node,
+        props: {
+          ...props,
+          box: spot(0, 0, 160, 1),
+          sizing: { w: "fixed", h: "hug" },
+          text: { ...props.text, resize: "height", wrap: "words" },
+        },
+      }
+    }),
+  )
+  const { answer, person, agent } = await bakeBoth(page, stack, opened, words.length)
+  expect(answer).toMatchObject({ ok: true })
+  expectSameBoxes(person, agent)
+})
+
+test("an agent refuses Japanese contextual punctuation when the baked boxes differ", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const words = [["「東」、（テスト）。", "Noto Sans JP"]] as const
+  const opened = await designDoom(page, context, stack, (slide) => twins(slide, "column", words))
+  const { answer } = await bakeBoth(page, stack, opened, words.length)
+  expect(answer).toMatchObject({ ok: false, refusal: "fonts" })
+  expect(answer.reason).toMatch(/^shaping$/)
+  expect((await saved(stack, opened, "a:1")).layout?.mode).toBe("column")
+})
+
 test("uses served Geist for an unserved family even when the browser knows its name", async ({
   page,
   context,
@@ -201,7 +255,7 @@ test("uses served Geist for an unserved family even when the browser knows its n
   ] as const
   const opened = await designDoom(page, context, stack, (slide) => twins(slide, "row", words))
   const run = painted(page, "p:2").locator("[data-run]")
-  await expect(run).toHaveCSS("font-family", /airdesign-font-geist/)
+  await expect(run).toHaveCSS("font-family", /airdesign-face-.*family%3DGeist%26/)
   expect(await run.evaluate((node) => getComputedStyle(node).fontFamily)).not.toContain("DejaVu Serif")
   const { answer, person, agent } = await bakeBoth(page, stack, opened, words.length)
   expect(answer).toMatchObject({ ok: true })
@@ -219,8 +273,19 @@ for (const failure of ["held manifest", "failed manifest", "failed file"] as con
       ["Quarter four", narrow],
     ] as const
     await designDoom(page, context, stack, (slide) => twins(slide, "row", words))
-    const run = painted(page, "p:2").locator("[data-run]")
-    const expected = await run.boundingBox()
+    const text = painted(page, "p:2")
+    const pending = text.locator("[data-font-pending]")
+    const ink = () =>
+      text.locator("[data-line]").evaluateAll((lines) =>
+        lines.map((line) => {
+          const range = document.createRange()
+          range.selectNodeContents(line)
+          const { x, y, width, height } = range.getBoundingClientRect()
+          return { x, y, width, height }
+        }),
+      )
+    await expect(pending).toHaveCount(0)
+    const expected = await ink()
     let release = () => {}
     const held = new Promise<void>((resolve) => {
       release = resolve
@@ -245,10 +310,9 @@ for (const failure of ["held manifest", "failed manifest", "failed file"] as con
     )
     try {
       await page.reload({ waitUntil: "domcontentloaded" })
-      await expect.poll(() => asked).toBeGreaterThanOrEqual(failure === "failed file" ? 3 : 1)
+      await expect.poll(() => asked).toBeGreaterThanOrEqual(failure === "failed file" ? 2 : 1)
       await expect(page.locator("[data-editor-ready]")).toBeVisible()
-      await expect(run).toBeVisible()
-      await expect(run).toHaveAttribute("data-font-pending", "")
+      await expect(pending.first()).toBeVisible()
       if (failure === "held manifest") {
         await pick(page, "p:1", 64, 44)
         const action = page.locator("[data-auto-layout]")
@@ -272,8 +336,8 @@ for (const failure of ["held manifest", "failed manifest", "failed file"] as con
       release()
     }
     await expect(page.locator("[data-editor-ready]")).toBeVisible()
-    await expect(run).toBeVisible()
-    await expect(run).not.toHaveAttribute("data-font-pending")
-    await expect.poll(() => run.boundingBox()).toEqual(expected)
+    await expect(text).toBeVisible()
+    await expect(pending).toHaveCount(0)
+    await expect.poll(ink).toEqual(expected)
   })
 }

@@ -31,6 +31,7 @@ test("a new deck opens as a doom deck, and the home lists it with its name and a
   await signInBrowser(context, cookie)
   await forward(page, stack)
   await page.goto("/")
+  expect(fontEngineRequests).toEqual([])
   await newDoomDeck(page)
   await page.locator("[data-editor-ready]").waitFor()
   await expect(page).toHaveURL(/\/s\/[A-Za-z0-9_-]{1,64}(\?node-id=.*)?$/)
@@ -55,7 +56,7 @@ test("a new deck opens as a doom deck, and the home lists it with its name and a
   await page.locator("[data-editor-ready]").waitFor()
   await expect(page.locator("[data-slide-box]")).toContainText("Quarterly review")
   expect(faults).toEqual([])
-  expect(fontEngineRequests).toEqual([])
+  expect(fontEngineRequests.some((path) => /\/icu-breaks-.*\.wasm$/.test(path))).toBe(true)
 })
 
 test("a doom deck moves to the Trash and comes back from the home, and its thumbnail paints from the copy on the device", async ({

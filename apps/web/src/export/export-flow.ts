@@ -18,7 +18,7 @@ export type ExportStart = "choosing" | "failed"
 type Printing = { readonly view: doom.Doom; readonly slides: readonly doom.NodeId[]; readonly run: number }
 
 export type ExportFlow = {
-  readonly failed: false | "paint" | "fonts"
+  readonly failed: false | "paint" | "fonts" | "capacity"
   readonly tryAgain: () => void
   readonly control: ReturnType<typeof useFlowState>
 }
@@ -70,7 +70,7 @@ function useFlowState(target: ExportTarget, start: ExportStart | undefined) {
     printed: (run: number) => {
       if (runs.current === run) setPrinting(null)
     },
-    fail: (run: number, reason: "paint" | "fonts") => {
+    fail: (run: number, reason: "paint" | "fonts" | "capacity") => {
       if (runs.current !== run) return
       setPrinting(null)
       setOpen(false)

@@ -55,6 +55,62 @@ function probeWidths(layout, icu, faces) {
   return [...widths]
 }
 
+async function shippedWraps(engine, item, files, widths) {
+  const release = []
+  const prepare = (name, axes) =>
+    engine.prepareFace({
+      revision: "font-layout-fixture",
+      key: name,
+      axes,
+      read: async () => new Uint8Array(files.get(name)),
+    })
+  try {
+    for (const name of new Set(["Geist", ...item.runs.flatMap((run) => run.faces)]))
+      release.push(engine.pinFace("font-layout-fixture", name))
+    const missingFace = await prepare("Geist", { wght: 400 })
+    let text = ""
+    const runs = []
+    for (const run of item.runs) {
+      const start = text.length
+      text += run.text
+      const faces = await Promise.all(
+        run.faces.map((name) => prepare(name, { wght: run.weight, opsz: 32, ...run.axes })),
+      )
+      runs.push({ range: { start, end: text.length }, size: run.size, tracking: run.tracking ?? 0, faces })
+    }
+    let offset = 0
+    const paragraphs = text.split("\n").map((part) => {
+      const start = offset
+      offset += part.length + 1
+      return {
+        text: part,
+        start,
+        direction: "auto",
+        locale: item.lang,
+        sourceOffsetByTextOffset: [],
+        runs: runs.flatMap((run) => {
+          const from = Math.max(0, run.range.start - start)
+          const to = Math.min(part.length, run.range.end - start)
+          return to <= from ? [] : [{ ...run, range: { start: from, end: to } }]
+        }),
+      }
+    })
+    return widths.map((width) =>
+      paragraphs.flatMap((paragraph) => {
+        const found = engine.flow({ paragraph, width, emergency: false, twoLines: false, missingFace })
+        if (found === undefined) throw new Error(`No shipped layout for ${item.id}`)
+        return found.lines.map(({ range, advance }) => ({
+          start: paragraph.start + range.start,
+          end: paragraph.start + range.end,
+          width: advance,
+        }))
+      }),
+    )
+  } finally {
+    for (const unpin of release) unpin()
+  }
+}
+
 const lineEnds = (rows) => rows.map(({ start, end }) => `${start}-${end}`).join("|")
 const sameEnds = (left, right) => lineEnds(left) === lineEnds(right)
 const diff = (rows, widths) => Math.max(0, ...rows.map(({ width }, at) => Math.abs(width - widths[at])))
@@ -68,7 +124,7 @@ export const snapshotProbe = ({ width, expected, actual }) => {
   return [Number(width.toFixed(6)), lineEnds(expected), lineEnds(actual), ...impact]
 }
 
-export async function compareLayout(page, icu, revision) {
+export async function compareLayout(page, icu, revision, engine) {
   const baseline = await readJson("./parity.json")
   const lineBaseline = await readJson("./line-ends.json")
   const files = new Map(
@@ -141,7 +197,7 @@ export async function compareLayout(page, icu, revision) {
     const pinned = lineBaseline.cases[item.id]
     const layout = plan(item.runs, item.lang, faces, icu.graphemes)
     const widths = probeWidths(layout, icu, faces)
-    const shared = widths.map((width) => wrap(layout, faces, width, icu.lines))
+    const shared = await shippedWraps(engine, item, files, widths)
     const native = await page.evaluate(
       ({ item, widths, paint, canvasPair }) => {
         const oracle = window.fontOracle
@@ -238,6 +294,7 @@ export async function compareLayout(page, icu, revision) {
     records.push({
       id: item.id,
       category,
+      nativeSystemFaces,
       advance,
       nativeAdvance: native.advance,
       assignedAdvance: native.assignedAdvance,

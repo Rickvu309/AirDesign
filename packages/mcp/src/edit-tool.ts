@@ -139,6 +139,9 @@ const shapingScripts = [
   "Malayalam",
   "Sinhala",
   "Myanmar",
+  "Balinese",
+  "Javanese",
+  "Sundanese",
   "Khmer",
   "Tibetan",
   "Thai",
@@ -158,7 +161,8 @@ const shapingPatterns = [
   ...shapingScripts,
 ]
 
-function shapingIn(chars: string): readonly string[] {
+function shapingIn(text: doom.Text): readonly string[] {
+  const { chars } = text
   const selected = chars.includes("\ufe0e")
     ? [...doom.graphemes(chars)].flatMap(({ segment }) =>
         segment.includes("\ufe0e") ? [segment === "\ufe0e" ? "U+FE0E" : `“${segment}”`] : [],
@@ -219,20 +223,6 @@ async function compileMeasured(
       step = steps.next(estimate)
       continue
     }
-    const shaped = required.flatMap((layer) => {
-      const chars = doom.propOf(bake.fold.nodes.get(layer), "text")?.chars ?? ""
-      const shaping = shapingIn(chars)
-      return shaping.length === 0 ? [] : [{ layer, shaping }]
-    })
-    if (shaped.length > 0)
-      return bakeRefusal(
-        bake,
-        shaped.map(({ layer }) => layer),
-        {
-          reason: "shaping",
-          shaping: [...new Set(shaped.flatMap(({ shaping }) => shaping))],
-        },
-      )
     const theme = doom.deckOf(bake.fold).theme
     const withPendingFace = (faces: ReadonlySet<string> | undefined) =>
       required.filter((layer) => {
@@ -259,8 +249,18 @@ async function compileMeasured(
       const chars = doom.missingGlyphsIn(bake.fold, layer, measured.missing)
       return chars.length === 0 ? [] : [{ layer, chars }]
     })
-    if (unread.length > 0)
-      return bakeRefusal(
+    const shapingRefusal = (layers: readonly doom.NodeId[]) => {
+      const details = layers.flatMap((layer) => {
+        const text = doom.propOf(bake.fold.nodes.get(layer), "text")
+        return text === undefined ? [] : shapingIn(text)
+      })
+      return bakeRefusal(bake, layers, {
+        reason: "shaping",
+        shaping: details.length === 0 ? ["the text exactly"] : [...new Set(details)],
+      })
+    }
+    const coverageRefusal = () =>
+      bakeRefusal(
         bake,
         unread.map(({ layer }) => layer),
         {
@@ -268,6 +268,59 @@ async function compileMeasured(
           characters: [...new Set(unread.flatMap(({ chars }) => chars))].join(""),
         },
       )
+    if (measured.shared === undefined && unread.length > 0) return coverageRefusal()
+    if (measured.shared !== undefined) {
+      const shared = await measured.shared(bake.fold, bake.frame)
+      if (typeof shared === "string") return bakeRefusal(bake, required, { reason: "pending" })
+      const texts = new Map(
+        required.flatMap((id) => {
+          const text = doom.propOf(bake.fold.nodes.get(id), "text")
+          return text === undefined ? [] : [[text, id] as const]
+        }),
+      )
+      const differing = new Set<doom.NodeId>()
+      const exact = doom.bakeLayout(bake.fold, bake.frame, (text, theme, width, fit) => {
+        const next = shared(text, theme, width, fit)
+        const id = texts.get(text)
+        if (id !== undefined) {
+          const old = measured.measure(text, theme, width, fit)
+          if (
+            Math.abs(old.w - next.w) > 0.5 ||
+            Math.abs(old.h - next.h) > 0.5 ||
+            Math.abs((old.wordFit?.w ?? 0) - (next.wordFit?.w ?? 0)) > 0.5
+          )
+            differing.add(id)
+        }
+        return next
+      })
+      const boxes = (writes: readonly doom.Write[]) =>
+        new Map(
+          writes.flatMap((write) => (write.prop === "box" ? [[write.node, write.value as doom.Box] as const] : [])),
+        )
+      const desired = boxes(exact)
+      const legacy = boxes(doom.bakeLayout(bake.fold, bake.frame, measured.measure))
+      const differs = [...new Set([...desired.keys(), ...legacy.keys()])].some((id) => {
+        const prior = doom.propOf(bake.fold.nodes.get(id), "box")
+        const left = desired.get(id) ?? prior
+        const right = legacy.get(id) ?? prior
+        return (
+          left === undefined ||
+          right === undefined ||
+          (["x", "y", "w", "h"] as const).some((edge) => Math.abs(left[edge] - right[edge]) > 0.5)
+        )
+      })
+      if (differs) {
+        if (
+          unread.length > 0 &&
+          unread.some(({ layer }) => {
+            const text = doom.propOf(bake.fold.nodes.get(layer), "text")
+            return text === undefined || shapingIn(text).length === 0
+          })
+        )
+          return coverageRefusal()
+        return shapingRefusal(differing.size === 0 ? required : [...differing])
+      }
+    }
     step = steps.next(measured.measure)
   }
   return step.value

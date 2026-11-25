@@ -92,14 +92,17 @@ index ce7304d5c0655d1e1596e768635824b7041e501e..32ba8dc9a4af7d35ac42cd61cbf6985f
  	/** The {@link Face} associated with this font. */
  	get face() {
  		if (!this._face) this._face = new Face(exports.hb_font_get_face(this.ptr));
-@@ -2362,6 +2377,9 @@ function otTagsToScriptAndLanguage(scriptTag, languageTag) {
+@@ -2362,6 +2377,12 @@ function otTagsToScriptAndLanguage(scriptTag, languageTag) {
  }
  //#endregion
  //#region src/index.ts
 -init(await createHarfBuzz());
 +let ready;
 +function initialize() {
-+	return ready ??= createHarfBuzz().then(init);
++	return ready ??= createHarfBuzz().then(init).catch((error) => {
++		ready = undefined;
++		throw error;
++	});
 +}
  //#endregion
 -export { AxisFlags, Blob, Buffer, BufferContentType, BufferFlag, BufferSerializeFlag, BufferSerializeFormat, ClusterLevel, ColorPaletteFlags, Direction, DrawFuncs, Face, Feature, Font, FontFuncs, GlyphClass, GlyphFlag, MetricsTag, PaintCompositeMode, PaintExtend, PaintFuncs, TracePhase, Variation, otTagToLanguage, otTagToScript, otTagsFromScriptAndLanguage, otTagsToScriptAndLanguage, shape, shapeWithTrace, version, versionString };

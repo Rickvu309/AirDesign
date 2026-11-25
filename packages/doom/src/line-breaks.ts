@@ -7,12 +7,19 @@ export type FontFace = {
   readonly ascent: number
   readonly descent: number
   readonly advances: Readonly<Record<string, number>>
+  readonly trackedKerning?: Readonly<Record<string, number>>
   readonly kerning?: Readonly<Record<string, number>>
 }
 
 export type FontWidths = Readonly<Record<string, FontFace>>
 
-export type Glyph = { readonly char: string; readonly width: number; readonly run: number; readonly join?: number }
+export type Glyph = {
+  readonly char: string
+  readonly width: number
+  readonly run: number
+  readonly join?: number
+  readonly hyphen?: number
+}
 export type LineSpan = { readonly start: number; readonly end: number; readonly forced: boolean }
 
 export function fontFace(font: string, bold: boolean, italic: boolean): string {
@@ -27,7 +34,7 @@ function breaksAfter(chars: readonly string[], at: number): boolean {
   const char = chars[at]
   const next = chars[at + 1]
   if (next === undefined) return false
-  if (char === forced || char === "​") return true
+  if (char === forced || char === "​" || char === "\u00ad") return true
   if (char === space) return next !== space
   if (next === space) return false
   if (char === "-") return at > 0 && chars[at - 1] !== space && alphanumeric(next)
@@ -41,7 +48,7 @@ export function isCjk(char: string): boolean {
 }
 
 export function wordBoundary(char: string, next: string): boolean {
-  return char === space ? next !== space : isCjk(char) && isCjk(next)
+  return char === "\u00ad" || (char === space ? next !== space : isCjk(char) && isCjk(next))
 }
 
 export function spansOf(glyphs: readonly Glyph[], first: number, rest: number, words: boolean): readonly LineSpan[] {
@@ -74,15 +81,16 @@ export function spansOf(glyphs: readonly Glyph[], first: number, rest: number, w
       full += glyph.width
       tail = glyph.char === space || glyph.char === forced ? tail + glyph.width : 0
     }
-    const content = full - tail
+    const content = full - tail + (to < glyphs.length - 1 ? (glyphs[to]?.hyphen ?? 0) : 0)
     if (has && width + content > room + slack) close(from, false)
     if (!words && !has && content > room + tolerance) {
       for (let at = from; at <= to; at += 1) {
         const glyph = glyphs[at]
         if (glyph === undefined) continue
         const blank = glyph.char === space || glyph.char === forced
-        if (has && !blank && width + glyph.width > room + tolerance) close(at, false)
-        width += glyph.width
+        const endWidth = glyph.width + (at === to ? (glyph.hyphen ?? 0) : 0)
+        if (has && !blank && width + endWidth > room + tolerance) close(at, false)
+        width += glyph.width - (has ? 0 : (glyph.join ?? 0))
         has = true
       }
     } else {

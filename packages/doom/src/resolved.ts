@@ -6,6 +6,13 @@ import type { Props } from "./props.js"
 export type Box = Props["box"]
 export type Point = { readonly x: Px; readonly y: Px }
 
+export type ResolvedFace = {
+  readonly family: string
+  readonly weight: number
+  readonly style: "normal" | "italic"
+  readonly variations: string
+}
+
 export type ResolvedRun = {
   readonly text: string
   readonly size: Px
@@ -17,6 +24,8 @@ export type ResolvedRun = {
   readonly color: Hex
   readonly tracking: Px
   readonly link?: string
+  readonly face?: ResolvedFace
+  readonly display?: string
 }
 
 export type ResolvedLine = {
@@ -29,6 +38,9 @@ export type ResolvedLine = {
   readonly ink: Px
   readonly align: "left" | "center" | "right" | "justify"
   readonly runs: readonly ResolvedRun[]
+  readonly locale?: string
+  readonly direction?: "ltr" | "rtl"
+  readonly pending?: boolean
   readonly label?: { readonly x: Px; readonly run: ResolvedRun }
 }
 

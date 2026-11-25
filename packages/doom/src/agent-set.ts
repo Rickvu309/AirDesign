@@ -23,6 +23,7 @@ const estimate = measureWith({})
 
 const neverOnSet = ["rows", "items", "axes"] as const
 const wordsOnly = [
+  "language",
   "size",
   "font",
   "weight",

@@ -1,4 +1,6 @@
+import { readFold, slidesOf } from "../../packages/doom/src/index.ts"
 import { expect, type Page } from "@playwright/test"
+import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
@@ -317,4 +319,160 @@ test("leaving a slide while typing keeps the typed words in its thumbnail every 
   const frames = () => page.evaluate(() => (window as unknown as { thumbFrames: boolean[] }).thumbFrames)
   await expect.poll(async () => (await frames()).length).toBe(120)
   expect((await frames()).filter((shown) => !shown)).toHaveLength(0)
+})
+
+test("the caret crosses an uncovered grapheme in one step and keeps the next keystroke", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openEditor(page, context, stack)
+  await page.keyboard.press("t")
+  await clickSlide(page, 300, 700)
+  await page.keyboard.insertText("a𓀀b")
+  await page.keyboard.press("Escape")
+  const [id] = await selectedIds(page)
+  const node = page.locator(`[data-slide-box] [data-node="${id}"]`)
+  await expect(node).toContainText("a?")
+  await page.keyboard.press("Enter")
+  await expect(editor(page)).toBeFocused()
+  await page.keyboard.press("ControlOrMeta+Home")
+  await page.keyboard.press("ArrowRight")
+  await page.keyboard.press("ArrowRight")
+  await page.keyboard.insertText("|")
+  await page.keyboard.press("Escape")
+  await expect.poll(async () => (await textOf(stack, opened, id ?? ""))?.chars).toBe("a𓀀|b")
+})
+
+for (const attempt of Array.from({ length: 20 }, (_, index) => index)) {
+  test(`a held font engine preserves the active text and saves it in order (${String(attempt + 1)})`, async ({
+    page,
+    context,
+    stack,
+  }) => {
+    let release = () => {}
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    let requested = () => {}
+    const loading = new Promise<void>((resolve) => {
+      requested = resolve
+    })
+    await page.route("**/*.wasm", async (route) => {
+      requested()
+      await held
+      await route.continue()
+    })
+    try {
+      const opened = await openEditor(page, context, stack)
+      await loading
+      await page.keyboard.press("t")
+      await clickSlide(page, 300, 700)
+      await expect(editor(page)).toBeFocused()
+      await page.keyboard.type("Costs fall ")
+      const ime = attempt === 19 ? await context.newCDPSession(page) : undefined
+      await ime?.send("Input.imeSetComposition", { text: "とうきょう", selectionStart: 5, selectionEnd: 5 })
+      await page.evaluate(() => {
+        const selection = window.getSelection()
+        const line = document.querySelector("[data-text-editor] [data-line]")
+        if (line === null || selection === null) throw new Error("No active text")
+        const records: MutationRecord[] = []
+        const observer = new MutationObserver((changed) => records.push(...changed))
+        observer.observe(line, { subtree: true, childList: true, characterData: true, attributes: true })
+        const { anchorNode, anchorOffset, focusNode, focusOffset } = selection
+        Object.assign(window, {
+          checkHeldText: () => {
+            observer.disconnect()
+            const now = window.getSelection()
+            return (
+              records.length === 0 &&
+              line.isConnected &&
+              now?.anchorNode === anchorNode &&
+              now.anchorOffset === anchorOffset &&
+              now.focusNode === focusNode &&
+              now.focusOffset === focusOffset
+            )
+          },
+        })
+      })
+      const pending = page.locator("[data-slide-box] [data-font-pending]:not([data-text-editor] [data-font-pending])")
+      await expect(pending.first()).toBeAttached()
+      release()
+      await expect(pending).toHaveCount(0)
+      const stable = await page.evaluate(() => (window as Window & { checkHeldText?: () => boolean }).checkHeldText?.())
+      await ime?.send("Input.insertText", { text: "東京" })
+      await page.keyboard.type("12% with two shifts")
+      await page.keyboard.press("Escape")
+      const [id] = await selectedIds(page)
+      await expect
+        .poll(async () => (await textOf(stack, opened, id ?? ""))?.chars)
+        .toBe(`Costs fall ${ime === undefined ? "" : "東京"}12% with two shifts`)
+      expect(stable).toBe(true)
+    } finally {
+      release()
+    }
+  })
+}
+
+test("the filmstrip and canvas use Japanese for a Han-only title when another slide contains kana", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openEditor(page, context, stack)
+  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+  const read = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
+  const tool = (
+    await stack.toolBlocks(
+      "airdesign_edit_deck",
+      {
+        deck: opened.deck,
+        base: read.json.rev,
+        changes: [
+          { op: "set", target: `${opened.slide}.title`, text: "市場" },
+          { op: "slide", add: {} },
+        ],
+      },
+      opened.cookie,
+    )
+  ).find(({ type }) => type === "text")
+  expect(JSON.parse(tool?.text ?? "{}")).toMatchObject({ ok: true })
+  const changed = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
+  const fold = readFold(changed.json.fold)
+  if (fold === undefined) throw new Error("Missing fold")
+  const added = slidesOf(fold)[1]!
+  await landNodes(stack, opened, [
+    {
+      id: "language:1",
+      type: "shape",
+      parent: added.id,
+      props: {
+        box: spot(100, 100, 500, 100),
+        text: {
+          chars: "今後の取り組み",
+          spans: [],
+          paras: [{}],
+          style: "title",
+          resize: "fixed",
+          alignV: "top",
+        },
+      },
+    },
+  ])
+  const title = page.locator("[data-slide-box] [data-run]").filter({ hasText: "市場" })
+  const thumb = page.locator("[data-slide-thumb] [data-run]").filter({ hasText: "市場" })
+  await expect(title).toHaveAttribute("style", /Noto%2520Sans%2520JP/i)
+  await expect(thumb).toHaveAttribute("style", /Noto%2520Sans%2520JP/i)
+
+  const bounds = await title.boundingBox()
+  if (bounds === null) throw new Error("No painted title")
+  await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+  const [id] = await selectedIds(page)
+  if (id === undefined) throw new Error("No selected text layer")
+  await page.getByRole("button", { name: editorCopy.designPanel, exact: true }).click()
+  await page.getByRole("combobox", { name: designCopy.textLanguage }).click()
+  await page.getByRole("option", { name: designCopy.languages.ko, exact: true }).click()
+  await expect(title).toHaveAttribute("style", /Noto%2520Sans%2520KR/i)
+  await expect(thumb).toHaveAttribute("style", /Noto%2520Sans%2520KR/i)
+  await expect.poll(async () => (await savedNode(stack, opened, id))?.text).toMatchObject({ language: "ko" })
 })

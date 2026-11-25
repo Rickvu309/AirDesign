@@ -15,15 +15,16 @@ export function compileDuplicate(draft: Draft, change: Extract<AgentChange, { op
 
 export function compileDeck(draft: Draft, change: Extract<AgentChange, { op: "deck" }>): void {
   const deck = deckOf(draft.doom) ?? stop("missing")
-  const { name, nameFollows, theme: themeId, colors, fonts } = change
+  const { name, nameFollows, language, theme: themeId, colors, fonts } = change
   if (
     name === undefined &&
     nameFollows === undefined &&
+    language === undefined &&
     themeId === undefined &&
     colors === undefined &&
     fonts === undefined
   )
-    stop("shape", deck.id, "deck", "missing", "A name, nameFollows, theme, colors or fonts.")
+    stop("shape", deck.id, "deck", "missing", "A name, nameFollows, language, theme, colors or fonts.")
   const theme =
     themeId === undefined
       ? (propOf(deck, "theme") ?? stop("missing", deck.id, "theme"))
@@ -31,6 +32,7 @@ export function compileDeck(draft: Draft, change: Extract<AgentChange, { op: "de
         stop("shape", deck.id, "theme", "form", `One of ${Object.keys(themeLibrary).join(", ")}.`))
   put(draft, deck.id, {
     ...(name === undefined ? {} : { name }),
+    ...(language === undefined ? {} : { language }),
     ...(nameFollows === undefined ? {} : { nameFollows }),
     ...(themeId === undefined && colors === undefined && fonts === undefined
       ? {}

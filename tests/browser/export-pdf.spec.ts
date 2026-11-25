@@ -9,7 +9,7 @@ import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import * as doom from "../../packages/doom/src/index.ts"
 import { test, type Stack } from "./api-stack"
 import { covers } from "./gesture"
-import { landNodes, landOffScreen, openEditor, savedSlides, spot, type Opened } from "./editor-deck"
+import { clickSlide, landNodes, landOffScreen, openEditor, savedSlides, spot, type Opened } from "./editor-deck"
 import { openScreen } from "./open-screen"
 import { pdfPages } from "./pdf-file"
 
@@ -110,6 +110,46 @@ test("Export prints every slide on its own 16:9 page under the deck's name, with
   expect(pages[0]?.links).toEqual(expect.arrayContaining(["https://airdesign.app/board", "page"]))
   await expect(printPages(page)).toHaveCount(0)
   await expect(page).not.toHaveTitle("Q3 Board final")
+})
+
+test("Japanese and Korean typed in Inter use served script faces in the canvas, filmstrip and PDF", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await recordPrints(page)
+  await openEditor(page, context, stack)
+  const requests: string[] = []
+  page.on("request", (request) => {
+    const url = new URL(request.url())
+    if (url.pathname === fontRoutes.file.path) requests.push(url.searchParams.get("family") ?? "")
+  })
+  const japanese = "東京で会議"
+  const korean = "안녕하세요"
+  await page.keyboard.press("t")
+  await clickSlide(page, 200, 700)
+  await expect(page.locator("[data-text-editor]")).toBeFocused()
+  expect(requests.filter((name) => name.startsWith("Noto Sans"))).toEqual([])
+  await page.keyboard.insertText(japanese)
+  await page.keyboard.press("Enter")
+  await page.keyboard.insertText(korean)
+  await page.keyboard.press("Escape")
+  const expectScriptFaces = async (scope: string) => {
+    for (const { text, script } of [
+      { text: japanese, script: "JP" },
+      { text: korean, script: "KR" },
+    ]) {
+      const run = page.locator(`${scope} [data-run]`).getByText(text, { exact: true })
+      await expect(run).toHaveCSS("font-family", new RegExp(`airdesign-face-.*Noto%2520Sans%2520${script}`))
+    }
+  }
+  await expectScriptFaces("[data-slide-box]")
+  await expectScriptFaces("[data-slide-thumb]")
+  await exportButton(page).click()
+  await dialog(page).getByRole("button", { name: exportCopy.action }).click()
+  await expect.poll(() => printTitles(page)).toHaveLength(1)
+  await expectScriptFaces("[data-print-page]")
+  expect(requests.filter((name) => name.startsWith("Noto Sans")).sort()).toEqual(["Noto Sans JP", "Noto Sans KR"])
 })
 
 test("a library theme repaints every page of a PDF", async ({ page, context, stack }) => {
@@ -405,11 +445,14 @@ for (const font of ["slow", "failed"] as const) {
         expect(await printTitles(page)).toEqual([])
         release()
         await expect.poll(() => printTitles(page)).toHaveLength(1)
-        await expect(printPages(page).locator('[data-node="t:7"] [data-run]')).not.toHaveAttribute("data-font-pending")
+        const printedRun = printPages(page).locator('[data-node="t:7"] [data-run]')
+        await expect(printedRun).not.toHaveAttribute("data-font-pending")
+        await expect(printedRun).toHaveCSS("font-family", /airdesign-face-.*family%3DMontserrat%26/)
         expect(
-          await page.evaluate(() =>
-            [...document.fonts].some((face) => face.family.includes("montserrat") && face.status === "loaded"),
-          ),
+          await printedRun.evaluate((run) => {
+            const family = getComputedStyle(run).fontFamily.replaceAll('"', "")
+            return [...document.fonts].some((face) => face.family === family && face.status === "loaded")
+          }),
         ).toBe(true)
       }
     } finally {

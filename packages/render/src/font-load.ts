@@ -1,9 +1,8 @@
 import { fallbackFont, fontRoutes, servedFontAlias, type ServedFace } from "@airdesign/fonts"
 
-const paintFontWait = 400
 const outputFontWait = 10_000
 
-async function beforeFontDeadline(work: Promise<boolean>, limit: number): Promise<boolean> {
+export async function beforeFontDeadline(work: Promise<boolean>, limit = outputFontWait): Promise<boolean> {
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     return await Promise.race([
@@ -15,13 +14,6 @@ async function beforeFontDeadline(work: Promise<boolean>, limit: number): Promis
   } finally {
     clearTimeout(timer)
   }
-}
-
-export async function waitForPaintFonts(work: Promise<unknown>): Promise<void> {
-  await beforeFontDeadline(
-    work.then(() => true),
-    paintFontWait,
-  )
 }
 
 export type FontIssue = { readonly family: string; readonly refusal: "unknown" | "unavailable" }
@@ -66,6 +58,52 @@ export type InstalledFace = {
 }
 
 const installed = new WeakMap<Document, InstalledFace[]>()
+const exact = new WeakMap<Document, Map<string, FontFace>>()
+const reads = new Map<string, Promise<Uint8Array<ArrayBuffer>>>()
+
+export function readServedFile(url: string): Promise<Uint8Array<ArrayBuffer>> {
+  let pending = reads.get(url)
+  if (pending === undefined) {
+    pending = fetch(url, { cache: "force-cache", signal: AbortSignal.timeout(30_000) })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Served face unavailable")
+        return new Uint8Array(await response.arrayBuffer())
+      })
+      .finally(() => reads.delete(url))
+    reads.set(url, pending)
+  }
+  return pending
+}
+
+export const exactFamily = (url: string): string => `airdesign-face-${encodeURIComponent(url)}`
+
+export async function installExactFace(doc: Document, file: Face, bytes: Uint8Array<ArrayBuffer>): Promise<void> {
+  const family = exactFamily(file.url)
+  const kept = installed.get(doc) ?? []
+  if (kept.some((face) => face.family === family)) return
+  const weight = "1 1000"
+  const face = await new FontFace(family, bytes, { style: file.style, weight }).load()
+  const current = installed.get(doc) ?? []
+  if (current.some((face) => face.family === family)) return
+  doc.fonts.add(face)
+  let registered = exact.get(doc)
+  if (registered === undefined) exact.set(doc, (registered = new Map()))
+  registered.set(family, face)
+  installed.set(doc, [...current, { ...file, family, weight }])
+}
+
+export function forgetExactFace(doc: Document, file: Face): void {
+  const family = exactFamily(file.url)
+  const registered = exact.get(doc)
+  const face = registered?.get(family)
+  if (face === undefined) return
+  doc.fonts.delete(face)
+  registered?.delete(family)
+  installed.set(
+    doc,
+    installedFaces(doc).filter((entry) => entry.family !== family),
+  )
+}
 
 export function installedFaces(doc: Document): readonly InstalledFace[] {
   return installed.get(doc) ?? []
@@ -75,7 +113,7 @@ async function installFonts(doc: Document, family: Manifest): Promise<void> {
   const alias = servedFontAlias(family.family)
   const faces = await Promise.all(
     family.faces.map(async (file) => {
-      const face = new FontFace(alias, `url("${file.url}")`, { style: file.style, weight: file.weight })
+      const face = new FontFace(alias, await readServedFile(file.url), { style: file.style, weight: file.weight })
       return face.load()
     }),
   )
@@ -87,6 +125,7 @@ async function installFonts(doc: Document, family: Manifest): Promise<void> {
 
 export class FontLoader {
   private readonly pending = new Map<string, Promise<FontIssue | null>>()
+  private readonly manifests = new Map<string, Promise<Manifest | null>>()
   private readonly settled = new Set<string>()
   private readonly failures = new Set<string>()
   private readonly watchers = new Set<() => void>()
@@ -119,6 +158,10 @@ export class FontLoader {
 
   faces(name: string): readonly ServedFace[] | undefined {
     return this.served.get(name.toLowerCase())?.faces
+  }
+
+  async files(name: string): Promise<readonly Face[]> {
+    return (await this.manifest(name))?.faces ?? []
   }
 
   servedFamily(name: string): string | undefined {
@@ -176,15 +219,33 @@ export class FontLoader {
     for (const watcher of this.watchers) watcher()
   }
 
-  private async register(name: string): Promise<FontIssue | null> {
+  private manifest(name: string): Promise<Manifest | null> {
+    const key = name.toLowerCase()
+    let pending = this.manifests.get(key)
+    if (pending === undefined) {
+      pending = this.requestManifest(name).catch((error: unknown) => {
+        this.manifests.delete(key)
+        throw error
+      })
+      this.manifests.set(key, pending)
+    }
+    return pending
+  }
+
+  private async requestManifest(name: string): Promise<Manifest | null> {
     const response = await this.network(`${fontRoutes.family.path}?family=${encodeURIComponent(name)}`, {
       signal: AbortSignal.timeout(45_000),
     })
-    if (response.status === 404 && name.toLowerCase() !== fallbackFont.toLowerCase())
-      return { family: name, refusal: "unknown" }
+    if (response.status === 404 && name.toLowerCase() !== fallbackFont.toLowerCase()) return null
     if (!response.ok) throw new Error("font source")
     const raw: unknown = await response.json()
     if (!manifest(raw)) throw new Error("font manifest")
+    return raw
+  }
+
+  private async register(name: string): Promise<FontIssue | null> {
+    const raw = await this.manifest(name)
+    if (raw === null) return { family: name, refusal: "unknown" }
     const key = name.toLowerCase()
     this.served.set(key, { family: raw.family, faces: raw.faces.map(({ style, weight }) => ({ style, weight })) })
     await this.install(raw).catch((error: unknown) => {

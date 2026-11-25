@@ -1,93 +1,14 @@
-import { type FontWidths } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { createLayoutProbe, servedFontAlias, type LayoutComparison } from "@airdesign/fonts"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo } from "react"
 import { useIcons } from "./icon-nodes.js"
 import { type AssetUrl, PaintLayers } from "./node-fills.js"
 import { MaskedChildren } from "./mask-layers.js"
 import { NodeArt, holds, type NodeHost } from "./node-art.js"
-import { fontsFor, installedFaces } from "./font-load.js"
-import { measureFaces, measureReady } from "./doom-widths.js"
+import { hasPendingText, useDoomMeasure } from "./doom-layout.js"
 
 type Resolved = doom.Resolved
 
 const noAssets: AssetUrl = () => undefined
-
-export function useDoomMeasure(value: doom.Doom, record?: (result: LayoutComparison) => void): doom.Measure | null {
-  const probe = useMemo(
-    () =>
-      record === undefined
-        ? undefined
-        : createLayoutProbe({
-            record,
-            afterPaint: () =>
-              new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
-            family: async (name) => {
-              await fontsFor(document)?.load(name)
-              const alias = servedFontAlias(name)
-              return installedFaces(document)
-                .filter((face) => face.family === alias)
-                .map((face) => ({
-                  ...face,
-                  key: face.url,
-                  read: async () => {
-                    const response = await fetch(face.url, {
-                      cache: "force-cache",
-                      signal: AbortSignal.timeout(30_000),
-                    })
-                    if (!response.ok) throw new Error("Served face unavailable")
-                    return new Uint8Array(await response.arrayBuffer())
-                  },
-                }))
-            },
-          }),
-    [record],
-  )
-  const needs = useMemo(() => doom.doomFaces(value), [value])
-  const key = JSON.stringify(needs)
-  const [widths, setWidths] = useState<FontWidths | null>(null)
-  useEffect(() => {
-    let current = true
-    let retry: ReturnType<typeof setTimeout> | undefined
-    let delay = 500
-    let measuring = false
-    let refresh = false
-    const measure = async () => {
-      if (measuring) {
-        refresh = true
-        return
-      }
-      measuring = true
-      clearTimeout(retry)
-      const measured = await measureFaces(document, needs)
-      measuring = false
-      if (!current) return
-      if (measured !== null) setWidths(measured)
-      if (refresh) {
-        refresh = false
-        void measure()
-      } else if (measured === null || !measureReady(document, needs)) {
-        retry = setTimeout(() => void measure(), delay)
-        delay = Math.min(delay * 2, 8_000)
-      }
-    }
-    const loader = fontsFor(document)
-    let settled = loader?.settledCount()
-    const unsubscribe = loader?.subscribe(() => {
-      const next = loader.settledCount()
-      if (next === settled) return
-      settled = next
-      void measure()
-    })
-    void measure()
-    return () => {
-      current = false
-      unsubscribe?.()
-      clearTimeout(retry)
-    }
-  }, [key])
-  return useMemo(() => (widths === null ? null : doom.measureWith(widths, probe)), [widths, probe])
-}
 
 function iconNames(nodes: readonly Resolved[]): readonly string[] {
   return nodes.flatMap((node) => [
@@ -150,21 +71,20 @@ export function SlidePaint(props: {
 export function useDoomSlide(
   value: doom.Doom,
   slide: doom.NodeId,
-  record?: (result: LayoutComparison) => void,
+  priority = 0,
 ): {
   readonly nodes: readonly Resolved[] | null
   readonly background: readonly doom.ResolvedPaint[]
   readonly ready: boolean
+  readonly fontsReady: boolean
   readonly measure: doom.Measure | null
 } {
-  const measure = useDoomMeasure(value, record)
-  const nodes = useMemo(
-    () => (measure === null ? null : doom.resolveSlide(value, slide, measure)),
-    [value, slide, measure],
-  )
+  const measure = useDoomMeasure(value, slide, priority)
+  const nodes = useMemo(() => doom.resolveSlide(value, slide, measure), [value, slide, measure])
   const iconsReady = useIcons(nodes === null ? [] : iconNames(nodes))
   const background = useMemo(() => doom.slideBackground(value, slide), [value, slide])
-  return { nodes, background, ready: nodes !== null && iconsReady, measure }
+  const fontsReady = nodes !== null && !nodes.some(hasPendingText)
+  return { nodes, background, ready: nodes !== null && iconsReady, fontsReady, measure }
 }
 
 export function DoomSlide(props: {
@@ -174,10 +94,10 @@ export function DoomSlide(props: {
   readonly assetUrl?: AssetUrl
   readonly waiting?: string
 }) {
-  const { nodes, background, ready } = useDoomSlide(props.doom, props.slide)
+  const { nodes, background, ready, fontsReady } = useDoomSlide(props.doom, props.slide)
   const { size } = doom.deckOf(props.doom)
   return (
-    <div data-fonts-pending={ready ? undefined : ""}>
+    <div data-fonts-pending={ready && fontsReady ? undefined : ""}>
       <SlidePaint
         nodes={nodes ?? []}
         background={background}

@@ -2,7 +2,6 @@ import { expect } from "@playwright/test"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
 import { textCopy } from "../../apps/web/src/copy/text-copy"
-import { servedFontAlias } from "../../packages/fonts/src/index.ts"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
 import { clickSlide, landNodes, openEditor, spot } from "./editor-deck"
@@ -63,19 +62,19 @@ test("Ctrl+B on a template heading toggles SemiBold and Bold, and the painted wi
       .innerText()
       .then((text) => text.replace(/[^A-Za-z]/g, "").replace(/Weight/g, ""))
 
-  await expect.poll(async () => (await painted()).family).toContain(servedFontAlias("Inter SemiBold"))
+  await expect.poll(async () => (await painted()).family).toMatch(/airdesign-face-.*family%3DInter%26/)
+  await expect.poll(async () => (await painted()).weight).toBe("600")
   await expect.poll(weightName).toBe("SemiBold")
   const before = await painted()
 
   await page.keyboard.press("ControlOrMeta+b")
   await expect.poll(async () => (await painted()).width).toBeGreaterThan(before.width + 2)
-  await expect.poll(async () => (await painted()).family).not.toContain(servedFontAlias("Inter SemiBold"))
   await expect.poll(async () => (await painted()).weight).toBe("700")
   await expect.poll(weightName).toBe(shortcutCopy.gestures.bold)
   const bold = await painted()
 
   await page.keyboard.press("ControlOrMeta+b")
-  await expect.poll(async () => (await painted()).family).toContain(servedFontAlias("Inter SemiBold"))
+  await expect.poll(async () => (await painted()).weight).toBe("600")
   await expect.poll(weightName).toBe("SemiBold")
   await expect.poll(async () => Math.abs((await painted()).width - before.width)).toBeLessThan(1)
   expect(bold.width).toBeGreaterThan(before.width + 2)

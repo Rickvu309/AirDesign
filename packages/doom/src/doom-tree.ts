@@ -23,6 +23,7 @@ export type TreeSlide = {
 }
 export type Tree = {
   readonly theme: Theme
+  readonly language?: string
   readonly name?: string
   readonly size?: { readonly w: number; readonly h: number }
   readonly slides: readonly TreeSlide[]
@@ -69,6 +70,7 @@ export function doomFromTree(tree: Tree): Grown {
   const deck = mint("deck")
   writes.push({ node: deck, prop: "type", value: "deck" }, { node: deck, prop: "name", value: tree.name ?? "deck" })
   writes.push({ node: deck, prop: "theme", value: tree.theme })
+  if (tree.language !== undefined) writes.push({ node: deck, prop: "language", value: tree.language })
   writes.push({ node: deck, prop: "size", value: tree.size ?? { w: 1920, h: 1080 } })
   const row = add("slideRow", { id: deck, at: orderKeyBetween(null, null) }, undefined, undefined)
   const slides: NodeId[] = []

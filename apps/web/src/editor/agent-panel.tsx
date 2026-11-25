@@ -24,7 +24,7 @@ export function AgentPanel({
       deck={deck.deck}
       hidden={false}
       undo={undo}
-      pendingFonts={() => pendingDoomFonts(document, deck.view())}
+      pendingFonts={() => pendingDoomFonts(document)}
       runs={<AgentRuns view={view} editing={editing} undoRun={deck.undoRun} />}
       undoneRun={(run) => view.runs.get(run)?.undone}
       {...(start === undefined ? {} : { start })}

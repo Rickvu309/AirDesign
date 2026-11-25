@@ -1,7 +1,6 @@
 import * as doom from "@airdesign/doom"
-import { fallbackFont, fontFamily, pinnedOpticalSize, servedFontName } from "@airdesign/fonts"
+import { fontFamily, pinnedOpticalSize } from "@airdesign/fonts"
 import type { CSSProperties } from "react"
-import { fontsFor } from "./font-load.js"
 
 type Run = doom.ResolvedRun
 
@@ -9,11 +8,13 @@ function runLook(run: Run): CSSProperties {
   const underline = run.underline || run.link !== undefined
   const decoration = [underline ? "underline" : "", run.strike ? "line-through" : ""].filter(Boolean).join(" ")
   return {
-    fontFamily: fontFamily(run.font),
+    fontFamily: run.face === undefined ? fontFamily(run.font) : `${JSON.stringify(run.face.family)}`,
     fontSize: run.size,
-    fontWeight: run.bold ? 700 : 400,
-    fontStyle: run.italic ? "italic" : "normal",
-    fontVariationSettings: `"opsz" ${String(pinnedOpticalSize)}`,
+    fontWeight: run.face?.weight ?? (run.bold ? 700 : 400),
+    fontStyle: run.face?.style ?? (run.italic ? "italic" : "normal"),
+    ...(run.face === undefined ? {} : { fontSynthesis: "none" }),
+    fontVariationSettings:
+      run.face === undefined ? `"opsz" ${String(pinnedOpticalSize)}` : run.face.variations || "normal",
     color: run.color,
     ...(decoration === "" ? {} : { textDecoration: decoration }),
     ...(run.tracking === 0 ? {} : { letterSpacing: run.tracking }),
@@ -27,9 +28,6 @@ export function TextLines({
   readonly lines: readonly doom.ResolvedLine[]
   readonly editing?: boolean
 }) {
-  const loader = typeof document === "undefined" ? undefined : fontsFor(document)
-  const pending = (run: Run) =>
-    loader !== undefined && (!loader.ready(servedFontName(run.font) ?? fallbackFont) || !loader.ready(fallbackFont))
   return (
     <>
       {lines.map((line, at) => (
@@ -38,6 +36,8 @@ export function TextLines({
           data-line=""
           data-start={line.start}
           data-end={line.end}
+          dir={line.direction}
+          lang={line.locale}
           style={{
             position: "absolute",
             left: line.x,
@@ -63,11 +63,11 @@ export function TextLines({
             <span
               key={index}
               data-run=""
-              data-font-pending={pending(run) ? "" : undefined}
+              data-font-pending={line.pending ? "" : undefined}
               {...(run.link === undefined ? {} : { "data-link": run.link })}
               style={runLook(run)}
             >
-              {!editing && index === line.runs.length - 1 ? run.text.trimEnd() : run.text}
+              {paintRun(line.runs, run, index, editing)}
             </span>
           ))}
           {editing && line.runs.length === 0 ? <br /> : null}
@@ -75,4 +75,11 @@ export function TextLines({
       ))}
     </>
   )
+}
+
+function paintRun(runs: readonly Run[], run: Run, index: number, editing: boolean): string {
+  const display = editing && run.display?.includes("\u2060") ? run.text : (run.display ?? run.text)
+  return !editing && runs.slice(index + 1).every((next) => /^ *$/u.test(next.text))
+    ? display.replace(/ +$/u, "")
+    : display
 }

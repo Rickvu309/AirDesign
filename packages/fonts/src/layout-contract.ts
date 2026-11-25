@@ -23,6 +23,8 @@ type LayoutRun = {
   readonly size: number
   readonly tracking: number
   readonly faces: readonly [LayoutFace, ...LayoutFace[]]
+  readonly stack?: string
+  readonly fallback?: (cluster: string, presentation: "text" | "color" | undefined) => Iterable<LayoutFace>
 }
 
 export type LayoutParagraph = {
@@ -43,14 +45,17 @@ type LayoutFaceInterval = {
   readonly face: LayoutFace
 }
 
+export type ShapedLine = {
+  readonly kind: "shaped"
+  readonly range: Utf16Range
+  readonly advance: number
+  readonly faces: readonly LayoutFaceInterval[]
+  readonly glyphs: readonly LayoutGlyph[]
+  readonly display?: string
+}
+
 export type LayoutLine =
-  | {
-      readonly kind: "shaped"
-      readonly range: Utf16Range
-      readonly advance: number
-      readonly faces: readonly LayoutFaceInterval[]
-      readonly glyphs: readonly LayoutGlyph[]
-    }
+  | ShapedLine
   | { readonly kind: "unserved"; readonly range: Utf16Range }
   | { readonly kind: "pending"; readonly range: Utf16Range; readonly face: LayoutFace }
 
@@ -60,6 +65,8 @@ export type FontLayout = {
     readonly paragraph: LayoutParagraph
     readonly range: Utf16Range
     readonly lineEnding: "plain" | "discretionary-hyphen"
+    readonly missingFace?: LayoutFace
+    readonly contextualSpacing?: boolean
   }) => LayoutLine
 }
 
@@ -75,9 +82,25 @@ export type FaceAsset = {
   readonly axes: LayoutFace["axes"]
   readonly faceIndex?: number
   readonly read: () => Promise<Uint8Array<ArrayBuffer>>
+  readonly onEvict?: () => void
 }
 
 export type FontLayoutEngine = FontLayout & {
   readonly prepareFace: (asset: FaceAsset) => Promise<LayoutFace>
+  readonly pinFace: (revision: string, key: string, priority?: number) => () => void
+  readonly hasFace: (face: LayoutFace) => boolean
   readonly cache: () => { readonly bytes: number; readonly faces: number; readonly evictions: number }
+  readonly flow: (input: {
+    readonly paragraph: LayoutParagraph
+    readonly width: number
+    readonly emergency: boolean
+    readonly twoLines: boolean
+    readonly missingFace: LayoutFace
+  }) =>
+    | {
+        readonly direction: "ltr" | "rtl"
+        readonly lines: readonly ShapedLine[]
+        readonly twoLineWidth?: number
+      }
+    | undefined
 }

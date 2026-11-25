@@ -16,6 +16,11 @@ export function fontSamples(
     let previous: string | undefined
     for (const { segment } of graphemes(text.normalize("NFC"))) {
       chars.add(segment)
+      if (segment === "\u00ad") {
+        chars.add("‐")
+        chars.add("-")
+        continue
+      }
       if (previous !== undefined) pairs.set(previous + segment, [previous, segment])
       previous = segment
     }
