@@ -521,23 +521,38 @@
           }
         }
       ]
-    }
-  ],
-  "advice": [
-    {
-      "code": "value-label-space",
-      "when": ["if", ["get", "variant.labels"], ["eq", ["get", "showValues"], false], false],
-      "note": "Value labels need more room. Show fewer categories or make the chart wider."
     },
     {
-      "code": "many-columns",
-      "when": [
-        "if",
-        ["lt", 12, ["get", "rowCount"]],
-        ["every", ["get", "data.rows"], "r", ["timeCategory", ["get", "r.label"]]],
-        false
+      "let": [
+        [
+          "valueLabelSpace",
+          [
+            "if",
+            ["if", ["get", "variant.labels"], ["eq", ["get", "showValues"], false], false],
+            [
+              "advise",
+              "value-label-space",
+              "Value labels need more room. Show fewer categories or make the chart wider."
+            ],
+            false
+          ]
+        ],
+        [
+          "manyColumns",
+          [
+            "if",
+            [
+              "if",
+              ["lt", 12, ["get", "rowCount"]],
+              ["every", ["get", "data.rows"], "r", ["timeCategory", ["get", "r.label"]]],
+              false
+            ],
+            ["advise", "many-columns", "Use a line chart to show the trend across more than 12 time periods."],
+            false
+          ]
+        ]
       ],
-      "note": "Use a line chart to show the trend across more than 12 time periods."
+      "children": []
     }
   ]
 }

@@ -120,13 +120,6 @@
     },
     "align": "center-center"
   },
-  "advice": [
-    {
-      "code": "many-steps",
-      "when": ["lt", 5, ["get", "count"]],
-      "note": "Split the steps across two process diagrams."
-    }
-  ],
   "parts": [
     {
       "repeat": {
@@ -343,6 +336,20 @@
         "route": "straight",
         "arrow": "triangle"
       }
+    },
+    {
+      "let": [
+        [
+          "manySteps",
+          [
+            "if",
+            ["lt", 5, ["get", "count"]],
+            ["advise", "many-steps", "Split the steps across two process diagrams."],
+            false
+          ]
+        ]
+      ],
+      "children": []
     }
   ]
 }

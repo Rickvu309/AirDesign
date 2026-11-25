@@ -1,6 +1,6 @@
 import { readColor } from "../color.js"
 import type { Refusal } from "../refusal.js"
-import { boolean, finite, integer, list, literal, naming, object, oneOf, reject, variant } from "../read-kit.js"
+import { boolean, finite, integer, literal, naming, object, oneOf, reject, variant } from "../read-kit.js"
 import { readCollections, readData } from "./collections.js"
 import { type Bindings, type Expr, binding, readExpr } from "./expression.js"
 import { defaultNumberTokens, readLocale } from "./operators.js"
@@ -187,7 +187,6 @@ function specReader() {
     {
       let: readBindings,
       layout: expression,
-      advice: list(object({ code: name, when: expression, note: wordsWithin(240) }), 16),
       defaults: tokenRecord,
       variants,
       defaultVariant: variantRecord,

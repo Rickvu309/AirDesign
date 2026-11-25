@@ -252,7 +252,11 @@ describe("waterfall library", () => {
     expect(fill(tree, "bar", "Open")).toEqual(fill(tree, "bar", "End"))
     expect(fill(tree, "bar", "Gain")).not.toEqual(fill(tree, "bar", "Loss"))
     expect(tree.findings).toContainEqual(
-      expect.objectContaining({ kind: "advice", code: "total-mismatch", note: "End: Use the running balance for this total." }),
+      expect.objectContaining({
+        kind: "advice",
+        code: "total-mismatch",
+        note: "End: Use the running balance for this total.",
+      }),
     )
   })
 
