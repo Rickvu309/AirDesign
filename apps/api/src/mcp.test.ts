@@ -385,7 +385,7 @@ describe("mcp route", () => {
     })
   })
 
-  it("counts a refusal toward the thirty, and refuses the thirty-first call until the clock leaves the window", async () => {
+  it("counts a refusal toward the ninety, and refuses the ninety-first call until the clock leaves the window", async () => {
     let clock = 1_000_000
     const served = await ownServer("clock", { now: () => clock })
     try {
@@ -394,7 +394,7 @@ describe("mcp route", () => {
         cookie,
         async (client) => {
           expect((await tool(client, "read_deck", { deck: "neverthere" })).answer.refusal).toBe("deck")
-          for (let call = 1; call < 30; call += 1) expect((await tool(client, "list_decks", {})).isError).toBeFalsy()
+          for (let call = 1; call < 90; call += 1) expect((await tool(client, "list_decks", {})).isError).toBeFalsy()
           const blocked = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
           expect(blocked.isError).toBe(true)
           expect(blocked.structuredContent).toEqual(toolLimited)
@@ -408,11 +408,11 @@ describe("mcp route", () => {
     }
   })
 
-  it("refuses the thirty-first tool call after a new sign-in", async () => {
+  it("refuses the ninety-first tool call after a new sign-in", async () => {
     const email = address("cap")
     const cookie = await sign(email)
     await withMcp(cookie, async (client) => {
-      for (let call = 0; call < 30; call += 1) expect((await tool(client, "list_decks", {})).isError).toBeFalsy()
+      for (let call = 0; call < 90; call += 1) expect((await tool(client, "list_decks", {})).isError).toBeFalsy()
       const blocked = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
       expect(blocked.structuredContent).toEqual(toolLimited)
     })
@@ -423,7 +423,7 @@ describe("mcp route", () => {
   })
 
   it("counts overlapping tool calls once each", async () => {
-    const requests = 33
+    const requests = 93
     let lookups = 0
     let markAllSignedIn = () => {}
     const allSignedIn = new Promise<void>((resolve) => {
@@ -482,7 +482,7 @@ describe("mcp route", () => {
       await new Promise((resolve) => setImmediate(resolve))
       for (const call of held) call.release()
       const texts = await Promise.all(held.map((call) => call.answer))
-      expect(texts.filter((text) => !text.includes(toolLimit))).toHaveLength(30)
+      expect(texts.filter((text) => !text.includes(toolLimit))).toHaveLength(90)
       expect(texts.filter((text) => text.includes(toolLimit))).toHaveLength(3)
     } finally {
       await served.close()

@@ -1,63 +1,15 @@
 import { describe, expect, it } from "vitest"
 
-import { componentLibrary } from "./component/library.js"
-import { isRefusal, nodeId, orderKeyBetween, placeComponent } from "./index.js"
-import { land, placed } from "./component/testing/linked-instance-fixtures.js"
-import { childrenOf, parentOf, slidesOf } from "./doom-walk.js"
+import { placed } from "./component/testing/linked-instance-fixtures.js"
+import { slidesOf } from "./doom-walk.js"
 import { doomFromTree, type TreeNode } from "./doom-tree.js"
 import { textFromMarkdown } from "./markdown.js"
 import { slideFindings } from "./slide-findings.js"
 import { defaultTheme } from "./theme.js"
-import { measure, spot } from "./testing/doom-fixtures-art.js"
+import { spot } from "./testing/doom-fixtures-art.js"
+import { chart, codes, findings, text, type Layer } from "./testing/slide-findings-kit.js"
 
-const text = (chars: string, style: "title" | "display" | "body" = "body", width = 1600): TreeNode => ({
-  type: "shape",
-  props: {
-    ...(style === "body" ? {} : { role: "title" }),
-    text: textFromMarkdown(chars, style),
-    box: spot(0, 0, width, 180),
-  },
-})
-
-const chart = (
-  component: "column" | "pie" | "line" = "column",
-  box = spot(0, 200, 600, 500),
-  tokens: Record<string, string> = component === "column" ? { unitHeader: "$M" } : {},
-) => ({ component, box, tokens })
-
-type Layer = TreeNode | ReturnType<typeof chart>
-
-function findings(slides: readonly (readonly Layer[])[], count = slides.length) {
-  const grown = doomFromTree({
-    theme: defaultTheme,
-    slides: slides.map((layers) => ({ children: layers.filter((layer) => "type" in layer) })),
-  })
-  let doom = grown.doom
-  let serial = 0
-  for (const [index, slide] of grown.slides.entries()) {
-    let at = parentOf(childrenOf(doom, slide).at(-1))?.at ?? null
-    for (const layer of slides[index] ?? []) {
-      if ("type" in layer) continue
-      const definition = componentLibrary.get(layer.component)
-      if (definition === undefined) throw new Error("missing component definition")
-      at = orderKeyBetween(at, null)
-      const writes = placeComponent(doom, definition, {
-        frame: nodeId(`chart:${++serial}`),
-        parent: { id: slide, at },
-        box: layer.box,
-        data: definition.spec.sample?.data,
-        tokens: layer.tokens,
-        measure,
-      })
-      if (isRefusal(writes)) throw new Error(JSON.stringify(writes))
-      doom = land(doom, writes, true)
-    }
-  }
-  return slideFindings(doom, grown.slides.slice(0, count), { measure })
-}
-
-const codes = (slides: readonly (readonly Layer[])[], count?: number) =>
-  findings(slides, count).map((finding) => finding.code)
+const tableCodes = (slides: readonly (readonly Layer[])[]) => codes(slides).filter((code) => code !== "no-chart")
 
 describe("slide findings", () => {
   it("advises replacing a topic label with a takeaway and preserves an action title", () => {
@@ -329,7 +281,9 @@ describe("slide findings", () => {
   const source = text("Source: Finance close pack")
 
   it("finds a Total that does not equal its column's sum and names the total cell", () => {
-    const found = findings([[table([...segments, ["Total", "37.6", "43.4"]]), source]])
+    const found = findings([[table([...segments, ["Total", "37.6", "43.4"]]), source]]).filter(
+      ({ code }) => code !== "no-chart",
+    )
     expect(found).toMatchObject([
       {
         code: "total-mismatch",
@@ -344,7 +298,7 @@ describe("slide findings", () => {
     ["rounding explains the gap", ["Total", "37.6", "43.2"]],
     ["a cell is not a number", ["Total", "37.6", "n/a"]],
   ])("leaves a Total clear when %s", (_, total) => {
-    expect(codes([[table([...segments, total]), source]])).toEqual([])
+    expect(tableCodes([[table([...segments, total]), source]])).toEqual([])
   })
 
   it("reads currency, thousands, units and parentheses before it adds a column", () => {
@@ -354,8 +308,8 @@ describe("slide findings", () => {
       ["Refund", "($250K)"],
       ["Total", "$1,000K"],
     ]
-    expect(codes([[table(money), source]])).toEqual([])
-    expect(codes([[table([...money.slice(0, 3), ["Total", "$1,500K"]]), source]])).toEqual(["total-mismatch"])
+    expect(tableCodes([[table(money), source]])).toEqual([])
+    expect(tableCodes([[table([...money.slice(0, 3), ["Total", "$1,500K"]]), source]])).toEqual(["total-mismatch"])
   })
 
   it("leaves rates, multiples and points unsummed, since growth rows never add up to a total's growth", () => {
@@ -365,7 +319,7 @@ describe("slide findings", () => {
       ["SMB", "+1%", "0.9x", "-1 pts"],
       ["Total", "+15%", "1.1x", "+1 pts"],
     ]
-    expect(codes([[table(rates), source]])).toEqual([])
+    expect(tableCodes([[table(rates), source]])).toEqual([])
   })
 
   it.each(["Margin (%)", "Growth %", "Margin (pp)", "YoY", "CAGR", "Multiple (x)", "x"])(
@@ -377,7 +331,7 @@ describe("slide findings", () => {
         ["B", "30"],
         ["Total", "40"],
       ]
-      expect(codes([[table(rates), source]])).toEqual([])
+      expect(tableCodes([[table(rates), source]])).toEqual([])
     },
   )
 
@@ -389,24 +343,24 @@ describe("slide findings", () => {
   ]
 
   it("still adds a column whose header names an amount", () => {
-    expect(codes([[table(rounded), source]])).toEqual(["total-mismatch"])
+    expect(tableCodes([[table(rounded), source]])).toEqual(["total-mismatch"])
   })
 
   it.each(["Figures are rounded to the nearest $1 million.", "Totals may not sum.", "Due to rounding, totals differ"])(
     "leaves a table clear when the slide says figures are rounded (%s)",
     (note) => {
-      expect(codes([[table(rounded), source, text(note)]])).toEqual([])
-      expect(codes([[table(rounded), source, card("Note", note)]])).toEqual([])
-      expect(codes([[table([...rounded.slice(0, 3), [`Total (${note})`, "29"]]), source]])).toEqual([])
+      expect(tableCodes([[table(rounded), source, text(note)]])).toEqual([])
+      expect(tableCodes([[table(rounded), source, card("Note", note)]])).toEqual([])
+      expect(tableCodes([[table([...rounded.slice(0, 3), [`Total (${note})`, "29"]]), source]])).toEqual([])
     },
   )
 
   it("leaves a table with a subtotal, mixed units or a rounding note clear", () => {
     const wrong = ["Total", "37.6", "43.4"]
-    expect(codes([[table([...segments, ["Subtotal", "37.6", "43.1"], wrong]), source]])).toEqual([])
-    expect(codes([[table([...segments.slice(0, 4), ["Services", "1.4", "1.6%"], wrong]), source]])).toEqual([])
+    expect(tableCodes([[table([...segments, ["Subtotal", "37.6", "43.1"], wrong]), source]])).toEqual([])
+    expect(tableCodes([[table([...segments.slice(0, 4), ["Services", "1.4", "1.6%"], wrong]), source]])).toEqual([])
     expect(
-      codes([[table([...segments, wrong]), text("Source: Finance. Figures may not sum due to rounding")]]),
+      tableCodes([[table([...segments, wrong]), text("Source: Finance. Figures may not sum due to rounding")]]),
     ).toEqual([])
   })
 })

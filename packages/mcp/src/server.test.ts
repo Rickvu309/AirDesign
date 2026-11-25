@@ -382,7 +382,7 @@ describe("a host that admits each tool call", () => {
   it("is asked for every call, and a refusal answers the host's text and changes nothing", async () => {
     const decks = memoryDecks(started)
     const asked: number[] = []
-    const text = "Thirty tool calls in five minutes. The next tool call can run in 12 seconds." as const
+    const text = "Ninety tool calls in five minutes. The next tool call can run in 12 seconds." as const
     const host: Host = {
       ...decks,
       admit: async (seen) => {
@@ -417,7 +417,7 @@ describe("a host that admits each tool call", () => {
   it("counts calls in the session's own log when the host does not admit", async () => {
     const session = sessionFor()
     await withClient(session, memoryDecks(started), async (client) => {
-      for (let call = 0; call < 30; call += 1) {
+      for (let call = 0; call < 90; call += 1) {
         const listed = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
         expect(listed.isError).not.toBe(true)
       }
@@ -425,7 +425,7 @@ describe("a host that admits each tool call", () => {
       expect(refused.isError).toBe(true)
       expect(refused.structuredContent).toMatchObject({
         refusal: "rate",
-        note: "Thirty tool calls in five minutes. The next tool call can run in 300 seconds.",
+        note: "Ninety tool calls in five minutes. The next tool call can run in 300 seconds.",
       })
     })
   })

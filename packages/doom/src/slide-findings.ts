@@ -1,5 +1,6 @@
+import { chartSeries, isReference } from "./chart-series.js"
 import { linkedOwner } from "./component/instance-ownership.js"
-import { componentSpec } from "./component/library.js"
+import { componentLibrary, componentSpec } from "./component/library.js"
 import { deckOf } from "./deck-of.js"
 import type { Doom, Node } from "./doom.js"
 import { boxOf, childrenOf, parentOf, propOf, slidesOf } from "./doom-walk.js"
@@ -11,6 +12,8 @@ import { textArea } from "./preset-geometry.js"
 import type { Box } from "./resolved.js"
 import { solveLayout } from "./solve-layout.js"
 import { isStructuralTitle, isTitleLabel, normalizeTitle } from "./title-label.js"
+
+const chartIds = [...componentLibrary.values()].filter(({ spec }) => spec.chart !== undefined).map(({ id }) => id)
 
 const fixes = {
   "title-label": "State the slide’s takeaway in one sentence.",
@@ -25,6 +28,7 @@ const fixes = {
   "no-unit": "Name the unit in the chart's unitHeader, prefix or suffix, such as $M or %.",
   "total-mismatch":
     "Make the total equal the sum of the rows above, or add a note that figures may not sum due to rounding.",
+  "no-chart": `The deck has no chart, and this table holds its clearest number series. If the series proves the slide's title, show it as a chart in the table's place: read_deck with a chart id (${chartIds.join(", ")}) gives its data, then add kind component.`,
 } as const
 
 export type SlideFinding = {
@@ -215,6 +219,7 @@ function onSlide(
   slide: NodeId,
   layers: readonly Node[],
   heading: Title | undefined,
+  candidate: NodeId | undefined,
   measurement?: Measurement,
 ) {
   const found: SlideFinding[] = []
@@ -243,6 +248,8 @@ function onSlide(
   if (!texts.some(({ text }) => roundingNote.test(text.chars)))
     for (const grid of layers)
       for (const cell of totalMismatches(doom, grid)) found.push(finding("total-mismatch", slide, cell))
+  if (candidate !== undefined && layers.some((node) => node.id === candidate && dataGrid(doom, node)))
+    found.push(finding("no-chart", slide, candidate))
   const largest = Math.max(...charts.map(({ area }) => area))
   if (charts.filter(({ kind }) => kind === "pie").length > 1) found.push(finding("pie-compare", slide))
   else if (charts.filter(({ area }) => area >= largest / 4).length > 1) found.push(finding("two-charts", slide))
@@ -255,6 +262,20 @@ function onSlide(
   return found
 }
 
+function chartCandidate(doom: Doom, slides: readonly { readonly id: NodeId; readonly layers: readonly Node[] }[]) {
+  if (slides.some(({ layers }) => slideCharts(layers).length > 0)) return undefined
+  let best: { readonly id: NodeId; readonly length: number } | undefined
+  for (const { id, layers } of slides) {
+    const texts = [propOf(doom.nodes.get(id), "name") ?? "", ...layers.map((node) => propOf(node, "text")?.chars ?? "")]
+    if (isReference(texts)) continue
+    for (const node of layers) {
+      const length = chartSeries(doom, node)
+      if (length > (best?.length ?? 0)) best = { id: node.id, length }
+    }
+  }
+  return best?.id
+}
+
 export function slideFindings(
   doom: Doom,
   slides: readonly NodeId[],
@@ -264,12 +285,13 @@ export function slideFindings(
   const titles = new Map<string, SlideFinding[]>()
   const found: SlideFinding[] = []
   const selected = new Set(slides)
-  for (const slide of slidesOf(doom)) {
-    const { id } = slide
-    if (propOf(slide, "hidden") === true) continue
-    const layers = shownLayers(doom, id)
+  const shown = slidesOf(doom).flatMap((slide) =>
+    propOf(slide, "hidden") === true ? [] : [{ id: slide.id, layers: shownLayers(doom, slide.id) }],
+  )
+  const candidate = chartCandidate(doom, shown)
+  for (const { id, layers } of shown) {
     const heading = slideTitle(layers)
-    if (selected.has(id)) found.push(...onSlide(doom, id, layers, heading, measurement))
+    if (selected.has(id)) found.push(...onSlide(doom, id, layers, heading, candidate, measurement))
     const title = bodyTitle(heading)
     if (title === undefined || isPlaceholder(title.title)) continue
     const key = normalizeTitle(title.title)
