@@ -11,7 +11,7 @@ On an open deck, Shift+click adds a layer to the selection, and Ctrl/Cmd+G makes
 - `step-in` in nested groups a click picks the top group, each double-click steps one level in, Shift+Enter steps back out to the parent, and Cmd/Ctrl+click picks the layer at once (see `canvas-select.md`).
 - `group-transform` resizing a group scales the layers inside it and leaves it hugging them. A layer picked inside a group moves, resizes and turns where it shows on the slide; its box is stored in its group's space, and the group above it fits its layers again.
 - `group-copy` Ctrl/Cmd+D on a group copies it with its layers, their words painted.
-- `agent-group` an agent's `airdesign_edit_deck` change `{ op: "wrap", nodes: [...], layout? }` wraps layers in a frame and `{ op: "unwrap", node }` takes them out where they show; the Agent panel's Undo takes the run back.
+- `agent-group` an agent's `airdesign_edit_deck` change `{ op: "wrap", nodes: [...], layout? }` wraps layers in a frame and `{ op: "unwrap", node }` takes them out where they show; Undo under Aira's reply takes Aira's run back, and `airdesign_undo_run` takes back any agent's.
 
 ## How to get to it (user POV)
 

@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto"
 import { expect } from "@playwright/test"
-import { agentRunsCopy, airaCopy, airaStepWords, undoCopy } from "../bin/product-copy.mjs"
+import { airaCopy, airaStepWords, undoCopy } from "../bin/product-copy.mjs"
 
 const asked = "Add three KPIs to this slide"
 
@@ -112,24 +112,14 @@ async function outsideAgent(kit, cookie, { deck, slide }) {
   await expect(mark).toHaveText("Claude Code is editing this slide")
   await capture("outside-editing")
   note(
-    `Claude Code, connected over OAuth, edited the open deck at rev ${String(landed.rev)}; the slide label row names it and the Agent panel lists its live run`,
+    `Claude Code, connected over OAuth, edited the open deck at rev ${String(landed.rev)}; the slide label row names it`,
   )
 
   expect((await call("stop_run", { deck, runId: landed.runId })).ok).toBe(true)
   await expect(mark).toHaveCount(0)
-  await expect(page.locator("[data-agent-run-undo]")).toHaveCount(2)
-  await capture("outside-listed")
-  note("Claude Code stopped its run: the mark left the canvas and its run shows Undo beside Aira's")
-
-  const row = page.locator("[data-agent-runs] li").filter({ hasText: "Claude Code" })
-  await row.locator("[data-agent-run-undo]").click()
-  await expect(row).toContainText(agentRunsCopy.undone)
-  await page.reload()
-  await page.locator("[data-editor-ready]").waitFor()
-  await expect(row).toContainText(agentRunsCopy.undone)
-  await expect(page.locator("[data-agent-run-undo]")).toHaveCount(1)
-  await capture("outside-undone")
-  note("Undo on Claude Code's row took back only its text, and the run still reads Undone after a reload")
+  await expect(page.locator("[data-editor-panel]").getByText("Claude Code")).toHaveCount(0)
+  await capture("outside-stopped")
+  note("Claude Code stopped its run: the mark left the canvas and the Agent panel shows only Aira's chat")
 }
 
 export default async function drive(kit) {

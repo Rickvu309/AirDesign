@@ -139,7 +139,7 @@ export {
   slideOf,
   slidesOf,
 } from "./doom-walk.js"
-export { type ListedRun, liveRuns, runsOf } from "./live-runs.js"
+export { liveRuns, runsOf } from "./live-runs.js"
 export { type Face, type FaceNeeds, doomFaces } from "./text-faces.js"
 export { contentAreaOf, gapFor } from "./agent-place.js"
 export { placeholderSubtitle, titleOnlyWrites, titleSlideWrites } from "./slide-placeholders.js"

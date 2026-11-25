@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto"
 import { expect, type Page } from "@playwright/test"
 import * as doom from "../../packages/doom/src/index.ts"
 import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
-import { agentEditingMark, agentRunStatus, agentRunsCopy } from "../../apps/web/src/copy/agent-runs-copy.ts"
+import { agentEditingMark } from "../../apps/web/src/copy/agent-runs-copy.ts"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { test, type Stack } from "./api-stack"
@@ -101,7 +101,6 @@ test("the mark shows while an agent writes, leaves after thirty quiet seconds wi
   const label = page.locator("[data-slide-label]")
   const mark = label.getByRole("button", { name: agentEditingMark(["Claude Code"], { here: true }) })
   const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
-  await expect(side.locator("[data-agent-runs]")).toHaveCount(0)
 
   const first = await call("edit_deck", {
     deck: opened.deck,
@@ -111,9 +110,7 @@ test("the mark shows while an agent writes, leaves after thirty quiet seconds wi
   expect(first.ok, JSON.stringify(first)).toBe(true)
   await expect(canvas.getByText("Agent note", { exact: true })).toBeVisible()
   await expect(mark).toBeVisible()
-  const row = side.locator("[data-agent-runs] li").filter({ hasText: "Claude Code" })
-  await expect(row).toContainText("Editing slide 1")
-  await expect(row.getByRole("button", { name: productCopy.undo })).toHaveCount(0)
+  await expect(side.getByText("Claude Code")).toHaveCount(0)
 
   await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
   await expect(side.locator("[data-aira-panel]")).toBeHidden()
@@ -122,8 +119,6 @@ test("the mark shows while an agent writes, leaves after thirty quiet seconds wi
 
   await page.clock.fastForward(31_000)
   await expect(label.locator("[data-agent-at-work]")).toHaveCount(0)
-  await expect(row).toContainText(agentRunStatus(false, { slide: 1 }))
-  await expect(row.getByRole("button", { name: productCopy.undo })).toBeVisible()
   expect((await saved(stack, opened)).runs.get(String(first.runId))?.phase).toBe("running")
 
   const late = await call("edit_deck", {
@@ -135,11 +130,10 @@ test("the mark shows while an agent writes, leaves after thirty quiet seconds wi
   expect(late.ok, JSON.stringify(late)).toBe(true)
   await expect(canvas.getByText("Late note", { exact: true })).toBeVisible()
   await expect(mark).toBeVisible()
-  await expect(side.locator("[data-agent-runs] li")).toHaveCount(1)
   expect((await saved(stack, opened)).runs.get(String(first.runId))).toMatchObject({ phase: "running" })
 })
 
-test("Undo from the list and from Aira's chat read one undone state, which takes back only that run and a reload keeps", async ({
+test("Undo in Aira's chat takes back only Aira's run, leaves another agent's work, and a reload keeps it", async ({
   page,
   context,
   stack,
@@ -167,37 +161,33 @@ test("Undo from the list and from Aira's chat read one undone state, which takes
   await ask(page, "Add a summary and a note")
   await expect(canvas.getByText("Draft note", { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
-  const names = side.locator("[data-agent-runs] li > span > span:first-child")
-  await expect(names).toHaveText([productCopy.agentName, "Claude Code"])
-  const claude = side.locator("[data-agent-runs] li").filter({ hasText: "Claude Code" })
-  const aira = side.locator("[data-agent-runs] li").filter({ hasText: productCopy.agentName })
-  const chatUndo = log.getByRole("button", { name: productCopy.undo, exact: true })
+  const undo = side.getByRole("button", { name: productCopy.undo, exact: true })
+  await expect(undo).toHaveCount(1)
 
-  await claude.getByRole("button", { name: productCopy.undo }).click()
-  await expect(canvas.getByText("Agent note", { exact: true })).toHaveCount(0)
-  await expect(claude).toContainText(agentRunsCopy.undone)
-  await expect(canvas.getByText("Draft note", { exact: true })).toBeVisible()
-  await expect(chatUndo).toBeVisible()
-
-  await aira.getByRole("button", { name: productCopy.undo }).click()
+  await log.getByRole("button", { name: productCopy.undo, exact: true }).click()
   await expect(canvas.getByText("Draft note", { exact: true })).toHaveCount(0)
   await expect(log.getByText(airaCopy.undone, { exact: true })).toBeVisible()
-  await expect(chatUndo).toHaveCount(0)
+  await expect(canvas.getByText("Agent note", { exact: true })).toBeVisible()
 
   await page.locator("[data-canvas-stage]").focus()
   await page.keyboard.press("ControlOrMeta+Shift+z")
   await expect(canvas.getByText("Draft note", { exact: true })).toBeVisible()
-  await expect(aira.getByRole("button", { name: productCopy.undo })).toBeVisible()
-  await chatUndo.click()
+  await undo.click()
   await expect(canvas.getByText("Draft note", { exact: true })).toHaveCount(0)
-  await expect(aira).toContainText(agentRunsCopy.undone)
 
-  await expect.poll(async () => [...(await saved(stack, opened)).runs.values()].every((run) => run.undone)).toBe(true)
+  await expect
+    .poll(async () =>
+      [...(await saved(stack, opened)).runs].map(([id, run]) => [id === first.runId, run.undone === true]),
+    )
+    .toEqual(
+      expect.arrayContaining([
+        [true, false],
+        [false, true],
+      ]),
+    )
   await page.reload()
   await page.locator("[data-editor-ready]").waitFor()
-  await expect(claude).toContainText(agentRunsCopy.undone)
-  await expect(aira).toContainText(agentRunsCopy.undone)
-  await expect(side.locator("[data-agent-run-undo]")).toHaveCount(0)
-  await expect(canvas.getByText("Agent note", { exact: true })).toHaveCount(0)
+  await expect(undo).toHaveCount(0)
+  await expect(canvas.getByText("Agent note", { exact: true })).toBeVisible()
   await expect(canvas.getByText("Draft note", { exact: true })).toHaveCount(0)
 })
