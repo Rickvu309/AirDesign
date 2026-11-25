@@ -52,7 +52,6 @@ function placeAll(
   const masks = masksOf(nodes)
   const outlines = new Map(nodes.filter((node) => node.mask).map((node) => [node, silhouetteIn(node, within)]))
   return nodes.flatMap((node, index) => {
-    if (node.derived) return []
     const mask = masks[index]
     const masking = { reveals: outlines.get(node) ?? null, maskedBy: (mask && outlines.get(mask)) ?? null }
     return [place(node, parent, masking, byId)]

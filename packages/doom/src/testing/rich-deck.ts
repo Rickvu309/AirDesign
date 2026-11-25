@@ -1,7 +1,10 @@
-import { type NodeId, type Doom, type Write, nodeId } from "../index.js"
+import { type NodeId, type Doom, type Write, isRefusal, nodeId, placeComponent } from "../index.js"
 import { type OrderKey, orderKeyBetween } from "../order-key.js"
 import { box, ids, land, sampleDeck, textOf } from "../sample-deck.js"
 import { parentOf } from "../doom-walk.js"
+import { columnDefinition } from "../component/library.js"
+import { data, land as landInstance, measure } from "../component/testing/linked-instance-fixtures.js"
+import { partId } from "../component/part-id.js"
 import { started } from "../agent-fixtures.js"
 
 export const more = {
@@ -10,11 +13,13 @@ export const more = {
   layout: nodeId("t:12"),
   layoutTitle: nodeId("t:13"),
   layoutSubtitle: nodeId("t:14"),
-  chart: nodeId("t:15"),
+  column: nodeId("t:15"),
   line: nodeId("t:16"),
   icon: nodeId("t:17"),
   titled: nodeId("t:18"),
 }
+
+export const generatedColumn = partId(more.column, ["root"])
 
 export function richDeck(): Doom {
   const sampled = sampleDeck()
@@ -44,15 +49,6 @@ export function richDeck(): Doom {
     ...child(more.titled, "shape", more.slide2, on(more.titled, "box", box(50, 50, 600, 90))),
     on(more.titled, "text", textOf("Old title")),
     on(more.titled, "role", "title"),
-    ...child(more.chart, "frame", ids.slide, on(more.chart, "box", box(100, 300, 800, 500))),
-    on(more.chart, "chart", {
-      kind: "bar",
-      categories: ["Q1", "Q2"],
-      series: [
-        { name: "Plan", values: [3, 4] },
-        { name: "Actual", values: [2, 5] },
-      ],
-    }),
     ...child(more.line, "shape", ids.slide, on(more.line, "box", box(100, 200, 300, 0))),
     on(more.line, "geometry", {
       kind: "line",
@@ -75,5 +71,15 @@ export function richDeck(): Doom {
     on(more.layoutSubtitle, "role", "subtitle"),
     on(more.layoutSubtitle, "text", textOf("Subtitle")),
   ])
-  return started(doom)
+  const lineKey = parentOf(doom.nodes.get(more.line))?.at
+  if (lineKey === undefined) throw new Error("missing line order")
+  const instance = placeComponent(doom, columnDefinition, {
+    frame: more.column,
+    parent: { id: ids.slide, at: orderKeyBetween(parentOf(doom.nodes.get(ids.side))?.at ?? null, lineKey) },
+    box: box(100, 300, 800, 500),
+    data: data(3, 4),
+    measure,
+  })
+  if (isRefusal(instance)) throw new Error(JSON.stringify(instance))
+  return started(landInstance(doom, instance, true))
 }

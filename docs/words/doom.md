@@ -17,7 +17,7 @@ One thing in Doom: a deck, slide row, slide, frame or shape, named by its `type`
 _Avoid_: element, object, layer (a layer is what a person sees on the slide)
 
 **frame**:
-The one container. It holds nodes and may carry paint, radius, clip, a layout or a chart. A frame with no paint is what a person calls a group.
+The one container. It holds nodes and may carry paint, radius, clip, a layout or a component instance. A frame with no paint is what a person calls a group.
 _Avoid_: group (in code), container, artboard
 
 **shape**:

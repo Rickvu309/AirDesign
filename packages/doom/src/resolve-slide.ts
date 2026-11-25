@@ -1,4 +1,3 @@
-import { deriveChart } from "./derive-chart.js"
 import { deckOf } from "./deck-of.js"
 import type { NodeId } from "./ids.js"
 import { lineRoute } from "./line-ends.js"
@@ -70,12 +69,7 @@ const reads = (node: Node) => prop(node, "geometry")?.kind === "line"
 
 function resolveNode(context: Context, node: Node, box: Box): Resolved {
   const { theme } = context
-  const children = [
-    ...(node.type === "frame" && prop(node, "chart") !== undefined
-      ? deriveChart(node.id, prop(node, "chart")!, box, theme, context.measure)
-      : []),
-    ...nodesOf(context, node.id),
-  ]
+  const children = nodesOf(context, node.id)
   const before = kept.get(node)
   if (
     before !== undefined &&
@@ -113,7 +107,6 @@ function resolveFresh(context: Context, node: Node, box: Box, children: readonly
     clip: prop(node, "clip") ?? false,
     mask: prop(node, "mask") ?? false,
     children,
-    derived: false,
   }
 }
 

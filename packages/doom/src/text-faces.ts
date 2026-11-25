@@ -24,9 +24,6 @@ export function doomFaces(doom: Doom, layers?: readonly NodeId[]): FaceNeeds {
         if (span.italic === true) italic = true
       }
     }
-    const chart = node.type === "frame" ? node.chart : undefined
-    if (chart !== undefined)
-      for (const name of [...chart.categories, ...chart.series.map((series) => series.name)]) texts.add(name)
   }
   for (const font of fonts) {
     const family = familyOf(font)

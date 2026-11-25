@@ -320,7 +320,6 @@ export function compileAdd(draft: Draft, change: Add): void {
   const parent = change.into === undefined ? slide : living(draft, change.into, "into")
   if (change.into !== undefined && (parent.type !== "frame" || slideOf(draft.doom, parent.id) !== slide.id))
     stop("missing", parent.id, "into")
-  if (propOf(parent, "chart") !== undefined) stop("shape", parent.id, "into", "form", "A frame that is not a chart.")
   if (linkedOwner(draft.doom.nodes, parent.id) !== undefined)
     stop("shape", parent.id, "into", "form", "This layer is linked. Use detach to make it a plain layer.")
   checkFields(change)

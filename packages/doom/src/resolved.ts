@@ -91,5 +91,4 @@ export type Resolved = {
   readonly clip: boolean
   readonly mask: boolean
   readonly children: readonly Resolved[]
-  readonly derived: boolean
 }

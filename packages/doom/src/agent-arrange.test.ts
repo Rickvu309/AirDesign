@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { build, minter } from "./agent-fixtures.js"
-import { more, richDeck } from "./testing/rich-deck.js"
+import { generatedColumn, more, richDeck } from "./testing/rich-deck.js"
 import { ids, land } from "./sample-deck.js"
 import { childrenOf, parentOf, propOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
@@ -14,24 +14,24 @@ const refusal = (doom: Doom, value: Record<string, unknown>) => compileAgentChan
 describe("move", () => {
   it("puts a node first, after a sibling, or last among its parent's children", () => {
     const base = richDeck()
-    expect(kids(base, ids.slide)).toEqual([ids.card, ids.side, more.chart, more.line, more.icon])
+    expect(kids(base, ids.slide)).toEqual([ids.card, ids.side, more.column, more.line, more.icon])
     expect(kids(build(base, change({ op: "move", node: more.icon, after: null })), ids.slide)).toEqual([
       more.icon,
       ids.card,
       ids.side,
-      more.chart,
+      more.column,
       more.line,
     ])
     expect(kids(build(base, change({ op: "move", node: more.icon, after: ids.card })), ids.slide)).toEqual([
       ids.card,
       more.icon,
       ids.side,
-      more.chart,
+      more.column,
       more.line,
     ])
     expect(kids(build(base, change({ op: "move", node: ids.card })), ids.slide)).toEqual([
       ids.side,
-      more.chart,
+      more.column,
       more.line,
       more.icon,
       ids.card,
@@ -80,8 +80,8 @@ describe("move", () => {
     })
   })
 
-  it("refuses a move into a chart", () => {
-    expect(refusal(richDeck(), { op: "move", node: ids.card, into: more.chart })).toMatchObject({
+  it("refuses a move into a generated frame", () => {
+    expect(refusal(richDeck(), { op: "move", node: ids.card, into: generatedColumn })).toMatchObject({
       refused: "shape",
       field: "into",
     })
@@ -110,7 +110,7 @@ describe("wrap and unwrap", () => {
     expect(kids(doom, frame.id)).toEqual([ids.card, ids.side])
     expect(propOf(doom.nodes.get(ids.card)!, "box")).toMatchObject({ x: 0, y: 0 })
     expect(propOf(doom.nodes.get(ids.side)!, "box")).toMatchObject({ x: 300, y: 0 })
-    expect(kids(doom, ids.slide)).toEqual([frame.id, more.chart, more.line, more.icon])
+    expect(kids(doom, ids.slide)).toEqual([frame.id, more.column, more.line, more.icon])
   })
 
   it("wraps a frame that clips its children, as the frame gesture does, with no hug sizing", () => {
@@ -130,7 +130,7 @@ describe("wrap and unwrap", () => {
 
   it("unwraps a frame: its children take its place and position, and the frame goes", () => {
     const doom = build(wrapped(), change({ op: "unwrap", node: childrenOf(wrapped(), ids.slide)[0]!.id }))
-    expect(kids(doom, ids.slide)).toEqual([ids.card, ids.side, more.chart, more.line, more.icon])
+    expect(kids(doom, ids.slide)).toEqual([ids.card, ids.side, more.column, more.line, more.icon])
     expect(propOf(doom.nodes.get(ids.card)!, "box")).toMatchObject({ x: 100, y: 0 })
     expect(propOf(doom.nodes.get(ids.side)!, "box")).toMatchObject({ x: 400, y: 0 })
   })
@@ -143,14 +143,17 @@ describe("wrap and unwrap", () => {
     )
   })
 
-  it("refuses nodes from different parents, an empty list, a slide, a shape unwrapped and a chart unwrapped", () => {
+  it("refuses nodes from different parents, an empty list, a slide, a shape unwrapped and a generated frame unwrapped", () => {
     expect(refusal(richDeck(), { op: "wrap", nodes: [ids.card, ids.title] })).toMatchObject({
       refused: "shape",
       field: "nodes",
     })
     expect(refusal(richDeck(), { op: "wrap", nodes: [ids.slide] })).toMatchObject({ refused: "shape", field: "nodes" })
     expect(refusal(richDeck(), { op: "unwrap", node: ids.title })).toMatchObject({ refused: "shape", field: "node" })
-    expect(refusal(richDeck(), { op: "unwrap", node: more.chart })).toMatchObject({ refused: "shape", field: "node" })
+    expect(refusal(richDeck(), { op: "unwrap", node: generatedColumn })).toMatchObject({
+      refused: "shape",
+      field: "node",
+    })
     expect(refusal(richDeck(), { op: "wrap", nodes: ["z:9"] })).toMatchObject({
       refused: "missing",
       field: "nodes",
@@ -162,7 +165,7 @@ describe("wrap and unwrap", () => {
 describe("delete", () => {
   it("removes nodes by clearing their parent, which undo can put back", () => {
     const doom = build(richDeck(), change({ op: "delete", nodes: [ids.card, more.line] }))
-    expect(kids(doom, ids.slide)).toEqual([ids.side, more.chart, more.icon])
+    expect(kids(doom, ids.slide)).toEqual([ids.side, more.column, more.icon])
     expect(parentOf(doom.nodes.get(ids.card)!)).toBeNull()
   })
 

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest"
 
-import { placed } from "./component/testing/linked-instance-fixtures.js"
-import { slidesOf } from "./doom-walk.js"
+import { componentLibrary } from "./component/library.js"
+import { isRefusal, nodeId, orderKeyBetween, placeComponent } from "./index.js"
+import { land, placed } from "./component/testing/linked-instance-fixtures.js"
+import { childrenOf, parentOf, slidesOf } from "./doom-walk.js"
 import { doomFromTree, type TreeNode } from "./doom-tree.js"
 import { textFromMarkdown } from "./markdown.js"
 import { slideFindings } from "./slide-findings.js"
@@ -17,20 +19,39 @@ const text = (chars: string, style: "title" | "display" | "body" = "body", width
   },
 })
 
-const chart = (kind: "column" | "pie" = "column"): TreeNode => ({
-  type: "frame",
-  props: {
-    chart: { kind, categories: ["Q1", "Q2", "Q3"], series: [{ name: "Revenue", values: [2, 3, 4] }] },
-    box: spot(0, 200, 600, 500),
-  },
-})
+const chart = (component: "column" | "pie" = "column", box = spot(0, 200, 600, 500)) => ({ component, box })
 
-function findings(slides: readonly (readonly TreeNode[])[], count = slides.length) {
-  const grown = doomFromTree({ theme: defaultTheme, slides: slides.map((children) => ({ children })) })
-  return slideFindings(grown.doom, grown.slides.slice(0, count), { measure })
+type Layer = TreeNode | ReturnType<typeof chart>
+
+function findings(slides: readonly (readonly Layer[])[], count = slides.length) {
+  const grown = doomFromTree({
+    theme: defaultTheme,
+    slides: slides.map((layers) => ({ children: layers.filter((layer) => "type" in layer) })),
+  })
+  let doom = grown.doom
+  let serial = 0
+  for (const [index, slide] of grown.slides.entries()) {
+    let at = parentOf(childrenOf(doom, slide).at(-1))?.at ?? null
+    for (const layer of slides[index] ?? []) {
+      if ("type" in layer) continue
+      const definition = componentLibrary.get(layer.component)
+      if (definition === undefined) throw new Error("missing component definition")
+      at = orderKeyBetween(at, null)
+      const writes = placeComponent(doom, definition, {
+        frame: nodeId(`chart:${++serial}`),
+        parent: { id: slide, at },
+        box: layer.box,
+        data: definition.spec.sample?.data,
+        measure,
+      })
+      if (isRefusal(writes)) throw new Error(JSON.stringify(writes))
+      doom = land(doom, writes, true)
+    }
+  }
+  return slideFindings(doom, grown.slides.slice(0, count), { measure })
 }
 
-const codes = (slides: readonly (readonly TreeNode[])[], count?: number) =>
+const codes = (slides: readonly (readonly Layer[])[], count?: number) =>
   findings(slides, count).map((finding) => finding.code)
 
 describe("slide findings", () => {
@@ -155,7 +176,7 @@ describe("slide findings", () => {
   })
 
   it("leaves a full-size chart with a small companion clear", () => {
-    const small: TreeNode = { ...chart(), props: { ...chart().props, box: spot(620, 200, 200, 100) } }
+    const small = chart("column", spot(620, 200, 200, 100))
     expect(codes([[small, chart(), text("Source: Annual report")]])).toEqual([])
   })
 
