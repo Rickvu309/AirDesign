@@ -200,4 +200,48 @@ describe("slide findings", () => {
     )
     expect(codes([[text("0.0% and 100.0%"), text("Alorem")]])).toEqual([])
   })
+
+  describe("empty cards", () => {
+    const words = (chars: string): TreeNode => ({
+      type: "shape",
+      props: { geometry: { kind: "rect" }, sizing: { w: "fill", h: "hug" }, text: textFromMarkdown(chars, "body") },
+    })
+    const card = (lines: readonly string[], filled: boolean): TreeNode => ({
+      type: "frame",
+      props: {
+        sizing: { w: "fill", h: "fill" },
+        fills: filled ? [{ kind: "solid", color: { var: "background2" } }] : [],
+        layout: { mode: "column", gap: 16, padding: { t: 38, r: 38, b: 38, l: 38 }, align: "top-left" },
+      },
+      children: lines.map(words),
+    })
+    const row = (high: number, cards: readonly (readonly string[])[], filled = true): TreeNode => ({
+      type: "frame",
+      name: "KPI",
+      props: {
+        box: spot(160, 280, 1600, high),
+        layout: { mode: "row", gap: 32, padding: { t: 0, r: 0, b: 0, l: 0 }, align: "top-left" },
+      },
+      children: cards.map((lines) => card(lines, filled)),
+    })
+    const kpis = [
+      ["ARR", "$158.4M", "Target $160.0M"],
+      ["Gross margin", "79%", "Target 78%"],
+    ]
+
+    it("advises shrinking a row whose fullest card stands mostly empty, once for the row", () => {
+      const found = findings([[row(460, [...kpis, ["Net revenue retention", "109%"]]), text("Source: Finance pack")]])
+      expect(found).toEqual([
+        expect.objectContaining({
+          code: "empty-card",
+          note: "Make the cards, or the row that holds them, only as tall as their words.",
+        }),
+      ])
+    })
+
+    it("leaves a row its fullest card fills, and frames with no fill, clear", () => {
+      expect(codes([[row(300, [...kpis, ["Net revenue retention", "109%"]])]])).toEqual([])
+      expect(codes([[row(460, kpis, false)]])).toEqual([])
+    })
+  })
 })

@@ -3,12 +3,16 @@ import type { AgentChange } from "./agent-change.js"
 import { agentDeck, build, lastChild, minter, titledSlide } from "./agent-fixtures.js"
 import { bottomLimitOf, contentAreaOf } from "./agent-place.js"
 import { childrenOf, propOf } from "./doom-walk.js"
-import type { Doom } from "./index.js"
+import type { Doom, NodeId } from "./index.js"
+import { slideFindings } from "./slide-findings.js"
+import { measure } from "./testing/doom-fixtures-art.js"
 import { ids } from "./sample-deck.js"
 
 const slide = ids.slide
 const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as AgentChange
 const made = (doom: Doom) => lastChild(doom, slide)
+const emptyCardsOn = (doom: Doom, on: NodeId) =>
+  slideFindings(doom, [on], { measure }).filter((found) => found.code === "empty-card")
 
 const kpiItems = [
   { title: "Revenue", value: "$4.2M", note: "+12% YoY" },
@@ -40,6 +44,34 @@ describe("a pattern under a title", () => {
     },
   )
 
+  it.each([
+    ["kpi", kpiItems],
+    [
+      "cards",
+      [
+        { title: "Grow", icon: "trending-up", points: ["Enter two markets"] },
+        { title: "Protect", icon: "shield", points: ["Cut cost to serve", "Raise retention"] },
+      ],
+    ],
+    [
+      "compare",
+      [
+        { title: "Build", points: ["Slower", "Ours to keep"] },
+        { title: "Buy", points: ["Faster"] },
+      ],
+    ],
+  ] as const)("keeps %s cards at their words' height at the top of a taller box", (kind, items) => {
+    const { doom: start, on } = titled()
+    const given = { x: 160, y: 280, w: 1600, h: 660 }
+    const doom = build(start, { op: "add", slide: on, kind, items, box: given } as AgentChange, minter("p"))
+    const row = lastChild(doom, on)
+    const box = propOf(row, "box")!
+    expect(box).toMatchObject({ x: given.x, y: given.y, w: given.w })
+    expect(box.h).toBeLessThan(given.h / 2)
+    for (const card of childrenOf(doom, row.id)) expect(propOf(card, "sizing")).toEqual({ w: "fill", h: "fill" })
+    expect(emptyCardsOn(doom, on)).toEqual([])
+  })
+
   it.each(["timeline", "flow", "matrix"] as const)("fills the band down to the bottom margin for %s", (kind) => {
     const { doom: start, on } = titled()
     const items =
@@ -68,6 +100,7 @@ describe("a pattern under a title", () => {
       minter("p"),
     )
     const box = propOf(lastChild(doom, on), "box")!
+    expect(emptyCardsOn(doom, on)).toEqual([])
     expect(box.y + box.h).toBeGreaterThan(bottomLimitOf(1080) - items.length)
     expect(box.y + box.h).toBeLessThanOrEqual(bottomLimitOf(1080))
   })
