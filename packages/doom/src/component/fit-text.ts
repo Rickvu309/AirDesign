@@ -1,3 +1,4 @@
+import { resolveColor } from "../color.js"
 import type { Measure, Measured } from "../measure.js"
 import { type Text, textLimits } from "../text.js"
 import { paragraphCuts } from "../text-ellipsis.js"
@@ -5,7 +6,7 @@ import type { Theme } from "../theme.js"
 import { finite, naming, reject } from "../read-kit.js"
 import type { GroupedText, Kept, PreparedPart, TextPart } from "./nodes.js"
 import type { TextFitFinding } from "./findings.js"
-import { type Charge, numeric } from "./values.js"
+import { type Charge, color, numeric } from "./values.js"
 
 export type FittingContext = {
   readonly measure: Measure
@@ -332,4 +333,23 @@ export function* fitGroups(
       if (part !== undefined) yield part
     }
   }
+}
+
+function luminance(hex: string): number {
+  const rgb = [1, 3, 5].map((i) => {
+    const channel = Number.parseInt(hex.slice(i, i + 2), 16) / 255
+    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * rgb[0]! + 0.7152 * rgb[1]! + 0.0722 * rgb[2]!
+}
+
+export function contrastInk(fill: unknown, first: unknown, second: unknown, theme: Theme) {
+  const a = color(first)
+  const b = color(second)
+  const surface = luminance(resolveColor(color(fill), theme)) + 0.05
+  const contrast = (ink: typeof a) => {
+    const level = luminance(resolveColor(ink, theme)) + 0.05
+    return Math.max(level, surface) / Math.min(level, surface)
+  }
+  return contrast(a) >= contrast(b) ? a : b
 }

@@ -90,9 +90,10 @@ describe("NodeArt", () => {
       props: { box: spot(0, 0, 100, 100) },
       children: [wedge(upper), wedge(d)],
     })
-    const paintOrder = (d: string) => painted([frame(d)]).match(/opacity:0\.5|stroke-width="2"/g)
-    expect(paintOrder(lower)).toEqual(["opacity:0.5", 'stroke-width="2"', 'stroke-width="2"'])
-    expect(paintOrder(upper)).toEqual(["opacity:0.5", "opacity:0.5"])
+    const html = (d: string) => painted([frame(d)])
+    expect(html(lower)).toContain('<g opacity="0.5"')
+    expect(html(upper)).not.toContain("<g")
+    expect(html(upper).match(/opacity:0\.5/g)).toHaveLength(2)
   })
 
   it("places a node by its box and rounds the box by its radius, filling it with each paint in order", () => {

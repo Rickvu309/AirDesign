@@ -2,8 +2,9 @@ import { naming, reject } from "../read-kit.js"
 import { type Charge, type Value, color, entries, id, isList, name, numeric, wordsWithin } from "./values.js"
 
 type Field =
-  | { readonly kind: "string" | "string?" | "number" | "number?" | "color?" | "positive" | "nonnegative" }
-  | { readonly kind: "list"; readonly item: "number?" | "color?" }
+  | { readonly kind: "string" | "string?" | "number" | "number?" | "positive" | "nonnegative" | "color" }
+  | { readonly kind: "optional"; readonly field: Field }
+  | { readonly kind: "list"; readonly item: Field }
   | { readonly kind: "enum"; readonly choices: readonly string[] }
   | { readonly kind: "ref"; readonly table: string }
 type Fields = Readonly<Record<string, Field>>
@@ -11,7 +12,13 @@ type Collections = Readonly<Record<string, Fields>>
 
 const readLabel = wordsWithin(200)
 
-function readField(raw: unknown): Field {
+function readField(raw: unknown, position: "field" | "optional" | "item" = "field"): Field {
+  if (raw !== null && typeof raw === "object" && !isList(raw) && position !== "item") {
+    const [kind, value] = entries(raw, 1)[0] ?? []
+    if (kind === "list") return { kind, item: readField(value, "item") }
+    if (kind === "optional" && position === "field") return { kind, field: readField(value, "optional") }
+    return reject("shape", "A list or optional field declaration.")
+  }
   if (isList(raw)) {
     if (raw.length > 32) return reject("limit", "At most 32 enum choices.")
     const choices = Array.from(raw, (choice, i) => naming(`[${i}]`, () => readLabel(choice)))
@@ -24,16 +31,19 @@ function readField(raw: unknown): Field {
     case "string?":
     case "number":
     case "number?":
-    case "color?":
     case "positive":
     case "nonnegative":
+    case "color":
       return { kind: raw }
     case "number?[]":
-      return { kind: "list", item: "number?" }
+      return { kind: "list", item: { kind: "number?" } }
     case "color?[]":
-      return { kind: "list", item: "color?" }
+      return { kind: "list", item: { kind: "optional", field: { kind: "color" } } }
+    case "color?":
+      return { kind: "optional", field: { kind: "color" } }
   }
-  if (typeof raw === "string" && raw.startsWith("ref:")) return { kind: "ref", table: name(raw.slice(4)) }
+  if (position === "field" && typeof raw === "string" && raw.startsWith("ref:"))
+    return { kind: "ref", table: name(raw.slice(4)) }
   return reject("shape", "A field type, a list of enum choices, or a ref:collection name.")
 }
 
@@ -87,7 +97,8 @@ function readScalarValue(field: Field, raw: unknown): string | number | null {
       const value = numeric(raw)
       return value >= 0 ? value : reject("shape", "A nonnegative number.")
     }
-    case "color?":
+    case "color":
+    case "optional":
     case "list":
       return reject("shape", "A scalar collection field.")
   }
@@ -95,14 +106,19 @@ function readScalarValue(field: Field, raw: unknown): string | number | null {
 
 function readValue(field: Field, raw: unknown, charge: Charge): Value {
   switch (field.kind) {
-    case "color?":
-      return raw === null ? null : color(raw)
-    case "list": {
-      if (!isList(raw)) return reject("shape", "A list of values.")
-      if (raw.length > 100) return reject("limit", "At most 100 values in a list field.")
-      charge(raw.length)
-      return Array.from(raw, (value, i) => naming(`[${i}]`, () => readValue({ kind: field.item }, value, charge)))
-    }
+    case "optional":
+      return raw === undefined || raw === null ? null : readValue(field.field, raw, charge)
+    case "list":
+      if (!isList(raw)) return reject("shape", "A list of field values.")
+      if (raw.length > 100) return reject("limit", "At most 100 values in a field.")
+      return Array.from(raw, (value, i) =>
+        naming(`[${i}]`, () => {
+          charge(typeof value === "string" ? 1 + value.length : 1)
+          return readValue(field.item, value, charge)
+        }),
+      )
+    case "color":
+      return color(raw)
     default:
       return readScalarValue(field, raw)
   }

@@ -2,7 +2,10 @@ import { type Color, type Hex, readColor as colorReader } from "./paint.js"
 import { Reject } from "./read-kit.js"
 import type { Theme } from "./theme.js"
 
-const channels = (hex: Hex): readonly number[] => [1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16))
+function channels(hex: Hex) {
+  const at = (index: number) => Number.parseInt(hex.slice(index, index + 2), 16)
+  return [at(1), at(3), at(5)] as const
+}
 
 const hexOf = (parts: readonly number[]): Hex =>
   `#${parts
@@ -17,6 +20,12 @@ export function tinted(hex: Hex, tint: number): Hex {
   const towards = tint > 0 ? 255 : 0
   const share = Math.abs(tint)
   return hexOf(channels(hex).map((part) => part + (towards - part) * share))
+}
+
+export function grayscale(hex: Hex): Hex {
+  const [r, g, b] = channels(hex)
+  const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  return hexOf([gray, gray, gray])
 }
 
 export function resolveColor(color: Color, theme: Theme): Hex {

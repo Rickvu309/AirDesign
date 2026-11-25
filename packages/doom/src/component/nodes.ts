@@ -102,6 +102,7 @@ export type PreparedPart =
   | Kept
   | TextFitFinding
   | Extract<ComponentFinding, { kind: "check" }>
+  | Extract<ComponentFinding, { kind: "notice" }>
 
 const align = literal(["left", "center", "right", "justify"])
 const vertical = literal(["top", "center", "bottom"])
@@ -135,6 +136,17 @@ export function preparePart(
     })
     return { kind: "check", key, field, message }
   }
+  if (emit.kind === "notice")
+    return {
+      kind: "notice",
+      key,
+      field,
+      message: readField("message", emit.message, (value) => {
+        const message = string(value)
+        charge(message.length)
+        return message
+      }),
+    }
   if (emit.kind === "line") {
     return {
       key,
@@ -277,7 +289,7 @@ export function treeOf(
 ): ComponentTree {
   const seen = new Map<string, { readonly id: NodeId; readonly part: PlacedPart }>()
   for (const fitted of fitGroups(parts, context, frame)) {
-    if (fitted.kind === "text-fit" || fitted.kind === "check") {
+    if (fitted.kind === "text-fit" || fitted.kind === "check" || fitted.kind === "notice") {
       findings.push(fitted)
       continue
     }

@@ -8,6 +8,7 @@ function findingMessage(finding: doom.ComponentFinding): string {
     case "advice":
       return finding.note
     case "check":
+    case "notice":
       return finding.message
     case "flow-omitted":
       return finding.omitted.length === 1
