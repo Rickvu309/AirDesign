@@ -305,7 +305,7 @@ function addComponent(draft: Draft, parent: Node, change: Add): void {
   const available = change.box ?? freeArea(draft, parent) ?? stop("limit", parent.id, "box")
   const box =
     change.box === undefined && sample !== undefined
-      ? centred(available, { w: Math.min(sample.w, available.w), h: Math.min(sample.h, available.h) })
+      ? centred(available, pictureFit({ width: sample.w, height: sample.h }, available))
       : available
   const placed = placeComponent(draft.doom, definition, {
     frame: draft.mint(),

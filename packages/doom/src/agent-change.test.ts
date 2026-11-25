@@ -1,3 +1,4 @@
+import { linkedComponentsEnabled } from "./component-rollout.js"
 import { describe, expect, it } from "vitest"
 import { bytesOf, limits } from "./limits.js"
 import { hex } from "./sample-deck.js"
@@ -210,6 +211,7 @@ describe("the advertised schema", () => {
       "colors",
       "fonts",
       "nameFollows",
+      ...(linkedComponentsEnabled ? ["component", "data", "variant", "tokens"] : []),
     ]
     expect(Object.keys(change).sort()).toEqual([...named].sort())
     const used = new Set(valid.flatMap((each) => Object.keys(each)))
@@ -229,8 +231,19 @@ describe("the advertised schema", () => {
     }
   })
 
-  it("names the nine ops", () => {
-    expect(change.op?.enum).toEqual(["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck"])
+  it("advertises detach only during the linked template rollout", () => {
+    expect(change.op?.enum).toEqual([
+      "add",
+      "set",
+      "move",
+      "wrap",
+      "unwrap",
+      "delete",
+      "slide",
+      "duplicate",
+      "deck",
+      ...(linkedComponentsEnabled ? ["detach"] : []),
+    ])
   })
 
   it("fits the budget for the one tool that carries it", () => {

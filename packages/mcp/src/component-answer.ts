@@ -57,6 +57,6 @@ export function componentSignature(id: string): Signature | undefined {
     defaultVariant: spec.defaultVariant ?? {},
     tokens: spec.defaults ?? {},
     sample: spec.sample,
-    overrides: { text: ["textStyle", "name", "link"], shapes: ["fill", "name"] },
+    overrides: doom.linkedPartOverrides,
   }
 }

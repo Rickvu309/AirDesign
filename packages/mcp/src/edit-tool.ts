@@ -52,6 +52,8 @@ function rootsInFold(fold: doom.Doom, client: string, changes: readonly doom.Age
   }))
 }
 
+type UpdatedComponent = { readonly id: doom.NodeId; readonly partCount: number }
+
 function landedAnswer(
   deck: string,
   rev: number,
@@ -60,18 +62,23 @@ function landedAnswer(
   findings: Findings = { findings: [], layout: "untouched" },
   bakedLayouts: readonly doom.NodeId[] = [],
   components: readonly ComponentReadFinding[] = [],
+  updatedComponents: readonly UpdatedComponent[] = [],
 ): ToolResult {
   const words = added.map(
     (each) => `${each.id} ${each.kind}${each.change === undefined ? "" : ` (change ${String(each.change)})`}`,
   )
   const lead = `Landed at rev ${String(rev)}${added.length === 0 ? "" : `, adding ${words.join(", ")}`}. Send runId with your next edits, and to airdesign_stop_run when done.`
   const found = findings.findings.length === 0 ? {} : { findings: listed(findings.findings) }
-  return answered([lead, ...componentFindingsNote(components), ...findingsNote(findings)].join(" "), {
+  const updates = updatedComponents.map(
+    ({ id, partCount }) => `Updated linked template ${id} (${partCount} generated parts).`,
+  )
+  return answered([lead, ...updates, ...componentFindingsNote(components), ...findingsNote(findings)].join(" "), {
     ok: true,
     deck,
     rev,
     runId: run,
     added,
+    ...(updatedComponents.length === 0 ? {} : { updatedComponents }),
     ...(bakedLayouts.length === 0 ? {} : { bakedLayouts }),
     ...found,
     ...(components.length === 0 ? {} : { componentFindings: components }),
@@ -365,11 +372,25 @@ export async function editDeckTool(
   const laid = await layoutOf(host, compiled.after, () =>
     doom.touchedSlides(opened.fold, compiled.after, compiled.edit.writes),
   )
+  const regenerated = new Set<doom.NodeId>()
+  const updated = new Map<doom.NodeId, UpdatedComponent>()
+  for (const { node, prop, value } of compiled.edit.writes) {
+    if (prop !== "instance" || value === null) continue
+    const instance = doom.props.instance.read(value)
+    if (doom.isRefusal(instance)) continue
+    regenerated.add(instance.generated)
+    for (const part of instance.parts) regenerated.add(part.node)
+    if (doom.propOf(opened.fold.nodes.get(node), "instance") !== undefined)
+      updated.set(node, { id: node, partCount: instance.parts.length })
+  }
   return landedAnswer(
     landed.deck,
     landed.rev,
     run,
-    rootsOfEdit(compiled.edit, compiled.added),
+    rootsOfEdit(
+      compiled.edit,
+      compiled.added.filter(({ id }) => !regenerated.has(id)),
+    ),
     {
       findings: [...compiled.findings, ...laid.findings],
       layout: laid.layout,
@@ -385,5 +406,6 @@ export async function editDeckTool(
       compiled.edit.writes.flatMap(({ node, prop, value }) => (prop === "instance" && value !== null ? [node] : [])),
       measure,
     ),
+    [...updated.values()],
   )
 }

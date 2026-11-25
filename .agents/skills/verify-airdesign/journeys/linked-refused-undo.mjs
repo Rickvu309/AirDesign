@@ -38,7 +38,7 @@ export default async function drive(kit) {
   const bar = (fold, id) => inst(fold).parts.find(({ key }) => key[0] === "bar" && key[1] === id)?.node
   const suppressed = async () => inst(await read()).suppressed.map(({ key }) => key.join("/"))
   const f0 = await read()
-  const placed = doom.placeComponent(f0, {
+  const placed = doom.placeComponent(f0, doom.columnDefinition, {
     frame,
     parent: { id: slide, at: doom.orderKeyBetween(null, null) },
     box: { x: 240, y: 180, w: 1440, h: 720, rotation: 0, flipH: false, flipV: false },
