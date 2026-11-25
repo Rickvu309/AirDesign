@@ -94,6 +94,7 @@ describe("createServer", () => {
         "duplicate",
         "deck",
         "detach",
+        "component",
       ])
       expect(advertisedTokens).toBeLessThanOrEqual(8000)
       expect(listedTokens).toBeLessThanOrEqual(8000)

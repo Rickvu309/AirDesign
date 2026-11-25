@@ -123,6 +123,20 @@ export type ComponentEditSample = {
 }
 const estimate = measureWith({})
 
+export type RecordingMeasure = { readonly measure: Measure; readonly sample: (view: Doom) => ComponentEditSample }
+
+export function recordingMeasure(measure: Measure = estimate): RecordingMeasure {
+  const texts = new Set<string>()
+  const measures: Parameters<Measure>[] = []
+  const recording: Measure = (text, theme, width, fit) => {
+    measures.push([text, theme, width, fit])
+    texts.add(text.chars)
+    if (theme.textStyles[text.style].case === "upper") texts.add(text.chars.toUpperCase())
+    return measure(text, theme, width, fit)
+  }
+  return { measure: recording, sample: (view: Doom): ComponentEditSample => ({ view, texts: [...texts], measures }) }
+}
+
 export function sampleComponentEdit(
   view: Doom,
   writes: readonly Write[],
@@ -131,18 +145,12 @@ export function sampleComponentEdit(
 ): ComponentEditSample | null | Refusal {
   const preview = componentEditPreview(view, changingWrites(view, writes), batchStart, focusEdit)
   if (preview === null || isRefusal(preview)) return preview
-  const texts = new Set<string>()
-  const measures: Parameters<Measure>[] = []
+  const recorder = recordingMeasure()
   for (const root of preview.roots) {
-    const sample = refreshComponent(view, preview.view, root, (text, theme, width, fit) => {
-      measures.push([text, theme, width, fit])
-      texts.add(text.chars)
-      if (theme.textStyles[text.style].case === "upper") texts.add(text.chars.toUpperCase())
-      return estimate(text, theme, width, fit)
-    })
+    const sample = refreshComponent(view, preview.view, root, recorder.measure)
     if (isRefusal(sample)) return sample
   }
-  return { view: preview.view, texts: [...texts], measures }
+  return recorder.sample(preview.view)
 }
 
 export function prepareComponentEdit(

@@ -7,8 +7,14 @@ import type { DeckHost } from "./deck-host.js"
 import { deckMeasure } from "./deck-measure.js"
 import { imageNames, imageProblem, imagesPerCall, pictureSizes, withAssets, type NamedImages } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
-import { componentFindings, componentFindingsNote, type ComponentReadFinding } from "./component-answer.js"
+import {
+  componentFindings,
+  componentFindingsNote,
+  sampleFindings,
+  type ComponentReadFinding,
+} from "./component-answer.js"
 import { withCatalogFonts } from "./font-names.js"
+import { templateWords, writtenTemplates, type WrittenTemplate } from "./template-answer.js"
 
 type Read =
   | { readonly ok: true; readonly changes: readonly doom.AgentChange[] }
@@ -30,11 +36,12 @@ function readChanges(raw: readonly unknown[]): Read {
 type Added = { readonly id: string; readonly kind: string; readonly change?: number }
 
 function rootsOfEdit(edit: doom.Edit, added: readonly doom.AddedNode[]): readonly Added[] {
-  const made = new Set<string>(added.filter((each) => each.kind !== "slideRow").map((each) => each.id))
+  const placed = added.filter((each) => each.kind !== "slideRow" && each.kind !== "template")
+  const made = new Set<string>(placed.map((each) => each.id))
   const parents = new Map<string, string>()
   for (const write of edit.writes)
     if (write.prop === "parent" && write.value !== null) parents.set(write.node, (write.value as { id: string }).id)
-  return added.filter((each) => each.kind !== "slideRow" && !made.has(parents.get(each.id) ?? ""))
+  return placed.filter((each) => !made.has(parents.get(each.id) ?? ""))
 }
 
 const makesRoot = (change: doom.AgentChange) =>
@@ -53,7 +60,6 @@ function rootsInFold(fold: doom.Doom, client: string, changes: readonly doom.Age
 }
 
 type UpdatedComponent = { readonly id: doom.NodeId; readonly partCount: number }
-
 function landedAnswer(
   deck: string,
   rev: number,
@@ -63,6 +69,7 @@ function landedAnswer(
   bakedLayouts: readonly doom.NodeId[] = [],
   components: readonly ComponentReadFinding[] = [],
   updatedComponents: readonly UpdatedComponent[] = [],
+  templates: readonly WrittenTemplate[] = [],
 ): ToolResult {
   const words = added.map(
     (each) => `${each.id} ${each.kind}${each.change === undefined ? "" : ` (change ${String(each.change)})`}`,
@@ -72,12 +79,15 @@ function landedAnswer(
   const updates = updatedComponents.map(
     ({ id, partCount }) => `Updated linked template ${id} (${partCount} generated parts).`,
   )
-  return answered([lead, ...updates, ...componentFindingsNote(components), ...findingsNote(findings)].join(" "), {
+  const written = templates.map(templateWords)
+  const notes = [lead, ...written, ...updates, ...componentFindingsNote(components), ...findingsNote(findings)]
+  return answered(notes.join(" "), {
     ok: true,
     deck,
     rev,
     runId: run,
     added,
+    ...(templates.length === 0 ? {} : { templates }),
     ...(updatedComponents.length === 0 ? {} : { updatedComponents }),
     ...(bakedLayouts.length === 0 ? {} : { bakedLayouts }),
     ...found,
@@ -426,6 +436,7 @@ export async function editDeckTool(
   const laid = await layoutOf(host, compiled.after, () =>
     doom.touchedSlides(opened.fold, compiled.after, compiled.edit.writes),
   )
+  const templates = writtenTemplates(compiled.edit, compiled.after)
   const regenerated = new Set<doom.NodeId>()
   const updated = new Map<doom.NodeId, UpdatedComponent>()
   for (const { node, prop, value } of compiled.edit.writes) {
@@ -455,11 +466,19 @@ export async function editDeckTool(
         ? [write.node]
         : [],
     ),
-    componentFindings(
-      compiled.after,
-      compiled.edit.writes.flatMap(({ node, prop, value }) => (prop === "instance" && value !== null ? [node] : [])),
-      measure,
-    ),
+    [
+      ...sampleFindings(
+        compiled.after,
+        templates.map(({ id }) => id),
+        measure,
+      ),
+      ...componentFindings(
+        compiled.after,
+        compiled.edit.writes.flatMap(({ node, prop, value }) => (prop === "instance" && value !== null ? [node] : [])),
+        measure,
+      ),
+    ],
     [...updated.values()],
+    templates,
   )
 }

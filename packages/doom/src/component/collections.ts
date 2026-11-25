@@ -12,6 +12,21 @@ type Collections = Readonly<Record<string, Fields>>
 
 const readLabel = wordsWithin(200)
 
+const scalarTypes = ["string", "string?", "number", "number?", "positive", "nonnegative", "color"] as const
+const shorthandTypes: Readonly<Record<string, Field>> = {
+  "number?[]": { kind: "list", item: { kind: "number?" } },
+  "color?[]": { kind: "list", item: { kind: "optional", field: { kind: "color" } } },
+  "color?": { kind: "optional", field: { kind: "color" } },
+}
+
+export const fieldTypeNames: readonly string[] = [
+  ...scalarTypes,
+  ...Object.keys(shorthandTypes),
+  "list",
+  "optional",
+  "ref:",
+]
+
 function readField(raw: unknown, position: "field" | "optional" | "item" = "field"): Field {
   if (raw !== null && typeof raw === "object" && !isList(raw) && position !== "item") {
     const [kind, value] = entries(raw, 1)[0] ?? []
@@ -26,22 +41,8 @@ function readField(raw: unknown, position: "field" | "optional" | "item" = "fiel
       return reject("shape", "A non-empty list of distinct enum choices.")
     return { kind: "enum", choices }
   }
-  switch (raw) {
-    case "string":
-    case "string?":
-    case "number":
-    case "number?":
-    case "positive":
-    case "nonnegative":
-    case "color":
-      return { kind: raw }
-    case "number?[]":
-      return { kind: "list", item: { kind: "number?" } }
-    case "color?[]":
-      return { kind: "list", item: { kind: "optional", field: { kind: "color" } } }
-    case "color?":
-      return { kind: "optional", field: { kind: "color" } }
-  }
+  if ((scalarTypes as readonly unknown[]).includes(raw)) return { kind: raw as (typeof scalarTypes)[number] }
+  if (typeof raw === "string" && Object.hasOwn(shorthandTypes, raw)) return shorthandTypes[raw]!
   if (position === "field" && typeof raw === "string" && raw.startsWith("ref:"))
     return { kind: "ref", table: name(raw.slice(4)) }
   return reject("shape", "A field type, a list of enum choices, or a ref:collection name.")

@@ -217,6 +217,7 @@ describe("the advertised schema", () => {
       "variant",
       "tokens",
       "focus",
+      "spec",
     ]
     expect(Object.keys(change).sort()).toEqual([...named].sort())
     const used = new Set(valid.flatMap((each) => Object.keys(each)))
@@ -242,7 +243,7 @@ describe("the advertised schema", () => {
     expect(Object.keys(change).includes("focus")).toBe(true)
   })
 
-  it("advertises detach on linked templates", () => {
+  it("advertises detach on linked templates and authoring a template", () => {
     expect(change.op?.enum).toEqual([
       "add",
       "set",
@@ -254,6 +255,7 @@ describe("the advertised schema", () => {
       "duplicate",
       "deck",
       "detach",
+      "component",
     ])
   })
 

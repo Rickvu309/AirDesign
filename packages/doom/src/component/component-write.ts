@@ -1,6 +1,6 @@
 import type { Doom, Write } from "../doom.js"
 import { deckOf } from "../deck-of.js"
-import { childrenOf, deckOf as deckNodeOf, parentOf, propOf } from "../doom-walk.js"
+import { childrenOf, deckOf as deckNodeOf, onDeck, parentOf, propOf } from "../doom-walk.js"
 import { readNodeId, type NodeId } from "../ids.js"
 import { bytesOf, limits } from "../limits.js"
 import type { Measure } from "../measure.js"
@@ -12,6 +12,7 @@ import { componentEditPreview, rebuildRoots, unchangedSpec } from "./component-e
 import { deckComponent } from "./deck-component.js"
 import { expandComponent } from "./expand-component.js"
 import type { ComponentFinding } from "./findings.js"
+import type { ComponentTree } from "./nodes.js"
 import { refreshComponent } from "./join-instance.js"
 import { componentSpec } from "./library.js"
 import { type ComponentSpec, readComponentSpec } from "./spec.js"
@@ -145,20 +146,22 @@ function specWrites(fold: Doom, node: NodeId, current: Current | undefined, { sp
   ]
 }
 
-export function prepareComponentWrite(
+export type ComponentSpecWrite = Omit<ComponentWrite, "rebuilt">
+
+export function prepareComponentSpec(
   fold: Doom,
-  asked: { readonly spec: unknown; readonly target?: string },
+  asked: { readonly spec: unknown; readonly target?: string | undefined },
   measure: Measure,
   mint: () => NodeId,
-): ComponentWrite | Refusal {
+  charge: Charge = editBudget().charge,
+): ComponentSpecWrite | Refusal {
   const current = asked.target === undefined ? undefined : currentComponent(fold, asked.target)
   if (isRefusal(current)) return current
   const read = readWritten(asked.spec, current)
   if (isRefusal(read)) return read
   const { spec, frame, data } = read
-  const work = editBudget()
   const theme = deckOf(fold).theme
-  const tree = expandComponent(spec, { data, frame, theme, measure, work: work.charge })
+  const tree = expandComponent(spec, { data, frame, theme, measure, work: charge })
   if (isRefusal(tree))
     return { refused: tree.refused, field: sampleField(tree.field), form: `Expanding the sample: ${stated(tree)}` }
   const node = current?.node ?? mint()
@@ -167,35 +170,108 @@ export function prepareComponentWrite(
   if (isRefusal(writes)) return writes
   const unchanged = unchangedSpec(fold, changingWrites(fold, writes))
   if (unchanged !== undefined) return unchanged
-  const findings: ComponentWriteFinding[] = tree.findings.map((finding) => ({ ...finding, where: "sample" }))
+  const findings = tree.findings.map((finding): ComponentWriteFinding => ({ ...finding, where: "sample" }))
+  return { component: node, revision, writes, findings }
+}
+
+type Budget = ReturnType<typeof editBudget>
+
+function rebuiltOrRefused(
+  base: Doom,
+  view: Doom,
+  root: NodeId,
+  component: NodeId,
+  instances: number,
+  measure: Measure,
+  work: Budget,
+) {
+  const rebuilt = refreshComponent(base, view, root, measure, work.charge)
+  if (!isRefusal(rebuilt)) return rebuilt
+  if (work.spent())
+    return overBudget(
+      component,
+      `Updating ${component} would rebuild ${instances} instances, more work than one edit allows. Detach or delete some instances, or make the spec cheaper.`,
+    )
+  if (rebuilt.node !== undefined) return rebuilt
+  return {
+    refused: rebuilt.refused,
+    node: root,
+    prop: "instance",
+    ...(rebuilt.field === undefined ? {} : { field: rebuilt.field }),
+    form: `Layer ${root} cannot expand with component ${component}: ${stated(rebuilt)}`,
+  } satisfies Refusal
+}
+
+const overBudget = (node: NodeId, form: string): Refusal => ({
+  refused: "limit",
+  node,
+  prop: "spec",
+  field: "spec",
+  form,
+})
+
+const tooLarge = (node: NodeId, instances: number) =>
+  overBudget(
+    node,
+    `Updating ${node} would rebuild ${instances} instances, more than one edit can carry. Detach or delete some instances, or make the spec smaller.`,
+  )
+
+export function prepareComponentWrite(
+  fold: Doom,
+  asked: { readonly spec: unknown; readonly target?: string },
+  measure: Measure,
+  mint: () => NodeId,
+): ComponentWrite | Refusal {
+  const work = editBudget()
+  const made = prepareComponentSpec(fold, asked, measure, mint, work.charge)
+  if (isRefusal(made)) return made
+  const { component: node, revision, writes } = made
+  const findings = [...made.findings]
   const preview = componentEditPreview(fold, writes)
   if (isRefusal(preview)) return preview
   if (preview === null) return { component: node, revision, writes, rebuilt: [], findings }
   const instances = preview.roots.length
-  const refused = (form: string): Refusal => ({ refused: "limit", node, prop: "spec", field: "spec", form })
   const prepared = rebuildRoots(fold, writes, preview, (root) => {
-    const rebuilt = refreshComponent(fold, preview.view, root, measure, work.charge)
-    if (!isRefusal(rebuilt)) {
-      findings.push(...rebuilt.tree.findings.map((finding) => ({ ...finding, where: root })))
-      return rebuilt
-    }
-    if (work.spent())
-      return refused(
-        `Updating ${node} would rebuild ${instances} instances, more work than one edit allows. Detach or delete some instances, or make the spec cheaper.`,
-      )
-    if (rebuilt.node !== undefined) return rebuilt
-    return {
-      refused: rebuilt.refused,
-      node: root,
-      prop: "instance",
-      ...(rebuilt.field === undefined ? {} : { field: rebuilt.field }),
-      form: `Layer ${root} cannot expand with component ${node}: ${stated(rebuilt)}`,
-    }
+    const rebuilt = rebuiltOrRefused(fold, preview.view, root, node, instances, measure, work)
+    if (!isRefusal(rebuilt)) findings.push(...rebuilt.tree.findings.map((finding) => ({ ...finding, where: root })))
+    return rebuilt
   })
   if (isRefusal(prepared)) return prepared
-  if (bytesOf(JSON.stringify(prepared)) >= limits.body - limits.form)
-    return refused(
-      `Updating ${node} would rebuild ${instances} instances, more than one edit can carry. Detach or delete some instances, or make the spec smaller.`,
-    )
+  if (bytesOf(JSON.stringify(prepared)) >= limits.body - limits.form) return tooLarge(node, instances)
   return { component: node, revision, writes: prepared, rebuilt: preview.roots, findings }
+}
+
+export function staleInstances(view: Doom, components: ReadonlySet<NodeId>): readonly NodeId[] {
+  const stale: NodeId[] = []
+  for (const node of view.nodes.values()) {
+    const linked = propOf(node, "instance")?.component
+    if (linked?.node === undefined || !components.has(linked.node) || !onDeck(view.nodes, node.id)) continue
+    if (deckComponent(view, linked.node)?.revision !== linked.revision) stale.push(node.id)
+  }
+  return stale
+}
+
+export type StaleRebuild = { readonly writes: readonly Write[] } | (Refusal & { readonly component: NodeId })
+
+export function rebuildStaleInstances(view: Doom, components: readonly NodeId[], measure: Measure): StaleRebuild {
+  const work = editBudget()
+  const writes: Write[] = []
+  for (const component of components) {
+    const roots = staleInstances(view, new Set([component]))
+    for (const root of roots) {
+      const rebuilt = rebuiltOrRefused(view, view, root, component, roots.length, measure, work)
+      if (isRefusal(rebuilt)) return { ...rebuilt, component }
+      writes.push(...rebuilt.update.writes)
+    }
+    if (bytesOf(JSON.stringify(writes)) >= limits.body - limits.form)
+      return { ...tooLarge(component, roots.length), component }
+  }
+  return { writes }
+}
+
+export function componentSampleTree(fold: Doom, id: NodeId, measure: Measure): ComponentTree | Refusal {
+  const found = deckComponent(fold, id)
+  if (found?.spec.sample === undefined) return refuse("missing", id, "spec")
+  const { w, h, data } = found.spec.sample
+  return expandComponent(found.spec, { data, frame: { x: 0, y: 0, w, h }, theme: deckOf(fold).theme, measure })
 }

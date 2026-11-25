@@ -1,6 +1,6 @@
 import type { AgentColor, AgentFill, AgentLook } from "./agent-look-types.js"
 import { tokenRecord, variantRecord } from "./component/spec.js"
-import { id as componentId, record, readFocus } from "./component/values.js"
+import { record, readFocus } from "./component/values.js"
 import { languageField } from "./language.js"
 import { readAngle, readRotation } from "./angle.js"
 import { arrowField, startArrowField } from "./agent-arrow.js"
@@ -92,6 +92,7 @@ export type AgentChange =
     }
   | { readonly op: "unwrap"; readonly node: NodeId }
   | { readonly op: "detach"; readonly target: NodeId }
+  | { readonly op: "component"; readonly spec: Readonly<Record<string, unknown>>; readonly target?: NodeId }
   | { readonly op: "delete"; readonly nodes: readonly NodeId[] }
   | { readonly op: "duplicate"; readonly nodes: readonly NodeId[] }
   | ({ readonly op: "deck" } & DeckLook)
@@ -220,7 +221,10 @@ const lookFields: LookFields = {
   from: field(endSchema("Where a line starts: a layer's side, which it then follows, or a point."), readEnd),
   to: field(endSchema("Where a line ends: a layer's side, which it then follows, or a point."), readEnd),
   route: choice(["straight", "elbow", "curve"], "How a line runs between its ends."),
-  component: field({ type: "string", description: "Template id from read_deck." }, componentId),
+  component: field(
+    { type: "string", description: "Template id from read_deck." },
+    matching(/^([\w-]{1,32}|[a-z0-9]{1,16}:[0-9]{1,12})$/, 32, "A template id from read_deck."),
+  ),
   data: field({ type: "object", description: "Rows by collection. Omit on add to use the sample." }, record),
   variant: field({ type: "object", description: "Template variant choices." }, variantRecord),
   tokens: field({ type: "object", description: "Template token overrides." }, tokenRecord),
@@ -384,6 +388,14 @@ const focus = field(
   readFocus,
 )
 
+const spec = field(
+  {
+    type: "object",
+    description: "A component spec, grammar 1. A target updates that component; its instances follow.",
+  },
+  record,
+)
+
 const lookReaders = pickFrom(lookFields, Object.keys(lookFields) as (keyof typeof lookFields)[])
 const readChange = variant("op", {
   add: object({ kind: literal(addKinds), slide: readId }, { ...pickFrom(placeFields, ["into"]), ...lookReaders }),
@@ -392,6 +404,7 @@ const readChange = variant("op", {
   wrap: object(pickFrom(placeFields, ["nodes"]), pickFrom(lookFields, ["layout", "clip"])),
   unwrap: object(pickFrom(placeFields, ["node"])),
   detach: object({ target: readId }),
+  component: object({ spec: spec.read }, { target: readId }),
   delete: object(pickFrom(placeFields, ["nodes"])),
   slide: object({}, pickFrom(placeFields, ["add", "move", "delete"])),
   duplicate: object(pickFrom(placeFields, ["nodes"])),
@@ -455,15 +468,16 @@ export const agentChangesSchema = {
       required: ["op"],
       properties: {
         op: {
-          enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck", "detach"],
+          enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck", "detach", "component"],
           description:
-            "component add: component, data?, variant?, tokens?, box?. detach: target. " +
+            "component: spec, target? (no target adds one). component add: component, data?, variant?, tokens?, box?. detach: target. " +
             "add: kind, slide, into?, look. set: target, look. move: node, into?, after?. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
         },
         ...schemasOf(placeFields),
         kind: choice(addKinds, `${kindWords} component: a linked template.`).schema,
         ...schemasOf(lookFields),
         focus: focus.schema,
+        spec: spec.schema,
       },
     },
   },

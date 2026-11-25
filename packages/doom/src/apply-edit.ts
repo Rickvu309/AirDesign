@@ -420,7 +420,12 @@ export function applyBeforeRebuild(doom: Doom, landed: Landed): Doom | Refusal {
   return isRefusal(landing) ? landing : landing.doom
 }
 
-export function applyStep(doom: Doom, landed: Landed): Doom | Refusal {
-  const landing = landEdit(doom, landed, { counts: () => countsOf(doom), deck: () => hasDeck(doom), partial: true })
+export function applyStep(doom: Doom, landed: Landed, rebuilding = false): Doom | Refusal {
+  const landing = landEdit(doom, landed, {
+    counts: () => countsOf(doom),
+    deck: () => hasDeck(doom),
+    partial: true,
+    ...(rebuilding ? { rebuilding } : {}),
+  })
   return isRefusal(landing) ? landing : landing.doom
 }

@@ -10,6 +10,7 @@
     "CHECKS.md",
     "COMMANDS.md",
     "docs/packs.md",
+    "packages/doom/src/component/grammar",
     "pnpm-lock.yaml",
     "apps/site/src/landing/product-demo/editor-demo-art.html",
     "dist",
