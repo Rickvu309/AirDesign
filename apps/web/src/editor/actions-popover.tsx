@@ -1,14 +1,4 @@
-import {
-  ChartBar,
-  ChartColumn,
-  ChartGantt,
-  ChartLine,
-  ChartNoAxesColumn,
-  ChartPie,
-  FileDown,
-  Image,
-  Search,
-} from "lucide-react"
+import { ChartBar, ChartColumn, ChartLine, ChartPie, FileDown, Image, Search, createLucideIcon } from "lucide-react"
 import { DynamicIcon, type IconName } from "lucide-react/dynamic"
 import { useEffect, useId, useMemo, useRef, useState, type ComponentType, type KeyboardEvent } from "react"
 import { editorCopy } from "@/copy/editor-copy"
@@ -39,6 +29,16 @@ type Group = {
   readonly find: (words: string) => readonly Action[]
 }
 
+const StackedChart = createLucideIcon("StackedChart", [
+  ["path", { d: "M3 3v18h18", key: "axis" }],
+  ["path", { d: "M7 21V10h4v11M7 15h4M15 21V5h4v16M15 12h4", key: "columns" }],
+])
+
+const WaterfallChart = createLucideIcon("WaterfallChart", [
+  ["path", { d: "M3 3v18h18", key: "axis" }],
+  ["path", { d: "M6 21v-8h3v8m3-8V9h3v4Zm6 8V9h3v12M9 13h3m3-4h3", key: "columns" }],
+])
+
 const chartInserts = [
   { id: "column", component: "column", label: editorCopy.chartKinds.column, glyph: ChartColumn },
   {
@@ -48,8 +48,8 @@ const chartInserts = [
     label: editorCopy.chartKinds.bar,
     glyph: ChartBar,
   },
-  { id: "stacked", component: "stacked", label: editorCopy.chartKinds.stacked, glyph: ChartNoAxesColumn },
-  { id: "waterfall", component: "waterfall", label: editorCopy.chartKinds.waterfall, glyph: ChartGantt },
+  { id: "stacked", component: "stacked", label: editorCopy.chartKinds.stacked, glyph: StackedChart },
+  { id: "waterfall", component: "waterfall", label: editorCopy.chartKinds.waterfall, glyph: WaterfallChart },
   { id: "line", component: "line", label: editorCopy.chartKinds.line, glyph: ChartLine },
   { id: "pie", component: "pie", label: editorCopy.chartKinds.pie, glyph: ChartPie },
 ] as const

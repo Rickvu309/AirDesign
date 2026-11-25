@@ -168,9 +168,9 @@ export function discardedOverrides(before: Doom, root: NodeId, writes: readonly 
   if (prior === undefined || written === undefined) return []
   const next = props.instance.read(written.value)
   if (isRefusal(next) || prior.generated !== next.generated) return []
-  const kept = new Set([...next.parts, ...next.suppressed].map(({ key }) => keyString(key)))
+  const kept = new Set([...next.parts, ...next.suppressed, ...(next.unfitted ?? [])].map(({ key }) => keyString(key)))
   const overrides: Write[] = []
-  for (const { node, key, baseline } of prior.parts) {
+  for (const { node, key, baseline } of [...prior.parts, ...(prior.unfitted ?? [])]) {
     if (kept.has(keyString(key))) continue
     const current = before.nodes.get(node)
     if (current?.type !== "shape") continue
@@ -269,7 +269,11 @@ export function restoreInstance(
       restoresKeys ||= field !== "tokens"
     }
     if (restoresKeys) {
-      const afterKeys = new Set([...change.after.parts, ...change.after.suppressed].map(({ key }) => keyString(key)))
+      const afterKeys = new Set(
+        [...change.after.parts, ...change.after.suppressed, ...(change.after.unfitted ?? [])].map(({ key }) =>
+          keyString(key),
+        ),
+      )
       expired.push(...change.before.suppressed.filter(({ key }) => !afterKeys.has(keyString(key))))
       const byNode = new Map<NodeId, Write[]>()
       for (const write of change.overrides) {
@@ -277,7 +281,7 @@ export function restoreInstance(
         if (writes === undefined) byNode.set(write.node, [write])
         else writes.push(write)
       }
-      for (const part of change.before.parts) {
+      for (const part of [...change.before.parts, ...(change.before.unfitted ?? [])]) {
         const key = keyString(part.key)
         const overrides = byNode.get(part.node)
         if (!afterKeys.has(key) && overrides !== undefined) returning.set(key, { part, overrides })

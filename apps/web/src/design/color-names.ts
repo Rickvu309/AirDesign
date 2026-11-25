@@ -212,12 +212,25 @@ function distinguish(names: string[], labs: readonly Lab[], allowTone: boolean):
   }
 }
 
+function avoid(names: string[], reserved: readonly string[]): void {
+  const taken = new Set([...reserved, ...names])
+  names.forEach((name, index) => {
+    if (!reserved.includes(name)) return
+    let count = 2
+    while (taken.has(colorNameCopy.numbered(name, count))) count += 1
+    names[index] = colorNameCopy.numbered(name, count)
+    taken.add(names[index])
+  })
+}
+
 export function namedByColor<T extends { readonly css: string }>(
   swatches: readonly T[],
+  reserved: readonly string[] = [],
 ): (T & { readonly name: string })[] {
   const labs = swatches.map((swatch) => labOf(swatch.css))
   const names = labs.map((lab) => nearest(lab).name)
   distinguish(names, labs, true)
   distinguish(names, labs, false)
+  avoid(names, reserved)
   return swatches.map((swatch, index) => ({ ...swatch, name: names[index] ?? colorNameCopy.black }))
 }

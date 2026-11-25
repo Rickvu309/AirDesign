@@ -303,7 +303,10 @@ function addComponent(draft: Draft, parent: Node, change: Add): void {
     const aligned = parent.type === "slide" ? alignedWithTitle(draft, parent, box) : box
     const scale = Math.min(maxComponentScale, fitScale(natural, aligned))
     const fitted = centred(aligned, { w: Math.round(natural.width * scale), h: Math.round(natural.height * scale) })
-    box = aligned === box ? fitted : { ...fitted, x: aligned.x }
+    box =
+      aligned === box
+        ? fitted
+        : { ...fitted, x: aligned.x, w: definition.spec.chart === undefined ? fitted.w : aligned.w }
   }
   const source = "id" in definition ? definition : { node: definition.node, revision: definition.revision }
   const placed = placeComponent(draft.doom, source, {

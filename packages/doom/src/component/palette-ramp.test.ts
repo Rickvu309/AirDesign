@@ -1,43 +1,81 @@
 import { expect, it, vi } from "vitest"
 import { resolveColor } from "../color.js"
-import type { Hex } from "../paint.js"
 import { defaultTheme, themeLibrary } from "../theme.js"
-import { paletteRamp, rampLightness } from "./palette-ramp.js"
+import { paletteRamp, rampCapacity, rampLightness, rampSlots } from "./palette-ramp.js"
+import { contrast, validatorDeltaE } from "./testing/palette-checks.js"
 
-function luminance(hex: Hex) {
-  return [0.2126, 0.7152, 0.0722].reduce((sum, weight, channel) => {
-    const offset = 1 + channel * 2
-    const value = Number.parseInt(hex.slice(offset, offset + 2), 16) / 255
-    const linear = value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
-    return sum + weight * linear
-  }, 0)
+const themes = Object.entries(themeLibrary)
+
+function rampOf(theme: (typeof themeLibrary)["neutral"]["theme"]) {
+  return Array.from({ length: 3 }, (_, i) =>
+    resolveColor(paletteRamp([i, 3, { var: "accent1" }, { var: "text2" }], theme), theme),
+  )
 }
 
-function contrast(left: Hex, right: Hex) {
-  const a = luminance(left)
-  const b = luminance(right)
-  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
-}
-
-it.each(Object.entries(themeLibrary))("keeps the accent and neutral marks visible in %s", (_id, { theme }) => {
-  const { accent1, background } = theme.colors
-  const colorAt = (i: number, size: number) => {
-    const role = paletteRamp([i, size, { var: "accent1" }, { var: "text2" }], theme)
-    expect(role).toMatchObject({ var: i === 0 ? "accent1" : "text2" })
-    return resolveColor(role, theme)
-  }
-  const ramp = Array.from({ length: 6 }, (_, i) => colorAt(i, 6))
-  const neutral = colorAt(1, 2)
-  expect(ramp[0]).toBe(accent1)
-  expect(new Set(ramp).size).toBe(3)
-  expect(contrast(neutral, background)).toBeGreaterThanOrEqual(3)
-  expect(contrast(neutral, background)).toBeLessThan(3.05)
-  expect(contrast(neutral, background)).toBeLessThan(contrast(accent1, background))
-  expect(Math.abs(rampLightness(ramp[2]!) - rampLightness(ramp[1]!))).toBeGreaterThanOrEqual(0.06)
-  expect(ramp.slice(3)).toEqual([ramp[1], ramp[2], ramp[1]])
+it.each(themes)("keeps the accent and every grey 15 OKLab ΔE apart in %s", (_id, { theme }) => {
+  const distinct = [...new Set(rampOf(theme))]
+  for (const [i, left] of distinct.entries())
+    for (const right of distinct.slice(i + 1)) expect(validatorDeltaE(left, right)).toBeGreaterThanOrEqual(15)
 })
 
-it.each(Object.entries(themeLibrary))("mutes labelled highlights in %s", (_id, { theme }) => {
+it.each(themes)("never paints a grey heavier than the accent in %s", (_id, { theme }) => {
+  const { accent1, background } = theme.colors
+  for (const grey of rampOf(theme).slice(1))
+    expect(contrast(grey, background)).toBeLessThanOrEqual(contrast(accent1, background))
+})
+
+it.each(themes)("keeps the first grey at or past the contrast floor in %s", (_id, { theme }) => {
+  const { accent1, background } = theme.colors
+  const [accent, neutral] = rampOf(theme)
+  expect(accent).toBe(accent1)
+  expect(contrast(neutral!, background)).toBeGreaterThanOrEqual(3)
+})
+
+it.each(themes)("keeps every grey at 3:1 on the background in %s", (_id, { theme }) => {
+  for (const grey of rampOf(theme).slice(1)) expect(contrast(grey, theme.colors.background)).toBeGreaterThanOrEqual(3)
+})
+
+it("finds a second grey only where one meets 3:1 between the first grey and the accent", () => {
+  expect(Object.fromEntries(themes.map(([id, { theme }]) => [id, rampCapacity(theme)]))).toEqual({
+    consulting: 3,
+    editorial: 2,
+    midnight: 2,
+    neutral: 3,
+    technical: 2,
+  })
+})
+
+it.each(themes)("darkens the second grey from the first when %s has room for it", (_id, { theme }) => {
+  const [, first, second] = rampOf(theme)
+  if (first === second) return
+  expect(Math.abs(rampLightness(second!) - rampLightness(first!))).toBeGreaterThanOrEqual(0.06)
+})
+
+it("finds a second grey in at least one built-in theme and not in every one", () => {
+  const counts = themes.map(([, { theme }]) => new Set(rampOf(theme)).size)
+  expect(counts).toContain(3)
+  expect(counts).toContain(2)
+})
+
+it.each(themes)("alternates the greys it has and reports what it lacks in %s", (_id, { theme }) => {
+  const report = vi.fn()
+  const rows = ["a", "b", "c", "d"].map((id) => ({ id }))
+  const slots = rampSlots([rows, ["a"]], () => {}, report, theme)
+  const capacity = new Set(rampOf(theme)).size
+  expect(slots.count).toBe(capacity)
+  expect(slots.indices).toEqual(capacity === 3 ? [0, 1, 2, 1] : [0, 1, 1, 1])
+  expect(report).toHaveBeenCalledExactlyOnceWith({ kind: "many-series", count: 4, capacity })
+})
+
+it.each(themes)("lets labelled marks share greys without a finding in %s", (_id, { theme }) => {
+  const report = vi.fn()
+  const rows = ["a", "b", "c", "d"].map((id) => ({ id }))
+  rampSlots([rows, ["a"], "labelled"], () => {}, report, theme)
+  rampSlots([rows, ["c"], "circular"], () => {}, report, theme)
+  expect(report).not.toHaveBeenCalled()
+})
+
+it.each(themes)("mutes labelled highlights in %s", (_id, { theme }) => {
   const { accent1, background } = theme.colors
   const grey = resolveColor(paletteRamp([1, 2, { var: "accent1" }, { var: "text2" }, true], theme), theme)
   expect(contrast(grey, background)).toBeGreaterThanOrEqual(2.2)
@@ -49,5 +87,9 @@ it("reports when the palette needs more distinct colours than it has slots", () 
   const report = vi.fn()
   const theme = defaultTheme
   paletteRamp([0, 5, { var: "accent1" }, { var: "text2" }, true], theme, report)
-  expect(report).toHaveBeenCalledExactlyOnceWith({ kind: "many-series", count: 5, capacity: 3 })
+  expect(report).toHaveBeenCalledExactlyOnceWith({
+    kind: "many-series",
+    count: 5,
+    capacity: new Set(rampOf(theme)).size,
+  })
 })

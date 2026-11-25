@@ -161,8 +161,8 @@ it.each([
 })
 
 it.each([
-  { width: 100, labels: false },
-  { width: 102, labels: true },
+  { width: 176, labels: false },
+  { width: 180, labels: true },
 ])("requires 8 px clearance for every label at $width px", ({ width, labels }) => {
   const measure: ComponentInput["measure"] = (text, theme, width, fit) => {
     const result = inputs.measure(text, theme, width, fit)
@@ -176,10 +176,12 @@ it.each([
       rows: [
         { id: "a", label: "A", value: 1 },
         { id: "b", label: "B", value: 10 },
+        { id: "c", label: "C", value: 1 },
+        { id: "d", label: "D", value: 10 },
       ],
     },
   })
-  expect(tree.children.filter(({ key }) => key[0] === "value")).toHaveLength(labels ? 2 : 0)
+  expect(tree.children.filter(({ key }) => key[0] === "value")).toHaveLength(labels ? 4 : 0)
   expect(tree.children.some(({ key }) => key[0] === "tick")).toBe(!labels)
   if (!labels) {
     const explicitAxis = expand({
@@ -190,6 +192,8 @@ it.each([
         rows: [
           { id: "a", label: "A", value: 1 },
           { id: "b", label: "B", value: 10 },
+          { id: "c", label: "C", value: 1 },
+          { id: "d", label: "D", value: 10 },
         ],
       },
       variant: { labels: false },
@@ -241,10 +245,11 @@ it("accents focused category IDs and keeps every other column in one neutral", (
   expect(part(tree.children, "bar", "last")?.props.fills).toEqual(muted)
 })
 
-it("reports an omitted legend when the series has no label", () => {
+it("asks for a series label when the legend is enabled", () => {
   const tree = expand({ ...inputs, variant: { legend: true } })
   expect(part(tree.children, "legend-label", "series")).toBeUndefined()
-  expect(tree.findings).toContainEqual(expect.objectContaining({ kind: "flow-omitted", omitted: [0] }))
+  expect(tree.findings).toContainEqual(expect.objectContaining({ kind: "advice", code: "legend-label-missing" }))
+  expect(tree.findings).not.toContainEqual(expect.objectContaining({ kind: "flow-omitted" }))
 })
 
 it("reports unknown focus and paints the ordinary accent", () => {

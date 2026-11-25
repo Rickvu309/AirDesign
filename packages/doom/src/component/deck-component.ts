@@ -5,6 +5,7 @@ import { type NodeId, readNodeId } from "../ids.js"
 import { Reject } from "../read-kit.js"
 import { isRefusal, refuse, type Refusal } from "../refusal.js"
 import { type ComponentRef, type Instance, readInstanceInputs } from "./instance.js"
+import { type ComponentDefinition, resolveComponent } from "./library.js"
 import { type ComponentSpec, readComponentSpec } from "./spec.js"
 
 export type DeckComponent = { readonly node: NodeId; readonly revision: number; readonly spec: ComponentSpec }
@@ -197,3 +198,10 @@ export function guardDeckLinks(
 }
 
 export const sameComponent = (a: ComponentRef, b: ComponentRef): boolean => a.id === b.id && a.node === b.node
+
+export function resolveComponentInFold(
+  doom: Doom,
+  reference: ComponentRef,
+): (ComponentRef & Pick<ComponentDefinition, "spec">) | undefined {
+  return reference.node === undefined ? resolveComponent(reference) : deckComponent(doom, reference.node)
+}

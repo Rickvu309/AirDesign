@@ -114,7 +114,7 @@ describe("line component", () => {
     expect(new Set(colors).size).toBe(3)
     expect(colors[0]).toBe(defaultTheme.colors.accent1)
     expect(colors.slice(1)).toEqual([colors[1], colors[2], colors[1], colors[2], colors[1], colors[2], colors[1]])
-    expect(findings).toContainEqual(expect.objectContaining({ kind: "many-series", count: 8, capacity: 3 }))
+    expect(findings).not.toContainEqual(expect.objectContaining({ kind: "many-series" }))
     expect(findings).toContainEqual(expect.objectContaining({ key: ["series-density"] }))
   })
 
@@ -201,7 +201,10 @@ describe.each([
       })
       const slices = children.filter(({ key }) => key[0] === "slice")
       expect(slices).toHaveLength(count)
-      expect(slices.every(({ props }) => props.geometry.kind === "path" && props.geometry.fillStroke)).toBe(true)
+      for (const { props } of slices) {
+        expect(props.geometry).toMatchObject({ kind: "path" })
+        expect(props.strokes).toEqual([{ kind: "solid", color: { var: "background" } }])
+      }
       const colors = slices.flatMap(({ props }) => {
         const fill = props.fills?.[0]
         return fill?.kind === "solid" ? [resolveColor(fill.color, defaultTheme)] : []
@@ -281,7 +284,7 @@ describe.each([
     expect(slices[0]?.props.fills?.[0]).toMatchObject({ color: { var: "accent1" } })
     for (const { props } of slices.slice(1))
       expect(props.fills?.[0]).toMatchObject({ color: { var: "text2", tint: expect.any(Number) } })
-    expect(findings).toContainEqual(expect.objectContaining({ kind: "many-series", count: 7, capacity: 3 }))
+    expect(findings).not.toContainEqual(expect.objectContaining({ kind: "many-series" }))
     expect(findings).toContainEqual(expect.objectContaining({ key: ["many-slices"] }))
   })
 
@@ -364,4 +367,19 @@ describe.each([
     expect(valid.children.filter(({ key }) => key[0] === "slice")).toHaveLength(2)
     expect(valid.children.find(({ key }) => key[0] === "legend" && key[1] === "r2")?.props.text?.chars).toContain("0%")
   })
+})
+
+it.each([pieComponent, donutComponent])("alternates muted slices around the ring with middle focus", (spec) => {
+  const rows = mix([8, 7, 6, 5, 4, 3, 2, 1]).rows.map(({ id, label, value }) => ({ id, label, value }))
+  const tree = expandComponent(spec, {
+    data: { ...mix([8, 7, 6, 5, 4, 3, 2, 1]), rows },
+    focus: ["r2"],
+    frame: { x: 0, y: 0, w: 1100, h: 620 },
+    theme: defaultTheme,
+    measure: measureWith({}),
+  })
+  if (isRefusal(tree)) throw new Error(JSON.stringify(tree))
+  const fills = tree.children.filter(({ key }) => key[0] === "slice").map(({ props }) => props.fills)
+  expect(fills).toHaveLength(6)
+  for (const [i, fill] of fills.entries()) expect(fill).not.toEqual(fills[(i + 1) % fills.length])
 })

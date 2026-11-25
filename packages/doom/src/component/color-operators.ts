@@ -1,4 +1,4 @@
-import { resolveColor } from "../color.js"
+import { resolveColor, tinted } from "../color.js"
 import type { Color, Hex } from "../paint.js"
 import type { Theme } from "../theme.js"
 import { finite } from "../read-kit.js"
@@ -16,32 +16,35 @@ function contrast(first: number, second: number): number {
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05)
 }
 
-export function contrastGrey([backdrop, accent, step, preferred, minimum]: Values, theme: Theme, charge: Charge): Hex {
+export function contrastGrey(
+  [backdrop, accent, step, preferred, minimum]: Values,
+  theme: Theme,
+  charge: Charge,
+): Color {
   const level = (value: Value | undefined) => luminance(resolveColor(color(value), theme))
   const background = level(backdrop)
   const focus = level(accent)
-  const driver = level(step)
+  const base = color(step)
+  const driver = luminance(resolveColor(base, theme))
   const target = finite(1, 21)(preferred)
   const separation = finite(1, 21)(minimum)
-  const greyAt = (channel: number): Hex => {
-    const byte = channel.toString(16).padStart(2, "0")
-    return `#${byte}${byte}${byte}`
-  }
+  const shade = (tint: number): Color => (typeof base === "string" ? tinted(base, tint) : { var: base.var, tint })
   const stepContrast = contrast(driver, background)
-  let best = background > 0.18 ? 0 : 255
+  let best = shade(background > 0.18 ? -1 : 1)
   let distance = Infinity
-  for (let channel = 0; channel <= 255; channel++) {
+  for (let step = -200; step <= 200; step++) {
     charge()
-    const greyLevel = luminance(greyAt(channel))
-    const ratio = contrast(greyLevel, background)
+    const candidate = shade(step / 200)
+    const shadeLevel = luminance(resolveColor(candidate, theme))
+    const ratio = contrast(shadeLevel, background)
     if (ratio <= stepContrast) continue
-    if (contrast(greyLevel, focus) < separation || contrast(greyLevel, driver) < separation) continue
+    if (contrast(shadeLevel, focus) < separation || contrast(shadeLevel, driver) < separation) continue
     const difference = Math.abs(ratio - target)
     if (difference >= distance) continue
-    best = channel
+    best = candidate
     distance = difference
   }
-  return greyAt(best)
+  return best
 }
 
 export function readableInk([fill]: Values, theme: Theme): Color {

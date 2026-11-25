@@ -2,6 +2,7 @@
   "version": 1,
   "name": "Waterfall",
   "chart": "cartesian",
+  "minFrame": { "w": 160, "h": 180 },
   "sample": {
     "w": 1540,
     "h": 650,
@@ -377,10 +378,9 @@
               ["get", "isTotal"],
               ["get", "totalFill"],
               [
-                "focusColor",
-                ["get", "activeFocus"],
-                ["list", ["get", "r.id"]],
-                ["if", ["eq", ["count", ["get", "activeFocus"]], 0], ["get", "stepFill"], ["get", "token.highlight"]],
+                "if",
+                ["includes", ["get", "activeFocus"], ["get", "r.id"]],
+                ["get", "token.highlight"],
                 ["get", "stepFill"]
               ]
             ]
@@ -426,7 +426,8 @@
               "smaller": ["get", "token.captionSmall"],
               "group": "categories",
               "thin": 4,
-              "keep": ["get", "isTotal"]
+              "keep": ["get", "isTotal"],
+              "advise": "Show fewer categories or widen the frame."
             }
           }
         }

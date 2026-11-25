@@ -44,16 +44,29 @@ The optional instance property `focus` holds up to 100 category or series IDs. O
 
 | Expression                                                           | Result                                                                                                                                 |
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `["focusColor", focus, keys, accent, neutral]`                       | Accent when the focus list is empty or when at least one key matches. Neutral otherwise.                                               |
+| `["includes", list, value]`                                          | True when the list holds the value. Use it inside `if` to give focused marks the accent.                                               |
 | `["matchingFocus", requested, markIdsOrRows, idField?, valueField?]` | Matches requested IDs with plotted marks. An optional value field excludes rows with missing values. Reports missing IDs.              |
-| `["rampSlots", rows, focus]`                                         | Maps rows to an accent or grey slot for marks and legend swatches. Reports when the ramp must reuse shades.                            |
+| `["rampSlots", rows, focus, arrangement?]`                           | Maps rows to an accent or grey slot for marks and legend swatches. Reports when the chart needs more colours than the ramp has.        |
+| `["rampFold", rows, focus, other]`                                   | Keeps the rows the ramp can tell apart and sums the rest into the `other` row. Returns `rows`, `folded` IDs, `slots` and `count`.      |
+| `["rampCapacity"]`                                                   | How many colours the theme's ramp tells apart: the accent and its greys.                                                               |
 | `["paletteRamp", index, count, accent, neutral, labelled?]`          | Accent at index zero, followed by neutral shades stepping away from the background. The count is 1 to 100 and the index is zero-based. |
 
-Read the instance property with `["get", "focus"]`. Pass the mark's category, its series or both as a list of keys. Column passes each plotted row ID and uses a single ramp shade for every muted mark. The neutral base is `text2`, and the main accent is `accent1`. Theme references follow the deck's theme. The ramp tints toward white on light backgrounds and shades toward black on dark backgrounds. The first neutral targets 3:1 against the background, or 2.2:1 when the optional fifth argument is true for direct labels. The second neutral is at least 0.06 OKLCH lightness away. The ramp reuses its two greys beyond three slots and reports a `many-series` finding. Multi-series specs can use the same ramp for the marks and the legend.
+Read the instance property with `["get", "focus"]`. Column tests each plotted row ID with `includes` and uses a single ramp shade for every muted mark. The neutral base is `text2`, and the main accent is `accent1`. Theme references follow the deck's theme. The ramp tints toward white on light backgrounds and shades toward black on dark backgrounds.
+
+The first grey targets 3:1 against the background, or 2.2:1 when the optional fifth argument is true for direct labels. The second grey is the nearest darker shade of the same grey that is at least 15 OKLab ΔE (×100) from both the first grey and the accent, the normal-vision floor in the dataviz skill's palette validator, and no heavier than the accent against the background. When none fits, the first grey moves away from the background, no heavier than the accent and still 15 ΔE from it, until a second grey fits. When no pair exists, every muted slot takes the first grey and the ramp holds two colours. Every grey keeps 3:1 on the background, so a mark never needs its label to be seen. Of the built-in themes, consulting and neutral have two greys, and editorial, midnight and technical have one.
+
+`rampFold` gives each row with its own `color` and each focused row its own colour, and gives the rest the greys. When the rest need more greys than the theme has, it keeps one fewer and sums the others into the `other` row, which takes the last grey, and reports `series-folded` advice with the fix. Stacked columns use it, so each series they show has its own colour in the plot and the legend. A clustered chart shows at most `["rampCapacity"]` series, never more than three, and drops the rest with a finding, because a summed bar would compare a sum with single series.
+
+`rampSlots` alternates the greys it has. With no arrangement, it reports a `many-series` finding when the chart needs more colours than the theme's ramp holds. The optional third argument names a chart whose marks are labelled directly, so they can share a grey without a finding:
+
+- `"labelled"`: lines that carry their own labels.
+- `"circular"`: pie slices. The greys alternate around the ring from the focus, so neighbours differ where the theme has two greys. Pie slices are also separated by a background seam.
+
+Stacked segments that touch are parted by the same 2 px background seam, taken from the segment that sits further from the baseline. The seam is left out where either segment is shorter than 4 px, and every nonzero segment is at least 1 px tall.
 
 ## Signed color roles
 
-Theme colors `positive`, `negative`, and `total` are available as ordinary theme color references, such as `{ "var": "positive" }`. Put the sign or meaning in text or geometry as well. Column uses the series accent by default. Set the `legend` variant and supply `seriesLabel` to show a series key. A missing label produces a `flow-omitted` finding. Set `signed` to enable sign colors and key entries for the signs present, with labels from `positiveLabel` and `negativeLabel`. A focus that matches a plotted mark takes precedence over the signed variant. Waterfall specs can use `total` for a balance bar. The color picker lists the palette colors.
+Theme colors `positive`, `negative`, and `total` are available as ordinary theme color references, such as `{ "var": "positive" }`. Put the sign or meaning in text or geometry as well. Column uses the series accent by default. Set the `legend` variant and supply `seriesLabel` to show a series key. A missing label produces `legend-label-missing` advice. Set `signed` to enable sign colors and key entries for the signs present, with labels from `positiveLabel` and `negativeLabel`. A focus that matches a plotted mark takes precedence over the signed variant. Waterfall specs can use `total` for a balance bar. The color picker lists the palette colors.
 
 ## Paint check
 
@@ -90,15 +103,16 @@ The process template accepts an optional `tokens.focus` step ID. The first step 
 
 ## Lists and colors
 
-| Expression                                  | Result                                                                                                                                                                                        |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `["sortBy", rows, field, ...fields]`        | Sorts by ascending numeric fields in priority order. Tied rows keep their input order.                                                                                                        |
-| `["groupBy", rows, "field"]`                | Indexes records by a string field. Records within each group keep their input order.                                                                                                          |
-| `["lookup", index, key, fallback]`          | Reads a key from a record, or returns the optional fallback. The default fallback is null.                                                                                                    |
-| `["cycle", list, index]`                    | Reads a nonnegative index modulo the list length. An empty list returns null.                                                                                                                 |
-| `["round", value, digits]`                  | Rounds a number to 0–12 decimal places without formatting it.                                                                                                                                 |
-| `["readableInk", fill]`                     | Chooses black or white according to which has greater contrast against the resolved fill.                                                                                                     |
-| `["contrastTint", fill, background, ratio]` | Blends the resolved fill toward the background until it reaches the requested contrast ratio, from 1 to 21. If the fill already meets or falls below that ratio, it keeps the supplied color. |
+| Expression                                                 | Result                                                                                                                                                                                                                                                        |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `["sortBy", rows, field, ...fields]`                       | Sorts by ascending numeric fields in priority order. Tied rows keep their input order.                                                                                                                                                                        |
+| `["groupBy", rows, "field"]`                               | Indexes records by a string field. Records within each group keep their input order.                                                                                                                                                                          |
+| `["lookup", index, key, fallback]`                         | Reads a key from a record, or returns the optional fallback. The default fallback is null.                                                                                                                                                                    |
+| `["cycle", list, index]`                                   | Reads a nonnegative index modulo the list length. An empty list returns null.                                                                                                                                                                                 |
+| `["round", value, digits]`                                 | Rounds a number to 0–12 decimal places without formatting it.                                                                                                                                                                                                 |
+| `["readableInk", fill]`                                    | Chooses black or white according to which has greater contrast against the resolved fill.                                                                                                                                                                     |
+| `["contrastTint", fill, background, ratio]`                | Blends the resolved fill toward the background until it reaches the requested contrast ratio, from 1 to 21. If the fill already meets or falls below that ratio, it keeps the supplied color.                                                                 |
+| `["contrastGrey", background, accent, step, ratio, apart]` | Tints the step colour's theme colour toward the ratio against the background, heavier than the step and at least `apart` from the step and the accent. It returns a theme colour with a tint, so it recolours with the theme; a raw hex step gives a raw hex. |
 
 A collection field of type `"color?"` accepts a hex value, a theme color reference, or null. Missing fields become null.
 
@@ -107,3 +121,11 @@ A collection field of type `"color?"` accepts a hex value, a theme color referen
 Use `"fit": { "minWidth": expression }` to omit a text part and report a finding when its box is narrower than the minimum. Text that clears the minimum still goes through measured fit.
 
 In a grouped text fit with thinning enabled, set `keep` to a boolean expression to retain essential labels while thinning the others. A retained label that cannot fit still reports a finding.
+
+In a grouped text fit with thinning enabled, set `advise` to one sentence that tells the agent how to make room, such as `"Show fewer categories or widen the frame."`. The group's `text-fit` finding carries it as `advice` whenever labels are thinned, and MCP ends the finding's note with it.
+
+## Frame and work limits
+
+`minFrame` is `{ w, h }` in pixels, each from 1 to 20,000: the smallest frame the template draws in. A spec may not set its own work or part limit. `library.ts` sets a larger `workLimit` (default 80,000 work units) or `partLimit` (default 499 parts) for the built-in templates that need one.
+
+`minFrame` is a hard floor for a linked instance. A canvas resize stops at it, Figma-style, and a resize of a group or a selection keeps the chart at its minimum. Placing or resizing an instance below it is refused, and the refusal names the minimum, such as "Needs a size of at least 140 × 160 px." An instance saved smaller than its minimum, by an older build or by undoing a resize, paints at its minimum from its stored corner on the canvas, filmstrip, captures and PDF, and expands at the minimum with `frame-too-small` advice. Nothing is written when a deck opens. A person's resize from any handle starts from the painted size, so the stored box comes back to at least the minimum as an ordinary undoable edit.

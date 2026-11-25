@@ -39,6 +39,7 @@ export type ComponentRef = { readonly revision: number } & (
   | { readonly node: NodeId; readonly id?: never }
 )
 const componentRef = oneOf<ComponentRef>(object({ id, revision }), object({ node, revision }))
+const parts = list(object({ key: keyOf, node, baseline }), 499)
 
 const storedInstance = object(
   {
@@ -47,10 +48,10 @@ const storedInstance = object(
     tokens: tokenRecord,
     data: (raw) => raw,
     generated: node,
-    parts: list(object({ key: keyOf, node, baseline }), 499),
+    parts,
     suppressed: list(object({ key: keyOf, reason: literal(["delete"]) }), 499),
   },
-  { focus: readFocus },
+  { focus: readFocus, unfitted: parts },
 )
 
 export type Instance = Omit<ReturnType<typeof storedInstance>, "data" | "focus"> & {
@@ -68,10 +69,11 @@ export function readInstance(raw: unknown): Instance {
   const found = storedInstance(raw)
   const ref = found.component
   const data = ref.node === undefined ? readLibraryInputs(ref, found) : readStoredData(found.data)
-  if (found.parts.length + found.suppressed.length > 499) return reject("limit")
+  const unfitted = found.unfitted ?? []
+  if (found.parts.length + found.suppressed.length + unfitted.length > 499) return reject("limit")
   const ids = new Set([found.generated])
   const keys = new Set([keyString(["root"])])
-  for (const part of [...found.parts, ...found.suppressed]) {
+  for (const part of [...found.parts, ...found.suppressed, ...unfitted]) {
     const key = keyString(part.key)
     if (keys.has(key)) return reject()
     keys.add(key)

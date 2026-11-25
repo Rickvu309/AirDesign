@@ -40,7 +40,9 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
             work(cost)
           }
     const { theme, measure } = input
-    const frame = naming("frame", () => readFrame(input.frame))
+    const given = naming("frame", () => readFrame(input.frame))
+    const minimum = spec.minFrame ?? given
+    const frame = { ...given, w: Math.max(given.w, minimum.w), h: Math.max(given.h, minimum.h) }
     const token = readTokens(spec, input.themeTokens ?? {}, input.tokens ?? {})
     const fitting = { measure, theme, charge }
     const findings: ComponentFinding[] = []
@@ -59,6 +61,15 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
         variant: naming("variant", () => readChoices(spec, input.variant ?? {})),
       },
     }
+
+    if (frame.w !== given.w || frame.h !== given.h)
+      findings.push({
+        kind: "advice",
+        code: "frame-too-small",
+        field: "frame",
+        key: ["root"],
+        note: `Resize the frame to at least ${minimum.w} × ${minimum.h} px.`,
+      })
 
     const bind = (bindings: Bindings | undefined, parent: Scope, field: string): Scope => {
       if (bindings === undefined || bindings.length === 0) return parent

@@ -53,7 +53,7 @@ const chart = (id: string, raw: unknown, limits: Pick<ComponentSpec, "workLimit"
 const clusteredDefinition = chart("clustered-chart", clusteredChart, { workLimit: 400_000, partLimit: 750 })
 const lineDefinition = chart("line", line, { workLimit: 400_000 })
 const pieDefinition = chart("pie", pie, { workLimit: 400_000 })
-const stackedDefinition = chart("stacked", stacked)
+const stackedDefinition = chart("stacked", stacked, { workLimit: 200_000 })
 const waterfallDefinition = chart("waterfall", waterfall)
 
 export const clusteredChartComponent: ComponentSpec = clusteredDefinition.spec

@@ -12,18 +12,20 @@ import { orderKeyBetween } from "../order-key.js"
 import { siteSpot } from "../preset-geometry.js"
 import { props, type Props } from "../props.js"
 import { isRefusal, refuse, type Refusal } from "../refusal.js"
-import { deckComponent, sameComponent } from "./deck-component.js"
+import { resolveComponentInFold, sameComponent } from "./deck-component.js"
 import { expandComponent, type ComponentInput } from "./expand-component.js"
 import {
   hasBaselineFill,
+  instanceFields,
   keyString,
   type ComponentRef,
   type Instance,
   type PartBaseline,
   type PartKey,
 } from "./instance.js"
-import { type ComponentDefinition, resolveComponent } from "./library.js"
+import type { ComponentDefinition } from "./library.js"
 import type { ComponentNode, ComponentTree } from "./nodes.js"
+import { belowMinimum } from "./minimum-frame.js"
 import { partId } from "./part-id.js"
 
 export type ComponentUpdateFinding =
@@ -89,12 +91,19 @@ function join(
   measure: Measure,
   returning?: ReadonlyMap<string, Instance["parts"][number]>,
   restored?: ReadonlyMap<NodeId, readonly Write[]>,
+  settled = false,
 ): ComponentUpdate | Refusal {
   const old = new Map(previous?.parts.map((part) => [keyString(part.key), part]))
+  const resting = new Map(previous?.unfitted?.map((part) => [keyString(part.key), part]))
   const findings: ComponentUpdateFinding[] = []
   const emittedKeys = new Set(tree.children.map(({ key }) => keyString(key)))
+  const unfittedKeys = new Set(tree.unfitted.map(keyString))
+  const rests = (key: PartKey) => {
+    const name = keyString(key)
+    return !emittedKeys.has(name) && (settled || unfittedKeys.has(name))
+  }
   const kept = instance.suppressed.filter(({ key }) => {
-    if (emittedKeys.has(keyString(key))) return true
+    if (emittedKeys.has(keyString(key)) || rests(key)) return true
     findings.push({ kind: "discarded-suppression", key })
     return false
   })
@@ -103,12 +112,15 @@ function join(
   const active = tree.children
     .filter((part) => !suppressed.has(keyString(part.key)))
     .map((part) => {
+      const name = keyString(part.key)
       const baseline = baselineOf(part)
-      const record = old.get(keyString(part.key)) ?? returning?.get(keyString(part.key))
+      const back = resting.get(name)
+      resting.delete(name)
+      const record = old.get(name) ?? back ?? returning?.get(name)
       const reused = record?.baseline.kind === baseline.kind ? record : undefined
-      if (reused !== undefined) old.delete(keyString(part.key))
+      if (reused !== undefined) old.delete(name)
       const node = reused?.node ?? partId(frame, part.key)
-      return { part, baseline, reused, node }
+      return { part, baseline, reused, node, parked: reused !== undefined && reused === back }
     })
   const ids = new Map(active.map(({ part, node }) => [part.id, node]))
   const emitted = new Map(tree.children.map((part) => [part.id, part]))
@@ -125,7 +137,7 @@ function join(
 
   const allocated = new Set(create.map(({ node }) => node))
   let at = orderKeyBetween(null, null)
-  for (const { part, reused, node } of active) {
+  for (const { part, reused, node, parked } of active) {
     const values = part.props
     const overrides = reused === undefined ? [] : (restored?.get(node) ?? [])
     const current = doom.nodes.get(node)
@@ -136,7 +148,8 @@ function join(
       if (current === undefined) writes.push({ node, prop: "type", value: part.type })
     } else if (
       current?.type !== "shape" ||
-      (current.parent?.id !== instance.generated && !(current.parent === null && returning?.has(keyString(part.key))))
+      (current.parent?.id !== instance.generated &&
+        !(current.parent === null && (parked || returning?.has(keyString(part.key)))))
     ) {
       return refuse("shape", node, "parent")
     }
@@ -178,7 +191,8 @@ function join(
       writes.push({ node, prop, value, ...(base === undefined ? {} : { base }) })
     }
   }
-  for (const { node, key, baseline } of old.values()) {
+  const unfitted: Instance["parts"][number][] = []
+  const leave = ({ node, key, baseline }: Instance["parts"][number]) => {
     const current = doom.nodes.get(node)
     const discarded = (prop: "fills" | "text" | "name" | "link") =>
       findings.push({ kind: "discarded-override", key, node, prop })
@@ -186,23 +200,38 @@ function join(
     if (baseline.kind === "text" && propOf(current, "text")?.style !== baseline.style) discarded("text")
     if (propOf(current, "name") !== key.join(" / ")) discarded("name")
     if (propOf(current, "link") !== undefined) discarded("link")
-    writes.push({ node, prop: "parent", value: null })
+  }
+  for (const part of old.values()) {
+    writes.push({ node: part.node, prop: "parent", value: null })
+    if (rests(part.key)) unfitted.push(part)
+    else leave(part)
+  }
+  for (const part of resting.values()) {
+    if (rests(part.key)) unfitted.push(part)
+    else leave(part)
+  }
+  for (const [name, part] of returning ?? []) {
+    if (!emittedKeys.has(name) && !resting.has(name) && !old.has(name) && rests(part.key)) unfitted.push(part)
   }
   const previousKeys = new Set(
-    [...(previous?.parts ?? []), ...(previous?.suppressed ?? [])].map(({ key }) => keyString(key)),
+    [...(previous?.parts ?? []), ...(previous?.suppressed ?? []), ...(previous?.unfitted ?? [])].map(({ key }) =>
+      keyString(key),
+    ),
   )
   const parked = kept.flatMap(({ key }): Write[] => {
     if (previousKeys.has(keyString(key))) return []
     const node = partId(frame, key)
     return propOf(doom.nodes.get(node), "parent") === null ? [{ node, prop: "parent", value: null }] : []
   })
+  const { unfitted: _previous, ...inputs } = instance
   const saved = saveInstance(
     doom,
     frame,
     {
-      ...instance,
+      ...inputs,
       suppressed: kept,
       parts: active.map(({ part, node, baseline }) => ({ key: part.key, node, baseline })),
+      ...(unfitted.length === 0 ? {} : { unfitted }),
     },
     writes,
     measure,
@@ -244,6 +273,8 @@ export function placeComponent(
     definition.node === undefined ? { id: definition.id, revision } : { node: definition.node, revision }
   const generated = partId(frame, ["root"])
   if (frame === generated || doom.nodes.has(frame) || doom.nodes.has(generated)) return refuse("shape", frame, "type")
+  const small = belowMinimum(spec.minFrame, box, frame)
+  if (small !== undefined) return small
   const tree = expandComponent(spec, {
     frame: { x: 0, y: 0, w: box.w, h: box.h },
     data,
@@ -322,7 +353,9 @@ function rebuild(
   const proposed = { ...instance, ...patch, component }
   const tree = expandInstance(doom, root, proposed, measure, { definition: resolved, returning, restored, input, work })
   if (isRefusal(tree)) return tree
-  const update = join(doom, frame, proposed, instance, tree, [], measure, returning, restored)
+  const before = linked(doom, frame)?.instance
+  const settled = before !== undefined && instanceFields.every((field) => sameValue(before[field], proposed[field]))
+  const update = join(doom, frame, proposed, instance, tree, [], measure, returning, restored, settled)
   return isRefusal(update) ? update : { update, tree }
 }
 
@@ -330,13 +363,6 @@ export function componentTree(doom: Doom, frame: NodeId, measure: Measure): Comp
   const root = linked(doom, frame)
   if (root === undefined) return refuse("missing", frame, "instance")
   return expandInstance(doom, root, root.instance, measure, {})
-}
-
-export function resolveComponentInFold(
-  doom: Doom,
-  reference: ComponentRef,
-): (ComponentRef & Pick<ComponentDefinition, "spec">) | undefined {
-  return reference.node === undefined ? resolveComponent(reference) : deckComponent(doom, reference.node)
 }
 
 function expandInstance(
@@ -354,17 +380,19 @@ function expandInstance(
   )
     return refuse("shape", id, "instance")
   const styles = new Map(
-    [...instance.parts, ...(returning?.values() ?? [])].flatMap(({ key, node, baseline }) => {
-      const current = input.nodes.get(node)
-      const text = props.text.read(restored?.get(node)?.find(({ prop }) => prop === "text")?.value)
-      if (!isRefusal(text)) return [[keyString(key), text.style] as const]
-      return baseline.kind === "text" &&
-        current?.type === "shape" &&
-        current.text !== undefined &&
-        current.text.style !== baseline.style
-        ? [[keyString(key), current.text.style] as const]
-        : []
-    }),
+    [...instance.parts, ...(instance.unfitted ?? []), ...(returning?.values() ?? [])].flatMap(
+      ({ key, node, baseline }) => {
+        const current = input.nodes.get(node)
+        const text = props.text.read(restored?.get(node)?.find(({ prop }) => prop === "text")?.value)
+        if (!isRefusal(text)) return [[keyString(key), text.style] as const]
+        return baseline.kind === "text" &&
+          current?.type === "shape" &&
+          current.text !== undefined &&
+          current.text.style !== baseline.style
+          ? [[keyString(key), current.text.style] as const]
+          : []
+      },
+    ),
   )
   return expandComponent(definition.spec, {
     frame: { x: 0, y: 0, w: box.w, h: box.h },

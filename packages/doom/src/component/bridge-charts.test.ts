@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { defaultTheme, isRefusal, measureWith, resolveColor, themeLibrary } from "../index.js"
-import { type ComponentTree, expandComponent, readComponentSpec } from "./index.js"
-import stacked from "./library/stacked.json" with { type: "json" }
-import waterfall from "./library/waterfall.json" with { type: "json" }
+import { type ComponentTree, expandComponent } from "./index.js"
+import { componentSpec } from "./library.js"
 
 const frame = { x: 0, y: 0, w: 1540, h: 650 }
 const measure = measureWith({})
@@ -18,16 +17,14 @@ const segment = (id: string, category: string, series: string, value: number, co
 const step = (id: string, value: number, mode = "delta", after = "carry") => ({ id, label: id, mode, after, value })
 
 function expand(
-  raw: unknown,
+  id: "stacked" | "waterfall",
   data: unknown,
   variant = {},
   tokens = {},
   theme = defaultTheme,
   focus: readonly string[] = [],
 ) {
-  const spec = readComponentSpec(raw)
-  if (isRefusal(spec)) throw new Error(JSON.stringify(spec))
-  const result = expandComponent(spec, { theme, measure, frame, data, variant, tokens, focus })
+  const result = expandComponent(componentSpec(id)!, { theme, measure, frame, data, variant, tokens, focus })
   if (isRefusal(result)) throw new Error(JSON.stringify(result))
   return result
 }
@@ -60,16 +57,16 @@ describe("stacked column library", () => {
         segment("support-b", "b", "Support", 5),
       ],
     }
-    const tree = expand(stacked, data)
+    const tree = expand("stacked", data)
     for (const id of ["a", "b"]) {
       expect(edge(tree, "segment", id, `core-${id}`)).toBe(box(tree, "zero")?.y)
-      expect(edge(tree, "segment", id, `support-${id}`)).toBe(box(tree, "segment", id, `core-${id}`)?.y)
+      expect(edge(tree, "segment", id, `support-${id}`)).toBe((box(tree, "segment", id, `core-${id}`)?.y ?? 0) - 2)
     }
     expect(chars(tree, "total", "a")).toBe("15")
     expect(chars(tree, "series-label", "Core")).toBe("Core")
     expect(box(tree, "series-label", "Core")?.x).toBeGreaterThan(box(tree, "segment", "b", "core-b")?.x ?? Infinity)
     expect(count(tree, "legend-swatch")).toBe(0)
-    const repeated = expand(stacked, { ...data, segments: [...data.segments, segment("tiny", "b", "Core", 0.01)] })
+    const repeated = expand("stacked", { ...data, segments: [...data.segments, segment("tiny", "b", "Core", 0.01)] })
     expect(count(repeated, "series-label")).toBe(0)
     expect(count(repeated, "legend-swatch")).toBe(2)
   })
@@ -78,16 +75,16 @@ describe("stacked column library", () => {
     const names = ["Professional services", "Subscriptions", "Hardware", "Training", "Other"]
     const data = {
       categories: [category("a")],
-      series: names.map((label, i) => ({ ...series(`s${i}`), label })),
+      series: names.map((label, i) => ({ ...series(`s${i}`, { var: `accent${(i % 4) + 1}` }), label })),
       segments: [segment("sales", "a", "s0", 1.4)],
     }
-    const tree = expand(stacked, data, { legend: true }, { title: "Revenue by line", unitHeader: "$M" })
+    const tree = expand("stacked", data, { legend: true }, { title: "Revenue by line", unitHeader: "$M" })
     expect(names.map((_, i) => chars(tree, "legend-label", `s${i}`))).toEqual(names)
     expect(names.map((_, i) => fill(tree, "legend-swatch", `s${i}`)).every(Boolean)).toBe(true)
     expect(chars(tree, "value", "a", "sales")).toBe("1.4")
     expect(edge(tree, "legend-label", "s0")).toBeLessThan(box(tree, "total", "a")?.y ?? 0)
     const longData = { ...data, series: data.series.map((row) => ({ ...row, label: row.label.repeat(8) })) }
-    const crowded = expand(stacked, longData)
+    const crowded = expand("stacked", longData)
     const legendKeys = (role: string) => crowded.children.filter(({ key }) => key[0] === role).map(({ key }) => key[1])
     expect(legendKeys("legend-swatch")).toEqual(legendKeys("legend-label"))
     expect(legendKeys("legend-label").length).toBeLessThan(names.length)
@@ -100,15 +97,15 @@ describe("stacked column library", () => {
       series: [series("core"), series("support")],
       segments: [segment("core-a", "a", "core", 30), segment("support-a", "a", "support", 20)],
     }
-    const plain = expand(stacked, data)
-    const focused = expand(stacked, data, {}, {}, defaultTheme, ["support"])
+    const plain = expand("stacked", data)
+    const focused = expand("stacked", data, {}, {}, defaultTheme, ["support"])
     expect(fill(focused, "segment", "a", "support-a")).toEqual(fill(plain, "segment", "a", "core-a"))
     expect(fill(focused, "segment", "a", "core-a")).toEqual(fill(plain, "segment", "a", "support-a"))
   })
 
   it("keeps separate signed offsets and honors the legacy series and point colors", () => {
     const tree = expand(
-      stacked,
+      "stacked",
       {
         categories: [category("march", "March"), category("april", "April"), category("may", "May")],
         series: [series("Core"), series("Support"), series("Other", { var: "accent4" })],
@@ -130,8 +127,8 @@ describe("stacked column library", () => {
     const zero = box(tree, "zero")?.y
     expect(edge(tree, "segment", "march", "core-mar")).toBe(zero)
     expect(box(tree, "segment", "march", "support-mar")?.y).toBe(zero)
-    expect(edge(tree, "segment", "march", "other-mar")).toBe(box(tree, "segment", "march", "core-mar")?.y)
-    expect(box(tree, "segment", "april", "support-apr")?.y).toBe(edge(tree, "segment", "april", "core-apr"))
+    expect(edge(tree, "segment", "march", "other-mar")).toBe((box(tree, "segment", "march", "core-mar")?.y ?? 0) - 2)
+    expect(box(tree, "segment", "april", "support-apr")?.y).toBe(edge(tree, "segment", "april", "core-apr") + 2)
     expect(chars(tree, "value", "april", "support-apr")).toBe("−5.75")
     expect(chars(tree, "total", "april")).toBe("Net −1.75")
     expect(edge(tree, "total", "april")).toBeLessThan(box(tree, "segment", "april", "other-apr")?.y ?? 0)
@@ -143,7 +140,7 @@ describe("stacked column library", () => {
 
   it("handles all-negative stacks, exact zero, and a label too short to fit", () => {
     const tree = expand(
-      stacked,
+      "stacked",
       {
         categories: [category("a")],
         series: [series("core")],
@@ -171,11 +168,11 @@ describe("stacked column library", () => {
       series: Array.from({ length: 7 }, (_, i) => series(`s${i}`)),
       segments: Array.from({ length: 7 }, (_, i) => segment(`v${i}`, "a", `s${i}`, i + 5)),
     }
-    const tree = expand(stacked, data)
-    const plain = expand(stacked, data, { labels: false, totals: false })
+    const tree = expand("stacked", data)
+    const plain = expand("stacked", data, { labels: false, totals: false })
     expect(fill(tree, "segment", "a", "v0")).toEqual({ kind: "solid", color: { var: "accent1" } })
-    expect(fill(tree, "segment", "a", "v6")).toMatchObject({ kind: "solid", color: { var: "text2" } })
-    expect(tree.findings).toContainEqual(expect.objectContaining({ kind: "advice", code: "many-segments" }))
+    expect(fill(tree, "segment", "a", "other", "aggregate")).toMatchObject({ kind: "solid", color: { var: "text2" } })
+    expect(tree.findings).toContainEqual(expect.objectContaining({ kind: "advice", code: "series-folded" }))
     expect(count(plain, "value")).toBe(0)
     expect(count(plain, "total")).toBe(0)
     expect(plain.children.filter(({ key }) => key[0] === "segment").map(({ key }) => key)).toEqual(
@@ -186,7 +183,7 @@ describe("stacked column library", () => {
   it("expands 100 categories and evenly thins crowded category captions", () => {
     const categories = Array.from({ length: 100 }, (_, i) => category(`c${i}`, `Category ${i}`))
     const data = { categories, series: [series("a")], segments: categories.map(({ id }) => segment(id, id, "a", 10)) }
-    const tree = expand(stacked, data, { totals: true })
+    const tree = expand("stacked", data, { totals: true })
     expect(count(tree, "segment")).toBe(100)
     expect(count(tree, "category")).toBeGreaterThan(1)
     expect(thinnedCategories(tree)).toBe(100 - count(tree, "category"))
@@ -214,9 +211,9 @@ describe("waterfall library", () => {
   it.each([
     ["fallback", defaultTheme] as const,
     ...Object.values(themeLibrary).map(({ id, theme }) => [id, theme] as const),
-  ])("uses distinct totals, steps and focus in %s", (_id, theme) => {
+  ])("uses distinct totals, steps and focus, with totals a heavier text2 tint, in %s", (_id, theme) => {
     const tree = expand(
-      waterfall,
+      "waterfall",
       { rows: [step("Open", 100, "total"), step("Price", 5), step("Volume", -3), step("Close", 102, "total")] },
       {},
       {},
@@ -234,14 +231,14 @@ describe("waterfall library", () => {
     expect.soft(focus).toBe(theme.colors.accent1)
     expect.soft(contrast(focus, total)).toBeGreaterThanOrEqual(1.5)
     expect.soft(contrast(total, stepGrey)).toBeGreaterThanOrEqual(1.5)
-    expect.soft(total.slice(1, 3)).toBe(total.slice(3, 5))
-    expect.soft(total.slice(3, 5)).toBe(total.slice(5, 7))
+    expect.soft(fill(tree, "bar", "Open")).toMatchObject({ color: { var: "text2" } })
+    expect.soft(contrast(total, theme.colors.background)).toBeGreaterThan(contrast(stepGrey, theme.colors.background))
   })
 
   it("keeps an explicitly requested focus color", () => {
     const highlight = { var: "accent1" }
     const tree = expand(
-      waterfall,
+      "waterfall",
       { rows: [step("Open", 100, "total"), step("Price", 5), step("Close", 105, "total")] },
       {},
       { highlight },
@@ -252,7 +249,7 @@ describe("waterfall library", () => {
   })
 
   it("keeps a final delta and asks for a closing total", () => {
-    const tree = expand(waterfall, { rows: [step("Open", 100, "total"), step("Price", 5), step("Volume", -3)] })
+    const tree = expand("waterfall", { rows: [step("Open", 100, "total"), step("Price", 5), step("Volume", -3)] })
     expect(chars(tree, "value", "Volume")).toBe("−3")
     expect(tree.findings).toContainEqual(
       expect.objectContaining({ kind: "advice", code: "missing-closing-total", note: "Add a closing total row." }),
@@ -262,7 +259,7 @@ describe("waterfall library", () => {
 
   it("keeps both ends on the baseline and highlights a focused step among neutral steps", () => {
     const tree = expand(
-      waterfall,
+      "waterfall",
       {
         rows: [step("Open", 20, "total"), step("Gain", 5), step("Loss", -3), step("End", 999, "total")],
       },
@@ -291,7 +288,7 @@ describe("waterfall library", () => {
       if (i === 29) return step("Closing balance", 0, "total")
       return step(`Driver ${i}`, i % 2 === 0 ? 1 : -1)
     }).map((row, i) => ({ ...row, id: `r${i}` }))
-    const tree = expand(waterfall, { rows })
+    const tree = expand("waterfall", { rows })
     expect(chars(tree, "category", "r0")).toBe("Opening balance")
     expect(chars(tree, "category", "r15")).toBe("Subtotal")
     expect(chars(tree, "category", "r29")).toBe("Closing balance")
@@ -305,7 +302,7 @@ describe("waterfall library", () => {
   })
 
   it("starts a marked opening balance at zero and carries it to the next step", () => {
-    const tree = expand(waterfall, {
+    const tree = expand("waterfall", {
       rows: [step("Open", 2, "total"), step("Gain", 1.4), step("End", 3.3999, "total")],
     })
     expect(edge(tree, "bar", "Open")).toBe(box(tree, "zero")?.y)
@@ -317,7 +314,7 @@ describe("waterfall library", () => {
 
   it("bridges the running endpoints through a subtotal and breaks after a reset", () => {
     const tree = expand(
-      waterfall,
+      "waterfall",
       {
         rows: [
           step("Open", 20, "total"),
@@ -352,7 +349,7 @@ describe("waterfall library", () => {
 
   it("keeps zero and near-zero observations visible without changing accumulated levels", () => {
     const tree = expand(
-      waterfall,
+      "waterfall",
       {
         rows: [step("Open", -12, "total"), step("Flat", 0), step("Tiny", -0.0001), step("End", 0, "total")],
       },
@@ -371,7 +368,7 @@ describe("waterfall library", () => {
   })
 
   it("expands and thins 100 steps without losing a connector or mark", () => {
-    const tree = expand(waterfall, {
+    const tree = expand("waterfall", {
       rows: Array.from({ length: 100 }, (_, i) =>
         step(`Step-${i}`, i % 2 === 0 ? 1 : -1, i === 0 || i === 99 ? "total" : "delta"),
       ),

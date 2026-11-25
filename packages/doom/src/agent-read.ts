@@ -1,4 +1,4 @@
-import { resolveComponentInFold } from "./component/join-instance.js"
+import { resolveComponentInFold } from "./component/deck-component.js"
 import type { AgentColor } from "./agent-change.js"
 import { uniformAlign, uniformColor } from "./agent-look.js"
 import type { Arrow, End, Geometry } from "./geometry.js"

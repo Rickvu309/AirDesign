@@ -2,6 +2,7 @@
   "version": 1,
   "name": "Chart",
   "chart": "cartesian",
+  "minFrame": { "w": 140, "h": 160 },
   "sample": {
     "w": 1540,
     "h": 650,
@@ -222,17 +223,25 @@
     ["plotTop", 99],
     ["categorySpace", 62],
     ["valueSpace", ["if", ["get", "showValues"], ["if", ["lt", ["get", "lo"], 0], 44, 12], 12]],
-    ["legendLeading", 26],
-    ["legendRowHeight", 32],
+    ["legendRow", { "leading": 26, "height": 32 }],
     [
       "legendRoom",
       ["sub", ["get", "frame.h"], ["add", ["get", "plotTop"], 48, ["get", "categorySpace"], ["get", "valueSpace"]]]
     ],
     [
-      "legend",
+      "legendUnnamed",
       [
         "if",
         ["get", "variant.legend"],
+        ["if", ["get", "signColors"], false, ["eq", ["get", "token.seriesLabel"], ""]],
+        false
+      ]
+    ],
+    [
+      "legend",
+      [
+        "if",
+        ["if", ["get", "variant.legend"], ["eq", ["get", "legendUnnamed"], false], false],
         [
           "flowText",
           [
@@ -271,12 +280,12 @@
             "width": ["max", 0, ["get", "plotWidth"]],
             "rows": [
               "if",
-              ["lt", ["get", "legendRoom"], ["get", "legendRowHeight"]],
+              ["lt", ["get", "legendRoom"], ["get", "legendRow.height"]],
               0,
-              ["if", ["lt", ["get", "legendRoom"], ["mul", 2, ["get", "legendRowHeight"]]], 1, 2]
+              ["if", ["lt", ["get", "legendRoom"], ["mul", 2, ["get", "legendRow.height"]]], 1, 2]
             ],
-            "rowHeight": ["get", "legendRowHeight"],
-            "leading": ["get", "legendLeading"],
+            "rowHeight": ["get", "legendRow.height"],
+            "leading": ["get", "legendRow.leading"],
             "gap": 22,
             "style": ["get", "token.caption"],
             "smaller": ["get", "captionSmall"]
@@ -288,7 +297,7 @@
         }
       ]
     ],
-    ["legendTop", ["sub", ["get", "frame.h"], ["mul", ["get", "legend.rows"], ["get", "legendRowHeight"]]]],
+    ["legendTop", ["sub", ["get", "frame.h"], ["mul", ["get", "legend.rows"], ["get", "legendRow.height"]]]],
     ["categoryTop", ["sub", ["get", "legendTop"], ["get", "categorySpace"]]],
     ["plotBottom", ["sub", ["get", "categoryTop"], ["get", "valueSpace"]]],
     ["zero", ["linear", 0, ["get", "axis.lo"], ["get", "axis.hi"], ["get", "plotBottom"], ["get", "plotTop"]]]
@@ -441,7 +450,8 @@
                 "fit": {
                   "smaller": ["get", "captionSmall"],
                   "group": "categories",
-                  "thin": 4
+                  "thin": 4,
+                  "advise": "Show fewer categories or widen the frame."
                 }
               }
             },
@@ -465,9 +475,8 @@
                       "if",
                       ["get", "hasFocus"],
                       [
-                        "focusColor",
-                        ["get", "activeFocus"],
-                        ["list", ["get", "r.id"]],
+                        "if",
+                        ["includes", ["get", "activeFocus"], ["get", "r.id"]],
                         ["get", "seriesAccent"],
                         ["get", "neutralMark"]
                       ],
@@ -519,7 +528,7 @@
       },
       "let": [
         ["x", ["add", ["get", "gutter"], ["get", "placed.x"]]],
-        ["y", ["add", ["get", "legendTop"], ["mul", ["get", "placed.row"], ["get", "legendRowHeight"]]]]
+        ["y", ["add", ["get", "legendTop"], ["mul", ["get", "placed.row"], ["get", "legendRow.height"]]]]
       ],
       "children": [
         {
@@ -527,7 +536,7 @@
             "kind": "rect",
             "key": ["list", "legend-swatch", ["get", "placed.item.id"]],
             "x": ["get", "x"],
-            "y": ["add", ["get", "y"], ["div", ["sub", ["get", "legendRowHeight"], 16], 2]],
+            "y": ["add", ["get", "y"], ["div", ["sub", ["get", "legendRow.height"], 16], 2]],
             "w": 16,
             "h": 16,
             "fill": ["get", "placed.item.fill"]
@@ -537,10 +546,10 @@
           "emit": {
             "kind": "text",
             "key": ["list", "legend-label", ["get", "placed.item.id"]],
-            "x": ["add", ["get", "x"], ["get", "legendLeading"]],
+            "x": ["add", ["get", "x"], ["get", "legendRow.leading"]],
             "y": ["get", "y"],
             "w": ["get", "placed.w"],
-            "h": ["get", "legendRowHeight"],
+            "h": ["get", "legendRow.height"],
             "chars": ["get", "placed.item.chars"],
             "style": ["get", "token.caption"],
             "size": ["get", "legend.size"],
@@ -563,6 +572,15 @@
               "value-label-space",
               "Value labels need more room. Show fewer categories or make the chart wider."
             ],
+            false
+          ]
+        ],
+        [
+          "legendLabel",
+          [
+            "if",
+            ["get", "legendUnnamed"],
+            ["advise", "legend-label-missing", "Set seriesLabel to show the legend."],
             false
           ]
         ],

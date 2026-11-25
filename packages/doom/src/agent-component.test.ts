@@ -99,10 +99,10 @@ describe("linked components in agent edits", () => {
   })
 
   it.each([
-    { layout: "title", width: 713 },
+    { layout: "title", width: 1600 },
     { layout: "blank", width: 1766 },
     { layout: "body", width: 734 },
-  ])("fills the free area and preserves proportions on a $layout slide", ({ layout, width }) => {
+  ])("fits the chart into the free area on a $layout slide", ({ layout, width }) => {
     const size = { w: 1920, h: 1080 }
     const {
       doom,
@@ -142,7 +142,7 @@ describe("linked components in agent edits", () => {
     if (box === undefined) throw new Error("No component box")
     const sample = columnDefinition.spec.sample
     if (sample === undefined) throw new Error("No column sample")
-    expect(Math.abs(box.w - (box.h * sample.w) / sample.h)).toBeLessThanOrEqual(2)
+    if (layout !== "title") expect(Math.abs(box.w - (box.h * sample.w) / sample.h)).toBeLessThanOrEqual(2)
     expect(box.w).toBe(width)
     if (layout === "title") expect(box.x).toBe(160)
     for (const kid of childrenOf(before, slide)) {

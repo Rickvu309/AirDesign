@@ -1,3 +1,4 @@
+import { componentMinimum } from "./component/minimum-frame.js"
 import { deckOf } from "./deck-of.js"
 import type { NodeId } from "./ids.js"
 import type { Align9, Layout, Sizing } from "./layout.js"
@@ -60,6 +61,12 @@ function sizeOf(context: Context, node: Node, forcedW: number | null, forcedH: n
 }
 
 function measuredSize(context: Context, node: Node, forcedW: number | null, forcedH: number | null): Size {
+  const size = naturalSize(context, node, forcedW, forcedH)
+  const least = componentMinimum(context.doom, node.id)
+  return least === undefined ? size : { w: Math.max(size.w, least.w), h: Math.max(size.h, least.h) }
+}
+
+function naturalSize(context: Context, node: Node, forcedW: number | null, forcedH: number | null): Size {
   const mode = modes(node)
   const stored = storedBox(node)
   const w = forcedW ?? (mode.w === "fixed" ? stored.w : null)

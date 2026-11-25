@@ -2,6 +2,7 @@
   "version": 1,
   "name": "Pie chart",
   "chart": "pie",
+  "minFrame": { "w": 140, "h": 140 },
   "sample": {
     "w": 1540,
     "h": 650,
@@ -144,7 +145,8 @@
           ["get", "focus"],
           ["filter", ["at", ["get", "selected"], 0], "r", ["lt", ["mul", 1e-6, ["get", "total"]], ["get", "r.value"]]],
           "id"
-        ]
+        ],
+        "circular"
       ]
     ],
     [
@@ -433,7 +435,7 @@
                   ["get", "p.to"]
                 ],
                 "fill": ["get", "p.color"],
-                "fillStroke": true
+                "stroke": { "color": { "var": "background" }, "width": 2 }
               }
             }
           ]

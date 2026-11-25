@@ -3,7 +3,7 @@ import * as doom from "@airdesign/doom"
 const estimate = doom.measureWith({})
 const shownFindings = 10
 
-function findingMessage(finding: doom.ComponentFinding, categoryCount: number): string {
+function findingMessage(finding: doom.ComponentFinding): string {
   switch (finding.kind) {
     case "advice":
       return finding.note
@@ -21,12 +21,8 @@ function findingMessage(finding: doom.ComponentFinding, categoryCount: number): 
     case "many-series":
       return `needs ${finding.count} distinct colours. Use at most ${finding.capacity} colour groups or split the chart.`
     case "text-fit": {
-      const { neededWidth, availableWidth, thinned } = finding
-      const guidance =
-        finding.key[0] === "categories" && categoryCount > 12
-          ? " Show fewer categories, or use a line chart for a trend or a bar chart for a ranking."
-          : ""
-      return `needs ${Math.ceil(neededWidth)} px in ${Math.floor(availableWidth)} px${thinned === undefined ? "." : `, with ${thinned} labels thinned.`}${guidance}`
+      const { neededWidth, availableWidth, thinned, advice } = finding
+      return `needs ${Math.ceil(neededWidth)} px in ${Math.floor(availableWidth)} px${thinned === undefined ? "." : `, with ${thinned} labels thinned.`}${advice === undefined ? "" : ` ${advice}`}`
     }
     case "text-overflow":
       return `needs ${finding.neededWidth}x${finding.neededHeight} px in a ${finding.availableWidth}x${finding.availableHeight} box.`
@@ -42,12 +38,10 @@ export function componentFindings(fold: doom.Doom, ids: readonly doom.NodeId[], 
   for (const node of new Set(ids)) {
     const tree = doom.componentTree(fold, node, measure)
     if (doom.isRefusal(tree)) continue
-    const instance = doom.propOf(fold.nodes.get(node), "instance")
-    const categoryCount = instance?.component.id === "column" ? (instance.data.rows?.length ?? 0) : 0
     for (const finding of tree.findings) {
       const { kind, key } = finding
       const subject = `${node} ${key.join(" / ")}`
-      const note = `${subject} ${findingMessage(finding, categoryCount)}`
+      const note = `${subject} ${findingMessage(finding)}`
       findings.push({ node, code: finding.kind === "advice" ? finding.code : kind, key, note })
       if (findings.length === shownFindings) return findings
     }
@@ -132,7 +126,7 @@ export function sampleFindings(fold: doom.Doom, ids: readonly doom.NodeId[], mea
         node: id,
         code: finding.kind === "advice" ? finding.code : finding.kind,
         key: finding.key,
-        note: `${id} sample ${finding.key.join(" / ")} ${findingMessage(finding, 0)}`,
+        note: `${id} sample ${finding.key.join(" / ")} ${findingMessage(finding)}`,
       }))
     })
     .slice(0, shownFindings)

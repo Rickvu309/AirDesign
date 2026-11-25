@@ -13,6 +13,7 @@ import {
 import architecture from "./testing/architecture.json" with { type: "json" }
 import { librarySpec } from "./testing/diagram-tree.js"
 import { landTree } from "./testing/land-tree.js"
+import { componentLibrary } from "./library.js"
 import column from "./testing/column.json" with { type: "json" }
 import waterfall from "./testing/waterfall.json" with { type: "json" }
 
@@ -408,3 +409,32 @@ it.each(["workLimit", "partLimit"])("does not accept a %s grant in authored JSON
     field,
   })
 })
+
+it("accepts a numeric override for an automatic token regardless of its name", () => {
+  const spec = readComponentSpec({
+    ...specOf([{ emit: { ...rectangle, w: ["get", "token.markWidth"] } }]),
+    defaults: { markWidth: "auto" },
+  })
+  if (isRefusal(spec)) throw new Error(JSON.stringify(spec))
+  const tree = expand(spec, { ...inputs, data: {}, tokens: { markWidth: 42 } })
+  expect(tree.children[0]?.props.box.w).toBe(42)
+})
+
+it.each(["column", "clustered-chart", "line", "pie", "waterfall", "stacked"])(
+  "draws %s at its minimum size inside an undersized frame and says how to fit it",
+  (id) => {
+    const spec = componentLibrary.get(id)?.spec
+    if (spec?.sample === undefined || spec.minFrame === undefined) throw new Error("Expected a chart sample")
+    const small = expand(spec, { ...inputs, data: spec.sample.data, frame: { x: 0, y: 0, w: 40, h: 40 } })
+    const least = expand(spec, { ...inputs, data: spec.sample.data, frame: { x: 0, y: 0, ...spec.minFrame } })
+    expect(small.children.length).toBeGreaterThan(0)
+    expect(small.children).toEqual(least.children)
+    expect(small.findings).toContainEqual(
+      expect.objectContaining({
+        kind: "advice",
+        code: "frame-too-small",
+        note: `Resize the frame to at least ${spec.minFrame.w} × ${spec.minFrame.h} px.`,
+      }),
+    )
+  },
+)
