@@ -32,20 +32,20 @@ describe("admit", () => {
     expect(opened.events).toHaveLength(5)
   })
 
-  it("allows the thirtieth tool call and refuses the thirty-first", () => {
-    const called = take(emptyLog(), "tool", 30, (index) => index)
-    const refused = admit(called, "tool", 29)
+  it("allows the ninetieth tool call and refuses the ninety-first", () => {
+    const called = take(emptyLog(), "tool", 90, (index) => index)
+    const refused = admit(called, "tool", 89)
     expect(refused.ok).toBe(false)
     if (refused.ok) return
     expect(refused.log).toBe(called)
-    expect(refused.log.events).toHaveLength(30)
+    expect(refused.log.events).toHaveLength(90)
     expect(refused.resetsAt).toBe(300_000)
-    expect(refused.text).toBe("Thirty tool calls in five minutes. The next tool call can run in 300 seconds.")
+    expect(refused.text).toBe("Ninety tool calls in five minutes. The next tool call can run in 300 seconds.")
     const next = admit(called, "tool", 300_000)
     expect(next.ok).toBe(true)
     if (!next.ok) return
-    expect(next.log.events).toHaveLength(30)
-    expect(called.events).toHaveLength(30)
+    expect(next.log.events).toHaveLength(90)
+    expect(called.events).toHaveLength(90)
   })
 
   it("allows the twentieth turn and refuses the twenty-first", () => {
@@ -86,36 +86,42 @@ describe("admit", () => {
       expect(log.events.length).toBeLessThanOrEqual(30)
       now += 10_000
     }
-    const filled = take(emptyLog(), "tool", 30, () => 5_000_000)
+    const filled = take(emptyLog(), "tool", 90, () => 5_000_000)
     const refused = admit(filled, "tool", 5_000_000)
     expect(refused.ok).toBe(false)
     if (refused.ok) return
-    expect(refused.log.events).toHaveLength(30)
-    expect(refused.text).toBe("Thirty tool calls in five minutes. The next tool call can run in 300 seconds.")
+    expect(refused.log.events).toHaveLength(90)
+    expect(refused.text).toBe("Ninety tool calls in five minutes. The next tool call can run in 300 seconds.")
   })
 
-  it("gives each agent its own thirty tool calls and refuses the account's ninety-first", () => {
+  it("gives each agent its own ninety tool calls and refuses the account's three hundred and first", () => {
     let log = emptyLog()
-    for (const agent of ["one", "two", "three"]) {
-      for (let call = 0; call < 30; call += 1) {
+    for (const [agent, calls] of [
+      ["one", 90],
+      ["two", 90],
+      ["three", 90],
+      ["four", 30],
+    ] as const) {
+      for (let call = 0; call < calls; call += 1) {
         const admitted = admit(log, "tool", call, agent)
         if (!admitted.ok) throw new Error(admitted.text)
         log = admitted.log
       }
-      const full = admit(log, "tool", 30, agent)
+      if (calls < 90) continue
+      const full = admit(log, "tool", 90, agent)
       expect(full.ok).toBe(false)
       if (full.ok) return
-      expect(full.text).toBe("Thirty tool calls in five minutes. The next tool call can run in 300 seconds.")
+      expect(full.text).toBe("Ninety tool calls in five minutes. The next tool call can run in 300 seconds.")
     }
-    const fourth = admit(log, "tool", 40, "four")
-    expect(fourth.ok).toBe(false)
-    if (fourth.ok) return
-    expect(fourth.log).toBe(log)
-    expect(fourth.resetsAt).toBe(300_000)
-    expect(fourth.text).toBe(
-      "Ninety tool calls in five minutes from this account's agents. The next tool call can run in 300 seconds.",
+    const fifth = admit(log, "tool", 95, "five")
+    expect(fifth.ok).toBe(false)
+    if (fifth.ok) return
+    expect(fifth.log).toBe(log)
+    expect(fifth.resetsAt).toBe(300_000)
+    expect(fifth.text).toBe(
+      "Three hundred tool calls in five minutes from this account's agents. The next tool call can run in 300 seconds.",
     )
-    expect(admit(log, "tool", 300_000, "four").ok).toBe(true)
+    expect(admit(log, "tool", 300_000, "five").ok).toBe(true)
   })
 
   it("counts a deck apart from a tool call and a turn", () => {

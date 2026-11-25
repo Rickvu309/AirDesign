@@ -172,7 +172,7 @@ type Cell = {
   readonly cols: number
 }
 
-function cellsOf(grid: Grid, flow: readonly Node[]): readonly Cell[] {
+export function cellsOf(grid: Grid, flow: readonly Node[]): readonly Cell[] {
   const taken = new Set<string>()
   const cover = (row: number, col: number, rows: number, cols: number) => {
     for (let r = row; r < row + rows; r += 1)

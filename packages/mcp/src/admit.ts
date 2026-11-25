@@ -6,8 +6,8 @@ export type CallerLog = {
 
 export type AdmissionText =
   | `Five decks in one minute. The next deck can open in ${string} seconds.`
-  | `Thirty tool calls in five minutes. The next tool call can run in ${string} seconds.`
-  | `Ninety tool calls in five minutes from this account's agents. The next tool call can run in ${string} seconds.`
+  | `Ninety tool calls in five minutes. The next tool call can run in ${string} seconds.`
+  | `Three hundred tool calls in five minutes from this account's agents. The next tool call can run in ${string} seconds.`
   | `Twenty turns in five minutes. The next turn can start in ${string} seconds.`
 
 export type Admission =
@@ -16,11 +16,11 @@ export type Admission =
 
 const limitOf = {
   deck: 5,
-  tool: 30,
+  tool: 90,
   turn: 20,
 } as const
 
-const accountTools = 90
+const accountTools = 300
 
 const windowOf = {
   deck: 60_000,
@@ -41,9 +41,9 @@ function wholeSeconds(now: number, resetsAt: number): number {
 function sentence(kind: LimitKind, now: number, resetsAt: number, account: boolean): AdmissionText {
   const seconds = String(wholeSeconds(now, resetsAt))
   if (account)
-    return `Ninety tool calls in five minutes from this account's agents. The next tool call can run in ${seconds} seconds.`
+    return `Three hundred tool calls in five minutes from this account's agents. The next tool call can run in ${seconds} seconds.`
   if (kind === "deck") return `Five decks in one minute. The next deck can open in ${seconds} seconds.`
-  if (kind === "tool") return `Thirty tool calls in five minutes. The next tool call can run in ${seconds} seconds.`
+  if (kind === "tool") return `Ninety tool calls in five minutes. The next tool call can run in ${seconds} seconds.`
   return `Twenty turns in five minutes. The next turn can start in ${seconds} seconds.`
 }
 

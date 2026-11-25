@@ -20,7 +20,7 @@ const asked = [{ role: "user", content: "How should slide two open?" }]
 const turnCharge = 1_904_000
 const stoppedCharge = 412 * 2_000 + airaMaxTokens * 10_000 + 200 * 2_500 + 100 * 100
 const wednesday = Date.UTC(2026, 10, 11, 12)
-const toolLimit = "Thirty tool calls in five minutes. The next tool call can run in 300 seconds."
+const toolLimit = "Ninety tool calls in five minutes. The next tool call can run in 300 seconds."
 const turnLimit = "Twenty turns in five minutes. The next turn can start in 300 seconds."
 
 type Account = { readonly email: string; readonly cookie: string }
@@ -192,11 +192,11 @@ async function listed(client: McpClient) {
 }
 
 describe("the limits an account's calls share hold on every server and after a restart", () => {
-  it("refuses the thirty-first tool call when the thirty landed on two servers, and on a server started after", async () => {
+  it("refuses the ninety-first tool call when the ninety landed on two servers, and on a server started after", async () => {
     const account = await signIn()
     for (const on of [first, second]) {
       await withMcp(account.cookie, on, async (client) => {
-        for (let call = 0; call < 15; call += 1) {
+        for (let call = 0; call < 45; call += 1) {
           expect((await listed(client)).isError).toBeFalsy()
         }
       })

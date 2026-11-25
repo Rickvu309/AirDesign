@@ -167,20 +167,24 @@ for (const pairing of ["two agents", "Aira and an agent"] as const) {
 }
 
 describe("tool call limits", () => {
-  it("give each agent its own thirty calls in five minutes and the account ninety", async () => {
+  it("give each agent its own ninety calls in five minutes and the account three hundred", async () => {
     const owner = await account()
     const tokens = await Promise.all(["one", "two", "three", "four"].map((name) => grant(owner, name)))
     const callers = await Promise.all(tokens.map((token) => connected({ authorization: `Bearer ${token}` })))
     const [one, two, three, four] = callers
     if (one === undefined || two === undefined || three === undefined || four === undefined) throw new Error("agents")
-    for (let count = 0; count < 30; count += 1) expect((await one.call("list_decks", {})).ok).toBe(true)
-    const thirtyFirst = await one.call("list_decks", {})
-    expect(thirtyFirst.text).toMatch(/^Thirty tool calls in five minutes\./)
-    for (const agent of [two, three]) {
-      for (let count = 0; count < 30; count += 1) expect((await agent.call("list_decks", {})).ok).toBe(true)
+    for (let count = 0; count < 90; count += 1) expect((await one.call("list_decks", {})).ok).toBe(true)
+    const ninetyFirst = await one.call("list_decks", {})
+    expect(ninetyFirst.text).toMatch(/^Ninety tool calls in five minutes\./)
+    for (const [agent, calls] of [
+      [two, 90],
+      [three, 90],
+      [four, 30],
+    ] as const) {
+      for (let count = 0; count < calls; count += 1) expect((await agent.call("list_decks", {})).ok).toBe(true)
     }
-    const ninetyFirst = await four.call("list_decks", {})
-    expect(ninetyFirst.text).toMatch(/^Ninety tool calls in five minutes from this account's agents\./)
+    const threeHundredFirst = await four.call("list_decks", {})
+    expect(threeHundredFirst.text).toMatch(/^Three hundred tool calls in five minutes from this account's agents\./)
   }, 60_000)
 })
 
