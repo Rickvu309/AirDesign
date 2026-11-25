@@ -68,6 +68,7 @@ describe("a pattern under a title", () => {
     const box = propOf(row, "box")!
     expect(box).toMatchObject({ x: given.x, y: given.y, w: given.w })
     expect(box.h).toBeLessThan(given.h / 2)
+    expect(propOf(row, "sizing")).toEqual({ w: "fixed", h: "hug" })
     for (const card of childrenOf(doom, row.id)) expect(propOf(card, "sizing")).toEqual({ w: "fill", h: "fill" })
     expect(emptyCardsOn(doom, on)).toEqual([])
   })
