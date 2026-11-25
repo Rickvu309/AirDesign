@@ -5,18 +5,35 @@ import cycle from "./library/cycle.json" with { type: "json" }
 import process from "./library/process.json" with { type: "json" }
 import { type ComponentSpec, readComponentSpec } from "./spec.js"
 
-const components = new Map<string, ComponentSpec>()
+export type ComponentDefinition = ComponentRef & { readonly spec: ComponentSpec }
+type ComponentRef = { readonly id: string; readonly revision: number }
+
+function builtIn(id: string, raw: unknown): ComponentDefinition {
+  const spec = readComponentSpec(raw)
+  if (isRefusal(spec)) throw new Error(`Invalid ${id} component ${JSON.stringify(spec)}`)
+  return { id, revision: 1, spec }
+}
+
+export const columnDefinition: ComponentDefinition = builtIn("column", column)
+export const columnComponent: ComponentSpec = columnDefinition.spec
+export const componentLibrary: ReadonlyMap<string, ComponentDefinition> = new Map(
+  [columnDefinition].map((definition) => [definition.id, definition]),
+)
 
 export const componentSpec = (id: string) => components.get(id)
 
-function libraryComponent(name: string, raw: unknown): ComponentSpec {
-  const spec = readComponentSpec(raw)
-  if (isRefusal(spec)) throw new Error(`Invalid ${name} component ${JSON.stringify(spec)}`)
-  components.set(name, spec)
-  return spec
+export function resolveComponent({ id, revision }: ComponentRef): ComponentDefinition | undefined {
+  const found = componentLibrary.get(id)
+  return found?.revision === revision ? found : undefined
 }
 
-export const columnComponent: ComponentSpec = libraryComponent("column", column)
-export const processComponent: ComponentSpec = libraryComponent("process", process)
-export const architectureComponent: ComponentSpec = libraryComponent("architecture", architecture)
-export const cycleComponent: ComponentSpec = libraryComponent("cycle", cycle)
+export const processComponent: ComponentSpec = builtIn("process", process).spec
+export const architectureComponent: ComponentSpec = builtIn("architecture", architecture).spec
+export const cycleComponent: ComponentSpec = builtIn("cycle", cycle).spec
+
+const components = new Map<string, ComponentSpec>([
+  [columnDefinition.id, columnComponent],
+  ["process", processComponent],
+  ["architecture", architectureComponent],
+  ["cycle", cycleComponent],
+])

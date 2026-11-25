@@ -1,11 +1,12 @@
 import { readColor } from "../color.js"
 import type { Refusal } from "../refusal.js"
 import { boolean, finite, integer, literal, naming, object, reject, variant } from "../read-kit.js"
-import { readCollections } from "./collections.js"
+import { readCollections, readData } from "./collections.js"
 import { type Bindings, type Expr, binding, readExpr } from "./expression.js"
 import { defaultNumberTokens, readLocale } from "./operators.js"
 import {
   budget,
+  type Charge,
   checkDepth,
   componentRefusal,
   entries,
@@ -149,7 +150,7 @@ function specReader() {
       }),
     )
   }
-  return object(
+  const read = object(
     {
       version: integer(1, 1),
       name: (raw) => {
@@ -167,11 +168,32 @@ function specReader() {
       defaultVariant: variantRecord,
       quantities,
       chart: literal(["cartesian", "pie"]),
+      sample: (raw: unknown) => raw,
     },
   )
+  return (raw: unknown) => {
+    const { sample, ...spec } = read(raw)
+    if (sample === undefined) return { ...spec, sample: undefined }
+    return {
+      ...spec,
+      sample: naming("sample", () =>
+        object({
+          w: integer(1, 1_000_000),
+          h: integer(1, 1_000_000),
+          data: (raw) => readComponentData(spec, raw, charge),
+        })(sample),
+      ),
+    }
+  }
 }
 
 export type ComponentSpec = ReturnType<ReturnType<typeof specReader>>
+
+export const readComponentData = (
+  spec: { readonly collections: Parameters<typeof readData>[0] },
+  raw: unknown,
+  charge: Charge,
+) => readData(spec.collections, raw, charge)
 
 export function readComponentSpec(raw: unknown): ComponentSpec | Refusal {
   try {

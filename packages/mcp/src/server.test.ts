@@ -93,6 +93,7 @@ describe("createServer", () => {
         "slide",
         "duplicate",
         "deck",
+        ...(doom.linkedComponentsEnabled ? ["detach"] : []),
       ])
       expect(advertisedTokens).toBeLessThanOrEqual(8000)
       expect(listedTokens).toBeLessThanOrEqual(8000)

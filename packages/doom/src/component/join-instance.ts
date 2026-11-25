@@ -12,8 +12,8 @@ import { siteSpot } from "../preset-geometry.js"
 import { props, type Props } from "../props.js"
 import { isRefusal, refuse, type Refusal } from "../refusal.js"
 import { expandComponent, type ComponentInput } from "./expand-component.js"
-import { keyString, type Instance, type PartBaseline, type PartKey } from "./instance.js"
-import { columnComponent } from "./library.js"
+import { hasBaselineFill, keyString, type Instance, type PartBaseline, type PartKey } from "./instance.js"
+import { type ComponentDefinition, resolveComponent } from "./library.js"
 import type { ComponentNode, ComponentTree } from "./nodes.js"
 import { partId } from "./part-id.js"
 
@@ -46,7 +46,7 @@ function linked(doom: Doom, frame: NodeId): InstanceFrame | undefined {
 function baselineOf(node: ComponentNode): PartBaseline {
   if (node.props.text !== undefined) return { kind: "text", style: node.generatedStyle ?? node.props.text.style }
   if (node.props.geometry.kind === "line") return { kind: "line" }
-  return { kind: "rect", fills: node.props.fills ?? [] }
+  return { kind: node.props.geometry.kind === "path" ? "path" : "rect", fills: node.props.fills ?? [] }
 }
 
 function saveInstance(
@@ -149,7 +149,8 @@ function join(
       let value: unknown = values[prop] ?? null
       if (
         prop === "fills" &&
-        reused?.baseline.kind === "rect" &&
+        reused !== undefined &&
+        hasBaselineFill(reused.baseline) &&
         current?.type === "shape" &&
         !overrides.some(({ prop }) => prop === "fills") &&
         !sameValue(current.fills ?? [], reused.baseline.fills)
@@ -172,7 +173,7 @@ function join(
     const current = doom.nodes.get(node)
     const discarded = (prop: "fills" | "text" | "name" | "link") =>
       findings.push({ kind: "discarded-override", key, node, prop })
-    if (baseline.kind === "rect" && !sameValue(propOf(current, "fills") ?? [], baseline.fills)) discarded("fills")
+    if (hasBaselineFill(baseline) && !sameValue(propOf(current, "fills") ?? [], baseline.fills)) discarded("fills")
     if (baseline.kind === "text" && propOf(current, "text")?.style !== baseline.style) discarded("text")
     if (propOf(current, "name") !== key.join(" / ")) discarded("name")
     if (propOf(current, "link") !== undefined) discarded("link")
@@ -210,6 +211,7 @@ function join(
 
 export function placeComponent(
   doom: Doom,
+  { id, revision, spec }: ComponentDefinition,
   {
     frame,
     parent,
@@ -227,7 +229,7 @@ export function placeComponent(
 ): readonly Write[] | Refusal {
   const generated = partId(frame, ["root"])
   if (frame === generated || doom.nodes.has(frame) || doom.nodes.has(generated)) return refuse("shape", frame, "type")
-  const tree = expandComponent(columnComponent, {
+  const tree = expandComponent(spec, {
     frame: { x: 0, y: 0, w: box.w, h: box.h },
     data,
     tokens,
@@ -248,7 +250,7 @@ export function placeComponent(
   const placed = join(
     doom,
     frame,
-    { component: { id: "column", revision: 1 }, generated, data, tokens, variant, suppressed: [] },
+    { component: { id, revision }, generated, data, tokens, variant, suppressed: [] },
     undefined,
     tree,
     create,
@@ -262,8 +264,9 @@ export function regenerateComponent(
   frame: NodeId,
   patch: ComponentPatch,
   measure: Measure,
+  definition?: ComponentDefinition,
 ): ComponentUpdate | Refusal {
-  return updateComponent(doom, frame, patch, measure)
+  return updateComponent(doom, frame, patch, measure, definition)
 }
 
 export function refreshComponent(
@@ -280,15 +283,42 @@ function updateComponent(
   frame: NodeId,
   patch: ComponentPatch & Partial<Pick<Instance, "suppressed">>,
   measure: Measure,
+  definition?: ComponentDefinition,
   returning?: ReadonlyMap<string, Instance["parts"][number]>,
   restored?: ReadonlyMap<NodeId, readonly Write[]>,
   input: Doom = doom,
 ): ComponentUpdate | Refusal {
   const root = linked(input, frame)
   if (root === undefined) return refuse("missing", frame, "instance")
-  const { instance, box } = root
-  if (box === undefined) return refuse("shape", frame, "box")
+  const { instance } = root
   const proposed = { ...instance, ...patch }
+  const tree = expandInstance(doom, root, proposed, measure, definition, returning, restored)
+  if (isRefusal(tree)) return tree
+  return join(doom, frame, proposed, instance, tree, [], measure, returning, restored)
+}
+
+export function componentTree(doom: Doom, frame: NodeId, measure: Measure): ComponentTree | Refusal {
+  const root = linked(doom, frame)
+  if (root === undefined) return refuse("missing", frame, "instance")
+  return expandInstance(doom, root, root.instance, measure)
+}
+
+function expandInstance(
+  doom: Doom,
+  { id, instance, box }: InstanceFrame,
+  proposed: Inputs,
+  measure: Measure,
+  definition = resolveComponent(instance.component),
+  returning?: ReadonlyMap<string, Instance["parts"][number]>,
+  restored?: ReadonlyMap<NodeId, readonly Write[]>,
+): ComponentTree | Refusal {
+  if (box === undefined) return refuse("shape", id, "box")
+  if (
+    definition === undefined ||
+    definition.id !== instance.component.id ||
+    definition.revision !== instance.component.revision
+  )
+    return refuse("shape", id, "instance")
   const styles = new Map(
     [...instance.parts, ...(returning?.values() ?? [])].flatMap(({ key, node, baseline }) => {
       const current = input.nodes.get(node)
@@ -302,7 +332,7 @@ function updateComponent(
         : []
     }),
   )
-  const tree = expandComponent(columnComponent, {
+  return expandComponent(definition.spec, {
     frame: { x: 0, y: 0, w: box.w, h: box.h },
     data: proposed.data,
     tokens: proposed.tokens,
@@ -311,8 +341,6 @@ function updateComponent(
     measure,
     styleFor: (key) => styles.get(keyString(key)),
   })
-  if (isRefusal(tree)) return tree
-  return join(doom, frame, proposed, instance, tree, [], measure, returning, restored)
 }
 
 export type SuppressionChange = Instance["parts"][number] & {
@@ -373,7 +401,15 @@ export function restoreComponent(
     overrides.set(part.node, saved)
   }
   return changed
-    ? updateComponent(doom, frame, { ...patch, suppressed: [...suppressed.values()] }, measure, returning, overrides)
+    ? updateComponent(
+        doom,
+        frame,
+        { ...patch, suppressed: [...suppressed.values()] },
+        measure,
+        undefined,
+        returning,
+        overrides,
+      )
     : { writes: [], findings: [] }
 }
 

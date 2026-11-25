@@ -285,7 +285,7 @@ it.each(["data update", "person delete", "later run", "in-flight rename"])(
     const by = agent(
       memoryDecks(() => {
         const { doom: before, slides } = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [] }] })
-        const writes = doom.placeComponent(before, {
+        const writes = doom.placeComponent(before, doom.columnDefinition, {
           frame,
           parent: { id: slides[0]!, at: doom.orderKeyBetween(null, null) },
           box: { x: 100, y: 100, w: 1500, h: 700, rotation: 0, flipH: false, flipV: false },

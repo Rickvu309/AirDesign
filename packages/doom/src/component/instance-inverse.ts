@@ -1,5 +1,12 @@
 import { sameValue } from "../changing-writes.js"
-import { instanceFieldKey, instanceFields, keyString, type Instance, type InstanceField } from "./instance.js"
+import {
+  hasBaselineFill,
+  instanceFieldKey,
+  instanceFields,
+  keyString,
+  type Instance,
+  type InstanceField,
+} from "./instance.js"
 import { restoreComponent, type ComponentPatch, type SuppressionChange } from "./join-instance.js"
 import type { Doom, Landed, Write } from "../doom.js"
 import { onDeck, parentOf, propOf } from "../doom-walk.js"
@@ -167,7 +174,7 @@ export function discardedOverrides(before: Doom, root: NodeId, writes: readonly 
     if (kept.has(keyString(key))) continue
     const current = before.nodes.get(node)
     if (current?.type !== "shape") continue
-    if (baseline.kind === "rect" && !sameValue(current.fills ?? [], baseline.fills))
+    if (hasBaselineFill(baseline) && !sameValue(current.fills ?? [], baseline.fills))
       overrides.push({ node, prop: "fills", value: current.fills ?? null })
     if (baseline.kind === "text" && current.text !== undefined && current.text.style !== baseline.style)
       overrides.push({ node, prop: "text", value: current.text })
@@ -206,8 +213,8 @@ export function derivedCells(
     for (const { node, baseline } of after.parts) {
       const previous = old.get(node)
       if (
-        baseline.kind === "rect" &&
-        previous?.kind === "rect" &&
+        hasBaselineFill(baseline) &&
+        hasBaselineFill(previous) &&
         fills.has(node) &&
         (!sameValue(fills.get(node) ?? [], baseline.fills) || !sameValue(prior(node, "fills") ?? [], previous.fills))
       )

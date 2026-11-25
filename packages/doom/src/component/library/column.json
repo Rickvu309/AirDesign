@@ -2,6 +2,18 @@
   "version": 1,
   "name": "Chart",
   "chart": "cartesian",
+  "sample": {
+    "w": 1540,
+    "h": 650,
+    "data": {
+      "rows": [
+        { "id": "q1", "label": "Q1", "value": 12 },
+        { "id": "q2", "label": "Q2", "value": 19 },
+        { "id": "q3", "label": "Q3", "value": 15 },
+        { "id": "q4", "label": "Q4", "value": 24 }
+      ]
+    }
+  },
   "collections": {
     "rows": {
       "label": "string",

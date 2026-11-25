@@ -56,7 +56,7 @@ async function reloadReplay(turn: State[string], actions: readonly Edge[], graph
     tokens: { accent: { var: "accent3" } },
   }
   const later = { data: dataFor("ba"), variant: { labels: true }, tokens: { accent: { var: "accent4" } } }
-  const placed = doom.placeComponent(deck.view(), {
+  const placed = doom.placeComponent(deck.view(), doom.columnDefinition, {
     frame,
     parent: { id: slide, at },
     box: { x: 20, y: 30, w: 1200, h: 600, flipH: false, flipV: false, rotation: 0 },

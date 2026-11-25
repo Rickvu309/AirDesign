@@ -1,11 +1,14 @@
 import type { AgentChange, AgentLook } from "./agent-change.js"
-import { type Draft, type Values, living, put, stop } from "./agent-draft.js"
+import { type Draft, type Values, Stop, living, put, stop } from "./agent-draft.js"
 import { insertLinkedRun } from "./agent-insert.js"
 import { askedArrow, chartOf, colorOf, iconName, layoutOf, surfaceOf, textOfLook } from "./agent-look.js"
 import { lineEnds } from "./agent-line-ends.js"
 import { gapFor, slideSize, themeOf } from "./agent-place.js"
 import { notesText } from "./notes-text.js"
 import { resizedBy } from "./agent-resize.js"
+import { regenerateComponent } from "./component/join-instance.js"
+import { resolveComponent } from "./component/library.js"
+import { isRefusal } from "./refusal.js"
 import { bakeLayout } from "./bake-layout.js"
 import { measureWith } from "./measure.js"
 import { chartKeepingPoints, chartWithPointColor } from "./chart.js"
@@ -174,7 +177,44 @@ function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | und
   }
 }
 
+const componentFields = ["data", "variant", "tokens"] as const
+
+function setComponent(draft: Draft, change: SetChange, field: (typeof componentFields)[number]): void {
+  const { target, data, variant, tokens, op: _op, ...other } = change
+  const extra = Object.entries(other).find(([, value]) => value !== undefined)
+  if (extra !== undefined)
+    stop(
+      "shape",
+      undefined,
+      extra[0],
+      "form",
+      "Set data, variant and tokens together. Use another change for layer styling.",
+    )
+  const id = readNodeId(target) ?? stop("shape", undefined, "target", "form", "A linked component instance id.")
+  const node = living(draft, id, "target")
+  const instance = propOf(node, "instance") ?? stop("shape", id, field, "needs", "a linked component instance")
+  const definition = resolveComponent(instance.component)
+  if (definition === undefined) stop("shape", id, "target", "form", "A component available in this build.")
+  const updated = regenerateComponent(
+    draft.doom,
+    id,
+    {
+      ...(data === undefined ? {} : { data }),
+      ...(variant === undefined ? {} : { variant }),
+      ...(tokens === undefined ? {} : { tokens }),
+    },
+    draft.reading.measure ?? estimate,
+    definition,
+  )
+  if (isRefusal(updated)) throw new Stop(updated)
+  draft.writes.push(...updated.writes)
+}
+
 export function compileSet(draft: Draft, change: SetChange): void {
+  if (change.component !== undefined)
+    stop("shape", undefined, "component", "unknown", "Set data, variant or tokens on an instance.")
+  const componentField = componentFields.find((field) => change[field] !== undefined)
+  if (componentField !== undefined) return setComponent(draft, change, componentField)
   if (change.insert !== undefined && (change.target.startsWith("*.") || change.target.includes("#")))
     stop("shape", undefined, "insert", "needs", "a text layer")
   if (change.target.startsWith("*.")) return setEverySlide(draft, change, change.target.slice(2))

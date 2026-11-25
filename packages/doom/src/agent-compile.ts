@@ -4,6 +4,8 @@ import { compileSet } from "./agent-set.js"
 import { compileSlide } from "./agent-slide.js"
 import { compileDeck, compileDuplicate } from "./agent-copy.js"
 import type { AgentChange, AgentRefusal } from "./agent-change.js"
+import { detachComponent } from "./component/join-instance.js"
+import { isRefusal } from "./refusal.js"
 import { type Reading, Stop, draftOf } from "./agent-draft.js"
 import type { NodeId } from "./ids.js"
 import type { Write } from "./doom.js"
@@ -20,7 +22,8 @@ export function nameOf(change: AgentChange): string {
     case "add":
       return `add ${change.kind}`
     case "set":
-      return `set ${change.target}`
+    case "detach":
+      return `${change.op} ${change.target}`
     case "move":
     case "unwrap":
       return `${change.op} ${change.node}`
@@ -45,6 +48,11 @@ export function compileAgentChange(
   try {
     if (change.op === "add") compileAdd(draft, change)
     if (change.op === "set") compileSet(draft, change)
+    if (change.op === "detach") {
+      const detached = detachComponent(doom, change.target)
+      if (isRefusal(detached)) throw new Stop(detached)
+      draft.writes.push(...detached)
+    }
     if (change.op === "move") compileMove(draft, change)
     if (change.op === "wrap") compileWrap(draft, change)
     if (change.op === "unwrap") compileUnwrap(draft, change)

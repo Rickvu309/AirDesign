@@ -4,12 +4,11 @@ import type { TextStyleName } from "../text.js"
 import type { Theme } from "../theme.js"
 import type { PartKey } from "./instance.js"
 import { boolean, naming, reject } from "../read-kit.js"
-import { readData } from "./collections.js"
 import type { ComponentFinding } from "./findings.js"
 import { type Bindings, type Expr, type Scope, childScope, evaluator, valuesOf } from "./expression.js"
 import { type ComponentTree, type PreparedPart, preparePart, readFrame, readLayout, treeOf } from "./nodes.js"
 import { numberFormat } from "./operators.js"
-import { type ComponentSpec, type Part, readChoices, readTokens } from "./spec.js"
+import { type ComponentSpec, type Part, readChoices, readComponentData, readTokens } from "./spec.js"
 import { type Value, budget, componentRefusal } from "./values.js"
 
 export type ComponentInput = {
@@ -40,7 +39,7 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
     const scope: Scope = {
       values: {
         frame,
-        data: naming("data", () => readData(spec.collections, input.data, charge)),
+        data: naming("data", () => readComponentData(spec, input.data, charge)),
         token,
         variant: naming("variant", () => readChoices(spec, input.variant ?? {})),
       },

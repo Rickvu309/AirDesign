@@ -222,7 +222,7 @@ const readRows: { readonly raw: unknown; readonly field: string; readonly fault:
 describe("each refused edit names its own path", () => {
   it("keeps the field, the fault and the accepted form", () => {
     for (const row of readRows) {
-      expect(readAgentChange(row.raw), JSON.stringify(row.raw)).toMatchObject({
+      expect(readAgentChange(row.raw, false), JSON.stringify(row.raw)).toMatchObject({
         refused: "shape",
         field: row.field,
         fault: row.fault,

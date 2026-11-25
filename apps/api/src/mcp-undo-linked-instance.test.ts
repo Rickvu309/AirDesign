@@ -10,6 +10,7 @@ import {
   onDeck,
   orderKeyBetween,
   placeComponent,
+  columnDefinition,
   propOf,
   readFold,
   regenerateComponent,
@@ -107,7 +108,7 @@ it.each([
               { node: startIds.deck, prop: "theme.fonts.body", value: "Liberation Sans Narrow" },
             ]
           : []
-      const writes = placeComponent(opened, {
+      const writes = placeComponent(opened, columnDefinition, {
         frame,
         parent: { id: slide, at: orderKeyBetween(null, null) },
         box: { x: 240, y: 180, w: 1440, h: 720, rotation: 0, flipH: false, flipV: false },
@@ -182,7 +183,7 @@ it.each([
         const agent = current.runs.get(runId)!.agent
         const author: Edit["author"] = { kind: "agent", id: agent, run: runId }
         const placedFrame = nodeId("chart:2")
-        const writes = placeComponent(current, {
+        const writes = placeComponent(current, columnDefinition, {
           frame: placedFrame,
           parent: { id: slide, at: orderKeyBetween(null, null) },
           box: { x: 240, y: 180, w: 1440, h: 720, rotation: 0, flipH: false, flipV: false },
