@@ -255,7 +255,8 @@
             "fit": {
               "smaller": ["get", "token.captionSmall"],
               "group": "categories",
-              "thin": 4
+              "thin": 4,
+              "keep": ["get", "isTotal"]
             }
           }
         }

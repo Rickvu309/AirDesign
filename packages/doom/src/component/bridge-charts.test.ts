@@ -38,6 +38,23 @@ const edge = (tree: ComponentTree, ...key: string[]) => {
 const count = (tree: ComponentTree, role: string) => tree.children.filter(({ key }) => key[0] === role).length
 
 describe("stacked column library", () => {
+  it("stacks shuffled rows in the same series order in every column", () => {
+    const tree = expand(stacked, {
+      categories: [category("a"), category("b")],
+      series: [series("Core"), series("Support")],
+      segments: [
+        segment("support-a", "a", "Support", 5),
+        segment("core-b", "b", "Core", 10),
+        segment("core-a", "a", "Core", 10),
+        segment("support-b", "b", "Support", 5),
+      ],
+    })
+    for (const id of ["a", "b"]) {
+      expect(edge(tree, "segment", id, `core-${id}`)).toBe(box(tree, "zero")?.y)
+      expect(edge(tree, "segment", id, `support-${id}`)).toBe(box(tree, "segment", id, `core-${id}`)?.y)
+    }
+  })
+
   it("keeps separate signed offsets and honors the legacy series and point colors", () => {
     const tree = expand(
       stacked,
@@ -126,6 +143,26 @@ describe("stacked column library", () => {
 })
 
 describe("waterfall library", () => {
+  it("keeps the opening, subtotal and closing captions while evenly thinning steps", () => {
+    const rows = Array.from({ length: 30 }, (_, i) => {
+      if (i === 0) return step("Opening balance", 50, "total")
+      if (i === 15) return step("Subtotal", 0, "total")
+      if (i === 29) return step("Closing balance", 0, "total")
+      return step(`Driver ${i}`, i % 2 === 0 ? 1 : -1)
+    }).map((row, i) => ({ ...row, id: `r${i}` }))
+    const tree = expand(waterfall, { rows })
+    expect(chars(tree, "category", "r0")).toBe("Opening balance")
+    expect(chars(tree, "category", "r15")).toBe("Subtotal")
+    expect(chars(tree, "category", "r29")).toBe("Closing balance")
+
+    const steps = rows.filter(({ mode }) => mode === "delta")
+    const kept = steps.flatMap(({ id }, i) => (chars(tree, "category", id) === undefined ? [] : [i]))
+    expect(kept.length).toBeGreaterThanOrEqual(8)
+    expect(kept.length).toBeLessThan(steps.length)
+    expect(new Set(kept.slice(1).map((index, i) => index - kept[i]!)).size).toBe(1)
+    expect(tree.findings.find(({ key }) => key[0] === "categories")?.thinned).toBe(steps.length - kept.length)
+  })
+
   it("starts a marked opening balance at zero and carries it to the next step", () => {
     const tree = expand(waterfall, { rows: [step("Open", 20, "total"), step("Gain", 12), step("End", 0, "total")] })
     expect(edge(tree, "bar", "Open")).toBe(box(tree, "zero")?.y)
