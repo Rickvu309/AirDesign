@@ -2,7 +2,7 @@ import { applyBeforeFreeing } from "../apply-edit.js"
 import { changingWrites } from "../changing-writes.js"
 import type { Doom, Landed, Write } from "../doom.js"
 import { onDeck, propOf, flows } from "../doom-walk.js"
-import { rev, type NodeId } from "../ids.js"
+import { rev, type NodeId, type Rev } from "../ids.js"
 import { bytesOf, limits } from "../limits.js"
 import { measureWith, type Measure } from "../measure.js"
 import { props } from "../props.js"
@@ -26,7 +26,11 @@ export function changesLabelStyle(value: unknown, prior: unknown): boolean {
 
 type Preview = { readonly view: Doom; readonly roots: readonly NodeId[] }
 
-export function componentEditPreview(view: Doom, asked: readonly Write[]): Preview | null | Refusal {
+export function componentEditPreview(
+  view: Doom,
+  asked: readonly Write[],
+  batchStart = view.rev,
+): Preview | null | Refusal {
   if (!asked.some((write) => writesTheme(write) || write.prop === "box" || write.prop === "text")) return null
   const explicit = new Set(instanceRoots(asked))
   const roots = new Set<NodeId>()
@@ -59,7 +63,8 @@ export function componentEditPreview(view: Doom, asked: readonly Write[]): Previ
     rev: rev(view.rev + 1),
     writes: [
       ...asked.map((write) => {
-        const base = write.base ?? view.revs.get(write.node)?.get(write.prop)
+        const current = view.revs.get(write.node)?.get(write.prop)
+        const base = current !== undefined && current > batchStart ? current : (write.base ?? current)
         return base === undefined ? write : { ...write, base }
       }),
       ...[...roots].map((node): Write => ({ node, prop: "instance", value: propOf(view.nodes.get(node), "instance") })),
@@ -79,8 +84,12 @@ export function componentEditPreview(view: Doom, asked: readonly Write[]): Previ
 export type ComponentEditSample = { readonly view: Doom; readonly texts: readonly string[] }
 const estimate = measureWith({})
 
-export function sampleComponentEdit(view: Doom, writes: readonly Write[]): ComponentEditSample | null | Refusal {
-  const preview = componentEditPreview(view, changingWrites(view, writes))
+export function sampleComponentEdit(
+  view: Doom,
+  writes: readonly Write[],
+  batchStart?: Rev,
+): ComponentEditSample | null | Refusal {
+  const preview = componentEditPreview(view, changingWrites(view, writes), batchStart)
   if (preview === null || isRefusal(preview)) return preview
   const texts = new Set<string>()
   for (const root of preview.roots) {
@@ -98,9 +107,10 @@ export function prepareComponentEdit(
   view: Doom,
   writes: readonly Write[],
   measure: Measure,
+  batchStart?: Rev,
 ): readonly Write[] | Refusal {
   const asked = changingWrites(view, writes)
-  const preview = componentEditPreview(view, asked)
+  const preview = componentEditPreview(view, asked, batchStart)
   if (preview === null) return writes
   if (isRefusal(preview)) return preview
   const generated = new Map<string, Write>()

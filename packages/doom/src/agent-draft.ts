@@ -1,7 +1,7 @@
 import type { Measure } from "./measure.js"
 import { type OrderKey, orderKeyBetween } from "./order-key.js"
 import type { AgentRefusal } from "./agent-change.js"
-import type { NodeId } from "./ids.js"
+import type { NodeId, Rev } from "./ids.js"
 import { type PropName, props } from "./props.js"
 import type { FieldFault } from "./read-kit.js"
 import type { Refusal } from "./refusal.js"
@@ -14,6 +14,7 @@ export type Values = { readonly [K in PropName]?: Props[K] }
 export type Natural = { readonly width: number; readonly height: number }
 export type Reading = {
   readonly read?: Doom
+  readonly batchStart?: Rev
   readonly boxes?: ReadonlyMap<NodeId, Box>
   readonly pictures?: ReadonlyMap<string, Natural>
   readonly measure?: Measure
