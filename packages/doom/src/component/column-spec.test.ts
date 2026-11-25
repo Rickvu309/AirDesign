@@ -143,3 +143,77 @@ describe("column chart precision and legends", () => {
     expect(withLegend.findings).toContainEqual(expect.objectContaining({ kind: "flow-omitted", omitted: [0, 1] }))
   })
 })
+
+it.each([
+  ["short", (i: number) => ["I", "J", "L", "T"][i % 4]!, (i: number) => 1 + Math.floor(i / 5)],
+  ["region", (i: number) => `Region ${i + 1}`, (i: number) => i + 1],
+  ["three digit", () => "I", (i: number) => 100 + i * 13],
+  ["years", (i: number) => String(1980 + i), (i: number) => i + 1],
+] as const)("switches crowded %s value labels to the axis", (kind, label, value) => {
+  const rows = Array.from({ length: 40 }, (_, i) => ({ id: `r${i}`, label: label(i), value: value(i) }))
+  const tree = expand({ ...inputs, frame: { ...inputs.frame, w: 713, h: 301 }, data: { rows } })
+  expect(tree.children.filter(({ key }) => key[0] === "value")).toHaveLength(0)
+  expect(tree.children.filter(({ key }) => key[0] === "tick").length).toBeGreaterThan(0)
+  expect(tree.findings).toContainEqual(expect.objectContaining({ kind: "advice", code: "value-label-space" }))
+  expect(tree.findings.some((finding) => finding.kind === "advice" && finding.code === "many-columns")).toBe(
+    kind === "years",
+  )
+})
+
+it.each([
+  { width: 100, labels: false },
+  { width: 102, labels: true },
+])("requires 8 px clearance for every label at $width px", ({ width, labels }) => {
+  const measure: ComponentInput["measure"] = (text, theme, width, fit) => {
+    const result = inputs.measure(text, theme, width, fit)
+    return text.style === "label" ? { ...result, w: text.chars.length === 1 ? 15 : 31 } : result
+  }
+  const tree = expand({
+    ...inputs,
+    measure,
+    frame: { ...inputs.frame, w: width },
+    data: {
+      rows: [
+        { id: "a", label: "A", value: 1 },
+        { id: "b", label: "B", value: 10 },
+      ],
+    },
+  })
+  expect(tree.children.filter(({ key }) => key[0] === "value")).toHaveLength(labels ? 2 : 0)
+  expect(tree.children.some(({ key }) => key[0] === "tick")).toBe(!labels)
+  if (!labels) {
+    const explicitAxis = expand({
+      ...inputs,
+      measure,
+      frame: { ...inputs.frame, w: width },
+      data: {
+        rows: [
+          { id: "a", label: "A", value: 1 },
+          { id: "b", label: "B", value: 10 },
+        ],
+      },
+      variant: { labels: false },
+    })
+    expect(explicitAxis.children).toEqual(tree.children)
+    expect(explicitAxis.findings).not.toContainEqual(expect.objectContaining({ code: "value-label-space" }))
+  }
+})
+
+it("keeps the widest axis tick when its measured width falls between pixels", () => {
+  const measure: ComponentInput["measure"] = (text, theme, width, fit) => ({
+    ...inputs.measure(text, theme, width, fit),
+    w: text.chars.length === 1 ? 12.2 : 24.2,
+  })
+  const tree = expand({
+    ...inputs,
+    measure,
+    data: { rows: [{ id: "row", label: "A", value: 8 }] },
+    variant: { labels: false },
+  })
+  expect(tree.children.filter(({ key }) => key[0] === "tick").map(({ props }) => props.text?.chars)).toEqual([
+    "0",
+    "5",
+    "10",
+  ])
+  expect(tree.findings).toEqual([])
+})

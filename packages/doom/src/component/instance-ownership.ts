@@ -3,7 +3,6 @@ import type { Doom, Landed, Node, Write } from "../doom.js"
 import { parentOf, propOf } from "../doom-walk.js"
 import { props } from "../props.js"
 import { styleWrite } from "../text-writes.js"
-import { agentLinkTarget } from "../link.js"
 import type { NodeId } from "../ids.js"
 import { isRefusal, refuse, type Refusal } from "../refusal.js"
 import { keyString, type Instance, type PartKey } from "./instance.js"
@@ -141,13 +140,21 @@ function styleProps(kind: Kind | undefined): readonly Write["prop"][] {
   return kind === undefined ? [] : Object.values(styledFields[kind])
 }
 
-const sharedOverrides = ["name", "link"] as const
-
 function agentOverrides(kind: Kind): readonly string[] {
-  return [
-    ...Object.keys(styledFields[kind]),
-    ...sharedOverrides.filter((field) => field !== "link" || kind === agentLinkTarget),
-  ]
+  return [...Object.keys(styledFields[kind]), "name", ...(kind === "text" ? ["link"] : [])]
+}
+
+export function linkedSetField(
+  nodes: Tree["nodes"],
+  node: Node,
+  change: Readonly<Record<string, unknown>>,
+): string | undefined {
+  if (linkedOwner(nodes, node.id) === undefined) return undefined
+  const kind = kindOf(node)
+  const allowed = kind === undefined ? [] : agentOverrides(kind)
+  return Object.keys(change).find(
+    (field) => field !== "op" && field !== "target" && change[field] !== undefined && !allowed.includes(field),
+  )
 }
 
 export const linkedPartOverrides: {
@@ -165,7 +172,7 @@ export function linkedOverride(nodes: Tree["nodes"], write: Write): boolean {
 }
 
 function editable(write: Write, before: Node | undefined, after: Node | undefined): boolean {
-  if (sharedOverrides.some((prop) => prop === write.prop)) return true
+  if (write.prop === "name" || write.prop === "link") return true
   if (!styleProps(kindOf(before)).includes(write.prop)) return false
   if (write.prop === "fills") return true
   if (
@@ -178,8 +185,7 @@ function editable(write: Write, before: Node | undefined, after: Node | undefine
     return false
   return (
     sameValue({ ...after.text, style: before.text.style }, before.text) ||
-    sameValue(after.text, styleWrite(before.text, after.text.style)) ||
-    sameValue(before.text, styleWrite(after.text, before.text.style))
+    sameValue(after.text, styleWrite(before.text, after.text.style))
   )
 }
 

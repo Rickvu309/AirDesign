@@ -173,6 +173,16 @@ const operators: Readonly<Record<string, Operation>> = {
     const resolution = Math.abs(number(value))
     return resolution === 0 ? 0 : Math.min(12, Math.max(0, -Math.floor(Math.log10(resolution))))
   }),
+  timeCategory: fixed(1, ([value], charge) => {
+    const label = string(value)
+    charge(label.length)
+    return /^(?:[12]\d{3}(?:[-/.]\d{1,2}(?:[-/.]\d{1,2})?|[EeAa])?|(?:FY\s*)?['’]?\d{2,4}\s+Q[1-4]|Q[1-4](?:\s+(?:FY\s*)?['’]?\d{2,4})?|FY\s*['’]?\d{2,4}|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)[.]?(?:\s+['’]?\d{2,4})?)$/i.test(
+      label.trim(),
+    )
+  }),
+  fitSize: fixed(1, ([value], _charge, _format, { theme }) =>
+    value === "auto" ? Math.min(...Object.values(theme.textStyles).map(({ size }) => size)) : number(value),
+  ),
   isInteger: fixed(1, ([value]) => Number.isInteger(number(value))),
   textWidth: { min: 2, max: 3, run: (args, _charge, _format, context) => textWidth(args, context) },
   textMetrics: fixed(2, (args, _charge, _format, context) => textMetrics(args, context)),
@@ -180,18 +190,24 @@ const operators: Readonly<Record<string, Operation>> = {
     contrastInk(fill, first, second, context.theme),
   ),
   flowText: fixed(2, (args, _charge, _format, context, report) => flowText(args, context, report)),
-  format: fixed(2, ([value, options], charge, format, _context, report) => {
-    if (options !== null && typeof options === "object" && !isList(options)) {
-      if (typeof options.prefix === "string") charge(options.prefix.length)
-      if (typeof options.suffix === "string") charge(options.suffix.length)
-    }
-    const { scale, digits, prefix, suffix, sign } = readFormat(options)
-    const original = number(value)
-    const rounded = number(Number(number(original / scale).toFixed(digits)))
-    if (original !== 0 && rounded === 0) report({ kind: "rounded-to-zero", value: original, scale, digits })
-    const lead = rounded < 0 ? "−" : rounded > 0 && sign === "always" ? "+" : ""
-    return string(lead + prefix + format(Math.abs(rounded), digits) + suffix)
-  }),
+  format: {
+    min: 2,
+    max: 3,
+    run: ([value, options, mode], charge, format, _context, report) => {
+      if (options !== null && typeof options === "object" && !isList(options)) {
+        if (typeof options.prefix === "string") charge(options.prefix.length)
+        if (typeof options.suffix === "string") charge(options.suffix.length)
+      }
+      if (mode !== undefined) literal(["measure"])(mode)
+      const { scale, digits, prefix, suffix, sign } = readFormat(options)
+      const original = number(value)
+      const rounded = number(Number(number(original / scale).toFixed(digits)))
+      if (mode !== "measure" && original !== 0 && rounded === 0)
+        report({ kind: "rounded-to-zero", value: original, scale, digits })
+      const lead = rounded < 0 ? "−" : rounded > 0 && sign === "always" ? "+" : ""
+      return string(lead + prefix + format(Math.abs(rounded), digits) + suffix)
+    },
+  },
   floor: fixed(1, ([value]) => Math.floor(number(value))),
   hypot: fixed(2, ([x, y]) => Math.hypot(number(x), number(y))),
   pow10: fixed(1, ([digits]) => 10 ** integer(-12, 12)(digits)),

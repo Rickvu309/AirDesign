@@ -279,6 +279,7 @@ export function readTokens(
       if (value !== "auto") naming("tokens.digits", () => integer(0, 12)(value))
       continue
     }
+    if (name === "captionSmall" && initial === "auto" && typeof value === "number") continue
     if (readColor(initial) !== undefined ? readColor(value) === undefined : typeof initial !== typeof value)
       return naming(`tokens.${name}`, () => reject("shape", "The token must match its default value's type."))
   }

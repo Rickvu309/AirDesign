@@ -2,7 +2,7 @@ import type { AgentChange, AgentLook } from "./agent-change.js"
 import { type Draft, type Values, Stop, living, put, stop } from "./agent-draft.js"
 import { insertLinkedRun } from "./agent-insert.js"
 import { askedArrow, chartOf, colorOf, iconName, layoutOf, surfaceOf, textOfLook } from "./agent-look.js"
-import { agentLinkTarget } from "./link.js"
+import { linkedSetField } from "./component/instance-ownership.js"
 import { lineEnds } from "./agent-line-ends.js"
 import { gapFor, slideSize, themeOf } from "./agent-place.js"
 import { notesText } from "./notes-text.js"
@@ -226,6 +226,15 @@ export function compileSet(draft: Draft, change: SetChange): void {
     stop("shape", node.id, "target", "form", "A slide, a frame or a shape.")
   for (const field of [...neverOnSet, ...unfit[node.type]])
     if (change[field] !== undefined) stop("shape", node.id, field, "unknown")
+  const refusedField = linkedSetField(draft.doom.nodes, node, change)
+  if (refusedField !== undefined)
+    stop(
+      "shape",
+      node.id,
+      refusedField,
+      "form",
+      "Use the component tokens to change linked labels, or detach to edit the layer directly.",
+    )
   const fitting = change.fit !== undefined || change.crop !== undefined
   if (fitting && !(propOf(node, "fills") ?? []).some((paint) => paint.kind === "image"))
     stop("shape", node.id, change.crop === undefined ? "fit" : "crop", "needs", "an image fill")
@@ -234,7 +243,7 @@ export function compileSet(draft: Draft, change: SetChange): void {
   const outline = propOf(node, "geometry")?.kind
   if (change.shape !== undefined && (outline === "line" || outline === "icon" || outline === "path"))
     stop("shape", node.id, "shape", "needs", "a preset outline")
-  if (change.link !== undefined && propOf(node, agentLinkTarget) === undefined)
+  if (change.link !== undefined && propOf(node, "text") === undefined)
     stop("shape", node.id, "link", "needs", "a text layer")
   const now = {
     fills: propOf(node, "fills"),

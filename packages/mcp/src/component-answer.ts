@@ -3,7 +3,7 @@ import * as doom from "@airdesign/doom"
 const estimate = doom.measureWith({})
 const shownFindings = 10
 
-function findingMessage(finding: doom.ComponentFinding): string {
+function findingMessage(finding: doom.ComponentFinding, categoryCount: number): string {
   switch (finding.kind) {
     case "advice":
       return finding.note
@@ -18,7 +18,11 @@ function findingMessage(finding: doom.ComponentFinding): string {
       return `rounds ${finding.value} to zero at the current precision.`
     case "text-fit": {
       const { neededWidth, availableWidth, thinned } = finding
-      return `needs ${Math.ceil(neededWidth)} px in ${Math.floor(availableWidth)} px${thinned === undefined ? "." : `, with ${thinned} labels thinned.`}`
+      const guidance =
+        finding.key[0] === "categories" && categoryCount > 12
+          ? " Show fewer categories, or use a line chart for a trend or a bar chart for a ranking."
+          : ""
+      return `needs ${Math.ceil(neededWidth)} px in ${Math.floor(availableWidth)} px${thinned === undefined ? "." : `, with ${thinned} labels thinned.`}${guidance}`
     }
   }
 }
@@ -28,10 +32,12 @@ export function componentFindings(fold: doom.Doom, ids: readonly doom.NodeId[], 
   for (const node of new Set(ids)) {
     const tree = doom.componentTree(fold, node, measure)
     if (doom.isRefusal(tree)) continue
+    const instance = doom.propOf(fold.nodes.get(node), "instance")
+    const categoryCount = instance?.component.id === "column" ? (instance.data.rows?.length ?? 0) : 0
     for (const finding of tree.findings) {
       const { kind, key } = finding
       const subject = `${node} ${key.join(" / ")}`
-      const note = `${subject} ${findingMessage(finding)}`
+      const note = `${subject} ${findingMessage(finding, categoryCount)}`
       findings.push({ node, code: finding.kind === "advice" ? finding.code : kind, key, note })
       if (findings.length === shownFindings) return findings
     }

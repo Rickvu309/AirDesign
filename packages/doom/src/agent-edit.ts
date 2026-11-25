@@ -73,7 +73,6 @@ export function* agentEditSteps(
     ...(by.componentSample === undefined ? {} : { componentSample: by.componentSample }),
   }
   const writes: Write[] = []
-  const templateText = new Set<Write>()
   const ends: number[] = []
   let view = doom
   let emptied = 0
@@ -109,8 +108,6 @@ export function* agentEditSteps(
     })
     if (isRefusal(next)) return { ...next, change: nameOf(change), at }
     if (countsOf(next).slides === 0 && countsOf(view).slides > 0) emptied = at
-    for (const write of compiled)
-      if (write.prop === "text" && linkedOwner(next.nodes, write.node) !== undefined) templateText.add(write)
     view = next
     writes.push(...compiled)
     ends.push(writes.length)
@@ -152,5 +149,5 @@ export function* agentEditSteps(
     return [{ id: node.id, change: at, kind: kindOf(node) }]
   })
   const added = [...made, ...filled].sort((one, two) => one.change - two.change)
-  return { edit, after: landed, added, findings: agentFindings(landed, writes, templateText) }
+  return { edit, after: landed, added, findings: agentFindings(landed, writes) }
 }

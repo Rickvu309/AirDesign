@@ -35,9 +35,9 @@
       "var": "text2"
     },
     "label": "label",
-    "labelSmall": 18,
+    "labelSmall": 20,
     "layerLabel": "label",
-    "layerSmall": 16,
+    "layerSmall": 20,
     "radius": 8,
     "lineWidth": 3
   },

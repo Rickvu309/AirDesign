@@ -22,7 +22,7 @@ export type Expr =
   | { readonly kind: "record"; readonly fields: Bindings }
   | { readonly kind: "get"; readonly path: readonly string[] }
   | { readonly kind: "if"; readonly condition: Expr; readonly yes: Expr; readonly no: Expr }
-  | { readonly kind: "map" | "filter"; readonly source: Expr; readonly as: string; readonly body: Expr }
+  | { readonly kind: "map" | "filter" | "every"; readonly source: Expr; readonly as: string; readonly body: Expr }
   | {
       readonly kind: "scan"
       readonly source: Expr
@@ -64,6 +64,7 @@ export function readExpr(raw: unknown, depth: number, charge: () => void): Expr 
       return { kind: op, condition: arg(1), yes: arg(2), no: arg(3) }
     case "map":
     case "filter":
+    case "every":
       arity(3)
       return { kind: op, source: arg(1), as: naming("[2]", () => binding(raw[2])), body: arg(3) }
     case "scan":
@@ -130,17 +131,16 @@ export function evaluator(context: FittingContext, format: NumberFormat) {
           ? read(expr.yes, "[2]")
           : read(expr.no, "[3]")
       case "map":
-      case "filter": {
+      case "filter":
+      case "every": {
         const source = naming("[1]", () => valuesOf(evaluate(expr.source, scope, report)))
         if (expr.kind === "map")
           return naming("[3]", () =>
             source.map((row, i) => evaluate(expr.body, childScope(scope, { [expr.as]: row, i }, charge), report)),
           )
-        return naming("[3]", () =>
-          source.filter((row, i) =>
-            boolean(evaluate(expr.body, childScope(scope, { [expr.as]: row, i }, charge), report)),
-          ),
-        )
+        const matches = (row: Value, i: number) =>
+          boolean(evaluate(expr.body, childScope(scope, { [expr.as]: row, i }, charge), report))
+        return naming("[3]", () => (expr.kind === "every" ? source.every(matches) : source.filter(matches)))
       }
       case "scan": {
         let acc = read(expr.seed, "[3]")

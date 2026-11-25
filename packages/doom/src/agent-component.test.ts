@@ -20,16 +20,23 @@ import { textFromMarkdown } from "./markdown.js"
 import { sampleDeck } from "./sample-deck.js"
 
 function compile(fold: ReturnType<typeof sampleDeck>, raw: unknown, once: string) {
-  const change = readAgentChange(raw, true)
-  if (isRefusal(change)) throw new Error(JSON.stringify(change))
-  const result = compileAgentEdit(fold, [change], {
+  const result = attempt(fold, [raw], once)
+  if (isRefusal(result)) throw new Error(JSON.stringify(result))
+  return result
+}
+
+function attempt(fold: ReturnType<typeof sampleDeck>, edits: readonly unknown[], once: string) {
+  const changes = edits.map((raw) => {
+    const change = readAgentChange(raw, true)
+    if (isRefusal(change)) throw new Error(JSON.stringify(change))
+    return change
+  })
+  return compileAgentEdit(fold, changes, {
     author: { kind: "agent", id: "agent", run: once },
     phase: "start",
     once,
     mint: minter(once),
   })
-  if (isRefusal(result)) throw new Error(JSON.stringify(result))
-  return result
 }
 
 describe("linked components in agent edits", () => {
@@ -137,6 +144,7 @@ describe("linked components in agent edits", () => {
     if (sample === undefined) throw new Error("No column sample")
     expect(Math.abs(box.w - (box.h * sample.w) / sample.h)).toBeLessThanOrEqual(2)
     expect(box.w).toBe(width)
+    if (layout === "title") expect(box.x).toBe(160)
     for (const kid of childrenOf(before, slide)) {
       const occupied = propOf(kid, "box")
       if (occupied === undefined) continue
@@ -189,6 +197,77 @@ describe("linked components in agent edits", () => {
       text: ["textStyle", "name", "link"],
       shapes: ["fill", "name"],
       lines: ["name"],
+    })
+  })
+
+  it.each([
+    ["category", { textStyle: "body" }, true],
+    ["category", { name: "Label" }, true],
+    ["category", { link: "https://example.com" }, true],
+    ["category", { size: 31 }, false],
+    ["category", { size: 14 }, false],
+    ["category", { font: "Comic Neue" }, false],
+    ["category", { letterSpacing: 3 }, false],
+    ["category", { weight: "Bold" }, false],
+    ["category", { case: "upper" }, false],
+    ["category", { underline: true }, false],
+    ["category", { lineHeight: 1.7 }, false],
+    ["category", { textStyle: "body", size: 31 }, false],
+    ["category", { fill: "accent2" }, false],
+    ["category", { text: "Other" }, false],
+    ["bar", { fill: "accent2" }, true],
+    ["bar", { name: "Bar" }, true],
+    ["bar", { link: "https://example.com" }, false],
+    ["bar", { textStyle: "body" }, false],
+    ["zero", { name: "Rule" }, true],
+    ["zero", { link: "https://example.com" }, false],
+    ["zero", { fill: "accent2" }, false],
+    ["zero", { stroke: "accent2" }, false],
+    ["zero", { textStyle: "body" }, false],
+  ])("applies the advertised %s overrides to %j", (key, fields, allowed) => {
+    const before = sampleDeck()
+    const placed = compile(
+      before,
+      { op: "add", kind: "component", component: "column", slide: firstSlide(before) },
+      "place",
+    )
+    const root = placed.added.find(({ kind }) => kind === "component")?.id
+    const target =
+      root === undefined
+        ? undefined
+        : propOf(placed.after.nodes.get(root), "instance")?.parts.find((part) => part.key[0] === key)?.node
+    if (target === undefined) throw new Error("No generated part")
+    const result = attempt(placed.after, [{ op: "set", target, ...fields }], "override")
+    expect(isRefusal(result)).toBe(!allowed)
+    if (!isRefusal(result)) expect(result.after.nodes.get(target)).not.toEqual(placed.after.nodes.get(target))
+  })
+
+  it("flags off-scale agent tokens and refuses raw size even after regeneration in a batch", () => {
+    const { doom } = doomFromTree({ theme: defaultTheme, size: { w: 1920, h: 1080 }, slides: [{ children: [] }] })
+    const placed = compile(
+      doom,
+      { op: "add", kind: "component", component: "column", slide: firstSlide(doom) },
+      "place",
+    )
+    const root = placed.added.find(({ kind }) => kind === "component")?.id
+    const label =
+      root === undefined
+        ? undefined
+        : propOf(placed.after.nodes.get(root), "instance")?.parts.find(({ key }) => key[0] === "category")?.node
+    if (root === undefined || label === undefined) throw new Error("No generated label")
+    const rows = Array.from({ length: 40 }, (_, index) => ({
+      id: index === 0 ? "q1" : `row-${index}`,
+      label: `Region ${index + 1}`,
+      value: index + 1,
+    }))
+    const data = { op: "set", target: root, data: { rows } }
+    for (const captionSmall of [14, 22]) {
+      const result = compile(placed.after, { ...data, tokens: { captionSmall } }, "token")
+      expect(result.findings).toContainEqual(expect.objectContaining({ code: "off-scale", size: captionSmall }))
+    }
+    expect(attempt(placed.after, [data, { op: "set", target: label, size: 31 }], "batch")).toMatchObject({
+      refused: "shape",
+      at: 1,
     })
   })
 

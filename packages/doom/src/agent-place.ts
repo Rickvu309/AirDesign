@@ -54,7 +54,7 @@ export function freeArea(draft: Draft, parent: Node, natural?: Natural): Area | 
   return { x: best.x, y: best.y, w: best.cx, h: best.cy }
 }
 
-function alignedWithTitle(draft: Draft, slide: Node, area: Area): Area {
+export function alignedWithTitle(draft: Draft, slide: Node, area: Area): Area {
   const title = descendantsOf(draft.doom, slide.id).find((node) => propOf(node, "role") === "title")
   const box = title === undefined ? undefined : boxOf(title, draft.reading.boxes)
   if (box === undefined) return area
