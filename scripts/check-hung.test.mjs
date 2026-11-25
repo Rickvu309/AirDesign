@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { runCheck, stepRunner } from "./check.mjs"
+import { runCheck, stepRunner, stopEveryGroup } from "./check.mjs"
 import { checkSteps } from "./check-steps.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 
@@ -35,7 +35,13 @@ const waitGone = async (pid) => {
 }
 
 const folder = fs.mkdtempSync(path.join(os.tmpdir(), "check-hung-"))
-process.on("exit", () => fs.rmSync(folder, { recursive: true, force: true }))
+process.on("exit", () => {
+  stopEveryGroup()
+  fs.rmSync(folder, { recursive: true, force: true })
+})
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.on(signal, () => process.exit(128 + os.constants.signals[signal]))
+}
 
 const oneSlot = () => ({ AIRDESIGN_CHECK_SLOTS: "1" })
 const lock = () => takeMachineLock({ folder, env: oneSlot(), say: () => {} })

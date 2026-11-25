@@ -68,14 +68,23 @@ export const runCheck = async ({ chosen, lock, run, all = false, eventName = "",
 
 const groups = new Map()
 
-const stopGroup = (pid) => {
+const stopGroup = (pid, signal = "SIGKILL") => {
   try {
-    process.kill(-pid, "SIGKILL")
+    process.kill(-pid, signal)
   } catch {}
 }
 
-const stopEveryGroup = () => {
-  for (const pid of groups.keys()) stopGroup(pid)
+export const stopEveryGroup = (signal) => {
+  for (const pid of groups.keys()) stopGroup(pid, signal)
+}
+
+export const spawnGroup = (name, command, args, options) => {
+  const child = spawn(command, args, { ...options, detached: true })
+  if (child.pid !== undefined) groups.set(child.pid, name)
+  child.once("close", () => {
+    if (groups.delete(child.pid)) stopGroup(child.pid)
+  })
+  return child
 }
 
 const stillRunning = (pid) =>
@@ -97,12 +106,8 @@ export const stepRunner =
       const limit = limitOf(name)
       const started = Date.now()
       if (live) say(`start ${name}\n`)
-      const child = spawn(command, args, {
-        cwd: root,
-        env: extra ? { ...process.env, ...extra } : process.env,
-        detached: limit !== undefined,
-      })
-      if (limit !== undefined && child.pid !== undefined) groups.set(child.pid, name)
+      const options = { cwd: root, env: extra ? { ...process.env, ...extra } : process.env }
+      const child = limit === undefined ? spawn(command, args, options) : spawnGroup(name, command, args, options)
       let output = ""
       let hung = false
       let finished = false
@@ -126,8 +131,6 @@ export const stepRunner =
         if (finished) return
         finished = true
         clearTimeout(timer)
-        if (groups.has(child.pid)) stopGroup(child.pid)
-        groups.delete(child.pid)
         const seconds = ((Date.now() - started) / 1000).toFixed(1)
         if (status !== 0 || hung) {
           const prefix = live ? "" : output
@@ -157,7 +160,7 @@ export const stepRunner =
 export const run = stepRunner({ limitOf: (name) => checkSteps.stepLimit(name, false) })
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.on("exit", stopEveryGroup)
+  process.on("exit", () => stopEveryGroup())
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
     process.once(signal, () => {
       const running = [...groups.values()]
