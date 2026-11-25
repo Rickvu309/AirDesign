@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { flushSync } from "react-dom"
 import { blankLine } from "./text-blank-line"
 import { offsetOfPlace, placeOfOffset, type Place } from "./text-caret"
-import { highlightsOf, sameHighlights, type Highlight } from "./text-highlight"
+import { highlightsOf, probeSpan, sameHighlights, type Highlight } from "./text-highlight"
 import { readTextClipboard, writeTextClipboard } from "./text-clipboard"
 import { graphemeAfter, graphemeBefore, sliceText, wordAfter, wordBefore } from "./text-edit"
 import type { TextSession } from "./use-text-session"
@@ -59,6 +59,7 @@ export function TextHost(props: {
   const marked = useRef<{ readonly from: number; readonly to: number } | null>(null)
   const [fresh, setFresh] = useState(0)
   const [highlights, setHighlights] = useState<readonly Highlight[]>([])
+  const layer = useRef<HTMLDivElement>(null)
   const painted = useRef<{
     readonly draft: doom.Text
     readonly lines: readonly doom.ResolvedLine[]
@@ -103,11 +104,12 @@ export function TextHost(props: {
     showSelection(element, shown.anchor, shown.focus)
   }, [session.sync, fresh, session.draft, lines, followFormatting])
 
-  useLayoutEffect(() => {
-    const element = host.current
-    const next = element === null ? [] : highlightsOf(element, session.anchor, session.focus)
+  function highlight(anchor: number, focus: number) {
+    const [element, under] = [host.current, layer.current]
+    const next = element === null || under === null ? [] : highlightsOf(element, under, anchor, focus)
     setHighlights((now) => (sameHighlights(now, next) ? now : next))
-  })
+  }
+  useLayoutEffect(() => highlight(session.anchor, session.focus))
 
   useEffect(() => {
     const element = host.current
@@ -232,7 +234,24 @@ export function TextHost(props: {
 
   return (
     <>
-      <div aria-hidden className="pointer-events-none absolute inset-0">
+      <div
+        ref={layer}
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={session.draft.overflow === "ellipsis" ? { overflow: "hidden" } : undefined}
+      >
+        {[
+          [0, 0],
+          [probeSpan, 0],
+          [0, probeSpan],
+        ].map(([left, top]) => (
+          <i
+            key={`${String(left)}-${String(top)}`}
+            data-text-probe=""
+            className="absolute size-0"
+            style={{ left, top }}
+          />
+        ))}
         {highlights.map((each, at) => (
           <div
             key={at}
@@ -260,6 +279,7 @@ export function TextHost(props: {
           ...(session.draft.overflow === "ellipsis" ? { overflow: "auto", scrollbarWidth: "none" } : {}),
         }}
         onKeyDown={keys}
+        onScroll={() => highlight(latest.current.session.anchor, latest.current.session.focus)}
         onCopy={(event) => copy(event, false)}
         onCut={(event) => copy(event, true)}
         onPaste={(event) => {

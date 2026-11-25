@@ -437,3 +437,53 @@ test("selected words are highlighted at the height of their line, inside the tex
   await page.keyboard.press("ArrowRight")
   await expect(page.locator("[data-text-highlight]")).toHaveCount(0)
 })
+
+test("a highlight ends at the last letter of a wrapped line and reaches a little past a line that ends its paragraph", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openEditor(page, context, stack)
+  const chars = "Costs fall twelve percent this year\nTwo shifts"
+  await landNodes(stack, opened, [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: opened.slide,
+      props: {
+        name: "Words",
+        box: spot(300, 600, 420, 300),
+        text: { chars, spans: [], paras: [{}, {}], style: "body", resize: "fixed", alignV: "top" },
+      },
+    },
+  ])
+  await clickSlide(page, 320, 620)
+  await page.keyboard.press("Enter")
+  await expect(editor(page)).toBeFocused()
+  await page.keyboard.press("ControlOrMeta+a")
+  const read = () =>
+    page.evaluate(() => {
+      const host = document.querySelector("[data-text-editor]")!
+      const lines = [...host.querySelectorAll("[data-line]")]
+      const range = document.createRange()
+      return {
+        highlights: [...document.querySelectorAll("[data-text-highlight]")].map(
+          (each) => each.getBoundingClientRect().right,
+        ),
+        words: lines.map((line) => {
+          range.selectNodeContents(line)
+          return range.getBoundingClientRect().right
+        }),
+        height: lines[0]!.getBoundingClientRect().height,
+      }
+    })
+  await expect.poll(async () => (await read()).highlights.length).toBeGreaterThan(2)
+  const { highlights, words, height } = await read()
+  expect(highlights.length).toBe(words.length)
+  const ended = words.length - 2
+  highlights.forEach((right, at) => {
+    const past = right - words[at]!
+    if (at === ended) expect(Math.abs(past - height / 4)).toBeLessThan(1)
+    else expect(Math.abs(past)).toBeLessThan(1)
+  })
+})
