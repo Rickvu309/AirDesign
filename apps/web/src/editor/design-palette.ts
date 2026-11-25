@@ -23,5 +23,10 @@ export function paletteOf(view: doom.Doom, theme: doom.Theme): Palette {
     for (const span of propOf(node, "text")?.spans ?? [])
       if (typeof span.color === "string") found.add(span.color.slice(1).toUpperCase())
   }
-  return { templateColors: swatchesOf(theme), deck: [...found] }
+  const signed = namedByColor(
+    doom.colorVars
+      .filter((name) => !doom.paletteColorVars.some((role) => role === name))
+      .map((name) => ({ var: name, css: theme.colors[name].toUpperCase() })),
+  )
+  return { templateColors: [...swatchesOf(theme), ...signed], deck: [...found] }
 }

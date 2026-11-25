@@ -58,6 +58,10 @@ export function shownHex(value: doom.Color, templateColors: readonly Swatch[]): 
   return bare(value.tint === undefined || value.tint === 0 ? base : doom.tinted(base, value.tint))
 }
 
+export function pickerSwatches(templateColors: readonly Swatch[]): readonly Swatch[] {
+  return templateColors.filter((swatch) => doom.paletteColorVars.some((role) => role === swatch.var))
+}
+
 export function templateColorColumns(templateColors: readonly Swatch[]): readonly TemplateColorColumn[] {
   return templateColors.map((swatch) => {
     const shades = shadesOf(swatch.css).map((shade) => {
@@ -71,14 +75,14 @@ export function templateColorColumns(templateColors: readonly Swatch[]): readonl
 export const matches = (choice: doom.Color, value: doom.Color): boolean => doom.sameColor(choice, value)
 
 export function deckChoices(palette: Palette): readonly Choice[] {
-  const taken = new Set(palette.templateColors.map((swatch) => bare(swatch.css)))
+  const taken = new Set(pickerSwatches(palette.templateColors).map((swatch) => bare(swatch.css)))
   return palette.deck
     .filter((hex) => !taken.has(hex))
     .map((hex) => ({ color: `#${hex.toLowerCase()}`, css: `#${hex}`, name: hex }))
 }
 
 export function tintChoices(templateColors: readonly Swatch[], value: doom.Color | undefined): readonly Choice[] {
-  const shades = templateColorColumns(templateColors).flatMap((column) => column.shades)
+  const shades = templateColorColumns(pickerSwatches(templateColors)).flatMap((column) => column.shades)
   if (value === undefined || typeof value === "string" || value.tint === undefined || value.tint === 0) return shades
   if (shades.some((choice) => matches(choice.color, value))) return shades
   const hex = shownHex(value, templateColors)

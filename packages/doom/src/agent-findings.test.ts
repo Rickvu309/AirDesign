@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentEdit } from "./agent-edit.js"
 import { agentDeck, minter, runName } from "./agent-fixtures.js"
+import { paletteColorVars } from "./paint.js"
 import { agentFindings } from "./agent-findings.js"
-import { agent, hex, ids, sampleDeck, textOf, theme } from "./sample-deck.js"
+import { agent, hex, ids, land, sampleDeck, textOf, theme } from "./sample-deck.js"
 
 const red = hex(0xff0000)
 const nearRed = hex(0xff0001)
@@ -34,6 +35,22 @@ describe("value findings: the edit lands, and the answer names the nearest named
     expect(edit.findings[0]!.note).toBe(
       `t:6: ${red} is not a theme colour, so a new template will not recolour it; the nearest is ${to} (${theme().colors[to]}).`,
     )
+  })
+
+  it("suggests palette colours for literals close to semantic chart colours", () => {
+    const signedTheme = {
+      ...theme(),
+      colors: { ...theme().colors, positive: hex(0x00775e), negative: hex(0xa53e42), total: hex(0x325da9) },
+    }
+    const deck = land(sampleDeck(), [{ node: ids.deck, prop: "theme", value: signedTheme }])
+    for (const role of ["positive", "negative", "total"] as const) {
+      const near = hex(Number.parseInt(signedTheme.colors[role].slice(1), 16) ^ 1)
+      const [finding] = agentFindings(deck, [
+        { node: ids.card, prop: "fills", value: [{ kind: "solid", color: near }] },
+      ])
+      expect(finding?.code).toBe("off-palette")
+      if (finding?.code === "off-palette") expect(paletteColorVars).toContain(finding.to)
+    }
   })
 
   it("names a size off the type scale and a font that is not the theme's, with the nearest style", () => {

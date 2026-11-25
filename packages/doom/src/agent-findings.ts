@@ -2,7 +2,7 @@ import type { Chart } from "./chart.js"
 import { deckOf, propOf } from "./doom-walk.js"
 import type { Doom, Write } from "./doom.js"
 import type { NodeId } from "./ids.js"
-import { type Color, type ColorVar, type Hex, type Paint, colorVars } from "./paint.js"
+import { type Color, type ColorVar, type Hex, type Paint, colorVars, paletteColorVars } from "./paint.js"
 import { type Text, type TextStyleName, textStyleNames } from "./text.js"
 import { familyOf } from "./painted-face.js"
 import type { Theme } from "./theme.js"
@@ -20,7 +20,7 @@ function nearestColor(theme: Theme, hex: Hex): ColorVar {
   const [r, g, b] = channels(hex)
   let best: ColorVar = "text"
   let distance = Number.POSITIVE_INFINITY
-  for (const name of colorVars) {
+  for (const name of paletteColorVars) {
     const [tr, tg, tb] = channels(theme.colors[name])
     const mean = (r + tr) / 2
     const near = (2 + mean / 256) * (r - tr) ** 2 + 4 * (g - tg) ** 2 + (2 + (255 - mean) / 256) * (b - tb) ** 2
