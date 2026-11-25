@@ -5,8 +5,9 @@ import { installIndexedDb } from "./browser-fixtures.js"
 import { deleteDatabase } from "./device.js"
 import { createDoomDeck, openDoomDeck } from "./doom-deck.js"
 import { memoryDoomRemote, type DoomRemote } from "./doom-remote.js"
-import { deviceStorage, doomFoldKey, memoryStorage } from "./doom-storage.js"
-import { changeSlots } from "./store.js"
+import { deviceStorage, memoryStorage } from "./doom-storage.js"
+import { doomNodeKey } from "./fold-rows.js"
+import { writeSlot } from "./store.js"
 
 const id = doom.nodeId
 const [deckNode, row, slide, card] = [id("s:1"), id("s:2"), id("s:3"), id("s:4")] as const
@@ -75,16 +76,8 @@ describe("a deck the server no longer has", () => {
     expect(made.ok).toBe(true)
     const kept = await storage.read()
     if (kept?.fold === undefined) throw new Error("missing stored fold")
-    const fold = doom.foldToJson(kept.fold)
-    if (typeof fold !== "object" || fold === null) throw new Error("invalid serialized fold")
-    const stale = {
-      ...fold,
-      nodes: {
-        ...Object.fromEntries(kept.fold.nodes),
-        [card]: { ...kept.fold.nodes.get(card), chart: { kind: "column", categories: ["A"], series: [] } },
-      },
-    }
-    await changeSlots([{ key: doomFoldKey("old-chart"), value: stale }], [])
+    const stale = { ...kept.fold.nodes.get(card), chart: { kind: "column", categories: ["A"], series: [] } }
+    await writeSlot(doomNodeKey("old-chart", card), { node: stale })
 
     expect(await storage.read()).toBeUndefined()
     server.gone = true

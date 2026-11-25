@@ -51,6 +51,7 @@ const stripOf = (current: number): SlideStrip => ({
   onClone: () => undefined,
   onRemove: () => undefined,
   onMove: () => undefined,
+  onSkip: () => undefined,
   thumbHeight: 101,
   thumb: () => null,
 })

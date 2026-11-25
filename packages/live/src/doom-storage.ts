@@ -1,7 +1,9 @@
 import * as doom from "@airdesign/doom"
 import { componentFields, type Queued, type Regeneration, type Suppression } from "./doom-queue.js"
 import { dropDeck } from "./device-sweep.js"
-import { changeSlots, readRange, readSlot } from "./store.js"
+import { accountKey, finished, scoped, storeName, transaction } from "./device.js"
+import { readFoldRows, writeFoldRows } from "./fold-rows.js"
+import { readRange, signedIn } from "./store.js"
 
 export type Saved = { readonly fold?: doom.Doom; readonly queue: readonly Queued[] }
 
@@ -33,7 +35,6 @@ export function keepDoom(storage: DoomStorage, keep: (kept: boolean) => void) {
   }
 }
 
-export const doomFoldKey = (deck: string): string => `${deck}\u0004fold`
 export const doomQueuePrefix = (deck: string): string => `${deck}\u0004queue\u0004`
 
 const stampLength = 11
@@ -114,6 +115,7 @@ export function deviceStorage(deck: string): DoomStorage {
   const prefix = doomQueuePrefix(deck)
   const rows = new Map<string, { readonly key: string; readonly queued: Queued }>()
   let latest = 0
+  let written: doom.Doom | undefined
 
   const keyFor = (once: string): string => {
     latest = Math.max(Date.now(), latest + 1)
@@ -122,8 +124,10 @@ export function deviceStorage(deck: string): DoomStorage {
 
   return {
     async read() {
-      const [stored, kept] = await Promise.all([readSlot(doomFoldKey(deck)), readRange(prefix)])
-      const fold = stored === null ? undefined : doom.readFold(stored)
+      const account = accountKey()
+      if (account === undefined) return undefined
+      const [fold, kept] = await Promise.all([readFoldRows(account, deck), readRange(prefix)])
+      written = fold
       const queue: Queued[] = []
       for (const { key, value } of kept) {
         latest = Math.max(latest, Number.parseInt(key.slice(prefix.length, prefix.length + stampLength), 36) || 0)
@@ -136,7 +140,7 @@ export function deviceStorage(deck: string): DoomStorage {
       return { ...(fold === undefined ? {} : { fold }), queue }
     },
     async write({ fold, queue }) {
-      const puts = fold === undefined ? [] : [{ key: doomFoldKey(deck), value: doom.foldToJson(fold) }]
+      const puts: { readonly key: string; readonly value: unknown }[] = []
       const drops: string[] = []
       const next = new Map(rows)
       if (queue !== undefined) {
@@ -154,13 +158,21 @@ export function deviceStorage(deck: string): DoomStorage {
           puts.push({ key, value: queued })
         }
       }
-      if (puts.length === 0 && drops.length === 0) return
-      await changeSlots(puts, drops)
+      if (fold === undefined && puts.length === 0 && drops.length === 0) return
+      const account = signedIn()
+      const writing = await transaction("readwrite")
+      const store = writing.objectStore(storeName)
+      for (const key of drops) store.delete(scoped(account, key))
+      for (const { key, value } of puts) store.put(value, scoped(account, key))
+      if (fold !== undefined) writeFoldRows(store, account, deck, written, fold)
+      await finished(writing, () => undefined)
+      if (fold !== undefined) written = fold
       rows.clear()
       for (const [once, row] of next) rows.set(once, row)
     },
     async drop() {
       rows.clear()
+      written = undefined
       await dropDeck(deck)
     },
   }

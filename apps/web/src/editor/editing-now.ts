@@ -12,7 +12,7 @@ export function heardWrites(heard: Heard, view: doom.Doom, now: number, opening:
     if (before === undefined) next.set(run.id, { wrote: run.wrote, at: opening ? -Infinity : now })
     else next.set(run.id, before.wrote === run.wrote ? before : { wrote: run.wrote, at: now })
   }
-  return next
+  return next.size === heard.size && [...next].every(([id, each]) => heard.get(id) === each) ? heard : next
 }
 
 export function editingNow(heard: Heard, now: number): ReadonlySet<string> {

@@ -28,18 +28,6 @@ export async function readRange(prefix: string): Promise<readonly { readonly key
   )
 }
 
-export async function changeSlots(
-  puts: readonly { readonly key: string; readonly value: unknown }[],
-  drops: readonly string[],
-): Promise<void> {
-  const account = signedIn()
-  const writing = await transaction("readwrite")
-  const store = writing.objectStore(storeName)
-  for (const key of drops) store.delete(scoped(account, key))
-  for (const { key, value } of puts) store.put(value, scoped(account, key))
-  await finished(writing, () => undefined)
-}
-
 export function writeSlot(key: string, value: unknown): Promise<void> {
   return putSlots([{ key, value }]).then(() => undefined)
 }
