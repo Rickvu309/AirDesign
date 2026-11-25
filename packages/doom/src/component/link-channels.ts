@@ -65,10 +65,10 @@ function tracks(min: number, max: number): number[] {
   return result
 }
 
-function ports(card: Card, site: Site): Port[] {
+function ports(card: Card, site: Site, single: boolean): Port[] {
   const vertical = site === "t" || site === "b"
   const width = vertical ? card.w : card.h
-  const preferred = vertical ? (site === "t" ? -6 : 6) : 0
+  const preferred = vertical && !single ? (site === "t" ? -6 : 6) : 0
   const positions = [width / 2 + preferred]
   for (
     let step = clearance;
@@ -106,6 +106,14 @@ export function linkChannels(
   if (links.length === 0) return []
   const { left, right, bottom } = object({ left: numeric, right: numeric, bottom: numeric })(bounds)
   const byId = new Map(cards.map((card) => [card.id, card]))
+  const verticalDegree = new Map<string, number>()
+  for (const { from, to } of links) {
+    charge()
+    if (byId.get(from)?.row === byId.get(to)?.row) continue
+    verticalDegree.set(from, (verticalDegree.get(from) ?? 0) + 1)
+    verticalDegree.set(to, (verticalDegree.get(to) ?? 0) + 1)
+  }
+  const cardPorts = (card: Card, site: Site) => ports(card, site, verticalDegree.get(card.id) === 1)
   const rows = [...new Map(cards.map((card) => [card.row, card])).values()].sort((a, b) => a.row - b.row)
   const gutters = [
     ...tracks(left, Math.min(right, ...cards.map((card) => card.x)) - clearance).reverse(),
@@ -162,11 +170,11 @@ export function linkChannels(
         ...(peer.from === card.id && route.start.site === site ? [route.start] : []),
         ...(peer.to === card.id && route.end.site === site ? [route.end] : []),
       ])
-      return [...new Map([...reused, ...ports(card, site)].map((port) => [port.along, port])).values()]
+      return [...new Map([...reused, ...cardPorts(card, site)].map((port) => [port.along, port])).values()]
     }
     if (sameRow && a !== b) {
-      const start = ports(a, facing[0])[0]!
-      const end = ports(b, facing[1])[0]!
+      const start = cardPorts(a, facing[0])[0]!
+      const end = cardPorts(b, facing[1])[0]!
       tryRoute({ start, end, channels: [] })
     }
     const sides: readonly (readonly ["t" | "b", "t" | "b"])[] = sameRow
@@ -216,8 +224,8 @@ export function linkChannels(
     }
     const route: Route = best ??
       fallback ?? {
-        start: ports(a, facing[0])[0]!,
-        end: ports(b, facing[1])[0]!,
+        start: cardPorts(a, facing[0])[0]!,
+        end: cardPorts(b, facing[1])[0]!,
         channels: [],
       }
     occupied.push({ link, route, segments: segments(route) })

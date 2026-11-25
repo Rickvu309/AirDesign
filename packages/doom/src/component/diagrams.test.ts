@@ -118,7 +118,7 @@ describe("process diagram", () => {
     expect(rest.map((card) => card.props.text?.spans[0]?.color)).toEqual([{ var: "text2" }, { var: "text2" }])
   })
 
-  it("moves the accent and larger number to the focused step", () => {
+  it("moves the accent to the focused step", () => {
     const tree = expand(processComponent, { frame: process.frame, data: steps(4), tokens: { focus: "s2" } })
     const cards = role(tree, "step")
     expect(cards.map((card) => card.props.text?.spans[0]?.color)).toEqual([
@@ -127,7 +127,7 @@ describe("process diagram", () => {
       { var: "accent1" },
       { var: "text2" },
     ])
-    expect(cards[2]?.props.text?.spans[0]?.size).toBeGreaterThan(cards[0]!.props.text!.spans[0]!.size!)
+    expect(new Set(cards.map((card) => card.props.text?.spans[0]?.size)).size).toBe(1)
   })
 
   it("suggests two diagrams for a six-step process while keeping all six cards", () => {

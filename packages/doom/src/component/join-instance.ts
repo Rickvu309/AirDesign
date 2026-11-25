@@ -68,7 +68,7 @@ function saveInstance(
   return all
 }
 
-const partProps = ["box", "geometry", "fills", "strokes", "stroke", "text"] as const
+const partProps = ["box", "geometry", "fills", "strokes", "stroke", "text", "absolute"] as const
 
 function join(
   doom: Doom,

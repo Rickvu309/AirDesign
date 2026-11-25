@@ -14,7 +14,7 @@ import type { Emission } from "./spec.js"
 import { color, type Value } from "./values.js"
 
 type ShapeProps = Pick<Props, "name" | "box" | "geometry"> &
-  Partial<Pick<Props, "fills" | "strokes" | "stroke" | "radius" | "text">>
+  Partial<Pick<Props, "fills" | "strokes" | "stroke" | "radius" | "text" | "absolute">>
 export type ComponentNode = {
   readonly id: NodeId
   readonly key: PartKey
@@ -220,7 +220,7 @@ export function preparePart(
     key,
     field,
     kind: "shape",
-    props: { ...shared, ...filled(emit.fill), ...surface(emit), text },
+    props: { ...shared, ...filled(emit.fill), ...surface(emit), ...(emit.absolute ? { absolute: true } : {}), text },
     ...(style === undefined ? {} : { generatedStyle: generated.style }),
   }
   if (fit === undefined) return part

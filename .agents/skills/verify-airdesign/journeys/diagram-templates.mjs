@@ -162,9 +162,10 @@ export default async function drive(kit) {
             id: `s${i}`,
             label: `Step ${i + 1}`,
             description: descriptionExamples[i],
+            ...(direction === "column" ? { note: "2 weeks" } : {}),
           }))
           const { tree } = await expand("process", { frame, data: { steps }, variant: { direction } })
-          expect(tree.children).toHaveLength(2 * count - 1)
+          expect(tree.children).toHaveLength((direction === "column" ? 3 : 2) * count - 1)
           expect(
             tree.findings.filter(({ kind }) => kind === "text-fit"),
             `${direction} ${count}`,
@@ -194,7 +195,7 @@ export default async function drive(kit) {
         expect(line.y + line.h).toBeLessThanOrEqual(part.props.box.h)
       }
       note(
-        "Served Geist: process counts 3–8 fit in both directions with descriptions. One impossible label retains its full source and paints an ellipsis in bounds.",
+        "Served Geist: process counts 3–8 fit in both directions with descriptions and column durations. One impossible label retains its full source and paints an ellipsis in bounds.",
       )
     }
     if (diagram.name === "process") {

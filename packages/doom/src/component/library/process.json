@@ -133,51 +133,6 @@
         "over": ["get", "data.steps"],
         "as": "s"
       },
-      "emit": {
-        "kind": "text",
-        "key": ["list", "step", ["get", "s.id"]],
-        "x": ["add", ["get", "left"], ["mul", ["get", "i"], ["get", "stepX"]]],
-        "y": ["add", ["get", "top"], ["mul", ["get", "i"], ["get", "stepY"]]],
-        "w": ["get", "cardW"],
-        "h": ["get", "cardH"],
-        "chars": [
-          "filter",
-          ["list", ["get", "number"], ["get", "title"], ["get", "description"], ["get", "duration"]],
-          "paragraph",
-          ["if", ["lt", ["get", "i"], 2], true, ["if", ["eq", ["get", "paragraph.chars"], ""], false, true]]
-        ],
-        "style": ["if", ["get", "row"], ["get", "token.label"], ["get", "token.columnLabel"]],
-        "color": ["get", "token.ink"],
-        "align": "left",
-        "alignV": "top",
-        "fill": ["get", "token.card"],
-        "overflow": "ellipsis",
-        "stroke": {
-          "color": ["if", ["get", "focused"], ["get", "token.number"], ["get", "token.edge"]],
-          "width": 2
-        },
-        "radius": ["get", "token.radius"],
-        "padding": [
-          "if",
-          ["get", "row"],
-          {
-            "t": 24,
-            "r": 16,
-            "b": 24,
-            "l": 16
-          },
-          {
-            "t": 7,
-            "r": 20,
-            "b": 7,
-            "l": 20
-          }
-        ],
-        "fit": {
-          "smaller": ["if", ["get", "row"], ["get", "token.rowLabelSmall"], ["get", "token.labelSmall"]],
-          "group": "steps"
-        }
-      },
       "let": [
         ["focused", ["eq", ["get", "s.id"], ["get", "focus"]]],
         [
@@ -199,7 +154,7 @@
           {
             "chars": ["if", ["lt", ["get", "i"], 9], ["concat", "0", ["get", "stepNumber"]], ["get", "stepNumber"]],
             "color": ["if", ["get", "focused"], ["get", "token.number"], ["get", "token.description"]],
-            "scale": ["if", ["get", "focused"], 1, 0.8],
+            "scale": 0.8,
             "bold": true,
             "wrap": "none"
           }
@@ -217,8 +172,8 @@
           {
             "chars": ["get", "s.description"],
             "color": ["get", "token.description"],
-            "scale": ["if", ["get", "row"], 0.77, 0.72],
             "bold": false,
+            "scale": ["if", ["get", "row"], 0.77, 0.72],
             "maxLines": ["if", ["get", "row"], 3, 1],
             "spaceBefore": ["if", ["get", "row"], 6, 2]
           }
@@ -228,12 +183,147 @@
           {
             "chars": ["get", "s.note"],
             "color": ["get", "token.description"],
-            "scale": ["if", ["get", "row"], 0.8, 1],
+            "scale": 0.8,
             "bold": false,
             "wrap": "none",
-            "spaceBefore": ["if", ["get", "row"], 8, 2]
+            "spaceBefore": 8
           }
+        ],
+        ["x", ["add", ["get", "left"], ["mul", ["get", "i"], ["get", "stepX"]]]],
+        ["y", ["add", ["get", "top"], ["mul", ["get", "i"], ["get", "stepY"]]]],
+        ["note", ["get", "s.note"]],
+        [
+          "noteW",
+          [
+            "if",
+            ["get", "row"],
+            0,
+            [
+              "if",
+              ["eq", ["get", "note"], ""],
+              0,
+              ["textWidth", ["get", "note"], ["get", "token.columnLabel"], ["get", "token.labelSmall"]]
+            ]
+          ]
         ]
+      ],
+      "children": [
+        {
+          "when": ["get", "row"],
+          "emit": {
+            "kind": "text",
+            "key": ["list", "step", ["get", "s.id"]],
+            "x": ["get", "x"],
+            "y": ["get", "y"],
+            "w": ["get", "cardW"],
+            "h": ["get", "cardH"],
+            "chars": [
+              "filter",
+              ["list", ["get", "number"], ["get", "title"], ["get", "description"], ["get", "duration"]],
+              "paragraph",
+              ["if", ["lt", ["get", "i"], 2], true, ["if", ["eq", ["get", "paragraph.chars"], ""], false, true]]
+            ],
+            "style": ["get", "token.label"],
+            "color": ["get", "token.ink"],
+            "align": "left",
+            "alignV": "top",
+            "fill": ["get", "token.card"],
+            "overflow": "ellipsis",
+            "stroke": {
+              "color": ["if", ["get", "focused"], ["get", "token.number"], ["get", "token.edge"]],
+              "width": 2
+            },
+            "radius": ["get", "token.radius"],
+            "padding": {
+              "t": 24,
+              "r": 16,
+              "b": 24,
+              "l": 16
+            },
+            "fit": {
+              "smaller": ["get", "token.rowLabelSmall"],
+              "group": "steps"
+            }
+          }
+        },
+        {
+          "when": ["eq", ["get", "row"], false],
+          "emit": {
+            "kind": "text",
+            "key": ["list", "step", ["get", "s.id"]],
+            "x": ["get", "x"],
+            "y": ["get", "y"],
+            "w": ["get", "cardW"],
+            "h": ["get", "cardH"],
+            "chars": [
+              "filter",
+              [
+                "list",
+                {
+                  "chars": [
+                    "if",
+                    ["lt", ["get", "i"], 9],
+                    ["concat", "0", ["get", "stepNumber"]],
+                    ["get", "stepNumber"]
+                  ],
+                  "color": ["if", ["get", "focused"], ["get", "token.number"], ["get", "token.description"]],
+                  "scale": 0.8,
+                  "bold": true,
+                  "wrap": "none",
+                  "lineHeight": 1.2
+                },
+                ["get", "title"],
+                ["get", "description"]
+              ],
+              "paragraph",
+              ["if", ["lt", ["get", "i"], 2], true, ["eq", ["eq", ["get", "paragraph.chars"], ""], false]]
+            ],
+            "style": ["get", "token.columnLabel"],
+            "color": ["get", "token.ink"],
+            "align": "left",
+            "alignV": "top",
+            "fill": ["get", "token.card"],
+            "overflow": "ellipsis",
+            "stroke": {
+              "color": ["if", ["get", "focused"], ["get", "token.number"], ["get", "token.edge"]],
+              "width": 2
+            },
+            "radius": ["get", "token.radius"],
+            "padding": {
+              "t": 7,
+              "r": ["add", 20, ["if", ["eq", ["get", "note"], ""], 0, ["add", ["get", "noteW"], 16]]],
+              "b": 7,
+              "l": 20
+            },
+            "size": ["get", "token.labelSmall"]
+          }
+        },
+        {
+          "when": ["if", ["get", "row"], false, ["eq", ["eq", ["get", "note"], ""], false]],
+          "emit": {
+            "kind": "text",
+            "key": ["list", "duration", ["get", "s.id"]],
+            "x": ["add", ["get", "x"], ["max", 20, ["sub", ["get", "cardW"], ["add", 20, ["get", "noteW"]]]]],
+            "y": ["add", ["get", "y"], ["add", 10, ["mul", ["get", "token.labelSmall"], 0.96]]],
+            "w": ["min", ["max", 0, ["sub", ["get", "cardW"], 40]], ["get", "noteW"]],
+            "h": ["max", 0, ["sub", ["get", "cardH"], ["add", 17, ["mul", ["get", "token.labelSmall"], 0.96]]]],
+            "chars": [
+              "list",
+              {
+                "chars": ["get", "note"],
+                "bold": false,
+                "wrap": "none"
+              }
+            ],
+            "style": ["get", "token.columnLabel"],
+            "size": ["get", "token.labelSmall"],
+            "color": ["get", "token.description"],
+            "align": "right",
+            "alignV": "top",
+            "absolute": true,
+            "overflow": "ellipsis"
+          }
+        }
       ]
     },
     {
