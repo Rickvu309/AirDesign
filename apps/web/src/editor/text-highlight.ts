@@ -28,11 +28,13 @@ function localOf(layer: HTMLElement): ((point: Point) => Point) | null {
   return (point) => ({ x: along(point, across), y: along(point, down) })
 }
 
-function caretOf(line: HTMLElement, local: number): Point | null {
+function caretOf(line: HTMLElement, local: number, side: "start" | "end"): Point | null {
+  const runs = [...line.querySelectorAll<HTMLElement>("[data-run]")]
   let left = local
-  for (const run of line.querySelectorAll<HTMLElement>("[data-run]")) {
+  for (const [at, run] of runs.entries()) {
     const length = run.textContent?.length ?? 0
-    if (left <= length) return run.firstChild === null ? null : caretAt(run.firstChild, left)
+    const inside = side === "end" || at === runs.length - 1 ? left <= length : left < length
+    if (inside) return run.firstChild === null ? null : caretAt(run.firstChild, left)
     left -= length
   }
   return null
@@ -56,7 +58,7 @@ export function highlightsOf(
     if (from > to || (from === to && !broken)) return []
     const [h, centre] = [line.offsetHeight, local(middle(line.getBoundingClientRect()))]
     const blank = centre.x - line.offsetWidth / 2
-    const [a, b] = [caretOf(line, from - start), caretOf(line, to - start)].map((caret) =>
+    const [a, b] = [caretOf(line, from - start, "start"), caretOf(line, to - start, "end")].map((caret) =>
       caret === null ? blank : local(caret).x,
     ) as [number, number]
     const tail = broken ? h / 4 : 0
