@@ -1,4 +1,4 @@
-import { boolean, naming, reject } from "../read-kit.js"
+import { naming, reject } from "../read-kit.js"
 import type { ReportFinding } from "./findings.js"
 import type { FittingContext } from "./fit-text.js"
 import { type NumberFormat, readOperator } from "./operators.js"
@@ -8,6 +8,7 @@ import {
   type Value,
   type ValueRecord,
   checkDepth,
+  condition,
   entries,
   isList,
   valueList,
@@ -127,7 +128,7 @@ export function evaluator(context: FittingContext, format: NumberFormat) {
       case "get":
         return get(scope, expr.path, charge)
       case "if":
-        return naming("[1]", () => boolean(evaluate(expr.condition, scope, report)))
+        return naming("[1]", () => condition(evaluate(expr.condition, scope, report)))
           ? read(expr.yes, "[2]")
           : read(expr.no, "[3]")
       case "map":
@@ -139,7 +140,7 @@ export function evaluator(context: FittingContext, format: NumberFormat) {
             source.map((row, i) => evaluate(expr.body, childScope(scope, { [expr.as]: row, i }, charge), report)),
           )
         const matches = (row: Value, i: number) =>
-          boolean(evaluate(expr.body, childScope(scope, { [expr.as]: row, i }, charge), report))
+          condition(evaluate(expr.body, childScope(scope, { [expr.as]: row, i }, charge), report))
         return naming("[3]", () => (expr.kind === "every" ? source.every(matches) : source.filter(matches)))
       }
       case "scan": {

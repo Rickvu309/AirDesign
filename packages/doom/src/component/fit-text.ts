@@ -16,6 +16,7 @@ export type FittingContext = {
 
 export const textSize = finite(textLimits.size.min, textLimits.size.max)
 const tolerance = 1e-6
+const spill = 1
 
 export function measurePart(
   part: TextPart,
@@ -134,6 +135,28 @@ function finding(part: TextPart, size: number, neededWidth: number, availableWid
 
 function missed(part: TextPart, text: Text, found: TextFitFinding): Kept | TextFitFinding {
   return text.overflow === "ellipsis" ? { kind: "kept", part: withText(part, text), finding: found } : found
+}
+
+export function overflowing(part: TextPart, context: FittingContext): TextPart | Kept {
+  const { text, box } = part.props
+  if (text.overflow === "ellipsis" || text.chars === "") return part
+  const measured = measurePart(part, text, context, undefined, box.w)
+  const inset = (text.padding?.l ?? 0) + (text.padding?.r ?? 0)
+  const ink = Math.max(0, ...measured.lines.map((line) => line.ink)) + inset
+  if (measured.h <= box.h + spill && ink <= box.w + spill) return part
+  return {
+    kind: "kept",
+    part,
+    finding: {
+      kind: "text-overflow",
+      key: part.key,
+      field: part.field,
+      neededWidth: Math.ceil(Math.max(ink, box.w)),
+      neededHeight: Math.ceil(measured.h),
+      availableWidth: box.w,
+      availableHeight: box.h,
+    },
+  }
 }
 
 export function fitOne(

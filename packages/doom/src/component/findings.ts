@@ -20,6 +20,19 @@ export type ComponentFinding = { readonly key: PartKey; readonly field: string }
       readonly availableWidth: number
       readonly thinned?: number
     }
+  | {
+      readonly kind: "text-overflow"
+      readonly neededWidth: number
+      readonly neededHeight: number
+      readonly availableWidth: number
+      readonly availableHeight: number
+    }
+  | {
+      readonly kind: "outside-frame"
+      readonly box: { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
+      readonly frame: { readonly w: number; readonly h: number }
+    }
 )
 
 export type TextFitFinding = Extract<ComponentFinding, { kind: "text-fit" }>
+export type TextOverflowFinding = Extract<ComponentFinding, { kind: "text-overflow" }>

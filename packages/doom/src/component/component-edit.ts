@@ -27,7 +27,7 @@ export function changesLabelStyle(value: unknown, prior: unknown): boolean {
 
 type FocusEdit = { readonly node: NodeId; readonly focus: readonly string[] }
 
-type Preview = { readonly view: Doom; readonly roots: readonly NodeId[] }
+export type Preview = { readonly view: Doom; readonly roots: readonly NodeId[] }
 
 export function componentEditPreview(
   view: Doom,
@@ -153,30 +153,41 @@ export function prepareComponentEdit(
   focusEdit?: FocusEdit,
 ): readonly Write[] | Refusal {
   const asked = changingWrites(view, writes)
-  const unchanged = unchangedTemplate(view, asked)
-  if (unchanged !== undefined) return { ...refuse("shape", unchanged, "spec"), form: "The spec is unchanged." }
+  const unchanged = unchangedSpec(view, asked)
+  if (unchanged !== undefined) return unchanged
   const preview = componentEditPreview(view, asked, batchStart, focusEdit)
   if (preview === null) return writes
   if (isRefusal(preview)) return preview
-  const generated = new Map<string, Write>()
-  const cell = ({ node, prop }: Write) => `${node}\u0000${prop}`
-  for (const root of preview.roots) {
-    const update = refreshComponent(view, preview.view, root, measure)
-    if (isRefusal(update)) return update
-    const marker: Write = { node: root, prop: "instance", value: propOf(view.nodes.get(root), "instance") }
-    generated.set(cell(marker), marker)
-    for (const write of update.writes) generated.set(cell(write), write)
-  }
-  const prepared = [...asked.filter((write) => !generated.has(cell(write))), ...generated.values()]
+  const prepared = rebuildRoots(view, asked, preview, (root) => refreshComponent(view, preview.view, root, measure))
+  if (isRefusal(prepared)) return prepared
   return bytesOf(JSON.stringify(prepared)) >= limits.body - limits.form ? refuse("limit") : prepared
 }
 
-function unchangedTemplate(view: Doom, asked: readonly Write[]): NodeId | undefined {
+export function rebuildRoots(
+  view: Doom,
+  asked: readonly Write[],
+  preview: Preview,
+  refresh: (root: NodeId) => { readonly update: { readonly writes: readonly Write[] } } | Refusal,
+): readonly Write[] | Refusal {
+  const generated = new Map<string, Write>()
+  const cell = ({ node, prop }: Write) => `${node}\u0000${prop}`
+  for (const root of preview.roots) {
+    const rebuilt = refresh(root)
+    if (isRefusal(rebuilt)) return rebuilt
+    const marker: Write = { node: root, prop: "instance", value: propOf(view.nodes.get(root), "instance") }
+    generated.set(cell(marker), marker)
+    for (const write of rebuilt.update.writes) generated.set(cell(write), write)
+  }
+  return [...asked.filter((write) => !generated.has(cell(write))), ...generated.values()]
+}
+
+export function unchangedSpec(view: Doom, asked: readonly Write[]): Refusal | undefined {
   const specs = new Set(asked.flatMap(({ node, prop }) => (prop === "spec" ? [node] : [])))
-  return asked.find(
+  const node = asked.find(
     ({ node, prop }) =>
       prop === "revision" && !specs.has(node) && propOf(view.nodes.get(node), "revision") !== undefined,
   )?.node
+  return node === undefined ? undefined : { ...refuse("shape", node, "spec"), form: "The spec is unchanged." }
 }
 
 export function withCurrentComponents(
@@ -202,9 +213,9 @@ export function withCurrentComponents(
   const generated = new Map<string, Write>()
   const cell = ({ node, prop }: Write) => `${node}\u0000${prop}`
   for (const root of stale) {
-    const update = refreshComponent(view, next, root, measure)
+    const rebuilt = refreshComponent(view, next, root, measure)
     const detach: Write = { node: root, prop: "instance", value: null }
-    for (const write of isRefusal(update) ? [detach] : update.writes) generated.set(cell(write), write)
+    for (const write of isRefusal(rebuilt) ? [detach] : rebuilt.update.writes) generated.set(cell(write), write)
   }
   return [...writes.filter((write) => !generated.has(cell(write))), ...generated.values()]
 }

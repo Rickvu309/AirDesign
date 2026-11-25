@@ -28,6 +28,12 @@ function findingMessage(finding: doom.ComponentFinding, categoryCount: number): 
           : ""
       return `needs ${Math.ceil(neededWidth)} px in ${Math.floor(availableWidth)} px${thinned === undefined ? "." : `, with ${thinned} labels thinned.`}${guidance}`
     }
+    case "text-overflow":
+      return `needs ${finding.neededWidth}x${finding.neededHeight} px in a ${finding.availableWidth}x${finding.availableHeight} box.`
+    case "outside-frame": {
+      const { box, frame } = finding
+      return `sits at ${box.x},${box.y} ${box.w}x${box.h}, outside the ${frame.w}x${frame.h} frame.`
+    }
   }
 }
 

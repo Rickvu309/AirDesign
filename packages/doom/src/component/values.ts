@@ -93,4 +93,7 @@ export function componentRefusal(thrown: unknown): Refusal {
   }
 }
 
+export const condition = (value: Value): boolean =>
+  typeof value === "boolean" ? value : reject("shape", "true or false. Compare with eq or lt.")
+
 export const valueList = (value: Value | undefined): Values => (isList(value) ? value : reject("shape", "A list."))
