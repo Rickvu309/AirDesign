@@ -48,7 +48,7 @@
     "neutral": {
       "var": "text2"
     },
-    "highlight": { "var": "accent1", "tint": 0 },
+    "highlight": { "var": "accent1" },
     "source": ""
   },
   "let": [
@@ -153,7 +153,7 @@
         {
           "var": "background"
         },
-        ["if", ["get", "variant.labels"], 2.2, 3]
+        2.2
       ]
     ],
     [
@@ -162,16 +162,7 @@
         "if",
         ["get", "variant.signed"],
         ["get", "token.total"],
-        ["contrastTint", { "var": "text" }, { "var": "background" }, 11.7]
-      ]
-    ],
-    [
-      "focusFill",
-      [
-        "if",
-        ["get", "variant.signed"],
-        ["get", "token.highlight"],
-        ["contrastingAccent", ["get", "token.highlight"], ["get", "totalFill"], ["get", "neutralFill"]]
+        ["contrastGrey", { "var": "background" }, { "var": "accent1" }, ["get", "neutralFill"], 5, 1.5]
       ]
     ],
     [
@@ -339,7 +330,7 @@
               [
                 "if",
                 ["eq", ["get", "r.id"], ["get", "token.focus"]],
-                ["get", "focusFill"],
+                ["get", "token.highlight"],
                 [
                   "if",
                   ["get", "variant.signed"],

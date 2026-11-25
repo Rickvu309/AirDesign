@@ -7,7 +7,7 @@ import { linkChannels } from "./link-channels.js"
 import { textExtent } from "./text-extent.js"
 import { contrastInk, type FittingContext } from "./fit-text.js"
 import { allocate } from "./allocate.js"
-import { contrastTint, contrastingAccent, readableInk } from "./color-operators.js"
+import { contrastGrey, contrastTint, readableInk } from "./color-operators.js"
 import {
   cycle,
   flatten,
@@ -138,7 +138,7 @@ const operators: Readonly<Record<string, Operation>> = {
   groupBy: fixed(2, groupIndex),
   cycle: fixed(2, cycle),
   contrastTint: fixed(3, (args, charge, _format, { theme }) => contrastTint(args, theme, charge)),
-  contrastingAccent: fixed(3, (args, _charge, _format, { theme }) => contrastingAccent(args, theme)),
+  contrastGrey: fixed(5, (args, charge, _format, { theme }) => contrastGrey(args, theme, charge)),
   readableInk: fixed(1, (args, _charge, _format, { theme }) => readableInk(args, theme)),
   eq: fixed(2, ([a, b], charge) => {
     if (typeof a === "string" && typeof b === "string" && a.length === b.length) charge(a.length)
