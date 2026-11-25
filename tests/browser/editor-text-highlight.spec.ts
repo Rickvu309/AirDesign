@@ -129,10 +129,9 @@ test("right-to-left words selected after left-to-right words are highlighted acr
   const read = () =>
     page.evaluate(() => {
       const side = (rect: DOMRect | undefined) => (rect === undefined ? null : { left: rect.left, right: rect.right })
-      const last = [...document.querySelectorAll("[data-text-editor] [data-run]")].at(-1)
       return {
         highlight: side(document.querySelector("[data-text-highlight]")?.getBoundingClientRect()),
-        words: side(last?.getBoundingClientRect()),
+        words: side(getSelection()?.getRangeAt(0).getBoundingClientRect()),
         picked: getSelection()?.toString(),
       }
     })
