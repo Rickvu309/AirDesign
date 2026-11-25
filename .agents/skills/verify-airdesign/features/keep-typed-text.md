@@ -4,7 +4,7 @@ Every edit a person makes is first applied on the device and queued there, then 
 
 ## Sub-features
 
-- `queue` each edit is applied to the view at once and kept with the server's last fold in IndexedDB (`deviceStorage` in `packages/live/src/doom-storage.ts`, keys `<deck>\u0004fold` and `<deck>\u0004queue`). Edits land in order, each on the one before it; offline they keep painting and queueing, and replay in order on reconnect (`packages/live/src/doom-deck.test.ts`).
+- `queue` each edit is applied to the view at once and kept with the server's last fold in IndexedDB (`deviceStorage` in `packages/live/src/doom-storage.ts`, keys `<deck>\u0004queue`, and `<deck>\u0004head`, `<deck>\u0004node` and `<deck>\u0004once` in `packages/live/src/fold-rows.ts`). A landed edit rewrites only the nodes it changed. Edits land in order, each on the one before it; offline they keep painting and queueing, and replay in order on reconnect (`packages/live/src/doom-deck.test.ts`).
 - `lost-answer` an edit whose answer was lost lands once: it is sent again with the same `once`, and the server does not apply it twice.
 - `device-paint` a deck this account opened before on this browser opens from the kept fold and queue without waiting for `doomRoutes.open`, then catches up with `doomRoutes.since` (`openDoomDeck` in `packages/live/src/doom-deck.ts`). `[data-editor-ready]` marks the open editor.
 - `device-account` the kept decks, queued edits, stars, pictures and Aira chats are kept under the account (`accountKey` in `packages/live/src/device.ts`, read from the `airdesign.account` cookie the sign-in sets). Another account on the same browser sees none of the first one's; signed out, the device shows and keeps nothing (`packages/live/src/device-account.test.ts`).

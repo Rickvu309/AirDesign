@@ -8,9 +8,9 @@ export function signInAs(account: string | undefined): void {
   newPage()
 }
 
-export type Traffic = { opens: number; ranges: number; keys: number; puts: number }
+export type Traffic = { opens: number; ranges: number; keys: number; puts: number; bytes: number }
 
-export const traffic: Traffic = { opens: 0, ranges: 0, keys: 0, puts: 0 }
+export const traffic: Traffic = { opens: 0, ranges: 0, keys: 0, puts: 0, bytes: 0 }
 
 export type SlowStore = {
   closed: boolean
@@ -164,6 +164,7 @@ function installStore(slow?: SlowStore): void {
                   put: (value: unknown, key: string) =>
                     enqueue(() => {
                       traffic.puts += 1
+                      traffic.bytes += JSON.stringify(value)?.length ?? 0
                       rows.set(key, structuredClone(value))
                       return key
                     }),

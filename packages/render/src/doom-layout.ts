@@ -347,6 +347,18 @@ function layoutFor(doc: Document): BrowserLayout | undefined {
 }
 
 const locales = new WeakMap<doom.Doom, string>()
+let latest: { readonly value: doom.Doom; readonly locale: string } | undefined
+
+function sameTexts(before: doom.Doom, after: doom.Doom): boolean {
+  if (doom.deckOf(before).language !== doom.deckOf(after).language) return false
+  for (const [id, node] of after.nodes) {
+    const was = before.nodes.get(id)
+    if (was === node) continue
+    if (was === undefined || doom.propOf(was, "text") !== doom.propOf(node, "text")) return false
+    if (doom.parentOf(was) !== doom.parentOf(node)) return false
+  }
+  return true
+}
 
 export function deckLocale(
   value: doom.Doom,
@@ -357,11 +369,14 @@ export function deckLocale(
   let locale: string
   if (typing !== undefined && layerLanguage(typing.before, typing.layer) === layerLanguage(value, typing.layer)) {
     locale = deckLocale(typing.before)
+  } else if (latest !== undefined && sameTexts(latest.value, value)) {
+    locale = latest.locale
   } else {
     const language = doom.deckOf(value).language
     locale = language === undefined || language === "und" ? hanLanguage(doom.deckTexts(value)) : language
   }
   locales.set(value, locale)
+  latest = { value, locale }
   return locale
 }
 

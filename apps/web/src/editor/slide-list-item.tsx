@@ -53,11 +53,12 @@ export function SlideItem({
 }) {
   const entry = useRef<HTMLButtonElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  const latest = useRef({ onSelect, onChoose })
+  const latest = useRef({ onSelect, onChoose, onSkip })
   useLayoutEffect(() => {
-    latest.current = { onSelect, onChoose }
+    latest.current = { onSelect, onChoose, onSkip }
   })
   const onMenuChoose = useCallback((change: SlideKey) => latest.current.onChoose?.(change), [])
+  const onMenuSkip = useCallback((skipped: boolean) => latest.current.onSkip?.(skipped), [])
   const onMenuOpenChange = useCallback((next: boolean) => {
     setMenuOpen(next)
     if (next) latest.current.onSelect?.("menu")
@@ -136,7 +137,7 @@ export function SlideItem({
           onOpenChange={onMenuOpenChange}
           onChoose={onMenuChoose}
           skipped={skipped}
-          onSkip={onSkip}
+          onSkip={onSkip === undefined ? undefined : onMenuSkip}
           set={menuSet}
         />
       )}

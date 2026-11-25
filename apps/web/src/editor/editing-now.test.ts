@@ -43,6 +43,12 @@ describe("which agents are editing now", () => {
     expect(editingNow(heard, 300_000 + 1_000)).toEqual(new Set(["c1"]))
   })
 
+  it("keeps what it heard when no run wrote since", () => {
+    const started = write(grown.doom, "A", "start")
+    const heard = heardWrites(heardWrites(new Map(), grown.doom, 0, true), started, 0, false)
+    expect(heardWrites(heard, started, 5_000, false)).toBe(heard)
+  })
+
   it("does not call a run that was already open when the tab opened editing until it writes again", () => {
     const started = write(grown.doom, "A", "start")
     const heard = heardWrites(new Map(), started, 5_000, true)
