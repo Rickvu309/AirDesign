@@ -66,6 +66,7 @@ export function* agentEditSteps(
     }
   const reading: Reading = {
     read: by.read ?? doom,
+    batchStart: doom.rev,
     ...(by.boxes === undefined ? {} : { boxes: by.boxes }),
     ...(by.pictures === undefined ? {} : { pictures: by.pictures }),
     ...(by.measure === undefined ? {} : { measure: by.measure }),

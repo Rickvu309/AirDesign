@@ -53,6 +53,41 @@ describe("linked components in agent edits", () => {
     expect(detached.after.nodes.size).toBe(updated.after.nodes.size)
   })
 
+  it("regenerates data and changes the generated label style in the same batch", () => {
+    const before = sampleDeck()
+    const placed = compile(
+      before,
+      {
+        op: "add",
+        kind: "component",
+        component: "column",
+        slide: firstSlide(before),
+      },
+      "place",
+    )
+    const root = placed.added.find(({ kind }) => kind === "component")?.id
+    const instance = root === undefined ? undefined : propOf(placed.after.nodes.get(root), "instance")
+    const label = instance?.parts.find(({ key }) => key[0] === "category" && key[1] === "q1")?.node
+    if (root === undefined || label === undefined) throw new Error("No category label")
+    const changes = [
+      { op: "set", target: root, data: { rows: [{ id: "q1", label: "New quarter", value: 10 }] } },
+      { op: "set", target: label, textStyle: "body" },
+    ].map((raw) => {
+      const change = readAgentChange(raw, true)
+      if (isRefusal(change)) throw new Error(JSON.stringify(change))
+      return change
+    })
+    const edited = compileAgentEdit(placed.after, changes, {
+      author: { kind: "agent", id: "agent", run: "update" },
+      phase: "start",
+      once: "update",
+      mint: minter("update"),
+      read: readingOf(placed.after, placed.after.rev),
+    })
+    if (isRefusal(edited)) throw new Error(JSON.stringify(edited))
+    expect(propOf(edited.after.nodes.get(label), "text")).toMatchObject({ chars: "New quarter", style: "body" })
+  })
+
   it("centres a sample in free space on a slide with a title", () => {
     const size = { w: 1920, h: 1080 }
     const {

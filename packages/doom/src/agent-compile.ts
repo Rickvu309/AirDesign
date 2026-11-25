@@ -70,12 +70,12 @@ export function compileAgentChange(
     if (change.op === "delete") compileDelete(draft, change)
     if (change.op === "slide") compileSlide(draft, change)
     if (reading.componentSample !== undefined) {
-      const sample = sampleComponentEdit(doom, draft.writes)
+      const sample = sampleComponentEdit(doom, draft.writes, reading.batchStart)
       if (isRefusal(sample)) return { ...sample, change: nameOf(change) }
       if (sample !== null) reading.componentSample(sample)
     }
     const measure = reading.measure ?? estimate
-    const writes = prepareComponentEdit(doom, draft.writes, measure)
+    const writes = prepareComponentEdit(doom, draft.writes, measure, reading.batchStart)
     return isRefusal(writes) ? { ...writes, change: nameOf(change) } : freeLineEnds(doom, writes, measure)
   } catch (thrown) {
     if (thrown instanceof Stop) return { ...thrown.refusal, change: nameOf(change) }
