@@ -29,6 +29,7 @@ const ignorable = 1
 const emoji = 2
 const emojiPresentation = 4
 const extendedPictographic = 8
+const printableAscii = /^[ -~]*$/u
 const bidi = bidiFactory()
 let engine: Promise<FontLayoutEngine> | undefined
 
@@ -141,15 +142,52 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
     return buffer.getGlyphInfos()
   }
 
-  function properties(points: readonly number[]): number {
-    return points.reduce((found, cp) => found | breaker.properties(cp), 0)
-  }
-
-  function presentation(points: readonly number[], flags: number) {
+  function presentation(points: readonly number[], flags: number): "text" | "color" | undefined {
     if ((flags & emoji) !== 0 && points.includes(0xfe0e)) return "text"
     if ((flags & emojiPresentation) !== 0 || ((flags & emoji) !== 0 && points.includes(0xfe0f))) return "color"
     if (points.includes(0x20e3) || ((flags & extendedPictographic) !== 0 && points.includes(0x200d))) return "color"
     return undefined
+  }
+
+  const clusters = new Map<string, ReturnType<typeof analyzeCluster>>()
+  const directions = new Map<string, ReturnType<typeof bidi.getEmbeddingLevels>>()
+  const leftToRight = new Uint8Array()
+
+  function analyzeCluster(cluster: string) {
+    const points = Array.from(cluster, (char) => char.codePointAt(0)!)
+    const properties = points.map(breaker.properties)
+    const flags = properties.reduce((found, value) => found | value, 0)
+    return {
+      points,
+      visible: points.filter((_, index) => (properties[index]! & ignorable) === 0),
+      flags,
+      wanted: presentation(points, flags),
+      script: points.map(breaker.script).find((tag) => tag !== undefined),
+    }
+  }
+
+  function clusterOf(cluster: string) {
+    const cached = clusters.get(cluster)
+    if (cached !== undefined) return cached
+    const analysis = analyzeCluster(cluster)
+    if (cluster.length <= 32) {
+      if (clusters.size >= 1024) clusters.clear()
+      clusters.set(cluster, analysis)
+    }
+    return analysis
+  }
+
+  function embedding(text: string, direction: LayoutParagraph["direction"]) {
+    if (direction !== "rtl" && printableAscii.test(text)) return undefined
+    const key = direction + ":" + text
+    const cached = directions.get(key)
+    if (cached !== undefined) return cached
+    const analysis = bidi.getEmbeddingLevels(text, direction === "auto" ? undefined : direction)
+    if (text.length <= 4096) {
+      if (directions.size >= 64) directions.clear()
+      directions.set(key, analysis)
+    }
+    return analysis
   }
 
   const shapeLine: FontLayoutEngine["shapeLine"] = ({
@@ -164,14 +202,22 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
     let prepared = paragraphs.get(paragraph)
     if (prepared === undefined) {
       prepared = {
-        graphemes: breaker.breaks(paragraph).graphemes,
-        levels: bidi.getEmbeddingLevels(text, paragraph.direction === "auto" ? undefined : paragraph.direction).levels,
+        graphemes: breaker.graphemes(text),
+        levels: embedding(text, paragraph.direction)?.levels ?? leftToRight,
         runs: shapingRuns(paragraph.runs),
       }
       paragraphs.set(paragraph, prepared)
     }
     const { graphemes, levels, runs } = prepared
     const items: Item[] = []
+    const fonts = new Map<LayoutFace, hb.Font>()
+    const fontFor = (face: LayoutFace) => {
+      const cached = fonts.get(face)
+      if (cached !== undefined) return cached
+      const font = faces.font(face)
+      if (font !== undefined) fonts.set(face, font)
+      return font
+    }
     const line = text.slice(range.start, range.end)
     let display = line
     let runAt = 0
@@ -180,19 +226,16 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
       const start = Math.max(range.start, graphemes[at - 1]!)
       if (start >= range.end) break
       const end = Math.min(graphemes[at]!, range.end)
-      const cluster = Array.from(text.slice(start, end), (char) => char.codePointAt(0)!)
-      const flags = properties(cluster)
-      const wanted = presentation(cluster, flags)
-      const clusterScript = cluster.map(breaker.script).find((tag) => tag !== undefined)
-      script = clusterScript ?? script
+      const cluster = clusterOf(text.slice(start, end))
+      const { flags, wanted } = cluster
+      script = cluster.script ?? script
       for (let from = start; from < end;) {
         while (runs[runAt] !== undefined && runs[runAt]!.range.end <= from) runAt++
         const run = runs[runAt]
         if (run === undefined || run.range.start > from) return { kind: "unserved", range: sourceRange(from, end) }
         const to = Math.min(end, run.range.end)
-        const points = Array.from(text.slice(from, to), (char) => char.codePointAt(0)!)
-        const visible = points.some((cp) => (breaker.properties(cp) & ignorable) === 0)
-        const trackedClusters = visible && from === start ? 1 : 0
+        const { points, visible } = from === start && to === end ? cluster : clusterOf(text.slice(from, to))
+        const trackedClusters = visible.length > 0 && from === start ? 1 : 0
         const level = levels[from] ?? 0
         const fallback = () => run.fallback?.(text.slice(from, to), wanted) ?? []
         const ordered =
@@ -216,7 +259,7 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
               ((flags & emoji) !== 0 && points.includes(0xfe0f) && face.presentation !== "color")
             )
               continue
-            const font = faces.font(face)
+            const font = fontFor(face)
             if (font === undefined) return { kind: "pending", range: sourceRange(start, end), face }
             const item = { start: from, end: to, run, level, script, face, trackedClusters }
             const variationMissing = points.some((cp, index) => {
@@ -237,7 +280,7 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
                     (cp >= 0xe0020 && cp <= 0xe007f),
                 ))
             if (explicitSequence && face.presentation !== "color") continue
-            const mapped = points.every((cp) => (breaker.properties(cp) & ignorable) !== 0 || font.nominalGlyph(cp))
+            const mapped = visible.every((cp) => font.nominalGlyph(cp))
             if (!mapped || explicitSequence) {
               const probe = shape(font, item, line, range.start, locale)
               if (
@@ -280,13 +323,13 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
     const last = items.at(-1)
     const shown =
       lineEnding === "discretionary-hyphen" && display.endsWith("\u00ad") && last !== undefined
-        ? display.slice(0, -1) + (faces.font(last.face)?.nominalGlyph(0x2010) ? "‐" : "-")
+        ? display.slice(0, -1) + (fontFor(last.face)?.nominalGlyph(0x2010) ? "‐" : "-")
         : display
     const glyphs: LayoutGlyph[] = []
     const intervals: { range: { start: number; end: number }; face: LayoutFace }[] = []
     let advance = 0
     for (const item of items) {
-      const font = faces.font(item.face)
+      const font = fontFor(item.face)
       if (font === undefined) return { kind: "pending", range: sourceRange(item.start, item.end), face: item.face }
       const shaped = shape(font, item, shown, range.start, locale, contextualSpacing)
       const missing = shaped.find((glyph) => glyph.codepoint === 0)
@@ -329,7 +372,7 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
     hasFace: (face) => faces.has(face),
     cache: () => faces.cache(),
     flow: flowWith({ breaks: breaker.breaks, shapeLine }, (text) =>
-      (bidi.getEmbeddingLevels(text).paragraphs[0]?.level ?? 0) === 1 ? "rtl" : "ltr",
+      (embedding(text, "auto")?.paragraphs[0]?.level ?? 0) === 1 ? "rtl" : "ltr",
     ),
   }
 }

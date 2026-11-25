@@ -65,7 +65,8 @@ export function TextHost(props: {
   const sameDraft = session.draft === previous?.draft
   const followFormatting = sameDraft ? previous.followFormatting : session.draft.chars === previous?.draft.chars
   const lines =
-    previous !== null && (marked.current !== null || (sameDraft && !followFormatting))
+    previous !== null &&
+    (marked.current !== null || (sameDraft && !followFormatting && !previous.lines.some((line) => line.pending)))
       ? previous.lines
       : (node.text?.sourceLines ?? node.text?.lines ?? [blankLine(session.draft, theme, node)])
   const focused = useRef<{ readonly element: HTMLDivElement; readonly sync: number } | null>(null)

@@ -265,3 +265,33 @@ test("infers one Han language from every text in a deck", async () => {
   expect(hanLanguage(["鬱鬱蔥蔥"])).toBe("zh-Hant")
   expect(hanLanguage(["繁體中文", "시장", "まとめ"])).toBe("ja")
 })
+
+test("looks up a ready face once while shaping a line", async () => {
+  const layout = await loadFontLayout()
+  const face = await layout.prepareFace({
+    revision: fontRevision,
+    key: "narrow",
+    axes: {},
+    read: () => readFile(narrow),
+  })
+  const text = "AVATAR office"
+  const range = { start: 0, end: text.length }
+  const lookup = vi.spyOn(LayoutFaces.prototype, "font")
+  try {
+    const line = layout.shapeLine({
+      paragraph: {
+        text,
+        locale: "en-US",
+        direction: "ltr",
+        runs: [{ range, faces: [face], size: 44, tracking: 0 }],
+        sourceOffsetByTextOffset: Array.from({ length: text.length + 1 }, (_, at) => at),
+      },
+      range,
+      lineEnding: "plain",
+    })
+    expect(line.kind).toBe("shaped")
+    expect(lookup).toHaveBeenCalledTimes(1)
+  } finally {
+    lookup.mockRestore()
+  }
+})
