@@ -137,3 +137,15 @@ it("counts a discretionary hyphen only when that mark ends the line", () => {
     [5, 20],
   ])
 })
+
+it("sets tabular figures at the width of zero and carries them to the painted run", () => {
+  const width = measureWith({
+    Inter: { ascent: 1, descent: 0, advances: { "0": 0.6, "1": 0.3, ".": 0.25 } },
+  })
+  const proportional = words("11.1")
+  const tabular = words("11.1", { spans: [{ end: 4, figures: "tabular" }] })
+  expect(width(proportional, plain, null).w).toBeCloseTo(20 * (0.3 * 3 + 0.25))
+  expect(width(tabular, plain, null).w).toBeCloseTo(20 * (0.6 * 3 + 0.25))
+  expect(width(tabular, plain, null).lines[0]!.runs[0]).toMatchObject({ figures: "tabular" })
+  expect(width(proportional, plain, null).lines[0]!.runs[0]).not.toHaveProperty("figures")
+})

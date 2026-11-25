@@ -346,3 +346,31 @@ test("a waiting face preserves the served runs in the same paragraph", async () 
     expect(result?.lines[0]?.display).toBeUndefined()
   }
 })
+
+test("sets tabular figures at one width when the run asks and the font has them", async () => {
+  const layout = await createFontLayout()
+  const geist = await layout.prepareFace({
+    revision: fontRevision,
+    key: "geist-figures",
+    axes: {},
+    read: () => readFile(new URL("../../../apps/api/fonts/Geist[wght].ttf", import.meta.url)),
+  })
+  const advance = (text: string, figures?: "tabular") => {
+    const range = { start: 0, end: text.length }
+    const line = layout.shapeLine({
+      paragraph: {
+        text,
+        locale: "en-US",
+        direction: "ltr",
+        runs: [{ range, faces: [geist], size: 44, tracking: 0, ...(figures === undefined ? {} : { figures }) }],
+        sourceOffsetByTextOffset: Array.from({ length: text.length + 1 }, (_, at) => at),
+      },
+      range,
+      lineEnding: "plain",
+    })
+    if (line.kind !== "shaped") throw new Error("unshaped")
+    return line.advance
+  }
+  expect(advance("1111")).not.toBe(advance("0000"))
+  expect(advance("1111", "tabular")).toBe(advance("0000", "tabular"))
+})

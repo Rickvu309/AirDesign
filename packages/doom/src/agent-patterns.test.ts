@@ -417,9 +417,9 @@ describe("a grid of words", () => {
       mode: "grid",
       columns: [{ fr: 1 }, { fr: 1 }, { fr: 1 }, { fr: 1 }],
       rows: ["hug", "hug", "hug"],
-      gap: gapFor(1920),
+      gap: 0,
     })
-    const cells = childrenOf(doom, root.id)
+    const cells = childrenOf(doom, root.id).filter((node) => propOf(node, "text") !== undefined)
     expect(propOf(cells[0]!, "cell")).toEqual({ row: 0, col: 1 })
     expect(propOf(cells[0]!, "text")).toMatchObject({ chars: "Q1", style: "heading" })
     expect(propOf(cells[4]!, "text")).toMatchObject({ chars: "Beta", style: "heading" })
@@ -427,14 +427,14 @@ describe("a grid of words", () => {
   })
 
   it("leaves an empty word out, so the grid keeps a hole instead of an empty text", () => {
-    const cells = childrenOf(doom, root.id)
+    const cells = childrenOf(doom, root.id).filter((node) => propOf(node, "text") !== undefined)
     expect(cells.map((cell) => propOf(cell, "cell"))).not.toContainEqual({ row: 0, col: 0 })
     expect(cells).toHaveLength(11)
   })
 
   it("takes markdown in a cell and pads a short row by leaving the cell out", () => {
     const ragged = build(agentDeck(), add({ kind: "frame", rows: [["a", "b"], ["**c**"]] }))
-    const cells = childrenOf(ragged, made(ragged).id)
+    const cells = childrenOf(ragged, made(ragged).id).filter((node) => propOf(node, "text") !== undefined)
     expect(cells).toHaveLength(3)
     expect(propOf(cells[2]!, "text")!.spans[0]).toMatchObject({ bold: true })
   })

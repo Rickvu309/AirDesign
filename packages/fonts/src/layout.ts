@@ -62,6 +62,7 @@ function sameMetrics(a: Run, b: Run): boolean {
   return (
     a.size === b.size &&
     a.tracking === b.tracking &&
+    a.figures === b.figures &&
     a.stack === b.stack &&
     a.faces.length === b.faces.length &&
     a.faces.every((face, index) => sameFace(face, b.faces[index]!))
@@ -93,6 +94,7 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
   const buffer = new hb.Buffer()
   const noLigatures = ["liga", "clig"].map((tag) => new hb.Feature(tag, 0, 0, 0xffffffff))
   const contextualSpacing = new hb.Feature("chws", 1, 0, 0xffffffff)
+  const tabularFigures = new hb.Feature("tnum", 1, 0, 0xffffffff)
   const spacingFeatures = new WeakMap<hb.Font, ReadonlySet<string>>()
   const paragraphs = new WeakMap<
     LayoutParagraph,
@@ -113,6 +115,7 @@ async function initializeLayout(): Promise<FontLayoutEngine> {
     const scale = Math.round(item.run.size * scalePerPx)
     font.setScale(scale, scale)
     const features = item.run.tracking === 0 ? [] : [...noLigatures]
+    if (item.run.figures === "tabular") features.push(tabularFigures)
     if (spacing && /[\u2018-\u201f\u3000-\u303f\uff00-\uffef]/u.test(line)) {
       let supported = spacingFeatures.get(font)
       if (supported === undefined) {

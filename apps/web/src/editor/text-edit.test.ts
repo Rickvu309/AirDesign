@@ -11,6 +11,7 @@ import {
   replaceRange,
   sliceText,
   toggleMark,
+  typeInto,
   withMark,
   toggledList,
   withParagraphs,
@@ -74,6 +75,27 @@ describe("replaceRange", () => {
     expect(valid(replaceRange(plain(""), 0, 0, "x")).chars).toBe("x")
     expect(valid(replaceRange(plain("x"), 0, 1, "")).chars).toBe("")
     expect(valid(replaceRange(plain("ab"), 0, 0, "z")).chars).toBe("zab")
+  })
+})
+
+describe("typeInto", () => {
+  const total = { ...plain("2111"), spans: [{ end: 4, bold: true, figures: "tabular" as const }] }
+
+  it("keeps the look of words typed over all of them", () => {
+    expect(valid(typeInto(total, 0, 4, "2000", null).text).spans).toEqual(total.spans)
+  })
+
+  it("holds the look of the words a person deletes, for the words they type next", () => {
+    const emptied = typeInto(total, 0, 4, "", null)
+    expect(emptied.text.chars).toBe("")
+    const typed = typeInto(emptied.text, 0, 0, "2000", emptied.pending)
+    expect(valid(typed.text).spans).toEqual(total.spans)
+    expect(typed.pending).toBeNull()
+  })
+
+  it("keeps a held look through another delete on empty words", () => {
+    const emptied = typeInto(total, 0, 4, "", null)
+    expect(typeInto(emptied.text, 0, 0, "", emptied.pending).pending).toEqual(emptied.pending)
   })
 })
 

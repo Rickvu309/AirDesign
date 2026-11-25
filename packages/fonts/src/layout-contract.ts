@@ -22,6 +22,7 @@ type LayoutRun = {
   readonly range: Utf16Range
   readonly size: number
   readonly tracking: number
+  readonly figures?: "tabular"
   readonly faces: readonly [LayoutFace, ...LayoutFace[]]
   readonly stack?: string
   readonly fallback?: (cluster: string, presentation: "text" | "color" | undefined) => Iterable<LayoutFace | "loading">

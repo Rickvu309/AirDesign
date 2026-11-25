@@ -10,7 +10,7 @@ import {
   baseOf,
   lookAt,
   markOn,
-  replaceRange,
+  typeInto,
   toggleMark,
   withMark,
   toggledList,
@@ -254,10 +254,9 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
     replace(from, to, insert) {
       const now = ref.current
       if (now === null) return
-      const collapsed = from === to && now.pending !== null
-      const draft = replaceRange(now.draft, from, to, insert, collapsed ? (now.pending ?? undefined) : undefined)
+      const { text: draft, pending } = typeInto(now.draft, from, to, insert, now.pending)
       const caret = Math.min(from, to) + insert.length
-      change({ draft, anchor: caret, focus: caret, pending: null })
+      change({ draft, anchor: caret, focus: caret, pending })
     },
     paste(from, to, slice) {
       const now = ref.current

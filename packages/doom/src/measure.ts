@@ -17,7 +17,7 @@ export type Measured = {
 }
 export type Measure = (text: Text, theme: Theme, width: Px | null, fit?: "two-lines") => Measured
 
-type ProbedRun = Pick<ResolvedRun, "font" | "bold" | "italic" | "size" | "tracking"> & {
+type ProbedRun = Pick<ResolvedRun, "font" | "bold" | "italic" | "size" | "tracking" | "figures"> & {
   readonly range: { readonly start: number; readonly end: number }
 }
 
@@ -103,6 +103,7 @@ function lookOf(span: Span | undefined, base: Base, theme: Theme): CasedLook {
     ...(span.color === undefined ? {} : { color: resolveColor(span.color, theme) }),
     ...(span.tracking === undefined ? {} : { tracking: span.tracking }),
     ...(span.case === undefined ? {} : { case: span.case }),
+    ...(span.figures === undefined ? {} : { figures: span.figures }),
     ...(span.link === undefined ? {} : { link: span.link }),
   }
 }
@@ -201,8 +202,16 @@ function paragraphOf(
     const last = runs.at(-1)
     if (last !== undefined && char.run === chars[index - 1]?.run) last.range.end = text.length
     else {
-      const { font, bold, italic, size, tracking } = looks[char.run]!
-      runs.push({ font, bold, italic, size, tracking, range: { start, end: text.length } })
+      const { font, bold, italic, size, tracking, figures } = looks[char.run]!
+      runs.push({
+        font,
+        bold,
+        italic,
+        size,
+        tracking,
+        ...(figures === undefined ? {} : { figures }),
+        range: { start, end: text.length },
+      })
     }
   }
   offsets.push(chars.at(-1)?.end ?? 0)
@@ -308,12 +317,16 @@ function measureOnce(widths: FontWidths, probe: MeasureProbe | undefined, layout
           before.bold === look.bold &&
           before.italic === look.italic &&
           before.size === look.size &&
-          before.tracking === look.tracking
+          before.tracking === look.tracking &&
+          before.figures === look.figures
             ? ((look.tracking === 0 ? face?.kerning : (face?.trackedKerning ?? face?.kerning))?.[
                 previous.char + sample
               ] ?? 0)
             : 0
-        const measured = face?.advances[sample] ?? face?.advances[item.char.normalize("NFC")]
+        const measured =
+          (look.figures === "tabular" && /^[0-9]$/u.test(sample) ? face?.advances["0"] : undefined) ??
+          face?.advances[sample] ??
+          face?.advances[item.char.normalize("NFC")]
         const advance = measured ?? (words ? estimateAdvance(char) : isCjk(char) ? 1 : fallbackAdvance)
         glyphs.push({
           char,

@@ -18,6 +18,7 @@ function runLook(run: Run): CSSProperties {
     color: run.color,
     ...(decoration === "" ? {} : { textDecoration: decoration }),
     ...(run.tracking === 0 ? {} : { letterSpacing: run.tracking }),
+    ...(run.figures === "tabular" ? { fontVariantNumeric: "tabular-nums" } : {}),
   }
 }
 
