@@ -56,15 +56,22 @@ export function TextHost(props: {
   const latest = useRef({ api, session, deck, slides, onLeave: props.onLeave })
   const marked = useRef<{ readonly from: number; readonly to: number } | null>(null)
   const [fresh, setFresh] = useState(0)
+  const [composingLines, setComposingLines] = useState<readonly doom.ResolvedLine[] | null>(null)
+  const lines = composingLines ?? node.text?.sourceLines ?? node.text?.lines ?? [blankLine(session.draft, theme, node)]
+  const focused = useRef<{ readonly element: HTMLDivElement; readonly sync: number } | null>(null)
   useEffect(() => {
     latest.current = { api, session, deck, slides, onLeave: props.onLeave }
   })
 
   useLayoutEffect(() => {
     const element = host.current
-    if (element === null) return
-    element.focus({ preventScroll: true })
-    if (session.entry.kind === "point" && session.sync === 1) {
+    if (element === null || marked.current !== null) return
+    const sync = focused.current?.element !== element || focused.current.sync !== session.sync
+    if (sync) {
+      focused.current = { element, sync: session.sync }
+      element.focus({ preventScroll: true })
+    } else if (element.ownerDocument.activeElement !== element) return
+    if (sync && session.entry.kind === "point" && session.sync === 1) {
       const place = placeAt(element.ownerDocument, session.entry.x, session.entry.y)
       const offset = place === null ? null : offsetOfPlace(element, place)
       const at = offset ?? session.draft.chars.length
@@ -73,7 +80,7 @@ export function TextHost(props: {
       return
     }
     showSelection(element, session.anchor, session.focus)
-  }, [session.sync, fresh])
+  }, [session.sync, fresh, lines])
 
   useEffect(() => {
     const element = host.current
@@ -194,13 +201,6 @@ export function TextHost(props: {
     if (cut) current.replace(from, to, "")
   }
 
-  const [painted, paint] = useState(() => ({
-    draft: session.draft,
-    lines: node.text?.lines ?? [blankLine(session.draft, theme, node)],
-  }))
-  if (painted.draft !== session.draft && marked.current === null) {
-    paint({ draft: session.draft, lines: node.text?.lines ?? [blankLine(session.draft, theme, node)] })
-  }
   return (
     <div
       key={fresh}
@@ -236,16 +236,18 @@ export function TextHost(props: {
         const now = latest.current.session
         const at = found ?? { anchor: now.anchor, focus: now.focus }
         marked.current = { from: Math.min(at.anchor, at.focus), to: Math.max(at.anchor, at.focus) }
+        setComposingLines(lines)
       }}
       onCompositionEnd={(event) => {
         const range = marked.current
         marked.current = null
         if (range === null) return
         latest.current.api.replace(range.from, range.to, event.data)
+        setComposingLines(null)
         setFresh((value) => value + 1)
       }}
     >
-      <TextLines lines={painted.lines} editing />
+      <TextLines lines={lines} editing />
     </div>
   )
 }

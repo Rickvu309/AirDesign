@@ -167,6 +167,7 @@ describe("the advertised schema", () => {
       "text",
       "insert",
       "textStyle",
+      "language",
       "align",
       "layout",
       "gap",

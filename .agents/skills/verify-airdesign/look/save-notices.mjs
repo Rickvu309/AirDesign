@@ -7,6 +7,7 @@ export const editAnswers = (kit, answer) =>
   )
 
 export async function cutOff(kit) {
+  await expect(kit.page.locator("[data-fonts-pending]")).toHaveCount(0)
   await kit.page.route(
     (url) => url.pathname.startsWith("/doom/"),
     (route) => route.abort("internetdisconnected"),
