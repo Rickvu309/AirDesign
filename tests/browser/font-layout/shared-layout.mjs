@@ -1,13 +1,14 @@
 export async function shapeCorpus(layout, cases, prepare) {
   const rows = []
-  for (const { id, lang: locale, runs } of cases) {
+  for (const { id, lang: locale, runs, revision } of cases) {
     let text = ""
     const styled = []
     for (const run of runs) {
       const start = text.length
       text += run.text
       const faces = []
-      for (const name of run.faces) faces.push(await prepare(layout, name, { wght: run.weight, opsz: 32, ...run.axes }))
+      for (const name of run.faces)
+        faces.push(await prepare(layout, name, { wght: run.weight, opsz: 32, ...run.axes }, revision))
       styled.push({ range: { start, end: text.length }, faces, size: run.size, tracking: run.tracking ?? 0 })
     }
     const paragraph = {
@@ -55,33 +56,34 @@ export async function shapeCorpus(layout, cases, prepare) {
 
 export async function exerciseEviction(layout, cases, prepare) {
   const rows = []
-  let previous
+  const recent = []
   for (let cycle = 0; cycle < 4; cycle++) {
     for (const item of cases) {
       const [result] = await shapeCorpus(layout, [item], prepare)
       const cache = layout.cache()
+      const oldest = recent.length === cases.length - 1 ? recent.shift() : undefined
       const evicted =
-        previous === undefined
+        oldest === undefined
           ? undefined
           : layout.shapeLine({
-              paragraph: previous,
-              range: { start: 0, end: previous.text.length },
+              paragraph: oldest,
+              range: { start: 0, end: oldest.text.length },
               lineEnding: "plain",
             })
       const run = item.runs[0]
-      const face = await prepare(layout, run.faces[0], { wght: run.weight, opsz: 32 })
-      previous = {
+      const face = await prepare(layout, run.faces[0], { wght: run.weight, opsz: 32 }, item.revision)
+      recent.push({
         text: run.text,
         locale: item.lang,
         direction: "auto",
         sourceOffsetByTextOffset: Array.from({ length: run.text.length + 1 }, (_, at) => at),
         runs: [{ range: { start: 0, end: run.text.length }, size: run.size, tracking: 0, faces: [face] }],
-      }
+      })
       rows.push({
         id: item.id,
         line: result.line,
         cache,
-        previousWasPending: evicted !== undefined && "face" in evicted,
+        oldestWasPending: evicted !== undefined && "face" in evicted,
       })
     }
   }
@@ -100,9 +102,11 @@ export function observeWasmMemory() {
   const streaming = WebAssembly.instantiateStreaming
   WebAssembly.instantiate = async (...args) => remember(await instantiate(...args))
   WebAssembly.instantiateStreaming = async (...args) => remember(await streaming(...args))
-  return () => {
-    WebAssembly.instantiate = instantiate
-    WebAssembly.instantiateStreaming = streaming
-    return [...memories].map((memory) => memory.buffer.byteLength)
+  return {
+    bytes: () => [...memories].map((memory) => memory.buffer.byteLength),
+    stop() {
+      WebAssembly.instantiate = instantiate
+      WebAssembly.instantiateStreaming = streaming
+    },
   }
 }

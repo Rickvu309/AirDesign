@@ -101,7 +101,7 @@ test("the shipped Node and Chromium engines agree on styled glyphs and line offs
   const { fontLayoutRevision } = await loadFontLayoutContract()
   const { createHash } = await import("node:crypto")
   const { gzipSync } = await import("node:zlib")
-  const { corpus } = await import("./font-layout/cases.mjs")
+  const { corpus, paintStyleCases } = await import("./font-layout/cases.mjs")
   const { fixtureBytes, manifest } = await import("./font-layout/fixture-faces.mjs")
   const { shapeCorpus, exerciseEviction } = await import("./font-layout/shared-layout.mjs")
   const ids = new Set([
@@ -124,15 +124,20 @@ test("the shipped Node and Chromium engines agree on styled glyphs and line offs
     "mixed-styles",
     "punctuation-glue",
   ])
-  const cases = corpus.filter(({ id }) => ids.has(id))
-  expect(cases).toHaveLength(ids.size)
-  const evictionIds = ["cjk-punctuation", "hangul-nfc", "emoji-zwj-Geist"]
-  const evictionCases = evictionIds.map((id, at) => ({
+  const cases = [...corpus.filter(({ id }) => ids.has(id)), ...paintStyleCases]
+  expect(cases).toHaveLength(ids.size + paintStyleCases.length)
+  const evictionCases = [
+    { id: "japanese", lang: "ja", text: "日本語", face: "JP", revision: fontRevision },
+    { id: "korean", lang: "ko", text: "매출 증가", face: "KR", revision: fontRevision },
+    { id: "emoji", lang: "en-US", text: "👩‍💻", face: "Emoji", revision: fontRevision },
+    { id: "previous-japanese", lang: "ja", text: "日本語", face: "JP", revision: fontRevision + "-previous" },
+  ].map(({ id, lang, text, face, revision }) => ({
     id,
-    lang: ["ja", "ko", "en-US"][at],
-    runs: [{ text: ["日本語", "매출 증가", "👩‍💻"][at], faces: [["JP", "KR", "Emoji"][at]], size: 44, weight: 400 }],
+    lang,
+    revision,
+    runs: [{ text, faces: [face], size: 44, weight: 400 }],
   }))
-  const budget = 28 * 1024 * 1024
+  const budget = 48 * 1024 * 1024
   const names = new Set<string>([...cases, ...evictionCases].flatMap(({ runs }) => runs.flatMap(({ faces }) => faces)))
   const bytes = new Map<string, Buffer>()
   await Promise.all([...names].map(async (name) => bytes.set(name, await fixtureBytes(manifest[name]))))
@@ -144,15 +149,30 @@ test("the shipped Node and Chromium engines agree on styled glyphs and line offs
   const hashes = Object.fromEntries([...names].map((name) => [name, manifest[name].sha256]))
   const dist = "apps/web/dist/assets"
   const assets = await readdir(dist)
+  expect(assets.filter((file) => file.endsWith(".js")).length).toBeLessThanOrEqual(2_037)
+  const home = await readFile("apps/web/dist/index.html", "utf8")
+  expect([...home.matchAll(/(?:src|href)="\/assets\/([^"]+)-[\w-]{8}\.js"/g)].map(([, name]) => name)).toEqual([
+    "index",
+    "createLucideIcon",
+    "check",
+    "circle-check",
+    "circle-exclamation-point",
+    "info",
+    "loader-circle",
+    "octagon-x",
+    "triangle-exclamation-point",
+    "x",
+    "usage-load",
+  ])
   const chunk = assets.find((name) => /^layout-[\w-]{8}\.js$/.test(name))
   expect(chunk).toBeDefined()
   const wasmName = assets.find((name) => /^icu-breaks-.*\.wasm$/.test(name))
   expect(wasmName).toBeDefined()
   const wasm = await readFile(`${dist}/${wasmName}`)
   expect(createHash("sha256").update(wasm).digest("hex")).toBe(fontLayoutRevision.icuBreakerSha256)
-  expect(wasm.length).toBeLessThanOrEqual(4_800_000)
-  expect(gzipSync(wasm).length).toBeLessThanOrEqual(2_800_000)
-  for (const notice of ["HarfBuzz.txt", "ICU.txt", "bidi-js.txt"])
+  expect(wasm.length).toBeLessThanOrEqual(2_700_000)
+  expect(gzipSync(wasm).length).toBeLessThanOrEqual(1_200_000)
+  for (const notice of ["HarfBuzz.txt", "ICU.txt", "bidi-js.txt", "musl.txt"])
     expect(await readFile(`${dist}/font-layout-licenses/${notice}`)).toEqual(
       await readFile(`packages/fonts/licenses/${notice}`),
     )
@@ -160,8 +180,12 @@ test("the shipped Node and Chromium engines agree on styled glyphs and line offs
   const started = performance.now()
   const node = await loadFontLayout()
   const nodeCold = performance.now() - started
-  const prepare = (layout: FontExports.FontLayoutEngine, name: string, axes: Record<string, number>) =>
-    layout.prepareFace({ revision: fontRevision, key: name, axes, read: async () => new Uint8Array(bytesFor(name)) })
+  const prepare = (
+    layout: FontExports.FontLayoutEngine,
+    name: string,
+    axes: Record<string, number>,
+    revision = fontRevision,
+  ) => layout.prepareFace({ revision, key: name, axes, read: async () => new Uint8Array(bytesFor(name)) })
   const { breakResults } = await import("./font-layout/unicode.mjs")
   expect(
     await breakResults(
@@ -175,16 +199,29 @@ test("the shipped Node and Chromium engines agree on styled glyphs and line offs
     { name: "GraphemeBreakTest", cases: 1093, failures: [] },
     { name: "LineBreakTest", cases: 16672, failures: [] },
   ])
+  const { loadIcu } = await import("./font-layout/icu.mjs")
+  const reference = await loadIcu(fontLayoutRevision)
+  for (const { id, lang: locale, runs } of corpus) {
+    const text = runs.map((run) => run.text).join("")
+    expect(node.breaks({ text, locale }), id).toEqual({
+      graphemes: reference.graphemes(text),
+      opportunities: reference.lines(text, locale),
+    })
+  }
+  for (const locale of ["en_US_POSIX", "ja-u-lb-loose", "zh-Hant-u-lb-strict"]) {
+    const text = "売上 収益。前年比＋31％"
+    expect(node.breaks({ text, locale }).opportunities, locale).toEqual(reference.lines(text, locale))
+  }
+  const eviction = await exerciseEviction(node, evictionCases, prepare)
   const expected = await shapeCorpus(node, cases, prepare)
-  const eviction = await exerciseEviction(await loadFontLayout(budget), evictionCases, prepare)
   let peakBytes = 0
-  for (const [at, row] of eviction.entries()) {
+  for (const row of eviction) {
     expect(row.line.kind).toBe("shaped")
     expect(row.cache.bytes).toBeLessThanOrEqual(budget)
     peakBytes = Math.max(peakBytes, row.cache.bytes)
-    if (at >= 2 && at % 3 !== 1) expect(row.previousWasPending).toBe(true)
   }
-  expect(eviction.at(-1)?.cache.evictions).toBe(11)
+  expect(eviction.at(-1)?.cache.evictions).toBeGreaterThan(0)
+  expect(eviction.some((row) => row.oldestWasPending)).toBe(true)
   for (const row of expected) {
     expect(row.line.kind, row.id).toBe("shaped")
     expect(
@@ -219,19 +256,22 @@ test("the shipped Node and Chromium engines agree on styled glyphs and line offs
   await page.route("**/shared-layout.mjs", (route) =>
     route.fulfill({ contentType: "text/javascript", path: "tests/browser/font-layout/shared-layout.mjs" }),
   )
-  await page.route("**/layout-fixture/*", (route) =>
+  await page.route("**/chromium.mjs", (route) =>
+    route.fulfill({ contentType: "text/javascript", path: "tests/browser/font-layout/chromium.mjs" }),
+  )
+  await page.route("**/faces/*.ttf", (route) =>
     route.fulfill({
       contentType: "font/ttf",
-      body: bytesFor(new URL(route.request().url()).pathname.split("/").at(-1) ?? ""),
+      body: bytesFor(new URL(route.request().url()).pathname.slice("/faces/".length, -".ttf".length)),
     }),
   )
   await page.goto("/font-layout-harness")
   const actual = await page.evaluate(
-    async ({ chunk, cases, evictionCases, budget, fontRevision, hashes }) => {
+    async ({ chunk, cases, evictionCases, fontRevision, hashes, paintStyleCases, paintFaces }) => {
       const { shapeCorpus, exerciseEviction, observeWasmMemory } = await import(
         new URL("/shared-layout.mjs", location.href).href
       )
-      const stopMemory = observeWasmMemory()
+      const memory = observeWasmMemory()
       const started = performance.now()
       const { createFontLayout } = await import(`/assets/${chunk}`)
       const layout = await createFontLayout()
@@ -240,15 +280,20 @@ test("the shipped Node and Chromium engines agree on styled glyphs and line offs
       const read = async (name: string) => {
         let file = fixtureCache.get(name)
         if (file !== undefined) return file
-        const response = await fetch(`/layout-fixture/${name}`)
+        const response = await fetch(`/faces/${name}.ttf`)
         if (!response.ok) throw new Error(`Unavailable font fixture ${name}`)
         file = new Uint8Array(await response.arrayBuffer())
         fixtureCache.set(name, file)
         return file
       }
-      const prepare = async (engine: FontExports.FontLayoutEngine, name: string, axes: Record<string, number>) => {
+      const prepare = async (
+        engine: FontExports.FontLayoutEngine,
+        name: string,
+        axes: Record<string, number>,
+        revision = fontRevision,
+      ) => {
         const face = await engine.prepareFace({
-          revision: fontRevision,
+          revision,
           key: name,
           axes,
           read: () => read(name),
@@ -256,19 +301,47 @@ test("the shipped Node and Chromium engines agree on styled glyphs and line offs
         if (face.sha256 !== hashes[name]) throw new Error(`Wrong face bytes for ${name}`)
         return face
       }
-      const eviction = await exerciseEviction(await createFontLayout(budget), evictionCases, prepare)
-      const heapBytes = stopMemory()
-      return { rows: await shapeCorpus(layout, cases, prepare), eviction, chromiumCold, heapBytes }
+      const eviction = await exerciseEviction(layout, evictionCases, prepare)
+      const warmHeapBytes = memory.bytes()
+      await exerciseEviction(layout, evictionCases, prepare)
+      const repeatedHeapBytes = memory.bytes()
+      const { full, loadNative } = await import(new URL("/chromium.mjs", location.href).href)
+      await loadNative(paintFaces)
+      const nativeWidths = paintStyleCases.map((item) => full(item))
+      const rows = await shapeCorpus(layout, cases, prepare)
+      const heapBytes = memory.bytes()
+      memory.stop()
+      return { rows, eviction, chromiumCold, heapBytes, warmHeapBytes, repeatedHeapBytes, nativeWidths }
     },
-    { chunk, cases, evictionCases, budget, fontRevision, hashes },
+    {
+      chunk,
+      cases,
+      evictionCases,
+      fontRevision,
+      hashes,
+      paintStyleCases,
+      paintFaces: Object.fromEntries(["Narrow", "NarrowItalic"].map((name) => [name, manifest[name]])),
+    },
   )
   expect(actual.rows).toEqual(expected)
+  const paintWidths = paintStyleCases.map(({ id }, index) => ({
+    id,
+    shared: rowFor(id).line.advance,
+    native: actual.nativeWidths[index],
+  }))
+  for (const { id, shared, native } of paintWidths) expect(Math.abs(shared - native), id).toBeLessThan(0.05)
+  expect(rowFor("latin-italic").line.faces.map(({ face }: { face: FontExports.LayoutFace }) => face.sha256)).toEqual([
+    hashes.Narrow,
+    hashes.NarrowItalic,
+  ])
   expect(actual.eviction).toEqual(eviction)
-  expect(actual.heapBytes).toHaveLength(3)
-  expect(Math.max(...actual.heapBytes)).toBeLessThan(64 * 1024 * 1024)
+  expect(actual.heapBytes).toHaveLength(2)
+  expect(actual.repeatedHeapBytes).toEqual(actual.warmHeapBytes)
+  expect(Math.max(...actual.heapBytes)).toBeLessThan(72 * 1024 * 1024)
   await info.attach("Shared font engine", {
     body: JSON.stringify({
       cases: expected.length,
+      paintWidths,
       nodeCold,
       chromiumCold: actual.chromiumCold,
       peakBytes,

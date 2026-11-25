@@ -1,9 +1,8 @@
 import { type FontWidths, fontFace } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { fallbackFont, fontFamily, servedFontName } from "@airdesign/fonts"
+import { fallbackFont, fontFamily, pinnedOpticalSize, servedFontName } from "@airdesign/fonts"
 import { fontsFor, waitForPaintFonts } from "./font-load.js"
 
-export const pinnedOpticalSize = 32
 const em = pinnedOpticalSize
 
 type Measured = {

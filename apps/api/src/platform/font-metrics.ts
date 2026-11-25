@@ -4,6 +4,7 @@ import {
   createLayoutProbe,
   fallbackFont,
   pickServedFace,
+  pinnedOpticalSize,
   regularWeight,
   weightRange,
   type LayoutComparison,
@@ -11,7 +12,6 @@ import {
 import * as hb from "harfbuzzjs"
 import type { FontSource } from "./font-source.js"
 
-const paintedOpticalSize = 32
 const heldLimit = 200_000
 const facesHeld = 20
 const failedFor = 60_000
@@ -57,7 +57,7 @@ function shaperOf(bytes: Uint8Array, face: ServedFace, weight: number): Shaper {
   const axes = hbFace.getAxisInfos()
   font.setVariations([
     ...("wght" in axes ? [new hb.Variation("wght", Math.min(high, Math.max(low, weight)))] : []),
-    ...("opsz" in axes ? [new hb.Variation("opsz", paintedOpticalSize)] : []),
+    ...("opsz" in axes ? [new hb.Variation("opsz", pinnedOpticalSize)] : []),
   ])
   const extents = font.hExtents()
   return {

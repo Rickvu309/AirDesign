@@ -4,7 +4,7 @@ export const fontLayoutRevision = {
   bidiJsPackage: "1.1.0",
   icuReferencePackage: "0.4.0",
   icuWasmSha256: "4017a9d417b52f7b18a9e5b15813484324a2830377b03227c4e6b1396cdac190",
-  icuBreakerSha256: "33df68e271f37c0d86e0751c6e7117cd7f77a471f8ad91b64b3237b37b039eca",
+  icuBreakerSha256: "2cff0a59a1d6f81218392b47b2971c36d86468d0036c1c450fee4e6f168007ad",
   unicode: "16.0.0",
 } as const
 

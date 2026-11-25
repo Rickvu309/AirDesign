@@ -25,9 +25,20 @@ mkdir -p "$scratch/native" "$scratch/wasm/lib" "$scratch/data"
 export LD_LIBRARY_PATH="$scratch/native/lib:$scratch/native/stubdata"
 icupkg="$scratch/native/bin/icupkg"
 full="$scratch/native/data/out/icudt77l.dat"
-"$icupkg" -l "$full" | awk '!/^brkitr\// && !/^(nfkc\.nrm|uemoji\.icu|pool\.res|root\.res|res_index\.res)$/' > "$scratch/data/exclude.txt"
-"$icupkg" -r "$scratch/data/exclude.txt" "$full" "$scratch/data/icudt77l.dat"
 cd "$scratch/data"
+unused='cjdict[.]dict|(sent|title|word)[^.]*[.]brk'
+"$icupkg" -l "$full" | awk -v unused="$unused" '
+  !/^brkitr\// && !/^(nfkc\.nrm|uemoji\.icu|pool\.res|root\.res|res_index\.res)$/ ||
+    $0 ~ "^brkitr/(" unused ")$"
+' > exclude.txt
+mkdir -p brkitr
+for locale in root el en_US_POSIX; do
+  awk -v unused="$unused" '$0 !~ "\\{\"(" unused ")\"\\}" { sub(/boundaries\{/, "boundaries:table{"); print }' \
+    "$source/icu4c/source/data/brkitr/$locale.txt" > "$locale.txt"
+  "$scratch/native/bin/genrb" -q -d brkitr "$locale.txt"
+  printf 'brkitr/%s.res\n' "$locale"
+done > replace.txt
+"$icupkg" -s "$PWD" -a replace.txt -r exclude.txt "$full" icudt77l.dat
 python3 - <<'PY'
 from pathlib import Path
 

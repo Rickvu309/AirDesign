@@ -1,5 +1,5 @@
 import bidiFactory from "bidi-js"
-import * as hb from "harfbuzzjs"
+import * as hb from "harfbuzzjs/lazy"
 import { loadBreaker } from "./icu-breaks.js"
 import {
   type FontLayoutEngine,
@@ -28,6 +28,7 @@ const emoji = 2
 const emojiPresentation = 4
 const extendedPictographic = 8
 const bidi = bidiFactory()
+let engine: Promise<FontLayoutEngine> | undefined
 
 function firstAfter(offsets: readonly number[], at: number): number {
   let low = 0
@@ -41,13 +42,47 @@ function firstAfter(offsets: readonly number[], at: number): number {
 }
 
 function sameFace(a: LayoutFace, b: LayoutFace): boolean {
-  return a.revision === b.revision && a.sha256 === b.sha256 && a.faceIndex === b.faceIndex && a.axes === b.axes
+  if (a === b) return true
+  if (
+    a.revision !== b.revision ||
+    a.sha256 !== b.sha256 ||
+    a.faceIndex !== b.faceIndex ||
+    a.presentation !== b.presentation
+  )
+    return false
+  const axes = Object.entries(a.axes)
+  return axes.length === Object.keys(b.axes).length && axes.every(([tag, value]) => b.axes[tag] === value)
 }
 
-export async function createFontLayout(byteBudget: number = faceBudget): Promise<FontLayoutEngine> {
+function sameMetrics(a: Run, b: Run): boolean {
+  return a.size === b.size && a.tracking === b.tracking
+}
+
+function shapingRuns(runs: LayoutParagraph["runs"]): readonly Run[] {
+  const joined: Run[] = []
+  for (const run of runs) {
+    const previous = joined.at(-1)
+    if (
+      previous !== undefined &&
+      previous.range.end === run.range.start &&
+      sameMetrics(previous, run) &&
+      previous.faces.length === run.faces.length &&
+      previous.faces.every((face, index) => sameFace(face, run.faces[index]!))
+    ) {
+      joined[joined.length - 1] = { ...previous, range: { start: previous.range.start, end: run.range.end } }
+    } else joined.push(run)
+  }
+  return joined
+}
+
+export function createFontLayout(): Promise<FontLayoutEngine> {
+  return (engine ??= initializeLayout())
+}
+
+async function initializeLayout(): Promise<FontLayoutEngine> {
+  const [, breaker] = await Promise.all([hb.initialize(), loadBreaker()])
   if (hb.versionString() !== fontLayoutRevision.harfBuzz) throw new Error("HarfBuzz revision changed")
-  const breaker = await loadBreaker()
-  const faces = new LayoutFaces(byteBudget)
+  const faces = new LayoutFaces(faceBudget)
   const buffer = new hb.Buffer()
   const noLigatures = ["liga", "clig"].map((tag) => new hb.Feature(tag, 0, 0, 0xffffffff))
   const paragraphs = new WeakMap<
@@ -55,6 +90,7 @@ export async function createFontLayout(byteBudget: number = faceBudget): Promise
     {
       readonly graphemes: readonly number[]
       readonly levels: Uint8Array
+      readonly runs: readonly Run[]
     }
   >()
 
@@ -83,17 +119,18 @@ export async function createFontLayout(byteBudget: number = faceBudget): Promise
   }
 
   const shapeLine: FontLayoutEngine["shapeLine"] = ({ paragraph, range, lineEnding }) => {
-    const { text, locale, runs, sourceOffsetByTextOffset: source } = paragraph
+    const { text, locale, sourceOffsetByTextOffset: source } = paragraph
     const sourceRange = (start: number, end: number) => ({ start: source[start] ?? start, end: source[end] ?? end })
     let prepared = paragraphs.get(paragraph)
     if (prepared === undefined) {
       prepared = {
         graphemes: breaker.breaks(paragraph).graphemes,
         levels: bidi.getEmbeddingLevels(text, paragraph.direction === "auto" ? undefined : paragraph.direction).levels,
+        runs: shapingRuns(paragraph.runs),
       }
       paragraphs.set(paragraph, prepared)
     }
-    const { graphemes, levels } = prepared
+    const { graphemes, levels, runs } = prepared
     const items: Item[] = []
     const line = text.slice(range.start, range.end)
     let runAt = 0
@@ -169,7 +206,7 @@ export async function createFontLayout(byteBudget: number = faceBudget): Promise
         if (
           last !== undefined &&
           sameFace(last.face, selected.face) &&
-          last.run === run &&
+          sameMetrics(last.run, run) &&
           last.level === level &&
           (last.script === script || last.script === undefined)
         ) {

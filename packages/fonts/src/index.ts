@@ -6,6 +6,7 @@ export {
   boldWeight,
   holdsWeight,
   namedFace,
+  pinnedOpticalSize,
   readStyleName,
   regularWeight,
   styleName,
@@ -20,8 +21,8 @@ export const loadFontLayoutContract = (): Promise<typeof import("./layout-contra
 
 export type { FontLayoutEngine, LayoutFace } from "./layout-contract.js"
 
-export const loadFontLayout = async (byteBudget?: number): Promise<import("./layout-contract.js").FontLayoutEngine> =>
-  (await import("./layout.js")).createFontLayout(byteBudget)
+export const loadFontLayout = async (): Promise<import("./layout-contract.js").FontLayoutEngine> =>
+  (await import("./layout.js")).createFontLayout()
 
 export { pickServedFace, weightRange } from "./served-face.js"
 export { createLayoutProbe, type LayoutComparison } from "./layout-probe.js"

@@ -4,6 +4,35 @@ const item = (id, text, faces, lang = "en-US", extra = {}) => ({
   lang,
   runs: [{ text, faces: [...new Set([...faces, ...fallback])], size: 44, weight: 400, ...extra }],
 })
+const narrow = { faces: ["Narrow"], size: 44, weight: 400 }
+export const paintStyleCases = [
+  {
+    id: "latin-color-kerning",
+    lang: "en-US",
+    runs: [
+      { ...narrow, text: "A", color: "red" },
+      { ...narrow, text: "VATAR o", color: "blue" },
+      { ...narrow, text: "ffice" },
+    ],
+  },
+  {
+    id: "latin-link-kerning",
+    lang: "en-US",
+    runs: [
+      { ...narrow, text: "A" },
+      { ...narrow, text: "VATAR o", href: "#example" },
+      { ...narrow, text: "ffice" },
+    ],
+  },
+  {
+    id: "latin-italic",
+    lang: "en-US",
+    runs: [
+      { ...narrow, text: "AVATAR " },
+      { ...narrow, text: "office", faces: ["NarrowItalic"], italic: true },
+    ],
+  },
+]
 const emoji = {
   zwj: "👩‍💻👨‍👩‍👧",
   flag: "🇻🇳🇰🇷",

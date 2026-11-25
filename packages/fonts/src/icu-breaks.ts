@@ -12,7 +12,7 @@ export type Breaker = {
 async function instantiateIcu(imports: WebAssembly.Imports): Promise<WebAssembly.Instance> {
   const asset = new URL("../wasm/icu-breaks.wasm", import.meta.url)
   if (asset.protocol === "file:") {
-    const { readFile } = await import("node:fs/promises")
+    const { readFile } = process.getBuiltinModule("node:fs/promises")
     return (await WebAssembly.instantiate(await readFile(asset), imports)).instance
   }
   return (await WebAssembly.instantiateStreaming(fetch(asset), imports)).instance

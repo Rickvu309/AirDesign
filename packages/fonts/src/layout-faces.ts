@@ -1,4 +1,4 @@
-import * as hb from "harfbuzzjs"
+import * as hb from "harfbuzzjs/lazy"
 import type { FaceAsset, LayoutFace } from "./layout-contract.js"
 
 type Parsed = {
@@ -16,12 +16,14 @@ type File = {
 }
 
 const instanceLimit = 16
+const readLimit = 3
+type FaceBytes = { readonly bytes: Uint8Array<ArrayBuffer>; readonly hash: string }
 
 export class LayoutFaces {
   private readonly files = new Map<string, File>()
   private readonly hashes = new Map<string, string>()
-  private readonly pending = new Map<string, Promise<string>>()
-  private tail: Promise<unknown> = Promise.resolve()
+  private readonly pending = new Map<string, Promise<FaceBytes>>()
+  private readonly failures = new Map<string, number>()
   private bytes = 0
   private evictions = 0
   private readonly budget: number
@@ -43,13 +45,26 @@ export class LayoutFaces {
     return file
   }
 
-  private async load(asset: FaceAsset, key: string): Promise<string> {
-    const bytes = await asset.read()
-    if (bytes.byteLength === 0 || bytes.byteLength > this.budget) throw new Error("Served face exceeds its byte budget")
-    const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), (byte) =>
-      byte.toString(16).padStart(2, "0"),
-    ).join("")
-    const id = JSON.stringify([asset.revision, hash])
+  private async read(asset: FaceAsset, key: string): Promise<FaceBytes> {
+    const failures = this.failures.get(key) ?? 0
+    if (failures >= readLimit) throw new Error("Served face reached its read limit")
+    try {
+      const bytes = await Promise.resolve().then(() => asset.read())
+      if (bytes.byteLength === 0 || bytes.byteLength > this.budget)
+        throw new Error("Served face exceeds its byte budget")
+      const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), (byte) =>
+        byte.toString(16).padStart(2, "0"),
+      ).join("")
+      this.failures.delete(key)
+      return { bytes, hash }
+    } catch (error) {
+      this.failures.set(key, failures + 1)
+      throw error
+    }
+  }
+
+  private store(revision: string, key: string, { bytes, hash }: FaceBytes): string {
+    const id = JSON.stringify([revision, hash])
     let file = this.hold(id)
     if (file === undefined) {
       for (const [oldId, old] of this.files) {
@@ -92,14 +107,14 @@ export class LayoutFaces {
     if (hash === undefined) {
       let pending = this.pending.get(key)
       if (pending === undefined) {
-        pending = this.tail.then(() => this.hashes.get(key) ?? this.load(asset, key))
+        pending = this.read(asset, key)
         this.pending.set(key, pending)
-        this.tail = pending.then(
-          () => this.pending.delete(key),
-          () => this.pending.delete(key),
-        )
       }
-      hash = await pending
+      try {
+        hash = this.store(asset.revision, key, await pending)
+      } finally {
+        if (this.pending.get(key) === pending) this.pending.delete(key)
+      }
     }
     const faceIndex = asset.faceIndex ?? 0
     const parsed = this.parsed(asset.revision, hash, faceIndex)
