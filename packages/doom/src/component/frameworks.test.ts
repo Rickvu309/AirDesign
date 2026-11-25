@@ -56,19 +56,19 @@ describe("consulting frameworks", () => {
     expect(key.x + key.w).toBeLessThan(horizontalTitle.box.x)
     expect(horizontalTitle.text?.spans[0]?.size).toBe(verticalTitle.text?.spans[0]?.size)
     expect(role(tree, "axis")).toHaveLength(2)
-    expect(role(tree, "action")).toHaveLength(4)
-    expect(keyed(tree, "label", "a").props.box.x).toBeLessThan(keyed(tree, "label", "b").props.box.x)
+    expect(role(tree, "quadrant")).toHaveLength(4)
+    expect(keyed(tree, "item", "a").props.box.x).toBeLessThan(keyed(tree, "item", "b").props.box.x)
     const small = keyed(tree, "dot", "a").props.box
     const large = keyed(tree, "dot", "b").props.box
     expect(large.w).toBeGreaterThanOrEqual(32)
     expect(large.w).toBeGreaterThan(2.5 * small.w)
     expect(Math.abs(small.w - large.w * Math.sqrt(100 / 900))).toBeLessThanOrEqual(0.5)
-    expect(large.x + large.w).toBeLessThan(keyed(tree, "label", "b").props.box.x)
-    expect(keyed(tree, "action", "upper-right").props.text?.spans[0]?.color).toEqual({ var: "accent1" })
+    expect(large.x + large.w).toBeLessThan(keyed(tree, "item", "b").props.box.x)
+    expect(keyed(tree, "quadrant", "upper-right").props.text?.spans[0]?.color).toEqual({ var: "accent1" })
     expect(tree.findings).toEqual([])
   })
 
-  it("moves a quadrant with its action, dots and labels, and an item's dot with its label", () => {
+  it("moves a quadrant with its label and items, and an item's dot with its label", () => {
     const matrix = spec("matrix")
     if (matrix.sample === undefined) throw new Error("Missing matrix sample")
     const tree = expand(matrix, { frame, data: matrix.sample.data })
@@ -77,12 +77,12 @@ describe("consulting frameworks", () => {
     const [item] = matrix.sample.data.items as readonly { readonly id: string; readonly quadrant: string }[]
     const members = [
       keyed(tree, "tile", item!.quadrant).id,
-      keyed(tree, "action", item!.quadrant).id,
-      ...["dot", "label"].map((role) => keyed(tree, role, item!.id).id),
+      keyed(tree, "quadrant", item!.quadrant).id,
+      ...["dot", "item"].map((role) => keyed(tree, role, item!.id).id),
     ]
     const quadrant = painted(dragHolder(doom, tree.id, members[0]!, { x: 30, y: -20 }), slide)
     expect(shifts(before, quadrant, members)).toEqual(Array(4).fill({ x: 30, y: -20 }))
-    const holder = tree.groups.find(({ key }) => key.join("/") === `item/${item!.id}`)!
+    const holder = tree.groups.find(({ key }) => key.join("/") === `item-group/${item!.id}`)!
     const moved = dragHolder(doom, holder.group!, members[2]!, { x: 5, y: 7 })
     expect(shifts(before, painted(moved, slide), members)).toEqual([
       { x: 0, y: 0 },

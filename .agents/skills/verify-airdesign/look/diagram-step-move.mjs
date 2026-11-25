@@ -20,9 +20,9 @@ export async function center(page, id) {
 export async function moveColumnStep(kit, { opened, tree, saved, out }) {
   const { page, capture, note } = kit
   const part = (...key) => tree.children.find((child) => child.key.join("/") === key.join("/"))
-  const card = part("card", "s1")
+  const card = part("step", "s1")
   const duration = part("duration", "s1")
-  const step = tree.groups.find(({ key }) => key.join("/") === "step/s1")
+  const step = tree.groups.find(({ key }) => key.join("/") === "step-group/s1")
   expect([card.group, duration.group]).toEqual([step.id, step.id])
   const connectors = tree.children.filter(({ key }) => key[0] === "connector")
   const before = connectors.map((line) => lineEnds(saved, line))

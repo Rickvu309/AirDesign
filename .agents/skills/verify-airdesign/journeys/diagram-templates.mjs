@@ -256,10 +256,10 @@ export default async function drive(kit) {
       }))
       const { tree, measure } = await expand("process", { ...fixture, data: { steps } }, theme)
       expect(tree.findings.filter(({ kind }) => kind === "text-fit")).toMatchObject([
-        { kind: "text-fit", key: ["card", "s4"] },
+        { kind: "text-fit", key: ["step", "s4"] },
       ])
       const { doom: fold, slide } = landTree(tree, theme)
-      const part = tree.children.find(({ key }) => key.join("/") === "card/s4")
+      const part = tree.children.find(({ key }) => key.join("/") === "step/s4")
       const { lines } = doom.resolveSlide(fold, slide, measure)[0].children.find(({ id }) => id === part.id).text
       expect(
         lines
@@ -372,7 +372,7 @@ export default async function drive(kit) {
     }
 
     if (diagram.name === "process" && diagram.variant === undefined) {
-      const steps = tree.children.filter(({ key }) => key[0] === "card")
+      const steps = tree.children.filter(({ key }) => key[0] === "step")
       const connectors = tree.children.filter(({ key }) => key[0] === "connector")
       const before = connectors.map((line) => lineEnds(saved, line))
       const from = await center(page, steps[1].id)
