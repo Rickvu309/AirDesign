@@ -1,6 +1,6 @@
 # CI uses an editor speed budget calibrated on hosted runners
 
-The spec uses the hosted timing limits when `CI=true` or `CI=1`. The ranges below come from the #1646 verifier's clean GitHub-hosted `browser-timings` readings on November 24, 2026. The verifier kept 17 readings across main and PR branches (15 for thumbnails) after excluding the three planted typing slowdowns in [run 45488434046](https://github.com/Rickvu309/AirDesign/actions/runs/45488434046).
+`tests/browser/editor-speed.spec.ts` enforces the hosted limits defined in `tests/browser/editor-speed-budget.ts` when `CI=true` or `CI=1`. The ranges below come from the #1646 verifier's clean GitHub-hosted `browser-timings` readings on November 24, 2026. The verifier kept 17 readings across main and PR branches (15 for thumbnails) after excluding the three planted typing slowdowns in [run 45488434046](https://github.com/Rickvu309/AirDesign/actions/runs/45488434046).
 
 | Reading (ms)            | Clean CI range | CI limit | Local limit |
 | ----------------------- | -------------: | -------: | ----------: |
