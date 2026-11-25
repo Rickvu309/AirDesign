@@ -2,3 +2,4 @@ layer: model
 public:
   - src/index.ts
   - src/icon-names.ts
+  - src/undo-copy.ts
