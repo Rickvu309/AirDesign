@@ -236,12 +236,7 @@ function Editing({
           </span>
         </PanelHead>
         <div className={cn("flex min-h-0 flex-1 flex-col", panel === "agent" ? null : "hidden")}>
-          <AgentPanel
-            deck={client}
-            view={view}
-            editing={editingRuns}
-            {...(start.aira === undefined ? {} : { start: start.aira })}
-          />
+          <AgentPanel deck={client} view={view} {...(start.aira === undefined ? {} : { start: start.aira })} />
         </div>
         {panel === "design" && slide !== undefined ? (
           <DesignPanel

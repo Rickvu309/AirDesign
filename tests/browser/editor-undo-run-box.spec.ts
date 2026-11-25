@@ -1,7 +1,6 @@
 import { expect } from "@playwright/test"
-import * as doom from "../../packages/doom/src/index.ts"
 import { test } from "./api-stack"
-import { accent, clickSlide, landNodes, openEditor, otherTab, savedNode, selectedIds, spot } from "./editor-deck"
+import { clickSlide, landNodes, openEditor, otherTab, savedNode, selectedIds, spot } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -51,50 +50,4 @@ test("Ctrl+Z of the tab that grouped a layer, after the other tab nudged it, put
   expect(seen).toMatchObject({ x: holder.x + grouped.x + 1, y: holder.y + grouped.y })
 
   await other.close()
-})
-
-test("Undo on an agent run that moved a layer out of its frame, after the person nudged it, puts it back in the frame where the person sees it", async ({
-  page,
-  context,
-  stack,
-}) => {
-  const opened = await openEditor(page, context, stack)
-  await landNodes(stack, opened, [
-    { id: "t:81", type: "frame", parent: opened.slide, props: { box: spot(100, 200, 500, 500), fills: accent } },
-    {
-      id: "t:83",
-      type: "shape",
-      parent: "t:81",
-      props: { box: spot(100, 100, 200, 100), geometry: { kind: "rect" }, fills: blue, name: "Card" },
-    },
-  ])
-  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
-  const author = { kind: "agent", id: "helper", run: "run-out" }
-  const onTop = doom.orderKeyBetween(doom.orderKeyBetween(doom.orderKeyBetween(null, null), null), null)
-  for (const edit of [
-    {
-      once: "out-1",
-      author,
-      phase: "start",
-      writes: [
-        { node: "t:83", prop: "parent", value: { id: opened.slide, at: onTop } },
-        { node: "t:83", prop: "box", value: spot(200, 300, 200, 100) },
-      ],
-    },
-    { once: "out-2", author, phase: "stop", writes: [] },
-  ])
-    expect((await stack.post(doomRoutes.edit.path, { deck: opened.deck, edit }, opened.cookie)).json.ok).toBe(true)
-  const cardIn = async () => (await savedNode(stack, opened, "t:83")) as { parent: { id: string }; box: Box }
-  await expect.poll(async () => (await cardIn()).parent.id).toBe(opened.slide)
-  await expect(page.locator('[data-slide-box] [data-node="t:81"] [data-node="t:83"]')).toHaveCount(0)
-  await expect(page.locator('[data-slide-box] [data-node="t:83"]')).toHaveCount(1)
-
-  await clickSlide(page, 300, 350)
-  await expect.poll(() => selectedIds(page)).toEqual(["t:83"])
-  await page.keyboard.press("ArrowRight")
-  await expect.poll(async () => (await cardIn()).box.x).toBe(201)
-
-  await page.locator('[data-agent-run="run-out"] [data-agent-run-undo]').click()
-  await expect.poll(async () => (await cardIn()).parent.id).toBe("t:81")
-  expect((await cardIn()).box).toMatchObject({ x: 101, y: 100, w: 200, h: 100 })
 })

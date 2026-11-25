@@ -1,7 +1,5 @@
 import { expect, type BrowserContext, type Page } from "@playwright/test"
-import { airaKeptLayerName } from "../../apps/web/src/copy/aira-copy.ts"
 import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
-import * as doom from "../../packages/doom/src/index.ts"
 import { forward, test, type Stack } from "./api-stack"
 import {
   accent,
@@ -249,58 +247,6 @@ test("a reorder made offline of a layer another tab deleted, from the frame they
   await expect.poll(() => parentId("t:92")).toBe("t:91")
   await expect(shownCard(other)).toHaveCount(1)
   await expect(shownCard(page)).toHaveCount(1)
-  await other.close()
-})
-
-test("Undo on an agent run puts back the colour of a layer it leaves in the frame the run moved it to, and says why it stays", async ({
-  page,
-  context,
-  stack,
-}) => {
-  const opened = await openEditor(page, context, stack)
-  await landNodes(stack, opened, [
-    { id: "t:81", type: "frame", parent: opened.slide, props: { box: spot(100, 200, 500, 500), fills: accent } },
-    { id: "t:82", type: "frame", parent: opened.slide, props: { box: spot(800, 200, 500, 500), fills: accent } },
-    {
-      id: "t:83",
-      type: "shape",
-      parent: "t:81",
-      props: { box: spot(100, 100, 200, 100), geometry: { kind: "rect" }, fills: blue, name: "Card" },
-    },
-  ])
-  const { doomRoutes, undoStaysNote } = await import("../../packages/catalog/src/index.ts")
-  const opening = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
-  const base = doom.readFold(opening.json.fold)?.revs.get(doom.nodeId("t:83"))?.get("fills")
-  const author = { kind: "agent", id: "helper", run: "run-card" }
-  const red = [{ kind: "solid", color: { var: "accent2" } }]
-  for (const edit of [
-    {
-      once: "card-1",
-      author,
-      phase: "start",
-      writes: [
-        { node: "t:83", prop: "parent", value: { id: "t:82", at: "a0" } },
-        { node: "t:83", prop: "fills", value: red, base },
-      ],
-    },
-    { once: "card-2", author, phase: "stop", writes: [] },
-  ])
-    expect((await stack.post(doomRoutes.edit.path, { deck: opened.deck, edit }, opened.cookie)).json.ok).toBe(true)
-  await expect.poll(async () => (await savedNode(stack, opened, "t:83"))?.fills).toEqual(red)
-
-  const other = await otherTab(context, stack, opened.deck)
-  await clickSlide(other, 130, 230)
-  await expect.poll(() => selectedIds(other)).toEqual(["t:81"])
-  await other.keyboard.press("Delete")
-  await expect.poll(async () => (await savedNode(stack, opened, "t:81"))?.parent).toBeNull()
-
-  const row = page.locator('[data-agent-run="run-card"]')
-  await row.locator("[data-agent-run-undo]").click()
-  await expect.poll(async () => (await savedNode(stack, opened, "t:83"))?.fills).toEqual(blue)
-  expect(((await savedNode(stack, opened, "t:83"))?.parent as { id: string }).id).toBe("t:82")
-  await expect(row.locator("[data-agent-run-note]")).toHaveText(
-    undoStaysNote(author.id, { kept: [], left: [airaKeptLayerName("Card")], waiting: [] }),
-  )
   await other.close()
 })
 

@@ -9,7 +9,7 @@ A line's two ends are each a point on the slide or a site on another layer: its 
 - `connector-copy` Ctrl/Cmd+D on a frame holding two shapes and a connector between them copies the connector joined to the copied shapes.
 - `connector-panel` the Design panel for a line shows Align, Border and Shadow (`panel-connector`).
 - `agent-line` an agent's `airdesign_edit_deck` change `{ op: "add", kind: "line", slide, box, arrow, stroke, strokeWidth }` adds a line across its box, with an arrowhead at its end when `arrow` is true.
-- `agent-diagram` `{ op: "add", kind: "flow", slide, items: [{ title, note }, ...] }` with 2 to 6 items adds the steps in an auto layout row and joins each to the next with a straight arrow (`flow` in `packages/doom/src/agent-patterns.ts`). The Agent panel's Undo takes the run back.
+- `agent-diagram` `{ op: "add", kind: "flow", slide, items: [{ title, note }, ...] }` with 2 to 6 items adds the steps in an auto layout row and joins each to the next with a straight arrow (`flow` in `packages/doom/src/agent-patterns.ts`). Undo under Aira's reply takes Aira's run back, and `airdesign_undo_run` takes back any agent's.
 
 ## How to get to it (user POV)
 

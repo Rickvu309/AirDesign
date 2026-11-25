@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger } from "@/components/ui/popover"
 import { Conversation, ConversationContent, ConversationScrollButton } from "@/components/ai-elements/conversation"
@@ -41,7 +41,6 @@ export function AiraPanel({
   mint = () => crypto.randomUUID(),
   store = deviceChats,
   start = {},
-  runs = null,
   undoneRun = () => undefined,
 }: {
   deck: string
@@ -54,7 +53,6 @@ export function AiraPanel({
   mint?: () => string
   store?: ChatStore
   start?: AiraStart
-  runs?: ReactNode
   undoneRun?: (run: string) => boolean | undefined
 }) {
   const [chat, setChat] = useState(() => start.chat ?? airaChat(deck))
@@ -210,7 +208,9 @@ export function AiraPanel({
 
   async function undo(exchange: number, focus = true) {
     setUndoing(true)
-    const next = await undoExchange(latest.current, exchange, undoRun)
+    const now = latest.current
+    const settled = { ...now, exchanges: now.exchanges.map((each) => settledByRuns(each, undoneRun)) }
+    const next = await undoExchange(settled, exchange, undoRun)
     setUndoing(false)
     if (next === undefined) return false
     returnToComposer.current = focus && document.activeElement === document.body
@@ -290,7 +290,6 @@ export function AiraPanel({
           </Button>
         </span>
       </div>
-      {runs}
       {empty ? (
         <AiraWelcome notOffered={notOffered} />
       ) : (
