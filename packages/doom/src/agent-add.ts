@@ -15,7 +15,7 @@ import {
 import { addGrid, addPattern } from "./agent-patterns.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { placeholderSubtitle } from "./slide-placeholders.js"
-import { type Area, areaFor, cardRadiusFor, gapFor, patternArea, sizeOf, slideSize, themeOf } from "./agent-place.js"
+import { type Area, areaFor, cardRadiusFor, freeArea, gapFor, patternArea, slideSize, themeOf } from "./agent-place.js"
 import { lineEnds } from "./agent-line-ends.js"
 import { pictureFit } from "./picture-fit.js"
 import type { StrokeStyle } from "./paint.js"
@@ -302,10 +302,11 @@ function addComponent(draft: Draft, parent: Node, change: Add): void {
   if (definition === undefined) stop("shape", undefined, "component", "form", "A template id from read_deck.")
   const { sample } = definition.spec
   const data = change.data ?? sample?.data ?? stop("shape", undefined, "data", "missing", "Rows by collection.")
-  const available = sizeOf(draft, parent)
-  const size =
-    sample === undefined ? available : { w: Math.min(sample.w, available.w), h: Math.min(sample.h, available.h) }
-  const box = change.box ?? centred({ x: 0, y: 0, ...available }, size)
+  const available = change.box ?? freeArea(draft, parent) ?? stop("limit", parent.id, "box")
+  const box =
+    change.box === undefined && sample !== undefined
+      ? centred(available, { w: Math.min(sample.w, available.w), h: Math.min(sample.h, available.h) })
+      : available
   const placed = placeComponent(draft.doom, definition, {
     frame: draft.mint(),
     parent: { id: parent.id, at: nextKey(draft, parent.id) },
