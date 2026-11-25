@@ -240,6 +240,10 @@ describe("linked components in agent edits", () => {
     const result = attempt(placed.after, [{ op: "set", target, ...fields }], "override")
     expect(isRefusal(result)).toBe(!allowed)
     if (!isRefusal(result)) expect(result.after.nodes.get(target)).not.toEqual(placed.after.nodes.get(target))
+    else
+      expect(result).toMatchObject({
+        form: `This layer belongs to linked template ${root}. Set tokens on ${root}, or detach ${root} to edit its layers.`,
+      })
   })
 
   it("flags off-scale agent tokens and refuses raw size even after regeneration in a batch", () => {
