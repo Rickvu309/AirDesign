@@ -173,7 +173,7 @@ export default async function drive(kit) {
     const themeId = diagram.theme ?? "technical"
     const theme = doom.themeLibrary[themeId].theme
     const artifact = diagram.theme === undefined ? diagram.name : `${diagram.name}-${themeId}`
-    const sample = component[`${diagram.name}Component`].sample
+    const sample = doom.componentLibrary.get(diagram.name).spec.sample
     let fixture =
       diagram.theme === undefined
         ? JSON.parse(await readFile(join(repo, `packages/doom/src/component/testing/${diagram.name}.json`), "utf8"))
