@@ -1,5 +1,6 @@
 import type { Measure, Measured } from "../measure.js"
 import { type Text, textLimits } from "../text.js"
+import { paragraphCuts } from "../text-ellipsis.js"
 import type { Theme } from "../theme.js"
 import { finite, naming, reject } from "../read-kit.js"
 import type { GroupedText, Kept, PreparedPart, TextPart } from "./nodes.js"
@@ -70,9 +71,9 @@ function prepareFit(part: TextPart, size: number, context: FittingContext, wrap:
             size: span.size === undefined ? size : Math.max(1, (span.size * size) / base),
           })),
         }
-  const filled = text.overflow === "ellipsis"
-  const single = measurePart(part, resized, context, wrap && !filled ? "two-lines" : undefined)
-  if (filled && wrap && !fits(part, single, Infinity)) {
+  const keepsOverflow = text.overflow === "ellipsis"
+  const single = measurePart(part, resized, context, wrap && !keepsOverflow ? "two-lines" : undefined)
+  if (keepsOverflow && wrap && !fits(part, single, Infinity)) {
     const wrapped = measurePart(part, resized, context, undefined, box.w)
     const ink = Math.max(0, ...wrapped.lines.map((line) => line.ink))
     const inset = (text.padding?.l ?? 0) + (text.padding?.r ?? 0)
@@ -88,6 +89,7 @@ function withWidth(fit: Fit, part: TextPart): TextPart | undefined {
   if (
     fit.wrapped !== undefined &&
     fits(part, fit.wrapped, Infinity) &&
+    paragraphCuts(fit.text, fit.wrapped.lines).size === 0 &&
     fit.wrapped.lines.every((line) => line.ink <= line.w + tolerance)
   )
     return withText(part, fit.text)
@@ -106,7 +108,7 @@ function finding(part: TextPart, size: number, neededWidth: number, availableWid
 }
 
 function missed(part: TextPart, text: Text, found: TextFitFinding): Kept | TextFitFinding {
-  return part.props.fills === undefined ? found : { kind: "kept", part: withText(part, text), finding: found }
+  return text.overflow === "ellipsis" ? { kind: "kept", part: withText(part, text), finding: found } : found
 }
 
 export function fitOne(

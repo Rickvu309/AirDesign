@@ -44,14 +44,50 @@ function ellipsize(line: ResolvedLine, text: Text, theme: Theme, measure: Measur
   return { ...line, align: line.align === "justify" ? "left" : line.align, ink: best?.ink ?? 0, runs: best?.runs ?? [] }
 }
 
+export function paragraphCuts(text: Text, lines: readonly ResolvedLine[]): ReadonlySet<number> {
+  const cuts = new Set<number>()
+  if (!text.paras.some((para) => para.maxLines !== undefined)) return cuts
+  let index = 0
+  let end = text.chars.indexOf("\n")
+  let lineInParagraph = 0
+  for (const [i, line] of lines.entries()) {
+    while (end !== -1 && line.start > end) {
+      index += 1
+      end = text.chars.indexOf("\n", end + 1)
+      lineInParagraph = 0
+    }
+    lineInParagraph += 1
+    const limit = text.paras[index]?.maxLines ?? Infinity
+    if (lineInParagraph > limit) cuts.add(i)
+  }
+  return cuts
+}
+
 export function ellipsized(measured: Measured, text: Text, theme: Theme, height: number, measure: Measure): Measured {
   const bottom = text.padding?.b ?? 0
-  const stop = measured.lines.findIndex((line) => line.y + line.h + bottom > height)
-  const visible = stop === -1 ? measured.lines : measured.lines.slice(0, stop)
-  if (stop === -1 && visible.every((line) => line.ink <= line.w)) return measured
-  const lines = visible.map((line, index) =>
-    line.ink > line.w || (stop !== -1 && index === visible.length - 1) ? ellipsize(line, text, theme, measure) : line,
-  )
+  const cuts = paragraphCuts(text, measured.lines)
+  let lifted = 0
+  let shortened = false
+  const lines: ResolvedLine[] = []
+  for (const [i, line] of measured.lines.entries()) {
+    if (cuts.has(i)) {
+      lifted += line.h
+      continue
+    }
+    const y = line.y - lifted
+    if (y + line.h + bottom > height) {
+      const last = lines.pop()
+      if (last !== undefined) lines.push(ellipsize(last, text, theme, measure))
+      shortened = true
+      break
+    }
+    const placed = lifted === 0 ? line : { ...line, y }
+    if (line.ink > line.w || cuts.has(i + 1)) {
+      lines.push(ellipsize(placed, text, theme, measure))
+      shortened = true
+    } else lines.push(placed)
+  }
+  if (!shortened) return measured
   const last = lines.at(-1)
   return { ...measured, lines, h: last === undefined ? 0 : last.y + last.h + bottom }
 }

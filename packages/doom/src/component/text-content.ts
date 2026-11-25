@@ -1,11 +1,18 @@
 import type { Color } from "../paint.js"
-import { boolean, finite, list, literal, object } from "../read-kit.js"
+import { boolean, finite, integer, list, literal, object } from "../read-kit.js"
 import type { Para, Span } from "../text.js"
 import { color, isList, string, type Charge, type Value } from "./values.js"
 
 const paragraph = object(
   { chars: string },
-  { color, scale: finite(0.1, 1), bold: boolean, wrap: literal(["none"]), spaceBefore: finite(0, 1_000) },
+  {
+    color,
+    scale: finite(0.1, 1),
+    bold: boolean,
+    wrap: literal(["none"]),
+    maxLines: integer(1, 16),
+    spaceBefore: finite(0, 1_000),
+  },
 )
 
 export function textContent(
@@ -30,7 +37,8 @@ export function textContent(
   const paras: Para[] = []
   let chars = ""
   for (const { chars: words, color, scale, bold, ...para } of list(paragraph, 16, 1)(value)) {
-    const lines = para.wrap === "none" ? [words.replaceAll("\n", " ")] : words.split("\n")
+    const lines =
+      para.wrap === "none" || para.maxLines !== undefined ? [words.replaceAll("\n", " ")] : words.split("\n")
     charge(words.length + 16 * lines.length)
     if (paras.length > 0) chars += "\n"
     chars += lines.join("\n")

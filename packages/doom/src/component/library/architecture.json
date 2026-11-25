@@ -39,11 +39,12 @@
     "layerLabel": "label",
     "layerSmall": 16,
     "radius": 8,
-    "lineWidth": 3
+    "lineWidth": 2
   },
   "let": [
-    ["layerGap", 16],
+    ["layerGap", 48],
     ["inset", 24],
+    ["gutter", 36],
     ["labelW", ["min", 240, ["mul", ["get", "frame.w"], 0.2]]],
     ["cardGap", 32],
     ["layerCount", ["count", ["get", "data.layers"]]],
@@ -61,7 +62,7 @@
       ]
     ],
     ["contentX", ["get", "labelW"]],
-    ["contentW", ["max", 0, ["sub", ["sub", ["get", "frame.w"], ["get", "labelW"]], ["get", "inset"]]]],
+    ["contentW", ["max", 0, ["sub", ["sub", ["get", "frame.w"], ["get", "labelW"]], ["get", "gutter"]]]],
     [
       "cardW",
       [
@@ -195,6 +196,7 @@
             "align": "center",
             "alignV": "center",
             "fill": ["get", "token.card"],
+            "overflow": "ellipsis",
             "stroke": {
               "color": ["get", "token.edge"],
               "width": 2
@@ -217,6 +219,7 @@
       "let": [
         ["a", ["at", ["filter", ["get", "placed"], "p", ["eq", ["get", "p.id"], ["get", "k.from"]]], 0]],
         ["b", ["at", ["filter", ["get", "placed"], "p", ["eq", ["get", "p.id"], ["get", "k.to"]]], 0]],
+        ["lane", ["div", ["add", ["get", "i"], 1], ["add", ["count", ["get", "data.links"]], 1]]],
         ["down", ["lt", ["get", "a.layer"], ["get", "b.layer"]]],
         ["up", ["lt", ["get", "b.layer"], ["get", "a.layer"]]],
         ["right", ["lt", ["get", "a.slot"], ["get", "b.slot"]]],
@@ -247,7 +250,7 @@
           [
             "sub",
             ["mul", ["add", ["get", "a.layer"], ["if", ["get", "down"], 1, 0]], ["get", "bandStep"]],
-            ["div", ["get", "layerGap"], 2]
+            ["mul", ["get", "layerGap"], ["get", "lane"]]
           ]
         ],
         [
@@ -255,7 +258,7 @@
           [
             "sub",
             ["mul", ["add", ["get", "b.layer"], ["if", ["get", "up"], 1, 0]], ["get", "bandStep"]],
-            ["div", ["get", "layerGap"], 2]
+            ["mul", ["get", "layerGap"], ["get", "lane"]]
           ]
         ],
         [
@@ -263,7 +266,7 @@
           [
             "add",
             ["mul", ["get", "a.layer"], ["get", "bandStep"]],
-            ["div", ["sub", ["get", "bandH"], ["get", "cardH"]], 4]
+            ["mul", ["get", "lane"], ["div", ["sub", ["get", "bandH"], ["get", "cardH"]], 2]]
           ]
         ]
       ],
@@ -271,24 +274,32 @@
         "kind": "line",
         "key": ["list", "link", ["get", "k.id"]],
         "start": [
-          "site",
-          ["list", "component", ["get", "k.from"]],
+          "if",
+          ["get", "same"],
           [
-            "if",
-            ["get", "lateral"],
-            "t",
-            ["if", ["get", "down"], "b", ["if", ["get", "up"], "t", ["if", ["get", "right"], "r", "l"]]]
-          ]
+            "site",
+            ["list", "component", ["get", "k.from"]],
+            ["if", ["get", "lateral"], "t", ["if", ["get", "right"], "r", "l"]]
+          ],
+          {
+            "key": ["list", "component", ["get", "k.from"]],
+            "site": ["if", ["get", "down"], "b", "t"],
+            "along": ["if", ["get", "down"], 0.65, 0.35]
+          }
         ],
         "end": [
-          "site",
-          ["list", "component", ["get", "k.to"]],
+          "if",
+          ["get", "same"],
           [
-            "if",
-            ["get", "lateral"],
-            "t",
-            ["if", ["get", "down"], "t", ["if", ["get", "up"], "b", ["if", ["get", "right"], "l", "r"]]]
-          ]
+            "site",
+            ["list", "component", ["get", "k.to"]],
+            ["if", ["get", "lateral"], "t", ["if", ["get", "right"], "l", "r"]]
+          ],
+          {
+            "key": ["list", "component", ["get", "k.to"]],
+            "site": ["if", ["get", "down"], "t", "b"],
+            "along": ["if", ["get", "down"], 0.35, 0.65]
+          }
         ],
         "color": ["get", "token.connector"],
         "width": ["get", "token.lineWidth"],
@@ -320,7 +331,7 @@
               },
               {
                 "axis": "x",
-                "at": ["sub", ["get", "frame.w"], ["div", ["get", "inset"], 2]]
+                "at": ["sub", ["get", "frame.w"], ["mul", ["get", "gutter"], ["get", "lane"]]]
               },
               {
                 "axis": "y",

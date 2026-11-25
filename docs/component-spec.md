@@ -45,3 +45,17 @@ Theme colors `positive`, `negative`, and `total` are available as ordinary theme
 ## Paint check
 
 Run the `component-column` journey with `verify-airdesign` to check saved parts, canvas, filmstrip, and PDF. Set `AIRDESIGN_COLUMN_POPPLER=1` with Poppler installed to extract the PDF text and rasterize the page for comparison.
+
+## Text overflow
+
+Set `overflow: "ellipsis"` on a text emit to paint an ellipsis when its text exceeds the available width or height. The saved shape keeps all its text. A fit rule still reports a `text-fit` finding when the label cannot fit at its configured size. If the emit omits `overflow`, a failed fit rule omits the text part. Fill controls the shape’s appearance.
+
+Structured copy accepts a list of paragraph records. A paragraph can set `maxLines` from 1 to 16 on an ellipsis text part. When the paragraph exceeds that limit, its last visible line ends in an ellipsis and later paragraphs keep their place in the flow. Use `wrap: "none"` for a paragraph that must stay on one line.
+
+## Connector attachments
+
+A connector endpoint can use `["site", partKey, side]` to attach to the default site. An endpoint record with `key`, `site`, and an optional `along` fraction can attach anywhere along a rectangular edge. Fractions run from left to right on top and bottom edges and from top to bottom on left and right edges. Channel coordinates are relative to the component frame.
+
+## Advice
+
+The optional top-level `advice` list contains records with a `code`, a `when` expression, and a `note` that gives the reader a fix. A matching record adds a finding to the root and expansion proceeds.

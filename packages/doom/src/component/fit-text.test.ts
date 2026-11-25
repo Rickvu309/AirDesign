@@ -94,6 +94,20 @@ function land(tree: ComponentTree) {
 }
 
 describe("component text fitting", () => {
+  it("keeps overflowing text only when the emit asks for an ellipsis", () => {
+    const filled = expand(read(specOf([{ emit: { ...measuredText, fill: { var: "background" } } }])), {
+      ...inputs,
+      data: {},
+    })
+    const bare = expand(read(specOf([{ emit: { ...measuredText, overflow: "ellipsis" } }])), {
+      ...inputs,
+      data: {},
+    })
+    expect(filled.children).toEqual([])
+    expect(bare.children[0]?.props.text?.overflow).toBe("ellipsis")
+    expect(bare.findings).toEqual(filled.findings)
+  })
+
   it("shrinks categories to one size before wrapping and reports labels that cannot fit", () => {
     const frame = { ...column.frame, w: 186 }
     const rows = [

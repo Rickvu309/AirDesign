@@ -1,6 +1,6 @@
 import { readColor } from "../color.js"
 import type { Refusal } from "../refusal.js"
-import { boolean, finite, integer, literal, naming, object, reject, variant } from "../read-kit.js"
+import { boolean, finite, integer, list, literal, naming, object, reject, variant } from "../read-kit.js"
 import { readCollections, readData } from "./collections.js"
 import { type Bindings, type Expr, binding, readExpr } from "./expression.js"
 import { defaultNumberTokens, readLocale } from "./operators.js"
@@ -87,7 +87,7 @@ function emission(read: (raw: unknown) => Expr) {
   const surface = { stroke, radius: read }
   const readTextPart = object(
     { ...position, chars: read, style: read, color: read, align: read, alignV: read },
-    { ...surface, fill: read, padding: read, size: read, fit: (raw: unknown) => (raw === "omit" ? raw : fitText(raw)) },
+    { ...surface, fill: read, padding: read, size: read, overflow: literal(["ellipsis"]), fit: (raw: unknown) => (raw === "omit" ? raw : fitText(raw)) },
   )
   return variant("kind", {
     rect: object({ ...position, fill: read }, surface),
@@ -163,6 +163,7 @@ function specReader() {
     {
       let: readBindings,
       layout: expression,
+      advice: list(object({ code: name, when: expression, note: wordsWithin(240) }), 16),
       defaults: tokenRecord,
       variants,
       defaultVariant: variantRecord,

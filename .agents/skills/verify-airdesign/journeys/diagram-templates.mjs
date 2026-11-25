@@ -15,9 +15,20 @@ import {
   words,
 } from "../look/doom-deck.mjs"
 
+const descriptionExamples = [
+  "Map customer needs",
+  "Set success criteria",
+  "Validate a direction",
+  "Ship a pilot",
+  "Measure adoption",
+  "Review feedback",
+  "Refine the rollout",
+  "Track the impact",
+]
+
 const diagrams = [
-  { name: "architecture", prefix: "arch", title: "Every request reaches data through the gateway" },
-  { name: "process", prefix: "proc", title: "Five steps take an idea to launch" },
+  { name: "architecture", prefix: "arch", title: "Mobile can send events directly" },
+  { name: "process", prefix: "proc", title: "Eight steps take an idea to launch" },
   { name: "cycle", prefix: "loop", title: "Each release feeds the next plan" },
 ]
 
@@ -90,6 +101,7 @@ async function exportPdf(kit, out, name) {
     .click()
   const printed = page.locator("[data-print-page]")
   await expect(printed).toHaveCount(1)
+  await expect(printed).not.toContainText("…")
   await writeFile(join(out, `${name}-print.png`), await printed.screenshot())
   const pdf = await page.pdf({ preferCSSPageSize: true })
   const { pdfPages } = await import("../../../../tests/browser/pdf-file.ts")
@@ -149,11 +161,15 @@ export default async function drive(kit) {
           const steps = Array.from({ length: count }, (_, i) => ({
             id: `s${i}`,
             label: `Step ${i + 1}`,
-            description: "Review",
+            description: descriptionExamples[i],
           }))
           const { tree } = await expand("process", { frame, data: { steps }, variant: { direction } })
           expect(tree.children).toHaveLength(2 * count - 1)
-          expect(tree.findings, `${direction} ${count}`).toEqual([])
+          expect(
+            tree.findings.filter(({ kind }) => kind === "text-fit"),
+            `${direction} ${count}`,
+          ).toEqual([])
+          expect(tree.findings.map(({ code }) => code)).toEqual(count > 5 ? ["many-steps"] : [])
         }
       }
       const steps = Array.from({ length: 8 }, (_, i) => ({
@@ -161,7 +177,9 @@ export default async function drive(kit) {
         label: i === 4 ? "W".repeat(120) : `Step ${i + 1}`,
       }))
       const { tree, measure } = await expand("process", { ...fixture, data: { steps } })
-      expect(tree.findings).toMatchObject([{ kind: "text-fit", key: ["step", "s4"] }])
+      expect(tree.findings.filter(({ kind }) => kind === "text-fit")).toMatchObject([
+        { kind: "text-fit", key: ["step", "s4"] },
+      ])
       const { doom: fold, slide } = landTree(tree, theme)
       const part = tree.children.find(({ key }) => key.join("/") === "step/s4")
       const { lines } = doom.resolveSlide(fold, slide, measure)[0].children.find(({ id }) => id === part.id).text
@@ -179,8 +197,12 @@ export default async function drive(kit) {
         "Served Geist: process counts 3–8 fit in both directions with descriptions. One impossible label retains its full source and paints an ellipsis in bounds.",
       )
     }
+    if (diagram.name === "process") {
+      const labels = [...fixture.data.steps.map(({ label }) => label), "Review", "Refine", "Track"]
+      fixture.data.steps = labels.map((label, i) => ({ id: `s${i}`, label, description: descriptionExamples[i] }))
+    }
     const { tree: expanded } = await expand(diagram.name, fixture)
-    expect(expanded.findings).toEqual([])
+    expect(expanded.findings.filter(({ kind }) => kind === "text-fit")).toEqual([])
     const tree = remap(expanded, diagram.prefix)
 
     const opened = await openDoomDeck(kit)
@@ -223,6 +245,11 @@ export default async function drive(kit) {
       if (child.props.geometry.kind === "line") expect(stored.geometry).toEqual(child.props.geometry)
       else expect(stored.box).toEqual(child.props.box)
       await expect(page.locator(`[data-slide-thumb] [data-node="${child.id}"]`).first()).toBeAttached(slowPaint)
+    }
+    if (diagram.name === "process") {
+      const slide = page.locator("[data-slide-box]")
+      await expect(slide).not.toContainText("…")
+      await expect(page.locator("[data-slide-thumb]").first()).not.toContainText("…")
     }
     const shot = await capture(`${diagram.name}-canvas`)
     out = dirname(shot)
