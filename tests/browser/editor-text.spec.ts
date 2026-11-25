@@ -54,7 +54,7 @@ test("the Text tool places a text layer, typing and Ctrl+B write it, and Escape 
   await page.keyboard.press("Shift+ArrowLeft")
   await page.keyboard.press("Shift+ArrowLeft")
   await page.keyboard.press("ControlOrMeta+b")
-  await expect(page.getByRole("button", { name: editorCopy.bold })).toHaveAttribute("aria-pressed", "true")
+  await expect(editor(page).locator("[data-run]").last()).toHaveCSS("font-weight", "700")
   await page.keyboard.press("Escape")
   await expect(editor(page)).toHaveCount(0)
   const [id] = await selectedIds(page)
@@ -267,18 +267,6 @@ test("pasted words keep their line breaks, and undo while typing takes back the 
   await expect.poll(async () => (await textOf(stack, opened, "t:1"))?.chars).toBe("firsttwo\nthree.")
   await page.keyboard.press("ControlOrMeta+z")
   await expect.poll(async () => (await textOf(stack, opened, "t:1"))?.chars).toBe("firsttwo\nthree")
-})
-
-test("the text bar sets the named style and Underline for the selected words", async ({ page, context, stack }) => {
-  const opened = await openEditor(page, context, stack)
-  await clickSlide(page, 600, 410)
-  await page.keyboard.press("Enter")
-  await page.getByRole("button", { name: editorCopy.underline }).click()
-  await page.getByRole("combobox", { name: editorCopy.textStyle }).click()
-  await page.getByRole("option", { name: editorCopy.textStyles.heading, exact: true }).click()
-  await page.keyboard.press("Escape")
-  await expect.poll(async () => (await textOf(stack, opened, "s:4"))?.style).toBe("heading")
-  expect((await textOf(stack, opened, "s:4"))?.spans).toEqual([{ end: 8, underline: true }])
 })
 
 test("the slide's thumbnail follows typing before the words are kept", async ({ page, context, stack }) => {

@@ -36,7 +36,7 @@ Each feature file starts with an H1 title and one paragraph describing what the 
 
 ## Features
 
-- [Start a deck and edit its text](./open-edit-save.md): New deck opens `/s/<id>` with a title, and the Describe your deck box opens one and sends your words to Aira; double-click or T to edit, the text bar and its keys format it, the server keeps it and a reload shows it. Specs `editor.spec.ts`, `editor-text.spec.ts`, `editor-text-format.spec.ts`; look states `blank-deck`, `text-format-bold`.
+- [Start a deck and edit its text](./open-edit-save.md): New deck opens `/s/<id>` with a title, and the Describe your deck box opens one and sends your words to Aira; double-click or T to edit, its keys and the Design panel format it, the server keeps it and a reload shows it. Specs `editor.spec.ts`, `editor-text.spec.ts`, `editor-text-format.spec.ts`; look states `blank-deck`, `text-format-bold`.
 - [Deck list and Trash](./deck-list-trash.md): Recents' six newest decks with thumbnails, `No decks yet`, starring and the Starred list, Move to Trash and Undo, Restore, Empty Trash. Journey `deck-list-trash`; spec `home.spec.ts`.
 - [Deck names, search and All decks](./deck-names.md): `All decks`, the sidebar search, renaming from the editor's title, a name taken from slide 1's title. Journey `deck-list-trash`; spec `editor-page.spec.ts`; look states `decks-all`, `decks-search-match`, `editor-renaming`, `editor-rename-refused`.
 - [Keep edits on the device and paint from it](./keep-typed-text.md): edits queue on the device through a reload, a closed tab or offline, paint before the server answers, stay with the account, and open from the server on a fresh device. Tests `packages/live/src/doom-deck.test.ts`, `device-account.test.ts`; spec `editor-picture.spec.ts`.
