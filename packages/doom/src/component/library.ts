@@ -1,5 +1,6 @@
 import { isRefusal } from "../refusal.js"
 import architecture from "./library/architecture.json" with { type: "json" }
+import clusteredChart from "./library/clustered-chart.json" with { type: "json" }
 import column from "./library/column.json" with { type: "json" }
 import cycle from "./library/cycle.json" with { type: "json" }
 import process from "./library/process.json" with { type: "json" }
@@ -39,3 +40,9 @@ const components = new Map<string, ComponentSpec>([
   ["architecture", architectureComponent],
   ["cycle", cycleComponent],
 ])
+
+export const clusteredChartComponent: ComponentSpec = {
+  ...builtIn("clustered-chart", clusteredChart).spec,
+  workLimit: 400_000,
+  partLimit: 750,
+}

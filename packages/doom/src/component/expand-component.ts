@@ -3,7 +3,7 @@ import type { Refusal } from "../refusal.js"
 import type { TextStyleName } from "../text.js"
 import type { Theme } from "../theme.js"
 import type { PartKey } from "./instance.js"
-import { boolean, naming, reject } from "../read-kit.js"
+import { boolean, integer, naming, reject } from "../read-kit.js"
 import type { ComponentFinding } from "./findings.js"
 import { type Bindings, type Expr, type Scope, childScope, evaluator, valuesOf } from "./expression.js"
 import { type ComponentTree, type PreparedPart, preparePart, readFrame, readLayout, treeOf } from "./nodes.js"
@@ -24,7 +24,9 @@ export type ComponentInput = {
 
 export function expandComponent(spec: ComponentSpec, input: ComponentInput): ComponentTree | Refusal {
   try {
-    const charge = budget(80_000, "An expansion may use at most 80,000 work units.")
+    const workLimit = integer(1, 1_000_000)(spec.workLimit ?? 80_000)
+    const partLimit = integer(1, 4_500)(spec.partLimit ?? 499)
+    const charge = budget(workLimit, `An expansion may use at most ${workLimit} work units.`)
     const { theme, measure } = input
     const frame = naming("frame", () => readFrame(input.frame))
     const token = readTokens(spec, input.themeTokens ?? {}, input.tokens ?? {})
@@ -79,7 +81,8 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
           styleFor: input.styleFor,
         })
         if (prepared.kind === "shape" || prepared.kind === "line") {
-          if (emitted >= 499) naming(emitField, () => reject("limit", "An expansion may emit at most 499 parts."))
+          if (emitted >= partLimit)
+            naming(emitField, () => reject("limit", `An expansion may emit at most ${partLimit} parts.`))
           emitted += 1
         }
         parts.push(prepared)
@@ -104,7 +107,7 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
       if (naming(field, () => boolean(evaluate(when, root, field))))
         findings.push({ kind: "advice", key: ["root"], field, code, note })
     }
-    return treeOf(spec.name, frame, parts, fitting, findings, layout)
+    return treeOf(spec.name, frame, parts, fitting, partLimit, findings, layout)
   } catch (thrown) {
     return componentRefusal(thrown)
   }

@@ -50,6 +50,7 @@ for (const name of [
   "consulting-mcp",
   "component-column",
   "component-paths",
+  "clustered-charts",
   "diagram-templates",
   "path-paint",
   "usage-page",

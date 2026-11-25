@@ -1,8 +1,9 @@
 import { naming, reject } from "../read-kit.js"
-import { type Charge, entries, id, isList, name, numeric, wordsWithin } from "./values.js"
+import { type Charge, type Value, color, entries, id, isList, name, numeric, wordsWithin } from "./values.js"
 
 type Field =
-  | { readonly kind: "string" | "string?" | "number" | "number?" | "positive" | "nonnegative" }
+  | { readonly kind: "string" | "string?" | "number" | "number?" | "color?" | "positive" | "nonnegative" }
+  | { readonly kind: "list"; readonly item: "number?" | "color?" }
   | { readonly kind: "enum"; readonly choices: readonly string[] }
   | { readonly kind: "ref"; readonly table: string }
 type Fields = Readonly<Record<string, Field>>
@@ -23,9 +24,14 @@ function readField(raw: unknown): Field {
     case "string?":
     case "number":
     case "number?":
+    case "color?":
     case "positive":
     case "nonnegative":
       return { kind: raw }
+    case "number?[]":
+      return { kind: "list", item: "number?" }
+    case "color?[]":
+      return { kind: "list", item: "color?" }
   }
   if (typeof raw === "string" && raw.startsWith("ref:")) return { kind: "ref", table: name(raw.slice(4)) }
   return reject("shape", "A field type, a list of enum choices, or a ref:collection name.")
@@ -57,7 +63,7 @@ export function readCollections(raw: unknown): Collections {
   return tables
 }
 
-function readValue(field: Field, raw: unknown): string | number | null {
+function readScalarValue(field: Field, raw: unknown): string | number | null {
   switch (field.kind) {
     case "string":
       return readLabel(raw)
@@ -81,13 +87,50 @@ function readValue(field: Field, raw: unknown): string | number | null {
       const value = numeric(raw)
       return value >= 0 ? value : reject("shape", "A nonnegative number.")
     }
+    case "color?":
+    case "list":
+      return reject("shape", "A scalar collection field.")
   }
 }
 
-type Row = Readonly<Record<string, string | number | null>> & { readonly id: string }
-type Data = Readonly<Record<string, readonly Row[]>>
+function readValue(field: Field, raw: unknown, charge: Charge): Value {
+  switch (field.kind) {
+    case "color?":
+      return raw === null ? null : color(raw)
+    case "list": {
+      if (!isList(raw)) return reject("shape", "A list of values.")
+      if (raw.length > 100) return reject("limit", "At most 100 values in a list field.")
+      charge(raw.length)
+      return Array.from(raw, (value, i) => naming(`[${i}]`, () => readValue({ kind: field.item }, value, charge)))
+    }
+    default:
+      return readScalarValue(field, raw)
+  }
+}
 
-export function readData(schema: Collections, raw: unknown, charge: Charge): Data {
+type Row<T> = Readonly<Record<string, T | string>> & { readonly id: string }
+type Data<T> = Readonly<Record<string, readonly Row<T>[]>>
+
+export function readData(schema: Collections, raw: unknown, charge: Charge) {
+  return readTables(schema, raw, charge, readScalarValue, {})
+}
+
+export function readExpansionData(
+  schema: Collections,
+  raw: unknown,
+  charge: Charge,
+  limits: Readonly<Record<string, number>> = {},
+) {
+  return readTables(schema, raw, charge, readValue, limits)
+}
+
+function readTables<T extends Value>(
+  schema: Collections,
+  raw: unknown,
+  charge: Charge,
+  readCell: (field: Field, value: unknown, charge: Charge) => T,
+  limits: Readonly<Record<string, number>>,
+): Data<T> {
   const ids = new Map<string, Set<string>>()
   const references: { table: string; value: string; path: string }[] = []
   const tables = entries(raw, 16).map(([table, rawRows]) =>
@@ -95,7 +138,8 @@ export function readData(schema: Collections, raw: unknown, charge: Charge): Dat
       const fields = Object.hasOwn(schema, table) ? schema[table] : undefined
       if (fields === undefined) return reject("shape", `Unknown collection "${table}".`)
       if (!isList(rawRows)) return reject("shape", "A list of rows.")
-      if (rawRows.length > 100) return reject("limit", "At most 100 rows in a collection.")
+      const limit = Object.hasOwn(limits, table) ? (limits[table] ?? 100) : 100
+      if (rawRows.length > limit) return reject("limit", `At most ${limit} rows in a collection.`)
       const rowIds = new Set<string>()
       ids.set(table, rowIds)
       const fieldEntries = Object.entries(fields)
@@ -114,7 +158,7 @@ export function readData(schema: Collections, raw: unknown, charge: Charge): Dat
             const value = naming(name, () => {
               const raw = Object.hasOwn(row, name) ? row[name] : undefined
               charge(typeof raw === "string" ? 1 + raw.length : 1)
-              return readValue(field, raw)
+              return readCell(field, raw, charge)
             })
             if (field.kind === "ref" && typeof value === "string")
               references.push({ table: field.table, value, path: `${table}[${i}].${name}` })
