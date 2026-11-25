@@ -16,14 +16,14 @@
     {
       "file": "packages/live/src/doom-deck.ts",
       "names": ["connected"],
-      "digest": "dd6960474ebf",
-      "blob": "0858f87a36bf35a40241dcaae43425ac4b96108a"
+      "digest": "ce63f870b97b",
+      "blob": "252eeb5baa73367b1f6589f4352e07f39cc48275"
     },
     {
       "file": "packages/live/src/doom-queue.ts",
-      "names": ["readGap", "shown", "queueEdit", "dropped"],
-      "digest": "3c618e4d9ac8",
-      "blob": "2f51bb6fb5614e40611ec335ef18096af990be9c"
+      "names": ["readGap", "shown", "shownAfter", "queueEdit", "queueEditOn", "dropped"],
+      "digest": "b272f7dc4957",
+      "blob": "2d62753dc9546ca25ce0713d62379df0fca697ce"
     },
     {
       "file": "apps/api/src/doom/doom-deck.ts",

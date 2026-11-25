@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { ownedIn, revIn, rewritten, shown, skipped, trimmed, type Queued } from "./doom-queue.js"
+import { queueEditOn, releaseBases, releasedBases, shownAfter, type Queued } from "./doom-queue.js"
 
 const setAside: ReadonlySet<doom.Refusal["refused"]> = new Set(["shape", "limit", "person", "run-fenced", "last-slide"])
 
@@ -41,15 +41,13 @@ function endsOnly(server: doom.Doom, write: doom.Write, pressed: Pressed, at: do
   return ends === undefined ? undefined : { ...write, value: ends, base: at }
 }
 
-export function onStandingOnly(
+function onStandingOnly(
   server: doom.Doom,
-  queue: readonly Queued[],
+  head: Queued,
   pressed: Pressed,
   mine: ReadonlySet<doom.Rev>,
   measure: doom.Measure,
-): { readonly queue: readonly Queued[]; readonly skipped: boolean } | undefined {
-  const head = queue[0]
-  if (head === undefined) return undefined
+): readonly doom.Write[] | undefined {
   const kept = head.edit.writes.flatMap((write) => {
     const at = server.revs.get(write.node)?.get(write.prop)
     const theirs = at !== undefined && at > pressed.since && !mine.has(at) && (write.base ?? 0) < at
@@ -62,81 +60,118 @@ export function onStandingOnly(
     doom.onStandingLayers(server, kept, pressed.since, pressed.since, pressed.measuredIn),
     measure,
   )
-  if (JSON.stringify(writes) === JSON.stringify(head.edit.writes)) return undefined
-  if (writes.length === 0) return { queue: skipped(queue, head.edit.once), skipped: true }
-  return { queue: trimmed(queue, head.edit.once, writes), skipped: false }
+  return JSON.stringify(writes) === JSON.stringify(head.edit.writes) ? undefined : writes
 }
 
 export type Replayed = {
   readonly queue: readonly Queued[]
+  readonly view: doom.Doom
   readonly gone: readonly string[]
   readonly steps: ReadonlyMap<string, { readonly before: doom.Doom; readonly writes: readonly doom.Write[] }>
   readonly pressed: ReadonlyMap<string, Pressed>
 }
 
-export function onStanding(
+const sliceMilliseconds = 8
+
+function nextTask(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0))
+}
+
+export async function onStanding(
   server: doom.Doom,
   queue: readonly Queued[],
   turned: ReadonlyMap<string, Pressed>,
   once: string,
   measure: doom.Measure,
-): Replayed | undefined {
+  current: () => boolean,
+  now = performance.now,
+): Promise<Replayed | undefined> {
+  const head = queue[0]
   const pressed = turned.get(once)
-  if (pressed === undefined) return undefined
-  const ownedBy = (now: readonly Queued[], onces: readonly string[]) =>
-    ownedIn(server, now, [...turned.keys(), ...onces])
-  const kept = onStandingOnly(server, queue, pressed, ownedBy(queue, pressed.owned), measure)
+  if (head === undefined || pressed === undefined) return undefined
+  const mine = new Set<doom.Rev>()
+  for (const name of turned.keys()) {
+    const rev = server.onces.get(name)
+    if (rev !== undefined) mine.add(rev)
+  }
+  const headOwned = new Set(mine)
+  for (const name of pressed.owned) {
+    const rev = server.onces.get(name)
+    if (rev !== undefined) headOwned.add(rev)
+  }
+  const kept = onStandingOnly(server, head, pressed, headOwned, measure)
   if (kept === undefined) return undefined
-  let next = kept.queue
-  const gone: string[] = kept.skipped ? [once] : []
+
+  const next: Queued[] = []
+  const gone: string[] = []
   const steps = new Map<string, { before: doom.Doom; writes: readonly doom.Write[] }>()
   const again = new Map<string, Pressed>()
-  const relay = (name: string) => {
-    const at = next.findIndex((each) => each.edit.once === name)
-    steps.set(name, { before: shown(server, next.slice(0, at)), writes: next[at]!.edit.writes })
-  }
-  if (!kept.skipped) relay(once)
-  const changed = new Set([once])
-  for (const { edit } of queue) {
-    const over = turned.get(edit.once)
+  const released = new Map<string, ReturnType<typeof releasedBases>>()
+  const prefix = new Map<string, { before: doom.Doom; edit: doom.Edit }>()
+  const provisional = new Map<doom.Rev, string>()
+  let view = server
+  const clock = now.bind(performance)
+  let deadline = clock() + sliceMilliseconds
+
+  for (const original of queue) {
+    if (clock() >= deadline) {
+      await nextTask()
+      if (!current()) return undefined
+      deadline = clock() + sliceMilliseconds
+    }
+    const each = releaseBases(original, released)
+    const name = each.edit.once
+    const over = turned.get(name)
     const inverted = over?.owned.at(-1)
-    if (
-      edit.readBase !== undefined ||
-      over === undefined ||
-      inverted === undefined ||
-      !over.owned.some((name) => changed.has(name))
-    )
-      continue
-    changed.add(edit.once)
-    const at = next.findIndex((each) => each.edit.once === edit.once)
-    const prior = next.findIndex((each) => each.edit.once === inverted)
-    const rev = revIn(server, next, inverted)
-    const now = shown(server, next.slice(0, at))
-    const was = shown(server, next.slice(0, prior))
-    const writes =
-      prior < 0 || rev === undefined
-        ? []
-        : doom.freeLineEnds(
-            now,
-            doom.invert(
-              was,
-              now,
-              { once: inverted, author: edit.author, writes: next[prior]!.edit.writes, rev },
-              ownedBy(next, over.owned),
-            ),
-            measure,
-            now,
-            was,
-          )
-    const made = writes.length === 0 ? undefined : rewritten(server, next, edit.once, writes)
-    if (made === undefined || doom.isRefusal(made)) {
-      next = skipped(next, edit.once)
-      gone.push(edit.once)
+    let made: Queued | undefined = each
+    if (each === head) {
+      made =
+        kept.length === 0 ? undefined : { ...head, edit: { ...head.edit, writes: kept }, after: kept.map(() => null) }
+    } else if (
+      each.edit.readBase === undefined &&
+      over !== undefined &&
+      inverted !== undefined &&
+      over.owned.some((name) => released.has(name))
+    ) {
+      const prior = prefix.get(inverted)
+      const rev = view.onces.get(inverted)
+      if (prior === undefined || rev === undefined) made = undefined
+      else {
+        const extra: doom.Rev[] = []
+        for (const own of over.owned) {
+          const at = view.onces.get(own)
+          if (at === undefined || mine.has(at)) continue
+          mine.add(at)
+          extra.push(at)
+        }
+        const writes = doom.freeLineEnds(
+          view,
+          doom.invert(prior.before, view, { ...prior.edit, author: each.edit.author, rev }, mine),
+          measure,
+          view,
+          prior.before,
+        )
+        for (const at of extra) mine.delete(at)
+        const built = writes.length === 0 ? undefined : queueEditOn(server, view, provisional, { ...each.edit, writes })
+        made = built === undefined || doom.isRefusal(built) ? undefined : built
+        if (made !== undefined) again.set(name, pressedOn(server, view, writes, over.owned))
+      }
+    }
+
+    if (made !== each) released.set(name, releasedBases(each, made?.edit.writes ?? []))
+    if (made === undefined) {
+      gone.push(name)
       continue
     }
-    next = made
-    relay(edit.once)
-    again.set(edit.once, pressedOn(server, now, writes, over.owned))
+    if (made !== each) steps.set(name, { before: view, writes: made.edit.writes })
+    next.push(made)
+    prefix.set(name, { before: view, edit: made.edit })
+    const folded = shownAfter(view, made)
+    if (folded !== view) {
+      provisional.set(folded.rev, name)
+      if (turned.has(name)) mine.add(folded.rev)
+      view = folded
+    }
   }
-  return { queue: next, gone, steps, pressed: again }
+  return { queue: next, view, gone, steps, pressed: again }
 }
