@@ -1,6 +1,7 @@
 {
   "version": 1,
   "name": "Chart",
+  "chart": "cartesian",
   "collections": {
     "rows": {
       "label": "string",

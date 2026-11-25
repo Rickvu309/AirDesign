@@ -5,9 +5,14 @@ import cycle from "./library/cycle.json" with { type: "json" }
 import process from "./library/process.json" with { type: "json" }
 import { type ComponentSpec, readComponentSpec } from "./spec.js"
 
+const components = new Map<string, ComponentSpec>()
+
+export const componentSpec = (id: string) => components.get(id)
+
 function libraryComponent(name: string, raw: unknown): ComponentSpec {
   const spec = readComponentSpec(raw)
   if (isRefusal(spec)) throw new Error(`Invalid ${name} component ${JSON.stringify(spec)}`)
+  components.set(name, spec)
   return spec
 }
 
