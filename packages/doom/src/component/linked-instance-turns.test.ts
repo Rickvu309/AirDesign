@@ -104,7 +104,7 @@ it("lets an agent override a fitted chart label and keeps the style on the next 
   const crowded = {
     rows: Array.from({ length: 12 }, (_, i) => ({ id: `r${i}`, label: `Quarterly revenue ${i}`, value: i + 1 })),
   }
-  const joined = land(before, refresh(before, { data: crowded }), true)
+  const joined = land(before, refresh(before, { data: crowded, tokens: { captionSmall: 20 } }), true)
   const label = part(joined, "category", "r0")
   expect(propOf(joined.nodes.get(label), "text")?.spans[0]?.size).toBeDefined()
   const compiled = compileAgentEdit(joined, [{ op: "set", target: label, textStyle: "title" }], {

@@ -17,6 +17,7 @@ import { placeholderTitle } from "./placeholder-title.js"
 import { placeholderSubtitle } from "./slide-placeholders.js"
 import {
   type Area,
+  alignedWithTitle,
   areaFor,
   cardRadiusFor,
   fitScale,
@@ -315,12 +316,13 @@ function addComponent(draft: Draft, parent: Node, change: Add): void {
   const { sample } = definition.spec
   const data = change.data ?? sample?.data ?? stop("shape", undefined, "data", "missing", "Rows by collection.")
   const natural = sample === undefined ? undefined : { width: sample.w, height: sample.h }
-  const available = change.box ?? freeArea(draft, parent, natural) ?? stop("limit", parent.id, "box")
-  const scale = natural === undefined ? 1 : Math.min(maxComponentScale, fitScale(natural, available))
-  const box =
-    change.box === undefined && natural !== undefined
-      ? centred(available, { w: Math.round(natural.width * scale), h: Math.round(natural.height * scale) })
-      : available
+  let box = change.box ?? freeArea(draft, parent, natural) ?? stop("limit", parent.id, "box")
+  if (change.box === undefined && natural !== undefined) {
+    const aligned = parent.type === "slide" ? alignedWithTitle(draft, parent, box) : box
+    const scale = Math.min(maxComponentScale, fitScale(natural, aligned))
+    const fitted = centred(aligned, { w: Math.round(natural.width * scale), h: Math.round(natural.height * scale) })
+    box = aligned === box ? fitted : { ...fitted, x: aligned.x }
+  }
   const placed = placeComponent(draft.doom, definition, {
     frame: draft.mint(),
     parent: { id: parent.id, at: nextKey(draft, parent.id) },

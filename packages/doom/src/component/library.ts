@@ -17,7 +17,11 @@ function builtIn(id: string, raw: unknown): ComponentDefinition {
   return { id, revision: 1, spec }
 }
 
-export const columnDefinition: ComponentDefinition = builtIn("column", column)
+const columnTemplate = builtIn("column", column)
+export const columnDefinition: ComponentDefinition = {
+  ...columnTemplate,
+  spec: { ...columnTemplate.spec, workLimit: 110_000 },
+}
 export const columnComponent: ComponentSpec = columnDefinition.spec
 export const componentLibrary: ReadonlyMap<string, ComponentDefinition> = new Map(
   [columnDefinition].map((definition) => [definition.id, definition]),

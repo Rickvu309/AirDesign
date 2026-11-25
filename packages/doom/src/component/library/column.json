@@ -7,10 +7,26 @@
     "h": 650,
     "data": {
       "rows": [
-        { "id": "q1", "label": "Q1", "value": 12 },
-        { "id": "q2", "label": "Q2", "value": 19 },
-        { "id": "q3", "label": "Q3", "value": 15 },
-        { "id": "q4", "label": "Q4", "value": 24 }
+        {
+          "id": "q1",
+          "label": "Q1",
+          "value": 12
+        },
+        {
+          "id": "q2",
+          "label": "Q2",
+          "value": 19
+        },
+        {
+          "id": "q3",
+          "label": "Q3",
+          "value": 15
+        },
+        {
+          "id": "q4",
+          "label": "Q4",
+          "value": 24
+        }
       ]
     }
   },
@@ -62,22 +78,145 @@
     "heading": "label",
     "label": "label",
     "caption": "caption",
-    "captionSmall": 20
+    "captionSmall": "auto"
   },
   "let": [
     ["gutter", 12],
+    ["captionSmall", ["fitSize", ["get", "token.captionSmall"]]],
     ["rowCount", ["count", ["get", "data.rows"]]],
-    ["plotWidth", ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]]],
-    ["laneWidth", ["div", ["get", "plotWidth"], ["max", 1, ["get", "rowCount"]]]],
-    ["markWidth", ["mul", ["get", "laneWidth"], 0.57]],
-    ["markInset", ["div", ["sub", ["get", "laneWidth"], ["get", "markWidth"]], 2]],
-    ["plotTop", 99],
     ["values", ["map", ["get", "data.rows"], "r", ["if", ["eq", ["get", "r.value"], null], 0, ["get", "r.value"]]]],
     ["lo", ["min", 0, ["get", "values"]]],
     ["maxValue", ["max", 0, ["get", "values"]]],
     ["hi", ["max", 1, ["get", "maxValue"]]],
+    [
+      "valueFormat",
+      {
+        "scale": ["get", "token.scale"],
+        "digits": [
+          "if",
+          ["eq", ["get", "token.digits"], "auto"],
+          ["decimals", ["get", "values"], ["get", "token.scale"]],
+          ["get", "token.digits"]
+        ],
+        "prefix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.prefix"], ""],
+        "suffix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.suffix"], ""],
+        "sign": "negative"
+      }
+    ],
+    [
+      "labelLane",
+      ["floor", ["div", ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]], ["max", 1, ["get", "rowCount"]]]]
+    ],
+    [
+      "showValues",
+      [
+        "if",
+        ["get", "variant.labels"],
+        [
+          "every",
+          ["get", "data.rows"],
+          "r",
+          [
+            "if",
+            ["eq", ["get", "r.value"], null],
+            true,
+            [
+              "if",
+              [
+                "lt",
+                ["get", "labelLane"],
+                [
+                  "add",
+                  [
+                    "textWidth",
+                    ["format", ["get", "r.value"], ["get", "valueFormat"], "measure"],
+                    ["get", "token.label"]
+                  ],
+                  8
+                ]
+              ],
+              false,
+              true
+            ]
+          ]
+        ],
+        false
+      ]
+    ],
+    [
+      "axis",
+      [
+        "if",
+        ["if", ["get", "showValues"], true, ["every", ["get", "data.rows"], "r", ["eq", ["get", "r.value"], null]]],
+        {
+          "lo": ["get", "lo"],
+          "hi": ["get", "hi"],
+          "step": 0,
+          "ticks": ["list"]
+        },
+        ["axis", ["get", "lo"], ["get", "hi"], 3]
+      ]
+    ],
+    [
+      "axisFormat",
+      {
+        "scale": ["get", "token.scale"],
+        "digits": [
+          "max",
+          [
+            "if",
+            ["eq", ["get", "token.digits"], "auto"],
+            ["decimals", ["get", "values"], ["get", "token.scale"]],
+            ["get", "token.digits"]
+          ],
+          ["resolutionDigits", ["div", ["get", "axis.step"], ["get", "token.scale"]]]
+        ],
+        "prefix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.prefix"], ""],
+        "suffix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.suffix"], ""],
+        "sign": "negative"
+      }
+    ],
+    [
+      "ticks",
+      [
+        "map",
+        ["get", "axis.ticks"],
+        "v",
+        {
+          "id": ["get", "v.id"],
+          "value": ["get", "v.value"],
+          "chars": ["format", ["get", "v.value"], ["get", "axisFormat"], "measure"]
+        }
+      ]
+    ],
+    [
+      "tickWidth",
+      [
+        "min",
+        ["div", ["get", "frame.w"], 3],
+        [
+          "add",
+          1,
+          ["max", 0, ["map", ["get", "ticks"], "t", ["textWidth", ["get", "t.chars"], ["get", "token.caption"]]]]
+        ]
+      ]
+    ],
+    [
+      "plotLeft",
+      [
+        "if",
+        ["eq", ["count", ["get", "ticks"]], 0],
+        ["get", "gutter"],
+        ["add", ["get", "gutter"], ["get", "tickWidth"], 8]
+      ]
+    ],
+    ["plotWidth", ["sub", ["get", "frame.w"], ["add", ["get", "plotLeft"], ["get", "gutter"]]]],
+    ["laneWidth", ["div", ["get", "plotWidth"], ["max", 1, ["get", "rowCount"]]]],
+    ["markWidth", ["mul", ["get", "laneWidth"], 0.57]],
+    ["markInset", ["div", ["sub", ["get", "laneWidth"], ["get", "markWidth"]], 2]],
+    ["plotTop", 99],
     ["categorySpace", 62],
-    ["valueSpace", ["if", ["get", "variant.labels"], ["if", ["lt", ["get", "lo"], 0], 44, 12], 12]],
+    ["valueSpace", ["if", ["get", "showValues"], ["if", ["lt", ["get", "lo"], 0], 44, 12], 12]],
     ["legendLeading", 26],
     ["legendRowHeight", 32],
     [
@@ -114,7 +253,14 @@
               "item",
               ["get", "item.show"]
             ],
-            ["list", { "id": "series", "chars": ["get", "token.seriesLabel"], "fill": ["get", "token.accent"] }]
+            [
+              "list",
+              {
+                "id": "series",
+                "chars": ["get", "token.seriesLabel"],
+                "fill": ["get", "token.accent"]
+              }
+            ]
           ],
           {
             "width": ["max", 0, ["get", "plotWidth"]],
@@ -128,10 +274,13 @@
             "leading": ["get", "legendLeading"],
             "gap": 22,
             "style": ["get", "token.caption"],
-            "smaller": ["get", "token.captionSmall"]
+            "smaller": ["get", "captionSmall"]
           }
         ],
-        { "items": ["list"], "rows": 0 }
+        {
+          "items": ["list"],
+          "rows": 0
+        }
       ]
     ],
     ["legendTop", ["sub", ["get", "frame.h"], ["mul", ["get", "legend.rows"], ["get", "legendRowHeight"]]]],
@@ -152,22 +301,7 @@
         ]
       ]
     ],
-    [
-      "valueFormat",
-      {
-        "scale": ["get", "token.scale"],
-        "digits": [
-          "if",
-          ["eq", ["get", "token.digits"], "auto"],
-          ["decimals", ["get", "values"], ["get", "token.scale"]],
-          ["get", "token.digits"]
-        ],
-        "prefix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.prefix"], ""],
-        "suffix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.suffix"], ""],
-        "sign": "negative"
-      }
-    ],
-    ["zero", ["linear", 0, ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]]
+    ["zero", ["linear", 0, ["get", "axis.lo"], ["get", "axis.hi"], ["get", "plotBottom"], ["get", "plotTop"]]]
   ],
   "parts": [
     {
@@ -187,10 +321,63 @@
       }
     },
     {
+      "repeat": {
+        "over": ["get", "ticks"],
+        "as": "t"
+      },
+      "let": [
+        [
+          "y",
+          [
+            "linear",
+            ["get", "t.value"],
+            ["get", "axis.lo"],
+            ["get", "axis.hi"],
+            ["get", "plotBottom"],
+            ["get", "plotTop"]
+          ]
+        ]
+      ],
+      "children": [
+        {
+          "when": ["if", ["eq", ["get", "t.value"], 0], false, true],
+          "emit": {
+            "kind": "line",
+            "key": ["list", "grid", ["get", "t.id"]],
+            "start": ["point", ["get", "plotLeft"], ["get", "y"]],
+            "end": ["point", ["sub", ["get", "frame.w"], ["get", "gutter"]], ["get", "y"]],
+            "color": {
+              "var": "text2",
+              "tint": 0.8
+            },
+            "width": 1,
+            "route": "straight",
+            "arrow": "none"
+          }
+        },
+        {
+          "emit": {
+            "kind": "text",
+            "key": ["list", "tick", ["get", "t.id"]],
+            "x": 0,
+            "y": ["sub", ["get", "y"], 16],
+            "w": ["get", "tickWidth"],
+            "h": 32,
+            "chars": ["get", "t.chars"],
+            "style": ["get", "token.caption"],
+            "color": ["get", "token.muted"],
+            "align": "right",
+            "alignV": "center",
+            "fit": "omit"
+          }
+        }
+      ]
+    },
+    {
       "emit": {
         "kind": "line",
         "key": ["list", "zero"],
-        "start": ["point", ["get", "gutter"], ["get", "zero"]],
+        "start": ["point", ["get", "plotLeft"], ["get", "zero"]],
         "end": ["point", ["sub", ["get", "frame.w"], ["get", "gutter"]], ["get", "zero"]],
         "color": ["get", "token.rule"],
         "width": 2,
@@ -203,7 +390,7 @@
         "over": ["get", "data.rows"],
         "as": "r"
       },
-      "let": [["laneStart", ["add", ["get", "gutter"], ["mul", ["get", "i"], ["get", "laneWidth"]]]]],
+      "let": [["laneStart", ["add", ["get", "plotLeft"], ["mul", ["get", "i"], ["get", "laneWidth"]]]]],
       "children": [
         {
           "emit": {
@@ -218,7 +405,11 @@
             "color": ["get", "token.muted"],
             "align": "center",
             "alignV": "center",
-            "fit": { "smaller": ["get", "token.captionSmall"], "group": "categories", "thin": 4 }
+            "fit": {
+              "smaller": ["get", "captionSmall"],
+              "group": "categories",
+              "thin": 4
+            }
           }
         },
         {
@@ -231,8 +422,8 @@
                   [
                     "linear",
                     ["get", "r.value"],
-                    ["get", "lo"],
-                    ["get", "hi"],
+                    ["get", "axis.lo"],
+                    ["get", "axis.hi"],
                     ["get", "plotBottom"],
                     ["get", "plotTop"]
                   ]
@@ -266,7 +457,7 @@
                   }
                 },
                 {
-                  "when": ["get", "variant.labels"],
+                  "when": ["get", "showValues"],
                   "emit": {
                     "kind": "text",
                     "key": ["list", "value", ["get", "r.id"]],
@@ -283,8 +474,7 @@
                     "style": ["get", "token.label"],
                     "color": ["get", "token.ink"],
                     "align": "center",
-                    "alignV": "center",
-                    "fit": "omit"
+                    "alignV": "center"
                   }
                 }
               ]
@@ -294,7 +484,10 @@
       ]
     },
     {
-      "repeat": { "over": ["get", "legend.items"], "as": "placed" },
+      "repeat": {
+        "over": ["get", "legend.items"],
+        "as": "placed"
+      },
       "let": [
         ["x", ["add", ["get", "gutter"], ["get", "placed.x"]]],
         ["y", ["add", ["get", "legendTop"], ["mul", ["get", "placed.row"], ["get", "legendRowHeight"]]]]
@@ -328,6 +521,23 @@
           }
         }
       ]
+    }
+  ],
+  "advice": [
+    {
+      "code": "value-label-space",
+      "when": ["if", ["get", "variant.labels"], ["eq", ["get", "showValues"], false], false],
+      "note": "Value labels need more room. Show fewer categories or make the chart wider."
+    },
+    {
+      "code": "many-columns",
+      "when": [
+        "if",
+        ["lt", 12, ["get", "rowCount"]],
+        ["every", ["get", "data.rows"], "r", ["timeCategory", ["get", "r.label"]]],
+        false
+      ],
+      "note": "Use a line chart to show the trend across more than 12 time periods."
     }
   ]
 }

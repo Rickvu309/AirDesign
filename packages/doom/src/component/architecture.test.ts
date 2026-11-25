@@ -75,7 +75,7 @@ describe("architecture diagram", () => {
     }
     const tree = expand(architectureComponent, { ...architecture, data })
     expect(role(tree, "component")).toHaveLength(10)
-    expect(sizes(role(tree, "component"))).toEqual(new Set([18]))
+    expect(sizes(role(tree, "component"))).toEqual(new Set([20]))
   })
 
   it("keeps each connector attached when a person moves a card", () => {
