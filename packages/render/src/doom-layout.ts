@@ -348,14 +348,25 @@ function layoutFor(doc: Document): BrowserLayout | undefined {
 
 const locales = new WeakMap<doom.Doom, string>()
 
-export function deckLocale(value: doom.Doom): string {
-  let locale = locales.get(value)
-  if (locale === undefined) {
+export function deckLocale(
+  value: doom.Doom,
+  typing?: { readonly before: doom.Doom; readonly layer: doom.NodeId },
+): string {
+  const known = locales.get(value)
+  if (known !== undefined) return known
+  let locale: string
+  if (typing !== undefined && layerLanguage(typing.before, typing.layer) === layerLanguage(value, typing.layer)) {
+    locale = deckLocale(typing.before)
+  } else {
     const language = doom.deckOf(value).language
     locale = language === undefined || language === "und" ? hanLanguage(doom.deckTexts(value)) : language
-    locales.set(value, locale)
   }
+  locales.set(value, locale)
   return locale
+}
+
+function layerLanguage(value: doom.Doom, layer: doom.NodeId): string {
+  return hanLanguage([doom.propOf(value.nodes.get(layer), "text")?.chars ?? ""])
 }
 
 const noSubscription = () => () => {}

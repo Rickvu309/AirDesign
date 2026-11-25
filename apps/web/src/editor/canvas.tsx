@@ -1,6 +1,6 @@
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { SlidePaint, useDoomSlide } from "@airdesign/render"
+import { deckLocale, SlidePaint, useDoomSlide } from "@airdesign/render"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { CanvasOverlay, type Preview } from "./canvas-overlay"
@@ -117,7 +117,11 @@ export function DoomCanvas(props: {
       ...(preview === null || start !== view ? [] : [{ once: "preview", author, writes: preview.writes }]),
       ...(text.preview.length === 0 ? [] : [{ once: "text-preview", author, writes: text.preview }]),
     ]
-    return edits.length === 0 ? start : doom.viewOf(start, edits)
+    if (edits.length === 0) return start
+    const shown = doom.viewOf(start, edits)
+    const layer = preview === null ? text.preview.find(({ prop }) => prop === "text")?.node : undefined
+    if (layer !== undefined) deckLocale(shown, { before: view, layer })
+    return shown
   }, [view, preview, text.preview])
   const painted = useDoomSlide(shown, slide, 1)
   const geometry = useMemo(() => (painted.nodes === null ? emptyGeometry : geometryOf(painted.nodes)), [painted.nodes])

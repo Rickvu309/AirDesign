@@ -1,4 +1,5 @@
 import * as doom from "@airdesign/doom"
+import { deckLocale } from "@airdesign/render"
 import { useMemo, useSyncExternalStore } from "react"
 import { Thumb } from "./thumb"
 
@@ -54,9 +55,12 @@ export function TypedThumb(props: {
 }) {
   const { typing, view, slide } = props
   const writes = useSyncExternalStore(typing.subscribe, () => typing.writesOn(slide))
-  const shown = useMemo(
-    () => (writes.length === 0 ? view : doom.viewOf(view, [{ once: "typing", author, writes }])),
-    [view, writes],
-  )
+  const shown = useMemo(() => {
+    if (writes.length === 0) return view
+    const shown = doom.viewOf(view, [{ once: "typing", author, writes }])
+    const layer = writes.find(({ prop }) => prop === "text")?.node
+    if (layer !== undefined) deckLocale(shown, { before: view, layer })
+    return shown
+  }, [view, writes])
   return <Thumb view={shown} slide={slide} width={props.width} assetUrl={props.assetUrl} />
 }
