@@ -4,8 +4,8 @@
     {
       "file": "packages/live/src/doom-deck.ts",
       "names": ["connected"],
-      "digest": "eb0785e8354c",
-      "blob": "ad4339b1f8206858f09acdcded81d1d092c3ba56"
+      "digest": "d1ce1b07ba10",
+      "blob": "2a79a42e75af4d136a316e715f62651876c2371c"
     },
     {
       "file": "packages/live/src/doom-follow.ts",
@@ -17,7 +17,7 @@
       "file": "packages/live/src/doom-queue.ts",
       "names": ["landed", "queueEditOn", "releasedBases", "releaseBases"],
       "digest": "0ed9e3c3e080",
-      "blob": "4426be3f0a74033d7cc45517bbc1e26430141497"
+      "blob": "7bae8389be1a0f653dcddbcf70a8237173ca0a7d"
     },
     {
       "file": "packages/live/src/turn-replay.ts",

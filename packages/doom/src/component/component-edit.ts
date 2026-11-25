@@ -1,5 +1,5 @@
-import { componentWrites } from "./deck-component.js"
-import { applyBeforeFreeing } from "../apply-edit.js"
+import { componentWrites, deckComponent, returningInstances } from "./deck-component.js"
+import { applyBeforeRebuild } from "../apply-edit.js"
 import { changingWrites, sameValue } from "../changing-writes.js"
 import type { Doom, Landed, Write } from "../doom.js"
 import { onDeck, propOf, flows } from "../doom-walk.js"
@@ -105,7 +105,7 @@ export function componentEditPreview(
       })),
     ],
   }
-  const next = applyBeforeFreeing({ ...view, onces: new Map() }, edit, true)
+  const next = applyBeforeRebuild({ ...view, onces: new Map() }, edit)
   if (isRefusal(next)) return next
   const refused = guardInstances(view, next, { ...edit, writes: asked.filter((write) => !sizes.has(write)) }, false)
   if (refused !== undefined) return refused
@@ -167,4 +167,38 @@ export function prepareComponentEdit(
   }
   const prepared = [...asked.filter((write) => !generated.has(cell(write))), ...generated.values()]
   return bytesOf(JSON.stringify(prepared)) >= limits.body - limits.form ? refuse("limit") : prepared
+}
+
+export function withReturningRebuilt(
+  view: Doom,
+  writes: readonly Write[],
+  measure: Measure,
+): readonly Write[] | Refusal {
+  const returning = returningInstances(view, writes)
+  if (returning.length === 0) return writes
+  const next = applyBeforeRebuild(
+    { ...view, onces: new Map() },
+    {
+      once: "returning",
+      author: { kind: "person", id: "returning" },
+      readBase: view.rev,
+      rev: rev(view.rev + 1),
+      writes,
+    },
+  )
+  if (isRefusal(next)) return next
+  const stale = returning.filter((root) => {
+    const instance = propOf(next.nodes.get(root), "instance")
+    const source = instance?.component.node
+    return source !== undefined && deckComponent(next, source)?.revision !== instance?.component.revision
+  })
+  if (stale.length === 0) return writes
+  const generated = new Map<string, Write>()
+  const cell = ({ node, prop }: Write) => `${node}\u0000${prop}`
+  for (const root of stale) {
+    const update = refreshComponent(view, next, root, measure)
+    if (isRefusal(update)) return update
+    for (const write of update.writes) generated.set(cell(write), write)
+  }
+  return [...writes.filter((write) => !generated.has(cell(write))), ...generated.values()]
 }

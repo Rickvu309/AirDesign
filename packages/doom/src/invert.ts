@@ -1,4 +1,6 @@
 import { componentWrites } from "./component/deck-component.js"
+import { deletedInstances } from "./component/deleted-instances.js"
+import { withReturningRebuilt } from "./component/component-edit.js"
 import { applyBeforeFreeing } from "./apply-edit.js"
 import {
   derivedCells,
@@ -87,7 +89,8 @@ export function invertStep(
 ): readonly Write[] | Refusal {
   const expanded = withPartDeletes(before, asked.writes)
   if (isRefusal(expanded)) return []
-  const edit = { ...asked, writes: expanded }
+  const deleted = deletedInstances(after, expanded, (root) => propOf(before.nodes.get(root), "instance")).nodes
+  const edit = { ...asked, writes: expanded.filter(({ node }) => !deleted.has(node)) }
   const joined = instanceRoots(edit.writes).flatMap((root) => {
     const prior = propOf(before.nodes.get(root), "instance")
     if (prior === undefined) return []
@@ -116,7 +119,15 @@ export function invertStep(
   const removed = new Set(
     edit.writes.flatMap(({ node, prop, value }) => (prop === "parent" && value === null ? [node] : [])),
   )
-  if (roots.some((root) => !onDeck(after.nodes, root) && !removed.has(root))) return []
+  const removedWith = (root: NodeId) => {
+    let at: NodeId | undefined = root
+    for (let hops = 0; at !== undefined && hops <= after.nodes.size; hops += 1) {
+      if (removed.has(at)) return true
+      at = parentIn(after, at)?.id
+    }
+    return false
+  }
+  if (roots.some((root) => !onDeck(after.nodes, root) && !removedWith(root))) return []
   if (grouped && instanceRemovalConflicts(after, structural, owned)) return []
   if (
     grouped &&
@@ -182,7 +193,7 @@ export function invertStep(
     if (isRefusal(restored)) return restored
     rebuilt.push(...restored.writes)
   }
-  const inverse = withRegenerated(
+  const reversed = withRegenerated(
     [
       ...moves,
       ...standing.filter((each) => each.prop !== "parent"),
@@ -190,7 +201,9 @@ export function invertStep(
     ],
     rebuilt,
   )
-  if (grouped || rebuilt.length > 0) {
+  const inverse = withReturningRebuilt(after, reversed, measure)
+  if (isRefusal(inverse)) return inverse
+  if (grouped || rebuilt.length > 0 || inverse !== reversed) {
     const trial = applyBeforeFreeing(after, {
       once: edit.once + ":inverse",
       author: { kind: "person", id: "inverse" },
@@ -198,7 +211,7 @@ export function invertStep(
       readBase: after.rev,
       writes: inverse,
     })
-    if (isRefusal(trial)) return rebuilt.length === 0 ? [] : trial
+    if (isRefusal(trial)) return rebuilt.length === 0 && inverse === reversed ? [] : trial
   }
   return inverse
 }

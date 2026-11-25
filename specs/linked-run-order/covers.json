@@ -5,19 +5,19 @@
       "file": "packages/doom/src/component/instance-inverse.ts",
       "names": ["derivedCells", "restoreInstance"],
       "digest": "55ac59076a4e",
-      "blob": "a24d833e6cfb08ae2986f08ce9eca402e1ef3f5f"
+      "blob": "743f49fc0ef3562c0d84b5883a0f7bcc085b20e0"
     },
     {
       "file": "packages/doom/src/invert-run.ts",
       "names": ["invertRun", "undoSourceOf"],
-      "digest": "2a68f8207ea9",
-      "blob": "29f7b164f882fd84dd0799865557a43ebf172cb4"
+      "digest": "3c1b4046dfec",
+      "blob": "4bede352c416748d9aa87f18d44e3a068cdadd0a"
     },
     {
       "file": "packages/mcp/src/undo-tool.ts",
       "names": ["turnRun"],
-      "digest": "5b9b1955c040",
-      "blob": "03b9b995eb7794eb8b508dfbaab17480e165dfd4"
+      "digest": "13faf4e5a96c",
+      "blob": "d6726bcef9f2787187effca82f8b8363a2e7d621"
     },
     {
       "file": "apps/api/src/doom/doom-write.ts",

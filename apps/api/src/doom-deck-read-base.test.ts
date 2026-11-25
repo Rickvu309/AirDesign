@@ -375,3 +375,55 @@ it("validates and replays a deck component through the ordinary edit routes", as
   }
   expect(replay.nodes).toEqual(detached.nodes)
 })
+
+it("detaches a nested instance whose component was deleted while its slide was gone, as the device does", async () => {
+  const deck = await made()
+  const component = doom.nodeId("nested:1")
+  const second = doom.nodeId("nested:2")
+  const group = doom.nodeId("nested:3")
+  const frame = doom.nodeId("nested:4")
+  const at = doom.orderKeyBetween(null, null)
+  const box = { x: 0, y: 0, w: 300, h: 100, rotation: 0, flipH: false, flipV: false }
+  const spec = {
+    version: 1,
+    name: "Tile",
+    collections: {},
+    parts: [{ emit: { kind: "rect", key: ["list", "tile"], x: 0, y: 0, w: 100, h: 100, fill: { var: "accent1" } } }],
+    sample: { w: 300, h: 100, data: {} },
+  }
+  const setup: doom.Write[] = [
+    { node: component, prop: "type", value: "component" },
+    { node: component, prop: "parent", value: { id: startIds.deck, at } },
+    { node: component, prop: "name", value: "Tile" },
+    { node: component, prop: "spec", value: spec },
+    { node: component, prop: "revision", value: 1 },
+    { node: second, prop: "type", value: "slide" },
+    { node: second, prop: "parent", value: { id: startIds.row, at: doom.orderKeyBetween(at, null) } },
+    { node: group, prop: "type", value: "frame" },
+    { node: group, prop: "parent", value: { id: second, at } },
+    { node: group, prop: "box", value: box },
+  ]
+  expect((await send(deck, setup)).json).toMatchObject({ ok: true })
+  const authored = await foldOf(deck)
+  const placed = doom.placeComponent(
+    authored,
+    { node: component, revision: 1 },
+    { frame, parent: { id: group, at }, box, data: {}, measure: doom.measureWith({}) },
+  )
+  if (doom.isRefusal(placed)) throw new Error(JSON.stringify(placed))
+  expect((await post("edit", { deck, edit: { ...edit(placed), readBase: authored.rev } })).json).toMatchObject({
+    ok: true,
+  })
+  const linked = await foldOf(deck)
+  const slideBack: doom.Write = { node: second, prop: "parent", value: doom.propOf(linked.nodes.get(second), "parent") }
+  expect((await send(deck, [{ node: second, prop: "parent", value: null }])).json).toMatchObject({ ok: true })
+  expect((await send(deck, [{ node: component, prop: "parent", value: null }])).json).toMatchObject({ ok: true })
+  const gone = await foldOf(deck)
+  const device = doom.applyEdit(gone, { ...edit([slideBack]), rev: doom.rev(gone.rev + 1) })
+  if (doom.isRefusal(device)) throw new Error(JSON.stringify(device))
+  expect(device.nodes.get(frame)).not.toHaveProperty("instance")
+  expect((await send(deck, [slideBack])).json).toMatchObject({ ok: true })
+  const back = await foldOf(deck)
+  expect(doom.onDeck(back.nodes, frame)).toBe(true)
+  expect(back.nodes).toEqual(device.nodes)
+})

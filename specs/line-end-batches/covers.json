@@ -16,8 +16,8 @@
     {
       "file": "apps/api/src/doom/doom-edit-part.ts",
       "names": ["partSql", "seedsOf"],
-      "digest": "94e7d2ce9b43",
-      "blob": "861f1277271d61752b22ec3cf70f8e509aa15fa2"
+      "digest": "ae0d1fa14be9",
+      "blob": "a3207072486aade5f9498d04e5bec3b91ad89b1e"
     }
   ]
 }
