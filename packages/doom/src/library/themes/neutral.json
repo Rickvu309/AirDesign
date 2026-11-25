@@ -12,7 +12,10 @@
     "accent4": "#7a5af8",
     "accent5": "#d92d20",
     "accent6": "#4e8b2f",
-    "link": "#2f5bd3"
+    "link": "#2f5bd3",
+    "positive": "#087b67",
+    "negative": "#711f27",
+    "total": "#2f5bd3"
   },
   "fonts": {
     "heading": "Inter SemiBold",

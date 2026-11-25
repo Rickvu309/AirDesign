@@ -7,7 +7,8 @@ import { type Text, type TextStyleName, textStyleNames } from "../text.js"
 import { textContent } from "./text-content.js"
 import { keyOf, keyString, type PartKey } from "./instance.js"
 import { type Reader, finite, list, literal, naming, object, reject } from "../read-kit.js"
-import { type FittingContext, fitGroups, fitOne } from "./fit-text.js"
+import { type FittingContext, fitGroups, fitOne, textSize } from "./fit-text.js"
+import type { ComponentFinding, TextFitFinding } from "./findings.js"
 import type { Expr } from "./expression.js"
 import type { Emission } from "./spec.js"
 import { color, type Value } from "./values.js"
@@ -20,15 +21,6 @@ export type ComponentNode = {
   readonly type: "shape"
   readonly props: ShapeProps
   readonly generatedStyle?: TextStyleName
-}
-export type ComponentFinding = {
-  readonly kind: "text-fit"
-  readonly key: PartKey
-  readonly field: string
-  readonly size: number
-  readonly neededWidth: number
-  readonly availableWidth: number
-  readonly thinned?: number
 }
 export type ComponentTree = {
   readonly id: NodeId
@@ -102,8 +94,8 @@ export type GroupedText = {
   readonly thin: number | undefined
   readonly laneWidth: number
 }
-export type Kept = { readonly kind: "kept"; readonly part: TextPart; readonly finding: ComponentFinding }
-export type PreparedPart = PlacedPart | GroupedText | Kept | ComponentFinding
+export type Kept = { readonly kind: "kept"; readonly part: TextPart; readonly finding: TextFitFinding }
+export type PreparedPart = PlacedPart | GroupedText | Kept | TextFitFinding
 
 const align = literal(["left", "center", "right", "justify"])
 const vertical = literal(["top", "center", "bottom"])
@@ -118,12 +110,17 @@ type ComponentStyle = ((key: PartKey) => TextStyleName | undefined) | undefined
 export function preparePart(
   emit: Emission,
   field: string,
-  context: FittingContext & { readonly read: (expr: Expr) => Value; readonly styleFor: ComponentStyle },
+  context: FittingContext & {
+    readonly read: (expr: Expr, field: string, key?: PartKey) => Value
+    readonly styleFor: ComponentStyle
+  },
 ): PreparedPart {
   const { read, charge } = context
-  const readField = <T>(name: string, expr: Expr, parse: (value: Value) => T): T =>
-    naming(`${field}.${name}`, () => parse(read(expr)))
-  const key = readField("key", emit.key, keyOf)
+  const key = naming(`${field}.key`, () => keyOf(read(emit.key, `${field}.key`)))
+  const readField = <T>(name: string, expr: Expr, parse: (value: Value) => T): T => {
+    const path = `${field}.${name}`
+    return naming(path, () => parse(read(expr, path, key)))
+  }
   if (emit.kind === "line") {
     return {
       key,
@@ -194,14 +191,19 @@ export function preparePart(
   const alignment = readField("align", emit.align, align)
   const ink = readField("color", emit.color, color)
   const textStyle = readField("style", emit.style, literal(textStyleNames))
+  const explicitSize = emit.size === undefined ? undefined : readField("size", emit.size, textSize)
   const alignV = readField("alignV", emit.alignV, vertical)
   const fit = emit.fit
   const content = readField("chars", emit.chars, (raw) =>
-    textContent(raw, ink, alignment, context.theme.textStyles[textStyle].size, charge),
+    textContent(raw, ink, alignment, explicitSize ?? context.theme.textStyles[textStyle].size, charge),
   )
   const generated = naming(field, () =>
     prop("text", {
       ...content,
+      ...(explicitSize === undefined ? {} : {
+        spans: content.spans.map((span) => ({ ...span, size: span.size ?? explicitSize })),
+        wrap: "none",
+      }),
       style: textStyle,
       resize: "fixed",
       alignV,
@@ -245,9 +247,9 @@ export function treeOf(
   frame: ReturnType<typeof readFrame>,
   parts: readonly PreparedPart[],
   context: FittingContext,
+  findings: ComponentFinding[],
   layout?: Props["layout"],
 ): ComponentTree {
-  const findings: ComponentFinding[] = []
   const seen = new Map<string, { readonly id: NodeId; readonly part: PlacedPart }>()
   for (const fitted of fitGroups(parts, context, frame.w)) {
     if (fitted.kind === "text-fit") {

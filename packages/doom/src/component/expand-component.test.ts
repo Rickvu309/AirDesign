@@ -81,7 +81,7 @@ describe("expandComponent", () => {
     const baseline = zero(part(result, "zero"))
     expect(part(result, "bar", "q1")?.props.box.y).toBe(baseline)
     expect(bottom(part(result, "bar", "q2")?.props.box)).toBe(baseline)
-    expect(part(result, "value", "q1")?.props.text?.chars).toBe("−12")
+    expect(part(result, "value", "q1")?.props.text?.chars).toBe("−12.0")
   })
 
   it("keeps zero and its label while a missing observation has only its category", () => {
@@ -138,6 +138,87 @@ describe("expandComponent", () => {
     expect(
       part(nodes({ ...inputs, tokens: { accent: defaultTheme.colors.accent2 } }), "bar", "q1")?.props.fills,
     ).toEqual([{ kind: "solid", color: defaultTheme.colors.accent2 }])
+  })
+
+  it.each([
+    [1250, "1,250", "0"],
+    [41, "41.0", "0.0"],
+    [7.25, "7.25", "0.00"],
+  ])("uses one precision for %s and a tiny value in the same chart", (value, expected, rounded) => {
+    const tree = expand(columnComponent, {
+      ...inputs,
+      data: {
+        rows: [
+          { id: "max", label: "Largest", value },
+          { id: "tiny", label: "Tiny", value: -0.001 },
+        ],
+      },
+    })
+    expect(part(tree.children, "value", "max")?.props.text?.chars).toBe(expected)
+    expect(part(tree.children, "value", "tiny")?.props.text?.chars).toBe(rounded)
+    expect(tree.findings).toEqual([
+      expect.objectContaining({ kind: "rounded-to-zero", key: ["value", "tiny"], value: -0.001 }),
+    ])
+  })
+
+  it("chooses precision in display units and honors explicit digits", () => {
+    const input = { ...inputs, data: { rows: [{ id: "r", label: "Row", value: 4100 }] }, tokens: { scale: 100 } }
+    expect(part(nodes(input), "value", "r")?.props.text?.chars).toBe("41.0")
+    const themed = { ...input, themeTokens: { "number.digits": 2 } }
+    expect(part(nodes(themed), "value", "r")?.props.text?.chars).toBe("41.00")
+    expect(part(nodes({ ...themed, tokens: { ...input.tokens, digits: 0 } }), "value", "r")?.props.text?.chars).toBe(
+      "41",
+    )
+  })
+
+  it("flows the sign key as complete swatch and label pairs", () => {
+    const input = {
+      ...inputs,
+      variant: { legend: true },
+      data: {
+        rows: [
+          { id: "a", label: "A", value: 41 },
+          { id: "b", label: "B", value: -6 },
+        ],
+      },
+      tokens: { positiveLabel: "Growth", negativeLabel: "Decline" },
+    }
+    const tree = expand(columnComponent, input)
+    for (const [id, sign] of [
+      ["a", "positive"],
+      ["b", "negative"],
+    ] as const) {
+      expect(part(tree.children, "bar", id)?.props.fills).toEqual([{ kind: "solid", color: { var: sign } }])
+      expect(part(tree.children, "legend-swatch", sign)?.props.fills).toEqual(
+        part(tree.children, "bar", id)?.props.fills,
+      )
+      expect(part(tree.children, "legend-label", sign)).toBeDefined()
+    }
+    const narrow = expand(columnComponent, { ...input, frame: { ...inputs.frame, w: 165 } })
+    expect(part(narrow.children, "legend-label", "positive")?.props.box.y).toBeLessThan(
+      part(narrow.children, "legend-label", "negative")!.props.box.y,
+    )
+    const crowded = expand(columnComponent, { ...input, tokens: { ...input.tokens, positiveLabel: "W".repeat(200) } })
+    expect(part(crowded.children, "legend-label", "positive")).toBeUndefined()
+    expect(part(crowded.children, "legend-swatch", "positive")).toBeUndefined()
+    expect(part(crowded.children, "legend-swatch", "negative")).toBeDefined()
+    expect(crowded.findings).toContainEqual(expect.objectContaining({ kind: "flow-omitted", omitted: [0] }))
+  })
+
+  it("keeps the plot when the frame is too short for a legend row", () => {
+    const input = {
+      ...inputs,
+      frame: { ...inputs.frame, w: 280, h: 240 },
+      data: {
+        rows: [
+          { id: "a", label: "A", value: 41 },
+          { id: "b", label: "B", value: -6 },
+        ],
+      },
+    }
+    const withLegend = expand(columnComponent, { ...input, variant: { legend: true } })
+    expect(withLegend.children).toEqual(nodes(input))
+    expect(withLegend.findings).toContainEqual(expect.objectContaining({ kind: "flow-omitted", omitted: [0, 1] }))
   })
 
   it("uses grouping and locale from theme tokens with instance overrides", () => {

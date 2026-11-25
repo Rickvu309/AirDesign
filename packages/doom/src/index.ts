@@ -79,7 +79,7 @@ export {
   emptyDoom,
 } from "./doom.js"
 export type { Para, Span, Text, TextStyleName } from "./text.js"
-export { paragraphAligns, textLimits } from "./text.js"
+export { paragraphAligns, textLimits, textStyleNames } from "./text.js"
 export { notesText } from "./notes-text.js"
 export { type TextPatch, lookWrite, paraWrite, styleWrite } from "./text-writes.js"
 export { linkedOwner } from "./component/instance-ownership.js"

@@ -5,6 +5,7 @@ import type { TreeNode } from "../doom-tree.js"
 export const plainTheme: Theme = {
   ...theme(),
   colors: {
+    ...theme().colors,
     text: "#111111",
     background: "#ffffff",
     text2: "#666666",

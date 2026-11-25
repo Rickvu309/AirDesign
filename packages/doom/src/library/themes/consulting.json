@@ -12,7 +12,10 @@
     "accent4": "#456d67",
     "accent5": "#596777",
     "accent6": "#994226",
-    "link": "#00665e"
+    "link": "#00665e",
+    "positive": "#007c70",
+    "negative": "#642516",
+    "total": "#14334b"
   },
   "fonts": {
     "heading": "Source Serif 4",

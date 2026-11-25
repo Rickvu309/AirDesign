@@ -17,7 +17,7 @@ describe("swatchesOf", () => {
 describe("neutralColorNames", () => {
   it("are the names a new deck's panel shows", () => {
     const theme = doom.themeLibrary.neutral.theme
-    for (const [name, shown] of Object.entries(neutralColorNames))
-      expect(swatchesOf(theme).find((swatch) => swatch.var === name)?.name).toBe(shown)
+    const names = Object.fromEntries(swatchesOf(theme).map((swatch) => [swatch.var, swatch.name]))
+    expect(names).toEqual(neutralColorNames)
   })
 })

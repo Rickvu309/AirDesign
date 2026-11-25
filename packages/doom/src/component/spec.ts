@@ -22,6 +22,8 @@ export const tokenRecord = (raw: unknown): Readonly<Record<string, ReturnType<ty
   Object.fromEntries(
     entries(raw, 64).map(([key, value]) => {
       switch (key) {
+        case "number.digits":
+          return [key, naming(key, () => integer(-1, 12)(value))]
         case "number.locale":
           return [key, naming(key, () => readLocale(value))]
         case "number.group":
@@ -82,13 +84,19 @@ function emission(read: (raw: unknown) => Expr) {
   }
   const stroke = object({ color: read, width: read })
   const surface = { stroke, radius: read }
+  const readTextPart = object(
+    { ...position, chars: read, style: read, color: read, align: read, alignV: read },
+    { ...surface, fill: read, padding: read, size: read, fit: (raw: unknown) => (raw === "omit" ? raw : fitText(raw)) },
+  )
   return variant("kind", {
     rect: object({ ...position, fill: read }, surface),
     path: object({ ...position, d: read }, { fill: read, fillStroke: boolean, stroke }),
-    text: object(
-      { ...position, chars: read, style: read, color: read, align: read, alignV: read },
-      { ...surface, fill: read, padding: read, fit: (raw: unknown) => (raw === "omit" ? raw : fitText(raw)) },
-    ),
+    text: (raw: unknown) => {
+      const text = readTextPart(raw)
+      if (text.size !== undefined && text.fit !== undefined)
+        naming("size", () => reject("shape", "An explicit text size requires a box without fit."))
+      return text
+    },
     line: object(
       { key: read, start: read, end: read, color: read, width: read, route: read, arrow: read },
       { dash: read, channels: read },
@@ -211,6 +219,7 @@ export function readTokens(
   const defaults: ReturnType<typeof tokenRecord> = {
     ...themeTokens,
     ...spec.defaults,
+    "number.digits": themeTokens["number.digits"] ?? spec.defaults?.["number.digits"] ?? -1,
     "number.locale":
       themeTokens["number.locale"] ?? spec.defaults?.["number.locale"] ?? defaultNumberTokens["number.locale"],
     "number.group":

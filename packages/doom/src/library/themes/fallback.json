@@ -10,7 +10,10 @@
     "accent4": "#f2a900",
     "accent5": "#e4572e",
     "accent6": "#7a5cc0",
-    "link": "#1f6feb"
+    "link": "#1f6feb",
+    "positive": "#007e6e",
+    "negative": "#6e271b",
+    "total": "#0b3a6f"
   },
   "fonts": {
     "heading": "Inter",

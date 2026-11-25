@@ -1,6 +1,7 @@
-import type { Measure, Measured, Text, Theme } from "../index.js"
-import { naming, reject } from "../read-kit.js"
-import type { ComponentFinding, GroupedText, Kept, PreparedPart, TextPart } from "./nodes.js"
+import { type Measure, type Measured, type Text, type Theme, textLimits } from "../index.js"
+import { finite, naming, reject } from "../read-kit.js"
+import type { GroupedText, Kept, PreparedPart, TextPart } from "./nodes.js"
+import type { TextFitFinding } from "./findings.js"
 import { type Charge, numeric } from "./values.js"
 
 export type FittingContext = {
@@ -9,19 +10,27 @@ export type FittingContext = {
   readonly charge: Charge
 }
 
+export const textSize = finite(textLimits.size.min, textLimits.size.max)
 const tolerance = 1e-6
 
 export function measurePart(
   part: TextPart,
   text: Text,
+  context: FittingContext,
+  fit?: "two-lines",
+  width: number | null = null,
+): Measured {
+  return naming(`${part.field}.fit`, () => measureText(text, context, fit, width))
+}
+
+export function measureText(
+  text: Text,
   { measure, theme, charge }: FittingContext,
   fit?: "two-lines",
   width: number | null = null,
 ): Measured {
-  return naming(`${part.field}.fit`, () => {
-    charge(96 + (fit === undefined ? 2 : 6) * text.chars.length + 8 * (text.paras.length - 1))
-    return measure(text, theme, width, fit)
-  })
+  charge(96 + (fit === undefined ? 2 : 6) * text.chars.length + 8 * (text.paras.length - 1))
+  return measure(text, theme, width, fit)
 }
 
 export function fits(part: TextPart, result: Measured, limit: number): boolean {
@@ -83,12 +92,7 @@ function withWidth(fit: Fit, part: TextPart): TextPart | undefined {
   if (fit.split !== undefined && fit.split.w <= part.props.box.w + tolerance) return withText(part, fit.text)
 }
 
-function finding(
-  part: TextPart,
-  size: number,
-  neededWidth: number,
-  availableWidth = part.props.box.w,
-): ComponentFinding {
+function finding(part: TextPart, size: number, neededWidth: number, availableWidth = part.props.box.w): TextFitFinding {
   return {
     kind: "text-fit",
     key: part.key,
@@ -99,7 +103,7 @@ function finding(
   }
 }
 
-function missed(part: TextPart, text: Text, found: ComponentFinding): Kept | ComponentFinding {
+function missed(part: TextPart, text: Text, found: TextFitFinding): Kept | TextFitFinding {
   return part.props.fills === undefined ? found : { kind: "kept", part: withText(part, text), finding: found }
 }
 
@@ -107,7 +111,7 @@ export function fitOne(
   part: TextPart,
   smaller: number | undefined,
   context: FittingContext,
-): TextPart | Kept | ComponentFinding {
+): TextPart | Kept | TextFitFinding {
   const natural = measurePart(part, part.props.text, context)
   if (fits(part, natural, smaller === undefined ? Infinity : 2)) return part
   if (smaller === undefined)
@@ -224,7 +228,7 @@ export function* fitGroups(
     groups.set(group, shared)
   }
 
-  const fitted = new Map<TextPart, TextPart | Kept | ComponentFinding>()
+  const fitted = new Map<TextPart, TextPart | Kept | TextFitFinding>()
   for (const [name, group] of groups) {
     if (!group.shrink) continue
     const fits = group.entries.map(({ part }) => {

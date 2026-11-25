@@ -1,4 +1,8 @@
 import { finite, integer, literal, object, reject } from "../read-kit.js"
+import type { ReportFinding } from "./findings.js"
+import type { FittingContext } from "./fit-text.js"
+import { decimals, positiveScale } from "./precision.js"
+import { flowText, textWidth } from "./text-operators.js"
 import { polyline, wedge } from "./path-operators.js"
 import { polar } from "./polar.js"
 import {
@@ -9,17 +13,15 @@ import {
   isList,
   numeric,
   string,
+  valueList,
   wordsWithin,
 } from "./values.js"
 
-const list = (value: Value | undefined): Values => (isList(value) ? value : reject("shape", "A list."))
+const list = valueList
 const number = numeric
 const index = integer(-1e15, 1e15)
 const readFormat = object({
-  scale: (raw) => {
-    const scale = number(raw)
-    return scale > 0 ? scale : reject("shape", "The scale must be positive.")
-  },
+  scale: positiveScale,
   digits: integer(0, 12),
   prefix: string,
   suffix: string,
@@ -65,7 +67,13 @@ export function numberFormat(tokens: ValueRecord, charge: Charge): NumberFormat 
 type Operation = {
   readonly min: number
   readonly max: number
-  readonly run: (args: Values, charge: Charge, format: NumberFormat) => Value
+  readonly run: (
+    args: Values,
+    charge: Charge,
+    format: NumberFormat,
+    context: FittingContext,
+    report: ReportFinding,
+  ) => Value
 }
 
 const fixed = (arity: number, run: Operation["run"]): Operation => ({ min: arity, max: arity, run })
@@ -133,13 +141,19 @@ const operators: Readonly<Record<string, Operation>> = {
     const size = number(step * finite(0, 1)(share))
     return { start: number(number(start) + step * index(i) + (step - size) / 2), size }
   }),
-  format: fixed(2, ([value, options], charge, format) => {
+  decimals: fixed(2, decimals),
+  isInteger: fixed(1, ([value]) => Number.isInteger(number(value))),
+  textWidth: { min: 2, max: 3, run: (args, _charge, _format, context) => textWidth(args, context) },
+  flowText: fixed(2, (args, _charge, _format, context, report) => flowText(args, context, report)),
+  format: fixed(2, ([value, options], charge, format, _context, report) => {
     if (options !== null && typeof options === "object" && !isList(options)) {
       if (typeof options.prefix === "string") charge(options.prefix.length)
       if (typeof options.suffix === "string") charge(options.suffix.length)
     }
     const { scale, digits, prefix, suffix, sign } = readFormat(options)
-    const rounded = number(Number(number(number(value) / scale).toFixed(digits)))
+    const original = number(value)
+    const rounded = number(Number(number(original / scale).toFixed(digits)))
+    if (original !== 0 && rounded === 0) report({ kind: "rounded-to-zero", value: original, scale, digits })
     const lead = rounded < 0 ? "−" : rounded > 0 && sign === "always" ? "+" : ""
     return string(lead + prefix + format(Math.abs(rounded), digits) + suffix)
   }),

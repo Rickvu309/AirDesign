@@ -12,7 +12,10 @@
     "accent4": "#7b4b6e",
     "accent5": "#2f6f8f",
     "accent6": "#8c6239",
-    "link": "#b4532a"
+    "link": "#b4532a",
+    "positive": "#57733c",
+    "negative": "#67281a",
+    "total": "#2f6f8f"
   },
   "fonts": {
     "heading": "Source Serif 4 SemiBold",
