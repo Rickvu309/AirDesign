@@ -14,6 +14,7 @@ export const fontWeights = [
 
 export const regularWeight = 400
 export const boldWeight = 700
+export const pinnedOpticalSize = 32
 
 export type NamedFace = {
   readonly family: string

@@ -43,6 +43,8 @@ The comparison samples styled paragraphs through Doom's existing measure and rec
 
 Set `VITE_COMPARE_FONT_LAYOUT=1` when running the web development server. For the API, set `NODE_ENV=development AIRDESIGN_COMPARE_FONT_LAYOUT=1`. Look for `Served font comparison` in each console. The records contain offsets, advances, cache counts, and elapsed time. Both engines use `und` and automatic direction because deck text has no locale or direction fields.
 
-The shipped ICU module keeps grapheme and line rules, their dictionaries, and the data those operations and script and emoji selection need. To rebuild it, activate Emscripten 4.0.23, check out ICU at `release-77-1`, and run `bash packages/fonts/wasm/build-icu.sh <icu-checkout> <empty-build-directory>` from the repo root. The browser spec checks the WASM hash and its 4.8 MB raw and 2.8 MB gzip budgets. The build copies the licence notices beside the browser assets.
+The shipped ICU module keeps grapheme and line rules and the Thai, Lao, Khmer, and Burmese dictionaries. Its budgets are 2.7 MB raw and 1.2 MB gzip. The browser spec verifies the WASM hash and compares its break offsets with the pinned ICU reference and the Unicode suites. The build copies the licence notices beside the browser assets.
 
-HarfBuzz keeps font files by revision and SHA-256. The cache has a 48 MiB font byte budget. The local binding patch releases font instances, faces, and blobs on eviction. WASM can reuse freed space within its existing memory pages.
+To rebuild the ICU module, activate Emscripten 4.0.23 and check out ICU at `release-77-1`. Run `bash packages/fonts/wasm/build-icu.sh <icu-checkout> <empty-build-directory>` from the repo root.
+
+Each Node process or browser JavaScript context shares one engine with a 48 MiB font byte budget. HarfBuzz keeps font files by revision and SHA-256. Face reads run concurrently and share a read in flight for the same revision and key. Three failed reads exhaust the attempts for that key and revision. The binding patch releases font instances, faces, and blobs so WASM can reuse their space.

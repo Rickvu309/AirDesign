@@ -1,8 +1,8 @@
 import { fallbackFont, servedFontName } from "./family.js"
 import { fontRevision } from "./catalog.js"
-import { boldWeight, regularWeight, type ServedFace } from "./named-face.js"
+import { boldWeight, pinnedOpticalSize, regularWeight, type ServedFace } from "./named-face.js"
 import { pickServedFace, weightRange } from "./served-face.js"
-import type { FaceAsset, FontLayoutEngine, LayoutFace, LayoutParagraph } from "./layout-contract.js"
+import type { FaceAsset, FontLayoutEngine, LayoutParagraph } from "./layout-contract.js"
 
 type MeasureSample = {
   readonly text: string
@@ -32,7 +32,6 @@ export type LayoutComparison = SampleResult & {
 
 const maxShapes = 64
 const intervalMs = 250
-let engine: Promise<FontLayoutEngine> | undefined
 
 function compare(layout: FontLayoutEngine, sample: MeasureSample, paragraph: LayoutParagraph): SampleResult {
   const { text, sourceOffsetByTextOffset: offsets } = paragraph
@@ -87,32 +86,33 @@ export function createLayoutProbe(options: {
       try {
         if (options.afterPaint !== undefined) await options.afterPaint()
         start = now()
-        const active = await (engine ??= import("./layout.js").then(({ createFontLayout }) => createFontLayout()))
-        const runs: LayoutParagraph["runs"][number][] = []
-        for (const run of sample.runs) {
-          const weight = run.bold ? boldWeight : regularWeight
-          const primary = servedFontName(run.font) ?? fallbackFont
-          const faces: LayoutFace[] = []
-          for (const family of new Set([primary, fallbackFont])) {
-            const chosen = pickServedFace(await options.family(family), weight, run.italic)
-            if (chosen === undefined) continue
-            const [low, high] = weightRange(chosen)
-            faces.push(
-              await active.prepareFace({
-                revision: fontRevision,
-                key: chosen.key,
-                read: chosen.read,
-                axes: { wght: Math.max(low, Math.min(high, weight)), opsz: 32 },
+        const { createFontLayout } = await import("./layout.js")
+        const active = await createFontLayout()
+        const runs = await Promise.all(
+          sample.runs.map(async (run): Promise<LayoutParagraph["runs"][number] | undefined> => {
+            const weight = run.bold ? boldWeight : regularWeight
+            const primary = servedFontName(run.font) ?? fallbackFont
+            const faces = await Promise.all(
+              [...new Set([primary, fallbackFont])].map(async (family) => {
+                const chosen = pickServedFace(await options.family(family), weight, run.italic)
+                if (chosen === undefined) return undefined
+                const [low, high] = weightRange(chosen)
+                return active.prepareFace({
+                  revision: fontRevision,
+                  key: chosen.key,
+                  read: chosen.read,
+                  axes: { wght: Math.max(low, Math.min(high, weight)), opsz: pinnedOpticalSize },
+                })
               }),
             )
-          }
-          const [first, ...fallbacks] = faces
-          if (first !== undefined) runs.push({ ...run, faces: [first, ...fallbacks] })
-        }
+            const [first, ...fallbacks] = faces.filter((face) => face !== undefined)
+            return first === undefined ? undefined : { ...run, faces: [first, ...fallbacks] }
+          }),
+        )
         outcome = compare(active, sample, {
           text: sample.text,
           sourceOffsetByTextOffset: sample.sourceOffsetByTextOffset,
-          runs,
+          runs: runs.filter((run) => run !== undefined),
           locale: "und",
           direction: "auto",
         })

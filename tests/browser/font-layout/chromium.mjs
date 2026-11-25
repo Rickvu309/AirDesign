@@ -5,6 +5,8 @@ const apply = (span, run, selected) => {
   span.style.fontFamily += ", system-ui, sans-serif"
   span.style.fontSize = run.size + "px"
   span.style.fontWeight = run.weight
+  if (run.italic) span.style.fontStyle = "italic"
+  if (run.color) span.style.color = run.color
   span.style.letterSpacing = (run.tracking ?? 0) + "px"
   span.style.fontVariationSettings = '"opsz" 32'
 }
@@ -23,7 +25,8 @@ const paint = (parent, runs, start, end, pieces) => {
   let at = 0
   for (const run of runs) {
     if (at + run.text.length > start && at < end) {
-      const span = document.createElement("span")
+      const span = run.href ? document.createElement("a") : document.createElement("span")
+      if (run.href) span.href = run.href
       apply(span, run)
       span.textContent = run.text.slice(Math.max(0, start - at), end - at)
       parent.append(span)
@@ -52,7 +55,7 @@ function element(lang, width, whiteSpace, controlled = false) {
 export async function loadNative(manifest) {
   await Promise.all(
     Object.entries(manifest).map(async ([id, meta]) => {
-      const face = new FontFace(faceName(id), "url(/faces/" + id + ".ttf)", { weight: meta.weight })
+      const face = new FontFace(faceName(id), "url(/faces/" + id + ".ttf)", { weight: meta.weight, style: meta.style })
       document.fonts.add(face)
       await face.load()
     }),
@@ -90,7 +93,7 @@ export function fullLines(item, lines, pieces) {
 }
 
 function rangeFor(parent) {
-  const nodes = [...parent.querySelectorAll("span")].map((span) => span.firstChild).filter(Boolean)
+  const nodes = [...parent.querySelectorAll("span, a")].map((span) => span.firstChild).filter(Boolean)
   const positions = []
   let at = 0
   for (const node of nodes) {

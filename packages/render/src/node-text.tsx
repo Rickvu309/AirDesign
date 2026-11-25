@@ -1,8 +1,7 @@
 import * as doom from "@airdesign/doom"
-import { fallbackFont, fontFamily, servedFontName } from "@airdesign/fonts"
+import { fallbackFont, fontFamily, pinnedOpticalSize, servedFontName } from "@airdesign/fonts"
 import type { CSSProperties } from "react"
 import { fontsFor } from "./font-load.js"
-import { pinnedOpticalSize } from "./doom-widths.js"
 
 type Run = doom.ResolvedRun
 

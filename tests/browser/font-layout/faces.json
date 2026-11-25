@@ -104,6 +104,14 @@
     "bytes": 112644,
     "sha256": "ab74085ab53ca88945d1ef57493c955c1dca3f2e7d7b4b7ab90cd107a7262bc7"
   },
+  "NarrowItalic": {
+    "file": "LiberationSansNarrow-Italic.ttf",
+    "source": "apps/api/fonts/LiberationSansNarrow-Italic.ttf",
+    "weight": "400",
+    "style": "italic",
+    "bytes": 132068,
+    "sha256": "ea0f8a0d2cdba7d9d36a7622caa6f2f72dad28c2ad091610e3828a5563fe22b2"
+  },
   "NarrowBold": {
     "file": "LiberationSansNarrow-Bold.ttf",
     "source": "apps/api/fonts/LiberationSansNarrow-Bold.ttf",
