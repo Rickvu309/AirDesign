@@ -40,7 +40,9 @@
     "muted": {
       "var": "text2"
     },
-    "rule": "#93A6BA",
+    "rule": {
+      "var": "text2"
+    },
     "heading": "label",
     "label": "label",
     "caption": "caption",
@@ -68,7 +70,9 @@
       "tint": 0.68
     },
     "focus": "",
-    "source": ""
+    "source": "",
+    "valueWidth": 24,
+    "totalWidth": 48
   },
   "let": [
     ["multipleSeries", ["lt", 1, ["count", ["get", "data.series"]]]],
@@ -146,9 +150,20 @@
           ["get", "multipleSeries"],
           [
             "sortBy",
-            ["get", "data.segments"],
-            "s",
-            ["lookup", ["at", ["lookup", ["get", "seriesColors"], ["get", "s.series"]], 0], "order"]
+            [
+              "map",
+              ["get", "data.segments"],
+              "s",
+              {
+                "id": ["get", "s.id"],
+                "category": ["get", "s.category"],
+                "series": ["get", "s.series"],
+                "value": ["get", "s.value"],
+                "color": ["get", "s.color"],
+                "order": ["lookup", ["at", ["lookup", ["get", "seriesColors"], ["get", "s.series"]], 0], "order"]
+              }
+            ],
+            "order"
           ],
           ["get", "data.segments"]
         ],
@@ -358,6 +373,12 @@
           "items": ["list"]
         }
       ]
+    ],
+    [
+      "labelSpace",
+      {
+        "lane": ["div", ["get", "plotWidth"], ["max", 1, ["get", "rowCount"]]]
+      }
     ]
   ],
   "parts": [
@@ -491,7 +512,9 @@
               "color": ["get", "s.color"]
             }
           ]
-        ]
+        ],
+        ["narrowValues", ["lt", ["sub", ["mul", ["get", "labelSpace.lane"], 0.57], 8], ["get", "token.valueWidth"]]],
+        ["narrowTotals", ["lt", ["get", "labelSpace.lane"], ["get", "token.totalWidth"]]]
       ],
       "children": [
         {
@@ -527,7 +550,7 @@
               }
             },
             {
-              "when": ["get", "variant.labels"],
+              "when": ["if", ["get", "narrowValues"], false, ["get", "variant.labels"]],
               "emit": {
                 "kind": "text",
                 "key": ["list", "value", ["get", "group.id"], ["get", "s.id"]],
@@ -541,7 +564,7 @@
                 "align": "center",
                 "alignV": "center",
                 "fit": {
-                  "minWidth": 24
+                  "minWidth": ["get", "token.valueWidth"]
                 }
               }
             },
@@ -565,20 +588,23 @@
           ]
         },
         {
-          "when": ["get", "variant.totals"],
+          "when": ["if", ["get", "narrowTotals"], false, ["get", "variant.totals"]],
           "let": [
+            ["positive", ["sum", ["map", ["get", "group.segments"], "s", ["max", 0, ["get", "s.value"]]]]],
             [
               "top",
-              [
-                "linear",
-                ["sum", ["map", ["get", "group.segments"], "s", ["max", 0, ["get", "s.value"]]]],
-                ["get", "lo"],
-                ["get", "hi"],
-                ["get", "plotBottom"],
-                ["get", "plotTop"]
-              ]
+              ["linear", ["get", "positive"], ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]
             ],
-            ["net", ["sum", ["map", ["get", "group.segments"], "s", ["get", "s.value"]]]]
+            ["net", ["sum", ["map", ["get", "group.segments"], "s", ["get", "s.value"]]]],
+            [
+              "prefix",
+              [
+                "if",
+                ["if", ["lt", 0, ["get", "positive"]], ["lt", ["get", "net"], ["get", "positive"]], false],
+                "Net ",
+                ""
+              ]
+            ]
           ],
           "emit": {
             "kind": "text",
@@ -587,13 +613,13 @@
             "y": ["sub", ["get", "top"], 37],
             "w": ["get", "lane.size"],
             "h": 32,
-            "chars": ["format", ["get", "net"], ["get", "valueFormat"]],
+            "chars": ["concat", ["get", "prefix"], ["format", ["get", "net"], ["get", "valueFormat"]]],
             "style": ["get", "token.label"],
             "color": ["get", "token.ink"],
             "align": "center",
             "alignV": "center",
             "fit": {
-              "minWidth": 48
+              "minWidth": ["get", "token.totalWidth"]
             }
           }
         },
@@ -618,6 +644,23 @@
           }
         }
       ]
+    }
+  ],
+  "advice": [
+    {
+      "when": [
+        "if",
+        [
+          "if",
+          ["get", "variant.labels"],
+          ["lt", ["sub", ["mul", ["get", "labelSpace.lane"], 0.57], 8], ["get", "token.valueWidth"]],
+          false
+        ],
+        true,
+        ["if", ["get", "variant.totals"], ["lt", ["get", "labelSpace.lane"], ["get", "token.totalWidth"]], false]
+      ],
+      "code": "labels-omitted",
+      "note": "Widen the chart or show fewer columns to fit value labels."
     }
   ]
 }

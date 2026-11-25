@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { defaultTheme, isRefusal, measureWith } from "../index.js"
+import { defaultTheme, isRefusal, measureWith, resolveColor, themeLibrary } from "../index.js"
 import { type ComponentTree, expandComponent, readComponentSpec } from "./index.js"
 import stacked from "./library/stacked.json" with { type: "json" }
 import waterfall from "./library/waterfall.json" with { type: "json" }
@@ -17,10 +17,10 @@ const segment = (id: string, category: string, series: string, value: number, co
 })
 const step = (id: string, value: number, mode = "delta", after = "carry") => ({ id, label: id, mode, after, value })
 
-function expand(raw: unknown, data: unknown, variant = {}, tokens = {}) {
+function expand(raw: unknown, data: unknown, variant = {}, tokens = {}, theme = defaultTheme) {
   const spec = readComponentSpec(raw)
   if (isRefusal(spec)) throw new Error(JSON.stringify(spec))
-  const result = expandComponent(spec, { theme: defaultTheme, measure, frame, data, variant, tokens })
+  const result = expandComponent(spec, { theme, measure, frame, data, variant, tokens })
   if (isRefusal(result)) throw new Error(JSON.stringify(result))
   return result
 }
@@ -114,7 +114,7 @@ describe("stacked column library", () => {
     expect(edge(tree, "segment", "march", "other-mar")).toBe(box(tree, "segment", "march", "core-mar")?.y)
     expect(box(tree, "segment", "april", "support-apr")?.y).toBe(edge(tree, "segment", "april", "core-apr"))
     expect(chars(tree, "value", "april", "support-apr")).toBe("−5.75")
-    expect(chars(tree, "total", "april")).toBe("−1.75")
+    expect(chars(tree, "total", "april")).toBe("Net −1.75")
     expect(edge(tree, "total", "april")).toBeLessThan(box(tree, "segment", "april", "other-apr")?.y ?? 0)
     expect(chars(tree, "unit")).toBe("hours")
     expect(count(tree, "legend-label")).toBe(3)
@@ -141,6 +141,7 @@ describe("stacked column library", () => {
     expect(chars(tree, "value", "a", "zero")).toBeUndefined()
     expect(chars(tree, "value", "a", "tiny")).toBeUndefined()
     expect(tree.findings.map(({ key }) => key)).toContainEqual(["value", "a", "tiny"])
+    expect(chars(tree, "total", "a")).toBe("−15")
     expect(edge(tree, "total", "a")).toBeLessThan(box(tree, "zero")?.y ?? 0)
     expect(count(tree, "legend-label")).toBe(0)
   })
@@ -170,26 +171,56 @@ describe("stacked column library", () => {
     expect(count(tree, "segment")).toBe(100)
     expect(count(tree, "category")).toBeGreaterThan(1)
     expect(thinnedCategories(tree)).toBe(100 - count(tree, "category"))
-    expect(tree.findings.filter(({ key }) => key[0] === "value")).toHaveLength(100)
-    expect(tree.findings.filter(({ key }) => key[0] === "total")).toHaveLength(100)
+    expect(tree.findings.filter(({ key }) => ["value", "total"].includes(key[0] ?? ""))).toHaveLength(0)
+    expect(
+      tree.findings.filter((finding) => finding.kind === "advice" && finding.code === "labels-omitted"),
+    ).toHaveLength(1)
   })
 })
 
 describe("waterfall library", () => {
+  it.each([
+    ["fallback", defaultTheme] as const,
+    ...Object.values(themeLibrary).map(({ id, theme }) => [id, theme] as const),
+  ])("uses distinct totals, steps and focus in %s", (_id, theme) => {
+    const tree = expand(
+      waterfall,
+      { rows: [step("Open", 100, "total"), step("Price", 5), step("Volume", -3), step("Close", 102, "total")] },
+      {},
+      { focus: "Price" },
+      theme,
+    )
+    const paints = ["Open", "Price", "Volume"].map((id) => {
+      const paint = fill(tree, "bar", id)
+      if (paint?.kind !== "solid") throw new Error(`Expected a solid bar for ${id}`)
+      return resolveColor(paint.color, theme)
+    })
+    expect(new Set(paints).size).toBe(3)
+    expect(paints[1]).toBe(theme.colors.accent1)
+  })
+
+  it("keeps a final delta and asks for a closing total", () => {
+    const tree = expand(waterfall, { rows: [step("Open", 100, "total"), step("Price", 5), step("Volume", -3)] })
+    expect(chars(tree, "value", "Volume")).toBe("−3")
+    expect(tree.findings).toContainEqual(
+      expect.objectContaining({ kind: "advice", code: "missing-closing-total", note: "Add a closing total row." }),
+    )
+    expect(part(tree, "bridge", "Volume")?.props.strokes?.[0]).toEqual({ kind: "solid", color: { var: "text2" } })
+  })
+
   it("keeps both ends on the baseline and highlights a focused step among neutral steps", () => {
     const tree = expand(
       waterfall,
       {
-        rows: [step("Open", 20), step("Gain", 5), step("Loss", -3), step("End", 999)],
+        rows: [step("Open", 20, "total"), step("Gain", 5), step("Loss", -3), step("End", 999, "total")],
       },
       {},
       { focus: "Gain" },
     )
     for (const id of ["Open", "End"]) expect(edge(tree, "bar", id)).toBe(box(tree, "zero")?.y)
     expect(chars(tree, "value", "End")).toBe("22")
-    expect(fill(tree, "bar", "End")).toEqual({ kind: "solid", color: { var: "total" } })
+    expect(fill(tree, "bar", "End")).toEqual({ kind: "solid", color: { var: "text", tint: -1 } })
     expect(fill(tree, "bar", "Gain")).toEqual({ kind: "solid", color: { var: "accent1" } })
-    expect(fill(tree, "bar", "Loss")).toEqual({ kind: "solid", color: { var: "text2" } })
     expect(tree.findings).toContainEqual(
       expect.objectContaining({ kind: "advice", code: "total-mismatch", note: "End: Use the running balance for this total." }),
     )
@@ -231,7 +262,7 @@ describe("waterfall library", () => {
       waterfall,
       {
         rows: [
-          step("Open", 20),
+          step("Open", 20, "total"),
           step("Loss", -5),
           step("Subtotal", 999, "total"),
           step("Gain", 12),
@@ -265,7 +296,7 @@ describe("waterfall library", () => {
     const tree = expand(
       waterfall,
       {
-        rows: [step("Open", -12), step("Flat", 0), step("Tiny", -0.0001), step("End", 0, "total")],
+        rows: [step("Open", -12, "total"), step("Flat", 0), step("Tiny", -0.0001), step("End", 0, "total")],
       },
       {},
       { digits: 0 },
@@ -283,7 +314,9 @@ describe("waterfall library", () => {
 
   it("expands and thins 100 steps without losing a connector or mark", () => {
     const tree = expand(waterfall, {
-      rows: Array.from({ length: 100 }, (_, i) => step(`Step-${i}`, i % 2 === 0 ? 1 : -1)),
+      rows: Array.from({ length: 100 }, (_, i) =>
+        step(`Step-${i}`, i % 2 === 0 ? 1 : -1, i === 0 || i === 99 ? "total" : "delta"),
+      ),
     })
     expect(count(tree, "bar")).toBe(100)
     expect(count(tree, "bridge")).toBe(99)
@@ -291,6 +324,9 @@ describe("waterfall library", () => {
     expect(count(tree, "category")).toBeLessThan(100)
     const findings = tree.findings.map(({ key }) => key[0])
     expect(findings).toContain("categories")
-    expect(findings.filter((role) => role === "value")).toHaveLength(100)
+    expect(findings.filter((role) => role === "value")).toHaveLength(0)
+    expect(
+      tree.findings.filter((finding) => finding.kind === "advice" && finding.code === "labels-omitted"),
+    ).toHaveLength(1)
   })
 })
