@@ -32,7 +32,12 @@ test("selected words are highlighted at the height of their line, inside the tex
         native: getComputedStyle(host.querySelector("[data-run]")!, "::selection").backgroundColor,
       }
     })
-  await expect.poll(async () => (await read()).highlights.length).toBe(1)
+  await expect
+    .poll(async () => {
+      const { highlights, words } = await read()
+      return highlights.length === 1 && Math.abs(highlights[0]!.left - words.left) < 1
+    })
+    .toBe(true)
   const { highlights, line, frame, words, native } = await read()
   const [highlight] = highlights
   expect(Math.abs(highlight!.top - line.top)).toBeLessThan(0.5)
@@ -136,7 +141,12 @@ test("right-to-left words selected after left-to-right words are highlighted acr
       }
     })
   await expect.poll(async () => (await read()).picked).toBe("אבג")
-  await expect.poll(async () => (await read()).highlight).not.toBeNull()
+  await expect
+    .poll(async () => {
+      const { highlight, words } = await read()
+      return highlight !== null && words !== null && Math.abs(highlight.left - words.left) < 1
+    })
+    .toBe(true)
   const { highlight, words } = await read()
   expect(words!.right - words!.left).toBeGreaterThan(5)
   expect(Math.abs(highlight!.left - words!.left)).toBeLessThan(1)
