@@ -35,11 +35,6 @@ const matrixDefinition = builtIn("matrix", matrix)
 const processDefinition = builtIn("process", process, ["labelSmall", "rowLabelSmall"])
 const treeDefinition = builtIn("tree", tree)
 export const columnComponent: ComponentSpec = columnDefinition.spec
-export const processComponent: ComponentSpec = processDefinition.spec
-export const architectureComponent: ComponentSpec = architectureDefinition.spec
-export const cycleComponent: ComponentSpec = cycleDefinition.spec
-export const matrixComponent: ComponentSpec = matrixDefinition.spec
-export const treeComponent: ComponentSpec = treeDefinition.spec
 
 export function componentSpec(id: string): ComponentSpec | undefined {
   return id === "donut" ? donutComponent : componentLibrary.get(id)?.spec
@@ -72,8 +67,6 @@ export const donutComponent: ComponentSpec = chart(
   },
   { workLimit: 400_000 },
 ).spec
-export const stackedComponent: ComponentSpec = stackedDefinition.spec
-export const waterfallComponent: ComponentSpec = waterfallDefinition.spec
 
 export const componentLibrary: ReadonlyMap<string, ComponentDefinition> = new Map(
   [

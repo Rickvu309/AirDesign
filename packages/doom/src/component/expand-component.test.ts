@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { defaultTheme, fontFace, isRefusal, measureWith, type Props } from "../index.js"
 import {
-  architectureComponent,
   columnComponent,
   expandComponent,
   readComponentSpec,
@@ -12,11 +11,13 @@ import {
   type PartKey,
 } from "./index.js"
 import architecture from "./testing/architecture.json" with { type: "json" }
+import { librarySpec } from "./testing/diagram-tree.js"
 import { landTree } from "./testing/land-tree.js"
 import column from "./testing/column.json" with { type: "json" }
 import waterfall from "./testing/waterfall.json" with { type: "json" }
 
 const measure = measureWith({})
+const architectureComponent = librarySpec("architecture")
 const dejavu = { ...defaultTheme, fonts: { heading: "DejaVu Sans", body: "DejaVu Sans" } }
 const metrics = (digits: number, extra: Readonly<Record<string, number>>) => ({
   ascent: 1901 / 2048,

@@ -1,8 +1,8 @@
 import { expect, it } from "vitest"
 import { FontMetrics } from "../apps/api/src/platform/font-metrics.js"
 import { FontSource } from "../apps/api/src/platform/font-source.js"
-import { architectureComponent, expandComponent, processComponent } from "../packages/doom/src/component/index.js"
-import { ends, resolvedById, role } from "../packages/doom/src/component/testing/diagram-tree.js"
+import { expandComponent } from "../packages/doom/src/component/index.js"
+import { ends, librarySpec, resolvedById, role } from "../packages/doom/src/component/testing/diagram-tree.js"
 import architecture from "../packages/doom/src/component/testing/architecture.json" with { type: "json" }
 import { landTree } from "../packages/doom/src/component/testing/land-tree.js"
 import process from "../packages/doom/src/component/testing/process.json" with { type: "json" }
@@ -20,6 +20,8 @@ const metrics = new FontMetrics(new FontSource(undefined))
 const technical = themeLibrary.technical
 if (technical === undefined) throw new Error("Missing Technical theme")
 const theme = technical.theme
+const processComponent = librarySpec("process")
+const architectureComponent = librarySpec("architecture")
 
 const defaultCases = Object.entries(themeLibrary).flatMap(([themeId, { theme }]) =>
   Array.from(componentLibrary, ([id, { spec }]) => ({ themeId, theme, id, spec })),

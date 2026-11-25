@@ -165,15 +165,3 @@ function cubicAt(from: Point, pullFrom: Point, pullTo: Point, to: Point, share: 
     y: a * from.y + b * pullFrom.y + c * pullTo.y + d * to.y,
   }
 }
-
-export function boxBetween(from: Point, to: Point): Box {
-  return {
-    x: Math.min(from.x, to.x),
-    y: Math.min(from.y, to.y),
-    w: Math.abs(to.x - from.x),
-    h: Math.abs(to.y - from.y),
-    rotation: 0,
-    flipH: false,
-    flipV: false,
-  }
-}

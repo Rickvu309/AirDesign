@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest"
 import { type Box, defaultTheme, resolveSlide, siteSpot } from "../index.js"
-import { architectureComponent, type ComponentNode } from "./index.js"
+import type { ComponentNode } from "./index.js"
 import architecture from "./testing/architecture.json" with { type: "json" }
-import { ends, expand, keyed, measure, resolvedById, role } from "./testing/diagram-tree.js"
+import { ends, expand, keyed, librarySpec, measure, resolvedById, role } from "./testing/diagram-tree.js"
 import { landTree, writeProps } from "./testing/land-tree.js"
 
+const architectureComponent = librarySpec("architecture")
 const sizes = (nodes: readonly ComponentNode[]) =>
   new Set(nodes.map((node) => node.props.text?.spans[0]?.size ?? defaultTheme.textStyles.label.size))
 
