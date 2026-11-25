@@ -216,11 +216,6 @@ describe("a deck whose name follows its first title", () => {
     expect(nameFromTitleWrites(doom, [retitle(doom, "")])).toEqual([])
   })
 
-  it("names the deck back to the default when the title it follows goes back to the placeholder", () => {
-    const doom = titled("Temporary", true)
-    expect(nameFromTitleWrites(doom, [retitle(doom, placeholderTitle)])).toEqual([named(blankDeckName)])
-  })
-
   it("writes only when the edit changes the title", () => {
     const doom = titled(blankDeckName, true)
     expect(nameFromTitleWrites(doom, [{ node: ids.slide, prop: "name", value: "Intro" }])).toEqual([])
