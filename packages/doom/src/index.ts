@@ -30,6 +30,7 @@ export {
   readingOf,
 } from "./agent-edit.js"
 export type { AgentFinding } from "./agent-findings.js"
+export { addsCardRow } from "./agent-patterns.js"
 export {
   type LayoutFinding,
   type MissingGlyphs,

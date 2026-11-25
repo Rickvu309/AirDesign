@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
-import { agentDeck, build, lastChild, minter, titledSlide } from "./agent-fixtures.js"
+import { compileAgentChange } from "./agent-compile.js"
+import { agentDeck, apply, build, lastChild, minter, started, titledSlide } from "./agent-fixtures.js"
 import { bottomLimitOf, contentAreaOf } from "./agent-place.js"
 import { childrenOf, propOf } from "./doom-walk.js"
+import { doomFromTree } from "./doom-tree.js"
 import type { Doom, NodeId } from "./index.js"
 import { slideFindings } from "./slide-findings.js"
+import { solveLayout } from "./solve-layout.js"
+import { themeLibrary } from "./theme.js"
 import { measure } from "./testing/doom-fixtures-art.js"
 import { ids } from "./sample-deck.js"
 
@@ -197,5 +201,80 @@ describe("cards sized to their words", () => {
     const short = propOf(row(shortCards), "box")!
     expect(box.h).toBeGreaterThan(short.h)
     expect(box.y + box.h).toBeLessThanOrEqual(bottomLimitOf(1080))
+  })
+})
+
+describe("a card row in a box shorter than its words", () => {
+  type Given = { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
+  const placed = (start: Doom, on: NodeId, kind: string, items: unknown, given: Given) => {
+    const change = { op: "add", slide: on, kind, items, box: given } as AgentChange
+    const writes = compileAgentChange(start, change, minter("p"), { measure })
+    if ("refused" in writes) return writes
+    const doom = apply(start, writes)
+    const row = lastChild(doom, on)
+    return { row, painted: solveLayout(doom, on, measure).get(row.id)! }
+  }
+  const same = (words: string, count: number) =>
+    Array.from({ length: count }, () => ({ title: words, value: "$4.2M", note: words }))
+
+  it("keeps three measured KPI cards inside a 275 px box by stepping the words down", () => {
+    const { doom: start, on } = titledSlide()
+    const given = { x: 160, y: 280, w: 1600, h: 275 }
+    const got = placed(start, on, "kpi", same("Customer financial results for the year", 3), given)
+    if ("refused" in got) throw new Error(JSON.stringify(got))
+    expect(got.painted.y).toBe(given.y)
+    expect(got.painted.h).toBeLessThanOrEqual(given.h)
+  })
+
+  it("refuses five KPI cards whose measured words cannot step down into a 316 px box", () => {
+    const { doom: start, on } = titledSlide()
+    const given = { x: 160, y: 280, w: 1600, h: 316 }
+    const got = placed(start, on, "kpi", same("Customer financial results for the year", 5), given)
+    expect(got).toMatchObject({ refused: "limit", field: "items" })
+  })
+
+  const long = "Customer financial results for the year, after every adjustment the auditors asked for"
+  const rows = {
+    kpi: (count: number) => same(long, count),
+    cards: (count: number) =>
+      Array.from({ length: count }, () => ({ title: long, icon: "star", points: [long, long] })),
+    compare: (count: number) => Array.from({ length: count }, () => ({ title: long, points: [long, long] })),
+  }
+  it.each(Object.keys(themeLibrary))("never paints a card row past its box in the %s theme", (name) => {
+    const grown = doomFromTree({ theme: themeLibrary[name]!.theme, slides: [{ children: [] }] })
+    const start = started(grown.doom)
+    const on = grown.slides[0]!
+    for (const [kind, items] of Object.entries(rows))
+      for (const count of kind === "compare" ? [2, 3] : [2, 3, 4, 5])
+        for (const high of [240, 320, 420, 560]) {
+          const given = { x: 160, y: 280, w: 1600, h: high }
+          const got = placed(start, on, kind, items(count), given)
+          if ("refused" in got) continue
+          expect(got.painted.h, `${kind} ${String(count)} in ${String(high)}`).toBeLessThanOrEqual(high)
+        }
+  })
+})
+
+describe("empty cards stay quiet outside card rows", () => {
+  const given = { x: 160, y: 280, w: 1600, h: 660 }
+  const quiet = (change: Record<string, unknown>) => {
+    const { doom: start, on } = titledSlide()
+    const doom = build(start, { op: "add", slide: on, box: given, ...change } as AgentChange, minter("p"))
+    expect(emptyCardsOn(doom, on)).toEqual([])
+  }
+
+  it("leaves a flow's connector lane in a box it was given clear", () => {
+    quiet({ kind: "flow", items: [{ title: "Sign up" }, { title: "Verify" }, { title: "Pay" }] })
+  })
+
+  it("leaves a matrix grid in a box it was given clear", () => {
+    quiet({
+      kind: "matrix",
+      items: [{ title: "Quick wins" }, { title: "Big bets" }, { title: "Fill-ins" }, { title: "Avoid" }],
+    })
+  })
+
+  it("leaves a chart's parts in a box it was given clear", () => {
+    quiet({ kind: "component", component: "column" })
   })
 })
