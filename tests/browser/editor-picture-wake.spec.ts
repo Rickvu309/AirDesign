@@ -11,19 +11,20 @@ test("an agent's first picture read reaches a tab that is between two catch-ups 
 }) => {
   const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
   const opened = await openEditor(page, context, stack)
-  let held = false
+  const before = (await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)).json as { rev: number }
+  let held = true
   let reopen: () => void = () => undefined
   const gap = new Promise<void>((resolve) => {
     reopen = resolve
   })
   await page.route("**/doom/since", async (route) => {
-    if (held) {
+    const from = (route.request().postDataJSON() as { rev: number }).rev
+    if (held && from > before.rev) {
       held = false
       await gap
     }
     await route.fallback()
   })
-  held = true
   await landNodes(stack, opened, [
     {
       id: "w:1",
