@@ -1,7 +1,7 @@
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { dropped, landed, queueEdit, sendable, shown, skipped, trimmed, type Queued } from "./doom-queue.js"
+import { dropped, landed, queueEdit, sendable, shown, releaseBases, releasedBases, type Queued } from "./doom-queue.js"
 
 const person: doom.Author = { kind: "person", id: "tab" }
 const id = doom.nodeId
@@ -149,8 +149,8 @@ describe("a turn skipped", () => {
     queue = queued(base, queue, edit("redo", [{ node: title, prop: "text", value: words("one") }]))
     expect(queue[1]?.after).toEqual(["undo"])
     queue = queued(base, queue, edit("other", [{ node: card, prop: "name", value: "C" }]))
-    const rest = skipped(queue, "undo")
-    expect(rest.map((each) => each.edit.once)).toEqual(["redo", "other"])
+    const released = new Map([["undo", releasedBases(queue[0]!, [])]])
+    const rest = queue.slice(1).map((each) => releaseBases(each, released))
     expect(rest[0]?.after).toEqual([null])
     expect(rest[0]?.edit.writes[0]).toMatchObject({ base: doom.rev(1) })
     expect(sendable(rest[0]!)).toEqual(rest[0]?.edit)
@@ -186,13 +186,11 @@ describe("a turn trimmed to some of its writes", () => {
     )
     expect(queue[1]?.after).toEqual(["undo", "undo"])
     const kept = queue[0]!.edit.writes.filter((write) => write.prop === "fills")
-    const rest = trimmed(queue, "undo", kept)
-    expect(rest[0]?.edit.writes).toEqual(kept)
-    expect(rest[0]?.after).toEqual([null])
-    expect(rest[1]?.after).toEqual([null, "undo"])
-    expect(rest[1]?.edit.writes[0]).toMatchObject({ prop: "text", base: doom.rev(1) })
-    expect(rest[1]?.edit.writes[1]).not.toHaveProperty("base")
-    expect(landed(rest, "undo", doom.rev(5))[0]?.edit.writes[1]).toMatchObject({ prop: "fills", base: doom.rev(5) })
+    const redo = releaseBases(queue[1]!, new Map([["undo", releasedBases(queue[0]!, kept)]]))
+    expect(redo.after).toEqual([null, "undo"])
+    expect(redo.edit.writes[0]).toMatchObject({ prop: "text", base: doom.rev(1) })
+    expect(redo.edit.writes[1]).not.toHaveProperty("base")
+    expect(landed([redo], "undo", doom.rev(5))[0]?.edit.writes[1]).toMatchObject({ prop: "fills", base: doom.rev(5) })
   })
 })
 

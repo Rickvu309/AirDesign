@@ -220,8 +220,12 @@ function connected(
 
   const ownedRevs = (onces: Iterable<string>) => ownedIn(server, queue, onces)
 
-  function standOnly(once: string): boolean {
-    const kept = onStanding(server, queue, turned, once, options.measure?.() ?? estimate)
+  async function standOnly(once: string): Promise<boolean> {
+    const fold = server
+    const pending = queue
+    const current = () => !gone && server === fold && queue === pending
+    const kept = await onStanding(fold, pending, turned, once, options.measure?.() ?? estimate, current)
+    if (!current()) return true
     if (kept === undefined) return false
     queue = kept.queue
     forget(kept.gone)
@@ -230,6 +234,7 @@ function connected(
       const because = each.afterRead?.find((name) => changed.has(name))
       if (because !== undefined) drop(each.edit.once, { refused: "stale", because })
     }
+    if (queue === kept.queue) memo = { server: fold, queue, view: kept.view }
     const again = (steps: Step[]) =>
       steps.map((step) => {
         const relaid = kept.steps.get(step.onces[0]!)
@@ -292,7 +297,8 @@ function connected(
         pressed !== undefined
       ) {
         if (!(await catchUp().catch(() => ({ ok: false }))).ok) return { ok: false, reason: "offline" }
-        if (queue[0] !== head || standOnly(once)) {
+        if (queue[0] !== head || (await standOnly(once))) {
+          if (gone) return { ok: false, reason: "blocked", refusal: "deck" }
           await save({ queue })
           tell()
           continue

@@ -16,13 +16,17 @@ export function readGap(fold: doom.Doom, { edit, afterRead }: Queued): string | 
 export function shown(server: doom.Doom, queue: readonly Queued[], provisional?: Map<doom.Rev, string>): doom.Doom {
   let view = server
   for (const each of queue) {
-    if (readGap(view, each) !== undefined) continue
-    const next = appliedOn(view, each.edit)
-    if (doom.isRefusal(next) || next === view) continue
-    provisional?.set(next.rev, each.edit.once)
+    const next = shownAfter(view, each)
+    if (next !== view) provisional?.set(next.rev, each.edit.once)
     view = next
   }
   return view
+}
+
+export function shownAfter(view: doom.Doom, each: Queued): doom.Doom {
+  if (readGap(view, each) !== undefined) return view
+  const next = appliedOn(view, each.edit)
+  return doom.isRefusal(next) ? view : next
 }
 
 export function appliedOn(view: doom.Doom, edit: doom.Edit): doom.Doom | doom.Refusal {
@@ -42,7 +46,15 @@ function withoutBase({ base: _base, ...write }: doom.Write): doom.Write {
 
 export function queueEdit(server: doom.Doom, queue: readonly Queued[], edit: doom.Edit): Queued | doom.Refusal {
   const provisional = new Map<doom.Rev, string>()
-  const view = shown(server, queue, provisional)
+  return queueEditOn(server, shown(server, queue, provisional), provisional, edit)
+}
+
+export function queueEditOn(
+  server: doom.Doom,
+  view: doom.Doom,
+  provisional: ReadonlyMap<doom.Rev, string>,
+  edit: doom.Edit,
+): Queued | doom.Refusal {
   if (edit.readBase !== undefined && edit.readBase !== view.rev) return { refused: "stale" }
   const after: (string | null)[] = []
   const writes: doom.Write[] = []
@@ -93,59 +105,39 @@ export function landed(queue: readonly Queued[], once: string, rev: doom.Rev): Q
   return rest
 }
 
-const sameWrite = (a: doom.Write, b: doom.Write) => a.node === b.node && a.prop === b.prop
+const writeKey = ({ node, prop }: doom.Write) => `${node}/${prop}`
 
-function released(queue: readonly Queued[], once: string, was: Queued, keep: readonly doom.Write[]): Queued[] {
-  const read = (write: doom.Write) => was.edit.writes.findIndex((each) => sameWrite(each, write))
-  return queue.map((each) => {
-    if (!each.after.includes(once)) return each
-    const freed = each.edit.writes.map(
-      (write, index) => each.after[index] === once && !keep.some((kept) => sameWrite(kept, write)),
-    )
-    return {
-      ...each,
-      edit: {
-        ...each.edit,
-        writes: each.edit.writes.map((write, index) => {
-          if (!freed[index]) return write
-          const base = was.edit.writes[read(write)]?.base
-          return base === undefined ? withoutBase(write) : { ...write, base }
-        }),
-      },
-      after: each.after.map((name, index) =>
-        freed[index] ? (was.after[read(each.edit.writes[index]!)] ?? null) : name,
-      ),
-    }
-  })
+type WriteBase = { readonly base?: doom.Rev; readonly after: string | null }
+type Released = ReadonlyMap<string, WriteBase | null>
+
+export function releasedBases(was: Queued, keep: readonly doom.Write[]): Released {
+  const bases = new Map<string, WriteBase | null>()
+  for (const [index, write] of was.edit.writes.entries()) {
+    const key = writeKey(write)
+    if (!bases.has(key))
+      bases.set(key, { after: was.after[index] ?? null, ...(write.base === undefined ? {} : { base: write.base }) })
+  }
+  for (const write of keep) bases.set(writeKey(write), null)
+  return bases
 }
 
-export function trimmed(queue: readonly Queued[], once: string, keep: readonly doom.Write[]): Queued[] {
-  const head = queue.find((each) => each.edit.once === once)
-  if (head === undefined) return [...queue]
-  const kept = (each: Queued): Queued[] =>
-    each !== head
-      ? [each]
-      : keep.length === 0
-        ? []
-        : [{ ...each, edit: { ...each.edit, writes: keep }, after: keep.map(() => null) }]
-  return released(queue.flatMap(kept), once, head, keep)
+export function releaseBases(queued: Queued, released: ReadonlyMap<string, Released>): Queued {
+  let writes: doom.Write[] | undefined
+  let after: (string | null)[] | undefined
+  for (const [index, name] of queued.after.entries()) {
+    if (name === null) continue
+    const bases = released.get(name)
+    if (bases === undefined) continue
+    const write = queued.edit.writes[index]!
+    const found = bases.get(writeKey(write))
+    if (found === null) continue
+    writes ??= [...queued.edit.writes]
+    after ??= [...queued.after]
+    writes[index] = found?.base === undefined ? withoutBase(write) : { ...write, base: found.base }
+    after[index] = found?.after ?? null
+  }
+  return writes === undefined || after === undefined ? queued : { ...queued, edit: { ...queued.edit, writes }, after }
 }
-
-export function rewritten(
-  server: doom.Doom,
-  queue: readonly Queued[],
-  once: string,
-  writes: readonly doom.Write[],
-): Queued[] | doom.Refusal {
-  const at = queue.findIndex((each) => each.edit.once === once)
-  const was = queue[at]
-  if (was === undefined) return [...queue]
-  const made = queueEdit(server, queue.slice(0, at), { ...was.edit, writes })
-  if (doom.isRefusal(made)) return made
-  return [...queue.slice(0, at), made, ...released(queue.slice(at + 1), once, was, writes)]
-}
-
-export const skipped = (queue: readonly Queued[], once: string): Queued[] => trimmed(queue, once, [])
 
 export function dropped(
   queue: readonly Queued[],
@@ -172,8 +164,9 @@ export function revIn(server: doom.Doom, queue: readonly Queued[], once: string)
 
 export function ownedIn(server: doom.Doom, queue: readonly Queued[], onces: Iterable<string>): Set<doom.Rev> {
   const owned = new Set<doom.Rev>()
+  let view: doom.Doom | undefined
   for (const name of onces) {
-    const turnedAt = revIn(server, queue, name)
+    const turnedAt = server.onces.get(name) ?? (view ??= shown(server, queue)).onces.get(name)
     if (turnedAt !== undefined) owned.add(turnedAt)
   }
   return owned
