@@ -48,6 +48,10 @@ const reading = {
     "scripts/deploy.test.mjs": [".railway/railway.ts"],
     "scripts/land.test.mjs": ["apps/web/src/thin-deck.tsx"],
     "scripts/check-specs.test.mjs": ["specs/doom-runs/"],
+    [".agents/skills/verify-airdesign/features/features.test.mjs"]: [
+      ".agents/skills/verify-airdesign/features/",
+      ".agents/skills/verify-airdesign/journeys/",
+    ],
   },
 }
 const mapReading = (changed) => changeMap(changed, reading)
@@ -61,6 +65,20 @@ same(
   "a file in an app that a script test reads keeps its own parts and adds the script tests",
   on(mapReading(["apps/web/src/thin-deck.tsx"])),
   ["source", "scripts", "design", "browser", "journeys", "pdf"],
+)
+const features = ".agents/skills/verify-airdesign/features/features.test.mjs"
+same(
+  "a file a unit test reads names that test file among the unit tests and leaves the script tests off",
+  [mapReading([".agents/skills/verify-airdesign/journeys/account-name.mjs"])].map((result) => [
+    result.unitTests,
+    result.parts.scripts,
+  ]),
+  [[[features], false]],
+)
+same(
+  "a feature file a unit test reads selects that test, though the map takes it for a doc",
+  mapReading([".agents/skills/verify-airdesign/features/new-feature.md"]).unitTests,
+  [features],
 )
 same(
   "a file under a folder a script test reads runs the script tests, and its neighbour in another folder does not",
@@ -319,6 +337,22 @@ same(
     (file) => real([file]).parts.scripts,
   ),
   [true, true, true, true],
+)
+same(
+  "in the repo, a new journey or feature file selects the feature map test, which PRs 1661, 1664 and 1666 broke in ci after the gate passed",
+  [
+    ".agents/skills/verify-airdesign/journeys/new-journey.mjs",
+    ".agents/skills/verify-airdesign/features/new-feature.md",
+    ".agents/skills/verify-airdesign/features/README.md",
+  ].map((file) => real([file]).unitTests.includes(".agents/skills/verify-airdesign/features/features.test.mjs")),
+  [true, true, true],
+)
+same(
+  "in the repo, a new built-in theme selects the test that indexes the theme folder",
+  real(["packages/doom/src/library/themes/new-theme.json"]).unitTests.includes(
+    "packages/doom/src/theme-library.test.ts",
+  ),
+  true,
 )
 same(
   "in the repo, a doc and a workflow that script tests read turn them on",

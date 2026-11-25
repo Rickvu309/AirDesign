@@ -4,7 +4,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { journeyFolder, journeyNameOf } from "../tests/journeys/journey-shards.mjs"
 import { browserJobs, browserReach, browserSpec, designScans, inBrowser } from "./browser-change-map.mjs"
-import { readersOf, scriptTestReads } from "./script-test-reads.mjs"
+import { readersOf, testReads } from "./test-reads.mjs"
 import { readSpecSeconds } from "./spec-seconds.mjs"
 
 export const ciParts = ["source", "scripts", "design", "browser", "journeys", "pdf", "model-check"]
@@ -38,6 +38,7 @@ const servedBy = {
 const code = /\.(mjs|js|cjs|ts|tsx|mts)$/
 const testFile = /\.test\.(ts|tsx|mjs|mts)$/
 const testOrSpec = /\.(test|spec)\.(ts|tsx|mjs|mts)$/
+const scriptTest = /^scripts\/[^/]+\.test\.mjs$/
 const unitNode = (dir) => `unit:${dir}/`
 const goneNode = (file) => `gone:${file.replace(/\.(mjs|js|cjs|ts|tsx|mts)$/, "").replace(/\/index$/, "")}`
 
@@ -127,7 +128,8 @@ export const changeMap = (changed, graph, { full = false } = {}) => {
       return runEverything(`${file} changes how every part runs`)
     if (setup.has(file)) return runEverything(`${file} is shared test setup`)
     turnOn("source", file)
-    if (readersOf(graph.reads ?? {}, file).length > 0) turnOn("scripts", file)
+    for (const reader of readersOf(graph.reads ?? {}, file))
+      turnOn(scriptTest.test(reader) ? "scripts" : `unit:${reader}`, file)
     const gone = goneNode(file)
     if (pdfSpecs.includes(file) || file === "scripts/pdf-check.mjs" || file === "scripts/pdf-sample.mjs")
       turnOn("pdf", file)
@@ -324,7 +326,7 @@ export const readChangeGraph = (root) => {
     browserSeconds: readSpecSeconds(root).seconds,
     packages,
     imports: readImports(root, files, packages),
-    reads: scriptTestReads(root, files),
+    reads: testReads(root, files),
   }
 }
 

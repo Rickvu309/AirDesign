@@ -31,7 +31,7 @@ try {
   )
   write("packages/a/src/b.test.ts", "import {test} from 'vitest'; test('b', () => {})")
   write("scripts/spec-replays.mjs", "export const replays = () => []")
-  write("scripts/script-test-reads.mjs", fs.readFileSync(path.join(root, "scripts/script-test-reads.mjs"), "utf8"))
+  write("scripts/test-reads.mjs", fs.readFileSync(path.join(root, "scripts/test-reads.mjs"), "utf8"))
   write("scripts/a.mjs", "export const a = 1")
   write("scripts/a.test.mjs", 'import { a } from "./a.mjs"')
   write("tests/browser/a.spec.ts", 'import { a } from "./a"')

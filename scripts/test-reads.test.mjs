@@ -4,7 +4,7 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { proofPlan } from "../.agents/skills/verify-airdesign/bin/prove-plan.mjs"
-import { readersOf, scriptTestReads } from "./script-test-reads.mjs"
+import { readersOf, testReads } from "./test-reads.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -14,7 +14,7 @@ const same = (name, actual, expected) => {
   }
 }
 
-const folder = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-script-test-reads-"))
+const folder = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-test-reads-"))
 try {
   const put = (file, text = "") => {
     fs.mkdirSync(path.dirname(path.join(folder, file)), { recursive: true })
@@ -51,11 +51,17 @@ try {
   )
   put("scripts/quiet.test.mjs", 'import { gate } from "./gate.mjs"\nconst text = "no path here"\n')
   put("scripts/notscript.mjs", 'read("AGENTS.md")\n')
+  put("packages/doom/src/library/themes/plain.json")
+  put("apps/web/public/favicon.svg")
+  put("packages/doom/src/themes.test.ts", 'readdirSync("packages/doom/src/library/themes")\n')
+  put("apps/web/src/favicon.test.ts", "readFileSync(new URL(`../public/${name}`, import.meta.url))\n")
+  put("apps/site/src/other-app.test.ts", 'readdirSync("packages/doom/src/library/themes")\n')
+  put("scripts/shards.test.mjs", 'const files = names.map((name) => `tests/browser/${name}`).join(" ")\n')
   const tracked = execFileSync("find", [".", "-type", "f"], { cwd: folder, encoding: "utf8" })
     .split("\n")
     .filter(Boolean)
     .map((file) => file.slice(2))
-  const reads = scriptTestReads(folder, tracked)
+  const reads = testReads(folder, tracked)
 
   same("a test that reads a root file by name is linked to it", readersOf(reads, "AGENTS.md"), [
     "scripts/limit.test.mjs",
@@ -100,6 +106,16 @@ try {
     [readersOf(reads, "apps/web/src/other.tsx"), readersOf(reads, ".github/workflows/deploy.yml")],
     [[], []],
   )
+  same(
+    "a unit test reads a folder of its own package, and a test outside that package does not link it",
+    readersOf(reads, "packages/doom/src/library/themes/new.json"),
+    ["packages/doom/src/themes.test.ts"],
+  )
+  same(
+    "a relative template path that ends in a folder links that folder, and a template that only builds names does not",
+    [readersOf(reads, "apps/web/public/favicon-32.png"), readersOf(reads, "tests/browser/home.spec.ts")],
+    [["apps/web/src/favicon.test.ts"], []],
+  )
   same("a script that is not a test is no reader", Object.keys(reads).includes("scripts/notscript.mjs"), false)
   same("a test with no path reads nothing", reads["scripts/quiet.test.mjs"], [])
 } finally {
@@ -107,7 +123,7 @@ try {
 }
 
 const tracked = execFileSync("git", ["ls-files"], { cwd: root, encoding: "utf8" }).split("\n").filter(Boolean)
-const real = scriptTestReads(root, tracked)
+const real = testReads(root, tracked)
 
 same(
   "AGENTS.md is read by the test that holds its size",
@@ -125,6 +141,14 @@ same(
     (file) => readersOf(real, file).length > 0,
   ),
   [true, true, true, true, true],
+)
+same(
+  "the feature map test reads the journeys and the feature files, which PRs 1661, 1664 and 1666 added without running it",
+  [
+    ".agents/skills/verify-airdesign/journeys/new-journey.mjs",
+    ".agents/skills/verify-airdesign/features/new-feature.md",
+  ].map((file) => readersOf(real, file).includes(".agents/skills/verify-airdesign/features/features.test.mjs")),
+  [true, true],
 )
 same("no test reads a path nobody wrote", readersOf(real, "no/such/file.txt"), [])
 
