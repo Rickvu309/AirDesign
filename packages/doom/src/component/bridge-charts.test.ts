@@ -17,10 +17,17 @@ const segment = (id: string, category: string, series: string, value: number, co
 })
 const step = (id: string, value: number, mode = "delta", after = "carry") => ({ id, label: id, mode, after, value })
 
-function expand(raw: unknown, data: unknown, variant = {}, tokens = {}, theme = defaultTheme) {
+function expand(
+  raw: unknown,
+  data: unknown,
+  variant = {},
+  tokens = {},
+  theme = defaultTheme,
+  focus: readonly string[] = [],
+) {
   const spec = readComponentSpec(raw)
   if (isRefusal(spec)) throw new Error(JSON.stringify(spec))
-  const result = expandComponent(spec, { theme, measure, frame, data, variant, tokens })
+  const result = expandComponent(spec, { theme, measure, frame, data, variant, tokens, focus })
   if (isRefusal(result)) throw new Error(JSON.stringify(result))
   return result
 }
@@ -85,6 +92,18 @@ describe("stacked column library", () => {
     expect(legendKeys("legend-swatch")).toEqual(legendKeys("legend-label"))
     expect(legendKeys("legend-label").length).toBeLessThan(names.length)
     expect(crowded.findings.some(({ kind }) => kind === "flow-omitted")).toBe(true)
+  })
+
+  it("moves the shared accent between stacked series", () => {
+    const data = {
+      categories: [category("a")],
+      series: [series("core"), series("support")],
+      segments: [segment("core-a", "a", "core", 30), segment("support-a", "a", "support", 20)],
+    }
+    const plain = expand(stacked, data)
+    const focused = expand(stacked, data, {}, {}, defaultTheme, ["support"])
+    expect(fill(focused, "segment", "a", "support-a")).toEqual(fill(plain, "segment", "a", "core-a"))
+    expect(fill(focused, "segment", "a", "core-a")).toEqual(fill(plain, "segment", "a", "support-a"))
   })
 
   it("keeps separate signed offsets and honors the legacy series and point colors", () => {
@@ -200,8 +219,9 @@ describe("waterfall library", () => {
       waterfall,
       { rows: [step("Open", 100, "total"), step("Price", 5), step("Volume", -3), step("Close", 102, "total")] },
       {},
-      { focus: "Price" },
+      {},
       theme,
+      ["Price"],
     )
     const paintFor = (id: string) => {
       const paint = fill(tree, "bar", id)
@@ -224,7 +244,9 @@ describe("waterfall library", () => {
       waterfall,
       { rows: [step("Open", 100, "total"), step("Price", 5), step("Close", 105, "total")] },
       {},
-      { focus: "Price", highlight },
+      { highlight },
+      defaultTheme,
+      ["Price"],
     )
     expect(fill(tree, "bar", "Price")).toEqual({ kind: "solid", color: highlight })
   })
@@ -245,7 +267,9 @@ describe("waterfall library", () => {
         rows: [step("Open", 20, "total"), step("Gain", 5), step("Loss", -3), step("End", 999, "total")],
       },
       {},
-      { focus: "Gain" },
+      {},
+      defaultTheme,
+      ["Gain"],
     )
     for (const id of ["Open", "End"]) expect(edge(tree, "bar", id)).toBe(box(tree, "zero")?.y)
     expect(chars(tree, "value", "End")).toBe("22")
