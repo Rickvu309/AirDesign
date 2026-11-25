@@ -1,4 +1,4 @@
-import { columnDefinition } from "./library.js"
+import { columnDefinition } from "../library.js"
 import {
   type Doom,
   type Edit,
@@ -14,7 +14,7 @@ import {
   rev,
   placeComponent,
   regenerateComponent,
-} from "../index.js"
+} from "../../index.js"
 
 export const frame = nodeId("linked:1")
 let counter = 1

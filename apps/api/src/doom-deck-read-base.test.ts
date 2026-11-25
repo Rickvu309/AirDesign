@@ -228,7 +228,15 @@ it("stores a linked join, suppression and detach, then replays a guarded inverse
   const full = doomRoutes.since.result((await post("since", { deck, rev: 0 })).json)
   if (!full.ok) throw new Error(JSON.stringify(full))
   expect(log.edits).toHaveLength(6)
-  expect(doom.replayLog(full.edits)).toEqual(restored)
+  let replayed = doom.emptyDoom
+  for (const row of full.edits) {
+    const landed = doom.readLanded(row, replayed)
+    if (doom.isRefusal(landed)) throw new Error(JSON.stringify(landed))
+    const next = doom.applyEdit(replayed, landed)
+    if (doom.isRefusal(next)) throw new Error(JSON.stringify(next))
+    replayed = next
+  }
+  expect(replayed).toEqual(restored)
 })
 
 it("undoes a generation from replaced rows and keeps a later fill", async () => {

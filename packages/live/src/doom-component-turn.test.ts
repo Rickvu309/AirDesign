@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { afterEach, beforeEach, expect, it } from "vitest"
 import { installIndexedDb } from "./browser-fixtures.js"
 import { deleteDatabase } from "./device.js"
-import { barFor, data, frame, measure, person, placed, two } from "./doom-component-fixtures.js"
+import { barFor, data, frame, measure, person, placed, two } from "./testing/doom-component-fixtures.js"
 
 beforeEach(installIndexedDb)
 afterEach(deleteDatabase)

@@ -36,7 +36,7 @@ import {
   person,
   placed,
   refresh,
-} from "./linked-instance-fixtures.js"
+} from "./testing/linked-instance-fixtures.js"
 
 it("joins the same key after reorder, preserves exact overrides and leaves manual siblings in place", () => {
   const first = placed()

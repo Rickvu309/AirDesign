@@ -47,7 +47,6 @@ export { type NodeId, type Rev, nodeId, readNodeId, rev } from "./ids.js"
 export { changingWrites, sameValue } from "./changing-writes.js"
 export { invert, invertStep, removePlacedInstance } from "./invert.js"
 export { onStandingLayers } from "./standing-layers.js"
-export { replayLog } from "./replay-log.js"
 export {
   type Replaced,
   type RunEdit,

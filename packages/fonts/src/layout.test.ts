@@ -1,11 +1,12 @@
 import { readFile } from "node:fs/promises"
 import { expect, test, vi } from "vitest"
-import { fontRevision, loadFontLayout, servedFontName } from "./index.js"
+import { fontRevision, servedFontName } from "./index.js"
+import { createFontLayout } from "./layout.js"
 
 const narrow = new URL("../../../apps/api/fonts/LiberationSansNarrow-Regular.ttf", import.meta.url)
 
 test("shapes loaded faces with UTF-16 clusters and reports missing clusters", async () => {
-  const layout = await loadFontLayout()
+  const layout = await createFontLayout()
   const face = await layout.prepareFace({
     revision: fontRevision,
     key: "narrow",
@@ -34,7 +35,7 @@ test("shapes loaded faces with UTF-16 clusters and reports missing clusters", as
 })
 
 test("aliases and concurrent prepares share the same file across variation requests", async () => {
-  const layout = await loadFontLayout()
+  const layout = await createFontLayout()
   const alias = servedFontName("Arial Narrow")
   expect(alias).toBe(servedFontName("Liberation Sans Narrow"))
   if (alias === undefined) throw new Error("Missing served font alias")
@@ -57,7 +58,7 @@ test("aliases and concurrent prepares share the same file across variation reque
 })
 
 test("shapes across adjacent run boundaries with separately prepared faces", async () => {
-  const layout = await loadFontLayout()
+  const layout = await createFontLayout()
   const asset = { revision: fontRevision, key: "narrow", axes: {}, read: () => readFile(narrow) }
   const first = await layout.prepareFace(asset)
   const second = await layout.prepareFace(asset)
@@ -87,7 +88,7 @@ test("shapes across adjacent run boundaries with separately prepared faces", asy
 })
 
 test("reads a second face while the first face is still loading", async () => {
-  const layout = await loadFontLayout()
+  const layout = await createFontLayout()
   let release = () => {}
   const held = new Promise<void>((resolve) => {
     release = resolve
@@ -113,7 +114,7 @@ test("reads a second face while the first face is still loading", async () => {
 })
 
 test("bounds repeated reads of an unavailable face revision", async () => {
-  const layout = await loadFontLayout()
+  const layout = await createFontLayout()
   const read = vi.fn(async () => {
     throw new Error("unavailable")
   })
@@ -123,6 +124,6 @@ test("bounds repeated reads of an unavailable face revision", async () => {
 })
 
 test("loads one layout engine and shares its cache across callers", async () => {
-  const [first, second] = await Promise.all([loadFontLayout(), loadFontLayout()])
+  const [first, second] = await Promise.all([createFontLayout(), createFontLayout()])
   expect(second).toBe(first)
 })

@@ -4,8 +4,11 @@ import type * as FontExports from "@airdesign/fonts"
 
 async function loadReference() {
   const { packageBuild } = await import("../../scripts/package-build.mjs")
-  const { loadFontLayoutContract }: typeof FontExports = await packageBuild(process.cwd(), "@airdesign/fonts")
-  const { fontLayoutRevision } = await loadFontLayoutContract()
+  const { fontLayoutRevision }: typeof import("../../packages/fonts/src/layout-contract.js") = await packageBuild(
+    process.cwd(),
+    "@airdesign/fonts",
+    "layout-contract.js",
+  )
   const { loadIcu } = await import("./font-layout/icu.mjs")
   return { fontLayoutRevision, icu: await loadIcu(fontLayoutRevision) }
 }
@@ -94,11 +97,12 @@ test("an installed CJK face paints Han that served Geist cannot cover", async ({
 test("the shipped Node and Chromium engines agree on styled glyphs and line offsets", async ({ page }, info) => {
   const { readdir } = await import("node:fs/promises")
   const { packageBuild } = await import("../../scripts/package-build.mjs")
-  const { loadFontLayout, fontRevision, loadFontLayoutContract }: typeof FontExports = await packageBuild(
+  const { fontRevision }: typeof FontExports = await packageBuild(process.cwd(), "@airdesign/fonts")
+  const { fontLayoutRevision }: typeof import("../../packages/fonts/src/layout-contract.js") = await packageBuild(
     process.cwd(),
     "@airdesign/fonts",
+    "layout-contract.js",
   )
-  const { fontLayoutRevision } = await loadFontLayoutContract()
   const { createHash } = await import("node:crypto")
   const { gzipSync } = await import("node:zlib")
   const { corpus, paintStyleCases } = await import("./font-layout/cases.mjs")
@@ -178,7 +182,12 @@ test("the shipped Node and Chromium engines agree on styled glyphs and line offs
     )
 
   const started = performance.now()
-  const node = await loadFontLayout()
+  const { createFontLayout }: typeof import("../../packages/fonts/src/layout.js") = await packageBuild(
+    process.cwd(),
+    "@airdesign/fonts",
+    "layout.js",
+  )
+  const node = await createFontLayout()
   const nodeCold = performance.now() - started
   const prepare = (
     layout: FontExports.FontLayoutEngine,

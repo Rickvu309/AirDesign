@@ -30,7 +30,7 @@ import {
   person,
   placed,
   refresh,
-} from "./linked-instance-fixtures.js"
+} from "./testing/linked-instance-fixtures.js"
 
 it("inverts chart placement for a person and for a run", () => {
   const { doom: before, slides } = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
