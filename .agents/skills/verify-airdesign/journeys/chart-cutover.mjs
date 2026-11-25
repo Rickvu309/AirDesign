@@ -1,6 +1,6 @@
-import { airaCopy, editorCopy } from "../bin/product-copy.mjs"
+import { airaCopy, designCopy, editorCopy } from "../bin/product-copy.mjs"
 import { connectOutsideAgent } from "./aira-panel.mjs"
-import { node, openDoomDeck, readDoom } from "../look/doom-deck.mjs"
+import { node, openDesign, openDoomDeck, readDoom } from "../look/doom-deck.mjs"
 import { addSlideStart } from "../look/doom-slides.mjs"
 
 const inserts = ["column", "bar", "stacked", "waterfall", "line", "pie"]
@@ -35,6 +35,34 @@ export default async function drive(kit) {
     await expect(page.locator(`[data-slide-thumb] [data-node="${id}"]`)).toBeAttached()
     await capture(`insert-${kind}`)
   }
+
+  await addSlideStart(page, editorCopy.slideStarts.blank)
+  const waterfall = await insert("waterfall")
+  await expect.poll(async () => (await read()).fold.nodes[waterfall]?.instance?.component.id).toBe("waterfall")
+  const { fold } = await read()
+  const chart = fold.nodes[waterfall]
+  const part = chart.instance.parts.find(({ node }) => fold.nodes[node]?.type === "shape")
+  expect(part).toBeDefined()
+  await openDesign(page)
+  const mark = node(page, part.node)
+  await expect(mark).toBeAttached()
+  const bounds = await mark.boundingBox()
+  expect(bounds).not.toBeNull()
+  await page.mouse.dblclick(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+  const selected = await page.locator("[data-selection-outline]").getAttribute("data-selection-outline")
+  expect(selected).not.toBe(waterfall)
+  expect(fold.nodes[selected]?.type).toBe("frame")
+  await expect(page.locator("[data-design-panel]")).toHaveAttribute("data-design-element", waterfall)
+  await expect(page.getByRole("button", { name: designCopy.detachInstance })).toBeVisible()
+  await expect(page.locator("[data-design-panel]").getByText(chart.name, { exact: true })).toBeVisible()
+  await capture("chart-part-instance-panel")
+  const newChart = await insert("column")
+  await expect.poll(async () => (await read()).fold.nodes[newChart]?.instance?.component.id).toBe("column")
+  await expect.poll(async () => (await read()).fold.nodes[newChart]?.parent?.id).toBe(chart.parent.id)
+  await capture("insert-with-part-selected")
+  note(
+    "Double-clicking a chart selected its generated frame and opened the instance panel. Actions inserted the next chart on the same slide.",
+  )
 
   await addSlideStart(page, editorCopy.slideStarts.blank)
   const paths = new Set([doomRoutes.edit.path, doomRoutes.since.path])

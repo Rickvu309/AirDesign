@@ -60,7 +60,13 @@ const readyFonts = () => "ready" as const
 export function DesignPanel(props: Props) {
   useServedFaces()
   const { deck, client, view, slide, selection, onSelection } = props
-  const ids = selection.ids.filter((id) => view.nodes.has(id))
+  const selectedIds = selection.ids.filter((id) => view.nodes.has(id))
+  const [picked] = selectedIds
+  const ownerFrame =
+    picked !== undefined && selectedIds.length === 1 && view.nodes.get(picked)?.type === "frame"
+      ? doom.linkedOwner(view.nodes, picked)
+      : undefined
+  const ids = ownerFrame === undefined ? selectedIds : [ownerFrame]
   const painted = useDoomSlide(view, slide)
   const geometry = useMemo(() => geometryOf(painted.nodes ?? []), [painted.nodes])
   const theme = doom.deckOf(view).theme

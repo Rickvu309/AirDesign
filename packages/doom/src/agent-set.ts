@@ -189,7 +189,7 @@ export function compileSet(draft: Draft, change: SetChange): void {
     stop("shape", undefined, "component", "unknown", "Set data, variant or tokens on an instance.")
   const componentField = componentFields.find((field) => change[field] !== undefined)
   if (componentField !== undefined) return setComponent(draft, change, componentField)
-  if (change.insert !== undefined && (change.target.startsWith("*.") || change.target.includes("#")))
+  if (change.insert !== undefined && change.target.startsWith("*."))
     stop("shape", undefined, "insert", "needs", "a text layer")
   if (change.target.startsWith("*.")) return setEverySlide(draft, change, change.target.slice(2))
   const node = targetNode(draft, change.target)

@@ -278,7 +278,6 @@ export function DoomCanvas(props: {
         size,
         geometry,
         selected: current.ids,
-        chart: true,
       })
       const made = componentInsertWrites(view, {
         parent,

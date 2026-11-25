@@ -1,6 +1,15 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { chartArea, componentInsertWrites, drawWrites, iconSwapWrites, iconWrites, type Drawing } from "./create-writes"
+import {
+  chartArea,
+  componentInsertWrites,
+  drawWrites,
+  iconSwapWrites,
+  iconWrites,
+  insertionTarget,
+  type Drawing,
+} from "./create-writes"
+import { geometryOf } from "./slide-geometry"
 import { darkTheme } from "./testing/create-writes-art"
 import { grow, landed } from "./testing/doom-fixtures"
 
@@ -184,6 +193,41 @@ describe("inserting", () => {
       instance: { component: { id: "column" }, parts: expect.any(Array) },
     })
   })
+
+  it.each(["instance", "generated frame"])(
+    "inserts charts and icons at slide level with a selected %s",
+    (selection) => {
+      const measure = doom.measureWith({})
+      const chart = componentInsertWrites(built.view, {
+        parent: slide,
+        area: { x: 200, y: 200, w: 500, h: 400 },
+        component: "column",
+        mint: () => id,
+        measure,
+      })
+      if (chart === null) throw new Error("Missing chart")
+      const view = landed(built.view, chart.writes)
+      const generated = doom.childrenOf(view, id).find((node) => node.type === "frame")
+      if (generated === undefined) throw new Error("Missing generated frame")
+      const selected = selection === "instance" ? id : generated.id
+      const geometry = geometryOf(doom.resolveSlide(view, slide, measure))
+      const target = insertionTarget(view, { slide, size: inside, geometry, selected: [selected] })
+      expect(target).toMatchObject({ parent: slide, inside, anchor: { x: 200, y: 200 } })
+
+      const next = doom.nodeId("m:9")
+      const inserted = componentInsertWrites(view, {
+        parent: target.parent,
+        area: chartArea(view, target.parent, target.inside, target.anchor),
+        component: "column",
+        mint: () => next,
+        measure,
+      })
+      if (inserted === null) throw new Error("Missing inserted chart")
+      expect(doom.propOf(landed(view, inserted.writes).nodes.get(next), "parent")?.id).toBe(slide)
+      const icon = iconWrites(view, next, { ...slot, id: target.parent }, "rocket", target.inside, target.anchor)
+      expect(doom.propOf(landed(view, icon).nodes.get(next), "parent")?.id).toBe(slide)
+    },
+  )
 
   it("fills the content area under a title, on the title's left edge", () => {
     let next = 0

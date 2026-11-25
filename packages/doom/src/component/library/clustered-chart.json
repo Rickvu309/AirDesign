@@ -688,7 +688,12 @@
                 [
                   "if",
                   ["get", "horizontal"],
-                  ["add", ["get", "categoryWidth"], ["get", "labelGap"], ["get", "negativeSpace"]],
+                  [
+                    "add",
+                    ["get", "categoryWidth"],
+                    ["min", 18, ["mul", ["get", "innerW"], 0.04]],
+                    ["get", "negativeSpace"]
+                  ],
                   ["if", ["get", "hasDirectLabels"], 0, ["get", "tickWidth"]]
                 ]
               ]

@@ -204,22 +204,29 @@ export function insertionTarget(
     size,
     geometry,
     selected,
-    chart = false,
   }: {
     readonly slide: doom.NodeId
     readonly size: Size
     readonly geometry: SlideGeometry
     readonly selected: readonly doom.NodeId[]
-    readonly chart?: boolean
   },
 ) {
   const [only] = selected
   const placed = selected.length === 1 && only !== undefined ? geometry.byId.get(only) : undefined
   const stored = placed === undefined ? undefined : view.nodes.get(placed.id)
-  if (placed !== undefined && stored?.type === "frame" && (!chart || stored.instance === undefined)) {
+  if (
+    placed !== undefined &&
+    stored?.type === "frame" &&
+    stored.instance === undefined &&
+    doom.linkedOwner(view.nodes, placed.id) === undefined
+  ) {
     return { parent: placed.id, inside: placed.node.box, anchor: undefined }
   }
-  return { parent: slide, inside: size, anchor: placed?.node.box }
+  const anchor =
+    placed === undefined || placed.parent === null
+      ? placed?.node.box
+      : { ...placed.node.box, x: placed.bounds.left, y: placed.bounds.top }
+  return { parent: slide, inside: size, anchor }
 }
 
 export function chartArea(view: doom.Doom, parent: doom.NodeId, inside: Size, anchor?: Box): Box {

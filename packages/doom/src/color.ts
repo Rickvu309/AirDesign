@@ -1,4 +1,4 @@
-import { type Color, type Hex, readColor as colorReader } from "./paint.js"
+import { type Color, type Hex, colorVars, readColor as colorReader } from "./paint.js"
 import { Reject } from "./read-kit.js"
 import type { Theme } from "./theme.js"
 
@@ -35,6 +35,13 @@ export function readColor(raw: unknown): Color | undefined {
     if (!(thrown instanceof Reject)) throw thrown
     return undefined
   }
+}
+
+export function namedColor(raw: string): Color | undefined {
+  const [, name, step] = /^([a-z0-9]+)([+-](?:100|[1-9][0-9]?))?$/.exec(raw) ?? []
+  const base = colorVars.find((entry) => entry === name)
+  if (base === undefined) return undefined
+  return step === undefined ? { var: base } : { var: base, tint: Number(step) / 100 }
 }
 
 export function sameColor(left: Color, right: Color): boolean {

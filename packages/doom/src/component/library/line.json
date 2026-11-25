@@ -192,28 +192,7 @@
       "baseBottom",
       ["max", ["get", "top"], ["sub", ["get", "frame.h"], ["max", 58, ["min", 108, ["div", ["get", "frame.h"], 4]]]]]
     ],
-    [
-      "axisWidth",
-      [
-        "min",
-        ["max", 42, ["mul", ["get", "frame.w"], 0.18]],
-        [
-          "max",
-          49,
-          [
-            "add",
-            2,
-            [
-              "max",
-              ["textWidth", ["format", ["get", "lo"], ["get", "valueFormat"]], ["get", "token.caption"]],
-              ["textWidth", ["format", ["get", "hi"], ["get", "valueFormat"]], ["get", "token.caption"]]
-            ]
-          ]
-        ]
-      ]
-    ],
-    ["axisX", ["min", ["div", ["get", "frame.w"], 4], ["add", ["get", "axisWidth"], 8]]],
-    ["left", ["min", ["div", ["get", "frame.w"], 3], ["add", ["get", "axisX"], 32]]],
+    ["left", ["min", 32, ["div", ["get", "frame.w"], 8]]],
     [
       "labelX",
       [
@@ -224,7 +203,7 @@
       ]
     ],
     [
-      "endMetrics",
+      "endValues",
       [
         "map",
         ["get", "active"],
@@ -232,8 +211,7 @@
         {
           "id": ["get", "series.id"],
           "color": ["get", "series.color"],
-          "chars": ["get", "series.label"],
-          "size": ["textMetrics", ["get", "series.label"], ["get", "token.caption"]],
+          "label": ["get", "series.label"],
           "val": [
             "at",
             ["filter", ["get", "series.values"], "v", ["if", ["eq", ["get", "v"], null], false, true]],
@@ -243,6 +221,35 @@
               1
             ]
           ]
+        }
+      ]
+    ],
+    [
+      "endCaptions",
+      [
+        "map",
+        ["get", "endValues"],
+        "series",
+        {
+          "id": ["get", "series.id"],
+          "color": ["get", "series.color"],
+          "val": ["get", "series.val"],
+          "chars": ["concat", ["get", "series.label"], " ", ["format", ["get", "series.val"], ["get", "valueFormat"]]]
+        }
+      ]
+    ],
+    [
+      "endMetrics",
+      [
+        "map",
+        ["get", "endCaptions"],
+        "series",
+        {
+          "id": ["get", "series.id"],
+          "color": ["get", "series.color"],
+          "chars": ["get", "series.chars"],
+          "size": ["textMetrics", ["get", "series.chars"], ["get", "token.caption"]],
+          "val": ["get", "series.val"]
         }
       ]
     ],
@@ -619,23 +626,10 @@
             {
               "emit": {
                 "kind": "line",
-                "key": ["list", "axis"],
-                "start": ["point", ["get", "axisX"], ["get", "top"]],
-                "end": ["point", ["get", "axisX"], ["get", "bottom"]],
-                "color": ["get", "token.rule"],
-                "width": 1.5,
-                "route": "straight",
-                "arrow": "none"
-              },
-              "when": ["if", ["get", "variant.labels"], false, true]
-            },
-            {
-              "emit": {
-                "kind": "line",
                 "key": ["list", "zero"],
                 "start": [
                   "point",
-                  ["get", "axisX"],
+                  ["get", "left"],
                   ["linear", 0, ["get", "lo"], ["get", "hi"], ["get", "bottom"], ["get", "top"]]
                 ],
                 "end": [
@@ -648,40 +642,6 @@
                 "route": "straight",
                 "arrow": "none"
               }
-            },
-            {
-              "repeat": {
-                "over": ["list", ["get", "lo"], 0, ["get", "hi"]],
-                "as": "tick"
-              },
-              "when": [
-                "if",
-                ["get", "variant.labels"],
-                false,
-                ["if", ["eq", ["get", "tick"], 0], ["eq", ["get", "i"], 1], true]
-              ],
-              "children": [
-                {
-                  "emit": {
-                    "kind": "text",
-                    "key": ["list", "tick", ["index-key", ["get", "i"]]],
-                    "x": 0,
-                    "y": [
-                      "sub",
-                      ["linear", ["get", "tick"], ["get", "lo"], ["get", "hi"], ["get", "bottom"], ["get", "top"]],
-                      16
-                    ],
-                    "w": ["get", "axisWidth"],
-                    "h": 32,
-                    "chars": ["format", ["get", "tick"], ["get", "valueFormat"]],
-                    "style": ["get", "token.caption"],
-                    "color": ["get", "token.muted"],
-                    "align": "right",
-                    "alignV": "center",
-                    "fit": "omit"
-                  }
-                }
-              ]
             },
             {
               "repeat": {

@@ -116,7 +116,6 @@ export const sample: Readonly<Record<string, unknown>> = {
   from: { layer: built.ids.card },
   to: { x: 900, y: 40 },
   route: "elbow",
-  chart: { kind: "bar", categories: ["A"], series: [{ name: "S", values: [1] }], unit: "$M" },
   box: { x: 10, y: 10, w: 50, h: 50 },
   name: "Renamed",
   hidden: true,
