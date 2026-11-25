@@ -5,6 +5,8 @@ const shownFindings = 10
 
 function findingMessage(finding: doom.ComponentFinding): string {
   switch (finding.kind) {
+    case "advice":
+      return finding.note
     case "flow-omitted":
       return finding.omitted.length === 1
         ? "omitted 1 item that did not fit."
@@ -27,7 +29,7 @@ export function componentFindings(fold: doom.Doom, ids: readonly doom.NodeId[], 
       const { kind, key } = finding
       const subject = `${node} ${key.join(" / ")}`
       const note = `${subject} ${findingMessage(finding)}`
-      findings.push({ node, code: kind, key, note })
+      findings.push({ node, code: finding.kind === "advice" ? finding.code : kind, key, note })
       if (findings.length === shownFindings) return findings
     }
   }
