@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { act, createElement } from "react"
 import { createRoot } from "react-dom/client"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { DoomSlide } from "./index.js"
+import { deckLocale, DoomSlide } from "./index.js"
 
 const roots: ReturnType<typeof createRoot>[] = []
 
@@ -52,4 +52,38 @@ describe("DoomSlide", () => {
     expect(host.querySelector("[data-line]")?.textContent).toBe("Revenue")
     expect(slide?.firstElementChild?.getAttribute("style")).toContain("scale(0.5)")
   })
+})
+
+it("keeps the deck locale while typing and rechecks it when a draft changes the deck's language evidence", () => {
+  const base = doom.doomFromTree({
+    theme: doom.defaultTheme,
+    slides: [
+      {
+        children: [
+          {
+            type: "shape",
+            name: "words",
+            props: { box: spot(100, 100, 600, 100), text: doom.textFromMarkdown("まとめ", "title") },
+          },
+          {
+            type: "shape",
+            name: "title",
+            props: { box: spot(100, 220, 600, 100), text: doom.textFromMarkdown("東京本社", "title") },
+          },
+        ],
+      },
+    ],
+  })
+  const draft = (layer: doom.NodeId, chars: string) =>
+    doom.viewOf(base.doom, [
+      {
+        once: "typing",
+        author: { kind: "person", id: "typist" },
+        writes: [{ node: layer, prop: "text", value: doom.textFromMarkdown(chars, "title") }],
+      },
+    ])
+  const { words, title } = base.ids
+  if (words === undefined || title === undefined) throw new Error("Missing text layers")
+  expect(deckLocale(draft(title, "営業報告"), { before: base.doom, layer: title })).toBe("ja")
+  expect(deckLocale(draft(words, "Summary"), { before: base.doom, layer: words })).toBe("und")
 })
