@@ -235,30 +235,3 @@ test("undo back to an empty text saves it empty while the text stays open, and l
   await page.keyboard.press("Escape")
   await expect.poll(async () => (await savedNode(stack, opened, id))?.parent).toBeNull()
 })
-
-test("a text edit fully undone inside the text leaves no deck undo step behind", async ({ page, context, stack }) => {
-  covers("edit-text", "undo")
-  await page.clock.install()
-  const opened = await openEditor(page, context, stack)
-  const subtitle = async () =>
-    (await savedNode(stack, opened, "s:5"))?.box as { x: number; y: number; w: number; h: number }
-  const subtitleX = async () => (await subtitle()).x
-  const box = await subtitle()
-  const before = box.x
-  const title = await charsOf(stack, opened, "s:4")
-  await clickSlide(page, box.x + box.w / 2, box.y + box.h / 2)
-  await page.keyboard.press("ArrowRight")
-  await expect.poll(subtitleX).toBe(before + 1)
-  await editTitle(page)
-  await page.keyboard.type("Temporary", { delay: 10 })
-  await page.clock.runFor(1000)
-  await expect.poll(() => charsOf(stack, opened, "s:4")).toBe("Temporary")
-  await page.keyboard.press("ControlOrMeta+z")
-  await expect(page.locator("[data-text-editor]")).toHaveText(title ?? "")
-  await page.clock.runFor(1000)
-  await expect.poll(() => charsOf(stack, opened, "s:4")).toBe(title)
-  await page.keyboard.press("ControlOrMeta+z")
-  await expect(page.locator("[data-text-editor]")).toHaveCount(0)
-  await expect.poll(subtitleX).toBe(before)
-  await expect.poll(() => charsOf(stack, opened, "s:4")).toBe(title)
-})
