@@ -151,8 +151,18 @@ async function turnRun(
     })
   const who = run.name === "" ? "An agent" : run.name
   const names = (ids: readonly doom.NodeId[]) => ids.map((id) => layerName(opened.fold, id))
-  const stays = { kept: names(turned.kept), left: names(turned.left), waiting: names(turned.waiting) }
-  const note = staysNote(who, stays)
+  const created = new Set(
+    edits.flatMap(({ writes }) => writes.flatMap(({ node, prop }) => (prop === "type" ? [node] : []))),
+  )
+  const later = names(turned.kept.filter((node) => !created.has(node)))
+  const stays = {
+    kept: names(turned.kept.filter((node) => created.has(node))),
+    left: names(turned.left),
+    waiting: names(turned.waiting),
+  }
+  const note = [staysNote(who, stays), later.length === 0 ? "" : `Later changes to ${listed(later)} were kept.`]
+    .filter(Boolean)
+    .join(" ")
   const body = {
     deck: opened.deck,
     rev: opened.rev,

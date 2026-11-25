@@ -219,13 +219,13 @@ export function preparePart(
     props: { ...shared, ...filled(emit.fill), ...surface(emit), text },
     ...(style === undefined ? {} : { generatedStyle: generated.style }),
   }
-  if (fit === undefined || (style !== undefined && typeof fit === "object" && fit.group !== undefined)) return part
+  if (fit === undefined) return part
   if (fit === "omit") return fitOne(part, undefined, context)
   const smaller = Math.min(
     readField("fit.smaller", fit.smaller, smallerSize),
     context.theme.textStyles[text.style].size,
   )
-  if (fit.group === undefined) return fitOne(part, smaller, context)
+  if (fit.group === undefined || style !== undefined) return fitOne(part, smaller, context)
   const laneWidth = fit.thin === undefined ? position.w : w
   const inset = Math.min((fit.thin ?? 0) / 2, laneWidth / 2)
   const label =

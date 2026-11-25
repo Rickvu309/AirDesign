@@ -4,10 +4,10 @@ import { agentKeptLayers, agentLeftLayers, agentUndoStays } from "./agent-runs-c
 describe("the notes after an Undo on an agent run", () => {
   it("says a kept layer was changed, without saying who changed it, and that the person can delete it", () => {
     expect(agentKeptLayers("Claude Code", ["“Panel”"])).toBe(
-      "“Panel” stays, because it, or something in it, was changed after Claude Code made it. Delete it yourself if you don't want it.",
+      "Changes made to “Panel” after Claude Code’s edit were kept.",
     )
     expect(agentKeptLayers("Aira", ["“Panel”", "“Card”"])).toBe(
-      "“Panel” and “Card” stay, because they, or something in them, were changed after Aira made them. Delete them yourself if you don't want them.",
+      "Changes made to “Panel” and “Card” after Aira’s edit were kept.",
     )
   })
 

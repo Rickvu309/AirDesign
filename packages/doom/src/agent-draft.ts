@@ -8,6 +8,7 @@ import type { Refusal } from "./refusal.js"
 import type { Node, Doom, Write } from "./doom.js"
 import { type Box, childrenOf, isLive, parentOf } from "./doom-walk.js"
 import type { Props } from "./props.js"
+import type { ComponentEditSample } from "./component/component-edit.js"
 
 export type Values = { readonly [K in PropName]?: Props[K] }
 export type Natural = { readonly width: number; readonly height: number }
@@ -17,6 +18,7 @@ export type Reading = {
   readonly pictures?: ReadonlyMap<string, Natural>
   readonly measure?: Measure
   readonly bake?: (frame: NodeId) => readonly Write[]
+  readonly componentSample?: (sample: ComponentEditSample) => void
 }
 export type Draft = {
   readonly doom: Doom

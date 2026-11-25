@@ -255,6 +255,7 @@ export class FontMetrics {
     folds: readonly doom.Doom[],
     budget = Number.POSITIVE_INFINITY,
     layers?: readonly doom.NodeId[],
+    extraTexts: readonly string[] = [],
   ): Promise<Measured | Unmeasured> {
     const used = new Map<string, Set<string>>()
     for (const fold of folds) {
@@ -274,7 +275,7 @@ export class FontMetrics {
     )
     const needs = {
       faces: [...faces].flatMap(([key, face]) => (layers === undefined || used.has(key) ? [face] : [])),
-      texts: [...new Set(each.flatMap((needs) => needs.texts))],
+      texts: [...new Set([...each.flatMap((needs) => needs.texts), ...extraTexts])],
     }
     const read = await this.widths(needs, used, budget)
     if (typeof read === "string") return read

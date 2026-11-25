@@ -76,11 +76,13 @@ it.each(["online", "offline", "offline after reload"])(
   },
 )
 
-it("removes an offline placement after another writer adds chart rows, then redoes it with their data", async () => {
+it.each(["online", "offline"])("removes a placement after another writer adds chart rows (%s)", async (mode) => {
   const { deck, shared, offline } = await placed()
-  offline(true)
-  expect(deck.undo()).toMatchObject({ ok: true })
-  expect(await deck.sync()).toMatchObject({ ok: false, reason: "offline" })
+  if (mode === "offline") {
+    offline(true)
+    expect(deck.undo()).toMatchObject({ ok: true })
+    expect(await deck.sync()).toMatchObject({ ok: false, reason: "offline" })
+  }
   const next = doom.regenerateComponent(deck.server(), frame, { data: two }, measure)
   if (doom.isRefusal(next)) throw new Error(JSON.stringify(next))
   expect(
@@ -91,6 +93,11 @@ it("removes an offline placement after another writer adds chart rows, then redo
   ).toMatchObject({ ok: true })
   const added = next.writes.find(({ prop }) => prop === "type")?.node
   if (added === undefined) throw new Error("Missing new part")
+  if (mode === "online") {
+    await deck.catchUp()
+    expect(instance(deck.view())?.data).toEqual(two)
+    expect(deck.undo()).toMatchObject({ ok: true })
+  }
   offline(false)
   expect(await deck.sync()).toEqual({ ok: true })
   expect(doom.onDeck(deck.server().nodes, frame)).toBe(false)
@@ -279,3 +286,51 @@ it.each([false, true])(
     expect(reopened.deck.notices()).toEqual([])
   },
 )
+
+it.each(["move", "delete"])("reconciles an offline placement undo after a remote %s", async (change) => {
+  const { deck, shared, offline } = await placed()
+  const at = doom.orderKeyBetween(doom.orderKeyBetween(null, null), null)
+  offline(true)
+  expect(deck.undo()).toMatchObject({ ok: true })
+  expect(await deck.sync()).toMatchObject({ ok: false, reason: "offline" })
+  expect(
+    await shared.edit({
+      deck: deck.deck,
+      edit: {
+        once: "other-parent",
+        author: person,
+        writes: [{ node: frame, prop: "parent", value: change === "move" ? { id: slide, at } : null }],
+      },
+    }),
+  ).toMatchObject({ ok: true })
+  offline(false)
+  expect(await deck.sync()).toEqual({ ok: true })
+  expect(doom.onDeck(deck.server().nodes, frame)).toBe(change === "move")
+  expect(deck.notices()).toEqual(change === "move" ? [expect.objectContaining({ refused: "stale", node: frame })] : [])
+})
+
+it("undoes an ordinary shape placed beside a chart after another device recolors the shape", async () => {
+  const shape = doom.nodeId("shape:1")
+  const at = doom.orderKeyBetween(doom.orderKeyBetween(null, null), null)
+  const { deck, shared, offline } = await placed([
+    { node: shape, prop: "type", value: "shape" },
+    { node: shape, prop: "parent", value: { id: slide, at } },
+  ])
+  offline(true)
+  expect(deck.undo()).toMatchObject({ ok: true })
+  expect(await deck.sync()).toMatchObject({ ok: false, reason: "offline" })
+  expect(
+    await shared.edit({
+      deck: deck.deck,
+      edit: {
+        once: "other-color",
+        author: person,
+        writes: [{ node: shape, prop: "fills", value: [{ kind: "solid", color: { var: "accent2" } }] }],
+      },
+    }),
+  ).toMatchObject({ ok: true })
+  offline(false)
+  expect(await deck.sync()).toEqual({ ok: true })
+  expect(doom.onDeck(deck.server().nodes, frame)).toBe(false)
+  expect(doom.onDeck(deck.server().nodes, shape)).toBe(false)
+})

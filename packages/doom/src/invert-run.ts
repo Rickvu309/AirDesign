@@ -6,6 +6,7 @@ import {
   instanceFieldRevs,
   instanceRemovalConflicts,
   instanceTransition,
+  measuredInstanceEdit,
   restoreInstance,
   readDiscardedOverrides,
   withRegenerated,
@@ -201,27 +202,38 @@ function writerOf(now: Doom, edits: readonly RunEdit[], mine: ReadonlySet<Rev>, 
 
 function linkedEdits(edits: readonly RunEdit[]) {
   const structural = new Set<NodeId>()
+  const measured = new Set<Rev>()
   const byRoot = new Map<NodeId, [InstanceTransition, ...InstanceTransition[]]>()
   const byEdit = new Map<Rev, InstanceTransition[]>()
   for (const edit of edits) {
+    const prior = new Map(edit.replaced.map((cell) => [cellName(cell), cell.value]))
+    const transitions: InstanceTransition[] = []
     for (const { node, key, value, rev, fields, overrides } of edit.replaced) {
       if (key !== "instance") continue
       const before = props.instance.read(value)
       const previous = fields ?? Object.fromEntries(instanceFields.map((field) => [field, rev ?? undefined]))
       const change = isRefusal(before) ? undefined : instanceTransition(node, before, edit, previous, overrides ?? [])
-      if (change === undefined) {
-        structural.add(node)
-        continue
-      }
-      const history = byRoot.get(node)
-      byRoot.set(node, history === undefined ? [change] : [change, ...history])
-      const transitions = byEdit.get(edit.rev) ?? []
-      transitions.push(change)
-      byEdit.set(edit.rev, transitions)
+      if (change === undefined) structural.add(node)
+      else transitions.push(change)
+    }
+    if (
+      transitions.some((change) =>
+        measuredInstanceEdit(change, edit.writes, ({ node, prop }) => prior.get(cellName({ node, key: prop }))),
+      )
+    ) {
+      measured.add(edit.rev)
+      for (const { root } of transitions) structural.add(root)
+      continue
+    }
+    if (transitions.length === 0) continue
+    byEdit.set(edit.rev, transitions)
+    for (const change of transitions) {
+      const history = byRoot.get(change.root)
+      byRoot.set(change.root, history === undefined ? [change] : [change, ...history])
     }
   }
   for (const node of structural) byRoot.delete(node)
-  return { byRoot, byEdit }
+  return { byRoot, byEdit, measured }
 }
 
 function withoutGenerated(applied: RunEdit, transitions: readonly InstanceTransition[], keepInstance = false): RunEdit {
@@ -315,16 +327,18 @@ export function invertRun(
   const restored = new Map<string, Restore>()
   const blocked = new Set<NodeId>()
   const chosen: RunEdit[] = []
-  const { byRoot, byEdit } = linkedEdits(edits)
+  const { byRoot, byEdit, measured } = linkedEdits(edits)
   const structural = edits.map((edit) =>
     withoutGenerated(edit, byEdit.get(edit.rev)?.filter(({ root }) => byRoot.has(root)) ?? []),
   )
   const kept = keptOf(now, structural, mine)
   const rebuilt: Write[] = []
+  const keptInstances: NodeId[] = []
   for (const transitions of byRoot.values()) {
     const restored = restoreInstance(now, transitions, owned, measure)
     if (isRefusal(restored)) return { writes: [], kept: [], left: [], waiting: [], refused: restored }
-    rebuilt.push(...restored)
+    rebuilt.push(...restored.writes)
+    if (restored.kept) keptInstances.push(transitions[0].root)
   }
   const currentWriter = (was: Replaced) => {
     const name = cellName(was)
@@ -332,6 +346,13 @@ export function invertRun(
     return writer.get(name)
   }
   for (const source of structural.toReversed()) {
+    if (
+      measured.has(source.rev) &&
+      source.replaced.some((cell) => kept.has(cell.node) || currentWriter(cell) !== source.rev)
+    ) {
+      keptInstances.push(...source.replaced.flatMap(({ key, node }) => (key === "instance" ? [node] : [])))
+      continue
+    }
     const stays = ({ node }: { readonly node: NodeId }) => !kept.has(node)
     const edit = { ...source, writes: source.writes.filter(stays), replaced: source.replaced.filter(stays) }
     const roots = edit.replaced.flatMap(({ node, key }) => (key === "instance" ? [node] : []))
@@ -366,7 +387,7 @@ export function invertRun(
         continue
       }
     }
-    chosen.push(source)
+    chosen.push(edit)
     for (const was of edit.replaced) {
       const name = cellName(was)
       const other = currentWriter(was)
@@ -385,6 +406,7 @@ export function invertRun(
   const result = settle(now, chosen.reverse(), kept, [...restored.values()], started)
   return {
     ...result,
+    kept: [...new Set([...result.kept, ...keptInstances])],
     writes: withRegenerated(result.writes, rebuilt),
     left: [...new Set([...result.left, ...blocked])],
   }

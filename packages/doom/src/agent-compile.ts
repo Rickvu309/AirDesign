@@ -10,6 +10,10 @@ import type { Write } from "./doom.js"
 import type { Doom } from "./doom.js"
 import { freeLineEnds } from "./freed-line-ends.js"
 import { measureWith } from "./measure.js"
+import { prepareComponentEdit, sampleComponentEdit } from "./component/component-edit.js"
+import { isRefusal } from "./refusal.js"
+
+const estimate = measureWith({})
 
 export function nameOf(change: AgentChange): string {
   switch (change.op) {
@@ -48,7 +52,14 @@ export function compileAgentChange(
     if (change.op === "deck") compileDeck(draft, change)
     if (change.op === "delete") compileDelete(draft, change)
     if (change.op === "slide") compileSlide(draft, change)
-    return freeLineEnds(doom, draft.writes, reading.measure ?? measureWith({}))
+    if (reading.componentSample !== undefined) {
+      const sample = sampleComponentEdit(doom, draft.writes)
+      if (isRefusal(sample)) return { ...sample, change: nameOf(change) }
+      if (sample !== null) reading.componentSample(sample)
+    }
+    const measure = reading.measure ?? estimate
+    const writes = prepareComponentEdit(doom, draft.writes, measure)
+    return isRefusal(writes) ? { ...writes, change: nameOf(change) } : freeLineEnds(doom, writes, measure)
   } catch (thrown) {
     if (thrown instanceof Stop) return { ...thrown.refusal, change: nameOf(change) }
     throw thrown

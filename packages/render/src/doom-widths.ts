@@ -157,8 +157,15 @@ export async function measureFaces(doc: Document, needs: doom.FaceNeeds): Promis
   return kept.widths
 }
 
-export async function measureDoom(doc: Document, value: doom.Doom): Promise<doom.Measure> {
-  const widths = await measureFaces(doc, doom.doomFaces(value))
-  if (widths === null) throw new Error("Font metrics unavailable")
+export async function measureDoom(
+  doc: Document,
+  value: doom.Doom,
+  extraTexts?: readonly string[],
+): Promise<doom.Measure> {
+  const faces = doom.doomFaces(value)
+  const needs = extraTexts === undefined ? faces : { ...faces, texts: [...new Set([...faces.texts, ...extraTexts])] }
+  const widths = await measureFaces(doc, needs)
+  if (widths === null || (extraTexts !== undefined && !measureReady(doc, needs)))
+    throw new Error("Font metrics unavailable")
   return doom.measureWith(widths)
 }

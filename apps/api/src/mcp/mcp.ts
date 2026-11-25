@@ -150,7 +150,7 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured, fo
       }
     }
   const on = (client: Sql, forUndo = false): UndoHost => ({
-    measure: (folds, layers) => servedFontMetrics(fonts).measure(folds, measureBudget, layers),
+    measure: (folds, layers, extraTexts) => servedFontMetrics(fonts).measure(folds, measureBudget, layers, extraTexts),
     open: guarded(async (deck) => opened(deck, await openDoom(client, { deck, forUndo }, email))),
     edit: guarded(async (deck, edit) => {
       const landed = await editDoom(client, { deck, edit: edit as unknown as Readonly<Record<string, unknown>> }, email)

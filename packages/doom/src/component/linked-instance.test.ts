@@ -141,7 +141,7 @@ it("keeps the linked creation when a later edit adds a manual child", () => {
   })
 })
 
-it("fits only inherited category styles and stores the new generated style", () => {
+it("measures a category override in its chosen style and stores the new generated style", () => {
   const before = placed()
   const label = part(before, "category", "a")
   const text = propOf(before.nodes.get(label), "text")
@@ -162,7 +162,7 @@ it("fits only inherited category styles and stores the new generated style", () 
   )
   if (isRefusal(writes)) throw new Error(JSON.stringify(writes))
   const refreshed = land(override, writes.writes, true)
-  expect(measured).toEqual([])
+  expect(measured).toEqual(["label"])
   expect(refreshed.nodes.get(label)).toMatchObject({ text: { chars: "Alpha", style: "label" } })
   expect(instance(refreshed).parts.find(({ node }) => node === label)?.baseline).toEqual({
     kind: "text",

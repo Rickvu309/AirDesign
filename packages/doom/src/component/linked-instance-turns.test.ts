@@ -107,7 +107,7 @@ it("lets an agent override a fitted chart label and keeps the style on the next 
     mint,
   })
   if (isRefusal(compiled)) throw new Error(JSON.stringify(compiled))
-  const styled = land(joined, compiled.edit.writes)
+  const styled = land(joined, compiled.edit.writes, true)
   expect(propOf(styled.nodes.get(label), "text")?.style).toBe("title")
   const next = land(
     styled,

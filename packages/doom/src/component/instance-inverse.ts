@@ -10,6 +10,7 @@ import { isRefusal } from "../refusal.js"
 import type { Measure } from "../measure.js"
 import { onStandingLayers } from "../standing-layers.js"
 import { instanceFits, instanceRoots } from "./instance-ownership.js"
+import { changesBoxSize, writesTheme } from "./component-edit.js"
 
 export function instanceRemovalConflicts(
   now: Doom,
@@ -68,6 +69,44 @@ export type InstanceTransition = {
   readonly after: Instance
   readonly fields: FieldRevs
   readonly overrides: readonly Write[]
+}
+
+export function measuredInstanceEdit(
+  { root, before, after }: InstanceTransition,
+  writes: readonly Write[],
+  prior: (write: Write) => unknown,
+): boolean {
+  const changesLayout = writes.some(
+    (write) =>
+      writesTheme(write) || (write.node === root && write.prop === "box" && changesBoxSize(write.value, prior(write))),
+  )
+  if (changesLayout) return true
+  const text = writes.filter(({ prop }) => prop === "text")
+  if (text.length === 0) return false
+  const styles = (instance: Instance) =>
+    new Map(
+      instance.parts.flatMap(({ node, baseline }) =>
+        baseline.kind === "text" ? [[node, baseline.style] as const] : [],
+      ),
+    )
+  const old = styles(before)
+  const next = styles(after)
+  const inputsChanged = instanceFields.some((field) => !sameValue(before[field], after[field]))
+  return text.some(changedStyle)
+
+  function changedStyle(write: Write): boolean {
+    const wasStyle = old.get(write.node)
+    const becameStyle = next.get(write.node)
+    if (wasStyle === undefined || becameStyle === undefined) return false
+    const was = props.text.read(prior(write))
+    const became = props.text.read(write.value)
+    return (
+      !isRefusal(was) &&
+      !isRefusal(became) &&
+      was.style !== became.style &&
+      (!inputsChanged || was.style !== wasStyle || became.style !== becameStyle)
+    )
+  }
 }
 
 export function instanceTransition(
@@ -195,11 +234,12 @@ export function restoreInstance(
 ) {
   const [{ root, before, rev }] = transitions
   const current = propOf(now.nodes.get(root), "instance")
-  if (current?.generated !== before.generated || !onDeck(now.nodes, root)) return []
+  if (current?.generated !== before.generated || !onDeck(now.nodes, root)) return { writes: [], kept: false }
   const test: Write = { node: root, prop: "instance", value: current }
-  if (onStandingLayers(now, [test], rev, rev, new Map()).length === 0) return []
+  if (onStandingLayers(now, [test], rev, rev, new Map()).length === 0) return { writes: [], kept: false }
   const fields = instanceFieldRevs(now, root)
   let values = current
+  let kept = false
   const expired: Instance["suppressed"][number][] = []
   const returning = new Map<
     string,
@@ -210,7 +250,10 @@ export function restoreInstance(
     for (const field of instanceFields) {
       if (sameValue(change.before[field], change.after[field])) continue
       const at = fields[field]
-      if (at !== change.rev && (at === undefined || !owned.has(at))) continue
+      if (at !== change.rev && (at === undefined || !owned.has(at))) {
+        kept ||= at !== undefined && at > change.rev
+        continue
+      }
       if (!sameValue(values[field], change.after[field])) continue
       values = { ...values, [field]: change.before[field] }
       const previous = change.fields[field]
@@ -248,7 +291,9 @@ export function restoreInstance(
     expired,
     returning,
   )
-  return isRefusal(restored) ? { ...restored, node: root, prop: "instance" as const } : restored.writes
+  return isRefusal(restored)
+    ? { ...restored, node: root, prop: "instance" as const }
+    : { writes: restored.writes, kept }
 }
 
 export function withRegenerated(writes: readonly Write[], regenerated: readonly Write[]): readonly Write[] {
