@@ -139,7 +139,7 @@ async function servedProcess(input: Omit<Parameters<typeof expandComponent>[1], 
   if (isRefusal(tree)) throw new Error(JSON.stringify(tree))
   const { doom, slide } = landTree(tree, theme)
   const resolved = resolvedById(resolveSlide(doom, slide, fonts.measure))
-  return { tree, resolved, cards: role(tree, "card").map(({ id }) => resolved.get(id)!) }
+  return { tree, resolved, cards: role(tree, "step").map(({ id }) => resolved.get(id)!) }
 }
 
 async function servedMeasure() {

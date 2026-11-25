@@ -7,7 +7,7 @@ Process, architecture, cycle, 2×2 matrix and issue tree are library specs. The 
 - Process lays 3 to 8 numbered cards in an auto layout row or column. Each card has a title, an optional description and an optional duration. A column duration is its own text layer, grouped with its card as the step. Row descriptions can wrap to three lines. The focus step carries the accent and defaults to step one. A process with more than five steps suggests using two diagrams.
 - Architecture draws one band per layer. Adjacent-layer links use the gap between bands. Skip-layer links use the band gaps and side gutters. Links can share a line into or out of a card. Unrelated links use separate lanes where the diagram has room.
 - Cycle places 3 to 6 steps on an ellipse with curved or straight connectors.
-- Matrix uses two titled arrow axes, four action quadrants and labeled dots with optional bubble sizes scaled by area. A focus quadrant takes the accent. Each quadrant groups its tile, action and items, and each item groups its dot and label.
+- Matrix uses two titled arrow axes, four action quadrants and labeled dots with optional bubble sizes scaled by area. A focus quadrant takes the accent. Each quadrant groups its tile, label and items, and each item groups its dot and label.
 - Issue tree flows left to right. Focus emphasizes a branch and its ancestors. Wide splits, deep branches, crowded leaves and overflowing labels generate findings. Both frameworks give advice when a focus ID is missing and use their default colours.
 - Cards in a fit group shrink together. Labels wrap and finish with an ellipsis when needed. The source text stays editable and the expansion reports one finding for each label that cannot fit.
 
