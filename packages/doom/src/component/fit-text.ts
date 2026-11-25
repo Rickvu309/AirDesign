@@ -58,7 +58,13 @@ type Fit = {
   readonly neededWidth: number
 }
 
-function prepareFit(part: TextPart, size: number, context: FittingContext, wrap: boolean): Fit {
+function prepareFit(
+  part: TextPart,
+  size: number,
+  context: FittingContext,
+  wrap: boolean,
+  height = part.props.box.h,
+): Fit {
   const { text, box } = part.props
   const base = context.theme.textStyles[text.style].size
   const resized =
@@ -80,7 +86,7 @@ function prepareFit(part: TextPart, size: number, context: FittingContext, wrap:
     return { part, text: resized, size, single, split: undefined, wrapped, neededWidth: ink + inset }
   }
   const candidate = single.wordFit
-  const split = candidate !== undefined && candidate.h <= box.h + tolerance ? candidate : undefined
+  const split = candidate !== undefined && candidate.h <= height + tolerance ? candidate : undefined
   return { part, text: resized, size, single, split, neededWidth: Math.min(single.w, split?.w ?? Infinity) }
 }
 
@@ -97,7 +103,7 @@ function requiredWidth(fit: Fit, context: FittingContext): number {
   return wide
 }
 
-function withWidth(fit: Fit, part: TextPart): TextPart | undefined {
+function withFit(fit: Fit, part: TextPart): TextPart | undefined {
   if (fits(part, fit.single, 2)) return withText(part, fit.text)
   if (
     fit.wrapped !== undefined &&
@@ -106,7 +112,12 @@ function withWidth(fit: Fit, part: TextPart): TextPart | undefined {
     fit.wrapped.lines.every((line) => line.ink <= line.w + tolerance)
   )
     return withText(part, fit.text)
-  if (fit.split !== undefined && fit.split.w <= part.props.box.w + tolerance) return withText(part, fit.text)
+  if (
+    fit.split !== undefined &&
+    fit.split.w <= part.props.box.w + tolerance &&
+    fit.split.h <= part.props.box.h + tolerance
+  )
+    return withText(part, fit.text)
 }
 
 function finding(part: TextPart, size: number, neededWidth: number, availableWidth = part.props.box.w): TextFitFinding {
@@ -134,7 +145,7 @@ export function fitOne(
   if (smaller === undefined)
     return missed(part, part.props.text, finding(part, context.theme.textStyles[part.props.text.style].size, natural.w))
   const fit = prepareFit(part, smaller, context, true)
-  return withWidth(fit, part) ?? missed(part, fit.text, finding(part, smaller, requiredWidth(fit, context)))
+  return withFit(fit, part) ?? missed(part, fit.text, finding(part, smaller, requiredWidth(fit, context)))
 }
 
 type Group = {
@@ -142,28 +153,42 @@ type Group = {
   readonly fullSize: number
   readonly smaller: number
   readonly thin: number | undefined
+  readonly axis: GroupedText["axis"]
   shrink: boolean
 }
 
-function widen(part: TextPart, width: number, x = part.props.box.x + (part.props.box.w - width) / 2): TextPart {
-  const box = part.props.box
-  return { ...part, props: { ...part.props, box: { ...box, x, w: width } } }
-}
-
-const center = ({
-  part: {
-    props: { box },
-  },
-}: Fit): number => box.x + box.w / 2
-
-function thinGroup(fits: readonly Fit[], frameWidth: number, gap: number, charge: Charge) {
-  const slots = fits.map((fit) => {
+function thinGroup(fits: readonly Fit[], frameSpan: number, gap: number, axis: Group["axis"], charge: Charge) {
+  const across = axis === "horizontal"
+  const center = ({
+    part: {
+      props: { box },
+    },
+  }: Fit) => (across ? box.x + box.w / 2 : box.y + box.h / 2)
+  const place = (part: TextPart, start: number, span: number): TextPart => {
+    const box = part.props.box
+    return {
+      ...part,
+      props: { ...part.props, box: across ? { ...box, x: start, w: span } : { ...box, y: start, h: span } },
+    }
+  }
+  const ordered = [...fits].sort((a, b) => center(a) - center(b))
+  const first = ordered[0]?.part.props.box
+  const last = ordered.at(-1)?.part.props.box
+  const from = across ? 0 : Math.max(0, first?.y ?? 0)
+  const to = across || last === undefined ? frameSpan : Math.min(frameSpan, last.y + last.h)
+  const slots = ordered.map((fit) => {
     const x = center(fit)
-    const minimum = fit.neededWidth
-    const capacity = 2 * Math.min(x, frameWidth - x)
+    const { w } = fit.part.props.box
+    const minimum = across
+      ? fit.neededWidth
+      : Math.min(
+          fit.single.w <= w + tolerance && fit.single.lines.length <= 2 ? fit.single.h : Infinity,
+          fit.split !== undefined && fit.split.w <= w + tolerance ? fit.split.h : Infinity,
+        )
+    const capacity = 2 * Math.min(x - from, to - x)
     const left = x - minimum / 2
-    const edgeLeft = Math.max(0, Math.min(left, frameWidth - minimum))
-    const label = minimum <= frameWidth ? withWidth(fit, widen(fit.part, minimum, edgeLeft)) : undefined
+    const edgeLeft = Math.max(from, Math.min(left, to - minimum))
+    const label = minimum <= to - from ? withFit(fit, place(fit.part, edgeLeft, minimum)) : undefined
     return { fit, x, left, edgeLeft, minimum, capacity, label }
   })
   type Slot = (typeof slots)[number] & { readonly placedLeft: number }
@@ -213,7 +238,7 @@ function thinGroup(fits: readonly Fit[], frameWidth: number, gap: number, charge
       slot.minimum,
       Math.min(slot.capacity, roomBeside(selected[i - 1]), roomBeside(selected[i + 1])),
     )
-    placed.set(slot.fit.part, widen(slot.label, width, slot.x - width / 2))
+    placed.set(slot.fit.part, place(slot.label, slot.x - width / 2, width))
   }
   return placed
 }
@@ -221,22 +246,25 @@ function thinGroup(fits: readonly Fit[], frameWidth: number, gap: number, charge
 export function* fitGroups(
   parts: readonly PreparedPart[],
   context: FittingContext,
-  frameWidth: number,
+  frame: { readonly w: number; readonly h: number },
 ): Iterable<Exclude<PreparedPart, GroupedText>> {
   const groups = new Map<string, Group>()
   const naturalFits = new Set<TextPart>()
   for (const entry of parts) {
     if (entry.kind !== "grouped-text") continue
-    const { part, group, smaller, thin } = entry
+    const { part, group, smaller, thin, axis } = entry
     const { text } = part.props
     const fullSize = context.theme.textStyles[text.style].size
-    const shared = groups.get(group) ?? { entries: [], fullSize, smaller, thin, shrink: false }
-    if (shared.fullSize !== fullSize || shared.smaller !== smaller || shared.thin !== thin)
+    const shared = groups.get(group) ?? { entries: [], fullSize, smaller, thin, axis, shrink: false }
+    if (shared.fullSize !== fullSize || shared.smaller !== smaller || shared.thin !== thin || shared.axis !== axis)
       naming(`${part.field}.fit.group`, () => reject("shape", "A fit group must share sizes and thinning settings."))
     if (thin !== undefined && part.props.fills !== undefined)
       naming(`${part.field}.fit.thin`, () => reject("shape", "A filled text is never thinned."))
-    if (thin !== undefined && text.paras.some((para) => para.align !== "center"))
-      naming(`${part.field}.fit.thin`, () => reject("shape", "Thinning requires centered text."))
+    if (
+      thin !== undefined &&
+      (axis === "horizontal" ? text.paras.some((para) => para.align !== "center") : text.alignV !== "center")
+    )
+      naming(`${part.field}.fit.thin`, () => reject("shape", "Text must be centered along its thinning axis."))
     shared.entries.push(entry)
     if (!shared.shrink) {
       if (fits(part, measurePart(part, text, context), 2)) naturalFits.add(part)
@@ -251,12 +279,12 @@ export function* fitGroups(
     const fits = group.entries.map(({ part }) => {
       if (naturalFits.has(part)) {
         const natural = prepareFit(part, group.smaller, context, false)
-        if (withWidth(natural, part) !== undefined) return natural
+        if (withFit(natural, part) !== undefined) return natural
       }
-      return prepareFit(part, group.smaller, context, true)
+      return prepareFit(part, group.smaller, context, true, group.axis === "vertical" ? frame.h : undefined)
     })
     for (const fit of fits) {
-      const part = withWidth(fit, fit.part)
+      const part = withFit(fit, fit.part)
       if (part !== undefined) fitted.set(fit.part, part)
     }
     const omitted = fits.filter(({ part }) => !fitted.has(part))
@@ -267,8 +295,13 @@ export function* fitGroups(
       continue
     }
 
-    const ordered = [...fits].sort((a, b) => center(a) - center(b))
-    const selected = thinGroup(ordered, frameWidth, group.thin, context.charge)
+    const selected = thinGroup(
+      fits,
+      group.axis === "horizontal" ? frame.w : frame.h,
+      group.thin,
+      group.axis,
+      context.charge,
+    )
     for (const { part } of fits) fitted.delete(part)
     for (const [key, part] of selected) fitted.set(key, part)
     if (selected.size < fits.length) {
@@ -279,7 +312,12 @@ export function* fitGroups(
         ? fits.reduce((a, b) => (a.neededWidth <= b.neededWidth ? a : b))
         : omitted.reduce((a, b) => (deficit(a) >= deficit(b) ? a : b))
       yield {
-        ...finding(example.part, example.size, example.neededWidth, empty ? frameWidth : lanes.get(example.part)),
+        ...finding(
+          example.part,
+          example.size,
+          example.neededWidth,
+          empty && group.axis === "horizontal" ? frame.w : lanes.get(example.part),
+        ),
         key: [name],
         thinned: fits.length - selected.size,
       }

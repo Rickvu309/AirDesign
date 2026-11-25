@@ -74,13 +74,23 @@ const quantity = object({
 const quantities = (raw: unknown) =>
   Object.fromEntries(entries(raw, 32).map(([field, value]) => [path(field), naming(field, () => quantity(value))]))
 
+const collectionLimits = (raw: unknown) =>
+  Object.fromEntries(
+    entries(raw, 16).map(([table, value]) => [name(table), naming(table, () => integer(1, 100)(value))]),
+  )
+
 function emission(read: (raw: unknown) => Expr) {
   const position = { key: read, x: read, y: read, w: read, h: read }
-  const readFit = object({ smaller: read }, { group: name, thin: finite(0, 1_000) })
+  const readFit = object(
+    { smaller: read },
+    { group: name, thin: finite(0, 1_000), axis: literal(["horizontal", "vertical"]) },
+  )
   const fitText = (raw: unknown) => {
     const fit = readFit(raw)
     if (fit.thin !== undefined && fit.group === undefined)
       naming("thin", () => reject("shape", "Thinning requires a fit group."))
+    if (fit.axis !== undefined && fit.thin === undefined)
+      naming("axis", () => reject("shape", "A fit axis requires thinning."))
     return fit
   }
   const stroke = object({ color: read, width: read })
@@ -99,6 +109,7 @@ function emission(read: (raw: unknown) => Expr) {
   )
   return variant("kind", {
     rect: object({ ...position, fill: read }, surface),
+    finding: object({ key: read, message: read }),
     path: object({ ...position, d: read }, { fill: read, fillStroke: boolean, stroke }),
     text: (raw: unknown) => {
       const text = readTextPart(raw)
@@ -178,6 +189,7 @@ function specReader() {
       quantities,
       chart: literal(["cartesian", "pie"]),
       sample: (raw: unknown) => raw,
+      collectionLimits,
     },
   )
   return (raw: unknown) => {
@@ -196,13 +208,16 @@ function specReader() {
   }
 }
 
-export type ComponentSpec = ReturnType<ReturnType<typeof specReader>>
+export type ComponentSpec = ReturnType<ReturnType<typeof specReader>> & {
+  readonly partLimit?: number
+  readonly workLimit?: number
+}
 
 export const readComponentData = (
-  spec: { readonly collections: Parameters<typeof readData>[0] },
+  spec: { readonly collections: Parameters<typeof readData>[0]; readonly collectionLimits?: Parameters<typeof readData>[3] },
   raw: unknown,
   charge: Charge,
-) => readData(spec.collections, raw, charge)
+) => readData(spec.collections, raw, charge, spec.collectionLimits)
 
 export function readComponentSpec(raw: unknown): ComponentSpec | Refusal {
   try {
@@ -210,6 +225,9 @@ export function readComponentSpec(raw: unknown): ComponentSpec | Refusal {
     if (Object.keys(spec.variants ?? {}).length !== Object.keys(spec.defaultVariant ?? {}).length)
       return naming("defaultVariant", () => reject("shape", "One default choice per variant."))
     naming("defaultVariant", () => readChoices(spec, {}))
+    for (const table of Object.keys(spec.collectionLimits ?? {}))
+      if (!Object.hasOwn(spec.collections, table))
+        return naming(`collectionLimits.${table}`, () => reject("shape", `Unknown collection "${table}".`))
     for (const [key] of Object.entries(spec.quantities ?? {})) {
       const [table, field, extra] = key.split(".")
       const fields = table !== undefined && Object.hasOwn(spec.collections, table) ? spec.collections[table] : undefined
@@ -221,7 +239,9 @@ export function readComponentSpec(raw: unknown): ComponentSpec | Refusal {
         type.kind === "enum" ||
         type.kind === "ref" ||
         type.kind === "string" ||
-        type.kind === "string?"
+        type.kind === "string?" ||
+        type.kind === "color?" ||
+        type.kind === "list"
       )
         return naming(`quantities.${key}`, () => reject("shape", "The quantity must name a numeric collection field."))
     }

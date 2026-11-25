@@ -1,11 +1,14 @@
 import { finite, integer, literal, object, reject } from "../read-kit.js"
 import type { ReportFinding } from "./findings.js"
 import type { FittingContext } from "./fit-text.js"
+import { axis } from "./numeric-axis.js"
+import { sortBy, startsWithIgnoreCase } from "./order-values.js"
 import { decimals, positiveScale } from "./precision.js"
 import { flowText, textWidth } from "./text-operators.js"
 import { linkChannels } from "./link-channels.js"
 import { polyline, wedge } from "./path-operators.js"
 import { polar } from "./polar.js"
+import { textExtent } from "./text-extent.js"
 import {
   type Charge,
   type Value,
@@ -109,6 +112,17 @@ const operators: Readonly<Record<string, Operation>> = {
     return values.reduce<number>((total, value) => total + number(value), 0)
   }),
   count: fixed(1, ([source]) => list(source).length),
+  flatten: fixed(1, ([source], charge) => {
+    const lists = list(source)
+    charge(lists.length)
+    const nested = lists.map((value) => {
+      const values = list(value)
+      charge(values.length)
+      return values
+    })
+    return nested.flat()
+  }),
+  coalesce: fixed(2, ([value, fallback]) => value ?? fallback ?? null),
   eq: fixed(2, ([a, b], charge) => {
     if (typeof a === "string" && typeof b === "string" && a.length === b.length) charge(a.length)
     return a === b
@@ -142,6 +156,12 @@ const operators: Readonly<Record<string, Operation>> = {
     const size = number(step * finite(0, 1)(share))
     return { start: number(number(start) + step * index(i) + (step - size) / 2), size }
   }),
+  sortBy: { min: 2, max: 5, run: sortBy },
+  startsWithIgnoreCase: fixed(2, startsWithIgnoreCase),
+  axis: fixed(3, ([lo, hi, target], charge) => axis(lo, hi, target, charge)),
+  textExtent: fixed(2, ([chars, style], charge, _format, { theme, measure }) =>
+    textExtent(chars, style, theme, measure, charge),
+  ),
   decimals: fixed(2, decimals),
   isInteger: fixed(1, ([value]) => Number.isInteger(number(value))),
   textWidth: { min: 2, max: 3, run: (args, _charge, _format, context) => textWidth(args, context) },

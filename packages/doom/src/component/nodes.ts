@@ -11,7 +11,7 @@ import { type FittingContext, fitGroups, fitOne, textSize } from "./fit-text.js"
 import type { ComponentFinding, TextFitFinding } from "./findings.js"
 import type { Expr } from "./expression.js"
 import type { Emission } from "./spec.js"
-import { color, type Value } from "./values.js"
+import { color, string, type Value } from "./values.js"
 
 type ShapeProps = Pick<Props, "name" | "box" | "geometry"> &
   Partial<Pick<Props, "fills" | "strokes" | "stroke" | "radius" | "text" | "absolute">>
@@ -93,9 +93,15 @@ export type GroupedText = {
   readonly smaller: number
   readonly thin: number | undefined
   readonly laneWidth: number
+  readonly axis: "horizontal" | "vertical"
 }
 export type Kept = { readonly kind: "kept"; readonly part: TextPart; readonly finding: TextFitFinding }
-export type PreparedPart = PlacedPart | GroupedText | Kept | TextFitFinding
+export type PreparedPart =
+  | PlacedPart
+  | GroupedText
+  | Kept
+  | TextFitFinding
+  | Extract<ComponentFinding, { kind: "check" }>
 
 const align = literal(["left", "center", "right", "justify"])
 const vertical = literal(["top", "center", "bottom"])
@@ -120,6 +126,14 @@ export function preparePart(
   const readField = <T>(name: string, expr: Expr, parse: (value: Value) => T): T => {
     const path = `${field}.${name}`
     return naming(path, () => parse(read(expr, path, key)))
+  }
+  if (emit.kind === "finding") {
+    const message = readField("message", emit.message, (value) => {
+      const message = string(value)
+      charge(message.length)
+      return message
+    })
+    return { kind: "check", key, field, message }
   }
   if (emit.kind === "line") {
     return {
@@ -230,16 +244,24 @@ export function preparePart(
     context.theme.textStyles[text.style].size,
   )
   if (fit.group === undefined || style !== undefined) return fitOne(part, smaller, context)
-  const laneWidth = fit.thin === undefined ? position.w : w
-  const inset = Math.min((fit.thin ?? 0) / 2, laneWidth / 2)
-  const label =
+  const axis = fit.axis ?? "horizontal"
+  const lane = axis === "horizontal" ? w : h
+  const inset = Math.min((fit.thin ?? 0) / 2, lane / 2)
+  const padded =
     fit.thin === undefined
-      ? part
-      : {
-          ...part,
-          props: { ...part.props, box: { ...position, x: x + inset, w: laneWidth - 2 * inset } },
-        }
-  return { kind: "grouped-text", part: label, group: fit.group, smaller, thin: fit.thin, laneWidth }
+      ? position
+      : axis === "horizontal"
+        ? { ...position, x: x + inset, w: lane - 2 * inset }
+        : { ...position, y: y + inset, h: lane - 2 * inset }
+  return {
+    kind: "grouped-text",
+    part: { ...part, props: { ...part.props, box: padded } },
+    group: fit.group,
+    smaller,
+    thin: fit.thin,
+    laneWidth: fit.thin === undefined ? position.w : w,
+    axis,
+  }
 }
 
 const rootKey = ["root"] as const
@@ -249,19 +271,21 @@ export function treeOf(
   frame: ReturnType<typeof readFrame>,
   parts: readonly PreparedPart[],
   context: FittingContext,
+  partLimit: number,
   findings: ComponentFinding[],
   layout?: Props["layout"],
 ): ComponentTree {
   const seen = new Map<string, { readonly id: NodeId; readonly part: PlacedPart }>()
-  for (const fitted of fitGroups(parts, context, frame.w)) {
-    if (fitted.kind === "text-fit") {
+  for (const fitted of fitGroups(parts, context, frame)) {
+    if (fitted.kind === "text-fit" || fitted.kind === "check") {
       findings.push(fitted)
       continue
     }
     if (fitted.kind === "kept") findings.push(fitted.finding)
     const part = fitted.kind === "kept" ? fitted.part : fitted
     const index = seen.size
-    if (index >= 499) naming(part.field, () => reject("limit", "An expansion may emit at most 499 parts."))
+    if (index >= partLimit)
+      naming(part.field, () => reject("limit", `An expansion may emit at most ${partLimit} parts.`))
     const key = keyString(part.key)
     naming(`${part.field}.key`, () => {
       context.charge(key.length)

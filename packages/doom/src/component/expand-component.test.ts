@@ -380,3 +380,30 @@ describe("expandComponent", () => {
     expect(land(tree).nodes.get(link!.id)).toMatchObject(link!.props)
   })
 })
+
+it("emits a conditional finding alongside ordinary component nodes", () => {
+  const spec = read(
+    specOf([
+      { emit: rectangle },
+      {
+        let: [["label", ["concat", "Make room for the ", "diagram."]]],
+        when: ["lt", ["get", "frame.w"], 10],
+        emit: { kind: "finding", key: ["list", "space"], message: ["get", "label"] },
+      },
+    ]),
+  )
+  const fits = expand(spec, { ...inputs, data: {} })
+  const crowded = expand(spec, { ...inputs, data: {}, frame: { ...inputs.frame, w: 8 } })
+  expect(fits.findings).toEqual([])
+  expect(crowded.findings).toEqual([
+    { kind: "check", key: ["space"], field: "parts[1].emit", message: "Make room for the diagram." },
+  ])
+  expect(crowded.children).toEqual(fits.children)
+})
+
+it.each(["workLimit", "partLimit"])("does not accept a %s grant in authored JSON", (field) => {
+  expect(readComponentSpec({ ...specOf([{ emit: rectangle }]), [field]: 500 })).toMatchObject({
+    refused: "shape",
+    field,
+  })
+})
