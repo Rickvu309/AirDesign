@@ -112,8 +112,8 @@ async function exportPdf(kit, out, name, expectedText) {
     .click()
   const printed = page.locator("[data-print-page]")
   await expect(printed).toHaveCount(1)
-  if (expectedText === undefined) await expect(printed).not.toContainText("…")
-  else await expect(printed).toContainText(expectedText)
+  await expect(printed).not.toContainText("…")
+  for (const label of expectedText) await expect(printed).toContainText(label)
   await writeFile(join(out, `${name}-print.png`), await printed.screenshot())
   const pdf = await page.pdf({ preferCSSPageSize: true })
   const { pdfPages } = await import("../../../../tests/browser/pdf-file.ts")
@@ -144,7 +144,7 @@ export default async function drive(kit) {
   const { landTree } = await packageBuild(repo, "@airdesign/doom", "component/testing/land-tree.js")
   const estimate = doom.measureWith({})
   async function expand(name, fixture, theme) {
-    const spec = component[`${name}Component`]
+    const spec = doom.componentLibrary.get(name).spec
     const estimated = component.expandComponent(spec, { ...fixture, theme, measure: estimate })
     expect(doom.isRefusal(estimated), JSON.stringify(estimated)).toBe(false)
     const served = await fonts.measure([landTree(estimated, theme).doom])
@@ -157,6 +157,15 @@ export default async function drive(kit) {
   }
   let out
 
+  for (const { id, spec } of doom.componentLibrary.values()) {
+    const { w, h, data } = spec.sample
+    for (const [themeId, { theme }] of Object.entries(doom.themeLibrary)) {
+      const { tree } = await expand(id, { frame: { x: 160, y: 220, w, h }, data }, theme)
+      expect(tree.findings, `${id} default sample on ${themeId}`).toEqual([])
+    }
+  }
+  note("Every library sample expanded with zero findings on every built-in theme using served fonts.")
+
   await page.addInitScript(() => {
     window.print = () => {}
   })
@@ -168,9 +177,17 @@ export default async function drive(kit) {
     let fixture =
       diagram.theme === undefined
         ? JSON.parse(await readFile(join(repo, `packages/doom/src/component/testing/${diagram.name}.json`), "utf8"))
-        : { frame: { x: 160, y: 220, w: sample.w, h: sample.h }, data: sample.data, tokens: { focus: diagram.focus } }
+        : {
+            frame: { x: 160, y: 220, w: sample.w, h: sample.h },
+            data: sample.data,
+            tokens: artifact === "tree-technical" ? {} : { focus: diagram.focus },
+          }
     const expectedText =
-      diagram.name === "matrix" ? "Core platform" : diagram.name === "tree" ? "on mobile checkout" : undefined
+      diagram.name === "matrix"
+        ? ["Core platform", "Current size", "Future growth", "Bubble size: Revenue"]
+        : diagram.name === "tree"
+          ? sample.data.nodes.map(({ label }) => label)
+          : []
     if (diagram.name === "tree") {
       const nodes = sample.data.nodes.map((node) => (node.id === "mobile" ? { ...node, label: "W".repeat(120) } : node))
       const { tree, measure } = await expand("tree", { ...fixture, data: { nodes } }, theme)
@@ -309,18 +326,14 @@ export default async function drive(kit) {
       else expect(stored.box).toEqual(child.props.box)
       await expect(page.locator(`[data-slide-thumb] [data-node="${child.id}"]`).first()).toBeAttached(slowPaint)
     }
-    if (diagram.name === "process") {
+    if (diagram.name === "process" || diagram.name === "tree") {
       const slide = page.locator("[data-slide-box]")
       await expect(slide).not.toContainText("…")
       await expect(page.locator("[data-slide-thumb]").first()).not.toContainText("…")
     }
-    if (expectedText !== undefined) {
-      await expect(page.locator("[data-slide-box]")).toContainText(expectedText)
-      await expect(page.locator("[data-slide-thumb]").first()).toContainText(expectedText)
-    }
-    if (diagram.name === "matrix") {
-      await expect(page.locator("[data-slide-box]")).toContainText("Bubble size: Revenue")
-      await expect(page.locator("[data-slide-thumb]").first()).toContainText("Bubble size: Revenue")
+    for (const label of expectedText) {
+      await expect(page.locator("[data-slide-box]")).toContainText(label)
+      await expect(page.locator("[data-slide-thumb]").first()).toContainText(label)
     }
     const shot = await capture(`${artifact}-canvas`)
     out = dirname(shot)

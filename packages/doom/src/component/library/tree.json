@@ -19,32 +19,32 @@
         {
           "id": "new",
           "parent": "root",
-          "label": "Among new customers\u2026"
+          "label": "New customers"
         },
         {
           "id": "existing",
           "parent": "root",
-          "label": "Among existing customers\u2026"
+          "label": "Existing customers"
         },
         {
           "id": "mobile",
           "parent": "new",
-          "label": "\u2026on mobile checkout"
+          "label": "Mobile checkout"
         },
         {
           "id": "desktop",
           "parent": "new",
-          "label": "\u2026on desktop checkout"
+          "label": "Desktop checkout"
         },
         {
           "id": "renewals",
           "parent": "existing",
-          "label": "\u2026at renewal"
+          "label": "Renewals"
         },
         {
           "id": "expansion",
           "parent": "existing",
-          "label": "\u2026during an upgrade"
+          "label": "Upgrades"
         }
       ]
     }
