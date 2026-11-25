@@ -1,6 +1,5 @@
-import { readFold, slidesOf } from "../../packages/doom/src/index.ts"
+import { readFold, slidesOf, type AgentChange } from "../../packages/doom/src/index.ts"
 import { expect, type Page } from "@playwright/test"
-import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
@@ -421,22 +420,18 @@ test("the filmstrip and canvas use Japanese for a Han-only title when another sl
 }) => {
   const opened = await openEditor(page, context, stack)
   const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
-  const read = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
-  const tool = (
-    await stack.toolBlocks(
-      "airdesign_edit_deck",
-      {
-        deck: opened.deck,
-        base: read.json.rev,
-        changes: [
-          { op: "set", target: `${opened.slide}.title`, text: "市場" },
-          { op: "slide", add: {} },
-        ],
-      },
-      opened.cookie,
-    )
-  ).find(({ type }) => type === "text")
-  expect(JSON.parse(tool?.text ?? "{}")).toMatchObject({ ok: true })
+  const edit = async (changes: readonly AgentChange[]) => {
+    const read = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
+    const tool = (
+      await stack.toolBlocks("airdesign_edit_deck", { deck: opened.deck, base: read.json.rev, changes }, opened.cookie)
+    ).find(({ type }) => type === "text")
+    expect(JSON.parse(tool?.text ?? "{}")).toMatchObject({ ok: true })
+  }
+  const titleRole = `${opened.slide}.title`
+  await edit([
+    { op: "set", target: titleRole, text: "市場" },
+    { op: "slide", add: {} },
+  ])
   const changed = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
   const fold = readFold(changed.json.fold)
   if (fold === undefined) throw new Error("Missing fold")
@@ -464,14 +459,17 @@ test("the filmstrip and canvas use Japanese for a Han-only title when another sl
   await expect(title).toHaveAttribute("style", /Noto%2520Sans%2520JP/i)
   await expect(thumb).toHaveAttribute("style", /Noto%2520Sans%2520JP/i)
 
+  await page.getByRole("button", { name: editorCopy.designPanel, exact: true }).click()
+  const languagePicker = page.getByRole("combobox", { name: /language/i })
+  await expect(languagePicker).toHaveCount(0)
+
   const bounds = await title.boundingBox()
   if (bounds === null) throw new Error("No painted title")
   await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
   const [id] = await selectedIds(page)
   if (id === undefined) throw new Error("No selected text layer")
-  await page.getByRole("button", { name: editorCopy.designPanel, exact: true }).click()
-  await page.getByRole("combobox", { name: designCopy.textLanguage }).click()
-  await page.getByRole("option", { name: designCopy.languages.ko, exact: true }).click()
+  await expect(languagePicker).toHaveCount(0)
+  await edit([{ op: "set", target: titleRole, language: "ko" }])
   await expect(title).toHaveAttribute("style", /Noto%2520Sans%2520KR/i)
   await expect(thumb).toHaveAttribute("style", /Noto%2520Sans%2520KR/i)
   await expect.poll(async () => (await savedNode(stack, opened, id))?.text).toMatchObject({ language: "ko" })
