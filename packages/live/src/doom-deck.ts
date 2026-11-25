@@ -223,9 +223,8 @@ function connected(
   async function standOnly(once: string): Promise<boolean> {
     const fold = server
     const pending = queue
-    const current = () => !gone && server === fold && queue === pending
-    const kept = await onStanding(fold, pending, turned, once, options.measure?.() ?? estimate, current)
-    if (!current()) return true
+    const kept = await onStanding(fold, pending, turned, once, options.measure?.() ?? estimate)
+    if (gone || server !== fold || queue !== pending) return true
     if (kept === undefined) return false
     queue = kept.queue
     forget(kept.gone)
@@ -246,6 +245,12 @@ function connected(
     return true
   }
 
+  function reached() {
+    if (link === "reached") return
+    link = "reached"
+    tell()
+  }
+
   async function drain(): Promise<Synced> {
     for (;;) {
       const head = queue[0]
@@ -258,6 +263,7 @@ function connected(
         } catch {
           return { ok: false, reason: "offline" }
         }
+        reached()
         if (queue[0] === head) {
           drop(once, { refused: "stale", because: built })
           await save({ queue })
@@ -271,6 +277,7 @@ function connected(
       } catch {
         return { ok: false, reason: "offline" }
       }
+      if (answer.ok || answer.refusal === "edit" || answer.refusal === "size" || answer.refusal === "field") reached()
       if (answer.ok) {
         try {
           if (!(await reach(answer.rev))) return { ok: false, reason: "offline" }
