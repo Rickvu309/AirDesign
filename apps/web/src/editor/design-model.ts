@@ -96,6 +96,21 @@ function geometrySection(view: doom.Doom, id: doom.NodeId): PanelSection[] {
 export function nodeModel(input: ModelInput): PanelModel {
   const { view, id } = input
   const kind = kindOf(view, id)
+  const owner = doom.linkedOwner(view.nodes, id)
+  if (owner !== undefined) {
+    const part = propOf(view.nodes.get(owner), "instance")?.parts.find(({ node }) => node === id)
+    let sections: PanelSection[] = []
+    if (part?.baseline.kind === "text") {
+      const style = textSections(input, kind).find(({ trait }) => trait === "text")
+      const control = style?.strips.flat().find(({ field }) => field === "style")
+      sections = [
+        ...(style === undefined || control === undefined ? [] : [{ ...style, strips: [[control]] }]),
+        ...linkSection({ ...input, words: null }),
+      ]
+    }
+    if (part?.baseline.kind === "rect") sections = fillSections(input, kind).filter(({ trait }) => trait === "fills")
+    return { node: id, nodes: [id], kind, sections }
+  }
   const layout = propOf(view.nodes.get(id), "layout")
   const drawn = kind === "shape" || kind === "frame" || kind === "connector" || kind === "picture"
   return {

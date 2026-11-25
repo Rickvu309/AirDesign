@@ -266,6 +266,15 @@ export function regenerateComponent(
   return updateComponent(doom, frame, patch, measure)
 }
 
+export function refreshComponent(
+  doom: Doom,
+  proposed: Doom,
+  frame: NodeId,
+  measure: Measure,
+): ComponentUpdate | Refusal {
+  return updateComponent(doom, frame, {}, measure, undefined, undefined, proposed)
+}
+
 function updateComponent(
   doom: Doom,
   frame: NodeId,
@@ -273,15 +282,16 @@ function updateComponent(
   measure: Measure,
   returning?: ReadonlyMap<string, Instance["parts"][number]>,
   restored?: ReadonlyMap<NodeId, readonly Write[]>,
+  input: Doom = doom,
 ): ComponentUpdate | Refusal {
-  const root = linked(doom, frame)
+  const root = linked(input, frame)
   if (root === undefined) return refuse("missing", frame, "instance")
   const { instance, box } = root
   if (box === undefined) return refuse("shape", frame, "box")
   const proposed = { ...instance, ...patch }
   const styles = new Map(
     [...instance.parts, ...(returning?.values() ?? [])].flatMap(({ key, node, baseline }) => {
-      const current = doom.nodes.get(node)
+      const current = input.nodes.get(node)
       const text = props.text.read(restored?.get(node)?.find(({ prop }) => prop === "text")?.value)
       if (!isRefusal(text)) return [[keyString(key), text.style] as const]
       return baseline.kind === "text" &&
@@ -297,7 +307,7 @@ function updateComponent(
     data: proposed.data,
     tokens: proposed.tokens,
     variant: proposed.variant,
-    theme: deckOf(doom).theme,
+    theme: deckOf(input).theme,
     measure,
     styleFor: (key) => styles.get(keyString(key)),
   })

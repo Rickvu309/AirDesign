@@ -25,6 +25,7 @@ import {
 } from "./selection"
 import type { Placed, Point, SlideGeometry } from "./slide-geometry"
 import { transformedBy } from "./transform-drag"
+import { commitDesignEdit } from "./component-edits"
 import type { EditorClient } from "./use-deck"
 
 import type { Drawn } from "./create-writes"
@@ -409,7 +410,7 @@ export function useCanvasPointer(args: PointerArgs) {
       if (!a.client.push(done.writes).ok && copies !== null) a.onSelection(gesture.selected)
       return
     }
-    a.client.push(done.writes)
+    commitDesignEdit(a.client, done.writes, gesture.view)
   }
 
   return {

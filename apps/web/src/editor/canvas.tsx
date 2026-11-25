@@ -109,11 +109,13 @@ export function DoomCanvas(props: {
   const caretKey = caret === null ? "" : JSON.stringify(caret)
   useEffect(() => onWords?.(caret), [onWords, caretKey])
   const shown = useMemo(() => {
+    const transform = preview?.kind === "transform" ? doom.componentEditPreview(view, preview.writes) : null
+    const start = transform === null || doom.isRefusal(transform) ? view : transform.view
     const edits = [
-      ...(preview === null ? [] : [{ once: "preview", author, writes: preview.writes }]),
+      ...(preview === null || start !== view ? [] : [{ once: "preview", author, writes: preview.writes }]),
       ...(text.preview.length === 0 ? [] : [{ once: "text-preview", author, writes: text.preview }]),
     ]
-    return edits.length === 0 ? view : doom.viewOf(view, edits)
+    return edits.length === 0 ? start : doom.viewOf(start, edits)
   }, [view, preview, text.preview])
   const painted = useDoomSlide(shown, slide, recordFontComparison)
   const geometry = useMemo(() => (painted.nodes === null ? emptyGeometry : geometryOf(painted.nodes)), [painted.nodes])

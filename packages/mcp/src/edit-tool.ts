@@ -305,7 +305,8 @@ export async function editDeckTool(
   const problem = imageProblem(fonts.changes, found)
   if (problem !== undefined) return problem
   const changes = found === undefined ? fonts.changes : withAssets(fonts.changes, found)
-  const compile = (measure?: doom.Measure) =>
+  const samples: doom.ComponentEditSample[] = []
+  const compile = (measure?: doom.Measure, sample = false) =>
     compileMeasured(
       opened.fold,
       changes,
@@ -321,19 +322,31 @@ export async function editDeckTool(
         read: doom.readingOf(opened.fold, parsed.base),
         ...(found === undefined ? {} : { pictures: pictureSizes(found) }),
         ...(measure === undefined ? {} : { measure }),
+        ...(sample ? { componentSample: (sample: doom.ComponentEditSample) => samples.push(sample) } : {}),
         ...(parsed.runId === undefined ? { phase: "start" as const } : {}),
       },
       host,
       pendingFonts,
     )
-  let compiled = await compile()
+  let compiled = await compile(undefined, true)
   if ("answer" in compiled) return compiled
-  if (!("refused" in compiled) && doom.mayLeaveDeck(opened.fold, compiled.edit.writes)) {
+  if (samples.length > 0) {
+    const measured = await deckMeasure(
+      host,
+      [opened.fold, ...samples.map(({ view }) => view)],
+      undefined,
+      samples.flatMap(({ texts }) => texts),
+    )
+    if (measured === undefined)
+      return refused("fonts", { note: "Unable to measure the linked chart. Try again when its fonts are available." })
+    compiled = await compile(measured.measure)
+  } else if (!("refused" in compiled) && doom.mayLeaveDeck(opened.fold, compiled.edit.writes)) {
     const measured = await deckMeasure(host, [opened.fold, compiled.after])
     if (measured !== undefined) compiled = await compile(measured.measure)
   }
   if ("answer" in compiled) return compiled
   if ("refused" in compiled) return doomRefused(compiled, { rev: opened.rev })
+  if (compiled.edit.readBase !== undefined && parsed.base !== opened.rev) return refused("stale", { rev: opened.rev })
   if (compiled.edit.writes.length === 0) return unchangedAnswer(opened.deck, opened.rev, parsed.runId)
   const landed = await host.edit(parsed.deck, compiled.edit)
   if (!landed.ok) return hostRefused(landed)

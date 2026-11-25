@@ -30,6 +30,7 @@ export type EditBy = {
   readonly boxes?: Reading["boxes"]
   readonly pictures?: Reading["pictures"]
   readonly measure?: Measure
+  readonly componentSample?: Reading["componentSample"]
 }
 
 export function readingOf(doom: Doom, base: number): Doom {
@@ -67,6 +68,7 @@ export function* agentEditSteps(
     ...(by.boxes === undefined ? {} : { boxes: by.boxes }),
     ...(by.pictures === undefined ? {} : { pictures: by.pictures }),
     ...(by.measure === undefined ? {} : { measure: by.measure }),
+    ...(by.componentSample === undefined ? {} : { componentSample: by.componentSample }),
   }
   const writes: Write[] = []
   const ends: number[] = []
@@ -94,6 +96,7 @@ export function* agentEditSteps(
         once: `${by.once}#${at}`,
         author: by.author,
         writes: compiled,
+        ...(compiled.some(({ prop }) => prop === "instance") ? { readBase: view.rev } : {}),
         ...(by.phase !== undefined && at === 0 ? { phase: by.phase } : {}),
       }),
       rev: rev(view.rev + 1),
@@ -111,6 +114,7 @@ export function* agentEditSteps(
     once: by.once,
     author: by.author,
     writes: changing,
+    ...(changing.some(({ prop }) => prop === "instance") ? { readBase: doom.rev } : {}),
     ...(by.phase === undefined ? {} : { phase: by.phase }),
   }
   const landed = applyEdit(doom, { ...edit, rev: rev(doom.rev + 1) })

@@ -45,7 +45,11 @@ export type DeckHost = {
     nodes: readonly doom.NodeId[],
   ) => Promise<doom.LayerPositions | doom.Doom | undefined>
   readonly images?: (deck: DeckId, names: readonly string[]) => Promise<NamedImages>
-  readonly measure?: (folds: readonly doom.Doom[], layers?: readonly doom.NodeId[]) => Promise<Measured | Unmeasured>
+  readonly measure?: (
+    folds: readonly doom.Doom[],
+    layers?: readonly doom.NodeId[],
+    extraTexts?: readonly string[],
+  ) => Promise<Measured | Unmeasured>
   readonly pictures?: (
     deck: DeckId,
     fold: doom.Doom,

@@ -6,6 +6,7 @@ import {
   instanceFieldRevs,
   instanceRemovalConflicts,
   instanceTransition,
+  measuredInstanceEdit,
   restoreInstance,
   withRegenerated,
 } from "./component/instance-inverse.js"
@@ -86,7 +87,7 @@ export function invertStep(
   const expanded = withPartDeletes(before, asked.writes)
   if (isRefusal(expanded)) return []
   const edit = { ...asked, writes: expanded }
-  const transitions = instanceRoots(edit.writes).flatMap((root) => {
+  const joined = instanceRoots(edit.writes).flatMap((root) => {
     const prior = propOf(before.nodes.get(root), "instance")
     if (prior === undefined) return []
     const change = instanceTransition(
@@ -98,6 +99,13 @@ export function invertStep(
     )
     return change === undefined ? [] : [change]
   })
+  const measured = joined.some((change) =>
+    measuredInstanceEdit(change, edit.writes, (write) => {
+      if (write.prop === "box" || write.prop === "text") return propOf(before.nodes.get(write.node), write.prop)
+      return undefined
+    }),
+  )
+  const transitions = measured ? [] : joined
   const derived = derivedCells(transitions, edit.writes, (node, key) => propOf(before.nodes.get(node), key))
   const structural = { ...edit, writes: edit.writes.filter(({ node, prop }) => !derived({ node, key: prop })) }
   const roots = instanceRoots(structural.writes)
@@ -120,11 +128,8 @@ export function invertStep(
     return []
   const writes: Write[] = []
   const placements = new Set<NodeId>()
-  const entering = new Set(
-    structural.writes.flatMap(({ node, prop, value }) => (prop === "parent" && value !== null ? [node] : [])),
-  )
   for (const root of roots) {
-    if (parentIn(before, root) !== null || !entering.has(root)) continue
+    if (parentIn(before, root) !== null) continue
     if (propOf(after.nodes.get(root), "instance") === undefined) continue
     const removal = removePlacedInstance(after, root, edit.rev, owned)
     if (removal === undefined) return []
@@ -135,10 +140,12 @@ export function invertStep(
     if (placements.has(node) && (key === "parent" || key === "instance")) continue
     const writer = after.revs.get(node)?.get(key)
     if (writer === undefined) {
+      if (measured) return { refused: "stale", node, prop: key }
       if (grouped && key === "instance") return []
       continue
     }
     if (writer !== edit.rev && !owned.has(writer)) {
+      if (measured) return { refused: "stale", node, prop: key }
       if (grouped && key === "instance") return []
       const wrote = edit.writes.findLast((write) => write.node === node && write.prop === "geometry")?.value
       const ends =
@@ -160,6 +167,7 @@ export function invertStep(
   }
   const measuredIn = new Map(writes.map(({ node }) => [node, parentIn(before, node)?.id ?? null]))
   const standing = onStandingLayers(after, writes, edit.rev, edit.rev, measuredIn, { before, writes: edit.writes })
+  if (measured && standing.length !== writes.length) return { refused: "stale" }
   if (writes.some((write) => write.prop === "parent" && placements.has(write.node) && !standing.includes(write)))
     return []
   const moves = standing.filter((each) => each.prop === "parent" && each.value !== null)
@@ -169,7 +177,7 @@ export function invertStep(
   for (const change of transitions) {
     const restored = restoreInstance(after, [change], owned, measure)
     if (isRefusal(restored)) return restored
-    rebuilt.push(...restored)
+    rebuilt.push(...restored.writes)
   }
   const inverse = withRegenerated(
     [

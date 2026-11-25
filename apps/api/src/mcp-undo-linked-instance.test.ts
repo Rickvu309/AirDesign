@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto"
 import { doomRoutes, mcpRoutes, readDeckId } from "@airdesign/catalog"
 import {
   detachComponent,
+  deckOf,
   isRefusal,
   measureWith,
   nodeId,
@@ -29,6 +30,9 @@ it.each([
   "100 deletions",
   "a linked update and detach",
   "a linked update and detach after consecutive suppressions",
+  "a linked update and detach after another run updated the chart",
+  "a later person update",
+  "a body font change",
   "placing a chart",
   "placing a chart that another device recolours",
   "placing and updating a chart",
@@ -96,6 +100,13 @@ it.each([
       }
       const person: Edit["author"] = { kind: "person", id: "other-device" }
       const opened = await fold()
+      const seedFont: Edit["writes"] =
+        scenario === "a body font change"
+          ? [
+              { node: startIds.deck, prop: "theme.fonts.heading", value: "Liberation Sans Narrow" },
+              { node: startIds.deck, prop: "theme.fonts.body", value: "Liberation Sans Narrow" },
+            ]
+          : []
       const writes = placeComponent(opened, {
         frame,
         parent: { id: slide, at: orderKeyBetween(null, null) },
@@ -104,7 +115,22 @@ it.each([
         measure,
       })
       if (isRefusal(writes)) throw new Error(JSON.stringify(writes))
-      await send({ once: "place", author: person, writes, readBase: opened.rev })
+      await send({ once: "place", author: person, writes: [...seedFont, ...writes], readBase: opened.rev })
+      if (scenario === "a body font change") {
+        const current = await fold()
+        const changed = await call("edit_deck", {
+          deck: id,
+          base: current.rev,
+          changes: [{ op: "deck", fonts: { body: "Geist" } }],
+        })
+        const next = await fold()
+        expect(next.rev).toBe(current.rev + 1)
+        expect(deckOf(next).theme.fonts.body).toBe("Geist")
+        expect(next.revs.get(frame)?.get("instance")).toBe(next.rev)
+        expect(await call("undo_run", { deck: id, runId: changed.runId })).toMatchObject({ ok: true, note: "Undone" })
+        expect(deckOf(await fold()).theme).toEqual(deckOf(current).theme)
+        return
+      }
       const update = async (value: number) => {
         const run = await call("edit_deck", {
           deck: id,
@@ -125,6 +151,20 @@ it.each([
           readBase: current.rev,
         })
         return runId
+      }
+      if (scenario === "a later person update") {
+        const runId = await update(2)
+        const current = await fold()
+        const next = regenerateComponent(current, frame, { data: data(3) }, measure)
+        if (isRefusal(next)) throw new Error(JSON.stringify(next))
+        await send({ once: "person-update", author: person, readBase: current.rev, writes: next.writes })
+        expect(await call("undo_run", { deck: id, runId })).toMatchObject({
+          ok: true,
+          note: "Undone. Later changes to “Chart 2” were kept.",
+          kept: [frame],
+        })
+        expect(propOf((await fold()).nodes.get(frame), "instance")?.data).toEqual(data(3))
+        return
       }
       if (scenario.includes("placing")) {
         const mixed = scenario.startsWith("updating one")
@@ -214,14 +254,17 @@ it.each([
           })
         }
         expect(propOf((await fold()).nodes.get(frame), "instance")?.suppressed).toHaveLength(100)
-        const storage = await deck.query<{ bytes: number }>(
+        const storage = await deck.query<{ bytes: number; checkpoint: number; largestDeletion: number }>(
           `
-        select sum(octet_length(replaced::text))::int as bytes
+        select sum(octet_length(replaced::text))::int as bytes,
+          max(octet_length(replaced ->> 'before')) filter (where once = 'data-2') as checkpoint,
+          max(octet_length(replaced ->> 'before')) filter (where once like 'delete-bars-%') as "largestDeletion"
         from deck.doom_edit where deck = $1 and edit -> 'author' ->> 'run' = $2
       `,
           [id, runId],
         )
         expect(storage.rows[0]!.bytes).toBeLessThan(100_000)
+        expect(storage.rows[0]!.largestDeletion).toBeLessThan(storage.rows[0]!.checkpoint / 2)
         const log = await ask(server.base, "POST", doomRoutes.run.path, { deck: id, run: runId }, cookie)
         expect(log.json).toMatchObject({ ok: true })
         expect(Buffer.byteLength(JSON.stringify(log.json))).toBeLessThan(100_000)
@@ -230,6 +273,7 @@ it.each([
         return
       }
       if (scenario.startsWith("a linked update and detach")) {
+        const afterAnotherRun = scenario.endsWith("another run updated the chart")
         if (scenario.endsWith("edits")) {
           const prior = scenario.includes("50,000") ? 50_000 : 6_000
           await deck.query(
@@ -258,7 +302,8 @@ it.each([
         const undoFold = undoOpen.ok ? readFold(undoOpen.fold) : undefined
         expect(undoFold?.onces.size).toBe(0)
         expect(undoFold?.rev).toBe((await fold()).rev)
-        const runId = await update(2)
+        if (afterAnotherRun) await update(2)
+        const runId = await update(afterAnotherRun ? 3 : 2)
         let updated = await fold()
         const agent = updated.runs.get(runId)!.agent
         if (scenario.endsWith("suppressions")) {
@@ -286,8 +331,32 @@ it.each([
         ).toEqual([])
         expect(statements.length).toBeLessThanOrEqual(5)
         expect(propOf((await fold()).nodes.get(frame), "instance")).toBeUndefined()
+        if (scenario.endsWith("suppressions")) {
+          const result = await ask(server.base, "POST", doomRoutes.run.path, { deck: id, run: runId }, cookie)
+          const log = doomRoutes.run.result(result.json)
+          expect(log).toMatchObject({
+            edits: expect.arrayContaining([
+              expect.objectContaining({
+                once: "suppress-bar",
+                writes: [{ node: expect.any(String), prop: "parent", value: null }],
+              }),
+            ]),
+            replaced: expect.arrayContaining([
+              expect.arrayContaining([
+                expect.objectContaining({
+                  node: frame,
+                  key: "instance",
+                  value: expect.objectContaining({ suppressed: [{ key: ["category", "a"], reason: "delete" }] }),
+                }),
+              ]),
+            ]),
+          })
+        }
         expect(await call("undo_run", { deck: id, runId })).toMatchObject({ ok: true, note: "Undone" })
-        expect(propOf((await fold()).nodes.get(frame), "instance")).toMatchObject({ data: data(1), suppressed: [] })
+        expect(propOf((await fold()).nodes.get(frame), "instance")).toMatchObject({
+          data: data(afterAnotherRun ? 2 : 1),
+          suppressed: [],
+        })
         return
       }
       const older = await update(2)

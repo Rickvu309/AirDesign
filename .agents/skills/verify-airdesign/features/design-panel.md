@@ -10,6 +10,7 @@
 - `picture` a picture: `Fill` with how the image sits (Fill, Fit or Crop), and `Replace image` beside the title. An icon has a Color swatch.
 - `border` a shape, frame, picture or line: `Border` with None, Solid, Dashed and Dotted (a line has no None), then `Color` once it has one.
 - `chart` a chart: the panel shows the same controls as for other frames. Agents set chart data.
+- A linked chart has frame controls and Detach instance. Font, theme, size and label-style changes save the regenerated layers with the change that produced them. The `linked-chart-refresh` journey checks held saves, two tabs, detach and undo offline, and a 100-row chart after reopening, on the filmstrip, in capture and in PDF.
 - `auto-layout` an auto layout frame: `Remove auto layout` under the title (see `auto-layout-frame.md`).
 - `selection-colors` `Selection colors` lists the colours the selection, or the slide, uses; picking one changes each layer that uses it.
 - `slide` with nothing selected: `Background` takes Solid, Gradient, Image or a colour for the slide's fills, and `Theme` previews each library theme's heading font, slide background and first three accents. One selection writes the whole deck theme, the same write as an agent's `{ "op": "deck", "theme": "<id>" }`.

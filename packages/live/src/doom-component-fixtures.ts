@@ -10,7 +10,7 @@ export const measure = doom.measureWith({})
 
 export const data = (value: number) => ({ rows: [{ id: "a", label: "A", value }] })
 
-export async function placed() {
+export async function placed(extra: readonly doom.Write[] = []) {
   const shared = memoryDoomRemote({
     once: "start",
     author: person,
@@ -46,7 +46,7 @@ export async function placed() {
     data: data(1),
   })
   if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
-  const pushed = deck.push(writes, { read: deck.view() })
+  const pushed = deck.push([...writes, ...extra], { read: deck.view() })
   if (!pushed.ok) throw new Error(JSON.stringify(pushed))
   await deck.sync()
   const node = deck.view().nodes.get(frame)

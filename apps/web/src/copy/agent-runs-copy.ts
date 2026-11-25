@@ -64,7 +64,5 @@ export function agentUndoStays(agent: string, stays: UndoStays): string {
 }
 
 export function agentKeptLayers(agent: string, layers: readonly string[]): string {
-  return layers.length === 1
-    ? `${opening(layers)} stays, because it, or something in it, was changed after ${agent} made it. Delete it yourself if you don't want it.`
-    : `${opening(layers)} stay, because they, or something in them, were changed after ${agent} made them. Delete them yourself if you don't want them.`
+  return `Changes made to ${listed(layers)} after ${agent}’s edit were kept.`
 }
