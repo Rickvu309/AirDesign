@@ -85,3 +85,55 @@ export function componentSignature(id: string): Signature | undefined {
     overrides: doom.linkedPartOverrides,
   }
 }
+
+type PlacedInstance = {
+  readonly id: doom.NodeId
+  readonly slide: doom.NodeId
+  readonly box: unknown
+  readonly data: unknown
+  readonly variant: unknown
+}
+
+export function instancesOf(fold: doom.Doom, id: string): readonly PlacedInstance[] {
+  return [...fold.nodes.values()].flatMap((node) => {
+    const instance = doom.propOf(node, "instance")
+    const slide = doom.slideOf(fold, node.id)
+    if (instance === undefined || slide === undefined || (instance.component.id ?? instance.component.node) !== id)
+      return []
+    return [{ id: node.id, slide, box: doom.propOf(node, "box"), data: instance.data, variant: instance.variant }]
+  })
+}
+
+function collectionWords(spec: unknown): string {
+  const collections = (spec as { readonly collections?: Readonly<Record<string, object>> } | undefined)?.collections
+  return Object.entries(collections ?? {})
+    .map(([table, fields]) => `${table}: ${Object.keys(fields).join(", ")}`)
+    .join("; ")
+}
+
+export function componentLines(fold: doom.Doom): readonly string[] {
+  return [...fold.nodes.values()].flatMap((node) => {
+    const found = doom.deckComponent(fold, node.id)
+    if (found === undefined) return []
+    const count = instancesOf(fold, node.id).length
+    const fields = collectionWords(doom.propOf(node, "spec"))
+    return [
+      `${node.id} "${found.spec.name}" r${found.revision}, ${count} instances${fields === "" ? "" : `, ${fields}`}`,
+    ]
+  })
+}
+
+export function sampleFindings(fold: doom.Doom, ids: readonly doom.NodeId[], measure = estimate) {
+  return ids
+    .flatMap((id) => {
+      const tree = doom.componentSampleTree(fold, id, measure)
+      if (doom.isRefusal(tree)) return []
+      return tree.findings.map((finding) => ({
+        node: id,
+        code: finding.kind === "advice" ? finding.code : finding.kind,
+        key: finding.key,
+        note: `${id} sample ${finding.key.join(" / ")} ${findingMessage(finding, 0)}`,
+      }))
+    })
+    .slice(0, shownFindings)
+}

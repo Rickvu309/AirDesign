@@ -26,6 +26,8 @@ import type { Text } from "./text.js"
 import { componentLibrary } from "./component/library.js"
 import { linkedOwner } from "./component/instance-ownership.js"
 import { placeComponent } from "./component/join-instance.js"
+import { deckComponent } from "./component/deck-component.js"
+import { readNodeId } from "./ids.js"
 import { isRefusal } from "./refusal.js"
 import { measureWith } from "./measure.js"
 import { textHeight } from "./text-estimate.js"
@@ -290,7 +292,8 @@ const maxComponentScale = 2
 
 function addComponent(draft: Draft, parent: Node, change: Add): void {
   const id = change.component ?? stop("shape", undefined, "component", "missing", "A template id from read_deck.")
-  const definition = componentLibrary.get(id)
+  const node = readNodeId(id)
+  const definition = componentLibrary.get(id) ?? (node === undefined ? undefined : deckComponent(draft.doom, node))
   if (definition === undefined) stop("shape", undefined, "component", "form", "A template id from read_deck.")
   const { sample } = definition.spec
   const data = change.data ?? sample?.data ?? stop("shape", undefined, "data", "missing", "Rows by collection.")
@@ -302,7 +305,8 @@ function addComponent(draft: Draft, parent: Node, change: Add): void {
     const fitted = centred(aligned, { w: Math.round(natural.width * scale), h: Math.round(natural.height * scale) })
     box = aligned === box ? fitted : { ...fitted, x: aligned.x }
   }
-  const placed = placeComponent(draft.doom, definition, {
+  const source = "id" in definition ? definition : { node: definition.node, revision: definition.revision }
+  const placed = placeComponent(draft.doom, source, {
     frame: draft.mint(),
     parent: { id: parent.id, at: nextKey(draft, parent.id) },
     box: givenBox(change, box),

@@ -14,6 +14,11 @@ import { isRefusal } from "./refusal.js"
 import type { Author, Edit, Doom, Write } from "./doom.js"
 import { onTop } from "./view-of.js"
 import { type AgentFinding, agentFindings } from "./agent-findings.js"
+import { recordingMeasure } from "./component/component-edit.js"
+import { rebuildStaleInstances } from "./component/component-write.js"
+import { measureWith } from "./measure.js"
+
+const estimate = measureWith({})
 
 export type AddedNode = { readonly id: NodeId; readonly change: number; readonly kind: string }
 export type AgentEdit = {
@@ -77,6 +82,7 @@ export function* agentEditSteps(
   let view = doom
   let emptied = 0
   let guarded = false
+  const templates = new Map<NodeId, number>()
   for (const [at, change] of changes.entries()) {
     let frame: NodeId | undefined
     const beforeBake: Reading = pauseForBake
@@ -94,23 +100,44 @@ export function* agentEditSteps(
       compiled = compileAgentChange(view, change, by.mint, { ...reading, measure })
     }
     if ("refused" in compiled) return { ...compiled, at }
-    const strict = compiled.some(({ node, prop }) => prop === "instance" || linkedOwner(view.nodes, node) !== undefined)
+    const template = change.op === "component" ? compiled.find(({ prop }) => prop === "spec")?.node : undefined
+    if (template !== undefined) templates.set(template, at)
+    const strict = compiled.some(
+      ({ node, prop }) =>
+        prop === "instance" || (prop === "spec" && view.nodes.has(node)) || linkedOwner(view.nodes, node) !== undefined,
+    )
     guarded ||= strict
-    const next = applyStep(view, {
-      ...onTop(view, {
-        once: `${by.once}#${at}`,
-        author: by.author,
-        writes: compiled,
-        ...(strict ? { readBase: view.rev } : {}),
-        ...(by.phase !== undefined && at === 0 ? { phase: by.phase } : {}),
-      }),
-      rev: rev(view.rev + 1),
-    })
+    const next = applyStep(
+      view,
+      {
+        ...onTop(view, {
+          once: `${by.once}#${at}`,
+          author: by.author,
+          writes: compiled,
+          ...(strict ? { readBase: view.rev } : {}),
+          ...(by.phase !== undefined && at === 0 ? { phase: by.phase } : {}),
+        }),
+        rev: rev(view.rev + 1),
+      },
+      template !== undefined,
+    )
     if (isRefusal(next)) return { ...next, change: nameOf(change), at }
     if (countsOf(next).slides === 0 && countsOf(view).slides > 0) emptied = at
     view = next
     writes.push(...compiled)
     ends.push(writes.length)
+  }
+  if (templates.size > 0) {
+    const recorder = by.componentSample === undefined ? undefined : recordingMeasure()
+    const rebuilt = rebuildStaleInstances(view, [...templates.keys()], recorder?.measure ?? reading.measure ?? estimate)
+    if (recorder !== undefined) by.componentSample?.(recorder.sample(view))
+    if ("refused" in rebuilt) {
+      const { component, ...refusal } = rebuilt
+      const at = templates.get(component) ?? 0
+      return { ...refusal, change: nameOf(changes[at] as AgentChange), at }
+    }
+    guarded ||= rebuilt.writes.length > 0
+    writes.push(...rebuilt.writes)
   }
   const named = nameFromTitleWrites(doom, writes)
   writes.push(...named)

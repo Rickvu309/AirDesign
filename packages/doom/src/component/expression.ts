@@ -42,6 +42,8 @@ export const binding = (raw: unknown): string => {
   return reserved.has(bind) ? reject("shape", `The name "${bind}" is reserved.`) : bind
 }
 
+export const expressionForms = ["get", "if", "map", "filter", "every", "scan"] as const
+
 export function readExpr(raw: unknown, depth: number, charge: () => void): Expr {
   checkDepth(depth)
   charge()

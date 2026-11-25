@@ -1,8 +1,17 @@
+import { readFileSync } from "node:fs"
+import { createRequire } from "node:module"
+
 import { readDeckQuery, readNamedDeck } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import { answered, hostRefused, refused, told, type ToolImage, type ToolResult } from "./answer.js"
-import { componentFindings, componentFindingsNote, componentSignature } from "./component-answer.js"
+import {
+  componentFindings,
+  componentFindingsNote,
+  componentLines,
+  componentSignature,
+  instancesOf,
+} from "./component-answer.js"
 import { deckMeasure } from "./deck-measure.js"
 import type { DeckHost, Opened } from "./deck-host.js"
 import { type Laid, layoutOf, listed, readFindingsNote } from "./layout-answer.js"
@@ -99,6 +108,7 @@ type Query = {
   readonly cursor?: string | undefined
   readonly find?: string | undefined
   readonly component?: string | undefined
+  readonly grammar?: 1 | undefined
 }
 
 type Chosen =
@@ -146,12 +156,14 @@ export function readAnswer(opened: Opened, query: Query, laid?: Laid): ToolResul
     ...(doom.deckOf(opened.fold).language === undefined ? {} : { language: doom.deckOf(opened.fold).language }),
     ...found,
   }
-  const components = [...doom.componentLibrary.keys()]
+  const components = [...componentLines(opened.fold), ...doom.componentLibrary.keys()]
   const note = [
     lead(opened, slides.length),
     ...(components.length === 0
       ? []
-      : ["Read with component to see a template's sample or detail for a placed instance."]),
+      : [
+          "Read with component for a template's spec and instances, or detail for a placed instance. A component is a template the deck keeps as data: read grammar 1 before writing one.",
+        ]),
     ...(laid === undefined ? [] : readFindingsNote(laid)),
   ].join(" ")
   return answered(note, {
@@ -167,21 +179,51 @@ async function laidRead(opened: Opened, query: Query, host: DeckHost): Promise<L
   return picked.ok ? layoutOf(host, opened.fold, () => picked.chosen) : undefined
 }
 
-async function componentRead(opened: Opened, query: Query, host: DeckHost): Promise<ToolResult | undefined> {
-  if (query.component !== undefined) {
-    const signature = componentSignature(query.component)
-    if (signature === undefined)
-      return refused("dead", { field: "component", note: "Read the deck for available template ids." })
-    return answered(
-      `Template ${signature.id} r${signature.revision}. Add kind component with this id, or set data, variant and tokens on an instance.`,
-      {
-        ok: true,
-        deck: opened.deck,
-        rev: opened.rev,
-        signature,
+let grammarText: string | undefined
+
+function grammarRead(opened: Opened): ToolResult {
+  grammarText ??= readFileSync(createRequire(import.meta.url).resolve("@airdesign/doom/grammar/1.md"), "utf8")
+  return answered(
+    "The component spec syntax, grammar 1, is in text. Add a component with the airdesign_edit_deck change op component.",
+    { ok: true, deck: opened.deck, rev: opened.rev, grammar: 1, text: grammarText },
+  )
+}
+
+function templateRead(opened: Opened, id: string): ToolResult {
+  const node = doom.readNodeId(id)
+  const authored = node === undefined ? undefined : doom.deckComponent(opened.fold, node)
+  const builtIn = doom.componentLibrary.get(id)
+  const found = authored ?? builtIn
+  if (found === undefined)
+    return refused("dead", { field: "component", note: "Read the deck for available template ids." })
+  const instances = instancesOf(opened.fold, id)
+  const name = found.spec.name
+  const change =
+    authored === undefined
+      ? "It is built in: to change it, add a new component starting from its spec."
+      : `To change it, send op component with target ${id} and the whole spec; its instances follow.`
+  return answered(
+    `Template ${id} "${name}" r${found.revision}, ${instances.length} instances, at rev ${opened.rev}. ${change} Add kind component with component ${id} to place it. read_deck grammar 1 has the spec syntax.`,
+    {
+      ok: true,
+      deck: opened.deck,
+      rev: opened.rev,
+      component: {
+        id,
+        name,
+        revision: found.revision,
+        builtIn: authored === undefined,
+        spec: authored === undefined ? builtIn?.source : doom.propOf(opened.fold.nodes.get(authored.node), "spec"),
+        instances,
       },
-    )
-  }
+      ...(builtIn === undefined ? {} : { signature: componentSignature(id) }),
+    },
+  )
+}
+
+async function componentRead(opened: Opened, query: Query, host: DeckHost): Promise<ToolResult | undefined> {
+  if (query.grammar !== undefined) return grammarRead(opened)
+  if (query.component !== undefined) return templateRead(opened, query.component)
   if (query.find !== undefined) return undefined
   const id = doom.readNodeId(query.detail)
   if (id === undefined) return undefined
@@ -227,14 +269,25 @@ export async function readDeckTool(raw: unknown, agent: string, host: DeckHost):
   if (!opened.ok) return hostRefused(opened)
   const parsed = readDeckQuery(raw)
   if (!parsed.ok) return refused(parsed.refusal)
-  const query = { ...parsed, component: typeof parsed.component === "string" ? parsed.component : undefined }
+  const query = {
+    ...parsed,
+    component: typeof parsed.component === "string" ? parsed.component : undefined,
+    grammar: parsed.grammar,
+  }
   const component = await componentRead(opened, query, host)
   const read = withOtherRuns(
     component ?? readAnswer(opened, query, await laidRead(opened, query, host)),
     opened.fold,
     agent,
   )
-  if (parsed.picture !== true || !read.ok || parsed.find !== undefined || parsed.component !== undefined) return read
+  if (
+    parsed.picture !== true ||
+    !read.ok ||
+    parsed.find !== undefined ||
+    parsed.component !== undefined ||
+    parsed.grammar !== undefined
+  )
+    return read
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
   const detail = doom.readNodeId(parsed.detail)
   const slide = parsed.slide ?? (detail === undefined ? undefined : doom.slideOf(opened.fold, detail))

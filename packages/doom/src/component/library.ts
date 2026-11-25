@@ -15,13 +15,14 @@ import { type ComponentSpec, readComponentSpec } from "./spec.js"
 export type ComponentDefinition = ComponentRef & {
   readonly spec: ComponentSpec
   readonly sizeTokens: readonly string[]
+  readonly source: unknown
 }
 type ComponentRef = { readonly id: string; readonly node?: never; readonly revision: number }
 
 function builtIn(id: string, raw: unknown, sizeTokens: readonly string[] = []): ComponentDefinition {
   const spec = readComponentSpec(raw)
   if (isRefusal(spec)) throw new Error(`Invalid ${id} component ${JSON.stringify(spec)}`)
-  return { id, revision: 1, spec, sizeTokens }
+  return { id, revision: 1, spec, sizeTokens, source: raw }
 }
 
 const columnTemplate = builtIn("column", column, ["captionSmall"])

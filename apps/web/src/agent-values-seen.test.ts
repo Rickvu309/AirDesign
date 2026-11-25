@@ -51,6 +51,7 @@ const seen: Readonly<Record<string, Seen>> = {
   data: { declined: "The agent sets the data behind a linked template." },
   variant: { declined: "The agent changes a placed template’s variant.", partly: ["actions:component"] },
   tokens: { declined: "The agent sets template-specific formatting." },
+  spec: { declined: "A person asks Aira to make or change a template, so the panel stays simple." },
   rows: {
     declined: "One simple panel. Agents still set auto layout.",
     partly: ["gesture:edit-text"],
@@ -110,8 +111,13 @@ const owedToPerson = [
   "innerShadow",
 ]
 
+const agentOnlyOps: Readonly<Record<string, string>> = {
+  component: "A person asks Aira to make or change a template, so the panel stays simple.",
+}
+
 const structural = new Set([
   "op",
+  "spec",
   "kind",
   "add",
   "move",
@@ -132,6 +138,7 @@ describe("every value an agent sets names where a person sees it and changes it"
       [...agentOps].filter(
         (op) =>
           !["set", "add", "slide"].includes(op) &&
+          agentOnlyOps[op] === undefined &&
           !entries.some(([, entry]) => "agent" in entry && entry.agent === `op.${op}`),
       ),
     ).toEqual([])

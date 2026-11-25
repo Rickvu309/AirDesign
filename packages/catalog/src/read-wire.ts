@@ -21,9 +21,10 @@ export const readDeckQuery = readInput(
       .exactOptional(),
     component: z
       .string()
-      .regex(/^[\w-]{1,32}$/)
-      .describe("Read a template's input signature and sample.")
+      .regex(/^[\w:-]{1,32}$/)
+      .describe("A component's spec, revision and instances. column is built in.")
       .exactOptional(),
+    grammar: z.literal(1).describe("The component spec syntax.").exactOptional(),
     picture: z.literal(true).describe("Add a picture of each slide read, up to 10.").exactOptional(),
     find: z
       .string()

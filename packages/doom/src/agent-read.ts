@@ -60,6 +60,7 @@ function layoutWords(layout: Layout): readonly string[] {
 
 export function kindOf(node: Node): string {
   if (node.type === "slide" || node.type === "slideRow") return node.type
+  if (node.type === "component") return "template"
   if (node.type === "frame") {
     if (node.instance !== undefined) return "component"
     return "frame"

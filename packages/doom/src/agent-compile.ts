@@ -11,7 +11,8 @@ import type { Write } from "./doom.js"
 import type { Doom } from "./doom.js"
 import { freeLineEnds } from "./freed-line-ends.js"
 import { measureWith } from "./measure.js"
-import { prepareComponentEdit, sampleComponentEdit } from "./component/component-edit.js"
+import { prepareComponentEdit, recordingMeasure, sampleComponentEdit } from "./component/component-edit.js"
+import { prepareComponentSpec } from "./component/component-write.js"
 import { isRefusal } from "./refusal.js"
 import { propOf } from "./doom-walk.js"
 
@@ -35,7 +36,24 @@ export function nameOf(change: AgentChange): string {
       return `slide ${change.add !== undefined ? "add" : change.move !== undefined ? "move" : change.delete !== undefined ? "delete" : ""}`.trim()
     case "deck":
       return "deck"
+    case "component":
+      return change.target === undefined ? "component" : `component ${change.target}`
   }
+}
+
+type ComponentChange = Extract<AgentChange, { readonly op: "component" }>
+
+function compileComponent(
+  doom: Doom,
+  change: ComponentChange,
+  mint: () => NodeId,
+  reading: Reading,
+): readonly Write[] | AgentRefusal {
+  const recorder = reading.componentSample === undefined ? undefined : recordingMeasure()
+  const measure = recorder?.measure ?? reading.measure ?? estimate
+  const made = prepareComponentSpec(doom, change, measure, mint)
+  if (recorder !== undefined) reading.componentSample?.(recorder.sample(doom))
+  return isRefusal(made) ? { ...made, change: nameOf(change) } : made.writes
 }
 
 export function compileAgentChange(
@@ -44,6 +62,7 @@ export function compileAgentChange(
   mint: () => NodeId,
   reading: Reading = {},
 ): readonly Write[] | AgentRefusal {
+  if (change.op === "component") return compileComponent(doom, change, mint, reading)
   const draft = draftOf(doom, mint, reading)
   try {
     const focus = change.op === "set" ? change.focus : undefined

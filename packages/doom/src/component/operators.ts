@@ -285,6 +285,8 @@ const operators: Readonly<Record<string, Operation>> = {
   site: fixed(2, ([key, site]) => ({ key: list(key), site: literal(["t", "r", "b", "l", "c"])(site) })),
 }
 
+export const operatorNames: readonly string[] = Object.keys(operators)
+
 export function readOperator(op: string, arity: number): Operation {
   const operator = Object.hasOwn(operators, op) ? operators[op] : undefined
   if (operator === undefined) return reject("shape", `Unknown operator "${op}".`)
