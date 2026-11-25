@@ -26,7 +26,7 @@ export const testsFor = ({ map, related, inventory, changed, seconds = {}, dista
   const reach = unitTestsIn(map.unitTests, inventory)
   const reached = new Set(reach)
   const weight = (file) => secondsPerFile + (seconds[file] ?? 0) / 2
-  const mustRun = [...new Set([...changed, ...map.unitTests])].filter((file) => reached.has(file))
+  const mustRun = [...new Set([...changed, ...map.readers])].filter((file) => reached.has(file))
   const near = map.unitTests === "all" ? [] : related.filter((file) => reached.has(file) && !mustRun.includes(file))
   const files = [...mustRun]
   let spent = files.reduce((sum, file) => sum + weight(file), 0)
@@ -212,8 +212,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       run,
       later: async () => {
         const base = execFileSync("git", ["merge-base", against, "HEAD"], { cwd: root, encoding: "utf8" }).trim()
-        const plan = JSON.parse(await node([prove, "prove", "--plan", "--base", against]))
-        const map = changeMap(plan.changed, readChangeGraph(root))
+        const graph = readChangeGraph(root)
+        const reads = path.join(ownTemp, "reads.json")
+        fs.writeFileSync(reads, JSON.stringify(graph.reads))
+        const plan = JSON.parse(await node([prove, "prove", "--plan", "--base", against, "--reads", reads]))
+        const map = changeMap(plan.changed, graph)
         const inventory = Object.values(testFilesByProject(root)).flat().sort()
         const related = map.unitTests === "all" || map.unitTests.length === 0 ? [] : await relatedTests(base, ownTemp)
         const workspace = await loadWorkspace(root)

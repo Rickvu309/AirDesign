@@ -76,6 +76,21 @@ same(
   [[[features], false]],
 )
 same(
+  "a change that runs everything still names the unit tests that read a changed file, so the gate runs them",
+  [mapReading([".agents/skills/verify-airdesign/features/new-feature.md", ".github/workflows/ci.yml"])].map(
+    (result) => [result.everything, result.unitTests, result.readers],
+  ),
+  [[true, "all", [features]]],
+)
+same(
+  "the unit tests that read a changed file are named apart from the folders, and a script test is not among them",
+  [mapReading([".agents/skills/verify-airdesign/journeys/account-name.mjs", ".railway/railway.ts"])].map((result) => [
+    result.readers,
+    result.parts.scripts,
+  ]),
+  [[[features], true]],
+)
+same(
   "a feature file a unit test reads selects that test, though the map takes it for a doc",
   mapReading([".agents/skills/verify-airdesign/features/new-feature.md"]).unitTests,
   [features],

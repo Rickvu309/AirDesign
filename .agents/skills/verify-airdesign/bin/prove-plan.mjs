@@ -1,4 +1,5 @@
 import path from "node:path"
+import { readersOf } from "../../../../scripts/test-reads.mjs"
 import { suitesFor } from "./suites.mjs"
 
 const skillPath = ".agents/skills/verify-airdesign/"
@@ -61,15 +62,10 @@ const unitStep = (changed) => {
   return { kind: "unit-tests", files: sources, tests: "related", because: `${String(sources.length)} changed sources` }
 }
 
-const readBy = (reads, file) =>
-  Object.entries(reads)
-    .filter(([, links]) => links.some((link) => link === file || (link.endsWith("/") && file.startsWith(link))))
-    .map(([test]) => test)
-
 const toolingStep = (changed, scripts, reads) => {
   const touched = changed.filter((file) => /^scripts\/[^/]+\.mjs$/.test(file))
   const imported = importersOf(scripts, touched).filter((file) => file.endsWith(".test.mjs") && file in scripts)
-  const readers = (file) => readBy(reads, file).filter((test) => scriptTest.test(test))
+  const readers = (file) => readersOf(reads, file).filter((test) => scriptTest.test(test))
   const read = changed.filter((file) => readers(file).length > 0)
   const files = [...new Set([...imported, ...read.flatMap(readers)])].sort()
   if (files.length === 0) return undefined
