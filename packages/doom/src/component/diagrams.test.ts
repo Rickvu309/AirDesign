@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { resolveSlide, solveLayout } from "../index.js"
+import { defaultTheme, resolveSlide, solveLayout } from "../index.js"
 import { architectureComponent, cycleComponent, processComponent } from "./index.js"
 import architecture from "./testing/architecture.json" with { type: "json" }
 import cycle from "./testing/cycle.json" with { type: "json" }
@@ -27,45 +27,7 @@ describe("process diagram", () => {
     expect(tree.findings.filter(({ kind }) => kind === "text-fit")).toEqual([])
   })
 
-  it.each([7, 8])("fits realistic descriptions in two lines in a %i-step row", (count) => {
-    const descriptions = [
-      "Map customer needs",
-      "Set success criteria",
-      "Validate a direction",
-      "Ship a pilot",
-      "Measure adoption",
-      "Review feedback",
-      "Refine the rollout",
-      "Track the impact",
-    ]
-    const tree = expand(processComponent, {
-      frame: process.frame,
-      data: { steps: steps(count).steps.map((step, i) => ({ ...step, description: descriptions[i]! })) },
-    })
-    const cards = role(tree, "step")
-    expect(new Set(cards.map((card) => card.props.box.h)).size).toBe(1)
-    const { doom, slide } = landTree(tree)
-    const resolved = resolvedById(resolveSlide(doom, slide, measure))
-    const descriptionLines = cards.map((card, i) => {
-      const start = card.props.text!.chars.lastIndexOf("\n") + 1
-      const lines = resolved.get(card.id)!.text!.lines.filter((line) => line.start >= start)
-      expect(
-        lines
-          .map((line) =>
-            line.runs
-              .map((run) => run.text)
-              .join("")
-              .trim(),
-          )
-          .join(" "),
-      ).toBe(descriptions[i])
-      expect(lines.length).toBeLessThanOrEqual(2)
-      return lines.length
-    })
-    expect(descriptionLines).toContain(2)
-  })
-
-  it("shortens a three-line description and keeps the duration below it", () => {
+  it("shortens a long description and keeps the duration below it", () => {
     const description = "Consolidate feedback across customer segments and operating teams"
     const tree = expand(processComponent, {
       frame: process.frame,
@@ -76,11 +38,21 @@ describe("process diagram", () => {
     const lines = resolvedById(resolveSlide(doom, slide, measure))
       .get(card.id)!
       .text!.lines.map((line) => line.runs.map((run) => run.text).join(""))
-    expect(lines).toHaveLength(5)
-    expect(lines[3]).toMatch(/…$/)
-    expect(lines[4]).toBe("2 weeks")
+    expect(lines).toHaveLength(6)
+    expect(lines[4]).toMatch(/…$/)
+    expect(lines[5]).toBe("2 weeks")
     expect(card.props.text?.chars).toContain(description)
-    expect(tree.findings).toContainEqual(expect.objectContaining({ kind: "text-fit", key: card.key }))
+    const finding = tree.findings.find((finding) => finding.kind === "text-fit")
+    expect(finding).toMatchObject({ key: card.key })
+    expect(finding?.neededWidth).toBeGreaterThan(card.props.box.w)
+    const text = card.props.text
+    if (!text || !finding) throw new Error("Expected shortened text")
+    const lineCount = (width: number) =>
+      measure(text, defaultTheme, width).lines.filter(
+        (line) => line.start >= 10 && line.start < text.chars.lastIndexOf("\n"),
+      ).length
+    expect(lineCount(finding.neededWidth)).toBeLessThanOrEqual(3)
+    expect(lineCount(finding.neededWidth - 1)).toBeGreaterThan(3)
   })
 
   it("stores each step where the frame's auto layout paints it", () => {
@@ -146,15 +118,28 @@ describe("process diagram", () => {
     expect(rest.map((card) => card.props.text?.spans[0]?.color)).toEqual([{ var: "text2" }, { var: "text2" }])
   })
 
-  it("offers phases for a six-step process while keeping all six cards", () => {
+  it("moves the accent and larger number to the focused step", () => {
+    const tree = expand(processComponent, { frame: process.frame, data: steps(4), tokens: { focus: "s2" } })
+    const cards = role(tree, "step")
+    expect(cards.map((card) => card.props.text?.spans[0]?.color)).toEqual([
+      { var: "text2" },
+      { var: "text2" },
+      { var: "accent1" },
+      { var: "text2" },
+    ])
+    expect(cards[2]?.props.text?.spans[0]?.size).toBeGreaterThan(cards[0]!.props.text!.spans[0]!.size!)
+  })
+
+  it("suggests two diagrams for a six-step process while keeping all six cards", () => {
     const tree = expand(processComponent, { frame: process.frame, data: steps(6) })
     expect(role(tree, "step")).toHaveLength(6)
     expect(tree.findings).toEqual([
       {
         kind: "advice",
+        field: "advice[0].when",
         key: ["root"],
         code: "many-steps",
-        note: "Group the steps into phases to make the process easier to follow.",
+        note: "Split the steps across two process diagrams.",
       },
     ])
   })

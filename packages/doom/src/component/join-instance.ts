@@ -110,7 +110,7 @@ function join(
     const target = emitted.get(point.node)
     if (target === undefined) return undefined
     const { box, geometry } = target.props
-    const spot = siteSpot(geometry, box.w, box.h, point.site)
+    const spot = siteSpot(geometry, box.w, box.h, point.site, point.along)
     return { x: Math.round(box.x + spot.x), y: Math.round(box.y + spot.y) }
   }
 

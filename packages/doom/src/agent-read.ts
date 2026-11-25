@@ -181,7 +181,8 @@ function shownArrow(name: string, arrow: Arrow): readonly string[] {
 }
 
 function lineWords(line: Extract<Geometry, { kind: "line" }>): readonly string[] {
-  const end = (name: string, at: End) => ("node" in at ? [`${name}=${at.node}:${sideWords[at.site]}`] : [])
+  const end = (name: string, at: End) =>
+    "node" in at ? [`${name}=${at.node}:${sideWords[at.site]}${at.along === undefined ? "" : `@${at.along}`}`] : []
   return [
     ...end("from", line.start),
     ...end("to", line.end),

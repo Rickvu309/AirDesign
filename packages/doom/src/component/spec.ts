@@ -87,7 +87,14 @@ function emission(read: (raw: unknown) => Expr) {
   const surface = { stroke, radius: read }
   const readTextPart = object(
     { ...position, chars: read, style: read, color: read, align: read, alignV: read },
-    { ...surface, fill: read, padding: read, size: read, overflow: literal(["ellipsis"]), fit: (raw: unknown) => (raw === "omit" ? raw : fitText(raw)) },
+    {
+      ...surface,
+      fill: read,
+      padding: read,
+      size: read,
+      overflow: literal(["ellipsis"]),
+      fit: (raw: unknown) => (raw === "omit" ? raw : fitText(raw)),
+    },
   )
   return variant("kind", {
     rect: object({ ...position, fill: read }, surface),
