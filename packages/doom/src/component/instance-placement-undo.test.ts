@@ -1,5 +1,6 @@
 import { expect, it } from "vitest"
 import {
+  columnDefinition,
   defaultTheme,
   doomFromTree,
   invert,
@@ -15,7 +16,13 @@ import { at, box, data, frame, land, measure, mint, person } from "./linked-inst
 
 it("keeps the entire placement if removing it would drop a later move of its manual child", () => {
   const { doom: before, slides } = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
-  const chart = placeComponent(before, { frame, parent: { id: slides[0]!, at }, box, data: data(1, 2), measure })
+  const chart = placeComponent(before, columnDefinition, {
+    frame,
+    parent: { id: slides[0]!, at },
+    box,
+    data: data(1, 2),
+    measure,
+  })
   if (isRefusal(chart)) throw new Error(JSON.stringify(chart))
   const child = mint()
   const writes: Write[] = [
@@ -31,7 +38,13 @@ it("keeps the entire placement if removing it would drop a later move of its man
 it("undoes an agent chart placement while keeping another layer and its later connector", () => {
   const { doom: before, slides } = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
   const slide = slides[0]!
-  const chart = placeComponent(before, { frame, parent: { id: slide, at }, box, data: data(1, 2), measure })
+  const chart = placeComponent(before, columnDefinition, {
+    frame,
+    parent: { id: slide, at },
+    box,
+    data: data(1, 2),
+    measure,
+  })
   if (isRefusal(chart)) throw new Error(JSON.stringify(chart))
   const shape = mint()
   const line = mint()

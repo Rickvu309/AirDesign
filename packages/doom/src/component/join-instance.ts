@@ -275,7 +275,7 @@ export function refreshComponent(
   frame: NodeId,
   measure: Measure,
 ): ComponentUpdate | Refusal {
-  return updateComponent(doom, frame, {}, measure, undefined, undefined, proposed)
+  return updateComponent(doom, frame, {}, measure, undefined, undefined, undefined, proposed)
 }
 
 function updateComponent(
@@ -292,7 +292,7 @@ function updateComponent(
   if (root === undefined) return refuse("missing", frame, "instance")
   const { instance } = root
   const proposed = { ...instance, ...patch }
-  const tree = expandInstance(doom, root, proposed, measure, definition, returning, restored)
+  const tree = expandInstance(doom, root, proposed, measure, definition, returning, restored, input)
   if (isRefusal(tree)) return tree
   return join(doom, frame, proposed, instance, tree, [], measure, returning, restored)
 }
@@ -311,6 +311,7 @@ function expandInstance(
   definition = resolveComponent(instance.component),
   returning?: ReadonlyMap<string, Instance["parts"][number]>,
   restored?: ReadonlyMap<NodeId, readonly Write[]>,
+  input: Doom = doom,
 ): ComponentTree | Refusal {
   if (box === undefined) return refuse("shape", id, "box")
   if (
