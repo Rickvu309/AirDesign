@@ -167,4 +167,3 @@ export type { LayerPositions } from "./standing-layers.js"
 
 export { reservedPartId } from "./component/part-id.js"
 export { deckTexts } from "./deck-of.js"
-export { languages } from "./language.js"
