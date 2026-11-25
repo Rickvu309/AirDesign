@@ -22,6 +22,21 @@ async function ask(page: Page, text: string) {
   await page.keyboard.press("Enter")
 }
 
+test("the Ask Aira box draws no ring while the person types in it, in the box or in the field", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await openEditor(page, context, stack)
+  const field = page.locator("[data-editor-panel]").getByRole("textbox", { name: airaCopy.askAira })
+  await field.fill("Add a chart")
+  await expect(field).toBeFocused()
+  const outlines = await field.evaluate((node) =>
+    [node, node.parentElement!].map((each) => getComputedStyle(each).outlineStyle),
+  )
+  expect(outlines).toEqual(["none", "none"])
+})
+
 test("Aira adds KPIs through the MCP address, the canvas paints them as they land, and Undo takes the run back", async ({
   page,
   context,
