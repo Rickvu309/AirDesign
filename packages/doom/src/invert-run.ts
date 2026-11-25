@@ -16,7 +16,7 @@ import { type Instance, instanceFields, keyString } from "./component/instance.j
 import { sameValue } from "./changing-writes.js"
 import { withPartDeletes } from "./component/instance-ownership.js"
 import { withCurrentComponents } from "./component/component-edit.js"
-import { withoutDeletedInstances } from "./component/deleted-instances.js"
+import { rebuiltByUpdate } from "./component/update-rebuild.js"
 import { onDeck } from "./doom-walk.js"
 import type { Doom, Landed, Node, Write } from "./doom.js"
 import { readLanded } from "./fold-json.js"
@@ -320,6 +320,18 @@ export function undoSourceOf(before: Doom, edit: Landed): RunEdit {
   }
 }
 
+function withoutUpdateRebuild(edit: RunEdit): RunEdit {
+  const rebuilt = rebuiltByUpdate(
+    edit.writes,
+    (node, key) => edit.replaced.find((cell) => cell.node === node && cell.key === key)?.value,
+  )
+  return {
+    ...edit,
+    writes: edit.writes.filter(({ node, prop }) => !rebuilt(node, prop)),
+    replaced: edit.replaced.filter(({ node, key }) => !rebuilt(node, key)),
+  }
+}
+
 export function invertRun(
   now: Doom,
   asked: readonly RunEdit[],
@@ -327,7 +339,7 @@ export function invertRun(
   started?: LayerPositions | Doom,
   measure: Measure = measureWith({}),
 ): Undone {
-  const { edits, skipped } = withoutDeletedInstances(now, asked)
+  const edits = asked.map(withoutUpdateRebuild)
   const mine = new Set<Rev>([...owned, ...edits.map((edit) => edit.rev)])
   const writer = new Map<string, Rev | null | undefined>()
   const restored = new Map<string, Restore>()
@@ -414,7 +426,7 @@ export function invertRun(
   if (isRefusal(writes)) return { writes: [], kept: [], left: [], waiting: [], refused: writes }
   return {
     ...result,
-    kept: [...new Set([...result.kept, ...keptInstances, ...skipped])],
+    kept: [...new Set([...result.kept, ...keptInstances])],
     writes,
     left: [...new Set([...result.left, ...blocked])],
   }

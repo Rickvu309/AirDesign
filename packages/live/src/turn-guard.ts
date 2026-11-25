@@ -11,9 +11,9 @@ export function turnGuard(
   readonly guarded: boolean
   readonly replay: { readonly readBase?: doom.Rev; readonly turnFrom?: string[]; readonly turnSource?: doom.RunEdit }
 } {
-  const returning = doom.returningInstances(now, writes).length > 0
-  const guarded = returning || step.guarded === true
-  const linked = returning || step.writes.some(({ prop }) => prop === "instance")
+  const rebuilds = doom.rebuildsLinks(now, writes)
+  const guarded = rebuilds || step.guarded === true
+  const linked = rebuilds || step.writes.some(({ prop }) => prop === "instance")
   const last = source.once
   return {
     guarded,

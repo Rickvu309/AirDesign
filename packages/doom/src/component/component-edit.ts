@@ -1,4 +1,4 @@
-import { componentWrites, deckComponent, returningInstances } from "./deck-component.js"
+import { componentWrites, rebuildsLinks, staleLinks } from "./deck-component.js"
 import { applyBeforeRebuild } from "../apply-edit.js"
 import { changingWrites, sameValue } from "../changing-writes.js"
 import type { Doom, Landed, Write } from "../doom.js"
@@ -174,25 +174,20 @@ export function withCurrentComponents(
   asked: readonly Write[],
   measure: Measure,
 ): readonly Write[] | Refusal {
-  const writes = withRisingRevisions(view, asked)
-  const returning = returningInstances(view, writes)
-  if (returning.length === 0) return writes
+  const writes = withNextRevisions(view, asked)
+  if (!rebuildsLinks(view, writes)) return writes
   const next = applyBeforeRebuild(
     { ...view, onces: new Map() },
     {
-      once: "returning",
-      author: { kind: "person", id: "returning" },
+      once: "current-components",
+      author: { kind: "person", id: "current-components" },
       readBase: view.rev,
       rev: rev(view.rev + 1),
       writes,
     },
   )
   if (isRefusal(next)) return next
-  const stale = returning.filter((root) => {
-    const instance = propOf(next.nodes.get(root), "instance")
-    const source = instance?.component.node
-    return source !== undefined && deckComponent(next, source)?.revision !== instance?.component.revision
-  })
+  const stale = staleLinks(view, next, writes)
   if (stale.length === 0) return writes
   const generated = new Map<string, Write>()
   const cell = ({ node, prop }: Write) => `${node}\u0000${prop}`
@@ -204,24 +199,15 @@ export function withCurrentComponents(
   return [...writes.filter((write) => !generated.has(cell(write))), ...generated.values()]
 }
 
-function withRisingRevisions(fold: Pick<Doom, "nodes">, writes: readonly Write[]): readonly Write[] {
-  const raised = new Map<NodeId, { readonly from: number; readonly to: number }>()
+function withNextRevisions(view: Doom, writes: readonly Write[]): readonly Write[] {
+  const raised = new Map<NodeId, Write>()
   for (const { node, prop, value } of writes) {
-    const current = fold.nodes.get(node)
-    if (prop !== "revision" || current?.type !== "component" || current.revision === undefined) continue
-    if (typeof value === "number" && value <= current.revision)
-      raised.set(node, { from: value, to: current.revision + 1 })
+    const current = view.nodes.get(node)
+    if (prop !== "spec" || current?.type !== "component" || current.revision === undefined) continue
+    if (sameValue(current.spec, value)) continue
+    const base = view.revs.get(node)?.get("revision")
+    raised.set(node, { node, prop: "revision", value: current.revision + 1, ...(base === undefined ? {} : { base }) })
   }
   if (raised.size === 0) return writes
-  return writes.map((write) => {
-    const revision = raised.get(write.node)?.to
-    if (write.prop === "revision" && revision !== undefined) return { ...write, value: revision }
-    if (write.prop !== "instance") return write
-    const instance = props.instance.read(write.value)
-    if (isRefusal(instance) || instance.component.node === undefined) return write
-    const moved = raised.get(instance.component.node)
-    if (moved === undefined || moved.from !== instance.component.revision) return write
-    const component = { node: instance.component.node, revision: moved.to }
-    return { ...write, value: { ...(write.value as object), component } }
-  })
+  return [...writes.filter(({ node, prop }) => !(prop === "revision" && raised.has(node))), ...raised.values()]
 }

@@ -4,7 +4,7 @@ import { onDeck, parentOf, propOf } from "../doom-walk.js"
 import { type NodeId, readNodeId } from "../ids.js"
 import { Reject } from "../read-kit.js"
 import { isRefusal, refuse, type Refusal } from "../refusal.js"
-import { type ComponentRef, readInstanceInputs } from "./instance.js"
+import { type ComponentRef, type Instance, readInstanceInputs } from "./instance.js"
 import { type ComponentSpec, readComponentSpec } from "./spec.js"
 
 export type DeckComponent = { readonly node: NodeId; readonly revision: number; readonly spec: ComponentSpec }
@@ -53,7 +53,7 @@ function landsOnDeck(fold: Pick<Doom, "nodes">, parents: ReadonlyMap<NodeId, Nod
   return false
 }
 
-export function returningInstances(fold: Pick<Doom, "nodes">, writes: readonly Write[]): readonly NodeId[] {
+function returningInstances(fold: Pick<Doom, "nodes">, writes: readonly Write[]): readonly NodeId[] {
   const parents = parentWrites(writes)
   const returns = [...parents].some(
     ([node, parent]) => parent !== null && fold.nodes.has(node) && !onDeck(fold.nodes, node),
@@ -96,10 +96,10 @@ export function withComponentDeletes(fold: Pick<Doom, "nodes">, writes: readonly
   return detach.length === 0 ? writes : [...writes, ...detach]
 }
 
-function risesFrom(prior: Node | undefined, node: Extract<Node, { readonly type: "component" }>): boolean {
-  if (prior?.type !== "component" || prior.revision === undefined) return true
-  if (node.revision === undefined) return false
-  return node.revision > prior.revision || (node.revision === prior.revision && sameValue(prior.spec, node.spec))
+function nextRevision(prior: Node | undefined, node: Extract<Node, { readonly type: "component" }>): boolean {
+  if (prior?.type !== "component" || prior.revision === undefined) return node.revision === 1
+  if (node.revision === prior.revision + 1) return true
+  return node.revision === prior.revision && sameValue(prior.spec, node.spec)
 }
 
 const liveComponent = (fold: Pick<Doom, "nodes">, id: NodeId) => {
@@ -117,7 +117,7 @@ export function guardComponents(
   for (const id of changed) {
     const node = after.nodes.get(id)
     if (node?.type !== "component") continue
-    if (!risesFrom(before.nodes.get(id), node)) return refuse("shape", id, "revision")
+    if (!nextRevision(before.nodes.get(id), node)) return refuse("shape", id, "revision")
     if (node.parent == null) continue
     if (node.spec === undefined) return refuse("shape", id, "spec")
     if (node.revision === undefined) return refuse("shape", id, "revision")
@@ -129,11 +129,11 @@ export function guardComponents(
     return { ...refuse("limit", arrived, "parent"), form: "A deck holds at most 32 components." }
 }
 
-export function guardDeckLinks(
+function linkedRoots(
   before: Pick<Doom, "nodes">,
   after: Pick<Doom, "nodes">,
   writes: readonly Write[],
-): Refusal | undefined {
+): ReadonlySet<NodeId> {
   const changed = componentWrites(before, writes)
   const affected = new Set([
     ...writes.flatMap(({ node, prop }) => (prop === "instance" ? [node] : [])),
@@ -144,8 +144,42 @@ export function guardDeckLinks(
       const source = propOf(node, "instance")?.component.node
       if (source !== undefined && changed.has(source)) affected.add(node.id)
     }
+  return affected
+}
+
+export function rebuildsLinks(fold: Pick<Doom, "nodes">, writes: readonly Write[]): boolean {
+  return (
+    componentWrites(fold, writes).size > 0 ||
+    returningInstances(fold, writes).length > 0 ||
+    writes.some(
+      ({ prop, value }) => prop === "instance" && (value as Partial<Instance> | null)?.component?.node !== undefined,
+    )
+  )
+}
+
+export function staleLinks(
+  before: Pick<Doom, "nodes">,
+  after: Pick<Doom, "nodes">,
+  writes: readonly Write[],
+): readonly NodeId[] {
+  return [...linkedRoots(before, after, writes)].filter((root) => {
+    const instance = propOf(after.nodes.get(root), "instance")
+    const source = instance?.component.node
+    return (
+      source !== undefined &&
+      onDeck(after.nodes, root) &&
+      deckComponent(after, source)?.revision !== instance?.component.revision
+    )
+  })
+}
+
+export function guardDeckLinks(
+  before: Pick<Doom, "nodes">,
+  after: Pick<Doom, "nodes">,
+  writes: readonly Write[],
+): Refusal | undefined {
   const resolved = new Map<NodeId, DeckComponent | undefined>()
-  for (const root of affected) {
+  for (const root of linkedRoots(before, after, writes)) {
     const instance = propOf(after.nodes.get(root), "instance")
     const source = instance?.component.node
     if (source === undefined || instance === undefined || !onDeck(after.nodes, root)) continue

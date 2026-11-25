@@ -141,8 +141,7 @@ async function turnRun(
     once,
     author: { kind: "agent", id: agent, run: runId, ...(run.name === "" ? {} : { name: run.name }) },
     writes: turned.writes,
-    ...(turned.writes.some(({ prop }) => prop === "instance") ||
-    doom.returningInstances(opened.fold, turned.writes).length > 0
+    ...(turned.writes.some(({ prop }) => prop === "instance") || doom.rebuildsLinks(opened.fold, turned.writes)
       ? { readBase: opened.fold.rev }
       : {}),
     runUndo: { run: runId, undone: true },

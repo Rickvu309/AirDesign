@@ -1,5 +1,5 @@
 import { componentWrites } from "./component/deck-component.js"
-import { deletedInstances } from "./component/deleted-instances.js"
+import { rebuiltByUpdate } from "./component/update-rebuild.js"
 import { withCurrentComponents } from "./component/component-edit.js"
 import { applyBeforeFreeing } from "./apply-edit.js"
 import {
@@ -87,10 +87,13 @@ export function invertStep(
   owned: ReadonlySet<Rev> = new Set(),
   measure: Measure = measureWith({}),
 ): readonly Write[] | Refusal {
-  const expanded = withPartDeletes(before, asked.writes)
+  const fromUpdate = rebuiltByUpdate(asked.writes, (node, key) => propOf(before.nodes.get(node), key))
+  const expanded = withPartDeletes(
+    before,
+    asked.writes.filter(({ node, prop }) => !fromUpdate(node, prop)),
+  )
   if (isRefusal(expanded)) return []
-  const deleted = deletedInstances(after, expanded, (root) => propOf(before.nodes.get(root), "instance")).nodes
-  const edit = { ...asked, writes: expanded.filter(({ node }) => !deleted.has(node)) }
+  const edit = { ...asked, writes: expanded }
   const joined = instanceRoots(edit.writes).flatMap((root) => {
     const prior = propOf(before.nodes.get(root), "instance")
     if (prior === undefined) return []

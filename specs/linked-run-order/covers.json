@@ -10,14 +10,14 @@
     {
       "file": "packages/doom/src/invert-run.ts",
       "names": ["invertRun", "undoSourceOf"],
-      "digest": "c0418ec0b22d",
-      "blob": "5e84f94d231415b8aef3ab07620634555b729e62"
+      "digest": "954a606b7dde",
+      "blob": "0b782e0abe95b5c21ea7f414838e59785982196c"
     },
     {
       "file": "packages/mcp/src/undo-tool.ts",
       "names": ["turnRun"],
-      "digest": "13faf4e5a96c",
-      "blob": "d6726bcef9f2787187effca82f8b8363a2e7d621"
+      "digest": "52908f5c7300",
+      "blob": "e30b575da054cbe5f157abdf3e8b7762bd6590f3"
     },
     {
       "file": "apps/api/src/doom/doom-write.ts",
