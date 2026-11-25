@@ -86,7 +86,11 @@ export async function tabs(first: doom.Edit) {
     await before?.()
     return answer ?? remote.edit(...args)
   }
-  const mine = await join("a", "create", { ...remote, edit: reachable(sending), since: reachable(remote.since) })
+  const mine = await join("a", "create", {
+    ...remote,
+    edit: reachable(sending),
+    since: reachable((...args: Parameters<DoomRemote["since"]>) => remote.since(...args)),
+  })
   const theirs = await join("b", "open", remote)
   return { cut, mine, theirs, remote, inFlight }
 }

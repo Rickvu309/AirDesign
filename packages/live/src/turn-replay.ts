@@ -83,7 +83,6 @@ export async function onStanding(
   turned: ReadonlyMap<string, Pressed>,
   once: string,
   measure: doom.Measure,
-  current: () => boolean,
   now = performance.now,
 ): Promise<Replayed | undefined> {
   const head = queue[0]
@@ -116,7 +115,6 @@ export async function onStanding(
   for (const original of queue) {
     if (clock() >= deadline) {
       await nextTask()
-      if (!current()) return undefined
       deadline = clock() + sliceMilliseconds
     }
     const each = releaseBases(original, released)
