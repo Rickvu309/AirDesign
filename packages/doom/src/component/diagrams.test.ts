@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest"
 import { defaultTheme, resolveSlide, solveLayout } from "../index.js"
-import { architectureComponent, cycleComponent, processComponent } from "./index.js"
 import architecture from "./testing/architecture.json" with { type: "json" }
 import cycle from "./testing/cycle.json" with { type: "json" }
-import { ends, expand, keyed, measure, resolvedById, role } from "./testing/diagram-tree.js"
+import { ends, expand, keyed, librarySpec, measure, resolvedById, role } from "./testing/diagram-tree.js"
 import { landTree } from "./testing/land-tree.js"
 import process from "./testing/process.json" with { type: "json" }
 
+const processComponent = librarySpec("process")
+const architectureComponent = librarySpec("architecture")
+const cycleComponent = librarySpec("cycle")
 const steps = (count: number, label = (i: number) => `Step ${i + 1}`) => ({
   steps: Array.from({ length: count }, (_, i) => ({ id: `s${i}`, label: label(i) })),
 })

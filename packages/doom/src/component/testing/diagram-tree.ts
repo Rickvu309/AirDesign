@@ -1,4 +1,4 @@
-import { defaultTheme, isRefusal, measureWith, type Resolved } from "../../index.js"
+import { componentLibrary, defaultTheme, isRefusal, measureWith, type Resolved } from "../../index.js"
 import {
   expandComponent,
   type ComponentInput,
@@ -8,6 +8,11 @@ import {
 } from "../index.js"
 
 export const measure = measureWith({})
+export function librarySpec(id: string): ComponentSpec {
+  const found = componentLibrary.get(id)
+  if (found === undefined) throw new Error(`Missing template ${id}`)
+  return found.spec
+}
 export const expand = (spec: ComponentSpec, input: Omit<ComponentInput, "theme" | "measure">): ComponentTree => {
   const tree = expandComponent(spec, { theme: defaultTheme, measure, ...input })
   if (isRefusal(tree)) throw new Error(JSON.stringify(tree))
