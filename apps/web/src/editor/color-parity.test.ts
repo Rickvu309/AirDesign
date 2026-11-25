@@ -82,7 +82,7 @@ const propOfField: Readonly<Record<Field, "fills" | "strokes" | "text">> = {
   stroke: "strokes",
   color: "text",
 }
-const agentColors: readonly doom.AgentColor[] = [...(Object.keys(theme.colors) as doom.ColorVar[]), `${hash}1f4e79`]
+const agentColors: readonly doom.AgentColor[] = [...doom.colorVars, `${hash}1f4e79`]
 
 function colored(desc: Desc): boolean {
   switch (desc.kind) {
@@ -137,7 +137,7 @@ function personLands(name: string, control: PanelControl, color: doom.Color): do
   return writes.length === 0 ? null : landed(view, writes)
 }
 
-describe("a person reaches every colour an agent can send", () => {
+describe("colour controls and agent colours", () => {
   it("offers a template colour, a tint and a typed hex in every colour control of Doom's panel, and each lands", () => {
     const missed: string[] = []
     for (const name of Object.keys(sends))
@@ -151,7 +151,7 @@ describe("a person reaches every colour an agent can send", () => {
     expect(missed).toEqual([])
   })
 
-  it("lands every colour an agent sends to a layer from Doom's panel too, on the same property", () => {
+  it("lands agent colours and offers corresponding choices for palette roles and hex in the panel", () => {
     const missed: string[] = []
     let next = 0
     const mint = () => doom.nodeId(`m:${String((next += 1))}`)
@@ -165,6 +165,8 @@ describe("a person reaches every colour an agent can send", () => {
             missed.push(`agent ${name} ${field} ${color}`)
             continue
           }
+          if (doom.colorVars.some((role) => role === color) && !doom.paletteColorVars.some((role) => role === color))
+            continue
           const reached = colorControls(name).some((control) =>
             personColors().some((choice) => {
               if (JSON.stringify(choice) !== JSON.stringify(wanted) && !color.startsWith(hash)) return false

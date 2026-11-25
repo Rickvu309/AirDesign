@@ -10,15 +10,17 @@
   },
   "variants": {
     "labels": [true, false],
-    "legend": [true, false]
+    "legend": [true, false],
+    "signed": [true, false]
   },
   "defaultVariant": {
     "labels": true,
-    "legend": false
+    "legend": false,
+    "signed": false
   },
   "defaults": {
     "scale": 1,
-    "digits": -1,
+    "digits": "auto",
     "prefix": "",
     "suffix": "",
     "unitHeader": "",
@@ -32,6 +34,9 @@
     },
     "rule": "#93A6BA",
     "accent": {
+      "var": "accent1"
+    },
+    "positive": {
       "var": "positive"
     },
     "negative": {
@@ -68,7 +73,7 @@
       "legend",
       [
         "if",
-        ["get", "variant.legend"],
+        ["if", ["get", "variant.legend"], ["get", "variant.signed"], false],
         [
           "flowText",
           [
@@ -78,7 +83,7 @@
               {
                 "id": "positive",
                 "chars": ["get", "token.positiveLabel"],
-                "fill": ["get", "token.accent"],
+                "fill": ["get", "token.positive"],
                 "show": ["lt", 0, ["get", "maxValue"]]
               },
               {
@@ -111,10 +116,6 @@
     ],
     ["legendTop", ["sub", ["get", "frame.h"], ["mul", ["get", "legend.rows"], ["get", "legendRowHeight"]]]],
     ["categoryTop", ["sub", ["get", "legendTop"], ["get", "categorySpace"]]],
-    [
-      "preferredDigits",
-      ["if", ["eq", ["get", "token.digits"], -1], ["get", "token.number.digits"], ["get", "token.digits"]]
-    ],
     ["plotBottom", ["sub", ["get", "categoryTop"], ["get", "valueSpace"]]],
     ["headerUnit", ["if", ["eq", ["get", "token.unitPlace"], "header"], ["get", "token.unitHeader"], ""]],
     [
@@ -137,9 +138,9 @@
         "scale": ["get", "token.scale"],
         "digits": [
           "if",
-          ["eq", ["get", "preferredDigits"], -1],
+          ["eq", ["get", "token.digits"], "auto"],
           ["decimals", ["get", "values"], ["get", "token.scale"]],
-          ["get", "preferredDigits"]
+          ["get", "token.digits"]
         ],
         "prefix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.prefix"], ""],
         "suffix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.suffix"], ""],
@@ -231,7 +232,17 @@
                       ["sub", ["get", "edge"], ["get", "zero"]],
                       ["sub", ["get", "zero"], ["get", "edge"]]
                     ],
-                    "fill": ["if", ["lt", ["get", "r.value"], 0], ["get", "token.negative"], ["get", "token.accent"]]
+                    "fill": [
+                      "if",
+                      ["get", "variant.signed"],
+                      [
+                        "if",
+                        ["lt", ["get", "r.value"], 0],
+                        ["get", "token.negative"],
+                        ["if", ["lt", 0, ["get", "r.value"]], ["get", "token.positive"], ["get", "token.accent"]]
+                      ],
+                      ["get", "token.accent"]
+                    ]
                   }
                 },
                 {

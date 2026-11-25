@@ -1,4 +1,6 @@
-import { type Measure, type Measured, type Text, type Theme, textLimits } from "../index.js"
+import type { Measure, Measured } from "../measure.js"
+import { type Text, textLimits } from "../text.js"
+import type { Theme } from "../theme.js"
 import { finite, naming, reject } from "../read-kit.js"
 import type { GroupedText, Kept, PreparedPart, TextPart } from "./nodes.js"
 import type { TextFitFinding } from "./findings.js"

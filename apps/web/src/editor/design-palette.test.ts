@@ -4,6 +4,14 @@ import { swatchesOf } from "./design-palette"
 import { neutralColorNames } from "./testing/neutral-color-names"
 
 describe("swatchesOf", () => {
+  it("offers the eleven palette colors for every built-in theme", () => {
+    for (const { theme } of Object.values(doom.themeLibrary)) {
+      const vars = swatchesOf(theme).map(({ var: role }) => role)
+      expect(vars).toHaveLength(11)
+      for (const role of ["positive", "negative", "total"]) expect(vars).not.toContain(role)
+    }
+  })
+
   it("names each theme colour with the colour word a person would say, never its hex", () => {
     const swatches = swatchesOf(doom.defaultTheme)
     for (const swatch of swatches) expect(swatch.name).toMatch(/^[A-Z][a-z]+( [a-z]+)*( \d)?$/)

@@ -6,10 +6,10 @@ import { exportCopy, productCopy } from "../bin/product-copy.mjs"
 import { clickSlide, landNodes, openDoomDeck, readDoom } from "../look/doom-deck.mjs"
 
 const rows = [
-  { id: "opening", label: "Q1", value: 41 },
-  { id: "decline", label: "Q2", value: -13.7 },
-  { id: "recovery", label: "Q3", value: 29.4 },
-  { id: "close", label: "Q4", value: 32.6 },
+  { id: "opening", label: "Q1", value: 4.1 },
+  { id: "decline", label: "Q2", value: -1.37 },
+  { id: "recovery", label: "Q3", value: 2.94 },
+  { id: "close", label: "Q4", value: 3.26 },
 ]
 const title = "Change in operating profit, $M"
 const positiveLabel = "Growth from established business lines"
@@ -32,11 +32,12 @@ export default async function drive(kit) {
   const measure = doom.measureWith(widths.widths)
 
   const hasLegend = Object.hasOwn(columnComponent.variants, "legend")
+  const signed = Object.hasOwn(columnComponent.variants, "signed")
   const tree = expandComponent(columnComponent, {
     data: { rows },
     frame: { x: 520, y: 180, w: 880, h: 720 },
     tokens: { title, ...(hasLegend ? { positiveLabel, negativeLabel } : {}) },
-    variant: hasLegend ? { legend: true } : {},
+    variant: hasLegend ? { legend: true, ...(signed ? { signed: true } : {}) } : {},
     theme,
     measure,
   })
@@ -104,7 +105,8 @@ export default async function drive(kit) {
   await expect(printedPage).toHaveCount(1)
   const expectedText = [
     ...rows.map(({ label }) => label),
-    ...(hasLegend ? [positiveLabel, negativeLabel, "41.0", "−13.7"] : ["41", "−14"]),
+    ...(hasLegend ? [positiveLabel, negativeLabel] : []),
+    ...(signed ? ["4.1", "−1.4", "2.9", "3.3"] : hasLegend ? ["4.10", "−1.37", "2.94", "3.26"] : ["4", "−1", "3", "3"]),
   ]
   for (const text of expectedText) await expect(printedPage).toContainText(text)
   const pdf = await page.pdf({ preferCSSPageSize: true })

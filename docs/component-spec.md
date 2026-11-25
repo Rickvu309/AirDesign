@@ -24,15 +24,15 @@ Each input item is a record with `chars` and any fields the spec needs, such as 
 | `style`     | Named theme text style.                                                                                |
 | `smaller`   | Second size to try, from 1 to 2,000 px and capped at the style's original size.                        |
 
-Items flow in input order. The operator first uses the original size and wraps at item boundaries. If space runs out, it repeats at the smaller size. Any item that cannot fit at the selected size is omitted. Blank and multiline labels are also omitted. One `flow-omitted` finding lists the omitted zero-based input indices.
+Items flow in input order. The operator first uses the original size and wraps at item boundaries. If space runs out, it repeats at the smaller size. Any item that cannot fit at the selected size is omitted. Later items can still fit in the remaining room. Blank and multiline labels are also omitted. One `flow-omitted` finding lists the omitted zero-based input indices.
 
 A placement is `{ item, x, row, w }`. The row is zero-based and `x` starts at the left edge of that row. The label starts at `x + leading` and has width `w`, rounded up to a whole pixel. Repeat over the placements to emit both the mark and the label. Use the original item ID in their part keys. Set the text emission's optional `size` to the flow's shared size. Explicit-size emissions use an unwrapped box and require the spec to supply its geometry.
 
 ## Numeric display
 
-`["decimals", values, scale]` returns one precision for the entire data set. It skips nulls and uses the largest absolute value after dividing by the positive display scale. For a nonzero maximum `m`, it returns `clamp(0, 2, 2 - floor(log10(m)))`. Empty and all-zero lists give zero decimals.
+`["decimals", values, scale]` returns one precision for the entire data set. It skips nulls and uses the largest absolute value after dividing by the positive display scale. It returns one decimal when the maximum magnitude is below 10 and at least one scaled value is fractional. All other lists give zero decimals.
 
-Column uses this default when its `digits` token is `-1`. A spec or instance may choose 0 to 12 digits explicitly. A theme can supply the `number.digits` preference, readable as `["get", "token.number.digits"]`. Column uses that preference when its `digits` token is automatic.
+Column uses this default when its `digits` token is `"auto"`. A spec or instance may choose 0 to 12 digits explicitly. A theme can supply the `number.digits` preference. Column uses that preference when its `digits` token is automatic.
 
 When an axis uses a whole step in display units, use zero decimals for its ticks. For example, `["if", ["isInteger", ["div", ["get", "step"], ["get", "token.scale"]]], 0, ["get", "axisDigits"]]` selects the tick precision.
 
@@ -40,7 +40,7 @@ When an axis uses a whole step in display units, use zero decimals for its ticks
 
 ## Signed color roles
 
-Theme colors `positive`, `negative`, and `total` are available as ordinary theme color references, such as `{ "var": "positive" }`. Put the sign or meaning in text or geometry as well. Column uses sign colors for its bars. Its optional `legend` variant shows the sign key, with labels set by `positiveLabel` and `negativeLabel`. Waterfall specs can use `total` for a balance bar.
+Theme colors `positive`, `negative`, and `total` are available as ordinary theme color references, such as `{ "var": "positive" }`. Put the sign or meaning in text or geometry as well. Column uses the series accent by default. Set the `signed` variant to enable sign colors and the `legend` variant to show a key for the signs present. Set its labels with `positiveLabel` and `negativeLabel`. Waterfall specs can use `total` for a balance bar. The color picker lists the palette colors.
 
 ## Paint check
 

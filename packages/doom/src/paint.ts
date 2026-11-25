@@ -14,7 +14,7 @@ import {
 
 export const signedColorVars = ["positive", "negative", "total"] as const
 
-export const colorVars = [
+export const paletteColorVars = [
   "text",
   "background",
   "text2",
@@ -26,8 +26,8 @@ export const colorVars = [
   "accent5",
   "accent6",
   "link",
-  ...signedColorVars,
 ] as const
+export const colorVars = [...paletteColorVars, ...signedColorVars] as const
 export type ColorVar = (typeof colorVars)[number]
 export type Hex = `#${string}`
 export type Px = number

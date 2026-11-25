@@ -23,7 +23,7 @@ export const tokenRecord = (raw: unknown): Readonly<Record<string, ReturnType<ty
     entries(raw, 64).map(([key, value]) => {
       switch (key) {
         case "number.digits":
-          return [key, naming(key, () => integer(-1, 12)(value))]
+          return [key, naming(key, () => integer(0, 12)(value))]
         case "number.locale":
           return [key, naming(key, () => readLocale(value))]
         case "number.group":
@@ -219,7 +219,6 @@ export function readTokens(
   const defaults: ReturnType<typeof tokenRecord> = {
     ...themeTokens,
     ...spec.defaults,
-    "number.digits": themeTokens["number.digits"] ?? spec.defaults?.["number.digits"] ?? -1,
     "number.locale":
       themeTokens["number.locale"] ?? spec.defaults?.["number.locale"] ?? defaultNumberTokens["number.locale"],
     "number.group":
@@ -229,8 +228,14 @@ export function readTokens(
   for (const [name, value] of Object.entries(tokens)) {
     const initial = Object.hasOwn(defaults, name) ? defaults[name] : undefined
     if (initial === undefined) return naming(`tokens.${name}`, () => reject("shape", `Unknown token "${name}".`))
+    if (name === "digits" && initial === "auto") {
+      if (value !== "auto") naming("tokens.digits", () => integer(0, 12)(value))
+      continue
+    }
     if (readColor(initial) !== undefined ? readColor(value) === undefined : typeof initial !== typeof value)
       return naming(`tokens.${name}`, () => reject("shape", "The token must match its default value's type."))
   }
-  return { ...defaults, ...tokens }
+  const resolved = { ...defaults, ...tokens }
+  if (resolved.digits === "auto" && resolved["number.digits"] !== undefined) resolved.digits = resolved["number.digits"]
+  return resolved
 }

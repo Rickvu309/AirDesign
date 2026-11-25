@@ -11,8 +11,14 @@ export function decimals([source, scaleArg]: Values, charge: Charge): number {
   const scale = positiveScale(scaleArg)
   charge(values.length)
   let max = 0
+  let hasFraction = false
   for (const value of values) {
-    if (value !== null) max = Math.max(max, Math.abs(numeric(value)))
+    if (value === null) continue
+    const displayed = Math.abs(numeric(value) / scale)
+    max = Math.max(max, displayed)
+    if (hasFraction || Number.isInteger(displayed)) continue
+    const tolerance = Math.min(1e-12, displayed * Number.EPSILON)
+    hasFraction = Math.abs(displayed - Math.round(displayed)) > tolerance
   }
-  return max === 0 ? 0 : Math.max(0, Math.min(2, 2 - Math.floor(Math.log10(max / scale))))
+  return hasFraction && max < 10 ? 1 : 0
 }
