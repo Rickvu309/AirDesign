@@ -31,6 +31,7 @@ const seen: Readonly<Record<string, Seen>> = {
   opacity: { declined: "Layer styling belongs to the deck design and its agent." },
   text: { person: ["gesture:edit-text", "panel:link.target#words"] },
   insert: { person: ["gesture:edit-text"] },
+  language: { declined: "AirDesign infers the language from the deck. Agents can override it." },
   textStyle: { person: ["panel:text.style"] },
   align: {
     declined: "One simple panel. Agents still set auto layout.",

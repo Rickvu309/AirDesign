@@ -163,7 +163,6 @@ export function DesignPanel(props: Props) {
   if (first === undefined) return null
   const model: PanelModel = rest.length === 0 ? first : panelOfMany([first, ...rest])
   const measure = painted.measure
-  const selectedText = only === undefined ? undefined : doom.propOf(view.nodes.get(only), "text")
   const selected = only === undefined ? undefined : view.nodes.get(only)
   const storedName = doom.propOf(selected, "name")
   const owner = only === undefined ? undefined : doom.linkedOwner(view.nodes, only)

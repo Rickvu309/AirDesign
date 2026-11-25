@@ -81,6 +81,40 @@ test("the Italic button italicizes the words selected at the click, even before 
   await expect.poll(async () => (await textOf(stack, opened))?.spans).toEqual([{ end: 5, italic: true }, { end: 10 }])
 })
 
+for (const mark of ["bold", "italic"] as const) {
+  test(`the ${mark} button keeps unselected heading text in the served semibold face`, async ({
+    page,
+    context,
+    stack,
+  }) => {
+    const opened = await openEditor(page, context, stack)
+    const heading = layer("Alpha beta")
+    await landNodes(stack, opened, [
+      {
+        id: "t:1",
+        type: "shape",
+        parent: opened.slide,
+        props: { ...heading, text: { ...heading.text, style: "heading" } },
+      },
+    ])
+    await expect(runs(page).first()).toHaveCSS("font-family", /airdesign-face-/)
+    await clickSlide(page, 300, 640)
+    await edit(page)
+    await page.keyboard.press("ControlOrMeta+Home")
+    for (let step = 0; step < 5; step++) await page.keyboard.press("Shift+ArrowRight")
+    await page.getByRole("button", { name: editorCopy[mark], exact: true }).click()
+    const editingRuns = editor(page).locator("[data-run]")
+    await expect(editingRuns.first()).toHaveText("Alpha")
+    await expect(editingRuns.last()).toHaveText("beta", { useInnerText: true })
+    await expect(editingRuns.first()).toHaveCSS(
+      mark === "bold" ? "font-weight" : "font-style",
+      mark === "bold" ? "700" : "italic",
+    )
+    await expect(editingRuns.last()).toHaveCSS("font-family", /airdesign-face-/)
+    await expect(editingRuns.last()).toHaveCSS("font-weight", "600")
+  })
+}
+
 test("Ctrl+Alt+T, R, J and L align the paragraphs the cursor touches and leave the others alone", async ({
   page,
   context,

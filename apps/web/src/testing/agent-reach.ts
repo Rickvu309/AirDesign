@@ -106,6 +106,7 @@ export const sample: Readonly<Record<string, unknown>> = {
   text: "Changed",
   insert: { at: 2, text: "linked", link: "https://example.com" },
   textStyle: "heading",
+  language: "ja",
   align: "center",
   layout: "row",
   gap: 10,

@@ -254,6 +254,11 @@ test("admits an export face ahead of a filmstrip face under the pinned cap", asy
 
 test("infers one Han language from every text in a deck", async () => {
   const { hanLanguage } = await import("./script-fonts.js")
+  for (const title of ["東京本社", "営業報告", "市場概況", "業績報告", "営業利益", "売上高", "社外秘", "42億円"])
+    expect(hanLanguage([title]), title).toBe("und")
+  for (const title of ["繁體中文", "臺灣經濟展望", "營業報告", "鬱鬱蔥蔥"])
+    expect(hanLanguage([title]), title).toBe("zh-Hant")
+  for (const title of ["市场概况", "营业报告", "收入同比增长"]) expect(hanLanguage([title]), title).toBe("und")
   expect(hanLanguage(["市场概况", "收入"])).toBe("und")
   expect(hanLanguage(["市場概況", "売上高", "まとめ"])).toBe("ja")
   expect(hanLanguage(["繁體中文", "시장"])).toBe("ko")
