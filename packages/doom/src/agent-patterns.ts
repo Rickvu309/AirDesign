@@ -62,6 +62,7 @@ function rowOf(area: Area, cards: readonly Sized[], gap: Px, root: Values): Bloc
     {
       ...root,
       box: boxIn(area, tallest),
+      sizing: { w: "fixed", h: "hug" },
       layout: { mode: "row", gap, padding: sidesOf(0), align: "top-left" },
     },
     cards.map((card) => card.block),

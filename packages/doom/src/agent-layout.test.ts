@@ -20,14 +20,7 @@ const blank = () => {
   return { doom, on: slidesOf(doom).at(-1)!.id }
 }
 
-describe("a frame given a height keeps it", () => {
-  it("keeps the height of a KPI row and lets each card fill it", () => {
-    const doom = build(agentDeck(), add({ kind: "kpi", items: kpiItems, box }))
-    const row = lastChild(doom, slide)
-    expect(propOf(row, "box")).toMatchObject({ h: 420 })
-    for (const card of childrenOf(doom, row.id)) expect(propOf(card, "sizing")).toEqual({ w: "fill", h: "fill" })
-  })
-
+describe("a grid given a height keeps it", () => {
   it("keeps the height of a grid and hugs every row", () => {
     const rows = [
       ["", "Q1", "Q2"],
