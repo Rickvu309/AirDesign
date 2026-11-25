@@ -158,7 +158,14 @@ type Group = {
   shrink: boolean
 }
 
-function thinGroup(fits: readonly Fit[], frameSpan: number, gap: number, axis: Group["axis"], charge: Charge, kept: ReadonlySet<TextPart>) {
+function thinGroup(
+  fits: readonly Fit[],
+  frameSpan: number,
+  gap: number,
+  axis: Group["axis"],
+  charge: Charge,
+  kept: ReadonlySet<TextPart>,
+) {
   const across = axis === "horizontal"
   const center = ({
     part: {
@@ -173,9 +180,9 @@ function thinGroup(fits: readonly Fit[], frameSpan: number, gap: number, axis: G
     }
   }
   const ordered = [...fits].sort((a, b) => center(a) - center(b))
-  const first = ordered[0]?.part.props.box
+  const firstBox = ordered[0]?.part.props.box
   const last = ordered.at(-1)?.part.props.box
-  const from = across ? 0 : Math.max(0, first?.y ?? 0)
+  const from = across ? 0 : Math.max(0, firstBox?.y ?? 0)
   const to = across || last === undefined ? frameSpan : Math.min(frameSpan, last.y + last.h)
   const slots = ordered.map((fit) => {
     const x = center(fit)

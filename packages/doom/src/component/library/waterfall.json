@@ -28,7 +28,9 @@
     "muted": {
       "var": "text2"
     },
-    "rule": "#93A6BA",
+    "rule": {
+      "var": "text2"
+    },
     "heading": "label",
     "label": "label",
     "caption": "caption",
@@ -55,36 +57,17 @@
     ["headerUnit", ["get", "token.unitHeader"]],
     ["gutter", ["min", 12, ["div", ["get", "frame.w"], 4]]],
     ["rowCount", ["count", ["get", "data.rows"]]],
+    ["lastMode", ["at", ["map", ["get", "data.rows"], "r", ["get", "r.mode"]], ["sub", ["get", "rowCount"], 1]]],
     ["availableWidth", ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]]],
     ["plotWidth", ["get", "availableWidth"]],
     ["categoryTop", ["max", 0, ["sub", ["get", "frame.h"], ["if", ["eq", ["get", "token.source"], ""], 56, 98]]]],
     ["plotBottom", ["max", 0, ["sub", ["get", "categoryTop"], 12]]],
     ["plotTop", ["min", ["div", ["get", "plotBottom"], 2], ["if", ["get", "variant.labels"], 90, 60]]],
     [
-      "rows",
-      [
-        "map",
-        ["get", "data.rows"],
-        "r",
-        {
-          "id": ["get", "r.id"],
-          "label": ["get", "r.label"],
-          "after": ["get", "r.after"],
-          "value": ["get", "r.value"],
-          "mode": [
-            "if",
-            ["if", ["eq", ["get", "i"], 0], true, ["eq", ["get", "i"], ["sub", ["get", "rowCount"], 1]]],
-            "total",
-            ["get", "r.mode"]
-          ]
-        }
-      ]
-    ],
-    [
       "steps",
       [
         "scan",
-        ["get", "rows"],
+        ["get", "data.rows"],
         "r",
         0,
         [
@@ -163,6 +146,42 @@
         "suffix": "",
         "sign": "negative"
       }
+    ],
+    [
+      "neutralFill",
+      [
+        "contrastTint",
+        ["get", "token.neutral"],
+        {
+          "var": "background"
+        },
+        ["if", ["get", "variant.labels"], 2.2, 3]
+      ]
+    ],
+    [
+      "closingAdvice",
+      [
+        "if",
+        ["lt", 0, ["get", "rowCount"]],
+        [
+          "if",
+          ["eq", ["get", "lastMode"], "delta"],
+          ["advise", "missing-closing-total", "Add a closing total row."],
+          false
+        ],
+        false
+      ]
+    ],
+    ["valueWidth", 24],
+    ["narrowValues", ["lt", ["div", ["get", "plotWidth"], ["max", 1, ["get", "rowCount"]]], ["get", "valueWidth"]]],
+    [
+      "labelAdvice",
+      [
+        "if",
+        ["if", ["get", "variant.labels"], ["get", "narrowValues"], false],
+        ["advise", "labels-omitted", "Widen the chart or show fewer columns to fit value labels."],
+        false
+      ]
     ]
   ],
   "parts": [
@@ -300,7 +319,17 @@
             "fill": [
               "if",
               ["get", "isTotal"],
-              ["get", "token.total"],
+              [
+                "if",
+                ["get", "variant.signed"],
+                ["get", "token.total"],
+                [
+                  "readableInk",
+                  {
+                    "var": "background"
+                  }
+                ]
+              ],
               [
                 "if",
                 ["eq", ["get", "r.id"], ["get", "token.focus"]],
@@ -311,17 +340,17 @@
                   [
                     "if",
                     ["eq", ["get", "r.value"], 0],
-                    ["get", "token.neutral"],
+                    ["get", "neutralFill"],
                     ["if", ["lt", ["get", "r.value"], 0], ["get", "token.down"], ["get", "token.up"]]
                   ],
-                  ["get", "token.neutral"]
+                  ["get", "neutralFill"]
                 ]
               ]
             ]
           }
         },
         {
-          "when": ["get", "variant.labels"],
+          "when": ["if", ["get", "narrowValues"], false, ["get", "variant.labels"]],
           "emit": {
             "kind": "text",
             "key": ["list", "value", ["get", "r.id"]],
@@ -339,7 +368,7 @@
             "align": "center",
             "alignV": "center",
             "fit": {
-              "minWidth": 24
+              "minWidth": ["get", "valueWidth"]
             }
           }
         },

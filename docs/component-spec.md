@@ -61,3 +61,25 @@ A connector endpoint can use `["site", partKey, side]` to attach to the default 
 The optional top-level `advice` list contains records with a `code`, a `when` expression, and a `note` that gives the reader a fix. A matching record adds a finding to the root and expansion proceeds.
 
 The process template accepts an optional `tokens.focus` step ID. The first step carries the accent when the ID is omitted or does not match a step.
+
+Use `["advise", code, message]` to report advice while evaluating an expression. An optional fourth item names the affected data row. Put the expression inside an `if` to report only when the condition holds.
+
+## Lists and colors
+
+| Expression                                  | Result                                                                                                                                                                                        |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `["sortBy", rows, field, ...fields]`        | Sorts by ascending numeric fields in priority order. Tied rows keep their input order.                                                                                                        |
+| `["groupBy", rows, "field"]`                | Indexes records by a string field. Records within each group keep their input order.                                                                                                          |
+| `["lookup", index, key, fallback]`          | Reads a key from a record, or returns the optional fallback. The default fallback is null.                                                                                                    |
+| `["cycle", list, index]`                    | Reads a nonnegative index modulo the list length. An empty list returns null.                                                                                                                 |
+| `["round", value, digits]`                  | Rounds a number to 0–12 decimal places without formatting it.                                                                                                                                 |
+| `["readableInk", fill]`                     | Chooses black or white according to which has greater contrast against the resolved fill.                                                                                                     |
+| `["contrastTint", fill, background, ratio]` | Blends the resolved fill toward the background until it reaches the requested contrast ratio, from 1 to 21. If the fill already meets or falls below that ratio, it keeps the supplied color. |
+
+A collection field of type `"color?"` accepts a hex value, a theme color reference, or null. Missing fields become null.
+
+## Label fit
+
+Use `"fit": { "minWidth": expression }` to omit a text part and report a finding when its box is narrower than the minimum. Text that clears the minimum still goes through measured fit.
+
+In a grouped text fit with thinning enabled, set `keep` to a boolean expression to retain essential labels while thinning the others. A retained label that cannot fit still reports a finding.
