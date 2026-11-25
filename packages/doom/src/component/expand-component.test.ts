@@ -81,7 +81,7 @@ describe("expandComponent", () => {
     const baseline = zero(part(result, "zero"))
     expect(part(result, "bar", "q1")?.props.box.y).toBe(baseline)
     expect(bottom(part(result, "bar", "q2")?.props.box)).toBe(baseline)
-    expect(part(result, "value", "q1")?.props.text?.chars).toBe("−12.0")
+    expect(part(result, "value", "q1")?.props.text?.chars).toBe("−12")
   })
 
   it("keeps zero and its label while a missing observation has only its category", () => {
@@ -142,8 +142,8 @@ describe("expandComponent", () => {
 
   it.each([
     [1250, "1,250", "0"],
-    [41, "41.0", "0.0"],
-    [7.25, "7.25", "0.00"],
+    [41, "41", "0"],
+    [7.25, "7.3", "0.0"],
   ])("uses one precision for %s and a tiny value in the same chart", (value, expected, rounded) => {
     const tree = expand(columnComponent, {
       ...inputs,
@@ -161,9 +161,33 @@ describe("expandComponent", () => {
     ])
   })
 
+  it.each([[3, 1, 2], [12, 8, 5], Array.from({ length: 10 }, (_, i) => i + 1)])(
+    "keeps whole-number data whole (first value %s)",
+    (...values) => {
+      const rows = values.map((value, index) => ({ id: `r${index}`, label: `Q${index}`, value }))
+      const tree = expand(columnComponent, { ...inputs, data: { rows } })
+      expect(tree.children.filter(({ key }) => key[0] === "value").map(({ props }) => props.text?.chars)).toEqual(
+        values.map(String),
+      )
+    },
+  )
+
+  it.each([
+    [12, 8],
+    [-12, -8],
+    [12, -8],
+  ])("keeps plain data in the series color (%s, %s)", (...values) => {
+    const rows = values.map((value, index) => ({ id: `r${index}`, label: `Q${index}`, value }))
+    const tree = expand(columnComponent, { ...inputs, data: { rows }, variant: { legend: true } })
+    expect(tree.children.filter(({ key }) => key[0] === "bar").map(({ props }) => props.fills)).toEqual(
+      rows.map(() => [{ kind: "solid", color: { var: "accent1" } }]),
+    )
+    expect(tree.children.filter(({ key }) => key[0].startsWith("legend-"))).toEqual([])
+  })
+
   it("chooses precision in display units and honors explicit digits", () => {
     const input = { ...inputs, data: { rows: [{ id: "r", label: "Row", value: 4100 }] }, tokens: { scale: 100 } }
-    expect(part(nodes(input), "value", "r")?.props.text?.chars).toBe("41.0")
+    expect(part(nodes(input), "value", "r")?.props.text?.chars).toBe("41")
     const themed = { ...input, themeTokens: { "number.digits": 2 } }
     expect(part(nodes(themed), "value", "r")?.props.text?.chars).toBe("41.00")
     expect(part(nodes({ ...themed, tokens: { ...input.tokens, digits: 0 } }), "value", "r")?.props.text?.chars).toBe(
@@ -174,7 +198,7 @@ describe("expandComponent", () => {
   it("flows the sign key as complete swatch and label pairs", () => {
     const input = {
       ...inputs,
-      variant: { legend: true },
+      variant: { legend: true, signed: true },
       data: {
         rows: [
           { id: "a", label: "A", value: 41 },
@@ -216,8 +240,8 @@ describe("expandComponent", () => {
         ],
       },
     }
-    const withLegend = expand(columnComponent, { ...input, variant: { legend: true } })
-    expect(withLegend.children).toEqual(nodes(input))
+    const withLegend = expand(columnComponent, { ...input, variant: { legend: true, signed: true } })
+    expect(withLegend.children).toEqual(nodes({ ...input, variant: { signed: true } }))
     expect(withLegend.findings).toContainEqual(expect.objectContaining({ kind: "flow-omitted", omitted: [0, 1] }))
   })
 

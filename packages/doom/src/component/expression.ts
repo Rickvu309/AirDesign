@@ -108,13 +108,7 @@ function get(scope: Scope, path: readonly string[], charge: Charge): Value {
       value = undefined
       break
     }
-    if (!Object.hasOwn(value, field)) {
-      const rest = path.slice(i).join(".")
-      charge(rest.length)
-      value = Object.hasOwn(value, rest) ? value[rest] : undefined
-      break
-    }
-    value = value[field]
+    value = Object.hasOwn(value, field) ? value[field] : undefined
   }
   return value === undefined ? reject("shape", `Unknown value "${path.join(".")}".`) : value
 }

@@ -1,4 +1,4 @@
-import { type Text, textStyleNames } from "../index.js"
+import { type Text, textStyleNames } from "../text.js"
 import { finite, integer, literal, naming, object } from "../read-kit.js"
 import type { ReportFinding } from "./findings.js"
 import { type FittingContext, measureText, textSize } from "./fit-text.js"

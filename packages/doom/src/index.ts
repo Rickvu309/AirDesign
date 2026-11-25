@@ -61,7 +61,7 @@ export {
 export type { Align9, Cell, Layout, Sizing, Track } from "./layout.js"
 export type { Chart } from "./chart.js"
 export type { Color, ColorVar, Effect, Hex, ImagePaint, Paint, StrokeStyle } from "./paint.js"
-export { colorVars } from "./paint.js"
+export { colorVars, paletteColorVars } from "./paint.js"
 export { type NodeType, type Origin, type PropName, type Props, type WriteKey, accepts, holds, props } from "./props.js"
 export { textFromMarkdown, textToMarkdown } from "./markdown.js"
 export { readEdit, readWrite } from "./read-write.js"

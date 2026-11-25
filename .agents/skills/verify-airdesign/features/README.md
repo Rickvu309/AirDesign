@@ -58,6 +58,7 @@ Each feature file starts with an H1 title and one paragraph describing what the 
 - [Slide paint](./slide-paint.md): each layer paints at its box on a slide of the deck's size, fonts load by name, thumbnails in the list and on Home. Tests `packages/render/src`; spec `editor.spec.ts`; look states `slide-effects`, `slide-chart`, `font-catalog`.
 - [Component paths](./component-paths.md): wedges and polylines paint in the editor, filmstrip, slide capture and PDF. Journeys `component-paths` and `path-paint`.
 - [Diagram templates](./diagram-templates.md): process, architecture and cycle specs paint in the editor, filmstrip and PDF, and a moved card keeps its connectors. Journey `diagram-templates`.
+- **Component column.** Journey `component-column` checks measured legends and labels on the canvas, filmstrip and PDF.
 - [Delete account](./delete-account.md): the account menu deletes the account after the person types its email; the server, the stored pictures and the browser keep nothing of it. Test `apps/api/src/delete-account.test.ts`; spec `account.spec.ts`; look state `account-delete-ask`.
 - [Ask Aira through the server](./aira-turn.md): one metered model call at a time streams text and tool calls, the tool calls run through `/mcp`, the person stops or undoes the run.
 - [Connected agents](./connected-agents.md): the account menu opens `/settings/agents`, shows and copies the MCP address, lists connected agents, and disconnects one so its access and refresh tokens stop working at once. Journeys `connected-agents` and `consulting-mcp`.

@@ -4,7 +4,7 @@ import { namedByColor } from "@/design/color-names"
 import { propOf } from "@airdesign/doom"
 
 export function swatchesOf(theme: doom.Theme): readonly Swatch[] {
-  return namedByColor(doom.colorVars.map((name) => ({ var: name, css: theme.colors[name].toUpperCase() })))
+  return namedByColor(doom.paletteColorVars.map((name) => ({ var: name, css: theme.colors[name].toUpperCase() })))
 }
 
 function literalHexes(paints: readonly doom.Paint[] | undefined): readonly string[] {
