@@ -1,14 +1,16 @@
 import { boolean, naming, reject } from "../read-kit.js"
+import type { ReportFinding } from "./findings.js"
+import type { FittingContext } from "./fit-text.js"
 import { type NumberFormat, readOperator } from "./operators.js"
 import {
   type Charge,
   type Scalar,
   type Value,
-  type Values,
   type ValueRecord,
   checkDepth,
   entries,
   isList,
+  valueList,
   name,
   numeric,
   path,
@@ -81,10 +83,7 @@ export function readExpr(raw: unknown, depth: number, charge: () => void): Expr 
   }
 }
 
-export function valuesOf(value: Value): Values {
-  if (!isList(value)) return reject("shape", "A list.")
-  return value
-}
+export const valuesOf = valueList
 
 export type Scope = { readonly parent?: Scope; readonly values: ValueRecord }
 
@@ -105,18 +104,26 @@ function get(scope: Scope, path: readonly string[], charge: Charge): Value {
   for (let i = 1; value !== undefined && i < path.length; i += 1) {
     charge()
     const field = path[i]!
-    value =
-      value !== null && typeof value === "object" && !isList(value) && Object.hasOwn(value, field)
-        ? value[field]
-        : undefined
+    if (value === null || typeof value !== "object" || isList(value)) {
+      value = undefined
+      break
+    }
+    if (!Object.hasOwn(value, field)) {
+      const rest = path.slice(i).join(".")
+      charge(rest.length)
+      value = Object.hasOwn(value, rest) ? value[rest] : undefined
+      break
+    }
+    value = value[field]
   }
   return value === undefined ? reject("shape", `Unknown value "${path.join(".")}".`) : value
 }
 
-export function evaluator(charge: Charge, format: NumberFormat): (expr: Expr, scope: Scope) => Value {
-  function evaluate(expr: Expr, scope: Scope): Value {
+export function evaluator(context: FittingContext, format: NumberFormat) {
+  const { charge } = context
+  function evaluate(expr: Expr, scope: Scope, report: ReportFinding): Value {
     charge()
-    const read = (child: Expr, at: string) => naming(at, () => evaluate(child, scope))
+    const read = (child: Expr, at: string) => naming(at, () => evaluate(child, scope, report))
     switch (expr.kind) {
       case "literal":
         return expr.value
@@ -125,27 +132,29 @@ export function evaluator(charge: Charge, format: NumberFormat): (expr: Expr, sc
       case "get":
         return get(scope, expr.path, charge)
       case "if":
-        return naming("[1]", () => boolean(evaluate(expr.condition, scope)))
+        return naming("[1]", () => boolean(evaluate(expr.condition, scope, report)))
           ? read(expr.yes, "[2]")
           : read(expr.no, "[3]")
       case "map":
       case "filter": {
-        const source = naming("[1]", () => valuesOf(evaluate(expr.source, scope)))
+        const source = naming("[1]", () => valuesOf(evaluate(expr.source, scope, report)))
         if (expr.kind === "map")
           return naming("[3]", () =>
-            source.map((row, i) => evaluate(expr.body, childScope(scope, { [expr.as]: row, i }, charge))),
+            source.map((row, i) => evaluate(expr.body, childScope(scope, { [expr.as]: row, i }, charge), report)),
           )
         return naming("[3]", () =>
-          source.filter((row, i) => boolean(evaluate(expr.body, childScope(scope, { [expr.as]: row, i }, charge)))),
+          source.filter((row, i) =>
+            boolean(evaluate(expr.body, childScope(scope, { [expr.as]: row, i }, charge), report)),
+          ),
         )
       }
       case "scan": {
         let acc = read(expr.seed, "[3]")
-        const source = naming("[1]", () => valuesOf(evaluate(expr.source, scope)))
+        const source = naming("[1]", () => valuesOf(evaluate(expr.source, scope, report)))
         return source.map((row, i) => {
           const scoped = naming("[4]", () => childScope(scope, { [expr.as]: row, i, acc }, charge))
-          const next = naming("[4]", () => evaluate(expr.step, scoped))
-          const output = naming("[5]", () => evaluate(expr.output, childScope(scoped, { next }, charge)))
+          const next = naming("[4]", () => evaluate(expr.step, scoped, report))
+          const output = naming("[5]", () => evaluate(expr.output, childScope(scoped, { next }, charge), report))
           acc = next
           return output
         })
@@ -155,6 +164,8 @@ export function evaluator(charge: Charge, format: NumberFormat): (expr: Expr, sc
           expr.args.map((arg, i) => read(arg, `[${i + 1}]`)),
           charge,
           format,
+          context,
+          report,
         )
         return typeof result === "number" ? numeric(result) : result
       }

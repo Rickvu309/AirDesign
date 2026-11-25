@@ -10,6 +10,7 @@ import {
   px,
   readEffectList,
   readHex,
+  signedColorVars,
 } from "./paint.js"
 import { type Reader, detailOf, finite, integer, keyed, literal, object, words } from "./read-kit.js"
 import { type TextStyleName, textStyleNames } from "./text.js"
@@ -107,10 +108,28 @@ export const themeLibrary: Readonly<Record<string, LibraryTheme> & { neutral: Li
 const readTextStyles: Reader<Theme["textStyles"]> = (raw) =>
   readEveryTextStyle(typeof raw === "object" && raw !== null ? { ...defaultTheme.textStyles, ...raw } : raw)
 
+const originalColorVars = colorVars.filter((name) => !signedColorVars.some((role) => role === name))
+
+const readStoredColors: Reader<Theme["colors"]> = (raw) => {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return themeFields.colors(raw)
+  if (signedColorVars.every((role) => Object.hasOwn(raw, role))) return themeFields.colors(raw)
+  const builtIn = Object.values(themeLibrary).find(({ theme }) =>
+    originalColorVars.every((name) => Object.hasOwn(raw, name) && Reflect.get(raw, name) === theme.colors[name]),
+  )
+  const base = builtIn?.theme ?? defaultTheme
+  return themeFields.colors({
+    positive: base.colors.positive,
+    negative: base.colors.negative,
+    total: base.colors.total,
+    ...raw,
+  })
+}
+
 export const readTheme: Reader<Theme> = object({
   ...themeFields,
   ...themeStyleFields,
   textStyles: readTextStyles,
+  colors: readStoredColors,
 })
 
 const entries = <const N extends string>(group: string, names: readonly N[]) =>

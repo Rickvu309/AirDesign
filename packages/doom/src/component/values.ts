@@ -84,3 +84,5 @@ export function componentRefusal(thrown: unknown): Refusal {
     form: detail.form ?? "A value allowed by the component grammar.",
   }
 }
+
+export const valueList = (value: Value | undefined): Values => (isList(value) ? value : reject("shape", "A list."))

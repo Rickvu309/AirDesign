@@ -48,6 +48,7 @@ for (const name of [
   "deck-list-trash",
   "connected-agents",
   "consulting-mcp",
+  "component-column",
   "component-paths",
   "diagram-templates",
   "path-paint",

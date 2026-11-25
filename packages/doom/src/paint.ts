@@ -12,6 +12,8 @@ import {
   words,
 } from "./read-kit.js"
 
+export const signedColorVars = ["positive", "negative", "total"] as const
+
 export const colorVars = [
   "text",
   "background",
@@ -24,6 +26,7 @@ export const colorVars = [
   "accent5",
   "accent6",
   "link",
+  ...signedColorVars,
 ] as const
 export type ColorVar = (typeof colorVars)[number]
 export type Hex = `#${string}`

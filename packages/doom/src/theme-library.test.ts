@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 import { defaultTheme, libraryThemeOf, themeLibrary } from "./index.js"
 import { themeFiles } from "./library/theme-index.js"
 import midnight from "./library/themes/midnight.json" with { type: "json" }
-import { colorVars, type ColorVar, type Hex } from "./paint.js"
+import { colorVars, signedColorVars, type ColorVar, type Hex } from "./paint.js"
 import { designedThemes, fallbackArt, libraryArt } from "./testing/theme-library-art.js"
 
 declare const process: {
@@ -10,7 +10,9 @@ declare const process: {
 }
 
 const backgrounds = ["background", "background2"] as const satisfies readonly ColorVar[]
-const inks = colorVars.filter((color) => color !== "background" && color !== "background2")
+const inks = colorVars.filter(
+  (color) => !backgrounds.some((background) => color === background) && !signedColorVars.some((role) => color === role),
+)
 
 function linearChannel(color: Hex, offset: number): number {
   const srgb = Number.parseInt(color.slice(offset, offset + 2), 16) / 255
@@ -47,6 +49,20 @@ describe("built-in themes", () => {
     const { theme } = themeLibrary.neutral
     expect(libraryThemeOf({ ...theme, colors: { ...theme.colors } })?.id).toBe("neutral")
     expect(libraryThemeOf({ ...theme, fonts: { ...theme.fonts, body: "Lora" } })).toBeUndefined()
+  })
+
+  it.each(Object.values(themeLibrary))("distinguishes gains and losses in $name", ({ id, theme }) => {
+    const colors: Readonly<Record<string, Hex>> = theme.colors
+    const contrast = (a: Hex, b: Hex) => {
+      const [dark, light] = [luminance(a), luminance(b)].sort((x, y) => x - y)
+      return (light! + 0.05) / (dark! + 0.05)
+    }
+    const { positive, negative, total } = colors
+    if (positive === undefined || negative === undefined || total === undefined)
+      throw new Error(`Missing signed colors in ${id}`)
+    expect(contrast(positive, negative)).toBeGreaterThanOrEqual(2)
+    for (const paint of [positive, negative, total])
+      for (const surface of backgrounds) expect(contrast(paint, theme.colors[surface])).toBeGreaterThanOrEqual(3)
   })
 
   it("preserves fallback art", () => {

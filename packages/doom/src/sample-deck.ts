@@ -2,6 +2,7 @@ import { defaultTheme } from "./theme.js"
 import { orderKeyBetween, type OrderKey } from "./order-key.js"
 import {
   applyEdit,
+  colorVars,
   emptyDoom,
   isRefusal,
   nodeId,
@@ -31,25 +32,11 @@ export const hex = (seed: number): Hex => `#${seed.toString(16).padStart(6, "0")
 export const person: Author = { kind: "person", id: "quan" }
 export const agent = (run: string): Author => ({ kind: "agent", id: "aira", run })
 
-export const colorNames = [
-  "text",
-  "background",
-  "text2",
-  "background2",
-  "accent1",
-  "accent2",
-  "accent3",
-  "accent4",
-  "accent5",
-  "accent6",
-  "link",
-] as const
-
 export function theme(): Theme {
   const style = { size: 32, font: "body", weight: 400, lineHeight: 1.2, tracking: 0 } as const
   return {
     colors: Object.fromEntries(
-      colorNames.map((name, index) => [name, `#${String(index % 10).repeat(6)}`]),
+      colorVars.map((name, index) => [name, `#${String(index % 10).repeat(6)}`]),
     ) as Theme["colors"],
     fonts: { heading: "Inter", body: "Inter" },
     textStyles: {

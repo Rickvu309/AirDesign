@@ -12,7 +12,10 @@
     "accent4": "#7d4c1b",
     "accent5": "#8e3858",
     "accent6": "#475673",
-    "link": "#244f9f"
+    "link": "#244f9f",
+    "positive": "#007d73",
+    "negative": "#63203b",
+    "total": "#244f9f"
   },
   "fonts": {
     "heading": "Geist",

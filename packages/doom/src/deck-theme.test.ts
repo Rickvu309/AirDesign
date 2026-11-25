@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { deckOf } from "./deck-of.js"
-import { defaultTheme, readTheme } from "./theme.js"
+import { defaultTheme, readTheme, themeLibrary } from "./theme.js"
 import { measure } from "./testing/doom-fixtures-art.js"
 import { doomFromTree } from "./doom-tree.js"
 import { isRefusal } from "./index.js"
@@ -32,6 +32,14 @@ describe("a deck's theme", () => {
     const stored = readTheme({ ...defaultTheme, textStyles: keynote })
     expect(stored).toMatchObject({ textStyles: { ...keynote, display: defaultTheme.textStyles.display } })
   })
+
+  it.each([defaultTheme, ...Object.values(themeLibrary).map(({ theme }) => theme)])(
+    "backfills the signed colors of a saved theme",
+    (theme) => {
+      const { positive: _positive, negative: _negative, total: _total, ...old } = theme.colors
+      expect(readTheme({ ...theme, colors: old })).toEqual(theme)
+    },
+  )
 
   it("refuses to unset a deck's theme, so no deck falls back to the default scale", () => {
     const refused = tryLand(sampleDeck(), [{ node: ids.deck, prop: "theme", value: null }])

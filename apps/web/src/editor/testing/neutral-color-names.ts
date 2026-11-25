@@ -12,4 +12,7 @@ export const neutralColorNames: Readonly<Record<doom.ColorVar, string>> = {
   accent5: "Red",
   accent6: "Green",
   link: "Blue 2",
+  positive: "Dark teal",
+  negative: "Dark brown",
+  total: "Blue 3",
 }

@@ -9,14 +9,16 @@
     }
   },
   "variants": {
-    "labels": [true, false]
+    "labels": [true, false],
+    "legend": [true, false]
   },
   "defaultVariant": {
-    "labels": true
+    "labels": true,
+    "legend": false
   },
   "defaults": {
     "scale": 1,
-    "digits": 0,
+    "digits": -1,
     "prefix": "",
     "suffix": "",
     "unitHeader": "",
@@ -30,8 +32,13 @@
     },
     "rule": "#93A6BA",
     "accent": {
-      "var": "accent1"
+      "var": "positive"
     },
+    "negative": {
+      "var": "negative"
+    },
+    "positiveLabel": "Positive",
+    "negativeLabel": "Negative",
     "heading": "label",
     "label": "label",
     "caption": "caption",
@@ -45,14 +52,70 @@
     ["markWidth", ["mul", ["get", "laneWidth"], 0.57]],
     ["markInset", ["div", ["sub", ["get", "laneWidth"], ["get", "markWidth"]], 2]],
     ["plotTop", 99],
-    ["categoryTop", ["sub", ["get", "frame.h"], 62]],
     ["values", ["map", ["get", "data.rows"], "r", ["if", ["eq", ["get", "r.value"], null], 0, ["get", "r.value"]]]],
     ["lo", ["min", 0, ["get", "values"]]],
-    ["hi", ["max", 1, ["get", "values"]]],
+    ["maxValue", ["max", 0, ["get", "values"]]],
+    ["hi", ["max", 1, ["get", "maxValue"]]],
+    ["categorySpace", 62],
+    ["valueSpace", ["if", ["get", "variant.labels"], ["if", ["lt", ["get", "lo"], 0], 44, 12], 12]],
+    ["legendLeading", 26],
+    ["legendRowHeight", 32],
     [
-      "plotBottom",
-      ["sub", ["get", "categoryTop"], ["if", ["get", "variant.labels"], ["if", ["lt", ["get", "lo"], 0], 44, 12], 12]]
+      "legendRoom",
+      ["sub", ["get", "frame.h"], ["add", ["get", "plotTop"], 48, ["get", "categorySpace"], ["get", "valueSpace"]]]
     ],
+    [
+      "legend",
+      [
+        "if",
+        ["get", "variant.legend"],
+        [
+          "flowText",
+          [
+            "filter",
+            [
+              "list",
+              {
+                "id": "positive",
+                "chars": ["get", "token.positiveLabel"],
+                "fill": ["get", "token.accent"],
+                "show": ["lt", 0, ["get", "maxValue"]]
+              },
+              {
+                "id": "negative",
+                "chars": ["get", "token.negativeLabel"],
+                "fill": ["get", "token.negative"],
+                "show": ["lt", ["get", "lo"], 0]
+              }
+            ],
+            "item",
+            ["get", "item.show"]
+          ],
+          {
+            "width": ["max", 0, ["get", "plotWidth"]],
+            "rows": [
+              "if",
+              ["lt", ["get", "legendRoom"], ["get", "legendRowHeight"]],
+              0,
+              ["if", ["lt", ["get", "legendRoom"], ["mul", 2, ["get", "legendRowHeight"]]], 1, 2]
+            ],
+            "rowHeight": ["get", "legendRowHeight"],
+            "leading": ["get", "legendLeading"],
+            "gap": 22,
+            "style": ["get", "token.caption"],
+            "smaller": ["get", "token.captionSmall"]
+          }
+        ],
+        { "items": ["list"], "rows": 0 }
+      ]
+    ],
+    ["legendTop", ["sub", ["get", "frame.h"], ["mul", ["get", "legend.rows"], ["get", "legendRowHeight"]]]],
+    ["categoryTop", ["sub", ["get", "legendTop"], ["get", "categorySpace"]]],
+    [
+      "preferredDigits",
+      ["if", ["eq", ["get", "token.digits"], -1], ["get", "token.number.digits"], ["get", "token.digits"]]
+    ],
+    ["plotBottom", ["sub", ["get", "categoryTop"], ["get", "valueSpace"]]],
     ["headerUnit", ["if", ["eq", ["get", "token.unitPlace"], "header"], ["get", "token.unitHeader"], ""]],
     [
       "header",
@@ -72,7 +135,12 @@
       "valueFormat",
       {
         "scale": ["get", "token.scale"],
-        "digits": ["get", "token.digits"],
+        "digits": [
+          "if",
+          ["eq", ["get", "preferredDigits"], -1],
+          ["decimals", ["get", "values"], ["get", "token.scale"]],
+          ["get", "preferredDigits"]
+        ],
         "prefix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.prefix"], ""],
         "suffix": ["if", ["eq", ["get", "token.unitPlace"], "label"], ["get", "token.suffix"], ""],
         "sign": "negative"
@@ -163,7 +231,7 @@
                       ["sub", ["get", "edge"], ["get", "zero"]],
                       ["sub", ["get", "zero"], ["get", "edge"]]
                     ],
-                    "fill": ["get", "token.accent"]
+                    "fill": ["if", ["lt", ["get", "r.value"], 0], ["get", "token.negative"], ["get", "token.accent"]]
                   }
                 },
                 {
@@ -191,6 +259,42 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "repeat": { "over": ["get", "legend.items"], "as": "placed" },
+      "let": [
+        ["x", ["add", ["get", "gutter"], ["get", "placed.x"]]],
+        ["y", ["add", ["get", "legendTop"], ["mul", ["get", "placed.row"], ["get", "legendRowHeight"]]]]
+      ],
+      "children": [
+        {
+          "emit": {
+            "kind": "rect",
+            "key": ["list", "legend-swatch", ["get", "placed.item.id"]],
+            "x": ["get", "x"],
+            "y": ["add", ["get", "y"], ["div", ["sub", ["get", "legendRowHeight"], 16], 2]],
+            "w": 16,
+            "h": 16,
+            "fill": ["get", "placed.item.fill"]
+          }
+        },
+        {
+          "emit": {
+            "kind": "text",
+            "key": ["list", "legend-label", ["get", "placed.item.id"]],
+            "x": ["add", ["get", "x"], ["get", "legendLeading"]],
+            "y": ["get", "y"],
+            "w": ["get", "placed.w"],
+            "h": ["get", "legendRowHeight"],
+            "chars": ["get", "placed.item.chars"],
+            "style": ["get", "token.caption"],
+            "size": ["get", "legend.size"],
+            "color": ["get", "token.muted"],
+            "align": "left",
+            "alignV": "center"
+          }
         }
       ]
     }
