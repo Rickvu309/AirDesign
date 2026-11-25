@@ -98,8 +98,8 @@ export function withComponentDeletes(fold: Pick<Doom, "nodes">, writes: readonly
 
 function nextRevision(prior: Node | undefined, node: Extract<Node, { readonly type: "component" }>): boolean {
   if (prior?.type !== "component" || prior.revision === undefined) return node.revision === 1
-  if (node.revision === prior.revision + 1) return true
-  return node.revision === prior.revision && sameValue(prior.spec, node.spec)
+  if (sameValue(prior.spec, node.spec)) return node.revision === prior.revision
+  return node.revision === prior.revision + 1
 }
 
 const liveComponent = (fold: Pick<Doom, "nodes">, id: NodeId) => {

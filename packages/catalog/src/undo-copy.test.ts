@@ -27,4 +27,13 @@ describe("the notes after an Undo on an agent run", () => {
     expect(note.indexOf("“A”")).toBeLessThan(note.indexOf("“B”"))
     expect(note.indexOf("“B”")).toBeLessThan(note.indexOf("“C”"))
   })
+
+  it("names a deleted component whose update the undo skipped", () => {
+    expect(undoStaysNote("Aira", { kept: [], left: [], waiting: [], skipped: ["“Tile”"] })).toBe(
+      "The component “Tile” was deleted, so its update wasn't undone.",
+    )
+    expect(undoStaysNote("Aira", { kept: [], left: [], waiting: [], skipped: ["“Tile”", "“Matrix”"] })).toBe(
+      "The components “Tile” and “Matrix” were deleted, so their updates weren't undone.",
+    )
+  })
 })

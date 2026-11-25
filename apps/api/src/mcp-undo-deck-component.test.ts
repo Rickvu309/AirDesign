@@ -253,3 +253,54 @@ it.each([
   },
   60_000,
 )
+
+it("names a template deleted since when MCP undo_run undoes the rest of the run, and leaves it as restored", async () => {
+  const stack = await open()
+  try {
+    const { runId, agent } = await seeded(stack, [frame])
+    await stack.sent("widen", agent, updating(await stack.fold(), tile(200), 2))
+    const deleting = await stack.sent("delete", person, [{ node: component, prop: "parent", value: null }])
+    const undone = await stack.call("undo_run", { deck: stack.deck, runId })
+    expect(undone).toMatchObject({ ok: true, kept: [], left: [], waiting: [], skipped: [component] })
+    expect(undone.note).toMatch(/The component “Tile” was deleted, so its update wasn't undone\.$/)
+    const partial = await stack.fold()
+    expect(partial.runs.get(runId)?.undone).toBe(true)
+    expect(doom.propOf(partial.nodes.get(startIds.slide), "name")).not.toBe("First slide")
+    expect((await stack.replayed()).nodes).toEqual(partial.nodes)
+
+    const inverse = doom.invertStep(deleting.before, partial, deleting.edit, new Set(), measure)
+    if (doom.isRefusal(inverse)) throw new Error(JSON.stringify(inverse))
+    await stack.sent("restore", person, inverse)
+    expect(await stack.call("undo_run", { deck: stack.deck, runId })).toMatchObject({ ok: false, reason: "nothing" })
+    const stored = await stack.fold()
+    expect(linkOf(stored, frame)?.component).toEqual({ node: component, revision: 2 })
+    expect(widthOf(stored, frame)).toBe(200)
+    expect((await stack.replayed()).nodes).toEqual(stored.nodes)
+  } finally {
+    await stack.close()
+  }
+}, 60_000)
+
+it("refuses a template update that changes only its revision through the edit route", async () => {
+  const stack = await open()
+  try {
+    const { agent } = await seeded(stack, [frame])
+    const before = await stack.fold()
+    const base = (prop: "spec" | "revision") => before.revs.get(component)!.get(prop)!
+    const bump = { node: component, prop: "revision", value: 2, base: base("revision") } satisfies doom.Write
+    const same = { node: component, prop: "spec", value: tile(100), base: base("spec") } satisfies doom.Write
+    expect(doom.prepareComponentEdit(before, [same, bump], measure)).toMatchObject({ refused: "shape", prop: "spec" })
+    for (const writes of [[bump], [same, bump]])
+      expect(
+        await stack.send({ once: crypto.randomUUID(), author: agent, readBase: before.rev, writes }),
+      ).toMatchObject({
+        ok: false,
+        refused: "shape",
+        node: component,
+        prop: "revision",
+      })
+    expect((await stack.fold()).nodes).toEqual(before.nodes)
+  } finally {
+    await stack.close()
+  }
+}, 60_000)

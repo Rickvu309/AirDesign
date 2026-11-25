@@ -112,6 +112,7 @@ function turnAgain(
   changed: ReadonlySet<string>,
   owned: Iterable<string>,
   measure: doom.Measure,
+  skipped: doom.NodeId[],
 ): readonly doom.Write[] | doom.Refusal {
   const names = each.turnFrom ?? []
   const source = names.at(-1)
@@ -146,6 +147,7 @@ function turnAgain(
         return doom.isRefusal(turned) ? turned : [...turned, ...removals]
       }
       const turned = doom.invertRun(now, [rest], mine, undefined, measure)
+      skipped.push(...turned.skipped)
       return turned.refused ?? [...turned.writes, ...removals]
     }
   }
@@ -169,6 +171,7 @@ function reprepare(
   owned: Iterable<string>,
   measure: doom.Measure,
   runs: ReadonlyMap<string, RunUndoSource>,
+  skipped: doom.NodeId[],
 ): readonly doom.Write[] | doom.Refusal {
   const run = undoingRun(each)
   if (run !== undefined) {
@@ -176,6 +179,7 @@ function reprepare(
     if (source === undefined || now.runs.get(run)?.undone !== false) return []
     const mine = new Set([...owned].flatMap((once) => now.onces.get(once) ?? []))
     const turned = doom.invertRun(now, source.edits, mine, source.started, measure)
+    skipped.push(...turned.skipped)
     return turned.refused ?? turned.writes
   }
   const intent = each.regeneration
@@ -188,7 +192,7 @@ function reprepare(
     const made = doom.regenerateComponent(now, intent.frame, patch, measure)
     return doom.isRefusal(made) ? made : made.writes
   }
-  if (each.turnFrom !== undefined) return turnAgain(now, each, changed, owned, measure)
+  if (each.turnFrom !== undefined) return turnAgain(now, each, changed, owned, measure, skipped)
   const writes = rebasedWrites(now, each, changed)
   if (each.suppressions !== undefined) return suppressWrites(now, writes, each.suppressions)
   if (detaches(each))
@@ -208,6 +212,7 @@ export function replayLinked(
   measure: doom.Measure,
   owned: Iterable<string>,
   runs: ReadonlyMap<string, RunUndoSource>,
+  turnOf: (once: string) => "undo" | "redo" | undefined = () => undefined,
 ) {
   const names = new Set(affected)
   const changed = new Set<string>()
@@ -237,7 +242,11 @@ export function replayLinked(
               rev: before.onces.get(turnSource.once) ?? turnSource.rev,
             }),
           }
-    const fresh = reprepare(before, rebuiltSource, changed, owned, measure, runs)
+    const skipped: doom.NodeId[] = []
+    const fresh = reprepare(before, rebuiltSource, changed, owned, measure, runs, skipped)
+    const turn = turnOf(once)
+    for (const node of skipped)
+      notices.push({ once, refused: "missing", node, prop: "spec", ...(turn === undefined ? {} : { turn }) })
     if (doom.isRefusal(fresh) || fresh.length === 0 || (readBase !== undefined && !rebuilds(each))) {
       gone.push(once)
       if (doom.isRefusal(fresh) && fresh.refused !== "missing") notices.push({ once, ...fresh })

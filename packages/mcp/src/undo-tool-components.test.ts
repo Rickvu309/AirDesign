@@ -263,3 +263,69 @@ it("undoes an agent's template update by undo_run after a person placed another 
     expect(doom.propOf(fold().nodes.get(instance.parts[0]!.node), "box")?.w).toBe(100)
   }
 })
+
+async function renamedThenUpdated() {
+  const template = await nestedTemplate()
+  const { by, deck, fold, component, slide, edit } = template
+  await edit("widen", aira("widen"), [{ node: slide, prop: "name", value: "Tiles" }])
+  const now = fold()
+  const writes = doom.prepareComponentEdit(
+    now,
+    [
+      { node: component, prop: "spec", value: tile(200), base: now.revs.get(component)!.get("spec")! },
+      { node: component, prop: "revision", value: 2, base: now.revs.get(component)!.get("revision")! },
+    ],
+    doom.measureWith({}),
+  )
+  if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
+  expect((await by.decks.edit(deck, { once: "update", author: aira("widen"), readBase: now.rev, writes })).ok).toBe(
+    true,
+  )
+  return template
+}
+
+it("names a template deleted since when undo_run undoes the rest of the run, and leaves it as restored", async () => {
+  const { by, deck, fold, component, slide, frame, part, person, edit } = await renamedThenUpdated()
+  const before = fold()
+  const deleting = [{ node: component, prop: "parent", value: null }] satisfies doom.Write[]
+  await edit("delete", person, deleting)
+  const undone = await by.call("undo_run", { deck, runId: "widen" })
+  expect(undone.answer).toMatchObject({ ok: true, kept: [], left: [], waiting: [], skipped: [component] })
+  expect(undone.answer.note).toBe("Undone. The component “Tile” was deleted, so its update wasn't undone.")
+  expect(fold().runs.get("widen")?.undone).toBe(true)
+  expect(doom.propOf(fold().nodes.get(slide), "name")).toBeUndefined()
+
+  const now = fold()
+  const landed = { once: "delete", author: person, writes: deleting, rev: now.onces.get("delete")! }
+  const inverse = doom.invertStep(before, now, landed, new Set(), doom.measureWith({}))
+  if (doom.isRefusal(inverse)) throw new Error(JSON.stringify(inverse))
+  await edit("restore", person, inverse)
+  expect((await by.call("undo_run", { deck, runId: "widen" })).answer).toMatchObject({ ok: false, reason: "nothing" })
+  expect(doom.propOf(fold().nodes.get(component), "revision")).toBe(2)
+  expect(doom.propOf(fold().nodes.get(frame), "instance")?.component).toEqual({ node: component, revision: 2 })
+  expect(doom.propOf(fold().nodes.get(part), "box")?.w).toBe(200)
+})
+
+it("names a template deleted since when undo_run has nothing else to undo, and lands nothing", async () => {
+  const { by, deck, fold, component, person, edit, update } = await nestedTemplate()
+  await update("widen", aira("widen"), tile(200), 2)
+  await edit("delete", person, [{ node: component, prop: "parent", value: null }])
+  const before = fold()
+  const undone = await by.call("undo_run", { deck, runId: "widen" })
+  expect(undone.answer).toMatchObject({ ok: false, reason: "left", skipped: [component] })
+  expect(undone.answer.note).toBe("The component “Tile” was deleted, so its update wasn't undone.")
+  expect(fold()).toBe(before)
+})
+
+it("refuses a template update that changes only its revision, so undo_run never meets one", async () => {
+  const { by, deck, fold, component } = await nestedTemplate()
+  const now = fold()
+  const bump = [
+    { node: component, prop: "revision", value: 2, base: now.revs.get(component)!.get("revision")! },
+  ] satisfies doom.Write[]
+  expect(doom.prepareComponentEdit(now, bump, doom.measureWith({}))).toMatchObject({ refused: "shape", prop: "spec" })
+  expect(await by.decks.edit(deck, { once: "bump", author: aira("bump"), phase: "start", writes: bump })).toMatchObject(
+    { ok: false },
+  )
+  expect(fold()).toBe(now)
+})

@@ -2,139 +2,29 @@ import * as doom from "@airdesign/doom"
 import { afterEach, beforeEach, expect, it } from "vitest"
 import { installIndexedDb } from "./browser-fixtures.js"
 import { deleteDatabase } from "./device.js"
-import { createDoomDeck, openDoomDeck } from "./doom-deck.js"
-import { memoryDoomRemote, type DoomRemote } from "./doom-remote.js"
+import { openDoomDeck } from "./doom-deck.js"
 import { memoryStorage } from "./doom-storage.js"
+import {
+  again,
+  component,
+  elsewhere,
+  frame,
+  later,
+  measure,
+  onSlideTwo,
+  other,
+  placedElsewhere,
+  placing,
+  requiringRows,
+  spec,
+  templateUpdate,
+  tiled,
+  updateElsewhere,
+  person,
+} from "./testing/template-deck.js"
 
 beforeEach(installIndexedDb)
 afterEach(deleteDatabase)
-
-const at = doom.orderKeyBetween(null, null)
-const person: doom.Author = { kind: "person", id: "person" }
-const other: doom.Author = { kind: "agent", id: "agent", run: "template" }
-const again: doom.Author = { kind: "agent", id: "agent", run: "again" }
-const measure = doom.measureWith({})
-const deckNode = doom.nodeId("s:1")
-const slide = doom.nodeId("s:4")
-const component = doom.nodeId("c:1")
-const frame = doom.nodeId("frame:1")
-
-const spec = (width: number) => ({
-  version: 1,
-  name: "Tile",
-  collections: {},
-  parts: [{ emit: { kind: "rect", key: ["list", "tile"], x: 0, y: 0, w: width, h: 100, fill: { var: "accent1" } } }],
-  sample: { w: 300, h: 100, data: {} },
-})
-
-async function tiled() {
-  const shared = memoryDoomRemote({
-    once: "start",
-    author: person,
-    writes: [
-      { node: deckNode, prop: "type", value: "deck" },
-      { node: deckNode, prop: "theme", value: doom.defaultTheme },
-      { node: doom.nodeId("s:2"), prop: "type", value: "slideRow" },
-      { node: doom.nodeId("s:2"), prop: "parent", value: { id: deckNode, at } },
-      { node: doom.nodeId("s:3"), prop: "type", value: "slide" },
-      { node: doom.nodeId("s:3"), prop: "parent", value: { id: doom.nodeId("s:2"), at } },
-      { node: slide, prop: "type", value: "slide" },
-      { node: slide, prop: "parent", value: { id: doom.nodeId("s:2"), at: doom.orderKeyBetween(at, null) } },
-      { node: component, prop: "type", value: "component" },
-      { node: component, prop: "parent", value: { id: deckNode, at } },
-      { node: component, prop: "name", value: "Tile" },
-      { node: component, prop: "spec", value: spec(100) },
-      { node: component, prop: "revision", value: 1 },
-    ],
-  })
-  let offline = false
-  const remote: DoomRemote = {
-    ...shared,
-    edit: async (body) => {
-      if (offline) throw new TypeError("offline")
-      return shared.edit(body)
-    },
-  }
-  const opened = await createDoomDeck(remote, "templates", { client: "first" })
-  if (!opened.ok) throw new Error(JSON.stringify(opened))
-  const { deck } = opened
-  const box = { x: 10, y: 10, w: 300, h: 100, rotation: 0, flipH: false, flipV: false }
-  const writes = doom.placeComponent(
-    deck.view(),
-    { node: component, revision: 1 },
-    { frame, parent: { id: slide, at }, box, data: {}, measure },
-  )
-  if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
-  expect(deck.push(writes, { read: deck.view() }).ok).toBe(true)
-  await deck.sync()
-  return {
-    deck,
-    shared,
-    tile: doom.propOf(deck.server().nodes.get(frame), "instance")!.parts[0]!.node,
-    offline: (value: boolean) => {
-      offline = value
-    },
-  }
-}
-
-async function onSlideTwo(beforeDelete?: (shared: DoomRemote, fold: doom.Doom) => Promise<void>) {
-  const { deck, shared, tile, offline } = await tiled()
-  if (beforeDelete !== undefined) {
-    await deck.sync()
-    await beforeDelete(shared, deck.server())
-    await deck.catchUp()
-  }
-  expect(deck.push([{ node: slide, prop: "parent", value: null }]).ok).toBe(true)
-  await deck.sync()
-  return { deck, shared, tile, offline }
-}
-
-async function elsewhere(
-  shared: DoomRemote,
-  fold: doom.Doom,
-  writes: readonly doom.Write[],
-  { once = crypto.randomUUID() as string, author = other, undoing = false } = {},
-) {
-  const landed = await shared.edit({
-    deck: "templates",
-    edit: {
-      once,
-      author,
-      ...(undoing ? { runUndo: { run: "template", undone: true } } : { phase: "start" as const }),
-      readBase: fold.rev,
-      writes,
-    },
-  })
-  expect(landed).toMatchObject({ ok: true })
-}
-
-async function updateElsewhere(
-  shared: DoomRemote,
-  fold: doom.Doom,
-  value: unknown = spec(200),
-  revision = 2,
-  once?: string,
-  author = other,
-) {
-  const base = (prop: "spec" | "revision") => fold.revs.get(component)!.get(prop)!
-  const writes = doom.prepareComponentEdit(
-    fold,
-    [
-      { node: component, prop: "spec", value, base: base("spec") },
-      { node: component, prop: "revision", value: revision, base: base("revision") },
-    ],
-    measure,
-  )
-  if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
-  await elsewhere(shared, fold, writes, { author, ...(once === undefined ? {} : { once }) })
-  return writes
-}
-
-const requiringRows = {
-  ...spec(200),
-  collections: { rows: { note: "string" } },
-  sample: { w: 300, h: 100, data: { rows: [{ id: "a", note: "sample" }] } },
-}
 
 it("brings a slide back with its instance rebuilt when another tab updated the template first", async () => {
   const { deck, shared, tile } = await onSlideTwo()
@@ -259,41 +149,6 @@ it("rebuilds a slide undo at the current spec after the template update its laye
   expect(deck.view()).toEqual(back)
   expect(deck.notices()).toEqual([])
 })
-
-const later = doom.nodeId("frame:2")
-
-async function placedElsewhere(shared: DoomRemote, fold: doom.Doom, writes: readonly doom.Write[]) {
-  const landed = await shared.edit({
-    deck: "templates",
-    edit: { once: crypto.randomUUID(), author: person, readBase: fold.rev, writes },
-  })
-  expect(landed).toMatchObject({ ok: true })
-}
-
-function templateUpdate(fold: doom.Doom, value: unknown, revision: number): readonly doom.Write[] {
-  const base = (prop: "spec" | "revision") => fold.revs.get(component)!.get(prop)!
-  const writes = doom.prepareComponentEdit(
-    fold,
-    [
-      { node: component, prop: "spec", value, base: base("spec") },
-      { node: component, prop: "revision", value: revision, base: base("revision") },
-    ],
-    measure,
-  )
-  if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
-  return writes
-}
-
-function placing(fold: doom.Doom, revision: number, data: object = {}, parent = slide): readonly doom.Write[] {
-  const box = { x: 10, y: 200, w: 300, h: 100, rotation: 0, flipH: false, flipV: false }
-  const writes = doom.placeComponent(
-    fold,
-    { node: component, revision },
-    { frame: later, parent: { id: parent, at }, box, data, measure },
-  )
-  if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
-  return writes
-}
 
 function expectTiles(fold: doom.Doom, revision: number, width: number) {
   expect(doom.propOf(fold.nodes.get(component), "revision")).toBe(revision)

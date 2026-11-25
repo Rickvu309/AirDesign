@@ -63,6 +63,7 @@ export function AgentRuns({
         ...(turned.later === undefined ? {} : { later: named(turned.later) }),
         left: named(turned.left),
         waiting: named(turned.waiting),
+        ...(turned.skipped === undefined ? {} : { skipped: named(turned.skipped) }),
         landed: turned.ok,
       })
     else if (turned.reason === "refused") mark(turned.refused.prop === "instance" ? "rebuild" : "refused")

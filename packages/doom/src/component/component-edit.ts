@@ -153,6 +153,8 @@ export function prepareComponentEdit(
   focusEdit?: FocusEdit,
 ): readonly Write[] | Refusal {
   const asked = changingWrites(view, writes)
+  const unchanged = unchangedTemplate(view, asked)
+  if (unchanged !== undefined) return { ...refuse("shape", unchanged, "spec"), form: "The spec is unchanged." }
   const preview = componentEditPreview(view, asked, batchStart, focusEdit)
   if (preview === null) return writes
   if (isRefusal(preview)) return preview
@@ -167,6 +169,14 @@ export function prepareComponentEdit(
   }
   const prepared = [...asked.filter((write) => !generated.has(cell(write))), ...generated.values()]
   return bytesOf(JSON.stringify(prepared)) >= limits.body - limits.form ? refuse("limit") : prepared
+}
+
+function unchangedTemplate(view: Doom, asked: readonly Write[]): NodeId | undefined {
+  const specs = new Set(asked.flatMap(({ node, prop }) => (prop === "spec" ? [node] : [])))
+  return asked.find(
+    ({ node, prop }) =>
+      prop === "revision" && !specs.has(node) && propOf(view.nodes.get(node), "revision") !== undefined,
+  )?.node
 }
 
 export function withCurrentComponents(

@@ -1,6 +1,6 @@
 import type * as doom from "@airdesign/doom"
 
-type Stays = Pick<doom.Undone, "kept" | "left" | "waiting">
+type Stays = Pick<doom.Undone, "kept" | "left" | "waiting"> & { readonly skipped?: readonly doom.NodeId[] }
 
 export function runUndoStays(
   edits: readonly doom.RunEdit[],
@@ -12,5 +12,7 @@ export function runUndoStays(
     edits.flatMap(({ writes }) => writes.filter(({ prop }) => prop === "type").map(({ node }) => node)),
   )
   const later = stays.kept.filter((node) => !created.has(node))
-  return later.length === 0 ? stays : { ...stays, later }
+  const { skipped = [], ...rest } = stays
+  const named = skipped.length === 0 ? rest : { ...rest, skipped }
+  return later.length === 0 ? named : { ...named, later }
 }

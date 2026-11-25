@@ -4,8 +4,8 @@
     {
       "file": "packages/live/src/doom-deck.ts",
       "names": ["connected"],
-      "digest": "4617004d1b10",
-      "blob": "bfeb2fe2c1ee01c0ea064bf10c936607cf99b167"
+      "digest": "a88fd34c4b3e",
+      "blob": "b189476924909ddd054691fdfb38e3ae32dc6036"
     },
     {
       "file": "packages/live/src/doom-follow.ts",

@@ -124,6 +124,7 @@ async function turnRun(
     later: names(later),
     left: names(turned.left),
     waiting: names(turned.waiting),
+    skipped: names(turned.skipped),
   })
   const body = {
     deck: opened.deck,
@@ -132,9 +133,10 @@ async function turnRun(
     kept: turned.kept,
     left: turned.left,
     waiting: turned.waiting,
+    ...(turned.skipped.length === 0 ? {} : { skipped: turned.skipped }),
   }
   if (turned.writes.length === 0)
-    return [...turned.kept, ...turned.left, ...turned.waiting].length === 0
+    return [...turned.kept, ...turned.left, ...turned.waiting, ...turned.skipped].length === 0
       ? answered(nothingLeft, { ok: false, reason: "nothing", ...empty })
       : answered(note, { ok: false, reason: "left", ...body })
   const edit: doom.Edit = {

@@ -1,10 +1,11 @@
 import { expect, it } from "vitest"
-import { applyEdit, type Write } from "../index.js"
+import { applyEdit, type Node, type Write } from "../index.js"
 import { invertStep } from "../invert.js"
 import { invertRun, undoSourceOf } from "../invert-run.js"
 import { onDeck, propOf } from "../doom-walk.js"
 import { frame, instance, measure, mint } from "./testing/linked-instance-fixtures.js"
 import { prepareComponentEdit } from "./component-edit.js"
+import { skippedTemplates } from "./update-rebuild.js"
 import {
   accepted,
   create,
@@ -71,22 +72,72 @@ it("accepts only the next revision, so the largest legal revision stays out of r
   expect(propOf(updated(linked, node, 200, 2).nodes.get(node), "revision")).toBe(2)
 })
 
-it("waits for a deleted template to come back before undoing an update to it, then rebuilds every instance", () => {
-  const { linked, node } = onSlideTwo()
-  const changing = updating(linked, node, 200, 2)
+it("skips an update to a template deleted since, undoes the rest of the step, and names what it skipped", () => {
+  const { linked, node, slide } = onSlideTwo()
+  const changing = step(linked, [
+    ...updating(linked, node, 200, 2).writes,
+    { node: slide, prop: "name", value: "Tiles" },
+  ])
   const changed = accepted(applyEdit(linked, changing))
   const deleting = step(changed, [{ node, prop: "parent", value: null }])
   const deleted = accepted(applyEdit(changed, deleting))
   expect(deleted.nodes.get(frame)).not.toHaveProperty("instance")
-  expect(invertStep(linked, deleted, changing, new Set(), measure)).toMatchObject({ refused: "stale" })
-  expect(invertRun(deleted, [undoSourceOf(linked, changing)], new Set(), linked, measure).writes).toEqual([])
 
-  const back = undone(changed, deleting, deleted)
+  expect(skippedTemplates(linked, deleted, changing.writes)).toEqual([node])
+  const reverted = undone(linked, changing, deleted)
+  expect(propOf(reverted.nodes.get(slide), "name")).toBeUndefined()
+  expect(onDeck(reverted.nodes, node)).toBe(false)
+  expect(propOf(reverted.nodes.get(node), "spec")).toEqual(spec(200))
+
+  const run = invertRun(deleted, [undoSourceOf(linked, changing)], new Set(), linked, measure)
+  expect(run).toMatchObject({ kept: [], left: [], waiting: [], skipped: [node] })
+  expect(run.refused).toBeUndefined()
+  expect(accepted(applyEdit(deleted, step(deleted, run.writes))).nodes).toEqual(reverted.nodes)
+
+  const back = undone(changed, deleting, reverted)
+  expect(propOf(back.nodes.get(node), "spec")).toEqual(spec(200))
   expect(instance(back).component).toEqual({ node, revision: 2 })
-  const reverted = undone(linked, changing, back)
-  expect(propOf(reverted.nodes.get(node), "spec")).toEqual(spec(100))
-  expect(instance(reverted).component).toEqual({ node, revision: 3 })
-  expect(tileWidth(reverted, frame)).toBe(100)
+  expect(tileWidth(back, frame)).toBe(200)
+})
+
+it("consumes an undo of a template update whose template was deleted since, without refusing it", () => {
+  const { linked, node } = onSlideTwo()
+  const changing = updating(linked, node, 200, 2)
+  const changed = accepted(applyEdit(linked, changing))
+  const deleted = accepted(applyEdit(changed, step(changed, [{ node, prop: "parent", value: null }])))
+  expect(invertStep(linked, deleted, changing, new Set(), measure)).toEqual([])
+  expect(skippedTemplates(linked, deleted, changing.writes)).toEqual([node])
+  const run = invertRun(deleted, [undoSourceOf(linked, changing)], new Set(), linked, measure)
+  expect(run).toEqual({ writes: [], kept: [], left: [], waiting: [], skipped: [node] })
+  expect(skippedTemplates(changed, changed, changing.writes)).toEqual([])
+})
+
+it("refuses a template update that changes nothing but its revision, when prepared and when it lands", () => {
+  const { linked, node } = onSlideTwo()
+  const base = (prop: "spec" | "revision") => linked.revs.get(node)!.get(prop)!
+  for (const writes of [
+    [
+      { node, prop: "spec", value: spec(100), base: base("spec") },
+      { node, prop: "revision", value: 2, base: base("revision") },
+    ],
+    [{ node, prop: "revision", value: 2, base: base("revision") }],
+  ] satisfies Write[][]) {
+    expect(prepareComponentEdit(linked, writes, measure)).toMatchObject({ refused: "shape", node, prop: "spec" })
+    expect(applyEdit(linked, step(linked, writes))).toMatchObject({ refused: "shape", node, prop: "revision" })
+  }
+})
+
+it("undoes a revision-only template change already in history as a no-op", () => {
+  const { linked, node } = onSlideTwo()
+  const widened = updating(linked, node, 200, 2)
+  const bumped = { ...widened, writes: widened.writes.filter(({ prop }) => prop !== "spec") }
+  const after = accepted(applyEdit(linked, widened))
+  const restated = { ...after.nodes.get(node)!, spec: spec(100) } as Node
+  const changed = { ...after, nodes: new Map(after.nodes).set(node, restated) }
+  expect(invertStep(linked, changed, bumped, new Set(), measure)).toEqual([])
+  const run = invertRun(changed, [undoSourceOf(linked, bumped)], new Set(), linked, measure)
+  expect(run.refused).toBeUndefined()
+  expect(run.writes).toEqual([])
 })
 
 it("undoes a template update that an instance placed since cannot follow by detaching only that instance", () => {
