@@ -303,15 +303,6 @@ const placeFields = {
     },
     readTarget,
   ),
-  focus: field(
-    {
-      type: "array",
-      items: { type: "string" },
-      maxItems: 100,
-      description: "Set on a linked component. Category or series IDs to accent. [] clears focus.",
-    },
-    readFocus,
-  ),
   node: id("The node."),
   nodes: field(
     { type: "array", items: idSchema, minItems: 1, maxItems: limits.delete, description: "Node ids." },
@@ -377,6 +368,15 @@ const pickFrom = <T extends { readonly [P in keyof T]: Field<unknown> }, K exten
 
 const { component, data, tokens, variant: componentVariant, ...ordinaryLook } = lookFields
 const componentLook = { component, data, variant: componentVariant, tokens }
+const focus = field(
+  {
+    type: "array",
+    items: { type: "string" },
+    maxItems: 100,
+    description: "Set on a linked component. Category or series IDs to accent. [] clears focus.",
+  },
+  readFocus,
+)
 
 function changeReader(components: boolean) {
   const look = components ? lookFields : ordinaryLook
@@ -386,7 +386,7 @@ function changeReader(components: boolean) {
       { kind: literal(components ? addKinds : ordinaryKinds), slide: readId },
       { ...pickFrom(placeFields, ["into"]), ...lookReaders },
     ),
-    set: object(pickFrom(placeFields, ["target"]), { ...lookReaders, ...pickFrom(placeFields, ["focus"]) }),
+    set: object(pickFrom(placeFields, ["target"]), { ...lookReaders, ...(components ? { focus: focus.read } : {}) }),
     move: object(pickFrom(placeFields, ["node"]), pickFrom(placeFields, ["into", "after"])),
     wrap: object(pickFrom(placeFields, ["nodes"]), pickFrom(lookFields, ["layout", "clip"])),
     unwrap: object(pickFrom(placeFields, ["node"])),
@@ -482,7 +482,7 @@ export const agentChangesSchema = {
           linkedComponentsEnabled ? `${kindWords} component: a linked template.` : kindWords,
         ).schema,
         ...schemasOf(ordinaryLook),
-        ...(linkedComponentsEnabled ? schemasOf(componentLook) : {}),
+        ...(linkedComponentsEnabled ? { ...schemasOf(componentLook), focus: focus.schema } : {}),
       },
     },
   },
