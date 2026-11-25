@@ -233,12 +233,13 @@
           ]
         ]
       ],
+      "group": ["list", "step", ["get", "s.id"]],
       "children": [
         {
           "when": ["get", "row"],
           "emit": {
             "kind": "text",
-            "key": ["list", "step", ["get", "s.id"]],
+            "key": ["list", "card", ["get", "s.id"]],
             "x": ["get", "x"],
             "y": ["get", "y"],
             "w": ["get", "cardW"],
@@ -276,7 +277,7 @@
           "when": ["eq", ["get", "row"], false],
           "emit": {
             "kind": "text",
-            "key": ["list", "step", ["get", "s.id"]],
+            "key": ["list", "card", ["get", "s.id"]],
             "x": ["get", "x"],
             "y": ["get", "y"],
             "w": ["get", "cardW"],
@@ -346,7 +347,6 @@
             "color": ["get", "token.description"],
             "align": "right",
             "alignV": "top",
-            "absolute": true,
             "overflow": "ellipsis"
           }
         }
@@ -362,8 +362,8 @@
       "emit": {
         "kind": "line",
         "key": ["list", "connector", ["get", "s.id"]],
-        "start": ["site", ["list", "step", ["get", "s.id"]], ["if", ["get", "row"], "r", "b"]],
-        "end": ["site", ["list", "step", ["get", "following.id"]], ["if", ["get", "row"], "l", "t"]],
+        "start": ["site", ["list", "card", ["get", "s.id"]], ["if", ["get", "row"], "r", "b"]],
+        "end": ["site", ["list", "card", ["get", "following.id"]], ["if", ["get", "row"], "l", "t"]],
         "color": ["get", "token.connector"],
         "width": ["get", "token.lineWidth"],
         "route": "straight",

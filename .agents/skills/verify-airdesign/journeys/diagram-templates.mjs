@@ -4,6 +4,7 @@ import { PNG } from "pngjs"
 import { fontShelf, shelfFolder } from "../../../../scripts/font-shelf.mjs"
 import { packageBuild } from "../../../../scripts/package-build.mjs"
 import { exportCopy, frameCopy, productCopy } from "../bin/product-copy.mjs"
+import { center, lineEnds, moveColumnStep } from "../look/diagram-step-move.mjs"
 import {
   clickSlide,
   dragSlide,
@@ -30,6 +31,13 @@ const descriptionExamples = [
 const diagrams = [
   { name: "architecture", prefix: "arch", title: "Mobile can send events directly" },
   { name: "process", prefix: "proc", title: "Eight steps take an idea to launch" },
+  {
+    name: "process",
+    prefix: "procol",
+    title: "Each step names how long it takes",
+    artifact: "process-column",
+    variant: { direction: "column" },
+  },
   { name: "cycle", prefix: "loop", title: "Each release feeds the next plan" },
   ...["technical", "midnight"].flatMap((theme) => [
     {
@@ -91,16 +99,13 @@ function remap(tree, prefix) {
     value.geometry?.kind === "line"
       ? { ...value, geometry: { ...value.geometry, start: end(value.geometry.start), end: end(value.geometry.end) } }
       : value
-  return {
-    ...tree,
-    id: id(tree.id),
-    children: tree.children.map((child) => ({ ...child, id: id(child.id), props: props(child.props) })),
-  }
-}
-
-function lineEnds(saved, line) {
-  const { start, end } = saved.nodes[line.id].geometry
-  return [start.node, end.node]
+  const layer = (node) => ({
+    ...node,
+    id: id(node.id),
+    props: props(node.props),
+    ...(node.group === undefined ? {} : { group: id(node.group) }),
+  })
+  return { ...tree, id: id(tree.id), children: tree.children.map(layer), groups: tree.groups.map(layer) }
 }
 
 async function exportPdf(kit, out, name, expectedText) {
@@ -124,14 +129,6 @@ async function exportPdf(kit, out, name, expectedText) {
   await writeFile(join(out, `${name}.pdf`), pdf)
   await page.evaluate(() => window.dispatchEvent(new Event("afterprint")))
   await expect(printed).toHaveCount(0)
-}
-
-async function center(page, id) {
-  const box = await page.locator(`[data-slide-box] [data-node="${id}"]`).first().boundingBox()
-  if (box === null) throw new Error(`${id} is not painted`)
-  const slide = await page.locator("[data-slide-box]").boundingBox()
-  const scale = 1920 / slide.width
-  return { x: (box.x - slide.x + box.width / 2) * scale, y: (box.y - slide.y + box.height / 2) * scale }
 }
 
 export default async function drive(kit) {
@@ -172,7 +169,7 @@ export default async function drive(kit) {
   for (const diagram of diagrams) {
     const themeId = diagram.theme ?? "technical"
     const theme = doom.themeLibrary[themeId].theme
-    const artifact = diagram.theme === undefined ? diagram.name : `${diagram.name}-${themeId}`
+    const artifact = diagram.artifact ?? (diagram.theme === undefined ? diagram.name : `${diagram.name}-${themeId}`)
     const sample = doom.componentLibrary.get(diagram.name).spec.sample
     let fixture =
       diagram.theme === undefined
@@ -220,7 +217,20 @@ export default async function drive(kit) {
       }
     }
     if (diagram.name === "architecture") fixture = withExtraLinks(fixture)
-    if (diagram.name === "process") {
+    if (diagram.variant?.direction === "column") {
+      fixture = {
+        frame: { x: 560, y: 200, w: 800, h: 820 },
+        variant: diagram.variant,
+        data: {
+          steps: descriptionExamples.slice(0, 5).map((description, i) => ({
+            id: `s${i}`,
+            label: ["Discover", "Define", "Prototype", "Build", "Launch"][i],
+            description,
+            note: `${i + 2} weeks`,
+          })),
+        },
+      }
+    } else if (diagram.name === "process") {
       for (const direction of ["row", "column"]) {
         const frame = direction === "row" ? fixture.frame : { x: 600, y: 160, w: 720, h: 800 }
         for (let count = 3; count <= 8; count += 1) {
@@ -232,6 +242,7 @@ export default async function drive(kit) {
           }))
           const { tree } = await expand("process", { frame, data: { steps }, variant: { direction } }, theme)
           expect(tree.children).toHaveLength((direction === "column" ? 3 : 2) * count - 1)
+          expect(tree.groups).toHaveLength(direction === "column" ? count : 0)
           expect(
             tree.findings.filter(({ kind }) => kind === "text-fit"),
             `${direction} ${count}`,
@@ -245,10 +256,10 @@ export default async function drive(kit) {
       }))
       const { tree, measure } = await expand("process", { ...fixture, data: { steps } }, theme)
       expect(tree.findings.filter(({ kind }) => kind === "text-fit")).toMatchObject([
-        { kind: "text-fit", key: ["step", "s4"] },
+        { kind: "text-fit", key: ["card", "s4"] },
       ])
       const { doom: fold, slide } = landTree(tree, theme)
-      const part = tree.children.find(({ key }) => key.join("/") === "step/s4")
+      const part = tree.children.find(({ key }) => key.join("/") === "card/s4")
       const { lines } = doom.resolveSlide(fold, slide, measure)[0].children.find(({ id }) => id === part.id).text
       expect(
         lines
@@ -264,13 +275,14 @@ export default async function drive(kit) {
         "Served Geist: process counts 3–8 fit in both directions with descriptions and column durations. One impossible label retains its full source and paints an ellipsis in bounds.",
       )
     }
-    if (diagram.name === "process") {
+    if (diagram.name === "process" && diagram.variant === undefined) {
       const labels = [...fixture.data.steps.map(({ label }) => label), "Review", "Refine", "Track"]
       fixture.data.steps = labels.map((label, i) => ({ id: `s${i}`, label, description: descriptionExamples[i] }))
     }
     const { tree: expanded } = await expand(diagram.name, fixture, theme)
     expect(expanded.findings.filter(({ kind }) => kind === "text-fit")).toEqual([])
     const tree = remap(expanded, diagram.prefix)
+    const layers = component.componentLayers(tree)
 
     const opened = await openDoomDeck(kit)
     const nodes = (await readDoom(kit, opened)).fold.nodes
@@ -312,15 +324,16 @@ export default async function drive(kit) {
         props: { name: diagram.title, box: spot(160, 88, 1600, 80), text: words(diagram.title, { style: "heading" }) },
       },
       tree,
-      ...tree.children.map((child) => ({ ...child, parent: tree.id })),
+      ...layers,
     ])
 
     const saved = (await readDoom(kit, opened)).fold
-    for (const child of tree.children) {
-      const stored = saved.nodes[child.id]
-      if (child.props.geometry.kind === "line") expect(stored.geometry).toEqual(child.props.geometry)
-      else expect(stored.box).toEqual(child.props.box)
-      await expect(page.locator(`[data-slide-thumb] [data-node="${child.id}"]`).first()).toBeAttached(slowPaint)
+    for (const layer of layers) {
+      const stored = saved.nodes[layer.id]
+      expect(stored.parent.id).toBe(layer.parent)
+      if (layer.props.geometry?.kind === "line") expect(stored.geometry).toEqual(layer.props.geometry)
+      else expect(stored.box).toEqual(layer.props.box)
+      await expect(page.locator(`[data-slide-thumb] [data-node="${layer.id}"]`).first()).toBeAttached(slowPaint)
     }
     if (diagram.name === "process" || diagram.name === "tree") {
       const slide = page.locator("[data-slide-box]")
@@ -358,8 +371,8 @@ export default async function drive(kit) {
       note("Issue tree: dragging a branch preserves its parent and child attachments.")
     }
 
-    if (diagram.name === "process") {
-      const steps = tree.children.filter(({ key }) => key[0] === "step")
+    if (diagram.name === "process" && diagram.variant === undefined) {
+      const steps = tree.children.filter(({ key }) => key[0] === "card")
       const connectors = tree.children.filter(({ key }) => key[0] === "connector")
       const before = connectors.map((line) => lineEnds(saved, line))
       const from = await center(page, steps[1].id)
@@ -381,6 +394,8 @@ export default async function drive(kit) {
       await capture("process-step-moved")
       note("process: after Remove auto layout, dragging step 2 down moves it and both its connectors stay attached.")
     }
+
+    if (diagram.variant?.direction === "column") await moveColumnStep(kit, { opened, tree, saved, out })
 
     if (diagram.name === "architecture") {
       const gateway = tree.children.find(({ key }) => key.join("/") === "component/gateway")

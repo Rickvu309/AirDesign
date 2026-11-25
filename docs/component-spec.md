@@ -65,6 +65,10 @@ Set `overflow: "ellipsis"` on a text emit to paint an ellipsis when its text exc
 
 Structured copy accepts a list of paragraph records. A paragraph can set `maxLines` from 1 to 16 on an ellipsis text part. It treats line breaks inside that paragraph as spaces. Text parts without ellipsis ignore the line limit. When the paragraph exceeds that limit, its last visible line ends in an ellipsis and later paragraphs keep their place in the flow. Use `wrap: "none"` for a paragraph that must stay on one line.
 
+## Groups
+
+A part with `children` can set `group` to a key expression. Its layers land in one frame that hugs them, the same frame Group makes in the editor, so they move as one after Remove auto layout. Give a card and the layers that sit on it one group, such as a process step's card and duration or a matrix quadrant's tile, action and items. Groups nest. A group takes its first layer's place in paint order and in its frame's auto layout. Each layer keeps its box in the component frame, and the landed layer's box is relative to its group. A group that keeps fewer than two layers, for example after a fit omits a label, is left out and its layer stands alone. A group key must differ from every emitted key. A linked instance keeps its parts flat inside the generated frame.
+
 ## Connector attachments
 
 A connector endpoint can use `["site", partKey, side]` to attach to the default site. An endpoint record with `key`, `site`, and an optional `along` fraction can attach anywhere along a rectangular edge. Fractions run from left to right on top and bottom edges and from top to bottom on left and right edges. Channel coordinates are relative to the component frame.

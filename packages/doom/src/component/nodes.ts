@@ -11,6 +11,7 @@ import { type FittingContext, fitGroups, fitOne, textSize } from "./fit-text.js"
 import type { ComponentFinding, TextFitFinding } from "./findings.js"
 import type { Expr } from "./expression.js"
 import type { Emission } from "./spec.js"
+import { type ComponentGroup, type Grouping, groupsOf } from "./groups.js"
 import { color, string, type Value } from "./values.js"
 
 type ShapeProps = Pick<Props, "name" | "box" | "geometry"> &
@@ -21,6 +22,7 @@ export type ComponentNode = {
   readonly type: "shape"
   readonly props: ShapeProps
   readonly generatedStyle?: TextStyleName
+  readonly group?: NodeId
 }
 export type ComponentTree = {
   readonly id: NodeId
@@ -28,6 +30,7 @@ export type ComponentTree = {
   readonly type: "frame"
   readonly props: Pick<Props, "name" | "box"> & Partial<Pick<Props, "layout">>
   readonly children: readonly ComponentNode[]
+  readonly groups: readonly ComponentGroup[]
   readonly findings: readonly ComponentFinding[]
 }
 
@@ -301,6 +304,7 @@ export function treeOf(
   context: FittingContext,
   partLimit: number,
   findings: ComponentFinding[],
+  grouping: Grouping,
   layout?: Props["layout"],
 ): ComponentTree {
   const seen = new Map<string, { readonly id: NodeId; readonly part: PlacedPart }>()
@@ -376,12 +380,19 @@ export function treeOf(
       },
     })
   }
+  const grouped = groupsOf(children, grouping, seen, context.charge)
+  if (seen.size + grouped.groups.length > partLimit)
+    reject("limit", `An expansion may emit at most ${partLimit} parts.`)
   return {
     id: nodeId("component:1"),
     type: "frame",
     key: rootKey,
     props: { name, box: box(frame.x, frame.y, frame.w, frame.h), ...(layout === undefined ? {} : { layout }) },
-    children,
+    children: children.map((child) => {
+      const group = grouped.holderOf.get(keyString(child.key))
+      return group === undefined ? child : { ...child, group }
+    }),
+    groups: grouped.groups,
     findings,
   }
 }

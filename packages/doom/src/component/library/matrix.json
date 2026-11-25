@@ -313,6 +313,7 @@
           ]
         ]
       ],
+      "group": ["list", "quadrant", ["get", "q.id"]],
       "children": [
         {
           "emit": {
@@ -328,7 +329,7 @@
         {
           "emit": {
             "kind": "text",
-            "key": ["list", "quadrant", ["get", "q.id"]],
+            "key": ["list", "action", ["get", "q.id"]],
             "x": ["get", "labelX"],
             "y": ["get", "labelY"],
             "w": ["max", 0, ["sub", ["get", "tileW"], ["mul", 2, ["get", "inset"]]]],
@@ -385,6 +386,7 @@
             ],
             ["itemX", ["add", ["get", "labelX"], ["get", "itemOffset"]]]
           ],
+          "group": ["list", "item", ["get", "item.id"]],
           "children": [
             {
               "emit": {
@@ -406,7 +408,7 @@
             {
               "emit": {
                 "kind": "text",
-                "key": ["list", "item", ["get", "item.id"]],
+                "key": ["list", "label", ["get", "item.id"]],
                 "x": ["get", "itemX"],
                 "y": ["get", "rowY"],
                 "w": [

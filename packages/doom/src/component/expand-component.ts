@@ -2,12 +2,13 @@ import type { Measure } from "../measure.js"
 import type { Refusal } from "../refusal.js"
 import type { TextStyleName } from "../text.js"
 import type { Theme } from "../theme.js"
-import type { PartKey } from "./instance.js"
+import { keyOf, keyString, type PartKey } from "./instance.js"
 import { boolean, integer, naming, reject } from "../read-kit.js"
 import { readExpansionData } from "./collections.js"
 import type { ComponentFinding } from "./findings.js"
 import { type Bindings, type Expr, type Scope, childScope, evaluator, valuesOf } from "./expression.js"
 import { type ComponentTree, type PreparedPart, preparePart, readFrame, readLayout, treeOf } from "./nodes.js"
+import type { Grouping } from "./groups.js"
 import { numberFormat } from "./operators.js"
 import { type ComponentSpec, type Part, readChoices, readTokens } from "./spec.js"
 import { type Value, budget, componentRefusal, readFocus } from "./values.js"
@@ -65,7 +66,8 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
 
     let emitted = 0
     const parts: PreparedPart[] = []
-    const visit = (part: Part, parent: Scope, field: string): void => {
+    const grouping: Grouping = { groups: new Map(), memberOf: new Map() }
+    const visit = (part: Part, parent: Scope, field: string, within?: string): void => {
       naming(field, () => charge())
       const emit = (scope: Scope) => {
         naming(field, () => charge())
@@ -74,7 +76,19 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
         if (when !== undefined && !naming(`${field}.when`, () => boolean(evaluate(when, local, `${field}.when`))))
           return
         if ("children" in part) {
-          for (const [i, child] of part.children.entries()) visit(child, local, `${field}.children[${i}]`)
+          const group = part.group
+          const holder =
+            group === undefined
+              ? within
+              : naming(`${field}.group`, () => {
+                  const key = keyOf(evaluate(group, local, `${field}.group`))
+                  const name = keyString(key)
+                  charge(name.length)
+                  if (grouping.groups.has(name)) reject("shape", `Duplicate group key ${name}.`)
+                  grouping.groups.set(name, { key, field: `${field}.group`, within })
+                  return name
+                })
+          for (const [i, child] of part.children.entries()) visit(child, local, `${field}.children[${i}]`, holder)
           return
         }
         const emitField = `${field}.emit`
@@ -89,6 +103,8 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
           emitted += 1
         }
         parts.push(prepared)
+        if (within !== undefined)
+          grouping.memberOf.set(keyString("part" in prepared ? prepared.part.key : prepared.key), within)
       }
       if (part.repeat === undefined) {
         emit(parent)
@@ -105,7 +121,7 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
     const layout =
       layoutExpr === undefined ? undefined : naming("layout", () => readLayout(evaluate(layoutExpr, root, "layout")))
     for (const [i, part] of spec.parts.entries()) visit(part, root, `parts[${i}]`)
-    return treeOf(spec.name, frame, parts, fitting, partLimit, findings, layout)
+    return treeOf(spec.name, frame, parts, fitting, partLimit, findings, grouping, layout)
   } catch (thrown) {
     return componentRefusal(thrown)
   }
