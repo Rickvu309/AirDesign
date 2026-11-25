@@ -64,6 +64,69 @@ test("two tabs typing offline keep both tabs' words, and the next open sends a c
   expect(await chars("s:4")).toBe("First tab again")
 })
 
+function asTheEarlierAppSavedIt(deck: string): Promise<readonly string[]> {
+  return new Promise((resolve, reject) => {
+    const opening = indexedDB.open("airdesign")
+    opening.onerror = () => reject(opening.error)
+    opening.onsuccess = () => {
+      const moving = opening.result.transaction("rows", "readwrite")
+      const store = moving.objectStore("rows")
+      const keys = store.getAllKeys()
+      const values = store.getAll()
+      values.onsuccess = () => {
+        const fold = { rev: 0, runs: null as unknown, nodes: {}, revs: {}, onces: {} } as Record<string, any>
+        const mark = `${deck}\u0004`
+        let scope = ""
+        for (const [at, key] of (keys.result as string[]).entries()) {
+          const [kind, name] = key.slice(key.indexOf(mark) + mark.length).split("\u0004") as [string, string]
+          if (!key.includes(mark) || !["head", "node", "once"].includes(kind)) continue
+          scope = key.slice(0, key.indexOf(mark) + mark.length)
+          const value = values.result[at]
+          if (kind === "head") Object.assign(fold, { rev: value.rev, runs: value.runs })
+          if (kind === "once") fold.onces[name] = value
+          if (kind === "node") fold.nodes[name] = value.node
+          if (kind === "node" && value.revs !== undefined) fold.revs[name] = value.revs
+          store.delete(key)
+        }
+        if (scope !== "") store.put(fold, `${scope}fold`)
+      }
+      moving.onerror = () => reject(moving.error)
+      moving.oncomplete = () => {
+        const left = opening.result.transaction("rows").objectStore("rows").getAllKeys()
+        left.onsuccess = () => {
+          opening.result.close()
+          const kept = (left.result as string[]).filter((key) => key.includes(`${deck}\u0004`))
+          resolve([...new Set(kept.map((key) => key.split("\u0004")[1]!))])
+        }
+      }
+    }
+  })
+}
+
+test("a deck the earlier app saved on the device opens offline after the upgrade and sends the words it had queued", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openEditor(page, context, stack)
+  const title = (await savedNode(stack, opened, "s:4"))?.box as Box
+  const cut = await cutOff(page)
+  await page.reload()
+  await page.locator("[data-editor-ready]").waitFor()
+  await typeInto(page, title, "Typed before the upgrade")
+  await expect.poll(() => page.evaluate(asTheEarlierAppSavedIt, opened.deck)).toEqual(["fold", "queue"])
+
+  await page.reload()
+  await page.locator("[data-editor-ready]").waitFor()
+  await expect(
+    page.locator("[data-slide-box] [data-line]").filter({ hasText: "Typed before the upgrade" }),
+  ).toHaveCount(1)
+  cut.online()
+  await expect
+    .poll(async () => ((await savedNode(stack, opened, "s:4"))?.text as { chars?: string })?.chars)
+    .toBe("Typed before the upgrade")
+})
+
 test("an undo made offline over a layer another tab deletes lands the rest on reconnect, and keeps every step", async ({
   page,
   context,

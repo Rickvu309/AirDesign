@@ -4,8 +4,14 @@
     {
       "file": "packages/live/src/doom-storage.ts",
       "names": ["readQueued", "deviceStorage"],
-      "digest": "9a4b509b2cf1",
-      "blob": "f9d2e2c680aaa5e7a96fe343b587324a3f2df61d"
+      "digest": "f59311cdc16f",
+      "blob": "4e8f565d1352fbc09dbde967ef26e0d73ade225d"
+    },
+    {
+      "file": "packages/live/src/fold-rows.ts",
+      "names": ["readFoldRows", "writeFoldRows"],
+      "digest": "45bc981586cc",
+      "blob": "88c5ff3853e731a98395fd732356af6e5a99fa71"
     },
     {
       "file": "packages/live/src/doom-set-aside.ts",
@@ -17,7 +23,7 @@
       "file": "packages/doom/src/invert-run.ts",
       "names": ["undoSourceOf"],
       "digest": "dedd0a6970f2",
-      "blob": "36909b87d9c78f56732cdc2c43c9098cdc45fc73"
+      "blob": "26a394cbfb2568c1914060d7158bd4aa38563ddf"
     },
     {
       "file": "packages/doom/src/component/instance-inverse.ts",
