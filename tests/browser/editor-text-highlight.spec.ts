@@ -94,3 +94,52 @@ test("a highlight ends at the last letter of a wrapped line and reaches a little
     else expect(Math.abs(past)).toBeLessThan(1)
   })
 })
+
+test("right-to-left words selected after left-to-right words are highlighted across their whole width", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openEditor(page, context, stack)
+  const chars = "abc אבג"
+  await landNodes(stack, opened, [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: opened.slide,
+      props: {
+        name: "Words",
+        box: spot(300, 600, 800, 200),
+        text: {
+          chars,
+          spans: [{ end: 4 }, { end: 7, bold: true }],
+          paras: [{}],
+          style: "body",
+          resize: "fixed",
+          alignV: "top",
+        },
+      },
+    },
+  ])
+  await clickSlide(page, 320, 620)
+  await page.keyboard.press("Enter")
+  await expect(editor(page)).toBeFocused()
+  await page.keyboard.press("ControlOrMeta+End")
+  for (let step = 0; step < 3; step++) await page.keyboard.press("Shift+ArrowLeft")
+  const read = () =>
+    page.evaluate(() => {
+      const side = (rect: DOMRect | undefined) => (rect === undefined ? null : { left: rect.left, right: rect.right })
+      const last = [...document.querySelectorAll("[data-text-editor] [data-run]")].at(-1)
+      return {
+        highlight: side(document.querySelector("[data-text-highlight]")?.getBoundingClientRect()),
+        words: side(last?.getBoundingClientRect()),
+        picked: getSelection()?.toString(),
+      }
+    })
+  await expect.poll(async () => (await read()).picked).toBe("אבג")
+  await expect.poll(async () => (await read()).highlight).not.toBeNull()
+  const { highlight, words } = await read()
+  expect(words!.right - words!.left).toBeGreaterThan(5)
+  expect(Math.abs(highlight!.left - words!.left)).toBeLessThan(1)
+  expect(Math.abs(highlight!.right - words!.right)).toBeLessThan(1)
+})
