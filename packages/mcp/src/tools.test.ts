@@ -183,7 +183,7 @@ describe("edit_deck", () => {
     const { deck, rev, slides } = await created(by)
     const landed = await by.call(
       "edit_deck",
-      edit(deck, rev, [{ op: "set", target: `${slides[0]!}.title`, color: offTheme }]),
+      edit(deck, rev, [{ op: "set", target: `${slides[0]!}.title`, text: "Sales grew", color: offTheme }]),
     )
     const answer = landed.answer as { note: string; findings: { code: string; note: string }[] }
     expect(landed.ok).toBe(true)

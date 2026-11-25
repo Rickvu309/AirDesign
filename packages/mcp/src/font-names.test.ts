@@ -14,7 +14,11 @@ const titled = () =>
       {
         name: "Title",
         children: [
-          { type: "shape", name: "Title", props: { role: "title", text: doom.textFromMarkdown("Untitled", "title") } },
+          {
+            type: "shape",
+            name: "Title",
+            props: { role: "title", text: doom.textFromMarkdown("Sales grew", "title") },
+          },
         ],
       },
     ],
