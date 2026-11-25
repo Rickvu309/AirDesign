@@ -2,7 +2,6 @@ import { type Instance, readInstance } from "./component/instance.js"
 import { readLanguage } from "./language.js"
 import { limits } from "./limits.js"
 import { type OrderKey, readOrderKey } from "./order-key.js"
-import { type Chart, readChart } from "./chart.js"
 import { type Geometry, readGeometry } from "./geometry.js"
 import { type NodeId, type Rev, readNodeId, readRev } from "./ids.js"
 import { type Cell, type Layout, type Sizing, readCell, readLayout, readSizing } from "./layout.js"
@@ -78,7 +77,6 @@ export type Props = {
   readonly clip: boolean
   readonly mask: boolean
   readonly instance: Instance
-  readonly chart: Chart
   readonly link: string | NodeId
   readonly role: "title" | "subtitle" | "body" | "number" | "footer"
   readonly notes: Text
@@ -123,7 +121,6 @@ export const accepts = {
     "layout",
     "clip",
     "mask",
-    "chart",
     "instance",
     "link",
     "origin",
@@ -242,7 +239,6 @@ export const props: { readonly [K in PropName]: PropSpec<K> } = {
   clip: spec(boolean, "toggle", null),
   mask: spec(boolean, "toggle", "Whether this layer masks the layers above it."),
   instance: spec(readInstance, "none", null),
-  chart: spec(readChart, "custom", "The data a chart frame draws."),
   link: spec(readLink, "text", null),
   role: spec(literal(["title", "subtitle", "body", "number", "footer"]), "choice", null),
   notes: spec(readText, "text", "A slide's presenter notes.", "base"),

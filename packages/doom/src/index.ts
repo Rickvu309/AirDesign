@@ -58,7 +58,6 @@ export {
   instanceAfterEdit,
 } from "./invert-run.js"
 export type { Align9, Cell, Layout, Sizing, Track } from "./layout.js"
-export type { Chart } from "./chart.js"
 export type { Color, ColorVar, Effect, Hex, ImagePaint, Paint, StrokeStyle } from "./paint.js"
 export { colorVars, paletteColorVars } from "./paint.js"
 export { type NodeType, type Origin, type PropName, type Props, type WriteKey, accepts, holds, props } from "./props.js"
@@ -103,7 +102,6 @@ export {
 export { solveLayout } from "./solve-layout.js"
 export { fontSamples, graphemes } from "./graphemes.js"
 export { bakeLayout, bakeTextLayers } from "./bake-layout.js"
-export { deriveChart } from "./derive-chart.js"
 export type { Box, Point, Resolved, ResolvedEffect, ResolvedLine, ResolvedPaint, ResolvedRun } from "./resolved.js"
 export { resolveSlide, slideBackground } from "./resolve-slide.js"
 export {

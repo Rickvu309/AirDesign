@@ -5,7 +5,8 @@ import { installIndexedDb } from "./browser-fixtures.js"
 import { deleteDatabase } from "./device.js"
 import { createDoomDeck, openDoomDeck } from "./doom-deck.js"
 import { memoryDoomRemote, type DoomRemote } from "./doom-remote.js"
-import { deviceStorage, memoryStorage } from "./doom-storage.js"
+import { deviceStorage, doomFoldKey, memoryStorage } from "./doom-storage.js"
+import { changeSlots } from "./store.js"
 
 const id = doom.nodeId
 const [deckNode, row, slide, card] = [id("s:1"), id("s:2"), id("s:3"), id("s:4")] as const
@@ -67,6 +68,29 @@ describe("a deck the server no longer has", () => {
     expect(await openDoomDeck(server, "trashed", { client: "a" })).toEqual({ ok: false, refusal: "deck" })
   })
 
+  it("ignores a stale fold with a retired chart and reports the dropped deck missing", async () => {
+    const server = goneLater(memoryDoomRemote(start))
+    const storage = deviceStorage("old-chart")
+    const made = await createDoomDeck(server, "old-chart", { client: "a", storage })
+    expect(made.ok).toBe(true)
+    const kept = await storage.read()
+    if (kept?.fold === undefined) throw new Error("missing stored fold")
+    const fold = doom.foldToJson(kept.fold)
+    if (typeof fold !== "object" || fold === null) throw new Error("invalid serialized fold")
+    const stale = {
+      ...fold,
+      nodes: {
+        ...Object.fromEntries(kept.fold.nodes),
+        [card]: { ...kept.fold.nodes.get(card), chart: { kind: "column", categories: ["A"], series: [] } },
+      },
+    }
+    await changeSlots([{ key: doomFoldKey("old-chart"), value: stale }], [])
+
+    expect(await storage.read()).toBeUndefined()
+    server.gone = true
+    expect(await openDoomDeck(server, "old-chart", { client: "b" })).toEqual({ ok: false, refusal: "deck" })
+  })
+
   it("drops the unsent edits it kept when the server refuses to open the deck", async () => {
     const server = goneLater(memoryDoomRemote(start))
     if (!(await createDoomDeck(server, "deleted", { client: "a", storage: memoryStorage() })).ok)
@@ -80,5 +104,46 @@ describe("a deck the server no longer has", () => {
     server.gone = true
     expect(await openDoomDeck(server, "deleted", { client: "b" })).toEqual({ ok: false, refusal: "deck" })
     expect(await deviceStorage("deleted").read()).toBeUndefined()
+  })
+})
+
+describe("edits a device kept from before charts were retired", () => {
+  beforeEach(installIndexedDb)
+  afterEach(async () => {
+    await deleteDatabase()
+  })
+
+  it("refuses a queued chart edit without failing and saves the edits queued with it", async () => {
+    const server = memoryDoomRemote(start)
+    if (!(await createDoomDeck(server, "queued-chart", { client: "a", storage: memoryStorage() })).ok)
+      throw new Error("create")
+    const chart = {
+      once: "kept-chart",
+      author: { kind: "person", id: "a" },
+      writes: [{ node: card, prop: "chart", value: { kind: "column", categories: ["A"], series: [] } }],
+    } as unknown as doom.Edit
+    const name: doom.Edit = {
+      once: "kept-name",
+      author: { kind: "person", id: "a" },
+      writes: [{ node: card, prop: "name", value: "Kept" }],
+    }
+    await deviceStorage("queued-chart").write({
+      queue: [
+        { edit: chart, after: [null] },
+        { edit: name, after: [null] },
+      ],
+    })
+
+    const opened = await openDoomDeck(server, "queued-chart", { client: "b" })
+    if (!opened.ok) throw new Error(JSON.stringify(opened))
+    expect(await opened.deck.sync()).toEqual({ ok: true })
+    expect(opened.deck.pending()).toEqual([])
+    expect(opened.deck.notices()).toEqual([{ once: "kept-chart", refused: "shape", node: card }])
+    expect((await deviceStorage("queued-chart").read())?.queue).toEqual([])
+    const saved = await server.open({ deck: "queued-chart" })
+    if (!saved.ok) throw new Error(JSON.stringify(saved))
+    expect(saved.fold.nodes.get(card)).toEqual(opened.deck.view().nodes.get(card))
+    expect(saved.fold.nodes.get(card)).toMatchObject({ name: "Kept" })
+    expect(saved.fold.nodes.get(card)).not.toHaveProperty("chart")
   })
 })

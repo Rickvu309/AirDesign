@@ -119,7 +119,6 @@ export const NodeArt = memo(function NodeArt({
   return (
     <div
       data-node={node.id}
-      {...(node.derived ? { "data-derived": "" } : {})}
       data-geometry={geometry?.kind ?? "frame"}
       style={{
         position: "absolute",

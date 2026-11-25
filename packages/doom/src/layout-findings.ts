@@ -104,13 +104,12 @@ function inkOf(line: ResolvedLine, x: number, y: number): Rect {
   return { x: left, y: y + line.y + (line.h - em) / 2, w: x + line.x + shift + line.ink - left, h: em }
 }
 
-const painted = (node: Resolved) =>
-  node.fills.some((paint) => paint.opacity > 0) || node.strokes.length > 0 || node.children.some((kid) => kid.derived)
+const painted = (node: Resolved) => node.fills.some((paint) => paint.opacity > 0) || node.strokes.length > 0
 
 function place(slide: Slide, node: Resolved, x: number, y: number, ancestors: readonly Spin[]): Placed {
   const box = { x: x + node.box.x, y: y + node.box.y, w: node.box.w, h: node.box.h }
   const chain = [...ancestors, { rotation: node.box.rotation, cx: box.x + box.w / 2, cy: box.y + box.h / 2 }]
-  const laid = node.children.filter((kid) => !kid.derived).map((kid) => place(slide, kid, box.x, box.y, chain))
+  const laid = node.children.map((kid) => place(slide, kid, box.x, box.y, chain))
   judgeKids(slide, laid)
   const lines =
     node.text === null || unread(slide, node.id)

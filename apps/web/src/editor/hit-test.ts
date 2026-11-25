@@ -6,7 +6,6 @@ export type Skip = (id: doom.NodeId) => boolean
 
 function paints(node: doom.Resolved): boolean {
   if (node.fills.length > 0 || node.strokes.length > 0) return true
-  if (node.type === "frame") return node.children.some((child) => child.derived)
   return node.text !== null || node.geometry?.kind === "icon"
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { apply, build } from "./agent-fixtures.js"
-import { more, richDeck } from "./testing/rich-deck.js"
+import { generatedColumn, more, richDeck } from "./testing/rich-deck.js"
 import { readForAgent } from "./agent-read.js"
 import { hex, ids } from "./sample-deck.js"
 import type { AgentChange } from "./agent-change.js"
@@ -49,7 +49,9 @@ describe("readForAgent", () => {
       ids.title,
       ids.side,
       ids.caption,
-      more.chart,
+      more.column,
+      generatedColumn,
+      ...(doom.children.get(generatedColumn) ?? []),
       more.line,
       more.icon,
       "slide",
@@ -99,9 +101,9 @@ describe("readForAgent", () => {
     expect(plain).toContain("layout=row gap=29")
   })
 
-  it("reads an old chart as a frame and names a line, an icon and a role", () => {
-    const chart = read.find((line) => line.includes(more.chart))!
-    expect(chart).toContain(`${more.chart} frame @100,300 800x500`)
+  it("reads a linked component and names a line, an icon and a role", () => {
+    const column = read.find((line) => line.includes(more.column))!
+    expect(column).toContain(`${more.column} component column r1`)
     expect(read.find((line) => line.includes(more.line))).toBe(`  ${more.line} line @100,200 300x0`)
     expect(read.find((line) => line.includes(more.icon))).toBe(`  ${more.icon} icon @900,200 96x96 icon=star`)
     expect(read.find((line) => line.includes(more.titled))).toContain(`${more.titled} text:title @50,50 600x90`)

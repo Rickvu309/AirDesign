@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { doomFaces } from "./index.js"
-import { block, label, plainTheme, spot } from "./testing/doom-fixtures-art.js"
+import { block, label, plainTheme } from "./testing/doom-fixtures-art.js"
 import { doomFromTree } from "./doom-tree.js"
 
 const faces = (nodes: Parameters<typeof doomFromTree>[0]["slides"][number]["children"]) =>
@@ -43,14 +43,9 @@ describe("doomFaces", () => {
     expect(faces([]).faces.some((face) => face.italic)).toBe(false)
   })
 
-  it("gives the words to measure: every text, a chart's names, and the plain alphabet", () => {
-    const chart = { kind: "column", categories: ["Zürich"], series: [{ name: "Ωmega", values: [1] }] }
-    const texts = faces([
-      label("t", "hello", {}),
-      { type: "frame", name: "c", props: { box: spot(0, 0, 100, 100), chart } as never },
-      block("b", 1, 1),
-    ]).texts
-    expect(texts).toEqual(expect.arrayContaining(["hello", "Zürich", "Ωmega"]))
+  it("gives the words to measure: every text and the plain alphabet", () => {
+    const texts = faces([label("t", "hello", {}), label("u", "Zürich", {}), block("b", 1, 1)]).texts
+    expect(texts).toEqual(expect.arrayContaining(["hello", "Zürich"]))
     expect(texts.join("")).toMatch(/0123456789/)
     expect(texts.join("")).toContain("•")
   })

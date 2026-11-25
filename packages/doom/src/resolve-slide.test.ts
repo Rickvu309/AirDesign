@@ -146,35 +146,6 @@ describe("resolveSlide", () => {
     expect(resolved([block("a", 10, 10)]).parts[0]?.text).toBeNull()
   })
 
-  it("derives a chart frame's children from its data and puts them before the frame's own children", () => {
-    const chart = { kind: "column", categories: ["A", "B"], series: [{ name: "S", values: [1, 2] }] }
-    const { parts, ids } = resolved([
-      {
-        type: "frame",
-        name: "chart",
-        props: { box: spot(0, 0, 800, 400), chart } as never,
-        children: [block("note", 20, 20)],
-      },
-    ])
-    const children = parts[0]?.children ?? []
-    expect(children.some((child) => child.id === `${ids.chart}#0:0` && child.derived)).toBe(true)
-    expect(children[children.length - 1]).toMatchObject({ id: ids.note, derived: false })
-  })
-
-  it("changes a chart's bars when the data changes and never stores them", () => {
-    const first = resolved([
-      {
-        type: "frame",
-        name: "chart",
-        props: {
-          box: spot(0, 0, 800, 400),
-          chart: { kind: "column", categories: ["A"], series: [{ name: "S", values: [1] }] },
-        } as never,
-      },
-    ])
-    expect([...first.doom.nodes.keys()].some((id) => id.includes("#"))).toBe(false)
-  })
-
   it("scales a path drawn in the box's own units to the box's pixels", () => {
     const { parts } = resolved([
       { type: "shape", name: "p", props: { box: spot(0, 0, 200, 100), geometry: { kind: "path", d: "M0 0L1 1" } } },
