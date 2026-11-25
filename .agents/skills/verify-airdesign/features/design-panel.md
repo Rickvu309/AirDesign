@@ -9,7 +9,6 @@
 - `fill` a shape or a frame: `Fill` with None, Solid, Gradient and Image. A gradient shows its stops, direction and angle, and `From center` makes it radial (`doomGradient` in `apps/web/src/editor/design-model-fills.ts`). Image picks a file (see `picture-add.md`) and lists how it sits: Fill, Fit or Crop.
 - `picture` a picture: `Fill` with how the image sits (Fill, Fit or Crop), and `Replace image` beside the title. An icon has a Color swatch.
 - `border` a shape, frame, picture or line: `Border` with None, Solid, Dashed and Dotted (a line has no None), then `Color` once it has one.
-- `chart` a chart: the panel shows the same controls as for other frames. Agents set chart data.
 - A linked chart has frame controls and Detach instance. Font, theme, size and label-style changes save the regenerated layers with the change that produced them. The `linked-chart-refresh` journey checks held saves, a concurrent change during a resize, editable colors, the label title and Text section, detach and undo offline, and a 100-row chart after reopening, on the filmstrip, in capture and in PDF.
 - `auto-layout` an auto layout frame: `Remove auto layout` under the title (see `auto-layout-frame.md`).
 - `selection-colors` `Selection colors` lists the colours the selection, or the slide, uses; picking one changes each layer that uses it.

@@ -41,14 +41,8 @@ export const cycleComponent: ComponentSpec = cycleDefinition.spec
 export const matrixComponent: ComponentSpec = matrixDefinition.spec
 export const treeComponent: ComponentSpec = treeDefinition.spec
 
-export const componentLibrary: ReadonlyMap<string, ComponentDefinition> = new Map(
-  [columnDefinition, architectureDefinition, cycleDefinition, matrixDefinition, processDefinition, treeDefinition].map(
-    (definition) => [definition.id, definition],
-  ),
-)
-
 export function componentSpec(id: string): ComponentSpec | undefined {
-  return componentLibrary.get(id)?.spec ?? expandedComponents.get(id)
+  return id === "donut" ? donutComponent : componentLibrary.get(id)?.spec
 }
 
 export function resolveComponent({ id, revision }: ComponentRef): ComponentDefinition | undefined {
@@ -56,29 +50,43 @@ export function resolveComponent({ id, revision }: ComponentRef): ComponentDefin
   return found?.revision === revision ? found : undefined
 }
 
-export const clusteredChartComponent: ComponentSpec = {
-  ...builtIn("clustered-chart", clusteredChart).spec,
-  workLimit: 400_000,
-  partLimit: 750,
+const chart = (id: string, raw: unknown, limits: Pick<ComponentSpec, "workLimit" | "partLimit"> = {}) => {
+  const definition = builtIn(id, raw, ["captionSmall"])
+  return { ...definition, spec: { ...definition.spec, ...limits } }
 }
-export const lineComponent: ComponentSpec = { ...builtIn("line", line).spec, workLimit: 400_000 }
-export const pieComponent: ComponentSpec = { ...builtIn("pie", pie).spec, workLimit: 400_000 }
-export const donutComponent: ComponentSpec = {
-  ...builtIn("donut", {
+const clusteredDefinition = chart("clustered-chart", clusteredChart, { workLimit: 400_000, partLimit: 750 })
+const lineDefinition = chart("line", line, { workLimit: 400_000 })
+const pieDefinition = chart("pie", pie, { workLimit: 400_000 })
+const stackedDefinition = chart("stacked", stacked)
+const waterfallDefinition = chart("waterfall", waterfall)
+
+export const clusteredChartComponent: ComponentSpec = clusteredDefinition.spec
+export const lineComponent: ComponentSpec = lineDefinition.spec
+export const pieComponent: ComponentSpec = pieDefinition.spec
+export const donutComponent: ComponentSpec = chart(
+  "donut",
+  {
     ...pie,
     name: "Donut chart",
     defaultVariant: { ...pie.defaultVariant, shape: "donut" },
-  }).spec,
-  workLimit: 400_000,
-}
-export const stackedComponent: ComponentSpec = builtIn("stacked", stacked).spec
-export const waterfallComponent: ComponentSpec = builtIn("waterfall", waterfall).spec
+  },
+  { workLimit: 400_000 },
+).spec
+export const stackedComponent: ComponentSpec = stackedDefinition.spec
+export const waterfallComponent: ComponentSpec = waterfallDefinition.spec
 
-const expandedComponents = new Map<string, ComponentSpec>([
-  ["clustered-chart", clusteredChartComponent],
-  ["line", lineComponent],
-  ["pie", pieComponent],
-  ["donut", donutComponent],
-  ["stacked", stackedComponent],
-  ["waterfall", waterfallComponent],
-])
+export const componentLibrary: ReadonlyMap<string, ComponentDefinition> = new Map(
+  [
+    columnDefinition,
+    architectureDefinition,
+    cycleDefinition,
+    matrixDefinition,
+    processDefinition,
+    treeDefinition,
+    clusteredDefinition,
+    stackedDefinition,
+    waterfallDefinition,
+    lineDefinition,
+    pieDefinition,
+  ].map((definition) => [definition.id, definition]),
+)

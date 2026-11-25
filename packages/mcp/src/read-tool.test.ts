@@ -20,14 +20,14 @@ const titled = () =>
     ],
   }).doom
 
-function agent(components = false) {
+function agent() {
   const decks = memoryDecks(titled)
   let minted = 0
   let calls = 0
   const session: Session = { agent: "aira", mint: () => `minted${String((minted += 1))}`, log: emptyLog(), now: 0 }
   return (op: string, args: unknown) => {
     session.once = `call${String((calls += 1))}`
-    return callTool(names[op] ?? op, args, session, decks, new Set(), components)
+    return callTool(names[op] ?? op, args, session, decks)
   }
 }
 
@@ -72,14 +72,8 @@ describe("read_deck's theme", () => {
   })
 })
 
-it("omits templates when placement is disabled", async () => {
-  const call = agent(false)
-  const { answer } = await call("create_deck", {})
-  expect((await call("read_deck", { deck: answer.deck })).answer).not.toHaveProperty("components")
-})
-
-it("advertises and places every template when placement is enabled", async () => {
-  const call = agent(true)
+it("advertises and places every template", async () => {
+  const call = agent()
   const { answer } = await call("create_deck", { name: "Consulting" })
   const { deck, slides } = answer
   let rev = answer.rev
@@ -88,7 +82,19 @@ it("advertises and places every template when placement is enabled", async () =>
 
   const components = read.answer.components
   if (!Array.isArray(components)) throw new Error("Expected advertised templates")
-  expect(components).toEqual(["column", "architecture", "cycle", "matrix", "process", "tree"])
+  expect(components).toEqual([
+    "column",
+    "architecture",
+    "cycle",
+    "matrix",
+    "process",
+    "tree",
+    "clustered-chart",
+    "stacked",
+    "waterfall",
+    "line",
+    "pie",
+  ])
   for (const component of components) {
     const signature = await call("read_deck", { deck, component })
     expect(signature.answer).toMatchObject({

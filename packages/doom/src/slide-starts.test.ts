@@ -8,7 +8,6 @@ import { placeholderTitle } from "./placeholder-title.js"
 import { type SlideStart, slideStartWrites, slideStarts } from "./slide-starts.js"
 import { titleOnlyWrites } from "./slide-placeholders.js"
 import { textHeight } from "./text-estimate.js"
-import { sampleChart } from "./sample-charts.js"
 import { applyEdit, isRefusal, rev, type Doom, type NodeId } from "./index.js"
 
 const person = { kind: "person", id: "test" } as const
@@ -17,7 +16,13 @@ function started(start: SlideStart): { doom: Doom; slide: NodeId } {
   const grown = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
   const slide = grown.slides[0]!
   const writes = slideStartWrites(grown.doom, slide, minter("s"), start)
-  const next = applyEdit(grown.doom, { once: "start", author: person, writes, rev: rev(grown.doom.rev + 1) })
+  const next = applyEdit(grown.doom, {
+    once: "start",
+    author: person,
+    writes,
+    readBase: grown.doom.rev,
+    rev: rev(grown.doom.rev + 1),
+  })
   if (isRefusal(next)) throw new Error(JSON.stringify(next))
   return { doom: next, slide }
 }
@@ -106,7 +111,7 @@ describe("a designed starting slide", () => {
     expect(names("timeline")).toEqual(["Title", "Timeline"])
     expect(names("grid")).toEqual(["Title", "Grid"])
     const { doom, slide } = started("chart")
-    expect(childrenOf(doom, slide).some((node) => propOf(node, "chart")?.kind === "column")).toBe(true)
+    expect(childrenOf(doom, slide).some((node) => propOf(node, "instance")?.component.id === "column")).toBe(true)
     const text = started("text")
     const body = childrenOf(text.doom, text.slide).find((node) => propOf(node, "role") !== "title")!
     expect(propOf(body, "text")).toMatchObject({
@@ -132,15 +137,5 @@ describe("the content area of a slide", () => {
     expect(area.y).toBeGreaterThan(200)
     expect(area.y + area.h).toBeLessThanOrEqual(1000)
     expect(contentAreaOf(doom, slide)).toEqual({ x: 160, y: 80, w: 1600, h: 920 })
-  })
-})
-
-describe("a sample chart", () => {
-  it("has a category for every value and a series name a person can edit", () => {
-    for (const kind of ["column", "bar", "line", "pie", "stacked"] as const) {
-      const chart = sampleChart(kind)
-      expect(chart.kind).toBe(kind)
-      for (const series of chart.series) expect(series.values).toHaveLength(chart.categories.length)
-    }
   })
 })

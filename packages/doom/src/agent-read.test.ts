@@ -99,9 +99,9 @@ describe("readForAgent", () => {
     expect(plain).toContain("layout=row gap=29")
   })
 
-  it("names a chart, a line, an icon and a role", () => {
+  it("reads an old chart as a frame and names a line, an icon and a role", () => {
     const chart = read.find((line) => line.includes(more.chart))!
-    expect(chart).toContain(`${more.chart} chart @100,300 800x500 chart={"kind":"bar","categories":["Q1","Q2"]`)
+    expect(chart).toContain(`${more.chart} frame @100,300 800x500`)
     expect(read.find((line) => line.includes(more.line))).toBe(`  ${more.line} line @100,200 300x0`)
     expect(read.find((line) => line.includes(more.icon))).toBe(`  ${more.icon} icon @900,200 96x96 icon=star`)
     expect(read.find((line) => line.includes(more.titled))).toContain(`${more.titled} text:title @50,50 600x90`)

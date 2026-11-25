@@ -47,14 +47,16 @@ export default async function drive({ signIn, post, mcpRoutes, expect, note }) {
     },
     {
       op: "add",
-      kind: "chart",
+      kind: "component",
+      component: "column",
       slide,
-      chart: {
-        kind: "column",
-        categories: ["North", "South"],
-        series: [{ name: "Revenue", values: [14, 10] }],
-        unit: "$M",
+      data: {
+        rows: [
+          { id: "north", label: "North", value: 14 },
+          { id: "south", label: "South", value: 10 },
+        ],
       },
+      tokens: { unitHeader: "$M" },
       box: { x: 160, y: 230, w: 1500, h: 650 },
     },
   ])

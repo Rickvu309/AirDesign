@@ -4,7 +4,7 @@ import os from "node:os"
 import path from "node:path"
 import { PNG } from "pngjs"
 import { differences, measure, parityFaults } from "../tests/browser/path-parity-score.ts"
-import { pathParityCanvas, pathParityPdf, sampleDeckLines, sampleDeckPdf } from "./pdf-sample.mjs"
+import { chartDeckPdf, pathParityCanvas, pathParityPdf, sampleDeckLines, sampleDeckPdf } from "./pdf-sample.mjs"
 
 const poppler = (name, args) => execFileSync(name, args, { encoding: "latin1" })
 
@@ -79,7 +79,7 @@ export function pathParityPdfFaults(canvasFile, pdfFile, scratch) {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   if (!process.argv.includes("--no-export")) {
-    for (const stale of [sampleDeckPdf, sampleDeckLines, pathParityPdf, pathParityCanvas])
+    for (const stale of [sampleDeckPdf, sampleDeckLines, pathParityPdf, pathParityCanvas, chartDeckPdf])
       fs.rmSync(stale, { force: true })
     execFileSync(
       "pnpm",
@@ -103,6 +103,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     lines: JSON.parse(fs.readFileSync(sampleDeckLines, "utf8")),
     reach: inkReach(fs.readFileSync(path.join(scratch, "first.ppm"))),
   })
+  const chartPages = poppler("pdftotext", [chartDeckPdf, "-"]).trim().split("\f")
+  const chartLabels = ["Q1", "Partners", "Existing", "Growth", "Customers", "Small business"]
+  if (chartPages.length !== chartLabels.length) faults.push(`Chart PDF has ${chartPages.length} pages, expected six`)
+  for (const [index, label] of chartLabels.entries())
+    if (!chartPages[index]?.replace(/\s+/g, " ").includes(label))
+      faults.push(`Chart PDF page ${index + 1} has no readable "${label}" label`)
   faults.push(...pathParityPdfFaults(pathParityCanvas, pathParityPdf, scratch))
   fs.rmSync(scratch, { recursive: true, force: true })
   if (faults.length > 0) {
@@ -110,6 +116,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(1)
   }
   console.log(
-    "The sample deck's PDF has every slide on a 16:9 page, embedded fonts and readable text, and the wedges, rings, polylines and dashes of the path scene paint as they do on the canvas.",
+    "The sample deck's PDF has every slide on a 16:9 page, embedded fonts and readable text, the six chart inserts have readable labels, and the wedges, rings, polylines and dashes of the path scene paint as they do on the canvas.",
   )
 }

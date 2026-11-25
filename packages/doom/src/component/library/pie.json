@@ -2,6 +2,30 @@
   "version": 1,
   "name": "Pie chart",
   "chart": "pie",
+  "sample": {
+    "w": 1540,
+    "h": 650,
+    "data": {
+      "series": [{ "id": "share" }],
+      "rows": [
+        {
+          "id": "s0",
+          "label": "Enterprise",
+          "value": 42
+        },
+        {
+          "id": "s1",
+          "label": "Mid-market",
+          "value": 29
+        },
+        {
+          "id": "s2",
+          "label": "Small business",
+          "value": 29
+        }
+      ]
+    }
+  },
   "collections": {
     "series": {},
     "rows": {

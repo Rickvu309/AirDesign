@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { type AgentChange, readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { minter } from "./agent-fixtures.js"
-import { more, richDeck } from "./testing/rich-deck.js"
+import { richDeck } from "./testing/rich-deck.js"
 import { hex, ids, land } from "./sample-deck.js"
 
 const hiddenCaption = {
@@ -58,18 +58,11 @@ describe("a field refusal names the path, the fault and the accepted form", () =
 })
 
 const kindForm =
-  "One of text, shape, line, path, frame, picture, icon, chart, kpi, cards, compare, matrix, timeline, flow."
+  "One of text, shape, line, path, frame, picture, icon, kpi, cards, compare, matrix, timeline, flow, component."
 const colorForm = "A theme colour, lighter or darker by a percent, or #rrggbb."
 const nodeForm = "1 to 16 of a-z or 0-9, a colon, then 1 to 12 digits."
-const chart = { kind: "bar", categories: ["a"], series: [{ name: "s", values: [1] }] }
 
 const readRows: { readonly raw: unknown; readonly field: string; readonly fault: string; readonly form: string }[] = [
-  {
-    raw: { op: "set", target: "t:3", chart: { categories: ["a"], series: [{ name: "s", values: [1] }] } },
-    field: "chart.kind",
-    fault: "missing",
-    form: "One of bar, column, line, pie, stacked.",
-  },
   {
     raw: { op: "slide", move: { after: null } },
     field: "move.slide",
@@ -112,16 +105,6 @@ const readRows: { readonly raw: unknown; readonly field: string; readonly fault:
     fault: "form",
     form: "One of top, right, bottom, left, center.",
   },
-  {
-    raw: {
-      op: "set",
-      target: "t:3",
-      chart: { kind: "bar", categories: ["a"], series: [{ name: "s", values: [1], color: "bad" }] },
-    },
-    field: "chart.series.0.color",
-    fault: "form",
-    form: colorForm,
-  },
   { raw: { op: "deck", colors: { accent1: "blue" } }, field: "colors.accent1", fault: "form", form: "#rrggbb." },
   {
     raw: { op: "deck", fonts: { heading: "!!!" } },
@@ -139,16 +122,6 @@ const readRows: { readonly raw: unknown; readonly field: string; readonly fault:
     field: "stroke",
     fault: "form",
     form: "A theme colour, lighter or darker by a percent, #rrggbb, or none.",
-  },
-  {
-    raw: {
-      op: "set",
-      target: "t:3",
-      chart: { kind: "bar", categories: ["a", "b"], series: [{ name: "s", values: [1] }] },
-    },
-    field: "chart.series",
-    fault: "form",
-    form: "One value per category.",
   },
   {
     raw: { op: "add", kind: "text", slide: "t:3", text: 123 },
@@ -222,7 +195,7 @@ const readRows: { readonly raw: unknown; readonly field: string; readonly fault:
 describe("each refused edit names its own path", () => {
   it("keeps the field, the fault and the accepted form", () => {
     for (const row of readRows) {
-      expect(readAgentChange(row.raw, false), JSON.stringify(row.raw)).toMatchObject({
+      expect(readAgentChange(row.raw), JSON.stringify(row.raw)).toMatchObject({
         refused: "shape",
         field: row.field,
         fault: row.fault,
@@ -243,7 +216,6 @@ describe("each refused edit names its own path", () => {
     needs(set(ids.title, { startArrow: "arrow" }), "startArrow", "a line")
     needs(set(ids.title, { fit: "fill" }), "fit", "an image fill")
     needs(set(ids.card, { crop: { left: 10 } }), "crop", "an image fill")
-    needs(set(ids.title, { chart }), "chart", "a chart layer")
     needs(set(ids.card, { gap: 16 }), "gap", "a row or column layout")
     needs(
       { op: "add", kind: "frame", slide: ids.slide, rows: [["H"], ["a"]], layout: "row" },
@@ -255,7 +227,6 @@ describe("each refused edit names its own path", () => {
     needs({ op: "add", kind: "shape", slide: ids.slide, link: "https://example.com" }, "link", "a text layer")
     needs(set(ids.caption, { insert: linked }), "insert", "a text layer")
     needs(set("*.title", { insert: linked }), "insert", "a text layer")
-    needs(set(`${more.chart}#Plan:Q1`, { insert: linked }), "insert", "a text layer")
     const pictured = land(richDeck(), [
       { node: ids.title, prop: "fills", value: [{ kind: "image", asset: "a".repeat(64), fit: "tile" }] },
     ])

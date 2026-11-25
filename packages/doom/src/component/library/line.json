@@ -2,6 +2,37 @@
   "version": 1,
   "name": "Line chart",
   "chart": "cartesian",
+  "sample": {
+    "w": 1540,
+    "h": 650,
+    "data": {
+      "categories": [
+        {
+          "id": "c1",
+          "label": "Q1"
+        },
+        {
+          "id": "c2",
+          "label": "Q2"
+        },
+        {
+          "id": "c3",
+          "label": "Q3"
+        },
+        {
+          "id": "c4",
+          "label": "Q4"
+        }
+      ],
+      "series": [
+        {
+          "id": "s1",
+          "label": "Customers",
+          "values": [12, 19, 21, 27]
+        }
+      ]
+    }
+  },
   "collections": {
     "categories": {
       "label": "string"
@@ -430,11 +461,7 @@
       "lane",
       ["max", 1, ["min", 135, ["if", ["eq", ["get", "rowCount"], 1], ["div", ["get", "frame.w"], 3], ["get", "step"]]]]
     ],
-    ["canvas", ["max", 1, ["get", "frame.w"], ["get", "frame.h"]]],
-    [
-      "dot",
-      ["div", ["min", ["get", "token.markerRadius"], ["max", 2, ["mul", ["get", "lane"], 0.3]]], ["get", "canvas"]]
-    ],
+    ["marker", ["min", ["get", "token.markerRadius"], ["max", 2, ["mul", ["get", "lane"], 0.3]]]],
     [
       "canDraw",
       [
@@ -676,8 +703,8 @@
                         "key": ["list", "trace", ["get", "srs.id"], ["get", "first.id"]],
                         "x": 0,
                         "y": 0,
-                        "w": ["get", "canvas"],
-                        "h": ["get", "canvas"],
+                        "w": ["get", "frame.w"],
+                        "h": ["get", "frame.h"],
                         "d": [
                           "polyline",
                           [
@@ -686,8 +713,8 @@
                             "xy",
                             [
                               "point",
-                              ["div", ["get", "xy.x"], ["get", "canvas"]],
-                              ["div", ["get", "xy.y"], ["get", "canvas"]]
+                              ["div", ["get", "xy.x"], ["get", "frame.w"]],
+                              ["div", ["get", "xy.y"], ["get", "frame.h"]]
                             ]
                           ]
                         ],
@@ -718,8 +745,8 @@
                             "key": ["list", "markers", ["get", "srs.id"], ["get", "anchor.id"]],
                             "x": 0,
                             "y": 0,
-                            "w": ["get", "canvas"],
-                            "h": ["get", "canvas"],
+                            "w": ["get", "frame.w"],
+                            "h": ["get", "frame.h"],
                             "d": [
                               "discs",
                               [
@@ -728,12 +755,12 @@
                                 "xy",
                                 [
                                   "point",
-                                  ["div", ["get", "xy.x"], ["get", "canvas"]],
-                                  ["div", ["get", "xy.y"], ["get", "canvas"]]
+                                  ["div", ["get", "xy.x"], ["get", "frame.w"]],
+                                  ["div", ["get", "xy.y"], ["get", "frame.h"]]
                                 ]
                               ],
-                              ["get", "dot"],
-                              ["get", "dot"]
+                              ["div", ["get", "marker"], ["get", "frame.w"]],
+                              ["div", ["get", "marker"], ["get", "frame.h"]]
                             ],
                             "fill": ["get", "anchor.color"]
                           }

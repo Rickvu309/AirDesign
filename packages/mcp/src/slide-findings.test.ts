@@ -83,9 +83,14 @@ describe("consulting slide advice over MCP", () => {
             { op: "set", target: `${slide}.title`, text: "Pricing strategy" },
             {
               op: "add",
-              kind: "chart",
+              kind: "frame",
               slide,
-              chart: { kind: "column", categories: ["North"], series: [{ name: "Revenue", values: [14] }] },
+              rows: [
+                ["Region", "Revenue"],
+                ["North", "14"],
+                ["South", "22"],
+                ["East", "37"],
+              ],
               box: { x: 160, y: 360, w: 1500, h: 450 },
             },
           ],

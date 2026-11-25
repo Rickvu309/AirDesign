@@ -1,7 +1,7 @@
 import { readColor } from "../color.js"
 import type { Refusal } from "../refusal.js"
 import { boolean, finite, integer, literal, naming, object, oneOf, reject, variant } from "../read-kit.js"
-import { readCollections, readData } from "./collections.js"
+import { readCollections, readExpansionData } from "./collections.js"
 import { type Bindings, type Expr, binding, readExpr } from "./expression.js"
 import { defaultNumberTokens, readLocale } from "./operators.js"
 import {
@@ -218,10 +218,13 @@ export type ComponentSpec = ReturnType<ReturnType<typeof specReader>> & {
 }
 
 export const readComponentData = (
-  spec: { readonly collections: Parameters<typeof readData>[0] },
+  spec: {
+    readonly collections: Parameters<typeof readExpansionData>[0]
+    readonly collectionLimits?: Parameters<typeof readExpansionData>[3]
+  },
   raw: unknown,
   charge: Charge,
-) => readData(spec.collections, raw, charge)
+) => readExpansionData(spec.collections, raw, charge, spec.collectionLimits)
 
 export function readComponentSpec(raw: unknown): ComponentSpec | Refusal {
   try {

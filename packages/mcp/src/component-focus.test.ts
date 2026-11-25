@@ -5,7 +5,7 @@ import { expect, it } from "vitest"
 import { createServer, emptyLog } from "./index.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
-it.runIf(doom.linkedComponentsEnabled)("sets and clears category focus on a linked component over MCP", async () => {
+it("sets and clears category focus on a linked component over MCP", async () => {
   const start = () => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [] }] }).doom
   const before = start()
   const frame = doom.nodeId("chart:1")

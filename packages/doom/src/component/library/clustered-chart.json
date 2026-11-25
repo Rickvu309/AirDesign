@@ -1,6 +1,38 @@
 {
   "version": 1,
   "name": "Clustered chart",
+  "chart": "cartesian",
+  "sample": {
+    "w": 1540,
+    "h": 650,
+    "data": {
+      "categories": [
+        {
+          "id": "c1",
+          "label": "Enterprise"
+        },
+        {
+          "id": "c2",
+          "label": "Mid-market"
+        },
+        {
+          "id": "c3",
+          "label": "Small business"
+        },
+        {
+          "id": "c4",
+          "label": "Partners"
+        }
+      ],
+      "series": [
+        {
+          "id": "s1",
+          "label": "Revenue",
+          "values": [24, 19, 15, 12]
+        }
+      ]
+    }
+  },
   "collections": {
     "categories": {
       "label": "string"
@@ -9,7 +41,7 @@
       "label": "string",
       "values": "number?[]",
       "fill": "color?",
-      "fills": "color?[]"
+      "fills": { "optional": { "list": "color?" } }
     }
   },
   "collectionLimits": {
@@ -1084,7 +1116,7 @@
                             "h": ["if", ["get", "horizontal"], ["get", "mark.size"], ["get", "alongSize"]],
                             "fill": [
                               "coalesce",
-                              ["at", ["get", "s.fills"], ["get", "categoryIndex"]],
+                              ["at", ["coalesce", ["get", "s.fills"], ["list"]], ["get", "categoryIndex"]],
                               [
                                 "coalesce",
                                 ["get", "s.fill"],

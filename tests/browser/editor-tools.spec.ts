@@ -108,12 +108,14 @@ test("Actions, centred over the toolbar, adds an icon from a search and each kin
   expect(icon.geometry).toMatchObject({ name: "lucide/rocket" })
   expect(near(icon.box.x, 900, 1) && near(icon.box.y, 808, 1)).toBe(true)
 
-  for (const kind of ["column", "bar", "line", "pie", "stacked"] as const) {
+  for (const kind of ["column", "bar", "stacked", "waterfall", "line", "pie"] as const) {
     await page.getByRole("button", { name: editorCopy.actions, exact: true }).click()
     await page.getByRole("option", { name: editorCopy.chartKinds[kind], exact: true }).click()
-    await expect.poll(async () => (await picked(page, stack, opened)).node?.chart).toMatchObject({ kind })
+    await expect
+      .poll(async () => (await picked(page, stack, opened)).node?.instance)
+      .toMatchObject({ component: { id: kind === "bar" ? "clustered-chart" : kind }, parts: expect.any(Array) })
   }
-  await expect.poll(() => page.locator("[data-slide-box] [data-derived]").count()).toBeGreaterThan(4)
+  await expect.poll(() => page.locator('[data-slide-box] [data-node^="p"]').count()).toBeGreaterThan(4)
 })
 
 test("in Actions, Enter runs the top match, the arrow keys move the highlight, and the Deck group title finds Export as PDF", async ({
@@ -128,7 +130,9 @@ test("in Actions, Enter runs the top match, the arrow keys move the highlight, a
   await search.fill("pie")
   await expect(page.getByRole("option", { selected: true })).toHaveText(editorCopy.chartKinds.pie)
   await page.keyboard.press("Enter")
-  await expect.poll(async () => (await picked(page, stack, opened)).node?.chart).toMatchObject({ kind: "pie" })
+  await expect
+    .poll(async () => (await picked(page, stack, opened)).node?.instance)
+    .toMatchObject({ component: { id: "pie" } })
   await expect(search).toBeHidden()
 
   await open()
@@ -138,7 +142,9 @@ test("in Actions, Enter runs the top match, the arrow keys move the highlight, a
   await page.keyboard.press("ArrowUp")
   await expect(page.getByRole("option", { selected: true })).toHaveText(editorCopy.chartKinds.bar)
   await page.keyboard.press("Enter")
-  await expect.poll(async () => (await picked(page, stack, opened)).node?.chart).toMatchObject({ kind: "bar" })
+  await expect
+    .poll(async () => (await picked(page, stack, opened)).node?.instance)
+    .toMatchObject({ component: { id: "clustered-chart" }, variant: { orientation: "bar" } })
 
   await open()
   await search.fill(editorCopy.deckGroup.toLowerCase())
@@ -171,11 +177,13 @@ test("in Actions, the Enter that ends an IME composition, as Vietnamese Telex se
   await expect(search).toHaveValue("pie")
   await ime.send("Input.insertText", { text: "pie" })
   await expect(search).toHaveValue("pie")
-  expect((await picked(page, stack, opened)).node?.chart).toBeUndefined()
+  expect((await picked(page, stack, opened)).node?.instance).toBeUndefined()
 
   await page.keyboard.press("Enter")
   await expect(page.locator("body")).toHaveAttribute("data-key-composing", "false")
-  await expect.poll(async () => (await picked(page, stack, opened)).node?.chart).toMatchObject({ kind: "pie" })
+  await expect
+    .poll(async () => (await picked(page, stack, opened)).node?.instance)
+    .toMatchObject({ component: { id: "pie" } })
   await expect(search).toBeHidden()
 })
 

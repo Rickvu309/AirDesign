@@ -13,45 +13,59 @@ import {
   slideTitle,
 } from "../slide-kit.js"
 
-const exhibit = (name: string, heading: string, chart: doom.TreeNode) =>
+const exhibit = (name: string, heading: string) =>
   frame(name, { box: box(0, 0, 100, 100), sizing: { w: "fill", h: "fill" }, layout: columnOf(20) }, [
     copy(`${name} heading`, heading, { style: "body", color: ink, bold: true, size: 26 }),
-    chart,
   ])
 
-const segments = ["Enterprise", "Mid-market", "Small business", "Public sector", "Partners"]
+const categories = (labels: readonly string[]) => labels.map((label, index) => ({ id: `c${index + 1}`, label }))
+const chartBox = { x: 0, y: 55, w: (contentWidth - 96) / 2, h: 604 }
+const series = [
+  { id: "existing", label: "Existing customers" },
+  { id: "new", label: "New customers" },
+]
 
-const ranking = frame("ranking chart", {
-  box: box(0, 0, 100, 100),
-  sizing: { w: "fill", h: "fill" },
-  chart: {
-    kind: "bar",
-    categories: segments,
-    series: [
-      {
-        name: "Net new revenue",
-        values: [1.9, 1.2, 0.7, 0.5, 0.3],
-        color: { var: "accent1", tint: 0.62 },
-        points: [{ at: 0, color: { var: "accent1" } }],
-      },
-    ],
-    labels: true,
+export const barChartComponents = [
+  {
+    parent: "ranking",
+    component: "clustered-chart",
+    variant: { orientation: "bar" },
+    box: chartBox,
+    data: {
+      categories: categories(["Enterprise", "Mid-market", "Small business", "Public sector", "Partners"]),
+      series: [
+        {
+          id: "revenue",
+          label: "Net new revenue",
+          values: [1.9, 1.2, 0.7, 0.5, 0.3],
+          fills: ["accent1", "accent1+62", "accent1+62", "accent1+62", "accent1+62"],
+        },
+      ],
+    },
   },
-})
-
-const quarters = frame("quarters chart", {
-  box: box(0, 0, 100, 100),
-  sizing: { w: "fill", h: "fill" },
-  chart: {
-    kind: "stacked",
-    categories: ["Q1", "Q2", "Q3", "Q4"],
-    series: [
-      { name: "Existing customers", values: [0.72, 0.8, 0.88, 0.97] },
-      { name: "New customers", values: [0.2, 0.24, 0.29, 0.34], color: { var: "accent2" } },
-    ],
-    labels: true,
+  {
+    parent: "quarterly",
+    component: "stacked",
+    box: chartBox,
+    data: {
+      categories: categories(["Q1", "Q2", "Q3", "Q4"]),
+      series,
+      segments: [
+        [0.72, 0.2],
+        [0.8, 0.24],
+        [0.88, 0.29],
+        [0.97, 0.34],
+      ].flatMap((values, index) =>
+        series.map(({ id: seriesId }, at) => ({
+          id: `c${index + 1}-${seriesId}`,
+          category: `c${index + 1}`,
+          series: seriesId,
+          value: values[at]!,
+        })),
+      ),
+    },
   },
-})
+]
 
 export function barCharts(): doom.TreeSlide {
   return {
@@ -60,8 +74,8 @@ export function barCharts(): doom.TreeSlide {
       accentTick(),
       slideTitle("Enterprise leads every segment in net new revenue"),
       frame("exhibits", { box: box(margin, 288, contentWidth, 660), layout: rowOf(96) }, [
-        exhibit("ranking", "Net new revenue by segment, 2025, $M", ranking),
-        exhibit("quarterly", "Revenue by quarter, 2025, $M", quarters),
+        exhibit("ranking", "Net new revenue by segment, 2025, $M"),
+        exhibit("quarterly", "Revenue by quarter, 2025, $M"),
       ]),
       ...footer("Source: Company finance, fiscal year 2025", "9"),
     ],

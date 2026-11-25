@@ -91,6 +91,10 @@ export const layers = ["words", "card", "rule", "star", "photo", "panel"] as con
 
 export const sample: Readonly<Record<string, unknown>> = {
   focus: ["category"],
+  component: "column",
+  data: { rows: [{ id: "q1", label: "Q1", value: 12 }] },
+  variant: { labels: false },
+  tokens: { digits: 1 },
   fill: "accent2",
   stroke: "accent2",
   strokeWidth: 3,
@@ -241,7 +245,8 @@ export const reach: Readonly<Record<string, Entry>> = {
   "panel:name": { agent: "set.name", writes: "name", on: "card", props: ["name"] },
   "actions:icon": { agent: "add.icon", props: ["geometry"] },
   "actions:icon#swap": { agent: "set.icon", writes: "geometry", on: "star", props: ["geometry"] },
-  "actions:chart": { agent: "add.chart", props: ["chart"] },
+  "panel:detach-instance": { agent: "op.detach", props: ["instance"] },
+  "actions:component": { agent: "add.component", props: ["instance"] },
   "drop:picture": { agent: "add.picture", props: ["fills"] },
 }
 

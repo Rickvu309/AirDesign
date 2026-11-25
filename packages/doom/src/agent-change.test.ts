@@ -1,4 +1,3 @@
-import { linkedComponentsEnabled } from "./component-rollout.js"
 import { describe, expect, it } from "vitest"
 import { bytesOf, limits } from "./limits.js"
 import { hex } from "./sample-deck.js"
@@ -18,9 +17,9 @@ const valid: readonly AgentChange[] = [
   { op: "add", kind: "kpi", slide: "t:3" as never, items: [{ title: "Revenue", value: "$4.2M", note: "+12%" }] },
   {
     op: "add",
-    kind: "chart",
+    kind: "component",
     slide: "t:3" as never,
-    chart: { kind: "bar", categories: ["Q1"], series: [{ name: "Plan", values: [3], color: "accent2" }] },
+    component: "column",
   },
   {
     op: "add",
@@ -35,7 +34,7 @@ const valid: readonly AgentChange[] = [
   { op: "set", target: "t:3.title", text: "x", fill: "none", stroke: hex(0xaabbcc), effect: "lifted" },
   { op: "set", target: "t:6", insert: { at: 2, text: "linked", link: "https://example.com" } },
   { op: "set", target: "t:6", d: "M0 0L1 1" },
-  { op: "set", target: "t:9#Plan:Q1", fill: "accent3" },
+  { op: "set", target: "t:9", focus: ["q1"] },
   { op: "move", node: "t:4" as never, into: "t:5" as never, after: null },
   { op: "wrap", nodes: ["t:4" as never], layout: "row" },
   { op: "unwrap", node: "t:4" as never },
@@ -86,6 +85,8 @@ describe("readAgentChange", () => {
     refused({ op: "set", target: "t:3", layout: "grid" })
     refused({ op: "slide", add: { layout: "Blank" } })
     refused({ op: "paint" })
+    refused({ op: "set", target: "t:3", chart: {} })
+    refused({ op: "set", target: "t:3#Plan:Q1", fill: "accent1" })
     refused("add")
     refused(null)
     refused({
@@ -176,7 +177,6 @@ describe("the advertised schema", () => {
       "from",
       "to",
       "route",
-      "chart",
       "rows",
       "items",
       "axes",
@@ -211,7 +211,11 @@ describe("the advertised schema", () => {
       "colors",
       "fonts",
       "nameFollows",
-      ...(linkedComponentsEnabled ? ["component", "data", "variant", "tokens", "focus"] : []),
+      "component",
+      "data",
+      "variant",
+      "tokens",
+      "focus",
     ]
     expect(Object.keys(change).sort()).toEqual([...named].sort())
     const used = new Set(valid.flatMap((each) => Object.keys(each)))
@@ -231,14 +235,13 @@ describe("the advertised schema", () => {
     }
   })
 
-  it("reads focus only during the linked template rollout", () => {
+  it("reads focus on linked templates", () => {
     const focus = { op: "set", target: "t:3", focus: ["category"] }
-    expect(readAgentChange(focus, true)).toMatchObject(focus)
-    expect(readAgentChange(focus, false)).toMatchObject({ refused: "shape" })
-    expect(Object.keys(change).includes("focus")).toBe(linkedComponentsEnabled)
+    expect(readAgentChange(focus)).toMatchObject(focus)
+    expect(Object.keys(change).includes("focus")).toBe(true)
   })
 
-  it("advertises detach only during the linked template rollout", () => {
+  it("advertises detach on linked templates", () => {
     expect(change.op?.enum).toEqual([
       "add",
       "set",
@@ -249,7 +252,7 @@ describe("the advertised schema", () => {
       "slide",
       "duplicate",
       "deck",
-      ...(linkedComponentsEnabled ? ["detach"] : []),
+      "detach",
     ])
   })
 

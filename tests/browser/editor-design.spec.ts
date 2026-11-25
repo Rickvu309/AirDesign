@@ -251,50 +251,59 @@ test("a tiled picture shows its mode alongside the current fit options, and a fr
 
 test("a selected chart keeps its frame controls and paints data set by an agent", async ({ page, context, stack }) => {
   const opened = await designing(page, context, stack)
-  await landNodes(stack, opened, [
+  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+  const read = async () => (await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)).json
+  await stack.toolBlocks(
+    "airdesign_edit_deck",
     {
-      id: "t:5",
-      type: "frame",
-      parent: opened.slide,
-      props: {
-        name: editorCopy.chart,
-        box: spot(1100, 700, 600, 260),
-        chart: {
-          kind: "column",
-          categories: ["Q1", "Q2", "Q3"],
-          series: [{ name: "Revenue", values: [12, 19, 15] }],
-          labels: true,
+      deck: opened.deck,
+      base: (await read()).rev,
+      changes: [
+        {
+          op: "add",
+          kind: "component",
+          component: "column",
+          slide: opened.slide,
+          box: { x: 1100, y: 700, w: 600, h: 260 },
         },
-      },
+      ],
     },
-  ])
+    opened.cookie,
+  )
+  const fold = doom.readFold((await read()).fold)
+  if (fold === undefined) throw new Error("could not read the deck")
+  const target = [...fold.nodes.values()].find((node) => doom.propOf(node, "instance") !== undefined)?.id
+  if (target === undefined) throw new Error("could not read the instance")
   const canvas = page.locator("[data-slide-box]")
   await expect(canvas.getByText("Q1", { exact: true })).toBeVisible()
 
-  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
-  const answer = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
-  const fold = doom.readFold(answer.json.fold)
-  if (fold === undefined) throw new Error("could not read the deck")
-  const chart = {
-    kind: "column",
-    categories: ["Launch", "Renewal"],
-    series: [{ name: "Revenue", values: [37, 61] }],
-    labels: true,
+  const data = {
+    rows: [
+      { id: "launch", label: "Launch", value: 37 },
+      { id: "renewal", label: "Renewal", value: 61 },
+    ],
   }
   await stack.toolBlocks(
     "airdesign_edit_deck",
-    { deck: opened.deck, base: fold.rev, changes: [{ op: "set", target: "t:5", chart }] },
+    { deck: opened.deck, base: fold.rev, changes: [{ op: "set", target, data }] },
     opened.cookie,
   )
-  expect((await savedNode(stack, opened, "t:5"))?.chart).toEqual(chart)
+  const saved = doom.readFold((await read()).fold)
+  const linked = doom.propOf(saved?.nodes.get(target), "instance")
+  expect(linked).toMatchObject({ data })
+  const bar = linked?.parts.find(({ key }) => key[0] === "bar")
+  if (bar === undefined) throw new Error("missing chart bar")
   await expect(canvas.getByText("Launch", { exact: true })).toBeVisible()
   await expect(canvas.getByText("61", { exact: true })).toBeVisible()
   await expect(canvas.getByText("Q1", { exact: true })).toHaveCount(0)
 
-  await clickSlide(page, 1300, 850)
-  expect(await selectedIds(page)).toEqual(["t:5"])
+  const bounds = await node(page, bar.node).boundingBox()
+  if (bounds === null) throw new Error("chart bar did not paint")
+  await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+  await expect.poll(() => selectedIds(page)).toEqual([target])
   await expect(panel(page).getByRole("button", { name: /align right/i })).toBeVisible()
   await expect(page.locator('[data-grip="bottom-right"]')).toBeVisible()
+  await expect(panel(page).getByRole("button", { name: designCopy.detachInstance })).toBeVisible()
   await expect(panel(page)).toHaveAttribute("data-panel-kind", "frame")
   await expect(section(page, fillCopy.section)).toBeVisible()
   await expect(section(page, designCopy.border)).toBeVisible()

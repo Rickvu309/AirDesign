@@ -62,6 +62,7 @@ const manualPanel = new Set([
   "panel:remove-auto-layout",
   "panel:show-hidden",
   "panel:name",
+  "panel:detach-instance",
 ])
 
 function panelKeys(): ReadonlySet<string> {

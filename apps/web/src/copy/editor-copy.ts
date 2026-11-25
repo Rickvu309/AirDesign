@@ -9,7 +9,6 @@ export const editorCopy = {
   removeMask: "Remove mask",
   alignLeft: "Align left",
   alignCenter: "Align center",
-  chart: "Chart",
   paintKinds: { solid: "Solid", gradient: "Gradient", image: "Image" },
   textTool: "Text",
   moveTools: "Move tools",
@@ -31,6 +30,7 @@ export const editorCopy = {
     line: "Line chart",
     pie: "Pie chart",
     stacked: "Stacked chart",
+    waterfall: "Waterfall chart",
   },
   slideStarts: {
     title: "Title",

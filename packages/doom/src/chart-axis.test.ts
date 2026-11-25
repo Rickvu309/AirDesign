@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { readAgentChange } from "./agent-change.js"
-import { build } from "./agent-fixtures.js"
-import { richDeck } from "./testing/rich-deck.js"
-import { readChart } from "./chart.js"
-import { type Chart, type Resolved, deriveChart, nodeId, propOf, readForAgent } from "./index.js"
-import { ids } from "./sample-deck.js"
+import { type Chart, type Resolved, deriveChart, nodeId } from "./index.js"
 import { measure, plainTheme, spot } from "./testing/doom-fixtures-art.js"
 
 const frame = nodeId("t:9")
@@ -68,25 +63,5 @@ describe("chart axis labels", () => {
     )
     expect(words).toEqual(expect.arrayContaining(["10.00", "10.25"]))
     expect(words).not.toContain("10")
-  })
-
-  it("stores an axis unit on the chart and reads it back", () => {
-    expect(readChart(revenue)).toMatchObject({ unit: "$M" })
-    const doom = build(richDeck(), { op: "add", kind: "chart", slide: ids.slide, chart: revenue })
-    const saved = [...doom.nodes.values()].flatMap((node) => {
-      const chart = propOf(node, "chart")
-      return chart === undefined ? [] : [chart]
-    })
-    expect(saved).toContainEqual(expect.objectContaining({ unit: "$M" }))
-    expect(readForAgent(doom, "all")).toContain('"unit":"$M"')
-  })
-
-  it("names a blank or non-text axis unit", () => {
-    const chart = { ...revenue, unit: "$M" }
-    const set = (unit: unknown) => readAgentChange({ op: "set", target: "t:3", chart: { ...chart, unit } })
-    expect(set("")).toMatchObject({ field: "chart.unit" })
-    expect(set("   ")).toMatchObject({ field: "chart.unit" })
-    expect(set(4)).toMatchObject({ field: "chart.unit" })
-    expect(set("$M")).not.toHaveProperty("refused")
   })
 })

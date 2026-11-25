@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { agentDeck, build, lastChild, minter, titledSlide } from "./agent-fixtures.js"
-import { bottomLimitOf } from "./agent-place.js"
+import { bottomLimitOf, contentAreaOf } from "./agent-place.js"
 import { childrenOf, propOf } from "./doom-walk.js"
 import type { Doom } from "./index.js"
 import { ids } from "./sample-deck.js"
@@ -115,8 +115,9 @@ describe("a pattern under a title", () => {
       {
         op: "add",
         slide: on,
-        kind: "chart",
-        chart: { kind: "bar", categories: ["Q1", "Q2"], series: [{ name: "Plan", values: [3, 4] }] },
+        kind: "component",
+        component: "column",
+        box: contentAreaOf(start, on)!,
       } as AgentChange,
       minter("c"),
     )

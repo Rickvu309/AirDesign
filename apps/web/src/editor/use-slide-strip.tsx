@@ -28,6 +28,7 @@ export function useSlideStrip(props: {
   readonly slides: readonly doom.NodeId[]
   readonly current: doom.NodeId | undefined
   readonly onCurrent: (slide: doom.NodeId) => void
+  readonly measure: doom.Measure | null
   readonly assetUrl: (asset: string) => string | undefined
 }): SlideStrip {
   const { view, typing, client, slides, current, onCurrent, assetUrl } = props
@@ -66,8 +67,14 @@ export function useSlideStrip(props: {
     },
     onAdd: (part, after) => {
       const from = after === undefined ? current : slides[after]
-      const made = addSlideWrites(view, from ?? null, mint, part !== undefined && isStart(part) ? part : "titleOnly")
-      client.push(made.writes)
+      const made = addSlideWrites(
+        view,
+        from ?? null,
+        mint,
+        part !== undefined && isStart(part) ? part : "titleOnly",
+        props.measure ?? undefined,
+      )
+      client.push(made.writes, part === "chart" ? { read: view } : undefined)
       onCurrent(made.slide)
       say.current(slideListCopy.added((from === undefined ? slides.length : slides.indexOf(from)) + 2))
     },

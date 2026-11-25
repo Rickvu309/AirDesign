@@ -61,23 +61,31 @@ function minter(): () => doom.NodeId {
   return () => doom.nodeId(`p:${String((next += 1))}`)
 }
 
-function planted(view: doom.Doom, grown: Grown, index: number, part: ListedStart, mint: () => doom.NodeId): doom.Doom {
+function planted(
+  view: doom.Doom,
+  grown: Grown,
+  index: number,
+  part: ListedStart,
+  mint: () => doom.NodeId,
+  measure: doom.Measure,
+): doom.Doom {
   const slide = grown.slides[index]
   if (slide === undefined) return view
   const landed = doom.applyEdit(view, {
     once: `layout-${part}`,
     author: person,
-    writes: doom.slideStartWrites(view, slide, mint, part),
+    writes: doom.slideStartWrites(view, slide, mint, part, measure),
     rev: doom.rev(view.rev + 1),
+    ...(part === "chart" ? { readBase: view.rev } : {}),
   })
   return doom.isRefusal(landed) ? view : landed
 }
 
-function grow(theme: doom.Theme, size: Size, fills: Fills): Grown {
+function grow(theme: doom.Theme, size: Size, fills: Fills, measure: doom.Measure): Grown {
   const grown = seed(theme, size, fills)
   const mint = minter()
   let view = grown.doom
-  for (const [index, part] of doom.slideStarts.entries()) view = planted(view, grown, index, part, mint)
+  for (const [index, part] of doom.slideStarts.entries()) view = planted(view, grown, index, part, mint, measure)
   return { doom: view, slides: grown.slides }
 }
 
@@ -107,7 +115,7 @@ export function layoutPictures(theme: doom.Theme, size: Size, fills: Fills, meas
   const held = heldFor(theme)
   const hit = held.get(key)
   if (hit !== undefined) return hit
-  const grown = grow(theme, size, fills)
+  const grown = grow(theme, size, fills, measure)
   const made = picturesOf(grown.doom, grown.slides, size, measure)
   held.set(key, made)
   return made
@@ -131,13 +139,13 @@ async function warmInSlices(
   await pause()
   const grown = seed(theme, size, fills)
   const mint = minter()
+  const measure = await measureOf(grown.doom)
   let view = grown.doom
   for (const [index, part] of doom.slideStarts.entries()) {
     await pause()
-    view = planted(view, grown, index, part, mint)
+    view = planted(view, grown, index, part, mint, measure)
   }
   await pause()
-  const measure = await measureOf(view)
   const pictures = {} as LayoutPictures
   for (const [index, part] of doom.slideStarts.entries()) {
     await pause()

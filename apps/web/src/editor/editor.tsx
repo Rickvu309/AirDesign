@@ -104,6 +104,7 @@ function Editing({
   const strip = useSlideStrip({
     view,
     typing,
+    measure,
     client,
     slides,
     current: slide,

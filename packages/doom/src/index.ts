@@ -132,7 +132,6 @@ export {
 export { type ListedRun, liveRuns, runsOf } from "./live-runs.js"
 export { type Face, type FaceNeeds, doomFaces } from "./text-faces.js"
 export { contentAreaOf, gapFor } from "./agent-place.js"
-export { sampleChart } from "./sample-charts.js"
 export { placeholderSubtitle, titleOnlyWrites, titleSlideWrites } from "./slide-placeholders.js"
 export { type SlideStart, slideStartWrites, slideStarts } from "./slide-starts.js"
 export { blankDeckName, deckNameFollows, nameFromTitleWrites } from "./deck-name-from-title.js"
@@ -151,10 +150,11 @@ export {
   detachComponent,
   suppressPart,
 } from "./component/join-instance.js"
-export { linkedComponentsEnabled } from "./component-rollout.js"
 export type { ComponentFinding } from "./component/findings.js"
 export { type ComponentDefinition, columnDefinition, componentLibrary } from "./component/library.js"
 export { type Instance, type PartKey, readPartKey } from "./component/instance.js"
 export { linkedPartOverrides, partDeletes, suppressKeys } from "./component/instance-ownership.js"
 
 export type { LayerPositions } from "./standing-layers.js"
+
+export { reservedPartId } from "./component/part-id.js"

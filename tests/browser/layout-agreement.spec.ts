@@ -15,7 +15,21 @@ const families = [
 ] as const
 const styles = ["title", "heading", "body", "caption"] as const
 const boxWidths = [480, 900, 1600]
-const notWords = new Set(["op", "kind", "slide", "into", "textStyle", "icon", "fill", "color", "layout", "align"])
+const notWords = new Set([
+  "id",
+  "component",
+  "orientation",
+  "op",
+  "kind",
+  "slide",
+  "into",
+  "textStyle",
+  "icon",
+  "fill",
+  "color",
+  "layout",
+  "align",
+])
 
 function wordsOf(value: unknown, key = ""): readonly string[] {
   if (typeof value === "string") return notWords.has(key) ? [] : [value]

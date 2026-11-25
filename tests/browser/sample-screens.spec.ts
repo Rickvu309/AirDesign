@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test"
+import { nodeId, reservedPartId } from "../../packages/doom/src/index.ts"
 import { sampleRoutes } from "../../apps/web/src/samples/sample-routes"
 import { test } from "./deck-test"
 import { openScreen } from "./open-screen"
@@ -28,10 +29,15 @@ for (const [name, path] of Object.entries(sampleRoutes)) {
     await openScreen(page, path)
     await page.locator("[data-doom-slide]").waitFor()
     await expect(page.locator("[data-fonts-pending]")).toHaveCount(0)
-    const clashes = await page.evaluate(() => {
+    const ids = await page
+      .locator("[data-doom-slide] [data-node^=p]")
+      .evaluateAll((nodes) => nodes.flatMap((node) => node.getAttribute("data-node") ?? []))
+    const parts = [...new Set(ids.filter((id) => reservedPartId(nodeId(id))))]
+    const clashes = await page.evaluate((ids) => {
+      const parts = new Set(ids)
       const slide = document.querySelector("[data-doom-slide]")!
       const owner = (element: Element) => element.closest("[data-node]")!
-      const drawn = (element: Element) => element.closest("[data-derived]") === null
+      const drawn = (element: Element) => !parts.has(owner(element).getAttribute("data-node") ?? "")
       const lines = [...slide.querySelectorAll<HTMLElement>("[data-line]")].filter(
         (line) => drawn(line) && line.textContent?.trim(),
       )
@@ -54,7 +60,7 @@ for (const [name, path] of Object.entries(sampleRoutes)) {
         }
       }
       return found
-    })
+    }, parts)
     expect(clashes).toEqual([])
   })
 }
