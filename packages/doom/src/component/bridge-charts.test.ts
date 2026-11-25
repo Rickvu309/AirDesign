@@ -178,6 +178,19 @@ describe("stacked column library", () => {
   })
 })
 
+function contrast(a: string, b: string): number {
+  const luminance = (hex: string) => {
+    const channel = (start: number) => {
+      const value = Number.parseInt(hex.slice(start, start + 2), 16) / 255
+      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+    }
+    return 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5)
+  }
+  const first = luminance(a)
+  const second = luminance(b)
+  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05)
+}
+
 describe("waterfall library", () => {
   it.each([
     ["fallback", defaultTheme] as const,
@@ -190,13 +203,31 @@ describe("waterfall library", () => {
       { focus: "Price" },
       theme,
     )
-    const paints = ["Open", "Price", "Volume"].map((id) => {
+    const paintFor = (id: string) => {
       const paint = fill(tree, "bar", id)
       if (paint?.kind !== "solid") throw new Error(`Expected a solid bar for ${id}`)
       return resolveColor(paint.color, theme)
-    })
-    expect(new Set(paints).size).toBe(3)
-    expect(paints[1]).toBe(theme.colors.accent1)
+    }
+    const total = paintFor("Open")
+    const focus = paintFor("Price")
+    const stepGrey = paintFor("Volume")
+    expect.soft(contrast(focus, total)).toBeGreaterThanOrEqual(1.5)
+    expect.soft(contrast(focus, stepGrey)).toBeGreaterThanOrEqual(1.5)
+    expect.soft(contrast(total, theme.colors.background)).toBeCloseTo(11.7, 0)
+    const score = (accent: string) => Math.min(contrast(accent, total), contrast(accent, stepGrey))
+    const { accent1, accent2, accent3, accent4, accent5, accent6 } = theme.colors
+    expect(score(focus)).toBe(Math.max(...[accent1, accent2, accent3, accent4, accent5, accent6].map(score)))
+  })
+
+  it("keeps an explicitly requested focus color", () => {
+    const highlight = { var: "accent1" }
+    const tree = expand(
+      waterfall,
+      { rows: [step("Open", 100, "total"), step("Price", 5), step("Close", 105, "total")] },
+      {},
+      { focus: "Price", highlight },
+    )
+    expect(fill(tree, "bar", "Price")).toEqual({ kind: "solid", color: highlight })
   })
 
   it("keeps a final delta and asks for a closing total", () => {
@@ -219,8 +250,8 @@ describe("waterfall library", () => {
     )
     for (const id of ["Open", "End"]) expect(edge(tree, "bar", id)).toBe(box(tree, "zero")?.y)
     expect(chars(tree, "value", "End")).toBe("22")
-    expect(fill(tree, "bar", "End")).toEqual({ kind: "solid", color: { var: "text", tint: -1 } })
-    expect(fill(tree, "bar", "Gain")).toEqual({ kind: "solid", color: { var: "accent1" } })
+    expect(fill(tree, "bar", "Open")).toEqual(fill(tree, "bar", "End"))
+    expect(fill(tree, "bar", "Gain")).not.toEqual(fill(tree, "bar", "Loss"))
     expect(tree.findings).toContainEqual(
       expect.objectContaining({ kind: "advice", code: "total-mismatch", note: "End: Use the running balance for this total." }),
     )
