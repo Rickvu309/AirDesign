@@ -4,7 +4,8 @@
   "collections": {
     "steps": {
       "label": "string",
-      "description": "string?"
+      "description": "string?",
+      "note": "string?"
     }
   },
   "variants": {
@@ -104,6 +105,13 @@
     },
     "align": "center-center"
   },
+  "advice": [
+    {
+      "code": "many-steps",
+      "when": ["lt", 5, ["get", "count"]],
+      "note": "Group the steps into phases to make the process easier to follow."
+    }
+  ],
   "parts": [
     {
       "repeat": {
@@ -118,28 +126,17 @@
         "w": ["get", "cardW"],
         "h": ["get", "cardH"],
         "chars": [
-          "if",
-          ["eq", ["get", "s.description"], ""],
-          ["list", ["get", "number"], ["get", "title"]],
-          [
-            "list",
-            ["get", "number"],
-            ["get", "title"],
-            {
-              "chars": ["get", "s.description"],
-              "color": ["get", "token.description"],
-              "scale": ["if", ["get", "row"], 0.7, 0.72],
-              "bold": false,
-              "wrap": "none",
-              "spaceBefore": ["if", ["get", "row"], 6, 2]
-            }
-          ]
+          "filter",
+          ["list", ["get", "number"], ["get", "title"], ["get", "description"], ["get", "duration"]],
+          "paragraph",
+          ["if", ["lt", ["get", "i"], 2], true, ["if", ["eq", ["get", "paragraph.chars"], ""], false, true]]
         ],
         "style": ["if", ["get", "row"], ["get", "token.label"], ["get", "token.columnLabel"]],
         "color": ["get", "token.ink"],
         "align": "left",
         "alignV": "top",
         "fill": ["get", "token.card"],
+        "overflow": "ellipsis",
         "stroke": {
           "color": ["get", "token.edge"],
           "width": 2
@@ -150,9 +147,9 @@
           ["get", "row"],
           {
             "t": 36,
-            "r": 24,
+            "r": 16,
             "b": 24,
-            "l": 24
+            "l": 16
           },
           {
             "t": 7,
@@ -185,7 +182,7 @@
           "number",
           {
             "chars": ["if", ["lt", ["get", "i"], 9], ["concat", "0", ["get", "stepNumber"]], ["get", "stepNumber"]],
-            "color": ["get", "token.number"],
+            "color": ["if", ["eq", ["get", "i"], 0], ["get", "token.number"], ["get", "token.description"]],
             "scale": ["if", ["get", "row"], 0.68, 0.65],
             "bold": true,
             "wrap": "none"
@@ -197,6 +194,28 @@
             "chars": ["get", "s.label"],
             "color": ["get", "token.ink"],
             "spaceBefore": ["if", ["get", "row"], 16, 3]
+          }
+        ],
+        [
+          "description",
+          {
+            "chars": ["get", "s.description"],
+            "color": ["get", "token.description"],
+            "scale": ["if", ["get", "row"], 0.77, 0.72],
+            "bold": false,
+            "maxLines": ["if", ["get", "row"], 2, 1],
+            "spaceBefore": ["if", ["get", "row"], 6, 2]
+          }
+        ],
+        [
+          "duration",
+          {
+            "chars": ["get", "s.note"],
+            "color": ["get", "token.description"],
+            "scale": 0.65,
+            "bold": false,
+            "wrap": "none",
+            "spaceBefore": ["if", ["get", "row"], 8, 2]
           }
         ]
       ]

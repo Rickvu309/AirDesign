@@ -149,16 +149,32 @@ function judgeOwn(slide: Slide, node: Resolved, box: Rect): void {
   if (stored === undefined || text === undefined || node.text === null) return
   if (text.resize === "fixed" && !unread(slide, stored.id)) {
     const area = textArea(propOf(stored, "geometry"), box.w, box.h)
-    const need = Math.ceil(slide.measure(text, slide.theme, area.w).h)
-    const room = Math.round(area.h)
-    if (need > room + spill)
-      slide.found.push({
-        code: "overflow",
-        node: stored.id,
-        need,
-        room,
-        note: `${stored.id}: its words need ${String(need)} px of height and its box holds ${String(room)}, so they spill out; make the box at least ${String(need)} tall or cut words.`,
-      })
+    if (text.overflow === "ellipsis") {
+      if (node.text.sourceLines !== undefined) {
+        const excess = Math.max(0, ...node.text.sourceLines.map((line) => line.ink - line.w))
+        const need = Math.ceil(excess > 0 ? area.w + excess : slide.measure(text, slide.theme, area.w).h)
+        const room = Math.round(excess > 0 ? area.w : area.h)
+        const resize = excess > 0 ? " or make the box wider" : need > room ? " or make the box taller" : ""
+        slide.found.push({
+          code: "overflow",
+          node: stored.id,
+          need,
+          room,
+          note: `${stored.id}: the label was shortened to fit. Use fewer words${resize}.`,
+        })
+      }
+    } else {
+      const need = Math.ceil(slide.measure(text, slide.theme, area.w).h)
+      const room = Math.round(area.h)
+      if (need > room + spill)
+        slide.found.push({
+          code: "overflow",
+          node: stored.id,
+          need,
+          room,
+          note: `${stored.id}: its words need ${String(need)} px of height and its box holds ${String(room)}, so they spill out; make the box at least ${String(need)} tall or cut words.`,
+        })
+    }
   }
   const sizes = node.text.lines.flatMap((line) =>
     line.runs.filter((run) => run.text.trim() !== "").map((run) => run.size),

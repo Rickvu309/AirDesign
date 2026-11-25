@@ -4,8 +4,8 @@ Process, architecture and cycle are library specs. The interpreter expands them 
 
 ## Sub-features
 
-- Process lays 3 to 8 numbered cards in an auto layout row or column. Each card has a title and an optional single-line description.
-- Architecture draws one band per layer. Adjacent-layer links use the gap between bands. Skip-layer links use both gaps and the side gutter. Links over intervening cards in the same band use the space above the cards.
+- Process lays 3 to 8 numbered cards in an auto layout row or column. Each card has a title, an optional description and an optional duration. Row descriptions can wrap to two lines. The first step carries the accent, and a process with more than five steps suggests grouping them into phases.
+- Architecture draws one band per layer. Adjacent-layer links use the gap between bands. Skip-layer links use separate lanes through both gaps and the side gutter. Links over intervening cards in the same band use the space above the cards.
 - Cycle places 3 to 6 steps on an ellipse with curved or straight connectors.
 - Cards in a fit group shrink together. Labels wrap and finish with an ellipsis when needed. The source text stays editable and the expansion reports one finding for each label that cannot fit.
 
@@ -15,10 +15,10 @@ The journey lands the library expansions as ordinary layers. Cmd/Ctrl-click a ca
 
 ## Driving it with verify-airdesign
 
-Run the `diagram-templates` journey on an isolated stack. It expands with served Geist on the Technical theme, compares the saved rows, captures canvas and filmstrip, exports PDF, and checks that card moves preserve the connector attachments. It also checks the 3–8 step range in both directions, resolves an impossible label, and reads back the MCP card edits.
+Run the `diagram-templates` journey on an isolated stack. It expands with served Geist on the Technical theme, compares the saved rows, captures canvas and filmstrip, exports PDF, and checks that card moves preserve the connector attachments. It checks the 3–8 step range in both directions with realistic descriptions, paints an eight-step row, resolves an impossible label, and reads back the MCP card edits.
 
 ## Gotchas
 
-- A process description is one line. A long description ends in an ellipsis at 7 or 8 steps in a row, while the bottom of the card stays empty.
-- The ellipsis turns on only when the text part has a fill. A label that is just too wide raises no finding.
-- Skip-layer links can share a gutter lane with unrelated links and read as the wrong connection. Judge architecture links from the canvas, not the saved rows.
+- Descriptions that exceed two lines in a row or one line in a column end with an ellipsis.
+- Cmd/Ctrl-click a card and press Enter to edit its full text. The spec opts into shortening with `overflow: "ellipsis"`. Width and height can both shorten a label and raise a finding.
+- Inspect routes on the canvas. The saved rows store attachment sites and channels. If a card moves past its channel, the elbow router still follows the card.

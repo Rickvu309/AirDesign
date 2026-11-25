@@ -8,6 +8,7 @@ export type ReportFinding = (finding: ExpressionFinding) => void
 
 export type ComponentFinding = { readonly key: PartKey; readonly field: string } & (
   | ExpressionFinding
+  | { readonly kind: "advice"; readonly code: string; readonly note: string }
   | {
       readonly kind: "text-fit"
       readonly size: number

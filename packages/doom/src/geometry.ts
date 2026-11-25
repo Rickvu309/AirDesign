@@ -16,7 +16,7 @@ import {
 
 export type End =
   | { readonly x: Px; readonly y: Px }
-  | { readonly node: NodeId; readonly site: "t" | "r" | "b" | "l" | "c" }
+  | { readonly node: NodeId; readonly site: "t" | "r" | "b" | "l" | "c"; readonly along?: number }
 export const lineArrowheads = ["none", "arrow", "triangle", "circle"] as const
 export type Arrow = (typeof lineArrowheads)[number]
 export const pathLimit = 4_000
@@ -46,10 +46,10 @@ export type Geometry =
 
 const readEnd: Reader<End> = oneOf<End>(
   object({ x: px(), y: px() }),
-  object({
-    node: (raw) => readNodeId(raw) ?? reject(),
-    site: literal(["t", "r", "b", "l", "c"]),
-  }),
+  object(
+    { node: (raw) => readNodeId(raw) ?? reject(), site: literal(["t", "r", "b", "l", "c"]) },
+    { along: finite(0, 1) },
+  ),
 )
 
 const readArrow = literal<Arrow>(lineArrowheads)

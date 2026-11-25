@@ -170,7 +170,11 @@ export function presetSites(shaped: Shaped | null | undefined, w: number, h: num
   }
 }
 
-export function siteSpot(shaped: Shaped | null | undefined, w: number, h: number, site: Site): Point {
+export function siteSpot(shaped: Shaped | null | undefined, w: number, h: number, site: Site, along?: number): Point {
+  if (along !== undefined && (shaped == null || shaped.kind === "rect")) {
+    if (site === "t" || site === "b") return { x: w * along, y: h * boxSpots[site].y }
+    if (site === "l" || site === "r") return { x: w * boxSpots[site].x, y: h * along }
+  }
   const plain = { x: w * boxSpots[site].x, y: h * boxSpots[site].y }
   if (site === "c") return plain
   const toward = facing[site]

@@ -25,6 +25,18 @@ describe("layout findings: what a slide paints wrong, measured with the deck's f
     ])
   })
 
+  it.each([
+    ["wide", "WWWWWWWWWWWWWWWWWWWW", 200, 60, { wrap: "none" }],
+    ["tall", "aaaa bbbb cccc dddd", 200, 30, {}],
+  ] as const)("explains that a %s label was shortened", (_, chars, w, h, text) => {
+    const { findings } = found([
+      label("title", chars, { box: spot(100, 100, w, h) }, { ...fixed, ...text, overflow: "ellipsis" }),
+    ])
+    expect(findings).toEqual([
+      expect.objectContaining({ code: "overflow", note: expect.stringContaining("shortened") }),
+    ])
+  })
+
   it("finds no overflow in a box that grows with its words", () => {
     expect(found([label("title", "aaaa bbbb cccc dddd", { box: spot(100, 100, 200, 30) })]).findings).toEqual([])
   })

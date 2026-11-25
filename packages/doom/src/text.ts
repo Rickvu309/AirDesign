@@ -30,6 +30,7 @@ export type Para = {
   readonly spaceBefore?: Px
   readonly spaceAfter?: Px
   readonly wrap?: "none"
+  readonly maxLines?: number
 }
 export type Text = {
   readonly chars: string
@@ -75,6 +76,7 @@ const readPara = object(
     spaceBefore: size,
     spaceAfter: size,
     wrap: literal(["none"]),
+    maxLines: integer(1, 16),
   },
 )
 

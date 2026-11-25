@@ -58,7 +58,7 @@ function box(x: number, y: number, w: number, h: number): Props["box"] {
 }
 
 const readPoint = object({ x: coordinate, y: coordinate })
-const readSite = object({ key: keyOf, site: literal(["t", "r", "b", "l", "c"]) })
+const readSite = object({ key: keyOf, site: literal(["t", "r", "b", "l", "c"]) }, { along: finite(0, 1) })
 
 type PartEnd = ReturnType<typeof readPoint> | ReturnType<typeof readSite>
 const endpoint = (raw: Value): PartEnd =>
@@ -210,7 +210,7 @@ export function preparePart(
       resize: "fixed",
       alignV,
       ...(fit === undefined ? {} : { wrap: "words" }),
-      ...(fit === undefined || emit.fill === undefined ? {} : { overflow: "ellipsis" }),
+      ...(emit.overflow === undefined ? {} : { overflow: emit.overflow }),
       ...(emit.padding === undefined ? {} : { padding: readField("padding", emit.padding, sides) }),
     }),
   )
@@ -280,8 +280,9 @@ export function treeOf(
     if (target === undefined || target.part.kind !== "shape")
       return reject("shape", `The site must name an emitted shape. No shape has key ${keyString(end.key)}.`)
     const { box, geometry } = target.part.props
-    const spot = siteSpot(geometry, box.w, box.h, end.site)
-    return { x: box.x + spot.x, y: box.y + spot.y, end: { node: target.id, site: end.site } }
+    const { key: _key, ...attachment } = end
+    const spot = siteSpot(geometry, box.w, box.h, end.site, end.along)
+    return { x: box.x + spot.x, y: box.y + spot.y, end: { node: target.id, ...attachment } }
   }
 
   const children: ComponentNode[] = []

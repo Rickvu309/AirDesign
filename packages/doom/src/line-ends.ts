@@ -57,7 +57,14 @@ function resting(
   return { at: { x, y }, box: own }
 }
 
-export function endOnShape(shaped: Shaped | null | undefined, box: Box, x: number, y: number, site: Site): RouteEnd {
+export function endOnShape(
+  shaped: Shaped | null | undefined,
+  box: Box,
+  x: number,
+  y: number,
+  site: Site,
+  along?: number,
+): RouteEnd {
   const center = { x: x + box.w / 2, y: y + box.h / 2 }
   const radians = (box.rotation * Math.PI) / 180
   const cos = Math.cos(radians)
@@ -81,7 +88,7 @@ export function endOnShape(shaped: Shaped | null | undefined, box: Box, x: numbe
   const top = Math.min(...corners.map((corner) => corner.y))
   const quarter = Math.round(box.rotation / 90)
   return {
-    at: turn(siteSpot(shaped, box.w, box.h, site)),
+    at: turn(siteSpot(shaped, box.w, box.h, site, along)),
     side: site === "c" ? null : sideTurns[(((sideTurns.indexOf(site) + quarter) % 4) + 4) % 4]!,
     around: {
       x: left,
@@ -109,7 +116,7 @@ export function lineRoute(
     const placed = at !== null && box !== undefined ? { at, box } : resting(doom, boxes, end.node)
     if (placed === null) return { at: { x: 0, y: 0 }, side: null, around: null }
     const geometry = propOf(doom.nodes.get(end.node), "geometry")
-    return endOnShape(geometry, placed.box, placed.at.x - origin.x, placed.at.y - origin.y, end.site)
+    return endOnShape(geometry, placed.box, placed.at.x - origin.x, placed.at.y - origin.y, end.site, end.along)
   }
   const start = resolve(line.start)
   const end = resolve(line.end)
