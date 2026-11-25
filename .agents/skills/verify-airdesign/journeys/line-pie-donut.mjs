@@ -150,8 +150,15 @@ export default async function drive(kit) {
   const colorOf = (color) => doom.resolveColor(color, theme)
   const pieParts = trees[1].children
   const fills = pieParts.filter(({ key }) => key[0] === "slice").map(({ props }) => colorOf(props.fills[0].color))
-  expect(pieParts.filter(({ key }) => key[0] === "legend")).toHaveLength(6)
-  expect(pieParts.filter(({ key }) => key[0] === "swatch")).toHaveLength(6)
+  const keysFor = (roles) =>
+    pieParts
+      .filter(({ key }) => roles.includes(key[0]))
+      .map(({ key }) => key.slice(1).join("/"))
+      .sort()
+  const slices = keysFor(["slice"])
+  expect(slices).toHaveLength(6)
+  expect(keysFor(["percentage", "legend"])).toEqual(slices)
+  expect(keysFor(["swatch"])).toEqual(keysFor(["legend"]))
 
   await clickSlide(page, 50, 50)
   await page.keyboard.press("ControlOrMeta+a")
