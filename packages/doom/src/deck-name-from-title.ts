@@ -47,9 +47,7 @@ export function nameFromTitleWrites(doom: Doom, writes: readonly Write[]): reado
   const { id, chars } = firstTitleOf(after)
   const before = firstTitleOf(doom).id
   if (before === id && !writes.some((write) => write.node === id && write.prop === "text")) return []
-  const unwritten = chars === placeholderTitle
-  if (unwritten && before === id) return []
-  const typed = unwritten ? "" : nameOf(chars)
+  const typed = chars === placeholderTitle ? "" : nameOf(chars)
   const name = typed === "" ? blankDeckName : typed
   if (name === propOf(deck, "name")) return []
   const based = (prop: "name" | "nameFollows", value: unknown): Write => {

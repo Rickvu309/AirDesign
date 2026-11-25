@@ -1,4 +1,4 @@
-import type * as doom from "@airdesign/doom"
+import * as doom from "@airdesign/doom"
 
 export type Step = {
   readonly onces: readonly string[]
@@ -27,14 +27,17 @@ export function relaySteps(steps: readonly Step[], laid: ReadonlyMap<string, Lai
   })
 }
 
+function changesNothing({ before, writes }: Step): boolean {
+  const last = new Map(writes.map((write) => [`${write.node}\0${write.prop}`, write]))
+  return doom.changingWrites(before, [...last.values()]).length === 0
+}
+
 export function recordStep(steps: Step[], step: Step, canJoin: boolean) {
   const open = steps.at(-1)
   if (canJoin && step.key !== undefined && open?.guarded !== true && open?.key === step.key) {
-    steps[steps.length - 1] = {
-      ...open,
-      onces: [...open.onces, ...step.onces],
-      writes: [...open.writes, ...step.writes],
-    }
+    const joined = { ...open, onces: [...open.onces, ...step.onces], writes: [...open.writes, ...step.writes] }
+    if (changesNothing(joined)) steps.pop()
+    else steps[steps.length - 1] = joined
   } else steps.push(step)
 }
 

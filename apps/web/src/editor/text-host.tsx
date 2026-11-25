@@ -105,7 +105,10 @@ export function TextHost(props: {
       if (found !== null) latest.current.api.select(found.anchor, found.focus)
     }
     function before(event: InputEvent) {
-      if (marked.current !== null || event.inputType === "insertCompositionText") return
+      const type = event.inputType
+      const turning = type === "historyUndo" || type === "historyRedo"
+      if (marked.current !== null && turning) event.preventDefault()
+      if (marked.current !== null || type === "insertCompositionText") return
       event.preventDefault()
       const { api: current, session: now } = latest.current
       const at = selectionOf(element!) ?? { anchor: now.anchor, focus: now.focus }
@@ -113,7 +116,6 @@ export function TextHost(props: {
       const to = Math.max(at.anchor, at.focus)
       const chars = now.draft.chars
       const collapsed = from === to
-      const type = event.inputType
       if (type === "insertText" || type === "insertReplacementText") {
         const data = event.data ?? event.dataTransfer?.getData("text/plain") ?? ""
         if (data !== "") current.replace(from, to, data, type === "insertText" ? "typing" : undefined)
@@ -139,7 +141,7 @@ export function TextHost(props: {
         current.replace(from, to, "")
       } else if (type === "insertFromPaste" || type === "insertFromDrop") {
         pasteFrom(event.dataTransfer, from, to)
-      } else if (type === "historyUndo" || type === "historyRedo") {
+      } else if (turning) {
         current.step(type === "historyUndo" ? "undo" : "redo")
       }
     }

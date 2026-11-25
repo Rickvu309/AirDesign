@@ -93,6 +93,20 @@ describe("an edit that changes nothing", () => {
     expect(xOf(mine.view())).toBe(0)
   })
 
+  it("leaves no step when a step's saved edits set a value and set it back, so one undo takes back the step before it", async () => {
+    const mine = await join(memoryDoomRemote(start), "a", "create")
+    mine.push([{ node: title, prop: "box", value: box(10) }])
+    mine.push([{ node: title, prop: "text", value: words("Hello") }], { step: "text:1" })
+    expect(await mine.sync()).toEqual({ ok: true })
+    mine.push([{ node: title, prop: "text", value: words("Title") }], { step: "text:1" })
+    expect(await mine.sync()).toEqual({ ok: true })
+    expect(mine.undo().ok).toBe(true)
+    expect(xOf(mine.view())).toBe(0)
+    expect(textOf(mine.view())).toBe("Title")
+    expect(mine.redo().ok).toBe(true)
+    expect(xOf(mine.view())).toBe(10)
+  })
+
   it("never undoes another writer's change it has not seen yet", async () => {
     const shared = memoryDoomRemote(start)
     const mine = await join(shared, "a", "create")
