@@ -3,15 +3,19 @@ import * as doom from "@airdesign/doom"
 const estimate = doom.measureWith({})
 const shownFindings = 10
 
-type FindingMessage = { readonly kind: string } & (
-  | { readonly neededWidth: number; readonly availableWidth: number; readonly thinned?: number }
-  | { readonly message: string }
-)
-
-function findingMessage(finding: FindingMessage): string {
-  if ("message" in finding) return finding.message
-  const { neededWidth, availableWidth, thinned } = finding
-  return `needs ${Math.ceil(neededWidth)} px in ${Math.floor(availableWidth)} px${thinned === undefined ? "." : `, with ${thinned} labels thinned.`}`
+function findingMessage(finding: doom.ComponentFinding): string {
+  switch (finding.kind) {
+    case "flow-omitted":
+      return finding.omitted.length === 1
+        ? "omitted 1 item that did not fit."
+        : `omitted ${finding.omitted.length} items that did not fit.`
+    case "rounded-to-zero":
+      return `rounds ${finding.value} to zero at the current precision.`
+    case "text-fit": {
+      const { neededWidth, availableWidth, thinned } = finding
+      return `needs ${Math.ceil(neededWidth)} px in ${Math.floor(availableWidth)} px${thinned === undefined ? "." : `, with ${thinned} labels thinned.`}`
+    }
+  }
 }
 
 export function componentFindings(fold: doom.Doom, ids: readonly doom.NodeId[], measure = estimate) {

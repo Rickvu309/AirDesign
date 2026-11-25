@@ -153,6 +153,7 @@ export {
   suppressPart,
 } from "./component/join-instance.js"
 export { linkedComponentsEnabled } from "./component-rollout.js"
+export type { ComponentFinding } from "./component/findings.js"
 export { type ComponentDefinition, columnDefinition, componentLibrary } from "./component/library.js"
 export { type Instance, type PartKey, readPartKey } from "./component/instance.js"
 export { linkedPartOverrides, partDeletes, suppressKeys } from "./component/instance-ownership.js"
