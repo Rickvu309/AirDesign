@@ -2,6 +2,7 @@ import * as doom from "@airdesign/doom"
 import { TextLines } from "@airdesign/render"
 import { gestureFor } from "@/lib/gestures"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { flushSync } from "react-dom"
 import { blankLine } from "./text-blank-line"
 import { offsetOfPlace, placeOfOffset, type Place } from "./text-caret"
 import { readTextClipboard, writeTextClipboard } from "./text-clipboard"
@@ -98,7 +99,7 @@ export function TextHost(props: {
     const element = host.current
     if (element === null) return
     const doc = element.ownerDocument
-    const selected = () => (marked.current === null ? selectionOf(element!) : null)
+    const selected = () => (marked.current === null && host.current === element ? selectionOf(element) : null)
     function listen() {
       const found = selected()
       if (found !== null) latest.current.api.select(found.anchor, found.focus)
@@ -251,10 +252,12 @@ export function TextHost(props: {
       }}
       onCompositionEnd={(event) => {
         const range = marked.current
-        marked.current = null
         if (range === null) return
-        latest.current.api.replace(range.from, range.to, event.data)
-        setFresh((value) => value + 1)
+        flushSync(() => {
+          latest.current.api.replace(range.from, range.to, event.data)
+          marked.current = null
+          setFresh((value) => value + 1)
+        })
       }}
     >
       <TextLines lines={lines} editing />

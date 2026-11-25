@@ -59,6 +59,15 @@ for (const change of ["bold", "italic", "ime"] as const) {
     await edit(page)
     await page.keyboard.press("ControlOrMeta+End")
 
+    let release = () => {}
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    await page.route("**/fonts/**", async (route) => {
+      await held
+      await route.continue()
+    })
+
     const inserted = change === "ime" ? "東京" : "x"
     if (change === "ime") {
       const cdp = await context.newCDPSession(page)
@@ -72,8 +81,16 @@ for (const change of ["bold", "italic", "ime"] as const) {
 
     const editing = editor(page).locator("[data-run]")
     await expect(editor(page)).toHaveText(heading.text.chars + inserted)
-    await expect(editing.first()).toHaveCSS("font-family", family)
-    await expect(editing.first()).toHaveCSS("font-weight", "600")
+    try {
+      expect(
+        await editing.first().evaluate((run) => {
+          const style = getComputedStyle(run)
+          return { family: style.fontFamily, weight: style.fontWeight }
+        }),
+      ).toEqual({ family, weight: "600" })
+    } finally {
+      release()
+    }
     await expect(editing.last()).toHaveText(inserted)
     await expect(editing.last()).toHaveCSS("font-family", /airdesign-face-/)
     if (change === "ime") {

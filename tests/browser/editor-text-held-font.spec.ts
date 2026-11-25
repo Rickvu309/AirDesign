@@ -93,3 +93,46 @@ for (const attempt of Array.from({ length: 20 }, (_, index) => index)) {
     }
   })
 }
+
+for (let attempt = 1; attempt <= 10; attempt++) {
+  test(`an IME commit saves in order when fonts arrive during composition (${String(attempt)})`, async ({
+    page,
+    context,
+    stack,
+  }) => {
+    let release = () => {}
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    await page.route(
+      (url) => url.pathname.endsWith(".wasm") || url.pathname.includes("/fonts/"),
+      async (route) => {
+        await held
+        await route.continue()
+      },
+    )
+    try {
+      const opened = await openEditor(page, context, stack)
+      await page.keyboard.press("t")
+      await clickSlide(page, 300, 700)
+      await expect(editor(page)).toBeFocused()
+      await page.keyboard.type("Costs fall ", { delay: 10 })
+      const ime = await context.newCDPSession(page)
+      await ime.send("Input.imeSetComposition", { text: "と", selectionStart: 1, selectionEnd: 1 })
+      await ime.send("Input.imeSetComposition", { text: "とうきょう", selectionStart: 5, selectionEnd: 5 })
+      const pending = page.locator("[data-slide-box] [data-font-pending]:not([data-text-editor] [data-font-pending])")
+      await expect(pending.first()).toBeAttached()
+      release()
+      await expect(pending).toHaveCount(0)
+      await ime.send("Input.insertText", { text: "東京" })
+      await page.keyboard.type("12% with two shifts", { delay: 10 })
+      await page.keyboard.press("Escape")
+      const [id] = await selectedIds(page)
+      await expect
+        .poll(async () => (await savedNode(stack, opened, id ?? ""))?.text)
+        .toMatchObject({ chars: "Costs fall 東京12% with two shifts" })
+    } finally {
+      release()
+    }
+  })
+}
