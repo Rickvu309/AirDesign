@@ -103,11 +103,6 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
     const layout =
       layoutExpr === undefined ? undefined : naming("layout", () => readLayout(evaluate(layoutExpr, root, "layout")))
     for (const [i, part] of spec.parts.entries()) visit(part, root, `parts[${i}]`)
-    for (const [i, { code, note, when }] of (spec.advice ?? []).entries()) {
-      const field = `advice[${i}].when`
-      if (naming(field, () => boolean(evaluate(when, root, field))))
-        findings.push({ kind: "advice", key: ["root"], field, code, note })
-    }
     return treeOf(spec.name, frame, parts, fitting, partLimit, findings, layout)
   } catch (thrown) {
     return componentRefusal(thrown)

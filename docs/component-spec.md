@@ -56,13 +56,11 @@ Structured copy accepts a list of paragraph records. A paragraph can set `maxLin
 
 A connector endpoint can use `["site", partKey, side]` to attach to the default site. An endpoint record with `key`, `site`, and an optional `along` fraction can attach anywhere along a rectangular edge. Fractions run from left to right on top and bottom edges and from top to bottom on left and right edges. Channel coordinates are relative to the component frame.
 
-## Advice
-
-The optional top-level `advice` list contains records with a `code`, a `when` expression, and a `note` that gives the reader a fix. A matching record adds a finding to the root and expansion proceeds.
-
 The process template accepts an optional `tokens.focus` step ID. The first step carries the accent when the ID is omitted or does not match a step.
 
-Use `["advise", code, message]` to report advice while evaluating an expression. An optional fourth item names the affected data row. Put the expression inside an `if` to report only when the condition holds.
+## Advice
+
+Use `["advise", code, note]` to report advice while evaluating an expression. An optional fourth item prefixes the note with the affected data row. Put the expression inside an `if` to report only when the condition holds.
 
 ## Lists and colors
 

@@ -134,13 +134,12 @@ describe("process diagram", () => {
     const tree = expand(processComponent, { frame: process.frame, data: steps(6) })
     expect(role(tree, "step")).toHaveLength(6)
     expect(tree.findings).toEqual([
-      {
+      expect.objectContaining({
         kind: "advice",
-        field: "advice[0].when",
         key: ["root"],
         code: "many-steps",
         note: "Split the steps across two process diagrams.",
-      },
+      }),
     ])
   })
 

@@ -644,23 +644,30 @@
           }
         }
       ]
-    }
-  ],
-  "advice": [
+    },
     {
-      "when": [
-        "if",
+      "let": [
         [
-          "if",
-          ["get", "variant.labels"],
-          ["lt", ["sub", ["mul", ["get", "labelSpace.lane"], 0.57], 8], ["get", "token.valueWidth"]],
-          false
-        ],
-        true,
-        ["if", ["get", "variant.totals"], ["lt", ["get", "labelSpace.lane"], ["get", "token.totalWidth"]], false]
+          "labelsOmitted",
+          [
+            "if",
+            [
+              "if",
+              [
+                "if",
+                ["get", "variant.labels"],
+                ["lt", ["sub", ["mul", ["get", "labelSpace.lane"], 0.57], 8], ["get", "token.valueWidth"]],
+                false
+              ],
+              true,
+              ["if", ["get", "variant.totals"], ["lt", ["get", "labelSpace.lane"], ["get", "token.totalWidth"]], false]
+            ],
+            ["advise", "labels-omitted", "Widen the chart or show fewer columns to fit value labels."],
+            false
+          ]
+        ]
       ],
-      "code": "labels-omitted",
-      "note": "Widen the chart or show fewer columns to fit value labels."
+      "children": []
     }
   ]
 }
