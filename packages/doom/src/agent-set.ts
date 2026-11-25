@@ -2,7 +2,7 @@ import type { AgentChange, AgentLook } from "./agent-change.js"
 import { type Draft, type Values, Stop, living, put, stop } from "./agent-draft.js"
 import { insertLinkedRun } from "./agent-insert.js"
 import { askedArrow, chartOf, colorOf, iconName, layoutOf, surfaceOf, textOfLook } from "./agent-look.js"
-import { linkedSetField } from "./component/instance-ownership.js"
+import { linkedOwner, linkedSetField } from "./component/instance-ownership.js"
 import { lineEnds } from "./agent-line-ends.js"
 import { gapFor, slideSize, themeOf } from "./agent-place.js"
 import { notesText } from "./notes-text.js"
@@ -227,13 +227,14 @@ export function compileSet(draft: Draft, change: SetChange): void {
   for (const field of [...neverOnSet, ...unfit[node.type]])
     if (change[field] !== undefined) stop("shape", node.id, field, "unknown")
   const refusedField = linkedSetField(draft.doom.nodes, node, change)
-  if (refusedField !== undefined)
+  const template = linkedOwner(draft.doom.nodes, node.id)
+  if (refusedField !== undefined && template !== undefined)
     stop(
       "shape",
       node.id,
       refusedField,
       "form",
-      "Use the component tokens to change linked labels, or detach to edit the layer directly.",
+      `This layer belongs to linked template ${template}. Set tokens on ${template}, or detach ${template} to edit its layers.`,
     )
   const fitting = change.fit !== undefined || change.crop !== undefined
   if (fitting && !(propOf(node, "fills") ?? []).some((paint) => paint.kind === "image"))
