@@ -54,15 +54,29 @@ export function TypographyControl({ control, onChange }: ControlProps) {
             {() => chosen?.label ?? (control.mixed ? designCopy.mixed : (control.placeholder ?? textCopy.custom))}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent alignItemWithTrigger={false} align="end" className="max-h-96 w-80 max-w-[calc(100vw-2rem)]">
-          <SelectGroup>
-            <SelectLabel>{textCopy.styles}</SelectLabel>
-            {control.choices?.map((choice) => (
-              <SelectItem key={choice.value} value={choice.value} style={choice.appearance} title={choice.label}>
-                <span className="min-w-0 truncate">{choice.label}</span>
-                {choice.detail === undefined ? null : <span className="shrink-0">{` · ${choice.detail}`}</span>}
-              </SelectItem>
-            ))}
+        <SelectContent alignItemWithTrigger={false} align="start" className="max-h-96 rounded-xl">
+          <SelectGroup className="p-0">
+            <SelectLabel className="border-b px-3 py-2.5 text-sm font-medium text-foreground">
+              {textCopy.styles}
+            </SelectLabel>
+            <div className="p-1">
+              {control.choices?.map((choice) => (
+                <SelectItem
+                  key={choice.value}
+                  value={choice.value}
+                  check="start"
+                  className="py-1.5"
+                  title={choice.label}
+                >
+                  <span className="min-w-0 truncate">
+                    {choice.label}
+                    {choice.detail === undefined ? null : (
+                      <span className="text-muted-foreground!">{` · ${choice.detail}`}</span>
+                    )}
+                  </span>
+                </SelectItem>
+              ))}
+            </div>
           </SelectGroup>
         </SelectContent>
       </Select>
