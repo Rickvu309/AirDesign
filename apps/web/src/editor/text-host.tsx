@@ -71,6 +71,11 @@ export function TextHost(props: {
       ? previous.lines
       : (node.text?.sourceLines ?? node.text?.lines ?? [blankLine(session.draft, theme, node)])
   const focused = useRef<{ readonly element: HTMLDivElement; readonly sync: number } | null>(null)
+  const mounted = host.current
+  const held =
+    sameDraft && marked.current === null && mounted !== null && mounted.ownerDocument.activeElement === mounted
+      ? selectionOf(mounted)
+      : null
   useEffect(() => {
     latest.current = { api, session, deck, slides, onLeave: props.onLeave }
   })
@@ -92,7 +97,8 @@ export function TextHost(props: {
       showSelection(element, at, at)
       return
     }
-    showSelection(element, session.anchor, session.focus)
+    const shown = sync || held === null ? session : held
+    showSelection(element, shown.anchor, shown.focus)
   }, [session.sync, fresh, session.draft, lines, followFormatting])
 
   useEffect(() => {
