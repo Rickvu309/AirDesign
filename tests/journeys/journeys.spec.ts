@@ -47,6 +47,7 @@ for (const name of [
   "linked-refused-undo",
   "deck-list-trash",
   "connected-agents",
+  "consulting-mcp",
   "component-paths",
   "diagram-templates",
   "path-paint",

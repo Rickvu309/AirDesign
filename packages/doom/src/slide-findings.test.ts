@@ -7,6 +7,7 @@ import { textFromMarkdown } from "./markdown.js"
 import { sampleChart } from "./sample-charts.js"
 import { slideFindings } from "./slide-findings.js"
 import { defaultTheme } from "./theme.js"
+import { actionTitles } from "./testing/slide-titles.js"
 import { measure, spot } from "./testing/doom-fixtures-art.js"
 
 const text = (chars: string, style: "title" | "display" | "body" = "body", width = 1600): TreeNode => ({
@@ -23,8 +24,8 @@ const chart = (kind: "column" | "pie" = "column"): TreeNode => ({
   props: { chart: sampleChart(kind), box: spot(0, 200, 600, 500) },
 })
 
-function findings(slides: readonly (readonly TreeNode[])[], count = slides.length) {
-  const grown = doomFromTree({ theme: defaultTheme, slides: slides.map((children) => ({ children })) })
+function findings(slides: readonly (readonly TreeNode[])[], count = slides.length, theme = defaultTheme) {
+  const grown = doomFromTree({ theme, slides: slides.map((children) => ({ children })) })
   return slideFindings(grown.doom, grown.slides.slice(0, count), { measure })
 }
 
@@ -50,11 +51,34 @@ describe("slide findings", () => {
     ).toEqual([])
   })
 
-  it("counts words and uses measured lines for short titles", () => {
-    const long = "Demand is rising because buyers in every region now order more units from us each week"
-    expect(codes([[text(long, "title")]])).toEqual(["title-long"])
+  it("uses measured lines in preference to word count", () => {
+    const longTitles = Object.values(actionTitles)
+      .flat()
+      .filter((title) => title.split(/\s+/).length >= 16)
+    expect(longTitles).toHaveLength(15)
+    const theme = {
+      ...defaultTheme,
+      textStyles: { ...defaultTheme.textStyles, title: { ...defaultTheme.textStyles.title, size: 36 } },
+    }
+    expect(
+      findings(
+        longTitles.map((title) => [text(title, "title")]),
+        longTitles.length,
+        theme,
+      ),
+    ).toEqual([])
     expect(codes([[text("Demand is rising across markets", "title", 140)]])).toEqual(["title-long"])
     expect(codes([[text("Demand is rising across markets", "title")]])).toEqual([])
+  })
+
+  it("uses a loose word limit when the title cannot be measured", () => {
+    const long = "Demand is rising " + "across many markets ".repeat(8)
+    const check = (title: string) => {
+      const grown = doomFromTree({ theme: defaultTheme, slides: [{ children: [text(title, "title")] }] })
+      return slideFindings(grown.doom, grown.slides).map(({ code }) => code)
+    }
+    expect(check("Demand is rising " + "across many markets ".repeat(6))).toEqual([])
+    expect(check(long)).toEqual(["title-long"])
   })
 
   it("finds a duplicate outside the touched slides and ignores out-of-scope titles", () => {
@@ -71,7 +95,7 @@ describe("slide findings", () => {
     expect(codes([[text("Demand is rising", "display")], [text("Demand is rising", "title")]])).toEqual([])
   })
 
-  it("asks for a source on charts and grids with at least three digit-bearing cells", () => {
+  it("asks for a source on charts and grids with at least three data values", () => {
     const grid: TreeNode = {
       type: "frame",
       props: {
@@ -83,7 +107,7 @@ describe("slide findings", () => {
           padding: { t: 0, r: 0, b: 0, l: 0 },
         },
       },
-      children: [text("12%"), text("$20"), text("Q1")],
+      children: [text("12%"), text("$20"), text("1.2x")],
     }
     expect(codes([[chart()], [grid]])).toEqual(["no-source", "no-source"])
     expect(
@@ -92,7 +116,35 @@ describe("slide findings", () => {
         [grid, text("Source: Survey")],
       ]),
     ).toEqual([])
-    expect(codes([[{ ...grid, children: [text("12%"), text("$20"), text("Notes")] }]])).toEqual([])
+    expect(codes([[{ ...grid, children: [text("12%"), text("$20"), text("Q1")] }]])).toEqual([])
+  })
+
+  it.each([
+    ["2025", "2026", "2027"],
+    ["Q1", "FY25", "Step 1"],
+  ])("leaves a grid of labels clear (%s, %s, %s)", (...labels) => {
+    const grid: TreeNode = {
+      type: "frame",
+      props: {
+        layout: {
+          mode: "grid",
+          columns: [{ fr: 1 }],
+          rows: ["hug", "hug", "hug"],
+          gap: 0,
+          padding: { t: 0, r: 0, b: 0, l: 0 },
+        },
+      },
+      children: labels.map((label) => text(label)),
+    }
+    expect(codes([[grid]])).toEqual([])
+  })
+
+  it.each([
+    "Note: Fiscal years\nSource: Annual report",
+    "Note: Fiscal years. Sources: Annual reports",
+    "Note: Fiscal years Source: Annual report",
+  ])("accepts a source label after a note (%s)", (footer) => {
+    expect(codes([[chart(), text(footer)]])).toEqual([])
   })
 
   it("recognizes a linked column chart without counting its generated layers", () => {
@@ -105,10 +157,28 @@ describe("slide findings", () => {
     ).toMatchObject([{ code: "no-source" }])
   })
 
-  it("advises splitting two charts and comparing two pies with 100% columns", () => {
-    expect(codes([[chart(), chart(), text("Source: Annual report")]])).toEqual(["two-charts"])
-    expect(codes([[chart("pie"), chart("pie"), text("Source: Annual report")]])).toEqual(["two-charts", "pie-compare"])
+  it("asks whether two full-size charts make different points", () => {
+    expect(findings([[chart(), chart(), text("Source: Annual report")]])).toMatchObject([
+      { code: "two-charts", note: "If the charts make different points, give each its own slide." },
+    ])
     expect(codes([[chart("pie"), chart(), text("Source: Annual report")]])).toEqual(["two-charts"])
+  })
+
+  it("gives one comparison finding for two pies", () => {
+    expect(codes([[chart("pie"), chart("pie"), text("Source: Annual report")]])).toEqual(["pie-compare"])
+  })
+
+  it("leaves a full-size chart with a small companion clear", () => {
+    const small: TreeNode = { ...chart(), props: { chart: sampleChart("column"), box: spot(620, 200, 200, 100) } }
+    expect(codes([[small, chart(), text("Source: Annual report")]])).toEqual([])
+  })
+
+  it("leaves long agendas clear", () => {
+    expect(codes([[text("Agenda", "title"), text("- one\n- two\n- three\n- four\n- five\n- six")]])).toEqual([])
+  })
+
+  it("leaves Roman numerals clear", () => {
+    expect(codes([[text("XX"), text("Super Bowl XX"), text("XX-Large"), text("XX chromosome")]])).toEqual([])
   })
 
   it("counts only top-level bullet paragraphs in each block", () => {

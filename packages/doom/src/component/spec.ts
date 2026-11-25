@@ -1,6 +1,6 @@
 import { readColor } from "../color.js"
 import type { Refusal } from "../refusal.js"
-import { boolean, finite, integer, naming, object, reject, variant } from "../read-kit.js"
+import { boolean, finite, integer, literal, naming, object, reject, variant } from "../read-kit.js"
 import { readCollections } from "./collections.js"
 import { type Bindings, type Expr, binding, readExpr } from "./expression.js"
 import { defaultNumberTokens, readLocale } from "./operators.js"
@@ -158,6 +158,7 @@ function specReader() {
       variants,
       defaultVariant: variantRecord,
       quantities,
+      chart: literal(["cartesian", "pie"]),
     },
   )
 }
