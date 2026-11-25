@@ -18,7 +18,6 @@ public:
   - fill-copy.ts
   - format-copy.ts
   - geometry-copy.ts
-  - guide-copy.ts
   - link-copy.ts
   - notes-copy.ts
   - option-copy.ts
