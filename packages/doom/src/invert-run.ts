@@ -15,7 +15,7 @@ import {
 import { type Instance, instanceFields, keyString } from "./component/instance.js"
 import { sameValue } from "./changing-writes.js"
 import { withPartDeletes } from "./component/instance-ownership.js"
-import { withReturningRebuilt } from "./component/component-edit.js"
+import { withCurrentComponents } from "./component/component-edit.js"
 import { withoutDeletedInstances } from "./component/deleted-instances.js"
 import { onDeck } from "./doom-walk.js"
 import type { Doom, Landed, Node, Write } from "./doom.js"
@@ -410,7 +410,7 @@ export function invertRun(
     }
   }
   const result = settle(now, chosen.reverse(), kept, [...restored.values()], started)
-  const writes = withReturningRebuilt(now, withRegenerated(result.writes, rebuilt), measure)
+  const writes = withCurrentComponents(now, withRegenerated(result.writes, rebuilt), measure)
   if (isRefusal(writes)) return { writes: [], kept: [], left: [], waiting: [], refused: writes }
   return {
     ...result,

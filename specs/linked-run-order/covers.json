@@ -10,8 +10,8 @@
     {
       "file": "packages/doom/src/invert-run.ts",
       "names": ["invertRun", "undoSourceOf"],
-      "digest": "3c1b4046dfec",
-      "blob": "4bede352c416748d9aa87f18d44e3a068cdadd0a"
+      "digest": "c0418ec0b22d",
+      "blob": "5e84f94d231415b8aef3ab07620634555b729e62"
     },
     {
       "file": "packages/mcp/src/undo-tool.ts",

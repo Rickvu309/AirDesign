@@ -1,5 +1,5 @@
 import { sameValue } from "../changing-writes.js"
-import type { Doom, Write } from "../doom.js"
+import type { Doom, Node, Write } from "../doom.js"
 import { onDeck, parentOf, propOf } from "../doom-walk.js"
 import { type NodeId, readNodeId } from "../ids.js"
 import { Reject } from "../read-kit.js"
@@ -96,6 +96,12 @@ export function withComponentDeletes(fold: Pick<Doom, "nodes">, writes: readonly
   return detach.length === 0 ? writes : [...writes, ...detach]
 }
 
+function risesFrom(prior: Node | undefined, node: Extract<Node, { readonly type: "component" }>): boolean {
+  if (prior?.type !== "component" || prior.revision === undefined) return true
+  if (node.revision === undefined) return false
+  return node.revision > prior.revision || (node.revision === prior.revision && sameValue(prior.spec, node.spec))
+}
+
 const liveComponent = (fold: Pick<Doom, "nodes">, id: NodeId) => {
   const node = fold.nodes.get(id)
   return node?.type === "component" && node.parent != null
@@ -110,12 +116,11 @@ export function guardComponents(
   if (changed.size === 0) return undefined
   for (const id of changed) {
     const node = after.nodes.get(id)
-    if (node?.type !== "component" || node.parent == null) continue
+    if (node?.type !== "component") continue
+    if (!risesFrom(before.nodes.get(id), node)) return refuse("shape", id, "revision")
+    if (node.parent == null) continue
     if (node.spec === undefined) return refuse("shape", id, "spec")
     if (node.revision === undefined) return refuse("shape", id, "revision")
-    const prior = before.nodes.get(id)
-    if (prior?.type === "component" && !sameValue(prior.spec, node.spec) && prior.revision === node.revision)
-      return refuse("shape", id, "revision")
   }
   let count = 0
   for (const node of after.nodes.values()) if (liveComponent(after, node.id)) count++

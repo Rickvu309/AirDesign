@@ -169,11 +169,12 @@ export function prepareComponentEdit(
   return bytesOf(JSON.stringify(prepared)) >= limits.body - limits.form ? refuse("limit") : prepared
 }
 
-export function withReturningRebuilt(
+export function withCurrentComponents(
   view: Doom,
-  writes: readonly Write[],
+  asked: readonly Write[],
   measure: Measure,
 ): readonly Write[] | Refusal {
+  const writes = withRisingRevisions(view, asked)
   const returning = returningInstances(view, writes)
   if (returning.length === 0) return writes
   const next = applyBeforeRebuild(
@@ -197,8 +198,30 @@ export function withReturningRebuilt(
   const cell = ({ node, prop }: Write) => `${node}\u0000${prop}`
   for (const root of stale) {
     const update = refreshComponent(view, next, root, measure)
-    if (isRefusal(update)) return update
-    for (const write of update.writes) generated.set(cell(write), write)
+    const detach: Write = { node: root, prop: "instance", value: null }
+    for (const write of isRefusal(update) ? [detach] : update.writes) generated.set(cell(write), write)
   }
   return [...writes.filter((write) => !generated.has(cell(write))), ...generated.values()]
+}
+
+function withRisingRevisions(fold: Pick<Doom, "nodes">, writes: readonly Write[]): readonly Write[] {
+  const raised = new Map<NodeId, { readonly from: number; readonly to: number }>()
+  for (const { node, prop, value } of writes) {
+    const current = fold.nodes.get(node)
+    if (prop !== "revision" || current?.type !== "component" || current.revision === undefined) continue
+    if (typeof value === "number" && value <= current.revision)
+      raised.set(node, { from: value, to: current.revision + 1 })
+  }
+  if (raised.size === 0) return writes
+  return writes.map((write) => {
+    const revision = raised.get(write.node)?.to
+    if (write.prop === "revision" && revision !== undefined) return { ...write, value: revision }
+    if (write.prop !== "instance") return write
+    const instance = props.instance.read(write.value)
+    if (isRefusal(instance) || instance.component.node === undefined) return write
+    const moved = raised.get(instance.component.node)
+    if (moved === undefined || moved.from !== instance.component.revision) return write
+    const component = { node: instance.component.node, revision: moved.to }
+    return { ...write, value: { ...(write.value as object), component } }
+  })
 }
