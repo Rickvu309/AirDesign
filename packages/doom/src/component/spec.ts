@@ -83,7 +83,7 @@ function emission(read: (raw: unknown) => Expr) {
   const position = { key: read, x: read, y: read, w: read, h: read }
   const readFit = object(
     { smaller: read },
-    { group: name, thin: finite(0, 1_000), axis: literal(["horizontal", "vertical"]) },
+    { group: name, thin: finite(0, 1_000), axis: literal(["horizontal", "vertical"]), keep: read },
   )
   const fitText = (raw: unknown) => {
     const fit = readFit(raw)
@@ -91,6 +91,8 @@ function emission(read: (raw: unknown) => Expr) {
       naming("thin", () => reject("shape", "Thinning requires a fit group."))
     if (fit.axis !== undefined && fit.thin === undefined)
       naming("axis", () => reject("shape", "A fit axis requires thinning."))
+    if (fit.keep !== undefined && fit.thin === undefined)
+      naming("keep", () => reject("shape", "Keeping a label requires thinning."))
     return fit
   }
   const stroke = object({ color: read, width: read })

@@ -158,7 +158,7 @@ type Group = {
   shrink: boolean
 }
 
-function thinGroup(fits: readonly Fit[], frameSpan: number, gap: number, axis: Group["axis"], charge: Charge) {
+function thinGroup(fits: readonly Fit[], frameSpan: number, gap: number, axis: Group["axis"], charge: Charge, kept: ReadonlySet<TextPart>) {
   const across = axis === "horizontal"
   const center = ({
     part: {
@@ -190,40 +190,80 @@ function thinGroup(fits: readonly Fit[], frameSpan: number, gap: number, axis: G
     const left = x - minimum / 2
     const edgeLeft = Math.max(from, Math.min(left, to - minimum))
     const label = minimum <= to - from ? withFit(fit, place(fit.part, edgeLeft, minimum)) : undefined
-    return { fit, x, left, edgeLeft, minimum, capacity, label }
+    return { fit, x, left, edgeLeft, minimum, capacity, label, keep: kept.has(fit.part) }
   })
   type Slot = (typeof slots)[number] & { readonly placedLeft: number }
+  const pinned = slots.filter(({ keep }) => keep)
+  const optional = slots.filter(({ keep }) => !keep)
   const placed = new Map<TextPart, TextPart>()
-  if (slots[0]?.label === undefined) {
+  if (pinned.length === 0 && slots[0]?.label === undefined) {
     const first = slots.find(({ label }) => label !== undefined)
     if (first?.label !== undefined) placed.set(first.fit.part, first.label)
     return placed
   }
 
-  let selected: Slot[] = []
-  for (let stride = 1; stride <= slots.length; stride += 1) {
+  const first =
+    pinned.length === 0
+      ? 0
+      : optional.findIndex((slot) => {
+          if (slot.label === undefined) return false
+          const left = slot.x < pinned[0]!.x || slot.x > pinned.at(-1)!.x ? slot.edgeLeft : slot.left
+          return pinned.every((fixed) => {
+            charge()
+            return slot.x < fixed.x
+              ? left + slot.minimum + gap <= fixed.edgeLeft + tolerance
+              : left + tolerance >= fixed.edgeLeft + fixed.minimum + gap
+          })
+        })
+  const sampleAt = (start: number, stride: number): Slot[] | undefined => {
     charge()
     const sample: Slot[] = []
-    for (let i = 0; i < slots.length; i += stride) {
+    let i = start
+    let fixed = 0
+    while (i < optional.length || fixed < pinned.length) {
       charge()
-      const slot = slots[i]!
-      const edge = i === 0 || i + stride >= slots.length
-      const placedLeft = edge ? slot.edgeLeft : slot.left
+      const candidate = optional[i]
+      const required = pinned[fixed]
+      const slot =
+        required !== undefined && (candidate === undefined || required.x <= candidate.x) ? required : candidate!
+      if (slot.keep) fixed += 1
+      else i += stride
+      const edge = sample.length === 0 || (i >= optional.length && fixed >= pinned.length)
+      const placedLeft = edge || slot.keep ? slot.edgeLeft : slot.left
       const before = sample.at(-1)
       if (
         slot.label === undefined ||
-        (!edge && slot.capacity + tolerance < slot.minimum) ||
+        (!edge && !slot.keep && slot.capacity + tolerance < slot.minimum) ||
         (before !== undefined && placedLeft + tolerance < before.placedLeft + before.minimum + gap)
       )
-        break
+        return undefined
       sample.push({ ...slot, placedLeft })
     }
-    if (sample.length === Math.ceil(slots.length / stride)) {
-      selected = sample
-      break
+    return sample
+  }
+  const required = pinned.map((slot) => ({ ...slot, placedLeft: slot.edgeLeft }))
+  const canSample =
+    first >= 0 &&
+    required.every((slot, i) => {
+      const before = required[i - 1]
+      return (
+        slot.label !== undefined &&
+        (before === undefined || slot.placedLeft + tolerance >= before.placedLeft + before.minimum + gap)
+      )
+    })
+  const choose = (): Slot[] => {
+    if (!canSample) return required
+    for (let stride = 1; first + stride <= optional.length; stride += 1) {
+      const phases = pinned.length === 0 ? 1 : stride
+      for (let offset = 0; offset < phases; offset += 1) {
+        const sample = sampleAt(first + offset, stride)
+        if (sample !== undefined) return sample
+      }
     }
+    return required
   }
 
+  const selected = choose()
   for (const [i, slot] of selected.entries()) {
     if (slot.label === undefined) continue
     if (slot.left !== slot.placedLeft) {
@@ -296,22 +336,30 @@ export function* fitGroups(
       continue
     }
 
+    const kept = new Set(group.entries.filter(({ keep }) => keep).map(({ part }) => part))
     const selected = thinGroup(
       fits,
       group.axis === "horizontal" ? frame.w : frame.h,
       group.thin,
       group.axis,
       context.charge,
+      kept,
     )
     for (const { part } of fits) fitted.delete(part)
     for (const [key, part] of selected) fitted.set(key, part)
-    if (selected.size < fits.length) {
+    for (const fit of fits) {
+      if (!kept.has(fit.part) || selected.has(fit.part)) continue
+      fitted.set(fit.part, withText(fit.part, fit.text))
+      yield finding(fit.part, fit.size, fit.neededWidth)
+    }
+    const thinned = fits.filter(({ part }) => !fitted.has(part))
+    if (thinned.length > 0) {
       const lanes = new Map(group.entries.map((entry) => [entry.part, entry.laneWidth]))
       const deficit = (fit: Fit) => fit.neededWidth - (lanes.get(fit.part) ?? fit.part.props.box.w)
       const empty = selected.size === 0
       const example = empty
-        ? fits.reduce((a, b) => (a.neededWidth <= b.neededWidth ? a : b))
-        : omitted.reduce((a, b) => (deficit(a) >= deficit(b) ? a : b))
+        ? thinned.reduce((a, b) => (a.neededWidth <= b.neededWidth ? a : b))
+        : thinned.reduce((a, b) => (deficit(a) >= deficit(b) ? a : b))
       yield {
         ...finding(
           example.part,
@@ -320,7 +368,7 @@ export function* fitGroups(
           empty && group.axis === "horizontal" ? frame.w : lanes.get(example.part),
         ),
         key: [name],
-        thinned: fits.length - selected.size,
+        thinned: thinned.length,
       }
     }
   }

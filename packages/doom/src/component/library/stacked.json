@@ -103,6 +103,7 @@
           "s",
           {
             "id": ["get", "s.id"],
+            "order": ["get", "i"],
             "fill": [
               "if",
               ["eq", ["get", "s.color"], null],
@@ -126,7 +127,24 @@
         "id"
       ]
     ],
-    ["segmentsByCategory", ["groupBy", ["get", "data.segments"], "category"]],
+    [
+      "segmentsByCategory",
+      [
+        "groupBy",
+        [
+          "if",
+          ["get", "legend"],
+          [
+            "sortBy",
+            ["get", "data.segments"],
+            "s",
+            ["lookup", ["at", ["lookup", ["get", "seriesColors"], ["get", "s.series"]], 0], "order"]
+          ],
+          ["get", "data.segments"]
+        ],
+        "category"
+      ]
+    ],
     [
       "groups",
       [

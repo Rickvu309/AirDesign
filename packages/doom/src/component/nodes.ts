@@ -6,7 +6,7 @@ import { isRefusal } from "../refusal.js"
 import { type Text, type TextStyleName, textStyleNames } from "../text.js"
 import { textContent } from "./text-content.js"
 import { keyOf, keyString, type PartKey } from "./instance.js"
-import { type Reader, finite, list, literal, naming, object, reject } from "../read-kit.js"
+import { type Reader, boolean, finite, list, literal, naming, object, reject } from "../read-kit.js"
 import { type FittingContext, fitGroups, fitOne, textSize } from "./fit-text.js"
 import type { ComponentFinding, TextFitFinding } from "./findings.js"
 import type { Expr } from "./expression.js"
@@ -92,6 +92,7 @@ export type GroupedText = {
   readonly group: string
   readonly smaller: number
   readonly thin: number | undefined
+  readonly keep: boolean
   readonly laneWidth: number
   readonly axis: "horizontal" | "vertical"
 }
@@ -278,6 +279,7 @@ export function preparePart(
       : axis === "horizontal"
         ? { ...position, x: x + inset, w: lane - 2 * inset }
         : { ...position, y: y + inset, h: lane - 2 * inset }
+  const keep = fit.keep !== undefined && readField("fit.keep", fit.keep, boolean)
   return {
     kind: "grouped-text",
     part: { ...part, props: { ...part.props, box: padded } },
@@ -286,6 +288,7 @@ export function preparePart(
     thin: fit.thin,
     laneWidth: fit.thin === undefined ? position.w : w,
     axis,
+    keep,
   }
 }
 
