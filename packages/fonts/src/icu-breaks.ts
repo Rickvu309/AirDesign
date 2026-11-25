@@ -5,6 +5,7 @@ const line = 2
 
 export type Breaker = {
   readonly breaks: FontLayout["breaks"]
+  readonly graphemes: (text: string) => readonly number[]
   readonly script: (codepoint: number) => string | undefined
   readonly properties: (codepoint: number) => number
 }
@@ -70,11 +71,28 @@ export async function loadBreaker(): Promise<Breaker> {
     }
   }
 
+  const graphemeCache = new Map<string, readonly number[]>()
+  const lineCache = new Map<string, readonly number[]>()
+  function cachedBreaks(type: number, text: string, locale: string) {
+    const cache = type === character ? graphemeCache : lineCache
+    const key = type === character ? text : locale.length + ":" + locale + text
+    const cached = cache.get(key)
+    if (cached !== undefined) return cached
+    const offsets = breaks(type, text, locale)
+    if (text.length <= 4096) {
+      if (cache.size >= 64) cache.clear()
+      cache.set(key, offsets)
+    }
+    return offsets
+  }
+  const graphemes = (text: string) => cachedBreaks(character, text, "und")
+
   return {
+    graphemes,
     breaks: ({ text, locale }) => {
       if (/(?:^|[@;])\s*lw=phrase(?:;|$)/iu.test(locale) || /-u(?:-[a-z0-9]{2,8})*-lw-phrase(?:-|$)/iu.test(locale))
         throw new Error("Phrase line breaking is unavailable")
-      return { graphemes: breaks(character, text, "und"), opportunities: breaks(line, text, locale) }
+      return { graphemes: graphemes(text), opportunities: cachedBreaks(line, text, locale) }
     },
     script(codepoint: number) {
       const tag = Number(script(codepoint))
