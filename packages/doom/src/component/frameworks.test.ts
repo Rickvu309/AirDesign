@@ -11,6 +11,22 @@ function spec(id: string) {
 }
 
 describe("consulting frameworks", () => {
+  it("keeps both axis titles clear of the arrows at the tips", () => {
+    const matrix = spec("matrix")
+    if (matrix.sample === undefined) throw new Error("Missing matrix sample")
+    const tree = expand(matrix, { frame, data: matrix.sample.data })
+    const x = keyed(tree, "axis", "x").props.box
+    const y = keyed(tree, "axis", "y").props.box
+    const xTitle = keyed(tree, "axis-title", "x").props.box
+    const yTitle = keyed(tree, "axis-title", "y").props.box
+    const xGap = xTitle.y - x.y
+    const yGap = yTitle.x - y.x
+    expect(xGap).toBeGreaterThan(3)
+    expect(xGap).toBeCloseTo(yGap)
+    expect(xTitle.x + xTitle.w).toBeCloseTo(x.x + x.w)
+    expect(yTitle.y).toBeCloseTo(y.y)
+  })
+
   it("places labeled items in their quadrant and emphasizes only the chosen quadrant", () => {
     const tree = expand(spec("matrix"), {
       frame,
@@ -33,10 +49,20 @@ describe("consulting frameworks", () => {
       },
     })
     expect(keyed(tree, "size-key").props.text?.chars).toBe("Bubble size: Revenue")
+    const key = keyed(tree, "size-key").props.box
+    const horizontalTitle = keyed(tree, "axis-title", "x").props
+    const verticalTitle = keyed(tree, "axis-title", "y").props
+    expect(key.x + key.w).toBeLessThan(horizontalTitle.box.x)
+    expect(horizontalTitle.text?.spans[0]?.size).toBe(verticalTitle.text?.spans[0]?.size)
     expect(role(tree, "axis")).toHaveLength(2)
     expect(role(tree, "quadrant")).toHaveLength(4)
     expect(keyed(tree, "item", "a").props.box.x).toBeLessThan(keyed(tree, "item", "b").props.box.x)
-    expect(keyed(tree, "dot", "b").props.box.w / keyed(tree, "dot", "a").props.box.w).toBeCloseTo(3)
+    const small = keyed(tree, "dot", "a").props.box
+    const large = keyed(tree, "dot", "b").props.box
+    expect(large.w).toBeGreaterThanOrEqual(32)
+    expect(large.w).toBeGreaterThan(2.5 * small.w)
+    expect(Math.abs(small.w - large.w * Math.sqrt(100 / 900))).toBeLessThanOrEqual(0.5)
+    expect(large.x + large.w).toBeLessThan(keyed(tree, "item", "b").props.box.x)
     expect(keyed(tree, "quadrant", "upper-right").props.text?.spans[0]?.color).toEqual({ var: "accent1" })
     expect(tree.findings).toEqual([])
   })

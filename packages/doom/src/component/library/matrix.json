@@ -143,9 +143,10 @@
     ["left", ["min", 28, ["mul", ["get", "frame.w"], 0.04]]],
     ["top", ["min", 62, ["mul", ["get", "frame.h"], 0.14]]],
     ["bottom", ["max", ["get", "top"], ["sub", ["get", "frame.h"], ["get", "top"]]]],
-    ["footerH", ["if", ["get", "hasSizes"], ["div", ["get", "top"], 2], ["get", "top"]]],
+    ["mid", ["div", ["get", "frame.w"], 2]],
     ["right", ["max", ["get", "left"], ["sub", ["get", "frame.w"], ["get", "left"]]]],
     ["gap", ["min", 8, ["mul", ["get", "frame.w"], 0.01], ["mul", ["get", "frame.h"], 0.01]]],
+    ["axisGap", ["min", 12, ["mul", ["get", "left"], 0.5], ["mul", ["get", "top"], 0.3]]],
     ["tileW", ["max", 0, ["sub", ["div", ["sub", ["get", "right"], ["get", "left"]], 2], ["get", "gap"]]]],
     ["tileH", ["max", 0, ["sub", ["div", ["sub", ["get", "bottom"], ["get", "top"]], 2], ["get", "gap"]]]],
     ["inset", ["min", 28, ["mul", ["get", "tileW"], 0.07]]],
@@ -289,7 +290,12 @@
           ["min", 56, ["div", ["sub", ["get", "tileH"], ["get", "labelH"]], ["max", 1, ["count", ["get", "members"]]]]]
         ],
         ["labelX", ["add", ["get", "x"], ["get", "inset"]]],
-        ["markerW", ["min", 24, ["mul", ["get", "inset"], 0.75]]],
+        [
+          "markerW",
+          ["if", ["get", "hasSizes"], ["min", 38, ["mul", ["get", "inset"], 1.4]], ["mul", ["get", "inset"], 0.75]]
+        ],
+        ["markerGap", ["mul", ["get", "inset"], 0.45]],
+        ["itemOffset", ["add", ["get", "markerW"], ["get", "markerGap"]]],
         [
           "labelY",
           [
@@ -354,7 +360,7 @@
               "dotW",
               [
                 "min",
-                ["get", "rowH"],
+                ["mul", ["get", "rowH"], 0.8],
                 ["get", "markerW"],
                 [
                   "if",
@@ -362,7 +368,7 @@
                   10,
                   [
                     "max",
-                    6,
+                    8,
                     [
                       "if",
                       ["lt", 0, ["get", "maxSize"]],
@@ -377,7 +383,7 @@
                 ]
               ]
             ],
-            ["itemX", ["add", ["get", "labelX"], ["mul", 1.2, ["get", "inset"]]]]
+            ["itemX", ["add", ["get", "labelX"], ["get", "itemOffset"]]]
           ],
           "children": [
             {
@@ -403,7 +409,11 @@
                 "key": ["list", "item", ["get", "item.id"]],
                 "x": ["get", "itemX"],
                 "y": ["get", "rowY"],
-                "w": ["max", 0, ["sub", ["get", "tileW"], ["mul", 3.2, ["get", "inset"]]]],
+                "w": [
+                  "max",
+                  0,
+                  ["sub", ["get", "tileW"], ["add", ["mul", 2, ["get", "inset"]], ["get", "itemOffset"]]]
+                ],
                 "h": ["get", "rowH"],
                 "chars": ["get", "item.label"],
                 "style": "label",
@@ -449,19 +459,29 @@
         "over": ["get", "axes"],
         "as": "axis"
       },
-      "let": [["isX", ["eq", ["get", "axis.id"], "x"]]],
+      "let": [
+        ["isX", ["eq", ["get", "axis.id"], "x"]],
+        [
+          "titleX",
+          [
+            "add",
+            ["get", "axisGap"],
+            ["if", ["if", ["get", "isX"], ["get", "hasSizes"], false], ["get", "mid"], ["get", "left"]]
+          ]
+        ]
+      ],
       "emit": {
         "kind": "text",
         "key": ["list", "axis-title", ["get", "axis.id"]],
-        "x": ["add", ["get", "left"], ["get", "gap"]],
-        "y": ["if", ["get", "isX"], ["get", "bottom"], 0],
-        "w": ["max", 0, ["sub", ["sub", ["get", "frame.w"], ["get", "left"]], ["get", "gap"]]],
-        "h": ["if", ["get", "isX"], ["get", "footerH"], ["get", "top"]],
+        "x": ["get", "titleX"],
+        "y": ["if", ["get", "isX"], ["add", ["get", "bottom"], ["get", "axisGap"]], 0],
+        "w": ["sub", ["get", "frame.w"], ["get", "titleX"]],
+        "h": ["if", ["get", "isX"], ["sub", ["get", "top"], ["get", "axisGap"]], ["get", "top"]],
         "chars": ["get", "axis.label"],
         "style": "label",
         "color": ["get", "token.axis"],
         "align": ["if", ["get", "isX"], "right", "left"],
-        "alignV": ["if", ["get", "isX"], "center", "top"],
+        "alignV": "top",
         "overflow": "ellipsis",
         "fit": {
           "smaller": 16
@@ -474,14 +494,14 @@
         "kind": "text",
         "key": ["list", "size-key"],
         "x": ["get", "left"],
-        "y": ["add", ["get", "bottom"], ["get", "footerH"]],
-        "w": ["sub", ["get", "right"], ["get", "left"]],
-        "h": ["get", "footerH"],
+        "y": ["add", ["get", "bottom"], ["get", "axisGap"]],
+        "w": ["sub", ["get", "mid"], ["get", "left"]],
+        "h": ["sub", ["get", "top"], ["get", "axisGap"]],
         "chars": ["concat", "Bubble size: ", ["get", "token.sizeLabel"]],
         "style": "caption",
         "align": "left",
         "color": ["get", "token.axis"],
-        "alignV": "center",
+        "alignV": "top",
         "overflow": "ellipsis",
         "fit": { "smaller": 16 }
       }

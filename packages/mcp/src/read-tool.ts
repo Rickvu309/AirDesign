@@ -173,7 +173,6 @@ async function laidRead(opened: Opened, query: Query, host: DeckHost): Promise<L
 
 async function componentRead(opened: Opened, query: Query, host: DeckHost): Promise<ToolResult | undefined> {
   if (query.component !== undefined) {
-    if (!doom.linkedComponentsEnabled) return undefined
     const signature = componentSignature(query.component)
     if (signature === undefined)
       return refused("dead", { field: "component", note: "Read the deck for available template ids." })

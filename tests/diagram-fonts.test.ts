@@ -6,12 +6,52 @@ import { ends, resolvedById, role } from "../packages/doom/src/component/testing
 import architecture from "../packages/doom/src/component/testing/architecture.json" with { type: "json" }
 import { landTree } from "../packages/doom/src/component/testing/land-tree.js"
 import process from "../packages/doom/src/component/testing/process.json" with { type: "json" }
-import { type Box, type Point, isRefusal, measureWith, resolveSlide, themeLibrary } from "../packages/doom/src/index.js"
+import {
+  type Box,
+  type Point,
+  componentLibrary,
+  isRefusal,
+  measureWith,
+  resolveSlide,
+  themeLibrary,
+} from "../packages/doom/src/index.js"
 
 const metrics = new FontMetrics(new FontSource(undefined))
 const technical = themeLibrary.technical
 if (technical === undefined) throw new Error("Missing Technical theme")
 const theme = technical.theme
+
+const defaultCases = Object.entries(themeLibrary).flatMap(([themeId, { theme }]) =>
+  Array.from(componentLibrary, ([id, { spec }]) => ({ themeId, theme, id, spec })),
+)
+it.each(defaultCases)("$id has no default sample findings on $themeId", async ({ id, spec, theme, themeId }) => {
+  const sample = spec.sample
+  if (sample === undefined) throw new Error(`Missing ${id} sample`)
+  const input = { frame: { x: 0, y: 0, w: sample.w, h: sample.h }, data: sample.data, theme }
+  const estimate = expandComponent(spec, { ...input, measure: measureWith({}) })
+  if (isRefusal(estimate)) throw new Error(JSON.stringify(estimate))
+  expect(estimate.findings).toEqual([])
+  if (themeId === "technical") {
+    const fonts = await metrics.measure([landTree(estimate, theme).doom])
+    if (typeof fonts === "string") throw new Error(fonts)
+    expect([...fonts.pending, ...fonts.missing]).toEqual([])
+    const tree = expandComponent(spec, { ...input, measure: fonts.measure })
+    if (isRefusal(tree)) throw new Error(JSON.stringify(tree))
+    expect(tree.findings).toEqual([])
+    if (id === "tree") {
+      const { doom, slide } = landTree(tree, theme)
+      const resolved = resolvedById(resolveSlide(doom, slide, fonts.measure))
+      for (const { id } of role(tree, "node")) {
+        expect(
+          resolved
+            .get(id)
+            ?.text?.lines.flatMap(({ runs }) => runs.map(({ text }) => text))
+            .join(" "),
+        ).not.toContain("…")
+      }
+    }
+  }
+})
 
 const columnCases = [7, 8].flatMap((count) =>
   [false, true].flatMap((descriptions) =>
