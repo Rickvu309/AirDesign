@@ -30,7 +30,7 @@ A placement is `{ item, x, row, w }`. The row is zero-based and `x` starts at th
 
 ## Numeric display
 
-`["decimals", values, scale]` returns one precision for the entire data set. It skips nulls and uses the largest absolute value after dividing by the positive display scale. It returns one decimal when the maximum magnitude is below 10 and at least one scaled value is fractional. All other lists give zero decimals.
+`["decimals", values, scale]` returns one precision for the entire data set. It skips nulls, divides by the positive display scale, and rounds to one decimal. It returns one decimal when the largest rounded magnitude is below 10 and at least one rounded value is fractional. All other lists give zero decimals.
 
 Column uses this default when its `digits` token is `"auto"`. A spec or instance may choose 0 to 12 digits explicitly. A theme can supply the `number.digits` preference. Column uses that preference when its `digits` token is automatic.
 
@@ -40,7 +40,7 @@ When an axis uses a whole step in display units, use zero decimals for its ticks
 
 ## Signed color roles
 
-Theme colors `positive`, `negative`, and `total` are available as ordinary theme color references, such as `{ "var": "positive" }`. Put the sign or meaning in text or geometry as well. Column uses the series accent by default. Set the `signed` variant to enable sign colors and the `legend` variant to show a key for the signs present. Set its labels with `positiveLabel` and `negativeLabel`. Waterfall specs can use `total` for a balance bar. The color picker lists the palette colors.
+Theme colors `positive`, `negative`, and `total` are available as ordinary theme color references, such as `{ "var": "positive" }`. Put the sign or meaning in text or geometry as well. Column uses the series accent by default. Set the `legend` variant to show a series key labeled by `seriesLabel`. Set `signed` to enable sign colors and key entries for the signs present, with labels from `positiveLabel` and `negativeLabel`. Waterfall specs can use `total` for a balance bar. The color picker lists the palette colors.
 
 ## Paint check
 

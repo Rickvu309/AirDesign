@@ -97,7 +97,8 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
     }
     const root = bind(spec.let, scope, "let")
     const layoutExpr = spec.layout
-    const layout = layoutExpr === undefined ? undefined : naming("layout", () => readLayout(evaluate(layoutExpr, root)))
+    const layout =
+      layoutExpr === undefined ? undefined : naming("layout", () => readLayout(evaluate(layoutExpr, root, "layout")))
     for (const [i, part] of spec.parts.entries()) visit(part, root, `parts[${i}]`)
     return treeOf(spec.name, frame, parts, fitting, findings, layout)
   } catch (thrown) {

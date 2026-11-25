@@ -1,3 +1,7 @@
+import { createElement } from "react"
+import { renderToStaticMarkup } from "react-dom/server"
+import { UnionControl } from "../design/controls/union"
+import { ColorControl } from "../design/controls/color"
 import * as doom from "@airdesign/doom"
 import type { Desc } from "../design/control-desc"
 import { describe, expect, it } from "vitest"
@@ -6,7 +10,8 @@ import { templateColorColumns, typedColor } from "../design/color-choices"
 import { namedByColor } from "../design/color-names"
 import { changeWrites } from "./design-changes"
 import { nodeModel } from "./design-model"
-import { swatchesOf } from "./design-palette"
+import { paletteOf } from "./design-palette"
+import { neutralColorNames } from "./testing/neutral-color-names"
 import { grow, landed, spot } from "./testing/doom-fixtures"
 
 const hash = "#"
@@ -109,7 +114,7 @@ function colorControls(name: string): readonly PanelControl[] {
 const sent = (control: PanelControl, color: doom.Color) => (control.desc.kind === "color" ? color : { solid: color })
 
 function personColors(): readonly doom.Color[] {
-  const columns = templateColorColumns(namedByColor(swatchesOf(theme)))
+  const columns = templateColorColumns(paletteOf(view, theme).templateColors)
   const tint = columns
     .flatMap((column) => column.shades)
     .find((shade) => typeof shade.color !== "string" && (shade.color.tint ?? 0) > 0)
@@ -151,7 +156,7 @@ describe("colour controls and agent colours", () => {
     expect(missed).toEqual([])
   })
 
-  it("lands agent colours and offers corresponding choices for palette roles and hex in the panel", () => {
+  it("lands every agent colour through both edit paths", () => {
     const missed: string[] = []
     let next = 0
     const mint = () => doom.nodeId(`m:${String((next += 1))}`)
@@ -165,8 +170,6 @@ describe("colour controls and agent colours", () => {
             missed.push(`agent ${name} ${field} ${color}`)
             continue
           }
-          if (doom.colorVars.some((role) => role === color) && !doom.paletteColorVars.some((role) => role === color))
-            continue
           const reached = colorControls(name).some((control) =>
             personColors().some((choice) => {
               if (JSON.stringify(choice) !== JSON.stringify(wanted) && !color.startsWith(hash)) return false
@@ -178,6 +181,37 @@ describe("colour controls and agent colours", () => {
           if (!reached) missed.push(`${name} ${field} ${color}`)
         }
     expect(missed).toEqual([])
+  })
+
+  it.each(doom.colorVars)("shows an agent's %s fill by name and renders its actual colour", (role) => {
+    const theme = doom.themeLibrary.neutral.theme
+    for (const tint of [undefined, 0.2]) {
+      const color = tint === undefined ? { var: role } : { var: role, tint }
+      const writes = doom.compileAgentChange(
+        view,
+        { op: "set", target: id("card"), fill: tint === undefined ? role : `${role}+20` },
+        () => doom.nodeId("m:1"),
+      )
+      if (doom.isRefusal(writes)) throw new Error(writes.refused)
+      const after = landed(view, writes)
+      const control = nodeModel({ view: after, id: id("card"), theme, slides: [] })
+        .sections.flatMap(({ strips }) => strips.flat())
+        .find(({ trait, field }) => trait === "fills" && field === "paint")!
+      const css = doom.resolveColor(color, theme)
+      const baseName =
+        Object.entries(neutralColorNames).find(([name]) => name === role)?.[1] ??
+        namedByColor([{ css: theme.colors[role] }])[0]!.name
+      const markup = renderToStaticMarkup(
+        createElement(UnionControl, {
+          control,
+          inner: (props) => createElement(ColorControl, props),
+          palette: paletteOf(after, theme),
+          onChange: () => {},
+        }),
+      )
+      expect(markup).toContain(`background:${css.toUpperCase()}`)
+      expect(markup).toContain(`>${tint === undefined ? baseName : css.slice(1).toUpperCase()}</span>`)
+    }
   })
 
   it("offers a tint written as the theme colour and its tint, so it follows a template color change", () => {

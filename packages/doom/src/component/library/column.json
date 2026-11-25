@@ -42,6 +42,7 @@
     "negative": {
       "var": "negative"
     },
+    "seriesLabel": "Series",
     "positiveLabel": "Positive",
     "negativeLabel": "Negative",
     "heading": "label",
@@ -73,28 +74,33 @@
       "legend",
       [
         "if",
-        ["if", ["get", "variant.legend"], ["get", "variant.signed"], false],
+        ["get", "variant.legend"],
         [
           "flowText",
           [
-            "filter",
+            "if",
+            ["get", "variant.signed"],
             [
-              "list",
-              {
-                "id": "positive",
-                "chars": ["get", "token.positiveLabel"],
-                "fill": ["get", "token.positive"],
-                "show": ["lt", 0, ["get", "maxValue"]]
-              },
-              {
-                "id": "negative",
-                "chars": ["get", "token.negativeLabel"],
-                "fill": ["get", "token.negative"],
-                "show": ["lt", ["get", "lo"], 0]
-              }
+              "filter",
+              [
+                "list",
+                {
+                  "id": "positive",
+                  "chars": ["get", "token.positiveLabel"],
+                  "fill": ["get", "token.positive"],
+                  "show": ["lt", 0, ["get", "maxValue"]]
+                },
+                {
+                  "id": "negative",
+                  "chars": ["get", "token.negativeLabel"],
+                  "fill": ["get", "token.negative"],
+                  "show": ["lt", ["get", "lo"], 0]
+                }
+              ],
+              "item",
+              ["get", "item.show"]
             ],
-            "item",
-            ["get", "item.show"]
+            ["list", { "id": "series", "chars": ["get", "token.seriesLabel"], "fill": ["get", "token.accent"] }]
           ],
           {
             "width": ["max", 0, ["get", "plotWidth"]],

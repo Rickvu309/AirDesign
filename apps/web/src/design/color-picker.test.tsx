@@ -78,6 +78,22 @@ describe("the colour list", () => {
     expect(pickingHex).toContain(`value="1F4E79"`)
   })
 
+  it("starts Add color at the held semantic tint and keeps semantic roles out of the grid", () => {
+    const signed = {
+      ...palette,
+      templateColors: [...palette.templateColors, { var: "positive", css: "007E6E", name: "Dark teal" }],
+    } satisfies Palette
+    const value = { var: "positive", tint: 0.2 } as const
+    const list = renderToStaticMarkup(
+      <PickerBody title="Fill" value={value} palette={signed} onPick={() => undefined} />,
+    )
+    expect(buttons(list)).not.toContainEqual(expect.objectContaining({ name: "Dark teal" }))
+    const picking = renderToStaticMarkup(
+      <PickerBody title="Fill" picking value={value} palette={signed} onPick={() => undefined} />,
+    )
+    expect(picking).toContain('value="33988B"')
+  })
+
   it("offers a way to show the rest of the deck when one row of swatches is not enough", () => {
     const many: Palette = {
       templateColors: palette.templateColors,

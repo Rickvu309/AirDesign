@@ -200,10 +200,12 @@ export function preparePart(
   const generated = naming(field, () =>
     prop("text", {
       ...content,
-      ...(explicitSize === undefined ? {} : {
-        spans: content.spans.map((span) => ({ ...span, size: span.size ?? explicitSize })),
-        wrap: "none",
-      }),
+      ...(explicitSize === undefined
+        ? {}
+        : {
+            spans: content.spans.map((span) => ({ ...span, size: span.size ?? explicitSize })),
+            wrap: "none",
+          }),
       style: textStyle,
       resize: "fixed",
       alignV,

@@ -7,6 +7,7 @@ import {
   deckChoices,
   hexOf,
   matches,
+  pickerSwatches,
   templateColorColumns,
   tintChoices,
   type Choice,
@@ -185,7 +186,7 @@ export function PickerBody({
     onPick(color)
     onSwatch?.()
   }
-  const bases = templateColorColumns(palette.templateColors).map((column) => column.swatch)
+  const bases = templateColorColumns(pickerSwatches(palette.templateColors)).map((column) => column.swatch)
   const heldBase = value === undefined ? -1 : bases.findIndex((choice) => matches(choice.color, value))
   const deck = deckChoices(palette)
   const heldDeck = value === undefined ? -1 : deck.findIndex((choice) => matches(choice.color, value))
