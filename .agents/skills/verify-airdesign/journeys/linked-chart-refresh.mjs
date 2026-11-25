@@ -45,7 +45,7 @@ export async function linkedChart(kit) {
   const part = (fold, role, id) => chart(fold).parts.find(({ key }) => key[0] === role && key[1] === id)?.node
   const before = await read()
   const measure = doom.measureWith({})
-  const placed = doom.placeComponent(before, {
+  const placed = doom.placeComponent(before, doom.columnDefinition, {
     frame,
     parent: { id: slide, at: doom.orderKeyBetween(null, null) },
     box: spot(245, 180, 1430, 690),

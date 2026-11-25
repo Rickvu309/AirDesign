@@ -344,7 +344,7 @@ export async function editDeckTool(
   if (samples.length > 0) {
     const measured = await deckMeasure(
       host,
-      [opened.fold, ...samples.map(({ view }) => view)],
+      [opened.fold, ...samples.map(({ view }) => view), ...("refused" in compiled ? [] : [compiled.after])],
       undefined,
       samples.flatMap(({ texts }) => texts),
     )
@@ -352,7 +352,8 @@ export async function editDeckTool(
       return refused("fonts", { note: "Unable to measure the linked chart. Try again when its fonts are available." })
     measure = measured.measure
     compiled = await compile(measure)
-  }) => prop === "instance" && value !== null)
+  } else if (!("refused" in compiled)) {
+    const instanceWrites = compiled.edit.writes.some(({ prop, value }) => prop === "instance" && value !== null)
     if (instanceWrites || doom.mayLeaveDeck(opened.fold, compiled.edit.writes)) {
       const measured = await deckMeasure(host, [opened.fold, compiled.after])
       if (instanceWrites && host.measure !== undefined && measured === undefined)

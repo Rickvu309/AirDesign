@@ -6,7 +6,7 @@ it("offers only writable design controls for generated chart parts", () => {
   const { doom: before, slides } = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [] }] })
   const slide = slides[0]!
   const frame = doom.nodeId("chart:1")
-  const writes = doom.placeComponent(before, {
+  const writes = doom.placeComponent(before, doom.columnDefinition, {
     frame,
     parent: { id: slide, at: doom.orderKeyBetween(null, null) },
     box: { x: 180, y: 180, w: 1200, h: 560, rotation: 0, flipH: false, flipV: false },
