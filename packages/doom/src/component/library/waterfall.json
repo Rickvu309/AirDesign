@@ -44,7 +44,6 @@
     "total": {
       "var": "total"
     },
-    "focus": "",
     "neutral": {
       "var": "text2"
     },
@@ -146,16 +145,15 @@
       }
     ],
     [
-      "neutralFill",
+      "activeFocus",
       [
-        "contrastTint",
-        ["get", "token.neutral"],
-        {
-          "var": "background"
-        },
-        2.2
+        "matchingFocus",
+        ["get", "focus"],
+        ["filter", ["get", "data.rows"], "r", ["if", ["eq", ["get", "r.mode"], "total"], false, true]],
+        "id"
       ]
     ],
+    ["neutralFill", ["paletteRamp", 1, 2, ["get", "token.highlight"], ["get", "token.neutral"], true]],
     [
       "totalFill",
       [
@@ -267,6 +265,20 @@
         ["b", ["linear", ["get", "r.end"], ["get", "lo"], ["get", "hi"], ["get", "plotBottom"], ["get", "plotTop"]]],
         ["top", ["min", ["get", "a"], ["get", "b"]]],
         ["height", ["sub", ["max", ["get", "a"], ["get", "b"]], ["get", "top"]]],
+        [
+          "stepFill",
+          [
+            "if",
+            ["get", "variant.signed"],
+            [
+              "if",
+              ["eq", ["get", "r.value"], 0],
+              ["get", "neutralFill"],
+              ["if", ["lt", ["get", "r.value"], 0], ["get", "token.down"], ["get", "token.up"]]
+            ],
+            ["get", "neutralFill"]
+          ]
+        ],
         ["isTotal", ["eq", ["get", "r.mode"], "total"]],
         ["prev", ["at", ["get", "steps"], ["sub", ["get", "i"], 1]]],
         [
@@ -328,20 +340,11 @@
               ["get", "isTotal"],
               ["get", "totalFill"],
               [
-                "if",
-                ["eq", ["get", "r.id"], ["get", "token.focus"]],
-                ["get", "token.highlight"],
-                [
-                  "if",
-                  ["get", "variant.signed"],
-                  [
-                    "if",
-                    ["eq", ["get", "r.value"], 0],
-                    ["get", "neutralFill"],
-                    ["if", ["lt", ["get", "r.value"], 0], ["get", "token.down"], ["get", "token.up"]]
-                  ],
-                  ["get", "neutralFill"]
-                ]
+                "focusColor",
+                ["get", "activeFocus"],
+                ["list", ["get", "r.id"]],
+                ["if", ["eq", ["count", ["get", "activeFocus"]], 0], ["get", "stepFill"], ["get", "token.highlight"]],
+                ["get", "stepFill"]
               ]
             ]
           }

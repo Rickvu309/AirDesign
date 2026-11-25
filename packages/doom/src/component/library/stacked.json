@@ -50,26 +50,9 @@
     "accent1": {
       "var": "accent1"
     },
-    "accent2": {
+    "neutral": {
       "var": "text2"
     },
-    "accent3": {
-      "var": "text2",
-      "tint": 0.17
-    },
-    "accent4": {
-      "var": "text2",
-      "tint": 0.34
-    },
-    "accent5": {
-      "var": "text2",
-      "tint": 0.51
-    },
-    "accent6": {
-      "var": "text2",
-      "tint": 0.68
-    },
-    "focus": "",
     "source": "",
     "valueWidth": 24,
     "totalWidth": 48
@@ -101,6 +84,10 @@
       ]
     ],
     [
+      "colorSlots",
+      ["rampSlots", ["get", "data.series"], ["matchingFocus", ["get", "focus"], ["get", "data.series"], "id"]]
+    ],
+    [
       "seriesItems",
       [
         "map",
@@ -110,31 +97,15 @@
           "id": ["get", "s.id"],
           "order": ["get", "i"],
           "fill": [
-            "if",
-            ["eq", ["get", "s.color"], null],
+            "coalesce",
+            ["get", "s.color"],
             [
-              "if",
-              [
-                "if",
-                ["eq", ["get", "token.focus"], ""],
-                ["eq", ["get", "i"], 0],
-                ["eq", ["get", "s.id"], ["get", "token.focus"]]
-              ],
+              "paletteRamp",
+              ["at", ["get", "colorSlots.indices"], ["get", "i"]],
+              ["get", "colorSlots.count"],
               ["get", "token.accent1"],
-              [
-                "cycle",
-                [
-                  "list",
-                  ["get", "token.accent2"],
-                  ["get", "token.accent3"],
-                  ["get", "token.accent4"],
-                  ["get", "token.accent5"],
-                  ["get", "token.accent6"]
-                ],
-                ["get", "i"]
-              ]
-            ],
-            ["get", "s.color"]
+              ["get", "token.neutral"]
+            ]
           ],
           "chars": ["get", "s.label"]
         }
@@ -350,7 +321,6 @@
       ]
     ],
     ["chip", ["min", 18, ["get", "legendHeight"]]],
-    ["legendLeading", ["add", ["get", "chip"], 8]],
     [
       "legend",
       [
@@ -363,7 +333,7 @@
             "width": ["get", "plotWidth"],
             "rows": 1,
             "rowHeight": ["get", "legendHeight"],
-            "leading": ["get", "legendLeading"],
+            "leading": ["add", ["get", "chip"], 8],
             "gap": 22,
             "style": ["get", "token.caption"],
             "smaller": ["get", "token.captionSmall"]
@@ -455,7 +425,7 @@
           "emit": {
             "kind": "text",
             "key": ["list", "legend-label", ["get", "placed.item.id"]],
-            "x": ["add", ["get", "legendLeft"], ["get", "legendLeading"]],
+            "x": ["add", ["get", "legendLeft"], ["add", ["get", "chip"], 8]],
             "y": ["get", "legendTop"],
             "w": ["get", "placed.w"],
             "h": ["get", "legendHeight"],
