@@ -1,282 +1,33 @@
 {
-  "spec": {
-    "version": 1,
-    "name": "Service architecture",
-    "collections": {
-      "layers": {
-        "label": "string"
-      },
-      "nodes": {
-        "layer": "ref:layers",
-        "name": "string",
-        "detail": "string"
-      },
-      "edges": {
-        "from": "ref:nodes",
-        "to": "ref:nodes",
-        "sourceSite": ["t", "r", "b", "l", "c"],
-        "targetSite": ["t", "r", "b", "l", "c"],
-        "style": ["primary", "cross"]
-      }
-    },
-    "defaults": {
-      "title": "Service architecture",
-      "card": "#EAF1F8",
-      "connector": "#68819B",
-      "cross": "#197E76"
-    },
-    "let": [
-      ["gutter", 12],
-      ["top", 96],
-      ["cardH", 118],
-      ["rowsH", ["sub", ["get", "frame.h"], 151]]
+  "frame": { "x": 160, "y": 260, "w": 1600, "h": 680 },
+  "data": {
+    "layers": [
+      { "id": "channels", "label": "Channels" },
+      { "id": "services", "label": "Services" },
+      { "id": "data", "label": "Data" }
     ],
-    "parts": [
-      {
-        "emit": {
-          "kind": "text",
-          "key": ["list", "heading"],
-          "x": 0,
-          "y": 0,
-          "w": ["get", "frame.w"],
-          "h": 42,
-          "chars": ["get", "token.title"],
-          "style": ["get", "token.heading"],
-          "color": ["get", "token.ink"],
-          "align": "left",
-          "alignV": "center"
-        }
-      },
-      {
-        "repeat": {
-          "over": ["get", "data.edges"],
-          "as": "e"
-        },
-        "emit": {
-          "kind": "line",
-          "key": ["list", "edge", ["get", "e.id"]],
-          "start": ["site", ["list", "service", ["get", "e.from"]], ["get", "e.sourceSite"]],
-          "end": ["site", ["list", "service", ["get", "e.to"]], ["get", "e.targetSite"]],
-          "color": ["if", ["eq", ["get", "e.style"], "cross"], ["get", "token.cross"], ["get", "token.connector"]],
-          "width": 3,
-          "route": "straight",
-          "arrow": "triangle"
-        }
-      },
-      {
-        "repeat": {
-          "over": ["get", "data.layers"],
-          "as": "l"
-        },
-        "let": [
-          [
-            "lane",
-            [
-              "band",
-              ["get", "i"],
-              ["count", ["get", "data.layers"]],
-              ["get", "gutter"],
-              ["sub", ["get", "frame.w"], ["mul", 2, ["get", "gutter"]]],
-              0.61
-            ]
-          ],
-          ["services", ["filter", ["get", "data.nodes"], "n", ["eq", ["get", "n.layer"], ["get", "l.id"]]]]
-        ],
-        "children": [
-          {
-            "emit": {
-              "kind": "text",
-              "key": ["list", "lane", ["get", "l.id"]],
-              "x": ["get", "lane.start"],
-              "y": 48,
-              "w": ["get", "lane.size"],
-              "h": 36,
-              "chars": ["get", "l.label"],
-              "style": ["get", "token.caption"],
-              "color": ["get", "token.muted"],
-              "align": "center",
-              "alignV": "center"
-            }
-          },
-          {
-            "repeat": {
-              "over": ["get", "services"],
-              "as": "n"
-            },
-            "let": [
-              ["slot", ["band", ["get", "i"], ["count", ["get", "services"]], ["get", "top"], ["get", "rowsH"], 0]],
-              ["y", ["sub", ["get", "slot.start"], ["div", ["get", "cardH"], 2]]]
-            ],
-            "children": [
-              {
-                "emit": {
-                  "kind": "rect",
-                  "key": ["list", "service", ["get", "n.id"]],
-                  "x": ["get", "lane.start"],
-                  "y": ["get", "y"],
-                  "w": ["get", "lane.size"],
-                  "h": ["get", "cardH"],
-                  "fill": ["get", "token.card"]
-                }
-              },
-              {
-                "emit": {
-                  "kind": "text",
-                  "key": ["list", "name", ["get", "n.id"]],
-                  "x": ["get", "lane.start"],
-                  "y": ["add", ["get", "y"], 23],
-                  "w": ["get", "lane.size"],
-                  "h": 35,
-                  "chars": ["get", "n.name"],
-                  "style": ["get", "token.label"],
-                  "color": ["get", "token.ink"],
-                  "align": "center",
-                  "alignV": "center"
-                }
-              },
-              {
-                "emit": {
-                  "kind": "text",
-                  "key": ["list", "detail", ["get", "n.id"]],
-                  "x": ["get", "lane.start"],
-                  "y": ["add", ["get", "y"], 64],
-                  "w": ["get", "lane.size"],
-                  "h": 31,
-                  "chars": ["get", "n.detail"],
-                  "style": ["get", "token.caption"],
-                  "color": ["get", "token.muted"],
-                  "align": "center",
-                  "alignV": "center"
-                }
-              }
-            ]
-          }
-        ]
-      }
+    "components": [
+      { "id": "web", "layer": "channels", "name": "Web app" },
+      { "id": "mobile", "layer": "channels", "name": "Mobile app" },
+      { "id": "partners", "layer": "channels", "name": "Partner API" },
+      { "id": "identity", "layer": "services", "name": "Identity" },
+      { "id": "gateway", "layer": "services", "name": "API gateway" },
+      { "id": "orders", "layer": "services", "name": "Orders" },
+      { "id": "payments", "layer": "services", "name": "Payments" },
+      { "id": "postgres", "layer": "data", "name": "Postgres" },
+      { "id": "events", "layer": "data", "name": "Event stream" },
+      { "id": "storage", "layer": "data", "name": "Object storage" }
+    ],
+    "links": [
+      { "id": "web", "from": "web", "to": "gateway" },
+      { "id": "mobile", "from": "mobile", "to": "gateway" },
+      { "id": "partners", "from": "partners", "to": "gateway" },
+      { "id": "auth", "from": "gateway", "to": "identity" },
+      { "id": "route", "from": "gateway", "to": "orders" },
+      { "id": "charge", "from": "orders", "to": "payments" },
+      { "id": "write", "from": "orders", "to": "postgres" },
+      { "id": "publish", "from": "orders", "to": "events" },
+      { "id": "receipts", "from": "payments", "to": "storage" }
     ]
-  },
-  "fixture": {
-    "theme": {
-      "ink": "#182C43",
-      "muted": "#455B73",
-      "rule": "#93A6BA",
-      "accent": {
-        "var": "accent1"
-      },
-      "heading": "label",
-      "label": "label",
-      "caption": "caption"
-    },
-    "tokens": {},
-    "frame": {
-      "x": 190,
-      "y": 210,
-      "w": 1540,
-      "h": 650
-    },
-    "data": {
-      "layers": [
-        {
-          "id": "edge",
-          "label": "EDGE"
-        },
-        {
-          "id": "app",
-          "label": "APPLICATION"
-        },
-        {
-          "id": "storage",
-          "label": "STORAGE"
-        }
-      ],
-      "nodes": [
-        {
-          "id": "gateway",
-          "layer": "edge",
-          "name": "Gateway",
-          "detail": "HTTPS ingress"
-        },
-        {
-          "id": "events",
-          "layer": "edge",
-          "name": "Event bus",
-          "detail": "Async dispatch"
-        },
-        {
-          "id": "query",
-          "layer": "app",
-          "name": "Query service",
-          "detail": "Read path"
-        },
-        {
-          "id": "workers",
-          "layer": "app",
-          "name": "Worker pool",
-          "detail": "Async processing"
-        },
-        {
-          "id": "records",
-          "layer": "storage",
-          "name": "Records",
-          "detail": "Primary database"
-        },
-        {
-          "id": "archive",
-          "layer": "storage",
-          "name": "Archive",
-          "detail": "Audit storage"
-        }
-      ],
-      "edges": [
-        {
-          "id": "http",
-          "from": "gateway",
-          "to": "query",
-          "sourceSite": "r",
-          "targetSite": "l",
-          "style": "primary"
-        },
-        {
-          "id": "event",
-          "from": "events",
-          "to": "workers",
-          "sourceSite": "r",
-          "targetSite": "l",
-          "style": "primary"
-        },
-        {
-          "id": "read",
-          "from": "query",
-          "to": "records",
-          "sourceSite": "r",
-          "targetSite": "l",
-          "style": "primary"
-        },
-        {
-          "id": "backup",
-          "from": "workers",
-          "to": "archive",
-          "sourceSite": "r",
-          "targetSite": "l",
-          "style": "primary"
-        },
-        {
-          "id": "audit",
-          "from": "gateway",
-          "to": "archive",
-          "sourceSite": "r",
-          "targetSite": "t",
-          "style": "cross"
-        },
-        {
-          "id": "index",
-          "from": "workers",
-          "to": "records",
-          "sourceSite": "r",
-          "targetSite": "b",
-          "style": "cross"
-        }
-      ]
-    }
   }
 }

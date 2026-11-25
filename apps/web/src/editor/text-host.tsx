@@ -194,7 +194,7 @@ export function TextHost(props: {
     if (cut) current.replace(from, to, "")
   }
 
-  const lines = node.text?.lines ?? [blankLine(session.draft, theme, node)]
+  const lines = node.text?.sourceLines ?? node.text?.lines ?? [blankLine(session.draft, theme, node)]
   return (
     <div
       key={fresh}
@@ -211,6 +211,7 @@ export function TextHost(props: {
         cursor: "text",
         userSelect: "text",
         minWidth: 2,
+        ...(session.draft.overflow === "ellipsis" ? { overflow: "auto", scrollbarWidth: "none" } : {}),
       }}
       onKeyDown={keys}
       onCopy={(event) => copy(event, false)}

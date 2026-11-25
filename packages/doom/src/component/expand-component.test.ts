@@ -1,17 +1,7 @@
 import { describe, expect, it } from "vitest"
+import { defaultTheme, fontFace, isRefusal, measureWith, type Props } from "../index.js"
 import {
-  applyEdit,
-  defaultTheme,
-  doomFromTree,
-  fontFace,
-  isRefusal,
-  measureWith,
-  orderKeyBetween,
-  readEdit,
-  rev,
-  type Props,
-} from "../index.js"
-import {
+  architectureComponent,
   columnComponent,
   expandComponent,
   readComponentSpec,
@@ -22,6 +12,7 @@ import {
   type PartKey,
 } from "./index.js"
 import architecture from "./testing/architecture.json" with { type: "json" }
+import { landTree } from "./testing/land-tree.js"
 import column from "./testing/column.json" with { type: "json" }
 import waterfall from "./testing/waterfall.json" with { type: "json" }
 
@@ -81,25 +72,7 @@ const measuredText = {
   fit: "omit",
 }
 
-function land(tree: ComponentTree) {
-  const { doom, slides } = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
-  const writesOf = (node: ComponentTree | ComponentNode, parent: unknown) => [
-    { node: node.id, prop: "type", value: node.type },
-    { node: node.id, prop: "parent", value: parent },
-    ...Object.entries(node.props).map(([prop, value]) => ({ node: node.id, prop, value })),
-  ]
-  let at = orderKeyBetween(null, null)
-  const writes = writesOf(tree, { id: slides[0], at })
-  for (const child of tree.children) {
-    at = orderKeyBetween(at, null)
-    writes.push(...writesOf(child, { id: tree.id, at }))
-  }
-  const edit = readEdit({ once: "component", author: { kind: "person", id: "fixture" }, writes }, doom)
-  if (isRefusal(edit)) throw new Error(JSON.stringify(edit))
-  const result = applyEdit(doom, { ...edit, rev: rev(2) })
-  if (isRefusal(result)) throw new Error(JSON.stringify(result))
-  return result
-}
+const land = (tree: ComponentTree) => landTree(tree).doom
 
 describe("expandComponent", () => {
   it("places signed bars on either side of zero", () => {
@@ -316,9 +289,8 @@ describe("expandComponent", () => {
     expect(expandComponent(columnComponent, { ...inputs, data: { rows: [row, row] } })).toMatchObject({
       refused: "shape",
     })
-    const fixture = architecture.fixture
-    const data = { ...fixture.data, edges: [{ ...fixture.data.edges[0], to: "unknown" }] }
-    expect(expandComponent(read(architecture.spec), { ...inputs, data })).toMatchObject({ refused: "shape" })
+    const data = { ...architecture.data, links: [{ ...architecture.data.links[0], to: "unknown" }] }
+    expect(expandComponent(architectureComponent, { ...inputs, data })).toMatchObject({ refused: "shape" })
   })
 
   it("expands waterfall balances, zero crossings, bridges and reset", () => {
@@ -339,24 +311,72 @@ describe("expandComponent", () => {
     expect(part(children, "bridge", "subtotal")).toBeUndefined()
   })
 
-  it("resolves an architecture connector before its attached rectangles in paint order", () => {
-    const fixture = architecture.fixture
-    const tree = expand(read(architecture.spec), {
-      ...fixture,
-      themeTokens: fixture.theme,
-      theme: defaultTheme,
-      measure,
-    })
-    const { children } = tree
-    const audit = part(children, "edge", "audit")
-    const gateway = part(children, "service", "gateway")
-    const archive = part(children, "service", "archive")
-    expect(children.indexOf(audit!)).toBeLessThan(children.indexOf(gateway!))
-    expect(audit?.props.geometry).toMatchObject({
+  it("emits outlined rounded cards with padded text, dashed lines and the frame's auto layout", () => {
+    const card = {
+      kind: "text",
+      key: ["list", "card"],
+      x: 0,
+      y: 0,
+      w: 200,
+      h: 80,
+      chars: "Card",
+      style: "label",
+      color: defaultTheme.colors.text,
+      align: "center",
+      alignV: "center",
+      fill: { var: "background2" },
+      stroke: { color: { var: "text2", tint: 0.7 }, width: 2 },
+      radius: 8,
+      padding: 12,
+    }
+    const line = {
       kind: "line",
-      start: { node: gateway?.id, site: "r" },
-      end: { node: archive?.id, site: "t" },
+      key: ["list", "line"],
+      start: ["site", ["list", "card"], "r"],
+      end: ["point", 400, 40],
+      color: defaultTheme.colors.text,
+      width: 2,
+      route: "straight",
+      arrow: "none",
+      dash: "dash",
+    }
+    const layout = { mode: "row", gap: 24, padding: { t: 0, r: 0, b: 0, l: 0 }, align: "center-left" }
+    const tree = expand(read({ ...specOf([{ emit: card }, { emit: line }]), layout }), { ...inputs, data: {} })
+    expect(tree.props.layout).toEqual(layout)
+    expect(part(tree.children, "card")?.props).toMatchObject({
+      fills: [{ kind: "solid", color: { var: "background2" } }],
+      strokes: [{ kind: "solid", color: { var: "text2", tint: 0.7 } }],
+      stroke: { weight: 2, align: "inside", dash: "solid" },
+      radius: 8,
+      text: { chars: "Card", padding: { t: 12, r: 12, b: 12, l: 12 } },
     })
-    expect(land(tree).nodes.get(audit!.id)).toMatchObject(audit!.props)
+    expect(part(tree.children, "line")?.props.stroke).toMatchObject({ dash: "dash" })
+  })
+
+  it("refuses an invalid frame layout and thinning a filled text", () => {
+    const layout = { mode: "spiral" }
+    expect(expandComponent(read({ ...specOf([{ emit: rectangle }]), layout }), { ...inputs, data: {} })).toMatchObject({
+      refused: "shape",
+      field: "layout",
+    })
+    const thinned = { ...measuredText, fill: defaultTheme.colors.text, fit: { smaller: 12, group: "g", thin: 4 } }
+    expect(expandComponent(read(specOf([{ emit: thinned }])), { ...inputs, data: {} })).toMatchObject({
+      refused: "shape",
+    })
+  })
+
+  it("resolves an architecture connector before its attached cards in paint order", () => {
+    const tree = expand(architectureComponent, { ...architecture, theme: defaultTheme, measure })
+    const { children } = tree
+    const link = part(children, "link", "web")
+    const web = part(children, "component", "web")
+    const gateway = part(children, "component", "gateway")
+    expect(children.indexOf(link!)).toBeGreaterThan(children.indexOf(gateway!))
+    expect(link?.props.geometry).toMatchObject({
+      kind: "line",
+      start: { node: web?.id, site: "b" },
+      end: { node: gateway?.id, site: "t" },
+    })
+    expect(land(tree).nodes.get(link!.id)).toMatchObject(link!.props)
   })
 })

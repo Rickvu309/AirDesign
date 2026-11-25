@@ -29,6 +29,7 @@ export type Para = {
   readonly lineHeight?: number
   readonly spaceBefore?: Px
   readonly spaceAfter?: Px
+  readonly wrap?: "none"
 }
 export type Text = {
   readonly chars: string
@@ -39,6 +40,7 @@ export type Text = {
   readonly alignV: "top" | "center" | "bottom"
   readonly wrap?: "none" | "words"
   readonly padding?: Sides
+  readonly overflow?: "ellipsis"
 }
 
 export const textLimits = {
@@ -72,6 +74,7 @@ const readPara = object(
     lineHeight: finite(textLimits.lineHeight.min, textLimits.lineHeight.max),
     spaceBefore: size,
     spaceAfter: size,
+    wrap: literal(["none"]),
   },
 )
 
@@ -84,7 +87,7 @@ const readFrame = object(
     resize: literal(["fixed", "height", "widthAndHeight", "truncate"]),
     alignV: literal(["top", "center", "bottom"]),
   },
-  { padding: readSides, wrap: literal(["none", "words"]) },
+  { padding: readSides, wrap: literal(["none", "words"]), overflow: literal(["ellipsis"]) },
 )
 
 export const readText: Reader<Text> = (raw) => {

@@ -147,6 +147,7 @@ export function charsByFace(text: Text, theme: Theme): ReadonlyMap<string, Reado
     let chars = found.get(face)
     if (chars === undefined) found.set(face, (chars = new Set()))
     chars.add(item.char.normalize("NFC"))
+    if (text.overflow === "ellipsis") chars.add("…")
   }
   return found
 }
@@ -234,7 +235,8 @@ function measureOnce(widths: FontWidths, probe: MeasureProbe | undefined): Measu
       }
       const paragraphEnd = chars.at(-1)?.end ?? paragraphStart
       const firstLine = lines.length
-      for (const [spanIndex, span] of spansOf(glyphs, inner - indent, inner - indent, words).entries()) {
+      const room = para?.wrap === "none" ? Infinity : inner - indent
+      for (const [spanIndex, span] of spansOf(glyphs, room, room, words).entries()) {
         const runs: ResolvedRun[] = []
         let size = base.size
         for (let at = span.start; at < span.end; at += 1) {

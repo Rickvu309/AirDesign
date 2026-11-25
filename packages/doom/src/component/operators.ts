@@ -1,5 +1,6 @@
 import { finite, integer, literal, object, reject } from "../read-kit.js"
 import { polyline, wedge } from "./path-operators.js"
+import { polar } from "./polar.js"
 import {
   type Charge,
   type Value,
@@ -144,6 +145,7 @@ const operators: Readonly<Record<string, Operation>> = {
   }),
   polyline: fixed(1, ([points], charge) => polyline(list(points), charge)),
   wedge: fixed(5, wedge),
+  polar: fixed(3, polar),
   point: fixed(2, ([x, y]) => ({ x: number(x), y: number(y) })),
   site: fixed(2, ([key, site]) => ({ key: list(key), site: literal(["t", "r", "b", "l", "c"])(site) })),
 }

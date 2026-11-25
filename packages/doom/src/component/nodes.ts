@@ -1,18 +1,19 @@
-import type { End } from "../geometry.js"
+import { type End, readChannel, type Channel } from "../geometry.js"
 import { siteSpot } from "../preset-geometry.js"
 import { nodeId, type NodeId } from "../ids.js"
 import { props, type Props } from "../props.js"
 import { isRefusal } from "../refusal.js"
-import type { Text, TextStyleName } from "../text.js"
+import { type Text, type TextStyleName, textStyleNames } from "../text.js"
+import { textContent } from "./text-content.js"
 import { keyOf, keyString, type PartKey } from "./instance.js"
-import { type Reader, finite, literal, naming, object, reject } from "../read-kit.js"
+import { type Reader, finite, list, literal, naming, object, reject } from "../read-kit.js"
 import { type FittingContext, fitGroups, fitOne } from "./fit-text.js"
 import type { Expr } from "./expression.js"
 import type { Emission } from "./spec.js"
-import { color, string, type Value } from "./values.js"
+import { color, type Value } from "./values.js"
 
 type ShapeProps = Pick<Props, "name" | "box" | "geometry"> &
-  Partial<Pick<Props, "fills" | "strokes" | "stroke" | "text">>
+  Partial<Pick<Props, "fills" | "strokes" | "stroke" | "radius" | "text">>
 export type ComponentNode = {
   readonly id: NodeId
   readonly key: PartKey
@@ -33,7 +34,7 @@ export type ComponentTree = {
   readonly id: NodeId
   readonly key: readonly ["root"]
   readonly type: "frame"
-  readonly props: Pick<Props, "name" | "box">
+  readonly props: Pick<Props, "name" | "box"> & Partial<Pick<Props, "layout">>
   readonly children: readonly ComponentNode[]
   readonly findings: readonly ComponentFinding[]
 }
@@ -44,6 +45,8 @@ const prop = <K extends keyof typeof props>(key: K, raw: unknown): Props[K] => {
   const refuse = () => reject(value.refused === "limit" ? "limit" : "shape", value.form ?? `Valid ${key} properties.`)
   return value.field === undefined ? refuse() : naming(value.field, refuse)
 }
+
+export const readLayout = (raw: Value): Props["layout"] => prop("layout", raw)
 
 const coordinate = finite(-1_000_000, 1_000_000)
 const size = finite(0, 1_000_000)
@@ -73,6 +76,7 @@ type Line = {
   readonly start: PartEnd
   readonly end: PartEnd
   readonly route: Extract<Props["geometry"], { kind: "line" }>["route"]
+  readonly channels?: readonly Channel[]
   readonly arrow: Extract<Props["geometry"], { kind: "line" }>["arrows"][1]
   readonly strokes: Props["strokes"]
   readonly stroke: Props["stroke"]
@@ -98,12 +102,15 @@ export type GroupedText = {
   readonly thin: number | undefined
   readonly laneWidth: number
 }
-export type PreparedPart = PlacedPart | GroupedText | ComponentFinding
+export type Kept = { readonly kind: "kept"; readonly part: TextPart; readonly finding: ComponentFinding }
+export type PreparedPart = PlacedPart | GroupedText | Kept | ComponentFinding
 
 const align = literal(["left", "center", "right", "justify"])
 const vertical = literal(["top", "center", "bottom"])
 const route = literal(["straight", "elbow", "curve"])
 const arrow = literal(["none", "arrow", "triangle", "circle"])
+const sides = (value: Value): Value => (typeof value === "number" ? { t: value, r: value, b: value, l: value } : value)
+const dash = literal(["solid", "dash", "dot"])
 const smallerSize = finite(1, 2_000)
 
 type ComponentStyle = ((key: PartKey) => TextStyleName | undefined) | undefined
@@ -126,12 +133,37 @@ export function preparePart(
         start: readField("start", emit.start, endpoint),
         end: readField("end", emit.end, endpoint),
         route: readField("route", emit.route, route),
+        ...(emit.channels === undefined
+          ? {}
+          : { channels: readField("channels", emit.channels, list(readChannel, 8)) }),
         arrow: readField("arrow", emit.arrow, arrow),
         strokes: [{ kind: "solid", color: readField("color", emit.color, color) }],
-        stroke: readField("width", emit.width, (weight) => prop("stroke", { weight, align: "center", dash: "solid" })),
+        stroke: readField("width", emit.width, (weight) =>
+          prop("stroke", {
+            weight,
+            align: "center",
+            dash: emit.dash === undefined ? "solid" : readField("dash", emit.dash, dash),
+          }),
+        ),
       },
     }
   }
+  type Outline = { readonly color: Expr; readonly width: Expr }
+  const outline = (stroke: Outline | undefined, align: "inside" | "center") =>
+    stroke === undefined
+      ? {}
+      : {
+          strokes: [{ kind: "solid" as const, color: readField("stroke.color", stroke.color, color) }],
+          stroke: readField("stroke.width", stroke.width, (weight) => prop("stroke", { weight, align, dash: "solid" })),
+        }
+  const surface = (emit: { readonly stroke?: Outline; readonly radius?: Expr }) => ({
+    ...outline(emit.stroke, "inside"),
+    ...(emit.radius === undefined
+      ? {}
+      : { radius: readField("radius", emit.radius, (value) => prop("radius", value)) }),
+  })
+  const filled = (fill: Expr | undefined) =>
+    fill === undefined ? {} : { fills: [{ kind: "solid" as const, color: readField("fill", fill, color) }] }
   const x = readField("x", emit.x, coordinate)
   const y = readField("y", emit.y, coordinate)
   const w = readField("w", emit.w, size)
@@ -143,7 +175,7 @@ export function preparePart(
       key,
       field,
       kind: "shape",
-      props: { ...shared, fills: [{ kind: "solid", color: readField("fill", emit.fill, color) }] },
+      props: { ...shared, ...filled(emit.fill), ...surface(emit) },
     }
 
   if (emit.kind === "path") {
@@ -151,48 +183,31 @@ export function preparePart(
       if (typeof d === "string") charge(d.length)
       return prop("geometry", { kind: "path", d, ...(emit.fillStroke ? { fillStroke: true } : {}) })
     })
-    const fill = emit.fill
-    const stroke = emit.stroke
     return {
       key,
       field,
       kind: "shape",
-      props: {
-        ...shared,
-        geometry,
-        ...(fill === undefined ? {} : { fills: [{ kind: "solid", color: readField("fill", fill, color) }] }),
-        ...(stroke === undefined
-          ? {}
-          : {
-              strokes: [{ kind: "solid", color: readField("stroke.color", stroke.color, color) }],
-              stroke: readField("stroke.width", stroke.width, (weight) =>
-                prop("stroke", { weight, align: "center", dash: "solid" }),
-              ),
-            }),
-      },
+      props: { ...shared, geometry, ...filled(emit.fill), ...outline(emit.stroke, "center") },
     }
   }
 
-  const chars = readField("chars", emit.chars, (value) => {
-    if (typeof value === "string") charge(value.length)
-    return string(value)
-  })
   const alignment = readField("align", emit.align, align)
   const ink = readField("color", emit.color, color)
-  const textStyle = naming(`${field}.style`, () => read(emit.style))
+  const textStyle = readField("style", emit.style, literal(textStyleNames))
   const alignV = readField("alignV", emit.alignV, vertical)
-  const lines = chars.split("\n")
-  naming(`${field}.chars`, () => charge(16 * lines.length))
   const fit = emit.fit
+  const content = readField("chars", emit.chars, (raw) =>
+    textContent(raw, ink, alignment, context.theme.textStyles[textStyle].size, charge),
+  )
   const generated = naming(field, () =>
     prop("text", {
-      chars,
-      spans: chars === "" ? [] : [{ end: chars.length, color: ink }],
-      paras: lines.map(() => ({ align: alignment })),
+      ...content,
       style: textStyle,
       resize: "fixed",
       alignV,
       ...(fit === undefined ? {} : { wrap: "words" }),
+      ...(fit === undefined || emit.fill === undefined ? {} : { overflow: "ellipsis" }),
+      ...(emit.padding === undefined ? {} : { padding: readField("padding", emit.padding, sides) }),
     }),
   )
   const style = context.styleFor?.(key)
@@ -201,7 +216,7 @@ export function preparePart(
     key,
     field,
     kind: "shape",
-    props: { ...shared, text },
+    props: { ...shared, ...filled(emit.fill), ...surface(emit), text },
     ...(style === undefined ? {} : { generatedStyle: generated.style }),
   }
   if (fit === undefined || (style !== undefined && typeof fit === "object" && fit.group !== undefined)) return part
@@ -230,14 +245,17 @@ export function treeOf(
   frame: ReturnType<typeof readFrame>,
   parts: readonly PreparedPart[],
   context: FittingContext,
+  layout?: Props["layout"],
 ): ComponentTree {
   const findings: ComponentFinding[] = []
   const seen = new Map<string, { readonly id: NodeId; readonly part: PlacedPart }>()
-  for (const part of fitGroups(parts, context, frame.w)) {
-    if (part.kind === "text-fit") {
-      findings.push(part)
+  for (const fitted of fitGroups(parts, context, frame.w)) {
+    if (fitted.kind === "text-fit") {
+      findings.push(fitted)
       continue
     }
+    if (fitted.kind === "kept") findings.push(fitted.finding)
+    const part = fitted.kind === "kept" ? fitted.part : fitted
     const index = seen.size
     if (index >= 499) naming(part.field, () => reject("limit", "An expansion may emit at most 499 parts."))
     const key = keyString(part.key)
@@ -273,7 +291,7 @@ export function treeOf(
       })
       continue
     }
-    const { start, end, route, arrow, strokes, stroke } = part.line
+    const { start, end, route, arrow, strokes, stroke, channels } = part.line
     const a = naming(`${part.field}.start`, () => resolve(start))
     const b = naming(`${part.field}.end`, () => resolve(end))
     children.push({
@@ -288,7 +306,14 @@ export function treeOf(
             size(Math.abs(a.y - b.y)),
           ),
         ),
-        geometry: { kind: "line", start: a.end, end: b.end, route, arrows: ["none", arrow] },
+        geometry: {
+          kind: "line",
+          start: a.end,
+          end: b.end,
+          route,
+          arrows: ["none", arrow],
+          ...(channels === undefined || channels.length === 0 ? {} : { channels }),
+        },
         strokes,
         stroke,
       },
@@ -298,7 +323,7 @@ export function treeOf(
     id: nodeId("component:1"),
     type: "frame",
     key: rootKey,
-    props: { name, box: box(frame.x, frame.y, frame.w, frame.h) },
+    props: { name, box: box(frame.x, frame.y, frame.w, frame.h), ...(layout === undefined ? {} : { layout }) },
     children,
     findings,
   }

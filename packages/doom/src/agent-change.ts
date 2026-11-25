@@ -17,6 +17,7 @@ import {
   type EffectStyleName,
   type Hex,
   type Px,
+  type Sides,
   colorVars,
   effectStyleNames,
   px,
@@ -29,6 +30,7 @@ import {
   agentColor,
   boolean,
   detailOf,
+  finite,
   formed,
   forms,
   list,
@@ -83,7 +85,7 @@ export type AgentLook = {
   readonly align?: "left" | "center" | "right" | "justify"
   readonly layout?: "row" | "column" | "none"
   readonly gap?: Px
-  readonly padding?: Px
+  readonly padding?: Px | Sides
   readonly icon?: string
   readonly arrow?: boolean | Arrow
   readonly startArrow?: Arrow
@@ -236,7 +238,27 @@ const lookFields: LookFields = {
   ),
   layout: choice(["row", "column", "none"], "How a frame places its children. none leaves them where they are."),
   gap: number(0, 1_000, "Space between the children of a row or column."),
-  padding: number(0, 1_000, "Space between a frame's edge and its children."),
+  padding: field<Px | Sides>(
+    {
+      description:
+        "Space in pixels between a text box and its words or a frame and its children. A number sets all sides. Use t, r, b, l to set individual sides.",
+      anyOf: [
+        { type: "number", minimum: 0, maximum: 1_000 },
+        {
+          type: "object",
+          required: ["t", "r", "b", "l"],
+          additionalProperties: false,
+          properties: Object.fromEntries(
+            ["t", "r", "b", "l"].map((side) => [side, { type: "number", minimum: 0, maximum: 1_000 }]),
+          ),
+        },
+      ],
+    },
+    union<Px | Sides>("A padding number or t, r, b, l in pixels.", [
+      finite(0, 1_000),
+      object({ t: finite(0, 1_000), r: finite(0, 1_000), b: finite(0, 1_000), l: finite(0, 1_000) }),
+    ]),
+  ),
   icon: field({ type: "string", description: "An icon name such as star, arrow-right or trending-up." }, readIconName),
   arrow: arrowField,
   startArrow: startArrowField,

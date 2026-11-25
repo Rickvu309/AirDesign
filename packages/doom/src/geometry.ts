@@ -26,6 +26,9 @@ export const readPathData: Reader<string> = matching(
   `SVG path data, up to ${pathLimit} characters.`,
 )
 
+export type Channel = { readonly axis: "x" | "y"; readonly at: Px }
+export const readChannel: Reader<Channel> = object({ axis: literal(["x", "y"]), at: px() })
+
 export type Geometry =
   | { readonly kind: "rect" }
   | { readonly kind: "ellipse" }
@@ -38,6 +41,7 @@ export type Geometry =
       readonly end: End
       readonly route: "straight" | "elbow" | "curve"
       readonly arrows: readonly [Arrow, Arrow]
+      readonly channels?: readonly Channel[]
     }
 
 const readEnd: Reader<End> = oneOf<End>(
@@ -56,10 +60,13 @@ export const readGeometry: Reader<Geometry> = variant("kind", {
   preset: object({ name: matching(/^[A-Za-z0-9]+$/, 40) }, { adjust: list(finite(-1_000_000, 1_000_000), 12) }),
   path: object({ d: readPathData }, { fillStroke: boolean }),
   icon: object({ name: matching(/^[a-z0-9-]+\/[a-z0-9-]+$/, 80) }),
-  line: object({
-    start: readEnd,
-    end: readEnd,
-    route: literal(["straight", "elbow", "curve"]),
-    arrows: pair(readArrow),
-  }),
+  line: object(
+    {
+      start: readEnd,
+      end: readEnd,
+      route: literal(["straight", "elbow", "curve"]),
+      arrows: pair(readArrow),
+    },
+    { channels: list(readChannel, 8, 1) },
+  ),
 })

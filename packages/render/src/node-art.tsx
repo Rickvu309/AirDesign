@@ -115,6 +115,7 @@ export const NodeArt = memo(function NodeArt({
   const missing =
     waiting !== undefined && node.fills.some((paint) => paint.kind === "image" && assetUrl(paint.asset) === undefined)
   const unshown = missing && box.w >= labelWidth && box.h >= labelHeight
+  const text = node.text === null ? null : <TextLines lines={node.text.lines} />
   return (
     <div
       data-node={node.id}
@@ -183,7 +184,7 @@ export const NodeArt = memo(function NodeArt({
       </div>
       {unshown ? <WaitingLabel text={waiting} /> : null}
       {(host?.id === node.id ? host.render(node) : null) ??
-        (node.text === null ? null : <TextLines lines={node.text.lines} />)}
+        (node.text?.overflow === "clip" ? <div style={{ ...fill, overflow: "clip" }}>{text}</div> : text)}
       {node.children.length === 0 ? null : (
         <div
           style={{

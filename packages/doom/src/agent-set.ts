@@ -85,7 +85,7 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "transition",
     ...wordsOnly,
   ],
-  shape: ["layout", "gap", "padding", "notes", "clip", "skipped", "transition"],
+  shape: ["layout", "gap", "notes", "clip", "skipped", "transition"],
 }
 const roleTarget = /^([a-z0-9]{1,16}:[0-9]{1,12})\.(title|subtitle|body)$/
 
@@ -214,6 +214,8 @@ export function compileSet(draft: Draft, change: SetChange): void {
     change.insert === undefined || current === undefined
       ? current
       : insertLinkedRun(current, change.insert.at, change.insert.text, change.insert.link)
+  if (node.type === "shape" && change.padding !== undefined && held === undefined && change.text === undefined)
+    stop("shape", node.id, "padding", "needs", "a text layer")
   const worded = node.type === "shape" ? textOfLook(change, held, "body", themeOf(draft)) : undefined
   const written = worded ?? (change.insert === undefined ? undefined : held)
   const text = resizedBy(written ?? now.text, change.box, now.box) ?? written

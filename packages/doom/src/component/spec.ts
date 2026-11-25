@@ -80,17 +80,19 @@ function emission(read: (raw: unknown) => Expr) {
       naming("thin", () => reject("shape", "Thinning requires a fit group."))
     return fit
   }
+  const stroke = object({ color: read, width: read })
+  const surface = { stroke, radius: read }
   return variant("kind", {
-    rect: object({ ...position, fill: read }),
-    path: object(
-      { ...position, d: read },
-      { fill: read, fillStroke: boolean, stroke: object({ color: read, width: read }) },
-    ),
+    rect: object({ ...position, fill: read }, surface),
+    path: object({ ...position, d: read }, { fill: read, fillStroke: boolean, stroke }),
     text: object(
       { ...position, chars: read, style: read, color: read, align: read, alignV: read },
-      { fit: (raw: unknown) => (raw === "omit" ? raw : fitText(raw)) },
+      { ...surface, fill: read, padding: read, fit: (raw: unknown) => (raw === "omit" ? raw : fitText(raw)) },
     ),
-    line: object({ key: read, start: read, end: read, color: read, width: read, route: read, arrow: read }),
+    line: object(
+      { key: read, start: read, end: read, color: read, width: read, route: read, arrow: read },
+      { dash: read, channels: read },
+    ),
   })
 }
 
@@ -149,7 +151,14 @@ function specReader() {
       collections: readCollections,
       parts: (raw) => readParts(raw, 0),
     },
-    { let: readBindings, defaults: tokenRecord, variants, defaultVariant: variantRecord, quantities },
+    {
+      let: readBindings,
+      layout: expression,
+      defaults: tokenRecord,
+      variants,
+      defaultVariant: variantRecord,
+      quantities,
+    },
   )
 }
 
@@ -171,7 +180,8 @@ export function readComponentSpec(raw: unknown): ComponentSpec | Refusal {
         type === undefined ||
         type.kind === "enum" ||
         type.kind === "ref" ||
-        type.kind === "string"
+        type.kind === "string" ||
+        type.kind === "string?"
       )
         return naming(`quantities.${key}`, () => reject("shape", "The quantity must name a numeric collection field."))
     }

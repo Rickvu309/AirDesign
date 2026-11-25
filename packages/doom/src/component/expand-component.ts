@@ -6,7 +6,7 @@ import type { PartKey } from "./instance.js"
 import { boolean, naming, reject } from "../read-kit.js"
 import { readData } from "./collections.js"
 import { type Bindings, type Scope, childScope, evaluator, valuesOf } from "./expression.js"
-import { type ComponentTree, type PreparedPart, preparePart, readFrame, treeOf } from "./nodes.js"
+import { type ComponentTree, type PreparedPart, preparePart, readFrame, readLayout, treeOf } from "./nodes.js"
 import { numberFormat } from "./operators.js"
 import { type ComponentSpec, type Part, readChoices, readTokens } from "./spec.js"
 import { type Value, budget, componentRefusal } from "./values.js"
@@ -88,8 +88,10 @@ export function expandComponent(spec: ComponentSpec, input: ComponentInput): Com
         emit(naming(repeatField, () => childScope(parent, { [as]: row, i }, charge)))
     }
     const root = bind(spec.let, scope, "let")
+    const layoutExpr = spec.layout
+    const layout = layoutExpr === undefined ? undefined : naming("layout", () => readLayout(evaluate(layoutExpr, root)))
     for (const [i, part] of spec.parts.entries()) visit(part, root, `parts[${i}]`)
-    return treeOf(spec.name, frame, parts, fitting)
+    return treeOf(spec.name, frame, parts, fitting, layout)
   } catch (thrown) {
     return componentRefusal(thrown)
   }
