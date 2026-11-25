@@ -392,6 +392,7 @@ export async function prepareDoomFonts(
   doc: Document,
   value: doom.Doom,
   slides: readonly doom.NodeId[],
+  samples: readonly Parameters<doom.Measure>[] = [],
 ): Promise<{ readonly measure: doom.Measure; readonly release: () => void } | "fonts" | "capacity"> {
   const layout = layoutFor(doc)
   if (layout === undefined) return { measure: withoutFonts, release: () => {} }
@@ -405,7 +406,8 @@ export async function prepareDoomFonts(
         while (live) {
           const measure = use.measure()
           const nodes = slides.flatMap((slide) => doom.resolveSlide(value, slide, measure))
-          if (!nodes.some(hasPendingText)) {
+          const measured = samples.map((args) => measure(...args))
+          if (!nodes.some(hasPendingText) && !measured.some(({ lines }) => lines.some((line) => line.pending))) {
             ready = measure
             return true
           }
@@ -421,11 +423,16 @@ export async function prepareDoomFonts(
   }
 }
 
-export async function measureDoom(doc: Document, value: doom.Doom): Promise<doom.Measure> {
+export async function measureDoom(
+  doc: Document,
+  value: doom.Doom,
+  samples?: readonly Parameters<doom.Measure>[],
+): Promise<doom.Measure> {
   const prepared = await prepareDoomFonts(
     doc,
     value,
     doom.slidesOf(value).map((slide) => slide.id),
+    samples,
   )
   if (typeof prepared === "string") throw new Error("Font metrics unavailable")
   prepared.release()

@@ -46,7 +46,7 @@ async function commitMeasuredEdit(
     }
     let measure
     try {
-      measure = await measureDoom(document, proposed.view, proposed.texts)
+      measure = await measureDoom(document, proposed.view, proposed.measures)
     } catch {
       toast.error(designCopy.chartFontFailed)
       return

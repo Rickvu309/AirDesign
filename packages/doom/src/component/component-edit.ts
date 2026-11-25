@@ -103,7 +103,11 @@ export function componentEditPreview(
   return roots.size === 0 ? null : { view: next, roots: [...roots] }
 }
 
-export type ComponentEditSample = { readonly view: Doom; readonly texts: readonly string[] }
+export type ComponentEditSample = {
+  readonly view: Doom
+  readonly texts: readonly string[]
+  readonly measures: readonly Parameters<Measure>[]
+}
 const estimate = measureWith({})
 
 export function sampleComponentEdit(
@@ -115,15 +119,17 @@ export function sampleComponentEdit(
   const preview = componentEditPreview(view, changingWrites(view, writes), batchStart, focusEdit)
   if (preview === null || isRefusal(preview)) return preview
   const texts = new Set<string>()
+  const measures: Parameters<Measure>[] = []
   for (const root of preview.roots) {
     const sample = refreshComponent(view, preview.view, root, (text, theme, width, fit) => {
+      measures.push([text, theme, width, fit])
       texts.add(text.chars)
       if (theme.textStyles[text.style].case === "upper") texts.add(text.chars.toUpperCase())
       return estimate(text, theme, width, fit)
     })
     if (isRefusal(sample)) return sample
   }
-  return { view: preview.view, texts: [...texts] }
+  return { view: preview.view, texts: [...texts], measures }
 }
 
 export function prepareComponentEdit(
