@@ -21,6 +21,7 @@ import {
 } from "./text-edit"
 import type { EditorClient } from "./use-deck"
 import { refusedText, type Sent } from "./text-refused"
+import { moved, noHistory, recorded, turned, type Changed, type Kept, type Run, type TextHistory } from "./text-history"
 
 export type Created = {
   readonly id: doom.NodeId
@@ -54,7 +55,7 @@ export type TextSession = {
   readonly preview: readonly doom.Write[]
   begin(node: doom.NodeId, entry: Entry): void
   beginNew(created: Created, resize: doom.Text["resize"]): void
-  replace(from: number, to: number, insert: string): void
+  replace(from: number, to: number, insert: string, run?: Run): void
   paste(from: number, to: number, slice: TextSlice): void
   mark(mark: Mark): void
   link(link: string | null): void
@@ -78,6 +79,8 @@ let sessions = 0
 
 const empty = (resize: doom.Text["resize"]): doom.Text => ({ ...doom.textFromMarkdown("", "body"), resize })
 
+const keptOf = ({ draft, anchor, focus }: Session): Kept => ({ draft, anchor, focus })
+
 function creationWrites(created: Created, draft: doom.Text): readonly doom.Write[] {
   return [
     { node: created.id, prop: "type", value: "shape" },
@@ -97,6 +100,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
   const [refused, setRefused] = useState(false)
   const notices = useSyncExternalStore(client.subscribe, client.notices)
   const selected = useRef<(() => Caret | null) | null>(null)
+  const history = useRef<TextHistory>(noHistory)
   const viewRef = useRef(view)
   useEffect(() => {
     viewRef.current = view
@@ -113,6 +117,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
     const at = selected.current?.() ?? null
     if (now === null || at === null || (now.anchor === at.anchor && now.focus === at.focus)) return now
     const next = { ...now, ...at, pending: null }
+    history.current = moved(history.current)
     set(next)
     return next
   }
@@ -200,6 +205,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
     const text = propOf(viewRef.current.nodes.get(node), "text") ?? blankTextFor(keeps)
     pushed.current = JSON.stringify(text)
     step.current = `text:${String((sessions += 1))}`
+    history.current = noHistory
     const from = entry.kind === "all" ? 0 : text.chars.length
     set({
       node,
@@ -220,6 +226,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
     const text = empty(resize)
     pushed.current = JSON.stringify(text)
     step.current = `text:${String((sessions += 1))}`
+    history.current = noHistory
     set({
       node: created.id,
       created,
@@ -235,9 +242,21 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
     })
   }
 
-  function change(next: Partial<Session> & { readonly draft: doom.Text }) {
+  function change(next: Partial<Session> & { readonly draft: doom.Text }, changed: Changed | null = null) {
     const now = ref.current
-    if (now !== null) set({ ...now, ...next, sync: now.sync + 1 })
+    if (now === null) return
+    if (next.draft !== now.draft)
+      history.current = recorded(history.current, keptOf(now), changed, next.anchor ?? now.anchor)
+    set({ ...now, ...next, sync: now.sync + 1 })
+  }
+
+  function turnText(kind: "undo" | "redo"): boolean {
+    const now = ref.current
+    const done = now === null ? null : turned(history.current, kind, keptOf(now))
+    if (now === null || done === null) return false
+    history.current = done.history
+    set({ ...now, ...done.back, pending: null, sync: now.sync + 1 })
+    return true
   }
 
   const sessionApi: TextSession = {
@@ -251,19 +270,19 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
     }, [session?.draft, session?.painted, session?.created, session?.node, session?.keeps, view, measure]),
     begin,
     beginNew,
-    replace(from, to, insert) {
+    replace(from, to, insert, run) {
       const now = ref.current
       if (now === null) return
       const { text: draft, pending } = typeInto(now.draft, from, to, insert, now.pending)
       const caret = Math.min(from, to) + insert.length
-      change({ draft, anchor: caret, focus: caret, pending })
+      change({ draft, anchor: caret, focus: caret, pending }, { from, to, run })
     },
     paste(from, to, slice) {
       const now = ref.current
       if (now === null) return
       const draft = insertSlice(now.draft, from, to, slice)
       const caret = Math.min(from, to) + slice.chars.length
-      change({ draft, anchor: caret, focus: caret, pending: null })
+      change({ draft, anchor: caret, focus: caret, pending: null }, { from, to })
     },
     mark(mark) {
       const now = live()
@@ -311,6 +330,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
     select(anchor, focus) {
       const now = ref.current
       if (now === null || (now.anchor === anchor && now.focus === focus)) return
+      history.current = moved(history.current)
       set({ ...now, anchor, focus, pending: null })
     },
     host(read) {
@@ -319,6 +339,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
     flush,
     finish,
     step(kind) {
+      if (turnText(kind)) return
       flush()
       set(null)
       if (kind === "undo") client.undo()
