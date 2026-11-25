@@ -50,6 +50,7 @@ export type Session = {
 
 export type TextSession = {
   readonly session: Session | null
+  readonly theme: doom.Theme
   readonly refused: boolean
   readonly preview: readonly doom.Write[]
   begin(node: doom.NodeId, entry: Entry): void
@@ -61,6 +62,7 @@ export type TextSession = {
   align(align: NonNullable<doom.Para["align"]>): void
   list(kind: "bullet" | "number"): void
   indent(by: 1 | -1): void
+  setStyle(style: doom.TextStyleName): void
   select(anchor: number, focus: number): void
   host(selected: (() => Caret | null) | null): void
   flush(): void
@@ -260,6 +262,7 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
 
   const sessionApi: TextSession = {
     session,
+    theme: doom.deckOf(view).theme,
     refused,
     preview: useMemo(() => {
       if (session === null) return []
@@ -320,6 +323,10 @@ export function useTextSession(client: EditorClient, view: doom.Doom, measure: d
         return level === 0 ? rest : { ...rest, level }
       })
       change({ draft })
+    },
+    setStyle(style) {
+      const now = ref.current
+      if (now !== null) change({ draft: doom.styleWrite(now.draft, style) })
     },
     select(anchor, focus) {
       const now = ref.current

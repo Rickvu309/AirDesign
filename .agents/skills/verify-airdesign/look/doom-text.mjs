@@ -2,6 +2,7 @@ import { expect } from "@playwright/test"
 import { clickSlide, node, openDoomDeck, selectNode, spot, words } from "./doom-deck.mjs"
 
 export const textEditor = (page) => page.locator("[data-text-editor]")
+export const textBar = (page) => page.getByRole("toolbar", { name: "Text formatting", exact: true })
 
 export const textLayer = (id, chars, box = spot(160, 760, 1200, 120), more = {}) => ({
   id,
@@ -22,6 +23,7 @@ export async function leaveText(page) {
 export async function titleEdited(kit) {
   const opened = await openDoomDeck(kit)
   await editText(kit.page, "s:4")
+  await expect(textBar(kit.page)).toBeVisible()
   return opened
 }
 

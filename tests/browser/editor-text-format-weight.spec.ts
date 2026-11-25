@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { test } from "./api-stack"
 import { clickSlide, landNodes, openEditor } from "./editor-deck"
 import { edit, editor, layer, leave, runs, textOf } from "./text-layer"
@@ -6,7 +7,7 @@ import { edit, editor, layer, leave, runs, textOf } from "./text-layer"
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 for (const mark of ["bold", "italic"] as const) {
-  test(`the ${mark} key keeps unselected heading text in the served semibold face`, async ({
+  test(`the ${mark} button keeps unselected heading text in the served semibold face`, async ({
     page,
     context,
     stack,
@@ -26,7 +27,7 @@ for (const mark of ["bold", "italic"] as const) {
     await edit(page)
     await page.keyboard.press("ControlOrMeta+Home")
     for (let step = 0; step < 5; step++) await page.keyboard.press("Shift+ArrowRight")
-    await page.keyboard.press(mark === "bold" ? "ControlOrMeta+b" : "ControlOrMeta+i")
+    await page.getByRole("button", { name: editorCopy[mark], exact: true }).click()
     const editingRuns = editor(page).locator("[data-run]")
     await expect(editingRuns.first()).toHaveText("Alpha")
     await expect(editingRuns.last()).toHaveText("beta", { useInnerText: true })
