@@ -2,7 +2,7 @@ import { naming, reject } from "../read-kit.js"
 import { type Charge, entries, id, isList, name, numeric, wordsWithin } from "./values.js"
 
 type Field =
-  | { readonly kind: "string" | "number" | "number?" | "positive" | "nonnegative" }
+  | { readonly kind: "string" | "string?" | "number" | "number?" | "positive" | "nonnegative" }
   | { readonly kind: "enum"; readonly choices: readonly string[] }
   | { readonly kind: "ref"; readonly table: string }
 type Fields = Readonly<Record<string, Field>>
@@ -20,6 +20,7 @@ function readField(raw: unknown): Field {
   }
   switch (raw) {
     case "string":
+    case "string?":
     case "number":
     case "number?":
     case "positive":
@@ -60,6 +61,8 @@ function readValue(field: Field, raw: unknown): string | number | null {
   switch (field.kind) {
     case "string":
       return readLabel(raw)
+    case "string?":
+      return raw === undefined || raw === null ? "" : readLabel(raw)
     case "ref":
       return id(raw)
     case "enum": {
@@ -104,7 +107,7 @@ export function readData(schema: Collections, raw: unknown, charge: Charge): Dat
             const value = id(Object.hasOwn(row, "id") ? row.id : undefined)
             return rowIds.has(value) ? reject("shape", `Duplicate row ID "${value}".`) : value
           })
-          if (Object.keys(row).length !== fieldEntries.length + 1)
+          if (Object.keys(row).some((key) => key !== "id" && !Object.hasOwn(fields, key)))
             return reject("shape", "A row must contain exactly the declared collection fields and an ID.")
           rowIds.add(rowId)
           const values = fieldEntries.map(([name, field]) => {

@@ -115,7 +115,7 @@ export function lineRoute(
   const end = resolve(line.end)
   const points =
     line.route === "elbow"
-      ? elbowPoints(start, end)
+      ? elbowPoints(start, end, line.channels)
       : line.route === "curve"
         ? curvePoints(start, end)
         : [start.at, end.at]

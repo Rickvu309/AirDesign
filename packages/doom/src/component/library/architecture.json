@@ -1,0 +1,342 @@
+{
+  "version": 1,
+  "name": "Architecture",
+  "collections": {
+    "layers": {
+      "label": "string"
+    },
+    "components": {
+      "layer": "ref:layers",
+      "name": "string"
+    },
+    "links": {
+      "from": "ref:components",
+      "to": "ref:components"
+    }
+  },
+  "defaults": {
+    "ink": {
+      "var": "text"
+    },
+    "muted": {
+      "var": "text2"
+    },
+    "band": {
+      "var": "background2"
+    },
+    "card": {
+      "var": "background"
+    },
+    "edge": {
+      "var": "text2",
+      "tint": 0.7
+    },
+    "connector": {
+      "var": "text2"
+    },
+    "label": "label",
+    "labelSmall": 18,
+    "layerLabel": "label",
+    "layerSmall": 16,
+    "radius": 8,
+    "lineWidth": 3
+  },
+  "let": [
+    ["layerGap", 16],
+    ["inset", 24],
+    ["labelW", ["min", 240, ["mul", ["get", "frame.w"], 0.2]]],
+    ["cardGap", 32],
+    ["layerCount", ["count", ["get", "data.layers"]]],
+    [
+      "columns",
+      [
+        "max",
+        1,
+        [
+          "map",
+          ["get", "data.layers"],
+          "l",
+          ["count", ["filter", ["get", "data.components"], "c", ["eq", ["get", "c.layer"], ["get", "l.id"]]]]
+        ]
+      ]
+    ],
+    ["contentX", ["get", "labelW"]],
+    ["contentW", ["max", 0, ["sub", ["sub", ["get", "frame.w"], ["get", "labelW"]], ["get", "inset"]]]],
+    [
+      "cardW",
+      [
+        "min",
+        320,
+        [
+          "div",
+          ["max", 0, ["sub", ["get", "contentW"], ["mul", ["get", "cardGap"], ["sub", ["get", "columns"], 1]]]],
+          ["get", "columns"]
+        ]
+      ]
+    ],
+    [
+      "bandH",
+      [
+        "div",
+        [
+          "max",
+          0,
+          ["sub", ["get", "frame.h"], ["mul", ["get", "layerGap"], ["max", 0, ["sub", ["get", "layerCount"], 1]]]]
+        ],
+        ["max", 1, ["get", "layerCount"]]
+      ]
+    ],
+    ["bandStep", ["add", ["get", "bandH"], ["get", "layerGap"]]],
+    ["cardH", ["max", 0, ["min", 88, ["sub", ["get", "bandH"], 32]]]],
+    [
+      "indexed",
+      [
+        "map",
+        ["get", "data.components"],
+        "c",
+        {
+          "id": ["get", "c.id"],
+          "layer": ["get", "c.layer"],
+          "at": ["get", "i"]
+        }
+      ]
+    ],
+    [
+      "placed",
+      [
+        "map",
+        ["get", "indexed"],
+        "c",
+        {
+          "id": ["get", "c.id"],
+          "layer": [
+            "sum",
+            ["map", ["get", "data.layers"], "l", ["if", ["eq", ["get", "l.id"], ["get", "c.layer"]], ["get", "i"], 0]]
+          ],
+          "slot": [
+            "count",
+            [
+              "filter",
+              ["get", "indexed"],
+              "o",
+              ["if", ["eq", ["get", "o.layer"], ["get", "c.layer"]], ["lt", ["get", "o.at"], ["get", "c.at"]], false]
+            ]
+          ]
+        }
+      ]
+    ]
+  ],
+  "parts": [
+    {
+      "repeat": {
+        "over": ["get", "data.layers"],
+        "as": "l"
+      },
+      "let": [
+        ["bandY", ["mul", ["get", "i"], ["get", "bandStep"]]],
+        ["members", ["filter", ["get", "data.components"], "c", ["eq", ["get", "c.layer"], ["get", "l.id"]]]],
+        [
+          "span",
+          [
+            "sub",
+            ["mul", ["count", ["get", "members"]], ["add", ["get", "cardW"], ["get", "cardGap"]]],
+            ["get", "cardGap"]
+          ]
+        ],
+        ["firstX", ["add", ["get", "contentX"], ["div", ["sub", ["get", "contentW"], ["get", "span"]], 2]]]
+      ],
+      "children": [
+        {
+          "emit": {
+            "kind": "rect",
+            "key": ["list", "band", ["get", "l.id"]],
+            "x": 0,
+            "y": ["get", "bandY"],
+            "w": ["get", "frame.w"],
+            "h": ["get", "bandH"],
+            "fill": ["get", "token.band"],
+            "radius": ["get", "token.radius"]
+          }
+        },
+        {
+          "emit": {
+            "kind": "text",
+            "key": ["list", "layer", ["get", "l.id"]],
+            "x": ["get", "inset"],
+            "y": ["get", "bandY"],
+            "w": ["max", 0, ["sub", ["get", "labelW"], ["mul", 2, ["get", "inset"]]]],
+            "h": ["get", "bandH"],
+            "chars": ["get", "l.label"],
+            "style": ["get", "token.layerLabel"],
+            "color": ["get", "token.muted"],
+            "align": "left",
+            "alignV": "center",
+            "fit": {
+              "smaller": ["get", "token.layerSmall"],
+              "group": "layers"
+            }
+          }
+        },
+        {
+          "repeat": {
+            "over": ["get", "members"],
+            "as": "c"
+          },
+          "emit": {
+            "kind": "text",
+            "key": ["list", "component", ["get", "c.id"]],
+            "x": ["add", ["get", "firstX"], ["mul", ["get", "i"], ["add", ["get", "cardW"], ["get", "cardGap"]]]],
+            "y": ["add", ["get", "bandY"], ["div", ["sub", ["get", "bandH"], ["get", "cardH"]], 2]],
+            "w": ["get", "cardW"],
+            "h": ["get", "cardH"],
+            "chars": ["get", "c.name"],
+            "style": ["get", "token.label"],
+            "color": ["get", "token.ink"],
+            "align": "center",
+            "alignV": "center",
+            "fill": ["get", "token.card"],
+            "stroke": {
+              "color": ["get", "token.edge"],
+              "width": 2
+            },
+            "radius": ["get", "token.radius"],
+            "padding": 16,
+            "fit": {
+              "smaller": ["get", "token.labelSmall"],
+              "group": "components"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "repeat": {
+        "over": ["get", "data.links"],
+        "as": "k"
+      },
+      "let": [
+        ["a", ["at", ["filter", ["get", "placed"], "p", ["eq", ["get", "p.id"], ["get", "k.from"]]], 0]],
+        ["b", ["at", ["filter", ["get", "placed"], "p", ["eq", ["get", "p.id"], ["get", "k.to"]]], 0]],
+        ["down", ["lt", ["get", "a.layer"], ["get", "b.layer"]]],
+        ["up", ["lt", ["get", "b.layer"], ["get", "a.layer"]]],
+        ["right", ["lt", ["get", "a.slot"], ["get", "b.slot"]]],
+        ["same", ["eq", ["get", "a.layer"], ["get", "b.layer"]]],
+        [
+          "skip",
+          [
+            "lt",
+            1,
+            ["sub", ["max", ["get", "a.layer"], ["get", "b.layer"]], ["min", ["get", "a.layer"], ["get", "b.layer"]]]
+          ]
+        ],
+        [
+          "lateral",
+          [
+            "if",
+            ["get", "same"],
+            [
+              "lt",
+              1,
+              ["sub", ["max", ["get", "a.slot"], ["get", "b.slot"]], ["min", ["get", "a.slot"], ["get", "b.slot"]]]
+            ],
+            false
+          ]
+        ],
+        [
+          "fromY",
+          [
+            "sub",
+            ["mul", ["add", ["get", "a.layer"], ["if", ["get", "down"], 1, 0]], ["get", "bandStep"]],
+            ["div", ["get", "layerGap"], 2]
+          ]
+        ],
+        [
+          "toY",
+          [
+            "sub",
+            ["mul", ["add", ["get", "b.layer"], ["if", ["get", "up"], 1, 0]], ["get", "bandStep"]],
+            ["div", ["get", "layerGap"], 2]
+          ]
+        ],
+        [
+          "above",
+          [
+            "add",
+            ["mul", ["get", "a.layer"], ["get", "bandStep"]],
+            ["div", ["sub", ["get", "bandH"], ["get", "cardH"]], 4]
+          ]
+        ]
+      ],
+      "emit": {
+        "kind": "line",
+        "key": ["list", "link", ["get", "k.id"]],
+        "start": [
+          "site",
+          ["list", "component", ["get", "k.from"]],
+          [
+            "if",
+            ["get", "lateral"],
+            "t",
+            ["if", ["get", "down"], "b", ["if", ["get", "up"], "t", ["if", ["get", "right"], "r", "l"]]]
+          ]
+        ],
+        "end": [
+          "site",
+          ["list", "component", ["get", "k.to"]],
+          [
+            "if",
+            ["get", "lateral"],
+            "t",
+            ["if", ["get", "down"], "t", ["if", ["get", "up"], "b", ["if", ["get", "right"], "l", "r"]]]
+          ]
+        ],
+        "color": ["get", "token.connector"],
+        "width": ["get", "token.lineWidth"],
+        "route": "elbow",
+        "arrow": "triangle",
+        "channels": [
+          "if",
+          ["get", "same"],
+          [
+            "if",
+            ["get", "lateral"],
+            [
+              "list",
+              {
+                "axis": "y",
+                "at": ["get", "above"]
+              }
+            ],
+            ["list"]
+          ],
+          [
+            "if",
+            ["get", "skip"],
+            [
+              "list",
+              {
+                "axis": "y",
+                "at": ["get", "fromY"]
+              },
+              {
+                "axis": "x",
+                "at": ["sub", ["get", "frame.w"], ["div", ["get", "inset"], 2]]
+              },
+              {
+                "axis": "y",
+                "at": ["get", "toY"]
+              }
+            ],
+            [
+              "list",
+              {
+                "axis": "y",
+                "at": ["get", "fromY"]
+              }
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

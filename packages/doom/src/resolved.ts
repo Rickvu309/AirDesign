@@ -32,6 +32,12 @@ export type ResolvedLine = {
   readonly label?: { readonly x: Px; readonly run: ResolvedRun }
 }
 
+export type ResolvedText = {
+  readonly lines: readonly ResolvedLine[]
+  readonly overflow?: "clip"
+  readonly sourceLines?: readonly ResolvedLine[]
+}
+
 export type ResolvedPaint =
   | { readonly kind: "solid"; readonly color: Hex; readonly opacity: number }
   | {
@@ -81,7 +87,7 @@ export type Resolved = {
   readonly radius: readonly [Px, Px, Px, Px]
   readonly effects: readonly ResolvedEffect[]
   readonly geometry: ResolvedGeometry | null
-  readonly text: { readonly lines: readonly ResolvedLine[] } | null
+  readonly text: ResolvedText | null
   readonly clip: boolean
   readonly mask: boolean
   readonly children: readonly Resolved[]

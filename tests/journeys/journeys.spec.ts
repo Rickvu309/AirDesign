@@ -47,6 +47,7 @@ for (const name of [
   "deck-list-trash",
   "connected-agents",
   "component-paths",
+  "diagram-templates",
   "path-paint",
   "usage-page",
   "account-name",

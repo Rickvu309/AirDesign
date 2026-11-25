@@ -57,6 +57,7 @@ const words = [
   "alignV",
   "spaceBefore",
   "spaceAfter",
+  "padding",
 ] as const
 const patternFields = ["box", "name", "hidden", "items"] as const
 

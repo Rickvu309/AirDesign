@@ -1,3 +1,4 @@
+import type { Channel } from "./geometry.js"
 import { distanceToSegment } from "./preset-geometry.js"
 import type { Point } from "./resolved.js"
 
@@ -455,7 +456,31 @@ function routed(start: RouteEnd, end: RouteEnd): readonly Point[] {
   return [start.at, end.at]
 }
 
-export function elbowPoints(start: RouteEnd, end: RouteEnd): readonly Point[] {
+function throughChannels(start: RouteEnd, end: RouteEnd, channels: readonly Channel[]): readonly Point[] | undefined {
+  const points = [start.at]
+  const outwardFrom = (terminal: RouteEnd, next: Point) => {
+    if (terminal.side === null) return true
+    const side = outward[terminal.side]
+    return (next.x - terminal.at.x) * side.x + (next.y - terminal.at.y) * side.y > 0
+  }
+  let lastAxis: Channel["axis"] | undefined
+  for (const { axis, at } of channels) {
+    if (axis === lastAxis) return undefined
+    points.push({ ...points[points.length - 1]!, [axis]: at })
+    lastAxis = axis
+  }
+  if (lastAxis === undefined) return undefined
+  const last = points[points.length - 1]!
+  points.push({ ...end.at, [lastAxis]: last[lastAxis] }, end.at)
+  if (!outwardFrom(start, points[1]!) || !outwardFrom(end, points[points.length - 2]!)) return undefined
+  return tidy(points)
+}
+
+export function elbowPoints(start: RouteEnd, end: RouteEnd, channels?: readonly Channel[]): readonly Point[] {
+  if (channels !== undefined) {
+    const points = throughChannels(start, end, channels)
+    if (points !== undefined) return points
+  }
   if (start.side !== null || end.side !== null) {
     const points = tidy(routed(start, end))
     return points.length === 1 ? [start.at, end.at] : points

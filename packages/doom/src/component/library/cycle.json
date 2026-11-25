@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "name": "Cycle",
+  "collections": {
+    "steps": {
+      "label": "string"
+    }
+  },
+  "variants": {
+    "route": ["curve", "straight"]
+  },
+  "defaultVariant": {
+    "route": "curve"
+  },
+  "defaults": {
+    "ink": {
+      "var": "text"
+    },
+    "card": {
+      "var": "background"
+    },
+    "edge": {
+      "var": "text2",
+      "tint": 0.7
+    },
+    "connector": {
+      "var": "text2"
+    },
+    "label": "label",
+    "labelSmall": 18,
+    "radius": 8,
+    "lineWidth": 3
+  },
+  "let": [
+    ["count", ["count", ["get", "data.steps"]]],
+    ["cardW", ["min", 300, ["mul", ["get", "frame.w"], 0.3]]],
+    ["cardH", ["min", 104, ["mul", ["get", "frame.h"], 0.22]]],
+    ["origin", ["point", 0, 0]],
+    ["rx", ["max", 0, ["div", ["sub", ["get", "frame.w"], ["get", "cardW"]], 2]]],
+    ["ry", ["max", 0, ["div", ["sub", ["get", "frame.h"], ["get", "cardH"]], 2]]]
+  ],
+  "parts": [
+    {
+      "repeat": {
+        "over": ["get", "data.steps"],
+        "as": "s"
+      },
+      "let": [
+        ["turn", ["sub", ["div", ["get", "i"], ["max", 1, ["get", "count"]]], 0.25]],
+        ["px", ["polar", ["get", "origin"], ["get", "rx"], ["get", "turn"]]],
+        ["py", ["polar", ["get", "origin"], ["get", "ry"], ["get", "turn"]]]
+      ],
+      "emit": {
+        "kind": "text",
+        "key": ["list", "step", ["get", "s.id"]],
+        "x": ["add", ["div", ["sub", ["get", "frame.w"], ["get", "cardW"]], 2], ["get", "px.x"]],
+        "y": ["add", ["div", ["sub", ["get", "frame.h"], ["get", "cardH"]], 2], ["get", "py.y"]],
+        "w": ["get", "cardW"],
+        "h": ["get", "cardH"],
+        "chars": ["get", "s.label"],
+        "style": ["get", "token.label"],
+        "color": ["get", "token.ink"],
+        "align": "center",
+        "alignV": "center",
+        "fill": ["get", "token.card"],
+        "stroke": {
+          "color": ["get", "token.edge"],
+          "width": 2
+        },
+        "radius": ["get", "token.radius"],
+        "padding": 16,
+        "fit": {
+          "smaller": ["get", "token.labelSmall"],
+          "group": "steps"
+        }
+      }
+    },
+    {
+      "repeat": {
+        "over": ["get", "data.steps"],
+        "as": "s"
+      },
+      "when": ["lt", 1, ["get", "count"]],
+      "let": [
+        ["j", ["if", ["lt", ["add", ["get", "i"], 1], ["get", "count"]], ["add", ["get", "i"], 1], 0]],
+        ["following", ["at", ["get", "data.steps"], ["get", "j"]]],
+        [
+          "outX",
+          [
+            "polar",
+            ["get", "origin"],
+            ["get", "rx"],
+            ["add", ["sub", ["div", ["get", "i"], ["max", 1, ["get", "count"]]], 0.25], 0.25]
+          ]
+        ],
+        [
+          "outY",
+          [
+            "polar",
+            ["get", "origin"],
+            ["get", "ry"],
+            ["add", ["sub", ["div", ["get", "i"], ["max", 1, ["get", "count"]]], 0.25], 0.25]
+          ]
+        ],
+        [
+          "inX",
+          [
+            "polar",
+            ["get", "origin"],
+            ["get", "rx"],
+            ["sub", ["sub", ["div", ["get", "j"], ["max", 1, ["get", "count"]]], 0.25], 0.25]
+          ]
+        ],
+        [
+          "inY",
+          [
+            "polar",
+            ["get", "origin"],
+            ["get", "ry"],
+            ["sub", ["sub", ["div", ["get", "j"], ["max", 1, ["get", "count"]]], 0.25], 0.25]
+          ]
+        ]
+      ],
+      "emit": {
+        "kind": "line",
+        "key": ["list", "connector", ["get", "s.id"]],
+        "start": [
+          "site",
+          ["list", "step", ["get", "s.id"]],
+          [
+            "if",
+            [
+              "lt",
+              ["max", ["get", "outY.y"], ["sub", 0, ["get", "outY.y"]]],
+              ["max", ["get", "outX.x"], ["sub", 0, ["get", "outX.x"]]]
+            ],
+            ["if", ["lt", 0, ["get", "outX.x"]], "r", "l"],
+            ["if", ["lt", 0, ["get", "outY.y"]], "b", "t"]
+          ]
+        ],
+        "end": [
+          "site",
+          ["list", "step", ["get", "following.id"]],
+          [
+            "if",
+            [
+              "lt",
+              ["max", ["get", "inY.y"], ["sub", 0, ["get", "inY.y"]]],
+              ["max", ["get", "inX.x"], ["sub", 0, ["get", "inX.x"]]]
+            ],
+            ["if", ["lt", 0, ["get", "inX.x"]], "r", "l"],
+            ["if", ["lt", 0, ["get", "inY.y"]], "b", "t"]
+          ]
+        ],
+        "color": ["get", "token.connector"],
+        "width": ["get", "token.lineWidth"],
+        "route": ["get", "variant.route"],
+        "arrow": "triangle"
+      }
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { catalog, projectTools } from "@airdesign/catalog"
+import { catalog, projectTools, readDeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
@@ -327,4 +327,33 @@ describe("edit_deck frees a connector end whose shape leaves the slide", () => {
     expect("node" in lineStart(grown.ids.toChild!)).toBe(false)
     expect(paintedAt(grown.ids.toChild!)).toEqual(seen)
   })
+})
+
+it("reads and sets an ordinary text card's padding, fill, outline and radius", async () => {
+  const by = agent()
+  const made = (await by.call("create_deck", {})).answer
+  const read = readDeckId(made.deck)
+  if (!read.ok || !Array.isArray(made.slides)) throw new Error("Missing deck")
+  const { deck } = read
+  const rev = () => by.decks.decks.get(deck)!.rev
+  const added = (
+    await by.call("edit_deck", {
+      deck,
+      base: rev(),
+      changes: [{ op: "add", kind: "shape", slide: made.slides[0], text: "Gateway" }],
+    })
+  ).answer
+  if (!Array.isArray(added.added)) throw new Error("Missing card")
+  const target = added.added[0].id
+  for (const padding of [28, { t: 12, r: 16, b: 20, l: 24 }]) {
+    const edited = await by.call("edit_deck", {
+      deck,
+      base: rev(),
+      changes: [{ op: "set", target, padding, fill: "background2", stroke: "accent1", strokeWidth: 3, radius: 12 }],
+    })
+    expect(edited.answer).toMatchObject({ ok: true })
+    const read = await by.call("read_deck", { deck, slide: made.slides[0] })
+    expect(JSON.stringify(read.answer)).toContain(`padding=${typeof padding === "number" ? padding : "12,16,20,24"}`)
+    expect(JSON.stringify(read.answer)).toContain("fill=background2 stroke=accent1 strokeWidth=3 radius=12")
+  }
 })

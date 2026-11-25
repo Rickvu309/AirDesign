@@ -89,7 +89,8 @@ export const chartOf = (chart: AgentChart): Chart => ({
 
 export const iconName = (icon: string): string => (icon.includes("/") ? icon : `lucide/${icon}`)
 
-export const sidesOf = (all: number): Sides => ({ t: all, r: all, b: all, l: all })
+export const sidesOf = (all: number | Sides): Sides =>
+  typeof all === "number" ? { t: all, r: all, b: all, l: all } : all
 
 export const turnOf = (look: AgentLook): Partial<Box> => ({
   ...(look.rotation === undefined ? {} : { rotation: look.rotation }),
@@ -316,7 +317,7 @@ export function textOfLook(
   fallback: TextStyleName,
   theme?: Theme,
 ): Text | undefined {
-  if (textKeys.every((key) => look[key] === undefined)) return undefined
+  if (look.padding === undefined && textKeys.every((key) => look[key] === undefined)) return undefined
   const style = look.textStyle ?? now?.style ?? fallback
   const words = look.text
   const replacing = words !== undefined && now !== undefined
@@ -335,6 +336,7 @@ export function textOfLook(
             alignV: now.alignV,
             ...(now.wrap === "words" ? { wrap: now.wrap } : {}),
             ...(now.padding === undefined ? {} : { padding: now.padding }),
+            ...(now.overflow === undefined ? {} : { overflow: now.overflow }),
           }
   }
   const align = look.align ?? (replacing ? uniformAlign(now) : undefined)
@@ -351,6 +353,7 @@ export function textOfLook(
   }
   if (Object.keys(para).length > 0) text = paraWrite(text, para)
   if (look.weight !== undefined) text = weightOn(text, look.weight, look.font, theme)
+  if (look.padding !== undefined) text = { ...text, padding: sidesOf(look.padding) }
   return look.alignV === undefined ? text : { ...text, alignV: look.alignV }
 }
 

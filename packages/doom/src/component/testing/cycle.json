@@ -1,0 +1,11 @@
+{
+  "frame": { "x": 260, "y": 250, "w": 1400, "h": 700 },
+  "data": {
+    "steps": [
+      { "id": "plan", "label": "Plan" },
+      { "id": "build", "label": "Build" },
+      { "id": "measure", "label": "Measure" },
+      { "id": "learn", "label": "Learn" }
+    ]
+  }
+}

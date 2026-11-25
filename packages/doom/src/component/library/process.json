@@ -1,0 +1,223 @@
+{
+  "version": 1,
+  "name": "Process",
+  "collections": {
+    "steps": {
+      "label": "string",
+      "description": "string?"
+    }
+  },
+  "variants": {
+    "direction": ["row", "column"]
+  },
+  "defaultVariant": {
+    "direction": "row"
+  },
+  "defaults": {
+    "ink": {
+      "var": "text"
+    },
+    "card": {
+      "var": "background"
+    },
+    "edge": {
+      "var": "text2",
+      "tint": 0.7
+    },
+    "connector": {
+      "var": "text2"
+    },
+    "label": "heading",
+    "labelSmall": 18,
+    "gap": 64,
+    "radius": 8,
+    "lineWidth": 2,
+    "number": {
+      "var": "accent1"
+    },
+    "description": {
+      "var": "text2"
+    },
+    "columnLabel": "label",
+    "columnGap": 16,
+    "cardHeight": 240,
+    "rowLabelSmall": 26
+  },
+  "let": [
+    ["row", ["eq", ["get", "variant.direction"], "row"]],
+    ["count", ["max", 1, ["count", ["get", "data.steps"]]]],
+    [
+      "gap",
+      [
+        "if",
+        ["get", "row"],
+        ["min", ["get", "token.gap"], ["div", ["get", "frame.w"], ["mul", ["get", "count"], 5]]],
+        ["get", "token.columnGap"]
+      ]
+    ],
+    ["gaps", ["mul", ["get", "gap"], ["sub", ["get", "count"], 1]]],
+    [
+      "cardW",
+      [
+        "if",
+        ["get", "row"],
+        ["min", 360, ["div", ["max", 0, ["sub", ["get", "frame.w"], ["get", "gaps"]]], ["get", "count"]]],
+        ["min", 560, ["get", "frame.w"]]
+      ]
+    ],
+    [
+      "cardH",
+      [
+        "if",
+        ["get", "row"],
+        ["min", ["get", "token.cardHeight"], ["get", "frame.h"]],
+        ["min", 132, ["div", ["max", 0, ["sub", ["get", "frame.h"], ["get", "gaps"]]], ["get", "count"]]]
+      ]
+    ],
+    ["stepX", ["if", ["get", "row"], ["add", ["get", "cardW"], ["get", "gap"]], 0]],
+    ["stepY", ["if", ["get", "row"], 0, ["add", ["get", "cardH"], ["get", "gap"]]]],
+    [
+      "left",
+      [
+        "div",
+        ["sub", ["get", "frame.w"], ["add", ["get", "cardW"], ["mul", ["get", "stepX"], ["sub", ["get", "count"], 1]]]],
+        2
+      ]
+    ],
+    [
+      "top",
+      [
+        "div",
+        ["sub", ["get", "frame.h"], ["add", ["get", "cardH"], ["mul", ["get", "stepY"], ["sub", ["get", "count"], 1]]]],
+        2
+      ]
+    ]
+  ],
+  "layout": {
+    "mode": ["get", "variant.direction"],
+    "gap": ["get", "gap"],
+    "padding": {
+      "t": 0,
+      "r": 0,
+      "b": 0,
+      "l": 0
+    },
+    "align": "center-center"
+  },
+  "parts": [
+    {
+      "repeat": {
+        "over": ["get", "data.steps"],
+        "as": "s"
+      },
+      "emit": {
+        "kind": "text",
+        "key": ["list", "step", ["get", "s.id"]],
+        "x": ["add", ["get", "left"], ["mul", ["get", "i"], ["get", "stepX"]]],
+        "y": ["add", ["get", "top"], ["mul", ["get", "i"], ["get", "stepY"]]],
+        "w": ["get", "cardW"],
+        "h": ["get", "cardH"],
+        "chars": [
+          "if",
+          ["eq", ["get", "s.description"], ""],
+          ["list", ["get", "number"], ["get", "title"]],
+          [
+            "list",
+            ["get", "number"],
+            ["get", "title"],
+            {
+              "chars": ["get", "s.description"],
+              "color": ["get", "token.description"],
+              "scale": ["if", ["get", "row"], 0.7, 0.72],
+              "bold": false,
+              "wrap": "none",
+              "spaceBefore": ["if", ["get", "row"], 6, 2]
+            }
+          ]
+        ],
+        "style": ["if", ["get", "row"], ["get", "token.label"], ["get", "token.columnLabel"]],
+        "color": ["get", "token.ink"],
+        "align": "left",
+        "alignV": "top",
+        "fill": ["get", "token.card"],
+        "stroke": {
+          "color": ["get", "token.edge"],
+          "width": 2
+        },
+        "radius": ["get", "token.radius"],
+        "padding": [
+          "if",
+          ["get", "row"],
+          {
+            "t": 36,
+            "r": 24,
+            "b": 24,
+            "l": 24
+          },
+          {
+            "t": 7,
+            "r": 20,
+            "b": 7,
+            "l": 20
+          }
+        ],
+        "fit": {
+          "smaller": ["if", ["get", "row"], ["get", "token.rowLabelSmall"], ["get", "token.labelSmall"]],
+          "group": "steps"
+        }
+      },
+      "let": [
+        [
+          "stepNumber",
+          [
+            "format",
+            ["add", ["get", "i"], 1],
+            {
+              "scale": 1,
+              "digits": 0,
+              "prefix": "",
+              "suffix": "",
+              "sign": "negative"
+            }
+          ]
+        ],
+        [
+          "number",
+          {
+            "chars": ["if", ["lt", ["get", "i"], 9], ["concat", "0", ["get", "stepNumber"]], ["get", "stepNumber"]],
+            "color": ["get", "token.number"],
+            "scale": ["if", ["get", "row"], 0.68, 0.65],
+            "bold": true,
+            "wrap": "none"
+          }
+        ],
+        [
+          "title",
+          {
+            "chars": ["get", "s.label"],
+            "color": ["get", "token.ink"],
+            "spaceBefore": ["if", ["get", "row"], 16, 3]
+          }
+        ]
+      ]
+    },
+    {
+      "repeat": {
+        "over": ["get", "data.steps"],
+        "as": "s"
+      },
+      "let": [["following", ["at", ["get", "data.steps"], ["add", ["get", "i"], 1]]]],
+      "when": ["lt", ["add", ["get", "i"], 1], ["count", ["get", "data.steps"]]],
+      "emit": {
+        "kind": "line",
+        "key": ["list", "connector", ["get", "s.id"]],
+        "start": ["site", ["list", "step", ["get", "s.id"]], ["if", ["get", "row"], "r", "b"]],
+        "end": ["site", ["list", "step", ["get", "following.id"]], ["if", ["get", "row"], "l", "t"]],
+        "color": ["get", "token.connector"],
+        "width": ["get", "token.lineWidth"],
+        "route": "straight",
+        "arrow": "triangle"
+      }
+    }
+  ]
+}

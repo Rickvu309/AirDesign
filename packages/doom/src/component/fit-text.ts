@@ -1,6 +1,6 @@
 import type { Measure, Measured, Text, Theme } from "../index.js"
 import { naming, reject } from "../read-kit.js"
-import type { ComponentFinding, GroupedText, PreparedPart, TextPart } from "./nodes.js"
+import type { ComponentFinding, GroupedText, Kept, PreparedPart, TextPart } from "./nodes.js"
 import { type Charge, numeric } from "./values.js"
 
 export type FittingContext = {
@@ -16,10 +16,11 @@ export function measurePart(
   text: Text,
   { measure, theme, charge }: FittingContext,
   fit?: "two-lines",
+  width: number | null = null,
 ): Measured {
   return naming(`${part.field}.fit`, () => {
     charge(96 + (fit === undefined ? 2 : 6) * text.chars.length + 8 * (text.paras.length - 1))
-    return measure(text, theme, null, fit)
+    return measure(text, theme, width, fit)
   })
 }
 
@@ -27,7 +28,7 @@ export function fits(part: TextPart, result: Measured, limit: number): boolean {
   return (
     numeric(result.w) <= part.props.box.w + tolerance &&
     numeric(result.h) <= part.props.box.h + tolerance &&
-    result.lines.length <= limit
+    result.lines.length <= (part.props.text.overflow === "ellipsis" ? Infinity : limit)
   )
 }
 
@@ -41,16 +42,31 @@ type Fit = {
   readonly size: number
   readonly single: Measured
   readonly split: Measured["wordFit"]
+  readonly wrapped?: Measured
   readonly neededWidth: number
 }
 
 function prepareFit(part: TextPart, size: number, context: FittingContext, wrap: boolean): Fit {
   const { text, box } = part.props
+  const base = context.theme.textStyles[text.style].size
   const resized =
-    size === context.theme.textStyles[text.style].size
+    size === base
       ? text
-      : { ...text, spans: text.spans.map((span) => ({ ...span, size })) }
-  const single = measurePart(part, resized, context, wrap ? "two-lines" : undefined)
+      : {
+          ...text,
+          spans: text.spans.map((span) => ({
+            ...span,
+            size: span.size === undefined ? size : Math.max(1, (span.size * size) / base),
+          })),
+        }
+  const filled = text.overflow === "ellipsis"
+  const single = measurePart(part, resized, context, wrap && !filled ? "two-lines" : undefined)
+  if (filled && wrap && !fits(part, single, Infinity)) {
+    const wrapped = measurePart(part, resized, context, undefined, box.w)
+    const ink = Math.max(0, ...wrapped.lines.map((line) => line.ink))
+    const inset = (text.padding?.l ?? 0) + (text.padding?.r ?? 0)
+    return { part, text: resized, size, single, split: undefined, wrapped, neededWidth: ink + inset }
+  }
   const candidate = single.wordFit
   const split = candidate !== undefined && candidate.h <= box.h + tolerance ? candidate : undefined
   return { part, text: resized, size, single, split, neededWidth: Math.min(single.w, split?.w ?? Infinity) }
@@ -58,6 +74,12 @@ function prepareFit(part: TextPart, size: number, context: FittingContext, wrap:
 
 function withWidth(fit: Fit, part: TextPart): TextPart | undefined {
   if (fits(part, fit.single, 2)) return withText(part, fit.text)
+  if (
+    fit.wrapped !== undefined &&
+    fits(part, fit.wrapped, Infinity) &&
+    fit.wrapped.lines.every((line) => line.ink <= line.w + tolerance)
+  )
+    return withText(part, fit.text)
   if (fit.split !== undefined && fit.split.w <= part.props.box.w + tolerance) return withText(part, fit.text)
 }
 
@@ -77,16 +99,21 @@ function finding(
   }
 }
 
+function missed(part: TextPart, text: Text, found: ComponentFinding): Kept | ComponentFinding {
+  return part.props.fills === undefined ? found : { kind: "kept", part: withText(part, text), finding: found }
+}
+
 export function fitOne(
   part: TextPart,
   smaller: number | undefined,
   context: FittingContext,
-): TextPart | ComponentFinding {
+): TextPart | Kept | ComponentFinding {
   const natural = measurePart(part, part.props.text, context)
   if (fits(part, natural, smaller === undefined ? Infinity : 2)) return part
-  if (smaller === undefined) return finding(part, context.theme.textStyles[part.props.text.style].size, natural.w)
+  if (smaller === undefined)
+    return missed(part, part.props.text, finding(part, context.theme.textStyles[part.props.text.style].size, natural.w))
   const fit = prepareFit(part, smaller, context, true)
-  return withWidth(fit, part) ?? finding(part, smaller, fit.neededWidth)
+  return withWidth(fit, part) ?? missed(part, fit.text, finding(part, smaller, fit.neededWidth))
 }
 
 type Group = {
@@ -185,6 +212,8 @@ export function* fitGroups(
     const shared = groups.get(group) ?? { entries: [], fullSize, smaller, thin, shrink: false }
     if (shared.fullSize !== fullSize || shared.smaller !== smaller || shared.thin !== thin)
       naming(`${part.field}.fit.group`, () => reject("shape", "A fit group must share sizes and thinning settings."))
+    if (thin !== undefined && part.props.fills !== undefined)
+      naming(`${part.field}.fit.thin`, () => reject("shape", "A filled text is never thinned."))
     if (thin !== undefined && text.paras.some((para) => para.align !== "center"))
       naming(`${part.field}.fit.thin`, () => reject("shape", "Thinning requires centered text."))
     shared.entries.push(entry)
@@ -195,7 +224,7 @@ export function* fitGroups(
     groups.set(group, shared)
   }
 
-  const fitted = new Map<TextPart, TextPart | ComponentFinding>()
+  const fitted = new Map<TextPart, TextPart | Kept | ComponentFinding>()
   for (const [name, group] of groups) {
     if (!group.shrink) continue
     const fits = group.entries.map(({ part }) => {
@@ -212,7 +241,8 @@ export function* fitGroups(
     const omitted = fits.filter(({ part }) => !fitted.has(part))
     if (omitted.length === 0) continue
     if (group.thin === undefined) {
-      for (const fit of omitted) fitted.set(fit.part, finding(fit.part, fit.size, fit.neededWidth))
+      for (const fit of omitted)
+        fitted.set(fit.part, missed(fit.part, fit.text, finding(fit.part, fit.size, fit.neededWidth)))
       continue
     }
 
