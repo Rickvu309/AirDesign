@@ -86,15 +86,17 @@ describe("what a type accepts", () => {
 })
 
 describe("delete and missing", () => {
-  it("deletes with parent null, keeps the node and its props, and revives it in place", () => {
+  it("deletes with parent null, keeps the node and its props, and revives it only for the write that saw the delete", () => {
     const doom = sampleDeck()
     const gone = land(doom, [{ node: ids.card, prop: "parent", value: null }])
     expect(gone.nodes.get(ids.card)).toMatchObject({ parent: null, box: box(100) })
     expect(gone.children.get(ids.slide)).toEqual([ids.side])
     expect(gone.children.get(ids.card)).toEqual([ids.title])
-    const back = land(gone, [
-      { node: ids.card, prop: "parent", value: (doom.nodes.get(ids.card) as { parent: unknown }).parent },
-    ])
+    const slot = (doom.nodes.get(ids.card) as { parent: unknown }).parent
+    const raced = land(gone, [{ node: ids.card, prop: "parent", value: slot }])
+    expect(raced.nodes.get(ids.card)).toMatchObject({ parent: null })
+    expect(raced.children.get(ids.slide)).toEqual([ids.side])
+    const back = land(gone, [{ node: ids.card, prop: "parent", value: slot, base: revOf(gone, ids.card, "parent")! }])
     expect(back.children.get(ids.slide)).toEqual([ids.card, ids.side])
   })
 
@@ -189,13 +191,25 @@ describe("delete and missing", () => {
     expect(isRefusal(tryLand(land(nested, [gone]), [tucked]))).toBe(false)
   })
 
-  it("lets one edit revive a node and write to it, parent first", () => {
+  it("lets one edit revive a node and write to it when the parent write saw the delete", () => {
     const gone = land(sampleDeck(), [{ node: ids.card, prop: "parent", value: null }])
     const back = land(gone, [
-      { node: ids.card, prop: "parent", value: place(ids.slide) },
+      { node: ids.card, prop: "parent", value: place(ids.slide), base: revOf(gone, ids.card, "parent")! },
       { node: ids.card, prop: "name", value: "Back" },
     ])
-    expect(back.nodes.get(ids.card)).toMatchObject({ name: "Back" })
+    expect(back.nodes.get(ids.card)).toMatchObject({ name: "Back", parent: { id: ids.slide } })
+  })
+
+  it("leaves a deleted layer deleted when a move lands beside a sibling, and does not refuse the edit", () => {
+    const gone = land(sampleDeck(), [{ node: ids.card, prop: "parent", value: null }])
+    const moved = land(gone, [
+      { node: ids.card, prop: "parent", value: place(ids.slide) },
+      { node: ids.card, prop: "box", value: box(12) },
+      { node: ids.side, prop: "parent", value: place(ids.slide) },
+      { node: ids.side, prop: "name", value: "Kept" },
+    ])
+    expect(moved.nodes.get(ids.card)).toMatchObject({ parent: null, box: box(100) })
+    expect(moved.nodes.get(ids.side)).toMatchObject({ name: "Kept" })
   })
 })
 

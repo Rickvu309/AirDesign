@@ -3,6 +3,7 @@ import * as doom from "@airdesign/doom"
 import {
   acceptedWithoutRow,
   appliedOn,
+  followedEdit,
   regenerationFor,
   type Regeneration,
   type Suppression,
@@ -361,7 +362,7 @@ function connected(
     }
     const made = queueEditOn(server, before, provisional, edit)
     if (doom.isRefusal(made)) return { ok: false, refused: made }
-    const trial = appliedOn(before, made.edit)
+    const trial = appliedOn(before, followedEdit(before, made))
     if (doom.isRefusal(trial)) return { ok: false, refused: trial }
     queue = [
       ...queue,

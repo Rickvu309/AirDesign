@@ -43,9 +43,23 @@ export function shown(server: doom.Doom, queue: readonly Queued[], provisional?:
   return view
 }
 
+// A queued undo stores no rev. The delete's rev exists only in this view, and `after` names that edit.
+// Putting the rev back lets the undo restore the layer. A move that did not see the delete has no `after`.
+export function followedEdit(view: doom.Doom, each: Queued): doom.Edit {
+  if (!each.after.some((once) => once !== null)) return each.edit
+  const writes = each.edit.writes.map((write, index) => {
+    if (write.base !== undefined) return write
+    const once = each.after[index]
+    if (once == null) return write
+    const base = view.onces.get(once)
+    return base === undefined ? write : { ...write, base }
+  })
+  return { ...each.edit, writes }
+}
+
 export function shownAfter(view: doom.Doom, each: Queued): doom.Doom {
   if (readGap(view, each) !== undefined) return view
-  const next = appliedOn(view, each.edit)
+  const next = appliedOn(view, followedEdit(view, each))
   return doom.isRefusal(next) ? view : next
 }
 
@@ -78,11 +92,7 @@ export function queueProjection() {
 }
 
 export function appliedOn(view: doom.Doom, edit: doom.Edit): doom.Doom | doom.Refusal {
-  const writes = edit.writes.map(({ base: _sent, ...write }) => {
-    const was = view.revs.get(write.node)?.get(write.prop)
-    return was === undefined ? write : { ...write, base: was }
-  })
-  return doom.applyEdit(view, { ...edit, writes, rev: doom.rev(view.rev + 1) })
+  return doom.applyEdit(view, { ...doom.onTop(view, edit), rev: doom.rev(view.rev + 1) })
 }
 
 const compareAndSet = (key: doom.WriteKey): boolean =>

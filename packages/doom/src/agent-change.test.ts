@@ -265,6 +265,14 @@ describe("the advertised schema", () => {
     ])
   })
 
+  it("describes a move as the parser accepts it", () => {
+    const described = change.op?.description ?? ""
+    expect(described).toContain("into is required with nodes or box")
+    expect(described).toContain("names a slide")
+    expect(described).toContain("x, y, w, h")
+    expect(described).toContain("w, h do not resize")
+  })
+
   it("fits the budget for the one tool that carries it", () => {
     const tokens = Math.ceil(bytesOf(JSON.stringify(agentChangesSchema)) / 4)
     expect(tokens).toBeLessThan(4_500)

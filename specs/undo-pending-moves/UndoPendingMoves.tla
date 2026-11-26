@@ -8,10 +8,11 @@
 \* pending until it replays (`queueEdit` and `sync` in packages/live/src/doom-deck.ts). It is an ordinary edit, so it
 \* takes back no delete. Online, the person may delete K once while it shows, and press Ctrl+Z once on that step.
 \* Another tab may delete K while it shows, or P while it stands, twice in all, and press Ctrl+Z on its own steps.
-\* The deck (`write` in packages/doom/src/apply-edit.ts) lands a move of K into P while P stands, or into a deleted
-\* P for a write that takes back a delete of K: an undo's write, which names the edit it replaces as its base, of
-\* a K that is deleted before the edit. An undo writes a parent only when its step or an undo of the same tab wrote
-\* it last, and with nothing to write takes the step off and does nothing.
+\* The deck (`write` in packages/doom/src/apply-edit.ts) lands a move of a live K into a standing P. A move of a
+\* deleted K into a standing P lands and leaves K deleted: the delete wins, and the move is not a refusal. A write
+\* that takes back a delete of K, an undo's write naming the edit it replaces as its base, puts K back, including
+\* into a deleted P. An undo writes a parent only when its step or an undo of the same tab wrote it last, and with
+\* nothing to write takes the step off and does nothing.
 EXTENDS Integers
 
 VARIABLES pK, pP, wK, wP, n, turned, undid, pending, cut, stacked, theirs, t1, t2, acts, hid
@@ -21,6 +22,7 @@ vars == <<pK, pP, wK, wP, n, turned, undid, pending, cut, stacked, theirs, t1, t
 Shows == pK = 1 /\ pP = 0
 In(bits, id) == (bits \div (2 ^ id)) % 2 = 1
 \* Whether the deck lands a write that moves K into P, for a write that takes back a delete or not.
+\* A move that does not take back a delete leaves a deleted K deleted; Replay handles that before Lands.
 Lands(restores) == pP = 0 \/ (restores /\ pK = -1)
 
 TypeOK ==
@@ -40,9 +42,11 @@ PersonMove ==
 
 Replay ==
   /\ pending = "queued"
-  /\ IF Lands(FALSE)
-     THEN pK' = 1 /\ wK' = n + 1 /\ n' = n + 1 /\ pending' = "landed"
-     ELSE pending' = "refused" /\ UNCHANGED <<pK, wK, n>>
+  /\ IF pK = -1 /\ pP = 0
+     THEN n' = n + 1 /\ pending' = "landed" /\ UNCHANGED <<pK, wK>>
+     ELSE IF Lands(FALSE)
+          THEN pK' = 1 /\ wK' = n + 1 /\ n' = n + 1 /\ pending' = "landed"
+          ELSE pending' = "refused" /\ UNCHANGED <<pK, wK, n>>
   /\ UNCHANGED <<pP, wP, turned, cut, stacked>> /\ Theirs
 
 PersonDelete ==
