@@ -15,6 +15,7 @@ export const slideListCopy = {
   slideName: (number: number, count: number) => `Slide ${String(number)} of ${String(count)}`,
   selectedName: (number: number, count: number) => `Slide ${String(number)} of ${String(count)}, selected`,
   selected: (count: number) => `${slidesOf(count)} selected`,
+  nothingSelected: "Nothing selected",
   newSlide: "New slide",
   addSlide: "Add slide",
   lastSlide: "A deck keeps at least one slide.",

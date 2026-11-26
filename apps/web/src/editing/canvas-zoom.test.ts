@@ -8,6 +8,7 @@ import {
   steppedZoom,
   typedZoom,
   zoomKey,
+  zoomRanges,
 } from "@/editing/canvas-zoom"
 
 const wide = { width: 12_192_000, height: 6_858_000 }
@@ -127,4 +128,11 @@ describe("typed zoom", () => {
     expect(typedZoom("-20")).toBeNull()
     expect(typedZoom("5%%")).toBeNull()
   })
+})
+
+it("accepts every Grid percent and steps to its own floor", () => {
+  for (const percent of [1, 4, 5, 7, 9, 400]) expect(typedZoom(String(percent), zoomRanges.grid)).toBe(percent)
+  expect(steppedZoom("out", 10, zoomRanges.grid)).toBe(5)
+  expect(steppedZoom("out", 5, zoomRanges.grid)).toBe(1)
+  expect(steppedZoom("in", 1, zoomRanges.grid)).toBe(5)
 })

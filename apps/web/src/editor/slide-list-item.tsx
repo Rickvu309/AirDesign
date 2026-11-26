@@ -23,12 +23,10 @@ export function SlideItem({
   picked = false,
   menuSet,
   reachable = true,
-  grid = false,
   skipped = false,
   markWidth,
   onSkip,
   onSelect,
-  onOpen,
   onChoose,
   onKeyDown,
   onDragStart,
@@ -42,12 +40,10 @@ export function SlideItem({
   picked?: boolean
   menuSet?: SlideMenuSet | undefined
   reachable?: boolean
-  grid?: boolean
   skipped?: boolean
   markWidth?: number
   onSkip?: ((skipped: boolean) => void) | undefined
   onSelect?: (press: SlidePress) => void
-  onOpen?: (() => void) | undefined
   onChoose?: (change: SlideKey) => void
   onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void
   onDragStart?: (event: DragEvent<HTMLButtonElement>) => void
@@ -68,14 +64,12 @@ export function SlideItem({
     if (next) latest.current.onSelect?.("menu")
     else if (entry.current?.isConnected) entry.current.focus()
   }, [])
-  const look = grid
-    ? "flex w-fit flex-col items-start gap-2 rounded-[2px]"
-    : cn(
-        "flex w-fit items-start gap-2 rounded-[var(--shape-card)] py-1.5 pr-1.5 pl-2",
-        active || picked ? "bg-[var(--row)]" : onSelect !== undefined && "hover:bg-black/4",
-      )
+  const look = cn(
+    "flex w-fit items-start gap-2 rounded-[var(--shape-card)] py-1.5 pr-1.5 pl-2",
+    active || picked ? "bg-[var(--row)]" : onSelect !== undefined && "hover:bg-black/4",
+  )
   const number = (
-    <span aria-hidden className={grid ? "flex h-4 items-center" : "flex w-4 flex-col items-center gap-1.5 pt-0.5"}>
+    <span aria-hidden className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
       <span data-slide-number className={cn("text-xs tabular-nums", active ? "font-medium text-index" : "text-quiet")}>
         {slideNumberLabel(index - 1, skipped)}
       </span>
@@ -110,9 +104,6 @@ export function SlideItem({
         data-slide-item
         data-selected={picked || undefined}
         onClick={(event) => onSelect(slidePress(event))}
-        onDoubleClick={(event) => {
-          if (!event.shiftKey && !event.metaKey && !event.ctrlKey) onOpen?.()
-        }}
         onContextMenu={
           onChoose === undefined
             ? undefined

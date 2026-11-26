@@ -44,7 +44,7 @@ export function Filmstrip(props: {
 
     let observer: IntersectionObserver | undefined
     if (typeof IntersectionObserver === "function") {
-      const root = cell.closest("[data-grid-room]") ?? cell.closest("[data-slide-list]")
+      const root = cell.closest("[data-slide-list]")
       observer = new IntersectionObserver(
         (entries) => {
           schedule(entries.some((entry) => entry.isIntersecting))

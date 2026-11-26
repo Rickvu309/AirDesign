@@ -52,15 +52,7 @@ export function Island({ children, className }: { children: ReactNode; className
   )
 }
 
-export function GridHead({
-  title,
-  save,
-  canAdd,
-  onAdd,
-  onSlides,
-  onRename,
-  onTrash,
-}: {
+export type GridHeadProps = {
   title: string
   save: SaveStatus | null
   canAdd: boolean
@@ -68,7 +60,10 @@ export function GridHead({
   onSlides: () => void
   onTrash?: () => void
   onRename?: (name: string) => void
-}) {
+  selected?: number | null
+}
+
+export function GridHead({ title, save, canAdd, onAdd, onSlides, onRename, onTrash, selected = null }: GridHeadProps) {
   return (
     <Island>
       <a
@@ -121,6 +116,11 @@ export function GridHead({
       >
         <EditorIcon name="grid" size={16} />
       </Button>
+      {selected === null ? null : (
+        <span className="px-2 text-xs font-medium text-foreground tabular-nums" data-grid-selected>
+          {slideListCopy.selected(selected)}
+        </span>
+      )}
     </Island>
   )
 }

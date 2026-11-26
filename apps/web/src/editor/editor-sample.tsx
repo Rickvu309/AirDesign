@@ -1,4 +1,5 @@
 import { catalog, projectTools, type AgentOp } from "@airdesign/catalog"
+import * as doom from "@airdesign/doom"
 import { memoryDoomRemote, memoryStorage } from "@airdesign/live"
 import { useState } from "react"
 import type { AiraChat, AiraExchange, AiraStep } from "@/aira/aira-loop"
@@ -71,14 +72,41 @@ export const saveSamples = {
   setAsideTooLarge: { status: { kind: "set-aside", edits: 1, tooLarge: true }, online: true },
 } satisfies Record<string, Saving>
 
-function opened() {
-  const remote = memoryDoomRemote(sampleDeck.edit)
+const groupSizes = [1, 3, 3]
+
+function grouped(): doom.Edit {
+  const row = doom.parentOf(sampleDeck.doom.nodes.get(sampleDeck.slides[0] ?? doom.nodeId("")))
+  const deckId = sampleDeck.ids["deck"]
+  if (row == null || deckId === undefined) return sampleDeck.edit
+  let rowAt = row.at
+  let first = 0
+  const writes = groupSizes.slice(1).flatMap((size, group): doom.Write[] => {
+    first += groupSizes[group] ?? 0
+    rowAt = doom.orderKeyBetween(rowAt, null)
+    const id = doom.nodeId(`sample-group:${String(group)}`)
+    let at: doom.OrderKey | null = null
+    return [
+      { node: id, prop: "type", value: "slideRow" },
+      { node: id, prop: "parent", value: { id: deckId, at: rowAt } },
+      ...sampleDeck.slides.slice(first, first + size).map((slide): doom.Write => {
+        at = doom.orderKeyBetween(at, null)
+        return { node: slide, prop: "parent", value: { id, at } }
+      }),
+    ]
+  })
+  return { ...sampleDeck.edit, writes: [...sampleDeck.edit.writes, ...writes] }
+}
+
+export const groupedSample = { groups: groupSizes, size: doom.deckOf(sampleDeck.doom).size }
+
+function opened(edit: doom.Edit) {
+  const remote = memoryDoomRemote(edit)
   void remote.create({ deck })
   return { remote, storage: memoryStorage() }
 }
 
 export function EditorSample({ start }: { readonly start: EditorStart }) {
-  const [open] = useState(opened)
+  const [open] = useState(() => opened(start.grid === undefined ? sampleDeck.edit : grouped()))
   return (
     <div className="relative">
       <Editor id={deck} open={open} start={{ ...start, aira: { usage: loadUsage, ...start.aira } }} />
