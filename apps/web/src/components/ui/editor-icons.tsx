@@ -73,7 +73,7 @@ export function EditorIcon({
   strokeWidth = 1.75,
 }: {
   name: EditorIconName
-  size?: number
+  size?: 11 | 12 | 13 | 14 | 15 | 16 | 18 | 22
   className?: string
   strokeWidth?: number
 }) {
