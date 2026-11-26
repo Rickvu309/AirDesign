@@ -2,7 +2,7 @@ import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { renderToStaticMarkup } from "react-dom/server"
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
-import { deckRoutes, oauthRoutes } from "@airdesign/catalog"
+import { accountRoutes, oauthRoutes } from "@airdesign/catalog"
 import { OAuthAuthorize } from "@/connect/oauth-authorize"
 
 const query = new URLSearchParams({
@@ -53,7 +53,7 @@ function reply(body: unknown, status = 200) {
 }
 function consent(screen = "claude") {
   fetcher.mockResolvedValueOnce(reply({ ok: true, screen, redirect_host: "agent.example" }))
-  fetcher.mockResolvedValueOnce(reply({ ok: true, account: { email: "ada@example.com" } }))
+  fetcher.mockResolvedValueOnce(reply({ ok: true, account: { email: "ada@example.com", name: "Ada Lovelace" } }))
 }
 async function mount() {
   host = document.createElement("div")
@@ -74,6 +74,13 @@ function recovery(transient: boolean) {
   expect(link?.getAttribute("href")).toBe(transient ? address : "/")
   expect(host.querySelector("button")).toBeNull()
 }
+
+it("shows the saved name and email of the signed-in account", async () => {
+  consent()
+  await mount()
+  expect(host.textContent).toContain("Ada Lovelace")
+  expect(host.textContent).toContain("ada@example.com")
+})
 
 it("shows loading without a consent decision before the client rule answers", () => {
   const markup = renderToStaticMarkup(<OAuthAuthorize />)
@@ -136,7 +143,7 @@ it.each(["network", "server", "rate", "malformed", "refusal", "unsafe redirect"]
     recovery(failure === "network" || failure === "server" || failure === "rate")
     expect(fetcher.mock.calls.map(([path]) => path)).toEqual([
       oauthRoutes.client.path,
-      deckRoutes.list.path,
+      accountRoutes.profile.path,
       oauthRoutes.approve.path,
     ])
   },
