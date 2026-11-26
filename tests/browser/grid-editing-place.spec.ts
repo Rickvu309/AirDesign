@@ -1,0 +1,204 @@
+import { expect, type Page } from "@playwright/test"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
+import { test } from "./api-stack"
+import { landNodes, landOffScreen, openEditor, savedNode, savedSlides, type Opened } from "./editor-deck"
+import { boxOf, card, entry, openGrid, viewport, wheelAt, zoomTo, type Box, type Point } from "./grid-deck"
+import { layer, textOf, type Stack } from "./text-layer"
+
+test.use({ viewport: { width: 1600, height: 1000 }, reducedMotion: "reduce" })
+test.describe.configure({ mode: "parallel" })
+
+const slideW = 1920
+const slideH = 1080
+const layerBox = { x: 200, y: 600, w: 800, h: 300 }
+const live = (page: Page) => page.locator("[data-editor-grid] [data-grid-edit]")
+const outline = (page: Page) => live(page).locator("[data-selection-outline]")
+const editor = (page: Page) => page.locator("[data-text-editor]")
+const painted = (page: Page, id: string) => page.locator(`[data-editor-grid] [data-node="${id}"]`)
+
+const zooms = ["fit", 30, 100, 250] as const
+type Zoom = (typeof zooms)[number]
+
+function zoomLabel(zoom: Zoom): string {
+  return zoom === "fit" ? "fit" : `${String(zoom)}%`
+}
+
+async function twoSlides(page: Page, context: Parameters<typeof openEditor>[1], stack: Stack) {
+  const opened = await openEditor(page, context, stack)
+  await landNodes(stack, opened, [{ id: "t:1", type: "shape", parent: opened.slide, props: layer("Hello grid") }])
+  await page.getByRole("button", { name: slideListCopy.addSlide }).click()
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
+  await openGrid(page)
+  await expect(entry(page, 2)).toHaveAttribute("aria-current", "true")
+  await expect(live(page)).toHaveCount(0)
+  return opened
+}
+
+async function deck(page: Page, context: Parameters<typeof openEditor>[1], stack: Stack): Promise<Opened> {
+  const opened = await twoSlides(page, context, stack)
+  const second = (await savedSlides(stack, opened))[1]
+  if (second === undefined) throw new Error("no second slide")
+  await landOffScreen(stack, opened, [{ id: "t:2", type: "shape", parent: second, props: layer("Second slide") }])
+  await expect(painted(page, "t:1")).toBeVisible()
+  await expect(painted(page, "t:2")).toBeVisible()
+  return opened
+}
+
+async function savedBox(stack: Stack, opened: Opened, id: string): Promise<Point> {
+  const box = (await savedNode(stack, opened, id))?.box as { x?: number; y?: number } | undefined
+  return { x: box?.x ?? Number.NaN, y: box?.y ?? Number.NaN }
+}
+
+async function centreOf(target: ReturnType<typeof painted>): Promise<Point> {
+  const box = await boxOf(target)
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+}
+
+async function panSlidePoint(page: Page, number: number, x: number, y: number): Promise<Point> {
+  const room = await boxOf(viewport(page))
+  const around = { x: room.x + room.width / 2, y: room.y + room.height / 2 }
+  const frame = await boxOf(card(page, number))
+  const at = { x: frame.x + (frame.width * x) / slideW, y: frame.y + (frame.height * y) / slideH }
+  await wheelAt(page, around, { x: at.x - around.x, y: at.y - around.y })
+  return around
+}
+
+function visibleOnLayer(frame: Box, room: Box): Point {
+  const left = frame.x + (frame.width * layerBox.x) / slideW
+  const top = frame.y + (frame.height * layerBox.y) / slideH
+  const right = left + (frame.width * layerBox.w) / slideW
+  const bottom = top + (frame.height * layerBox.h) / slideH
+  const x1 = Math.max(left, room.x + 2)
+  const y1 = Math.max(top, room.y + 2)
+  const x2 = Math.min(right, room.x + room.width - 2)
+  const y2 = Math.min(bottom, room.y + room.height - 2)
+  if (x2 - x1 < 8 || y2 - y1 < 8) throw new Error("the layer is off screen")
+  return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 }
+}
+
+async function aim(page: Page, number: number, id: string, panned: boolean): Promise<Point> {
+  if (!panned) return visibleOnLayer(await boxOf(card(page, number)), await boxOf(viewport(page)))
+  const at = await panSlidePoint(page, number, layerBox.x + layerBox.w / 2, layerBox.y + layerBox.h / 2)
+  await expect.poll(async () => (await centreOf(painted(page, id))).x).toBeCloseTo(at.x, 0)
+  await expect.poll(async () => (await centreOf(painted(page, id))).y).toBeCloseTo(at.y, 0)
+  return at
+}
+
+async function stillThenDrag(page: Page, stack: Stack, opened: Opened, number: number, id: string, panned: boolean) {
+  const at = await aim(page, number, id, panned)
+  const before = await boxOf(card(page, number))
+  await page.mouse.move(at.x, at.y)
+  await page.mouse.down()
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  const during = await boxOf(card(page, number))
+  expect(
+    Math.abs(during.x - before.x) + Math.abs(during.y - before.y),
+    `${id} moved its card on a press that did not move`,
+  ).toBeLessThan(1)
+  await page.mouse.up()
+  await expect(outline(page), `${id} was missed`).toHaveAttribute("data-selection-outline", id)
+  await expect
+    .poll(async () => savedBox(stack, opened, id), { message: `${id} was written by a still click` })
+    .toEqual({
+      x: layerBox.x,
+      y: layerBox.y,
+    })
+  const scale = (await boxOf(card(page, number))).width / slideW
+  await page.mouse.move(at.x, at.y)
+  await page.mouse.down()
+  await page.keyboard.down("Control")
+  await page.mouse.move(at.x + 100, at.y, { steps: 8 })
+  await page.mouse.up()
+  await page.keyboard.up("Control")
+  const moved = { x: layerBox.x + 100 / scale, y: layerBox.y }
+  await expect
+    .poll(async () => savedBox(stack, opened, id), { message: `${id} did not move by 100/scale` })
+    .toMatchObject({ y: moved.y })
+  await expect.poll(async () => (await savedBox(stack, opened, id)).x).toBeCloseTo(moved.x, 0)
+}
+
+for (const zoom of zooms) {
+  for (const panned of [false, true]) {
+    test(`a still click on the current slide at ${zoomLabel(zoom)} ${panned ? "after a pan" : "without panning"} writes nothing, and a 100px drag moves by 100/scale`, async ({
+      page,
+      context,
+      stack,
+    }) => {
+      const opened = await deck(page, context, stack)
+      if (zoom !== "fit") await zoomTo(page, zoom)
+      await stillThenDrag(page, stack, opened, 2, "t:2", panned)
+    })
+  }
+}
+
+for (const zoom of zooms) {
+  for (const panned of [false, true]) {
+    if (!panned && zoom !== "fit" && zoom !== 30) continue
+    test(`a still click on another slide at ${zoomLabel(zoom)} ${panned ? "after a pan" : "without panning"} writes nothing, and a 100px drag moves by 100/scale`, async ({
+      page,
+      context,
+      stack,
+    }) => {
+      const opened = await deck(page, context, stack)
+      if (zoom !== "fit") await zoomTo(page, zoom)
+      await stillThenDrag(page, stack, opened, 1, "t:1", panned)
+    })
+  }
+}
+
+for (const zoom of zooms) {
+  test(`the caret lands under the pointer after a pan at ${zoomLabel(zoom)}`, async ({ page, context, stack }) => {
+    const opened = await deck(page, context, stack)
+    const blank = await boxOf(card(page, 1))
+    await page.mouse.click(blank.x + blank.width * 0.9, blank.y + blank.height * 0.9)
+    await expect(entry(page, 1)).toHaveAttribute("aria-current", "true")
+    await expect(live(page)).toHaveCount(0)
+    if (zoom !== "fit") await zoomTo(page, zoom)
+    await panSlidePoint(page, 1, 262, 636)
+    const point = await painted(page, "t:1")
+      .locator("[data-run]")
+      .first()
+      .evaluate((span) => {
+        const text = span.firstChild
+        if (text === null || text.textContent === null || text.textContent.length < 3) return null
+        const range = document.createRange()
+        range.setStart(text, 0)
+        range.setEnd(text, 3)
+        const box = range.getBoundingClientRect()
+        return { x: box.right - 0.1, y: box.y + box.height / 2 }
+      })
+    if (point === null) throw new Error("no glyph")
+    const before = await boxOf(card(page, 1))
+    await page.mouse.dblclick(point.x, point.y)
+    await expect(editor(page)).toBeFocused()
+    const during = await boxOf(card(page, 1))
+    expect(
+      Math.abs(during.x - before.x) + Math.abs(during.y - before.y),
+      "the card moved under the caret",
+    ).toBeLessThan(1)
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+    const caret = await editor(page).evaluate((field) => {
+      const selected = document.getSelection()
+      if (selected === null || selected.rangeCount === 0 || !field.contains(selected.anchorNode)) return null
+      const box = selected.getRangeAt(0).getClientRects()[0]
+      return box === undefined ? null : { x: box.x, y: box.y + box.height / 2 }
+    })
+    expect(caret, "the caret left the pointer").not.toBeNull()
+    expect(Math.hypot((caret?.x ?? 0) - point.x, (caret?.y ?? 0) - point.y)).toBeLessThan(4)
+    await expect
+      .poll(() =>
+        editor(page).evaluate((field) => {
+          const selected = document.getSelection()
+          if (selected === null || selected.anchorNode === null || !selected.isCollapsed) return -1
+          const range = document.createRange()
+          range.selectNodeContents(field)
+          range.setEnd(selected.anchorNode, selected.anchorOffset)
+          return range.toString().length
+        }),
+      )
+      .toBe(3)
+    await page.keyboard.insertText("|")
+    await page.keyboard.press("Escape")
+    await expect.poll(async () => (await textOf(stack, opened))?.chars).toBe("Hel|lo grid")
+  })
+}
