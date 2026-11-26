@@ -53,6 +53,8 @@ const buttonVariants = cva(
           "h-9 gap-1.5 px-3 text-[length:var(--type-dense)] leading-ui-tight has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
         lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
         dialog: "h-9 px-4",
+        consent:
+          "h-10 gap-1.5 rounded-[var(--shape-card)] px-0 [text-box:trim-both_cap_alphabetic] motion-safe:enabled:active:scale-[0.97] has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
         icon: "size-8",
         "icon-xs":
           "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
@@ -61,6 +63,12 @@ const buttonVariants = cva(
       },
     },
     compoundVariants: [
+      {
+        variant: "outline",
+        size: "consent",
+        class:
+          "border-transparent bg-white text-foreground shadow-[inset_0_0_0_1px_var(--field-edge),0_1px_2px_0_color-mix(in_srgb,var(--color-black)_4%,transparent)]",
+      },
       {
         variant: "stage",
         size: "dense",
