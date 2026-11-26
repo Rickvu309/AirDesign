@@ -10,7 +10,7 @@ import { discardOpening } from "@/decks/discard-opening"
 import { handFirstRequest, openingDeck, peekFirstRequest } from "@/lib/first-request"
 
 type Listed = { readonly deck: string; readonly name: string; readonly starred?: boolean }
-type Account = { readonly email: string; readonly starred: readonly Listed[] }
+type Account = { readonly email: string; readonly starred?: readonly Listed[] }
 
 export function AiraStart({
   account,
@@ -45,7 +45,7 @@ export function AiraStart({
 }
 
 export function AiraPage({ navigate }: { navigate: (path: string) => void }) {
-  const [account, setAccount] = useState<Account>({ email: "", starred: [] })
+  const [account, setAccount] = useState<Account>({ email: "" })
   useEffect(() => {
     async function refresh() {
       const noted = openingDeck()
