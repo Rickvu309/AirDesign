@@ -44,7 +44,7 @@ describe("skip, transition, word spacing and blur over the protocol", () => {
     await withClient(sessionFor(), memoryDecks(started), async (client) => {
       const call = async (name: string, args: Record<string, unknown>) =>
         (await client.callTool({ name: `airdesign_${name}`, arguments: args })).structuredContent as Record<string, any>
-      const made = await call("create_deck", { name: "Look" })
+      const made = await call("execute", { script: 'createDeck({ name: "Look" })' })
       const slide = (made.slides as string[])[0]!
       const edited = await call("execute", {
         deck: made.deck,

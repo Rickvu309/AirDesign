@@ -35,7 +35,11 @@ function agent() {
 describe("get with find, and one change over every slide's title", () => {
   it("restyles every slide's title in one change and finds each by the words of its line", async () => {
     const call = agent()
-    const made = (await call("create_deck", {})).answer as { deck: string; rev: number; slides: string[] }
+    const made = (await call("execute", { script: "createDeck()" })).answer as {
+      deck: string
+      rev: number
+      slides: string[]
+    }
     const { deck, rev, slides } = made
     const added = await call("execute", { deck, script: scriptOf([{ op: "duplicate", nodes: [slides[0]] }]) })
     expect(added.ok).toBe(true)
@@ -61,7 +65,7 @@ describe("get with find, and one change over every slide's title", () => {
 describe("the deck's theme in get", () => {
   it("names each text style's size, so an agent picks a size on the deck's own scale", async () => {
     const call = agent()
-    const { deck } = (await call("create_deck", {})).answer as { deck: string }
+    const { deck } = (await call("execute", { script: "createDeck()" })).answer as { deck: string }
     const read = await readOf(call, deck)
     expect(read.answer).toMatchObject({
       theme: {
@@ -73,7 +77,7 @@ describe("the deck's theme in get", () => {
 
 it("reads a deck without listing templates and refuses template lookup", async () => {
   const call = agent()
-  const { deck } = (await call("create_deck", {})).answer as { deck: string }
+  const { deck } = (await call("execute", { script: "createDeck()" })).answer as { deck: string }
   const read = await readOf(call, deck)
   expect(read.ok).toBe(true)
   expect(read.answer).not.toHaveProperty("components")
@@ -85,7 +89,7 @@ it("reads a deck without listing templates and refuses template lookup", async (
 
 it("refuses to author or place a template without changing the deck", async () => {
   const call = agent()
-  const { deck, rev, slides } = (await call("create_deck", {})).answer as {
+  const { deck, rev, slides } = (await call("execute", { script: "createDeck()" })).answer as {
     deck: string
     rev: number
     slides: string[]

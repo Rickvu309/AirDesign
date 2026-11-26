@@ -481,6 +481,7 @@ describe("POST /aira/turn resets the week on the recorded Monday", () => {
   })
 })
 
-it("tells Aira what each kind of element takes, in the words the MCP server tells an agent", () => {
+it("names the conversation deck and gives Aira the same tool instructions as MCP", () => {
+  expect(airaSystem(deck)).toContain(`The deck for this conversation is ${deck}.`)
   expect(airaSystem(deck)).toContain(kindInstructions())
 })

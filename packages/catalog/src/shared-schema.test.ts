@@ -147,7 +147,7 @@ describe("a schema for a caller that may not follow references", () => {
   })
 
   it("gives back every tool's advertised schema, with no reference left", () => {
-    for (const op of ["create_deck", "execute", "list_decks", "stop_run", "undo_run"] as const) {
+    for (const op of ["execute", "get_app_state", "get_style", "read_skill", "stop_run", "undo_run"] as const) {
       const inlined = inlinedSchema(toolInputSchema(op))
       expect(references(inlined)).toEqual([])
       expect(inlined).not.toHaveProperty("$defs")

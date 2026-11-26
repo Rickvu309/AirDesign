@@ -16,7 +16,7 @@ export default async function drive({ signIn, post, mcpRoutes, expect, note }) {
     expect(answer, JSON.stringify(response)).toMatchObject({ ok: true })
     return answer
   }
-  const { deck } = await call("create_deck", { name: "Regional revenue" })
+  const { deck } = await call("execute", { script: 'createDeck({ name: "Regional revenue" })' })
   const labels = ["Revenue by region", "Market overview", "Q3 results", "Profit by year", "Volume by segment"]
   const conclusions = [
     "Rework pricing strategy",

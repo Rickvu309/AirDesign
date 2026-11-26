@@ -8,6 +8,7 @@ import {
   type DoomOpened,
   type DoomRan,
   type SlidePictures,
+  type TabSelection,
 } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
@@ -16,7 +17,13 @@ export type DoomRemote = {
   open(body: { readonly deck: string; readonly trashed?: true }): Promise<DoomOpened>
   edit(body: { readonly deck: string; readonly edit: doom.Edit }): Promise<DoomLanded>
   since(
-    body: { readonly deck: string; readonly rev: number; readonly wait?: boolean; readonly pictures?: boolean },
+    body: {
+      readonly deck: string
+      readonly rev: number
+      readonly wait?: boolean
+      readonly pictures?: boolean
+      readonly selection?: TabSelection
+    },
     signal?: AbortSignal,
   ): Promise<DoomCaught>
   run?(body: { readonly deck: string; readonly run: string }): Promise<DoomRan>

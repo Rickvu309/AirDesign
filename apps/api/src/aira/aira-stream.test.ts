@@ -95,9 +95,9 @@ describe("play relays one model turn", () => {
   it("gives a call with no input or input that is not an object an empty input", async () => {
     const { played: result } = await played([
       start,
-      ...toolBlock(0, "airdesign_list_decks", [""]),
-      ...toolBlock(1, "airdesign_list_decks", ['["a"]']),
-      ...toolBlock(2, "airdesign_list_decks", ['{"deck": "a']),
+      ...toolBlock(0, "airdesign_get_app_state", [""]),
+      ...toolBlock(1, "airdesign_get_app_state", ['["a"]']),
+      ...toolBlock(2, "airdesign_get_app_state", ['{"deck": "a']),
       stopped,
     ])
     expect(result).toMatchObject({

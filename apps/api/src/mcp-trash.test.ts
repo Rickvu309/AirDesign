@@ -51,12 +51,12 @@ describe("a trashed deck through mcp", () => {
     const tool = async (name: string, args: Record<string, unknown>) =>
       (await client.callTool({ name: `airdesign_${name}`, arguments: args })).structuredContent as Answer
     try {
-      const kept = await tool("create_deck", { name: "Kept" })
-      const thrown = await tool("create_deck", { name: "Thrown" })
+      const kept = await tool("execute", { script: 'createDeck({ name: "Kept" })' })
+      const thrown = await tool("execute", { script: 'createDeck({ name: "Thrown" })' })
       expect((await ask(base, "POST", deckRoutes.trash.path, { deck: thrown.deck }, cookie)).json).toMatchObject({
         ok: true,
       })
-      expect((await tool("list_decks", {})).decks).toEqual([{ deck: kept.deck, name: "Kept", rev: kept.rev }])
+      expect((await tool("get_app_state", {})).decks).toEqual([{ deck: kept.deck, name: "Kept", rev: kept.rev }])
       expect(await tool("execute", { deck: thrown.deck, script: "get()" })).toMatchObject({
         ok: false,
         refusal: "deck",

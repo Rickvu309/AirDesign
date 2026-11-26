@@ -53,7 +53,10 @@ describe("an open tab sends the picture of each slide of a Doom deck, and an age
     })
     const client = new Client({ name: "airdesign-test", version: "0.0.0" })
     await client.connect(transport)
-    const created = await client.callTool({ name: "airdesign_create_deck", arguments: { name: "Seen" } })
+    const created = await client.callTool({
+      name: "airdesign_execute",
+      arguments: { script: 'createDeck({ name: "Seen" })' },
+    })
     return { cookie, client, made: created.structuredContent as Answer }
   }
 

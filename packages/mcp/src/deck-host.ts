@@ -1,9 +1,11 @@
-import type { DeckId, DoomRefusal } from "@airdesign/catalog"
+import type { DeckId, DoomRefusal, TabSelection } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import type { NamedImages } from "./named-image.js"
 
 export type DeckSummary = { readonly deck: DeckId; readonly name: string; readonly rev: number }
+
+export type OpenTab = { readonly deck: DeckId; readonly selection?: TabSelection | undefined }
 
 export type Opened = { readonly ok: true; readonly deck: DeckId; readonly rev: number; readonly fold: doom.Doom }
 export type Listed = {
@@ -42,7 +44,8 @@ export type DeckHost = {
   }
   readonly withUndo: <T>(deck: DeckId, undo: (host: UndoHost) => Promise<T>) => Promise<T | DoomRefusal>
   readonly list: (cursor: DeckId | undefined) => Promise<Listed | DoomRefusal>
-  readonly create: (name: string, once: string) => Promise<Opened | DoomRefusal>
+  readonly openTab?: () => OpenTab | undefined
+  readonly create: (name: string, theme: doom.Theme | undefined, once: string) => Promise<Opened | DoomRefusal>
   readonly open: (deck: DeckId) => Promise<Opened | DoomRefusal>
   readonly edit: (deck: DeckId, edit: doom.Edit) => Promise<Landed | DoomRefusal>
   readonly run: (deck: DeckId, run: string) => Promise<RunLog | DoomRefusal>

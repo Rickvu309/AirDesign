@@ -46,7 +46,7 @@ it("restores a connector's original free point when undoing one agent run", asyn
       const fields: Record<string, unknown> = { ...answer }
       return fields
     }
-    const created = await call("create_deck", { name: "Board" })
+    const created = await call("execute", { script: 'createDeck({ name: "Board" })' })
     const parsed = readDeckId(created.deck)
     if (!parsed.ok) throw new Error("no deck in tool answer")
     const id = parsed.deck

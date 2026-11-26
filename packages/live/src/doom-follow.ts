@@ -19,6 +19,14 @@ const retryMilliseconds = 2_000
 
 export function followDoom({ deck, since, revision, leave, resync, apply, tell, send, pause }: Following) {
   let held: AbortController | undefined
+  const selectionChanged = Symbol()
+  let selection: Parameters<DoomRemote["since"]>[0]["selection"]
+  function reportSelection(next: typeof selection): void {
+    if (next?.slide === selection?.slide && next?.ids === selection?.ids) return
+    selection = next
+    held?.abort(selectionChanged)
+  }
+
   let picturesUntil = 0
   const picturesWanted = () => Date.now() < picturesUntil
 
@@ -27,11 +35,18 @@ export function followDoom({ deck, since, revision, leave, resync, apply, tell, 
   async function follow(signal: AbortSignal): Promise<Followed> {
     let wait = false
     while (!signal.aborted) {
+      const request = new AbortController()
+      held = request
       try {
-        held = new AbortController()
         const answer = await since(
-          { deck, rev: revision(), wait, ...(picturesWanted() ? { pictures: true } : {}) },
-          AbortSignal.any([signal, held.signal]),
+          {
+            deck,
+            rev: revision(),
+            wait,
+            ...(selection === undefined ? {} : { selection }),
+            ...(picturesWanted() ? { pictures: true } : {}),
+          },
+          AbortSignal.any([signal, request.signal]),
         )
         if (signal.aborted) return "stopped"
         if (!answer.ok && answer.refusal === "deck") return await leave()
@@ -49,6 +64,7 @@ export function followDoom({ deck, since, revision, leave, resync, apply, tell, 
         send()
       } catch {
         if (signal.aborted) return "stopped"
+        if (request.signal.reason === selectionChanged) continue
         wait = false
         await pause(retryMilliseconds)
       }
@@ -56,7 +72,7 @@ export function followDoom({ deck, since, revision, leave, resync, apply, tell, 
     return "stopped"
   }
 
-  return { shown: { follow, picturesWanted, caught: () => caught }, wake: () => held?.abort() }
+  return { shown: { follow, reportSelection, picturesWanted, caught: () => caught }, wake: () => held?.abort() }
 }
 
 export function foldCaught(

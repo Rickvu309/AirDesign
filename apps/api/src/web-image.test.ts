@@ -90,7 +90,10 @@ describe("an agent adds an image from the web to a Doom deck through the MCP add
     })
     const client = new Client({ name: "airdesign-test", version: "0.0.0" })
     await client.connect(transport)
-    const created = await client.callTool({ name: "airdesign_create_deck", arguments: { name: "Logos" } })
+    const created = await client.callTool({
+      name: "airdesign_execute",
+      arguments: { script: 'createDeck({ name: "Logos" })' },
+    })
     return { cookie, client, made: created.structuredContent as Answer }
   }
 

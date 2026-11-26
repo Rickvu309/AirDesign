@@ -21,7 +21,8 @@ function agent(more: Partial<DeckHost> = {}) {
     const result = await callTool(`airdesign_${name}`, args, session, host)
     return { ...result, answer: result.answer as Answer }
   }
-  const made = async () => (await call("create_deck", {})).answer as { deck: string; slides: string[] }
+  const made = async () =>
+    (await call("execute", { script: "createDeck()" })).answer as { deck: string; slides: string[] }
   const fold = (deck: string) => decks.decks.get(deck as never)!
   const live = (deck: string) =>
     new Set([
@@ -348,7 +349,7 @@ describe("an insert that fills a slide's title placeholder", () => {
     const decks = memoryDecks(titled)
     const session: Session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0 }
     session.once = "make"
-    const made = (await callTool("airdesign_create_deck", {}, session, decks)).answer as {
+    const made = (await callTool("airdesign_execute", { script: "createDeck()" }, session, decks)).answer as {
       deck: string
       slides: string[]
     }

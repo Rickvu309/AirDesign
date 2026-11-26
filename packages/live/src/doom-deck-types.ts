@@ -64,6 +64,7 @@ export type DoomDeck = {
   undoRun(run: string): Promise<TurnedRun>
   sync(): Promise<Synced>
   catchUp(): Promise<{ readonly ok: boolean }>
+  reportSelection(selection: { readonly slide: doom.NodeId; readonly ids: readonly doom.NodeId[] } | undefined): void
   follow(signal: AbortSignal): Promise<Followed>
   reportPictures(rev: number, pictures: SlidePictures): Promise<DoomPictured>
   picturesWanted(): boolean

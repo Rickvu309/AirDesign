@@ -15,17 +15,23 @@ export const airaStepWords: Readonly<Record<AgentOp, StepWords | null>> = {
     refused: "Couldn't change slides",
     stopped: "Stopped working on slides",
   },
-  list_decks: {
+  get_app_state: {
     working: "Listing your decks",
     done: "Listed your decks",
     refused: "Couldn't list your decks",
     stopped: "Stopped listing your decks",
   },
-  create_deck: {
-    working: "Creating a deck",
-    done: "Created a deck",
-    refused: "Couldn't create a deck",
-    stopped: "Stopped creating a deck",
+  read_skill: {
+    working: "Reading a design guide",
+    done: "Read a design guide",
+    refused: "Couldn't read the design guide",
+    stopped: "Stopped reading the design guide",
+  },
+  get_style: {
+    working: "Looking up styles",
+    done: "Looked up styles",
+    refused: "Couldn't look up styles",
+    stopped: "Stopped looking up styles",
   },
   stop_run: null,
   undo_run: {

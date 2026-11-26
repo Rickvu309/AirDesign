@@ -49,7 +49,7 @@ describe("paths over MCP", () => {
           throw new Error("Expected structured MCP output")
         return structuredContent as Record<string, unknown>
       }
-      const made = await call("create_deck", { name: "Paths" })
+      const made = await call("execute", { script: 'createDeck({ name: "Paths" })' })
       const deck = made?.deck
       const slides = made?.slides
       if (!Array.isArray(slides)) throw new Error("Expected a slide")

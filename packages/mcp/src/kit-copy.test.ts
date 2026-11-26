@@ -22,7 +22,11 @@ function agent() {
     const result = await callTool(`airdesign_${name}`, args, session, host)
     return { ...result, answer: result.answer as Answer }
   }
-  const made = async () => (await call("create_deck", {})).answer as { deck: string; slides: string[] }
+  const made = async () => {
+    const { ok, answer } = await call("execute", { script: "createDeck()" })
+    expect(ok, JSON.stringify(answer)).toBe(true)
+    return answer as { deck: string; slides: string[] }
+  }
   const fold = (deck: string) => decks.decks.get(deck as never)!
   return { call, made, fold }
 }

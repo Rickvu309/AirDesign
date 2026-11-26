@@ -52,7 +52,7 @@ type Found = { readonly code: string; readonly node: string; readonly with?: str
 describe("layout findings in the answers, measured by the host with the deck's fonts and no open tab", () => {
   it("lands an edit that covers the title's words and names the overlap on the slide it touched", async () => {
     const call = agent()
-    const { deck, rev, slides } = (await call("create_deck", {})).answer as {
+    const { deck, rev, slides } = (await call("execute", { script: "createDeck()" })).answer as {
       deck: string
       rev: number
       slides: string[]
@@ -76,7 +76,7 @@ describe("layout findings in the answers, measured by the host with the deck's f
 
   it("reads each layer at the size it paints and lists the problems of the slides it read", async () => {
     const call = agent()
-    const { deck, slides } = (await call("create_deck", {})).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
       deck: string
       rev: number
       slides: string[]
@@ -93,7 +93,7 @@ describe("layout findings in the answers, measured by the host with the deck's f
 
   it("says the layout is clear when the slides it touched paint with nothing off, so the agent need not guess", async () => {
     const call = agent()
-    const { deck, slides } = (await call("create_deck", {})).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
       deck: string
       rev: number
       slides: string[]
@@ -108,7 +108,7 @@ describe("layout findings in the answers, measured by the host with the deck's f
 
   const unchecked = async (measure: DeckHost["measure"]) => {
     const call = agent(measure)
-    const { deck, slides } = (await call("create_deck", {})).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
       deck: string
       rev: number
       slides: string[]
@@ -140,7 +140,7 @@ describe("layout findings in the answers, measured by the host with the deck's f
 
   it("names only the texts whose letters the fonts lack, and still checks the rest of the slide", async () => {
     const call = agent(async () => measured(["🚀"]))
-    const { deck, slides } = (await call("create_deck", {})).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
       deck: string
       rev: number
       slides: string[]
@@ -162,7 +162,7 @@ describe("layout findings in the answers, measured by the host with the deck's f
 
   it("lists at most ten problems and says how many more the call holds", async () => {
     const call = agent()
-    const { deck, slides } = (await call("create_deck", {})).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
       deck: string
       rev: number
       slides: string[]
@@ -198,7 +198,7 @@ describe("the note on texts the fonts cannot measure", () => {
   it("names every text up to five, then counts the rest, in the right number", async () => {
     const note = async (count: number) => {
       const call = agent(async () => measured(["🚀"]))
-      const { deck, slides } = (await call("create_deck", {})).answer as {
+      const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
         deck: string
         rev: number
         slides: string[]

@@ -1,5 +1,6 @@
-import { readExecute, readNamedDeck } from "@airdesign/catalog"
+import { readCreateDeck, readExecute, readNamedDeck } from "@airdesign/catalog"
 import { answered, doomRefused, hostRefused, refused, told, type ToolContent, type ToolResult } from "./answer.js"
+import { readAnswer } from "./deck-read.js"
 import type { DeckHost } from "./deck-host.js"
 import { OpRefused, newPlan, opNote, runOperation, verbs, type Plan, type Verb } from "./execute-ops.js"
 import { landEdit, landedBefore, type Agent, type Landed } from "./land-edit.js"
@@ -8,12 +9,16 @@ import { onceIds } from "./once-ids.js"
 import { withOtherRuns } from "./other-runs.js"
 import { scriptLimits, scriptPool, type Answer, type ScriptEnd } from "./script-pool.js"
 
-const scripts = scriptPool(verbs)
+const scripts = scriptPool([...verbs, "createDeck"])
 const resultLimit = 20_000
 const shotsPerCall = 4
 
 async function answerOp(plan: Plan, verb: string, fields: unknown): Promise<Answer> {
   try {
+    if (verb === "createDeck") {
+      plan.ops += 1
+      throw new OpRefused(refused("field", { note: "Omit the deck id when calling createDeck." }).answer)
+    }
     return { ok: true, value: await runOperation(plan, verb as Verb, fields) }
   } catch (thrown) {
     if (!(thrown instanceof OpRefused)) throw thrown
@@ -26,7 +31,7 @@ function at(line: number | undefined): string {
   return line === undefined ? "" : ` at line ${String(line)}`
 }
 
-function stopped(plan: Plan, end: Extract<ScriptEnd, { ok: false }>): ToolResult {
+function stopped(plan: Pick<Plan, "ops" | "refused">, end: Extract<ScriptEnd, { ok: false }>): ToolResult {
   if (end.stop === "busy")
     return told(false, {
       ok: false,
@@ -125,6 +130,44 @@ function leadOf(landed: Landed | undefined, rev: number): string {
   return `Landed at rev ${String(rev)} as one undo step.`
 }
 
+async function createFromScript(script: string, once: string, host: DeckHost): Promise<ToolResult> {
+  let creation: Extract<ReturnType<typeof readCreateDeck>, { ok: true }> | undefined
+  let failure: ToolResult | undefined
+  let ops = 0
+  const operation = async (verb: string, fields: unknown): Promise<Answer> => {
+    ops += 1
+    if (verb !== "createDeck") {
+      failure = refused("field", { note: "Send a deck id to read or edit a deck." })
+    } else if (creation !== undefined) {
+      failure = refused("field", { note: "Call createDeck once per script." })
+    } else {
+      const parsed = readCreateDeck(fields === undefined ? {} : fields)
+      if (parsed.ok) {
+        creation = parsed
+        return { ok: true, value: undefined }
+      }
+      const { ok: _ok, refusal, ...detail } = parsed
+      failure = refused(refusal, detail)
+    }
+    return { ok: false, message: String(failure.answer.note) }
+  }
+  const end = await scripts.run({ account: host.account, script, operation })
+  if (!end.ok) {
+    const failed = failure === undefined ? {} : { refused: { op: ops, answer: failure.answer } }
+    return stopped({ ops, ...failed }, end)
+  }
+  if (failure !== undefined) return failure
+  if (creation === undefined) return refused("field", { note: "Use createDeck({ name, theme }) or send a deck id." })
+  const made = await host.create(creation.name, creation.theme, once)
+  if (!made.ok) return hostRefused(made)
+  const result = readAnswer(made, {})
+  return told(result.ok, {
+    ...result.answer,
+    ...resultOf(end),
+    ...(end.logs.length === 0 ? {} : { logs: end.logs }),
+  })
+}
+
 export async function executeTool(
   raw: unknown,
   agent: Agent,
@@ -133,16 +176,17 @@ export async function executeTool(
   pendingFonts: ReadonlySet<string>,
 ): Promise<ToolResult> {
   const named = readNamedDeck(raw)
-  if (!named.ok) {
-    const { ok: _ok, refusal, ...detail } = named
-    return refused(refusal, detail)
-  }
-  const opened = await host.open(named.deck)
-  if (!opened.ok) return hostRefused(opened)
+  if (!named.ok && named.refusal === "deck") return refused("deck")
+  const opened = named.ok ? await host.open(named.deck) : undefined
+  if (opened?.ok === false) return hostRefused(opened)
   const input = readExecute(raw)
   if (!input.ok) {
     const { ok: _ok, refusal, ...detail } = input
     return refused(refusal, detail)
+  }
+  if (opened === undefined) {
+    if (input.runId !== undefined) return refused("field", { note: "Send a deck id with runId." })
+    return createFromScript(input.script, once, host)
   }
   const again = await landedBefore(opened, once, host)
   if (again !== undefined)

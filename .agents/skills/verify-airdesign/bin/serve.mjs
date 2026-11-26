@@ -35,8 +35,12 @@ function forward(req, res, apiPort, countryHeader, origins) {
     },
   )
   outgoing.on("error", () => {
+    if (res.destroyed) return
     res.writeHead(502)
     res.end()
+  })
+  res.once("close", () => {
+    if (!res.writableEnded) outgoing.destroy()
   })
   req.pipe(outgoing)
 }

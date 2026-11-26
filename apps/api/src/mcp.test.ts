@@ -22,7 +22,7 @@ const listCall = {
   jsonrpc: "2.0",
   id: 1,
   method: "tools/call",
-  params: { name: "airdesign_list_decks", arguments: {} },
+  params: { name: "airdesign_get_app_state", arguments: {} },
 }
 
 describe("mcp route", () => {
@@ -122,8 +122,8 @@ describe("mcp route", () => {
     return { ...result, answer: result.structuredContent as Answer }
   }
 
-  async function made(client: Client, name = "Board"): Promise<Answer> {
-    const result = await tool(client, "create_deck", { name })
+  async function made(client: Client, name = "Board", once?: string): Promise<Answer> {
+    const result = await tool(client, "execute", { script: `createDeck(${JSON.stringify({ name })})` }, once)
     expect(result.isError, JSON.stringify(result.content)).not.toBe(true)
     return result.answer
   }
@@ -174,7 +174,7 @@ describe("mcp route", () => {
         text: JSON.stringify(sessionRefusal),
       })
     }
-    const create = { ...listCall, params: { name: "airdesign_create_deck", arguments: {} } }
+    const create = { ...listCall, params: { name: "airdesign_execute", arguments: { script: "createDeck()" } } }
     expect((await posted(base, {}, create)).status).toBe(401)
     expect((await deck.query("select id from deck.doom")).rowCount).toBe(before.rowCount)
   })
@@ -187,14 +187,14 @@ describe("mcp route", () => {
     })
   })
 
-  it("makes a doom deck, reads it, edits it in a run, reads it again and stops the run", async () => {
+  it("creates, reads and edits the deck, then stops the run", async () => {
     await withMcp(await sign(address("flow")), async (client) => {
       const first = await made(client)
       expect(first).toMatchObject({ ok: true, name: "Board", slides: [expect.any(String)] })
       const row = await stored(first.deck)
       expect(row).toMatchObject({ rev: first.rev, name: "Board" })
 
-      const listed = await tool(client, "list_decks", {})
+      const listed = await tool(client, "get_app_state", {})
       expect(listed.answer.decks).toEqual([{ deck: first.deck, name: "Board", rev: first.rev }])
 
       const landed = await tool(client, "execute", {
@@ -235,18 +235,17 @@ describe("mcp route", () => {
 
   it("makes one deck and lands one edit for a call sent again with the same once", async () => {
     await withMcp(await sign(address("once")), async (client) => {
-      const created = await tool(client, "create_deck", { name: "Once" }, "create-1")
-      const again = await tool(client, "create_deck", { name: "Once" }, "create-1")
-      expect(again.answer).toEqual(created.answer)
-      expect((await tool(client, "list_decks", {})).answer.decks).toHaveLength(1)
+      const created = await made(client, "Once", "create-1")
+      expect(await made(client, "Once", "create-1")).toEqual(created)
+      expect((await tool(client, "get_app_state", {})).answer.decks).toHaveLength(1)
       const args = {
-        deck: created.answer.deck,
-        script: scriptOf([{ op: "add", kind: "shape", slide: created.answer.slides[0], text: "A" }]),
+        deck: created.deck,
+        script: scriptOf([{ op: "add", kind: "shape", slide: created.slides[0], text: "A" }]),
       }
       const first = await tool(client, "execute", args, "edit-1")
       const second = await tool(client, "execute", args, "edit-1")
       expect(second.answer).toMatchObject({ ok: true, rev: first.answer.rev, runId: first.answer.runId })
-      expect((await stored(created.answer.deck))!.rev).toBe(created.answer.rev + 1)
+      expect((await stored(created.deck))!.rev).toBe(created.rev + 1)
     })
   })
 
@@ -269,7 +268,7 @@ describe("mcp route", () => {
         ok: false,
         refusal: "owner",
       })
-      expect((await tool(client, "list_decks", {})).answer.decks).toEqual([])
+      expect((await tool(client, "get_app_state", {})).answer.decks).toEqual([])
     })
     expect(await stored(owned.deck)).toEqual(before)
   })
@@ -355,12 +354,12 @@ describe("mcp route", () => {
         cookie,
         async (client) => {
           expect((await tool(client, "execute", { deck: "neverthere", script: "get()" })).answer.refusal).toBe("deck")
-          for (let call = 1; call < 90; call += 1) expect((await tool(client, "list_decks", {})).isError).toBeFalsy()
-          const blocked = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
+          for (let call = 1; call < 90; call += 1) expect((await tool(client, "get_app_state", {})).isError).toBeFalsy()
+          const blocked = await client.callTool({ name: "airdesign_get_app_state", arguments: {} })
           expect(blocked.isError).toBe(true)
           expect(blocked.structuredContent).toEqual(toolLimited)
           clock += 300_000
-          expect((await tool(client, "list_decks", {})).isError).toBeFalsy()
+          expect((await tool(client, "get_app_state", {})).isError).toBeFalsy()
         },
         served.base,
       )
@@ -373,12 +372,12 @@ describe("mcp route", () => {
     const email = address("cap")
     const cookie = await sign(email)
     await withMcp(cookie, async (client) => {
-      for (let call = 0; call < 90; call += 1) expect((await tool(client, "list_decks", {})).isError).toBeFalsy()
-      const blocked = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
+      for (let call = 0; call < 90; call += 1) expect((await tool(client, "get_app_state", {})).isError).toBeFalsy()
+      const blocked = await client.callTool({ name: "airdesign_get_app_state", arguments: {} })
       expect(blocked.structuredContent).toEqual(toolLimited)
     })
     await withMcp(await sign(email), async (client) => {
-      const blocked = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
+      const blocked = await client.callTool({ name: "airdesign_get_app_state", arguments: {} })
       expect(blocked.structuredContent).toEqual(toolLimited)
     })
   })
@@ -490,12 +489,12 @@ describe("mcp route", () => {
       await withMcp(
         cookie,
         async (client) => {
-          const refused = await tool(client, "create_deck", {})
+          const refused = await tool(client, "execute", { script: "createDeck()" })
           expect(refused.isError).toBe(true)
           expect(refused.answer).toMatchObject(storeFailure)
-          for (const name of ["list_decks", "execute", "stop_run"]) {
+          for (const name of ["get_app_state", "execute", "stop_run"]) {
             const args = {
-              list_decks: {},
+              get_app_state: {},
               execute: { deck: "a", script: 'remove({ target: "a:1" })' },
               stop_run: { deck: "a", runId: "r" },
             }[name]
