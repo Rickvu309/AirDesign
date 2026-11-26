@@ -65,15 +65,27 @@ const nodeForm = "1 to 16 of a-z or 0-9, a colon, then 1 to 12 digits."
 const readRows: { readonly raw: unknown; readonly field: string; readonly fault: string; readonly form: string }[] = [
   {
     raw: { op: "slide", move: { after: null } },
-    field: "move.slide",
-    fault: "missing",
-    form: nodeForm,
+    field: "move",
+    fault: "form",
+    form: "A slide id, or a slide group id.",
   },
   {
     raw: { op: "slide", move: { slide: "t:3" } },
     field: "move.after",
     fault: "missing",
-    form: "A node id, or null.",
+    form: "A slide id, or null to put it first.",
+  },
+  {
+    raw: { op: "slide", move: { group: "a:1" } },
+    field: "move.after",
+    fault: "missing",
+    form: "Use before or after with a slide group id. Use after null to put it first.",
+  },
+  {
+    raw: { op: "slide", add: { after: null } },
+    field: "add.after",
+    fault: "form",
+    form: "A slide id. Name the group and after null to put it first.",
   },
   {
     raw: { op: "set", target: "t:3", fill: { gradient: [hex(0x112233), "notacolor"] } },

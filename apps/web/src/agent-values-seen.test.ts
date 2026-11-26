@@ -18,8 +18,16 @@ const seen: Readonly<Record<string, Seen>> = {
   node: { address: "the layer moved or unwrapped" },
   nodes: { address: "the layers wrapped, deleted or duplicated" },
   after: { address: "the place among siblings" },
-  add: { person: ["gesture:slide-add"] },
-  move: { person: ["gesture:slide-up", "gesture:slide-down"] },
+  add: { person: ["gesture:slide-add", "menu:new-slide-group"] },
+  move: {
+    person: [
+      "gesture:slide-up",
+      "gesture:slide-down",
+      "gesture:slide-group-up",
+      "gesture:slide-group-down",
+      "drag:slide-group-start",
+    ],
+  },
   delete: { person: ["gesture:slide-delete"] },
   fill: { person: ["panel:fills.paint", "panel:slide-background"] },
   stroke: { person: ["panel:border.color", "panel:image.color"] },

@@ -152,6 +152,7 @@ export { type FontFace, type FontWidths, type Glyph, fontFace } from "./line-bre
 export { familyOf, paintedFace, storedFace } from "./painted-face.js"
 export { type OrderKey, orderKeyBetween } from "./order-key.js"
 export { type Keyed, siblingKeys } from "./sibling-keys.js"
+export { type SlideGroup, slideGroups, slidePlacementWrites } from "./slide-placement.js"
 export { type Clipboard, type Copies, copiedMove, duplicateWrites, pasteWrites } from "./copy-writes.js"
 export { moveToSlide } from "./move-to-slide.js"
 export {

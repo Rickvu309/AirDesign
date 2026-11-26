@@ -14,7 +14,8 @@ import { limits } from "./limits.js"
 import { type Field, choice, field, flag, number, string } from "./agent-fields.js"
 import { innerShadowFields } from "./agent-inner-shadow.js"
 import { slideLookFields } from "./agent-slide-look.js"
-import { type NodeId, readNodeId } from "./ids.js"
+import { type SlideAdd, type SlideMove, idSchema, readId, readAfter, slideFields } from "./agent-slide-fields.js"
+import type { NodeId } from "./ids.js"
 import {
   type ColorVar,
   type EffectStyleName,
@@ -29,12 +30,10 @@ import {
 } from "./paint.js"
 import {
   type Reader,
-  accepting,
   agentColor,
   boolean,
   detailOf,
   finite,
-  formed,
   forms,
   list,
   literal,
@@ -78,8 +77,6 @@ export type DeckLook = {
   readonly colors?: { readonly [K in ColorVar]?: Hex }
   readonly fonts?: { readonly heading?: string; readonly body?: string }
 }
-export type SlideAdd = { readonly after?: NodeId }
-export type SlideMove = { readonly slide: NodeId; readonly after: NodeId | null }
 export type AgentChange =
   | ({ readonly op: "add"; readonly kind: AgentAdd; readonly slide: NodeId; readonly into?: NodeId } & AgentLook)
   | ({ readonly op: "set"; readonly target: string; readonly focus?: readonly string[] } & AgentLook)
@@ -112,9 +109,7 @@ export type AgentChange =
 
 export type AgentRefusal = Refusal & { readonly change: string; readonly at?: number; readonly field?: string }
 
-const idSchema = { $ref: "#/$defs/id" }
 const colorSchema = { $ref: "#/$defs/color" }
-const readId = formed(readNodeId, forms.node)
 const tintedName = new RegExp(`^(${colorVars.join("|")})([+-](100|[1-9][0-9]?))?$`)
 export const readColor = agentColor(tintedName, 16, forms.color) as Reader<AgentColor>
 const id = (description: string) => field<NodeId>({ ...idSchema, description }, readId)
@@ -123,7 +118,6 @@ const readNone = literal(["none"] as const)
 
 const readFontName = matching(/^[A-Za-z0-9][A-Za-z0-9 ]{0,99}$/, 100, forms.font)
 const readIconName = matching(/^([a-z0-9-]+\/)?[a-z0-9-]+$/, 80, forms.icon)
-const readAfter = accepting(forms.after, (raw) => (raw === null ? null : readId(raw)))
 
 type LookFields = { readonly [K in keyof AgentLook]-?: Field<Exclude<AgentLook[K], undefined>> }
 
@@ -302,8 +296,6 @@ const lookFields: LookFields = {
   ...innerShadowFields(readColor),
 }
 
-const readSlideAdd = object({}, { after: readId })
-const readSlideMove = object({ slide: readId, after: readAfter })
 const readTarget = matching(
   /^([a-z0-9]{1,16}:[0-9]{1,12}(\.(title|subtitle|body))?|\*\.(title|subtitle|body))$/,
   440,
@@ -334,28 +326,7 @@ const placeFields = {
     },
     readAfter,
   ),
-  add: field(
-    {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        after: { ...idSchema, description: "The slide to add after. Left out: at the end." },
-      },
-      description: "Add a slide.",
-    },
-    readSlideAdd,
-  ),
-  move: field(
-    {
-      type: "object",
-      additionalProperties: false,
-      required: ["slide", "after"],
-      properties: { slide: idSchema, after: { oneOf: [idSchema, { type: "null" }] } },
-      description: "Move a slide after another slide, or to the front with null.",
-    },
-    readSlideMove,
-  ),
-  delete: id("A slide to delete."),
+  ...slideFields,
   theme: choice(Object.keys(themeLibrary), "Replace the deck theme with this library theme by id."),
   colors: field(
     {
@@ -478,7 +449,7 @@ export const agentChangesSchema = {
           enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck", "detach", "component"],
           description:
             "component: spec, target? (no target adds one). component add: component, data?, variant?, tokens?, box?. detach: target. " +
-            "add: kind, slide, into?, look. set: target, look. move: node, or nodes. into is required with nodes or box and then names a slide; one node may name a frame. after?. box? needs x, y, w, h; x, y place the union and w, h do not resize. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
+            "add: kind, slide, into?, look. set: target, look. move: node, or nodes. into is required with nodes or box and then names a slide; one node may name a frame. after?. box? needs x, y, w, h; x, y place the union and w, h do not resize. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. Group ids are in read_deck as group=<id>. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
         },
         ...schemasOf(placeFields),
         kind: choice(addKinds, `${kindWords} component: a linked template.`).schema,
