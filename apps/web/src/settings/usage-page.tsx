@@ -81,9 +81,7 @@ export function UsagePage({
       >
         {loaded?.kind === "unavailable" ? (
           <div role="alert" className="flex items-center justify-between gap-4">
-            <span className="text-[length:var(--type-body)] leading-[18px] text-muted-foreground">
-              {usageCopy.failed}
-            </span>
+            <span className="text-[length:var(--type-body)] leading-ui text-muted-foreground">{usageCopy.failed}</span>
             <Button type="button" variant="outline" className={settingsAction} onClick={() => void refresh()}>
               {productCopy.payTryAgain}
             </Button>
@@ -108,7 +106,7 @@ export function UsagePage({
             </div>
             <span
               className={cn(
-                "text-[length:var(--type-dense)] leading-[17px] text-muted-foreground",
+                "text-[length:var(--type-dense)] leading-ui-tight text-muted-foreground",
                 week === null && "motion-safe:animate-pulse",
               )}
             >

@@ -151,7 +151,7 @@ export function AgentsPage({ navigate }: { navigate: (path: string) => void }) {
               role="alert"
               className="flex items-center justify-between gap-4 py-3 shadow-[inset_0_1px_0_0_var(--line)]"
             >
-              <span className="text-[length:var(--type-body)] leading-[18px] text-muted-foreground">
+              <span className="text-[length:var(--type-body)] leading-ui text-muted-foreground">
                 {productCopy.agentsFailed}
               </span>
               <Button type="button" variant="outline" className={settingsAction} onClick={() => void refresh()}>

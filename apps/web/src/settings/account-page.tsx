@@ -58,7 +58,7 @@ export function AccountPage({
       {loaded?.kind === "unavailable" ? (
         <Card title={settingsCopy.account}>
           <div role="alert" className="flex items-center justify-between gap-4">
-            <span className="text-[length:var(--type-body)] leading-[18px] text-muted-foreground">
+            <span className="text-[length:var(--type-body)] leading-ui text-muted-foreground">
               {accountCopy.failed}
             </span>
             <Button type="button" variant="outline" onClick={() => void refresh()}>
