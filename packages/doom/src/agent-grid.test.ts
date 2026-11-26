@@ -4,7 +4,8 @@ import { bottomLimitOf, gapFor } from "./agent-place.js"
 import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
 import { defaultTheme } from "./theme.js"
 import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
-import { ladderOf } from "./pattern-parts.js"
+import { ladderOf } from "./agent-block.js"
+import { compileAgentChange } from "./agent-compile.js"
 import { type Doom, type NodeId } from "./index.js"
 import { widestWord } from "./text-estimate.js"
 import { ids, land } from "./sample-deck.js"
@@ -285,5 +286,69 @@ describe("a grid of words is set as a consulting table", () => {
   it("leaves a last row that is not a total in the body's weight", () => {
     const { at } = tableOf(segments.slice(0, 4))
     expect(propOf(at(3, 1), "text")!.spans.every((span) => span.bold === true)).toBe(false)
+  })
+})
+
+describe("a grid of words", () => {
+  const rows = [
+    ["", "Q1", "Q2", "Q3"],
+    ["Product", "Beta", "Launch", "Scale"],
+    ["Sales", "Pilot", "Roll out", "Expand"],
+  ]
+  const doom = build(agentDeck(), add({ kind: "frame", rows, name: "Roadmap" }))
+  const root = made(doom)
+
+  it("is a grid frame with a cell of text for each word, the first row a header", () => {
+    expect(propOf(root, "name")).toBe("Roadmap")
+    expect(propOf(root, "layout")).toMatchObject({
+      mode: "grid",
+      columns: [{ fr: 1 }, { fr: 1 }, { fr: 1 }, { fr: 1 }],
+      rows: ["hug", "hug", "hug"],
+      gap: 0,
+    })
+    const cells = childrenOf(doom, root.id).filter((node) => propOf(node, "text") !== undefined)
+    expect(propOf(cells[0]!, "cell")).toEqual({ row: 0, col: 1 })
+    expect(propOf(cells[0]!, "text")).toMatchObject({ chars: "Q1", style: "heading" })
+    expect(propOf(cells[4]!, "text")).toMatchObject({ chars: "Beta", style: "heading" })
+    expect(propOf(cells[10]!, "cell")).toEqual({ row: 2, col: 3 })
+  })
+
+  it("leaves an empty word out, so the grid keeps a hole instead of an empty text", () => {
+    const cells = childrenOf(doom, root.id).filter((node) => propOf(node, "text") !== undefined)
+    expect(cells.map((cell) => propOf(cell, "cell"))).not.toContainEqual({ row: 0, col: 0 })
+    expect(cells).toHaveLength(11)
+  })
+
+  it("takes markdown in a cell and pads a short row by leaving the cell out", () => {
+    const ragged = build(agentDeck(), add({ kind: "frame", rows: [["a", "b"], ["**c**"]] }))
+    const cells = childrenOf(ragged, made(ragged).id).filter((node) => propOf(node, "text") !== undefined)
+    expect(cells).toHaveLength(3)
+    expect(propOf(cells[2]!, "text")!.spans[0]).toMatchObject({ bold: true })
+  })
+
+  it("steps down to fit, refuses when it cannot, and refuses a layout beside the rows", () => {
+    const long = Array.from({ length: 12 }, (_, at) => [
+      `Row ${at}`,
+      "words that run to a few lines of text in a narrow column of the grid",
+    ])
+    expect(
+      compileAgentChange(
+        agentDeck(),
+        add({ kind: "frame", box: { x: 0, y: 0, w: 500, h: 200 }, rows: long }),
+        minter(),
+      ),
+    ).toMatchObject({ refused: "limit", field: "items" })
+    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows, layout: "row" }), minter())).toMatchObject({
+      refused: "shape",
+      field: "layout",
+    })
+    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows: [] }), minter())).toMatchObject({
+      refused: "shape",
+      field: "rows",
+    })
+    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows: [[]] }), minter())).toMatchObject({
+      refused: "shape",
+      field: "rows",
+    })
   })
 })
