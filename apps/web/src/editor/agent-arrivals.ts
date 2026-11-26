@@ -6,6 +6,8 @@ const layerTypes: ReadonlySet<doom.NodeType> = new Set(["frame", "shape", "compo
 
 export const noArrivals: Arrivals = { made: new Set(), changed: new Set() }
 
+const noSlides: ReadonlySet<doom.NodeId> = new Set()
+
 function freshAgentRevs(before: doom.Doom, after: doom.Doom, caught: doom.Rev): ReadonlySet<doom.Rev> {
   const moved = new Set<doom.Rev>()
   for (const [id, run] of after.runs)
@@ -34,23 +36,31 @@ export function agentArrivals(before: doom.Doom, after: doom.Doom, caught: doom.
   return { made: new Set(top.filter(isNew)), changed: new Set(top.filter((id) => !isNew(id))) }
 }
 
-export function agentSlide(before: doom.Doom, after: doom.Doom, caught: doom.Rev): doom.NodeId | undefined {
-  if (before === after) return undefined
+export function agentSlides(before: doom.Doom, after: doom.Doom, caught: doom.Rev): ReadonlySet<doom.NodeId> {
+  if (before === after) return noSlides
   const fresh = freshAgentRevs(before, after, caught)
-  if (fresh.size === 0) return undefined
+  if (fresh.size === 0) return noSlides
   const written = new Set(
     [...after.revs]
       .filter(([, revs]) => [...revs.values()].some((at) => fresh.has(at)))
       .map(([id]) => (after.nodes.get(id)?.type === "slide" ? id : doom.slideOf(after, id))),
   )
+  return new Set(
+    doom
+      .slidesOf(after)
+      .filter(({ id }) => !before.nodes.has(id) && written.has(id))
+      .map(({ id }) => id),
+  )
+}
+
+export function agentSlide(before: doom.Doom, after: doom.Doom, caught: doom.Rev): doom.NodeId | undefined {
+  const made = agentSlides(before, after, caught)
+  if (made.size === 0) return undefined
   const madeAt = (id: doom.NodeId) => Math.max(...(after.revs.get(id)?.values() ?? []))
-  return doom
-    .slidesOf(after)
-    .filter(({ id }) => !before.nodes.has(id) && written.has(id))
-    .reduce<doom.NodeId | undefined>(
-      (latest, { id }) => (latest === undefined || madeAt(id) >= madeAt(latest) ? id : latest),
-      undefined,
-    )
+  return [...made].reduce<doom.NodeId | undefined>(
+    (latest, id) => (latest === undefined || madeAt(id) >= madeAt(latest) ? id : latest),
+    undefined,
+  )
 }
 
 function isLayer(view: doom.Doom, id: doom.NodeId): boolean {

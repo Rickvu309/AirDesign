@@ -27,6 +27,7 @@ import type { LayoutPictureSource } from "@/editor/layout-pictures"
 import { cn } from "@/lib/class-names"
 import { setDropPlace } from "@/editor/slide-list-pick"
 import { useSlideListSet } from "@/editor/use-slide-list-set"
+import { useThumbArrival, type StripArrival } from "@/editor/agent-arrival"
 
 export const slideThumbWidth = 197
 
@@ -76,6 +77,7 @@ export function SlideSidebar({
   layers = null,
   onSlideSelection,
   arrived = false,
+  arrival,
   onGrid,
 }: {
   title: string
@@ -86,6 +88,7 @@ export function SlideSidebar({
   layers?: ReactNode
   onSlideSelection?: (count: number) => void
   arrived?: boolean
+  arrival?: StripArrival
   onGrid?: () => void
 }) {
   return (
@@ -98,7 +101,7 @@ export function SlideSidebar({
         {...(onRename === undefined ? {} : { onRename })}
         {...(onTrash === undefined ? {} : { onTrash })}
       />
-      <DeckStrip strip={strip} onSlideSelection={onSlideSelection} arrived={arrived} />
+      <DeckStrip strip={strip} onSlideSelection={onSlideSelection} arrived={arrived} arrival={arrival} />
       {layers}
     </aside>
   )
@@ -140,12 +143,15 @@ function DeckStrip({
   strip,
   onSlideSelection,
   arrived,
+  arrival,
 }: {
   strip: SlideStrip
   onSlideSelection: ((count: number) => void) | undefined
   arrived: boolean
+  arrival: StripArrival | undefined
 }) {
   const list = useRef<HTMLDivElement>(null)
+  useThumbArrival(list, arrival)
   useLayoutEffect(() => {
     if (!arrived || (document.activeElement !== null && document.activeElement !== document.body)) return
     list.current?.querySelector<HTMLElement>('[data-slide-entry][aria-current="true"]')?.focus()
@@ -213,12 +219,19 @@ function DeckStrip({
         strip.onMove?.(from, index)
       }}
     >
-      <Filmstrip
-        className={thumbCard}
-        height={strip.thumbHeight}
-        paint={() => strip.thumb(index, thumbWidth)}
-        width={thumbWidth}
-      />
+      <span className="relative block shrink-0">
+        <Filmstrip
+          className={thumbCard}
+          height={strip.thumbHeight}
+          paint={() => strip.thumb(index, thumbWidth)}
+          width={thumbWidth}
+        />
+        <span
+          aria-hidden="true"
+          data-thumb-arrival={strip.slideIds[index]}
+          className="pointer-events-none absolute inset-0"
+        />
+      </span>
     </SlideItem>
   )
   const present = (key: string) => {
