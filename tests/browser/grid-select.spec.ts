@@ -3,7 +3,19 @@ import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { boxOf, chip, entries, entry, openGroups, said, selectedNumbers, viewport, wheelAt, zoomTo } from "./grid-deck"
+import {
+  boxOf,
+  card,
+  chip,
+  entries,
+  entry,
+  openGroups,
+  said,
+  selectedNumbers,
+  viewport,
+  wheelAt,
+  zoomTo,
+} from "./grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -110,13 +122,15 @@ test("a pick stays on the same slides when another tab deletes an earlier slide"
   await expect(entry(page, 7)).toHaveCount(0)
   await expect(entry(page, 4)).toHaveAttribute("aria-current", "true")
   expect(await selectedNumbers(page)).toEqual([2, 4])
-  await entry(page, 1).click({ modifiers: [shift] })
+  await card(page, 1)
+    .locator("[data-slide-number]")
+    .click({ modifiers: [shift] })
   expect(await selectedNumbers(page)).toEqual([1, 2, 3, 4])
 })
 
 test("a click on the visible edge of a slide panned almost out of view picks it", async ({ page, context, stack }) => {
   await openGroups(page, context, stack, [4, 3])
-  await entry(page, 1).click()
+  await card(page, 1).locator("[data-slide-number]").click()
   await zoomTo(page, 50)
   const room = await boxOf(viewport(page))
   const two = await boxOf(entry(page, 2))
