@@ -24,8 +24,9 @@ function ThemeThumbnail({ theme, compact = false }: { readonly theme: doom.Theme
       aria-hidden="true"
       data-fonts-pending={pending ? "" : undefined}
       className={cn(
-        "flex aspect-video shrink-0 flex-col items-center justify-center overflow-hidden rounded-[var(--shape-control)] leading-none outline -outline-offset-1 outline-black/10 [font-synthesis:none] dark:outline-white/10",
+        "flex aspect-video shrink-0 flex-col items-center justify-center overflow-hidden rounded-[var(--shape-control)] outline -outline-offset-1 outline-black/10 [font-synthesis:none] dark:outline-white/10",
         compact ? "w-12 gap-0.5 text-[length:var(--type-body)]" : "w-18 gap-1 text-[length:var(--type-title)]",
+        "leading-none",
       )}
       style={{ backgroundColor: colors.background }}
     >

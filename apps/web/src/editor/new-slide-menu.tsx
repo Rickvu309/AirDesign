@@ -218,7 +218,7 @@ export function NewSlideMenu({
               hidden
               tabIndex={-1}
               data-layout-menu=""
-              className="fixed z-50 w-57 flex-col overscroll-contain overflow-y-auto rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0"
+              className="fixed z-50 w-57 flex-col overscroll-contain overflow-y-auto rounded-xl bg-foreground p-1.5 text-white shadow-dark-overlay ring-0"
               onKeyDown={(event) => {
                 if (composing(event) || panel.current === null) return
                 if (event.key === "Tab") return close(true)
