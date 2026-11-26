@@ -11,6 +11,7 @@ import {
   openEditor,
   savedNode,
   selectedIds,
+  slidePoint,
   spot,
 } from "./editor-deck"
 
@@ -143,4 +144,22 @@ test("the hover outline goes when the pointer leaves the canvas before the brows
   await heldUntilPointerLeft
   await expect(editor).toHaveCount(0)
   await expect(hover).toHaveCount(0)
+})
+
+test("the Hand gesture clears hover and Move restores it at the pointer", async ({ page, context, stack }) => {
+  await withLayers(page, context, stack)
+  const hover = page.locator("[data-hover-outline]")
+  const first = await slidePoint(page, 200, 750)
+  const second = await slidePoint(page, 1400, 750)
+  await page.mouse.move(first.x, first.y)
+  await expect(hover).toBeAttached()
+  await page.keyboard.down(shortcutCopy.keyNames.Space)
+  await expect(hover).toHaveCount(0)
+  await page.mouse.down()
+  await page.mouse.move(second.x, second.y)
+  await page.mouse.up()
+  await expect(hover).toHaveCount(0)
+  await page.keyboard.up(shortcutCopy.keyNames.Space)
+  const bounds = await hover.boundingBox()
+  expect(bounds!.x).toBeGreaterThan(first.x)
 })
