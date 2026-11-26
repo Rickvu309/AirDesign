@@ -1,60 +1,32 @@
 import { describe, expect, it } from "vitest"
 import { gridElementPresses } from "@/editor/grid-number"
-import { gridPress, type GridHit } from "@/editor/grid-hit"
+import { gridRoute, type GridPart } from "@/editor/grid-hit"
 
-describe("grid press", () => {
-  const cases: readonly [GridHit, boolean, boolean, ReturnType<typeof gridPress>][] = [
-    ["number", false, false, "slide"],
-    ["number", true, false, "slide"],
-    ["number", false, true, "slide"],
-    ["blank", false, false, "slide"],
-    ["blank", false, true, "slide"],
-    ["element", false, false, "element"],
-    ["element", false, true, "element"],
-    ["blank", true, false, "slide"],
-    ["blank", true, true, "slide"],
-    ["element", true, false, "editor"],
-    ["element", true, true, "editor"],
-    ["text", true, false, "element"],
-    ["text", true, true, "editor"],
-    ["typing", true, false, "editor"],
-    ["typing", true, true, "editor"],
-  ]
+const parts = ["number", "live", "picture"] as const satisfies readonly GridPart[]
 
-  for (const [hit, active, modified, press] of cases) {
-    it(`a ${modified ? "modified " : ""}press on ${hit} of ${active ? "the live slide" : "a thumbnail"} goes to ${press}`, () => {
-      expect(gridPress(hit, active, modified)).toBe(press)
-    })
-  }
-
-  it("treats every part of an unreadable slide as the slide, open or closed", () => {
-    for (const active of [false, true])
-      for (const modified of [false, true])
-        for (const hit of ["number", "blank", "element", "text", "typing"] as const)
-          expect(gridPress(hit, active, modified, true)).toBe("slide")
+describe("grid route", () => {
+  it("keeps a press on the number, or on a slide too small to edit, on the slide", () => {
+    for (const part of parts) for (const element of [false, true]) expect(gridRoute(part, element, true)).toBe("slide")
+    for (const element of [false, true]) expect(gridRoute("number", element, false)).toBe("slide")
   })
 
-  it("treats a thumbnail too small to show its number as one whole slide", () => {
-    for (const modified of [false, true]) expect(gridPress("element", false, modified, true)).toBe("slide")
-    expect(gridPress("element", false, false, false)).toBe("element")
-    expect(gridPress("text", true, false, true)).toBe("slide")
-    expect(gridPress("blank", true, false, true)).toBe("slide")
+  it("leaves a press on the live canvas to the canvas", () => {
+    expect(gridRoute("live", false, false)).toBe("canvas")
+    expect(gridRoute("live", true, false)).toBe("canvas")
   })
 
-  it("leaves every press that starts on a number or a blank thumbnail to the slide", () => {
-    for (const modified of [false, true]) {
-      expect(gridPress("number", false, modified)).toBe("slide")
-      expect(gridPress("blank", false, modified)).toBe("slide")
-    }
+  it("edits when the picture holds a layer and picks the slide when it does not", () => {
+    expect(gridRoute("picture", true, false)).toBe("edit")
+    expect(gridRoute("picture", false, false)).toBe("slide")
   })
 })
 
 it.each([
   [87.99, 112, "slide"],
   [88, 27.99, "slide"],
-  [88, 28, "element"],
-  [400, 111.99, "element"],
-  [400, 112, "element"],
-])("routes element presses at width %s and gap %s to %s", (width, gap, pressed) => {
-  expect(gridPress("element", false, false, !gridElementPresses({ width, gap }))).toBe(pressed)
+  [88, 28, "edit"],
+  [400, 111.99, "edit"],
+  [400, 112, "edit"],
+])("routes a layer under the pointer at width %s and gap %s to %s", (width, gap, route) => {
+  expect(gridRoute("picture", true, !gridElementPresses({ width, gap }))).toBe(route)
 })
