@@ -21,11 +21,9 @@ import { GridHead, Island, type GridHeadProps } from "@/editor/editor-chrome"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { gridCommand, gridMove } from "@/editor/editor-grid-keys"
 import { gridAddFits } from "@/editor/grid-add-placement"
-import { GridCard } from "@/editor/grid-card"
-import { GridDragGhost, GridDropBar } from "@/editor/grid-drag-marks"
-import { gridBands, gridIndices, gridRanges } from "@/editor/grid-drop"
-import { GridGroupAdd } from "@/editor/grid-group-add"
-import { GridGroupFrame, useGroupHover } from "@/editor/grid-group-frame"
+import { GridDragGhost } from "@/editor/grid-drag-marks"
+import { gridBands, gridRanges } from "@/editor/grid-drop"
+import { useGroupHover } from "@/editor/grid-group-frame"
 import {
   gridLiveSlide,
   gridOpened,
@@ -35,7 +33,6 @@ import {
   type GridInteraction,
 } from "@/editor/grid-interaction"
 import { gridEntryOf } from "@/editor/grid-hit"
-import { GridTargets } from "@/editor/grid-targets"
 import type { Selection } from "@/editor/selection"
 import { useGridEditing } from "@/editor/use-grid-editing"
 import type { CanvasCard } from "@/editor/canvas"
@@ -44,6 +41,7 @@ import { gridLayout, gridSpacing } from "@/editor/grid-lines"
 import { gridZoomPlacement } from "@/editor/grid-number"
 import { marqueeStep, type MarqueeDeck } from "@/editor/grid-marquee"
 import { pickAll, pickRange, pickToggle, prunedPick, toggledCurrent } from "@/editor/grid-selection"
+import { GridSheet } from "@/editor/grid-sheet"
 import { gridGripsShown, gridPaintMargin, gridShown, type GridView } from "@/editor/grid-viewport"
 import { GridSlideMenu } from "@/editor/grid-slide-menu"
 import { useSlideSay, type SlideStrip } from "@/editor/slide-sidebar"
@@ -433,16 +431,7 @@ export function EditorGrid({
       rowGap: spacing.line * scale,
     })
   const held = new Set(preview?.held ?? [])
-  const tinted = (group: number) =>
-    !gripBlocked &&
-    grips &&
-    (hover?.group === group ? hover.part === "handle" : gripFocus === group && hover?.part !== "add")
   const dropBar = drag.bar
-  const inRoom = (left: number, top: number, width: number, height: number) => {
-    const x = camera.view.x + left * scale
-    const y = camera.view.y + top * scale
-    return x >= 0 && y >= 0 && x + width * scale <= camera.room.width && y + height * scale <= camera.room.height
-  }
   return (
     <div
       ref={root}
@@ -502,115 +491,48 @@ export function EditorGrid({
           onContextMenu={onCardMenu}
           onFocus={onCardFocus}
         >
-          {bands.map((band, number) => {
-            const first = layout.cards[band.start]
-            if (first === undefined) return null
-            const last = number === bands.length - 1
-            return [
-              <GridGroupFrame
-                key={`frame:${first.id}`}
-                number={number}
-                box={{
-                  left: 0,
-                  top: band.top,
-                  width: band.width,
-                  height: band.bottom - band.top,
-                }}
-                hover={hover?.group === number ? hover.part : gripFocus === number ? "handle" : null}
-                tint={tinted(number)}
-                wrapped={band.wrapped}
-                blocked={gripBlocked}
-                grips={grips}
-                onGrab={(event) => drag.grab(band.start, event, true)}
-                onMove={(direction) => {
-                  grouped.clear()
-                  const next = groups[number + (direction === "up" ? -1 : 1)]
-                  const range = groups[number]
-                  if (next === undefined || range === undefined) return
-                  actions.moveSlides(gridIndices(range), direction === "up" ? next.start : next.end, "keep")
-                }}
-                onFocusGrip={(focused) => setGripFocus(focused ? number : null)}
-              />,
-              ...layout.cards.slice(band.start, band.end).map((card) => {
-                const shift = drag.shift(card.index)
-                return (
-                  <GridCard
-                    key={card.id}
-                    card={card}
-                    placement={placement}
-                    count={count}
-                    view={view}
-                    painted={painted.has(card.index)}
-                    current={card.index === current}
-                    selected={selected.has(card.index)}
-                    multiple={picked !== null}
-                    reachable={card.index === reachable}
-                    skipped={doom.propOf(view.nodes.get(card.id), "skipped") === true}
-                    assetUrl={assetUrl}
-                    lifted={held.has(card.index)}
-                    shiftX={shift?.x ?? 0}
-                    shiftY={shift?.y ?? 0}
-                    still={drag.still}
-                    tinted={tinted(number)}
-                    wrapped={band.wrapped}
-                    addGap={addBlocked ? null : spacing.column}
-                    addEnd={card.index === band.end - 1}
-                    previewFits={
-                      card.index === band.end - 1 &&
-                      inRoom(card.left + card.width + spacing.column, card.top, card.width, card.height)
-                    }
-                    onAdd={addAfter}
-                    {...(liveSlide !== null && card.id === liveSlide
-                      ? {
-                          live: live(card.id, 1, {
-                            handoff: edit.handoff,
-                            onBlank: edit.blank,
-                            onMode: edit.mode,
-                            onRun,
-                            pointAt: (client) => camera.slidePoint(card, client),
-                          }),
-                        }
-                      : {})}
-                  />
-                )
-              }),
-              addBlocked ? null : (
-                <GridGroupAdd
-                  key={`add:${first.id}`}
-                  group={number + 1}
-                  left={0}
-                  top={band.bottom}
-                  width={first.width}
-                  gap={spacing.group}
-                  preview={{
-                    top: spacing.group + spacing.inset,
-                    height: first.height,
-                    fits: inRoom(0, band.bottom + spacing.group + spacing.inset, first.width, first.height),
-                  }}
-                  last={last}
-                  onAdd={() => actions.add(band.end - 1, "new")}
-                />
-              ),
-            ]
-          })}
-          {layout.cards.map((card) =>
-            painted.has(card.index) || card.id === liveSlide ? (
-              <GridTargets key={`targets:${card.id}`} view={view} slide={card.id} onGeometry={edit.onGeometry} />
-            ) : null,
-          )}
-          {dropBar === null ? null : <GridDropBar bar={dropBar} scale={scale} />}
-          {box === null ? null : (
-            <div
-              aria-hidden="true"
-              data-grid-marquee
-              style={{
-                transform: `translate(${String(box.left)}px, ${String(box.top)}px)`,
-                width: box.right - box.left,
-                height: box.bottom - box.top,
-                ...{ "--grid-scale": String(scale) },
-              }}
-            />
-          )}
+          <GridSheet
+            bands={bands}
+            cards={layout.cards}
+            groups={groups}
+            view={view}
+            count={count}
+            placement={placement}
+            painted={painted}
+            current={current}
+            selected={selected}
+            multiple={picked !== null}
+            reachable={reachable}
+            assetUrl={assetUrl}
+            held={held}
+            still={drag.still}
+            shift={drag.shift}
+            spacing={spacing}
+            addBlocked={addBlocked}
+            origin={camera.view}
+            room={camera.room}
+            onAddGap={addAfter}
+            onAddGroup={(index) => actions.add(index, "new")}
+            liveSlide={liveSlide}
+            live={live}
+            handoff={edit.handoff}
+            onBlank={edit.blank}
+            onMode={edit.mode}
+            onGeometry={edit.onGeometry}
+            onRun={onRun}
+            slidePoint={camera.slidePoint}
+            grips={grips}
+            blocked={gripBlocked}
+            hover={hover}
+            gripFocus={gripFocus}
+            onGrab={(index, event) => drag.grab(index, event, true)}
+            onMoveSlides={actions.moveSlides}
+            clearHover={grouped.clear}
+            onFocusGrip={setGripFocus}
+            dropBar={dropBar}
+            marquee={box}
+            scale={scale}
+          />
         </div>
       </div>
       {preview === null ? null : (
