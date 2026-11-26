@@ -109,7 +109,7 @@ export function ZoomMenu({
         data-zoom-readout
       >
         {`${String(percent)}%`}
-        <EditorIcon name="chev" size={12} className="text-faint" />
+        <EditorIcon name="chev" size={12} tone="faint" />
       </DropdownMenuTrigger>
       <EditorMenuContent
         side="bottom"

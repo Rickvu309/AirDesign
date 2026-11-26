@@ -18,6 +18,7 @@ const buttonVariants = cva(
           "border-0 bg-[image:var(--fill-marketing)] text-primary-foreground shadow-[inset_0_1px_0_var(--white-35),0_2px_6px_var(--strong-20)] hover:bg-[image:var(--fill-marketing-hover)] active:bg-[image:var(--fill-marketing-active)]",
         outline: cn("border-border", outline),
         "outline-field": cn("border-field-edge", outline),
+        "panel-outline": cn("border-border font-normal aria-disabled:opacity-50", outline),
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary-hover aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         "panel-action":
@@ -40,8 +41,12 @@ const buttonVariants = cva(
           "border-0 bg-danger-solid text-white shadow-[inset_0_0_0_1px_var(--danger-edge)] hover:bg-danger-solid",
         link: "text-primary-strong underline-offset-4 hover:underline",
         link: "text-primary underline-offset-4 hover:underline",
+        "view-switch":
+          "rounded-md text-quiet hover:bg-muted hover:text-foreground active:translate-y-0 aria-pressed:bg-line aria-pressed:text-foreground aria-pressed:hover:bg-line",
+        "panel-tab":
+          "rounded-[var(--shape-control)] text-quiet hover:text-foreground active:translate-y-0 aria-pressed:bg-white aria-pressed:text-foreground aria-pressed:shadow-[0px_1px_2px_var(--black-10)]",
         "editable-label":
-          "block truncate rounded-md border-0 text-left text-inherit hover:bg-black/4 active:translate-y-0",
+          "block truncate rounded-md border-0 text-left text-[length:inherit] text-foreground hover:bg-black/4 active:translate-y-0",
       },
       size: {
         default: "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",

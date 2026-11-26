@@ -56,7 +56,8 @@ function DropdownMenuContent({
           data-slot="dropdown-menu-content"
           className={cn(
             "z-50 max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none transition-[opacity,scale] duration-150 ease-out data-starting-style:scale-95 data-starting-style:opacity-0 data-ending-style:scale-95 data-ending-style:opacity-0 data-closed:overflow-hidden data-instant:transition-none",
-            variant === "editor" && "rounded-xl bg-foreground p-1.5 text-white shadow-dark-overlay ring-0 duration-0",
+            variant === "editor" &&
+              "overscroll-contain rounded-xl bg-foreground p-1.5 text-white shadow-dark-overlay ring-0 duration-0",
             className,
           )}
           {...props}
@@ -140,7 +141,10 @@ function DropdownMenuRadioItem({
       {...props}
     >
       <span
-        className="pointer-events-none absolute right-2 flex items-center justify-center"
+        className={cn(
+          "pointer-events-none absolute right-2 flex items-center justify-center",
+          variant === "editor" && "hidden",
+        )}
         data-slot="dropdown-menu-radio-item-indicator"
       >
         <MenuPrimitive.RadioItemIndicator>

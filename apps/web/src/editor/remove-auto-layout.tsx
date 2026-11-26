@@ -15,9 +15,9 @@ export function RemoveAutoLayoutButton({
     <div data-auto-layout className="border-b border-line px-4 pb-3">
       <Button
         type="button"
-        variant="outline"
+        variant="panel-outline"
         size="sm"
-        className="w-full gap-2 font-normal aria-disabled:opacity-50"
+        className="w-full gap-2"
         aria-describedby={reason === undefined ? undefined : reasonId}
         focusableWhenDisabled
         onClick={onRemove}

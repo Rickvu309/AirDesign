@@ -66,15 +66,25 @@ const iconPaths = {
 
 export type EditorIconName = keyof typeof iconPaths
 
+const tones = {
+  faint: "text-faint",
+  quiet: "text-quiet",
+  accent: "text-primary",
+} as const
+
+type IconTone = keyof typeof tones
+
 export function EditorIcon({
   name,
   size = 16,
   className,
+  tone,
   strokeWidth = 1.75,
 }: {
   name: EditorIconName
   size?: 11 | 12 | 13 | 14 | 15 | 16 | 18 | 22
   className?: string
+  tone?: IconTone
   strokeWidth?: number
 }) {
   return (
@@ -87,16 +97,22 @@ export function EditorIcon({
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={cn("shrink-0", className)}
+      className={cn("shrink-0", tone && tones[tone], className)}
       aria-hidden="true"
       dangerouslySetInnerHTML={{ __html: iconPaths[name] }}
     />
   )
 }
 
-export function SparkIcon({ size = 14, className }: { size?: number; className?: string }) {
+export function SparkIcon({ size = 14, className, tone }: { size?: number; className?: string; tone?: IconTone }) {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} className={cn("shrink-0", className)} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      className={cn("shrink-0", tone && tones[tone], className)}
+      aria-hidden="true"
+    >
       <path
         d="M4.5 20.5 9.4 10.2M19.5 20.5 14.6 10.2"
         fill="none"

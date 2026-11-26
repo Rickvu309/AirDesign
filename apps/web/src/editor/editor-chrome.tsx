@@ -33,7 +33,7 @@ export function DeckTitle({
   return (
     <span className={cn("flex min-w-0 items-center gap-1", className)}>
       <span className="min-w-0 truncate text-[length:var(--type-dense)] font-medium text-foreground">{title}</span>
-      <EditorIcon name="chev" size={14} className="text-faint" />
+      <EditorIcon name="chev" size={14} tone="faint" />
     </span>
   )
 }
@@ -96,9 +96,8 @@ export function GridHead({ title, save, canAdd, onAdd, onSlides, onRename, onTra
       <span aria-hidden="true" className="mx-1 block h-5 w-px bg-[var(--field-edge)]" />
       <Button
         type="button"
-        variant="ghost"
+        variant="view-switch"
         size="icon"
-        className="size-8 rounded-md text-quiet active:translate-y-0"
         aria-label={slideListCopy.slidesView}
         aria-pressed={false}
         onClick={onSlides}
@@ -107,9 +106,8 @@ export function GridHead({ title, save, canAdd, onAdd, onSlides, onRename, onTra
       </Button>
       <Button
         type="button"
-        variant="ghost"
+        variant="view-switch"
         size="icon"
-        className="size-8 rounded-md bg-line text-foreground hover:bg-line active:translate-y-0"
         aria-label={slideListCopy.gridView}
         aria-pressed
         onClick={onSlides}
@@ -163,9 +161,8 @@ export function SidebarHead({
         {onGrid === undefined ? null : (
           <Button
             type="button"
-            variant="ghost"
+            variant="view-switch"
             size="icon"
-            className="size-8 rounded-md text-quiet active:translate-y-0"
             aria-label={slideListCopy.gridView}
             aria-pressed={false}
             data-view-toggle
