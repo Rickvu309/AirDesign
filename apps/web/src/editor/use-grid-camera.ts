@@ -424,6 +424,9 @@ export function useGridCamera({
     zoomTo,
     zoomSelection,
     panBy: (delta: { readonly x: number; readonly y: number }) => show(pannedGrid(latest.current.view, delta)),
+    hold: () => {
+      if (latest.current.camera === "fit") show(latest.current.view)
+    },
     world: (point: { readonly x: number; readonly y: number }) => {
       const at = local(point)
       const { view: now } = latest.current

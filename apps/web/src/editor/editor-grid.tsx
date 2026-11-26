@@ -228,6 +228,7 @@ export function EditorGrid({
     dispatch,
     choose,
     onOpen,
+    onAdding: camera.hold,
   })
   const drag = useGridDrag({
     camera,
@@ -383,6 +384,11 @@ export function EditorGrid({
     grips &&
     (hover?.group === group ? hover.part === "handle" : gripFocus === group && hover?.part !== "add")
   const dropBar = drag.bar
+  const inRoom = (left: number, top: number, width: number, height: number) => {
+    const x = camera.view.x + left * scale
+    const y = camera.view.y + top * scale
+    return x >= 0 && y >= 0 && x + width * scale <= camera.room.width && y + height * scale <= camera.room.height
+  }
   return (
     <div
       ref={root}
@@ -494,6 +500,10 @@ export function EditorGrid({
                     wrapped={band.wrapped}
                     addGap={addBlocked ? null : spacing.column}
                     addEnd={card.index === band.end - 1}
+                    previewFits={
+                      card.index === band.end - 1 &&
+                      inRoom(card.left + card.width + spacing.column, card.top, card.width, card.height)
+                    }
                     onAdd={addAfter}
                   />
                 )
@@ -506,7 +516,11 @@ export function EditorGrid({
                   top={band.bottom}
                   width={first.width}
                   gap={spacing.group}
-                  preview={{ top: spacing.group + spacing.inset, height: first.height }}
+                  preview={{
+                    top: spacing.group + spacing.inset,
+                    height: first.height,
+                    fits: inRoom(0, band.bottom + spacing.group + spacing.inset, first.width, first.height),
+                  }}
                   last={last}
                   onAdd={() => actions.add(band.end - 1, "new")}
                 />
