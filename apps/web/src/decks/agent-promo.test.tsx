@@ -7,7 +7,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-const card = () => renderToStaticMarkup(<AgentPromo href="/settings/agents" ornaments={false} />)
+const card = () => renderToStaticMarkup(<AgentPromo onConnect={() => {}} ornaments={false} />)
 
 it("cuts the holes in the Codex and Cursor logos instead of painting them solid", () => {
   const html = card()
@@ -27,9 +27,20 @@ it("shows only the Connect an agent button, on the sidebar's color with a border
   const html = card()
   expect(html).not.toContain("Bring your own agent")
   const button = html
-    .match(/<a href="\/settings\/agents" class="([^"]*)"[^>]*>[^]*Connect an agent<\/a>$/)?.[1]
+    .match(/<button type="button" class="([^"]*)"[^>]*>[^]*Connect an agent<\/button>$/)?.[1]
     ?.split(" ")
   expect(button).toContain("bg-canvas")
   expect(button).toContain("border-field-edge")
   expect(button).not.toContain("bg-background")
+})
+
+it("opens the connect dialog from the signature button, never a link to another page", () => {
+  const html = card()
+  const button = html.match(/<button type="button" class="([^"]*)"[^>]*>[^]*?Connect an agent<\/button>/)?.[1]
+  expect(button).toContain("bg-[image:var(--fill-marketing)]")
+  expect(html).not.toContain("<a ")
+})
+
+it("keeps a design screen's card a link to its sample screen", () => {
+  expect(renderToStaticMarkup(<AgentPromo />)).toContain('<a href="/screens/s71-01-agents-connect-approve-claude"')
 })

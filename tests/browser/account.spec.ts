@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test"
 import { test } from "./deck-test"
 import { settingsCopy } from "../../apps/web/src/copy/settings-copy"
 import { accountCopy } from "../../apps/web/src/copy/account-copy"
+import { connectAgentCopy } from "../../apps/web/src/copy/connect-agent-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { usageCopy } from "../../apps/web/src/copy/usage-copy"
 
@@ -74,16 +75,24 @@ test("reaches Account from the account menu and Settings tabs, sees email, and w
   await expect(page).toHaveURL(/\/settings\/account$/)
 })
 
-test("follows the sidebar card to the Agents page", async ({ page }) => {
+test("the sidebar card opens the connect dialog over Home, and Settings hides the card on its Agents tab", async ({
+  page,
+}) => {
   await mockApp(page)
 
   await page.goto("/")
   const sidebar = page.locator("[data-decks-sidebar]")
   await expect(sidebar.getByRole("heading", { name: "Bring your own agent" })).toBeVisible()
-  await sidebar.getByRole("link", { name: "Connect an agent" }).click()
+  await sidebar.getByRole("button", { name: connectAgentCopy.title }).click()
 
-  await expect(page).toHaveURL(/\/settings\/agents$/)
-  await expect(page.getByRole("heading", { name: settingsCopy.agents, exact: true })).toBeVisible()
+  const dialog = page.getByRole("dialog", { name: connectAgentCopy.title })
+  await expect(dialog.getByText("https://mcp.airdesign.test/mcp", { exact: true })).toBeVisible()
+  await expect(page).toHaveURL(/\/$/)
+  await page.keyboard.press("Escape")
+  await expect(dialog).toBeHidden()
+
+  await page.goto("/settings/agents")
+  await expect(page.getByRole("heading", { name: settingsCopy.noAgents, exact: true })).toBeVisible()
   await expect(sidebar.getByText(accountCopy.agentCardBody)).toHaveCount(0)
 })
 

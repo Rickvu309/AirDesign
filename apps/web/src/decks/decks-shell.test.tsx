@@ -26,10 +26,11 @@ describe("account row", () => {
 })
 
 describe("bring your own agent card", () => {
-  it("links a real account to the Agents page", () => {
+  it("gives a real account a button that opens the connect dialog", () => {
     const html = shell("person@example.com")
     expect(html).toContain("Bring your own agent")
-    expect(html).toMatch(/<a href="\/settings\/agents"[^>]*>[^]*Connect an agent/)
+    expect(html).toMatch(/<button type="button"[^>]*>[^]*?Connect an agent<\/button>/)
+    expect(html).not.toContain('href="/settings/agents"')
   })
 
   it("keeps the design screen linking to its sample screen", () => {
