@@ -202,18 +202,58 @@
   --rhythm-comfortable: 8px;
 }
 
-:where(a[href], button, input, select, textarea, summary, [tabindex], [contenteditable="true"]):focus-visible:not(
+:where(:root:not([data-quiet-focus]))
+  :where(a[href], button, input, select, summary, [tabindex]):focus-visible:not(
     [role^="menuitem"],
     [role="option"],
     [data-focus-ring] > :is(input, textarea),
     [data-slot="input"],
     [data-slot="textarea"],
-    [data-focus-edge],
-    [data-pointer-focus]
+    [data-focus-edge]
+  ),
+:where(
+    input:not(
+      [type="range"],
+      [type="checkbox"],
+      [type="radio"],
+      [type="button"],
+      [type="submit"],
+      [type="reset"],
+      [type="color"],
+      [type="file"]
+    ),
+    textarea,
+    [contenteditable="true"]
+  ):focus-visible:not(
+    [role^="menuitem"],
+    [role="option"],
+    [data-focus-ring] > :is(input, textarea),
+    [data-slot="input"],
+    [data-slot="textarea"],
+    [data-focus-edge]
   ),
 [data-focus-ring]:has(> :is(input, textarea):focus-visible) {
   outline: var(--focus-ring-width) solid var(--focus-ring);
   outline-offset: var(--focus-ring-offset);
+}
+
+:where(:root[data-quiet-focus])
+  :where(a[href], button, input, select, summary, [tabindex]):focus-visible:not(
+    input:not(
+      [type="range"],
+      [type="checkbox"],
+      [type="radio"],
+      [type="button"],
+      [type="submit"],
+      [type="reset"],
+      [type="color"],
+      [type="file"]
+    ),
+    textarea,
+    [contenteditable="true"],
+    [aria-invalid="true"]
+  ) {
+  outline: none;
 }
 
 :where([data-slot="input"], [data-slot="textarea"]) {

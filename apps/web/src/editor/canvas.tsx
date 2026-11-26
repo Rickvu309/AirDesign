@@ -424,15 +424,7 @@ export function DoomCanvas(props: {
           cursor: panning ? "grab" : "default",
           ["--focus-ring-offset" as string]: "calc(-1 * var(--focus-ring-width))",
         }}
-        onPointerDown={(event) => {
-          event.currentTarget.dataset.pointerFocus = ""
-          pointer.down(event)
-        }}
-        onBlur={(event) => {
-          const next = event.relatedTarget
-          if (!(next instanceof Node && event.currentTarget.contains(next)))
-            delete event.currentTarget.dataset.pointerFocus
-        }}
+        onPointerDown={pointer.down}
         onPointerMove={pointer.move}
         onPointerUp={pointer.up}
         onPointerCancel={pointer.cancel}

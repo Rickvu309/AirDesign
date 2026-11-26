@@ -43,3 +43,20 @@ test("the deck name shares the logo's row with the Grid view button and ellipsiz
   expect(measured.right).toBeLessThanOrEqual(gridBox.x + 1)
   expect(gridBox.x + gridBox.width).toBeLessThanOrEqual(side.x + side.width + 1)
 })
+
+test("the deck name shows no ring after a rename by click, and rings once Tab reaches it", async ({ page }) => {
+  await page.goto("/screens/s43-02-editor-tools-design-panel")
+  await page.getByRole("button", { name: `${productCopy.renameDeck}: ${sample}` }).click()
+  const field = page.getByRole("textbox", { name: productCopy.deckName })
+  await field.fill("Test")
+  await field.press("Enter")
+
+  const name = page.getByRole("button", { name: `${productCopy.renameDeck}: Test` })
+  await expect(name).toBeFocused()
+  await expect(name).toHaveCSS("outline-style", "none")
+
+  await page.keyboard.press("Shift+Tab")
+  await page.keyboard.press("Tab")
+  await expect(name).toBeFocused()
+  await expect(name).toHaveCSS("outline-style", "solid")
+})

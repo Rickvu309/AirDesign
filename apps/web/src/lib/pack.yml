@@ -5,4 +5,5 @@ public:
   - first-request.ts
   - fields-of.ts
   - gestures.ts
+  - quiet-focus.ts
   - slide-numbering.ts

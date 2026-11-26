@@ -3,12 +3,14 @@ export const focusVisible = {
   rank: 2,
   reads:
     "the focused control in the tab order when the browser treats its focus as visible: its outline, and every :focus, :focus-visible and :focus-within rule that paints it or a close ancestor",
-  cannot: "focus states the page was not put in; only the control that has focus during the scan is judged",
+  cannot:
+    "focus states the page was not put in; only the control that has focus during the scan is judged, and only once Tab has moved focus, because the app keeps focus quiet until then",
   inspect: (element, page) => {
     if (document.activeElement !== element || element === document.body || !element.matches(":focus-visible")) return
     if (element.tabIndex < 0) return
     const typing = element.matches("input,textarea,select") || element.isContentEditable
     if (typing && page.style(element).caretColor !== "transparent") return
+    if (!typing && document.documentElement.hasAttribute("data-quiet-focus")) return
     const style = page.style(element)
     if (style.outlineStyle !== "none" && parseFloat(style.outlineWidth) > 0 && page.rgba(style.outlineColor)[3] > 0.1)
       return

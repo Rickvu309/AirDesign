@@ -1,11 +1,5 @@
 [
   {
-    "page": "*",
-    "detector": "focus-visible",
-    "selector": "[data-editor-stage][data-pointer-focus]",
-    "reason": "A click put focus on the slide canvas, so later keys (nudges, tools) show no ring, as the owner decided on 2026-11-23. The theme's ring shows when Tab brings focus there; editor-page.spec.ts holds both."
-  },
-  {
     "page": "check-email*",
     "detector": "dead-control",
     "selector": "[data-send-again]",
