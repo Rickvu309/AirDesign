@@ -73,7 +73,9 @@ export function useGridMarquee({
     const held = press.current
     if (held === null) return
     stop()
-    if (held.started) onStep({ kind: "restore", state: held.before })
+    if (!held.started) return
+    swallow.current = true
+    onStep({ kind: "restore", state: held.before })
   }
 
   function step(time: number) {
@@ -157,6 +159,7 @@ export function useGridMarquee({
   return {
     box,
     press: (event: PointerEvent<HTMLDivElement>) => {
+      swallow.current = false
       if (event.button !== 0 || !event.isPrimary || event.pointerType === "touch" || hand) return
       if (press.current !== null || !blankCanvas(event.target)) return
       event.preventDefault()
