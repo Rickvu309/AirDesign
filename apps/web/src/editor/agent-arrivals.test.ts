@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { agentArrivals } from "./agent-arrivals"
+import { agentArrivals, agentSlide } from "./agent-arrivals"
 
 const grown = doom.doomFromTree({
   theme: doom.defaultTheme,
@@ -103,5 +103,23 @@ describe("what an agent just put on the deck", () => {
   it("names the layers of the edit that stops the run", () => {
     const stopped = landed(started, { author: agent(), phase: "stop", writes: [named(card!, "Done")] })
     expect(agentArrivals(started, stopped, grown.doom.rev)).toEqual({ made: new Set(), changed: new Set([card]) })
+  })
+
+  const home = doom.parentOf(grown.doom.nodes.get(slide))!
+  const slideMade = (id: string): readonly doom.Write[] => [
+    { node: doom.nodeId(id), prop: "type", value: "slide" },
+    { node: doom.nodeId(id), prop: "parent", value: { id: home.id, at: doom.orderKeyBetween(home.at, null) } },
+  ]
+
+  it("names the slide an agent just made, and no slide for a person's or one already caught up", () => {
+    const next = landed(started, { author: agent(), writes: [...slideMade("s:9"), ...made("t:9", doom.nodeId("s:9"))] })
+    expect(agentSlide(started, next, grown.doom.rev)).toBe("s:9")
+    expect(agentSlide(started, next, next.rev)).toBeUndefined()
+    const mine = landed(started, { author: person, writes: slideMade("s:8") })
+    expect(agentSlide(started, mine, grown.doom.rev)).toBeUndefined()
+    const filled = landed(next, { author: agent(), writes: made("t:6", doom.nodeId("s:9")) })
+    expect(agentSlide(started, filled, grown.doom.rev)).toBe("s:9")
+    const text = landed(started, { author: agent(), writes: made("t:7", slide) })
+    expect(agentSlide(started, text, grown.doom.rev)).toBeUndefined()
   })
 })
