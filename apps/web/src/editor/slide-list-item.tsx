@@ -4,8 +4,8 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  type DragEvent,
   type KeyboardEvent,
+  type PointerEvent,
   type ReactNode,
 } from "react"
 import { slideListCopy } from "@/copy/slide-list-copy"
@@ -29,9 +29,7 @@ export function SlideItem({
   onSelect,
   onChoose,
   onKeyDown,
-  onDragStart,
-  onDragOver,
-  onDrop,
+  onPointerDown,
   children,
 }: {
   index: number
@@ -46,9 +44,7 @@ export function SlideItem({
   onSelect?: (press: SlidePress) => void
   onChoose?: (change: SlideKey) => void
   onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void
-  onDragStart?: (event: DragEvent<HTMLButtonElement>) => void
-  onDragOver?: (event: DragEvent<HTMLButtonElement>) => void
-  onDrop?: (event: DragEvent<HTMLButtonElement>) => void
+  onPointerDown?: ((event: PointerEvent<HTMLButtonElement>) => void) | undefined
   children: ReactNode
 }) {
   const entry = useRef<HTMLButtonElement>(null)
@@ -65,7 +61,7 @@ export function SlideItem({
     else if (entry.current?.isConnected) entry.current.focus()
   }, [])
   const look = cn(
-    "flex w-fit items-start gap-2 rounded-[var(--shape-card)] py-1.5 pr-1.5 pl-2",
+    "flex w-fit items-start gap-2 rounded-[var(--shape-card)] py-1.5 pr-1.5 pl-2 select-none",
     active || picked ? "bg-[var(--row)]" : onSelect !== undefined && "hover:bg-black/4",
   )
   const number = (
@@ -92,7 +88,6 @@ export function SlideItem({
       <button
         ref={entry}
         type="button"
-        draggable={onDragStart !== undefined}
         aria-current={active ? "true" : undefined}
         aria-label={picked ? slideListCopy.selectedName(index, count) : slideListCopy.slideName(index, count)}
         aria-description={skipped ? slideListCopy.skipped : undefined}
@@ -120,9 +115,7 @@ export function SlideItem({
           }
           onKeyDown?.(event)
         }}
-        onDragStart={onDragStart}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
+        onPointerDown={onPointerDown}
       >
         {number}
         {children}

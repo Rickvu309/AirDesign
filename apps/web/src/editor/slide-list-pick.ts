@@ -67,8 +67,3 @@ export function turnedPick(step: SetStep, ids: readonly string[]): SetTurn {
   if (key === step.after) return { at: step.done, step: { ...step, seen: key } }
   return { at: null, step: null }
 }
-
-export function setDropPlace(held: readonly number[], index: number): number | null {
-  if (held.includes(index)) return null
-  return index > (held.at(-1) ?? index) ? index + 1 : index
-}

@@ -25,14 +25,14 @@ import { NewSlideMenu } from "@/editor/new-slide-menu"
 import type { LayoutChoice } from "@/editing/slide-layout"
 import type { LayoutPictureSource } from "@/editor/layout-pictures"
 import { cn } from "@/lib/class-names"
-import { setDropPlace } from "@/editor/slide-list-pick"
+import { useSlideListDrag } from "@/editor/use-slide-list-drag"
 import { useSlideListSet } from "@/editor/use-slide-list-set"
 
 export const slideThumbWidth = 197
 
 const thumbWidth = slideThumbWidth
 
-const thumbCard = cn("block shrink-0 overflow-hidden rounded-[2px] bg-white", hairlineShadow)
+const thumbCard = cn("slide-thumb block shrink-0 overflow-hidden rounded-[2px] bg-white", hairlineShadow)
 
 export type SetChange = { readonly picked: readonly string[]; readonly order: readonly string[] }
 
@@ -173,9 +173,20 @@ function DeckStrip({
     announce,
     onSlideSelection,
   })
+  const { onPointerDown, onClickCapture } = useSlideListDrag(
+    list,
+    strip.slideIds,
+    (index) => (inSet(index) && strip.onMoveMany !== undefined ? held : [index]),
+    (drop) => {
+      following.current = true
+      if (drop.held.length > 1) return moveSlides(drop.held, drop.at)
+      announce(slideListCopy.moved(slideNumber(drop.grabbed), slideNumber(drop.place)))
+      strip.onMove?.(drop.grabbed, drop.place)
+    },
+  )
   const item = (index: number) => (
     <SlideItem
-      key={index}
+      key={strip.slideIds[index] ?? index}
       index={slideNumber(index)}
       count={strip.count}
       active={index === strip.current}
@@ -195,23 +206,7 @@ function DeckStrip({
         if (onSet === null) runSlideChange(strip, index, change, announce)
         else onSet(change)
       }}
-      onDragStart={(event) => {
-        event.dataTransfer.setData("text/plain", String(index))
-        event.dataTransfer.effectAllowed = "move"
-      }}
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={(event) => {
-        event.preventDefault()
-        const from = Number(event.dataTransfer.getData("text/plain"))
-        if (!Number.isInteger(from) || from === index) return
-        if (inSet(from) && strip.onMoveMany !== undefined) {
-          const at = setDropPlace(held, index)
-          if (at !== null) moveSlides(held, at)
-          return
-        }
-        announce(slideListCopy.moved(slideNumber(from), slideNumber(index)))
-        strip.onMove?.(from, index)
-      }}
+      onPointerDown={strip.onMove === undefined ? undefined : (event) => onPointerDown(index, event)}
     >
       <Filmstrip
         className={thumbCard}
@@ -239,9 +234,7 @@ function DeckStrip({
     onKeyDownCapture: (event: KeyboardEvent<HTMLDivElement>) => {
       if (slideKey(event) !== null || movesWithHistory(event)) following.current = true
     },
-    onDropCapture: () => {
-      following.current = true
-    },
+    onClickCapture,
     onBlur: (event: FocusEvent<HTMLDivElement>) => {
       if (event.relatedTarget !== null && !event.currentTarget.contains(event.relatedTarget)) following.current = false
     },

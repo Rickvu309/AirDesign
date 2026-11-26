@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { pickedSlides } from "@/editor/grid-selection"
-import { heldOf, livePick, pressedPick, setDropPlace, slidePress } from "@/editor/slide-list-pick"
+import { heldOf, livePick, pressedPick, slidePress } from "@/editor/slide-list-pick"
 
 const ids = ["a", "b", "c", "d", "e", "f"]
 
@@ -50,12 +50,5 @@ describe("slide list selection", () => {
     const moved = ["d", "a", "c", "b"]
     expect(pickedSlides(livePick(pick, 0, moved), moved, 0)).toEqual([0, 2, 3])
     expect(livePick(pick, 0, ["d", "a", "e"])).toBeNull()
-  })
-
-  it("drops a moved set before a slide above it and after a slide below it, and nowhere inside it", () => {
-    expect(setDropPlace([2, 3], 0)).toBe(0)
-    expect(setDropPlace([2, 3], 5)).toBe(6)
-    expect(setDropPlace([2, 3], 3)).toBeNull()
-    expect(setDropPlace([1, 4], 2)).toBe(2)
   })
 })
