@@ -21,7 +21,7 @@ export function StatusPill({
         "flex h-10 items-center rounded-[var(--shape-card)] bg-foreground text-[length:var(--type-dense)] text-white shadow-dark-overlay",
         error && "bg-background text-danger-text",
         layout === "action" && "h-auto min-h-10 max-w-full gap-2.5 py-1.5 pr-1.5 pl-3.5",
-        layout === "message" && "h-auto min-h-10 px-3.5 py-2 [overflow-wrap:anywhere]",
+        layout === "message" && "h-auto min-h-10 w-max max-w-full px-3.5 py-2 [overflow-wrap:anywhere]",
         className,
       )}
       style={style}

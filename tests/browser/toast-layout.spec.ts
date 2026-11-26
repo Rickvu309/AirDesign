@@ -1,4 +1,5 @@
-import { productCopy } from "../../apps/web/src/copy/product-copy"
+import { creditsCopy } from "../../apps/web/src/copy/credits-copy"
+import { moveFailedOf, productCopy } from "../../apps/web/src/copy/product-copy"
 import { undoCopy } from "../../apps/web/src/copy/undo-copy"
 import { expect } from "@playwright/test"
 import { test } from "./deck-test"
@@ -78,4 +79,131 @@ test("Trash Undo and Close dismiss by touch on a phone", async ({ browser }) => 
   } finally {
     await context.close()
   }
+})
+
+test("error notices match their white pill with a light close button and give three-line errors vertical room", async ({
+  page,
+}) => {
+  const longName = "Quarterly Pricing Strategy Review for Regional Enterprise Leads"
+  await page.setViewportSize({ width: 1470, height: 923 })
+  await page.route("**/account/profile", (route) =>
+    route.fulfill({ json: { ok: true, account: { email: "person@example.com", name: "Person" } } }),
+  )
+  await page.route("**/decks/list", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        account: { email: "person@example.com" },
+        decks: [
+          {
+            deck: "deck-1",
+            name: longName,
+            edited: "2026-11-26T00:00:00.000Z",
+            created: "2026-11-26T00:00:00.000Z",
+            doom: { rev: 1 },
+          },
+        ],
+        trash: [],
+      },
+    }),
+  )
+  await page.route("**/decks/trash", (route) => route.fulfill({ status: 500, json: { ok: false } }))
+
+  await page.goto("/")
+  await page.getByRole("button", { name: `${longName} actions` }).click()
+  await page.getByRole("menuitem", { name: productCopy.moveToTrash }).click()
+
+  const failedMessage = moveFailedOf(longName)
+  const text = page.getByText(failedMessage, { exact: true })
+  await expect(text).toBeVisible()
+  const close = page.getByRole("button", { name: productCopy.close, exact: true })
+  await expect(close).toBeVisible()
+
+  const metrics = await page.evaluate((message) => {
+    const spans = [...document.querySelectorAll("[data-sonner-toast] span")]
+    const label = spans.find((node) => node.textContent === message)
+    const pill = label?.parentElement
+    const closeButton = document.querySelector(`[data-sonner-toast] button[aria-label="Close"]`)
+    if (!label || !pill || !closeButton) throw new Error("Missing error toast elements")
+    const range = document.createRange()
+    range.selectNodeContents(label)
+    const rects = [...range.getClientRects()].filter((rect) => rect.width > 0 && rect.height > 0)
+    const textTop = Math.min(...rects.map((rect) => rect.top))
+    const textBottom = Math.max(...rects.map((rect) => rect.bottom))
+    const pillBox = pill.getBoundingClientRect()
+    const pillStyle = getComputedStyle(pill)
+    const closeStyle = getComputedStyle(closeButton)
+    return {
+      lines: rects.length,
+      pillBg: pillStyle.backgroundColor,
+      closeBg: closeStyle.backgroundColor,
+      closeBorderWidth: closeStyle.borderTopWidth,
+      topGap: textTop - pillBox.top,
+      bottomGap: pillBox.bottom - textBottom,
+      pillWidth: pillBox.width,
+    }
+  }, failedMessage)
+
+  expect(metrics.pillBg).toBe("rgb(255, 255, 255)")
+  expect(metrics.closeBg).toBe("rgb(255, 255, 255)")
+  expect(metrics.closeBorderWidth).toBe("1px")
+  expect(metrics.pillWidth).toBeLessThanOrEqual(420)
+  expect(metrics.lines).toBeGreaterThanOrEqual(3)
+  expect(metrics.topGap).toBeGreaterThanOrEqual(9)
+  expect(metrics.bottomGap).toBeGreaterThanOrEqual(9)
+
+  await page.setViewportSize({ width: 320, height: 700 })
+  for (const control of [close, page.getByRole("button", { name: productCopy.payTryAgain, exact: true })]) {
+    const box = await control.boundingBox()
+    if (box === null) throw new Error("Missing error toast control")
+    expect(box.x).toBeGreaterThanOrEqual(0)
+    expect(box.x + box.width).toBeLessThanOrEqual(320)
+  }
+})
+
+test("status toasts size to their words within a sensible maximum and stay centered over main", async ({ page }) => {
+  await page.setViewportSize({ width: 1470, height: 923 })
+  await page.route("**/account/profile", (route) =>
+    route.fulfill({ json: { ok: true, account: { email: "person@example.com", name: "Person" } } }),
+  )
+  await page.route("**/aira/usage", (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        account: { email: "person@example.com" },
+        usage: { used: 0, allowed: 2, resets: "2026-11-30T00:00:00.000Z" },
+      },
+    }),
+  )
+  await page.route("**/credits/read", (route) =>
+    route.fulfill({ json: { ok: true, credits: { cents: 0, autoReset: false, history: [] } } }),
+  )
+
+  await page.goto("/settings/usage")
+  await page.getByRole("button", { name: creditsCopy.add, exact: true }).click()
+  const toast = page.locator("[data-sonner-toast]")
+  await expect(toast).toContainText(creditsCopy.purchases)
+
+  const metrics = await page.evaluate((message) => {
+    const main = document.querySelector("[data-decks-main]")
+    const pill = [...document.querySelectorAll("[data-sonner-toast] div")].find(
+      (node) => node.textContent === message && getComputedStyle(node).backgroundColor === "rgb(34, 34, 34)",
+    )
+    if (!main || !pill) throw new Error("Missing status toast pill")
+    const range = document.createRange()
+    range.selectNodeContents(pill)
+    const textBox = range.getBoundingClientRect()
+    const pillBox = pill.getBoundingClientRect()
+    const mainBox = main.getBoundingClientRect()
+    return {
+      pillWidth: pillBox.width,
+      leftPad: textBox.left - pillBox.left,
+      rightPad: pillBox.right - textBox.right,
+      centerDelta: Math.abs(pillBox.left + pillBox.width / 2 - (mainBox.left + mainBox.width / 2)),
+    }
+  }, creditsCopy.purchases)
+
+  expect(metrics.pillWidth).toBeLessThan(280)
+  expect(Math.abs(metrics.rightPad - metrics.leftPad)).toBeLessThanOrEqual(2)
+  expect(metrics.centerDelta).toBeLessThanOrEqual(2)
 })

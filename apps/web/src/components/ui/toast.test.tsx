@@ -37,7 +37,21 @@ it("keeps custom action notices available with a named close control", () => {
     .filter((entry): entry is ToastT => !("dismiss" in entry))
     .find((entry) => entry.id === id)
   expect(entry?.duration).toBe(Infinity)
-  expect(renderToStaticMarkup(createElement("div", null, entry?.jsx))).toContain('aria-label="Close"')
+  const html = renderToStaticMarkup(createElement("div", null, entry?.jsx))
+  expect(html).toContain('aria-label="Close"')
+  expect(html).toContain("bg-foreground")
+})
+
+it("gives a light notice a light close control instead of a solid dark button", () => {
+  const id = toast.notice(() => createElement("button", null, "Try again"), { tone: "light" })
+  const entry = sonner
+    .getHistory()
+    .filter((entry): entry is ToastT => !("dismiss" in entry))
+    .find((entry) => entry.id === id)
+  const html = renderToStaticMarkup(createElement("div", null, entry?.jsx))
+  expect(html).toContain('aria-label="Close"')
+  expect(html).toContain("bg-background")
+  expect(html).not.toContain("bg-foreground")
 })
 
 it("leaves plain success messages on Sonner's short lifetime", () => {
