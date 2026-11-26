@@ -78,3 +78,39 @@ test("the 6-digit code draws one ring at a time, focus colour on focus and error
     }
   }
 })
+
+test("the sign-in footer underlines its links so they stand apart from plain text", async ({ page }) => {
+  for (const reducedMotion of ["no-preference", "reduce"] as const) {
+    await page.emulateMedia({ reducedMotion })
+    for (const size of viewports) {
+      await page.setViewportSize(size)
+      await page.goto(`${site.origin}/sign-in`)
+      await page.evaluate(() => document.fonts.ready)
+      const styles = await page.evaluate(() => {
+        const read = (selector: string) => {
+          const element = document.querySelector(selector)
+          if (!element) throw new Error(`missing ${selector}`)
+          const style = getComputedStyle(element)
+          return {
+            textDecorationLine: style.textDecorationLine,
+            textUnderlineOffset: style.textUnderlineOffset,
+          }
+        }
+        return {
+          terms: read('footer a[href="/terms"]'),
+          plain: read("footer span"),
+          privacy: read('footer a[href="/privacy"]'),
+        }
+      })
+      expect(styles.terms, `${reducedMotion} ${size.width}px terms`).toEqual({
+        textDecorationLine: "underline",
+        textUnderlineOffset: "2px",
+      })
+      expect(styles.privacy, `${reducedMotion} ${size.width}px privacy`).toEqual({
+        textDecorationLine: "underline",
+        textUnderlineOffset: "2px",
+      })
+      expect(styles.plain.textDecorationLine, `${reducedMotion} ${size.width}px plain text`).toBe("none")
+    }
+  }
+})
