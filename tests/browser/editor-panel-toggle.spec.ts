@@ -71,7 +71,7 @@ test("the side panel button closes and opens the panel under one pointer spot, a
   await expect(toggle(page)).toHaveAttribute("aria-expanded", "false")
   await toggle(page).click()
   await expect(panel(page)).toBeVisible()
-  await expect(page.locator("[data-slide-grid]")).toBeVisible()
+  await expect(page.locator("[data-editor-grid]")).toBeVisible()
   await page.getByRole("button", { name: slideListCopy.slidesView }).click()
   await expect(toggle(page)).toHaveAttribute("aria-expanded", "false")
   await page.getByRole("button", { name: slideListCopy.gridView }).click()
