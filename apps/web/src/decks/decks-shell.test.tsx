@@ -82,3 +82,27 @@ describe("bring your own agent card art", () => {
     expect(html).toMatch(/<button type="button" aria-label="Collapse"[^>]*class="[^"]*left-\[192px\]/)
   })
 })
+
+describe("Aira", () => {
+  const links = (html: string) =>
+    [...html.matchAll(/<a href="([^"]+)"[^>]*>(?:(?!<\/a>).)*data-sidebar-label[^>]*>([^<]+)</g)].map((found) => [
+      found[2],
+      found[1],
+    ])
+
+  it("sits right under All decks and opens the Aira page for a real account", () => {
+    const named = links(shell("person@example.com"))
+    const at = named.findIndex(([name]) => name === "All decks")
+    expect(named[at + 1]).toEqual(["Aira", "/aira"])
+  })
+
+  it("opens its design screen from a design screen, and marks the page it is on", () => {
+    const html = renderToStaticMarkup(
+      <DecksShell active="aira">
+        <p>content</p>
+      </DecksShell>,
+    )
+    expect(links(html)).toContainEqual(["Aira", "/screens/s35-01-decks-aira-start"])
+    expect(html).toMatch(/<a href="\/screens\/s35-01-decks-aira-start"[^>]*aria-current="page"/)
+  })
+})

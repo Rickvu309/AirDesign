@@ -6,6 +6,7 @@ dependencies:
   - apps/web/src/lib
 public:
   - agent-logos.ts
+  - aira-page.tsx
   - danger-dialog.tsx
   - deck-glyph.tsx
   - discard-opening.ts

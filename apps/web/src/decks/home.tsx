@@ -26,9 +26,8 @@ import {
   unstarredOf,
 } from "@/copy/product-copy"
 import { DeckBrowser } from "@/decks/deck-browser"
-import { DescribeDeck } from "@/decks/describe-deck"
 import { discardOpening } from "@/decks/discard-opening"
-import { handFirstRequest, openingDeck, peekFirstRequest } from "@/lib/first-request"
+import { openingDeck } from "@/lib/first-request"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { clearGridShift, gridShift } from "@/decks/grid-shift"
 import { DeckActions, DeckRowMenu } from "@/decks/deck-menu"
@@ -270,15 +269,6 @@ export function Home({
         trash ? <EmptyTrashButton disabled={decks.length === 0} onClick={() => setDeleting([...decks])} /> : undefined
       }
     >
-      {section === "recents" && (
-        <DescribeDeck
-          initial={peekFirstRequest() ?? ""}
-          onDescribe={(text) => {
-            handFirstRequest(text)
-            navigate("/s")
-          }}
-        />
-      )}
       {trash && <TrashNote />}
       {unavailable && (
         <div className="mt-8" role="alert">

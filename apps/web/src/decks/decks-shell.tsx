@@ -1,6 +1,7 @@
 import { useAccountProfile } from "@/account/account-profile"
 import { useId, useState, type ReactNode } from "react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { SparkIcon } from "@/components/ui/editor-icons"
 import { Input } from "@/components/ui/input"
 import { DeckGlyph } from "@/decks/deck-glyph"
 import { DeleteAccountDialog } from "@/decks/delete-account"
@@ -19,14 +20,22 @@ const sections: {
   id: DeckSection
   label: string
   href: string
-  glyph: "clock" | "decks" | "trash" | "gear"
+  page: string
+  glyph: "clock" | "decks" | "trash" | "gear" | "spark"
   size: number
 }[] = [
-  { id: "recents", label: "Recents", href: deckRoutes.recentsGrid, glyph: "clock", size: 15 },
-  { id: "all-decks", label: "All decks", href: deckRoutes.allDecksGrid, glyph: "decks", size: 15 },
-  { id: "trash", label: "Trash", href: deckRoutes.trash, glyph: "trash", size: 14 },
-  { id: "settings", label: "Settings", href: deckRoutes.settings, glyph: "gear", size: 15 },
+  { id: "recents", label: "Recents", href: deckRoutes.recentsGrid, page: "/", glyph: "clock", size: 15 },
+  { id: "all-decks", label: "All decks", href: deckRoutes.allDecksGrid, page: "/all", glyph: "decks", size: 15 },
+  { id: "aira", label: productCopy.agentName, href: deckRoutes.aira, page: "/aira", glyph: "spark", size: 15 },
+  { id: "trash", label: "Trash", href: deckRoutes.trash, page: "/trash", glyph: "trash", size: 14 },
+  { id: "settings", label: "Settings", href: deckRoutes.settings, page: settingsPaths.usage, glyph: "gear", size: 15 },
 ]
+
+type SectionGlyph = (typeof sections)[number]["glyph"]
+
+function SectionIcon({ glyph, size }: { glyph: SectionGlyph; size: number }) {
+  return glyph === "spark" ? <SparkIcon size={size} className="text-primary" /> : <DeckGlyph name={glyph} size={size} />
+}
 
 const settingsMenu = [
   { path: settingsPaths.usage, label: settingsCopy.usage },
@@ -110,14 +119,7 @@ export function DecksShell({
   const [deletingAccount, setDeletingAccount] = useState(false)
   const starredLabel = useId()
   const empty = realAccount ? starred?.length === 0 : firstVisit
-  const primary = { ...sections[0], href: realAccount ? "/" : sections[0].href }
-  const rest = realAccount
-    ? [
-        { ...sections[1], href: "/all" },
-        { ...sections[2], href: "/trash" },
-        { ...sections[3], href: settingsPaths.usage },
-      ]
-    : sections.slice(1)
+  const [primary, ...rest] = sections.map((section) => (realAccount ? { ...section, href: section.page } : section))
   return (
     <div className="flex h-full w-full max-md:flex-col">
       <aside
@@ -217,7 +219,7 @@ export function DecksShell({
             aria-current={active === primary.id ? "page" : undefined}
           >
             <span data-sidebar-icon className={iconColumn}>
-              <DeckGlyph name={primary.glyph} size={primary.size} />
+              <SectionIcon glyph={primary.glyph} size={primary.size} />
             </span>
             <span data-sidebar-label>{primary.label}</span>
           </a>
@@ -234,7 +236,7 @@ export function DecksShell({
                 aria-current={active === section.id ? "page" : undefined}
               >
                 <span data-sidebar-icon className={iconColumn}>
-                  <DeckGlyph name={section.glyph} size={section.size} />
+                  <SectionIcon glyph={section.glyph} size={section.size} />
                 </span>
                 <span data-sidebar-label>{section.label}</span>
               </a>

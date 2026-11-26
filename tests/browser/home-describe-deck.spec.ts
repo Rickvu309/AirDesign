@@ -7,7 +7,7 @@ test.use({ viewport: { width: 1600, height: 1000 }, locale: "en-US" })
 
 const words = "A board update on Q3 revenue, numbers first"
 
-test("describing a deck on the home makes a deck and sends the words to Aira once, and a reload does not send them again", async ({
+test("describing a deck on the Aira page makes a deck and sends the words to Aira once, and a reload does not send them again", async ({
   page,
   context,
   stack,
@@ -15,7 +15,7 @@ test("describing a deck on the home makes a deck and sends the words to Aira onc
   await signInBrowser(context, await stack.signIn())
   const called = await forward(page, stack)
   stack.aira({ name: "turn.sse" })
-  await page.goto("/")
+  await page.goto("/aira")
   const box = page.getByRole("textbox", { name: productCopy.describeDeck })
   await box.fill(words)
   await page.keyboard.press("Enter")
@@ -71,7 +71,7 @@ test("pressing Back while the deck opens puts the words back and leaves no blank
   const hold = holdCreate(page)
   await hold.seen
   try {
-    await page.goto("/")
+    await page.goto("/aira")
     const box = page.getByRole("textbox", { name: productCopy.describeDeck })
     await box.fill(words)
     const asked = page.waitForRequest("**/doom/create")

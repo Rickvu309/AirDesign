@@ -87,21 +87,12 @@ it("offers no deck start on Trash", async () => {
 
 const box = () => host.querySelector(`textarea[aria-label="${productCopy.describeDeck}"]`)
 
-it("offers the words again when the editor was left before it opened", async () => {
+it("keeps the Describe your deck box off Recents, All decks and Trash, since it lives on the Aira page", async () => {
   handFirstRequest("A board update on Q3 revenue, numbers first")
-  await show()
-  expect((box() as HTMLTextAreaElement).value).toBe("A board update on Q3 revenue, numbers first")
-})
-
-it("offers the Describe your deck box on Recents, and on neither All decks nor Trash", async () => {
-  await show()
-  expect(box()).not.toBeNull()
-  await act(async () => root.unmount())
-  host.remove()
-  await show("all-decks")
-  expect(box()).toBeNull()
-  await act(async () => root.unmount())
-  host.remove()
-  await show("trash")
-  expect(box()).toBeNull()
+  for (const section of ["recents", "all-decks", "trash"] as const) {
+    await show(section)
+    expect(box()).toBeNull()
+    await act(async () => root.unmount())
+    host.remove()
+  }
 })

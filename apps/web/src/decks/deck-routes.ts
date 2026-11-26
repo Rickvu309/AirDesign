@@ -4,6 +4,7 @@ export const deckRoutes = {
   recentsList: "/screens/s31-03-decks-browse-recents-list",
   allDecksGrid: "/screens/s31-04-decks-browse-all-decks-grid",
   allDecksList: "/screens/s31-05-decks-browse-all-decks-list",
+  aira: "/screens/s35-01-decks-aira-start",
   deckMoved: "/screens/s33-01-decks-trash-deck-moved-toast",
   trash: "/screens/s33-02-decks-trash-list",
   emptyTrashConfirm: "/screens/s33-03-decks-trash-empty-trash-confirm",
@@ -13,4 +14,4 @@ export const deckRoutes = {
   connectAgent: "/screens/s71-01-agents-connect-approve-claude",
 } as const
 
-export type DeckSection = "recents" | "all-decks" | "trash" | "settings"
+export type DeckSection = "recents" | "all-decks" | "aira" | "trash" | "settings"

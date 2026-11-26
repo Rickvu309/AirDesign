@@ -1,4 +1,5 @@
 import { deckRoutes } from "@/decks/deck-routes"
+import { AiraStartScreen } from "@/decks/screens/aira-start"
 import { AllDecksGrid } from "@/decks/screens/all-decks-grid"
 import { AllDecksList } from "@/decks/screens/all-decks-list"
 import { DeckMovedToast } from "@/decks/screens/deck-moved-toast"
@@ -14,6 +15,7 @@ export const screens = {
   [deckRoutes.recentsList]: RecentsList,
   [deckRoutes.allDecksGrid]: AllDecksGrid,
   [deckRoutes.allDecksList]: AllDecksList,
+  [deckRoutes.aira]: AiraStartScreen,
   [deckRoutes.deckMoved]: DeckMovedToast,
   [deckRoutes.deckNotFound]: function DeckNotFound() {
     return <NotFound kind="deck" />
