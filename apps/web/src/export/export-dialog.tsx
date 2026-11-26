@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { choiceProblem, problemOn, type ExportChoice, type SlideChoice } from "@/export/export-choice"
 import { exportCopy } from "@/copy/export-copy"
 import { slideNames } from "@/export/export-options"
+import { cn } from "@/lib/class-names"
 
 const fieldEdge = "shadow-[0_0_0_1px_var(--field-edge)]"
 const fieldText = "text-[length:var(--type-dense)] leading-ui-tight text-foreground"
@@ -66,7 +67,11 @@ function OptionSelect<T extends string>({
         aria-labelledby={labelId}
         aria-invalid={problemId !== undefined}
         aria-describedby={problemId}
-        className={`h-9 w-full rounded-lg border-0 bg-white pr-3 pl-3 data-[size=default]:h-9 ${fieldEdge} ${fieldText}`}
+        className={cn(
+          "h-9 w-full rounded-lg border-0 bg-white pr-3 pl-3 data-[size=default]:h-9",
+          fieldEdge,
+          fieldText,
+        )}
       >
         <SelectValue>{(selected: T | null) => names[selected ?? value] ?? ""}</SelectValue>
       </SelectTrigger>
@@ -110,7 +115,7 @@ function SlideNumber({
       disabled={disabled}
       value={value}
       onChange={(event) => onValue(event.target.value)}
-      className={`h-9 w-20 rounded-lg bg-white px-3 ${fieldEdge} ${fieldText}`}
+      className={cn("h-9 w-20 rounded-lg bg-white px-3", fieldEdge, fieldText)}
     />
   )
 }
@@ -238,7 +243,10 @@ export function ExportDialog({
                   variant="default"
                   disabled={exporting || problem !== null}
                   {...(problem === null ? {} : { "aria-describedby": problemId })}
-                  className={`h-9 min-w-[73.25px] rounded-lg px-3 text-[length:var(--type-dense)] leading-ui-tight font-medium ${problem === null ? "" : "opacity-50"}`}
+                  className={cn(
+                    "h-9 min-w-[73.25px] rounded-lg px-3 text-[length:var(--type-dense)] leading-ui-tight font-medium",
+                    problem !== null && "opacity-50",
+                  )}
                 >
                   {exporting ? exportCopy.exporting : exportCopy.action}
                 </Button>
