@@ -2,17 +2,8 @@ import type { Ref } from "react"
 import { Button } from "@/components/ui/button"
 import { presentCopy } from "@/copy/present-copy"
 import { EditorIcon } from "@/components/ui/editor-icons"
-import { cn } from "@/lib/class-names"
 
-export function PresentButton({
-  faded = false,
-  onClick,
-  ref,
-}: {
-  faded?: boolean
-  onClick?: () => void
-  ref?: Ref<HTMLButtonElement>
-}) {
+export function PresentButton({ onClick, ref }: { onClick?: () => void; ref?: Ref<HTMLButtonElement> }) {
   return (
     <Button
       {...(ref === undefined ? {} : { ref })}
@@ -22,7 +13,7 @@ export function PresentButton({
       aria-label={presentCopy.present}
       aria-keyshortcuts="Meta+Enter Control+Enter F5"
       data-present-button
-      className={cn("size-8 rounded-lg text-foreground active:translate-y-0", faded && "opacity-40")}
+      className="active:translate-y-0"
       {...(onClick === undefined ? {} : { onClick })}
     >
       <EditorIcon name="play" size={16} />
