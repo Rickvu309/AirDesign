@@ -224,6 +224,7 @@ export function EditorGrid({
     const to = gridMove(event.key, layout.cards, index)
     if (to === null) return
     event.preventDefault()
+    event.stopPropagation()
     focusCard(to, true)
     if (event.shiftKey) {
       const next = pickRange(picked, to, current)

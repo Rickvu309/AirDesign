@@ -269,6 +269,7 @@ export function useGridCamera({
       if (gestureFor(event, "grid") !== "pan-arrows") return
       if (!onCanvas(event.target, host.current) || !blankCanvas(event.target) || !editorOwnsKey(event)) return
       event.preventDefault()
+      event.stopPropagation()
       show(arrowGrid(latest.current.view, event.key))
     }
     const up = (event: KeyboardEvent) => {
