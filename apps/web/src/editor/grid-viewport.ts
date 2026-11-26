@@ -186,6 +186,19 @@ export function cardBox(layout: GridLayout, view: GridView, index: number): Grid
   }
 }
 
+export function gridSlidePoint(
+  view: GridView,
+  card: { readonly left: number; readonly top: number },
+  host: { readonly left: number; readonly top: number },
+  client: { readonly x: number; readonly y: number },
+): { readonly x: number; readonly y: number } {
+  if (view.scale <= 0) return { x: 0, y: 0 }
+  return {
+    x: (client.x - host.left - view.x) / view.scale - card.left,
+    y: (client.y - host.top - view.y) / view.scale - card.top,
+  }
+}
+
 export function keptGridShows(
   camera: GridCamera,
   layout: GridLayout,

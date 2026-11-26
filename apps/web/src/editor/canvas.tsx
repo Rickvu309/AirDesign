@@ -62,6 +62,7 @@ export type CanvasCard = {
   readonly onBlank: () => void
   readonly onMode: (mode: "elements" | "text") => void
   readonly onRun: (run: ActionRun) => void
+  readonly pointAt?: (client: { readonly x: number; readonly y: number }) => { readonly x: number; readonly y: number }
 }
 
 const idleRun: ActionRun = {
@@ -386,6 +387,7 @@ export function DoomCanvas(props: CanvasProps) {
     },
     onCropEnd: () => onCropping(null),
     ...(props.card === undefined ? {} : { onBlank: props.card.onBlank }),
+    ...(props.card?.pointAt === undefined ? {} : { pointAt: props.card.pointAt }),
   })
 
   const wasText = useRef(false)
