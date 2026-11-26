@@ -227,12 +227,7 @@ export function ExportDialog({
             <div className="border-t border-line">
               <div className="flex h-15 items-center justify-end gap-2 px-5">
                 {exporting ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-9 rounded-lg px-3 text-[length:var(--type-dense)] leading-ui-tight font-medium"
-                    onClick={onClose}
-                  >
+                  <Button type="button" variant="outline" size="dense-dialog" onClick={onClose}>
                     {exportCopy.cancel}
                   </Button>
                 ) : null}
@@ -241,12 +236,10 @@ export function ExportDialog({
                   type="submit"
                   focusableWhenDisabled
                   variant="default"
+                  size="dense-dialog"
                   disabled={exporting || problem !== null}
                   {...(problem === null ? {} : { "aria-describedby": problemId })}
-                  className={cn(
-                    "h-9 min-w-[73.25px] rounded-lg px-3 text-[length:var(--type-dense)] leading-ui-tight font-medium",
-                    problem !== null && "opacity-50",
-                  )}
+                  className={cn("min-w-[73.25px]", problem !== null && "opacity-50")}
                 >
                   {exporting ? exportCopy.exporting : exportCopy.action}
                 </Button>
