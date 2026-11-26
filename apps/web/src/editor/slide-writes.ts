@@ -77,7 +77,7 @@ export function addSlideWrites(
   if (row === undefined) {
     const deck = deckId(view)
     const deckRows = deck === null ? [] : doom.childrenOf(view, deck)
-    row = deckRows.findLast((each) => each.type === "slideRow" && doom.propOf(each, "hidden") !== true)?.id
+    row = doom.slideRowAt(view, "last")
     if (row === undefined) {
       row = mint()
       const rowAt = doom.parentOf(deckRows.at(-1))?.at ?? null

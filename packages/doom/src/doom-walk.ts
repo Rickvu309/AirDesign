@@ -37,6 +37,15 @@ export function rowsOf(doom: Doom, hidden: boolean): readonly Node[] {
 
 export const slidesOf = (doom: Doom): readonly Node[] => rowsOf(doom, false).flatMap((row) => childrenOf(doom, row.id))
 
+export function slideRowAt(doom: Doom, end: "first" | "last"): NodeId | undefined {
+  const slides = slidesOf(doom)
+  const slide = end === "first" ? slides[0] : slides.at(-1)
+  const row = parentOf(slide)?.id
+  if (row !== undefined) return row
+  const rows = rowsOf(doom, false)
+  return (end === "first" ? rows[0] : rows.at(-1))?.id
+}
+
 export function slideOf(doom: Doom, id: NodeId): NodeId | undefined {
   let at: Node | undefined = doom.nodes.get(id)
   for (let hops = 0; at !== undefined && hops <= doom.nodes.size; hops += 1) {

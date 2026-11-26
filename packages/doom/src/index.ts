@@ -137,6 +137,7 @@ export {
   parentOf,
   propOf,
   slideOf,
+  slideRowAt,
   slidesOf,
 } from "./doom-walk.js"
 export { liveRuns, runsOf } from "./live-runs.js"

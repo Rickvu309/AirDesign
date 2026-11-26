@@ -3,7 +3,7 @@ import type { AgentChange, SlideAdd, SlideMove } from "./agent-change.js"
 import { type Draft, add, keysAfter, living, stop } from "./agent-draft.js"
 import type { NodeId } from "./ids.js"
 import type { Node } from "./doom.js"
-import { deckOf, parentOf, rowsOf, slidesOf } from "./doom-walk.js"
+import { deckOf, parentOf, slideRowAt, slidesOf } from "./doom-walk.js"
 
 function deckSlide(draft: Draft, id: NodeId, field: string): Node {
   const node = living(draft, id, field)
@@ -16,7 +16,7 @@ function addSlide(draft: Draft, options: SlideAdd): void {
   const deck = deckOf(draft.doom) ?? stop("missing")
   const slides = slidesOf(draft.doom)
   const previous = options.after === undefined ? slides.at(-1) : deckSlide(draft, options.after, "after")
-  let row = previous === undefined ? rowsOf(draft.doom, false).at(-1)?.id : parentOf(previous)?.id
+  let row = previous === undefined ? slideRowAt(draft.doom, "last") : parentOf(previous)?.id
   if (row === undefined) {
     row = draft.mint()
     add(draft, row, "slideRow", deck.id, {})
@@ -29,7 +29,7 @@ function moveSlide(draft: Draft, options: SlideMove): void {
   const slide = deckSlide(draft, options.slide, "move")
   const after = options.after === null ? null : deckSlide(draft, options.after, "after")
   if (after?.id === slide.id) stop("shape", slide.id, "after", "form", "A different slide, or null to put it first.")
-  const row = after === null ? rowsOf(draft.doom, false)[0]?.id : parentOf(after)?.id
+  const row = after === null ? slideRowAt(draft.doom, "first") : parentOf(after)?.id
   if (row === undefined) stop("missing", undefined, "after")
   const [key] = keysAfter(draft, row, after?.id ?? null, 1, new Set([slide.id]))
   draft.writes.push({ node: slide.id, prop: "parent", value: { id: row, at: key as OrderKey } })
