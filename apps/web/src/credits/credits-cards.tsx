@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { ConfirmationDialog } from "@/components/ui/dialog"
 import { creditsCopy, creditAmount, creditDate } from "@/copy/credits-copy"
 import { productCopy } from "@/copy/product-copy"
 import { cn } from "@/lib/class-names"
@@ -110,35 +110,27 @@ export function CreditsCards({ state }: { state: CreditsState }) {
           </>
         )}
       </Card>
-      <Dialog
-        open={state.reset !== null}
-        onOpenChange={(open) => {
-          if (!open) state.closeReset()
-        }}
-      >
-        <DialogContent showCloseButton={false}>
-          <DialogTitle>{creditsCopy.confirmTitle}</DialogTitle>
-          <DialogDescription>{creditsCopy.confirmBody}</DialogDescription>
+      {state.reset !== null && (
+        <ConfirmationDialog
+          title={creditsCopy.confirmTitle}
+          body={creditsCopy.confirmBody}
+          action={creditsCopy.confirm}
+          busy={state.busy}
+          onCancel={state.closeReset}
+          onConfirm={() => {
+            if (state.reset !== null) void state.change({ kind: "reset", once: state.reset })
+          }}
+        >
           {state.error ? (
-            <p role="alert" className="text-danger-text">
+            <p
+              role="alert"
+              className="mt-3 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-danger-text"
+            >
               {state.error}
             </p>
           ) : null}
-          <DialogFooter>
-            <Button variant="outline" disabled={state.busy} onClick={state.closeReset}>
-              {productCopy.cancel}
-            </Button>
-            <Button
-              disabled={state.busy}
-              onClick={() => {
-                if (state.reset !== null) void state.change({ kind: "reset", once: state.reset })
-              }}
-            >
-              {creditsCopy.confirm}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </ConfirmationDialog>
+      )}
     </>
   )
 }
