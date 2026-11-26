@@ -311,6 +311,14 @@
     font-weight: 600;
   }
 
+  [data-six-digit-code]:not(:has(> [aria-invalid="true"])) {
+    --focus-ring-width: 0px;
+  }
+
+  [data-six-digit-code]:not(:has(> [aria-invalid="true"])) .code-box[data-active] {
+    box-shadow: inset 0 0 0 1.5px var(--foreground);
+  }
+
   .code-box[data-active]:empty::after {
     content: "";
     width: 1.5px;

@@ -42,7 +42,9 @@ function readCodeRings(page: Page) {
   })
 }
 
-test("the 6-digit code draws one ring at a time, focus colour on focus and error colour on error", async ({ page }) => {
+test("the 6-digit code marks the active box with a dark edge on focus and rings the code in the error colour", async ({
+  page,
+}) => {
   await page.addInitScript(() => sessionStorage.setItem("airdesign.pending-sign-in-email", "ada@example.com"))
   for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await page.emulateMedia({ reducedMotion })
@@ -54,11 +56,12 @@ test("the 6-digit code draws one ring at a time, focus colour on focus and error
       await input.focus()
 
       const focused = await readCodeRings(page)
-      expect(focused.outlineStyle, `${reducedMotion} ${size.width}px focused outline`).toBe("solid")
-      expect(focused.outlineWidth, `${reducedMotion} ${size.width}px focused width`).toBe("2px")
-      expect(focused.outlineColor, `${reducedMotion} ${size.width}px focused colour`).toBe("rgb(45, 111, 205)")
-      expect(focused.activeShadow, `${reducedMotion} ${size.width}px no second ring on focus`).toBe(
-        focused.restingShadow,
+      expect(focused.outlineWidth, `${reducedMotion} ${size.width}px no ring around the code on focus`).toBe("0px")
+      expect(focused.activeShadow, `${reducedMotion} ${size.width}px the active box has a dark edge`).toBe(
+        "rgb(34, 34, 34) 0px 0px 0px 1.5px inset",
+      )
+      expect(focused.restingShadow, `${reducedMotion} ${size.width}px a resting box keeps its edge`).not.toBe(
+        focused.activeShadow,
       )
       expect(focused.caretContent, `${reducedMotion} ${size.width}px focused caret`).toBe('""')
       expect(focused.caretColor, `${reducedMotion} ${size.width}px focused caret colour`).toBe("rgb(45, 111, 205)")
