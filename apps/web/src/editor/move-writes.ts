@@ -42,7 +42,7 @@ export function moveWrites(
           value: { ...line, start: shiftedEnd(line.start, local), end: shiftedEnd(line.end, local) },
         },
       ]
-    const stored = doom.propOf(node, "box") ?? placed.node.box
+    const stored = doom.propOf(node, "box") ?? doom.unfittedBox(placed.node.box)
     const next = { ...stored, x: Math.round(stored.x + local.x), y: Math.round(stored.y + local.y) }
     return next.x === stored.x && next.y === stored.y ? [] : [{ node: id, prop: "box", value: next }]
   })

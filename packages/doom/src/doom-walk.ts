@@ -1,6 +1,6 @@
 import type { NodeId } from "./ids.js"
 import type { PropName, Props } from "./props.js"
-import type { Box } from "./resolved.js"
+import type { Box, LayoutBox } from "./resolved.js"
 import type { Node, Doom } from "./doom.js"
 
 export type { Box }
@@ -70,7 +70,7 @@ export function descendantsOf(doom: Doom, id: NodeId): readonly Node[] {
   return childrenOf(doom, id).flatMap((child) => [child, ...descendantsOf(doom, child.id)])
 }
 
-export function boxOf(node: Node, boxes?: ReadonlyMap<NodeId, Box>): Box {
+export function boxOf(node: Node, boxes?: ReadonlyMap<NodeId, LayoutBox>): LayoutBox {
   return boxes?.get(node.id) ?? propOf(node, "box") ?? zeroBox
 }
 

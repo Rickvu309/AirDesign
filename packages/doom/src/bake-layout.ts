@@ -1,9 +1,10 @@
 import type { NodeId } from "./ids.js"
 import type { Sizing } from "./layout.js"
 import { measureWith, type Measure } from "./measure.js"
+import { unfittedBox } from "./matrix.js"
 import type { Doom, Node, Write } from "./doom.js"
 import { childrenOf, descendantsOf, isLaidOut, parentOf, propOf, slideOf } from "./doom-walk.js"
-import type { Box } from "./resolved.js"
+import type { Box, LayoutBox } from "./resolved.js"
 import { solveLayout } from "./solve-layout.js"
 
 const sameBox = (left: Box | undefined, right: Box) =>
@@ -23,11 +24,10 @@ function fixed(node: Node, from: Sizing["w"]): Write[] {
   return next.w === sizing.w && next.h === sizing.h ? [] : [{ node: node.id, prop: "sizing", value: next }]
 }
 
-function boxWrite(node: Node, boxes: ReadonlyMap<NodeId, Box>): Write[] {
+function boxWrite(node: Node, boxes: ReadonlyMap<NodeId, LayoutBox>): Write[] {
   const solved = boxes.get(node.id)
-  return solved === undefined || sameBox(propOf(node, "box"), solved)
-    ? []
-    : [{ node: node.id, prop: "box", value: solved }]
+  const box = solved === undefined ? undefined : unfittedBox(solved)
+  return box === undefined || sameBox(propOf(node, "box"), box) ? [] : [{ node: node.id, prop: "box", value: box }]
 }
 
 export function bakeLayout(doom: Doom, frame: NodeId, measure: Measure): readonly Write[] {

@@ -12,8 +12,11 @@ export {
   apply as applyMatrix,
   artMatrix,
   boxMatrix,
+  contentMatrix,
+  fitShift,
   identity as identityMatrix,
   invert as invertMatrix,
+  unfittedBox,
 } from "./matrix.js"
 export { compileAgentChange } from "./agent-compile.js"
 export { boardDeckChanges } from "./board-deck.js"

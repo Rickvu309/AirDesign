@@ -1,4 +1,4 @@
-import type { Box, Point } from "./resolved.js"
+import type { Box, GroupFit, LayoutBox, Point } from "./resolved.js"
 
 export type Matrix = readonly [number, number, number, number, number, number]
 
@@ -41,4 +41,24 @@ export function boxMatrix(parent: Matrix, box: Box): Matrix {
 export function artMatrix(parent: Matrix, box: Box): Matrix {
   const flip: Matrix = [box.flipH ? -1 : 1, 0, 0, box.flipV ? -1 : 1, box.flipH ? box.w : 0, box.flipV ? box.h : 0]
   return multiply(boxMatrix(parent, box), flip)
+}
+
+export function contentMatrix(matrix: Matrix, box: LayoutBox): Matrix {
+  const origin = box.fit?.origin
+  return origin === undefined ? matrix : multiply(matrix, [1, 0, 0, 1, -origin.x, -origin.y])
+}
+
+export function fitShift(box: Pick<Box, "w" | "h" | "rotation">, fit: GroupFit | undefined): Point {
+  if (fit === undefined) return { x: 0, y: 0 }
+  if (box.rotation % 360 === 0) return fit.origin
+  const matrix = boxMatrix(identity, { ...box, x: 0, y: 0, flipH: false, flipV: false })
+  const at = apply(matrix, { x: fit.pivot.x - fit.origin.x, y: fit.pivot.y - fit.origin.y })
+  return { x: fit.pivot.x - at.x, y: fit.pivot.y - at.y }
+}
+
+export function unfittedBox(placed: LayoutBox): Box {
+  if (placed.fit === undefined) return placed
+  const { fit, ...box } = placed
+  const shift = fitShift(box, fit)
+  return { ...box, x: box.x - shift.x, y: box.y - shift.y }
 }

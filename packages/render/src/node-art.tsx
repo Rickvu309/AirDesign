@@ -188,6 +188,7 @@ export const NodeArt = memo(function NodeArt({
         <div
           style={{
             ...fill,
+            ...(box.fit === undefined ? {} : { left: -box.fit.origin.x, top: -box.fit.origin.y }),
             ...(node.clip ? { overflow: "hidden", borderRadius: round } : {}),
           }}
         >

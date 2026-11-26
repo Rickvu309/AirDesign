@@ -243,7 +243,7 @@ export function DoomCanvas(props: CanvasProps) {
   function draw(request: DrawRequest): readonly doom.Write[] | null {
     const holder = request.chain?.filter((each) => view.nodes.get(each.id)?.type === "frame").at(-1)
     const parent = holder?.id ?? slide
-    const local = (point: Point) => (holder === undefined ? point : apply(invert(holder.matrix), point))
+    const local = (point: Point) => (holder === undefined ? point : apply(invert(holder.content), point))
     const from = local(request.from)
     const to = request.to === null ? null : local(request.to)
     if (tool === "text") {

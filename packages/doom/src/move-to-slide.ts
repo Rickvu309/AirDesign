@@ -4,7 +4,7 @@ import type { Node, Doom, Write } from "./doom.js"
 import { boxOf, childrenOf, deckOf, descendantsOf, isLive, lockedIn, parentOf, propOf } from "./doom-walk.js"
 import type { End, Geometry } from "./geometry.js"
 import type { NodeId } from "./ids.js"
-import { apply, identity } from "./matrix.js"
+import { apply, contentMatrix, fitShift, identity } from "./matrix.js"
 import { type OrderKey, orderKeyBetween } from "./order-key.js"
 import { type Landings, worldMatrix } from "./replant.js"
 import { isRefusal, type Refusal } from "./refusal.js"
@@ -154,7 +154,9 @@ function holderMatrix(view: Doom, node: Node, landings: Landings) {
   const holder = parent == null ? undefined : view.nodes.get(parent.id)
   if (holder === undefined || holder.type === "slide" || holder.type === "deck" || holder.type === "slideRow")
     return identity
-  return worldMatrix(view, holder.id, landings)
+  const matrix = worldMatrix(view, holder.id, landings)
+  const box = landings.get(holder.id)?.box
+  return box === undefined ? matrix : contentMatrix(matrix, box)
 }
 
 function movedLine(view: Doom, node: Node, landings: Landings, delta: Point): Geometry | undefined {
@@ -176,11 +178,14 @@ function placedBox(
 ): Box {
   const local = boxOf(node, boxes)
   const center = apply(worldMatrix(view, node.id, landings), { x: local.w / 2, y: local.h / 2 })
+  const { fit, ...box } = local
+  const rotation = slideTurn(view, node.id, boxes)
+  const shift = fitShift({ ...box, rotation }, fit)
   return {
-    ...local,
-    x: Math.round(center.x + delta.x - local.w / 2),
-    y: Math.round(center.y + delta.y - local.h / 2),
-    rotation: slideTurn(view, node.id, boxes),
+    ...box,
+    x: Math.round(center.x + delta.x - local.w / 2 - shift.x),
+    y: Math.round(center.y + delta.y - local.h / 2 - shift.y),
+    rotation,
   }
 }
 

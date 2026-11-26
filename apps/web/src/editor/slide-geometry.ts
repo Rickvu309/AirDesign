@@ -3,6 +3,7 @@ import {
   type Matrix,
   applyMatrix as apply,
   boxMatrix,
+  contentMatrix,
   identityMatrix as identity,
   invertMatrix as invert,
 } from "@airdesign/doom"
@@ -19,6 +20,7 @@ export type Placed = {
   readonly parent: doom.NodeId | null
   readonly node: doom.Resolved
   readonly matrix: Matrix
+  readonly content: Matrix
   readonly corners: Corners
   readonly bounds: Bounds
   readonly rotation: number
@@ -48,7 +50,7 @@ function placeAll(
   parent: Placed | null,
   byId: Map<doom.NodeId, Placed>,
 ): readonly Placed[] {
-  const within = parent?.matrix ?? identity
+  const within = parent?.content ?? identity
   const masks = masksOf(nodes)
   const outlines = new Map(nodes.filter((node) => node.mask).map((node) => [node, silhouetteIn(node, within)]))
   return nodes.flatMap((node, index) => {
@@ -64,7 +66,7 @@ function place(
   { reveals, maskedBy }: Pick<Placed, "reveals" | "maskedBy">,
   byId: Map<doom.NodeId, Placed>,
 ): Placed {
-  const matrix = boxMatrix(parent?.matrix ?? identity, node.box)
+  const matrix = boxMatrix(parent?.content ?? identity, node.box)
   const { w, h } = node.box
   const corners: Corners = [
     apply(matrix, { x: 0, y: 0 }),
@@ -78,6 +80,7 @@ function place(
     parent: parent?.id ?? null,
     node,
     matrix,
+    content: contentMatrix(matrix, node.box),
     corners,
     bounds: boundsOf(corners),
     rotation: (parent?.rotation ?? 0) + node.box.rotation,

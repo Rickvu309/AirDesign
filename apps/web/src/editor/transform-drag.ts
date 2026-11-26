@@ -210,18 +210,32 @@ function placedWrites(input: TransformInput, member: Member, next: Tilted): read
   const placed = geometry.byId.get(member.id) as Placed
   const node = view.nodes.get(member.id)!
   const parent = placed.parent === null ? undefined : geometry.byId.get(placed.parent)
-  const local = parent === undefined ? next.center : apply(invert(parent.matrix), next.center)
+  const local = parent === undefined ? next.center : apply(invert(parent.content), next.center)
   const w = Math.max(1, Math.round(next.w))
   const h = Math.max(1, Math.round(next.h))
-  const stored = doom.propOf(node, "box") ?? placed.node.box
+  const stored = doom.propOf(node, "box") ?? doom.unfittedBox(placed.node.box)
   const rotation = doom.wrapRotation(next.rotation - (parent?.rotation ?? 0))
-  const box = { ...stored, x: Math.round(local.x - w / 2), y: Math.round(local.y - h / 2), w, h, rotation }
+  const fit = placed.node.box.fit
+  const across = w / (member.w || 1)
+  const down = h / (member.h || 1)
+  const scalePoint = ({ x, y }: Point) => ({ x: x * across, y: y * down })
+  const shift = doom.fitShift(
+    { w, h, rotation },
+    fit === undefined ? undefined : { origin: scalePoint(fit.origin), pivot: scalePoint(fit.pivot) },
+  )
+  const box = {
+    ...stored,
+    x: Math.round(local.x - w / 2 - shift.x),
+    y: Math.round(local.y - h / 2 - shift.y),
+    w,
+    h,
+    rotation,
+  }
   const widthChanged = w !== Math.round(member.w)
   const heightChanged = h !== Math.round(member.h)
   const writes: doom.Write[] = [{ node: member.id, prop: "box", value: box }]
   if (isGroup(view, member.id)) {
-    if (widthChanged || heightChanged)
-      writes.push(...scaledChildren(view, geometry, member.id, w / member.w, h / member.h))
+    if (widthChanged || heightChanged) writes.push(...scaledChildren(view, geometry, member.id, across, down))
     return writes
   }
   const sizing = doom.propOf(node, "sizing") ?? { w: "fixed" as const, h: "fixed" as const }
