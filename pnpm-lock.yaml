@@ -414,6 +414,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^6.1.2
         version: 6.2.1(vite@8.3.6(@types/node@24.19.2)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.1))
+      outtrue:
+        specifier: 0.2.0
+        version: 0.2.0(oxlint@1.92.0)
       oxlint:
         specifier: ^1.90.0
         version: 1.92.0
@@ -4209,6 +4212,13 @@ packages:
   ora@8.2.0:
     resolution: {integrity: sha512-weP+BZ8MVNnlCm8c0Qdc1WSWq4Qn7I+9CJGm7Qali6g44e/PUzbjNqJX5NJ9ljlNMosfJvg1fKEGILklK9cwnw==}
     engines: {node: '>=18'}
+
+  outtrue@0.2.0:
+    resolution: {integrity: sha512-LpDX5WOy3bcUTTlWpF29MhKmQ1WzrWIcA0Sh2qeZ6VNxxoMq0/6A0nj8u0E1QJS6DNVrfdwNL6FQFtTNG0I1tg==}
+    engines: {node: '>=22.18.0'}
+    hasBin: true
+    peerDependencies:
+      oxlint: '>=1.92.0'
 
   oxc-parser@0.157.0:
     resolution: {integrity: sha512-2MJ9tZGXUbEIhQT/O2OPLlYCgur75ES26t2Pb1sYrvDQcRjrE7GmubkALgPEB6LzOY6sM81AAHKfl5M/FgnjJg==}
@@ -8497,6 +8507,10 @@ snapshots:
       stdin-discarder: 0.2.2
       string-width: 7.2.0
       strip-ansi: 7.2.0
+
+  outtrue@0.2.0(oxlint@1.92.0):
+    dependencies:
+      oxlint: 1.92.0
 
   oxc-parser@0.157.0:
     dependencies:
