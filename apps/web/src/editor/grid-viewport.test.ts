@@ -4,11 +4,13 @@ import { gridLayout, gridSpacing } from "@/editor/grid-lines"
 import {
   arrowGrid,
   boundedGridScale,
+  cardBox,
   fittedGrid,
   fittedGridCards,
   fittedGridElements,
   gridGrip,
   gridShown,
+  gridSlidePoint,
   keptGridShows,
   pannedGrid,
   readGridViewport,
@@ -295,6 +297,33 @@ describe("painting only what shows", () => {
     expect(gridShown(layout, { x: -2 * step, y: 0, scale: 0.1 }, room, 0)[0]).toBe(2)
     expect(gridShown(layout, { x: 5000, y: 0, scale: 0.1 }, room, 200)).toEqual([])
     expect(gridShown(layout, { x: 1100, y: 0, scale: 0.1 }, room, 200)).toEqual([0, 4, 8])
+  })
+})
+
+describe("a screen point on a card", () => {
+  it("lands on the same slide point the card was placed from, panned or not", () => {
+    const layout = deckOf([2])
+    const card = layout.cards[1]!
+    const host = { left: 48, top: 96 }
+    const slide = { x: 200, y: 600 }
+    const room = { width: 1600, height: 900 }
+    const views = [
+      fittedGrid(layout, room),
+      { x: 10, y: -30, scale: 0.3 },
+      { x: -360, y: 210, scale: 1 },
+      { x: -900, y: 525, scale: 2.5 },
+    ]
+    for (const view of views) {
+      const box = cardBox(layout, view, card.index)
+      expect(box).not.toBeNull()
+      if (box === null) continue
+      const back = gridSlidePoint(view, card, host, {
+        x: host.left + box.left + slide.x * view.scale,
+        y: host.top + box.top + slide.y * view.scale,
+      })
+      expect(back.x).toBeCloseTo(slide.x, 6)
+      expect(back.y).toBeCloseTo(slide.y, 6)
+    }
   })
 })
 

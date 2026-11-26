@@ -186,6 +186,10 @@ export function EditorGrid({
   edit.scaleNow.current = camera.view.scale
   edit.handNow.current = hand
   edit.spaceNow.current = camera.space
+  edit.slideAt.current = (index, client) => {
+    const card = layout.cards[index]
+    return card === undefined ? null : camera.slidePoint(card, client)
+  }
   const shown = camera.gliding.current ? camera.viewNow() : camera.view
   const scale = shown.scale
   const painted = new Set(gridShown(layout, shown, camera.room, paintMargin))
@@ -374,6 +378,7 @@ export function EditorGrid({
     const index = gridEntryOf(event.target)
     if (index === null) return
     setStop(index)
+    if (event.target instanceof Element && event.target.closest("[data-grid-edit]") !== null) return
     if (!quiet.current) camera.reveal(index)
   }
 
@@ -538,6 +543,7 @@ export function EditorGrid({
                             onBlank: edit.blank,
                             onMode: edit.mode,
                             onRun,
+                            pointAt: (client) => camera.slidePoint(card, client),
                           }),
                         }
                       : {})}

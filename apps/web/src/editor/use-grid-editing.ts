@@ -46,6 +46,12 @@ export function useGridEditing({
   const scaleNow = useRef(1)
   const handNow = useRef(false)
   const spaceNow = useRef(false)
+  const slideAt = useRef<
+    (
+      index: number,
+      client: { readonly x: number; readonly y: number },
+    ) => { readonly x: number; readonly y: number } | null
+  >(() => null)
   const onGeometry = useCallback((slide: doom.NodeId, geometry: SlideGeometry | null) => {
     if (geometry === null) geometries.current.delete(slide)
     else geometries.current.set(slide, geometry)
@@ -89,9 +95,8 @@ export function useGridEditing({
     }
     if (target.closest("[data-grid-edit]") !== null) return
     const geometry = geometries.current.get(card.id)
-    const rect = target.closest("[data-grid-card]")?.getBoundingClientRect()
-    if (geometry === undefined || rect === undefined) return
-    const at = { x: (event.clientX - rect.left) / scale, y: (event.clientY - rect.top) / scale }
+    const at = slideAt.current(index, { x: event.clientX, y: event.clientY })
+    if (geometry === undefined || at === null) return
     if (elementAt(geometry, at, 4.5 / scale, (id) => doom.lockedIn(view, id)) === null) return
     swallow.current = true
     flushSync(() => {
@@ -181,6 +186,7 @@ export function useGridEditing({
     scaleNow,
     handNow,
     spaceNow,
+    slideAt,
     onGeometry,
     step,
     press,

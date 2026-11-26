@@ -14,6 +14,7 @@ import {
   fittedGridElements,
   gridPaintMargin,
   gridShown,
+  gridSlidePoint,
   keptGridShows,
   pannedGrid,
   readGridViewport,
@@ -443,6 +444,14 @@ export function useGridCamera({
       const at = local(point)
       const { view: now } = latest.current
       return { x: (at.x - now.x) / now.scale, y: (at.y - now.y) / now.scale }
+    },
+    slidePoint(
+      card: { readonly left: number; readonly top: number },
+      client: { readonly x: number; readonly y: number },
+    ) {
+      const box = host.current?.getBoundingClientRect()
+      const { view: now } = latest.current
+      return box === undefined ? { x: 0, y: 0 } : gridSlidePoint(now, card, box, client)
     },
     handlers: {
       ref: host,

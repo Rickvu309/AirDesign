@@ -67,6 +67,7 @@ export type PointerArgs = {
   readonly onCrop: (id: doom.NodeId) => void
   readonly onCropEnd: () => void
   readonly onBlank?: () => void
+  readonly pointAt?: (client: Point) => Point
 }
 
 type Active =
@@ -192,6 +193,8 @@ export function useCanvasPointer(args: PointerArgs) {
   const frame = useRef(0)
 
   const toSlide = (event: { readonly clientX: number; readonly clientY: number }): Point => {
+    const pointAt = latest.current.pointAt
+    if (pointAt !== undefined) return pointAt({ x: event.clientX, y: event.clientY })
     const box = latest.current.slideBox.current?.getBoundingClientRect()
     const { scale } = latest.current
     return box === undefined
