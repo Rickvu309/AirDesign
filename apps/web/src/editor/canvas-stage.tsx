@@ -1,12 +1,13 @@
 import * as doom from "@airdesign/doom"
 import { SlidePaint } from "@airdesign/render"
-import { type DragEvent, type MouseEvent, type PointerEvent, type RefObject } from "react"
+import { useMemo, type DragEvent, type MouseEvent, type PointerEvent, type RefObject } from "react"
 import { createPortal } from "react-dom"
 import { canvasInset, slideTop, type Zoom } from "@/editing/canvas-zoom"
 import { editorCopy } from "@/copy/editor-copy"
 import { pictureCopy } from "@/copy/picture-copy"
 import { AgentArrival } from "./agent-arrival"
 import { AgentAtWork } from "./agent-at-work"
+import type { Flight } from "./canvas-carry"
 import type { ActionRun } from "./actions-popover"
 import { CanvasOverlay, type Preview } from "./canvas-overlay"
 import type { Size } from "./canvas-view"
@@ -56,6 +57,7 @@ export function CanvasStage({
   onLeave,
   caught,
   preview,
+  flight,
   hover,
   marquee,
   crop,
@@ -111,6 +113,7 @@ export function CanvasStage({
   readonly onLeave: () => void
   readonly caught: EditorClient["caught"]
   readonly preview: Preview | null
+  readonly flight: Flight | null
   readonly hover: doom.NodeId | null
   readonly marquee: Rect | null
   readonly crop: {
@@ -138,6 +141,15 @@ export function CanvasStage({
   readonly panel: RightPanel
   readonly shapes: ShapesShown | undefined
 }) {
+  const carried = flight?.carried
+  const flying = useMemo(
+    () => (carried === undefined ? null : nodes.filter((node) => carried.has(node.id))),
+    [nodes, carried],
+  )
+  const staying = useMemo(
+    () => (carried === undefined ? nodes : nodes.filter((node) => !carried.has(node.id))),
+    [nodes, carried],
+  )
   const slideW = size.w * scale
   const slideH = size.h * scale
   const width = placed ? slideW : Math.max(box.w, slideW + 2 * canvasInset.side)
@@ -195,7 +207,7 @@ export function CanvasStage({
                 slideBox={slideBox}
               >
                 <SlidePaint
-                  nodes={nodes}
+                  nodes={staying}
                   background={background}
                   size={size}
                   width={size.w * scale}
@@ -220,6 +232,26 @@ export function CanvasStage({
                         },
                       })}
                 />
+                {flight === null || flying === null ? null : (
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute top-0 left-0"
+                    style={{
+                      transform: `translate(${String(flight.by.x * scale)}px, ${String(flight.by.y * scale)}px)`,
+                    }}
+                    data-carried=""
+                  >
+                    <SlidePaint
+                      nodes={flying}
+                      background={[]}
+                      size={size}
+                      width={size.w * scale}
+                      assetUrl={assetUrl}
+                      waiting={pictureCopy.uploading}
+                      iconsReady={ready}
+                    />
+                  </div>
+                )}
                 <AgentArrival
                   view={view}
                   slide={slide}
@@ -229,6 +261,7 @@ export function CanvasStage({
                 <CanvasOverlay
                   view={shown}
                   preview={preview}
+                  flight={flight}
                   geometry={geometry}
                   selected={selected.ids}
                   hovered={hover}

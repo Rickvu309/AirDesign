@@ -125,6 +125,7 @@ export const gestures = [
     ],
     where: ["slide"],
   },
+  { id: "move-to-slide", group: "move", keys: [], pointing: [{ on: "element", drag: true }], where: ["grid"] },
   {
     id: "snap-off",
     group: "move",

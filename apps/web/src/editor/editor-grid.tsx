@@ -47,6 +47,7 @@ import { GridSlideMenu } from "@/editor/grid-slide-menu"
 import { useSlideSay, type SlideStrip } from "@/editor/slide-sidebar"
 import { slideGroupsOf } from "@/editor/slide-writes"
 import { useGridCamera } from "@/editor/use-grid-camera"
+import { useGridCarry } from "@/editor/use-grid-carry"
 import { useGridDrag } from "@/editor/use-grid-drag"
 import { useGridMarquee } from "@/editor/use-grid-marquee"
 import { pointAt, useGridSlideActions } from "@/editor/use-grid-slide-actions"
@@ -406,7 +407,15 @@ export function EditorGrid({
   }
 
   const preview = drag.preview
-  const gripBlocked = hand || camera.space || preview !== null || marquee.box !== null
+  const { carried, carry } = useGridCarry({
+    layout,
+    live: liveSlide,
+    geometries: edit.geometries,
+    camera,
+    land: edit.land,
+  })
+  const lifting = preview !== null || carried !== null
+  const gripBlocked = hand || camera.space || lifting || marquee.box !== null
   const grips = strip.onMoveGroups !== undefined && gridGripsShown(size.h, scale)
 
   const grouped = useGroupHover({ host: camera.handlers.ref, bands, scale, world: camera.world, blocked: gripBlocked })
@@ -421,7 +430,7 @@ export function EditorGrid({
     actions.full ||
     camera.space ||
     hand ||
-    preview !== null ||
+    lifting ||
     box !== null ||
     menu !== null ||
     touch ||
@@ -468,7 +477,7 @@ export function EditorGrid({
         }}
         data-grid-viewport
         data-marquee={box === null ? undefined : ""}
-        data-dragging={preview === null ? undefined : ""}
+        data-dragging={lifting ? "" : undefined}
         data-focus-edge
       >
         <div
@@ -516,6 +525,8 @@ export function EditorGrid({
             onAddGroup={(index) => actions.add(index, "new")}
             liveSlide={liveSlide}
             live={live}
+            carry={carry}
+            taking={carried?.over ?? null}
             handoff={edit.handoff}
             onBlank={edit.blank}
             onMode={edit.mode}

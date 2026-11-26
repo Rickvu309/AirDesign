@@ -259,7 +259,8 @@ html:has(.reflow-frame) #root {
 }
 @media (hover: hover) and (pointer: fine) {
   [data-grid-viewport]:not([data-panning], [data-marquee], [data-dragging])
-    [data-grid-card]:has(:is([data-slide-entry], [data-slide-number]):hover) {
+    [data-grid-card]:has(:is([data-slide-entry], [data-slide-number]):hover),
+  [data-grid-card][data-taking] {
     & [data-grid-halo] {
       opacity: 1;
       @media (prefers-reduced-motion: no-preference) {

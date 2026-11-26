@@ -14,6 +14,8 @@ import { cropDrag, isCropGrip, type CropGrip } from "./crop-drag"
 import type { CropTarget } from "./crop-handles"
 import { isEndGrip, lineEndDrag, type EndGrip } from "./line-end-drag"
 import { movedBy } from "./move-writes"
+import type { Flight, GridCarry } from "./canvas-carry"
+import { useLayerCarry } from "./use-layer-carry"
 import {
   marqueeSelection,
   noSelection,
@@ -25,7 +27,7 @@ import {
   type Selection,
 } from "./selection"
 import type { Placed, Point, SlideGeometry } from "./slide-geometry"
-import type { CanvasGesture } from "./canvas-gesture"
+import type { CanvasGesture, Moving } from "./canvas-gesture"
 import { transformedBy } from "./transform-drag"
 import { commitDesignEdit } from "./component-edits"
 import type { EditorClient } from "./use-deck"
@@ -69,6 +71,9 @@ export type PointerArgs = {
   readonly onCropEnd: () => void
   readonly onBlank?: () => void
   readonly pointAt?: (client: Point) => Point
+  readonly slide: doom.NodeId
+  readonly setFlight: (flight: Flight | null) => void
+  readonly carry?: GridCarry
 }
 
 const threshold = 3
@@ -162,6 +167,8 @@ export function useCanvasPointer(args: PointerArgs) {
     view: doom.Doom,
   ) => hitChain(geometry.roots, toSlide(event), 4.5 / screenScale(), (id) => doom.lockedIn(view, id))
 
+  const carry = useLayerCarry({ latest, active, toSlide, screenScale, advance, copied })
+
   type Evaluated = Pick<Preview, "writes" | "guides" | "label"> & { readonly copies: doom.Copies | null }
 
   function evaluate(
@@ -254,13 +261,9 @@ export function useCanvasPointer(args: PointerArgs) {
       return
     }
     if (gesture.kind === "move" || gesture.kind === "transform") {
+      if (gesture.kind === "move" && carry.show(gesture, event)) return
       const done = evaluate(gesture, event)
-      if (gesture.kind === "move" && (done.copies !== null) !== gesture.copying) {
-        gesture.copying = done.copies !== null
-        a.onSelection(
-          done.copies === null ? gesture.selected : { ids: done.copies.roots, inside: gesture.selected.inside },
-        )
-      }
+      if (gesture.kind === "move") copied(gesture, done.copies)
       const { copies: _copies, ...preview } = done
       a.setPreview(done.writes.length === 0 ? null : { ...preview, kind: gesture.kind })
       return
@@ -303,7 +306,16 @@ export function useCanvasPointer(args: PointerArgs) {
     a.onSelection({ ids, inside: null })
   }
 
+  function copied(gesture: Moving, copies: doom.Copies | null) {
+    if ((copies !== null) === gesture.copying) return
+    gesture.copying = copies !== null
+    latest.current.onSelection(
+      copies === null ? gesture.selected : { ids: copies.roots, inside: gesture.selected.inside },
+    )
+  }
+
   function schedule(event: PointerEvent | ReactPointerEvent) {
+    carry.track(event)
     pending.current = event
     if (frame.current !== 0) return
     frame.current = requestAnimationFrame(() => {
@@ -325,6 +337,9 @@ export function useCanvasPointer(args: PointerArgs) {
     pending.current = null
     a.setMarquee(null)
     a.setPreview(null)
+    a.setFlight(null)
+    carry.stop()
+    if (gesture?.kind === "move" && gesture.over !== undefined) a.carry?.onCarry(undefined)
     if (gesture?.kind === "marquee") {
       if (!commit || last === null) a.onSelection(gesture.before)
       else if (gesture.moved || farFromPress(last)) boxed(gesture, rectBetween(gesture.origin, toSlide(last)), last)
@@ -381,12 +396,11 @@ export function useCanvasPointer(args: PointerArgs) {
       if (gesture.kind === "move" && gesture.alone !== null) a.onSelection(gesture.alone)
       return
     }
+    if (gesture.kind === "move" && carry.drop(gesture, last)) return
     const done = evaluate(gesture, last)
     if (gesture.kind === "move") {
-      const copies = done.copies
-      if (gesture.copying !== (copies !== null))
-        a.onSelection(copies === null ? gesture.selected : { ids: copies.roots, inside: gesture.selected.inside })
-      if (!a.client.push(done.writes).ok && copies !== null) a.onSelection(gesture.selected)
+      copied(gesture, done.copies)
+      if (!a.client.push(done.writes).ok && done.copies !== null) a.onSelection(gesture.selected)
       return
     }
     commitDesignEdit(a.client, done.writes, gesture.view)
@@ -485,7 +499,10 @@ export function useCanvasPointer(args: PointerArgs) {
         copies: null,
         copying: false,
         moved: false,
+        lifted: null,
+        over: undefined,
       }
+      carry.begin()
     },
     double(event: ReactMouseEvent<HTMLElement>) {
       const a = latest.current

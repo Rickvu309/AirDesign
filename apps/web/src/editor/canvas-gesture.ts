@@ -1,4 +1,5 @@
 import type * as doom from "@airdesign/doom"
+import type { Lift } from "./canvas-carry"
 import type { CropGrip } from "./crop-drag"
 import type { CropTarget } from "./crop-handles"
 import type { EndGrip } from "./line-end-drag"
@@ -19,6 +20,8 @@ export type CanvasGesture =
       copies: doom.Copies | null
       copying: boolean
       moved: boolean
+      lifted: { readonly copies: doom.Copies | null; readonly lift: Lift | null } | null
+      over: doom.NodeId | null | undefined
     }
   | {
       readonly kind: "transform"
@@ -64,3 +67,5 @@ export type CanvasGesture =
       shown: string | null
       moved: boolean
     }
+
+export type Moving = Extract<CanvasGesture, { kind: "move" }>

@@ -1,6 +1,7 @@
 import * as doom from "@airdesign/doom"
 import type { PointerEvent, ReactNode } from "react"
 import type { CanvasCard } from "@/editor/canvas"
+import type { GridCarry } from "@/editor/canvas-carry"
 import { GridCard } from "@/editor/grid-card"
 import { GridDropBar } from "@/editor/grid-drag-marks"
 import { gridIndices, type GridBand, type GridRange } from "@/editor/grid-drop"
@@ -60,6 +61,8 @@ export function GridSheet({
   onAddGroup,
   liveSlide,
   live,
+  carry,
+  taking,
   handoff,
   onBlank,
   onMode,
@@ -101,6 +104,8 @@ export function GridSheet({
   readonly onAddGroup: (index: number) => void
   readonly liveSlide: string | null
   readonly live: (slide: doom.NodeId, scale: number, card: CanvasCard) => ReactNode
+  readonly carry: GridCarry
+  readonly taking: doom.NodeId | null
   readonly handoff: CanvasCard["handoff"]
   readonly onBlank: CanvasCard["onBlank"]
   readonly onMode: CanvasCard["onMode"]
@@ -170,6 +175,7 @@ export function GridSheet({
                 shiftX={moved?.x ?? 0}
                 shiftY={moved?.y ?? 0}
                 still={still}
+                taking={card.id === taking}
                 tinted={tinted(number, blocked, grips, hover, gripFocus)}
                 wrapped={band.wrapped}
                 addGap={addBlocked ? null : spacing.column}
@@ -195,6 +201,7 @@ export function GridSheet({
                         onMode,
                         onRun,
                         pointAt: (client) => slidePoint(card, client),
+                        carry,
                       }),
                     }
                   : {})}

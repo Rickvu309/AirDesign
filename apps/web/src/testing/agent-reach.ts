@@ -197,6 +197,7 @@ export const reach: Readonly<Record<string, Entry>> = {
   "gesture:back": { agent: "op.move", props: ["parent"] },
   "gesture:duplicate": { agent: "op.duplicate", props: ["parent"] },
   "gesture:duplicate-drag": { agent: "op.duplicate", props: ["parent", "box"] },
+  "gesture:move-to-slide": { agent: "op.move", props: ["parent", "box", "geometry"] },
   "gesture:cut": { agent: "op.delete", props: ["parent"] },
   "gesture:paste": { agent: "op.add", props: ["parent", "type"] },
   "gesture:group": { agent: "op.wrap", props: ["parent", "type", "box"] },

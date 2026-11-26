@@ -24,6 +24,7 @@ export const GridCard = memo(function GridCard({
   shiftX,
   shiftY,
   still,
+  taking,
   tinted,
   wrapped,
   addGap,
@@ -47,6 +48,7 @@ export const GridCard = memo(function GridCard({
   readonly shiftX: number
   readonly shiftY: number
   readonly still: boolean
+  readonly taking: boolean
   readonly tinted: boolean
   readonly wrapped: boolean
   readonly addGap: number | null
@@ -72,6 +74,7 @@ export const GridCard = memo(function GridCard({
       data-selected={selected || undefined}
       data-number-placement={placement}
       data-lifted={lifted || undefined}
+      data-taking={taking ? "" : undefined}
       data-group-tint={tinted || undefined}
       data-wrapped={wrapped || undefined}
     >

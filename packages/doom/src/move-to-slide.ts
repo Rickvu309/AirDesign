@@ -242,7 +242,7 @@ export function moveToSlide(
   slide: NodeId,
   at: Point,
   options: MoveToSlideOptions = {},
-): { readonly writes: readonly Write[] } | Refusal {
+): { readonly writes: readonly Write[]; readonly moved: readonly NodeId[] } | Refusal {
   if (!Number.isFinite(at.x) || !Number.isFinite(at.y)) return form("box", "A place on the slide.")
   const target = view.nodes.get(slide)
   if (!isLive(target)) return missing(slide, "into")
@@ -272,5 +272,5 @@ export function moveToSlide(
     const line = movedLine(view, node, landings, delta)
     if (line !== undefined) writes.push({ node: id, prop: "geometry", value: line })
   }
-  return { writes }
+  return { writes, moved: ordered }
 }
