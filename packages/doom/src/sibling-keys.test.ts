@@ -31,16 +31,20 @@ function rowsAt(keys: readonly OrderKey[]): Doom {
   ])
 }
 
-function placed(doom: Doom, index: number, ids: readonly NodeId[]): Doom {
+function insertion(doom: Doom, index: number, ids: readonly NodeId[]): Write[] {
   const siblings = childrenOf(doom, parent).map((node) => ({ id: node.id, at: parentOf(node)!.at }))
   const { keys, shifted } = siblingKeys(siblings, index, ids.length)
-  return land(doom, [
+  return [
     ...ids.flatMap((id, offset): Write[] => [
       { node: id, prop: "type", value: "slideRow" },
       { node: id, prop: "parent", value: { id: parent, at: keys[offset]! } },
     ]),
     ...shifted.map((each): Write => ({ node: each.id, prop: "parent", value: { id: parent, at: each.at } })),
-  ])
+  ]
+}
+
+function placed(doom: Doom, index: number, ids: readonly NodeId[]): Doom {
+  return land(doom, insertion(doom, index, ids))
 }
 
 const order = (doom: Doom) => childrenOf(doom, parent).map((node) => node.id as string)
@@ -54,12 +58,30 @@ describe("sibling keys", () => {
     expect(order(placed(doom, 2, [nodeId("new:1")]))).toEqual(["r:0", "r:1", "new:1", "r:2"])
   })
 
-  it("moves only the tied siblings after the spot, and none when the bounds differ", () => {
+  it("rekeys every sibling of a tie from any index inside it, and none from outside", () => {
     const tied = rowsAt([b, b, b])
     const siblings = childrenOf(tied, parent).map((node) => ({ id: node.id, at: parentOf(node)!.at }))
-    expect(siblingKeys(siblings, 1, 1).shifted.map((each) => each.id)).toEqual(["r:1", "r:2"])
+    const inside = siblingKeys(siblings, 1, 1)
+    expect(inside.shifted.map((each) => each.id)).toEqual(["r:0", "r:1", "r:2"])
+    expect(siblingKeys(siblings, 2, 1).shifted).toEqual(inside.shifted)
     expect(siblingKeys(siblings, 0, 1).shifted).toEqual([])
     expect(siblingKeys(siblings, 3, 1).shifted).toEqual([])
+  })
+
+  it("rekeys the whole tie the same way from every index inside it, so both insert orders converge", () => {
+    const tied = rowsAt([b, b, b])
+    const siblings = childrenOf(tied, parent).map((node) => ({ id: node.id, at: parentOf(node)!.at }))
+    expect(siblingKeys(siblings, 1, 1).shifted).toEqual(siblingKeys(siblings, 2, 1).shifted)
+    const left = insertion(tied, 1, [nodeId("l:1")])
+    const right = insertion(tied, 2, [nodeId("m:1")])
+    const leftFirst = land(land(tied, left), right)
+    const rightFirst = land(land(tied, right), left)
+    const keysOf = (doom: Doom) => childrenOf(doom, parent).map((node) => `${node.id as string}@${parentOf(node)!.at}`)
+    expect(order(leftFirst)).toEqual(["r:0", "l:1", "r:1", "m:1", "r:2"])
+    expect(order(rightFirst)).toEqual(order(leftFirst))
+    expect(keysOf(rightFirst)).toEqual(keysOf(leftFirst))
+    const ats = childrenOf(leftFirst, parent).map((node) => parentOf(node)!.at)
+    expect(new Set(ats).size).toBe(ats.length)
   })
 
   it("lands every placement where it was asked, for any keys, ties included", () => {
