@@ -46,6 +46,38 @@ afterAll(async () => {
   await close()
 })
 
+it("answers HEAD on the MCP address like a POST without credentials", async () => {
+  const head = await fetch(new URL("/mcp", base), { method: "HEAD" })
+  const post = await fetch(new URL("/mcp", base), { method: "POST" })
+  expect(head.status).toBe(401)
+  expect(post.status).toBe(401)
+  expect(head.headers.get("www-authenticate")).toBe(post.headers.get("www-authenticate"))
+  expect(head.headers.get("www-authenticate")).toBe(
+    'Bearer resource_metadata="https://resource.example/.well-known/oauth-protected-resource"',
+  )
+  expect(await head.text()).toBe("")
+})
+
+it("serves the resource metadata at the address under the MCP path too, and 404 for other well-known addresses", async () => {
+  const root = await fetch(new URL("/.well-known/oauth-protected-resource", base))
+  const byPath = await fetch(new URL("/.well-known/oauth-protected-resource/mcp", base))
+  expect(byPath.status).toBe(200)
+  expect(byPath.headers.get("content-type")).toContain("application/json")
+  expect(await byPath.json()).toEqual(await root.json())
+  for (const path of ["/.well-known/oauth-authorization-server/mcp", "/.well-known/openid-configuration"]) {
+    expect((await fetch(new URL(path, base))).status).toBe(404)
+  }
+})
+
+it("discovers the resource metadata from the MCP address alone, with no challenge to read", async () => {
+  const localFetch: typeof fetch = (input, init) => {
+    const url = new URL(input instanceof Request ? input.url : input)
+    return fetch(new URL(url.pathname + url.search, base), init)
+  }
+  const found = await discoverOAuthProtectedResourceMetadata(resource, undefined, localFetch)
+  expect(found).toMatchObject({ resource, authorization_servers: [publicOrigin] })
+})
+
 it("discovers authorization from only the MCP address and calls a tool with its grant", async () => {
   const localFetch: typeof fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : input)

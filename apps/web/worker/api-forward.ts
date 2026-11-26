@@ -31,6 +31,8 @@ const apiPaths = [
   ...airaPaths,
 ]
 
+const wellKnown = "/.well-known/"
+
 type Visit = Request & { cf?: { country?: unknown } }
 
 export default {
@@ -40,7 +42,9 @@ export default {
       const commit = env.COMMIT !== undefined && env.COMMIT.length > 0 ? env.COMMIT : "unknown"
       return Response.json({ commit })
     }
-    if (!apiPaths.includes(url.pathname)) return env.ASSETS.fetch(request)
+    if (!apiPaths.includes(url.pathname)) {
+      return url.pathname.startsWith(wellKnown) ? new Response(null, { status: 404 }) : env.ASSETS.fetch(request)
+    }
     if (!env.API_ORIGIN) return new Response(null, { status: 503 })
     const destination = new URL(url.pathname + url.search, env.API_ORIGIN)
     const forwarded = new Request(destination, request)

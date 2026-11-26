@@ -111,7 +111,7 @@ const localBase = "http://127.0.0.1"
 const unreadTarget = "The request target could not be read."
 const unservedMethod = "This address does not answer that method."
 const unreadHost = "The request host could not be read."
-const mcpMethods = ["GET", "POST", "DELETE"]
+const mcpMethods = ["GET", "HEAD", "POST", "DELETE"]
 const localHosts = ["localhost", "127.0.0.1", "[::1]"]
 
 type Cookie = string | readonly string[]
@@ -458,6 +458,7 @@ const deckHttp = { signedIn, answerSize, parsedJson, sendJson, gone }
 export const routes: readonly Route[] = [
   ...fontRouteList,
   { method: "GET", path: mcpRoutes.resourceMetadata.path, serve: resourceMetadataRoute },
+  { method: "GET", path: mcpRoutes.resourceMetadataByPath.path, serve: resourceMetadataRoute },
   { method: "GET", path: mcpRoutes.authorizationMetadata.path, serve: authorizationMetadataRoute },
   { method: "GET", path: "/health", serve: healthRoute },
   { method: "GET", path: "/version", serve: versionRoute },
