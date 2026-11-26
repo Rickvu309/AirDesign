@@ -12,7 +12,7 @@ function Input({
     <InputPrimitive
       {...props}
       type={type}
-      data-slot="input"
+      data-slot={variant === "embedded" ? "input-embedded" : "input"}
       className={cn(
         variant === "embedded"
           ? "min-w-0 bg-transparent outline-none placeholder:text-quiet"
