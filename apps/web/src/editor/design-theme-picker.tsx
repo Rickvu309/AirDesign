@@ -4,6 +4,7 @@ import { fontsFor } from "@airdesign/render"
 import { useEffect } from "react"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { designCopy } from "@/copy/design-copy"
+import { cn } from "@/lib/class-names"
 import { useServedFaces } from "@/design/served-faces"
 import { DesignSection } from "./design-sections"
 
@@ -22,7 +23,10 @@ function ThemeThumbnail({ theme, compact = false }: { readonly theme: doom.Theme
     <span
       aria-hidden="true"
       data-fonts-pending={pending ? "" : undefined}
-      className={`flex aspect-video shrink-0 flex-col items-center justify-center overflow-hidden rounded-[var(--shape-control)] leading-none outline -outline-offset-1 outline-black/10 [font-synthesis:none] dark:outline-white/10 ${compact ? "w-12 gap-0.5 text-[length:var(--type-body)]" : "w-18 gap-1 text-[length:var(--type-title)]"}`}
+      className={cn(
+        "flex aspect-video shrink-0 flex-col items-center justify-center overflow-hidden rounded-[var(--shape-control)] leading-none outline -outline-offset-1 outline-black/10 [font-synthesis:none] dark:outline-white/10",
+        compact ? "w-12 gap-0.5 text-[length:var(--type-body)]" : "w-18 gap-1 text-[length:var(--type-title)]",
+      )}
       style={{ backgroundColor: colors.background }}
     >
       <span
@@ -38,7 +42,7 @@ function ThemeThumbnail({ theme, compact = false }: { readonly theme: doom.Theme
         {thumbnailAccents.map((accent) => (
           <span
             key={accent}
-            className={`rounded-full ${compact ? "h-1 w-2" : "h-1.5 w-3"}`}
+            className={cn("rounded-full", compact ? "h-1 w-2" : "h-1.5 w-3")}
             style={{ backgroundColor: colors[accent] }}
           />
         ))}
