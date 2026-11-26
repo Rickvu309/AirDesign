@@ -512,18 +512,19 @@ export function EditorGrid({
             ]
           })}
           {dropBar === null ? null : <GridDropBar bar={dropBar} scale={scale} />}
+          {box === null ? null : (
+            <div
+              aria-hidden="true"
+              data-grid-marquee
+              style={{
+                transform: `translate(${String(box.left)}px, ${String(box.top)}px)`,
+                width: box.right - box.left,
+                height: box.bottom - box.top,
+                ...{ "--grid-scale": String(scale) },
+              }}
+            />
+          )}
         </div>
-        {box === null ? null : (
-          <div
-            aria-hidden="true"
-            data-grid-marquee
-            style={{
-              transform: `translate(${String(live.x + box.left * scale)}px, ${String(live.y + box.top * scale)}px)`,
-              width: (box.right - box.left) * scale,
-              height: (box.bottom - box.top) * scale,
-            }}
-          />
-        )}
       </div>
       {preview === null ? null : (
         <GridDragGhost
