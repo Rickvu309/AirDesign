@@ -9,7 +9,9 @@ const gridRoom = { width: 1470, height: 923 - 96 - 76 }
 
 function zoomedOn(index: number) {
   let next = 0
-  const groups = groupedSample.groups.map((size) => Array.from({ length: size }, () => doom.nodeId(String(next++))))
+  const groups = groupedSample.groups.map((size) =>
+    Array.from({ length: size }, () => doom.nodeId(`s:${String(next++)}`)),
+  )
   const size = groupedSample.size
   return fittedGridCards(gridLayout(groups, { width: size.w, height: size.h }), [index], gridRoom) ?? undefined
 }

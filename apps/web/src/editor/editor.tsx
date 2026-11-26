@@ -255,6 +255,7 @@ function Editing({
               closeGrid()
             }}
             hand={tool === "hand"}
+            onHand={(hand) => setTool(hand ? "hand" : "move")}
             head={{
               title,
               save: saved.save,

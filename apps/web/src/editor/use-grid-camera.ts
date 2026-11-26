@@ -76,12 +76,14 @@ export function useGridCamera({
   layout,
   ringed,
   hand,
+  onHand,
   start,
 }: {
   readonly deck: string
   readonly layout: GridLayout
   readonly ringed: readonly number[]
   readonly hand: boolean
+  readonly onHand: (hand: boolean) => void
   readonly start?: GridView
 }) {
   const [camera, setCamera] = useState<GridCamera>(() => start ?? keptCamera(deck))
@@ -89,9 +91,9 @@ export function useGridCamera({
   const [space, setSpace] = useState(false)
   const host = useRef<HTMLDivElement | null>(null)
   const view = camera === "fit" ? fittedGrid(layout, room) : camera
-  const latest = useRef({ camera, view, layout, ringed, room, hand })
+  const latest = useRef({ camera, view, layout, ringed, room, hand, onHand })
   useLayoutEffect(() => {
-    latest.current = { camera, view, layout, ringed, room, hand }
+    latest.current = { camera, view, layout, ringed, room, hand, onHand }
   })
   const pan = useRef<{ pointer: number; x: number; y: number; view: GridView } | null>(null)
   const panned = useRef(false)
@@ -232,6 +234,12 @@ export function useGridCamera({
     const down = (event: KeyboardEvent) => {
       if (event.isComposing || typing(event.target) || !onCanvas(event.target, host.current)) return
       const gesture = gestureFor(event, "editor")
+      if (gesture === "tool-hand" || gesture === "tool-move") {
+        if (!editorOwnsKey(event)) return
+        event.preventDefault()
+        latest.current.onHand(gesture === "tool-hand")
+        return
+      }
       if (gesture === "pan") {
         const target = event.target
         if (target instanceof Element && target.closest("button, a[href]") !== null && blankCanvas(target)) return

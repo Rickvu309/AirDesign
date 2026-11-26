@@ -64,6 +64,7 @@ export function EditorGrid({
   onCurrent,
   onOpen,
   hand,
+  onHand,
   head,
   right,
   bar,
@@ -78,6 +79,7 @@ export function EditorGrid({
   readonly onCurrent: (index: number) => void
   readonly onOpen: (index: number) => void
   readonly hand: boolean
+  readonly onHand: (hand: boolean) => void
   readonly head: Omit<GridHeadProps, "selected">
   readonly right: ReactNode
   readonly bar: ReactNode
@@ -97,6 +99,7 @@ export function EditorGrid({
     layout,
     ringed,
     hand,
+    onHand,
     ...(start.camera === undefined ? {} : { start: start.camera }),
   })
   const scale = camera.view.scale
