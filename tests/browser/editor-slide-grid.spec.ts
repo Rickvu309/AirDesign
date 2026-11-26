@@ -118,7 +118,7 @@ test("text typed just before Grid view opens is saved, and an undo there takes i
   stack,
 }) => {
   await openEditor(page, context, stack)
-  await clickSlide(page, 960, 440, { double: true })
+  await clickSlide(page, 960, 490, { double: true })
   await page.keyboard.type(" zebra")
   await expect(entry(page, 1)).toContainText("zebra")
   await gridView(page).click()
