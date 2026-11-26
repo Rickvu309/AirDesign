@@ -29,7 +29,6 @@ export const GridCard = memo(function GridCard({
   wrapped,
   addGap,
   addEnd,
-  previewFits,
   onAdd,
   live,
 }: {
@@ -53,7 +52,6 @@ export const GridCard = memo(function GridCard({
   readonly wrapped: boolean
   readonly addGap: number | null
   readonly addEnd: boolean
-  readonly previewFits: boolean
   readonly onAdd: (index: number) => void
   readonly live?: ReactNode
 }) {
@@ -126,7 +124,6 @@ export const GridCard = memo(function GridCard({
           height={card.height}
           gap={addGap}
           end={addEnd}
-          fits={previewFits}
           reachable={reachable}
           onAdd={() => onAdd(card.index)}
         />

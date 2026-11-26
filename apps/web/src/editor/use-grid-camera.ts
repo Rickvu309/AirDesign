@@ -74,7 +74,7 @@ function paintWorld(sheet: HTMLElement, view: GridView, refresh: boolean) {
   if (!refresh) return
   const value = String(view.scale)
   for (const node of sheet.querySelectorAll<HTMLElement>(
-    "[data-grid-overlay], [data-slide-entry], [data-slide-skip-mark], [data-grid-group-frame], [data-group-insert], [data-gap-insert]",
+    "[data-grid-overlay], [data-slide-entry], [data-slide-skip-mark], [data-grid-group-frame]",
   )) {
     node.style.transform = ""
     node.style.setProperty("--grid-scale", value)
@@ -132,7 +132,7 @@ export function useGridCamera({
   const latest = useRef({ camera, view, layout, ringed, elements, room, hand, onHand })
   const gliding = useRef(false)
   const rendered = useRef<GridCamera>(camera)
-  const renderedScale = useRef<number | null>(null)
+  const paintedScale = useRef<number | null>(null)
   const paintedKey = useRef("")
   const restTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [, setFrame] = useState(0)
@@ -148,6 +148,7 @@ export function useGridCamera({
   function paint(shown: GridView, refresh: boolean) {
     const node = sheet.current
     if (node !== null) paintWorld(node, shown, refresh)
+    if (refresh) paintedScale.current = shown.scale
     writePercent(Math.round(shown.scale * 100))
   }
 
@@ -183,7 +184,7 @@ export function useGridCamera({
 
   function glide(next: GridView) {
     latest.current = { ...latest.current, camera: next, view: next }
-    paint(next, renderedScale.current !== next.scale)
+    paint(next, paintedScale.current !== next.scale)
     gliding.current = true
     const key = frameKey(next)
     if (key !== paintedKey.current) {
@@ -200,7 +201,6 @@ export function useGridCamera({
       : { camera, view, layout, ringed, elements, room, hand, onHand }
     rendered.current = camera
     paint(shown, !gliding.current)
-    if (!gliding.current) renderedScale.current = shown.scale
     paintedKey.current = frameKey(shown)
   })
 
