@@ -42,7 +42,6 @@ export {
   touchedSlides,
   unmeasuredTexts,
 } from "./layout-findings.js"
-export { type SlideFinding, slideFindings } from "./slide-findings.js"
 export { kindOf as agentKind, readForAgent } from "./agent-read.js"
 export { type Counts, applyEdit, countsOf, hasDeck, landEdit } from "./apply-edit.js"
 export { foldToJson, readFold, readLanded, readRuns, readStoredNode, revsToJson, runsToJson } from "./fold-json.js"

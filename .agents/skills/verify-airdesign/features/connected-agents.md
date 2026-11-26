@@ -25,7 +25,7 @@ Preconditions:
 - `$V doctor <run>` is ok.
 
 - **Run it.** `$V journey <run> connected-agents`. Prints `"passed":true`.
-- **Check slide advice.** Run `$V journey <run> consulting-mcp`. Build five slides with topic titles and unsourced charts, check the findings in the edit and each slide read, then fix the deck in one edit and read back the saved titles and sources.
+- **Check layout findings.** Run `$V journey <run> consulting-mcp`. Build five slides and add an off-slide shape to the first. Check the finding in the edit and read answers. Delete the shape and read back the saved slides with clear layouts.
 - **Open from Home.** Sign in, open `/`, open the account menu (`NN-account-menu`), click `menuitem "Agents"`. Lands on `/settings/agents` showing `No agents connected yet` (`NN-agents-empty`).
 - **Copy MCP address.** Click `button "Connect an agent"` (`NN-agents-connect`), then `button "Copy"` in the dialog. Clipboard holds `mcp` from `accountRoutes.agents` and the button reads `Done` (`NN-mcp-copied`).
 - **Connect an agent.** With the dialog open, register a Claude OAuth client (`oauthRoutes.register`), approve (`oauthRoutes.approve`), exchange the authorization code (`oauthRoutes.token`), and initialize `/mcp` with the issued bearer token. The dialog reads `Claude is connected` with no reload (`NN-agents-connect-done`). `Done` closes it and `Claude` is in the list (`NN-agents-connected`).

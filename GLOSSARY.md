@@ -227,10 +227,10 @@ _Avoid_: shortcut (in code), hotkey, command
 
 ## Findings
 
-What a slide's data can say is wrong, or worth knowing.
+What the editor can measure about a slide's layout and its use of the deck's style.
 
 **finding**:
-What is wrong on a slide, or worth knowing, and what would put it right.
+A measured layout problem or a departure from the deck's style, with a suggested fix.
 _Avoid_: issue, warning, lint, diagnostic
 
 **overflow**:
