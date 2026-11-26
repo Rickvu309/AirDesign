@@ -4,9 +4,6 @@ import { slideListCopy } from "@/copy/slide-list-copy"
 import { EditorMenuRule } from "@/editor/editor-menu"
 import type { SlideKey } from "@/editor/slide-keys"
 
-export const slideMenuItem =
-  "h-8 gap-5.5 rounded-md py-0 pr-2.5 pl-2 text-[length:var(--type-dense)] text-white focus:bg-quiet focus:text-white not-data-[variant=destructive]:focus:**:text-white"
-
 const keys: Record<SlideKey, { readonly label: string; readonly shown: string; readonly shortcuts: string }> = {
   clone: { label: slideListCopy.duplicate, shown: slideListCopy.duplicateKey, shortcuts: "Control+D Meta+D" },
   remove: { label: slideListCopy.delete, shown: slideListCopy.deleteKey, shortcuts: "Delete Backspace" },
@@ -101,13 +98,15 @@ export const SlideMenu = memo(function SlideMenu({
         side={pointer ? "bottom" : "right"}
         align="start"
         sideOffset={pointer ? 2 : 8}
-        className="flex w-max min-w-47 flex-col rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0 duration-0"
+        variant="editor"
+        className="flex w-max min-w-47 flex-col"
       >
         {onOpen === undefined ? null : (
           <DropdownMenuItem
             disabled={set !== undefined && set.size > 1}
             aria-keyshortcuts={slideListCopy.openKey}
-            className={slideMenuItem}
+            variant="editor"
+            className="gap-5.5"
             onClick={onOpen}
           >
             <span className="min-w-0 flex-1">{slideListCopy.open}</span>
@@ -161,7 +160,8 @@ export function SlideMenuRows({
       key={change}
       disabled={!(allowed?.(change) ?? slideChangeAllowed(change, index, count))}
       aria-keyshortcuts={keys[change].shortcuts}
-      className={slideMenuItem}
+      variant="editor"
+      className="gap-5.5"
       onClick={() => onChoose(change)}
     >
       <span className="min-w-0 flex-1">{labels?.[change] ?? keys[change].label}</span>
@@ -182,7 +182,7 @@ export function SlideSkipItem({
   const single = skipped ? slideListCopy.unskip : slideListCopy.skip
   const set = skipped ? slideListCopy.unskipSet : slideListCopy.skipSet
   return (
-    <DropdownMenuItem className={slideMenuItem} onClick={() => onSkip(!skipped)}>
+    <DropdownMenuItem variant="editor" className="gap-5.5" onClick={() => onSkip(!skipped)}>
       {count === 1 ? single : set(count)}
     </DropdownMenuItem>
   )
