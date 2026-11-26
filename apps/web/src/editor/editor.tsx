@@ -258,8 +258,7 @@ function Editing({
           <EditorGrid
             deck={id}
             view={view}
-            current={strip.current}
-            onCurrent={strip.onSelect}
+            strip={strip}
             onOpen={(index) => {
               strip.onSelect(index)
               closeGrid()

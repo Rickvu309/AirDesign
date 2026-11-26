@@ -41,8 +41,6 @@ describe("grid drop", () => {
 })
 
 describe("drag preview", () => {
-  const slots = [0, 1, 2, 3, 4].map((index) => ({ index, left: index * 332, top: 0, width: 300, height: 169 }))
-
   it("shows each slide at the slot it takes after the move, and leaves the others where they are", () => {
     expect([0, 1, 2, 3, 4].map((index) => previewSlot(index, 1, 3))).toEqual([0, 3, 1, 2, 4])
     expect([0, 1, 2, 3, 4].map((index) => previewSlot(index, 3, 0))).toEqual([1, 2, 3, 0, 4])
@@ -166,8 +164,8 @@ describe("drop side", () => {
 
 describe("whole slide group drops", () => {
   const bands = [
-    { start: 0, end: 3, top: 100, bottom: 400 },
-    { start: 3, end: 8, top: 600, bottom: 900 },
+    { start: 0, end: 3, top: 100, bottom: 400, width: 900, wrapped: false },
+    { start: 3, end: 8, top: 600, bottom: 900, width: 900, wrapped: true },
   ]
   const scale = 0.5
   const outside = terminalGroupBand / 2 / scale
