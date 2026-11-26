@@ -138,7 +138,6 @@
           "src/decks/deck-card.tsx": 1,
           "src/decks/deck-row.tsx": 5,
           "src/decks/deck-thumbnail.tsx": 1,
-          "src/decks/decks-shell.tsx": 1,
           "src/decks/home.tsx": 1,
           "src/decks/not-found.tsx": 1,
           "src/decks/screens/trash-list.tsx": 2,
