@@ -69,9 +69,7 @@ function AccountFace({ account: realAccount }: { account?: { email: string } }) 
   const name =
     realAccount === undefined
       ? account.name
-      : realAccount.email === ""
-        ? settingsCopy.account
-        : profile?.name || accountName(realAccount.email)
+      : profile?.name || (realAccount.email === "" ? settingsCopy.account : accountName(realAccount.email))
   return (
     <>
       <span
