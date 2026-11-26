@@ -1,9 +1,12 @@
+import { wrapRotation } from "./angle.js"
 import { linkedOwner } from "./component/instance-ownership.js"
 import type { Node, Doom, Write } from "./doom.js"
 import { boxOf, childrenOf, deckOf, descendantsOf, isLive, lockedIn, parentOf, propOf } from "./doom-walk.js"
 import type { End, Geometry } from "./geometry.js"
 import type { NodeId } from "./ids.js"
+import { apply, identity } from "./matrix.js"
 import { type OrderKey, orderKeyBetween } from "./order-key.js"
+import { type Landings, worldMatrix } from "./replant.js"
 import { isRefusal, type Refusal } from "./refusal.js"
 import type { Box, Point } from "./resolved.js"
 
@@ -22,21 +25,6 @@ const form = (field: string, form: string, node?: NodeId, refused: Refusal["refu
 
 const missing = (node: NodeId, field: string): Refusal => ({ refused: "missing", node, field })
 
-function slidePoint(view: Doom, boxes: ReadonlyMap<NodeId, Box> | undefined, id: NodeId): Point {
-  let x = 0
-  let y = 0
-  let at: Node | undefined = view.nodes.get(id)
-  for (let hops = 0; at !== undefined && at.type !== "slide" && hops <= view.nodes.size; hops += 1) {
-    if (at.type === "deck" || at.type === "slideRow") break
-    const box = boxOf(at, boxes)
-    x += box.x
-    y += box.y
-    const parent = parentOf(at)
-    at = parent == null ? undefined : view.nodes.get(parent.id)
-  }
-  return { x, y }
-}
-
 function rootsOf(view: Doom, ids: readonly NodeId[]): readonly Node[] | Refusal {
   if (ids.length === 0) return form("nodes", "Layers to move.")
   const unique = [...new Set(ids)]
@@ -51,7 +39,7 @@ function rootsOf(view: Doom, ids: readonly NodeId[]): readonly Node[] | Refusal 
   for (const node of nodes) for (const child of descendantsOf(view, node.id)) covered.add(child.id)
   const roots = nodes.filter((node) => !covered.has(node.id))
   for (const node of roots) {
-    if (lockedIn(view, node.id)) return form("node", "This layer is locked.", node.id)
+    if (lockedIn(view, node.id)) return form("node", "This layer is locked. Unlock it or choose another.", node.id)
     const owner = linkedOwner(view.nodes, node.id)
     if (owner !== undefined && !unique.includes(owner))
       return form("node", "This layer is linked. Move the template with it.", node.id)
@@ -59,12 +47,55 @@ function rootsOf(view: Doom, ids: readonly NodeId[]): readonly Node[] | Refusal 
   return roots
 }
 
-function anchorOf(view: Doom, roots: readonly Node[], boxes: ReadonlyMap<NodeId, Box> | undefined): Point {
-  const places = roots.map((node) => slidePoint(view, boxes, node.id))
-  return {
-    x: Math.min(...places.map((place) => place.x)),
-    y: Math.min(...places.map((place) => place.y)),
+function resolvedLandings(view: Doom, boxes: ReadonlyMap<NodeId, Box> | undefined): Landings {
+  const landings = new Map<NodeId, { box: Box }>()
+  if (boxes === undefined) return landings
+  for (const [id, box] of boxes) {
+    const node = view.nodes.get(id)
+    if (node?.type === "frame" || node?.type === "shape") landings.set(id, { box })
   }
+  return landings
+}
+
+function slideTurn(view: Doom, id: NodeId, boxes: ReadonlyMap<NodeId, Box> | undefined): number {
+  let turn = 0
+  let at: Node | undefined = view.nodes.get(id)
+  for (let hops = 0; at !== undefined && hops <= view.nodes.size; hops += 1) {
+    if (at.type === "slide" || at.type === "deck" || at.type === "slideRow") break
+    turn += boxOf(at, boxes).rotation
+    const parent = parentOf(at)
+    at = parent == null ? undefined : view.nodes.get(parent.id)
+  }
+  return wrapRotation(turn)
+}
+
+function paintedAnchor(
+  view: Doom,
+  roots: readonly Node[],
+  boxes: ReadonlyMap<NodeId, Box> | undefined,
+  landings: Landings,
+): Point {
+  let x = Number.POSITIVE_INFINITY
+  let y = Number.POSITIVE_INFINITY
+  for (const node of roots) {
+    const box = boxOf(node, boxes)
+    const matrix = worldMatrix(view, node.id, landings)
+    for (const corner of [
+      { x: 0, y: 0 },
+      { x: box.w, y: 0 },
+      { x: 0, y: box.h },
+      { x: box.w, y: box.h },
+    ]) {
+      const at = apply(matrix, corner)
+      x = Math.min(x, at.x)
+      y = Math.min(y, at.y)
+    }
+  }
+  return { x, y }
+}
+
+function anchorOf(view: Doom, roots: readonly Node[], boxes: ReadonlyMap<NodeId, Box> | undefined): Point {
+  return paintedAnchor(view, roots, boxes, resolvedLandings(view, boxes))
 }
 
 export function slidePlace(view: Doom, ids: readonly NodeId[], boxes?: ReadonlyMap<NodeId, Box>): Point | Refusal {
@@ -112,26 +143,58 @@ function sameEnd(left: End, right: End): boolean {
   return false
 }
 
-function shiftEnd(end: End, origin: Point, delta: Point): End {
+function shiftEnd(end: End, matrix: ReturnType<typeof worldMatrix>, delta: Point): End {
   if ("node" in end) return end
-  return { x: end.x + origin.x + delta.x, y: end.y + origin.y + delta.y }
+  const spot = apply(matrix, end)
+  return { x: Math.round(spot.x + delta.x), y: Math.round(spot.y + delta.y) }
 }
 
-function movedLine(
+function holderMatrix(view: Doom, node: Node, landings: Landings) {
+  const parent = parentOf(node)
+  const holder = parent == null ? undefined : view.nodes.get(parent.id)
+  if (holder === undefined || holder.type === "slide" || holder.type === "deck" || holder.type === "slideRow")
+    return identity
+  return worldMatrix(view, holder.id, landings)
+}
+
+function movedLine(view: Doom, node: Node, landings: Landings, delta: Point): Geometry | undefined {
+  const geometry = propOf(node, "geometry")
+  if (geometry?.kind !== "line") return undefined
+  const matrix = holderMatrix(view, node, landings)
+  const start = shiftEnd(geometry.start, matrix, delta)
+  const end = shiftEnd(geometry.end, matrix, delta)
+  if (sameEnd(start, geometry.start) && sameEnd(end, geometry.end)) return undefined
+  return { ...geometry, start, end }
+}
+
+function placedBox(
   view: Doom,
   node: Node,
   boxes: ReadonlyMap<NodeId, Box> | undefined,
+  landings: Landings,
   delta: Point,
-): Geometry | undefined {
-  const geometry = propOf(node, "geometry")
-  if (geometry?.kind !== "line") return undefined
-  const parent = parentOf(node)
-  const holder = parent == null ? undefined : view.nodes.get(parent.id)
-  const origin = holder === undefined || holder.type === "slide" ? { x: 0, y: 0 } : slidePoint(view, boxes, holder.id)
-  const start = shiftEnd(geometry.start, origin, delta)
-  const end = shiftEnd(geometry.end, origin, delta)
-  if (sameEnd(start, geometry.start) && sameEnd(end, geometry.end)) return undefined
-  return { ...geometry, start, end }
+): Box {
+  const local = boxOf(node, boxes)
+  const center = apply(worldMatrix(view, node.id, landings), { x: local.w / 2, y: local.h / 2 })
+  return {
+    ...local,
+    x: Math.round(center.x + delta.x - local.w / 2),
+    y: Math.round(center.y + delta.y - local.h / 2),
+    rotation: slideTurn(view, node.id, boxes),
+  }
+}
+
+function sameBox(stored: Box | undefined, next: Box): boolean {
+  return (
+    stored !== undefined &&
+    stored.x === next.x &&
+    stored.y === next.y &&
+    stored.w === next.w &&
+    stored.h === next.h &&
+    stored.rotation === next.rotation &&
+    stored.flipH === next.flipH &&
+    stored.flipV === next.flipV
+  )
 }
 
 function keysAt(
@@ -187,7 +250,8 @@ export function moveToSlide(
   const roots = rootsOf(view, ids)
   if (isRefusal(roots)) return roots
   const boxes = options.boxes
-  const corner = anchorOf(view, roots, boxes)
+  const landings = resolvedLandings(view, boxes)
+  const corner = paintedAnchor(view, roots, boxes, landings)
   const delta = { x: at.x - corner.x, y: at.y - corner.y }
   const moving = new Set<NodeId>(roots.map((node) => node.id))
   for (const node of roots) for (const child of descendantsOf(view, node.id)) moving.add(child.id)
@@ -200,15 +264,12 @@ export function moveToSlide(
     const key = keys[index]
     const node = view.nodes.get(id)
     if (key === undefined || !isLive(node)) continue
-    const place = slidePoint(view, boxes, id)
-    const box = { ...boxOf(node, boxes), x: place.x + delta.x, y: place.y + delta.y }
+    const box = placedBox(view, node, boxes, landings, delta)
     const parent = parentOf(node)
     if (parent?.id !== slide || parent.at !== key)
       writes.push({ node: id, prop: "parent", value: { id: slide, at: key } })
-    const stored = boxOf(node, boxes)
-    if (stored.x !== box.x || stored.y !== box.y || stored.w !== box.w || stored.h !== box.h)
-      writes.push({ node: id, prop: "box", value: box })
-    const line = movedLine(view, node, boxes, delta)
+    if (!sameBox(propOf(node, "box"), box)) writes.push({ node: id, prop: "box", value: box })
+    const line = movedLine(view, node, landings, delta)
     if (line !== undefined) writes.push({ node: id, prop: "geometry", value: line })
   }
   return { writes }

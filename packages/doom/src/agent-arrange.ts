@@ -9,7 +9,10 @@ import type { NodeId } from "./ids.js"
 import type { Layout } from "./layout.js"
 import { linkedOwner } from "./component/instance-ownership.js"
 import type { Node } from "./doom.js"
-import { boxOf, childrenOf, descendantsOf, parentOf, propOf, zeroBox } from "./doom-walk.js"
+import { boxOf, childrenOf, descendantsOf, parentOf, propOf, slideOf, zeroBox } from "./doom-walk.js"
+import { measureWith } from "./measure.js"
+import type { Box } from "./resolved.js"
+import { solveLayout } from "./solve-layout.js"
 
 type Op<K extends AgentChange["op"]> = Extract<AgentChange, { op: K }>
 
@@ -47,13 +50,26 @@ function arrangeableNode(draft: Draft, id: NodeId, field: string): Node {
   return arrangeable(node) ? node : stop("shape", id, field, "form", "A frame or a shape.")
 }
 
+function sourceBoxes(draft: Draft, ids: readonly NodeId[]): ReadonlyMap<NodeId, Box> | undefined {
+  if (draft.reading.boxes !== undefined) return draft.reading.boxes
+  const measure = draft.reading.measure ?? measureWith({})
+  const slides = new Set<NodeId>()
+  for (const id of ids) {
+    const slide = slideOf(draft.doom, id)
+    if (slide !== undefined) slides.add(slide)
+  }
+  const solved = new Map<NodeId, Box>()
+  for (const slide of slides) for (const [id, box] of solveLayout(draft.doom, slide, measure)) solved.set(id, box)
+  return solved.size === 0 ? undefined : solved
+}
+
 function placeOnSlide(draft: Draft, change: Op<"move">): void {
   if (change.node !== undefined && change.nodes !== undefined)
     stop("shape", change.node, "nodes", "form", "One layer, or a list of layers.")
   const ids = change.nodes ?? (change.node === undefined ? undefined : [change.node])
   if (ids === undefined) stop("shape", undefined, "node", "needs", "A frame or a shape.")
-  if (change.into === undefined) stop("shape", undefined, "into", "needs", "A slide.")
-  const boxes = draft.reading.boxes
+  if (change.into === undefined) stop("shape", undefined, "into", "needs", "a destination slide id")
+  const boxes = sourceBoxes(draft, ids)
   const place = change.box === undefined ? slidePlace(draft.doom, ids, boxes) : { x: change.box.x, y: change.box.y }
   if (isRefusal(place)) throw new Stop(place)
   const moved = moveToSlide(draft.doom, ids, change.into, place, {

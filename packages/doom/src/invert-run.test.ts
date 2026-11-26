@@ -149,7 +149,9 @@ describe("undoing a run, edit by edit from the values each write replaced", () =
     world = by(world, person, [{ node: ids.card, prop: "parent", value: null }])
     const undone = undoRun(world, "a")
     expect(undone.writes).toEqual([])
-    world = by(world, person, [{ node: ids.card, prop: "parent", value: place(ids.side) }])
+    world = by(world, person, [
+      { node: ids.card, prop: "parent", value: place(ids.side), base: revOf(world.doom, ids.card, "parent")! },
+    ])
     world = by(world, person, [{ node: ids.side, prop: "parent", value: null }])
     const { world: after } = undo(world)
     expect(nodeOf(after, ids.title).parent).toMatchObject({ id: ids.slide })

@@ -31,6 +31,7 @@ type Working = {
   readonly created: Set<NodeId>
   readonly copied: Set<NodeId>
   readonly ownRevs: Set<NodeId>
+  readonly keptDeleted: Set<NodeId>
   regrouped: boolean
 }
 
@@ -42,6 +43,25 @@ const deleted = (node: Node) => parentOf(node) === null
 const takesBackDelete = (doom: Doom, write: Write) =>
   write.base !== undefined && parentOf(doom.nodes.get(write.node)) === null
 
+// A move that did not see a delete leaves the layer deleted.
+// The write that names the delete's rev is an undo and still restores.
+function staysDeleted(doom: Doom, writes: readonly Write[]): Set<NodeId> {
+  const placing = new Set<NodeId>()
+  const restoring = new Set<NodeId>()
+  for (const write of writes) {
+    if (write.prop !== "parent" || write.value === null || typeof write.value !== "object") continue
+    const node = doom.nodes.get(write.node)
+    if (node === undefined || !deleted(node)) continue
+    const parent = write.value as Parent
+    const target = doom.nodes.get(parent.id)
+    if (target === undefined || deleted(target)) continue
+    if (write.base === doom.revs.get(write.node)?.get("parent")) restoring.add(write.node)
+    else placing.add(write.node)
+  }
+  for (const id of restoring) placing.delete(id)
+  return placing
+}
+
 function open(doom: Doom): Working {
   return {
     nodes: new Map(doom.nodes),
@@ -51,6 +71,7 @@ function open(doom: Doom): Working {
     created: new Set(),
     copied: new Set(),
     ownRevs: new Set(),
+    keptDeleted: new Set(),
     regrouped: false,
   }
 }
@@ -179,6 +200,7 @@ function write(work: Working, doom: Doom, landed: Landed, raw: Write, known: Kno
     stamp(work, id, ["type"], landed.rev)
     return undefined
   }
+  if (work.keptDeleted.has(id)) return undefined
   const node = work.nodes.get(id)!
   if (key !== "parent" && deleted(node)) return refuse("missing", id, key)
   const undoingOwn =
@@ -327,6 +349,7 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
   const writes = withPartDeletes(doom, landed.writes)
   if (isRefusal(writes)) return writes
   const expanded = writes === landed.writes ? landed : { ...landed, writes }
+  for (const id of staysDeleted(doom, expanded.writes)) work.keptDeleted.add(id)
   for (const each of expanded.writes) {
     const refusal = write(work, doom, expanded, each, known)
     if (refusal !== undefined) return refusal

@@ -3,12 +3,14 @@ import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { build, compiled, minter } from "./agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
-import { childrenOf, parentOf, propOf } from "./doom-walk.js"
-import { invert, isRefusal, moveToSlide, type Doom, type NodeId } from "./index.js"
-import { ids, land } from "./sample-deck.js"
-import { column, plainTheme, spot } from "./testing/doom-fixtures-art.js"
+import { boxOf, childrenOf, parentOf, propOf } from "./doom-walk.js"
+import { compileAgentEdit, invert, isRefusal, moveToSlide, type Doom, type NodeId } from "./index.js"
+import { apply, boxMatrix, identity } from "./matrix.js"
+import { ids, land, person } from "./sample-deck.js"
+import { column, measure, padding, plainTheme, spot } from "./testing/doom-fixtures-art.js"
 import { step } from "./testing/invert-edit.js"
 import { generatedColumn, more, richDeck } from "./testing/rich-deck.js"
+import { solveLayout } from "./solve-layout.js"
 import type { Point } from "./resolved.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
@@ -177,7 +179,7 @@ describe("moveToSlide", () => {
     })
     expect(moveToSlide(locked, [ids.card], more.slide2, { x: 0, y: 0 })).toMatchObject({
       refused: "shape",
-      form: "This layer is locked.",
+      form: "This layer is locked. Unlock it or choose another.",
     })
     expect(moveToSlide(deck, [generatedColumn], more.slide2, { x: 0, y: 0 })).toMatchObject({
       refused: "shape",
@@ -236,6 +238,166 @@ describe("an agent move onto a slide", () => {
     expect(refusal(richDeck(), { op: "move", nodes: [ids.card] })).toMatchObject({
       refused: "shape",
       field: "into",
+      fault: "needs",
+      needs: "a destination slide id",
+    })
+  })
+})
+
+describe("a move composes the transforms it crosses", () => {
+  function turned() {
+    const grown = doomFromTree({
+      theme: plainTheme,
+      slides: [
+        {
+          children: [
+            {
+              type: "frame",
+              name: "group",
+              props: { box: { ...spot(50, 50, 100, 100), rotation: 90 } },
+              children: [{ type: "shape", name: "nested", props: { box: { ...spot(20, 10, 30, 10), flipH: true } } }],
+            },
+            {
+              type: "frame",
+              name: "flow",
+              props: { box: spot(0, 0, 200, 180), layout: column({}, 0, padding(20)) },
+              children: [{ type: "shape", name: "flowChild", props: { box: spot(7, 9, 20, 20) } }],
+            },
+            {
+              type: "shape",
+              name: "rotated",
+              props: { box: { ...spot(100, 200, 80, 40), rotation: 90, flipV: true } },
+            },
+            { type: "shape", name: "flat", props: { box: spot(160, 235, 30, 30) } },
+            {
+              type: "shape",
+              name: "loose",
+              props: {
+                box: spot(10, 20, 40, 0),
+                geometry: {
+                  kind: "line" as const,
+                  start: { x: 10, y: 20 },
+                  end: { x: 50, y: 20 },
+                  route: "straight" as const,
+                  arrows: ["none", "none"] as const,
+                },
+              },
+            },
+          ],
+        },
+        { children: [] },
+      ],
+    })
+    return { view: grown.doom, named: grown.ids, from: grown.slides[0]!, to: grown.slides[1]! }
+  }
+
+  const corners = (view: Doom, id: NodeId, parent?: NodeId) => {
+    const box = boxOf(view.nodes.get(id)!)
+    const matrix = boxMatrix(parent === undefined ? identity : boxMatrix(identity, boxOf(view.nodes.get(parent)!)), box)
+    return [
+      apply(matrix, { x: 0, y: 0 }),
+      apply(matrix, { x: box.w, y: 0 }),
+      apply(matrix, { x: 0, y: box.h }),
+      apply(matrix, { x: box.w, y: box.h }),
+    ]
+  }
+
+  it("places the painted union of a turned layer and a flat layer at the requested point", () => {
+    const { view, named, to } = turned()
+    const moved = across(view, [named.rotated!, named.flat!], to, { x: 330, y: 440 }).landed.after
+    expect(propOf(moved.nodes.get(named.rotated!)!, "box")).toMatchObject({ rotation: 90, flipV: true })
+    const painted = [...corners(moved, named.rotated!), ...corners(moved, named.flat!)]
+    expect({ x: Math.min(...painted.map(({ x }) => x)), y: Math.min(...painted.map(({ y }) => y)) }).toEqual({
+      x: 330,
+      y: 440,
+    })
+  })
+
+  it("keeps a child's painted edge when it leaves a turned group", () => {
+    const { view, named, to } = turned()
+    const id = named.nested!
+    const before = corners(view, id, named.group!)
+    const moved = across(view, [id], to, { x: 330, y: 440 }).landed.after
+    const after = corners(moved, id)
+    expect(after[1]!.x - after[0]!.x).toBeCloseTo(before[1]!.x - before[0]!.x, 6)
+    expect(after[1]!.y - after[0]!.y).toBeCloseTo(before[1]!.y - before[0]!.y, 6)
+    expect(propOf(moved.nodes.get(id)!, "box")).toMatchObject({ flipH: true, rotation: 90 })
+  })
+
+  it("carries a free line's ends through the frame that held them", () => {
+    const grown = doomFromTree({
+      theme: plainTheme,
+      slides: [
+        {
+          children: [
+            {
+              type: "frame",
+              name: "group",
+              props: { box: { ...spot(50, 50, 100, 100), rotation: 90 } },
+              children: [
+                {
+                  type: "shape",
+                  name: "loose",
+                  props: {
+                    box: spot(10, 20, 40, 0),
+                    geometry: {
+                      kind: "line" as const,
+                      start: { x: 10, y: 20 },
+                      end: { x: 50, y: 20 },
+                      route: "straight" as const,
+                      arrows: ["none", "none"] as const,
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        { children: [] },
+      ],
+    })
+    const holder = boxOf(grown.doom.nodes.get(grown.ids.group!)!)
+    const matrix = boxMatrix(identity, holder)
+    const at = apply(matrix, { x: 10, y: 20 })
+    const moved = across(grown.doom, [grown.ids.loose!], grown.slides[1]!, { x: at.x, y: at.y }).landed.after
+    const line = propOf(moved.nodes.get(grown.ids.loose!)!, "geometry")
+    const end = apply(matrix, { x: 50, y: 20 })
+    expect(line).toMatchObject({
+      start: { x: Math.round(at.x), y: Math.round(at.y) },
+      end: { x: Math.round(end.x), y: Math.round(end.y) },
+    })
+  })
+
+  it("bakes the layout box when the drop is the child's apparent place", () => {
+    const { view, named, from, to } = turned()
+    const boxes = solveLayout(view, from, measure)
+    const effective = boxes.get(named.flowChild!)!
+    const holder = boxes.get(named.flow!)!
+    expect(effective).not.toEqual(boxOf(view.nodes.get(named.flowChild!)!))
+    const at = { x: holder.x + effective.x, y: holder.y + effective.y }
+    const result = moveToSlide(view, [named.flowChild!], to, at, { boxes })
+    if (isRefusal(result)) throw new Error(JSON.stringify(result))
+    const after = step(view, result.writes).after
+    expect(propOf(after.nodes.get(named.flowChild!)!, "box")).toEqual({ ...effective, ...at })
+  })
+
+  it("bakes the resolved place for an agent's boxless move out of auto layout", () => {
+    const { view, named, from, to } = turned()
+    const boxes = solveLayout(view, from, measure)
+    const child = boxes.get(named.flowChild!)!
+    const frame = boxes.get(named.flow!)!
+    const result = compileAgentEdit(view, [change({ op: "move", nodes: [named.flowChild!], into: to })], {
+      author: person,
+      once: "agent",
+      mint: minter(),
+      measure,
+    })
+    if (isRefusal(result)) throw new Error(JSON.stringify(result))
+    expect(propOf(result.after.nodes.get(named.flowChild!)!, "box")).toMatchObject({
+      x: frame.x + child.x,
+      y: frame.y + child.y,
+      w: child.w,
+      h: child.h,
     })
   })
 })

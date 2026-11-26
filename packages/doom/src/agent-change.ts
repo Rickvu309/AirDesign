@@ -478,7 +478,7 @@ export const agentChangesSchema = {
           enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck", "detach", "component"],
           description:
             "component: spec, target? (no target adds one). component add: component, data?, variant?, tokens?, box?. detach: target. " +
-            "add: kind, slide, into?, look. set: target, look. move: node or nodes, into?, after?, box? x,y. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
+            "add: kind, slide, into?, look. set: target, look. move: node, or nodes. into is required with nodes or box and then names a slide; one node may name a frame. after?. box? needs x, y, w, h; x, y place the union and w, h do not resize. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
         },
         ...schemasOf(placeFields),
         kind: choice(addKinds, `${kindWords} component: a linked template.`).schema,

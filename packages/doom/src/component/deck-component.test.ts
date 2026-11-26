@@ -125,7 +125,17 @@ it("scopes component byte and count refusals to the offending fields", () => {
   const removed = accepted(applyEdit(full, step(full, [{ node: nodes[5]!, prop: "parent", value: null }])))
   const refilled = accepted(applyEdit(removed, step(removed, create(deck, nodes[32]!, spec(100)))))
   expect(
-    applyEdit(refilled, step(refilled, [{ node: nodes[5]!, prop: "parent", value: { id: deck, at } }])),
+    applyEdit(
+      refilled,
+      step(refilled, [
+        {
+          node: nodes[5]!,
+          prop: "parent",
+          value: { id: deck, at },
+          base: refilled.revs.get(nodes[5]!)!.get("parent")!,
+        },
+      ]),
+    ),
   ).toMatchObject({ refused: "limit", node: nodes[5], prop: "parent" })
 })
 

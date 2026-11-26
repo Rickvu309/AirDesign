@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import type { Notice } from "./doom-deck-types.js"
-import { appliedOn, dropped, queueEdit, shown, type Queued, type Suppression } from "./doom-queue.js"
+import { appliedOn, dropped, followedEdit, queueEdit, shown, type Queued, type Suppression } from "./doom-queue.js"
 
 type Step = { readonly before: doom.Doom; readonly writes: readonly doom.Write[] }
 
@@ -260,7 +260,7 @@ export function replayLinked(
       writes,
       ...(readBase === undefined ? {} : { readBase: before.rev }),
     })
-    const trial = doom.isRefusal(made) ? made : appliedOn(before, made.edit)
+    const trial = doom.isRefusal(made) ? made : appliedOn(before, followedEdit(before, made))
     if (
       readBase === before.rev &&
       !doom.isRefusal(made) &&

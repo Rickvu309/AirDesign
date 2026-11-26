@@ -129,7 +129,14 @@ describe("invert", () => {
 
   it("leaves a node alone that someone put back somewhere else", () => {
     const removed = step(sampleDeck(), [{ node: ids.card, prop: "parent", value: null }])
-    const revived = step(removed.after, [{ node: ids.card, prop: "parent", value: place(ids.side) }])
+    const revived = step(removed.after, [
+      {
+        node: ids.card,
+        prop: "parent",
+        value: place(ids.side),
+        base: revOf(removed.after, ids.card, "parent")!,
+      },
+    ])
     expect(invert(removed.before, revived.after, removed.edit)).toEqual([])
   })
 

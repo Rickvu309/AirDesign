@@ -94,6 +94,22 @@ describe("queueing an edit on the view", () => {
     expect(second[1]?.after).toEqual(["a"])
   })
 
+  it("shows a layer again when the undo of a queued delete is still waiting", () => {
+    const base = server()
+    const removing = queued(base, [], edit("delete", [{ node: card, prop: "parent", value: null }]))
+    const gone = shown(base, removing)
+    const parentRev = gone.revs.get(card)?.get("parent")
+    if (parentRev === undefined) throw new Error("no parent rev")
+    const restoring = queued(
+      base,
+      removing,
+      edit("undo", [{ node: card, prop: "parent", value: at(slide), base: parentRev }]),
+    )
+    expect(restoring[1]?.edit.writes[0]).not.toHaveProperty("base")
+    expect(restoring[1]?.after).toEqual(["delete"])
+    expect(doom.parentOf(shown(base, restoring).nodes.get(card))?.id).toBe(slide)
+  })
+
   it("refuses an edit whose base names a provisional rev no queued edit holds", () => {
     const base = server()
     expect(queueEdit(base, [], edit("a", [{ node: title, prop: "box", value: box(5), base: doom.rev(7) }]))).toEqual({
@@ -232,5 +248,91 @@ describe("an edit dropped", () => {
     const base = server()
     const queue = queued(base, [], edit("a", [{ node: card, prop: "name", value: "A" }]))
     expect(dropped(queue, "zzz")).toEqual({ queue, gone: [] })
+  })
+})
+
+describe("a move queued before another tab deletes a layer", () => {
+  function crossed() {
+    return doom.doomFromTree({
+      theme: doom.defaultTheme,
+      slides: [
+        {
+          children: [
+            {
+              type: "shape",
+              name: "first",
+              props: { box: { x: 1, y: 2, w: 20, h: 30, rotation: 0, flipH: false, flipV: false } },
+            },
+            { type: "shape", name: "second" },
+            {
+              type: "shape",
+              name: "connector",
+              props: (named) => ({
+                geometry: {
+                  kind: "line" as const,
+                  start: { node: named.first!, site: "c" as const },
+                  end: { node: named.second!, site: "c" as const },
+                  route: "straight" as const,
+                  arrows: ["none", "none"] as const,
+                },
+              }),
+            },
+          ],
+        },
+        { children: [] },
+      ],
+    })
+  }
+
+  it.each(["first", "connector"])(
+    "keeps a concurrently deleted %s deleted through a pending multi-layer cross-slide move",
+    (name) => {
+      const grown = crossed()
+      const start = grown.doom
+      const first = grown.ids.first!
+      const second = grown.ids.second!
+      const gone = grown.ids[name]!
+      const into = grown.slides[1]!
+      const moved = doom.moveToSlide(start, [first, second], into, { x: 8, y: 10 })
+      if (doom.isRefusal(moved)) throw new Error(JSON.stringify(moved))
+      const pending = queueEdit(start, [], { once: "move", author: person, writes: moved.writes })
+      if (doom.isRefusal(pending)) throw new Error(JSON.stringify(pending))
+      const deleted = doom.applyEdit(start, {
+        once: "delete",
+        author: { kind: "person", id: "second-tab" },
+        writes: [{ node: gone, prop: "parent", value: null }],
+        rev: doom.rev(start.rev + 1),
+      })
+      if (doom.isRefusal(deleted)) throw new Error(JSON.stringify(deleted))
+      const optimistic = shown(deleted, [pending])
+      const persisted = doom.applyEdit(deleted, { ...sendable(pending), rev: doom.rev(deleted.rev + 1) })
+      expect(doom.parentOf(optimistic.nodes.get(gone))).toBeNull()
+      if (doom.isRefusal(persisted)) throw new Error(JSON.stringify(persisted))
+      expect(doom.parentOf(persisted.nodes.get(gone))).toBeNull()
+      expect(doom.parentOf(persisted.nodes.get(second))?.id).toBe(into)
+    },
+  )
+
+  it("keeps a concurrently deleted layer deleted through the legacy single-layer move", () => {
+    const grown = crossed()
+    const start = grown.doom
+    const first = grown.ids.first!
+    const into = grown.slides[1]!
+    const writes = doom.compileAgentChange(start, { op: "move", node: first, into }, () => doom.nodeId("n:55"))
+    if ("refused" in writes) throw new Error(JSON.stringify(writes))
+    const pending = queueEdit(start, [], { once: "old-move", author: person, writes })
+    if (doom.isRefusal(pending)) throw new Error(JSON.stringify(pending))
+    const deleted = doom.applyEdit(start, {
+      once: "delete",
+      author: { kind: "person", id: "second-tab" },
+      writes: [{ node: first, prop: "parent", value: null }],
+      rev: doom.rev(start.rev + 1),
+    })
+    if (doom.isRefusal(deleted)) throw new Error(JSON.stringify(deleted))
+    const optimistic = shown(deleted, [pending])
+    const persisted = doom.applyEdit(deleted, { ...sendable(pending), rev: doom.rev(deleted.rev + 1) })
+    expect(doom.parentOf(optimistic.nodes.get(first))).toBeNull()
+    if (doom.isRefusal(persisted)) throw new Error(JSON.stringify(persisted))
+    expect(doom.parentOf(persisted.nodes.get(first))).toBeNull()
   })
 })

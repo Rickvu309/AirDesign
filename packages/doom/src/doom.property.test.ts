@@ -178,10 +178,13 @@ it("never makes a cycle of parents, and refuses exactly the reparents that would
             return false
           }
           const parent = target === -2 ? null : target === -1 ? ids.slide : nodes[target]!
-          const expected =
-            target >= 0 &&
-            ((parents[target] === null && !(restore && parents[node] === null)) ||
-              (first && parents[node] !== null && underNode(target)))
+          const liveTarget = target === -1 || (target >= 0 && parents[target] !== null)
+          const stays = parents[node] === null && !restore && target !== -2 && liveTarget
+          const expected = stays
+            ? "ok"
+            : target >= 0 &&
+                ((parents[target] === null && !(restore && parents[node] === null)) ||
+                  (first && parents[node] !== null && underNode(target)))
               ? "missing"
               : target >= 0 && underNode(target)
                 ? "cycle"
@@ -198,7 +201,7 @@ it("never makes a cycle of parents, and refuses exactly the reparents that would
           if (expected === "ok") {
             expect(isRefusal(result)).toBe(false)
             doom = result as Doom
-            parents[node] = target === -2 ? null : target === -1 ? "slide" : target
+            if (!stays) parents[node] = target === -2 ? null : target === -1 ? "slide" : target
           } else {
             expect(result).toMatchObject({ refused: expected })
           }

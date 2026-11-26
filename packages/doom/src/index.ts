@@ -92,7 +92,7 @@ export {
   sampleComponentEdit,
 } from "./component/component-edit.js"
 export type { Theme } from "./theme.js"
-export { viewOf } from "./view-of.js"
+export { onTop, viewOf } from "./view-of.js"
 export { readColor, resolveColor, sameColor, tinted } from "./color.js"
 export {
   type Measure,
