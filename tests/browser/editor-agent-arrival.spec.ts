@@ -99,7 +99,7 @@ test("a person's own edit during an open agent run, and any agent edit under red
   expect(await marksSeen(page)).toBe(0)
 })
 
-test("typing in an arriving layer, zooming, or asking for less motion ends the trace at once", async ({
+test("typing in an arriving layer, zooming, dragging it, or asking for less motion ends the trace at once", async ({
   page,
   context,
   stack,
@@ -132,6 +132,15 @@ test("typing in an arriving layer, zooming, or asking for less motion ends the t
   await more("Zoomed note", 100)
   await page.keyboard.press("Shift+0")
   await expect(layer.locator("> *")).toHaveCount(0)
+
+  const dragged = await more("Dragged note", 450)
+  const hold = await dragged.boundingBox()
+  if (hold === null) throw new Error("the agent's note is not painted")
+  await page.mouse.move(hold.x + 40, hold.y + hold.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(hold.x + 140, hold.y + hold.height / 2 + 40, { steps: 4 })
+  await expect(layer.locator("> *")).toHaveCount(0)
+  await page.mouse.up()
 
   const calmed = await more("Calm note", 800)
   await page.emulateMedia({ reducedMotion: "reduce" })
