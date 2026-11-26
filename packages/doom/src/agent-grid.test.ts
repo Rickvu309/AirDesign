@@ -8,7 +8,6 @@ import { ladderOf } from "./pattern-parts.js"
 import { type Doom, type NodeId } from "./index.js"
 import { widestWord } from "./text-estimate.js"
 import { ids, land } from "./sample-deck.js"
-import { slideFindings } from "./slide-findings.js"
 
 const slide = ids.slide
 const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as AgentChange
@@ -253,19 +252,6 @@ describe("a grid of words is set as a consulting table", () => {
     const { at, ruleAt } = tableOf([...segments.slice(0, 4), ["**Total**", "37.6", "43.4", ""]])
     expect(propOf(at(4, 1), "text")!.spans.every((span) => span.bold === true)).toBe(true)
     expect(ruleAt(4)).toMatchObject({ sides: { t: 2 } })
-  })
-
-  it("finds a Total the agent wrote that does not equal its column's sum", () => {
-    const { doom, at } = tableOf([
-      ["Segment ($M)", "Q3 FY25", "Q3 FY26"],
-      ["Enterprise", "15.2", "18.6"],
-      ["Mid-market", "13.1", "14.9"],
-      ["SMB", "7.9", "8.0"],
-      ["Services", "1.4", "1.6"],
-      ["Total", "37.6", "43.4"],
-    ])
-    const found = slideFindings(doom, [slide]).filter(({ code }) => code === "total-mismatch")
-    expect(found.map(({ node }) => node)).toEqual([at(5, 2)!.id])
   })
 
   describe("an agent's edit of a cell's words", () => {

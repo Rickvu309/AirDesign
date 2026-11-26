@@ -3,7 +3,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
 import { emptyLog, callTool, type DeckHost, type Session } from "./index.js"
-import { layoutOf } from "./layout-answer.js"
+import { layoutOf } from "./layout-findings-answer.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
@@ -21,7 +21,7 @@ const titled = () =>
             props: {
               role: "title",
               box: { x: 160, y: 380, w: 1600, h: 160, rotation: 0, flipH: false, flipV: false },
-              text: doom.textFromMarkdown("Sales grew", "title"),
+              text: doom.textFromMarkdown("Revenue by region", "title"),
             },
           },
         ],
@@ -87,9 +87,9 @@ describe("layout findings in the answers, measured by the host with the deck's f
       changes: [{ op: "add", kind: "shape", slide: slides[0], box: { x: 1800, y: 900, w: 300, h: 100 } }],
     })
     const read = (await call("read_deck", { deck })).answer as { layers: string; findings: Found[] }
-    const title = estimate(doom.textFromMarkdown("Sales grew", "title"), doom.defaultTheme, 1600).h
+    const title = estimate(doom.textFromMarkdown("Revenue by region", "title"), doom.defaultTheme, 1600).h
     expect(read.layers.split("\n")[1]).toContain(`1600x${String(Number(title.toFixed(1)))}`)
-    expect(read.findings).toMatchObject([{ code: "off-slide" }])
+    expect(read.findings.map(({ code }) => code)).toEqual(["off-slide"])
   })
 
   it("says the layout is clear when the slides it touched paint with nothing off, so the agent need not guess", async () => {

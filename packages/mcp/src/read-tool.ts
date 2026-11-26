@@ -14,7 +14,7 @@ import {
 } from "./component-answer.js"
 import { deckMeasure } from "./deck-measure.js"
 import type { DeckHost, Opened } from "./deck-host.js"
-import { type Laid, layoutOf, listed, readFindingsNote } from "./layout-answer.js"
+import { type Laid, layoutOf, listed, readFindingsNote } from "./layout-findings-answer.js"
 import { withOtherRuns } from "./other-runs.js"
 
 const readBytes = 24_000

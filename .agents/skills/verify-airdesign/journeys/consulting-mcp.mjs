@@ -60,32 +60,44 @@ export default async function drive({ signIn, post, mcpRoutes, expect, note }) {
       box: { x: 160, y: 230, w: 1500, h: 650 },
     },
   ])
+  changes.push({
+    op: "add",
+    kind: "shape",
+    slide: slides[0],
+    box: { x: 1850, y: 900, w: 200, h: 60 },
+  })
   const drafted = await call("edit_deck", { deck, base: add.rev, runId: add.runId, changes })
-  const hasAdvice = (answer, slide) => {
-    const findings = answer.findings.filter((finding) => finding.slide === slide)
-    expect(findings.map(({ code }) => code).sort()).toEqual(["no-source", "title-label"])
-    for (const { note } of findings) expect(note).toMatch(/^[A-Z][^\n]+\.$/)
+  const offSlide = (drafted.findings ?? []).find(({ code }) => code === "off-slide")
+  expect(offSlide).toEqual({
+    code: "off-slide",
+    node: expect.any(String),
+    note: expect.stringContaining("130 px past the slide's edge"),
+  })
+  for (const [index, slide] of slides.entries()) {
+    const answer = await call("read_deck", { deck, slide })
+    expect(answer.findings ?? []).toEqual(index === 0 ? [offSlide] : [])
+    if (index === 0) note(`read_deck findings: ${JSON.stringify(answer.findings)}`)
   }
-  for (const slide of slides) hasAdvice(drafted, slide)
-  for (const slide of slides) hasAdvice(await call("read_deck", { deck, slide }), slide)
-  note("The edit and five slide reads returned title-label and no-source in structuredContent.")
   const fixed = await call("edit_deck", {
     deck,
     base: drafted.rev,
     runId: drafted.runId,
-    changes: slides.flatMap((slide, index) => [
-      { op: "set", target: slide + ".title", text: conclusions[index] },
-      {
-        op: "add",
-        kind: "text",
-        slide,
-        textStyle: "caption",
-        text: "Note: Figures rounded. Source: Quarterly management accounts",
-        box: { x: 160, y: 930, w: 1500, h: 55 },
-      },
-    ]),
+    changes: [
+      { op: "delete", nodes: [offSlide.node] },
+      ...slides.flatMap((slide, index) => [
+        { op: "set", target: slide + ".title", text: conclusions[index] },
+        {
+          op: "add",
+          kind: "text",
+          slide,
+          textStyle: "caption",
+          text: "Note: Figures rounded. Source: Quarterly management accounts",
+          box: { x: 160, y: 930, w: 1500, h: 55 },
+        },
+      ]),
+    ],
   })
-  const cleared = (answer) => expect((answer.findings ?? []).filter((finding) => finding.slide)).toEqual([])
+  const cleared = (answer) => expect(answer.findings ?? []).toEqual([])
   cleared(fixed)
   for (const [index, slide] of slides.entries()) {
     const answer = await call("read_deck", { deck, slide })
@@ -97,6 +109,6 @@ export default async function drive({ signIn, post, mcpRoutes, expect, note }) {
   expect(measured.layers).toMatch(/1600x123\.2 style=title/)
   note("The 17-word title wrapped to two measured lines at the default 56 px.")
   note(
-    "One edit fixed all five slides. Fresh reads confirmed the saved command titles and sources, and the consulting findings cleared.",
+    "One edit fixed all five slides. Fresh reads confirmed the saved command titles and sources, and the layout findings cleared.",
   )
 }
