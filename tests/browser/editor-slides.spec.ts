@@ -3,6 +3,7 @@ import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
 import { clickSlide, openEditor, savedNode, savedSlides, selectedIds, type Opened } from "./editor-deck"
+import { openGroups, otherGrid, savedGroups } from "./grid-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -116,4 +117,33 @@ test("the last slide cannot be deleted", async ({ page, context, stack }) => {
   await page.keyboard.press("Delete")
   await expect(entries(page)).toHaveCount(1)
   expect(await savedSlides(stack, opened)).toHaveLength(1)
+})
+
+test("an open slide menu acts on its own slide after another tab adds one above it, and closes when its slide goes", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openGroups(page, context, stack, [4])
+  const other = await otherGrid(context, stack, opened)
+  await page.getByRole("button", { name: slideListCopy.slidesView }).click()
+  await expect(entries(page)).toHaveCount(4)
+  const menu = page.getByRole("menu")
+  await entry(page, 3).click({ button: "right" })
+  await expect(menu).toBeVisible()
+  await other.locator(`[data-editor-grid] [data-slide-entry="1"]`).click({ button: "right" })
+  await other.getByRole("menuitem", { name: slideListCopy.addAfterMenu }).click()
+  await expect(entries(page)).toHaveCount(5)
+  await expect(menu).toBeVisible()
+  await menu.getByRole("menuitem", { name: slideListCopy.delete }).click()
+  await expect.poll(async () => (await savedGroups(stack, opened)).flat()).not.toContain(opened.ids[2])
+  expect((await savedGroups(stack, opened)).flat()).toHaveLength(4)
+
+  await expect(other.locator("[data-editor-grid] [data-slide-entry]")).toHaveCount(4)
+  await entry(page, 4).click({ button: "right" })
+  await expect(menu).toBeVisible()
+  await other.locator(`[data-editor-grid] [data-slide-entry="4"]`).click()
+  await other.keyboard.press("Delete")
+  await expect(entries(page)).toHaveCount(3)
+  await expect(menu).toBeHidden()
 })
