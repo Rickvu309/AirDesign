@@ -326,6 +326,40 @@ test("renders empty, loading, failed, and signed-out states without a blank page
   await expect(page.getByRole("button", { name: connectAgentCopy.title })).toBeVisible()
 })
 
+test("a phone wraps the address only after a slash, never inside a word", async ({ page }) => {
+  const address = "https://studio.airdesign.app/mcp"
+  await mockHome(page)
+  await page.route("**/account/agents", (route) =>
+    route.fulfill({ json: { ok: true, account: { email: "person@example.com" }, mcp: address, agents: [] } }),
+  )
+  await page.goto("/settings/agents")
+  await page.getByRole("button", { name: connectAgentCopy.title }).click()
+  const shown = connectDialog(page).getByText(address, { exact: true })
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 800 })
+    const lines = await shown.evaluate((element) => {
+      const range = document.createRange()
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
+      const found: { top: number; text: string }[] = []
+      for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+        const text = node.textContent ?? ""
+        for (let index = 0; index < text.length; index++) {
+          range.setStart(node, index)
+          range.setEnd(node, index + 1)
+          const top = range.getBoundingClientRect().top
+          const last = found.at(-1)
+          if (last !== undefined && top < last.top + 2) last.text += text.charAt(index)
+          else found.push({ top, text: text.charAt(index) })
+        }
+      }
+      return found.map((line) => line.text)
+    })
+    expect(lines.join("")).toBe(address)
+    for (const line of lines.slice(0, -1)) expect(line, `${width}px: ${lines.join(" | ")}`).toMatch(/\/$/)
+    for (const line of lines.slice(1)) expect(line, `${width}px: ${lines.join(" | ")}`).not.toMatch(/^\//)
+  }
+})
+
 test("signed out on /settings/agents goes to sign-in with the path and query", async ({ page }) => {
   await page.route("**/account/agents", (route) =>
     route.fulfill({ status: 401, json: { ok: false, refusal: "session" } }),
