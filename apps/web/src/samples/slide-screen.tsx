@@ -9,7 +9,7 @@ const assetUrl = (asset: string) => (asset === pictureAsset ? landscapeUrl : und
 
 export function SlideScreen({ grown }: { readonly grown: doom.Grown }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted p-8">
+    <main className="flex min-h-dvh items-center justify-center bg-muted p-8">
       <div className="overflow-hidden rounded-md shadow-card">
         <DoomSlide doom={grown.doom} slide={grown.slides[0]!} width={slideWidth} assetUrl={assetUrl} />
       </div>
