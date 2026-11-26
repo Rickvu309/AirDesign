@@ -101,7 +101,7 @@ export const catalog = {
     runsOn: "server",
     read: readDeckQuery,
     description:
-      "Read an owned deck, one line for each layer: its id, what it is, @x,y and size, then its look. rev is the base to send to airdesign_edit_deck. Send slide or cursor to read the rest.",
+      "Read an owned deck, one line for each layer: its id, what it is, @x,y and size, then its look. A slide line ends with group=<id>. rev is the base to send to airdesign_edit_deck. Send slide or cursor to read the rest.",
   },
 } as const satisfies Readonly<Record<string, OpRow>>
 

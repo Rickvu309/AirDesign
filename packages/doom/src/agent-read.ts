@@ -252,6 +252,7 @@ function slideLine(node: Node): string {
   const fills = propOf(node, "fills")
   const notes = propOf(node, "notes")
   const transition = propOf(node, "transition")
+  const group = parentOf(node)?.id
   return [
     "slide",
     node.id,
@@ -261,6 +262,7 @@ function slideLine(node: Node): string {
     ...(transition === undefined ? [] : [`transition=${transition.kind}/${String(transition.ms)}`]),
     ...(fills !== undefined && fills.length > 0 ? [`fill=${paintWords(fills)}`] : []),
     ...(notes === undefined || notes.chars === "" ? [] : [`notes=${quoted(notes.chars)}`]),
+    ...(group === undefined ? [] : [`group=${group}`]),
   ].join(" ")
 }
 

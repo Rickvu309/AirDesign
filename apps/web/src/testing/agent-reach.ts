@@ -18,7 +18,12 @@ function deckOf(children: readonly doom.TreeNode[]) {
 export type Probe = "words" | "card" | "rule" | "star" | "photo" | "panel" | "slide"
 
 type Reach =
-  | { readonly agent: string; readonly writes?: doom.PropName; readonly on?: Probe }
+  | {
+      readonly agent: string
+      readonly writes?: doom.PropName
+      readonly on?: Probe
+      readonly probe?: Readonly<Record<string, unknown>>
+    }
   | { readonly personOnly: string }
   | { readonly owed: string; readonly probe?: Readonly<Record<string, unknown>> }
 
@@ -236,23 +241,23 @@ export const reach: Readonly<Record<string, Entry>> = {
   "gesture:slide-earlier": { agent: "slide.move", props: ["parent"] },
   "gesture:slide-later": { agent: "slide.move", props: ["parent"] },
   "gesture:slide-group-up": {
-    owed: "slide.move puts a slide inside its anchor's slide group; no word moves a whole slide group",
-    probe: { op: "slide", move: { group: "a:1", after: null } },
+    agent: "slide.move",
+    probe: { op: "slide", move: { group: "a:2", before: "a:1" } },
     props: ["parent"],
   },
   "gesture:slide-group-down": {
-    owed: "slide.move puts a slide inside its anchor's slide group; no word moves a whole slide group",
-    probe: { op: "slide", move: { group: "a:1", after: null } },
+    agent: "slide.move",
+    probe: { op: "slide", move: { group: "a:1", after: "a:2" } },
     props: ["parent"],
   },
   "drag:slide-group-start": {
-    owed: "slide.move after a slide group's last slide stays in that group; no word puts a slide first in the next",
-    probe: { op: "slide", move: { slide: "a:1", before: "a:2" } },
+    agent: "slide.move",
+    probe: { op: "slide", move: { slide: "a:3", group: "a:2", after: null } },
     props: ["parent"],
   },
   "menu:new-slide-group": {
-    owed: "slide.add joins the slide group of the slide it follows; no word starts a new slide group",
-    probe: { op: "slide", add: { after: "a:1", group: "new" } },
+    agent: "slide.add",
+    probe: { op: "slide", add: { group: "new", after: "a:1" } },
     props: ["type", "parent"],
   },
 

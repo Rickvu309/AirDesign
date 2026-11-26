@@ -17,12 +17,7 @@ import {
 
 const slideOps = new Set(["add", "move", "delete"])
 
-const owedToAgent: readonly string[] = [
-  "gesture:slide-group-up",
-  "gesture:slide-group-down",
-  "drag:slide-group-start",
-  "menu:new-slide-group",
-]
+const owedToAgent: readonly string[] = []
 
 const viewOnly = new Set([
   "select",
@@ -160,5 +155,47 @@ describe("every capability a person has names its agent word, or says why it is 
 
   it("lists the capabilities owed to agents, and no others", () => {
     expect(entries.flatMap(([key, entry]) => ("owed" in entry ? [key] : []))).toEqual(owedToAgent)
+  })
+
+  it.each([
+    ["gesture:slide-group-up", [["a:4"], ["a:3"]]],
+    ["gesture:slide-group-down", [["a:4"], ["a:3"]]],
+    ["drag:slide-group-start", [["a:3", "a:4"]]],
+    ["menu:new-slide-group", [["a:3"], ["new:1"], ["a:4"]]],
+  ] as const)("%s lands the same slide groups through the agent", (capability, groups) => {
+    const initial = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ name: "Slides", children: [] }] }).doom
+    const deck = [...initial.nodes.values()].find((node) => node.type === "deck")!
+    const [first] = doom.slidesOf(initial)
+    const previous = doom.parentOf(initial.nodes.get(doom.parentOf(first)!.id))!.at
+    const left = doom.nodeId("a:1")
+    const right = doom.nodeId("a:2")
+    const one = doom.nodeId("a:3")
+    const two = doom.nodeId("a:4")
+    const key = doom.orderKeyBetween(previous, null)
+    const land = (view: doom.Doom, author: doom.Author, writes: readonly doom.Write[]) => {
+      const result = doom.applyEdit(view, { once: `parity-${view.rev}`, author, writes, rev: doom.rev(view.rev + 1) })
+      if (doom.isRefusal(result)) throw new Error(JSON.stringify(result))
+      return result
+    }
+    const view = land(initial, { kind: "person", id: "parity" }, [
+      { node: left, prop: "type", value: "slideRow" },
+      { node: left, prop: "parent", value: { id: deck.id, at: key } },
+      { node: right, prop: "type", value: "slideRow" },
+      { node: right, prop: "parent", value: { id: deck.id, at: doom.orderKeyBetween(key, null) } },
+      { node: one, prop: "type", value: "slide" },
+      { node: one, prop: "parent", value: { id: left, at: key } },
+      { node: two, prop: "type", value: "slide" },
+      { node: two, prop: "parent", value: { id: right, at: key } },
+      { node: first!.id, prop: "parent", value: null },
+    ])
+    const entry = reach[capability]
+    if (entry === undefined || !("agent" in entry)) throw new Error(`${capability} needs an agent change`)
+    const change = doom.readAgentChange(entry.probe)
+    if (doom.isRefusal(change)) throw new Error(JSON.stringify(change))
+    let minted = 0
+    const writes = doom.compileAgentChange(view, change, () => doom.nodeId(`new:${++minted}`))
+    if ("refused" in writes) throw new Error(JSON.stringify(writes))
+    const after = land(view, { kind: "person", id: "parity" }, writes)
+    expect(doom.slideGroups(after).map((group) => group.slides)).toEqual(groups)
   })
 })

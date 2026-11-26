@@ -57,7 +57,7 @@ describe("readForAgent", () => {
       "slide",
       more.titled,
     ])
-    expect(read[0]).toBe(`slide ${ids.slide} "Slide 1"`)
+    expect(read[0]).toBe(`slide ${ids.slide} "Slide 1" group=${ids.row}`)
     expect(read[1]!.startsWith("  ")).toBe(true)
     expect(read[2]!.startsWith("    ")).toBe(true)
   })
@@ -111,7 +111,7 @@ describe("readForAgent", () => {
 
   it("reads only the slides asked for, and says so for an id that is no slide", () => {
     expect(lines(readForAgent(doom, [more.slide2]))).toEqual([
-      `slide ${more.slide2} "Slide 2"`,
+      `slide ${more.slide2} "Slide 2" group=${ids.row}`,
       expect.stringContaining(more.titled),
     ])
     expect(readForAgent(doom, ["z:9" as never])).toContain("z:9 missing")
