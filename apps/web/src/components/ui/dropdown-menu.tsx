@@ -30,6 +30,7 @@ function DropdownMenuTrigger({
 }
 
 function DropdownMenuContent({
+  variant = "default",
   align = "start",
   alignOffset = 0,
   side = "bottom",
@@ -38,7 +39,9 @@ function DropdownMenuContent({
   className,
   ...props
 }: MenuPrimitive.Popup.Props &
-  Pick<MenuPrimitive.Positioner.Props, "align" | "alignOffset" | "side" | "sideOffset" | "anchor">) {
+  Pick<MenuPrimitive.Positioner.Props, "align" | "alignOffset" | "side" | "sideOffset" | "anchor"> & {
+    variant?: "default" | "editor"
+  }) {
   return (
     <MenuPrimitive.Portal>
       <MenuPrimitive.Positioner
@@ -53,6 +56,7 @@ function DropdownMenuContent({
           data-slot="dropdown-menu-content"
           className={cn(
             "z-50 max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none transition-[opacity,scale] duration-150 ease-out data-starting-style:scale-95 data-starting-style:opacity-0 data-ending-style:scale-95 data-ending-style:opacity-0 data-closed:overflow-hidden data-instant:transition-none",
+            variant === "editor" && "rounded-xl bg-foreground p-1.5 text-white shadow-dark-overlay ring-0 duration-0",
             className,
           )}
           {...props}
@@ -83,6 +87,9 @@ function DropdownMenuLabel({
   )
 }
 
+const editorRow =
+  "h-8 gap-2.5 rounded-md py-0 pr-2.5 pl-2 text-[length:var(--type-dense)] text-white focus:bg-quiet focus:text-white not-data-[variant=destructive]:focus:**:text-white"
+
 function DropdownMenuItem({
   className,
   inset,
@@ -90,7 +97,7 @@ function DropdownMenuItem({
   ...props
 }: MenuPrimitive.Item.Props & {
   inset?: boolean
-  variant?: "default" | "destructive"
+  variant?: "default" | "destructive" | "editor"
 }) {
   return (
     <MenuPrimitive.Item
@@ -99,6 +106,7 @@ function DropdownMenuItem({
       data-variant={variant}
       className={cn(
         "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-danger-text data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-danger-text dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-danger-text",
+        variant === "editor" && editorRow,
         className,
       )}
       {...props}
@@ -114,9 +122,11 @@ function DropdownMenuRadioItem({
   className,
   children,
   inset,
+  variant = "default",
   ...props
 }: MenuPrimitive.RadioItem.Props & {
   inset?: boolean
+  variant?: "default" | "editor"
 }) {
   return (
     <MenuPrimitive.RadioItem
@@ -124,6 +134,7 @@ function DropdownMenuRadioItem({
       data-inset={inset}
       className={cn(
         "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        variant === "editor" && editorRow,
         className,
       )}
       {...props}
@@ -141,11 +152,15 @@ function DropdownMenuRadioItem({
   )
 }
 
-function DropdownMenuSeparator({ className, ...props }: MenuPrimitive.Separator.Props) {
+function DropdownMenuSeparator({
+  className,
+  variant = "default",
+  ...props
+}: MenuPrimitive.Separator.Props & { variant?: "default" | "editor" }) {
   return (
     <MenuPrimitive.Separator
       data-slot="dropdown-menu-separator"
-      className={cn("-mx-1 my-1 h-px bg-border", className)}
+      className={cn("-mx-1 my-1 h-px bg-border", variant === "editor" && "bg-quiet/60", className)}
       {...props}
     />
   )

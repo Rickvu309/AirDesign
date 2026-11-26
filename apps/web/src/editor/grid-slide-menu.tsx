@@ -1,7 +1,7 @@
 import { limits } from "@airdesign/doom"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { slideListCopy } from "@/copy/slide-list-copy"
-import { SlideMenu, slideMenuItem } from "@/editor/slide-menu"
+import { SlideMenu } from "@/editor/slide-menu"
 import type { SlideStrip } from "@/editor/slide-sidebar"
 import type { GridMenu, useGridSlideActions } from "@/editor/use-grid-slide-actions"
 
@@ -41,14 +41,20 @@ export function GridSlideMenu({
               key={side}
               disabled={actions.full}
               aria-description={actions.full ? slideListCopy.slideLimit(limits.slides) : undefined}
-              className={slideMenuItem}
+              variant="editor"
+              className="gap-5.5"
               onClick={() => actions.add(menu.index, side)}
             >
               {side === "same" ? slideListCopy.addAfterMenu : slideListCopy.addBelowMenu}
             </DropdownMenuItem>
           ))}
       {strip.onMoveGroups === undefined ? null : (
-        <DropdownMenuItem disabled={!actions.canMoveBelow} className={slideMenuItem} onClick={actions.moveBelow}>
+        <DropdownMenuItem
+          disabled={!actions.canMoveBelow}
+          variant="editor"
+          className="gap-5.5"
+          onClick={actions.moveBelow}
+        >
           {slideListCopy.moveBelowMenu}
         </DropdownMenuItem>
       )}

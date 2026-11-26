@@ -8,9 +8,6 @@ import {
 import { EditorIcon, type EditorIconName } from "@/components/ui/editor-icons"
 import { cn } from "@/lib/class-names"
 
-const menuRow =
-  "h-8 gap-2.5 rounded-md py-0 pr-2.5 pl-2 text-[length:var(--type-dense)] text-white focus:bg-quiet focus:text-white focus:**:text-white"
-
 export function EditorMenuContent({
   children,
   className,
@@ -21,10 +18,8 @@ export function EditorMenuContent({
 >) {
   return (
     <DropdownMenuContent
-      className={cn(
-        "flex w-47 min-w-0 flex-col overscroll-contain rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0 duration-0",
-        className,
-      )}
+      variant="editor"
+      className={cn("flex w-47 min-w-0 flex-col overscroll-contain", className)}
       {...place}
     >
       {children}
@@ -52,7 +47,8 @@ export function EditorMenuRow({
       value={value}
       closeOnClick
       {...(keys === undefined ? {} : { "aria-keyshortcuts": keys })}
-      className={cn(menuRow, "[&>[data-slot=dropdown-menu-radio-item-indicator]]:hidden")}
+      variant="editor"
+      className="[&>[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
     >
       <span className="flex size-4 items-center justify-center">
         {checked ? <EditorIcon name="check" size={14} className="size-3.5" /> : null}
@@ -80,11 +76,7 @@ export function EditorMenuAction({
   onClick: () => void
 }) {
   return (
-    <DropdownMenuItem
-      {...(keys === undefined ? {} : { "aria-keyshortcuts": keys })}
-      className={menuRow}
-      onClick={onClick}
-    >
+    <DropdownMenuItem {...(keys === undefined ? {} : { "aria-keyshortcuts": keys })} variant="editor" onClick={onClick}>
       <span className="size-4" />
       <span className="flex-1">{label}</span>
       {shortcut === undefined ? null : (
@@ -97,5 +89,5 @@ export function EditorMenuAction({
 }
 
 export function EditorMenuRule() {
-  return <DropdownMenuSeparator className="-mx-1.5 my-1.5 h-px bg-quiet/60" />
+  return <DropdownMenuSeparator variant="editor" className="-mx-1.5 my-1.5" />
 }

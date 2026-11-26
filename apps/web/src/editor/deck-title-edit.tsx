@@ -100,17 +100,14 @@ export function DeckTitleEdit({
                 renaming.current = true
                 rename()
               }}
-              className="h-8 gap-2.5 rounded-md py-0 pr-2.5 pl-2 text-[length:var(--type-dense)] text-white focus:bg-quiet focus:text-white focus:**:text-white"
+              variant="editor"
             >
               {productCopy.rename}
             </DropdownMenuItem>
             {onTrash === undefined ? null : (
               <>
                 <DropdownMenuSeparator className="mx-0 bg-quiet" />
-                <DropdownMenuItem
-                  onClick={onTrash}
-                  className="h-8 gap-2.5 rounded-md py-0 pr-2.5 pl-2 text-[length:var(--type-dense)] text-white focus:bg-quiet focus:text-white focus:**:text-white"
-                >
+                <DropdownMenuItem onClick={onTrash} variant="editor">
                   {productCopy.moveToTrash}
                 </DropdownMenuItem>
               </>
