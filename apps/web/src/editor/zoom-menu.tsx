@@ -115,7 +115,7 @@ export function ZoomMenu({
         side="bottom"
         align="end"
         sideOffset={10}
-        className="w-[220px]"
+        className="w-55"
         {...(canvas === undefined ? {} : { finalFocus: restoreAfterTyping })}
       >
         <ZoomField percent={percent} onZoom={choose} range={range} />

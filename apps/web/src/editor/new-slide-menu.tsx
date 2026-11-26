@@ -25,7 +25,7 @@ function iconNames(nodes: readonly doom.Resolved[]): readonly string[] {
 }
 
 const thumbFrame =
-  "pointer-events-none block shrink-0 overflow-hidden rounded-[2px] outline outline-white/15 -outline-offset-1"
+  "pointer-events-none block shrink-0 overflow-hidden rounded-xs outline outline-white/15 -outline-offset-1"
 
 function thumbHeight(size: { readonly w: number; readonly h: number }): number {
   return Math.round((thumbWidth * size.h) / size.w)
@@ -218,7 +218,7 @@ export function NewSlideMenu({
               hidden
               tabIndex={-1}
               data-layout-menu=""
-              className="fixed z-50 w-[228px] flex-col overscroll-contain overflow-y-auto rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0"
+              className="fixed z-50 w-57 flex-col overscroll-contain overflow-y-auto rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0"
               onKeyDown={(event) => {
                 if (composing(event) || panel.current === null) return
                 if (event.key === "Tab") return close(true)

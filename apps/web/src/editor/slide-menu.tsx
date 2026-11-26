@@ -101,7 +101,7 @@ export const SlideMenu = memo(function SlideMenu({
         side={pointer ? "bottom" : "right"}
         align="start"
         sideOffset={pointer ? 2 : 8}
-        className="flex w-max min-w-[188px] flex-col rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0 duration-0"
+        className="flex w-max min-w-47 flex-col rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0 duration-0"
       >
         {onOpen === undefined ? null : (
           <DropdownMenuItem
