@@ -73,7 +73,7 @@ function sweepOf(box: Box, round: boolean): { readonly clip: HTMLElement; readon
   const clip = document.createElement("div")
   clip.style.cssText = `position:absolute;left:${box.left}px;top:${box.top}px;width:${box.width}px;height:${box.height}px;overflow:hidden;border-radius:${round ? "50%" : "3px"}`
   const bar = document.createElement("div")
-  bar.style.cssText = `position:absolute;inset-block:0;left:0;width:${Math.max(80, box.width * 0.5)}px;background:linear-gradient(100deg,transparent,var(--arrival-sweep),transparent)`
+  bar.style.cssText = `position:absolute;inset-block:0;left:0;width:${Math.max(80, box.width * 0.5)}px;background:linear-gradient(90deg,transparent,var(--arrival-sweep),transparent)`
   clip.append(bar)
   return { clip, bar }
 }
