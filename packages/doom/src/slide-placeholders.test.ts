@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest"
-import { agentDeck, apply, build, minter } from "./agent-fixtures.js"
+import type { AgentChange } from "./agent-change.js"
+import { agentDeck, apply, build, compiled, minter } from "./agent-fixtures.js"
+import { measureWith } from "./measure.js"
+import { solveLayout } from "./solve-layout.js"
 import { placeholderSubtitle, titleOnlyWrites, titleSlideWrites } from "./slide-placeholders.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { defaultTheme } from "./theme.js"
@@ -10,6 +13,7 @@ import type { Doom } from "./doom.js"
 
 const size = { w: 1920, h: 1080 }
 const theme = defaultTheme
+const estimate = measureWith({})
 
 function withTitleSlide(): Doom {
   const mint = minter("p")
@@ -25,7 +29,7 @@ describe("a title slide's placeholders", () => {
     const text = propOf(title, "text")!
     const box = propOf(title, "box")!
     expect(propOf(title, "role")).toBe("title")
-    expect(text).toMatchObject({ chars: placeholderTitle, style: "display", resize: "fixed", alignV: "bottom" })
+    expect(text).toMatchObject({ chars: placeholderTitle, style: "display", resize: "height", alignV: "bottom" })
     const typical = { ...text, chars: "Q3 board update" }
     expect(textHeight(typical, theme, box.w)).toBe(theme.textStyles.display.size * theme.textStyles.display.lineHeight)
     expect(box.y + box.h).toBe(540)
@@ -64,6 +68,25 @@ describe("a title-only slide's placeholder", () => {
     expect(propOf(title, "role")).toBe("title")
     expect(propOf(title, "text")).toMatchObject({ chars: placeholderTitle, style: "title", resize: "height" })
     expect(propOf(title, "box")).toMatchObject({ x: 160, y: 80, w: 1600 })
+  })
+})
+
+describe("a title that hugs its lines", () => {
+  it("lands where an agent puts it, at the height it reads, however many lines it has grown", () => {
+    const doom = withTitleSlide()
+    const title = byRole(doom, "title")
+    const read = solveLayout(doom, ids.slide, estimate).get(title.id)!
+    expect(read.y + read.h).toBe(540)
+    const long = "Quarterly review for the board and every team that reports to it"
+    const wrapped = build(doom, { op: "set", target: title.id, text: long } as unknown as AgentChange)
+    const boxes = solveLayout(wrapped, ids.slide, estimate)
+    const tall = boxes.get(title.id)!
+    expect(tall.h).toBeGreaterThan(read.h)
+    expect(tall.y + tall.h).toBe(540)
+    const change = { op: "set", target: title.id, box: { y: 100 } } as unknown as AgentChange
+    const moved = apply(wrapped, compiled(wrapped, change, minter("m"), { boxes }))
+    expect(solveLayout(moved, ids.slide, estimate).get(title.id)).toMatchObject({ y: 100, h: tall.h })
+    expect(propOf(byRole(moved, "title"), "text")!.resize).toBe("height")
   })
 })
 

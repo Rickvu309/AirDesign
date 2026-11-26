@@ -19,17 +19,17 @@ test("a new doom deck opens at its own address, paints its first slide and keeps
   const title = page.locator(`[data-slide-box] [data-node="${node}"]`)
   await expect(title).toHaveCount(1)
   const boxOf = async (id: string) => (await savedNode(stack, opened, id))?.box as { x: number; y: number } | undefined
-  expect(await boxOf(node)).toMatchObject(spot(160, 344, 1600, 196))
+  expect(await boxOf(node)).toMatchObject(spot(160, 445, 1600, 95))
 
-  await clickSlide(page, 600, 420)
+  await clickSlide(page, 600, 490)
   expect(await selectedIds(page)).toEqual([node])
-  await dragSlide(page, { x: 600, y: 420 }, { x: 700, y: 520 })
+  await dragSlide(page, { x: 600, y: 490 }, { x: 700, y: 590 })
   await expect.poll(async () => (await boxOf(node))?.x).not.toBe(160)
   const dragged = await boxOf(node)
   expect(dragged?.x).toBeGreaterThanOrEqual(258)
   expect(dragged?.x).toBeLessThanOrEqual(262)
-  expect(dragged?.y).toBeGreaterThanOrEqual(442)
-  expect(dragged?.y).toBeLessThanOrEqual(446)
+  expect(dragged?.y).toBeGreaterThanOrEqual(543)
+  expect(dragged?.y).toBeLessThanOrEqual(547)
   const { x, y } = dragged ?? { x: 0, y: 0 }
 
   await page.keyboard.press("ArrowRight")
@@ -48,7 +48,7 @@ test("a new doom deck opens at its own address, paints its first slide and keeps
   const slide = await page.locator("[data-slide-box]").boundingBox()
   expect((shown?.x ?? 0) - (slide?.x ?? 0)).toBeCloseTo(((x + 1) * (slide?.width ?? 0)) / 1920, 0)
 
-  await clickSlide(page, 600, 500)
+  await clickSlide(page, 1800, 600)
   await page.keyboard.press("Delete")
   await expect(title).toHaveCount(0)
   await expect.poll(async () => (await savedNode(stack, opened, node))?.parent).toBeNull()

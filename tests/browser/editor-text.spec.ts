@@ -127,7 +127,7 @@ test("a double-click edits a text layer where it was clicked, Enter edits it wit
   covers("edit-text", "undo")
   const opened = await openEditor(page, context, stack)
   const title = "s:4"
-  await clickSlide(page, 600, 410)
+  await clickSlide(page, 600, 490)
   await page.keyboard.press("Enter")
   await expect(editor(page)).toBeFocused()
   await page.keyboard.type("Replaced")
@@ -138,7 +138,7 @@ test("a double-click edits a text layer where it was clicked, Enter edits it wit
   expect((await textOf(stack, opened, title))?.paras).toHaveLength(2)
 
   await page.keyboard.press("Escape")
-  await clickSlide(page, 300, 410, { double: true })
+  await clickSlide(page, 300, 490, { double: true })
   await expect(editor(page)).toBeFocused()
   await page.keyboard.press("ControlOrMeta+a")
   await page.keyboard.press("Delete")

@@ -9,7 +9,7 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 const titleNode = "s:4"
 
 async function typeTitle(page: Page, text: string) {
-  await clickSlide(page, 600, 420)
+  await clickSlide(page, 600, 490)
   await page.keyboard.press("Enter")
   await page.keyboard.type(text)
   await page.keyboard.press("Escape")

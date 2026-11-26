@@ -173,6 +173,18 @@ describe("solveLayout of text", () => {
     expect(at("t")).toMatchObject({ w: 100, h: 40 })
   })
 
+  it("grows a height-hugging text away from the edge its words are pinned to", () => {
+    const words = "aaaa bbbb cccc"
+    const box = spot(0, 200, 100, lineHeight)
+    const at = (alignV: "top" | "center" | "bottom") =>
+      solved([label("t", words, { box }, { resize: "height", alignV })]).at("t")
+    const high = at("top").h
+    expect(high).toBeGreaterThan(lineHeight)
+    expect(at("top").y).toBe(200)
+    expect(at("bottom")).toMatchObject({ y: 200 + lineHeight - high, h: high })
+    expect(at("center")).toMatchObject({ y: 200 + (lineHeight - high) / 2, h: high })
+  })
+
   it("wraps text that fills a row's width at the width the row gives it, and the row hugs that height", () => {
     const { at } = solved([
       rowOf(
