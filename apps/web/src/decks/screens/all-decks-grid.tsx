@@ -7,13 +7,12 @@ import { SampleSlide } from "@/decks/screens/sample-slide"
 export function AllDecksGrid() {
   return (
     <DeckBrowser title="All decks" active="all-decks" view="grid" scope="all">
-      <DeckGrid className="mt-6">
+      <DeckGrid>
         {recentDeckCards.map((deck) => (
           <DeckCard
             key={deck.name}
             name={deck.name}
             edited={deck.edited}
-            previewClassName="h-34"
             href="#"
             preview={<SampleSlide name={deck.name} />}
             action={<DeckActions name={deck.name} starred={false} onStar={() => undefined} onTrash={() => undefined} />}

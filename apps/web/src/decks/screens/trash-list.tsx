@@ -63,7 +63,7 @@ export function TrashList({ confirm = false }: { confirm?: boolean }) {
   return (
     <DeckBrowser title="Trash" active="trash" trailing={<EmptyTrashButton />}>
       <TrashNote />
-      <DeckGrid className="mt-6 grid-cols-3">
+      <DeckGrid className="mt-6 max-w-none grid-cols-3">
         {trashDeckCards.map((deck) => (
           <DeckCard
             key={deck.name}
