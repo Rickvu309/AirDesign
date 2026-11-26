@@ -7,6 +7,7 @@ import { DeckGlyph } from "@/decks/deck-glyph"
 import { DeleteAccountDialog } from "@/decks/delete-account"
 import { accountName } from "@/decks/account-name"
 import { AgentButton, AgentPromo } from "@/decks/agent-promo"
+import { ConnectAgent } from "@/decks/connect-agent"
 import { deckPath } from "@/decks/deck-listing"
 import { account, starredFolders } from "@/decks/sample-decks"
 import { deckRoutes, type DeckSection } from "@/decks/deck-routes"
@@ -117,6 +118,7 @@ export function DecksShell({
 }) {
   const profile = useAccountProfile()
   const [deletingAccount, setDeletingAccount] = useState(false)
+  const [connecting, setConnecting] = useState(false)
   const starredLabel = useId()
   const empty = realAccount ? starred?.length === 0 : firstVisit
   const [primary, ...rest] = sections.map((section) => (realAccount ? { ...section, href: section.page } : section))
@@ -278,9 +280,10 @@ export function DecksShell({
             <AgentButton href={deckRoutes.connectAgent} />
           ) : (
             settingsTab !== "agents" && (
-              <AgentPromo {...(realAccount ? { href: settingsPaths.agents, ornaments: false } : {})} />
+              <AgentPromo {...(realAccount ? { onConnect: () => setConnecting(true), ornaments: false } : {})} />
             )
           )}
+          {connecting && <ConnectAgent onClose={() => setConnecting(false)} />}
         </div>
       </aside>
       <main data-decks-main className="min-w-0 flex-1 px-20 pt-8 max-md:px-4 max-md:pt-6">

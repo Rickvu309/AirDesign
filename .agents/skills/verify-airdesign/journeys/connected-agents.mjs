@@ -2,7 +2,10 @@ import { createHash, randomBytes } from "node:crypto"
 import { createRequire } from "node:module"
 import { expect } from "@playwright/test"
 
-const { settingsCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/settings-copy.ts")
+const load = createRequire(import.meta.url)
+const { settingsCopy } = load("../../../../apps/web/src/copy/settings-copy.ts")
+const { productCopy } = load("../../../../apps/web/src/copy/product-copy.ts")
+const { connectAgentCopy, connectedOf } = load("../../../../apps/web/src/copy/connect-agent-copy.ts")
 
 function pkce() {
   const verifier = randomBytes(32).toString("base64url")
@@ -72,13 +75,16 @@ export default async function drive({
   expect(initial.json.ok).toBe(true)
   expect(initial.json.agents).toEqual([])
   const mcpAddress = initial.json.mcp
-  await expect(page.getByText(mcpAddress, { exact: true })).toBeVisible()
+  await page.getByRole("button", { name: connectAgentCopy.title }).click()
+  const connect = page.getByRole("dialog", { name: connectAgentCopy.title })
+  await expect(connect.getByText(mcpAddress, { exact: true })).toBeVisible()
+  await capture("agents-connect")
 
-  await page.getByRole("button", { name: "Copy", exact: true }).click()
+  await connect.getByRole("button", { name: connectAgentCopy.copy, exact: true }).click()
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(mcpAddress)
-  await expect(page.getByRole("button", { name: "Done", exact: true })).toBeVisible()
+  await expect(connect.getByRole("button", { name: productCopy.done, exact: true })).toBeVisible()
   await capture("mcp-copied")
-  note(`opened /settings/agents from the account menu and copied MCP address ${mcpAddress}`)
+  note(`opened the connect dialog from /settings/agents and copied MCP address ${mcpAddress}`)
 
   const redirectUri = "https://claude.ai/api/mcp/auth_callback"
   const registered = await post(oauthRoutes.register, {
@@ -119,10 +125,14 @@ export default async function drive({
   expect(initialized.status).toBe(200)
   note("connected Claude over OAuth + PKCE and initialized /mcp with its bearer token")
 
-  await page.reload()
+  const connected = page.getByRole("dialog", { name: connectedOf("Claude") })
+  await expect(connected).toBeVisible()
+  await capture("agents-connect-done")
+  await connected.getByRole("button", { name: productCopy.done, exact: true }).click()
+  await expect(connected).toBeHidden()
   await expect(page.getByText("Claude", { exact: true })).toBeVisible()
-  await expect(page.getByText("Connected just now", { exact: true })).toBeVisible()
   await capture("agents-connected")
+  note("the open dialog said Claude is connected without a reload, and the list shows it")
 
   const listed = await post(accountRoutes.agents, {}, cookie)
   expect(listed.status).toBe(200)

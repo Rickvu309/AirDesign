@@ -1,5 +1,7 @@
 import { expect, type Page } from "@playwright/test"
 import { test } from "./deck-test"
+import { connectAgentCopy, connectedOf, setupPromptOf, waitingOf } from "../../apps/web/src/copy/connect-agent-copy"
+import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { settingsCopy } from "../../apps/web/src/copy/settings-copy"
 
 test.use({ reducedMotion: "reduce" })
@@ -22,11 +24,19 @@ async function mockHome(page: Page, email = "person@example.com") {
   )
 }
 
-test("reaches Agents from the Home account menu, copies the MCP address, disconnects an agent after confirming, and leaves out unbacked controls", async ({
-  context,
+function listAgents(page: Page, agents: () => AgentRow[]) {
+  return page.route("**/account/agents", (route) =>
+    route.fulfill({
+      json: { ok: true, account: { email: "person@example.com" }, mcp: mcpAddress, agents: agents() },
+    }),
+  )
+}
+
+const connectDialog = (page: Page) => page.getByRole("dialog", { name: connectAgentCopy.title })
+
+test("reaches Agents from the Home account menu, lists each agent by name alone, and disconnects one after confirming", async ({
   page,
 }) => {
-  await context.grantPermissions(["clipboard-read", "clipboard-write"])
   await mockHome(page)
 
   let agents: AgentRow[] = [
@@ -47,16 +57,7 @@ test("reaches Agents from the Home account menu, copies the MCP address, disconn
   ]
   const revoked: unknown[] = []
 
-  await page.route("**/account/agents", (route) =>
-    route.fulfill({
-      json: {
-        ok: true,
-        account: { email: "person@example.com" },
-        mcp: mcpAddress,
-        agents,
-      },
-    }),
-  )
+  await listAgents(page, () => agents)
   await page.route("**/account/agents/revoke", async (route) => {
     const body = route.request().postDataJSON() as { id: string }
     revoked.push(body)
@@ -71,23 +72,13 @@ test("reaches Agents from the Home account menu, copies the MCP address, disconn
   await expect(page).toHaveURL(/\/settings\/agents$/)
   await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible()
   await expect(page.getByRole("heading", { name: "Agents", exact: true })).toBeVisible()
-  await expect(page.getByRole("heading", { name: "MCP server", exact: true })).toBeVisible()
-  await expect(page.getByText(mcpAddress, { exact: true })).toBeVisible()
-
-  await expect(page.getByRole("switch", { name: "Aira" })).toHaveCount(0)
-  await expect(page.getByRole("button", { name: "Connect", exact: true })).toHaveCount(0)
-  await expect(page.getByText("Setup guides for Claude and Codex")).toHaveCount(0)
   await expect(page.getByRole("link", { name: settingsCopy.usage, exact: true })).toBeVisible()
   await expect(page.getByRole("link", { name: "Account", exact: true })).toBeVisible()
 
-  await page.getByRole("button", { name: settingsCopy.copy, exact: true }).click()
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(mcpAddress)
-  await expect(page.getByRole("button", { name: "Done", exact: true })).toBeVisible()
-
   await expect(page.getByText("Claude", { exact: true })).toBeVisible()
-  await expect(page.getByText("Connected 2 hours ago", { exact: true })).toBeVisible()
   await expect(page.getByText("127.0.0.1:8124", { exact: true })).toBeVisible()
-  await expect(page.getByText("Connected just now", { exact: true })).toBeVisible()
+  await expect(page.getByText(/^Connected /)).toHaveCount(0)
+  await expect(page.getByText(mcpAddress, { exact: true })).toHaveCount(0)
 
   const disconnectButtons = page.getByRole("button", { name: "Disconnect", exact: true })
   await expect(disconnectButtons).toHaveCount(2)
@@ -112,7 +103,63 @@ test("reaches Agents from the Home account menu, copies the MCP address, disconn
   const secondDialog = page.getByRole("dialog", { name: "Disconnect 127.0.0.1:8124?" })
   await secondDialog.getByRole("button", { name: "Disconnect", exact: true }).click()
   expect(revoked).toEqual([{ id: "grant-claude" }, { id: "grant-other" }])
-  await expect(page.getByText(settingsCopy.noAgents, { exact: true })).toBeVisible()
+  await expect(page.getByRole("heading", { name: settingsCopy.noAgents, exact: true })).toBeVisible()
+})
+
+test("the connect dialog gives an app the address and a coding agent a prompt, then says which agent connected without a reload", async ({
+  context,
+  page,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"])
+  await mockHome(page)
+  let agents: AgentRow[] = []
+  await listAgents(page, () => agents)
+
+  await page.goto("/settings/agents")
+  await page.getByRole("button", { name: connectAgentCopy.title }).click()
+  const dialog = connectDialog(page)
+
+  await expect(dialog.getByRole("button", { name: "Claude", exact: true })).toHaveAttribute("aria-pressed", "true")
+  await expect(dialog.getByText(mcpAddress, { exact: true })).toBeVisible()
+  await expect(dialog.getByRole("link", { name: "Open Claude connectors" })).toHaveAttribute(
+    "href",
+    "https://claude.ai/customize/connectors",
+  )
+  await dialog.getByRole("button", { name: connectAgentCopy.copy, exact: true }).click()
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(mcpAddress)
+  await expect(dialog.getByRole("button", { name: productCopy.done, exact: true })).toBeVisible()
+
+  await dialog.getByRole("button", { name: "Claude Code", exact: true }).click()
+  await expect(dialog.getByText(waitingOf("Claude Code"), { exact: true })).toBeVisible()
+  await dialog.getByRole("button", { name: connectAgentCopy.copyPrompt, exact: true }).click()
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(setupPromptOf(mcpAddress))
+
+  await dialog.getByRole("button", { name: "Gemini", exact: true }).click()
+  await expect(dialog.getByRole("button", { name: "Gemini CLI", exact: true })).toHaveAttribute("aria-pressed", "true")
+  await dialog.getByRole("button", { name: "Antigravity", exact: true }).click()
+  await expect(dialog.getByText(waitingOf("Antigravity"), { exact: true })).toBeVisible()
+
+  await dialog.getByRole("button", { name: "Other", exact: true }).click()
+  await expect(dialog.getByText(mcpAddress, { exact: true })).toBeVisible()
+  await expect(dialog.getByRole("link")).toHaveCount(0)
+
+  agents = [
+    {
+      id: "grant-code",
+      name: "Claude Code",
+      agent: "claude-code",
+      host: "127.0.0.1",
+      connected: new Date().toISOString(),
+    },
+  ]
+  const connected = page.getByRole("dialog", { name: connectedOf("Claude Code") })
+  await expect(connected).toBeVisible()
+  await expect(connected.getByText(connectAgentCopy.connectedBody, { exact: true })).toBeVisible()
+  await expect(connected.getByRole("button")).toHaveCount(1)
+  await connected.getByRole("button", { name: productCopy.done, exact: true }).click()
+  await expect(connected).toBeHidden()
+  await expect(page.getByText("Claude Code", { exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Disconnect", exact: true })).toHaveCount(1)
 })
 
 test("renders empty, loading, failed, and signed-out states without a blank page", async ({ page }) => {
@@ -144,8 +191,7 @@ test("renders empty, loading, failed, and signed-out states without a blank page
 
   await page.goto("/settings/agents")
   await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible()
-  await expect(page.getByRole("heading", { name: "MCP server", exact: true })).toBeVisible()
-  await expect(page.getByRole("button", { name: settingsCopy.copy, exact: true })).toBeDisabled()
+  await expect(page.getByRole("heading", { name: settingsCopy.agents, exact: true })).toBeVisible()
   await expect(page.getByText(settingsCopy.noAgents, { exact: true })).toHaveCount(0)
 
   unblockLoad()
@@ -153,11 +199,16 @@ test("renders empty, loading, failed, and signed-out states without a blank page
   await expect(retry).toBeVisible()
   await expect(page.getByText(settingsCopy.noAgents, { exact: true })).toHaveCount(0)
 
+  await page.getByRole("button", { name: connectAgentCopy.title }).click()
+  const dialog = connectDialog(page)
+  await expect(dialog.getByRole("alert")).toHaveText(new RegExp(`^${connectAgentCopy.loadFailed}`))
   shouldFail = false
-  await retry.click()
-  await expect(page.getByText(settingsCopy.noAgents, { exact: true })).toBeVisible()
-  await expect(page.getByText(mcpAddress, { exact: true })).toBeVisible()
-  await expect(page.getByRole("button", { name: settingsCopy.copy, exact: true })).toBeEnabled()
+  await dialog.getByRole("button", { name: "Try again", exact: true }).click()
+  await expect(dialog.getByText(mcpAddress, { exact: true })).toBeVisible()
+  await page.keyboard.press("Escape")
+
+  await expect(page.getByRole("heading", { name: settingsCopy.noAgents, exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: connectAgentCopy.title })).toBeVisible()
 })
 
 test("signed out on /settings/agents goes to sign-in with the path and query", async ({ page }) => {
@@ -169,13 +220,9 @@ test("signed out on /settings/agents goes to sign-in with the path and query", a
   await expect(page).toHaveURL(/\/sign-in\?next=%2Fsettings%2Fagents%3Fsource%3Dmenu$/)
 })
 
-test("explains how to connect and selects the address when clipboard access fails", async ({ page }) => {
+test("selects the address and says how to copy it when clipboard access fails", async ({ page }) => {
   await mockHome(page)
-  await page.route("**/account/agents", (route) =>
-    route.fulfill({
-      json: { ok: true, account: { email: "person@example.com" }, mcp: mcpAddress, agents: [] },
-    }),
-  )
+  await listAgents(page, () => [])
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "clipboard", {
       value: {
@@ -184,14 +231,19 @@ test("explains how to connect and selects the address when clipboard access fail
     })
   })
   await page.goto("/settings/agents")
-  await expect(page.getByText(settingsCopy.noAgents, { exact: true })).toBeVisible()
-  await expect(page.getByText(settingsCopy.connectAgent)).toBeVisible()
-  await expect(page.getByRole("link", { name: "Connect an agent" })).toHaveCount(0)
-  await expect(page.getByRole("status")).toHaveText("")
-  await page.getByRole("button", { name: settingsCopy.copy, exact: true }).click()
-  await expect(page.getByRole("button", { name: settingsCopy.copyFailed, exact: true })).toBeVisible()
-  await expect(page.getByRole("status")).toHaveText(settingsCopy.copyManually)
+  await expect(page.getByRole("heading", { name: settingsCopy.noAgents, exact: true })).toBeVisible()
+  const sidebar = page.locator("[data-decks-sidebar]")
+  await expect(sidebar.getByRole("button", { name: connectAgentCopy.title })).toHaveCount(0)
+
+  await page.getByRole("button", { name: connectAgentCopy.title }).click()
+  const dialog = connectDialog(page)
+  await expect(dialog.getByRole("status")).toHaveText("")
+  await dialog.getByRole("button", { name: connectAgentCopy.copy, exact: true }).click()
+  await expect(dialog.getByRole("button", { name: connectAgentCopy.copyFailed, exact: true })).toBeVisible()
+  await expect(dialog.getByRole("status")).toHaveText(connectAgentCopy.copyManually)
   expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(mcpAddress)
+  await page.keyboard.press("Escape")
+
   await page.getByRole("link", { name: settingsCopy.usage, exact: true }).click()
-  await expect(page.getByRole("link", { name: "Connect an agent" })).toBeVisible()
+  await expect(sidebar.getByRole("button", { name: connectAgentCopy.title })).toBeVisible()
 })

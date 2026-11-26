@@ -9,6 +9,7 @@ public:
   - box-copy.ts
   - color-copy.ts
   - color-name-copy.ts
+  - connect-agent-copy.ts
   - connect-copy.ts
   - credits-copy.ts
   - deck-time-copy.ts

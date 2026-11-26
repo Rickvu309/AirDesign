@@ -73,7 +73,7 @@ test("the account menu opens Usage, and its tabs move between Usage and Agents",
   await expect(page.getByRole("button", { name: email })).toBeVisible()
   await page.getByRole("link", { name: settingsCopy.agents, exact: true }).click()
   await expect(page).toHaveURL(/\/settings\/agents$/)
-  await expect(page.getByRole("heading", { name: settingsCopy.mcp, exact: true })).toBeVisible()
+  await expect(page.getByRole("heading", { name: settingsCopy.noAgents, exact: true })).toBeVisible()
   await page.getByRole("link", { name: settingsCopy.usage, exact: true }).click()
   await expect(page).toHaveURL(/\/settings\/usage$/)
 })

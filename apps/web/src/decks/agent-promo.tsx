@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { buttonVariants } from "@/components/ui/button"
 import { accountCopy } from "@/copy/account-copy"
+import { connectAgentCopy } from "@/copy/connect-agent-copy"
 import { cn } from "@/lib/class-names"
 import { promoFill } from "@/decks/agent-promo-art"
 import { claudeLogo, openAiLogo } from "@/decks/agent-logos"
@@ -26,30 +27,42 @@ function keepCollapsed(): void {
   }
 }
 
-export function AgentButton({ href }: { href: string }) {
+type Opening = { href: string } | { onConnect: () => void }
+
+function Opener({ opening, className }: { opening: Opening; className: string }) {
+  const label = (
+    <>
+      <DeckGlyph name="plug" size={14} />
+      {connectAgentCopy.title}
+    </>
+  )
+  return "href" in opening ? (
+    <a href={opening.href} className={className}>
+      {label}
+    </a>
+  ) : (
+    <button type="button" className={className} onClick={opening.onConnect}>
+      {label}
+    </button>
+  )
+}
+
+export function AgentButton(opening: Opening) {
   return (
-    <a
-      href={href}
+    <Opener
+      opening={opening}
       className={cn(
         buttonVariants({ variant: "outline" }),
         "h-9 w-full gap-1.5 border-field-edge bg-canvas text-[length:var(--type-dense)] text-foreground hover:bg-black/4",
       )}
-    >
-      <DeckGlyph name="plug" size={14} />
-      Connect an agent
-    </a>
+    />
   )
 }
 
-export function AgentPromo({
-  href = deckRoutes.connectAgent,
-  ornaments = true,
-}: {
-  href?: string
-  ornaments?: boolean
-}) {
+export function AgentPromo({ onConnect, ornaments = true }: { onConnect?: () => void; ornaments?: boolean }) {
   const [collapsed, setCollapsed] = useState(keptCollapsed)
-  if (collapsed) return <AgentButton href={href} />
+  const opening = onConnect ? { onConnect } : { href: deckRoutes.connectAgent }
+  if (collapsed) return <AgentButton {...opening} />
   return (
     <section className="h-[254.31px] w-[224px] max-md:hidden shrink-0 overflow-hidden rounded-[var(--shape-dialog)] bg-background shadow-[0_0_0_1px_var(--line),0_4px_12px_rgb(0_0_0/4%)]">
       <div
@@ -136,10 +149,7 @@ export function AgentPromo({
         <p className="mt-2 h-[34.81px] text-[length:var(--type-caption)] leading-[17.405px] text-muted-foreground">
           {accountCopy.agentCardBody}
         </p>
-        <a href={href} className={cn(buttonVariants({ variant: "outline" }), "mt-5 w-full gap-1.5")}>
-          <DeckGlyph name="plug" size={14} />
-          Connect an agent
-        </a>
+        <Opener opening={opening} className={cn(buttonVariants({ variant: "signature" }), "mt-5 w-full gap-1.5")} />
       </div>
     </section>
   )
