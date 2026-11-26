@@ -163,7 +163,7 @@ function Undone({ stays }: { readonly stays: string }) {
   const plain = stays === ""
   return (
     <p
-      className={`flex min-h-6 gap-1.5 text-xs text-muted-foreground ${plain ? "items-center" : "items-start py-1"}`}
+      className={cn("flex min-h-6 gap-1.5 text-xs text-muted-foreground", plain ? "items-center" : "items-start py-1")}
       data-aira-undone
     >
       <EditorIcon name="undo" size={13} className={plain ? "shrink-0" : "mt-px shrink-0"} />
