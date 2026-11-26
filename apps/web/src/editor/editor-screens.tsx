@@ -49,6 +49,7 @@ export const screens = {
   [editorRoutes.gridFit]: () => <EditorSample start={{ grid: {} }} />,
   [editorRoutes.gridPicked]: () => <EditorSample start={{ grid: { picked: [0, 2, 3] } }} />,
   [editorRoutes.gridZoomed]: () => <EditorSample start={{ grid: zoomed === undefined ? {} : { camera: zoomed } }} />,
+  [editorRoutes.gridMenu]: () => <EditorSample start={{ grid: { menu: 3 } }} />,
   [exportRoutes.pdf]: () => <EditorSample start={{ panel: "agent", export: "choosing" }} />,
   [exportRoutes.failed]: () => <EditorSample start={{ panel: "agent", export: "failed" }} />,
 }
