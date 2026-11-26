@@ -1,6 +1,14 @@
-import { expect, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
+import { productCopy } from "../../apps/web/src/copy/product-copy"
+import { settingsCopy } from "../../apps/web/src/copy/settings-copy"
 
 type Check = [id: string, state: string, verify: (page: Page) => Promise<void>]
+
+async function expectOutlineHover(button: Locator) {
+  const background = await button.evaluate((element) => getComputedStyle(element).backgroundColor)
+  await button.hover()
+  await expect(button).not.toHaveCSS("background-color", background)
+}
 
 export const webDesignChecks: Check[] = [
   [
@@ -68,6 +76,71 @@ export const webDesignChecks: Check[] = [
     "decks-loading",
     async (page) => {
       await expect(page.locator("[data-loading] article")).toHaveCount(4)
+    },
+  ],
+  [
+    "05-account-hover",
+    "account-tab",
+    async (page) => {
+      const danger = page.getByRole("button", { name: settingsCopy.deleteAccount, exact: true })
+      await expectOutlineHover(danger)
+      await expect(danger).toHaveCSS("color", "rgb(185, 47, 47)")
+      await expectOutlineHover(page.getByRole("button", { name: settingsCopy.signOut, exact: true }))
+    },
+  ],
+  [
+    "05-trash-hover",
+    "trash-populated",
+    async (page) => {
+      const restore = page.getByRole("button", { name: "Restore", exact: true }).first()
+      const empty = page.getByRole("button", { name: "Empty Trash", exact: true })
+      await expect(restore).toHaveCSS(
+        "border-radius",
+        await empty.evaluate((button) => getComputedStyle(button).borderRadius),
+      )
+      await expectOutlineHover(restore)
+      await expectOutlineHover(empty)
+    },
+  ],
+  [
+    "05-disconnect-hover",
+    "agents-connected",
+    async (page) => {
+      await expectOutlineHover(page.getByRole("button", { name: productCopy.disconnect, exact: true }).first())
+    },
+  ],
+  [
+    "05-danger-cancel-hover",
+    "account-delete-ask",
+    async (page) => {
+      await expectOutlineHover(page.getByRole("button", { name: productCopy.cancel, exact: true }))
+    },
+  ],
+  [
+    "05-consent-cancel-hover",
+    "consent-claude",
+    async (page) => {
+      await expectOutlineHover(page.getByRole("button", { name: productCopy.cancel, exact: true }))
+    },
+  ],
+  [
+    "05-retry-border",
+    "decks-failed",
+    async (page) => {
+      await expect(page.getByRole("button", { name: productCopy.payTryAgain })).toHaveCSS(
+        "border-color",
+        "rgb(215, 215, 214)",
+      )
+    },
+  ],
+  [
+    "05-search-border",
+    "decks-search-empty",
+    async (page) => {
+      await expect(page.getByRole("button", { name: productCopy.clearSearch })).toHaveCSS(
+        "border-color",
+        "rgb(215, 215, 214)",
+      )
     },
   ],
 ]

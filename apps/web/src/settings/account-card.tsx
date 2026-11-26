@@ -1,11 +1,9 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { settingsAction } from "@/settings/settings-action"
 import { accountCopy } from "@/copy/account-copy"
 import { ModuleRow } from "@/settings/module-row"
 import { settingsCopy } from "@/copy/settings-copy"
-
-const settingsAction =
-  "h-[var(--space-32)] border-0 bg-background px-3.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
 
 export function AccountCard({
   email,
@@ -41,7 +39,7 @@ export function AccountCard({
             <Button
               type="button"
               variant="outline"
-              className={`${settingsAction} text-danger-text`}
+              className={`${settingsAction} text-danger-text hover:text-danger-text`}
               style={{ width: 122.75 }}
               onClick={onDelete}
             >

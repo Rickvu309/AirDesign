@@ -1,14 +1,12 @@
 import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { settingsAction } from "@/settings/settings-action"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AccountCard } from "@/settings/account-card"
 import { ModuleRow } from "@/settings/module-row"
 import { SettingsFrame } from "@/settings/settings-frame"
 import { settingsCopy } from "@/settings/settings-sample"
-
-const settingsAction =
-  "h-[var(--space-32)] border-0 bg-background px-3.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
 
 const settingsChoice =
   "h-8 w-[120px] border-0 bg-background px-2.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"

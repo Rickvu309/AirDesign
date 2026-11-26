@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { settingsAction } from "@/settings/settings-action"
 import { cn } from "@/lib/class-names"
 import { productCopy, usageResetsOn } from "@/copy/product-copy"
 import { usageCopy, usageUsedOf } from "@/copy/usage-copy"
@@ -16,9 +17,6 @@ import { creditsCopy } from "@/copy/credits-copy"
 import { resetCents } from "@airdesign/catalog"
 
 import { PageToaster } from "@/components/ui/page-notice"
-
-const settingsAction =
-  "h-[var(--space-32)] border-0 bg-background px-3.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
 
 export function UsagePage({
   navigate,

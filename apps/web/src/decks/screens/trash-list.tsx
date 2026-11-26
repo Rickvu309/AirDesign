@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { Button } from "@/components/ui/button"
 import { emptyTrashTitleOf, productCopy } from "@/copy/product-copy"
 import { DangerDialog } from "@/decks/danger-dialog"
 import { DeckBrowser } from "@/decks/deck-browser"
@@ -8,13 +9,9 @@ import { SampleSlide } from "@/decks/screens/sample-slide"
 
 export function RestoreButton({ onClick }: { onClick?: (pointer: boolean) => void }) {
   return (
-    <button
-      type="button"
-      onClick={(event) => onClick?.(event.detail > 0)}
-      className="flex h-7 items-center rounded-md bg-background px-2.5 text-[length:var(--type-caption)] leading-none font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)]"
-    >
+    <Button type="button" variant="outline-field" size="compact" onClick={(event) => onClick?.(event.detail > 0)}>
       Restore
-    </button>
+    </Button>
   )
 }
 
@@ -48,14 +45,9 @@ export function EmptyTrashDialog({
 
 export function EmptyTrashButton({ disabled, onClick }: { disabled?: boolean; onClick?: () => void }) {
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className="h-7 rounded-lg bg-background px-3 text-[length:var(--type-dense)] font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)] disabled:opacity-50"
-    >
+    <Button type="button" variant="outline-field" size="compact" disabled={disabled} onClick={onClick}>
       Empty Trash
-    </button>
+    </Button>
   )
 }
 

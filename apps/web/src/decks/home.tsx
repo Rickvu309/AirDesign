@@ -277,7 +277,7 @@ export function Home({
             title={productCopy.decksFailedTitle}
             description={productCopy.decksFailedBody}
             actions={
-              <Button variant="outline" size="sm" onClick={() => void refresh()}>
+              <Button variant="outline-field" size="sm" onClick={() => void refresh()}>
                 {productCopy.payTryAgain}
               </Button>
             }
@@ -329,7 +329,7 @@ export function Home({
             title={noMatchTitleOf(query.trim())}
             description={productCopy.noMatchBody}
             actions={
-              <Button variant="outline" size="sm" onClick={() => search("")}>
+              <Button variant="outline-field" size="sm" onClick={() => search("")}>
                 {productCopy.clearSearch}
               </Button>
             }
