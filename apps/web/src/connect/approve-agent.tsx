@@ -2,6 +2,7 @@ import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { AgentPair, type ConsentAgent } from "@/connect/agent-pair"
 import { connectPermissions, signedInAccount } from "@/copy/connect-copy"
+import { cn } from "@/lib/class-names"
 
 const trimmed = "[text-box:trim-both_cap_alphabetic]"
 
@@ -40,19 +41,28 @@ export function ApproveAgent({
         <AgentPair agent={agent} />
         <header className="flex flex-col items-center gap-1.5 text-center">
           <h1
-            className={`flex min-h-7 items-center justify-center text-balance [overflow-wrap:anywhere] text-[length:var(--type-title)] font-semibold tracking-dialog-title text-foreground ${trimmed}`}
+            className={cn(
+              "flex min-h-7 items-center justify-center text-balance [overflow-wrap:anywhere] text-[length:var(--type-title)] font-semibold tracking-dialog-title text-foreground",
+              trimmed,
+            )}
           >
             {title}
           </h1>
           <p
-            className={`flex min-h-[var(--space-16)] items-center justify-center text-balance [overflow-wrap:anywhere] text-[length:var(--type-dense)] text-quiet ${trimmed}`}
+            className={cn(
+              "flex min-h-[var(--space-16)] items-center justify-center text-balance [overflow-wrap:anywhere] text-[length:var(--type-dense)] text-quiet",
+              trimmed,
+            )}
           >
             {subtitle}
           </p>
         </header>
         <div className="flex min-h-14.25 w-full items-center gap-3 rounded-xl px-3">
           <span
-            className={`flex size-8 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] font-semibold text-white ${trimmed}`}
+            className={cn(
+              "flex size-8 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] font-semibold text-white",
+              trimmed,
+            )}
           >
             {account.initials}
           </span>
@@ -68,7 +78,10 @@ export function ApproveAgent({
             type="button"
             onClick={onSwitch}
             disabled={approving}
-            className={`relative shrink-0 disabled:pointer-events-none disabled:opacity-50 text-[length:var(--type-dense)] leading-ui-tight font-medium text-[color:var(--primary-strong)] motion-safe:enabled:active:scale-[0.97] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)_and_(pointer:fine)]:hover:text-strong-hover after:absolute after:inset-[min(0px,calc((100%-44px)/2))] after:content-[''] ${trimmed}`}
+            className={cn(
+              "relative shrink-0 disabled:pointer-events-none disabled:opacity-50 text-[length:var(--type-dense)] leading-ui-tight font-medium text-[color:var(--primary-strong)] motion-safe:enabled:active:scale-[0.97] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)_and_(pointer:fine)]:hover:text-strong-hover after:absolute after:inset-[min(0px,calc((100%-44px)/2))] after:content-['']",
+              trimmed,
+            )}
           >
             Switch
           </button>
@@ -90,7 +103,7 @@ export function ApproveAgent({
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className={`text-[length:var(--type-dense)] leading-ui-tight text-foreground ${trimmed}`}>
+                <span className={cn("text-[length:var(--type-dense)] leading-ui-tight text-foreground", trimmed)}>
                   {permission}
                 </span>
               </li>
@@ -101,7 +114,10 @@ export function ApproveAgent({
           <Button
             type="button"
             variant="outline"
-            className={`h-10 flex-1 rounded-[var(--shape-card)] border-transparent bg-white px-0 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge),0_1px_2px_0_rgb(0_0_0/4%)] motion-safe:enabled:active:scale-[0.97] ${trimmed}`}
+            className={cn(
+              "h-10 flex-1 rounded-[var(--shape-card)] border-transparent bg-white px-0 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge),0_1px_2px_0_color-mix(in_srgb,var(--color-black)_4%,transparent)] motion-safe:enabled:active:scale-[0.97]",
+              trimmed,
+            )}
             disabled={approving}
             onClick={onDeny}
           >
@@ -110,7 +126,10 @@ export function ApproveAgent({
           <Button
             type="button"
             variant="default"
-            className={`h-10 flex-1 rounded-[var(--shape-card)] px-0 text-sm font-medium motion-safe:enabled:active:scale-[0.97] ${trimmed}`}
+            className={cn(
+              "h-10 flex-1 rounded-[var(--shape-card)] px-0 text-sm font-medium motion-safe:enabled:active:scale-[0.97]",
+              trimmed,
+            )}
             disabled={approving}
             aria-busy={approving}
             onClick={onAllow}
