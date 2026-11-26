@@ -114,10 +114,8 @@ export function ApproveAgent({
           <Button
             type="button"
             variant="outline"
-            className={cn(
-              "h-10 flex-1 rounded-[var(--shape-card)] border-transparent bg-white px-0 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge),0_1px_2px_0_color-mix(in_srgb,var(--color-black)_4%,transparent)] motion-safe:enabled:active:scale-[0.97]",
-              trimmed,
-            )}
+            size="consent"
+            className="flex-1"
             disabled={approving}
             onClick={onDeny}
           >
@@ -126,10 +124,8 @@ export function ApproveAgent({
           <Button
             type="button"
             variant="default"
-            className={cn(
-              "h-10 flex-1 rounded-[var(--shape-card)] px-0 text-sm font-medium motion-safe:enabled:active:scale-[0.97]",
-              trimmed,
-            )}
+            size="consent"
+            className="flex-1"
             disabled={approving}
             aria-busy={approving}
             onClick={onAllow}
