@@ -291,7 +291,7 @@ html:has(.reflow-frame) #root {
   left: 0;
   z-index: 10;
   pointer-events: none;
-  border: var(--grid-marquee-width) solid var(--grid-marquee-edge);
+  border: calc(var(--grid-marquee-width) / var(--grid-scale)) solid var(--grid-marquee-edge);
   background: var(--grid-marquee-fill);
 }
 [data-grid-card][data-lifted] :is([data-slide-entry], [data-slide-number]) {
