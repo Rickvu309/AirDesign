@@ -70,7 +70,8 @@ export const webDesignChecks: Check[] = [
     "04-deck-list-preview",
     "decks-list",
     async (page) => {
-      await expect(page.locator("[data-deck-row] [data-deck-initial]").first()).toBeVisible()
+      const rows = await page.locator("[data-deck-row]").count()
+      await expect(page.locator("[data-deck-row] :is([data-deck-initial], [data-deck-thumbnail])")).toHaveCount(rows)
     },
   ],
   [
