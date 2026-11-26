@@ -39,7 +39,7 @@ function agent() {
 describe("a raw size and font over the protocol", () => {
   it("lands a font the catalog serves under its own name, and names a size off the scale", async () => {
     const call = agent()
-    const { deck, slides } = (await call("create_deck", {})).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
       deck: string
       rev: number
       slides: string[]
@@ -62,7 +62,7 @@ describe("a raw size and font over the protocol", () => {
 
   it("sets a weight the panel names, and reads the family and that weight", async () => {
     const call = agent()
-    const { deck, slides } = (await call("create_deck", {})).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
       deck: string
       rev: number
       slides: string[]
@@ -81,7 +81,7 @@ describe("a raw size and font over the protocol", () => {
 
   it("names no off-font finding for a weight set on the deck's own family", async () => {
     const call = agent()
-    const { deck, rev, slides } = (await call("create_deck", {})).answer as {
+    const { deck, rev, slides } = (await call("execute", { script: "createDeck()" })).answer as {
       deck: string
       rev: number
       slides: string[]
@@ -100,7 +100,7 @@ describe("a raw size and font over the protocol", () => {
 
   it("refuses a font the catalog does not serve, and lands nothing", async () => {
     const call = agent()
-    const { deck, rev, slides } = (await call("create_deck", {})).answer as {
+    const { deck, rev, slides } = (await call("execute", { script: "createDeck()" })).answer as {
       deck: string
       rev: number
       slides: string[]
@@ -117,7 +117,7 @@ describe("a raw size and font over the protocol", () => {
   })
   it("sets the theme's fonts under the catalog's own names, and refuses a family it does not serve", async () => {
     const call = agent()
-    const { deck } = (await call("create_deck", {})).answer as { deck: string; rev: number }
+    const { deck } = (await call("execute", { script: "createDeck()" })).answer as { deck: string; rev: number }
     const themed = await call("execute", {
       deck,
       script: scriptOf([{ op: "deck", name: "Board", fonts: { heading: "lora" } }]),
@@ -130,6 +130,6 @@ describe("a raw size and font over the protocol", () => {
       script: scriptOf([{ op: "deck", fonts: { body: "Nowhere Grotesk" } }]),
     })
     expect(unknown.answer).toMatchObject({ ok: false, refusal: "field", field: "fonts.body", op: 1 })
-    expect((await call("list_decks", {})).answer).toMatchObject({ decks: [{ deck, name: "Board" }] })
+    expect((await call("get_app_state", {})).answer).toMatchObject({ decks: [{ deck, name: "Board" }] })
   })
 })

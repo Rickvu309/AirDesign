@@ -18,7 +18,7 @@ afterAll(async () => {
 type Made = { readonly deck: string; readonly rev: number; readonly slide: string }
 
 async function made(agent: Agent): Promise<Made> {
-  const created = await agent.call("create_deck", {})
+  const created = await agent.call("execute", { script: "createDeck()" })
   expect(created.ok, created.said).toBe(true)
   return {
     deck: created.body.deck as string,
@@ -161,17 +161,17 @@ describe("tool call limits", () => {
     const callers = await Promise.all(tokens.map((token) => connected({ authorization: `Bearer ${token}` })))
     const [one, two, three, four] = callers
     if (one === undefined || two === undefined || three === undefined || four === undefined) throw new Error("agents")
-    for (let count = 0; count < 90; count += 1) expect((await one.call("list_decks", {})).ok).toBe(true)
-    const ninetyFirst = await one.call("list_decks", {})
+    for (let count = 0; count < 90; count += 1) expect((await one.call("get_app_state", {})).ok).toBe(true)
+    const ninetyFirst = await one.call("get_app_state", {})
     expect(ninetyFirst.text).toMatch(/^Ninety tool calls in five minutes\./)
     for (const [agent, calls] of [
       [two, 90],
       [three, 90],
       [four, 30],
     ] as const) {
-      for (let count = 0; count < calls; count += 1) expect((await agent.call("list_decks", {})).ok).toBe(true)
+      for (let count = 0; count < calls; count += 1) expect((await agent.call("get_app_state", {})).ok).toBe(true)
     }
-    const threeHundredFirst = await four.call("list_decks", {})
+    const threeHundredFirst = await four.call("get_app_state", {})
     expect(threeHundredFirst.text).toMatch(/^Three hundred tool calls in five minutes from this account's agents\./)
   }, 60_000)
 })

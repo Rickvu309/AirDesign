@@ -36,7 +36,7 @@ function agent(overrides: (decks: ReturnType<typeof memoryDecks>) => Partial<Dec
 }
 
 async function deckOf(by: ReturnType<typeof agent>) {
-  const made = await by.call("create_deck", {})
+  const made = await by.call("execute", { script: "createDeck()" })
   const answer = made.answer as { deck: string; rev: number; slides: string[] }
   return answer
 }

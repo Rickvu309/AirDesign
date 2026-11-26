@@ -83,7 +83,7 @@ async function listedDecks(access: string): Promise<unknown> {
         requestInit: { headers: { authorization: `Bearer ${access}` } },
       }),
     )
-    return (await sdk.callTool({ name: "airdesign_list_decks", arguments: {} })).structuredContent
+    return (await sdk.callTool({ name: "airdesign_get_app_state", arguments: {} })).structuredContent
   } finally {
     await sdk.close()
   }
@@ -179,7 +179,7 @@ it("signs Gemini in from HEAD /mcp to revoke, and keeps it connected across refr
   )
   const tools = (await sdk.listTools()).tools.map((tool) => tool.name)
   await sdk.close()
-  expect(tools).toContain("airdesign_list_decks")
+  expect(tools).toContain("airdesign_get_app_state")
   expect(tools).toContain("airdesign_execute")
 
   const refreshed = { grant_type: "refresh_token", refresh_token: first.refresh, resource }
@@ -189,7 +189,7 @@ it("signs Gemini in from HEAD /mcp to revoke, and keeps it connected across refr
   expect(third.refresh).toBe(first.refresh)
   expect(new Set([first.access, second.access, third.access]).size).toBe(3)
 
-  const empty = { ok: true, decks: [], note: "Your decks." }
+  const empty = { ok: true, decks: [], openDeck: null, note: "No deck is open in an AirDesign tab." }
   for (const access of [first.access, second.access, third.access]) {
     expect(await listedDecks(access)).toEqual(empty)
   }

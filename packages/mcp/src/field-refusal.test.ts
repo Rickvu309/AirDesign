@@ -36,7 +36,7 @@ const hiddenCaption = {
 describe("an agent reads the field a refusal names", () => {
   it("says which field of the empty hidden caption was the wrong form, and the form it accepts", async () => {
     const by = agent()
-    const made = await by.call("create_deck", {})
+    const made = await by.call("execute", { script: "createDeck()" })
     const { deck, slides } = made.answer as { deck: string; slides: string[] }
     const refused = await by.call("execute", { deck, script: scriptOf([{ ...hiddenCaption, slide: slides[0] }]) })
     expect(refused.answer).toMatchObject({
@@ -57,7 +57,7 @@ describe("an agent reads the field a refusal names", () => {
 
   it("names an empty script, an unknown argument, a bad run id and a missing deck", async () => {
     const by = agent()
-    const made = await by.call("create_deck", {})
+    const made = await by.call("execute", { script: "createDeck()" })
     const { deck, slides } = made.answer as { deck: string; slides: string[] }
     const runForm = "The runId a call answered: 1 to 64 of letters, digits, _ or -."
     const empty = await by.call("execute", { deck, script: "" })

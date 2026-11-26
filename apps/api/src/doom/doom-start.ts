@@ -14,7 +14,11 @@ export const startAuthor: doom.Author = { kind: "person", id: "airdesign" }
 
 const slide = { w: 1920, h: 1080 } as const
 
-export function startEdit(): doom.Edit {
+export type DeckStart = { readonly name: string; readonly theme: doom.Theme }
+
+export function startEdit(
+  { name, theme }: DeckStart = { name: blankDeckName, theme: doom.themeLibrary.neutral.theme },
+): doom.Edit {
   const first = orderKeyBetween(null, null)
   const create = (node: doom.NodeId, type: string, parent: doom.NodeId | undefined) => [
     { node, prop: "type" as const, value: type },
@@ -28,9 +32,9 @@ export function startEdit(): doom.Edit {
     author: startAuthor,
     writes: [
       ...create(deck, "deck", undefined),
-      { node: deck, prop: "name", value: blankDeckName },
-      { node: deck, prop: "nameFollows", value: true },
-      { node: deck, prop: "theme", value: doom.themeLibrary.neutral.theme },
+      { node: deck, prop: "name", value: name },
+      { node: deck, prop: "nameFollows", value: name === blankDeckName },
+      { node: deck, prop: "theme", value: theme },
       { node: deck, prop: "size", value: slide },
       ...create(row, "slideRow", deck),
       ...create(first_, "slide", row),

@@ -33,10 +33,10 @@ it("saves and refuses slide group edits through the existing tool, using structu
       const result = await client.callTool({ name: `airdesign_${tool}`, arguments: args })
       return result.structuredContent
     }
-    const made = await call("create_deck", {})
+    const made = await call("execute", { script: "createDeck()" })
     expect(made).toMatchObject({ ok: true, deck: expect.any(String) })
     if (typeof made !== "object" || made === null || !("deck" in made) || typeof made.deck !== "string")
-      throw new Error("create_deck returned no deck id")
+      throw new Error("createDeck returned no deck id")
     const { deck } = made
     const read = async () => {
       const saved = (await call("execute", { deck, script: "get()" })) as { ok: boolean; result: unknown }

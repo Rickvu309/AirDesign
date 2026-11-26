@@ -24,7 +24,7 @@ function agent() {
 describe("a shape's outline through the agent tools", () => {
   it("adds a star, reads it back as shape=star5, and refuses a connector as a shape", async () => {
     const call = agent()
-    const { deck, slides } = (await call("create_deck", {})).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
       deck: string
       rev: number
       slides: string[]

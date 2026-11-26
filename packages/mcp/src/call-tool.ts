@@ -2,10 +2,9 @@ import { catalog, projectTools, type AgentOp } from "@airdesign/catalog"
 
 import { type CallerLog } from "./admit.js"
 import { type ToolResult, refused } from "./answer.js"
-import { createDeckTool } from "./create-tool.js"
+import { appStateTool } from "./app-state-tool.js"
 import type { DeckHost } from "./deck-host.js"
 import { executeTool } from "./execute-tool.js"
-import { listDecksTool } from "./list-tool.js"
 import { getStyleTool, readSkillTool } from "./skill-tools.js"
 import { stopRunTool } from "./stop-tool.js"
 import { undoRunTool } from "./undo-tool.js"
@@ -23,8 +22,7 @@ const tools = projectTools(catalog)
 
 export const opOf = (name: string): AgentOp | undefined => tools.find((tool) => tool.name === name)?.op
 
-export const knownTool = (name: string): boolean =>
-  opOf(name) !== undefined || name === "airdesign_read_skill" || name === "airdesign_get_style"
+export const knownTool = (name: string): boolean => opOf(name) !== undefined
 
 export async function callTool(
   name: string,
@@ -33,16 +31,16 @@ export async function callTool(
   host: DeckHost,
   pendingFonts: ReadonlySet<string> = new Set(),
 ): Promise<ToolResult> {
-  if (name === "airdesign_read_skill") return readSkillTool(raw)
-  if (name === "airdesign_get_style") return getStyleTool(raw)
   const op = opOf(name)
   if (op === undefined) return refused("field")
   const once = session.once ?? session.mint()
   switch (op) {
-    case "list_decks":
-      return listDecksTool(raw, host)
-    case "create_deck":
-      return createDeckTool(raw, once, host)
+    case "get_app_state":
+      return appStateTool(raw, host)
+    case "read_skill":
+      return readSkillTool(raw)
+    case "get_style":
+      return getStyleTool(raw)
     case "execute":
       return executeTool(raw, { id: session.agent, name: session.name }, once, host, pendingFonts)
     case "stop_run":

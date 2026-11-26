@@ -7,7 +7,7 @@ import { fieldRefusal, readInput } from "./wire.js"
 export const blankDeckName = doom.blankDeckName
 
 const readFields = readInput(
-  z.strictObject({ name: z.string().describe("The deck's name. Left out: Blank deck.").exactOptional() }),
+  z.strictObject({ name: z.string().exactOptional(), theme: z.string().exactOptional() }),
   () => fieldRefusal,
 )
 
@@ -16,7 +16,16 @@ export const readCreateDeck = Object.assign(
     const fields = readFields(raw)
     if (!fields.ok) return fields
     const name = fields.name === undefined ? blankDeckName : readDeckName(fields.name)
-    return name === undefined ? fieldRefusal : { ok: true as const, name }
+    const themeId = fields.theme
+    if (name === undefined) return { ...fieldRefusal, field: "name", fault: "form" as const }
+    if (themeId !== undefined && !Object.hasOwn(doom.themeLibrary, themeId))
+      return {
+        ...fieldRefusal,
+        field: "theme",
+        fault: "form" as const,
+        form: Object.keys(doom.themeLibrary).join(", "),
+      }
+    return { ok: true as const, name, theme: themeId === undefined ? undefined : doom.themeLibrary[themeId]?.theme }
   },
   { input: readFields.input },
 )

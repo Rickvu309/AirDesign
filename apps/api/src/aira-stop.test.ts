@@ -368,7 +368,14 @@ describe("a stop that names the edit call it cut", () => {
       params: { name, arguments: args, ...(named === undefined ? {} : { _meta: { "app.airdesign/once": named } }) },
     })
     const headers = { accept: "application/json, text/event-stream" }
-    const made = await ask(main, "POST", "/mcp", call("airdesign_create_deck", {}), account.cookie, headers)
+    const made = await ask(
+      main,
+      "POST",
+      "/mcp",
+      call("airdesign_execute", { script: "createDeck()" }),
+      account.cookie,
+      headers,
+    )
     const reply = made.text.startsWith("{")
       ? made.text
       : (made.text.split("\n").find((line) => line.startsWith("data: ")) ?? "").slice(6)

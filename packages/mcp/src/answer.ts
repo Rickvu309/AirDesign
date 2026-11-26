@@ -19,7 +19,7 @@ export type ToolResult = {
 export const refusalWords = {
   field:
     "A field is missing, unknown or the wrong form. Send only the fields the input schema lists, each in its described form.",
-  deck: "This session can reach no deck with this id. airdesign_list_decks lists the decks you own.",
+  deck: "This session can reach no deck with this id. airdesign_get_app_state lists the decks you own.",
   owner: "This deck belongs to another account. Work only on decks this account owns.",
   limit: "A value, the deck or a slide is over its limit: the words of a layer, the layers of the deck, or its slides.",
   kind: "An operation moves a layer into itself or into a layer that cannot hold it.",

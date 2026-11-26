@@ -1,4 +1,4 @@
-import { picturesWantedMilliseconds, type DeckId, type SlidePictures } from "@airdesign/catalog"
+import { picturesWantedMilliseconds, type DeckId, type SlidePictures, type TabSelection } from "@airdesign/catalog"
 import type { NodeId } from "@airdesign/doom"
 
 export const picturesCap = 200_000_000
@@ -23,6 +23,8 @@ function missingOf(shots: Shots): readonly NodeId[] {
   return [...shots.keys].flatMap(([slide, key]) => (shots.held.get(slide)?.key === key ? [] : [slide]))
 }
 
+type OpenTab = { readonly deck: DeckId; readonly selection: TabSelection | undefined }
+
 type Wanted = { readonly until: number; readonly slides: ReadonlySet<NodeId> }
 
 export class DeckPictures {
@@ -30,6 +32,7 @@ export class DeckPictures {
   private readonly waiting = new Map<DeckId, Set<() => void>>()
   private readonly wanting = new Map<DeckId, Wanted>()
   private readonly asking = new Map<DeckId, Set<() => void>>()
+  private readonly tabs = new Map<string, Set<OpenTab>>()
   private readonly seen = new Map<DeckId, number>()
   private bytes = 0
   private readonly cap: number
@@ -58,6 +61,25 @@ export class DeckPictures {
     const held = this.wanting.get(deck)
     if (held === undefined || held.until <= this.now()) return []
     return slides.filter((slide) => held.slides.has(slide))
+  }
+
+  openTab(email: string): OpenTab | undefined {
+    return [...(this.tabs.get(email) ?? [])].at(-1)
+  }
+
+  watchTab(email: string, tab: OpenTab, signal: AbortSignal): void {
+    if (signal.aborted) return
+    const tabs = this.tabs.get(email) ?? new Set()
+    tabs.add(tab)
+    this.tabs.set(email, tabs)
+    signal.addEventListener(
+      "abort",
+      () => {
+        tabs.delete(tab)
+        if (tabs.size === 0) this.tabs.delete(email)
+      },
+      { once: true },
+    )
   }
 
   watched(deck: DeckId): boolean {

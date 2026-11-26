@@ -30,12 +30,8 @@ function executeRefusal(issues: readonly z.core.$ZodIssue[], raw: unknown): Fiel
 
 export const readExecute = readInput(
   z.strictObject({
-    deck: deckInput,
-    script: z
-      .string()
-      .min(1)
-      .max(scriptBytes)
-      .describe("JavaScript with the operation functions, get, screenshot and print. Its last value is the result."),
+    deck: deckInput.describe("Deck id. Omit for a createDeck script.").exactOptional(),
+    script: z.string().min(1).max(scriptBytes).describe("JavaScript. Its last value is the result."),
     runId: z
       .string()
       .regex(deckPattern)

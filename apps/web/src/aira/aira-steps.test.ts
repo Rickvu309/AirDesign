@@ -80,21 +80,21 @@ describe("replyPieces", () => {
 
   it("lists three different steps in one sentence", () => {
     const [row] = replyPieces([
-      tool("airdesign_create_deck", "done"),
-      tool("airdesign_list_decks", "done"),
+      tool("airdesign_read_skill", "done"),
+      tool("airdesign_get_app_state", "done"),
       tool("airdesign_execute", "done"),
     ])
-    expect(row).toMatchObject({ title: "Created a deck, listed your decks, and worked on slides" })
+    expect(row).toMatchObject({ title: "Read a design guide, listed your decks, and worked on slides" })
   })
 
   it("sums up steps taken one after another in one line that expands to each step", () => {
-    const [row] = replyPieces([tool("airdesign_list_decks", "done"), tool("airdesign_execute", "done")])
+    const [row] = replyPieces([tool("airdesign_get_app_state", "done"), tool("airdesign_execute", "done")])
     expect(row).toEqual({
       kind: "steps",
       title: "Listed your decks and worked on slides",
       state: "done",
       lines: [
-        { id: "airdesign_list_decks", text: "Listed your decks", state: "done" },
+        { id: "airdesign_get_app_state", text: "Listed your decks", state: "done" },
         { id: "airdesign_execute", text: "Worked on slides", state: "done" },
       ],
       reasons: [],
@@ -127,7 +127,7 @@ describe("replyPieces", () => {
   })
 
   it("marks a row refused when any of its steps was refused, so the summary says so", () => {
-    const [row] = replyPieces([tool("airdesign_list_decks", "done"), tool("airdesign_execute", "refused")])
+    const [row] = replyPieces([tool("airdesign_get_app_state", "done"), tool("airdesign_execute", "refused")])
     expect(row).toMatchObject({ title: "Listed your decks and couldn't change slides", state: "refused" })
   })
 
@@ -180,7 +180,7 @@ describe("replyPieces", () => {
     const pieces = replyPieces([
       tool("airdesign_execute", "done"),
       tool("airdesign_stop_run", "done"),
-      tool("airdesign_list_decks", "done"),
+      tool("airdesign_get_app_state", "done"),
     ])
     expect(pieces).toHaveLength(1)
     expect(pieces[0]).toMatchObject({ title: "Worked on slides and listed your decks" })

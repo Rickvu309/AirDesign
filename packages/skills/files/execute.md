@@ -1,13 +1,19 @@
-# Reading and changing a deck with `airdesign_execute`
+# Creating, reading and changing a deck with `airdesign_execute`
 
 `airdesign_execute` runs one JavaScript script against one deck. Send `{ deck, script, runId? }`. When the script ends, everything it changed lands as one edit and one undo step. If it throws, nothing lands.
+
+## Create a deck
+
+Start with `airdesign_get_app_state` to find your decks, an open deck and its selection when available. Use `cursor: next` to see more decks.
+
+To start a new deck, omit `deck` and `runId` and send the script `createDeck({ name: "Quarterly review", theme: "neutral" })`. Both fields are optional. Use one `createDeck` call per script. The answer gives you the new deck id and its first slide id. Use that deck id in later calls to fill the deck. Read the `slides` skill before designing.
 
 ## The script
 
 - Each operation below is a global function that takes one object of fields and answers at once. `insert` returns the new id, so one script can add a slide, fill it, measure it and fix it.
 - Use variables, loops and arithmetic. Compute sizes and positions from the numbers, such as a bar's width from its value or an even spacing from a count, instead of guessing.
 - `print(...)` or `console.log(...)` adds a line to the answer's `logs`, up to 50. The value of the last expression comes back as `result`, cut at 20,000 characters.
-- A refused operation throws an Error whose message names the operation by its number and says what to fix. Uncaught, nothing lands and the answer gives the line. Caught, that operation changed nothing and the script goes on.
+- A refused operation throws an Error whose message names the operation by its number and says what to fix. Uncaught, nothing lands and the answer gives the line. In a deck edit script, you can catch the error and continue. If any operation fails in a creation script, no deck is created.
 - If Execute refuses an edit as `stale`, read the changed property with `get` in a separate call before revising your edit.
 - The sandbox has no network, files, modules, timers or `await`. A script runs at most 20 seconds and 64 MB, is at most 100,000 characters, and makes at most 100 changes. Split bigger work over several calls.
 

@@ -51,7 +51,7 @@ describe("an agent's title on a deck made over MCP", () => {
       new StreamableHTTPClientTransport(new URL(`${base}/mcp`), { requestInit: { headers: { cookie } } }),
     )
     try {
-      const first = (await tool(client, "create_deck", { name: "Board" })).answer
+      const first = (await tool(client, "execute", { script: 'createDeck({ name: "Board" })' })).answer
       const read = async () =>
         (await tool(client, "execute", { deck: first.deck, script: "get().layers" })).answer.result as string
       expect(await read()).toContain("Untitled")

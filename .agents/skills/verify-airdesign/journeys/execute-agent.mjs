@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test"
 import { airaCopy, airaStepWords, undoCopy } from "../bin/product-copy.mjs"
 import { connectOutsideAgent } from "./aira-panel.mjs"
-import { readDoom } from "../look/doom-deck.mjs"
+import { readDoom, selectNode } from "../look/doom-deck.mjs"
 import { addSlides, entries } from "../look/doom-slides.mjs"
 
 const built = (slide) => `
@@ -23,7 +23,7 @@ screenshot({ target: s })
 ;({ slide: s, widths, title: measured, problems: get({ target: s }).problems.length })`
 
 export default async function drive(kit) {
-  const { signIn, page, post, capture, note, doomRoutes, mcpRoutes, aira, holdReply } = kit
+  const { signIn, page, context, post, capture, note, doomRoutes, mcpRoutes, aira, holdReply } = kit
   const { cookie } = await signIn()
   await page.goto("/s")
   await page.locator("[data-editor-ready]").waitFor()
@@ -32,6 +32,16 @@ export default async function drive(kit) {
   const first = Object.values((await readDoom(kit, opened)).fold.nodes).find((node) => node.type === "slide").id
   const canvas = page.locator("[data-slide-box]")
   const call = await connectOutsideAgent(kit, cookie, "Script agent")
+  const originalTitle = canvas.locator("[data-node]").first()
+  const layer = await originalTitle.getAttribute("data-node")
+  await selectNode(page, layer)
+  await expect
+    .poll(() => call("get_app_state", {}))
+    .toMatchObject({
+      decks: [{ deck }],
+      openDeck: { deck, selection: { slide: first, ids: [layer] } },
+    })
+  note("The OAuth agent saw the open deck and the selected layer in structured content.")
 
   const started = Date.now()
   const agent = await call("execute", { deck, script: built(first) })
@@ -107,6 +117,21 @@ export default async function drive(kit) {
     "While the tab was offline the person added a slide and the agent's execute landed; on reconnect the tab replayed its slide and painted the agent's text, and the server holds both.",
   )
   await call("stop_run", { deck, runId: late.runId })
+  const second = await context.newPage()
+  await second.goto("/s")
+  await second.locator("[data-editor-ready]").waitFor()
+  const other = new URL(second.url()).pathname.slice("/s/".length)
+  await expect.poll(() => call("get_app_state", {})).toMatchObject({ openDeck: { deck: other } })
+  await second.close()
+  await expect.poll(() => call("get_app_state", {})).toMatchObject({ openDeck: { deck } })
+  await page.goto("/")
+  await expect
+    .poll(() => call("get_app_state", {}))
+    .toMatchObject({
+      decks: expect.arrayContaining([{ deck, name: expect.any(String), rev: expect.any(Number) }]),
+      openDeck: null,
+    })
+  note("Closing the newer tab returned the other deck. Leaving the editor then returned no open deck.")
   void post
   void mcpRoutes
   void holdReply

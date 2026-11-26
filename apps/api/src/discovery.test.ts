@@ -164,18 +164,19 @@ it("discovers authorization from only the MCP address and calls a tool with its 
     )
     const tools = await sdk.listTools()
     expect(tools.tools.find((tool) => tool.name === "airdesign_execute")?.annotations?.idempotentHint).toBe(false)
-    expect(tools.tools.find((tool) => tool.name === "airdesign_list_decks")?.annotations).toMatchObject({
+    expect(tools.tools.find((tool) => tool.name === "airdesign_get_app_state")?.annotations).toMatchObject({
       readOnlyHint: true,
       idempotentHint: true,
     })
     const created = await ask(base, "POST", "/doom/create", { deck: "discovery" }, cookie)
     expect(created.json).toMatchObject({ ok: true, deck: "discovery", rev: 1 })
-    const listed = await sdk.callTool({ name: "airdesign_list_decks", arguments: {} })
+    const listed = await sdk.callTool({ name: "airdesign_get_app_state", arguments: {} })
     expect(listed.isError).not.toBe(true)
     expect(listed.structuredContent).toEqual({
       ok: true,
       decks: [{ deck: "discovery", name: "Blank deck", rev: 1 }],
-      note: "Your decks.",
+      openDeck: null,
+      note: "No deck is open in an AirDesign tab.",
     })
     const read = await sdk.callTool({ name: "airdesign_execute", arguments: { deck: "discovery", script: "get()" } })
     expect(read.isError).not.toBe(true)

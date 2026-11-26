@@ -103,6 +103,9 @@ function Editing({
   const [panel, setPanel] = useKeptPanel(id, start.panel)
   const [zoom, setZoom] = useState<Zoom>("fit")
   const [grid, setGrid] = useState(start.grid !== undefined)
+  useEffect(() => {
+    client.reportSelection(grid || slide === undefined ? undefined : { slide, ids: selection.ids })
+  }, [client, grid, slide, selection.ids])
   const [leftGrid, setLeftGrid] = useState(false)
   const [gridShown, setGridShown] = useState<GridShownZoom>({ percent: 25, fit: true, selection: false })
   const gridCommands = useRef<GridCommands | null>(null)

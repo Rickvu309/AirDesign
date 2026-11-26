@@ -5,7 +5,7 @@ import * as doom from "@airdesign/doom"
 import { isUniqueViolation, type Sql } from "../platform/pool.js"
 import { type Part, partOf, partSql, seedsOf } from "./doom-edit-part.js"
 import { readRunRecord } from "./doom-run-record.js"
-import { startAuthor, startEdit } from "./doom-start.js"
+import { startAuthor, startEdit, type DeckStart } from "./doom-start.js"
 
 const headSql = "select id, owner, rev, trashed is not null as trashed from deck.doom where id = $1"
 
@@ -103,9 +103,9 @@ function* changedNodes(part: doom.Doom, next: doom.Doom): Iterable<doom.NodeId> 
   for (const [id, node] of next.nodes) if (part.nodes.get(id) !== node) yield id
 }
 
-export async function createDoom(db: Sql, parsed: { readonly deck: DeckId }, email: string) {
+export async function createDoom(db: Sql, parsed: { readonly deck: DeckId }, email: string, start?: DeckStart) {
   if ((await readStored(db, parsed.deck)) === undefined) {
-    const edit = { ...startEdit(), rev: doom.rev(1) }
+    const edit = { ...startEdit(start), rev: doom.rev(1) }
     const started = doom.applyEdit(doom.emptyDoom, edit)
     if (doom.isRefusal(started)) throw new Error(`the starting doom was refused: ${started.refused}`)
     const counts = doom.countsOf(started)

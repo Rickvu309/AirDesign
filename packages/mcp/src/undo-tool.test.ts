@@ -45,7 +45,7 @@ function agent(decks: MemoryDecks = memoryDecks(start), id = "aira", name = "Air
 
 async function renamed() {
   const by = agent()
-  const made = await by.call("create_deck", { name: "Board" })
+  const made = await by.call("execute", { script: 'createDeck({ name: "Board" })' })
   const deck = made.answer.deck as string
   const fold = by.decks.decks.get(deck as never)!
   const title = [...fold.nodes.values()].find((node) => node.type === "shape")!
@@ -84,7 +84,7 @@ describe("undo_run", () => {
 
   it("leaves a layer a person changed since, says why, and takes the rest back", async () => {
     const by = agent()
-    const made = await by.call("create_deck", { name: "Board" })
+    const made = await by.call("execute", { script: 'createDeck({ name: "Board" })' })
     const deck = made.answer.deck as string
     const slides = made.answer.slides as string[]
     const first = await by.call("execute", {
@@ -121,7 +121,7 @@ describe("undo_run", () => {
 
   it("takes the agent's own turn off a layer it leaves where the agent put it, and keeps the turn the person saw", async () => {
     const by = agent()
-    const made = await by.call("create_deck", { name: "Board" })
+    const made = await by.call("execute", { script: 'createDeck({ name: "Board" })' })
     const deck = made.answer.deck as string
     const slide = (made.answer.slides as string[])[0] as doom.NodeId
     const [outer, group, card] = [doom.nodeId("g:101"), doom.nodeId("g:102"), doom.nodeId("g:103")]
@@ -203,7 +203,7 @@ describe("design details an agent sets", () => {
           }).doom,
       ),
     )
-    const made = await by.call("create_deck", { name: "Design details" })
+    const made = await by.call("execute", { script: 'createDeck({ name: "Design details" })' })
     const deck = made.answer.deck
     const key = [...by.decks.decks.keys()].find((id) => id === deck)
     if (key === undefined) throw new Error("No deck was created")

@@ -1,6 +1,6 @@
 import type { ServerResponse } from "node:http"
 
-import { doomRoutes } from "@airdesign/catalog"
+import { doomRoutes, type TabSelection } from "@airdesign/catalog"
 
 import type { DeckPictures } from "./deck-pictures.js"
 import type { DeckListen } from "../platform/listen.js"
@@ -46,6 +46,7 @@ async function heldSince(
     readonly deck: Parameters<typeof sinceDoom>[1]["deck"]
     readonly rev: number
     readonly pictures?: boolean | undefined
+    readonly selection?: TabSelection | undefined
   },
   email: string,
   signal: AbortSignal,
@@ -61,6 +62,7 @@ async function heldSince(
       const caught = await sinceDoom(options.deck, parsed, email)
       if (!caught.ok) return caught
       if (caught.edits.length > 0 || owed(options, parsed)) return withPictures(options, parsed, caught)
+      options.pictures.watchTab(email, { deck: parsed.deck, selection: parsed.selection }, hold)
       const wanted = await Promise.race([woken, asked])
       if (signal.aborted) return undefined
       if (wanted) return { ...caught, pictures: true as const }

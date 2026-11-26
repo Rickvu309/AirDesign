@@ -189,7 +189,7 @@ async function called(client: McpClient, name: string, args: Record<string, unkn
 }
 
 async function listed(client: McpClient) {
-  return client.callTool({ name: "airdesign_list_decks", arguments: {} })
+  return client.callTool({ name: "airdesign_get_app_state", arguments: {} })
 }
 
 describe("the limits an account's calls share hold on every server and after a restart", () => {
@@ -230,7 +230,7 @@ describe("an agent's run on a deck", () => {
     let run = ""
     let added = ""
     await withMcp(account.cookie, first, async (client) => {
-      const made = await called(client, "create_deck", {})
+      const made = await called(client, "execute", { script: "createDeck()" })
       deck = made.deck
       const opened = await called(client, "execute", {
         deck,

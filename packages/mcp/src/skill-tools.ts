@@ -2,58 +2,6 @@ import { listStyles, readSkill, readSkillIndex, readStyle } from "@airdesign/ski
 
 import { answered, refused, type ToolResult } from "./answer.js"
 
-export type ReadOnlyTool = {
-  readonly name: string
-  readonly description: string
-  readonly inputSchema: Readonly<Record<string, unknown>>
-  readonly annotations: {
-    readonly readOnlyHint: true
-    readonly destructiveHint: false
-    readonly idempotentHint: true
-    readonly openWorldHint: false
-  }
-}
-
-const readOnlyAnnotations = {
-  readOnlyHint: true as const,
-  destructiveHint: false as const,
-  idempotentHint: true as const,
-  openWorldHint: false as const,
-}
-
-export const skillTools: readonly ReadOnlyTool[] = [
-  {
-    name: "airdesign_get_style",
-    description: "Read an AirDesign visual style and its parameters. Omit name to list available styles.",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        name: {
-          type: "string",
-          description: "Style name from the list. Omit to list styles.",
-        },
-      },
-    },
-    annotations: readOnlyAnnotations,
-  },
-  {
-    name: "airdesign_read_skill",
-    description: "Read an AirDesign skill guide. Omit name to list available skills and when to read each.",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        name: {
-          type: "string",
-          description: "Skill name from the index. Omit for the index.",
-        },
-      },
-    },
-    annotations: readOnlyAnnotations,
-  },
-]
-
 function readOptionalName(
   raw: unknown,
   form: string,

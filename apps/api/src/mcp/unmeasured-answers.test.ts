@@ -25,7 +25,7 @@ it("keeps naming a text its font cannot measure on every read and edit after the
     session.once = `call${String((calls += 1))}`
     return callTool(names[op]!, args, session, host)
   }
-  const { deck, slides } = (await call("create_deck", {})).answer as {
+  const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
     deck: string
     rev: number
     slides: string[]

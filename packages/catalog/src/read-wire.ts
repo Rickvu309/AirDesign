@@ -8,4 +8,4 @@ const deckCursor = z
   .transform((value) => value as DeckId)
   .describe("Continue after this deck id.")
 
-export const readListDecks = readInput(z.strictObject({ cursor: deckCursor.exactOptional() }), inputRefusal)
+export const readAppState = readInput(z.strictObject({ cursor: deckCursor.exactOptional() }), inputRefusal)

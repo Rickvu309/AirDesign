@@ -45,7 +45,7 @@ function agent(decks: MemoryDecks = memoryDecks(start), id = "aira") {
 }
 
 async function created(by: ReturnType<typeof agent>) {
-  const made = await by.call("create_deck", {})
+  const made = await by.call("execute", { script: "createDeck()" })
   return made.answer as { deck: string; rev: number; slides: string[] }
 }
 
@@ -62,10 +62,10 @@ async function read(by: ReturnType<typeof agent>, deck: string, fields: Readonly
 
 const person: doom.Author = { kind: "person", id: "quan" }
 
-describe("create_deck and list_decks", () => {
+describe("createDeck and get_app_state", () => {
   it("makes a deck and answers its id, name and first read", async () => {
     const by = agent()
-    const made = await by.call("create_deck", { name: "Board" })
+    const made = await by.call("execute", { script: 'createDeck({ name: "Board" })' })
     expect(made.ok).toBe(true)
     expect(made.answer).toMatchObject({
       ok: true,
@@ -79,8 +79,8 @@ describe("create_deck and list_decks", () => {
 
   it("makes one deck for a call sent again with the same once", async () => {
     const by = agent()
-    const first = await by.call("create_deck", {}, "same")
-    const again = await by.call("create_deck", {}, "same")
+    const first = await by.call("execute", { script: "createDeck()" }, "same")
+    const again = await by.call("execute", { script: "createDeck()" }, "same")
     expect(again.answer).toEqual(first.answer)
     expect(by.decks.decks.size).toBe(1)
   })
@@ -88,21 +88,33 @@ describe("create_deck and list_decks", () => {
   it("lists the decks with id, name and rev", async () => {
     const by = agent()
     const made = await created(by)
-    const listed = await by.call("list_decks", {})
+    const listed = await by.call("get_app_state", {})
     expect(listed.answer).toEqual({
       ok: true,
       decks: [{ deck: made.deck, name: "Blank deck", rev: made.rev }],
-      note: "Your decks.",
+      openDeck: null,
+      note: "No deck is open in an AirDesign tab.",
     })
+  })
+
+  it("creates with a built-in theme and saves nothing when the script fails", async () => {
+    const by = agent()
+    const theme = Object.values(doom.themeLibrary).find(({ id }) => id !== "neutral")!
+    const create = `createDeck(${JSON.stringify({ name: "Themed", theme: theme.id })})`
+    const interrupted = await by.call("execute", { script: `${create}; throw new Error("stop")` })
+    expect(interrupted.answer).toMatchObject({ ok: false, refusal: "script" })
+    expect(by.decks.decks.size).toBe(0)
+    const made = await by.call("execute", { script: create })
+    expect(made.answer).toMatchObject({ ok: true, name: "Themed", theme: { colors: theme.theme.colors } })
   })
 
   it("refuses a field it does not take", async () => {
     const by = agent()
-    expect((await by.call("create_deck", { template: "neutral" })).answer).toMatchObject({
+    expect((await by.call("execute", { script: 'createDeck({ template: "neutral" })' })).answer).toMatchObject({
       ok: false,
       refusal: "field",
     })
-    expect((await by.call("list_decks", { deck: "x" })).answer).toMatchObject({ ok: false, refusal: "field" })
+    expect((await by.call("get_app_state", { deck: "x" })).answer).toMatchObject({ ok: false, refusal: "field" })
   })
 })
 

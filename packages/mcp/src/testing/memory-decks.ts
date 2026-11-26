@@ -69,7 +69,7 @@ export function memoryDecks(start: () => doom.Doom, initial: ReadonlyMap<string,
       ok: true,
       decks: [...decks].map(([deck, fold]) => ({ deck, name: doom.deckName(fold), rev: fold.rev })),
     }),
-    create: async (name, once) => {
+    create: async (name, theme, once) => {
       const read = readDeckId(`d${shortHash(once)}`)
       if (!read.ok) return refusal("deck")
       if (!decks.has(read.deck)) {
@@ -78,11 +78,15 @@ export function memoryDecks(start: () => doom.Doom, initial: ReadonlyMap<string,
         bases.set(read.deck, fresh)
       }
       const present = decks.get(read.deck)!
-      if (doom.deckName(present) === name) return { ok: true, deck: read.deck, rev: present.rev, fold: present }
+      if (doom.deckName(present) === name && theme === undefined)
+        return { ok: true, deck: read.deck, rev: present.rev, fold: present }
       const named = await edit(read.deck, {
         once: "name",
         author: { kind: "person", id: "start" },
-        writes: [{ node: deckNode(present), prop: "name", value: name }],
+        writes: [
+          { node: deckNode(present), prop: "name", value: name },
+          ...(theme === undefined ? [] : [{ node: deckNode(present), prop: "theme" as const, value: theme }]),
+        ],
       })
       if (!named.ok) return named
       const fold = decks.get(read.deck)!

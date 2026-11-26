@@ -25,7 +25,10 @@ function agent() {
 describe("refusals in execute", () => {
   it("refuses a move into a frame inside one an earlier change deleted, and says so in the answer", async () => {
     const by = agent()
-    const { deck, slides } = (await by.call("create_deck", {})).answer as { deck: string; slides: string[] }
+    const { deck, slides } = (await by.call("execute", { script: "createDeck()" })).answer as {
+      deck: string
+      slides: string[]
+    }
     const rev = () => by.decks.decks.get(deck as never)!.rev
     const frameIn = async (into?: string) => {
       const change = { op: "add", kind: "frame", slide: slides[0], ...(into === undefined ? {} : { into }) }
@@ -137,7 +140,7 @@ function connected(grown: ReturnType<typeof drifted>, measureOf: (folds: readonl
     return callTool(names[op] ?? op, args, session, host)
   }
   const made = async () => {
-    const created = await call("create_deck", {})
+    const created = await call("execute", { script: "createDeck()" })
     return (created.answer as { deck: string }).deck
   }
   const freeEnd = (deck: string, line = grown.ids.l!) => {
@@ -276,7 +279,7 @@ describe("a script frees a connector end whose shape leaves the slide", () => {
       session.once = `call${String((calls += 1))}`
       return callTool(names[op] ?? op, args, session, decks)
     }
-    const deck = ((await call("create_deck", {})).answer as { deck: string }).deck
+    const deck = ((await call("execute", { script: "createDeck()" })).answer as { deck: string }).deck
     const fold = () => decks.decks.get(deck as never)!
     const lineStart = (line: doom.NodeId) => {
       const geometry = doom.propOf(fold().nodes.get(line), "geometry")
@@ -331,7 +334,7 @@ describe("a script frees a connector end whose shape leaves the slide", () => {
 
 it("reads and sets an ordinary text card's padding, fill, outline and radius", async () => {
   const by = agent()
-  const made = (await by.call("create_deck", {})).answer
+  const made = (await by.call("execute", { script: "createDeck()" })).answer
   const read = readDeckId(made.deck)
   if (!read.ok || !Array.isArray(made.slides)) throw new Error("Missing deck")
   const { deck } = read

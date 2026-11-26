@@ -1,11 +1,13 @@
 import * as z from "zod/v4"
 
 import { advertisedSchema } from "./advertised-schema.js"
-import { readCreateDeck } from "./create-wire.js"
 import { readExecute } from "./execute-wire.js"
-import { readListDecks } from "./read-wire.js"
+import { inputRefusal, readInput } from "./wire.js"
+import { readAppState } from "./read-wire.js"
 import { sharedSchemas } from "./shared-schema.js"
 import { readRun, type WireReader } from "./wire.js"
+
+const readOptionalName = readInput(z.strictObject({ name: z.string().exactOptional() }), inputRefusal)
 
 type OpDetails = {
   readonly kind: "query" | "command" | "action" | "stream"
@@ -49,13 +51,6 @@ export type AgentTool<Op extends string = AgentOp> = {
 
 export const catalog = {
   commit_edits: { kind: "command", exposure: "web" },
-  create_deck: {
-    kind: "command",
-    exposure: "agent",
-    runsOn: "server",
-    read: readCreateDeck,
-    description: "Create a deck this account owns. The answer has its deck id, its slides and its theme.",
-  },
   index_deck: { kind: "action", exposure: "web", runsOn: "server" },
   start_run: { kind: "command", exposure: "web" },
   stop_run: {
@@ -86,14 +81,28 @@ export const catalog = {
     openWorld: true,
     read: readExecute,
     description:
-      'Read and change a deck with one JavaScript script. Everything it changes lands as one edit and one undo step, or nothing lands. Read airdesign_read_skill {name: "execute"} before your first call. Each operation is a function that answers at once: insert returns the new id and get returns measured boxes and problems, so one script can add slides, fill them and place layers from measured sizes. The answer lists the new ids, the result and logs, and any problems to fix.',
+      'Create, read or edit a deck with JavaScript. Edits land as one undo step. Read airdesign_read_skill with name "execute" for operations and examples.',
   },
-  list_decks: {
+  get_app_state: {
     kind: "query",
     exposure: "agent",
     runsOn: "server",
-    read: readListDecks,
-    description: "List owned decks with id, name and rev.",
+    read: readAppState,
+    description: "List your decks and see the deck and selection in an open tab.",
+  },
+  get_style: {
+    kind: "query",
+    exposure: "agent",
+    runsOn: "server",
+    read: readOptionalName,
+    description: "Read an AirDesign visual style and its parameters. Omit name to list available styles.",
+  },
+  read_skill: {
+    kind: "query",
+    exposure: "agent",
+    runsOn: "server",
+    read: readOptionalName,
+    description: "Read an AirDesign skill guide. Omit name for the index.",
   },
 } as const satisfies Readonly<Record<string, OpRow>>
 

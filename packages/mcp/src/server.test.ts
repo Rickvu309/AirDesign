@@ -47,24 +47,16 @@ describe("createServer", () => {
     expect(createServer(session, memoryDecks(started))).not.toBe(createServer(session, memoryDecks(started)))
   })
 
-  it("lists the seven tools within 1,033 tokens", async () => {
+  it("lists six tools within the listing ceiling", async () => {
     const projected = projectTools(catalog)
     await withClient(sessionFor(), memoryDecks(started), async (client) => {
       expect(client.getServerVersion()?.name).toBe("airdesign")
       const { tools } = await client.listTools()
-      const advertised = tools.map((tool) => ({
-        name: tool.name,
-        description: tool.description,
-        inputSchema: tool.inputSchema,
-        annotations: tool.annotations,
-      }))
-      const advertisedTokens = Math.ceil(bytesOf(JSON.stringify(advertised)) / 4)
       const listedTokens = Math.ceil(bytesOf(JSON.stringify(await client.listTools())) / 4)
       expect(tools.map((tool) => tool.name)).toEqual([
-        "airdesign_create_deck",
         "airdesign_execute",
+        "airdesign_get_app_state",
         "airdesign_get_style",
-        "airdesign_list_decks",
         "airdesign_read_skill",
         "airdesign_stop_run",
         "airdesign_undo_run",
@@ -80,14 +72,13 @@ describe("createServer", () => {
         })
       }
       const execute = tools.find((tool) => tool.name === "airdesign_execute")!
-      expect(execute.inputSchema).toMatchObject({ required: ["deck", "script"] })
+      expect(execute.inputSchema).toMatchObject({ required: ["script"] })
       expect(Object.keys((execute.inputSchema as { properties: object }).properties)).toEqual([
         "deck",
         "script",
         "runId",
       ])
-      expect(advertisedTokens).toBeLessThanOrEqual(1031)
-      expect(listedTokens).toBeLessThanOrEqual(1033)
+      expect(listedTokens).toBeLessThanOrEqual(Math.ceil(826 * 1.05))
       expect(tools.every((tool) => !Object.hasOwn(tool, "outputSchema"))).toBe(true)
     })
   })
@@ -99,7 +90,7 @@ describe("createServer", () => {
         const result = await client.callTool({ name: `airdesign_${name}`, arguments: args as Record<string, unknown> })
         return result.structuredContent as Record<string, any>
       }
-      const made = await call("create_deck", { name: "Replace" })
+      const made = await call("execute", { script: 'createDeck({ name: "Replace" })' })
       const deck = made.deck as string
       const [first] = made.slides as string[]
       const add = { op: "slide", add: {} }
@@ -125,7 +116,7 @@ describe("createServer", () => {
         expect(result.isError, JSON.stringify(result.content)).not.toBe(true)
         return result.structuredContent as Record<string, any>
       }
-      const made = await call("create_deck", { name: "Board" })
+      const made = await call("execute", { script: 'createDeck({ name: "Board" })' })
       const deck = made.deck as string
       const filled = await call("execute", {
         deck,
@@ -150,11 +141,23 @@ describe("createServer", () => {
     const decks = memoryDecks(started)
     await withClient(sessionFor(), decks, async (client) => {
       const once = (value: unknown) => ({ _meta: { [onceMeta]: value } })
-      const first = await client.callTool({ name: "airdesign_create_deck", arguments: {}, ...once("make-1") })
-      const again = await client.callTool({ name: "airdesign_create_deck", arguments: {}, ...once("make-1") })
+      const first = await client.callTool({
+        name: "airdesign_execute",
+        arguments: { script: "createDeck()" },
+        ...once("make-1"),
+      })
+      const again = await client.callTool({
+        name: "airdesign_execute",
+        arguments: { script: "createDeck()" },
+        ...once("make-1"),
+      })
       expect(again.structuredContent).toEqual(first.structuredContent)
       expect(decks.decks.size).toBe(1)
-      const bad = await client.callTool({ name: "airdesign_create_deck", arguments: {}, ...once("not allowed!") })
+      const bad = await client.callTool({
+        name: "airdesign_execute",
+        arguments: { script: "createDeck()" },
+        ...once("not allowed!"),
+      })
       expect(bad.isError).toBe(true)
       expect(bad.structuredContent).toMatchObject({ ok: false, refusal: "field" })
     })
@@ -178,7 +181,7 @@ describe("a gradient angle past a full turn", () => {
     await withClient(sessionFor(), memoryDecks(started), async (client) => {
       const call = async (name: string, args: Record<string, unknown>) =>
         (await client.callTool({ name: `airdesign_${name}`, arguments: args })).structuredContent as Record<string, any>
-      const made = await call("create_deck", { name: "Angle" })
+      const made = await call("execute", { script: 'createDeck({ name: "Angle" })' })
       const edited = await call("execute", {
         deck: made.deck,
         script: scriptOf([
@@ -204,7 +207,7 @@ describe("link addresses over the protocol", () => {
     await withClient(session, memoryDecks(started), async (client) => {
       const call = async (name: string, args: Record<string, unknown>) =>
         client.callTool({ name: `airdesign_${name}`, arguments: args })
-      const made = (await call("create_deck", { name: "Links" })).structuredContent as {
+      const made = (await call("execute", { script: 'createDeck({ name: "Links" })' })).structuredContent as {
         deck: string
         slides: string[]
       }
@@ -234,7 +237,7 @@ describe("a rotation past a full turn", () => {
     await withClient(sessionFor(), memoryDecks(started), async (client) => {
       const call = async (name: string, args: Record<string, unknown>) =>
         (await client.callTool({ name: `airdesign_${name}`, arguments: args })).structuredContent as Record<string, any>
-      const made = await call("create_deck", { name: "Turn" })
+      const made = await call("execute", { script: 'createDeck({ name: "Turn" })' })
       const edited = await call("execute", {
         deck: made.deck,
         script: scriptOf([{ op: "add", kind: "shape", slide: made.slides[0], rotation: -90 }]),
@@ -248,7 +251,7 @@ describe("a rotation past a full turn", () => {
     await withClient(sessionFor(), memoryDecks(started), async (client) => {
       const call = async (name: string, args: Record<string, unknown>) =>
         (await client.callTool({ name: `airdesign_${name}`, arguments: args })).structuredContent as Record<string, any>
-      const made = await call("create_deck", { name: "Turn" })
+      const made = await call("execute", { script: 'createDeck({ name: "Turn" })' })
       const edited = await call("execute", {
         deck: made.deck,
         script: scriptOf([
@@ -274,7 +277,7 @@ describe("an answer read from structuredContent alone", () => {
     await withClient(sessionFor(), host, async (client) => {
       const call = (name: string, args: Record<string, unknown>) =>
         client.callTool({ name: `airdesign_${name}`, arguments: args })
-      const made = await call("create_deck", { name: "Board" })
+      const made = await call("execute", { script: 'createDeck({ name: "Board" })' })
       const deck = (made.structuredContent as { deck: string }).deck
       const first = (made.structuredContent as { slides: string[] }).slides[0]!
       const read = await call("execute", { deck, script: `screenshot({ target: "${first}" }); get().layers` })
@@ -287,7 +290,7 @@ describe("an answer read from structuredContent alone", () => {
         made,
         read,
         edited,
-        listed: await call("list_decks", {}),
+        listed: await call("get_app_state", {}),
         stopped: await call("stop_run", { deck, runId }),
         unknown: await call("execute", { deck: "nothere", script: "get()" }),
         wrong: await call("execute", { deck, script: 'update({ target: "z:9", fill: 3 })' }),
@@ -307,7 +310,7 @@ describe("an answer read from structuredContent alone", () => {
       expect(answers.unknown.structuredContent).toEqual({
         ok: false,
         refusal: "deck",
-        note: "This session can reach no deck with this id. airdesign_list_decks lists the decks you own.",
+        note: "This session can reach no deck with this id. airdesign_get_app_state lists the decks you own.",
       })
       expect((answers.wrong.structuredContent as { note: string }).note).toMatch(
         /^Nothing landed\. Operation 1 \(update\) at line 1: /,
@@ -318,7 +321,7 @@ describe("an answer read from structuredContent alone", () => {
   it("says in structuredContent that no tab is open to paint a picture", async () => {
     const host: Host = { ...memoryDecks(started), pictures: async () => "unwatched" }
     await withClient(sessionFor(), host, async (client) => {
-      const made = await client.callTool({ name: "airdesign_create_deck", arguments: {} })
+      const made = await client.callTool({ name: "airdesign_execute", arguments: { script: "createDeck()" } })
       const { deck, slides } = made.structuredContent as { deck: string; slides: string[] }
       const read = await client.callTool({
         name: "airdesign_execute",
@@ -347,9 +350,9 @@ describe("a host that admits each tool call", () => {
       },
     }
     await withClient(sessionFor(), host, async (client) => {
-      const made = await client.callTool({ name: "airdesign_create_deck", arguments: {} })
+      const made = await client.callTool({ name: "airdesign_execute", arguments: { script: "createDeck()" } })
       expect(made.isError).not.toBe(true)
-      const refused = await client.callTool({ name: "airdesign_create_deck", arguments: {} })
+      const refused = await client.callTool({ name: "airdesign_execute", arguments: { script: "createDeck()" } })
       expect(refused.isError).toBe(true)
       expect(refused.structuredContent).toEqual({ ok: false, refusal: "rate", note: text })
     })
@@ -361,7 +364,7 @@ describe("a host that admits each tool call", () => {
     const decks = memoryDecks(started)
     const host: Host = { ...decks, admit: () => Promise.reject(new Error("connect ECONNREFUSED")) }
     await withClient(sessionFor(), host, async (client) => {
-      const refused = await client.callTool({ name: "airdesign_create_deck", arguments: {} })
+      const refused = await client.callTool({ name: "airdesign_execute", arguments: { script: "createDeck()" } })
       expect(refused.isError).toBe(true)
       expect(refused.structuredContent).toMatchObject({ ok: false, refusal: "store" })
     })
@@ -372,10 +375,10 @@ describe("a host that admits each tool call", () => {
     const session = sessionFor()
     await withClient(session, memoryDecks(started), async (client) => {
       for (let call = 0; call < 90; call += 1) {
-        const listed = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
+        const listed = await client.callTool({ name: "airdesign_get_app_state", arguments: {} })
         expect(listed.isError).not.toBe(true)
       }
-      const refused = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
+      const refused = await client.callTool({ name: "airdesign_get_app_state", arguments: {} })
       expect(refused.isError).toBe(true)
       expect(refused.structuredContent).toMatchObject({
         refusal: "rate",

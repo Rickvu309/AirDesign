@@ -6,13 +6,13 @@ describe("run operations in the catalog", () => {
     expect(catalog.start_run).toEqual({ kind: "command", exposure: "web" })
     expect(catalog.stop_run).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
     expect(catalog.undo_run).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
-    expect(catalog.list_decks).toMatchObject({ kind: "query", exposure: "agent", runsOn: "server" })
+    expect(catalog.get_app_state).toMatchObject({ kind: "query", exposure: "agent", runsOn: "server" })
     expect(catalog.execute).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
-    expect(catalog.create_deck).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
     expect(projectTools(catalog).map((tool) => tool.op)).toEqual([
-      "create_deck",
       "execute",
-      "list_decks",
+      "get_app_state",
+      "get_style",
+      "read_skill",
       "stop_run",
       "undo_run",
     ])
@@ -22,11 +22,12 @@ describe("run operations in the catalog", () => {
 describe("projectTools", () => {
   it("projects the agent tools in name order", () => {
     const tools = projectTools(catalog)
-    expect(tools).toHaveLength(5)
+    expect(tools).toHaveLength(6)
     expect(tools.map((tool) => tool.name)).toEqual([
-      "airdesign_create_deck",
       "airdesign_execute",
-      "airdesign_list_decks",
+      "airdesign_get_app_state",
+      "airdesign_get_style",
+      "airdesign_read_skill",
       "airdesign_stop_run",
       "airdesign_undo_run",
     ])
@@ -44,12 +45,12 @@ describe("projectTools", () => {
       openWorldHint: true,
     })
     expect(tools.find((tool) => tool.name === "airdesign_execute")?.description).toMatch(
-      /one edit and one undo step, or nothing lands\. Read airdesign_read_skill \{name: "execute"\}/,
+      /one undo step\. Read airdesign_read_skill with name "execute"/,
     )
-    expect(tools.find((tool) => tool.name === "airdesign_list_decks")).toEqual({
-      name: "airdesign_list_decks",
-      op: "list_decks",
-      description: "List owned decks with id, name and rev.",
+    expect(tools.find((tool) => tool.name === "airdesign_get_app_state")).toEqual({
+      name: "airdesign_get_app_state",
+      op: "get_app_state",
+      description: "List your decks and see the deck and selection in an open tab.",
       runsOn: "server",
       readOnlyHint: true,
       destructiveHint: false,

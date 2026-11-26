@@ -53,6 +53,7 @@ export {
   type DoomOpened,
   type DoomPictured,
   type DoomRefusal,
+  type TabSelection,
 } from "./doom-wire.js"
 export {
   readApprovalRequest,
@@ -84,7 +85,7 @@ export {
 
 export { deckChangeWords, readDeckChange } from "./deck-edit-wire.js"
 export { readExecute } from "./execute-wire.js"
-export { readListDecks } from "./read-wire.js"
+export { readAppState } from "./read-wire.js"
 export { pictureBytes, pictureType, type SlidePictures } from "./slide-pictures-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, pendingFontsMeta, readOnce } from "./mcp-routes.js"

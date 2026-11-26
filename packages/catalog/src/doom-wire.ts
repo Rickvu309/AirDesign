@@ -71,12 +71,22 @@ export const readDoomOpen = readInput(
   inputRefusal,
 )
 
+const nodeInput = z.string().transform((raw, ctx) => {
+  const node = doom.readNodeId(raw)
+  if (node !== undefined) return node
+  ctx.issues.push({ code: "custom", message: "node id", input: raw })
+  return z.NEVER
+})
+const selectionInput = z.strictObject({ slide: nodeInput, ids: z.array(nodeInput).max(limits.elements).readonly() })
+export type TabSelection = Readonly<z.infer<typeof selectionInput>>
+
 export const readDoomSince = readInput(
   z.strictObject({
     deck: deckInput,
     rev: wholeInput,
     wait: z.boolean().optional(),
     pictures: z.boolean().optional(),
+    selection: selectionInput.optional(),
   }),
   inputRefusal,
 )

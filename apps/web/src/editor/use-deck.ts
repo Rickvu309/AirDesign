@@ -23,6 +23,7 @@ export type EditorClient = Pick<
   | "redo"
   | "undoRun"
   | "reportPictures"
+  | "reportSelection"
   | "picturesWanted"
   | "subscribe"
   | "status"

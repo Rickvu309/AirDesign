@@ -36,7 +36,6 @@ import {
   runPositions,
 } from "../doom/doom-deck.js"
 import { runUndoRevs, withDoomWrite } from "../doom/doom-write.js"
-import { startIds } from "../doom/doom-start.js"
 
 export type McpHost = {
   readonly deck: Sql
@@ -200,29 +199,21 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured, fo
         ...(found.length > listPage && last !== undefined ? { next: last.deck } : {}),
       } as const
     }),
-    create: guarded(async (name, once) => {
+    create: guarded(async (name, theme, once) => {
       const id = readDeckId(createHash("sha256").update(`${email}\n${once}`).digest("hex").slice(0, 32))
       if (!id.ok) return refusal("deck")
-      const made = opened(id.deck, await createDoom(db, { deck: id.deck }, email))
-      if (!made.ok || doom.deckName(made.fold) === name) return made
-      const named = await editDoom(
-        db,
-        {
-          deck: id.deck,
-          edit: {
-            once: "name",
-            author: { kind: "person", id: "airdesign" },
-            writes: [{ node: startIds.deck, prop: "name", value: name }],
-          },
-        },
-        email,
+      return opened(
+        id.deck,
+        await createDoom(db, { deck: id.deck }, email, { name, theme: theme ?? doom.themeLibrary.neutral.theme }),
       )
-      return decoded(named) ?? opened(id.deck, await openDoom(db, { deck: id.deck }, email))
     }),
     images: async (deck, names) => storedImages(db, deck, email, names, images),
     ...(shots === undefined
       ? {}
-      : { pictures: (deck, fold, slides) => slidePictures(shots, seen.wait, deck, fold, slides) }),
+      : {
+          openTab: () => shots.openTab(email),
+          pictures: (deck, fold, slides) => slidePictures(shots, seen.wait, deck, fold, slides),
+        }),
     ...on(db),
     withUndo: (deck, undo) => guarded(() => withDoomWrite(db, deck, email, (client) => undo(on(client, true))))(),
   }

@@ -6,7 +6,6 @@ import { limited, refused, type ToolResult } from "./answer.js"
 import { callTool, knownTool, type Session } from "./call-tool.js"
 import type { DeckHost } from "./deck-host.js"
 import { kindInstructions } from "./instructions.js"
-import { skillTools } from "./skill-tools.js"
 
 function inputSchema(json: Readonly<Record<string, unknown>>) {
   return {
@@ -41,7 +40,7 @@ type RegisteredTool = {
 }
 
 function listedTools(): readonly RegisteredTool[] {
-  const fromCatalog: RegisteredTool[] = projectTools(catalog).map((tool) => ({
+  return projectTools(catalog).map((tool) => ({
     name: tool.name,
     description: tool.description,
     inputSchema: toolInputSchema(tool.op),
@@ -52,9 +51,6 @@ function listedTools(): readonly RegisteredTool[] {
       openWorldHint: tool.openWorldHint,
     },
   }))
-  return [...fromCatalog, ...skillTools].sort((left, right) =>
-    left.name < right.name ? -1 : left.name > right.name ? 1 : 0,
-  )
 }
 
 export type Host = DeckHost & { readonly admit?: (session: Session) => Promise<Admission> }
