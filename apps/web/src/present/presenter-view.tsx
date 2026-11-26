@@ -35,6 +35,8 @@ function on(handler: (() => void) | undefined) {
 
 export function PresenterView(props: PresenterViewProps) {
   const position = presentCopy.position(slideNumber(props.at), props.count)
+  const aspectRatio = `${props.size.width} / ${props.size.height}`
+  const currentPreviewStyle = { width: "100%", "--present-slide-ratio": aspectRatio }
   return (
     <section
       aria-label={presentCopy.presenter}
@@ -76,15 +78,21 @@ export function PresenterView(props: PresenterViewProps) {
           <StageTextButton label={presentCopy.stop} {...on(props.onStop)} />
         </div>
       </header>
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-auto p-4 md:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] md:gap-8 md:p-6">
-        <section className="flex min-h-0 flex-col gap-2" data-present-current>
+      <div className="grid min-h-0 flex-1 auto-rows-max grid-cols-1 gap-4 overflow-auto p-4 md:auto-rows-auto md:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] md:gap-8 md:p-6">
+        <section className="flex min-h-0 flex-col gap-2" data-present-current style={currentPreviewStyle}>
           <Caption>{presentCopy.current}</Caption>
-          <FittedSlide index={props.at} size={props.size} paint={props.paint} top className="flex-1" />
+          <FittedSlide
+            index={props.at}
+            size={props.size}
+            paint={props.paint}
+            top
+            className="aspect-(--present-slide-ratio) shrink-0 md:aspect-auto md:flex-1"
+          />
         </section>
         <div className="flex min-h-0 flex-col gap-6">
           <section className="flex flex-col gap-2" data-present-next>
             <Caption>{presentCopy.upNext}</Caption>
-            <div className="w-full" style={{ aspectRatio: `${props.size.width} / ${props.size.height}` }}>
+            <div className="w-full" style={{ aspectRatio }}>
               {props.next === null ? (
                 <div className="flex size-full items-center justify-center bg-stage">
                   <EndOfDeck small />
@@ -102,7 +110,7 @@ export function PresenterView(props: PresenterViewProps) {
           </section>
           <section className="flex min-h-0 flex-1 flex-col gap-2" data-present-notes>
             <Caption>{presentCopy.notes}</Caption>
-            <div className="min-h-0 flex-1 overflow-auto pr-2 text-[length:var(--type-title)] leading-[var(--leading-body)] whitespace-pre-wrap text-[var(--white-88)]">
+            <div className="min-h-0 flex-1 overflow-auto pr-2 text-[length:var(--type-title)] leading-[var(--leading-body)] wrap-anywhere whitespace-pre-wrap text-[var(--white-88)]">
               {props.notes.trim() === "" ? (
                 <span className="text-[length:var(--type-section)] text-[var(--stage-quiet)]">
                   {presentCopy.noNotes}
