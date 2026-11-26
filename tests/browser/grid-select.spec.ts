@@ -126,3 +126,22 @@ test("a click on the visible edge of a slide panned almost out of view picks it"
   await page.mouse.click(room.x + 10, edge.y + edge.height / 2)
   await current(page, 2)
 })
+
+for (const mode of ["Grid", "Slides"]) {
+  test(`${mode} keeps a toggled-off slide as the anchor of the next Shift-click`, async ({ page, context, stack }) => {
+    await openGroups(page, context, stack, [4, 3])
+    if (mode === "Slides") await page.getByRole("button", { name: slideListCopy.slidesView }).click()
+    const slide = (number: number) => page.locator(`[data-slide-entry="${String(number)}"]`)
+    const picked = () =>
+      page
+        .locator("[data-slide-entry][data-selected]")
+        .evaluateAll((all) => all.map((each) => Number(each.getAttribute("data-slide-entry"))))
+    await slide(1).click()
+    await slide(3).click({ modifiers: ["ControlOrMeta"] })
+    await slide(5).click({ modifiers: ["ControlOrMeta"] })
+    await slide(3).click({ modifiers: ["ControlOrMeta"] })
+    expect(await picked()).toEqual([1, 5])
+    await slide(6).click({ modifiers: [shift] })
+    expect(await picked()).toEqual([3, 4, 5, 6])
+  })
+}

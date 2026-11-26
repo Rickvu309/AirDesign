@@ -23,9 +23,8 @@ type Press = {
   readonly client: Point
   readonly adding: boolean
   readonly before: GridInteraction
-  readonly deck: MarqueeDeck
   readonly started: boolean
-  readonly hits: readonly number[] | null
+  readonly hits: string | null
 }
 
 const frameTime = 1000 / 60
@@ -53,13 +52,18 @@ export function useGridMarquee({
   const swallow = useRef(false)
   const [box, setBox] = useState<MarqueeBox | null>(null)
 
-  function draw(held: Press) {
+  function hitsOf(held: Press) {
     const area = marqueeBox(held.start, camera.world(held.client))
+    return { area, hits: marqueeHits(area, layout.cards) }
+  }
+
+  function draw(held: Press) {
+    const { area, hits } = hitsOf(held)
     setBox(area)
-    const hits = marqueeHits(area, layout.cards)
-    if (held.hits !== null && hits.join(",") === held.hits.join(",")) return
-    press.current = { ...held, hits }
-    onStep(marqueeStep(held.before, held.deck, hits, held.adding))
+    const ids = hits.map((hit) => deck.order[hit]).join(",")
+    if (ids === held.hits) return
+    press.current = { ...held, hits: ids }
+    onStep(marqueeStep(held.before, deck, hits, held.adding))
   }
 
   function stop() {
@@ -118,7 +122,7 @@ export function useGridMarquee({
     stop()
     if (!held.started) return
     swallow.current = true
-    onEnd(held.before, held.deck, held.hits ?? [], held.adding)
+    onEnd(held.before, deck, hitsOf(held).hits, held.adding)
   }
 
   function escape(event: KeyboardEvent) {
@@ -172,7 +176,6 @@ export function useGridMarquee({
         client: from,
         adding: event.shiftKey || event.metaKey || event.ctrlKey,
         before: state,
-        deck,
         started: false,
         hits: null,
       }
