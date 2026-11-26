@@ -17,59 +17,17 @@ function markup(over: Partial<SlideStrip> = {}): string {
   return renderToStaticMarkup(<SlideSidebar title="Deck" strip={{ ...strip, ...over }} />)
 }
 
-const gridView = { zoom: 0.25, onScale: () => undefined, onSlides: () => undefined }
-
-function viewed(grid: boolean, over: Partial<SlideStrip> = {}): string {
-  return renderToStaticMarkup(
-    <SlideSidebar
-      title="Deck"
-      strip={{ ...strip, ...over }}
-      grid={grid ? gridView : undefined}
-      onGrid={() => undefined}
-    />,
-  )
-}
-
 function tags(html: string, pattern: RegExp): string[] {
   return [...html.matchAll(pattern)].map((found) => found[0])
 }
 
 describe("grid view", () => {
-  const button = (html: string, name: string) =>
-    tags(html, new RegExp(`<button[^>]*aria-label="${name}"[^>]*>`, "g"))[0]
-  const thumbs = (html: string) => tags(html, /<div[^>]*data-slide-thumb[^>]*>/g)
-  const lines = (html: string) => tags(html, /<div[^>]*data-slide-grid-line="\d+"[^>]*>/g)
-
-  it("offers Grid view in the sidebar head, and Slides view beside a pressed Grid view in the grid", () => {
-    expect(button(viewed(false), "Grid view")).toContain('aria-pressed="false"')
-    expect(button(viewed(false), "Slides view")).toBeUndefined()
-    expect(button(viewed(true), "Grid view")).toContain('aria-pressed="true"')
-    expect(button(viewed(true), "Slides view")).toContain('aria-pressed="false"')
-    expect(button(markup(), "Grid view")).toBeUndefined()
-  })
-
-  it("shows the same slide list, each slide at the grid's zoom of the deck's slide size", () => {
-    const list = (html: string) => tags(html, /<div[^>]*data-slide-list[^>]*>/g)[0]
-    expect(list(viewed(false))).not.toContain("data-slide-grid")
-    expect(list(viewed(true))).toContain("data-slide-grid")
-    expect(list(viewed(true))).toContain('aria-label="Slides"')
-    expect(thumbs(viewed(false))[0]).toContain("width:197px")
-    expect(thumbs(viewed(true))[0]).toContain("width:480px")
-    expect(thumbs(viewed(true))[0]).toContain("height:270px")
-    expect(tags(viewed(true), /<button[^>]*data-slide-entry="\d"[^>]*>/g)).toHaveLength(4)
-  })
-
-  it("starts each slide group on its own line in the grid", () => {
-    expect(lines(viewed(true))).toHaveLength(1)
-    expect(lines(viewed(true, { groupStarts: [2] }))).toHaveLength(2)
-    expect(lines(viewed(false, { groupStarts: [2] }))).toHaveLength(0)
-  })
-
-  it("keeps the deck's name, New slide and the way home in the grid", () => {
-    const html = viewed(true, { onAdd: () => undefined })
-    expect(html).toContain('aria-label="Go to your decks"')
-    expect(html).toContain(">New slide<")
-    expect(html).toContain("Deck")
+  it("offers Grid view, not pressed, in the sidebar head", () => {
+    const html = renderToStaticMarkup(<SlideSidebar title="Deck" strip={strip} onGrid={() => undefined} />)
+    const button = tags(html, /<button[^>]*aria-label="Grid view"[^>]*>/g)[0]
+    expect(button).toContain('aria-pressed="false"')
+    expect(html).not.toContain('aria-label="Slides view"')
+    expect(markup()).not.toContain('aria-label="Grid view"')
   })
 })
 

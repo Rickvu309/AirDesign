@@ -1,13 +1,13 @@
 import * as doom from "@airdesign/doom"
 import { flushMedia } from "@airdesign/live"
 import { useDoomMeasure } from "@airdesign/render"
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react"
 import { peekFirstRequest } from "@/lib/first-request"
 import { replaceDeckAddress } from "@/editor/slide-address"
 import { NotFoundPage } from "@/decks/not-found-page"
 import { tabTitleOf } from "@/copy/product-copy"
 import { editorCopy } from "@/copy/editor-copy"
-import { notesWidth, slideRoom } from "@/editing/canvas-zoom"
+import { notesWidth, slideRoom, zoomRanges } from "@/editing/canvas-zoom"
 import { Island, PanelHead } from "@/editor/editor-chrome"
 import { ExportControl } from "@/export/export-control"
 import { useExport, usePrintKeyHeld, type ExportStart } from "@/export/export-flow"
@@ -35,6 +35,7 @@ import { renameWrites } from "./deck-writes"
 import { AgentPanel } from "./agent-panel"
 import { DesignPanel } from "./design-panel"
 import { DoomCanvas, type CanvasCommands, type CaretWords } from "./canvas"
+import { EditorGrid, type GridCommands, type GridShownZoom, type GridStart } from "./editor-grid"
 import { DoomNotes } from "./notes"
 import { Thumb } from "./thumb"
 import { typingPreview } from "./typing-preview"
@@ -71,6 +72,7 @@ export type EditorStart = {
   readonly aira?: AiraStart
   readonly save?: Saving
   readonly export?: ExportStart
+  readonly grid?: GridStart
 }
 
 function Editing({
@@ -98,9 +100,24 @@ function Editing({
   const [tool, setTool] = useState<Tool>(start.tool ?? "move")
   const [panel, setPanel] = useKeptPanel(id, start.panel)
   const [zoom, setZoom] = useState<Zoom>("fit")
-  const [grid, setGrid] = useState(false)
-  const [gridZoom, setGridZoom] = useState<Zoom>("fit")
-  const [gridScale, setGridScale] = useState({ now: 0.25, fit: 0.25 })
+  const [grid, setGrid] = useState(start.grid !== undefined)
+  const [leftGrid, setLeftGrid] = useState(false)
+  const [gridShown, setGridShown] = useState<GridShownZoom>({ percent: 25, fit: true, selection: false })
+  const gridCommands = useRef<GridCommands | null>(null)
+  const onGridShown = useCallback(
+    (next: GridShownZoom) =>
+      setGridShown((held) =>
+        held.percent === next.percent && held.fit === next.fit && held.selection === next.selection ? held : next,
+      ),
+    [],
+  )
+  const onGridCommands = useCallback((next: GridCommands | null) => {
+    gridCommands.current = next
+  }, [])
+  const closeGrid = () => {
+    setGrid(false)
+    setLeftGrid(true)
+  }
   const [open, setOpen] = useKeptOpen(grid ? "grid" : "slides")
   const [airaWorking, setAiraWorking] = useState(false)
   const toggleHeld = useRef(false)
@@ -217,144 +234,155 @@ function Editing({
   const headRule = <span aria-hidden="true" className="mx-0.5 block h-5 w-px bg-[var(--field-edge)]" />
   const gridZoomMenu = (
     <ZoomMenu
-      keyed={false}
-      zoom={gridZoom === "fit" ? "fit" : percentOf(gridScale.now)}
-      percent={percentOf(gridScale.now)}
-      onZoom={(next) =>
-        setGridZoom(
-          next === "fit" || next / 100 <= gridScale.fit || (gridScale.fit < 0.1 && next <= 10) ? "fit" : next / 100,
-        )
-      }
+      range={zoomRanges.grid}
+      zoom={gridShown.fit ? "fit" : gridShown.percent}
+      percent={gridShown.percent}
+      onZoom={(next) => gridCommands.current?.zoomTo(next)}
+      {...(gridShown.selection ? { onSelection: () => gridCommands.current?.zoomSelection() } : {})}
     />
   )
   return (
     <div className="window-frame flex" data-editor-frame={id} inert={present.show !== null}>
-      <div className="contents" onKeyDownCapture={(event) => addAfterKey(event, strip)}>
-        <SlideSidebar
-          title={title}
-          strip={strip}
-          save={saved.save}
-          onRename={(name) => client.push(renameWrites(view, name))}
-          grid={
-            grid
-              ? {
-                  zoom: gridZoom,
-                  onScale: (now, fit) =>
-                    setGridScale((held) => (held.now === now && held.fit === fit ? held : { now, fit })),
-                  onSlides: () => setGrid(false),
-                  bar: (
-                    <EditorToolbar
-                      tool={tool}
-                      onTool={(next) => {
-                        setTool(next)
-                        if (next !== "move") setGrid(false)
-                      }}
-                      actionsOpen={false}
-                      onActionsOpen={(open) => {
-                        setActionsOpen(open)
-                        if (open) setGrid(false)
-                      }}
-                      run={noActions}
-                      panel={panel}
-                      onPanel={pickPanel}
-                      {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
-                    />
-                  ),
-                  ...(!panelHidden
-                    ? {}
-                    : {
-                        right: (
-                          <>
-                            {gridZoomMenu}
-                            {headRule}
-                            {headActions}
-                          </>
-                        ),
-                      }),
-                }
-              : undefined
-          }
-          onGrid={() => {
-            setSelection(noSelection)
-            setGrid(true)
-          }}
-        />
-      </div>
       {grid ? (
         <>
+          <EditorGrid
+            deck={id}
+            view={view}
+            current={strip.current}
+            onCurrent={strip.onSelect}
+            onOpen={(index) => {
+              strip.onSelect(index)
+              closeGrid()
+            }}
+            hand={tool === "hand"}
+            head={{
+              title,
+              save: saved.save,
+              canAdd: slides.length > 0,
+              onAdd: () => strip.onAdd?.(),
+              onSlides: closeGrid,
+              onRename: (name) => client.push(renameWrites(view, name)),
+            }}
+            right={
+              panelHidden ? (
+                <>
+                  {gridZoomMenu}
+                  {headRule}
+                  {headActions}
+                </>
+              ) : undefined
+            }
+            bar={
+              <EditorToolbar
+                tool={tool}
+                onTool={(next) => {
+                  setTool(next)
+                  if (next !== "move" && next !== "hand") closeGrid()
+                }}
+                actionsOpen={false}
+                onActionsOpen={(open) => {
+                  setActionsOpen(open)
+                  if (open) closeGrid()
+                }}
+                run={noActions}
+                panel={panel}
+                onPanel={pickPanel}
+                {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
+              />
+            }
+            assetUrl={assets.assetUrl}
+            onShown={onGridShown}
+            onCommands={onGridCommands}
+            {...(start.grid === undefined ? {} : { start: start.grid })}
+          />
           <SlidePictures client={client} assetUrl={assets.assetUrl} />
           <ThinNoticeView notice={notice} onTryAgain={tryAgain} />
         </>
       ) : (
-        <div className="flex min-w-0 flex-1 flex-col bg-canvas">
-          {panelHidden ? (
-            <div className="flex h-14 shrink-0 items-center justify-end pr-2" data-keeps-selection>
-              <Island>
-                {slidesZoomMenu}
-                {headRule}
-                {headActions}
-              </Island>
-            </div>
-          ) : null}
-          <div ref={canvas.onCanvas} className="relative min-h-0 min-w-0 flex-1" data-editor-canvas>
-            {slide === undefined ? null : (
-              <DoomCanvas
-                deck={id}
-                assets={assets}
-                client={client}
-                view={view}
-                measure={measure}
-                slide={slide}
-                editingRuns={editingRuns}
-                slideNumber={slideNumber(strip.current)}
-                selection={selection}
-                onSelection={setSelection}
-                tool={tool}
-                onTool={setTool}
-                panel={panel}
-                onPanel={pickPanel}
-                zoom={zoom}
-                scale={scale}
-                room={fit}
-                overlay={canvas.overlay}
-                onZoom={setZoom}
-                onCommands={(next) => {
-                  commands.current = next ?? idle
-                }}
-                toolbarHost={toolbarHost}
-                actionsOpen={actionsOpen}
-                onActionsOpen={setActionsOpen}
-                notice={notice}
-                onExport={exporting.control.openDialog}
-                onTryAgain={tryAgain}
-                onTyping={typing.set}
-                onWords={setWords}
-                cropping={cropping}
-                onCropping={setCropping}
-                {...(start.editing === undefined ? {} : { editing: start.editing })}
-                {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
-              />
-            )}
-            <div
-              ref={canvas.onOverlay}
-              data-canvas-overlay
-              className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center pb-4"
-            >
+        <>
+          <div className="contents" onKeyDownCapture={(event) => addAfterKey(event, strip)}>
+            <SlideSidebar
+              title={title}
+              strip={strip}
+              save={saved.save}
+              onRename={(name) => client.push(renameWrites(view, name))}
+              arrived={leftGrid}
+              onGrid={() => {
+                setSelection(noSelection)
+                setGrid(true)
+              }}
+            />
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col bg-canvas">
+            {panelHidden ? (
+              <div className="flex h-14 shrink-0 items-center justify-end pr-2" data-keeps-selection>
+                <Island>
+                  {slidesZoomMenu}
+                  {headRule}
+                  {headActions}
+                </Island>
+              </div>
+            ) : null}
+            <div ref={canvas.onCanvas} className="relative min-h-0 min-w-0 flex-1" data-editor-canvas>
               {slide === undefined ? null : (
-                <>
-                  <div
-                    data-notes-width
-                    style={{ width: notesWidth(room, { width: size.w * scale, height: size.h * scale }) }}
-                  >
-                    <DoomNotes client={client} view={view} slide={slide} />
-                  </div>
-                  <span className="block h-3" />
-                </>
+                <DoomCanvas
+                  deck={id}
+                  assets={assets}
+                  client={client}
+                  view={view}
+                  measure={measure}
+                  slide={slide}
+                  editingRuns={editingRuns}
+                  slideNumber={slideNumber(strip.current)}
+                  selection={selection}
+                  onSelection={setSelection}
+                  tool={tool}
+                  onTool={setTool}
+                  panel={panel}
+                  onPanel={pickPanel}
+                  zoom={zoom}
+                  scale={scale}
+                  room={fit}
+                  overlay={canvas.overlay}
+                  onZoom={setZoom}
+                  onCommands={(next) => {
+                    commands.current = next ?? idle
+                  }}
+                  toolbarHost={toolbarHost}
+                  actionsOpen={actionsOpen}
+                  onActionsOpen={setActionsOpen}
+                  notice={notice}
+                  onExport={exporting.control.openDialog}
+                  onTryAgain={tryAgain}
+                  onTyping={typing.set}
+                  onWords={setWords}
+                  cropping={cropping}
+                  onCropping={setCropping}
+                  {...(start.editing === undefined ? {} : { editing: start.editing })}
+                  {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
+                />
               )}
-              <div ref={setToolbarHost} className="flex w-full justify-center px-4" />
+              <div
+                ref={canvas.onOverlay}
+                data-canvas-overlay
+                className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center pb-4"
+              >
+                {slide === undefined ? null : (
+                  <>
+                    <div
+                      data-notes-width
+                      style={{ width: notesWidth(room, { width: size.w * scale, height: size.h * scale }) }}
+                    >
+                      <DoomNotes client={client} view={view} slide={slide} />
+                    </div>
+                    <span className="block h-3" />
+                  </>
+                )}
+                <div ref={setToolbarHost} className="flex w-full justify-center px-4" />
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
       <div className={panelHidden ? "hidden" : "contents"}>
         <ResizablePanel panel={panel}>

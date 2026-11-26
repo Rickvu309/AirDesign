@@ -99,10 +99,6 @@ export function useSlideStrip(props: {
     onMoveMany: (held, at) => {
       client.push(moveSlideWrites(view, pick(held), at))
     },
-    slideSize: { width: size.w, height: size.h },
-    groupStarts: slides.flatMap((id, at) =>
-      doom.parentOf(view.nodes.get(id))?.id === doom.parentOf(view.nodes.get(slides[at - 1] ?? id))?.id ? [] : [at],
-    ),
     skipped: slides.map((id) => doom.propOf(view.nodes.get(id), "skipped") === true),
     onSkip: (indices, skipping) => {
       const writes = skipWrites(view, slides, indices, skipping)
