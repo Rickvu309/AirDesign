@@ -61,6 +61,40 @@ describe("two tabs editing one deck", () => {
     expect(shown(landed(back, writes))).toEqual(shown(deleted))
   })
 
+  it("drops a rekey of a tied slide the other tab deleted, and still adds the new slide, in both orders", () => {
+    const { view, slides } = grouped([1])
+    const a = addSlideWrites(view, slides[0]!, minter("a"), "blank")
+    const b = addSlideWrites(view, slides[0]!, minter("b"), "blank")
+    const tied = served(view, a.writes, b.writes)
+    const keyOf = (id: doom.NodeId) => doom.parentOf(tied.nodes.get(id))?.at
+    expect(keyOf(a.slide)).toBe(keyOf(b.slide))
+    const order = slideIds(tied)
+    const second = [a.slide, b.slide].sort((left, right) => order.indexOf(left) - order.indexOf(right))[1]!
+    const before = order[order.indexOf(second) - 1]!
+    const deleting = deleteSlideWrites(tied, [second])
+    const adding = addSlideWrites(tied, before, minter("c"), "blank")
+    const shift = adding.writes.find((write) => write.node === second && write.prop === "parent")
+    expect(shift).toMatchObject({ prop: "parent" })
+    expect(shift).not.toHaveProperty("base")
+    const replay = (name: string, ...edits: readonly (readonly doom.Write[])[]) =>
+      edits.reduce((server, writes, number) => {
+        const next = doom.applyEdit(server, {
+          once: `${name}-${String(number)}`,
+          author: { kind: "person", id: name },
+          writes,
+          rev: doom.rev(server.rev + 1),
+        })
+        if (doom.isRefusal(next)) throw new Error(`refused ${JSON.stringify(next)}`)
+        return next
+      }, tied)
+    const deleteThenAdd = replay("da", deleting, adding.writes)
+    const addThenDelete = replay("ad", adding.writes, deleting)
+    expect(doom.parentOf(deleteThenAdd.nodes.get(second))).toBeNull()
+    expect(doom.parentOf(addThenDelete.nodes.get(second))).toBeNull()
+    expect(slideIds(deleteThenAdd)).toContain(adding.slide)
+    expect(shown(deleteThenAdd)).toEqual(shown(addThenDelete))
+  })
+
   it("moves a slide group between two slide groups that two tabs added at one spot", () => {
     const { view, slides } = grouped([4, 4, 4])
     const a = addSlideWrites(view, slides[0]!, minter("a"), "blank", undefined, "new")
