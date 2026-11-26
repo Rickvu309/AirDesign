@@ -38,7 +38,7 @@
     "design-system/known-tokens": [
       "error",
       {
-        "theme": ["src/index.css"]
+        "theme": ["src/index.css", "../../packages/theme/src/tokens.css"]
       }
     ],
     "design-system/layout-only-classname": [

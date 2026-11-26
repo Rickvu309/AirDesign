@@ -269,6 +269,23 @@ lowered(
   "The lint rule react/rules-of-hooks no longer fails in apps/web/.oxlintrc.json.",
 )
 lowered(
+  "a lint baseline raised",
+  {
+    listed: [modified("apps/web/.oxlintrc.json")],
+    fork: {
+      "apps/web/.oxlintrc.json": JSON.stringify({
+        rules: { "design-system/no-raw-values": ["error", { baseline: { "src/a.tsx": 2 } }] },
+      }),
+    },
+    head: {
+      "apps/web/.oxlintrc.json": JSON.stringify({
+        rules: { "design-system/no-raw-values": ["error", { baseline: { "src/a.tsx": 3 } }] },
+      }),
+    },
+  },
+  "In apps/web/.oxlintrc.json, design-system/no-raw-values allows src/a.tsx 3 findings, up from 2.",
+)
+lowered(
   "a strict type option turned off",
   {
     listed: [modified("tsconfig.base.json")],
