@@ -41,7 +41,7 @@ import {
 import type { RightPanel } from "./editor-toolbar"
 import type { ShapesShown } from "@/editor/shape-tool"
 import type { EditorClient } from "./use-deck"
-import type { ZoomKey } from "@/editing/canvas-zoom"
+import { canvasInset, type ZoomKey } from "@/editing/canvas-zoom"
 
 const author: doom.Author = { kind: "person", id: "preview" }
 const emptyGeometry: SlideGeometry = { roots: [], byId: new Map() }
@@ -184,9 +184,11 @@ export function DoomCanvas(props: CanvasProps) {
     if (element !== null && paper !== null) {
       const rect = element.getBoundingClientRect()
       const at =
-        about === undefined
-          ? { x: rect.width / 2, y: rect.height / 2 }
-          : { x: about.clientX - rect.left, y: about.clientY - rect.top }
+        about !== undefined
+          ? { x: about.clientX - rect.left, y: about.clientY - rect.top }
+          : point !== undefined
+            ? { x: canvasInset.side + room.w / 2, y: canvasInset.gap + room.h / 2 }
+            : { x: rect.width / 2, y: rect.height / 2 }
       const box = paper.getBoundingClientRect()
       const held = {
         point: point ?? { x: (rect.left + at.x - box.left) / scale, y: (rect.top + at.y - box.top) / scale },
