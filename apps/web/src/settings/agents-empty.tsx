@@ -27,10 +27,10 @@ function placed(size: number, from = 0) {
 
 export function AgentsEmpty({ onConnect }: { onConnect: () => void }) {
   return (
-    <section className="flex w-[860px] max-w-full flex-col items-center overflow-hidden rounded-xl bg-canvas pb-9">
+    <section className="flex w-215 max-w-full flex-col items-center overflow-hidden rounded-xl bg-canvas pb-9">
       <div
         aria-hidden="true"
-        className="relative h-[165px] self-stretch overflow-hidden [mask-image:linear-gradient(black_78%,transparent)]"
+        className="relative h-41.25 self-stretch overflow-hidden [mask-image:linear-gradient(black_78%,transparent)]"
         style={{
           backgroundImage:
             "radial-gradient(34% 62% at 50% 50%, rgb(77 148 251 / 16%) 0%, rgb(77 148 251 / 5%) 55%, rgb(77 148 251 / 0%) 100%)",

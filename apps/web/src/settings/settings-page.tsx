@@ -30,8 +30,8 @@ export function SettingsPage({
       <DecksShell settingsTab={tab} active="settings" account={{ email }} onSignOut={onSignOut} onNavigate={navigate}>
         <div className="-mx-20 -mt-8 h-[calc(100%+2rem)] overflow-y-auto pt-8 pb-12 max-md:-mx-4 max-md:-mt-6 max-md:h-full max-md:pt-6">
           <div data-settings-header className="border-b border-line">
-            <div className="mx-auto w-full max-w-[908px] px-6 max-md:px-4">
-              <h1 className="text-[length:var(--type-title)] leading-8 font-medium tracking-[-0.4px] text-foreground">
+            <div className="mx-auto w-full max-w-227 px-6 max-md:px-4">
+              <h1 className="text-[length:var(--type-title)] leading-8 font-medium tracking-page-title text-foreground">
                 {settingsCopy.title}
               </h1>
               <nav className="mt-6 flex h-[var(--space-32)] items-start gap-7" aria-label={settingsCopy.title}>
@@ -59,7 +59,7 @@ export function SettingsPage({
               </nav>
             </div>
           </div>
-          <div data-settings-content className="mx-auto mt-7 flex w-full max-w-[908px] px-6 flex-col gap-4 max-md:px-4">
+          <div data-settings-content className="mx-auto mt-7 flex w-full max-w-227 px-6 flex-col gap-4 max-md:px-4">
             {children}
           </div>
         </div>

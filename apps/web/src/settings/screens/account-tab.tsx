@@ -9,7 +9,7 @@ import { SettingsFrame } from "@/settings/settings-frame"
 import { settingsCopy } from "@/settings/settings-sample"
 
 const settingsChoice =
-  "h-8 w-[120px] border-0 bg-background px-2.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
+  "h-8 w-30 border-0 bg-background px-2.5 text-[length:var(--type-dense)] leading-ui-tight shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
 
 function PreferenceRow({ title, status, value }: { title: string; status?: string; value: string }) {
   const titleId = useId()

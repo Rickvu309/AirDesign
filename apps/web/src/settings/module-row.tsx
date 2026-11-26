@@ -17,7 +17,7 @@ export function ModuleRow({
     <div className="flex items-center gap-3 py-3 shadow-[inset_0_1px_0_0_var(--line)]">
       {mark}
       <div className="min-w-0 flex-1">
-        <div id={titleId} className="text-[length:var(--type-body)] leading-[18px] font-medium text-foreground">
+        <div id={titleId} className="text-[length:var(--type-body)] leading-ui font-medium text-foreground">
           {title}
         </div>
         {status ? (
