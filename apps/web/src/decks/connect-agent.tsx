@@ -1,8 +1,10 @@
 import { accountRoutes } from "@airdesign/catalog"
+import { XIcon } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Dialog,
+  DialogClose,
   DialogDescription,
   DialogOverlay,
   DialogPopup,
@@ -153,8 +155,11 @@ export function ConnectAgent({ onClose }: { onClose: () => void }) {
   const [choiceId, setChoiceId] = useState(connectChoices[0].id)
   const [wayIds, setWayIds] = useState<Record<string, string>>({})
   const known = useRef<Set<string> | null>(null)
+  const asking = useRef(false)
 
   async function load() {
+    if (asking.current) return
+    asking.current = true
     try {
       const result = await post(accountRoutes.agents.path, {})
       if (!result.ok) return setFailed(true)
@@ -166,6 +171,8 @@ export function ConnectAgent({ onClose }: { onClose: () => void }) {
       if (fresh) setConnected(fresh)
     } catch {
       setFailed(true)
+    } finally {
+      asking.current = false
     }
   }
 
@@ -285,6 +292,14 @@ export function ConnectAgent({ onClose }: { onClose: () => void }) {
                   </p>
                 </>
               )}
+              <DialogClose
+                aria-label={productCopy.close}
+                render={
+                  <Button variant="ghost" size="icon-sm" className="absolute top-3 right-3 text-muted-foreground" />
+                }
+              >
+                <XIcon />
+              </DialogClose>
             </>
           )}
         </DialogPopup>

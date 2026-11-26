@@ -1,5 +1,5 @@
 import { accountRoutes } from "@airdesign/catalog"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { disconnectBodyOf, disconnectTitleOf, productCopy } from "@/copy/product-copy"
@@ -49,10 +49,13 @@ export function AgentsPage({ navigate }: { navigate: (path: string) => void }) {
   const [disconnecting, setDisconnecting] = useState<ConnectedAgent | null>(null)
   const [busy, setBusy] = useState(false)
   const [disconnectFailed, setDisconnectFailed] = useState(false)
+  const asked = useRef(0)
 
   async function refresh() {
+    const mine = ++asked.current
     try {
       const result = await post(accountRoutes.agents.path, {})
+      if (mine !== asked.current) return
       if (result.ok) {
         setListing(result)
         setUnavailable(false)
@@ -60,7 +63,7 @@ export function AgentsPage({ navigate }: { navigate: (path: string) => void }) {
         setUnavailable(true)
       }
     } catch {
-      setUnavailable(true)
+      if (mine === asked.current) setUnavailable(true)
     }
   }
 
