@@ -65,7 +65,7 @@ describe("Starred", () => {
 
 describe("bring your own agent card art", () => {
   const plusTile = "left-[200px]"
-  const minusDisk = "left-[192px]"
+  const collapse = 'aria-label="Collapse"'
 
   it("keeps the design screen's plus tile and minus disk", () => {
     const html = renderToStaticMarkup(
@@ -74,13 +74,13 @@ describe("bring your own agent card art", () => {
       </DecksShell>,
     )
     expect(html).toContain(plusTile)
-    expect(html).toContain(minusDisk)
+    expect(html).toContain(collapse)
   })
 
   it("leaves the plus tile off a real account, where nothing answers it, and keeps the minus disk that collapses the card", () => {
     const html = shell("person@example.com")
     expect(html).not.toContain(plusTile)
-    expect(html).toMatch(/<button type="button" aria-label="Collapse"[^>]*class="[^"]*left-\[192px\]/)
+    expect(html).toContain(collapse)
   })
 })
 

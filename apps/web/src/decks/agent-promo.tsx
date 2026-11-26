@@ -64,7 +64,7 @@ export function AgentPromo({ onConnect, ornaments = true }: { onConnect?: () => 
   const opening = onConnect ? { onConnect } : { href: deckRoutes.connectAgent }
   if (collapsed) return <AgentButton {...opening} />
   return (
-    <section className="h-[254.31px] w-[224px] max-md:hidden shrink-0 overflow-hidden rounded-[var(--shape-dialog)] bg-background shadow-[0_0_0_1px_var(--line),0_4px_12px_rgb(0_0_0/4%)]">
+    <section className="h-[254.31px] w-full max-md:hidden shrink-0 overflow-hidden rounded-[var(--shape-dialog)] bg-background shadow-[0_0_0_1px_var(--line),0_4px_12px_rgb(0_0_0/4%)]">
       <div
         className="relative h-[112px]"
         style={{
@@ -72,16 +72,16 @@ export function AgentPromo({ onConnect, ornaments = true }: { onConnect?: () => 
             "radial-gradient(50% 50% at 50% 55%, rgb(77 148 251 / 16%) 0%, rgb(77 148 251 / 5%) 45%, rgb(77 148 251 / 0%) 72%)",
         }}
       >
-        <span className="absolute top-[-48px] left-[2px] size-[220px] rounded-full shadow-[0_0_0_1px_rgb(77_148_251/14%)]" />
-        <span className="absolute top-[-13px] left-[37px] size-[150px] rounded-full shadow-[0_0_0_1px_rgb(77_148_251/18%)]" />
-        <span className="absolute top-[20px] left-[70px] size-[84px] rounded-full shadow-[0_0_0_1px_rgb(77_148_251/26%)]" />
+        <span className="absolute top-[-48px] left-1/2 size-[220px] -translate-x-1/2 rounded-full shadow-[0_0_0_1px_rgb(77_148_251/14%)]" />
+        <span className="absolute top-[-13px] left-1/2 size-[150px] -translate-x-1/2 rounded-full shadow-[0_0_0_1px_rgb(77_148_251/18%)]" />
+        <span className="absolute top-[20px] left-1/2 size-[84px] -translate-x-1/2 rounded-full shadow-[0_0_0_1px_rgb(77_148_251/26%)]" />
         <span className="absolute top-[45px] left-[-12px] flex size-9 items-center justify-center rounded-[var(--shape-card)] bg-ink text-white shadow-[0_4px_10px_rgb(0_0_0/14%)]">
           <span dangerouslySetInnerHTML={{ __html: openAiLogo }} />
         </span>
         <span className="absolute top-[41px] left-[34px] flex size-[42px] items-center justify-center rounded-xl bg-claude text-white shadow-[0_4px_10px_rgb(217_119_87/30%)]">
           <span dangerouslySetInnerHTML={{ __html: claudeLogo }} />
         </span>
-        <span className="absolute top-[35px] left-[85px] flex size-[54px] items-center justify-center rounded-[var(--shape-dialog)] bg-background shadow-[0_0_0_1px_rgb(0_0_0/6%),0_8px_20px_rgb(77_148_251/28%)]">
+        <span className="absolute top-[35px] left-1/2 flex size-[54px] -translate-x-1/2 items-center justify-center rounded-[var(--shape-dialog)] bg-background shadow-[0_0_0_1px_rgb(0_0_0/6%),0_8px_20px_rgb(77_148_251/28%)]">
           <AirdesignMark size={32} />
         </span>
         <span className="absolute top-[41px] left-[148px] flex size-[42px] items-center justify-center rounded-xl bg-ink shadow-[0_4px_10px_rgb(0_0_0/16%)]">
@@ -127,7 +127,7 @@ export function AgentPromo({ onConnect, ornaments = true }: { onConnect?: () => 
             keepCollapsed()
             setCollapsed(true)
           }}
-          className="absolute top-2 left-[192px] flex size-6 items-center justify-center rounded-full bg-white/85 text-muted-foreground shadow-[0_0_0_1px_var(--line)] hover:text-foreground"
+          className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-full bg-white/85 text-muted-foreground shadow-[0_0_0_1px_var(--line)] hover:text-foreground"
         >
           <svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true">
             <line
