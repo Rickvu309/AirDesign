@@ -211,7 +211,7 @@ export function DesignPanel(props: Props) {
                 ? undefined
                 : () => {
                     const fonts = bakeFontState(document, view, only)
-                    if (fonts === "failed") toast.error(designCopy.layoutFontFailed)
+                    if (fonts === "failed") toast.refusal(designCopy.layoutFontFailed)
                     if (fonts === "ready") client.push(doom.bakeLayout(view, only, measure))
                   }
             }
@@ -227,7 +227,8 @@ export function DesignPanel(props: Props) {
               onClick={() => {
                 const read = client.view()
                 const writes = doom.detachComponent(read, only)
-                if (doom.isRefusal(writes) || !client.push(writes, { read }).ok) toast.error(designCopy.chartEditFailed)
+                if (doom.isRefusal(writes) || !client.push(writes, { read }).ok)
+                  toast.refusal(designCopy.chartEditFailed)
               }}
             >
               {designCopy.detachInstance}

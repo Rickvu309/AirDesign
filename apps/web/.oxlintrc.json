@@ -69,7 +69,6 @@
           "src/editor/design-sections.tsx": 3,
           "src/editor/design-theme-picker.tsx": 3,
           "src/editor/editor-chrome.tsx": 1,
-          "src/editor/editor-toast.tsx": 1,
           "src/editor/editor-toolbar.tsx": 4,
           "src/editor/hidden-locked.tsx": 1,
           "src/editor/panel-toggle.tsx": 1,
@@ -98,7 +97,6 @@
           "src/decks/agent-promo.tsx": 4,
           "src/decks/connect-agent.tsx": 1,
           "src/decks/screens/trash-list.tsx": 1,
-          "src/editor/editor-toast.tsx": 2,
           "src/export/export-dialog.tsx": 1
         }
       }

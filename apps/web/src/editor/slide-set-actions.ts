@@ -34,7 +34,7 @@ export function slideSetAction(
       return
     }
     if (change === "clone" && held.length + strip.count > limits.slides) {
-      toast.error(slideListCopy.slideLimit(limits.slides))
+      toast.refusal(slideListCopy.slideLimit(limits.slides))
       return
     }
     const result = strip.onChangeSet?.(change, held)

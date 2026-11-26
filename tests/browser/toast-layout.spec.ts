@@ -59,14 +59,12 @@ for (const width of [320, 480, 735]) {
   })
 }
 
-test("state-owned editor status stays until its owning state changes", async ({ page }) => {
+test("an offline deck shows no notice", async ({ page }) => {
   await page.clock.install()
   await page.goto("/screens/s49-02-editor-errors-offline")
-  const notice = page.locator("[data-sonner-toast]")
-  await expect(notice).toBeVisible()
-  await expect(notice.getByRole("button", { name: productCopy.close, exact: true })).toHaveCount(0)
+  await expect(page.locator("[data-save-status]")).toHaveText(productCopy.savedOffline)
   await page.clock.fastForward(15000)
-  await expect(notice).toBeVisible()
+  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0)
 })
 
 test("Trash Undo and Close dismiss by touch on a phone", async ({ browser }) => {

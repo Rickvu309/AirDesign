@@ -6,7 +6,7 @@ In an open deck a PNG, JPEG or GIF file dropped on the canvas lands at the drop 
 
 - `picture-drop` a dropped file lands as one edit (`pictureWrites` in `apps/web/src/editor/picture-writes.ts`), selected, painted from a `blob:` address. One undo takes it away and redo brings it back; a reload and a fresh device paint it.
 - `picture-paste` a picture file pasted outside a text lands centred on the slide.
-- `picture-refuse` a file that is not a PNG, JPEG or GIF, a file at or over the media limit or past the pixel limit, or one the browser cannot decode lands nothing and shows `Unable to add image.` with what to choose (`pictureCopy` in `apps/web/src/copy/picture-copy.ts`).
+- `picture-refuse` a file that is not a PNG, JPEG or GIF, a file at or over the media limit or past the pixel limit, or one the browser cannot decode lands nothing and shows what to choose instead (`pictureCopy` in `apps/web/src/copy/picture-copy.ts`).
 - `picture-upload` the picture paints and lands in the deck while its upload fails; the upload goes through when the device is back online (`flushMedia` in `packages/live/src/media.ts`).
 - `picture-uploading` a device that does not hold the bytes paints the box with `Image is still uploading from another device`.
 - `picture-fill` the Design panel's Fill `Image` picks a file for a shape's fill, the slide background, or a picture's `Replace`, and the panel shows it (see `design-panel.md`).

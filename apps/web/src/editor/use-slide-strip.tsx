@@ -41,7 +41,7 @@ export function useSlideStrip(props: {
   const pick = (held: readonly number[]) => held.flatMap((at) => slides[at] ?? [])
   const landed = (writes: readonly doom.Write[], options?: Parameters<EditorClient["push"]>[1]): boolean => {
     const pushed = client.push(writes, options)
-    if (!pushed.ok && pushed.refused.refused === "limit") toast.error(slideListCopy.slideLimit(doom.limits.slides))
+    if (!pushed.ok && pushed.refused.refused === "limit") toast.refusal(slideListCopy.slideLimit(doom.limits.slides))
     return pushed.ok
   }
   const remove = (removed: readonly doom.NodeId[]): "removed" | "last-slide" | "refused" => {
@@ -129,7 +129,7 @@ export function useSlideStrip(props: {
     onChangeSet: (change, held) => {
       if (change === "remove") {
         const removed = remove(pick(held))
-        if (removed === "last-slide") toast.error(slideListCopy.lastSlide)
+        if (removed === "last-slide") toast.refusal(slideListCopy.lastSlide)
         if (removed !== "removed") return null
         return { picked: [], order: doom.slidesOf(client.view()).map((each) => each.id) }
       }
