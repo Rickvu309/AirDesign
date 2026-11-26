@@ -1,6 +1,12 @@
 import { toast as sonner, type ExternalToast, type ToastT } from "sonner"
 import { XIcon } from "lucide-react"
 import { productCopy } from "@/copy/product-copy"
+import { cn } from "@/lib/class-names"
+
+type NoticeOptions = ExternalToast & {
+  tone?: "dark" | "light"
+  maxWidth?: string
+}
 
 const persistent = { duration: Infinity, closeButton: true, dismissible: true }
 
@@ -82,22 +88,36 @@ export const toast = {
   refusal(message: Parameters<typeof sonner.error>[0], options?: ExternalToast) {
     return sonner.error(message, { ...identified(options), ...persistent, duration: figmaNotice })
   },
-  notice(content: Parameters<typeof sonner.custom>[0], options?: ExternalToast) {
+  notice(content: Parameters<typeof sonner.custom>[0], options?: NoticeOptions) {
+    const { tone = "dark", maxWidth, ...toastOptions } = options ?? {}
     return sonner.custom(
       (id) => (
-        <div className="pointer-events-auto mx-auto flex w-max max-w-full items-center gap-1">
-          <div className="min-w-0 [&>*]:max-w-full">{content(id)}</div>
-          <button
-            type="button"
-            aria-label={productCopy.close}
-            className="pointer-events-auto flex size-7 shrink-0 items-center justify-center rounded-full bg-foreground text-white shadow-sm"
-            onClick={() => dismiss(id)}
+        <div className="flex justify-center">
+          <div
+            className={cn(
+              "pointer-events-auto flex w-max items-center gap-1",
+              maxWidth === undefined ? "max-w-full" : "shrink-0",
+            )}
+            style={maxWidth === undefined ? undefined : { maxWidth }}
           >
-            <XIcon size={14} aria-hidden="true" />
-          </button>
+            <div className="min-w-0 flex-1 [&>*]:max-w-full">{content(id)}</div>
+            <button
+              type="button"
+              aria-label={productCopy.close}
+              className={cn(
+                "pointer-events-auto flex size-7 shrink-0 items-center justify-center rounded-full transition-colors",
+                tone === "light"
+                  ? "border border-field-edge bg-background text-muted-foreground shadow-dark-overlay hover:bg-muted hover:text-foreground"
+                  : "bg-foreground text-white shadow-sm",
+              )}
+              onClick={() => dismiss(id)}
+            >
+              <XIcon size={14} aria-hidden="true" />
+            </button>
+          </div>
         </div>
       ),
-      { ...identified(options), ...persistent, style: { ...options?.style, maxWidth: "calc(100vw - 32px)" } },
+      { ...identified(toastOptions), ...persistent, style: { ...toastOptions.style, maxWidth: "calc(100vw - 32px)" } },
     )
   },
 }

@@ -11,12 +11,12 @@ export function ActionPill({
   text: string
   action: string
   onAct: () => void
-  width: string
+  width?: string
   error?: boolean
 }) {
   return (
-    <StatusPill error={error} layout="action" style={{ width }}>
-      <span className="min-w-0 flex-1 text-pretty">{text}</span>
+    <StatusPill error={error} layout="action" style={width === undefined ? undefined : { width }}>
+      <span className="min-w-0 flex-1 py-1 leading-ui-tight text-pretty">{text}</span>
       <button
         type="button"
         className={cn(
