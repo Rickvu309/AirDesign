@@ -16,6 +16,7 @@ import { isEndGrip, lineEndDrag, type EndGrip } from "./line-end-drag"
 import { movedBy } from "./move-writes"
 import type { Flight, GridCarry } from "./canvas-carry"
 import { useCanvasHover } from "./use-canvas-hover"
+import type { CanvasPan } from "./use-canvas-pan"
 import { useLayerCarry } from "./use-layer-carry"
 import {
   marqueeSelection,
@@ -50,6 +51,7 @@ export type DrawRequest = {
 
 export type PointerArgs = {
   readonly stage: RefObject<HTMLDivElement | null>
+  readonly pan: CanvasPan
   readonly slideBox: RefObject<HTMLDivElement | null>
   readonly client: EditorClient
   readonly view: doom.Doom
@@ -230,10 +232,10 @@ export function useCanvasPointer(args: PointerArgs) {
     const a = latest.current
     if (gesture === null) return
     if (gesture.kind === "pan") {
-      const stage = a.stage.current
-      if (stage === null) return
-      stage.scrollLeft = gesture.left - (event.clientX - gesture.x)
-      stage.scrollTop = gesture.top - (event.clientY - gesture.y)
+      a.pan.moveTo({
+        x: gesture.offset.x + event.clientX - gesture.x,
+        y: gesture.offset.y + event.clientY - gesture.y,
+      })
       return
     }
     const at = toSlide(event)
@@ -427,8 +429,7 @@ export function useCanvasPointer(args: PointerArgs) {
           kind: "pan",
           x: event.clientX,
           y: event.clientY,
-          left: stage.scrollLeft,
-          top: stage.scrollTop,
+          offset: a.pan.position(),
         }
         return
       }

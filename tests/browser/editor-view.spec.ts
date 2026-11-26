@@ -34,8 +34,8 @@ test("zoom keys, the wheel and the hand tool move around the slide as Figma does
 
   await page.keyboard.press("Shift+Digit0")
   const stage = page.locator("[data-editor-stage]")
-  await expect.poll(() => stage.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true)
-  const left = await stage.evaluate((element) => element.scrollLeft)
+  await expect(percent).toHaveText(editorCopy.percent(100))
+  const beforePan = (await slide.boundingBox())!
   await page.getByRole("button", { name: editorCopy.moveTools }).click()
   await page.getByRole("menuitem", { name: new RegExp(editorCopy.toolHand) }).click()
   const room = await stage.boundingBox()
@@ -43,7 +43,7 @@ test("zoom keys, the wheel and the hand tool move around the slide as Figma does
   await page.mouse.down()
   await page.mouse.move((room?.x ?? 0) + 500, (room?.y ?? 0) + 300, { steps: 4 })
   await page.mouse.up()
-  expect(await stage.evaluate((element) => element.scrollLeft)).toBeGreaterThan(left)
+  expect(await slide.boundingBox()).toEqual({ ...beforePan, x: beforePan.x - 100 })
   await page.keyboard.press("v")
   await expect(page.getByRole("button", { name: editorCopy.toolMove, exact: true })).toHaveAttribute(
     "aria-pressed",
