@@ -149,7 +149,7 @@ test("right-to-left words selected after left-to-right words are highlighted acr
       }
     })
   await expect.poll(async () => (await read()).picked).toBe("אבג")
-  const settled = async () => {
+  const covered = async () => {
     const { highlight, words } = await read()
     return (
       highlight !== null &&
@@ -159,9 +159,9 @@ test("right-to-left words selected after left-to-right words are highlighted acr
       Math.abs(highlight.right - words.right) < 1
     )
   }
-  await expect.poll(settled).toBe(true)
+  await expect.poll(covered).toBe(true)
   const early = (await read()).words!
   release()
   await expect.poll(async () => Math.abs((await read()).words!.right - early.right) > 1).toBe(true)
-  await expect.poll(settled).toBe(true)
+  await expect.poll(covered).toBe(true)
 })
