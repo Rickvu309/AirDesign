@@ -77,7 +77,6 @@ export function ThemePicker({
         </SelectTrigger>
         <SelectContent
           alignItemWithTrigger={false}
-          data-focus-edge
           className="overscroll-contain text-[length:var(--panel-control-size)] outline-none"
         >
           <SelectGroup>

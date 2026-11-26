@@ -45,7 +45,6 @@ export function DeckRowMenu({ children, name, starred, onStar, onTrash }: DeckAc
         side="bottom"
         align="start"
         sideOffset={4}
-        data-focus-edge
         finalFocus={() => trigger.current?.querySelector("a") ?? false}
       >
         <ContextMenuItem onClick={onStar}>{starred ? unstarOf(name) : starOf(name)}</ContextMenuItem>

@@ -204,6 +204,7 @@
 
 :where(:root:not([data-quiet-focus]))
   :where(a[href], button, input, select, summary, [tabindex]):focus-visible:not(
+    [tabindex="-1"]:is([role="menu"], [role="listbox"], [role="dialog"], [role="alertdialog"]),
     [role^="menuitem"],
     [role="option"],
     [data-focus-ring] > :is(input, textarea),
@@ -239,6 +240,21 @@
 
 :where(:root[data-quiet-focus])
   :where(a[href], button, input, select, summary, [tabindex]):focus-visible:not(
+    input:not(
+      [type="range"],
+      [type="checkbox"],
+      [type="radio"],
+      [type="button"],
+      [type="submit"],
+      [type="reset"],
+      [type="color"],
+      [type="file"]
+    ),
+    textarea,
+    [contenteditable="true"],
+    [aria-invalid="true"]
+  ),
+:where([tabindex="-1"]:is([role="menu"], [role="listbox"], [role="dialog"], [role="alertdialog"])):focus-visible:not(
     input:not(
       [type="range"],
       [type="checkbox"],
