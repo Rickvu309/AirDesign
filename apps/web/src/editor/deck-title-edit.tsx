@@ -83,7 +83,8 @@ export function DeckTitleEdit({
           </DropdownMenuTrigger>
           <EditorMenuContent
             side="bottom"
-            align="start"
+            align={onTrash ? "start" : "end"}
+            className={onTrash ? undefined : "w-fit min-w-28"}
             sideOffset={4}
             finalFocus={() => {
               if (!renaming.current) return true
