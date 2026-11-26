@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test"
+import { editorCopy } from "../../apps/web/src/copy/editor-copy.ts"
 import { zoomCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy.ts"
 import { test } from "./api-stack"
@@ -83,4 +84,31 @@ test("a menu or key zoom keeps the selected slide on screen", async ({ page, con
   await page.keyboard.press("Shift+Digit0")
   await expect.poll(() => percent(page)).toBe(100)
   expect(await centred(page, 7)).toBe(true)
+})
+
+test("at a chosen zoom opening the side panel keeps the selected slide on screen, and moves nothing it does not clip", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await openGroups(page, context, stack, [4, 3])
+  const panel = page.getByRole("button", { name: editorCopy.sidePanel, exact: true })
+  await entry(page, 4).click()
+  await page.keyboard.press("Shift+Digit2")
+  await zoomTo(page, 10)
+  const kept = await boxOf(entry(page, 4))
+  const wide = await boxOf(viewport(page))
+  await panel.click()
+  await expect.poll(async () => (await boxOf(viewport(page))).width).toBeLessThan(wide.width - 200)
+  expect(await boxOf(entry(page, 4))).toEqual(kept)
+  expect(await percent(page)).toBe(10)
+  await panel.click()
+  await expect.poll(async () => (await boxOf(viewport(page))).width).toBe(wide.width)
+  await entry(page, 4).click()
+  await page.keyboard.press("Shift+Digit2")
+  await expect.poll(() => percent(page)).toBeGreaterThan(10)
+  const filled = await percent(page)
+  await panel.click()
+  await expect.poll(() => percent(page)).toBeLessThan(filled)
+  expect(await inside(entry(page, 4), viewport(page))).toBe(true)
 })

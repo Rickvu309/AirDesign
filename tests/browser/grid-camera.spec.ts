@@ -73,7 +73,7 @@ test("Space-drag pans over a focused slide with a grab cursor, without picking t
   expect(await page.evaluate(() => [scrollX, scrollY, document.scrollingElement?.scrollTop ?? 0])).toEqual([0, 0, 0])
 })
 
-test("H picks the hand tool and a drag pans over slides, V returns to move, and the middle button pans too", async ({
+test("H picks the hand tool, whose drag pans and click picks nothing, V returns to move, and the middle button pans", async ({
   page,
   context,
   stack,
@@ -89,6 +89,9 @@ test("H picks the hand tool and a drag pans over slides, V returns to move, and 
   await drag(page, { x: third.x + 20, y: third.y + 20 }, { x: 60, y: 40 }, "left")
   await movedBy(page, 3, third, { x: 60, y: 40 })
   await expect(entry(page, 1)).toHaveAttribute("aria-current", "true")
+  await entry(page, 2).click()
+  await expect(entry(page, 1)).toHaveAttribute("aria-current", "true")
+  await expect(entry(page, 1)).toHaveAttribute("data-selected", "true")
   await page.keyboard.press("v")
   await expect(tools(page).getByRole("button", { name: editorCopy.toolMove, exact: true })).toHaveAttribute(
     "aria-pressed",
@@ -127,4 +130,59 @@ test("arrows with no slide focused pan the canvas, while a focused slide's arrow
   await page.keyboard.press("ArrowRight")
   await expect(entry(page, 2)).toBeFocused()
   await movedBy(page, 1, focused, { x: 0, y: 0 })
+})
+
+test("thirty pinch steps zoom at once and keep the camera with one write once they settle", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await openGroups(page, context, stack, [4, 3])
+  const before = await percent(page)
+  await viewport(page).evaluate((element) => {
+    const counted = window as unknown as { gridWrites: number }
+    counted.gridWrites = 0
+    const write = Storage.prototype.setItem
+    Storage.prototype.setItem = function (key: string, value: string) {
+      if (key.startsWith("airdesign.grid-viewport.")) counted.gridWrites += 1
+      write.call(this, key, value)
+    }
+    const box = element.getBoundingClientRect()
+    for (let step = 0; step < 30; step += 1)
+      element.dispatchEvent(
+        new WheelEvent("wheel", {
+          deltaY: -2,
+          ctrlKey: true,
+          clientX: box.x + box.width / 2,
+          clientY: box.y + box.height / 2,
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+  })
+  await expect.poll(() => percent(page)).toBeGreaterThan(before)
+  const writes = () => page.evaluate(() => (window as unknown as { gridWrites: number }).gridWrites)
+  await expect.poll(writes).toBe(1)
+  await page.waitForTimeout(400)
+  expect(await writes()).toBe(1)
+})
+
+test.describe("touch", () => {
+  test.use({ hasTouch: true })
+
+  test("a touch drag on empty canvas pans the slides", async ({ page, context, stack }) => {
+    await openGroups(page, context, stack, [4, 3])
+    const room = await boxOf(viewport(page))
+    const first = await boxOf(entry(page, 1))
+    const from = { x: room.x + 20, y: room.y + room.height - 20 }
+    const touch = await context.newCDPSession(page)
+    await touch.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [from] })
+    for (let step = 1; step <= 5; step += 1)
+      await touch.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x: from.x + step * 12, y: from.y - step * 8 }],
+      })
+    await touch.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] })
+    await movedBy(page, 1, first, { x: 60, y: -40 })
+  })
 })
