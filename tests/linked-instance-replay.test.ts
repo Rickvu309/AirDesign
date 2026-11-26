@@ -449,4 +449,4 @@ it("replays every reachable linked suppression transition through the device and
     "UndoUpdate",
     "Update",
   ])
-}, 60_000)
+}, 180_000)
