@@ -229,7 +229,7 @@ html:has(.reflow-frame) #root {
   box-shadow: 0 0 0 1px var(--primary);
   background: transparent;
 }
-[data-slide-number] {
+[data-grid-card] [data-slide-number] {
   position: absolute;
   top: 0;
   left: 0;
