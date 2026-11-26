@@ -13,4 +13,18 @@ export const webDesignChecks: Check[] = [
       )
     },
   ],
+  [
+    "02-agent-promo",
+    "decks-populated",
+    async (page) => {
+      const promo = page.locator("[data-decks-sidebar] section")
+      const insets = await promo.evaluate((element) => {
+        const sidebar = element.closest("[data-decks-sidebar]")?.getBoundingClientRect()
+        const card = element.getBoundingClientRect()
+        if (sidebar === undefined) throw new Error("Sidebar is missing")
+        return [card.left - sidebar.left, sidebar.right - card.right]
+      })
+      expect(insets).toEqual([12, 12])
+    },
+  ],
 ]
