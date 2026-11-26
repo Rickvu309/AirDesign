@@ -71,7 +71,7 @@ function paintWorld(sheet: HTMLElement, view: GridView, refresh: boolean) {
   if (!refresh) return
   const value = String(view.scale)
   for (const node of sheet.querySelectorAll<HTMLElement>(
-    "[data-grid-overlay], [data-slide-entry], [data-slide-skip-mark]",
+    "[data-grid-overlay], [data-slide-entry], [data-slide-skip-mark], [data-grid-group-frame], [data-group-insert], [data-gap-insert]",
   )) {
     node.style.transform = ""
     node.style.setProperty("--grid-scale", value)
