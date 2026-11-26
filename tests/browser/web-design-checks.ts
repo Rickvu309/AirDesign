@@ -43,4 +43,31 @@ export const webDesignChecks: Check[] = [
       expect(geometry).toEqual([0, 0, 0])
     },
   ],
+  [
+    "04-deck-list-preview",
+    "decks-list",
+    async (page) => {
+      await expect(page.locator("[data-deck-row] [data-deck-initial]").first()).toBeVisible()
+    },
+  ],
+  [
+    "04-list-skeleton",
+    "decks-list-loading",
+    async (page) => {
+      const row = page.locator("[data-loading] > [aria-hidden=true]").first()
+      const layout = await row.evaluate((element) => [
+        element.getBoundingClientRect().height,
+        getComputedStyle(element).gridTemplateColumns.split(" ").length,
+        element.children.length,
+      ])
+      expect(layout).toEqual([64, 4, 4])
+    },
+  ],
+  [
+    "04-grid-skeleton",
+    "decks-loading",
+    async (page) => {
+      await expect(page.locator("[data-loading] article")).toHaveCount(4)
+    },
+  ],
 ]

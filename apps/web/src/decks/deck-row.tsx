@@ -1,8 +1,13 @@
 import type { ReactNode } from "react"
 import type { DeckRowData } from "@/decks/sample-decks"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/class-names"
 
 const columns = "grid grid-cols-[80px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]"
+
+const row = cn("h-16 items-center", columns)
+const previewBox = "h-[45px] w-20"
+const nameInset = "ml-4"
 
 const trimmed = { textBox: "trim-both cap alphabetic" } as const
 
@@ -44,9 +49,9 @@ export function DeckRow({
 }) {
   return (
     <article data-deck-row>
-      <div className={cn("h-16 items-center", columns)}>
-        <div className="h-[45px] w-20 overflow-hidden rounded-md bg-line">{preview}</div>
-        <div className="flex min-w-0 items-center gap-1 pr-4 pl-4">
+      <div className={row}>
+        <div className={cn(previewBox, "overflow-hidden rounded-md bg-line")}>{preview}</div>
+        <div className={cn(nameInset, "flex min-w-0 items-center gap-1 pr-4")}>
           <h2
             className="min-w-0 truncate py-1 text-[length:var(--type-dense)] leading-[18px] font-medium text-foreground"
             style={trimmed}
@@ -77,6 +82,22 @@ export function DeckTableHeader({ sortMarks = true }: { sortMarks?: boolean }) {
       </span>
       <SortLabel mark={sortMarks}>Edited</SortLabel>
       <SortLabel mark={sortMarks}>Created</SortLabel>
+    </div>
+  )
+}
+
+export function DeckTableSkeleton() {
+  return (
+    <div className="mt-12" data-loading="true" aria-busy="true">
+      <DeckTableHeader sortMarks={false} />
+      {[0, 1, 2].map((key) => (
+        <div key={key} className={row} aria-hidden="true">
+          <Skeleton tone="line" className={previewBox} />
+          <Skeleton tone="line" className={cn(nameInset, "h-4 w-1/2")} />
+          <Skeleton tone="line" className="h-4 w-1/2 max-w-24" />
+          <Skeleton tone="line" className="h-4 w-1/2 max-w-24" />
+        </div>
+      ))}
     </div>
   )
 }
