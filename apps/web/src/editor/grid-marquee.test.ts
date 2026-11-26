@@ -10,7 +10,8 @@ const faces = [
   { index: 4, left: 120, top: 80, width: 100, height: 50 },
 ]
 
-const several: GridInteraction = { kind: "slides", pick: { anchor: 3, slides: new Set([3]) } }
+const several: GridInteraction = { kind: "slides", pick: { anchor: "d", slides: new Set(["d"]) } }
+const order = ["a", "b", "c", "d", "e"]
 
 describe("grid marquee", () => {
   it("draws the same box whichever corner the drag starts from", () => {
@@ -34,33 +35,33 @@ describe("grid marquee", () => {
   })
 
   it("replaces the selection with the slides it crosses, and clears it when it crosses none", () => {
-    expect(gridStep(several, marqueeStep(several, { current: 0, count: 5 }, [1, 2], false))).toEqual({
+    expect(gridStep(several, marqueeStep(several, { current: 0, order }, [1, 2], false))).toEqual({
       kind: "slides",
-      pick: { anchor: 1, slides: new Set([1, 2]) },
+      pick: { anchor: "b", slides: new Set(["b", "c"]) },
     })
-    expect(gridStep(several, marqueeStep(several, { current: 0, count: 5 }, [], false))).toEqual({ kind: "none" })
+    expect(gridStep(several, marqueeStep(several, { current: 0, order }, [], false))).toEqual({ kind: "none" })
   })
 
   it("adds to the selection from before the gesture, keeping its anchor", () => {
-    expect(gridStep(several, marqueeStep(several, { current: 0, count: 5 }, [0, 1], true))).toEqual({
+    expect(gridStep(several, marqueeStep(several, { current: 0, order }, [0, 1], true))).toEqual({
       kind: "slides",
-      pick: { anchor: 3, slides: new Set([0, 1, 3]) },
+      pick: { anchor: "d", slides: new Set(["a", "b", "d"]) },
     })
-    expect(gridStep(several, marqueeStep(several, { current: 0, count: 5 }, [], true))).toEqual(several)
+    expect(gridStep(several, marqueeStep(several, { current: 0, order }, [], true))).toEqual(several)
   })
 
   it("adds to the current slide when nothing else was picked, to nothing when no slide was selected, and leaves a selection it only crosses as it was", () => {
     const current: GridInteraction = { kind: "slides", pick: null }
-    expect(gridStep(current, marqueeStep(current, { current: 2, count: 5 }, [4], true))).toEqual({
+    expect(gridStep(current, marqueeStep(current, { current: 2, order }, [4], true))).toEqual({
       kind: "slides",
-      pick: { anchor: 2, slides: new Set([2, 4]) },
+      pick: { anchor: "c", slides: new Set(["c", "e"]) },
     })
     const none: GridInteraction = { kind: "none" }
-    expect(gridStep(none, marqueeStep(none, { current: 2, count: 5 }, [4], true))).toEqual({
+    expect(gridStep(none, marqueeStep(none, { current: 2, order }, [4], true))).toEqual({
       kind: "slides",
-      pick: { anchor: 4, slides: new Set([4]) },
+      pick: { anchor: "e", slides: new Set(["e"]) },
     })
-    expect(gridStep(current, marqueeStep(current, { current: 2, count: 5 }, [2], true))).toBe(current)
+    expect(gridStep(current, marqueeStep(current, { current: 2, order }, [2], true))).toBe(current)
   })
 
   it("pans faster the closer the pointer comes to an edge of the room, and not outside it", () => {

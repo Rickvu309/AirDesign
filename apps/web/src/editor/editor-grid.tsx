@@ -34,9 +34,10 @@ export type GridCommands = { readonly zoomTo: (zoom: Zoom) => void; readonly zoo
 
 export type GridStart = { readonly picked?: readonly number[]; readonly camera?: GridView }
 
-function opened(start: GridStart): GridInteraction {
-  const first = start.picked?.[0]
-  return first === undefined ? gridOpened : { kind: "slides", pick: { anchor: first, slides: new Set(start.picked) } }
+function opened(start: GridStart, order: readonly string[]): GridInteraction {
+  const picked = start.picked?.flatMap((index) => order[index] ?? []) ?? []
+  const [anchor] = picked
+  return anchor === undefined ? gridOpened : { kind: "slides", pick: { anchor, slides: new Set(picked) } }
 }
 
 const paintMargin = 200
@@ -91,9 +92,10 @@ export function EditorGrid({
   const { size } = doom.deckOf(view)
   const layout = useMemo(() => gridLayout(slideGroups(view), { width: size.w, height: size.h }), [view, size.w, size.h])
   const count = layout.cards.length
-  const [state, dispatch] = useReducer(gridStep, start, opened)
-  const picked = prunedPick(gridPick(state), count)
-  const ringed = gridRinged(state, current, count)
+  const order = useMemo(() => layout.cards.map((card) => card.id), [layout])
+  const [state, dispatch] = useReducer(gridStep, start, (begin) => opened(begin, order))
+  const picked = prunedPick(gridPick(state), order)
+  const ringed = gridRinged(state, order, current)
   const camera = useGridCamera({
     deck,
     layout,
@@ -114,7 +116,7 @@ export function EditorGrid({
     (text: string) => setMessage((held) => ({ text, odd: held === null ? false : !held.odd })),
     [],
   )
-  const deckOf: MarqueeDeck = { current, count }
+  const deckOf: MarqueeDeck = { current, order }
 
   function focusCard(index: number, reveal: boolean) {
     quiet.current = !reveal
@@ -132,13 +134,14 @@ export function EditorGrid({
 
   function pickedNow(next: GridInteraction) {
     if (next.kind === "none") {
+      list.current?.focus({ preventScroll: true })
       announce(slideListCopy.nothingSelected)
       return
     }
-    const now = toggledCurrent(next.pick, current)
+    const now = toggledCurrent(next.pick, order, current)
     if (now !== current) choose(now)
     focusCard(now, false)
-    announce(slideListCopy.selected(gridRinged(next, now, count).length))
+    announce(slideListCopy.selected(gridRinged(next, order, now).length))
   }
 
   const marquee = useGridMarquee({
@@ -157,10 +160,10 @@ export function EditorGrid({
       choose(index)
       return
     }
-    const next = shift ? pickRange(picked, index, current) : pickToggle(picked, index, current)
+    const next = shift ? pickRange(picked, order, index, current) : pickToggle(picked, order, index, current)
     dispatch({ kind: "pick", pick: next })
     if (next !== null) announce(slideListCopy.selected(next.slides.size))
-    choose(toggledCurrent(next, index))
+    choose(toggledCurrent(next, order, index))
   }
 
   function clear() {
@@ -203,7 +206,7 @@ export function EditorGrid({
     const index = entryOf(event.target)
     if (gesture === "select-all") {
       event.preventDefault()
-      const all = pickAll(count, current)
+      const all = pickAll(order, current)
       dispatch({ kind: "pick", pick: all })
       if (all !== null) announce(slideListCopy.selected(all.slides.size))
       return
@@ -227,7 +230,7 @@ export function EditorGrid({
     event.preventDefault()
     focusCard(to, true)
     if (event.shiftKey) {
-      const next = pickRange(picked, to, current)
+      const next = pickRange(picked, order, to, current)
       dispatch({ kind: "pick", pick: next })
       if (next !== null) announce(slideListCopy.selected(next.slides.size))
     } else dispatch({ kind: "pick", pick: null })

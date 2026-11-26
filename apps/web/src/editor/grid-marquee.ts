@@ -13,7 +13,7 @@ export type MarqueeBox = {
 
 type MarqueeFace = GridRect & { readonly index: number }
 
-export type MarqueeDeck = { readonly current: number; readonly count: number }
+export type MarqueeDeck = { readonly current: number; readonly order: readonly string[] }
 
 const dragSlop = 4
 const edge = 56
@@ -47,16 +47,15 @@ export function marqueeHits(box: MarqueeBox, faces: readonly MarqueeFace[]): rea
 
 export function marqueeStep(
   before: GridInteraction,
-  { current, count }: MarqueeDeck,
+  { current, order }: MarqueeDeck,
   hits: readonly number[],
   adding: boolean,
 ): GridStep {
-  const kept = adding ? gridRinged(before, current, count) : []
+  const kept = adding ? gridRinged(before, order, current) : []
   if (adding && hits.every((hit) => kept.includes(hit))) return { kind: "restore", state: before }
-  const slides = new Set([...kept, ...hits])
-  if (slides.size === 0) return { kind: "clear" }
-  const anchor = (adding ? prunedPick(gridPick(before), count)?.anchor : undefined) ?? Math.min(...slides)
-  return { kind: "pick", pick: { anchor, slides } }
+  const slides = new Set(order.filter((_, index) => kept.includes(index) || hits.includes(index)))
+  const anchor = (adding ? prunedPick(gridPick(before), order)?.anchor : undefined) ?? [...slides][0]
+  return anchor === undefined ? { kind: "clear" } : { kind: "pick", pick: { anchor, slides } }
 }
 
 function edgeSpeed(at: number, start: number, length: number): number {

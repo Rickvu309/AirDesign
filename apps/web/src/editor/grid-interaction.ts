@@ -1,4 +1,4 @@
-import { pickedSlides, prunedPick, type GridPick } from "@/editor/grid-selection"
+import { pickedSlides, type GridPick } from "@/editor/grid-selection"
 
 export type GridInteraction = { readonly kind: "none" } | { readonly kind: "slides"; readonly pick: GridPick }
 
@@ -28,6 +28,6 @@ export function gridPick(state: GridInteraction): GridPick {
   return state.kind === "slides" ? state.pick : null
 }
 
-export function gridRinged(state: GridInteraction, current: number, count: number): readonly number[] {
-  return state.kind === "slides" ? pickedSlides(prunedPick(state.pick, count), current) : []
+export function gridRinged(state: GridInteraction, order: readonly string[], current: number): readonly number[] {
+  return state.kind === "slides" ? pickedSlides(state.pick, order, current) : []
 }

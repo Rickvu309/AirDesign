@@ -1,42 +1,50 @@
-export type GridPick = { readonly anchor: number; readonly slides: ReadonlySet<number> } | null
+export type GridPick = { readonly anchor: string; readonly slides: ReadonlySet<string> } | null
 
-function sorted(slides: Iterable<number>): readonly number[] {
-  return [...slides].sort((left, right) => left - right)
+type Order = readonly string[]
+
+function heldPick(anchor: string | undefined, slides: ReadonlySet<string>): GridPick {
+  return anchor !== undefined && slides.size > 0 ? { anchor, slides } : null
 }
 
-function heldPick(anchor: number, slides: ReadonlySet<number>): GridPick {
-  return slides.size > 0 ? { anchor, slides } : null
+export function pickedSlides(pick: GridPick, order: Order, current: number): readonly number[] {
+  const held = pick === null ? [] : order.flatMap((id, index) => (pick.slides.has(id) ? [index] : []))
+  return held.length === 0 ? [current] : held
 }
 
-export function pickedSlides(pick: GridPick, current: number): readonly number[] {
-  return pick === null ? [current] : sorted(pick.slides)
+function pickedIds(pick: GridPick, order: Order, current: number): Set<string> {
+  return new Set(pickedSlides(pick, order, current).flatMap((index) => order[index] ?? []))
 }
 
-export function pickToggle(pick: GridPick, index: number, current: number): GridPick {
-  const held = new Set(pick === null ? [current] : pick.slides)
-  if (held.has(index)) held.delete(index)
-  else held.add(index)
-  return heldPick(index, held)
+export function pickToggle(pick: GridPick, order: Order, index: number, current: number): GridPick {
+  const id = order[index]
+  if (id === undefined) return pick
+  const held = pickedIds(pick, order, current)
+  if (held.has(id)) held.delete(id)
+  else held.add(id)
+  return heldPick(id, held)
 }
 
-export function pickRange(pick: GridPick, index: number, current: number): GridPick {
-  const anchor = pick === null ? current : pick.anchor
+export function pickRange(pick: GridPick, order: Order, index: number, current: number): GridPick {
+  const kept = pick === null ? -1 : order.indexOf(pick.anchor)
+  const anchor = kept === -1 ? current : kept
   const low = Math.min(anchor, index)
   const high = Math.max(anchor, index)
-  return heldPick(anchor, new Set(Array.from({ length: high - low + 1 }, (_, offset) => low + offset)))
+  return heldPick(order[anchor], new Set(order.slice(low, high + 1)))
 }
 
-export function pickAll(count: number, current: number): GridPick {
-  return heldPick(current, new Set(Array.from({ length: count }, (_, index) => index)))
+export function pickAll(order: Order, current: number): GridPick {
+  return heldPick(order[current] ?? order[0], new Set(order))
 }
 
-export function prunedPick(pick: GridPick, count: number): GridPick {
+export function prunedPick(pick: GridPick, order: Order): GridPick {
   if (pick === null) return null
-  return heldPick(pick.anchor, new Set([...pick.slides].filter((index) => index < count)))
+  const slides = new Set(order.filter((id) => pick.slides.has(id)))
+  return heldPick(slides.has(pick.anchor) ? pick.anchor : order.find((id) => slides.has(id)), slides)
 }
 
-export function toggledCurrent(pick: GridPick, index: number): number {
-  if (pick === null || pick.slides.has(index)) return index
-  const left = sorted(pick.slides)
+export function toggledCurrent(pick: GridPick, order: Order, index: number): number {
+  const id = order[index]
+  if (pick === null || (id !== undefined && pick.slides.has(id))) return index
+  const left = pickedSlides(pick, order, index)
   return left.filter((slide) => slide < index).at(-1) ?? left[0] ?? index
 }
