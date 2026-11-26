@@ -214,4 +214,12 @@ export const webDesignChecks: Check[] = [
       )
     },
   ],
+  [
+    "10-deck-title-menu",
+    "deck-title-menu",
+    async (page) => {
+      const width = await page.getByRole("menu").evaluate((menu) => menu.getBoundingClientRect().width)
+      expect(width).toBeLessThanOrEqual(120)
+    },
+  ],
 ]
