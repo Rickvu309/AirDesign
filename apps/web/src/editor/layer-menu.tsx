@@ -39,11 +39,14 @@ export function LayerMenu(props: {
     if (editingText(event.target)) return
     event.preventDefault()
     const box = slideBox.current?.getBoundingClientRect()
+    const layoutWidth = slideBox.current?.offsetWidth ?? 0
+    const painted = box !== undefined && box.width > 0 && layoutWidth > 0 ? box.width / layoutWidth : 1
+    const visual = Math.abs(painted - 1) < 0.001 ? scale : scale * painted
     const at =
-      box === undefined || scale === 0
+      box === undefined || visual === 0
         ? { x: 0, y: 0 }
-        : { x: (event.clientX - box.left) / scale, y: (event.clientY - box.top) / scale }
-    const chain = hitChain(geometry.roots, at, 4.5 / (scale || 1), (id) => doom.lockedIn(view, id))
+        : { x: (event.clientX - box.left) / visual, y: (event.clientY - box.top) / visual }
+    const chain = hitChain(geometry.roots, at, 4.5 / (visual || 1), (id) => doom.lockedIn(view, id))
     if (chain === null) {
       chosen.current = []
       setOpen(false)
