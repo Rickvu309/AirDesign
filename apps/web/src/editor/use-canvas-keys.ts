@@ -93,6 +93,7 @@ export function useCanvasKeys(args: KeyArgs) {
         if (gesture === "undo") a.client.undo()
         else a.client.redo()
       } else if (gesture === "pan") {
+        if (event.target instanceof HTMLElement && event.target.closest("[data-view-toggle]") !== null) return
         handled()
         a.onSpace(true)
       } else if (gesture in toolOf) {

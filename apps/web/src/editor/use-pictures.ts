@@ -29,19 +29,12 @@ export function useDoomPictures(args: {
   readonly scale: number
   readonly onPlaced: (id: doom.NodeId) => void
 }): Pictures {
-  const { deck, keepUrl, assetUrl } = args
+  const { keepUrl, assetUrl } = args
   const [notice, setNotice] = useState<ThinNotice | null>(null)
   const latest = useRef(args)
   useEffect(() => {
     latest.current = args
   })
-
-  useEffect(() => {
-    void flushMedia(deck)
-    const again = () => void flushMedia(deck)
-    window.addEventListener("online", again)
-    return () => window.removeEventListener("online", again)
-  }, [deck])
 
   useEffect(() => {
     if (notice === null) return

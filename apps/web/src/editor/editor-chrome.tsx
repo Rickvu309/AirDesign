@@ -6,6 +6,9 @@ import type { SaveStatus } from "@/editor/save-status"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { productCopy } from "@/copy/product-copy"
 import { cn } from "@/lib/class-names"
+import { surfaceShadow } from "@/components/ui/shadows"
+import { Button } from "@/components/ui/button"
+import { slideListCopy } from "@/copy/slide-list-copy"
 
 export function DeckTitle({
   title,
@@ -41,18 +44,101 @@ export function PanelHead({ children }: { children: ReactNode }) {
   )
 }
 
+export function Island({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={cn("flex h-11 items-center gap-1 rounded-xl bg-white px-1.5", surfaceShadow, className)}>
+      {children}
+    </div>
+  )
+}
+
+export function GridHead({
+  title,
+  save,
+  canAdd,
+  onAdd,
+  onSlides,
+  onRename,
+  onTrash,
+}: {
+  title: string
+  save: SaveStatus | null
+  canAdd: boolean
+  onAdd: () => void
+  onSlides: () => void
+  onTrash?: () => void
+  onRename?: (name: string) => void
+}) {
+  return (
+    <Island>
+      <a
+        href="/"
+        aria-label={productCopy.goToDecks}
+        className="flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-black/4"
+      >
+        <AirdesignMark size={20} />
+      </a>
+      <DeckTitle
+        title={title}
+        className="max-w-[240px] pr-2 pl-0.5"
+        {...(onRename === undefined ? {} : { onRename })}
+        {...(onTrash === undefined ? {} : { onTrash })}
+      />
+      {save === null ? null : <SaveStatusLine status={save} />}
+      <Button
+        type="button"
+        variant="ghost"
+        className={cn(
+          "h-7 gap-1 rounded-md bg-white pr-2 pl-1.5 text-xs font-medium text-foreground hover:bg-white active:translate-y-0",
+          surfaceShadow,
+        )}
+        disabled={!canAdd}
+        onClick={onAdd}
+      >
+        <EditorIcon name="plus" size={13} />
+        {slideListCopy.newSlide}
+      </Button>
+      <span aria-hidden="true" className="mx-1 block h-5 w-px bg-[var(--field-edge)]" />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-8 rounded-md text-quiet active:translate-y-0"
+        aria-label={slideListCopy.slidesView}
+        aria-pressed={false}
+        onClick={onSlides}
+      >
+        <EditorIcon name="slide" size={16} />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-8 rounded-md bg-line text-foreground hover:bg-line active:translate-y-0"
+        aria-label={slideListCopy.gridView}
+        aria-pressed
+        onClick={onSlides}
+      >
+        <EditorIcon name="grid" size={16} />
+      </Button>
+    </Island>
+  )
+}
+
 export function SidebarHead({
   title,
   onRename,
   onTrash,
   homeHref,
   save = null,
+  onGrid,
 }: {
   title: string
   onTrash?: () => void
   onRename?: (name: string) => void
   homeHref?: string
   save?: SaveStatus | null
+  onGrid?: () => void
 }) {
   return (
     <div className="flex shrink-0 flex-col pt-2 pr-2 pb-1 pl-3">
@@ -67,6 +153,20 @@ export function SidebarHead({
           >
             <AirdesignMark size={20} />
           </a>
+        )}
+        {onGrid === undefined ? null : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-8 rounded-md text-quiet active:translate-y-0"
+            aria-label={slideListCopy.gridView}
+            aria-pressed={false}
+            data-view-toggle
+            onClick={onGrid}
+          >
+            <EditorIcon name="grid" size={16} />
+          </Button>
         )}
       </div>
       <div className="flex w-full min-w-0">
