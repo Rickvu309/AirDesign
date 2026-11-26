@@ -55,6 +55,7 @@ export type CaretWords = LinkedWords & { readonly node: doom.NodeId }
 export type CanvasHandoff = {
   down: (event: PointerEvent<HTMLDivElement>) => void
   editAt: (event: MouseEvent<HTMLDivElement>) => void
+  cancel: () => boolean
 }
 
 export type CanvasCard = {
@@ -405,6 +406,7 @@ export function DoomCanvas(props: CanvasProps) {
     card.handoff.current = {
       down: (event) => pointer.down(event),
       editAt: (event) => pointer.double(event),
+      cancel: () => pointer.cancelDrag(),
     }
     return () => {
       card.handoff.current = null
