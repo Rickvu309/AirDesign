@@ -148,13 +148,22 @@ export async function executeTool(
       made: again.roots.map((each) => ({ ids: [each.id] })),
       problems: listed(again.findings.findings),
     })
+  const lastRead = await host.agentReads.last(opened.deck, agent.id).catch(() => null)
+  if (lastRead === null) return refused("store")
   const plan = newPlan(opened, host, once, agent, input.runId, pendingFonts)
   const end = await scripts.run(input.script, (verb, fields) => answerOp(plan, verb, fields))
   if (!end.ok) return stopped(plan, end)
   const compiled = plan.changes.length === 0 ? undefined : plan.session.finish()
   if (compiled !== undefined && "refused" in compiled)
     return landRefused(plan, doomRefused(compiled, { rev: opened.rev }))
-  const sent = compiled === undefined ? undefined : await landEdit(opened, compiled, host)
+  if (lastRead === undefined || (compiled === undefined && plan.read)) {
+    try {
+      await host.agentReads.remember(opened.deck, agent.id, opened.fold.rev)
+    } catch {
+      return refused("store")
+    }
+  }
+  const sent = compiled === undefined ? undefined : await landEdit(opened, compiled, host, lastRead ?? opened.fold.rev)
   if (sent !== undefined && !("landed" in sent)) return landRefused(plan, sent)
   const landed = sent
   const shots = await pictures(plan, host)

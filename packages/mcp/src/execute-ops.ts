@@ -38,6 +38,7 @@ export type Plan = {
   images: number
   view: doom.Doom
   ops: number
+  read: boolean
   readonly changes: doom.AgentChange[]
   readonly changeOps: { readonly op: number; readonly verb: Verb }[]
   readonly made: Made[]
@@ -87,6 +88,7 @@ export function newPlan(
     images: 0,
     view: opened.fold,
     ops: 0,
+    read: false,
     changes: [],
     changeOps: [],
     made: [],
@@ -415,8 +417,11 @@ export async function runOperation(plan: Plan, verb: Verb, raw: unknown): Promis
       return undefined
     case "variables":
       return variables(plan, op, verb, fields)
-    case "get":
-      return read(plan, op, verb, fields)
+    case "get": {
+      const value = await read(plan, op, verb, fields)
+      plan.read = true
+      return value
+    }
     case "screenshot": {
       const slide = doom.slideOf(plan.view, nodeOf(plan, op, verb, fields.target, "target").id)
       if (slide !== undefined && !plan.shots.includes(slide)) plan.shots.push(slide)

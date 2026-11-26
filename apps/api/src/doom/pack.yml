@@ -14,6 +14,7 @@ public:
   - original.ts
 owns_tables:
   - deck.doom
+  - deck.doom_agent_read
   - deck.doom_edit
   - deck.doom_node
   - deck.media

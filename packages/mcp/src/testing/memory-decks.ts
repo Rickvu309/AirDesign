@@ -11,6 +11,7 @@ const refusal = (kind: Exclude<DoomRefusal["refusal"], "edit">): DoomRefusal => 
 export function memoryDecks(start: () => doom.Doom, initial: ReadonlyMap<string, doom.Doom> = new Map()): MemoryDecks {
   const decks = new Map<DeckId, doom.Doom>()
   const logs = new Map<DeckId, { edit: doom.Landed; replaced: unknown }[]>()
+  const reads = new Map<string, doom.Rev>()
   const bases = new Map<DeckId, doom.Doom>()
   for (const [id, fold] of initial) {
     const read = readDeckId(id)
@@ -36,6 +37,21 @@ export function memoryDecks(start: () => doom.Doom, initial: ReadonlyMap<string,
   }
   const host: MemoryDecks = {
     decks,
+    agentReads: {
+      last: async (deck, agent) => reads.get(`${deck}:${agent}`),
+      remember: async (deck, agent, rev) => {
+        const key = `${deck}:${agent}`
+        if (rev > (reads.get(key) ?? -1)) reads.set(key, rev)
+      },
+      byPerson: async (deck, revs) => {
+        const wanted = new Set(revs)
+        return new Set(
+          (logs.get(deck) ?? []).flatMap(({ edit }) =>
+            wanted.has(edit.rev) && edit.author.kind === "person" ? [edit.rev] : [],
+          ),
+        )
+      },
+    },
     withUndo: async (deck, undo) =>
       undo({
         ...host,

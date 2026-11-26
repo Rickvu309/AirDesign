@@ -16,8 +16,8 @@
     {
       "file": "packages/mcp/src/execute-tool.ts",
       "names": ["executeTool"],
-      "digest": "ba194e4a06ed",
-      "blob": "0740c5add2e66a4824dd3840fa7cdd689151e619"
+      "digest": "3bca6f3094aa",
+      "blob": "a8a176c2d2422680365cf19b726de242ca9c1ac3"
     },
     {
       "file": "packages/mcp/src/stop-tool.ts",
@@ -36,6 +36,24 @@
       "names": ["admit"],
       "digest": "377d192d10b0",
       "blob": "9e4cc56271432749269ba3080292c8abd51a62d2"
+    },
+    {
+      "file": "packages/mcp/src/land-edit.ts",
+      "names": ["landEdit"],
+      "digest": "03918698d856",
+      "blob": "fefd098e19e25e59ab3fc58b5afab719f0f4b419"
+    },
+    {
+      "file": "packages/mcp/src/execute-ops.ts",
+      "names": ["runOperation"],
+      "digest": "1614da98bf31",
+      "blob": "cb56fed90830ae37917a7848deb9a62ebdd6da5b"
+    },
+    {
+      "file": "apps/api/src/doom/doom-deck.ts",
+      "names": ["lastAgentRead", "personRevs", "rememberAgentRead"],
+      "digest": "8337baa545dc",
+      "blob": "c6280f56c7da829fb4060cbf239ae27a6ab86299"
     }
   ]
 }

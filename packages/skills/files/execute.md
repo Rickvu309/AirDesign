@@ -8,6 +8,7 @@
 - Use variables, loops and arithmetic. Compute sizes and positions from the numbers, such as a bar's width from its value or an even spacing from a count, instead of guessing.
 - `print(...)` or `console.log(...)` adds a line to the answer's `logs`, up to 50. The value of the last expression comes back as `result`, cut at 20,000 characters.
 - A refused operation throws an Error whose message names the operation by its number and says what to fix. Uncaught, nothing lands and the answer gives the line. Caught, that operation changed nothing and the script goes on.
+- If Execute refuses an edit as `stale`, read the changed property with `get` in a separate call before revising your edit.
 - The sandbox has no network, files, modules, timers or `await`. A script runs at most 20 seconds and 64 MB, is at most 100,000 characters, and makes at most 100 changes. Split bigger work over several calls.
 
 ```js

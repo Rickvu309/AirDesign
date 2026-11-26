@@ -329,3 +329,27 @@ export async function spendOnce(db: Sql, email: string, deck: string, once: stri
   if (named.ok) await editDoom(db, { deck: named.deck, edit: { once, author: startAuthor, writes: [] } }, email)
   return (await db.query<{ run: string | null }>(onceRunSql, [email, deck, once])).rows[0]?.run ?? undefined
 }
+
+export async function lastAgentRead(db: Sql, deck: DeckId, agent: string) {
+  const { rows } = await db.query<{ rev: number }>(
+    "select rev from deck.doom_agent_read where deck = $1 and agent = $2",
+    [deck, agent],
+  )
+  return rows[0] === undefined ? undefined : doom.rev(rows[0].rev)
+}
+
+export async function rememberAgentRead(db: Sql, deck: DeckId, agent: string, rev: doom.Rev): Promise<void> {
+  await db.query(
+    `insert into deck.doom_agent_read as seen (deck, agent, rev) values ($1, $2, $3)
+    on conflict (deck, agent) do update set rev = excluded.rev where seen.rev < excluded.rev`,
+    [deck, agent, rev],
+  )
+}
+
+export async function personRevs(db: Sql, deck: DeckId, revs: readonly doom.Rev[]) {
+  const { rows } = await db.query<{ rev: number }>(
+    "select rev from deck.doom_edit where deck = $1 and rev = any($2::integer[]) and edit #>> '{author,kind}' = 'person'",
+    [deck, revs],
+  )
+  return new Set(rows.map(({ rev }) => doom.rev(rev)))
+}
