@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { test } from "./api-stack"
-import { boxOf, centre, chip, entry, openGroups, said, selectedNumbers, viewport, type Point } from "./grid-deck"
+import { boxOf, card, centre, chip, entry, openGroups, said, selectedNumbers, viewport, type Point } from "./grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -44,9 +44,13 @@ function crossed(page: Page, from: Point, to: Point): Promise<number[]> {
   )
 }
 
+function slideNumber(page: Page, number: number) {
+  return card(page, number).locator("[data-slide-number]")
+}
+
 async function pick(page: Page, ...numbers: number[]): Promise<void> {
-  await entry(page, numbers[0]!).click()
-  for (const number of numbers.slice(1)) await entry(page, number).click({ modifiers: ["ControlOrMeta"] })
+  await slideNumber(page, numbers[0]!).click()
+  for (const number of numbers.slice(1)) await slideNumber(page, number).click({ modifiers: ["ControlOrMeta"] })
   await expect.poll(() => selectedNumbers(page)).toEqual(numbers.toSorted((one, two) => one - two))
 }
 
