@@ -65,13 +65,13 @@ function DeckGridSkeleton({ section }: { section: HomeSection }) {
         <article key={key} className="rounded-[var(--shape-dialog)] bg-canvas p-1.5" aria-hidden="true">
           <div className="px-2.5 pt-2 pb-2.5">
             <div className="flex h-5 items-center">
-              <Skeleton className="h-4 w-3/5 bg-line" />
+              <Skeleton tone="line" className="h-4 w-3/5" />
             </div>
             <div className="flex h-4.5 items-center">
-              <Skeleton className="h-3.5 w-2/5 bg-line" />
+              <Skeleton tone="line" className="h-3.5 w-2/5" />
             </div>
           </div>
-          <Skeleton className={cn("h-37.5 w-full rounded-[var(--shape-card)] bg-line", previewHeight(section))} />
+          <Skeleton tone="line" className={cn("h-37.5 w-full rounded-[var(--shape-card)]", previewHeight(section))} />
         </article>
       ))}
     </DeckGrid>

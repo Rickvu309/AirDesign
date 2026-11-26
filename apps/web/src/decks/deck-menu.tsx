@@ -9,16 +9,7 @@ import { StarButton } from "@/decks/star-button"
 export function DeckMenu({ name, onTrash }: { name: string; onTrash: (pointer: boolean) => void }) {
   return (
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={deckActionsOf(name)}
-            className="text-muted-foreground hover:bg-line"
-          />
-        }
-      >
+      <DropdownMenuTrigger render={<Button variant="ghost-line" size="icon-sm" aria-label={deckActionsOf(name)} />}>
         <DeckGlyph name="more" size={16} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-auto">

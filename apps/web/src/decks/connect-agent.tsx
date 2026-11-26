@@ -264,7 +264,7 @@ export function ConnectAgent({
                 <AgentMark name={agentMark(connected)} size={44} />
               </div>
               <DialogTitle className={cn(title, "mt-4 text-center")}>{connectedOf(agentLabel(connected))}</DialogTitle>
-              <DialogDescription className={cn(dense, "mt-1 text-center text-muted-foreground")}>
+              <DialogDescription density="dense" className="mt-1 text-center">
                 {connectAgentCopy.connectedBody}
               </DialogDescription>
               <Button type="button" variant="signature" className="mt-6 h-9 w-full" onClick={onClose}>
@@ -288,7 +288,7 @@ export function ConnectAgent({
                   <XIcon />
                 </DialogClose>
               </div>
-              <DialogDescription className={cn(dense, "mt-1 text-muted-foreground")}>
+              <DialogDescription density="dense" className="mt-1">
                 {connectAgentCopy.body}
               </DialogDescription>
               <div role="group" aria-label={connectAgentCopy.agents} className="mt-5 grid grid-cols-4 gap-2">

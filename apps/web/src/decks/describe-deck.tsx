@@ -75,7 +75,9 @@ export function DescribeDeck({
               field.current?.focus()
             }}
           >
-            <EditorIcon name={each.icon} size={13} className="text-primary" />
+            <span className="contents text-primary">
+              <EditorIcon name={each.icon} size={13} />
+            </span>
             {each.words}
           </button>
         ))}
