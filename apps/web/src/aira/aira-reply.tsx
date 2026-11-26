@@ -32,7 +32,7 @@ type Segment =
 
 const cardClass =
   "flex flex-col gap-3 rounded-xl bg-white p-3.5 shadow-[0px_0px_0px_1px_var(--line),0px_1px_2px_var(--black-5)]"
-const cardTitle = "text-[length:var(--type-dense)] leading-[17px] font-semibold text-foreground"
+const cardTitle = "text-[length:var(--type-dense)] leading-ui-tight font-semibold text-foreground"
 const cardBody = "text-[length:var(--type-dense)] leading-[1.5] text-quiet"
 
 function segments(exchange: AiraExchange): readonly Segment[] {
@@ -487,7 +487,7 @@ export function UsagePop({ usage }: { usage: WeekUsage }) {
       align="end"
       sideOffset={8}
       aria-label={productCopy.usageTitle}
-      className="w-[220px] gap-2 rounded-[var(--shape-card)] bg-white p-3 text-foreground shadow-[0px_0px_0px_1px_var(--black-8),0px_8px_24px_var(--black-10)] ring-0"
+      className="w-55 gap-2 rounded-[var(--shape-card)] bg-white p-3 text-foreground shadow-[0px_0px_0px_1px_var(--black-8),0px_8px_24px_var(--black-10)] ring-0"
     >
       <span className="flex items-center justify-between text-xs font-medium text-foreground">
         {productCopy.usageTitle}

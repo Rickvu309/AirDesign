@@ -69,7 +69,7 @@ export function AiraComposer({
               aria-label="Stop"
               onClick={onStop}
             >
-              <span className="block size-2.5 rounded-[2px] bg-white" />
+              <span className="block size-2.5 rounded-xs bg-white" />
             </PromptInputButton>
           ) : (
             <PromptInputButton
