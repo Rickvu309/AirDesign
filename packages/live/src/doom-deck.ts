@@ -556,11 +556,9 @@ function connected(
     undoRun,
     sync,
     catchUp,
-    follow: following.follow,
-    caught: following.caught,
+    ...following.shown,
     reportPictures: async (rev, pictures) =>
       remote.pictures === undefined ? { ok: false, refusal: "server" } : remote.pictures({ deck, rev, pictures }),
-    picturesWanted: following.picturesWanted,
     subscribe(listener) {
       listeners.add(listener)
       return () => {
