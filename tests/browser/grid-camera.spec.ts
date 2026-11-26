@@ -3,7 +3,7 @@ import { editorCopy } from "../../apps/web/src/copy/editor-copy.ts"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy.ts"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { boxOf, chip, entry, openGroups, percent, viewport, wheelAt } from "./grid-deck"
+import { boxOf, chip, entry, openGroups, percent, viewport, wheelAt, zoomTo } from "./grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -168,6 +168,107 @@ test("thirty pinch steps zoom at once and keep the camera with one write once th
   )
   expect(Math.round((JSON.parse(kept ?? "{}") as { scale: number }).scale * 100)).toBe(await percent(page))
   expect(await writes()).toBe(1)
+})
+
+test("a pinch spread across frames zooms without a React commit on every frame", async ({ page, context, stack }) => {
+  await page.addInitScript(() => {
+    const counted = window as unknown as { gridCommits: number }
+    counted.gridCommits = 0
+    ;(window as unknown as { __REACT_DEVTOOLS_GLOBAL_HOOK__: object }).__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
+      isDisabled: false,
+      supportsFiber: true,
+      inject: () => 1,
+      onCommitFiberRoot: () => {
+        counted.gridCommits += 1
+      },
+    }
+  })
+  await openGroups(page, context, stack, [14])
+  const room = await boxOf(viewport(page))
+  const before = await percent(page)
+  const frames = 24
+  const commits = await viewport(page).evaluate(
+    async (element, gesture: { readonly frames: number; readonly x: number; readonly y: number }) => {
+      const counted = window as unknown as { gridCommits: number }
+      const start = counted.gridCommits
+      for (let step = 0; step < gesture.frames; step += 1) {
+        element.dispatchEvent(
+          new WheelEvent("wheel", {
+            deltaY: -4,
+            ctrlKey: true,
+            clientX: gesture.x,
+            clientY: gesture.y,
+            bubbles: true,
+            cancelable: true,
+          }),
+        )
+        await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+      }
+      return counted.gridCommits - start
+    },
+    { frames, x: room.x + room.width / 2, y: room.y + room.height / 2 },
+  )
+  expect(await percent(page)).toBeGreaterThan(before)
+  expect(commits).toBeGreaterThan(0)
+  expect(commits).toBeLessThan(frames)
+})
+
+test("a slide that scrolls into view during a pan is painted before the camera settles", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await openGroups(page, context, stack, [14])
+  await zoomTo(page, 100)
+  const target = await page.evaluate(() => {
+    const room = document.querySelector("[data-grid-viewport]")?.getBoundingClientRect()
+    if (room === undefined) return null
+    const margin = 200
+    let best: { index: number; x: number; y: number } | null = null
+    document.querySelectorAll("[data-grid-card]").forEach((card, index) => {
+      if (card.querySelector("[data-slide-paint]") !== null) return
+      const box = card.getBoundingClientRect()
+      const below = box.top - room.bottom
+      const above = room.top - box.bottom
+      const right = box.left - room.right
+      const left = room.left - box.right
+      const steps = [
+        below > margin ? { x: 0, y: Math.ceil(below - margin + 40) } : null,
+        above > margin ? { x: 0, y: -Math.ceil(above - margin + 40) } : null,
+        right > margin ? { x: Math.ceil(right - margin + 40), y: 0 } : null,
+        left > margin ? { x: -Math.ceil(left - margin + 40), y: 0 } : null,
+      ].flatMap((step) => (step === null ? [] : [step]))
+      const step = steps.sort((a, b) => Math.abs(a.x) + Math.abs(a.y) - (Math.abs(b.x) + Math.abs(b.y)))[0]
+      if (step === undefined) return
+      const travel = Math.abs(step.x) + Math.abs(step.y)
+      if (best === null || travel < Math.abs(best.x) + Math.abs(best.y)) best = { index, ...step }
+    })
+    return best
+  })
+  expect(target).not.toBeNull()
+  await viewport(page).evaluate(
+    async (element, delta: { readonly x: number; readonly y: number }) => {
+      const box = element.getBoundingClientRect()
+      element.dispatchEvent(
+        new WheelEvent("wheel", {
+          deltaX: delta.x,
+          deltaY: delta.y,
+          clientX: box.x + box.width / 2,
+          clientY: box.y + box.height / 2,
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+    },
+    { x: target?.x ?? 0, y: target?.y ?? 0 },
+  )
+  const painted = await page.evaluate((index) => {
+    const card = document.querySelectorAll("[data-grid-card]")[index ?? -1]
+    return card?.querySelector("[data-slide-paint]") != null
+  }, target?.index)
+  expect(painted).toBe(true)
 })
 
 test.describe("touch", () => {

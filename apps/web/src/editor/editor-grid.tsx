@@ -21,10 +21,11 @@ import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { gridMove } from "@/editor/editor-grid-keys"
 import { GridCard } from "@/editor/grid-card"
 import { gridOpened, gridPick, gridRinged, gridStep, type GridInteraction } from "@/editor/grid-interaction"
-import { gridLayout, gridSpacing } from "@/editor/grid-lines"
+import { gridLayout } from "@/editor/grid-lines"
+import { gridZoomPlacement } from "@/editor/grid-number"
 import { marqueeStep, type MarqueeDeck } from "@/editor/grid-marquee"
 import { pickAll, pickRange, pickToggle, prunedPick, toggledCurrent } from "@/editor/grid-selection"
-import { gridShown, type GridView } from "@/editor/grid-viewport"
+import { gridPaintMargin, gridShown, type GridView } from "@/editor/grid-viewport"
 import { useGridCamera } from "@/editor/use-grid-camera"
 import { useGridMarquee } from "@/editor/use-grid-marquee"
 
@@ -39,8 +40,6 @@ function opened(start: GridStart, order: readonly string[]): GridInteraction {
   const [anchor] = picked
   return anchor === undefined ? gridOpened : { kind: "slides", pick: { anchor, slides: new Set(picked) } }
 }
-
-const paintMargin = 200
 
 function slideGroups(view: doom.Doom): readonly (readonly doom.NodeId[])[] {
   const rows = new Map<doom.NodeId | undefined, doom.NodeId[]>()
@@ -96,17 +95,20 @@ export function EditorGrid({
   const [state, dispatch] = useReducer(gridStep, start, (begin) => opened(begin, order))
   const picked = prunedPick(gridPick(state), order)
   const ringed = gridRinged(state, order, current)
+  const list = useRef<HTMLDivElement>(null)
   const camera = useGridCamera({
     deck,
     layout,
     ringed,
     hand,
     onHand,
+    sheet: list,
     ...(start.camera === undefined ? {} : { start: start.camera }),
   })
-  const scale = camera.view.scale
-  const painted = new Set(gridShown(layout, camera.view, camera.room, paintMargin))
-  const list = useRef<HTMLDivElement>(null)
+  const live = camera.gliding.current ? camera.viewNow() : camera.view
+  const scale = live.scale
+  const placement = gridZoomPlacement(layout, scale)
+  const painted = new Set(gridShown(layout, live, camera.room, gridPaintMargin))
   const root = useRef<HTMLDivElement>(null)
   const quiet = useRef(false)
   const chosen = useRef<number | null>(current)
@@ -193,7 +195,10 @@ export function EditorGrid({
 
   const percent = Math.round(scale * 100)
   const selection = ringed.length > 0
-  useLayoutEffect(() => onShown({ percent, fit: camera.fit, selection }), [onShown, percent, camera.fit, selection])
+  useLayoutEffect(() => {
+    if (camera.gliding.current) return
+    onShown({ percent, fit: camera.fit, selection })
+  }, [onShown, percent, camera.fit, selection, camera.settled])
 
   useLayoutEffect(() => {
     onCommands({ zoomTo: (zoom) => camera.zoomTo(zoom, ringed[0]), zoomSelection: camera.zoomSelection })
@@ -260,7 +265,6 @@ export function EditorGrid({
     if (!quiet.current) camera.reveal(index)
   }
 
-  const spacing = gridSpacing({ width: size.w, height: size.h })
   const selected = new Set(ringed)
   const box = marquee.box
   const reachable = stop < count ? stop : current
@@ -293,7 +297,10 @@ export function EditorGrid({
           role="group"
           aria-label={slideListCopy.listName}
           className="absolute top-0 left-0 outline-none"
-          style={{ transform: `translate(${String(camera.view.x)}px, ${String(camera.view.y)}px)` }}
+          style={{
+            transform: `translate(${String(live.x)}px, ${String(live.y)}px) scale(${String(live.scale)})`,
+            transformOrigin: "0 0",
+          }}
           data-slide-list
           data-focus-edge
           onKeyDown={onKey}
@@ -306,8 +313,7 @@ export function EditorGrid({
             <GridCard
               key={card.id}
               card={card}
-              scale={scale}
-              gap={spacing.group}
+              placement={placement}
               count={count}
               view={view}
               painted={painted.has(card.index)}
@@ -325,7 +331,7 @@ export function EditorGrid({
             aria-hidden="true"
             data-grid-marquee
             style={{
-              transform: `translate(${String(camera.view.x + box.left * scale)}px, ${String(camera.view.y + box.top * scale)}px)`,
+              transform: `translate(${String(live.x + box.left * scale)}px, ${String(live.y + box.top * scale)}px)`,
               width: (box.right - box.left) * scale,
               height: (box.bottom - box.top) * scale,
             }}

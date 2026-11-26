@@ -168,17 +168,41 @@ html:has(.reflow-frame) #root {
 [data-grid-card] [data-slide-skip-cover] {
   inset: 0;
 }
-[data-grid-card] {
+@property --grid-scale {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+[data-grid-overlay] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(100% * var(--grid-scale));
+  height: calc(100% * var(--grid-scale));
+  transform: scale(calc(1 / var(--grid-scale)));
+  transform-origin: 0 0;
+  pointer-events: none;
   --grid-radius: max(var(--grid-radius-min), calc(var(--grid-radius-canvas) * var(--grid-scale)));
 }
+[data-grid-front] {
+  z-index: 1;
+}
+[data-grid-overlay] [data-slide-number] {
+  pointer-events: auto;
+}
 [data-grid-card] [data-slide-entry] {
-  --focus-ring-width: var(--grid-focus-width);
   --focus-ring-offset: 0px;
-  border-radius: var(--grid-radius);
-  box-shadow: var(--shadow-grid);
+  outline-width: calc(var(--grid-focus-width) / var(--grid-scale));
+  border-radius: max(calc(var(--grid-radius-min) / var(--grid-scale)), var(--grid-radius-canvas));
+  box-shadow:
+    0 0 0 calc(1px / var(--grid-scale)) var(--line),
+    0 calc(1px / var(--grid-scale)) calc(3px / var(--grid-scale)) rgb(15 36 51 / 8%);
 }
 [data-grid-card][data-selected] [data-slide-entry] {
-  box-shadow: var(--shadow-grid-selected);
+  box-shadow: 0 0 0 calc(2px / var(--grid-scale)) var(--ring);
+}
+[data-grid-card] [data-slide-skip-mark] {
+  transform: scale(calc(1 / var(--grid-scale)));
 }
 [data-grid-halo] {
   position: absolute;
@@ -230,7 +254,7 @@ html:has(.reflow-frame) #root {
 }
 @media (hover: hover) and (pointer: fine) {
   [data-grid-viewport]:not([data-panning], [data-marquee])
-    [data-grid-card]:has(> :is([data-slide-entry], [data-slide-number]):hover) {
+    [data-grid-card]:has(:is([data-slide-entry], [data-slide-number]):hover) {
     & [data-grid-halo] {
       opacity: 1;
       @media (prefers-reduced-motion: no-preference) {
@@ -249,7 +273,7 @@ html:has(.reflow-frame) #root {
       -webkit-text-stroke-width: 0;
     }
     &:not([data-selected]) [data-slide-entry] {
-      box-shadow: 0 0 0 1px var(--primary);
+      box-shadow: 0 0 0 calc(1px / var(--grid-scale)) var(--primary);
     }
     &[data-number-placement="inside"]:not([data-selected]) [data-slide-entry] {
       box-shadow: none;

@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react"
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type PointerEvent, type RefObject } from "react"
 import { gestureFor, releases } from "@/lib/gestures"
 import { steppedZoom, zoomKey, zoomRanges, type Zoom } from "@/editing/canvas-zoom"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
+import { gridZoomPlacement } from "@/editor/grid-number"
 import type { GridLayout, GridRect, GridSize } from "@/editor/grid-lines"
 import {
   arrowGrid,
@@ -9,6 +10,8 @@ import {
   cardBox,
   fittedGrid,
   fittedGridCards,
+  gridPaintMargin,
+  gridShown,
   keptGridShows,
   pannedGrid,
   readGridViewport,
@@ -62,12 +65,61 @@ function union(boxes: readonly GridRect[]): GridRect | null {
   return { left, top, width: right - left, height: bottom - top }
 }
 
+const heldScale = new WeakMap<HTMLElement, string>()
+const heldChrome = new WeakMap<HTMLElement, (HTMLElement | SVGElement)[]>()
+
+function chrome(sheet: HTMLElement, refresh: boolean): readonly (HTMLElement | SVGElement)[] {
+  if (!refresh) {
+    const cached = heldChrome.get(sheet)
+    if (cached !== undefined) return cached
+  }
+  const found: (HTMLElement | SVGElement)[] = []
+  for (const node of sheet.querySelectorAll("[data-grid-overlay], [data-slide-entry], [data-slide-skip-mark]")) {
+    if (node instanceof HTMLElement || node instanceof SVGElement) found.push(node)
+  }
+  heldChrome.set(sheet, found)
+  return found
+}
+
+function paintWorld(sheet: HTMLElement, view: GridView, refresh: boolean) {
+  sheet.style.transform = `translate(${String(view.x)}px, ${String(view.y)}px) scale(${String(view.scale)})`
+  sheet.style.transformOrigin = "0 0"
+  const value = String(view.scale)
+  if (!refresh && heldScale.get(sheet) === value) return
+  heldScale.set(sheet, value)
+  for (const node of chrome(sheet, refresh)) {
+    if (node.style.getPropertyValue("--grid-scale") === value) continue
+    node.style.setProperty("--grid-scale", value)
+  }
+}
+
+function writePercent(percent: number) {
+  const root = document.querySelector("[data-zoom-readout]")
+  if (root === null) return
+  const next = `${String(percent)}%`
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  let node = walker.nextNode()
+  while (node !== null) {
+    if (node.textContent?.endsWith("%") === true) {
+      if (node.textContent !== next) node.textContent = next
+      return
+    }
+    node = walker.nextNode()
+  }
+}
+
+function sameCamera(held: GridCamera, next: GridCamera): boolean {
+  if (held === "fit" || next === "fit") return held === next
+  return held.x === next.x && held.y === next.y && held.scale === next.scale
+}
+
 export function useGridCamera({
   deck,
   layout,
   ringed,
   hand,
   onHand,
+  sheet,
   start,
 }: {
   readonly deck: string
@@ -75,25 +127,87 @@ export function useGridCamera({
   readonly ringed: readonly number[]
   readonly hand: boolean
   readonly onHand: (hand: boolean) => void
+  readonly sheet: RefObject<HTMLDivElement | null>
   readonly start?: GridView
 }) {
   const [camera, setCamera] = useState<GridCamera>(() => start ?? keptCamera(deck))
+  const [settled, setSettled] = useState(0)
   const [room, setRoom] = useState<GridSize>({ width: 0, height: 0 })
   const [space, setSpace] = useState(false)
   const host = useRef<HTMLDivElement | null>(null)
   const view = camera === "fit" ? fittedGrid(layout, room) : camera
   const latest = useRef({ camera, view, layout, ringed, room, hand, onHand })
-  useLayoutEffect(() => {
-    latest.current = { camera, view, layout, ringed, room, hand, onHand }
-  })
+  const gliding = useRef(false)
+  const rendered = useRef<GridCamera>(camera)
+  const paintedKey = useRef("")
+  const restTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const [, setFrame] = useState(0)
   const pan = useRef<{ pointer: number; x: number; y: number; view: GridView } | null>(null)
   const panned = useRef(false)
   const heldSpace = useRef(false)
 
-  function show(next: GridCamera) {
-    latest.current = { ...latest.current, camera: next, view: next === "fit" ? latest.current.view : next }
-    setCamera(next)
+  function frameKey(shown: GridView) {
+    const { layout: laid, room: size } = latest.current
+    return `${gridZoomPlacement(laid, shown.scale)}:${gridShown(laid, shown, size, gridPaintMargin).join(",")}`
   }
+
+  function paint(shown: GridView, refresh: boolean) {
+    const node = sheet.current
+    if (node !== null) paintWorld(node, shown, refresh)
+    writePercent(Math.round(shown.scale * 100))
+  }
+
+  function stopGlide() {
+    gliding.current = false
+    if (restTimer.current !== undefined) clearTimeout(restTimer.current)
+    restTimer.current = undefined
+  }
+
+  function show(next: GridCamera) {
+    stopGlide()
+    const shown = next === "fit" ? fittedGrid(latest.current.layout, latest.current.room) : next
+    latest.current = { ...latest.current, camera: next, view: shown }
+    paint(shown, false)
+    if (!sameCamera(rendered.current, next)) setCamera(next)
+    setSettled((held) => held + 1)
+  }
+
+  function rest() {
+    if (restTimer.current !== undefined) clearTimeout(restTimer.current)
+    restTimer.current = undefined
+    if (!gliding.current) return
+    gliding.current = false
+    const next = latest.current.camera
+    if (!sameCamera(rendered.current, next)) setCamera(next)
+    setSettled((held) => held + 1)
+  }
+
+  function scheduleRest() {
+    if (restTimer.current !== undefined) clearTimeout(restTimer.current)
+    restTimer.current = setTimeout(rest, settleAfter)
+  }
+
+  function glide(next: GridView) {
+    latest.current = { ...latest.current, camera: next, view: next }
+    paint(next, false)
+    gliding.current = true
+    const key = frameKey(next)
+    if (key !== paintedKey.current) {
+      paintedKey.current = key
+      setFrame((held) => held + 1)
+    }
+    scheduleRest()
+  }
+
+  useLayoutEffect(() => {
+    const shown = gliding.current ? latest.current.view : view
+    latest.current = gliding.current
+      ? { ...latest.current, layout, ringed, room, hand, onHand }
+      : { camera, view, layout, ringed, room, hand, onHand }
+    rendered.current = camera
+    paint(shown, true)
+    paintedKey.current = frameKey(shown)
+  })
 
   function center() {
     return { x: latest.current.room.width / 2, y: latest.current.room.height / 2 }
@@ -187,7 +301,7 @@ export function useGridCamera({
     const wheel = (event: WheelEvent) => {
       event.preventDefault()
       if (pinching !== null && (event.ctrlKey || event.metaKey)) return
-      show(wheeledGrid(latest.current.view, event, local({ x: event.clientX, y: event.clientY })))
+      glide(wheeledGrid(latest.current.view, event, local({ x: event.clientX, y: event.clientY })))
     }
     const start = (raw: Event) => {
       raw.preventDefault()
@@ -204,11 +318,12 @@ export function useGridCamera({
         event.clientX !== undefined && event.clientY !== undefined && (event.clientX !== 0 || event.clientY !== 0)
           ? { x: event.clientX, y: event.clientY }
           : pointer
-      show(zoomedGridBy(latest.current.view, factor, at === null ? center() : local(at)))
+      glide(zoomedGridBy(latest.current.view, factor, at === null ? center() : local(at)))
     }
     const end = (raw: Event) => {
       raw.preventDefault()
       pinching = null
+      rest()
     }
     element.addEventListener("pointermove", move, { passive: true })
     element.addEventListener("wheel", wheel, { passive: false })
@@ -221,6 +336,7 @@ export function useGridCamera({
       element.removeEventListener("gesturestart", start)
       element.removeEventListener("gesturechange", change)
       element.removeEventListener("gestureend", end)
+      if (restTimer.current !== undefined) clearTimeout(restTimer.current)
     }
   }, [])
 
@@ -298,18 +414,22 @@ export function useGridCamera({
     const held = pan.current
     if (held === null || held.pointer !== event.pointerId) return
     panned.current = true
-    show(pannedGrid(held.view, { x: event.clientX - held.x, y: event.clientY - held.y }))
+    glide(pannedGrid(held.view, { x: event.clientX - held.x, y: event.clientY - held.y }))
   }
 
   function release(event: PointerEvent<HTMLDivElement>) {
     if (pan.current?.pointer !== event.pointerId) return
     pan.current = null
     delete event.currentTarget.dataset.panning
+    rest()
   }
 
   return {
     view,
     fit: camera === "fit",
+    settled,
+    gliding,
+    viewNow: () => latest.current.view,
     room,
     space,
     reveal,

@@ -2,15 +2,14 @@ import type * as doom from "@airdesign/doom"
 import { memo, type CSSProperties } from "react"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { slideNumberLabel } from "@/lib/slide-numbering"
-import { gridNumberPlacement } from "@/editor/grid-number"
+import type { GridNumberPlacement } from "@/editor/grid-number"
 import type { GridCard as Placed } from "@/editor/grid-lines"
 import { SkippedSlide } from "@/editor/skipped-slide"
 import { Thumb } from "./thumb"
 
 export const GridCard = memo(function GridCard({
   card,
-  scale,
-  gap,
+  placement,
   count,
   view,
   painted,
@@ -22,8 +21,7 @@ export const GridCard = memo(function GridCard({
   assetUrl,
 }: {
   readonly card: Placed
-  readonly scale: number
-  readonly gap: number
+  readonly placement: GridNumberPlacement
   readonly count: number
   readonly view: doom.Doom
   readonly painted: boolean
@@ -34,16 +32,8 @@ export const GridCard = memo(function GridCard({
   readonly skipped: boolean
   readonly assetUrl: (asset: string) => string | undefined
 }) {
-  const width = card.width * scale
   const number = card.index + 1
-  const placement = gridNumberPlacement({ width, gap: gap * scale })
-  const place: CSSProperties & Record<"--grid-scale", number> = {
-    left: card.left * scale,
-    top: card.top * scale,
-    width,
-    height: card.height * scale,
-    "--grid-scale": scale,
-  }
+  const place: CSSProperties = { left: card.left, top: card.top, width: card.width, height: card.height }
   return (
     <div
       className="absolute"
@@ -52,7 +42,9 @@ export const GridCard = memo(function GridCard({
       data-selected={selected || undefined}
       data-number-placement={placement}
     >
-      <span aria-hidden="true" data-grid-halo />
+      <span data-grid-overlay>
+        <span aria-hidden="true" data-grid-halo />
+      </span>
       <button
         type="button"
         aria-current={current ? "true" : undefined}
@@ -67,16 +59,18 @@ export const GridCard = memo(function GridCard({
         data-slide-skipped={skipped || undefined}
       >
         <span
-          className="pointer-events-none absolute top-0 left-0 block origin-top-left"
-          style={{ width: card.width, height: card.height, transform: `scale(${String(scale)})` }}
+          className="pointer-events-none absolute top-0 left-0 block"
+          style={{ width: card.width, height: card.height }}
           data-slide-thumb
         >
           {painted ? <Thumb view={view} slide={card.id} width={card.width} assetUrl={assetUrl} /> : null}
         </span>
         {skipped ? <SkippedSlide /> : null}
       </button>
-      <span aria-hidden="true" data-slide-number hidden={placement === "hidden"}>
-        {slideNumberLabel(card.index, skipped)}
+      <span data-grid-overlay data-grid-front>
+        <span aria-hidden="true" data-slide-number hidden={placement === "hidden"}>
+          {slideNumberLabel(card.index, skipped)}
+        </span>
       </span>
     </div>
   )
