@@ -25,6 +25,7 @@ import {
   type Selection,
 } from "./selection"
 import type { Placed, Point, SlideGeometry } from "./slide-geometry"
+import type { CanvasGesture } from "./canvas-gesture"
 import { transformedBy } from "./transform-drag"
 import { commitDesignEdit } from "./component-edits"
 import type { EditorClient } from "./use-deck"
@@ -70,62 +71,6 @@ export type PointerArgs = {
   readonly pointAt?: (client: Point) => Point
 }
 
-type Active =
-  | { readonly kind: "pan"; readonly x: number; readonly y: number; readonly left: number; readonly top: number }
-  | {
-      readonly kind: "move"
-      readonly origin: Point
-      readonly ids: readonly doom.NodeId[]
-      readonly view: doom.Doom
-      readonly geometry: SlideGeometry
-      readonly alone: Selection | null
-      readonly selected: Selection
-      copies: doom.Copies | null
-      copying: boolean
-      moved: boolean
-    }
-  | {
-      readonly kind: "transform"
-      readonly grip: TransformGrip
-      readonly origin: Point
-      readonly ids: readonly doom.NodeId[]
-      readonly view: doom.Doom
-      readonly geometry: SlideGeometry
-      moved: boolean
-    }
-  | {
-      readonly kind: "end"
-      readonly grip: EndGrip
-      readonly origin: Point
-      readonly line: doom.NodeId
-      readonly view: doom.Doom
-      readonly geometry: SlideGeometry
-      moved: boolean
-    }
-  | {
-      readonly kind: "crop"
-      readonly grip: CropGrip
-      readonly origin: Point
-      readonly target: CropTarget
-      readonly view: doom.Doom
-      readonly geometry: SlideGeometry
-      moved: boolean
-    }
-  | {
-      readonly kind: "draw"
-      readonly origin: Point
-      readonly chain: readonly Placed[] | null
-      moved: boolean
-    }
-  | {
-      readonly kind: "marquee"
-      readonly origin: Point
-      readonly base: readonly doom.NodeId[]
-      readonly geometry: SlideGeometry
-      readonly view: doom.Doom
-      moved: boolean
-    }
-
 const threshold = 3
 
 export function dragButton(event: { readonly button: number; readonly ctrlKey: boolean }): boolean {
@@ -161,7 +106,7 @@ export function useCanvasPointer(args: PointerArgs) {
   useLayoutEffect(() => {
     latest.current = args
   })
-  const active = useRef<Active | null>(null)
+  const active = useRef<CanvasGesture | null>(null)
   const fnDown = useRef(false)
   useEffect(() => {
     const fnKey = (event: KeyboardEvent) => {
@@ -220,7 +165,7 @@ export function useCanvasPointer(args: PointerArgs) {
   type Evaluated = Pick<Preview, "writes" | "guides" | "label"> & { readonly copies: doom.Copies | null }
 
   function evaluate(
-    gesture: Extract<Active, { kind: "move" | "transform" }>,
+    gesture: Extract<CanvasGesture, { kind: "move" | "transform" }>,
     event: PointerEvent | ReactPointerEvent,
   ): Evaluated {
     const a = latest.current
@@ -338,11 +283,24 @@ export function useCanvasPointer(args: PointerArgs) {
     }
     const rect = rectBetween(gesture.origin, at)
     a.setMarquee(rect)
+    boxed(gesture, rect, event)
+  }
+
+  function boxed(
+    gesture: Extract<CanvasGesture, { kind: "marquee" }>,
+    rect: Rect,
+    event: PointerEvent | ReactPointerEvent,
+  ) {
+    const a = latest.current
     const hits = marqueeSelection(gesture.geometry, rect, {
       deep: event.metaKey || event.ctrlKey,
       locked: (id) => doom.lockedIn(gesture.view, id),
     })
-    a.onSelection({ ids: [...new Set([...gesture.base, ...hits])], inside: null })
+    const ids = [...new Set([...gesture.base, ...hits])]
+    const shown = ids.join(" ")
+    if (shown === gesture.shown) return
+    gesture.shown = shown
+    a.onSelection({ ids, inside: null })
   }
 
   function schedule(event: PointerEvent | ReactPointerEvent) {
@@ -367,6 +325,12 @@ export function useCanvasPointer(args: PointerArgs) {
     pending.current = null
     a.setMarquee(null)
     a.setPreview(null)
+    if (gesture?.kind === "marquee") {
+      if (!commit || last === null) a.onSelection(gesture.before)
+      else if (gesture.moved || farFromPress(last)) boxed(gesture, rectBetween(gesture.origin, toSlide(last)), last)
+      else if (gesture.blank) a.onBlank?.()
+      return
+    }
     if (gesture?.kind === "draw" && commit && last !== null) {
       const at = toSlide(last)
       const far = gesture.moved || farFromPress(last)
@@ -488,16 +452,21 @@ export function useCanvasPointer(args: PointerArgs) {
       const chain = chainAt(event, a.geometry, a.view)
       const deep = event.metaKey || event.ctrlKey
       if (chain === null) {
-        if (a.onBlank !== undefined && a.tool === "move") {
-          if (a.geometry.roots.length > 0) {
-            event.preventDefault()
-            a.onBlank()
-          }
-          return
+        const blank = a.onBlank !== undefined && a.tool === "move"
+        if (blank && a.geometry.roots.length === 0) return
+        if (blank) event.preventDefault()
+        else if (!event.shiftKey) a.onSelection(noSelection)
+        active.current = {
+          kind: "marquee",
+          origin,
+          base: event.shiftKey ? a.selection.ids : [],
+          before: a.selection,
+          blank,
+          geometry: a.geometry,
+          view: a.view,
+          shown: null,
+          moved: false,
         }
-        const base = event.shiftKey ? a.selection.ids : []
-        if (!event.shiftKey) a.onSelection(noSelection)
-        active.current = { kind: "marquee", origin, base, geometry: a.geometry, view: a.view, moved: false }
         return
       }
       const unit = unitOf(chain, a.selection.inside, deep)

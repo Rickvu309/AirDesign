@@ -162,6 +162,11 @@ export function useGridEditing({
   function escape(event: KeyboardEvent<HTMLDivElement>) {
     if (event.nativeEvent.isComposing || !editorOwnsKey(event)) return
     if (gestureFor(event.nativeEvent, "grid") !== "deselect") return
+    if (handoff.current?.cancel() === true) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
     if (typing(event.target) || state.kind === "text" || state.kind === "none") return
     event.preventDefault()
     event.stopPropagation()

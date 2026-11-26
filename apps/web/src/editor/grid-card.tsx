@@ -66,7 +66,7 @@ export const GridCard = memo(function GridCard({
   }
   return (
     <div
-      className="absolute"
+      className={live === undefined ? "absolute" : "absolute z-2"}
       style={place}
       data-grid-card
       data-selected={selected || undefined}

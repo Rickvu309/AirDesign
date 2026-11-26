@@ -376,6 +376,7 @@ export function EditorGrid({
   }
 
   function onCardGrab(event: PointerEvent<HTMLDivElement>) {
+    if (edit.inLive(event.target)) return
     const index = entryOf(event.target)
     if (index !== null) drag.grab(index, event)
   }
