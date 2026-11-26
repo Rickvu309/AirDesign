@@ -326,7 +326,7 @@ const rebodied = harness({
 })
 same("--body-file rewrites an open pull request's body", await rebodied.run(), 0)
 same("with the file's text", rebodied.edits, [
-  { path: "repos/Rickvu309/AirDesign/pulls/412", fields: { body: "## What changes\n\nA.\n\n## Proof\n\nRan it.\n" } },
+  { path: "repos/Rickvu309/AirDesign/pulls/412", fields: { body: "**Now:** A.\n**Proof:** Ran it.\n" } },
 ])
 same(
   "and says once that a body edit starts the bar check again",
@@ -335,8 +335,8 @@ same(
 )
 
 const unchanged = harness({
-  pull: { number: 412, baseRefName: "main", url: "u", title: "Add land", body: "## Proof\n" },
-  bodyText: "## Proof\n",
+  pull: { number: 412, baseRefName: "main", url: "u", title: "Add land", body: "**Now:** A.\n**Proof:** Ran it.\n" },
+  bodyText: "**Now:** A.\n**Proof:** Ran it.\n",
   args: ["--title", "Add land", "--body-file", "/tmp/body.md"],
 })
 same("a title and body the pull request already has land", await unchanged.run(), 0)
@@ -351,30 +351,25 @@ const proofless = harness({
   bodyText: "## What changes\n\nA.\n",
   args: ["--title", "Add land", "--body-file", "/tmp/body.md", "--check"],
 })
-same("a body with no Evidence heading only warns", await proofless.run(), 0)
+same("a body file that opens with neither lead stops", await proofless.run(), 1)
 same(
-  "and says so in one line",
-  proofless.said.filter((line) => line.startsWith("body       warning: the body has no ## Evidence heading")).length,
-  1,
+  "and says how a body opens",
+  proofless.said.at(-1).startsWith("STOPPED at body: the body opens with neither lead."),
+  true,
 )
+const oldShape = harness({
+  pull: { number: 412, baseRefName: "main", url: "u", title: "Add land", body: "## Summary\n\nA.\n" },
+  args: ["--check"],
+})
+same("an open pull request's body from before the lead rule still lands", await oldShape.run(), 0)
 same(
-  "a body with an Evidence heading says nothing",
+  "a body with a lead says nothing",
   clean.said.some((line) => line.startsWith("body")),
   false,
 )
-const prProofless = harness({
-  pull: { number: 412, baseRefName: "main", url: "u", title: "Add land", body: "A." },
-  args: ["--check"],
-})
-await prProofless.run()
-same(
-  "an open pull request's body is read too",
-  prProofless.said.some((line) => line.includes("no ## Evidence heading")),
-  true,
-)
 same(
   "and the body file is not",
-  prProofless.log.some((line) => line.startsWith("read ")),
+  oldShape.log.some((line) => line.startsWith("read ")),
   false,
 )
 const unread = harness({ pull: null, bodyText: null, args: ["--title", "Add land", "--body-file", "/tmp/none.md"] })

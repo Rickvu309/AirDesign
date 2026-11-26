@@ -1,4 +1,4 @@
-import { hasProof, titleAdvice, titleFaults, titleLimit, titleVerdict } from "./title.mjs"
+import { titleAdvice, titleFaults, titleLimit, titleVerdict } from "./title.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -59,16 +59,6 @@ same(
 same(
   "the advice names the limit and where the rest goes",
   titleAdvice.includes("at most 72 characters") && titleAdvice.includes("body"),
-  true,
-)
-
-same("a body with a Proof heading has proof", hasProof("## What changes\n\nA.\n\n## Proof\n\nRan it.\n"), true)
-same("a Proof heading of any level counts", hasProof("### Proof\nRan it."), true)
-same("a body with no Proof heading has none", hasProof("## What changes\n\nA proof of concept.\n"), false)
-same("an empty body has none", hasProof(undefined), false)
-same(
-  "an Evidence heading from the pr skill counts as proof",
-  hasProof("## Summary\n\nA.\n\n## Evidence\n\nRan it.\n"),
   true,
 )
 

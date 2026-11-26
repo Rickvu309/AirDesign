@@ -30,15 +30,17 @@ export const noVisibleChange = (body) =>
     )
     .find((reason) => reason !== undefined)
 
+export const proofImage = (repository) =>
+  new RegExp(
+    `!\\[[^\\]]*\\]\\(https://github\\.com/${repository.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/releases/download/proof(?:-\\d+)?/[^)\\s]+\\.png\\)`,
+    "i",
+  )
+
 export const hasBeforeAfter = (body, repository) => {
   const text = beforeAfterSection(body)
   if (text === undefined) return false
   if (noVisibleChange(body) !== undefined) return true
-  const place = repository.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  return new RegExp(
-    `!\\[[^\\]]*\\]\\(https://github\\.com/${place}/releases/download/proof(?:-\\d+)?/[^)\\s]+\\.png\\)`,
-    "i",
-  ).test(text)
+  return proofImage(repository).test(text)
 }
 
 export const beforeAfterNeed = ({ changedFiles, body, repository }) => {

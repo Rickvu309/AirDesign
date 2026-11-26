@@ -49,7 +49,7 @@ same(
   "a body that only mentions Claude Code passes",
   await harness({
     pull: null,
-    bodyText: "## Proof\n\nRan the land test with Claude Code's output.\n",
+    bodyText: "**Now:** A.\n**Proof:** Ran the land test with Claude Code's output.\n",
     args: ["--title", "Add land", "--body-file", "/tmp/body.md", "--check"],
   }).run(),
   0,

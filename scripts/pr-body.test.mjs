@@ -3,7 +3,15 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { runner } from "./land-git.mjs"
-import { bodyFaults, branchBodyFaults, githubOffBranch, localOffBranch, templateSentences } from "./pr-body.mjs"
+import {
+  bodyFaults,
+  branchBodyFaults,
+  githubOffBranch,
+  leadFaults,
+  leadLimit,
+  localOffBranch,
+  templateSentences,
+} from "./pr-body.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -33,6 +41,41 @@ for (const line of [
 ])
   same(`a name in a sentence is not a placeholder: ${line}`, faultsOf(`${line}\n`), [])
 same("a placeholder in a fenced block is not judged", faultsOf("```\nPUBLISHED_IMAGES\n```\n"), [])
+
+const leadOf = (body, changedFiles = []) => leadFaults(body, { repository, changedFiles })
+const plain = "**Now:** the gate reads the change map.\n**Proof:** 12 script tests pass.\n"
+const tree = `${image}\n\n<details><summary>Detail</summary>\n\n**Result.** The highlight sits on its line (Passed)\n\n- **A.** It stays inside the box (Passed)\n\n</details>\n`
+const canvas = ["apps/web/src/editor/canvas.tsx"]
+same("a body that opens with Now and Proof lines has a lead", leadOf(plain), [])
+same("a body that opens with the tree picture and its result has a lead", leadOf(tree), [])
+same(
+  "a risk line and a Before / after section follow either lead",
+  leadOf(`${plain}**Risk:** one-way: it drops a table.\n`),
+  [],
+)
+same("a body that opens with a Summary heading has no lead", leadOf("## Summary\n\nA.\n\n## Evidence\n\nRan it.\n"), [
+  "the body opens with neither lead. Open it with the tree picture from show-airdesign, published with verify-airdesign publish, and the tree's Markdown in a details block. For a change no person sees, open it with a **Now:** line and a **Proof:** line.",
+])
+same("a Now line with no Proof line is not a lead", leadOf("**Now:** the gate reads the change map.\n").length, 1)
+same("a picture with no tree result is not a lead", leadOf(`${image}\n\nIt works.\n`).length, 1)
+same("a change a person sees opens with the tree, not the plain lines", leadOf(plain, canvas), [
+  "this changes what a person sees (apps/web/src/editor/canvas.tsx), so the body opens with the tree picture from show-airdesign and the tree's Markdown in a details block, not with the **Now:** line.",
+])
+same("a change a person sees with the tree passes", leadOf(tree, canvas), [])
+same(
+  "a change that touches seen files and shows nothing new may use the plain lines",
+  leadOf(`${plain}\n## Before / after\n\nNo visible change: only a file moved.\n`, canvas),
+  [],
+)
+const long = `${plain}\n${Array.from({ length: leadLimit }, (_, at) => `Line ${String(at)}.`).join("\n")}\n`
+same("a body past the limit is refused, and the refusal counts its lines", leadOf(long), [
+  `the body has ${String(leadLimit + 2)} lines outside its details block, over the limit of ${String(leadLimit)}. Cut it, or move the detail into the details block.`,
+])
+same(
+  "lines inside the details block are not counted",
+  leadOf(`${plain}\n<details><summary>Detail</summary>\n\n${"Line.\n".repeat(leadLimit * 2)}\n</details>\n`),
+  [],
+)
 
 const [sentence] = templateSentences()
 same("the template's sentences are read from the template", sentence.length > 20, true)
