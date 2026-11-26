@@ -121,7 +121,7 @@ export function DecksShell({
   const empty = realAccount ? starred?.length === 0 : firstVisit
   const [primary, ...rest] = sections.map((section) => (realAccount ? { ...section, href: section.page } : section))
   return (
-    <div className="flex h-full w-full max-md:flex-col">
+    <div className="flex size-full max-md:flex-col">
       <aside
         data-decks-sidebar
         className="flex h-full w-[var(--decks-sidebar-width)] shrink-0 flex-col bg-canvas px-3 pt-2.5 pb-3 max-md:h-auto max-md:w-full"
