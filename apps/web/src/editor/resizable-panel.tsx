@@ -53,6 +53,7 @@ export function ResizablePanel({ panel, children }: { panel: Panel; children: Re
     <aside
       className="relative flex h-full shrink-0 flex-col border-l border-line bg-white"
       style={{ width }}
+      id="editor-panel"
       data-editor-panel
     >
       <div

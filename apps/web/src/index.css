@@ -165,6 +165,10 @@ html:has(.reflow-frame) #root {
   place-items: center;
   pointer-events: none;
 }
+[data-slide-grid] [data-slide-skip-cover] {
+  inset-block: 1.5rem 0;
+  right: 0;
+}
 [data-slide-skip-mark] {
   box-sizing: content-box;
   width: var(--space-16);

@@ -191,6 +191,26 @@ describe("delete slides", () => {
 })
 
 describe("move slides", () => {
+  it("keeps a slide dropped on a group's last slide in that group", () => {
+    const { view: flat, slides } = three()
+    const [one, two, last] = slides
+    const group = doom.parentOf(flat.nodes.get(one!))!
+    const deck = doom.parentOf(flat.nodes.get(group.id))!
+    const second = doom.nodeId("m:99")
+    const view = landed(flat, [
+      { node: second, prop: "type", value: "slideRow" },
+      { node: second, prop: "parent", value: { id: deck.id, at: doom.orderKeyBetween(deck.at, null) } },
+      { node: last!, prop: "parent", value: { id: second, at: doom.orderKeyBetween(null, null) } },
+    ])
+    const groupOf = (after: doom.Doom, slide: doom.NodeId) => doom.parentOf(after.nodes.get(slide))?.id
+    const moved = landed(view, moveSlideWrites(view, [one!], 2, two))
+    expect(slideIds(moved)).toEqual([two, one, last])
+    expect(groupOf(moved, one!)).toBe(group.id)
+    const joined = landed(view, moveSlideWrites(view, [one!], 2, last))
+    expect(slideIds(joined)).toEqual([two, one, last])
+    expect(groupOf(joined, one!)).toBe(second)
+  })
+
   it("is one write per slide that puts them before the asked place", () => {
     const { view, slides } = three()
     const writes = moveSlideWrites(view, [slides[0]!], 3)

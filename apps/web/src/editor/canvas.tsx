@@ -71,6 +71,8 @@ export function DoomCanvas(props: {
   readonly onZoom: (zoom: Zoom) => void
   readonly onCommands: (commands: CanvasCommands | null) => void
   readonly toolbarHost: HTMLElement | null
+  readonly actionsOpen: boolean
+  readonly onActionsOpen: (open: boolean) => void
   readonly editing?: doom.NodeId
   readonly shapes?: ShapesShown
   readonly notice: ThinNotice | null
@@ -89,7 +91,7 @@ export function DoomCanvas(props: {
   const [preview, setPreview] = useState<Preview | null>(null)
   const [marquee, setMarquee] = useState<Rect | null>(null)
   const [hover, setHover] = useState<doom.NodeId | null>(null)
-  const [actionsOpen, setActionsOpen] = useState(false)
+  const { actionsOpen, onActionsOpen: setActionsOpen } = props
   const anchor = useRef<{ readonly point: Point; readonly at: Point } | null>(null)
 
   const { size } = doom.deckOf(view)
@@ -104,6 +106,13 @@ export function DoomCanvas(props: {
   const typedOn =
     text.session === null ? undefined : doom.slideOf(view, text.session.created?.parent.id ?? text.session.node)
   useEffect(() => onTyping?.(text.preview, typedOn), [onTyping, text.preview, typedOn])
+  useEffect(
+    () => () => {
+      onTyping?.([], undefined)
+      onWords?.(null)
+    },
+    [onTyping, onWords],
+  )
   const session = text.session
   const words = session === null ? null : linkedWords(session.draft, session.anchor, session.focus)
   const caret = session === null || words === null ? null : { ...words, node: session.node }
@@ -379,7 +388,7 @@ export function DoomCanvas(props: {
     cancelDrag: pointer.cancelDrag,
     dragging: pointer.dragging,
     onEditText: (id) => text.begin(id, { kind: "all" }),
-    onActions: () => setActionsOpen((open) => !open),
+    onActions: () => setActionsOpen(!actionsOpen),
     cropping: cropNode !== null,
     onCropEnd: () => onCropping(null),
   })

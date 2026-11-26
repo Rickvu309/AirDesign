@@ -1,22 +1,28 @@
 import * as doom from "@airdesign/doom"
+import { flushMedia } from "@airdesign/live"
 import { useDoomMeasure } from "@airdesign/render"
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react"
 import { peekFirstRequest } from "@/lib/first-request"
 import { replaceDeckAddress } from "@/editor/slide-address"
 import { NotFoundPage } from "@/decks/not-found-page"
 import { tabTitleOf } from "@/copy/product-copy"
 import { editorCopy } from "@/copy/editor-copy"
 import { notesWidth, slideRoom } from "@/editing/canvas-zoom"
-import { PanelHead } from "@/editor/editor-chrome"
+import { Island, PanelHead } from "@/editor/editor-chrome"
 import { ExportControl } from "@/export/export-control"
 import { useExport, usePrintKeyHeld, type ExportStart } from "@/export/export-flow"
 import { ResizablePanel } from "@/editor/resizable-panel"
-import { useKeptPanel, type ShownPanel } from "@/editor/kept-panel"
+import { useKeptOpen, useKeptPanel, type ShownPanel } from "@/editor/kept-panel"
+import { PanelToggle } from "@/editor/panel-toggle"
 import type { ShapesShown } from "@/editor/shape-tool"
 import type { AiraStart } from "@/aira/aira-panel"
 import { SlideSidebar } from "@/editor/slide-sidebar"
 import { useCanvasRoom } from "@/editor/use-canvas-room"
 import { ZoomMenu } from "@/editor/zoom-menu"
+import type { ActionRun } from "./actions-popover"
+import { EditorToolbar } from "./editor-toolbar"
+import { ThinNoticeView, type ThinNotice } from "./thin-notice"
+import { SlidePictures } from "./use-slide-pictures"
 import { PresentButton } from "@/present/present-button"
 import { usePresentKeys } from "@/present/present-keys"
 import { PresentLayer } from "@/present/present-layer"
@@ -37,12 +43,20 @@ import { noSelection, type Selection } from "./selection"
 import { useCurrentSlide } from "./use-current-slide"
 import { useAssetUrls } from "./use-asset-urls"
 import { useSlideStepKeys } from "./use-slide-step-keys"
+import { useGridHistoryKeys } from "./use-grid-history-keys"
 import { addAfterKey, useSlideStrip } from "./use-slide-strip"
 import type { Tool } from "./use-canvas-pointer"
 import { useDoomDeck, useDoomView, type EditorClient, type OpenOptions } from "./use-deck"
 import { useSaveShown, type Saving } from "./use-save-shown"
 import { useEditingNow } from "./use-editing-now"
 import { slideNumber } from "@/lib/slide-numbering"
+
+const noActions: ActionRun = {
+  chart: null,
+  icon: () => undefined,
+  picture: () => undefined,
+  exportPdf: () => undefined,
+}
 
 function deckName(view: doom.Doom): string {
   const deck = [...view.nodes.values()].find((node) => node.type === "deck")
@@ -84,6 +98,22 @@ function Editing({
   const [tool, setTool] = useState<Tool>(start.tool ?? "move")
   const [panel, setPanel] = useKeptPanel(id, start.panel)
   const [zoom, setZoom] = useState<Zoom>("fit")
+  const [grid, setGrid] = useState(false)
+  const [gridZoom, setGridZoom] = useState<Zoom>("fit")
+  const [gridScale, setGridScale] = useState({ now: 0.25, fit: 0.25 })
+  const [open, setOpen] = useKeptOpen(grid ? "grid" : "slides")
+  const [airaWorking, setAiraWorking] = useState(false)
+  const toggleHeld = useRef(false)
+  const openPanel = (next: boolean) => {
+    toggleHeld.current = document.activeElement?.closest("[data-panel-toggle]") != null
+    setOpen(next)
+  }
+  useLayoutEffect(() => {
+    if (!toggleHeld.current) return
+    toggleHeld.current = false
+    document.querySelector<HTMLElement>("[data-panel-toggle]")?.focus({ preventScroll: true })
+  }, [open])
+  const [actionsOpen, setActionsOpen] = useState(false)
   const [toolbarHost, setToolbarHost] = useState<HTMLElement | null>(null)
   const idle: CanvasCommands = { zoomTo: setZoom, zoomSelection: null, linkWords: () => undefined }
   const commands = useRef<CanvasCommands>(idle)
@@ -123,6 +153,7 @@ function Editing({
     },
   })
   usePresentKeys(present.show === null, (from) => present.start(from === "first" ? 0 : strip.current))
+  useGridHistoryKeys(grid, client)
   useSlideStepKeys({ slides, current: slide, selecting: selection.ids.length > 0, onCurrent: choose })
   const title = deckName(view)
   const exporting = useExport(
@@ -138,6 +169,12 @@ function Editing({
   )
   usePrintKeyHeld()
   useEffect(() => {
+    void flushMedia(id)
+    const again = () => void flushMedia(id)
+    window.addEventListener("online", again)
+    return () => window.removeEventListener("online", again)
+  }, [id])
+  useEffect(() => {
     if (title === "") return
     const before = document.title
     document.title = tabTitleOf(title)
@@ -145,6 +182,51 @@ function Editing({
       document.title = before
     }
   }, [title])
+  const notice: ThinNotice | null =
+    exporting.failed === "capacity"
+      ? "export-capacity"
+      : exporting.failed === "fonts"
+        ? "export-fonts"
+        : exporting.failed
+          ? "export-failed"
+          : saved.notice
+  const tryAgain = (failed: ThinNotice) => {
+    if (failed === "export-capacity") exporting.control.openDialog()
+    if (failed === "export-failed" || failed === "export-fonts") exporting.tryAgain()
+  }
+  const panelHidden = !open
+  const pickPanel = (next: ShownPanel) => {
+    setPanel(next)
+    if (!open) setOpen(true)
+  }
+  const slidesZoomMenu = (
+    <ZoomMenu
+      zoom={zoom === "fit" ? "fit" : percent}
+      percent={percent}
+      onZoom={(next) => commands.current.zoomTo(next === "fit" ? "fit" : next / 100)}
+      {...(selection.ids.length === 0 ? {} : { onSelection: () => commands.current.zoomSelection?.() })}
+    />
+  )
+  const headActions = (
+    <span className="flex items-center gap-1">
+      <PanelToggle open={open} working={airaWorking} onOpen={openPanel} />
+      <PresentButton ref={presentButton} onClick={() => present.start(strip.current)} />
+      <ExportControl flow={exporting} />
+    </span>
+  )
+  const headRule = <span aria-hidden="true" className="mx-0.5 block h-5 w-px bg-[var(--field-edge)]" />
+  const gridZoomMenu = (
+    <ZoomMenu
+      keyed={false}
+      zoom={gridZoom === "fit" ? "fit" : percentOf(gridScale.now)}
+      percent={percentOf(gridScale.now)}
+      onZoom={(next) =>
+        setGridZoom(
+          next === "fit" || next / 100 <= gridScale.fit || (gridScale.fit < 0.1 && next <= 10) ? "fit" : next / 100,
+        )
+      }
+    />
+  )
   return (
     <div className="window-frame flex" data-editor-frame={id} inert={present.show !== null}>
       <div className="contents" onKeyDownCapture={(event) => addAfterKey(event, strip)}>
@@ -153,106 +235,157 @@ function Editing({
           strip={strip}
           save={saved.save}
           onRename={(name) => client.push(renameWrites(view, name))}
+          grid={
+            grid
+              ? {
+                  zoom: gridZoom,
+                  onScale: (now, fit) =>
+                    setGridScale((held) => (held.now === now && held.fit === fit ? held : { now, fit })),
+                  onSlides: () => setGrid(false),
+                  bar: (
+                    <EditorToolbar
+                      tool={tool}
+                      onTool={(next) => {
+                        setTool(next)
+                        if (next !== "move") setGrid(false)
+                      }}
+                      actionsOpen={false}
+                      onActionsOpen={(open) => {
+                        setActionsOpen(open)
+                        if (open) setGrid(false)
+                      }}
+                      run={noActions}
+                      panel={panel}
+                      onPanel={pickPanel}
+                      {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
+                    />
+                  ),
+                  ...(!panelHidden
+                    ? {}
+                    : {
+                        right: (
+                          <>
+                            {gridZoomMenu}
+                            {headRule}
+                            {headActions}
+                          </>
+                        ),
+                      }),
+                }
+              : undefined
+          }
+          onGrid={() => {
+            setSelection(noSelection)
+            setGrid(true)
+          }}
         />
       </div>
-      <div ref={canvas.onCanvas} className="relative min-w-0 flex-1" data-editor-canvas>
-        {slide === undefined ? null : (
-          <DoomCanvas
-            deck={id}
-            assets={assets}
-            client={client}
-            view={view}
-            measure={measure}
-            slide={slide}
-            editingRuns={editingRuns}
-            slideNumber={slideNumber(strip.current)}
-            selection={selection}
-            onSelection={setSelection}
-            tool={tool}
-            onTool={setTool}
-            panel={panel}
-            onPanel={setPanel}
-            zoom={zoom}
-            scale={scale}
-            room={fit}
-            overlay={canvas.overlay}
-            onZoom={setZoom}
-            onCommands={(next) => {
-              commands.current = next ?? idle
-            }}
-            toolbarHost={toolbarHost}
-            notice={
-              exporting.failed === "capacity"
-                ? "export-capacity"
-                : exporting.failed === "fonts"
-                  ? "export-fonts"
-                  : exporting.failed
-                    ? "export-failed"
-                    : saved.notice
-            }
-            onExport={exporting.control.openDialog}
-            onTryAgain={(notice) => {
-              if (notice === "export-capacity") exporting.control.openDialog()
-              if (notice === "export-failed" || notice === "export-fonts") exporting.tryAgain()
-            }}
-            onTyping={typing.set}
-            onWords={setWords}
-            cropping={cropping}
-            onCropping={setCropping}
-            {...(start.editing === undefined ? {} : { editing: start.editing })}
-            {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
-          />
-        )}
-        <div
-          ref={canvas.onOverlay}
-          data-canvas-overlay
-          className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center pb-4"
-        >
-          {slide === undefined ? null : (
-            <>
-              <div
-                data-notes-width
-                style={{ width: notesWidth(room, { width: size.w * scale, height: size.h * scale }) }}
-              >
-                <DoomNotes client={client} view={view} slide={slide} />
-              </div>
-              <span className="block h-3" />
-            </>
-          )}
-          <div ref={setToolbarHost} className="flex w-full justify-center px-4" />
+      {grid ? (
+        <>
+          <SlidePictures client={client} assetUrl={assets.assetUrl} />
+          <ThinNoticeView notice={notice} onTryAgain={tryAgain} />
+        </>
+      ) : (
+        <div className="flex min-w-0 flex-1 flex-col bg-canvas">
+          {panelHidden ? (
+            <div className="flex h-14 shrink-0 items-center justify-end pr-2" data-keeps-selection>
+              <Island>
+                {slidesZoomMenu}
+                {headRule}
+                {headActions}
+              </Island>
+            </div>
+          ) : null}
+          <div ref={canvas.onCanvas} className="relative min-h-0 min-w-0 flex-1" data-editor-canvas>
+            {slide === undefined ? null : (
+              <DoomCanvas
+                deck={id}
+                assets={assets}
+                client={client}
+                view={view}
+                measure={measure}
+                slide={slide}
+                editingRuns={editingRuns}
+                slideNumber={slideNumber(strip.current)}
+                selection={selection}
+                onSelection={setSelection}
+                tool={tool}
+                onTool={setTool}
+                panel={panel}
+                onPanel={pickPanel}
+                zoom={zoom}
+                scale={scale}
+                room={fit}
+                overlay={canvas.overlay}
+                onZoom={setZoom}
+                onCommands={(next) => {
+                  commands.current = next ?? idle
+                }}
+                toolbarHost={toolbarHost}
+                actionsOpen={actionsOpen}
+                onActionsOpen={setActionsOpen}
+                notice={notice}
+                onExport={exporting.control.openDialog}
+                onTryAgain={tryAgain}
+                onTyping={typing.set}
+                onWords={setWords}
+                cropping={cropping}
+                onCropping={setCropping}
+                {...(start.editing === undefined ? {} : { editing: start.editing })}
+                {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
+              />
+            )}
+            <div
+              ref={canvas.onOverlay}
+              data-canvas-overlay
+              className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center pb-4"
+            >
+              {slide === undefined ? null : (
+                <>
+                  <div
+                    data-notes-width
+                    style={{ width: notesWidth(room, { width: size.w * scale, height: size.h * scale }) }}
+                  >
+                    <DoomNotes client={client} view={view} slide={slide} />
+                  </div>
+                  <span className="block h-3" />
+                </>
+              )}
+              <div ref={setToolbarHost} className="flex w-full justify-center px-4" />
+            </div>
+          </div>
         </div>
+      )}
+      <div className={panelHidden ? "hidden" : "contents"}>
+        <ResizablePanel panel={panel}>
+          <PanelHead>
+            {panelHidden ? null : grid ? gridZoomMenu : slidesZoomMenu}
+            {panelHidden ? null : headActions}
+          </PanelHead>
+          <div className={cn("flex min-h-0 flex-1 flex-col", panel === "agent" ? null : "hidden")}>
+            <AgentPanel
+              deck={client}
+              view={view}
+              onWorking={setAiraWorking}
+              {...(start.aira === undefined ? {} : { start: start.aira })}
+            />
+          </div>
+          {panel === "design" && slide !== undefined ? (
+            <DesignPanel
+              deck={id}
+              client={client}
+              view={view}
+              slide={slide}
+              slideNumber={slideNumber(strip.current)}
+              selection={selection}
+              onSelection={setSelection}
+              words={words}
+              onCrop={setCropping}
+              onLinkWords={(link) => commands.current.linkWords(link)}
+            />
+          ) : null}
+        </ResizablePanel>
       </div>
-      <ResizablePanel panel={panel}>
-        <PanelHead>
-          <ZoomMenu
-            zoom={zoom === "fit" ? "fit" : percent}
-            percent={percent}
-            onZoom={(next) => commands.current.zoomTo(next === "fit" ? "fit" : next / 100)}
-            {...(selection.ids.length === 0 ? {} : { onSelection: () => commands.current.zoomSelection?.() })}
-          />
-          <span className="flex items-center gap-1">
-            <PresentButton ref={presentButton} onClick={() => present.start(strip.current)} />
-            <ExportControl flow={exporting} />
-          </span>
-        </PanelHead>
-        <div className={cn("flex min-h-0 flex-1 flex-col", panel === "agent" ? null : "hidden")}>
-          <AgentPanel deck={client} view={view} {...(start.aira === undefined ? {} : { start: start.aira })} />
-        </div>
-        {panel === "design" && slide !== undefined ? (
-          <DesignPanel
-            deck={id}
-            client={client}
-            view={view}
-            slide={slide}
-            slideNumber={slideNumber(strip.current)}
-            selection={selection}
-            onSelection={setSelection}
-            words={words}
-            onCrop={setCropping}
-            onLinkWords={(link) => commands.current.linkWords(link)}
-          />
-        ) : null}
-      </ResizablePanel>
       <PresentLayer
         present={present}
         title={title}
