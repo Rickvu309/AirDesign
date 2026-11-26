@@ -65,32 +65,18 @@ function union(boxes: readonly GridRect[]): GridRect | null {
   return { left, top, width: right - left, height: bottom - top }
 }
 
-const heldScale = new WeakMap<HTMLElement, string>()
-const heldChrome = new WeakMap<HTMLElement, (HTMLElement | SVGElement)[]>()
-
-function chrome(sheet: HTMLElement, refresh: boolean): readonly (HTMLElement | SVGElement)[] {
-  if (!refresh) {
-    const cached = heldChrome.get(sheet)
-    if (cached !== undefined) return cached
-  }
-  const found: (HTMLElement | SVGElement)[] = []
-  for (const node of sheet.querySelectorAll("[data-grid-overlay], [data-slide-entry], [data-slide-skip-mark]")) {
-    if (node instanceof HTMLElement || node instanceof SVGElement) found.push(node)
-  }
-  heldChrome.set(sheet, found)
-  return found
-}
-
 function paintWorld(sheet: HTMLElement, view: GridView, refresh: boolean) {
   sheet.style.transform = `translate(${String(view.x)}px, ${String(view.y)}px) scale(${String(view.scale)})`
   sheet.style.transformOrigin = "0 0"
+  if (!refresh) return
   const value = String(view.scale)
-  if (!refresh && heldScale.get(sheet) === value) return
-  heldScale.set(sheet, value)
-  for (const node of chrome(sheet, refresh)) {
-    if (node.style.getPropertyValue("--grid-scale") === value) continue
+  for (const node of sheet.querySelectorAll<HTMLElement>(
+    "[data-grid-overlay], [data-slide-entry], [data-slide-skip-mark]",
+  )) {
+    node.style.transform = ""
     node.style.setProperty("--grid-scale", value)
   }
+  for (const number of sheet.querySelectorAll<HTMLElement>("[data-slide-number]")) number.style.transform = ""
 }
 
 function writePercent(percent: number) {
@@ -139,6 +125,7 @@ export function useGridCamera({
   const latest = useRef({ camera, view, layout, ringed, room, hand, onHand })
   const gliding = useRef(false)
   const rendered = useRef<GridCamera>(camera)
+  const renderedScale = useRef<number | null>(null)
   const paintedKey = useRef("")
   const restTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [, setFrame] = useState(0)
@@ -159,6 +146,7 @@ export function useGridCamera({
 
   function stopGlide() {
     gliding.current = false
+    host.current?.removeAttribute("data-zooming")
     if (restTimer.current !== undefined) clearTimeout(restTimer.current)
     restTimer.current = undefined
   }
@@ -177,6 +165,7 @@ export function useGridCamera({
     restTimer.current = undefined
     if (!gliding.current) return
     gliding.current = false
+    host.current?.removeAttribute("data-zooming")
     const next = latest.current.camera
     if (!sameCamera(rendered.current, next)) setCamera(next)
     setSettled((held) => held + 1)
@@ -190,6 +179,10 @@ export function useGridCamera({
   function glide(next: GridView) {
     latest.current = { ...latest.current, camera: next, view: next }
     paint(next, false)
+    const zooming = renderedScale.current !== next.scale
+    if (zooming) {
+      if (host.current?.hasAttribute("data-zooming") === false) host.current.setAttribute("data-zooming", "")
+    } else if (host.current?.hasAttribute("data-zooming") === true) host.current.removeAttribute("data-zooming")
     gliding.current = true
     const key = frameKey(next)
     if (key !== paintedKey.current) {
@@ -205,7 +198,8 @@ export function useGridCamera({
       ? { ...latest.current, layout, ringed, room, hand, onHand }
       : { camera, view, layout, ringed, room, hand, onHand }
     rendered.current = camera
-    paint(shown, true)
+    paint(shown, !gliding.current)
+    if (!gliding.current) renderedScale.current = shown.scale
     paintedKey.current = frameKey(shown)
   })
 
