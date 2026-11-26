@@ -25,7 +25,7 @@ Preconditions:
 - **Rename in a spec.** `tests/browser/editor-page.spec.ts` renames the deck in the sidebar, checks the tab title and the saved deck node, reloads, and finds the name on the Home card.
 - **Refused name.** In a scratch journey: click `button "Rename deck: Blank deck"`, empty the field and press Enter. The alert reads `Enter a name for this deck.`; Escape keeps `Blank deck`.
 - **All decks and search.** In a scratch journey with two decks: `/all` lists both, with `All decks` marked current. Typing part of one name leaves only that deck and puts `q=` in the address; a reload keeps it; a name no deck has shows the no-match card; `Clear search` empties the box.
-- **States for look.** `decks-all`, `decks-search-match`, `decks-search-empty`, `decks-search-focus`, `editor-renaming`, `editor-rename-refused`, `deck-title-rename`, `deck-title-menu`, and `home-after-rename-back` (a rename held 300 ms, the edit dropped once the page goes Back, then Home), each one file in `look/states/`, with the shared drivers `../look/renaming.mjs` and `../look/deck-listing.mjs`.
+- **States for look.** `decks-all`, `decks-search-match`, `decks-search-empty`, `decks-search-focus`, `editor-renaming`, `editor-rename-refused`, `deck-title-rename`, `deck-title-renamed` (Enter after a click, focus back on the name with no ring), `deck-title-menu`, and `home-after-rename-back` (a rename held 300 ms, the edit dropped once the page goes Back, then Home), each one file in `look/states/`, with the shared drivers `../look/renaming.mjs` and `../look/deck-listing.mjs`.
 
 ## Gotchas
 

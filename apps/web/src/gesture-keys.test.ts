@@ -56,6 +56,7 @@ const controlKeys: Readonly<Record<string, readonly string[]>> = {
   "apps/web/src/editor/slide-grid-step.ts": ["ArrowDown", "ArrowLeft", "ArrowRight", "End", "Home"],
   "apps/web/src/editor/slide-sidebar.tsx": list,
   "apps/web/src/editor/zoom-menu.tsx": ["ArrowDown", "ArrowUp", ...field, "Tab"],
+  "apps/web/src/lib/quiet-focus.ts": ["Tab"],
   "apps/web/src/present/use-present.ts": [" ", "Enter", "Tab"],
 }
 

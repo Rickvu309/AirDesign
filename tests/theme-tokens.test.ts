@@ -67,8 +67,14 @@ describe("theme tokens", () => {
     expect(tokens).toContain("--focus-ring-width: 2px;")
     expect(tokens).toContain("--focus-ring-offset: 2px;")
     expect(tokens).toMatch(/:focus-visible[^{]*\{[^}]*outline: var\(--focus-ring-width\) solid var\(--focus-ring\);/)
-
-    const own = /focus(?:-visible|-within)?:(?:ring|outline|shadow|border-ring)|outline-ring|:focus-visible\s*\{/
+    expect(tokens, "a control rings only once Tab has moved focus; see apps/web/src/lib/quiet-focus.rule.md").toMatch(
+      /:where\(:root:not\(\[data-quiet-focus\]\)\)\s+:where\(a\[href\], button, input, select, summary, \[tabindex\]\):focus-visible/,
+    )
+    expect(tokens, "only a field a person types in rings before Tab; a slider or checkbox waits like a button").toMatch(
+      /\n:where\(\s*input:not\(\s*\[type="range"\],\s*\[type="checkbox"\]/,
+    )
+    const own =
+      /focus(?:-visible|-within)?:(?:ring|outline|shadow|border-ring)|outline-ring|:focus-visible\s*\{|pointer-?focus/i
     const sources: string[] = []
     const walk = (folder: string) => {
       for (const entry of readdirSync(path.join(repoRoot, folder), { withFileTypes: true })) {
