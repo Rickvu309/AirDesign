@@ -48,6 +48,10 @@ export function screenFor(client: Registered, used: string): Screen {
   return "other"
 }
 
+export function rotatesRefresh(client: Registered, used: string): boolean {
+  return screenFor(client, used) !== "gemini"
+}
+
 export function agentNameOf(client: Registered, used: string): string {
   const screen = screenFor(client, used)
   if (screen === "claude") return "Claude"

@@ -2,7 +2,7 @@ import type { TokenRequest } from "@airdesign/catalog"
 import { oauth } from "@airdesign/oauth"
 
 import type { Answer } from "../platform/answer.js"
-import { readClient } from "./clients.js"
+import { readClient, rotatesRefresh } from "./clients.js"
 import {
   accessLifetime,
   advance,
@@ -34,20 +34,22 @@ function unavailable(): Answer {
   return { status: 503, body: { error: "temporarily_unavailable" } }
 }
 
-function grantAnswer(advanced: Advance | undefined): Answer {
+function grantAnswer(advanced: Advance | undefined, held: string | undefined): Answer {
   if (advanced?.lost === true) return unavailable()
   if (advanced === undefined || !advanced.accepted || advanced.issued === undefined) return failure("invalid_grant")
-  return issuedAnswer(advanced.issued)
+  return issuedAnswer(advanced.issued, held)
 }
 
-function issuedAnswer(issued: Issued): Answer {
+function issuedAnswer(issued: Issued, held: string | undefined): Answer {
+  const refresh = issued.refresh ?? held
+  if (refresh === undefined) return failure("invalid_grant")
   return {
     status: 200,
     body: {
       access_token: issued.access,
       token_type: "Bearer",
       expires_in: accessLifetime / 1000,
-      refresh_token: issued.refresh,
+      refresh_token: refresh,
     },
   }
 }
@@ -57,7 +59,8 @@ async function exchangeCode(
   request: Extract<TokenRequest, { grant: "authorization_code" }>,
 ): Promise<Answer> {
   const { code, verifier, clientId, redirectUri, resource } = request
-  if ((await readClient(host.db, clientId)) === undefined) return failure("invalid_client")
+  const client = await readClient(host.db, clientId)
+  if (client === undefined) return failure("invalid_client")
   if (!ownResource(resource, host.own)) return failure("invalid_target")
   const approval = await readApprovalByCode(host.db, code)
   if (approval === undefined) return failure("invalid_grant")
@@ -66,12 +69,17 @@ async function exchangeCode(
   if (!verifierPattern.test(verifier) || !sameSecret(challengeOf(verifier), approval.challenge)) {
     return failure("invalid_grant")
   }
-  const advanced = await advance(host.db, approval.id, { command: "exchange" }, { issue: true, now: host.now })
+  const advanced = await advance(
+    host.db,
+    approval.id,
+    { command: "exchange", rotates: rotatesRefresh(client, approval.redirectUri) },
+    { issue: true, now: host.now },
+  )
   if (advanced !== undefined && advanced.lost !== true && !advanced.accepted && advanced.grant.code === "used") {
     const revoked = await advance(host.db, approval.id, { command: "revoke" }, { issue: false })
     if (revoked?.lost === true) return unavailable()
   }
-  return grantAnswer(advanced)
+  return grantAnswer(advanced, undefined)
 }
 
 async function refresh(host: TokenHost, request: Extract<TokenRequest, { grant: "refresh_token" }>): Promise<Answer> {
@@ -88,7 +96,7 @@ async function refresh(host: TokenHost, request: Extract<TokenRequest, { grant: 
     { command: "rotate", generation: token.generation },
     { issue: true, now: host.now },
   )
-  return grantAnswer(advanced)
+  return grantAnswer(advanced, secret)
 }
 
 export async function tokenAnswer(host: TokenHost, request: TokenRequest): Promise<Answer> {

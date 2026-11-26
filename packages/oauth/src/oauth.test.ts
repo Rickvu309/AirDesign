@@ -4,24 +4,25 @@ import { oauth, openGrant, type Command, type Grant } from "./index.js"
 
 const principal = "ada@studio"
 
-function exchanged(who = principal): Grant {
+function exchanged(who = principal, rotates = true): Grant {
   const open = openGrant(who)
-  const result = oauth(open, { command: "exchange" })
+  const result = oauth(open, { command: "exchange", rotates })
   expect(result.accepted).toBe(true)
   expect(result.grant.code).toBe("used")
   expect(result.grant.generation).toBe(1)
   expect(result.grant.principal).toBe(who)
+  expect(result.grant.rotates).toBe(rotates)
   return result.grant
 }
 
 describe("oauth", () => {
   it("a code works once", () => {
     const open = openGrant(principal)
-    const first = oauth(open, { command: "exchange" })
+    const first = oauth(open, { command: "exchange", rotates: true })
     expect(first.accepted).toBe(true)
     expect(first.grant.code).toBe("used")
     expect(first.grant.generation).toBe(1)
-    const second = oauth(first.grant, { command: "exchange" })
+    const second = oauth(first.grant, { command: "exchange", rotates: true })
     expect(second.accepted).toBe(false)
     expect(second.grant).toBe(first.grant)
   })
@@ -78,6 +79,41 @@ describe("oauth", () => {
     const person = exchanged(principal)
     expect(person.principal).toBe(principal)
     expect(person.principal).not.toBe(grant.principal)
+  })
+
+  it("a grant that keeps its refresh token refreshes at generation 1 again and again, and never revokes", () => {
+    const kept = exchanged(principal, false)
+    for (let refresh = 0; refresh < 5; refresh += 1) {
+      const result = oauth(kept, { command: "rotate", generation: 1 })
+      expect(result.accepted).toBe(true)
+      expect(result.grant).toBe(kept)
+      expect(result.grant).toEqual({ principal, code: "used", generation: 1, revoked: false, rotates: false })
+    }
+    expect(oauth(kept, { command: "call", generation: 1 }).accepted).toBe(true)
+    expect(oauth(kept, { command: "rotate", generation: 2 }).grant).toBe(kept)
+    expect(oauth(kept, { command: "rotate", generation: 0 }).grant).toBe(kept)
+  })
+
+  it("revoke still ends a grant that keeps its refresh token", () => {
+    const revoked = oauth(exchanged(principal, false), { command: "revoke" })
+    expect(revoked.accepted).toBe(true)
+    expect(revoked.grant.revoked).toBe(true)
+    expect(oauth(revoked.grant, { command: "rotate", generation: 1 }).accepted).toBe(false)
+    expect(oauth(revoked.grant, { command: "call", generation: 1 }).accepted).toBe(false)
+  })
+
+  it("whether a grant rotates is set once, by the exchange that uses its code", () => {
+    expect(openGrant(principal).rotates).toBe(true)
+    const kept = exchanged(principal, false)
+    const again = oauth(kept, { command: "exchange", rotates: true })
+    expect(again.accepted).toBe(false)
+    expect(again.grant).toBe(kept)
+    for (const rotates of [undefined, "false", 0, null]) {
+      const open = openGrant(principal)
+      const result = oauth(open, { command: "exchange", rotates } as unknown as Command)
+      expect(result.accepted).toBe(false)
+      expect(result.grant).toBe(open)
+    }
   })
 
   it("rotates five times in a row and only the newest generation calls", () => {
@@ -219,7 +255,7 @@ describe("oauth", () => {
   it("no command can write an extra key into the grant", () => {
     const extras = { principal: "intruder", actor: "intruder", deck: "258.8", revoked: true, code: "open" }
     const cases: readonly (readonly [Grant, Command])[] = [
-      [openGrant(principal), { command: "exchange" }],
+      [openGrant(principal), { command: "exchange", rotates: true }],
       [exchanged(), { command: "call", generation: 1 }],
       [exchanged(), { command: "rotate", generation: 1 }],
       [exchanged(), { command: "revoke" }],
@@ -230,7 +266,7 @@ describe("oauth", () => {
       expect(clean.accepted).toBe(true)
       expect(dirty).toEqual(clean)
       expect(dirty.grant.principal).toBe(principal)
-      expect(Object.keys(dirty.grant).sort()).toEqual(["code", "generation", "principal", "revoked"])
+      expect(Object.keys(dirty.grant).sort()).toEqual(["code", "generation", "principal", "revoked", "rotates"])
     }
   })
 
@@ -254,6 +290,7 @@ describe("oauth", () => {
         code: fc.constantFrom("open", "used"),
         generation: fc.integer({ min: 0, max: 9 }),
         revoked: fc.boolean(),
+        rotates: fc.boolean(),
       },
       { requiredKeys: [] },
     )
@@ -262,20 +299,20 @@ describe("oauth", () => {
     })
     const generation = fc.integer({ min: 0, max: 3 })
     const command: fc.Arbitrary<Command> = fc.oneof(
-      { weight: 1, arbitrary: fc.constant<Command>({ command: "exchange" }) },
+      { weight: 1, arbitrary: fc.boolean().map<Command>((rotates) => ({ command: "exchange", rotates })) },
       { weight: 2, arbitrary: generation.map<Command>((value) => ({ command: "call", generation: value })) },
       { weight: 5, arbitrary: generation.map<Command>((value) => ({ command: "rotate", generation: value })) },
       { weight: 1, arbitrary: fc.constant<Command>({ command: "revoke" }) },
     )
     fc.assert(
       fc.property(fc.boolean(), fc.array(fc.tuple(command, extra, unknown), { maxLength: 10 }), (fresh, steps) => {
-        let grant = fresh ? openGrant(principal) : exchanged()
+        let grant = fresh ? openGrant(principal) : exchanged(principal, steps.length % 2 === 0)
         for (const [plain, keys, words] of steps) {
           const clean = oauth(grant, plain)
           const dirty = oauth(grant, { ...words, ...keys, ...plain } as Command)
           expect(dirty).toEqual(clean)
           expect(dirty.grant.principal).toBe(principal)
-          expect(Object.keys(dirty.grant).sort()).toEqual(["code", "generation", "principal", "revoked"])
+          expect(Object.keys(dirty.grant).sort()).toEqual(["code", "generation", "principal", "revoked", "rotates"])
           if (clean.grant === grant) {
             expect(dirty.grant).toBe(grant)
           }
@@ -303,7 +340,7 @@ describe("oauth", () => {
     for (const who of ["Alice", " ALICE ", "Ada@Studio", "", "Ñandú 258.7"]) {
       const opened = openGrant(who)
       expect(opened.principal).toBe(who)
-      const first = oauth(opened, { command: "exchange" })
+      const first = oauth(opened, { command: "exchange", rotates: true })
       expect(first.grant.principal).toBe(who)
       const called = oauth(first.grant, { command: "call", generation: 1 })
       expect(called.accepted).toBe(true)
@@ -322,7 +359,7 @@ describe("oauth", () => {
     const opened = openGrant(principal)
     const live = exchanged()
     const named: readonly (readonly [Grant, string, object])[] = [
-      [opened, "exchange", {}],
+      [opened, "exchange", { rotates: true }],
       [live, "call", { generation: 1 }],
       [live, "rotate", { generation: 1 }],
       [live, "revoke", {}],
@@ -347,7 +384,7 @@ describe("oauth", () => {
     expect(dirty.accepted).toBe(true)
     expect(dirty.grant).toBe(grant)
     expect(dirty.grant).toEqual(clean.grant)
-    const named = { command: "exchange" as const, deck: "258.8" }
+    const named = { command: "exchange" as const, rotates: true, deck: "258.8" }
     const exchange = oauth(openGrant(principal), named)
     expect(exchange.accepted).toBe(true)
     expect(exchange.grant.generation).toBe(1)
@@ -356,7 +393,7 @@ describe("oauth", () => {
   it("accepts at most one generation and nothing after revocation", () => {
     const generation = fc.oneof(fc.integer({ min: -1, max: 8 }), fc.constant(1.5), fc.constant(Number.NaN))
     const step: fc.Arbitrary<Command> = fc.oneof(
-      fc.constant({ command: "exchange" as const }),
+      fc.record({ command: fc.constant("exchange" as const), rotates: fc.boolean() }),
       fc.record({ command: fc.constant("call" as const), generation }),
       fc.record({ command: fc.constant("rotate" as const), generation }),
       fc.constant({ command: "revoke" as const }),
@@ -371,6 +408,8 @@ describe("oauth", () => {
             expect(result.accepted).toBe(false)
             expect(result.grant).toBe(before)
           }
+          if (!result.grant.rotates) expect(result.grant.generation).toBeLessThanOrEqual(1)
+          if (!before.rotates && command.command !== "revoke") expect(result.grant.revoked).toBe(before.revoked)
           if (!result.accepted && result.grant !== before) {
             expect(before.revoked).toBe(false)
             expect(result.grant.revoked).toBe(true)
@@ -388,7 +427,7 @@ describe("oauth", () => {
           }
           expect(accepted).toBeLessThanOrEqual(1)
           if (grant.revoked) {
-            expect(oauth(grant, { command: "exchange" }).accepted).toBe(false)
+            expect(oauth(grant, { command: "exchange", rotates: true }).accepted).toBe(false)
             expect(oauth(grant, { command: "call", generation: grant.generation }).accepted).toBe(false)
             expect(oauth(grant, { command: "rotate", generation: grant.generation }).accepted).toBe(false)
             expect(oauth(grant, { command: "revoke" }).accepted).toBe(false)
