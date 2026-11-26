@@ -172,6 +172,8 @@ html:has(.reflow-frame) #root {
   --grid-radius: max(var(--grid-radius-min), calc(var(--grid-radius-canvas) * var(--grid-scale)));
 }
 [data-grid-card] [data-slide-entry] {
+  --focus-ring-width: var(--grid-focus-width);
+  --focus-ring-offset: 0px;
   border-radius: var(--grid-radius);
   box-shadow: var(--shadow-grid);
 }
