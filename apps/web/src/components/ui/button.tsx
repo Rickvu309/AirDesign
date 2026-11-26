@@ -40,13 +40,12 @@ const buttonVariants = cva(
         "destructive-solid":
           "border-0 bg-danger-solid text-white shadow-[inset_0_0_0_1px_var(--danger-edge)] hover:bg-danger-solid",
         link: "text-primary-strong underline-offset-4 hover:underline",
-        link: "text-primary underline-offset-4 hover:underline",
         "view-switch":
           "rounded-md text-quiet hover:bg-muted hover:text-foreground active:translate-y-0 aria-pressed:bg-line aria-pressed:text-foreground aria-pressed:hover:bg-line",
         "panel-tab":
           "rounded-[var(--shape-control)] text-quiet hover:text-foreground active:translate-y-0 aria-pressed:bg-white aria-pressed:text-foreground aria-pressed:shadow-[0px_1px_2px_var(--black-10)]",
         "editable-label":
-          "block truncate rounded-md border-0 text-left text-[length:inherit] text-foreground hover:bg-black/4 active:translate-y-0",
+          "block truncate rounded-md border-0 text-left text-[length:inherit] text-foreground hover:bg-black/4 active:not-aria-[haspopup]:translate-y-0",
       },
       size: {
         default: "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
