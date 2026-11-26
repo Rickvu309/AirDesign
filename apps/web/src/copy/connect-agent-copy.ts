@@ -98,7 +98,14 @@ export const connectChoices = [
     name: "Gemini",
     mark: "gemini",
     ways: [
-      { id: "gemini-cli", tab: "Gemini CLI", name: "Gemini CLI", kind: "prompt" },
+      {
+        id: "gemini-app",
+        tab: "Gemini app",
+        name: "Gemini",
+        kind: "address",
+        add: "Add it as a custom app, then choose Allow.",
+        open: { label: "Open Gemini apps", href: "https://gemini.google.com/apps" },
+      },
       { id: "antigravity", tab: "Antigravity", name: "Antigravity", kind: "prompt" },
     ],
   },

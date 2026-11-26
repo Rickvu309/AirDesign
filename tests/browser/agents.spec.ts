@@ -32,6 +32,7 @@ async function mockHome(page: Page, email = "person@example.com") {
 
 const [claude, , gemini, other] = connectChoices
 const claudeApp = claude.ways[0].open
+const geminiApp = gemini.ways[0].open
 const codeKind = claude.ways[1].id
 
 function listAgents(page: Page, agents: () => AgentRow[]) {
@@ -146,6 +147,8 @@ test("the connect dialog gives an app the address and a coding agent a prompt, t
     "aria-pressed",
     "true",
   )
+  await expect(dialog.getByText(mcpAddress, { exact: true })).toBeVisible()
+  await expect(dialog.getByRole("link", { name: geminiApp.label })).toHaveAttribute("href", geminiApp.href)
   await dialog.getByRole("button", { name: gemini.ways[1].tab, exact: true }).click()
   await expect(dialog.getByText(waitingOf(gemini.ways[1].name), { exact: true })).toBeVisible()
 
