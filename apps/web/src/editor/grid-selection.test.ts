@@ -49,6 +49,12 @@ describe("grid selection", () => {
     expect(pickedSlides(pickRange(picked, after, 0, 3), after, 0)).toEqual([0, 1, 2, 3])
   })
 
+  it("starts the next range from a slide a toggle just took away", () => {
+    const picked = prunedPick(pickToggle(pickToggle(pickToggle(null, order, 2, 0), order, 4, 0), order, 2, 0), order)
+    expect(pickedSlides(picked, order, 0)).toEqual([0, 4])
+    expect(pickedSlides(pickRange(picked, order, 5, 0), order, 0)).toEqual([2, 3, 4, 5])
+  })
+
   it("makes the clicked slide current, or the nearest selected slide before it when the click took it away", () => {
     const three = pickToggle(pickToggle(null, order, 2, 0), order, 4, 0)
     expect(toggledCurrent(three, order, 4)).toBe(4)

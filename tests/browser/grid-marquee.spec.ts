@@ -206,3 +206,35 @@ test("a drag that crosses no slide takes the ring away, says so, and Select all 
   await page.keyboard.press("ControlOrMeta+a")
   await expect.poll(() => selectedNumbers(page)).toEqual([1, 2, 3, 4, 5, 6, 7])
 })
+
+test("a drag keeps to the slides under it when another tab deletes an earlier slide mid-drag", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openGroups(page, context, stack, [7])
+  const four = await boxOf(entry(page, 4))
+  const target = await centre(page, 4)
+  await page.mouse.move(four.x + 10, four.y + four.height + 4)
+  await page.mouse.down()
+  await page.mouse.move(target.x, target.y, { steps: 4 })
+  await expect.poll(() => selectedNumbers(page)).toEqual([4])
+  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+  const result = await stack.post(
+    doomRoutes.edit.path,
+    {
+      deck: opened.deck,
+      edit: {
+        once: "marquee-remove-earlier",
+        author: { kind: "person", id: "other-tab" },
+        writes: [{ node: opened.ids[0], prop: "parent", value: null }],
+      },
+    },
+    opened.cookie,
+  )
+  expect(result.json.ok).toBe(true)
+  await expect(entry(page, 7)).toHaveCount(0)
+  await page.mouse.move(target.x + 2, target.y)
+  await page.mouse.up()
+  expect(await selectedNumbers(page)).toEqual([4])
+})

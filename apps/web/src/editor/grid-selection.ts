@@ -39,7 +39,7 @@ export function pickAll(order: Order, current: number): GridPick {
 export function prunedPick(pick: GridPick, order: Order): GridPick {
   if (pick === null) return null
   const slides = new Set(order.filter((id) => pick.slides.has(id)))
-  return heldPick(slides.has(pick.anchor) ? pick.anchor : order.find((id) => slides.has(id)), slides)
+  return heldPick(order.includes(pick.anchor) ? pick.anchor : order.find((id) => slides.has(id)), slides)
 }
 
 export function toggledCurrent(pick: GridPick, order: Order, index: number): number {
