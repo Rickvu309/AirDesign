@@ -147,3 +147,17 @@ test("an open slide menu acts on its own slide after another tab adds one above 
   await expect(entries(page)).toHaveCount(3)
   await expect(menu).toBeHidden()
 })
+
+test("Ctrl+D on a full deck says the slide limit and makes no copy", async ({ page, context, stack }) => {
+  const opened = await openGroups(page, context, stack, [50])
+  const start = await savedGroups(stack, opened)
+  await page.getByRole("button", { name: slideListCopy.slidesView }).click()
+  await entry(page, 1).click()
+  await page.keyboard.press("ControlOrMeta+d")
+  await expect(page.getByText(slideListCopy.slideLimit(50))).toBeVisible()
+  await expect(entries(page)).toHaveCount(50)
+  expect((await page.locator("[data-announcer]").allTextContents()).join(" ")).not.toContain(
+    slideListCopy.duplicated(1),
+  )
+  expect(await savedGroups(stack, opened)).toEqual(start)
+})

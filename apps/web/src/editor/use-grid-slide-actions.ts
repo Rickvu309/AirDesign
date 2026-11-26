@@ -150,17 +150,8 @@ export function useGridSlideActions({
     }
     follow.current = "current"
     dispatch({ kind: "pick", pick: null })
-    if (command === "clone") {
-      strip.onClone?.(index)
-      announce(slideListCopy.duplicated(index + 1))
-      return
-    }
-    if (count < 2) {
-      announce(slideListCopy.lastSlide)
-      return
-    }
-    strip.onRemove?.(index)
-    announce(slideListCopy.deleted(index + 1))
+    if (command === "clone") strip.onClone?.(index)
+    else strip.onRemove?.(index)
   }
 
   const menuHeld = menu === null ? [] : held.includes(menu.index) ? held : [menu.index]
