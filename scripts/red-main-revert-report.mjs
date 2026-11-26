@@ -1,6 +1,6 @@
 import { beforeAfterSection, hasBeforeAfter, noVisibleChange, seen } from "./before-after.mjs"
 import { plainLog } from "./failed-tests.mjs"
-import { agentHeader, failureExcerpt } from "./race-issue.mjs"
+import { failureExcerpt } from "./race-issue.mjs"
 import { titleFaults } from "./title.mjs"
 
 const runnerPath = /\/home\/runner\/work\/[^/\s]+\/[^/\s]+\//g
@@ -107,8 +107,6 @@ export const revertPull = ({
         ...excerpts,
       ]
   const body = [
-    agentHeader,
-    "",
     ...(drill ? ["**Drill:** this pull request will be closed without merging.", ""] : []),
     "## Summary",
     "",

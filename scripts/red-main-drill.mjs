@@ -1,5 +1,4 @@
 import { setTimeout } from "node:timers/promises"
-import { agentHeader } from "./race-issue.mjs"
 
 export const drillBranch = ({ sha, id, attempt }) => `red-main/drill-${sha}-${id}-${attempt}`
 
@@ -67,7 +66,7 @@ export const finishDrill = async ({ repository, io, pull, close, say }) => {
   const deleted = removeDrillBranch({ io, ...pull, say })
   const outcome = `Red-main drill ${pull.url}. ${closed.status === 0 ? "Closed the pull request." : "Closing the pull request failed."} ${deleted ? `Deleted branch ${pull.branch}.` : "Deleting the branch failed."}\n\n${[fault, runs].filter(Boolean).join("\n\n")}`
   say(outcome.trim())
-  const recorded = io.redMain(`${agentHeader}\n\n${outcome.trim()}`, true)
+  const recorded = io.redMain(`${outcome.trim()}`, true)
   return { failed: fault !== undefined || closed.status !== 0 || !deleted || recorded.status !== 0 }
 }
 

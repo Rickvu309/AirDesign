@@ -1,8 +1,8 @@
+import { attributionLine } from "./commit-authors.mjs"
 import fs from "node:fs"
 import path from "node:path"
 import { parse } from "yaml"
 import { bodyFaults } from "./pr-body.mjs"
-import { agentHeader } from "./race-issue.mjs"
 import {
   culpritBody,
   culpritNumber,
@@ -143,7 +143,7 @@ const pull = revertPull({
   jobs: logs[43661138626],
 })
 const bodyLines = pull.body.split("\n")
-same("the revert pull request starts with the agent line", bodyLines[0], agentHeader)
+same("the revert pull request starts with its summary, with no agent line", bodyLines[0], "## Summary")
 same(
   "its title quotes the reverted title when that fits the title rule",
   [pull.title, titleVerdict(pull.title)],
@@ -372,7 +372,7 @@ same(
   "the drill opens the bot's marked PR as the owner",
   [
     drilled.result.failed,
-    drillBody.startsWith(agentHeader),
+    attributionLine(drillBody) === undefined,
     drillBody.includes("Drill:"),
     bodyFaults(drillBody, { repository }),
   ],

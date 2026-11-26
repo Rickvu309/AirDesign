@@ -1,3 +1,4 @@
+import { attributionLine } from "./commit-authors.mjs"
 import fs from "node:fs"
 import { checkSteps, specCache } from "./check-steps.mjs"
 import { failedTests } from "./failed-tests.mjs"
@@ -222,9 +223,9 @@ same("the save-status race is one issue across its failures", [first, again], [{
 const created = replay.calls.find((call) => call.args[1] === "create")
 const commented = replay.calls.find((call) => call.args[1] === "comment")
 same(
-  "the issue speaks for the owner and carries the test, the commit, the failure output and how to prove the race",
+  "the issue has no agent line and carries the test, the commit, the failure output and how to prove the race",
   [
-    created.input.startsWith("🤖 **AI Agent responding on behalf of Quan Vu**"),
+    attributionLine(created.input) === undefined,
     created.input.includes("tests/browser/save-status.spec.ts:206"),
     created.input.includes("e05168b79aaa"),
     created.input.includes('Received: "Saved"'),

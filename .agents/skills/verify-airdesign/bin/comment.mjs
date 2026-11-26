@@ -1,8 +1,6 @@
 import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
-
-export const agentOwner = "Quan Vu"
-export const agentHeader = `🤖 **AI Agent responding on behalf of ${agentOwner}**`
+import { attributionLine } from "../../../../scripts/commit-authors.mjs"
 
 function ghIn(args, options = {}) {
   return execFileSync("gh", args, {
@@ -16,7 +14,10 @@ function ghIn(args, options = {}) {
 export function commentBody(markdown) {
   const text = String(markdown ?? "")
   if (text.trim() === "") throw new Error("refuses an empty file: comment has no content")
-  return `${agentHeader}\n\n${text}`
+  const attribution = attributionLine(text)
+  if (attribution !== undefined)
+    throw new Error(`refuses the comment: it has the attribution line "${attribution}". Delete that line.`)
+  return text
 }
 
 export function comment({ pr, file, runGh = ghIn }) {

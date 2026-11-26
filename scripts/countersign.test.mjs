@@ -13,9 +13,9 @@ const owner = (body) => ({ body, association: "OWNER" })
 const signed = countersignBody({ head, verdict: "right", reason })
 
 same(
-  "a countersign is the agent line, then one line with the head, the verdict and the reason",
+  "a countersign is one line with the head, the verdict and the reason",
   signed,
-  `🤖 **AI Agent responding on behalf of Quan Vu**\n\ncountersign ${head} right: ${reason}\n`,
+  `countersign ${head} right: ${reason}\n`,
 )
 same("a countersign for the head is read back", countersignFor([owner(signed)], head), { verdict: "right", reason })
 same(

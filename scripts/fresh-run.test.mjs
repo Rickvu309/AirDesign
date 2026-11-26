@@ -1,3 +1,4 @@
+import { attributionLine } from "./commit-authors.mjs"
 import { failedTests } from "./failed-tests.mjs"
 import { history, logs } from "./red-main-replay.mjs"
 import { freshRunMark, outsideTheDiff } from "./fresh-run.mjs"
@@ -212,9 +213,9 @@ const taken = await follow({ reads: reopened, files: appFile, runs: [freshRun, p
 same("an app-code pull request takes a fresh run for the untouched browser test and merges", taken.code, 0)
 same("one comment is posted", taken.posted.length, 1)
 same(
-  "the comment speaks for the owner, names the failed test and marks the head",
+  "the comment has no agent line, names the failed test and marks the head",
   [
-    taken.posted[0].includes("body=🤖 **AI Agent responding on behalf of Quan Vu**"),
+    attributionLine(taken.posted[0].replace(/^body=/, "")) === undefined,
     taken.posted[0].includes("tests/browser/save-status.spec.ts:206"),
     taken.posted[0].includes(freshRunMark(head)),
     taken.posted[0].includes("tests this pull request does not edit"),

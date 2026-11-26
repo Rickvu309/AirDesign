@@ -2,13 +2,11 @@ import { execFileSync, spawnSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
-const agentLine = "🤖 **AI Agent responding on behalf of Quan Vu**"
 const trusted = new Set(["OWNER", "MEMBER", "COLLABORATOR"])
 const signLine = /^countersign ([0-9a-f]{40}) (right|wrong): (\S.*)$/gm
 const verdicts = new Set(["right", "wrong"])
 
-export const countersignBody = ({ head, verdict, reason }) =>
-  `${agentLine}\n\ncountersign ${head} ${verdict}: ${reason}\n`
+export const countersignBody = ({ head, verdict, reason }) => `countersign ${head} ${verdict}: ${reason}\n`
 
 export const countersignFor = (comments, head) =>
   comments

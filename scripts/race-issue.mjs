@@ -1,8 +1,6 @@
 import { browserSpec, deckStateNote } from "./deck-state-file.mjs"
 import { plainLog } from "./failed-tests.mjs"
 
-export const agentHeader = "🤖 **AI Agent responding on behalf of Quan Vu**"
-
 export const forceTheGap =
   "Prove the race by forcing the gap: put a delay where the two steps can interleave, so the old code fails every time, then show the fix passes 5 times in a row with the same delay."
 
@@ -55,8 +53,6 @@ const deckState = (test) => (browserSpec(test.file) ? [deckStateNote, ""] : [])
 
 const raceBody = ({ test, excerpt, commit, seen }) =>
   [
-    agentHeader,
-    "",
     `\`${testId(test)}\` failed ${seen}, at commit ${commit}.`,
     "",
     `A test that fails beside other work and passes on its own has found a race, in the test or in the code it covers. ${forceTheGap} Close this issue with the pull request that fixes the race. Each later failure of this test adds a comment here.`,
@@ -66,7 +62,7 @@ const raceBody = ({ test, excerpt, commit, seen }) =>
   ].join("\n")
 
 const raceComment = ({ test, excerpt, commit, seen }) =>
-  [agentHeader, "", `Failed again ${seen}, at commit ${commit}.`, "", ...deckState(test), ...output(excerpt)].join("\n")
+  [`Failed again ${seen}, at commit ${commit}.`, "", ...deckState(test), ...output(excerpt)].join("\n")
 
 const said = (answer) => (answer.stderr || answer.stdout).trim()
 
@@ -148,8 +144,6 @@ const hasFix = ({ gh, git, repository, commit, merge }) => {
 
 const predatesFixComment = ({ test, excerpt, commit, seen, fix }) =>
   [
-    agentHeader,
-    "",
     `Failed ${seen}, at commit ${commit}. That failure predates the fix: #${fix.pull} merged as ${fix.merge.slice(0, 7)}, and ${commit.slice(0, 7)} does not contain it. Nothing was filed.`,
     "",
     ...deckState(test),
@@ -158,8 +152,6 @@ const predatesFixComment = ({ test, excerpt, commit, seen, fix }) =>
 
 const fixDidNotHoldComment = ({ test, excerpt, commit, seen, fix }) =>
   [
-    agentHeader,
-    "",
     `Failed ${seen}, at commit ${commit}, which contains the fix: #${fix.pull} merged as ${fix.merge.slice(0, 7)}. The fix did not hold, so this issue is open again.`,
     "",
     ...deckState(test),

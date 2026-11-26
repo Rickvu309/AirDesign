@@ -1,6 +1,5 @@
 import { failedCauses, failedScripts, failedSteps, failedTests, plainLog } from "./failed-tests.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
-import { agentHeader } from "./race-issue.mjs"
 
 const short = (sha) => sha.slice(0, 8)
 const streakRead = 3
@@ -132,8 +131,6 @@ export const mainsFault = async ({ gh, repository, run, jobs, say, sleep, now, i
 
 export const mainGreenComment = ({ repository, run, head, since, healer, queue }) =>
   [
-    agentHeader,
-    "",
     `ci run https://github.com/${repository}/actions/runs/${run.id} on head ${head.slice(0, 7)} failed only in the jobs and tests main's own push runs failed in, while main was red since ${since.head.slice(0, 7)} (${since.title}).`,
     "",
     `Main is green again at ${healer.head.slice(0, 7)}. ${queue ? "pnpm land put it in the merge queue again" : "pnpm land closed and reopened it"} for a ci run on that main. Nothing was rerun, and this is not the one fresh run for this head.`,
