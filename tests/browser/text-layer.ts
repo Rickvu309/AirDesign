@@ -23,7 +23,7 @@ export async function seeded(page: Page, stack: Stack, opened: Opened, chars: st
 
 export type Saved = {
   chars: string
-  spans: { end: number; italic?: boolean; underline?: boolean; strike?: boolean; link?: string }[]
+  spans: { end: number; bold?: boolean; italic?: boolean; underline?: boolean; strike?: boolean; link?: string }[]
   paras: { align?: string; list?: string; level?: number }[]
 }
 
