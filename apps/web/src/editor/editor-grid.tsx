@@ -25,7 +25,7 @@ import { GridCard } from "@/editor/grid-card"
 import { GridDragGhost, GridDropBar } from "@/editor/grid-drag-marks"
 import { gridBands, gridIndices, gridRanges } from "@/editor/grid-drop"
 import { GridGroupAdd } from "@/editor/grid-group-add"
-import { GridGroupFrame, groupHoverAt, type GridGroupHover } from "@/editor/grid-group-frame"
+import { GridGroupFrame, useGroupHover } from "@/editor/grid-group-frame"
 import { gridOpened, gridPick, gridRinged, gridStep, type GridInteraction } from "@/editor/grid-interaction"
 import { gridLayout, gridSpacing } from "@/editor/grid-lines"
 import { gridZoomPlacement } from "@/editor/grid-number"
@@ -125,7 +125,6 @@ export function EditorGrid({
   const chosen = useRef<number | null>(current)
   const [stop, setStop] = useState(current)
   const [message, setMessage] = useState<Announcement | null>(null)
-  const [hover, setHover] = useState<{ readonly group: number; readonly part: GridGroupHover } | null>(null)
   const [gripFocus, setGripFocus] = useState<number | null>(null)
   const [touch, setTouch] = useState(false)
   const announce = useCallback(
@@ -333,13 +332,8 @@ export function EditorGrid({
   const gripBlocked = hand || camera.space || preview !== null || marquee.box !== null
   const grips = strip.onMoveGroups !== undefined && gridGripsShown(size.h, scale)
 
-  function onHover(event: PointerEvent<HTMLDivElement>) {
-    const next =
-      event.pointerType !== "mouse" || gripBlocked
-        ? null
-        : groupHoverAt(bands, camera.world({ x: event.clientX, y: event.clientY }), event.target, scale)
-    if (next?.group !== hover?.group || next?.part !== hover?.part) setHover(next)
-  }
+  const grouped = useGroupHover({ host: camera.handlers.ref, bands, scale, world: camera.world, blocked: gripBlocked })
+  const hover = grouped.hover
 
   const spacing = gridSpacing({ width: size.w, height: size.h })
   const selected = new Set(ringed)
@@ -398,9 +392,8 @@ export function EditorGrid({
         onPointerDown={marquee.press}
         onPointerMove={(event) => {
           camera.handlers.onPointerMove(event)
-          onHover(event)
+          grouped.move(event)
         }}
-        onPointerLeave={() => setHover(null)}
         onClick={(event) => {
           if (marquee.swallowedClick()) return
           if (entryOf(event.target) === null) clear()
@@ -451,7 +444,7 @@ export function EditorGrid({
                 grips={grips}
                 onGrab={(event) => drag.grab(band.start, event, true)}
                 onMove={(direction) => {
-                  setHover(null)
+                  grouped.clear()
                   const next = groups[number + (direction === "up" ? -1 : 1)]
                   const range = groups[number]
                   if (next === undefined || range === undefined) return

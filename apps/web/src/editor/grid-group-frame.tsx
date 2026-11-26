@@ -1,4 +1,4 @@
-import type { PointerEvent } from "react"
+import { useEffect, useState, type PointerEvent, type RefObject } from "react"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { gridGroupCommand } from "@/editor/editor-grid-keys"
 import type { GridBand } from "@/editor/grid-drop"
@@ -32,6 +32,42 @@ export function groupHoverAt(
           (band) => world.x >= -reach && world.x <= band.width && world.y >= band.top - above && world.y <= band.bottom,
         )
   return group === -1 ? null : { group, part }
+}
+
+type Hovered = { readonly group: number; readonly part: GridGroupHover } | null
+
+export function useGroupHover({
+  host,
+  bands,
+  scale,
+  world,
+  blocked,
+}: {
+  readonly host: RefObject<HTMLElement | null>
+  readonly bands: readonly GridBand[]
+  readonly scale: number
+  readonly world: (point: { readonly x: number; readonly y: number }) => { readonly x: number; readonly y: number }
+  readonly blocked: boolean
+}) {
+  const [hover, setHover] = useState<Hovered>(null)
+  useEffect(() => {
+    const element = host.current
+    if (element === null) return
+    const leave = () => setHover(null)
+    element.addEventListener("pointerleave", leave)
+    return () => element.removeEventListener("pointerleave", leave)
+  }, [host])
+  return {
+    hover,
+    clear: () => setHover(null),
+    move: (event: PointerEvent<HTMLElement>) => {
+      const next =
+        event.pointerType !== "mouse" || blocked
+          ? null
+          : groupHoverAt(bands, world({ x: event.clientX, y: event.clientY }), event.target, scale)
+      if (next?.group !== hover?.group || next?.part !== hover?.part) setHover(next)
+    },
+  }
 }
 
 export function GridGroupFrame({

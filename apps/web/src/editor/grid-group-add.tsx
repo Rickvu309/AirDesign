@@ -1,4 +1,4 @@
-import { useState, type ComponentProps, type CSSProperties } from "react"
+import { useCallback, useState, type ComponentProps, type CSSProperties } from "react"
 import { Button } from "@/components/ui/button"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { slideListCopy } from "@/copy/slide-list-copy"
@@ -26,10 +26,17 @@ export function GridGroupAdd({
   readonly onAdd: () => void
 }) {
   const [used, setUsed] = useState(false)
+  const leaves = useCallback((node: HTMLDivElement | null) => {
+    if (node === null) return
+    const leave = () => setUsed(false)
+    node.addEventListener("pointerleave", leave)
+    return () => node.removeEventListener("pointerleave", leave)
+  }, [])
   const band = last ? Math.min(gap, 48) : gap
   const label = slideListCopy.addBelow(group)
   return (
     <div
+      ref={leaves}
       data-group-insert={last ? "last" : "between"}
       data-used={used ? "" : undefined}
       className="absolute"
@@ -40,7 +47,6 @@ export function GridGroupAdd({
         height: band,
         ...{ "--grid-group-preview-distance": `${String(preview.top)}px` },
       }}
-      onPointerLeave={() => setUsed(false)}
     >
       <div
         data-group-preview
