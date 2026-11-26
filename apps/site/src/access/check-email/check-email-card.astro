@@ -7,7 +7,7 @@ const mailButtonClass =
   "flex h-11 items-center justify-center gap-3 rounded-lg bg-background text-[length:var(--type-section)] font-medium shadow-[0_0_0_1px_var(--field-edge),0_1px_2px_var(--black-5)] pressable hover:brightness-[0.98]";
 ---
 
-<div class="flex flex-col items-center rounded-2xl bg-background p-10 text-center shadow-[0px_0px_0px_1px_var(--black-7),0px_1px_2px_0px_var(--black-3),0px_12px_32px_0px_var(--black-4)] max-sm:p-6">
+<div class="flex flex-col items-center rounded-2xl bg-background px-10 pt-10 pb-4 text-center shadow-[0px_0px_0px_1px_var(--black-7),0px_1px_2px_0px_var(--black-3),0px_12px_32px_0px_var(--black-4)] max-sm:px-6 max-sm:pt-6 max-sm:pb-3">
   <div class="my-px flex size-[var(--space-48)] items-center justify-center rounded-xl bg-[image:var(--fill-marketing)] text-white shadow-[inset_0_1px_0_var(--white-35),0_0_0_1px_var(--fill-marketing-bottom),0_1px_2px_var(--black-12)]">
     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
   </div>
@@ -48,7 +48,7 @@ const mailButtonClass =
 
   <p class="mt-[var(--space-24)] text-[length:var(--type-body)] leading-[1.43] text-muted-foreground">
     Didn't get it?{" "}
-    <button class="touch-target pressable cursor-pointer px-1 font-semibold text-primary-strong disabled:cursor-default" type="button" data-send-again>{signInCopy.sendAgain}</button>
+    <button class="touch-target -my-3 pressable cursor-pointer px-1 font-semibold text-primary-strong disabled:cursor-default" type="button" data-send-again>{signInCopy.sendAgain}</button>
   </p>
-  <p class="reserved-line mt-2 text-[length:var(--type-dense)] leading-[1.31] text-muted-foreground data-failed:text-danger-text" role="status" data-send-again-status></p>
+  <p class="reserved-line mt-2 text-[length:var(--type-dense)] leading-[1.31] text-muted-foreground data-failed:text-danger-text max-sm:mt-1.5" role="status" data-send-again-status></p>
 </div>

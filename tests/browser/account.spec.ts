@@ -186,3 +186,48 @@ test("Settings keeps its heading and cards 24px inside the pane on a narrow wind
   expect(cards.left - pane!.x).toBeGreaterThanOrEqual(24)
   expect(pane!.x + pane!.width - cards.right).toBeGreaterThanOrEqual(24)
 })
+
+test("the Profile card trims bottom dead space without jumping when the name error appears", async ({ page }) => {
+  await page.setViewportSize({ width: 1470, height: 923 })
+  await mockApp(page)
+  await page.route("**/account/profile", (route) =>
+    route.fulfill({ json: { ok: true, account: { email: "person@example.com", name: "Person" } } }),
+  )
+  await page.goto("/settings/account")
+  const input = page.getByLabel(accountCopy.name, { exact: true })
+  await expect(input).toHaveValue("Person")
+
+  const measure = () =>
+    page.evaluate(() => {
+      const cards = [...document.querySelectorAll<HTMLElement>("[data-settings-content] > section")]
+      const profile = cards[0]
+      const account = cards[1]
+      const field = profile?.querySelector<HTMLElement>('input[name="name"]')
+      const alert = profile?.querySelector<HTMLElement>('[role="alert"]')
+      if (!profile || !account || !field || !alert) throw new Error("missing account cards")
+      const profileBox = profile.getBoundingClientRect()
+      const accountBox = account.getBoundingClientRect()
+      const fieldBox = field.getBoundingClientRect()
+      const alertBox = alert.getBoundingClientRect()
+      return {
+        belowInput: profileBox.bottom - fieldBox.bottom,
+        profileHeight: profileBox.height,
+        accountTop: accountBox.top,
+        alertGap: alertBox.top - fieldBox.bottom,
+        alertBottomClearance: profileBox.bottom - alertBox.bottom,
+      }
+    })
+
+  const before = await measure()
+  expect(before.belowInput).toBeLessThanOrEqual(36)
+
+  await input.fill("   ")
+  await input.press("Enter")
+  await expect(page.getByRole("alert")).toHaveText(accountCopy.nameInvalid)
+
+  const after = await measure()
+  expect(Math.abs(after.profileHeight - before.profileHeight)).toBeLessThanOrEqual(0.5)
+  expect(Math.abs(after.accountTop - before.accountTop)).toBeLessThanOrEqual(0.5)
+  expect(after.alertGap).toBeGreaterThanOrEqual(4)
+  expect(after.alertBottomClearance).toBeGreaterThanOrEqual(8)
+})

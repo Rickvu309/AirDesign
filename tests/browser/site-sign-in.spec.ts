@@ -202,3 +202,79 @@ test("marketing and sign-in primary buttons clear 4.5:1 across rest, hover, pres
   release()
   await page.unrouteAll({ behavior: "ignoreErrors" })
 })
+
+test("the check-email card balances its bottom space without jumping when errors or status appear", async ({
+  page,
+}) => {
+  const { signInRoutes } = await import("../../packages/catalog/src/index.ts")
+  await page.addInitScript(() => sessionStorage.setItem("airdesign.pending-sign-in-email", "ada@example.com"))
+  await page.route(`**${signInRoutes.email.path}`, (route) => route.fulfill({ status: 202, json: { ok: true } }))
+  await page.route(`**${signInRoutes.code.path}`, (route) =>
+    route.fulfill({ status: 400, json: { ok: false, refusal: "code" } }),
+  )
+
+  for (const size of viewports) {
+    await page.setViewportSize(size)
+    await page.goto(`${site.origin}/sign-in/check`)
+    await page.evaluate(() => document.fonts.ready)
+
+    const measure = () =>
+      page.evaluate(() => {
+        const button = document.querySelector<HTMLElement>("[data-send-again]")
+        const status = document.querySelector<HTMLElement>("[data-send-again-status]")
+        const card = button?.closest("div")
+        const icon = card?.firstElementChild
+        const outlook = document.querySelector<HTMLElement>('a[href*="outlook"]')
+        const different = document.querySelector<HTMLElement>('a[href="/sign-in"]')
+        if (!button || !status || !card || !icon || !outlook || !different) throw new Error("missing check-email parts")
+        const range = document.createRange()
+        range.selectNodeContents(button)
+        const textBox = range.getBoundingClientRect()
+        const cardBox = card.getBoundingClientRect()
+        const iconBox = icon.getBoundingClientRect()
+        const buttonBox = button.getBoundingClientRect()
+        const statusBox = status.getBoundingClientRect()
+        return {
+          topSpace: iconBox.top - cardBox.top,
+          bottomSpace: cardBox.bottom - textBox.bottom,
+          sendAgainHeight: buttonBox.height,
+          cardHeight: cardBox.height,
+          outlookTop: outlook.getBoundingClientRect().top,
+          differentTop: different.getBoundingClientRect().top,
+          statusBottomClearance: cardBox.bottom - statusBox.bottom,
+        }
+      })
+
+    const initial = await measure()
+    expect(initial.sendAgainHeight, `${size.width}px touch target`).toBeGreaterThanOrEqual(44)
+    expect(initial.bottomSpace, `${size.width}px bottom balance`).toBeLessThanOrEqual(initial.topSpace + 12)
+
+    await page.getByLabel("Or enter the 6-digit code").pressSequentially("000000")
+    await expect(page.getByRole("alert").filter({ hasText: /\S/ })).toBeVisible()
+    const afterCode = await measure()
+    expect(
+      Math.abs(afterCode.cardHeight - initial.cardHeight),
+      `${size.width}px code error height`,
+    ).toBeLessThanOrEqual(0.5)
+    expect(
+      Math.abs(afterCode.outlookTop - initial.outlookTop),
+      `${size.width}px code error outlook`,
+    ).toBeLessThanOrEqual(0.5)
+    expect(
+      Math.abs(afterCode.differentTop - initial.differentTop),
+      `${size.width}px code error footer link`,
+    ).toBeLessThanOrEqual(0.5)
+
+    await page.locator("[data-send-again]").click()
+    await expect(page.locator("[data-send-again-status]")).toContainText("Email sent again.")
+    const afterResend = await measure()
+    expect(Math.abs(afterResend.cardHeight - initial.cardHeight), `${size.width}px resend height`).toBeLessThanOrEqual(
+      0.5,
+    )
+    expect(
+      Math.abs(afterResend.differentTop - initial.differentTop),
+      `${size.width}px resend footer link`,
+    ).toBeLessThanOrEqual(0.5)
+    expect(afterResend.statusBottomClearance, `${size.width}px resend clearance`).toBeGreaterThanOrEqual(10)
+  }
+})
