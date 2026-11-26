@@ -164,6 +164,38 @@ test.describe("with reduced motion", () => {
     }
   })
 
+  test("the resting ticker stays on one row with a full-height label at every width", async ({ page }) => {
+    await openHero(page)
+    for (const size of widths) {
+      await page.setViewportSize(size)
+      await page.evaluate(() => document.fonts.ready)
+      const layout = await page.evaluate(() => {
+        const bar = document.querySelector(".ticker-bar")
+        const mark = document.querySelector(".ticker-mark")
+        const stage = document.querySelector(".hero-stage")
+        const items = [...document.querySelectorAll('.ticker-copy:not([aria-hidden="true"]) .ticker-item')]
+        if (!bar || !mark || !stage) throw new Error("missing hero ticker parts")
+        const barBox = bar.getBoundingClientRect()
+        const markBox = mark.getBoundingClientRect()
+        const stageBox = stage.getBoundingClientRect()
+        const rows = new Set(items.map((item) => Math.round(item.getBoundingClientRect().top))).size
+        return {
+          rows,
+          barHeight: barBox.height,
+          markHeight: markBox.height,
+          barBottom: barBox.bottom,
+          stageBottom: stageBox.bottom,
+          scrollWidth: document.documentElement.scrollWidth,
+          clientWidth: document.documentElement.clientWidth,
+        }
+      })
+      expect(layout.rows, `${size.width}px row count`).toBe(1)
+      expect(Math.abs(layout.barHeight - layout.markHeight), `${size.width}px label gap`).toBeLessThanOrEqual(2)
+      expect(layout.barBottom, `${size.width}px inside hero`).toBeLessThanOrEqual(layout.stageBottom + 1)
+      expect(layout.scrollWidth, `${size.width}px page width`).toBeLessThanOrEqual(layout.clientWidth)
+    }
+  })
+
   test("the header name stays readable after the hero scrolls away", async ({ page }) => {
     await openHero(page)
     for (const size of [
