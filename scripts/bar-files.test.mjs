@@ -278,6 +278,34 @@ lowered(
   "tsconfig.base.json turned off strict.",
 )
 
+const proves = (file) => `${file} was removed, and it proved a feature a person uses.`
+const gridSpec = "tests/browser/grid-canvas.spec.ts"
+const gridJourney = ".agents/skills/verify-airdesign/journeys/grid-gap-add.mjs"
+const namesFeature = ".agents/skills/verify-airdesign/features/deck-names.md"
+same(
+  "commits 9b0587d26 and c67df726f removed Grid view's browser specs and journeys",
+  judged({ listed: [removed(gridSpec), removed(gridJourney)] }),
+  { labels: ["changes-ci", "lowers-the-bar"], lowers: [proves(gridSpec), proves(gridJourney)] },
+)
+same("a removed feature file removes the feature from the map", judged({ listed: [removed(namesFeature)] }), {
+  labels: ["changes-ci", "lowers-the-bar"],
+  lowers: [proves(namesFeature)],
+})
+same(
+  "a renamed, changed or added proof, and a removed unit test, look state or helper, lower nothing",
+  judged({
+    listed: [
+      { name: "tests/browser/slide-grid.spec.ts", before: gridSpec, status: "renamed" },
+      modified(gridJourney),
+      added(namesFeature),
+      removed("apps/web/src/editor/grid-lines.test.ts"),
+      removed(".agents/skills/verify-airdesign/look/states/grid-fit.mjs"),
+      removed("tests/browser/grid-deck.ts"),
+    ],
+  }),
+  quiet,
+)
+
 for (const file of [
   ".github/workflows/ci.yml",
   "tooling/oxlint-plugin-airdesign/rules/no-raw.js",
