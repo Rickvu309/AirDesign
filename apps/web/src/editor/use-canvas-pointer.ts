@@ -15,6 +15,7 @@ import type { CropTarget } from "./crop-handles"
 import { isEndGrip, lineEndDrag, type EndGrip } from "./line-end-drag"
 import { movedBy } from "./move-writes"
 import type { Flight, GridCarry } from "./canvas-carry"
+import { useCanvasHover } from "./use-canvas-hover"
 import { useLayerCarry } from "./use-layer-carry"
 import {
   marqueeSelection,
@@ -126,7 +127,10 @@ export function useCanvasPointer(args: PointerArgs) {
         window.removeEventListener("keydown", fnKey)
         window.removeEventListener("keyup", fnKey)
       }
-    const leave = () => latest.current.setHover(null)
+    const leave = () => {
+      hover.point.current = null
+      latest.current.setHover(null)
+    }
     const menu = (event: Event) => {
       if (event instanceof MouseEvent && event.ctrlKey) event.preventDefault()
     }
@@ -168,6 +172,8 @@ export function useCanvasPointer(args: PointerArgs) {
   ) => hitChain(geometry.roots, toSlide(event), 4.5 / screenScale(), (id) => doom.lockedIn(view, id))
 
   const carry = useLayerCarry({ latest, active, toSlide, screenScale, advance, copied })
+
+  const hover = useCanvasHover({ latest, active, panning: args.panning, chainAt })
 
   type Evaluated = Pick<Preview, "writes" | "guides" | "label"> & { readonly copies: doom.Copies | null }
 
@@ -416,6 +422,7 @@ export function useCanvasPointer(args: PointerArgs) {
       if (a.texting) a.onTextEnd()
       stage.setPointerCapture(event.pointerId)
       if (a.panning || event.button === 1) {
+        a.setHover(null)
         active.current = {
           kind: "pan",
           x: event.clientX,
@@ -526,19 +533,25 @@ export function useCanvasPointer(args: PointerArgs) {
       }
     },
     move(event: ReactPointerEvent<HTMLElement>) {
+      hover.point.current = event
       const a = latest.current
       if (active.current !== null) {
         schedule(event)
         return
       }
       if (a.panning || a.texting) return
-      const chain = chainAt(event, a.geometry, a.view)
-      a.setHover(chain === null ? null : unitOf(chain, a.selection.inside, event.metaKey || event.ctrlKey).id)
+      hover.update(event)
     },
     up(event: ReactPointerEvent<HTMLElement>) {
-      const stage = latest.current.stage.current
+      const a = latest.current
+      const panned = active.current?.kind === "pan"
+      const stage = a.stage.current
       if (stage?.hasPointerCapture(event.pointerId) === true) stage.releasePointerCapture(event.pointerId)
       finish(true, event)
+      if (panned) {
+        hover.point.current = event
+        if (!a.panning) hover.restore()
+      }
     },
     cancel() {
       finish(false, null)
