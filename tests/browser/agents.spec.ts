@@ -133,9 +133,11 @@ test("the connect dialog gives an app the address and a coding agent a prompt, t
   await expect(dialog.getByRole("button", { name: claude.name, exact: true })).toHaveAttribute("aria-pressed", "true")
   await expect(dialog.getByText(mcpAddress, { exact: true })).toBeVisible()
   await expect(dialog.getByRole("link", { name: claudeApp.label })).toHaveAttribute("href", claudeApp.href)
+  await expect(dialog.getByRole("button", { name: connectAgentCopy.copy, exact: true })).toHaveText("")
   await dialog.getByRole("button", { name: connectAgentCopy.copy, exact: true }).click()
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(mcpAddress)
   await expect(dialog.getByRole("button", { name: productCopy.done, exact: true })).toBeVisible()
+  await expect(dialog.getByRole("button", { name: productCopy.done, exact: true })).toHaveText("")
 
   await dialog.getByRole("button", { name: settingsCopy.claudeCode, exact: true }).click()
   await expect(dialog.getByText(waitingOf(settingsCopy.claudeCode), { exact: true })).toBeVisible()
