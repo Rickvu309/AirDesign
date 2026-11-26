@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "lib": ["es2023"],
+    "types": ["node"],
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+  },
+  "include": ["src"],
+  "references": [{ "path": "../doom" }]
+}

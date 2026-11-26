@@ -2,7 +2,7 @@ import { compileAdd } from "./agent-add.js"
 import { compileDelete, compileMove, compileUnwrap, compileWrap } from "./agent-arrange.js"
 import { compileSet } from "./agent-set.js"
 import { compileSlide } from "./agent-slide.js"
-import { compileDeck, compileDuplicate } from "./agent-copy.js"
+import { compileDeck, compileDuplicate, compilePaste } from "./agent-copy.js"
 import type { AgentChange, AgentRefusal } from "./agent-change.js"
 import { detachComponent } from "./component/join-instance.js"
 import { type Reading, Stop, draftOf, living, stop } from "./agent-draft.js"
@@ -37,6 +37,8 @@ export function nameOf(change: AgentChange): string {
       return `${change.op} ${change.nodes[0] ?? ""}${change.nodes.length > 1 ? `+${change.nodes.length - 1}` : ""}`
     case "slide":
       return `slide ${change.add !== undefined ? "add" : change.move !== undefined ? "move" : change.delete !== undefined ? "delete" : ""}`.trim()
+    case "paste":
+      return `paste ${change.piece.name ?? change.piece.type}`
     case "deck":
       return "deck"
     case "component":
@@ -95,6 +97,7 @@ export function compileAgentChange(
     if (change.op === "wrap") compileWrap(draft, change)
     if (change.op === "unwrap") compileUnwrap(draft, change)
     if (change.op === "duplicate") compileDuplicate(draft, change)
+    if (change.op === "paste") compilePaste(draft, change)
     if (change.op === "deck") compileDeck(draft, change)
     if (change.op === "delete") compileDelete(draft, change)
     if (change.op === "slide") compileSlide(draft, change)

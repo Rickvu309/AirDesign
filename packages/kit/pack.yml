@@ -1,0 +1,3 @@
+layer: model
+public:
+  runtime: [src/index.ts]
