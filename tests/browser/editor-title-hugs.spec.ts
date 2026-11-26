@@ -13,7 +13,7 @@ test("a cover title's box hugs its lines and grows upward as the title wraps, le
   await openEditor(page, context, stack)
   await clickSlide(page, 600, 500)
   const outline = page.locator("[data-selection-outline]")
-  const subtitle = page.locator("[data-slide-box] [data-node]").filter({ hasText: "Subtitle" })
+  const subtitle = page.locator("[data-slide-box] [data-node]").nth(1)
   await expect(outline).toHaveCount(1)
   const one = (await outline.boundingBox())!
   const below = (await subtitle.boundingBox())!
