@@ -2,14 +2,14 @@ import * as doom from "@airdesign/doom"
 import { hitChain } from "@/editor/hit-test"
 import type { Point, SlideGeometry } from "@/editor/slide-geometry"
 
-export type GridHit = "number" | "blank" | "element" | "text" | "typing"
+export type GridPart = "number" | "live" | "picture"
 
-export type GridPressed = "slide" | "element" | "editor"
+export type GridRoute = "slide" | "edit" | "canvas"
 
-export function gridPress(hit: GridHit, active: boolean, modified: boolean, small = false): GridPressed {
-  if (small || hit === "number" || hit === "blank") return "slide"
-  if (!active) return "element"
-  return hit === "text" && !modified ? "element" : "editor"
+export function gridRoute(part: GridPart, element: boolean, small: boolean): GridRoute {
+  if (part === "number" || small) return "slide"
+  if (part === "live") return "canvas"
+  return element ? "edit" : "slide"
 }
 
 export function elementAt(

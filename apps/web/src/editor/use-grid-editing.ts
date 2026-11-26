@@ -3,7 +3,7 @@ import { useCallback, useRef, type KeyboardEvent, type MouseEvent, type PointerE
 import { flushSync } from "react-dom"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
-import { elementAt, gridEntryOf } from "@/editor/grid-hit"
+import { elementAt, gridEntryOf, gridRoute } from "@/editor/grid-hit"
 import { gridEditing, gridStep, type GridInteraction, type GridStep } from "@/editor/grid-interaction"
 import type { GridLayout, GridRect } from "@/editor/grid-lines"
 import { gridElementPresses } from "@/editor/grid-number"
@@ -67,22 +67,43 @@ export function useGridEditing({
     return list.current?.querySelector<HTMLElement>(`[data-slide-entry="${String(index + 1)}"]`) ?? null
   }
 
+  function layerAt(index: number, id: doom.NodeId, scale: number, event: PointerEvent<HTMLDivElement>): boolean {
+    const geometry = geometries.current.get(id)
+    const at = slideAt.current(index, { x: event.clientX, y: event.clientY })
+    if (geometry === undefined || at === null) return false
+    return elementAt(geometry, at, 4.5 / scale, (node) => doom.lockedIn(view, node)) !== null
+  }
+
   function press(event: PointerEvent<HTMLDivElement>) {
     swallow.current = false
     if (event.button !== 0 || handNow.current || spaceNow.current) return
     const target = event.target
     if (!(target instanceof Element)) return
-    if (target.closest("[data-slide-number]") !== null) return
     const index = gridEntryOf(target)
     const card = index === null ? undefined : layout.cards[index]
     const scale = scaleNow.current
-    if (
-      index === null ||
-      card === undefined ||
-      scale <= 0 ||
-      !gridElementPresses({ width: card.width * scale, gap: line * scale })
-    ) {
-      if (index !== null && target.closest("[data-grid-edit]") !== null) {
+    const part =
+      target.closest("[data-slide-number]") !== null
+        ? "number"
+        : target.closest("[data-grid-edit]") !== null
+          ? "live"
+          : "picture"
+    const editable =
+      card !== undefined &&
+      index !== null &&
+      scale > 0 &&
+      gridElementPresses({ width: card.width * scale, gap: line * scale })
+    const element =
+      part === "picture" &&
+      card !== undefined &&
+      index !== null &&
+      scale > 0 &&
+      gridElementPresses({ width: card.width * scale, gap: line * scale }) &&
+      layerAt(index, card.id, scale, event)
+    const route = gridRoute(part, element, !editable)
+    if (route === "canvas") return
+    if (route !== "edit") {
+      if (part === "live" && index !== null) {
         event.preventDefault()
         event.stopPropagation()
         flushSync(() => {
@@ -93,11 +114,7 @@ export function useGridEditing({
       }
       return
     }
-    if (target.closest("[data-grid-edit]") !== null) return
-    const geometry = geometries.current.get(card.id)
-    const at = slideAt.current(index, { x: event.clientX, y: event.clientY })
-    if (geometry === undefined || at === null) return
-    if (elementAt(geometry, at, 4.5 / scale, (id) => doom.lockedIn(view, id)) === null) return
+    if (card === undefined || index === null) return
     swallow.current = true
     flushSync(() => {
       if (index !== current) onCurrent(index)
