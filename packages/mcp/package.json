@@ -30,6 +30,7 @@
   "dependencies": {
     "@airdesign/catalog": "workspace:*",
     "@airdesign/doom": "workspace:*",
+    "@airdesign/skills": "workspace:*",
     "@modelcontextprotocol/server": "^2.4.0",
     "zod": "^4.6.7"
   }

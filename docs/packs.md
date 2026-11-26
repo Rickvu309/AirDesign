@@ -48,6 +48,7 @@ flowchart TD
     p_packages_doom["packages/doom"]
     p_packages_fonts["packages/fonts"]
     p_packages_oauth["packages/oauth"]
+    p_packages_skills["packages/skills"]
     p_packages_theme["packages/theme"]
     p_packages_usage["packages/usage"]
   end
@@ -177,5 +178,6 @@ flowchart TD
 | `packages/mcp` | service | runtime: packages/mcp/src/index.ts; testing: packages/mcp/src/testing/evals.ts | none | none |
 | `packages/oauth` | core | src/index.ts | none | none |
 | `packages/render` | model | src/index.ts | none | none |
+| `packages/skills` | core | runtime: packages/skills/src/index.ts | none | none |
 | `packages/theme` | core | none | none | none |
 | `packages/usage` | core | src/index.ts | none | none |
