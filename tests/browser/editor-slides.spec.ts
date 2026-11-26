@@ -26,6 +26,15 @@ test("the slide strip shows, adds, steps through, reorders, deletes and restores
   await expect(entries(page)).toHaveCount(1)
   await expect(entry(page, 1)).toHaveAttribute("aria-current", "true")
   await expect(painted(page)).toHaveCount(2)
+  const number = await entry(page, 1)
+    .locator("[data-slide-number]")
+    .evaluate((digit) => {
+      const column = digit.parentElement?.getBoundingClientRect()
+      const box = digit.getBoundingClientRect()
+      return column === undefined ? null : { before: box.left - column.left, after: column.right - box.right }
+    })
+  expect(number?.before).toBeGreaterThanOrEqual(0)
+  expect(number?.after).toBeGreaterThanOrEqual(0)
 
   await page.getByRole("button", { name: slideListCopy.addSlide }).click()
   await expect(entries(page)).toHaveCount(2)
