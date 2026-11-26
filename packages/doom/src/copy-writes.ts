@@ -80,6 +80,29 @@ export function copiedMove(copies: Copies, moves: readonly Write[]): readonly Wr
 
 type Sibling = Keyed & { readonly copyOf?: NodeId }
 
+function retie(
+  list: Sibling[],
+  index: number,
+  shifted: readonly Keyed[],
+  slot: Slot,
+  moved: Map<NodeId, Slot>,
+  copySlots: Map<NodeId, Slot>,
+): void {
+  let start = -1
+  for (let place = 0; place < list.length; place += 1) {
+    const covers = place <= index && index < place + shifted.length
+    if (!covers || !shifted.every((each, offset) => list[place + offset]?.id === each.id)) continue
+    start = place
+  }
+  if (start < 0) return
+  shifted.forEach((shift, offset) => {
+    const entry = list[start + offset]!
+    list[start + offset] = { ...entry, at: shift.at }
+    if (entry.copyOf === undefined) moved.set(entry.id, { id: slot.id, at: shift.at })
+    else copySlots.set(entry.copyOf, { id: slot.id, at: shift.at })
+  })
+}
+
 export function duplicateWrites(view: Doom, ids: readonly NodeId[], mint: Mint): Copies {
   const lists = new Map<NodeId, Sibling[]>()
   const copySlots = new Map<NodeId, Slot>()
@@ -96,12 +119,7 @@ export function duplicateWrites(view: Doom, ids: readonly NodeId[], mint: Mint):
     lists.set(slot.id, list)
     const index = list.findIndex((each) => each.id === root && each.copyOf === undefined) + 1
     const { keys, shifted } = siblingKeys(list, index, 1)
-    shifted.forEach(({ at }, offset) => {
-      const entry = list[index + offset]!
-      list[index + offset] = { ...entry, at }
-      if (entry.copyOf === undefined) moved.set(entry.id, { id: slot.id, at })
-      else copySlots.set(entry.copyOf, { id: slot.id, at })
-    })
+    retie(list, index, shifted, slot, moved, copySlots)
     list.splice(index, 0, { id: root, at: keys[0]!, copyOf: root })
     copySlots.set(root, { id: slot.id, at: keys[0]! })
   }
