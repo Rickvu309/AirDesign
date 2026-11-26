@@ -183,9 +183,10 @@ html:has(.reflow-frame) #root {
   transform-origin: 0 0;
   pointer-events: none;
 }
-[data-grid-card],
+[data-grid-overlay],
 [data-grid-group-frame],
-[data-group-insert] {
+[data-group-insert],
+[data-gap-insert] {
   --grid-radius: max(var(--grid-radius-min), calc(var(--grid-radius-canvas) * var(--grid-scale)));
 }
 [data-grid-front] {
