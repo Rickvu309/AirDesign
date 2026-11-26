@@ -3,6 +3,7 @@ import os from "node:os"
 import path from "node:path"
 import { bytesOf } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
+import { readSkillIndex } from "@airdesign/skills"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 
@@ -125,7 +126,7 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
         ok: false,
         refusal: "field",
         field: "name",
-        available: ["edit-deck"],
+        available: readSkillIndex().skills.map((entry) => entry.name),
       })
       expect(textOf(missing)).toEqual([{ type: "text", text: JSON.stringify(missing.structuredContent) }])
 
