@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url"
 import { expect, type Browser, type BrowserContext, type Page } from "@playwright/test"
 import { test } from "./deck-test"
 import { keptWait, keptWaitApproval } from "./kept-wait"
+import { webDesignChecks } from "./web-design-checks"
 
 type Kit = { page: Page; context: BrowserContext; out: string }
 type State = { name: string; design: string | null }
@@ -99,6 +100,7 @@ test("every named state of this design shard is reached and scanned in one stack
     const identifiers = catalog.projectTools(catalog.catalog).map((tool) => tool.name)
     const rows: { page: string; findings: Finding[] }[] = []
     const used = new Set<number>()
+    const designFailures: string[] = []
     const { contextPool } = await load<Pool>(join(skill, "look/context-pool.mjs"))
     const contexts = contextPool(browser, {
       baseURL: origin,
@@ -123,6 +125,14 @@ test("every named state of this design shard is reached and scanned in one stack
         rows.push({ page: state.name, findings: scanned.findings })
         swept.set(state.name, scanned.findings)
         for (const index of scanned.used) used.add(index)
+        for (const [id, name, verify] of webDesignChecks) {
+          if (name !== state.name) continue
+          try {
+            await verify(kit.page)
+          } catch (error) {
+            designFailures.push(`${id}: ${String(error)}`)
+          }
+        }
       },
     )
     await contexts.close()
@@ -137,6 +147,7 @@ test("every named state of this design shard is reached and scanned in one stack
     })
     expect(failures, "every named state is reached").toEqual([])
     expect(rows.length).toBe(selected.length)
+    expect(designFailures).toEqual([])
   } finally {
     execFileSync(process.execPath, [helper, "stop", run], { cwd: root, stdio: "ignore" })
   }

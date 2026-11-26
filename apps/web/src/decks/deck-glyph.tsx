@@ -85,7 +85,7 @@ export function DeckGlyph({ name, size }: { name: Glyph; size?: number }) {
     return (
       <svg width={box} height={box} viewBox="10 10.5 15 15" aria-hidden="true">
         {trashIconPaths.map((d) => (
-          <path key={d.slice(0, 24)} d={d} fill="currentColor" />
+          <path key={d.slice(0, 24)} d={d} fill="currentColor" fillRule="evenodd" />
         ))}
       </svg>
     )
