@@ -177,4 +177,14 @@ export const webDesignChecks: Check[] = [
       await expect(page.getByText("Verify", { exact: true })).toBeVisible()
     },
   ],
+  [
+    "08-aira-placeholder",
+    "aira-start",
+    async (page) => {
+      const color = await page
+        .locator("[data-describe-deck] textarea")
+        .evaluate((field) => getComputedStyle(field, "::placeholder").color)
+      expect(color).toBe("rgb(102, 102, 102)")
+    },
+  ],
 ]

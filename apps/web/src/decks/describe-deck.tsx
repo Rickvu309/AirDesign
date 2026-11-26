@@ -46,7 +46,7 @@ export function DescribeDeck({
           placeholder={productCopy.describeDeckExample}
           value={text}
           data-focus-edge
-          className="min-h-12 text-[length:var(--type-field)] outline-hidden placeholder:text-faint"
+          className="min-h-12 text-[length:var(--type-field)] outline-hidden placeholder:text-[color:var(--placeholder-prompt)]"
           onChange={(event) => setText(event.target.value)}
           onKeyDown={onKey}
         />
