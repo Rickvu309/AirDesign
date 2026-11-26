@@ -44,6 +44,7 @@ import { noSelection, type Selection } from "./selection"
 import { useCurrentSlide } from "./use-current-slide"
 import { useAssetUrls } from "./use-asset-urls"
 import { useSlideStepKeys } from "./use-slide-step-keys"
+import { useAgentSlide } from "./use-agent-slide"
 import { useGridHistoryKeys } from "./use-grid-history-keys"
 import { addAfterKey, useSlideStrip } from "./use-slide-strip"
 import type { Tool } from "./use-canvas-pointer"
@@ -148,6 +149,15 @@ function Editing({
   }
   const assets = useAssetUrls(id, view)
   const typing = useMemo(typingPreview, [])
+  const [textingOn, setTextingOn] = useState<doom.NodeId>()
+  useAgentSlide(view, client.caught, grid || textingOn === slide || cropping !== null, choose)
+  const onTyping = useCallback(
+    (writes: readonly doom.Write[], on: doom.NodeId | undefined) => {
+      typing.set(writes, on)
+      setTextingOn(on)
+    },
+    [typing],
+  )
   const strip = useSlideStrip({
     view,
     typing,
@@ -355,7 +365,7 @@ function Editing({
                   notice={notice}
                   onExport={exporting.control.openDialog}
                   onTryAgain={tryAgain}
-                  onTyping={typing.set}
+                  onTyping={onTyping}
                   onWords={setWords}
                   cropping={cropping}
                   onCropping={setCropping}

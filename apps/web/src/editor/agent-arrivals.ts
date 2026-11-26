@@ -34,6 +34,20 @@ export function agentArrivals(before: doom.Doom, after: doom.Doom, caught: doom.
   return { made: new Set(top.filter(isNew)), changed: new Set(top.filter((id) => !isNew(id))) }
 }
 
+export function agentSlide(before: doom.Doom, after: doom.Doom, caught: doom.Rev): doom.NodeId | undefined {
+  if (before === after) return undefined
+  const until = Math.max(...freshAgentRevs(before, after, caught))
+  const since = Math.max(caught, before.rev)
+  const madeAt = (id: doom.NodeId) => Math.max(...(after.revs.get(id)?.values() ?? []))
+  return doom
+    .slidesOf(after)
+    .filter(({ id }) => !before.nodes.has(id) && madeAt(id) > since && madeAt(id) <= until)
+    .reduce<doom.NodeId | undefined>(
+      (latest, { id }) => (latest === undefined || madeAt(id) >= madeAt(latest) ? id : latest),
+      undefined,
+    )
+}
+
 function isLayer(view: doom.Doom, id: doom.NodeId): boolean {
   const node = view.nodes.get(id)
   return node !== undefined && layerTypes.has(node.type) && doom.onDeck(view.nodes, id)

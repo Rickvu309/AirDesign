@@ -377,6 +377,7 @@ test("the filmstrip and canvas use Japanese for a Han-only title when another sl
       },
     },
   ])
+  await page.locator("[data-slide-entry]").first().click()
   const title = page.locator("[data-slide-box] [data-run]").filter({ hasText: "市場" })
   const thumb = page.locator("[data-slide-thumb] [data-run]").filter({ hasText: "市場" })
   await expect(title).toHaveAttribute("style", /Noto%2520Sans%2520JP/i)

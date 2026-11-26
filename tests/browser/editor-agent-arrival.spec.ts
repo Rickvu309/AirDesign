@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test"
+import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { test, type Stack } from "./api-stack"
 import { agentCall, connectClaudeCode, saved } from "./claude-code"
 import { openEditor, type Opened } from "./editor-deck"
@@ -169,4 +170,93 @@ test("an agent edit made while the editor was closed does not play when the deck
   release()
   await expect(page.locator("[data-slide-box]").getByText("Agent note", { exact: true })).toBeVisible()
   expect(await marksSeen(page)).toBe(0)
+})
+
+test("the texts Aira adds from the chat arrive traced on the canvas", async ({ page, context, stack }) => {
+  const opened = await openEditor(page, context, stack)
+  const canvas = page.locator("[data-slide-box]")
+  await countMarks(page)
+  stack.aira(
+    {
+      name: "add-two-texts.sse",
+      fill: { deck: opened.deck, base: String((await saved(stack, opened)).rev), slide: opened.slide },
+    },
+    { name: "added-two-texts.sse" },
+  )
+  await page
+    .locator("[data-editor-panel]")
+    .getByRole("textbox", { name: airaCopy.askAira })
+    .fill("Add a summary and a note")
+  await page.keyboard.press("Enter")
+  await expect(canvas.getByText("Draft note", { exact: true })).toBeVisible()
+  await expect.poll(() => marksSeen(page)).toBeGreaterThan(0)
+})
+
+test("the canvas goes to a slide an agent makes and traces what the agent writes on it, but stays put while the person types", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openEditor(page, context, stack)
+  const canvas = page.locator("[data-slide-box]")
+  const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
+  const slideWith = async (text: string, runId?: unknown) => {
+    const made = await call("edit_deck", {
+      deck: opened.deck,
+      base: (await saved(stack, opened)).rev,
+      ...(runId === undefined ? {} : { runId }),
+      changes: [{ op: "slide", add: {} }],
+    })
+    expect(made.ok, JSON.stringify(made)).toBe(true)
+    const slide = (made.added as readonly { id: string }[])[0]!.id
+    const wrote = await call("edit_deck", {
+      deck: opened.deck,
+      base: (await saved(stack, opened)).rev,
+      runId: made.runId,
+      changes: [note(slide, text, 400)],
+    })
+    expect(wrote.ok, JSON.stringify(wrote)).toBe(true)
+    return { slide, runId: made.runId }
+  }
+
+  await countMarks(page)
+  const first = await slideWith("On the new slide")
+  await expect(canvas.getByText("On the new slide", { exact: true })).toBeVisible()
+  await expect(page).toHaveURL(new RegExp(encodeURIComponent(first.slide)))
+  await expect.poll(() => marksSeen(page)).toBeGreaterThan(0)
+
+  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+  let release = () => {}
+  const waited = new Promise<void>((resolve) => (release = resolve))
+  await page.route(`**${doomRoutes.since.path}`, async (route) => {
+    await waited
+    await route.fallback()
+  })
+  const together = await slideWith("Both in one answer", first.runId)
+  release()
+  await expect(canvas.getByText("Both in one answer", { exact: true })).toBeVisible()
+  await expect(page).toHaveURL(new RegExp(encodeURIComponent(together.slide)))
+  await page.unroute(`**${doomRoutes.since.path}`)
+
+  const stage = await page.locator("[data-slide-box]").boundingBox()
+  if (stage === null) throw new Error("no slide on the canvas")
+  await page.keyboard.press("r")
+  await page.mouse.move(stage.x + 60, stage.y + 60)
+  await page.mouse.down()
+  await page.mouse.move(stage.x + 160, stage.y + 140, { steps: 3 })
+  await slideWith("While drawing", first.runId)
+  await expect(page.locator("[data-slide-thumb]").getByText("While drawing", { exact: true })).toHaveCount(1)
+  await page.mouse.up()
+  await expect(page).toHaveURL(new RegExp(encodeURIComponent(together.slide)))
+  await expect.poll(async () => (await saved(stack, opened)).children.get(together.slide as never)?.length).toBe(2)
+  await page.keyboard.press("Escape")
+
+  const box = await canvas.getByText("Both in one answer", { exact: true }).boundingBox()
+  if (box === null) throw new Error("the agent's note is not painted")
+  await page.mouse.dblclick(box.x + 20, box.y + box.height / 2)
+  await page.keyboard.type("Mine ")
+  await slideWith("Elsewhere", first.runId)
+  await expect(page.locator("[data-slide-thumb]").getByText("Elsewhere", { exact: true })).toHaveCount(1)
+  await expect(canvas.getByText("Elsewhere", { exact: true })).toHaveCount(0)
+  await expect(page).toHaveURL(new RegExp(encodeURIComponent(together.slide)))
 })
