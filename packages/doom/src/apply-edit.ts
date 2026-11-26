@@ -18,6 +18,7 @@ import { readWriteIn } from "./read-write.js"
 import { type Refusal, isRefusal, refuse } from "./refusal.js"
 import type { Landed, Node, Run, Doom, Write } from "./doom.js"
 import { onDeck, propOf, slideOf } from "./doom-walk.js"
+import { parentLanding } from "./parent-landing.js"
 import type { End } from "./geometry.js"
 import { freedInFold } from "./lost-ends.js"
 import { type Theme, themeKeys, withThemeValue } from "./theme.js"
@@ -40,24 +41,18 @@ const parentOf = (node: Node | undefined): Parent | null | undefined =>
 
 const deleted = (node: Node) => parentOf(node) === null
 
-const takesBackDelete = (doom: Doom, write: Write) =>
-  write.base !== undefined && parentOf(doom.nodes.get(write.node)) === null
+const takesBackDelete = (doom: Doom, write: Write) => parentLanding(doom, [write], write) === "restore"
 
 function staysDeleted(doom: Doom, writes: readonly Write[]): Set<NodeId> {
-  const placing = new Set<NodeId>()
+  const dropping = new Set<NodeId>()
   const restoring = new Set<NodeId>()
   for (const write of writes) {
-    if (write.prop !== "parent" || write.value === null || typeof write.value !== "object") continue
-    const node = doom.nodes.get(write.node)
-    if (node === undefined || !deleted(node)) continue
-    const parent = write.value as Parent
-    const target = doom.nodes.get(parent.id)
-    if (target === undefined || deleted(target)) continue
-    if (write.base === doom.revs.get(write.node)?.get("parent")) restoring.add(write.node)
-    else placing.add(write.node)
+    const fate = parentLanding(doom, writes, write)
+    if (fate === "drop") dropping.add(write.node)
+    else if (fate === "restore") restoring.add(write.node)
   }
-  for (const id of restoring) placing.delete(id)
-  return placing
+  for (const id of restoring) dropping.delete(id)
+  return dropping
 }
 
 function open(doom: Doom): Working {

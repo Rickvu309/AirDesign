@@ -1,10 +1,9 @@
 import { applyEdit } from "./apply-edit.js"
+import { parentOf } from "./doom-walk.js"
 import { rev } from "./ids.js"
+import { parentLanding } from "./parent-landing.js"
 import { isRefusal } from "./refusal.js"
 import type { Edit, Doom } from "./doom.js"
-
-const deletedParent = (view: Doom, id: Edit["writes"][number]["node"]) =>
-  (view.nodes.get(id) as { parent?: unknown } | undefined)?.parent === null
 
 export function onTop(view: Doom, edit: Edit): Edit {
   return {
@@ -13,7 +12,9 @@ export function onTop(view: Doom, edit: Edit): Edit {
       const { base: sentBase, ...write } = sent
       const was = view.revs.get(write.node)?.get(write.prop)
       if (was === undefined) return write
-      if (write.prop === "parent" && deletedParent(view, write.node) && sentBase === undefined) return write
+      const deleted = parentOf(view.nodes.get(sent.node)) === null
+      if (sent.prop === "parent" && deleted && sentBase === undefined) return write
+      if (sent.prop === "parent" && deleted && parentLanding(view, edit.writes, sent) !== "restore") return sent
       return { ...write, base: was }
     }),
   }
