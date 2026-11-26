@@ -1,5 +1,5 @@
 import fs from "node:fs"
-import { beforeAfterNeed } from "./before-after.mjs"
+import { beforeAfterNeed, noVisibleChange, proofImage, seen } from "./before-after.mjs"
 import { changedOnBranch } from "./land-git.mjs"
 
 const templateFile = new URL("../.github/pull_request_template.md", import.meta.url)
@@ -68,6 +68,48 @@ export const bodyFaults = (body, { offBranch = () => false, changedFiles = [], r
   return [
     ...faults,
     `this changes what a person sees (${named}), and the body has no ## Before / after with a proof release image. Add the image from verify-airdesign before-after and publish, or the one line "No visible change: <why>" under ## Before / after.`,
+  ]
+}
+
+export const leadLimit = 25
+
+const outsideDetails = (lines) => {
+  let folded = false
+  return lines.filter((line) => {
+    if (/^<details\b/i.test(line)) folded = true
+    const inside = folded
+    if (/<\/details>\s*$/i.test(line)) folded = false
+    return !inside && line !== ""
+  })
+}
+
+export const leadFaults = (body, { changedFiles = [], repository }) => {
+  const lines = String(body ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+  const first = lines.find((line) => line !== "") ?? ""
+  const tree =
+    first.startsWith("![") && proofImage(repository).test(first) && lines.some((line) => line.startsWith("**Result.**"))
+  const plain = first.startsWith("**Now:**") && lines.some((line) => line.startsWith("**Proof:**"))
+  const shown = noVisibleChange(body) === undefined ? [...new Set(changedFiles.filter(seen))] : []
+  const named = `${shown.slice(0, 3).join(", ")}${shown.length > 3 ? ` and ${String(shown.length - 3)} more` : ""}`
+  const open = outsideDetails(lines).length
+  return [
+    ...(tree || plain
+      ? []
+      : [
+          "the body opens with neither lead. Open it with the tree picture from show-airdesign, published with verify-airdesign publish, and the tree's Markdown in a details block. For a change no person sees, open it with a **Now:** line and a **Proof:** line.",
+        ]),
+    ...(plain && shown.length > 0
+      ? [
+          `this changes what a person sees (${named}), so the body opens with the tree picture from show-airdesign and the tree's Markdown in a details block, not with the **Now:** line.`,
+        ]
+      : []),
+    ...(open > leadLimit
+      ? [
+          `the body has ${String(open)} lines outside its details block, over the limit of ${String(leadLimit)}. Cut it, or move the detail into the details block.`,
+        ]
+      : []),
   ]
 }
 

@@ -1,3 +1,3 @@
 # PR titles and bodies follow the rules; name the areas
 
-`pnpm land` refuses bad titles and bodies before the gate; `bar` fails on local paths, placeholders or commits absent from branch and main (`scripts/pr-body.mjs`). Missing Evidence warns. `commit-titles` warns; `bar` adds title and area labels
+`pnpm land` refuses bad titles and bodies before the gate; `bar` fails on local paths, placeholders or commits absent from branch and main (`scripts/pr-body.mjs`). `pnpm land --body-file` and `pnpm pr-body` also refuse a body with no lead (`leadFaults`): it opens with the published tree picture from `show-airdesign` and the tree's Markdown in a details block, or, for a change no person sees, with a `**Now:**` line and a `**Proof:**` line, and holds at most 25 lines outside the details block. An open pull request's older body is not judged for its lead. `commit-titles` warns; `bar` adds title and area labels

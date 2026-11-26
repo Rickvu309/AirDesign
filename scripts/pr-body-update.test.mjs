@@ -51,9 +51,9 @@ const run = (body, options) => {
 
 const invisible = { files: ["scripts/land.mjs"] }
 const visible = { files: ["apps/web/src/editor/canvas.tsx"] }
-const cleanBody = "## Summary\n\nA.\n\n## Evidence\n\nRan it: 12 tests pass.\n"
+const cleanBody = "**Now:** A.\n**Proof:** Ran it: 12 tests pass.\n"
 
-const stale = run(`## Summary\n\nA.\n\n## Evidence\n\nMeasured at ${oldHead}: 12 tests pass.\n`, {
+const stale = run(`**Now:** A.\n**Proof:** Ran it.\n\n\n\n\nMeasured at ${oldHead}: 12 tests pass.\n`, {
   ...invisible,
   offBranch: [oldHead],
 })
@@ -75,9 +75,12 @@ same(
 )
 same("and PATCHes nothing", unseen.patched, [])
 
-const shown = run(`${cleanBody}\n## Before / after\n\n${proof}\n`, visible)
+const treeBody = `${proof}\n\n<details><summary>Detail</summary>\n\n**Result.** A holds (Passed)\n\n</details>\n`
+const shown = run(`${treeBody}\n## Before / after\n\n${proof}\n`, visible)
 same("a visible change with its proof image is accepted", shown.ok, true)
-same("and PATCHes the body", shown.patched, [`${cleanBody}\n## Before / after\n\n${proof}\n`])
+same("and PATCHes the body", shown.patched, [`${treeBody}\n## Before / after\n\n${proof}\n`])
+const plainShown = run(`${cleanBody}\n## Before / after\n\n${proof}\n`, visible)
+same("a visible change that opens with the plain lines is refused", [plainShown.ok, plainShown.patched], [false, []])
 
 const clean = run(cleanBody, invisible)
 same("a clean body is accepted", clean.ok, true)

@@ -6,6 +6,7 @@ import { beforeAfterNeed } from "./before-after.mjs"
 import { pullBodyFaults, readPullHead, readPullMeta } from "./bar.mjs"
 import { attributionLine } from "./commit-authors.mjs"
 import { ghApi, readWithRetry } from "./github-read.mjs"
+import { leadFaults } from "./pr-body.mjs"
 
 export const usage = "usage: pnpm pr-body <pull request number> <body file>"
 
@@ -17,6 +18,7 @@ export const updateBody = ({ api, repository, number, body }) => {
   const faults = [
     ...(attribution === undefined ? [] : [`the body has the attribution line "${attribution}". Delete that line.`]),
     ...pullBodyFaults({ api: read, repository, pull, changedFiles, body }),
+    ...leadFaults(body, { changedFiles, repository }),
   ]
   if (faults.length > 0) return { ok: false, lines: faults.map((fault) => `Body: ${fault}`) }
   const movement = (now) =>

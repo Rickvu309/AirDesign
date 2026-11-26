@@ -67,7 +67,7 @@ export const harness = (options = {}) => {
       title: "Add pnpm land",
       body: "## Proof\n\nRan it.\n",
     },
-    bodyText = "## What changes\n\nA.\n\n## Proof\n\nRan it.\n",
+    bodyText = "**Now:** A.\n**Proof:** Ran it.\n",
     conflicts = "",
     behind = "0",
     mainMigrations = migrationsOf("a", "b"),
