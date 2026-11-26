@@ -79,14 +79,34 @@ export function readGridViewport(raw: string | null): GridView | null {
   }
 }
 
-export function fittedGrid(block: GridSize, room: GridSize): GridView {
-  const scale = boundedGridScale(
+export const gridGrip = { offset: 32, width: 28, minimumHeight: 80 }
+
+const gripRoom = gridGrip.offset + gridGrip.width / 2
+
+export function gridGripsShown(slideHeight: number, scale: number): boolean {
+  return slideHeight * scale >= gridGrip.minimumHeight
+}
+
+function fitScale(block: GridSize, room: GridSize, left: number): number {
+  return boundedGridScale(
     Math.min(
-      (room.width - 2 * fitPadding) / Math.max(1, block.width),
+      (room.width - 2 * fitPadding - left) / Math.max(1, block.width),
       (room.height - 2 * fitPadding) / Math.max(1, block.height),
     ),
   )
-  return { x: (room.width - block.width * scale) / 2, y: (room.height - block.height * scale) / 2, scale }
+}
+
+export function fittedGrid(block: GridSize, room: GridSize, grips?: number): GridView {
+  let scale = fitScale(block, room, 0)
+  let left = 0
+  if (grips !== undefined && gridGripsShown(grips, scale)) {
+    const roomy = fitScale(block, room, gripRoom)
+    if (gridGripsShown(grips, roomy)) {
+      scale = roomy
+      left = gripRoom
+    } else scale = boundedGridScale(Math.min(scale, (gridGrip.minimumHeight - 0.01) / grips))
+  }
+  return { x: (room.width - block.width * scale + left) / 2, y: (room.height - block.height * scale) / 2, scale }
 }
 
 export function fittedGridCards(layout: GridLayout, indices: readonly number[], room: GridSize): GridView | null {
@@ -97,7 +117,8 @@ export function fittedGridCards(layout: GridLayout, indices: readonly number[], 
   const top = Math.min(...cards.map((card) => card.top)) - inset
   const right = Math.max(...cards.map((card) => card.left + card.width))
   const bottom = Math.max(...cards.map((card) => card.top + card.height))
-  const fit = fittedGrid({ width: right - left, height: bottom - top }, room)
+  const leading = cards.some((card) => card.left === 0)
+  const fit = fittedGrid({ width: right - left, height: bottom - top }, room, leading ? cards[0]?.height : undefined)
   return { x: fit.x - left * fit.scale, y: fit.y - top * fit.scale, scale: fit.scale }
 }
 

@@ -36,6 +36,16 @@ export const slideListCopy = {
     count === 1 ? `Skipped slide ${String(number)} in Present` : `Skipped ${slidesOf(count)} in Present`,
   shownInPresent: (count: number, number: number) =>
     count === 1 ? `Slide ${String(number)} shows in Present` : `${slidesOf(count)} show in Present`,
+  open: "Open",
+  openKey: "Enter",
+  addAfterMenu: "Add slide after",
+  addBelowMenu: "Add slide in a new slide group below",
+  moveBelowMenu: "Move to a new slide group below",
+  addAfter: (number: number) => `Add slide after slide ${String(number)}`,
+  addBelow: (group: number) => `Add slide in a new slide group below slide group ${String(group)}`,
+  moveGroup: (group: number) => `Move slide group ${String(group)}`,
+  groupMoved: (from: number, to: number) => `Moved slide group ${String(from)} to position ${String(to)}`,
+  groupKeys: "Alt+ArrowUp Alt+ArrowDown",
   duplicate: "Duplicate",
   delete: "Delete",
   setActions: (count: number) => ({

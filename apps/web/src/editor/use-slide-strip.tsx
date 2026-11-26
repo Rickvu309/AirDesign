@@ -13,6 +13,7 @@ import {
   duplicateSlideWrites,
   moveSlideWrites,
   neighbourAfterDelete,
+  slideGroupMoveWrites,
 } from "./slide-writes"
 import { skipSaid, skipWrites } from "./slide-skip"
 import type { EditorClient } from "./use-deck"
@@ -65,7 +66,7 @@ export function useSlideStrip(props: {
       const slide = slides[at]
       if (slide !== undefined) onCurrent(slide)
     },
-    onAdd: (part, after) => {
+    onAdd: (part, after, side = "same") => {
       const from = after === undefined ? current : slides[after]
       const made = addSlideWrites(
         view,
@@ -73,10 +74,12 @@ export function useSlideStrip(props: {
         mint,
         part !== undefined && isStart(part) ? part : "titleOnly",
         props.measure ?? undefined,
+        side,
       )
-      client.push(made.writes, part === "chart" ? { read: view } : undefined)
+      if (!client.push(made.writes, part === "chart" ? { read: view } : undefined).ok) return
       onCurrent(made.slide)
-      say.current(slideListCopy.added((from === undefined ? slides.length : slides.indexOf(from)) + 2))
+      const number = doom.slidesOf(client.view()).findIndex((each) => each.id === made.slide) + 1
+      say.current(slideListCopy.added(number))
     },
     onClone: (at) => {
       const slide = slides[at]
@@ -98,6 +101,13 @@ export function useSlideStrip(props: {
     },
     onMoveMany: (held, at) => {
       client.push(moveSlideWrites(view, pick(held), at))
+    },
+    onMoveGroups: (held, at, side) => {
+      const writes = slideGroupMoveWrites(view, pick(held), at, side, mint)
+      if (writes.length === 0 || !client.push(writes).ok) return false
+      const first = pick(held)[0]
+      if (side !== "keep" && first !== undefined) onCurrent(first)
+      return true
     },
     skipped: slides.map((id) => doom.propOf(view.nodes.get(id), "skipped") === true),
     onSkip: (indices, skipping) => {

@@ -1,6 +1,7 @@
-import { memo, useEffect, type RefObject } from "react"
+import { memo, useEffect, type ComponentProps, type ReactNode } from "react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { slideListCopy } from "@/copy/slide-list-copy"
+import { EditorMenuRule } from "@/editor/editor-menu"
 import type { SlideKey } from "@/editor/slide-keys"
 
 export const slideMenuItem =
@@ -36,6 +37,8 @@ export function slideChangeAllowed(change: SlideKey, index: number, count: numbe
   return index < count - 1
 }
 
+export type SlideMenuAnchor = ComponentProps<typeof DropdownMenuContent>["anchor"]
+
 export const SlideMenu = memo(function SlideMenu({
   anchor,
   index,
@@ -46,16 +49,22 @@ export const SlideMenu = memo(function SlideMenu({
   skipped,
   onSkip,
   set,
+  pointer = false,
+  onOpen,
+  children,
 }: {
-  anchor: RefObject<HTMLButtonElement | null>
+  anchor: SlideMenuAnchor
   index: number
   count: number
   open: boolean
-  onOpenChange: (open: boolean) => void
+  onOpenChange: (open: boolean, keyboard: boolean) => void
   onChoose: (change: SlideKey) => void
   skipped: boolean
   onSkip: ((skipped: boolean) => void) | undefined
   set?: SlideMenuSet | undefined
+  pointer?: boolean
+  onOpen?: () => void
+  children?: ReactNode
 }) {
   useEffect(() => {
     if (!open) return
@@ -75,15 +84,36 @@ export const SlideMenu = memo(function SlideMenu({
     return () => cancelAnimationFrame(frame)
   }, [open])
   return (
-    <DropdownMenu modal={false} open={open} onOpenChange={onOpenChange}>
+    <DropdownMenu
+      modal={false}
+      open={open}
+      onOpenChange={(next, details) =>
+        onOpenChange(
+          next,
+          details.reason === "escape-key" ||
+            (details.reason === "item-press" && !(details.event instanceof MouseEvent && details.event.detail > 0)),
+        )
+      }
+    >
       <DropdownMenuContent
         anchor={anchor}
         finalFocus={false}
-        side="right"
+        side={pointer ? "bottom" : "right"}
         align="start"
-        sideOffset={8}
+        sideOffset={pointer ? 2 : 8}
         className="flex w-max min-w-[188px] flex-col rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0 duration-0"
       >
+        {onOpen === undefined ? null : (
+          <DropdownMenuItem
+            disabled={set !== undefined && set.size > 1}
+            aria-keyshortcuts="Enter"
+            className={slideMenuItem}
+            onClick={onOpen}
+          >
+            <span className="min-w-0 flex-1">{slideListCopy.open}</span>
+            <span className="text-xs text-[var(--shortcut)]">{slideListCopy.openKey}</span>
+          </DropdownMenuItem>
+        )}
         {set === undefined ? (
           <SlideMenuRows index={index} count={count} onChoose={onChoose} />
         ) : (
@@ -101,6 +131,12 @@ export const SlideMenu = memo(function SlideMenu({
             onSkip={onSkip}
             {...(set === undefined ? {} : { count: set.size })}
           />
+        )}
+        {children === undefined ? null : (
+          <>
+            <EditorMenuRule />
+            {children}
+          </>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

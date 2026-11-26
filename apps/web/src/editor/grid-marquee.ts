@@ -28,7 +28,7 @@ export function marqueeBox(start: MarqueePoint, end: MarqueePoint): MarqueeBox {
   }
 }
 
-export function marqueeStarted(start: MarqueePoint, end: MarqueePoint): boolean {
+export function dragStarted(start: MarqueePoint, end: MarqueePoint): boolean {
   return Math.hypot(end.x - start.x, end.y - start.y) >= dragSlop
 }
 

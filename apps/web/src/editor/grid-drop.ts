@@ -3,7 +3,12 @@ import { gridAnchor, gridMovePlacement, sameGroups, type GridMoveSide } from "@/
 
 export type GridRange = { readonly start: number; readonly end: number }
 
-export type GridBand = GridRange & { readonly top: number; readonly bottom: number }
+export type GridBand = GridRange & {
+  readonly top: number
+  readonly bottom: number
+  readonly width: number
+  readonly wrapped: boolean
+}
 
 export type GridDrop = { readonly at: number; readonly side: GridMoveSide }
 
@@ -24,10 +29,13 @@ export function gridRanges(layout: GridLayout): readonly GridRange[] {
 export function gridBands(layout: GridLayout): readonly GridBand[] {
   return gridRanges(layout).map((range) => {
     const cards = layout.cards.slice(range.start, range.end)
+    const top = Math.min(...cards.map((card) => card.top))
     return {
       ...range,
-      top: Math.min(...cards.map((card) => card.top)),
+      top,
       bottom: Math.max(...cards.map((card) => card.top + card.height)),
+      width: Math.max(...cards.map((card) => card.left + card.width)),
+      wrapped: cards.some((card) => card.top !== top),
     }
   })
 }

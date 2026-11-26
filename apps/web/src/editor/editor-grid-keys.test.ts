@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { gridMove } from "@/editor/editor-grid-keys"
+import { gridCommand, gridGroupCommand, gridMove } from "@/editor/editor-grid-keys"
 
 const row = (left: number, top: number) => ({ left, top, width: 100, height: 60 })
 
@@ -40,5 +40,37 @@ describe("grid keys", () => {
     expect(gridMove("ArrowDown", [row(0, 0), row(120, 0)], 0)).toBe(0)
     expect(gridMove("ArrowUp", [row(0, 0), row(120, 0)], 1)).toBe(1)
     expect(gridMove("Enter", grid, 2)).toBeNull()
+  })
+})
+
+const press = (key: string, keys: { altKey?: boolean; ctrlKey?: boolean; metaKey?: boolean; code?: string } = {}) => ({
+  key,
+  code: keys.code ?? key,
+  altKey: keys.altKey ?? false,
+  ctrlKey: keys.ctrlKey ?? false,
+  metaKey: keys.metaKey ?? false,
+  shiftKey: false,
+})
+
+describe("grid slide commands", () => {
+  it("reads the slide list's keys and Alt with Left or Right as commands on the focused slides", () => {
+    expect(gridCommand(press("Enter"))).toBe("open")
+    expect(gridCommand(press("Delete"))).toBe("remove")
+    expect(gridCommand(press("Backspace"))).toBe("remove")
+    expect(gridCommand(press("d", { ctrlKey: true, code: "KeyD" }))).toBe("clone")
+    expect(gridCommand(press("d", { metaKey: true, code: "KeyD" }))).toBe("clone")
+    expect(gridCommand(press("[", { ctrlKey: true, code: "BracketLeft" }))).toBe("up")
+    expect(gridCommand(press("]", { metaKey: true, code: "BracketRight" }))).toBe("down")
+    expect(gridCommand(press("ArrowLeft", { altKey: true }))).toBe("up")
+    expect(gridCommand(press("ArrowRight", { altKey: true }))).toBe("down")
+    expect(gridCommand(press("ContextMenu"))).toBe("menu")
+    expect(gridCommand(press("ArrowRight"))).toBeNull()
+    expect(gridCommand(press("ArrowUp", { altKey: true }))).toBeNull()
+  })
+
+  it("reads Alt with Up or Down on a slide group's grip as a move of that slide group", () => {
+    expect(gridGroupCommand(press("ArrowUp", { altKey: true }))).toBe("up")
+    expect(gridGroupCommand(press("ArrowDown", { altKey: true }))).toBe("down")
+    expect(gridGroupCommand(press("ArrowLeft", { altKey: true }))).toBeNull()
   })
 })
