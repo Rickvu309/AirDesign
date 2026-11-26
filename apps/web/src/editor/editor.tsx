@@ -390,6 +390,7 @@ function Editing({
                   zoom={zoom}
                   scale={scale}
                   room={fit}
+                  viewport={{ w: canvas.width, h: canvas.height }}
                   overlay={canvas.overlay}
                   onZoom={setZoom}
                   toolbarHost={toolbarHost}
