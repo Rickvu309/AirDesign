@@ -5,10 +5,6 @@ import { addSlideStart } from "../look/doom-slides.mjs"
 
 const inserts = ["column", "bar", "stacked", "waterfall", "line", "pie"]
 
-function latestInstance(fold, component) {
-  return Object.values(fold.nodes).findLast((node) => node.parent && node.instance?.component.id === component)
-}
-
 export default async function drive(kit) {
   const { page, expect, capture, note, doomRoutes, mcpRoutes, aira, holdReply } = kit
   const opened = await openDoomDeck(kit)
@@ -24,12 +20,14 @@ export default async function drive(kit) {
     return selection.getAttribute("data-selection-outline")
   }
 
+  let column
   for (const kind of inserts) {
     await addSlideStart(page, editorCopy.slideStarts.blank)
     const id = await insert(kind)
     const component = kind === "bar" ? "clustered-chart" : kind
     await expect.poll(async () => (await read()).fold.nodes[id]?.instance?.component.id).toBe(component)
     const frame = (await read()).fold.nodes[id]
+    if (kind === "column") column = frame
     expect(frame.instance.parts.length).toBeGreaterThan(4)
     await expect(node(page, frame.instance.parts[0].node)).toBeAttached()
     await expect(page.locator(`[data-slide-thumb] [data-node="${id}"]`)).toBeAttached()
@@ -102,13 +100,8 @@ export default async function drive(kit) {
     "Six chart inserts landed on the canvas and filmstrip. Undo removed an offline insert, and the next insert survived reload and saved after reconnect.",
   )
 
-  const placed = await call("edit_deck", {
-    deck,
-    base: (await read()).rev,
-    changes: [{ op: "add", kind: "component", component: "column", slide: opened.slide }],
-  })
-  expect(placed.ok).toBe(true)
-  const target = placed.added.find(({ kind }) => kind === "component").id
+  expect(column).toBeDefined()
+  const target = column.id
   const data = {
     rows: [
       { id: "north", label: "North", value: 42 },
@@ -117,54 +110,51 @@ export default async function drive(kit) {
   }
   const focused = await call("edit_deck", {
     deck,
-    base: placed.rev,
-    runId: placed.runId,
+    base: (await read()).rev,
     changes: [{ op: "set", target, data, focus: ["north"] }],
   })
   expect(focused.ok).toBe(true)
   expect((await read()).fold.nodes[target].instance).toMatchObject({ data, focus: ["north"] })
-  const detail = await call("read_deck", { deck, slide: opened.slide, detail: target })
+  const slide = column.parent.id
+  const detail = await call("read_deck", { deck, slide, detail: target })
   expect(detail.ok).toBe(true)
-  await page.locator('[data-slide-entry="1"]').click()
+  expect(detail.instance).toBeUndefined()
+  await page.locator('[data-slide-entry="2"]').click()
   await expect(node(page, target)).toBeAttached()
-  await expect
-    .poll(async () => (await call("read_deck", { deck, slide: opened.slide, picture: true })).pictures)
-    .toEqual([opened.slide])
+  await expect.poll(async () => (await call("read_deck", { deck, slide, picture: true })).pictures).toEqual([slide])
   const detached = await call("edit_deck", {
     deck,
     base: focused.rev,
-    runId: placed.runId,
+    runId: focused.runId,
     changes: [{ op: "detach", target }],
   })
   expect(detached.ok).toBe(true)
   expect((await read()).fold.nodes[target].instance).toBeUndefined()
-  await call("stop_run", { deck, runId: placed.runId })
-  note("MCP placed a chart, updated its data and focus, read its detail and picture, and detached it.")
+  await call("stop_run", { deck, runId: focused.runId })
+  note("MCP updated the data and focus of a saved chart, read its picture, and detached it.")
 
   const airaDeck = await openDoomDeck(kit)
   const airaRead = () => readDoom(kit, airaDeck)
+  const targetForAira = await insert("column")
+  await expect.poll(async () => (await airaRead()).fold.nodes[targetForAira]?.instance?.component.id).toBe("column")
   const before = await airaRead()
-  aira([{ name: "add-column.sse", fill: { deck: airaDeck.deck, base: String(before.rev), slide: airaDeck.slide } }])
-  const held = await holdReply(mcpRoutes.mcp, { afterServer: true })
-  const composer = page.getByRole("textbox", { name: airaCopy.askAira })
-  await composer.fill("Add a column chart of launch and renewal revenue")
-  await composer.press("Enter")
-  await held.received
-  const added = await airaRead()
-  const instance = latestInstance(added.fold, "column")
-  expect(instance).toBeDefined()
   aira([
-    { name: "update-column.sse", fill: { deck: airaDeck.deck, base: String(added.rev), target: instance.id } },
+    { name: "update-column.sse", fill: { deck: airaDeck.deck, base: String(before.rev), target: targetForAira } },
     { name: "updated-column.sse" },
   ])
+  const held = await holdReply(mcpRoutes.mcp, { afterServer: true })
+  const composer = page.getByRole("textbox", { name: airaCopy.askAira })
+  await composer.fill("Update this chart with launch and renewal revenue")
+  await composer.press("Enter")
+  await held.received
   await held.release()
   await expect(page.locator("[data-slide-box]").getByText("Launch", { exact: true })).toBeVisible()
   const after = await airaRead()
   expect(Object.values(after.fold.nodes).filter((node) => node.instance)).toHaveLength(1)
-  expect(after.fold.nodes[instance.id].instance.data.rows).toEqual([
+  expect(after.fold.nodes[targetForAira].instance.data.rows).toEqual([
     { id: "launch", label: "Launch", value: 37 },
     { id: "renewal", label: "Renewal", value: 61 },
   ])
   await capture("aira-updated-column")
-  note("Aira's recorded turn placed a column and set its data on the same saved instance.")
+  note("Aira's recorded turn updated the data on a saved chart.")
 }

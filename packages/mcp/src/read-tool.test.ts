@@ -72,64 +72,30 @@ describe("read_deck's theme", () => {
   })
 })
 
-it("advertises and places every template", async () => {
+it("reads a deck without listing templates and refuses template lookup", async () => {
   const call = agent()
-  const { answer } = await call("create_deck", { name: "Consulting" })
-  const { deck, slides } = answer
-  let rev = answer.rev
-  if (typeof deck !== "string" || !Array.isArray(slides)) throw new Error("Expected a created deck")
+  const { deck } = (await call("create_deck", {})).answer
   const read = await call("read_deck", { deck })
-
-  const components = read.answer.components
-  if (!Array.isArray(components)) throw new Error("Expected advertised templates")
-  expect(components).toEqual([
-    "column",
-    "architecture",
-    "cycle",
-    "matrix",
-    "process",
-    "tree",
-    "clustered-chart",
-    "stacked",
-    "waterfall",
-    "line",
-    "pie",
-  ])
-  for (const component of components) {
-    const signature = await call("read_deck", { deck, component })
-    expect(signature.answer).toMatchObject({
-      ok: true,
-      signature: { id: component, sample: { data: expect.any(Object) } },
-    })
-    const placed = await call("edit_deck", {
-      deck,
-      base: rev,
-      changes: [
-        { op: "add", slide: slides[0], kind: "component", component, box: { x: 160, y: 220, w: 1600, h: 700 } },
-      ],
-    })
-    expect(placed.answer, component).toMatchObject({ ok: true })
-    expect(placed.answer.findings ?? []).not.toContainEqual(expect.objectContaining({ code: "off-scale" }))
-    const sample = doom.componentLibrary.get(component)?.spec.sample
-    if (sample === undefined) throw new Error(`Missing sample for ${component}`)
-    const data = Object.fromEntries(
-      Object.entries(sample.data).map(([collection, rows]) => [
-        collection,
-        rows.map((row) => ({
-          ...row,
-          ...(typeof row.label === "string" ? { label: `${row.label} across every region and channel` } : {}),
-        })),
-      ]),
-    )
-    const fitted = await call("edit_deck", {
-      deck,
-      base: placed.answer.rev,
-      changes: [
-        { op: "add", slide: slides[0], kind: "component", component, data, box: { x: 160, y: 220, w: 1600, h: 700 } },
-      ],
-    })
-    expect(fitted.answer, component).toMatchObject({ ok: true })
-    expect(fitted.answer.findings ?? [], component).not.toContainEqual(expect.objectContaining({ code: "off-scale" }))
-    rev = fitted.answer.rev
+  expect(read.ok).toBe(true)
+  expect(read.answer).not.toHaveProperty("components")
+  for (const request of [{ grammar: 1 }, { component: "column" }]) {
+    expect((await call("read_deck", { deck, ...request })).answer).toMatchObject({ ok: false, refusal: "field" })
   }
+})
+
+it("refuses to author or place a template without changing the deck", async () => {
+  const call = agent()
+  const { deck, rev, slides } = (await call("create_deck", {})).answer as {
+    deck: string
+    rev: number
+    slides: string[]
+  }
+  for (const change of [
+    { op: "component", spec: {} },
+    { op: "add", kind: "component", slide: slides[0], component: "column" },
+  ]) {
+    const edit = await call("edit_deck", { deck, base: rev, changes: [change] })
+    expect(edit.answer).toMatchObject({ ok: false, refusal: "field", at: 0 })
+  }
+  expect((await call("read_deck", { deck })).answer).toMatchObject({ ok: true, rev })
 })

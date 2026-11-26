@@ -1,4 +1,4 @@
-import { fallbackFont, readDeckEdit, readNamedDeck, servedFontName } from "@airdesign/catalog"
+import { fallbackFont, readDeckChange, readDeckEdit, readNamedDeck, servedFontName } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import { answered, hostRefused, refused, doomRefused, type ToolResult } from "./answer.js"
@@ -7,15 +7,7 @@ import type { DeckHost } from "./deck-host.js"
 import { deckMeasure } from "./deck-measure.js"
 import { imageNames, imageProblem, imagesPerCall, pictureSizes, withAssets, type NamedImages } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
-import {
-  componentFindings,
-  componentFindingsNote,
-  sampleFindings,
-  type ComponentReadFinding,
-} from "./component-answer.js"
 import { withCatalogFonts } from "./font-names.js"
-import { templateWords, writtenTemplates, type WrittenTemplate } from "./template-answer.js"
-
 type Read =
   | { readonly ok: true; readonly changes: readonly doom.AgentChange[] }
   | { readonly ok: false; readonly result: ToolResult }
@@ -23,7 +15,7 @@ type Read =
 function readChanges(raw: readonly unknown[]): Read {
   const changes: doom.AgentChange[] = []
   for (const [at, each] of raw.entries()) {
-    const read = doom.readAgentChange(each)
+    const read = readDeckChange(each)
     if ("refused" in read) {
       const op = typeof each === "object" && each !== null ? (each as { op?: unknown }).op : undefined
       return { ok: false, result: doomRefused({ ...read, change: typeof op === "string" ? op : "change", at }) }
@@ -36,7 +28,7 @@ function readChanges(raw: readonly unknown[]): Read {
 type Added = { readonly id: string; readonly kind: string; readonly change?: number }
 
 function rootsOfEdit(edit: doom.Edit, added: readonly doom.AddedNode[]): readonly Added[] {
-  const placed = added.filter((each) => each.kind !== "slideRow" && each.kind !== "template")
+  const placed = added.filter((each) => each.kind !== "slideRow")
   const made = new Set<string>(placed.map((each) => each.id))
   const parents = new Map<string, string>()
   for (const write of edit.writes)
@@ -59,7 +51,6 @@ function rootsInFold(fold: doom.Doom, client: string, changes: readonly doom.Age
   }))
 }
 
-type UpdatedComponent = { readonly id: doom.NodeId; readonly partCount: number }
 function landedAnswer(
   deck: string,
   rev: number,
@@ -67,31 +58,21 @@ function landedAnswer(
   added: readonly Added[],
   findings: Findings = { findings: [], layout: "untouched" },
   bakedLayouts: readonly doom.NodeId[] = [],
-  components: readonly ComponentReadFinding[] = [],
-  updatedComponents: readonly UpdatedComponent[] = [],
-  templates: readonly WrittenTemplate[] = [],
 ): ToolResult {
   const words = added.map(
     (each) => `${each.id} ${each.kind}${each.change === undefined ? "" : ` (change ${String(each.change)})`}`,
   )
   const lead = `Landed at rev ${String(rev)}${added.length === 0 ? "" : `, adding ${words.join(", ")}`}. Send runId with your next edits, and to airdesign_stop_run when done.`
   const found = findings.findings.length === 0 ? {} : { findings: listed(findings.findings) }
-  const updates = updatedComponents.map(
-    ({ id, partCount }) => `Updated linked template ${id} (${partCount} generated parts).`,
-  )
-  const written = templates.map(templateWords)
-  const notes = [lead, ...written, ...updates, ...componentFindingsNote(components), ...findingsNote(findings)]
+  const notes = [lead, ...findingsNote(findings)]
   return answered(notes.join(" "), {
     ok: true,
     deck,
     rev,
     runId: run,
     added,
-    ...(templates.length === 0 ? {} : { templates }),
-    ...(updatedComponents.length === 0 ? {} : { updatedComponents }),
     ...(bakedLayouts.length === 0 ? {} : { bakedLayouts }),
     ...found,
-    ...(components.length === 0 ? {} : { componentFindings: components }),
   })
 }
 
@@ -436,17 +417,13 @@ export async function editDeckTool(
   const laid = await layoutOf(host, compiled.after, () =>
     doom.touchedSlides(opened.fold, compiled.after, compiled.edit.writes),
   )
-  const templates = writtenTemplates(compiled.edit, compiled.after)
   const regenerated = new Set<doom.NodeId>()
-  const updated = new Map<doom.NodeId, UpdatedComponent>()
-  for (const { node, prop, value } of compiled.edit.writes) {
+  for (const { prop, value } of compiled.edit.writes) {
     if (prop !== "instance" || value === null) continue
     const instance = doom.props.instance.read(value)
     if (doom.isRefusal(instance)) continue
     regenerated.add(instance.generated)
     for (const part of instance.parts) regenerated.add(part.node)
-    if (doom.propOf(opened.fold.nodes.get(node), "instance") !== undefined)
-      updated.set(node, { id: node, partCount: instance.parts.length })
   }
   return landedAnswer(
     landed.deck,
@@ -466,19 +443,5 @@ export async function editDeckTool(
         ? [write.node]
         : [],
     ),
-    [
-      ...sampleFindings(
-        compiled.after,
-        templates.map(({ id }) => id),
-        measure,
-      ),
-      ...componentFindings(
-        compiled.after,
-        compiled.edit.writes.flatMap(({ node, prop, value }) => (prop === "instance" && value !== null ? [node] : [])),
-        measure,
-      ),
-    ],
-    [...updated.values()],
-    templates,
   )
 }

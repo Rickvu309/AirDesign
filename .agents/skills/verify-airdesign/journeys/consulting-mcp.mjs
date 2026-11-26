@@ -45,20 +45,14 @@ export default async function drive({ signIn, post, mcpRoutes, expect, note }) {
       text: labels[index],
       box: { x: 160, y: 80, w: 1600, h: 120 },
     },
-    {
+    ...[14, 10].map((value, bar) => ({
       op: "add",
-      kind: "component",
-      component: "column",
+      kind: "shape",
       slide,
-      data: {
-        rows: [
-          { id: "north", label: "North", value: 14 },
-          { id: "south", label: "South", value: 10 },
-        ],
-      },
-      tokens: { unitHeader: "$M" },
-      box: { x: 160, y: 230, w: 1500, h: 650 },
-    },
+      name: bar === 0 ? "North" : "South",
+      fill: bar === 0 ? "accent1" : "accent2",
+      box: { x: 160 + bar * 260, y: 800 - value * 30, w: 200, h: value * 30 },
+    })),
   ])
   changes.push({
     op: "add",

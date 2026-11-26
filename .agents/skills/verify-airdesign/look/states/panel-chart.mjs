@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test"
-import { connectOutsideAgent } from "../../journeys/aira-panel.mjs"
+import { packageBuild } from "../../../../../scripts/package-build.mjs"
 import { landNodes, openDesign, openDoomDeck, readDoom, spot, words } from "../doom-deck.mjs"
 import { emptySlide } from "../doom-slides.mjs"
 
@@ -16,26 +16,28 @@ async function drive(kit) {
       },
     },
   ])
-  const call = await connectOutsideAgent(kit, opened.cookie, "Chart sample")
-  const { rev: base } = await readDoom(kit, opened)
-  const landed = await call("edit_deck", {
-    deck: opened.deck,
-    base,
-    changes: [
-      {
-        op: "add",
-        kind: "component",
-        component: "column",
-        slide: opened.slide,
-        box: { x: 350, y: 410, w: 1250, h: 505 },
-        data: { rows: [24, 37, 31, 48].map((value, i) => ({ id: `q${i + 1}`, label: `Q${i + 1}`, value })) },
-      },
-    ],
+  const doom = await packageBuild(kit.repo, "@airdesign/doom")
+  const { fold: saved } = await readDoom(kit, opened)
+  const fold = doom.readFold(saved)
+  if (fold === undefined) throw new Error("Chart deck could not be read")
+  const chart = doom.nodeId("c:3")
+  const writes = doom.placeComponent(fold, doom.columnDefinition, {
+    frame: chart,
+    parent: { id: opened.slide, at: doom.orderKeyBetween(saved.nodes["c:2"].parent.at, null) },
+    box: spot(350, 410, 1250, 505),
+    data: { rows: [24, 37, 31, 48].map((value, i) => ({ id: `q${i + 1}`, label: `Q${i + 1}`, value })) },
+    measure: doom.measureWith({}),
   })
-  expect(landed.ok).toBe(true)
-  expect((await call("stop_run", { deck: opened.deck, runId: landed.runId })).ok).toBe(true)
-  await expect(page.getByText("Chart sample is editing this slide")).toHaveCount(0)
-  const chart = landed.added.find(({ kind }) => kind === "component").id
+  if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
+  const landed = await kit.post(
+    kit.doomRoutes.edit,
+    {
+      deck: opened.deck,
+      edit: { once: "place-column", author: { kind: "person", id: "chart-sample" }, readBase: fold.rev, writes },
+    },
+    opened.cookie,
+  )
+  expect(landed.json, JSON.stringify(landed.json)).toMatchObject({ ok: true })
   await expect(page.locator(`[data-slide-box] [data-node="${chart}"]`)).toBeAttached()
   await openDesign(page)
   const bar = (await readDoom(kit, opened)).fold.nodes[chart].instance.parts.find(({ key }) => key[0] === "bar").node

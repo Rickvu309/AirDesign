@@ -18,6 +18,34 @@ import {
 } from "./wire.js"
 
 const { $defs, properties } = doom.agentChangesSchema
+const { op, kind, ...otherFields } = $defs.change.properties
+const lookFields = Object.fromEntries(
+  Object.entries(otherFields).filter(([name]) => name !== "component" && name !== "spec"),
+)
+const editOps = op.enum.filter((value) => value !== "component")
+const addKinds = kind.enum.filter((value) => value !== "component")
+const editDefs = {
+  ...$defs,
+  change: {
+    ...$defs.change,
+    properties: {
+      op: { ...op, enum: editOps },
+      kind: { ...kind, enum: addKinds },
+      ...lookFields,
+    },
+  },
+}
+
+export function readDeckChange(raw: unknown): doom.AgentChange | doom.Refusal {
+  const change = recordOf(raw)
+  if (change?.op === "component") return { refused: "shape", field: "op", form: editOps.join(", ") }
+  if (change?.op === "add" && change.kind === "component")
+    return { refused: "shape", field: "kind", form: addKinds.join(", ") }
+  if (change !== undefined && Object.hasOwn(change, "component"))
+    return { refused: "shape", field: "component", fault: "unknown" }
+  return doom.readAgentChange(raw)
+}
+
 const idForm = "1 to 64 of letters, digits, _ or -."
 const changesForm = `1 to ${String(limits.batch)} changes.`
 const editForm = "One of deck, base, runId, changes."
@@ -43,7 +71,7 @@ export const readDeckEdit = readInput(
         .exactOptional(),
       changes: z.array(z.unknown()).min(1).max(limits.batch).meta(properties.changes),
     })
-    .meta({ $defs }),
+    .meta({ $defs: editDefs }),
   (issues, raw): FieldRefusal | DeckRefusal | BaseRefusal | BatchRefusal => {
     const unknown = unknownField(issues)
     if (unknown !== undefined) return { ok: false, refusal: "field", field: unknown, fault: "unknown", form: editForm }

@@ -226,7 +226,7 @@ const lookFields: LookFields = {
     { type: "string", description: "Template id from read_deck." },
     matching(/^([\w-]{1,32}|[a-z0-9]{1,16}:[0-9]{1,12})$/, 32, "A template id from read_deck."),
   ),
-  data: field({ type: "object", description: "Rows by collection. Omit on add to use the sample." }, record),
+  data: field({ type: "object", description: "Rows by collection." }, record),
   variant: field({ type: "object", description: "Template variant choices." }, variantRecord),
   tokens: field({ type: "object", description: "Template token overrides." }, tokenRecord),
   rows: field(
@@ -448,11 +448,10 @@ export const agentChangesSchema = {
         op: {
           enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck", "detach", "component"],
           description:
-            "component: spec, target? (no target adds one). component add: component, data?, variant?, tokens?, box?. detach: target. " +
-            "add: kind, slide, into?, look. set: target, look. move: node, or nodes. into is required with nodes or box and then names a slide; one node may name a frame. after?. box? needs x, y, w, h; x, y place the union and w, h do not resize. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. Group ids are in read_deck as group=<id>. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
+            "detach: target. add: kind, slide, into?, look. set: target, look. move: node, or nodes. into is required with nodes or box and then names a slide; one node may name a frame. after?. box? needs x, y, w, h; x, y place the union and w, h do not resize. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. Group ids are in read_deck as group=<id>. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
         },
         ...schemasOf(placeFields),
-        kind: choice(addKinds, `${kindWords} component: a linked template.`).schema,
+        kind: { enum: addKinds, description: kindWords },
         ...schemasOf(lookFields),
         focus: focus.schema,
         spec: spec.schema,

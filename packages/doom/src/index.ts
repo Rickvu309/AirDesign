@@ -85,7 +85,6 @@ export { notesText } from "./notes-text.js"
 export { type TextPatch, lookWrite, paraWrite, styleWrite } from "./text-writes.js"
 export { linkedOwner, linkedOverride } from "./component/instance-ownership.js"
 export { deckComponent, rebuildsLinks } from "./component/deck-component.js"
-export { componentSampleTree } from "./component/component-write.js"
 export { skippedTemplates } from "./component/update-rebuild.js"
 export {
   type ComponentEditSample,
@@ -166,10 +165,9 @@ export {
   detachComponent,
   suppressPart,
 } from "./component/join-instance.js"
-export type { ComponentFinding } from "./component/findings.js"
-export { type ComponentDefinition, columnDefinition, componentLibrary } from "./component/library.js"
+export { columnDefinition, componentLibrary } from "./component/library.js"
 export { type Instance, type PartKey, readPartKey } from "./component/instance.js"
-export { linkedPartOverrides, partDeletes, suppressKeys } from "./component/instance-ownership.js"
+export { partDeletes, suppressKeys } from "./component/instance-ownership.js"
 
 export type { LayerPositions } from "./standing-layers.js"
 

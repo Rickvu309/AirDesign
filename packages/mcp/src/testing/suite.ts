@@ -15,6 +15,23 @@ export type SuiteRow = {
 const aim = `${slides.opening}.title`
 const baseRev = Number(evalDeck().rev)
 const logoAsset = "1".repeat(64)
+const bars = [
+  { name: "Q1 plan", value: 3, fill: "accent2" },
+  { name: "Q1 actual", value: 3.5, fill: "accent1" },
+  { name: "Q2 plan", value: 4, fill: "accent2" },
+  { name: "Q2 actual", value: 4.5, fill: "accent1" },
+]
+
+const chart = (slide: string) =>
+  bars.map(({ name, value, fill }, index) => ({
+    op: "add",
+    kind: "shape",
+    slide,
+    name,
+    fill,
+    box: { x: 300, y: 260 + 124 * index, w: 260 * value, h: 88 },
+  }))
+const hasChart = (end: doom.Doom) => bars.every(({ name }) => has(end, `name="${name}"`))
 
 const lines = (end: doom.Doom) => doom.readForAgent(end, "all")
 const has = (end: doom.Doom, fragment: string) => lines(end).includes(fragment)
@@ -243,25 +260,13 @@ export const suite: readonly SuiteRow[] = [
     "layout=row gap=24",
   ),
   placed("add-icon", "Add a rocket icon to the roadmap slide.", { kind: "icon", icon: "rocket" }, "icon=rocket"),
-  placed(
+  row(
     "add-chart",
     "Add a bar chart of Plan against Actual for Q1 and Q2 to the roadmap slide.",
-    {
-      kind: "component",
-      component: "clustered-chart",
-      variant: { orientation: "bar" },
-      data: {
-        categories: [
-          { id: "q1", label: "Q1" },
-          { id: "q2", label: "Q2" },
-        ],
-        series: [
-          { id: "plan", label: "Plan", values: [3, 4] },
-          { id: "actual", label: "Actual", values: [3.5, 4.5] },
-        ],
-      },
-    },
-    "component clustered-chart r1",
+    { landed: hasChart },
+    [edit(chart(slides.roadmap), baseRev)],
+    addTo(slides.roadmap, { kind: "shape", name: "Q1 plan" }),
+    "landed",
   ),
   placed(
     "add-picture",
@@ -519,7 +524,7 @@ export const suite: readonly SuiteRow[] = [
             made.length === 5 &&
             has(end, 'name="KPI"') &&
             has(end, 'name="Decision"') &&
-            has(end, "component clustered-chart r1") &&
+            hasChart(end) &&
             lines(end)
               .split("\n")
               .filter((line) => line.includes("icon=")).length === 3 &&
@@ -570,27 +575,7 @@ function boardAttempt(withChart: boolean): Attempt {
           items: [{ title: "Decision requested", points: ["Approve the budget"] }],
         },
         title(three, "Revenue ran ahead of plan"),
-        ...(withChart
-          ? [
-              {
-                op: "add",
-                kind: "component",
-                slide: three,
-                component: "clustered-chart",
-                variant: { orientation: "bar" },
-                data: {
-                  categories: [
-                    { id: "q1", label: "Q1" },
-                    { id: "q2", label: "Q2" },
-                  ],
-                  series: [
-                    { id: "plan", label: "Plan", values: [3, 4] },
-                    { id: "actual", label: "Actual", values: [3.5, 4.5] },
-                  ],
-                },
-              },
-            ]
-          : []),
+        ...(withChart ? chart(three) : []),
         title(four, "Three priorities"),
         {
           op: "add",

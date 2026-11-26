@@ -53,10 +53,6 @@ it("sets and clears category focus on a linked component over MCP", async () => 
         },
       })
       expect(result.structuredContent).toMatchObject({ ok: true })
-      if (index === 2)
-        expect(result.structuredContent).toMatchObject({
-          componentFindings: [expect.objectContaining({ code: "focus-missing" })],
-        })
       const saved = [...decks.decks.values()][0]!
       expect(doom.propOf(saved.nodes.get(frame), "name")).toBe(name)
       const chart = doom.propOf(saved.nodes.get(frame), "instance")
@@ -66,7 +62,8 @@ it("sets and clears category focus on a linked component over MCP", async () => 
         { kind: "solid", color: index === 0 ? { var: "text2", tint: expect.any(Number) } : { var: "accent1" } },
       ])
       const read = await client.callTool({ name: "airdesign_read_deck", arguments: { deck, detail: frame } })
-      expect(read.structuredContent).toMatchObject({ instance: { focus, data: { rows: [{ id: "a" }, { id: "b" }] } } })
+      expect(read.structuredContent).toMatchObject({ ok: true, layers: expect.stringContaining(frame) })
+      expect(read.structuredContent).not.toHaveProperty("instance")
     }
   } finally {
     await client.close()
