@@ -24,9 +24,9 @@ export const refusalWords = {
   limit: "A value, the deck or a slide is over its limit: the words of a layer, the layers of the deck, or its slides.",
   kind: "An operation moves a layer into itself or into a layer that cannot hold it.",
   dead: "A layer or slide you named is not in the deck, or an earlier operation in this call removed it. For a move, that includes a frame above the frame you move the layer into. get() lists the ids.",
-  stale: "The deck changed while the call ran. Send the call again.",
+  stale: "The deck changed while the call ran. Read it with get in a separate call, then revise your edit.",
   "person-protected":
-    "A person changed this layer during your run, so it is closed to you, and nothing landed. Leave it, or send the call without runId to start a new run.",
+    "A person changed this layer during your run, so it is closed to you, and nothing landed. Leave it, or read it again and send the edit without runId to start a new run.",
   "run-fenced":
     "That run has stopped, never started, or is another agent's, and nothing landed. Send the call without runId to start a new run.",
   "last-slide":

@@ -154,6 +154,7 @@ describe("database migrations", () => {
     ]
     const deckRights = [
       ["doom", full],
+      ["doom_agent_read", noDelete],
       ["doom_edit", "INSERT SELECT"],
       ["doom_node", noDelete],
       ["media", "DELETE INSERT SELECT"],

@@ -24,7 +24,17 @@ import { fetchImage, type ImageNet } from "../platform/image-fetch.js"
 import { keepMedia, storedMedia } from "../doom/media.js"
 import type { OriginalStore } from "../platform/original-store.js"
 import type { Sql } from "../platform/pool.js"
-import { createDoom, editDoom, listDoom, openDoom, runDoom, runPositions } from "../doom/doom-deck.js"
+import {
+  createDoom,
+  editDoom,
+  lastAgentRead,
+  listDoom,
+  openDoom,
+  personRevs,
+  rememberAgentRead,
+  runDoom,
+  runPositions,
+} from "../doom/doom-deck.js"
 import { runUndoRevs, withDoomWrite } from "../doom/doom-write.js"
 import { startIds } from "../doom/doom-start.js"
 
@@ -171,6 +181,11 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured, fo
     undoRevs: (deck, agent) => runUndoRevs(client, deck, email, agent),
   })
   return {
+    agentReads: {
+      last: (deck, agent) => lastAgentRead(db, deck, agent),
+      remember: (deck, agent, rev) => rememberAgentRead(db, deck, agent, rev),
+      byPerson: (deck, revs) => personRevs(db, deck, revs),
+    },
     list: guarded(async (cursor) => {
       const found = await listDoom(db, email, cursor, listPage + 1)
       const decks = found.slice(0, listPage).flatMap((row) => {

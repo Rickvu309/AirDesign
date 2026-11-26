@@ -1,3 +1,4 @@
+import { readDeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
@@ -153,6 +154,45 @@ describe("execute runs a script as one edit", () => {
     expect(again.answer).toMatchObject({ ok: true, rev: first.answer.rev, runId: first.answer.runId })
     expect(String(again.answer.note)).toContain("landed before")
     expect(doom.slidesOf(by.fold(deck))).toHaveLength(2)
+  })
+
+  it("keeps the person's text when an agent writes from an earlier read, then lands after a new read", async () => {
+    const by = agent()
+    const { deck, slides } = await by.made()
+    const first = await by.call("execute", {
+      deck,
+      script: `insert({ parent: "${slides[0]}", kind: "text", text: "Original" })`,
+    })
+    const lead = first.answer.result as doom.NodeId
+    const read = { deck, script: `get({ target: "${lead}" })` }
+    const write = { deck, script: `update({ target: "${lead}", text: "Agent's revision" })` }
+    expect((await by.call("execute", read)).answer.result.layers).toContain("Original")
+    const named = readDeckId(deck)
+    if (!named.ok) throw new Error("invalid deck")
+    const fold = by.fold(deck)
+    const typed = await by.decks.edit(named.deck, {
+      once: "person-types",
+      author: { kind: "person", id: "quan" },
+      writes: [{ node: lead, prop: "text", value: doom.textFromMarkdown("Person's revision", "body"), base: fold.rev }],
+    })
+    expect(typed.ok).toBe(true)
+
+    const refused = await by.call("execute", write)
+    expect(refused.answer).toMatchObject({ ok: false, refusal: "stale", node: lead, prop: "text" })
+    expect(String(refused.answer.note)).toContain("Read")
+    expect(by.fold(deck).rev).toBe(typed.ok ? typed.rev : undefined)
+    expect(doom.propOf(by.fold(deck).nodes.get(lead), "text")?.chars).toBe("Person's revision")
+
+    const unrelated = await by.call("execute", {
+      deck,
+      script: `insert({ parent: "${slides[0]}", kind: "shape", shape: "rect" })`,
+    })
+    expect(unrelated.ok).toBe(true)
+    expect((await by.call("execute", write)).answer).toMatchObject({ ok: false, refusal: "stale" })
+
+    expect((await by.call("execute", read)).answer.result.layers).toContain("Person's revision")
+    expect((await by.call("execute", write)).ok).toBe(true)
+    expect(doom.propOf(by.fold(deck).nodes.get(lead), "text")?.chars).toBe("Agent's revision")
   })
 
   it("refuses the call as stale when a person changes the same text while the script runs", async () => {

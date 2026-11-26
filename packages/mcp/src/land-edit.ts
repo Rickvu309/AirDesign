@@ -250,7 +250,12 @@ export async function measuredSteps<Done>(
   return step.value
 }
 
-export async function landEdit(opened: Opened, compiled: doom.AgentEdit, host: DeckHost): Promise<Landed | ToolResult> {
+export async function landEdit(
+  opened: Opened,
+  compiled: doom.AgentEdit,
+  host: DeckHost,
+  lastRead: doom.Rev,
+): Promise<Landed | ToolResult> {
   if (compiled.edit.writes.length === 0)
     return {
       landed: true,
@@ -259,6 +264,18 @@ export async function landEdit(opened: Opened, compiled: doom.AgentEdit, host: D
       bakedLayouts: [],
       unchanged: true,
     }
+  const afterRead = compiled.edit.writes.flatMap(({ base }) => (base !== undefined && base > lastRead ? [base] : []))
+  if (afterRead.length > 0) {
+    const personRevs = await host.agentReads.byPerson(opened.deck, [...new Set(afterRead)]).catch(() => undefined)
+    if (personRevs === undefined) return refused("store")
+    const unseen = compiled.edit.writes.find(({ base }) => base !== undefined && personRevs.has(base))
+    if (unseen !== undefined)
+      return refused("stale", {
+        node: unseen.node,
+        prop: unseen.prop,
+        note: "A person changed this property since you read the deck. Read it with get in a separate call, then revise your edit.",
+      })
+  }
   const landed = await host.edit(opened.deck, compiled.edit)
   if (!landed.ok) return hostRefused(landed)
   const laid = await layoutOf(host, compiled.after, () =>

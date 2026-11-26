@@ -101,7 +101,7 @@ export async function fillAccount(served: Served, sql: Sql, email: string): Prom
   const decks = [await storedDeck(served, cookie), await storedDeck(served, cookie)]
   await posted(served, deckRoutes.trash.path, { deck: decks[1] }, cookie)
   const oauth = await connected(served, cookie)
-  await agentEdit(served, oauth.access)
+  decks.push(await agentEdit(served, oauth.access))
   const asked = { deck: decks[0], messages: [{ role: "user", content: "Fuzz" }] }
   const turn = await ask(served.base, "POST", airaRoutes.turn.path, asked, cookie, { [countryHeader]: "VN" })
   if (turn.status !== 200) throw new Error(turn.text)
@@ -129,6 +129,7 @@ export const accountTables = [
   ["session.credits", "email = $1", "email"],
   ["session.credit_history", "email = $1", "email"],
   ["deck.doom", "owner = $1", "email"],
+  ["deck.doom_agent_read", "deck = any($1::text[])", "decks"],
   ["deck.doom_edit", "deck in (select id from deck.doom where owner = $1)", "email"],
   ["deck.doom_node", "deck in (select id from deck.doom where owner = $1)", "email"],
   ["deck.media", "deck = any($1::text[])", "decks"],
@@ -177,12 +178,13 @@ async function agentCall(served: Served, access: string, name: string, args: unk
   return answered
 }
 
-async function agentEdit(served: Served, access: string): Promise<void> {
+async function agentEdit(served: Served, access: string): Promise<string> {
   const made = await agentCall(served, access, "airdesign_create_deck", {})
   await agentCall(served, access, "airdesign_execute", {
     deck: made.deck,
     script: scriptOf([{ op: "add", kind: "text", slide: made.slides[0], text: "agent" }]),
   })
+  return made.deck
 }
 
 export async function mcpStatus(served: Served, access: string): Promise<number> {

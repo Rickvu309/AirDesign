@@ -15,6 +15,9 @@ type ModelRun = "a1" | "a2" | "b1" | "b2"
 type World = {
   readonly server: doom.Doom
   readonly xRevs: readonly number[]
+  readonly reads: ReadonlyMap<string, doom.Rev>
+  readonly person: boolean
+  readonly overwrote: boolean
   readonly ids: Readonly<Partial<Record<ModelRun, string>>>
   readonly out: string
   readonly mixed: boolean
@@ -36,7 +39,7 @@ const readDeck = readDeckId("dagentsreplay")
 if (!readDeck.ok) throw new Error("the replay deck id does not read")
 const deck: DeckId = readDeck.deck
 
-function opened(): { readonly server: doom.Doom; readonly x: string } {
+function opened(): { readonly server: doom.Doom; readonly x: doom.NodeId } {
   const server = doom.doomFromTree({
     theme: doom.defaultTheme,
     slides: [
@@ -62,9 +65,18 @@ function opened(): { readonly server: doom.Doom; readonly x: string } {
 
 const start = opened()
 
-function hosted(server: doom.Doom): { readonly host: DeckHost; readonly now: () => doom.Doom } {
-  let fold = server
+function hosted(world: World) {
+  let fold = world.server
+  const reads = new Map(world.reads)
+  const personRev = world.person ? fold.revs.get(start.x)?.get("text") : undefined
   const host: DeckHost = {
+    agentReads: {
+      last: async (_deck, agent) => reads.get(agent),
+      remember: async (_deck, agent, rev) => {
+        reads.set(agent, rev)
+      },
+      byPerson: async (_deck, revs) => new Set(personRev !== undefined && revs.includes(personRev) ? [personRev] : []),
+    },
     withUndo: async (_deck, undo) => undo({ ...host, undoRevs: async () => new Set() }),
     list: async () => ({ ok: true, decks: [] }),
     create: async () => ({ ok: false, refusal: "deck" }),
@@ -80,16 +92,11 @@ function hosted(server: doom.Doom): { readonly host: DeckHost; readonly now: () 
     },
     run: async () => ({ ok: true, edits: [], replaced: [] }),
   }
-  return { host, now: () => fold }
+  return { host, now: () => fold, reads }
 }
 
-async function call(
-  world: World,
-  by: Agent,
-  op: string,
-  args: unknown,
-): Promise<{ readonly answer: Record<string, unknown>; readonly server: doom.Doom; readonly calls: number }> {
-  const { host, now } = hosted(world.server)
+async function call(world: World, by: Agent, op: string, args: unknown) {
+  const { host, now, reads } = hosted(world)
   const calls = world.calls + 1
   const result: ToolResult = await callTool(
     toolNames[op] ?? op,
@@ -103,7 +110,7 @@ async function call(
     },
     host,
   )
-  return { answer: result.answer as Record<string, unknown>, server: now(), calls }
+  return { answer: result.answer, server: now(), calls, reads }
 }
 
 function phaseOf(world: World, run: ModelRun): "idle" | "running" | "stopped" {
@@ -112,7 +119,15 @@ function phaseOf(world: World, run: ModelRun): "idle" | "running" | "stopped" {
 }
 
 function observe(world: World): Spec {
+  const read = (by: Agent) => {
+    const rev = world.reads.get(agentKeys[by])
+    return rev === undefined ? -1 : world.xRevs.filter((each) => each <= rev).length
+  }
   return {
+    readA: read("a"),
+    readB: read("b"),
+    person: world.person,
+    overwrote: world.overwrote,
     pa1: phaseOf(world, "a1"),
     pa2: phaseOf(world, "a2"),
     pb1: phaseOf(world, "b1"),
@@ -143,10 +158,15 @@ async function edits(world: World, by: Agent, run?: ModelRun): Promise<World> {
   const runId = done.answer.runId
   if (typeof rev !== "number" || typeof runId !== "string")
     throw new Error(`execute answered ${JSON.stringify(done.answer)}`)
+  const read = world.reads.get(agentKeys[by])
+  const unseen = world.person && read !== undefined && read < world.server.rev
   return {
     ...world,
     calls: done.calls,
     server: done.server,
+    reads: done.reads,
+    person: false,
+    overwrote: world.overwrote || unseen,
     xRevs: [...world.xRevs, rev],
     ids: run === undefined ? { ...world.ids, [into]: runId } : world.ids,
     out: "landed",
@@ -168,8 +188,40 @@ async function stops(world: World, by: Agent, run: ModelRun): Promise<World> {
   }
 }
 
+async function reads(world: World, by: Agent): Promise<World> {
+  const done = await call(world, by, "execute", { deck, script: `get({ target: "${start.x}" })` })
+  return {
+    ...world,
+    calls: done.calls,
+    server: done.server,
+    reads: done.reads,
+    out: refusalOf(done.answer) ?? "read",
+  }
+}
+
+async function types(world: World): Promise<World> {
+  const { host, now } = hosted(world)
+  const base = world.server.revs.get(start.x)?.get("text")
+  const typed = await host.edit(deck, {
+    once: "person-types",
+    author: { kind: "person", id: "person" },
+    writes: [
+      {
+        node: start.x,
+        prop: "text",
+        value: doom.textFromMarkdown("Person's words", "body"),
+        ...(base === undefined ? {} : { base }),
+      },
+    ],
+  })
+  if (!typed.ok) throw new Error(`person edit refused ${JSON.stringify(typed)}`)
+  return { ...world, server: now(), xRevs: [...world.xRevs, typed.rev], person: true, out: "typed" }
+}
+
 async function step(world: World, action: string): Promise<readonly World[]> {
   const named = modelRuns.filter((run) => world.ids[run] !== undefined)
+  if (action === "AgentReads") return Promise.all(agentNames.map((by) => reads(world, by)))
+  if (action === "PersonTypes") return [await types(world)]
   if (action === "AgentStarts") return Promise.all(agentNames.map((by) => edits(world, by)))
   if (action === "AgentWrites")
     return Promise.all(agentNames.flatMap((by) => named.map((run) => edits(world, by, run))))
@@ -189,11 +241,14 @@ function said(source: Spec, action: string, target: Spec): string {
 }
 
 async function replayed(graph: Graph, failures: string[]) {
-  const first = [...graph.states].find(([, state]) => state.ver === 0 && state.pa1 === "idle" && state.pb1 === "idle")
+  const first = [...graph.states].find(([, state]) => state.ver === 0 && state.out === "none")
   if (first === undefined) throw new Error("no initial state")
   const empty: World = {
     server: start.server,
     xRevs: [],
+    reads: new Map(),
+    person: false,
+    overwrote: false,
     ids: {},
     out: "none",
     mixed: false,
@@ -202,7 +257,7 @@ async function replayed(graph: Graph, failures: string[]) {
   }
   const reached = new Map<string, World>([[first[0], empty]])
   const queued = [first[0]]
-  const seen = { edges: 0, landed: 0, fenced: 0, stopped: 0, already: 0, restarted: 0 }
+  const seen = { edges: 0, landed: 0, fenced: 0, stopped: 0, already: 0, restarted: 0, stale: 0, reread: 0 }
   while (queued.length > 0) {
     const from = queued.shift() as string
     const world = reached.get(from) as World
@@ -222,6 +277,8 @@ async function replayed(graph: Graph, failures: string[]) {
         continue
       }
       if (edge.action !== "Done") {
+        if (target.out === "stale") seen.stale += 1
+        if (edge.action === "AgentReads" && source.out === "stale") seen.reread += 1
         if (target.out === "landed") seen.landed += 1
         if (target.out === "run-fenced") seen.fenced += 1
         if (target.out === "stopped") seen.stopped += 1
@@ -261,5 +318,7 @@ describe("agents replay", () => {
     expect(seen.stopped).toBeGreaterThan(0)
     expect(seen.already).toBeGreaterThan(0)
     expect(seen.restarted).toBeGreaterThan(0)
+    expect(seen.stale).toBeGreaterThan(0)
+    expect(seen.reread).toBeGreaterThan(0)
   }, 60_000)
 })
