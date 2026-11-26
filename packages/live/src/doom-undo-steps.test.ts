@@ -80,7 +80,7 @@ describe("an undo the deck refuses", () => {
     expect(await theirs.sync()).toEqual({ ok: true })
     await mine.catchUp()
     expect(mine.undo()).toMatchObject({ ok: false, reason: "refused", refused: { refused: "last-slide" } })
-    expect(theirs.push([{ node: slide, prop: "parent", value: at(row) }]).ok).toBe(true)
+    expect(theirs.undo().ok).toBe(true)
     expect(await theirs.sync()).toEqual({ ok: true })
     await mine.catchUp()
     expect(mine.undo().ok).toBe(true)
