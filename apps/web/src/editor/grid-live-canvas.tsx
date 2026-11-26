@@ -8,7 +8,6 @@ export function GridLiveCanvas(
   return (
     <DoomCanvas
       {...props}
-      scale={1}
       zoom={1}
       room={{ w: 1, h: 1 }}
       overlay={0}

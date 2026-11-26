@@ -1,4 +1,5 @@
 import type { Aim } from "./line-end-drag"
+import { ScreenSized } from "./screen-sized"
 import type { Point } from "./slide-geometry"
 
 const edge = "var(--primary-strong)"
@@ -24,44 +25,31 @@ export function LineHandles({
       {aim === null ? null : (
         <g data-line-sites="">
           {aim.sites.map((site, at) => (
-            <circle
-              key={at}
-              cx={site.x * scale}
-              cy={site.y * scale}
-              r={siteRadius}
-              fill="white"
-              stroke={edge}
-              strokeWidth={1}
-            />
+            <ScreenSized key={at} at={{ x: site.x * scale, y: site.y * scale }}>
+              <circle r={siteRadius} fill="white" stroke={edge} strokeWidth={1} />
+            </ScreenSized>
           ))}
           {aim.site === null ? null : (
-            <circle data-line-site="" cx={aim.site.x * scale} cy={aim.site.y * scale} r={siteRadius + 2} fill={edge} />
+            <ScreenSized at={{ x: aim.site.x * scale, y: aim.site.y * scale }}>
+              <circle data-line-site="" r={siteRadius + 2} fill={edge} />
+            </ScreenSized>
           )}
         </g>
       )}
       {grips.map((grip, at) => {
         const end = ends[at]!
         return (
-          <g key={grip}>
-            <circle
-              data-grip={grip}
-              cx={end.x * scale}
-              cy={end.y * scale}
-              r={reach}
-              fill="transparent"
-              style={{ pointerEvents: "all", cursor: "move" }}
-            />
+          <ScreenSized key={grip} at={{ x: end.x * scale, y: end.y * scale }}>
+            <circle data-grip={grip} r={reach} fill="transparent" style={{ pointerEvents: "all", cursor: "move" }} />
             <circle
               data-line-end={attached[at] === true ? "attached" : "free"}
-              cx={end.x * scale}
-              cy={end.y * scale}
               r={radius}
               fill={attached[at] === true ? edge : "white"}
               stroke={edge}
               strokeWidth={1}
               style={{ pointerEvents: "none" }}
             />
-          </g>
+          </ScreenSized>
         )
       })}
     </g>

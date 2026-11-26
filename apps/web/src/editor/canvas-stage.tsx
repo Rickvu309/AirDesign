@@ -170,12 +170,13 @@ export function CanvasStage({
         tabIndex={0}
         className={
           placed
-            ? "absolute inset-0 touch-none overflow-visible outline-none select-none"
+            ? "absolute top-0 left-0 touch-none overflow-visible outline-none select-none"
             : "absolute inset-0 touch-none overflow-auto bg-canvas outline-none select-none"
         }
         style={{
           cursor: panning ? "grab" : "default",
           ["--focus-ring-offset" as string]: "calc(-1 * var(--focus-ring-width))",
+          ...(placed ? { width, height, transform: `scale(${String(1 / scale)})`, transformOrigin: "0 0" } : {}),
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
