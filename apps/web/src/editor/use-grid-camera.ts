@@ -285,13 +285,13 @@ export function useGridCamera({
   }, [])
 
   function press(event: PointerEvent<HTMLDivElement>) {
+    panned.current = false
     const touch = event.pointerType === "touch" && blankCanvas(event.target)
     if (event.button !== 1 && !(event.button === 0 && (latest.current.hand || heldSpace.current || touch))) return
     event.preventDefault()
     event.stopPropagation()
     event.currentTarget.setPointerCapture(event.pointerId)
     event.currentTarget.dataset.panning = "true"
-    panned.current = false
     pan.current = { pointer: event.pointerId, x: event.clientX, y: event.clientY, view: latest.current.view }
   }
 
