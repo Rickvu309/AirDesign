@@ -36,11 +36,11 @@ export function ApproveAgent({
 
   return (
     <main className="screen-frame reflow-frame grid place-items-center px-4 py-6">
-      <section className="flex w-full max-w-[360px] flex-col items-center gap-6">
+      <section className="flex w-full max-w-90 flex-col items-center gap-6">
         <AgentPair agent={agent} />
         <header className="flex flex-col items-center gap-1.5 text-center">
           <h1
-            className={`flex min-h-7 items-center justify-center text-balance [overflow-wrap:anywhere] text-[length:var(--type-title)] font-semibold tracking-[-0.3px] text-foreground ${trimmed}`}
+            className={`flex min-h-7 items-center justify-center text-balance [overflow-wrap:anywhere] text-[length:var(--type-title)] font-semibold tracking-dialog-title text-foreground ${trimmed}`}
           >
             {title}
           </h1>
@@ -50,14 +50,14 @@ export function ApproveAgent({
             {subtitle}
           </p>
         </header>
-        <div className="flex min-h-[57px] w-full items-center gap-3 rounded-xl px-3">
+        <div className="flex min-h-14.25 w-full items-center gap-3 rounded-xl px-3">
           <span
             className={`flex size-8 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] font-semibold text-white ${trimmed}`}
           >
             {account.initials}
           </span>
           <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
-            <span className="block text-[length:var(--type-dense)] leading-[17px] font-medium text-foreground">
+            <span className="block text-[length:var(--type-dense)] leading-ui-tight font-medium text-foreground">
               {account.name || account.email}
             </span>
             {account.name && account.name !== account.email && (
@@ -68,7 +68,7 @@ export function ApproveAgent({
             type="button"
             onClick={onSwitch}
             disabled={approving}
-            className={`relative shrink-0 disabled:pointer-events-none disabled:opacity-50 text-[length:var(--type-dense)] leading-[17px] font-medium text-[color:var(--primary-strong)] motion-safe:enabled:active:scale-[0.97] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)_and_(pointer:fine)]:hover:text-strong-hover after:absolute after:inset-[min(0px,calc((100%-44px)/2))] after:content-[''] ${trimmed}`}
+            className={`relative shrink-0 disabled:pointer-events-none disabled:opacity-50 text-[length:var(--type-dense)] leading-ui-tight font-medium text-[color:var(--primary-strong)] motion-safe:enabled:active:scale-[0.97] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)_and_(pointer:fine)]:hover:text-strong-hover after:absolute after:inset-[min(0px,calc((100%-44px)/2))] after:content-[''] ${trimmed}`}
           >
             Switch
           </button>
@@ -90,7 +90,7 @@ export function ApproveAgent({
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className={`text-[length:var(--type-dense)] leading-[17px] text-foreground ${trimmed}`}>
+                <span className={`text-[length:var(--type-dense)] leading-ui-tight text-foreground ${trimmed}`}>
                   {permission}
                 </span>
               </li>

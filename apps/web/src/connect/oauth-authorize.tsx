@@ -290,7 +290,7 @@ export function OAuthAuthorize() {
   if (view.kind === "loading") {
     return (
       <main className="screen-frame reflow-frame grid place-items-center px-4 py-6">
-        <section className="flex w-full max-w-[360px] flex-col items-center gap-6 text-center">
+        <section className="flex w-full max-w-90 flex-col items-center gap-6 text-center">
           <AgentPair agent={view.agent ?? null} />
           <h1 className="text-balance [overflow-wrap:anywhere] text-[length:var(--type-title)] font-semibold text-foreground">
             {view.title ?? "Connect an agent"}
