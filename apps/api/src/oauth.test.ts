@@ -314,7 +314,6 @@ describe("oauth host", () => {
         { redirect_uris: ["https://example.com/cb#frag"] },
         { redirect_uris: ["https://example.com/cb#"] },
         { redirect_uris: [] },
-        { redirect_uris: Array.from({ length: 6 }, (_, index) => `https://example.com/${String(index)}`) },
         { redirect_uris: [named], client_name: "x".repeat(201) },
         { redirect_uris: [named], client_name: 7 },
         { redirect_uris: "https://example.com/cb" },

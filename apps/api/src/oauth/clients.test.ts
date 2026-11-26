@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { screenFor, type Screen } from "./clients.js"
+import { readRegistration, screenFor, type Screen } from "./clients.js"
+import { geminiRegistration } from "./testing/gemini-registration.js"
 import { checkedResource, ownResource } from "../platform/resource.js"
 
 const claudeCallback = "https://claude.ai/api/mcp/auth_callback"
@@ -72,5 +73,21 @@ describe("the configured address", () => {
     ]) {
       expect(() => checkedResource(value)).toThrow(/resource/)
     }
+  })
+})
+
+describe("a registration", () => {
+  it("reads Gemini's six Google redirects", () => {
+    expect(readRegistration(geminiRegistration)).toEqual({
+      ok: true,
+      redirectUris: geminiRegistration.redirect_uris,
+      name: "Google",
+    })
+  })
+
+  it("refuses more than ten redirects", () => {
+    const uris = Array.from({ length: 11 }, (_, index) => `https://example.com/${String(index)}`)
+    expect(readRegistration({ redirect_uris: uris })).toEqual({ ok: false, refusal: "invalid_client_metadata" })
+    expect(readRegistration({ redirect_uris: uris.slice(1) })).toMatchObject({ ok: true })
   })
 })

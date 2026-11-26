@@ -322,6 +322,21 @@ describe("oauth readers", () => {
     expect(readClientMetadata({ redirect_uris: [redirect], client_name: "n" })).toMatchObject({ name: "n" })
   })
 
+  it("readClientMetadata reads the six Google redirects Gemini registers, and up to ten", () => {
+    const google = ["oauth-redirect-sandbox", "oauth-redirect-test", "oauth-redirect"].flatMap((host) =>
+      ["r", "a"].map(
+        (path) => `https://${host}.googleusercontent.com/${path}/user_bound_custom-mcp-f6492779cacd5f618adb99b9`,
+      ),
+    )
+    expect(readClientMetadata({ client_name: "Google", redirect_uris: google })).toEqual({
+      ok: true,
+      redirectUris: google,
+      name: "Google",
+    })
+    const ten = Array.from({ length: 10 }, (_, index) => `${redirect}${String(index)}`)
+    expect(readClientMetadata({ redirect_uris: ten })).toMatchObject({ ok: true, redirectUris: ten })
+  })
+
   for (const body of [
     ...wrongBodies,
     {},
@@ -330,7 +345,7 @@ describe("oauth readers", () => {
     { redirect_uris: [7] },
     { redirect_uris: ["https://a.example/#x"] },
     { redirect_uris: [`https://a.example/${"x".repeat(2000)}`] },
-    { redirect_uris: Array.from({ length: 6 }, () => redirect) },
+    { redirect_uris: Array.from({ length: 11 }, () => redirect) },
     { redirect_uris: [redirect], client_name: 7 },
     { redirect_uris: [redirect], client_name: "x".repeat(201) },
   ]) {
