@@ -60,17 +60,14 @@
           "src/decks/new-deck-button.tsx": 1,
           "src/decks/screens/deck-moved-toast.tsx": 1,
           "src/decks/star-button.tsx": 1,
-          "src/design/color-picker.tsx": 2,
-          "src/design/controls/action.tsx": 3,
+          "src/design/color-picker.tsx": 1,
+          "src/design/controls/action.tsx": 1,
           "src/design/controls/alignment-grid.tsx": 1,
-          "src/design/controls/choice.tsx": 3,
-          "src/design/controls/color.tsx": 1,
           "src/design/controls/link.tsx": 2,
           "src/design/controls/number.tsx": 1,
           "src/design/controls/preset.tsx": 2,
           "src/design/controls/toggle.tsx": 1,
           "src/design/controls/typography.tsx": 5,
-          "src/design/controls/union.tsx": 3,
           "src/design/custom-color.tsx": 1,
           "src/design/shape-grid.tsx": 1,
           "src/editor/deck-title-edit.tsx": 5,
@@ -107,7 +104,6 @@
       "error",
       {
         "baseline": {
-          "src/design/controls/typography.tsx": 1,
           "src/editor/editor-toast.tsx": 1,
           "src/editor/new-slide-menu.tsx": 2,
           "src/settings/screens/usage-tab.tsx": 6
@@ -182,7 +178,6 @@
           "src/decks/decks-shell.tsx": 2,
           "src/decks/describe-deck.tsx": 2,
           "src/decks/screens/deck-moved-toast.tsx": 1,
-          "src/design/color-picker.tsx": 5,
           "src/design/controls/link.tsx": 1,
           "src/design/controls/number.tsx": 1,
           "src/design/custom-color.tsx": 2,
@@ -210,7 +205,6 @@
           "src/aira/aira-reply.tsx": 1,
           "src/connect/approve-agent.tsx": 7,
           "src/connect/screens/claude-connected.tsx": 2,
-          "src/design/controls/list.tsx": 1,
           "src/editor/design-theme-picker.tsx": 2,
           "src/editor/new-slide-menu.tsx": 1,
           "src/export/export-dialog.tsx": 3,
@@ -230,7 +224,6 @@
       {
         "baseline": {
           "src/decks/decks-shell.tsx": 1,
-          "src/design/controls/action.tsx": 1,
           "src/design/controls/link.tsx": 1
         }
       }

@@ -12,7 +12,6 @@ import {
 import { designCopy } from "@/copy/design-copy"
 import { textCopy } from "@/copy/text-copy"
 import type { ControlProps } from "@/design/panel"
-import { cn } from "@/lib/class-names"
 
 export function TypographyControl({ control, onChange }: ControlProps) {
   const loader = typeof document === "undefined" ? undefined : fontsFor(document)
@@ -42,12 +41,9 @@ export function TypographyControl({ control, onChange }: ControlProps) {
         <SelectTrigger
           aria-label={textCopy.style}
           disabled={!control.choices?.length}
-          className={cn(
-            "w-full rounded-[var(--shape-control)] border-0 bg-white px-2 shadow-[inset_0px_0px_0px_1px_var(--field-edge)]",
-            chosen === undefined
-              ? "h-[var(--control-dense)] text-[length:var(--type-caption)] data-[size=default]:h-[var(--control-dense)]"
-              : "h-8",
-          )}
+          variant="panel"
+          size={chosen === undefined ? "dense" : "default"}
+          className="w-full px-2"
           style={chosen?.appearance}
         >
           <SelectValue>
@@ -64,6 +60,7 @@ export function TypographyControl({ control, onChange }: ControlProps) {
                 <SelectItem
                   key={choice.value}
                   value={choice.value}
+                  variant="panel"
                   check="start"
                   className="py-1.5"
                   title={choice.label}
@@ -71,7 +68,7 @@ export function TypographyControl({ control, onChange }: ControlProps) {
                   <span className="min-w-0 truncate">
                     {choice.label}
                     {choice.detail === undefined ? null : (
-                      <span className="text-muted-foreground!">{` · ${choice.detail}`}</span>
+                      <span className="text-muted-foreground">{` · ${choice.detail}`}</span>
                     )}
                   </span>
                 </SelectItem>

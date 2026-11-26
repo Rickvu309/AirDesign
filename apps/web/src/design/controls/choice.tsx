@@ -28,10 +28,10 @@ function ChoiceList({
       <SelectTrigger
         ref={trigger}
         aria-labelledby={label}
-        className={cn(
-          "h-[var(--control-dense)] w-full rounded-[var(--shape-control)] border-0 bg-white text-[length:var(--type-caption)] shadow-[inset_0px_0px_0px_1px_var(--field-edge)] data-[size=default]:h-[var(--control-dense)]",
-          control.inherited ? "text-quiet" : null,
-        )}
+        variant="panel"
+        size="dense"
+        data-inherited={control.inherited ? "" : undefined}
+        className="w-full"
       >
         <SelectValue>
           {(selected: string | null) => {
@@ -46,7 +46,7 @@ function ChoiceList({
       </SelectTrigger>
       <SelectContent data-keeps-format data-keeps-selection>
         {options.map((option) => (
-          <SelectItem key={option} value={option}>
+          <SelectItem key={option} variant="panel" value={option}>
             {control.choices?.find((choice) => choice.value === option)?.label ?? optionWord(control.field, option)}
           </SelectItem>
         ))}
@@ -83,13 +83,7 @@ export function ChoiceControl(props: ControlProps) {
           <span id={label} className={controlLabel}>
             {title}
           </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-6 px-1.5 text-[length:var(--type-caption)] font-normal text-quiet hover:text-foreground active:translate-y-0"
-            onClick={() => onChange(null)}
-          >
+          <Button type="button" variant="ghost" size="panel-caption" onClick={() => onChange(null)}>
             {reset}
           </Button>
         </div>
@@ -113,22 +107,16 @@ export function ChoiceControl(props: ControlProps) {
               <Button
                 key={option}
                 type="button"
-                variant="ghost"
+                variant="panel-segment"
+                size={null}
+                data-inherited={control.inherited ? "" : undefined}
                 aria-pressed={chosen}
                 aria-label={word}
                 title={Icon ? word : undefined}
                 onClick={() => {
                   if (!chosen) onChange(option)
                 }}
-                className={cn(
-                  "h-[var(--control-dense)] min-w-0 flex-1 rounded-[var(--panel-segment-radius)] px-0 text-xs font-normal active:translate-y-0",
-                  chosen
-                    ? cn(
-                        "bg-white font-medium shadow-[inset_0_0_0_1px_var(--panel-edge)] hover:bg-white",
-                        control.inherited ? "text-quiet" : "text-foreground",
-                      )
-                    : "text-quiet hover:bg-transparent hover:text-foreground",
-                )}
+                className="min-w-0 flex-1"
               >
                 {Icon ? (
                   <Icon size={14} className="size-3.5" strokeWidth={1.5} aria-hidden />

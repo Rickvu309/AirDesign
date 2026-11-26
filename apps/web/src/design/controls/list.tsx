@@ -4,9 +4,6 @@ import { Button } from "@/components/ui/button"
 import { designCopy } from "@/copy/design-copy"
 import { partControl, type ControlProps } from "@/design/panel"
 
-const quiet =
-  "h-6 px-1.5 text-[length:var(--type-caption)] font-normal text-quiet hover:text-foreground active:translate-y-0"
-
 export function ListControl({ control, palette, onChange, inner }: ControlProps) {
   const label = useId()
   const desc = control.desc.kind === "list" ? control.desc : null
@@ -31,8 +28,7 @@ export function ListControl({ control, palette, onChange, inner }: ControlProps)
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
-                  className={quiet}
+                  size="panel-caption"
                   aria-label={designCopy.removeStop(at + 1)}
                   onClick={() => onChange(items.filter((_, each) => each !== at))}
                 >
@@ -53,8 +49,8 @@ export function ListControl({ control, palette, onChange, inner }: ControlProps)
         <Button
           type="button"
           variant="ghost"
-          size="sm"
-          className={`self-start ${quiet}`}
+          size="panel-caption"
+          className="self-start"
           onClick={() => onChange([...items, items.at(-1)])}
         >
           {designCopy.addStop}
