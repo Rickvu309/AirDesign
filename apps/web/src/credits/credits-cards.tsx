@@ -4,6 +4,7 @@ import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { creditsCopy, creditAmount, creditDate } from "@/copy/credits-copy"
 import { productCopy } from "@/copy/product-copy"
+import { cn } from "@/lib/class-names"
 import type { useCredits } from "@/credits/use-credits"
 
 import { showStatus } from "@/components/ui/page-notice"
@@ -11,12 +12,15 @@ import { showStatus } from "@/components/ui/page-notice"
 type CreditsState = ReturnType<typeof useCredits>
 
 export function CreditsCards({ state }: { state: CreditsState }) {
+  const loading = state.loaded === null
   const credits = state.loaded?.kind === "credits" ? state.loaded.credits : null
   return (
     <>
       <Card
         title={creditsCopy.title}
-        detail={credits === null ? undefined : creditAmount(credits.cents)}
+        detail={
+          credits !== null ? creditAmount(credits.cents) : loading ? <span aria-hidden="true">&nbsp;</span> : undefined
+        }
         description={creditsCopy.facts}
         align="end"
         actions={
@@ -25,34 +29,50 @@ export function CreditsCards({ state }: { state: CreditsState }) {
           </Button>
         }
       >
-        {credits === null ? (
-          state.loaded === null ? (
-            <p role="status">{creditsCopy.loading}</p>
-          ) : (
-            <div className="flex items-center justify-between gap-4">
-              <p role="alert">{creditsCopy.failed}</p>
-              <Button variant="outline" onClick={() => void state.refresh()}>
-                {productCopy.payTryAgain}
-              </Button>
-            </div>
-          )
+        {credits === null && !loading ? (
+          <div className="flex items-center justify-between gap-4">
+            <p role="alert">{creditsCopy.failed}</p>
+            <Button variant="outline" onClick={() => void state.refresh()}>
+              {productCopy.payTryAgain}
+            </Button>
+          </div>
         ) : (
-          <div className="flex items-center justify-between gap-4 border-t border-line pt-3.5">
-            <div className="min-w-0">
-              <label htmlFor="credits-auto-reset" className="text-[length:var(--type-body)] font-medium">
-                {creditsCopy.autoReset}
-              </label>
-              <p id="credits-auto-description" className="mt-0.5 text-[length:var(--type-dense)] text-muted-foreground">
-                {creditsCopy.autoResetBody}
-              </p>
+          <div className="grid border-t border-line pt-3.5">
+            <div
+              aria-hidden={loading || undefined}
+              className={cn("col-start-1 row-start-1 flex items-center justify-between gap-4", loading && "invisible")}
+            >
+              <div className="min-w-0">
+                <label htmlFor="credits-auto-reset" className="text-[length:var(--type-body)] font-medium">
+                  {creditsCopy.autoReset}
+                </label>
+                <p
+                  id="credits-auto-description"
+                  className="mt-0.5 text-[length:var(--type-dense)] text-muted-foreground"
+                >
+                  {creditsCopy.autoResetBody}
+                </p>
+              </div>
+              {credits === null ? (
+                <span className="w-[var(--space-32)] shrink-0" />
+              ) : (
+                <Switch
+                  id="credits-auto-reset"
+                  checked={credits.autoReset}
+                  disabled={state.busy}
+                  aria-describedby="credits-auto-description"
+                  onCheckedChange={(enabled) => void state.change({ kind: "autoReset", enabled })}
+                />
+              )}
             </div>
-            <Switch
-              id="credits-auto-reset"
-              checked={credits.autoReset}
-              disabled={state.busy}
-              aria-describedby="credits-auto-description"
-              onCheckedChange={(enabled) => void state.change({ kind: "autoReset", enabled })}
-            />
+            {loading && (
+              <p
+                role="status"
+                className="col-start-1 row-start-1 self-center text-[length:var(--type-dense)] text-muted-foreground"
+              >
+                {creditsCopy.loading}
+              </p>
+            )}
           </div>
         )}
         {state.error && state.reset === null ? (

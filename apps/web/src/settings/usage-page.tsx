@@ -71,7 +71,13 @@ export function UsagePage({
           </Button>
         }
         title={productCopy.usageTitle}
-        {...(week === null ? {} : { description: usageResetsOn(resetsWhen(week.resets)) })}
+        description={
+          week !== null ? (
+            usageResetsOn(resetsWhen(week.resets))
+          ) : loaded === null ? (
+            <span aria-hidden="true">&nbsp;</span>
+          ) : undefined
+        }
       >
         {loaded?.kind === "unavailable" ? (
           <div role="alert" className="flex items-center justify-between gap-4">

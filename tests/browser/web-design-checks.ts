@@ -143,4 +143,31 @@ export const webDesignChecks: Check[] = [
       )
     },
   ],
+  [
+    "06-account-loading",
+    "decks-loading",
+    async (page) => {
+      await expect(page.locator("[data-account-name]")).toHaveText("Verify")
+    },
+  ],
+  [
+    "06-account-failed",
+    "decks-failed",
+    async (page) => {
+      await expect(page.locator("[data-account-name]")).toHaveText("Verify")
+    },
+  ],
+  [
+    "06-usage-loading",
+    "usage-loading",
+    async (page) => {
+      const cards = page.locator("[data-settings-content] > section")
+      await expect(page.locator("[data-account-name]")).toHaveText("Verify")
+      await expect(cards.nth(1).getByRole("status")).toHaveCSS("font-size", "13px")
+      const heights = await cards.evaluateAll((sections) =>
+        sections.slice(0, 2).map((section) => section.getBoundingClientRect().height),
+      )
+      expect(heights).toEqual([111, 191])
+    },
+  ],
 ]

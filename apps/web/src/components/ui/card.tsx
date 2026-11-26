@@ -11,8 +11,8 @@ export function Card({
   children,
 }: {
   title: string
-  description?: string
-  detail?: string
+  description?: ReactNode
+  detail?: ReactNode
   actions?: ReactNode
   align?: "center" | "end"
   className?: string
