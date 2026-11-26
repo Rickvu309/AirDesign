@@ -2,6 +2,7 @@ import * as doom from "@airdesign/doom"
 import type { TransformGrip } from "./transform-math"
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
@@ -65,6 +66,7 @@ export type PointerArgs = {
   readonly crop: CropTarget | null
   readonly onCrop: (id: doom.NodeId) => void
   readonly onCropEnd: () => void
+  readonly onBlank?: () => void
 }
 
 type Active =
@@ -155,7 +157,7 @@ function gripOf(target: EventTarget | null): TransformGrip | EndGrip | CropGrip 
 
 export function useCanvasPointer(args: PointerArgs) {
   const latest = useRef(args)
-  useEffect(() => {
+  useLayoutEffect(() => {
     latest.current = args
   })
   const active = useRef<Active | null>(null)
@@ -472,6 +474,13 @@ export function useCanvasPointer(args: PointerArgs) {
       const chain = chainAt(event, a.geometry, a.view)
       const deep = event.metaKey || event.ctrlKey
       if (chain === null) {
+        if (a.onBlank !== undefined && a.tool === "move") {
+          if (a.geometry.roots.length > 0) {
+            event.preventDefault()
+            a.onBlank()
+          }
+          return
+        }
         const base = event.shiftKey ? a.selection.ids : []
         if (!event.shiftKey) a.onSelection(noSelection)
         active.current = { kind: "marquee", origin, base, geometry: a.geometry, view: a.view, moved: false }

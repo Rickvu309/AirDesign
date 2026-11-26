@@ -1,5 +1,5 @@
 import type * as doom from "@airdesign/doom"
-import { memo, type CSSProperties } from "react"
+import { memo, type CSSProperties, type ReactNode } from "react"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { slideNumberLabel } from "@/lib/slide-numbering"
 import { GridGapAdd } from "@/editor/grid-gap-add"
@@ -30,6 +30,7 @@ export const GridCard = memo(function GridCard({
   addEnd,
   previewFits,
   onAdd,
+  live,
 }: {
   readonly card: Placed
   readonly placement: GridNumberPlacement
@@ -52,6 +53,7 @@ export const GridCard = memo(function GridCard({
   readonly addEnd: boolean
   readonly previewFits: boolean
   readonly onAdd: (index: number) => void
+  readonly live?: ReactNode
 }) {
   const number = card.index + 1
   const place: CSSProperties = {
@@ -84,7 +86,11 @@ export const GridCard = memo(function GridCard({
         }
         aria-description={skipped ? slideListCopy.skipped : undefined}
         tabIndex={reachable ? 0 : -1}
-        className="absolute inset-0 overflow-hidden bg-white text-left"
+        className={
+          live === undefined
+            ? "absolute inset-0 overflow-hidden bg-white text-left"
+            : "pointer-events-none absolute inset-0 overflow-hidden bg-white text-left"
+        }
         data-slide-entry={number}
         data-selected={selected || undefined}
         data-slide-skipped={skipped || undefined}
@@ -94,10 +100,17 @@ export const GridCard = memo(function GridCard({
           style={{ width: card.width, height: card.height }}
           data-slide-thumb
         >
-          {painted ? <Thumb view={view} slide={card.id} width={card.width} assetUrl={assetUrl} /> : null}
+          {painted && live === undefined ? (
+            <Thumb view={view} slide={card.id} width={card.width} assetUrl={assetUrl} />
+          ) : null}
         </span>
         {skipped ? <SkippedSlide /> : null}
       </button>
+      {live === undefined ? null : (
+        <div className="absolute inset-0" data-grid-live>
+          {live}
+        </div>
+      )}
       <span data-grid-overlay data-grid-front>
         <span aria-hidden="true" data-slide-number hidden={placement === "hidden"}>
           {slideNumberLabel(card.index, skipped)}

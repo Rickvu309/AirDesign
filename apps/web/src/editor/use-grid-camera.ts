@@ -4,12 +4,14 @@ import { steppedZoom, zoomKey, zoomRanges, type Zoom } from "@/editing/canvas-zo
 import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { gridZoomPlacement } from "@/editor/grid-number"
 import type { GridLayout, GridRect, GridSize } from "@/editor/grid-lines"
+import type { GridElementFrame } from "@/editor/use-grid-editing"
 import {
   arrowGrid,
   boundedGridScale,
   cardBox,
   fittedGrid,
   fittedGridCards,
+  fittedGridElements,
   gridPaintMargin,
   gridShown,
   keptGridShows,
@@ -103,6 +105,7 @@ export function useGridCamera({
   deck,
   layout,
   ringed,
+  elements,
   hand,
   onHand,
   sheet,
@@ -111,6 +114,7 @@ export function useGridCamera({
   readonly deck: string
   readonly layout: GridLayout
   readonly ringed: readonly number[]
+  readonly elements: GridElementFrame | null
   readonly hand: boolean
   readonly onHand: (hand: boolean) => void
   readonly sheet: RefObject<HTMLDivElement | null>
@@ -122,7 +126,7 @@ export function useGridCamera({
   const [space, setSpace] = useState(false)
   const host = useRef<HTMLDivElement | null>(null)
   const view = camera === "fit" ? fittedGrid(layout, room, layout.cards[0]?.height) : camera
-  const latest = useRef({ camera, view, layout, ringed, room, hand, onHand })
+  const latest = useRef({ camera, view, layout, ringed, elements, room, hand, onHand })
   const gliding = useRef(false)
   const rendered = useRef<GridCamera>(camera)
   const renderedScale = useRef<number | null>(null)
@@ -189,8 +193,8 @@ export function useGridCamera({
   useLayoutEffect(() => {
     const shown = gliding.current ? latest.current.view : view
     latest.current = gliding.current
-      ? { ...latest.current, layout, ringed, room, hand, onHand }
-      : { camera, view, layout, ringed, room, hand, onHand }
+      ? { ...latest.current, layout, ringed, elements, room, hand, onHand }
+      : { camera, view, layout, ringed, elements, room, hand, onHand }
     rendered.current = camera
     paint(shown, !gliding.current)
     if (!gliding.current) renderedScale.current = shown.scale
@@ -224,7 +228,15 @@ export function useGridCamera({
   }
 
   function zoomSelection() {
-    const { layout: laid, ringed: picked, room: size } = latest.current
+    const { layout: laid, ringed: picked, elements: frame, room: size } = latest.current
+    if (frame !== null) {
+      const card = laid.cards[frame.index]
+      const next = card === undefined ? null : fittedGridElements(card, frame.bounds, size)
+      if (next !== null) {
+        show(next)
+        return
+      }
+    }
     const next = fittedGridCards(laid, picked, size)
     if (next !== null) show(next)
   }

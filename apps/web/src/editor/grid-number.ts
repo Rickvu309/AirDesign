@@ -12,3 +12,7 @@ export function gridZoomPlacement(layout: GridLayout, scale: number): GridNumber
   if (card === undefined) return "hidden"
   return gridNumberPlacement({ width: card.width * scale, gap: gridSpacing(card).group * scale })
 }
+
+export function gridElementPresses(screen: { width: number; gap: number }): boolean {
+  return gridNumberPlacement(screen) !== "hidden" && screen.gap >= 28
+}
