@@ -15,7 +15,7 @@ it("gives every coding agent a prompt and every app the address", () => {
     "Claude Code": "prompt",
     "ChatGPT app": "address",
     Codex: "prompt",
-    "Gemini CLI": "prompt",
+    "Gemini app": "address",
     Antigravity: "prompt",
     Other: "address",
   })
@@ -27,7 +27,11 @@ it("names each way once", () => {
 
 it("opens an app's own page over https", () => {
   const links = ways.flatMap((way) => (way.kind === "address" && way.open ? [way.open.href] : []))
-  expect(links).toEqual(["https://claude.ai/customize/connectors", "https://chatgpt.com/plugins"])
+  expect(links).toEqual([
+    "https://claude.ai/customize/connectors",
+    "https://chatgpt.com/plugins",
+    "https://gemini.google.com/apps",
+  ])
 })
 
 it("writes the server's address into the prompt an agent is given", () => {
