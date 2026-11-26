@@ -364,7 +364,7 @@ function orphanOf(doom: Doom): string | undefined {
   return undefined
 }
 
-function deletesStick(server: Doom, pending: readonly Edit[], project: boolean): void {
+function deletesHold(server: Doom, pending: readonly Edit[], project: boolean): void {
   let doom = server
   for (const edit of pending) {
     const deleted = [...doom.nodes.keys()].filter((id) => parentOf(doom.nodes.get(id)) === null)
@@ -476,8 +476,8 @@ describe("two clients", () => {
           for (const side of [0, 1]) {
             const projected = view(side)
             expect(orphanOf(projected)).toBeUndefined()
-            deletesStick(server, pending[side]!, true)
-            deletesStick(server, pending[side]!, false)
+            deletesHold(server, pending[side]!, true)
+            deletesHold(server, pending[side]!, false)
             expect(shapeOf(projected).includes("deleted paints")).toBe(false)
           }
         }
