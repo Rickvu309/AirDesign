@@ -28,7 +28,6 @@ type Lifted = {
   readonly rows: readonly HTMLElement[]
   readonly pitch: number
   readonly numbers: readonly (HTMLElement | null)[]
-  readonly labels: readonly string[]
   place: number
 }
 
@@ -98,8 +97,7 @@ export function useSlideListDrag(
       frame = requestAnimationFrame(scroll)
       const held = [...heldWith(index)].sort((one, other) => one - other)
       const numbers = rows.map((each) => each.querySelector<HTMLElement>("[data-slide-number]"))
-      const labels = numbers.map((number) => number?.textContent ?? "")
-      return { drag: { count: rows.length, held, grabbed: index }, rows, pitch, numbers, labels, place: 0 }
+      return { drag: { count: rows.length, held, grabbed: index }, rows, pitch, numbers, place: 0 }
     }
 
     const end = (drop: boolean) => {
@@ -115,14 +113,14 @@ export function useSlideListDrag(
       row.removeAttribute("data-slide-held")
       swallow.current = true
       const moved = drop && dragOrder(held.drag, held.place).some((each, position) => each !== position)
-      if (!moved)
-        held.numbers.forEach((number, each) => {
-          if (number !== null) number.textContent = held.labels[each] ?? ""
-        })
-      else
+      if (moved)
         flushSync(() => {
           onDrop({ held: held.drag.held, grabbed: index, place: held.place, at: dragTarget(held.drag, held.place) })
         })
+      root.querySelectorAll<HTMLElement>(slideRows).forEach((each, at) => {
+        const number = each.querySelector<HTMLElement>("[data-slide-number]")
+        if (number !== null) number.textContent = slideNumberLabel(at, each.hasAttribute("data-slide-skipped"))
+      })
       glideRows(root, null)
     }
 
