@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test"
+import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { test } from "./api-stack"
 import {
@@ -17,6 +18,8 @@ import {
 } from "./grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
+
+const space = shortcutCopy.keyNames.Space
 
 const add = (page: Page, number: number) =>
   page.getByRole("button", { name: slideListCopy.addAfter(number), exact: true })
@@ -166,9 +169,9 @@ test("the inline adds hide at a small zoom, during Space, with the hand and on a
   await zoomTo(page, 10)
   await expect(below(page, 1)).toBeAttached()
   await entry(page, 4).focus()
-  await page.keyboard.down("Space")
+  await page.keyboard.down(space)
   await expect(page.locator("[data-add-gap], [data-add-group]")).toHaveCount(0)
-  await page.keyboard.up("Space")
+  await page.keyboard.up(space)
   await page.keyboard.press("h")
   await expect(page.locator("[data-add-gap], [data-add-group]")).toHaveCount(0)
   await page.keyboard.press("v")

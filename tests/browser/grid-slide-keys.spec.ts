@@ -1,10 +1,13 @@
 import { expect } from "@playwright/test"
+import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
 import { entries, entry, openGroups, picked, said, savedGroups, selectedNumbers } from "./grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
+
+const shift = shortcutCopy.chord.other.shift
 
 test("Delete, Ctrl+D, Ctrl+[ and ] and Alt with Left or Right act on the focused slide, one undo each", async ({
   page,
@@ -60,7 +63,7 @@ test("on several picked slides the keys act on all of them, copies end up picked
   const saved = () => savedGroups(stack, opened)
   const start = await saved()
   await entry(page, 2).click()
-  await entry(page, 3).click({ modifiers: ["Shift"] })
+  await entry(page, 3).click({ modifiers: [shift] })
   await page.keyboard.press("ControlOrMeta+d")
   await expect(entries(page)).toHaveCount(8)
   await expect(said(page)).toHaveText(slideListCopy.duplicatedSet(2))
@@ -69,7 +72,7 @@ test("on several picked slides the keys act on all of them, copies end up picked
   await expect.poll(saved).toEqual(start)
 
   await entry(page, 2).click()
-  await entry(page, 3).click({ modifiers: ["Shift"] })
+  await entry(page, 3).click({ modifiers: [shift] })
   await page.keyboard.press("Alt+ArrowRight")
   await expect.poll(saved).toEqual([picked(opened.ids, [1]), picked(opened.ids, [4, 2, 3, 5, 6])])
   expect(await selectedNumbers(page)).toEqual([3, 4])
@@ -77,7 +80,7 @@ test("on several picked slides the keys act on all of them, copies end up picked
   await expect.poll(saved).toEqual(start)
 
   await entry(page, 2).click()
-  await entry(page, 3).click({ modifiers: ["Shift"] })
+  await entry(page, 3).click({ modifiers: [shift] })
   await page.keyboard.press("Delete")
   await expect(entries(page)).toHaveCount(4)
   await expect(said(page)).toHaveText(slideListCopy.deletedSet(2))
