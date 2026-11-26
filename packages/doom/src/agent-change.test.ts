@@ -36,6 +36,12 @@ const valid: readonly AgentChange[] = [
   { op: "set", target: "t:6", d: "M0 0L1 1" },
   { op: "set", target: "t:9", focus: ["q1"] },
   { op: "move", node: "t:4" as never, into: "t:5" as never, after: null },
+  {
+    op: "move",
+    nodes: ["t:4" as never, "t:5" as never],
+    into: "t:10" as never,
+    box: { x: 40, y: 60, w: 200, h: 100 },
+  },
   { op: "wrap", nodes: ["t:4" as never], layout: "row" },
   { op: "unwrap", node: "t:4" as never },
   { op: "delete", nodes: ["t:4" as never] },

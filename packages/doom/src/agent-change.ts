@@ -83,7 +83,14 @@ export type SlideMove = { readonly slide: NodeId; readonly after: NodeId | null 
 export type AgentChange =
   | ({ readonly op: "add"; readonly kind: AgentAdd; readonly slide: NodeId; readonly into?: NodeId } & AgentLook)
   | ({ readonly op: "set"; readonly target: string; readonly focus?: readonly string[] } & AgentLook)
-  | { readonly op: "move"; readonly node: NodeId; readonly into?: NodeId; readonly after?: NodeId | null }
+  | {
+      readonly op: "move"
+      readonly node?: NodeId
+      readonly nodes?: readonly NodeId[]
+      readonly into?: NodeId
+      readonly after?: NodeId | null
+      readonly box?: NonNullable<AgentLook["box"]>
+    }
   | {
       readonly op: "wrap"
       readonly nodes: readonly NodeId[]
@@ -400,7 +407,7 @@ const lookReaders = pickFrom(lookFields, Object.keys(lookFields) as (keyof typeo
 const readChange = variant("op", {
   add: object({ kind: literal(addKinds), slide: readId }, { ...pickFrom(placeFields, ["into"]), ...lookReaders }),
   set: object(pickFrom(placeFields, ["target"]), { ...lookReaders, focus: focus.read }),
-  move: object(pickFrom(placeFields, ["node"]), pickFrom(placeFields, ["into", "after"])),
+  move: object({}, { ...pickFrom(placeFields, ["node", "nodes", "into", "after"]), box: lookFields.box.read }),
   wrap: object(pickFrom(placeFields, ["nodes"]), pickFrom(lookFields, ["layout", "clip"])),
   unwrap: object(pickFrom(placeFields, ["node"])),
   detach: object({ target: readId }),
@@ -471,7 +478,7 @@ export const agentChangesSchema = {
           enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck", "detach", "component"],
           description:
             "component: spec, target? (no target adds one). component add: component, data?, variant?, tokens?, box?. detach: target. " +
-            "add: kind, slide, into?, look. set: target, look. move: node, into?, after?. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
+            "add: kind, slide, into?, look. set: target, look. move: node or nodes, into?, after?, box? x,y. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
         },
         ...schemasOf(placeFields),
         kind: choice(addKinds, `${kindWords} component: a linked template.`).schema,
