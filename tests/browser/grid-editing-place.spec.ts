@@ -312,6 +312,7 @@ test("a press that never moves writes nothing when the canvas scrolls under it",
   await expect.poll(async () => (await boxOf(card(page, 2))).y).toBeLessThan(before - 30)
   await page.mouse.up()
   await expect(outline(page)).toHaveAttribute("data-selection-outline", "t:2")
-  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 400)))
-  expect(await savedBox(stack, opened, "t:2")).toEqual({ x: layerBox.x, y: layerBox.y })
+  await expect
+    .poll(async () => savedBox(stack, opened, "t:2"), { message: "t:2 was written by a press that never moved" })
+    .toEqual({ x: layerBox.x, y: layerBox.y })
 })
