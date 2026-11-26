@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { cn } from "@/lib/class-names"
 import { settingsAction } from "@/settings/settings-action"
 import { accountCopy } from "@/copy/account-copy"
 import { ModuleRow } from "@/settings/module-row"
@@ -39,7 +40,7 @@ export function AccountCard({
             <Button
               type="button"
               variant="outline"
-              className={`${settingsAction} text-danger-text hover:text-danger-text`}
+              className={cn(settingsAction, "text-danger-text hover:text-danger-text")}
               style={{ width: 122.75 }}
               onClick={onDelete}
             >

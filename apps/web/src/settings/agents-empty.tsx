@@ -3,6 +3,7 @@ import { connectAgentCopy } from "@/copy/connect-agent-copy"
 import { settingsCopy } from "@/copy/settings-copy"
 import { AgentMark } from "@/decks/agent-mark"
 import { DeckGlyph } from "@/decks/deck-glyph"
+import { cn } from "@/lib/class-names"
 
 const middle = 95
 const rings = [
@@ -38,7 +39,7 @@ export function AgentsEmpty({ onConnect }: { onConnect: () => void }) {
         {rings.map((ring) => (
           <span
             key={ring.size}
-            className={`absolute rounded-full ${ring.edge}`}
+            className={cn("absolute rounded-full", ring.edge)}
             style={{ ...placed(ring.size), width: ring.size, height: ring.size }}
           />
         ))}
