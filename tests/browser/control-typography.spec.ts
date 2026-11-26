@@ -47,3 +47,21 @@ test("a text style names the style, writes it to the text, and Undo puts the bod
   await undoOnStage(page)
   await expect.poll(style).toBe("body")
 })
+
+test("the font size list opens under the size field at the field's width", async ({ page, context, stack }) => {
+  await designDoom(page, context, stack, (slide) => [
+    {
+      id: "t:1",
+      type: "shape",
+      parent: slide,
+      props: { box: spot(100, 100, 1400, 200), text: words("Quarterly review") },
+    },
+  ])
+  await pick(page, "t:1", 400, 180)
+  const opener = panel(page).getByRole("button", { name: textCopy.sizes, exact: true })
+  const field = await opener.locator("xpath=ancestor::label").boundingBox()
+  await opener.click()
+  const menu = page.getByRole("menu")
+  await expect.poll(async () => Math.abs((await menu.boundingBox())!.width - field!.width)).toBeLessThan(2)
+  expect(Math.abs((await menu.boundingBox())!.x - field!.x)).toBeLessThan(2)
+})
