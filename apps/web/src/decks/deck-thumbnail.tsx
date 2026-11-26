@@ -8,7 +8,19 @@ import { cn } from "@/lib/class-names"
 
 const slideRatio = 1080 / 1920
 
-function ThumbnailPaint({ deck, rev, name, box }: { deck: string; rev: number; name: string; box: Size }) {
+function ThumbnailPaint({
+  deck,
+  rev,
+  name,
+  box,
+  inset,
+}: {
+  deck: string
+  rev: number
+  name: string
+  box: Size
+  inset: number
+}) {
   const [markup, setMarkup] = useState<string | null | undefined>(undefined)
   useEffect(() => {
     let live = true
@@ -21,7 +33,7 @@ function ThumbnailPaint({ deck, rev, name, box }: { deck: string; rev: number; n
   }, [deck, rev])
   if (markup === undefined) return null
   if (markup === null) return <DeckInitial name={name} />
-  const width = fittedWidth(box, { width: 1920, height: 1080 })
+  const width = fittedWidth(box, { width: 1920, height: 1080 }, inset)
   return (
     <div
       data-deck-thumbnail=""
@@ -36,7 +48,17 @@ function ThumbnailPaint({ deck, rev, name, box }: { deck: string; rev: number; n
   )
 }
 
-export function DeckThumbnail({ deck, rev, name }: { deck: string; rev: number; name: string }) {
+export function DeckThumbnail({
+  deck,
+  rev,
+  name,
+  inset = 16,
+}: {
+  deck: string
+  rev: number
+  name: string
+  inset?: number
+}) {
   const { frame, box } = usePreviewBox()
   return (
     <div ref={frame} data-deck-preview className="size-full">
@@ -45,7 +67,7 @@ export function DeckThumbnail({ deck, rev, name }: { deck: string; rev: number; 
           width={box.width}
           height={box.height}
           className="flex items-center justify-center"
-          paint={() => <ThumbnailPaint deck={deck} rev={rev} name={name} box={box} />}
+          paint={() => <ThumbnailPaint deck={deck} rev={rev} name={name} box={box} inset={inset} />}
         />
       )}
     </div>

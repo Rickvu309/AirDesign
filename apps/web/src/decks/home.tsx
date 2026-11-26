@@ -31,7 +31,7 @@ import { openingDeck } from "@/lib/first-request"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { clearGridShift, gridShift } from "@/decks/grid-shift"
 import { DeckActions, DeckRowMenu } from "@/decks/deck-menu"
-import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
+import { DeckRow, DeckTableHeader, DeckTableSkeleton } from "@/decks/deck-row"
 import { DeckThumbnail } from "@/decks/deck-thumbnail"
 import { MovedToast } from "@/decks/screens/deck-moved-toast"
 import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
@@ -39,6 +39,7 @@ import { deckTime } from "@/copy/deck-time-copy"
 import { addressOf, addressRead } from "@/decks/deck-address"
 import { allDecks, deckPath, decksMatching, recentDecks, type ListedDeck } from "@/decks/deck-listing"
 import { signOut } from "@/account/sign-out"
+import { cn } from "@/lib/class-names"
 
 type Deck = ListedDeck & { readonly doom: { readonly rev: number } }
 type Listing = { ok: true; account: { email: string }; decks: Deck[]; trash: Deck[] }
@@ -56,34 +57,33 @@ function starredIn(listing: Listing, deck: string, starred: boolean): Listing {
   return { ...listing, decks: shown(listing.decks), trash: shown(listing.trash) }
 }
 
-function DeckGridSkeleton({ className }: { className?: string }) {
+function DeckGridSkeleton({ section }: { section: HomeSection }) {
+  const trash = section === "trash"
   return (
-    <DeckGrid className={className} data-loading="true" aria-busy="true">
-      {[0, 1, 2].map((key) => (
+    <DeckGrid className={gridLayout(section)} data-loading="true" aria-busy="true">
+      {(trash ? [0, 1, 2] : [0, 1, 2, 3]).map((key) => (
         <article key={key} className="rounded-[var(--shape-dialog)] bg-canvas p-1.5" aria-hidden="true">
-          <div className="space-y-2 px-2.5 pt-2 pb-2.5">
-            <Skeleton className="h-4 w-3/5 bg-line" />
-            <Skeleton className="h-3.5 w-2/5 bg-line" />
+          <div className="px-2.5 pt-2 pb-2.5">
+            <div className="flex h-5 items-center">
+              <Skeleton className="h-4 w-3/5 bg-line" />
+            </div>
+            <div className="flex h-4.5 items-center">
+              <Skeleton className="h-3.5 w-2/5 bg-line" />
+            </div>
           </div>
-          <Skeleton className="h-[150px] w-full rounded-[var(--shape-card)] bg-line" />
+          <Skeleton className={cn("h-[150px] w-full rounded-[var(--shape-card)] bg-line", previewHeight(section))} />
         </article>
       ))}
     </DeckGrid>
   )
 }
 
-function DeckTableSkeleton() {
-  return (
-    <div className="mt-12 space-y-3" data-loading="true" aria-busy="true">
-      <DeckTableHeader sortMarks={false} />
-      {[0, 1, 2].map((key) => (
-        <div key={key} className="flex h-12 items-center justify-between rounded-lg bg-canvas px-4" aria-hidden="true">
-          <Skeleton className="h-4 w-1/3 bg-line" />
-          <Skeleton className="h-4 w-24 bg-line" />
-        </div>
-      ))}
-    </div>
-  )
+function gridLayout(section: HomeSection) {
+  return section === "trash" ? "mt-6 grid-cols-3" : section === "all-decks" ? "mt-6" : undefined
+}
+
+function previewHeight(section: HomeSection) {
+  return section === "recents" ? undefined : "h-[136px]"
 }
 
 export type HomeSection = "recents" | "all-decks" | "trash"
@@ -284,7 +284,7 @@ export function Home({
           />
         </div>
       )}
-      {loading && (!listView || trash) && <DeckGridSkeleton className={trash ? "mt-6 grid-cols-3" : undefined} />}
+      {loading && (!listView || trash) && <DeckGridSkeleton section={section} />}
       {loading && listView && !trash && <DeckTableSkeleton />}
       {noDecks && (
         <div className="mt-8">
@@ -292,7 +292,7 @@ export function Home({
         </div>
       )}
       {listing !== null && showGrid && !noDecks && !noMatch && (
-        <DeckGrid ref={grid} className={trash ? "mt-6 grid-cols-3" : section !== "recents" ? "mt-6" : undefined}>
+        <DeckGrid ref={grid} className={gridLayout(section)}>
           {!listView || trash
             ? decks.map((deck) => (
                 <DeckCard
@@ -303,7 +303,7 @@ export function Home({
                     trash ? deckTime(deck.trashed ?? deck.edited, now()).trash : deckTime(deck.edited, now()).card
                   }
                   href={trash ? undefined : deckPath(deck)}
-                  previewClassName={section !== "recents" ? "h-[136px]" : undefined}
+                  previewClassName={previewHeight(section)}
                   preview={<DeckThumbnail deck={deck.deck} rev={deck.doom.rev} name={deck.name} />}
                   action={
                     trash ? (
@@ -351,6 +351,7 @@ export function Home({
                 name={deck.name}
                 edited={deckTime(deck.edited, now()).row}
                 created={deckTime(deck.created, now()).created}
+                preview={<DeckThumbnail deck={deck.deck} rev={deck.doom.rev} name={deck.name} inset={0} />}
                 href={deckPath(deck)}
               />
             </DeckRowMenu>

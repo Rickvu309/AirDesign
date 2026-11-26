@@ -2,9 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react"
 
 export type Size = { readonly width: number; readonly height: number }
 
-const inset = 16
-
-export function fittedWidth(box: Size, slide: Size): number {
+export function fittedWidth(box: Size, slide: Size, inset = 16): number {
   if (slide.width <= 0 || slide.height <= 0) return 0
   const room = { width: box.width - inset * 2, height: box.height - inset * 2 }
   return Math.max(0, Math.floor(Math.min(room.width, (room.height * slide.width) / slide.height)))
