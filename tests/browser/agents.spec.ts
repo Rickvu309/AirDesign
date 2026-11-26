@@ -1,6 +1,12 @@
 import { expect, type Page } from "@playwright/test"
 import { test } from "./deck-test"
-import { connectAgentCopy, connectedOf, setupPromptOf, waitingOf } from "../../apps/web/src/copy/connect-agent-copy"
+import {
+  connectAgentCopy,
+  connectChoices,
+  connectedOf,
+  setupPromptOf,
+  waitingOf,
+} from "../../apps/web/src/copy/connect-agent-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { settingsCopy } from "../../apps/web/src/copy/settings-copy"
 
@@ -23,6 +29,10 @@ async function mockHome(page: Page, email = "person@example.com") {
     }),
   )
 }
+
+const [claude, , gemini, other] = connectChoices
+const claudeApp = claude.ways[0].open
+const codeKind = claude.ways[1].id
 
 function listAgents(page: Page, agents: () => AgentRow[]) {
   return page.route("**/account/agents", (route) =>
@@ -119,47 +129,47 @@ test("the connect dialog gives an app the address and a coding agent a prompt, t
   await page.getByRole("button", { name: connectAgentCopy.title }).click()
   const dialog = connectDialog(page)
 
-  await expect(dialog.getByRole("button", { name: "Claude", exact: true })).toHaveAttribute("aria-pressed", "true")
+  await expect(dialog.getByRole("button", { name: claude.name, exact: true })).toHaveAttribute("aria-pressed", "true")
   await expect(dialog.getByText(mcpAddress, { exact: true })).toBeVisible()
-  await expect(dialog.getByRole("link", { name: "Open Claude connectors" })).toHaveAttribute(
-    "href",
-    "https://claude.ai/customize/connectors",
-  )
+  await expect(dialog.getByRole("link", { name: claudeApp.label })).toHaveAttribute("href", claudeApp.href)
   await dialog.getByRole("button", { name: connectAgentCopy.copy, exact: true }).click()
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(mcpAddress)
   await expect(dialog.getByRole("button", { name: productCopy.done, exact: true })).toBeVisible()
 
-  await dialog.getByRole("button", { name: "Claude Code", exact: true }).click()
-  await expect(dialog.getByText(waitingOf("Claude Code"), { exact: true })).toBeVisible()
+  await dialog.getByRole("button", { name: settingsCopy.claudeCode, exact: true }).click()
+  await expect(dialog.getByText(waitingOf(settingsCopy.claudeCode), { exact: true })).toBeVisible()
   await dialog.getByRole("button", { name: connectAgentCopy.copyPrompt, exact: true }).click()
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(setupPromptOf(mcpAddress))
 
-  await dialog.getByRole("button", { name: "Gemini", exact: true }).click()
-  await expect(dialog.getByRole("button", { name: "Gemini CLI", exact: true })).toHaveAttribute("aria-pressed", "true")
-  await dialog.getByRole("button", { name: "Antigravity", exact: true }).click()
-  await expect(dialog.getByText(waitingOf("Antigravity"), { exact: true })).toBeVisible()
+  await dialog.getByRole("button", { name: gemini.name, exact: true }).click()
+  await expect(dialog.getByRole("button", { name: gemini.ways[0].tab, exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  )
+  await dialog.getByRole("button", { name: gemini.ways[1].tab, exact: true }).click()
+  await expect(dialog.getByText(waitingOf(gemini.ways[1].name), { exact: true })).toBeVisible()
 
-  await dialog.getByRole("button", { name: "Other", exact: true }).click()
+  await dialog.getByRole("button", { name: other.name, exact: true }).click()
   await expect(dialog.getByText(mcpAddress, { exact: true })).toBeVisible()
   await expect(dialog.getByRole("link")).toHaveCount(0)
 
   agents = [
     {
       id: "grant-code",
-      name: "Claude Code",
-      agent: "claude-code",
+      name: settingsCopy.claudeCode,
+      agent: codeKind,
       host: "127.0.0.1",
       connected: new Date().toISOString(),
     },
   ]
-  const connected = page.getByRole("dialog", { name: connectedOf("Claude Code") })
+  const connected = page.getByRole("dialog", { name: connectedOf(settingsCopy.claudeCode) })
   await expect(connected).toBeVisible()
   await expect(connected.getByText(connectAgentCopy.connectedBody, { exact: true })).toBeVisible()
   await expect(connected.getByRole("button")).toHaveCount(1)
   await connected.getByRole("button", { name: productCopy.done, exact: true }).click()
   await expect(connected).toBeHidden()
-  await expect(page.getByText("Claude Code", { exact: true })).toBeVisible()
-  await expect(page.getByRole("button", { name: "Disconnect", exact: true })).toHaveCount(1)
+  await expect(page.getByText(settingsCopy.claudeCode, { exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: productCopy.disconnect, exact: true })).toHaveCount(1)
 })
 
 test("a list answer that arrives late never replaces a newer one, so a connected agent stays listed", async ({
@@ -197,20 +207,20 @@ test("a list answer that arrives late never replaces a newer one, so a connected
   agents = [
     {
       id: "grant-code",
-      name: "Claude Code",
-      agent: "claude-code",
+      name: settingsCopy.claudeCode,
+      agent: codeKind,
       host: "127.0.0.1",
       connected: "2026-11-26T00:00:00Z",
     },
   ]
-  const connected = page.getByRole("dialog", { name: connectedOf("Claude Code") })
+  const connected = page.getByRole("dialog", { name: connectedOf(settingsCopy.claudeCode) })
   await connected.getByRole("button", { name: productCopy.done, exact: true }).click()
-  await expect(page.getByRole("button", { name: "Disconnect", exact: true })).toHaveCount(1)
+  await expect(page.getByRole("button", { name: productCopy.disconnect, exact: true })).toHaveCount(1)
 
   const late = page.waitForResponse("**/account/agents")
   release()
   await late
-  await expect(page.getByRole("button", { name: "Disconnect", exact: true })).toHaveCount(1)
+  await expect(page.getByRole("button", { name: productCopy.disconnect, exact: true })).toHaveCount(1)
   await expect(page.getByText(settingsCopy.noAgents, { exact: true })).toHaveCount(0)
 })
 
@@ -250,7 +260,7 @@ test("the connect dialog asks for the list one request at a time and closes from
 
   await page.locator("[data-decks-sidebar]").getByRole("button", { name: connectAgentCopy.title }).click()
   const dialog = connectDialog(page)
-  const retry = dialog.getByRole("button", { name: "Try again", exact: true })
+  const retry = dialog.getByRole("button", { name: productCopy.payTryAgain, exact: true })
   await expect(retry).toBeVisible()
   await second
   await retry.click()
@@ -295,7 +305,7 @@ test("renders empty, loading, failed, and signed-out states without a blank page
   await expect(page.getByText(settingsCopy.noAgents, { exact: true })).toHaveCount(0)
 
   unblockLoad()
-  const retry = page.getByRole("button", { name: "Try again", exact: true })
+  const retry = page.getByRole("button", { name: productCopy.payTryAgain, exact: true })
   await expect(retry).toBeVisible()
   await expect(page.getByText(settingsCopy.noAgents, { exact: true })).toHaveCount(0)
 
@@ -303,7 +313,7 @@ test("renders empty, loading, failed, and signed-out states without a blank page
   const dialog = connectDialog(page)
   await expect(dialog.getByRole("alert")).toHaveText(new RegExp(`^${connectAgentCopy.loadFailed}`))
   shouldFail = false
-  await dialog.getByRole("button", { name: "Try again", exact: true }).click()
+  await dialog.getByRole("button", { name: productCopy.payTryAgain, exact: true }).click()
   await expect(dialog.getByText(mcpAddress, { exact: true })).toBeVisible()
   await page.keyboard.press("Escape")
 

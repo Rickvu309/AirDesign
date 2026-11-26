@@ -1,10 +1,11 @@
 import { expect, it } from "vitest"
-import { connectChoices, setupPromptOf } from "@/copy/connect-agent-copy"
+import { connectChoices, setupPromptOf, type ConnectChoice } from "@/copy/connect-agent-copy"
 
-const ways = connectChoices.flatMap((choice) => choice.ways)
+const choices: readonly ConnectChoice[] = connectChoices
+const ways = choices.flatMap((choice) => choice.ways)
 
 it("offers Claude, ChatGPT, Gemini and Other, in that order", () => {
-  expect(connectChoices.map((choice) => choice.name)).toEqual(["Claude", "ChatGPT", "Gemini", "Other"])
+  expect(choices.map((choice) => choice.name)).toEqual(["Claude", "ChatGPT", "Gemini", "Other"])
 })
 
 it("gives every coding agent a prompt and every app the address", () => {
