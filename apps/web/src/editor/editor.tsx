@@ -171,7 +171,7 @@ function Editing({
   })
   usePresentKeys(present.show === null, (from) => present.start(from === "first" ? 0 : strip.current))
   useGridHistoryKeys(grid, client)
-  useSlideStepKeys({ slides, current: slide, selecting: selection.ids.length > 0, onCurrent: choose })
+  useSlideStepKeys({ slides, current: slide, paused: grid || selection.ids.length > 0, onCurrent: choose })
   const title = deckName(view)
   const exporting = useExport(
     {
