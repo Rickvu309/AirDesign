@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test"
+import { creditsCopy } from "../../apps/web/src/copy/credits-copy"
 import { productCopy } from "../../apps/web/src/copy/product-copy"
 import { settingsCopy } from "../../apps/web/src/copy/settings-copy"
 
@@ -220,6 +221,16 @@ export const webDesignChecks: Check[] = [
     async (page) => {
       const width = await page.getByRole("menu").evaluate((menu) => menu.getBoundingClientRect().width)
       expect(width).toBeLessThanOrEqual(120)
+    },
+  ],
+  [
+    "11-reset-button",
+    "credits-reset",
+    async (page) => {
+      const reset = page.getByRole("button", { name: creditsCopy.reset, exact: true, includeHidden: true })
+      await expect(reset).toBeEnabled()
+      await expect(reset).toHaveCSS("background-color", "rgb(255, 255, 255)")
+      await expect(reset).toHaveCSS("font-weight", "500")
     },
   ],
 ]

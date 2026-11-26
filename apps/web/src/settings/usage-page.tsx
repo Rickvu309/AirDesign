@@ -56,8 +56,8 @@ export function UsagePage({
         actions={
           <Button
             type="button"
-            variant="secondary"
-            className="border-input bg-accent px-3.5 font-semibold hover:bg-input disabled:text-muted-foreground disabled:opacity-100"
+            variant="outline"
+            className={settingsAction}
             disabled={
               credits.busy ||
               week === null ||
