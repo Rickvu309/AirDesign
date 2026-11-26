@@ -135,3 +135,52 @@ test("with reduced motion the demo holds still and offers no pause button", asyn
   expect(await playStates(page)).toEqual([])
   await expect(page.locator("[data-demo-pause]")).toBeHidden()
 })
+
+function headerPillOverlap(page: Page) {
+  return page.evaluate(() => {
+    const nav = document.querySelector("header nav")?.getBoundingClientRect()
+    const pill = document.querySelector("#product .status-pill")?.getBoundingClientRect()
+    if (!nav || !pill) throw new Error("missing header or status pill")
+    const width = Math.max(0, Math.min(nav.right, pill.right) - Math.max(nav.left, pill.left))
+    const height = Math.max(0, Math.min(nav.bottom, pill.bottom) - Math.max(nav.top, pill.top))
+    return {
+      overlapArea: width * height,
+      navBottom: nav.bottom,
+      pillTop: pill.top,
+      pillBottom: pill.bottom,
+      viewportHeight: window.innerHeight,
+    }
+  })
+}
+
+test("the fixed header never covers the product demo status pill", async ({ page }) => {
+  for (const reducedMotion of ["no-preference", "reduce"] as const) {
+    await page.emulateMedia({ reducedMotion })
+    for (const size of [
+      { width: 1470, height: 923 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(size)
+      await page.goto(`${site.origin}/`)
+      await page.evaluate(() => document.fonts.ready)
+
+      await page.locator(demo).evaluate((element) => element.scrollIntoView({ behavior: "instant", block: "center" }))
+      await painted(page)
+      const atDemo = await headerPillOverlap(page)
+      expect(atDemo.overlapArea, `${reducedMotion} ${size.width}px demo`).toBe(0)
+
+      await page
+        .locator("#product")
+        .evaluate((section) => section.scrollIntoView({ behavior: "instant", block: "start" }))
+      await painted(page)
+      const atSection = await headerPillOverlap(page)
+      expect(atSection.overlapArea, `${reducedMotion} ${size.width}px #product`).toBe(0)
+      expect(atSection.pillTop, `${reducedMotion} ${size.width}px #product below header`).toBeGreaterThanOrEqual(
+        atSection.navBottom,
+      )
+      expect(atSection.pillBottom, `${reducedMotion} ${size.width}px #product visible`).toBeLessThanOrEqual(
+        atSection.viewportHeight,
+      )
+    }
+  }
+})
