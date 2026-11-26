@@ -272,13 +272,14 @@ test("with several icons selected, picking an icon in Actions swaps every one, a
   await expect.poll(async () => (await selectedIds(page)).length).toBe(1)
   const right = (await picked(page, stack, opened)).id
   const heart = await page.locator(`[data-slide-box] [data-node="${right}"]`).boundingBox()
+  const placed = ((await savedNode(stack, opened, right)) as Saved).box.x
   await page.mouse.move((heart?.x ?? 0) + (heart?.width ?? 0) / 2, (heart?.y ?? 0) + (heart?.height ?? 0) / 2)
   await page.mouse.down()
   await page.mouse.move((heart?.x ?? 0) + (heart?.width ?? 0) / 2 + 120, (heart?.y ?? 0) + (heart?.height ?? 0) / 2, {
     steps: 8,
   })
   await page.mouse.up()
-  await expect.poll(async () => ((await savedNode(stack, opened, right)) as Saved).box.x).toBeGreaterThan(1000)
+  await expect.poll(async () => ((await savedNode(stack, opened, right)) as Saved).box.x).toBeGreaterThan(placed + 200)
   const rocket = await page.locator(`[data-slide-box] [data-node="${left}"]`).boundingBox()
   await page.keyboard.down(shortcutCopy.chord.other.shift)
   await page.mouse.click((rocket?.x ?? 0) + (rocket?.width ?? 0) / 2, (rocket?.y ?? 0) + (rocket?.height ?? 0) / 2)
