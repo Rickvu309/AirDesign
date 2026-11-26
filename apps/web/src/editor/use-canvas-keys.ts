@@ -113,6 +113,7 @@ export function useCanvasKeys(args: KeyArgs) {
           handled()
           a.onEditText(only)
         } else {
+          if (event.target instanceof HTMLElement && event.target.closest("button, a") !== null) return
           const child = parent?.children.find(({ id }) => !doom.lockedIn(a.view, id))
           if (parent === undefined || child === undefined) return
           const inside = steppedIn([parent, child], a.selection)

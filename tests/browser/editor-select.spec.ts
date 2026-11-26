@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
 import {
@@ -78,6 +79,21 @@ test("Enter selects an unlocked child one level down and still edits text", asyn
   expect(await selectedIds(page)).toEqual(["k:4"])
   await page.keyboard.press(shortcutCopy.keyNames.Enter)
   await expect(page.locator("[data-text-editor]")).toBeFocused()
+})
+
+test("Enter on a focused Add slide button adds a slide and steps into no layer", async ({ page, context, stack }) => {
+  const opened = await openEditor(page, context, stack)
+  await clearSubtitle(stack, opened)
+  await landNodes(stack, opened, [
+    { id: "k:1", type: "frame", parent: opened.slide, props: { box: spot(600, 600, 720, 200) } },
+    { id: "k:2", type: "shape", parent: "k:1", props: { box: spot(0, 0, 200, 72), fills: accent } },
+  ])
+  await clickSlide(page, 700, 636)
+  expect(await selectedIds(page)).toEqual(["k:1"])
+  await page.getByRole("button", { name: slideListCopy.addSlide }).focus()
+  await page.keyboard.press(shortcutCopy.keyNames.Enter)
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
+  expect(await selectedIds(page)).not.toEqual(["k:2"])
 })
 
 test("Shift adds a layer, Cmd or Ctrl reaches inside a frame, and a locked layer passes the click through", async ({
