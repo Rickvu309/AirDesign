@@ -193,6 +193,7 @@ test("a list answer that arrives late never replaces a newer one, so a connected
   await page.evaluate(() => window.dispatchEvent(new Event("focus")))
   await heldArrived
   await page.getByRole("button", { name: connectAgentCopy.title }).click()
+  await expect(connectDialog(page).getByText(mcpAddress, { exact: true })).toBeVisible()
   agents = [
     {
       id: "grant-code",
