@@ -71,6 +71,17 @@ export function AgentArrival({
     }
   }, [still])
 
+  useLayoutEffect(() => {
+    const running = playing.current
+    const show = (event: PointerEvent) => {
+      if (!(event.target instanceof Element) || event.target.closest("[data-canvas-stage]") === null) return
+      running.get(slide)?.stop()
+      running.delete(slide)
+    }
+    window.addEventListener("pointerdown", show, true)
+    return () => window.removeEventListener("pointerdown", show, true)
+  }, [slide])
+
   return (
     <div
       ref={layer}

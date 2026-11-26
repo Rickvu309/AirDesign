@@ -369,3 +369,28 @@ test("a person's own new slide and an agent-made slide under reduced motion play
   expect(await marksSeen(page)).toBe(0)
   expect(await thumbMarksSeen(page)).toBe(0)
 })
+
+test("a press on the canvas shows an arriving slide's surface at once", async ({ page, context, stack }) => {
+  const opened = await openEditor(page, context, stack)
+  const surface = page.locator("[data-slide-box] [data-slide-paint]")
+  const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
+  await page.evaluate(() => {
+    const play = Element.prototype.animate
+    Element.prototype.animate = function slowed(frames, options) {
+      const timing = typeof options === "object" ? { ...options, duration: 60_000 } : options
+      return play.call(this, frames, timing)
+    }
+  })
+  const made = await call("edit_deck", {
+    deck: opened.deck,
+    base: (await saved(stack, opened)).rev,
+    changes: [{ op: "slide", add: {} }],
+  })
+  expect(made.ok, JSON.stringify(made)).toBe(true)
+  await expect.poll(() => surface.evaluate((element) => element.getAnimations().length)).toBe(1)
+  const box = await page.locator("[data-slide-box]").boundingBox()
+  if (box === null) throw new Error("no slide on the canvas")
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  expect(await surface.evaluate((element) => element.getAnimations().length)).toBe(0)
+  expect(await surface.evaluate((element) => getComputedStyle(element).opacity)).toBe("1")
+})
