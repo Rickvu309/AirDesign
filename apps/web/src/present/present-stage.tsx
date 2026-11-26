@@ -23,14 +23,11 @@ export function StageButton({
   return (
     <Button
       type="button"
-      variant="ghost"
+      variant="stage"
       size="icon"
       aria-label={label}
       title={keys === undefined ? label : `${label} (${keys})`}
-      className={cn(
-        "rounded-lg text-[var(--white-80)] hover:bg-[var(--stage-hover)] hover:text-[var(--background)] active:translate-y-0",
-        large ? "size-11" : "size-9",
-      )}
+      className={large ? "size-11" : "size-9"}
       {...(onClick === undefined ? {} : { onClick })}
     >
       <EditorIcon name={icon} size={large ? 22 : 18} />
@@ -40,12 +37,7 @@ export function StageButton({
 
 export function StageTextButton({ label, onClick }: { label: string; onClick?: () => void }) {
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      className="h-8 rounded-lg px-3 text-[length:var(--type-dense)] font-medium text-[var(--white-80)] shadow-[inset_0_0_0_1px_var(--stage-hover)] hover:bg-[var(--stage-hover)] hover:text-[var(--background)] active:translate-y-0"
-      {...(onClick === undefined ? {} : { onClick })}
-    >
+    <Button type="button" variant="stage" size="dense" {...(onClick === undefined ? {} : { onClick })}>
       {label}
     </Button>
   )
