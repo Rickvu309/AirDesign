@@ -159,26 +159,37 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
     })
   })
 
-  it("returns an empty style list for airdesign_get_style and refuses unknown style names", async () => {
+  it("serves one style for every library theme, each naming only that theme's colours and text styles", async () => {
+    const themeIds = Object.keys(doom.themeLibrary).sort()
+    const sections = ["Identity", "Layout", "Token map", "Decoration", "Hierarchy", "Typography", "Parameters"]
     await withClient(sessionFor(), memoryDecks(started), async (client) => {
       const listed = await client.callTool({ name: "airdesign_get_style", arguments: {} })
       expect(listed.isError).not.toBe(true)
-      expect(listed.structuredContent).toEqual({
-        ok: true,
-        styles: [],
-        note: "No styles are available yet.",
-      })
-      expect(textOf(listed)).toEqual([{ type: "text", text: JSON.stringify(listed.structuredContent) }])
+      const styles = (listed.structuredContent as { styles: { name: string; summary: string }[] }).styles
+      expect(styles.map((style) => style.name)).toEqual(themeIds)
 
-      const missing = await client.callTool({ name: "airdesign_get_style", arguments: { name: "editorial" } })
+      for (const id of themeIds) {
+        const theme = doom.themeLibrary[id]!.theme
+        const known = new Set([...Object.keys(theme.colors), ...Object.keys(theme.textStyles), "heading", "body"])
+        const opened = await client.callTool({ name: "airdesign_get_style", arguments: { name: id } })
+        expect(opened.isError).not.toBe(true)
+        const answer = opened.structuredContent as { text: string; parameters: unknown[] }
+        expect(answer.parameters.length).toBeGreaterThan(0)
+        expect(answer.text.match(/^## .+$/gm)).toEqual(sections.map((section) => `## ${section}`))
+        const tokenMap = answer.text.split("## Token map")[1]!.split("\n## ")[0]!
+        const named = [...tokenMap.matchAll(/`([a-zA-Z0-9]+)(?:[+-]\d+)?`/g)].map((match) => match[1]!)
+        expect(named.length).toBeGreaterThan(0)
+        expect(named.filter((name) => !known.has(name))).toEqual([])
+      }
+
+      const missing = await client.callTool({ name: "airdesign_get_style", arguments: { name: "editorial-dark" } })
       expect(missing.isError).toBe(true)
       expect(missing.structuredContent).toMatchObject({
         ok: false,
         refusal: "field",
         field: "name",
-        available: [],
+        available: themeIds,
       })
-      expect(textOf(missing)).toEqual([{ type: "text", text: JSON.stringify(missing.structuredContent) }])
     })
   })
 
