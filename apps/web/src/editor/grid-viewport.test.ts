@@ -6,6 +6,7 @@ import {
   boundedGridScale,
   fittedGrid,
   fittedGridCards,
+  fittedGridElements,
   gridGrip,
   gridShown,
   keptGridShows,
@@ -29,6 +30,19 @@ function deckOf(lengths: readonly number[], slide = wide) {
 }
 
 describe("grid viewport", () => {
+  it("fits selected elements by their box inside the card, with no room taken for a header", () => {
+    const card = { left: 100, top: 200, width: 1920, height: 1080 }
+    const bounds = { left: 200, top: 100, width: 400, height: 200 }
+    const room = { width: 1000, height: 800 }
+    const fit = fittedGrid({ width: bounds.width, height: bounds.height }, room)
+    expect(fittedGridElements(card, bounds, room)).toEqual({
+      x: fit.x - (card.left + bounds.left) * fit.scale,
+      y: fit.y - (card.top + bounds.top) * fit.scale,
+      scale: fit.scale,
+    })
+    expect(fittedGridElements(card, { ...bounds, width: 0 }, room)).toBeNull()
+  })
+
   it("keeps the canvas point under the zoom anchor in place", () => {
     const view = { x: -700, y: 1400, scale: 0.5 }
     const anchor = { x: 430, y: 280 }

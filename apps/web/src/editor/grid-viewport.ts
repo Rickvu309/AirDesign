@@ -109,6 +109,16 @@ export function fittedGrid(block: GridSize, room: GridSize, grips?: number): Gri
   return { x: (room.width - block.width * scale + left) / 2, y: (room.height - block.height * scale) / 2, scale }
 }
 
+export function fittedGridElements(card: GridRect, bounds: GridRect, room: GridSize): GridView | null {
+  if (bounds.width <= 0 || bounds.height <= 0) return null
+  const fit = fittedGrid({ width: bounds.width, height: bounds.height }, room)
+  return {
+    x: fit.x - (card.left + bounds.left) * fit.scale,
+    y: fit.y - (card.top + bounds.top) * fit.scale,
+    scale: fit.scale,
+  }
+}
+
 export function fittedGridCards(layout: GridLayout, indices: readonly number[], room: GridSize): GridView | null {
   const cards = layout.cards.filter((card) => indices.includes(card.index))
   if (cards.length === 0) return null

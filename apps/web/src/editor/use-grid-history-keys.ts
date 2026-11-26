@@ -9,6 +9,7 @@ export function useGridHistoryKeys(grid: boolean, client: EditorClient) {
     if (!grid) return
     function down(event: KeyboardEvent) {
       if (event.isComposing || typing(event.target)) return
+      if (document.querySelector("[data-grid-edit]") !== null) return
       const gesture = gestureFor(event, "editor")
       if (gesture !== "undo" && gesture !== "redo") return
       if (!editorOwnsKey(event)) return

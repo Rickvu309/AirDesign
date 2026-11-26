@@ -1,12 +1,19 @@
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { deckLocale, SlidePaint, useDoomSlide } from "@airdesign/render"
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { createPortal } from "react-dom"
-import { CanvasOverlay, type Preview } from "./canvas-overlay"
-import { ThinNoticeView, type ThinNotice } from "./thin-notice"
-import { AgentAtWork } from "./agent-at-work"
-import { AgentArrival } from "./agent-arrival"
+import { deckLocale, useDoomSlide } from "@airdesign/render"
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent,
+  type RefObject,
+} from "react"
+import type { Preview } from "./canvas-overlay"
+import type { ThinNotice } from "./thin-notice"
+import { CanvasStage } from "./canvas-stage"
 import type { AssetUrls } from "./use-asset-urls"
 import { useDoomPictures } from "./use-pictures"
 import { cropModeWrites, croppedPaint } from "./crop-drag"
@@ -15,13 +22,12 @@ import { useSlidePictures } from "./use-slide-pictures"
 import { scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
 import { kept, type Rect, type Selection } from "./selection"
 import { aroundPlaced, apply, geometryOf, invert, type Point, type SlideGeometry } from "./slide-geometry"
-import { TextHost } from "./text-host"
 import { linkedWords, type LinkedWords } from "./text-edit"
 import { useTextSession } from "./use-text-session"
 import { propOf } from "@airdesign/doom"
 import { useCanvasKeys } from "./use-canvas-keys"
 import { useCanvasPointer, type DrawRequest, type Tool } from "./use-canvas-pointer"
-import type { ChartInsert } from "./actions-popover"
+import type { ActionRun, ChartInsert } from "./actions-popover"
 import {
   chartArea,
   componentInsertWrites,
@@ -30,14 +36,10 @@ import {
   iconSwapWrites,
   iconWrites,
 } from "./create-writes"
-import { EditorToolbar, type RightPanel } from "./editor-toolbar"
-import { LayerMenu } from "./layer-menu"
+import type { RightPanel } from "./editor-toolbar"
 import type { ShapesShown } from "@/editor/shape-tool"
 import type { EditorClient } from "./use-deck"
-import { canvasInset, slideTop, type ZoomKey } from "@/editing/canvas-zoom"
-import { slideFrame } from "@/editor/slide-frame"
-import { pictureCopy } from "@/copy/picture-copy"
-import { editorCopy } from "@/copy/editor-copy"
+import type { ZoomKey } from "@/editing/canvas-zoom"
 
 const author: doom.Author = { kind: "person", id: "preview" }
 const emptyGeometry: SlideGeometry = { roots: [], byId: new Map() }
@@ -50,7 +52,26 @@ export type CanvasCommands = {
 
 export type CaretWords = LinkedWords & { readonly node: doom.NodeId }
 
-export function DoomCanvas(props: {
+export type CanvasHandoff = {
+  down: (event: PointerEvent<HTMLDivElement>) => void
+  editAt: (event: MouseEvent<HTMLDivElement>) => void
+}
+
+export type CanvasCard = {
+  readonly handoff: RefObject<CanvasHandoff | null>
+  readonly onBlank: () => void
+  readonly onMode: (mode: "elements" | "text") => void
+  readonly onRun: (run: ActionRun) => void
+}
+
+const idleRun: ActionRun = {
+  chart: null,
+  icon: () => undefined,
+  picture: () => undefined,
+  exportPdf: () => undefined,
+}
+
+export type CanvasProps = {
   readonly deck: string
   readonly assets: AssetUrls
   readonly client: EditorClient
@@ -83,7 +104,10 @@ export function DoomCanvas(props: {
   readonly onWords?: (words: CaretWords | null) => void
   readonly cropping: doom.NodeId | null
   readonly onCropping: (id: doom.NodeId | null) => void
-}) {
+  readonly card?: CanvasCard
+}
+
+export function DoomCanvas(props: CanvasProps) {
   const { client, view, slide, selection, onSelection, tool, onTool, zoom, scale, room, overlay } = props
   const stage = useRef<HTMLDivElement>(null)
   const slideBox = useRef<HTMLDivElement>(null)
@@ -178,6 +202,7 @@ export function DoomCanvas(props: {
   }, [scale])
 
   useEffect(() => {
+    if (props.card !== undefined) return
     const element = stage.current
     if (element === null) return
     function wheel(event: WheelEvent) {
@@ -360,9 +385,38 @@ export function DoomCanvas(props: {
       onCropping(id)
     },
     onCropEnd: () => onCropping(null),
+    ...(props.card === undefined ? {} : { onBlank: props.card.onBlank }),
   })
 
+  const wasText = useRef(false)
+  useLayoutEffect(() => {
+    const card = props.card
+    if (card === undefined) return
+    const texting = text.session !== null
+    card.onMode(texting ? "text" : "elements")
+    if (wasText.current && !texting) stage.current?.focus({ preventScroll: true })
+    wasText.current = texting
+  })
+  useLayoutEffect(() => {
+    const card = props.card
+    if (card === undefined) return
+    card.handoff.current = {
+      down: (event) => pointer.down(event),
+      editAt: (event) => pointer.double(event),
+    }
+    return () => {
+      card.handoff.current = null
+    }
+  })
+  useLayoutEffect(() => {
+    const onRun = props.card?.onRun
+    if (onRun === undefined) return
+    onRun(run)
+    return () => onRun(idleRun)
+  }, [props.card?.onRun, run])
+
   function onZoomKey(key: ZoomKey) {
+    if (props.card !== undefined) return
     if (key === "fit") zoomTo("fit")
     else if (key === "actual") zoomTo(1)
     else if (key === "in" || key === "out") zoomTo(steppedScale(scale, key === "in" ? 1 : -1))
@@ -403,129 +457,62 @@ export function DoomCanvas(props: {
     return () => props.onCommands(null)
   })
 
-  const slideW = size.w * scale
-  const slideH = size.h * scale
-  const width = Math.max(box.w, slideW + 2 * canvasInset.side)
-  const height = Math.max(box.h, slideH + 2 * canvasInset.gap + overlay)
-  const left = (width - slideW) / 2
-  const top = slideTop({ height, overlay, slide: slideH })
   return (
-    <>
-      <div
-        ref={stage}
-        data-canvas-stage=""
-        data-canvas-fit={zoom === "fit" ? "true" : "false"}
-        data-editor-stage=""
-        data-editor-ready={painted.ready ? props.deck : undefined}
-        aria-label={editorCopy.canvas}
-        role="application"
-        tabIndex={0}
-        className="absolute inset-0 touch-none overflow-auto bg-canvas outline-none select-none"
-        style={{
-          cursor: panning ? "grab" : "default",
-          ["--focus-ring-offset" as string]: "calc(-1 * var(--focus-ring-width))",
-        }}
-        onPointerDown={pointer.down}
-        onPointerMove={pointer.move}
-        onPointerUp={pointer.up}
-        onPointerCancel={pointer.cancel}
-        onDoubleClick={pointer.double}
-        onDragOver={pictures.over}
-        onDrop={pictures.drop}
-      >
-        <div style={{ position: "relative", width, height }}>
-          <div data-slide-wrapper="" style={{ position: "absolute", left, top, width: slideW, height: slideH }}>
-            <span
-              className="absolute inset-x-0 bottom-full mb-3 flex items-end justify-between gap-4 text-[length:var(--type-dense)] text-quiet"
-              data-slide-label=""
-            >
-              {props.slideNumber}
-              <AgentAtWork
-                view={props.view}
-                editing={props.editingRuns}
-                slide={props.slide}
-                onOpen={() => props.onPanel("agent")}
-              />
-            </span>
-            <div ref={slideBox} data-slide-box="" className={slideFrame} style={{ position: "absolute", inset: 0 }}>
-              <LayerMenu
-                view={view}
-                geometry={geometry}
-                selection={current}
-                onSelection={onSelection}
-                scale={scale}
-                client={client}
-                slideBox={slideBox}
-              >
-                <SlidePaint
-                  nodes={painted.nodes ?? []}
-                  background={painted.background}
-                  size={size}
-                  width={size.w * scale}
-                  assetUrl={pictures.assetUrl}
-                  waiting={pictureCopy.uploading}
-                  iconsReady={painted.ready}
-                  {...(text.session === null
-                    ? {}
-                    : {
-                        host: {
-                          id: text.session.node,
-                          render: (resolved) => (
-                            <TextHost
-                              deck={props.deck}
-                              slides={slides}
-                              node={resolved}
-                              theme={theme}
-                              api={text}
-                              onLeave={leaveText}
-                            />
-                          ),
-                        },
-                      })}
-                />
-                <AgentArrival
-                  view={view}
-                  slide={slide}
-                  caught={client.caught}
-                  still={`${slide} ${String(scale)} ${text.session?.node ?? ""} ${preview?.kind ?? ""}`}
-                />
-                <CanvasOverlay
-                  view={shown}
-                  preview={preview}
-                  geometry={geometry}
-                  selected={current.ids}
-                  hovered={hover}
-                  marquee={marquee}
-                  editing={text.session !== null}
-                  crop={crop}
-                  cropUrl={cropUrl}
-                  scale={scale}
-                  size={size}
-                />
-              </LayerMenu>
-            </div>
-          </div>
-        </div>
-      </div>
-      <ThinNoticeView
-        notice={pictures.notice ?? (text.refused ? "text-refused" : props.notice)}
-        onTryAgain={props.onTryAgain}
-      />
-      {props.toolbarHost === null
-        ? null
-        : createPortal(
-            <EditorToolbar
-              tool={tool}
-              onTool={onTool}
-              actionsOpen={actionsOpen}
-              onActionsOpen={setActionsOpen}
-              run={run}
-              panel={props.panel}
-              onPanel={props.onPanel}
-              {...(props.shapes === undefined ? {} : { shapes: props.shapes })}
-            />,
-            props.toolbarHost,
-          )}
-    </>
+    <CanvasStage
+      placed={props.card !== undefined}
+      stage={stage}
+      slideBox={slideBox}
+      zoom={zoom}
+      deck={props.deck}
+      ready={painted.ready}
+      panning={panning}
+      scale={scale}
+      size={size}
+      box={box}
+      overlay={overlay}
+      slideNumber={props.slideNumber}
+      view={view}
+      shown={shown}
+      editingRuns={props.editingRuns}
+      slide={slide}
+      onPanel={props.onPanel}
+      geometry={geometry}
+      selected={current}
+      onSelection={onSelection}
+      client={client}
+      nodes={painted.nodes ?? []}
+      background={painted.background}
+      assetUrl={pictures.assetUrl}
+      session={text.session}
+      text={text}
+      slides={slides}
+      theme={theme}
+      onLeave={leaveText}
+      caught={client.caught}
+      preview={preview}
+      hover={hover}
+      marquee={marquee}
+      crop={crop}
+      cropUrl={cropUrl}
+      onPointerDown={pointer.down}
+      onPointerMove={pointer.move}
+      onPointerUp={pointer.up}
+      onPointerCancel={pointer.cancel}
+      onDoubleClick={pointer.double}
+      onDragOver={pictures.over}
+      onDrop={pictures.drop}
+      pictureNotice={pictures.notice}
+      textRefused={text.refused}
+      notice={props.notice}
+      onTryAgain={props.onTryAgain}
+      toolbarHost={props.toolbarHost}
+      tool={tool}
+      onTool={onTool}
+      actionsOpen={actionsOpen}
+      onActionsOpen={setActionsOpen}
+      run={run}
+      panel={props.panel}
+      shapes={props.shapes}
+    />
   )
 }

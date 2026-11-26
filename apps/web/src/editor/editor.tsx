@@ -36,6 +36,7 @@ import { AgentPanel } from "./agent-panel"
 import { DesignPanel } from "./design-panel"
 import { DoomCanvas, type CanvasCommands, type CaretWords } from "./canvas"
 import { EditorGrid, type GridCommands, type GridShownZoom, type GridStart } from "./editor-grid"
+import { GridLiveCanvas } from "./grid-live-canvas"
 import { DoomNotes } from "./notes"
 import { Thumb } from "./thumb"
 import { typingPreview } from "./typing-preview"
@@ -105,6 +106,10 @@ function Editing({
   const [leftGrid, setLeftGrid] = useState(false)
   const [gridShown, setGridShown] = useState<GridShownZoom>({ percent: 25, fit: true, selection: false })
   const gridCommands = useRef<GridCommands | null>(null)
+  const liveGrid = useRef(false)
+  const returnLive = useRef(false)
+  const gridBegin = useRef<(() => void) | null>(null)
+  const [gridRun, setGridRun] = useState<ActionRun>(noActions)
   const onGridShown = useCallback(
     (next: GridShownZoom) =>
       setGridShown((held) =>
@@ -116,9 +121,19 @@ function Editing({
     gridCommands.current = next
   }, [])
   const closeGrid = () => {
+    returnLive.current = liveGrid.current
     setGrid(false)
     setLeftGrid(true)
   }
+  const onCanvasCommands = useCallback((next: CanvasCommands | null) => {
+    commands.current = next ?? idle
+  }, [])
+  const onGridEditing = useCallback((live: boolean) => {
+    liveGrid.current = live
+  }, [])
+  const onGridBegin = useCallback((begin: (() => void) | null) => {
+    gridBegin.current = begin
+  }, [])
   const [open, setOpen] = useKeptOpen(grid ? "grid" : "slides")
   const [airaWorking, setAiraWorking] = useState(false)
   const toggleHeld = useRef(false)
@@ -251,6 +266,30 @@ function Editing({
       {...(gridShown.selection ? { onSelection: () => gridCommands.current?.zoomSelection() } : {})}
     />
   )
+  const canvasProps = {
+    deck: id,
+    assets,
+    client,
+    view,
+    measure,
+    editingRuns,
+    selection,
+    onSelection: setSelection,
+    tool,
+    onTool: setTool,
+    panel,
+    onPanel: pickPanel,
+    onCommands: onCanvasCommands,
+    actionsOpen,
+    onActionsOpen: setActionsOpen,
+    onExport: exporting.control.openDialog,
+    onTryAgain: tryAgain,
+    onTyping,
+    onWords: setWords,
+    cropping,
+    onCropping: setCropping,
+    ...(start.shapes === undefined ? {} : { shapes: start.shapes }),
+  }
   return (
     <div className="window-frame flex" data-editor-frame={id} inert={present.show !== null}>
       {grid ? (
@@ -287,14 +326,14 @@ function Editing({
                 tool={tool}
                 onTool={(next) => {
                   setTool(next)
-                  if (next !== "move" && next !== "hand") closeGrid()
+                  if (next !== "move" && next !== "hand") gridBegin.current?.()
                 }}
-                actionsOpen={false}
+                actionsOpen={actionsOpen}
                 onActionsOpen={(open) => {
                   setActionsOpen(open)
-                  if (open) closeGrid()
+                  if (open) gridBegin.current?.()
                 }}
-                run={noActions}
+                run={gridRun}
                 panel={panel}
                 onPanel={pickPanel}
                 {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
@@ -303,7 +342,15 @@ function Editing({
             assetUrl={assets.assetUrl}
             onShown={onGridShown}
             onCommands={onGridCommands}
-            {...(start.grid === undefined ? {} : { start: start.grid })}
+            selection={selection.ids}
+            onSelection={setSelection}
+            onEditing={onGridEditing}
+            onBegin={onGridBegin}
+            onRun={setGridRun}
+            live={(shown, gridScale, card) => (
+              <GridLiveCanvas {...canvasProps} slide={shown} scale={gridScale} card={card} />
+            )}
+            start={{ ...(start.grid ?? {}), editing: returnLive.current }}
           />
           <SlidePictures client={client} assetUrl={assets.assetUrl} />
           <ThinNoticeView notice={notice} onTryAgain={tryAgain} />
@@ -319,7 +366,7 @@ function Editing({
               arrived={leftGrid}
               arrival={{ view, caught: client.caught, still: `${slide ?? ""} ${String(scale)}` }}
               onGrid={() => {
-                setSelection(noSelection)
+                if (!returnLive.current) setSelection(noSelection)
                 setGrid(true)
               }}
             />
@@ -337,40 +384,17 @@ function Editing({
             <div ref={canvas.onCanvas} className="relative min-h-0 min-w-0 flex-1" data-editor-canvas>
               {slide === undefined ? null : (
                 <DoomCanvas
-                  deck={id}
-                  assets={assets}
-                  client={client}
-                  view={view}
-                  measure={measure}
+                  {...canvasProps}
                   slide={slide}
-                  editingRuns={editingRuns}
                   slideNumber={slideNumber(strip.current)}
-                  selection={selection}
-                  onSelection={setSelection}
-                  tool={tool}
-                  onTool={setTool}
-                  panel={panel}
-                  onPanel={pickPanel}
                   zoom={zoom}
                   scale={scale}
                   room={fit}
                   overlay={canvas.overlay}
                   onZoom={setZoom}
-                  onCommands={(next) => {
-                    commands.current = next ?? idle
-                  }}
                   toolbarHost={toolbarHost}
-                  actionsOpen={actionsOpen}
-                  onActionsOpen={setActionsOpen}
                   notice={notice}
-                  onExport={exporting.control.openDialog}
-                  onTryAgain={tryAgain}
-                  onTyping={onTyping}
-                  onWords={setWords}
-                  cropping={cropping}
-                  onCropping={setCropping}
                   {...(start.editing === undefined ? {} : { editing: start.editing })}
-                  {...(start.shapes === undefined ? {} : { shapes: start.shapes })}
                 />
               )}
               <div

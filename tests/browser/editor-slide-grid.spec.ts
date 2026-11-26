@@ -13,7 +13,7 @@ const entries = (page: Page) => page.locator("[data-slide-entry]")
 const entry = (page: Page, number: number) => page.locator(`[data-slide-entry="${String(number)}"]`)
 const gridView = (page: Page) => page.getByRole("button", { name: slideListCopy.gridView })
 
-test("Grid view shows every slide, the island and the tools lead back to Slides view, and Enter or a double click opens a slide", async ({
+test("Grid view shows every slide and the island, inserts stay in Grid, and Enter or a double click opens a slide", async ({
   page,
   context,
   stack,
@@ -59,21 +59,27 @@ test("Grid view shows every slide, the island and the tools lead back to Slides 
     "true",
   )
   await tools.getByRole("button", { name: editorCopy.textTool, exact: true }).click()
-  await expect(page.locator("[data-slide-box]")).toBeVisible()
+  await expect(page.locator("[data-editor-grid]")).toBeVisible()
+  await expect(page.locator("[data-grid-edit]")).toHaveCount(1)
+  await expect(page.locator("[data-editor-canvas]")).toHaveCount(0)
   await expect(tools.getByRole("button", { name: editorCopy.textTool, exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
   )
   await page.keyboard.press("Escape")
-  await gridView(page).click()
+  await expect(page.locator("[data-grid-edit]")).toHaveCount(0)
   await tools.getByRole("button", { name: editorCopy.actions, exact: true }).click()
-  await expect(page.locator("[data-slide-box]")).toBeVisible()
+  await expect(page.locator("[data-editor-grid]")).toBeVisible()
+  await expect(page.locator("[data-grid-edit]")).toHaveCount(1)
+  await expect(page.locator("[data-editor-canvas]")).toHaveCount(0)
   await expect(tools.getByRole("button", { name: editorCopy.actions, exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
   )
   await page.keyboard.press("Escape")
-  await gridView(page).click()
+  await page.keyboard.press("Escape")
+  await expect(page.locator("[data-grid-edit]")).toHaveCount(0)
+  await expect(page.locator("[data-editor-grid]")).toBeVisible()
 
   await entry(page, 3).focus()
   await page.keyboard.press("Enter")

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { gridNumberPlacement } from "./grid-number"
+import { gridElementPresses, gridNumberPlacement } from "./grid-number"
 
 describe("grid number placement", () => {
   it.each([
@@ -20,5 +20,14 @@ describe("grid number placement", () => {
     expect(gridNumberPlacement({ width: 88, gap: 50 })).toBe("inside")
     expect(gridNumberPlacement({ width: 400, gap: 87.99 })).toBe("inside")
     expect(gridNumberPlacement({ width: 400, gap: 88 })).toBe("above")
+  })
+})
+
+describe("element presses", () => {
+  it("starts only once a slide is wide enough to show its number and the gap is readable", () => {
+    expect(gridElementPresses({ width: 87.99, gap: 112 })).toBe(false)
+    expect(gridElementPresses({ width: 88, gap: 27.99 })).toBe(false)
+    expect(gridElementPresses({ width: 88, gap: 28 })).toBe(true)
+    expect(gridElementPresses({ width: 400, gap: 112 })).toBe(true)
   })
 })

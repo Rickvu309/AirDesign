@@ -27,6 +27,12 @@ import { gridBands, gridIndices, gridRanges } from "@/editor/grid-drop"
 import { GridGroupAdd } from "@/editor/grid-group-add"
 import { GridGroupFrame, useGroupHover } from "@/editor/grid-group-frame"
 import { gridOpened, gridPick, gridRinged, gridStep, type GridInteraction } from "@/editor/grid-interaction"
+import { gridEntryOf } from "@/editor/grid-hit"
+import { GridTargets } from "@/editor/grid-targets"
+import type { Selection } from "@/editor/selection"
+import { useGridEditing } from "@/editor/use-grid-editing"
+import type { CanvasCard } from "@/editor/canvas"
+import type { ActionRun } from "@/editor/actions-popover"
 import { gridLayout, gridSpacing } from "@/editor/grid-lines"
 import { gridZoomPlacement } from "@/editor/grid-number"
 import { marqueeStep, type MarqueeDeck } from "@/editor/grid-marquee"
@@ -40,13 +46,21 @@ import { useGridDrag } from "@/editor/use-grid-drag"
 import { useGridMarquee } from "@/editor/use-grid-marquee"
 import { pointAt, useGridSlideActions } from "@/editor/use-grid-slide-actions"
 
+const paintMargin = gridPaintMargin
+
 export type GridShownZoom = { readonly percent: number; readonly fit: boolean; readonly selection: boolean }
 
 export type GridCommands = { readonly zoomTo: (zoom: Zoom) => void; readonly zoomSelection: () => void }
 
-export type GridStart = { readonly picked?: readonly number[]; readonly camera?: GridView; readonly menu?: number }
+export type GridStart = {
+  readonly picked?: readonly number[]
+  readonly camera?: GridView
+  readonly menu?: number
+  readonly editing?: boolean
+}
 
 function opened(start: GridStart, order: readonly string[]): GridInteraction {
+  if (start.editing === true) return { kind: "elements" }
   const picked = start.picked?.flatMap((index) => order[index] ?? []) ?? []
   const [anchor] = picked
   return anchor === undefined ? gridOpened : { kind: "slides", pick: { anchor, slides: new Set(picked) } }
@@ -72,6 +86,12 @@ export function EditorGrid({
   assetUrl,
   onShown,
   onCommands,
+  selection,
+  onSelection,
+  onEditing,
+  onBegin,
+  onRun,
+  live,
   start = {},
 }: {
   readonly deck: string
@@ -86,6 +106,12 @@ export function EditorGrid({
   readonly assetUrl: (asset: string) => string | undefined
   readonly onShown: (shown: GridShownZoom) => void
   readonly onCommands: (commands: GridCommands | null) => void
+  readonly selection: readonly doom.NodeId[]
+  readonly onSelection: (next: Selection) => void
+  readonly onEditing: (live: boolean) => void
+  readonly onBegin: (begin: (() => void) | null) => void
+  readonly onRun: (run: ActionRun) => void
+  readonly live: (slide: doom.NodeId, scale: number, card: CanvasCard) => ReactNode
   readonly start?: GridStart
 }) {
   const { current } = strip
@@ -113,19 +139,6 @@ export function EditorGrid({
   const picked = prunedPick(gridPick(state), order)
   const ringed = gridRinged(state, order, current)
   const list = useRef<HTMLDivElement>(null)
-  const camera = useGridCamera({
-    deck,
-    layout,
-    ringed,
-    hand,
-    onHand,
-    sheet: list,
-    ...(start.camera === undefined ? {} : { start: start.camera }),
-  })
-  const live = camera.gliding.current ? camera.viewNow() : camera.view
-  const scale = live.scale
-  const placement = gridZoomPlacement(layout, scale)
-  const painted = new Set(gridShown(layout, live, camera.room, gridPaintMargin))
   const root = useRef<HTMLDivElement>(null)
   const ghost = useRef<HTMLDivElement>(null)
   const quiet = useRef(false)
@@ -139,6 +152,44 @@ export function EditorGrid({
     [],
   )
   useSlideSay(strip.say, announce)
+
+  function choose(index: number) {
+    if (index === current) return
+    chosen.current = index
+    strip.onSelect(index)
+  }
+
+  const spacing = gridSpacing({ width: size.w, height: size.h })
+  const edit = useGridEditing({
+    list,
+    state,
+    dispatch,
+    current,
+    layout,
+    line: spacing.line,
+    view,
+    selected: selection,
+    onCurrent: choose,
+    onSelection,
+    announce,
+  })
+  const camera = useGridCamera({
+    deck,
+    layout,
+    ringed,
+    elements: edit.frame,
+    hand,
+    onHand,
+    sheet: list,
+    ...(start.camera === undefined ? {} : { start: start.camera }),
+  })
+  edit.scaleNow.current = camera.view.scale
+  edit.handNow.current = hand
+  edit.spaceNow.current = camera.space
+  const shown = camera.gliding.current ? camera.viewNow() : camera.view
+  const scale = shown.scale
+  const painted = new Set(gridShown(layout, shown, camera.room, paintMargin))
+  const placement = gridZoomPlacement(layout, scale)
   const deckOf: MarqueeDeck = { current, order }
 
   function focusCard(index: number, reveal: boolean) {
@@ -149,14 +200,8 @@ export function EditorGrid({
     quiet.current = false
   }
 
-  function choose(index: number) {
-    if (index === current) return
-    chosen.current = index
-    strip.onSelect(index)
-  }
-
   function pickedNow(next: GridInteraction) {
-    if (next.kind === "none") {
+    if (next.kind !== "slides") {
       list.current?.focus({ preventScroll: true })
       announce(slideListCopy.nothingSelected)
       return
@@ -173,25 +218,25 @@ export function EditorGrid({
     state,
     deck: deckOf,
     hand,
-    onStep: dispatch,
+    onStep: edit.step,
     onEnd: (before, held, hits, adding) => pickedNow(gridStep(before, marqueeStep(before, held, hits, adding))),
   })
 
   function pick(index: number, shift: boolean, toggle: boolean) {
     if (!shift && !toggle) {
-      dispatch({ kind: "pick", pick: null })
+      edit.step({ kind: "pick", pick: null })
       choose(index)
       return
     }
     const next = shift ? pickRange(picked, order, index, current) : pickToggle(picked, order, index, current)
-    dispatch({ kind: "pick", pick: next })
+    edit.step({ kind: "pick", pick: next })
     if (next !== null) announce(slideListCopy.selected(next.slides.size))
     choose(toggledCurrent(next, order, index))
   }
 
   function clear() {
     if (state.kind === "none") return
-    dispatch({ kind: "clear" })
+    edit.step({ kind: "clear" })
     list.current?.focus({ preventScroll: true })
     announce(slideListCopy.nothingSelected)
   }
@@ -248,11 +293,16 @@ export function EditorGrid({
   const addAfter = useCallback((index: number) => latestAdd.current(index, "same"), [])
 
   const percent = Math.round(scale * 100)
-  const selection = ringed.length > 0
+  const canZoom = ringed.length > 0 || edit.frame !== null
   useLayoutEffect(() => {
     if (camera.gliding.current) return
-    onShown({ percent, fit: camera.fit, selection })
-  }, [onShown, percent, camera.fit, selection, camera.settled])
+    onShown({ percent, fit: camera.fit, selection: canZoom })
+  }, [onShown, percent, camera.fit, canZoom, camera.settled])
+  useLayoutEffect(() => onEditing(edit.editing), [onEditing, edit.editing])
+  useLayoutEffect(() => {
+    onBegin(edit.begin)
+    return () => onBegin(null)
+  }, [onBegin, edit.begin])
 
   useLayoutEffect(() => {
     onCommands({ zoomTo: (zoom) => camera.zoomTo(zoom, ringed[0]), zoomSelection: camera.zoomSelection })
@@ -263,20 +313,14 @@ export function EditorGrid({
     if (!editorOwnsKey(event)) return
     if (touch) setTouch(false)
     if (event.target instanceof Element && event.target.closest("[data-add-gap]") !== null) return
+    if (edit.inLive(event.target)) return
     const gesture = gestureFor(event.nativeEvent, "grid")
-    const index = entryOf(event.target)
+    const index = gridEntryOf(event.target)
     if (gesture === "select-all") {
       event.preventDefault()
       const all = pickAll(order, current)
-      dispatch({ kind: "pick", pick: all })
+      edit.step({ kind: "pick", pick: all })
       if (all !== null) announce(slideListCopy.selected(all.slides.size))
-      return
-    }
-    if (gesture === "deselect") {
-      if (state.kind === "none") return
-      event.preventDefault()
-      dispatch({ kind: "escape" })
-      announce(slideListCopy.nothingSelected)
       return
     }
     if (index === null) return
@@ -294,14 +338,15 @@ export function EditorGrid({
     focusCard(to, true)
     if (event.shiftKey) {
       const next = pickRange(picked, order, to, current)
-      dispatch({ kind: "pick", pick: next })
+      edit.step({ kind: "pick", pick: next })
       if (next !== null) announce(slideListCopy.selected(next.slides.size))
-    } else dispatch({ kind: "pick", pick: null })
+    } else edit.step({ kind: "pick", pick: null })
     choose(to)
   }
 
   function onCardPress(event: MouseEvent<HTMLDivElement>) {
-    if (entryOf(event.target) !== null) event.preventDefault()
+    if (edit.inLive(event.target)) return
+    if (gridEntryOf(event.target) !== null) event.preventDefault()
   }
 
   function onCardGrab(event: PointerEvent<HTMLDivElement>) {
@@ -310,15 +355,11 @@ export function EditorGrid({
   }
 
   function onCardClick(event: MouseEvent<HTMLDivElement>) {
-    const index = entryOf(event.target)
+    if (edit.swallowed(event) || edit.inLive(event.target)) return
+    const index = gridEntryOf(event.target)
     if (index === null) return
     focusCard(index, true)
     pick(index, event.shiftKey, event.metaKey || event.ctrlKey)
-  }
-
-  function onCardDouble(event: MouseEvent<HTMLDivElement>) {
-    const index = entryOf(event.target)
-    if (index !== null && !event.shiftKey && !event.metaKey && !event.ctrlKey) onOpen(index)
   }
 
   function onCardMenu(event: MouseEvent<HTMLDivElement>) {
@@ -330,7 +371,7 @@ export function EditorGrid({
   }
 
   function onCardFocus(event: FocusEvent<HTMLDivElement>) {
-    const index = entryOf(event.target)
+    const index = gridEntryOf(event.target)
     if (index === null) return
     setStop(index)
     if (!quiet.current) camera.reveal(index)
@@ -343,7 +384,6 @@ export function EditorGrid({
   const grouped = useGroupHover({ host: camera.handlers.ref, bands, scale, world: camera.world, blocked: gripBlocked })
   const hover = grouped.hover
 
-  const spacing = gridSpacing({ width: size.w, height: size.h })
   const selected = new Set(ringed)
   const box = marquee.box
   const reachable = stop < count ? stop : current
@@ -384,6 +424,7 @@ export function EditorGrid({
       onPointerMoveCapture={(event) => {
         if (touch && event.pointerType === "mouse") setTouch(false)
       }}
+      onKeyDown={edit.escape}
     >
       <header className="flex h-24 shrink-0 items-start justify-between gap-3 px-3 pt-3">
         <GridHead {...head} selected={picked === null ? null : picked.slides.size} />
@@ -404,7 +445,7 @@ export function EditorGrid({
         }}
         onClick={(event) => {
           if (marquee.swallowedClick()) return
-          if (entryOf(event.target) === null) clear()
+          if (gridEntryOf(event.target) === null) clear()
         }}
         data-grid-viewport
         data-marquee={box === null ? undefined : ""}
@@ -418,16 +459,17 @@ export function EditorGrid({
           aria-label={slideListCopy.listName}
           className="absolute top-0 left-0 outline-none"
           style={{
-            transform: `translate(${String(live.x)}px, ${String(live.y)}px) scale(${String(live.scale)})`,
+            transform: `translate(${String(shown.x)}px, ${String(shown.y)}px) scale(${String(shown.scale)})`,
             transformOrigin: "0 0",
           }}
           data-slide-list
           data-focus-edge
           onKeyDown={onKey}
+          onPointerDownCapture={edit.press}
           onPointerDown={onCardGrab}
           onMouseDown={onCardPress}
           onClick={onCardClick}
-          onDoubleClick={onCardDouble}
+          onDoubleClick={(event) => edit.editOrOpen(event, onOpen)}
           onContextMenu={onCardMenu}
           onFocus={onCardFocus}
         >
@@ -489,6 +531,16 @@ export function EditorGrid({
                       inRoom(card.left + card.width + spacing.column, card.top, card.width, card.height)
                     }
                     onAdd={addAfter}
+                    {...(edit.editing && card.index === current
+                      ? {
+                          live: live(card.id, scale, {
+                            handoff: edit.handoff,
+                            onBlank: edit.blank,
+                            onMode: edit.mode,
+                            onRun,
+                          }),
+                        }
+                      : {})}
                   />
                 )
               }),
@@ -511,6 +563,11 @@ export function EditorGrid({
               ),
             ]
           })}
+          {layout.cards.map((card) =>
+            painted.has(card.index) || (edit.editing && card.index === current) ? (
+              <GridTargets key={`targets:${card.id}`} view={view} slide={card.id} onGeometry={edit.onGeometry} />
+            ) : null,
+          )}
           {dropBar === null ? null : <GridDropBar bar={dropBar} scale={scale} />}
           {box === null ? null : (
             <div
