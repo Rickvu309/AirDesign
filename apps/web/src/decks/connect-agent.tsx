@@ -1,5 +1,5 @@
 import { accountRoutes } from "@airdesign/catalog"
-import { XIcon } from "lucide-react"
+import { CheckIcon, CopyIcon, XIcon } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
@@ -30,8 +30,13 @@ import { cn } from "@/lib/class-names"
 
 const pollEvery = 2000
 const dense = "text-[length:var(--type-dense)] leading-[var(--leading-body)]"
-const quietAction =
-  "h-[var(--space-32)] shrink-0 border-0 bg-background px-3.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
+const quietEdge = "border-0 bg-background shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
+const quietAction = `h-[var(--space-32)] shrink-0 px-3.5 text-[length:var(--type-dense)] leading-[17px] ${quietEdge}`
+const quietIcon = `text-muted-foreground hover:text-foreground ${quietEdge}`
+const swap =
+  "col-start-1 row-start-1 transition-[opacity,scale,filter] duration-(--duration-micro) ease-out motion-reduce:transition-none"
+const iconShown = "scale-100 opacity-100 blur-none"
+const iconHidden = "scale-50 opacity-0 blur-[2px]"
 const picked = "bg-background text-foreground shadow-[0_0_0_1px_var(--line),0_1px_2px_rgb(0_0_0/6%)]"
 
 function Copied({ text, label, prompt = false }: { text: string; label: string; prompt?: boolean }) {
@@ -62,6 +67,8 @@ function Copied({ text, label, prompt = false }: { text: string; label: string; 
     }
   }
 
+  const name = status === "copied" ? productCopy.done : status === "failed" ? connectAgentCopy.copyFailed : label
+
   return (
     <>
       <div
@@ -76,15 +83,33 @@ function Copied({ text, label, prompt = false }: { text: string; label: string; 
         >
           {text}
         </span>
-        <Button
-          type="button"
-          variant={prompt ? "signature" : "outline"}
-          disabled={text === ""}
-          className={prompt ? "self-end" : quietAction}
-          onClick={() => void copy()}
-        >
-          {status === "copied" ? productCopy.done : status === "failed" ? connectAgentCopy.copyFailed : label}
-        </Button>
+        {prompt ? (
+          <Button
+            type="button"
+            variant="signature"
+            disabled={text === ""}
+            className="self-end"
+            onClick={() => void copy()}
+          >
+            {name}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            disabled={text === ""}
+            aria-label={name}
+            title={name}
+            className={quietIcon}
+            onClick={() => void copy()}
+          >
+            <span className="grid">
+              <CopyIcon aria-hidden className={cn(swap, status === "copied" ? iconHidden : iconShown)} />
+              <CheckIcon aria-hidden className={cn(swap, status === "copied" ? iconShown : iconHidden)} />
+            </span>
+          </Button>
+        )}
       </div>
       <p role="status" className={cn(dense, "text-muted-foreground", status === "failed" && "mt-2")}>
         {status === "failed" ? connectAgentCopy.copyManually : ""}
