@@ -369,7 +369,7 @@ async function approveRoute(visit: Visit): Promise<void> {
 async function tokenRoute(visit: Visit): Promise<void> {
   const { options, now, res } = visit
   res.setHeader("cache-control", "no-store")
-  const parsed = await readForm(visit, readTokenRequest)
+  const parsed = await readForm(visit, (type, pairs) => readTokenRequest(type, pairs, visit.req.headers.authorization))
   if (parsed === undefined) return
   if (!parsed.ok) {
     sendJson(res, 400, { error: parsed.refusal })

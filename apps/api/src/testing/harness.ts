@@ -159,9 +159,14 @@ export async function ask(
   return send(base, method, route, payload, "application/json", cookie, extra)
 }
 
-export async function askForm(base: string, route: string, fields: Record<string, string>): Promise<Reply> {
+export async function askForm(
+  base: string,
+  route: string,
+  fields: Record<string, string>,
+  extra?: Record<string, string>,
+): Promise<Reply> {
   const payload = Buffer.from(new URLSearchParams(fields).toString())
-  return send(base, "POST", route, payload, "application/x-www-form-urlencoded")
+  return send(base, "POST", route, payload, "application/x-www-form-urlencoded", undefined, extra)
 }
 
 export async function signInByCode(base: string, mails: readonly Mail[], email: string): Promise<string> {
