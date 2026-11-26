@@ -11,7 +11,7 @@ export function Message({
       data-role={from}
       className={cn(
         "flex w-full flex-col gap-1.5",
-        from === "user" ? "max-w-[280px] items-end self-end" : "gap-3.5",
+        from === "user" ? "max-w-70 items-end self-end" : "gap-3.5",
         className,
       )}
       {...props}
