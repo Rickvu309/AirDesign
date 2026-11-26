@@ -10,7 +10,7 @@ async function drive(kit) {
   await addSlides(page, 8)
   await entry(page, 4).click()
   await page.getByRole("button", { name: slideListCopy.gridView }).click()
-  await expect(page.locator("[data-slide-grid]")).toBeVisible()
+  await expect(page.locator("[data-editor-grid]")).toBeVisible()
   await expect(entries(page)).toHaveCount(9)
   await expect(entry(page, 4)).toHaveAttribute("aria-current", "true")
 }

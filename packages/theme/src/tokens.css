@@ -166,6 +166,7 @@
   --shadow-chrome: none;
   --grid-radius-min: 2px;
   --grid-radius-canvas: 13px;
+  --grid-focus-width: 3px;
   --grid-halo-outset: 6px;
   --grid-halo-band: 30px;
   --grid-halo-band-outset: 8px;
