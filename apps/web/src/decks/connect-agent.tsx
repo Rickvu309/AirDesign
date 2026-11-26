@@ -184,7 +184,13 @@ function Steps({ way, address }: { way: ConnectWay; address: string }) {
   )
 }
 
-export function ConnectAgent({ onClose }: { onClose: () => void }) {
+export function ConnectAgent({
+  onClose,
+  onConnected,
+}: {
+  onClose: () => void
+  onConnected?: (listing: AgentListing) => void
+}) {
   const [listing, setListing] = useState<AgentListing | null>(null)
   const [failed, setFailed] = useState(false)
   const [connected, setConnected] = useState<ConnectedAgent | null>(null)
@@ -204,7 +210,10 @@ export function ConnectAgent({ onClose }: { onClose: () => void }) {
       known.current = new Set(agents.map((item) => item.id))
       setListing(result)
       setFailed(false)
-      if (fresh) setConnected(fresh)
+      if (fresh) {
+        setConnected(fresh)
+        onConnected?.(result)
+      }
     } catch {
       setFailed(true)
     } finally {
@@ -264,7 +273,21 @@ export function ConnectAgent({ onClose }: { onClose: () => void }) {
             </>
           ) : (
             <>
-              <DialogTitle className={title}>{connectAgentCopy.title}</DialogTitle>
+              <div className="relative">
+                <DialogTitle className={title}>{connectAgentCopy.title}</DialogTitle>
+                <DialogClose
+                  aria-label={productCopy.close}
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="absolute -top-0.5 -right-1.5 text-muted-foreground"
+                    />
+                  }
+                >
+                  <XIcon />
+                </DialogClose>
+              </div>
               <DialogDescription className={cn(dense, "mt-1 text-muted-foreground")}>
                 {connectAgentCopy.body}
               </DialogDescription>
@@ -328,14 +351,6 @@ export function ConnectAgent({ onClose }: { onClose: () => void }) {
                   </p>
                 </>
               )}
-              <DialogClose
-                aria-label={productCopy.close}
-                render={
-                  <Button variant="ghost" size="icon-sm" className="absolute top-3 right-3 text-muted-foreground" />
-                }
-              >
-                <XIcon />
-              </DialogClose>
             </>
           )}
         </DialogPopup>

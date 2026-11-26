@@ -10,6 +10,20 @@ async function expectOutlineHover(button: Locator) {
   await expect(button).not.toHaveCSS("background-color", background)
 }
 
+async function expectConnectClose(page: Page) {
+  const geometry = await page.getByRole("button", { name: productCopy.close, exact: true }).evaluate((button) => {
+    const dialog = button.closest("[data-connect-agent]")
+    const title = dialog?.querySelector("h2")?.getBoundingClientRect()
+    if (title === undefined || dialog === null) throw new Error("Connection dialog title is missing")
+    const box = button.getBoundingClientRect()
+    const icon = button.querySelector("svg")?.getBoundingClientRect()
+    if (icon === undefined) throw new Error("Connection dialog close icon is missing")
+    const contentRight = dialog.getBoundingClientRect().right - parseFloat(getComputedStyle(dialog).paddingRight)
+    return [box.top + box.height / 2 - (title.top + title.height / 2), icon.right - contentRight]
+  })
+  expect(geometry).toEqual([0, 0])
+}
+
 export const webDesignChecks: Check[] = [
   [
     "01-trash-icon",
@@ -185,6 +199,19 @@ export const webDesignChecks: Check[] = [
         .locator("[data-describe-deck] textarea")
         .evaluate((field) => getComputedStyle(field, "::placeholder").color)
       expect(color).toBe("rgb(102, 102, 102)")
+    },
+  ],
+  ["09-connect-close-desktop", "agents-connect", expectConnectClose],
+  ["09-connect-close-phone", "agents-connect-gemini-phone", expectConnectClose],
+  [
+    "09-connect-refresh",
+    "agents-connect-done",
+    async (page) => {
+      await expect(page.locator("[data-settings-content]").getByText(settingsCopy.claude, { exact: true })).toBeVisible(
+        {
+          timeout: 3_000,
+        },
+      )
     },
   ],
 ]
