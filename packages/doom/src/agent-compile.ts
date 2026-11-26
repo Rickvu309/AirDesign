@@ -25,7 +25,10 @@ export function nameOf(change: AgentChange): string {
     case "set":
     case "detach":
       return `${change.op} ${change.target}`
-    case "move":
+    case "move": {
+      const ids = change.nodes ?? (change.node === undefined ? [] : [change.node])
+      return `move ${ids[0] ?? ""}${ids.length > 1 ? `+${ids.length - 1}` : ""}`
+    }
     case "unwrap":
       return `${change.op} ${change.node}`
     case "wrap":

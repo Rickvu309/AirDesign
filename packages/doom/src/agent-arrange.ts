@@ -1,6 +1,8 @@
 import { orderKeyBetween, type OrderKey } from "./order-key.js"
 import type { AgentChange } from "./agent-change.js"
-import { type Draft, add, keysAfter, living, put, stop } from "./agent-draft.js"
+import { type Draft, Stop, add, keysAfter, living, put, stop } from "./agent-draft.js"
+import { moveToSlide, slidePlace } from "./move-to-slide.js"
+import { isRefusal } from "./refusal.js"
 import { sidesOf } from "./agent-look.js"
 import { gapFor, slideSize } from "./agent-place.js"
 import type { NodeId } from "./ids.js"
@@ -45,7 +47,29 @@ function arrangeableNode(draft: Draft, id: NodeId, field: string): Node {
   return arrangeable(node) ? node : stop("shape", id, field, "form", "A frame or a shape.")
 }
 
+function placeOnSlide(draft: Draft, change: Op<"move">): void {
+  if (change.node !== undefined && change.nodes !== undefined)
+    stop("shape", change.node, "nodes", "form", "One layer, or a list of layers.")
+  const ids = change.nodes ?? (change.node === undefined ? undefined : [change.node])
+  if (ids === undefined) stop("shape", undefined, "node", "needs", "A frame or a shape.")
+  if (change.into === undefined) stop("shape", undefined, "into", "needs", "A slide.")
+  const boxes = draft.reading.boxes
+  const place = change.box === undefined ? slidePlace(draft.doom, ids, boxes) : { x: change.box.x, y: change.box.y }
+  if (isRefusal(place)) throw new Stop(place)
+  const moved = moveToSlide(draft.doom, ids, change.into, place, {
+    ...(boxes === undefined ? {} : { boxes }),
+    ...(change.after === undefined ? {} : { after: change.after }),
+  })
+  if (isRefusal(moved)) throw new Stop(moved)
+  draft.writes.push(...moved.writes)
+}
+
 export function compileMove(draft: Draft, change: Op<"move">): void {
+  if (change.nodes !== undefined || change.box !== undefined) {
+    placeOnSlide(draft, change)
+    return
+  }
+  if (change.node === undefined) stop("shape", undefined, "node", "needs", "A frame or a shape.")
   const node = arrangeableNode(draft, change.node, "node")
   const from = parentIdOf(node)
   const target = change.into === undefined ? living(draft, from, "into") : living(draft, change.into, "into")
