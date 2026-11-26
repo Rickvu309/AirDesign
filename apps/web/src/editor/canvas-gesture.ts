@@ -8,7 +8,7 @@ import type { Placed, Point, SlideGeometry } from "./slide-geometry"
 import type { TransformGrip } from "./transform-math"
 
 export type CanvasGesture =
-  | { readonly kind: "pan"; readonly x: number; readonly y: number; readonly left: number; readonly top: number }
+  | { readonly kind: "pan"; readonly x: number; readonly y: number; readonly offset: Point }
   | {
       readonly kind: "move"
       readonly origin: Point

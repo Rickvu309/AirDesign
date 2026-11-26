@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { SlidePaint } from "@airdesign/render"
 import { useMemo, type DragEvent, type MouseEvent, type PointerEvent, type RefObject } from "react"
 import { createPortal } from "react-dom"
-import { canvasInset, slideTop, type Zoom } from "@/editing/canvas-zoom"
+import { slideTop, type Zoom } from "@/editing/canvas-zoom"
 import { editorCopy } from "@/copy/editor-copy"
 import { pictureCopy } from "@/copy/picture-copy"
 import { AgentArrival } from "./agent-arrival"
@@ -35,7 +35,8 @@ export function CanvasStage({
   panning,
   scale,
   size,
-  pan,
+  content,
+  panLayer,
   overlay,
   slideNumber,
   view,
@@ -91,7 +92,8 @@ export function CanvasStage({
   readonly panning: boolean
   readonly scale: number
   readonly size: { readonly w: number; readonly h: number }
-  readonly pan: { readonly box: Size; readonly left: number; readonly top: number }
+  readonly content: Size
+  readonly panLayer: RefObject<HTMLDivElement | null>
   readonly overlay: number
   readonly slideNumber: number
   readonly view: doom.Doom
@@ -152,8 +154,7 @@ export function CanvasStage({
   )
   const slideW = size.w * scale
   const slideH = size.h * scale
-  const width = placed ? slideW : Math.max(pan.box.w, slideW + 2 * canvasInset.side)
-  const height = placed ? slideH : Math.max(pan.box.h, slideH + 2 * canvasInset.gap + overlay)
+  const { w: width, h: height } = content
   const left = placed ? 0 : (width - slideW) / 2
   const top = placed ? 0 : slideTop({ height, overlay, slide: slideH })
   return (
@@ -178,7 +179,7 @@ export function CanvasStage({
           ["--focus-ring-offset" as string]: "calc(-1 * var(--focus-ring-width))",
           ...(placed
             ? { width, height, transform: `scale(${String(1 / scale)})`, transformOrigin: "0 0" }
-            : { padding: `${pan.top}px ${pan.left}px`, scrollbarWidth: "none", overflowAnchor: "none" }),
+            : { scrollbarWidth: "none", overflowAnchor: "none" }),
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -188,7 +189,7 @@ export function CanvasStage({
         onDragOver={onDragOver}
         onDrop={onDrop}
       >
-        <div style={{ position: "relative", width, height }}>
+        <div ref={panLayer} style={{ position: "relative", width, height }}>
           <div data-slide-wrapper="" style={{ position: "absolute", left, top, width: slideW, height: slideH }}>
             {placed ? null : (
               <span
@@ -199,12 +200,7 @@ export function CanvasStage({
                 <AgentAtWork view={view} editing={editingRuns} slide={slide} onOpen={() => onPanel("agent")} />
               </span>
             )}
-            <div
-              ref={slideBox}
-              data-slide-box=""
-              className={slideFrame}
-              style={{ position: "absolute", inset: 0, transform: placed ? undefined : "translateZ(0)" }}
-            >
+            <div ref={slideBox} data-slide-box="" className={slideFrame} style={{ position: "absolute", inset: 0 }}>
               <LayerMenu
                 view={view}
                 geometry={geometry}

@@ -20,7 +20,7 @@ import { useDoomPictures } from "./use-pictures"
 import { cropModeWrites, croppedPaint } from "./crop-drag"
 import { usePictureNatural } from "./use-picture-natural"
 import { useSlidePictures } from "./use-slide-pictures"
-import { scrollToAnchor, type ZoomAnchor } from "./canvas-anchor"
+import { anchorOffset, type ZoomAnchor } from "./canvas-anchor"
 import { scaleOf, scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
 import { kept, type Rect, type Selection } from "./selection"
 import { aroundPlaced, apply, geometryOf, invert, type Point, type SlideGeometry } from "./slide-geometry"
@@ -28,7 +28,7 @@ import { linkedWords, type LinkedWords } from "./text-edit"
 import { useTextSession } from "./use-text-session"
 import { propOf } from "@airdesign/doom"
 import { useCanvasKeys } from "./use-canvas-keys"
-import { useCanvasPan } from "./use-canvas-pan"
+import { unpanned, useCanvasPan } from "./use-canvas-pan"
 import { useCanvasPointer, type DrawRequest, type Tool } from "./use-canvas-pointer"
 import type { ActionRun, ChartInsert } from "./actions-popover"
 import {
@@ -118,7 +118,6 @@ export function DoomCanvas(props: CanvasProps) {
   const { client, view, slide, selection, onSelection, tool, onTool, zoom, scale, room, overlay } = props
   const stage = useRef<HTMLDivElement>(null)
   const slideBox = useRef<HTMLDivElement>(null)
-  const pan = useCanvasPan(stage, props.viewport)
   const [space, setSpace] = useState(false)
   const [preview, setPreview] = useState<Preview | null>(null)
   const [flight, setFlight] = useState<Flight | null>(null)
@@ -128,6 +127,12 @@ export function DoomCanvas(props: CanvasProps) {
   const anchor = useRef<ZoomAnchor | null>(null)
 
   const { size } = doom.deckOf(view)
+  const viewport = props.viewport
+  const content = {
+    w: viewport === null ? size.w * scale : Math.max(viewport.w, size.w * scale + 2 * canvasInset.side),
+    h: viewport === null ? size.h * scale : Math.max(viewport.h, size.h * scale + 2 * canvasInset.gap + overlay),
+  }
+  const pan = useCanvasPan(stage, viewport, content)
   const text = useTextSession(client, view, props.measure)
   const editingFirst = useRef(props.editing)
   useEffect(() => {
@@ -174,7 +179,7 @@ export function DoomCanvas(props: CanvasProps) {
     const paper = slideBox.current
     if (next === "fit") {
       anchor.current = null
-      element?.scrollTo({ left: pan.left, top: pan.top })
+      pan.moveTo(unpanned)
     } else if (element !== null && paper !== null) {
       const rect = element.getBoundingClientRect()
       const at =
@@ -188,7 +193,7 @@ export function DoomCanvas(props: CanvasProps) {
         point: point ?? { x: (rect.left + at.x - box.left) / scale, y: (rect.top + at.y - box.top) / scale },
         at,
       }
-      if (scaleOf(next, room, size) === scale) scrollToAnchor(element, paper, held, scale)
+      if (scaleOf(next, room, size) === scale) pan.moveTo(anchorOffset(element, paper, held, scale, pan.position()))
       else anchor.current = held
     }
     props.onZoom(next)
@@ -200,17 +205,30 @@ export function DoomCanvas(props: CanvasProps) {
     const paper = slideBox.current
     anchor.current = null
     if (held === null || element === null || paper === null) return
-    scrollToAnchor(element, paper, held, scale)
+    pan.moveTo(anchorOffset(element, paper, held, scale, pan.position()))
   }, [scale])
 
   useEffect(() => {
-    if (props.card !== undefined) return
+    if (viewport === null) return
     const element = stage.current
     if (element === null) return
-    function wheel(event: WheelEvent) {
-      if (!event.ctrlKey && !event.metaKey) return
+    const wheel = (event: WheelEvent) => {
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault()
+        zoomTo(wheelScale(scale, event.deltaY), event)
+        return
+      }
       event.preventDefault()
-      zoomTo(wheelScale(scale, event.deltaY), event)
+      const mode = event.deltaMode
+      const horizontal = event.shiftKey && event.deltaX === 0
+      const dx = horizontal ? event.deltaY : event.deltaX
+      const dy = horizontal ? 0 : event.deltaY
+      const line = 40
+      const { x, y } = pan.position()
+      pan.moveTo({
+        x: x - dx * (mode === WheelEvent.DOM_DELTA_PAGE ? viewport.w : mode === WheelEvent.DOM_DELTA_LINE ? line : 1),
+        y: y - dy * (mode === WheelEvent.DOM_DELTA_PAGE ? viewport.h : mode === WheelEvent.DOM_DELTA_LINE ? line : 1),
+      })
     }
     element.addEventListener("wheel", wheel, { passive: false })
     return () => element.removeEventListener("wheel", wheel)
@@ -365,6 +383,7 @@ export function DoomCanvas(props: CanvasProps) {
   const pointer = useCanvasPointer({
     stage,
     slideBox,
+    pan,
     client,
     view,
     geometry,
@@ -475,7 +494,8 @@ export function DoomCanvas(props: CanvasProps) {
       panning={panning}
       scale={scale}
       size={size}
-      pan={pan}
+      content={content}
+      panLayer={pan.layer}
       overlay={overlay}
       slideNumber={props.slideNumber}
       view={view}
