@@ -3,7 +3,6 @@ import { failedSteps, failedTests } from "./failed-tests.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
 import { enqueue, readPull } from "./merge-queue.mjs"
 import {
-  agentHeader,
   designStateFile,
   designStatesRunner,
   failureExcerpt,
@@ -143,8 +142,6 @@ const freshRunReason = ({ byMap, races }) => {
 
 export const freshRunComment = ({ repository, run, head, tests, queue, races = [], byMap = false }) =>
   [
-    agentHeader,
-    "",
     `ci failed on head ${head.slice(0, 7)} in ${byMap ? "jobs the change map says this diff cannot reach" : "tests this pull request does not edit"}. ${runUrl(repository, run.id)}`,
     "",
     ...tests.map((test) => `- ${test.line === undefined ? test.file : `${test.file}:${test.line}`}: ${test.name}`),

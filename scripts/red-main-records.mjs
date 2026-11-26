@@ -1,5 +1,5 @@
 import { recordOldFault } from "./old-fault-issue.mjs"
-import { agentHeader, recordRace } from "./race-issue.mjs"
+import { recordRace } from "./race-issue.mjs"
 import { runUrl, testExcerpt } from "./red-main-revert-report.mjs"
 
 const short = (sha) => sha.slice(0, 7)
@@ -34,7 +34,7 @@ const recordedLine = ({ repository, event, races, old, suspect }) => {
       ? []
       : [`old faults that fail the same way at the last green commit too, recorded in ${listed(old)}`]),
   ]
-  const head = `${agentHeader}\n\nci failed on main in run ${runUrl(repository, event.id)}`
+  const head = `ci failed on main in run ${runUrl(repository, event.id)}`
   return suspect
     ? `${head} on ${parts.join(" and ")}. The bot reverts nothing for them.`
     : `${head} only on ${parts.join(" and ")}. The bot reverts nothing. The next push to main runs ci again.`
@@ -48,7 +48,7 @@ export const recordRun = ({ repository, io, judged, event, ended = false }) => {
   )
   if (judged.verdict === "unknown" && kept.length === 0) {
     io.redMain(
-      `${agentHeader}\n\nci failed on main in run ${runUrl(repository, event.id)}, and the bot reverts nothing: ${judged.why}. A person or agent reads the log.`,
+      `ci failed on main in run ${runUrl(repository, event.id)}, and the bot reverts nothing: ${judged.why}. A person or agent reads the log.`,
       ended,
     )
     return { failed: false }
@@ -60,7 +60,7 @@ export const recordRun = ({ repository, io, judged, event, ended = false }) => {
     const done = keep({ repository, io, each, log, event })
     if (done.why !== undefined) {
       io.redMain(
-        `${agentHeader}\n\nci failed on main in run ${runUrl(repository, event.id)}, and the bot could not record ${each.title}: ${done.why}`,
+        `ci failed on main in run ${runUrl(repository, event.id)}, and the bot could not record ${each.title}: ${done.why}`,
         ended,
       )
       return { failed: true }

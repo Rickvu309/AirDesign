@@ -7,7 +7,7 @@ import { countersignBody } from "./countersign.mjs"
 import { freshRunComment, freshRunVerdict, postFreshRun, recordRaces, reopenPull } from "./fresh-run.mjs"
 import { failedJobLogs } from "./job-logs.mjs"
 import { failureLines } from "./land-report.mjs"
-import { agentHeader, openIssues } from "./race-issue.mjs"
+import { openIssues } from "./race-issue.mjs"
 import { recordEndedRaces, recordRun } from "./red-main-records.mjs"
 import { decide } from "./red-main-verdict.mjs"
 import { cleanRead, revertPull, runUrl } from "./red-main-revert-report.mjs"
@@ -110,10 +110,10 @@ const mergeRevert = ({ repository, io, number, head, target, why }) => {
           head,
         ])
   if (queued.status !== 0) {
-    io.redMain(`${agentHeader}\n\nThe revert of ${target} passed ci, and merging it failed: ${queued.stderr.trim()}`)
+    io.redMain(`The revert of ${target} passed ci, and merging it failed: ${queued.stderr.trim()}`)
     return { failed: true }
   }
-  io.redMain(`${agentHeader}\n\n${why}, so the bot merged the revert of ${target}.`)
+  io.redMain(`${why}, so the bot merged the revert of ${target}.`)
   return { failed: false }
 }
 
@@ -132,14 +132,14 @@ const openRevert = ({ repository, io, decision, event, say, drill }) => {
   if (/^Revert\b/.test(title)) {
     if (drill) return fail(`the drill target ${target} is itself a revert`)
     io.redMain(
-      `${agentHeader}\n\nci is red on main, and the first red commit ${target} is itself a revert. The bot reverts no revert: fix forward. ${runUrl(repository, decision.run.id)}`,
+      `ci is red on main, and the first red commit ${target} is itself a revert. The bot reverts no revert: fix forward. ${runUrl(repository, decision.run.id)}`,
     )
     return { failed: false }
   }
   if (io.owner === undefined) {
     if (drill) return fail("RED_MAIN_TOKEN is missing")
     io.redMain(
-      `${agentHeader}\n\nci is red on main, and the first red commit is ${target}. The bot opened no revert: the RED_MAIN_TOKEN secret is missing, and a pull request opened with the workflow's own token runs no checks. ${runUrl(repository, decision.run.id)}`,
+      `ci is red on main, and the first red commit is ${target}. The bot opened no revert: the RED_MAIN_TOKEN secret is missing, and a pull request opened with the workflow's own token runs no checks. ${runUrl(repository, decision.run.id)}`,
     )
     say("RED_MAIN_TOKEN is missing")
     return { failed: true }
@@ -173,7 +173,7 @@ const openRevert = ({ repository, io, decision, event, say, drill }) => {
   }
   if (pull !== undefined) {
     io.redMain(
-      `${agentHeader}\n\nci is still red on main in run ${runUrl(repository, event.id)}. The revert of ${target} is ${pull.state.toLowerCase()} (${pull.url}), so the bot opens no other: fix forward.`,
+      `ci is still red on main in run ${runUrl(repository, event.id)}. The revert of ${target} is ${pull.state.toLowerCase()} (${pull.url}), so the bot opens no other: fix forward.`,
     )
     return { failed: false }
   }
@@ -199,7 +199,7 @@ const openRevert = ({ repository, io, decision, event, say, drill }) => {
     io.git(["revert", "--abort"])
     if (drill) return fail(`the drill could not revert ${target} on main`)
     io.redMain(
-      `${agentHeader}\n\nci is red on main, and the first red commit is ${target}. Its revert conflicts with what main holds now, so the bot opened none: fix forward. ${runUrl(repository, decision.run.id)}`,
+      `ci is red on main, and the first red commit is ${target}. Its revert conflicts with what main holds now, so the bot opened none: fix forward. ${runUrl(repository, decision.run.id)}`,
     )
     return { failed: false }
   }
@@ -246,14 +246,14 @@ const openRevert = ({ repository, io, decision, event, say, drill }) => {
   const from = `${target}${culprit === undefined ? "" : ` from #${culprit.number}`}`
   io.redMain(
     decision.action === "suspect"
-      ? `${agentHeader}\n\nci failed on main in run ${runUrl(repository, decision.run.id)}, only in browser tests that the first red commit ${from} reaches through app code. One red may be a race, so the bot opened ${url} on branch ${branch} to revert it, and merges it only once a later push run on main fails the same test. If a later push run passes first, it closes the revert and records the race.`
-      : `${agentHeader}\n\nci failed on main in run ${runUrl(repository, decision.run.id)}. The first red commit is ${from}. The bot opened ${url} on branch ${branch} to revert it, and merges it once its ci passes while main is still red.`,
+      ? `ci failed on main in run ${runUrl(repository, decision.run.id)}, only in browser tests that the first red commit ${from} reaches through app code. One red may be a race, so the bot opened ${url} on branch ${branch} to revert it, and merges it only once a later push run on main fails the same test. If a later push run passes first, it closes the revert and records the race.`
+      : `ci failed on main in run ${runUrl(repository, decision.run.id)}. The first red commit is ${from}. The bot opened ${url} on branch ${branch} to revert it, and merges it once its ci passes while main is still red.`,
   )
   return { failed: false }
 }
 
 const closePull = ({ repository, io, number, comment }) =>
-  io.gh(["pr", "close", String(number), "--repo", repository, "--comment", `${agentHeader}\n\n${comment}`])
+  io.gh(["pr", "close", String(number), "--repo", repository, "--comment", `${comment}`])
 
 const closeRevert = ({ repository, io, number, green, raceUrls = [] }) =>
   closePull({
@@ -288,7 +288,7 @@ const closeFixedForward = ({ repository, io, state, green, races }) => {
   }
   if (recorded.why === undefined) return { failed: false }
   io.redMain(
-    `${agentHeader}\n\nci passed on main at ${short(green.sha)} after a failure the bot judged a race, and the race could not be recorded: ${recorded.why}`,
+    `ci passed on main at ${short(green.sha)} after a failure the bot judged a race, and the race could not be recorded: ${recorded.why}`,
     true,
   )
   return { failed: true }
@@ -297,7 +297,7 @@ const closeFixedForward = ({ repository, io, state, green, races }) => {
 const followFailedRevert = ({ repository, io, event, target, number, head }) => {
   const stop = (why) => {
     io.redMain(
-      `${agentHeader}\n\nci failed on the revert of ${target} in ${runUrl(repository, event.id)}. ${why}. Fix forward on main or fix the revert.`,
+      `ci failed on the revert of ${target} in ${runUrl(repository, event.id)}. ${why}. Fix forward on main or fix the revert.`,
     )
     return { failed: false }
   }
@@ -356,7 +356,7 @@ const followRevert = ({ repository, io, event, say }) => {
       "--repo",
       repository,
       "--body",
-      `${agentHeader}\n\nci passed on this revert in ${runUrl(repository, event.id)}. Main is not yet red for certain at this commit, so the bot leaves it open: it merges it once a later push run on main fails the same test, and closes it if a push run on main passes first.`,
+      `ci passed on this revert in ${runUrl(repository, event.id)}. Main is not yet red for certain at this commit, so the bot leaves it open: it merges it once a later push run on main fails the same test, and closes it if a push run on main passes first.`,
     ])
     return say(`the revert of ${target} waits for a second red on main`)
   }

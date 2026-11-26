@@ -2,20 +2,23 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { afterAll, describe, expect, it } from "vitest"
-import { agentHeader, agentOwner, comment, commentBody } from "./comment.mjs"
+import { comment, commentBody } from "./comment.mjs"
 
 const folder = mkdtempSync(path.join(os.tmpdir(), "comment-"))
 afterAll(() => rmSync(folder, { recursive: true, force: true }))
 
 describe("comment", () => {
-  it("formats comment with agent header on first line and takes name from one constant", () => {
-    expect(agentOwner).toBe("Quan Vu")
-    expect(agentHeader).toBe("🤖 **AI Agent responding on behalf of Quan Vu**")
-    const formatted = commentBody("Review findings and notes.")
-    const lines = formatted.split("\n")
-    expect(lines[0]).toBe("🤖 **AI Agent responding on behalf of Quan Vu**")
-    expect(lines[1]).toBe("")
-    expect(lines.slice(2).join("\n")).toBe("Review findings and notes.")
+  it("posts the file's text as it is, with no agent line", () => {
+    expect(commentBody("Review findings and notes.")).toBe("Review findings and notes.")
+  })
+
+  it("refuses a comment that carries an agent line", () => {
+    expect(() => commentBody("🤖 **AI Agent responding on behalf of Quan Vu**\n\nLooks right.")).toThrow(
+      'has the attribution line "🤖 **AI Agent responding on behalf of Quan Vu**". Delete that line.',
+    )
+    expect(() => commentBody("Looks right.\n\nReviewed with sol-loop: 1 rounds with gpt-6.2-sol.")).toThrow(
+      "Delete that line.",
+    )
   })
 
   it("refuses an empty file or whitespace only", () => {
@@ -39,6 +42,6 @@ describe("comment", () => {
     expect(calls[0][1]).toBe("comment")
     expect(calls[0][2]).toBe("339")
     expect(calls[0][3]).toBe("--body")
-    expect(calls[0][4].startsWith("🤖 **AI Agent responding on behalf of Quan Vu**\n\n")).toBe(true)
+    expect(calls[0][4]).toBe("LGTM, ready to merge.")
   })
 })

@@ -1,5 +1,5 @@
 import { replayVariable } from "./property-seed.mjs"
-import { agentHeader, keepIssue, output, testId } from "./race-issue.mjs"
+import { keepIssue, output, testId } from "./race-issue.mjs"
 
 const titleLimit = 256
 
@@ -19,8 +19,6 @@ const how = (test) => (test.replay === undefined ? "" : " with the same seed and
 
 const oldFaultBody = ({ test, excerpt, commit, green, seen }) =>
   [
-    agentHeader,
-    "",
     `\`${testId(test)}\` failed ${seen}, at commit ${commit}. The bot ran it again at the last green commit ${green}${how(test)}, and it failed the same way there, so no commit after ${green} caused it. The bot reverted nothing for it.`,
     "",
     "Run it again on your machine:",
@@ -36,8 +34,6 @@ const oldFaultBody = ({ test, excerpt, commit, green, seen }) =>
 
 const oldFaultComment = ({ test, excerpt, commit, green, seen }) =>
   [
-    agentHeader,
-    "",
     `Failed again ${seen}, at commit ${commit}, and the same way at the last green commit ${green}${how(test)}.`,
     "",
     "~~~sh",

@@ -1,5 +1,6 @@
+import { attributionLine } from "./commit-authors.mjs"
 import { deckStateFile, deckStateNote } from "./deck-state-file.mjs"
-import { agentHeader, raceKey, raceTitle, recordRace } from "./race-issue.mjs"
+import { raceKey, raceTitle, recordRace } from "./race-issue.mjs"
 
 const same = (what, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -76,9 +77,9 @@ same("a failure on a commit that lacks the fix files nothing and comments on the
 same("the stale failure points at the fixed issue", stale, { url: issueUrl(1126) })
 const staleComment = replayed.calls.find((call) => call.args[1] === "comment")
 same(
-  "the comment speaks for the owner, says the failure predates the fix and names the fix and the commit",
+  "the comment has no agent line, says the failure predates the fix and names the fix and the commit",
   [
-    staleComment.input.startsWith(agentHeader),
+    attributionLine(staleComment.input) === undefined,
     staleComment.input.includes("predates the fix"),
     staleComment.input.includes("1136"),
     staleComment.input.includes(fixMerge.slice(0, 7)),
@@ -102,9 +103,9 @@ same("a failure on a commit that has the fix reopens the closed issue and files 
 same("the reopened issue is the result", reopened, { url: issueUrl(1126) })
 const heldComment = held.calls.find((call) => call.args[1] === "comment")
 same(
-  "the reopen comment speaks for the owner, says the fix did not hold and carries the new evidence",
+  "the reopen comment has no agent line, says the fix did not hold and carries the new evidence",
   [
-    heldComment.input.startsWith(agentHeader),
+    attributionLine(heldComment.input) === undefined,
     heldComment.input.includes("did not hold"),
     heldComment.input.includes("1136"),
     heldComment.input.includes(newerThanFix),

@@ -12,13 +12,15 @@ const coAuthorTrailer = /^[ \t]*co-authored-by[ \t]*:/im
 const generatedLine =
   /^[^\w\n]*generated[ \t-]+(?:with|by)\b[^\w\n]*(?:claude|anthropic|codex|openai|chatgpt|gpt|grok|copilot|gemini|aider|devin|droid)\b/im
 const attributionBot = /factory-droid/i
+const agentLine = /^[^\w\n]*(?:\u{1F916}|\*\*)[^\w\n]*(?:[\w.-]+ ){1,4}responding on behalf of\b/iu
+const reviewLine = /^[^\w\n]*reviewed with sol-loop\b/i
 const largeOutput = 64 * 1024 * 1024
 const eventsThatAddCommits = new Set(["pull_request", "merge_group"])
 
 export const attributionLine = (text) =>
   text
     .split(/\r?\n/)
-    .find((line) => generatedLine.test(line) || attributionBot.test(line))
+    .find((line) => [generatedLine, attributionBot, agentLine, reviewLine].some((banned) => banned.test(line)))
     ?.trim()
 
 export const commitFix =
