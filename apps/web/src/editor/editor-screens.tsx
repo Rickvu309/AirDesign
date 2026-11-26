@@ -7,16 +7,16 @@ import { fittedGridCards } from "./grid-viewport"
 
 const gridRoom = { width: 1470, height: 923 - 96 - 76 }
 
-function zoomedOn(index: number) {
+function titleZoomed() {
   let next = 0
   const groups = groupedSample.groups.map((size) =>
     Array.from({ length: size }, () => doom.nodeId(`s:${String(next++)}`)),
   )
   const size = groupedSample.size
-  return fittedGridCards(gridLayout(groups, { width: size.w, height: size.h }), [index], gridRoom) ?? undefined
+  return fittedGridCards(gridLayout(groups, { width: size.w, height: size.h }), [0], gridRoom) ?? undefined
 }
 
-const zoomed = zoomedOn(1)
+const zoomed = titleZoomed()
 
 export const screens = {
   [editorRoutes.agentWorking]: () => <EditorSample start={{ panel: "agent", aira: airaSamples.working }} />,
@@ -48,9 +48,7 @@ export const screens = {
   ),
   [editorRoutes.gridFit]: () => <EditorSample start={{ grid: {} }} />,
   [editorRoutes.gridPicked]: () => <EditorSample start={{ grid: { picked: [0, 2, 3] } }} />,
-  [editorRoutes.gridZoomed]: () => (
-    <EditorSample start={{ grid: zoomed === undefined ? {} : { picked: [1], camera: zoomed } }} />
-  ),
+  [editorRoutes.gridZoomed]: () => <EditorSample start={{ grid: zoomed === undefined ? {} : { camera: zoomed } }} />,
   [exportRoutes.pdf]: () => <EditorSample start={{ panel: "agent", export: "choosing" }} />,
   [exportRoutes.failed]: () => <EditorSample start={{ panel: "agent", export: "failed" }} />,
 }
