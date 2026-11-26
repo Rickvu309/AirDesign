@@ -16,6 +16,12 @@ const redirectUri = "https://client.example/callback"
 const state = "state /&="
 const challenge = "challenge"
 const accountEmail = "account@example.com"
+let accountProfile: string
+
+test.beforeAll(async () => {
+  const { accountRoutes } = await import("../../packages/catalog/src/index.ts")
+  accountProfile = `**${accountRoutes.profile.path}`
+})
 
 function authorizePath(overrides: Record<string, string | null> = {}) {
   const fields: Record<string, string> = {
@@ -48,8 +54,8 @@ async function answerClient(page: Page, payload: Record<string, unknown>, status
   await page.route("**/oauth/client", async (route) => {
     await route.fulfill({ status, json: payload })
   })
-  await page.route("**/decks/list", async (route) => {
-    await route.fulfill({ json: { ok: true, account: { email: accountEmail }, decks: [] } })
+  await page.route(accountProfile, async (route) => {
+    await route.fulfill({ json: { ok: true, account: { email: accountEmail, name: null } } })
   })
 }
 
@@ -155,9 +161,9 @@ test("client check and account lookup send only their agreed bodies", async ({ p
       json: { ok: true, client_name: "ignored", screen: "claude", redirect_host: "claude.ai" },
     })
   })
-  await page.route("**/decks/list", async (route) => {
+  await page.route(accountProfile, async (route) => {
     accountBody = route.request().postDataJSON()
-    await route.fulfill({ json: { ok: true, account: { email: accountEmail }, decks: [] } })
+    await route.fulfill({ json: { ok: true, account: { email: accountEmail, name: null } } })
   })
   await page.goto(authorizePath({ scope: "everything", resource: "https://api.example/resource" }))
   await expect(page.getByRole("button", { name: "Allow", exact: true })).toBeVisible()
@@ -384,8 +390,8 @@ test("loading status offers no decision before the client is validated", async (
       json: { ok: true, client_name: "ignored", screen: "claude", redirect_host: "claude.ai" },
     })
   })
-  await page.route("**/decks/list", async (route) => {
-    await route.fulfill({ json: { ok: true, account: { email: accountEmail }, decks: [] } })
+  await page.route(accountProfile, async (route) => {
+    await route.fulfill({ json: { ok: true, account: { email: accountEmail, name: null } } })
   })
   const asked = page.waitForRequest("**/oauth/client")
   await page.goto(authorizePath())
@@ -495,9 +501,9 @@ test("the account lookup shows loading status and approval prevents another deci
     releaseAccount = resolve
   })
   await answerClient(page, { ok: true, screen: "claude", redirect_host: "claude.ai" })
-  await page.route("**/decks/list", async (route) => {
+  await page.route(accountProfile, async (route) => {
     await accountWait
-    await route.fulfill({ json: { ok: true, account: { email: accountEmail }, decks: [] } })
+    await route.fulfill({ json: { ok: true, account: { email: accountEmail, name: null } } })
   })
   await page.goto(authorizePath())
   await expect(page.getByRole("heading", { name: claudeConnect.title })).toBeVisible()

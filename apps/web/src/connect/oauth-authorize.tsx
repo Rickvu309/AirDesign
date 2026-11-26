@@ -1,4 +1,4 @@
-import { deckRoutes, oauthRoutes, signOutRoutes } from "@airdesign/catalog"
+import { accountRoutes, oauthRoutes, signOutRoutes } from "@airdesign/catalog"
 import { useEffect, useRef, useState } from "react"
 import { AgentPair, type ConsentAgent } from "@/connect/agent-pair"
 import { ConnectError } from "@/connect/connect-error"
@@ -29,7 +29,7 @@ type Consent = {
   codeChallenge: string
   state: string | null
   resource: string | undefined
-  account: { initials: string; email: string }
+  account: { initials: string; email: string; name: string }
 }
 
 type View =
@@ -166,14 +166,23 @@ async function consentRequest(
     }
   }
 
-  const listReply = await post(deckRoutes.list.path, {})
-  if (listReply === null || listReply.response.status >= 500 || listReply.response.status === 429)
+  const profile = await post(accountRoutes.profile.path, {})
+  if (profile === null || profile.response.status >= 500 || profile.response.status === 429)
     return { kind: "unavailable" }
-  if (listReply.response.status === 401) return { kind: "redirect", address: signInAddress() }
-  if (!listReply.response.ok || !isRecord(listReply.body) || listReply.body.ok !== true) return { kind: "refused" }
-  const account = listReply.body.account
+  if (profile.response.status === 401) return { kind: "redirect", address: signInAddress() }
+  if (!profile.response.ok || !isRecord(profile.body) || profile.body.ok !== true) return { kind: "refused" }
+  const account = profile.body.account
   if (!isRecord(account) || typeof account.email !== "string" || account.email.length === 0) return { kind: "refused" }
 
+  const name = typeof account.name === "string" ? account.name.trim() : ""
+  const initials = name
+    ? name
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((word) => Array.from(word)[0])
+        .join("")
+        .toUpperCase()
+    : account.email.slice(0, 1).toUpperCase()
   const content = presentation(client.screen, client.host)
   return {
     kind: "consent",
@@ -185,7 +194,8 @@ async function consentRequest(
       state: query.has("state") ? (query.get("state") ?? "") : null,
       resource,
       account: {
-        initials: account.email.slice(0, 1).toUpperCase(),
+        initials,
+        name,
         email: account.email,
       },
     },

@@ -170,4 +170,11 @@ export const webDesignChecks: Check[] = [
       expect(heights).toEqual([111, 191])
     },
   ],
+  [
+    "07-consent-name",
+    "consent-claude",
+    async (page) => {
+      await expect(page.getByText("Verify", { exact: true })).toBeVisible()
+    },
+  ],
 ]
