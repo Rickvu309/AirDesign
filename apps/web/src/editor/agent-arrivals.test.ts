@@ -119,6 +119,11 @@ describe("what an agent just put on the deck", () => {
     expect(agentSlide(started, mine, grown.doom.rev)).toBeUndefined()
     const filled = landed(next, { author: agent(), writes: made("t:6", doom.nodeId("s:9")) })
     expect(agentSlide(started, filled, grown.doom.rev)).toBe("s:9")
+    const theirs = landed(landed(started, { author: person, writes: slideMade("s:5") }), {
+      author: agent(),
+      writes: made("t:5", slide),
+    })
+    expect(agentSlide(started, theirs, grown.doom.rev)).toBeUndefined()
     const text = landed(started, { author: agent(), writes: made("t:7", slide) })
     expect(agentSlide(started, text, grown.doom.rev)).toBeUndefined()
   })
