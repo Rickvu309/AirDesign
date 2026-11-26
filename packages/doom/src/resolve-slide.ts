@@ -8,7 +8,7 @@ import type { StrokeStyle } from "./paint.js"
 import type { PropName, Props } from "./props.js"
 import { resolveEffects, resolvePaints, resolveRadius } from "./resolve-paint.js"
 import { resolveText } from "./resolve-text.js"
-import type { Box, Resolved, ResolvedGeometry, ResolvedPaint } from "./resolved.js"
+import type { Box, LayoutBox, Resolved, ResolvedGeometry, ResolvedPaint } from "./resolved.js"
 import type { Node, Doom } from "./doom.js"
 import { solveLayout } from "./solve-layout.js"
 import type { Theme } from "./theme.js"
@@ -17,7 +17,7 @@ type Context = {
   readonly doom: Doom
   readonly theme: Theme
   readonly measure: Measure
-  readonly boxes: ReadonlyMap<NodeId, Box>
+  readonly boxes: ReadonlyMap<NodeId, LayoutBox>
 }
 
 const prop = <K extends PropName>(node: Node, key: K): Props[K] | undefined => (node as Partial<Props>)[key]
@@ -46,28 +46,32 @@ function geometryOf(context: Context, node: Node, box: Box): ResolvedGeometry {
 type Kept = {
   readonly theme: Theme
   readonly measure: Measure
-  readonly box: Box
+  readonly box: LayoutBox
   readonly children: readonly Resolved[]
   readonly resolved: Resolved
 }
 
 const kept = new WeakMap<Node, Kept>()
 
-const sameBox = (left: Box, right: Box) =>
+const sameBox = (left: LayoutBox, right: LayoutBox) =>
   left.x === right.x &&
   left.y === right.y &&
   left.w === right.w &&
   left.h === right.h &&
   left.rotation === right.rotation &&
   left.flipH === right.flipH &&
-  left.flipV === right.flipV
+  left.flipV === right.flipV &&
+  left.fit?.origin.x === right.fit?.origin.x &&
+  left.fit?.origin.y === right.fit?.origin.y &&
+  left.fit?.pivot.x === right.fit?.pivot.x &&
+  left.fit?.pivot.y === right.fit?.pivot.y
 
 const sameList = (left: readonly Resolved[], right: readonly Resolved[]) =>
   left.length === right.length && left.every((each, at) => each === right[at])
 
 const reads = (node: Node) => prop(node, "geometry")?.kind === "line"
 
-function resolveNode(context: Context, node: Node, box: Box): Resolved {
+function resolveNode(context: Context, node: Node, box: LayoutBox): Resolved {
   const { theme } = context
   const children = nodesOf(context, node.id)
   const before = kept.get(node)
@@ -85,7 +89,7 @@ function resolveNode(context: Context, node: Node, box: Box): Resolved {
   return resolved
 }
 
-function resolveFresh(context: Context, node: Node, box: Box, children: readonly Resolved[]): Resolved {
+function resolveFresh(context: Context, node: Node, box: LayoutBox, children: readonly Resolved[]): Resolved {
   const { theme } = context
   const strokes = resolvePaints(prop(node, "strokes"), theme)
   const text = node.type === "shape" ? prop(node, "text") : undefined

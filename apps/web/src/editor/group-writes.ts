@@ -5,7 +5,7 @@ import { apply, invert, type Placed, type Point, type SlideGeometry } from "./sl
 type Made = { readonly writes: readonly doom.Write[]; readonly selected: readonly doom.NodeId[] }
 
 function localBounds(parent: Placed | undefined, members: readonly Placed[]) {
-  const toLocal = (point: Point) => (parent === undefined ? point : apply(invert(parent.matrix), point))
+  const toLocal = (point: Point) => (parent === undefined ? point : apply(invert(parent.content), point))
   const points = members.flatMap((each) => each.corners.map(toLocal))
   const left = Math.min(...points.map((point) => point.x))
   const top = Math.min(...points.map((point) => point.y))
@@ -53,7 +53,7 @@ export function wrapWrites(
   let after: OrderKey | null = null
   for (const member of members) {
     after = orderKeyBetween(after, null)
-    const stored = doom.propOf(view.nodes.get(member.id), "box") ?? member.node.box
+    const stored = doom.propOf(view.nodes.get(member.id), "box") ?? doom.unfittedBox(member.node.box)
     const line = doom.propOf(view.nodes.get(member.id), "geometry")
     writes.push({ node: member.id, prop: "parent", value: { id: wrapper, at: after } })
     if (line?.kind === "line") {
@@ -64,7 +64,7 @@ export function wrapWrites(
         value: { ...line, start: shift(line.start), end: shift(line.end) },
       })
     } else {
-      const spot = member.node.box
+      const spot = doom.unfittedBox(member.node.box)
       writes.push({
         node: member.id,
         prop: "box",
@@ -84,7 +84,7 @@ export function ungroupWrites(view: doom.Doom, geometry: SlideGeometry, ids: rea
     const frame = geometry.byId.get(id)
     if (node?.type !== "frame" || slot === null || frame === undefined) continue
     const holder = geometry.byId.get(slot.id)
-    const toHolder = (point: Point) => (holder === undefined ? point : apply(invert(holder.matrix), point))
+    const toHolder = (point: Point) => (holder === undefined ? point : apply(invert(holder.content), point))
     const siblings = doom.childrenOf(view, slot.id)
     const nextAt = doom.parentOf(siblings[siblings.findIndex((each) => each.id === id) + 1])?.at ?? null
     let after: OrderKey | null = slot.at
@@ -99,7 +99,7 @@ export function ungroupWrites(view: doom.Doom, geometry: SlideGeometry, ids: rea
       if (line?.kind === "line") {
         const move = (end: doom.End): doom.End => {
           if ("node" in end) return end
-          const spot = toHolder(apply(frame.matrix, end))
+          const spot = toHolder(apply(frame.content, end))
           return { x: Math.round(spot.x), y: Math.round(spot.y) }
         }
         writes.push({
@@ -109,16 +109,18 @@ export function ungroupWrites(view: doom.Doom, geometry: SlideGeometry, ids: rea
         })
         continue
       }
-      const { w, h } = placed.node.box
-      const centre = toHolder(apply(placed.matrix, { x: placed.node.box.w / 2, y: placed.node.box.h / 2 }))
+      const { w, h, fit } = placed.node.box
+      const centre = toHolder(apply(placed.matrix, { x: w / 2, y: h / 2 }))
+      const rotation = doom.wrapRotation(placed.rotation - (holder?.rotation ?? 0))
+      const shift = doom.fitShift({ w, h, rotation }, fit)
       writes.push({
         node: child.id,
         prop: "box",
         value: {
-          ...(stored ?? placed.node.box),
-          x: Math.round(centre.x - w / 2),
-          y: Math.round(centre.y - h / 2),
-          rotation: doom.wrapRotation(placed.rotation - (holder?.rotation ?? 0)),
+          ...(stored ?? doom.unfittedBox(placed.node.box)),
+          x: Math.round(centre.x - w / 2 - shift.x),
+          y: Math.round(centre.y - h / 2 - shift.y),
+          rotation,
         },
       })
     }

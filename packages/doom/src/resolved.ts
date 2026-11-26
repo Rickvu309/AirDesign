@@ -5,6 +5,11 @@ import type { Props } from "./props.js"
 
 export type Box = Props["box"]
 export type Point = { readonly x: Px; readonly y: Px }
+export type LayoutBox = Box & { readonly fit?: GroupFit }
+export type GroupFit = {
+  readonly origin: Point
+  readonly pivot: Point
+}
 
 export type ResolvedFace = {
   readonly family: string
@@ -92,7 +97,7 @@ export type ResolvedGeometry =
 export type Resolved = {
   readonly id: string
   readonly type: "frame" | "shape"
-  readonly box: Box
+  readonly box: LayoutBox
   readonly opacity: number
   readonly fills: readonly ResolvedPaint[]
   readonly strokes: readonly ResolvedPaint[]

@@ -144,6 +144,25 @@ describe("resizing", () => {
     expect(moved.writes.some((write) => write.prop === "sizing")).toBe(false)
   })
 
+  it("resizes a group across the visual width of its quarter-turned child", () => {
+    const group = grow([
+      {
+        type: "frame",
+        name: "group",
+        props: { box: spot(100, 100, 160, 40), sizing: { w: "hug", h: "hug" } },
+        children: [{ type: "shape", name: "inside", props: { box: spot(0, 0, 160, 40, 90), fills: paint } }],
+      },
+    ])
+    const id = group.ids.group!
+    const moved = transformedBy(input(group, [id], "right", { x: 200, y: 120 }, { x: 240, y: 120 }))
+    const after = landed(group.view, moved.writes)
+    const fitted = doom.solveLayout(after, group.slides[0]!, group.measure).get(id)!
+    expect(fitted.x).toBeCloseTo(160)
+    expect(fitted.y).toBeCloseTo(40)
+    expect(fitted.w).toBeCloseTo(80)
+    expect(fitted.h).toBeCloseTo(160)
+  })
+
   it("keeps a cropped picture's aspect on an ordinary resize, and Control is the resize that stretches it", () => {
     const asset = "a".repeat(64)
     const crop = { x: 0.1, y: 0, w: 0.6, h: 0.75 }

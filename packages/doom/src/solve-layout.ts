@@ -3,15 +3,16 @@ import { deckOf } from "./deck-of.js"
 import type { NodeId } from "./ids.js"
 import type { Align9, Layout, Sizing } from "./layout.js"
 import { lineRoute, routeBox } from "./line-ends.js"
+import { apply, boxMatrix, fitShift, identity, unfittedBox } from "./matrix.js"
 import type { Measure } from "./measure.js"
 import type { Props, PropName } from "./props.js"
-import type { Box } from "./resolved.js"
+import type { Box, GroupFit, LayoutBox } from "./resolved.js"
 import type { Node, Doom } from "./doom.js"
 import type { Theme } from "./theme.js"
 
 type LayoutMeasure = (...args: [...Parameters<Measure>, NodeId]) => ReturnType<Measure>
 
-type Size = { readonly w: number; readonly h: number }
+type Size = { readonly w: number; readonly h: number; readonly fit?: GroupFit }
 type Mode = Sizing["w"]
 type Context = {
   readonly doom: Doom
@@ -20,7 +21,7 @@ type Context = {
   readonly sizes: Map<string, Size>
   readonly showHidden?: NodeId
 }
-type Placed = { readonly id: NodeId; readonly box: Box }
+type Placed = { readonly id: NodeId; readonly box: LayoutBox }
 type Plan = { readonly size: Size; readonly kids: readonly Placed[] }
 type Flow = Extract<Layout, { mode: "row" | "column" }>
 type Grid = Extract<Layout, { mode: "grid" }>
@@ -32,6 +33,20 @@ const prop = <K extends PropName>(node: Node, key: K): Props[K] | undefined => (
 const storedBox = (node: Node): Box => prop(node, "box") ?? nothing
 const layoutOf = (node: Node): Layout => prop(node, "layout") ?? { mode: "none" }
 const isLine = (node: Node) => prop(node, "geometry")?.kind === "line"
+
+function freeGroup(node: Node): boolean {
+  const sizing = prop(node, "sizing")
+  return (
+    node.type === "frame" &&
+    sizing?.w === "hug" &&
+    sizing.h === "hug" &&
+    layoutOf(node).mode === "none" &&
+    (prop(node, "fills") ?? []).length === 0 &&
+    (prop(node, "strokes") ?? []).length === 0 &&
+    prop(node, "clip") !== true &&
+    prop(node, "mask") !== true
+  )
+}
 
 function modes(node: Node): { readonly w: Mode; readonly h: Mode } {
   const sizing = prop(node, "sizing") ?? { w: "fixed", h: "fixed" }
@@ -68,10 +83,11 @@ function sizeOf(context: Context, node: Node, forcedW: number | null, forcedH: n
 function measuredSize(context: Context, node: Node, forcedW: number | null, forcedH: number | null): Size {
   const size = naturalSize(context, node, forcedW, forcedH)
   const least = componentMinimum(context.doom, node.id)
-  return least === undefined ? size : { w: Math.max(size.w, least.w), h: Math.max(size.h, least.h) }
+  return least === undefined ? size : { ...size, w: Math.max(size.w, least.w), h: Math.max(size.h, least.h) }
 }
 
 function naturalSize(context: Context, node: Node, forcedW: number | null, forcedH: number | null): Size {
+  if ((forcedW !== null || forcedH !== null) && freeGroup(node)) return sizeOf(context, node, null, null)
   const mode = modes(node)
   const stored = storedBox(node)
   const w = forcedW ?? (mode.w === "fixed" ? stored.w : null)
@@ -84,8 +100,11 @@ function naturalSize(context: Context, node: Node, forcedW: number | null, force
   return { w: w ?? measured.w, h: h ?? measured.h }
 }
 
-function place(node: Node, x: number, y: number, size: Size): Placed {
-  return { id: node.id, box: { ...storedBox(node), x, y, w: size.w, h: size.h } }
+function place(node: Node, x: number, y: number, size: Size, flowing = false): Placed {
+  const box = { ...storedBox(node), x, y, ...size }
+  if (flowing || size.fit === undefined) return { id: node.id, box }
+  const shift = fitShift(box, size.fit)
+  return { id: node.id, box: { ...box, x: x + shift.x, y: y + shift.y } }
 }
 
 function alignOf(align: Align9, horizontal: boolean): readonly [main: number, cross: number] {
@@ -162,8 +181,8 @@ function flowPlan(context: Context, layout: Flow, flow: readonly Node[], w: numb
       const crossOffset = crossShare * Math.max(0, room - across(final))
       kids.push(
         horizontal
-          ? place(item.node, mainAt, crossAt + crossOffset, final)
-          : place(item.node, crossAt + crossOffset, mainAt, final),
+          ? place(item.node, mainAt, crossAt + crossOffset, final, true)
+          : place(item.node, crossAt + crossOffset, mainAt, final, true),
       )
       mainAt += main + gap
     }
@@ -273,6 +292,7 @@ function gridPlan(context: Context, layout: Grid, flow: readonly Node[], w: numb
       padding.l + offsetOf(columns, cell.col, gap),
       padding.t + offsetOf(rows, cell.row, gap),
       size,
+      true,
     )
   })
   return {
@@ -281,6 +301,39 @@ function gridPlan(context: Context, layout: Grid, flow: readonly Node[], w: numb
       h: h ?? spanOf(rows, 0, rows.length, gap) + padding.t + padding.b,
     },
     kids,
+  }
+}
+
+function groupSize(kids: readonly Placed[], size: Size): Size {
+  if (!kids.some(({ box }) => box.rotation % 360 !== 0 || box.fit !== undefined)) return size
+  let left = Infinity
+  let top = Infinity
+  let right = -Infinity
+  let bottom = -Infinity
+  let restW = 0
+  let restH = 0
+  for (const { box } of kids) {
+    const rest = unfittedBox(box)
+    restW = Math.max(restW, rest.x + (box.fit === undefined ? box.w : box.fit.pivot.x * 2))
+    restH = Math.max(restH, rest.y + (box.fit === undefined ? box.h : box.fit.pivot.y * 2))
+    const matrix = boxMatrix(identity, box)
+    for (const corner of [
+      { x: 0, y: 0 },
+      { x: box.w, y: 0 },
+      { x: 0, y: box.h },
+      { x: box.w, y: box.h },
+    ]) {
+      const point = apply(matrix, corner)
+      left = Math.min(left, point.x)
+      top = Math.min(top, point.y)
+      right = Math.max(right, point.x)
+      bottom = Math.max(bottom, point.y)
+    }
+  }
+  return {
+    w: right - left,
+    h: bottom - top,
+    fit: { origin: { x: left, y: top }, pivot: { x: restW / 2, y: restH / 2 } },
   }
 }
 
@@ -305,12 +358,15 @@ function plan(context: Context, container: Node, w: number | null, h: number | n
     layout.mode === "none"
       ? { w: w ?? extent((box) => box.x + box.w), h: h ?? extent((box) => box.y + box.h) }
       : arranged.size
-  return { size: own, kids: [...arranged.kids, ...freed] }
+  return {
+    size: w === null && h === null && freeGroup(container) ? groupSize(freed, own) : own,
+    kids: [...arranged.kids, ...freed],
+  }
 }
 
 function arrange(
   context: Context,
-  boxes: Map<NodeId, Box>,
+  boxes: Map<NodeId, LayoutBox>,
   node: Node,
   w: number,
   h: number,
@@ -324,7 +380,7 @@ function arrange(
   }
 }
 
-function placeHidden(context: Context, boxes: Map<NodeId, Box>, node: Node): void {
+function placeHidden(context: Context, boxes: Map<NodeId, LayoutBox>, node: Node): void {
   const inclusive: Context = { ...context, showHidden: node.id }
   const mode = modes(node)
   const laid = boxes.get(node.id)
@@ -356,9 +412,9 @@ export function solveLayout(
   root: NodeId,
   measure: LayoutMeasure,
   path?: readonly NodeId[],
-): ReadonlyMap<NodeId, Box> {
+): ReadonlyMap<NodeId, LayoutBox> {
   const node = doom.nodes.get(root)
-  const boxes = new Map<NodeId, Box>()
+  const boxes = new Map<NodeId, LayoutBox>()
   if (node === undefined) return boxes
   const { theme, size } = deckOf(doom)
   const context = { doom, theme, measure, sizes: new Map<string, Size>() }
@@ -367,7 +423,8 @@ export function solveLayout(
     arrange(context, boxes, node, size.w, size.h, path)
   } else {
     const own = sizeOf(context, node, null, null)
-    boxes.set(root, { ...storedBox(node), w: own.w, h: own.h })
+    const { x, y } = storedBox(node)
+    boxes.set(root, place(node, x, y, own).box)
     arrange(context, boxes, node, own.w, own.h, path)
   }
   if (path === undefined) {

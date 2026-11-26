@@ -16,7 +16,7 @@ export function flipWrites(
       const placed = geometry.byId.get(id)
       if (placed === undefined || !transformable(view, id)) return []
       const member = memberOf(placed)
-      const stored = propOf(view.nodes.get(id), "box") ?? placed.node.box
+      const stored = propOf(view.nodes.get(id), "box") ?? doom.unfittedBox(placed.node.box)
       return [
         [
           id,
@@ -32,21 +32,24 @@ export function flipWrites(
   )
   return flipSelection(layers, axis).flatMap((flipped) => {
     const placed = geometry.byId.get(flipped.id)!
-    const stored = propOf(view.nodes.get(flipped.id), "box") ?? placed.node.box
+    const stored = propOf(view.nodes.get(flipped.id), "box") ?? doom.unfittedBox(placed.node.box)
     const parent = placed.parent === null ? undefined : geometry.byId.get(placed.parent)
     const box = flipped.box ?? layers.get(flipped.id)!.box
     const centre = { x: box.x + box.w / 2, y: box.y + box.h / 2 }
-    const local = parent === undefined ? centre : apply(invert(parent.matrix), centre)
+    const local = parent === undefined ? centre : apply(invert(parent.content), centre)
     const turn = flipped.rotation ?? layers.get(flipped.id)!.rotation
+    const rotation = doom.wrapRotation(turn - (parent?.rotation ?? 0))
+    const { w, h, fit } = placed.node.box
+    const shift = doom.fitShift({ w, h, rotation }, fit)
     return [
       {
         node: flipped.id,
         prop: "box" as const,
         value: {
           ...stored,
-          x: Math.round(local.x - placed.node.box.w / 2),
-          y: Math.round(local.y - placed.node.box.h / 2),
-          rotation: doom.wrapRotation(turn - (parent?.rotation ?? 0)),
+          x: Math.round(local.x - w / 2 - shift.x),
+          y: Math.round(local.y - h / 2 - shift.y),
+          rotation,
           flipH: flipped.flipH ?? stored.flipH,
           flipV: flipped.flipV ?? stored.flipV,
         },

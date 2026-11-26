@@ -4,8 +4,8 @@
     {
       "file": "packages/live/src/doom-deck.ts",
       "names": ["connected"],
-      "digest": "a88fd34c4b3e",
-      "blob": "b189476924909ddd054691fdfb38e3ae32dc6036"
+      "digest": "7f1e20347028",
+      "blob": "054a6e430d4c6f4c69b817630c057aae15df762b"
     },
     {
       "file": "packages/doom/src/invert.ts",
@@ -22,8 +22,8 @@
     {
       "file": "packages/doom/src/replant.ts",
       "names": ["replanted", "worldMatrix", "landingsOf"],
-      "digest": "80c0508ae9e8",
-      "blob": "e324377239f6fff880684c4114545778ce557401"
+      "digest": "042127e209c4",
+      "blob": "7c2b423c8a1b093b0b97e995539c5d55f82bdac5"
     }
   ]
 }

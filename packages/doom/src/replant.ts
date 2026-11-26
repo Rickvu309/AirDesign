@@ -2,10 +2,10 @@ import { wrapRotation } from "./angle.js"
 import type { Doom, Write } from "./doom.js"
 import type { End } from "./geometry.js"
 import type { NodeId } from "./ids.js"
-import { type Matrix, apply, boxMatrix, identity, invert, multiply } from "./matrix.js"
-import type { Box } from "./resolved.js"
+import { type Matrix, apply, boxMatrix, contentMatrix, identity, invert, multiply } from "./matrix.js"
+import type { Box, LayoutBox } from "./resolved.js"
 
-type Landing = { readonly parent?: NodeId | null; readonly box?: Box }
+type Landing = { readonly parent?: NodeId | null; readonly box?: LayoutBox }
 export type Landings = ReadonlyMap<NodeId, Landing>
 
 type Held = { readonly parent?: { readonly id: NodeId } | null; readonly box?: Box; readonly geometry?: unknown }
@@ -25,7 +25,9 @@ export function worldMatrix(now: Doom, node: NodeId | null, landings: Landings =
   }
   return chain.reduce((matrix, id) => {
     const box = landings.get(id)?.box ?? heldBy(now, id)?.box
-    return box === undefined ? matrix : boxMatrix(matrix, box)
+    if (box === undefined) return matrix
+    const placed = boxMatrix(matrix, box)
+    return id === node ? placed : contentMatrix(placed, box)
   }, identity)
 }
 

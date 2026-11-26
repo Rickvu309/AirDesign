@@ -11,6 +11,7 @@ import { linkedOwner } from "./component/instance-ownership.js"
 import type { Node } from "./doom.js"
 import { boxOf, childrenOf, descendantsOf, parentOf, propOf, slideOf, zeroBox } from "./doom-walk.js"
 import { measureWith } from "./measure.js"
+import { unfittedBox } from "./matrix.js"
 import type { Box } from "./resolved.js"
 import { solveLayout } from "./solve-layout.js"
 
@@ -23,7 +24,7 @@ const hasBox = (draft: Draft, node: Node) =>
 
 function shift(draft: Draft, node: Node, dx: number, dy: number): void {
   if (!hasBox(draft, node) || (dx === 0 && dy === 0)) return
-  const box = boxOf(node, draft.reading.boxes)
+  const box = unfittedBox(boxOf(node, draft.reading.boxes))
   put(draft, node.id, { box: { ...box, x: box.x + dx, y: box.y + dy } })
 }
 
@@ -32,7 +33,7 @@ function originIn(draft: Draft, parent: NodeId): { readonly x: number; readonly 
   let y = 0
   let at: Node | undefined = draft.doom.nodes.get(parent)
   for (let hops = 0; at?.type === "frame" && hops <= draft.doom.nodes.size; hops += 1) {
-    const box = boxOf(at, draft.reading.boxes)
+    const box = unfittedBox(boxOf(at, draft.reading.boxes))
     x += box.x
     y += box.y
     const above = parentOf(at)
@@ -157,7 +158,7 @@ export function compileUnwrap(draft: Draft, change: Op<"unwrap">): void {
   const parent = parentIdOf(frame)
   const kids = childrenOf(draft.doom, frame.id)
   const keys = keysAfter(draft, parent, frame.id, kids.length)
-  const origin = boxOf(frame, draft.reading.boxes)
+  const origin = unfittedBox(boxOf(frame, draft.reading.boxes))
   kids.forEach((kid, at) => {
     draft.writes.push({ node: kid.id, prop: "parent", value: { id: parent, at: keys[at] as OrderKey } })
     shift(draft, kid, origin.x, origin.y)

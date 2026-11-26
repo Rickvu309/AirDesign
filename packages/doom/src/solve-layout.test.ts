@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest"
-import { type Layout, type Track, solveLayout } from "./index.js"
+import {
+  type Layout,
+  type Track,
+  applyMatrix,
+  boxMatrix,
+  contentMatrix,
+  identityMatrix,
+  readForAgent,
+  solveLayout,
+} from "./index.js"
 import {
   advance,
   block,
@@ -27,6 +36,46 @@ function solved(slide: readonly TreeNode[], slideProps = {}) {
 
 const rowOf = (children: readonly TreeNode[], layout: object = {}, box = spot(0, 0, 600, 200), props: object = {}) =>
   ({ type: "frame", name: "row", props: { box, layout: row(layout), ...props }, children }) satisfies TreeNode
+
+describe("solveLayout in a free-layout group", () => {
+  const upright = spot(140, 90, 160, 40)
+  const group = (rotation: number): TreeNode => ({
+    type: "frame",
+    name: "group",
+    props: { box: { ...upright, rotation }, sizing: { w: "hug", h: "hug" } },
+    children: [block("turned", 160, 40, { box: { ...spot(0, 0, 160, 40), rotation: 90, flipH: true } })],
+  })
+
+  it("fits both edges of a turned child and keeps it in place inside a turned group", () => {
+    const { at } = solved([group(30)])
+    const frame = at("group")
+    const matrix = boxMatrix(identityMatrix, frame)
+    const before = applyMatrix(boxMatrix(identityMatrix, { ...upright, rotation: 30 }), { x: 80, y: 20 })
+    const after = applyMatrix(matrix, { x: frame.w / 2, y: frame.h / 2 })
+    expect(frame.w).toBeCloseTo(40)
+    expect(frame.h).toBeCloseTo(160)
+    expect(after.x).toBeCloseTo(before.x)
+    expect(after.y).toBeCloseTo(before.y)
+    expect(at("turned")).toMatchObject({ x: 0, y: 0, w: 160, h: 40, rotation: 90, flipH: true })
+    const child = at("turned")
+    const keep = boxMatrix(boxMatrix(identityMatrix, { ...upright, rotation: 30 }), child)
+    const fitted = boxMatrix(contentMatrix(matrix, frame), child)
+    for (const [index, value] of fitted.entries()) expect(value).toBeCloseTo(keep[index]!)
+  })
+
+  it("gives an auto-layout parent the fitted width and height", () => {
+    const { at, boxes, doom, slides } = solved([
+      rowOf([group(0), block("next", 100, 20)], { gap: 12 }, spot(0, 0, 1, 1), {
+        sizing: { w: "hug", h: "hug" },
+      }),
+    ])
+    expect(at("group").w).toBeCloseTo(40)
+    expect(at("next").x).toBeCloseTo(52)
+    expect(at("row").w).toBeCloseTo(152)
+    expect(at("row").h).toBeCloseTo(160)
+    expect(readForAgent(doom, slides, boxes)).toContain("40x160")
+  })
+})
 
 describe("solveLayout in a row", () => {
   it("puts children one after another with the gap and the padding, boxes relative to the row", () => {

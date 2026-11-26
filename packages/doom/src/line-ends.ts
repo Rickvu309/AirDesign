@@ -1,5 +1,5 @@
 import type { NodeId } from "./ids.js"
-import type { Box, Point } from "./resolved.js"
+import type { Box, LayoutBox, Point } from "./resolved.js"
 import type { Doom } from "./doom.js"
 import { propOf } from "./doom-walk.js"
 import { curvePoints, elbowPoints, type RouteEnd, type Side } from "./line-route.js"
@@ -11,14 +11,15 @@ type Line = Extract<NonNullable<Props["geometry"]>, { kind: "line" }>
 const parentOf = (doom: Doom, id: NodeId): NodeId | undefined =>
   (doom.nodes.get(id) as { parent?: { id: NodeId } | null } | undefined)?.parent?.id
 
-function positionOf(doom: Doom, boxes: ReadonlyMap<NodeId, Box>, id: NodeId): Point | null {
+function positionOf(doom: Doom, boxes: ReadonlyMap<NodeId, LayoutBox>, id: NodeId, content = false): Point | null {
   if (!boxes.has(id)) return null
   let x = 0
   let y = 0
   for (let at: NodeId | undefined = id; at !== undefined && boxes.has(at); at = parentOf(doom, at)) {
     const box = boxes.get(at)!
-    x += box.x
-    y += box.y
+    const origin = at !== id || content ? box.fit?.origin : undefined
+    x += box.x - (origin?.x ?? 0)
+    y += box.y - (origin?.y ?? 0)
   }
   return { x, y }
 }
@@ -40,7 +41,7 @@ function resting(
   let y = own.y
   for (let at: NodeId | undefined = parent, hops = 0; at !== undefined && hops <= doom.nodes.size; hops += 1) {
     if (boxes.has(at)) {
-      const origin = positionOf(doom, boxes, at)
+      const origin = positionOf(doom, boxes, at, true)
       if (origin === null) return null
       return { at: { x: x + origin.x, y: y + origin.y }, box: own }
     }
@@ -108,7 +109,7 @@ export function lineRoute(
   parent: NodeId | undefined,
   line: Line,
 ): LineRoute {
-  const origin = (parent === undefined ? null : positionOf(doom, boxes, parent)) ?? { x: 0, y: 0 }
+  const origin = (parent === undefined ? null : positionOf(doom, boxes, parent, true)) ?? { x: 0, y: 0 }
   const resolve = (end: Line["start"]): RouteEnd => {
     if ("x" in end) return { at: { x: end.x, y: end.y }, side: null, around: null }
     const at = positionOf(doom, boxes, end.node)
