@@ -377,7 +377,7 @@ for (const font of ["slow", "failed"] as const) {
       await exportButton(page).click()
       await dialog(page).getByRole("button", { name: exportCopy.action }).click()
       if (font === "failed") {
-        await expect(page.getByText(/A font in these slides couldn’t load/)).toBeVisible()
+        await expect(page.getByText(/Unable to load a font in these slides/)).toBeVisible()
         expect(await printTitles(page)).toEqual([])
       } else {
         await expect(dialog(page)).toBeVisible()

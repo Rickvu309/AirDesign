@@ -1,5 +1,6 @@
 import { toast as sonner, type ExternalToast, type ToastT } from "sonner"
 import { XIcon } from "lucide-react"
+import { StatusPill } from "@/components/ui/status-pill"
 import { productCopy } from "@/copy/product-copy"
 import { cn } from "@/lib/class-names"
 
@@ -70,23 +71,25 @@ function dismiss(id?: ToastId) {
 
 export const toast = {
   dismiss,
-  message(message: Parameters<typeof sonner.message>[0], options?: ExternalToast) {
-    return sonner.message(message, identified(options))
-  },
-  success(message: Parameters<typeof sonner.success>[0], options?: ExternalToast) {
-    return sonner.success(message, {
-      ...identified(options),
-      ...(options?.action || options?.cancel ? persistent : {}),
-    })
-  },
   custom(content: Parameters<typeof sonner.custom>[0], options?: ExternalToast) {
     return sonner.custom(content, identified(options))
   },
-  error(message: Parameters<typeof sonner.error>[0], options?: ExternalToast) {
-    return sonner.error(message, { ...identified(options), ...persistent })
-  },
-  refusal(message: Parameters<typeof sonner.error>[0], options?: ExternalToast) {
-    return sonner.error(message, { ...identified(options), ...persistent, duration: figmaNotice })
+  refusal(text: string, options?: ExternalToast) {
+    return sonner.custom(
+      () => (
+        <div className="flex justify-center">
+          <div className="pointer-events-auto w-max max-w-full shrink-0">
+            <StatusPill layout="message">{text}</StatusPill>
+          </div>
+        </div>
+      ),
+      {
+        ...identified(options),
+        duration: figmaNotice,
+        unstyled: true,
+        style: { left: 0, right: 0, pointerEvents: "none" },
+      },
+    )
   },
   notice(content: Parameters<typeof sonner.custom>[0], options?: NoticeOptions) {
     const { tone = "dark", maxWidth, ...toastOptions } = options ?? {}

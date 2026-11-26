@@ -188,13 +188,9 @@ test("the shipped Node and Chromium engines agree on styled glyphs and line offs
     "index",
     "createLucideIcon",
     "check",
-    "circle-check",
     "circle-exclamation-point",
     "copy",
-    "info",
     "loader-circle",
-    "octagon-x",
-    "triangle-exclamation-point",
     "x",
     "usage-load",
   ])

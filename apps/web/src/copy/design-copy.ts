@@ -4,8 +4,7 @@ import { frameCopy } from "./frame-copy"
 const layerCount = (count: number, kind: string) =>
   `${new Intl.NumberFormat("en").format(count)} ${kind} ${count === 1 ? "layer" : "layers"}`
 
-export const fontLoadFailed = (where: "this frame" | "these slides") =>
-  `A font in ${where} couldn’t load. Try again when it’s available.`
+export const fontLoadFailed = (where: "this frame" | "these slides") => `Unable to load a font in ${where}.`
 
 export const designCopy = {
   slide: (number: number) => `Slide ${String(number)}`,
@@ -27,14 +26,14 @@ export const designCopy = {
   selectMatching: "Select matching layers",
   titles: { text: "Text", picture: "Image", icon: "Icon" },
   autoFrame: frameCopy.autoFrame,
-  layoutFontFailed: fontLoadFailed("this frame"),
+  layoutFontFailed: `${fontLoadFailed("this frame")} Try again.`,
   layoutMeasuring: "Measuring text…",
   layoutFontPending: "Fonts are still loading.",
   removeAutoLayout: frameCopy.removeAutoLayout,
   detachInstance: "Detach instance",
   chartEditFailed: "Unable to update the linked chart.",
-  chartEditStale: "The deck changed while the chart was updating. Try again.",
-  chartFontFailed: fontLoadFailed("this frame"),
+  chartEditStale: "The deck changed. Try again.",
+  chartFontFailed: `${fontLoadFailed("this frame")} Try again.`,
   square: "Rectangle",
   layerName: "Layer name",
   layerNameEmpty: "Enter a name for this layer.",

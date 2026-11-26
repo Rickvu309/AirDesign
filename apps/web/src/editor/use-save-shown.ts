@@ -17,10 +17,16 @@ export function saveShown({ status, online }: Saving): SaveShown {
     }
   if (status.kind === "saved" || status.kind === "saving") return { notice: null, save: status.kind }
   if (status.kind === "storage-failed") return { notice: "storage-failed", save: "saving" }
-  if (status.kind === "offline" && !online) return { notice: "offline", save: "offline" }
-  if (status.kind === "offline" || status.kind === "blocked") return { notice: "unreached", save: "unreached" }
+  if (status.kind === "offline" && !online) return { notice: null, save: "offline" }
+  if (status.kind === "offline" || status.kind === "blocked") return { notice: null, save: "unreached" }
   const notice = status.tooLarge ? "set-aside-too-large" : status.edits === 1 ? "set-aside-one" : "set-aside"
   return { notice, save: "unsaved" }
+}
+
+export function noticeShown(saved: ThinNotice | null, exportFailed: false | "paint" | "fonts" | "capacity") {
+  if (saved === "storage-failed" || exportFailed === false) return saved
+  if (exportFailed === "capacity") return "export-capacity"
+  return exportFailed === "fonts" ? "export-fonts" : "export-failed"
 }
 
 function watchNetwork(change: () => void): () => void {

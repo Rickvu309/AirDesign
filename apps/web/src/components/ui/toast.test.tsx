@@ -6,28 +6,16 @@ import { toast } from "./toast"
 
 afterEach(() => sonner.dismiss())
 
-it("keeps a recovery error dismissible even when a caller asks for a short lifetime", () => {
-  const id = toast.error("Copy your notes and reload", { duration: 4000, closeButton: false })
-  expect(
-    sonner
-      .getHistory()
-      .filter((entry): entry is ToastT => !("dismiss" in entry))
-      .find((entry) => entry.id === id),
-  ).toMatchObject({
-    duration: Infinity,
-    closeButton: true,
-    dismissible: true,
-  })
-})
-
-it("closes a refusal the person cannot act on after Figma's 3 seconds, and still lets them close it sooner", () => {
-  const id = toast.refusal("Layer stays", { description: "It cannot be removed." })
-  expect(
-    sonner
-      .getHistory()
-      .filter((entry): entry is ToastT => !("dismiss" in entry))
-      .find((entry) => entry.id === id),
-  ).toMatchObject({ type: "error", duration: 3000, closeButton: true, dismissible: true })
+it("closes a refusal after Figma's 3 seconds as one plain pill with no close control", () => {
+  const id = toast.refusal("Layer stays")
+  const entry = sonner
+    .getHistory()
+    .filter((entry): entry is ToastT => !("dismiss" in entry))
+    .find((entry) => entry.id === id)
+  expect(entry).toMatchObject({ duration: 3000, unstyled: true })
+  const drawn = renderToStaticMarkup(createElement("div", null, entry?.jsx))
+  expect(drawn).toContain("Layer stays")
+  expect(drawn).not.toContain("<button")
 })
 
 it("keeps custom action notices available with a named close control", () => {
@@ -54,26 +42,6 @@ it("gives a light notice a light close control instead of a solid dark button", 
   expect(html).not.toContain("bg-foreground")
 })
 
-it("leaves plain success messages on Sonner's short lifetime", () => {
-  const id = toast.success("Downloaded")
-  const entry = sonner
-    .getHistory()
-    .filter((entry): entry is ToastT => !("dismiss" in entry))
-    .find((entry) => entry.id === id)
-  expect(entry?.type).toBe("success")
-  expect(entry?.duration).toBeUndefined()
-})
-
-it("keeps a success with Undo available even when the caller supplies a finite duration", () => {
-  const id = toast.success("Moved", { duration: 9000, action: { label: "Undo", onClick() {} } })
-  expect(
-    sonner
-      .getHistory()
-      .filter((entry): entry is ToastT => !("dismiss" in entry))
-      .find((entry) => entry.id === id),
-  ).toMatchObject({ duration: Infinity, closeButton: true })
-})
-
 function shown(id: string | number): ToastT | undefined {
   return sonner
     .getHistory()
@@ -82,14 +50,19 @@ function shown(id: string | number): ToastT | undefined {
 }
 
 it("shows a notice again as a new toast once the person closed it, so the closing one cannot take it away", () => {
-  const first = toast.error("Unable to save presenter notes", { id: "notes-refused" })
+  const first = toast.custom(() => createElement("p", null, "Unable to save"), {
+    id: "notes-refused",
+    duration: Infinity,
+  })
   const closed = shown(first)
   if (closed === undefined) throw new Error("no notice")
   closed.onDismiss?.(closed)
-  const again = toast.error("Unable to save presenter notes", { id: "notes-refused" })
+  const show = () =>
+    toast.custom(() => createElement("p", null, "Unable to save"), { id: "notes-refused", duration: Infinity })
+  const again = show()
   expect(again).not.toBe(first)
-  expect(shown(again)).toMatchObject({ title: "Unable to save presenter notes", duration: Infinity })
-  expect(toast.error("Unable to save presenter notes", { id: "notes-refused" })).toBe(again)
+  expect(shown(again)).toMatchObject({ duration: Infinity })
+  expect(show()).toBe(again)
   vi.stubGlobal("requestAnimationFrame", (frame: FrameRequestCallback) => {
     frame(0)
     return 0

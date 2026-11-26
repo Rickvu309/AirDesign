@@ -2,6 +2,7 @@ import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, beforeAll, expect, it, vi } from "vitest"
 import { productCopy } from "../copy/product-copy"
+import { EditorToaster } from "./editor-toast"
 import { ThinNoticeView, type ThinNotice } from "./thin-notice"
 
 type JsdomModule = {
@@ -59,7 +60,12 @@ function openPage(): { readonly window: Window & typeof globalThis; readonly roo
 
 async function show(root: Root, notice: ThinNotice | null, wait: number): Promise<void> {
   await act(async () => {
-    root.render(<ThinNoticeView notice={notice} onTryAgain={() => undefined} />)
+    root.render(
+      <>
+        <EditorToaster />
+        <ThinNoticeView notice={notice} onTryAgain={() => undefined} />
+      </>,
+    )
   })
   await act(async () => {
     await vi.advanceTimersByTimeAsync(wait)
@@ -72,34 +78,41 @@ function shownText(window: Window & typeof globalThis): string[] {
     .map((toast) => toast.textContent ?? "")
 }
 
-it("the offline notice shows again when it comes back while its last showing is still leaving", async () => {
+it("a notice shows again when it comes back while its last showing is still leaving", async () => {
   const { window, root } = openPage()
   await show(root, null, 0)
-  await show(root, "offline", 100)
-  expect(shownText(window)).toEqual([productCopy.editorOffline])
+  await show(root, "set-aside", 100)
+  expect(shownText(window)).toEqual([productCopy.editsSetAside])
   await show(root, null, 50)
   expect(shownText(window)).toEqual([])
-  await show(root, "offline", 600)
-  expect(shownText(window)).toEqual([productCopy.editorOffline])
+  await show(root, "set-aside", 600)
+  expect(shownText(window)).toEqual([productCopy.editsSetAside])
 })
 
 it("a notice that changes while it shows replaces its text in the same place", async () => {
   const { window, root } = openPage()
   await show(root, null, 0)
-  await show(root, "offline", 100)
-  await show(root, "unreached", 300)
-  expect(shownText(window)).toEqual([productCopy.editorUnreached])
+  await show(root, "set-aside", 100)
+  await show(root, "set-aside-one", 300)
+  expect(shownText(window)).toEqual([productCopy.editSetAside])
   expect(window.document.querySelectorAll("[data-sonner-toast]")).toHaveLength(1)
 })
 
 it("a recovery notice shown again before dismissal reaches Sonner has active controls", async () => {
   const { window, root } = openPage()
-  await show(root, "storage-failed", 100)
+  await show(root, "export-failed", 100)
   const leaving = window.document.querySelector<HTMLElement>("[data-sonner-toast]")
   expect(leaving).not.toBeNull()
-  await act(async () => root.render(<ThinNoticeView notice={null} onTryAgain={() => undefined} />))
+  await act(async () =>
+    root.render(
+      <>
+        <EditorToaster />
+        <ThinNoticeView notice={null} onTryAgain={() => undefined} />
+      </>,
+    ),
+  )
   expect(leaving?.inert).toBe(true)
-  await show(root, "storage-failed", 1)
+  await show(root, "export-failed", 1)
   const active = [...window.document.querySelectorAll<HTMLElement>("[data-sonner-toast]")].find(
     (toast) => toast !== leaving,
   )

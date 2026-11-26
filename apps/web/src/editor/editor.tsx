@@ -21,6 +21,7 @@ import { useCanvasRoom } from "@/editor/use-canvas-room"
 import { ZoomMenu } from "@/editor/zoom-menu"
 import type { ActionRun } from "./actions-popover"
 import { EditorToolbar } from "./editor-toolbar"
+import { EditorToaster } from "./editor-toast"
 import { ThinNoticeView, type ThinNotice } from "./thin-notice"
 import { SlidePictures } from "./use-slide-pictures"
 import { PresentButton } from "@/present/present-button"
@@ -50,7 +51,7 @@ import { useGridHistoryKeys } from "./use-grid-history-keys"
 import { addAfterKey, useSlideStrip } from "./use-slide-strip"
 import type { Tool } from "./use-canvas-pointer"
 import { useDoomDeck, useDoomView, type EditorClient, type OpenOptions } from "./use-deck"
-import { useSaveShown, type Saving } from "./use-save-shown"
+import { noticeShown, useSaveShown, type Saving } from "./use-save-shown"
 import { useEditingNow } from "./use-editing-now"
 import { slideNumber } from "@/lib/slide-numbering"
 
@@ -224,14 +225,7 @@ function Editing({
       document.title = before
     }
   }, [title])
-  const notice: ThinNotice | null =
-    exporting.failed === "capacity"
-      ? "export-capacity"
-      : exporting.failed === "fonts"
-        ? "export-fonts"
-        : exporting.failed
-          ? "export-failed"
-          : saved.notice
+  const notice = noticeShown(saved.notice, exporting.failed)
   const tryAgain = (failed: ThinNotice) => {
     if (failed === "export-capacity") exporting.control.openDialog()
     if (failed === "export-failed" || failed === "export-fonts") exporting.tryAgain()
@@ -292,6 +286,7 @@ function Editing({
   }
   return (
     <div className="window-frame flex" data-editor-frame={id} inert={present.show !== null}>
+      <EditorToaster />
       {grid ? (
         <>
           <EditorGrid

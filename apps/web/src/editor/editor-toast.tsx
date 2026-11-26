@@ -1,95 +1,60 @@
-import { useEffect, useId, type CSSProperties } from "react"
+import { useEffect, useId, useRef, type CSSProperties } from "react"
 import { toast } from "@/components/ui/toast"
+import { ActionPill } from "@/components/ui/action-pill"
 import { StatusPill } from "@/components/ui/status-pill"
 import { Toaster } from "@/components/ui/sonner"
 
 const toastRoom = "30rem"
 
-const toastWidths = { screen: "301.11px", canvas: "289.46px" }
-
-export function EditorToast({
-  kind,
-  text,
-  action,
-  place = "screen",
-  still = false,
-  host = true,
-}: {
-  kind: "success" | "info" | "error"
-  text: string
-  action?: string
-  place?: "screen" | "canvas"
-  still?: boolean
-  host?: boolean
-}) {
-  const width = toastWidths[place]
+export function EditorToast({ text, action, onAct }: { text: string; action?: string; onAct?: () => void }) {
   const id = useId()
+  const act = useRef(onAct)
+  useEffect(() => {
+    act.current = onAct
+  })
   useEffect(() => {
     toast.custom(
       () => (
-        <StatusPill
-          error={kind === "error"}
-          className="pointer-events-auto mx-auto h-auto min-h-10 w-max max-w-full gap-2.5 py-2 pr-4 pl-3.5"
-          style={{ minWidth: width }}
-        >
-          {kind === "success" ? (
-            <span className="relative block size-4 shrink-0">
-              <svg
-                className="absolute top-[5.19px] left-[3.63px] block"
-                viewBox="3.13 4.69 8.75 5.94"
-                width="8.75"
-                height="5.94"
-                aria-hidden="true"
-              >
-                <path
-                  d="M3.13 7.81 5.94 10.63 11.88 4.69"
-                  fill="none"
-                  stroke="var(--background)"
-                  strokeWidth="1.09"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-          ) : null}
-          <span className="min-w-0 flex-1 text-pretty">{text}</span>
-          {action ? <span className="text-[length:var(--type-dense)] font-medium">{action}</span> : null}
-        </StatusPill>
+        <div className="flex justify-center">
+          <div className="pointer-events-auto w-max max-w-full shrink-0">
+            {action === undefined ? (
+              <StatusPill layout="message">{text}</StatusPill>
+            ) : (
+              <ActionPill text={text} action={action} onAct={() => act.current?.()} />
+            )}
+          </div>
+        </div>
       ),
       {
         id,
-        toasterId: "editor-status",
         duration: Number.POSITIVE_INFINITY,
         unstyled: true,
         style: {
           left: 0,
           right: 0,
-          ...(still
-            ? { opacity: 1, transform: "translateY(0)", transition: "none" }
-            : { transition: "transform var(--ease-micro), opacity var(--ease-micro)" }),
+          transition: "transform var(--ease-micro), opacity var(--ease-micro)",
           pointerEvents: "none",
         },
       },
     )
-  }, [id, action, kind, text, width, still])
+  }, [id, action, text])
   useEffect(
     () => () => {
       toast.dismiss(id)
     },
     [id],
   )
-  return host ? <EditorToaster place={place} /> : null
+  return null
 }
 
-export function EditorToaster({ place = "canvas" }: { place?: "screen" | "canvas" }) {
+export function EditorToaster() {
   return (
     <Toaster
-      id="editor-status"
       position="top-center"
       offset={{ top: 12 }}
       visibleToasts={1}
       style={{ "--width": toastRoom } as CSSProperties}
-      className={place === "canvas" ? "min-[601px]:-translate-x-14" : undefined}
+      className="min-[601px]:-translate-x-14"
     />
   )
 }

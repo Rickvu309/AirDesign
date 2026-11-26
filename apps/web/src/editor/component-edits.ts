@@ -41,21 +41,21 @@ async function commitMeasuredEdit(
     if (current !== read && !cellsMatch(read, current, writes)) break
     const proposed = current === read ? sampled : doom.sampleComponentEdit(current, writes)
     if (proposed === null || doom.isRefusal(proposed)) {
-      toast.error(designCopy.chartEditFailed)
+      toast.refusal(designCopy.chartEditFailed)
       return
     }
     let measure
     try {
       measure = await measureDoom(document, proposed.view, proposed.measures)
     } catch {
-      toast.error(designCopy.chartFontFailed)
+      toast.refusal(designCopy.chartFontFailed)
       return
     }
     if (client.view() !== current) continue
     const prepared = doom.prepareComponentEdit(current, writes, measure)
     if (doom.isRefusal(prepared) || !client.push(prepared, { read: current }).ok)
-      toast.error(designCopy.chartEditFailed)
+      toast.refusal(designCopy.chartEditFailed)
     return
   }
-  toast.error(designCopy.chartEditStale)
+  toast.refusal(designCopy.chartEditStale)
 }
