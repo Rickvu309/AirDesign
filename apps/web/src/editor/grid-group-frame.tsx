@@ -1,10 +1,38 @@
 import type { PointerEvent } from "react"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { gridGroupCommand } from "@/editor/editor-grid-keys"
+import type { GridBand } from "@/editor/grid-drop"
 import type { GridRect } from "@/editor/grid-lines"
 import { gridGrip } from "@/editor/grid-viewport"
 
 export type GridGroupHover = "band" | "slide" | "handle" | "add"
+
+const gripReach = 52
+
+function partOf(target: EventTarget | null): GridGroupHover {
+  if (!(target instanceof Element)) return "band"
+  if (target.closest("[data-group-handle]") !== null) return "handle"
+  if (target.closest("[data-gap-insert], [data-group-insert]") !== null) return "add"
+  return target.closest("[data-grid-card]") === null ? "band" : "slide"
+}
+
+export function groupHoverAt(
+  bands: readonly GridBand[],
+  world: { readonly x: number; readonly y: number },
+  target: EventTarget | null,
+  scale: number,
+): { readonly group: number; readonly part: GridGroupHover } | null {
+  const part = partOf(target)
+  const reach = gripReach / scale
+  const above = gridGrip.minimumHeight / 2 / scale
+  const group =
+    part === "add"
+      ? bands.findLastIndex((band) => band.top <= world.y)
+      : bands.findIndex(
+          (band) => world.x >= -reach && world.x <= band.width && world.y >= band.top - above && world.y <= band.bottom,
+        )
+  return group === -1 ? null : { group, part }
+}
 
 export function GridGroupFrame({
   number,
