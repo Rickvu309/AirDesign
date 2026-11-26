@@ -135,7 +135,7 @@ export function ShapeGrid({
     <div
       role="group"
       aria-label={label}
-      className={cn("grid w-[408px] grid-cols-11 gap-0.5 rounded-xl bg-white p-1.5", floatShadow)}
+      className={cn("grid w-102 grid-cols-11 gap-0.5 rounded-xl bg-white p-1.5", floatShadow)}
       onKeyDown={moveFocus}
       data-shape-grid
     >
