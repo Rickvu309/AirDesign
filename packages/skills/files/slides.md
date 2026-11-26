@@ -50,7 +50,7 @@ The body area runs from under the title to above the source line, about y 280 to
 
 ## Check each slide
 
-1. After you fill a slide, read it with `airdesign_read_deck {deck, slide}` and fix every finding before the next slide.
+1. After you fill a slide, read it with `get({ target: slide })` in `airdesign_execute` and fix every problem before the next slide.
 2. Read the boxes in that answer: nothing outside 1920 by 1080, and the lowest layer near the bottom of the body area.
-3. When the deck is done, read it once with `picture: true` and look at each slide as the reader will. If no picture comes back, the person has no tab open: do not ask again.
+3. When the deck is done, call `screenshot({ target: slide })` for each slide and look at it as the reader will. If the answer says no tab is open, do not ask again.
 4. Read the `avoid` and `review` skills and run the review before you stop.

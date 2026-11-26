@@ -1,6 +1,6 @@
 # Set a slide's background
 
-On an open deck with no layer selected, the Design panel shows the current slide: its number, the deck's **Theme**, the slide's **Background** and its **Selection colors**. The background takes a solid colour, a gradient or a picture; the slide and its thumbnail paint it at once, it reaches the server as the slide node's `fills`, and one undo takes it back. An agent sets the same fill with `airdesign_edit_deck` and `{ "op": "set", "target": "<slide>", "fill": … }`.
+On an open deck with no layer selected, the Design panel shows the current slide: its number, the deck's **Theme**, the slide's **Background** and its **Selection colors**. The background takes a solid colour, a gradient or a picture; the slide and its thumbnail paint it at once, it reaches the server as the slide node's `fills`, and one undo takes it back. An agent sets the same fill with `airdesign_execute` and `{ "op": "set", "target": "<slide>", "fill": … }`.
 
 ## Sub-features
 
@@ -9,7 +9,7 @@ On an open deck with no layer selected, the Design panel shows the current slide
 - `background-picture` an image fill picked from a file fills the slide background (`tests/browser/editor-design.spec.ts`).
 - `background-undo` Ctrl/Cmd+Z on the canvas takes the background back to what it was, and a reload keeps the result.
 - `theme` opens the library picker and applies a theme to the whole deck. States `design-template` and `design-theme-options`.
-- `agent-background` `airdesign_edit_deck` with a `set` whose target is the slide's id and a `fill` paints the slide's background (`packages/doom/src/agent-set.test.ts`, "paints a slide's background"), through the same run as every other agent change. The person's Undo for the run takes it back.
+- `agent-background` `airdesign_execute` with a `set` whose target is the slide's id and a `fill` paints the slide's background (`packages/doom/src/agent-set.test.ts`, "paints a slide's background"), through the same run as every other agent change. The person's Undo for the run takes it back.
 
 ## How to get to it (user POV)
 
@@ -23,7 +23,7 @@ Preconditions:
 
 - **Specs.** `pnpm test:browser tests/browser/editor-design.spec.ts tests/browser/editor-gradient-fill.spec.ts` sets a solid, a gradient, a template colour and a picture on the background, reads each from the saved slide node, undoes and reloads.
 - **In a scratch journey.** Make a deck with `newDoomDeck`, click `button "Design"`, click the button whose name starts `Background color`, pick a template colour, press Escape, and poll `post(doomRoutes.open, { deck }, cookie)` until the slide node's `fills[0].color` names it. Click the slide, press Ctrl/Cmd+Z, and poll until it does not.
-- **Agent.** Over MCP, `airdesign_read_deck`, then `airdesign_edit_deck` with the change `{ "op": "set", "target": "<slide>", "fill": "#1F4E79" }`. The open editor paints it, and `doomRoutes.open` holds the slide node's new `fills`.
+- **Agent.** Over MCP, `get` in `airdesign_execute`, then `airdesign_execute` with the change `{ "op": "set", "target": "<slide>", "fill": "#1F4E79" }`. The open editor paints it, and `doomRoutes.open` holds the slide node's new `fills`.
 - **States for look.** The states named above.
 
 ## Gotchas

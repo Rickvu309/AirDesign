@@ -21,12 +21,21 @@ const nameOf = (chars: string): string => [...(chars.split("\n")[0] ?? "").trim(
 
 const isBlank = (name: unknown): boolean => name === undefined || name === blankDeckName
 
+function appliedOnce(doom: Doom, writes: readonly Write[]): Doom | undefined {
+  const stamped = writes.map((write) => {
+    const was = doom.revs.get(write.node)?.get(write.prop)
+    return write.base !== undefined || was === undefined ? write : { ...write, base: was }
+  })
+  const after = applyBeforeFreeing(doom, { once: "deck-name", author, writes: stamped, rev: rev(doom.rev + 1) })
+  return isRefusal(after) ? undefined : after
+}
+
 function nameFollowsTitle(deck: Node): boolean {
   const flag = propOf(deck, "nameFollows")
   return flag ?? isBlank(propOf(deck, "name"))
 }
 
-export function nameFromTitleWrites(doom: Doom, writes: readonly Write[]): readonly Write[] {
+export function nameFromTitleWrites(doom: Doom, writes: readonly Write[], applied?: Doom): readonly Write[] {
   const deck = [...doom.nodes.values()].find((node) => node.type === "deck")
   if (deck === undefined) return []
   const ownWrites = writes.filter((write) => write.node === deck.id)
@@ -38,12 +47,8 @@ export function nameFromTitleWrites(doom: Doom, writes: readonly Write[]): reado
   }
   const flagged = ownWrites.findLast((write) => write.prop === "nameFollows")
   if (!(flagged === undefined ? nameFollowsTitle(deck) : flagged.value === true)) return []
-  const stamped = writes.map((write) => {
-    const was = doom.revs.get(write.node)?.get(write.prop)
-    return write.base !== undefined || was === undefined ? write : { ...write, base: was }
-  })
-  const after = applyBeforeFreeing(doom, { once: "deck-name", author, writes: stamped, rev: rev(doom.rev + 1) })
-  if (isRefusal(after)) return []
+  const after = applied ?? appliedOnce(doom, writes)
+  if (after === undefined) return []
   const { id, chars } = firstTitleOf(after)
   const before = firstTitleOf(doom).id
   if (before === id && !writes.some((write) => write.node === id && write.prop === "text")) return []

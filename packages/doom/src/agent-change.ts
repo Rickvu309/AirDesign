@@ -209,8 +209,8 @@ const lookFields: LookFields = {
   to: field(endSchema("Where a line ends: a layer's side, which it then follows, or a point."), readEnd),
   route: choice(["straight", "elbow", "curve"], "How a line runs between its ends."),
   component: field(
-    { type: "string", description: "Template id from read_deck." },
-    matching(/^([\w-]{1,32}|[a-z0-9]{1,16}:[0-9]{1,12})$/, 32, "A template id from read_deck."),
+    { type: "string", description: "Template id." },
+    matching(/^([\w-]{1,32}|[a-z0-9]{1,16}:[0-9]{1,12})$/, 32, "A template id."),
   ),
   data: field({ type: "object", description: "Rows by collection." }, record),
   variant: field({ type: "object", description: "Template variant choices." }, variantRecord),
@@ -396,7 +396,7 @@ export const agentChangesSchema = {
       maxItems: limits.batch,
       items: { $ref: "#/$defs/change" },
       description:
-        "Applied in order, all or none. Sizes are pixels on a 1920 by 1080 slide. Take ids from read_deck; a layer you add has an id only in the answer. Patterns and frames with a layout place their own children. Colours are theme names, so a new template recolours the deck.",
+        "Applied in order, all or none. Sizes are pixels on a 1920 by 1080 slide. Take ids from get. Patterns and frames with a layout place their own children. Colours are theme names, so a new template recolours the deck.",
     },
   },
   $defs: {
@@ -415,7 +415,7 @@ export const agentChangesSchema = {
         op: {
           enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck", "detach", "component"],
           description:
-            "detach: target. add: kind, slide, into?, look. set: target, look. move: node, or nodes. into is required with nodes or box and then names a slide; one node may name a frame. after?. box? needs x, y, w, h; x, y place the union and w, h do not resize. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. Group ids are in read_deck as group=<id>. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
+            "detach: target. add: kind, slide, into?, look. set: target, look. move: node, or nodes. into is required with nodes or box and then names a slide; one node may name a frame. after?. box? needs x, y, w, h; x, y place the union and w, h do not resize. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. Group ids are in get as group=<id>. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
         },
         ...schemasOf(placeFields),
         kind: { enum: addKinds, description: kindWords },

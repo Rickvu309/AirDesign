@@ -180,7 +180,7 @@ it("signs Gemini in from HEAD /mcp to revoke, and keeps it connected across refr
   const tools = (await sdk.listTools()).tools.map((tool) => tool.name)
   await sdk.close()
   expect(tools).toContain("airdesign_list_decks")
-  expect(tools).toContain("airdesign_edit_deck")
+  expect(tools).toContain("airdesign_execute")
 
   const refreshed = { grant_type: "refresh_token", refresh_token: first.refresh, resource }
   const second = await tokens(await tokenForm(refreshed, client.client_id))

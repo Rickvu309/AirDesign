@@ -3,6 +3,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
 import { emptyLog, callTool, type Session } from "./index.js"
+import { readOf, scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
@@ -38,43 +39,41 @@ function agent() {
 describe("a raw size and font over the protocol", () => {
   it("lands a font the catalog serves under its own name, and names a size off the scale", async () => {
     const call = agent()
-    const { deck, rev, slides } = (await call("create_deck", {})).answer as {
+    const { deck, slides } = (await call("create_deck", {})).answer as {
       deck: string
       rev: number
       slides: string[]
     }
     const title = `${slides[0]!}.title`
-    const landed = await call("edit_deck", {
+    const landed = await call("execute", {
       deck,
-      base: rev,
-      changes: [{ op: "set", target: title, font: "montserrat", size: 72 }],
+      script: scriptOf([{ op: "set", target: title, font: "montserrat", size: 72 }]),
     })
     expect(landed.ok).toBe(true)
     expect(landed.answer).toMatchObject({
-      findings: [
+      problems: [
         { code: "off-scale", size: 72, style: expect.any(String), to: expect.any(Number) },
         { code: "off-font", font: "Montserrat" },
       ],
     })
-    const read = await call("read_deck", { deck })
+    const read = await readOf(call, deck)
     expect(String(read.answer.layers)).toContain('size=72 font="Montserrat"')
   })
 
   it("sets a weight the panel names, and reads the family and that weight", async () => {
     const call = agent()
-    const { deck, rev, slides } = (await call("create_deck", {})).answer as {
+    const { deck, slides } = (await call("create_deck", {})).answer as {
       deck: string
       rev: number
       slides: string[]
     }
     const title = `${slides[0]!}.title`
-    const landed = await call("edit_deck", {
+    const landed = await call("execute", {
       deck,
-      base: rev,
-      changes: [{ op: "set", target: title, weight: "ExtraBold" }],
+      script: scriptOf([{ op: "set", target: title, weight: "ExtraBold" }]),
     })
     expect(landed.ok).toBe(true)
-    const read = await call("read_deck", { deck })
+    const read = await readOf(call, deck)
     expect(String(read.answer.layers)).toContain('font="Inter"')
     expect(String(read.answer.layers)).toContain("weight=ExtraBold")
     expect(String(read.answer.layers)).not.toContain("Inter ExtraBold")
@@ -89,10 +88,9 @@ describe("a raw size and font over the protocol", () => {
     }
     let base = rev
     for (const weight of ["Medium", "ExtraBold", "Regular", "Bold"]) {
-      const landed = await call("edit_deck", {
+      const landed = await call("execute", {
         deck,
-        base,
-        changes: [{ op: "set", target: `${slides[0]!}.title`, weight }],
+        script: scriptOf([{ op: "set", target: `${slides[0]!}.title`, weight }]),
       })
       expect(landed.ok).toBe(true)
       expect(JSON.stringify(landed.answer)).not.toContain("off-font")
@@ -107,34 +105,31 @@ describe("a raw size and font over the protocol", () => {
       rev: number
       slides: string[]
     }
-    const unknown = await call("edit_deck", {
+    const unknown = await call("execute", {
       deck,
-      base: rev,
-      changes: [{ op: "set", target: `${slides[0]!}.title`, font: "Nowhere Grotesk" }],
+      script: scriptOf([{ op: "set", target: `${slides[0]!}.title`, font: "Nowhere Grotesk" }]),
     })
-    expect(unknown.answer).toMatchObject({ ok: false, refusal: "field", field: "font", at: 0 })
+    expect(unknown.answer).toMatchObject({ ok: false, refusal: "field", field: "font", op: 1 })
     expect(String(unknown.answer.note)).toContain(
       "Nowhere Grotesk is not in AirDesign's font catalog, so nothing landed.",
     )
-    expect((await call("read_deck", { deck })).answer.rev).toBe(rev)
+    expect((await readOf(call, deck)).answer.rev).toBe(rev)
   })
   it("sets the theme's fonts under the catalog's own names, and refuses a family it does not serve", async () => {
     const call = agent()
-    const { deck, rev } = (await call("create_deck", {})).answer as { deck: string; rev: number }
-    const themed = await call("edit_deck", {
+    const { deck } = (await call("create_deck", {})).answer as { deck: string; rev: number }
+    const themed = await call("execute", {
       deck,
-      base: rev,
-      changes: [{ op: "deck", name: "Board", fonts: { heading: "lora" } }],
+      script: scriptOf([{ op: "deck", name: "Board", fonts: { heading: "lora" } }]),
     })
     expect(themed.ok).toBe(true)
-    expect((await call("read_deck", { deck })).answer).toMatchObject({ theme: { fonts: { heading: "Lora" } } })
-    const unknown = await call("edit_deck", {
+    expect((await readOf(call, deck)).answer).toMatchObject({ theme: { fonts: { heading: "Lora" } } })
+    const unknown = await call("execute", {
       deck,
-      base: rev + 1,
       runId: (themed.answer as { runId: string }).runId,
-      changes: [{ op: "deck", fonts: { body: "Nowhere Grotesk" } }],
+      script: scriptOf([{ op: "deck", fonts: { body: "Nowhere Grotesk" } }]),
     })
-    expect(unknown.answer).toMatchObject({ ok: false, refusal: "field", field: "fonts.body", at: 0 })
+    expect(unknown.answer).toMatchObject({ ok: false, refusal: "field", field: "fonts.body", op: 1 })
     expect((await call("list_decks", {})).answer).toMatchObject({ decks: [{ deck, name: "Board" }] })
   })
 })

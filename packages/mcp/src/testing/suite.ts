@@ -3,8 +3,8 @@ import * as doom from "@airdesign/doom"
 import { blank, blankDeck, evalDeck, named, slides } from "./eval-deck.js"
 import { onceIds } from "../once-ids.js"
 import { swatch } from "./suite-art.js"
-import { heldRun, noteTouched, runningWith, stoppedRun, typedByAPerson } from "./suite-changed-decks.js"
-import { type Attempt, type Reason, type Step, type Task, edit, read, stop } from "./score.js"
+import { heldRun, noteTouched, runningWith, stoppedRun } from "./suite-changed-decks.js"
+import { type Attempt, type Reason, type Step, type Task, edit, read, run, stop } from "./score.js"
 
 export type SuiteRow = {
   readonly task: Task
@@ -13,7 +13,6 @@ export type SuiteRow = {
 }
 
 const aim = `${slides.opening}.title`
-const baseRev = Number(evalDeck().rev)
 const logoAsset = "1".repeat(64)
 const bars = [
   { name: "Q1 plan", value: 3, fill: "accent2" },
@@ -46,8 +45,8 @@ const textOf = (end: doom.Doom, id: string): string | undefined => {
 const slideIds = (end: doom.Doom) => doom.slidesOf(end).map((slide) => slide.id as string)
 const childrenOf = (end: doom.Doom, id: string) => (end.children.get(id as never) ?? []) as readonly string[]
 
-const ok: Step = { name: "edit_deck", outcome: "ok" }
-const refused = (outcome: string): Step => ({ name: "edit_deck", outcome })
+const ok: Step = { name: "execute", outcome: "ok" }
+const refused = (outcome: string): Step => ({ name: "execute", outcome })
 const unchanged = (end: doom.Doom) => end.rev === evalDeck().rev
 
 function row(
@@ -81,7 +80,7 @@ function row(
   }
 }
 
-const one = (change: Record<string, unknown>): Attempt => [edit([change], baseRev)]
+const one = (change: Record<string, unknown>): Attempt => [edit([change])]
 const setTitle = (text: string) => one({ op: "set", target: aim, text })
 const setOn = (target: string, look: Record<string, unknown>) => one({ op: "set", target, ...look })
 const addTo = (slide: string, look: Record<string, unknown>) => one({ op: "add", slide, ...look })
@@ -175,12 +174,7 @@ export const suite: readonly SuiteRow[] = [
     "delete-every-slide",
     "Delete every slide in the deck.",
     { steps: [refused("last-slide")], landed: unchanged },
-    [
-      edit(
-        Object.values(slides).map((slide) => ({ op: "slide", delete: slide })),
-        baseRev,
-      ),
-    ],
+    [edit(Object.values(slides).map((slide) => ({ op: "slide", delete: slide })))],
     one({ op: "slide", delete: slides.roadmap }),
     "tool",
   ),
@@ -261,7 +255,7 @@ export const suite: readonly SuiteRow[] = [
     "add-chart",
     "Add a bar chart of Plan against Actual for Q1 and Q2 to the roadmap slide.",
     { landed: hasChart },
-    [edit(chart(slides.roadmap), baseRev)],
+    [edit(chart(slides.roadmap))],
     addTo(slides.roadmap, { kind: "shape", name: "Q1 plan" }),
     "landed",
   ),
@@ -373,18 +367,29 @@ export const suite: readonly SuiteRow[] = [
   ),
 
   row(
-    "base-ahead",
-    "Set the title of the opening slide to North star. The deck is at revision 1, and your copy says revision 9.",
-    { steps: [refused("base")], landed: unchanged },
-    [edit([{ op: "set", target: aim, text: "North star" }], 9)],
-    setTitle("North star"),
-    "tool",
+    "loop-lands-once",
+    "Add three slides titled One, Two and Three in one call.",
+    {
+      landed: (end) =>
+        ["One", "Two", "Three"].every((word) => has(end, `text="${word}"`)) && slideIds(end).length === slideCount + 3,
+    },
+    [
+      run(
+        'for (const word of ["One", "Two", "Three"]) { const s = insert({ kind: "slide" }); insert({ parent: s, kind: "text", textStyle: "title", text: word }) }',
+      ),
+    ],
+    ["One", "Two", "Three"].map((word) =>
+      run(
+        `const s = insert({ kind: "slide" }); insert({ parent: s, kind: "text", textStyle: "title", text: "${word}" })`,
+      ),
+    ),
+    "calls",
   ),
   row(
     "unknown-deck",
     "Set the title of the deck that has the id missing to North star.",
     { steps: [refused("deck")], landed: unchanged },
-    [edit([{ op: "set", target: aim, text: "North star" }], baseRev, undefined, "missing")],
+    [edit([{ op: "set", target: aim, text: "North star" }], undefined, "missing")],
     setTitle("North star"),
     "tool",
   ),
@@ -405,11 +410,11 @@ export const suite: readonly SuiteRow[] = [
     "tool",
   ),
   row(
-    "empty-changes",
-    "Send an edit with no changes.",
-    { steps: [refused("batch")], landed: unchanged },
-    [edit([], baseRev)],
-    setTitle("North star"),
+    "throw-lands-nothing",
+    "Add a slide, then stop the script with an error, so nothing lands.",
+    { steps: [refused("script")], landed: unchanged },
+    [run('insert({ kind: "slide" }); throw new Error("stop")')],
+    [run('insert({ kind: "slide" })')],
     "tool",
   ),
   row(
@@ -417,31 +422,36 @@ export const suite: readonly SuiteRow[] = [
     "Read the deck, then set the note to Plan was $3.9M.",
     {
       calls: 2,
-      steps: [{ name: "read_deck", outcome: "ok" }, ok],
+      steps: [{ name: "execute", outcome: "ok" }, ok],
       touches: [named.note],
       landed: (end) => textOf(end, named.note) === "Plan was $3.9M",
     },
-    [read(), edit([{ op: "set", target: named.note, text: "Plan was $3.9M" }], baseRev)],
-    [edit([{ op: "set", target: named.note, text: "Plan was $3.9M" }], baseRev)],
+    [read(), edit([{ op: "set", target: named.note, text: "Plan was $3.9M" }])],
+    [edit([{ op: "set", target: named.note, text: "Plan was $3.9M" }])],
     "tool",
   ),
   row(
-    "retry-after-stale",
-    "Set the title of the opening slide to Agent. A person retyped it after your read at revision 1, and the deck is at revision 2.",
+    "measured-caption",
+    "Put a caption that says Source: plan 24 px below the opening slide's title, reading the title's box first.",
     {
-      deck: typedByAPerson,
-      calls: 3,
-      steps: [refused("stale"), { name: "read_deck", outcome: "ok" }, ok],
-      touches: [named.title],
-      landed: (end) => textOf(end, named.title) === "Agent",
+      landed: (end) => {
+        const caption = [...end.nodes.values()].find((node) => textOf(end, node.id) === "Source: plan")
+        const title = doom.propOf(end.nodes.get(named.title as never), "box")
+        const box = caption === undefined ? undefined : doom.propOf(caption, "box")
+        return title !== undefined && box?.y === title.y + title.h + 24
+      },
     },
     [
-      edit([{ op: "set", target: aim, text: "Agent" }], baseRev),
-      read(),
-      edit([{ op: "set", target: aim, text: "Agent" }], baseRev + 1),
+      run(
+        `const t = get({ target: "${named.title}" }).box; insert({ parent: "${slides.opening}", kind: "text", textStyle: "caption", text: "Source: plan", box: { x: t.x, y: t.y + t.h + 24, w: t.w, h: 40 } })`,
+      ),
     ],
-    [edit([{ op: "set", target: aim, text: "Agent" }], baseRev + 1)],
-    "tool",
+    [
+      run(
+        `insert({ parent: "${slides.opening}", kind: "text", textStyle: "caption", text: "Source: plan", box: { x: 160, y: 900, w: 1600, h: 40 } })`,
+      ),
+    ],
+    "landed",
   ),
   row(
     "closed-by-a-person",
@@ -452,16 +462,16 @@ export const suite: readonly SuiteRow[] = [
       touches: [named.note],
       landed: (end) => lineOf(end, named.note).includes('name="Mine"'),
     },
-    [edit([{ op: "set", target: named.note, name: "Agent" }], baseRev + 2, heldRun)],
-    [edit([{ op: "set", target: named.note, name: "Agent" }], baseRev + 2)],
+    [edit([{ op: "set", target: named.note, name: "Agent" }], heldRun)],
+    [edit([{ op: "set", target: named.note, name: "Agent" }])],
     "tool",
   ),
   row(
     "stopped-run",
     "Add the words Late to the roadmap slide in the run that has stopped.",
     { deck: stoppedRun, steps: [refused("run-fenced")] },
-    [edit([{ op: "add", kind: "text", slide: slides.roadmap, text: "Late" }], baseRev + 2, heldRun)],
-    [edit([{ op: "add", kind: "text", slide: slides.roadmap, text: "Late" }], baseRev + 2)],
+    [edit([{ op: "add", kind: "text", slide: slides.roadmap, text: "Late" }], heldRun)],
+    [edit([{ op: "add", kind: "text", slide: slides.roadmap, text: "Late" }])],
     "tool",
   ),
   row(
@@ -483,14 +493,9 @@ export const suite: readonly SuiteRow[] = [
   row(
     "batch-limit",
     "Send a hundred and one changes in one call.",
-    { steps: [refused("batch")], landed: unchanged },
-    [
-      edit(
-        Array.from({ length: 101 }, () => ({ op: "delete", nodes: [named.note] })),
-        baseRev,
-      ),
-    ],
-    one({ op: "delete", nodes: [named.note] }),
+    { steps: [refused("limit")], landed: unchanged },
+    [edit(Array.from({ length: 101 }, (_, at) => ({ op: "set", target: named.note, name: `Note ${String(at)}` })))],
+    one({ op: "set", target: named.note, name: "Note" }),
     "tool",
   ),
   {
@@ -501,7 +506,7 @@ export const suite: readonly SuiteRow[] = [
       deck: blankDeck,
       want: {
         calls: 8,
-        steps: [{ name: "read_deck", outcome: "ok" }, ok, ok, { name: "stop_run", outcome: "ok" }],
+        steps: [{ name: "execute", outcome: "ok" }, ok, ok, { name: "stop_run", outcome: "ok" }],
         touches: [blank.title],
         landed: (end) => {
           const made = slideIds(end)
@@ -535,10 +540,7 @@ function boardAttempt(withChart: boolean): Attempt {
   })
   return [
     read(),
-    edit(
-      Array.from({ length: 4 }, () => ({ op: "slide", add: {} })),
-      baseRev,
-    ),
+    edit(Array.from({ length: 4 }, () => ({ op: "slide", add: {} }))),
     edit(
       [
         { op: "set", target: `${one}`, text: "Q3 board update" },
@@ -560,7 +562,6 @@ function boardAttempt(withChart: boolean): Attempt {
           ],
         },
       ],
-      baseRev + 1,
       boardIds.run,
     ),
     stop(boardIds.run),

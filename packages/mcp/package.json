@@ -31,7 +31,9 @@
     "@airdesign/catalog": "workspace:*",
     "@airdesign/doom": "workspace:*",
     "@airdesign/skills": "workspace:*",
+    "@jitl/quickjs-wasmfile-release-sync": "0.32.0",
     "@modelcontextprotocol/server": "^2.4.0",
+    "quickjs-emscripten-core": "0.32.0",
     "zod": "^4.6.7"
   }
 }

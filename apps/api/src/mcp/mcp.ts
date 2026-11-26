@@ -116,7 +116,8 @@ async function slidePictures(
   deck: DeckId,
   fold: doom.Doom,
   slides: readonly doom.NodeId[],
-): Promise<ReadonlyMap<doom.NodeId, SlideShot>> {
+): Promise<ReadonlyMap<doom.NodeId, SlideShot> | "unwatched"> {
+  if (!pictures.watched(deck)) return "unwatched"
   const keys = slides.map((slide) => [slide, slideKey(fold, slide)] as const)
   const previousFailures = keys.map(([slide, key]) => pictures.fontFailure(deck, slide, key))
   pictures.want(deck, slides)

@@ -25,10 +25,10 @@ export { pictureFit } from "./picture-fit.js"
 export { coverCrop, type ImageCrop } from "./picture-crop.js"
 export { slideKeyText } from "./slide-key.js"
 export {
-  type AddedNode,
   type AgentEdit,
-  type EditBy,
-  agentEditSteps,
+  type AgentSession,
+  type Bake,
+  agentEditSession,
   compileAgentEdit,
   readingOf,
 } from "./agent-edit.js"

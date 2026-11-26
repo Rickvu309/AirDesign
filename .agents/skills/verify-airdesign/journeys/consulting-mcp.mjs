@@ -16,18 +16,7 @@ export default async function drive({ signIn, post, mcpRoutes, expect, note }) {
     expect(answer, JSON.stringify(response)).toMatchObject({ ok: true })
     return answer
   }
-  const {
-    deck,
-    rev,
-    slides: [cover],
-  } = await call("create_deck", { name: "Regional revenue" })
-  const add = await call("edit_deck", {
-    deck,
-    base: rev,
-    changes: [...Array.from({ length: 5 }, () => ({ op: "slide", add: {} })), { op: "slide", delete: cover }],
-  })
-  const { slides } = await call("read_deck", { deck })
-  expect(slides).toHaveLength(5)
+  const { deck } = await call("create_deck", { name: "Regional revenue" })
   const labels = ["Revenue by region", "Market overview", "Q3 results", "Profit by year", "Volume by segment"]
   const conclusions = [
     "Rework pricing strategy",
@@ -36,73 +25,58 @@ export default async function drive({ signIn, post, mcpRoutes, expect, note }) {
     "Profit grew across all regions",
     "Retiree Health Benefit funding requirements are a significant burden, equal to 12% of total revenue in 2010",
   ]
-  const changes = slides.flatMap((slide, index) => [
-    {
-      op: "add",
-      kind: "text",
-      slide,
-      textStyle: "title",
-      text: labels[index],
-      box: { x: 160, y: 80, w: 1600, h: 120 },
-    },
-    ...[14, 10].map((value, bar) => ({
-      op: "add",
-      kind: "shape",
-      slide,
-      name: bar === 0 ? "North" : "South",
-      fill: bar === 0 ? "accent1" : "accent2",
-      box: { x: 160 + bar * 260, y: 800 - value * 30, w: 200, h: value * 30 },
-    })),
-  ])
-  changes.push({
-    op: "add",
-    kind: "shape",
-    slide: slides[0],
-    box: { x: 1850, y: 900, w: 200, h: 60 },
+  const drafted = await call("execute", {
+    deck,
+    script: `
+      const [cover] = get().slides
+      const labels = ${JSON.stringify(labels)}
+      const slides = labels.map((label) => {
+        const s = insert({ kind: "slide" })
+        insert({ parent: s, kind: "text", textStyle: "title", text: label, box: { x: 160, y: 80, w: 1600, h: 120 } })
+        ;[14, 10].forEach((value, bar) =>
+          insert({ parent: s, kind: "shape", name: bar === 0 ? "North" : "South", fill: bar === 0 ? "accent1" : "accent2", box: { x: 160 + bar * 260, y: 800 - value * 30, w: 200, h: value * 30 } }),
+        )
+        return s
+      })
+      remove({ target: cover })
+      insert({ parent: slides[0], kind: "shape", box: { x: 1850, y: 900, w: 200, h: 60 } })
+      slides
+    `,
   })
-  const drafted = await call("edit_deck", { deck, base: add.rev, runId: add.runId, changes })
-  const offSlide = (drafted.findings ?? []).find(({ code }) => code === "off-slide")
+  const slides = drafted.result
+  expect(slides).toHaveLength(5)
+  const offSlide = drafted.problems.find(({ code }) => code === "off-slide")
   expect(offSlide).toEqual({
     code: "off-slide",
     node: expect.any(String),
     note: expect.stringContaining("130 px past the slide's edge"),
   })
-  for (const [index, slide] of slides.entries()) {
-    const answer = await call("read_deck", { deck, slide })
-    expect(answer.findings ?? []).toEqual(index === 0 ? [offSlide] : [])
-    if (index === 0) note(`read_deck findings: ${JSON.stringify(answer.findings)}`)
-  }
-  const fixed = await call("edit_deck", {
+  note(`execute problems: ${JSON.stringify(drafted.problems)}`)
+  const fixed = await call("execute", {
     deck,
-    base: drafted.rev,
     runId: drafted.runId,
-    changes: [
-      { op: "delete", nodes: [offSlide.node] },
-      ...slides.flatMap((slide, index) => [
-        { op: "set", target: slide + ".title", text: conclusions[index] },
-        {
-          op: "add",
-          kind: "text",
-          slide,
-          textStyle: "caption",
-          text: "Note: Figures rounded. Source: Quarterly management accounts",
-          box: { x: 160, y: 930, w: 1500, h: 55 },
-        },
-      ]),
-    ],
+    script: `
+      const conclusions = ${JSON.stringify(conclusions)}
+      remove({ target: ${JSON.stringify(offSlide.node)} })
+      const slides = ${JSON.stringify(slides)}
+      slides.forEach((s, i) => {
+        update({ target: s + ".title", text: conclusions[i] })
+        insert({ parent: s, kind: "text", textStyle: "caption", text: "Note: Figures rounded. Source: Quarterly management accounts", box: { x: 160, y: 930, w: 1500, h: 55 } })
+      })
+      slides.map((s) => get({ target: s }))
+    `,
   })
-  const cleared = (answer) => expect(answer.findings ?? []).toEqual([])
-  cleared(fixed)
-  for (const [index, slide] of slides.entries()) {
-    const answer = await call("read_deck", { deck, slide })
-    cleared(answer)
-    expect(answer.layers).toContain(conclusions[index])
-    expect(answer.layers).toContain("Source: Quarterly management accounts")
+  expect(fixed.problems).toEqual([])
+  for (const [index, read] of fixed.result.entries()) {
+    expect(read.problems).toEqual([])
+    expect(read.layers).toContain(conclusions[index])
+    expect(read.layers).toContain("Source: Quarterly management accounts")
   }
-  const measured = await call("read_deck", { deck, slide: slides[4] })
-  expect(measured.layers).toMatch(/1600x123\.2 style=title/)
+  expect(fixed.result[4].layers).toMatch(/1600x123\.2 style=title/)
+  const stopped = await call("stop_run", { deck, runId: fixed.runId })
+  expect(stopped).toMatchObject({ ok: true })
   note("The 17-word title wrapped to two measured lines at the default 56 px.")
   note(
-    "One edit fixed all five slides. Fresh reads confirmed the saved command titles and sources, and the layout findings cleared.",
+    "Two execute calls built and fixed all five slides; get inside the second confirmed the titles, sources and cleared problems.",
   )
 }

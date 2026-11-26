@@ -8,7 +8,7 @@ A line's two ends are each a point on the slide or a site on another layer: its 
 - `connector-fixed` a line with both ends on layers does not move by a drag of its own (`movable` in `apps/web/src/editor/move-writes.ts`); move the layers instead.
 - `connector-copy` Ctrl/Cmd+D on a frame holding two shapes and a connector between them copies the connector joined to the copied shapes.
 - `connector-panel` the Design panel for a line shows Align, Border and Shadow (`panel-connector`).
-- `agent-line` an agent's `airdesign_edit_deck` change `{ op: "add", kind: "line", slide, box, arrow, stroke, strokeWidth }` adds a line across its box, with an arrowhead at its end when `arrow` is true.
+- `agent-line` an agent's `airdesign_execute` operation, Doom's change `{ op: "add", kind: "line", slide, box, arrow, stroke, strokeWidth }` adds a line across its box, with an arrowhead at its end when `arrow` is true.
 
 ## How to get to it (user POV)
 

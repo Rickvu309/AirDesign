@@ -285,8 +285,8 @@ describe("hostile input over every route", () => {
             id: 1,
             method: "tools/call",
             params: {
-              name: "airdesign_edit_deck",
-              arguments: { deck, base: 1, changes: [{ value: "v", node: "258.7", readAt: 0 }] },
+              name: "airdesign_execute",
+              arguments: { deck, script: 'update({ target: "258.7", text: "v" })' },
             },
           },
         },
@@ -503,7 +503,7 @@ describe("hostile input over every route", () => {
           jsonrpc: "2.0",
           id: 1,
           method: "tools/call",
-          params: { name: "airdesign_edit_deck", arguments: toolArguments },
+          params: { name: "airdesign_execute", arguments: toolArguments },
         }),
       ),
     }
@@ -511,7 +511,7 @@ describe("hostile input over every route", () => {
 
   for (const hostile of ["a\u0000b", "\ud800", "a b"]) {
     it(`refuses MCP tool arguments naming the deck ${JSON.stringify(hostile)} before Postgres`, async () => {
-      const answer = await send(mcpCall({ deck: hostile, base: 0, changes: [] }, signedHeaders()))
+      const answer = await send(mcpCall({ deck: hostile, script: "get()" }, signedHeaders()))
       expect(answer.status).toBe(200)
       expect(answer.text).not.toContain('"refusal":"store"')
       expect(answer.text).toContain('"refusal":"deck"')
@@ -519,10 +519,10 @@ describe("hostile input over every route", () => {
   }
 
   it("takes a bearer on /mcp only in the Bearer scheme", async () => {
-    const good = await send(mcpCall({ deck, base: 0, changes: [] }, [`authorization: Bearer ${accessToken}`]))
+    const good = await send(mcpCall({ deck, script: "get()" }, [`authorization: Bearer ${accessToken}`]))
     expect(good.status).toBe(200)
     for (const header of [accessToken, `Basic ${accessToken}`, `Basic  ${accessToken}`, `Bearer ${accessToken} x`]) {
-      const answer = await send(mcpCall({ deck, base: 0, changes: [] }, [`authorization: ${header}`]))
+      const answer = await send(mcpCall({ deck, script: "get()" }, [`authorization: ${header}`]))
       expect(record(header.slice(0, 7), answer)).toContain("answered 401")
     }
   })

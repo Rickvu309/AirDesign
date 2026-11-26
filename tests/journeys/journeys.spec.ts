@@ -39,8 +39,15 @@ async function drive(name: string, page: Page, context: BrowserContext): Promise
   }
 }
 
+test.describe.serial("journeys that play recorded Aira streams, one at a time", () => {
+  for (const name of ["aira-panel", "execute-agent"]) {
+    test(name, async ({ page, context }) => {
+      await drive(name, page, context)
+    })
+  }
+})
+
 for (const name of [
-  "aira-panel",
   "chart-cutover",
   "linked-offline-undo",
   "linked-chart-refresh",

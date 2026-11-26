@@ -27,7 +27,7 @@ describe("skills pack", () => {
   it("opens every skill named in the index and indexes every skill file", () => {
     const index = readSkillIndex()
     expect(index.skills.length).toBeGreaterThan(0)
-    expect(index.markdown).toContain("edit-deck")
+    expect(index.markdown).toContain("execute")
 
     for (const entry of index.skills) {
       expect(entry.when.length).toBeGreaterThan(0)
@@ -41,8 +41,8 @@ describe("skills pack", () => {
   })
 
   it("accepts an optional .md suffix and rejects index, styles and traversal paths", () => {
-    const plain = readSkill("edit-deck")
-    const withExtension = readSkill("edit-deck.md")
+    const plain = readSkill("execute")
+    const withExtension = readSkill("execute.md")
     expect(withExtension).toEqual(plain)
 
     expect(readSkill("")).toBeUndefined()

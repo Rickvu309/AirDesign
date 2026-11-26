@@ -2,6 +2,7 @@ import { picturesWantedMilliseconds, type DeckId, type SlidePictures } from "@ai
 import type { NodeId } from "@airdesign/doom"
 
 export const picturesCap = 200_000_000
+export const watchGrace = 5_000
 
 type Held = { readonly key: string; readonly data: string }
 
@@ -29,6 +30,7 @@ export class DeckPictures {
   private readonly waiting = new Map<DeckId, Set<() => void>>()
   private readonly wanting = new Map<DeckId, Wanted>()
   private readonly asking = new Map<DeckId, Set<() => void>>()
+  private readonly seen = new Map<DeckId, number>()
   private bytes = 0
   private readonly cap: number
   private readonly now: () => number
@@ -58,7 +60,16 @@ export class DeckPictures {
     return slides.filter((slide) => held.slides.has(slide))
   }
 
+  watched(deck: DeckId): boolean {
+    if ((this.asking.get(deck)?.size ?? 0) > 0) return true
+    const seen = this.seen.get(deck)
+    if (seen !== undefined && this.now() - seen < watchGrace) return true
+    this.seen.delete(deck)
+    return false
+  }
+
   asked(deck: DeckId, signal: AbortSignal): Promise<boolean> {
+    this.seen.set(deck, this.now())
     return new Promise((resolve) => {
       if (signal.aborted) {
         resolve(false)
@@ -66,11 +77,15 @@ export class DeckPictures {
       }
       const held = this.asking.get(deck) ?? new Set()
       const wake = () => {
+        this.seen.set(deck, this.now())
         signal.removeEventListener("abort", stop)
         resolve(true)
       }
       const stop = () => {
-        this.asking.get(deck)?.delete(wake)
+        this.seen.set(deck, this.now())
+        const left = this.asking.get(deck)
+        left?.delete(wake)
+        if (left?.size === 0) this.asking.delete(deck)
         resolve(false)
       }
       held.add(wake)
@@ -80,6 +95,7 @@ export class DeckPictures {
   }
 
   keep(deck: DeckId, revision: number, pictures: SlidePictures): readonly NodeId[] {
+    this.seen.set(deck, this.now())
     const was = this.decks.get(deck)
     if (was !== undefined && was.revision > revision) return missingOf(was)
     const keys = new Map(pictures.keys.map(({ slide, key }) => [slide, key]))

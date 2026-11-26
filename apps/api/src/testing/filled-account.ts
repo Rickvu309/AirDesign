@@ -1,3 +1,4 @@
+import { scriptOf } from "@airdesign/mcp/testing/evals"
 import { createHash, randomBytes } from "node:crypto"
 import {
   airaRoutes,
@@ -178,10 +179,9 @@ async function agentCall(served: Served, access: string, name: string, args: unk
 
 async function agentEdit(served: Served, access: string): Promise<void> {
   const made = await agentCall(served, access, "airdesign_create_deck", {})
-  await agentCall(served, access, "airdesign_edit_deck", {
+  await agentCall(served, access, "airdesign_execute", {
     deck: made.deck,
-    base: made.rev,
-    changes: [{ op: "add", kind: "text", slide: made.slides[0], text: "agent" }],
+    script: scriptOf([{ op: "add", kind: "text", slide: made.slides[0], text: "agent" }]),
   })
 }
 

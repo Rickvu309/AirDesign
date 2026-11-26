@@ -1,3 +1,4 @@
+import { scriptOf } from "@airdesign/mcp/testing/evals"
 import { randomBytes } from "node:crypto"
 
 import { mcpRoutes, readDeckId } from "@airdesign/catalog"
@@ -58,25 +59,22 @@ it("restores a connector's original free point when undoing one agent run", asyn
     const slide = startIds.slide
     const original = { x: 230, y: 145 }
     const end = { x: 100, y: 350 }
-    const madeLine = await call("edit_deck", {
+    const madeLine = await call("execute", {
       deck: id,
-      base: created.rev,
-      changes: [{ op: "add", kind: "line", slide, from: original, to: end, route: "straight" }],
+      script: scriptOf([{ op: "add", kind: "line", slide, from: original, to: end, route: "straight" }]),
     })
-    const line = addedId(madeLine.added)
-    const madeFrame = await call("edit_deck", {
+    const line = addedId(madeLine.made)
+    const madeFrame = await call("execute", {
       deck: id,
-      base: madeLine.rev,
-      changes: [{ op: "add", kind: "frame", slide, box: { x: 400, y: 200, w: 200, h: 100 } }],
+      script: scriptOf([{ op: "add", kind: "frame", slide, box: { x: 400, y: 200, w: 200, h: 100 } }]),
     })
-    const target = addedId(madeFrame.added)
+    const target = addedId(madeFrame.made)
     const runId = madeFrame.runId
     if (typeof runId !== "string") throw new Error("no run in tool answer")
-    await call("edit_deck", {
+    await call("execute", {
       deck: id,
-      base: madeFrame.rev,
       runId,
-      changes: [{ op: "set", target: line, from: { layer: target, side: "right" } }],
+      script: scriptOf([{ op: "set", target: line, from: { layer: target, side: "right" } }]),
     })
     expect((await fold()).nodes.get(line)).toMatchObject({ geometry: { start: { node: target, site: "r" }, end } })
     await call("undo_run", { deck: id, runId })
@@ -90,9 +88,10 @@ it("restores a connector's original free point when undoing one agent run", asyn
   }
 })
 
-function addedId(added: unknown) {
-  const first: unknown = Array.isArray(added) ? added[0] : undefined
-  if (typeof first !== "object" || first === null || !("id" in first) || typeof first.id !== "string")
-    throw new Error("no added layer in tool answer")
-  return nodeId(first.id)
+function addedId(made: unknown) {
+  const first: unknown = Array.isArray(made) ? made[0] : undefined
+  const id =
+    typeof first === "object" && first !== null && "ids" in first && Array.isArray(first.ids) ? first.ids[0] : undefined
+  if (typeof id !== "string") throw new Error("no added layer in tool answer")
+  return nodeId(id)
 }

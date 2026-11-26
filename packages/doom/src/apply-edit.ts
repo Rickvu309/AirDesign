@@ -22,6 +22,7 @@ import { parentLanding } from "./parent-landing.js"
 import type { End } from "./geometry.js"
 import { freedInFold } from "./lost-ends.js"
 import { type Theme, themeKeys, withThemeValue } from "./theme.js"
+import { layeredOver } from "./layered-map.js"
 
 type Parent = { readonly id: NodeId; readonly at: string }
 type Working = {
@@ -55,11 +56,12 @@ function staysDeleted(doom: Doom, writes: readonly Write[]): Set<NodeId> {
   return dropping
 }
 
-function open(doom: Doom): Working {
+function open(doom: Doom, layered = false): Working {
+  const copy = layered ? layeredOver : <K, V>(map: ReadonlyMap<K, V>) => new Map(map)
   return {
-    nodes: new Map(doom.nodes),
-    revs: new Map(doom.revs as Map<NodeId, Map<RevisionKey, Rev>>),
-    children: new Map(doom.children as Map<NodeId, NodeId[]>),
+    nodes: copy(doom.nodes),
+    revs: copy(doom.revs as Map<NodeId, Map<RevisionKey, Rev>>),
+    children: copy(doom.children as Map<NodeId, NodeId[]>),
     runs: new Map(doom.runs),
     created: new Set(),
     copied: new Set(),
@@ -263,6 +265,7 @@ export type Known = {
   readonly partial?: true
   readonly freeing?: true
   readonly rebuilding?: true
+  readonly layered?: true
 }
 export type Landing = { readonly doom: Doom; readonly delta: Counts }
 
@@ -277,14 +280,20 @@ function livesAsSlide(nodes: ReadonlyMap<NodeId, Node>, node: Node | undefined):
   return row !== undefined && !deleted(row) && (row as { hidden?: boolean }).hidden !== true
 }
 
+const counted = new WeakMap<Doom, Counts>()
+
 export function countsOf(doom: Doom): Counts {
+  const known = counted.get(doom)
+  if (known !== undefined) return known
   let elements = 0
   let slides = 0
   for (const node of doom.nodes.values()) {
     if (livesAsElement(node)) elements += 1
     if (livesAsSlide(doom.nodes, node)) slides += 1
   }
-  return { elements, slides }
+  const counts = { elements, slides }
+  counted.set(doom, counts)
+  return counts
 }
 
 export const hasDeck = (doom: Doom): boolean => {
@@ -328,7 +337,7 @@ function protect(work: Working, landed: Landed, touched: ReadonlySet<NodeId>): v
 export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Refusal {
   if (doom.onces.has(landed.once)) return { doom, delta: noChange }
   if (landed.readBase !== undefined && landed.readBase !== doom.rev) return refuse("stale")
-  const work = open(doom)
+  const work = open(doom, known.layered === true)
   const fenced = guardRun(work, landed)
   if (fenced !== undefined) return fenced
   if (
@@ -403,17 +412,18 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
     })
   }
   protect(work, landed, new Set(expanded.writes.map((each) => each.node)))
-  return {
-    doom: {
-      nodes: work.nodes,
-      revs: work.revs,
-      children: work.children,
-      rev: rev(Math.max(doom.rev, landed.rev)),
-      onces: new Map(doom.onces).set(landed.once, landed.rev),
-      runs: work.runs,
-    },
-    delta,
+  const landedDoom: Doom = {
+    nodes: work.nodes,
+    revs: work.revs,
+    children: work.children,
+    rev: rev(Math.max(doom.rev, landed.rev)),
+    onces: (known.layered === true ? layeredOver(doom.onces) : new Map(doom.onces)).set(landed.once, landed.rev),
+    runs: work.runs,
   }
+  const was = counted.get(doom)
+  if (was !== undefined)
+    counted.set(landedDoom, { elements: was.elements + delta.elements, slides: was.slides + delta.slides })
+  return { doom: landedDoom, delta }
 }
 
 export function applyEdit(doom: Doom, landed: Landed): Doom | Refusal {
@@ -436,12 +446,13 @@ export function applyBeforeRebuild(doom: Doom, landed: Landed): Doom | Refusal {
   return isRefusal(landing) ? landing : landing.doom
 }
 
-export function applyStep(doom: Doom, landed: Landed, rebuilding = false): Doom | Refusal {
+export function applyStep(doom: Doom, landed: Landed, rebuilding = false, layered = false): Doom | Refusal {
   const landing = landEdit(doom, landed, {
     counts: () => countsOf(doom),
     deck: () => hasDeck(doom),
     partial: true,
     ...(rebuilding ? { rebuilding } : {}),
+    ...(layered ? { layered } : {}),
   })
   return isRefusal(landing) ? landing : landing.doom
 }

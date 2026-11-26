@@ -87,12 +87,9 @@ describe("the schema an agent is shown", () => {
     })
   })
 
-  it("shows airdesign_edit_deck with no length caps, the cap on changes an agent can meet, and each colour and layer id once", () => {
-    const shown = JSON.stringify(toolInputSchema("edit_deck"))
+  it("shows airdesign_execute without the script's length cap, which its description names instead", () => {
+    const shown = JSON.stringify(toolInputSchema("execute"))
     expect(shown).not.toContain('"maxLength"')
-    expect(shown).not.toContain('"minProperties"')
-    expect(shown).toContain('"maxItems":100')
-    expect(shown.split("accent[1-6]").length - 1).toBe(1)
-    expect(shown.split('"^[a-z0-9]{1,16}:[0-9]{1,12}$"').length - 1).toBe(1)
+    expect(shown).toContain('"script"')
   })
 })

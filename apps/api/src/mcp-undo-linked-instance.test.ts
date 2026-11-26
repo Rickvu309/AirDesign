@@ -1,3 +1,4 @@
+import { scriptOf } from "@airdesign/mcp/testing/evals"
 import { randomBytes } from "node:crypto"
 
 import { doomRoutes, mcpRoutes, readDeckId } from "@airdesign/catalog"
@@ -120,10 +121,9 @@ it.each([
       await send({ once: "place", author: person, writes: [...seedFont, ...writes], readBase: opened.rev })
       if (scenario === "a body font change") {
         const current = await fold()
-        const changed = await call("edit_deck", {
+        const changed = await call("execute", {
           deck: id,
-          base: current.rev,
-          changes: [{ op: "deck", fonts: { body: "Geist" } }],
+          script: scriptOf([{ op: "deck", fonts: { body: "Geist" } }]),
         })
         const next = await fold()
         expect(next.rev).toBe(current.rev + 1)
@@ -134,10 +134,9 @@ it.each([
         return
       }
       const update = async (value: number) => {
-        const run = await call("edit_deck", {
+        const run = await call("execute", {
           deck: id,
-          base: (await fold()).rev,
-          changes: [{ op: "set", target: frame, name: `Chart ${value}` }],
+          script: scriptOf([{ op: "set", target: frame, name: `Chart ${value}` }]),
         })
         const current = await fold()
         const runId = run.runId
@@ -159,11 +158,10 @@ it.each([
         const instance = propOf(before.nodes.get(frame), "instance")!
         const label = instance.parts.find(({ key }) => key[0] === "category")!.node
         const runId = await update(2)
-        await call("edit_deck", {
+        await call("execute", {
           deck: id,
-          base: (await fold()).rev,
           runId,
-          changes: [{ op: "set", target: label, textStyle: "body" }],
+          script: scriptOf([{ op: "set", target: label, textStyle: "body" }]),
         })
         const result = await ask(server.base, "POST", doomRoutes.run.path, { deck: id, run: runId }, cookie)
         const log = doomRoutes.run.result(result.json)
@@ -198,10 +196,9 @@ it.each([
         const runId = mixed
           ? await update(2)
           : (
-              await call("edit_deck", {
+              await call("execute", {
                 deck: id,
-                base: (await fold()).rev,
-                changes: [{ op: "set", target: slide, name: "Place chart" }],
+                script: scriptOf([{ op: "set", target: slide, name: "Place chart" }]),
               })
             ).runId
         if (typeof runId !== "string") throw new Error("Missing run ID")

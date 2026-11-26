@@ -55,5 +55,5 @@ export type DeckHost = {
     deck: DeckId,
     fold: doom.Doom,
     slides: readonly doom.NodeId[],
-  ) => Promise<ReadonlyMap<doom.NodeId, SlideShot>>
+  ) => Promise<ReadonlyMap<doom.NodeId, SlideShot> | "unwatched">
 }

@@ -2,16 +2,16 @@
   "check": "checks-server.md#turn",
   "covers": [
     {
-      "file": "packages/mcp/src/edit-tool.ts",
-      "names": ["editDeckTool"],
-      "digest": "da24344fa117",
-      "blob": "aaf2608bce4f979071ac369e3a144814dc06ecb9"
+      "file": "packages/mcp/src/execute-tool.ts",
+      "names": ["executeTool"],
+      "digest": "ba194e4a06ed",
+      "blob": "0740c5add2e66a4824dd3840fa7cdd689151e619"
     },
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["guardRun", "protect"],
       "digest": "be43bc4f7607",
-      "blob": "4f3249169a85a8fdb3a255a285d094e7f7c3ea2e"
+      "blob": "95f4b9361999862fc725f0fb64a64251595eb913"
     }
   ]
 }

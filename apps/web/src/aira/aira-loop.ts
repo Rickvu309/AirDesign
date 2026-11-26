@@ -322,7 +322,7 @@ function untilStopped(work: Promise<unknown>, signal: AbortSignal): Promise<void
 }
 
 function changes(call: ToolCall): boolean {
-  return catalog[opOf.get(call.name) ?? "read_deck"].kind === "command"
+  return catalog[opOf.get(call.name) ?? "list_decks"].kind === "command"
 }
 
 async function callTool(

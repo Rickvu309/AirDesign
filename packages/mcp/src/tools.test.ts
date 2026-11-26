@@ -3,6 +3,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
 import { emptyLog, callTool, type Session, type ToolResult } from "./index.js"
+import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks, type MemoryDecks } from "./testing/memory-decks.js"
 import { offTheme } from "./testing/suite-art.js"
 
@@ -48,12 +49,16 @@ async function created(by: ReturnType<typeof agent>) {
   return made.answer as { deck: string; rev: number; slides: string[] }
 }
 
-const edit = (deck: string, base: number, changes: unknown[], runId?: string) => ({
+const edit = (deck: string, changes: unknown[], runId?: string) => ({
   deck,
-  base,
-  changes,
+  script: scriptOf(changes),
   ...(runId === undefined ? {} : { runId }),
 })
+
+async function read(by: ReturnType<typeof agent>, deck: string, fields: Readonly<Record<string, unknown>> = {}) {
+  const got = await by.call("execute", { deck, script: `get(${JSON.stringify(fields)})` })
+  return got.ok ? { ...got, answer: got.answer.result as Record<string, unknown> } : got
+}
 
 const person: doom.Author = { kind: "person", id: "quan" }
 
@@ -101,13 +106,13 @@ describe("create_deck and list_decks", () => {
   })
 })
 
-describe("read_deck", () => {
-  it("prints a line for each layer and answers the rev to send as base", async () => {
+describe("get in execute", () => {
+  it("prints a line for each layer and the deck's rev", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
-    const read = await by.call("read_deck", { deck })
-    expect(read.answer).toMatchObject({ ok: true, deck, rev, slides })
-    const lines = String(read.answer.layers).split("\n")
+    const got = await read(by, deck)
+    expect(got.answer).toMatchObject({ kind: "deck", deck, rev, slides })
+    const lines = String(got.answer.layers).split("\n")
     expect(lines[0]).toMatch(/^slide /)
     expect(lines[1]).toMatch(/^ {2}\S+ text:title @160,380 1600x160 .*text="Untitled"/)
   })
@@ -115,101 +120,97 @@ describe("read_deck", () => {
   it("reads one slide, and refuses a slide the deck does not have", async () => {
     const by = agent()
     const { deck, slides } = await created(by)
-    const one = await by.call("read_deck", { deck, slide: slides[0] })
+    const one = await read(by, deck, { target: slides[0] })
     expect(one.ok).toBe(true)
-    const none = await by.call("read_deck", { deck, slide: "z:9" })
+    const none = await read(by, deck, { target: "z:9" })
     expect(none.answer).toMatchObject({ ok: false, refusal: "dead", node: "z:9" })
   })
 
   it("pages a long deck by slide with next, and the next page continues from it", async () => {
     const by = agent()
-    const { deck, rev } = await created(by)
+    const { deck } = await created(by)
     const words = "word ".repeat(1_200).trim()
-    const added = await by.call(
-      "edit_deck",
+    await by.call(
+      "execute",
       edit(
         deck,
-        rev,
         Array.from({ length: 12 }, () => ({ op: "slide", add: {} })),
       ),
     )
-    const slides = (await by.call("read_deck", { deck })).answer.slides as string[]
+    const slides = (await read(by, deck)).answer.slides as string[]
     const filled = await by.call(
-      "edit_deck",
+      "execute",
       edit(
         deck,
-        (added.answer as { rev: number }).rev,
         slides.map((slide) => ({ op: "add", kind: "text", slide, text: words, box: { x: 0, y: 0, w: 1920, h: 900 } })),
       ),
     )
     expect(filled.ok).toBe(true)
-    const first = await by.call("read_deck", { deck })
+    const first = await read(by, deck)
     const next = (first.answer as { next?: string }).next
     expect(next).toBeDefined()
-    const rest = await by.call("read_deck", { deck, cursor: next })
+    const rest = await read(by, deck, { cursor: next })
     expect(String(rest.answer.layers).split("\n")[0]).toContain(next)
     expect(String(first.answer.layers)).not.toContain(`slide ${next}`)
   })
 
   it("refuses an unknown deck", async () => {
     const by = agent()
-    expect((await by.call("read_deck", { deck: "nothere" })).answer).toMatchObject({ ok: false, refusal: "deck" })
+    expect((await read(by, "nothere")).answer).toMatchObject({ ok: false, refusal: "deck" })
   })
 })
 
-describe("edit_deck", () => {
+describe("changes in execute", () => {
   it("starts a run, lands the changes at the next rev and answers the ids it added", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
     const landed = await by.call(
-      "edit_deck",
-      edit(deck, rev, [{ op: "add", kind: "text", slide: slides[0], text: "Hello **there**", textStyle: "heading" }]),
+      "execute",
+      edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "Hello **there**", textStyle: "heading" }]),
     )
     expect(landed.answer).toMatchObject({
       ok: true,
       deck,
       rev: rev + 1,
       runId: expect.any(String),
-      added: [{ change: 0, id: expect.stringMatching(/^m\w+:1$/), kind: "text" }],
+      made: [{ op: 1, verb: "insert", ids: [expect.stringMatching(/^m\w+:1$/)] }],
     })
     const fold = by.decks.decks.get(deck as never)!
     expect(fold.runs.get((landed.answer as { runId: string }).runId)?.phase).toBe("running")
-    const read = await by.call("read_deck", { deck })
-    expect(String(read.answer.layers)).toContain('text="Hello **there**"')
+    expect(String((await read(by, deck)).answer.layers)).toContain('text="Hello **there**"')
   })
 
   it("lands a hex colour and names the nearest theme colour in the answer's JSON, and finds nothing on names", async () => {
     const by = agent()
-    const { deck, rev, slides } = await created(by)
+    const { deck, slides } = await created(by)
     const landed = await by.call(
-      "edit_deck",
-      edit(deck, rev, [{ op: "set", target: `${slides[0]!}.title`, text: "Sales grew", color: offTheme }]),
+      "execute",
+      edit(deck, [{ op: "set", target: `${slides[0]!}.title`, text: "Sales grew", color: offTheme }]),
     )
-    const answer = landed.answer as { note: string; findings: { code: string; note: string }[] }
+    const answer = landed.answer as { note: string; problems: { code: string; note: string }[] }
     expect(landed.ok).toBe(true)
     expect(answer.note).toContain("fix it unless the person asked for it")
-    expect(answer.findings).toMatchObject([{ code: "off-palette", color: offTheme, to: expect.any(String) }])
-    expect(answer.findings[0]!.note).toContain(
+    expect(answer.problems).toMatchObject([{ code: "off-palette", color: offTheme, to: expect.any(String) }])
+    expect(answer.problems[0]!.note).toContain(
       `${offTheme} is not a theme colour, so a new template will not recolour it`,
     )
     const plain = await by.call(
-      "edit_deck",
+      "execute",
       edit(
         deck,
-        rev + 1,
         [{ op: "set", target: `${slides[0]!}.title`, color: "accent1" }],
         (landed.answer as { runId: string }).runId,
       ),
     )
-    expect(plain.answer).not.toHaveProperty("findings")
+    expect(plain.answer.problems).toEqual([])
   })
 
   it("answers only the root of what a grid add created", async () => {
     const by = agent()
-    const { deck, rev, slides } = await created(by)
+    const { deck, slides } = await created(by)
     const landed = await by.call(
-      "edit_deck",
-      edit(deck, rev, [
+      "execute",
+      edit(deck, [
         {
           op: "add",
           kind: "frame",
@@ -221,41 +222,37 @@ describe("edit_deck", () => {
         },
       ]),
     )
-    expect((landed.answer as { added: { kind: string }[] }).added).toMatchObject([{ change: 0, kind: "frame" }])
+    const [made] = (landed.answer as { made: { ids: string[] }[] }).made
+    expect(made!.ids).toHaveLength(1)
     const fold = by.decks.decks.get(deck as never)!
+    expect(doom.agentKind(fold.nodes.get(made!.ids[0] as never)!)).toBe("frame")
     expect(fold.nodes.size).toBeGreaterThan(8)
   })
 
-  it("lands a second edit in the same run, and an edit with no runId in a new one", async () => {
+  it("lands a second call in the same run, and a call with no runId in a new one", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
-    const first = await by.call(
-      "edit_deck",
-      edit(deck, rev, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]),
-    )
+    const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
     const { runId } = first.answer as { runId: string }
     const second = await by.call(
-      "edit_deck",
-      edit(deck, rev + 1, [{ op: "add", kind: "text", slide: slides[0], text: "B" }], runId),
+      "execute",
+      edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "B" }], runId),
     )
     expect(second.answer).toMatchObject({ ok: true, rev: rev + 2, runId })
-    const third = await by.call(
-      "edit_deck",
-      edit(deck, rev + 2, [{ op: "add", kind: "text", slide: slides[0], text: "C" }]),
-    )
+    const third = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "C" }]))
     expect((third.answer as { runId: string }).runId).not.toBe(runId)
   })
 
-  it("lands nothing and answers unchanged for an edit that sets only values the deck already holds", async () => {
+  it("lands nothing and answers unchanged for a call that sets only values the deck already holds", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
     const set = [{ op: "set", target: `${slides[0]!}.title`, text: "Same" }]
-    const first = await by.call("edit_deck", edit(deck, rev, set))
+    const first = await by.call("execute", edit(deck, set))
     const { runId } = first.answer as { runId: string }
     const runs = by.decks.decks.get(deck as never)!.runs.size
-    const again = await by.call("edit_deck", edit(deck, rev + 1, set, runId))
+    const again = await by.call("execute", edit(deck, set, runId))
     expect(again.answer).toMatchObject({ ok: true, unchanged: true, rev: rev + 1, runId })
-    const fresh = await by.call("edit_deck", edit(deck, rev + 1, set))
+    const fresh = await by.call("execute", edit(deck, set))
     expect(fresh.answer).toMatchObject({ ok: true, unchanged: true, rev: rev + 1 })
     expect(fresh.answer).not.toHaveProperty("runId")
     const fold = by.decks.decks.get(deck as never)!
@@ -263,12 +260,12 @@ describe("edit_deck", () => {
     expect(fold.runs.size).toBe(runs)
   })
 
-  it("lands none of a batch when one change is refused, and names the change, its place and the field", async () => {
+  it("lands none of a call when one operation is refused, and names the operation, its line and the field", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
     const refused = await by.call(
-      "edit_deck",
-      edit(deck, rev, [
+      "execute",
+      edit(deck, [
         { op: "add", kind: "text", slide: slides[0], text: "A" },
         { op: "set", target: "z:9", text: "B" },
       ]),
@@ -278,168 +275,115 @@ describe("edit_deck", () => {
       ok: false,
       refusal: "dead",
       refused: "missing",
-      change: "set z:9",
-      at: 1,
+      op: 2,
+      verb: "update",
+      line: 2,
       field: "target",
       node: "z:9",
     })
     expect(by.decks.decks.get(deck as never)!.rev).toBe(rev)
-    expect(String(refused.answer.note)).toContain("Change 2 (set z:9)")
+    expect(String(refused.answer.note)).toContain("Operation 2 (update) at line 2")
   })
 
-  it("names the change that has a field the op does not take", async () => {
+  it("names the operation that has a field its kind does not take", async () => {
     const by = agent()
-    const { deck, rev, slides } = await created(by)
+    const { deck, slides } = await created(by)
     const refused = await by.call(
-      "edit_deck",
-      edit(deck, rev, [
+      "execute",
+      edit(deck, [
         { op: "add", kind: "text", slide: slides[0], text: "A" },
         { op: "add", kind: "line", slide: slides[0], text: "no" },
       ]),
     )
-    expect(refused.answer).toMatchObject({
+    expect(refused.answer).toMatchObject({ ok: false, refusal: "field", refused: "shape", op: 2, field: "text" })
+  })
+
+  it("names the operation whose form cannot be read", async () => {
+    const by = agent()
+    const { deck } = await created(by)
+    const refused = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: "bad id" }]))
+    expect(refused.answer).toMatchObject({ ok: false, refusal: "dead", op: 1, field: "parent" })
+  })
+
+  it("refuses a call over 100 changes at the operation that passes it, an empty script and an unknown field", async () => {
+    const by = agent()
+    const { deck, rev, slides } = await created(by)
+    const change = { op: "add", kind: "text", slide: slides[0], text: "A", box: { x: 0, y: 0, w: 100, h: 50 } }
+    const many = await by.call(
+      "execute",
+      edit(
+        deck,
+        Array.from({ length: 101 }, () => change),
+      ),
+    )
+    expect(many.answer).toMatchObject({ ok: false, refusal: "limit", op: 101 })
+    expect(String(many.answer.note)).toContain("at most 100 changes")
+    expect((await by.call("execute", { deck, script: "" })).answer).toMatchObject({ ok: false, refusal: "field" })
+    expect((await by.call("execute", { ...edit(deck, [change]), actor: "person" })).answer).toMatchObject({
       ok: false,
       refusal: "field",
-      refused: "shape",
-      change: "add line",
-      at: 1,
-      field: "text",
+      field: "actor",
     })
+    expect(by.decks.decks.get(deck as never)!.rev).toBe(rev)
   })
 
-  it("names the change whose form cannot be read", async () => {
-    const by = agent()
-    const { deck, rev } = await created(by)
-    const refused = await by.call("edit_deck", edit(deck, rev, [{ op: "add", kind: "text", slide: "bad id" }]))
-    expect(refused.answer).toMatchObject({ ok: false, refusal: "field", refused: "shape", change: "add", at: 0 })
-  })
-
-  it("refuses a base the deck has not reached, and a call with no changes or too many", async () => {
+  it("answers a call sent again with the same once with what it landed, and lands it once", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
-    const change = { op: "add", kind: "text", slide: slides[0], text: "A" }
-    expect((await by.call("edit_deck", edit(deck, rev + 5, [change]))).answer).toMatchObject({ refusal: "base", rev })
-    expect((await by.call("edit_deck", edit(deck, rev, []))).answer).toMatchObject({ ok: false, refusal: "batch" })
-    expect(
-      (
-        await by.call(
-          "edit_deck",
-          edit(
-            deck,
-            rev,
-            Array.from({ length: 101 }, () => change),
-          ),
-        )
-      ).answer,
-    ).toMatchObject({ ok: false, refusal: "batch" })
-    expect((await by.call("edit_deck", { deck, changes: [change] })).answer).toMatchObject({
-      ok: false,
-      refusal: "base",
-    })
-    expect((await by.call("edit_deck", { ...edit(deck, rev, [change]), actor: "person" })).answer).toMatchObject({
-      ok: false,
-      refusal: "field",
-    })
-  })
-
-  it("answers a call sent again with the same once as the first time and lands it once", async () => {
-    const by = agent()
-    const { deck, rev, slides } = await created(by)
-    const args = edit(deck, rev, [{ op: "add", kind: "shape", slide: slides[0], text: "A" }])
-    const first = await by.call("edit_deck", args, "again")
-    const again = await by.call("edit_deck", args, "again")
-    expect(again.answer).toEqual(first.answer)
-    expect(by.decks.decks.get(deck as never)!.rev).toBe(rev + 1)
-  })
-
-  it("labels each added id with its change and kind, in the words and in the answer, and again when sent again", async () => {
-    const by = agent()
-    const { deck, rev, slides } = await created(by)
-    const args = edit(deck, rev, [
+    const args = edit(deck, [
       { op: "set", target: `${slides[0]}.title`, text: "A" },
       { op: "add", kind: "shape", slide: slides[0], box: { x: 0, y: 0, w: 10, h: 10 } },
       { op: "slide", add: {} },
     ])
-    const first = await by.call("edit_deck", args, "labels")
-    expect(first.answer.added).toEqual([
-      { change: 1, id: expect.any(String), kind: "shape" },
-      { change: 2, id: expect.any(String), kind: "slide" },
+    const first = await by.call("execute", args, "again")
+    expect(first.answer.made).toEqual([
+      { op: 2, verb: "insert", ids: [expect.any(String)] },
+      { op: 3, verb: "insert", ids: [expect.any(String)] },
     ])
-    const [shape, slide] = first.answer.added as { id: string }[]
-    expect(String(first.answer.note)).toContain(`adding ${shape!.id} shape (change 1), ${slide!.id} slide (change 2).`)
-    expect((await by.call("edit_deck", args, "labels")).answer).toEqual(first.answer)
+    const again = await by.call("execute", args, "again")
+    expect(again.answer).toMatchObject({ ok: true, rev: first.answer.rev, runId: first.answer.runId })
+    expect((again.answer.made as { ids: string[] }[]).flatMap((each) => each.ids).sort()).toEqual(
+      (first.answer.made as { ids: string[] }[]).flatMap((each) => each.ids).sort(),
+    )
+    expect(by.decks.decks.get(deck as never)!.rev).toBe(rev + 1)
   })
 
   it("refuses a slide add that names a layout, since a deck has none to list", async () => {
     const by = agent()
-    const { deck, rev } = await created(by)
-    const refused = await by.call("edit_deck", edit(deck, rev, [{ op: "slide", add: { layout: "Blank" } }]))
+    const { deck } = await created(by)
+    const refused = await by.call("execute", edit(deck, [{ op: "slide", add: { layout: "Blank" } }]))
     expect(refused.answer).toMatchObject({ ok: false, refusal: "field" })
-  })
-
-  it("refuses text a person changed after the agent read it as stale, and lands it after a fresh read", async () => {
-    const by = agent()
-    const { deck, rev, slides } = await created(by)
-    const fold = by.decks.decks.get(deck as never)!
-    const node = fold.children.get(slides[0] as never)![0]!
-    const typed = await by.decks.edit(deck as never, {
-      once: "typed",
-      author: person,
-      writes: [
-        {
-          node,
-          prop: "text",
-          value: doom.textFromMarkdown("Typed", "title"),
-          base: fold.revs.get(node)!.get("text")!,
-        },
-      ],
-    })
-    expect(typed).toMatchObject({ ok: true })
-    const change = { op: "set", target: `${slides[0]}.title`, text: "Agent" }
-    const stale = await by.call("edit_deck", edit(deck, rev, [change]))
-    expect(stale.answer).toMatchObject({ ok: false, refusal: "stale", refused: "stale", prop: "text" })
-    const fresh = await by.call("edit_deck", edit(deck, rev + 1, [change]))
-    expect(fresh.ok).toBe(true)
   })
 
   it("closes a layer to the run once a person changes it, and opens it again in a new run", async () => {
     const by = agent()
-    const { deck, rev, slides } = await created(by)
-    const first = await by.call(
-      "edit_deck",
-      edit(deck, rev, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]),
-    )
-    const { runId, added: made } = first.answer as { runId: string; added: { id: string }[] }
-    const added = made.map((each) => each.id)
+    const { deck, slides } = await created(by)
+    const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
+    const { runId, made } = first.answer as { runId: string; made: { ids: string[] }[] }
+    const added = made.flatMap((each) => each.ids)
     await by.decks.edit(deck as never, {
       once: "typed",
       author: person,
       writes: [{ node: added[0] as never, prop: "name", value: "Mine" }],
     })
-    const closed = await by.call(
-      "edit_deck",
-      edit(deck, rev + 2, [{ op: "set", target: added[0], name: "Agent" }], runId),
-    )
+    const closed = await by.call("execute", edit(deck, [{ op: "set", target: added[0], name: "Agent" }], runId))
     expect(closed.answer).toMatchObject({ ok: false, refusal: "person-protected", refused: "person", node: added[0] })
-    const reopened = await by.call("edit_deck", edit(deck, rev + 2, [{ op: "set", target: added[0], name: "Agent" }]))
+    const reopened = await by.call("execute", edit(deck, [{ op: "set", target: added[0], name: "Agent" }]))
     expect(reopened.ok).toBe(true)
   })
 })
 
 describe("stop_run", () => {
-  it("stops the run, so the next edit in it is refused run-fenced", async () => {
+  it("stops the run, so the next call in it is refused run-fenced", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
-    const first = await by.call(
-      "edit_deck",
-      edit(deck, rev, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]),
-    )
+    const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
     const { runId } = first.answer as { runId: string }
     const stopped = await by.call("stop_run", { deck, runId })
     expect(stopped.answer).toMatchObject({ ok: true, runId, rev: rev + 2 })
     const fenced = await by.call(
-      "edit_deck",
-      edit(deck, rev + 2, [{ op: "add", kind: "text", slide: slides[0], text: "B" }], runId),
+      "execute",
+      edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "B" }], runId),
     )
     expect(fenced.answer).toMatchObject({ ok: false, refusal: "run-fenced" })
   })
@@ -447,10 +391,7 @@ describe("stop_run", () => {
   it("answers a second stop ok and lands nothing", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
-    const first = await by.call(
-      "edit_deck",
-      edit(deck, rev, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]),
-    )
+    const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
     const { runId } = first.answer as { runId: string }
     await by.call("stop_run", { deck, runId })
     const again = await by.call("stop_run", { deck, runId })
@@ -461,26 +402,20 @@ describe("stop_run", () => {
   it("refuses another agent's run, which keeps running and taking its agent's edits", async () => {
     const by = agent()
     const other = agent(by.decks, "claude")
-    const { deck, rev, slides } = await created(by)
-    const first = await by.call(
-      "edit_deck",
-      edit(deck, rev, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]),
-    )
+    const { deck, slides } = await created(by)
+    const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
     const { runId } = first.answer as { runId: string }
     expect((await other.call("stop_run", { deck, runId }, "other-stop")).answer).toMatchObject({
       ok: false,
       refusal: "run-fenced",
     })
     const intruded = await other.call(
-      "edit_deck",
-      edit(deck, rev + 1, [{ op: "add", kind: "text", slide: slides[0], text: "B" }], runId),
+      "execute",
+      edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "B" }], runId),
       "other-edit",
     )
     expect(intruded.answer).toMatchObject({ ok: false, refusal: "run-fenced" })
-    const more = await by.call(
-      "edit_deck",
-      edit(deck, rev + 1, [{ op: "add", kind: "text", slide: slides[0], text: "C" }], runId),
-    )
+    const more = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "C" }], runId))
     expect(more.ok).toBe(true)
   })
 

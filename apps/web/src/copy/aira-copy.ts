@@ -9,17 +9,11 @@ export type StepWords = {
 }
 
 export const airaStepWords: Readonly<Record<AgentOp, StepWords | null>> = {
-  read_deck: {
-    working: "Reading the deck",
-    done: "Read the deck",
-    refused: "Couldn't read the deck",
-    stopped: "Stopped reading the deck",
-  },
-  edit_deck: {
-    working: "Editing slides",
-    done: "Edited slides",
-    refused: "Couldn't edit slides",
-    stopped: "Stopped editing slides",
+  execute: {
+    working: "Working on slides",
+    done: "Worked on slides",
+    refused: "Couldn't change slides",
+    stopped: "Stopped working on slides",
   },
   list_decks: {
     working: "Listing your decks",
@@ -166,4 +160,4 @@ export function airaFontIssue(issue: {
 }
 
 export const airaFontRequest = (layers: readonly string[], frame: string | undefined) =>
-  `The Fix fonts button was clicked. Retry the whole refused edit_deck batch with fonts that cover the text on ${layers.join(", ")}. Include every other change in the batch, including removing auto layout${frame === undefined ? "" : ` from frame ${frame}`}. None of that batch landed. Keep the existing edits and the text on layers you are only changing the font for.`
+  `The Fix fonts button was clicked. Run the refused airdesign_execute script again with fonts that cover the text on ${layers.join(", ")}. Keep every other operation in the script, including removing auto layout${frame === undefined ? "" : ` from frame ${frame}`}. None of that script landed. Keep the existing edits and the text on layers you are only changing the font for.`

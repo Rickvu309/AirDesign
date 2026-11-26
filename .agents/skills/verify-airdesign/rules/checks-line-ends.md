@@ -26,7 +26,7 @@ Properties:
 
 Bounds: one shape, one line, two tabs, one write by the other tab, a delete and one press, one redo, or one undo of a creation and attachment. 136 states. Run: `pnpm check:specs line-ends`. Replay: `tests/line-ends-replay.test.ts` drives all 176 edges from the four starts through the real `createDoomDeck`, `openDoomDeck` and `memoryDoomRemote`, the person's tab cut off from the server except for the edit a send step lets through, and another tab on the same server. `packages/live/src/doom-line-ends-tabs.test.ts` holds the same cases with a frame, `packages/doom/src/lost-ends.test.ts` the deck's freeing, a moved frame and the redo, and `apps/api/src/doom-deck-line-ends.test.ts` the server's partial fold.
 
-Leaves out: frames in the model (`freedInFold` reads the shape's frames as the deck held them before the batch, and `lost-ends.test.ts` holds a moved frame); a removal and undo or redo queued together, and a turn rebuilt behind a resent one (`onStanding` frees the rebuilt turn again; `turn-replay-queued.test.ts` holds the order); agent runs, which take `edit_deck` and `undo_run` through the same `freeLineEnds` and `freedInFold`.
+Leaves out: frames in the model (`freedInFold` reads the shape's frames as the deck held them before the batch, and `lost-ends.test.ts` holds a moved frame); a removal and undo or redo queued together, and a turn rebuilt behind a resent one (`onStanding` frees the rebuilt turn again; `turn-replay-queued.test.ts` holds the order); agent runs, which take `airdesign_execute` and `undo_run` through the same `freeLineEnds` and `freedInFold`.
 
 Known limits:
 

@@ -16,7 +16,7 @@ import {
 } from "@/aira/aira-history"
 
 const deck = "historydeck"
-const edit = "airdesign_edit_deck"
+const edit = "airdesign_execute"
 const asked = "Make the title shorter"
 
 function sizeOf(value: unknown): number {

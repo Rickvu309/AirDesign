@@ -1,3 +1,4 @@
+import { scriptOf } from "@airdesign/mcp/testing/evals"
 import { randomBytes } from "node:crypto"
 
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
@@ -51,28 +52,26 @@ describe("an agent's title on a deck made over MCP", () => {
     )
     try {
       const first = (await tool(client, "create_deck", { name: "Board" })).answer
-      const read = async () => (await tool(client, "read_deck", { deck: first.deck })).answer.layers as string
+      const read = async () =>
+        (await tool(client, "execute", { deck: first.deck, script: "get().layers" })).answer.result as string
       expect(await read()).toContain("Untitled")
-      const landed = await tool(client, "edit_deck", {
+      const landed = await tool(client, "execute", {
         deck: first.deck,
-        base: first.rev,
-        changes: [
+        script: scriptOf([
           { op: "add", kind: "text", slide: first.slides[0], text: "Q3 board update", textStyle: "title" },
           { op: "add", kind: "text", slide: first.slides[0], text: "Revenue grew", textStyle: "heading" },
-        ],
+        ]),
       })
       const lines = await read()
-      const filled = (landed.answer.added as { id: string; change: number; kind: string }[]).map(
-        ({ change, kind }) => ({
-          change,
-          kind,
-        }),
-      )
+      const filled = (landed.answer.made as { op: number; verb: string; ids: string[] }[]).map(({ op, verb }) => ({
+        op,
+        verb,
+      }))
       expect(filled).toEqual([
-        { change: 0, kind: "text" },
-        { change: 1, kind: "text" },
+        { op: 1, verb: "insert" },
+        { op: 2, verb: "insert" },
       ])
-      for (const { id } of landed.answer.added as { id: string }[]) expect(lines).toContain(`  ${id} text`)
+      for (const { ids } of landed.answer.made as { ids: string[] }[]) expect(lines).toContain(`  ${ids[0]!} text`)
       expect(lines).not.toContain("Untitled")
       expect(lines).toContain("Q3 board update")
       expect(lines.split("\n").filter((line) => line.includes("text="))).toHaveLength(2)

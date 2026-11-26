@@ -82,8 +82,9 @@ export {
   type TokenRequest,
 } from "./wire.js"
 
-export { readDeckChange, readDeckEdit } from "./deck-edit-wire.js"
-export { readDeckQuery, readListDecks } from "./read-wire.js"
+export { readDeckChange } from "./deck-edit-wire.js"
+export { readExecute } from "./execute-wire.js"
+export { readListDecks } from "./read-wire.js"
 export { pictureBytes, pictureType, type SlidePictures } from "./slide-pictures-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, pendingFontsMeta, readOnce } from "./mcp-routes.js"

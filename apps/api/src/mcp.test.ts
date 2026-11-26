@@ -1,8 +1,9 @@
+import { scriptOf } from "@airdesign/mcp/testing/evals"
 import { randomBytes } from "node:crypto"
 import { request as httpRequest } from "node:http"
 
 import { onceMeta, doomRoutes } from "@airdesign/catalog"
-import { limits, readFold, textFromMarkdown } from "@airdesign/doom"
+import { limits, readFold } from "@airdesign/doom"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { sessionRefusal, storeFailure, toolLimit, toolLimited } from "./testing/mcp-expected.js"
@@ -196,10 +197,9 @@ describe("mcp route", () => {
       const listed = await tool(client, "list_decks", {})
       expect(listed.answer.decks).toEqual([{ deck: first.deck, name: "Board", rev: first.rev }])
 
-      const landed = await tool(client, "edit_deck", {
+      const landed = await tool(client, "execute", {
         deck: first.deck,
-        base: first.rev,
-        changes: [
+        script: scriptOf([
           { op: "add", kind: "text", slide: first.slides[0], text: "Q3 **board** update", textStyle: "heading" },
           {
             op: "add",
@@ -207,15 +207,15 @@ describe("mcp route", () => {
             slide: first.slides[0],
             rows: [["Revenue", "$4.2M"]],
           },
-        ],
+        ]),
       })
       expect(landed.isError).not.toBe(true)
       expect(landed.answer).toMatchObject({ ok: true, deck: first.deck, rev: first.rev + 1, runId: expect.any(String) })
-      expect(landed.answer.added).toHaveLength(2)
+      expect(landed.answer.made).toHaveLength(2)
 
-      const read = await tool(client, "read_deck", { deck: first.deck })
-      expect(read.answer.rev).toBe(first.rev + 1)
-      const lines = read.answer.layers as string
+      const read = await tool(client, "execute", { deck: first.deck, script: "get()" })
+      expect(read.answer.result.rev).toBe(first.rev + 1)
+      const lines = read.answer.result.layers as string
       expect(lines).toContain('text="Q3 **board** update"')
       expect(lines).toContain("Revenue")
 
@@ -223,11 +223,10 @@ describe("mcp route", () => {
       expect(folded.runs.get(landed.answer.runId)?.phase).toBe("running")
       const stopped = await tool(client, "stop_run", { deck: first.deck, runId: landed.answer.runId })
       expect(stopped.answer).toMatchObject({ ok: true, rev: first.rev + 2 })
-      const fenced = await tool(client, "edit_deck", {
+      const fenced = await tool(client, "execute", {
         deck: first.deck,
-        base: first.rev + 2,
         runId: landed.answer.runId,
-        changes: [{ op: "add", kind: "text", slide: first.slides[0], text: "late" }],
+        script: scriptOf([{ op: "add", kind: "text", slide: first.slides[0], text: "late" }]),
       })
       expect(fenced.answer).toMatchObject({ ok: false, refusal: "run-fenced" })
       expect(readFold((await stored(first.deck))!.fold)!.rev).toBe(first.rev + 2)
@@ -242,12 +241,11 @@ describe("mcp route", () => {
       expect((await tool(client, "list_decks", {})).answer.decks).toHaveLength(1)
       const args = {
         deck: created.answer.deck,
-        base: created.answer.rev,
-        changes: [{ op: "add", kind: "shape", slide: created.answer.slides[0], text: "A" }],
+        script: scriptOf([{ op: "add", kind: "shape", slide: created.answer.slides[0], text: "A" }]),
       }
-      const first = await tool(client, "edit_deck", args, "edit-1")
-      const second = await tool(client, "edit_deck", args, "edit-1")
-      expect(second.answer).toEqual(first.answer)
+      const first = await tool(client, "execute", args, "edit-1")
+      const second = await tool(client, "execute", args, "edit-1")
+      expect(second.answer).toMatchObject({ ok: true, rev: first.answer.rev, runId: first.answer.runId })
       expect((await stored(created.answer.deck))!.rev).toBe(created.answer.rev + 1)
     })
   })
@@ -259,13 +257,12 @@ describe("mcp route", () => {
     })
     const before = await stored(owned.deck)
     await withMcp(await sign(address("else")), async (client) => {
-      const read = await tool(client, "read_deck", { deck: owned.deck })
+      const read = await tool(client, "execute", { deck: owned.deck, script: "get()" })
       expect(read.isError).toBe(true)
       expect(read.answer).toMatchObject({ ok: false, refusal: "owner" })
-      const edit = await tool(client, "edit_deck", {
+      const edit = await tool(client, "execute", {
         deck: owned.deck,
-        base: owned.rev,
-        changes: [{ op: "add", kind: "text", slide: owned.slides[0], text: "mine now" }],
+        script: scriptOf([{ op: "add", kind: "text", slide: owned.slides[0], text: "mine now" }]),
       })
       expect(edit.answer).toMatchObject({ ok: false, refusal: "owner" })
       expect((await tool(client, "stop_run", { deck: owned.deck, runId: "run" })).answer).toMatchObject({
@@ -279,7 +276,7 @@ describe("mcp route", () => {
 
   it("refuses a deck that was never made with deck and makes nothing", async () => {
     await withMcp(await sign(address("miss")), async (client) => {
-      const refused = await tool(client, "read_deck", { deck: "neverthere" })
+      const refused = await tool(client, "execute", { deck: "neverthere", script: "get()" })
       expect(refused.answer).toMatchObject({ ok: false, refusal: "deck" })
     })
     expect(await stored("neverthere")).toBeUndefined()
@@ -290,12 +287,11 @@ describe("mcp route", () => {
     const cookie = await sign(email)
     await withMcp(cookie, async (client) => {
       const first = await made(client)
-      const landed = await tool(client, "edit_deck", {
+      const landed = await tool(client, "execute", {
         deck: first.deck,
-        base: first.rev,
-        changes: [{ op: "add", kind: "frame", slide: first.slides[0] }],
+        script: scriptOf([{ op: "add", kind: "frame", slide: first.slides[0] }]),
       })
-      const added = (landed.answer.added as { id: string }[])[0]!.id
+      const added = (landed.answer.made as { ids: string[] }[])[0]!.ids[0]!
       const typed = await ask(
         base,
         "POST",
@@ -311,74 +307,41 @@ describe("mcp route", () => {
         cookie,
       )
       expect(typed.json).toMatchObject({ ok: true, rev: first.rev + 2 })
-      const closed = await tool(client, "edit_deck", {
+      const closed = await tool(client, "execute", {
         deck: first.deck,
-        base: first.rev + 2,
         runId: landed.answer.runId,
-        changes: [{ op: "set", target: added, name: "Agent" }],
+        script: scriptOf([{ op: "set", target: added, name: "Agent" }]),
       })
       expect(closed.answer).toMatchObject({ ok: false, refusal: "person-protected", refused: "person", node: added })
-      const reopened = await tool(client, "edit_deck", {
+      const reopened = await tool(client, "execute", {
         deck: first.deck,
-        base: first.rev + 2,
-        changes: [{ op: "set", target: added, name: "Agent" }],
+        script: scriptOf([{ op: "set", target: added, name: "Agent" }]),
       })
       expect(reopened.answer).toMatchObject({ ok: true })
-      const read = await tool(client, "read_deck", { deck: first.deck })
-      expect(read.answer.layers).toContain('name="Agent"')
+      const read = await tool(client, "execute", { deck: first.deck, script: "get().layers" })
+      expect(read.answer.result).toContain('name="Agent"')
     })
   })
 
-  it("refuses text a person typed after the agent read it as stale, and lands it after a fresh read", async () => {
-    const cookie = await sign(address("typed"))
-    await withMcp(cookie, async (client) => {
-      const first = await made(client)
-      const title = (await stored(first.deck))!
-      const fold = readFold(title.fold)!
-      const node = fold.children.get(first.slides[0])![0]!
-      const typed = await ask(
-        base,
-        "POST",
-        doomRoutes.edit.path,
-        {
-          deck: first.deck,
-          edit: {
-            once: "typed-1",
-            author: { kind: "person", id: "tab-1" },
-            writes: [
-              {
-                node,
-                prop: "text",
-                value: textFromMarkdown("Typed", "title"),
-                base: fold.revs.get(node)!.get("text"),
-              },
-            ],
-          },
-        },
-        cookie,
-      )
-      expect(typed.json).toMatchObject({ ok: true })
-      const change = { op: "set", target: `${first.slides[0]}.title`, text: "Agent" }
-      const stale = await tool(client, "edit_deck", { deck: first.deck, base: first.rev, changes: [change] })
-      expect(stale.answer).toMatchObject({ ok: false, refusal: "stale", refused: "stale", prop: "text" })
-      const fresh = await tool(client, "edit_deck", { deck: first.deck, base: first.rev + 1, changes: [change] })
-      expect(fresh.answer).toMatchObject({ ok: true })
-    })
-  })
-
-  it("names the change, its place and the field when a batch is refused, and lands none of it", async () => {
+  it("names the operation, its line and the field when a call is refused, and lands none of it", async () => {
     await withMcp(await sign(address("named")), async (client) => {
       const first = await made(client)
-      const refused = await tool(client, "edit_deck", {
+      const refused = await tool(client, "execute", {
         deck: first.deck,
-        base: first.rev,
-        changes: [
+        script: scriptOf([
           { op: "add", kind: "text", slide: first.slides[0], text: "A" },
           { op: "set", target: "z:9", text: "B" },
-        ],
+        ]),
       })
       expect(refused.isError).toBe(true)
-      expect(refused.answer).toMatchObject({ refusal: "dead", change: "set z:9", at: 1, field: "target", node: "z:9" })
+      expect(refused.answer).toMatchObject({
+        refusal: "dead",
+        op: 2,
+        verb: "update",
+        line: 2,
+        field: "target",
+        node: "z:9",
+      })
       expect((await stored(first.deck))!.rev).toBe(first.rev)
     })
   })
@@ -391,7 +354,7 @@ describe("mcp route", () => {
       await withMcp(
         cookie,
         async (client) => {
-          expect((await tool(client, "read_deck", { deck: "neverthere" })).answer.refusal).toBe("deck")
+          expect((await tool(client, "execute", { deck: "neverthere", script: "get()" })).answer.refusal).toBe("deck")
           for (let call = 1; call < 90; call += 1) expect((await tool(client, "list_decks", {})).isError).toBeFalsy()
           const blocked = await client.callTool({ name: "airdesign_list_decks", arguments: {} })
           expect(blocked.isError).toBe(true)
@@ -530,11 +493,10 @@ describe("mcp route", () => {
           const refused = await tool(client, "create_deck", {})
           expect(refused.isError).toBe(true)
           expect(refused.answer).toMatchObject(storeFailure)
-          for (const name of ["list_decks", "read_deck", "edit_deck", "stop_run"]) {
+          for (const name of ["list_decks", "execute", "stop_run"]) {
             const args = {
               list_decks: {},
-              read_deck: { deck: "a" },
-              edit_deck: { deck: "a", base: 0, changes: [{ op: "delete", nodes: ["a:1"] }] },
+              execute: { deck: "a", script: 'remove({ target: "a:1" })' },
               stop_run: { deck: "a", runId: "r" },
             }[name]
             const answered = await tool(client, name, args)

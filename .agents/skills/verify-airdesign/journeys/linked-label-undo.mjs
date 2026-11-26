@@ -68,10 +68,9 @@ export default async function drive(kit) {
   await erase(page, beta)
   await expect.poll(suppressed).toEqual(["bar/b"])
   await settle()
-  const styled = await call("edit_deck", {
+  const styled = await call("execute", {
     deck,
-    base: (await read()).rev,
-    changes: [{ op: "set", target: alpha, textStyle: "body" }],
+    script: `update({ target: "${alpha}", textStyle: "body" })`,
   })
   expect(styled.ok).toBe(true)
   await expect(page.locator("[data-agent-at-work]")).toBeAttached()

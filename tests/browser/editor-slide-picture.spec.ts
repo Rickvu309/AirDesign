@@ -38,12 +38,11 @@ const jpeg = (data: string | undefined) => {
   return bytes[0] === 0xff && bytes[1] === 0xd8
 }
 
-async function read(stack: Stack, opened: Opened, more: Record<string, unknown> = {}) {
-  const blocks = await stack.toolBlocks(
-    "airdesign_read_deck",
-    { deck: opened.deck, picture: true, ...more },
-    opened.cookie,
-  )
+async function read(stack: Stack, opened: Opened, more: { readonly slide?: string } = {}) {
+  const shots = (more.slide === undefined ? [opened.slide] : [more.slide])
+    .map((slide) => `screenshot({ target: "${slide}" })`)
+    .join("\n")
+  const blocks = await stack.toolBlocks("airdesign_execute", { deck: opened.deck, script: shots }, opened.cookie)
   const json = blocks.find((block) => block.type === "text")?.text ?? "{}"
   return {
     images: blocks.filter((block) => block.type === "image"),
@@ -101,7 +100,7 @@ test("an agent reading a Doom deck with picture gets the slide as the open tab p
   await expect(page.locator("[data-slide-box]").getByText("Costs fell")).toBeVisible()
   const behind = await read(stack, opened, { slide: opened.slide })
   expect(behind.images).toHaveLength(0)
-  expect(behind.answer.note).toContain(`No current picture of slide ${opened.slide}`)
+  expect(behind.answer.note).toContain(`No picture of ${opened.slide} yet`)
 
   blocked = false
   await expect
@@ -204,7 +203,7 @@ test("a font failure is reported only for the requested slide using that font", 
 
   const failed = await read(stack, opened, { slide: other })
   expect(failed.images).toHaveLength(0)
-  expect(failed.answer.note).toContain(`A font couldn’t load for slide ${other}.`)
+  expect(failed.answer.note).toContain(`A font could not load for ${other}, so it has no picture.`)
   const captured = await read(stack, opened, { slide: opened.slide })
   expect(captured.answer.pictures).toEqual([opened.slide])
   expect(jpeg(captured.images[0]?.data)).toBe(true)

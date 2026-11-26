@@ -3,6 +3,7 @@ import * as doom from "@airdesign/doom"
 
 import { emptyLog } from "../admit.js"
 import { callTool, type Session } from "../call-tool.js"
+import { scriptOf } from "./change-script.js"
 import { memoryDecks } from "./memory-decks.js"
 
 export type Tool = AgentOp
@@ -43,10 +44,13 @@ const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, t
 
 export const toolCall = (op: Tool, raw: unknown): Call => ({ name: names[op], raw })
 
-export const read = (deck: string = evalDeckId): Call => toolCall("read_deck", { deck })
+export const run = (script: string, runId?: string, deck: string = evalDeckId): Call =>
+  toolCall("execute", { deck, script, ...(runId === undefined ? {} : { runId }) })
 
-export const edit = (changes: readonly unknown[], base: number, runId?: string, deck: string = evalDeckId): Call =>
-  toolCall("edit_deck", { deck, base, changes, ...(runId === undefined ? {} : { runId }) })
+export const read = (deck: string = evalDeckId): Call => run("get()", undefined, deck)
+
+export const edit = (changes: readonly unknown[], runId?: string, deck: string = evalDeckId): Call =>
+  run(scriptOf(changes), runId, deck)
 
 export const stop = (runId: string, deck: string = evalDeckId): Call => toolCall("stop_run", { deck, runId })
 

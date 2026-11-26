@@ -1,3 +1,4 @@
+import { scriptOf } from "../../packages/mcp/src/testing/change-script.ts"
 import { expect, type Page } from "@playwright/test"
 import { borderWords } from "../../apps/web/src/copy/border-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
@@ -198,13 +199,9 @@ test("an agent's unwrap frees the connector where the canvas painted it", async 
   await expect(page.locator('[data-slide-box] [data-node="l:1"]')).toBeVisible()
   await page.evaluate(() => document.fonts.ready)
   const seen = await paintedStart(page, "l:1")
-  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
-  const fold = (await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)).json.fold as {
-    rev: number
-  }
   await stack.toolBlocks(
-    "airdesign_edit_deck",
-    { deck: opened.deck, base: fold.rev, changes: [{ op: "unwrap", node: "f:1" }] },
+    "airdesign_execute",
+    { deck: opened.deck, script: scriptOf([{ op: "unwrap", node: "f:1" }]) },
     opened.cookie,
   )
   await expect(page.locator('[data-slide-box] [data-node="f:1"]')).toHaveCount(0)

@@ -35,8 +35,8 @@ test("an agent's first picture read reaches a tab that is between two catch-ups 
   ])
   await expect(page.locator('[data-slide-box] [data-node="w:1"]')).toBeVisible()
   const reading = stack.toolBlocks(
-    "airdesign_read_deck",
-    { deck: opened.deck, picture: true, slide: opened.slide },
+    "airdesign_execute",
+    { deck: opened.deck, script: `screenshot({ target: "${opened.slide}" })` },
     opened.cookie,
   )
   const head = (await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)).json as { rev: number }

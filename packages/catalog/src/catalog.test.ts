@@ -7,13 +7,12 @@ describe("run operations in the catalog", () => {
     expect(catalog.stop_run).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
     expect(catalog.undo_run).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
     expect(catalog.list_decks).toMatchObject({ kind: "query", exposure: "agent", runsOn: "server" })
-    expect(catalog.read_deck).toMatchObject({ kind: "query", exposure: "agent", runsOn: "server" })
+    expect(catalog.execute).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
     expect(catalog.create_deck).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
     expect(projectTools(catalog).map((tool) => tool.op)).toEqual([
       "create_deck",
-      "edit_deck",
+      "execute",
       "list_decks",
-      "read_deck",
       "stop_run",
       "undo_run",
     ])
@@ -23,12 +22,11 @@ describe("run operations in the catalog", () => {
 describe("projectTools", () => {
   it("projects the agent tools in name order", () => {
     const tools = projectTools(catalog)
-    expect(tools).toHaveLength(6)
+    expect(tools).toHaveLength(5)
     expect(tools.map((tool) => tool.name)).toEqual([
       "airdesign_create_deck",
-      "airdesign_edit_deck",
+      "airdesign_execute",
       "airdesign_list_decks",
-      "airdesign_read_deck",
       "airdesign_stop_run",
       "airdesign_undo_run",
     ])
@@ -36,30 +34,18 @@ describe("projectTools", () => {
     expect(tools.find((tool) => tool.op === "stop_run")?.destructiveHint).toBe(false)
     expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("when your turn is finished")
     expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("closing layers")
-    expect(tools.filter((tool) => tool.openWorldHint).map((tool) => tool.name)).toEqual(["airdesign_edit_deck"])
-    const edit = tools.find((tool) => tool.name === "airdesign_edit_deck")
-    expect(edit).toEqual({
-      name: "airdesign_edit_deck",
-      op: "edit_deck",
-      description:
-        "Change the deck, all of it landing or none. Send airdesign_read_deck's rev as base. The answer has the new rev, the layers and slides you added, each as {change, id, kind}, and a runId: send it with your next edits and to airdesign_stop_run when done.",
+    expect(tools.filter((tool) => tool.openWorldHint).map((tool) => tool.name)).toEqual(["airdesign_execute"])
+    expect(tools.find((tool) => tool.name === "airdesign_execute")).toMatchObject({
+      op: "execute",
       runsOn: "server",
       readOnlyHint: false,
       destructiveHint: true,
       idempotentHint: false,
       openWorldHint: true,
     })
-    expect(tools.find((tool) => tool.name === "airdesign_read_deck")).toEqual({
-      name: "airdesign_read_deck",
-      op: "read_deck",
-      description:
-        "Read an owned deck, one line for each layer: its id, what it is, @x,y and size, then its look. A slide line ends with group=<id>. rev is the base to send to airdesign_edit_deck. Send slide or cursor to read the rest.",
-      runsOn: "server",
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-    })
+    expect(tools.find((tool) => tool.name === "airdesign_execute")?.description).toMatch(
+      /one edit and one undo step, or nothing lands\. Read airdesign_read_skill \{name: "execute"\}/,
+    )
     expect(tools.find((tool) => tool.name === "airdesign_list_decks")).toEqual({
       name: "airdesign_list_decks",
       op: "list_decks",
@@ -99,24 +85,38 @@ describe("projectTools", () => {
   })
 })
 
-it("reads the doom's changes through edit_deck", () => {
-  const read = catalog.edit_deck.read
-  const base = { deck: "d", base: 3 }
-  expect(read({ ...base, changes: [{ op: "add", kind: "text", slide: "s:3" }] }).ok).toBe(true)
-  expect(read({ ...base, runId: "r1", changes: [{ op: "delete", nodes: ["s:4"] }] }).ok).toBe(true)
-  expect(read({ ...base, changes: [] })).toEqual({
-    ok: false,
-    refusal: "batch",
-    field: "changes",
-    fault: "form",
-    form: "1 to 100 changes.",
-  })
-  expect(read({ deck: "d", changes: [{}] })).toEqual({ ok: false, refusal: "base" })
-  expect(read({ ...base, changes: [{}], actor: "person" })).toEqual({
+it("reads an execute call: a deck, a script up to 100,000 characters and an optional run", () => {
+  const read = catalog.execute.read
+  expect(read({ deck: "d", script: "get()" })).toEqual({ ok: true, deck: "d", script: "get()" })
+  expect(read({ deck: "d", script: "get()", runId: "r1" }).ok).toBe(true)
+  expect(read({ deck: "d", script: "x".repeat(100_000) }).ok).toBe(true)
+  expect(read({ deck: "d", script: "x".repeat(100_001) })).toEqual({
     ok: false,
     refusal: "field",
-    field: "actor",
-    fault: "unknown",
-    form: "One of deck, base, runId, changes.",
+    field: "script",
+    fault: "form",
+    form: "JavaScript, 1 to 100,000 characters.",
   })
+  expect(read({ deck: "d" })).toEqual({
+    ok: false,
+    refusal: "field",
+    field: "script",
+    fault: "missing",
+    form: "JavaScript, 1 to 100,000 characters.",
+  })
+  expect(read({ deck: "d", script: "", base: 3 })).toEqual({
+    ok: false,
+    refusal: "field",
+    field: "base",
+    fault: "unknown",
+    form: "One of deck, script, runId.",
+  })
+  expect(read({ deck: "d", script: "1", runId: "bad id!" })).toEqual({
+    ok: false,
+    refusal: "field",
+    field: "runId",
+    fault: "form",
+    form: "The runId a call answered: 1 to 64 of letters, digits, _ or -.",
+  })
+  expect(read({ deck: "bad id!", script: "1" })).toEqual({ ok: false, refusal: "deck" })
 })

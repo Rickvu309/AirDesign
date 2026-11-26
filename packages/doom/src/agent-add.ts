@@ -284,10 +284,10 @@ const estimate = measureWith({})
 const maxComponentScale = 2
 
 function addComponent(draft: Draft, parent: Node, change: Add): void {
-  const id = change.component ?? stop("shape", undefined, "component", "missing", "A template id from read_deck.")
+  const id = change.component ?? stop("shape", undefined, "component", "missing", "A template id.")
   const node = readNodeId(id)
   const definition = componentLibrary.get(id) ?? (node === undefined ? undefined : deckComponent(draft.doom, node))
-  if (definition === undefined) stop("shape", undefined, "component", "form", "A template id from read_deck.")
+  if (definition === undefined) stop("shape", undefined, "component", "form", "A template id.")
   const { sample } = definition.spec
   const data = change.data ?? sample?.data ?? stop("shape", undefined, "data", "missing", "Rows by collection.")
   const natural = sample === undefined ? undefined : { width: sample.w, height: sample.h }

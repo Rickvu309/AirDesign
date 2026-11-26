@@ -3,6 +3,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
 import { emptyLog, callTool, type Session } from "./index.js"
+import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
@@ -21,15 +22,15 @@ function agent() {
   return { decks, call }
 }
 
-describe("edit_deck refusals", () => {
+describe("refusals in execute", () => {
   it("refuses a move into a frame inside one an earlier change deleted, and says so in the answer", async () => {
     const by = agent()
     const { deck, slides } = (await by.call("create_deck", {})).answer as { deck: string; slides: string[] }
     const rev = () => by.decks.decks.get(deck as never)!.rev
     const frameIn = async (into?: string) => {
       const change = { op: "add", kind: "frame", slide: slides[0], ...(into === undefined ? {} : { into }) }
-      const made = await by.call("edit_deck", { deck, base: rev(), changes: [change] })
-      return (made.answer as { added: { id: string }[] }).added[0]!.id
+      const made = await by.call("execute", { deck, script: scriptOf([change]) })
+      return (made.answer as { made: { ids: string[] }[] }).made[0]!.ids[0]!
     }
     const outer = await frameIn()
     const middle = await frameIn(outer)
@@ -39,9 +40,9 @@ describe("edit_deck refusals", () => {
       { op: "delete", nodes: [middle] },
       { op: "move", node: outer, into: inner },
     ]
-    const refused = await by.call("edit_deck", { deck, base, changes })
-    expect(refused.answer).toMatchObject({ ok: false, refusal: "dead", refused: "missing", at: 1, node: outer })
-    expect(String(refused.answer.note)).toContain(`Change 2 (move ${outer})`)
+    const refused = await by.call("execute", { deck, script: scriptOf(changes) })
+    expect(refused.answer).toMatchObject({ ok: false, refusal: "dead", refused: "missing", op: 2, node: outer })
+    expect(String(refused.answer.note)).toContain("Operation 2 (move): ")
     expect(String(refused.answer.note)).toContain("a frame above the frame you move the layer into")
     expect(rev()).toBe(base)
   })
@@ -144,12 +145,11 @@ function connected(grown: ReturnType<typeof drifted>, measureOf: (folds: readonl
     if (geometry?.kind !== "line" || !("x" in geometry.start)) throw new Error(JSON.stringify(geometry))
     return { x: geometry.start.x, y: geometry.start.y }
   }
-  const edit = (deck: string, changes: readonly unknown[]) =>
-    call("edit_deck", { deck, base: decks.decks.get(deck as never)!.rev, changes })
+  const edit = (deck: string, changes: readonly unknown[]) => call("execute", { deck, script: scriptOf(changes) })
   return { decks, made, freeEnd, edit }
 }
 
-describe("edit_deck takes a shape off the deck", () => {
+describe("a script takes a shape off the deck", () => {
   const knowsLora = (folds: readonly doom.Doom[]) =>
     folds.some((fold) => doom.doomFaces(fold).faces.some((face) => face.font === "Lora")) ? wide : estimate
 
@@ -179,7 +179,7 @@ describe("edit_deck takes a shape off the deck", () => {
   })
 })
 
-describe("edit_deck set layout none", () => {
+describe("a script sets layout none", () => {
   it("keeps the children where the host's measure painted them", async () => {
     const grown = drifted()
     const by = connected(grown, () => wide)
@@ -194,7 +194,7 @@ describe("edit_deck set layout none", () => {
   })
 })
 
-describe("edit_deck delete", () => {
+describe("a script removes a layer", () => {
   it("frees a connector at the point the host's measure painted", async () => {
     const grown = drifted()
     const by = connected(grown, () => wide)
@@ -266,7 +266,7 @@ function pointed() {
   return grown
 }
 
-describe("edit_deck frees a connector end whose shape leaves the slide", () => {
+describe("a script frees a connector end whose shape leaves the slide", () => {
   async function opened() {
     const grown = pointed()
     const decks = memoryDecks(() => grown.doom)
@@ -284,7 +284,7 @@ describe("edit_deck frees a connector end whose shape leaves the slide", () => {
       return geometry.start
     }
     const paintedAt = (line: doom.NodeId) => painted(fold(), grown.slides[0]!, line, estimate)
-    const edit = (change: unknown) => call("edit_deck", { deck, base: fold().rev, changes: [change] })
+    const edit = (change: unknown) => call("execute", { deck, script: scriptOf([change]) })
     const undo = (answer: unknown) =>
       call("undo_run", { deck, runId: (answer as { runId: string }).runId }).then((undone) => undone.answer)
     return { grown, lineStart, paintedAt, edit, undo }
@@ -319,7 +319,7 @@ describe("edit_deck frees a connector end whose shape leaves the slide", () => {
     const { grown, lineStart, paintedAt, edit, undo } = await opened()
     const added = await edit({ op: "add", kind: "frame", slide: grown.slides[0] })
     expect(added.answer).toMatchObject({ ok: true })
-    const shape = (added.answer as { added: { id: string }[] }).added[0]!.id
+    const shape = (added.answer as { made: { ids: string[] }[] }).made[0]!.ids[0]!
     const attached = await edit({ op: "set", target: grown.ids.toChild, from: { layer: shape, side: "right" } })
     expect(attached.answer).toMatchObject({ ok: true })
     const seen = paintedAt(grown.ids.toChild!)
@@ -335,24 +335,23 @@ it("reads and sets an ordinary text card's padding, fill, outline and radius", a
   const read = readDeckId(made.deck)
   if (!read.ok || !Array.isArray(made.slides)) throw new Error("Missing deck")
   const { deck } = read
-  const rev = () => by.decks.decks.get(deck)!.rev
   const added = (
-    await by.call("edit_deck", {
+    await by.call("execute", {
       deck,
-      base: rev(),
-      changes: [{ op: "add", kind: "shape", slide: made.slides[0], text: "Gateway" }],
+      script: scriptOf([{ op: "add", kind: "shape", slide: made.slides[0], text: "Gateway" }]),
     })
   ).answer
-  if (!Array.isArray(added.added)) throw new Error("Missing card")
-  const target = added.added[0].id
+  if (!Array.isArray(added.made)) throw new Error("Missing card")
+  const target = added.made[0].ids[0]
   for (const padding of [28, { t: 12, r: 16, b: 20, l: 24 }]) {
-    const edited = await by.call("edit_deck", {
+    const edited = await by.call("execute", {
       deck,
-      base: rev(),
-      changes: [{ op: "set", target, padding, fill: "background2", stroke: "accent1", strokeWidth: 3, radius: 12 }],
+      script: scriptOf([
+        { op: "set", target, padding, fill: "background2", stroke: "accent1", strokeWidth: 3, radius: 12 },
+      ]),
     })
     expect(edited.answer).toMatchObject({ ok: true })
-    const read = await by.call("read_deck", { deck, slide: made.slides[0] })
+    const read = await by.call("execute", { deck, script: `get({ target: "${String(made.slides[0])}" })` })
     expect(JSON.stringify(read.answer)).toContain(`padding=${typeof padding === "number" ? padding : "12,16,20,24"}`)
     expect(JSON.stringify(read.answer)).toContain("fill=background2 stroke=accent1 strokeWidth=3 radius=12")
   }

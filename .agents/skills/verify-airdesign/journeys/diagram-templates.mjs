@@ -315,9 +315,9 @@ export default async function drive(kit) {
         join(dirname(before), "frameworks-before-slide.png"),
         await page.locator("[data-slide-box]").screenshot(),
       )
-      const response = await mcp(kit, opened, "read_deck", { deck: opened.deck })
-      expect(response).toMatchObject({ ok: true, slides: [opened.slide] })
-      expect(response.components).toBeUndefined()
+      const response = await mcp(kit, opened, "execute", { deck: opened.deck, script: "get()" })
+      expect(response).toMatchObject({ ok: true, result: { slides: [opened.slide] } })
+      expect(response.result.components).toBeUndefined()
     }
     await landNodes(kit, opened, [
       {
@@ -413,30 +413,22 @@ export default async function drive(kit) {
       for (const link of links) expect(lineEnds(after, link)).toEqual(lineEnds(saved, link))
       await capture("architecture-card-moved")
       note("Architecture: the gateway moved with each connector still attached.")
-      const reply = await mcp(kit, opened, "edit_deck", {
+      const reply = await mcp(kit, opened, "execute", {
         deck: opened.deck,
-        base: (await readDoom(kit, opened)).rev,
-        changes: [
-          {
-            op: "set",
-            target: gateway.id,
-            padding: 28,
-            fill: "background2",
-            stroke: "accent1",
-            strokeWidth: 4,
-            radius: 22,
-          },
-        ],
+        script: `update({ target: "${gateway.id}", padding: 28, fill: "background2", stroke: "accent1", strokeWidth: 4, radius: 22 })`,
       })
       expect(reply.ok, JSON.stringify(reply)).toBe(true)
-      const agentRead = await mcp(kit, opened, "read_deck", { deck: opened.deck, slide: opened.slide })
+      const agentRead = await mcp(kit, opened, "execute", {
+        deck: opened.deck,
+        script: `get({ target: "${opened.slide}" })`,
+      })
       expect(JSON.stringify(agentRead)).toContain("fill=background2 stroke=accent1 strokeWidth=4 radius=22")
       expect(JSON.stringify(agentRead)).toContain("padding=28")
       const painted = (await readDoom(kit, opened)).fold.nodes[gateway.id]
       expect(painted.text.padding).toEqual({ t: 28, r: 28, b: 28, l: 28 })
       await openDesign(page)
       await capture("architecture-card-design")
-      note("MCP reads and writes card padding, fill, border and radius through edit_deck and read_deck.")
+      note("MCP reads and writes card padding, fill, border and radius through execute.")
     }
   }
 }

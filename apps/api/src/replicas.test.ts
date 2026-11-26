@@ -1,3 +1,4 @@
+import { scriptOf } from "@airdesign/mcp/testing/evals"
 import { randomBytes } from "node:crypto"
 import { once } from "node:events"
 import { request } from "node:http"
@@ -231,15 +232,14 @@ describe("an agent's run on a deck", () => {
     await withMcp(account.cookie, first, async (client) => {
       const made = await called(client, "create_deck", {})
       deck = made.deck
-      const opened = await called(client, "edit_deck", {
+      const opened = await called(client, "execute", {
         deck,
-        base: made.rev,
-        changes: [
+        script: scriptOf([
           { op: "add", kind: "text", slide: made.slides[0], text: "a", box: { x: 160, y: 800, w: 600, h: 80 } },
-        ],
+        ]),
       })
       run = opened.runId
-      added = opened.added[0].id
+      added = opened.made[0].ids[0]
     })
     const typed = {
       deck,
@@ -251,20 +251,23 @@ describe("an agent's run on a deck", () => {
     }
     expect((await ask(first.base, "POST", doomRoutes.edit.path, typed, account.cookie)).json).toMatchObject({ rev: 3 })
     await withMcp(account.cookie, await replica(), async (client) => {
-      const closed = await called(client, "edit_deck", {
+      const closed = await called(client, "execute", {
         deck,
-        base: 3,
         runId: run,
-        changes: [{ op: "set", target: added, name: "b" }],
+        script: scriptOf([{ op: "set", target: added, name: "b" }]),
       })
       expect(closed).toMatchObject({ ok: false, refusal: "person-protected" })
-      const joined = await called(client, "edit_deck", {
+      const joined = await called(client, "execute", {
         deck,
-        base: 3,
         runId: run,
-        changes: [
-          { op: "add", kind: "text", slide: (await called(client, "read_deck", { deck })).slides[0], text: "c" },
-        ],
+        script: scriptOf([
+          {
+            op: "add",
+            kind: "text",
+            slide: (await called(client, "execute", { deck, script: "get().slides" })).result[0],
+            text: "c",
+          },
+        ]),
       })
       expect(joined).toMatchObject({ ok: true, rev: 4, runId: run })
     })

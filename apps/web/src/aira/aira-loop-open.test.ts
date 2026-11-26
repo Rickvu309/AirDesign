@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { airaChat, askAira } from "./aira-loop"
 
 const deck = "deck"
-const addSlide = projectTools(catalog).find((tool) => tool.op === "edit_deck")?.name ?? ""
+const addSlide = projectTools(catalog).find((tool) => tool.op === "execute")?.name ?? ""
 const usage = { used: 0.5, allowed: 2, resets: "2026-11-16T00:00:00.000Z" }
 const add = {
   type: "tool_use",

@@ -374,7 +374,7 @@ describe("POST /aira/turn meters each turn of a run the browser drives", () => {
   async function toolTurn(account: Account) {
     replay.play({ name: "tool.sse" })
     const first = await turn(account)
-    const read = { id: "toolu_fixture_read", name: "airdesign_read_deck", input: { deck } }
+    const read = { id: "toolu_fixture_read", name: "airdesign_execute", input: { deck, script: "get()" } }
     expect(linesOf(first).slice(2)).toEqual([
       { type: "tool", ...read },
       {

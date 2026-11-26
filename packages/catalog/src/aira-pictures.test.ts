@@ -14,8 +14,8 @@ const deck = "airadeck"
 const read = (id: string) => ({
   type: "tool_use",
   id,
-  name: "airdesign_read_deck",
-  input: { deck, slide: "256", picture: true },
+  name: "airdesign_execute",
+  input: { deck, script: 'screenshot({ target: "s:256" })' },
 })
 const image = (data = "/9j/4AAQSkZJRg==") => ({
   type: "image",

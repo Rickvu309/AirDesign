@@ -33,8 +33,6 @@ export type FieldDetail = {
 }
 export type FieldRefusal = { readonly ok: false; readonly refusal: "field" } & Partial<FieldDetail>
 export type DeckRefusal = { ok: false; refusal: "deck" }
-export type BatchRefusal = { readonly ok: false; readonly refusal: "batch" } & Partial<FieldDetail>
-export type BaseRefusal = { ok: false; refusal: "base" }
 type ResourceRefusal = { ok: false; refusal: "resource" }
 type ChallengeRefusal = { ok: false; refusal: "challenge" }
 type FormRefusal = { ok: false; refusal: "invalid_request" }
@@ -42,7 +40,6 @@ type GrantRefusal = { ok: false; refusal: "unsupported_grant_type" }
 
 export const fieldRefusal: FieldRefusal = { ok: false, refusal: "field" }
 const deckRefusal: DeckRefusal = { ok: false, refusal: "deck" }
-export const baseRefusal: BaseRefusal = { ok: false, refusal: "base" }
 const resourceRefusal: ResourceRefusal = { ok: false, refusal: "resource" }
 const challengeRefusal: ChallengeRefusal = { ok: false, refusal: "challenge" }
 const formRefusal: FormRefusal = { ok: false, refusal: "invalid_request" }

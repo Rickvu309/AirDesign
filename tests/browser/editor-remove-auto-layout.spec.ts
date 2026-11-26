@@ -1,3 +1,4 @@
+import { scriptOf } from "../../packages/mcp/src/testing/change-script.ts"
 import { fontRoutes } from "../../packages/fonts/src/index.ts"
 import { expect, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
@@ -95,13 +96,9 @@ async function bakeBoth(page: Page, stack: Stack, opened: Opened, count: number)
   await pick(page, "p:1", 64, 44)
   await page.locator("[data-auto-layout]").getByRole("button", { name: designCopy.removeAutoLayout }).click()
   await expect.poll(async () => (await saved(stack, opened, "p:1")).layout?.mode).toBe("none")
-  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
-  const fold = (await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)).json.fold as {
-    rev: number
-  }
   const [said] = await stack.toolBlocks(
-    "airdesign_edit_deck",
-    { deck: opened.deck, base: fold.rev, changes: [{ op: "set", target: "a:1", layout: "none" }] },
+    "airdesign_execute",
+    { deck: opened.deck, script: scriptOf([{ op: "set", target: "a:1", layout: "none" }]) },
     opened.cookie,
   )
   const answer = JSON.parse(said?.text ?? "{}") as Record<string, unknown>

@@ -122,9 +122,9 @@ const cases = [
   },
   {
     detector: "internal-identifier",
-    fires: '<div data-tool-state="done"><span>airdesign_edit_deck</span></div>',
+    fires: '<div data-tool-state="done"><span>airdesign_execute</span></div>',
     spares:
-      '<div data-tool-state="done"><span>Edited the deck</span></div><code>airdesign_edit_deck</code><p>Address https://mcp.example.test/mcp_v1</p>',
+      '<div data-tool-state="done"><span>Edited the deck</span></div><code>airdesign_execute</code><p>Address https://mcp.example.test/mcp_v1</p>',
   },
   {
     detector: "internal-identifier",
@@ -190,7 +190,7 @@ async function scanned(page: Page, body: string, options: object = {}): Promise<
   return scan(page, {
     allow: [],
     scope: "fixture",
-    identifiers: ["airdesign_edit_deck"],
+    identifiers: ["airdesign_execute"],
     tokens,
     offToken: true,
     ...options,
@@ -216,7 +216,7 @@ test("off-token stays quiet unless asked", async ({ page }) => {
 })
 
 test("an allow entry silences only its detector under its selector and reports that it was used", async ({ page }) => {
-  const body = '<div id="tool"><span>airdesign_edit_deck</span></div><p style="color:rgb(200,200,200)">Faint words</p>'
+  const body = '<div id="tool"><span>airdesign_execute</span></div><p style="color:rgb(200,200,200)">Faint words</p>'
   const allow = [
     { index: 0, page: "fixture", detector: "internal-identifier", selector: "#tool", reason: "A fixture." },
   ]

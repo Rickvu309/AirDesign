@@ -16,7 +16,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const deck = "deck"
 const run = "r"
 const nameOf = (op: string) => projectTools(catalog).find((tool) => tool.op === op)?.name ?? ""
-const edit = nameOf("edit_deck")
+const edit = nameOf("execute")
 const stopRun = nameOf("stop_run")
 const usage = { used: 0.5, allowed: 2, resets: "2026-11-16T00:00:00.000Z" }
 
@@ -104,7 +104,7 @@ function loop() {
         return new Response(ended([{ type: "text", text: "Ok" }]))
       }
       if (messages.length === 1) {
-        return new Response(ended([{ type: "tool_use", id: "call_1", name: edit, input: { deck, base: 1 } }]))
+        return new Response(ended([{ type: "tool_use", id: "call_1", name: edit, input: { deck, script: "get()" } }]))
       }
       const how = await Promise.race([finish.promise, stopped(init?.signal)])
       if (how === "failed") return new Response(`${JSON.stringify({ type: "end", ok: false, usage })}\n`)
