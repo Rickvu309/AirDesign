@@ -341,10 +341,25 @@ describe("API forwarding", () => {
     "/aira/turn",
     "/aira/usage",
     "/.well-known/oauth-protected-resource",
+    "/.well-known/oauth-protected-resource/mcp",
     "/.well-known/oauth-authorization-server",
   ])("forwards %s", async (path) => {
     await worker.fetch(new Request(`https://example.com${path}`, { method: "POST" }), env())
     expect(seen[0]?.url).toBe(path)
+    expect(assets).toEqual([])
+  })
+
+  it.each([
+    "/.well-known/openid-configuration",
+    "/.well-known/oauth-authorization-server/mcp",
+    "/.well-known/oauth-protected-resource/other",
+    "/.well-known/",
+  ])("answers 404 for %s instead of the app page", async (path) => {
+    for (const method of ["GET", "HEAD"]) {
+      const response = await worker.fetch(new Request(`https://example.com${path}`, { method }), env())
+      expect(response.status).toBe(404)
+    }
+    expect(seen).toEqual([])
     expect(assets).toEqual([])
   })
 })

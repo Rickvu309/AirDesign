@@ -5,6 +5,7 @@ import type { Pool } from "pg"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
 import { accountFuzzGood } from "./testing/account-fuzz.js"
+import { discoveryFuzzGood } from "./testing/discovery-fuzz.js"
 import { fuzzGood, fuzzAira } from "./testing/aira-fuzz.js"
 import { attacks, hostileEscapes, hostileValues, leaks, type Attack } from "./testing/fuzz-attack.js"
 import { badTargets } from "./testing/fuzz-target.js"
@@ -270,8 +271,6 @@ describe("hostile input over every route", () => {
     })
     accessToken = (issued.json as { access_token: string }).access_token
     goods = {
-      "GET /.well-known/oauth-protected-resource": [{ shape: "none", answers: 200 }],
-      "GET /.well-known/oauth-authorization-server": [{ shape: "none", answers: 200 }],
       "GET /health": [{ shape: "none", answers: 200 }],
       "GET /version": [{ shape: "none", answers: 200 }],
       "POST /smoke/session": [{ shape: "none", headers: [`authorization: Bearer ${smokeToken}`], answers: 200 }],
@@ -336,6 +335,7 @@ describe("hostile input over every route", () => {
       "POST /oauth/revoke": [{ shape: "form", answers: 200, fields: { token: "t" } }],
       ...fuzzGood(deck),
       ...accountFuzzGood,
+      ...discoveryFuzzGood,
       "POST /sign-in/email": [{ shape: "json", answers: 202, fields: { email: "good@example.com" } }],
       "POST /sign-in/code": [{ shape: "json", answers: 401, fields: { email: "good@example.com", code: "000000" } }],
       "GET /sign-in/link": [{ shape: "query", answers: 302, fields: { token: "t" } }],
