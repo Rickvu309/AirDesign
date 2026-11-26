@@ -105,6 +105,14 @@ test("right-to-left words selected after left-to-right words are highlighted acr
   context,
   stack,
 }) => {
+  let release = () => {}
+  const held = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.route("**/fonts/**", async (route) => {
+    await held
+    await route.continue()
+  })
   const opened = await openEditor(page, context, stack)
   const chars = "abc אבג"
   await landNodes(stack, opened, [
@@ -141,14 +149,19 @@ test("right-to-left words selected after left-to-right words are highlighted acr
       }
     })
   await expect.poll(async () => (await read()).picked).toBe("אבג")
-  await expect
-    .poll(async () => {
-      const { highlight, words } = await read()
-      return highlight !== null && words !== null && Math.abs(highlight.left - words.left) < 1
-    })
-    .toBe(true)
-  const { highlight, words } = await read()
-  expect(words!.right - words!.left).toBeGreaterThan(5)
-  expect(Math.abs(highlight!.left - words!.left)).toBeLessThan(1)
-  expect(Math.abs(highlight!.right - words!.right)).toBeLessThan(1)
+  const settled = async () => {
+    const { highlight, words } = await read()
+    return (
+      highlight !== null &&
+      words !== null &&
+      words.right - words.left > 5 &&
+      Math.abs(highlight.left - words.left) < 1 &&
+      Math.abs(highlight.right - words.right) < 1
+    )
+  }
+  await expect.poll(settled).toBe(true)
+  const early = (await read()).words!
+  release()
+  await expect.poll(async () => Math.abs((await read()).words!.right - early.right) > 1).toBe(true)
+  await expect.poll(settled).toBe(true)
 })
