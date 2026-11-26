@@ -203,6 +203,104 @@ for (const zoom of zooms) {
   })
 }
 
+async function liveView(page: Page): Promise<{ x: number; y: number; scale: number }> {
+  const raw = await page.locator("[data-editor-grid] [data-slide-list]").evaluate((node) => node.style.transform)
+  const match = /translate\(([-\d.]+)px,\s*([-\d.]+)px\) scale\(([-\d.]+)\)/.exec(raw)
+  if (match === null) throw new Error(`no grid transform: ${raw}`)
+  return { x: Number(match[1]), y: Number(match[2]), scale: Number(match[3]) }
+}
+
+async function cameraRested(page: Page): Promise<void> {
+  await expect
+    .poll(async () => {
+      const live = await liveView(page)
+      const stored = await page.evaluate(
+        () => Object.entries(localStorage).find(([key]) => key.startsWith("airdesign.grid-viewport."))?.[1] ?? "",
+      )
+      if (stored === "") return false
+      const kept = JSON.parse(stored) as { x: number; y: number; scale: number }
+      return (
+        Math.abs(kept.x - live.x) < 0.01 &&
+        Math.abs(kept.y - live.y) < 0.01 &&
+        Math.abs(kept.scale - live.scale) < 0.00001
+      )
+    })
+    .toBe(true)
+}
+
+async function pinch(page: Page, steps: number): Promise<number> {
+  const room = await boxOf(viewport(page))
+  const at = { x: room.x + room.width / 2, y: room.y + room.height / 2 }
+  const before = (await boxOf(card(page, 2))).width / slideW
+  for (let step = 0; step < steps; step += 1) await wheelAt(page, at, { x: 0, y: -10 }, { ctrlKey: true })
+  const scale = (await boxOf(card(page, 2))).width / slideW
+  expect(scale).toBeGreaterThan(before * 1.2)
+  return scale
+}
+
+function mapped(frame: Box, box: { x: number; y: number; w: number; h: number }): Box {
+  return {
+    x: frame.x + (frame.width * box.x) / slideW,
+    y: frame.y + (frame.height * box.y) / slideH,
+    width: (frame.width * box.w) / slideW,
+    height: (frame.height * box.h) / slideH,
+  }
+}
+
+function near(actual: Box, expected: Box, px: number, label: string) {
+  for (const key of ["x", "y", "width", "height"] as const)
+    expect(Math.abs(actual[key] - expected[key]), `${label} ${key}`).toBeLessThan(px)
+}
+
+function sitsOn(frame: Box, layer: Box, screenScale: number) {
+  const dx = frame.x + frame.width / 2 - (layer.x + layer.width / 2)
+  const dy = frame.y + frame.height / 2 - (layer.y + layer.height / 2)
+  expect(Math.hypot(dx, dy), "the selection frame left the layer").toBeLessThan(2)
+  const stroke = screenScale * 4 + 2
+  expect(Math.abs(frame.width - layer.width), "the selection frame is the wrong width").toBeLessThan(stroke)
+  expect(Math.abs(frame.height - layer.height), "the selection frame is the wrong height").toBeLessThan(stroke)
+}
+
+test("a wheel zoom that has not settled selects the layer under the pointer and moves it by 100/scale", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await deck(page, context, stack)
+  await zoomTo(page, 100)
+  await aim(page, 2, "t:2", true)
+  await cameraRested(page)
+  await page.clock.install()
+
+  await pinch(page, 4)
+  const room = await boxOf(viewport(page))
+  const hit = visibleOnLayer(await boxOf(card(page, 2)), room)
+  await page.mouse.move(hit.x, hit.y)
+  await page.mouse.down()
+  await page.mouse.up()
+  await expect(outline(page)).toHaveAttribute("data-selection-outline", "t:2")
+  await expect.poll(async () => savedBox(stack, opened, "t:2")).toEqual({ x: layerBox.x, y: layerBox.y })
+
+  const scale = await pinch(page, 4)
+  const dragged = visibleOnLayer(await boxOf(card(page, 2)), room)
+  await page.mouse.move(dragged.x, dragged.y)
+  await page.mouse.down()
+  await page.keyboard.down("Control")
+  await page.mouse.move(dragged.x + 100, dragged.y, { steps: 8 })
+  await page.mouse.up()
+  await page.keyboard.up("Control")
+  const moved = { x: layerBox.x + 100 / scale, y: layerBox.y }
+  await expect.poll(async () => savedBox(stack, opened, "t:2")).toMatchObject({ y: moved.y })
+  await expect.poll(async () => (await savedBox(stack, opened, "t:2")).x).toBeCloseTo(moved.x, 0)
+
+  await pinch(page, 4)
+  const frame = await boxOf(card(page, 2))
+  const layer = await boxOf(painted(page, "t:2"))
+  const saved = await savedBox(stack, opened, "t:2")
+  near(layer, mapped(frame, { x: saved.x, y: saved.y, w: layerBox.w, h: layerBox.h }), 2, "painted layer")
+  sitsOn(await boxOf(outline(page)), layer, frame.width / slideW)
+})
+
 test("a press that never moves writes nothing when the canvas scrolls under it", async ({ page, context, stack }) => {
   const opened = await deck(page, context, stack)
   await zoomTo(page, 100)

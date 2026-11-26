@@ -193,6 +193,14 @@ export function useCanvasPointer(args: PointerArgs) {
   const frame = useRef(0)
   const pressedAt = useRef<Point>({ x: 0, y: 0 })
 
+  function screenScale(): number {
+    const current = latest.current
+    if (current.pointAt === undefined) return current.scale
+    const box = current.slideBox.current?.getBoundingClientRect()
+    if (box === undefined || current.size.w <= 0 || box.width <= 0) return current.scale
+    return box.width / current.size.w
+  }
+
   const toSlide = (event: { readonly clientX: number; readonly clientY: number }): Point => {
     const pointAt = latest.current.pointAt
     if (pointAt !== undefined) return pointAt({ x: event.clientX, y: event.clientY })
@@ -207,7 +215,7 @@ export function useCanvasPointer(args: PointerArgs) {
     event: { readonly clientX: number; readonly clientY: number },
     geometry: SlideGeometry,
     view: doom.Doom,
-  ) => hitChain(geometry.roots, toSlide(event), 4.5 / latest.current.scale, (id) => doom.lockedIn(view, id))
+  ) => hitChain(geometry.roots, toSlide(event), 4.5 / screenScale(), (id) => doom.lockedIn(view, id))
 
   type Evaluated = Pick<Preview, "writes" | "guides" | "label"> & { readonly copies: doom.Copies | null }
 
@@ -225,7 +233,7 @@ export function useCanvasPointer(args: PointerArgs) {
         by: { x: at.x - gesture.origin.x, y: at.y - gesture.origin.y },
         snap: !event.ctrlKey,
         lockAxis: event.shiftKey,
-        scale: a.scale,
+        scale: screenScale(),
         size: a.size,
       })
       if (!event.altKey) return { writes: moved.writes, guides: moved.guides, label: null, copies: null }
@@ -249,7 +257,7 @@ export function useCanvasPointer(args: PointerArgs) {
       fromCenter: event.altKey,
       snapAngle: event.shiftKey,
       snap: !event.ctrlKey,
-      scale: a.scale,
+      scale: screenScale(),
       size: a.size,
     })
     return { ...transformed, copies: null }
@@ -282,7 +290,7 @@ export function useCanvasPointer(args: PointerArgs) {
         at,
         snap: !event.ctrlKey,
         lockAngle: event.shiftKey,
-        scale: a.scale,
+        scale: screenScale(),
       })
       a.setPreview({ kind: "end", writes: done.writes, guides: [], label: null, aim: done.aim })
       return
@@ -397,7 +405,7 @@ export function useCanvasPointer(args: PointerArgs) {
         at: toSlide(last),
         snap: !last.ctrlKey,
         lockAngle: last.shiftKey,
-        scale: a.scale,
+        scale: screenScale(),
       })
       a.client.push(done.writes)
       return

@@ -191,7 +191,7 @@ export function EditorGrid({
     sheet: list,
     ...(start.camera === undefined ? {} : { start: start.camera }),
   })
-  edit.scaleNow.current = camera.view.scale
+  edit.scaleNow.current = () => camera.viewNow().scale
   edit.handNow.current = hand
   edit.spaceNow.current = camera.space
   edit.slideAt.current = (index, client) => {
@@ -562,7 +562,7 @@ export function EditorGrid({
                     onAdd={addAfter}
                     {...(liveSlide !== null && card.id === liveSlide
                       ? {
-                          live: live(card.id, scale, {
+                          live: live(card.id, 1, {
                             handoff: edit.handoff,
                             onBlank: edit.blank,
                             onMode: edit.mode,

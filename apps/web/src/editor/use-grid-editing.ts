@@ -43,7 +43,7 @@ export function useGridEditing({
   const handoff = useRef<CanvasHandoff | null>(null)
   const geometries = useRef(new Map<doom.NodeId, SlideGeometry>())
   const swallow = useRef(false)
-  const scaleNow = useRef(1)
+  const scaleNow = useRef<() => number>(() => 1)
   const handNow = useRef(false)
   const spaceNow = useRef(false)
   const slideAt = useRef<
@@ -81,7 +81,7 @@ export function useGridEditing({
     if (!(target instanceof Element)) return
     const index = gridEntryOf(target)
     const card = index === null ? undefined : layout.cards[index]
-    const scale = scaleNow.current
+    const scale = scaleNow.current()
     const part =
       target.closest("[data-slide-number]") !== null
         ? "number"
