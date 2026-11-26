@@ -146,7 +146,6 @@ export function useGridCamera({
 
   function stopGlide() {
     gliding.current = false
-    host.current?.removeAttribute("data-zooming")
     if (restTimer.current !== undefined) clearTimeout(restTimer.current)
     restTimer.current = undefined
   }
@@ -165,7 +164,6 @@ export function useGridCamera({
     restTimer.current = undefined
     if (!gliding.current) return
     gliding.current = false
-    host.current?.removeAttribute("data-zooming")
     const next = latest.current.camera
     if (!sameCamera(rendered.current, next)) setCamera(next)
     setSettled((held) => held + 1)
@@ -178,11 +176,7 @@ export function useGridCamera({
 
   function glide(next: GridView) {
     latest.current = { ...latest.current, camera: next, view: next }
-    paint(next, false)
-    const zooming = renderedScale.current !== next.scale
-    if (zooming) {
-      if (host.current?.hasAttribute("data-zooming") === false) host.current.setAttribute("data-zooming", "")
-    } else if (host.current?.hasAttribute("data-zooming") === true) host.current.removeAttribute("data-zooming")
+    paint(next, renderedScale.current !== next.scale)
     gliding.current = true
     const key = frameKey(next)
     if (key !== paintedKey.current) {
