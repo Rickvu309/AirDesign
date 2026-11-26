@@ -104,6 +104,11 @@ export function AgentsPage({ navigate }: { navigate: (path: string) => void }) {
         <>
           {connecting && (
             <ConnectAgent
+              onConnected={(next) => {
+                asked.current++
+                setListing(next)
+                setUnavailable(false)
+              }}
               onClose={() => {
                 setConnecting(false)
                 void refresh()
