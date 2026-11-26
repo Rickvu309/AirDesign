@@ -64,27 +64,21 @@ export function AgentPromo({ onConnect, ornaments = true }: { onConnect?: () => 
   const opening = onConnect ? { onConnect } : { href: deckRoutes.connectAgent }
   if (collapsed) return <AgentButton {...opening} />
   return (
-    <section className="h-[254.31px] w-full max-md:hidden shrink-0 overflow-hidden rounded-[var(--shape-dialog)] bg-background shadow-[0_0_0_1px_var(--line),0_4px_12px_color-mix(in_srgb,black_4%,transparent)]">
-      <div
-        className="relative h-28"
-        style={{
-          backgroundImage:
-            "radial-gradient(50% 50% at 50% 55%, color-mix(in srgb, var(--primary) 16%, transparent) 0%, color-mix(in srgb, var(--primary) 5%, transparent) 45%, var(--primary-0) 72%)",
-        }}
-      >
-        <span className="absolute -top-12 left-1/2 size-55 -translate-x-1/2 rounded-full shadow-[0_0_0_1px_color-mix(in_srgb,var(--primary)_14%,transparent)]" />
-        <span className="absolute -top-3.25 left-1/2 size-37.5 -translate-x-1/2 rounded-full shadow-[0_0_0_1px_color-mix(in_srgb,var(--primary)_18%,transparent)]" />
-        <span className="absolute top-5 left-1/2 size-21 -translate-x-1/2 rounded-full shadow-[0_0_0_1px_color-mix(in_srgb,var(--primary)_26%,transparent)]" />
-        <span className="absolute top-11.25 -left-3 flex size-9 items-center justify-center rounded-[var(--shape-card)] bg-ink text-white shadow-[0_4px_10px_color-mix(in_srgb,black_14%,transparent)]">
+    <section className="h-[254.31px] w-full max-md:hidden shrink-0 overflow-hidden rounded-[var(--shape-dialog)] bg-background ring-1 ring-line shadow-[0_4px_12px] shadow-black/4">
+      <div className="relative h-28 bg-[radial-gradient(50%_50%_at_50%_55%,--alpha(var(--color-primary)/16%)_0%,--alpha(var(--color-primary)/5%)_45%,var(--primary-0)_72%)]">
+        <span className="absolute -top-12 left-1/2 size-55 -translate-x-1/2 rounded-full ring-1 ring-primary/14" />
+        <span className="absolute -top-3.25 left-1/2 size-37.5 -translate-x-1/2 rounded-full ring-1 ring-primary/18" />
+        <span className="absolute top-5 left-1/2 size-21 -translate-x-1/2 rounded-full ring-1 ring-primary/26" />
+        <span className="absolute top-11.25 -left-3 flex size-9 items-center justify-center rounded-[var(--shape-card)] bg-ink text-white shadow-[0_4px_10px] shadow-black/14">
           <span dangerouslySetInnerHTML={{ __html: openAiLogo }} />
         </span>
-        <span className="absolute top-10.25 left-8.5 flex size-10.5 items-center justify-center rounded-xl bg-claude text-white shadow-[0_4px_10px_color-mix(in_srgb,var(--claude)_30%,transparent)]">
+        <span className="absolute top-10.25 left-8.5 flex size-10.5 items-center justify-center rounded-xl bg-claude text-white shadow-[0_4px_10px] shadow-claude/30">
           <span dangerouslySetInnerHTML={{ __html: claudeLogo }} />
         </span>
-        <span className="absolute top-8.75 left-1/2 flex size-13.5 -translate-x-1/2 items-center justify-center rounded-[var(--shape-dialog)] bg-background shadow-[0_0_0_1px_color-mix(in_srgb,black_6%,transparent),0_8px_20px_color-mix(in_srgb,var(--primary)_28%,transparent)]">
+        <span className="absolute top-8.75 left-1/2 flex size-13.5 -translate-x-1/2 items-center justify-center rounded-[var(--shape-dialog)] bg-background ring-1 ring-black/6 shadow-[0_8px_20px] shadow-primary/28">
           <AirdesignMark size={32} />
         </span>
-        <span className="absolute top-10.25 left-37 flex size-10.5 items-center justify-center rounded-xl bg-ink shadow-[0_4px_10px_color-mix(in_srgb,black_16%,transparent)]">
+        <span className="absolute top-10.25 left-37 flex size-10.5 items-center justify-center rounded-xl bg-ink shadow-[0_4px_10px] shadow-black/16">
           <svg width="19" height="22" viewBox="1.35 0 19.3 22" aria-hidden="true">
             <path
               d="M1.73,5.21 L10.54,0.12 C10.82,-0.04 11.18,-0.04 11.46,0.12 L20.27,5.21 C20.51,5.35 20.65,5.6 20.65,5.87 L20.65,16.13 C20.65,16.4 20.51,16.65 20.27,16.79 L11.46,21.88 C11.18,22.04 10.82,22.04 10.54,21.88 L1.73,16.79 C1.49,16.65 1.35,16.41 1.35,16.13 L1.35,5.87 C1.35,5.6 1.49,5.35 1.73,5.21 Z M2.44,5.81 L19.44,5.81 C19.68,5.81 19.83,6.07 19.71,6.28 L11.21,21.01 C11.15,21.11 11,21.06 11,20.95 L11,11.31 C11,11.12 10.9,10.94 10.73,10.84 L2.38,6.02 C2.28,5.96 2.33,5.81 2.44,5.81 Z"
@@ -97,7 +91,7 @@ export function AgentPromo({ onConnect, ornaments = true }: { onConnect?: () => 
           <>
             <span
               data-agent-promo-ornament
-              className="absolute top-11.25 left-50 flex size-9 items-center justify-center rounded-[var(--shape-card)] bg-background text-muted-foreground shadow-[0_0_0_1px_var(--field-edge),0_4px_10px_color-mix(in_srgb,black_6%,transparent)]"
+              className="absolute top-11.25 left-50 flex size-9 items-center justify-center rounded-[var(--shape-card)] bg-background text-muted-foreground ring-1 ring-field-edge shadow-[0_4px_10px] shadow-black/6"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
                 <line
