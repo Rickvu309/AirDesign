@@ -3,7 +3,21 @@ import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { build, compiled, minter, started } from "./agent-fixtures.js"
 import { more, richDeck } from "./testing/rich-deck.js"
-import { applyEdit, emptyDoom, isRefusal, rev, type Doom } from "./index.js"
+import {
+  applyEdit,
+  childrenOf,
+  defaultTheme,
+  doomFromTree,
+  emptyDoom,
+  isRefusal,
+  nodeId,
+  orderKeyBetween,
+  rev,
+  type Doom,
+  type NodeId,
+  type OrderKey,
+  type Write,
+} from "./index.js"
 import { agent, create, ids, land, once, theme } from "./sample-deck.js"
 import { parentOf, propOf, slidesOf } from "./doom-walk.js"
 
@@ -12,6 +26,21 @@ const order = (doom: Doom) => slidesOf(doom).map((slide) => slide.id)
 const refusal = (doom: Doom, value: Record<string, unknown>) => compileAgentChange(doom, change(value), minter())
 
 describe("slide add", () => {
+  it("adds a slide in the last group that has a slide, leaving empty groups empty", () => {
+    const { doom, slides, empties } = deckWithEmptyGroups()
+    const added = build(started(doom), change({ op: "slide", add: {} }))
+    const made = slidesOf(added).at(-1)!
+    expect(parentOf(made)?.id).toBe(parentOf(added.nodes.get(slides[3]!))?.id)
+    for (const empty of empties) expect(childrenOf(added, empty)).toEqual([])
+  })
+
+  it("adds the first slide on the deck's only empty row", () => {
+    const bare = doomFromTree({ theme: defaultTheme, slides: [] }).doom
+    const row = [...bare.nodes.values()].find((node) => node.type === "slideRow")!
+    const added = build(started(bare), change({ op: "slide", add: {} }))
+    expect(parentOf(slidesOf(added)[0])?.id).toBe(row.id)
+  })
+
   it("adds a slide after the last one, in the same group, named by its place", () => {
     const doom = build(richDeck(), change({ op: "slide", add: {} }))
     const slides = slidesOf(doom)
@@ -61,6 +90,15 @@ describe("slide add", () => {
 })
 
 describe("slide move and delete", () => {
+  it("moves a slide to the front of the first group that has a slide, and leaves empty groups empty", () => {
+    const { doom, slides, empties } = deckWithEmptyGroups()
+    const base = started(doom)
+    const last = slides[3]!
+    const moved = build(base, change({ op: "slide", move: { slide: last, after: null } }))
+    expect(groups(moved)).toEqual([[last, slides[0]!, slides[1]!], [slides[2]!]])
+    for (const empty of empties) expect(childrenOf(moved, empty)).toEqual([])
+  })
+
   it("moves a slide to the front, or after another", () => {
     const base = build(richDeck(), change({ op: "slide", add: {} }), minter("a"))
     const third = slidesOf(base)[2]!.id
@@ -108,3 +146,49 @@ describe("slide move and delete", () => {
     })
   })
 })
+
+function groups(doom: Doom): NodeId[][] {
+  const rows: NodeId[][] = []
+  let row: NodeId | undefined
+  for (const slide of slidesOf(doom)) {
+    const parent = parentOf(slide)!.id
+    if (parent !== row) {
+      row = parent
+      rows.push([])
+    }
+    rows.at(-1)!.push(slide.id)
+  }
+  return rows
+}
+
+function deckWithEmptyGroups() {
+  const grown = doomFromTree({
+    theme: defaultTheme,
+    slides: ["One", "Two", "Three", "Four"].map((name) => ({ name, children: [] })),
+  })
+  const slides = grown.slides
+  const firstRow = parentOf(grown.doom.nodes.get(slides[0]!))!
+  const deck = parentOf(grown.doom.nodes.get(firstRow.id))!
+  const keys: OrderKey[] = [orderKeyBetween(null, null)]
+  for (let count = 0; count < 4; count += 1) keys.push(orderKeyBetween(keys.at(-1)!, null))
+  const [before, home, mid, later, after] = keys
+  const emptyBefore = nodeId("e:0")
+  const emptyMid = nodeId("e:1")
+  const emptyAfter = nodeId("e:2")
+  const second = nodeId("g:2")
+  const row = (id: NodeId, at: OrderKey): Write[] => [
+    { node: id, prop: "type", value: "slideRow" },
+    { node: id, prop: "parent", value: { id: deck.id, at } },
+  ]
+  const slideKey = orderKeyBetween(null, null)
+  const doom = land(grown.doom, [
+    { node: firstRow.id, prop: "parent", value: { id: deck.id, at: home! } },
+    ...row(emptyBefore, before!),
+    ...row(emptyMid, mid!),
+    ...row(second, later!),
+    { node: slides[2]!, prop: "parent", value: { id: second, at: slideKey } },
+    { node: slides[3]!, prop: "parent", value: { id: second, at: orderKeyBetween(slideKey, null) } },
+    ...row(emptyAfter, after!),
+  ])
+  return { doom, slides, empties: [emptyBefore, emptyMid, emptyAfter] }
+}

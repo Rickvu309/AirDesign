@@ -100,8 +100,11 @@ describe("add slide", () => {
   it("makes a first slide when the deck has none", () => {
     const withoutSlides = doom.doomFromTree({ theme: doom.defaultTheme, slides: [] }).doom
     expect(slideIds(withoutSlides)).toEqual([])
+    const row = [...withoutSlides.nodes.values()].find((node) => node.type === "slideRow")!
     const writes = addSlideWrites(withoutSlides, null, minter())
-    expect(slideIds(landed(withoutSlides, writes.writes))).toEqual([writes.slide])
+    const after = landed(withoutSlides, writes.writes)
+    expect(slideIds(after)).toEqual([writes.slide])
+    expect(doom.parentOf(after.nodes.get(writes.slide))?.id).toBe(row.id)
   })
 
   it("ignores non-slideRow deck children when choosing a row for a first slide", () => {
