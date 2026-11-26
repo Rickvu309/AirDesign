@@ -125,6 +125,11 @@ export function DoomCanvas(props: CanvasProps) {
   const [hover, setHover] = useState<doom.NodeId | null>(null)
   const { actionsOpen, onActionsOpen: setActionsOpen } = props
   const anchor = useRef<ZoomAnchor | null>(null)
+  const unmeasured = useRef<{
+    readonly next: Zoom
+    readonly about?: { readonly clientX: number; readonly clientY: number }
+    readonly point?: Point
+  } | null>(null)
 
   const { size } = doom.deckOf(view)
   const viewport = props.viewport
@@ -177,6 +182,14 @@ export function DoomCanvas(props: CanvasProps) {
   function zoomTo(next: Zoom, about?: { readonly clientX: number; readonly clientY: number }, point?: Point) {
     const element = stage.current
     const paper = slideBox.current
+    if (
+      element !== null &&
+      viewport !== null &&
+      (element.clientWidth !== viewport.w || element.clientHeight !== viewport.h)
+    ) {
+      unmeasured.current = { next, about, point }
+      return
+    }
     if (next === "fit") {
       anchor.current = null
       pan.moveTo(unpanned)
@@ -198,6 +211,12 @@ export function DoomCanvas(props: CanvasProps) {
     }
     props.onZoom(next)
   }
+
+  useLayoutEffect(() => {
+    const asked = unmeasured.current
+    unmeasured.current = null
+    if (asked !== null) zoomTo(asked.next, asked.about, asked.point)
+  }, [viewport?.w, viewport?.h])
 
   useLayoutEffect(() => {
     const held = anchor.current
