@@ -64,7 +64,7 @@ describe("Starred", () => {
 })
 
 describe("bring your own agent card art", () => {
-  const plusTile = "left-[200px]"
+  const plusTile = "data-agent-promo-ornament"
   const collapse = 'aria-label="Collapse"'
 
   it("keeps the design screen's plus tile and minus disk", () => {

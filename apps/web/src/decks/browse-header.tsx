@@ -22,7 +22,7 @@ export function BrowseHeader({
       data-decks-header
       className="flex h-8 items-center justify-between max-md:h-auto max-md:flex-wrap max-md:gap-2"
     >
-      <h1 className="h-8 text-[length:var(--type-title)] leading-8 font-medium tracking-[-0.4px] text-foreground">
+      <h1 className="h-8 text-[length:var(--type-title)] leading-8 font-medium tracking-page-title text-foreground">
         {title}
       </h1>
       {trailing ?? (

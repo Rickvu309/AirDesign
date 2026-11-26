@@ -37,7 +37,7 @@ function ThumbnailPaint({
   return (
     <div
       data-deck-thumbnail=""
-      className={cn("shrink-0 overflow-hidden rounded-[2px]", hairlineShadow)}
+      className={cn("shrink-0 overflow-hidden rounded-xs", hairlineShadow)}
       style={{ width, height: width * slideRatio }}
     >
       <div

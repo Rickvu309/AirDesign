@@ -23,7 +23,7 @@ export function NotFound({
   return (
     <div className="screen-frame reflow-frame" data-not-found={kind} data-not-found-live={live || undefined}>
       <DecksShell account={account} onSignOut={onSignOut}>
-        <h1 className="h-8 text-[length:var(--type-title)] leading-8 font-medium tracking-[-0.4px] text-foreground">
+        <h1 className="h-8 text-[length:var(--type-title)] leading-8 font-medium tracking-page-title text-foreground">
           {words[kind].title}
         </h1>
         <p className="mt-2 text-[length:var(--type-body)] leading-[var(--leading-body)] text-muted-foreground">

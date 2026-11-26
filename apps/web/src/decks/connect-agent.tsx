@@ -31,7 +31,7 @@ import { cn } from "@/lib/class-names"
 const pollEvery = 2000
 const dense = "text-[length:var(--type-dense)] leading-[var(--leading-body)]"
 const quietEdge = "border-0 bg-background shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
-const quietAction = `h-[var(--space-32)] shrink-0 px-3.5 text-[length:var(--type-dense)] leading-[17px] ${quietEdge}`
+const quietAction = `h-[var(--space-32)] shrink-0 px-3.5 text-[length:var(--type-dense)] leading-ui-tight ${quietEdge}`
 const quietIcon = `text-muted-foreground hover:text-foreground ${quietEdge}`
 const swap =
   "col-start-1 row-start-1 transition-[opacity,scale,filter] duration-(--duration-micro) ease-out motion-reduce:transition-none"
@@ -244,7 +244,7 @@ export function ConnectAgent({
         <DialogOverlay className="bg-black/25" />
         <DialogPopup
           data-connect-agent
-          className="fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-1rem)] w-[480px] max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[var(--shape-dialog)] bg-background p-7 shadow-[inset_0_0_0_1px_rgb(0_0_0/8%),0_24px_48px_rgb(0_0_0/16%)] outline-none max-md:p-5"
+          className="fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-1rem)] w-120 max-w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[var(--shape-dialog)] bg-background p-7 shadow-[var(--shadow-confirmation)] outline-none max-md:p-5"
         >
           {connected ? (
             <>

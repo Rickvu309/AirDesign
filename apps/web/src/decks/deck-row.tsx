@@ -6,7 +6,7 @@ import { cn } from "@/lib/class-names"
 const columns = "grid grid-cols-[80px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]"
 
 const row = cn("h-16 items-center", columns)
-const previewBox = "h-[45px] w-20"
+const previewBox = "h-11.25 w-20"
 const nameInset = "ml-4"
 
 const trimmed = { textBox: "trim-both cap alphabetic" } as const
@@ -60,17 +60,17 @@ export function DeckRow({
         </div>
         <div className={cn(nameInset, "flex min-w-0 items-center gap-1 pr-4")}>
           <h2
-            className="min-w-0 truncate py-1 text-[length:var(--type-dense)] leading-[18px] font-medium text-foreground"
+            className="min-w-0 truncate py-1 text-[length:var(--type-dense)] leading-ui font-medium text-foreground"
             style={trimmed}
           >
             {href ? <a href={href}>{name}</a> : name}
           </h2>
         </div>
-        <p className="text-[length:var(--type-dense)] leading-[18px] text-muted-foreground" style={trimmed}>
+        <p className="text-[length:var(--type-dense)] leading-ui text-muted-foreground" style={trimmed}>
           {edited}
         </p>
         {created ? (
-          <p className="text-[length:var(--type-dense)] leading-[18px] text-muted-foreground" style={trimmed}>
+          <p className="text-[length:var(--type-dense)] leading-ui text-muted-foreground" style={trimmed}>
             {created}
           </p>
         ) : (
@@ -83,7 +83,7 @@ export function DeckRow({
 
 export function DeckTableHeader({ sortMarks = true }: { sortMarks?: boolean }) {
   return (
-    <div className={cn("h-7 items-start text-[length:var(--type-dense)] leading-[17px] text-quiet", columns)}>
+    <div className={cn("h-7 items-start text-[length:var(--type-dense)] leading-ui-tight text-quiet", columns)}>
       <span className="col-span-2">
         <SortLabel mark={sortMarks}>Name</SortLabel>
       </span>

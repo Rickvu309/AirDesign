@@ -62,7 +62,7 @@ export function DeckCard({
         </div>
         {action ? <div className="relative -mr-0.5 shrink-0 pt-1.5">{action}</div> : null}
       </div>
-      <div className={cn("h-[150px] overflow-hidden rounded-[var(--shape-card)] bg-line", previewClassName)}>
+      <div className={cn("h-37.5 overflow-hidden rounded-[var(--shape-card)] bg-line", previewClassName)}>
         {preview ?? (
           <span className="flex size-full items-center justify-center">
             <DeckInitial name={name} />
