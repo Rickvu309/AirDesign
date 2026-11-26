@@ -165,7 +165,7 @@ export function ExportDialog({
           {...(finalFocus === undefined ? {} : { finalFocus })}
           data-export-dialog={exporting ? "exporting" : "choosing"}
           aria-busy={exporting}
-          className="fixed top-1/2 left-1/2 z-50 w-120 -translate-x-1/2 -translate-y-1/2 rounded-[var(--shape-dialog)] bg-white shadow-[0_24px_64px_color-mix(in_srgb,var(--color-black)_25%,transparent)] outline-none"
+          className="fixed top-1/2 left-1/2 z-50 w-120 -translate-x-1/2 -translate-y-1/2 rounded-[var(--shape-dialog)] bg-white shadow-[0_24px_64px] shadow-black/25 outline-none"
         >
           <form onSubmit={submit}>
             <div className="flex h-14 items-center justify-between border-b border-line pr-3 pl-5">
