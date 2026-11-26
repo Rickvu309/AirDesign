@@ -112,6 +112,17 @@ export function useGridEditing({
     })
   }
 
+  function open(index: number) {
+    const card = layout.cards[index]
+    if (card === undefined) return
+    flushSync(() => {
+      if (index !== current) onCurrent(index)
+      dispatch({ kind: "enter", slide: card.id })
+    })
+    list.current?.querySelector<HTMLElement>("[data-grid-edit]")?.focus({ preventScroll: true })
+    announce(slideListCopy.entered(index + 1))
+  }
+
   function swallowed(event: MouseEvent<HTMLDivElement>): boolean {
     if (!swallow.current || event.detail === 0) return false
     swallow.current = false
@@ -201,6 +212,7 @@ export function useGridEditing({
     onGeometry,
     step,
     press,
+    open,
     swallowed,
     editOrOpen,
     escape,
