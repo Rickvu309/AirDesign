@@ -289,14 +289,8 @@ function DeckStrip({
 function runSlideChange(strip: SlideStrip, index: number, change: SlideKey, announce: (text: string) => void): void {
   if (!slideChangeAllowed(change, index, strip.count)) return
   const number = slideNumber(index)
-  if (change === "remove") {
-    strip.onRemove?.(index)
-    announce(slideListCopy.deleted(number))
-  }
-  if (change === "clone") {
-    strip.onClone?.(index)
-    announce(slideListCopy.duplicated(number))
-  }
+  if (change === "remove") strip.onRemove?.(index)
+  if (change === "clone") strip.onClone?.(index)
   if (change === "up") {
     strip.onMove?.(index, index - 1)
     announce(slideListCopy.moved(number, number - 1))

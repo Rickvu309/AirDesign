@@ -94,3 +94,14 @@ test("on several picked slides the keys act on all of them, copies end up picked
   await expect(entries(page)).toHaveCount(6)
   expect(await saved()).toEqual(start)
 })
+
+test("Ctrl+D on a full deck says the slide limit and makes no copy", async ({ page, context, stack }) => {
+  const opened = await openGroups(page, context, stack, [10, 10, 10, 10, 10])
+  const start = await savedGroups(stack, opened)
+  await entry(page, 1).click()
+  await page.keyboard.press("ControlOrMeta+d")
+  await expect(page.getByText(slideListCopy.slideLimit(50))).toBeVisible()
+  await expect(entries(page)).toHaveCount(50)
+  await expect(said(page)).not.toContainText(slideListCopy.duplicated(1))
+  expect(await savedGroups(stack, opened)).toEqual(start)
+})

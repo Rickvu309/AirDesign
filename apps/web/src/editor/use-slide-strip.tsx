@@ -39,6 +39,11 @@ export function useSlideStrip(props: {
   const index = current === undefined ? 0 : Math.max(0, slides.indexOf(current))
   const mint = () => client.mint()
   const pick = (held: readonly number[]) => held.flatMap((at) => slides[at] ?? [])
+  const landed = (writes: readonly doom.Write[], options?: Parameters<EditorClient["push"]>[1]): boolean => {
+    const pushed = client.push(writes, options)
+    if (!pushed.ok && pushed.refused.refused === "limit") toast.error(slideListCopy.slideLimit(doom.limits.slides))
+    return pushed.ok
+  }
   const remove = (removed: readonly doom.NodeId[]): "removed" | "last-slide" | "refused" => {
     const writes = deleteSlideWrites(view, removed)
     if (writes.length === 0) return "refused"
@@ -76,7 +81,7 @@ export function useSlideStrip(props: {
         props.measure ?? undefined,
         side,
       )
-      if (!client.push(made.writes, part === "chart" ? { read: view } : undefined).ok) return
+      if (!landed(made.writes, part === "chart" ? { read: view } : undefined)) return
       onCurrent(made.slide)
       const number = doom.slidesOf(client.view()).findIndex((each) => each.id === made.slide) + 1
       say.current(slideListCopy.added(number))
@@ -86,12 +91,16 @@ export function useSlideStrip(props: {
       if (slide === undefined) return
       const made = duplicateSlideWrites(view, [slide], mint)
       const copy = made.slides[0]
-      if (copy !== undefined && client.push(made.writes).ok) onCurrent(copy)
+      if (copy === undefined || !landed(made.writes)) return
+      onCurrent(copy)
+      say.current(slideListCopy.duplicated(at + 1))
     },
     onRemove: (at) => {
       const slide = slides[at]
       if (slide === undefined) return
-      if (remove([slide]) === "last-slide") say.current(slideListCopy.lastSlide)
+      const removed = remove([slide])
+      if (removed === "last-slide") say.current(slideListCopy.lastSlide)
+      if (removed === "removed") say.current(slideListCopy.deleted(at + 1))
     },
     onMove: (from, to) => {
       const slide = slides[from]
