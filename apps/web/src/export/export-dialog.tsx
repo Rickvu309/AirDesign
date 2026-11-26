@@ -7,7 +7,7 @@ import { exportCopy } from "@/copy/export-copy"
 import { slideNames } from "@/export/export-options"
 
 const fieldEdge = "shadow-[0_0_0_1px_var(--field-edge)]"
-const fieldText = "text-[length:var(--type-dense)] leading-[17px] text-foreground"
+const fieldText = "text-[length:var(--type-dense)] leading-ui-tight text-foreground"
 
 function CloseMark() {
   return (
@@ -29,7 +29,7 @@ function OptionRow({ label, labelId, children }: { label: string; labelId: strin
     <div className="flex h-9 items-center">
       <span
         id={labelId}
-        className="w-[110px] shrink-0 text-[length:var(--type-dense)] leading-[17px] text-muted-foreground"
+        className="w-27.5 shrink-0 text-[length:var(--type-dense)] leading-ui-tight text-muted-foreground"
       >
         {label}
       </span>
@@ -160,7 +160,7 @@ export function ExportDialog({
           {...(finalFocus === undefined ? {} : { finalFocus })}
           data-export-dialog={exporting ? "exporting" : "choosing"}
           aria-busy={exporting}
-          className="fixed top-1/2 left-1/2 z-50 w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-[var(--shape-dialog)] bg-white shadow-[0_24px_64px_rgb(0_0_0/25%)] outline-none"
+          className="fixed top-1/2 left-1/2 z-50 w-120 -translate-x-1/2 -translate-y-1/2 rounded-[var(--shape-dialog)] bg-white shadow-[0_24px_64px_color-mix(in_srgb,var(--color-black)_25%,transparent)] outline-none"
         >
           <form onSubmit={submit}>
             <div className="flex h-14 items-center justify-between border-b border-line pr-3 pl-5">
@@ -211,21 +211,21 @@ export function ExportDialog({
                 </OptionRow>
               ) : null}
               {problem === null ? null : (
-                <p id={problemId} role="alert" className="pl-[126px] text-[length:var(--type-dense)] text-danger-text">
+                <p id={problemId} role="alert" className="pl-31.5 text-[length:var(--type-dense)] text-danger-text">
                   {problem}
                 </p>
               )}
-              <p className="text-[length:var(--type-dense)] leading-[17px] text-muted-foreground">
+              <p className="text-[length:var(--type-dense)] leading-ui-tight text-muted-foreground">
                 {exportCopy.printWindow}
               </p>
             </div>
             <div className="border-t border-line">
-              <div className="flex h-[60px] items-center justify-end gap-2 px-5">
+              <div className="flex h-15 items-center justify-end gap-2 px-5">
                 {exporting ? (
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-9 rounded-lg px-3 text-[length:var(--type-dense)] leading-[17px] font-medium"
+                    className="h-9 rounded-lg px-3 text-[length:var(--type-dense)] leading-ui-tight font-medium"
                     onClick={onClose}
                   >
                     {exportCopy.cancel}
@@ -238,7 +238,7 @@ export function ExportDialog({
                   variant="default"
                   disabled={exporting || problem !== null}
                   {...(problem === null ? {} : { "aria-describedby": problemId })}
-                  className={`h-9 min-w-[73.25px] rounded-lg px-3 text-[length:var(--type-dense)] leading-[17px] font-medium ${problem === null ? "" : "opacity-50"}`}
+                  className={`h-9 min-w-[73.25px] rounded-lg px-3 text-[length:var(--type-dense)] leading-ui-tight font-medium ${problem === null ? "" : "opacity-50"}`}
                 >
                   {exporting ? exportCopy.exporting : exportCopy.action}
                 </Button>
