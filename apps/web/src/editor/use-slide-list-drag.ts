@@ -8,8 +8,9 @@ import {
 } from "react"
 import { flushSync } from "react-dom"
 import { composing } from "@/lib/composing"
+import { slideNumberLabel } from "@/lib/slide-numbering"
 import { dragOrder, dragPlace, dragTarget, type SlideDrag } from "@/editor/slide-list-drag"
-import { glideRows, rowPitch, shiftRow, slideGlides, slideRows } from "@/editor/slide-list-glide"
+import { glideRows, rowPitch, slideGlides, slideRows } from "@/editor/slide-list-glide"
 
 const slop = 4
 const edge = 40
@@ -26,6 +27,8 @@ type Lifted = {
   readonly drag: SlideDrag
   readonly rows: readonly HTMLElement[]
   readonly pitch: number
+  readonly numbers: readonly (HTMLElement | null)[]
+  readonly labels: readonly string[]
   place: number
 }
 
@@ -43,8 +46,8 @@ export function useSlideListDrag(
     const next = key === "" ? [] : key.split(",")
     const glides = slideGlides(shown.current, next)
     shown.current = next
-    if (glides === null || list.current === null) return
     ending.current?.()
+    if (glides === null || list.current === null) return
     glideRows(list.current, glides)
   }, [list, key])
   useEffect(() => () => ending.current?.(), [])
@@ -69,7 +72,11 @@ export function useSlideListDrag(
       dragOrder(held.drag, held.place).forEach((each, position) => {
         const by = each === index ? top - each * held.pitch : (position - each) * held.pitch
         const moved = held.rows[each]
-        if (moved !== undefined) shiftRow(moved, by)
+        if (moved === undefined) return
+        moved.style.transform = by === 0 ? "" : `translateY(${String(by)}px)`
+        const number = held.numbers[each]
+        if (number !== null && number !== undefined)
+          number.textContent = slideNumberLabel(position, moved.hasAttribute("data-slide-skipped"))
       })
     }
 
@@ -90,7 +97,9 @@ export function useSlideListDrag(
       row.setAttribute("data-slide-held", "")
       frame = requestAnimationFrame(scroll)
       const held = [...heldWith(index)].sort((one, other) => one - other)
-      return { drag: { count: rows.length, held, grabbed: index }, rows, pitch, place: 0 }
+      const numbers = rows.map((each) => each.querySelector<HTMLElement>("[data-slide-number]"))
+      const labels = numbers.map((number) => number?.textContent ?? "")
+      return { drag: { count: rows.length, held, grabbed: index }, rows, pitch, numbers, labels, place: 0 }
     }
 
     const end = (drop: boolean) => {
@@ -106,7 +115,11 @@ export function useSlideListDrag(
       row.removeAttribute("data-slide-held")
       swallow.current = true
       const moved = drop && dragOrder(held.drag, held.place).some((each, position) => each !== position)
-      if (moved)
+      if (!moved)
+        held.numbers.forEach((number, each) => {
+          if (number !== null) number.textContent = held.labels[each] ?? ""
+        })
+      else
         flushSync(() => {
           onDrop({ held: held.drag.held, grabbed: index, place: held.place, at: dragTarget(held.drag, held.place) })
         })

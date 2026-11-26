@@ -216,19 +216,16 @@ function DeckStrip({
       />
     </SlideItem>
   )
-  const present = (key: string) => {
-    const at = Number(key.split(":")[1])
-    return at >= 0 && at < strip.count
-  }
-  const reachable = stop !== null && present(stop) ? stop : `slide:${String(strip.current)}`
+  const stopAt = stop === null ? -1 : strip.slideIds.findIndex((id) => id === stop)
+  const reachable = `slide:${String(stopAt === -1 ? strip.current : stopAt)}`
   const listProps = {
     ref: list,
     role: "group",
     "aria-label": slideListCopy.listName,
     "data-slide-list": true,
     onFocus: (event: FocusEvent<HTMLDivElement>) => {
-      const key = event.target.getAttribute("data-stop")
-      if (key !== null) setStop(key)
+      const at = Number(event.target.getAttribute("data-stop")?.split(":")[1])
+      setStop(strip.slideIds[at] ?? null)
     },
     onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => onListKey(event, strip, drop),
     onKeyDownCapture: (event: KeyboardEvent<HTMLDivElement>) => {

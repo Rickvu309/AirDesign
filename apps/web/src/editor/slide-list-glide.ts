@@ -23,16 +23,6 @@ function carried(row: HTMLElement): number {
   return row.getBoundingClientRect().top - (row.parentElement?.getBoundingClientRect().top ?? 0)
 }
 
-function numberOf(row: HTMLElement): HTMLElement | null {
-  return row.querySelector<HTMLElement>("[data-slide-number]")
-}
-
-export function shiftRow(row: HTMLElement, by: number): void {
-  const number = numberOf(row)
-  row.style.transform = by === 0 ? "" : `translateY(${String(by)}px)`
-  if (number !== null) number.style.transform = by === 0 ? "" : `translateY(${String(-by)}px)`
-}
-
 export function glideRows(list: HTMLElement, glides: readonly RowGlide[] | null): void {
   const rows = [...list.querySelectorAll<HTMLElement>(slideRows)]
   const pitch = rowPitch(list, rows)
@@ -40,19 +30,17 @@ export function glideRows(list: HTMLElement, glides: readonly RowGlide[] | null)
     const glide = glides?.[index] ?? 0
     return glide === "new" ? glide : glide * pitch + carried(row)
   })
-  const parts = rows.flatMap((row) => [row, numberOf(row) ?? []].flat())
-  for (const part of parts) part.style.transition = "none"
   rows.forEach((row, index) => {
     const start = starts[index] ?? 0
-    shiftRow(row, start === "new" || Math.abs(start) <= 0.5 ? 0 : start)
-    if (start !== "new") return
-    row.style.transform = "scale(0.96)"
-    row.style.opacity = "0"
+    row.style.transition = "none"
+    row.style.transform =
+      start === "new" ? "scale(0.96)" : Math.abs(start) > 0.5 ? `translateY(${String(start)}px)` : ""
+    row.style.opacity = start === "new" ? "0" : ""
   })
   void list.offsetHeight
-  for (const part of parts) {
-    part.style.transition = ""
-    part.style.transform = ""
-    part.style.opacity = ""
+  for (const row of rows) {
+    row.style.transition = ""
+    row.style.transform = ""
+    row.style.opacity = ""
   }
 }
