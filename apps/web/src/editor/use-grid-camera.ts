@@ -6,8 +6,10 @@ import type { GridLayout, GridRect, GridSize } from "@/editor/grid-lines"
 import {
   arrowGrid,
   boundedGridScale,
+  cardBox,
   fittedGrid,
   fittedGridCards,
+  keptGridShows,
   pannedGrid,
   readGridViewport,
   resizedGrid,
@@ -49,17 +51,6 @@ export function blankCanvas(target: EventTarget | null): boolean {
 
 function onCanvas(target: EventTarget | null, host: HTMLElement | null): boolean {
   return target === document.body || (target instanceof Element && host !== null && host.contains(target))
-}
-
-export function cardBox(layout: GridLayout, view: GridView, index: number): GridRect | null {
-  const card = layout.cards[index]
-  if (card === undefined) return null
-  return {
-    left: view.x + card.left * view.scale,
-    top: view.y + card.top * view.scale,
-    width: card.width * view.scale,
-    height: card.height * view.scale,
-  }
 }
 
 function union(boxes: readonly GridRect[]): GridRect | null {
@@ -135,6 +126,13 @@ export function useGridCamera({
     const next = fittedGridCards(laid, picked, size)
     if (next !== null) show(next)
   }
+
+  const measured = room.width > 0 && room.height > 0
+  useLayoutEffect(() => {
+    const { camera: shown, layout: laid, room: size, ringed: picked } = latest.current
+    const next = keptGridShows(shown, laid, size, picked[0])
+    if (next !== shown) show(next)
+  }, [layout, measured])
 
   useEffect(() => {
     const timer = setTimeout(() => keepCamera(deck, camera), settleAfter)

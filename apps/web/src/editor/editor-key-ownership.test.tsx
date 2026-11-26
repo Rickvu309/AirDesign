@@ -141,3 +141,22 @@ it.each([
     window.removeEventListener("keydown", capture, true)
   }
 })
+
+it("owns no key while the editor frame is inert behind a show, and every key once the show ends", () => {
+  window.document.body.innerHTML = '<div data-editor-frame="deck" inert><button></button></div>'
+  const frame = window.document.querySelector<HTMLElement>("[data-editor-frame]")!
+  const owned: boolean[] = []
+  const listen = (event: KeyboardEvent) => owned.push(editorOwnsKey(event))
+  window.addEventListener("keydown", listen, true)
+  try {
+    for (const key of [")", "@", "h", "ArrowRight"])
+      window.document.body.dispatchEvent(new window.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }))
+    frame.removeAttribute("inert")
+    window.document.body.dispatchEvent(
+      new window.KeyboardEvent("keydown", { key: ")", bubbles: true, cancelable: true }),
+    )
+    expect(owned).toEqual([false, false, false, false, true])
+  } finally {
+    window.removeEventListener("keydown", listen, true)
+  }
+})

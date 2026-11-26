@@ -7,6 +7,7 @@ import {
   fittedGrid,
   fittedGridCards,
   gridShown,
+  keptGridShows,
   pannedGrid,
   readGridViewport,
   resizedGrid,
@@ -263,5 +264,32 @@ describe("painting only what shows", () => {
     expect(gridShown(layout, { x: -2 * step, y: 0, scale: 0.1 }, room, 0)[0]).toBe(2)
     expect(gridShown(layout, { x: 5000, y: 0, scale: 0.1 }, room, 200)).toEqual([])
     expect(gridShown(layout, { x: 1100, y: 0, scale: 0.1 }, room, 200)).toEqual([0, 4, 8])
+  })
+})
+
+describe("a kept camera after the deck changed", () => {
+  const room = { width: 1000, height: 600 }
+
+  it("stays where it was while it shows any slide, and stays fit or unmeasured as it is", () => {
+    const layout = deckOf([4, 3])
+    const showing = { x: -100, y: -50, scale: 0.2 }
+    expect(keptGridShows(showing, layout, room, 6)).toBe(showing)
+    expect(keptGridShows("fit", layout, room, 6)).toBe("fit")
+    const empty = { x: 50_000, y: 0, scale: 0.2 }
+    expect(keptGridShows(empty, layout, { width: 0, height: 0 }, 0)).toBe(empty)
+  })
+
+  it("moves to the focused slide at the same zoom when no slide is left on screen, or fits with nothing to focus", () => {
+    const before = deckOf([4, 3])
+    const seventh = before.cards[6]!
+    const zoomed = { x: 500 - seventh.left - seventh.width / 2, y: 300 - seventh.top - seventh.height / 2, scale: 1 }
+    const after = deckOf([4, 2])
+    expect(gridShown(after, zoomed, room, 0)).toEqual([])
+    const kept = keptGridShows(zoomed, after, room, 5)
+    expect(kept).not.toBe("fit")
+    if (kept === "fit") return
+    expect(kept.scale).toBe(1)
+    expect(gridShown(after, kept, room, 0)).toContain(5)
+    expect(keptGridShows(zoomed, after, room, undefined)).toBe("fit")
   })
 })

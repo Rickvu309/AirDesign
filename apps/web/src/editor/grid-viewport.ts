@@ -144,6 +144,29 @@ export function resizedGrid(view: GridView, box: GridRect, before: GridRect, aft
   return panned.x === view.x ? view : { x: panned.x, y: view.y, scale: view.scale }
 }
 
+export function cardBox(layout: GridLayout, view: GridView, index: number): GridRect | null {
+  const card = layout.cards[index]
+  if (card === undefined) return null
+  return {
+    left: view.x + card.left * view.scale,
+    top: view.y + card.top * view.scale,
+    width: card.width * view.scale,
+    height: card.height * view.scale,
+  }
+}
+
+export function keptGridShows(
+  camera: GridCamera,
+  layout: GridLayout,
+  room: GridSize,
+  focus: number | undefined,
+): GridCamera {
+  if (camera === "fit" || room.width === 0 || room.height === 0 || gridShown(layout, camera, room, 0).length > 0)
+    return camera
+  const box = focus === undefined ? null : cardBox(layout, camera, focus)
+  return box === null ? "fit" : revealedGrid(camera, box, { left: 0, top: 0, ...room })
+}
+
 export function gridShown(layout: GridLayout, view: GridView, room: GridSize, margin: number): readonly number[] {
   return layout.cards
     .filter((card) => {
