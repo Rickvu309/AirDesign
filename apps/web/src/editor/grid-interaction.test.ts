@@ -3,13 +3,14 @@ import { gridPick, gridRinged, gridStep, type GridInteraction, type GridStep } f
 
 const none: GridInteraction = { kind: "none" }
 const current: GridInteraction = { kind: "slides", pick: null }
-const several: GridInteraction = { kind: "slides", pick: { anchor: 1, slides: new Set([1, 3]) } }
+const several: GridInteraction = { kind: "slides", pick: { anchor: "b", slides: new Set(["b", "d"]) } }
+const order = ["a", "b", "c", "d", "e"]
 
 const states = { none, current, several }
 
 const steps: Record<string, GridStep> = {
   pickCurrent: { kind: "pick", pick: null },
-  pickSeveral: { kind: "pick", pick: { anchor: 1, slides: new Set([1, 3]) } },
+  pickSeveral: { kind: "pick", pick: { anchor: "b", slides: new Set(["b", "d"]) } },
   escape: { kind: "escape" },
   clear: { kind: "clear" },
 }
@@ -41,10 +42,11 @@ describe("grid interaction", () => {
   })
 
   it("rings slides only while slides are what is selected, and drops slides the deck no longer has", () => {
-    expect(gridRinged(none, 2, 5)).toEqual([])
-    expect(gridRinged(current, 2, 5)).toEqual([2])
-    expect(gridRinged(several, 2, 5)).toEqual([1, 3])
-    expect(gridRinged(several, 2, 3)).toEqual([1])
+    expect(gridRinged(none, order, 2)).toEqual([])
+    expect(gridRinged(current, order, 2)).toEqual([2])
+    expect(gridRinged(several, order, 2)).toEqual([1, 3])
+    expect(gridRinged(several, ["a", "b", "c"], 2)).toEqual([1])
+    expect(gridRinged(several, ["b", "c", "d"], 2)).toEqual([0, 2])
   })
 
   it("names a pick only while several slides were chosen with Shift, Ctrl or Cmd", () => {

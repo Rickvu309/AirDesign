@@ -25,7 +25,7 @@ type Press = {
   readonly before: GridInteraction
   readonly deck: MarqueeDeck
   readonly started: boolean
-  readonly hits: readonly number[]
+  readonly hits: readonly number[] | null
 }
 
 const frameTime = 1000 / 60
@@ -57,7 +57,7 @@ export function useGridMarquee({
     const area = marqueeBox(held.start, camera.world(held.client))
     setBox(area)
     const hits = marqueeHits(area, layout.cards)
-    if (hits.join(",") === held.hits.join(",")) return
+    if (held.hits !== null && hits.join(",") === held.hits.join(",")) return
     press.current = { ...held, hits }
     onStep(marqueeStep(held.before, held.deck, hits, held.adding))
   }
@@ -118,7 +118,7 @@ export function useGridMarquee({
     stop()
     if (!held.started) return
     swallow.current = true
-    onEnd(held.before, held.deck, held.hits, held.adding)
+    onEnd(held.before, held.deck, held.hits ?? [], held.adding)
   }
 
   function escape(event: KeyboardEvent) {
@@ -174,7 +174,7 @@ export function useGridMarquee({
         before: state,
         deck,
         started: false,
-        hits: [],
+        hits: null,
       }
     },
     swallowedClick: () => {
