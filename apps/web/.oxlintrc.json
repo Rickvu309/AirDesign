@@ -158,10 +158,7 @@
     "design-system/no-template-classname": [
       "error",
       {
-        "baseline": {
-          "src/settings/account-card.tsx": 1,
-          "src/settings/agents-empty.tsx": 1
-        }
+        "baseline": {}
       }
     ],
     "design-system/one-way-imports": [
