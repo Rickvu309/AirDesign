@@ -354,7 +354,8 @@ export function EditorGrid({
     const command = gridCommand(event.nativeEvent)
     if (command !== null) {
       event.preventDefault()
-      if (command === "menu" && event.target instanceof HTMLElement) actions.openMenu(index, event.target, false)
+      if (command === "open") edit.open(index)
+      else if (command === "menu" && event.target instanceof HTMLElement) actions.openMenu(index, event.target, false)
       else actions.act(command, index)
       return
     }
