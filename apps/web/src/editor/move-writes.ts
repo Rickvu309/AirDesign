@@ -80,15 +80,16 @@ function shifted(bounds: Bounds, by: Point): Bounds {
   return { left: bounds.left + by.x, top: bounds.top + by.y, right: bounds.right + by.x, bottom: bounds.bottom + by.y }
 }
 
+export function axisLocked(by: Point, lock: boolean): Point {
+  if (!lock) return by
+  return Math.abs(by.x) >= Math.abs(by.y) ? { x: by.x, y: 0 } : { x: 0, y: by.y }
+}
+
 export function movedBy(input: MoveInput): Moved {
   const movers = input.ids.filter((id) => movable(input.view, id)).flatMap((id) => input.geometry.byId.get(id) ?? [])
   const start = aroundPlaced(movers)
   if (start === null) return { by: zero, guides: [], writes: [] }
-  const free = input.lockAxis
-    ? Math.abs(input.by.x) >= Math.abs(input.by.y)
-      ? { x: input.by.x, y: 0 }
-      : { x: 0, y: input.by.y }
-    : input.by
+  const free = axisLocked(input.by, input.lockAxis)
   if (!input.snap) {
     const by = { x: Math.round(free.x), y: Math.round(free.y) }
     return { by, guides: [], writes: moveWrites(input.view, input.geometry, input.ids, by) }

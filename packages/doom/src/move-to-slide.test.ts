@@ -106,7 +106,9 @@ describe("moveToSlide", () => {
       grown.ids.b,
       grown.ids.line,
     ])
+    expect(both.result.moved).toEqual([grown.ids.a, grown.ids.b, grown.ids.line])
     const one = across(grown.doom, [grown.ids.a!], grown.slides[1]!, { x: 10, y: 20 })
+    expect(one.result.moved).toEqual([grown.ids.a])
     expect(parentOf(one.landed.after.nodes.get(grown.ids.line!)!)?.id).toBe(grown.slides[0])
     expect(propOf(one.landed.after.nodes.get(grown.ids.line!)!, "geometry")).toMatchObject({
       start: { node: grown.ids.a, site: "r" },

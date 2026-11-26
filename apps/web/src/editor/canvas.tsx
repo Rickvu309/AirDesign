@@ -11,6 +11,7 @@ import {
   type PointerEvent,
   type RefObject,
 } from "react"
+import type { Flight, GridCarry } from "./canvas-carry"
 import type { Preview } from "./canvas-overlay"
 import type { ThinNotice } from "./thin-notice"
 import { CanvasStage } from "./canvas-stage"
@@ -64,6 +65,7 @@ export type CanvasCard = {
   readonly onMode: (mode: "elements" | "text") => void
   readonly onRun: (run: ActionRun) => void
   readonly pointAt?: (client: { readonly x: number; readonly y: number }) => { readonly x: number; readonly y: number }
+  readonly carry?: GridCarry
 }
 
 const idleRun: ActionRun = {
@@ -116,6 +118,7 @@ export function DoomCanvas(props: CanvasProps) {
   const [box, setBox] = useState<Size>({ w: 0, h: 0 })
   const [space, setSpace] = useState(false)
   const [preview, setPreview] = useState<Preview | null>(null)
+  const [flight, setFlight] = useState<Flight | null>(null)
   const [marquee, setMarquee] = useState<Rect | null>(null)
   const [hover, setHover] = useState<doom.NodeId | null>(null)
   const { actionsOpen, onActionsOpen: setActionsOpen } = props
@@ -387,8 +390,11 @@ export function DoomCanvas(props: CanvasProps) {
       onCropping(id)
     },
     onCropEnd: () => onCropping(null),
+    slide,
+    setFlight,
     ...(props.card === undefined ? {} : { onBlank: props.card.onBlank }),
     ...(props.card?.pointAt === undefined ? {} : { pointAt: props.card.pointAt }),
+    ...(props.card?.carry === undefined ? {} : { carry: props.card.carry }),
   })
 
   const wasText = useRef(false)
@@ -494,6 +500,7 @@ export function DoomCanvas(props: CanvasProps) {
       onLeave={leaveText}
       caught={client.caught}
       preview={preview}
+      flight={flight}
       hover={hover}
       marquee={marquee}
       crop={crop}

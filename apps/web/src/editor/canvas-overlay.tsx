@@ -1,6 +1,7 @@
 import * as doom from "@airdesign/doom"
 import type { Guide } from "./snapping"
 import type { Rect } from "./selection"
+import type { Flight } from "./canvas-carry"
 import { CanvasHandles } from "./canvas-handles"
 import { CropHandles, type CropTarget } from "./crop-handles"
 import { LineHandles } from "./line-handles"
@@ -57,6 +58,10 @@ function GuideMarks({ guide, scale }: { readonly guide: Guide; readonly scale: n
   )
 }
 
+function shift(by: Point, scale: number): string {
+  return `translate(${String(by.x * scale)} ${String(by.y * scale)})`
+}
+
 function routeOf(placed: Placed, scale: number): string | null {
   const geometry = placed.node.geometry
   if (geometry?.kind !== "line") return null
@@ -91,6 +96,7 @@ function Outline({
 export function CanvasOverlay(props: {
   readonly view: doom.Doom
   readonly preview: Preview | null
+  readonly flight: Flight | null
   readonly geometry: SlideGeometry
   readonly selected: readonly doom.NodeId[]
   readonly hovered: doom.NodeId | null
@@ -102,7 +108,10 @@ export function CanvasOverlay(props: {
   readonly size: { readonly w: number; readonly h: number }
 }) {
   const { view, preview, geometry, selected, hovered, marquee, scale, size } = props
-  const guides = preview?.guides ?? []
+  const { flight } = props
+  const guides = flight?.guides ?? preview?.guides ?? []
+  const carried = flight === null ? undefined : shift(flight.by, scale)
+  const landing = flight === null ? undefined : shift(flight.offset, scale)
   const frame =
     preview?.kind === "move" || preview?.kind === "draw" || props.editing || props.crop !== null
       ? null
@@ -122,21 +131,23 @@ export function CanvasOverlay(props: {
       style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}
     >
       {hover === undefined ? null : <Outline placed={hover} scale={scale} data-hover-outline="" />}
-      {chosen.map((placed) => (
-        <Outline key={placed.id} placed={placed} scale={scale} data-selection-outline={placed.id} />
-      ))}
-      {chosen.length > 1 && all !== null ? (
-        <rect
-          data-selection-frame=""
-          x={all.left * scale}
-          y={all.top * scale}
-          width={(all.right - all.left) * scale}
-          height={(all.bottom - all.top) * scale}
-          fill="none"
-          stroke={edge}
-          strokeWidth={1}
-        />
-      ) : null}
+      <g transform={carried}>
+        {chosen.map((placed) => (
+          <Outline key={placed.id} placed={placed} scale={scale} data-selection-outline={placed.id} />
+        ))}
+        {chosen.length > 1 && all !== null ? (
+          <rect
+            data-selection-frame=""
+            x={all.left * scale}
+            y={all.top * scale}
+            width={(all.right - all.left) * scale}
+            height={(all.bottom - all.top) * scale}
+            fill="none"
+            stroke={edge}
+            strokeWidth={1}
+          />
+        ) : null}
+      </g>
       {frame === null ? null : (
         <CanvasHandles
           frame={frame}
@@ -150,9 +161,11 @@ export function CanvasOverlay(props: {
       {ends === null ? null : (
         <LineHandles ends={ends} attached={attachedEnds(view, lone?.id)} aim={preview?.aim ?? null} scale={scale} />
       )}
-      {guides.map((guide, at) => (
-        <GuideMarks key={at} guide={guide} scale={scale} />
-      ))}
+      <g transform={landing}>
+        {guides.map((guide, at) => (
+          <GuideMarks key={at} guide={guide} scale={scale} />
+        ))}
+      </g>
       {marquee === null ? null : (
         <rect
           data-marquee=""

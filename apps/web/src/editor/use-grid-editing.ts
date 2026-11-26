@@ -181,6 +181,16 @@ export function useGridEditing({
     announce(slideListCopy.nothingSelected)
   }
 
+  function land(slide: doom.NodeId, ids: readonly doom.NodeId[]) {
+    const index = layout.cards.findIndex((card) => card.id === slide)
+    flushSync(() => {
+      if (index >= 0 && index !== current) onCurrent(index)
+      dispatch({ kind: "enter", slide })
+    })
+    onSelection({ ids, inside: null })
+    list.current?.querySelector<HTMLElement>("[data-grid-edit]")?.focus({ preventScroll: true })
+  }
+
   function blank() {
     flushSync(() => step({ kind: "pick", pick: null }))
     const chosen = entry(current)
@@ -198,7 +208,8 @@ export function useGridEditing({
   function mode(next: "elements" | "text") {
     const slide = sessionSlide()
     if (slide === undefined) return
-    dispatch(next === "text" ? { kind: "type", slide } : { kind: "enter", slide })
+    const step: GridStep = next === "text" ? { kind: "type", slide } : { kind: "enter", slide }
+    if (gridStep(state, step) !== state) dispatch(step)
   }
 
   const begin = useCallback(() => {
@@ -227,6 +238,8 @@ export function useGridEditing({
     editing,
     frame,
     handoff,
+    geometries,
+    land,
     scaleNow,
     handNow,
     spaceNow,
