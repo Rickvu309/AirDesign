@@ -149,10 +149,12 @@ const plain = (raw: unknown): Record<string, unknown> => {
 export const boolean: Reader<boolean> = (raw) => (typeof raw === "boolean" ? raw : wrong("true or false."))
 rememberForm(boolean, "true or false.")
 
+const asJsonStores = (value: number) => (Object.is(value, -0) ? 0 : value)
+
 export const finite = (min: number, max: number): Reader<number> => {
   const form = `A number from ${min} to ${max}.`
   const read: Reader<number> = (raw) =>
-    typeof raw === "number" && Number.isFinite(raw) && raw >= min && raw <= max ? raw : wrong(form)
+    typeof raw === "number" && Number.isFinite(raw) && raw >= min && raw <= max ? asJsonStores(raw) : wrong(form)
   rememberForm(read, form)
   return read
 }
@@ -160,7 +162,7 @@ export const finite = (min: number, max: number): Reader<number> => {
 export const integer = (min: number, max: number): Reader<number> => {
   const form = `A whole number from ${min} to ${max}.`
   const read: Reader<number> = (raw) =>
-    typeof raw === "number" && Number.isInteger(raw) && raw >= min && raw <= max ? raw : wrong(form)
+    typeof raw === "number" && Number.isInteger(raw) && raw >= min && raw <= max ? asJsonStores(raw) : wrong(form)
   rememberForm(read, form)
   return read
 }
