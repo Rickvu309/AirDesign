@@ -79,11 +79,11 @@ function DeckGridSkeleton({ section }: { section: HomeSection }) {
 }
 
 function gridLayout(section: HomeSection) {
-  return section === "trash" ? "mt-6 grid-cols-3" : section === "all-decks" ? "mt-6" : undefined
+  return section === "trash" ? "mt-6 max-w-none grid-cols-3" : undefined
 }
 
 function previewHeight(section: HomeSection) {
-  return section === "recents" ? undefined : "h-34"
+  return section === "trash" ? "h-34" : undefined
 }
 
 export type HomeSection = "recents" | "all-decks" | "trash"
