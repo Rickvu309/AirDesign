@@ -25,6 +25,8 @@ const add = (page: Page, number: number) =>
   page.getByRole("button", { name: slideListCopy.addAfter(number), exact: true })
 const below = (page: Page, group: number) =>
   page.getByRole("button", { name: slideListCopy.addBelow(group), exact: true })
+const spot = (page: Page, label: string) =>
+  page.locator("[data-add-spot]").filter({ has: page.locator(`[aria-label="${label}"]`) })
 async function undo(page: Page, saved: () => Promise<unknown>, start: unknown): Promise<void> {
   await page.keyboard.press("ControlOrMeta+z")
   await expect.poll(saved).toEqual(start)
@@ -61,14 +63,14 @@ test("the plus between two slides adds one there in their slide group, and it sa
   await expect.poll(() => sizes(page)).toEqual([5, 4, 2])
 })
 
-test("the dot at a slide group's end previews the new slide's place and adds it at that group's end", async ({
+test("the plus at a slide group's end previews the new slide's place and adds it at that group's end", async ({
   page,
   context,
   stack,
 }) => {
   const opened = await openGroups(page, context, stack, [4, 4, 2])
   await zoomTo(page, 10)
-  await add(page, 4).hover()
+  await spot(page, slideListCopy.addAfter(4)).hover()
   const placeholder = page.locator("[data-gap-placeholder]:visible")
   await expect(placeholder).toHaveCount(1)
   const preview = await boxOf(placeholder)

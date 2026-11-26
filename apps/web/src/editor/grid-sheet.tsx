@@ -14,14 +14,7 @@ import type { SlideGeometry } from "@/editor/slide-geometry"
 import type { GridDropBar as DropBar } from "@/editor/use-grid-drag"
 
 type Point = { readonly x: number; readonly y: number }
-type Room = { readonly width: number; readonly height: number }
 type Spacing = { readonly column: number; readonly group: number; readonly line: number; readonly inset: number }
-
-function inside(origin: Point, room: Room, scale: number, left: number, top: number, width: number, height: number) {
-  const x = origin.x + left * scale
-  const y = origin.y + top * scale
-  return x >= 0 && y >= 0 && x + width * scale <= room.width && y + height * scale <= room.height
-}
 
 function tinted(
   group: number,
@@ -55,8 +48,6 @@ export function GridSheet({
   shift,
   spacing,
   addBlocked,
-  origin,
-  room,
   onAddGap,
   onAddGroup,
   liveSlide,
@@ -98,8 +89,6 @@ export function GridSheet({
   readonly shift: (index: number) => Point | null
   readonly spacing: Spacing
   readonly addBlocked: boolean
-  readonly origin: Point
-  readonly room: Room
   readonly onAddGap: (index: number) => void
   readonly onAddGroup: (index: number) => void
   readonly liveSlide: string | null
@@ -180,18 +169,6 @@ export function GridSheet({
                 wrapped={band.wrapped}
                 addGap={addBlocked ? null : spacing.column}
                 addEnd={card.index === band.end - 1}
-                previewFits={
-                  card.index === band.end - 1 &&
-                  inside(
-                    origin,
-                    room,
-                    scale,
-                    card.left + card.width + spacing.column,
-                    card.top,
-                    card.width,
-                    card.height,
-                  )
-                }
                 onAdd={onAddGap}
                 {...(liveSlide !== null && card.id === liveSlide
                   ? {
@@ -216,19 +193,8 @@ export function GridSheet({
               top={band.bottom}
               width={first.width}
               gap={spacing.group}
-              preview={{
-                top: spacing.group + spacing.inset,
-                height: first.height,
-                fits: inside(
-                  origin,
-                  room,
-                  scale,
-                  0,
-                  band.bottom + spacing.group + spacing.inset,
-                  first.width,
-                  first.height,
-                ),
-              }}
+              column={spacing.column}
+              preview={{ top: spacing.group + spacing.inset, height: first.height }}
               last={last}
               onAdd={() => onAddGroup(band.end - 1)}
             />

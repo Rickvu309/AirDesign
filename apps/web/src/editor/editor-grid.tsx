@@ -519,8 +519,6 @@ export function EditorGrid({
             shift={drag.shift}
             spacing={spacing}
             addBlocked={addBlocked}
-            origin={camera.view}
-            room={camera.room}
             onAddGap={addAfter}
             onAddGroup={(index) => actions.add(index, "new")}
             liveSlide={liveSlide}

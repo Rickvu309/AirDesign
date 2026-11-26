@@ -182,7 +182,6 @@
   --grid-marquee-fill: color-mix(in oklch, var(--grid-marquee-edge) 10%, transparent);
   --grid-marquee-width: 1px;
   --grid-add-size: 24px;
-  --grid-add-dot: 8px;
   --grid-insertion-line-width: 1px;
   --grid-handle-pill-width: 5px;
   --grid-handle-pill-height: 24px;

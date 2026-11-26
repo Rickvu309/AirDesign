@@ -1,10 +1,12 @@
-import { useCallback, useState, type ComponentProps, type CSSProperties } from "react"
+import { useCallback, useState, type ComponentProps } from "react"
 import { Button } from "@/components/ui/button"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { gestureFor } from "@/lib/gestures"
 
-const addTarget = 44
+export function share(part: number, whole: number): string {
+  return `${String((part / whole) * 100)}%`
+}
 
 export function GridGroupAdd({
   group,
@@ -12,6 +14,7 @@ export function GridGroupAdd({
   top,
   width,
   gap,
+  column,
   preview,
   last,
   onAdd,
@@ -21,7 +24,8 @@ export function GridGroupAdd({
   readonly top: number
   readonly width: number
   readonly gap: number
-  readonly preview: { readonly top: number; readonly height: number; readonly fits: boolean }
+  readonly column: number
+  readonly preview: { readonly top: number; readonly height: number }
   readonly last: boolean
   readonly onAdd: () => void
 }) {
@@ -32,66 +36,54 @@ export function GridGroupAdd({
     node.addEventListener("pointerleave", leave)
     return () => node.removeEventListener("pointerleave", leave)
   }, [])
-  const band = last ? Math.min(gap, 48) : gap
   const label = slideListCopy.addBelow(group)
   return (
     <div
-      ref={leaves}
       data-group-insert={last ? "last" : "between"}
       data-used={used ? "" : undefined}
-      className="absolute"
-      style={{
-        left,
-        top,
-        width,
-        height: band,
-        ...{ "--grid-group-preview-distance": `${String(preview.top)}px` },
-      }}
+      className="pointer-events-none absolute"
+      style={{ left, top, width, height: gap }}
     >
-      <div
-        data-group-preview
-        className="pointer-events-none absolute left-0"
-        style={{ top: last ? preview.top : band / 2 }}
-      >
-        {last ? (
-          <GridPlaceholder width={width} height={preview.height} kind="group" fits={preview.fits} />
-        ) : (
-          <div data-group-insertion-line style={{ width }} />
-        )}
+      <div data-grid-overlay>
+        <div
+          data-group-preview
+          className="absolute left-0 w-full"
+          style={last ? { top: share(preview.top, gap), height: share(preview.height, gap) } : { top: "50%" }}
+        >
+          {last ? <GridPlaceholder kind="group" /> : <div data-group-insertion-line />}
+        </div>
+        <div
+          ref={leaves}
+          data-add-spot
+          style={{
+            left: last ? "50%" : "calc(var(--grid-add-size) / 2)",
+            width: share(column, width),
+            height: share(column, gap),
+          }}
+        >
+          <GridAddButton
+            data-add-group
+            aria-label={label}
+            title={label}
+            onFocus={() => setUsed(false)}
+            onClick={() => {
+              setUsed(true)
+              onAdd()
+            }}
+          />
+        </div>
       </div>
-      <GridAddButton
-        data-add-group
-        aria-label={label}
-        title={label}
-        style={{ left: width / 2, top: "50%", width: Math.min(addTarget, width), height: Math.min(addTarget, band) }}
-        onFocus={() => setUsed(false)}
-        onClick={() => {
-          setUsed(true)
-          onAdd()
-        }}
-      />
     </div>
   )
 }
 
-export function GridPlaceholder({
-  width,
-  height,
-  kind,
-  fits,
-}: {
-  readonly width: number
-  readonly height: number
-  readonly kind: "gap" | "group"
-  readonly fits: boolean
-}) {
+export function GridPlaceholder({ kind }: { readonly kind: "gap" | "group" }) {
   return (
     <div
-      data-preview-fits={fits ? "" : undefined}
       data-group-placeholder={kind === "group" ? "" : undefined}
       data-gap-placeholder={kind === "gap" ? "" : undefined}
       aria-hidden="true"
-      style={{ width, height }}
+      className="size-full"
     >
       <svg className="block size-full">
         <rect data-grid-placeholder-border />
@@ -100,16 +92,14 @@ export function GridPlaceholder({
   )
 }
 
-export function GridAddButton({ onClick, style, ...props }: ComponentProps<typeof Button>) {
-  const place: CSSProperties = { transform: "translate(-50%, -50%)", ...style }
+export function GridAddButton({ onClick, ...props }: ComponentProps<typeof Button>) {
   return (
     <Button
       type="button"
       variant="ghost"
       size="icon"
-      className="absolute"
+      data-focus-edge
       {...props}
-      style={place}
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => {
         event.stopPropagation()
