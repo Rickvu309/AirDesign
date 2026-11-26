@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest"
+
+declare const btoa: (text: string) => string
 import {
   readApprovalRequest,
   readBearer,
@@ -439,6 +441,35 @@ describe("oauth readers", () => {
           ),
         ).toEqual(invalid)
       }
+    }
+  })
+
+  const basic = (pair: string) => `Basic ${btoa(pair)}`
+  const formless = (pairs: readonly (readonly [string, string])[]) => pairs.filter(([name]) => name !== "client_id")
+
+  it("readTokenRequest reads the client id from HTTP Basic with an empty or ignored secret", () => {
+    for (const header of [basic("id:"), basic("id:secret"), `basic ${btoa("id:")}`]) {
+      expect(readTokenRequest(formType, formless(refresh), header)).toMatchObject({ ok: true, clientId: "id" })
+      expect(readTokenRequest(formType, formless(code), header)).toMatchObject({ ok: true, clientId: "id" })
+    }
+    expect(readTokenRequest(formType, formless(refresh), basic("a%3Ab+c:"))).toMatchObject({ clientId: "a:b c" })
+    expect(readTokenRequest(formType, refresh, basic("id:"))).toMatchObject({ ok: true, clientId: "id" })
+    expect(readTokenRequest(formType, refresh, "Bearer token")).toMatchObject({ ok: true, clientId: "id" })
+  })
+
+  it("readTokenRequest refuses a Basic client id that disagrees with the form or cannot be read", () => {
+    expect(readTokenRequest(formType, refresh, basic("other:"))).toEqual(invalid)
+    for (const header of [
+      "Basic",
+      "Basic ",
+      "Basic !!!",
+      basic(":"),
+      basic("id"),
+      basic("%E0:"),
+      basic("a\u0000:"),
+      basic("\u00e9:"),
+    ]) {
+      expect(readTokenRequest(formType, formless(refresh), header)).toEqual(invalid)
     }
   })
 

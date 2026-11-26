@@ -14,6 +14,9 @@ const grantIdCap = 128
 const emailPattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i
 const codePattern = /^\d{6}$/
 const bearerPattern = /^Bearer ([A-Za-z0-9._~+/=-]+)$/i
+const basicScheme = /^Basic(?: |$)/i
+const basicPattern = /^Basic ([A-Za-z0-9+/]+={0,2})$/i
+const base64Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 const challengePattern = /^[A-Za-z0-9_-]{43}$/
 const formType = "application/x-www-form-urlencoded"
 const hostPattern = /^(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::([0-9]{1,5}))?$/
@@ -328,6 +331,41 @@ function readForm(contentType: unknown, pairs: FormPairs): Map<string, string> |
   return fields
 }
 
+function asciiOfBase64(encoded: string): string | undefined {
+  let text = ""
+  let held = 0
+  let bits = 0
+  for (const sextet of encoded.replace(/=+$/, "")) {
+    held = (held << 6) | base64Alphabet.indexOf(sextet)
+    bits += 6
+    if (bits < 8) continue
+    bits -= 8
+    const byte = held >> bits
+    held &= (1 << bits) - 1
+    if (byte > 0x7f) return undefined
+    text += String.fromCharCode(byte)
+  }
+  return text
+}
+
+function formDecoded(raw: string): string | undefined {
+  try {
+    return decodeURIComponent(raw.replaceAll("+", " "))
+  } catch {
+    return undefined
+  }
+}
+
+function readBasicClient(header: unknown): { readonly ok: true; readonly clientId: string | undefined } | FormRefusal {
+  if (typeof header !== "string" || !basicScheme.test(header)) return { ok: true, clientId: undefined }
+  const encoded = basicPattern.exec(header)?.[1]
+  const pair = encoded === undefined ? undefined : asciiOfBase64(encoded)
+  const split = pair?.indexOf(":") ?? -1
+  const clientId = pair === undefined || split < 0 ? undefined : formDecoded(pair.slice(0, split))
+  if (clientId === undefined || clientId.length === 0 || !storableText(clientId)) return formRefusal
+  return { ok: true, clientId }
+}
+
 export type TokenRequest =
   | {
       readonly ok: true
@@ -346,11 +384,18 @@ export type TokenRequest =
       readonly resource: string | undefined
     }
 
-export function readTokenRequest(contentType: unknown, pairs: FormPairs): TokenRequest | FormRefusal | GrantRefusal {
+export function readTokenRequest(
+  contentType: unknown,
+  pairs: FormPairs,
+  authorization?: unknown,
+): TokenRequest | FormRefusal | GrantRefusal {
   const form = readForm(contentType, pairs)
   const grant = form?.get("grant_type")
-  if (form === undefined || grant === undefined) return formRefusal
-  const clientId = form.get("client_id")
+  const basic = readBasicClient(authorization)
+  if (form === undefined || grant === undefined || !basic.ok) return formRefusal
+  const posted = form.get("client_id")
+  if (posted !== undefined && basic.clientId !== undefined && posted !== basic.clientId) return formRefusal
+  const clientId = posted ?? basic.clientId
   const resource = form.get("resource")
   if (grant === "authorization_code") {
     const code = form.get("code")
