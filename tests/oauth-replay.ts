@@ -33,6 +33,7 @@ function oauthGrant(spec: Spec): Grant {
     code,
     generation: num(spec, "generation"),
     revoked: flag(spec, "revoked"),
+    rotates: flag(spec, "rotates"),
   }
 }
 
@@ -42,6 +43,7 @@ function oauthPicture(grant: Grant) {
     code: grant.code,
     generation: grant.generation,
     revoked: grant.revoked,
+    rotates: grant.rotates,
   }
 }
 
@@ -54,8 +56,9 @@ function oauthEdge(action: string): { command: OauthCommand; accepted: boolean }
     command: { command: "rotate" as const, generation },
     accepted,
   })
-  if (action === "Exchange") return { command: { command: "exchange" }, accepted: true }
-  if (action === "ExchangeRefused") return { command: { command: "exchange" }, accepted: false }
+  if (action === "Exchange") return { command: { command: "exchange", rotates: true }, accepted: true }
+  if (action === "ExchangeKept") return { command: { command: "exchange", rotates: false }, accepted: true }
+  if (action === "ExchangeRefused") return { command: { command: "exchange", rotates: true }, accepted: false }
   if (action === "Call0Refused") return call(0, false)
   if (action === "Call1") return call(1, true)
   if (action === "Call1Refused") return call(1, false)
@@ -65,6 +68,7 @@ function oauthEdge(action: string): { command: OauthCommand; accepted: boolean }
   if (action === "Call3Refused") return call(3, false)
   if (action === "Rotate0") return rotate(0, false)
   if (action === "Rotate1") return rotate(1, true)
+  if (action === "Rotate1Kept") return rotate(1, true)
   if (action === "Rotate1Reuse") return rotate(1, false)
   if (action === "Rotate1Refused") return rotate(1, false)
   if (action === "Rotate2") return rotate(2, true)

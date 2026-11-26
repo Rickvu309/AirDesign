@@ -4,6 +4,7 @@ import type { Pool } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
 import { bearerPrincipal, DeckListen, openPool, type Mail, type Sql } from "./index.js"
+import { geminiCallback, geminiRegistration } from "./oauth/testing/gemini-registration.js"
 import { ask, askForm, postgresInfo, serve, signInByCode, verifierPair } from "./testing/harness.js"
 
 const start = 1_000_000
@@ -95,6 +96,10 @@ async function connected(body: object, redirect: string): Promise<{ readonly cli
   return { clientId, pair: pairOf(await token({ ...fields, client_id: clientId })) }
 }
 
+function refresh(clientId: string, secret: string, at = base): Promise<Reply> {
+  return token({ grant_type: "refresh_token", refresh_token: secret, client_id: clientId }, undefined, at)
+}
+
 async function works(access: string): Promise<boolean> {
   return (await bearerPrincipal(session, access, clock)).ok
 }
@@ -136,5 +141,104 @@ describe("the token client id by HTTP Basic", () => {
     expect(reply.json).toEqual({ error: "invalid_request" })
     expect(await grantOf(clientId)).toMatchObject({ generation: 1, revoked: false })
     expect(await works(pair.access)).toBe(true)
+  })
+})
+
+function holdingTwoWrites(pool: Pool): Pool {
+  let arrived = 0
+  let openGate = () => {}
+  const bothRead = new Promise<void>((resolve) => {
+    openGate = resolve
+  })
+  return new Proxy(pool, {
+    get(target, name) {
+      if (name === "query") {
+        return async (text: unknown, ...rest: unknown[]) => {
+          if (String(text).includes("update session.oauth_grant")) {
+            arrived += 1
+            if (arrived === 2) openGate()
+            await bothRead
+          }
+          return Reflect.apply(target.query, target, [text, ...rest]) as unknown
+        }
+      }
+      const value: unknown = Reflect.get(target, name, target)
+      return typeof value === "function" ? value.bind(target) : value
+    },
+  })
+}
+
+describe("a Gemini grant keeps its refresh token", () => {
+  const gemini = () => connected(geminiRegistration, geminiCallback)
+
+  it("answers the same refresh token and a new access token on every refresh, and every access token works", async () => {
+    const { clientId, pair } = await gemini()
+    expect(await grantOf(clientId)).toMatchObject({ rotates: false })
+    const accesses = [pair.access]
+    for (let step = 0; step < 3; step += 1) {
+      clock += 60_000
+      const next = pairOf(await refresh(clientId, pair.refresh))
+      expect(next.refresh).toBe(pair.refresh)
+      expect(accesses).not.toContain(next.access)
+      accesses.push(next.access)
+    }
+    const grant = await grantOf(clientId)
+    expect(grant).toMatchObject({ generation: 1, revoked: false })
+    for (const access of accesses) expect(await works(access)).toBe(true)
+    const rows = await session.query("select 1 from session.oauth_token where grant_id = $1", [grant.id])
+    expect(rows.rowCount).toBe(5)
+  })
+
+  it("lets each access token run out at its own hour", async () => {
+    const { clientId, pair } = await gemini()
+    clock = start + 1_800_000
+    const later = pairOf(await refresh(clientId, pair.refresh))
+    clock = start + 3_600_000
+    expect(await works(pair.access)).toBe(false)
+    expect(await works(later.access)).toBe(true)
+    clock = start + 5_400_000
+    expect(await works(later.access)).toBe(false)
+    expect((await refresh(clientId, pair.refresh)).status).toBe(200)
+  })
+
+  it("answers two refreshes of one token at once, and the grant stays live", async () => {
+    const { clientId, pair } = await gemini()
+    const side = await served(holdingTwoWrites)
+    const [left, right] = await Promise.all([
+      refresh(clientId, pair.refresh, side.base),
+      refresh(clientId, pair.refresh, side.base),
+    ])
+    expect([left.status, right.status]).toEqual([200, 200])
+    for (const reply of [left, right]) {
+      expect(pairOf(reply).refresh).toBe(pair.refresh)
+      expect(await works(pairOf(reply).access)).toBe(true)
+    }
+    expect(await grantOf(clientId)).toMatchObject({ generation: 1, revoked: false })
+  })
+
+  it("ends at revoke: every access token and the refresh token stop", async () => {
+    const { clientId, pair } = await gemini()
+    const next = pairOf(await refresh(clientId, pair.refresh))
+    expect((await askForm(base, oauthRoutes.revoke.path, { token: pair.refresh })).status).toBe(200)
+    expect(await grantOf(clientId)).toMatchObject({ generation: 1, revoked: true })
+    expect(await works(pair.access)).toBe(false)
+    expect(await works(next.access)).toBe(false)
+    expect((await refresh(clientId, pair.refresh)).json).toEqual({ error: "invalid_grant" })
+  })
+
+  it.each([
+    ["Claude", { redirect_uris: ["https://claude.ai/api/mcp/auth_callback"] }],
+    ["Claude Code", { redirect_uris: [loopback], client_name: "Claude Code" }],
+    ["Codex", { redirect_uris: [loopback], client_name: "Codex" }],
+    ["any other client", { redirect_uris: [loopback] }],
+  ])("leaves %s rotating, and its reuse still revokes the grant", async (_kind, body) => {
+    const { clientId, pair: first } = await connected(body, body.redirect_uris[0] ?? "")
+    expect(await grantOf(clientId)).toMatchObject({ rotates: true })
+    const second = pairOf(await refresh(clientId, first.refresh))
+    expect(second.refresh).not.toBe(first.refresh)
+    expect(await works(first.access)).toBe(false)
+    expect((await refresh(clientId, first.refresh)).json).toEqual({ error: "invalid_grant" })
+    expect(await grantOf(clientId)).toMatchObject({ generation: 2, revoked: true })
+    expect(await works(second.access)).toBe(false)
   })
 })

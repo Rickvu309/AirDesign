@@ -27,7 +27,7 @@ export type TokenRow = {
 
 export type Issued = {
   readonly access: string
-  readonly refresh: string
+  readonly refresh: string | undefined
 }
 
 export type Advance = {
@@ -43,6 +43,7 @@ type GrantRow = {
   code: "open" | "used"
   generation: number
   revoked: boolean
+  rotates: boolean
   client_id: string
   redirect_uri: string
   challenge: string
@@ -50,7 +51,7 @@ type GrantRow = {
 }
 
 const columns =
-  "id, principal, code, generation, revoked, client_id, redirect_uri, challenge, code_expires from session.oauth_grant"
+  "id, principal, code, generation, revoked, rotates, client_id, redirect_uri, challenge, code_expires from session.oauth_grant"
 
 const writeSql = `
 with updated as (
@@ -58,6 +59,7 @@ with updated as (
   set code = $2,
       generation = $3,
       revoked = $4,
+      rotates = $12,
       connected = coalesce(connected, to_timestamp($11::float8 / 1000.0))
   where id = $1 and code = $5 and generation = $6 and revoked = $7
   returning id, generation
@@ -74,7 +76,13 @@ function approvalFrom(row: GrantRow | undefined): Approval | undefined {
   if (row === undefined) return undefined
   return {
     id: row.id,
-    grant: { principal: row.principal, code: row.code, generation: row.generation, revoked: row.revoked },
+    grant: {
+      principal: row.principal,
+      code: row.code,
+      generation: row.generation,
+      revoked: row.revoked,
+      rotates: row.rotates,
+    },
     clientId: row.client_id,
     redirectUri: row.redirect_uri,
     challenge: row.challenge,
@@ -85,14 +93,15 @@ function approvalFrom(row: GrantRow | undefined): Approval | undefined {
 export async function storeApproval(db: Sql, approval: Approval, code: string): Promise<void> {
   await db.query(
     `insert into session.oauth_grant
-      (id, principal, code, generation, revoked, client_id, redirect_uri, challenge, code_hash, code_expires)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      (id, principal, code, generation, revoked, rotates, client_id, redirect_uri, challenge, code_hash, code_expires)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
     [
       approval.id,
       approval.grant.principal,
       approval.grant.code,
       approval.grant.generation,
       approval.grant.revoked,
+      approval.grant.rotates,
       approval.clientId,
       approval.redirectUri,
       approval.challenge,
@@ -134,7 +143,8 @@ function sameGrant(left: Grant, right: Grant): boolean {
     left.principal === right.principal &&
     left.code === right.code &&
     left.generation === right.generation &&
-    left.revoked === right.revoked
+    left.revoked === right.revoked &&
+    left.rotates === right.rotates
   )
 }
 
@@ -144,15 +154,27 @@ export async function advance(
   command: Command,
   plan: { readonly issue: false } | { readonly issue: true; readonly now: number },
 ): Promise<Advance | undefined> {
-  const secrets: Issued | undefined = plan.issue ? { access: newSecret(), refresh: newSecret() } : undefined
+  const minted = plan.issue
+    ? { access: newSecret(), refresh: newSecret(), expires: plan.now + accessLifetime }
+    : undefined
   let last: Advance | undefined
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     const stored = await readApproval(db, id)
     if (stored === undefined) return undefined
     const result = oauth(stored.grant, command)
-    if (sameGrant(stored.grant, result.grant)) return { grant: result.grant, accepted: result.accepted }
+    const issuing = result.accepted ? minted : undefined
+    if (issuing === undefined && sameGrant(stored.grant, result.grant)) {
+      return { grant: result.grant, accepted: result.accepted }
+    }
     last = { grant: stored.grant, accepted: false }
-    const issuing = result.accepted ? secrets : undefined
+    const newRefresh = result.grant.generation !== stored.grant.generation
+    const tokens =
+      issuing === undefined
+        ? []
+        : [
+            { hash: hashSecret(issuing.access), kind: "access", expires: issuing.expires },
+            ...(newRefresh ? [{ hash: hashSecret(issuing.refresh), kind: "refresh", expires: null }] : []),
+          ]
     const written = await db.query(writeSql, [
       id,
       result.grant.code,
@@ -161,16 +183,19 @@ export async function advance(
       stored.grant.code,
       stored.grant.generation,
       stored.grant.revoked,
-      issuing === undefined ? [] : [hashSecret(issuing.access), hashSecret(issuing.refresh)],
-      issuing === undefined ? [] : ["access", "refresh"],
-      plan.issue && issuing !== undefined ? [plan.now + accessLifetime, null] : [],
+      tokens.map((token) => token.hash),
+      tokens.map((token) => token.kind),
+      tokens.map((token) => token.expires),
       command.command === "exchange" && plan.issue && result.accepted ? plan.now : null,
+      result.grant.rotates,
     ])
     if (written.rows.length > 0) {
       return {
         grant: result.grant,
         accepted: result.accepted,
-        ...(issuing === undefined ? {} : { issued: issuing }),
+        ...(issuing === undefined
+          ? {}
+          : { issued: { access: issuing.access, refresh: newRefresh ? issuing.refresh : undefined } }),
       }
     }
   }

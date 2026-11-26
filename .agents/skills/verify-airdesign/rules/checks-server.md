@@ -77,15 +77,20 @@ Sync: `specs/usage/covers.json`.
 
 ## oauth
 
-One OAuth grant: code exchange, calls, refresh rotation and revocation.
+One OAuth grant: code exchange, calls, refresh rotation or a kept refresh token, and revocation. The exchange sets once whether the grant rotates: `rotatesRefresh` in `apps/api/src/oauth/clients.ts` answers false only for the Gemini kind, because Google's connector keeps the first refresh token it gets and sends it again.
 
 - `CodeWorksOnce`: an authorization code is exchanged once.
 - `RotatedRefreshIsDead`: a rotated refresh token never works again.
 - `ReuseRevokesFamily`: reusing a rotated token revokes the whole grant. Harm: a stolen token keeps working.
 - `AfterRevocation`: after revocation no call or rotation is accepted.
 - `IdentityIsStored`: every accepted call acts as the stored principal.
+- `KeptRefreshStaysAtOne`: a grant that keeps its refresh token never moves past generation 1, so each refresh answers the same refresh token and a new access token, and every earlier access token keeps working until its own hour. Harm: Gemini presents a retired token and the person must connect again about every hour.
+- `KeptRefreshIsNeverReuse`: sending a kept refresh token again is never reuse and never revokes the grant.
+- `RotatesSetOnce` (a property over steps): nothing after the exchange changes whether a grant rotates.
 
-Bounds: one grant, generations up to 2, two exchanges. Run: `pnpm check:specs oauth`. Replay: `tests/oauth-replay.ts` through `oauth` in `packages/oauth/src/index.ts`. Its callers are `apps/api/src/oauth/grants.ts` and `apps/api/src/oauth/tokens.ts`. Leaves out: the web Worker's forward secret (`apps/web/worker/api-forward.ts`, `filterForwardedHeaders` in `apps/api/src/platform/forward-secret.ts`). It needs no model: each request is judged alone, by comparing one header with the server's secret, with no state kept between requests, so no order of steps can break it. `apps/api/src/forward-secret.test.ts` covers it: a matching secret keeps the visitor headers, a missing or wrong one drops them, and the health route needs none. One case is by design and worth knowing: with no secret set on the server, it trusts the visitor headers from anyone.
+The trade: a stolen kept refresh token is not caught by reuse detection, because reuse is normal for that client. Revoke, Disconnect and account deletion still end it.
+
+Bounds: one grant, rotating or kept, generations up to 2, two exchanges. 70 states. Run: `pnpm check:specs oauth`. Replay: `tests/oauth-replay.ts` through `oauth` in `packages/oauth/src/index.ts`. Its callers are `apps/api/src/oauth/grants.ts` and `apps/api/src/oauth/tokens.ts`; `advance` mints a refresh token only when the generation moves. Planted faults: a kept grant that rotates fails `KeptRefreshStaysAtOne` in TLC (13 states) and the replay on every `Rotate1Kept` edge; a kept refresh that revokes fails `KeptRefreshIsNeverReuse` (13 states); a revoke that resets `rotates` fails `RotatesSetOnce` (13 states). `apps/api/src/oauth-tokens.test.ts` drives a Gemini grant on Postgres: the same refresh token on every refresh, each access token valid to its own hour, two refreshes at once both answered, and revoke ending it, while Claude, Claude Code, Codex and any other client still rotate and lose the grant on reuse. Leaves out: the web Worker's forward secret (`apps/web/worker/api-forward.ts`, `filterForwardedHeaders` in `apps/api/src/platform/forward-secret.ts`). It needs no model: each request is judged alone, by comparing one header with the server's secret, with no state kept between requests, so no order of steps can break it. `apps/api/src/forward-secret.test.ts` covers it: a matching secret keeps the visitor headers, a missing or wrong one drops them, and the health route needs none. One case is by design and worth knowing: with no secret set on the server, it trusts the visitor headers from anyone.
 
 Sync: `specs/oauth/covers.json`.
 
