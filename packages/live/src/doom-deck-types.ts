@@ -51,6 +51,7 @@ export type DoomDeck = {
   notices(): readonly Notice[]
   clearNotices(): void
   status(): DeckStatus
+  caught(): doom.Rev
   mint(): doom.NodeId
   push(
     writes: readonly doom.Write[],

@@ -557,6 +557,7 @@ function connected(
     sync,
     catchUp,
     follow: following.follow,
+    caught: following.caught,
     reportPictures: async (rev, pictures) =>
       remote.pictures === undefined ? { ok: false, refusal: "server" } : remote.pictures({ deck, rev, pictures }),
     picturesWanted: following.picturesWanted,

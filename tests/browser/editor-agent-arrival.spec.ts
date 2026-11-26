@@ -98,3 +98,66 @@ test("a person's own edit during an open agent run, and any agent edit under red
   expect(await quiet.evaluate((element) => element.getAnimations().length)).toBe(0)
   expect(await marksSeen(page)).toBe(0)
 })
+
+test("typing in an arriving layer, zooming, or asking for less motion ends the trace at once", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openEditor(page, context, stack)
+  const canvas = page.locator("[data-slide-box]")
+  const layer = page.locator("[data-agent-arrival]")
+  const { call, runId } = await agentNote(stack, opened, "Agent note", 600)
+  const more = async (text: string, y: number) => {
+    const written = await call("edit_deck", {
+      deck: opened.deck,
+      base: (await saved(stack, opened)).rev,
+      runId,
+      changes: [note(opened.slide, text, y)],
+    })
+    expect(written.ok, JSON.stringify(written)).toBe(true)
+    await expect(layer.locator("svg")).toHaveCount(1)
+    return canvas.locator("[data-node]", { has: page.getByText(text, { exact: true }) }).last()
+  }
+  await expect(layer.locator("> *")).toHaveCount(0)
+
+  const typed = await more("Typed note", 300)
+  const box = await typed.boundingBox()
+  if (box === null) throw new Error("the agent's note is not painted")
+  await page.mouse.dblclick(box.x + 40, box.y + box.height / 2)
+  await expect(layer.locator("> *")).toHaveCount(0)
+  expect(await typed.evaluate((element) => element.getAnimations().length)).toBe(0)
+  await page.keyboard.press("Escape")
+
+  await more("Zoomed note", 100)
+  await page.keyboard.press("Shift+0")
+  await expect(layer.locator("> *")).toHaveCount(0)
+
+  const calmed = await more("Calm note", 800)
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  await expect(layer.locator("> *")).toHaveCount(0)
+  expect(await calmed.evaluate((element) => element.getAnimations().length)).toBe(0)
+})
+
+test("an agent edit made while the editor was closed does not play when the deck opens again", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openEditor(page, context, stack)
+  await page.goto("about:blank")
+  await agentNote(stack, opened, "Agent note", 600)
+  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+  let release = () => {}
+  const held = new Promise<void>((resolve) => (release = resolve))
+  await page.route(`**${doomRoutes.since.path}`, async (route) => {
+    await held
+    await route.fallback()
+  })
+  await page.goto(`/s/${opened.deck}`)
+  await page.locator("[data-editor-ready]").waitFor()
+  await countMarks(page)
+  release()
+  await expect(page.locator("[data-slide-box]").getByText("Agent note", { exact: true })).toBeVisible()
+  expect(await marksSeen(page)).toBe(0)
+})
