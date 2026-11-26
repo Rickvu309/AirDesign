@@ -6,10 +6,7 @@ export function ConnectError({ kind }: { kind: "refused" | "unavailable" }) {
   const href = kind === "unavailable" ? window.location.pathname + window.location.search : "/"
   return (
     <main className="screen-frame reflow-frame grid place-items-center px-4 py-6">
-      <section
-        className="flex w-full max-w-[360px] flex-col items-center gap-6 text-center"
-        aria-labelledby="connect-error"
-      >
+      <section className="flex w-full max-w-90 flex-col items-center gap-6 text-center" aria-labelledby="connect-error">
         <header className="flex flex-col gap-2">
           <h1 id="connect-error" className="text-balance text-[length:var(--type-title)] font-semibold text-foreground">
             {copy.title}
