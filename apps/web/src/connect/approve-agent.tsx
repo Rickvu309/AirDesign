@@ -2,9 +2,6 @@ import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { AgentPair, type ConsentAgent } from "@/connect/agent-pair"
 import { connectPermissions, signedInAccount } from "@/copy/connect-copy"
-import { cn } from "@/lib/class-names"
-
-const trimmed = "[text-box:trim-both_cap_alphabetic]"
 
 export function ApproveAgent({
   agent,
@@ -40,30 +37,15 @@ export function ApproveAgent({
       <section className="flex w-full max-w-90 flex-col items-center gap-6">
         <AgentPair agent={agent} />
         <header className="flex flex-col items-center gap-1.5 text-center">
-          <h1
-            className={cn(
-              "flex min-h-7 items-center justify-center text-balance [overflow-wrap:anywhere] text-[length:var(--type-title)] font-semibold tracking-dialog-title text-foreground",
-              trimmed,
-            )}
-          >
+          <h1 className="flex min-h-7 items-center justify-center text-balance [overflow-wrap:anywhere] text-[length:var(--type-title)] font-semibold tracking-dialog-title text-foreground [text-box:trim-both_cap_alphabetic]">
             {title}
           </h1>
-          <p
-            className={cn(
-              "flex min-h-[var(--space-16)] items-center justify-center text-balance [overflow-wrap:anywhere] text-[length:var(--type-dense)] text-quiet",
-              trimmed,
-            )}
-          >
+          <p className="flex min-h-[var(--space-16)] items-center justify-center text-balance [overflow-wrap:anywhere] text-[length:var(--type-dense)] text-quiet [text-box:trim-both_cap_alphabetic]">
             {subtitle}
           </p>
         </header>
         <div className="flex min-h-14.25 w-full items-center gap-3 rounded-xl px-3">
-          <span
-            className={cn(
-              "flex size-8 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] font-semibold text-white",
-              trimmed,
-            )}
-          >
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] font-semibold text-white [text-box:trim-both_cap_alphabetic]">
             {account.initials}
           </span>
           <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
@@ -78,10 +60,7 @@ export function ApproveAgent({
             type="button"
             onClick={onSwitch}
             disabled={approving}
-            className={cn(
-              "relative shrink-0 disabled:pointer-events-none disabled:opacity-50 text-[length:var(--type-dense)] leading-ui-tight font-medium text-[color:var(--primary-strong)] motion-safe:enabled:active:scale-[0.97] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)_and_(pointer:fine)]:hover:text-strong-hover after:absolute after:inset-[min(0px,calc((100%-44px)/2))] after:content-['']",
-              trimmed,
-            )}
+            className="relative shrink-0 disabled:pointer-events-none disabled:opacity-50 text-[length:var(--type-dense)] leading-ui-tight font-medium text-[color:var(--primary-strong)] motion-safe:enabled:active:scale-[0.97] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)_and_(pointer:fine)]:hover:text-strong-hover after:absolute after:inset-[min(0px,calc((100%-44px)/2))] after:content-[''] [text-box:trim-both_cap_alphabetic]"
           >
             Switch
           </button>
@@ -103,7 +82,7 @@ export function ApproveAgent({
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className={cn("text-[length:var(--type-dense)] leading-ui-tight text-foreground", trimmed)}>
+                <span className="text-[length:var(--type-dense)] leading-ui-tight text-foreground [text-box:trim-both_cap_alphabetic]">
                   {permission}
                 </span>
               </li>
