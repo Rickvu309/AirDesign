@@ -73,3 +73,18 @@ test("zoom to selection brings a second selection into view at the same zoom", a
   const outline = await page.locator('[data-selection-outline="z:2"]').boundingBox()
   expect(outline!.x + outline!.width).toBeLessThanOrEqual(stage!.x + stage!.width)
 })
+
+test("zoom to selection keeps the bottom handles clear of the notes overlay", async ({ page, context, stack }) => {
+  const opened = await openEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    { id: "z:3", type: "shape", parent: opened.slide, props: { box: spot(900, 260, 200, 560), fills: accent } },
+  ])
+  await clickSlide(page, 1000, 540)
+  const outline = page.locator('[data-selection-outline="z:3"]')
+  const before = await outline.boundingBox()
+  await page.keyboard.press("Shift+Digit2")
+  const after = await outline.boundingBox()
+  const overlay = await page.locator("[data-canvas-overlay]:not(svg)").boundingBox()
+  expect(after!.height).toBeGreaterThan(before!.height)
+  expect(after!.y + after!.height).toBeLessThanOrEqual(overlay!.y)
+})
