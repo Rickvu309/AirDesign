@@ -221,7 +221,7 @@ export function compileSet(draft: Draft, change: SetChange): void {
   const now = {
     fills: propOf(node, "fills"),
     stroke: propOf(node, "stroke"),
-    box: propOf(node, "box"),
+    box: draft.reading.boxes?.get(node.id) ?? propOf(node, "box"),
     layout: propOf(node, "layout"),
     text: propOf(node, "text"),
     effects: propOf(node, "effects"),

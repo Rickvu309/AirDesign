@@ -27,7 +27,7 @@ test("typing with pauses in one text edit is one undo step, and redo puts all of
   const opened = await openEditor(page, context, stack)
   const title = "s:4"
   const before = await charsOf(stack, opened, title)
-  await clickSlide(page, 600, 420)
+  await clickSlide(page, 600, 490)
   await page.keyboard.press("Enter")
   await expect(page.locator("[data-text-editor]")).toBeFocused()
   await typeWithPauses(page, ["Quarterly", " plan"])
@@ -168,7 +168,7 @@ test("undo inside the text while offline keeps the next key once the deck reconn
 })
 
 async function editTitle(page: Page) {
-  await clickSlide(page, 600, 420)
+  await clickSlide(page, 600, 490)
   await page.keyboard.press("Enter")
   await expect(page.locator("[data-text-editor]")).toBeFocused()
 }

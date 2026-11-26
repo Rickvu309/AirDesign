@@ -9,7 +9,7 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 const entry = (page: Page, number: number) => page.locator(`[data-slide-entry="${String(number)}"]`)
 
 async function typeTitle(page: Page, text: string) {
-  await clickSlide(page, 600, 420)
+  await clickSlide(page, 600, 490)
   await page.keyboard.press("Enter")
   await page.keyboard.press("ControlOrMeta+a")
   await page.keyboard.type(text)

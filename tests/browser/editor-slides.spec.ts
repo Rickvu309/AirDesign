@@ -92,7 +92,7 @@ test("the slide strip shows, adds, steps through, reorders, deletes and restores
   await entry(page, 3).click()
   await expect(painted(page)).toHaveCount(2)
 
-  await clickSlide(page, 600, 420)
+  await clickSlide(page, 600, 490)
   expect(await selectedIds(page)).not.toEqual([])
   await page.keyboard.press("Delete")
   await expect(painted(page)).toHaveCount(1)

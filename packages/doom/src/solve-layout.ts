@@ -42,6 +42,11 @@ function modes(node: Node): { readonly w: Mode; readonly h: Mode } {
   }
 }
 
+function pinned(node: Node): number {
+  const text = node.type === "shape" ? prop(node, "text") : undefined
+  return text?.resize === "height" ? factor[text.alignV] : 0
+}
+
 function childrenOf(context: Context, id: NodeId): readonly Node[] {
   return (context.doom.children.get(id) ?? []).flatMap((child) => {
     const node = context.doom.nodes.get(child)
@@ -286,7 +291,8 @@ function plan(context: Context, container: Node, w: number | null, h: number | n
   const loose = children.filter((child) => !flowing.includes(child))
   const freed = loose.map((child) => {
     const stored = storedBox(child)
-    return place(child, stored.x, stored.y, sizeOf(context, child, null, null))
+    const size = sizeOf(context, child, null, null)
+    return place(child, stored.x, stored.y + (stored.h - size.h) * pinned(child), size)
   })
   const arranged =
     layout.mode === "none"

@@ -18,7 +18,7 @@ const charsOf = async (stack: Stack, opened: Opened, id: string) =>
 const deckName = async (stack: Stack, opened: Opened) => (await savedNode(stack, opened, deckNode))?.name
 
 async function editTitle(page: Page) {
-  await clickSlide(page, 600, 420)
+  await clickSlide(page, 600, 490)
   await page.keyboard.press("Enter")
   await expect(page.locator("[data-text-editor]")).toBeFocused()
 }

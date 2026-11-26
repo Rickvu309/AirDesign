@@ -12,7 +12,7 @@ const upright = { rotation: 0, flipH: false, flipV: false } as const
 const marginShare = 1 / 12
 const gapShare = 1 / 60
 const middleShare = 1 / 2
-const titleHighShare = 2 / 11
+const titleHighShare = 11 / 125
 const subtitleHighShare = 1 / 8
 const titleTopShare = 2 / 27
 const titleOnlyHighShare = 1 / 9
@@ -69,7 +69,7 @@ export function titleSlideWrites(slide: NodeId, mint: () => NodeId, size: Size):
       "Title",
       "title",
       { x, y: bottom - high, w, h: high },
-      titleText("display", "fixed", "bottom"),
+      titleText("display", "height", "bottom"),
     ),
     ...placeholder(
       mint(),

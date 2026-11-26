@@ -41,17 +41,23 @@ export function freeArea(draft: Draft, parent: Node, natural?: Natural): Area | 
   if (w <= 0 || h <= 0) return undefined
   if (isLaidOut(parent)) return { x: 0, y: 0, w, h }
   const clear = gapFor(slideSize(draft).w)
-  const taken = childrenOf(draft.doom, parent.id)
-    .filter((child) => propOf(child, "hidden") !== true)
-    .map((child) => boxOf(child, draft.reading.boxes))
-    .map((box) => ({ x: box.x - clear, y: box.y - clear, cx: box.w + 2 * clear, cy: box.h + 2 * clear }))
-  const best = largestFreeBox(
-    { width: w, height: h },
-    taken,
-    natural === undefined ? undefined : ({ cx, cy }) => fitScale(natural, { w: cx, h: cy }),
-  )
-  if (best === undefined || best.cx < w * smallestWidthShare || best.cy < h * smallestHeightShare) return undefined
-  return { x: best.x, y: best.y, w: best.cx, h: best.cy }
+  const children = childrenOf(draft.doom, parent.id).filter((child) => propOf(child, "hidden") !== true)
+  const free = (underTitles: boolean): Area | undefined => {
+    const taken = children
+      .map((child) => {
+        const box = boxOf(child, draft.reading.boxes)
+        return underTitles && propOf(child, "role") === "title" ? { ...box, y: 0, h: box.y + box.h } : box
+      })
+      .map((box) => ({ x: box.x - clear, y: box.y - clear, cx: box.w + 2 * clear, cy: box.h + 2 * clear }))
+    const best = largestFreeBox(
+      { width: w, height: h },
+      taken,
+      natural === undefined ? undefined : ({ cx, cy }) => fitScale(natural, { w: cx, h: cy }),
+    )
+    if (best === undefined || best.cx < w * smallestWidthShare || best.cy < h * smallestHeightShare) return undefined
+    return { x: best.x, y: best.y, w: best.cx, h: best.cy }
+  }
+  return free(true) ?? free(false)
 }
 
 export function alignedWithTitle(draft: Draft, slide: Node, area: Area): Area {

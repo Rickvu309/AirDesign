@@ -25,7 +25,7 @@ test("zoom keys, the wheel and the hand tool move around the slide as Figma does
   await page.keyboard.press("Shift+Digit1")
   await expect(percent).toHaveText(editorCopy.percent(fitted))
 
-  await clickSlide(page, 600, 410)
+  await clickSlide(page, 600, 490)
   await page.keyboard.press("Shift+Digit2")
   await expect.poll(async () => percentOf(await percent.textContent())).toBeGreaterThan(fitted)
 

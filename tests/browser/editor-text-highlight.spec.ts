@@ -11,7 +11,7 @@ test("selected words are highlighted at the height of their line, inside the tex
   stack,
 }) => {
   await openEditor(page, context, stack)
-  await clickSlide(page, 600, 410)
+  await clickSlide(page, 600, 490)
   await page.keyboard.press("Enter")
   await expect(editor(page)).toBeFocused()
   await page.keyboard.press("ControlOrMeta+a")
