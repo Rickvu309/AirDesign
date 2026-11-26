@@ -101,7 +101,7 @@ export function useGridEditing({
     swallow.current = true
     flushSync(() => {
       if (index !== current) onCurrent(index)
-      dispatch({ kind: "enter" })
+      dispatch({ kind: "enter", slide: card.id })
     })
     handoff.current?.down(event)
     list.current?.querySelector<HTMLElement>("[data-grid-edit]")?.focus({ preventScroll: true })
@@ -155,22 +155,33 @@ export function useGridEditing({
     requestAnimationFrame(() => chosen?.focus({ preventScroll: true }))
   }
 
+  const shown = useRef<string | undefined>(undefined)
+  shown.current = layout.cards[current]?.id
+
+  function sessionSlide(): string | undefined {
+    return state.kind === "elements" || state.kind === "text" ? state.slide : shown.current
+  }
+
   function mode(next: "elements" | "text") {
-    dispatch(next === "text" ? { kind: "type" } : { kind: "enter" })
+    const slide = sessionSlide()
+    if (slide === undefined) return
+    dispatch(next === "text" ? { kind: "type", slide } : { kind: "enter", slide })
   }
 
   const begin = useCallback(() => {
-    dispatch({ kind: "enter" })
+    const slide = shown.current
+    if (slide !== undefined) dispatch({ kind: "enter", slide })
   }, [dispatch])
 
-  const card = layout.cards[current]
+  const liveId = state.kind === "elements" || state.kind === "text" ? state.slide : undefined
+  const card = liveId === undefined ? layout.cards[current] : layout.cards.find((item) => item.id === liveId)
   const geometry = card === undefined || !editing ? undefined : geometries.current.get(card.id)
   const bounds = geometry === undefined ? null : aroundPlaced(selected.flatMap((id) => geometry.byId.get(id) ?? []))
   const frame: GridElementFrame | null =
     bounds === null || bounds.right <= bounds.left || bounds.bottom <= bounds.top
       ? null
       : {
-          index: current,
+          index: card?.index ?? current,
           bounds: {
             left: bounds.left,
             top: bounds.top,

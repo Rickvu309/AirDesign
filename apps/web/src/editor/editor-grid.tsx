@@ -26,7 +26,14 @@ import { GridDragGhost, GridDropBar } from "@/editor/grid-drag-marks"
 import { gridBands, gridIndices, gridRanges } from "@/editor/grid-drop"
 import { GridGroupAdd } from "@/editor/grid-group-add"
 import { GridGroupFrame, useGroupHover } from "@/editor/grid-group-frame"
-import { gridOpened, gridPick, gridRinged, gridStep, type GridInteraction } from "@/editor/grid-interaction"
+import {
+  gridLiveSlide,
+  gridOpened,
+  gridPick,
+  gridRinged,
+  gridStep,
+  type GridInteraction,
+} from "@/editor/grid-interaction"
 import { gridEntryOf } from "@/editor/grid-hit"
 import { GridTargets } from "@/editor/grid-targets"
 import type { Selection } from "@/editor/selection"
@@ -59,8 +66,9 @@ export type GridStart = {
   readonly editing?: boolean
 }
 
-function opened(start: GridStart, order: readonly string[]): GridInteraction {
-  if (start.editing === true) return { kind: "elements" }
+function opened(start: GridStart, order: readonly string[], at: number): GridInteraction {
+  const slide = order[at]
+  if (start.editing === true && slide !== undefined) return { kind: "elements", slide }
   const picked = start.picked?.flatMap((index) => order[index] ?? []) ?? []
   const [anchor] = picked
   return anchor === undefined ? gridOpened : { kind: "slides", pick: { anchor, slides: new Set(picked) } }
@@ -135,7 +143,7 @@ export function EditorGrid({
   )
   const groups = useMemo(() => gridRanges(layout), [layout])
   const bands = useMemo(() => gridBands(layout), [layout])
-  const [state, dispatch] = useReducer(gridStep, start, (begin) => opened(begin, order))
+  const [state, dispatch] = useReducer(gridStep, start, (begin) => opened(begin, order, current))
   const picked = prunedPick(gridPick(state), order)
   const ringed = gridRinged(state, order, current)
   const list = useRef<HTMLDivElement>(null)
@@ -249,6 +257,21 @@ export function EditorGrid({
     const focused = document.activeElement
     if (focused === null || focused === document.body) focusCard(current, false)
   }, [])
+
+  const liveSlide = gridLiveSlide(state)
+  useLayoutEffect(() => {
+    if (liveSlide === null) return
+    const index = order.findIndex((id) => id === liveSlide)
+    if (index >= 0) {
+      if (index !== current) choose(index)
+      return
+    }
+    edit.step({ kind: "pick", pick: null })
+    chosen.current = current
+    if (order.length === 0) return
+    focusCard(Math.min(current, order.length - 1), false)
+    announce(slideListCopy.selected(1))
+  }, [liveSlide, order, current])
 
   useLayoutEffect(() => {
     if (chosen.current === current) {
@@ -536,7 +559,7 @@ export function EditorGrid({
                       inRoom(card.left + card.width + spacing.column, card.top, card.width, card.height)
                     }
                     onAdd={addAfter}
-                    {...(edit.editing && card.index === current
+                    {...(liveSlide !== null && card.id === liveSlide
                       ? {
                           live: live(card.id, scale, {
                             handoff: edit.handoff,
@@ -570,7 +593,7 @@ export function EditorGrid({
             ]
           })}
           {layout.cards.map((card) =>
-            painted.has(card.index) || (edit.editing && card.index === current) ? (
+            painted.has(card.index) || card.id === liveSlide ? (
               <GridTargets key={`targets:${card.id}`} view={view} slide={card.id} onGeometry={edit.onGeometry} />
             ) : null,
           )}
