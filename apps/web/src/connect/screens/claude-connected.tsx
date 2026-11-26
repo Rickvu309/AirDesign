@@ -1,6 +1,7 @@
 import { useEffect } from "react"
 import { AgentPair, type ConsentAgent } from "@/connect/agent-pair"
 import { claudeConnect, connectedCopy } from "@/copy/connect-copy"
+import { cn } from "@/lib/class-names"
 
 const trimmed = "[text-box:trim-both_cap_alphabetic]"
 
@@ -25,12 +26,18 @@ export function ClaudeConnected({
         <AgentPair agent={agent} />
         <header className="flex flex-col items-center gap-1.5 text-center">
           <h1
-            className={`flex min-h-7 items-center justify-center text-balance [overflow-wrap:anywhere] text-[length:var(--type-title)] font-semibold tracking-dialog-title text-foreground ${trimmed}`}
+            className={cn(
+              "flex min-h-7 items-center justify-center text-balance [overflow-wrap:anywhere] text-[length:var(--type-title)] font-semibold tracking-dialog-title text-foreground",
+              trimmed,
+            )}
           >
             {copy.title}
           </h1>
           <p
-            className={`flex min-h-[var(--space-16)] items-center justify-center text-balance [overflow-wrap:anywhere] text-[length:var(--type-dense)] text-quiet ${trimmed}`}
+            className={cn(
+              "flex min-h-[var(--space-16)] items-center justify-center text-balance [overflow-wrap:anywhere] text-[length:var(--type-dense)] text-quiet",
+              trimmed,
+            )}
           >
             {copy.subtitle}
           </p>
