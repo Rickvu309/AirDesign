@@ -24,7 +24,7 @@ export function SettingsFrame({
       <DecksShell active="settings">
         <div className="-mx-20 max-md:-mx-4">
           <div data-settings-header className="border-b border-line">
-            <div className="mx-auto w-full max-w-[860px] max-md:px-4">
+            <div className="mx-auto w-full max-w-[908px] px-6 max-md:px-4">
               <h1 className="text-[length:var(--type-title)] leading-8 font-medium tracking-[-0.4px] text-foreground">
                 {settingsCopy.title}
               </h1>
@@ -49,7 +49,7 @@ export function SettingsFrame({
               </nav>
             </div>
           </div>
-          <div data-settings-content className="mx-auto mt-7 flex w-full max-w-[860px] flex-col gap-4 max-md:px-4">
+          <div data-settings-content className="mx-auto mt-7 flex w-full max-w-[908px] px-6 flex-col gap-4 max-md:px-4">
             {children}
           </div>
         </div>
