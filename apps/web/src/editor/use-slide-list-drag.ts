@@ -7,6 +7,7 @@ import {
   type RefObject,
 } from "react"
 import { flushSync } from "react-dom"
+import { composing } from "@/lib/composing"
 import { dragOrder, dragPlace, dragTarget, type SlideDrag } from "@/editor/slide-list-drag"
 import { glideRows, rowPitch, shiftRow, slideGlides, slideRows } from "@/editor/slide-list-glide"
 
@@ -125,7 +126,7 @@ export function useSlideListDrag(
     }
     const onCancel = () => end(false)
     const onKey = (pressed: KeyboardEvent) => {
-      if (pressed.key !== "Escape" || lifted === null) return
+      if (composing(pressed) || pressed.key !== "Escape" || lifted === null) return
       pressed.preventDefault()
       pressed.stopPropagation()
       end(false)
