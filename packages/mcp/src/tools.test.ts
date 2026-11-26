@@ -204,7 +204,7 @@ describe("edit_deck", () => {
     expect(plain.answer).not.toHaveProperty("findings")
   })
 
-  it("answers only the root of what a pattern added", async () => {
+  it("answers only the root of what a grid add created", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
     const landed = await by.call(
@@ -212,11 +212,11 @@ describe("edit_deck", () => {
       edit(deck, rev, [
         {
           op: "add",
-          kind: "kpi",
+          kind: "frame",
           slide: slides[0],
-          items: [
-            { title: "Revenue", value: "$4M" },
-            { title: "Margin", value: "31%" },
+          rows: [
+            ["Revenue", "$4M"],
+            ["Margin", "31%"],
           ],
         },
       ]),
@@ -345,7 +345,7 @@ describe("edit_deck", () => {
   it("answers a call sent again with the same once as the first time and lands it once", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
-    const args = edit(deck, rev, [{ op: "add", kind: "kpi", slide: slides[0], items: [{ title: "A", value: "1" }] }])
+    const args = edit(deck, rev, [{ op: "add", kind: "shape", slide: slides[0], text: "A" }])
     const first = await by.call("edit_deck", args, "again")
     const again = await by.call("edit_deck", args, "again")
     expect(again.answer).toEqual(first.answer)

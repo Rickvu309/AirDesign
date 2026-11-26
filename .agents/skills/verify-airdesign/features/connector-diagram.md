@@ -1,6 +1,6 @@
 # Connectors and diagrams
 
-A line's two ends are each a point on the slide or a site on another layer: its top, right, bottom or left middle, or its centre (`End` in `packages/doom/src/geometry.ts`). A line whose ends sit on layers is a connector: it routes between them straight, as an elbow, or as a curve, and when a joined layer moves, the connector follows on the canvas during the drag, before the network. Its ends carry arrowheads. An agent makes a diagram in one change with the `flow` pattern: steps in a row, each joined to the next by an arrow from its right site to the next one's left site.
+A line's two ends are each a point on the slide or a site on another layer: its top, right, bottom or left middle, or its centre (`End` in `packages/doom/src/geometry.ts`). A line whose ends sit on layers is a connector: it routes between them straight, as an elbow, or as a curve, and when a joined layer moves, the connector follows on the canvas during the drag, before the network. Its ends carry arrowheads.
 
 ## Sub-features
 
@@ -9,13 +9,11 @@ A line's two ends are each a point on the slide or a site on another layer: its 
 - `connector-copy` Ctrl/Cmd+D on a frame holding two shapes and a connector between them copies the connector joined to the copied shapes.
 - `connector-panel` the Design panel for a line shows Align, Border and Shadow (`panel-connector`).
 - `agent-line` an agent's `airdesign_edit_deck` change `{ op: "add", kind: "line", slide, box, arrow, stroke, strokeWidth }` adds a line across its box, with an arrowhead at its end when `arrow` is true.
-- `agent-diagram` `{ op: "add", kind: "flow", slide, items: [{ title, note }, ...] }` with 2 to 6 items adds the steps in an auto layout row and joins each to the next with a straight arrow (`flow` in `packages/doom/src/agent-patterns.ts`). Undo under Aira's reply takes Aira's run back, and `airdesign_undo_run` takes back any agent's.
 
 ## How to get to it (user POV)
 
-- An open deck `/s/<id>` with a connector between two free layers: drag one of them. The steps of a `flow` sit in an auto layout row, so they do not move by a drag.
+- An open deck `/s/<id>` with a connector between two free layers: drag one of them.
 - The Design panel with the line selected.
-- Ask Aira for a flow of steps on a slide.
 
 ## Driving it with verify-airdesign
 
@@ -24,7 +22,7 @@ Preconditions:
 - `$V doctor <run>` is ok.
 
 - **States for look.** `connector-follow` (the start shape held mid-drag while its elbow follows) and `connector-around` (the start held below and left of the end), both on the `connected` deck in `../look/doom-canvas.mjs`; `panel-connector`.
-- **Unit tests.** `apps/web/src/editor/arrange-writes.test.ts` copies a frame whose connector joins two of its shapes and finds the copy's ends on the copied shapes. `packages/doom/src/agent-patterns.test.ts` checks the patterns land as frame trees Doom accepts.
+- **Unit tests.** `apps/web/src/editor/arrange-writes.test.ts` copies a frame whose connector joins two of its shapes and finds the copy's ends on the copied shapes.
 
 ## Gotchas
 

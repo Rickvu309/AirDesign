@@ -39,7 +39,7 @@ describe("the slide type scale at 1920 by 1080", () => {
     ])
   })
 
-  it("sets a label no smaller than a note, and heavier, so a KPI's label leads its delta", () => {
+  it("sets a label no smaller than a note, and heavier, so a metric label leads its change", () => {
     expect(size("label")).toBeGreaterThanOrEqual(size("caption"))
     expect(defaultTheme.textStyles.label.weight).toBeGreaterThan(defaultTheme.textStyles.caption.weight)
   })

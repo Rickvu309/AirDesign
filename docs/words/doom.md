@@ -85,12 +85,11 @@ _Avoid_: command, patch, tool call
 The choices an agent names for a layer: a theme colour, a text style name, an effect style name, a radius, words as markdown. It never names a gradient, a filter, a preset or a size.
 _Avoid_: style, traits, fields
 
-**pattern**:
-An agent change that adds a frame tree of text and shapes for one idea: `kpi`, `cards`, `compare`, `matrix`, `timeline` or `flow`. A frame with `rows` is a grid of words, not a pattern, set as a consulting table: a dark rule under the header, a thin light rule between rows, number columns right-aligned in tabular figures, and a last row that starts with "Total" in bold under a dark rule. A pattern writes only the text styles the deck names and steps down to the next named size, never to one between, until its words fit.
-_Avoid_: diagram, template, smart art
+**grid of words**:
+A frame added with `rows`, one list of cells per row. The first row is the header, number columns align right, and a final Total row is bold.
 
 **slide start**:
-A designed first state for a new slide, chosen in the New slide menu: title, title and text, KPIs, cards, chart, timeline, grid or blank. A slide start is the title placeholder plus what the agent's patterns build from placeholder words, so a person's slide looks as the agent's does. The plain plus button adds the title-only slide start. A new deck's first slide is the title start: a title and a subtitle placeholder that an agent's first title and first heading fill.
+A designed first state for a new slide, chosen in the New slide menu: title, title and text, grid or blank. The plain plus button adds the title-only slide start. A new deck's first slide is the title start: a title and a subtitle placeholder that an agent's first title and first heading fill.
 _Avoid_: layout, template slide
 
 **free area**:

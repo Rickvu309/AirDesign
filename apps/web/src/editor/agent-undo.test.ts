@@ -7,7 +7,7 @@ import { undoAgentRun } from "./agent-undo"
 const deck = "deck"
 const done: AiraChat = {
   ...airaChat(deck),
-  exchanges: [{ asked: "Add a KPI slide", steps: [], end: "done", runs: ["run-1", "run-2"] }],
+  exchanges: [{ asked: "Add a slide with results", steps: [], end: "done", runs: ["run-1", "run-2"] }],
 }
 const saved = Promise.resolve()
 const grown = doom.doomFromTree({

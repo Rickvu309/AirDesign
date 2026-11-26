@@ -13,12 +13,6 @@ import { ids, land } from "./sample-deck.js"
 const slide = ids.slide
 const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as AgentChange
 const made = (doom: Doom) => lastChild(doom, slide)
-const kpiItems = [
-  { title: "Revenue", value: "$4.2M", note: "+12% YoY" },
-  { title: "Margin", value: "31%", note: "+2 pts" },
-  { title: "Cash", value: "$9.1M" },
-]
-
 describe("a grid of words fills the band with its text size", () => {
   const rows = (count: number) =>
     Array.from({ length: count }, (_, at) => (at === 0 ? ["", "Q1", "Q2", "Q3"] : [`Line ${at}`, "3.0", "3.4", "3.8"]))
@@ -70,10 +64,8 @@ describe("a grid of words fills the band with its text size", () => {
       expect(bold, `${label} at ${cell.row},${cell.col}`).toBe(cell.row === 0 || cell.col === 0)
   })
 
-  it("keeps rows at the height of their words, from the top of the band", () => {
-    const { doom, root, box } = gridOf(4)
-    const kpi = build(agentDeck(), add({ kind: "kpi", items: kpiItems }))
-    expect(box.y).toBe(propOf(made(kpi), "box")!.y)
+  it("keeps rows at the height of their words", () => {
+    const { doom, root } = gridOf(4)
     expect(propOf(root, "layout")).toMatchObject({ rows: ["hug", "hug", "hug", "hug"], gap: 0 })
     expect(childrenOf(doom, root.id).length).toBeGreaterThan(0)
   })
@@ -230,7 +222,7 @@ describe("a grid of words is set as a consulting table", () => {
 
   it("reads a number through its markdown and its unit when it aligns a column", () => {
     const { at } = tableOf([
-      ["KPI", "Q3 FY26", "vs target"],
+      ["Metric", "Q3 FY26", "vs target"],
       ["ARR ($M)", "**158.4**", "−1.0%"],
       ["CAC payback", "**24**", "+4 mo"],
     ])
@@ -337,7 +329,7 @@ describe("a grid of words", () => {
         add({ kind: "frame", box: { x: 0, y: 0, w: 500, h: 200 }, rows: long }),
         minter(),
       ),
-    ).toMatchObject({ refused: "limit", field: "items" })
+    ).toMatchObject({ refused: "limit", field: "rows" })
     expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows, layout: "row" }), minter())).toMatchObject({
       refused: "shape",
       field: "layout",

@@ -21,7 +21,7 @@ type SetChange = Extract<AgentChange, { op: "set" }>
 
 const estimate = measureWith({})
 
-const neverOnSet = ["rows", "items", "axes"] as const
+const neverOnSet = ["rows"] as const
 const wordsOnly = [
   "language",
   "size",

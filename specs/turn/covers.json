@@ -4,8 +4,8 @@
     {
       "file": "packages/mcp/src/edit-tool.ts",
       "names": ["editDeckTool"],
-      "digest": "9d9e2161a526",
-      "blob": "dce1ac192d5d625c8ac0becc624acd0d4dd82552"
+      "digest": "da24344fa117",
+      "blob": "aaf2608bce4f979071ac369e3a144814dc06ecb9"
     },
     {
       "file": "packages/doom/src/apply-edit.ts",

@@ -1,6 +1,5 @@
 import type { AgentEnd } from "./agent-end.js"
 import type { AgentInsert } from "./agent-insert.js"
-import type { AgentItem } from "./agent-item.js"
 import type { InnerLook } from "./agent-inner-shadow.js"
 import type { SlideLook } from "./agent-slide-look.js"
 import type { WeightName } from "./painted-face.js"
@@ -50,8 +49,6 @@ export type AgentLook = {
   readonly variant?: ReturnType<typeof import("./component/spec.js").variantRecord>
   readonly tokens?: ReturnType<typeof import("./component/spec.js").tokenRecord>
   readonly rows?: readonly (readonly string[])[]
-  readonly items?: readonly AgentItem[]
-  readonly axes?: readonly [string, string]
   readonly box?: AgentBox
   readonly name?: string
   readonly hidden?: boolean

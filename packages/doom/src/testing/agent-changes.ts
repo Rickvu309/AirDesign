@@ -161,17 +161,6 @@ export const agentRows = rare(
   fc.constantFrom([], [[]], [["a"], []]),
 )
 
-const item = fc.record(
-  {
-    title: agentText,
-    value: fc.constantFrom("12%", "$4.2M", "Q3", "", "a\nb"),
-    note: agentText,
-    points: fc.array(agentText, { maxLength: 4 }),
-    icon: fc.constantFrom("star", "lucide/star", "trending-up", "no-such-icon"),
-  },
-  { requiredKeys: [] },
-)
-
 const font = rare(fc.constantFrom("Inter", "Roboto Mono", "No Such Font"), fc.constant("Inter\nBold"))
 
 const look = {
@@ -260,8 +249,6 @@ const look = {
   fillStroke: fc.boolean(),
   language: rare(fc.constantFrom("en", "vi", "ar", "zh-Hans", "und"), fc.constant("not a language")),
   rows: agentRows,
-  items: fc.array(item, { minLength: 1, maxLength: 8 }),
-  axes: fc.tuple(agentText, agentText),
 } as const
 
 type LookKey = keyof typeof look
@@ -299,7 +286,6 @@ const words = [
   "spaceAfter",
   "padding",
 ] as const
-const patternKeys = ["box", "name", "hidden", "items"] as const
 
 const kindKeys: Readonly<Record<string, readonly LookKey[]>> = {
   text: [...common, ...painted, ...words, "link"],
@@ -309,24 +295,12 @@ const kindKeys: Readonly<Record<string, readonly LookKey[]>> = {
   frame: [...common, ...painted, "layout", "gap", "padding", "align", "rows", "clip"],
   picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit", "crop"],
   icon: [...common, "icon", "stroke", "strokeWidth"],
-  kpi: patternKeys,
-  cards: patternKeys,
-  compare: patternKeys,
-  timeline: patternKeys,
-  flow: patternKeys,
-  matrix: [...patternKeys, "axes"],
 }
 
 const needs: Readonly<Record<string, readonly LookKey[]>> = {
   text: ["text"],
   path: ["d"],
   icon: ["icon"],
-  kpi: ["items"],
-  cards: ["items"],
-  compare: ["items"],
-  timeline: ["items"],
-  flow: ["items"],
-  matrix: ["items"],
 }
 
 const allKeys = Object.keys(look) as LookKey[]
@@ -385,7 +359,7 @@ const set = fc
   .record({
     target,
     look: lookOf(
-      allKeys.filter((key) => key !== "rows" && key !== "items" && key !== "axes"),
+      allKeys.filter((key) => key !== "rows"),
       3,
     ),
   })

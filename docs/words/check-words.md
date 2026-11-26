@@ -81,7 +81,7 @@ _Avoid_: broken build, broken main
 
 **metric**:
 A number `pnpm check` prints to track progress.
-_Avoid_: stick, score, KPI
+_Avoid_: stick, score
 
 **goal**:
 The value a counted metric should reach.

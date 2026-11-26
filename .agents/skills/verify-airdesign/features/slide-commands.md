@@ -5,7 +5,7 @@ The slide list on the left of an open deck lists every slide. The person adds a 
 ## Sub-features
 
 - `slide-add` `button "Add slide"` adds a slide with a title after the current one and opens it; Enter on a focused entry adds one after that entry. The status line says `Added slide <n>` (`useSlideStrip` in `apps/web/src/editor/use-slide-strip.tsx`).
-- `slide-start` `button "Choose a layout for the new slide"` beside `New slide` lists the designed starting slides: `Title`, `Title and text`, `KPIs`, `Cards`, `Chart`, `Timeline`, `Grid` and `Blank`. Choosing one adds that slide after the current one (`tests/browser/editor-page.spec.ts`). States `new-slide-menu`, `new-slide-layout`, `slide-chart`, `slide-added-title`.
+- `slide-start` `button "Choose a layout for the new slide"` beside `New slide` lists the designed starting slides: `Title`, `Title and text`, `Grid` and `Blank`. Choosing one adds that slide after the current one (`tests/browser/editor-page.spec.ts`). States `new-slide-menu`, `new-slide-layout`, `slide-added-title`.
 - `slide-duplicate` Ctrl/Cmd+D on a focused `[data-slide-entry]` adds a copy after it and makes the copy current.
 - `slide-move` Ctrl/Cmd+[ or Ctrl/Cmd+] on a focused entry moves that slide one place, and the moved slide stays current. Dragging an entry onto another moves it there (`tests/browser/editor-slides-transform.spec.ts`). State `slide-moved-twice`.
 - `slide-delete` Delete or Backspace on a focused entry deletes that slide. The last slide cannot be deleted: the status line says `A deck keeps at least one slide.`

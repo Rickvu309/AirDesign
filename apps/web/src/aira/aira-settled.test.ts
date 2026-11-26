@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { airaChat, settledByRuns, type AiraExchange } from "./aira-loop"
 
-const done: AiraExchange = { asked: "Add KPIs", steps: [], end: "done", runs: ["r1", "r2"] }
+const done: AiraExchange = { asked: "Add a results grid", steps: [], end: "done", runs: ["r1", "r2"] }
 const states = (map: Record<string, boolean>) => (run: string) => map[run]
 
 describe("an Aira request read against its runs in the deck", () => {

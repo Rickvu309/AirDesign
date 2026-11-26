@@ -7,7 +7,7 @@ import { openEditor, type Opened } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 }, locale: "en-US", timezoneId: "Asia/Ho_Chi_Minh" })
 
-const asked = "Add three KPIs to this slide"
+const asked = "Add a results grid to this slide"
 
 async function saved(stack: Stack, opened: Opened) {
   const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
@@ -37,7 +37,7 @@ test("the Ask Aira box draws no ring while the person types in it, in the box or
   expect(outlines).toEqual(["none", "none"])
 })
 
-test("Aira adds KPIs through the MCP address, the canvas paints them as they land, and Undo takes the run back", async ({
+test("Aira adds a results grid through the MCP address, the canvas paints them as they land, and Undo takes the run back", async ({
   page,
   context,
   stack,
@@ -51,15 +51,15 @@ test("Aira adds KPIs through the MCP address, the canvas paints them as they lan
     document.body.dataset.sameLoad = "yes"
   })
   stack.aira(
-    { name: "add-kpi.sse", fill: { deck: opened.deck, base: String(base), slide: opened.slide } },
-    { name: "added-kpi.sse" },
+    { name: "add-results-grid.sse", fill: { deck: opened.deck, base: String(base), slide: opened.slide } },
+    { name: "added-results-grid.sse" },
   )
   await expect(side.getByText(airaCopy.welcome)).toBeVisible()
   await ask(page, asked)
   await expect(canvas.getByText("$4.2M", { exact: true })).toBeVisible()
   await expect(canvas.getByText("Customers", { exact: true })).toBeVisible()
   expect(await canvas.locator("[data-node]").count()).toBeGreaterThan(before)
-  await expect(side.getByText("I will add three KPIs to the slide.", { exact: true })).toBeVisible()
+  await expect(side.getByText("I will add a results grid to the slide.", { exact: true })).toBeVisible()
   await expect(side.getByText("The slide now shows revenue, customers and churn.", { exact: true })).toBeVisible()
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
   await expect
@@ -86,7 +86,7 @@ test("Stop ends Aira's turn before its edit lands and the deck stays as it was",
   const requests: string[] = []
   page.on("request", (request) => requests.push(new URL(request.url()).pathname))
   stack.aira({
-    name: "add-kpi.sse",
+    name: "add-results-grid.sse",
     fill: { deck: opened.deck, base: String(base), slide: opened.slide },
     holdAfter: 3,
   })
@@ -112,7 +112,7 @@ test("Stop while Aira's edit is on its way spends its call, so the edit arriving
   const base = (await saved(stack, opened)).rev
   const side = page.locator("[data-editor-panel]")
   const canvas = page.locator("[data-slide-box]")
-  stack.aira({ name: "add-kpi.sse", fill: { deck: opened.deck, base: String(base), slide: opened.slide } })
+  stack.aira({ name: "add-results-grid.sse", fill: { deck: opened.deck, base: String(base), slide: opened.slide } })
   let sent: string | undefined
   const inFlight = new Promise<void>((reached) => {
     void page.route("**/mcp", (route) => {

@@ -11,9 +11,9 @@ import {
   strokeOf,
   wordsFit,
 } from "./agent-block.js"
-import { type Draft, type Values, stop } from "./agent-draft.js"
+import { type Draft, stop } from "./agent-draft.js"
 import { sidesOf, surfaceOf, turnOf } from "./agent-look.js"
-import { gapFor, patternArea, slideSize, themeOf } from "./agent-place.js"
+import { gapFor, gridArea, slideSize, themeOf } from "./agent-place.js"
 import type { Node } from "./doom.js"
 import { isBlankValue, isDataValue, numberValue } from "./number-values.js"
 import type { Paint, Sides } from "./paint.js"
@@ -43,7 +43,7 @@ function cellText(part: Part, look: CellLook): Part {
     paras: look.right ? paras.map((para) => ({ ...para, align: "right" as const })) : paras,
     padding: look.padding,
   }
-  const values = part.block.values as Values
+  const values = part.block.values
   return { ...part, text, block: { ...part.block, values: { ...values, text } } }
 }
 
@@ -98,7 +98,7 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
   if (rows.length === 0 || rows.some((row) => row.length === 0))
     stop("shape", undefined, "rows", "form", "One row or more, each with one cell or more.")
   if (change.layout !== undefined) stop("shape", undefined, "layout", "needs", "rows to place the grid")
-  const area = patternArea(draft, parent, change.box)
+  const area = gridArea(draft, parent, change.box)
   const theme = themeOf(draft)
   const gap = gapFor(slideSize(draft).w)
   const columns = Math.max(...rows.map((row) => row.length))
@@ -161,8 +161,8 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
         ...ruleOf(r, last, total, columns),
         ...row.flatMap((part, c): Block[] => {
           if (part === undefined) return []
-          const values = part.block.values as Values
-          const text: Text = { ...(values.text as Text), alignV: r === 0 ? "bottom" : "center" }
+          const values = part.block.values
+          const text: Text = { ...part.text, alignV: r === 0 ? "bottom" : "center" }
           return [
             { ...part.block, values: { ...values, sizing: { w: "fill", h: "fill" }, cell: { row: r, col: c }, text } },
           ]
@@ -172,6 +172,6 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
   }
   const block =
     steps.reduce<Block | undefined>((got, style) => got ?? attempt(style), undefined) ??
-    stop("limit", undefined, "items", "needs", "shorter labels, fewer columns or fewer rows")
+    stop("limit", undefined, "rows", "needs", "shorter labels, fewer columns or fewer rows")
   emit(draft, parent.id, block)
 }

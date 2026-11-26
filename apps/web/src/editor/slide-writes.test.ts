@@ -66,29 +66,26 @@ describe("add slide", () => {
     expect(roles).toEqual(["title", "subtitle"])
   })
 
-  it.each(["text", "kpis", "cards", "chart", "timeline", "grid"] as const)(
-    "adds a %s slide the agent's patterns built, under its title, in one edit with the slide",
-    (start) => {
-      const { view, slides } = three()
-      const made = addSlideWrites(view, slides[0]!, minter(), start)
-      const after = landed(view, made.writes)
-      const children = after.children.get(made.slide) ?? []
-      expect(children).toHaveLength(2)
-      expect((after.nodes.get(children[0]!) as { role?: string }).role).toBe("title")
-      expect(slideIds(after)[1]).toBe(made.slide)
-    },
-  )
-
-  it("keeps a pattern slide's content under its title, from the title's left edge", () => {
+  it.each(["text", "grid"] as const)("adds a %s layout, under its title, in one edit with the slide", (start) => {
     const { view, slides } = three()
-    const made = addSlideWrites(view, slides[0]!, minter(), "kpis")
+    const made = addSlideWrites(view, slides[0]!, minter(), start)
     const after = landed(view, made.writes)
-    const [title, kpi] = (after.children.get(made.slide) ?? []).map(
+    const children = after.children.get(made.slide) ?? []
+    expect(children).toHaveLength(2)
+    expect((after.nodes.get(children[0]!) as { role?: string }).role).toBe("title")
+    expect(slideIds(after)[1]).toBe(made.slide)
+  })
+
+  it("keeps the grid under its title, from the title's left edge", () => {
+    const { view, slides } = three()
+    const made = addSlideWrites(view, slides[0]!, minter(), "grid")
+    const after = landed(view, made.writes)
+    const [title, grid] = (after.children.get(made.slide) ?? []).map(
       (id) => (after.nodes.get(id) as doom.Node & { box: doom.Box }).box,
     )
-    expect(kpi!.x).toBe(title!.x)
-    expect(kpi!.y).toBeGreaterThanOrEqual(title!.y + title!.h)
-    expect(kpi!.w).toBe(title!.w)
+    expect(grid!.x).toBe(title!.x)
+    expect(grid!.y).toBeGreaterThanOrEqual(title!.y + title!.h)
+    expect(grid!.w).toBe(title!.w)
   })
 
   it("adds after the last slide too", () => {

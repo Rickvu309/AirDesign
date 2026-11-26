@@ -123,10 +123,10 @@ test("with the panel closed the selection, zoom, Present, Export and a running A
   const answer = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
   const base = doom.readFold(answer.json.fold)?.rev
   stack.aira(
-    { name: "add-kpi.sse", fill: { deck: opened.deck, base: String(base), slide: opened.slide } },
-    { name: "added-kpi.sse" },
+    { name: "add-results-grid.sse", fill: { deck: opened.deck, base: String(base), slide: opened.slide } },
+    { name: "added-results-grid.sse" },
   )
-  await panel(page).getByRole("textbox", { name: airaCopy.askAira }).fill("Add three KPIs to this slide")
+  await panel(page).getByRole("textbox", { name: airaCopy.askAira }).fill("Add a results grid to this slide")
   await page.keyboard.press("Enter")
   await toggle(page).click()
   await expect(panel(page)).toBeHidden()

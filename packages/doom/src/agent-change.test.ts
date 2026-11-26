@@ -14,7 +14,7 @@ const valid: readonly AgentChange[] = [
     textStyle: "title",
     box: { x: 0, y: 0, w: 900, h: 90 },
   },
-  { op: "add", kind: "kpi", slide: "t:3" as never, items: [{ title: "Revenue", value: "$4.2M", note: "+12%" }] },
+  { op: "add", kind: "frame", slide: "t:3" as never, rows: [["Revenue", "$4.2M"]] },
   {
     op: "add",
     kind: "component",
@@ -185,8 +185,6 @@ describe("the advertised schema", () => {
       "to",
       "route",
       "rows",
-      "items",
-      "axes",
       "box",
       "name",
       "hidden",

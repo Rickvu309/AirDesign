@@ -60,26 +60,16 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
     }
   })
 
-  it("holds the KPI row with a decision card under it, the chart, three icon cards and the roadmap grid", () => {
+  it("holds the results grid, a decision card, the chart, three icons and the roadmap grid", () => {
     const names = (slide: NodeId) => childrenOf(doom, slide).map((node) => propOf(node, "name"))
-    expect(names(slides[1]!)).toEqual([undefined, "KPI", "Decision"])
+    expect(names(slides[1]!)).toEqual([undefined, "Results", "Decision"])
     expect(
       childrenOf(doom, slides[2]!).some((node) => propOf(node, "instance")?.component.id === "clustered-chart"),
     ).toBe(true)
-    const priorities = childrenOf(doom, slides[3]!)[1]!
-    expect(descendantsOf(doom, priorities.id).filter((node) => propOf(node, "geometry")?.kind === "icon")).toHaveLength(
-      3,
-    )
+    expect(childrenOf(doom, slides[3]!).filter((node) => propOf(node, "geometry")?.kind === "icon")).toHaveLength(3)
     const roadmap = childrenOf(doom, slides[4]!)[1]!
     expect(propOf(roadmap, "layout")).toMatchObject({ mode: "grid" })
     expect(childrenOf(doom, roadmap.id).filter((node) => propOf(node, "text") !== undefined)).toHaveLength(19)
-  })
-
-  it("keeps the KPI row at content height and the decision card under it, inside the slide", () => {
-    const [, row, decision] = childrenOf(doom, slides[1]!).map((node) => propOf(node, "box")!)
-    expect(row!.h).toBeLessThan(0.55 * (1000 - row!.y))
-    expect(decision!.y).toBeGreaterThanOrEqual(row!.y + row!.h)
-    expect(decision!.y + decision!.h).toBeLessThanOrEqual(1000)
   })
 
   it("uses the deck's named text styles and no size of its own anywhere", () => {
@@ -138,36 +128,6 @@ describe("the board deck on the slide type scale", () => {
       const title = childrenOf(doom, slide).find((node) => propOf(node, "role") === "title")!
       expect(sizeOf(title)).toBe(56)
     }
-  })
-
-  it("sets a KPI as a number of 80 px over a label and a note of 24 px", () => {
-    const row = childrenOf(doom, slides[1]!).find((node) => propOf(node, "name") === "KPI")!
-    for (const card of childrenOf(doom, row.id)) {
-      const [label, number, note] = childrenOf(doom, card.id).map((node) => sizeOf(node)!)
-      expect(number).toBe(80)
-      expect(label).toBe(24)
-      expect(note).toBe(24)
-    }
-  })
-
-  it("sets card bullets, the decision card and the roadmap cells at 32 px or more", () => {
-    for (const slide of [slides[1]!, slides[3]!, slides[4]!]) {
-      const rest = childrenOf(doom, slide).filter(
-        (node) => propOf(node, "role") !== "title" && propOf(node, "name") !== "KPI",
-      )
-      for (const frame of rest)
-        for (const node of descendantsOf(doom, frame.id)) expect(sizeOf(node) ?? 32).toBeGreaterThanOrEqual(32)
-    }
-  })
-
-  it("keeps the decision card under the KPIs at the slide type scale, inside the slide", () => {
-    const decision = childrenOf(doom, slides[1]!).find((node) => propOf(node, "name") === "Decision")!
-    const card = childrenOf(doom, decision.id)[0]!
-    const [heading, points] = childrenOf(doom, card.id).map((node) => sizeOf(node)!)
-    expect(heading).toBe(40)
-    expect(points).toBe(32)
-    const box = propOf(decision, "box")!
-    expect(box.y + box.h).toBeLessThanOrEqual(1000)
   })
 
   it("sets a chart's words, value labels included, at 24 px or more", () => {

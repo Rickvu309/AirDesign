@@ -35,10 +35,6 @@ export const editorCopy = {
   slideStarts: {
     title: "Title",
     text: "Title and text",
-    kpis: "KPIs",
-    cards: "Cards",
-    chart: "Chart",
-    timeline: "Timeline",
     grid: "Grid",
     blank: "Blank",
   },
