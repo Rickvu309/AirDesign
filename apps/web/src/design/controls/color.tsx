@@ -38,7 +38,11 @@ export function ColorField({
       >
         {name}
       </span>
-      {disclosure ? <EditorIcon name="chev" size={12} className="ml-auto size-3 shrink-0 text-quiet" /> : null}
+      {disclosure ? (
+        <span className="ml-auto shrink-0 text-quiet">
+          <EditorIcon name="chev" size={12} />
+        </span>
+      ) : null}
     </>
   )
 }

@@ -40,13 +40,7 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
             {control.label}
           </span>
           {control.reset === null ? null : (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-6 px-1.5 text-[length:var(--type-caption)] font-normal text-quiet hover:text-foreground active:translate-y-0"
-              onClick={() => onChange(null)}
-            >
+            <Button type="button" variant="ghost" size="panel-caption" onClick={() => onChange(null)}>
               {control.reset}
             </Button>
           )}
@@ -83,22 +77,16 @@ export function UnionControl({ control, palette, onChange, inner }: ControlProps
               <Button
                 key={name}
                 type="button"
-                variant="ghost"
+                variant="panel-segment"
+                size={null}
+                data-inherited={control.inherited ? "" : undefined}
                 aria-pressed={pressed}
                 title={Icon === undefined ? undefined : word}
                 onClick={() => pick(name)}
-                className={cn(
-                  "h-[var(--control-dense)] min-w-0 flex-1 rounded-[var(--panel-segment-radius)] px-1 text-xs font-normal active:translate-y-0",
-                  pressed
-                    ? cn(
-                        "bg-white font-medium shadow-[inset_0_0_0_1px_var(--panel-edge)] hover:bg-white",
-                        control.inherited ? "text-quiet" : "text-foreground",
-                      )
-                    : "text-quiet hover:bg-transparent hover:text-foreground",
-                )}
+                className="min-w-0 flex-1"
               >
                 {Icon === undefined ? (
-                  word
+                  <span className="px-1">{word}</span>
                 ) : (
                   <>
                     <Icon size={14} className="size-3.5" strokeWidth={1.5} aria-hidden />
@@ -147,10 +135,10 @@ function UnionList({
     >
       <SelectTrigger
         aria-labelledby={label}
-        className={cn(
-          "h-[var(--control-dense)] w-full rounded-[var(--shape-control)] border-0 bg-white text-[length:var(--type-caption)] shadow-[inset_0px_0px_0px_1px_var(--field-edge)] data-[size=default]:h-[var(--control-dense)]",
-          inherited ? "text-quiet" : null,
-        )}
+        variant="panel"
+        size="dense"
+        data-inherited={inherited ? "" : undefined}
+        className="w-full"
       >
         <SelectValue>
           {(selected: string | null) => {
@@ -161,7 +149,7 @@ function UnionList({
       </SelectTrigger>
       <SelectContent>
         {names.map((name) => (
-          <SelectItem key={name} value={name}>
+          <SelectItem key={name} variant="panel" value={name}>
             {optionCopy[name] ?? name}
           </SelectItem>
         ))}

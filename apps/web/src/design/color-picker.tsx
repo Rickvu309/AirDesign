@@ -1,5 +1,6 @@
 import type * as doom from "@airdesign/doom"
 import { useState, type KeyboardEvent, type ReactElement, type ReactNode } from "react"
+import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { colorCopy } from "@/copy/color-copy"
 import { productCopy } from "@/copy/product-copy"
@@ -27,8 +28,6 @@ export function lightCss(css: string): boolean {
   return hex !== null && hex.slice(1).every((pair) => Number.parseInt(pair, 16) >= lightest)
 }
 
-const edged = "shadow-[0px_0px_0px_1px_var(--field-edge)]"
-const ringed = "shadow-[0_0_0_2px_var(--background),0_0_0_4px_var(--ring)]"
 const rainbow = `conic-gradient(from 90deg, ${[0, 60, 120, 180, 240, 300, 360]
   .map((hue) => `#${hexOf({ hue, saturation: 1, value: 1 })}`)
   .join(", ")})`
@@ -78,15 +77,17 @@ function Swatch({
   onClick: () => void
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="picker-swatch"
+      size={null}
       aria-label={name}
       aria-pressed={pressed}
       title={name}
       data-at={at}
       tabIndex={focused ? 0 : -1}
       onClick={onClick}
-      className={cn("aspect-square w-full rounded-md", lightCss(css) ? edged : null, pressed ? ringed : null)}
+      data-edged={!pressed && lightCss(css) ? "" : undefined}
       style={{ background: css }}
     />
   )
@@ -94,15 +95,19 @@ function Swatch({
 
 function More({ open, show, hide, onClick }: { open: boolean; show: string; hide: string; onClick: () => void }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="picker-icon"
+      size="icon-xs"
       aria-expanded={open}
       aria-label={open ? hide : show}
       onClick={onClick}
-      className="mx-auto flex size-6 items-center justify-center text-quiet"
+      className="mx-auto"
     >
-      <EditorIcon name="chev" size={14} className={open ? "rotate-180" : undefined} />
-    </button>
+      <span className={open ? "rotate-180" : undefined}>
+        <EditorIcon name="chev" size={14} />
+      </span>
+    </Button>
   )
 }
 
@@ -112,14 +117,9 @@ function Heading({ title, leading, onClose }: { title: string; leading?: ReactNo
       {leading}
       <span className="min-w-0 flex-1 text-[length:var(--type-dense)] font-medium text-foreground">{title}</span>
       {onClose === undefined ? null : (
-        <button
-          type="button"
-          aria-label={productCopy.close}
-          onClick={onClose}
-          className="flex size-6 shrink-0 items-center justify-center text-quiet"
-        >
+        <Button type="button" variant="picker-icon" size="icon-xs" aria-label={productCopy.close} onClick={onClose}>
           <EditorIcon name="x" size={14} />
-        </button>
+        </Button>
       )}
     </div>
   )
@@ -204,14 +204,9 @@ export function PickerBody({
         {...(onClose === undefined ? {} : { onClose })}
         leading={
           picking && onBack !== undefined ? (
-            <button
-              type="button"
-              aria-label={colorCopy.back}
-              onClick={onBack}
-              className="flex size-6 shrink-0 items-center justify-center text-quiet"
-            >
+            <Button type="button" variant="picker-icon" size="icon-xs" aria-label={colorCopy.back} onClick={onBack}>
               <EditorIcon name="chevl" size={14} />
-            </button>
+            </Button>
           ) : null
         }
       />
@@ -249,14 +244,15 @@ export function PickerBody({
           <div className={cn("flex flex-col gap-2", templateShown ? "border-t border-foreground/10 pt-3" : null)}>
             <span className="text-[length:var(--type-caption)] text-quiet">{colorCopy.others}</span>
             <div role="group" aria-label={colorCopy.others} className="grid grid-cols-6 gap-2" onKeyDown={moveFocus}>
-              <button
+              <Button
                 type="button"
+                variant="picker-swatch"
+                size={null}
                 aria-label={colorCopy.add}
                 title={colorCopy.add}
                 data-at="0,0"
                 tabIndex={deckFocus === "0,0" ? 0 : -1}
                 onClick={onAdd}
-                className="aspect-square w-full rounded-md"
                 style={{ background: rainbow }}
               />
               {deckShown.map((choice, index) => {

@@ -25,11 +25,12 @@ export function ActionControl({ control, onChange }: ControlProps) {
           render={
             <Button
               type="button"
-              variant="ghost"
+              variant="panel-action"
+              size={null}
               aria-label={control.label}
               title={control.label}
               disabled={control.field === "add" && options.length === 0}
-              className="h-[var(--control-dense)] w-6 shrink-0 p-0 text-[var(--panel-icon)]"
+              className="h-[var(--control-dense)] w-6"
             />
           }
         >
@@ -64,11 +65,12 @@ export function ActionControl({ control, onChange }: ControlProps) {
               <Button
                 key={option}
                 type="button"
-                variant="ghost"
+                variant="panel-action"
+                size={null}
                 aria-label={name}
                 title={name}
                 onClick={() => onChange(option)}
-                className="h-6 w-6 shrink-0 p-0 text-[var(--panel-icon)] hover:text-foreground active:translate-y-0"
+                className="size-6"
               >
                 {Icon === undefined ? (
                   optionWord(control.field, option)
