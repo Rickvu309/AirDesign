@@ -19,7 +19,7 @@ export function Card({
   children?: ReactNode
 }) {
   return (
-    <section className={cn("w-[860px] max-w-full rounded-xl bg-canvas p-5", className)}>
+    <section className={cn("w-215 max-w-full rounded-xl bg-canvas p-5", className)}>
       <header
         className={cn(
           "flex justify-between gap-4 max-md:flex-col max-md:items-start",
@@ -28,9 +28,9 @@ export function Card({
       >
         <div className="min-w-0">
           <h2 className="text-[length:var(--type-section)] leading-5 font-semibold text-foreground">{title}</h2>
-          {detail ? <p className="mt-1 text-[30px] leading-[39px] font-semibold text-foreground">{detail}</p> : null}
+          {detail ? <p className="mt-1 text-3xl leading-[39px] font-semibold text-foreground">{detail}</p> : null}
           {description ? (
-            <p className="mt-1 text-[length:var(--type-dense)] leading-[17px] text-muted-foreground">{description}</p>
+            <p className="mt-1 text-[length:var(--type-dense)] leading-ui-tight text-muted-foreground">{description}</p>
           ) : null}
         </div>
         {actions}

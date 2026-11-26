@@ -16,7 +16,7 @@ export function StatusPill({
   return (
     <div
       className={cn(
-        "flex h-10 items-center rounded-[var(--shape-card)] bg-foreground text-[length:var(--type-dense)] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]",
+        "flex h-10 items-center rounded-[var(--shape-card)] bg-foreground text-[length:var(--type-dense)] text-white shadow-dark-overlay",
         error && "bg-background text-danger-text",
         className,
       )}
