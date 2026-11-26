@@ -26,6 +26,8 @@ const buttonVariants = cva(
         "picker-icon": "border-0 p-0 text-quiet active:translate-y-0",
         "picker-swatch":
           "aspect-square w-full rounded-md border-0 p-0 active:translate-y-0 data-edged:shadow-[0px_0px_0px_1px_var(--field-edge)] aria-pressed:shadow-[0_0_0_2px_var(--background),0_0_0_4px_var(--ring)]",
+        "ghost-line":
+          "text-muted-foreground hover:bg-line hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
           "bg-destructive/10 text-danger-text hover:bg-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30",
         "destructive-solid":

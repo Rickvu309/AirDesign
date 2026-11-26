@@ -144,8 +144,8 @@ export function DeckGlyph({ name, size }: { name: Glyph; size?: number }) {
       <svg width={box} height={box} viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <path
           d={starPath}
-          fill={name === "starred" ? "currentColor" : "none"}
-          stroke="currentColor"
+          fill={name === "starred" ? "var(--foreground)" : "none"}
+          stroke={name === "starred" ? "var(--foreground)" : "currentColor"}
           strokeWidth="1.13"
           strokeLinejoin="round"
         />

@@ -35,7 +35,7 @@ const sections: {
 type SectionGlyph = (typeof sections)[number]["glyph"]
 
 function SectionIcon({ glyph, size }: { glyph: SectionGlyph; size: number }) {
-  return glyph === "spark" ? <SparkIcon size={size} className="text-primary" /> : <DeckGlyph name={glyph} size={size} />
+  return glyph === "spark" ? <SparkIcon size={size} /> : <DeckGlyph name={glyph} size={size} />
 }
 
 const settingsMenu = [
@@ -235,7 +235,7 @@ export function DecksShell({
                 )}
                 aria-current={active === section.id ? "page" : undefined}
               >
-                <span data-sidebar-icon className={iconColumn}>
+                <span data-sidebar-icon className={cn(iconColumn, section.glyph === "spark" && "text-primary")}>
                   <SectionIcon glyph={section.glyph} size={section.size} />
                 </span>
                 <span data-sidebar-label>{section.label}</span>
