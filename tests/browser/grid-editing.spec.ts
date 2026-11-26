@@ -3,7 +3,7 @@ import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
-import { clickSlide, landNodes, openEditor, savedNode, type Opened } from "./editor-deck"
+import { clickSlide, landNodes, landProps, openEditor, savedNode, type Opened } from "./editor-deck"
 import { covers } from "./gesture"
 import { card, entry, openGrid, percent, said, zoomTo } from "./grid-deck"
 import { layer, textOf, type Stack } from "./text-layer"
@@ -190,4 +190,20 @@ test("the text tool places a layer on the current slide and the edit survives a 
   await page.locator("[data-editor-ready]").waitFor()
   await openGrid(page)
   await expect(page.locator("[data-editor-grid]").getByText("Placed in Grid")).toBeVisible()
+})
+
+test("another tab deleting the live slide leaves editing and focuses a remaining slide", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await twoSlides(page, context, stack)
+  await node(page).dblclick()
+  await expect(editor(page)).toBeFocused()
+  await page.keyboard.insertText("Draft")
+  await landProps(stack, opened, opened.slide, { parent: null })
+  await expect(page.locator("[data-editor-grid] [data-slide-entry]")).toHaveCount(1)
+  await expect(editor(page)).toHaveCount(0)
+  await expect(live(page)).toHaveCount(0)
+  await expect(entry(page, 1)).toBeFocused()
 })
