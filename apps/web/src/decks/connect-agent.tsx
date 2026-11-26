@@ -1,6 +1,6 @@
 import { accountRoutes } from "@airdesign/catalog"
 import { CheckIcon, CopyIcon, XIcon } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { Fragment, useEffect, useRef, useState } from "react"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Dialog,
@@ -79,9 +79,20 @@ function Copied({ text, label, prompt = false }: { text: string; label: string; 
       >
         <span
           ref={shown}
-          className={cn("min-w-0 flex-1 text-foreground [overflow-wrap:anywhere]", dense, !prompt && "font-mono")}
+          className={cn(
+            "min-w-0 flex-1 text-foreground",
+            dense,
+            prompt ? "[overflow-wrap:anywhere]" : "font-mono [overflow-wrap:break-word]",
+          )}
         >
-          {text}
+          {prompt
+            ? text
+            : text.split(/(?<=\/)(?!\/)/).map((part, index) => (
+                <Fragment key={index}>
+                  {index > 0 ? <wbr /> : null}
+                  {part}
+                </Fragment>
+              ))}
         </span>
         {prompt ? (
           <Button
