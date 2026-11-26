@@ -105,7 +105,7 @@ function More({ open, show, hide, onClick }: { open: boolean; show: string; hide
       className="mx-auto"
     >
       <span className={open ? "rotate-180" : undefined}>
-        <EditorIcon name="chev" size={14} />
+        <EditorIcon name="chev" size={14} className="size-3.5" />
       </span>
     </Button>
   )
@@ -118,7 +118,7 @@ function Heading({ title, leading, onClose }: { title: string; leading?: ReactNo
       <span className="min-w-0 flex-1 text-[length:var(--type-dense)] font-medium text-foreground">{title}</span>
       {onClose === undefined ? null : (
         <Button type="button" variant="picker-icon" size="icon-xs" aria-label={productCopy.close} onClick={onClose}>
-          <EditorIcon name="x" size={14} />
+          <EditorIcon name="x" size={14} className="size-3.5" />
         </Button>
       )}
     </div>
@@ -205,7 +205,7 @@ export function PickerBody({
         leading={
           picking && onBack !== undefined ? (
             <Button type="button" variant="picker-icon" size="icon-xs" aria-label={colorCopy.back} onClick={onBack}>
-              <EditorIcon name="chevl" size={14} />
+              <EditorIcon name="chevl" size={14} className="size-3.5" />
             </Button>
           ) : null
         }
