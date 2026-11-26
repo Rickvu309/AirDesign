@@ -318,6 +318,7 @@ function Editing({
               save={saved.save}
               onRename={(name) => client.push(renameWrites(view, name))}
               arrived={leftGrid}
+              arrival={{ view, caught: client.caught, still: `${slide ?? ""} ${String(scale)}` }}
               onGrid={() => {
                 setSelection(noSelection)
                 setGrid(true)

@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { agentArrivals, agentSlide } from "./agent-arrivals"
+import { agentArrivals, agentSlide, agentSlides } from "./agent-arrivals"
 
 const grown = doom.doomFromTree({
   theme: doom.defaultTheme,
@@ -106,9 +106,9 @@ describe("what an agent just put on the deck", () => {
   })
 
   const home = doom.parentOf(grown.doom.nodes.get(slide))!
-  const slideMade = (id: string): readonly doom.Write[] => [
+  const slideMade = (id: string, after: doom.OrderKey | null = home.at): readonly doom.Write[] => [
     { node: doom.nodeId(id), prop: "type", value: "slide" },
-    { node: doom.nodeId(id), prop: "parent", value: { id: home.id, at: doom.orderKeyBetween(home.at, null) } },
+    { node: doom.nodeId(id), prop: "parent", value: { id: home.id, at: doom.orderKeyBetween(after, null) } },
   ]
 
   it("names the slide an agent just made, and no slide for a person's or one already caught up", () => {
@@ -126,5 +126,44 @@ describe("what an agent just put on the deck", () => {
     expect(agentSlide(started, theirs, grown.doom.rev)).toBeUndefined()
     const text = landed(started, { author: agent(), writes: made("t:7", slide) })
     expect(agentSlide(started, text, grown.doom.rev)).toBeUndefined()
+  })
+
+  it("names every fresh agent-made slide, and none for a person, undo, caught-up, or re-ordered edit", () => {
+    const firstKey = doom.orderKeyBetween(home.at, null)
+    const pair = landed(started, { author: agent(), writes: [...slideMade("s:9"), ...slideMade("s:10", firstKey)] })
+    expect(agentSlides(started, pair, grown.doom.rev)).toEqual(new Set(["s:9", "s:10"]))
+    expect(agentSlides(started, pair, pair.rev)).toEqual(new Set())
+    expect(agentSlides(started, started, grown.doom.rev)).toEqual(new Set())
+
+    const other: doom.Author = { kind: "agent", id: "aira", run: "a1", name: "Aira" }
+    const first = landed(started, { author: agent(), writes: slideMade("s:9") })
+    const second = landed(first, { author: other, phase: "start", writes: slideMade("s:10", firstKey) })
+    expect(agentSlides(started, second, grown.doom.rev)).toEqual(new Set(["s:9", "s:10"]))
+    expect(agentSlide(started, second, grown.doom.rev)).toBe("s:10")
+
+    const mine = landed(started, { author: person, writes: slideMade("s:8") })
+    expect(agentSlides(started, mine, grown.doom.rev)).toEqual(new Set())
+
+    const theirs = landed(landed(started, { author: person, writes: slideMade("s:5") }), {
+      author: agent(),
+      writes: made("t:5", slide),
+    })
+    expect(agentSlides(started, theirs, grown.doom.rev)).toEqual(new Set())
+
+    const undone = landed(first, {
+      author: person,
+      runUndo: { run: "c1", undone: true },
+      writes: [{ node: doom.nodeId("s:9"), prop: "parent", value: null }],
+    })
+    expect(agentSlides(first, undone, grown.doom.rev)).toEqual(new Set())
+
+    const confirmed = doom.applyEdit(landed(started, { author: person, writes: [named(title!, "Mine")] }), {
+      once: [...first.onces].find(([, at]) => at === first.rev)![0],
+      author: agent(),
+      writes: slideMade("s:9"),
+      rev: doom.rev(first.rev + 1),
+    })
+    if (doom.isRefusal(confirmed)) throw new Error(confirmed.refused)
+    expect(agentSlides(first, confirmed, grown.doom.rev)).toEqual(new Set())
   })
 })

@@ -1,12 +1,7 @@
 import type * as doom from "@airdesign/doom"
-import { useLayoutEffect, useRef } from "react"
-import { agentArrivals, agentSlide } from "./agent-arrivals"
-import { playArrival, type Playing } from "./trace-spark"
-
-const reduced = (): Pick<MediaQueryList, "matches" | "addEventListener" | "removeEventListener"> =>
-  typeof window.matchMedia === "function"
-    ? window.matchMedia("(prefers-reduced-motion: reduce)")
-    : { matches: false, addEventListener: () => undefined, removeEventListener: () => undefined }
+import { useLayoutEffect, useRef, type RefObject } from "react"
+import { agentArrivals, agentSlide, agentSlides } from "./agent-arrivals"
+import { playArrival, reducedMotion, type Playing } from "./trace-spark"
 
 const idOf = (element: HTMLElement) => element.dataset.node as doom.NodeId
 
@@ -37,10 +32,12 @@ export function AgentArrival({
         each.stop()
         playing.current.delete(id)
       }
-    if ((made.size === 0 && changed.size === 0 && !drawn) || reduced().matches) return
+    if ((made.size === 0 && changed.size === 0 && !drawn) || reducedMotion().matches) return
     const first = drawn ? 1 : 0
     if (drawn) {
-      const border = playArrival(host, host, "slide", 0)
+      playing.current.get(slide)?.stop()
+      const surface = host.parentElement?.querySelector<HTMLElement>("[data-slide-paint]") ?? host
+      const border = playArrival(host, surface, "slide", 0)
       playing.current.set(slide, border)
       void border.ended.then(() => {
         if (playing.current.get(slide) === border) playing.current.delete(slide)
@@ -51,6 +48,7 @@ export function AgentArrival({
       .filter((element) => made.has(idOf(element)) || changed.has(idOf(element)))
       .forEach((element, order) => {
         const id = idOf(element)
+        playing.current.get(id)?.stop()
         const each = playArrival(host, element, made.has(id) ? "made" : "changed", order + first)
         playing.current.set(id, each)
         void each.ended.then(() => {
@@ -65,7 +63,7 @@ export function AgentArrival({
       for (const each of running.values()) each.stop()
       running.clear()
     }
-    const motion = reduced()
+    const motion = reducedMotion()
     motion.addEventListener("change", stop)
     return () => {
       motion.removeEventListener("change", stop)
@@ -81,4 +79,62 @@ export function AgentArrival({
       className="pointer-events-none absolute inset-0 overflow-hidden print:hidden"
     />
   )
+}
+
+export type StripArrival = {
+  readonly view: doom.Doom
+  readonly caught: () => doom.Rev
+  readonly still: string
+}
+
+export function useThumbArrival(list: RefObject<HTMLDivElement | null>, arrival: StripArrival | undefined) {
+  const seen = useRef<doom.Doom | null>(null)
+  const playing = useRef(new Map<doom.NodeId, { readonly host: HTMLElement; readonly play: Playing }>())
+
+  useLayoutEffect(() => {
+    if (arrival === undefined) return
+    const before = seen.current
+    seen.current = arrival.view
+    const hostList = list.current
+    if (before === null || hostList === null) return
+    const made = agentSlides(before, arrival.view, arrival.caught())
+    for (const [id, each] of playing.current)
+      if (made.has(id) || !each.host.isConnected || each.host.dataset.thumbArrival !== id) {
+        each.play.stop()
+        playing.current.delete(id)
+      }
+    if (made.size === 0 || reducedMotion().matches) return
+    const hosts = new Map<doom.NodeId, HTMLElement>()
+    for (const node of hostList.querySelectorAll<HTMLElement>("[data-thumb-arrival]")) {
+      const id = node.dataset.thumbArrival as doom.NodeId | undefined
+      if (id !== undefined) hosts.set(id, node)
+    }
+    let order = 0
+    for (const id of made) {
+      const host = hosts.get(id)
+      const thumb = host?.parentElement?.querySelector<HTMLElement>("[data-slide-thumb]") ?? null
+      if (host === undefined || thumb === null) continue
+      const play = playArrival(host, thumb, "thumb", order)
+      order += 1
+      const entry = { host, play }
+      playing.current.set(id, entry)
+      void play.ended.then(() => {
+        if (playing.current.get(id) === entry) playing.current.delete(id)
+      })
+    }
+  }, [list, arrival?.view, arrival?.caught])
+
+  useLayoutEffect(() => {
+    const running = playing.current
+    const stop = () => {
+      for (const each of running.values()) each.play.stop()
+      running.clear()
+    }
+    const motion = reducedMotion()
+    motion.addEventListener("change", stop)
+    return () => {
+      motion.removeEventListener("change", stop)
+      stop()
+    }
+  }, [arrival?.still])
 }

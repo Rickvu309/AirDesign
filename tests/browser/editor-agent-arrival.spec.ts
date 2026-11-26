@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
+import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { test, type Stack } from "./api-stack"
 import { agentCall, connectClaudeCode, saved } from "./claude-code"
 import { openEditor, type Opened } from "./editor-deck"
@@ -18,16 +19,26 @@ async function countMarks(page: Page) {
   await page.evaluate(() => {
     const layer = document.querySelector("[data-agent-arrival]")
     if (layer === null) throw new Error("no arrival layer on the canvas")
-    const seen = { marks: 0 }
+    const seen = { marks: 0, thumbs: 0 }
     new MutationObserver((changes) => {
       seen.marks += changes.reduce((sum, change) => sum + change.addedNodes.length, 0)
     }).observe(layer, { childList: true })
+    const list = document.querySelector("[data-slide-list]")
+    if (list !== null)
+      new MutationObserver((changes) => {
+        for (const change of changes)
+          if (change.target instanceof Element && change.target.hasAttribute("data-thumb-arrival"))
+            seen.thumbs += change.addedNodes.length
+      }).observe(list, { childList: true, subtree: true })
     Object.assign(window, { arrivalMarks: seen })
   })
 }
 
 const marksSeen = (page: Page) =>
   page.evaluate(() => (window as unknown as { arrivalMarks: { marks: number } }).arrivalMarks.marks)
+
+const thumbMarksSeen = (page: Page) =>
+  page.evaluate(() => (window as unknown as { arrivalMarks: { thumbs: number } }).arrivalMarks.thumbs)
 
 async function agentNote(stack: Stack, opened: Opened, text: string, y: number) {
   const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
@@ -255,15 +266,24 @@ test("the canvas goes to a slide an agent makes and traces what the agent writes
   if (box === null) throw new Error("the agent's note is not painted")
   await page.mouse.dblclick(box.x + 20, box.y + box.height / 2)
   await page.keyboard.type("Mine ")
+  const beforeThumb = await thumbMarksSeen(page)
   await slideWith("Elsewhere", first.runId)
   await expect(page.locator("[data-slide-thumb]").getByText("Elsewhere", { exact: true })).toHaveCount(1)
   await expect(canvas.getByText("Elsewhere", { exact: true })).toHaveCount(0)
   await expect(page).toHaveURL(new RegExp(encodeURIComponent(together.slide)))
+  await expect.poll(() => thumbMarksSeen(page)).toBeGreaterThan(beforeThumb)
 })
 
-test("a slide an agent makes has its border traced as the canvas opens it", async ({ page, context, stack }) => {
+test("a slide an agent makes draws its canvas surface and filmstrip thumbnail, then leaves both settled", async ({
+  page,
+  context,
+  stack,
+}) => {
   const opened = await openEditor(page, context, stack)
   const layer = page.locator("[data-agent-arrival]")
+  const surface = page.locator("[data-slide-box] [data-slide-paint]")
+  const thumbLayer = page.locator('[data-slide-entry="2"] [data-thumb-arrival]')
+  const thumb = page.locator('[data-slide-entry="2"] [data-slide-thumb]')
   const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
   const made = await call("edit_deck", {
     deck: opened.deck,
@@ -272,9 +292,80 @@ test("a slide an agent makes has its border traced as the canvas opens it", asyn
   })
   expect(made.ok, JSON.stringify(made)).toBe(true)
   await expect(layer.locator("svg")).toHaveCount(1)
+  await expect(thumbLayer.locator("svg")).toHaveCount(1)
   const traced = await layer.locator("svg").evaluate((svg) => svg.firstElementChild!.getBoundingClientRect().width)
   const slide = await page.locator("[data-slide-box]").boundingBox()
   expect(traced).toBeGreaterThan((slide?.width ?? 0) - 8)
   expect(traced).toBeLessThanOrEqual(slide?.width ?? 0)
+  expect(await surface.evaluate((element) => element.getAnimations().length)).toBe(1)
+
   await expect(layer.locator("> *")).toHaveCount(0)
+  await expect(thumbLayer.locator("> *")).toHaveCount(0)
+  expect(await surface.evaluate((element) => element.getAnimations().length)).toBe(0)
+  expect(await surface.evaluate((element) => getComputedStyle(element).opacity)).toBe("1")
+  expect(await surface.evaluate((element) => element.style.opacity)).toBe("")
+  expect(await thumb.evaluate((element) => element.getAnimations().length)).toBe(0)
+  expect(await thumb.evaluate((element) => getComputedStyle(element).opacity)).toBe("1")
+  expect(await thumb.evaluate((element) => element.style.opacity)).toBe("")
+
+  const another = await call("edit_deck", {
+    deck: opened.deck,
+    base: (await saved(stack, opened)).rev,
+    runId: made.runId,
+    changes: [{ op: "slide", add: {} }],
+  })
+  expect(another.ok, JSON.stringify(another)).toBe(true)
+  const thirdThumbLayer = page.locator('[data-slide-entry="3"] [data-thumb-arrival]')
+  await expect(layer.locator("svg")).toHaveCount(1)
+  await expect(thirdThumbLayer.locator("svg")).toHaveCount(1)
+  await page.locator('[data-slide-entry="1"]').click()
+  await expect(layer.locator("> *")).toHaveCount(0)
+  await expect(thirdThumbLayer.locator("> *")).toHaveCount(0)
+  expect(await surface.evaluate((element) => element.getAnimations().length)).toBe(0)
+  expect(await surface.evaluate((element) => getComputedStyle(element).opacity)).toBe("1")
+  expect(
+    await page.locator('[data-slide-entry="3"] [data-slide-thumb]').evaluate((el) => el.getAnimations().length),
+  ).toBe(0)
+  expect(
+    await page.locator('[data-slide-entry="3"] [data-slide-thumb]').evaluate((el) => getComputedStyle(el).opacity),
+  ).toBe("1")
+})
+
+test("a person's own new slide and an agent-made slide under reduced motion play neither canvas nor filmstrip draw", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openEditor(page, context, stack)
+  const surface = page.locator("[data-slide-box] [data-slide-paint]")
+  await countMarks(page)
+
+  await page.getByRole("button", { name: slideListCopy.addSlide }).click()
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
+  await expect(page.locator('[data-slide-entry="2"]')).toHaveAttribute("aria-current", "true")
+  expect(await surface.evaluate((element) => element.getAnimations().length)).toBe(0)
+  expect(await surface.evaluate((element) => getComputedStyle(element).opacity)).toBe("1")
+  expect(
+    await page.locator('[data-slide-entry="2"] [data-slide-thumb]').evaluate((el) => el.getAnimations().length),
+  ).toBe(0)
+  expect(await marksSeen(page)).toBe(0)
+  expect(await thumbMarksSeen(page)).toBe(0)
+
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
+  const made = await call("edit_deck", {
+    deck: opened.deck,
+    base: (await saved(stack, opened)).rev,
+    changes: [{ op: "slide", add: {} }],
+  })
+  expect(made.ok, JSON.stringify(made)).toBe(true)
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
+  await expect(page.locator('[data-slide-entry="3"]')).toHaveAttribute("aria-current", "true")
+  expect(await surface.evaluate((element) => element.getAnimations().length)).toBe(0)
+  expect(await surface.evaluate((element) => getComputedStyle(element).opacity)).toBe("1")
+  expect(
+    await page.locator('[data-slide-entry="3"] [data-slide-thumb]').evaluate((el) => el.getAnimations().length),
+  ).toBe(0)
+  expect(await marksSeen(page)).toBe(0)
+  expect(await thumbMarksSeen(page)).toBe(0)
 })
