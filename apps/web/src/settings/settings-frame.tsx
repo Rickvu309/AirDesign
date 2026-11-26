@@ -22,7 +22,7 @@ export function SettingsFrame({
   return (
     <div className="screen-frame reflow-frame">
       <DecksShell active="settings">
-        <div className="-mx-14 max-md:-mx-4">
+        <div className="-mx-20 max-md:-mx-4">
           <div data-settings-header className="border-b border-line">
             <div className="mx-auto w-full max-w-[860px] max-md:px-4">
               <h1 className="text-[length:var(--type-title)] leading-8 font-medium tracking-[-0.4px] text-foreground">

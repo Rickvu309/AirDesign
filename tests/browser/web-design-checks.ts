@@ -27,4 +27,20 @@ export const webDesignChecks: Check[] = [
       expect(insets).toEqual([12, 12])
     },
   ],
+  [
+    "03-settings-divider",
+    "account-tab",
+    async (page) => {
+      const geometry = await page.locator("[data-settings-header]").evaluate((header) => {
+        const sidebar = document.querySelector("[data-decks-sidebar]")?.getBoundingClientRect()
+        const box = header.getBoundingClientRect()
+        return [
+          box.left - (sidebar?.right ?? 0),
+          innerWidth - box.right,
+          header.parentElement?.getBoundingClientRect().top,
+        ]
+      })
+      expect(geometry).toEqual([0, 0, 0])
+    },
+  ],
 ]
