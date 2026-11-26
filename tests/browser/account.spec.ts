@@ -75,15 +75,18 @@ test("reaches Account from the account menu and Settings tabs, sees email, and w
   await expect(page).toHaveURL(/\/settings\/account$/)
 })
 
-test("the sidebar card opens the connect dialog over Home, and Settings hides the card on its Agents tab", async ({
+test("the first-visit button opens Connect an agent over Home, and the Agents tab hides the sidebar promo", async ({
   page,
 }) => {
   await mockApp(page)
 
   await page.goto("/")
   const sidebar = page.locator("[data-decks-sidebar]")
-  await expect(sidebar.getByRole("heading", { name: "Bring your own agent" })).toBeVisible()
-  await sidebar.getByRole("button", { name: connectAgentCopy.title }).click()
+  await expect(page.getByRole("heading", { name: productCopy.noDecksTitle })).toBeVisible()
+  await expect(sidebar.getByRole("heading", { name: "Bring your own agent" })).toHaveCount(0)
+  const connect = sidebar.getByRole("button", { name: connectAgentCopy.title })
+  await expect(connect).toHaveCSS("height", "36px")
+  await connect.click()
 
   const dialog = page.getByRole("dialog", { name: connectAgentCopy.title })
   await expect(dialog.getByText("https://mcp.airdesign.test/mcp", { exact: true })).toBeVisible()

@@ -125,3 +125,43 @@ test("Escape while an IME composes in the deck search, as it cancels a conversio
   await page.keyboard.press("Escape")
   await expect(search).toHaveValue("")
 })
+
+test("Recents and All decks align their cards and keep wide previews close to a slide's shape", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await signInBrowser(context, await stack.signIn())
+  await forward(page, stack)
+  await page.setViewportSize({ width: 1470, height: 923 })
+  await page.goto("/")
+  await newDoomDeck(page)
+  await page.locator("[data-editor-ready]").waitFor()
+  const deck = new URL(page.url()).pathname.split("/").at(-1)
+  const card = page.locator(`[data-deck="${deck}"]`)
+  const preview = card.locator("[data-deck-preview]")
+  const heading = page.getByRole("heading", { level: 1 })
+  async function geometry() {
+    await expect(preview).toBeVisible()
+    const top = await card.evaluate((element) => element.getBoundingClientRect().top)
+    const bottom = await heading.evaluate((element) => element.getBoundingClientRect().bottom)
+    const { width, height } = await preview.evaluate((element) => {
+      const box = element.getBoundingClientRect()
+      return { width: box.width, height: box.height }
+    })
+    return { gap: top - bottom, height, aspect: width / height }
+  }
+
+  await page.getByRole("link", { name: productCopy.goToDecks }).click()
+  const recents = await geometry()
+  await page.getByRole("link", { name: "All decks", exact: true }).click()
+  const all = await geometry()
+  expect(all.gap).toBe(recents.gap)
+  expect(all.height).toBe(recents.height)
+
+  await page.setViewportSize({ width: 1920, height: 1080 })
+  for (const name of ["Recents", "All decks"]) {
+    await page.getByRole("link", { name, exact: true }).click()
+    expect(Math.abs((await geometry()).aspect - 16 / 9)).toBeLessThan(0.05)
+  }
+})
