@@ -8,6 +8,11 @@
 
 @theme inline {
   --font-sans: "Inter Variable", system-ui, sans-serif;
+  --leading-ui-tight: 17px;
+  --leading-ui: 18px;
+  --tracking-dialog-title: -0.3px;
+  --tracking-page-title: -0.4px;
+  --shadow-dark-overlay: 0 8px 24px var(--black-20);
 }
 
 [data-slide-paint],
