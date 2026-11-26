@@ -14,6 +14,14 @@ function idle(): Promise<void> {
   })
 }
 
+export function SlidePictures(props: {
+  readonly client: Parameters<typeof useSlidePictures>[0]
+  readonly assetUrl: (asset: string) => string | undefined
+}): null {
+  useSlidePictures(props.client, props.assetUrl)
+  return null
+}
+
 export function useSlidePictures(
   client: Pick<EditorClient, "server" | "pending" | "reportPictures" | "subscribe" | "picturesWanted">,
   assetUrl: (asset: string) => string | undefined,

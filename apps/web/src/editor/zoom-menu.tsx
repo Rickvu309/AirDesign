@@ -61,12 +61,14 @@ export function ZoomMenu({
   onZoom,
   onSelection,
   canvas,
+  keyed = true,
 }: {
   zoom: Zoom
   percent: number
   onZoom: (zoom: Zoom) => void
   onSelection?: () => void
   canvas?: RefObject<HTMLElement | null>
+  keyed?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const typed = useRef(false)
@@ -120,14 +122,12 @@ export function ZoomMenu({
         <EditorMenuRule />
         <EditorMenuAction
           label={zoomCopy.zoomIn}
-          shortcut={zoomCopy.inKey}
-          keys="Control+= Meta+="
+          {...(keyed ? { shortcut: zoomCopy.inKey, keys: "Control+= Meta+=" } : {})}
           onClick={() => onZoom(steppedZoom("in", percent))}
         />
         <EditorMenuAction
           label={zoomCopy.zoomOut}
-          shortcut={zoomCopy.outKey}
-          keys="Control+- Meta+-"
+          {...(keyed ? { shortcut: zoomCopy.outKey, keys: "Control+- Meta+-" } : {})}
           onClick={() => onZoom(steppedZoom("out", percent))}
         />
         {onSelection === undefined ? null : (

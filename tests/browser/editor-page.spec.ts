@@ -1,5 +1,4 @@
 import { expect, type Page } from "@playwright/test"
-import { guideWords } from "../../apps/web/src/copy/guide-copy"
 import { presentCopy } from "../../apps/web/src/copy/present-copy"
 import { productCopy, tabTitleOf, zoomCopy, zoomToOf } from "../../apps/web/src/copy/product-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
@@ -28,7 +27,7 @@ test("the Doom editor is the old editor's page: its columns, the slide number, n
   const left = page.locator("[data-editor-sidebar]")
   await expect(left.getByRole("link", { name: productCopy.goToDecks })).toHaveAttribute("href", /^\/$/)
   await expect(left.getByRole("button", { name: new RegExp(`^${productCopy.renameDeck}`) })).toBeVisible()
-  await expect(left.getByRole("button", { name: guideWords.grid, exact: true })).toHaveCount(0)
+  await expect(left.getByRole("button", { name: slideListCopy.gridView })).toHaveAttribute("aria-pressed", "false")
   await expect(left.getByRole("button", { name: slideListCopy.addSlide })).toBeVisible()
   await expect(left.getByText(slideListCopy.newSlide, { exact: true })).toBeVisible()
 

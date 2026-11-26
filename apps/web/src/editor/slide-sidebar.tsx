@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { hairlineShadow, surfaceShadow } from "@/components/ui/shadows"
-import { SidebarHead } from "@/editor/editor-chrome"
+import { GridHead, Island, SidebarHead } from "@/editor/editor-chrome"
 import { slideKey, type SlideKey } from "@/editor/slide-keys"
 import type { SaveStatus } from "@/editor/save-status"
 import { slideChangeAllowed } from "@/editor/slide-menu"
@@ -27,10 +27,53 @@ import type { LayoutPictureSource } from "@/editor/layout-pictures"
 import { cn } from "@/lib/class-names"
 import { setDropPlace } from "@/editor/slide-list-pick"
 import { useSlideListSet } from "@/editor/use-slide-list-set"
+import { gridStep } from "@/editor/slide-grid-step"
+import { gridFitScale, gridGapAfter, gridGaps, gridGroups, gridLines, type GridSize } from "@/editor/slide-grid-layout"
 
 export const slideThumbWidth = 197
 
 const thumbWidth = slideThumbWidth
+
+const gridBarRoom = 40
+
+const gridCard = "block shrink-0 overflow-hidden rounded-[2px] bg-white"
+const gridCardEdge = "shadow-[0px_0px_0px_1px_var(--line),0px_1px_3px_var(--black-8)]"
+const gridCardPicked = "shadow-[0px_0px_0px_2px_var(--ring)]"
+
+export type GridView = {
+  readonly zoom: "fit" | number
+  readonly onScale: (scale: number, fit: number) => void
+  readonly onSlides: () => void
+  readonly right?: ReactNode
+  readonly bar?: ReactNode
+}
+
+type GridChrome = GridView & {
+  readonly title: string
+  readonly save: SaveStatus | null
+  readonly onRename: ((name: string) => void) | undefined
+  readonly onTrash: (() => void) | undefined
+}
+
+function useRoom(): [GridSize, (element: HTMLElement | null) => void] {
+  const [room, setRoom] = useState<GridSize>({ width: 1200, height: 800 })
+  const [element, setElement] = useState<HTMLElement | null>(null)
+  useLayoutEffect(() => {
+    if (element === null) return
+    const measure = () =>
+      setRoom((last) =>
+        last.width === element.clientWidth && last.height === element.clientHeight
+          ? last
+          : { width: element.clientWidth, height: element.clientHeight },
+      )
+    measure()
+    if (typeof ResizeObserver !== "function") return
+    const observer = new ResizeObserver(measure)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [element])
+  return [room, setElement]
+}
 
 const thumbCard = cn("block shrink-0 overflow-hidden rounded-[2px] bg-white", hairlineShadow)
 
@@ -41,6 +84,8 @@ export type SlideStrip = {
   readonly slideIds: readonly NodeId[]
   readonly current: number
   readonly skipped?: readonly boolean[]
+  readonly groupStarts?: readonly number[]
+  readonly slideSize?: GridSize
   readonly onSkip?: (indices: readonly number[], skipped: boolean) => void
   readonly onSelection?: (indices: readonly number[]) => void
   readonly onSelect: (index: number) => void
@@ -75,6 +120,8 @@ export function SlideSidebar({
   save = null,
   layers = null,
   onSlideSelection,
+  grid,
+  onGrid,
 }: {
   title: string
   strip: SlideStrip
@@ -83,17 +130,38 @@ export function SlideSidebar({
   save?: SaveStatus | null
   layers?: ReactNode
   onSlideSelection?: (count: number) => void
+  grid?: GridView | undefined
+  onGrid?: () => void
 }) {
+  const inGrid = grid !== undefined
+  const [seen, setSeen] = useState(inGrid)
+  const [arrived, setArrived] = useState(false)
+  if (seen !== inGrid) {
+    setSeen(inGrid)
+    setArrived(true)
+  }
+  if (grid !== undefined)
+    return (
+      <section className="relative h-full min-w-0 flex-1 bg-canvas" data-editor-sidebar data-grid-view>
+        <DeckStrip
+          strip={strip}
+          onSlideSelection={onSlideSelection}
+          grid={{ ...grid, title, save, onRename, onTrash }}
+          arrived={arrived}
+        />
+      </section>
+    )
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white" data-editor-sidebar>
       <SidebarHead
         title={title}
         homeHref="/"
         save={save}
+        {...(onGrid === undefined ? {} : { onGrid })}
         {...(onRename === undefined ? {} : { onRename })}
         {...(onTrash === undefined ? {} : { onTrash })}
       />
-      <DeckStrip strip={strip} onSlideSelection={onSlideSelection} />
+      <DeckStrip strip={strip} onSlideSelection={onSlideSelection} grid={undefined} arrived={arrived} />
       {layers}
     </aside>
   )
@@ -116,15 +184,27 @@ function movesWithHistory(event: KeyboardEvent): boolean {
   return gesture === "undo" || gesture === "redo"
 }
 
-function onListKey(event: KeyboardEvent<HTMLDivElement>, strip: SlideStrip, drop: () => void) {
+function onListKey(event: KeyboardEvent<HTMLDivElement>, strip: SlideStrip, drop: () => void, grid: boolean) {
   if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
-  if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return
+  const sideways = grid && ["ArrowLeft", "ArrowRight"].includes(event.key)
+  if (!sideways && !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return
   const all = stopsOf(event.currentTarget)
   const at = all.findIndex((each) => each === document.activeElement)
   if (at === -1) return
   event.preventDefault()
+  event.stopPropagation()
   drop()
-  const target = all[rovedTo(event.key, all.length, at)]
+  const to = grid
+    ? gridStep(
+        event.key,
+        all.map((each) => {
+          const box = each.getBoundingClientRect()
+          return { left: Math.round(box.left), top: Math.round(box.top) }
+        }),
+        at,
+      )
+    : rovedTo(event.key, all.length, at)
+  const target = all[to]
   target?.focus()
   const entry = target?.getAttribute("data-slide-entry")
   if (entry !== null && entry !== undefined) strip.onSelect(Number(entry) - 1)
@@ -133,11 +213,32 @@ function onListKey(event: KeyboardEvent<HTMLDivElement>, strip: SlideStrip, drop
 function DeckStrip({
   strip,
   onSlideSelection,
+  grid,
+  arrived,
 }: {
   strip: SlideStrip
   onSlideSelection: ((count: number) => void) | undefined
+  grid: GridChrome | undefined
+  arrived: boolean
 }) {
   const list = useRef<HTMLDivElement>(null)
+  const [room, onRoom] = useRoom()
+  const slide = strip.slideSize ?? { width: 1920, height: 1080 }
+  const lines = grid === undefined ? [] : gridLines(strip.count, gridGroups(strip.count, strip.groupStarts ?? []))
+  const fit = gridFitScale(lines, slide, { width: room.width, height: room.height - 2 * gridBarRoom })
+  const scale = grid === undefined ? 1 : grid.zoom === "fit" ? fit : grid.zoom
+  const onScale = grid?.onScale
+  useLayoutEffect(() => {
+    onScale?.(scale, fit)
+  }, [onScale, scale, fit])
+  useLayoutEffect(() => {
+    if (!arrived || (document.activeElement !== null && document.activeElement !== document.body)) return
+    list.current?.querySelector<HTMLElement>('[data-slide-entry][aria-current="true"]')?.focus()
+  }, [arrived])
+  const cardWidth = grid === undefined ? thumbWidth : Math.max(1, Math.round(slide.width * scale))
+  const cardHeight =
+    grid === undefined ? strip.thumbHeight : Math.max(1, Math.round((cardWidth * slide.height) / slide.width))
+  const onOpen = grid?.onSlides
   const following = useRef(false)
   const { current, count } = strip
   const canAdd = count > 0 && strip.onAdd !== undefined
@@ -164,18 +265,27 @@ function DeckStrip({
   const item = (index: number) => (
     <SlideItem
       key={index}
+      grid={grid !== undefined}
       index={slideNumber(index)}
       count={strip.count}
       active={index === strip.current}
       picked={inSet(index)}
       menuSet={inSet(index) ? menuSet : undefined}
       skipped={strip.skipped?.[index] === true}
-      markWidth={thumbWidth}
+      markWidth={cardWidth}
       onSkip={
         strip.onSkip === undefined ? undefined : (skipped) => strip.onSkip?.(inSet(index) ? held : [index], skipped)
       }
       reachable={reachable === `slide:${String(index)}`}
       onSelect={(how) => press(index, how)}
+      onOpen={
+        onOpen === undefined
+          ? undefined
+          : () => {
+              strip.onSelect(index)
+              onOpen()
+            }
+      }
       onKeyDown={(event) => onSlideKey(strip, index, event, announce, setChange(index))}
       onChoose={(change) => {
         following.current = true
@@ -202,10 +312,14 @@ function DeckStrip({
       }}
     >
       <Filmstrip
-        className={thumbCard}
-        height={strip.thumbHeight}
-        paint={() => strip.thumb(index, thumbWidth)}
-        width={thumbWidth}
+        className={
+          grid === undefined
+            ? thumbCard
+            : cn(gridCard, index === strip.current || inSet(index) ? gridCardPicked : gridCardEdge)
+        }
+        height={cardHeight}
+        paint={() => strip.thumb(index, cardWidth)}
+        width={cardWidth}
       />
     </SlideItem>
   )
@@ -214,6 +328,70 @@ function DeckStrip({
     return at >= 0 && at < strip.count
   }
   const reachable = stop !== null && present(stop) ? stop : `slide:${String(strip.current)}`
+  const listProps = {
+    ref: list,
+    role: "group",
+    "aria-label": slideListCopy.listName,
+    "data-slide-list": true,
+    onFocus: (event: FocusEvent<HTMLDivElement>) => {
+      const key = event.target.getAttribute("data-stop")
+      if (key !== null) setStop(key)
+    },
+    onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => onListKey(event, strip, drop, grid !== undefined),
+    onKeyDownCapture: (event: KeyboardEvent<HTMLDivElement>) => {
+      if (slideKey(event) !== null || movesWithHistory(event)) following.current = true
+    },
+    onDropCapture: () => {
+      following.current = true
+    },
+    onBlur: (event: FocusEvent<HTMLDivElement>) => {
+      if (event.relatedTarget !== null && !event.currentTarget.contains(event.relatedTarget)) following.current = false
+    },
+  }
+  if (grid !== undefined) {
+    const column = gridGaps(slide).column * scale
+    return (
+      <>
+        <Announcer message={message} />
+        <div ref={onRoom} className="absolute inset-0 overflow-auto" data-grid-room>
+          <div className="flex min-h-full w-max min-w-full px-12 py-[88px]">
+            <div {...listProps} className="m-auto flex flex-col" data-slide-grid>
+              {lines.map((line, at) => (
+                <div
+                  key={line.cards[0]}
+                  className="flex"
+                  data-slide-grid-line={line.group}
+                  style={{ gap: column, marginBottom: gridGapAfter(lines, at, slide) * scale }}
+                >
+                  {line.cards.map(item)}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-3 *:pointer-events-auto">
+          <GridHead
+            title={grid.title}
+            save={grid.save}
+            canAdd={canAdd}
+            onAdd={() => {
+              following.current = true
+              strip.onAdd?.()
+            }}
+            onSlides={grid.onSlides}
+            {...(grid.onRename === undefined ? {} : { onRename: grid.onRename })}
+            {...(grid.onTrash === undefined ? {} : { onTrash: grid.onTrash })}
+          />
+          {grid.right === undefined ? null : <Island>{grid.right}</Island>}
+        </div>
+        {grid.bar === undefined ? null : (
+          <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center *:pointer-events-auto">
+            {grid.bar}
+          </div>
+        )}
+      </>
+    )
+  }
   return (
     <>
       <div className="flex px-3 pb-2">
@@ -242,28 +420,7 @@ function DeckStrip({
         </div>
       </div>
       <Announcer message={message} />
-      <div
-        ref={list}
-        role="group"
-        aria-label={slideListCopy.listName}
-        className="flex flex-1 flex-col gap-1 overflow-y-auto px-1.5 py-1"
-        data-slide-list
-        onFocus={(event: FocusEvent<HTMLDivElement>) => {
-          const key = event.target.getAttribute("data-stop")
-          if (key !== null) setStop(key)
-        }}
-        onKeyDown={(event) => onListKey(event, strip, drop)}
-        onKeyDownCapture={(event) => {
-          if (slideKey(event) !== null || movesWithHistory(event)) following.current = true
-        }}
-        onDropCapture={() => {
-          following.current = true
-        }}
-        onBlur={(event) => {
-          if (event.relatedTarget !== null && !event.currentTarget.contains(event.relatedTarget))
-            following.current = false
-        }}
-      >
+      <div {...listProps} className="flex flex-1 flex-col gap-1 overflow-y-auto px-1.5 py-1">
         {Array.from({ length: strip.count }, (_, index) => item(index))}
       </div>
     </>

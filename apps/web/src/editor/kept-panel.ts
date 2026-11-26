@@ -32,3 +32,33 @@ export function useKeptPanel(deck: string, shown?: ShownPanel): [ShownPanel, (pa
     },
   ]
 }
+
+export type PanelView = "slides" | "grid"
+
+function storedOpen(view: PanelView): string {
+  return `airdesign.panel-open.${view}`
+}
+
+export function keptOpen(view: PanelView): boolean {
+  try {
+    const kept = localStorage.getItem(storedOpen(view))
+    return kept === null ? view === "slides" : kept === "open"
+  } catch {
+    return view === "slides"
+  }
+}
+
+export function useKeptOpen(view: PanelView): [boolean, (open: boolean) => void] {
+  const [opens, setOpens] = useState(() => ({ slides: keptOpen("slides"), grid: keptOpen("grid") }))
+  return [
+    opens[view],
+    (open) => {
+      try {
+        localStorage.setItem(storedOpen(view), open ? "open" : "closed")
+      } catch {
+        void 0
+      }
+      setOpens((held) => ({ ...held, [view]: open }))
+    },
+  ]
+}

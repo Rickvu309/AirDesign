@@ -41,3 +41,17 @@ it("opens on Agent when the stored value is not a panel or the browser refuses s
   vi.stubGlobal("localStorage", undefined)
   expect(keptPanel("one")).toBe("agent")
 })
+
+it("opens the panel in Slides view and keeps it closed in Grid view until a person chooses otherwise", async () => {
+  const { keptOpen } = await import("./kept-panel")
+  const held = shelf()
+  vi.stubGlobal("localStorage", held)
+  expect(keptOpen("slides")).toBe(true)
+  expect(keptOpen("grid")).toBe(false)
+  held.setItem("airdesign.panel-open.slides", "closed")
+  held.setItem("airdesign.panel-open.grid", "open")
+  expect(keptOpen("slides")).toBe(false)
+  expect(keptOpen("grid")).toBe(true)
+  vi.stubGlobal("localStorage", refusing())
+  expect(keptOpen("slides")).toBe(true)
+})

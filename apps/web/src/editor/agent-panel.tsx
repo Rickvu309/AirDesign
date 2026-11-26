@@ -9,10 +9,12 @@ export function AgentPanel({
   deck,
   view,
   start,
+  onWorking,
 }: {
   readonly deck: Pick<EditorClient, "deck" | "undoRun" | "view">
   readonly view: doom.Doom
   readonly start?: AiraStart
+  readonly onWorking?: (working: boolean) => void
 }) {
   const undo = useMemo(() => undoAgentRun(deck), [deck])
   return (
@@ -24,6 +26,7 @@ export function AgentPanel({
       pendingFonts={() => pendingDoomFonts(document)}
       undoneRun={(run) => view.runs.get(run)?.undone}
       {...(start === undefined ? {} : { start })}
+      {...(onWorking === undefined ? {} : { onWorking })}
     />
   )
 }

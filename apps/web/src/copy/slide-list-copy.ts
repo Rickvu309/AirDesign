@@ -10,6 +10,8 @@ function slideLimit(limit: number): string {
 
 export const slideListCopy = {
   listName: "Slides",
+  gridView: "Grid view",
+  slidesView: "Slides view",
   slideName: (number: number, count: number) => `Slide ${String(number)} of ${String(count)}`,
   selectedName: (number: number, count: number) => `Slide ${String(number)} of ${String(count)}, selected`,
   selected: (count: number) => `${slidesOf(count)} selected`,

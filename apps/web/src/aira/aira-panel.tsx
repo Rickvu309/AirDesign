@@ -42,6 +42,7 @@ export function AiraPanel({
   store = deviceChats,
   start = {},
   undoneRun = () => undefined,
+  onWorking,
 }: {
   deck: string
   hidden: boolean
@@ -54,6 +55,7 @@ export function AiraPanel({
   store?: ChatStore
   start?: AiraStart
   undoneRun?: (run: string) => boolean | undefined
+  onWorking?: (working: boolean) => void
 }) {
   const [chat, setChat] = useState(() => start.chat ?? airaChat(deck))
   const [draft, setDraft] = useState(start.draft ?? "")
@@ -72,6 +74,9 @@ export function AiraPanel({
   const last = chat.exchanges.at(-1)
   const working = last?.end === "working"
   const busy = working || settling || undoing
+  useEffect(() => {
+    onWorking?.(working)
+  }, [working, onWorking])
   const { usage, available, loaded, refresh: refreshUsage } = useWeekUsage(chat.usage, online, start.usage)
   const limit = last?.end === "out-of-usage" && usage !== null ? airaBackOn(resetsWhen(usage.resets)) : undefined
   const notOffered = !available || last?.end === "country"

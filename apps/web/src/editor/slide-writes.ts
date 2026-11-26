@@ -80,7 +80,12 @@ export function neighbourAfterDelete(view: doom.Doom, removed: readonly doom.Nod
   return slides.slice(first + 1).find(kept) ?? slides.slice(0, Math.max(first, 0)).findLast(kept) ?? null
 }
 
-export function moveSlideWrites(view: doom.Doom, moved: readonly doom.NodeId[], at: number): readonly doom.Write[] {
+export function moveSlideWrites(
+  view: doom.Doom,
+  moved: readonly doom.NodeId[],
+  at: number,
+  onto?: doom.NodeId,
+): readonly doom.Write[] {
   const slides = doom.slidesOf(view).map((each) => each.id)
   const held = slides.filter((slide) => moved.includes(slide))
   if (held.length === 0) return []
@@ -90,7 +95,7 @@ export function moveSlideWrites(view: doom.Doom, moved: readonly doom.NodeId[], 
   if (order.every((slide, index) => slide === slides[index])) return []
   const before = others[place - 1]
   const next = others[place]
-  const anchor = next ?? before
+  const anchor = (onto !== undefined && [before, next].includes(onto) ? onto : undefined) ?? next ?? before
   const row = anchor === undefined ? undefined : doom.parentOf(view.nodes.get(anchor))?.id
   if (anchor === undefined || row === undefined) return []
   let low = before !== undefined && doom.parentOf(view.nodes.get(before))?.id === row ? keyOf(view, before) : null

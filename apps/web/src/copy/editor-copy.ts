@@ -44,6 +44,7 @@ export const editorCopy = {
   },
   panelAgent: "Agent",
   panelDesign: "Design",
+  sidePanel: "Side panel",
   textStyles: {
     display: "Display",
     bigNumber: "Big number",
