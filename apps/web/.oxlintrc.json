@@ -212,9 +212,7 @@
     "design-system/prefer-shorthand": [
       "error",
       {
-        "baseline": {
-          "src/decks/decks-shell.tsx": 1
-        }
+        "baseline": {}
       }
     ],
     "design-system/primitive-naming": "error",
