@@ -233,4 +233,16 @@ export const webDesignChecks: Check[] = [
       await expect(reset).toHaveCSS("font-weight", "500")
     },
   ],
+  [
+    "12-reset-dialog",
+    "credits-reset",
+    async (page) => {
+      const dialog = page.getByRole("dialog", { name: creditsCopy.confirmTitle })
+      await expect(dialog).toHaveCSS("width", "400px")
+      await expect(dialog.getByRole("button", { name: productCopy.cancel })).toHaveCSS("height", "36px")
+      await expect(page.locator("[data-slot=dialog-overlay]")).toHaveCSS("background-color", "oklab(0 0 0 / 0.25)")
+      const shadow = await dialog.evaluate((element) => getComputedStyle(element).boxShadow)
+      expect(shadow).toContain("0px 24px 48px")
+    },
+  ],
 ]

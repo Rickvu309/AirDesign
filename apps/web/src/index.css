@@ -32,6 +32,7 @@
     cursor: pointer;
   }
   html {
+    --shadow-confirmation: inset 0 0 0 1px rgb(0 0 0 / 8%), 0 24px 48px rgb(0 0 0 / 16%);
     @apply font-sans;
   }
 }

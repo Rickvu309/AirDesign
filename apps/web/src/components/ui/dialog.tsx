@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 import { cn } from "@/lib/class-names"
+import { productCopy } from "@/copy/product-copy"
 
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
@@ -123,7 +124,118 @@ function DialogDescription({ className, ...props }: DialogPrimitive.Description.
   )
 }
 
+function ConfirmationDialog({
+  title,
+  body,
+  action,
+  busy = false,
+  ready = true,
+  danger = false,
+  className,
+  children,
+  onCancel,
+  onConfirm,
+}: {
+  title: React.ReactNode
+  body: React.ReactNode
+  action: React.ReactNode
+  busy?: boolean
+  ready?: boolean
+  danger?: boolean
+  className?: string
+  children?: React.ReactNode
+  onCancel?: () => void
+  onConfirm?: () => void
+}) {
+  const cancel = React.useRef<HTMLButtonElement>(null)
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onCancel?.()
+      }}
+    >
+      <DialogPortal>
+        <DialogOverlay className="bg-black/25" />
+        <DialogPopup
+          initialFocus={cancel}
+          className={cn(
+            "fixed top-1/2 left-1/2 z-50 w-100 max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-background shadow-[var(--shadow-confirmation)] outline-none",
+            !danger && "pb-6",
+            className,
+          )}
+        >
+          {danger && (
+            <div className="absolute top-6 left-6 flex size-10 items-center justify-center rounded-xl bg-[linear-gradient(180deg,var(--danger-light),var(--destructive))] shadow-[inset_0_0_0_1px_var(--danger-edge),0_1px_0_rgb(255_255_255/35%),0_2px_6px_rgb(0_0_0/14%)]">
+              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                <line
+                  x1="7"
+                  y1="1.2"
+                  x2="7"
+                  y2="8.2"
+                  stroke="var(--background)"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                />
+                <circle cx="7" cy="11.4" r="1.3" fill="var(--background)" />
+              </svg>
+            </div>
+          )}
+          <DialogClose className="absolute top-6 right-6 flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-canvas">
+            <svg width="10" height="10" viewBox="9 9 10 10" aria-hidden="true">
+              <path
+                d="M9 9 L19 19 M19 9 L9 19"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="sr-only">{productCopy.close}</span>
+          </DialogClose>
+          <div className={cn("px-6", danger ? "pt-20" : "pt-6")}>
+            <DialogTitle
+              className={cn(
+                "text-[length:var(--type-section)] leading-5.5 font-semibold text-foreground",
+                !danger && "pr-9",
+              )}
+            >
+              {title}
+            </DialogTitle>
+            <DialogDescription className="mt-1.5 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-muted-foreground">
+              {body}
+            </DialogDescription>
+            {children}
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <Button
+                ref={cancel}
+                type="button"
+                variant="outline-field"
+                size="dialog"
+                disabled={busy}
+                onClick={onCancel}
+              >
+                {productCopy.cancel}
+              </Button>
+              <Button
+                type="button"
+                disabled={busy || !ready}
+                onClick={onConfirm}
+                variant={danger ? "destructive-solid" : "default"}
+                size="dialog"
+              >
+                {action}
+              </Button>
+            </div>
+          </div>
+        </DialogPopup>
+      </DialogPortal>
+    </Dialog>
+  )
+}
+
 export {
+  ConfirmationDialog,
   Dialog,
   DialogClose,
   DialogContent,
