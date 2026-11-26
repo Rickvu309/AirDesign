@@ -2,6 +2,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react"
 import { composing } from "@/lib/composing"
 
 export function editorOwnsKey(event: KeyboardEvent | ReactKeyboardEvent): boolean {
+  if (document.querySelector("[data-editor-frame][inert]") !== null) return false
   const overlays = [
     ...document.querySelectorAll<HTMLElement>(
       '[role="menu"][data-open], [data-slot="popover-content"][data-open], [role="dialog"][data-open], [role="alertdialog"][data-open]',

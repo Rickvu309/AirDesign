@@ -237,9 +237,15 @@ export function EditorGrid({
     choose(to)
   }
 
+  function onCardPress(event: MouseEvent<HTMLDivElement>) {
+    if (entryOf(event.target) !== null) event.preventDefault()
+  }
+
   function onCardClick(event: MouseEvent<HTMLDivElement>) {
     const index = entryOf(event.target)
-    if (index !== null) pick(index, event.shiftKey, event.metaKey || event.ctrlKey)
+    if (index === null) return
+    focusCard(index, true)
+    pick(index, event.shiftKey, event.metaKey || event.ctrlKey)
   }
 
   function onCardDouble(event: MouseEvent<HTMLDivElement>) {
@@ -291,6 +297,7 @@ export function EditorGrid({
           data-slide-list
           data-focus-edge
           onKeyDown={onKey}
+          onMouseDown={onCardPress}
           onClick={onCardClick}
           onDoubleClick={onCardDouble}
           onFocus={onCardFocus}
