@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuItem,
@@ -64,16 +66,17 @@ export function DeckTitleEdit({
 
   if (draft === null) {
     return (
-      <span className={cn("flex min-w-0 items-center", className)}>
-        <button
+      <span className={cn("flex min-w-0 items-center text-[length:var(--type-dense)]", className)}>
+        <Button
+          variant="editable-label"
           ref={trigger}
           type="button"
           aria-label={`${productCopy.renameDeck}: ${title}`}
           onClick={rename}
-          className="h-8 min-w-0 max-w-full truncate rounded-md px-1.5 text-[length:var(--type-dense)] font-medium text-foreground hover:bg-black/4"
+          className="min-w-0 max-w-full shrink"
         >
           {title}
-        </button>
+        </Button>
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger
             aria-label={deckActionsOf(title)}
@@ -118,8 +121,14 @@ export function DeckTitleEdit({
     )
   }
   return (
-    <span className={cn("relative flex min-w-0 flex-1", className)}>
-      <input
+    <span
+      className={cn(
+        "relative flex min-w-0 flex-1 text-[length:var(--type-dense)] [--focus-ring-offset:0px]",
+        className,
+      )}
+    >
+      <Input
+        variant="editable-label"
         ref={input}
         autoFocus
         data-deck-name-field
@@ -144,7 +153,7 @@ export function DeckTitleEdit({
             close(true)
           }
         }}
-        className="h-7 w-full min-w-0 flex-1 rounded-md bg-background px-1.5 [--focus-ring-offset:0px] text-[length:var(--type-dense)] font-medium text-foreground shadow-[0_0_0_1px_var(--field-edge)]"
+        className="h-7 flex-1"
       />
       {words === null ? null : (
         <span

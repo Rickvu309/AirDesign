@@ -1,4 +1,6 @@
 import { useRef, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { designCopy } from "@/copy/design-copy"
 import { composing } from "@/lib/composing"
 import { layerNameReading } from "./layer-name"
@@ -28,24 +30,28 @@ export function LayerName({ name, onRename }: { readonly name: string; readonly 
 
   if (draft === null) {
     return (
-      <button
-        type="button"
-        data-layer-name
-        aria-label={designCopy.renameLayer(name)}
-        onClick={() => {
-          closed.current = false
-          setDraft(name)
-        }}
-        className="h-8 max-w-full truncate rounded-md px-1.5 text-left text-[length:var(--panel-title-size)] font-medium text-foreground hover:bg-black/4"
-      >
-        {name}
-      </button>
+      <span className="block min-w-0 text-[length:var(--panel-title-size)]">
+        <Button
+          variant="editable-label"
+          type="button"
+          data-layer-name
+          aria-label={designCopy.renameLayer(name)}
+          onClick={() => {
+            closed.current = false
+            setDraft(name)
+          }}
+          className="max-w-full"
+        >
+          {name}
+        </Button>
+      </span>
     )
   }
 
   return (
-    <span className="relative block min-w-0">
-      <input
+    <span className="relative block min-w-0 text-[length:var(--panel-title-size)]">
+      <Input
+        variant="editable-label"
         autoFocus
         aria-label={designCopy.layerName}
         aria-invalid={words !== null}
@@ -68,7 +74,6 @@ export function LayerName({ name, onRename }: { readonly name: string; readonly 
             close()
           }
         }}
-        className="h-8 w-full min-w-0 rounded-md bg-background px-1.5 text-[length:var(--panel-title-size)] font-medium text-foreground shadow-[0_0_0_1px_var(--field-edge)] outline-none"
       />
       {words === null ? null : (
         <span

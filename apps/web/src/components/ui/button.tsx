@@ -39,6 +39,9 @@ const buttonVariants = cva(
         "destructive-solid":
           "border-0 bg-danger-solid text-white shadow-[inset_0_0_0_1px_var(--danger-edge)] hover:bg-danger-solid",
         link: "text-primary-strong underline-offset-4 hover:underline",
+        link: "text-primary underline-offset-4 hover:underline",
+        "editable-label":
+          "block truncate rounded-md border-0 text-left text-inherit hover:bg-black/4 active:translate-y-0",
       },
       size: {
         default: "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
@@ -74,6 +77,7 @@ const buttonVariants = cva(
         size: "dense",
         class: "shadow-[inset_0_0_0_1px_var(--stage-hover)]",
       },
+      { variant: "editable-label", class: "px-1.5" },
     ],
     defaultVariants: {
       variant: "default",

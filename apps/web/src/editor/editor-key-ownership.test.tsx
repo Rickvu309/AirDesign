@@ -87,6 +87,7 @@ it.each(["DialogContent", "DialogPopup"] as const)(
   "leaves a key pressed inside an open %s to the dialog, so the canvas behind never acts on it",
   async (kind) => {
     const { createRoot } = await import("react-dom/client")
+    const { Button } = await import("@/components/ui/button")
     const { Dialog, DialogContent, DialogPopup, DialogPortal } = ui
     const host = window.document.createElement("div")
     window.document.body.append(host)
@@ -96,12 +97,12 @@ it.each(["DialogContent", "DialogPopup"] as const)(
         <Dialog open>
           {kind === "DialogContent" ? (
             <DialogContent>
-              <button id="inside">Export</button>
+              <Button id="inside">Export</Button>
             </DialogContent>
           ) : (
             <DialogPortal>
               <DialogPopup>
-                <button id="inside">Export</button>
+                <Button id="inside">Export</Button>
               </DialogPopup>
             </DialogPortal>
           )}
