@@ -56,7 +56,7 @@ export function followDoom({ deck, since, revision, leave, resync, apply, tell, 
     return "stopped"
   }
 
-  return { follow, picturesWanted, caught: () => caught, wake: () => held?.abort() }
+  return { shown: { follow, picturesWanted, caught: () => caught }, wake: () => held?.abort() }
 }
 
 export function foldCaught(
