@@ -1,9 +1,9 @@
 import { AirdesignMark } from "@/components/ui/airdesign-mark"
+import gemini from "@/components/ui/gemini-art.svg"
 import type { ConnectMark } from "@/copy/connect-agent-copy"
 import { claudeLogo, openAiLogo } from "@/decks/agent-logos"
 import antigravity from "@/decks/antigravity-art.svg"
 import { DeckGlyph } from "@/decks/deck-glyph"
-import gemini from "@/decks/gemini-art.svg"
 import { cn } from "@/lib/class-names"
 
 const drawn = { claude: claudeLogo, chatgpt: openAiLogo } as const

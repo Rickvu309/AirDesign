@@ -14,9 +14,17 @@ export type Client = {
 
 const agentNameLimit = 60
 
-export type Screen = "claude" | "claude-code" | "codex" | "other"
+export type Screen = "claude" | "claude-code" | "codex" | "gemini" | "other"
+
+type Registered = Pick<Client, "name" | "redirectUris">
 
 const claudeCallbacks = ["https://claude.ai/api/mcp/auth_callback", "https://claude.com/api/mcp/auth_callback"]
+const googleRelayHosts = [
+  "oauth-redirect.googleusercontent.com",
+  "oauth-redirect-sandbox.googleusercontent.com",
+  "oauth-redirect-test.googleusercontent.com",
+]
+const googleRelayPath = /^\/[ar]\/[A-Za-z0-9_.-]+$/
 const loopbackHosts = ["localhost", "127.0.0.1", "[::1]"]
 const webSchemes = ["http:", "https:"]
 
@@ -25,24 +33,32 @@ function loopback(address: string): boolean {
   return url !== undefined && webSchemes.includes(url.protocol) && loopbackHosts.includes(url.hostname)
 }
 
-export function screenFor(name: string | null, address: string): Screen {
-  if (claudeCallbacks.includes(address)) return "claude"
-  const named = (name ?? "").trim().toLowerCase()
-  if (named.startsWith("claude code") && loopback(address)) return "claude-code"
-  if (named.startsWith("codex") && loopback(address)) return "codex"
+function googleRelay(address: string): boolean {
+  const url = readUrl(address)
+  if (url === undefined || !googleRelayHosts.includes(url.hostname) || !googleRelayPath.test(url.pathname)) return false
+  return address === `https://${url.hostname}${url.pathname}`
+}
+
+export function screenFor(client: Registered, used: string): Screen {
+  if (claudeCallbacks.includes(used)) return "claude"
+  if ([used, ...client.redirectUris].every(googleRelay)) return "gemini"
+  const named = (client.name ?? "").trim().toLowerCase()
+  if (named.startsWith("claude code") && loopback(used)) return "claude-code"
+  if (named.startsWith("codex") && loopback(used)) return "codex"
   return "other"
 }
 
-export function agentNameOf(name: string | null, address: string): string {
-  const screen = screenFor(name, address)
+export function agentNameOf(client: Registered, used: string): string {
+  const screen = screenFor(client, used)
   if (screen === "claude") return "Claude"
   if (screen === "claude-code") return "Claude Code"
   if (screen === "codex") return "Codex"
-  const trimmed = (name ?? "")
+  if (screen === "gemini") return "Gemini"
+  const trimmed = (client.name ?? "")
     .replace(/[\p{Cc}\p{Cf}]/gu, "")
     .trim()
     .slice(0, agentNameLimit)
-  return trimmed.length > 0 ? trimmed : (readUrl(address)?.host ?? "")
+  return trimmed.length > 0 ? trimmed : (readUrl(used)?.host ?? "")
 }
 
 function redirectAllowed(address: string): boolean {
@@ -98,11 +114,11 @@ export async function readClient(db: Sql, id: string): Promise<Client | undefine
 }
 
 export async function grantAgentName(db: Sql, grant: string): Promise<string> {
-  const found = await db.query<{ name: string | null; redirect_uri: string }>(
-    `select c.name, g.redirect_uri from session.oauth_grant g
+  const found = await db.query<{ name: string | null; redirect_uris: string[]; redirect_uri: string }>(
+    `select c.name, c.redirect_uris, g.redirect_uri from session.oauth_grant g
      join session.oauth_client c on c.id = g.client_id where g.id = $1`,
     [grant],
   )
   const row = found.rows[0]
-  return row === undefined ? "" : agentNameOf(row.name, row.redirect_uri)
+  return row === undefined ? "" : agentNameOf({ name: row.name, redirectUris: row.redirect_uris }, row.redirect_uri)
 }

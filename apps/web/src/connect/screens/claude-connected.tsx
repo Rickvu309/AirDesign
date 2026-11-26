@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { AgentPair } from "@/connect/agent-pair"
+import { AgentPair, type ConsentAgent } from "@/connect/agent-pair"
 import { claudeConnect, connectedCopy } from "@/copy/connect-copy"
 
 const trimmed = "[text-box:trim-both_cap_alphabetic]"
@@ -9,7 +9,7 @@ export function ClaudeConnected({
   name = "Claude",
   screenTitle = claudeConnect.connectedScreenTitle,
 }: {
-  agent?: "claude" | "codex" | null
+  agent?: ConsentAgent | null
   name?: string
   screenTitle?: string
 }) {

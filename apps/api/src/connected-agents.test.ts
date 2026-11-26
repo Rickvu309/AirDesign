@@ -4,11 +4,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, askForm, cookieFrom, postgresInfo, serve, testResource, verifierPair } from "./testing/harness.js"
 import { readSignInMail } from "./account/testing/read-sign-in-mail.js"
+import { geminiCallback, geminiRegistration } from "./oauth/testing/gemini-registration.js"
 
 type AgentRow = {
   readonly id: string
   readonly name: string | null
-  readonly agent: "claude" | "claude-code" | "codex" | "other"
+  readonly agent: "claude" | "claude-code" | "codex" | "gemini" | "other"
   readonly host: string
   readonly connected: string
 }
@@ -216,6 +217,31 @@ describe("connected agents routes", () => {
         },
       ],
     })
+  })
+
+  it("lists Gemini's registration as Gemini with its relay host, and keeps its client name", async () => {
+    const cookie = await signIn("gemini-agents@example.com")
+    const registered = await ask(base, "POST", oauthRoutes.register.path, geminiRegistration)
+    const clientId = (registered.json as { client_id: string }).client_id
+    const { code, verifier } = await approveOnly(cookie, clientId, geminiCallback)
+    const exchanged = await askForm(base, oauthRoutes.token.path, {
+      grant_type: "authorization_code",
+      code,
+      code_verifier: verifier,
+      client_id: clientId,
+      redirect_uri: geminiCallback,
+    })
+    expect(exchanged.status).toBe(200)
+    const listed = await ask(base, "POST", accountRoutes.agents.path, {}, cookie)
+    expect((listed.json as ListedAgents).agents).toEqual([
+      {
+        id: expect.any(String),
+        name: "Google",
+        agent: "gemini",
+        host: "oauth-redirect.googleusercontent.com",
+        connected: expect.any(String),
+      },
+    ])
   })
 
   it("reads the MCP address from options.resource rather than inventing one", async () => {

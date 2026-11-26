@@ -35,6 +35,7 @@ async function post(path: string, body: object) {
 function tileOf(item: ConnectedAgent) {
   if (item.agent === "claude" || item.agent === "claude-code") return <AgentTile name="claude" />
   if (item.agent === "codex") return <AgentTile name="codex" />
+  if (item.agent === "gemini") return <AgentTile name="gemini" />
   return (
     <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-background text-muted-foreground shadow-[inset_0_0_0_1px_var(--line)]">
       <DeckGlyph name="plug" size={15} />

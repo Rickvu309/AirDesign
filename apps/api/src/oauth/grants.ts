@@ -180,12 +180,13 @@ export async function advance(
 type ConnectedGrant = {
   readonly id: string
   readonly name: string | null
+  readonly redirect_uris: string[]
   readonly redirect_uri: string
   readonly connected: Date
 }
 
 const connectedGrantsSql = `
-select g.id, c.name, g.redirect_uri, g.connected
+select g.id, c.name, c.redirect_uris, g.redirect_uri, g.connected
 from session.oauth_grant g
 join session.oauth_client c on c.id = g.client_id
 where g.principal = $1 and g.code = 'used' and not g.revoked

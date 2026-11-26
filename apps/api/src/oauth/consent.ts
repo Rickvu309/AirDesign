@@ -44,7 +44,7 @@ export async function describeClient(db: Sql, request: ClientRequest, own: strin
     body: {
       ok: true,
       client_name: checked.client.name,
-      screen: screenFor(checked.client.name, checked.redirectUri),
+      screen: screenFor(checked.client, checked.redirectUri),
       redirect_host: checked.target.host,
     },
   }

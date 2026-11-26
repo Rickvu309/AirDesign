@@ -32,6 +32,13 @@ export const claudeCodeConnect = {
   footer: "Returns you to Claude Code on this computer. Disconnect anytime in Settings.",
 } as const
 
+export const geminiConnect = {
+  title: "Gemini wants to use AirDesign",
+  subtitle: claudeConnect.subtitle,
+  ability: "Gemini will be able to",
+  footer: "Returns you to Gemini. Disconnect anytime in Settings.",
+} as const
+
 export const refusedConnect = {
   title: "Unable to use this connection request",
   body: "Start connecting again from your agent, then approve its new request.",

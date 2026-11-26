@@ -15,7 +15,7 @@ test.use({ reducedMotion: "reduce" })
 type AgentRow = {
   id: string
   name: string | null
-  agent: "claude" | "claude-code" | "codex" | "other"
+  agent: "claude" | "claude-code" | "codex" | "other" | typeof gemini.mark
   host: string
   connected: string
 }
@@ -115,6 +115,27 @@ test("reaches Agents from the Home account menu, lists each agent by name alone,
   await secondDialog.getByRole("button", { name: "Disconnect", exact: true }).click()
   expect(revoked).toEqual([{ id: "grant-claude" }, { id: "grant-other" }])
   await expect(page.getByRole("heading", { name: settingsCopy.noAgents, exact: true })).toBeVisible()
+})
+
+test("lists a Gemini grant as Gemini with its mark, not the Google name its client registered", async ({ page }) => {
+  await mockHome(page)
+  await listAgents(page, () => [
+    {
+      id: "grant-gemini",
+      name: "Google",
+      agent: gemini.mark,
+      host: "oauth-redirect.googleusercontent.com",
+      connected: new Date().toISOString(),
+    },
+  ])
+
+  await page.goto("/settings/agents")
+  await expect(page.getByText(settingsCopy.gemini, { exact: true })).toBeVisible()
+  await expect(page.getByText("Google", { exact: true })).toHaveCount(0)
+  const disconnect = page.getByRole("button", { name: productCopy.disconnect, exact: true })
+  await expect(disconnect.locator("xpath=..").locator("img")).toHaveCount(1)
+  await disconnect.click()
+  await expect(page.getByRole("dialog", { name: "Disconnect Gemini?" })).toBeVisible()
 })
 
 test("the connect dialog gives an app the address and a coding agent a prompt, then says which agent connected without a reload", async ({
