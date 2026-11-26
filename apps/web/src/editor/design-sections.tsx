@@ -142,9 +142,9 @@ function SectionReset({
     <Button
       type="button"
       variant="ghost"
-      size="sm"
+      size="panel-caption"
       data-section-reset
-      className="-my-1 h-6 px-1.5 text-[length:var(--type-caption)] font-normal text-quiet hover:text-foreground active:translate-y-0"
+      className="-my-1"
       onClick={() => onChange(control, null)}
     >
       {control.reset}

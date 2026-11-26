@@ -1,3 +1,4 @@
+import { Input } from "@/components/ui/input"
 import { ChartBar, ChartColumn, ChartLine, ChartPie, FileDown, Image, Search, createLucideIcon } from "lucide-react"
 import { DynamicIcon, type IconName } from "lucide-react/dynamic"
 import { useEffect, useId, useMemo, useRef, useState, type ComponentType, type KeyboardEvent } from "react"
@@ -194,7 +195,8 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
       </label>
       <div data-focus-ring className="flex items-center gap-2 rounded-lg bg-muted px-2.5">
         <Search className="size-3.5 shrink-0 text-quiet" />
-        <input
+        <Input
+          variant="embedded"
           ref={field}
           id={id}
           type="search"
@@ -211,7 +213,7 @@ export function ActionsPanel(props: { readonly run: ActionRun; readonly finish: 
             setActive(event.target.value.trim() === "" ? null : 0)
           }}
           onKeyDown={onKeyDown}
-          className="h-8 w-full min-w-0 bg-transparent text-[length:var(--type-dense)] outline-none placeholder:text-quiet"
+          className="h-8 w-full"
         />
       </div>
       <div
