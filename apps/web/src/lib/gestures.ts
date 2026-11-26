@@ -1,6 +1,7 @@
 type Where =
   | "slide"
   | "element"
+  | "container"
   | "guide"
   | "text"
   | "control"
@@ -101,9 +102,9 @@ export const gestures = [
   {
     id: "step-in",
     group: "select",
-    keys: [],
+    keys: [{ key: "Enter" }],
     pointing: [{ on: "element", drag: false, double: true }],
-    where: ["slide"],
+    where: ["container"],
   },
   {
     id: "select-parent",
