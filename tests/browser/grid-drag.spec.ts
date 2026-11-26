@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test"
+import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
@@ -21,6 +22,8 @@ import {
 } from "./grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
+
+const space = shortcutCopy.keyNames.Space
 
 const bar = (page: Page) => page.locator("[data-drop-bar]")
 const ghost = (page: Page) => page.locator("[data-drag-ghost]")
@@ -232,9 +235,9 @@ test("a slide group's grip shows beside it on hover, tints the group, and hides 
   await expect(page.locator('[data-group-hover="band"]')).toHaveCount(0)
   await expect(page.locator("[data-grid-card][data-group-tint]")).toHaveCount(0)
   await entry(page, 2).focus()
-  await page.keyboard.down("Space")
+  await page.keyboard.down(space)
   await expect(grip(page, 1)).toBeHidden()
-  await page.keyboard.up("Space")
+  await page.keyboard.up(space)
   await page.keyboard.press("h")
   await expect(grip(page, 1)).toBeHidden()
   await page.keyboard.press("v")
