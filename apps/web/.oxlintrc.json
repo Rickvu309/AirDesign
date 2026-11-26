@@ -89,9 +89,7 @@
     "design-system/no-important": [
       "error",
       {
-        "baseline": {
-          "src/settings/screens/usage-tab.tsx": 6
-        }
+        "baseline": {}
       }
     ],
     "design-system/no-raw-values": [

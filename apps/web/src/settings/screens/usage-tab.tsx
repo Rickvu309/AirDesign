@@ -7,7 +7,7 @@ import { SettingsFrame } from "@/settings/settings-frame"
 import { settingsCopy, usageHistory } from "@/settings/settings-sample"
 
 const settingsSwitch =
-  "h-5! w-9! border-transparent p-0! shadow-none after:hidden data-checked:bg-primary! [&_[data-slot=switch-thumb]]:size-4! [&_[data-slot=switch-thumb]]:shadow-[0_1px_2px_var(--black-20)] [&_[data-slot=switch-thumb]]:data-checked:translate-x-4.5!"
+  "data-[size=default]:h-5 data-[size=default]:w-9 border-transparent p-0 shadow-none after:hidden [&_[data-slot=switch-thumb]]:shadow-[0_1px_2px_var(--black-20)] [&_[data-slot=switch-thumb]]:data-checked:translate-x-4.5"
 
 export function UsageTab({ children }: { children?: ReactNode }) {
   return (
