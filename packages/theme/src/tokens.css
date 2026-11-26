@@ -188,6 +188,10 @@
   --slide-marquee-width: 1px;
   --layer-hover-edge: var(--primary);
   --layer-hover-width: 1px;
+  --arrival-trace: var(--primary);
+  --arrival-sweep: color-mix(in oklch, white 28%, transparent);
+  --arrival-spark: color-mix(in oklch, var(--primary) 45%, white);
+  --arrival-spark-glow: color-mix(in oklch, var(--primary) 70%, white);
   --grid-number: var(--quiet);
   --grid-number-surface: var(--background);
   --slide-skip-opacity: 0.5;
