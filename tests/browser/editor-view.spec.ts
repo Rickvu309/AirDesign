@@ -102,7 +102,19 @@ test("every pan gesture moves a fitted slide and Fit recentres it", async ({ pag
   expect(await slide.boundingBox()).toEqual(before)
 })
 
-test("actual size keeps an unpanned slide centred after the viewport grows", async ({ page, context, stack }) => {
+test("actual size asked before the grown viewport is measured still centres the slide", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await page.addInitScript(() => {
+    const Observer = window.ResizeObserver
+    window.ResizeObserver = class extends Observer {
+      constructor(report: ResizeObserverCallback) {
+        super((entries, observer) => setTimeout(() => report(entries, observer), 400))
+      }
+    }
+  })
   await page.setViewportSize({ width: 1470, height: 923 })
   await openEditor(page, context, stack)
   await clickSlide(page, 50, 50)
