@@ -23,7 +23,234 @@
       {
         "allowConstantExport": true
       }
-    ]
+    ],
+    "design-system/classname-passthrough": "error",
+    "design-system/closed-variants": [
+      "error",
+      {
+        "baseline": {
+          "src/components/ui/airdesign-mark.tsx": 1,
+          "src/components/ui/editor-icons.tsx": 2
+        }
+      }
+    ],
+    "design-system/icon-button-label": "error",
+    "design-system/known-tokens": [
+      "error",
+      {
+        "theme": ["src/index.css"]
+      }
+    ],
+    "design-system/layout-only-classname": [
+      "error",
+      {
+        "baseline": {
+          "src/account/account-name-page.tsx": 1,
+          "src/account/name-form.tsx": 2,
+          "src/aira/aira-history-menu.tsx": 4,
+          "src/aira/aira-panel.tsx": 2,
+          "src/aira/aira-reply.tsx": 2,
+          "src/components/ai-elements/chain-of-thought.tsx": 2,
+          "src/components/ui/action-pill.tsx": 1,
+          "src/components/ui/page-notice.tsx": 2,
+          "src/connect/approve-agent.tsx": 2,
+          "src/decks/connect-agent.tsx": 6,
+          "src/decks/danger-dialog.tsx": 7,
+          "src/decks/deck-menu.tsx": 1,
+          "src/decks/decks-shell.tsx": 2,
+          "src/decks/describe-deck.tsx": 2,
+          "src/decks/home.tsx": 5,
+          "src/decks/new-deck-button.tsx": 1,
+          "src/decks/screens/deck-moved-toast.tsx": 1,
+          "src/decks/star-button.tsx": 1,
+          "src/design/color-picker.tsx": 2,
+          "src/design/controls/action.tsx": 3,
+          "src/design/controls/alignment-grid.tsx": 1,
+          "src/design/controls/choice.tsx": 3,
+          "src/design/controls/color.tsx": 1,
+          "src/design/controls/link.tsx": 2,
+          "src/design/controls/number.tsx": 1,
+          "src/design/controls/preset.tsx": 2,
+          "src/design/controls/toggle.tsx": 1,
+          "src/design/controls/typography.tsx": 5,
+          "src/design/controls/union.tsx": 3,
+          "src/design/custom-color.tsx": 1,
+          "src/design/shape-grid.tsx": 1,
+          "src/editor/deck-title-edit.tsx": 5,
+          "src/editor/design-panel.tsx": 1,
+          "src/editor/design-sections.tsx": 4,
+          "src/editor/design-theme-picker.tsx": 3,
+          "src/editor/editor-chrome.tsx": 5,
+          "src/editor/editor-menu.tsx": 2,
+          "src/editor/editor-toast.tsx": 2,
+          "src/editor/editor-toolbar.tsx": 4,
+          "src/editor/hidden-locked.tsx": 1,
+          "src/editor/new-slide-menu.tsx": 1,
+          "src/editor/panel-switch.tsx": 3,
+          "src/editor/panel-toggle.tsx": 1,
+          "src/editor/remove-auto-layout.tsx": 1,
+          "src/editor/shape-tool.tsx": 3,
+          "src/editor/slide-menu.tsx": 1,
+          "src/editor/slide-sidebar.tsx": 1,
+          "src/editor/zoom-menu.tsx": 2,
+          "src/export/export-control.tsx": 1,
+          "src/export/export-dialog.tsx": 7,
+          "src/present/present-button.tsx": 1,
+          "src/present/present-stage.tsx": 2,
+          "src/settings/account-card.tsx": 1,
+          "src/settings/agents-empty.tsx": 1,
+          "src/settings/agents-page.tsx": 1,
+          "src/settings/screens/agents-tab.tsx": 1,
+          "src/settings/screens/usage-tab.tsx": 1,
+          "src/settings/usage-page.tsx": 1
+        }
+      }
+    ],
+    "design-system/no-duplicate-primitives": "error",
+    "design-system/no-important": [
+      "error",
+      {
+        "baseline": {
+          "src/components/ui/page-notice.tsx": 1,
+          "src/design/controls/typography.tsx": 1,
+          "src/editor/editor-toast.tsx": 1,
+          "src/editor/new-slide-menu.tsx": 2,
+          "src/settings/screens/usage-tab.tsx": 6
+        }
+      }
+    ],
+    "design-system/no-raw-values": [
+      "error",
+      {
+        "baseline": {
+          "src/account/account-name-page.tsx": 3,
+          "src/aira/aira-composer.tsx": 1,
+          "src/aira/aira-reply.tsx": 2,
+          "src/components/ai-elements/message.tsx": 1,
+          "src/components/ui/card.tsx": 4,
+          "src/components/ui/status-pill.tsx": 1,
+          "src/components/ui/switch.tsx": 1,
+          "src/connect/approve-agent.tsx": 6,
+          "src/connect/connect-error.tsx": 1,
+          "src/connect/oauth-authorize.tsx": 1,
+          "src/connect/screens/claude-connected.tsx": 2,
+          "src/decks/agent-promo.tsx": 36,
+          "src/decks/browse-header.tsx": 1,
+          "src/decks/connect-agent.tsx": 4,
+          "src/decks/danger-dialog.tsx": 3,
+          "src/decks/deck-card.tsx": 1,
+          "src/decks/deck-row.tsx": 5,
+          "src/decks/deck-thumbnail.tsx": 1,
+          "src/decks/decks-shell.tsx": 1,
+          "src/decks/home.tsx": 1,
+          "src/decks/not-found.tsx": 1,
+          "src/decks/screens/trash-list.tsx": 2,
+          "src/decks/view-switch.tsx": 1,
+          "src/design/shape-grid.tsx": 1,
+          "src/editor/deck-title-edit.tsx": 1,
+          "src/editor/editor-chrome.tsx": 1,
+          "src/editor/editor-menu.tsx": 1,
+          "src/editor/editor-toast.tsx": 2,
+          "src/editor/layer-name-edit.tsx": 1,
+          "src/editor/new-slide-menu.tsx": 2,
+          "src/editor/slide-menu.tsx": 1,
+          "src/editor/slide-sidebar.tsx": 2,
+          "src/editor/zoom-menu.tsx": 1,
+          "src/export/export-dialog.tsx": 11,
+          "src/present/screens/slide-thumb.tsx": 1,
+          "src/settings/account-card.tsx": 1,
+          "src/settings/account-page.tsx": 1,
+          "src/settings/agents-empty.tsx": 2,
+          "src/settings/agents-page.tsx": 2,
+          "src/settings/module-row.tsx": 1,
+          "src/settings/screens/account-tab.tsx": 3,
+          "src/settings/screens/agents-tab.tsx": 1,
+          "src/settings/screens/usage-tab.tsx": 8,
+          "src/settings/settings-frame.tsx": 3,
+          "src/settings/settings-page.tsx": 3,
+          "src/settings/usage-page.tsx": 3
+        }
+      }
+    ],
+    "design-system/no-reach-in-selectors": [
+      "error",
+      {
+        "baseline": {
+          "src/editor/deck-title-edit.tsx": 2,
+          "src/editor/design-theme-picker.tsx": 2
+        }
+      }
+    ],
+    "design-system/no-rebuilt-primitives": [
+      "error",
+      {
+        "baseline": {
+          "src/aira/aira-reply.tsx": 1,
+          "src/components/ai-elements/conversation.tsx": 1,
+          "src/components/ai-elements/prompt-input.tsx": 1,
+          "src/connect/approve-agent.tsx": 1,
+          "src/decks/agent-promo.tsx": 2,
+          "src/decks/connect-agent.tsx": 2,
+          "src/decks/decks-shell.tsx": 2,
+          "src/decks/describe-deck.tsx": 2,
+          "src/decks/screens/deck-moved-toast.tsx": 1,
+          "src/decks/screens/trash-list.tsx": 2,
+          "src/design/color-picker.tsx": 5,
+          "src/design/controls/link.tsx": 1,
+          "src/design/controls/number.tsx": 1,
+          "src/design/custom-color.tsx": 2,
+          "src/editor/actions-popover.tsx": 2,
+          "src/editor/agent-at-work.tsx": 1,
+          "src/editor/deck-title-edit.tsx": 2,
+          "src/editor/design-sections.tsx": 1,
+          "src/editor/editor-key-ownership.test.tsx": 2,
+          "src/editor/grid-card.tsx": 1,
+          "src/editor/layer-name-edit.tsx": 2,
+          "src/editor/new-slide-menu.tsx": 2,
+          "src/editor/notes-bar.tsx": 1,
+          "src/editor/slide-list-item.tsx": 1,
+          "src/editor/zoom-menu.tsx": 1,
+          "src/export/export-dialog.tsx": 1,
+          "src/present/present-show.tsx": 1,
+          "src/present/presenter-view.tsx": 1
+        }
+      }
+    ],
+    "design-system/no-template-classname": [
+      "error",
+      {
+        "baseline": {
+          "src/aira/aira-reply.tsx": 1,
+          "src/connect/approve-agent.tsx": 7,
+          "src/connect/screens/claude-connected.tsx": 2,
+          "src/design/controls/list.tsx": 1,
+          "src/editor/design-theme-picker.tsx": 2,
+          "src/editor/new-slide-menu.tsx": 1,
+          "src/export/export-dialog.tsx": 3,
+          "src/settings/account-card.tsx": 1,
+          "src/settings/agents-empty.tsx": 1
+        }
+      }
+    ],
+    "design-system/one-way-imports": [
+      "error",
+      {
+        "layers": ["src/lib", "src/copy", "src/components/ui", "src/components", "src"]
+      }
+    ],
+    "design-system/prefer-shorthand": [
+      "error",
+      {
+        "baseline": {
+          "src/decks/decks-shell.tsx": 1,
+          "src/design/controls/action.tsx": 1,
+          "src/design/controls/link.tsx": 1,
+          "src/samples/slide-screen.tsx": 1
+        }
+      }
+    ],
+    "design-system/primitive-naming": "error",
+    "design-system/wrapped-libraries": "error"
   },
   "overrides": [
     {
@@ -44,5 +271,16 @@
         ]
       }
     }
-  ]
+  ],
+  "jsPlugins": [
+    {
+      "name": "design-system",
+      "specifier": "outtrue"
+    }
+  ],
+  "settings": {
+    "design-system": {
+      "primitives": "src/components/ui"
+    }
+  }
 }

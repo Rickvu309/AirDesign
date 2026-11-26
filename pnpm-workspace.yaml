@@ -19,6 +19,7 @@ minimumReleaseAgeExclude:
   - "ts-packwerk"
   - "oxfmt"
   - "@oxfmt/*"
+  - outtrue@0.2.0
 
 patchedDependencies:
   harfbuzzjs@1.6.4: patches/harfbuzzjs@1.6.4.patch
