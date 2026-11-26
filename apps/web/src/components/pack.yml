@@ -19,6 +19,7 @@ public:
   - ui/dialog.tsx
   - ui/dropdown-menu.tsx
   - ui/editor-icons.tsx
+  - ui/gemini-art.svg
   - ui/input.tsx
   - ui/page-notice.tsx
   - ui/popover.tsx

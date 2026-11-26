@@ -133,7 +133,7 @@ async function listAgents<Visit extends AccountVisit>(http: AccountHttp<Visit>, 
     agents: grants.map((row) => ({
       id: row.id,
       name: row.name,
-      agent: screenFor(row.name, row.redirect_uri),
+      agent: screenFor({ name: row.name, redirectUris: row.redirect_uris }, row.redirect_uri),
       host: readUrl(row.redirect_uri)?.host ?? "",
       connected: row.connected.toISOString(),
     })),

@@ -1,14 +1,20 @@
 import { deckRoutes, oauthRoutes, signOutRoutes } from "@airdesign/catalog"
 import { useEffect, useRef, useState } from "react"
-import { AgentPair } from "@/connect/agent-pair"
+import { AgentPair, type ConsentAgent } from "@/connect/agent-pair"
 import { ConnectError } from "@/connect/connect-error"
 import { ApproveAgent } from "@/connect/approve-agent"
 import { ClaudeConnected } from "@/connect/screens/claude-connected"
-import { claudeCodeConnect, claudeConnect, codexConnect, otherConnect } from "@/copy/connect-copy"
+import { claudeCodeConnect, claudeConnect, codexConnect, geminiConnect, otherConnect } from "@/copy/connect-copy"
 import { authorizationError, navigableAddress, oauthErrorRedirect } from "@/connect/oauth-request"
 
-type Agent = "claude" | "codex" | null
-type Screen = "claude" | "claude-code" | "codex" | "other"
+type Agent = ConsentAgent | null
+
+const screens = ["claude", "claude-code", "codex", "gemini", "other"] as const
+type Screen = (typeof screens)[number]
+
+function isScreen(value: unknown): value is Screen {
+  return screens.some((screen) => screen === value)
+}
 
 type Consent = {
   agent: Agent
@@ -96,6 +102,13 @@ function presentation(screen: Screen, host: string) {
       ...codexConnect,
       screenTitle: codexConnect.approveTitle,
     }
+  if (screen === "gemini")
+    return {
+      agent: "gemini" as const,
+      name: "Gemini",
+      ...geminiConnect,
+      screenTitle: claudeConnect.approveTitle,
+    }
   const copy = otherConnect(host)
   return {
     agent: null,
@@ -110,8 +123,7 @@ function presentation(screen: Screen, host: string) {
 
 function clientScreen(body: unknown): { screen: Screen; host: string } | null {
   if (!isRecord(body) || body.ok !== true || typeof body.redirect_host !== "string") return null
-  if (body.screen !== "claude" && body.screen !== "claude-code" && body.screen !== "codex" && body.screen !== "other")
-    return null
+  if (!isScreen(body.screen)) return null
   return { screen: body.screen, host: body.redirect_host }
 }
 

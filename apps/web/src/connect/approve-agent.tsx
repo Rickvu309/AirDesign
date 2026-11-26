@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { AgentPair } from "@/connect/agent-pair"
+import { AgentPair, type ConsentAgent } from "@/connect/agent-pair"
 import { connectPermissions, signedInAccount } from "@/copy/connect-copy"
 
 const trimmed = "[text-box:trim-both_cap_alphabetic]"
@@ -18,7 +18,7 @@ export function ApproveAgent({
   onSwitch,
   approving = false,
 }: {
-  agent: "claude" | "codex" | null
+  agent: ConsentAgent | null
   title: string
   subtitle: string
   ability: string

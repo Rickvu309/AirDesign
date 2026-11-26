@@ -7,6 +7,7 @@ export const settingsCopy = {
   claude: "Claude",
   claudeCode: "Claude Code",
   codex: "Codex",
+  gemini: "Gemini",
   noAgents: "No agents connected yet",
   signedIn: "Signed in with email",
   signOut: "Sign out",

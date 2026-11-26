@@ -85,6 +85,7 @@ it.each([
   ["claude", "Claude"],
   ["codex", "Codex on this computer"],
   ["claude-code", "Claude Code on this computer"],
+  ["gemini", "Gemini"],
   ["other", "agent.example"],
 ])("describes only supported access and costs for %s", async (screen, destination) => {
   consent(screen)
@@ -93,6 +94,14 @@ it.each([
   expect(host.textContent).not.toMatch(/brand and files|Import and export PowerPoint|Uses your weekly usage/)
   expect(host.textContent).toContain(`Returns you to ${destination}.`)
   expect(host.textContent).toContain("Disconnect anytime in Settings.")
+})
+it("names Gemini and shows its mark beside AirDesign's", async () => {
+  consent("gemini")
+  await mount()
+  expect(host.querySelector("h1")?.textContent).toBe("Gemini wants to use AirDesign")
+  expect(host.textContent).toContain("Gemini will be able to")
+  expect(host.textContent).not.toContain("agent.example")
+  expect(host.querySelectorAll("main > section > div:first-child img")).toHaveLength(1)
 })
 it.each(["network", "server", "rate", "malformed", "refusal"])("recovers from a %s consent lookup", async (failure) => {
   if (failure === "network") fetcher.mockRejectedValueOnce(new TypeError("offline"))

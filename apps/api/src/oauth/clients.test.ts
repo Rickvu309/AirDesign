@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
 import { readRegistration, screenFor, type Screen } from "./clients.js"
-import { geminiRegistration } from "./testing/gemini-registration.js"
 import { checkedResource, ownResource } from "../platform/resource.js"
+import { geminiCallback, geminiRegistration } from "./testing/gemini-registration.js"
 
 const claudeCallback = "https://claude.ai/api/mcp/auth_callback"
 
@@ -34,10 +34,40 @@ describe("screen for a client", () => {
     ["no name on loopback", null, "http://localhost:4000/cb", "other"],
     ["a loopback lookalike host", "Claude Code", "http://localhost.evil.example/cb", "other"],
     ["a name that only contains Codex", "My Codex", "http://localhost:4000/cb", "other"],
+    ["a Google relay callback whatever the name", "Claude Code", geminiCallback, "gemini"],
+    ["a Google relay callback with no name", null, geminiCallback, "gemini"],
+    [
+      "the Google sandbox relay on /a/",
+      null,
+      "https://oauth-redirect-sandbox.googleusercontent.com/a/x-1_y.z",
+      "gemini",
+    ],
+    ["the Google test relay on /r/", null, "https://oauth-redirect-test.googleusercontent.com/r/x", "gemini"],
+    ["a Google relay with a query", null, `${geminiCallback}?next=1`, "other"],
+    ["a Google relay over http", null, geminiCallback.replace("https:", "http:"), "other"],
+    ["a Google relay on another port", null, geminiCallback.replace(".com/", ".com:8443/"), "other"],
+    ["a Google relay with credentials", null, geminiCallback.replace("https://", "https://user@"), "other"],
+    ["a Google relay in capitals", null, geminiCallback.replace("oauth-redirect", "OAUTH-REDIRECT"), "other"],
+    ["a Google relay lookalike host", null, "https://oauth-redirect.googleusercontent.com.evil.example/r/x", "other"],
+    ["another googleusercontent host", null, "https://evil.googleusercontent.com/r/x", "other"],
+    ["a Google relay on another path", null, "https://oauth-redirect.googleusercontent.com/x/abc", "other"],
+    ["a Google relay with no id", null, "https://oauth-redirect.googleusercontent.com/r/", "other"],
+    ["a Google relay with a deeper path", null, "https://oauth-redirect.googleusercontent.com/r/a/b", "other"],
   ]
 
   it.each(table)("%s", (_label, name, address, screen) => {
-    expect(screenFor(name, address)).toBe(screen)
+    expect(screenFor({ name, redirectUris: [address] }, address)).toBe(screen)
+  })
+
+  it("is Gemini for each of the six redirects Gemini registers", () => {
+    const client = { name: geminiRegistration.client_name, redirectUris: geminiRegistration.redirect_uris }
+    for (const used of geminiRegistration.redirect_uris) expect(screenFor(client, used)).toBe("gemini")
+  })
+
+  it("is not Gemini when one registered redirect is not a Google relay", () => {
+    const client = { name: "Google", redirectUris: [...geminiRegistration.redirect_uris, "https://evil.example/cb"] }
+    expect(screenFor(client, geminiCallback)).toBe("other")
+    expect(screenFor(client, "https://evil.example/cb")).toBe("other")
   })
 })
 
