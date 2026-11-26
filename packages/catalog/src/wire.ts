@@ -8,7 +8,7 @@ declare const deckIdBrand: unique symbol
 export type DeckId = string & { readonly [deckIdBrand]: true }
 
 export const deckPattern = /^[A-Za-z0-9_-]{1,64}$/
-const redirectCap = 5
+const redirectCap = 10
 const emailCap = 254
 const grantIdCap = 128
 const emailPattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i
