@@ -190,6 +190,7 @@ test("the shipped Node and Chromium engines agree on styled glyphs and line offs
     "check",
     "circle-check",
     "circle-exclamation-point",
+    "copy",
     "info",
     "loader-circle",
     "octagon-x",
