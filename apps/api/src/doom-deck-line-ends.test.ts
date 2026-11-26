@@ -218,7 +218,7 @@ it("frees the end of a line a restored frame brings back onto the deck after its
   ])
   await send(deck, [gone(holder)])
   await send(deck, [gone(target)])
-  const rev = (await stored(deck)).rev
-  await asWhole(deck, [{ node: holder, prop: "parent", value: onSlide, base: rev }])
+  const fold = await stored(deck)
+  await asWhole(deck, [{ node: holder, prop: "parent", value: onSlide, base: fold.revs.get(holder)?.get("parent") }])
   expect(await startOf(deck)).toEqual(lineOf({ x: 300, y: 125 }))
 })

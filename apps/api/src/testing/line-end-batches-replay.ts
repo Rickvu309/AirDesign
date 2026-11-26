@@ -40,10 +40,11 @@ const made = (node: doom.NodeId, type: string, parent: string): doom.Write[] => 
   { node, prop: "parent", value: at(parent) },
 ]
 
-function batchOf(target: SpecState, base: doom.Rev): doom.Write[] {
+function batchOf(before: doom.Doom, target: SpecState): doom.Write[] {
+  const seen = (node: doom.NodeId) => before.revs.get(node)?.get("parent") ?? before.rev
   const writes: doom.Write[] = []
-  if (target.k === "delete") writes.push({ node: x, prop: "parent", value: null, base })
-  if (target.k === "shelve") writes.push({ node: x, prop: "parent", value: at(inner), base })
+  if (target.k === "delete") writes.push({ node: x, prop: "parent", value: null, base: seen(x) })
+  if (target.k === "shelve") writes.push({ node: x, prop: "parent", value: at(inner), base: seen(x) })
   if (target.o === "newN")
     writes.push(...made(drawn, "shape", startIds.slide), {
       node: drawn,
@@ -56,8 +57,8 @@ function batchOf(target: SpecState, base: doom.Rev): doom.Write[] {
       { node: line, prop: "geometry", value: lineOf(endOf(target.a)) },
     )
   if (target.o === "lineM") writes.push({ node: plain, prop: "geometry", value: lineOf(endOf(target.a)) })
-  if (target.f === "drop") writes.push({ node: frame, prop: "parent", value: null, base })
-  if (target.f === "restore") writes.push({ node: frame, prop: "parent", value: at(startIds.slide), base })
+  if (target.f === "drop") writes.push({ node: frame, prop: "parent", value: null, base: seen(frame) })
+  if (target.f === "restore") writes.push({ node: frame, prop: "parent", value: at(startIds.slide), base: seen(frame) })
   return writes
 }
 
@@ -144,7 +145,7 @@ async function replayEdge(replay: Replay, source: SpecState, target: SpecState):
   const before = await stored(replay, deck)
   if (!same(picture(before), pick(source)))
     return `seeded ${JSON.stringify(picture(before))} for ${JSON.stringify(source)}`
-  const writes = batchOf(target, before.rev)
+  const writes = batchOf(before, target)
   const whole = doom.applyEdit(before, {
     once: "whole",
     author: { kind: "person", id: "replay" },

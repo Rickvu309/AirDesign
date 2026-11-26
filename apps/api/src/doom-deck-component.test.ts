@@ -180,10 +180,16 @@ it("detaches a nested instance whose component was deleted while its slide was g
     ok: true,
   })
   const linked = await foldOf(deck)
-  const slideBack: doom.Write = { node: second, prop: "parent", value: doom.propOf(linked.nodes.get(second), "parent") }
+  const parent = doom.propOf(linked.nodes.get(second), "parent")
   expect((await send(deck, [{ node: second, prop: "parent", value: null }])).json).toMatchObject({ ok: true })
   expect((await send(deck, [{ node: component, prop: "parent", value: null }])).json).toMatchObject({ ok: true })
   const gone = await foldOf(deck)
+  const slideBack: doom.Write = {
+    node: second,
+    prop: "parent",
+    value: parent,
+    base: gone.revs.get(second)?.get("parent"),
+  }
   const device = doom.applyEdit(gone, { ...edit([slideBack]), rev: doom.rev(gone.rev + 1) })
   if (doom.isRefusal(device)) throw new Error(JSON.stringify(device))
   expect(device.nodes.get(frame)).not.toHaveProperty("instance")
