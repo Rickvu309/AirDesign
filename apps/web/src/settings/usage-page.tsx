@@ -57,6 +57,7 @@ export function UsagePage({
           <Button
             type="button"
             variant="outline"
+            size="dense-action"
             className={settingsAction}
             disabled={
               credits.busy ||
@@ -82,7 +83,13 @@ export function UsagePage({
         {loaded?.kind === "unavailable" ? (
           <div role="alert" className="flex items-center justify-between gap-4">
             <span className="text-[length:var(--type-body)] leading-ui text-muted-foreground">{usageCopy.failed}</span>
-            <Button type="button" variant="outline" className={settingsAction} onClick={() => void refresh()}>
+            <Button
+              type="button"
+              variant="outline"
+              size="dense-action"
+              className={settingsAction}
+              onClick={() => void refresh()}
+            >
               {productCopy.payTryAgain}
             </Button>
           </div>

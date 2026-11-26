@@ -88,7 +88,7 @@ export function AgentsPage({ navigate }: { navigate: (path: string) => void }) {
   }
 
   const connect = (
-    <Button type="button" variant="signature" className="gap-1.5 px-3.5" onClick={() => setConnecting(true)}>
+    <Button type="button" variant="signature" size="action" onClick={() => setConnecting(true)}>
       <DeckGlyph name="plug" size={14} />
       {connectAgentCopy.title}
     </Button>
@@ -154,7 +154,13 @@ export function AgentsPage({ navigate }: { navigate: (path: string) => void }) {
               <span className="text-[length:var(--type-body)] leading-ui text-muted-foreground">
                 {productCopy.agentsFailed}
               </span>
-              <Button type="button" variant="outline" className={settingsAction} onClick={() => void refresh()}>
+              <Button
+                type="button"
+                variant="outline"
+                size="dense-action"
+                className={settingsAction}
+                onClick={() => void refresh()}
+              >
                 {productCopy.payTryAgain}
               </Button>
             </div>
@@ -169,6 +175,7 @@ export function AgentsPage({ navigate }: { navigate: (path: string) => void }) {
                     <Button
                       type="button"
                       variant="outline"
+                      size="dense-action"
                       className={settingsAction}
                       onClick={() => setDisconnecting(item)}
                     >

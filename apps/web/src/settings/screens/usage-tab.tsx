@@ -16,7 +16,13 @@ export function UsageTab({ children }: { children?: ReactNode }) {
         title={settingsCopy.weeklyUsage}
         description={settingsCopy.resets}
         actions={
-          <Button type="button" variant="outline" className={settingsAction} style={{ width: 64.24 }}>
+          <Button
+            type="button"
+            variant="outline"
+            size="dense-action"
+            className={settingsAction}
+            style={{ width: 64.24 }}
+          >
             {settingsCopy.reset}
           </Button>
         }
@@ -36,12 +42,7 @@ export function UsageTab({ children }: { children?: ReactNode }) {
         description={settingsCopy.facts}
         align="end"
         actions={
-          <Button
-            type="button"
-            variant="default"
-            className="h-[var(--space-32)] px-3.5 text-[length:var(--type-dense)] leading-ui-tight"
-            style={{ width: 99.26 }}
-          >
+          <Button type="button" variant="default" size="dense-action" style={{ width: 99.26 }}>
             {settingsCopy.addCredits}
           </Button>
         }

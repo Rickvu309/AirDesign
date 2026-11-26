@@ -25,6 +25,7 @@ export function AccountCard({
             <Button
               type="button"
               variant="outline"
+              size="dense-action"
               className={settingsAction}
               style={{ width: 79.84 }}
               onClick={onSignOut}
@@ -40,6 +41,7 @@ export function AccountCard({
             <Button
               type="button"
               variant="outline"
+              size="dense-action"
               className={cn(settingsAction, "text-danger-text hover:text-danger-text")}
               style={{ width: 122.75 }}
               onClick={onDelete}

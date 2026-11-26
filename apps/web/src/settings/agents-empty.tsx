@@ -52,7 +52,7 @@ export function AgentsEmpty({ onConnect }: { onConnect: () => void }) {
       <h2 className="text-[length:var(--type-section)] leading-5 font-semibold text-foreground">
         {settingsCopy.noAgents}
       </h2>
-      <Button type="button" variant="signature" className="mt-4 gap-1.5 px-3.5" onClick={onConnect}>
+      <Button type="button" variant="signature" size="action" className="mt-4" onClick={onConnect}>
         <DeckGlyph name="plug" size={14} />
         {connectAgentCopy.title}
       </Button>
