@@ -191,6 +191,7 @@ export function useCanvasPointer(args: PointerArgs) {
   }, [])
   const pending = useRef<PointerEvent | ReactPointerEvent | null>(null)
   const frame = useRef(0)
+  const pressedAt = useRef<Point>({ x: 0, y: 0 })
 
   const toSlide = (event: { readonly clientX: number; readonly clientY: number }): Point => {
     const pointAt = latest.current.pointAt
@@ -254,6 +255,10 @@ export function useCanvasPointer(args: PointerArgs) {
     return { ...transformed, copies: null }
   }
 
+  function farFromPress(event: PointerEvent | ReactPointerEvent): boolean {
+    return Math.hypot(event.clientX - pressedAt.current.x, event.clientY - pressedAt.current.y) >= threshold
+  }
+
   function advance(event: PointerEvent | ReactPointerEvent) {
     const gesture = active.current
     const a = latest.current
@@ -266,8 +271,7 @@ export function useCanvasPointer(args: PointerArgs) {
       return
     }
     const at = toSlide(event)
-    const far = Math.hypot(at.x - gesture.origin.x, at.y - gesture.origin.y) * a.scale >= threshold
-    if (!gesture.moved && !far) return
+    if (!gesture.moved && !farFromPress(event)) return
     gesture.moved = true
     if (gesture.kind === "end") {
       const done = lineEndDrag({
@@ -357,7 +361,7 @@ export function useCanvasPointer(args: PointerArgs) {
     a.setPreview(null)
     if (gesture?.kind === "draw" && commit && last !== null) {
       const at = toSlide(last)
-      const far = gesture.moved || Math.hypot(at.x - gesture.origin.x, at.y - gesture.origin.y) * a.scale >= threshold
+      const far = gesture.moved || farFromPress(last)
       a.onDraw({
         from: gesture.origin,
         to: far ? at : null,
@@ -401,9 +405,7 @@ export function useCanvasPointer(args: PointerArgs) {
     if (gesture?.kind === "move" && gesture.copying && !commit) a.onSelection(gesture.selected)
     if (gesture === null || (gesture.kind !== "move" && gesture.kind !== "transform") || !commit || last === null)
       return
-    const at = toSlide(last)
-    const by = { x: at.x - gesture.origin.x, y: at.y - gesture.origin.y }
-    if (!gesture.moved && Math.hypot(by.x, by.y) * a.scale < threshold) {
+    if (!gesture.moved && !farFromPress(last)) {
       if (gesture.kind === "move" && gesture.alone !== null) a.onSelection(gesture.alone)
       return
     }
@@ -437,6 +439,7 @@ export function useCanvasPointer(args: PointerArgs) {
         }
         return
       }
+      pressedAt.current = { x: event.clientX, y: event.clientY }
       const origin = toSlide(event)
       const grip = gripOf(event.target)
       if (a.crop !== null && grip !== null && isCropGrip(grip)) {
