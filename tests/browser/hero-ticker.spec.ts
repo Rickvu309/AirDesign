@@ -63,6 +63,27 @@ test.describe("with motion allowed", () => {
     await expect(pause).toHaveAccessibleName("Pause the ticker")
   })
 
+  test("the pause button paints in the muted foreground token on desktop and phone", async ({ page }) => {
+    for (const size of [
+      { width: 1470, height: 923 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(size)
+      await openHero(page)
+      const colours = await page.evaluate(() => {
+        const tickerPause = document.querySelector("[data-ticker-pause]")
+        const demoPause = document.querySelector("[data-demo-pause] > span")
+        if (!tickerPause || !demoPause) throw new Error("missing pause controls")
+        return {
+          tickerPause: getComputedStyle(tickerPause).color,
+          demoPause: getComputedStyle(demoPause).color,
+        }
+      })
+      expect(colours.tickerPause, `${size.width}px`).toBe("rgb(102, 102, 102)")
+      expect(colours.tickerPause, `${size.width}px matches demo pause`).toBe(colours.demoPause)
+    }
+  })
+
   test("a tap pauses the ticker", async ({ browser }) => {
     const context = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } })
     const page = await context.newPage()
