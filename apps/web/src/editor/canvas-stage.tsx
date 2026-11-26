@@ -199,7 +199,12 @@ export function CanvasStage({
                 <AgentAtWork view={view} editing={editingRuns} slide={slide} onOpen={() => onPanel("agent")} />
               </span>
             )}
-            <div ref={slideBox} data-slide-box="" className={slideFrame} style={{ position: "absolute", inset: 0 }}>
+            <div
+              ref={slideBox}
+              data-slide-box=""
+              className={slideFrame}
+              style={{ position: "absolute", inset: 0, transform: placed ? undefined : "translateZ(0)" }}
+            >
               <LayerMenu
                 view={view}
                 geometry={geometry}
