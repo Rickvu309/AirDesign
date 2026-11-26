@@ -45,7 +45,7 @@ describe("createServer", () => {
     expect(createServer(session, memoryDecks(started))).not.toBe(createServer(session, memoryDecks(started)))
   })
 
-  it("lists the six tools within 8,000 tokens, each as the catalog describes it", async () => {
+  it("lists the eight tools within 8,000 tokens, each as described", async () => {
     const projected = projectTools(catalog)
     await withClient(sessionFor(), memoryDecks(started), async (client) => {
       expect(client.getServerVersion()?.name).toBe("airdesign")
@@ -58,17 +58,18 @@ describe("createServer", () => {
       }))
       const advertisedTokens = Math.ceil(bytesOf(JSON.stringify(advertised)) / 4)
       const listedTokens = Math.ceil(bytesOf(JSON.stringify(await client.listTools())) / 4)
-      expect(tools.map((tool) => tool.name)).toEqual(projected.map((tool) => tool.name))
       expect(tools.map((tool) => tool.name)).toEqual([
         "airdesign_create_deck",
         "airdesign_edit_deck",
+        "airdesign_get_style",
         "airdesign_list_decks",
         "airdesign_read_deck",
+        "airdesign_read_skill",
         "airdesign_stop_run",
         "airdesign_undo_run",
       ])
-      for (const [index, tool] of tools.entries()) {
-        const expected = projected[index]!
+      for (const expected of projected) {
+        const tool = tools.find((listed) => listed.name === expected.name)!
         expect(tool.description).toBe(expected.description)
         expect(tool.annotations).toEqual({
           readOnlyHint: expected.readOnlyHint,

@@ -7,6 +7,7 @@ import type { DeckHost } from "./deck-host.js"
 import { editDeckTool } from "./edit-tool.js"
 import { listDecksTool } from "./list-tool.js"
 import { readDeckTool } from "./read-tool.js"
+import { getStyleTool, readSkillTool } from "./skill-tools.js"
 import { stopRunTool } from "./stop-tool.js"
 import { undoRunTool } from "./undo-tool.js"
 
@@ -23,6 +24,9 @@ const tools = projectTools(catalog)
 
 export const opOf = (name: string): AgentOp | undefined => tools.find((tool) => tool.name === name)?.op
 
+export const knownTool = (name: string): boolean =>
+  opOf(name) !== undefined || name === "airdesign_read_skill" || name === "airdesign_get_style"
+
 export async function callTool(
   name: string,
   raw: unknown,
@@ -30,6 +34,8 @@ export async function callTool(
   host: DeckHost,
   pendingFonts: ReadonlySet<string> = new Set(),
 ): Promise<ToolResult> {
+  if (name === "airdesign_read_skill") return readSkillTool(raw)
+  if (name === "airdesign_get_style") return getStyleTool(raw)
   const op = opOf(name)
   if (op === undefined) return refused("field")
   const once = session.once ?? session.mint()

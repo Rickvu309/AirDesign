@@ -498,6 +498,9 @@ importers:
       '@airdesign/doom':
         specifier: workspace:*
         version: link:../doom
+      '@airdesign/skills':
+        specifier: workspace:*
+        version: link:../skills
       '@modelcontextprotocol/server':
         specifier: ^2.4.0
         version: 2.4.0
@@ -551,6 +554,15 @@ importers:
       '@types/react-dom':
         specifier: ^19.3.0
         version: 19.3.0(@types/react@19.3.0)
+      oxlint:
+        specifier: ^1.90.0
+        version: 1.92.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
+  packages/skills:
+    devDependencies:
       oxlint:
         specifier: ^1.90.0
         version: 1.92.0

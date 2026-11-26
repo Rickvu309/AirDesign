@@ -1,0 +1,3 @@
+layer: core
+public:
+  runtime: [src/index.ts]

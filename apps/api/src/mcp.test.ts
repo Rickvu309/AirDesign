@@ -178,11 +178,11 @@ describe("mcp route", () => {
     expect((await deck.query("select id from deck.doom")).rowCount).toBe(before.rowCount)
   })
 
-  it("lists the six agent tools for a signed-in caller", async () => {
+  it("lists agent tools", async () => {
     await withMcp(await sign(address("list")), async (client) => {
-      const listed = await client.listTools()
-      expect(listed.tools.map((tool) => tool.name)).toEqual(projectTools(catalog).map((each) => each.name))
-      expect(listed.tools).toHaveLength(6)
+      const names = (await client.listTools()).tools.map((t) => t.name)
+      const all = [...projectTools(catalog).map((t) => t.name), "airdesign_get_style", "airdesign_read_skill"]
+      expect(names).toEqual(all.sort())
     })
   })
 
