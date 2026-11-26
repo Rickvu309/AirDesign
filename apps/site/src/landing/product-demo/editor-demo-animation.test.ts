@@ -247,4 +247,51 @@ describe("playEditorDemoAnimation", () => {
     show(false)
     expect(recorded.some((animation) => animation.playing)).toBe(false)
   })
+
+  it("keeps the CAGR trend arrow clear of every bar total, its label, and the final bar", async () => {
+    const { demo } = await demoFixture(true)
+    const numberStyle = (element: Element, property: "left" | "top" | "width" | "height") =>
+      Number.parseFloat((element as HTMLElement).style[property])
+    const boxOf = (part: string) => {
+      const host = demo.querySelector(`[data-demo-part="${part}"]`)
+      if (!host) throw new Error(`missing ${part}`)
+      const inner = host.firstElementChild
+      const left = numberStyle(host, "left") + (inner ? numberStyle(inner, "left") : 0)
+      const top = numberStyle(host, "top") + (inner ? numberStyle(inner, "top") : 0)
+      const width = numberStyle(inner ?? host, "width")
+      const height = numberStyle(inner ?? host, "height")
+      return { left, top, right: left + width, bottom: top + height }
+    }
+    const line = demo.querySelector('[data-demo-part="cagr-line"] line')
+    const head = demo.querySelector('[data-demo-part="cagr-head"] path')
+    if (!line || !head) throw new Error("missing cagr svg")
+    const x1 = Number.parseFloat(line.getAttribute("x1") ?? "")
+    const y1 = Number.parseFloat(line.getAttribute("y1") ?? "")
+    const x2 = Number.parseFloat(line.getAttribute("x2") ?? "")
+    const y2 = Number.parseFloat(line.getAttribute("y2") ?? "")
+    const lineY = (x: number) => y1 + ((y2 - y1) * (x - x1)) / (x2 - x1)
+
+    for (const part of ["total-0", "total-1", "total-2", "total-3"]) {
+      const total = boxOf(part)
+      const centerX = (total.left + total.right) / 2
+      expect(lineY(centerX), `${part} center clearance`).toBeLessThan(total.top - 4)
+    }
+
+    const cagrLabel = boxOf("cagr-label")
+    expect(lineY(cagrLabel.right), "cagr-label right clearance").toBeGreaterThan(cagrLabel.bottom + 3)
+
+    const points = Array.from(
+      (head.getAttribute("d") ?? "").matchAll(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g),
+      ([, x, y]) => ({ x: Number.parseFloat(x), y: Number.parseFloat(y) }),
+    )
+    expect(points).toHaveLength(3)
+    const tip = points[1]
+    const total4 = boxOf("total-4")
+    const bar4 = boxOf("bar-4-2")
+    expect(tip.x).toBeLessThan(total4.left - 2)
+    expect(tip.y).toBeLessThan(bar4.top - 2)
+    for (const point of points) {
+      expect(point.x >= bar4.left && point.y >= bar4.top, `arrowhead point (${point.x}, ${point.y})`).toBe(false)
+    }
+  })
 })
