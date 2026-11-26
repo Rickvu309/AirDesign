@@ -167,6 +167,8 @@ export function keptGridShows(
   return box === null ? "fit" : revealedGrid(camera, box, { left: 0, top: 0, ...room })
 }
 
+export const gridPaintMargin = 200
+
 export function gridShown(layout: GridLayout, view: GridView, room: GridSize, margin: number): readonly number[] {
   return layout.cards
     .filter((card) => {
