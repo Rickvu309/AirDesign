@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react"
+import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { colorCopy } from "@/copy/color-copy"
 import { hexOf, hsvOf, shownHex, typedColor, type Hsv, type Palette } from "@/design/color-choices"
@@ -218,9 +219,10 @@ export function CustomColor({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <label className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg bg-white px-2.5 shadow-[0px_0px_0px_1px_var(--field-edge)]">
-          <span className="shrink-0 text-[length:var(--type-caption)] text-quiet">{colorCopy.hex}</span>
-          <input
+        <label className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-lg bg-white px-2.5 text-[length:var(--type-dense)] text-foreground uppercase tabular-nums shadow-[0px_0px_0px_1px_var(--field-edge)]">
+          <span className="shrink-0 text-[length:var(--type-caption)] text-quiet normal-case">{colorCopy.hex}</span>
+          <Input
+            variant="embedded"
             aria-label={colorCopy.hex}
             spellCheck={false}
             autoComplete="off"
@@ -241,7 +243,7 @@ export function CustomColor({
                 setTyped(null)
               }
             }}
-            className="min-w-0 flex-1 bg-transparent text-[length:var(--type-dense)] text-foreground uppercase tabular-nums outline-none"
+            className="flex-1"
           />
         </label>
       </div>

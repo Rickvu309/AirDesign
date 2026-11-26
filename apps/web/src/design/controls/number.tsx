@@ -1,3 +1,4 @@
+import { Input } from "@/components/ui/input"
 import { controlLabel } from "@/design/controls/control-label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { textCopy } from "@/copy/text-copy"
@@ -44,9 +45,6 @@ export function scrubbed(
 export function scrubAfter(to: Scrub, landed: number): Scrub {
   return landed === to.value ? to : { value: landed, x: to.x }
 }
-
-const listTrigger =
-  "ml-auto flex h-full w-6 shrink-0 items-center justify-center rounded-r-[var(--shape-control)] border-l border-white text-foreground outline-none"
 
 export function NumberField({
   control,
@@ -123,10 +121,10 @@ export function NumberField({
   const value = draft ?? shown
   const list = size ? (
     <DropdownMenu>
-      <DropdownMenuTrigger aria-label={textCopy.sizes} className={listTrigger} data-focus-ring>
+      <DropdownMenuTrigger aria-label={textCopy.sizes} variant="field-end" className="ml-auto h-full" data-focus-ring>
         <EditorIcon name="chev" size={12} className="size-3" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent anchor={row} align="start" className="max-h-80 min-w-0 overflow-y-auto">
+      <DropdownMenuContent anchor={row} align="start" className="max-h-80 min-w-0">
         {fontSizes.map((sizeValue) => (
           <DropdownMenuItem key={sizeValue} onClick={() => commit(String(sizeValue))}>
             {sizeValue}
@@ -166,19 +164,23 @@ export function NumberField({
           ) : null}
         </span>
       ) : null}
-      <span className={cn("relative grid min-w-0 max-w-full", look.name.show === "inside" && "shrink-0")}>
+      <span
+        className={cn(
+          "relative grid min-w-0 max-w-full text-left text-[length:var(--type-caption)] tabular-nums",
+          look.name.show === "inside" && "shrink-0",
+          control.inherited && draft === null ? "text-quiet" : "text-foreground",
+        )}
+      >
         <span
           aria-hidden
           className="invisible col-start-1 row-start-1 whitespace-pre text-[length:var(--type-caption)] tabular-nums"
         >
           {value || (control.mixed ? designCopy.mixed : "   ")}
         </span>
-        <input
+        <Input
           ref={field}
-          className={cn(
-            "absolute inset-0 w-full min-w-0 bg-transparent text-left text-[length:var(--type-caption)] tabular-nums outline-none placeholder:text-quiet",
-            control.inherited && draft === null ? "text-quiet" : "text-foreground",
-          )}
+          variant="embedded"
+          className="absolute inset-0 w-full"
           inputMode="decimal"
           aria-label={control.label}
           data-session
