@@ -232,7 +232,7 @@ export function useGridCamera({
       setSpace(false)
     }
     const down = (event: KeyboardEvent) => {
-      if (event.isComposing || typing(event.target) || !onCanvas(event.target, host.current)) return
+      if (event.isComposing || typing(event.target)) return
       const gesture = gestureFor(event, "editor")
       if (gesture === "tool-hand" || gesture === "tool-move") {
         if (!editorOwnsKey(event)) return
@@ -240,9 +240,7 @@ export function useGridCamera({
         latest.current.onHand(gesture === "tool-hand")
         return
       }
-      if (gesture === "pan") {
-        const target = event.target
-        if (target instanceof Element && target.closest("button, a[href]") !== null && blankCanvas(target)) return
+      if (gesture === "pan" && onCanvas(event.target, host.current)) {
         if (!editorOwnsKey(event)) return
         event.preventDefault()
         event.stopPropagation()
@@ -268,8 +266,8 @@ export function useGridCamera({
         else zoomTo(zoom === "actual" ? 100 : steppedZoom(zoom, percent, zoomRanges.grid), latest.current.ringed[0])
         return
       }
-      if (gestureFor(event, "grid") !== "pan-arrows" || !blankCanvas(event.target)) return
-      if (!editorOwnsKey(event)) return
+      if (gestureFor(event, "grid") !== "pan-arrows") return
+      if (!onCanvas(event.target, host.current) || !blankCanvas(event.target) || !editorOwnsKey(event)) return
       event.preventDefault()
       show(arrowGrid(latest.current.view, event.key))
     }
