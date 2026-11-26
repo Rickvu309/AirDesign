@@ -12,5 +12,5 @@
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
-  "references": [{ "path": "../catalog" }, { "path": "../doom" }, { "path": "../skills" }]
+  "references": [{ "path": "../catalog" }, { "path": "../doom" }, { "path": "../kit" }, { "path": "../skills" }]
 }

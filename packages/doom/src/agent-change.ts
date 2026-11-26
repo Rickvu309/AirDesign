@@ -15,6 +15,7 @@ import { innerShadowFields } from "./agent-inner-shadow.js"
 import { slideLookFields } from "./agent-slide-look.js"
 import { type SlideAdd, type SlideMove, idSchema, readId, readAfter, slideFields } from "./agent-slide-fields.js"
 import type { NodeId } from "./ids.js"
+import type { TreeNode } from "./doom-tree.js"
 import {
   type ColorVar,
   type EffectStyleName,
@@ -85,6 +86,12 @@ export type AgentChange =
   | { readonly op: "component"; readonly spec: Readonly<Record<string, unknown>>; readonly target?: NodeId }
   | { readonly op: "delete"; readonly nodes: readonly NodeId[] }
   | { readonly op: "duplicate"; readonly nodes: readonly NodeId[] }
+  | {
+      readonly op: "paste"
+      readonly piece: TreeNode
+      readonly into: NodeId
+      readonly box?: { readonly x: Px; readonly y: Px; readonly w?: Px; readonly h?: Px }
+    }
   | ({ readonly op: "deck" } & DeckLook)
   | {
       readonly op: "slide"

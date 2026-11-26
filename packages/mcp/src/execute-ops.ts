@@ -8,6 +8,7 @@ import { readAnswer } from "./deck-read.js"
 import { withCatalogFonts } from "./font-names.js"
 import { measuredSteps } from "./land-edit.js"
 import { layoutOf, listed } from "./layout-findings-answer.js"
+import { readPaste } from "./kit-paste.js"
 import { imageNames, imageProblem, imagesPerCall, pictureSizes, withAssets } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
 
@@ -115,7 +116,7 @@ export const verbFields: Readonly<Record<Verb, readonly string[]>> = {
   insert: ["parent", "kind", "after", "group", ...lookFields],
   update: ["target", ...lookFields],
   replace: ["target", "kind", ...lookFields],
-  copy: ["target", "targets"],
+  copy: ["target", "targets", "from", "parent", "box"],
   move: ["target", "targets", "parent", "after", "before", "group", "box"],
   remove: ["target", "targets"],
   group: ["target", "targets", ...lookFields],
@@ -177,6 +178,14 @@ async function compileOne(
   verb: Verb,
   raw: Readonly<Record<string, unknown>>,
 ): Promise<readonly string[]> {
+  const read = readDeckChange(raw)
+  if ("refused" in read) stop(plan, op, verb, doomRefused({ ...read, change: verb }))
+  const fonts = withCatalogFonts([read])
+  if (!fonts.ok) stop(plan, op, verb, fonts.result)
+  return stepOne(plan, op, verb, await withImages(plan, op, verb, fonts.changes[0] as doom.AgentChange))
+}
+
+async function stepOne(plan: Plan, op: number, verb: Verb, change: doom.AgentChange): Promise<readonly string[]> {
   if (plan.changes.length >= doom.limits.batch)
     stop(
       plan,
@@ -186,11 +195,6 @@ async function compileOne(
         note: `One call makes at most ${String(doom.limits.batch)} changes, and this one reached that before this operation. Send the rest in a second call.`,
       }),
     )
-  const read = readDeckChange(raw)
-  if ("refused" in read) stop(plan, op, verb, doomRefused({ ...read, change: verb }))
-  const fonts = withCatalogFonts([read])
-  if (!fonts.ok) stop(plan, op, verb, fonts.result)
-  const change = await withImages(plan, op, verb, fonts.changes[0] as doom.AgentChange)
   const measure = leavesLayers(change) ? (await deckMeasure(plan.host, [plan.view]))?.measure : undefined
   const stepped = await measuredSteps(plan.session.step(change, true, measure), plan.host, plan.pendingFonts)
   if ("content" in stepped) stop(plan, op, verb, stepped)
@@ -266,6 +270,14 @@ async function insert(plan: Plan, op: number, verb: Verb, fields: Readonly<Recor
   if (slide === undefined) stop(plan, op, verb, refused("dead", { field: "parent", node: parent.id }))
   const place = parent.type === "slide" ? { slide } : { slide, into: parent.id }
   return compileOne(plan, op, verb, { op: "add", ...without(fields, "parent"), ...place })
+}
+
+async function copy(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<string, unknown>>) {
+  const paste = readPaste(fields)
+  if (paste === undefined) return compileOne(plan, op, verb, { op: "duplicate", nodes: idsOf(fields) })
+  if ("answer" in paste) stop(plan, op, verb, paste)
+  const parent = nodeOf(plan, op, verb, fields.parent, "parent")
+  return stepOne(plan, op, verb, { op: "paste", into: parent.id, ...paste })
 }
 
 async function replace(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<string, unknown>>) {
@@ -398,7 +410,7 @@ export async function runOperation(plan: Plan, verb: Verb, raw: unknown): Promis
     case "insert":
       return made(await insert(plan, op, verb, fields))[0]
     case "copy":
-      return made(await compileOne(plan, op, verb, { op: "duplicate", nodes: idsOf(fields) }))
+      return made(await copy(plan, op, verb, fields))
     case "replace":
       return made(await replace(plan, op, verb, fields))[0]
     case "group":

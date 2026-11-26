@@ -30,6 +30,7 @@
   "dependencies": {
     "@airdesign/catalog": "workspace:*",
     "@airdesign/doom": "workspace:*",
+    "@airdesign/kit": "workspace:*",
     "@airdesign/skills": "workspace:*",
     "@jitl/quickjs-wasmfile-release-sync": "0.32.0",
     "@modelcontextprotocol/server": "^2.4.0",

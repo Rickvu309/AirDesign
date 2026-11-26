@@ -76,6 +76,7 @@ get({ target: s }).problems
 - `update({ target, ...look })` changes a layer or a slide. `target` is an id, `<slide>.title`, `<slide>.subtitle`, `<slide>.body`, or `*.title` for every slide's title.
 - `replace({ target, kind, ...look })` puts a new layer in the place of `target`, in the same parent and order and with its box unless you give one. Returns the new id.
 - `copy({ targets })` copies layers or slides, each right after its source, and returns the new ids.
+- `copy({ from: "kit/<piece>", parent, box? })` copies a kit piece into a slide or frame as plain layers you own and returns its id in a list. The `kit` skill lists the pieces.
 - `move({ target or targets, parent?, after?, box? })` moves layers. `parent` is a frame or a slide, `after` a sibling id or `null` for first, and `box` places them: `x` and `y` move the group, `w` and `h` do not resize. A slide moves with `after` or `before` a slide (`after: null` puts it first) or into a `group`.
 - `remove({ target or targets })` deletes layers or slides. A deck keeps one slide.
 - `group({ targets, layout?, clip?, ...look })` wraps layers in a new frame and returns its id. `ungroup({ target })` dissolves one.

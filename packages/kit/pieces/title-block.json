@@ -1,0 +1,43 @@
+{
+  "type": "frame",
+  "name": "Title block",
+  "props": {
+    "box": { "x": 0, "y": 0, "w": 1600, "h": 120, "rotation": 0, "flipH": false, "flipV": false },
+    "sizing": { "w": "fixed", "h": "hug" },
+    "layout": { "mode": "column", "gap": 16, "padding": { "t": 0, "r": 0, "b": 0, "l": 0 }, "align": "top-left" }
+  },
+  "children": [
+    {
+      "type": "shape",
+      "name": "Title",
+      "props": {
+        "geometry": { "kind": "rect" },
+        "sizing": { "w": "fill", "h": "hug" },
+        "text": {
+          "chars": "The headline states the takeaway",
+          "spans": [],
+          "paras": [{}],
+          "style": "title",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Subtitle",
+      "props": {
+        "geometry": { "kind": "rect" },
+        "sizing": { "w": "fill", "h": "hug" },
+        "text": {
+          "chars": "One line of context: the scope, the period or the source",
+          "spans": [{ "end": 56, "color": { "var": "text2" } }],
+          "paras": [{}],
+          "style": "body",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    }
+  ]
+}
