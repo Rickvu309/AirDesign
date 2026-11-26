@@ -316,7 +316,8 @@ export default async function drive(kit) {
         await page.locator("[data-slide-box]").screenshot(),
       )
       const response = await mcp(kit, opened, "read_deck", { deck: opened.deck })
-      expect(response.components).toEqual(expect.arrayContaining(["matrix", "tree"]))
+      expect(response).toMatchObject({ ok: true, slides: [opened.slide] })
+      expect(response.components).toBeUndefined()
     }
     await landNodes(kit, opened, [
       {

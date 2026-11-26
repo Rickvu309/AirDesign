@@ -253,27 +253,28 @@ test("a selected chart keeps its frame controls and paints data set by an agent"
   const opened = await designing(page, context, stack)
   const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
   const read = async () => (await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)).json
-  await stack.toolBlocks(
-    "airdesign_edit_deck",
+  const fold = doom.readFold((await read()).fold)
+  if (fold === undefined) throw new Error("could not read the deck")
+  const slide = doom.nodeId(opened.slide)
+  const target = doom.nodeId("chart:1")
+  const last = doom.childrenOf(fold, slide).at(-1)
+  const writes = doom.placeComponent(fold, doom.columnDefinition, {
+    frame: target,
+    parent: { id: slide, at: doom.orderKeyBetween(doom.propOf(last, "parent")?.at ?? null, null) },
+    box: spot(1100, 700, 600, 260),
+    data: { rows: [{ id: "q1", label: "Q1", value: 24 }] },
+    measure: doom.measureWith({}),
+  })
+  if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
+  const placed = await stack.post(
+    doomRoutes.edit.path,
     {
       deck: opened.deck,
-      base: (await read()).rev,
-      changes: [
-        {
-          op: "add",
-          kind: "component",
-          component: "column",
-          slide: opened.slide,
-          box: { x: 1100, y: 700, w: 600, h: 260 },
-        },
-      ],
+      edit: { once: "chart-fixture", author: { kind: "person", id: "fixture" }, readBase: fold.rev, writes },
     },
     opened.cookie,
   )
-  const fold = doom.readFold((await read()).fold)
-  if (fold === undefined) throw new Error("could not read the deck")
-  const target = [...fold.nodes.values()].find((node) => doom.propOf(node, "instance") !== undefined)?.id
-  if (target === undefined) throw new Error("could not read the instance")
+  expect(placed.json).toMatchObject({ ok: true })
   const canvas = page.locator("[data-slide-box]")
   await expect(canvas.getByText("Q1", { exact: true })).toBeVisible()
 
@@ -285,7 +286,7 @@ test("a selected chart keeps its frame controls and paints data set by an agent"
   }
   await stack.toolBlocks(
     "airdesign_edit_deck",
-    { deck: opened.deck, base: fold.rev, changes: [{ op: "set", target, data }] },
+    { deck: opened.deck, base: (await read()).rev, changes: [{ op: "set", target, data }] },
     opened.cookie,
   )
   const saved = doom.readFold((await read()).fold)

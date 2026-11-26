@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto"
 import { request as httpRequest } from "node:http"
 
-import { catalog, onceMeta, projectTools, doomRoutes } from "@airdesign/catalog"
+import { onceMeta, doomRoutes } from "@airdesign/catalog"
 import { limits, readFold, textFromMarkdown } from "@airdesign/doom"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
@@ -180,9 +180,9 @@ describe("mcp route", () => {
 
   it("lists agent tools", async () => {
     await withMcp(await sign(address("list")), async (client) => {
-      const names = (await client.listTools()).tools.map((t) => t.name)
-      const all = [...projectTools(catalog).map((t) => t.name), "airdesign_get_style", "airdesign_read_skill"]
-      expect(names).toEqual(all.sort())
+      const { tools } = await client.listTools()
+      expect(tools.map((t) => t.name)).toEqual(expect.arrayContaining(["airdesign_get_style", "airdesign_read_skill"]))
+      expect(JSON.stringify(tools)).not.toContain('"grammar"')
     })
   })
 

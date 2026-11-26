@@ -14,17 +14,7 @@ export const readDeckQuery = readInput(
     deck: deckInput,
     slide: z.string().regex(nodeIdPattern).describe("Only this slide.").exactOptional(),
     cursor: z.string().regex(nodeIdPattern).describe("Continue from this slide id.").exactOptional(),
-    detail: z
-      .string()
-      .regex(nodeIdPattern)
-      .describe("Read a path's commands or a template instance's data and findings.")
-      .exactOptional(),
-    component: z
-      .string()
-      .regex(/^[\w:-]{1,32}$/)
-      .describe("A component's spec, revision and instances. column is built in.")
-      .exactOptional(),
-    grammar: z.literal(1).describe("The component spec syntax.").exactOptional(),
+    detail: z.string().regex(nodeIdPattern).describe("Read a path's commands.").exactOptional(),
     picture: z.literal(true).describe("Add a picture of each slide read, up to 10.").exactOptional(),
     find: z
       .string()

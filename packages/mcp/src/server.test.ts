@@ -45,7 +45,7 @@ describe("createServer", () => {
     expect(createServer(session, memoryDecks(started))).not.toBe(createServer(session, memoryDecks(started)))
   })
 
-  it("lists the eight tools within 8,000 tokens, each as described", async () => {
+  it("lists the eight tools within 4,974 tokens", async () => {
     const projected = projectTools(catalog)
     await withClient(sessionFor(), memoryDecks(started), async (client) => {
       expect(client.getServerVersion()?.name).toBe("airdesign")
@@ -95,10 +95,9 @@ describe("createServer", () => {
         "duplicate",
         "deck",
         "detach",
-        "component",
       ])
-      expect(advertisedTokens).toBeLessThanOrEqual(8000)
-      expect(listedTokens).toBeLessThanOrEqual(8000)
+      expect(advertisedTokens).toBeLessThanOrEqual(4971)
+      expect(listedTokens).toBeLessThanOrEqual(4974)
       expect(tools.every((tool) => !Object.hasOwn(tool, "outputSchema"))).toBe(true)
     })
   })
@@ -159,9 +158,10 @@ describe("createServer", () => {
           { op: "add", kind: "kpi", slide: two, items: [{ title: "Revenue", value: "$4.2M" }] },
           {
             op: "add",
-            kind: "component",
+            kind: "shape",
             slide: three,
-            component: "column",
+            name: "Revenue",
+            fill: "accent1",
           },
           {
             op: "add",

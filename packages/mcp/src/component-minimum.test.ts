@@ -7,7 +7,7 @@ import { memoryDecks } from "./testing/memory-decks.js"
 
 const box = { x: 30, y: 100, w: 900, h: 600 }
 
-it("refuses to shrink or add a linked chart below its minimum and names the minimum", async () => {
+it("refuses to shrink an existing linked chart below its minimum and names the minimum", async () => {
   const start = () => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [] }] }).doom
   const before = start()
   const frame = doom.nodeId("chart:1")
@@ -38,20 +38,15 @@ it("refuses to shrink or add a linked chart below its minimum and names the mini
   await client.connect(clientTransport)
   const { w, h } = doom.columnDefinition.spec.minFrame!
   try {
-    for (const [index, change] of [
-      { op: "set", target: frame, box: { ...box, h: 120 } },
-      { op: "add", kind: "component", slide: slide.id, component: "column", box: { ...box, w: 100 } },
-    ].entries()) {
-      const result = await client.callTool({
-        name: "airdesign_edit_deck",
-        _meta: { [onceMeta]: `small-${index}` },
-        arguments: { deck, base: placed.rev, changes: [change] },
-      })
-      expect(result.structuredContent).toMatchObject({
-        ok: false,
-        note: expect.stringContaining(`Needs a size of at least ${w} × ${h} px.`),
-      })
-    }
+    const result = await client.callTool({
+      name: "airdesign_edit_deck",
+      _meta: { [onceMeta]: "small" },
+      arguments: { deck, base: placed.rev, changes: [{ op: "set", target: frame, box: { ...box, h: 120 } }] },
+    })
+    expect(result.structuredContent).toMatchObject({
+      ok: false,
+      note: expect.stringContaining(`Needs a size of at least ${w} × ${h} px.`),
+    })
     expect([...decks.decks.values()][0]).toBe(placed)
   } finally {
     await client.close()
