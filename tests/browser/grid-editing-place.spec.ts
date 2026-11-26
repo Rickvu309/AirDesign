@@ -202,3 +202,18 @@ for (const zoom of zooms) {
     await expect.poll(async () => (await textOf(stack, opened))?.chars).toBe("Hel|lo grid")
   })
 }
+
+test("a press that never moves writes nothing when the canvas scrolls under it", async ({ page, context, stack }) => {
+  const opened = await deck(page, context, stack)
+  await zoomTo(page, 100)
+  const at = await aim(page, 2, "t:2", true)
+  await page.mouse.move(at.x, at.y)
+  await page.mouse.down()
+  const before = (await boxOf(card(page, 2))).y
+  await page.mouse.wheel(0, 60)
+  await expect.poll(async () => (await boxOf(card(page, 2))).y).toBeLessThan(before - 30)
+  await page.mouse.up()
+  await expect(outline(page)).toHaveAttribute("data-selection-outline", "t:2")
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 400)))
+  expect(await savedBox(stack, opened, "t:2")).toEqual({ x: layerBox.x, y: layerBox.y })
+})
