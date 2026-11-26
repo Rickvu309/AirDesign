@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto"
 import * as doom from "../../packages/doom/src/index.ts"
 import type { Stack } from "./api-stack"
 import type { Opened } from "./editor-deck"
+import { settingsCopy } from "../../apps/web/src/copy/settings-copy.ts"
 
 export async function saved(stack: Stack, opened: Opened) {
   const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
@@ -16,7 +17,7 @@ export async function connectClaudeCode(stack: Stack, cookie: string): Promise<s
   const redirect = "http://127.0.0.1:33418/callback"
   const registered = await stack.post(oauthRoutes.register.path, {
     redirect_uris: [redirect],
-    client_name: "Claude Code",
+    client_name: settingsCopy.claudeCode,
   })
   const client = (registered.json as { client_id: string }).client_id
   const verifier = randomBytes(32).toString("base64url")
