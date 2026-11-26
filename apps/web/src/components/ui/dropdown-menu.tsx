@@ -8,8 +8,25 @@ function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
   return <MenuPrimitive.Root data-slot="dropdown-menu" {...props} />
 }
 
-function DropdownMenuTrigger({ ...props }: MenuPrimitive.Trigger.Props) {
-  return <MenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />
+function DropdownMenuTrigger({
+  variant = "default",
+  className,
+  ...props
+}: MenuPrimitive.Trigger.Props & { variant?: "default" | "field-end" }) {
+  return (
+    <MenuPrimitive.Trigger
+      data-slot="dropdown-menu-trigger"
+      className={
+        variant === "field-end"
+          ? cn(
+              "flex w-6 shrink-0 items-center justify-center rounded-r-[var(--shape-control)] border-l border-background text-foreground outline-none",
+              className,
+            )
+          : className
+      }
+      {...props}
+    />
+  )
 }
 
 function DropdownMenuContent({

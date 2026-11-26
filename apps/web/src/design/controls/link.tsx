@@ -74,7 +74,7 @@ export function LinkControl({ control, onChange }: ControlProps) {
           title={control.label}
           aria-invalid={invalid || undefined}
           aria-describedby={invalid ? issue : undefined}
-          className="h-full w-full min-w-0 rounded-l-[var(--shape-control)] bg-transparent px-2 text-[length:var(--type-caption)] outline-none"
+          className="size-full min-w-0 rounded-l-[var(--shape-control)] bg-transparent px-2 text-[length:var(--type-caption)] outline-none"
           value={draft ?? shown}
           onChange={(event) => {
             setDraft(event.target.value)
@@ -96,14 +96,10 @@ export function LinkControl({ control, onChange }: ControlProps) {
           }}
         />
         <DropdownMenu>
-          <DropdownMenuTrigger
-            type="button"
-            aria-label={linkCopy.slides}
-            className="flex w-6 shrink-0 items-center justify-center border-l border-background"
-          >
+          <DropdownMenuTrigger type="button" aria-label={linkCopy.slides} variant="field-end">
             <EditorIcon name="chev" size={12} />
           </DropdownMenuTrigger>
-          <DropdownMenuContent data-keeps-format align="end" className="max-h-72 overflow-auto">
+          <DropdownMenuContent data-keeps-format align="end" className="max-h-72">
             {value?.kind === "url" ? (
               <DropdownMenuItem onClick={() => window.open(value.url, "_blank", "noopener,noreferrer")}>
                 {linkCopy.open}
