@@ -54,10 +54,19 @@ describe("skills pack", () => {
     expect(readSkill("missing")).toBeUndefined()
   })
 
-  it("ships with an empty style list until styles land", () => {
-    expect(listStyles()).toEqual([])
-    expect(readStyle("neutral")).toBeUndefined()
+  it("ships styles whose list summary is their opening sentence and refuses traversal names", () => {
+    for (const style of listStyles()) {
+      expect(style.summary).toMatch(/^For .+\.$/)
+      expect(readStyle(style.name)?.parameters.length).toBeGreaterThan(0)
+    }
     expect(readStyle("../index")).toBeUndefined()
+  })
+
+  it("sends the agent from picking a theme to that theme's style", () => {
+    const themeLine = readSkill("slides")
+      ?.markdown.split("\n")
+      .find((line) => line.includes("Pick the theme"))
+    expect(themeLine).toContain("airdesign_get_style {name: <theme>}")
   })
 
   it("lists styles and reads style text with parsed parameters from a styles folder", () => {
