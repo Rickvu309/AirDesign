@@ -4,6 +4,8 @@ import { cn } from "@/lib/class-names"
 
 const outline =
   "bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50"
+const ghost =
+  "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50"
 
 const buttonVariants = cva(
   "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,opacity,transform] outline-none select-none active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:not-aria-busy:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -27,6 +29,11 @@ const buttonVariants = cva(
           "aspect-square w-full rounded-md border-0 p-0 active:translate-y-0 data-edged:shadow-[0px_0px_0px_1px_var(--field-edge)] aria-pressed:shadow-[0_0_0_2px_var(--background),0_0_0_4px_var(--ring)]",
         "ghost-line":
           "text-muted-foreground hover:bg-line hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+        ghost,
+        stage: cn(
+          ghost,
+          "text-[var(--white-80)] hover:bg-[var(--stage-hover)] hover:text-[var(--background)] active:translate-y-0",
+        ),
         destructive:
           "bg-destructive/10 text-danger-text hover:bg-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30",
         "destructive-solid":
@@ -40,6 +47,8 @@ const buttonVariants = cva(
         "panel-caption":
           "h-6 gap-1 rounded-[min(var(--radius-md),12px)] px-1.5 text-[length:var(--type-caption)] font-normal text-quiet active:translate-y-0 in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
         compact: "h-7 gap-1 px-2.5 text-[length:var(--type-dense)]",
+        dense:
+          "h-8 gap-1.5 px-3 text-[length:var(--type-dense)] has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
         "dense-dialog":
           "h-9 gap-1.5 px-3 text-[length:var(--type-dense)] leading-ui-tight has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
         lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
@@ -51,6 +60,13 @@ const buttonVariants = cva(
         "icon-lg": "size-9",
       },
     },
+    compoundVariants: [
+      {
+        variant: "stage",
+        size: "dense",
+        class: "shadow-[inset_0_0_0_1px_var(--stage-hover)]",
+      },
+    ],
     defaultVariants: {
       variant: "default",
       size: "default",

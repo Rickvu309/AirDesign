@@ -7,13 +7,7 @@ import { PrintSheet } from "@/export/print-sheet"
 
 function ExportButton({ onClick, ref }: { readonly onClick: () => void; readonly ref: Ref<HTMLButtonElement> }) {
   return (
-    <Button
-      ref={ref}
-      type="button"
-      variant="default"
-      className="h-8 rounded-lg px-3 text-[length:var(--type-dense)] font-medium active:translate-y-0"
-      onClick={onClick}
-    >
+    <Button ref={ref} type="button" variant="default" size="dense" onClick={onClick}>
       {productCopy.exportDeck}
     </Button>
   )
