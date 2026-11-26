@@ -151,6 +151,20 @@ test("Escape mid-drag puts the selection back, and the release that follows chan
   await expect(chip(page)).toHaveText(slideListCopy.selected(2))
 })
 
+test("a lost window ends the drag like Escape and puts the selection back", async ({ page, context, stack }) => {
+  await openGroups(page, context, stack, [4, 3])
+  await pick(page, 1, 2)
+  const from = await belowRight(page, 7)
+  const six = await centre(page, 6)
+  await press(page, from, six)
+  await expect.poll(() => selectedNumbers(page)).toEqual(await crossed(page, from, six))
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")))
+  await expect(marquee(page)).toHaveCount(0)
+  await expect.poll(() => selectedNumbers(page)).toEqual([1, 2])
+  await page.mouse.up()
+  expect(await selectedNumbers(page)).toEqual([1, 2])
+})
+
 test("the rectangle pans the canvas at its edge and stays anchored to where it started", async ({
   page,
   context,
