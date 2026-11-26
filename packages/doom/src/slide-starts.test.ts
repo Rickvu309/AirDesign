@@ -3,11 +3,10 @@ import { contentAreaOf } from "./agent-place.js"
 import { minter } from "./agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
 import { defaultTheme } from "./theme.js"
-import { childrenOf, descendantsOf, propOf } from "./doom-walk.js"
+import { childrenOf, propOf } from "./doom-walk.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { type SlideStart, slideStartWrites, slideStarts } from "./slide-starts.js"
 import { titleOnlyWrites } from "./slide-placeholders.js"
-import { textHeight } from "./text-estimate.js"
 import { applyEdit, isRefusal, rev, type Doom, type NodeId } from "./index.js"
 
 const person = { kind: "person", id: "test" } as const
@@ -32,7 +31,7 @@ const overlaps = (a: { x: number; y: number; w: number; h: number }, b: typeof a
 
 describe("a designed starting slide", () => {
   it("is offered in the order the New slide menu lists them", () => {
-    expect(slideStarts).toEqual(["title", "text", "kpis", "cards", "chart", "timeline", "grid", "blank"])
+    expect(slideStarts).toEqual(["title", "text", "grid", "blank"])
   })
 
   it.each(slideStarts.filter((start) => start !== "blank" && start !== "title"))(
@@ -61,39 +60,12 @@ describe("a designed starting slide", () => {
     expect(childrenOf(doom, slide).map((node) => propOf(node, "role"))).toEqual(["title", "subtitle"])
   })
 
-  it("kpis: sets the numbers in a style a typical figure fits on one line", () => {
-    const { doom, slide } = started("kpis")
-    const kpi = childrenOf(doom, slide).find((node) => propOf(node, "name") === "KPI")!
-    const numbers = descendantsOf(doom, kpi.id).filter((node) => propOf(node, "text")?.chars === "00.0%")
-    expect(numbers).toHaveLength(3)
-    const theme = defaultTheme
-    for (const node of numbers) {
-      const text = propOf(node, "text")!
-      const room = Math.floor((1600 - 2 * 29) / 3) - 2 * 38
-      for (const figure of ["$4.2M", "118%", "$12.5M", "+24.8%"]) {
-        const one = textHeight({ ...text, chars: figure }, theme, room)
-        expect(one, figure).toBe(theme.textStyles[text.style].size * theme.textStyles[text.style].lineHeight)
-      }
-    }
-  })
-
-  it.each(["kpis", "cards", "grid", "timeline"] as const)(
-    "%s: stays at content height under the title, short of the bottom margin",
-    (start) => {
-      const { doom, slide } = started(start)
-      const [content] = childrenOf(doom, slide).filter((node) => propOf(node, "role") !== "title")
-      const box = propOf(content!, "box")!
-      expect(box.h).toBeLessThan(0.55 * (1000 - box.y))
-      expect(box.y + box.h).toBeLessThan(1000)
-    },
-  )
-
-  it.each(["chart"] as const)("%s: fills the band under the title down to the bottom margin", (start) => {
+  it.each(["grid"] as const)("%s: stays at content height under the title, short of the bottom margin", (start) => {
     const { doom, slide } = started(start)
     const [content] = childrenOf(doom, slide).filter((node) => propOf(node, "role") !== "title")
     const box = propOf(content!, "box")!
-    expect(box.y + box.h).toBeGreaterThan(1000 - 8)
-    expect(box.y + box.h).toBeLessThanOrEqual(1000)
+    expect(box.h).toBeLessThan(0.55 * (1000 - box.y))
+    expect(box.y + box.h).toBeLessThan(1000)
   })
 
   it("blank: holds nothing", () => {
@@ -101,17 +73,12 @@ describe("a designed starting slide", () => {
     expect(childrenOf(doom, slide)).toHaveLength(0)
   })
 
-  it("is built by the agent's patterns, with placeholder words", () => {
+  it("starts the grid and text layouts with placeholder words", () => {
     const names = (start: SlideStart) => {
       const { doom, slide } = started(start)
       return childrenOf(doom, slide).map((node) => propOf(node, "name"))
     }
-    expect(names("kpis")).toEqual(["Title", "KPI"])
-    expect(names("cards")).toEqual(["Title", "Cards"])
-    expect(names("timeline")).toEqual(["Title", "Timeline"])
     expect(names("grid")).toEqual(["Title", "Grid"])
-    const { doom, slide } = started("chart")
-    expect(childrenOf(doom, slide).some((node) => propOf(node, "instance")?.component.id === "column")).toBe(true)
     const text = started("text")
     const body = childrenOf(text.doom, text.slide).find((node) => propOf(node, "role") !== "title")!
     expect(propOf(body, "text")).toMatchObject({

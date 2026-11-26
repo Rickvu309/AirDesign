@@ -3,7 +3,6 @@ import { shapeGeometry } from "./preset-geometry.js"
 import { type Draft, Stop, create, living, nextKey, put, stop } from "./agent-draft.js"
 import { askedArrow, iconName, layoutOf, solid, surfaceOf, textOfLook, turnOf, type Now } from "./agent-look.js"
 import { addGrid } from "./agent-grid.js"
-import { addPattern } from "./agent-patterns.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { placeholderSubtitle } from "./slide-placeholders.js"
 import {
@@ -68,7 +67,6 @@ const words = [
   "spaceAfter",
   "padding",
 ] as const
-const patternFields = ["box", "name", "hidden", "items"] as const
 
 const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
   text: [...common, ...painted, ...words, "link"],
@@ -79,12 +77,6 @@ const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
   picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit", "crop"],
   icon: [...common, "icon", "stroke", "strokeWidth"],
   component: ["component", "box", "data", "variant", "tokens", "rotation", "flip"],
-  kpi: patternFields,
-  cards: patternFields,
-  compare: patternFields,
-  timeline: patternFields,
-  flow: patternFields,
-  matrix: [...patternFields, "axes"],
 }
 
 const titleStyles: ReadonlySet<Text["style"]> = new Set(["display", "title"])
@@ -351,7 +343,5 @@ function compileKind(draft: Draft, parent: Node, slide: Node, change: Add): void
       return addIcon(draft, parent, change)
     case "component":
       return addComponent(draft, parent, change)
-    default:
-      return addPattern(draft, parent, change)
   }
 }

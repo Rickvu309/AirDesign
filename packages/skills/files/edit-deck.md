@@ -35,21 +35,11 @@ Add a layer to a slide or frame: `{ op: "add", kind, slide, into?, ...look }`.
   - `frame`: container that groups children (`layout`, `gap`, `padding`, `clip`) or creates a word grid when given `rows` (array of row string arrays; first row is the header; cells accept markdown; `""` leaves a cell empty).
   - `picture`: image layer using `fill: { image }` (an `https` URL or deck asset hash), `fit`, and `crop`.
   - `icon`: Lucide icon by name in `icon` (such as `trending-up` or `arrow-right`).
-  - Patterns (each lays out its own children from `items`):
-    - `kpi`: `title`, `value`, `note`
-    - `cards`: `title`, `points`, `icon`
-    - `compare`: 2 or 3 items of `title`, `points`
-    - `matrix`: up to 4 items in reading order, plus `axes: [across, up]`
-    - `timeline`: 2 to 8 items of `value`, `title`, `note`
-    - `flow`: 2 to 6 items of `title`, `note`
-  - `component`: linked template instance using `component` (template id from `airdesign_read_deck`), plus optional `data`, `variant`, `tokens`, `box`.
 - `into`: optional frame id on `slide` to place the new layer inside.
 
 ### `set`
 
-Update an existing layer or role target: `{ op: "set", target, focus?, ...look }`.
-
-- `focus`: on a linked component instance, array of category or series ids to accent (`[]` clears focus).
+Update an existing layer or role target: `{ op: "set", target, ...look }`.
 
 ### `move`
 
@@ -86,10 +76,9 @@ Update deck-level settings: `{ op: "deck", name?, nameFollows?, language?, theme
 - `theme`: library theme id (`neutral`, `consulting`, `editorial`, `midnight`, `technical`).
 - `colors` (`#rrggbb` by theme colour name) and `fonts` (`{ heading?, body? }`) override the chosen theme when provided.
 
-### `detach` and `component`
+### `detach`
 
 - `{ op: "detach", target }`: turn a template instance into editable plain layers.
-- `{ op: "component", spec, target? }`: add a grammar-1 component spec, or update an existing component at `target` so its instances follow.
 
 ## Look fields
 

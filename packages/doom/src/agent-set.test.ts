@@ -221,10 +221,7 @@ describe("set by node id", () => {
     expect(refusal(richDeck(), set(ids.title, { icon: "x" }))).toMatchObject({ field: "icon" })
     expect(refusal(richDeck(), set(ids.title, { layout: "row" }))).toMatchObject({ field: "layout" })
     expect(refusal(richDeck(), set(ids.slide, { opacity: 0.5 }))).toMatchObject({ field: "opacity" })
-    for (const field of ["rows", "items", "axes"])
-      expect(refusal(richDeck(), set(ids.card, { [field]: field === "axes" ? ["a", "b"] : [[]] }))).toMatchObject({
-        field,
-      })
+    expect(refusal(richDeck(), set(ids.card, { rows: [["value"]] }))).toMatchObject({ field: "rows" })
   })
 
   it("paints a slide's background", () => {

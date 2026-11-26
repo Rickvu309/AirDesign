@@ -124,6 +124,18 @@ describe("a tool's input schema says each repeated subschema once", () => {
     expect(references(sharedSchemas(twice))).toEqual([])
   })
 
+  it("advertises primitive and grid adds", () => {
+    expect(toolInputSchema("edit_deck")).toHaveProperty("$defs.change.properties.kind.enum", [
+      "text",
+      "shape",
+      "line",
+      "path",
+      "frame",
+      "picture",
+      "icon",
+    ])
+  })
+
   it("resolves every reference in airdesign_edit_deck, and still takes the forms the instructions name", () => {
     const schema = toolInputSchema("edit_deck")
     const defs = Object.keys((schema as { readonly $defs?: object }).$defs ?? {})
@@ -133,7 +145,7 @@ describe("a tool's input schema says each repeated subschema once", () => {
     const changes = [
       { op: "add", kind: "text", slide: "s:3", text: "Hi", textStyle: "title", fill: "accent2" },
       { op: "set", target: "s:3.title", color: "text2", effect: "lifted" },
-      { op: "add", kind: "kpi", slide: "s:3", items: [{ title: "Revenue", value: "$4M" }] },
+      { op: "add", kind: "frame", slide: "s:3", rows: [["Revenue", "$4M"]] },
       { op: "slide", add: {} },
     ]
     expect(check.safeParse({ deck: "d", base: 0, changes }).success).toBe(true)

@@ -399,8 +399,10 @@ describe("where an add lands", () => {
   })
 
   it("asks for a box when a shape goes into a laid-out frame whose size nobody wrote", () => {
-    const doom = build(agentDeck(), { op: "add", kind: "kpi", slide, items: [{ title: "A", value: "1" }] }, minter("a"))
-    const card = childrenOf(doom, lastChild(doom, slide).id)[0]!
+    const initial = build(agentDeck(), { ...frame, layout: "column" }, minter("a"))
+    const parent = lastChild(initial, slide)
+    const doom = apply(initial, [{ node: parent.id, prop: "box", value: null }])
+    const card = doom.nodes.get(parent.id)!
     expect(compileAgentChange(doom, { op: "add", kind: "shape", slide, into: card.id }, minter("b"))).toMatchObject({
       refused: "limit",
       field: "box",

@@ -28,21 +28,17 @@ export function boardDeckChanges(slides: readonly NodeId[]): readonly (readonly 
       title(two, "Results at a glance"),
       {
         op: "add",
-        kind: "kpi",
+        kind: "frame",
         slide: two,
-        items: [
-          { title: "Revenue", value: "$4.2M", note: "+12% YoY" },
-          { title: "Margin", value: "31%", note: "+2 pts" },
-          { title: "Net retention", value: "118%", note: "Best in two years" },
+        name: "Results",
+        rows: [
+          ["Metric", "Result", "Change"],
+          ["Revenue", "$4.2M", "+12% YoY"],
+          ["Margin", "31%", "+2 pts"],
+          ["Net retention", "118%", "Best in two years"],
         ],
       },
-      {
-        op: "add",
-        kind: "cards",
-        slide: two,
-        name: "Decision",
-        items: [{ title: "Decision requested", points: ["Approve the $2M expansion budget", "Vote by Friday"] }],
-      },
+      { op: "add", kind: "shape", slide: two, name: "Decision", text: "Approve the expansion budget by Friday" },
     ],
     [
       title(three, "Revenue ran ahead of plan"),
@@ -63,16 +59,14 @@ export function boardDeckChanges(slides: readonly NodeId[]): readonly (readonly 
     ],
     [
       title(four, "Three priorities for next year"),
-      {
-        op: "add",
-        kind: "cards",
-        slide: four,
-        items: [
-          { title: "Grow", icon: "trending-up", points: ["Enter two markets", "Double the sales team"] },
-          { title: "Protect", icon: "shield", points: ["Cut cost to serve", "Raise retention"] },
-          { title: "Build", icon: "hammer", points: ["Ship the platform", "Open the API"] },
-        ],
-      },
+      ...[
+        { text: "Grow\nEnter two markets", icon: "trending-up" },
+        { text: "Protect\nRaise retention", icon: "shield" },
+        { text: "Build\nShip the platform", icon: "hammer" },
+      ].flatMap(({ text, icon }, at): AgentChange[] => [
+        { op: "add", kind: "icon", slide: four, icon, box: { x: 80 + at * 600, y: 260, w: 80, h: 80 } },
+        { op: "add", kind: "text", slide: four, text, box: { x: 80 + at * 600, y: 372, w: 520, h: 100 } },
+      ]),
     ],
     [
       title(five, "Roadmap"),

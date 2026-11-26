@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto"
 import { expect } from "@playwright/test"
 import { airaCopy, airaStepWords, undoCopy } from "../bin/product-copy.mjs"
 
-const asked = "Add three KPIs to this slide"
+const asked = "Add a results grid to this slide"
 
 async function doomAgent(kit, cookie) {
   const { page, post, capture, note, doomRoutes, mcpRoutes, aira, holdReply } = kit
@@ -19,12 +19,15 @@ async function doomAgent(kit, cookie) {
   await capture("doom-agent-panel")
   note(`opened doom deck ${deck} at revision ${String(opened.rev)}; the Agent panel shows the Ask Aira composer`)
 
-  aira([{ name: "add-kpi.sse", fill: { deck, base: String(opened.rev), slide } }, { name: "added-kpi.sse" }])
+  aira([
+    { name: "add-results-grid.sse", fill: { deck, base: String(opened.rev), slide } },
+    { name: "added-results-grid.sse" },
+  ])
   const { release } = await holdReply(mcpRoutes.mcp)
   await composer.fill(asked)
   await page.keyboard.press("Enter")
   await expect(log.getByText(asked, { exact: true })).toBeVisible()
-  await expect(log.getByText("I will add three KPIs to the slide.", { exact: true })).toBeVisible()
+  await expect(log.getByText("I will add a results grid to the slide.", { exact: true })).toBeVisible()
   await expect(log.locator('[data-tool-state="working"]')).toHaveText(airaStepWords.edit_deck.working)
   await expect(side.getByRole("button", { name: "Stop" })).toBeVisible()
   await capture("working")
@@ -36,7 +39,7 @@ async function doomAgent(kit, cookie) {
   await expect(log.locator('[data-tool-state="done"]')).toHaveText(airaStepWords.edit_deck.done)
   await expect(log.getByRole("button", { name: undoCopy.undo })).toBeVisible()
   await capture("done")
-  note("the call went through /mcp and the canvas painted the KPIs without a reload")
+  note("the call went through /mcp and the canvas painted the results grid without a reload")
   return { deck, slide }
 }
 

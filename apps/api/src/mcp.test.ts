@@ -203,9 +203,9 @@ describe("mcp route", () => {
           { op: "add", kind: "text", slide: first.slides[0], text: "Q3 **board** update", textStyle: "heading" },
           {
             op: "add",
-            kind: "kpi",
+            kind: "frame",
             slide: first.slides[0],
-            items: [{ title: "Revenue", value: "$4.2M", note: "+12%" }],
+            rows: [["Revenue", "$4.2M"]],
           },
         ],
       })
@@ -243,9 +243,7 @@ describe("mcp route", () => {
       const args = {
         deck: created.answer.deck,
         base: created.answer.rev,
-        changes: [
-          { op: "add", kind: "cards", slide: created.answer.slides[0], items: [{ title: "A", points: ["one"] }] },
-        ],
+        changes: [{ op: "add", kind: "shape", slide: created.answer.slides[0], text: "A" }],
       }
       const first = await tool(client, "edit_deck", args, "edit-1")
       const second = await tool(client, "edit_deck", args, "edit-1")

@@ -76,7 +76,6 @@ function planted(
     author: person,
     writes: doom.slideStartWrites(view, slide, mint, part, measure),
     rev: doom.rev(view.rev + 1),
-    ...(part === "chart" ? { readBase: view.rev } : {}),
   })
   return doom.isRefusal(landed) ? view : landed
 }

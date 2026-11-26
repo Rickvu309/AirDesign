@@ -130,7 +130,10 @@ test("New slide offers the designed starting slides, and the plus adds a slide w
   ).toBeGreaterThan(200)
   await menu.click()
   const items = page.getByRole("menuitem")
-  await expect(items).toHaveCount(Object.keys(editorCopy.slideStarts).length)
+  await expect(items).toHaveCount(4)
+  for (const [at, name] of Object.values(editorCopy.slideStarts).entries()) {
+    await expect(items.nth(at)).toHaveAccessibleName(name)
+  }
   for (const [part, name] of Object.entries(editorCopy.slideStarts)) {
     const item = page.locator(`[data-layout="${part}"]`)
     await expect(item).toHaveAccessibleName(name)
@@ -142,27 +145,21 @@ test("New slide offers the designed starting slides, and the plus adds a slide w
     "color",
     "rgb(255, 255, 255)",
   )
-  await page.locator('[data-layout="chart"]').hover()
-  await expect(page.locator('[data-layout="chart"] > span:not([data-layout-thumb])')).toHaveCSS(
+  await page.locator('[data-layout="grid"]').hover()
+  await expect(page.locator('[data-layout="grid"] > span:not([data-layout-thumb])')).toHaveCSS(
     "color",
     "rgb(255, 255, 255)",
   )
   await expect(page.locator('[data-layout="title"] [data-run]').first()).not.toHaveCSS("color", "rgb(255, 255, 255)")
-  expect(
-    await page
-      .locator('[data-layout="chart"] svg')
-      .first()
-      .evaluate((node) => node.getBoundingClientRect().width),
-  ).toBeGreaterThan(16)
   await expect(page.locator('[data-layout="blank"] [data-node]')).toHaveCount(0)
   await expect(page.locator('[data-layout="title"] [data-node]')).toHaveCount(2)
-  expect(await page.locator('[data-layout="kpis"] [data-node]').count()).toBeGreaterThan(5)
+  expect(await page.locator('[data-layout="grid"] [data-node]').count()).toBeGreaterThan(5)
   await page.keyboard.press("Escape")
   await choose(editorCopy.slideStarts.blank)
   await expect(painted).toHaveCount(0)
   await choose(editorCopy.slideStarts.title)
   await expect(painted).toHaveCount(2)
-  await choose(editorCopy.slideStarts.kpis)
+  await choose(editorCopy.slideStarts.grid)
   expect(await painted.count()).toBeGreaterThan(5)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(4)
   await page.getByRole("button", { name: slideListCopy.addSlide }).click()
@@ -192,7 +189,10 @@ test("New slide builds no pictures until the pointer or focus arrives, and works
 
   await page.keyboard.press("Enter")
   await expect(trigger).toHaveAttribute("aria-expanded", "true")
-  await expect(items).toHaveCount(Object.keys(editorCopy.slideStarts).length)
+  await expect(items).toHaveCount(4)
+  for (const [at, name] of Object.values(editorCopy.slideStarts).entries()) {
+    await expect(items.nth(at)).toHaveAccessibleName(name)
+  }
   await expect(page.locator('[data-layout="title"]')).toBeFocused()
   await page.keyboard.press("ArrowDown")
   await expect(page.locator('[data-layout="text"]')).toBeFocused()

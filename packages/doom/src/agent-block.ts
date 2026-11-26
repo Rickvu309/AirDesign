@@ -1,5 +1,5 @@
 import type { AgentColor } from "./agent-change.js"
-import { type Draft, type Values, add, stop } from "./agent-draft.js"
+import { type Draft, type Values, create } from "./agent-draft.js"
 import { textOfLook } from "./agent-look.js"
 import type { Area } from "./agent-place.js"
 import { zeroBox } from "./doom-walk.js"
@@ -13,47 +13,26 @@ import type { Theme } from "./theme.js"
 
 export type Block = {
   readonly type: "frame" | "shape"
-  readonly key?: string
-  readonly values: Values | ((ref: (key: string) => NodeId) => Values)
+  readonly values: Values
   readonly children?: readonly Block[]
 }
-export type Sized = { readonly block: Block; readonly high: Px }
-export type Part = Sized & { readonly text: Text }
+export type Part = { readonly block: Block; readonly text: Text }
 
-export function emit(draft: Draft, parent: NodeId, root: Block): NodeId {
-  const ids = new Map<Block, NodeId>()
-  const keyed = new Map<string, NodeId>()
-  const assign = (block: Block): void => {
-    const id = draft.mint()
-    ids.set(block, id)
-    if (block.key !== undefined) keyed.set(block.key, id)
-    block.children?.forEach(assign)
-  }
-  assign(root)
-  const ref = (key: string) => keyed.get(key) ?? stop("missing", undefined, key)
-  const write = (block: Block, under: NodeId): void => {
-    const id = ids.get(block) as NodeId
-    add(draft, id, block.type, under, typeof block.values === "function" ? block.values(ref) : block.values)
-    block.children?.forEach((child) => write(child, id))
-  }
-  write(root, parent)
-  return ids.get(root) as NodeId
+export function emit(draft: Draft, parent: NodeId, block: Block): void {
+  const id = create(draft, block.type, parent, block.values)
+  for (const child of block.children ?? []) emit(draft, id, child)
 }
 
 export const ladderOf = (theme: Theme): readonly TextStyleName[] =>
   [...textStyleNames].sort((a, b) => theme.textStyles[b].size - theme.textStyles[a].size)
 
-export function partOf(markdown: string, style: TextStyleName, color: AgentColor = "text", center = false): Part {
-  const text = textOfLook(
-    { text: markdown, textStyle: style, color, ...(center ? { align: "center" as const } : {}) },
-    undefined,
-    style,
-  ) as Text
+export function partOf(markdown: string, style: TextStyleName, color: AgentColor = "text"): Part {
+  const text = textOfLook({ text: markdown, textStyle: style, color }, undefined, style) as Text
   const block: Block = {
     type: "shape",
     values: { geometry: { kind: "rect" }, sizing: { w: "fill", h: "hug" }, text },
   }
-  return { text, block, high: 0 }
+  return { text, block }
 }
 
 export const heightIn = (part: Part, theme: Theme, width: Px, measure?: Measure): Px =>

@@ -1,5 +1,5 @@
 event: message_start
-data: {"type":"message_start","message":{"id":"msg_fixture_kpi","type":"message","role":"assistant","model":"claude-sonnet-5-5","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":3100,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":1}}}
+data: {"type":"message_start","message":{"id":"msg_fixture_grid","type":"message","role":"assistant","model":"claude-sonnet-5-5","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":3100,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":1}}}
 
 event: content_block_start
 data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}
@@ -8,13 +8,13 @@ event: content_block_delta
 data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"I will add"}}
 
 event: content_block_delta
-data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":" three KPIs to the slide."}}
+data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":" a results grid to the slide."}}
 
 event: content_block_stop
 data: {"type":"content_block_stop","index":0}
 
 event: content_block_start
-data: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_fixture_kpi","name":"airdesign_edit_deck","input":{}}}
+data: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"toolu_fixture_grid","name":"airdesign_edit_deck","input":{}}}
 
 event: content_block_delta
 data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":""}}
@@ -23,7 +23,7 @@ event: content_block_delta
 data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"deck\": \"@deck@\", \""}}
 
 event: content_block_delta
-data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"base\": @base@, \"changes\": [{\"op\": \"add\", \"kind\": \"kpi\", \"slide\": \"@slide@\", \"items\": [{\"title\": \"Revenue\", \"value\": \"$4.2M\", \"note\": \"Up 18% on last quarter\"}, {\"title\": \"Customers\", \"value\": \"1,280\", \"note\": \"112 joined this month\"}, {\"title\": \"Churn\", \"value\": \"2.1%\", \"note\": \"Down from 2.6%\"}]}]}"}}
+data: {"type": "content_block_delta", "index": 1, "delta": {"type": "input_json_delta", "partial_json": "base\": @base@, \"changes\": [{\"op\": \"add\", \"kind\": \"frame\", \"slide\": \"@slide@\", \"rows\": [[\"Metric\", \"Value\"], [\"Revenue\", \"$4.2M\"], [\"Customers\", \"1,280\"], [\"Churn\", \"2.1%\"]]}]}"}}
 
 event: content_block_stop
 data: {"type":"content_block_stop","index":1}

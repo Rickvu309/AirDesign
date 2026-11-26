@@ -1,6 +1,6 @@
 # Auto layout frames
 
-An auto layout frame is a frame node whose `layout` lays its children out in a row or a column, a `gap` apart, inside its `padding`, placed by its `align`, as in Figma. Its `sizing` makes each side hug the children or stay fixed, and a child's own `sizing` can fill the frame's free length. Agents make them (`op: "wrap"` with a `layout`, or `op: "add"` with `kind: "frame"` and `layout`, `gap` and `padding`), and the agent patterns lay their cards out with them. A person sees the frame laid out, picks a child by double-click, resizes the frame, and takes auto layout off in the Design panel.
+An auto layout frame is a frame node whose `layout` lays its children out in a row or a column, a `gap` apart, inside its `padding`, placed by its `align`, as in Figma. Its `sizing` makes each side hug the children or stay fixed, and a child's own `sizing` can fill the frame's free length. Agents make them (`op: "wrap"` with a `layout`, or `op: "add"` with `kind: "frame"` and `layout`, `gap` and `padding`). A person sees the frame laid out, picks a child by double-click, resizes the frame, and takes auto layout off in the Design panel.
 
 ## Sub-features
 
@@ -30,4 +30,4 @@ Preconditions:
 ## Gotchas
 
 - A frame's `box` is its own place in its parent; with auto layout its children's places come from the solve, so read them from the canvas, not from their stored `box`.
-- A person makes a plain frame with F or Ctrl/Cmd+Alt+G (see `shape-insert.md` and `group-elements.md`); auto layout comes from an agent or a pattern.
+- A person makes a plain frame with F or Ctrl/Cmd+Alt+G (see `shape-insert.md` and `group-elements.md`); agents can add auto layout.

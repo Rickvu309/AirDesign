@@ -84,7 +84,7 @@ function underTitle(draft: Draft, slide: Node, area: Area): Area {
   return bottom > top ? { x: area.x, y: top, w: area.w, h: bottom - top } : area
 }
 
-export function patternArea(draft: Draft, parent: Node, box: Area | undefined): Area {
+export function gridArea(draft: Draft, parent: Node, box: Area | undefined): Area {
   if (box !== undefined) return box
   const free = areaFor(draft, parent, undefined)
   return parent.type === "slide" ? underTitle(draft, parent, free) : free

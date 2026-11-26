@@ -6,10 +6,10 @@ const measure = measureWith({})
 const wide = { w: 1920, h: 1080 }
 const color = (seed: number): `#${string}` => `#${seed.toString(16).padStart(6, "0")}`
 const roseGround = color(0x111827)
-const roseAccent = color(0xe11d48)
+const roseText = color(0xf8fafc)
 const rose: Theme = {
   ...defaultTheme,
-  colors: { ...defaultTheme.colors, accent1: roseAccent, background: roseGround, text: color(0xf8fafc) },
+  colors: { ...defaultTheme.colors, background: roseGround, text: roseText },
 }
 
 function solids(picture: LayoutPicture): string[] {
@@ -39,9 +39,9 @@ describe("layout pictures", () => {
     expect(Object.keys(plain)).toEqual([...slideStarts])
     expect(plain.blank.background).toEqual([{ kind: "solid", color: defaultTheme.colors.background, opacity: 1 }])
     expect(themed.blank.background).toEqual([{ kind: "solid", color: roseGround, opacity: 1 }])
-    expect(solids(plain.chart)).toContain(defaultTheme.colors.accent1)
-    expect(solids(themed.chart)).toContain(roseAccent)
-    expect(solids(themed.chart)).not.toContain(defaultTheme.colors.accent1)
+    expect(solids(plain.title)).toContain(defaultTheme.colors.text)
+    expect(solids(themed.title)).toContain(roseText)
+    expect(solids(themed.title)).not.toContain(defaultTheme.colors.text)
     expect(plain.title.size).toEqual(wide)
     expect(widest(plain.title)).toBe(1600)
     const narrow = layoutPictures(defaultTheme, { w: 1280, h: 720 }, undefined, measure)

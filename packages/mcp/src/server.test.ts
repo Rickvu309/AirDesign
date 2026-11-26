@@ -155,7 +155,7 @@ describe("createServer", () => {
         runId: slides.runId,
         changes: [
           { op: "add", kind: "text", slide: first, text: "Q3 board update", textStyle: "title" },
-          { op: "add", kind: "kpi", slide: two, items: [{ title: "Revenue", value: "$4.2M" }] },
+          { op: "add", kind: "text", slide: two, text: "$4.2M" },
           {
             op: "add",
             kind: "shape",
@@ -165,9 +165,9 @@ describe("createServer", () => {
           },
           {
             op: "add",
-            kind: "cards",
+            kind: "icon",
             slide: four,
-            items: [{ title: "Grow", icon: "trending-up", points: ["Enter two markets"] }],
+            icon: "trending-up",
           },
           {
             op: "add",

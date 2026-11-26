@@ -16,8 +16,8 @@
     {
       "file": "packages/mcp/src/edit-tool.ts",
       "names": ["editDeckTool"],
-      "digest": "dbe6f769459f",
-      "blob": "9b0280ffbe8c5d747195dcecc1d384b780bf76e6"
+      "digest": "da24344fa117",
+      "blob": "aaf2608bce4f979071ac369e3a144814dc06ecb9"
     },
     {
       "file": "packages/mcp/src/stop-tool.ts",

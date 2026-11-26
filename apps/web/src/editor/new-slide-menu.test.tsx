@@ -133,12 +133,12 @@ it("shows a painted picture of each starting slide beside its name", async () =>
 it("chooses the layout that was clicked", async () => {
   const chosen: string[] = []
   await openMenu((part) => chosen.push(part))
-  const chart = window.document.querySelector<HTMLElement>('[data-layout="chart"]')
-  if (chart === null) throw new Error("missing chart layout")
+  const grid = window.document.querySelector<HTMLElement>('[data-layout="grid"]')
+  if (grid === null) throw new Error("missing grid layout")
   await act(async () => {
-    chart.click()
+    grid.click()
   })
-  expect(chosen).toEqual(["chart"])
+  expect(chosen).toEqual(["grid"])
 })
 
 it("opens with Enter or Space on the trigger, hands the keys to the menu while open, and closes cleanly", async () => {

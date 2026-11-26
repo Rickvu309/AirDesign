@@ -2,13 +2,13 @@ import { expect } from "@playwright/test"
 import { openDoomDeck } from "./doom-deck.mjs"
 import { addSlideStart, editNodes, entry, slideIds } from "./doom-slides.mjs"
 
-const notes = "Open with the three numbers, then hand over to the chart. Keep it under a minute."
+const notes = "Open with the grid, then walk through the key points. Keep it under a minute."
 
 export async function presentState(kit, view = "audience") {
   const { page } = kit
   const opened = await openDoomDeck(kit)
-  await addSlideStart(page, "KPIs")
-  await addSlideStart(page, "Chart")
+  await addSlideStart(page, "Grid")
+  await addSlideStart(page, "Title and text")
   await expect.poll(async () => (await slideIds(kit, opened)).length).toBe(3)
   const [, second] = await slideIds(kit, opened)
   await editNodes(kit, opened, [

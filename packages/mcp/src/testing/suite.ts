@@ -135,9 +135,6 @@ function placed(
   )
 }
 
-const pattern = (id: string, prompt: string, make: Record<string, unknown>, shown: string, name: string): SuiteRow =>
-  placed(id, prompt, make, [`name="${name}"`, shown])
-
 const bigRun = "n".repeat(7_000)
 const tooBig = "n".repeat(9_000)
 const slideCount = 3
@@ -287,59 +284,47 @@ export const suite: readonly SuiteRow[] = [
     "layout=grid",
   ),
 
-  pattern(
-    "kpi-pattern",
-    "Show Revenue at $4M as a KPI on the roadmap slide.",
-    { kind: "kpi", items: [{ title: "Revenue", value: "$4M" }] },
-    "$4M",
-    "KPI",
+  placed(
+    "result-label",
+    "Add a shape showing Revenue at $4M on the roadmap slide.",
+    { kind: "shape", text: "Revenue $4M", fill: "accent2" },
+    ['text="Revenue $4M"', "fill=accent2"],
   ),
-  pattern(
-    "cards-pattern",
-    "Show a Grow card with one point on the roadmap slide.",
-    { kind: "cards", items: [{ title: "Grow", points: ["Enter two markets"] }] },
-    "Enter two markets",
-    "Cards",
+  placed(
+    "grow-card",
+    "Add a rounded Grow card with one point on the roadmap slide.",
+    { kind: "shape", text: "Grow\n- Enter two markets", radius: 20 },
+    ["radius=20", "Enter two markets"],
   ),
-  pattern(
-    "compare-pattern",
-    "Compare Build and Buy on the roadmap slide.",
+  placed(
+    "compare-options",
+    "Compare Build (Slow) and Buy (Fast) in a word grid on the roadmap slide.",
     {
-      kind: "compare",
-      items: [
-        { title: "Build", points: ["Slow"] },
-        { title: "Buy", points: ["Fast"] },
+      kind: "frame",
+      rows: [
+        ["Build", "Buy"],
+        ["Slow", "Fast"],
       ],
     },
-    "Fast",
-    "Compare",
+    ["layout=grid", 'text="**Build**"', 'text="**Buy**"', 'text="**Slow**"', 'text="Fast"'],
   ),
-  pattern(
-    "matrix-pattern",
-    "Show a matrix of Quick wins and Big bets on the roadmap slide.",
-    { kind: "matrix", items: [{ title: "Quick wins" }, { title: "Big bets" }], axes: ["Effort", "Impact"] },
-    "Big bets",
-    "Matrix",
+  placed(
+    "effort-impact",
+    "Add a labelled Quick wins quadrant on the roadmap slide.",
+    { kind: "shape", text: "Quick wins", name: "Low effort, high impact", box: { x: 160, y: 320, w: 800, h: 300 } },
+    ['name="Low effort, high impact"', 'text="Quick wins"', "@160,320 800x300"],
   ),
-  pattern(
-    "timeline-pattern",
-    "Show a timeline of Q1 Beta and Q2 Launch on the roadmap slide.",
-    {
-      kind: "timeline",
-      items: [
-        { value: "Q1", title: "Beta" },
-        { value: "Q2", title: "Launch" },
-      ],
-    },
-    "Launch",
-    "Timeline",
+  placed(
+    "milestone-list",
+    "List the Q1 Beta and Q2 Launch milestones on the roadmap slide.",
+    { kind: "text", text: "- Q1 Beta\n- Q2 Launch" },
+    ['text="- Q1 Beta\\n- Q2 Launch"'],
   ),
-  pattern(
-    "flow-pattern",
-    "Show a flow of Plan then Build on the roadmap slide.",
-    { kind: "flow", items: [{ title: "Plan" }, { title: "Build" }] },
-    "Build",
-    "Flow",
+  placed(
+    "step-arrow",
+    "Draw an arrow pointing right on the roadmap slide.",
+    { kind: "line", box: { x: 400, y: 310, w: 200, h: 0 }, arrow: true },
+    ["line @400,310 200x0 stroke=text2 strokeWidth=3 arrow"],
   ),
 
   row(
@@ -512,7 +497,7 @@ export const suite: readonly SuiteRow[] = [
     task: {
       id: "board-brief",
       prompt:
-        "Build a five-slide board deck: a title, a KPI summary with a decision card, a bar chart of plan against actual, three priorities with icons, and a roadmap as a grid of words.",
+        "Build a five-slide board deck: a title, a results summary with a decision card, a bar chart of plan against actual, three priorities with icons, and a roadmap as a grid of words.",
       deck: blankDeck,
       want: {
         calls: 8,
@@ -522,7 +507,7 @@ export const suite: readonly SuiteRow[] = [
           const made = slideIds(end)
           return (
             made.length === 5 &&
-            has(end, 'name="KPI"') &&
+            has(end, 'name="Results"') &&
             has(end, 'name="Decision"') &&
             hasChart(end) &&
             lines(end)
@@ -558,35 +543,12 @@ function boardAttempt(withChart: boolean): Attempt {
       [
         { op: "set", target: `${one}`, text: "Q3 board update" },
         title(two, "Results at a glance"),
-        {
-          op: "add",
-          kind: "kpi",
-          slide: two,
-          items: [
-            { title: "Revenue", value: "$4.2M", note: "+12% YoY" },
-            { title: "Margin", value: "31%" },
-          ],
-        },
-        {
-          op: "add",
-          kind: "cards",
-          slide: two,
-          name: "Decision",
-          items: [{ title: "Decision requested", points: ["Approve the budget"] }],
-        },
+        { op: "add", kind: "text", slide: two, name: "Results", text: "Revenue $4.2M · Margin 31%" },
+        { op: "add", kind: "shape", slide: two, name: "Decision", text: "Approve the budget" },
         title(three, "Revenue ran ahead of plan"),
         ...(withChart ? chart(three) : []),
         title(four, "Three priorities"),
-        {
-          op: "add",
-          kind: "cards",
-          slide: four,
-          items: [
-            { title: "Grow", icon: "trending-up", points: ["Enter two markets"] },
-            { title: "Protect", icon: "shield", points: ["Raise retention"] },
-            { title: "Build", icon: "hammer", points: ["Ship the platform"] },
-          ],
-        },
+        ...["trending-up", "shield", "hammer"].map((icon) => ({ op: "add", kind: "icon", slide: four, icon })),
         title(five, "Roadmap"),
         {
           op: "add",

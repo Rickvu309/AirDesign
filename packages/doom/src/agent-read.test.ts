@@ -93,7 +93,7 @@ describe("readForAgent", () => {
 
   it("leaves out what is the default: the plain ink colour and a padding of nothing", () => {
     const plain = readForAgent(
-      build(richDeck(), change({ op: "add", kind: "kpi", slide: more.slide2, items: [{ title: "A", value: "1" }] })),
+      build(richDeck(), change({ op: "add", kind: "frame", slide: more.slide2, layout: "row" })),
       [more.slide2],
     )
     expect(plain).not.toContain("color=text ")

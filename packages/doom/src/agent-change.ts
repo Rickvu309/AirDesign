@@ -7,7 +7,6 @@ import { arrowField, startArrowField } from "./agent-arrow.js"
 import { weightNames } from "./painted-face.js"
 import { endSchema, readEnd } from "./agent-end.js"
 import { insertField } from "./agent-insert.js"
-import { itemSchema, readItem } from "./agent-item.js"
 import { kindWords } from "./agent-kind-words.js"
 import { linkField } from "./agent-link.js"
 import { limits } from "./limits.js"
@@ -39,7 +38,6 @@ import {
   literal,
   matching,
   object,
-  pair,
   union,
   variant,
   words,
@@ -52,19 +50,7 @@ import { pathLimit, readPathData } from "./geometry.js"
 import { shapeNames } from "./preset-geometry.js"
 import { cropField } from "./agent-crop.js"
 
-export const patternNames = ["kpi", "cards", "compare", "matrix", "timeline", "flow"] as const
-export type PatternName = (typeof patternNames)[number]
-export const addKinds = [
-  "text",
-  "shape",
-  "line",
-  "path",
-  "frame",
-  "picture",
-  "icon",
-  ...patternNames,
-  "component",
-] as const
+export const addKinds = ["text", "shape", "line", "path", "frame", "picture", "icon", "component"] as const
 export type AgentAdd = (typeof addKinds)[number]
 
 export type { AgentBox, AgentColor, AgentFill, AgentGradient, AgentLook } from "./agent-look-types.js"
@@ -237,25 +223,6 @@ const lookFields: LookFields = {
         "Add with kind frame. Words in a grid, one array for each row, the first row the header. Markdown works in a cell. An empty string leaves the cell empty.",
     },
     list(list(words(limits.valueBytes), 24, 1), 64, 1),
-  ),
-  items: field(
-    {
-      type: "array",
-      items: itemSchema,
-      description:
-        "What a pattern shows. kpi: title, value, note. cards: title, points, icon. compare: title, points. matrix: title, points, in reading order. timeline: value, title, note. flow: title, note.",
-    },
-    list(readItem, 8, 1),
-  ),
-  axes: field(
-    {
-      type: "array",
-      items: { type: "string" },
-      minItems: 2,
-      maxItems: 2,
-      description: "Matrix axis labels: across, then up.",
-    },
-    pair(words(100)),
   ),
   box: field(
     {
