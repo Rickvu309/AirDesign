@@ -2,6 +2,7 @@ import { useState, type ComponentProps, type CSSProperties } from "react"
 import { Button } from "@/components/ui/button"
 import { EditorIcon } from "@/components/ui/editor-icons"
 import { slideListCopy } from "@/copy/slide-list-copy"
+import { gestureFor } from "@/lib/gestures"
 
 const addTarget = 44
 
@@ -120,7 +121,7 @@ export function GridAddButton({ onClick, style, ...props }: ComponentProps<typeo
         onClick?.(event)
       }}
       onKeyDown={(event) => {
-        if (event.key !== "Escape") return
+        if (gestureFor(event.nativeEvent, "grid") !== "deselect") return
         event.preventDefault()
         event.stopPropagation()
         event.currentTarget

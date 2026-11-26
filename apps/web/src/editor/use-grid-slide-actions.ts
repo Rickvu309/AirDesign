@@ -2,12 +2,11 @@ import { limits, type NodeId } from "@airdesign/doom"
 import { useLayoutEffect, useRef, useState, type RefObject } from "react"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import type { GridCommand } from "@/editor/editor-grid-keys"
-import { gridDrop, gridIndices, moveBelowPlace, type GridRange } from "@/editor/grid-drop"
+import { gridDrop, moveBelowPlace, type GridRange } from "@/editor/grid-drop"
 import type { GridStep } from "@/editor/grid-interaction"
 import type { GridLayout } from "@/editor/grid-lines"
-import { gridAnchor, gridMovePlacement, type GridMoveSide } from "@/editor/grid-move"
+import type { GridMoveSide } from "@/editor/grid-move"
 import { pickedSlides, type GridPick } from "@/editor/grid-selection"
-import { heldOf, livePick, setStepOf, turnedPick, type SetStep } from "@/editor/slide-list-pick"
 import type { SlideMenuAnchor, SlideMenuSet } from "@/editor/slide-menu"
 import { setMoveAt, slideSetAction } from "@/editor/slide-set-actions"
 import type { SlideStrip } from "@/editor/slide-sidebar"
@@ -60,20 +59,14 @@ export function useGridSlideActions({
   const ids: readonly string[] = layout.cards.map((card) => card.id)
   const shape = layout.cards.map((card) => `${String(card.group)}:${card.id}`).join(",")
   const { current, count } = strip
-  const held = pickedSlides(picked, current)
-  const step = useRef<SetStep | null>(null)
+  const held = pickedSlides(picked, ids, current)
   const follow = useRef<Follow>(null)
   const [menu, setMenu] = useState<GridMenu | null>(null)
 
-  useLayoutEffect(() => {
-    if (step.current === null) return
-    const turn = turnedPick(step.current, ids)
-    step.current = turn.step
-    if (turn.at === null) return
-    const at = turn.at.current === undefined ? -1 : ids.indexOf(turn.at.current)
-    dispatch({ kind: "pick", pick: livePick(turn.at.pick, at, ids) })
-    if (at !== -1) choose(at)
-  })
+  function pickIds(made: readonly string[]) {
+    const [anchor] = made
+    dispatch({ kind: "pick", pick: anchor === undefined || made.length < 2 ? null : { anchor, slides: new Set(made) } })
+  }
 
   useLayoutEffect(() => {
     const wanted = follow.current
@@ -98,38 +91,18 @@ export function useGridSlideActions({
       ?.focus({ preventScroll: true, focusVisible: true })
   }, [shape, current])
 
-  function remember(before: readonly string[], after: readonly string[], made: readonly string[]) {
-    const [anchor] = made
-    step.current = setStepOf(
-      before,
-      after,
-      { pick: heldOf(picked, before), current: before[current] },
-      { pick: anchor === undefined ? null : { anchor, slides: new Set(made) }, current: anchor },
-    )
-  }
-
   function moveSlides(moved: readonly number[], at: number, side: GridMoveSide) {
     const first = gridDrop(groups, moved, at, side)
     if (first === null || strip.onMoveGroups === undefined) return
     const keep = side === "keep"
     const head = ids[moved[0] ?? -1]
     const movedIds = moved.flatMap((index) => ids[index] ?? [])
-    const after = gridMovePlacement(
-      groups.map((group) => gridIndices(group).flatMap((index) => ids[index] ?? [])),
-      movedIds,
-      gridAnchor(ids, new Set(movedIds), at, side),
-      side,
-    ).flat()
     follow.current = keep && head !== undefined ? { grip: head as NodeId } : "current"
     if (!strip.onMoveGroups(moved, at, side)) {
       follow.current = null
       return
     }
-    if (keep || moved.length === 1) dispatch({ kind: "pick", pick: null })
-    else {
-      remember(ids, after, movedIds)
-      dispatch({ kind: "pick", pick: { anchor: first, slides: new Set(moved.map((_, offset) => first + offset)) } })
-    }
+    pickIds(keep ? [] : movedIds)
     announce(gridMoveMessage(groups, moved, at, keep))
   }
 
@@ -144,12 +117,7 @@ export function useGridSlideActions({
     follow: () => {
       follow.current = "current"
     },
-    pick: (made, after) => {
-      remember(ids, after, made)
-      const slides = made.map((id) => after.indexOf(id)).filter((index) => index !== -1)
-      const [anchor] = slides
-      dispatch({ kind: "pick", pick: anchor === undefined ? null : { anchor, slides: new Set(slides) } })
-    },
+    pick: pickIds,
     moveSlides: (moved, at) => moveSlides(moved, at, "same"),
     announce,
   })
@@ -199,6 +167,7 @@ export function useGridSlideActions({
         }
 
   return {
+    held,
     menu,
     menuHeld,
     menuSet,

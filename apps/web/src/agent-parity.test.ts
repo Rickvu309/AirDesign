@@ -17,7 +17,12 @@ import {
 
 const slideOps = new Set(["add", "move", "delete"])
 
-const owedToAgent: readonly string[] = []
+const owedToAgent: readonly string[] = [
+  "gesture:slide-group-up",
+  "gesture:slide-group-down",
+  "drag:slide-group-start",
+  "menu:new-slide-group",
+]
 
 const viewOnly = new Set([
   "select",

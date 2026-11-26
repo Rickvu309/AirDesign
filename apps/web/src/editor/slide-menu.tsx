@@ -106,7 +106,7 @@ export const SlideMenu = memo(function SlideMenu({
         {onOpen === undefined ? null : (
           <DropdownMenuItem
             disabled={set !== undefined && set.size > 1}
-            aria-keyshortcuts="Enter"
+            aria-keyshortcuts={slideListCopy.openKey}
             className={slideMenuItem}
             onClick={onOpen}
           >
