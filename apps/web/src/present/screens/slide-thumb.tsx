@@ -115,7 +115,7 @@ export function SlideThumb({ index, width }: { index: number; width: number }) {
   return (
     <div
       className={cn(
-        "flex shrink-0 flex-col overflow-hidden rounded-[2px]",
+        "flex shrink-0 flex-col overflow-hidden rounded-xs",
         fill,
         white && frameShadow,
         index === 4 && "justify-center",
