@@ -100,6 +100,13 @@ export function EditorGrid({
   )
   const count = layout.cards.length
   const order = useMemo(() => layout.cards.map((card) => card.id), [layout])
+  const shape = useMemo(
+    () =>
+      slideGroupsOf(view)
+        .map((group) => `${group.group}:${group.slides.join(",")}`)
+        .join("|"),
+    [view],
+  )
   const groups = useMemo(() => gridRanges(layout), [layout])
   const bands = useMemo(() => gridBands(layout), [layout])
   const [state, dispatch] = useReducer(gridStep, start, (begin) => opened(begin, order))
@@ -224,7 +231,8 @@ export function EditorGrid({
     layout,
     groups,
     selected: actions.held,
-    order: order.join(","),
+    shape,
+    panning: hand || camera.space,
     ghost,
     onMove: actions.moveSlides,
   })

@@ -36,7 +36,7 @@ export type GridDragPreview = {
 export type GridDropBar = { readonly at: number; readonly group: boolean; readonly rect: GridRect }
 
 type Press = {
-  readonly order: string
+  readonly shape: string
   readonly group: boolean
   readonly pointer: number
   readonly index: number
@@ -73,7 +73,8 @@ export function useGridDrag({
   layout,
   groups,
   selected,
-  order,
+  shape,
+  panning,
   ghost,
   onMove,
 }: {
@@ -81,7 +82,8 @@ export function useGridDrag({
   readonly layout: GridLayout
   readonly groups: readonly GridRange[]
   readonly selected: readonly number[]
-  readonly order: string
+  readonly shape: string
+  readonly panning: boolean
   readonly ghost: RefObject<HTMLDivElement | null>
   readonly onMove: (held: readonly number[], at: number, side: GridMoveSide) => void
 }) {
@@ -237,7 +239,7 @@ export function useGridDrag({
     const point = { x: event.clientX, y: event.clientY }
     if (!held.dragged) {
       if (!dragStarted(held.start, point)) return
-      if (held.order !== order) {
+      if (held.shape !== shape) {
         press.current = null
         return
       }
@@ -309,9 +311,13 @@ export function useGridDrag({
   }, [])
 
   useLayoutEffect(() => {
-    if (press.current === null || press.current.order === order) return
+    if (press.current === null || press.current.shape === shape) return
     latest.current.cancel()
-  }, [order])
+  }, [shape])
+
+  useLayoutEffect(() => {
+    if (panning) latest.current.cancel()
+  }, [panning])
 
   const dragging = preview !== null
   useLayoutEffect(() => {
@@ -335,7 +341,7 @@ export function useGridDrag({
     grab: (index: number, event: PointerEvent<HTMLElement>, group = false) => {
       if (event.button !== 0 || !event.isPrimary || press.current !== null) return
       press.current = {
-        order,
+        shape,
         group,
         pointer: event.pointerId,
         index,

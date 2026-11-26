@@ -11,6 +11,7 @@ import {
   grip,
   hoverOver,
   openGroups,
+  otherGrid,
   picked,
   reopenGrid,
   said,
@@ -295,4 +296,50 @@ test("a slide group moved and a slide added in a new group offline land once the
   expect((await saved())[1]).toEqual(start[2])
   await reopenGrid(page)
   await expect.poll(() => shownGroups(page)).toEqual([[1, 2, 3, 4], [5, 6], [7], [8, 9, 10, 11]])
+})
+
+test("a slide drag cancels when another tab changes the slide groups but not the slide order", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openGroups(page, context, stack, [4, 1, 4])
+  const other = await otherGrid(context, stack, opened)
+  await grab(page, 6)
+  await hoverOver(page, 4, 0.8)
+  await expect(ghost(page)).toBeVisible()
+  await grab(other, 5)
+  await hoverOver(other, 6, 0.2)
+  await expect(bar(other)).toBeVisible()
+  await other.mouse.up()
+  await expect
+    .poll(() => shownGroups(page))
+    .toEqual([
+      [1, 2, 3, 4],
+      [5, 6, 7, 8, 9],
+    ])
+  const moved = await savedGroups(stack, opened)
+  await expect(ghost(page)).toHaveCount(0)
+  await page.mouse.up()
+  expect(await savedGroups(stack, opened)).toEqual(moved)
+})
+
+test("Space or the hand tool during a slide drag cancels it, and the release saves nothing", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openGroups(page, context, stack, [4, 4])
+  const before = await savedGroups(stack, opened)
+  for (const key of [space, "h"]) {
+    await grab(page, 1)
+    await hoverOver(page, 5, 0.2)
+    await expect(ghost(page)).toBeVisible()
+    await page.keyboard.down(key)
+    await expect(ghost(page)).toHaveCount(0)
+    await page.mouse.up()
+    await page.keyboard.up(key)
+    await page.keyboard.press("v")
+    expect(await savedGroups(stack, opened)).toEqual(before)
+  }
 })
