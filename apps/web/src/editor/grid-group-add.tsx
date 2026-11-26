@@ -107,7 +107,7 @@ export function GridAddButton({ onClick, style, ...props }: ComponentProps<typeo
       type="button"
       variant="ghost"
       size="icon"
-      className="absolute rounded-full p-0 transition-none hover:bg-transparent active:translate-y-0"
+      className="absolute"
       {...props}
       style={place}
       onPointerDown={(event) => event.stopPropagation()}

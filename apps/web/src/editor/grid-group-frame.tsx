@@ -1,4 +1,5 @@
 import { useEffect, useState, type PointerEvent, type RefObject } from "react"
+import { Button } from "@/components/ui/button"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { gridGroupCommand } from "@/editor/editor-grid-keys"
 import type { GridBand } from "@/editor/grid-drop"
@@ -106,14 +107,22 @@ export function GridGroupFrame({
     >
       <span data-group-band aria-hidden="true" className="absolute" />
       {grips ? (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           data-group-handle
           aria-label={slideListCopy.moveGroup(number + 1)}
           aria-keyshortcuts={slideListCopy.groupKeys}
           disabled={blocked}
-          className="pointer-events-auto absolute top-1/2 z-10 flex touch-none items-center justify-center rounded-full"
-          style={{ left: -gridGrip.offset, width: gridGrip.width, transform: "translate(-50%, -50%)" }}
+          className="absolute"
+          style={{
+            left: -gridGrip.offset,
+            top: "50%",
+            zIndex: 10,
+            width: gridGrip.width,
+            transform: "translate(-50%, -50%)",
+          }}
           onPointerDown={(event) => {
             event.stopPropagation()
             event.currentTarget.focus({ preventScroll: true, focusVisible: false })
@@ -143,7 +152,7 @@ export function GridGroupFrame({
               <path d="M3 3h6M3 8h6M3 13h6" />
             </svg>
           </span>
-        </button>
+        </Button>
       ) : null}
     </div>
   )
