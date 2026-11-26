@@ -110,7 +110,7 @@ test("a pick stays on the same slides when another tab deletes an earlier slide"
   await expect(entry(page, 7)).toHaveCount(0)
   await expect(entry(page, 4)).toHaveAttribute("aria-current", "true")
   expect(await selectedNumbers(page)).toEqual([2, 4])
-  await entry(page, 1).click({ modifiers: ["Shift"] })
+  await entry(page, 1).click({ modifiers: [shift] })
   expect(await selectedNumbers(page)).toEqual([1, 2, 3, 4])
 })
 
