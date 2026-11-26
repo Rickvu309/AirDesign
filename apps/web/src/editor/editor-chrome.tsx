@@ -75,7 +75,7 @@ export function GridHead({ title, save, canAdd, onAdd, onSlides, onRename, onTra
       </a>
       <DeckTitle
         title={title}
-        className="max-w-[240px] pr-2 pl-0.5"
+        className="max-w-60 pr-2 pl-0.5"
         {...(onRename === undefined ? {} : { onRename })}
         {...(onTrash === undefined ? {} : { onTrash })}
       />

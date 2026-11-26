@@ -34,7 +34,7 @@ export const slideThumbWidth = 197
 
 const thumbWidth = slideThumbWidth
 
-const thumbCard = cn("slide-thumb block shrink-0 overflow-hidden rounded-[2px] bg-white", hairlineShadow)
+const thumbCard = cn("slide-thumb block shrink-0 overflow-hidden rounded-xs bg-white", hairlineShadow)
 
 export type SetChange = { readonly picked: readonly string[]; readonly order: readonly string[] }
 
@@ -94,7 +94,7 @@ export function SlideSidebar({
   onGrid?: () => void
 }) {
   return (
-    <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white" data-editor-sidebar>
+    <aside className="flex h-full w-62 shrink-0 flex-col border-r border-line bg-white" data-editor-sidebar>
       <SidebarHead
         title={title}
         homeHref="/"

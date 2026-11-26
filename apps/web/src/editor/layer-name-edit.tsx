@@ -74,7 +74,7 @@ export function LayerName({ name, onRename }: { readonly name: string; readonly 
         <span
           id="layer-name-words"
           role="alert"
-          className="absolute top-8 left-0 z-10 w-max max-w-[220px] rounded-md bg-background px-2 py-1.5 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-danger-text shadow-[0_0_0_1px_var(--field-edge),0_4px_12px_var(--black-6)]"
+          className="absolute top-8 left-0 z-10 w-max max-w-55 rounded-md bg-background px-2 py-1.5 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-danger-text shadow-[0_0_0_1px_var(--field-edge),0_4px_12px_var(--black-6)]"
         >
           {words}
         </span>

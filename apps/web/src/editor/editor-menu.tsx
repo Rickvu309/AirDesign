@@ -22,7 +22,7 @@ export function EditorMenuContent({
   return (
     <DropdownMenuContent
       className={cn(
-        "flex w-[188px] min-w-0 flex-col overscroll-contain rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0 duration-0",
+        "flex w-47 min-w-0 flex-col overscroll-contain rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0 duration-0",
         className,
       )}
       {...place}
