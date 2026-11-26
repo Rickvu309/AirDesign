@@ -114,3 +114,91 @@ test("the sign-in footer underlines its links so they stand apart from plain tex
     }
   }
 })
+
+async function gradientContrast(page: Page, selector: string, labelSelector?: string) {
+  return page.locator(selector).evaluate((element, inner) => {
+    const style = getComputedStyle(element)
+    const labelElement = inner === null ? element : (element.querySelector(inner) ?? element)
+    const labelStyle = getComputedStyle(labelElement)
+    const parse = (color: string): [number, number, number] => {
+      const match = color.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/)
+      if (!match) throw new Error(`unexpected color ${color}`)
+      return [Number(match[1]), Number(match[2]), Number(match[3])]
+    }
+    const linear = (channel: number) => {
+      const value = channel / 255
+      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+    }
+    const luminance = ([r, g, b]: [number, number, number]) =>
+      0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+    const ratio = (a: [number, number, number], b: [number, number, number]) => {
+      const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+      return ((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05)
+    }
+    const stops = [...style.backgroundImage.matchAll(/rgba?\([^)]+\)/g)].map((found) => parse(found[0]))
+    if (stops.length < 2) throw new Error(`expected gradient, got ${style.backgroundImage}`)
+    const label = parse(labelStyle.color)
+    return {
+      lowest: Math.min(...stops.map((stop) => ratio(label, stop))),
+      filter: style.filter,
+      opacity: Number(style.opacity),
+      labelOpacity: Number(labelStyle.opacity),
+      backgroundImage: style.backgroundImage,
+    }
+  }, labelSelector ?? null)
+}
+
+test("marketing and sign-in primary buttons clear 4.5:1 across rest, hover, pressed and sending states", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1470, height: 923 })
+  await page.goto(`${site.origin}/`)
+  await page.evaluate(() => document.fonts.ready)
+  const hero = "section.hero-landing a.primary-button"
+  const heroRest = await gradientContrast(page, hero)
+  expect(heroRest.filter).toBe("none")
+  expect(heroRest.lowest).toBeGreaterThanOrEqual(4.5)
+  await page.locator(hero).hover()
+  const heroHover = await gradientContrast(page, hero)
+  expect(heroHover.filter).toBe("none")
+  expect(heroHover.backgroundImage).not.toBe(heroRest.backgroundImage)
+  expect(heroHover.lowest).toBeGreaterThanOrEqual(4.5)
+  const heroBox = await page.locator(hero).boundingBox()
+  if (heroBox === null) throw new Error("missing hero button")
+  await page.mouse.move(heroBox.x + heroBox.width / 2, heroBox.y + heroBox.height / 2)
+  await page.mouse.down()
+  const heroActive = await gradientContrast(page, hero)
+  await page.mouse.move(0, 0)
+  await page.mouse.up()
+  expect(heroActive.filter).toBe("none")
+  expect(heroActive.backgroundImage).not.toBe(heroHover.backgroundImage)
+  expect(heroActive.lowest).toBeGreaterThanOrEqual(4.5)
+
+  await page.goto(`${site.origin}/sign-in`)
+  await page.evaluate(() => document.fonts.ready)
+  const submit = "[data-sign-in-form] button.primary-button"
+  const signInRest = await gradientContrast(page, submit, "[data-sign-in-label]")
+  expect(signInRest.lowest).toBeGreaterThanOrEqual(4.5)
+  let release = () => {}
+  const held = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.route(`${site.origin}/**`, async (route) => {
+    if (route.request().method() !== "POST") {
+      await route.continue()
+      return
+    }
+    await held
+    await route.abort()
+  })
+  await page.fill("#sign-in-email", "ada@example.com")
+  await page.locator(submit).click()
+  await expect(page.locator("[data-sign-in-form] [data-pending]")).toBeVisible()
+  const sending = await gradientContrast(page, submit, "[data-sign-in-label]")
+  expect(sending.filter).toBe("none")
+  expect(sending.opacity).toBe(1)
+  expect(sending.labelOpacity).toBe(1)
+  expect(sending.lowest).toBeGreaterThanOrEqual(4.5)
+  release()
+  await page.unrouteAll({ behavior: "ignoreErrors" })
+})
