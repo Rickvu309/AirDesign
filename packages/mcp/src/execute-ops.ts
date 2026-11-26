@@ -1,4 +1,4 @@
-import { readDeckChange } from "@airdesign/catalog"
+import { deckChangeWords, readDeckChange } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import { doomRefused, refused, type ToolResult } from "./answer.js"
@@ -99,13 +99,9 @@ export function newPlan(
 }
 
 const notLook = new Set(
-  "op kind slide into target node nodes after add move delete theme colors fonts nameFollows focus spec component data variant tokens".split(
-    " ",
-  ),
+  "op kind slide into target node nodes after add move delete theme colors fonts nameFollows".split(" "),
 )
-export const lookFields: readonly string[] = Object.keys(doom.agentChangesSchema.$defs.change.properties).filter(
-  (key) => !notLook.has(key),
-)
+const lookFields = deckChangeWords.fields.filter((key) => !notLook.has(key))
 const textFields = new Set(
   "text insert textStyle color size font weight lineHeight letterSpacing case underline strike alignV spaceBefore spaceAfter language".split(
     " ",

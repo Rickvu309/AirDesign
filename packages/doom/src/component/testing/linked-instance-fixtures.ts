@@ -1,3 +1,4 @@
+import { placeComponent, regenerateComponent } from "../join-instance.js"
 import { columnDefinition } from "../library.js"
 import {
   type Doom,
@@ -12,8 +13,6 @@ import {
   nodeId,
   orderKeyBetween,
   rev,
-  placeComponent,
-  regenerateComponent,
 } from "../../index.js"
 
 export const frame = nodeId("linked:1")

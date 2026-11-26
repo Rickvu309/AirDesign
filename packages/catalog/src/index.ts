@@ -82,7 +82,7 @@ export {
   type TokenRequest,
 } from "./wire.js"
 
-export { readDeckChange } from "./deck-edit-wire.js"
+export { deckChangeWords, readDeckChange } from "./deck-edit-wire.js"
 export { readExecute } from "./execute-wire.js"
 export { readListDecks } from "./read-wire.js"
 export { pictureBytes, pictureType, type SlidePictures } from "./slide-pictures-wire.js"
@@ -99,5 +99,5 @@ export {
   readAutoReset,
   type Credits,
 } from "./credits-routes.js"
-export { undoStaysNote, undoRebuildFailed, type UndoStays } from "./undo-copy.js"
+export { undoStaysNote, type UndoStays } from "./undo-copy.js"
 export { runUndoStays } from "./run-undo-stays.js"

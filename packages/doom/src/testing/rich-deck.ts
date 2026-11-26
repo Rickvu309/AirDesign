@@ -1,4 +1,5 @@
-import { type NodeId, type Doom, type Write, isRefusal, nodeId, placeComponent } from "../index.js"
+import { placeComponent } from "../component/join-instance.js"
+import { type NodeId, type Doom, type Write, isRefusal, nodeId } from "../index.js"
 import { type OrderKey, orderKeyBetween } from "../order-key.js"
 import { box, ids, land, sampleDeck, textOf } from "../sample-deck.js"
 import { parentOf } from "../doom-walk.js"

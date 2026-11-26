@@ -9,7 +9,6 @@ import { formatCopy } from "../../apps/web/src/copy/format-copy"
 import { linkCopy } from "../../apps/web/src/copy/link-copy"
 import { selectionColorsCopy } from "../../apps/web/src/copy/selection-colors-copy"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy"
-import * as doom from "../../packages/doom/src/index.ts"
 import { test } from "./api-stack"
 import { hexes, neutralColorNames } from "./editor-design-art"
 import { accent, clickSlide, landNodes, openEditor, savedNode, selectedIds, spot, type Opened } from "./editor-deck"
@@ -247,52 +246,6 @@ test("a tiled picture shows its mode alongside the current fit options, and a fr
   expect(await selectedIds(page)).toEqual(["t:4"])
   await page.locator("[data-auto-layout]").getByRole("button", { name: designCopy.removeAutoLayout }).click()
   await expect.poll(async () => (await saved(stack, opened, "t:4")).layout?.mode).toBe("none")
-})
-
-test("a selected chart keeps its frame controls", async ({ page, context, stack }) => {
-  const opened = await designing(page, context, stack)
-  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
-  const read = async () => (await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)).json
-  const fold = doom.readFold((await read()).fold)
-  if (fold === undefined) throw new Error("could not read the deck")
-  const slide = doom.nodeId(opened.slide)
-  const target = doom.nodeId("chart:1")
-  const last = doom.childrenOf(fold, slide).at(-1)
-  const writes = doom.placeComponent(fold, doom.columnDefinition, {
-    frame: target,
-    parent: { id: slide, at: doom.orderKeyBetween(doom.propOf(last, "parent")?.at ?? null, null) },
-    box: spot(1100, 700, 600, 260),
-    data: { rows: [{ id: "q1", label: "Q1", value: 24 }] },
-    measure: doom.measureWith({}),
-  })
-  if (doom.isRefusal(writes)) throw new Error(JSON.stringify(writes))
-  const placed = await stack.post(
-    doomRoutes.edit.path,
-    {
-      deck: opened.deck,
-      edit: { once: "chart-fixture", author: { kind: "person", id: "fixture" }, readBase: fold.rev, writes },
-    },
-    opened.cookie,
-  )
-  expect(placed.json).toMatchObject({ ok: true })
-  const canvas = page.locator("[data-slide-box]")
-  await expect(canvas.getByText("Q1", { exact: true })).toBeVisible()
-
-  const saved = doom.readFold((await read()).fold)
-  const linked = doom.propOf(saved?.nodes.get(target), "instance")
-  const bar = linked?.parts.find(({ key }) => key[0] === "bar")
-  if (bar === undefined) throw new Error("missing chart bar")
-
-  const bounds = await node(page, bar.node).boundingBox()
-  if (bounds === null) throw new Error("chart bar did not paint")
-  await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
-  await expect.poll(() => selectedIds(page)).toEqual([target])
-  await expect(panel(page).getByRole("button", { name: /align right/i })).toBeVisible()
-  await expect(page.locator('[data-grip="bottom-right"]')).toBeVisible()
-  await expect(panel(page).getByRole("button", { name: designCopy.detachInstance })).toBeVisible()
-  await expect(panel(page)).toHaveAttribute("data-panel-kind", "frame")
-  await expect(section(page, fillCopy.section)).toBeVisible()
-  await expect(section(page, designCopy.border)).toBeVisible()
 })
 
 test("several layers share one panel and Align moves them to the selection's edge", async ({

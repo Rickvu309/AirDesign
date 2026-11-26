@@ -42,20 +42,56 @@ export function boardDeckChanges(slides: readonly NodeId[]): readonly (readonly 
     ],
     [
       title(three, "Revenue ran ahead of plan"),
-      {
+      ...["Plan", "Actual"].map((text, i): AgentChange => ({
         op: "add",
-        kind: "component",
-        component: "clustered-chart",
-        variant: { orientation: "column" },
+        kind: "text",
         slide: three,
-        data: {
-          categories: ["Q1", "Q2", "Q3", "Q4"].map((label) => ({ id: label.toLowerCase(), label })),
-          series: [
-            { id: "plan", label: "Plan", values: [3.1, 3.4, 3.8, 4.1], fill: "accent2" },
-            { id: "actual", label: "Actual", values: [3.3, 3.7, 4.2, 4.6] },
-          ],
-        },
-      },
+        text,
+        textStyle: "caption",
+        color: i === 0 ? "accent2" : "accent1",
+        box: { x: 160 + 160 * i, y: 208, w: 140, h: 42 },
+      })),
+      ...[
+        [3.1, 3.3],
+        [3.4, 3.7],
+        [3.8, 4.2],
+        [4.1, 4.6],
+      ].flatMap((values, quarter): AgentChange[] => {
+        const x = 180 + quarter * 430
+        return [
+          ...values.flatMap((value, series): AgentChange[] => {
+            const left = x + series * 136
+            const height = Math.round(value * 112)
+            const name = `Q${quarter + 1} ${series === 0 ? "Plan" : "Actual"}`
+            return [
+              {
+                op: "add",
+                kind: "shape",
+                slide: three,
+                name,
+                fill: series === 0 ? "accent2" : "accent1",
+                box: { x: left, y: 910 - height, w: 120, h: height },
+              },
+              {
+                op: "add",
+                kind: "text",
+                slide: three,
+                text: String(value),
+                textStyle: "caption",
+                box: { x: left, y: 862 - height, w: 120, h: 42 },
+              },
+            ]
+          }),
+          {
+            op: "add",
+            kind: "text",
+            slide: three,
+            text: `Q${quarter + 1}`,
+            textStyle: "caption",
+            box: { x, y: 928, w: 256, h: 40 },
+          },
+        ]
+      }),
     ],
     [
       title(four, "Three priorities for next year"),

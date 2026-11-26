@@ -90,12 +90,19 @@ it("refuses to author or place a template without changing the deck", async () =
     rev: number
     slides: string[]
   }
-  const named = await call("execute", { deck, script: "component({ spec: {} })" })
-  expect(named.answer).toMatchObject({ ok: false, refusal: "script", line: 1 })
+  const target = JSON.stringify(slides[0])
+  for (const verb of ["component", "detach"]) {
+    const result = await call("execute", { deck, script: `${verb}({ target: ${target} })` })
+    expect(result.answer).toMatchObject({ ok: false, refusal: "script", line: 1 })
+  }
   const placed = await call("execute", {
     deck,
-    script: scriptOf([{ op: "add", kind: "component", slide: slides[0], component: "column" }]),
+    script: scriptOf([{ op: "add", kind: "component", slide: slides[0] }]),
   })
-  expect(placed.answer).toMatchObject({ ok: false, refusal: "field", op: 1 })
+  expect(placed.answer).toMatchObject({ ok: false, refusal: "field", op: 1, field: "kind" })
+  for (const field of ["component", "spec", "data", "variant", "tokens", "focus"]) {
+    const result = await call("execute", { deck, script: `update({ target: ${target}, ${field}: {} })` })
+    expect(result.answer).toMatchObject({ ok: false, refusal: "field", op: 1, field })
+  }
   expect((await readOf(call, deck)).answer).toMatchObject({ rev })
 })

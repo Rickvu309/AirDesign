@@ -37,12 +37,3 @@ export function recordStep(steps: Step[], step: Step, canJoin: boolean) {
     }
   } else steps.push(step)
 }
-
-export const turnOf =
-  (undoSteps: readonly Step[], redoSteps: readonly Step[]) =>
-  (once: string): "undo" | "redo" | undefined =>
-    redoSteps.some((step) => step.onces.includes(once))
-      ? "undo"
-      : undoSteps.some((step) => step.onces.includes(once))
-        ? "redo"
-        : undefined

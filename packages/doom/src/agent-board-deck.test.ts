@@ -1,4 +1,3 @@
-import { linkedOwner } from "./component/instance-ownership.js"
 import { describe, expect, it } from "vitest"
 import { bytesOf } from "./limits.js"
 import type { AgentChange } from "./agent-change.js"
@@ -63,9 +62,18 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
   it("holds the results grid, a decision card, the chart, three icons and the roadmap grid", () => {
     const names = (slide: NodeId) => childrenOf(doom, slide).map((node) => propOf(node, "name"))
     expect(names(slides[1]!)).toEqual([undefined, "Results", "Decision"])
-    expect(
-      childrenOf(doom, slides[2]!).some((node) => propOf(node, "instance")?.component.id === "clustered-chart"),
-    ).toBe(true)
+    expect(names(slides[2]!)).toEqual(
+      expect.arrayContaining([
+        "Q1 Plan",
+        "Q1 Actual",
+        "Q2 Plan",
+        "Q2 Actual",
+        "Q3 Plan",
+        "Q3 Actual",
+        "Q4 Plan",
+        "Q4 Actual",
+      ]),
+    )
     expect(childrenOf(doom, slides[3]!).filter((node) => propOf(node, "geometry")?.kind === "icon")).toHaveLength(3)
     const roadmap = childrenOf(doom, slides[4]!)[1]!
     expect(propOf(roadmap, "layout")).toMatchObject({ mode: "grid" })
@@ -75,7 +83,6 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
   it("uses the deck's named text styles and no size of its own anywhere", () => {
     for (const slide of slides)
       for (const node of descendantsOf(doom, slide)) {
-        if (linkedOwner(doom.nodes, node.id) !== undefined) continue
         const text = propOf(node, "text")
         if (text === undefined) continue
         expect(textStyleNames).toContain(text.style)
@@ -131,10 +138,7 @@ describe("the board deck on the slide type scale", () => {
   })
 
   it("sets a chart's words, value labels included, at 24 px or more", () => {
-    const chart = childrenOf(doom, slides[2]!).find((node) => propOf(node, "instance") !== undefined)!
-    const words = descendantsOf(doom, chart.id).flatMap(
-      (part) => propOf(part, "text")?.spans.flatMap((span) => span.size ?? []) ?? [],
-    )
+    const words = sizesOn(slides[2]!)
     expect(words.length).toBeGreaterThan(0)
     expect(Math.min(...words)).toBeGreaterThanOrEqual(24)
   })

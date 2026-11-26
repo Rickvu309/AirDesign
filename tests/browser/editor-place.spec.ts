@@ -17,7 +17,7 @@ const picked = async (page: Page, stack: Stack, opened: Opened) => {
   return (await savedNode(stack, opened, id)) as { box: { x: number; y: number; w: number; h: number } } | undefined
 }
 
-test("Place image inserts a picture from a file, and a chart or icon lands beside what is already there", async ({
+test("Place image inserts a picture from a file, and an icon lands beside what is already there", async ({
   page,
   context,
   stack,
@@ -39,13 +39,6 @@ test("Place image inserts a picture from a file, and a chart or icon lands besid
 
   await page.keyboard.press("r")
   await dragSlide(page, { x: 0, y: 0 }, { x: 1400, y: 1080 })
-  await actions.click()
-  await page.getByRole("option", { name: editorCopy.chartKinds.column, exact: true }).click()
-  await expect.poll(async () => (await picked(page, stack, opened))?.box.x).toBeGreaterThanOrEqual(1400)
-
-  await expect(page.locator("[data-actions-panel]")).toBeHidden()
-  await page.keyboard.press("ControlOrMeta+z")
-  await expect(page.locator("[data-slide-box]").getByText("Q1", { exact: true })).toHaveCount(0)
   await actions.click()
   await page.getByRole("combobox", { name: editorCopy.actionsSearch }).fill("rocket")
   await page.getByRole("option", { name: "rocket", exact: true }).click()

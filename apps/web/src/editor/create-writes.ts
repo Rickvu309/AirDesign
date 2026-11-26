@@ -135,7 +135,6 @@ export function centeredIn(inside: Size, size: Size): { readonly x: number; read
 type Box = Size & { readonly x: number; readonly y: number }
 
 const iconSide = 120
-const chartLeast: Size = { w: 280, h: 240 }
 
 const fits = (area: Box, least: Size) => area.w >= least.w && area.h >= least.h
 
@@ -214,12 +213,7 @@ export function insertionTarget(
   const [only] = selected
   const placed = selected.length === 1 && only !== undefined ? geometry.byId.get(only) : undefined
   const stored = placed === undefined ? undefined : view.nodes.get(placed.id)
-  if (
-    placed !== undefined &&
-    stored?.type === "frame" &&
-    stored.instance === undefined &&
-    doom.linkedOwner(view.nodes, placed.id) === undefined
-  ) {
+  if (placed !== undefined && stored?.type === "frame") {
     return { parent: placed.id, inside: placed.node.box, anchor: undefined }
   }
   const anchor =
@@ -227,47 +221,4 @@ export function insertionTarget(
       ? placed?.node.box
       : { ...placed.node.box, x: placed.bounds.left, y: placed.bounds.top }
   return { parent: slide, inside: size, anchor }
-}
-
-export function chartArea(view: doom.Doom, parent: doom.NodeId, inside: Size, anchor?: Box): Box {
-  return openArea(view, parent, inside, chartLeast, anchor)
-}
-
-export function componentInsertWrites(
-  view: doom.Doom,
-  pick: {
-    readonly parent: doom.NodeId
-    readonly area: Box
-    readonly component: string
-    readonly variant?: NonNullable<Extract<doom.AgentChange, { op: "add" }>["variant"]>
-    readonly mint: () => doom.NodeId
-    readonly measure: doom.Measure
-  },
-) {
-  const slide = doom.slideOf(view, pick.parent)
-  if (slide === undefined) return null
-  const built = doom.compileAgentEdit(
-    view,
-    [
-      {
-        op: "add",
-        kind: "component",
-        component: pick.component,
-        slide,
-        ...(slide === pick.parent ? {} : { into: pick.parent }),
-        ...(pick.variant === undefined ? {} : { variant: pick.variant }),
-        box: pick.area,
-      },
-    ],
-    {
-      author: { kind: "person", id: "component-insert" },
-      once: "component-insert",
-      mint: pick.mint,
-      measure: pick.measure,
-    },
-  )
-  if ("refused" in built) return null
-  const writes = built.edit.writes
-  const root = writes.find((write) => write.prop === "instance")
-  return root === undefined ? null : { id: root.node, writes }
 }

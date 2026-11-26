@@ -13,22 +13,9 @@ back(id, node, parent) as (
   select n.id, n.node, n.parent from back
   cross join lateral (select n.id, n.node, n.parent from deck.doom_node n where n.deck = $1 and n.parent = back.id offset 0) n
 ),
-linked_back(id, parent) as (
-  select id, parent from back where node #>> '{instance,component,node}' is not null
-  union
-  select back.id, back.parent from linked_back join back on back.id = linked_back.parent
-),
-changed_components as (
-  select id from deck.doom_node where deck = $1 and type = 'component' and id = any($2::text[])
-),
 seeded(ids) as (
   select array(
     select unnest($2::text[])
-    union
-    select n.id from deck.doom_node n
-    where exists (select 1 from changed_components)
-      and n.deck = $1 and n.type = 'frame'
-      and n.node #>> '{instance,component,node}' = any(array(select id from changed_components))
     union
     select id from back
     where node #>> '{geometry,start,node}' is not null or node #>> '{geometry,end,node}' is not null
@@ -55,43 +42,8 @@ chain(id, type, parent) as (
   select up.id, up.type, up.parent from chain
   cross join lateral (select up.id, up.type, up.parent from deck.doom_node up where up.deck = $1 and up.id = chain.parent offset 0) up
 ),
-generated as (
-  select n.node #>> '{instance,generated}' as id
-  from chain join deck.doom_node n on n.deck = $1 and n.id = chain.id
-  where n.node ? 'instance'
-  union
-  select unnest($7::text[])
-),
-sources as (
-  select n.node #>> '{instance,component,node}' as id
-  from chain cross join lateral (select n.node from deck.doom_node n where n.deck = $1 and n.id = chain.id offset 0) n
-  where n.node #>> '{instance,component,node}' is not null
-  union
-  select node #>> '{instance,component,node}' from back where node #>> '{instance,component,node}' is not null
-  union
-  select unnest($8::text[])
-),
-components as (
-  select n.id, n.parent from deck.doom_node n
-  where n.deck = $1 and n.id = any(array(select id from sources)) and n.type = 'component'
-  union
-  select n.id, n.parent from deck.doom_node n
-  where ($9::boolean or exists (select 1 from changed_components))
-    and n.deck = $1 and n.type = 'component' and n.parent is not null
-),
 wanted as (
-  select id from components
-  union
-  select parent from components where parent is not null
-  union
-  select id from linked_back
-  union
   select id from chain
-  union
-  select id from generated
-  union
-  select n.id from generated
-  cross join lateral (select n.id from deck.doom_node n where n.deck = $1 and n.parent = generated.id offset 0) n
   union
   select n.id from deck.doom_node n join chain on n.parent = chain.id
   where n.deck = $1 and chain.id = any($4::text[]) and chain.type = 'slideRow' and n.type = 'slide'
@@ -131,45 +83,34 @@ type Seeds = {
   readonly seeds: string[]
   readonly regrouped: string[]
   readonly removed: string[]
-  readonly generated: string[]
-  readonly components: string[]
-  readonly createsComponent: boolean
+  readonly linked?: { readonly node: doom.NodeId; readonly prop: "type" | "instance" }
 }
 
 export function seedsOf(edit: Readonly<Record<string, unknown>>): Seeds {
   const seeds = new Set<string>()
   const regrouped = new Set<string>()
   const removed = new Set<string>()
-  const generated = new Set<string>()
-  const components = new Set<string>()
-  let createsComponent = false
-  if (!Array.isArray(edit.writes))
-    return { seeds: [], regrouped: [], removed: [], generated: [], components: [], createsComponent: false }
+  let linked: Seeds["linked"]
+  if (!Array.isArray(edit.writes)) return { seeds: [], regrouped: [], removed: [] }
   for (const each of edit.writes as unknown[]) {
     if (typeof each !== "object" || each === null) continue
     const { node, prop, value } = each as { node?: unknown; prop?: unknown; value?: unknown }
     if (typeof node === "string") seeds.add(node)
-    if (prop === "type" && value === "component") createsComponent = true
+    if (prop === "instance" || (prop === "type" && value === "component")) {
+      const id = doom.readNodeId(node)
+      if (id !== undefined) linked ??= { node: id, prop }
+    }
     if (typeof node === "string" && (prop === "parent" || prop === "hidden")) regrouped.add(node)
     if (typeof node === "string" && prop === "parent" && value === null) removed.add(node)
     const parent = typeof value === "object" && value !== null ? (value as { id?: unknown }).id : undefined
     if (prop === "parent" && typeof parent === "string") seeds.add(parent)
-    if (prop === "instance" && typeof value === "object" && value !== null && "generated" in value) {
-      const id = doom.readNodeId(value.generated)
-      if (id !== undefined) generated.add(id)
-      const ref = "component" in value ? value.component : undefined
-      const source = typeof ref === "object" && ref !== null && "node" in ref ? doom.readNodeId(ref.node) : undefined
-      if (source !== undefined) components.add(source)
-    }
     if (prop === "geometry") for (const end of endNodes(value)) seeds.add(end)
   }
   return {
     seeds: [...seeds],
     regrouped: [...regrouped],
     removed: [...removed],
-    generated: [...generated],
-    components: [...components],
-    createsComponent,
+    ...(linked === undefined ? {} : { linked }),
   }
 }
 

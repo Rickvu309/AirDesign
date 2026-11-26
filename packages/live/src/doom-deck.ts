@@ -4,9 +4,6 @@ import {
   acceptedWithoutRow,
   appliedOn,
   followedEdit,
-  regenerationFor,
-  type Regeneration,
-  type Suppression,
   dropped,
   landed,
   ownedAt,
@@ -30,23 +27,13 @@ import type {
   TurnedRun,
 } from "./doom-deck-types.js"
 import { catchDoom, foldCaught, followDoom } from "./doom-follow.js"
-import {
-  dropNotices,
-  rebuilds,
-  replayLinked,
-  suppressionsOf,
-  suppressWrites,
-  loadRunUndos,
-  type RunUndoSource,
-} from "./doom-set-aside.js"
-import { forgetSteps, recordStep, relaySteps, turnOf, type Step } from "./doom-steps.js"
+import { dropNotices } from "./doom-set-aside.js"
+import { forgetSteps, recordStep, relaySteps, type Step } from "./doom-steps.js"
 import { statusOf, type DeckStatus, type Reach } from "./doom-status.js"
 import { deviceStorage, keepDoom, type DoomStorage } from "./doom-storage.js"
 import { runInLog } from "./run-log.js"
 import { watchedRunsOf } from "./watched-runs.js"
 import { catchingUpResolves, onStanding, pressedOn, remember, type Pressed } from "./turn-replay.js"
-import { turnGuard } from "./turn-guard.js"
-import { turnSkips } from "./turn-skips.js"
 
 export type { DoomDeck } from "./doom-deck-types.js"
 
@@ -94,7 +81,6 @@ function connected(
   let undoSteps: Step[] = []
   let redoSteps: Step[] = []
   const turned = new Map<string, Pressed>()
-  const runUndoSources = new Map<string, RunUndoSource>()
   let notices: readonly Notice[] = []
   let link: Reach = "reached"
   let kept = true
@@ -132,33 +118,10 @@ function connected(
     redoSteps = forgetSteps(redoSteps, gone)
   }
 
-  async function drop(once: string, refusal: Omit<Notice, "once">) {
-    if (refusal.refused === "stale")
-      await loadRunUndos(queue, once, runUndoSources, async (run) => {
-        const edits = await runInLog(remote, deck, view(), run)
-        return edits === "size" ? undefined : edits
-      })
+  function drop(once: string, refusal: Omit<Notice, "once">) {
     const before = queue
     const result = dropped(queue, once)
     if (result.gone.length === 0) return
-    const head = before.find((each) => each.edit.once === once)
-    if (refusal.refused === "stale" && head !== undefined && rebuilds(head)) {
-      const rebuilt = replayLinked(
-        server,
-        before,
-        result.gone,
-        measure(),
-        turned.keys(),
-        runUndoSources,
-        turnOf(undoSteps, redoSteps),
-      )
-      queue = rebuilt.queue
-      forget(rebuilt.gone)
-      undoSteps = relaySteps(undoSteps, rebuilt.steps)
-      redoSteps = relaySteps(redoSteps, rebuilt.steps)
-      notices = [...notices, ...rebuilt.notices]
-      return
-    }
     queue = result.queue
     forget(result.gone)
     notices = [...notices, ...dropNotices(before, result.gone, once, refusal)]
@@ -212,7 +175,7 @@ function connected(
     const changed = new Set([...kept.gone, ...kept.steps.keys()])
     for (const each of queue) {
       const because = each.afterRead?.find((name) => changed.has(name))
-      if (because !== undefined) await drop(each.edit.once, { refused: "stale", because })
+      if (because !== undefined) drop(each.edit.once, { refused: "stale", because })
     }
     if (queue === kept.queue) projection.adopt(fold, queue, kept.view, kept.provisional)
     undoSteps = relaySteps(undoSteps, kept.steps)
@@ -238,11 +201,7 @@ function connected(
         if (!(await catchUp().catch(() => ({ ok: false }))).ok) return offline
         reached()
         if (queue[0] === head) {
-          try {
-            await drop(once, { refused: "stale", because: built })
-          } catch {
-            return offline
-          }
+          drop(once, { refused: "stale", because: built })
           await save({ queue })
           tell()
         }
@@ -279,22 +238,14 @@ function connected(
           continue
         }
       }
-      if ((refusal === "edit" || refusal === "field" || refusal === "size") && queue.some(rebuilds)) {
-        if (!(await catchUp().catch(() => ({ ok: false }))).ok) return offline
-        if (queue[0]?.edit.once !== once) continue
-      }
       if (refusal === "edit") {
-        try {
-          await drop(once, {
-            refused: answer.refused,
-            ...(answer.node === undefined ? {} : { node: answer.node }),
-            ...(answer.prop === undefined ? {} : { prop: answer.prop }),
-          })
-        } catch {
-          return offline
-        }
+        drop(once, {
+          refused: answer.refused,
+          ...(answer.node === undefined ? {} : { node: answer.node }),
+          ...(answer.prop === undefined ? {} : { prop: answer.prop }),
+        })
       } else if (refusal === "size" || refusal === "field") {
-        await drop(once, { refused: refusal === "size" ? "limit" : "shape" })
+        drop(once, { refused: refusal === "size" ? "limit" : "shape" })
       } else if (refusal === "stale") return offline
       else return { ok: false, reason: "blocked", refusal }
       await save({ queue })
@@ -335,20 +286,12 @@ function connected(
       readBase,
       seen,
       last,
-      regeneration,
-      suppressions,
-      turnFrom,
-      turnSource,
     }: {
       runUndo?: doom.RunUndo
       follows?: string
       readBase?: doom.Rev
       seen?: doom.Doom | undefined
       last?: doom.Doom
-      regeneration?: Regeneration
-      suppressions?: readonly Suppression[]
-      turnFrom?: readonly string[]
-      turnSource?: doom.RunEdit
     } = {},
   ): (Sent & { readonly before: doom.Doom; readonly writes: readonly doom.Write[] }) | Refused {
     const { view: before, provisional } = projection.read(server, queue)
@@ -369,10 +312,6 @@ function connected(
       {
         ...made,
         ...(follows === undefined ? {} : { follows }),
-        ...(regeneration === undefined ? {} : { regeneration }),
-        ...(suppressions === undefined ? {} : { suppressions }),
-        ...(turnFrom === undefined ? {} : { turnFrom }),
-        ...(turnSource === undefined ? {} : { turnSource }),
       },
     ]
     projection.append(server, queue, trial, edit.once)
@@ -404,23 +343,18 @@ function connected(
       tell()
       return { ok: false, reason: "refused", refused: writes }
     }
-    const skips = turnSkips(step, now, last, turn)
     if (writes.length === 0) {
       from.pop()
-      if ("skipped" in skips.named) {
-        notices = skips.noticed(notices)
-        tell()
-      }
-      return { ok: false, reason: "nothing", ...skips.named }
+      return { ok: false, reason: "nothing" }
     }
-    const { guarded, replay } = turnGuard(now, writes, step, source, turned.keys())
+    const guarded = step.guarded === true
     const pushed = pushEdit(writes, author, {
       ...(step.run === undefined ? {} : { runUndo: { run: step.run, undone: to === redoSteps } }),
-      ...replay,
+      ...(guarded ? { readBase: now.rev } : {}),
       last: step.before,
     })
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
-    notices = skips.noticed(notices)
+    notices = notices.filter((notice) => notice.once !== last || notice.turn === undefined)
     from.pop()
     to.push({
       onces: [pushed.once],
@@ -430,7 +364,7 @@ function connected(
       ...(guarded ? { guarded: true } : {}),
     })
     remember(turned, pushed.once, pressedOn(server, now, pushed.writes, step.onces))
-    return { ok: true, once: pushed.once, saved: pushed.saved, ...skips.named }
+    return { ok: true, once: pushed.once, saved: pushed.saved }
   }
 
   async function undoRun(run: string): Promise<TurnedRun> {
@@ -451,39 +385,26 @@ function connected(
     if (refused !== undefined) return { ok: false, reason: "refused", refused }
     const stays = runUndoStays(edits, turnedRun)
     if (writes.length === 0)
-      return [...stays.kept, ...stays.left, ...stays.waiting, ...(stays.skipped ?? [])].length === 0
+      return [...stays.kept, ...stays.left, ...stays.waiting].length === 0
         ? { ok: false, reason: "nothing" }
         : { ok: false, reason: "left", ...stays }
-    const guarded = writes.some(({ prop }) => prop === "instance") || doom.rebuildsLinks(now, writes)
-    if (guarded) remember(runUndoSources, run, { edits, ...(started === undefined ? {} : { started }) })
-    const pushed = pushEdit(writes, author, {
-      runUndo: { run, undone: true },
-      ...(guarded ? { readBase: now.rev } : {}),
-    })
+    const pushed = pushEdit(writes, author, { runUndo: { run, undone: true } })
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
     redoSteps.push({
       onces: [pushed.once],
       before: now,
       writes: pushed.writes,
       run,
-      ...(guarded ? { guarded: true } : {}),
     })
     remember(turned, pushed.once, pressedOn(server, now, pushed.writes))
     return { ok: true, once: pushed.once, saved: pushed.saved, ...stays }
   }
 
-  function push(
-    asked: readonly doom.Write[],
-    pushing?: Parameters<DoomDeck["push"]>[1],
-    regeneration?: Regeneration,
-  ): ReturnType<DoomDeck["push"]> {
+  function push(asked: readonly doom.Write[], pushing?: Parameters<DoomDeck["push"]>[1]): ReturnType<DoomDeck["push"]> {
     const now = view()
-    if (pushing?.read !== undefined && pushing.read !== now) return { ok: false, refused: { refused: "stale" } }
-    const suppressions = regeneration === undefined ? suppressionsOf(now, asked) : []
-    const read = suppressions.length === 0 ? pushing?.read : now
-    const prepared = suppressions.length === 0 ? asked : suppressWrites(now, asked, suppressions)
-    if (doom.isRefusal(prepared)) return { ok: false, refused: prepared }
-    const given = doom.changingWrites(now, prepared)
+    const read = pushing?.read
+    if (read !== undefined && read !== now) return { ok: false, refused: { refused: "stale" } }
+    const given = doom.changingWrites(now, asked)
     if (given.length === 0) return { ok: true, unchanged: true }
     const derived = doom.nameFromTitleWrites(now, given)
     const fromTitle = read === undefined && derived.some((write) => write.prop === "name")
@@ -491,8 +412,6 @@ function connected(
     const named = fromTitle ? derived : []
     const pushed = pushEdit(own, pushing?.author ?? author, {
       seen: pushing?.seen,
-      ...(regeneration === undefined ? {} : { regeneration }),
-      ...(suppressions.length === 0 ? {} : { suppressions }),
       ...(read === undefined ? {} : { readBase: read.rev }),
     })
     if (!pushed.ok) return pushed
@@ -514,14 +433,6 @@ function connected(
     )
     redoSteps = []
     return sent
-  }
-
-  function regenerate(frame: doom.NodeId, patch: doom.ComponentPatch): ReturnType<DoomDeck["regenerate"]> {
-    const read = view()
-    const update = doom.regenerateComponent(read, frame, patch, measure())
-    if (doom.isRefusal(update)) return { ok: false, refused: update }
-    const pushed = push(update.writes, { read }, regenerationFor(frame, patch))
-    return pushed.ok ? { ...pushed, findings: update.findings } : pushed
   }
 
   const following = followDoom({
@@ -551,7 +462,6 @@ function connected(
     status: () => (shownStatus = statusOf({ unsent: queue.length, reach: link, kept, aside: notices }, shownStatus)),
     mint,
     push,
-    regenerate,
     undo: () => turn(undoSteps, redoSteps),
     redo: () => turn(redoSteps, undoSteps),
     undoRun,

@@ -43,7 +43,7 @@ async function openPanel() {
   const host = window.document.createElement("div")
   window.document.body.append(host)
   const root = createRoot(host)
-  const run = { chart: vi.fn(), icon: vi.fn(), picture: vi.fn(), exportPdf: vi.fn() }
+  const run = { icon: vi.fn(), picture: vi.fn(), exportPdf: vi.fn() }
   const finish = vi.fn()
   await act(async () => root.render(createElement(ActionsPanel, { run, finish })))
   const input = host.querySelector("input")
@@ -88,9 +88,9 @@ async function openPanel() {
 it("runs the top match when Enter is pressed in the search", async () => {
   const panel = await openPanel()
   try {
-    await panel.type("pie")
+    await panel.type("rocket")
     await panel.press("Enter")
-    expect(panel.run.chart).toHaveBeenCalledWith(expect.objectContaining({ id: "pie" }))
+    expect(panel.run.icon).toHaveBeenCalledWith("rocket")
     expect(panel.finish).toHaveBeenCalledTimes(1)
   } finally {
     await act(async () => panel.root.unmount())
@@ -100,12 +100,10 @@ it("runs the top match when Enter is pressed in the search", async () => {
 it("moves the highlight through the results with the arrow keys and runs the highlighted one", async () => {
   const panel = await openPanel()
   try {
-    await panel.type("chart")
     await panel.press("ArrowDown")
     await panel.press("ArrowDown")
-    await panel.press("ArrowUp")
     await panel.press("Enter")
-    expect(panel.run.chart).toHaveBeenCalledWith(expect.objectContaining({ id: "bar" }))
+    expect(panel.run.exportPdf).toHaveBeenCalledTimes(1)
   } finally {
     await act(async () => panel.root.unmount())
   }
@@ -114,10 +112,10 @@ it("moves the highlight through the results with the arrow keys and runs the hig
 it("keeps the highlight on the first result instead of wrapping", async () => {
   const panel = await openPanel()
   try {
-    await panel.type("column")
+    await panel.type("rocket")
     await panel.press("ArrowUp")
     await panel.press("Enter")
-    expect(panel.run.chart).toHaveBeenCalledWith(expect.objectContaining({ id: "column" }))
+    expect(panel.run.icon).toHaveBeenCalledWith("rocket")
   } finally {
     await act(async () => panel.root.unmount())
   }
@@ -144,11 +142,10 @@ it("finds the Deck row by its group title", async () => {
   }
 })
 
-it("finds every chart by the Charts group title", async () => {
+it("omits the chart insertion group", async () => {
   const panel = await openPanel()
   try {
-    await panel.type("charts")
-    expect(panel.host.querySelectorAll("[data-actions-group='charts'] [role='option']").length).toBe(6)
+    expect(panel.host.querySelectorAll("[data-actions-group='charts'] [role='option']").length).toBe(0)
   } finally {
     await act(async () => panel.root.unmount())
   }
@@ -160,9 +157,8 @@ it.each([
 ])("leaves Enter to %s instead of running the highlighted action", async (_, init) => {
   const panel = await openPanel()
   try {
-    await panel.type("pie")
+    await panel.type("rocket")
     await panel.press("Enter", init)
-    expect(panel.run.chart).not.toHaveBeenCalled()
     expect(panel.finish).not.toHaveBeenCalled()
   } finally {
     await act(async () => panel.root.unmount())
@@ -172,14 +168,14 @@ it.each([
 it("names the search a combobox whose active descendant is the selected option of its listbox", async () => {
   const panel = await openPanel()
   try {
-    await panel.type("chart")
+    await panel.press("ArrowDown")
     await panel.press("ArrowDown")
     const listbox = window.document.getElementById(panel.input.getAttribute("aria-controls") ?? "")
     expect(panel.input.getAttribute("role")).toBe("combobox")
     expect(panel.input.getAttribute("aria-expanded")).toBe("true")
     expect(listbox?.getAttribute("role")).toBe("listbox")
     expect(panel.highlighted()?.getAttribute("role")).toBe("option")
-    expect(panel.highlighted()?.textContent).toBe(editorCopy.chartKinds.bar)
+    expect(panel.highlighted()?.textContent).toBe(editorCopy.exportPdf)
     expect(listbox?.querySelectorAll("[aria-selected='true']")).toHaveLength(1)
     expect(listbox?.querySelectorAll("button")).toHaveLength(0)
   } finally {
@@ -190,13 +186,12 @@ it("names the search a combobox whose active descendant is the selected option o
 it("moves the one highlight to the row under the pointer", async () => {
   const panel = await openPanel()
   try {
-    await panel.type("chart")
-    await panel.hover(panel.option(editorCopy.chartKinds.line))
-    expect(panel.highlighted()?.textContent).toBe(editorCopy.chartKinds.line)
+    await panel.hover(panel.option(editorCopy.placeImage))
+    expect(panel.highlighted()?.textContent).toBe(editorCopy.placeImage)
     expect(panel.host.querySelectorAll("[aria-selected='true']")).toHaveLength(1)
     await panel.press("ArrowDown")
     await panel.press("Enter")
-    expect(panel.run.chart).toHaveBeenCalledWith(expect.objectContaining({ id: "pie" }))
+    expect(panel.run.exportPdf).toHaveBeenCalledTimes(1)
   } finally {
     await act(async () => panel.root.unmount())
   }
@@ -259,11 +254,10 @@ it("walks the icon grid by row with Up and Down and within the row with Left and
 it("drops the highlight when All icons swaps the results, so Enter runs nothing the person did not pick", async () => {
   const panel = await openPanel()
   try {
-    await panel.type("pie")
+    await panel.type("rocket")
     await panel.showAllIcons()
     expect(panel.highlighted()).toBeNull()
     await panel.press("Enter")
-    expect(panel.run.chart).not.toHaveBeenCalled()
     expect(panel.run.icon).not.toHaveBeenCalled()
     expect(window.document.activeElement).toBe(panel.input)
   } finally {
@@ -279,7 +273,7 @@ it("says Nothing matches in a status region that stays mounted, so a screen read
     await panel.type("zzzzzz")
     expect(panel.host.querySelector("[role='status']")).toBe(status)
     expect(status?.textContent).toBe(editorCopy.noActions)
-    await panel.type("pie")
+    await panel.type("rocket")
     expect(status?.textContent).toBe("")
   } finally {
     await act(async () => panel.root.unmount())

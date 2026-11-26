@@ -1,13 +1,13 @@
+import { placeComponent } from "./join-instance.js"
+import { columnDefinition } from "./library.js"
 import { expect, it } from "vitest"
 import {
-  columnDefinition,
   defaultTheme,
   doomFromTree,
   invert,
   invertRun,
   isRefusal,
   orderKeyBetween,
-  placeComponent,
   replacedBy,
   type Write,
 } from "../index.js"
