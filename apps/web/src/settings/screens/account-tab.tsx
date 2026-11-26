@@ -39,7 +39,13 @@ export function AccountTab() {
         title={settingsCopy.profile}
         description={settingsCopy.profileLine}
         actions={
-          <Button type="button" variant="outline" className={settingsAction} style={{ width: 52.26 }}>
+          <Button
+            type="button"
+            variant="outline"
+            size="dense-action"
+            className={settingsAction}
+            style={{ width: 52.26 }}
+          >
             {settingsCopy.edit}
           </Button>
         }

@@ -11,7 +11,7 @@ import { settingsCopy } from "@/settings/settings-sample"
 
 export function AgentsTab() {
   const disconnect = (
-    <Button type="button" variant="outline" className={settingsAction}>
+    <Button type="button" variant="outline" size="dense-action" className={settingsAction}>
       {productCopy.disconnect}
     </Button>
   )
@@ -21,7 +21,7 @@ export function AgentsTab() {
         title={settingsCopy.agents}
         description={settingsCopy.agentsBody}
         actions={
-          <Button type="button" variant="signature" className="gap-1.5 px-3.5">
+          <Button type="button" variant="signature" size="action">
             <DeckGlyph name="plug" size={14} />
             {connectAgentCopy.title}
           </Button>
