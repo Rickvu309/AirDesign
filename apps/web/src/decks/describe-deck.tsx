@@ -45,6 +45,7 @@ export function DescribeDeck({
           aria-label={productCopy.describeDeck}
           placeholder={productCopy.describeDeckExample}
           value={text}
+          data-focus-edge
           className="min-h-12 text-[length:var(--type-field)] outline-hidden placeholder:text-faint"
           onChange={(event) => setText(event.target.value)}
           onKeyDown={onKey}

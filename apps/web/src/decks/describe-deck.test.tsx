@@ -124,3 +124,9 @@ it("shows three ideas, and More ideas swaps in three others until the list start
   for (let turn = 3; turn < storyIdeas.length; turn += 3) await act(async () => more?.click())
   expect(shown()).toEqual(first)
 })
+
+it("draws no ring round the box when it takes focus, the way the editor's Aira box does", async () => {
+  const field = await show()
+  expect(field.hasAttribute("data-focus-edge")).toBe(true)
+  expect(host.querySelector("[data-focus-ring]")).toBeNull()
+})
