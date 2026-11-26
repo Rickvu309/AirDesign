@@ -217,7 +217,6 @@ export function NewSlideMenu({
               aria-label="New slide"
               hidden
               tabIndex={-1}
-              data-focus-edge=""
               data-layout-menu=""
               className="fixed z-50 w-[228px] flex-col overscroll-contain overflow-y-auto rounded-xl bg-foreground p-1.5 text-white shadow-[0px_8px_24px_var(--black-20)] ring-0"
               onKeyDown={(event) => {

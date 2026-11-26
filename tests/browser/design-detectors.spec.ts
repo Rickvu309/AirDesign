@@ -160,6 +160,19 @@ const cases = [
       '<style>#go:focus-visible{box-shadow:0 0 0 2px blue}</style><button id="go" style="outline:none;border:0;background:white">Export</button>',
   },
   {
+    detector: "stray-focus-edge",
+    fires:
+      '<script>document.documentElement.dataset.quietFocus = ""</script><button id="go" style="outline:2px solid blue">Export</button>',
+    spares: '<button id="go" style="outline:2px solid blue">Export</button>',
+  },
+  {
+    detector: "stray-focus-edge",
+    fires:
+      '<script>document.documentElement.dataset.quietFocus = ""</script><button id="go" style="outline:2px solid blue">Export</button>',
+    spares:
+      '<script>document.documentElement.dataset.quietFocus = ""</script><button id="go" aria-invalid="true" style="outline:1px solid red">Export</button>',
+  },
+  {
     detector: "off-token",
     fires: '<nav style="font-size:17px;color:rgb(1,2,3)">Decks</nav>',
     spares: '<nav style="font-size:14px;color:rgb(34,34,34)">Decks</nav>',

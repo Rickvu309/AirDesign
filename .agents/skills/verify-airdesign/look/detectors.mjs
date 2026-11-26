@@ -6,6 +6,7 @@ import { invisibleControl } from "./detectors/invisible-control.mjs"
 import { offToken } from "./detectors/off-token.mjs"
 import { overflowingText } from "./detectors/overflowing-text.mjs"
 import { stackedFrames } from "./detectors/stacked-frames.mjs"
+import { strayFocusEdge } from "./detectors/stray-focus-edge.mjs"
 import { textContrast } from "./detectors/text-contrast.mjs"
 import { truncatedText } from "./detectors/truncated-text.mjs"
 
@@ -20,6 +21,7 @@ export const detectors = [
   stackedFrames,
   textContrast,
   focusVisible,
+  strayFocusEdge,
   deadControl,
   { ...offToken, optIn: "--off-token" },
 ]
