@@ -292,3 +292,29 @@ test.describe("touch", () => {
     await movedBy(page, 1, first, { x: 60, y: -40 })
   })
 })
+
+test("slide numbers stay shown and the pick ring keeps its width while a pinch is under way", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await openGroups(page, context, stack, [4, 3])
+  await entry(page, 2).click()
+  const number = page.locator("[data-grid-card]").nth(1).locator("[data-slide-number]")
+  const ringOnScreen = () =>
+    entry(page, 2).evaluate((card) => {
+      const spread = Number.parseFloat(getComputedStyle(card).boxShadow.match(/([\d.]+)px(?!.*px)/)?.[1] ?? "0")
+      return Math.round((spread * card.getBoundingClientRect().width) / (card as HTMLElement).offsetWidth)
+    })
+  const before = await ringOnScreen()
+  expect(before).toBeGreaterThan(0)
+  const at = await boxOf(entry(page, 2))
+  await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2)
+  const started = await percent(page)
+  await page.keyboard.down("Control")
+  for (let step = 0; step < 6; step++) await page.mouse.wheel(0, -5)
+  await expect.poll(() => percent(page)).toBeGreaterThan(started)
+  await expect(number).toHaveCSS("opacity", "1")
+  expect(await ringOnScreen()).toBe(before)
+  await page.keyboard.up("Control")
+})

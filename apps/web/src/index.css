@@ -173,9 +173,6 @@ html:has(.reflow-frame) #root {
   inherits: false;
   initial-value: 1;
 }
-[data-grid-viewport][data-zooming] :is([data-slide-number], [data-slide-skip-mark]) {
-  opacity: 0;
-}
 [data-grid-overlay] {
   position: absolute;
   left: 0;
