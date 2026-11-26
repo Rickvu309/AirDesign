@@ -227,6 +227,18 @@ export const patchLines = (patch) => {
   return netLines(side("-").join("\n"), side("+").join("\n"))
 }
 
-export const lowerings = (file, read) => {
-  return detectors.flatMap(([applies, lowers]) => (applies(file.name) ? lowers(file.name, read(file)) : []))
-}
+const proofFolders = [
+  /^tests\/browser\/[^/]+\.spec\.ts$/,
+  /^\.agents\/skills\/verify-airdesign\/journeys\/[^/]+\.mjs$/,
+  /^\.agents\/skills\/verify-airdesign\/features\/[^/]+\.md$/,
+]
+
+const proofRemoved = (file) =>
+  file.status === "removed" && proofFolders.some((folder) => folder.test(file.name))
+    ? [`${file.name} was removed, and it proved a feature a person uses.`]
+    : []
+
+export const lowerings = (file, read) => [
+  ...proofRemoved(file),
+  ...detectors.flatMap(([applies, lowers]) => (applies(file.name) ? lowers(file.name, read(file)) : [])),
+]
