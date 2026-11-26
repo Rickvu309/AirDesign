@@ -48,7 +48,7 @@ function LayoutThumb({ picture, iconsReady }: { readonly picture: LayoutPicture;
     <span
       aria-hidden="true"
       data-layout-thumb=""
-      className={`${thumbFrame} [&_svg]:!size-auto`}
+      className={thumbFrame}
       style={{ width: thumbWidth, height, contain: "strict" }}
     >
       <span data-fonts-pending={iconsReady ? undefined : ""}>
@@ -250,7 +250,7 @@ export function NewSlideMenu({
                     ) : source === undefined ? null : (
                       <PendingThumb size={source.size} />
                     )}
-                    <span className="min-w-0 flex-1 truncate !text-white">{layout.name}</span>
+                    <span className="min-w-0 flex-1 truncate">{layout.name}</span>
                   </button>
                 )
               })}

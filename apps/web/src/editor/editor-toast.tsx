@@ -5,10 +5,7 @@ import { Toaster } from "@/components/ui/sonner"
 
 const toastRoom = "30rem"
 
-const toastMetrics = {
-  screen: { width: "301.11px", shift: "0px" },
-  canvas: { width: "289.46px", shift: "-56px" },
-} as const
+const toastWidths = { screen: "301.11px", canvas: "289.46px" }
 
 export function EditorToast({
   kind,
@@ -25,7 +22,7 @@ export function EditorToast({
   still?: boolean
   host?: boolean
 }) {
-  const { width } = toastMetrics[place]
+  const width = toastWidths[place]
   const id = useId()
   useEffect(() => {
     toast.custom(
@@ -85,7 +82,6 @@ export function EditorToast({
 }
 
 export function EditorToaster({ place = "canvas" }: { place?: "screen" | "canvas" }) {
-  const { shift } = toastMetrics[place]
   return (
     <Toaster
       id="editor-status"
@@ -93,7 +89,7 @@ export function EditorToaster({ place = "canvas" }: { place?: "screen" | "canvas
       offset={{ top: 12 }}
       visibleToasts={1}
       style={{ "--width": toastRoom } as CSSProperties}
-      className={shift === "0px" ? undefined : "min-[601px]:![left:calc(50%-56px)]"}
+      className={place === "canvas" ? "min-[601px]:-translate-x-14" : undefined}
     />
   )
 }
