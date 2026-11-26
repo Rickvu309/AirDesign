@@ -3,6 +3,7 @@ import { Filmstrip } from "@airdesign/render"
 import { gestureFor } from "@/lib/gestures"
 import { slideNumber } from "@/lib/slide-numbering"
 import type { NodeId } from "@airdesign/doom"
+import type { GridMoveSide } from "@/editor/grid-move"
 import {
   useCallback,
   useLayoutEffect,
@@ -45,13 +46,14 @@ export type SlideStrip = {
   readonly onSkip?: (indices: readonly number[], skipped: boolean) => void
   readonly onSelection?: (indices: readonly number[]) => void
   readonly onSelect: (index: number) => void
-  readonly onAdd?: (layoutPart?: string, after?: number) => void
+  readonly onAdd?: (layoutPart?: string, after?: number, side?: "same" | "new") => void
   readonly layouts?: readonly LayoutChoice[]
   readonly layoutPictures?: LayoutPictureSource
   readonly onClone?: (index: number) => void
   readonly onRemove?: (index: number) => void
   readonly onChangeSet?: (change: "clone" | "remove", indices: readonly number[]) => SetChange | null
   readonly onMoveMany?: (held: readonly number[], at: number) => void
+  readonly onMoveGroups?: (held: readonly number[], at: number, side: GridMoveSide) => boolean
   readonly onMove?: (from: number, to: number) => void
   readonly say?: { current: (text: string) => void }
   readonly thumbHeight: number

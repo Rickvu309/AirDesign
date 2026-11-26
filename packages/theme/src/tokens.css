@@ -181,6 +181,17 @@
   --grid-marquee-edge: var(--ring);
   --grid-marquee-fill: color-mix(in oklch, var(--grid-marquee-edge) 10%, transparent);
   --grid-marquee-width: 1px;
+  --grid-add-size: 24px;
+  --grid-add-dot: 8px;
+  --grid-insertion-line-width: 1px;
+  --grid-handle-pill-width: 5px;
+  --grid-handle-pill-height: 24px;
+  --grid-handle-grip-width: 18px;
+  --grid-handle-grip-height: 36px;
+  --grid-placeholder-stroke: 2px;
+  --grid-placeholder-dash: 8px;
+  --grid-placeholder-gap: 7px;
+  --grid-drop-bar: 4px;
   --snap-guide: #e05534;
   --spacing-guide: #ff00ff;
   --guide-label-size: 11px;
@@ -212,6 +223,8 @@
   --grid-number-hover: #165ba8;
   --grid-number: var(--quiet);
   --grid-number-surface: var(--background);
+  --grid-placeholder: var(--navy-8);
+  --grid-placeholder-edge: var(--quiet);
   --slide-skip-opacity: 0.5;
   --shadow-grid: 0 0 0 1px var(--line), 0 1px 3px rgb(15 36 51 / 8%);
   --shadow-grid-selected: 0 0 0 2px var(--ring);

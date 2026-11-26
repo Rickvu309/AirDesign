@@ -7,7 +7,7 @@ import {
   edgePan,
   marqueeBox,
   marqueeHits,
-  marqueeStarted,
+  dragStarted,
   marqueeStep,
   type MarqueeBox,
   type MarqueeDeck,
@@ -103,7 +103,7 @@ export function useGridMarquee({
     const held = press.current
     if (held === null || held.pointer !== event.pointerId) return
     const client = { x: event.clientX, y: event.clientY }
-    if (!held.started && !marqueeStarted(held.from, client)) return
+    if (!held.started && !dragStarted(held.from, client)) return
     const moved = { ...held, client, started: true }
     press.current = moved
     if (!held.started) {

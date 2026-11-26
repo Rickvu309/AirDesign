@@ -1,4 +1,34 @@
+import { gestureFor, type GestureId, type KeyLike } from "@/lib/gestures"
 import type { GridRect } from "@/editor/grid-lines"
+import type { SlideKey } from "@/editor/slide-keys"
+
+export type GridCommand = SlideKey | "open" | "menu"
+
+const commands: Partial<Record<GestureId, GridCommand>> = {
+  "slide-open": "open",
+  "slide-delete": "remove",
+  "slide-duplicate": "clone",
+  "slide-up": "up",
+  "slide-down": "down",
+  "slide-earlier": "up",
+  "slide-later": "down",
+  "slide-menu": "menu",
+}
+
+const groupCommands: Partial<Record<GestureId, "up" | "down">> = {
+  "slide-group-up": "up",
+  "slide-group-down": "down",
+}
+
+export function gridCommand(event: KeyLike): GridCommand | null {
+  const gesture = gestureFor(event, "grid")
+  return gesture === null ? null : (commands[gesture] ?? null)
+}
+
+export function gridGroupCommand(event: KeyLike): "up" | "down" | null {
+  const gesture = gestureFor(event, "grid")
+  return gesture === null ? null : (groupCommands[gesture] ?? null)
+}
 
 const rowSlack = 8
 

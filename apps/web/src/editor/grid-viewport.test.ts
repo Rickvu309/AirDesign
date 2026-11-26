@@ -6,6 +6,7 @@ import {
   boundedGridScale,
   fittedGrid,
   fittedGridCards,
+  gridGrip,
   gridShown,
   keptGridShows,
   pannedGrid,
@@ -189,15 +190,31 @@ describe("fit the deck", () => {
     }
   }
 
-  it("shows the reference decks at the old Grid's sizes, wider by the group handle room the old fit kept", () => {
+  it("shows the reference decks at the old Grid's sizes, keeping room for the slide group grips", () => {
     const room = { width: 1470, height: 759 }
     const shown = (lengths: readonly number[], slide = wide) => {
       const layout = deckOf(lengths, slide)
-      return Math.round(fittedGrid(layout, room).scale * slide.width)
+      return Math.round(fittedGrid(layout, room, slide.height).scale * slide.width)
     }
     expect([shown(Array(12).fill(2)), shown([1, 28, 10, 2], fourByThree), shown([3, 3]), shown([6])]).toEqual([
-      63, 107, 421, 313,
+      63, 107, 407, 303,
     ])
+  })
+
+  it("keeps the grips' room left of the slides only at sizes that show the grips", () => {
+    const room = { width: 1470, height: 759 }
+    const roomy = deckOf([3, 3])
+    const fit = fittedGrid(roomy, room, wide.height)
+    expect(wide.height * fit.scale).toBeGreaterThanOrEqual(gridGrip.minimumHeight)
+    expect(fit.x - (gridGrip.offset + gridGrip.width / 2)).toBeCloseTo(room.width - fit.x - roomy.width * fit.scale)
+    const small = deckOf(Array(12).fill(2))
+    expect(fittedGrid(small, room, wide.height)).toEqual(fittedGrid(small, room))
+    const edge = deckOf([6])
+    const tight = { width: 96 + ((gridGrip.minimumHeight + 0.1) / wide.height) * edge.width, height: 2000 }
+    const kept = fittedGrid(edge, tight, wide.height)
+    expect(wide.height * fittedGrid(edge, tight).scale).toBeGreaterThanOrEqual(gridGrip.minimumHeight)
+    expect(wide.height * kept.scale).toBeLessThan(gridGrip.minimumHeight)
+    expect(wide.height * kept.scale).toBeGreaterThan(gridGrip.minimumHeight - 0.1)
   })
 })
 

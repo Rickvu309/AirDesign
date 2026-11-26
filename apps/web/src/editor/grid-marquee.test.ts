@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { gridStep, type GridInteraction } from "@/editor/grid-interaction"
-import { edgePan, marqueeBox, marqueeHits, marqueeStarted, marqueeStep } from "@/editor/grid-marquee"
+import { edgePan, marqueeBox, marqueeHits, dragStarted, marqueeStep } from "@/editor/grid-marquee"
 
 const faces = [
   { index: 0, left: 0, top: 0, width: 100, height: 50 },
@@ -22,9 +22,9 @@ describe("grid marquee", () => {
   })
 
   it("starts only once the pointer passes the slide drag threshold", () => {
-    expect(marqueeStarted({ x: 0, y: 0 }, { x: 3, y: 0 })).toBe(false)
-    expect(marqueeStarted({ x: 0, y: 0 }, { x: 2, y: 2 })).toBe(false)
-    expect(marqueeStarted({ x: 0, y: 0 }, { x: 4, y: 0 })).toBe(true)
+    expect(dragStarted({ x: 0, y: 0 }, { x: 3, y: 0 })).toBe(false)
+    expect(dragStarted({ x: 0, y: 0 }, { x: 2, y: 2 })).toBe(false)
+    expect(dragStarted({ x: 0, y: 0 }, { x: 4, y: 0 })).toBe(true)
   })
 
   it("hits every slide face the box crosses, across groups, in slide order", () => {

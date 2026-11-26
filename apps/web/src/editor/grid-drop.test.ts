@@ -220,8 +220,19 @@ describe("slide groups from the layout", () => {
       { start: 3, end: 15 },
     ])
     const [first, second] = gridBands(layout)
-    expect(first).toMatchObject({ top: layout.cards[0]!.top, bottom: layout.cards[0]!.top + 1080 })
-    expect(second).toMatchObject({ top: layout.cards[3]!.top, bottom: layout.cards[14]!.top + 1080 })
+    const right = (card: number) => layout.cards[card]!.left + 1920
+    expect(first).toMatchObject({
+      top: layout.cards[0]!.top,
+      bottom: layout.cards[0]!.top + 1080,
+      width: right(2),
+      wrapped: false,
+    })
+    expect(second).toMatchObject({
+      top: layout.cards[3]!.top,
+      bottom: layout.cards[14]!.top + 1080,
+      width: Math.max(...layout.cards.slice(3).map((card) => card.left + 1920)),
+      wrapped: true,
+    })
   })
 })
 

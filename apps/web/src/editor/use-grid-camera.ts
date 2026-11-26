@@ -121,7 +121,7 @@ export function useGridCamera({
   const [room, setRoom] = useState<GridSize>({ width: 0, height: 0 })
   const [space, setSpace] = useState(false)
   const host = useRef<HTMLDivElement | null>(null)
-  const view = camera === "fit" ? fittedGrid(layout, room) : camera
+  const view = camera === "fit" ? fittedGrid(layout, room, layout.cards[0]?.height) : camera
   const latest = useRef({ camera, view, layout, ringed, room, hand, onHand })
   const gliding = useRef(false)
   const rendered = useRef<GridCamera>(camera)

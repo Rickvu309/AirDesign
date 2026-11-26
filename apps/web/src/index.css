@@ -182,6 +182,10 @@ html:has(.reflow-frame) #root {
   transform: scale(calc(1 / var(--grid-scale)));
   transform-origin: 0 0;
   pointer-events: none;
+}
+[data-grid-card],
+[data-grid-group-frame],
+[data-group-insert] {
   --grid-radius: max(var(--grid-radius-min), calc(var(--grid-radius-canvas) * var(--grid-scale)));
 }
 [data-grid-front] {
@@ -253,7 +257,7 @@ html:has(.reflow-frame) #root {
   color: var(--ring);
 }
 @media (hover: hover) and (pointer: fine) {
-  [data-grid-viewport]:not([data-panning], [data-marquee])
+  [data-grid-viewport]:not([data-panning], [data-marquee], [data-dragging])
     [data-grid-card]:has(:is([data-slide-entry], [data-slide-number]):hover) {
     & [data-grid-halo] {
       opacity: 1;
@@ -288,6 +292,162 @@ html:has(.reflow-frame) #root {
   pointer-events: none;
   border: var(--grid-marquee-width) solid var(--grid-marquee-edge);
   background: var(--grid-marquee-fill);
+}
+[data-grid-card][data-lifted] :is([data-slide-entry], [data-slide-number]) {
+  pointer-events: none;
+  opacity: 0.4;
+}
+[data-drop-bar] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  pointer-events: none;
+  border-radius: calc(var(--grid-drop-bar) / 2);
+  background: var(--primary);
+}
+[data-add-mark] {
+  width: var(--grid-add-size);
+  height: var(--grid-add-size);
+}
+[data-add-group],
+[data-add-gap] {
+  pointer-events: none;
+}
+[data-add-gap],
+[data-group-preview],
+[data-gap-preview],
+:is([data-group-placeholder], [data-gap-placeholder]):not([data-preview-fits]) {
+  visibility: hidden;
+}
+[data-add-group],
+[data-add-gap][tabindex="0"] {
+  visibility: visible;
+  opacity: 0;
+}
+[data-gap-insert="end"] [data-add-mark] {
+  width: var(--grid-add-dot);
+  height: var(--grid-add-dot);
+}
+[data-gap-insert="end"] [data-add-mark] svg {
+  display: none;
+}
+[data-add-gap]:focus-visible,
+[data-add-group]:focus-visible,
+[data-gap-insert]:has([data-add-gap]:focus-visible) [data-gap-preview],
+[data-group-insert]:not([data-used]):has([data-add-group]:focus-visible) [data-group-preview] {
+  visibility: visible;
+  opacity: 1;
+}
+[data-add-gap]:focus-visible [data-add-mark] {
+  width: var(--grid-add-size);
+  height: var(--grid-add-size);
+}
+[data-add-gap]:focus-visible svg {
+  display: block;
+}
+[data-grid-placeholder-border] {
+  --grid-placeholder-inset: calc(var(--grid-placeholder-stroke) / 2);
+  x: var(--grid-placeholder-inset);
+  y: var(--grid-placeholder-inset);
+  width: calc(100% - var(--grid-placeholder-stroke));
+  height: calc(100% - var(--grid-placeholder-stroke));
+  rx: calc(var(--grid-radius) - var(--grid-placeholder-inset));
+  fill: var(--grid-placeholder);
+  stroke: var(--grid-placeholder-edge);
+  stroke-width: var(--grid-placeholder-stroke);
+  stroke-dasharray: var(--grid-placeholder-dash) var(--grid-placeholder-gap);
+}
+[data-group-insertion-line] {
+  height: 0;
+  border-top: var(--grid-insertion-line-width) dashed var(--grid-placeholder-edge);
+}
+@media (hover: hover) and (pointer: fine) {
+  [data-gap-insert]:hover [data-add-gap],
+  [data-gap-insert="end"] [data-add-gap],
+  [data-group-insert]:hover [data-add-group] {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  [data-add-group] {
+    pointer-events: auto;
+  }
+  [data-group-insert]:not([data-used]):hover [data-group-preview],
+  [data-gap-insert]:has([data-add-gap]:hover) [data-gap-preview] {
+    visibility: visible;
+  }
+  [data-add-gap]:hover [data-add-mark] {
+    width: var(--grid-add-size);
+    height: var(--grid-add-size);
+  }
+  [data-add-gap]:hover svg {
+    display: block;
+  }
+}
+:root:has([role="menu"][data-open], [data-slot="popover-content"][data-open])
+  [data-editor-grid]
+  :is([data-gap-insert], [data-group-insert]),
+[data-grid-viewport]:is([data-panning], [data-marquee], [data-dragging]) :is([data-gap-insert], [data-group-insert]) {
+  display: none;
+}
+[data-group-insert="last"]:has([data-group-placeholder][data-preview-fits]) {
+  min-height: var(--grid-group-preview-distance);
+}
+[data-group-handle] {
+  height: var(--target-size);
+  opacity: 0;
+}
+[data-group-grip] {
+  width: var(--grid-handle-pill-width);
+  height: var(--grid-handle-pill-height);
+  background: var(--grid-hover);
+  color: var(--primary-foreground);
+}
+[data-group-grip] svg {
+  display: none;
+}
+[data-group-handle]:is(:hover, :focus-visible) [data-group-grip] {
+  width: var(--grid-handle-grip-width);
+  height: var(--grid-handle-grip-height);
+  background: var(--primary);
+}
+[data-group-handle]:is(:hover, :focus-visible) [data-group-grip] svg {
+  display: block;
+}
+[data-grid-group-frame][data-group-hover]:not([data-group-hover="add"]) [data-group-handle],
+[data-group-handle]:is(:hover, :focus-visible) {
+  opacity: 1;
+}
+[data-group-band] {
+  inset: calc(-1 * var(--grid-halo-band)) calc(-1 * var(--grid-halo-band-outset))
+    calc(-1 * var(--grid-halo-band-outset));
+  border-radius: calc(var(--grid-radius) + var(--grid-halo-band-outset));
+  opacity: 0;
+  background: var(--grid-hover);
+}
+[data-grid-group-frame][data-group-tint][data-wrapped] [data-group-band] {
+  opacity: 1;
+}
+[data-grid-viewport]:not([data-panning], [data-marquee], [data-dragging]) [data-grid-card][data-group-tint] {
+  & [data-grid-halo] {
+    opacity: 1;
+  }
+  & [data-slide-entry] {
+    --focus-ring-width: 0px;
+    box-shadow: var(--shadow-grid);
+  }
+  & [data-slide-number] {
+    color: var(--grid-number);
+  }
+}
+[data-grid-viewport]:not([data-panning], [data-marquee], [data-dragging])
+  [data-grid-card][data-group-tint][data-wrapped]
+  [data-grid-halo] {
+  opacity: 0;
+}
+[data-grid-viewport]:is([data-panning], [data-dragging]) [data-group-handle] {
+  visibility: hidden;
 }
 [data-slide-skip-mark] {
   box-sizing: content-box;
