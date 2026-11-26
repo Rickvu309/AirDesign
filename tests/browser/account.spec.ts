@@ -167,3 +167,19 @@ test("the name field has one continuous focus edge in normal and invalid states"
     expect(edge.shadow).toBe("none")
   }
 })
+
+test("Settings keeps its heading and cards 24px inside the pane on a narrow window", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 })
+  await mockApp(page)
+  await page.goto("/settings/account")
+  const pane = await page.locator("[data-settings-header]").boundingBox()
+  const heading = await page.getByRole("heading", { name: settingsCopy.title, exact: true }).boundingBox()
+  const cards = await page.locator("[data-settings-content]").evaluate((content) => {
+    const style = getComputedStyle(content)
+    const box = content.getBoundingClientRect()
+    return { left: box.left + parseFloat(style.paddingLeft), right: box.right - parseFloat(style.paddingRight) }
+  })
+  expect(heading!.x - pane!.x).toBeGreaterThanOrEqual(24)
+  expect(cards.left - pane!.x).toBeGreaterThanOrEqual(24)
+  expect(pane!.x + pane!.width - cards.right).toBeGreaterThanOrEqual(24)
+})
