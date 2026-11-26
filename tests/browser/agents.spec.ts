@@ -162,6 +162,105 @@ test("the connect dialog gives an app the address and a coding agent a prompt, t
   await expect(page.getByRole("button", { name: "Disconnect", exact: true })).toHaveCount(1)
 })
 
+test("a list answer that arrives late never replaces a newer one, so a connected agent stays listed", async ({
+  page,
+}) => {
+  await mockHome(page)
+  let agents: AgentRow[] = []
+  let hold = false
+  let held!: () => void
+  const heldArrived = new Promise<void>((resolve) => {
+    held = resolve
+  })
+  let release!: () => void
+  const released = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.route("**/account/agents", async (route) => {
+    const answer = { ok: true, account: { email: "person@example.com" }, mcp: mcpAddress, agents }
+    if (hold) {
+      hold = false
+      held()
+      await released
+    }
+    await route.fulfill({ json: answer })
+  })
+
+  await page.goto("/settings/agents")
+  await expect(page.getByRole("heading", { name: settingsCopy.noAgents, exact: true })).toBeVisible()
+
+  hold = true
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")))
+  await heldArrived
+  await page.getByRole("button", { name: connectAgentCopy.title }).click()
+  agents = [
+    {
+      id: "grant-code",
+      name: "Claude Code",
+      agent: "claude-code",
+      host: "127.0.0.1",
+      connected: "2026-11-26T00:00:00Z",
+    },
+  ]
+  const connected = page.getByRole("dialog", { name: connectedOf("Claude Code") })
+  await connected.getByRole("button", { name: productCopy.done, exact: true }).click()
+  await expect(page.getByRole("button", { name: "Disconnect", exact: true })).toHaveCount(1)
+
+  const late = page.waitForResponse("**/account/agents")
+  release()
+  await late
+  await expect(page.getByRole("button", { name: "Disconnect", exact: true })).toHaveCount(1)
+  await expect(page.getByText(settingsCopy.noAgents, { exact: true })).toHaveCount(0)
+})
+
+test("the connect dialog asks for the list one request at a time and closes from its Close button", async ({
+  page,
+}) => {
+  await mockHome(page)
+  let inFlight = 0
+  let most = 0
+  let seen = 0
+  let secondArrived!: () => void
+  const second = new Promise<void>((resolve) => {
+    secondArrived = resolve
+  })
+  let release!: () => void
+  const released = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.goto("/")
+  await page.route("**/account/agents", async (route) => {
+    seen += 1
+    inFlight += 1
+    most = Math.max(most, inFlight)
+    if (seen === 1) {
+      inFlight -= 1
+      return route.fulfill({ status: 500, body: "failed" })
+    }
+    if (seen === 2) {
+      secondArrived()
+      await released
+    }
+    inFlight -= 1
+    await route.fulfill({
+      json: { ok: true, account: { email: "person@example.com" }, mcp: mcpAddress, agents: [] },
+    })
+  })
+
+  await page.locator("[data-decks-sidebar]").getByRole("button", { name: connectAgentCopy.title }).click()
+  const dialog = connectDialog(page)
+  const retry = dialog.getByRole("button", { name: "Try again", exact: true })
+  await expect(retry).toBeVisible()
+  await second
+  await retry.click()
+  release()
+  await expect(dialog.getByText(mcpAddress, { exact: true })).toBeVisible()
+  expect(most).toBe(1)
+
+  await dialog.getByRole("button", { name: productCopy.close, exact: true }).click()
+  await expect(dialog).toBeHidden()
+})
+
 test("renders empty, loading, failed, and signed-out states without a blank page", async ({ page }) => {
   let unblockLoad!: () => void
   let blockFirstLoad: Promise<void> | null = new Promise<void>((resolve) => {
