@@ -117,6 +117,7 @@ export function DecksShell({
   const profile = useAccountProfile()
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [connecting, setConnecting] = useState(false)
+  const onConnect = () => setConnecting(true)
   const starredLabel = useId()
   const empty = realAccount ? starred?.length === 0 : firstVisit
   const [primary, ...rest] = sections.map((section) => (realAccount ? { ...section, href: section.page } : section))
@@ -274,12 +275,10 @@ export function DecksShell({
           </nav>
         )}
         <div className="mt-auto">
-          {firstVisit && !realAccount ? (
-            <AgentButton href={deckRoutes.connectAgent} />
+          {firstVisit ? (
+            <AgentButton {...(realAccount ? { onConnect } : { href: deckRoutes.connectAgent })} />
           ) : (
-            settingsTab !== "agents" && (
-              <AgentPromo {...(realAccount ? { onConnect: () => setConnecting(true), ornaments: false } : {})} />
-            )
+            settingsTab !== "agents" && <AgentPromo {...(realAccount ? { onConnect, ornaments: false } : {})} />
           )}
           {connecting && <ConnectAgent onClose={() => setConnecting(false)} />}
         </div>

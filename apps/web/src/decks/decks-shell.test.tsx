@@ -2,9 +2,9 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { DecksShell } from "./decks-shell"
 
-const shell = (email: string) =>
+const shell = (email: string, firstVisit = false) =>
   renderToStaticMarkup(
-    <DecksShell active="recents" account={{ email }} onSignOut={() => {}}>
+    <DecksShell active="recents" account={{ email }} firstVisit={firstVisit} onSignOut={() => {}}>
       <p>content</p>
     </DecksShell>,
   )
@@ -26,6 +26,12 @@ describe("account row", () => {
 })
 
 describe("bring your own agent card", () => {
+  it("gives a new account the collapsed Connect an agent button", () => {
+    const html = shell("person@example.com", true)
+    expect(html).not.toContain("Bring your own agent")
+    expect(html).toMatch(/<button[^>]*>[^]*?Connect an agent<\/button>/)
+  })
+
   it("gives a real account a button that opens the connect dialog", () => {
     const html = shell("person@example.com")
     expect(html).toContain("Bring your own agent")
