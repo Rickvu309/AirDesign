@@ -67,7 +67,7 @@ const buttonVariants = cva(
         variant: "outline",
         size: "consent",
         class:
-          "border-transparent bg-white text-foreground shadow-[inset_0_0_0_1px_var(--field-edge),0_1px_2px_0_color-mix(in_srgb,var(--color-black)_4%,transparent)]",
+          "border-transparent bg-white text-foreground shadow-[inset_0_0_0_1px_var(--field-edge),0_1px_2px_0_var(--black-4)]",
       },
       {
         variant: "stage",
