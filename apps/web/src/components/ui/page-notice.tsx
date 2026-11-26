@@ -20,7 +20,7 @@ export function PageToaster() {
       position="top-center"
       offset={12}
       style={{ "--width": pageToastWidth } as CSSProperties}
-      className="min-[601px]:![left:calc(50%+124px)]"
+      className="md:![left:calc(50%+var(--decks-sidebar-width)/2)]"
     />
   )
 }

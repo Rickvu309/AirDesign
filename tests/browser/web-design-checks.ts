@@ -245,4 +245,17 @@ export const webDesignChecks: Check[] = [
       expect(shadow).toContain("0px 24px 48px")
     },
   ],
+  [
+    "13-toast-centre",
+    "credits-purchases",
+    async (page) => {
+      const offset = await page.locator("[data-sonner-toaster]").evaluate((toast) => {
+        const main = document.querySelector("[data-decks-main]")?.getBoundingClientRect()
+        if (main === undefined) throw new Error("Main area is missing")
+        const box = toast.getBoundingClientRect()
+        return box.left + box.width / 2 - (main.left + main.width / 2)
+      })
+      expect(Math.abs(offset)).toBeLessThan(1)
+    },
+  ],
 ]

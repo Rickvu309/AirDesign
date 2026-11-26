@@ -124,7 +124,7 @@ export function DecksShell({
     <div className="flex h-full w-full max-md:flex-col">
       <aside
         data-decks-sidebar
-        className="flex h-full w-[240px] shrink-0 flex-col bg-canvas px-3 pt-2.5 pb-3 max-md:h-auto max-md:w-full"
+        className="flex h-full w-[var(--decks-sidebar-width)] shrink-0 flex-col bg-canvas px-3 pt-2.5 pb-3 max-md:h-auto max-md:w-full"
       >
         {realAccount && onSignOut ? (
           <>
