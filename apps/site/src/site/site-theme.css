@@ -93,19 +93,18 @@
   }
 
   .primary-button {
+    --button-edge: var(--fill-marketing-bottom);
     display: flex;
     align-items: center;
     justify-content: center;
     background-image: var(--fill-marketing);
     box-shadow:
       inset 0 1px 0 var(--white-35),
-      0 0 0 1px var(--primary-strong),
+      0 0 0 1px var(--button-edge),
       0 2px 6px var(--strong-20);
     color: var(--primary-foreground);
     font-weight: 500;
-    transition:
-      filter var(--transition-micro),
-      transform var(--transition-micro);
+    transition: transform var(--transition-micro);
   }
 
   .pressable {
@@ -153,7 +152,7 @@
     background-image: var(--fill-marketing);
     box-shadow:
       inset 0 1px 0 var(--white-40),
-      0 0 0 1px var(--primary-strong);
+      0 0 0 1px var(--fill-marketing-bottom);
     color: var(--primary-foreground);
   }
 
@@ -247,8 +246,9 @@
       animation-play-state: paused;
     }
 
-    .primary-button:hover {
-      filter: brightness(1.06);
+    .primary-button:not(:disabled):hover {
+      --button-edge: var(--fill-marketing-hover-bottom);
+      background-image: var(--fill-marketing-hover);
     }
 
     .nav-tab:hover,
@@ -257,8 +257,9 @@
     }
   }
 
-  .primary-button:active {
-    filter: brightness(0.94);
+  .primary-button:not(:disabled):active {
+    --button-edge: var(--fill-marketing-active-bottom);
+    background-image: var(--fill-marketing-active);
   }
 
   .nav-tab:active,
@@ -266,7 +267,7 @@
     color: var(--foreground);
   }
 
-  .primary-button:active,
+  .primary-button:not(:disabled):active,
   .nav-tab:active,
   .text-link:active,
   .pressable:active {
@@ -274,7 +275,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .primary-button:active,
+    .primary-button:not(:disabled):active,
     .nav-tab:active,
     .text-link:active,
     .pressable:active {
@@ -414,22 +415,8 @@
   }
 }
 
-[data-sign-in-label] {
-  transition: opacity var(--ease-micro);
-}
-
 [data-sign-in-form] button:disabled {
   cursor: wait;
-}
-
-[data-sign-in-form] [data-pending] [data-sign-in-label] {
-  opacity: 0.85;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [data-sign-in-label] {
-    transition: none;
-  }
 }
 
 @keyframes hero-chart-draw {

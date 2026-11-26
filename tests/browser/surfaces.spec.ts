@@ -102,6 +102,59 @@ test("New deck is the signature fill with no border or ring around it", async ({
   expect(edge).toEqual({ border: "0px", fill: true, ring: false })
 })
 
+test("New deck keeps its label at or above 4.5:1 across its gradient in rest, hover and pressed states", async ({
+  page,
+}) => {
+  await openScreen(page, "/screens/s31-02-decks-browse-recents-grid")
+  const button = page.locator("[data-decks-header] button").first()
+  const measure = () =>
+    button.evaluate((node) => {
+      const style = getComputedStyle(node)
+      const parse = (color: string): [number, number, number] => {
+        const match = color.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/)
+        if (!match) throw new Error(`unexpected color ${color}`)
+        return [Number(match[1]), Number(match[2]), Number(match[3])]
+      }
+      const linear = (channel: number) => {
+        const value = channel / 255
+        return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+      }
+      const luminance = ([r, g, b]: [number, number, number]) =>
+        0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+      const ratio = (a: [number, number, number], b: [number, number, number]) => {
+        const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+        return ((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05)
+      }
+      const stops = [...style.backgroundImage.matchAll(/rgba?\([^)]+\)/g)].map((found) => parse(found[0]))
+      if (stops.length < 2) throw new Error(`expected gradient, got ${style.backgroundImage}`)
+      const label = parse(style.color)
+      const lowest = Math.min(...stops.map((stop) => ratio(label, stop)))
+      return { lowest, filter: style.filter, opacity: Number(style.opacity), backgroundImage: style.backgroundImage }
+    })
+
+  const rest = await measure()
+  expect(rest.filter).toBe("none")
+  expect(rest.opacity).toBe(1)
+  expect(rest.lowest).toBeGreaterThanOrEqual(4.5)
+
+  await button.hover()
+  const hovered = await measure()
+  expect(hovered.filter).toBe("none")
+  expect(hovered.backgroundImage).not.toBe(rest.backgroundImage)
+  expect(hovered.lowest).toBeGreaterThanOrEqual(4.5)
+
+  const box = await button.boundingBox()
+  if (box === null) throw new Error("missing New deck box")
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  const pressed = await measure()
+  await page.mouse.move(0, 0)
+  await page.mouse.up()
+  expect(pressed.filter).toBe("none")
+  expect(pressed.backgroundImage).not.toBe(hovered.backgroundImage)
+  expect(pressed.lowest).toBeGreaterThanOrEqual(4.5)
+})
+
 test("the sidebar keeps its icons on one line and its words on another", async ({ page }) => {
   await openScreen(page, "/screens/s31-02-decks-browse-recents-grid")
   const lefts = (selector: string) =>
