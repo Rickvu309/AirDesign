@@ -1,5 +1,6 @@
 import type * as doom from "@airdesign/doom"
 import type { RefObject } from "react"
+import type { GridDropBar as Bar } from "./use-grid-drag"
 import { Thumb } from "./thumb"
 
 const ghostWidth = 160
@@ -56,5 +57,32 @@ export function GridDragGhost({
         </span>
       ) : null}
     </div>
+  )
+}
+
+export function GridDropBar({ bar, scale }: { readonly bar: Bar; readonly scale: number }) {
+  const left = bar.rect.left
+  const top = bar.rect.top
+  const thickness = `calc(var(--grid-drop-bar) / ${String(scale)})`
+  return (
+    <div
+      aria-hidden="true"
+      data-drop-bar
+      data-drop-place={bar.at + 1}
+      data-group-drop={bar.group ? "" : undefined}
+      style={
+        bar.group
+          ? {
+              transform: `translate(${String(left)}px, calc(${String(top)}px - var(--grid-drop-bar) / ${String(scale)} / 2))`,
+              width: bar.rect.width,
+              height: thickness,
+            }
+          : {
+              transform: `translate(calc(${String(left)}px - var(--grid-drop-bar) / ${String(scale)} / 2), ${String(top)}px)`,
+              width: thickness,
+              height: bar.rect.height,
+            }
+      }
+    />
   )
 }

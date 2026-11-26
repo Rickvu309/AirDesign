@@ -13,7 +13,6 @@ import {
   type ReactNode,
 } from "react"
 import { Announcer, type Announcement } from "@/components/ui/announcer"
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import type { Zoom } from "@/editing/canvas-zoom"
 import { gestureFor } from "@/lib/gestures"
@@ -23,17 +22,17 @@ import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { gridCommand, gridMove } from "@/editor/editor-grid-keys"
 import { gridAddFits } from "@/editor/grid-add-placement"
 import { GridCard } from "@/editor/grid-card"
-import { GridDragGhost } from "@/editor/grid-drag-ghost"
+import { GridDragGhost, GridDropBar } from "@/editor/grid-drag-marks"
 import { gridBands, gridIndices, gridRanges } from "@/editor/grid-drop"
 import { GridGroupAdd } from "@/editor/grid-group-add"
-import { GridGroupFrame, type GridGroupHover } from "@/editor/grid-group-frame"
+import { GridGroupFrame, groupHoverAt, type GridGroupHover } from "@/editor/grid-group-frame"
 import { gridOpened, gridPick, gridRinged, gridStep, type GridInteraction } from "@/editor/grid-interaction"
 import { gridLayout, gridSpacing } from "@/editor/grid-lines"
 import { gridZoomPlacement } from "@/editor/grid-number"
 import { marqueeStep, type MarqueeDeck } from "@/editor/grid-marquee"
 import { pickAll, pickRange, pickToggle, prunedPick, toggledCurrent } from "@/editor/grid-selection"
-import { gridGrip, gridGripsShown, gridPaintMargin, gridShown, type GridView } from "@/editor/grid-viewport"
-import { SlideMenu, slideMenuItem } from "@/editor/slide-menu"
+import { gridGripsShown, gridPaintMargin, gridShown, type GridView } from "@/editor/grid-viewport"
+import { GridSlideMenu } from "@/editor/grid-slide-menu"
 import { useSlideSay, type SlideStrip } from "@/editor/slide-sidebar"
 import { slideGroupsOf } from "@/editor/slide-writes"
 import { useGridCamera } from "@/editor/use-grid-camera"
@@ -53,20 +52,11 @@ function opened(start: GridStart, order: readonly string[]): GridInteraction {
   return anchor === undefined ? gridOpened : { kind: "slides", pick: { anchor, slides: new Set(picked) } }
 }
 
-const gripReach = 52
-
 function entryOf(target: EventTarget | null): number | null {
   if (!(target instanceof Element)) return null
   const entry = target.closest("[data-grid-card]")?.querySelector("[data-slide-entry]")
   const number = Number(entry?.getAttribute("data-slide-entry"))
   return Number.isInteger(number) && number > 0 ? number - 1 : null
-}
-
-function partOf(target: EventTarget | null): GridGroupHover {
-  if (!(target instanceof Element)) return "band"
-  if (target.closest("[data-group-handle]") !== null) return "handle"
-  if (target.closest("[data-gap-insert], [data-group-insert]") !== null) return "add"
-  return target.closest("[data-grid-card]") === null ? "band" : "slide"
 }
 
 export function EditorGrid({
@@ -344,22 +334,10 @@ export function EditorGrid({
   const grips = strip.onMoveGroups !== undefined && gridGripsShown(size.h, scale)
 
   function onHover(event: PointerEvent<HTMLDivElement>) {
-    if (event.pointerType !== "mouse" || gripBlocked) {
-      if (hover !== null) setHover(null)
-      return
-    }
-    const world = camera.world({ x: event.clientX, y: event.clientY })
-    const part = partOf(event.target)
-    const reach = gripReach / scale
-    const above = gridGrip.minimumHeight / 2 / scale
-    const group =
-      part === "add"
-        ? bands.findLastIndex((band) => band.top <= world.y)
-        : bands.findIndex(
-            (band) =>
-              world.x >= -reach && world.x <= band.width && world.y >= band.top - above && world.y <= band.bottom,
-          )
-    const next = group === -1 ? null : { group, part }
+    const next =
+      event.pointerType !== "mouse" || gripBlocked
+        ? null
+        : groupHoverAt(bands, camera.world({ x: event.clientX, y: event.clientY }), event.target, scale)
     if (next?.group !== hover?.group || next?.part !== hover?.part) setHover(next)
   }
 
@@ -532,27 +510,7 @@ export function EditorGrid({
               ),
             ]
           })}
-          {dropBar === null ? null : (
-            <div
-              aria-hidden="true"
-              data-drop-bar
-              data-drop-place={dropBar.at + 1}
-              data-group-drop={dropBar.group ? "" : undefined}
-              style={
-                dropBar.group
-                  ? {
-                      transform: `translate(${String(dropBar.rect.left)}px, calc(${String(dropBar.rect.top)}px - var(--grid-drop-bar) / ${String(scale)} / 2))`,
-                      width: dropBar.rect.width,
-                      height: `calc(var(--grid-drop-bar) / ${String(scale)})`,
-                    }
-                  : {
-                      transform: `translate(calc(${String(dropBar.rect.left)}px - var(--grid-drop-bar) / ${String(scale)} / 2), ${String(dropBar.rect.top)}px)`,
-                      width: `calc(var(--grid-drop-bar) / ${String(scale)})`,
-                      height: dropBar.rect.height,
-                    }
-              }
-            />
-          )}
+          {dropBar === null ? null : <GridDropBar bar={dropBar} scale={scale} />}
         </div>
         {box === null ? null : (
           <div
@@ -577,40 +535,7 @@ export function EditorGrid({
         />
       )}
       {menu === null ? null : (
-        <SlideMenu
-          open
-          anchor={menu.anchor}
-          pointer={menu.pointer}
-          index={menu.index}
-          count={count}
-          onOpenChange={(next, keyboard) => {
-            if (!next) actions.closeMenu(keyboard)
-          }}
-          onChoose={(change) => actions.act(change, menu.index)}
-          skipped={strip.skipped?.[menu.index] === true}
-          onSkip={strip.onSkip === undefined ? undefined : (skipped) => strip.onSkip?.(actions.menuHeld, skipped)}
-          set={actions.menuSet}
-          onOpen={() => onOpen(menu.index)}
-        >
-          {strip.onAdd === undefined
-            ? null
-            : (["same", "new"] as const).map((side) => (
-                <DropdownMenuItem
-                  key={side}
-                  disabled={actions.full}
-                  aria-description={actions.full ? slideListCopy.slideLimit(doom.limits.slides) : undefined}
-                  className={slideMenuItem}
-                  onClick={() => actions.add(menu.index, side)}
-                >
-                  {side === "same" ? slideListCopy.addAfterMenu : slideListCopy.addBelowMenu}
-                </DropdownMenuItem>
-              ))}
-          {strip.onMoveGroups === undefined ? null : (
-            <DropdownMenuItem disabled={!actions.canMoveBelow} className={slideMenuItem} onClick={actions.moveBelow}>
-              {slideListCopy.moveBelowMenu}
-            </DropdownMenuItem>
-          )}
-        </SlideMenu>
+        <GridSlideMenu menu={menu} actions={actions} strip={strip} count={count} onOpen={onOpen} />
       )}
       <div className="flex shrink-0 justify-center pt-2 pb-6">{bar}</div>
     </div>
