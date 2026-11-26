@@ -446,6 +446,7 @@ html:has(.reflow-frame) #root {
   [data-grid-halo] {
   opacity: 0;
 }
+[data-grid-group-frame][data-group-blocked] [data-group-handle],
 [data-grid-viewport]:is([data-panning], [data-dragging]) [data-group-handle] {
   visibility: hidden;
 }

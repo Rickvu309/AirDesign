@@ -151,3 +151,51 @@ export async function wheelAt(
     ...keys,
   })
 }
+
+export async function savedGroups(stack: Stack, opened: Opened): Promise<readonly (readonly string[])[]> {
+  const { doomRoutes } = await catalog()
+  const answer = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
+  const fold = doom.readFold(answer.json.fold)
+  const groups = new Map<string, string[]>()
+  for (const slide of fold === undefined ? [] : doom.slidesOf(fold)) {
+    const group = doom.parentOf(slide)?.id ?? ""
+    groups.set(group, [...(groups.get(group) ?? []), slide.id])
+  }
+  return [...groups.values()]
+}
+
+export function shownGroups(page: Page): Promise<number[][]> {
+  return page.locator("[data-editor-grid] [data-slide-list]").evaluate((list) => {
+    const groups: number[][] = []
+    for (const child of list.children) {
+      if (child.matches("[data-grid-group-frame]")) groups.push([])
+      const number = child.querySelector("[data-slide-entry]")?.getAttribute("data-slide-entry")
+      if (child.matches("[data-grid-card]") && number !== null && number !== undefined)
+        groups.at(-1)?.push(Number(number))
+    }
+    return groups
+  })
+}
+
+export const picked = (ids: readonly string[], numbers: readonly number[]) => numbers.map((number) => ids[number - 1]!)
+
+export const grip = (page: Page, group: number) =>
+  page.getByRole("button", { name: slideListCopy.moveGroup(group), exact: true })
+
+export async function grab(page: Page, number: number, across = 0.5): Promise<Box> {
+  const box = await boxOf(entry(page, number))
+  await page.mouse.move(box.x + box.width * across, box.y + box.height / 2)
+  await page.mouse.down()
+  return box
+}
+
+export async function hoverOver(page: Page, number: number, across: number): Promise<void> {
+  const box = await boxOf(entry(page, number))
+  await page.mouse.move(box.x + box.width * across, box.y + box.height / 2, { steps: 8 })
+}
+
+export async function reopenGrid(page: Page): Promise<void> {
+  await page.reload()
+  await page.locator("[data-editor-ready]").waitFor()
+  if ((await viewport(page).count()) === 0) await openGrid(page)
+}

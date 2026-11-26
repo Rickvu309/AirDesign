@@ -34,6 +34,7 @@ export function GridGroupFrame({
       data-grid-group-frame
       data-grid-group={number}
       data-group-hover={blocked ? undefined : (hover ?? undefined)}
+      data-group-blocked={blocked ? "" : undefined}
       data-group-tint={tint ? "" : undefined}
       data-wrapped={wrapped ? "" : undefined}
       className="pointer-events-none absolute"
