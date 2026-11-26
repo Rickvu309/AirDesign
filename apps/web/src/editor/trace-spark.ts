@@ -1,4 +1,4 @@
-export type Arrival = "made" | "changed"
+export type Arrival = "made" | "changed" | "slide"
 
 const svgSpace = "http://www.w3.org/2000/svg"
 const inOut = "cubic-bezier(0.77, 0, 0.175, 1)"
@@ -9,7 +9,8 @@ const glow = 24
 export const traceSpark = {
   stagger: 80,
   staggerCap: 480,
-  outline: { made: 520, changed: 380, fadeAt: 640, fade: 380 },
+  outline: { made: 520, changed: 380, slide: 900, fadeAt: 640, slideFadeAt: 980, fade: 380 },
+  slideInset: 2,
   focus: { at: 300, duration: 420, blur: 18 },
   sweep: { at: 380, duration: 560 },
   sparks: { at: 420 },
@@ -118,7 +119,14 @@ export type Playing = { readonly stop: () => void; readonly ended: Promise<void>
 export function playArrival(layer: HTMLElement, element: HTMLElement, arrival: Arrival, order: number): Playing {
   const delay = Math.min(order * traceSpark.stagger, traceSpark.staggerCap)
   const round = element.dataset.geometry === "ellipse"
-  const box = placed(layer, paintedBox(element))
+  const whole = placed(layer, paintedBox(element))
+  const inset = arrival === "slide" ? traceSpark.slideInset : 0
+  const box = {
+    left: whole.left + inset,
+    top: whole.top + inset,
+    width: whole.width - 2 * inset,
+    height: whole.height - 2 * inset,
+  }
   const group = document.createElement("div")
   const outline = outlineOf(box, round)
   const sweep = sweepOf(box, round)
@@ -148,7 +156,7 @@ export function playArrival(layer: HTMLElement, element: HTMLElement, arrival: A
     }),
     outline.animate([{ opacity: 1 }, { opacity: 0 }], {
       duration: traceSpark.outline.fade,
-      delay: delay + traceSpark.outline.fadeAt,
+      delay: delay + (arrival === "slide" ? traceSpark.outline.slideFadeAt : traceSpark.outline.fadeAt),
       easing: "ease",
       fill: "both",
     }),

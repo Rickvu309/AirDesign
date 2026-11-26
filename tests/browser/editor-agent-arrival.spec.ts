@@ -260,3 +260,21 @@ test("the canvas goes to a slide an agent makes and traces what the agent writes
   await expect(canvas.getByText("Elsewhere", { exact: true })).toHaveCount(0)
   await expect(page).toHaveURL(new RegExp(encodeURIComponent(together.slide)))
 })
+
+test("a slide an agent makes has its border traced as the canvas opens it", async ({ page, context, stack }) => {
+  const opened = await openEditor(page, context, stack)
+  const layer = page.locator("[data-agent-arrival]")
+  const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
+  const made = await call("edit_deck", {
+    deck: opened.deck,
+    base: (await saved(stack, opened)).rev,
+    changes: [{ op: "slide", add: {} }],
+  })
+  expect(made.ok, JSON.stringify(made)).toBe(true)
+  await expect(layer.locator("svg")).toHaveCount(1)
+  const traced = await layer.locator("svg").evaluate((svg) => svg.firstElementChild!.getBoundingClientRect().width)
+  const slide = await page.locator("[data-slide-box]").boundingBox()
+  expect(traced).toBeGreaterThan((slide?.width ?? 0) - 8)
+  expect(traced).toBeLessThanOrEqual(slide?.width ?? 0)
+  await expect(layer.locator("> *")).toHaveCount(0)
+})
