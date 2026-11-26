@@ -59,6 +59,27 @@ test("a click takes a group whole, a double-click steps into it, and Shift-Enter
   expect(await selectedIds(page)).toEqual([])
 })
 
+test("Enter selects an unlocked child one level down and still edits text", async ({ page, context, stack }) => {
+  covers("step-in", "edit-text")
+  const opened = await openEditor(page, context, stack)
+  await clearSubtitle(stack, opened)
+  const text = { chars: "A child layer", spans: [], paras: [{}], style: "body", resize: "fixed", alignV: "top" }
+  await landNodes(stack, opened, [
+    { id: "k:1", type: "frame", parent: opened.slide, props: { box: spot(600, 600, 720, 200) } },
+    { id: "k:2", type: "shape", parent: "k:1", props: { box: spot(0, 0, 200, 72), locked: true } },
+    { id: "k:3", type: "frame", parent: "k:1", props: { box: spot(300, 0, 200, 100) } },
+    { id: "k:4", type: "shape", parent: "k:3", props: { box: spot(0, 0, 200, 72), text } },
+  ])
+  await clickSlide(page, 960, 636)
+  expect(await selectedIds(page)).toEqual(["k:1"])
+  await page.keyboard.press(shortcutCopy.keyNames.Enter)
+  expect(await selectedIds(page)).toEqual(["k:3"])
+  await page.keyboard.press(shortcutCopy.keyNames.Enter)
+  expect(await selectedIds(page)).toEqual(["k:4"])
+  await page.keyboard.press(shortcutCopy.keyNames.Enter)
+  await expect(page.locator("[data-text-editor]")).toBeFocused()
+})
+
 test("Shift adds a layer, Cmd or Ctrl reaches inside a frame, and a locked layer passes the click through", async ({
   page,
   context,

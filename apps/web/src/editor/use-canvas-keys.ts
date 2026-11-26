@@ -6,7 +6,7 @@ import { editorOwnsKey } from "@/editor/editor-key-ownership"
 import { deleteWrites } from "./delete-writes"
 import { moveWrites } from "./move-writes"
 import { arranged } from "./arrange-keys"
-import { allIn, noSelection, steppedOut, type Selection } from "./selection"
+import { allIn, noSelection, steppedIn, steppedOut, type Selection } from "./selection"
 import type { SlideGeometry } from "./slide-geometry"
 import type { Tool } from "./use-canvas-pointer"
 import type { EditorClient } from "./use-deck"
@@ -78,9 +78,13 @@ export function useCanvasKeys(args: KeyArgs) {
         a.onCropEnd()
         return
       }
-      const selected = a.selection.ids.length > 0
+      const [only] = a.selection.ids
+      const parent = only !== undefined && a.selection.ids.length === 1 ? a.geometry.byId.get(only) : undefined
       const gesture =
-        (selected ? gestureFor(event, "element") : null) ?? gestureFor(event, "editor") ?? gestureFor(event, "slide")
+        (parent?.children.length ? gestureFor(event, "container") : null) ??
+        (only === undefined ? null : gestureFor(event, "element")) ??
+        gestureFor(event, "editor") ??
+        gestureFor(event, "slide")
       if (gesture === null) return
       const handled = () => event.preventDefault()
       if (arranged(gesture, a)) {
@@ -102,12 +106,20 @@ export function useCanvasKeys(args: KeyArgs) {
       } else if (gesture === "actions") {
         handled()
         a.onActions()
-      } else if (gesture === "edit-text") {
-        const [only] = a.selection.ids
+      } else if (gesture === "edit-text" || gesture === "step-in") {
         if (event.target instanceof HTMLElement && event.target.closest("[data-view-toggle]") !== null) return
-        if (only === undefined || a.selection.ids.length !== 1 || !doom.holdsText(a.view, only)) return
-        handled()
-        a.onEditText(only)
+        if (gesture === "edit-text") {
+          if (only === undefined || a.selection.ids.length !== 1 || !doom.holdsText(a.view, only)) return
+          handled()
+          a.onEditText(only)
+        } else {
+          const child = parent?.children.find(({ id }) => !doom.lockedIn(a.view, id))
+          if (parent === undefined || child === undefined) return
+          const inside = steppedIn([parent, child], a.selection)
+          if (inside === null) return
+          handled()
+          a.onSelection(inside)
+        }
       } else if (gesture === "select-all") {
         handled()
         a.onSelection(allIn(a.geometry, a.selection, (id) => doom.lockedIn(a.view, id)))

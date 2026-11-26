@@ -7,6 +7,7 @@ export const shortcutCopy = {
     other: { alt: "Alt", shift: "Shift" },
   },
   keyNames: {
+    Enter: "Enter",
     Space: "Space",
   },
 } as const
