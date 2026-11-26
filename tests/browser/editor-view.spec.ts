@@ -2,7 +2,7 @@ import { expect } from "@playwright/test"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { clickSlide, openEditor } from "./editor-deck"
+import { accent, clickSlide, landNodes, openEditor, spot } from "./editor-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -53,4 +53,23 @@ test("zoom keys, the wheel and the hand tool move around the slide as Figma does
   await page.mouse.wheel(0, -200)
   await page.keyboard.up("ControlOrMeta")
   await expect.poll(async () => percentOf(await percent.textContent())).toBeGreaterThan(fitted)
+})
+
+test("zoom to selection brings a second selection into view at the same zoom", async ({ page, context, stack }) => {
+  const opened = await openEditor(page, context, stack)
+  await landNodes(stack, opened, [
+    { id: "z:1", type: "shape", parent: opened.slide, props: { box: spot(10, 10, 120, 120), fills: accent } },
+    { id: "z:2", type: "shape", parent: opened.slide, props: { box: spot(135, 10, 120, 120), fills: accent } },
+  ])
+  const percent = page.locator("[data-zoom-readout]")
+  await clickSlide(page, 70, 70)
+  await page.keyboard.press("Shift+Digit2")
+  await expect(percent).toHaveText(editorCopy.percent(400))
+  await clickSlide(page, 195, 70)
+  await page.keyboard.press("Shift+Digit2")
+  await expect(percent).toHaveText(editorCopy.percent(400))
+
+  const stage = await page.locator("[data-canvas-stage]").boundingBox()
+  const outline = await page.locator('[data-selection-outline="z:2"]').boundingBox()
+  expect(outline!.x + outline!.width).toBeLessThanOrEqual(stage!.x + stage!.width)
 })

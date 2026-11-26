@@ -20,7 +20,8 @@ import { useDoomPictures } from "./use-pictures"
 import { cropModeWrites, croppedPaint } from "./crop-drag"
 import { usePictureNatural } from "./use-picture-natural"
 import { useSlidePictures } from "./use-slide-pictures"
-import { scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
+import { scrollToAnchor, type ZoomAnchor } from "./canvas-anchor"
+import { scaleOf, scaleToFill, steppedScale, wheelScale, type Size, type Zoom } from "./canvas-view"
 import { kept, type Rect, type Selection } from "./selection"
 import { aroundPlaced, apply, geometryOf, invert, type Point, type SlideGeometry } from "./slide-geometry"
 import { linkedWords, type LinkedWords } from "./text-edit"
@@ -122,7 +123,7 @@ export function DoomCanvas(props: CanvasProps) {
   const [marquee, setMarquee] = useState<Rect | null>(null)
   const [hover, setHover] = useState<doom.NodeId | null>(null)
   const { actionsOpen, onActionsOpen: setActionsOpen } = props
-  const anchor = useRef<{ readonly point: Point; readonly at: Point } | null>(null)
+  const anchor = useRef<ZoomAnchor | null>(null)
 
   const { size } = doom.deckOf(view)
   const text = useTextSession(client, view, props.measure)
@@ -186,10 +187,12 @@ export function DoomCanvas(props: CanvasProps) {
           ? { x: rect.width / 2, y: rect.height / 2 }
           : { x: about.clientX - rect.left, y: about.clientY - rect.top }
       const box = paper.getBoundingClientRect()
-      anchor.current = {
+      const held = {
         point: point ?? { x: (rect.left + at.x - box.left) / scale, y: (rect.top + at.y - box.top) / scale },
         at,
       }
+      if (scaleOf(next, room, size) === scale) scrollToAnchor(element, paper, held, scale)
+      else anchor.current = held
     }
     props.onZoom(next)
   }
@@ -200,10 +203,7 @@ export function DoomCanvas(props: CanvasProps) {
     const paper = slideBox.current
     anchor.current = null
     if (held === null || element === null || paper === null) return
-    const rect = element.getBoundingClientRect()
-    const box = paper.getBoundingClientRect()
-    element.scrollLeft += box.left + held.point.x * scale - (rect.left + held.at.x)
-    element.scrollTop += box.top + held.point.y * scale - (rect.top + held.at.y)
+    scrollToAnchor(element, paper, held, scale)
   }, [scale])
 
   useEffect(() => {
