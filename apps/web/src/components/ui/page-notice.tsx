@@ -20,7 +20,7 @@ export function PageToaster() {
       position="top-center"
       offset={12}
       style={{ "--width": pageToastWidth } as CSSProperties}
-      className="md:![left:calc(50%+var(--decks-sidebar-width)/2)]"
+      className="md:translate-x-[calc(var(--decks-sidebar-width)/2)]"
     />
   )
 }
@@ -52,8 +52,5 @@ export function showFailed(key: string, text: string, retry: () => void, over?: 
 }
 
 export function showStatus(text: string, id?: ToastId, duration = Number.POSITIVE_INFINITY) {
-  return toast.custom(
-    () => <StatusPill className="h-auto min-h-10 px-3.5 py-2 [overflow-wrap:anywhere]">{text}</StatusPill>,
-    { ...pageToastOptions, id, duration },
-  )
+  return toast.custom(() => <StatusPill layout="message">{text}</StatusPill>, { ...pageToastOptions, id, duration })
 }

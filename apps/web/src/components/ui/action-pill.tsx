@@ -15,7 +15,7 @@ export function ActionPill({
   error?: boolean
 }) {
   return (
-    <StatusPill error={error} className="h-auto min-h-10 max-w-full gap-2.5 py-1.5 pr-1.5 pl-3.5" style={{ width }}>
+    <StatusPill error={error} layout="action" style={{ width }}>
       <span className="min-w-0 flex-1 text-pretty">{text}</span>
       <button
         type="button"
