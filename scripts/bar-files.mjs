@@ -134,10 +134,19 @@ const failing = (level) => ["error", "deny", 2].includes(Array.isArray(level) ? 
 const lintLowered = (file, { base, head }) => {
   const before = parsed(base)?.rules ?? {}
   const after = parsed(head)?.rules ?? {}
-  return Object.keys(before)
+  const turnedDown = Object.keys(before)
     .filter((rule) => failing(before[rule]) && !failing(after[rule]))
     .map((rule) => `The lint rule ${rule} no longer fails in ${file}.`)
+  const raised = Object.keys(before).flatMap((rule) => {
+    const was = baselineOf(before[rule])
+    return Object.entries(baselineOf(after[rule]))
+      .filter(([path, count]) => count > (was[path] ?? 0))
+      .map(([path, count]) => `In ${file}, ${rule} allows ${path} ${count} findings, up from ${was[path] ?? 0}.`)
+  })
+  return [...turnedDown, ...raised]
 }
+
+const baselineOf = (level) => (Array.isArray(level) ? level[1]?.baseline : undefined) ?? {}
 
 const strictOption = /^(?:strict|noImplicit|noUnused|noUnchecked|noFallthrough|noPropertyAccess|exactOptional)/
 
