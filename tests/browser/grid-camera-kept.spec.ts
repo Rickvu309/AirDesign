@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test"
 import { zoomCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { test } from "./api-stack"
-import { boxOf, entry, inside, openGrid, openGroups, readout, viewport, wheelAt, zoomTo } from "./grid-deck"
+import { boxOf, entry, openGrid, openGroups, readout, viewport, wheelAt, zoomTo } from "./grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -79,5 +79,11 @@ test("a kept camera on a slide deleted in Slides view reopens on a slide that is
   await expect(seven).toHaveCount(0)
   await openGrid(page)
   await expect(entry(page, 6)).toHaveAttribute("aria-current", "true")
-  await expect.poll(() => inside(entry(page, 6), viewport(page))).toBe(true)
+  const room = await boxOf(viewport(page))
+  const six = await boxOf(entry(page, 6))
+  const middle = { x: room.x + room.width / 2, y: room.y + room.height / 2 }
+  expect(six.x < middle.x && six.x + six.width > middle.x && six.y < middle.y && six.y + six.height > middle.y).toBe(
+    true,
+  )
+  await expect(readout(page)).toHaveText(/^200%/)
 })
