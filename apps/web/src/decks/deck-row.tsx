@@ -50,7 +50,14 @@ export function DeckRow({
   return (
     <article data-deck-row>
       <div className={row}>
-        <div className={cn(previewBox, "overflow-hidden rounded-md bg-line")}>{preview}</div>
+        <div
+          className={cn(
+            previewBox,
+            "overflow-hidden rounded-md bg-line [&_[data-deck-initial]]:text-[length:var(--type-title)]",
+          )}
+        >
+          {preview}
+        </div>
         <div className={cn(nameInset, "flex min-w-0 items-center gap-1 pr-4")}>
           <h2
             className="min-w-0 truncate py-1 text-[length:var(--type-dense)] leading-[18px] font-medium text-foreground"
