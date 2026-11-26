@@ -14,7 +14,7 @@ export function ViewSwitch({
   const gridHref = links?.grid ?? (scope === "recents" ? deckRoutes.recentsGrid : deckRoutes.allDecksGrid)
   const listHref = links?.list ?? (scope === "recents" ? deckRoutes.recentsList : deckRoutes.allDecksList)
   return (
-    <div className="flex h-7 w-[54px] items-center gap-0.5 rounded-lg bg-canvas p-0.5" role="group" aria-label="Layout">
+    <div className="flex h-7 w-13.5 items-center gap-0.5 rounded-lg bg-canvas p-0.5" role="group" aria-label="Layout">
       <a
         href={gridHref}
         className={cn(

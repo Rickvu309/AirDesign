@@ -71,7 +71,7 @@ function DeckGridSkeleton({ section }: { section: HomeSection }) {
               <Skeleton className="h-3.5 w-2/5 bg-line" />
             </div>
           </div>
-          <Skeleton className={cn("h-[150px] w-full rounded-[var(--shape-card)] bg-line", previewHeight(section))} />
+          <Skeleton className={cn("h-37.5 w-full rounded-[var(--shape-card)] bg-line", previewHeight(section))} />
         </article>
       ))}
     </DeckGrid>
@@ -83,7 +83,7 @@ function gridLayout(section: HomeSection) {
 }
 
 function previewHeight(section: HomeSection) {
-  return section === "recents" ? undefined : "h-[136px]"
+  return section === "recents" ? undefined : "h-34"
 }
 
 export type HomeSection = "recents" | "all-decks" | "trash"

@@ -53,7 +53,7 @@ export function EmptyTrashButton({ disabled, onClick }: { disabled?: boolean; on
 
 export function TrashNote() {
   return (
-    <p className="mt-6 text-[length:var(--type-dense)] leading-[18px] text-quiet">
+    <p className="mt-6 text-[length:var(--type-dense)] leading-ui text-quiet">
       Decks here are removed for good after 30 days.
     </p>
   )
@@ -70,7 +70,7 @@ export function TrashList({ confirm = false }: { confirm?: boolean }) {
             name={deck.name}
             edited={deck.edited}
             action={<RestoreButton />}
-            previewClassName="h-[136px]"
+            previewClassName="h-34"
             preview={<SampleSlide name={deck.name} />}
           />
         ))}
