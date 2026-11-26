@@ -60,7 +60,7 @@
   padding-left: 4px;
 }
 
-[data-design-panel] [data-control="color"] button > svg {
+[data-design-panel] [data-control="color"] [data-color-disclosure] {
   color: var(--foreground);
 }
 
