@@ -52,14 +52,14 @@ export function NameForm({
     <form
       className={cn(
         "grid gap-x-6 gap-y-2",
-        joining ? "grid-cols-1" : "grid-cols-[minmax(0,1fr)_minmax(0,360px)] max-sm:grid-cols-1",
+        joining ? "grid-cols-1" : "-mb-2.5 grid-cols-[minmax(0,1fr)_minmax(0,360px)] max-sm:grid-cols-1",
       )}
       onSubmit={(event) => {
         event.preventDefault()
         if (!busy && !unchanged) void save()
       }}
     >
-      <div className={joining ? "" : "pt-2 max-sm:pt-0"}>
+      <div>
         <label htmlFor={id} className="text-[length:var(--type-body)] leading-5 font-medium">
           {accountCopy.name}
         </label>
@@ -93,19 +93,19 @@ export function NameForm({
                 setSaved(false)
               }}
             />
-            <div className="mt-2 min-h-5 text-[length:var(--type-dense)] leading-5">
-              {joining && (
+            {joining && (
+              <div className="mt-2 min-h-5 text-[length:var(--type-dense)] leading-5">
                 <p id={`${id}-hint`} hidden={error !== ""} className="text-muted-foreground">
                   {accountCopy.nameLater}
                 </p>
-              )}
-              <p id={`${id}-error`} role="alert" className="text-danger-text">
-                {error}
-              </p>
-              <p role="status" className="text-muted-foreground">
-                {saved ? accountCopy.nameSaved : ""}
-              </p>
-            </div>
+                <p id={`${id}-error`} role="alert" className="text-danger-text">
+                  {error}
+                </p>
+                <p role="status" className="text-muted-foreground">
+                  {saved ? accountCopy.nameSaved : ""}
+                </p>
+              </div>
+            )}
           </div>
           <Button
             type="submit"
@@ -122,6 +122,16 @@ export function NameForm({
             {joining ? accountCopy.nameContinue : accountCopy.nameSave}
           </Button>
         </div>
+        {!joining && (
+          <div className="mt-1.5 min-h-4.5 text-[length:var(--type-dense)] leading-ui-tight">
+            <p id={`${id}-error`} role="alert" className="text-danger-text">
+              {error}
+            </p>
+            <p role="status" className="text-muted-foreground">
+              {saved ? accountCopy.nameSaved : ""}
+            </p>
+          </div>
+        )}
       </div>
     </form>
   )
