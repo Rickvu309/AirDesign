@@ -102,6 +102,24 @@ test("every pan gesture moves a fitted slide and Fit recentres it", async ({ pag
   expect(await slide.boundingBox()).toEqual(before)
 })
 
+test("actual size keeps an unpanned slide centred after the viewport grows", async ({ page, context, stack }) => {
+  await page.setViewportSize({ width: 1470, height: 923 })
+  await openEditor(page, context, stack)
+  await clickSlide(page, 50, 50)
+  const stage = page.locator("[data-editor-stage]")
+  const slide = page.locator("[data-slide-box]")
+
+  await page.setViewportSize({ width: 2700, height: 1340 })
+  await stage.focus()
+  await page.keyboard.press("Shift+Digit0")
+  await expect(page.locator("[data-zoom-readout]")).toHaveText(editorCopy.percent(100))
+
+  const box = (await slide.boundingBox())!
+  const viewport = (await stage.boundingBox())!
+  expect(box.width).toBe(1920)
+  expect(Math.abs(box.x + box.width / 2 - (viewport.x + viewport.width / 2))).toBeLessThanOrEqual(1)
+})
+
 test("zoom to selection centres slide-edge layers, including at the same zoom", async ({ page, context, stack }) => {
   const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [

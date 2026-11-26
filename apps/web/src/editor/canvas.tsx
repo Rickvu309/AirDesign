@@ -94,6 +94,7 @@ export type CanvasProps = {
   readonly zoom: Zoom
   readonly scale: number
   readonly room: Size
+  readonly viewport: Size | null
   readonly overlay: number
   readonly slideNumber: number
   readonly onZoom: (zoom: Zoom) => void
@@ -117,7 +118,7 @@ export function DoomCanvas(props: CanvasProps) {
   const { client, view, slide, selection, onSelection, tool, onTool, zoom, scale, room, overlay } = props
   const stage = useRef<HTMLDivElement>(null)
   const slideBox = useRef<HTMLDivElement>(null)
-  const pan = useCanvasPan(stage, props.card !== undefined)
+  const pan = useCanvasPan(stage, props.viewport)
   const [space, setSpace] = useState(false)
   const [preview, setPreview] = useState<Preview | null>(null)
   const [flight, setFlight] = useState<Flight | null>(null)

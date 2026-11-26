@@ -1,29 +1,28 @@
-import { useLayoutEffect, useRef, useState, type RefObject } from "react"
+import { useLayoutEffect, useRef, type RefObject } from "react"
 import type { Size } from "./canvas-view"
 
-export function useCanvasPan(stage: RefObject<HTMLDivElement | null>, placed: boolean) {
-  const [box, setBox] = useState<Size>({ w: 0, h: 0 })
-  const left = Math.floor(box.w / 2)
-  const top = Math.floor(box.h / 2)
-  const previous = useRef({ left: 0, top: 0 })
+const empty: Size = { w: 0, h: 0 }
+
+export function useCanvasPan(stage: RefObject<HTMLDivElement | null>, viewport: Size | null) {
+  const box = viewport ?? empty
+  const { w, h } = box
+  const left = Math.floor(w / 2)
+  const top = Math.floor(h / 2)
+  const offset = useRef({ left: 0, top: 0 })
+  const scrollable = viewport !== null
 
   useLayoutEffect(() => {
     const element = stage.current
-    if (placed || element === null) return
-    const measure = () => setBox({ w: element.clientWidth, h: element.clientHeight })
-    measure()
-    const watcher = new ResizeObserver(measure)
-    watcher.observe(element, { box: "border-box" })
-    return () => watcher.disconnect()
-  }, [stage, placed])
-
-  useLayoutEffect(() => {
-    const element = stage.current
-    if (placed || element === null) return
-    element.scrollLeft += left - previous.current.left
-    element.scrollTop += top - previous.current.top
-    previous.current = { left, top }
-  }, [stage, placed, left, top])
+    if (!scrollable || element === null) return
+    const remember = () => {
+      if (element.clientWidth !== w || element.clientHeight !== h) return
+      offset.current = { left: element.scrollLeft - left, top: element.scrollTop - top }
+    }
+    element.scrollTo({ left: left + offset.current.left, top: top + offset.current.top })
+    remember()
+    element.addEventListener("scroll", remember)
+    return () => element.removeEventListener("scroll", remember)
+  }, [stage, scrollable, w, h, left, top])
 
   return { box, left, top }
 }
