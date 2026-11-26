@@ -130,8 +130,8 @@ function PieceView({ piece }: { piece: ReplyPiece }) {
 
 function Working() {
   return (
-    <span className="flex h-6 items-center text-primary" data-aira-working aria-hidden="true">
-      <SparkIcon size={14} className="motion-safe:animate-pulse" />
+    <span className="flex h-6 items-center text-primary motion-safe:animate-pulse" data-aira-working aria-hidden="true">
+      <SparkIcon size={14} />
     </span>
   )
 }
