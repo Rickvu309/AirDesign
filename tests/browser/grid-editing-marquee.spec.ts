@@ -170,7 +170,7 @@ for (const zoom of ["fit", 30, 100, 250] as const) {
     if (zoom !== "fit") await zoomTo(page, zoom)
     await centreOn(page, 1, 1300, 240)
     await enter(page, "m:1")
-    await press(page, await onSlide(page, 1, 1050, 100))
+    await press(page, await onSlide(page, 1, 1020, 100))
     await glide(page, await onSlide(page, 1, 1550, 330), 6)
     await page.mouse.up()
     expect(await selectedIds(page)).toEqual(["m:1", "m:2"])

@@ -195,7 +195,7 @@ export function GridSheet({
                 onAdd={onAddGap}
                 {...(liveSlide !== null && card.id === liveSlide
                   ? {
-                      live: live(card.id, 1, {
+                      live: live(card.id, scale, {
                         handoff,
                         onBlank,
                         onMode,

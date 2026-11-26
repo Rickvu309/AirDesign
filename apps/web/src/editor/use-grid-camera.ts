@@ -80,6 +80,8 @@ function paintWorld(sheet: HTMLElement, view: GridView, refresh: boolean) {
     node.style.setProperty("--grid-scale", value)
   }
   for (const number of sheet.querySelectorAll<HTMLElement>("[data-slide-number]")) number.style.transform = ""
+  for (const overlay of sheet.querySelectorAll<SVGElement>("svg[data-canvas-overlay]"))
+    overlay.style.setProperty("--shown-scale", value)
 }
 
 function writePercent(percent: number) {

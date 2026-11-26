@@ -167,6 +167,7 @@ export function DoomCanvas(props: CanvasProps) {
   const panning = space || tool === "hand"
 
   useEffect(() => {
+    if (props.card !== undefined) return
     const element = stage.current
     if (element === null) return
     const measure = () => setBox({ w: element.clientWidth, h: element.clientHeight })

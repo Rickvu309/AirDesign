@@ -1,5 +1,6 @@
 import { resizeCursor, rotateCursor, type ResizeGrip } from "./transform-math"
 import type { Frame } from "./selection-frame"
+import { ScreenSized, screenLine } from "./screen-sized"
 import { sizeLabelCentre, sizeLabelHeight } from "./size-label-place"
 import type { Point } from "./slide-geometry"
 
@@ -20,6 +21,8 @@ function toward(from: Point, to: Point, by: number): Point {
   return { x: from.x + ((to.x - from.x) / length) * by, y: from.y + ((to.y - from.y) / length) * by }
 }
 
+const origin: Point = { x: 0, y: 0 }
+
 export function CanvasHandles({
   frame,
   scale,
@@ -36,23 +39,25 @@ export function CanvasHandles({
     Point,
   ]
   const middle = { x: frame.center.x * scale, y: frame.center.y * scale }
+  const base = { x: (screen[2].x + screen[3].x) / 2, y: (screen[2].y + screen[3].y) / 2 }
   const below = sizeLabelCentre(screen, middle)
   const pill = label.length * 6.4 + 14
   return (
     <g data-handles="">
       {corners.map((name, at) => {
         const point = screen[at]!
-        const out = toward(middle, point, Math.hypot(point.x - middle.x, point.y - middle.y) + reach)
+        const out = toward(origin, { x: point.x - middle.x, y: point.y - middle.y }, reach)
         return (
-          <circle
-            key={name}
-            data-grip={`rotate-${name}`}
-            cx={out.x}
-            cy={out.y}
-            r={reach}
-            fill="transparent"
-            style={{ pointerEvents: "all", cursor: rotateCursor(name, frame.rotation) }}
-          />
+          <ScreenSized key={name} at={point}>
+            <circle
+              data-grip={`rotate-${name}`}
+              cx={out.x}
+              cy={out.y}
+              r={reach}
+              fill="transparent"
+              style={{ pointerEvents: "all", cursor: rotateCursor(name, frame.rotation) }}
+            />
+          </ScreenSized>
         )
       })}
       {edges.map(({ grip, from, to }) => {
@@ -67,35 +72,39 @@ export function CanvasHandles({
             x2={end.x}
             y2={end.y}
             stroke="transparent"
-            strokeWidth={grab}
-            style={{ pointerEvents: "stroke", cursor: resizeCursor(grip as ResizeGrip, frame.rotation) }}
+            style={{
+              ...screenLine(grab),
+              pointerEvents: "stroke",
+              cursor: resizeCursor(grip as ResizeGrip, frame.rotation),
+            }}
           />
         )
       })}
       {corners.map((name, at) => {
-        const point = screen[at]!
         return (
-          <rect
-            key={name}
-            data-grip={name}
-            x={point.x - grab / 2}
-            y={point.y - grab / 2}
-            width={grab}
-            height={grab}
-            fill="white"
-            stroke={edge}
-            strokeWidth={1}
-            transform={`rotate(${String(frame.rotation)} ${String(point.x)} ${String(point.y)})`}
-            style={{ pointerEvents: "all", cursor: resizeCursor(name, frame.rotation) }}
-          />
+          <ScreenSized key={name} at={screen[at]!} turn={frame.rotation}>
+            <rect
+              data-grip={name}
+              x={-grab / 2}
+              y={-grab / 2}
+              width={grab}
+              height={grab}
+              fill="white"
+              stroke={edge}
+              strokeWidth={1}
+              style={{ pointerEvents: "all", cursor: resizeCursor(name, frame.rotation) }}
+            />
+          </ScreenSized>
         )
       })}
-      <g data-size-label="" transform={`translate(${String(below.x)} ${String(below.y)})`}>
-        <rect x={-pill / 2} y={-sizeLabelHeight / 2} width={pill} height={sizeLabelHeight} rx={4} fill={edge} />
-        <text x={0} y={4} textAnchor="middle" fontSize={11} fill="white">
-          {label}
-        </text>
-      </g>
+      <ScreenSized at={base}>
+        <g data-size-label="" transform={`translate(${String(below.x - base.x)} ${String(below.y - base.y)})`}>
+          <rect x={-pill / 2} y={-sizeLabelHeight / 2} width={pill} height={sizeLabelHeight} rx={4} fill={edge} />
+          <text x={0} y={4} textAnchor="middle" fontSize={11} fill="white">
+            {label}
+          </text>
+        </g>
+      </ScreenSized>
     </g>
   )
 }

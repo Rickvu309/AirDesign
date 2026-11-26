@@ -7,6 +7,7 @@ import { CropHandles, type CropTarget } from "./crop-handles"
 import { LineHandles } from "./line-handles"
 import { attachedEnds, lineEnds, type Aim } from "./line-end-drag"
 import { framed } from "./selection-frame"
+import { chromeScale, ScreenSized, screenLine } from "./screen-sized"
 import { apply, aroundPlaced, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
 
 export type Preview = {
@@ -31,17 +32,14 @@ function GuideMarks({ guide, scale }: { readonly guide: Guide; readonly scale: n
       ? { x1: guide.at * scale, x2: guide.at * scale, y1: guide.from * scale, y2: guide.to * scale }
       : { y1: guide.at * scale, y2: guide.at * scale, x1: guide.from * scale, x2: guide.to * scale }
     return (
-      <g stroke={alert} strokeWidth={1}>
+      <g stroke={alert} style={screenLine(1)}>
         <line {...line} />
         {guide.marks.map((mark) => {
           const at: Point = vertical ? { x: guide.at, y: mark } : { x: mark, y: guide.at }
-          const x = at.x * scale
-          const y = at.y * scale
           return (
-            <path
-              key={mark}
-              d={`M${String(x - 3)},${String(y - 3)}L${String(x + 3)},${String(y + 3)}M${String(x - 3)},${String(y + 3)}L${String(x + 3)},${String(y - 3)}`}
-            />
+            <ScreenSized key={mark} at={{ x: at.x * scale, y: at.y * scale }}>
+              <path d="M-3,-3L3,3M-3,3L3,-3" strokeWidth={1} />
+            </ScreenSized>
           )
         })}
       </g>
@@ -52,7 +50,7 @@ function GuideMarks({ guide, scale }: { readonly guide: Guide; readonly scale: n
     ? { x1: guide.across * scale, x2: guide.across * scale, y1: guide.from * scale, y2: guide.to * scale }
     : { y1: guide.across * scale, y2: guide.across * scale, x1: guide.from * scale, x2: guide.to * scale }
   return (
-    <g stroke={alert} strokeWidth={1}>
+    <g stroke={alert} style={screenLine(1)}>
       <line {...line} />
     </g>
   )
@@ -87,9 +85,9 @@ function Outline({
 }) {
   const route = routeOf(placed, scale)
   return route === null ? (
-    <polygon {...marks} points={polygon(placed, scale)} fill="none" stroke={edge} strokeWidth={1} />
+    <polygon {...marks} points={polygon(placed, scale)} fill="none" stroke={edge} style={screenLine(1)} />
   ) : (
-    <path {...marks} d={route} fill="none" stroke={edge} strokeWidth={1} />
+    <path {...marks} d={route} fill="none" stroke={edge} style={screenLine(1)} />
   )
 }
 
@@ -128,7 +126,14 @@ export function CanvasOverlay(props: {
       data-canvas-overlay=""
       width={size.w * scale}
       height={size.h * scale}
-      style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none" }}
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        overflow: "visible",
+        pointerEvents: "none",
+        ["--chrome-scale" as string]: chromeScale(scale),
+      }}
     >
       {hover === undefined ? null : <Outline placed={hover} scale={scale} data-hover-outline="" />}
       <g transform={carried}>
@@ -144,7 +149,7 @@ export function CanvasOverlay(props: {
             height={(all.bottom - all.top) * scale}
             fill="none"
             stroke={edge}
-            strokeWidth={1}
+            style={screenLine(1)}
           />
         ) : null}
       </g>
@@ -175,7 +180,7 @@ export function CanvasOverlay(props: {
           height={(marquee.bottom - marquee.top) * scale}
           fill="var(--primary-15)"
           stroke={edge}
-          strokeWidth={1}
+          style={screenLine(1)}
         />
       )}
     </svg>

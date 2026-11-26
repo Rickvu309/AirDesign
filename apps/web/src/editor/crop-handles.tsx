@@ -1,6 +1,7 @@
 import { useId } from "react"
 import * as doom from "@airdesign/doom"
 import { cropShown, imageArea, type CropGrip } from "./crop-drag"
+import { ScreenSized } from "./screen-sized"
 import { apply, type Placed, type Point } from "./slide-geometry"
 import { resizeCursor, type ResizeGrip } from "./transform-math"
 
@@ -49,9 +50,8 @@ const sides = [
   { grip: "crop-w", x: 0, y: 0.5 },
 ] as const
 
-function cornerPath(at: Point, x: number, y: number): string {
-  const inward = { x: x === 0 ? 1 : -1, y: y === 0 ? 1 : -1 }
-  return `M${String(at.x + inward.x * leg)},${String(at.y)}H${String(at.x)}V${String(at.y + inward.y * leg)}`
+function cornerPath(x: number, y: number): string {
+  return `M${String((x === 0 ? 1 : -1) * leg)},0H0V${String((y === 0 ? 1 : -1) * leg)}`
 }
 
 export function CropHandles({
@@ -79,7 +79,6 @@ export function CropHandles({
     const at = apply(placed.matrix, { x: x * w, y: y * h })
     return { x: at.x * scale, y: at.y * scale }
   }
-  const turn = `rotate(${String(placed.rotation)}`
   const gripReach = cropGripReach(Math.abs(w * scale), Math.abs(h * scale))
   const hitShort = Math.min(reach, gripReach * 2)
   return (
@@ -122,12 +121,12 @@ export function CropHandles({
         const hitW = across ? hitLong : hitShort
         const hitH = across ? hitShort : hitLong
         return (
-          <g key={grip} transform={`${turn} ${String(at.x)} ${String(at.y)})`}>
+          <ScreenSized key={grip} at={at} turn={placed.rotation}>
             {gripReach === 0 ? null : (
               <rect
                 data-grip={grip}
-                x={at.x - hitW / 2}
-                y={at.y - hitH / 2}
+                x={-hitW / 2}
+                y={-hitH / 2}
                 width={hitW}
                 height={hitH}
                 fill="transparent"
@@ -136,8 +135,8 @@ export function CropHandles({
             )}
             <rect
               data-crop-grip={grip}
-              x={at.x - long / 2}
-              y={at.y - short / 2}
+              x={-long / 2}
+              y={-short / 2}
               width={long}
               height={short}
               rx={1}
@@ -146,18 +145,16 @@ export function CropHandles({
               strokeWidth={1}
               style={{ pointerEvents: "none" }}
             />
-          </g>
+          </ScreenSized>
         )
       })}
       {corners.map(({ grip, x, y }) => {
         const at = spot(x, y)
         return (
-          <g key={grip} transform={`${turn} ${String(at.x)} ${String(at.y)})`}>
+          <ScreenSized key={grip} at={at} turn={placed.rotation}>
             {gripReach === 0 ? null : (
               <circle
                 data-grip={grip}
-                cx={at.x}
-                cy={at.y}
                 r={gripReach}
                 fill="transparent"
                 style={{ pointerEvents: "all", cursor: cropCursor(grip, placed.rotation) }}
@@ -165,7 +162,7 @@ export function CropHandles({
             )}
             <path
               data-crop-grip={grip}
-              d={cornerPath(at, x, y)}
+              d={cornerPath(x, y)}
               fill="none"
               stroke="white"
               strokeWidth={thick + 2}
@@ -173,14 +170,14 @@ export function CropHandles({
               style={{ pointerEvents: "none" }}
             />
             <path
-              d={cornerPath(at, x, y)}
+              d={cornerPath(x, y)}
               fill="none"
               stroke={edge}
               strokeWidth={thick}
               strokeLinecap="square"
               style={{ pointerEvents: "none" }}
             />
-          </g>
+          </ScreenSized>
         )
       })}
     </g>
