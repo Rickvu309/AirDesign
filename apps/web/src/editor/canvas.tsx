@@ -28,6 +28,7 @@ import { linkedWords, type LinkedWords } from "./text-edit"
 import { useTextSession } from "./use-text-session"
 import { propOf } from "@airdesign/doom"
 import { useCanvasKeys } from "./use-canvas-keys"
+import { useCanvasPan } from "./use-canvas-pan"
 import { useCanvasPointer, type DrawRequest, type Tool } from "./use-canvas-pointer"
 import type { ActionRun, ChartInsert } from "./actions-popover"
 import {
@@ -116,7 +117,7 @@ export function DoomCanvas(props: CanvasProps) {
   const { client, view, slide, selection, onSelection, tool, onTool, zoom, scale, room, overlay } = props
   const stage = useRef<HTMLDivElement>(null)
   const slideBox = useRef<HTMLDivElement>(null)
-  const [box, setBox] = useState<Size>({ w: 0, h: 0 })
+  const pan = useCanvasPan(stage, props.card !== undefined)
   const [space, setSpace] = useState(false)
   const [preview, setPreview] = useState<Preview | null>(null)
   const [flight, setFlight] = useState<Flight | null>(null)
@@ -167,21 +168,13 @@ export function DoomCanvas(props: CanvasProps) {
   const current = kept(selection, geometry)
   const panning = space || tool === "hand"
 
-  useEffect(() => {
-    if (props.card !== undefined) return
-    const element = stage.current
-    if (element === null) return
-    const measure = () => setBox({ w: element.clientWidth, h: element.clientHeight })
-    measure()
-    const watcher = new ResizeObserver(measure)
-    watcher.observe(element)
-    return () => watcher.disconnect()
-  }, [])
-
   function zoomTo(next: Zoom, about?: { readonly clientX: number; readonly clientY: number }, point?: Point) {
     const element = stage.current
     const paper = slideBox.current
-    if (element !== null && paper !== null) {
+    if (next === "fit") {
+      anchor.current = null
+      element?.scrollTo({ left: pan.left, top: pan.top })
+    } else if (element !== null && paper !== null) {
       const rect = element.getBoundingClientRect()
       const at =
         about !== undefined
@@ -481,7 +474,7 @@ export function DoomCanvas(props: CanvasProps) {
       panning={panning}
       scale={scale}
       size={size}
-      box={box}
+      pan={pan}
       overlay={overlay}
       slideNumber={props.slideNumber}
       view={view}

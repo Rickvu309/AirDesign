@@ -35,7 +35,7 @@ export function CanvasStage({
   panning,
   scale,
   size,
-  box,
+  pan,
   overlay,
   slideNumber,
   view,
@@ -91,7 +91,7 @@ export function CanvasStage({
   readonly panning: boolean
   readonly scale: number
   readonly size: { readonly w: number; readonly h: number }
-  readonly box: Size
+  readonly pan: { readonly box: Size; readonly left: number; readonly top: number }
   readonly overlay: number
   readonly slideNumber: number
   readonly view: doom.Doom
@@ -152,8 +152,8 @@ export function CanvasStage({
   )
   const slideW = size.w * scale
   const slideH = size.h * scale
-  const width = placed ? slideW : Math.max(box.w, slideW + 2 * canvasInset.side)
-  const height = placed ? slideH : Math.max(box.h, slideH + 2 * canvasInset.gap + overlay)
+  const width = placed ? slideW : Math.max(pan.box.w, slideW + 2 * canvasInset.side)
+  const height = placed ? slideH : Math.max(pan.box.h, slideH + 2 * canvasInset.gap + overlay)
   const left = placed ? 0 : (width - slideW) / 2
   const top = placed ? 0 : slideTop({ height, overlay, slide: slideH })
   return (
@@ -176,7 +176,9 @@ export function CanvasStage({
         style={{
           cursor: panning ? "grab" : "default",
           ["--focus-ring-offset" as string]: "calc(-1 * var(--focus-ring-width))",
-          ...(placed ? { width, height, transform: `scale(${String(1 / scale)})`, transformOrigin: "0 0" } : {}),
+          ...(placed
+            ? { width, height, transform: `scale(${String(1 / scale)})`, transformOrigin: "0 0" }
+            : { padding: `${pan.top}px ${pan.left}px`, scrollbarWidth: "none", overflowAnchor: "none" }),
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
