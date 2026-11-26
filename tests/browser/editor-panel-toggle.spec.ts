@@ -89,7 +89,7 @@ test("with the panel closed the selection, zoom, Present, Export and a running A
   const opened = await openEditor(page, context, stack)
   const slide = page.locator("[data-slide-box]")
 
-  await clickSlide(page, 300, 440)
+  await clickSlide(page, 300, 490)
   const picked = await selectedIds(page)
   expect(picked.length).toBe(1)
   await toggle(page).click()
