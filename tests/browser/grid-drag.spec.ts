@@ -30,7 +30,13 @@ const bar = (page: Page) => page.locator("[data-drop-bar]")
 const ghost = (page: Page) => page.locator("[data-drag-ghost]")
 
 async function shiftOf(page: Page, number: number): Promise<number> {
-  return card(page, number).evaluate((element) => new DOMMatrixReadOnly(getComputedStyle(element).transform).m41)
+  // The card's translate is in layout px. The sheet scales it; the pitch beside it is measured on screen.
+  return card(page, number).evaluate((element) => {
+    const slide = new DOMMatrixReadOnly(getComputedStyle(element).transform).m41
+    const sheet = element.closest("[data-slide-list]")
+    const scale = sheet === null ? 1 : new DOMMatrixReadOnly(getComputedStyle(sheet).transform).a
+    return slide * scale
+  })
 }
 
 test("a slide dropped at another slide group's start joins it there, saves, survives a reload and undoes in one step", async ({
