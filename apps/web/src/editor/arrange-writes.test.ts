@@ -226,6 +226,21 @@ describe("layer order", () => {
     expect(orderWrites(built.view, [a!], "back")).toEqual([])
     expect(orderWrites(built.view, [c!], "forward")).toEqual([])
   })
+
+  it("places a layer between two siblings that share an order key", () => {
+    const { a, b, c } = built.ids
+    const place = doom.parentOf(built.view.nodes.get(b!))!
+    const tied = landed(built.view, [{ node: c!, prop: "parent", value: { id: place.id, at: place.at } }])
+    const after = landed(tied, orderWrites(tied, [a!], "forward"))
+    expect(childrenOf(after, built.slides[0]!)).toEqual([b, a, c])
+    const keys = childrenOf(after, built.slides[0]!).map((id) => doom.parentOf(after.nodes.get(id))!.at)
+    expect(keys[0]! < keys[1]! && keys[1]! < keys[2]!).toBe(true)
+  })
+  it("steps separated layers forward past different siblings", () => {
+    const { view, ids, slides } = grow(Array.from("abcde", (name) => ({ type: "shape", name })))
+    const after = landed(view, orderWrites(view, [ids.a!, ids.c!], "forward"))
+    expect(childrenOf(after, slides[0]!)).toEqual([ids.b, ids.a, ids.d, ids.c, ids.e])
+  })
 })
 
 describe("flip, hide and lock", () => {
