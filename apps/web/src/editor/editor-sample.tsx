@@ -75,20 +75,21 @@ export const saveSamples = {
 const groupSizes = [1, 3, 3]
 
 function grouped(): doom.Edit {
-  const row = doom.parentOf(sampleDeck.doom.nodes.get(sampleDeck.slides[0] ?? doom.nodeId("")))
+  const first = sampleDeck.slides[0]
+  const row = first === undefined ? undefined : doom.parentOf(sampleDeck.doom.nodes.get(first))
   const deckId = sampleDeck.ids["deck"]
   if (row == null || deckId === undefined) return sampleDeck.edit
   let rowAt = row.at
-  let first = 0
+  let start = 0
   const writes = groupSizes.slice(1).flatMap((size, group): doom.Write[] => {
-    first += groupSizes[group] ?? 0
+    start += groupSizes[group] ?? 0
     rowAt = doom.orderKeyBetween(rowAt, null)
-    const id = doom.nodeId(`sample-group:${String(group)}`)
+    const id = doom.nodeId(`group:${String(group + 1)}`)
     let at: doom.OrderKey | null = null
     return [
       { node: id, prop: "type", value: "slideRow" },
       { node: id, prop: "parent", value: { id: deckId, at: rowAt } },
-      ...sampleDeck.slides.slice(first, first + size).map((slide): doom.Write => {
+      ...sampleDeck.slides.slice(start, start + size).map((slide): doom.Write => {
         at = doom.orderKeyBetween(at, null)
         return { node: slide, prop: "parent", value: { id, at } }
       }),
