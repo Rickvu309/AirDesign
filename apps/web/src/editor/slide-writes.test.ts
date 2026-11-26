@@ -1,5 +1,7 @@
 import * as doom from "@airdesign/doom"
+import fc from "fast-check"
 import { describe, expect, it } from "vitest"
+import type { GridMoveSide } from "./grid-move"
 import { landed, paint, spot } from "./testing/doom-fixtures"
 import {
   addSlideWrites,
@@ -7,6 +9,7 @@ import {
   duplicateSlideWrites,
   moveSlideWrites,
   neighbourAfterDelete,
+  slideGroupMoveWrites,
 } from "./slide-writes"
 
 const slideIds = (view: doom.Doom) => doom.slidesOf(view).map((slide) => slide.id)
@@ -237,5 +240,167 @@ describe("move slides", () => {
     expect(moveSlideWrites(view, [slides[1]!], 1)).toEqual([])
     expect(moveSlideWrites(view, [slides[1]!], 2)).toEqual([])
     expect(moveSlideWrites(view, [slides[1]!, slides[2]!], 3)).toEqual([])
+  })
+})
+
+function grouped(sizes: readonly number[]) {
+  const total = sizes.reduce((sum, size) => sum + size, 0)
+  const grown = doom.doomFromTree({
+    theme: doom.defaultTheme,
+    slides: Array.from({ length: total }, (_, at) => ({ name: `S${String(at + 1)}`, children: [] })),
+  })
+  const first = doom.parentOf(grown.doom.nodes.get(grown.slides[0]!))!
+  const deck = doom.parentOf(grown.doom.nodes.get(first.id))!
+  const writes: doom.Write[] = []
+  let groupAt = first.at
+  let start = sizes[0] ?? 0
+  sizes.slice(1).forEach((size, offset) => {
+    const group = doom.nodeId(`g:${String(offset + 2)}`)
+    groupAt = doom.orderKeyBetween(groupAt, null)
+    writes.push(
+      { node: group, prop: "type", value: "slideRow" },
+      { node: group, prop: "parent", value: { id: deck.id, at: groupAt } },
+    )
+    let at: doom.OrderKey | null = null
+    for (const slide of grown.slides.slice(start, start + size)) {
+      at = doom.orderKeyBetween(at, null)
+      writes.push({ node: slide, prop: "parent", value: { id: group, at } })
+    }
+    start += size
+  })
+  return { view: writes.length === 0 ? grown.doom : landed(grown.doom, writes), slides: grown.slides }
+}
+
+function groupsOf(view: doom.Doom, slides: readonly doom.NodeId[]): number[][] {
+  const groups = new Map<doom.NodeId | undefined, number[]>()
+  for (const slide of doom.slidesOf(view)) {
+    const group = doom.parentOf(slide)?.id
+    groups.set(group, [...(groups.get(group) ?? []), slides.indexOf(slide.id)])
+  }
+  return [...groups.values()]
+}
+
+function liveGroups(view: doom.Doom): number {
+  return [...view.nodes.values()].filter((node) => node.type === "slideRow" && doom.parentOf(node) != null).length
+}
+
+function undone(view: doom.Doom, writes: readonly doom.Write[]): doom.Doom {
+  const after = landed(view, writes)
+  const asked = { once: "asked", author: { kind: "person" as const, id: "test" }, writes, rev: doom.rev(view.rev + 1) }
+  return landed(after, doom.invert(view, after, asked))
+}
+
+describe("move slides between slide groups", () => {
+  const pick = (slides: readonly doom.NodeId[], held: readonly number[]) => held.map((at) => slides[at]!)
+
+  it("drops slides after a slide into that slide's group", () => {
+    const { view, slides } = grouped([4, 4])
+    const moved = landed(view, slideGroupMoveWrites(view, pick(slides, [0]), 7, "same", minter()))
+    expect(groupsOf(moved, slides)).toEqual([
+      [1, 2, 3],
+      [4, 5, 6, 0, 7],
+    ])
+  })
+
+  it("puts a slide at a slide group's start without changing the slide order", () => {
+    const { view, slides } = grouped([4, 4])
+    const moved = landed(view, slideGroupMoveWrites(view, pick(slides, [3]), 4, "before", minter()))
+    expect(groupsOf(moved, slides)).toEqual([
+      [0, 1, 2],
+      [3, 4, 5, 6, 7],
+    ])
+  })
+
+  it("starts a new slide group below with the moved slides and no other", () => {
+    const { view, slides } = grouped([4, 4])
+    const writes = slideGroupMoveWrites(view, pick(slides, [1, 2]), 4, "new", minter())
+    const moved = landed(view, writes)
+    expect(groupsOf(moved, slides)).toEqual([
+      [0, 3],
+      [1, 2],
+      [4, 5, 6, 7],
+    ])
+    expect(writes.filter((write) => write.prop === "type")).toEqual([
+      { node: doom.nodeId("m:1"), prop: "type", value: "slideRow" },
+    ])
+  })
+
+  it("moves a whole slide group with one write to its slide group node", () => {
+    const { view, slides } = grouped([3, 2, 3])
+    const writes = slideGroupMoveWrites(view, pick(slides, [5, 6, 7]), 0, "keep", minter())
+    expect(writes).toHaveLength(1)
+    expect(groupsOf(landed(view, writes), slides)).toEqual([
+      [5, 6, 7],
+      [0, 1, 2],
+      [3, 4],
+    ])
+    const down = slideGroupMoveWrites(view, pick(slides, [0, 1, 2]), 8, "keep", minter())
+    expect(groupsOf(landed(view, down), slides)).toEqual([
+      [3, 4],
+      [5, 6, 7],
+      [0, 1, 2],
+    ])
+  })
+
+  it("takes away a slide group its last slide left, and undo brings it back", () => {
+    const { view, slides } = grouped([3, 1, 2])
+    const writes = slideGroupMoveWrites(view, pick(slides, [3]), 1, "same", minter())
+    const moved = landed(view, writes)
+    expect(groupsOf(moved, slides)).toEqual([
+      [0, 3, 1, 2],
+      [4, 5],
+    ])
+    expect(liveGroups(moved)).toBe(2)
+    expect(groupsOf(undone(view, writes), slides)).toEqual([[0, 1, 2], [3], [4, 5]])
+  })
+
+  it("writes nothing when the slides would stay in the same slide groups and places", () => {
+    const { view, slides } = grouped([4, 1, 3])
+    expect(slideGroupMoveWrites(view, pick(slides, [1]), 1, "same", minter())).toEqual([])
+    expect(slideGroupMoveWrites(view, pick(slides, [1, 2]), 3, "same", minter())).toEqual([])
+    expect(slideGroupMoveWrites(view, pick(slides, [5, 6, 7]), 5, "keep", minter())).toEqual([])
+    expect(slideGroupMoveWrites(view, pick(slides, [4]), 5, "new", minter())).toEqual([])
+  })
+
+  it("keeps every slide, keeps the others in order and lands as one undo, for any drop", () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer({ min: 1, max: 4 }), { minLength: 1, maxLength: 4 }),
+        fc.array(fc.nat(15), { minLength: 1, maxLength: 4 }),
+        fc.nat(16),
+        fc.constantFrom("same", "before", "new", "keep"),
+        (sizes, chosen, place, side: GridMoveSide) => {
+          const { view, slides } = grouped(sizes)
+          const held = [...new Set(chosen.map((at) => at % slides.length))].sort((a, b) => a - b)
+          const at = place % (slides.length + 1)
+          const before = groupsOf(view, slides)
+          const writes = slideGroupMoveWrites(view, pick(slides, held), at, side, minter())
+          const after = groupsOf(landed(view, writes), slides)
+          expect(after.flat().toSorted((a, b) => a - b)).toEqual(slides.map((_, index) => index))
+          expect(after.flat().filter((index) => !held.includes(index))).toEqual(
+            before.flat().filter((index) => !held.includes(index)),
+          )
+          expect(groupsOf(undone(view, writes), slides)).toEqual(before)
+        },
+      ),
+      { numRuns: 300 },
+    )
+  })
+})
+
+describe("add a slide in a new slide group", () => {
+  it("puts the slide alone in a new slide group right below the slide's group", () => {
+    const { view, slides } = grouped([2, 2])
+    const made = addSlideWrites(view, slides[0]!, minter(), "blank", undefined, "new")
+    const after = landed(view, made.writes)
+    const order = slideIds(after)
+    expect(groupsOf(after, [...slides, made.slide])).toEqual([[0, 1], [4], [2, 3]])
+    expect(order[2]).toBe(made.slide)
+  })
+
+  it("adds below the last slide group too", () => {
+    const { view, slides } = grouped([2, 2])
+    const made = addSlideWrites(view, slides[3]!, minter(), "blank", undefined, "new")
+    expect(groupsOf(landed(view, made.writes), [...slides, made.slide])).toEqual([[0, 1], [2, 3], [4]])
   })
 })
