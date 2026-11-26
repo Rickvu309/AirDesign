@@ -10,6 +10,7 @@ export const editorRoutes = {
   gridFit: "/screens/s44-01-editor-grid-fit",
   gridPicked: "/screens/s44-02-editor-grid-several-picked",
   gridZoomed: "/screens/s44-03-editor-grid-zoomed-in",
+  gridMenu: "/screens/s44-04-editor-grid-slide-menu",
   runFailed: "/screens/s49-01-editor-errors-agent-run-failed",
   offline: "/screens/s49-02-editor-errors-offline",
   setAside: "/screens/s49-03-editor-errors-edits-set-aside",

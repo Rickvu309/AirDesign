@@ -45,7 +45,7 @@ export type GridShownZoom = { readonly percent: number; readonly fit: boolean; r
 
 export type GridCommands = { readonly zoomTo: (zoom: Zoom) => void; readonly zoomSelection: () => void }
 
-export type GridStart = { readonly picked?: readonly number[]; readonly camera?: GridView }
+export type GridStart = { readonly picked?: readonly number[]; readonly camera?: GridView; readonly menu?: number }
 
 function opened(start: GridStart, order: readonly string[]): GridInteraction {
   const picked = start.picked?.flatMap((index) => order[index] ?? []) ?? []
@@ -239,6 +239,11 @@ export function EditorGrid({
     ghost,
     onMove: actions.moveSlides,
   })
+  useLayoutEffect(() => {
+    if (start.menu === undefined) return
+    const shown = list.current?.querySelector<HTMLElement>(`[data-slide-entry="${String(start.menu + 1)}"]`)
+    if (shown !== null && shown !== undefined) actions.openMenu(start.menu, shown, false)
+  }, [])
   const latestAdd = useRef(actions.add)
   useLayoutEffect(() => {
     latestAdd.current = actions.add

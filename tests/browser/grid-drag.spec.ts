@@ -260,3 +260,36 @@ test("dragging a slide near an edge pans the canvas, and Escape saves nothing", 
   await expect(ghost(page)).toHaveCount(0)
   expect(await savedGroups(stack, opened)).toEqual(start)
 })
+
+test("a slide group moved and a slide added in a new group offline land once the tab is back online", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openGroups(page, context, stack, [4, 4, 2])
+  const saved = () => savedGroups(stack, opened)
+  const start = await saved()
+  let offline = true
+  await page.route(
+    (url) => url.pathname.startsWith("/doom/"),
+    (route) => (offline ? route.abort("internetdisconnected") : route.fallback()),
+  )
+  await grip(page, 3).focus()
+  await page.keyboard.press("Alt+ArrowUp")
+  await expect
+    .poll(() => shownGroups(page))
+    .toEqual([
+      [1, 2, 3, 4],
+      [5, 6],
+      [7, 8, 9, 10],
+    ])
+  await entry(page, 5).click({ button: "right" })
+  await page.getByRole("menuitem", { name: slideListCopy.addBelowMenu }).click()
+  await expect.poll(() => shownGroups(page)).toEqual([[1, 2, 3, 4], [5, 6], [7], [8, 9, 10, 11]])
+  expect(await saved()).toEqual(start)
+  offline = false
+  await expect.poll(async () => (await saved()).map((group) => group.length), { timeout: 15_000 }).toEqual([4, 2, 1, 4])
+  expect((await saved())[1]).toEqual(start[2])
+  await reopenGrid(page)
+  await expect.poll(() => shownGroups(page)).toEqual([[1, 2, 3, 4], [5, 6], [7], [8, 9, 10, 11]])
+})
