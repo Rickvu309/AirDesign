@@ -3,7 +3,7 @@ import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { chip, entries, entry, openGroups, said, selectedNumbers, viewport } from "./grid-deck"
+import { boxOf, chip, entries, entry, openGroups, said, selectedNumbers, viewport, wheelAt, zoomTo } from "./grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -86,4 +86,43 @@ test("arrow keys move focus and the current slide, Up and Down by where slides s
   expect(await selectedNumbers(page)).toEqual([3, 4, 5])
   await expect(entries(page).and(page.locator('[tabindex="0"]'))).toHaveCount(1)
   await expect(entry(page, 3)).toHaveAttribute("tabindex", "0")
+})
+
+test("a pick stays on the same slides when another tab deletes an earlier slide", async ({ page, context, stack }) => {
+  const opened = await openGroups(page, context, stack, [4, 3])
+  await entry(page, 3).click()
+  await entry(page, 5).click({ modifiers: ["ControlOrMeta"] })
+  expect(await selectedNumbers(page)).toEqual([3, 5])
+  const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
+  const landed = await stack.post(
+    doomRoutes.edit.path,
+    {
+      deck: opened.deck,
+      edit: {
+        once: "grid-delete-earlier",
+        author: { kind: "person", id: "other-tab" },
+        writes: [{ node: opened.ids[1], prop: "parent", value: null }],
+      },
+    },
+    opened.cookie,
+  )
+  expect(landed.json.ok).toBe(true)
+  await expect(entry(page, 7)).toHaveCount(0)
+  await expect(entry(page, 4)).toHaveAttribute("aria-current", "true")
+  expect(await selectedNumbers(page)).toEqual([2, 4])
+  await entry(page, 1).click({ modifiers: ["Shift"] })
+  expect(await selectedNumbers(page)).toEqual([1, 2, 3, 4])
+})
+
+test("a click on the visible edge of a slide panned almost out of view picks it", async ({ page, context, stack }) => {
+  await openGroups(page, context, stack, [4, 3])
+  await entry(page, 1).click()
+  await zoomTo(page, 50)
+  const room = await boxOf(viewport(page))
+  const two = await boxOf(entry(page, 2))
+  await wheelAt(page, { x: room.x + 250, y: room.y + 200 }, { x: two.x + two.width - room.x - 20, y: 0 })
+  const edge = await boxOf(entry(page, 2))
+  expect(edge.x + edge.width - room.x).toBeCloseTo(20, 0)
+  await page.mouse.click(room.x + 10, edge.y + edge.height / 2)
+  await current(page, 2)
 })

@@ -1,5 +1,6 @@
 import { expect } from "@playwright/test"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy.ts"
+import { presentCopy } from "../../apps/web/src/copy/present-copy.ts"
 import { zoomCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { shortcutCopy } from "../../apps/web/src/copy/shortcut-copy.ts"
 import { test } from "./api-stack"
@@ -111,4 +112,20 @@ test("at a chosen zoom opening the side panel keeps the selected slide on screen
   await panel.click()
   await expect.poll(() => percent(page)).toBeLessThan(filled)
   expect(await inside(entry(page, 4), viewport(page))).toBe(true)
+})
+
+test("zoom keys pressed during a show leave the Grid camera as it was", async ({ page, context, stack }) => {
+  await openGroups(page, context, stack, [4, 3])
+  await entry(page, 1).click()
+  const before = await percent(page)
+  await page.getByRole("button", { name: presentCopy.present, exact: true }).click()
+  const shown = page.locator("[data-present-show] [data-present-slide]")
+  await expect(shown).toHaveAttribute("data-present-slide", "1")
+  await page.keyboard.press("Space")
+  await expect(shown).toHaveAttribute("data-present-slide", "2")
+  await page.keyboard.press("Shift+Digit0")
+  await page.keyboard.press("Shift+Digit2")
+  await page.keyboard.press("Escape")
+  await expect(shown).toHaveCount(0)
+  expect(await percent(page)).toBe(before)
 })

@@ -187,3 +187,22 @@ test("the rectangle pans the canvas at its edge and stays anchored to where it s
   await expect(marquee(page)).toHaveCount(0)
   expect((await selectedNumbers(page)).length).toBeGreaterThan(0)
 })
+
+test("a drag that crosses no slide takes the ring away, says so, and Select all still works", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await openGroups(page, context, stack, [4, 3])
+  await expect.poll(() => selectedNumbers(page)).toEqual([1])
+  const from = await belowRight(page, 7)
+  const to = { x: from.x + 30, y: from.y + 20 }
+  expect(await crossed(page, from, to)).toEqual([])
+  await press(page, from, to)
+  await expect(marquee(page)).toHaveCount(1)
+  await page.mouse.up()
+  await expect(said(page)).toHaveText(slideListCopy.nothingSelected)
+  expect(await selectedNumbers(page)).toEqual([])
+  await page.keyboard.press("ControlOrMeta+a")
+  await expect.poll(() => selectedNumbers(page)).toEqual([1, 2, 3, 4, 5, 6, 7])
+})
