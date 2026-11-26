@@ -22,6 +22,8 @@ export function followDoom({ deck, since, revision, leave, resync, apply, tell, 
   let picturesUntil = 0
   const picturesWanted = () => Date.now() < picturesUntil
 
+  let caught = revision()
+
   async function follow(signal: AbortSignal): Promise<Followed> {
     let wait = false
     while (!signal.aborted) {
@@ -38,6 +40,7 @@ export function followDoom({ deck, since, revision, leave, resync, apply, tell, 
           await pause(retryMilliseconds)
           continue
         }
+        if (!wait) caught = revision()
         wait = true
         if (answer.pictures === true) {
           picturesUntil = Date.now() + picturesWantedMilliseconds
@@ -53,7 +56,7 @@ export function followDoom({ deck, since, revision, leave, resync, apply, tell, 
     return "stopped"
   }
 
-  return { follow, picturesWanted, wake: () => held?.abort() }
+  return { follow, picturesWanted, caught: () => caught, wake: () => held?.abort() }
 }
 
 export function foldCaught(

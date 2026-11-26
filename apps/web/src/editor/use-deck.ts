@@ -26,6 +26,7 @@ export type EditorClient = Pick<
   | "picturesWanted"
   | "subscribe"
   | "status"
+  | "caught"
   | "notices"
   | "clearNotices"
 >

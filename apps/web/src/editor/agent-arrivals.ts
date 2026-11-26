@@ -6,9 +6,10 @@ const layerTypes: ReadonlySet<doom.NodeType> = new Set(["frame", "shape", "compo
 
 export const noArrivals: Arrivals = { made: new Set(), changed: new Set() }
 
-function freshAgentRevs(before: doom.Doom, after: doom.Doom): ReadonlySet<doom.Rev> {
+function freshAgentRevs(before: doom.Doom, after: doom.Doom, caught: doom.Rev): ReadonlySet<doom.Rev> {
   const moved = new Set<doom.Rev>()
-  for (const [id, run] of after.runs) if (before.runs.get(id)?.wrote !== run.wrote) moved.add(run.wrote)
+  for (const [id, run] of after.runs)
+    if (run.wrote > caught && before.runs.get(id)?.wrote !== run.wrote) moved.add(run.wrote)
   if (moved.size === 0) return moved
   for (const [once, at] of after.onces) if (moved.has(at) && before.onces.has(once)) moved.delete(at)
   return moved
@@ -20,9 +21,9 @@ function madeAncestor(view: doom.Doom, id: doom.NodeId, made: ReadonlySet<doom.N
   return false
 }
 
-export function agentArrivals(before: doom.Doom, after: doom.Doom): Arrivals {
+export function agentArrivals(before: doom.Doom, after: doom.Doom, caught: doom.Rev): Arrivals {
   if (before === after) return noArrivals
-  const fresh = freshAgentRevs(before, after)
+  const fresh = freshAgentRevs(before, after, caught)
   if (fresh.size === 0) return noArrivals
   const written = [...after.revs]
     .filter(([id, revs]) => [...revs.values()].some((at) => fresh.has(at)) && isLayer(after, id))

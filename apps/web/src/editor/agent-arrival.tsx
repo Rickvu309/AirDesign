@@ -1,14 +1,24 @@
 import type * as doom from "@airdesign/doom"
-import { useEffect, useLayoutEffect, useRef } from "react"
+import { useLayoutEffect, useRef } from "react"
 import { agentArrivals } from "./agent-arrivals"
 import { playArrival, type Playing } from "./trace-spark"
 
-const reducedMotion = () =>
-  typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+const reduced = (): Pick<MediaQueryList, "matches" | "addEventListener" | "removeEventListener"> =>
+  typeof window.matchMedia === "function"
+    ? window.matchMedia("(prefers-reduced-motion: reduce)")
+    : { matches: false, addEventListener: () => undefined, removeEventListener: () => undefined }
 
 const idOf = (element: HTMLElement) => element.dataset.node as doom.NodeId
 
-export function AgentArrival({ view, slide }: { readonly view: doom.Doom; readonly slide: doom.NodeId }) {
+export function AgentArrival({
+  view,
+  caught,
+  still,
+}: {
+  readonly view: doom.Doom
+  readonly caught: () => doom.Rev
+  readonly still: string
+}) {
   const layer = useRef<HTMLDivElement>(null)
   const seen = useRef<doom.Doom | null>(null)
   const playing = useRef(new Map<doom.NodeId, Playing>())
@@ -18,13 +28,13 @@ export function AgentArrival({ view, slide }: { readonly view: doom.Doom; readon
     seen.current = view
     const host = layer.current
     if (before === null || host === null) return
-    const { made, changed } = agentArrivals(before, view)
+    const { made, changed } = agentArrivals(before, view, caught())
     for (const [id, each] of playing.current)
       if (made.has(id) || view.revs.get(id) !== before.revs.get(id)) {
         each.stop()
         playing.current.delete(id)
       }
-    if ((made.size === 0 && changed.size === 0) || reducedMotion()) return
+    if ((made.size === 0 && changed.size === 0) || reduced().matches) return
     const painted = [...(host.parentElement?.querySelectorAll<HTMLElement>("[data-node]") ?? [])]
     painted
       .filter((element) => made.has(idOf(element)) || changed.has(idOf(element)))
@@ -36,22 +46,28 @@ export function AgentArrival({ view, slide }: { readonly view: doom.Doom; readon
           if (playing.current.get(id) === each) playing.current.delete(id)
         })
       })
-  }, [view])
+  }, [view, caught])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const running = playing.current
-    return () => {
+    const stop = () => {
       for (const each of running.values()) each.stop()
       running.clear()
     }
-  }, [slide])
+    const motion = reduced()
+    motion.addEventListener("change", stop)
+    return () => {
+      motion.removeEventListener("change", stop)
+      stop()
+    }
+  }, [still])
 
   return (
     <div
       ref={layer}
       aria-hidden
       data-agent-arrival=""
-      className="pointer-events-none absolute inset-0 overflow-hidden"
+      className="pointer-events-none absolute inset-0 overflow-hidden print:hidden"
     />
   )
 }
