@@ -13,6 +13,8 @@ import type { SlideStrip } from "@/editor/slide-sidebar"
 
 export type GridMenu = { readonly index: number; readonly anchor: SlideMenuAnchor; readonly pointer: boolean }
 
+type OpenMenu = Omit<GridMenu, "index"> & { readonly slide: string }
+
 type Follow = { readonly grip: NodeId } | "current" | null
 
 export function gridMoveMessage(
@@ -63,7 +65,13 @@ export function useGridSlideActions({
   const { current, count } = strip
   const held = pickedSlides(picked, ids, current)
   const follow = useRef<Follow>(null)
-  const [menu, setMenu] = useState<GridMenu | null>(null)
+  const [opened, setMenu] = useState<OpenMenu | null>(null)
+  const menuAt = opened === null ? -1 : ids.indexOf(opened.slide)
+  const menu: GridMenu | null = opened === null || menuAt < 0 ? null : { ...opened, index: menuAt }
+
+  useLayoutEffect(() => {
+    if (opened !== null && menuAt < 0) setMenu(null)
+  }, [opened, menuAt])
 
   function pickIds(made: readonly string[]) {
     const [anchor] = made
@@ -180,11 +188,13 @@ export function useGridSlideActions({
     add,
     act,
     openMenu: (index: number, anchor: SlideMenuAnchor, pointer: boolean) => {
+      const slide = ids[index]
+      if (slide === undefined) return
       if (!held.includes(index)) {
         dispatch({ kind: "pick", pick: null })
         choose(index)
       }
-      setMenu({ index, anchor, pointer })
+      setMenu({ slide, anchor, pointer })
     },
     closeMenu: (keyboard: boolean) => {
       const shown = menu

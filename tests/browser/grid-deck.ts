@@ -3,7 +3,7 @@ import * as doom from "../../packages/doom/src/index.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { zoomCopy } from "../../apps/web/src/copy/product-copy.ts"
 import type { Stack } from "./api-stack"
-import { openEditor, type Opened } from "./editor-deck"
+import { openEditor, otherTab, type Opened } from "./editor-deck"
 
 const catalog = () => import("../../packages/catalog/src/index.ts")
 
@@ -76,6 +76,13 @@ export async function openGroups(
   await openGrid(page)
   await expect(entries(page)).toHaveCount(total)
   return { ...opened, ids: await savedIds(stack, opened) }
+}
+
+export async function otherGrid(context: BrowserContext, stack: Stack, opened: Grouped): Promise<Page> {
+  const other = await otherTab(context, stack, opened.deck)
+  if ((await viewport(other).count()) === 0) await openGrid(other)
+  await expect(entries(other)).toHaveCount(opened.ids.length)
+  return other
 }
 
 export async function openGrid(page: Page): Promise<void> {

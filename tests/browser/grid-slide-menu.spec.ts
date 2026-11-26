@@ -2,7 +2,17 @@ import { expect, type Page } from "@playwright/test"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
 import { test } from "./api-stack"
 import { covers } from "./gesture"
-import { entries, entry, openGroups, picked, said, savedGroups, selectedNumbers, shownGroups } from "./grid-deck"
+import {
+  entries,
+  entry,
+  openGroups,
+  otherGrid,
+  picked,
+  said,
+  savedGroups,
+  selectedNumbers,
+  shownGroups,
+} from "./grid-deck"
 
 test.use({ viewport: { width: 1470, height: 923 }, reducedMotion: "reduce" })
 
@@ -171,4 +181,30 @@ test("with several slides picked the menu acts on all of them, and a slide alone
   await item(page, slideListCopy.skipSet(2)).click()
   await expect(entry(page, 3)).toHaveAttribute("data-slide-skipped", "true")
   await expect(entry(page, 4)).toHaveAttribute("data-slide-skipped", "true")
+})
+
+test("an open slide menu acts on its own slide after another tab adds one above it, and closes when its slide goes", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const opened = await openGroups(page, context, stack, [4, 4])
+  const other = await otherGrid(context, stack, opened)
+  await entry(page, 5).click({ button: "right" })
+  await ready(page)
+  await entry(other, 2).click({ button: "right" })
+  await item(other, slideListCopy.addAfterMenu).click()
+  await expect(entries(page)).toHaveCount(9)
+  await expect(menu(page)).toBeVisible()
+  await item(page, slideListCopy.delete).click()
+  await expect.poll(async () => (await savedGroups(stack, opened)).flat()).not.toContain(opened.ids[4])
+  expect((await savedGroups(stack, opened)).flat()).toEqual(expect.arrayContaining(picked(opened.ids, [1, 2, 3, 4])))
+
+  await expect(entries(other)).toHaveCount(8)
+  await entry(page, 5).click({ button: "right" })
+  await ready(page)
+  await entry(other, 5).click()
+  await other.keyboard.press("Delete")
+  await expect(entries(page)).toHaveCount(7)
+  await expect(menu(page)).toBeHidden()
 })
