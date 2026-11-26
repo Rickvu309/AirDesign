@@ -195,19 +195,15 @@ function readExchange(raw: unknown): AiraExchange | undefined {
   const later = names(exchange.later)
   const left = names(exchange.left)
   const waiting = names(exchange.waiting)
-  const skipped = names(exchange.skipped)
   const read: AiraExchange = { asked: exchange.asked, steps: steps as AiraStep[], end: exchange.end as AiraEnd, runs }
   return {
     ...read,
     ...(exchange.undoRefused === true ? { undoRefused: true } : {}),
-    ...(exchange.undoFailed === true || exchange.undoFailed === "size" || exchange.undoFailed === "rebuild"
-      ? { undoFailed: exchange.undoFailed }
-      : {}),
+    ...(exchange.undoFailed === true || exchange.undoFailed === "size" ? { undoFailed: exchange.undoFailed } : {}),
     ...(kept.length === 0 ? {} : { kept }),
     ...(later.length === 0 ? {} : { later }),
     ...(left.length === 0 ? {} : { left }),
     ...(waiting.length === 0 ? {} : { waiting }),
-    ...(skipped.length === 0 ? {} : { skipped }),
   }
 }
 

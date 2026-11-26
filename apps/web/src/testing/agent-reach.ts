@@ -1,3 +1,4 @@
+import { deckChangeWords } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 const spot = (x: number, y: number, w: number, h: number, rotation = 0) => ({
@@ -95,11 +96,6 @@ export const idOf = (probe: Probe): doom.NodeId => (probe === "slide" ? slide : 
 export const layers = ["words", "card", "rule", "star", "photo", "panel"] as const
 
 export const sample: Readonly<Record<string, unknown>> = {
-  focus: ["category"],
-  component: "column",
-  data: { rows: [{ id: "q1", label: "Q1", value: 12 }] },
-  variant: { labels: false },
-  tokens: { digits: 1 },
   fill: "accent2",
   stroke: "accent2",
   strokeWidth: 3,
@@ -273,8 +269,6 @@ export const reach: Readonly<Record<string, Entry>> = {
   "panel:name": { agent: "set.name", writes: "name", on: "card", props: ["name"] },
   "actions:icon": { agent: "add.icon", props: ["geometry"] },
   "actions:icon#swap": { agent: "set.icon", writes: "geometry", on: "star", props: ["geometry"] },
-  "panel:detach-instance": { agent: "op.detach", props: ["instance"] },
-  "actions:component": { agent: "add.component", props: ["instance"] },
   "drop:picture": { agent: "add.picture", props: ["fills"] },
 }
 
@@ -286,9 +280,6 @@ export const writesOf = (probe: Probe, look: Readonly<Record<string, unknown>>):
   return doom.isRefusal(writes) ? [] : writes.filter((write) => write.node === idOf(probe))
 }
 
-const schema = doom.agentChangesSchema.$defs.change.properties as Readonly<
-  Record<string, { readonly enum?: readonly string[] }>
->
-export const agentFields = new Set(Object.keys(schema))
-export const agentOps = new Set(schema.op?.enum)
-export const agentKinds = new Set(schema.kind?.enum)
+export const agentFields = new Set(deckChangeWords.fields)
+export const agentOps = new Set<string>(deckChangeWords.ops)
+export const agentKinds = new Set<string>(deckChangeWords.kinds)

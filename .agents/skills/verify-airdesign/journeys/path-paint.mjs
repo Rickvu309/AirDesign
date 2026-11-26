@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process"
 import { readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { PNG } from "pngjs"
-import { packageBuild } from "../../../../scripts/package-build.mjs"
+import paths from "../../../../tests/browser/fixtures/paint-paths.json" with { type: "json" }
 import { exportCopy, productCopy } from "../bin/product-copy.mjs"
 import { clickSlide, landNodes, openDoomDeck, readDoom, spot } from "../look/doom-deck.mjs"
 
@@ -23,19 +23,6 @@ const cases = [
 const center = (index) => (index === 20 ? [382, 243] : [190 + (index % 5) * 385, 125 + Math.floor(index / 5) * 235])
 
 const paint = (color, opacity = 1) => ({ kind: "solid", color, opacity })
-const wedge = (key, x, y, size, from, to, r0) => ({
-  emit: {
-    kind: "path",
-    key: ["list", key],
-    x,
-    y,
-    w: size,
-    h: size,
-    fill: blue,
-    d: ["wedge", ["point", 0.5, 0.5], r0, 0.5, from, to],
-  },
-})
-
 const seamCases = [
   ...Array.from({ length: 10 }, (_, i) => ({ name: `fan ${(i + 1) / 10}`, fan: true, node: (i + 1) / 10, limit: 4 })),
   ...Array.from({ length: 9 }, (_, i) => ({
@@ -50,26 +37,19 @@ const seamCases = [
 function pieces(cases) {
   return cases.flatMap((mode, index) => {
     const [x, y] = center(index)
-    return colors.map((color, i) => {
-      const part = wedge(
-        `pie-${index}-${i}`,
-        x - pieSize / 2,
-        y - pieSize / 2,
-        pieSize,
-        i / 5,
-        (i + 1) / 5,
-        mode.inner ?? 0,
-      )
-      if (mode.fan) {
-        const edge = (k) => [
-          "point",
-          0.5 + 0.5 * Math.cos((k * 2 * Math.PI) / 5),
-          0.5 + 0.5 * Math.sin((k * 2 * Math.PI) / 5),
-        ]
-        part.emit.d = ["polyline", ["list", ["point", 0.5, 0.5], edge(i), edge(i + 1), ["point", 0.5, 0.5]]]
-      }
-      return { ...part, color, mode, i }
-    })
+    const pathsFor = mode.fan ? paths.triangles : mode.inner ? paths.thinHoleRings : paths.wedges
+    return pathsFor.map((d, i) => ({
+      mode,
+      node: {
+        id: `pie${index + 1}:${i + 1}`,
+        props: {
+          box: spot(x - pieSize / 2, y - pieSize / 2, pieSize, pieSize),
+          geometry: { kind: "path", d, ...(mode.noStroke ? {} : { fillStroke: true }) },
+          fills: [paint(colors[i], alphaAt(mode.fill, i))],
+          opacity: alphaAt(mode.node, i),
+        },
+      },
+    }))
   })
 }
 
@@ -205,68 +185,29 @@ async function captureActualSize({ page, context, expect }, slide) {
 }
 
 async function drivePaths(kit, cases, grid, checkVector = false) {
-  const { page, expect, repo, note } = kit
-  const doom = await packageBuild(repo, "@airdesign/doom")
-  const { expandComponent, readComponentSpec } = await packageBuild(repo, "@airdesign/doom", "component/index.js")
-  const slices = pieces(cases)
-  const parts = [
-    ...slices,
-    ...grid.map(({ x, y, start, delta, direction, inner }, i) =>
-      wedge(`arc-${i}`, x, y, sweepSize, start, start + direction * (1 - delta), inner),
-    ),
-  ]
-  const trees = Array.from({ length: Math.ceil(parts.length / 60) }, (_, i) => {
-    const batch = parts.slice(i * 60, (i + 1) * 60)
-    const spec = readComponentSpec({
-      version: 1,
-      name: "Path paint",
-      collections: {},
-      parts: batch.map(({ emit }) => ({ emit })),
-    })
-    expect(doom.isRefusal(spec), JSON.stringify(spec)).toBe(false)
-    const tree = expandComponent(spec, {
-      data: {},
-      frame: { x: 0, y: 0, w: 1920, h: 1080 },
-      theme: doom.defaultTheme,
-      measure: doom.measureWith({}),
-    })
-    expect(doom.isRefusal(tree), JSON.stringify(tree)).toBe(false)
-    return {
-      ...tree,
-      id: `paint${i}:1`,
-      children: tree.children.map((child, j) => ({ ...child, id: `paint${i}:${j + 2}` })),
+  const { page, expect, note } = kit
+  const ancestors = new Map()
+  const nodes = pieces(cases).map(({ mode, node }) => {
+    if (mode.ancestor === undefined) return node
+    if (!ancestors.has(mode)) {
+      ancestors.set(mode, {
+        id: `translucent:${ancestors.size + 1}`,
+        type: "frame",
+        props: { box: spot(0, 0, 1920, 1080), opacity: mode.ancestor },
+      })
     }
+    return { ...node, parent: ancestors.get(mode).id }
   })
-  const byKey = new Map(slices.map((slice) => [slice.emit.key[1], slice]))
-  const ancestors = []
-  const nodes = trees.flatMap((tree) => {
-    const frames = new Map()
-    return tree.children.map((child) => {
-      const slice = byKey.get(child.key[0])
-      if (!slice) return { ...child, parent: tree.id }
-      const { mode, color, i } = slice
-      if (mode.ancestor !== undefined && !frames.has(mode)) {
-        const frame = {
-          id: `translucent:${ancestors.length + 1}`,
-          type: "frame",
-          parent: tree.id,
-          props: { box: spot(0, 0, 1920, 1080), opacity: mode.ancestor },
-        }
-        frames.set(mode, frame.id)
-        ancestors.push(frame)
-      }
-      return {
-        ...child,
-        parent: frames.get(mode) ?? tree.id,
-        props: {
-          ...child.props,
-          geometry: { ...child.props.geometry, ...(mode.noStroke ? {} : { fillStroke: true }) },
-          fills: [paint(color, alphaAt(mode.fill, i))],
-          opacity: alphaAt(mode.node, i),
-        },
-      }
-    })
-  })
+  nodes.push(
+    ...grid.map(({ x, y, direction }, i) => ({
+      id: `arc:${i + 1}`,
+      props: {
+        box: spot(x, y, sweepSize, sweepSize),
+        geometry: { kind: "path", d: direction === 1 ? paths.positiveSweep : paths.negativeRing },
+        fills: [paint(blue)],
+      },
+    })),
+  )
 
   await page.addInitScript(() => {
     window.print = () => {}
@@ -280,7 +221,7 @@ async function drivePaths(kit, cases, grid, checkVector = false) {
       Object.values((await readDoom(kit, opened)).fold.nodes).filter((node) => node.parent?.id === opened.slide),
     )
     .toHaveLength(0)
-  await landNodes(kit, opened, [...trees, ...ancestors])
+  if (ancestors.size > 0) await landNodes(kit, opened, [...ancestors.values()])
   for (let i = 0; i < nodes.length; i += 30) await landNodes(kit, opened, nodes.slice(i, i + 30))
   const thumb = checkVector ? await page.locator("[data-slide-thumb]").first().screenshot() : undefined
   const slideBox = page.locator("[data-slide-box]")

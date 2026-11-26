@@ -1,4 +1,4 @@
-import { undoRebuildFailed, undoStaysNote } from "@airdesign/catalog"
+import { undoStaysNote } from "@airdesign/catalog"
 import { agentRunsCopy } from "@/copy/agent-runs-copy"
 import { cn } from "@/lib/class-names"
 import { servedFontAlias } from "@airdesign/fonts"
@@ -156,7 +156,6 @@ const staysOf = (exchange: AiraExchange) =>
     later: exchange.later ?? [],
     left: exchange.left ?? [],
     waiting: exchange.waiting ?? [],
-    skipped: exchange.skipped ?? [],
   })
 
 function Undone({ stays }: { readonly stays: string }) {
@@ -178,7 +177,7 @@ function Undone({ stays }: { readonly stays: string }) {
 function UndoFailed({ reason }: { readonly reason: NonNullable<AiraExchange["undoFailed"]> }) {
   return (
     <p className="flex min-h-6 items-center text-xs text-muted-foreground" data-undo-failed>
-      {reason === "size" ? agentRunsCopy.undoTooLarge : reason === "rebuild" ? undoRebuildFailed : airaCopy.undoFailed}
+      {reason === "size" ? agentRunsCopy.undoTooLarge : airaCopy.undoFailed}
     </p>
   )
 }

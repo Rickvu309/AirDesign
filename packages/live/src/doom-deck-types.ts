@@ -17,11 +17,9 @@ export type Refused = { readonly ok: false; readonly refused: doom.Refusal }
 
 export type Pushed = Sent | { readonly ok: true; readonly unchanged: true } | Refused
 
-type Skipped = { readonly skipped?: readonly doom.NodeId[] }
-
 export type Turned =
-  | ({ readonly ok: true; readonly once: string; readonly saved: Promise<void> } & Skipped)
-  | ({ readonly ok: false; readonly reason: "nothing" } & Skipped)
+  | Sent
+  | { readonly ok: false; readonly reason: "nothing" }
   | { readonly ok: false; readonly reason: "refused"; readonly refused: doom.Refusal }
 
 type RunStays = {
@@ -29,7 +27,6 @@ type RunStays = {
   readonly later?: readonly doom.NodeId[]
   readonly left: readonly doom.NodeId[]
   readonly waiting: readonly doom.NodeId[]
-  readonly skipped?: readonly doom.NodeId[]
 }
 
 export type TurnedRun =
@@ -62,10 +59,6 @@ export type DoomDeck = {
       readonly seen?: doom.Doom
     },
   ): Pushed
-  regenerate(
-    frame: doom.NodeId,
-    patch: doom.ComponentPatch,
-  ): (Exclude<Pushed, Refused> & { readonly findings: readonly doom.ComponentUpdateFinding[] }) | Refused
   undo(): Turned
   redo(): Turned
   undoRun(run: string): Promise<TurnedRun>

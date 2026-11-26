@@ -56,7 +56,6 @@ import { useEditingNow } from "./use-editing-now"
 import { slideNumber } from "@/lib/slide-numbering"
 
 const noActions: ActionRun = {
-  chart: null,
   icon: () => undefined,
   picture: () => undefined,
   exportPdf: () => undefined,

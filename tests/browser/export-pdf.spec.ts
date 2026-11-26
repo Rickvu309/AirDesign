@@ -406,25 +406,3 @@ for (const font of ["slow", "failed"] as const) {
     }
   })
 }
-
-test("exports every chart insert as readable PDF text @pdf", async ({ page, context, stack }) => {
-  await recordPrints(page)
-  const opened = await openEditor(page, context, stack)
-  await deckOfSlides(page, stack, opened, 6)
-  const inserts = ["column", "bar", "stacked", "waterfall", "line", "pie"] as const
-  const labels = ["Q1", "Partners", "Existing", "Growth", "Customers", "Small business"]
-  for (const [index, kind] of inserts.entries()) {
-    await page.locator(`[data-slide-entry="${index + 1}"]`).click()
-    await page.getByRole("button", { name: editorCopy.actions, exact: true }).click()
-    await page.getByRole("option", { name: editorCopy.chartKinds[kind], exact: true }).click()
-    await expect(page.locator("[data-slide-box]")).toContainText(labels[index]!)
-  }
-  await exportButton(page).click()
-  await dialog(page).getByRole("button", { name: exportCopy.action }).click()
-  await expect(printPages(page)).toHaveCount(inserts.length)
-  for (const [index, label] of labels.entries()) await expect(printPages(page).nth(index)).toContainText(label)
-  const { chartDeckPdf } = await import("../../scripts/pdf-sample.mjs")
-  const pdf = await page.pdf({ preferCSSPageSize: true })
-  expect(pdfPages(pdf)).toHaveLength(inserts.length)
-  await writeFile(chartDeckPdf, pdf)
-})

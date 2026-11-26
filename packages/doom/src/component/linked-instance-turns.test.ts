@@ -1,18 +1,16 @@
+import { componentTree, placeComponent, suppressPart } from "./join-instance.js"
 import { columnDefinition } from "./library.js"
 import { expect, it } from "vitest"
 
 import {
   compileAgentEdit,
-  componentTree,
   defaultTheme,
   doomFromTree,
   invertRun,
   invertStep,
   isRefusal,
-  placeComponent,
   replacedBy,
   rev,
-  suppressPart,
   undoSourceOf,
   type Landed,
 } from "../index.js"

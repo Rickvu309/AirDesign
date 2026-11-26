@@ -47,7 +47,7 @@ export { foldToJson, readFold, readLanded, readRuns, readStoredNode, revsToJson,
 export { type Arrow, type End, type Geometry, lineArrowheads } from "./geometry.js"
 export { type NodeId, type Rev, nodeId, readNodeId, rev } from "./ids.js"
 export { changingWrites, sameValue } from "./changing-writes.js"
-export { invert, invertStep, removePlacedInstance } from "./invert.js"
+export { invert, invertStep } from "./invert.js"
 export { onStandingLayers } from "./standing-layers.js"
 export {
   type Replaced,
@@ -57,7 +57,6 @@ export {
   readRunEdit,
   replacedBy,
   undoSourceOf,
-  instanceAfterEdit,
 } from "./invert-run.js"
 export type { Align9, Cell, Layout, Sizing, Track } from "./layout.js"
 export type { Color, ColorVar, Effect, Hex, ImagePaint, Paint, StrokeStyle } from "./paint.js"
@@ -82,15 +81,6 @@ export type { Para, Span, Text, TextStyleName } from "./text.js"
 export { paragraphAligns, textLimits, textStyleNames } from "./text.js"
 export { notesText } from "./notes-text.js"
 export { type TextPatch, lookWrite, paraWrite, styleWrite } from "./text-writes.js"
-export { linkedOwner, linkedOverride } from "./component/instance-ownership.js"
-export { deckComponent, rebuildsLinks } from "./component/deck-component.js"
-export { skippedTemplates } from "./component/update-rebuild.js"
-export {
-  type ComponentEditSample,
-  componentEditPreview,
-  prepareComponentEdit,
-  sampleComponentEdit,
-} from "./component/component-edit.js"
 export type { Theme } from "./theme.js"
 export { onTop, viewOf } from "./view-of.js"
 export { readColor, resolveColor, sameColor, tinted } from "./color.js"
@@ -155,21 +145,6 @@ export { type Keyed, siblingKeys } from "./sibling-keys.js"
 export { type SlideGroup, slideGroups, slidePlacementWrites } from "./slide-placement.js"
 export { type Clipboard, type Copies, copiedMove, duplicateWrites, pasteWrites } from "./copy-writes.js"
 export { moveToSlide } from "./move-to-slide.js"
-export {
-  type ComponentPatch,
-  type ComponentUpdateFinding,
-  placeComponent,
-  componentTree,
-  regenerateComponent,
-  detachComponent,
-  suppressPart,
-} from "./component/join-instance.js"
-export { columnDefinition, componentLibrary } from "./component/library.js"
-export { type Instance, type PartKey, readPartKey } from "./component/instance.js"
-export { partDeletes, suppressKeys } from "./component/instance-ownership.js"
-
 export type { LayerPositions } from "./standing-layers.js"
 
-export { componentMinimum } from "./component/minimum-frame.js"
-export { reservedPartId } from "./component/part-id.js"
 export { deckTexts } from "./deck-of.js"

@@ -148,11 +148,6 @@ describe("a request Aira's changes were undone from", () => {
     expect(two).toContain("A group and “Revenue” stay because they were changed after Aira made them.")
   })
 
-  it("names a deleted component whose update the undo skipped", () => {
-    const markup = offered({ ...exchange(edited, "undone", ["r1"]), skipped: ["“Tile”"] })
-    expect(markup).toContain(`${airaCopy.undone} The component “Tile” was deleted, so its update wasn't undone.`)
-  })
-
   it("names what stays and offers Undo again when the undo landed nothing, as the Agents panel does", () => {
     const markup = offered({ ...exchange(edited, "done", ["r1"]), left: ["“Card”"], waiting: ["“Logo”"] })
     expect(markup).toContain(

@@ -4,20 +4,20 @@
     {
       "file": "packages/live/src/doom-deck.ts",
       "names": ["connected"],
-      "digest": "a88fd34c4b3e",
-      "blob": "b189476924909ddd054691fdfb38e3ae32dc6036"
+      "digest": "00393a816919",
+      "blob": "5f7bb17c3e03908d46fc84a8c2d987a8f770065f"
     },
     {
       "file": "packages/live/src/doom-follow.ts",
       "names": ["catchDoom", "foldCaught"],
       "digest": "f53264b656b1",
-      "blob": "e82ddb2d0e86bad7e4d65507d82583813cdef393"
+      "blob": "2840e4fd25e97bc7a30a14bc775e82245594f4b1"
     },
     {
       "file": "packages/live/src/doom-queue.ts",
       "names": ["landed", "queueEditOn", "releasedBases", "releaseBases"],
       "digest": "0ed9e3c3e080",
-      "blob": "7bae8389be1a0f653dcddbcf70a8237173ca0a7d"
+      "blob": "4b4a00097541788ed0fc7526bcc08533278a0fa4"
     },
     {
       "file": "packages/live/src/turn-replay.ts",

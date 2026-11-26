@@ -1,15 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import {
-  chartArea,
-  componentInsertWrites,
-  drawWrites,
-  iconSwapWrites,
-  iconWrites,
-  insertionTarget,
-  type Drawing,
-} from "./create-writes"
-import { geometryOf } from "./slide-geometry"
+import { drawWrites, iconSwapWrites, iconWrites, type Drawing } from "./create-writes"
 import { darkTheme } from "./testing/create-writes-art"
 import { grow, landed } from "./testing/doom-fixtures"
 
@@ -176,72 +167,6 @@ describe("inserting", () => {
     expect(iconSwapWrites(icons, [two], "star")).toBeNull()
   })
 
-  it("inserts a column component instance in the area it is given", () => {
-    const area = { x: 160, y: 229, w: 1600, h: 771 }
-    const inserted = componentInsertWrites(built.view, {
-      parent: slide,
-      area,
-      component: "column",
-      mint: () => id,
-      measure: doom.measureWith({}),
-    })
-    expect(inserted).not.toBeNull()
-    const after = landed(built.view, inserted!.writes)
-    expect(after.nodes.get(id)).toMatchObject({
-      type: "frame",
-      box: area,
-      instance: { component: { id: "column" }, parts: expect.any(Array) },
-    })
-  })
-
-  it.each(["instance", "generated frame"])(
-    "inserts charts and icons at slide level with a selected %s",
-    (selection) => {
-      const measure = doom.measureWith({})
-      const chart = componentInsertWrites(built.view, {
-        parent: slide,
-        area: { x: 200, y: 200, w: 500, h: 400 },
-        component: "column",
-        mint: () => id,
-        measure,
-      })
-      if (chart === null) throw new Error("Missing chart")
-      const view = landed(built.view, chart.writes)
-      const generated = doom.childrenOf(view, id).find((node) => node.type === "frame")
-      if (generated === undefined) throw new Error("Missing generated frame")
-      const selected = selection === "instance" ? id : generated.id
-      const geometry = geometryOf(doom.resolveSlide(view, slide, measure))
-      const target = insertionTarget(view, { slide, size: inside, geometry, selected: [selected] })
-      expect(target).toMatchObject({ parent: slide, inside, anchor: { x: 200, y: 200 } })
-
-      const next = doom.nodeId("m:9")
-      const inserted = componentInsertWrites(view, {
-        parent: target.parent,
-        area: chartArea(view, target.parent, target.inside, target.anchor),
-        component: "column",
-        mint: () => next,
-        measure,
-      })
-      if (inserted === null) throw new Error("Missing inserted chart")
-      expect(doom.propOf(landed(view, inserted.writes).nodes.get(next), "parent")?.id).toBe(slide)
-      const icon = iconWrites(view, next, { ...slot, id: target.parent }, "rocket", target.inside, target.anchor)
-      expect(doom.propOf(landed(view, icon).nodes.get(next), "parent")?.id).toBe(slide)
-    },
-  )
-
-  it("fills the content area under a title, on the title's left edge", () => {
-    let next = 0
-    const titled = landed(
-      built.view,
-      doom.titleOnlyWrites(slide, () => doom.nodeId(`t:${String((next += 1))}`), inside),
-    )
-    expect(chartArea(titled, slide, inside)).toEqual({ x: 160, y: 229, w: 1600, h: 771 })
-  })
-
-  it("keeps the content margins on an empty slide, a 0% fill", () => {
-    expect(chartArea(built.view, slide, inside)).toEqual({ x: 160, y: 80, w: 1600, h: 920 })
-  })
-
   it("centres an icon in the content area under a title and a subtitle", () => {
     let next = 0
     const titled = landed(
@@ -252,7 +177,7 @@ describe("inserting", () => {
     expect(after.nodes.get(id)).toMatchObject({ box: { x: 900, y: 808, w: 120, h: 120 } })
   })
 
-  it("puts a chart and an icon beside a block on a title slide", () => {
+  it("puts an icon beside a block on a title slide", () => {
     let next = 0
     const titled = landed(
       built.view,
@@ -265,10 +190,8 @@ describe("inserting", () => {
       { node: block, prop: "box", value: { x: 0, y: 0, w: 1400, h: 1080, rotation: 0, flipH: false, flipV: false } },
       { node: block, prop: "geometry", value: { kind: "rect" } },
     ])
-    const area = chartArea(occupied, slide, inside)
     const after = landed(occupied, iconWrites(occupied, id, { id: slide, at: "a4" as never }, "rocket", inside))
     const icon = after.nodes.get(id) as { box: { x: number } }
-    expect(area.x).toBeGreaterThanOrEqual(1400)
     expect(icon.box.x).toBeGreaterThanOrEqual(1400)
   })
 
@@ -302,27 +225,21 @@ describe("inserting", () => {
     }
   }
 
-  it("puts a chart and an icon in the open half of a 50% fill, inside the content margins", () => {
-    const { view, width } = occupied(0.5, "m:20")
-    const area = chartArea(view, slide, inside)
+  it("puts an icon in the open half of a 50% fill, inside the content margins", () => {
+    const { view } = occupied(0.5, "m:20")
     const after = landed(view, iconWrites(view, id, { id: slide, at: "a4" as never }, "rocket", inside))
-    expect(area).toEqual({ x: 989, y: 80, w: 771, h: 920 })
-    expect(area.x).toBeGreaterThanOrEqual(width)
     expect(after.nodes.get(id)).toMatchObject({ box: { x: 1315, y: 480, w: 120, h: 120 } })
   })
 
   it("keeps a readable size at an 85% fill, on top at the slide centre, instead of the whole slide", () => {
     const { view } = occupied(0.85, "m:21")
-    expect(chartArea(view, slide, inside)).toEqual({ x: 820, y: 420, w: 280, h: 240 })
     const after = landed(view, iconWrites(view, id, { id: slide, at: "a4" as never }, "rocket", inside))
     expect(after.nodes.get(id)).toMatchObject({ box: { x: 900, y: 480, w: 120, h: 120 } })
   })
 
   it("keeps that size at a 95% fill, and steps it off a selection", () => {
     const { view } = occupied(0.95, "m:22")
-    expect(chartArea(view, slide, inside)).toEqual({ x: 820, y: 420, w: 280, h: 240 })
     const selected = { x: 100, y: 200, w: 400, h: 300 }
-    expect(chartArea(view, slide, inside, selected)).toEqual({ x: 129, y: 229, w: 280, h: 240 })
     const after = landed(view, iconWrites(view, id, { id: slide, at: "a4" as never }, "rocket", inside, selected))
     expect(after.nodes.get(id)).toMatchObject({ box: { x: 129, y: 229, w: 120, h: 120 } })
   })
@@ -339,9 +256,6 @@ describe("inserting", () => {
       },
       { node: frame, prop: "geometry", value: { kind: "rect" } },
     ])
-    expect(chartArea(view, slide, inside)).toEqual({ x: 820, y: 420, w: 280, h: 240 })
-    const corner = { x: 1800, y: 1000, w: 100, h: 50 }
-    expect(chartArea(view, slide, inside, corner)).toEqual({ x: 1640, y: 840, w: 280, h: 240 })
     const after = landed(view, iconWrites(view, id, { id: slide, at: "a4" as never }, "rocket", inside))
     expect(after.nodes.get(id)).toMatchObject({ box: { x: 900, y: 480, w: 120, h: 120 } })
   })

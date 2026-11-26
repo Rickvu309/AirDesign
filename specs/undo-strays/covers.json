@@ -4,8 +4,8 @@
     {
       "file": "packages/live/src/doom-deck.ts",
       "names": ["connected"],
-      "digest": "7f1e20347028",
-      "blob": "054a6e430d4c6f4c69b817630c057aae15df762b"
+      "digest": "00393a816919",
+      "blob": "5f7bb17c3e03908d46fc84a8c2d987a8f770065f"
     },
     {
       "file": "packages/doom/src/invert.ts",

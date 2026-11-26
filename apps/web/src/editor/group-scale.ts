@@ -40,12 +40,11 @@ export function scaledChildren(
         },
       ]
     const stored = propOf(node, "box") ?? doom.unfittedBox(placed.node.box)
-    const least = doom.componentMinimum(view, child) ?? { w: 1, h: 1 }
     const sideways = Math.abs(stored.rotation % 180) === 90
     const widthScale = sideways ? down : across
     const heightScale = sideways ? across : down
-    const w = Math.max(least.w, Math.round(stored.w * widthScale))
-    const h = Math.max(least.h, Math.round(stored.h * heightScale))
+    const w = Math.max(1, Math.round(stored.w * widthScale))
+    const h = Math.max(1, Math.round(stored.h * heightScale))
     const box = {
       ...stored,
       x: Math.round(stored.x * across + (sideways ? (stored.w * across - w) / 2 : 0)),

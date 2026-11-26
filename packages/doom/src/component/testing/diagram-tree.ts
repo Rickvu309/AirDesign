@@ -1,5 +1,5 @@
+import { componentLibrary } from "../library.js"
 import {
-  componentLibrary,
   defaultTheme,
   isRefusal,
   measureWith,

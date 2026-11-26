@@ -1,4 +1,5 @@
 import * as doom from "@airdesign/doom"
+import { trendChart } from "./chart-marks.js"
 import {
   accentTick,
   box,
@@ -17,23 +18,6 @@ import {
   solid,
 } from "../slide-kit.js"
 
-export const lineChartComponent = {
-  parent: "trend",
-  component: "line",
-  box: { x: 0, y: 55, w: contentWidth - 80 - 460, h: 604 },
-  data: {
-    categories: ["Q1 24", "Q2 24", "Q3 24", "Q4 24", "Q1 25", "Q2 25", "Q3 25", "Q4 25"].map((label, index) => ({
-      id: `c${index + 1}`,
-      label,
-    })),
-    series: [
-      { id: "studio", label: "Studio", values: [18, 22, 27, 35, 44, 58, 73, 94] },
-      { id: "present", label: "Present", values: [9, 11, 14, 16, 21, 25, 30, 38] },
-      { id: "export", label: "Export", values: [4, 5, 6, 8, 9, 11, 13, 15] },
-    ],
-  },
-}
-
 export function lineChart(): doom.TreeSlide {
   return {
     name: "Line chart",
@@ -48,6 +32,7 @@ export function lineChart(): doom.TreeSlide {
             bold: true,
             size: 26,
           }),
+          trendChart,
         ]),
         frame(
           "callout",

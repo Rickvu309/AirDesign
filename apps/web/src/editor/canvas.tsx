@@ -30,15 +30,8 @@ import { propOf } from "@airdesign/doom"
 import { useCanvasKeys } from "./use-canvas-keys"
 import { unpanned, useCanvasPan } from "./use-canvas-pan"
 import { useCanvasPointer, type DrawRequest, type Tool } from "./use-canvas-pointer"
-import type { ActionRun, ChartInsert } from "./actions-popover"
-import {
-  chartArea,
-  componentInsertWrites,
-  insertionTarget,
-  drawWrites,
-  iconSwapWrites,
-  iconWrites,
-} from "./create-writes"
+import type { ActionRun } from "./actions-popover"
+import { insertionTarget, drawWrites, iconSwapWrites, iconWrites } from "./create-writes"
 import type { RightPanel } from "./editor-toolbar"
 import type { ShapesShown } from "@/editor/shape-tool"
 import type { EditorClient } from "./use-deck"
@@ -71,7 +64,6 @@ export type CanvasCard = {
 }
 
 const idleRun: ActionRun = {
-  chart: null,
   icon: () => undefined,
   picture: () => undefined,
   exportPdf: () => undefined,
@@ -162,14 +154,12 @@ export function DoomCanvas(props: CanvasProps) {
   const caretKey = caret === null ? "" : JSON.stringify(caret)
   useEffect(() => onWords?.(caret), [onWords, caretKey])
   const shown = useMemo(() => {
-    const transform = preview?.kind === "transform" ? doom.componentEditPreview(view, preview.writes) : null
-    const start = transform === null || doom.isRefusal(transform) ? view : transform.view
     const edits = [
-      ...(preview === null || start !== view ? [] : [{ once: "preview", author, writes: preview.writes }]),
+      ...(preview === null ? [] : [{ once: "preview", author, writes: preview.writes }]),
       ...(text.preview.length === 0 ? [] : [{ once: "text-preview", author, writes: text.preview }]),
     ]
-    if (edits.length === 0) return start
-    const shown = doom.viewOf(start, edits)
+    if (edits.length === 0) return view
+    const shown = doom.viewOf(view, edits)
     const layer = preview === null ? text.preview.find(({ prop }) => prop === "text")?.node : undefined
     if (layer !== undefined) deckLocale(shown, { before: view, layer })
     return shown
@@ -342,24 +332,6 @@ export function DoomCanvas(props: CanvasProps) {
       const id = client.mint()
       inserted(id, iconWrites(view, id, slotIn(parent), name, inside, anchor))
     },
-    chart(chart: ChartInsert) {
-      if (props.measure === null) return
-      const { parent, inside, anchor } = insertionTarget(view, {
-        slide,
-        size,
-        geometry,
-        selected: current.ids,
-      })
-      const made = componentInsertWrites(view, {
-        parent,
-        area: chartArea(view, parent, inside, anchor),
-        component: chart.component,
-        ...("variant" in chart ? { variant: chart.variant } : {}),
-        mint: () => client.mint(),
-        measure: props.measure,
-      })
-      if (made !== null && client.push(made.writes, { read: view }).ok) onSelection({ ids: [made.id], inside: null })
-    },
     picture(file: File) {
       pictures.add(file)
     },
@@ -375,12 +347,11 @@ export function DoomCanvas(props: CanvasProps) {
   })
   const run = useMemo(
     () => ({
-      chart: props.measure === null ? null : (chart: ChartInsert) => latestInserts.current.chart(chart),
       icon: (name: string) => latestInserts.current.icon(name),
       picture: (file: File) => latestInserts.current.picture(file),
       exportPdf: () => latestExport.current(),
     }),
-    [props.measure === null],
+    [],
   )
 
   useSlidePictures(client, pictures.assetUrl)

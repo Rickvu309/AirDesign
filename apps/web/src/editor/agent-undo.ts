@@ -14,11 +14,9 @@ export function undoAgentRun(client: Pick<EditorClient, "undoRun" | "view">): Un
         ...(turned.later === undefined ? {} : { later: named(turned.later) }),
         left: named(turned.left),
         waiting: named(turned.waiting),
-        ...(turned.skipped === undefined ? {} : { skipped: named(turned.skipped) }),
         undone: turned.ok,
       }
     if (turned.reason === "size") return "size"
-    if (turned.reason === "refused" && turned.refused.prop === "instance") return "rebuild"
     return turned.reason === "offline" ? "failed" : "refused"
   }
 }

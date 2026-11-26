@@ -1,6 +1,7 @@
+import { placeComponent, regenerateComponent } from "./join-instance.js"
 import { expect, it } from "vitest"
 
-import { defaultTheme, doomFromTree, isRefusal, placeComponent, regenerateComponent } from "../index.js"
+import { defaultTheme, doomFromTree, isRefusal } from "../index.js"
 import { propOf } from "../doom-walk.js"
 import { componentLibrary } from "./library.js"
 import type { Part } from "./spec.js"

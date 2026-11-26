@@ -1,3 +1,5 @@
+import { suppressKeys } from "./instance-ownership.js"
+import { placeComponent, regenerateComponent, detachComponent, suppressPart } from "./join-instance.js"
 import { columnDefinition } from "./library.js"
 import { expect, it } from "vitest"
 
@@ -14,11 +16,6 @@ import {
   replacedBy,
   undoSourceOf,
   rev,
-  placeComponent,
-  regenerateComponent,
-  detachComponent,
-  suppressPart,
-  suppressKeys,
 } from "../index.js"
 
 import { onDeck, propOf } from "../doom-walk.js"

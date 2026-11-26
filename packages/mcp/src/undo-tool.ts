@@ -1,4 +1,4 @@
-import { readNamedDeck, readRun, runUndoStays, undoStaysNote, undoRebuildFailed } from "@airdesign/catalog"
+import { readNamedDeck, readRun, runUndoStays, undoStaysNote } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import { answered, hostRefused, refused, type ToolResult } from "./answer.js"
@@ -99,17 +99,10 @@ async function turnRun(
     return answered(nothingLeft, { ok: false, reason: "nothing", ...empty })
   const nodes = positionNodes(opened.fold, edits)
   const started = nodes.length === 0 ? undefined : await host.positionsAt?.(opened.deck, edits[0]!.rev - 1, nodes)
-  let measure = edits.some(({ replaced }) => replaced.some(({ key }) => key === "instance"))
-    ? await deckMeasure(host, [opened.fold])
-    : undefined
   const owned = await host.undoRevs(opened.deck, agent)
-  let turned = doom.invertRun(opened.fold, edits, owned, started, measure?.measure)
-  if (measure === undefined && turned.writes.some(({ prop }) => prop === "instance")) {
-    measure = await deckMeasure(host, [opened.fold])
-    if (measure !== undefined) turned = doom.invertRun(opened.fold, edits, owned, started, measure.measure)
-  }
+  const turned = doom.invertRun(opened.fold, edits, owned, started)
   if (turned.refused !== undefined)
-    return answered(undoRebuildFailed, {
+    return answered(undoRefused, {
       ok: false,
       reason: "refused",
       refusal: turned.refused.refused,
@@ -124,7 +117,6 @@ async function turnRun(
     later: names(later),
     left: names(turned.left),
     waiting: names(turned.waiting),
-    skipped: names(turned.skipped),
   })
   const body = {
     deck: opened.deck,
@@ -133,29 +125,21 @@ async function turnRun(
     kept: turned.kept,
     left: turned.left,
     waiting: turned.waiting,
-    ...(turned.skipped.length === 0 ? {} : { skipped: turned.skipped }),
   }
   if (turned.writes.length === 0)
-    return [...turned.kept, ...turned.left, ...turned.waiting, ...turned.skipped].length === 0
+    return [...turned.kept, ...turned.left, ...turned.waiting].length === 0
       ? answered(nothingLeft, { ok: false, reason: "nothing", ...empty })
       : answered(note, { ok: false, reason: "left", ...body })
   const edit: doom.Edit = {
     once,
     author: { kind: "agent", id: agent, run: runId, ...(run.name === "" ? {} : { name: run.name }) },
     writes: turned.writes,
-    ...(turned.writes.some(({ prop }) => prop === "instance") || doom.rebuildsLinks(opened.fold, turned.writes)
-      ? { readBase: opened.fold.rev }
-      : {}),
     runUndo: { run: runId, undone: true },
   }
   const lineMeasure = doom.mayLeaveDeck(opened.fold, edit.writes)
     ? await deckMeasure(host, [opened.fold, doom.viewOf(opened.fold, [edit])])
     : undefined
-  const writes = doom.freeLineEnds(
-    opened.fold,
-    edit.writes,
-    lineMeasure?.measure ?? measure?.measure ?? doom.measureWith({}),
-  )
+  const writes = doom.freeLineEnds(opened.fold, edit.writes, lineMeasure?.measure ?? doom.measureWith({}))
   const landed = await host.edit(opened.deck, { ...edit, writes })
   if (!landed.ok) {
     return answered(undoRefused, { ok: false, reason: "refused", refusal: hostRefused(landed).answer.refusal, ...body })

@@ -83,7 +83,7 @@ test("a click places a default size, F draws a frame that holds what is drawn in
   await expect.poll(async () => (await picked(page, stack, opened)).node?.geometry.arrows).toEqual(["none", "arrow"])
 })
 
-test("Actions, centred over the toolbar, adds an icon from a search and each kind of chart with sample data", async ({
+test("Actions, centred over the toolbar, adds an icon from a search and omits chart insertion", async ({
   page,
   context,
   stack,
@@ -108,14 +108,8 @@ test("Actions, centred over the toolbar, adds an icon from a search and each kin
   expect(icon.geometry).toMatchObject({ name: "lucide/rocket" })
   expect(near(icon.box.x, 900, 1) && near(icon.box.y, 808, 1)).toBe(true)
 
-  for (const kind of ["column", "bar", "stacked", "waterfall", "line", "pie"] as const) {
-    await page.getByRole("button", { name: editorCopy.actions, exact: true }).click()
-    await page.getByRole("option", { name: editorCopy.chartKinds[kind], exact: true }).click()
-    await expect
-      .poll(async () => (await picked(page, stack, opened)).node?.instance)
-      .toMatchObject({ component: { id: kind === "bar" ? "clustered-chart" : kind }, parts: expect.any(Array) })
-  }
-  await expect.poll(() => page.locator('[data-slide-box] [data-node^="p"]').count()).toBeGreaterThan(4)
+  await page.getByRole("button", { name: editorCopy.actions, exact: true }).click()
+  await expect(page.locator('[data-actions-group="charts"]')).toHaveCount(0)
 })
 
 test("in Actions, Enter runs the top match, the arrow keys move the highlight, and the Deck group title finds Export as PDF", async ({
@@ -127,26 +121,22 @@ test("in Actions, Enter runs the top match, the arrow keys move the highlight, a
   const open = () => page.getByRole("button", { name: editorCopy.actions, exact: true }).click()
   const search = page.getByRole("combobox", { name: editorCopy.actionsSearch })
   await open()
-  await search.fill("pie")
-  await expect(page.getByRole("option", { selected: true })).toHaveText(editorCopy.chartKinds.pie)
+  await search.fill("rocket")
+  await expect(page.getByRole("option", { selected: true })).toHaveAttribute("aria-label", "rocket")
   await page.keyboard.press("Enter")
   await expect
-    .poll(async () => (await picked(page, stack, opened)).node?.instance)
-    .toMatchObject({ component: { id: "pie" } })
+    .poll(async () => (await picked(page, stack, opened)).node?.geometry)
+    .toMatchObject({
+      name: "lucide/rocket",
+    })
   await expect(search).toBeHidden()
 
   await open()
-  await search.fill("chart")
   await page.keyboard.press("ArrowDown")
   await page.keyboard.press("ArrowDown")
   await page.keyboard.press("ArrowUp")
-  await expect(page.getByRole("option", { selected: true })).toHaveText(editorCopy.chartKinds.bar)
-  await page.keyboard.press("Enter")
-  await expect
-    .poll(async () => (await picked(page, stack, opened)).node?.instance)
-    .toMatchObject({ component: { id: "clustered-chart" }, variant: { orientation: "bar" } })
+  await expect(page.getByRole("option", { selected: true })).toHaveText(editorCopy.placeImage)
 
-  await open()
   await search.fill(editorCopy.deckGroup.toLowerCase())
   await expect(page.getByRole("option", { name: editorCopy.exportPdf })).toBeVisible()
 })
@@ -170,20 +160,22 @@ test("in Actions, the Enter that ends an IME composition, as Vietnamese Telex se
     ),
   )
   const ime = await context.newCDPSession(page)
-  await ime.send("Input.imeSetComposition", { text: "pie", selectionStart: 3, selectionEnd: 3 })
-  await expect(page.getByRole("option", { selected: true })).toHaveText(editorCopy.chartKinds.pie)
+  await ime.send("Input.imeSetComposition", { text: "rocket", selectionStart: 6, selectionEnd: 6 })
+  await expect(page.getByRole("option", { selected: true })).toHaveAttribute("aria-label", "rocket")
   await page.keyboard.press("Enter")
   await expect(page.locator("body")).toHaveAttribute("data-key-composing", "true")
-  await expect(search).toHaveValue("pie")
-  await ime.send("Input.insertText", { text: "pie" })
-  await expect(search).toHaveValue("pie")
-  expect((await picked(page, stack, opened)).node?.instance).toBeUndefined()
+  await expect(search).toHaveValue("rocket")
+  await ime.send("Input.insertText", { text: "rocket" })
+  await expect(search).toHaveValue("rocket")
+  await expect(page.locator("[data-selection-outline]")).toHaveCount(0)
 
   await page.keyboard.press("Enter")
   await expect(page.locator("body")).toHaveAttribute("data-key-composing", "false")
   await expect
-    .poll(async () => (await picked(page, stack, opened)).node?.instance)
-    .toMatchObject({ component: { id: "pie" } })
+    .poll(async () => (await picked(page, stack, opened)).node?.geometry)
+    .toMatchObject({
+      name: "lucide/rocket",
+    })
   await expect(search).toBeHidden()
 })
 
@@ -196,10 +188,9 @@ test("in Actions, the pointer moves the one highlight, Down walks the icon grid 
   await page.getByRole("button", { name: editorCopy.actions, exact: true }).click()
   const search = page.getByRole("combobox", { name: editorCopy.actionsSearch })
   const selected = page.getByRole("option", { selected: true })
-  await search.fill("chart")
-  await page.getByRole("option", { name: editorCopy.chartKinds.line }).hover()
+  await page.getByRole("option", { name: editorCopy.exportPdf }).hover()
   await expect(selected).toHaveCount(1)
-  await expect(selected).toHaveText(editorCopy.chartKinds.line)
+  await expect(selected).toHaveText(editorCopy.exportPdf)
   await expect(search).toHaveAttribute("aria-activedescendant", (await selected.getAttribute("id")) ?? "")
 
   await page.getByRole("button", { name: editorCopy.allIcons }).click()

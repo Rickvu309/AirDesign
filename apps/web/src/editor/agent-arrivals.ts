@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 
 export type Arrivals = { readonly made: ReadonlySet<doom.NodeId>; readonly changed: ReadonlySet<doom.NodeId> }
 
-const layerTypes: ReadonlySet<doom.NodeType> = new Set(["frame", "shape", "component"])
+const layerTypes: ReadonlySet<doom.NodeType> = new Set(["frame", "shape"])
 
 export const noArrivals: Arrivals = { made: new Set(), changed: new Set() }
 

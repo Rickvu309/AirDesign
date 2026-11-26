@@ -1,30 +1,10 @@
 import * as doom from "@airdesign/doom"
 
-export const componentFields = ["data", "tokens", "variant"] as const
-export type Regeneration = {
-  readonly frame: doom.NodeId
-  readonly fields: readonly (typeof componentFields)[number][]
-}
-
-export function regenerationFor(frame: doom.NodeId, patch: doom.ComponentPatch): Regeneration {
-  return { frame, fields: componentFields.filter((field) => Object.hasOwn(patch, field)) }
-}
-
-export type Suppression = {
-  readonly frame: doom.NodeId
-  readonly node: doom.NodeId
-  readonly key: doom.PartKey
-}
-
 export type Queued = {
   readonly edit: doom.Edit
   readonly after: readonly (string | null)[]
   readonly follows?: string
   readonly afterRead?: readonly string[]
-  readonly regeneration?: Regeneration
-  readonly suppressions?: readonly Suppression[]
-  readonly turnFrom?: readonly string[]
-  readonly turnSource?: doom.RunEdit
 }
 
 export function readGap(fold: doom.Doom, { edit, afterRead }: Queued): string | undefined {

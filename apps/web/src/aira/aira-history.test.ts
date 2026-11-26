@@ -94,7 +94,6 @@ describe("a saved chat", () => {
       end: "undone",
       kept: ["“Revenue”", "a group"],
       left: ["“Card”"],
-      skipped: ["“Tile”"],
     }
     const read = readSavedChat(JSON.parse(JSON.stringify(saved({ ...chat, exchanges: [exchange] }))), deck)
     expect(read?.exchanges).toEqual([exchange])

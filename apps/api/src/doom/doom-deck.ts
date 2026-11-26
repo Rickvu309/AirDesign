@@ -4,7 +4,7 @@ import * as doom from "@airdesign/doom"
 
 import { isUniqueViolation, type Sql } from "../platform/pool.js"
 import { type Part, partOf, partSql, seedsOf } from "./doom-edit-part.js"
-import { readRunRecord, runRecord } from "./doom-run-record.js"
+import { readRunRecord } from "./doom-run-record.js"
 import { startAuthor, startEdit } from "./doom-start.js"
 
 const headSql = "select id, owner, rev, trashed is not null as trashed from deck.doom where id = $1"
@@ -145,28 +145,17 @@ export async function editDoom(
   email: string,
   still: (part: doom.Doom) => boolean = () => true,
 ) {
-  const { seeds, regrouped, removed: nulled, generated, components, createsComponent } = seedsOf(parsed.edit)
+  const { seeds, regrouped, removed: nulled, linked } = seedsOf(parsed.edit)
   let removed = nulled
   let back: string[] = []
   const once = typeof parsed.edit.once === "string" ? parsed.edit.once : ""
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const stored = (
-      await db.query<Part>(partSql, [
-        parsed.deck,
-        seeds,
-        once,
-        regrouped,
-        removed,
-        back,
-        generated,
-        components,
-        createsComponent,
-      ])
-    ).rows[0]
+    const stored = (await db.query<Part>(partSql, [parsed.deck, seeds, once, regrouped, removed, back])).rows[0]
     if (stored === undefined) return refusal("deck")
     if (stored.owner !== email) return refusal("owner")
     if (stored.trashed) return refusal("deck")
     if (stored.landed !== null) return { ok: true, deck: parsed.deck, rev: stored.landed } as const
+    if (linked !== undefined) return editRefusal({ refused: "shape", ...linked })
     const part = partOf(stored)
     if (part === undefined) return refusal("payload")
     if (!still(part)) return refusal("stale")
@@ -197,7 +186,7 @@ export async function editDoom(
     const runsMoved =
       next.runs.size !== part.runs.size || [...next.runs].some(([name, run]) => part.runs.get(name) !== run)
     const run = read.author.kind === "agent" ? read.author.run : undefined
-    const replaced = run === undefined ? null : JSON.stringify(await runRecord(db, parsed.deck, run, part, landed))
+    const replaced = run === undefined ? null : JSON.stringify(doom.replacedBy(part, landed))
     try {
       const wrote = await db.query(updateSql, [
         parsed.deck,

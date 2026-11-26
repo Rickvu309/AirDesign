@@ -1,6 +1,5 @@
 import { bakeFontState } from "@airdesign/render"
 import { toast } from "@/components/ui/toast"
-import { Button } from "@/components/ui/button"
 import * as doom from "@airdesign/doom"
 import { useDoomSlide } from "@airdesign/render"
 import { useMemo } from "react"
@@ -24,7 +23,6 @@ import { fillWrite, shownFill } from "./design-paint-values"
 import { DoomSelectionColors } from "./design-selection-section"
 import { panelTitle } from "./panel-title"
 import { ThemePicker } from "./design-theme-picker"
-import { commitDesignEdit } from "./component-edits"
 import { resolveColorOf } from "./design-slide-color"
 import type { Selection } from "./selection"
 import { HiddenLockedLayers } from "./hidden-locked"
@@ -57,13 +55,7 @@ function isImagePick(value: unknown): boolean {
 export function DesignPanel(props: Props) {
   useServedFaces()
   const { deck, client, view, slide, selection, onSelection } = props
-  const selectedIds = selection.ids.filter((id) => view.nodes.has(id))
-  const [picked] = selectedIds
-  const ownerFrame =
-    picked !== undefined && selectedIds.length === 1 && view.nodes.get(picked)?.type === "frame"
-      ? doom.linkedOwner(view.nodes, picked)
-      : undefined
-  const ids = ownerFrame === undefined ? selectedIds : [ownerFrame]
+  const ids = selection.ids.filter((id) => view.nodes.has(id))
   const painted = useDoomSlide(view, slide, 1)
   const geometry = useMemo(() => geometryOf(painted.nodes ?? []), [painted.nodes])
   const theme = doom.deckOf(view).theme
@@ -83,8 +75,6 @@ export function DesignPanel(props: Props) {
     })
   }
   const [only] = ids
-  const linked = only !== undefined && ids.length === 1 && doom.propOf(view.nodes.get(only), "instance") !== undefined
-  const linkedPart = ids.some((id) => doom.linkedOwner(view.nodes, id) !== undefined)
   const layout = only === undefined || ids.length !== 1 ? undefined : doom.propOf(view.nodes.get(only), "layout")
   const autoLayout = layout !== undefined && layout.mode !== "none"
   const fonts = autoLayout && only !== undefined ? bakeFontState(document, view, only) : "ready"
@@ -118,7 +108,7 @@ export function DesignPanel(props: Props) {
                   const deck = [...read.nodes.values()].find(({ type }) => type === "deck")
                   const next = doom.themeLibrary[id]?.theme
                   if (deck !== undefined && next !== undefined)
-                    commitDesignEdit(client, [{ node: deck.id, prop: "theme", value: next }], read)
+                    client.push([{ node: deck.id, prop: "theme", value: next }])
                 }}
               />
             )
@@ -164,29 +154,13 @@ export function DesignPanel(props: Props) {
   const model: PanelModel = rest.length === 0 ? first : panelOfMany([first, ...rest])
   const measure = painted.measure
   const selected = only === undefined ? undefined : view.nodes.get(only)
-  const storedName = doom.propOf(selected, "name")
-  const owner = only === undefined ? undefined : doom.linkedOwner(view.nodes, only)
-  const key =
-    owner === undefined
-      ? undefined
-      : doom.propOf(view.nodes.get(owner), "instance")?.parts.find(({ node }) => node === only)?.key
-  const text = doom.propOf(selected, "text")
-  const displayName =
-    text !== undefined && key !== undefined && storedName === key.join(" / ")
-      ? text.chars.split("\n")[0]?.trim()
-      : storedName
-  const layerName =
-    ids.length === 1
-      ? typeof displayName === "string" && displayName !== ""
-        ? displayName
-        : panelTitle(model)
-      : undefined
+  const name = doom.propOf(selected, "name")
+  const layerName = ids.length === 1 ? name || panelTitle(model) : undefined
   return (
     <ElementDesign
       model={model}
       palette={palette}
       layerName={layerName}
-      showTextHeading={linkedPart}
       onLayerName={
         only === undefined || ids.length !== 1
           ? undefined
@@ -216,44 +190,24 @@ export function DesignPanel(props: Props) {
                   }
             }
           />
-        ) : linked && only !== undefined ? (
-          <div className="border-b border-line px-4 pb-3">
-            <Button
-              type="button"
-              variant="panel-outline"
-              size="sm"
-              className="w-full"
-              data-linked-detach
-              onClick={() => {
-                const read = client.view()
-                const writes = doom.detachComponent(read, only)
-                if (doom.isRefusal(writes) || !client.push(writes, { read }).ok)
-                  toast.refusal(designCopy.chartEditFailed)
-              }}
-            >
-              {designCopy.detachInstance}
-            </Button>
-          </div>
         ) : null
       }
       selectionColors={
-        linkedPart ? null : (
-          <DoomSelectionColors
-            client={client}
-            view={view}
-            slide={slide}
-            ids={ids}
-            palette={palette}
-            onSelection={onSelection}
-          />
-        )
+        <DoomSelectionColors
+          client={client}
+          view={view}
+          slide={slide}
+          ids={ids}
+          palette={palette}
+          onSelection={onSelection}
+        />
       }
       onChange={(control, value) => {
         if (control.trait === "fills" && control.field === "paint" && isImagePick(value))
           return pickPicture((file) => replaceImage(ids, file))
         const link = control.trait === "link" && words !== null ? linkOf(value) : undefined
         if (link !== undefined) return props.onLinkWords(link)
-        commitDesignEdit(client, changeWrites(context, control, value), view)
+        client.push(changeWrites(context, control, value))
         if (
           control.trait === "image" &&
           control.field === "mode" &&

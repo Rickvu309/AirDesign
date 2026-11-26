@@ -48,12 +48,11 @@ export type AiraExchange = {
   readonly end: AiraEnd
   readonly runs: readonly string[]
   readonly undoRefused?: true
-  readonly undoFailed?: true | "size" | "rebuild"
+  readonly undoFailed?: true | "size"
   readonly kept?: readonly string[]
   readonly later?: readonly string[]
   readonly left?: readonly string[]
   readonly waiting?: readonly string[]
-  readonly skipped?: readonly string[]
 }
 
 export type AiraChat = {
@@ -93,7 +92,7 @@ export type AiraEvent =
       readonly type: "undo-failed"
       readonly exchange: number
       readonly runs: readonly string[]
-      readonly reason?: "size" | "rebuild"
+      readonly reason?: "size"
     }
 
 export type AskOptions = {
@@ -242,7 +241,6 @@ export function airaStep(chat: AiraChat, event: AiraEvent): AiraChat {
         ...(event.later === undefined || event.later.length === 0 ? {} : { later: event.later }),
         ...(event.left.length === 0 ? {} : { left: event.left }),
         ...(event.waiting.length === 0 ? {} : { waiting: event.waiting }),
-        ...(event.skipped === undefined || event.skipped.length === 0 ? {} : { skipped: event.skipped }),
       }))
     case "undo-refused":
       return changeAt(chat, event.exchange, (exchange) => ({ ...withoutFailure(exchange), undoRefused: true }))
@@ -515,7 +513,6 @@ export function settledByRuns(exchange: AiraExchange, undoneRun: (run: string) =
     later: _later,
     left: _left,
     waiting: _waiting,
-    skipped: _skipped,
     ...settled
   } = exchange
   return undone ? { ...settled, end: "undone" } : { ...settled, end: "done" }
