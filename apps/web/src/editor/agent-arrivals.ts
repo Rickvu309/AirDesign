@@ -36,12 +36,17 @@ export function agentArrivals(before: doom.Doom, after: doom.Doom, caught: doom.
 
 export function agentSlide(before: doom.Doom, after: doom.Doom, caught: doom.Rev): doom.NodeId | undefined {
   if (before === after) return undefined
-  const until = Math.max(...freshAgentRevs(before, after, caught))
-  const since = Math.max(caught, before.rev)
+  const fresh = freshAgentRevs(before, after, caught)
+  if (fresh.size === 0) return undefined
+  const written = new Set(
+    [...after.revs]
+      .filter(([, revs]) => [...revs.values()].some((at) => fresh.has(at)))
+      .map(([id]) => (after.nodes.get(id)?.type === "slide" ? id : doom.slideOf(after, id))),
+  )
   const madeAt = (id: doom.NodeId) => Math.max(...(after.revs.get(id)?.values() ?? []))
   return doom
     .slidesOf(after)
-    .filter(({ id }) => !before.nodes.has(id) && madeAt(id) > since && madeAt(id) <= until)
+    .filter(({ id }) => !before.nodes.has(id) && written.has(id))
     .reduce<doom.NodeId | undefined>(
       (latest, { id }) => (latest === undefined || madeAt(id) >= madeAt(latest) ? id : latest),
       undefined,
