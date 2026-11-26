@@ -7,7 +7,7 @@ import { typing } from "./use-canvas-keys"
 export function useSlideStepKeys(args: {
   readonly slides: readonly doom.NodeId[]
   readonly current: doom.NodeId | undefined
-  readonly selecting: boolean
+  readonly paused: boolean
   readonly onCurrent: (slide: doom.NodeId) => void
 }) {
   const latest = useRef(args)
@@ -16,8 +16,8 @@ export function useSlideStepKeys(args: {
   })
   useEffect(() => {
     function down(event: KeyboardEvent) {
-      const { slides, current, selecting, onCurrent } = latest.current
-      if (selecting || event.isComposing || typing(event.target)) return
+      const { slides, current, paused, onCurrent } = latest.current
+      if (paused || event.isComposing || typing(event.target)) return
       const gesture = gestureFor(event, "slides")
       if (gesture !== "slide-previous" && gesture !== "slide-next") return
       if (!editorOwnsKey(event)) return

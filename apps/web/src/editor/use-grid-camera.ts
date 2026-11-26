@@ -269,7 +269,6 @@ export function useGridCamera({
       if (gestureFor(event, "grid") !== "pan-arrows") return
       if (!onCanvas(event.target, host.current) || !blankCanvas(event.target) || !editorOwnsKey(event)) return
       event.preventDefault()
-      event.stopPropagation()
       show(arrowGrid(latest.current.view, event.key))
     }
     const up = (event: KeyboardEvent) => {
@@ -293,6 +292,7 @@ export function useGridCamera({
     event.stopPropagation()
     event.currentTarget.setPointerCapture(event.pointerId)
     event.currentTarget.dataset.panning = "true"
+    panned.current = event.button === 0 && !touch
     pan.current = { pointer: event.pointerId, x: event.clientX, y: event.clientY, view: latest.current.view }
   }
 

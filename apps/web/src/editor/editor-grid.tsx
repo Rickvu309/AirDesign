@@ -107,7 +107,7 @@ export function EditorGrid({
   const list = useRef<HTMLDivElement>(null)
   const root = useRef<HTMLDivElement>(null)
   const quiet = useRef(false)
-  const chosen = useRef<number | null>(null)
+  const chosen = useRef<number | null>(current)
   const [stop, setStop] = useState(current)
   const [message, setMessage] = useState<Announcement | null>(null)
   const announce = useCallback(
@@ -125,6 +125,7 @@ export function EditorGrid({
   }
 
   function choose(index: number) {
+    if (index === current) return
     chosen.current = index
     onCurrent(index)
   }
@@ -224,7 +225,6 @@ export function EditorGrid({
     const to = gridMove(event.key, layout.cards, index)
     if (to === null) return
     event.preventDefault()
-    event.stopPropagation()
     focusCard(to, true)
     if (event.shiftKey) {
       const next = pickRange(picked, to, current)
