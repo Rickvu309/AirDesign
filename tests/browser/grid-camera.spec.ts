@@ -163,7 +163,10 @@ test("thirty pinch steps zoom at once and keep the camera with one write once th
   await expect.poll(() => percent(page)).toBeGreaterThan(before)
   const writes = () => page.evaluate(() => (window as unknown as { gridWrites: number }).gridWrites)
   await expect.poll(writes).toBe(1)
-  await page.waitForTimeout(400)
+  const kept = await page.evaluate(
+    () => Object.entries(localStorage).find(([key]) => key.startsWith("airdesign.grid-viewport."))?.[1],
+  )
+  expect(Math.round((JSON.parse(kept ?? "{}") as { scale: number }).scale * 100)).toBe(await percent(page))
   expect(await writes()).toBe(1)
 })
 
