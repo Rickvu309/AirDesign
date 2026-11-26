@@ -45,6 +45,7 @@ export function useGridSlideActions({
   dispatch,
   choose,
   onOpen,
+  onAdding,
 }: {
   readonly strip: SlideStrip
   readonly layout: GridLayout
@@ -55,6 +56,7 @@ export function useGridSlideActions({
   readonly dispatch: (step: GridStep) => void
   readonly choose: (index: number) => void
   readonly onOpen: (index: number) => void
+  readonly onAdding: () => void
 }) {
   const ids: readonly string[] = layout.cards.map((card) => card.id)
   const shape = layout.cards.map((card) => `${String(card.group)}:${card.id}`).join(",")
@@ -110,6 +112,7 @@ export function useGridSlideActions({
     if (strip.onAdd === undefined || count >= limits.slides) return
     follow.current = "current"
     dispatch({ kind: "pick", pick: null })
+    onAdding()
     strip.onAdd(undefined, index, side)
   }
 

@@ -21,7 +21,7 @@ export function GridGroupAdd({
   readonly top: number
   readonly width: number
   readonly gap: number
-  readonly preview: { readonly top: number; readonly height: number }
+  readonly preview: { readonly top: number; readonly height: number; readonly fits: boolean }
   readonly last: boolean
   readonly onAdd: () => void
 }) {
@@ -48,7 +48,7 @@ export function GridGroupAdd({
         style={{ top: last ? preview.top : band / 2 }}
       >
         {last ? (
-          <GridPlaceholder width={width} height={preview.height} kind="group" />
+          <GridPlaceholder width={width} height={preview.height} kind="group" fits={preview.fits} />
         ) : (
           <div data-group-insertion-line style={{ width }} />
         )}
@@ -68,31 +68,20 @@ export function GridGroupAdd({
   )
 }
 
-function fitPreview(node: HTMLDivElement | null) {
-  const root = node?.closest("[data-grid-viewport]")
-  if (!node || !root || typeof IntersectionObserver !== "function") return
-  const observer = new IntersectionObserver(
-    ([entry]) => {
-      node.toggleAttribute("data-preview-fits", entry?.intersectionRatio === 1)
-    },
-    { root, threshold: 1 },
-  )
-  observer.observe(node)
-  return () => observer.disconnect()
-}
-
 export function GridPlaceholder({
   width,
   height,
   kind,
+  fits,
 }: {
   readonly width: number
   readonly height: number
   readonly kind: "gap" | "group"
+  readonly fits: boolean
 }) {
   return (
     <div
-      ref={fitPreview}
+      data-preview-fits={fits ? "" : undefined}
       data-group-placeholder={kind === "group" ? "" : undefined}
       data-gap-placeholder={kind === "gap" ? "" : undefined}
       aria-hidden="true"

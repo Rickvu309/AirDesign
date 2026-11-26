@@ -9,6 +9,7 @@ export function GridGapAdd({
   height,
   gap,
   end,
+  fits,
   reachable,
   onAdd,
 }: {
@@ -17,6 +18,7 @@ export function GridGapAdd({
   readonly height: number
   readonly gap: number
   readonly end: boolean
+  readonly fits: boolean
   readonly reachable: boolean
   readonly onAdd: () => void
 }) {
@@ -42,7 +44,7 @@ export function GridGapAdd({
       />
       {end ? (
         <div data-gap-preview className="pointer-events-none absolute top-0" style={{ left: gap }}>
-          <GridPlaceholder width={width} height={height} kind="gap" />
+          <GridPlaceholder width={width} height={height} kind="gap" fits={fits} />
         </div>
       ) : null}
     </div>
