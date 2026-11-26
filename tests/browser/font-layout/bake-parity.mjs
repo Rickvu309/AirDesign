@@ -169,12 +169,8 @@ export async function bakeParity(business = false) {
           }
           const session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0, once: "bake" }
           const { answer } = await callTool(
-            "airdesign_edit_deck",
-            {
-              deck: id,
-              base: fold.rev,
-              changes: [{ op: "set", target: ids.row, layout: "none" }],
-            },
+            "airdesign_execute",
+            { deck: id, script: `update({ target: "${ids.row}", layout: "none" })` },
             session,
             host,
           )

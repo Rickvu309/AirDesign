@@ -249,7 +249,7 @@ test("a tiled picture shows its mode alongside the current fit options, and a fr
   await expect.poll(async () => (await saved(stack, opened, "t:4")).layout?.mode).toBe("none")
 })
 
-test("a selected chart keeps its frame controls and paints data set by an agent", async ({ page, context, stack }) => {
+test("a selected chart keeps its frame controls", async ({ page, context, stack }) => {
   const opened = await designing(page, context, stack)
   const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
   const read = async () => (await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)).json
@@ -278,25 +278,10 @@ test("a selected chart keeps its frame controls and paints data set by an agent"
   const canvas = page.locator("[data-slide-box]")
   await expect(canvas.getByText("Q1", { exact: true })).toBeVisible()
 
-  const data = {
-    rows: [
-      { id: "launch", label: "Launch", value: 37 },
-      { id: "renewal", label: "Renewal", value: 61 },
-    ],
-  }
-  await stack.toolBlocks(
-    "airdesign_edit_deck",
-    { deck: opened.deck, base: (await read()).rev, changes: [{ op: "set", target, data }] },
-    opened.cookie,
-  )
   const saved = doom.readFold((await read()).fold)
   const linked = doom.propOf(saved?.nodes.get(target), "instance")
-  expect(linked).toMatchObject({ data })
   const bar = linked?.parts.find(({ key }) => key[0] === "bar")
   if (bar === undefined) throw new Error("missing chart bar")
-  await expect(canvas.getByText("Launch", { exact: true })).toBeVisible()
-  await expect(canvas.getByText("61", { exact: true })).toBeVisible()
-  await expect(canvas.getByText("Q1", { exact: true })).toHaveCount(0)
 
   const bounds = await node(page, bar.node).boundingBox()
   if (bounds === null) throw new Error("chart bar did not paint")

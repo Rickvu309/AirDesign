@@ -19,16 +19,13 @@ async function doomAgent(kit, cookie) {
   await capture("doom-agent-panel")
   note(`opened doom deck ${deck} at revision ${String(opened.rev)}; the Agent panel shows the Ask Aira composer`)
 
-  aira([
-    { name: "add-results-grid.sse", fill: { deck, base: String(opened.rev), slide } },
-    { name: "added-results-grid.sse" },
-  ])
+  aira([{ name: "add-results-grid.sse", fill: { deck, slide } }, { name: "added-results-grid.sse" }])
   const { release } = await holdReply(mcpRoutes.mcp)
   await composer.fill(asked)
   await page.keyboard.press("Enter")
   await expect(log.getByText(asked, { exact: true })).toBeVisible()
   await expect(log.getByText("I will add a results grid to the slide.", { exact: true })).toBeVisible()
-  await expect(log.locator('[data-tool-state="working"]')).toHaveText(airaStepWords.edit_deck.working)
+  await expect(log.locator('[data-tool-state="working"]')).toHaveText(airaStepWords.execute.working)
   await expect(side.getByRole("button", { name: "Stop" })).toBeVisible()
   await capture("working")
   note("the reply streamed and the Editing slides step waits on /mcp with Stop showing")
@@ -36,7 +33,7 @@ async function doomAgent(kit, cookie) {
   await release()
   await expect(canvas.getByText("$4.2M", { exact: true })).toBeVisible()
   await expect(log.getByText("The slide now shows revenue, customers and churn.", { exact: true })).toBeVisible()
-  await expect(log.locator('[data-tool-state="done"]')).toHaveText(airaStepWords.edit_deck.done)
+  await expect(log.locator('[data-tool-state="done"]')).toHaveText(airaStepWords.execute.done)
   await expect(log.getByRole("button", { name: undoCopy.undo })).toBeVisible()
   await capture("done")
   note("the call went through /mcp and the canvas painted the results grid without a reload")
@@ -103,12 +100,9 @@ export async function connectOutsideAgent(kit, cookie, name) {
 async function outsideAgent(kit, cookie, { deck, slide }) {
   const { page, post, capture, note, doomRoutes } = kit
   const call = await connectOutsideAgent(kit, cookie, "Claude Code")
-  const base = (await post(doomRoutes.open, { deck }, cookie)).json.rev
-  const box = { x: 160, y: 150, w: 1200, h: 80 }
-  const landed = await call("edit_deck", {
+  const landed = await call("execute", {
     deck,
-    base,
-    changes: [{ op: "add", kind: "text", slide, text: "Churn fell to 2.1% after the Q3 pricing change", box }],
+    script: `insert({ parent: "${slide}", kind: "text", text: "Churn fell to 2.1% after the Q3 pricing change", box: { x: 160, y: 150, w: 1200, h: 80 } })`,
   })
   expect(landed.ok).toBe(true)
   const mark = page.locator("[data-agent-at-work]")

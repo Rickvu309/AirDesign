@@ -11,13 +11,13 @@
       "file": "apps/api/src/server.ts",
       "names": ["caller", "mcpRoute"],
       "digest": "5b2238fda3b9",
-      "blob": "1a21d8f8069d913997c509719225b825f41bc35f"
+      "blob": "d7f01b67c9b137ffe41b6a4d0f90a987a167722c"
     },
     {
-      "file": "packages/mcp/src/edit-tool.ts",
-      "names": ["editDeckTool"],
-      "digest": "da24344fa117",
-      "blob": "aaf2608bce4f979071ac369e3a144814dc06ecb9"
+      "file": "packages/mcp/src/execute-tool.ts",
+      "names": ["executeTool"],
+      "digest": "ba194e4a06ed",
+      "blob": "0740c5add2e66a4824dd3840fa7cdd689151e619"
     },
     {
       "file": "packages/mcp/src/stop-tool.ts",
@@ -28,14 +28,14 @@
     {
       "file": "packages/doom/src/apply-edit.ts",
       "names": ["guardRun", "landEdit", "protect"],
-      "digest": "3e2229ac5ddd",
-      "blob": "5d7ef9dcb36a368e0aa4683eab9bca5e111e72dd"
+      "digest": "f35e3cf595ce",
+      "blob": "c7c15fea3b669c067a4a663e78bee1f750f0f0ae"
     },
     {
       "file": "packages/mcp/src/admit.ts",
       "names": ["admit"],
       "digest": "377d192d10b0",
-      "blob": "818df813c146ff4bd5acad3208cc3060f53faa67"
+      "blob": "9e4cc56271432749269ba3080292c8abd51a62d2"
     }
   ]
 }

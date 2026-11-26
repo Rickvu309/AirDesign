@@ -1,7 +1,7 @@
 import { readTurn } from "@airdesign/catalog"
 import { expect, it } from "vitest"
 import { airaChat } from "./aira-loop"
-import { asking, call, deck, ended, read, scripted } from "./testing/aira-loop-script"
+import { asking, call, deck, edit, ended, read, scripted } from "./testing/aira-loop-script"
 
 const data = "/9j/4AAQSkZJRgABAQ=="
 const label = "Slide 1 (256) at revision 4:"
@@ -16,8 +16,8 @@ const seen = {
 }
 
 it("hands Aira the picture the read answered, in the next turn only, and keeps it out of the history after", async () => {
-  const look = call("call_1", read, { deck, slide: "256", picture: true })
-  const again = call("call_2", read, { deck })
+  const look = call("call_1", edit, { deck, script: 'screenshot({ target: "s:256" })' })
+  const again = call("call_2", read, {})
   const link = scripted(
     [{ lines: [ended([look])] }, { lines: [ended([again])] }, { lines: [ended([{ type: "text", text: "Done" }])] }],
     [seen, { structuredContent: { ok: true, revision: 4 } }],

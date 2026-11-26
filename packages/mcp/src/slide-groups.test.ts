@@ -2,6 +2,7 @@ import * as doom from "@airdesign/doom"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { expect, it } from "vitest"
 import { createServer, emptyLog } from "./index.js"
+import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
 function slideGroupsIn(layers: string): { group: string; slides: string[] }[] {
@@ -38,12 +39,12 @@ it("saves and refuses slide group edits through the existing tool, using structu
       throw new Error("create_deck returned no deck id")
     const { deck } = made
     const read = async () => {
-      const saved = await call("read_deck", { deck })
+      const saved = (await call("execute", { deck, script: "get()" })) as { ok: boolean; result: unknown }
       expect(saved).toMatchObject({ ok: true })
-      return saved as { rev: number; layers: string }
+      return saved.result as { rev: number; layers: string }
     }
     const edit = async (body: Record<string, unknown>) =>
-      call("edit_deck", { deck, base: (await read()).rev, changes: [{ op: "slide", ...body }] })
+      call("execute", { deck, script: scriptOf([{ op: "slide", ...body }]) })
     const groups = async () => slideGroupsIn((await read()).layers)
 
     const [first] = await groups()
@@ -66,8 +67,9 @@ it("saves and refuses slide group edits through the existing tool, using structu
     expect(await edit({ move: { group: "missing:1", before: second.group } })).toMatchObject({
       ok: false,
       refusal: "dead",
-      field: "group",
-      note: expect.stringContaining("group=<id>"),
+      field: "target",
+      node: "missing:1",
+      note: expect.stringContaining("get() lists the ids"),
     })
     expect(await read()).toEqual(before)
   } finally {

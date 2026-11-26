@@ -227,7 +227,7 @@ export default async function drive(kit) {
         jsonrpc: "2.0",
         id: 1,
         method: "tools/call",
-        params: { name: "airdesign_read_deck", arguments: { deck, slide, picture: true } },
+        params: { name: "airdesign_execute", arguments: { deck, script: `screenshot({ target: "${slide}" })` } },
       }),
     }).then(async (response) => expect(response.ok, await response.text()).toBe(true)),
   ])

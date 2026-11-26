@@ -3,6 +3,7 @@ import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 
 import { createServer, emptyLog, type Host, type Session } from "./index.js"
+import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
 function started(): doom.Doom {
@@ -20,7 +21,8 @@ function started(): doom.Doom {
 }
 
 function sessionFor(): Session {
-  return { agent: "aira", mint: () => "minted", log: emptyLog(), now: 0 }
+  let minted = 0
+  return { agent: "aira", mint: () => `minted${String((minted += 1))}`, log: emptyLog(), now: 0 }
 }
 
 async function withClient(session: Session, host: Host, use: (client: Client) => Promise<void>): Promise<void> {
@@ -55,26 +57,28 @@ describe("paths over MCP", () => {
       const box = { x: 15, y: 20, w: 100, h: 100 }
       const d = "M0 0L1 1".padEnd(4000)
       const path = { op: "add", kind: "path", slide, d, box, fillStroke: true }
-      const edit = (base: unknown, ...changes: readonly object[]) => call("edit_deck", { deck, base, changes })
-      expect(await edit(made?.rev, { ...path, d: d + "Z" })).toMatchObject({ ok: false, field: "d" })
-      expect(await edit(made?.rev, { ...path, d: undefined })).toMatchObject({ ok: false, field: "d" })
-      const added = await edit(made?.rev, path, { ...path, d: "M0 1L1 0" })
+      const edit = (...changes: readonly object[]) => call("execute", { deck, script: scriptOf(changes) })
+      const read = async (target: unknown) =>
+        (await call("execute", { deck, script: `get({ target: ${JSON.stringify(target)} })` })).result as {
+          layers: string
+        }
+      expect(await edit({ ...path, d: d + "Z" })).toMatchObject({ ok: false, field: "d" })
+      expect(await edit({ ...path, d: undefined })).toMatchObject({ ok: false, field: "d" })
+      const added = await edit(path, { ...path, d: "M0 1L1 0" })
       expect(added?.ok).toBe(true)
-      const summary = await call("read_deck", { deck, slide })
-      expect(summary?.layers).toContain("path @15,20 100x100")
-      expect(summary?.layers).toContain("fillStroke=true")
-      expect(summary?.layers).not.toContain("d=")
-      const ids = added?.added
-      if (!Array.isArray(ids)) throw new Error("Expected added layers")
-      const target = ids[0].id
-      const detail = await call("read_deck", { deck, detail: target })
-      expect(detail?.layers).toContain(`d="${d}"`)
-      expect(detail?.layers).not.toContain('d="M0 1L1 0"')
-      const set = await edit(added?.rev, { op: "set", target, fillStroke: false, d: "M0 0L1 0L1 1Z" })
+      const summary = await read(slide)
+      expect(summary.layers).toContain("path @15,20 100x100")
+      expect(summary.layers).toContain("fillStroke=true")
+      expect(summary.layers).not.toContain("d=")
+      const madeIds = added?.made
+      if (!Array.isArray(madeIds)) throw new Error("Expected added layers")
+      const target = madeIds[0].ids[0]
+      const detail = await read(target)
+      expect(detail.layers).toContain(`d="${d}"`)
+      expect(detail.layers).not.toContain('d="M0 1L1 0"')
+      const set = await edit({ op: "set", target, fillStroke: false, d: "M0 0L1 0L1 1Z" })
       expect(set?.ok).toBe(true)
-      expect((await call("read_deck", { deck, detail: target }))?.layers).toContain(
-        'fillStroke=false d="M0 0L1 0L1 1Z"',
-      )
+      expect((await read(target)).layers).toContain('fillStroke=false d="M0 0L1 0L1 1Z"')
     })
   })
 })

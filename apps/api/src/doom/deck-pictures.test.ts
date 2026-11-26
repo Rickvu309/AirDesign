@@ -2,7 +2,7 @@ import { readDeckId, type DeckId, type SlidePictures } from "@airdesign/catalog"
 import { picturesWantedMilliseconds } from "@airdesign/catalog"
 import { nodeId, type NodeId } from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { DeckPictures } from "./deck-pictures.js"
+import { DeckPictures, watchGrace } from "./deck-pictures.js"
 
 function deckOf(name: string): DeckId {
   const read = readDeckId(name)
@@ -192,5 +192,25 @@ describe("the slides an agent has asked to see", () => {
     const left = pictures.asked(deck, gone.signal)
     gone.abort()
     expect(await left).toBe(false)
+  })
+})
+
+describe("whether an open tab watches a deck", () => {
+  it("knows no tab until one follows the deck or sends pictures, and for a few seconds after it stops", () => {
+    let now = 1_000
+    const pictures = new DeckPictures(undefined, () => now)
+    expect(pictures.watched(deck)).toBe(false)
+    const following = new AbortController()
+    void pictures.asked(deck, following.signal)
+    now += 60_000
+    expect(pictures.watched(deck)).toBe(true)
+    following.abort()
+    now += watchGrace - 1
+    expect(pictures.watched(deck)).toBe(true)
+    now += 1
+    expect(pictures.watched(deck)).toBe(false)
+    pictures.keep(deck, 3, report([[first, "a"]]))
+    expect(pictures.watched(deck)).toBe(true)
+    expect(pictures.watched(deckOf("other"))).toBe(false)
   })
 })

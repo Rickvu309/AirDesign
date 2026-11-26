@@ -3,8 +3,8 @@ import { askAira, type AiraChat } from "../aira-loop"
 
 export const deck = "deck"
 const nameOf = (op: string) => projectTools(catalog).find((tool) => tool.op === op)?.name ?? ""
-export const edit = nameOf("edit_deck")
-export const read = nameOf("read_deck")
+export const edit = nameOf("execute")
+export const read = nameOf("list_decks")
 export const stop = nameOf("stop_run")
 export const usage = { used: 0.5, allowed: 2, resets: "2026-11-16T00:00:00.000Z" }
 

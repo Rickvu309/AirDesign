@@ -93,7 +93,7 @@ describe("a tool's input schema says each repeated subschema once", () => {
 
   it("says a description that several uses share once, in the shared subschema, and keeps a different one beside its reference", () => {
     const slide = { type: "string", pattern: "^(?:[0-9]{1,10}|n[0-9a-z]{12})$" }
-    const named = { ...slide, description: "Slide id from airdesign_read_deck." }
+    const named = { ...slide, description: "Slide id from get." }
     const schema = {
       type: "object",
       properties: {
@@ -123,35 +123,6 @@ describe("a tool's input schema says each repeated subschema once", () => {
     const twice = { type: "object", properties: { a: { type: "object", properties: { x: color } } } }
     expect(references(sharedSchemas(twice))).toEqual([])
   })
-
-  it("advertises primitive and grid adds", () => {
-    expect(toolInputSchema("edit_deck")).toHaveProperty("$defs.change.properties.kind.enum", [
-      "text",
-      "shape",
-      "line",
-      "path",
-      "frame",
-      "picture",
-      "icon",
-    ])
-  })
-
-  it("resolves every reference in airdesign_edit_deck, and still takes the forms the instructions name", () => {
-    const schema = toolInputSchema("edit_deck")
-    const defs = Object.keys((schema as { readonly $defs?: object }).$defs ?? {})
-    expect(defs).toEqual(expect.arrayContaining(["color", "id", "change"]))
-    for (const reference of references(schema)) expect(defs).toContain(reference.replace("#/$defs/", ""))
-    const check = z.fromJSONSchema(schema)
-    const changes = [
-      { op: "add", kind: "text", slide: "s:3", text: "Hi", textStyle: "title", fill: "accent2" },
-      { op: "set", target: "s:3.title", color: "text2", effect: "lifted" },
-      { op: "add", kind: "frame", slide: "s:3", rows: [["Revenue", "$4M"]] },
-      { op: "slide", add: {} },
-    ]
-    expect(check.safeParse({ deck: "d", base: 0, changes }).success).toBe(true)
-    const wrong = { op: "set", target: "s:3", fill: "accent9" }
-    expect(check.safeParse({ deck: "d", base: 0, changes: [wrong] }).success).toBe(false)
-  })
 })
 
 describe("a schema for a caller that may not follow references", () => {
@@ -176,13 +147,13 @@ describe("a schema for a caller that may not follow references", () => {
   })
 
   it("gives back every tool's advertised schema, with no reference left", () => {
-    for (const op of ["create_deck", "edit_deck", "list_decks", "read_deck", "stop_run"] as const) {
+    for (const op of ["create_deck", "execute", "list_decks", "stop_run", "undo_run"] as const) {
       const inlined = inlinedSchema(toolInputSchema(op))
       expect(references(inlined)).toEqual([])
       expect(inlined).not.toHaveProperty("$defs")
     }
-    expect(inlinedSchema(toolInputSchema("read_deck"))).toEqual(
-      advertisedSchema(z.toJSONSchema(catalog.read_deck.read.input, { io: "input" })),
+    expect(inlinedSchema(toolInputSchema("execute"))).toEqual(
+      advertisedSchema(z.toJSONSchema(catalog.execute.read.input, { io: "input" })),
     )
   })
 })

@@ -14,11 +14,9 @@ type Agent = "a" | "b"
 type ModelRun = "a1" | "a2" | "b1" | "b2"
 type World = {
   readonly server: doom.Doom
-  readonly base: Readonly<Record<Agent, number>>
   readonly xRevs: readonly number[]
   readonly ids: Readonly<Partial<Record<ModelRun, string>>>
   readonly out: string
-  readonly overwrote: boolean
   readonly mixed: boolean
   readonly stoppedOther: boolean
   readonly calls: number
@@ -113,8 +111,6 @@ function phaseOf(world: World, run: ModelRun): "idle" | "running" | "stopped" {
   return id === undefined ? "idle" : (world.server.runs.get(id)?.phase ?? "idle")
 }
 
-const verAt = (world: World, base: number) => world.xRevs.filter((each) => each <= base).length
-
 function observe(world: World): Spec {
   return {
     pa1: phaseOf(world, "a1"),
@@ -122,10 +118,7 @@ function observe(world: World): Spec {
     pb1: phaseOf(world, "b1"),
     pb2: phaseOf(world, "b2"),
     ver: world.xRevs.length,
-    readA: verAt(world, world.base.a),
-    readB: verAt(world, world.base.b),
     out: world.out,
-    overwrote: world.overwrote,
     mixed: world.mixed,
     stoppedOther: world.stoppedOther,
   }
@@ -134,22 +127,14 @@ function observe(world: World): Spec {
 const refusalOf = (answer: Record<string, unknown>) =>
   answer.ok === true ? undefined : typeof answer.refusal === "string" ? answer.refusal : "unexpected"
 
-async function reads(world: World, by: Agent): Promise<World> {
-  const done = await call(world, by, "read_deck", { deck })
-  const rev = done.answer.rev
-  if (typeof rev !== "number") throw new Error(`read_deck answered ${JSON.stringify(done.answer)}`)
-  return { ...world, calls: done.calls, base: { ...world.base, [by]: rev }, out: "none" }
-}
-
 async function edits(world: World, by: Agent, run?: ModelRun): Promise<World> {
   const fresh = owned[by].find((each) => world.ids[each] === undefined)
   const into = run ?? fresh
   if (into === undefined) return { ...world, out: "a third run, beyond the model" }
   const named = run === undefined ? undefined : world.ids[run]
-  const done = await call(world, by, "edit_deck", {
+  const done = await call(world, by, "execute", {
     deck,
-    base: world.base[by],
-    changes: [{ op: "set", target: start.x, text: `${by}${String(world.calls + 1)}` }],
+    script: `update({ target: "${start.x}", text: "${by}${String(world.calls + 1)}" })`,
     ...(named === undefined ? {} : { runId: named }),
   })
   const refusal = refusalOf(done.answer)
@@ -157,17 +142,14 @@ async function edits(world: World, by: Agent, run?: ModelRun): Promise<World> {
   const rev = done.answer.rev
   const runId = done.answer.runId
   if (typeof rev !== "number" || typeof runId !== "string")
-    throw new Error(`edit_deck answered ${JSON.stringify(done.answer)}`)
-  const lastX = world.xRevs.at(-1) ?? 0
+    throw new Error(`execute answered ${JSON.stringify(done.answer)}`)
   return {
     ...world,
     calls: done.calls,
     server: done.server,
-    base: { ...world.base, [by]: rev },
     xRevs: [...world.xRevs, rev],
     ids: run === undefined ? { ...world.ids, [into]: runId } : world.ids,
     out: "landed",
-    overwrote: world.overwrote || world.base[by] < lastX,
     mixed: world.mixed || done.server.runs.get(runId)?.agent !== agentKeys[by] || ownerOf(into) !== by,
   }
 }
@@ -188,7 +170,6 @@ async function stops(world: World, by: Agent, run: ModelRun): Promise<World> {
 
 async function step(world: World, action: string): Promise<readonly World[]> {
   const named = modelRuns.filter((run) => world.ids[run] !== undefined)
-  if (action === "AgentReads") return Promise.all(agentNames.map((by) => reads(world, by)))
   if (action === "AgentStarts") return Promise.all(agentNames.map((by) => edits(world, by)))
   if (action === "AgentWrites")
     return Promise.all(agentNames.flatMap((by) => named.map((run) => edits(world, by, run))))
@@ -212,18 +193,16 @@ async function replayed(graph: Graph, failures: string[]) {
   if (first === undefined) throw new Error("no initial state")
   const empty: World = {
     server: start.server,
-    base: { a: start.server.rev, b: start.server.rev },
     xRevs: [],
     ids: {},
     out: "none",
-    overwrote: false,
     mixed: false,
     stoppedOther: false,
     calls: 0,
   }
   const reached = new Map<string, World>([[first[0], empty]])
   const queued = [first[0]]
-  const seen = { edges: 0, landed: 0, fenced: 0, stale: 0, stopped: 0, already: 0, restarted: 0 }
+  const seen = { edges: 0, landed: 0, fenced: 0, stopped: 0, already: 0, restarted: 0 }
   while (queued.length > 0) {
     const from = queued.shift() as string
     const world = reached.get(from) as World
@@ -245,7 +224,6 @@ async function replayed(graph: Graph, failures: string[]) {
       if (edge.action !== "Done") {
         if (target.out === "landed") seen.landed += 1
         if (target.out === "run-fenced") seen.fenced += 1
-        if (target.out === "stale") seen.stale += 1
         if (target.out === "stopped") seen.stopped += 1
         if (target.out === "already") seen.already += 1
         if (edge.action === "AgentStarts" && target.out === "landed") {
@@ -267,7 +245,7 @@ async function replayed(graph: Graph, failures: string[]) {
 }
 
 describe("agents replay", () => {
-  it("drives every edge of two agents' runs on one deck through the real edit_deck, stop_run and read_deck", async () => {
+  it("drives every edge of two agents' runs on one deck through the real execute and stop_run", async () => {
     assertJar(jarPath())
     const spec = topics(root).find((topic: { name: string }) => topic.name === "agents")
     if (spec === undefined) throw new Error("no agents spec")
@@ -280,7 +258,6 @@ describe("agents replay", () => {
     expect(seen.edges).toBe(graph.edges.length)
     expect(seen.landed).toBeGreaterThan(0)
     expect(seen.fenced).toBeGreaterThan(0)
-    expect(seen.stale).toBeGreaterThan(0)
     expect(seen.stopped).toBeGreaterThan(0)
     expect(seen.already).toBeGreaterThan(0)
     expect(seen.restarted).toBeGreaterThan(0)

@@ -3,6 +3,7 @@ import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 
 import { createServer, emptyLog, type Host, type Session } from "./index.js"
+import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
 function started(): doom.Doom {
@@ -13,7 +14,8 @@ function started(): doom.Doom {
 }
 
 function sessionFor(): Session {
-  return { agent: "aira", mint: () => "minted", log: emptyLog(), now: 0 }
+  let minted = 0
+  return { agent: "aira", mint: () => `minted${String((minted += 1))}`, log: emptyLog(), now: 0 }
 }
 
 async function withClient(session: Session, host: Host, use: (client: Client) => Promise<void>): Promise<void> {
@@ -37,10 +39,9 @@ describe("inner shadow over the protocol", () => {
         (await client.callTool({ name: `airdesign_${name}`, arguments: args })).structuredContent as Record<string, any>
       const made = await call("create_deck", { name: "Shadow" })
       const slide = (made.slides as string[])[0]!
-      const edited = await call("edit_deck", {
+      const edited = await call("execute", {
         deck: made.deck,
-        base: made.rev,
-        changes: [
+        script: scriptOf([
           {
             op: "add",
             kind: "shape",
@@ -48,14 +49,17 @@ describe("inner shadow over the protocol", () => {
             fill: "accent1",
             innerShadow: { color: "accent1", x: 0, y: 2, blur: 4, spread: 1, opacity: 0.4 },
           },
-        ],
+        ]),
       })
       expect(edited).toMatchObject({ ok: true })
-      expect((await call("read_deck", { deck: made.deck })).layers).toContain("innerShadow=accent1,0,2,4,1@0.4")
-      const bad = await call("edit_deck", {
+      expect((await call("execute", { deck: made.deck, script: "get().layers" })).result).toContain(
+        "innerShadow=accent1,0,2,4,1@0.4",
+      )
+      const bad = await call("execute", {
         deck: made.deck,
-        base: edited.rev,
-        changes: [{ op: "set", target: slide, innerShadow: { color: "nope", x: 0, y: 0, blur: 0, spread: 0 } }],
+        script: scriptOf([
+          { op: "set", target: slide, innerShadow: { color: "nope", x: 0, y: 0, blur: 0, spread: 0 } },
+        ]),
       })
       expect(bad).toMatchObject({ ok: false, field: "innerShadow.color" })
     })

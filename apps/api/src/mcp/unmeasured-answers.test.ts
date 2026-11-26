@@ -1,3 +1,4 @@
+import { scriptOf } from "@airdesign/mcp/testing/evals"
 import { catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { callTool, emptyLog, type Session } from "@airdesign/mcp"
@@ -24,26 +25,27 @@ it("keeps naming a text its font cannot measure on every read and edit after the
     session.once = `call${String((calls += 1))}`
     return callTool(names[op]!, args, session, host)
   }
-  const { deck, rev, slides } = (await call("create_deck", {})).answer as {
+  const { deck, slides } = (await call("create_deck", {})).answer as {
     deck: string
     rev: number
     slides: string[]
   }
-  const landed = await call("edit_deck", {
+  const landed = await call("execute", {
     deck,
-    base: rev,
-    changes: [{ op: "add", kind: "text", slide: slides[0], text: "Launch 🚀", box: { x: 160, y: 300, w: 800, h: 80 } }],
+    script: scriptOf([
+      { op: "add", kind: "text", slide: slides[0], text: "Launch 🚀", box: { x: 160, y: 300, w: 800, h: 80 } },
+    ]),
   })
-  const { added, runId } = landed.answer as { added: { id: string }[]; runId: string }
-  const unread = `${added[0]!.id} has a character the deck's fonts lack`
+  const { made, runId } = landed.answer as { made: { ids: string[] }[]; runId: string }
+  const id = made[0]!.ids[0]!
+  const unread = `${id} has a character the deck's fonts lack`
   expect(String(landed.answer.note)).toContain(unread)
-  const read = await call("read_deck", { deck })
-  expect(String(read.answer.note)).toContain(unread)
-  const again = await call("edit_deck", {
+  const read = await call("execute", { deck, script: "get().note" })
+  expect(String(read.answer.result)).toContain(unread)
+  const again = await call("execute", {
     deck,
-    base: rev + 1,
     runId,
-    changes: [{ op: "set", target: added[0]!.id, name: "Launch line" }],
+    script: scriptOf([{ op: "set", target: id, name: "Launch line" }]),
   })
   expect(String(again.answer.note)).toContain(unread)
   expect(String(again.answer.note)).not.toContain("Layout clear")

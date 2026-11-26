@@ -111,7 +111,10 @@ export default async function drive(kit) {
         jsonrpc: "2.0",
         id: 1,
         method: "tools/call",
-        params: { name: "airdesign_read_deck", arguments: { deck: opened.deck, slide: opened.slide, picture: true } },
+        params: {
+          name: "airdesign_execute",
+          arguments: { deck: opened.deck, script: `screenshot({ target: "${opened.slide}" })` },
+        },
       }),
     }).then(async (response) => expect(response.ok, await response.text()).toBe(true)),
   ])

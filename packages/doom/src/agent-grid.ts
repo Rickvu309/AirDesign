@@ -18,6 +18,7 @@ import type { Node } from "./doom.js"
 import { isBlankValue, isDataValue, numberValue } from "./number-values.js"
 import type { Paint, Sides } from "./paint.js"
 import type { Text, TextStyleName } from "./text.js"
+import { widestWord } from "./text-estimate.js"
 
 type Add = Extract<AgentChange, { op: "add" }>
 
@@ -170,8 +171,51 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
       ]),
     )
   }
+  const shortfall = (style: TextStyleName): string => {
+    const bold = (at: number, col: number) => at === 0 || col === 0 || (total && at === last)
+    const cramped = rows.flatMap((row, at) =>
+      row.flatMap((cell, col) => {
+        const words = (plain[at]?.[col] ?? "").split(/\s+/).filter((word) => word !== "")
+        const widest = words.reduce(
+          (most, word) =>
+            widestWord([word], theme, style, bold(at, col)) > widestWord([most], theme, style, bold(at, col))
+              ? word
+              : most,
+          "",
+        )
+        const needs = widestWord([widest], theme, style, bold(at, col))
+        return cell === "" || needs <= roomAt(at, col) ? [] : [{ at, col, widest, needs, room: roomAt(at, col) }]
+      }),
+    )
+    const first = cramped[0]
+    if (first !== undefined)
+      return `a shorter word than “${first.widest}” in row ${String(first.at + 1)}, column ${String(first.col + 1)}, which needs ${String(Math.ceil(first.needs))} px at ${style} size in a column of ${String(Math.floor(first.room))} px${cramped.length > 1 ? ` (and ${String(cramped.length - 1)} more cells)` : ""}; or fewer columns or a wider box`
+    const tall = rows
+      .map((row, at) =>
+        Math.max(
+          0,
+          ...row.map((cell, col) =>
+            cell === ""
+              ? 0
+              : heightIn(
+                  cellText(partOf(cell, style), {
+                    bold: bold(at, col),
+                    font: theme.fonts.body,
+                    right: false,
+                    tabular: false,
+                    padding: paddingAt(at, col),
+                  }),
+                  theme,
+                  width,
+                ),
+          ),
+        ),
+      )
+      .reduce((sum, high) => sum + high, 0)
+    return `fewer than ${String(rows.length)} rows or a taller box: at ${style} size they need ${String(Math.ceil(tall))} px and the box has ${String(Math.floor(area.h))} px`
+  }
   const block =
     steps.reduce<Block | undefined>((got, style) => got ?? attempt(style), undefined) ??
-    stop("limit", undefined, "rows", "needs", "shorter labels, fewer columns or fewer rows")
+    stop("limit", undefined, "rows", "needs", shortfall(steps.at(-1) ?? "caption"))
   emit(draft, parent.id, block)
 }

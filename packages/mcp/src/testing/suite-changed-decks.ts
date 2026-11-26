@@ -2,25 +2,6 @@ import * as doom from "@airdesign/doom"
 
 import { evalDeck, named, person } from "./eval-deck.js"
 
-export function typedByAPerson(): doom.Doom {
-  const start = evalDeck()
-  const landed = doom.applyEdit(start, {
-    once: "typed",
-    author: person,
-    writes: [
-      {
-        node: named.title,
-        prop: "text",
-        value: doom.textFromMarkdown("Typed by a person", "title"),
-        base: start.revs.get(named.title)!.get("text")!,
-      },
-    ],
-    rev: doom.rev(start.rev + 1),
-  })
-  if (doom.isRefusal(landed)) throw new Error("typed")
-  return landed
-}
-
 export const heldRun = "held"
 
 export function runningWith(then: readonly doom.Write[], by: doom.Author = person): doom.Doom {

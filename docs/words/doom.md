@@ -77,8 +77,16 @@ _Avoid_: poll, pull
 
 ## The agent's words
 
+**script**:
+The JavaScript an agent sends to `airdesign_execute`. It runs in a sandbox on a worker thread, calls operations such as `insert`, `update` and `get`, and everything it changes lands as one edit of the agent's run, or nothing does.
+_Avoid_: program, macro, batch
+
+**operation**:
+One function a script calls: `insert`, `update`, `replace`, `copy`, `move`, `remove`, `group`, `ungroup`, `variables`, `get` or `screenshot`. Each answers at once, so a script uses the new id or the measured box in its next line.
+_Avoid_: tool call, command
+
 **agent change**:
-One instruction an agent sends: `add`, `set`, `move`, `wrap`, `unwrap`, `delete` or `slide`. `compileAgentChange` turns it into writes, or refuses it by name; `compileAgentEdit` turns a batch of them into one edit of the agent's run. Nothing else turns agent words into writes.
+What an operation becomes: `add`, `set`, `move`, `wrap`, `unwrap`, `delete`, `duplicate`, `deck` or `slide`. `compileAgentChange` turns it into writes, or refuses it by name; `agentEditSession` compiles a script's changes one at a time and finishes them as one edit of the agent's run. Nothing else turns agent words into writes.
 _Avoid_: command, patch, tool call
 
 **look**:
@@ -97,7 +105,7 @@ The largest clear rectangle of a slide or frame, with a gap round what is alread
 _Avoid_: empty space, gap
 
 **reading**:
-What the agent saw when it last read the deck. Its text and list writes carry that revision as their `base`, so a person's later change refuses them as stale.
+What a script saw when its call opened the deck. Its text and list writes carry that revision as their `base`, so a change another writer lands before the call does refuses them as stale.
 _Avoid_: snapshot, readAt
 
 **run**:

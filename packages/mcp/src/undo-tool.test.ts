@@ -3,6 +3,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it, vi } from "vitest"
 
 import { emptyLog, callTool, type Session, type ToolResult } from "./index.js"
+import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks, type MemoryDecks } from "./testing/memory-decks.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
@@ -46,13 +47,11 @@ async function renamed() {
   const by = agent()
   const made = await by.call("create_deck", { name: "Board" })
   const deck = made.answer.deck as string
-  const rev = made.answer.rev as number
   const fold = by.decks.decks.get(deck as never)!
   const title = [...fold.nodes.values()].find((node) => node.type === "shape")!
-  const landed = await by.call("edit_deck", {
+  const landed = await by.call("execute", {
     deck,
-    base: rev,
-    changes: [{ op: "set", target: title.id, name: "Renamed" }],
+    script: scriptOf([{ op: "set", target: title.id, name: "Renamed" }]),
   })
   const runId = landed.answer.runId as string
   return { by, deck, rev: landed.answer.rev as number, runId, title: title.id }
@@ -88,20 +87,18 @@ describe("undo_run", () => {
     const made = await by.call("create_deck", { name: "Board" })
     const deck = made.answer.deck as string
     const slides = made.answer.slides as string[]
-    const first = await by.call("edit_deck", {
+    const first = await by.call("execute", {
       deck,
-      base: made.answer.rev,
-      changes: [{ op: "add", kind: "text", slide: slides[0], text: "Hello" }],
+      script: scriptOf([{ op: "add", kind: "text", slide: slides[0], text: "Hello" }]),
     })
     const runId = first.answer.runId as string
-    const hello = (first.answer.added as { id: string }[])[0]!.id
-    const second = await by.call("edit_deck", {
+    const hello = (first.answer.made as { ids: string[] }[])[0]!.ids[0]!
+    const second = await by.call("execute", {
       deck,
-      base: first.answer.rev,
-      changes: [{ op: "add", kind: "text", slide: slides[0], text: "Note" }],
+      script: scriptOf([{ op: "add", kind: "text", slide: slides[0], text: "Note" }]),
       runId,
     })
-    const note = (second.answer.added as { id: string }[])[0]!.id
+    const note = (second.answer.made as { ids: string[] }[])[0]!.ids[0]!
     const person = await by.decks.edit(deck as never, {
       once: "person",
       author: { kind: "person", id: "quan" },
@@ -220,15 +217,14 @@ describe("design details an agent sets", () => {
     const card = layer("Card")
     const photo = layer("Photo")
     const star = layer("Star")
-    const edited = await by.call("edit_deck", {
+    const edited = await by.call("execute", {
       deck,
-      base: made.answer.rev,
-      changes: [
+      script: scriptOf([
         { op: "set", target: words, lineHeight: 1.5, letterSpacing: 2.5, case: "upper" },
         { op: "set", target: card, opacity: 0.6, radius: 18, stroke: "accent2", strokeWidth: 6, effect: "glow" },
         { op: "set", target: photo, fit: "tile" },
         { op: "set", target: star, strokeWidth: 8 },
-      ],
+      ]),
     })
     expect(edited.answer).toMatchObject({ ok: true })
     const written = by.decks.decks.get(key)!
@@ -243,11 +239,10 @@ describe("design details an agent sets", () => {
     expect(doom.propOf(written.nodes.get(photo), "fills")).toEqual([{ kind: "image", asset, fit: "tile" }])
     expect(doom.propOf(written.nodes.get(star), "stroke")?.weight).toBe(8)
 
-    const strength = await by.call("edit_deck", {
+    const strength = await by.call("execute", {
       deck,
-      base: edited.answer.rev,
       runId: edited.answer.runId,
-      changes: [{ op: "set", target: card, effectOpacity: 0.4 }],
+      script: scriptOf([{ op: "set", target: card, effectOpacity: 0.4 }]),
     })
     expect(strength.answer).toMatchObject({ ok: true })
     expect(doom.propOf(by.decks.decks.get(key)?.nodes.get(card), "effects")).toEqual(
@@ -314,7 +309,7 @@ it.each(["data update", "person delete", "later run", "in-flight rename"])(
     const a = bar("a")
     const b = bar("b")
     const remove = (node: doom.NodeId) =>
-      by.call("edit_deck", { deck, base: fold().rev, changes: [{ op: "delete", nodes: [node] }] })
+      by.call("execute", { deck, script: scriptOf([{ op: "delete", nodes: [node] }]) })
     const deleted = await remove(a)
     expect(deleted.answer.ok).toBe(true)
     if (between === "data update") {
@@ -356,11 +351,10 @@ it.each(["data update", "person delete", "later run", "in-flight rename"])(
 )
 
 it("undoes consecutive runs that both renamed the same layer", async () => {
-  const { by, deck, runId, rev, title } = await renamed()
-  const newer = await by.call("edit_deck", {
+  const { by, deck, runId, title } = await renamed()
+  const newer = await by.call("execute", {
     deck,
-    base: rev,
-    changes: [{ op: "set", target: title, name: "Newer" }],
+    script: scriptOf([{ op: "set", target: title, name: "Newer" }]),
   })
   expect(newer.answer.ok).toBe(true)
   expect((await by.call("undo_run", { deck, runId: newer.answer.runId })).answer.ok).toBe(true)

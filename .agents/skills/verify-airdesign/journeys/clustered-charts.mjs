@@ -249,8 +249,8 @@ export default async function drive(kit) {
             id: 1,
             method: "tools/call",
             params: {
-              name: "airdesign_read_deck",
-              arguments: { deck: opened.deck, slide: opened.slide, picture: true },
+              name: "airdesign_execute",
+              arguments: { deck: opened.deck, script: `screenshot({ target: "${opened.slide}" })` },
             },
           }),
         }).then((response) => assert.ok(response.ok)),

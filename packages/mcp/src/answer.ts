@@ -21,22 +21,20 @@ export const refusalWords = {
     "A field is missing, unknown or the wrong form. Send only the fields the input schema lists, each in its described form.",
   deck: "This session can reach no deck with this id. airdesign_list_decks lists the decks you own.",
   owner: "This deck belongs to another account. Work only on decks this account owns.",
-  base: "base is a rev airdesign_read_deck answered, and this deck has not reached it. Read the deck, then send the edit with that rev.",
-  batch: "changes is missing or not a list of one to one hundred changes.",
   limit: "A value, the deck or a slide is over its limit: the words of a layer, the layers of the deck, or its slides.",
-  kind: "A change moves a layer into itself or into a layer that cannot hold it.",
-  dead: "A layer or slide you named is not in the deck, or an earlier change in this edit deleted it. For a move, that includes a frame above the frame you move the layer into. airdesign_read_deck lists the ids.",
-  stale: "The deck changed since your last read. Read the deck again and resend the change with the new rev as base.",
+  kind: "An operation moves a layer into itself or into a layer that cannot hold it.",
+  dead: "A layer or slide you named is not in the deck, or an earlier operation in this call removed it. For a move, that includes a frame above the frame you move the layer into. get() lists the ids.",
+  stale: "The deck changed while the call ran. Send the call again.",
   "person-protected":
-    "A person changed this layer during your run, so it is closed to you, and nothing landed. Leave it, or send the edit without runId to start a new run.",
+    "A person changed this layer during your run, so it is closed to you, and nothing landed. Leave it, or send the call without runId to start a new run.",
   "run-fenced":
-    "That run has stopped, never started, or is another agent's, and nothing landed. Send the edit without runId to start a new run.",
+    "That run has stopped, never started, or is another agent's, and nothing landed. Send the call without runId to start a new run.",
   "last-slide":
-    "A deck keeps at least one slide, so nothing landed. Leave one slide in the deck, or add the new slide in the same edit.",
+    "A deck keeps at least one slide, so nothing landed. Leave one slide in the deck, or add the new slide in the same call.",
   payload: "The deck is too large for this call, and nothing landed.",
   store: "The deck could not be read or saved, and nothing changed. Send the call again.",
   fonts:
-    "A frame you set to layout none holds words AirDesign could not measure, so its layers could not stay where they are painted, and nothing landed. If the answer names characters, set those layers in a font AirDesign serves that covers them; otherwise send the edit again.",
+    "A frame you set to layout none holds words AirDesign could not measure, so its layers could not stay where they are painted, and nothing landed. If the answer names characters, set those layers in a font AirDesign serves that covers them; otherwise send the call again.",
 } as const satisfies Partial<Record<EditRefusal, string>>
 
 export type Refused = keyof typeof refusalWords

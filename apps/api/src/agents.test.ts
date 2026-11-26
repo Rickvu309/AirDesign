@@ -1,3 +1,4 @@
+import { scriptOf } from "@airdesign/mcp/testing/evals"
 import { doomRoutes } from "@airdesign/catalog"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
@@ -46,31 +47,27 @@ for (const pairing of ["two agents", "Aira and an agent"] as const) {
       const owner = await account()
       const [first, second] = await pair(owner)
       const start = await made(first)
-      const a = await first.call("edit_deck", {
+      const a = await first.call("execute", {
         deck: start.deck,
-        base: start.rev,
-        changes: [text(start.slide, "one")],
+        script: scriptOf([text(start.slide, "one")]),
       })
-      const b = await second.call("edit_deck", {
+      const b = await second.call("execute", {
         deck: start.deck,
-        base: start.rev + 1,
-        changes: [text(start.slide, "two")],
+        script: scriptOf([text(start.slide, "two")]),
       })
       expect(a.ok && b.ok, `${a.said} ${b.said}`).toBe(true)
       expect(a.body.runId).not.toBe(b.body.runId)
       expect((await first.call("stop_run", { deck: start.deck, runId: a.body.runId })).ok).toBe(true)
-      const more = await second.call("edit_deck", {
+      const more = await second.call("execute", {
         deck: start.deck,
-        base: b.body.rev,
         runId: b.body.runId,
-        changes: [text(start.slide, "three")],
+        script: scriptOf([text(start.slide, "three")]),
       })
       expect(more.ok, more.said).toBe(true)
-      const fenced = await first.call("edit_deck", {
+      const fenced = await first.call("execute", {
         deck: start.deck,
-        base: more.body.rev,
         runId: a.body.runId,
-        changes: [text(start.slide, "late")],
+        script: scriptOf([text(start.slide, "late")]),
       })
       expect(fenced.body.refusal).toBe("run-fenced")
     })
@@ -79,43 +76,37 @@ for (const pairing of ["two agents", "Aira and an agent"] as const) {
       const owner = await account()
       const [first, second] = await pair(owner)
       const start = await made(first)
-      const a = await first.call("edit_deck", {
+      const a = await first.call("execute", {
         deck: start.deck,
-        base: start.rev,
-        changes: [text(start.slide, "one")],
+        script: scriptOf([text(start.slide, "one")]),
       })
-      const b = await second.call("edit_deck", {
+      const b = await second.call("execute", {
         deck: start.deck,
-        base: a.body.rev,
-        changes: [text(start.slide, "two")],
+        script: scriptOf([text(start.slide, "two")]),
       })
       expect(a.ok && b.ok, `${a.said} ${b.said}`).toBe(true)
-      const intruded = await second.call("edit_deck", {
+      const intruded = await second.call("execute", {
         deck: start.deck,
-        base: b.body.rev,
         runId: a.body.runId,
-        changes: [text(start.slide, "into a")],
+        script: scriptOf([text(start.slide, "into a")]),
       })
       expect(intruded.body.refusal).toBe("run-fenced")
       expect((await second.call("stop_run", { deck: start.deck, runId: a.body.runId })).body.refusal).toBe("run-fenced")
-      const again = await first.call("edit_deck", {
+      const again = await first.call("execute", {
         deck: start.deck,
-        base: b.body.rev,
-        changes: [text(start.slide, "a again")],
+        script: scriptOf([text(start.slide, "a again")]),
       })
       expect(again.ok, again.said).toBe(true)
-      const old = await first.call("edit_deck", {
+      const old = await first.call("execute", {
         deck: start.deck,
-        base: again.body.rev,
         runId: a.body.runId,
-        changes: [text(start.slide, "old run")],
+        script: scriptOf([text(start.slide, "old run")]),
       })
       expect(old.body.refusal).toBe("run-fenced")
-      const kept = await second.call("edit_deck", {
+      const kept = await second.call("execute", {
         deck: start.deck,
-        base: again.body.rev,
         runId: b.body.runId,
-        changes: [text(start.slide, "b still")],
+        script: scriptOf([text(start.slide, "b still")]),
       })
       expect(kept.ok, kept.said).toBe(true)
     })
@@ -124,17 +115,15 @@ for (const pairing of ["two agents", "Aira and an agent"] as const) {
       const owner = await account()
       const [first, second] = await pair(owner)
       const start = await made(first)
-      const a = await first.call("edit_deck", {
+      const a = await first.call("execute", {
         deck: start.deck,
-        base: start.rev,
-        changes: [text(start.slide, "one")],
+        script: scriptOf([text(start.slide, "one")]),
       })
-      const b = await second.call("edit_deck", {
+      const b = await second.call("execute", {
         deck: start.deck,
-        base: start.rev + 1,
-        changes: [text(start.slide, "two")],
+        script: scriptOf([text(start.slide, "two")]),
       })
-      const added = (a.body.added as { id: string }[])[0]!.id
+      const added = (a.body.made as { ids: string[] }[])[0]!.ids[0]!
       const typed = await ask(
         address.base,
         "POST",
@@ -154,11 +143,10 @@ for (const pairing of ["two agents", "Aira and an agent"] as const) {
         [first, a.body.runId],
         [second, b.body.runId],
       ] as const) {
-        const closed = await agent.call("edit_deck", {
+        const closed = await agent.call("execute", {
           deck: start.deck,
-          base: start.rev + 3,
           runId: run,
-          changes: [{ op: "set", target: added, name: "Agent" }],
+          script: scriptOf([{ op: "set", target: added, name: "Agent" }]),
         })
         expect(closed.body.refusal).toBe("person-protected")
       }
@@ -194,17 +182,16 @@ describe("an agent reading a deck another agent has a run open on", () => {
     const aira = await connected({ cookie: owner.cookie })
     const cursor = await connected({ authorization: `Bearer ${await grant(owner, "Cursor")}` })
     const start = await made(aira)
-    const a = await aira.call("edit_deck", { deck: start.deck, base: start.rev, changes: [text(start.slide, "one")] })
+    const a = await aira.call("execute", { deck: start.deck, script: scriptOf([text(start.slide, "one")]) })
     expect(a.ok, a.said).toBe(true)
-    const seen = await cursor.call("read_deck", { deck: start.deck })
+    const seen = await cursor.call("execute", { deck: start.deck, script: "get().slides" })
     expect(seen.body.otherRuns).toEqual([{ agent: "Aira", slide: start.slide, wrote: a.body.rev }])
-    const b = await cursor.call("edit_deck", {
+    const b = await cursor.call("execute", {
       deck: start.deck,
-      base: a.body.rev,
-      changes: [text(start.slide, "two")],
+      script: scriptOf([text(start.slide, "two")]),
     })
     expect(b.ok, b.said).toBe(true)
-    expect((await aira.call("read_deck", { deck: start.deck })).body.otherRuns).toEqual([
+    expect((await aira.call("execute", { deck: start.deck, script: "get().slides" })).body.otherRuns).toEqual([
       { agent: "Cursor", slide: start.slide, wrote: b.body.rev },
     ])
   })

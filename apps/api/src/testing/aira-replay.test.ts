@@ -36,11 +36,10 @@ describe("Replay", () => {
 
   it("writes each filled value where the fixture names it", async () => {
     const replay = new Replay()
-    replay.play({ name: "edit.sse", fill: { deck: "deckone", base: "7", node: "256.2" } })
+    replay.play({ name: "edit.sse", fill: { deck: "deckone", node: "256.2" } })
     expect(toolInput(await eventsOf(replay))).toEqual({
       deck: "deckone",
-      base: 7,
-      changes: [{ node: "256.2", readAt: 0, value: '[{"from":0,"runs":[{"from":0,"text":"Hello from Aira"}]}]' }],
+      script: 'update({"target": "256.2", "text": "Hello from Aira"})',
     })
   })
 })

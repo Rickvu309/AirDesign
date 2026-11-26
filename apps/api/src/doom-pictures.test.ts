@@ -70,8 +70,13 @@ describe("an open tab sends the picture of each slide of a Doom deck, and an age
   const send = (deck: string, rev: number, pictures: unknown, cookie: string) =>
     ask(base, "POST", "/doom/pictures", { deck, rev, pictures }, cookie)
 
-  const read = (client: Client, deck: string, more: Record<string, unknown> = {}) =>
-    client.callTool({ name: "airdesign_read_deck", arguments: { deck, picture: true, ...more } })
+  const read = (client: Client, deck: string, { slide }: { readonly slide: string | undefined }) =>
+    client.callTool({
+      name: "airdesign_execute",
+      arguments: { deck, script: `screenshot({ target: ${JSON.stringify(slide)} })` },
+    })
+
+  const followed = (deck: string, rev: number, cookie: string) => send(deck, rev, { keys: [], images: [] }, cookie)
 
   it("asks the tab for no picture until an agent reads, then names the slides the agent asked for and gives it the current one", async () => {
     const { cookie, client, made } = await opened()
@@ -110,6 +115,7 @@ describe("an open tab sends the picture of each slide of a Doom deck, and an age
       const [slide] = slides
       const key = keyOf(slide!)
       const keys = [{ slide, key }]
+      await followed(made.deck, rev, cookie)
       const pending = read(client, made.deck, { slide })
       await expect
         .poll(async () => (await send(made.deck, rev, { keys, images: [] }, cookie)).json)
@@ -117,9 +123,10 @@ describe("an open tab sends the picture of each slide of a Doom deck, and an age
       const failed = await send(made.deck, rev, { keys, images: [], fontFailures: keys }, cookie)
       const answer = await pending
       expect(failed.json).toMatchObject({ ok: true })
-      expect(answer.structuredContent).toMatchObject({ pictureFailures: [{ slide, reason: "fonts" }] })
+      expect((answer.structuredContent as { note: string }).note).toContain(`A font could not load for ${slide!}`)
       expect((answer.content as readonly Block[]).some((block) => block.type === "image")).toBe(false)
 
+      await followed(made.deck, rev, cookie)
       const retry = read(client, made.deck, { slide })
       await send(made.deck, rev, { keys, images: [{ slide, key, type: "image/jpeg", data: shot }] }, cookie)
       expect((await retry).structuredContent).toMatchObject({ pictures: [slide] })
@@ -146,6 +153,7 @@ describe("an open tab sends the picture of each slide of a Doom deck, and an age
     const { cookie, client, made } = await opened()
     try {
       const { rev, slides } = await keysOf(made.deck, cookie)
+      await followed(made.deck, rev, cookie)
       const reading = read(client, made.deck, { slide: slides[0] })
       await new Promise((resolve) => setTimeout(resolve, 40))
       const next = ask(base, "POST", "/doom/since", { deck: made.deck, rev, wait: true }, cookie)
@@ -173,7 +181,7 @@ describe("an open tab sends the picture of each slide of a Doom deck, and an age
       expect(Date.now() - started).toBeGreaterThanOrEqual(100)
       const blocks = answer.content as readonly Block[]
       expect(blocks.some((block) => block.type === "image")).toBe(false)
-      expect((answer.structuredContent as { note: string }).note).toContain(`No current picture of slide ${slide}`)
+      expect((answer.structuredContent as { note: string }).note).toContain(`No picture of ${slide!} yet`)
     } finally {
       await client.close()
     }
@@ -184,6 +192,7 @@ describe("an open tab sends the picture of each slide of a Doom deck, and an age
     try {
       const { rev, keyOf, slides } = await keysOf(made.deck, cookie)
       const [slide] = slides
+      await followed(made.deck, rev, cookie)
       const pending = read(client, made.deck, { slide })
       await new Promise((resolve) => setTimeout(resolve, 40))
       const keys = [{ slide, key: keyOf(slide!) }]
@@ -195,6 +204,20 @@ describe("an open tab sends the picture of each slide of a Doom deck, and an age
       )
       const blocks = (await pending).content as readonly Block[]
       expect(blocks.filter((block) => block.type === "image")).toHaveLength(1)
+    } finally {
+      await client.close()
+    }
+  })
+
+  it("answers at once that no tab is open when no tab follows the deck, and asks no tab for a picture", async () => {
+    const { cookie, client, made } = await opened()
+    try {
+      const { rev, slides } = await keysOf(made.deck, cookie)
+      const answer = await read(client, made.deck, { slide: slides[0] })
+      expect((answer.structuredContent as { note: string }).note).toContain("none is open")
+      expect((answer.content as readonly Block[]).some((block) => block.type === "image")).toBe(false)
+      const told = await ask(base, "POST", "/doom/since", { deck: made.deck, rev }, cookie)
+      expect(told.json).toEqual({ ok: true, deck: made.deck, rev, edits: [] })
     } finally {
       await client.close()
     }

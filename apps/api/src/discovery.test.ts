@@ -163,11 +163,7 @@ it("discovers authorization from only the MCP address and calls a tool with its 
       }),
     )
     const tools = await sdk.listTools()
-    expect(tools.tools.find((tool) => tool.name === "airdesign_edit_deck")?.annotations?.idempotentHint).toBe(false)
-    expect(tools.tools.find((tool) => tool.name === "airdesign_read_deck")?.annotations).toMatchObject({
-      readOnlyHint: true,
-      idempotentHint: true,
-    })
+    expect(tools.tools.find((tool) => tool.name === "airdesign_execute")?.annotations?.idempotentHint).toBe(false)
     expect(tools.tools.find((tool) => tool.name === "airdesign_list_decks")?.annotations).toMatchObject({
       readOnlyHint: true,
       idempotentHint: true,
@@ -181,22 +177,20 @@ it("discovers authorization from only the MCP address and calls a tool with its 
       decks: [{ deck: "discovery", name: "Blank deck", rev: 1 }],
       note: "Your decks.",
     })
-    const read = await sdk.callTool({ name: "airdesign_read_deck", arguments: { deck: "discovery" } })
+    const read = await sdk.callTool({ name: "airdesign_execute", arguments: { deck: "discovery", script: "get()" } })
     expect(read.isError).not.toBe(true)
-    const seen = read.structuredContent as { rev: number; slides: string[] }
-    expect(seen).toMatchObject({ ok: true, rev: 1, slides: ["s:3"] })
+    expect((read.structuredContent as { result: unknown }).result).toMatchObject({ rev: 1, slides: ["s:3"] })
     const called = await sdk.callTool({
-      name: "airdesign_edit_deck",
-      arguments: {
-        deck: "discovery",
-        base: seen.rev,
-        changes: [{ op: "set", target: "s:3.title", text: "Connected" }],
-      },
+      name: "airdesign_execute",
+      arguments: { deck: "discovery", script: 'update({ target: "s:3.title", text: "Connected" })' },
     })
     expect(called.isError).not.toBe(true)
     expect(called.structuredContent).toMatchObject({ ok: true, deck: "discovery", rev: 2 })
-    const again = await sdk.callTool({ name: "airdesign_read_deck", arguments: { deck: "discovery" } })
-    expect((again.structuredContent as { layers: string }).layers).toContain('text="Connected"')
+    const again = await sdk.callTool({
+      name: "airdesign_execute",
+      arguments: { deck: "discovery", script: "get().layers" },
+    })
+    expect((again.structuredContent as { result: string }).result).toContain('text="Connected"')
     const saved = await ask(base, "POST", "/doom/open", { deck: "discovery" }, cookie)
     expect(saved.json).toMatchObject({ rev: 2 })
   } finally {

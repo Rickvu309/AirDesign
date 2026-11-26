@@ -31,7 +31,7 @@ it("puts a note in place of a picture that would take the turn past its bytes, a
     { role: "user", content: "Look" },
     {
       role: "assistant",
-      content: [{ type: "tool_use", id: "call_1", name: "airdesign_read_deck", input: { deck: "airadeck" } }],
+      content: [{ type: "tool_use", id: "call_1", name: "airdesign_execute", input: { deck: "airadeck" } }],
     },
     { role: "user", content: [fitted] },
   ]

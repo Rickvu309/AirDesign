@@ -1,3 +1,4 @@
+import { scriptOf } from "../../packages/mcp/src/testing/change-script.ts"
 import { readFold, slidesOf, type AgentChange } from "../../packages/doom/src/index.ts"
 import { expect, type Page } from "@playwright/test"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
@@ -344,9 +345,8 @@ test("the filmstrip and canvas use Japanese for a Han-only title when another sl
   const opened = await openEditor(page, context, stack)
   const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
   const edit = async (changes: readonly AgentChange[]) => {
-    const read = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
     const tool = (
-      await stack.toolBlocks("airdesign_edit_deck", { deck: opened.deck, base: read.json.rev, changes }, opened.cookie)
+      await stack.toolBlocks("airdesign_execute", { deck: opened.deck, script: scriptOf(changes) }, opened.cookie)
     ).find(({ type }) => type === "text")
     expect(JSON.parse(tool?.text ?? "{}")).toMatchObject({ ok: true })
   }

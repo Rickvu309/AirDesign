@@ -246,7 +246,7 @@ describe("an agent places slides and slide groups", () => {
       refused: "shape",
       field: "group",
       fault: "needs",
-      needs: "a slide group id from read_deck, where a slide line ends with group=<id>",
+      needs: "a slide group id from get, where a slide line ends with group=<id>",
     })
     expect(refuse({ op: "slide", move: { slide: slides[1], group: groups[1], after: slides[0] } })).toMatchObject({
       refused: "shape",

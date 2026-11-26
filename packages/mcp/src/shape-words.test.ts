@@ -3,6 +3,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
 import { emptyLog, callTool, type Session } from "./index.js"
+import { readOf, scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
@@ -23,23 +24,21 @@ function agent() {
 describe("a shape's outline through the agent tools", () => {
   it("adds a star, reads it back as shape=star5, and refuses a connector as a shape", async () => {
     const call = agent()
-    const { deck, rev, slides } = (await call("create_deck", {})).answer as {
+    const { deck, slides } = (await call("create_deck", {})).answer as {
       deck: string
       rev: number
       slides: string[]
     }
     const box = { x: 200, y: 200, w: 300, h: 300 }
-    const landed = await call("edit_deck", {
+    const landed = await call("execute", {
       deck,
-      base: rev,
-      changes: [{ op: "add", kind: "shape", slide: slides[0], box, shape: "star5" }],
+      script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box, shape: "star5" }]),
     })
     expect(landed.ok).toBe(true)
-    expect(String((await call("read_deck", { deck })).answer.layers)).toContain(" shape=star5")
-    const refused = await call("edit_deck", {
+    expect(String((await readOf(call, deck)).answer.layers)).toContain(" shape=star5")
+    const refused = await call("execute", {
       deck,
-      base: rev + 1,
-      changes: [{ op: "add", kind: "shape", slide: slides[0], box, shape: "bentConnector3" }],
+      script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box, shape: "bentConnector3" }]),
     })
     expect(refused.ok).toBe(false)
     expect(refused.answer).toMatchObject({ field: "shape" })

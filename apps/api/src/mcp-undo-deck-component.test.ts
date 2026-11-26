@@ -1,3 +1,4 @@
+import { scriptOf } from "@airdesign/mcp/testing/evals"
 import { randomBytes } from "node:crypto"
 
 import { doomRoutes, mcpRoutes, readDeckId } from "@airdesign/catalog"
@@ -112,10 +113,9 @@ async function seeded(stack: Stack, roots: readonly doom.NodeId[]) {
     { node: group, prop: "box", value: box },
   ])
   for (const root of roots) await stack.sent(`place-${root}`, person, placing(await stack.fold(), root, 1))
-  const run = await stack.call("edit_deck", {
+  const run = await stack.call("execute", {
     deck: stack.deck,
-    base: (await stack.fold()).rev,
-    changes: [{ op: "set", target: startIds.slide, name: "First slide" }],
+    script: scriptOf([{ op: "set", target: startIds.slide, name: "First slide" }]),
   })
   const runId = String(run.runId)
   const agent: doom.Edit["author"] = { kind: "agent", id: (await stack.fold()).runs.get(runId)!.agent, run: runId }

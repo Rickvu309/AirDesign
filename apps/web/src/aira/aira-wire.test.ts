@@ -20,10 +20,10 @@ it("reads each line of the answer even when a chunk splits a line or a character
 })
 
 it("reads only the lines the server sends and skips the rest", () => {
-  expect(airaLine('{"type":"tool","id":"call_1","name":"airdesign_read_deck","input":{}}')).toEqual({
+  expect(airaLine('{"type":"tool","id":"call_1","name":"airdesign_execute","input":{}}')).toEqual({
     type: "tool",
     id: "call_1",
-    name: "airdesign_read_deck",
+    name: "airdesign_execute",
   })
   expect(airaLine('{"type":"end","ok":true,"stop":"end_turn","content":[],"usage":{"used":1}}')).toBeUndefined()
   expect(airaLine("not json")).toBeUndefined()

@@ -125,13 +125,20 @@ describe("a grid sets its values in the body face and keeps every word whole", (
     expect(splitCells(doom, lastChild(doom, on).id)).toEqual([])
   })
 
-  it("refuses a grid whose widest word fits no step", () => {
+  it("refuses a grid whose widest word fits no step, naming the cell, the word and the column's width", () => {
     const rows = [
       ["", "Pneumonoultramicroscopicsilicovolcanoconiosis", "B", "C", "D"],
       ["A", "1", "2", "3", "4"],
     ]
     expect(() => build(agentDeck(), add({ kind: "frame", rows }))).toThrow(
-      /shorter labels, fewer columns or fewer rows/,
+      /a shorter word than “Pneumonoultramicroscopicsilicovolcanoconiosis” in row 1, column 2, which needs \d+ px at caption size in a column of \d+ px; or fewer columns or a wider box/,
+    )
+  })
+
+  it("refuses a grid too tall for its box, naming the height it needs and the height it has", () => {
+    const rows = Array.from({ length: 30 }, (_, at) => [`Row ${String(at + 1)}`, String(at)])
+    expect(() => build(agentDeck(), add({ kind: "frame", rows, box: { x: 120, y: 200, w: 1200, h: 400 } }))).toThrow(
+      /fewer than 30 rows or a taller box: at caption size they need \d+ px and the box has 400 px/,
     )
   })
 })

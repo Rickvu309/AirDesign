@@ -25,10 +25,10 @@ function namesOf(nodes: readonly doom.NodeId[]): string {
 }
 
 const words = {
-  edit: "The edit landed. Each finding names what is off on a slide or off the deck's own choices, and the fix: fix it unless the person asked for it.",
+  edit: "Each problem names what is off on a slide or off the deck's own choices, and the fix: fix it unless the person asked for it.",
   read: "Each finding names what is off on the slides read, and the fix: fix it unless the person asked for it.",
   clear: "Layout clear: no overflow, overlap, off-slide or small text.",
-  more: (count: number, where: string) => `${String(count)} more findings are not listed: ${where}.`,
+  more: (count: number, where: string) => `${String(count)} more are not listed: ${where}.`,
   unread: (nodes: readonly doom.NodeId[]) => {
     const one = nodes.length === 1
     return `${namesOf(nodes)} ${one ? "has a character" : "have characters"} the deck's fonts lack, so ${one ? "its" : "their"} overflow and overlap are unknown. Check ${one ? "it" : "them"} by eye, or change the font or the ${one ? "character" : "characters"}.`
@@ -60,8 +60,8 @@ function shown(findings: Findings, lead: string, where: string): readonly string
   ]
 }
 
-export const findingsNote = (findings: Findings) => shown(findings, words.edit, "read the slides this edit touched")
-export const readFindingsNote = (laid: Findings) => shown(laid, words.read, "read one slide at a time")
+export const findingsNote = (findings: Findings) => shown(findings, words.edit, "get each slide this call touched")
+export const readFindingsNote = (laid: Findings) => shown(laid, words.read, "get one slide at a time")
 
 export function listed(
   findings: readonly Finding[],

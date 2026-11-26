@@ -2,7 +2,7 @@ import { readCreateDeck } from "@airdesign/catalog"
 
 import { hostRefused, refused, type ToolResult } from "./answer.js"
 import type { DeckHost } from "./deck-host.js"
-import { readAnswer } from "./read-tool.js"
+import { readAnswer } from "./deck-read.js"
 
 export async function createDeckTool(raw: unknown, once: string, host: DeckHost): Promise<ToolResult> {
   const parsed = readCreateDeck(raw)

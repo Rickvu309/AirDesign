@@ -2,8 +2,8 @@ import * as z from "zod/v4"
 
 import { advertisedSchema } from "./advertised-schema.js"
 import { readCreateDeck } from "./create-wire.js"
-import { readDeckEdit } from "./deck-edit-wire.js"
-import { readDeckQuery, readListDecks } from "./read-wire.js"
+import { readExecute } from "./execute-wire.js"
+import { readListDecks } from "./read-wire.js"
 import { sharedSchemas } from "./shared-schema.js"
 import { readRun, type WireReader } from "./wire.js"
 
@@ -54,7 +54,7 @@ export const catalog = {
     exposure: "agent",
     runsOn: "server",
     read: readCreateDeck,
-    description: "Create a deck this account owns. The answer has its deck id and its first airdesign_read_deck.",
+    description: "Create a deck this account owns. The answer has its deck id, its slides and its theme.",
   },
   index_deck: { kind: "action", exposure: "web", runsOn: "server" },
   start_run: { kind: "command", exposure: "web" },
@@ -65,7 +65,7 @@ export const catalog = {
     runsOn: "server",
     read: readRun,
     description:
-      "Call when your turn is finished, with the runId from airdesign_edit_deck, so a person's changes stop closing layers to you.",
+      "Call when your turn is finished, with the runId from airdesign_execute, so a person's changes stop closing layers to you.",
   },
   undo_run: {
     idempotent: true,
@@ -75,18 +75,18 @@ export const catalog = {
     runsOn: "server",
     read: readRun,
     description:
-      "Undo your own run. Send the runId from airdesign_edit_deck. The answer says what came back and what stayed, and why.",
+      "Undo your own run. Send the runId from airdesign_execute. The answer says what came back and what stayed, and why.",
   },
   watch_deck: { kind: "stream", exposure: "web" },
-  edit_deck: {
+  execute: {
     kind: "command",
     exposure: "agent",
     runsOn: "server",
     destructive: true,
     openWorld: true,
-    read: readDeckEdit,
+    read: readExecute,
     description:
-      "Change the deck, all of it landing or none. Send airdesign_read_deck's rev as base. The answer has the new rev, the layers and slides you added, each as {change, id, kind}, and a runId: send it with your next edits and to airdesign_stop_run when done.",
+      'Read and change a deck with one JavaScript script. Everything it changes lands as one edit and one undo step, or nothing lands. Read airdesign_read_skill {name: "execute"} before your first call. Each operation is a function that answers at once: insert returns the new id and get returns measured boxes and problems, so one script can add slides, fill them and place layers from measured sizes. The answer lists the new ids, the result and logs, and any problems to fix.',
   },
   list_decks: {
     kind: "query",
@@ -94,14 +94,6 @@ export const catalog = {
     runsOn: "server",
     read: readListDecks,
     description: "List owned decks with id, name and rev.",
-  },
-  read_deck: {
-    kind: "query",
-    exposure: "agent",
-    runsOn: "server",
-    read: readDeckQuery,
-    description:
-      "Read an owned deck, one line for each layer: its id, what it is, @x,y and size, then its look. A slide line ends with group=<id>. rev is the base to send to airdesign_edit_deck. Send slide or cursor to read the rest.",
   },
 } as const satisfies Readonly<Record<string, OpRow>>
 

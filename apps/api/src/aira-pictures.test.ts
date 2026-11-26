@@ -13,7 +13,12 @@ import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 
 const vietnam = { [countryHeader]: "VN" }
 const deck = "airadeck"
-const read = { type: "tool_use", id: "toolu_fixture_read", name: "airdesign_read_deck", input: { deck, picture: true } }
+const read = {
+  type: "tool_use",
+  id: "toolu_fixture_read",
+  name: "airdesign_execute",
+  input: { deck, script: 'screenshot({ target: "s:3" })' },
+}
 const data = "A".repeat(400_000)
 const pictured = {
   type: "tool_result",

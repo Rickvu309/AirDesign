@@ -1,3 +1,4 @@
+import { scriptOf } from "@airdesign/mcp/testing/evals"
 import { catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { callTool, emptyLog, type DeckHost, type Session } from "@airdesign/mcp"
@@ -91,10 +92,9 @@ async function agentBakes(
   }
   const { deck } = (await call("create_deck", {})).answer as { deck: string }
   const before = decks.decks.get(deck as never)!
-  const landed = await call("edit_deck", {
+  const landed = await call("execute", {
     deck,
-    base: before.rev,
-    changes,
+    script: scriptOf(changes),
   })
   return { answer: landed.answer, before, saved: decks.decks.get(deck as never)! }
 }

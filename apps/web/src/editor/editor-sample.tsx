@@ -28,7 +28,6 @@ const step = (op: AgentOp, at: number, state: "working" | "done"): AiraStep => (
   state,
 })
 
-const read = step("read_deck", 1, "done")
 const said: AiraStep = { kind: "text", text: "Seven slides from your notes, numbers first, then the three levers." }
 
 function chatOf(exchange: Omit<AiraExchange, "asked">, week = usage): AiraChat {
@@ -37,9 +36,8 @@ function chatOf(exchange: Omit<AiraExchange, "asked">, week = usage): AiraChat {
 
 const done = chatOf({
   steps: [
-    read,
     said,
-    step("edit_deck", 2, "done"),
+    step("execute", 2, "done"),
     { kind: "text", text: "Your deck is ready. Every number comes from your notes." },
   ],
   end: "done",
@@ -48,12 +46,12 @@ const done = chatOf({
 
 export const airaSamples = {
   working: {
-    chat: chatOf({ steps: [read, said, step("edit_deck", 2, "working")], end: "working", runs: ["sample-run"] }),
+    chat: chatOf({ steps: [said, step("execute", 2, "working")], end: "working", runs: ["sample-run"] }),
   },
   done: { chat: done },
-  failed: { chat: chatOf({ steps: [read, said, step("edit_deck", 2, "done")], end: "failed", runs: ["sample-run"] }) },
+  failed: { chat: chatOf({ steps: [said, step("execute", 2, "done")], end: "failed", runs: ["sample-run"] }) },
   limit: {
-    chat: chatOf({ steps: [read, said], end: "out-of-usage", runs: [] }, spent),
+    chat: chatOf({ steps: [said], end: "out-of-usage", runs: [] }, spent),
     usage: usageReader(spent),
   },
   long: {

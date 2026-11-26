@@ -3,6 +3,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
 import { callTool, emptyLog, type DeckHost, type Session, type ToolResult } from "./index.js"
+import { readOf, scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
@@ -52,13 +53,12 @@ describe("an image an agent names that is no address and no stored asset", () =>
   it("is refused, naming the change and why, and nothing lands", async () => {
     const by = agent()
     const made = await deckOf(by)
-    const sent = await by.call("edit_deck", {
+    const sent = await by.call("execute", {
       deck: made.deck,
-      base: made.rev,
-      changes: [addPicture(made.slides[0]!, "logo.png")],
+      script: scriptOf([addPicture(made.slides[0]!, "logo.png")]),
     })
     expect(sent.ok).toBe(false)
-    expect(sent.answer.note).toContain('Change 1: "logo.png" was not used because')
+    expect(sent.answer.note).toContain('Operation 1 (insert) at line 1: "logo.png" was not used because')
     expect(sent.answer.note).toContain("https address")
     const [{ rev }] = [await by.decks.open(made.deck as never)] as [{ rev: number }]
     expect(rev).toBe(made.rev)
@@ -69,13 +69,14 @@ describe("an image an agent names that is no address and no stored asset", () =>
       images: async (_deck, wanted) => new Map(wanted.map((each) => [each, { ok: false, refusal: "absent" } as const])),
     }))
     const made = await deckOf(by)
-    const sent = await by.call("edit_deck", {
+    const sent = await by.call("execute", {
       deck: made.deck,
-      base: made.rev,
-      changes: [addPicture(made.slides[0]!, stored)],
+      script: scriptOf([addPicture(made.slides[0]!, stored)]),
     })
     expect(sent.ok).toBe(false)
-    expect(sent.answer.note).toContain(`Change 1: "${stored}" was not used because this deck holds no picture`)
+    expect(sent.answer.note).toContain(
+      `Operation 1 (insert) at line 1: "${stored}" was not used because this deck holds`,
+    )
   })
 
   it("lands for a hash the deck holds", async () => {
@@ -84,10 +85,9 @@ describe("an image an agent names that is no address and no stored asset", () =>
         new Map(wanted.map((each) => [each, { ok: true, asset: each, width: 300, height: 200 } as const])),
     }))
     const made = await deckOf(by)
-    const sent = await by.call("edit_deck", {
+    const sent = await by.call("execute", {
       deck: made.deck,
-      base: made.rev,
-      changes: [addPicture(made.slides[0]!, stored)],
+      script: scriptOf([addPicture(made.slides[0]!, stored)]),
     })
     expect(sent.ok).toBe(true)
   })
@@ -99,28 +99,28 @@ describe("a picture an agent adds with no box", () => {
       images: async () => new Map([[logo, { ok: true, asset: stored, width: 4000, height: 1000 } as const]]),
     }))
     const made = await deckOf(by)
-    const sent = await by.call("edit_deck", {
+    const sent = await by.call("execute", {
       deck: made.deck,
-      base: made.rev,
-      changes: [addPicture(made.slides[0]!, logo)],
+      script: scriptOf([addPicture(made.slides[0]!, logo)]),
     })
     expect(sent.ok).toBe(true)
     const [{ fold }] = [await by.decks.open(made.deck as never)] as [{ fold: doom.Doom }]
-    const added = (sent.answer.added as { id: string }[])[0]!.id as doom.NodeId
+    const added = (sent.answer.made as { ids: string[] }[])[0]!.ids[0] as doom.NodeId
     const box = (fold.nodes.get(added) as { box: { w: number; h: number } }).box
     expect(box.w / box.h).toBeCloseTo(4, 1)
   })
 })
 
-describe("read_deck with picture", () => {
+describe("screenshot in execute", () => {
   const shot = "/9j/AAAA"
+  const shots = (slides: readonly string[]) => slides.map((slide) => `screenshot({ target: "${slide}" })`).join("\n")
 
   it("adds a picture of each slide that has a current one", async () => {
     const by = agent(() => ({
       pictures: async (_deck, _fold, slides) => new Map(slides.map((slide) => [slide, shot])),
     }))
     const made = await deckOf(by)
-    const read = await by.call("read_deck", { deck: made.deck, picture: true })
+    const read = await by.call("execute", { deck: made.deck, script: shots(made.slides) })
     expect(read.ok).toBe(true)
     const images = read.content.filter((block) => block.type === "image")
     expect(images).toHaveLength(2)
@@ -132,14 +132,14 @@ describe("read_deck with picture", () => {
       pictures: async (_deck, _fold, slides) => new Map(slides.slice(0, 1).map((slide) => [slide, shot])),
     }))
     const made = await deckOf(by)
-    const read = await by.call("read_deck", { deck: made.deck, picture: true })
+    const read = await by.call("execute", { deck: made.deck, script: shots(made.slides) })
     expect(read.content.filter((block) => block.type === "image")).toHaveLength(1)
     expect(read.answer.pictures).toEqual([made.slides[0]])
-    expect(read.answer.note).toContain(`No current picture of slide ${made.slides[1]}`)
+    expect(read.answer.note).toContain(`No picture of ${made.slides[1]!} yet`)
     expect(read.answer.note).toContain("open AirDesign tab")
   })
 
-  it("adds nothing when picture is not asked for", async () => {
+  it("asks for no picture when the script takes none", async () => {
     let asked = 0
     const by = agent(() => ({
       pictures: async () => {
@@ -148,9 +148,9 @@ describe("read_deck with picture", () => {
       },
     }))
     const made = await deckOf(by)
-    const read = await by.call("read_deck", { deck: made.deck })
+    const read = await readOf(by.call, made.deck)
+    expect(read.ok).toBe(true)
     expect(asked).toBe(0)
-    expect(read.content.every((block) => block.type === "text")).toBe(true)
   })
 
   it("asks only for the slide named", async () => {
@@ -162,7 +162,7 @@ describe("read_deck with picture", () => {
       },
     }))
     const made = await deckOf(by)
-    await by.call("read_deck", { deck: made.deck, slide: made.slides[1], picture: true })
+    await by.call("execute", { deck: made.deck, script: shots([made.slides[1]!]) })
     expect(wanted).toEqual([made.slides[1]])
   })
 })

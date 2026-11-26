@@ -1,3 +1,4 @@
+import { scriptOf } from "../../packages/mcp/src/testing/change-script.ts"
 import { expect, type Page } from "@playwright/test"
 import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { agentEditingMark } from "../../apps/web/src/copy/agent-runs-copy.ts"
@@ -35,10 +36,9 @@ test("the mark shows while an agent writes, leaves after thirty quiet seconds wi
   const mark = label.getByRole("button", { name: agentEditingMark(["Claude Code"], { here: true }) })
   const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
 
-  const first = await call("edit_deck", {
+  const first = await call("execute", {
     deck: opened.deck,
-    base: (await saved(stack, opened)).rev,
-    changes: [note(opened.slide, "Agent note", 820)],
+    script: scriptOf([note(opened.slide, "Agent note", 820)]),
   })
   expect(first.ok, JSON.stringify(first)).toBe(true)
   await expect(canvas.getByText("Agent note", { exact: true })).toBeVisible()
@@ -54,11 +54,10 @@ test("the mark shows while an agent writes, leaves after thirty quiet seconds wi
   await expect(label.locator("[data-agent-at-work]")).toHaveCount(0)
   expect((await saved(stack, opened)).runs.get(String(first.runId))?.phase).toBe("running")
 
-  const late = await call("edit_deck", {
+  const late = await call("execute", {
     deck: opened.deck,
-    base: (await saved(stack, opened)).rev,
     runId: first.runId,
-    changes: [note(opened.slide, "Late note", 700)],
+    script: scriptOf([note(opened.slide, "Late note", 700)]),
   })
   expect(late.ok, JSON.stringify(late)).toBe(true)
   await expect(canvas.getByText("Late note", { exact: true })).toBeVisible()
@@ -76,10 +75,9 @@ test("Undo in Aira's chat takes back only Aira's run, leaves another agent's wor
   const log = side.getByRole("log")
   const canvas = page.locator("[data-slide-box]")
   const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
-  const first = await call("edit_deck", {
+  const first = await call("execute", {
     deck: opened.deck,
-    base: (await saved(stack, opened)).rev,
-    changes: [note(opened.slide, "Agent note", 820)],
+    script: scriptOf([note(opened.slide, "Agent note", 820)]),
   })
   expect((await call("stop_run", { deck: opened.deck, runId: first.runId })).ok).toBe(true)
   await expect(canvas.getByText("Agent note", { exact: true })).toBeVisible()

@@ -61,7 +61,7 @@ describe("play relays one model turn", () => {
 
   it("streams a tool call once its input is whole and keeps it after the text in the turn's content", async () => {
     const { seen, played: result } = await played(streamEvents("tool.sse"))
-    const call = { id: "toolu_fixture_read", name: "airdesign_read_deck", input: { deck: "airadeck" } }
+    const call = { id: "toolu_fixture_read", name: "airdesign_execute", input: { deck: "airadeck", script: "get()" } }
     expect(seen).toEqual([
       { type: "text", text: "I will read the deck" },
       { type: "text", text: " first." },
@@ -80,14 +80,14 @@ describe("play relays one model turn", () => {
 
   it("keeps thinking with its signature and redacted thinking as the model sent them, in block order", async () => {
     const { seen, played: result } = await played(streamEvents("thinking.sse"))
-    const input = { deck: "airadeck", base: 1, changes: [{ node: "258.7", value: "Q3 results", readAt: 0 }] }
-    expect(seen).toEqual([{ type: "tool", id: "toolu_fixture_edit", name: "airdesign_edit_deck", input }])
+    const input = { deck: "airadeck", script: 'update({"target": "258.7", "text": "Q3 results"})' }
+    expect(seen).toEqual([{ type: "tool", id: "toolu_fixture_edit", name: "airdesign_execute", input }])
     expect(result).toMatchObject({
       kind: "settled",
       content: [
         { type: "thinking", thinking: "", signature: "EqQBCgIYAhIMfixturesignature" },
         { type: "redacted_thinking", data: "EmwKAhgBEgyfixtureredacted" },
-        { type: "tool_use", id: "toolu_fixture_edit", name: "airdesign_edit_deck", input },
+        { type: "tool_use", id: "toolu_fixture_edit", name: "airdesign_execute", input },
       ],
     })
   })

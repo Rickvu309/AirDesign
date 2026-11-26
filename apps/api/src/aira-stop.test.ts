@@ -1,3 +1,4 @@
+import { scriptOf } from "@airdesign/mcp/testing/evals"
 import { randomBytes } from "node:crypto"
 import { once } from "node:events"
 import { request } from "node:http"
@@ -379,11 +380,10 @@ describe("a stop that names the edit call it cut", () => {
       "POST",
       "/mcp",
       call(
-        "airdesign_edit_deck",
+        "airdesign_execute",
         {
           deck: created.deck,
-          base: created.rev,
-          changes: [{ op: "add", kind: "text", slide: created.slides[0], text: "Aira" }],
+          script: scriptOf([{ op: "add", kind: "text", slide: created.slides[0], text: "Aira" }]),
         },
         once,
       ),
@@ -394,7 +394,7 @@ describe("a stop that names the edit call it cut", () => {
     return { deck: created.deck, runId: /"runId":"([^"]+)"/.exec(answer.text)?.[1], slide: created.slides[0] }
   }
 
-  async function editCall(account: Account, deckName: string, base: number, slide: string, once: string) {
+  async function editCall(account: Account, deckName: string, slide: string, once: string) {
     return ask(
       main,
       "POST",
@@ -404,8 +404,8 @@ describe("a stop that names the edit call it cut", () => {
         id: 2,
         method: "tools/call",
         params: {
-          name: "airdesign_edit_deck",
-          arguments: { deck: deckName, base, changes: [{ op: "add", kind: "text", slide, text: "Late" }] },
+          name: "airdesign_execute",
+          arguments: { deck: deckName, script: scriptOf([{ op: "add", kind: "text", slide, text: "Late" }]) },
           _meta: { "app.airdesign/once": once },
         },
       },
@@ -432,7 +432,7 @@ describe("a stop that names the edit call it cut", () => {
     )
     expect(JSON.parse(stopped.text)).toEqual({ ok: true })
     const spent = await opened(account, name)
-    await editCall(account, name, spent.rev, slide!, "edit-2")
+    await editCall(account, name, slide!, "edit-2")
     const after = await opened(account, name)
     expect(Object.keys(after.fold.runs)).toEqual(Object.keys(before.fold.runs))
     expect(Object.keys(after.fold.nodes)).toEqual(Object.keys(before.fold.nodes))

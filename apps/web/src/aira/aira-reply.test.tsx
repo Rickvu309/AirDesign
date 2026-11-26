@@ -49,16 +49,14 @@ describe("a step Aira takes", () => {
 
   it("marks the summary of several finished steps and each step it opens to", () => {
     const steps: AiraStep[] = [
-      { kind: "tool", id: "t1", name: "airdesign_read_deck", state: "done" },
-      { kind: "tool", id: "t2", name: "airdesign_edit_deck", state: "done" },
+      { kind: "tool", id: "t1", name: "airdesign_execute", state: "done" },
+      { kind: "tool", id: "t2", name: "airdesign_execute", state: "done" },
     ]
     expect(marks(view(exchange(steps)))).toEqual(["check"])
   })
 
   it("moves nothing for a person who asked for reduced motion", () => {
-    const markup = view(
-      exchange([{ kind: "tool", id: "t1", name: "airdesign_edit_deck", state: "working" }], "working"),
-    )
+    const markup = view(exchange([{ kind: "tool", id: "t1", name: "airdesign_execute", state: "working" }], "working"))
     expect(markup).toMatch(/data-step-mark="progress"[^>]*class="[^"]*motion-safe:animate-spin/u)
     expect(markup).not.toMatch(/data-step-mark="progress"[^>]*class="[^"]*(?<!motion-safe:)animate-spin/u)
   })
@@ -67,8 +65,8 @@ describe("a step Aira takes", () => {
 describe("a step that is running", () => {
   it("shows the spinner as its one working signal and leaves its words still", () => {
     const steps: AiraStep[] = [
-      { kind: "tool", id: "t1", name: "airdesign_read_deck", state: "done" },
-      { kind: "tool", id: "t2", name: "airdesign_edit_deck", state: "working" },
+      { kind: "tool", id: "t1", name: "airdesign_execute", state: "done" },
+      { kind: "tool", id: "t2", name: "airdesign_execute", state: "working" },
     ]
     const markup = view(exchange(steps, "working"))
     expect(marks(markup)).toContain("progress")
@@ -135,7 +133,7 @@ describe("a request Aira's changes were undone from", () => {
     )
   }
 
-  const edited: AiraStep[] = [{ kind: "tool", id: "t1", name: "airdesign_edit_deck", state: "done" }]
+  const edited: AiraStep[] = [{ kind: "tool", id: "t1", name: "airdesign_execute", state: "done" }]
 
   it("says the changes are undone and offers Undo no more", () => {
     const markup = offered(exchange(edited, "undone", ["r1"]))
@@ -184,7 +182,7 @@ it("names the missing glyphs and layers and offers a font fix instead of a plain
     {
       kind: "tool",
       id: "t1",
-      name: "airdesign_edit_deck",
+      name: "airdesign_execute",
       state: "refused",
       refusal: "fonts",
       fontIssue: { kind: "coverage", characters: "収益", layers: ["t:2", "t:3"], layerNames: [] },
@@ -204,12 +202,12 @@ it("clears the font refusal after the same bake succeeds in the turn", () => {
       {
         kind: "tool",
         id: "t1",
-        name: "airdesign_edit_deck",
+        name: "airdesign_execute",
         state: "refused",
         refusal: "fonts",
         fontIssue: { kind: "coverage", characters: "収益", layers: ["t:2"], layerNames: [], target: "t:1" },
       },
-      { kind: "tool", id: "t2", name: "airdesign_edit_deck", state: "done", bakedLayouts: ["t:1"] },
+      { kind: "tool", id: "t2", name: "airdesign_execute", state: "done", bakedLayouts: ["t:1"] },
     ]),
     () => undefined,
   )
@@ -224,7 +222,7 @@ it("shows only the latest reason for a frame Aira tried twice", () => {
       {
         kind: "tool",
         id: "t1",
-        name: "airdesign_edit_deck",
+        name: "airdesign_execute",
         state: "refused",
         refusal: "fonts",
         fontIssue: { ...issue, kind: "coverage" },
@@ -232,7 +230,7 @@ it("shows only the latest reason for a frame Aira tried twice", () => {
       {
         kind: "tool",
         id: "t2",
-        name: "airdesign_edit_deck",
+        name: "airdesign_execute",
         state: "refused",
         refusal: "fonts",
         fontIssue: { ...issue, kind: "pending" },
@@ -243,14 +241,14 @@ it("shows only the latest reason for a frame Aira tried twice", () => {
   expect(markup).toContain("A font hasn’t loaded")
   expect(markup).toContain("Try again when the text updates.")
   expect(markup).not.toContain("Aira can switch fonts")
-  expect(markup).not.toContain("Couldn't edit slides")
+  expect(markup).not.toContain("Couldn't change slides")
 })
 
 it("asks Aira to retry every change in the refused batch with the fonts fixed", () => {
   const request = airaFontRequest(["t:2"], "t:1")
-  expect(request).toContain("Retry the whole refused edit_deck batch")
-  expect(request).toContain("Include every other change in the batch")
-  expect(request).toContain("None of that batch landed")
+  expect(request).toContain("Run the refused airdesign_execute script again")
+  expect(request).toContain("Keep every other operation in the script")
+  expect(request).toContain("None of that script landed")
 })
 
 it("names the text Aira cannot shape and offers the Design panel", () => {
@@ -259,7 +257,7 @@ it("names the text Aira cannot shape and offers the Design panel", () => {
       {
         kind: "tool",
         id: "t1",
-        name: "airdesign_edit_deck",
+        name: "airdesign_execute",
         state: "refused",
         refusal: "fonts",
         fontIssue: {

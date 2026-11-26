@@ -6,12 +6,12 @@ import { inlinedSchema } from "./shared-schema.js"
 
 const deck = "airadeck"
 const ask = { role: "user", content: "Retitle slide one." }
-const read = { type: "tool_use", id: "toolu_read", name: "airdesign_read_deck", input: { deck } }
+const read = { type: "tool_use", id: "toolu_read", name: "airdesign_execute", input: { deck, script: "get()" } }
 const edit = {
   type: "tool_use",
   id: "toolu_edit",
-  name: "airdesign_edit_deck",
-  input: { deck, base: 1, changes: [{ node: "258.7", value: "Q3 results", readAt: 0 }] },
+  name: "airdesign_execute",
+  input: { deck, script: 'update({ target: "s:3.title", text: "Q3 results" })' },
 }
 const stop = { type: "tool_use", id: "toolu_stop", name: "airdesign_stop_run", input: { deck, runId: "run" } }
 const thought = { type: "thinking", thinking: "", signature: "EqQBCgIYAhIMfixturesignature" }
@@ -52,9 +52,8 @@ describe("Aira's tools", () => {
     expect(JSON.stringify(airaTools)).not.toMatch(/"\$ref"|"\$defs"/)
     expect(airaTools.map((tool) => tool.name)).toEqual([
       "airdesign_create_deck",
-      "airdesign_edit_deck",
+      "airdesign_execute",
       "airdesign_list_decks",
-      "airdesign_read_deck",
       "airdesign_stop_run",
       "airdesign_undo_run",
     ])

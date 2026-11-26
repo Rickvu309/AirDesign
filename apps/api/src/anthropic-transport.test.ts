@@ -23,7 +23,12 @@ const call: ModelCall = {
         { type: "thinking", thinking: "", signature: "EqQBCgIYAhIMfixturesignature" },
         { type: "redacted_thinking", data: "EmwKAhgBEgyfixtureredacted" },
         { type: "text", text: "I will read the deck first." },
-        { type: "tool_use", id: "toolu_fixture_read", name: "airdesign_read_deck", input: { deck: "airadeck" } },
+        {
+          type: "tool_use",
+          id: "toolu_fixture_read",
+          name: "airdesign_execute",
+          input: { deck: "airadeck", script: "get()" },
+        },
       ],
     },
     {

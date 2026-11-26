@@ -4,9 +4,8 @@ import { type CallerLog } from "./admit.js"
 import { type ToolResult, refused } from "./answer.js"
 import { createDeckTool } from "./create-tool.js"
 import type { DeckHost } from "./deck-host.js"
-import { editDeckTool } from "./edit-tool.js"
+import { executeTool } from "./execute-tool.js"
 import { listDecksTool } from "./list-tool.js"
-import { readDeckTool } from "./read-tool.js"
 import { getStyleTool, readSkillTool } from "./skill-tools.js"
 import { stopRunTool } from "./stop-tool.js"
 import { undoRunTool } from "./undo-tool.js"
@@ -44,10 +43,8 @@ export async function callTool(
       return listDecksTool(raw, host)
     case "create_deck":
       return createDeckTool(raw, once, host)
-    case "read_deck":
-      return readDeckTool(raw, session.agent, host)
-    case "edit_deck":
-      return editDeckTool(raw, { id: session.agent, name: session.name }, once, host, pendingFonts)
+    case "execute":
+      return executeTool(raw, { id: session.agent, name: session.name }, once, host, pendingFonts)
     case "stop_run":
       return stopRunTool(raw, session.agent, once, host)
     case "undo_run":

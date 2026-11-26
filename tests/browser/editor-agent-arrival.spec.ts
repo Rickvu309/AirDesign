@@ -1,3 +1,4 @@
+import { scriptOf } from "../../packages/mcp/src/testing/change-script.ts"
 import { expect, type Page } from "@playwright/test"
 import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"
@@ -42,10 +43,9 @@ const thumbMarksSeen = (page: Page) =>
 
 async function agentNote(stack: Stack, opened: Opened, text: string, y: number) {
   const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
-  const written = await call("edit_deck", {
+  const written = await call("execute", {
     deck: opened.deck,
-    base: (await saved(stack, opened)).rev,
-    changes: [note(opened.slide, text, y)],
+    script: scriptOf([note(opened.slide, text, y)]),
   })
   expect(written.ok, JSON.stringify(written)).toBe(true)
   return { call, runId: written.runId }
@@ -98,11 +98,10 @@ test("a person's own edit during an open agent run, and any agent edit under red
   expect(await marksSeen(page)).toBe(0)
 
   await page.emulateMedia({ reducedMotion: "reduce" })
-  const late = await call("edit_deck", {
+  const late = await call("execute", {
     deck: opened.deck,
-    base: (await saved(stack, opened)).rev,
     runId,
-    changes: [note(opened.slide, "Quiet note", 300)],
+    script: scriptOf([note(opened.slide, "Quiet note", 300)]),
   })
   expect(late.ok, JSON.stringify(late)).toBe(true)
   const quiet = canvas.locator("[data-node]", { has: page.getByText("Quiet note", { exact: true }) }).last()
@@ -121,11 +120,10 @@ test("typing in an arriving layer, zooming, dragging it, or asking for less moti
   const layer = page.locator("[data-agent-arrival]")
   const { call, runId } = await agentNote(stack, opened, "Agent note", 600)
   const more = async (text: string, y: number) => {
-    const written = await call("edit_deck", {
+    const written = await call("execute", {
       deck: opened.deck,
-      base: (await saved(stack, opened)).rev,
       runId,
-      changes: [note(opened.slide, text, y)],
+      script: scriptOf([note(opened.slide, text, y)]),
     })
     expect(written.ok, JSON.stringify(written)).toBe(true)
     await expect(layer.locator("svg")).toHaveCount(1)
@@ -212,19 +210,17 @@ test("the canvas goes to a slide an agent makes and traces what the agent writes
   const canvas = page.locator("[data-slide-box]")
   const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
   const slideWith = async (text: string, runId?: unknown) => {
-    const made = await call("edit_deck", {
+    const made = await call("execute", {
       deck: opened.deck,
-      base: (await saved(stack, opened)).rev,
       ...(runId === undefined ? {} : { runId }),
-      changes: [{ op: "slide", add: {} }],
+      script: scriptOf([{ op: "slide", add: {} }]),
     })
     expect(made.ok, JSON.stringify(made)).toBe(true)
-    const slide = (made.added as readonly { id: string }[])[0]!.id
-    const wrote = await call("edit_deck", {
+    const slide = (made.made as readonly { ids: readonly string[] }[])[0]!.ids[0]!
+    const wrote = await call("execute", {
       deck: opened.deck,
-      base: (await saved(stack, opened)).rev,
       runId: made.runId,
-      changes: [note(slide, text, 400)],
+      script: scriptOf([note(slide, text, 400)]),
     })
     expect(wrote.ok, JSON.stringify(wrote)).toBe(true)
     return { slide, runId: made.runId }
@@ -285,10 +281,9 @@ test("a slide an agent makes draws its canvas surface and filmstrip thumbnail, t
   const thumbLayer = page.locator('[data-slide-entry="2"] [data-thumb-arrival]')
   const thumb = page.locator('[data-slide-entry="2"] [data-slide-thumb]')
   const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
-  const made = await call("edit_deck", {
+  const made = await call("execute", {
     deck: opened.deck,
-    base: (await saved(stack, opened)).rev,
-    changes: [{ op: "slide", add: {} }],
+    script: scriptOf([{ op: "slide", add: {} }]),
   })
   expect(made.ok, JSON.stringify(made)).toBe(true)
   await expect(layer.locator("svg")).toHaveCount(1)
@@ -308,11 +303,10 @@ test("a slide an agent makes draws its canvas surface and filmstrip thumbnail, t
   expect(await thumb.evaluate((element) => getComputedStyle(element).opacity)).toBe("1")
   expect(await thumb.evaluate((element) => element.style.opacity)).toBe("")
 
-  const another = await call("edit_deck", {
+  const another = await call("execute", {
     deck: opened.deck,
-    base: (await saved(stack, opened)).rev,
     runId: made.runId,
-    changes: [{ op: "slide", add: {} }],
+    script: scriptOf([{ op: "slide", add: {} }]),
   })
   expect(another.ok, JSON.stringify(another)).toBe(true)
   const thirdThumbLayer = page.locator('[data-slide-entry="3"] [data-thumb-arrival]')
@@ -353,10 +347,9 @@ test("a person's own new slide and an agent-made slide under reduced motion play
 
   await page.emulateMedia({ reducedMotion: "reduce" })
   const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
-  const made = await call("edit_deck", {
+  const made = await call("execute", {
     deck: opened.deck,
-    base: (await saved(stack, opened)).rev,
-    changes: [{ op: "slide", add: {} }],
+    script: scriptOf([{ op: "slide", add: {} }]),
   })
   expect(made.ok, JSON.stringify(made)).toBe(true)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
@@ -381,10 +374,9 @@ test("a press on the canvas shows an arriving slide's surface at once", async ({
       return play.call(this, frames, timing)
     }
   })
-  const made = await call("edit_deck", {
+  const made = await call("execute", {
     deck: opened.deck,
-    base: (await saved(stack, opened)).rev,
-    changes: [{ op: "slide", add: {} }],
+    script: scriptOf([{ op: "slide", add: {} }]),
   })
   expect(made.ok, JSON.stringify(made)).toBe(true)
   await expect.poll(() => surface.evaluate((element) => element.getAnimations().length)).toBe(1)

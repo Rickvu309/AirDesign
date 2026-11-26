@@ -10,7 +10,7 @@ The account menu (on Home, Trash and every Settings page) has `Agents`, which op
 - `agents-connect` with the dialog open, a grant that appears in `accountRoutes.agents` turns it into `<agent> is connected` with one button, `Done`. `Done` closes it and the list shows the agent.
 - `agents-list` `accountRoutes.agents` returns only the signed-in person's exchanged, unrevoked grants, newest first, with `id`, `name`, `agent` (`claude`, `claude-code`, `codex`, `gemini`, or `other`), `host`, and `connected`. Unexchanged approvals, revoked grants, and another person's grants never appear.
 - `agents-disconnect` clicking `Disconnect` opens `Disconnect <agent>?` (`Claude can no longer read or edit your decks. You can connect it again at any time.`). Confirming posts `accountRoutes.revokeAgent` with `{ id }`, removes the row, and refuses that grant's access token on `/mcp` (401 `invalid_token`) and refresh token on `/oauth/token` (400 `invalid_grant`) at once.
-- `agents-calls` a connected agent calls the same `/mcp` tools as Aira, with the same limits, and each agent's `airdesign_edit_deck` without a `runId` starts its own run. See `aira-turn.md`.
+- `agents-calls` a connected agent calls the same `/mcp` tools as Aira, with the same limits, and each agent's `airdesign_execute` without a `runId` starts its own run. See `aira-turn.md`.
 - `agents-session-only` both `accountRoutes.agents` and `accountRoutes.revokeAgent` accept only a browser session cookie; any `Authorization` header answers 401 `session` even alongside a valid cookie, and another account's or unknown grant id answers 403 `owner`.
 
 ## How to get to it (user POV)

@@ -6,14 +6,14 @@ import type { Node } from "./doom.js"
 import { childrenOf, deckOf, isLive, parentOf, rowsOf, slideRowAt, slidesOf } from "./doom-walk.js"
 import { slideGroups, slidePlacementWrites } from "./slide-placement.js"
 
-const groupNeeds = "a slide group id from read_deck, where a slide line ends with group=<id>"
+const groupNeeds = "a slide group id from get, where a slide line ends with group=<id>"
 const inGroupNeeds = "a slide id in that group, or null to put these first"
 
 function deckSlide(draft: Draft, id: NodeId, field: string): Node {
   const node = living(draft, id, field)
   return node.type === "slide" && slidesOf(draft.doom).some((slide) => slide.id === id)
     ? node
-    : stop("shape", id, field, "form", "A slide id from airdesign_read_deck.")
+    : stop("shape", id, field, "form", "A slide id from get.")
 }
 
 function requireGroup(draft: Draft, id: NodeId, field: string): NodeId {
@@ -27,7 +27,7 @@ function groupAnchor(draft: Draft, id: NodeId | null, field: string): NodeId | n
   requireGroup(draft, id, field)
   return slideGroups(draft.doom).some((group) => group.group === id)
     ? id
-    : stop("shape", id, field, "needs", "a slide group with at least one slide from airdesign_read_deck")
+    : stop("shape", id, field, "needs", "a slide group with at least one slide from get")
 }
 
 function addSlide(draft: Draft, { group, after }: SlideAdd): void {

@@ -11,13 +11,12 @@ const task: Task = {
   deck: evalDeck,
   want: {
     calls: 1,
-    steps: [{ name: "edit_deck", outcome: "ok" }],
+    steps: [{ name: "execute", outcome: "ok" }],
     touches: [named.title],
     landed: () => true,
   },
 }
-const base = Number(evalDeck().rev)
-const set = (target: string) => [edit([{ op: "set", target, text: "A" }], base)]
+const set = (target: string) => [edit([{ op: "set", target, text: "A" }])]
 
 describe("score", () => {
   it("passes an attempt that makes the calls the task wants and changes only what it names", async () => {
@@ -31,7 +30,7 @@ describe("score", () => {
   })
 
   it("fails an attempt whose answers are not the steps the task wants", async () => {
-    const result = await score(task, [edit([{ op: "set", target: "z:9", text: "A" }], base)])
+    const result = await score(task, [edit([{ op: "set", target: "z:9", text: "A" }])])
     expect(result).toMatchObject({ pass: false, reason: "tool", answers: [{ outcome: "dead" }] })
   })
 
@@ -51,8 +50,8 @@ describe("score", () => {
         throw new Error("no")
       },
     }
-    const result = await score(two, [{ name: "airdesign_edit_deck", raw: broken }, ...set(aim)])
-    expect(result.answers[0]).toEqual({ name: "airdesign_edit_deck", outcome: "thrown" })
+    const result = await score(two, [{ name: "airdesign_execute", raw: broken }, ...set(aim)])
+    expect(result.answers[0]).toEqual({ name: "airdesign_execute", outcome: "thrown" })
   })
 
   it("keeps every task's id once", () => {

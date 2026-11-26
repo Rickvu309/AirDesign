@@ -108,10 +108,14 @@ test("a picture is cropped on the canvas by its handles and by moving it in its 
 })
 
 async function cropRead(stack: Stack, opened: Opened) {
-  const blocks = await stack.toolBlocks("airdesign_read_deck", { deck: opened.deck }, opened.cookie)
+  const blocks = await stack.toolBlocks(
+    "airdesign_execute",
+    { deck: opened.deck, script: "get().layers" },
+    opened.cookie,
+  )
   const text = blocks.find((block) => block.type === "text")?.text ?? ""
-  const answer = JSON.parse(text) as { layers?: string }
-  return answer.layers?.match(/\/crop\([^)]*\)/)?.[0] ?? ""
+  const answer = JSON.parse(text) as { result?: string }
+  return answer.result?.match(/\/crop\([^)]*\)/)?.[0] ?? ""
 }
 
 test("an ordinary resize of a cropped picture keeps its aspect, as one undo, and the agent still reads that crop", async ({

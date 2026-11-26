@@ -24,15 +24,15 @@ describe("stepLine", () => {
   })
 
   it("writes a running step in the present tense and a finished one in the past", () => {
-    expect(stepLine("airdesign_edit_deck", "working")).toBe("Editing slides")
-    expect(stepLine("airdesign_edit_deck", "done")).toBe("Edited slides")
-    expect(stepLine("airdesign_read_deck", "working")).toBe("Reading the deck")
-    expect(stepLine("airdesign_read_deck", "done")).toBe("Read the deck")
+    expect(stepLine("airdesign_execute", "working")).toBe("Working on slides")
+    expect(stepLine("airdesign_execute", "done")).toBe("Worked on slides")
+    expect(stepLine("airdesign_execute", "working")).toBe("Working on slides")
+    expect(stepLine("airdesign_execute", "done")).toBe("Worked on slides")
   })
 
   it("says a refused step could not be done and a stopped step was stopped", () => {
-    expect(stepLine("airdesign_edit_deck", "refused")).toBe("Couldn't edit slides")
-    expect(stepLine("airdesign_edit_deck", "stopped")).toBe("Stopped editing slides")
+    expect(stepLine("airdesign_execute", "refused")).toBe("Couldn't change slides")
+    expect(stepLine("airdesign_execute", "stopped")).toBe("Stopped working on slides")
   })
 
   it("gives every tool Aira can call its own words in each state", () => {
@@ -62,16 +62,16 @@ describe("replyPieces", () => {
   it("keeps text where it streamed and turns each run of tool calls into one row", () => {
     const pieces = replyPieces([
       { kind: "text", text: "I will change the title." },
-      tool("airdesign_edit_deck", "done"),
+      tool("airdesign_execute", "done"),
       { kind: "text", text: "The title now reads Hello." },
     ])
     expect(pieces).toEqual([
       { kind: "text", text: "I will change the title." },
       {
         kind: "steps",
-        title: "Edited slides",
+        title: "Worked on slides",
         state: "done",
-        lines: [{ id: "airdesign_edit_deck", text: "Edited slides", state: "done" }],
+        lines: [{ id: "airdesign_execute", text: "Worked on slides", state: "done" }],
         reasons: [],
       },
       { kind: "text", text: "The title now reads Hello." },
@@ -80,62 +80,62 @@ describe("replyPieces", () => {
 
   it("lists three different steps in one sentence", () => {
     const [row] = replyPieces([
-      tool("airdesign_read_deck", "done"),
+      tool("airdesign_create_deck", "done"),
       tool("airdesign_list_decks", "done"),
-      tool("airdesign_edit_deck", "done"),
+      tool("airdesign_execute", "done"),
     ])
-    expect(row).toMatchObject({ title: "Read the deck, listed your decks, and edited slides" })
+    expect(row).toMatchObject({ title: "Created a deck, listed your decks, and worked on slides" })
   })
 
   it("sums up steps taken one after another in one line that expands to each step", () => {
-    const [row] = replyPieces([tool("airdesign_read_deck", "done"), tool("airdesign_edit_deck", "done")])
+    const [row] = replyPieces([tool("airdesign_list_decks", "done"), tool("airdesign_execute", "done")])
     expect(row).toEqual({
       kind: "steps",
-      title: "Read the deck and edited slides",
+      title: "Listed your decks and worked on slides",
       state: "done",
       lines: [
-        { id: "airdesign_read_deck", text: "Read the deck", state: "done" },
-        { id: "airdesign_edit_deck", text: "Edited slides", state: "done" },
+        { id: "airdesign_list_decks", text: "Listed your decks", state: "done" },
+        { id: "airdesign_execute", text: "Worked on slides", state: "done" },
       ],
       reasons: [],
     })
   })
 
   it("says a repeated step once in the summary and lists every call when expanded", () => {
-    const [row] = replyPieces([tool("airdesign_edit_deck", "done", "a"), tool("airdesign_edit_deck", "done", "b")])
-    expect(row).toMatchObject({ title: "Edited slides", lines: [{ id: "a" }, { id: "b" }] })
+    const [row] = replyPieces([tool("airdesign_execute", "done", "a"), tool("airdesign_execute", "done", "b")])
+    expect(row).toMatchObject({ title: "Worked on slides", lines: [{ id: "a" }, { id: "b" }] })
   })
 
   it("shows the running step on its own line after the finished ones", () => {
-    const pieces = replyPieces([tool("airdesign_read_deck", "done"), tool("airdesign_edit_deck", "working")])
+    const pieces = replyPieces([tool("airdesign_execute", "done"), tool("airdesign_execute", "working")])
     expect(pieces).toEqual([
       {
         kind: "steps",
-        title: "Read the deck",
+        title: "Worked on slides",
         state: "done",
-        lines: [{ id: "airdesign_read_deck", text: "Read the deck", state: "done" }],
+        lines: [{ id: "airdesign_execute", text: "Worked on slides", state: "done" }],
         reasons: [],
       },
       {
         kind: "steps",
-        title: "Editing slides",
+        title: "Working on slides",
         state: "working",
-        lines: [{ id: "airdesign_edit_deck", text: "Editing slides", state: "working" }],
+        lines: [{ id: "airdesign_execute", text: "Working on slides", state: "working" }],
         reasons: [],
       },
     ])
   })
 
   it("marks a row refused when any of its steps was refused, so the summary says so", () => {
-    const [row] = replyPieces([tool("airdesign_read_deck", "done"), tool("airdesign_edit_deck", "refused")])
-    expect(row).toMatchObject({ title: "Read the deck and couldn't edit slides", state: "refused" })
+    const [row] = replyPieces([tool("airdesign_list_decks", "done"), tool("airdesign_execute", "refused")])
+    expect(row).toMatchObject({ title: "Listed your decks and couldn't change slides", state: "refused" })
   })
 
   it("says under a refused step why it was refused, once per reason", () => {
     const refused = (id: string, refusal: string): AiraStep => ({
       kind: "tool",
       id,
-      name: "airdesign_edit_deck",
+      name: "airdesign_execute",
       state: "refused",
       refusal,
     })
@@ -145,7 +145,7 @@ describe("replyPieces", () => {
       refused("c", "stale"),
     ])
     expect(row).toMatchObject({
-      title: "Couldn't edit slides",
+      title: "Couldn't change slides",
       state: "refused",
       reasons: [airaRefusalWords["person-protected"], airaRefusalWords.stale],
     })
@@ -156,8 +156,8 @@ describe("replyPieces", () => {
 
   it("gives no reason for a refusal it has no words for, and none for a stopped step", () => {
     const [row] = replyPieces([
-      { kind: "tool", id: "a", name: "airdesign_edit_deck", state: "refused", refusal: "future" },
-      { kind: "tool", id: "b", name: "airdesign_edit_deck", state: "stopped" },
+      { kind: "tool", id: "a", name: "airdesign_execute", state: "refused", refusal: "future" },
+      { kind: "tool", id: "b", name: "airdesign_execute", state: "stopped" },
     ])
     expect(row).toMatchObject({ reasons: [] })
   })
@@ -178,12 +178,12 @@ describe("replyPieces", () => {
 
   it("leaves out the turn-ending call without splitting the row around it", () => {
     const pieces = replyPieces([
-      tool("airdesign_edit_deck", "done"),
+      tool("airdesign_execute", "done"),
       tool("airdesign_stop_run", "done"),
-      tool("airdesign_read_deck", "done"),
+      tool("airdesign_list_decks", "done"),
     ])
     expect(pieces).toHaveLength(1)
-    expect(pieces[0]).toMatchObject({ title: "Edited slides and read the deck" })
+    expect(pieces[0]).toMatchObject({ title: "Worked on slides and listed your decks" })
     expect(JSON.stringify(pieces)).not.toContain("stop")
   })
 

@@ -1,3 +1,4 @@
+import { scriptOf } from "@airdesign/mcp/testing/evals"
 import { randomBytes } from "node:crypto"
 
 import { deckRoutes } from "@airdesign/catalog"
@@ -56,9 +57,12 @@ describe("a trashed deck through mcp", () => {
         ok: true,
       })
       expect((await tool("list_decks", {})).decks).toEqual([{ deck: kept.deck, name: "Kept", rev: kept.rev }])
-      expect(await tool("read_deck", { deck: thrown.deck })).toMatchObject({ ok: false, refusal: "deck" })
+      expect(await tool("execute", { deck: thrown.deck, script: "get()" })).toMatchObject({
+        ok: false,
+        refusal: "deck",
+      })
       const changes = [{ op: "add", kind: "text", slide: thrown.slides[0], text: "in the trash" }]
-      expect(await tool("edit_deck", { deck: thrown.deck, base: thrown.rev, changes })).toMatchObject({
+      expect(await tool("execute", { deck: thrown.deck, script: scriptOf(changes) })).toMatchObject({
         ok: false,
         refusal: "deck",
       })

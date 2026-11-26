@@ -26,7 +26,8 @@ function started(): doom.Doom {
 }
 
 function sessionFor(): Session {
-  return { agent: "aira", mint: () => "minted", log: emptyLog(), now: 0 }
+  let minted = 0
+  return { agent: "aira", mint: () => `minted${String((minted += 1))}`, log: emptyLog(), now: 0 }
 }
 
 async function withClient(session: Session, host: Host, use: (client: Client) => Promise<void>): Promise<void> {
@@ -96,8 +97,8 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
       }
       expect(index.ok).toBe(true)
       expect(index.skills.length).toBeGreaterThan(0)
-      expect(index.skills.map((skill) => skill.name)).toContain("edit-deck")
-      expect(index.text).toContain("edit-deck")
+      expect(index.skills.map((skill) => skill.name)).toContain("execute")
+      expect(index.text).toContain("execute")
       expect(index.note).toContain("airdesign_read_skill")
 
       for (const entry of index.skills) {
@@ -111,10 +112,24 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
         expect(skill.text.trim().length).toBeGreaterThan(0)
       }
 
-      const editSkill = (await client.callTool({ name: "airdesign_read_skill", arguments: { name: "edit-deck" } }))
+      const executeSkill = (await client.callTool({ name: "airdesign_read_skill", arguments: { name: "execute" } }))
         .structuredContent as { text: string }
-      expect(editSkill.text).toContain("airdesign_edit_deck")
-      expect(editSkill.text).toContain("changes")
+      expect(executeSkill.text).toContain("airdesign_execute")
+      for (const verb of [
+        "insert",
+        "update",
+        "replace",
+        "copy",
+        "move",
+        "remove",
+        "group",
+        "ungroup",
+        "variables",
+        "get",
+        "screenshot",
+        "print",
+      ])
+        expect(executeSkill.text).toContain(`\`${verb}(`)
     })
   })
 

@@ -13,7 +13,7 @@ Read the titles alone, in order.
 
 ## Layout
 
-`airdesign_read_deck {deck, slide}` reports these as findings. Fix every one.
+`get({ target: slide })` in `airdesign_execute` reports these as problems. Fix every one.
 
 - Content cut off or running out of its box: `overflow`.
 - One layer covering another: `overlap`.
@@ -25,14 +25,14 @@ Read the boxes in the same answer for these:
 - Alignment: layers in a row share a top edge, layers in a column share a left edge, and every slide starts its content at x 120.
 - Clutter: more than about six separate blocks in the body area.
 
-Only a picture shows these. Read with `picture: true` when a tab is open:
+Only a picture shows these. Call `screenshot({ target: slide })` when a tab is open:
 
 - Hierarchy: the eye lands on the title, then on the one thing that proves it.
 - A label crossing a bar or a line, or words too close to an edge.
 
 ## Type
 
-Findings report these:
+Problems report these:
 
 - Text under the readable size: `small-text`.
 - A size or a font outside the theme: `off-scale`, `off-font`.
@@ -45,7 +45,7 @@ Check these in the words and styles yourself:
 
 ## Colour
 
-Findings report a colour outside the theme: `off-palette`.
+Problems report a colour outside the theme: `off-palette`.
 
 Check these yourself:
 

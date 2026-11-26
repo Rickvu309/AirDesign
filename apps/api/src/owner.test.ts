@@ -201,18 +201,17 @@ describe("only a deck's owner acts on it", () => {
     const revision = (await row(id))?.rev ?? 0
     return call(
       credential,
-      "airdesign_edit_deck",
+      "airdesign_execute",
       {
         deck: id,
-        base: revision,
-        changes: [{ op: "add", kind: "text", slide: "s:3", text: `v${String(revision + 1)}` }],
+        script: `insert({ parent: "s:3", kind: "text", text: "v${String(revision + 1)}" })`,
       },
       claim,
     )
   }
 
   function read(credential: Credential, id: string, claim: Claim = {}) {
-    return call(credential, "airdesign_read_deck", { deck: id }, claim)
+    return call(credential, "airdesign_execute", { deck: id, script: "get()" }, claim)
   }
 
   function editRefusalOf(called: Called): string | undefined {
@@ -342,7 +341,7 @@ describe("only a deck's owner acts on it", () => {
           jsonrpc: "2.0",
           id: 1,
           method: "tools/call",
-          params: { name: "airdesign_read_deck", arguments: { deck: id } },
+          params: { name: "airdesign_execute", arguments: { deck: id } },
         }),
       })
       expect(response.status).toBe(401)

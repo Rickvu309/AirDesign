@@ -47,7 +47,7 @@ export function readingOf(doom: Doom, base: number): Doom {
   return { ...doom, rev: at, revs }
 }
 
-type Bake = { readonly fold: Doom; readonly frame: NodeId }
+export type Bake = { readonly fold: Doom; readonly frame: NodeId }
 
 export function compileAgentEdit(doom: Doom, changes: readonly AgentChange[], by: EditBy): AgentEdit | AgentRefusal {
   const compiled = agentEditSteps(doom, changes, by, false).next()
@@ -55,20 +55,19 @@ export function compileAgentEdit(doom: Doom, changes: readonly AgentChange[], by
   return compiled.value
 }
 
-export function* agentEditSteps(
-  doom: Doom,
-  changes: readonly AgentChange[],
-  by: EditBy,
-  pauseForBake = true,
-): Generator<Bake, AgentEdit | AgentRefusal, Measure> {
-  if (changes.length === 0)
-    return {
-      refused: "shape",
-      change: "changes",
-      field: "changes",
-      fault: "missing",
-      form: "One to one hundred changes.",
-    }
+export type AgentStep = { readonly view: Doom; readonly added: readonly NodeId[] }
+
+export type AgentSession = {
+  readonly view: () => Doom
+  readonly step: (
+    change: AgentChange,
+    pauseForBake?: boolean,
+    measure?: Measure,
+  ) => Generator<Bake, AgentStep | AgentRefusal, Measure>
+  readonly finish: () => AgentEdit | AgentRefusal
+}
+
+export function agentEditSession(doom: Doom, by: EditBy): AgentSession {
   const reading: Reading = {
     read: by.read ?? doom,
     batchStart: doom.rev,
@@ -77,27 +76,34 @@ export function* agentEditSteps(
     ...(by.measure === undefined ? {} : { measure: by.measure }),
     ...(by.componentSample === undefined ? {} : { componentSample: by.componentSample }),
   }
+  const changes: AgentChange[] = []
   const writes: Write[] = []
   const ends: number[] = []
   let view = doom
   let emptied = 0
   let guarded = false
   const templates = new Map<NodeId, number>()
-  for (const [at, change] of changes.entries()) {
+  function* step(
+    change: AgentChange,
+    pauseForBake = true,
+    measure?: Measure,
+  ): Generator<Bake, AgentStep | AgentRefusal, Measure> {
+    const at = changes.length
+    const stepReading = measure === undefined ? reading : { ...reading, measure }
     let frame: NodeId | undefined
     const beforeBake: Reading = pauseForBake
       ? {
-          ...reading,
+          ...stepReading,
           bake: (target) => {
             frame = target
             return []
           },
         }
-      : reading
+      : stepReading
     let compiled = compileAgentChange(view, change, by.mint, beforeBake)
     if (frame !== undefined && !("refused" in compiled)) {
-      const measure = yield { fold: view, frame }
-      compiled = compileAgentChange(view, change, by.mint, { ...reading, measure })
+      const baked = yield { fold: view, frame }
+      compiled = compileAgentChange(view, change, by.mint, { ...stepReading, measure: baked })
     }
     if ("refused" in compiled) return { ...compiled, at }
     const template = change.op === "component" ? compiled.find(({ prop }) => prop === "spec")?.node : undefined
@@ -120,61 +126,99 @@ export function* agentEditSteps(
         rev: rev(view.rev + 1),
       },
       template !== undefined,
+      true,
     )
     if (isRefusal(next)) return { ...next, change: nameOf(change), at }
     if (countsOf(next).slides === 0 && countsOf(view).slides > 0) emptied = at
+    const before = view
     view = next
+    changes.push(change)
     writes.push(...compiled)
     ends.push(writes.length)
+    const added = compiled.flatMap((write) =>
+      write.prop === "type" && !before.nodes.has(write.node) ? [write.node] : [],
+    )
+    const filled = change.op === "add" && added.length === 0 ? compiled[0]?.node : undefined
+    return { view, added: filled === undefined ? [...new Set(added)] : [filled] }
   }
-  if (templates.size > 0) {
-    const recorder = by.componentSample === undefined ? undefined : recordingMeasure()
-    const rebuilt = rebuildStaleInstances(view, [...templates.keys()], recorder?.measure ?? reading.measure ?? estimate)
-    if (recorder !== undefined) by.componentSample?.(recorder.sample(view))
-    if ("refused" in rebuilt) {
-      const { component, ...refusal } = rebuilt
-      const at = templates.get(component) ?? 0
-      return { ...refusal, change: nameOf(changes[at] as AgentChange), at }
+  function finish(): AgentEdit | AgentRefusal {
+    if (changes.length === 0)
+      return {
+        refused: "shape",
+        change: "changes",
+        field: "changes",
+        fault: "missing",
+        form: "One to one hundred changes.",
+      }
+    const all = [...writes]
+    if (templates.size > 0) {
+      const recorder = by.componentSample === undefined ? undefined : recordingMeasure()
+      const rebuilt = rebuildStaleInstances(
+        view,
+        [...templates.keys()],
+        recorder?.measure ?? reading.measure ?? estimate,
+      )
+      if (recorder !== undefined) by.componentSample?.(recorder.sample(view))
+      if ("refused" in rebuilt) {
+        const { component, ...refusal } = rebuilt
+        const at = templates.get(component) ?? 0
+        return { ...refusal, change: nameOf(changes[at] as AgentChange), at }
+      }
+      guarded ||= rebuilt.writes.length > 0
+      all.push(...rebuilt.writes)
     }
-    guarded ||= rebuilt.writes.length > 0
-    writes.push(...rebuilt.writes)
+    const named = nameFromTitleWrites(doom, all, templates.size === 0 ? view : undefined)
+    all.push(...named)
+    const changing = changingWrites(doom, all)
+    const edit: Edit = {
+      once: by.once,
+      author: by.author,
+      writes: changing,
+      ...(guarded ? { readBase: (by.read ?? doom).rev } : {}),
+      ...(by.phase === undefined ? {} : { phase: by.phase }),
+    }
+    const landed = applyEdit(doom, { ...edit, rev: rev(doom.rev + 1) })
+    if (isRefusal(landed) && landed.refused === "last-slide")
+      return { ...landed, change: nameOf(changes[emptied] as AgentChange), at: emptied }
+    if (isRefusal(landed)) {
+      const refused = changing.find(
+        (write) => write.node === landed.node && (landed.prop === undefined || write.prop === landed.prop),
+      )
+      const index = refused === undefined ? -1 : all.indexOf(refused)
+      const at = Math.max(
+        0,
+        ends.findIndex((end) => end > index),
+      )
+      return { ...landed, change: nameOf(changes[at] as AgentChange), at }
+    }
+    const made = all.flatMap((write, index): AddedNode[] => {
+      const node = landed.nodes.get(write.node)
+      if (write.prop !== "type" || doom.nodes.has(write.node) || node === undefined) return []
+      return [{ id: write.node, change: ends.findIndex((end) => end > index), kind: kindOf(node) }]
+    })
+    const filled = changes.flatMap((change, at): AddedNode[] => {
+      const own = all.slice(ends[at - 1] ?? 0, ends[at])
+      const first = own[0]
+      const node = first === undefined ? undefined : landed.nodes.get(first.node)
+      if (change.op !== "add" || node === undefined || own.some((write) => write.prop === "type")) return []
+      return [{ id: node.id, change: at, kind: kindOf(node) }]
+    })
+    const added = [...made, ...filled].sort((one, two) => one.change - two.change)
+    return { edit, after: landed, added, findings: agentFindings(landed, all) }
   }
-  const named = nameFromTitleWrites(doom, writes)
-  writes.push(...named)
-  const changing = changingWrites(doom, writes)
-  const edit: Edit = {
-    once: by.once,
-    author: by.author,
-    writes: changing,
-    ...(guarded ? { readBase: (by.read ?? doom).rev } : {}),
-    ...(by.phase === undefined ? {} : { phase: by.phase }),
+  return { view: () => view, step, finish }
+}
+
+export function* agentEditSteps(
+  doom: Doom,
+  changes: readonly AgentChange[],
+  by: EditBy,
+  pauseForBake = true,
+): Generator<Bake, AgentEdit | AgentRefusal, Measure> {
+  const session = agentEditSession(doom, by)
+  for (const change of changes) {
+    const stepped = yield* session.step(change, pauseForBake)
+    if ("refused" in stepped) return stepped
   }
-  const landed = applyEdit(doom, { ...edit, rev: rev(doom.rev + 1) })
-  if (isRefusal(landed) && landed.refused === "last-slide")
-    return { ...landed, change: nameOf(changes[emptied] as AgentChange), at: emptied }
-  if (isRefusal(landed)) {
-    const refused = changing.find(
-      (write) => write.node === landed.node && (landed.prop === undefined || write.prop === landed.prop),
-    )
-    const index = refused === undefined ? -1 : writes.indexOf(refused)
-    const at = Math.max(
-      0,
-      ends.findIndex((end) => end > index),
-    )
-    return { ...landed, change: nameOf(changes[at] as AgentChange), at }
-  }
-  const made = writes.flatMap((write, index): AddedNode[] => {
-    const node = landed.nodes.get(write.node)
-    if (write.prop !== "type" || doom.nodes.has(write.node) || node === undefined) return []
-    return [{ id: write.node, change: ends.findIndex((end) => end > index), kind: kindOf(node) }]
-  })
-  const filled = changes.flatMap((change, at): AddedNode[] => {
-    const own = writes.slice(ends[at - 1] ?? 0, ends[at])
-    const first = own[0]
-    const node = first === undefined ? undefined : landed.nodes.get(first.node)
-    if (change.op !== "add" || node === undefined || own.some((write) => write.prop === "type")) return []
-    return [{ id: node.id, change: at, kind: kindOf(node) }]
-  })
-  const added = [...made, ...filled].sort((one, two) => one.change - two.change)
-  return { edit, after: landed, added, findings: agentFindings(landed, writes) }
+  return session.finish()
 }
