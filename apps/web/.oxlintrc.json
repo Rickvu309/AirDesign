@@ -137,7 +137,6 @@
           "src/decks/not-found.tsx": 1,
           "src/decks/screens/trash-list.tsx": 2,
           "src/decks/view-switch.tsx": 1,
-          "src/design/shape-grid.tsx": 1,
           "src/editor/deck-title-edit.tsx": 1,
           "src/editor/editor-chrome.tsx": 1,
           "src/editor/editor-menu.tsx": 1,
