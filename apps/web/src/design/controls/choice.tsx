@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { optionWord, shownWord } from "@/copy/option-copy"
 import type { ControlProps } from "@/design/panel"
-import { cn } from "@/lib/class-names"
 
 function ChoiceList({
   control,
