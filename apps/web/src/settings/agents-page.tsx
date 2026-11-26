@@ -2,6 +2,7 @@ import { accountRoutes } from "@airdesign/catalog"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { settingsAction } from "@/settings/settings-action"
 import { disconnectBodyOf, disconnectTitleOf, productCopy } from "@/copy/product-copy"
 import { DangerDialog } from "@/decks/danger-dialog"
 import { DeckGlyph } from "@/decks/deck-glyph"
@@ -15,9 +16,6 @@ import { connectAgentCopy } from "@/copy/connect-agent-copy"
 import { ConnectAgent } from "@/decks/connect-agent"
 import { agentLabel, type AgentListing, type ConnectedAgent } from "@/decks/connected-agent"
 import { AgentsEmpty } from "@/settings/agents-empty"
-
-const settingsAction =
-  "h-[var(--space-32)] border-0 bg-background px-3.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
 
 async function post(path: string, body: object) {
   const response = await fetch(path, {

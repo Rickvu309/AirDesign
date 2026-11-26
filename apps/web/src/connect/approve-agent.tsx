@@ -101,7 +101,7 @@ export function ApproveAgent({
           <Button
             type="button"
             variant="outline"
-            className={`h-10 flex-1 rounded-[var(--shape-card)] border-transparent bg-white px-0 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge),0_1px_2px_0_rgb(0_0_0/4%)] hover:bg-white motion-safe:enabled:active:scale-[0.97] ${trimmed}`}
+            className={`h-10 flex-1 rounded-[var(--shape-card)] border-transparent bg-white px-0 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge),0_1px_2px_0_rgb(0_0_0/4%)] motion-safe:enabled:active:scale-[0.97] ${trimmed}`}
             disabled={approving}
             onClick={onDeny}
           >

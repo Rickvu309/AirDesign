@@ -91,7 +91,7 @@ export function DangerDialog({
                 variant="outline"
                 disabled={busy}
                 onClick={onCancel}
-                className="h-9 border-0 bg-background px-4 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
+                className="h-9 border-0 bg-background px-4 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)]"
               >
                 {productCopy.cancel}
               </Button>
