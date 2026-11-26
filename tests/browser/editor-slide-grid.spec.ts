@@ -13,7 +13,7 @@ const entries = (page: Page) => page.locator("[data-slide-entry]")
 const entry = (page: Page, number: number) => page.locator(`[data-slide-entry="${String(number)}"]`)
 const gridView = (page: Page) => page.getByRole("button", { name: slideListCopy.gridView })
 
-test("Grid view shows every slide and the island, inserts stay in Grid, and Enter or a double click opens a slide", async ({
+test("Grid view shows every slide and the island, inserts stay in Grid, Enter edits the focused slide, and a double click opens one", async ({
   page,
   context,
   stack,
@@ -83,10 +83,10 @@ test("Grid view shows every slide and the island, inserts stay in Grid, and Ente
 
   await entry(page, 3).focus()
   await page.keyboard.press("Enter")
-  await expect(page.locator("[data-editor-grid]")).toHaveCount(0)
-  await expect(page.locator("[data-slide-label]")).toHaveText("3")
-  await expect(entry(page, 3)).toHaveAttribute("aria-current", "true")
-  await gridView(page).click()
+  await expect(page.locator("[data-editor-grid]")).toBeVisible()
+  await expect(page.locator("[data-grid-edit]")).toBeFocused()
+  await expect(page.locator("[data-editor-grid] [data-announcer]")).toHaveText(slideListCopy.entered(3))
+  await expect(page.locator("[data-editor-canvas]")).toHaveCount(0)
   await entry(page, 4).dblclick()
   await expect(gridView(page)).toHaveAttribute("aria-pressed", "false")
   await expect(page.locator("[data-editor-grid]")).toHaveCount(0)

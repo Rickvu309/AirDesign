@@ -16,6 +16,7 @@ export const slideListCopy = {
   selectedName: (number: number, count: number) => `Slide ${String(number)} of ${String(count)}, selected`,
   selected: (count: number) => `${slidesOf(count)} selected`,
   nothingSelected: "Nothing selected",
+  entered: (number: number) => `Editing slide ${String(number)}. Tab moves through its layers`,
   newSlide: "New slide",
   addSlide: "Add slide",
   lastSlide: "A deck keeps at least one slide.",
