@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react"
 import { OAuthAuthorize } from "./connect/oauth-authorize"
 import { isOAuthConsentPath } from "./connect/oauth-consent-path"
+import { AiraPage } from "./decks/aira-page"
 import { Home, homeSection } from "./decks/home"
 import { NotFoundPage } from "./decks/not-found-page"
 import { AccountPage } from "./settings/account-page"
@@ -30,6 +31,7 @@ function AppRoutes() {
   }
   if (path === "/" || path === "/all" || path === "/trash")
     return <Home section={homeSection(path)} navigate={navigate} />
+  if (path === "/aira") return <AiraPage navigate={navigate} />
   if (path === settingsPaths.account) return <AccountPage navigate={navigate} />
   if (path === settingsPaths.agents) return <AgentsPage navigate={navigate} />
   if (path === settingsPaths.usage) return <UsagePage navigate={navigate} />

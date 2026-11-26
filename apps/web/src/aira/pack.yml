@@ -7,7 +7,6 @@ dependencies:
 public:
   - aira-loop.ts
   - aira-panel.tsx
-  - aira-tile.tsx
   - aira-undo.ts
   - aira-usage.ts
   - usage-load.ts

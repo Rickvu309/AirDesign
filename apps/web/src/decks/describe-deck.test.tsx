@@ -2,6 +2,7 @@ import { act } from "react"
 import type { Root } from "react-dom/client"
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
 import { productCopy } from "@/copy/product-copy"
+import { storyIdeas } from "@/copy/story-ideas-copy"
 
 let createRoot: typeof import("react-dom/client").createRoot
 let DescribeDeck: typeof import("./describe-deck").DescribeDeck
@@ -69,7 +70,7 @@ const press = (field: HTMLTextAreaElement, init: { shiftKey?: boolean } = {}) =>
 
 it("shows an example in the placeholder and offers words that were already written", async () => {
   const field = await show("A board update on Q3 revenue")
-  expect(field.placeholder).toBe("A Q3 board update, numbers first")
+  expect(field.placeholder).toBe(productCopy.describeDeckExample)
   expect(field.getAttribute("aria-label")).toBe(productCopy.describeDeck)
   expect(field.value).toBe("A board update on Q3 revenue")
 })
@@ -96,4 +97,30 @@ it("keeps Make deck off until there are words", async () => {
   expect(send()?.hasAttribute("disabled")).toBe(true)
   await type(field, "A deck")
   expect(send()?.hasAttribute("disabled")).toBe(false)
+})
+
+const shown = () =>
+  [...host.querySelectorAll<HTMLButtonElement>("[data-story-idea]")].map((idea) => idea.textContent?.trim())
+
+it("puts an idea's words in the box and waits for Enter before it describes the deck", async () => {
+  const field = await show()
+  const idea = host.querySelector<HTMLButtonElement>("[data-story-idea]")
+  await act(async () => idea?.click())
+  expect(field.value).toBe(storyIdeas[0].words)
+  expect(described).toEqual([])
+  await press(field)
+  expect(described).toEqual([storyIdeas[0].words])
+})
+
+it("shows three ideas, and More ideas swaps in three others until the list starts again", async () => {
+  await show()
+  const first = shown()
+  expect(first).toEqual(storyIdeas.slice(0, 3).map((idea) => idea.words))
+  const more = [...host.querySelectorAll("button")].find(
+    (button) => button.textContent?.trim() === productCopy.moreIdeas,
+  )
+  await act(async () => more?.click())
+  expect(shown()).toEqual(storyIdeas.slice(3, 6).map((idea) => idea.words))
+  for (let turn = 3; turn < storyIdeas.length; turn += 3) await act(async () => more?.click())
+  expect(shown()).toEqual(first)
 })

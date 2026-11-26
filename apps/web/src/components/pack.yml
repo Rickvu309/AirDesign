@@ -9,6 +9,7 @@ public:
   - ai-elements/message.tsx
   - ai-elements/prompt-input.tsx
   - ui/action-pill.tsx
+  - ui/aira-tile.tsx
   - ui/airdesign-mark.tsx
   - ui/announcer.tsx
   - ui/button.tsx
