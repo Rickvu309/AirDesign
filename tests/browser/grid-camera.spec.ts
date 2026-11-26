@@ -225,8 +225,10 @@ test("a slide that scrolls into view during a pan is painted before the camera s
     if (room === undefined) return null
     const margin = 200
     let best: { index: number; x: number; y: number } | null = null
-    document.querySelectorAll("[data-grid-card]").forEach((card, index) => {
-      if (card.querySelector("[data-slide-paint]") !== null) return
+    const cards = [...document.querySelectorAll("[data-grid-card]")]
+    for (let index = 0; index < cards.length; index += 1) {
+      const card = cards[index]
+      if (card === undefined || card.querySelector("[data-slide-paint]") !== null) continue
       const box = card.getBoundingClientRect()
       const below = box.top - room.bottom
       const above = room.top - box.bottom
@@ -239,10 +241,10 @@ test("a slide that scrolls into view during a pan is painted before the camera s
         left > margin ? { x: -Math.ceil(left - margin + 40), y: 0 } : null,
       ].flatMap((step) => (step === null ? [] : [step]))
       const step = steps.sort((a, b) => Math.abs(a.x) + Math.abs(a.y) - (Math.abs(b.x) + Math.abs(b.y)))[0]
-      if (step === undefined) return
+      if (step === undefined) continue
       const travel = Math.abs(step.x) + Math.abs(step.y)
       if (best === null || travel < Math.abs(best.x) + Math.abs(best.y)) best = { index, ...step }
-    })
+    }
     return best
   })
   expect(target).not.toBeNull()
