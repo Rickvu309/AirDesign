@@ -64,6 +64,7 @@ export function NumberField({
   const held = numberShown(control, scale)
   const shown = held.text
   const field = useRef<HTMLInputElement>(null)
+  const row = useRef<HTMLLabelElement>(null)
   const scrub = useRef<Scrub | null>(null)
 
   function readNumber(value: number) {
@@ -125,7 +126,7 @@ export function NumberField({
       <DropdownMenuTrigger aria-label={textCopy.sizes} className={listTrigger} data-focus-ring>
         <EditorIcon name="chev" size={12} className="size-3" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="max-h-80 overflow-y-auto">
+      <DropdownMenuContent anchor={row} align="start" className="max-h-80 min-w-0 overflow-y-auto">
         {fontSizes.map((sizeValue) => (
           <DropdownMenuItem key={sizeValue} onClick={() => commit(String(sizeValue))}>
             {sizeValue}
@@ -134,8 +135,9 @@ export function NumberField({
       </DropdownMenuContent>
     </DropdownMenu>
   ) : null
-  const row = (
+  const shownRow = (
     <label
+      ref={row}
       className={cn(
         "flex h-[var(--control-dense)] w-full min-w-0 items-center gap-0 rounded-[var(--shape-control)] bg-[var(--panel-track)] pl-2",
         list === null ? "pr-2" : "pr-0",
@@ -209,10 +211,10 @@ export function NumberField({
       >
         {size ? textCopy.size : control.label}
       </span>
-      {row}
+      {shownRow}
     </div>
   ) : (
-    row
+    shownRow
   )
 }
 
