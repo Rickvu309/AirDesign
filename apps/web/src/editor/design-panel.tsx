@@ -220,9 +220,9 @@ export function DesignPanel(props: Props) {
           <div className="border-b border-line px-4 pb-3">
             <Button
               type="button"
-              variant="outline"
+              variant="panel-outline"
               size="sm"
-              className="w-full font-normal"
+              className="w-full"
               data-linked-detach
               onClick={() => {
                 const read = client.view()

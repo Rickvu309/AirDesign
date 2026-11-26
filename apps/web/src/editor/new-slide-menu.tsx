@@ -68,7 +68,7 @@ function Label(): ReactNode {
   return (
     <>
       New slide
-      <EditorIcon name="chev" size={13} className="text-quiet" />
+      <EditorIcon name="chev" size={13} tone="quiet" />
     </>
   )
 }

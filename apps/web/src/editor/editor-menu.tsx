@@ -17,11 +17,7 @@ export function EditorMenuContent({
   "side" | "align" | "sideOffset" | "alignOffset" | "anchor" | "finalFocus"
 >) {
   return (
-    <DropdownMenuContent
-      variant="editor"
-      className={cn("flex w-47 min-w-0 flex-col overscroll-contain", className)}
-      {...place}
-    >
+    <DropdownMenuContent variant="editor" className={cn("flex w-47 min-w-0 flex-col", className)} {...place}>
       {children}
     </DropdownMenuContent>
   )
@@ -48,7 +44,6 @@ export function EditorMenuRow({
       closeOnClick
       {...(keys === undefined ? {} : { "aria-keyshortcuts": keys })}
       variant="editor"
-      className="[&>[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
     >
       <span className="flex size-4 items-center justify-center">
         {checked ? <EditorIcon name="check" size={14} className="size-3.5" /> : null}

@@ -82,7 +82,7 @@ export function DeckTitleEdit({
             aria-label={deckActionsOf(title)}
             className="flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-black/4"
           >
-            <EditorIcon name="chev" size={14} className="text-faint" />
+            <EditorIcon name="chev" size={14} tone="faint" />
           </DropdownMenuTrigger>
           <EditorMenuContent
             side="bottom"
