@@ -150,6 +150,7 @@ export { type MediaType, mediaSize, mediaTypeOf, mediaTypes, overPixelLimit } fr
 export { type FontFace, type FontWidths, type Glyph, fontFace } from "./line-breaks.js"
 export { familyOf, paintedFace, storedFace } from "./painted-face.js"
 export { type OrderKey, orderKeyBetween } from "./order-key.js"
+export { type Keyed, type SiblingKeys, siblingKeys } from "./sibling-keys.js"
 export { type Clipboard, type Copies, copiedMove, duplicateWrites, pasteWrites } from "./copy-writes.js"
 export { moveToSlide } from "./move-to-slide.js"
 export {

@@ -1,4 +1,3 @@
-import { orderKeyBetween, type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import { gridAnchor, gridMovePlacement, sameGroups, type GridMoveSide } from "./grid-move"
 
@@ -10,8 +9,24 @@ function deckId(view: doom.Doom): doom.NodeId | null {
   return [...view.nodes.values()].find((node) => node.type === "deck")?.id ?? null
 }
 
-function keyOf(view: doom.Doom, id: doom.NodeId | undefined): OrderKey | null {
-  return id === undefined ? null : (doom.parentOf(view.nodes.get(id))?.at ?? null)
+function keyed(nodes: readonly (doom.Node | undefined)[]): readonly doom.Keyed[] {
+  return nodes.flatMap((node) => {
+    const place = doom.parentOf(node)
+    return node === undefined || place == null ? [] : [{ id: node.id, at: place.at }]
+  })
+}
+
+function placeWrites(
+  parent: doom.NodeId,
+  siblings: readonly doom.Keyed[],
+  index: number,
+  placed: readonly doom.NodeId[],
+): readonly doom.Write[] {
+  const { keys, shifted } = doom.siblingKeys(siblings, index, placed.length)
+  return [
+    ...placed.map((node, offset) => ({ node, prop: "parent" as const, value: { id: parent, at: keys[offset]! } })),
+    ...shifted.map((each) => ({ node: each.id, prop: "parent" as const, value: { id: parent, at: each.at } })),
+  ]
 }
 
 export type SlideGroup = { readonly group: doom.NodeId; readonly slides: readonly doom.NodeId[] }
@@ -30,18 +45,14 @@ export function slideGroupsOf(view: doom.Doom): readonly SlideGroup[] {
 
 function groupBelow(view: doom.Doom, above: doom.NodeId, mint: Mint): { group: doom.NodeId; writes: doom.Write[] } {
   const groups = slideGroupsOf(view)
-  const at = groups.findIndex((each) => each.group === above)
-  const place = doom.parentOf(view.nodes.get(above))
-  const next = doom.parentOf(view.nodes.get(groups[at + 1]?.group ?? above))
+  const deck = doom.parentOf(view.nodes.get(above))
   const group = mint()
-  if (place == null) return { group, writes: [] }
-  const key = orderKeyBetween(place.at, next !== undefined && next !== null && next.at > place.at ? next.at : null)
+  if (deck == null) return { group, writes: [] }
+  const rows = keyed(groups.map((each) => view.nodes.get(each.group)))
+  const at = groups.findIndex((each) => each.group === above) + 1
   return {
     group,
-    writes: [
-      { node: group, prop: "type", value: "slideRow" },
-      { node: group, prop: "parent", value: { id: place.id, at: key } },
-    ],
+    writes: [{ node: group, prop: "type", value: "slideRow" }, ...placeWrites(deck.id, rows, at, [group])],
   }
 }
 
@@ -72,18 +83,17 @@ export function addSlideWrites(
       const rowAt = doom.parentOf(deckRows.at(-1))?.at ?? null
       writes.push(
         { node: row, prop: "type", value: "slideRow" },
-        { node: row, prop: "parent", value: { id: deck as doom.NodeId, at: orderKeyBetween(rowAt, null) } },
+        { node: row, prop: "parent", value: { id: deck as doom.NodeId, at: doom.orderKeyBetween(rowAt, null) } },
       )
     }
   }
-  const order = doom.childrenOf(view, row)
+  const order = keyed(doom.childrenOf(view, row))
   const index = previous === undefined || side === "new" ? -1 : order.findIndex((each) => each.id === previous)
-  const at = orderKeyBetween(doom.parentOf(order[index])?.at ?? null, doom.parentOf(order[index + 1])?.at ?? null)
-  writes.push(
-    { node: slide, prop: "type", value: "slide" },
-    { node: slide, prop: "parent", value: { id: row, at } },
-    { node: slide, prop: "name", value: `Slide ${String(slides.length + 1)}` },
-  )
+  writes.push({ node: slide, prop: "type", value: "slide" }, ...placeWrites(row, order, index + 1, [slide]), {
+    node: slide,
+    prop: "name",
+    value: `Slide ${String(slides.length + 1)}`,
+  })
   const fills = previous === undefined ? undefined : doom.propOf(view.nodes.get(previous), "fills")
   if (fills !== undefined) writes.push({ node: slide, prop: "fills", value: fills })
   const withSlide = doom.applyEdit(view, {
@@ -136,22 +146,9 @@ export function moveSlideWrites(
   const anchor = (onto !== undefined && [before, next].includes(onto) ? onto : undefined) ?? next ?? before
   const row = anchor === undefined ? undefined : doom.parentOf(view.nodes.get(anchor))?.id
   if (anchor === undefined || row === undefined) return []
-  let low = before !== undefined && doom.parentOf(view.nodes.get(before))?.id === row ? keyOf(view, before) : null
-  const high = next !== undefined && doom.parentOf(view.nodes.get(next))?.id === row ? keyOf(view, next) : null
-  return held.map((slide) => {
-    low = orderKeyBetween(low, high)
-    return { node: slide, prop: "parent", value: { id: row, at: low } }
-  })
-}
-
-function keysBetween(low: OrderKey | null, high: OrderKey | null, count: number): readonly OrderKey[] {
-  const keys: OrderKey[] = []
-  let at = low
-  for (let made = 0; made < count; made += 1) {
-    at = orderKeyBetween(at, high)
-    keys.push(at)
-  }
-  return keys
+  const siblings = keyed(doom.childrenOf(view, row)).filter((each) => !held.includes(each.id))
+  const index = before === undefined ? -1 : siblings.findIndex((each) => each.id === before)
+  return placeWrites(row, siblings, index + 1, held)
 }
 
 export function slideGroupMoveWrites(
@@ -176,41 +173,28 @@ export function slideGroupMoveWrites(
     const kept = slides.find((slide) => !held.has(slide))
     return kept === undefined ? (whole?.group ?? null) : (groupOf.get(kept) ?? null)
   })
-  const writes: doom.Write[] = []
-  next.forEach((slides, number) => {
+  return next.flatMap((slides, number): readonly doom.Write[] => {
     const known = placed[number] ?? null
-    const kept = slides.some((slide) => !held.has(slide))
-    if (!kept) {
-      const keyOfGroup = (each: doom.NodeId | null | undefined) =>
-        each === null || each === undefined ? null : (doom.parentOf(view.nodes.get(each))?.at ?? null)
-      const key = orderKeyBetween(keyOfGroup(placed[number - 1]), keyOfGroup(placed[number + 1]))
-      if (known !== null) {
-        writes.push({ node: known, prop: "parent", value: { id: deck, at: key } })
-        return
-      }
+    if (slides.every((slide) => held.has(slide))) {
+      const rows = keyed(
+        placed.flatMap((row, other) => (other === number || row === null ? [] : [view.nodes.get(row)])),
+      )
+      if (known !== null) return placeWrites(deck, rows, number, [known])
       const group = mint()
-      writes.push(
+      return [
         { node: group, prop: "type", value: "slideRow" },
-        { node: group, prop: "parent", value: { id: deck, at: key } },
-      )
-      keysBetween(null, null, slides.length).forEach((at, offset) =>
-        writes.push({ node: slides[offset]!, prop: "parent", value: { id: group, at } }),
-      )
-      return
+        ...placeWrites(deck, rows, number, [group]),
+        ...placeWrites(group, [], 0, slides),
+      ]
     }
-    if (known === null) return
     const first = slides.findIndex((slide) => held.has(slide))
-    if (first === -1) return
-    const run = slides.filter((slide) => held.has(slide))
-    const low = first === 0 ? null : keyOf(view, slides[first - 1])
-    const high = keyOf(view, slides[first + run.length])
-    keysBetween(low, high, run.length).forEach((at, offset) =>
-      writes.push({ node: run[offset]!, prop: "parent", value: { id: known, at } }),
+    if (known === null || first === -1) return []
+    const siblings = keyed(doom.childrenOf(view, known)).filter((each) => !held.has(each.id))
+    return placeWrites(
+      known,
+      siblings,
+      first,
+      slides.filter((slide) => held.has(slide)),
     )
   })
-  const left = new Set(placed)
-  for (const each of groups)
-    if (!left.has(each.group) && each.slides.every((slide) => held.has(slide)))
-      writes.push({ node: each.group, prop: "parent", value: null })
-  return writes
 }

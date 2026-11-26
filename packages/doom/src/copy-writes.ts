@@ -4,6 +4,7 @@ import type { End, Geometry } from "./geometry.js"
 import type { NodeId } from "./ids.js"
 import { type OrderKey, orderKeyBetween } from "./order-key.js"
 import type { PropName, Props } from "./props.js"
+import { type Keyed, siblingKeys } from "./sibling-keys.js"
 
 type Slot = NonNullable<Props["parent"]>
 type Mint = () => NodeId
@@ -77,16 +78,42 @@ export function copiedMove(copies: Copies, moves: readonly Write[]): readonly Wr
   ]
 }
 
+type Sibling = Keyed & { readonly copyOf?: NodeId }
+
 export function duplicateWrites(view: Doom, ids: readonly NodeId[], mint: Mint): Copies {
-  const placements = ids.flatMap((root) => {
+  const lists = new Map<NodeId, Sibling[]>()
+  const copySlots = new Map<NodeId, Slot>()
+  const moved = new Map<NodeId, Slot>()
+  for (const root of ids) {
     const slot = slotOf(view, root)
-    if (slot === null) return []
-    const siblings = siblingsOf(view, slot.id)
-    const next = siblings[siblings.indexOf(root) + 1]
-    const above = next === undefined ? null : (slotOf(view, next)?.at ?? null)
-    return [{ root, slot: { id: slot.id, at: orderKeyBetween(slot.at, above) } }]
-  })
-  return copiesOf(view, placements, mint)
+    if (slot === null || copySlots.has(root)) continue
+    const list =
+      lists.get(slot.id) ??
+      siblingsOf(view, slot.id).flatMap((id): Sibling[] => {
+        const at = slotOf(view, id)?.at
+        return at === undefined ? [] : [{ id, at }]
+      })
+    lists.set(slot.id, list)
+    const index = list.findIndex((each) => each.id === root && each.copyOf === undefined) + 1
+    const { keys, shifted } = siblingKeys(list, index, 1)
+    shifted.forEach(({ at }, offset) => {
+      const entry = list[index + offset]!
+      list[index + offset] = { ...entry, at }
+      if (entry.copyOf === undefined) moved.set(entry.id, { id: slot.id, at })
+      else copySlots.set(entry.copyOf, { id: slot.id, at })
+    })
+    list.splice(index, 0, { id: root, at: keys[0]!, copyOf: root })
+    copySlots.set(root, { id: slot.id, at: keys[0]! })
+  }
+  const copies = copiesOf(
+    view,
+    [...copySlots].map(([root, slot]) => ({ root, slot })),
+    mint,
+  )
+  return {
+    ...copies,
+    writes: [...copies.writes, ...[...moved].map(([node, value]): Write => ({ node, prop: "parent", value }))],
+  }
 }
 
 export function pasteWrites(clipboard: Clipboard, into: Doom, parent: NodeId, mint: Mint): Copies {
