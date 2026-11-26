@@ -232,8 +232,7 @@
         "baseline": {
           "src/decks/decks-shell.tsx": 1,
           "src/design/controls/action.tsx": 1,
-          "src/design/controls/link.tsx": 1,
-          "src/samples/slide-screen.tsx": 1
+          "src/design/controls/link.tsx": 1
         }
       }
     ],
