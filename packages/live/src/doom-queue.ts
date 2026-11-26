@@ -43,8 +43,6 @@ export function shown(server: doom.Doom, queue: readonly Queued[], provisional?:
   return view
 }
 
-// A queued undo stores no rev. The delete's rev exists only in this view, and `after` names that edit.
-// Putting the rev back lets the undo restore the layer. A move that did not see the delete has no `after`.
 export function followedEdit(view: doom.Doom, each: Queued): doom.Edit {
   if (!each.after.some((once) => once !== null)) return each.edit
   const writes = each.edit.writes.map((write, index) => {

@@ -13,7 +13,6 @@ export function onTop(view: Doom, edit: Edit): Edit {
       const { base: sentBase, ...write } = sent
       const was = view.revs.get(write.node)?.get(write.prop)
       if (was === undefined) return write
-      // A move carries no base. Stamping the delete's rev would make it the undo that brings the layer back.
       if (write.prop === "parent" && deletedParent(view, write.node) && sentBase === undefined) return write
       return { ...write, base: was }
     }),

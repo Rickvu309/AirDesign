@@ -43,8 +43,6 @@ const deleted = (node: Node) => parentOf(node) === null
 const takesBackDelete = (doom: Doom, write: Write) =>
   write.base !== undefined && parentOf(doom.nodes.get(write.node)) === null
 
-// A move that did not see a delete leaves the layer deleted.
-// The write that names the delete's rev is an undo and still restores.
 function staysDeleted(doom: Doom, writes: readonly Write[]): Set<NodeId> {
   const placing = new Set<NodeId>()
   const restoring = new Set<NodeId>()
