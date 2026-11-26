@@ -1,8 +1,21 @@
 import fc from "fast-check"
 import { expect, it } from "vitest"
 import { orderKeyBetween } from "./order-key.js"
+import { minter, runName, started, titledSlide } from "./agent-fixtures.js"
+import { agentBatches, resolveRefs } from "./testing/agent-changes.js"
+import { richDeck } from "./testing/rich-deck.js"
 import {
   applyEdit,
+  compileAgentEdit,
+  deckOf,
+  foldToJson,
+  measureWith,
+  measureWithLayout,
+  readAgentChanges,
+  readFold,
+  readLanded,
+  resolveSlide,
+  slideBackground,
   invert,
   isRefusal,
   nodeId,
@@ -13,9 +26,10 @@ import {
   type NodeId,
   type PropName,
   type Doom,
+  type Text,
   type Write,
 } from "./index.js"
-import { box, create, ids, once, person, revOf, sampleDeck, textOf, tryLand } from "./sample-deck.js"
+import { agent, box, create, ids, once, person, revOf, sampleDeck, textOf, tryLand } from "./sample-deck.js"
 import { valuesOf } from "./testing/values-of.js"
 
 type Pick = {
@@ -372,4 +386,111 @@ it("shows the server's doom with the pending edits folded on top, as the fold it
       },
     ),
   )
+})
+
+const estimate = measureWith({})
+const face = { family: "Inter", weight: 400, style: "normal", variations: "" } as const
+const wordPerLine = measureWithLayout(({ text }) => {
+  const ends = [...text.matchAll(/\S+\s*/gu)].map((word) => (word.index ?? 0) + word[0].length)
+  const lines = (ends.length === 0 ? [text.length] : ends).map((end, at, all) => {
+    const start = at === 0 ? 0 : all[at - 1]!
+    return { start, end, advance: (end - start) * 10, faces: [{ start, end, face }] }
+  })
+  return { direction: "ltr", lines }
+})
+const starts = [started(sampleDeck()), richDeck(), titledSlide().doom]
+
+function opens(doom: Doom) {
+  const stored = readFold(JSON.parse(JSON.stringify(foldToJson(doom))))
+  expect(stored).toBeDefined()
+  expect(foldToJson(stored!)).toEqual(foldToJson(doom))
+  const { theme } = deckOf(doom)
+  for (const node of doom.nodes.values()) {
+    if (node.type === "slide") {
+      for (const measure of [estimate, wordPerLine]) resolveSlide(doom, node.id, measure)
+      slideBackground(doom, node.id)
+    }
+    const own = node as { readonly text?: Text; readonly notes?: Text; readonly box?: { readonly w: number } }
+    for (const text of [own.text, own.notes]) {
+      if (text === undefined) continue
+      for (const measure of [estimate, wordPerLine]) {
+        measure(text, theme, null)
+        if (own.box !== undefined) measure(text, theme, own.box.w, "two-lines")
+      }
+    }
+  }
+}
+
+function landsAgentEdits(start: Doom, batches: readonly (readonly unknown[])[]): number {
+  let doom = start
+  let accepted = 0
+  const mint = minter("p")
+  for (const [index, batch] of batches.entries()) {
+    const changes = readAgentChanges(JSON.parse(JSON.stringify(resolveRefs(doom, batch))))
+    if (isRefusal(changes)) continue
+    const result = compileAgentEdit(doom, changes, { author: agent(runName), once: `p-${index}`, mint, read: doom })
+    if ("refused" in result) continue
+    const replayed = readLanded(JSON.parse(JSON.stringify({ ...result.edit, rev: doom.rev + 1 })), doom)
+    if (isRefusal(replayed)) throw new Error(`the tab refuses what the server took: ${JSON.stringify(replayed)}`)
+    const next = applyEdit(doom, replayed)
+    if (isRefusal(next)) throw new Error(`the tab refuses what the server took: ${JSON.stringify(next)}`)
+    expect(foldToJson(next)).toEqual(foldToJson(result.after))
+    opens(next)
+    accepted += 1
+    doom = next
+  }
+  return accepted
+}
+
+const found: readonly (readonly [string, number, readonly (readonly unknown[])[]])[] = [
+  ["a line break in agent text", 0, [[{ op: "add", kind: "text", slide: ids.slide, text: "Line one\nLine two" }]]],
+  [
+    "a table with words in its cells",
+    0,
+    [
+      [
+        {
+          op: "add",
+          kind: "frame",
+          slide: ids.slide,
+          rows: [
+            ["Metric", "Q3"],
+            ["Revenue\nnet", "**$4.2M**"],
+          ],
+        },
+      ],
+    ],
+  ],
+  [
+    "text on a slide the run added",
+    2,
+    [[{ op: "slide", add: {} }], [{ op: "add", kind: "text", slide: "p:1", text: "- one\n- two" }]],
+  ],
+  [
+    "paragraph JSON sent as words",
+    0,
+    [[{ op: "set", target: ids.title, text: JSON.stringify({ paras: [{ from: -1, runs: [{ text: "x" }] }] }) }]],
+  ],
+  [
+    "a box moved to a y of -0",
+    0,
+    [
+      [{ op: "set", target: ids.caption, box: { x: 0, y: 0, w: 0, h: 0 } }],
+      [{ op: "move", nodes: [ids.caption], into: ids.slide, box: { x: 1, y: -5e-324, w: 0, h: 0 } }],
+    ],
+  ],
+]
+
+it.each(found)("opens the deck after %s", (_name, start, batches) => {
+  expect(landsAgentEdits(starts[start]!, batches)).toBe(batches.length)
+})
+
+it("leaves every deck it takes an agent edit for able to open, measure and paint", () => {
+  let accepted = 0
+  fc.assert(
+    fc.property(fc.nat(starts.length - 1), agentBatches, (start, batches) => {
+      accepted += landsAgentEdits(starts[start]!, batches)
+    }),
+  )
+  expect(accepted).toBeGreaterThan(0)
 })
