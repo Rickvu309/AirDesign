@@ -207,3 +207,43 @@ test("another tab deleting the live slide leaves editing and focuses a remaining
   await expect(live(page)).toHaveCount(0)
   await expect(entry(page, 1)).toBeFocused()
 })
+
+test("Delete, Ctrl+D and the arrow keys act on the layer while it is edited, and Delete removes the slide once editing ends", async ({
+  page,
+  context,
+  stack,
+}) => {
+  covers("delete", "duplicate", "nudge", "slide-delete")
+  const opened = await twoSlides(page, context, stack)
+  const slides = () => page.locator("[data-editor-grid] [data-slide-entry]")
+  const shapes = () => live(page).locator("[data-node]")
+  const start = await xOf(stack, opened)
+  await node(page).click()
+  await expect(live(page)).toBeFocused()
+  await expect(slides()).toHaveCount(2)
+
+  await page.keyboard.press("Alt+ArrowRight")
+  await expect.poll(async () => xOf(stack, opened)).toBe(start)
+  await expect(slides()).toHaveCount(2)
+
+  await page.keyboard.press("ArrowRight")
+  await expect.poll(async () => xOf(stack, opened)).toBe(start + 1)
+  await expect(slides()).toHaveCount(2)
+
+  const before = await shapes().count()
+  await page.keyboard.press("ControlOrMeta+d")
+  await expect.poll(() => shapes().count()).toBe(before + 1)
+  await expect(slides()).toHaveCount(2)
+  await expect.poll(async () => (await savedNode(stack, opened, "t:1"))?.parent ?? null).not.toBeNull()
+
+  await page.keyboard.press("Delete")
+  await expect.poll(() => shapes().count()).toBe(before)
+  await expect(slides()).toHaveCount(2)
+  await expect.poll(async () => (await savedNode(stack, opened, "t:1"))?.parent ?? null).not.toBeNull()
+
+  await page.keyboard.press("Escape")
+  await expect(live(page)).toHaveCount(0)
+  await expect(entry(page, 1)).toBeFocused()
+  await page.keyboard.press("Delete")
+  await expect(slides()).toHaveCount(1)
+})

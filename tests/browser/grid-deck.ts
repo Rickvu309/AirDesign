@@ -189,9 +189,12 @@ export const picked = (ids: readonly string[], numbers: readonly number[]) => nu
 export const grip = (page: Page, group: number) =>
   page.getByRole("button", { name: slideListCopy.moveGroup(group), exact: true })
 
+// The first slide's title and subtitle cover its middle, so a slide drag starts in the blank below them.
+const blankDown = 0.85
+
 export async function grab(page: Page, number: number, across = 0.5): Promise<Box> {
   const box = await boxOf(entry(page, number))
-  await page.mouse.move(box.x + box.width * across, box.y + box.height / 2)
+  await page.mouse.move(box.x + box.width * across, box.y + box.height * blankDown)
   await page.mouse.down()
   return box
 }
