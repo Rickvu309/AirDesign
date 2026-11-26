@@ -40,7 +40,7 @@ export function followDoom({ deck, since, revision, leave, resync, apply, tell, 
           await pause(retryMilliseconds)
           continue
         }
-        if (!wait) caught = revision()
+        if (!wait) caught = doom.rev(Math.max(revision(), answer.rev))
         wait = true
         if (answer.pictures === true) {
           picturesUntil = Date.now() + picturesWantedMilliseconds

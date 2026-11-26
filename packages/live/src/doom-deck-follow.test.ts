@@ -65,4 +65,33 @@ describe("following a deck", () => {
     stop.abort()
     await following
   })
+
+  it("counts every edit the server already held as caught up, even when the first answer brings only some", async () => {
+    const shared = memoryDoomRemote(start)
+    const other = await opened(shared, createDoomDeck, "other")
+    const storage = memoryStorage()
+    const early = await openDoomDeck(shared, "follow", { client: "late", storage })
+    if (!early.ok) throw new Error(JSON.stringify(early))
+    other.push([{ node: card, prop: "name", value: "First" }])
+    other.push([{ node: card, prop: "name", value: "Second" }])
+    expect(await other.sync()).toEqual({ ok: true })
+    let asked = 0
+    const partial: DoomRemote = {
+      ...shared,
+      since: async (body, signal) => {
+        const answer = await shared.since(body, signal)
+        asked += 1
+        return asked === 1 && answer.ok ? { ...answer, edits: answer.edits.slice(0, 1) } : answer
+      },
+    }
+    const late = await openDoomDeck(partial, "follow", { client: "late", storage })
+    if (!late.ok) throw new Error(JSON.stringify(late))
+    expect(late.deck.server().rev).toBeLessThan(other.server().rev)
+    const stop = new AbortController()
+    const following = late.deck.follow(stop.signal)
+    await vi.waitFor(() => expect(nameOf(late.deck.view())).toBe("Second"))
+    expect(late.deck.caught()).toBe(other.server().rev)
+    stop.abort()
+    await following
+  })
 })

@@ -486,7 +486,7 @@ export function DoomCanvas(props: {
                 <AgentArrival
                   view={view}
                   caught={client.caught}
-                  still={`${slide} ${String(scale)} ${text.session?.node ?? ""}`}
+                  still={`${slide} ${String(scale)} ${text.session?.node ?? ""} ${preview?.kind ?? ""}`}
                 />
                 <CanvasOverlay
                   view={shown}
