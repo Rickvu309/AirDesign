@@ -127,10 +127,15 @@ test("a click on the visible edge of a slide panned almost out of view picks it"
   await current(page, 2)
 })
 
-for (const mode of ["Grid", "Slides"]) {
-  test(`${mode} keeps a toggled-off slide as the anchor of the next Shift-click`, async ({ page, context, stack }) => {
+for (const list of [false, true]) {
+  const where = list ? "in the slide list" : "on the canvas"
+  test(`a slide a toggle took away stays the anchor of the next Shift-click ${where}`, async ({
+    page,
+    context,
+    stack,
+  }) => {
     await openGroups(page, context, stack, [4, 3])
-    if (mode === "Slides") await page.getByRole("button", { name: slideListCopy.slidesView }).click()
+    if (list) await page.getByRole("button", { name: slideListCopy.slidesView }).click()
     const slide = (number: number) => page.locator(`[data-slide-entry="${String(number)}"]`)
     const picked = () =>
       page
