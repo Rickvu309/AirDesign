@@ -125,12 +125,12 @@ export default async function drive({
   expect(initialized.status).toBe(200)
   note("connected Claude over OAuth + PKCE and initialized /mcp with its bearer token")
 
-  const connected = page.getByRole("dialog", { name: connectedOf("Claude") })
+  const connected = page.getByRole("dialog", { name: connectedOf(settingsCopy.claude) })
   await expect(connected).toBeVisible()
   await capture("agents-connect-done")
   await connected.getByRole("button", { name: productCopy.done, exact: true }).click()
   await expect(connected).toBeHidden()
-  await expect(page.getByText("Claude", { exact: true })).toBeVisible()
+  await expect(page.getByText(settingsCopy.claude, { exact: true })).toBeVisible()
   await capture("agents-connected")
   note("the open dialog said Claude is connected without a reload, and the list shows it")
 

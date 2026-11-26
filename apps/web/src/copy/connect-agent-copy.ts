@@ -60,7 +60,7 @@ export type ConnectChoice = {
   ways: readonly ConnectWay[]
 }
 
-export const connectChoices: readonly ConnectChoice[] = [
+export const connectChoices = [
   {
     id: "claude",
     name: "Claude",
@@ -116,4 +116,4 @@ export const connectChoices: readonly ConnectChoice[] = [
       },
     ],
   },
-]
+] as const satisfies readonly ConnectChoice[]
