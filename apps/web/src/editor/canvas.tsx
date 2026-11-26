@@ -6,6 +6,7 @@ import { createPortal } from "react-dom"
 import { CanvasOverlay, type Preview } from "./canvas-overlay"
 import { ThinNoticeView, type ThinNotice } from "./thin-notice"
 import { AgentAtWork } from "./agent-at-work"
+import { AgentArrival } from "./agent-arrival"
 import type { AssetUrls } from "./use-asset-urls"
 import { useDoomPictures } from "./use-pictures"
 import { cropModeWrites, croppedPaint } from "./crop-drag"
@@ -482,6 +483,7 @@ export function DoomCanvas(props: {
                         },
                       })}
                 />
+                <AgentArrival view={view} slide={slide} />
                 <CanvasOverlay
                   view={shown}
                   preview={preview}
