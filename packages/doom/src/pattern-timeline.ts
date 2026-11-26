@@ -1,8 +1,9 @@
 import type { AgentItem } from "./agent-item.js"
 import { sidesOf, solid } from "./agent-look.js"
 import type { Px } from "./paint.js"
-import { type Block, type Sized, frameOf, partOf, sizedPart } from "./pattern-parts.js"
-import { type Build, type Scale, boxIn, slotWidth, spreadDown, strokeOf, wholeWords } from "./pattern-scale.js"
+import { type Block, type Sized, boxIn, frameOf, partOf, strokeOf } from "./agent-block.js"
+import { sizedPart } from "./pattern-parts.js"
+import { type Build, type Scale, slotWidth, spreadDown, wholeWords } from "./pattern-scale.js"
 import { zeroBox } from "./doom-walk.js"
 
 const dotShare = 0.7

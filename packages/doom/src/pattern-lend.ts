@@ -4,7 +4,8 @@ import { type Area, bottomLimitOf, gapFor, slideSize, themeOf } from "./agent-pl
 import type { Node } from "./doom.js"
 import { boxOf, childrenOf, propOf } from "./doom-walk.js"
 import type { Px } from "./paint.js"
-import type { Block, Styles } from "./pattern-parts.js"
+import type { Block } from "./agent-block.js"
+import type { Styles } from "./pattern-parts.js"
 import { textHeight } from "./text-estimate.js"
 
 type Lender = { readonly row: Node; readonly spare: Px }
