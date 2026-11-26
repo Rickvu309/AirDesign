@@ -190,6 +190,11 @@ test.describe("with reduced motion", () => {
     for (const size of widths) {
       await page.setViewportSize(size)
       await page.evaluate(() => document.fonts.ready)
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), {
+          message: `${size.width}px page width`,
+        })
+        .toBeLessThanOrEqual(0)
       const layout = await page.evaluate(() => {
         const bar = document.querySelector(".ticker-bar")
         const mark = document.querySelector(".ticker-mark")
@@ -206,14 +211,11 @@ test.describe("with reduced motion", () => {
           markHeight: markBox.height,
           barBottom: barBox.bottom,
           stageBottom: stageBox.bottom,
-          scrollWidth: document.documentElement.scrollWidth,
-          clientWidth: document.documentElement.clientWidth,
         }
       })
       expect(layout.rows, `${size.width}px row count`).toBe(1)
       expect(Math.abs(layout.barHeight - layout.markHeight), `${size.width}px label gap`).toBeLessThanOrEqual(2)
       expect(layout.barBottom, `${size.width}px inside hero`).toBeLessThanOrEqual(layout.stageBottom + 1)
-      expect(layout.scrollWidth, `${size.width}px page width`).toBeLessThanOrEqual(layout.clientWidth)
     }
   })
 
