@@ -26,6 +26,10 @@ assert.deepEqual(kinds("read-kit.ts", 'export const forms = { node: "A node id, 
 assert.deepEqual(kinds("theme.ts", `const ink = "${ink}"`), [`taste: colour ${ink}`])
 assert.deepEqual(kinds("placeholder-title.ts", 'export const placeholderTitle = "Untitled"'), ['taste: "Untitled"'])
 assert.deepEqual(kinds("index.ts", 'export { readForAgent } from "./read.js"'), ["host: export readForAgent"])
+assert.deepEqual(kinds("layout-problems.ts", 'const judged = text.style !== "title" && "heading" === text.style'), [
+  'taste: a rule for "title" text',
+  'taste: a rule for "heading" text',
+])
 assert.deepEqual(kinds("apply-edit.ts", 'if (author.kind === "agent") refuse("run-fenced")'), [])
 assert.deepEqual(kinds("order-key.ts", 'throw new Error("invalid order key head")'), [])
 assert.deepEqual(kinds("preset-basic.ts", 'const guide = "dx1 cos swd2 1080000 val adj"'), [])

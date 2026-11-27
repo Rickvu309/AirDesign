@@ -4,6 +4,6 @@ The `doom-never-knows` step runs `scripts/doom-never-knows.mjs` as a warning aga
 
 - host: a file or an export named for an agent, MCP, a tool, an answer, a prompt or a hint, and any `note` field. The author kind `"agent"` and a run's `agent` id stay: the run fence needs them.
 - words: a string of three words or more. Doom answers with codes and numbers; the agent and the editor word them. A thrown `Error` and the preset geometry formulas are not words for a reader.
-- taste: a colour, a title-case word such as `"Untitled"`, a data file of design values, or a `*Share` constant that places things on a slide. OpenType weight names are font facts.
+- taste: a colour, a title-case word such as `"Untitled"`, a data file of design values, a `*Share` constant that places things on a slide, or a rule for a named text style such as `text.style === "title"`. OpenType weight names are font facts.
 
 `scripts/doom-never-knows.test.mjs` holds one case of each kind and each exception, plus the per-file ceiling rules.

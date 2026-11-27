@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { rules } from "./testing/problem-rules.js"
 import { type TreeNode, doomFromTree } from "./doom-tree.js"
 import { layoutProblems } from "./layout-problems.js"
 import { block, label, measure, plainTheme, spot } from "./testing/doom-fixtures-art.js"
@@ -29,7 +30,7 @@ function rule(
 
 function found(children: readonly TreeNode[]) {
   const grown = doomFromTree({ theme: plainTheme, slides: [{ children }] })
-  return { ids: grown.ids, problems: layoutProblems(grown.doom, grown.slides, measure) }
+  return { ids: grown.ids, problems: layoutProblems(grown.doom, grown.slides, measure, rules) }
 }
 
 describe("layout problems: strokes through words", () => {

@@ -1,3 +1,4 @@
 export { guide, type Guide, guides } from "./guides.js"
 export { piece, type Piece, pieces } from "./pieces.js"
+export { problemRules } from "./problem-rules.js"
 export { newDeckTheme, style, type Style, styleOf, styleText, type StyleText, styles } from "./styles.js"

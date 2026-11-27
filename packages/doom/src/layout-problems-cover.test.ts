@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { rules } from "./testing/problem-rules.js"
 import { block, label, measure, plainTheme, spot } from "./testing/doom-fixtures-art.js"
 import { type TreeNode, doomFromTree } from "./doom-tree.js"
 import type { Geometry } from "./geometry.js"
@@ -8,7 +9,7 @@ const filled = { fills: [{ kind: "solid", color: { var: "accent1" } }] }
 
 function found(children: readonly TreeNode[]) {
   const grown = doomFromTree({ theme: plainTheme, slides: [{ children }] })
-  return { ids: grown.ids, problems: layoutProblems(grown.doom, grown.slides, measure) }
+  return { ids: grown.ids, problems: layoutProblems(grown.doom, grown.slides, measure, rules) }
 }
 
 describe("layout problems: what may cover the slide without a word of its own", () => {

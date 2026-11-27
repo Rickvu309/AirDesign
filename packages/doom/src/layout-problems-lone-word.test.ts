@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest"
 import { label, measure, plainTheme, spot } from "./testing/doom-fixtures-art.js"
 import { doomFromTree, type TreeNode } from "./doom-tree.js"
-import { layoutProblems } from "./layout-problems.js"
+import { layoutProblems, type ProblemRules } from "./layout-problems.js"
 
-function found(title: TreeNode) {
+const headings: ProblemRules = { loneWord: ["title", "heading", "bigNumber"], readable: { size: 20, onHeight: 1080 } }
+
+function found(title: TreeNode, rules = headings) {
   const grown = doomFromTree({ theme: plainTheme, slides: [{ children: [title] }] })
-  return { ids: grown.ids, problems: layoutProblems(grown.doom, grown.slides, measure) }
+  return { ids: grown.ids, problems: layoutProblems(grown.doom, grown.slides, measure, rules) }
 }
 
 describe("lone words on the last line", () => {
@@ -32,5 +34,13 @@ describe("lone words on the last line", () => {
     ["aaaa bbbb cccc", 120, "body"],
   ] as const)("leaves %j alone at %i px in %s text", (chars, w, style) => {
     expect(found(label("headline", chars, { box: spot(100, 100, w, 200) }, { style })).problems).toEqual([])
+  })
+
+  it("judges only the styles the rules name", () => {
+    const box = { box: spot(100, 100, plainTheme.textStyles.body.size * 6, 250) }
+    const headline = label("headline", "aaaa bbbb cccc", box, { style: "body" })
+    expect(found(headline).problems).toEqual([])
+    const named = found(headline, { ...headings, loneWord: ["body"] })
+    expect(named.problems).toEqual([{ code: "lone-word", node: named.ids.headline, extra: expect.any(Number) }])
   })
 })

@@ -1,4 +1,5 @@
 import * as doom from "@airdesign/doom"
+import { problemRules } from "@airdesign/taste"
 
 import { namedIds, shownProblems } from "./budget.js"
 import type { DeckHost, Unmeasured } from "./deck-host.js"
@@ -86,7 +87,7 @@ export async function layoutOf(host: DeckHost, fold: doom.Doom, touched: () => r
     const boxes = new Map(slides.flatMap((slide) => [...doom.solveLayout(fold, slide, measure)]))
     const unread = doom.unmeasuredTexts(fold, slides, missing)
     return {
-      problems: worded(fold, doom.layoutProblems(fold, slides, measure, missing)),
+      problems: worded(fold, doom.layoutProblems(fold, slides, measure, problemRules, missing)),
       layout: "measured",
       boxes,
       unread,
