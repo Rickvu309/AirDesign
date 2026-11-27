@@ -431,7 +431,7 @@ it("gives Aira the MCP tool list and server instructions", async () => {
   try {
     const { tools } = await client.listTools()
     const instructions = client.getInstructions()
-    expect(instructions).toContain("read the `slides` skill with airdesign_read_skill")
+    expect(instructions).toContain("read the `slides` guide with airdesign_read_skill")
     expect((await turn(account)).status).toBe(200)
     const call = replay.calls.at(-1)?.call
     expect(call?.tools).toEqual(

@@ -1,6 +1,6 @@
 ---
 name: donut
-description: "The arithmetic for a donut of shares of one whole."
+description: "Before you draw a donut chart to show shares of one whole, read the script for the arcs."
 ---
 
 # Donut chart

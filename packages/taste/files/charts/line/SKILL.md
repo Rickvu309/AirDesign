@@ -1,6 +1,6 @@
 ---
 name: line
-description: "The arithmetic for a line chart: nice ticks, series named at their ends."
+description: "Before you draw a line chart to show a trend over many periods, read the script for ticks and end labels."
 ---
 
 # Line chart

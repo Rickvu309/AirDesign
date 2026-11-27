@@ -1,6 +1,6 @@
 ---
 name: table
-description: "A table of exact numbers: header, rows, total, numbers right-aligned."
+description: "Before you draw a table for readers to look up exact numbers, read how to insert it from rows."
 ---
 
 # Table

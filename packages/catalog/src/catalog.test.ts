@@ -33,7 +33,7 @@ describe("projectTools", () => {
     ])
     expect(tools.every((tool) => tool.runsOn === "server")).toBe(true)
     expect(tools.find((tool) => tool.op === "stop_run")?.destructiveHint).toBe(false)
-    expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("when your turn is finished")
+    expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("when your run is finished")
     expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("closing layers")
     expect(tools.filter((tool) => tool.openWorldHint).map((tool) => tool.name)).toEqual(["airdesign_execute"])
     expect(tools.find((tool) => tool.name === "airdesign_execute")).toMatchObject({
@@ -57,6 +57,15 @@ describe("projectTools", () => {
       idempotentHint: true,
       openWorldHint: false,
     })
+  })
+
+  it("describes guides, runs and edits with the agent's glossary words", () => {
+    const tools = projectTools(catalog)
+    expect(tools.find((tool) => tool.op === "read_skill")?.description).toContain("guide")
+    expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("a person's edits")
+    for (const tool of tools) {
+      expect(tool.description, tool.name).not.toMatch(/\b(?:skills?|turns?|changes?)\b/i)
+    }
   })
 
   it("gives every agent tool the JSON schema of its reader, a closed object that names its fields", () => {

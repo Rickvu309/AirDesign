@@ -1,6 +1,6 @@
 ---
 name: bar
-description: "The arithmetic for a ranked horizontal bar chart, as a script to run."
+description: "Before you draw a bar chart to rank items, read the script for horizontal bars."
 ---
 
 # Bar chart
