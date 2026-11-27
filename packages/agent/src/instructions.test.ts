@@ -1,4 +1,4 @@
-import { readSkill } from "@airdesign/taste"
+import { guide } from "@airdesign/taste"
 import { expect, it } from "vitest"
 
 import { instructions } from "./index.js"
@@ -16,5 +16,5 @@ it("sends the agent to the slides skill before it designs, and the skill opens",
     .split("\n")
     .find((each) => each.includes("airdesign_read_skill") && each.includes("`slides`"))
   expect(line).toBeDefined()
-  expect(readSkill("slides")?.markdown).toContain("# Designing slides")
+  expect(guide("slides")?.markdown).toContain("# Designing slides")
 })

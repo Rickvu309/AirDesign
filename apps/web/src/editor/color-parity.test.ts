@@ -1,4 +1,4 @@
-import { newDeckTheme, themePresets } from "@airdesign/taste"
+import { newDeckTheme, styles } from "@airdesign/taste"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { UnionControl } from "../design/controls/union"
@@ -231,7 +231,7 @@ describe("colour controls and agent colours", () => {
   })
 })
 
-it.each(themePresets)("gives different colours different names in $name", ({ theme }) => {
+it.each(styles)("gives different colours different names in $name", ({ theme }) => {
   const colors = paletteOf(view, theme).templateColors
   expect(colors).toHaveLength(14)
   expect(pickerSwatches(colors)).toEqual(

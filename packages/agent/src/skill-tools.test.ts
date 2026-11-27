@@ -1,13 +1,9 @@
-import { themePresetById, themePresets } from "@airdesign/taste"
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
-import os from "node:os"
-import path from "node:path"
 import * as doom from "@airdesign/doom"
-import { skills } from "@airdesign/taste"
+import { guide, guides, style, styles, styleText } from "@airdesign/taste"
 import { describe, expect, it } from "vitest"
 
 import { callTool, type DeckHost, type Session } from "./index.js"
-import { getStyleTool } from "./skill-tools.js"
+import { getStyleTool, readSkillTool } from "./skill-tools.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
 function started(): doom.Doom {
@@ -88,7 +84,7 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
       ok: false,
       refusal: "field",
       field: "name",
-      available: skills().map((entry) => entry.name),
+      available: guides().map((entry) => entry.name),
     })
 
     const traversal = await callTool("airdesign_read_skill", { name: "../package.json" }, session, host)
@@ -105,17 +101,17 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
   })
 
   it("serves one style for every library theme, each naming only that theme's colours and text styles", async () => {
-    const themeIds = themePresets.map(({ id }) => id).sort()
+    const themeIds = styles.map(({ id }) => id).sort()
     const sections = ["Identity", "Layout", "Token map", "Decoration", "Hierarchy", "Typography", "Parameters"]
     const session = sessionFor()
     const host = memoryDecks(started)
     const listed = await callTool("airdesign_get_style", {}, session, host)
     expect(listed.ok).toBe(true)
-    const styles = (listed.fields as { styles: { name: string; summary: string }[] }).styles
-    expect(styles.map((style) => style.name)).toEqual(themeIds)
+    const listedStyles = (listed.fields as { styles: { name: string; summary: string }[] }).styles
+    expect(listedStyles.map(({ name }) => name)).toEqual(themeIds)
 
     for (const id of themeIds) {
-      const theme = themePresetById(id)!.theme
+      const theme = style(id)!.theme
       const known = new Set([...Object.keys(theme.colors), ...Object.keys(theme.textStyles), "heading", "body"])
       const opened = await callTool("airdesign_get_style", { name: id }, session, host)
       expect(opened.ok).toBe(true)
@@ -153,63 +149,36 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
     expect(skill.ok).toBe(false)
     expect(skill.fields).toEqual({ ok: false, refusal: "rate", note: text })
 
-    const style = await callTool("airdesign_get_style", {}, session, host)
-    expect(style.ok).toBe(false)
-    expect(style.fields).toEqual({ ok: false, refusal: "rate", note: text })
+    const styleAnswer = await callTool("airdesign_get_style", {}, session, host)
+    expect(styleAnswer.ok).toBe(false)
+    expect(styleAnswer.fields).toEqual({ ok: false, refusal: "rate", note: text })
     expect(calls).toBe(2)
   })
 
-  it("lists styles and returns style text and parameters when styles exist", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "airdesign-mcp-styles-"))
-    try {
-      const stylesDir = path.join(root, "styles")
-      mkdirSync(stylesDir, { recursive: true })
-      writeFileSync(
-        path.join(stylesDir, "editorial.md"),
-        [
-          "# Editorial",
-          "",
-          "Calm editorial layout with strong serif headlines.",
-          "",
-          "## Parameters",
-          "",
-          "- `headingFont`: Heading font family",
-          "- `accent`: Single accent colour",
-          "",
-        ].join("\n"),
-      )
+  it("lists every style with its summary and opens one by a lenient name", () => {
+    const listed = getStyleTool({})
+    expect(listed.fields).toEqual({
+      ok: true,
+      styles: styles.map(({ id }) => ({ name: id, summary: styleText(id)!.summary })),
+      note: "Call airdesign_get_style with a style name to read its guide and parameters.",
+    })
 
-      const listed = getStyleTool({}, root)
-      expect(listed.ok).toBe(true)
-      expect(listed.fields).toEqual({
-        ok: true,
-        styles: [{ name: "editorial", summary: "Calm editorial layout with strong serif headlines." }],
-        note: "Call airdesign_get_style with a style name to read its guide and parameters.",
-      })
+    const loaded = getStyleTool({ name: " editorial.md " })
+    expect(loaded.fields).toEqual({
+      ok: true,
+      name: "editorial",
+      text: styleText("editorial")!.markdown,
+      parameters: styleText("editorial")!.parameters,
+      note: "Style editorial. Set its parameters before applying it to a deck.",
+    })
+  })
 
-      const loaded = getStyleTool({ name: "editorial" }, root)
-      expect(loaded.ok).toBe(true)
-      expect(loaded.fields).toMatchObject({
-        ok: true,
-        name: "editorial",
-        parameters: [
-          { name: "headingFont", description: "Heading font family" },
-          { name: "accent", description: "Single accent colour" },
-        ],
-        note: "Style editorial. Set its parameters before applying it to a deck.",
-      })
-      expect((loaded.fields as { text: string }).text).toContain("# Editorial")
-
-      const missing = getStyleTool({ name: "nope" }, root)
-      expect(missing.ok).toBe(false)
-      expect(missing.fields).toMatchObject({
-        ok: false,
-        refusal: "field",
-        field: "name",
-        available: ["editorial"],
-      })
-    } finally {
-      rmSync(root, { recursive: true, force: true })
-    }
+  it("opens a guide by a lenient name", () => {
+    expect(readSkillTool({ name: " execute.md " }).fields).toEqual({
+      ok: true,
+      name: "execute",
+      text: guide("execute")!.markdown,
+      note: "Skill execute.",
+    })
   })
 })

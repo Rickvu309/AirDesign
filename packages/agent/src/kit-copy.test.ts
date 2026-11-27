@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { kitPieces, readKitPiece, readSkill, skills, themePresetById } from "@airdesign/taste"
+import { guide, guides, piece, pieces, style } from "@airdesign/taste"
 import { describe, expect, it } from "vitest"
 
 import { callTool, type DeckHost, type Session } from "./index.js"
@@ -52,7 +52,7 @@ describe("copy from the kit", () => {
       expect(answer.ok, JSON.stringify(answer.fields)).toBe(true)
       const { s, block, lines } = answer.fields.result as { s: string; block: string; lines: string[] }
       const fold = by.fold(deck)
-      const { colors, fonts } = themePresetById(theme)!.theme
+      const { colors, fonts } = style(theme)!.theme
       const painted = flat(doom.resolveSlide(fold, s as doom.NodeId, estimate))
       expect(doom.propOf(fold.nodes.get(block as doom.NodeId), "box")).toMatchObject({ x: 160, y: 120, w: 1680 })
       expect(firstRun(painted, lines[0]!)).toMatchObject({ font: fonts.heading, color: colors.text })
@@ -61,7 +61,7 @@ describe("copy from the kit", () => {
   })
 
   it("lands plain owned layers: editing the copy never touches the piece", async () => {
-    const before = structuredClone(readKitPiece("title-block"))
+    const before = structuredClone(piece("title-block"))
     const by = agent()
     const { deck } = await by.made()
     const answer = await by.call("execute", {
@@ -80,7 +80,7 @@ describe("copy from the kit", () => {
     for (const id of [block, ...doom.childrenOf(fold, block as doom.NodeId).map((each) => each.id)])
       expect(fold.nodes.get(id as doom.NodeId)).not.toHaveProperty("instance")
     expect(doom.propOf(fold.nodes.get(title as doom.NodeId), "text")?.chars).toBe("Revenue grew 18% on two new markets")
-    expect(readKitPiece("title-block")).toEqual(before)
+    expect(piece("title-block")).toEqual(before)
   })
 
   it("lands a script that copies two pieces and edits one as one edit, and undo_run takes it all back", async () => {
@@ -153,10 +153,10 @@ describe("copy from the kit", () => {
     expect(placed.fields).toMatchObject({ verb: "copy", field: "box" })
   })
 
-  it("lists every piece in the kit skill, with its size", () => {
-    expect(skills().map((skill) => skill.name)).toContain("kit")
-    const kit = readSkill("kit")?.markdown ?? ""
-    for (const piece of kitPieces())
-      expect(kit).toContain(`\`kit/${piece.name}\` (${String(piece.size.w)} by ${String(piece.size.h)})`)
+  it("lists every piece in the kit guide, with its size", () => {
+    expect(guides().map((each) => each.name)).toContain("kit")
+    const kit = guide("kit")?.markdown ?? ""
+    for (const each of pieces())
+      expect(kit).toContain(`\`kit/${each.name}\` (${String(each.size.w)} by ${String(each.size.h)})`)
   })
 })

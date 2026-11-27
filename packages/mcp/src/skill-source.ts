@@ -1,4 +1,4 @@
-import { skills } from "@airdesign/taste"
+import { guides } from "@airdesign/taste"
 import { type Skill, SkillsExtension, type SkillSource } from "@modelcontextprotocol/server/ext/skills"
 
 type Catalog = {
@@ -12,7 +12,7 @@ const canonical = (uri: string): string => (URL.canParse(uri) ? new URL(uri).hre
 
 function built(): Catalog {
   const catalog = { skills: new Map<string, Skill>(), files: new Map<string, { text: string; mimeType: string }>() }
-  for (const guide of skills()) {
+  for (const guide of guides()) {
     const uriOf = (path: string) => new URL(`skill://${guide.name}/${path}`).href
     const uri = uriOf("SKILL.md")
     catalog.skills.set(uri, {
@@ -37,4 +37,4 @@ const source: SkillSource = {
   read: async (uri) => catalog().files.get(canonical(uri)),
 }
 
-export const guides = new SkillsExtension({ source, cacheHint: { ttlMs: 300_000, cacheScope: "public" } })
+export const skills = new SkillsExtension({ source, cacheHint: { ttlMs: 300_000, cacheScope: "public" } })

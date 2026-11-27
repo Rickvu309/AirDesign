@@ -5,7 +5,7 @@ import { filesDir, fs, nodePath } from "./package-files.js"
 const piecesDir = () => nodePath().join(filesDir(), "kit")
 const pieceName = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
-type KitPiece = {
+export type Piece = {
   readonly name: string
   readonly size: { readonly w: number; readonly h: number }
   readonly tree: TreeNode
@@ -14,7 +14,7 @@ type KitPiece = {
 type Fields = Readonly<Record<string, unknown>>
 type NamedEnd = { readonly layer: string } & Fields
 
-function sizeOf(tree: TreeNode): KitPiece["size"] {
+function sizeOf(tree: TreeNode): Piece["size"] {
   const box = (tree.props as { readonly box?: { readonly w: number; readonly h: number } } | undefined)?.box
   return { w: box?.w ?? 0, h: box?.h ?? 0 }
 }
@@ -43,7 +43,7 @@ function attached(node: TreeNode): TreeNode {
   }
 }
 
-export function readKitPiece(name: string): KitPiece | undefined {
+export function piece(name: string): Piece | undefined {
   if (!pieceName.test(name)) return undefined
   const { existsSync, readFileSync } = fs()
   const file = nodePath().join(piecesDir(), `${name}.json`)
@@ -52,11 +52,11 @@ export function readKitPiece(name: string): KitPiece | undefined {
   return { name, size: sizeOf(tree), tree: attached(tree) }
 }
 
-export function kitPieces(): readonly KitPiece[] {
+export function pieces(): readonly Piece[] {
   return fs()
     .readdirSync(piecesDir())
     .filter((file) => file.endsWith(".json"))
     .map((file) => file.slice(0, -5))
     .sort()
-    .flatMap((name) => readKitPiece(name) ?? [])
+    .flatMap((name) => piece(name) ?? [])
 }

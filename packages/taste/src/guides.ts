@@ -1,17 +1,17 @@
 import { filesDir, fs, nodePath } from "./package-files.js"
 
-type SkillFile = {
+type GuideFile = {
   readonly path: string
   readonly bytes: Uint8Array
   readonly digest: string
   readonly size: number
 }
 
-export type Skill = {
+export type Guide = {
   readonly name: string
   readonly description: string
   readonly markdown: string
-  readonly files: readonly SkillFile[]
+  readonly files: readonly GuideFile[]
 }
 
 const manifest = "SKILL.md"
@@ -33,7 +33,7 @@ function digestOf(bytes: Uint8Array): string {
   return `sha256:${createHash("sha256").update(bytes).digest("hex")}`
 }
 
-function readFolder(root: string, name: string): Skill {
+function readFolder(root: string, name: string): Guide {
   const dir = nodePath().join(root, name)
   const paths = filesUnder(dir).sort((a, b) => (a === manifest ? -1 : b === manifest ? 1 : a < b ? -1 : 1))
   const files = paths.map((path) => {
@@ -54,8 +54,8 @@ function readFolder(root: string, name: string): Skill {
   }
 }
 
-export function skills(dir: string = filesDir()): readonly Skill[] {
-  const root = nodePath().resolve(dir)
+export function guides(): readonly Guide[] {
+  const root = filesDir()
   return filesUnder(root)
     .filter((path) => path.endsWith(`/${manifest}`))
     .map((path) => path.slice(0, -manifest.length - 1))
@@ -63,12 +63,6 @@ export function skills(dir: string = filesDir()): readonly Skill[] {
     .map((name) => readFolder(root, name))
 }
 
-export function readSkill(
-  rawName: string,
-  dir?: string,
-): { readonly name: string; readonly markdown: string } | undefined {
-  const trimmed = rawName.trim()
-  const name = trimmed.endsWith(".md") ? trimmed.slice(0, -3) : trimmed
-  const skill = skills(dir).find((candidate) => candidate.name === name)
-  return skill === undefined ? undefined : { name: skill.name, markdown: skill.markdown }
+export function guide(name: string): Guide | undefined {
+  return guides().find((candidate) => candidate.name === name)
 }

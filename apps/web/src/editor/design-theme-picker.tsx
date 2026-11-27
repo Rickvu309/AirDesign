@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { themePresets, themePresetOf } from "@airdesign/taste"
+import { styleOf, styles } from "@airdesign/taste"
 import { fontFamily } from "@airdesign/fonts"
 import { fontsFor } from "@airdesign/render"
 import { useEffect } from "react"
@@ -9,7 +9,7 @@ import { cn } from "@/lib/class-names"
 import { useServedFaces } from "@/design/served-faces"
 import { DesignSection } from "./design-sections"
 
-const themes = [...themePresets].sort((one, two) => one.name.localeCompare(two.name))
+const themes = [...styles].sort((one, two) => one.name.localeCompare(two.name))
 const thumbnailAccents = ["accent1", "accent2", "accent3"] as const
 
 function ThemeThumbnail({ theme, compact = false }: { readonly theme: doom.Theme; readonly compact?: boolean }) {
@@ -61,7 +61,7 @@ export function ThemePicker({
   readonly onChoose: (id: string) => void
 }) {
   useServedFaces()
-  const current = themePresetOf(theme)
+  const current = styleOf(theme)
   const name = current?.name ?? designCopy.customTheme
   return (
     <DesignSection title={designCopy.theme}>

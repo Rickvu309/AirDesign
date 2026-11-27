@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { readKitPiece, readSkill } from "@airdesign/taste"
+import { guide, piece } from "@airdesign/taste"
 import { describe, expect, it } from "vitest"
 
 import { callTool, type DeckHost, type Session } from "./index.js"
@@ -25,7 +25,7 @@ function agent() {
 }
 
 const recipe = (kind: string): string => {
-  const markdown = readSkill(`charts/${kind}`)?.markdown ?? ""
+  const markdown = guide(`charts/${kind}`)?.markdown ?? ""
   const block = /```js\n([\s\S]*?)```/.exec(markdown)?.[1]
   expect(block, kind).toBeDefined()
   return block!
@@ -77,17 +77,17 @@ const pieceOf = (fold: doom.Doom, chart: doom.Node): doom.TreeNode => {
 }
 
 describe("chart recipes draw the kit's charts", () => {
-  for (const [kind, piece] of [
+  for (const [kind, name] of [
     ["table", "table"],
     ["bar", "bar-chart"],
     ["column", "column-chart"],
     ["line", "line-chart"],
     ["donut", "donut-chart"],
   ] as const)
-    it(`draws kit/${piece} from the ${kind} recipe's sample data`, async () => {
+    it(`draws kit/${name} from the ${kind} recipe's sample data`, async () => {
       const { answer, fold, chart } = await drawn("neutral", recipe(kind))
       expect(answer.problems).toEqual([])
-      expect(pieceOf(fold, chart)).toEqual(readKitPiece(piece)?.tree)
+      expect(pieceOf(fold, chart)).toEqual(piece(name)?.tree)
     })
 })
 

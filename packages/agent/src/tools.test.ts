@@ -1,4 +1,4 @@
-import { themePresets } from "@airdesign/taste"
+import { styles } from "@airdesign/taste"
 import { catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
@@ -100,7 +100,7 @@ describe("createDeck and get_app_state", () => {
 
   it("creates with a built-in theme and saves nothing when the script fails", async () => {
     const by = agent()
-    const theme = themePresets.find(({ id }) => id !== "neutral")!
+    const theme = styles.find(({ id }) => id !== "neutral")!
     const create = `createDeck(${JSON.stringify({ name: "Themed", theme: theme.id })})`
     const interrupted = await by.call("execute", { script: `${create}; throw new Error("stop")` })
     expect(interrupted.fields).toMatchObject({ ok: false, refusal: "script" })
@@ -109,7 +109,7 @@ describe("createDeck and get_app_state", () => {
     expect(made.fields).toMatchObject({ ok: true, name: "Themed", theme: { colors: theme.theme.colors } })
   })
 
-  it.each(themePresets)("writes the full $name theme through createDeck and variables", async (preset) => {
+  it.each(styles)("writes the full $name theme through createDeck and variables", async (preset) => {
     const by = agent()
     const initial = await by.call("execute", { script: `createDeck({ theme: "${preset.id}" })` })
     expect(initial.ok).toBe(true)

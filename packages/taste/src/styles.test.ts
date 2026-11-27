@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto"
-import { readdirSync } from "node:fs"
+import { readdirSync, readFileSync } from "node:fs"
 import { paletteColorVars, type ColorVar, type Hex } from "@airdesign/doom"
 import { describe, expect, it, vi } from "vitest"
 import midnight from "../files/styles/midnight.json" with { type: "json" }
-import { listStyles, newDeckTheme, themePresetById, themePresetOf, themePresets } from "./index.js"
-import { designedThemes, libraryArt } from "./theme-preset-art.js"
+import { newDeckTheme, style, styleOf, styles, styleText } from "./index.js"
+import { designedThemes, libraryArt } from "./style-art.js"
 
 const backgrounds = ["background", "background2"] as const satisfies readonly ColorVar[]
 const inks = paletteColorVars.filter((color) => color !== "background" && color !== "background2")
@@ -17,17 +17,33 @@ function linearChannel(color: Hex, offset: number): number {
 const luminance = (color: Hex) =>
   0.2126 * linearChannel(color, 1) + 0.7152 * linearChannel(color, 3) + 0.0722 * linearChannel(color, 5)
 
-describe("built-in themes", () => {
-  it("ships one preset for every style", () => {
-    const ids = themePresets.map(({ id }) => id).sort()
+describe("built-in styles", () => {
+  it("lists every style file in id order", () => {
+    const ids = styles.map(({ id }) => id)
     const files = readdirSync("packages/taste/files/styles").filter((file) => file.endsWith(".json"))
     expect(files.sort()).toEqual(ids.map((id) => `${id}.json`))
-    expect(ids).toEqual(listStyles().map(({ name }) => name))
+    expect(ids).toEqual([...ids].sort())
+  })
+
+  it("gives every style a text whose summary is its opening sentence", () => {
+    for (const { id } of styles) {
+      expect(styleText(id)?.summary).toMatch(/^For .+\.$/)
+      expect(styleText(id)?.parameters.length).toBeGreaterThan(0)
+    }
+    expect(styleText("../index")).toBeUndefined()
+    expect(styleText("editorial.md")).toBeUndefined()
+  })
+
+  it("reads a style's parameters from its Parameters section", () => {
+    const text = styleText("editorial")!
+    expect(text.markdown).toBe(readFileSync("packages/taste/files/styles/editorial.md", "utf8").trimEnd())
+    expect(text.parameters.map(({ name }) => name)).toEqual(["accent", "kicker", "density"])
+    expect(text.parameters[0]?.description).toMatch(/^the colour for the point that matters\./)
   })
 
   it("keeps every preset value apart from the Consulting accent and Technical title size", () => {
     const actual = Object.fromEntries(
-      themePresets.map(({ id, theme }) => [id, createHash("sha256").update(JSON.stringify(theme)).digest("hex")]),
+      styles.map(({ id, theme }) => [id, createHash("sha256").update(JSON.stringify(theme)).digest("hex")]),
     )
     expect(actual).toEqual({
       consulting: "efb3527b5e1f8e3a8b32c2aa47bef1aeed48ad76bddc06cf043bba6f1ffa78fc",
@@ -41,7 +57,7 @@ describe("built-in themes", () => {
   it.each(libraryArt)(
     "preserves $name art and inherits the slide type scale and effects",
     ({ id, name, accent1, heading }) => {
-      expect(themePresetById(id)).toMatchObject({
+      expect(style(id)).toMatchObject({
         id,
         name,
         theme: {
@@ -56,11 +72,11 @@ describe("built-in themes", () => {
 
   it("recognizes a stored copy and distinguishes a customized theme", () => {
     const theme = newDeckTheme
-    expect(themePresetOf({ ...theme, colors: { ...theme.colors } })?.id).toBe("neutral")
-    expect(themePresetOf({ ...theme, fonts: { ...theme.fonts, body: "Lora" } })).toBeUndefined()
+    expect(styleOf({ ...theme, colors: { ...theme.colors } })?.id).toBe("neutral")
+    expect(styleOf({ ...theme, fonts: { ...theme.fonts, body: "Lora" } })).toBeUndefined()
   })
 
-  it.each(themePresets)("distinguishes gains and losses in $name", ({ id, theme }) => {
+  it.each(styles)("distinguishes gains and losses in $name", ({ id, theme }) => {
     const colors: Readonly<Record<string, Hex>> = theme.colors
     const contrast = (a: Hex, b: Hex) => {
       const [dark, light] = [luminance(a), luminance(b)].sort((x, y) => x - y)
@@ -75,16 +91,16 @@ describe("built-in themes", () => {
   })
 
   it("gives a Consulting accent enough contrast to stand apart from its text", () => {
-    const { colors } = themePresetById("consulting")!.theme
+    const { colors } = style("consulting")!.theme
     expect((luminance(colors.accent1) + 0.05) / (luminance(colors.text) + 0.05)).toBeGreaterThanOrEqual(2)
   })
 
   it.each(designedThemes)("preserves $name art and type scale", ({ id, name, ...theme }) => {
-    expect(themePresetById(id)).toMatchObject({ id, name, theme })
+    expect(style(id)).toMatchObject({ id, name, theme })
   })
 
   it.each(designedThemes)("meets WCAG AA for $name text on both background tokens", ({ id }) => {
-    const entry = themePresetById(id)
+    const entry = style(id)
     if (entry === undefined) throw new Error(`Missing theme ${id}`)
 
     const { colors } = entry.theme
@@ -99,14 +115,14 @@ describe("built-in themes", () => {
   })
 })
 
-describe("malformed built-in themes", () => {
-  it("refuses a malformed color and names the preset and field", async () => {
+describe("malformed built-in styles", () => {
+  it("refuses a malformed color and names the style and field", async () => {
     vi.resetModules()
     vi.doMock("../files/styles/midnight.json", () => ({
       default: { ...midnight, colors: { ...midnight.colors, accent1: "6b9bff" } },
     }))
     try {
-      await expect(import("./theme-presets.js")).rejects.toThrow(/midnight\.json.*colors/)
+      await expect(import("./styles.js")).rejects.toThrow(/midnight\.json.*colors/)
     } finally {
       vi.doUnmock("../files/styles/midnight.json")
       vi.resetModules()

@@ -1,4 +1,4 @@
-import { newDeckTheme, themePresets } from "@airdesign/taste"
+import { newDeckTheme, styles } from "@airdesign/taste"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { pickerSwatches } from "@/design/color-choices"
@@ -9,7 +9,7 @@ const swatchesOf = (theme: doom.Theme) => pickerSwatches(paletteOf(doom.emptyDoo
 
 describe("the design palette", () => {
   it("offers the eleven palette colors for every built-in theme", () => {
-    for (const { theme } of themePresets) {
+    for (const { theme } of styles) {
       const vars = swatchesOf(theme).map(({ var: role }) => role)
       expect(vars).toHaveLength(11)
       for (const role of ["positive", "negative", "total"]) expect(vars).not.toContain(role)
