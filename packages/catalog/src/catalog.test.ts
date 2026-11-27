@@ -121,7 +121,7 @@ it("reads an execute call: a deck, a script up to 100,000 characters and an opti
     refusal: "field",
     field: "base",
     fault: "unknown",
-    form: "One of deck, script, runId.",
+    form: "One of deck, script, runId, summary.",
   })
   expect(read({ deck: "d", script: "1", runId: "bad id!" })).toEqual({
     ok: false,
@@ -131,6 +131,26 @@ it("reads an execute call: a deck, a script up to 100,000 characters and an opti
     form: "The runId a call answered: 1 to 64 of letters, digits, _ or -.",
   })
   expect(read({ deck: "bad id!", script: "1" })).toEqual({ ok: false, refusal: "deck" })
+})
+
+it("reads an execute call's optional summary: 1 to 80 characters, trimmed", () => {
+  const read = catalog.execute.read
+  const form = "A short label for this call, 1 to 80 characters."
+  expect(read({ deck: "d", script: "1", summary: "  Add the pricing slide " })).toEqual({
+    ok: true,
+    deck: "d",
+    script: "1",
+    summary: "Add the pricing slide",
+  })
+  expect(read({ deck: "d", script: "1", summary: "x".repeat(80) }).ok).toBe(true)
+  for (const summary of ["x".repeat(81), "   ", "", 3])
+    expect(read({ deck: "d", script: "1", summary })).toEqual({
+      ok: false,
+      refusal: "field",
+      field: "summary",
+      fault: "form",
+      form,
+    })
 })
 
 it("names a view tool for each doom route the deck view reads and for its images", () => {

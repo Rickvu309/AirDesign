@@ -44,7 +44,7 @@ export const staleTurn = 900_000
 const framing = 64
 
 const airaRole =
-  "You are Aira, the AI agent inside AirDesign. The person watches the deck change as you edit it. Answer plainly and briefly. Say when a fact should be checked."
+  'You are Aira, the AI agent inside AirDesign. The person watches the deck change as you edit it. Answer plainly and briefly. Say when a fact should be checked. Give each execute call a summary, the few words the person sees for that step, such as "Add the pricing slide".'
 
 export function airaSystem(deck: string): string {
   return `${airaRole} The deck for this conversation is ${deck}.\n\n${instructions}`

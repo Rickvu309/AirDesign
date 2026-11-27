@@ -418,3 +418,41 @@ it("keeps the letters and layer IDs from a font refusal in the visible step", as
     fontIssue: { kind: "coverage", characters: "収益", layers: ["t:2"], layerNames: [] },
   })
 })
+
+it("labels a call's step with the summary Aira gave it, whether the call streamed first or not", async () => {
+  const streamed = call("call_1", edit, { deck, script: "1", summary: "  Add the pricing slide " })
+  const unstreamed = call("call_2", edit, { deck, script: "2", summary: "Align the title" })
+  const link = scripted(
+    [
+      { lines: [{ type: "tool", id: "call_1", name: edit }, ended([streamed, unstreamed])] },
+      { lines: [ended([{ type: "text", text: "Done" }])] },
+    ],
+    [edited, edited],
+  )
+  const { done, shown } = await asking(airaChat(deck), "Add pricing", link)
+  expect(shown.flatMap((chat) => chat.exchanges[0]?.steps ?? [])).toContainEqual({
+    kind: "tool",
+    id: "call_1",
+    name: edit,
+    state: "working",
+    summary: "Add the pricing slide",
+  })
+  expect(done.exchanges[0]?.steps.slice(0, 2)).toEqual([
+    { kind: "tool", id: "call_1", name: edit, state: "done", summary: "Add the pricing slide" },
+    { kind: "tool", id: "call_2", name: edit, state: "done", summary: "Align the title" },
+  ])
+})
+
+it("leaves out a summary that is blank, too long or not words", async () => {
+  const calls = [
+    call("call_1", edit, { deck, script: "1", summary: "   " }),
+    call("call_2", edit, { deck, script: "1", summary: "x".repeat(81) }),
+    call("call_3", edit, { deck, script: "1", summary: 3 }),
+  ]
+  const link = scripted(
+    [{ lines: [ended(calls)] }, { lines: [ended([{ type: "text", text: "Done" }])] }],
+    [edited, edited, edited],
+  )
+  const { done } = await asking(airaChat(deck), "Add pricing", link)
+  for (const step of done.exchanges[0]?.steps.slice(0, 3) ?? []) expect(step).not.toHaveProperty("summary")
+})

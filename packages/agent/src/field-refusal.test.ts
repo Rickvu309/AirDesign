@@ -75,9 +75,9 @@ describe("an agent reads the field a refusal names", () => {
       refusal: "field",
       field: "extra",
       fault: "unknown",
-      form: "One of deck, script, runId.",
+      form: "One of deck, script, runId, summary.",
     })
-    expect(extra.fields.note).toBe("field extra. Unknown. Accepted form: One of deck, script, runId.")
+    expect(extra.fields.note).toBe("field extra. Unknown. Accepted form: One of deck, script, runId, summary.")
     const run = await by.call("execute", { deck, runId: "bad id!", script: "get()" })
     expect(run.fields).toMatchObject({ refusal: "field", field: "runId", fault: "form", form: runForm })
     expect(run.fields.note).toBe(`field runId. The wrong form. Accepted form: ${runForm}`)

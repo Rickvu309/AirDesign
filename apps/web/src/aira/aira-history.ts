@@ -8,6 +8,7 @@ import {
   type ToolAnswer,
 } from "@airdesign/catalog"
 import { fieldsOf } from "@/lib/fields-of"
+import { stepSummary } from "@/aira/aira-called-steps"
 import {
   airaChat,
   airaStep,
@@ -173,11 +174,13 @@ function readStep(raw: unknown): AiraStep | undefined {
     toolStates.has(step.state)
   ) {
     const bakedLayouts = stringList(step.bakedLayouts)
+    const summary = stepSummary(step.summary)
     const read = {
       kind: "tool",
       id: step.id,
       name: step.name,
       state: step.state as ToolState,
+      ...(summary === undefined ? {} : { summary }),
       ...(bakedLayouts.length === 0 ? {} : { bakedLayouts }),
     } as const
     if (typeof step.refusal !== "string") return read

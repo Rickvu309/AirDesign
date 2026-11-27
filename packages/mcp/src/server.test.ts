@@ -76,6 +76,7 @@ describe("createServer", () => {
         "deck",
         "script",
         "runId",
+        "summary",
       ])
       expect(tools.every((tool) => !Object.hasOwn(tool, "outputSchema"))).toBe(true)
     })

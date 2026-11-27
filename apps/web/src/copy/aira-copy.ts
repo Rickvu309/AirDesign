@@ -75,7 +75,9 @@ export const airaRefusalWords: Readonly<Record<EditRefusal | "unreached", string
 
 export function airaStepsSummary(said: readonly string[]): string {
   const [first = "", ...rest] = said
-  const lowered = rest.map((text) => `${text.charAt(0).toLowerCase()}${text.slice(1)}`)
+  const lowered = rest.map((text) =>
+    /^\p{Lu}[\p{Lu}\p{N}]/u.test(text) ? text : `${text.charAt(0).toLowerCase()}${text.slice(1)}`,
+  )
   return new Intl.ListFormat("en", { type: "conjunction" }).format([first, ...lowered])
 }
 

@@ -13,6 +13,7 @@ import { cappedScreenshots, readFontIssue, stringList, toolAnswer, type FontIssu
 import { airaLine, bodyLines, sendTool, weekUsage, type WeekUsage } from "@/aira/aira-wire"
 import type { UndoStays } from "@airdesign/catalog"
 import { fieldsOf } from "@/lib/fields-of"
+import { calledSteps } from "@/aira/aira-called-steps"
 
 export type ToolState = "working" | "done" | "refused" | "stopped"
 
@@ -24,6 +25,7 @@ export type AiraStep =
       readonly id: string
       readonly name: string
       readonly state: ToolState
+      readonly summary?: string
       readonly refusal?: string
       readonly bakedLayouts?: readonly string[] | undefined
       readonly fontIssue?: FontIssue
@@ -145,16 +147,6 @@ function said(steps: readonly AiraStep[], text: string): readonly AiraStep[] {
   return [...steps.slice(0, -1), { kind: "text", text: `${last.text}${text}` }]
 }
 
-function calling(steps: readonly AiraStep[], content: readonly ReplyBlock[]): readonly AiraStep[] {
-  const shown = new Set(steps.flatMap((step) => (step.kind === "tool" ? [step.id] : [])))
-  const missing = content.flatMap((block): AiraStep[] =>
-    block.type === "tool_use" && !shown.has(block.id)
-      ? [{ kind: "tool", id: block.id, name: block.name, state: "working" }]
-      : [],
-  )
-  return [...steps, ...missing]
-}
-
 function settled(
   steps: readonly AiraStep[],
   id: string,
@@ -170,6 +162,7 @@ function settled(
       id: step.id,
       name: step.name,
       state,
+      ...(step.summary === undefined ? {} : { summary: step.summary }),
       ...(state !== "refused" || refusal === undefined ? {} : { refusal }),
       ...(fontIssue === undefined ? {} : { fontIssue }),
       ...(bakedLayouts === undefined || bakedLayouts.length === 0 ? {} : { bakedLayouts }),
@@ -211,7 +204,7 @@ export function airaStep(chat: AiraChat, event: AiraEvent): AiraChat {
         answers: [],
         usage: event.usage,
       }
-      return changeLast(next, (last) => ({ ...last, steps: calling(last.steps, event.content) }))
+      return changeLast(next, (last) => ({ ...last, steps: calledSteps(last.steps, event.content) }))
     }
     case "answered": {
       const { answer, run, state, refusal, fontIssue, bakedLayouts } = event

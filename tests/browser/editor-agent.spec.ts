@@ -61,6 +61,7 @@ test("Aira adds a results grid through the MCP address, the canvas paints them a
   expect(await canvas.locator("[data-node]").count()).toBeGreaterThan(before)
   await expect(side.getByText("I will add a results grid to the slide.", { exact: true })).toBeVisible()
   await expect(side.getByText("The slide now shows revenue, customers and churn.", { exact: true })).toBeVisible()
+  await expect(side.locator('[data-tool-state="done"]')).toHaveText("Add the results grid")
   await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
   await expect
     .poll(async () => [...(await saved(stack, opened)).runs.values()].map((run) => run.phase))
