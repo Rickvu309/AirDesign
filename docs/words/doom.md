@@ -109,6 +109,6 @@ What a script saw when its call opened the deck. Its text and list writes carry 
 _Avoid_: snapshot, readAt
 
 **run**:
-One agent turn on a deck, and that agent's alone. Its first edit opens it (`phase: start`), and `stop_run` or the same agent's next start closes it, so an agent has one open run per deck. Another agent's write into it or stop of it is refused `run-fenced`. A person's change to a layer while it is open closes that layer to the run: the agent's next write to it is refused `person`.
+One agent turn on a deck, and that agent's alone. Its first edit opens it (`phase: start`), and `stop_run` or the same agent's next start closes it, so an agent has one open run per deck. Another agent's write into it or stop of it is refused `run-fenced`. A person's write to a layer while it is open closes that layer to the run: the agent's next write to it is refused `person`.
 A run keeps the name its agent connected under (`Aira`, `Claude Code`) and the slide of its last write. The editor says an agent is editing while that run wrote in the last 30 seconds; the server closes a run that wrote nothing for ten minutes (`endIdleRuns`). A person's run undo carries `runUndo`, which marks the run `undone` for every device and agent; its redo clears the mark, and so does the agent's next write into the run.
 _Avoid_: session, turn

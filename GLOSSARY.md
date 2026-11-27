@@ -105,8 +105,8 @@ The distance from one line of text to the next, as a percentage of the font's de
 _Avoid_: line spacing
 
 **template style**:
-The look a slide takes: its template colors, heading and body fonts and text styles. The code stores the trait `templateStyle`. `deck.templateStyles` sets every template style and `deck.templateStyleN` sets one. A slide's `templateStyle.id` chooses one. A deck or an agent that still says `theme` or `template`, or addresses `deck.theme` or `deck.templateN`, is read as this.
-_Avoid_: theme, palette, color scheme
+A slide's template colors, heading and body fonts, and text styles. See [theme](docs/words/doom.md#theme) for the values the deck holds.
+_Avoid_: palette, color scheme
 
 **template colors**:
 The twelve template colors: a person reads a color word such as Black, and the code keeps the slot.
@@ -210,8 +210,11 @@ A how-to an agent reads before it designs, such as slides, execute or charts/bar
 _Avoid_: skill, except in the MCP Skills extension and the `airdesign_read_skill` tool that serve a guide
 
 **style**:
-A named look with a theme, the values a deck takes, and a text that tells an agent how to design in it.
+A named design for a whole deck with a theme and text that tells an agent how to design in it.
 _Avoid_: theme preset, preset
+
+**kit**:
+The set of pieces.
 
 **piece**:
 A ready layer tree from the kit that an agent copies into a slide.
