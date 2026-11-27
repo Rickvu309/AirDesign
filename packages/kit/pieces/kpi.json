@@ -1,0 +1,61 @@
+{
+  "type": "frame",
+  "name": "KPI",
+  "props": {
+    "box": { "x": 0, "y": 0, "w": 480, "h": 213, "rotation": 0, "flipH": false, "flipV": false },
+    "sizing": { "w": "fixed", "h": "hug" },
+    "layout": { "mode": "column", "gap": 12, "padding": { "t": 28, "r": 0, "b": 0, "l": 0 }, "align": "top-left" },
+    "strokes": [{ "kind": "solid", "color": { "var": "text" }, "opacity": 0.2 }],
+    "stroke": { "weight": 2, "align": "inside", "dash": "solid", "sides": { "t": 2 } }
+  },
+  "children": [
+    {
+      "type": "shape",
+      "name": "Number",
+      "props": {
+        "geometry": { "kind": "rect" },
+        "sizing": { "w": "fill", "h": "hug" },
+        "text": {
+          "chars": "41%",
+          "spans": [{ "end": 3, "figures": "tabular" }],
+          "paras": [{}],
+          "style": "bigNumber",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Label",
+      "props": {
+        "geometry": { "kind": "rect" },
+        "sizing": { "w": "fill", "h": "hug" },
+        "text": {
+          "chars": "Revenue growth since May",
+          "spans": [],
+          "paras": [{}],
+          "style": "body",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Note",
+      "props": {
+        "geometry": { "kind": "rect" },
+        "sizing": { "w": "fill", "h": "hug" },
+        "text": {
+          "chars": "Up from 29% a year earlier",
+          "spans": [{ "end": 26, "color": { "var": "text2" } }],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    }
+  ]
+}

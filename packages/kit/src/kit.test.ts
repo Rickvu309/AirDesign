@@ -5,6 +5,9 @@ import { describe, expect, it } from "vitest"
 
 import { kitPieces, readKitPiece } from "./index.js"
 
+type Text = { readonly chars: string; readonly spans: readonly { readonly end: number }[] }
+type Spot = { readonly x: number; readonly y: number }
+
 const piecesDir = fileURLToPath(new URL("../pieces", import.meta.url))
 const files = readdirSync(piecesDir)
   .filter((file) => file.endsWith(".json"))
@@ -48,4 +51,72 @@ describe("kit pieces", () => {
     expect(readKitPiece("/etc/passwd")).toBeUndefined()
     expect(readKitPiece("")).toBeUndefined()
   })
+})
+
+const placed: Readonly<Record<string, readonly Spot[]>> = {
+  "title-block": [{ x: 120, y: 80 }],
+  kpi: [0, 1, 2].map((at) => ({ x: 120 + at * 600, y: 320 })),
+  comparison: [{ x: 120, y: 320 }],
+  "timeline-step": [0, 1, 2, 3].map((at) => ({ x: 120 + at * 420, y: 360 })),
+  "source-line": [{ x: 120, y: 990 }],
+}
+
+const doubled = (text: Text): Text => {
+  const chars = text.chars
+    .split("\n")
+    .map((line) => `${line} ${line}`)
+    .join("\n")
+  return {
+    ...text,
+    chars,
+    spans: text.spans.map((span) => (span.end === text.chars.length ? { ...span, end: chars.length } : span)),
+  }
+}
+
+const longer = (node: doom.TreeNode): doom.TreeNode => {
+  const props = node.props as { text?: Text } | undefined
+  return {
+    ...node,
+    ...(props?.text === undefined ? {} : { props: { ...props, text: doubled(props.text) } as never }),
+    children: node.children?.map(longer) ?? [],
+  }
+}
+
+const at = (tree: doom.TreeNode, spot: Spot): doom.TreeNode => {
+  const props = tree.props as { box: Record<string, unknown> }
+  return { ...tree, props: { ...props, box: { ...props.box, ...spot } } as never }
+}
+
+const runSizes = (all: readonly doom.Resolved[]): readonly number[] =>
+  all.flatMap((each) => [
+    ...(each.text?.lines.flatMap((line) => line.runs.filter((run) => run.text.trim() !== "").map((run) => run.size)) ??
+      []),
+    ...runSizes(each.children),
+  ])
+
+describe("every piece in every library theme", () => {
+  const estimate = doom.measureWith({})
+  const themes = ["consulting", "editorial", "midnight", "neutral", "technical"]
+
+  it("places each piece where a slide uses it", () => {
+    expect(Object.keys(placed).sort()).toEqual(files)
+  })
+
+  for (const words of ["sample", "twice as long"] as const)
+    it(`lays out with ${words} words: nothing spills, overlaps, leaves the slide or reads under 24 px`, () => {
+      for (const theme of themes)
+        for (const piece of kitPieces()) {
+          const tree = words === "sample" ? piece.tree : longer(piece.tree)
+          const grown = doom.doomFromTree({
+            theme: doom.themeLibrary[theme]!.theme,
+            slides: [{ children: placed[piece.name]!.map((spot) => at(tree, spot)) }],
+          })
+          const slide = grown.slides[0]!
+          const where = `${piece.name} in ${theme}`
+          expect(doom.layoutFindings(grown.doom, [slide], estimate), where).toEqual([])
+          expect(Math.min(...runSizes(doom.resolveSlide(grown.doom, slide, estimate))), where).toBeGreaterThanOrEqual(
+            24,
+          )
+        }
+    })
 })

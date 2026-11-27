@@ -1,0 +1,235 @@
+{
+  "type": "frame",
+  "name": "Comparison",
+  "props": {
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 1680,
+      "h": 254,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    },
+    "sizing": {
+      "w": "fixed",
+      "h": "hug"
+    },
+    "layout": {
+      "mode": "row",
+      "gap": 96,
+      "padding": {
+        "t": 0,
+        "r": 0,
+        "b": 0,
+        "l": 0
+      },
+      "align": "top-left"
+    }
+  },
+  "children": [
+    {
+      "type": "frame",
+      "name": "Option A",
+      "props": {
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
+        "layout": {
+          "mode": "column",
+          "gap": 20,
+          "padding": {
+            "t": 32,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          },
+          "align": "top-left"
+        },
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "accent1"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 4,
+          "align": "inside",
+          "dash": "solid",
+          "sides": {
+            "t": 4
+          }
+        }
+      },
+      "children": [
+        {
+          "type": "shape",
+          "name": "Heading",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "Build in house",
+              "spans": [],
+              "paras": [{}],
+              "style": "heading",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        },
+        {
+          "type": "shape",
+          "name": "Points",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "Ready in 14 months\n$6.2M over three years\nFull control of the roadmap",
+              "spans": [
+                {
+                  "end": 69,
+                  "color": {
+                    "var": "text2"
+                  }
+                }
+              ],
+              "paras": [
+                {
+                  "list": "bullet",
+                  "spaceAfter": 12
+                },
+                {
+                  "list": "bullet",
+                  "spaceAfter": 12
+                },
+                {
+                  "list": "bullet",
+                  "spaceAfter": 12
+                }
+              ],
+              "style": "body",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "name": "Option B",
+      "props": {
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
+        "layout": {
+          "mode": "column",
+          "gap": 20,
+          "padding": {
+            "t": 32,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          },
+          "align": "top-left"
+        },
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text"
+            },
+            "opacity": 0.2
+          }
+        ],
+        "stroke": {
+          "weight": 2,
+          "align": "inside",
+          "dash": "solid",
+          "sides": {
+            "t": 2
+          }
+        }
+      },
+      "children": [
+        {
+          "type": "shape",
+          "name": "Heading",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "Buy and integrate",
+              "spans": [],
+              "paras": [{}],
+              "style": "heading",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        },
+        {
+          "type": "shape",
+          "name": "Points",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "Ready in 5 months\n$8.9M over three years\nRoadmap shared with the vendor",
+              "spans": [
+                {
+                  "end": 71,
+                  "color": {
+                    "var": "text2"
+                  }
+                }
+              ],
+              "paras": [
+                {
+                  "list": "bullet",
+                  "spaceAfter": 12
+                },
+                {
+                  "list": "bullet",
+                  "spaceAfter": 12
+                },
+                {
+                  "list": "bullet",
+                  "spaceAfter": 12
+                }
+              ],
+              "style": "body",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

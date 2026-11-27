@@ -1,0 +1,33 @@
+{
+  "type": "shape",
+  "name": "Source line",
+  "props": {
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 1680,
+      "h": 31,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    },
+    "geometry": {
+      "kind": "rect"
+    },
+    "text": {
+      "chars": "Source: Finance Q3 close pack; company filings",
+      "spans": [
+        {
+          "end": 46,
+          "color": {
+            "var": "text2"
+          }
+        }
+      ],
+      "paras": [{}],
+      "style": "caption",
+      "resize": "height",
+      "alignV": "top"
+    }
+  }
+}
