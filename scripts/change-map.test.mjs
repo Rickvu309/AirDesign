@@ -364,7 +364,7 @@ same(
 )
 same(
   "in the repo, a new theme preset selects the test that indexes the styles folder",
-  real(["packages/taste/files/styles/new-theme.json"]).unitTests.includes("packages/taste/src/theme-presets.test.ts"),
+  real(["packages/taste/files/styles/new-theme.json"]).unitTests.includes("packages/taste/src/styles.test.ts"),
   true,
 )
 same(

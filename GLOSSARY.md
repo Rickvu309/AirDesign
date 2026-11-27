@@ -200,6 +200,23 @@ _Avoid_: "Failed to", "Error", "Oops", "Something went wrong"
 
 See [Doom words](docs/words/doom.md) for the terms used in the core.
 
+## Taste words
+
+**taste**:
+The design knowledge AirDesign gives an agent as data: its guides, styles and pieces.
+
+**guide**:
+A how-to an agent reads before it designs, such as slides, execute or charts/bar.
+_Avoid_: skill, except in the MCP Skills extension and the `airdesign_read_skill` tool that serve a guide
+
+**style**:
+A named look with a theme, the values a deck takes, and a text that tells an agent how to design in it.
+_Avoid_: theme preset, preset
+
+**piece**:
+A ready layer tree from the kit that an agent copies into a slide.
+_Avoid_: kit piece, snippet
+
 ## Editor words
 
 **border**:

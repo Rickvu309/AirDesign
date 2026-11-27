@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { themePresetById, themePresets } from "@airdesign/taste"
+import { style, styles } from "@airdesign/taste"
 
 import { doomRefused, refused, type Answer } from "./answer.js"
 import { imagesPerCall } from "./budget.js"
@@ -350,9 +350,9 @@ async function variables(plan: Plan, op: number, verb: Verb, fields: Readonly<Re
   const { theme: requested, ...changes } = fields
   let replacement = requested
   if (typeof requested === "string") {
-    const preset = themePresetById(requested)
-    if (preset === undefined) {
-      const ids = themePresets.map(({ id }) => id).join(", ")
+    const chosen = style(requested)
+    if (chosen === undefined) {
+      const ids = styles.map(({ id }) => id).join(", ")
       stop(
         plan,
         op,
@@ -360,7 +360,7 @@ async function variables(plan: Plan, op: number, verb: Verb, fields: Readonly<Re
         doomRefused({ refused: "shape", change: verb, field: "theme", fault: "form", form: `One of ${ids}.` }),
       )
     }
-    replacement = preset.theme
+    replacement = chosen.theme
   }
   if (hasLook(fields)) {
     await compileOne(plan, op, verb, {

@@ -1,5 +1,5 @@
 import type * as doom from "@airdesign/doom"
-import { readKitPiece } from "@airdesign/taste"
+import { piece } from "@airdesign/taste"
 
 import { refused, type Answer } from "./answer.js"
 
@@ -34,13 +34,12 @@ export function readPaste(fields: Fields): Pick<Paste, "piece" | "box"> | Answer
   const listed = ["target", "targets"].find((key) => fields[key] !== undefined)
   if (listed !== undefined) return refused("field", { field: listed, note: "copy takes from or targets, not both." })
   const from = fields.from
-  const piece =
-    typeof from === "string" && from.startsWith(kitPrefix) ? readKitPiece(from.slice(kitPrefix.length)) : undefined
-  if (piece === undefined)
+  const found = typeof from === "string" && from.startsWith(kitPrefix) ? piece(from.slice(kitPrefix.length)) : undefined
+  if (found === undefined)
     return refused("field", {
       field: "from",
       note: `The kit has no ${JSON.stringify(from)}. Its pieces are listed by airdesign_read_skill({ name: "kit" }).`,
     })
   const box = boxOf(fields.box)
-  return "fields" in box ? box : { piece: piece.tree, ...box }
+  return "fields" in box ? box : { piece: found.tree, ...box }
 }

@@ -1,4 +1,4 @@
-import { listStyles, readSkill, readStyle, skills } from "@airdesign/taste"
+import { guide, guides, styles, styleText } from "@airdesign/taste"
 
 import { answered, refused, type Answer } from "./answer.js"
 
@@ -23,8 +23,13 @@ function readOptionalName(
   return { ok: true, name: body.name }
 }
 
-function skillIndex(dir: string | undefined) {
-  const entries = skills(dir).map(({ name, description }) => ({ name, when: description }))
+const nameIn = (raw: string): string => {
+  const trimmed = raw.trim()
+  return trimmed.endsWith(".md") ? trimmed.slice(0, -3) : trimmed
+}
+
+function skillIndex() {
+  const entries = guides().map(({ name, description }) => ({ name, when: description }))
   const markdown = [
     "# AirDesign skills",
     "",
@@ -35,52 +40,44 @@ function skillIndex(dir: string | undefined) {
   return { markdown, skills: entries }
 }
 
-export function readSkillTool(raw: unknown, dir?: string): Answer {
+export function readSkillTool(raw: unknown): Answer {
   const parsed = readOptionalName(raw, "A skill name from the index.")
   if (!parsed.ok) return parsed.result
   if (parsed.name === undefined) {
-    const index = skillIndex(dir)
+    const index = skillIndex()
     return answered("Call airdesign_read_skill with a skill name to read its guide.", {
       ok: true,
       skills: index.skills,
       text: index.markdown,
     })
   }
-  const skill = readSkill(parsed.name, dir)
-  if (skill === undefined) {
-    const available = skills(dir).map((entry) => entry.name)
-    const note =
-      available.length === 0
-        ? "No skills are available."
-        : `No skill named "${parsed.name}". Available skills: ${available.join(", ")}.`
+  const found = guide(nameIn(parsed.name))
+  if (found === undefined) {
+    const available = guides().map((entry) => entry.name)
+    const note = `No skill named "${parsed.name}". Available skills: ${available.join(", ")}.`
     return refused("field", { field: "name", available, note })
   }
-  return answered(`Skill ${skill.name}.`, { ok: true, name: skill.name, text: skill.markdown })
+  return answered(`Skill ${found.name}.`, { ok: true, name: found.name, text: found.markdown })
 }
 
-export function getStyleTool(raw: unknown, dir?: string): Answer {
+export function getStyleTool(raw: unknown): Answer {
   const parsed = readOptionalName(raw, "A style name from the list.")
   if (!parsed.ok) return parsed.result
   if (parsed.name === undefined) {
-    const styles = listStyles(dir)
-    const note =
-      styles.length === 0
-        ? "No styles are available yet."
-        : "Call airdesign_get_style with a style name to read its guide and parameters."
-    return answered(note, { ok: true, styles })
+    const listed = styles.map(({ id }) => ({ name: id, summary: styleText(id)!.summary }))
+    return answered("Call airdesign_get_style with a style name to read its guide and parameters.", {
+      ok: true,
+      styles: listed,
+    })
   }
-  const style = readStyle(parsed.name, dir)
-  if (style === undefined) {
-    const available = listStyles(dir).map((entry) => entry.name)
-    const note =
-      available.length === 0
-        ? "No styles are available yet."
-        : `No style named "${parsed.name}". Available styles: ${available.join(", ")}.`
+  const name = nameIn(parsed.name)
+  const text = styleText(name)
+  if (text === undefined) {
+    const available = styles.map(({ id }) => id)
+    const note = `No style named "${parsed.name}". Available styles: ${available.join(", ")}.`
     return refused("field", { field: "name", available, note })
   }
   const note =
-    style.parameters.length === 0
-      ? `Style ${style.name}.`
-      : `Style ${style.name}. Set its parameters before applying it to a deck.`
-  return answered(note, { ok: true, name: style.name, text: style.markdown, parameters: style.parameters })
+    text.parameters.length === 0 ? `Style ${name}.` : `Style ${name}. Set its parameters before applying it to a deck.`
+  return answered(note, { ok: true, name, text: text.markdown, parameters: text.parameters })
 }

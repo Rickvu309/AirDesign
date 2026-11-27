@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { readSkill, skills } from "@airdesign/taste"
+import { guide, guides } from "@airdesign/taste"
 import { describe, expect, it } from "vitest"
 
 import { callTool, type DeckHost, type Session } from "./index.js"
@@ -13,7 +13,7 @@ const start = () => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ nam
 const estimate = doom.measureWith({})
 
 const layoutOf = (skill: string) => {
-  const blocks = [...(readSkill(skill)?.markdown ?? "").matchAll(/```js\n([\s\S]*?)```/g)].map((found) => found[1]!)
+  const blocks = [...(guide(skill)?.markdown ?? "").matchAll(/```js\n([\s\S]*?)```/g)].map((found) => found[1]!)
   expect(blocks, skill).toHaveLength(2)
   return blocks[1]!
 }
@@ -164,8 +164,8 @@ describe("the process flow recipe on new steps", () => {
 
 describe("the diagram skills", () => {
   it("are listed in the index and named in the kit guide", () => {
-    const names = skills().map((skill) => skill.name)
-    const kit = readSkill("kit")?.markdown ?? ""
+    const names = guides().map((skill) => skill.name)
+    const kit = guide("kit")?.markdown ?? ""
     for (const name of ["diagrams/architecture", "diagrams/process-flow"]) {
       expect(names).toContain(name)
       expect(kit).toContain(`\`${name}\``)

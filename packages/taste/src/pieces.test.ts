@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
-import { kitPieces, readKitPiece, readSkill, skills, themePresetById } from "./index.js"
+import { guides, piece, pieces, style } from "./index.js"
 
 type Text = { readonly chars: string; readonly spans: readonly { readonly end: number }[] }
 type Spot = { readonly x: number; readonly y: number }
@@ -22,27 +22,25 @@ const keysIn = (value: unknown): readonly string[] =>
       : Object.entries(value).flatMap(([key, inner]) => [key, ...keysIn(inner)])
 
 describe("kit pieces", () => {
-  it("has every piece a skill names", () => {
-    const named = skills().flatMap((entry) =>
-      [...(readSkill(entry.name)?.markdown ?? "").matchAll(/kit\/([a-z0-9-]+)/g)].map((m) => m[1]),
-    )
+  it("has every piece a guide names", () => {
+    const named = guides().flatMap((entry) => [...entry.markdown.matchAll(/kit\/([a-z0-9-]+)/g)].map((m) => m[1]))
     expect(named.length).toBeGreaterThan(0)
-    expect([...new Set(named)].filter((name) => readKitPiece(name!) === undefined)).toEqual([])
+    expect([...new Set(named)].filter((name) => piece(name!) === undefined)).toEqual([])
   })
 
   it("lists every piece file and opens each one with its size", () => {
     expect(files.length).toBeGreaterThan(0)
-    expect(kitPieces().map((piece) => piece.name)).toEqual(files)
+    expect(pieces().map((each) => each.name)).toEqual(files)
     for (const name of files) {
-      const piece = readKitPiece(name)
-      const box = (piece?.tree.props as { box?: { w: number; h: number } } | undefined)?.box
-      expect(piece?.size).toEqual({ w: box?.w, h: box?.h })
+      const opened = piece(name)
+      const box = (opened?.tree.props as { box?: { w: number; h: number } } | undefined)?.box
+      expect(opened?.size).toEqual({ w: box?.w, h: box?.h })
     }
   })
 
   it("grows each piece into layers Doom accepts", () => {
-    for (const piece of kitPieces())
-      expect(() => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [piece.tree] }] })).not.toThrow()
+    for (const each of pieces())
+      expect(() => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [each.tree] }] })).not.toThrow()
   })
 
   it("names only theme colours and text styles, so a piece follows any deck's theme", () => {
@@ -54,10 +52,10 @@ describe("kit pieces", () => {
   })
 
   it("opens nothing outside the pieces", () => {
-    expect(readKitPiece("missing")).toBeUndefined()
-    expect(readKitPiece("../package")).toBeUndefined()
-    expect(readKitPiece("/etc/passwd")).toBeUndefined()
-    expect(readKitPiece("")).toBeUndefined()
+    expect(piece("missing")).toBeUndefined()
+    expect(piece("../package")).toBeUndefined()
+    expect(piece("/etc/passwd")).toBeUndefined()
+    expect(piece("")).toBeUndefined()
   })
 })
 
@@ -123,14 +121,14 @@ describe("every piece in every library theme", () => {
   for (const words of ["sample", "twice as long"] as const)
     it(`lays out with ${words} words: nothing spills, overlaps, leaves the slide or reads under 24 px`, () => {
       for (const theme of themes)
-        for (const piece of kitPieces()) {
-          const tree = words === "sample" ? piece.tree : longer(piece.tree, holdsData.has(piece.name))
+        for (const each of pieces()) {
+          const tree = words === "sample" ? each.tree : longer(each.tree, holdsData.has(each.name))
           const grown = doom.doomFromTree({
-            theme: themePresetById(theme)!.theme,
-            slides: [{ children: placed[piece.name]!.map((spot) => at(tree, spot)) }],
+            theme: style(theme)!.theme,
+            slides: [{ children: placed[each.name]!.map((spot) => at(tree, spot)) }],
           })
           const slide = grown.slides[0]!
-          const where = `${piece.name} in ${theme}`
+          const where = `${each.name} in ${theme}`
           const findings = doom.layoutFindings(grown.doom, [slide], estimate)
           expect(
             findings.filter((finding) => words === "sample" || finding.code !== "lone-word"),
@@ -161,7 +159,7 @@ describe("diagram pieces", () => {
         const ends = (child.props as { geometry?: { start?: { layer?: string }; end?: { layer?: string } } })?.geometry
         return ends?.start?.layer === undefined ? [] : [[ends.start.layer, ends.end?.layer]]
       })
-      const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [readKitPiece(name)!.tree] }] })
+      const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [piece(name)!.tree] }] })
       const lines = linesOf(grown)
       expect(lines.length, name).toBeGreaterThan(1)
       expect(
@@ -176,9 +174,9 @@ describe("diagram pieces", () => {
   })
 
   it("keep a connector on its box when the box moves", () => {
-    const tree = readKitPiece("architecture")!.tree
-    const grow = (piece: doom.TreeNode) =>
-      doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [piece] }] })
+    const tree = piece("architecture")!.tree
+    const grow = (node: doom.TreeNode) =>
+      doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [node] }] })
     const estimate = doom.measureWith({})
     const ends = (grown: doom.Grown) => {
       const flat = (all: readonly doom.Resolved[]): readonly doom.Resolved[] =>

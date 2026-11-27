@@ -2,7 +2,7 @@ import { createHash } from "node:crypto"
 
 import * as doom from "@airdesign/doom"
 import { memoryDecks } from "@airdesign/agent/testing/evals"
-import { readSkill, skills } from "@airdesign/taste"
+import { guide, guides } from "@airdesign/taste"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { SKILLS_EXTENSION_ID, SkillsClient } from "@modelcontextprotocol/client/ext/skills"
 import { expect, it } from "vitest"
@@ -37,13 +37,13 @@ it("negotiates the skills extension and lists every guide at its skill URI", asy
     const listing = await new SkillsClient(client).list()
     expect(listing.invalid).toEqual([])
     expect(listing.skills.map((skill) => skill.uri)).toEqual(
-      skills()
-        .map((guide) => `skill://${guide.name}/SKILL.md`)
+      guides()
+        .map((each) => `skill://${each.name}/SKILL.md`)
         .sort(),
     )
-    for (const guide of skills()) {
-      const entry = listing.skills.find((skill) => skill.uri === `skill://${guide.name}/SKILL.md`)
-      expect(entry?.frontmatter).toEqual({ name: guide.name.split("/").at(-1), description: guide.description })
+    for (const each of guides()) {
+      const entry = listing.skills.find((skill) => skill.uri === `skill://${each.name}/SKILL.md`)
+      expect(entry?.frontmatter).toEqual({ name: each.name.split("/").at(-1), description: each.description })
     }
   })
 })
@@ -61,7 +61,7 @@ it("gets the slides skill and reads its SKILL.md with a matching digest", async 
 
     const verified = await new SkillsClient(client).read(skill)
     expect(verified.verified).toBe(true)
-    expect(verified.body?.trim()).toBe(readSkill("slides")?.markdown)
+    expect(verified.body?.trim()).toBe(guide("slides")?.markdown)
   })
 })
 

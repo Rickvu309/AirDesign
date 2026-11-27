@@ -25,7 +25,7 @@ test("each theme picked by keyboard saves in one undo step and repaints both tab
   stack,
 }) => {
   const { packageBuild } = await import("../../scripts/package-build.mjs")
-  const { themePresetById, themePresets }: typeof import("../../packages/taste/src/index.ts") = await packageBuild(
+  const { style, styles }: typeof import("../../packages/taste/src/index.ts") = await packageBuild(
     process.cwd(),
     "@airdesign/taste",
   )
@@ -50,21 +50,21 @@ test("each theme picked by keyboard saves in one undo step and repaints both tab
   }
   const savedTheme = async () => doom.deckOf(await readFold()).theme
   const picker = page.getByRole("combobox", { name: /^Change theme/ })
-  const neutral = themePresetById("neutral")!
+  const neutral = style("neutral")!
   let current = neutral
   await expect(picker.getByText(current.name, { exact: true })).toBeVisible()
   await expect(picker.locator("[data-slot=select-value] > [aria-hidden]")).toHaveText(designCopy.themeSample)
   await picker.press("Enter")
   const options = page.getByRole("option")
-  await expect(options).toHaveCount(themePresets.length)
+  await expect(options).toHaveCount(styles.length)
   await expect(options.locator(":scope > :first-child > [aria-hidden=true]")).toHaveText(
-    themePresets.map(() => designCopy.themeSample),
+    styles.map(() => designCopy.themeSample),
   )
   await expect(page.getByRole("dialog")).toHaveCount(0)
   await page.keyboard.press("Escape")
   await expect(picker).toBeFocused()
 
-  for (const entry of [...themePresets.filter(({ id }) => id !== neutral.id), neutral]) {
+  for (const entry of [...styles.filter(({ id }) => id !== neutral.id), neutral]) {
     await picker.press("Enter")
     await page.keyboard.type(entry.name)
     await expect(page.getByRole("option", { name: entry.name, exact: true })).toBeFocused()

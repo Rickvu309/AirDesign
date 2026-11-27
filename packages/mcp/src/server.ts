@@ -4,7 +4,7 @@ import { McpServer } from "@modelcontextprotocol/server"
 import { callTool, type DeckHost, instructions, refused, type Session } from "@airdesign/agent"
 
 import { encode } from "./encode.js"
-import { guides } from "./skill-source.js"
+import { skills } from "./skill-source.js"
 
 function inputSchema(json: Readonly<Record<string, unknown>>) {
   return {
@@ -67,6 +67,6 @@ export function createServer(session: Session, host: DeckHost): McpServer {
       },
     )
   }
-  guides.attach(server)
+  skills.attach(server)
   return server
 }

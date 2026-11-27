@@ -1,6 +1,6 @@
 import { readCreateDeck, readExecute, readNamedDeck } from "@airdesign/catalog"
 import type { Theme } from "@airdesign/doom"
-import { themePresetById, themePresets } from "@airdesign/taste"
+import { style, styles } from "@airdesign/taste"
 
 import { answered, doomRefused, hostRefused, refused, told, unadmitted, type Answer } from "./answer.js"
 import { resultChars, scriptLimits, shotsPerCall } from "./budget.js"
@@ -148,12 +148,12 @@ async function createFromScript(script: string, once: string, host: DeckHost): P
         const { ok: _ok, refusal, ...detail } = parsed
         failure = refused(refusal, detail)
       } else {
-        const preset = themePresetById(parsed.theme)
-        if (parsed.theme === undefined || preset !== undefined) {
-          creation = { name: parsed.name, theme: preset?.theme }
+        const chosen = style(parsed.theme)
+        if (parsed.theme === undefined || chosen !== undefined) {
+          creation = { name: parsed.name, theme: chosen?.theme }
           return { ok: true, value: undefined }
         }
-        failure = refused("field", { field: "theme", fault: "form", form: themePresets.map(({ id }) => id).join(", ") })
+        failure = refused("field", { field: "theme", fault: "form", form: styles.map(({ id }) => id).join(", ") })
       }
     }
     return { ok: false, message: String(failure.fields.note) }
