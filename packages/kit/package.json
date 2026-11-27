@@ -19,6 +19,7 @@
     "typecheck": "tsc -b"
   },
   "devDependencies": {
+    "@airdesign/skills": "workspace:*",
     "oxlint": "^1.90.0",
     "typescript": "catalog:"
   },

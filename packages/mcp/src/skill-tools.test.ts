@@ -1,3 +1,4 @@
+import { themePresetById, themePresets } from "@airdesign/skills"
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
@@ -160,7 +161,7 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
   })
 
   it("serves one style for every library theme, each naming only that theme's colours and text styles", async () => {
-    const themeIds = Object.keys(doom.themeLibrary).sort()
+    const themeIds = themePresets.map(({ id }) => id).sort()
     const sections = ["Identity", "Layout", "Token map", "Decoration", "Hierarchy", "Typography", "Parameters"]
     await withClient(sessionFor(), memoryDecks(started), async (client) => {
       const listed = await client.callTool({ name: "airdesign_get_style", arguments: {} })
@@ -169,7 +170,7 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
       expect(styles.map((style) => style.name)).toEqual(themeIds)
 
       for (const id of themeIds) {
-        const theme = doom.themeLibrary[id]!.theme
+        const theme = themePresetById(id)!.theme
         const known = new Set([...Object.keys(theme.colors), ...Object.keys(theme.textStyles), "heading", "body"])
         const opened = await client.callTool({ name: "airdesign_get_style", arguments: { name: id } })
         expect(opened.isError).not.toBe(true)

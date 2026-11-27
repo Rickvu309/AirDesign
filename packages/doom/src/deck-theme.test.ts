@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest"
 import { deckOf } from "./deck-of.js"
-import { defaultTheme, readTheme, themeLibrary } from "./theme.js"
+import { defaultTheme, readTheme } from "./theme.js"
 import { measure } from "./testing/doom-fixtures-art.js"
 import { doomFromTree } from "./doom-tree.js"
 import { isRefusal } from "./index.js"
 import { resolveSlide } from "./resolve-slide.js"
-import { ids, sampleDeck, tryLand } from "./sample-deck.js"
+import { hex, ids, sampleDeck, tryLand } from "./sample-deck.js"
 import { textFromMarkdown } from "./markdown.js"
 
 const { display: _, ...beforeDisplay } = defaultTheme.textStyles
@@ -33,13 +33,18 @@ describe("a deck's theme", () => {
     expect(stored).toMatchObject({ textStyles: { ...keynote, display: defaultTheme.textStyles.display } })
   })
 
-  it.each([defaultTheme, ...Object.values(themeLibrary).map(({ theme }) => theme)])(
-    "backfills the signed colors of a saved theme",
-    (theme) => {
-      const { positive: _positive, negative: _negative, total: _total, ...old } = theme.colors
-      expect(readTheme({ ...theme, colors: old })).toEqual(theme)
-    },
-  )
+  it("uses fallback values for missing signed colors and keeps any saved signed color", () => {
+    const { positive: _positive, total: _total, ...old } = defaultTheme.colors
+    const negative = hex(0xa63678)
+    expect(readTheme({ ...defaultTheme, colors: { ...old, negative } })).toEqual({
+      ...defaultTheme,
+      colors: { ...defaultTheme.colors, negative },
+    })
+  })
+
+  it("preserves the fallback art", () => {
+    expect(defaultTheme).toMatchObject({ colors: { accent1: hex(0x0b3a6f) }, fonts: { heading: "Inter" } })
+  })
 
   it("refuses to unset a deck's theme, so no deck falls back to the default scale", () => {
     const refused = tryLand(sampleDeck(), [{ node: ids.deck, prop: "theme", value: null }])

@@ -3,6 +3,8 @@ import { bytesOf, limits } from "./limits.js"
 import { hex } from "./sample-deck.js"
 import { agentChangesSchema, readAgentChange, readAgentChanges, type AgentChange } from "./agent-change.js"
 
+import { defaultTheme } from "./theme.js"
+
 const json = (value: unknown) => JSON.parse(JSON.stringify(value))
 
 const valid: readonly AgentChange[] = [
@@ -41,7 +43,7 @@ const valid: readonly AgentChange[] = [
   { op: "slide", add: { after: "t:3" as never } },
   { op: "slide", move: { slide: "t:3" as never, after: null } },
   { op: "slide", delete: "t:3" as never },
-  { op: "deck", theme: "neutral" },
+  { op: "deck", theme: defaultTheme },
 ]
 
 describe("readAgentChange", () => {
@@ -228,7 +230,6 @@ describe("the advertised schema", () => {
       if (schema.enum === undefined || key === "op") continue
       const changeWith = (value: string) => {
         if (key === "kind") return { op: "add", kind: value, slide: "t:3" }
-        if (key === "theme") return { op: "deck", theme: value }
         return { op: "set", target: "t:3", [key]: value }
       }
       for (const value of schema.enum) expect(readAgentChange(changeWith(value))).not.toHaveProperty("refused")

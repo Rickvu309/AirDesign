@@ -1,3 +1,4 @@
+import { themePresetById } from "@airdesign/skills"
 import * as doom from "@airdesign/doom"
 import { kitPieces, readKitPiece } from "@airdesign/kit"
 import { readSkill, readSkillIndex } from "@airdesign/skills"
@@ -53,7 +54,7 @@ describe("copy from the kit", () => {
       expect(answer.ok, JSON.stringify(answer.answer)).toBe(true)
       const { s, block, lines } = answer.answer.result as { s: string; block: string; lines: string[] }
       const fold = by.fold(deck)
-      const { colors, fonts } = doom.themeLibrary[theme]!.theme
+      const { colors, fonts } = themePresetById(theme)!.theme
       const painted = flat(doom.resolveSlide(fold, s as doom.NodeId, estimate))
       expect(doom.propOf(fold.nodes.get(block as doom.NodeId), "box")).toMatchObject({ x: 160, y: 120, w: 1680 })
       expect(firstRun(painted, lines[0]!)).toMatchObject({ font: fonts.heading, color: colors.text })

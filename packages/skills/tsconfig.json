@@ -7,9 +7,11 @@
     "sourceMap": true,
     "lib": ["es2023"],
     "types": ["node"],
-    "rootDir": "src",
+    "rootDir": ".",
+    "resolveJsonModule": true,
     "outDir": "dist",
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
-  "include": ["src"]
+  "include": ["src", "files/styles/*.json"],
+  "references": [{ "path": "../doom" }]
 }

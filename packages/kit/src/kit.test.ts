@@ -1,3 +1,4 @@
+import { themePresetById } from "@airdesign/skills"
 import { readdirSync, readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import * as doom from "@airdesign/doom"
@@ -108,7 +109,7 @@ describe("every piece in every library theme", () => {
         for (const piece of kitPieces()) {
           const tree = words === "sample" ? piece.tree : longer(piece.tree)
           const grown = doom.doomFromTree({
-            theme: doom.themeLibrary[theme]!.theme,
+            theme: themePresetById(theme)!.theme,
             slides: [{ children: placed[piece.name]!.map((spot) => at(tree, spot)) }],
           })
           const slide = grown.slides[0]!

@@ -7,7 +7,6 @@ import { readForAgent } from "./agent-read.js"
 import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { ids, theme } from "./sample-deck.js"
-import { themeLibrary } from "./theme.js"
 import { titleSlideWrites } from "./slide-placeholders.js"
 
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
@@ -156,18 +155,21 @@ describe("presenter notes and the deck's name and theme", () => {
     })
   })
 
-  it("switches to each library theme with one whole-theme write", () => {
-    for (const { id, theme } of Object.values(themeLibrary)) {
-      const change = readAgentChange({ op: "deck", theme: id })
-      if ("refused" in change) throw new Error(JSON.stringify(change))
-      expect(compileAgentChange(agentDeck(), change, minter())).toEqual([
-        { node: ids.deck, prop: "theme", value: theme },
-      ])
-      expect(propOf(at(build(agentDeck(), change), ids.deck), "theme")).toEqual(theme)
+  it("writes a custom theme as a value", () => {
+    const source = theme()
+    const custom = {
+      ...source,
+      fonts: { heading: "Lora", body: "Inter" },
+      textStyles: { ...source.textStyles, title: { ...source.textStyles.title, size: 93 } },
     }
+    const change = readAgentChange({ op: "deck", theme: custom })
+    if ("refused" in change) throw new Error(JSON.stringify(change))
+    expect(compileAgentChange(agentDeck(), change, minter())).toEqual([
+      { node: ids.deck, prop: "theme", value: custom },
+    ])
   })
 
-  it("refuses an unknown library theme at the tool boundary", () => {
+  it("refuses a theme name where an edit needs a theme value", () => {
     expect(readAgentChange({ op: "deck", theme: "toString" })).toMatchObject({ refused: "shape", field: "theme" })
   })
 

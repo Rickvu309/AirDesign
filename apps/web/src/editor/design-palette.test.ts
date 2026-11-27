@@ -1,3 +1,4 @@
+import { newDeckTheme, themePresets } from "@airdesign/skills"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { pickerSwatches } from "@/design/color-choices"
@@ -8,7 +9,7 @@ const swatchesOf = (theme: doom.Theme) => pickerSwatches(paletteOf(doom.emptyDoo
 
 describe("the design palette", () => {
   it("offers the eleven palette colors for every built-in theme", () => {
-    for (const { theme } of Object.values(doom.themeLibrary)) {
+    for (const { theme } of themePresets) {
       const vars = swatchesOf(theme).map(({ var: role }) => role)
       expect(vars).toHaveLength(11)
       for (const role of ["positive", "negative", "total"]) expect(vars).not.toContain(role)
@@ -27,7 +28,7 @@ describe("the design palette", () => {
 
 describe("neutralColorNames", () => {
   it("are the names a new deck's panel shows", () => {
-    const theme = doom.themeLibrary.neutral.theme
+    const theme = newDeckTheme
     const names = Object.fromEntries(swatchesOf(theme).map((swatch) => [swatch.var, swatch.name]))
     expect(names).toEqual(neutralColorNames)
   })

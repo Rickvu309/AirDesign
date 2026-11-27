@@ -7,8 +7,8 @@ import type { Doom } from "./doom.js"
 import { measureWith } from "./measure.js"
 import type { Resolved } from "./resolved.js"
 import { resolveSlide } from "./resolve-slide.js"
-import { ids } from "./sample-deck.js"
-import { themeLibrary } from "./theme.js"
+import { hex, ids } from "./sample-deck.js"
+import { defaultTheme, type Theme } from "./theme.js"
 
 const upright = { rotation: 0, flipH: false, flipV: false }
 const words = (chars: string, style: "title" | "body", color: "text" | "text2") => ({
@@ -41,7 +41,13 @@ const piece: TreeNode = {
   ],
 }
 
-function pasted(theme: "midnight" | "consulting"): { readonly doom: Doom; readonly root: string } {
+const customTheme: Theme = {
+  ...defaultTheme,
+  colors: { ...defaultTheme.colors, accent1: hex(0x155d94), text: hex(0x14293a), text2: hex(0x495d69) },
+  fonts: { heading: "Lora", body: "Source Sans 3" },
+}
+
+function pasted(theme: Theme): { readonly doom: Doom; readonly root: string } {
   const themed = build(agentDeck(), { op: "deck", theme })
   const doom = build(themed, { op: "paste", piece, into: ids.slide, box: { x: 300, y: 200 } })
   return { doom, root: lastChild(doom, ids.slide).id }
@@ -52,9 +58,9 @@ const runsOf = (each: Resolved | undefined) => each?.text?.lines.flatMap((line) 
 
 describe("paste copies a kit piece onto a slide as plain layers bound to the deck's theme", () => {
   it("takes each theme's colours and fonts", () => {
-    for (const name of ["midnight", "consulting"] as const) {
-      const { doom, root } = pasted(name)
-      const { colors, fonts } = themeLibrary[name]!.theme
+    for (const theme of [defaultTheme, customTheme]) {
+      const { doom, root } = pasted(theme)
+      const { colors, fonts } = theme
       const painted = flat(resolveSlide(doom, ids.slide, measureWith({})))
       const frame = painted.find((each) => each.id === root)
       const [title, subtitle] = childrenOf(doom, root as never).map((child) =>
@@ -67,7 +73,7 @@ describe("paste copies a kit piece onto a slide as plain layers bound to the dec
   })
 
   it("places the piece at the box, keeps its own size unless the box gives one, and keeps its layer names", () => {
-    const { doom, root } = pasted("midnight")
+    const { doom, root } = pasted(customTheme)
     expect(propOf(doom.nodes.get(root as never), "box")).toMatchObject({ x: 300, y: 200, w: 800, h: 240 })
     expect(childrenOf(doom, root as never).map((child) => propOf(child, "name"))).toEqual(["Title", "Subtitle"])
     const wide = build(agentDeck(), { op: "paste", piece, into: ids.slide, box: { x: 0, y: 0, w: 1200, h: 300 } })
@@ -76,7 +82,7 @@ describe("paste copies a kit piece onto a slide as plain layers bound to the dec
 
   it("holds no link back to the piece", () => {
     const before = JSON.stringify(piece)
-    const { doom, root } = pasted("midnight")
+    const { doom, root } = pasted(customTheme)
     const copied = [doom.nodes.get(root as never)!, ...childrenOf(doom, root as never)]
     for (const node of copied) {
       expect(Object.keys(node)).not.toContain("origin")

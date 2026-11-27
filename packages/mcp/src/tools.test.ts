@@ -1,3 +1,4 @@
+import { themePresets } from "@airdesign/skills"
 import { catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
@@ -99,13 +100,38 @@ describe("createDeck and get_app_state", () => {
 
   it("creates with a built-in theme and saves nothing when the script fails", async () => {
     const by = agent()
-    const theme = Object.values(doom.themeLibrary).find(({ id }) => id !== "neutral")!
+    const theme = themePresets.find(({ id }) => id !== "neutral")!
     const create = `createDeck(${JSON.stringify({ name: "Themed", theme: theme.id })})`
     const interrupted = await by.call("execute", { script: `${create}; throw new Error("stop")` })
     expect(interrupted.answer).toMatchObject({ ok: false, refusal: "script" })
     expect(by.decks.decks.size).toBe(0)
     const made = await by.call("execute", { script: create })
     expect(made.answer).toMatchObject({ ok: true, name: "Themed", theme: { colors: theme.theme.colors } })
+  })
+
+  it.each(themePresets)("writes the full $name theme through createDeck and variables", async (preset) => {
+    const by = agent()
+    const initial = await by.call("execute", { script: `createDeck({ theme: "${preset.id}" })` })
+    expect(initial.ok).toBe(true)
+    const made = [...by.decks.decks.values()][0]!
+    expect(doom.deckOf(made).theme).toEqual(preset.theme)
+
+    const { deck } = await created(by)
+    const changed = await by.call("execute", { deck, script: `variables({ theme: "${preset.id}" })` })
+    expect(changed.ok).toBe(true)
+    const saved = [...by.decks.decks.values()][1]!
+    expect(doom.deckOf(saved).theme).toEqual(preset.theme)
+  })
+
+  it("refuses an unknown theme id in createDeck and variables", async () => {
+    const by = agent()
+    const made = await by.call("execute", { script: 'createDeck({ theme: "constructor" })' })
+    expect(made.answer).toMatchObject({ ok: false, refusal: "field", field: "theme" })
+    expect(by.decks.decks.size).toBe(0)
+    const { deck, rev } = await created(by)
+    const changed = await by.call("execute", { deck, script: 'variables({ theme: "constructor" })' })
+    expect(changed.answer).toMatchObject({ ok: false, refusal: "field", field: "theme" })
+    expect((await read(by, deck)).answer).toMatchObject({ rev })
   })
 
   it("refuses a field it does not take", async () => {

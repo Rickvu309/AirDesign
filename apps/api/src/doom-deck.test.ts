@@ -1,3 +1,4 @@
+import { newDeckTheme } from "@airdesign/skills"
 import { randomBytes } from "node:crypto"
 import { doomRoutes } from "@airdesign/catalog"
 import { orderKeyBetween } from "@airdesign/doom"
@@ -114,7 +115,7 @@ describe("creating a doom deck", () => {
     const types = [...fold.nodes.values()].map((node) => node.type).sort()
     expect(types).toEqual(["deck", "shape", "shape", "slide", "slideRow"])
     const theme = (fold.nodes.get(startIds.deck) as { theme: doom.Theme }).theme
-    expect(theme).toEqual(doom.themeLibrary.neutral.theme)
+    expect(theme).toEqual(newDeckTheme)
     expect(Object.keys(theme.textStyles)).toEqual([
       "display",
       "bigNumber",

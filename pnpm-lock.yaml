@@ -258,6 +258,9 @@ importers:
       '@airdesign/oauth':
         specifier: workspace:*
         version: link:../../packages/oauth
+      '@airdesign/skills':
+        specifier: workspace:*
+        version: link:../../packages/skills
       '@airdesign/usage':
         specifier: workspace:*
         version: link:../../packages/usage
@@ -353,6 +356,9 @@ importers:
       '@airdesign/render':
         specifier: workspace:*
         version: link:../../packages/render
+      '@airdesign/skills':
+        specifier: workspace:*
+        version: link:../../packages/skills
       '@airdesign/theme':
         specifier: workspace:*
         version: link:../../packages/theme
@@ -480,6 +486,9 @@ importers:
         specifier: workspace:*
         version: link:../doom
     devDependencies:
+      '@airdesign/skills':
+        specifier: workspace:*
+        version: link:../skills
       oxlint:
         specifier: ^1.90.0
         version: 1.92.0
@@ -584,6 +593,10 @@ importers:
         version: 7.0.2
 
   packages/skills:
+    dependencies:
+      '@airdesign/doom':
+        specifier: workspace:*
+        version: link:../doom
     devDependencies:
       oxlint:
         specifier: ^1.90.0

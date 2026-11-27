@@ -42,7 +42,7 @@ Precise documentation. A cool off-white page, Geist throughout, everything on a 
 
 ## Typography
 
-- Titles in `title`: Geist at 52, sentence case, two lines at most.
+- Titles in `title`: Geist at 56, sentence case, two lines at most.
 - Box labels in `body2`; box headers in `label`. Sentence case everywhere, no upper case labels.
 - Numbers carry units; metrics in `bigNumber` with a `caption` label.
 - Nothing under `caption`.

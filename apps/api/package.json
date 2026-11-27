@@ -19,6 +19,7 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
+    "@airdesign/skills": "workspace:*",
     "@airdesign/catalog": "workspace:*",
     "@airdesign/doom": "workspace:*",
     "@airdesign/fonts": "workspace:*",

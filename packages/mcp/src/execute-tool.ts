@@ -1,4 +1,7 @@
 import { readCreateDeck, readExecute, readNamedDeck } from "@airdesign/catalog"
+import type { Theme } from "@airdesign/doom"
+import { themePresetById, themePresets } from "@airdesign/skills"
+
 import { answered, doomRefused, hostRefused, refused, told, type ToolContent, type ToolResult } from "./answer.js"
 import { readAnswer } from "./deck-read.js"
 import type { DeckHost } from "./deck-host.js"
@@ -131,7 +134,7 @@ function leadOf(landed: Landed | undefined, rev: number): string {
 }
 
 async function createFromScript(script: string, once: string, host: DeckHost): Promise<ToolResult> {
-  let creation: Extract<ReturnType<typeof readCreateDeck>, { ok: true }> | undefined
+  let creation: { readonly name: string; readonly theme: Theme | undefined } | undefined
   let failure: ToolResult | undefined
   let ops = 0
   const operation = async (verb: string, fields: unknown): Promise<Answer> => {
@@ -142,12 +145,17 @@ async function createFromScript(script: string, once: string, host: DeckHost): P
       failure = refused("field", { note: "Call createDeck once per script." })
     } else {
       const parsed = readCreateDeck(fields === undefined ? {} : fields)
-      if (parsed.ok) {
-        creation = parsed
-        return { ok: true, value: undefined }
+      if (!parsed.ok) {
+        const { ok: _ok, refusal, ...detail } = parsed
+        failure = refused(refusal, detail)
+      } else {
+        const preset = themePresetById(parsed.theme)
+        if (parsed.theme === undefined || preset !== undefined) {
+          creation = { name: parsed.name, theme: preset?.theme }
+          return { ok: true, value: undefined }
+        }
+        failure = refused("field", { field: "theme", fault: "form", form: themePresets.map(({ id }) => id).join(", ") })
       }
-      const { ok: _ok, refusal, ...detail } = parsed
-      failure = refused(refusal, detail)
     }
     return { ok: false, message: String(failure.answer.note) }
   }
