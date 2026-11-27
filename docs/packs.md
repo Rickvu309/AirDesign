@@ -115,6 +115,7 @@ flowchart TD
   p_apps_web_src_credits --> p_apps_web_src_copy
   p_apps_web_src_credits --> p_apps_web_src_editor
   p_apps_web_src_credits --> p_apps_web_src_lib
+  p_apps_web_src_deck_view --> p_packages_doom
   p_apps_web_src_deck_view --> p_apps_web_src_components
   p_apps_web_src_deck_view --> p_apps_web_src_copy
   p_apps_web_src_deck_view --> p_apps_web_src_editing
@@ -183,7 +184,7 @@ flowchart TD
 | `apps/web/src/connect` | feature | connect-screens.tsx, oauth-authorize.tsx, oauth-consent-path.ts | apps/web/src/components, apps/web/src/copy | none |
 | `apps/web/src/copy` | platform | account-copy.ts, agent-runs-copy.ts, aira-copy.ts, border-copy.ts, box-copy.ts, color-copy.ts, color-name-copy.ts, connect-agent-copy.ts, connect-copy.ts, credits-copy.ts, deck-time-copy.ts, deck-view-copy.ts, design-copy.ts, editor-copy.ts, export-copy.ts, fill-copy.ts, format-copy.ts, geometry-copy.ts, link-copy.ts, notes-copy.ts, option-copy.ts, picture-copy.ts, present-copy.ts, product-copy.ts, selection-colors-copy.ts, settings-copy.ts, shape-copy.ts, slide-list-copy.ts, story-ideas-copy.ts, text-copy.ts, undo-copy.ts, usage-copy.ts | packages/doom, apps/web/src/lib | none |
 | `apps/web/src/credits` | feature | credits-cards.tsx, credits-screens.tsx, use-credits.ts | apps/web/src/account, apps/web/src/components, apps/web/src/copy, apps/web/src/editor, apps/web/src/lib | none |
-| `apps/web/src/deck-view` | feature | deck-view.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
+| `apps/web/src/deck-view` | feature | chat-deck-view.tsx, deck-view.tsx | packages/doom, apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
 | `apps/web/src/decks` | feature | agent-logos.ts, agent-mark.tsx, aira-page.tsx, connect-agent.tsx, connected-agent.ts, danger-dialog.tsx, deck-glyph.tsx, discard-opening.ts, decks-screens.tsx, decks-shell.tsx, delete-account.tsx, home.tsx, not-found-page.tsx | apps/web/src/account, apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |
 | `apps/web/src/design` | shared | color-choices.ts, color-names.ts, color-picker.tsx, control-desc.ts, control-views.ts, controls/color.tsx, controls/union.tsx, design-shown.ts, icon-search.tsx, panel-arrangement.ts, panel-folds.ts, panel-order.ts, panel.ts, preset-icons.ts, shape-grid.tsx, served-faces.ts, shape-marks.tsx | packages/doom, apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
 | `apps/web/src/editing` | shared | canvas-zoom.ts, painted-picture.ts, picture-file.ts, slide-capture.ts, slide-layout.ts, slide-screenshot-report.ts, slide-screenshots.ts, use-asset-urls.ts, use-slide-screenshots.ts | packages/doom, apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |

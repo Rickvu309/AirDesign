@@ -1,4 +1,4 @@
-import { httpDoomRemote, memoryStorage, openDoomDeck, type DoomDeck } from "@airdesign/live"
+import { memoryStorage, openDoomDeck, type DoomDeck, type DoomRemote } from "@airdesign/live"
 import { useEffect, useState } from "react"
 
 export type ViewOpening =
@@ -6,9 +6,7 @@ export type ViewOpening =
   | { readonly status: "missing" }
   | { readonly status: "ready"; readonly deck: DoomDeck }
 
-const remote = httpDoomRemote()
-
-export function useViewDeck(id: string): ViewOpening {
+export function useViewDeck(id: string, remote: DoomRemote): ViewOpening {
   const [opening, setOpening] = useState<ViewOpening>({ status: "loading" })
   useEffect(() => {
     let current = true
@@ -28,6 +26,6 @@ export function useViewDeck(id: string): ViewOpening {
       current = false
       stop.abort()
     }
-  }, [id])
+  }, [id, remote])
   return opening
 }

@@ -90,7 +90,7 @@ A JPEG of one slide that a device painter took after the edit landed, which `scr
 _Avoid_: picture, slide picture, capture
 
 **painter lease**:
-A device painter's hold on a deck: the open editor tab today, any view that paints the deck later. It lasts while the painter waits for screenshot jobs and a few seconds after (`DeckScreenshots.lease`). With no lease, a screenshot answers at once that no painter is open.
+A device painter's hold on a deck: an open editor tab, or the deck view, in a browser tab or in a chat as an MCP App. It lasts while the painter waits for screenshot jobs and a few seconds after (`DeckScreenshots.lease`). With no lease, a screenshot answers at once that no painter is open.
 _Avoid_: watcher, open tab
 
 **agent change**:

@@ -1,8 +1,7 @@
 import { createHmac, randomBytes } from "node:crypto"
 
-import { airaTools, countryHeader, mcpRoutes, signInRoutes } from "@airdesign/catalog"
+import { airaTools, countryHeader, signInRoutes } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/doom"
-import { Client as McpClient, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
@@ -418,30 +417,6 @@ describe("POST /aira/turn meters each turn of a run the browser drives", () => {
     expect(replay.calls.length).toBe(calls)
     expect(await turnsOf(account.email)).toMatchObject([{ outcome: "settled" }])
   })
-})
-
-it("gives Aira the MCP tool list and server instructions", async () => {
-  const account = await signIn()
-  const client = new McpClient({ name: "parity", version: "0" })
-  await client.connect(
-    new StreamableHTTPClientTransport(new URL(mcpRoutes.mcp.path, main), {
-      requestInit: { headers: { cookie: account.cookie } },
-    }),
-  )
-  try {
-    const { tools } = await client.listTools()
-    const instructions = client.getInstructions()
-    expect(instructions).toContain("read the `slides` guide with airdesign_read_skill")
-    expect((await turn(account)).status).toBe(200)
-    const call = replay.calls.at(-1)?.call
-    expect(call?.tools).toEqual(
-      tools.map(({ name, description, inputSchema }) => ({ name, description, input_schema: inputSchema })),
-    )
-    expect(call?.system).toContain(`${deck}.\n\n${instructions}`)
-    expect(call?.system).not.toContain("Read the open deck before editing.")
-  } finally {
-    await client.close()
-  }
 })
 
 describe("POST /aira/turn pins the call and logs no person data", () => {

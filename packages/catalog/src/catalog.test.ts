@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { catalog, projectTools, toolInputSchema } from "./index.js"
+import { catalog, doomRoutes, projectTools, toolInputSchema, viewTools } from "./index.js"
 
 describe("run operations in the catalog", () => {
   it("keeps start_run from agents and offers stop_run and undo_run on the server", () => {
@@ -56,7 +56,16 @@ describe("projectTools", () => {
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
+      view: true,
     })
+  })
+
+  it("shows the deck view for execute and get_app_state only", () => {
+    expect(
+      projectTools(catalog)
+        .filter((tool) => tool.view)
+        .map((tool) => tool.name),
+    ).toEqual(["airdesign_execute", "airdesign_get_app_state"])
   })
 
   it("describes guides, runs and edits with the agent's glossary words", () => {
@@ -129,4 +138,15 @@ it("reads an execute call: a deck, a script up to 100,000 characters and an opti
     form: "The runId a call answered: 1 to 64 of letters, digits, _ or -.",
   })
   expect(read({ deck: "bad id!", script: "1" })).toEqual({ ok: false, refusal: "deck" })
+})
+
+it("names a view tool for each doom route the deck view reads", () => {
+  expect(viewTools).toEqual({
+    open: "airdesign_view_open",
+    since: "airdesign_view_since",
+    screenshots: "airdesign_view_screenshots",
+  })
+  for (const route of Object.keys(viewTools)) expect(doomRoutes).toHaveProperty(route)
+  const agentNames = new Set(projectTools(catalog).map((tool) => tool.name))
+  for (const name of Object.values(viewTools)) expect(agentNames.has(name)).toBe(false)
 })

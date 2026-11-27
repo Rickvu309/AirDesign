@@ -1,7 +1,15 @@
 import * as doom from "@airdesign/doom"
-import type { DoomDeck } from "@airdesign/live"
+import type { DoomDeck, DoomRemote } from "@airdesign/live"
 import { DoomSlide, Filmstrip } from "@airdesign/render"
-import { useLayoutEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react"
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type KeyboardEvent,
+  type MouseEvent,
+} from "react"
 import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { hairlineShadow, surfaceShadow } from "@/components/ui/shadows"
@@ -51,26 +59,70 @@ function stepOf(key: string, at: number, count: number): number | null {
   return null
 }
 
-function OpenLink({ href }: { readonly href: string }) {
+export type Shell = {
+  readonly openLink?: (url: string) => void
+  readonly fitHeight?: (height: number) => void
+}
+
+function opener(shell: Shell) {
+  const { openLink } = shell
+  if (openLink === undefined) return undefined
+  return (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault()
+    openLink(event.currentTarget.href)
+  }
+}
+
+function OpenLink({ href, shell }: { readonly href: string; readonly shell: Shell }) {
   return (
-    <a href={href} target="_blank" rel="noreferrer" className={buttonVariants({ size: "dense" })}>
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className={buttonVariants({ size: "dense" })}
+      onClick={opener(shell)}
+    >
       {deckViewCopy.openInAirDesign}
     </a>
   )
 }
 
-function ShownDeck({ id, client }: { readonly id: string; readonly client: DoomDeck }) {
+function ShownDeck({
+  id,
+  client,
+  slide: named,
+  shell,
+}: {
+  readonly id: string
+  readonly client: DoomDeck
+  readonly slide: string | undefined
+  readonly shell: Shell
+}) {
   const view = useSyncExternalStore(client.subscribe, client.view)
   const assets = useAssetUrls(id, view)
   useSlideScreenshots(client, assets.assetUrl)
   const slides = doom.slidesOf(view).map((slide) => slide.id)
   const [chosen, setChosen] = useState<doom.NodeId | undefined>(undefined)
+  useEffect(() => {
+    if (named !== undefined) setChosen(named as doom.NodeId)
+  }, [named])
   const at = Math.max(0, chosen === undefined ? 0 : slides.indexOf(chosen))
   const slide = slides[at]
   const { size } = doom.deckOf(view)
   const [roomRef, room] = useRoom()
   const strip = useRef<HTMLElement>(null)
+  const header = useRef<HTMLElement>(null)
   const stepped = useRef(false)
+  const { fitHeight } = shell
+  const wide = room?.width
+  const many = slides.length > 1
+
+  useLayoutEffect(() => {
+    if (fitHeight === undefined || wide === undefined) return
+    const padding = paddingOf({ width: wide, height: 0 })
+    const slideHeight = Math.round(((wide - padding * 2) * size.h) / size.w)
+    fitHeight((header.current?.offsetHeight ?? 0) + slideHeight + padding * 2 + (strip.current?.offsetHeight ?? 0))
+  }, [fitHeight, wide, size.w, size.h, many])
 
   useLayoutEffect(() => {
     const current = strip.current?.querySelector<HTMLElement>('[aria-current="true"]')
@@ -92,10 +144,10 @@ function ShownDeck({ id, client }: { readonly id: string; readonly client: DoomD
   const thumbHeight = Math.round((thumbWidth * size.h) / size.w)
   return (
     <div className="flex h-dvh flex-col bg-canvas text-foreground" data-deck-view-ready={id}>
-      <header className="flex h-12 shrink-0 items-center gap-2.5 border-b border-line bg-white pr-2 pl-4">
+      <header ref={header} className="flex h-12 shrink-0 items-center gap-2.5 border-b border-line bg-white pr-2 pl-4">
         <AirdesignMark size={20} />
         <h1 className="min-w-0 flex-1 truncate text-sm font-medium">{doom.deckName(view)}</h1>
-        <OpenLink href={`/s/${id}`} />
+        <OpenLink href={`/s/${id}`} shell={shell} />
       </header>
       <main ref={roomRef} className="relative flex min-h-0 flex-1 items-center justify-center">
         {slide !== undefined && width > 0 && (
@@ -144,7 +196,7 @@ function ShownDeck({ id, client }: { readonly id: string; readonly client: DoomD
   )
 }
 
-function Missing() {
+function Missing({ shell }: { readonly shell: Shell }) {
   return (
     <div className="flex h-dvh flex-col items-center justify-center bg-canvas px-6 text-center" data-deck-view-missing>
       <h1 className="text-[length:var(--type-title)] leading-8 font-medium tracking-page-title">
@@ -157,6 +209,7 @@ function Missing() {
         href="/"
         target="_blank"
         rel="noreferrer"
+        onClick={opener(shell)}
         className={buttonVariants({ size: "lg", className: "mt-6 h-9 px-3.5" })}
       >
         {productCopy.goToDecks}
@@ -165,14 +218,24 @@ function Missing() {
   )
 }
 
-export function DeckView({ id }: { readonly id: string }) {
-  const opening = useViewDeck(id)
-  if (opening.status === "missing") return <Missing />
+export function DeckView({
+  id,
+  slide,
+  remote,
+  shell = {},
+}: {
+  readonly id: string
+  readonly slide?: string | undefined
+  readonly remote: DoomRemote
+  readonly shell?: Shell
+}) {
+  const opening = useViewDeck(id, remote)
+  if (opening.status === "missing") return <Missing shell={shell} />
   if (opening.status === "loading")
     return (
       <div className="h-dvh bg-canvas" aria-busy="true">
         <span className="sr-only">{deckViewCopy.opening}</span>
       </div>
     )
-  return <ShownDeck id={id} client={opening.deck} />
+  return <ShownDeck id={id} client={opening.deck} slide={slide} shell={shell} />
 }
