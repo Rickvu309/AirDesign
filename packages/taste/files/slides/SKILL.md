@@ -33,13 +33,17 @@ Then read the one playbook your intent names and follow it. Read a principle onl
 
 ## The deck
 
-- 5 to 8 slides, the cover included, unless the person asks for more. No appendix and no section dividers unless asked: detail goes in a table on the slide that needs it, or is left out.
+- 5 to 8 slides, the cover included, unless the person asks for more. 8 is a ceiling, not a target: each ask and each finding keeps the slide with its evidence. No appendix and no section dividers unless asked: detail goes in a table on the slide that needs it, or is left out.
 - Say the recommendation once, up front; later slides prove it. The last slide is the ask or the next steps, with owners and dates, never a recap.
 
 ## Every slide
 
+- The title is one sentence of 12 words or fewer, two lines at most. Count the words.
 - Text takes its size from the theme's text styles: `title`, `heading`, `body`, `body2`, `caption`, `label`, `bigNumber`. Nothing under 24 px on the 1920 by 1080 slide, chart labels and footnotes included. When content does not fit, split the slide or cut words.
 - Fill the body area, from under the title to above the source line, about y 280 to 960. The main chart, table or diagram is as tall as that space, not its natural height. A row of cards gets the exhibit that explains it below. An empty band over a quarter of the slide, or a slide with a few words, is unfinished: add the proof or merge it.
 - One accent per slide, on the thing the title names.
+- One figure, one value: a number reads the same in the title, the chart and the table, with the same rounding.
+- Bars, columns and waterfall totals stand on a zero baseline.
+- A gap or correction in the material sits beside the exhibit it changes, under the chart or as a row note, with both figures named.
 - After each slide, read it with `get({ target: slide })` in `airdesign_execute` and fix every problem before the next slide.
 - When the deck is done, call `screenshot({ target: slide })` on each slide and look at it as the reader will. If the answer says no tab is open, carry on without pictures.

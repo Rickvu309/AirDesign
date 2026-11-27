@@ -32,7 +32,7 @@ Options, chosen by what the slide must prove. Copy them from `kit`; each recipe 
 ## Pause 1: Setup
 
 - [ ] The ask is one sentence, and slide 1 or 2 says a decision is needed today.
-- [ ] The plan is 5 to 8 slides with the cover, with no appendix, divider or recap slide unless the person asked. The model's detail sits in a table on the slide it proves.
+- [ ] The plan is 5 to 8 slides with the cover, with no appendix, divider or recap slide unless the person asked. Each ask or finding keeps the slide with its evidence. The model's detail sits in a table on the slide it proves.
 - [ ] The lead argument fits the decider's function: return for finance, market and customers for product, risk for operations.
 - [ ] The first content slide alone carries the answer and the ask. No later slide says the recommendation again.
 
@@ -43,10 +43,12 @@ Options, chosen by what the slide must prove. Copy them from `kit`; each recipe 
 - [ ] Options are ordered by impact, the recommended one named, and rejected options listed with the reason for each.
 - [ ] The ask names owners, money, sign-offs and dates, and the assumptions that must hold.
 - [ ] No body runs over five points or about 40 words.
-- [ ] Every total is re-added from its parts, and every percentage and difference recomputed, before it goes on a slide. Where the material's own figure disagrees, the slide shows the recomputed one and a note says so.
+- [ ] The material's own model is tested before the deck relies on it. Does an input already include the effect it is said to add? Does a cap, limit or segment size in the material bound the claimed effect? Do the parts behave as the plan assumes? Each answer, with its arithmetic, sits on the slide beside the figure it tests.
+- [ ] Every total is re-added from its parts, and every percentage and difference recomputed, before it goes on a slide. Where the material's own figure disagrees, the slide shows the recomputed one, and the gap, both figures named, sits under the exhibit it changes.
 
 ## Pause 3: Headlines
 
+- [ ] Each title is one sentence of 12 words or fewer, two lines at most.
 - [ ] Read alone, the titles go: recommendation, reasons, ask.
 - [ ] Each title gives a verdict or a move. A cautious title names what it depends on.
 - [ ] The last slide is the ask: what to approve, owners, money and dates.

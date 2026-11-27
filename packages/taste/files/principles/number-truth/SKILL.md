@@ -12,7 +12,6 @@ A wrong number ends the reader's trust in every other number. Each figure on a s
 - Every number comes from the material, or from one step of arithmetic on it. Write the arithmetic down before you type the result.
 - Round once, from the source value. 108,475 €k becomes €108.5m; rounding a rounded number drifts.
 - One precision across a series: all whole numbers, or one decimal when the values are under 10.
-- One metric has one value across the whole deck.
 - A group like "Others" is the sum of its members, computed, never estimated.
 - When the material's parts do not add up to its total, show the parts and say so in a note. Never repeat a wrong total.
 
@@ -33,7 +32,7 @@ A wrong number ends the reader's trust in every other number. Each figure on a s
 
 ## Drawn
 
-- Bars and columns start at zero; the longest takes the full track.
+- The longest bar takes the full track.
 - A target line carries its label, set apart from the bar ends.
 - The unit is named once, in the header or column head: $M, %, FTE. Values carry it when they stand alone.
 - Labels sit on or beside their marks, so a single series needs no legend.

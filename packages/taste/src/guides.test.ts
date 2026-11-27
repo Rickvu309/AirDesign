@@ -93,8 +93,18 @@ describe("guides", () => {
     expect(styleLine).toContain("airdesign_get_style {name: <style>}")
   })
 
+  it("states the title limit without a trigger, in the router and every Headlines pause", () => {
+    expect(guide("slides")?.markdown).toMatch(/12 words or fewer/)
+    const playbooks = guides().filter((each) => each.name.startsWith("playbooks/"))
+    expect(playbooks.length).toBe(5)
+    for (const each of playbooks) {
+      const headlines = each.markdown.split(/\n(?=## )/).find((section) => section.startsWith("## Pause 3: Headlines"))
+      expect(headlines, each.name).toMatch(/12 words or fewer/)
+    }
+  })
+
   it.each([
-    ["slides", 45],
+    ["slides", 50],
     ["playbooks/", 70],
     ["principles/", 70],
   ])("keeps %s within %i lines", (prefix, most) => {

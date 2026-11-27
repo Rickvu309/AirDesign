@@ -33,7 +33,7 @@ Options, chosen by what the slide must explain. Copy them from `kit`; each recip
 - [ ] The session type is stated: inform, decide, or solve a problem together.
 - [ ] Jargon stays only where every reader shares it; any other term is defined once where it first appears.
 - [ ] An unfamiliar system is shown as its parts before any conclusion about it.
-- [ ] The plan is 5 to 8 slides with the cover, with no appendix, divider or recap slide unless the person asked.
+- [ ] The plan is 5 to 8 slides with the cover, with no appendix, divider or recap slide unless the person asked. Each ask or finding keeps the slide with its evidence.
 
 ## Pause 2: Content
 
@@ -42,10 +42,11 @@ Options, chosen by what the slide must explain. Copy them from `kit`; each recip
 - [ ] Judgment calls, assumptions, dependencies and risks each have a slide or a row.
 - [ ] A comparison of three or more options on three or more criteria is a table.
 - [ ] No sentence runs past two clauses; nuance goes into points or table rows.
-- [ ] Every total is re-added from its parts, and every percentage and difference recomputed, before it goes on a slide. Where the material's own figure disagrees, the slide shows the recomputed one and a note says so.
+- [ ] Every total is re-added from its parts, and every percentage and difference recomputed, before it goes on a slide. Where the material's own figure disagrees, the slide shows the recomputed one, and the gap, both figures named, sits under the exhibit it changes.
 
 ## Pause 3: Headlines
 
+- [ ] Each title is one sentence of 12 words or fewer, two lines at most.
 - [ ] Each title asserts the choice made or the finding: "A queue between ingest and render keeps p99 under 200 ms".
 - [ ] Precision wins over punch: units, versions and conditions are named.
 - [ ] Read alone, the titles go: problem, constraints, design, evidence, plan.

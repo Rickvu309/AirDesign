@@ -32,7 +32,7 @@ Options, chosen by the form each old slide should take. Copy them from `kit`; ea
 - [ ] The ask and the mode are recovered from the old deck or the brief, and the ask is one sentence.
 - [ ] The deck keeps its style unless that style is broken; a broken one is replaced by the style its job calls for.
 - [ ] Every number in the old deck is listed, so none changes or goes missing by accident.
-- [ ] The plan is 5 to 8 slides with the cover, with no appendix, divider or recap slide unless the person asked.
+- [ ] The plan is 5 to 8 slides with the cover, with no appendix, divider or recap slide unless the person asked. Each ask or finding keeps the slide with its evidence.
 
 ## Pause 2: Content
 
@@ -40,10 +40,11 @@ Options, chosen by the form each old slide should take. Copy them from `kit`; ea
 - [ ] Material that is merely interesting is cut.
 - [ ] Lists are reordered so the most important item comes first.
 - [ ] A data dump becomes groups with what to do about each.
-- [ ] Every total is re-added from its parts, and every percentage and difference recomputed. Where the old deck's figure disagrees, the slide shows the recomputed one and a note says so.
+- [ ] Every total is re-added from its parts, and every percentage and difference recomputed. Where the old deck's figure disagrees, the slide shows the recomputed one, and the gap, both figures named, sits under the exhibit it changes.
 
 ## Pause 3: Headlines
 
+- [ ] Each title is one sentence of 12 words or fewer, two lines at most.
 - [ ] Every label title is now a claim with a verb.
 - [ ] The answer moved to the front; the titles alone tell the argument.
 - [ ] Jargon titles are rewritten in plain words.

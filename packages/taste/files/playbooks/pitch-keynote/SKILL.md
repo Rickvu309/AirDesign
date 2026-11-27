@@ -32,7 +32,7 @@ Options, chosen by the moment in the talk. Copy them from `kit`; each recipe is 
 - [ ] The mode is `live`. Builds are fine when the speaker controls the flow and the room does not interrupt.
 - [ ] The tone (confident, or optimistic with named dependencies) and the angle for this audience are chosen.
 - [ ] The talk has three pillars of equal rank, previewed early.
-- [ ] The plan is 5 to 8 slides with the cover, with no divider or recap slide unless the person asked for a longer talk.
+- [ ] The plan is 5 to 8 slides with the cover, with no divider or recap slide unless the person asked for a longer talk. Each claim keeps the slide that proves it.
 
 ## Pause 2: Content
 
@@ -40,11 +40,11 @@ Options, chosen by the moment in the talk. Copy them from `kit`; each recipe is 
 - [ ] Each big number is made human: per person, per day, against something familiar, before and after, or the cost of waiting.
 - [ ] When raw size is small, the case rests on growth or efficiency, and the raw figure still appears.
 - [ ] Each slide holds one idea and at most three short points; the speaker says the rest.
-- [ ] Every total is re-added from its parts, and every percentage and difference recomputed, before it goes on a slide. Where the material's own figure disagrees, the slide shows the recomputed one and a note says so.
+- [ ] Every total is re-added from its parts, and every percentage and difference recomputed, before it goes on a slide. Where the material's own figure disagrees, the slide shows the recomputed one, and the gap, both figures named, sits under the exhibit it changes.
 
 ## Pause 3: Headlines
 
-- [ ] Each title is a short hook the room gets at a glance, and its figure sits on the same slide.
+- [ ] Each title is a short hook the room gets at a glance: one sentence of 12 words or fewer, two lines at most, its figure on the same slide.
 - [ ] Titles state the story, not the metric: "Customers stay twice as long", not "Retention by cohort".
 - [ ] Every number, date and name in a title matches the material exactly: £4.8M stays £4.8M, and a date or deadline appears only when the material gives it or one step of arithmetic on it does.
 - [ ] The closing slide is the ask, with a date or a next step.
