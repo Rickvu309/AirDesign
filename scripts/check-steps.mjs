@@ -296,6 +296,14 @@ const rows = [
   { name: "spec-coverage", kind: "rule", command: "node", args: ["scripts/spec-replays.mjs"], verdict: "warn" },
   { name: "spec-drift", kind: "rule", command: "node", args: ["scripts/spec-sync.mjs"], verdict: "warn" },
   {
+    name: "doom-never-knows",
+    kind: "rule",
+    command: "node",
+    args: ["scripts/doom-never-knows.mjs"],
+    verdict: "warn",
+    showOnSuccess: true,
+  },
+  {
     name: "package-boundaries",
     kind: "rule",
     command: "pnpm",

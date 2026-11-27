@@ -184,6 +184,7 @@ const warningSteps = [
   "restored-files",
   "spec-drift",
   "spec-coverage",
+  "doom-never-knows",
   "design-findings",
 ]
 for (const name of warningSteps) {
