@@ -11,22 +11,21 @@ Horizontal bars ranked from largest to smallest: a ranking, market shares, a com
 
 - Items with names, compared by one number. Never time: periods go on a `charts/column` or `charts/line`.
 - 3 to 10 bars. Above 10, keep the top 9 and sum the rest into "Other", or show a table.
-- Values of zero or more. A chart with losses is a column chart with bars below a zero line.
+- Values of zero or more. A chart with losses is a `charts/waterfall` or a column chart with bars below a zero line.
 
 ## The rules
 
-- Sort from largest to smallest. "Other" goes last, whatever its size.
-- Bars start at zero and the longest bar takes the whole track: length = value / largest × track.
-- Value labels sit just after each bar's end, so no value axis and no gridlines.
-- Names sit left of the bars, right-aligned to one edge, in up to two lines. A name that needs three lines is too long: shorten it.
-- The gap between bars is smaller than a bar: a bar takes 60% of its row, 64 px at most.
+- Rank the bars from largest to smallest. "Other" goes last, whatever its size.
+- Bars start at a zero line and the longest bar takes the whole track: length = value / largest × track.
+- Label the data: each value sits just after its bar's end, so there is no value axis and no gridlines.
+- Names sit left of the bars on one line, right-aligned to one edge. The name column is as wide as the longest name, up to 40% of the chart. A longer name needs fewer words.
+- A bar takes 60% of its row, 64 px at most, so the gaps stay smaller than the bars.
 - One bar in `accent1`, the one the title talks about, with its value in bold. The others are `text` at 20% opacity. With no single point, every bar is `accent1`.
-- The header above the chart names what is measured and the unit: "Revenue by market, $M". Values then carry the unit too: "$412M".
-- One precision for all values: whole numbers, or one decimal when the values are under 10.
+- The unit lives once, in the header above the chart: "Revenue by market, $M". Values are bare numbers at one precision: whole numbers, or one decimal when the values are under 10.
 
 ## The script
 
-Change the six values at the top: the slide, the chart's box on the slide, the header, the rows, the name to accent and how a value reads. The rest does the arithmetic.
+Change the six values at the top: the slide, the chart's box on the slide, the header, the rows, the name to accent and how a value reads. The rest does the arithmetic and reads the deck's text sizes.
 
 ```js
 const slide = "<slide id>"
@@ -41,14 +40,16 @@ const rows = [
   ["Other", 96],
 ]
 const accent = "Germany"
-const shown = (value) => `$${value}M`
+const shown = (value) => `${value}`
 
+const { sizes } = variables({})
+const wide = (words, size) => Math.ceil(words.replaceAll("*", "").length * size * 0.56)
 const ranked = rows.toSorted((a, b) => (a[0] === "Other") - (b[0] === "Other") || b[1] - a[1])
 const largest = Math.max(...ranked.map(([, value]) => value))
 const top = 72
-const nameW = Math.round(box.w * 0.22)
-const valueW = 160
-const barX = nameW + 32
+const nameW = Math.min(Math.round(box.w * 0.4), Math.max(...ranked.map(([name]) => wide(name, sizes.body2))))
+const valueW = Math.max(...ranked.map(([, value]) => wide(`**${shown(value)}**`, sizes.body2))) + 8
+const barX = nameW + 24
 const track = box.w - barX - 16 - valueW
 const row = (box.h - top) / ranked.length
 const thick = Math.min(64, Math.round(row * 0.6))
@@ -66,7 +67,7 @@ insert({
 ranked.forEach(([name, value], i) => {
   const y = Math.round(top + i * row)
   const h = Math.round(top + (i + 1) * row) - y
-  const w = Math.round((track * value) / largest)
+  const w = Math.max(2, Math.round((track * value) / largest))
   const lit = name === accent
   insert({
     parent: chart,

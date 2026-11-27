@@ -10,19 +10,18 @@ Vertical columns over periods: quarters, months, years. Draw it yourself from re
 ## When
 
 - One number over 3 to 12 periods, in time order. Above 12 periods, draw a `charts/line`.
-- Items that are not time go on a `charts/bar`, ranked.
+- Items that are not time go on a `charts/bar`, ranked. Parts of each period's total go on a `charts/stacked-column`.
 - Values of zero or more.
 
 ## The rules
 
 - Periods run left to right, oldest first. Never sort them.
-- Columns start at zero on one baseline, and the tallest column takes the whole height: height = value / largest × plot height.
-- Value labels sit just above each column, so no value axis and no gridlines.
+- Columns start at one zero line and the tallest column takes the whole height: height = value / largest × plot height.
+- Label the data: each value sits just above its column, so there is no value axis and no gridlines.
 - Each period's name sits under its column, centred in the column's slot, in up to two lines. Never turn a name on its side: shorten it instead, "Q1 25" rather than "First quarter 2025", or name the year once in the header.
-- The gap between columns is smaller than a column: a column takes 60% of its slot, 120 px at most.
+- A column takes 60% of its slot, 120 px at most, so the gaps stay smaller than the columns.
 - One column in `accent1`, the period the title talks about, often the latest, with its value in bold. The others are `text` at 20% opacity. Mark an estimate in its name: "2027E".
-- The header above the chart names what is measured and the unit: "Revenue, $M".
-- One precision for all values.
+- The unit lives once, in the header above the chart: "Revenue, $M". Values are bare numbers at one precision.
 
 ## The script
 
@@ -43,14 +42,17 @@ const rows = [
   ["Q4 26", 59],
 ]
 const accent = "Q4 26"
-const shown = (value) => `$${value}M`
+const shown = (value) => `${value}`
 
+const { sizes } = variables({})
+const wide = (words, size) => Math.ceil(words.replaceAll("*", "").length * size * 0.56)
 const largest = Math.max(...rows.map(([, value]) => value))
-const nameH = 72
+const slot = box.w / rows.length
+const lines = rows.some(([name]) => wide(name, sizes.body2) > slot - 8) ? 2 : 1
+const nameH = Math.ceil(lines * sizes.body2 * 1.4)
 const base = box.h - nameH - 16
 const plotTop = 128
-const slot = box.w / rows.length
-const wide = Math.min(120, Math.round(slot * 0.6))
+const thick = Math.min(120, Math.round(slot * 0.6))
 const muted = { fill: "text", opacity: 0.2 }
 
 const chart = insert({ parent: slide, kind: "frame", layout: "none", name: "Column chart", box })
@@ -65,7 +67,7 @@ insert({
 rows.forEach(([name, value], i) => {
   const x = Math.round(i * slot)
   const w = Math.round((i + 1) * slot) - x
-  const h = Math.round(((base - plotTop) * value) / largest)
+  const h = Math.max(2, Math.round(((base - plotTop) * value) / largest))
   const lit = name === accent
   insert({
     parent: chart,
@@ -74,7 +76,7 @@ rows.forEach(([name, value], i) => {
     name: "Column",
     radius: 0,
     ...(lit ? { fill: "accent1" } : muted),
-    box: { x: x + Math.round((w - wide) / 2), y: base - h, w: wide, h },
+    box: { x: x + Math.round((w - thick) / 2), y: base - h, w: thick, h },
   })
   insert({
     parent: chart,
@@ -93,7 +95,7 @@ rows.forEach(([name, value], i) => {
     kind: "shape",
     fill: "none",
     name: "Name",
-    padding: 0,
+    padding: { t: 0, r: 4, b: 0, l: 4 },
     textStyle: "body2",
     color: "text2",
     text: name,
