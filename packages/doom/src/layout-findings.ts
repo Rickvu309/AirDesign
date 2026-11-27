@@ -2,11 +2,14 @@ import { charsByFace } from "./measure.js"
 import { deckOf } from "./deck-of.js"
 import type { Doom, Write } from "./doom.js"
 import { descendantsOf, propOf, slideOf, slidesOf } from "./doom-walk.js"
-import type { NodeId } from "./ids.js"
+import { readNodeId, type NodeId } from "./ids.js"
+import { strokeCrosses, strokeRoute, type StrokeRoute } from "./layout-line-crossing.js"
+import { routeSpots } from "./line-ends.js"
 import type { Measure } from "./measure.js"
 import { textArea } from "./preset-geometry.js"
 import { resolveSlide } from "./resolve-slide.js"
 import type { Resolved, ResolvedLine } from "./resolved.js"
+import { strokeDash } from "./stroke-dash.js"
 import type { Text } from "./text.js"
 import type { Theme } from "./theme.js"
 
@@ -15,6 +18,7 @@ export type Rect = { readonly x: number; readonly y: number; readonly w: number;
 export type LayoutFinding = { readonly node: NodeId; readonly note: string } & (
   | { readonly code: "overflow"; readonly need: number; readonly room: number }
   | { readonly code: "overlap"; readonly with: NodeId; readonly area: Rect }
+  | { readonly code: "line-crosses-text"; readonly with: NodeId }
   | { readonly code: "off-slide"; readonly past: number }
   | { readonly code: "small-text"; readonly size: number; readonly min: number }
   | { readonly code: "lone-word" }
@@ -41,6 +45,8 @@ type Slide = {
   readonly size: { readonly w: number; readonly h: number }
   readonly found: LayoutFinding[]
   readonly missing: MissingGlyphs
+  readonly letters: { readonly id: NodeId; readonly inks: readonly Rect[] }[]
+  readonly strokes: { readonly id: NodeId; readonly route: StrokeRoute; readonly attached: ReadonlySet<NodeId> }[]
 }
 
 const right = (rect: Rect) => rect.x + rect.w
@@ -120,15 +126,25 @@ function paintedArea(node: Resolved, box: Rect): readonly Rect[] {
   ].filter((strip) => strip.w > 0 && strip.h > 0)
 }
 
-function place(slide: Slide, node: Resolved, x: number, y: number, ancestors: readonly Spin[]): Placed {
+function place(slide: Slide, node: Resolved, x: number, y: number, ancestors: readonly Spin[], visible = true): Placed {
   const box = { x: x + node.box.x, y: y + node.box.y, w: node.box.w, h: node.box.h }
   const chain = [...ancestors, { rotation: node.box.rotation, cx: box.x + box.w / 2, cy: box.y + box.h / 2 }]
-  const laid = node.children.map((kid) => place(slide, kid, box.x, box.y, chain))
+  const shown = visible && node.opacity > 0
+  const origin = node.box.fit?.origin
+  const laid = node.children.map((kid) =>
+    place(slide, kid, box.x - (origin?.x ?? 0), box.y - (origin?.y ?? 0), chain, shown),
+  )
   judgeKids(slide, laid)
   const measured = node.text !== null && !unread(slide, node.id)
   const lines =
     node.text === null || !measured ? [] : node.text.lines.filter(written).map((line) => inkOf(line, box.x, box.y))
-  const inks = [...lines.map((ink) => mapRect(chain, ink)), ...laid.flatMap((kid) => kid.inks)]
+  const ownInk = lines.map((ink) => mapRect(chain, ink))
+  const id = readNodeId(node.id)
+  if (shown && id !== undefined) {
+    if (ownInk.length > 0) slide.letters.push({ id, inks: ownInk })
+    placeStroke(slide, id, node, box, chain)
+  }
+  const inks = [...ownInk, ...laid.flatMap((kid) => kid.inks)]
   const frame = mapRect(chain, box)
   const line = node.geometry?.kind === "line"
   const content = line
@@ -139,6 +155,45 @@ function place(slide: Slide, node: Resolved, x: number, y: number, ancestors: re
   const bounds = union([frame, ...inks, ...laid.map((kid) => kid.bounds)]) ?? frame
   judgeOwn(slide, node, box, measured)
   return { node, box, inks, content, bounds }
+}
+
+function placeStroke(slide: Slide, id: NodeId, node: Resolved, box: Rect, chain: readonly Spin[]): void {
+  const { geometry, stroke, strokes } = node
+  if (geometry?.kind !== "line" || stroke === null || stroke.weight <= 0 || !strokes.some((paint) => paint.opacity > 0))
+    return
+  if (stroke.sides !== undefined && strokes[0]?.kind === "solid") return
+  const points = routeSpots(geometry.points, geometry.route === "curve").map(({ x, y }) =>
+    chain.reduceRight((at, spin) => turn(at.x, at.y, spin), {
+      x: box.x + (node.box.flipH ? box.w - x : x),
+      y: box.y + (node.box.flipV ? box.h - y : y),
+    }),
+  )
+  const stored = propOf(slide.doom.nodes.get(id), "geometry")
+  const attached = new Set<NodeId>()
+  if (stored?.kind === "line")
+    for (const end of [stored.start, stored.end])
+      if ("node" in end) {
+        attached.add(end.node)
+        for (const layer of descendantsOf(slide.doom, end.node)) attached.add(layer.id)
+      }
+  slide.strokes.push({ id, route: strokeRoute(points, stroke.weight / 2, strokeDash(stroke)), attached })
+}
+
+function judgeStrokes(slide: Slide): void {
+  const name = (id: NodeId) => {
+    const label = propOf(slide.doom.nodes.get(id), "name")
+    return label ? `${label} (${id})` : id
+  }
+  for (const { id: line, route, attached } of slide.strokes)
+    for (const { id: text, inks } of slide.letters) {
+      if (line === text || attached.has(text) || !inks.some((ink) => strokeCrosses(route, ink, crossing))) continue
+      slide.found.push({
+        code: "line-crosses-text",
+        node: text,
+        with: line,
+        note: `Move ${name(line)} so it no longer crosses ${name(text)}.`,
+      })
+    }
 }
 
 export type MissingGlyphs = ReadonlyMap<string, ReadonlySet<string>>
@@ -311,9 +366,10 @@ export function layoutFindings(
   const found: LayoutFinding[] = []
   for (const id of slides) {
     if (doom.nodes.get(id)?.type !== "slide") continue
-    const slide: Slide = { doom, theme, measure, size, found, missing }
+    const slide: Slide = { doom, theme, measure, size, found, missing, letters: [], strokes: [] }
     const tops = resolveSlide(doom, id, measure).map((node) => place(slide, node, 0, 0, []))
     judgeKids(slide, tops)
+    judgeStrokes(slide)
     for (const top of tops) judgeEdges(slide, top)
   }
   return found

@@ -12,7 +12,14 @@ export type Findings = {
 export type Laid = Findings & { readonly boxes?: ReadonlyMap<doom.NodeId, doom.Box> }
 
 const shownFindings = 10
-const layoutCodes: ReadonlySet<string> = new Set(["overflow", "overlap", "off-slide", "small-text", "lone-word"])
+const layoutCodes: ReadonlySet<string> = new Set([
+  "overflow",
+  "overlap",
+  "off-slide",
+  "small-text",
+  "lone-word",
+  "line-crosses-text",
+])
 
 const namedIds = 5
 
@@ -27,7 +34,7 @@ function namesOf(nodes: readonly doom.NodeId[]): string {
 const words = {
   edit: "Each problem names what is off on a slide or off the deck's own choices, and the fix: fix it unless the person asked for it.",
   read: "Each finding names what is off on the slides read, and the fix: fix it unless the person asked for it.",
-  clear: "Layout clear: no overflow, overlap, off-slide or small text.",
+  clear: "Layout clear: no overflow, overlap, line crossings, off-slide or small text.",
   more: (count: number, where: string) => `${String(count)} more are not listed: ${where}.`,
   unread: (nodes: readonly doom.NodeId[]) => {
     const one = nodes.length === 1

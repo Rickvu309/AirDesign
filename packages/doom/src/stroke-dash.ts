@@ -1,4 +1,4 @@
-import type { StrokeStyle } from "@airdesign/doom"
+import type { StrokeStyle } from "./paint.js"
 
 const dashes = { solid: [], dash: [3, 2], dot: [0.01, 2] } as const
 
