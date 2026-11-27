@@ -58,7 +58,8 @@ async function fixtureSource() {
         const result = await family(url.searchParams.get("family"))
         return Response.json(result, { status: result.ok ? 200 : 404 })
       }
-      return new Response(bytes.get(input), { status: bytes.has(input) ? 200 : 404 })
+      const file = url.pathname + url.search
+      return new Response(bytes.get(file), { status: bytes.has(file) ? 200 : 404 })
     },
   }
 }
