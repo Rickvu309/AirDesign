@@ -43,7 +43,7 @@ Options, chosen by what the slide must prove. Copy them from `kit`; each recipe 
 - [ ] A causal claim has a matched group that held flat, and a lift bigger than the metric's normal swing (1 to 1.5 standard deviations). Otherwise it reads as directional.
 - [ ] Each result sits beside a like-for-like benchmark, the market's rate or its own history.
 - [ ] Credit for a lagging metric goes to the work that drove it, not to a new initiative.
-- [ ] The material's own model is tested before the deck relies on it. Does an input already include the effect it is said to add? Does a cap, limit or segment size in the material bound the claimed effect? Do the parts behave as the plan assumes? Each answer, with its arithmetic, sits on the slide beside the figure it tests.
+- [ ] The material's own model is tested before the deck relies on it: rebuild each modeled figure from its stated inputs, and a factor left over is an effect already inside it. Divide totals by counts to find averages the plan must respect. Does a cap, limit or segment size in the material bound the claimed effect? Do the parts behave as the plan assumes? Each answer, with its arithmetic, sits on the slide beside the figure it tests.
 - [ ] Every total is re-added from its parts, and every percentage and difference recomputed, before it goes on a slide. Where the material's own figure disagrees, the slide shows the recomputed one, and the gap, both figures named, sits under the exhibit it changes.
 
 ## Pause 3: Headlines
