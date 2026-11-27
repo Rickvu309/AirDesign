@@ -12,7 +12,7 @@ export type Findings = {
 export type Laid = Findings & { readonly boxes?: ReadonlyMap<doom.NodeId, doom.Box> }
 
 const shownFindings = 10
-const layoutCodes: ReadonlySet<string> = new Set(["overflow", "overlap", "off-slide", "small-text"])
+const layoutCodes: ReadonlySet<string> = new Set(["overflow", "overlap", "off-slide", "small-text", "lone-word"])
 
 const namedIds = 5
 

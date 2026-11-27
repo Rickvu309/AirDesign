@@ -7,6 +7,7 @@ import type { Measure } from "./measure.js"
 import { textArea } from "./preset-geometry.js"
 import { resolveSlide } from "./resolve-slide.js"
 import type { Resolved, ResolvedLine } from "./resolved.js"
+import type { Text } from "./text.js"
 import type { Theme } from "./theme.js"
 
 export type Rect = { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
@@ -16,6 +17,7 @@ export type LayoutFinding = { readonly node: NodeId; readonly note: string } & (
   | { readonly code: "overlap"; readonly with: NodeId; readonly area: Rect }
   | { readonly code: "off-slide"; readonly past: number }
   | { readonly code: "small-text"; readonly size: number; readonly min: number }
+  | { readonly code: "lone-word" }
 )
 
 const spill = 1
@@ -123,10 +125,9 @@ function place(slide: Slide, node: Resolved, x: number, y: number, ancestors: re
   const chain = [...ancestors, { rotation: node.box.rotation, cx: box.x + box.w / 2, cy: box.y + box.h / 2 }]
   const laid = node.children.map((kid) => place(slide, kid, box.x, box.y, chain))
   judgeKids(slide, laid)
+  const measured = node.text !== null && !unread(slide, node.id)
   const lines =
-    node.text === null || unread(slide, node.id)
-      ? []
-      : node.text.lines.filter(written).map((line) => inkOf(line, box.x, box.y))
+    node.text === null || !measured ? [] : node.text.lines.filter(written).map((line) => inkOf(line, box.x, box.y))
   const inks = [...lines.map((ink) => mapRect(chain, ink)), ...laid.flatMap((kid) => kid.inks)]
   const frame = mapRect(chain, box)
   const line = node.geometry?.kind === "line"
@@ -136,7 +137,7 @@ function place(slide: Slide, node: Resolved, x: number, y: number, ancestors: re
       ? union(paintedArea(node, box).map((area) => mapRect(chain, area)))
       : union(laid.flatMap((kid) => (kid.content === null ? kid.inks : [kid.content])))
   const bounds = union([frame, ...inks, ...laid.map((kid) => kid.bounds)]) ?? frame
-  judgeOwn(slide, node, box)
+  judgeOwn(slide, node, box, measured)
   return { node, box, inks, content, bounds }
 }
 
@@ -155,11 +156,34 @@ export function missingGlyphsIn(doom: Doom, id: NodeId, missing: MissingGlyphs):
 
 const unread = (slide: Slide, id: string) => missingGlyphsIn(slide.doom, id as NodeId, slide.missing).length > 0
 
-function judgeOwn(slide: Slide, node: Resolved, box: Rect): void {
+const words = new Intl.Segmenter(undefined, { granularity: "word" })
+
+function judgeLastLine(slide: Slide, id: NodeId, text: Text, lines: readonly ResolvedLine[], width: number): void {
+  if (text.style !== "title" && text.style !== "heading" && text.style !== "bigNumber") return
+  const last = lines.at(-1)
+  const previous = lines.at(-2)
+  if (last === undefined || previous === undefined || text.chars.slice(previous.start, last.start).includes("\n"))
+    return
+  const line = last.runs.map((run) => run.text).join("")
+  if ([...words.segment(line)].filter((word) => word.isWordLike).length !== 1) return
+  const full = slide.measure(text, slide.theme, null).lines.at(-1)
+  if (full === undefined) return
+  const extra = Math.ceil(full.x + full.ink + (text.padding?.r ?? 0) - width)
+  slide.found.push({
+    code: "lone-word",
+    node: id,
+    note:
+      extra > 0
+        ? `${id}: Shorten the text or widen its box by ${String(extra)} px to keep the last word with the rest.`
+        : `${id}: Shorten the text to keep the last word with the rest.`,
+  })
+}
+
+function judgeOwn(slide: Slide, node: Resolved, box: Rect, measured: boolean): void {
   const stored = slide.doom.nodes.get(node.id as NodeId)
   const text = stored === undefined ? undefined : propOf(stored, "text")
   if (stored === undefined || text === undefined || node.text === null) return
-  if (text.resize === "fixed" && !unread(slide, stored.id)) {
+  if (text.resize === "fixed" && measured) {
     const area = textArea(propOf(stored, "geometry"), box.w, box.h)
     if (text.overflow === "ellipsis") {
       if (node.text.sourceLines !== undefined) {
@@ -187,6 +211,10 @@ function judgeOwn(slide: Slide, node: Resolved, box: Rect): void {
           note: `${stored.id}: its words need ${String(need)} px of height and its box holds ${String(room)}, so they spill out; make the box at least ${String(need)} tall or cut words.`,
         })
     }
+  }
+  if (measured && node.text.sourceLines === undefined) {
+    const width = propOf(stored, "geometry")?.kind === "preset" ? Infinity : box.w
+    judgeLastLine(slide, stored.id, text, node.text.lines, width)
   }
   const sizes = node.text.lines.flatMap((line) =>
     line.runs.filter((run) => run.text.trim() !== "").map((run) => run.size),

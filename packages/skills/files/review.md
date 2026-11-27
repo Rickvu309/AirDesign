@@ -18,6 +18,7 @@ Read the titles alone, in order.
 - Content cut off or running out of its box: `overflow`.
 - One layer covering another: `overlap`.
 - A layer outside the slide: `off-slide`.
+- When execute reports `lone-word`, shorten the text or widen its box by the amount in the note.
 
 Read the boxes in the same answer for these:
 

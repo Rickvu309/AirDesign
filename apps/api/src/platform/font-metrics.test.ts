@@ -68,12 +68,13 @@ it("reads a served face's advances and pair kerning as Chromium's canvas measure
   expect(regular.ascent).toBeGreaterThan(0)
 })
 
-it("measures a deck's words with its theme fonts, so a fixed box too short for them is found", async () => {
+it("finds both overflow and a lone last word using the deck's theme fonts", async () => {
   const grown = deckIn({ heading: family, body: family })
   const measured = await new FontMetrics(new FontSource(undefined)).measure([grown.doom])
   if (typeof measured === "string") throw new Error(measured)
   expect(doom.layoutFindings(grown.doom, grown.slides, measured.measure)).toMatchObject([
     { code: "overflow", node: grown.ids.title, room: 100 },
+    { code: "lone-word", node: grown.ids.title, note: expect.stringContaining("widen its box by 13 px") },
   ])
 })
 
