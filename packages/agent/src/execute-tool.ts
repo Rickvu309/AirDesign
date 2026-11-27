@@ -204,7 +204,6 @@ export async function executeTool(
       deck: opened.deck,
       rev: again.rev,
       runId: input.runId ?? onceIds(once).run,
-      made: again.roots.map((each) => ({ ids: [each.id] })),
       problems: listed(again.problems.problems),
     })
   const lastRead = await host.agentReads.last(opened.deck, agent.id).catch(() => null)
@@ -249,7 +248,6 @@ export async function executeTool(
       rev,
       ...(runId === undefined ? {} : { runId }),
       ...(plan.names.size === 0 ? {} : { names: Object.fromEntries(plan.names) }),
-      made: plan.made,
       problems: landed === undefined ? [] : listed(landed.problems.problems),
       ...(landed?.unchanged === true ? { unchanged: true } : {}),
       ...(landed === undefined || landed.bakedLayouts.length === 0 ? {} : { bakedLayouts: landed.bakedLayouts }),

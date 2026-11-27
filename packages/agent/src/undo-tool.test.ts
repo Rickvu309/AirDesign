@@ -91,13 +91,13 @@ describe("undo_run", () => {
       script: scriptOf([{ op: "add", kind: "text", slide: slides[0], text: "Hello" }]),
     })
     const runId = first.fields.runId as string
-    const hello = (first.fields.made as { ids: string[] }[])[0]!.ids[0]!
+    const hello = first.fields.result as string
     const second = await by.call("execute", {
       deck,
       script: scriptOf([{ op: "add", kind: "text", slide: slides[0], text: "Note" }]),
       runId,
     })
-    const note = (second.fields.made as { ids: string[] }[])[0]!.ids[0]!
+    const note = second.fields.result as string
     const person = await by.decks.edit(deck as never, {
       once: "person",
       author: { kind: "person", id: "quan" },

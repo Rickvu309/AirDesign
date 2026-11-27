@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest"
 
 import { callTool, type DeckHost, type Session } from "./index.js"
 import { layoutOf } from "./problems-answer.js"
-import { readOf, scriptOf } from "./testing/change-script.js"
+import { readOf, scriptOf, scriptOfEach } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
@@ -67,10 +67,10 @@ describe("layout problems in the answers, measured by the host with the deck's f
       script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box, fill: "accent2" }]),
     })
     expect(landed.ok).toBe(true)
-    const answer = landed.fields as { rev: number; note: string; made: { ids: string[] }[]; problems: Found[] }
+    const answer = landed.fields as { rev: number; note: string; result: string; problems: Found[] }
     expect(answer.rev).toBe(rev + 1)
     expect(answer.problems).toMatchObject([{ code: "overlap", node: title }])
-    expect(answer.problems[0]!.note).toContain(answer.made[0]!.ids[0]!)
+    expect(answer.problems[0]!.note).toContain(answer.result)
     expect(answer.note).toContain("fix it unless the person asked for it")
   })
 
@@ -149,15 +149,15 @@ describe("layout problems in the answers, measured by the host with the deck's f
     }
     const landed = await call("execute", {
       deck,
-      script: scriptOf([
+      script: scriptOfEach([
         { op: "add", kind: "text", slide: slides[0], text: "Launch 🚀", box: { x: 160, y: 700, w: 600, h: 60 } },
         { op: "add", kind: "shape", slide: slides[0], box: { x: 1850, y: 900, w: 200, h: 100 } },
       ]),
     })
-    const answer = landed.fields as { note: string; made: { ids: string[] }[]; problems: Found[] }
-    expect(answer.problems).toMatchObject([{ code: "off-slide", node: answer.made[1]!.ids[0]! }])
+    const answer = landed.fields as { note: string; result: string[]; problems: Found[] }
+    expect(answer.problems).toMatchObject([{ code: "off-slide", node: answer.result[1] }])
     expect(answer.note).toContain(
-      `${answer.made[0]!.ids[0]!} has a character the deck's fonts lack, so its overflow and overlap are unknown. Check it by eye, or change the font or the character.`,
+      `${answer.result[0]!} has a character the deck's fonts lack, so its overflow and overlap are unknown. Check it by eye, or change the font or the character.`,
     )
     expect(answer.note).not.toContain("Layout clear")
   })
@@ -206,9 +206,8 @@ describe("the note on texts the fonts cannot measure", () => {
         slides: string[]
       }
       const changes = texts(count).map((change) => ({ ...change, slide: slides[0] }))
-      const landed = await call("execute", { deck, script: scriptOf(changes) })
-      const { made } = landed.fields as { made: { ids: string[] }[] }
-      return { note: String(landed.fields.note), ids: made.flatMap((each) => each.ids) }
+      const landed = await call("execute", { deck, script: scriptOfEach(changes) })
+      return { note: String(landed.fields.note), ids: landed.fields.result as string[] }
     }
     const two = await note(2)
     expect(two.note).toContain(

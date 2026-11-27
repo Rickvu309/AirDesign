@@ -7,14 +7,11 @@ import { type Problems, layoutOf } from "./problems-answer.js"
 import type { DeckHost, Opened } from "./deck-host.js"
 import { deckMeasure } from "./deck-measure.js"
 import { onceIds } from "./once-ids.js"
-export type Added = { readonly id: string; readonly kind: string }
 
-function rootsInFold(fold: doom.Doom, client: string): readonly Added[] {
+function rootsInFold(fold: doom.Doom, client: string): readonly doom.NodeId[] {
   const mine = [...fold.nodes.values()].filter((node) => node.id.startsWith(`${client}:`) && node.type !== "slideRow")
   const made = new Set<string>(mine.map((node) => node.id))
-  return mine
-    .filter((node) => !made.has(doom.parentOf(node)?.id ?? ""))
-    .map((node) => ({ id: node.id, kind: doom.agentKind(node) }))
+  return mine.filter((node) => !made.has(doom.parentOf(node)?.id ?? "")).map((node) => node.id)
 }
 
 export type Landed = {
@@ -25,7 +22,7 @@ export type Landed = {
   readonly unchanged?: true
 }
 
-export type LandedBefore = { readonly rev: number; readonly roots: readonly Added[]; readonly problems: Problems }
+export type LandedBefore = { readonly rev: number; readonly problems: Problems }
 
 export async function landedBefore(opened: Opened, once: string, host: DeckHost): Promise<LandedBefore | undefined> {
   const rev = opened.fold.onces.get(once)
@@ -35,9 +32,9 @@ export async function landedBefore(opened: Opened, once: string, host: DeckHost)
     doom.touchedSlides(
       opened.fold,
       opened.fold,
-      roots.map((root) => ({ node: root.id as doom.NodeId, prop: "type" as const })),
+      roots.map((node) => ({ node, prop: "type" as const })),
     )
-  return { rev, roots, problems: await layoutOf(host, opened.fold, touched) }
+  return { rev, problems: await layoutOf(host, opened.fold, touched) }
 }
 
 export type Agent = { readonly id: string; readonly name?: string | undefined }

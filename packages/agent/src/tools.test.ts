@@ -199,7 +199,7 @@ describe("get in execute", () => {
 })
 
 describe("changes in execute", () => {
-  it("starts a run, lands the changes at the next rev and answers the ids it added", async () => {
+  it("starts a run, lands the changes at the next rev and answers the id the script returned", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
     const landed = await by.call(
@@ -211,7 +211,7 @@ describe("changes in execute", () => {
       deck,
       rev: rev + 1,
       runId: expect.any(String),
-      made: [{ op: 1, verb: "insert", ids: [expect.stringMatching(/^m\w+:1$/)] }],
+      result: expect.stringMatching(/^m\w+:1$/),
     })
     const fold = by.decks.decks.get(deck as never)!
     expect(fold.runs.get((landed.fields as { runId: string }).runId)?.phase).toBe("running")
@@ -260,10 +260,8 @@ describe("changes in execute", () => {
         },
       ]),
     )
-    const [made] = (landed.fields as { made: { ids: string[] }[] }).made
-    expect(made!.ids).toHaveLength(1)
     const fold = by.decks.decks.get(deck as never)!
-    expect(doom.agentKind(fold.nodes.get(made!.ids[0] as never)!)).toBe("frame")
+    expect(doom.agentKind(fold.nodes.get(landed.fields.result as never)!)).toBe("frame")
     expect(fold.nodes.size).toBeGreaterThan(8)
   })
 
@@ -374,15 +372,8 @@ describe("changes in execute", () => {
       { op: "slide", add: {} },
     ])
     const first = await by.call("execute", args, "again")
-    expect(first.fields.made).toEqual([
-      { op: 2, verb: "insert", ids: [expect.any(String)] },
-      { op: 3, verb: "insert", ids: [expect.any(String)] },
-    ])
     const again = await by.call("execute", args, "again")
     expect(again.fields).toMatchObject({ ok: true, rev: first.fields.rev, runId: first.fields.runId })
-    expect((again.fields.made as { ids: string[] }[]).flatMap((each) => each.ids).sort()).toEqual(
-      (first.fields.made as { ids: string[] }[]).flatMap((each) => each.ids).sort(),
-    )
     expect(by.decks.decks.get(deck as never)!.rev).toBe(rev + 1)
   })
 
@@ -397,16 +388,15 @@ describe("changes in execute", () => {
     const by = agent()
     const { deck, slides } = await created(by)
     const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
-    const { runId, made } = first.fields as { runId: string; made: { ids: string[] }[] }
-    const added = made.flatMap((each) => each.ids)
+    const { runId, result: added } = first.fields as { runId: string; result: string }
     await by.decks.edit(deck as never, {
       once: "typed",
       author: person,
-      writes: [{ node: added[0] as never, prop: "name", value: "Mine" }],
+      writes: [{ node: added as never, prop: "name", value: "Mine" }],
     })
-    const closed = await by.call("execute", edit(deck, [{ op: "set", target: added[0], name: "Agent" }], runId))
-    expect(closed.fields).toMatchObject({ ok: false, refusal: "person-protected", refused: "person", node: added[0] })
-    const reopened = await by.call("execute", edit(deck, [{ op: "set", target: added[0], name: "Agent" }]))
+    const closed = await by.call("execute", edit(deck, [{ op: "set", target: added, name: "Agent" }], runId))
+    expect(closed.fields).toMatchObject({ ok: false, refusal: "person-protected", refused: "person", node: added })
+    const reopened = await by.call("execute", edit(deck, [{ op: "set", target: added, name: "Agent" }]))
     expect(reopened.ok).toBe(true)
   })
 })

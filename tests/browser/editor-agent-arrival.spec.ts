@@ -216,7 +216,7 @@ test("the canvas goes to a slide an agent makes and traces what the agent writes
       script: scriptOf([{ op: "slide", add: {} }]),
     })
     expect(made.ok, JSON.stringify(made)).toBe(true)
-    const slide = (made.made as readonly { ids: readonly string[] }[])[0]!.ids[0]!
+    const slide = made.result as string
     const wrote = await call("execute", {
       deck: opened.deck,
       runId: made.runId,

@@ -33,7 +33,7 @@ describe("refusals in execute", () => {
     const frameIn = async (into?: string) => {
       const change = { op: "add", kind: "frame", slide: slides[0], ...(into === undefined ? {} : { into }) }
       const made = await by.call("execute", { deck, script: scriptOf([change]) })
-      return (made.fields as { made: { ids: string[] }[] }).made[0]!.ids[0]!
+      return made.fields.result as string
     }
     const outer = await frameIn()
     const middle = await frameIn(outer)
@@ -322,7 +322,7 @@ describe("a script frees a connector end whose shape leaves the slide", () => {
     const { grown, lineStart, paintedAt, edit, undo } = await opened()
     const added = await edit({ op: "add", kind: "frame", slide: grown.slides[0] })
     expect(added.fields).toMatchObject({ ok: true })
-    const shape = (added.fields as { made: { ids: string[] }[] }).made[0]!.ids[0]!
+    const shape = added.fields.result as string
     const attached = await edit({ op: "set", target: grown.ids.toChild, from: { layer: shape, side: "right" } })
     expect(attached.fields).toMatchObject({ ok: true })
     const seen = paintedAt(grown.ids.toChild!)
@@ -344,8 +344,7 @@ it("reads and sets an ordinary text card's padding, fill, outline and radius", a
       script: scriptOf([{ op: "add", kind: "shape", slide: made.slides[0], text: "Gateway" }]),
     })
   ).fields
-  if (!Array.isArray(added.made)) throw new Error("Missing card")
-  const target = added.made[0].ids[0]
+  const target = added.result
   for (const padding of [28, { t: 12, r: 16, b: 20, l: 24 }]) {
     const edited = await by.call("execute", {
       deck,

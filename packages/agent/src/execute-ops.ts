@@ -28,8 +28,6 @@ export const verbs = [
 ] as const
 export type Verb = (typeof verbs)[number]
 
-export type Made = { readonly op: number; readonly verb: Verb; readonly ids: readonly string[] }
-
 export type Plan = {
   readonly opened: Opened
   readonly host: DeckHost
@@ -43,7 +41,6 @@ export type Plan = {
   read: boolean
   readonly changes: doom.AgentChange[]
   readonly changeOps: { readonly op: number; readonly verb: Verb }[]
-  readonly made: Made[]
   readonly names: Map<string, string>
   readonly shots: doom.NodeId[]
   refused?: { readonly op: number; readonly answer: Readonly<Record<string, unknown>> }
@@ -93,7 +90,6 @@ export function newPlan(
     read: false,
     changes: [],
     changeOps: [],
-    made: [],
     names: new Map(),
     shots: [],
   }
@@ -420,20 +416,19 @@ export async function runOperation(plan: Plan, verb: Verb, raw: unknown): Promis
   const op = plan.ops
   const fields = fieldsOf(raw)
   known(plan, op, verb, fields)
-  const made = (ids: readonly string[]) => {
-    if (ids.length > 0) plan.made.push({ op, verb, ids })
+  const named = (ids: readonly string[]) => {
     if (ids.length === 1 && typeof fields.name === "string") plan.names.set(fields.name, ids[0] as string)
     return ids
   }
   switch (verb) {
     case "insert":
-      return made(await insert(plan, op, verb, fields))[0]
+      return named(await insert(plan, op, verb, fields))[0]
     case "copy":
-      return made(await copy(plan, op, verb, fields))
+      return named(await copy(plan, op, verb, fields))
     case "replace":
-      return made(await replace(plan, op, verb, fields))[0]
+      return named(await replace(plan, op, verb, fields))[0]
     case "group":
-      return made(await group(plan, op, verb, fields))[0]
+      return named(await group(plan, op, verb, fields))[0]
     case "update":
       await compileOne(plan, op, verb, { op: "set", ...fields })
       return undefined

@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
 import { callTool, type Session } from "./index.js"
-import { scriptOf } from "./testing/change-script.js"
+import { scriptOfEach } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
 function started(): doom.Doom {
@@ -39,7 +39,7 @@ describe("paths through execute", () => {
     const box = { x: 15, y: 20, w: 100, h: 100 }
     const d = "M0 0L1 1".padEnd(4000)
     const path = { op: "add", kind: "path", slide, d, box, fillStroke: true }
-    const edit = (...changes: readonly object[]) => call("execute", { deck, script: scriptOf(changes) })
+    const edit = (...changes: readonly object[]) => call("execute", { deck, script: scriptOfEach(changes) })
     const read = async (target: unknown) =>
       (await call("execute", { deck, script: `get({ target: ${JSON.stringify(target)} })` })).result as {
         layers: string
@@ -52,9 +52,7 @@ describe("paths through execute", () => {
     expect(summary.layers).toContain("path @15,20 100x100")
     expect(summary.layers).toContain("fillStroke=true")
     expect(summary.layers).not.toContain("d=")
-    const madeIds = added?.made
-    if (!Array.isArray(madeIds)) throw new Error("Expected added layers")
-    const target = madeIds[0].ids[0]
+    const [target] = added?.result as string[]
     const detail = await read(target)
     expect(detail.layers).toContain(`d="${d}"`)
     expect(detail.layers).not.toContain('d="M0 1L1 0"')

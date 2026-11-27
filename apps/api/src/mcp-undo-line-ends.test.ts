@@ -63,12 +63,12 @@ it("restores a connector's original free point when undoing one agent run", asyn
       deck: id,
       script: scriptOf([{ op: "add", kind: "line", slide, from: original, to: end, route: "straight" }]),
     })
-    const line = addedId(madeLine.made)
+    const line = addedId(madeLine.result)
     const madeFrame = await call("execute", {
       deck: id,
       script: scriptOf([{ op: "add", kind: "frame", slide, box: { x: 400, y: 200, w: 200, h: 100 } }]),
     })
-    const target = addedId(madeFrame.made)
+    const target = addedId(madeFrame.result)
     const runId = madeFrame.runId
     if (typeof runId !== "string") throw new Error("no run in tool answer")
     await call("execute", {
@@ -88,10 +88,7 @@ it("restores a connector's original free point when undoing one agent run", asyn
   }
 })
 
-function addedId(made: unknown) {
-  const first: unknown = Array.isArray(made) ? made[0] : undefined
-  const id =
-    typeof first === "object" && first !== null && "ids" in first && Array.isArray(first.ids) ? first.ids[0] : undefined
+function addedId(id: unknown) {
   if (typeof id !== "string") throw new Error("no added layer in tool answer")
   return nodeId(id)
 }
