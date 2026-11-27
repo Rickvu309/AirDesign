@@ -6,7 +6,7 @@ requirePinnedNode()
 
 export default defineConfig<object, { production: Production | undefined }>({
   testDir: "tests/browser",
-  testMatch: "editor-trust.spec.ts",
+  testMatch: "editor.spec.ts",
   globalSetup: "./tests/browser/production.ts",
   retries: 0,
   workers: 1,
