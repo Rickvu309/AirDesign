@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 import { createServer, type Server } from "node:http"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import worker from "./sign-in-forward.js"
+import worker, { signInPagePaths } from "./sign-in-forward.js"
 import { signInRoutes, signOutRoutes } from "@airdesign/catalog"
 
 type Seen = {
@@ -12,6 +12,8 @@ type Seen = {
   contentType: string | undefined
   body: string
 }
+
+const assets = { fetch: () => Promise.resolve(new Response("sign-in page")) }
 
 let server: Server
 let origin: string
@@ -54,6 +56,7 @@ describe("sign-in forwarding", () => {
     for (const route of [...Object.values(signInRoutes), ...Object.values(signOutRoutes)]) {
       await worker.fetch(new Request(`https://airdesign.app${route.path}`, { method: route.method }), {
         API_ORIGIN: origin,
+        ASSETS: assets,
       })
       expect(seen.at(-1)?.url).toBe(route.path)
       expect(seen.at(-1)?.method).toBe(route.method)
@@ -67,7 +70,7 @@ describe("sign-in forwarding", () => {
         headers: { cookie: "airdesign.session=old", "content-type": "application/json" },
         body,
       }),
-      { API_ORIGIN: origin },
+      { API_ORIGIN: origin, ASSETS: assets },
     )
     expect(seen).toEqual([
       { method: "POST", url: path, cookie: "airdesign.session=old", contentType: "application/json", body },
@@ -80,6 +83,7 @@ describe("sign-in forwarding", () => {
   it("returns the link redirect and cookie without following it", async () => {
     const response = await worker.fetch(new Request("https://airdesign.app/sign-in/link?token=t1"), {
       API_ORIGIN: origin,
+      ASSETS: assets,
     })
     expect(seen).toHaveLength(1)
     expect(seen[0]?.method).toBe("GET")
@@ -89,10 +93,13 @@ describe("sign-in forwarding", () => {
     expect(response.headers.get("set-cookie")).toBe("airdesign.session=abc; Path=/")
   })
 
-  it.each(["/sign-in", "/sign-in/check", "/sign-in/expired", "/sign-in/email/x", "/decks/open"])(
+  it.each(["/sign-in/check", "/sign-in/expired", "/sign-in/email/x", "/decks/open"])(
     "does not forward %s and answers 404",
     async (path) => {
-      const response = await worker.fetch(new Request(`https://airdesign.app${path}`), { API_ORIGIN: origin })
+      const response = await worker.fetch(new Request(`https://airdesign.app${path}`), {
+        API_ORIGIN: origin,
+        ASSETS: assets,
+      })
       expect(response.status).toBe(404)
       expect(await response.text()).toBe("Not found")
       expect(seen).toEqual([])
@@ -103,6 +110,7 @@ describe("sign-in forwarding", () => {
     for (const path of ["/sign-in/email", "/sign-in/code", "/sign-in/link", "/sign-out"]) {
       const response = await worker.fetch(new Request(`https://airdesign.app${path}`, { method: "POST" }), {
         API_ORIGIN: apiOrigin,
+        ASSETS: assets,
       })
       expect(response.status).toBe(503)
     }
@@ -115,6 +123,7 @@ describe("sign-in forwarding", () => {
     const response = await worker.fetch(new Request("https://airdesign.app/version"), {
       API_ORIGIN: origin,
       COMMIT: commit,
+      ASSETS: assets,
     })
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ commit })
@@ -123,17 +132,26 @@ describe("sign-in forwarding", () => {
     outbound.mockRestore()
   })
 
-  it("sends /version to the Worker before site assets", () => {
+  it("sends /version and the sign-in page to the Worker before site assets, with the app origin the site is built with", () => {
     const text = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")
-    const config = JSON.parse(text.replace(/,(\s*[}\]])/g, "$1")) as { assets: { run_worker_first?: string[] } }
-    expect(config.assets.run_worker_first).toContain("/version")
+    const config = JSON.parse(text.replace(/,(\s*[}\]])/g, "$1")) as {
+      assets: { binding?: string; run_worker_first?: string[] }
+      vars?: { APP_ORIGIN?: string }
+    }
+    expect(config.assets.run_worker_first).toEqual(["/version", ...signInPagePaths])
+    expect(config.assets.binding).toBe("ASSETS")
+    const built = readFileSync(new URL("../.env.production", import.meta.url), "utf8")
+    expect(`PUBLIC_APP_ORIGIN=${config.vars?.APP_ORIGIN ?? ""}\n`).toBe(built)
   })
 
   it.each(["/pricing", "/agents", "/status", "/assets", "/assets/logo.png", "/agent-instructions.txt"])(
     "answers the site's 404 for the retired path %s and fetches nothing",
     async (path) => {
       const outbound = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("old", { status: 308 }))
-      const response = await worker.fetch(new Request(`https://airdesign.app${path}`), { API_ORIGIN: origin })
+      const response = await worker.fetch(new Request(`https://airdesign.app${path}`), {
+        API_ORIGIN: origin,
+        ASSETS: assets,
+      })
       expect(response.status).toBe(404)
       expect(await response.text()).toBe("Not found")
       expect(outbound).not.toHaveBeenCalled()
@@ -141,4 +159,53 @@ describe("sign-in forwarding", () => {
       outbound.mockRestore()
     },
   )
+})
+
+describe("sign-in page", () => {
+  const app = "https://studio.airdesign.app"
+  const account = `airdesign.account=${"a".repeat(32)}`
+
+  function page(path: string, cookie?: string): Request {
+    return new Request(`https://airdesign.app${path}`, cookie === undefined ? {} : { headers: { cookie } })
+  }
+
+  it.each(["/sign-in", "/sign-in/"])(
+    "sends a browser that holds an account key from %s to the app's next path before any page is sent",
+    async (path) => {
+      const served = vi.fn(assets.fetch)
+      const response = await worker.fetch(page(`${path}?next=%2Fs%2Fabc`, `theme=dark; ${account}`), {
+        APP_ORIGIN: app,
+        ASSETS: { fetch: served },
+      })
+      expect(response.status).toBe(302)
+      expect(response.headers.get("location")).toBe(`${app}/s/abc`)
+      expect(response.headers.get("cache-control")).toBe("private, no-store")
+      expect(served).not.toHaveBeenCalled()
+    },
+  )
+
+  it("keeps a hostile next path on the app host", async () => {
+    const response = await worker.fetch(page("/sign-in?next=//evil.example", account), {
+      APP_ORIGIN: app,
+      ASSETS: assets,
+    })
+    expect(response.headers.get("location")).toBe(`${app}/`)
+  })
+
+  it.each([undefined, "airdesign.account=", "airdesign.account=not-a-key"])(
+    "serves the sign-in page for the cookie %j",
+    async (cookie) => {
+      const response = await worker.fetch(page("/sign-in/?next=%2Fs%2Fabc", cookie), {
+        APP_ORIGIN: app,
+        ASSETS: assets,
+      })
+      expect(response.status).toBe(200)
+      expect(await response.text()).toBe("sign-in page")
+    },
+  )
+
+  it("serves the sign-in page when the app origin is missing, so the page never sends itself to itself", async () => {
+    const response = await worker.fetch(page("/sign-in", account), { ASSETS: assets })
+    expect(await response.text()).toBe("sign-in page")
+  })
 })

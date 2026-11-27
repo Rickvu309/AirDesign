@@ -92,13 +92,24 @@ export default async function drive(kit) {
   await capture("signed-in-by-link")
   note(`the emailed link signed ${address} in at ${origin}/`)
 
-  await page.goto(`${siteOrigin}/sign-in?next=%2Fsettings%2Faccount`)
+  const skipped = await page.goto(`${siteOrigin}/sign-in?next=%2Fsettings%2Faccount`)
+  expect(skipped?.request().redirectedFrom()?.url()).toBe(`${siteOrigin}/sign-in?next=%2Fsettings%2Faccount`)
   await expect(page).toHaveURL(`${origin}/settings/account`)
   await expect(page.locator("[data-account-name]")).toHaveText("Nguyễn Quân")
   await capture("signed-in-skips-sign-in")
-  note(`${address}, already signed in, opened ${siteOrigin}/sign-in and went straight to ${origin}/settings/account`)
+  note(
+    `${address}, already signed in, opened ${siteOrigin}/sign-in and the site redirected to ${origin}/settings/account before sending the form`,
+  )
 
   await page.context().clearCookies()
+  await page.context().addCookies([{ name: "airdesign.account", value: "a".repeat(32), url: siteOrigin }])
+  await page.goto(`${siteOrigin}/sign-in?next=%2Fsettings%2Faccount`)
+  await expect(page).toHaveURL(`${siteOrigin}/sign-in?next=%2Fsettings%2Faccount`)
+  await expect(page.getByLabel("Email")).toBeVisible()
+  expect((await page.context().cookies()).map((cookie) => cookie.name)).not.toContain("airdesign.account")
+  note(
+    "a stale account cookie costs one trip: the site sends it to the app, whose 401 clears it, and the site shows the form",
+  )
   await page.goto(second.link)
   await expect(page).toHaveURL(`${siteOrigin}/sign-in/expired`)
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible()

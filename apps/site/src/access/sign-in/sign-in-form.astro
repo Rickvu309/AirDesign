@@ -26,14 +26,10 @@ import { signInCopy } from "../sign-in-copy";
 </form>
 
 <script>
-  import { signedInDestination } from "../app-destination";
   import { readPendingEmail, rememberNextFromSearch } from "../pending-sign-in-email";
   import { signInCopy } from "../sign-in-copy";
   import { clearSignInFailure, showSignInFailure } from "../sign-in-failure";
   import { startEmailSignIn } from "../sign-in-requests";
-
-  const signedIn = signedInDestination(document.cookie, import.meta.env.PUBLIC_APP_ORIGIN, location.search);
-  if (signedIn !== null) location.replace(signedIn);
 
   rememberNextFromSearch(location.search);
 
