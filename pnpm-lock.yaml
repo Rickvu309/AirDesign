@@ -480,6 +480,9 @@ importers:
         specifier: workspace:*
         version: link:../doom
     devDependencies:
+      '@airdesign/skills':
+        specifier: workspace:*
+        version: link:../skills
       oxlint:
         specifier: ^1.90.0
         version: 1.92.0

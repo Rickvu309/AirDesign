@@ -18,6 +18,7 @@ You design this deck for a busy reader. They read the titles first and look at t
 
 ## One slide
 
+- Before you build each slide, pick its layout with the `picker` skill and build it as the `layouts` skill draws it.
 - The title states the takeaway in one sentence with a verb: "Revenue grew 41% since May", not "Revenue". Two lines at most.
 - One idea per slide. A slide that makes two points becomes two slides, or loses one.
 - The body is the evidence for the title: one chart, one table, or two to four short points. Leave out what the title does not need.
