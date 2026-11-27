@@ -211,11 +211,6 @@ const lookFields: LookFields = {
   from: field(endSchema("Where a line starts: a layer's side, which it then follows, or a point."), readEnd),
   to: field(endSchema("Where a line ends: a layer's side, which it then follows, or a point."), readEnd),
   route: choice(["straight", "elbow", "curve"], "How a line runs between its ends."),
-  lane: number(
-    -10_000,
-    10_000,
-    "Where an elbow line's middle leg runs: a y when its start leaves a top or bottom side, else an x.",
-  ),
   rows: field(
     {
       type: "array",

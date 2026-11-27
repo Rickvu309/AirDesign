@@ -6,11 +6,10 @@ import { addGrid } from "./agent-grid.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { placeholderSubtitle } from "./slide-placeholders.js"
 import { type Area, areaFor, cardRadiusFor, gapFor, slideSize, themeOf } from "./agent-place.js"
-import { laneOf, lineEnds, spanOfEnds } from "./agent-line-ends.js"
+import { lineEnds } from "./agent-line-ends.js"
 import { pictureFit } from "./picture-fit.js"
 import type { StrokeStyle } from "./paint.js"
 import type { Box } from "./doom-walk.js"
-import type { Geometry } from "./geometry.js"
 import { descendantsOf, isLaidOut, propOf, slideOf, zeroBox } from "./doom-walk.js"
 import type { Node } from "./doom.js"
 import type { Text } from "./text.js"
@@ -56,7 +55,7 @@ const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
   text: [...common, ...painted, ...words, "link"],
   shape: [...common, ...painted, ...words, "shape", "link"],
   path: [...common, ...painted, ...words, "d", "fillStroke", "link"],
-  line: [...common, "stroke", "strokeWidth", "arrow", "startArrow", "dash", "from", "to", "route", "lane"],
+  line: [...common, "stroke", "strokeWidth", "arrow", "startArrow", "dash", "from", "to", "route"],
   frame: [...common, ...painted, "layout", "gap", "padding", "align", "rows", "clip"],
   picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit", "crop"],
   icon: [...common, "icon", "stroke", "strokeWidth"],
@@ -180,32 +179,9 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
   })
 }
 
-function lineGeometry(draft: Draft, parent: Node, box: Box, change: Add): Extract<Geometry, { kind: "line" }> {
-  const ends = lineEnds(
-    draft,
-    { self: null, slide: slideOf(draft.doom, parent.id) },
-    {
-      kind: "line",
-      start: { x: box.x, y: box.y },
-      end: { x: box.x + box.w, y: box.y + box.h },
-      route: "straight",
-      arrows: ["none", "none"],
-    },
-    change,
-  )
-  return {
-    kind: "line",
-    ...ends,
-    route: change.route ?? "straight",
-    arrows: [change.startArrow ?? "none", askedArrow(change.arrow, "none")],
-    ...(change.lane === undefined ? {} : { channels: laneOf(ends.start, ends.end, change.lane) }),
-  }
-}
-
 function addLine(draft: Draft, parent: Node, change: Add): void {
-  const spanned = change.box === undefined ? spanOfEnds(draft, parent, change) : undefined
-  const area = spanned ?? areaFor(draft, parent, change.box)
-  const box = givenBox(change, area, spanned?.h ?? 0)
+  const area = areaFor(draft, parent, change.box)
+  const box = givenBox(change, area, 0)
   create(draft, "shape", parent.id, {
     ...surfaced(
       draft,
@@ -214,7 +190,23 @@ function addLine(draft: Draft, parent: Node, change: Add): void {
       "center",
     ),
     box,
-    geometry: lineGeometry(draft, parent, box, change),
+    geometry: {
+      kind: "line",
+      ...lineEnds(
+        draft,
+        { self: null, slide: slideOf(draft.doom, parent.id) },
+        {
+          kind: "line",
+          start: { x: box.x, y: box.y },
+          end: { x: box.x + box.w, y: box.y + box.h },
+          route: "straight",
+          arrows: ["none", "none"],
+        },
+        change,
+      ),
+      route: change.route ?? "straight",
+      arrows: [change.startArrow ?? "none", askedArrow(change.arrow, "none")],
+    },
   })
 }
 

@@ -63,10 +63,6 @@ const seen: Readonly<Record<string, Seen>> = {
   from: { person: ["gesture:line-end"] },
   to: { person: ["gesture:line-end"] },
   route: { person: ["panel:border.route"] },
-  lane: {
-    declined:
-      "agent-only by the owner's lean workspace direction (2026-11-24): diagram scripts place an elbow's middle leg",
-  },
   box: { person: ["gesture:move", "gesture:resize", "panel:box.align"] },
   name: { person: ["panel:name"] },
   hidden: { person: ["gesture:hide", "panel:show-hidden"] },

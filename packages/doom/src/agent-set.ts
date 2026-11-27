@@ -2,7 +2,7 @@ import type { AgentChange, AgentLook } from "./agent-change.js"
 import { type Draft, type Values, living, put, stop } from "./agent-draft.js"
 import { insertLinkedRun } from "./agent-insert.js"
 import { askedArrow, iconName, layoutOf, surfaceOf, textOfLook } from "./agent-look.js"
-import { laneOf, lineEnds } from "./agent-line-ends.js"
+import { lineEnds } from "./agent-line-ends.js"
 import { gapFor, slideSize, themeOf } from "./agent-place.js"
 import { notesText } from "./notes-text.js"
 import { resizedBy } from "./agent-resize.js"
@@ -66,7 +66,6 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "from",
     "to",
     "route",
-    "lane",
     "box",
   ],
   frame: [
@@ -80,7 +79,6 @@ const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof AgentL
     "from",
     "to",
     "route",
-    "lane",
     "notes",
     "shape",
     "skipped",
@@ -124,9 +122,7 @@ function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | und
     if (geometry?.kind !== "icon") stop("shape", node.id, "icon", "needs", "an icon")
     return { kind: "icon", name: iconName(change.icon) }
   }
-  const lined = (["startArrow", "arrow", "from", "to", "route", "lane"] as const).find(
-    (field) => change[field] !== undefined,
-  )
+  const lined = (["startArrow", "arrow", "from", "to", "route"] as const).find((field) => change[field] !== undefined)
   if (lined !== undefined && geometry?.kind !== "line") stop("shape", node.id, lined, "needs", "a line")
   if (pathField !== undefined && geometry?.kind === "path") {
     return {
@@ -143,13 +139,11 @@ function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | und
     box !== undefined && pointed
       ? { ...geometry, start: { x: box.x, y: box.y }, end: { x: box.x + box.w, y: box.y + box.h } }
       : geometry
-  const ends = lineEnds(draft, { self: node.id, slide: slideOf(draft.doom, node.id) }, placed, change)
   return {
     ...placed,
-    ...ends,
+    ...lineEnds(draft, { self: node.id, slide: slideOf(draft.doom, node.id) }, placed, change),
     ...(change.route === undefined ? {} : { route: change.route }),
     arrows: [change.startArrow ?? geometry.arrows[0], askedArrow(change.arrow, geometry.arrows[1])],
-    ...(change.lane === undefined ? {} : { channels: laneOf(ends.start, ends.end, change.lane) }),
   }
 }
 

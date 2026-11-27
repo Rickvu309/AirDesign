@@ -1,11 +1,11 @@
 import { type NodeId, readNodeId } from "./ids.js"
 import { type Px, px } from "./paint.js"
-import { type Reader, finite, literal, object, oneOf, reject } from "./read-kit.js"
+import { type Reader, literal, object, oneOf, reject } from "./read-kit.js"
 
 const sideWords = ["top", "right", "bottom", "left", "center"] as const
 
 export type AgentEnd =
-  | { readonly layer: NodeId; readonly side?: (typeof sideWords)[number]; readonly along?: number }
+  | { readonly layer: NodeId; readonly side?: (typeof sideWords)[number] }
   | { readonly x: Px; readonly y: Px }
 
 export const endSchema = (description: string) => ({
@@ -18,12 +18,6 @@ export const endSchema = (description: string) => ({
       properties: {
         layer: { $ref: "#/$defs/id" },
         side: { enum: sideWords, description: "Left out: the side facing the other end." },
-        along: {
-          type: "number",
-          minimum: 0,
-          maximum: 1,
-          description: "Where on the side, from 0 at its left or top end to 1. Left out: its middle.",
-        },
       },
     },
     {
@@ -36,6 +30,6 @@ export const endSchema = (description: string) => ({
 })
 
 export const readEnd: Reader<AgentEnd> = oneOf<AgentEnd>(
-  object({ layer: (raw) => readNodeId(raw) ?? reject() }, { side: literal(sideWords), along: finite(0, 1) }),
+  object({ layer: (raw) => readNodeId(raw) ?? reject() }, { side: literal(sideWords) }),
   object({ x: px(), y: px() }),
 )

@@ -74,8 +74,6 @@ const placed: Readonly<Record<string, readonly Spot[]>> = {
   "column-chart": [{ x: 120, y: 300 }],
   "line-chart": [{ x: 120, y: 300 }],
   "donut-chart": [{ x: 120, y: 300 }],
-  "process-flow": [{ x: 120, y: 470 }],
-  architecture: [{ x: 120, y: 300 }],
 }
 
 const holdsData = new Set(["table", "bar-chart", "column-chart", "line-chart", "donut-chart"])
@@ -139,68 +137,4 @@ describe("every piece in every library theme", () => {
           )
         }
     })
-})
-
-type Line = { readonly start: { readonly node?: doom.NodeId }; readonly end: { readonly node?: doom.NodeId } }
-
-const linesOf = (grown: doom.Grown) =>
-  [...grown.doom.nodes.values()].flatMap((node) => {
-    const geometry = doom.propOf(node, "geometry")
-    return geometry?.kind === "line" ? [{ node, geometry: geometry as Line }] : []
-  })
-
-describe("diagram pieces", () => {
-  const diagrams = ["architecture", "process-flow"]
-
-  it("attach both ends of every connector to the box their piece names", () => {
-    for (const name of diagrams) {
-      const raw = JSON.parse(readFileSync(`${piecesDir}/${name}.json`, "utf8")) as doom.TreeNode
-      const named = (raw.children ?? []).flatMap((child) => {
-        const ends = (child.props as { geometry?: { start?: { layer?: string }; end?: { layer?: string } } })?.geometry
-        return ends?.start?.layer === undefined ? [] : [[ends.start.layer, ends.end?.layer]]
-      })
-      const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [readKitPiece(name)!.tree] }] })
-      const lines = linesOf(grown)
-      expect(lines.length, name).toBeGreaterThan(1)
-      expect(
-        lines.map(({ geometry }) =>
-          [geometry.start, geometry.end].map((end) =>
-            end.node === undefined ? undefined : doom.propOf(grown.doom.nodes.get(end.node), "name"),
-          ),
-        ),
-        name,
-      ).toEqual(named)
-    }
-  })
-
-  it("keep a connector on its box when the box moves", () => {
-    const tree = readKitPiece("architecture")!.tree
-    const grow = (piece: doom.TreeNode) =>
-      doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [piece] }] })
-    const estimate = doom.measureWith({})
-    const ends = (grown: doom.Grown) => {
-      const flat = (all: readonly doom.Resolved[]): readonly doom.Resolved[] =>
-        all.flatMap((each) => [each, ...flat(each.children)])
-      return flat(doom.resolveSlide(grown.doom, grown.slides[0]!, estimate)).flatMap((each) => {
-        const geometry = each.geometry as {
-          readonly kind: string
-          readonly to?: { readonly x: number; readonly y: number }
-        } | null
-        return geometry?.kind === "line" ? [{ x: each.box.x + geometry.to!.x, y: each.box.y + geometry.to!.y }] : []
-      })
-    }
-    const moved: doom.TreeNode = {
-      ...tree,
-      children: tree.children!.map((child) => {
-        if (child.name !== "Ledger") return child
-        const props = child.props as { box: { x: number } }
-        return { ...child, props: { ...props, box: { ...props.box, x: props.box.x + 120 } } as never }
-      }),
-    }
-    const before = ends(grow(tree))
-    const after = ends(grow(moved))
-    const shifted = after.filter((end, at) => end.x !== before[at]!.x)
-    expect(shifted.length).toBe(1)
-    expect(shifted[0]!.x - before[after.indexOf(shifted[0]!)]!.x).toBe(120)
-  })
 })
