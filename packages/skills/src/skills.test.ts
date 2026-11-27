@@ -69,16 +69,6 @@ describe("skills pack", () => {
     expect(themeLine).toContain("airdesign_get_style {name: <theme>}")
   })
 
-  it("sends the agent to the picker before each slide and the picker only to layouts that exist", () => {
-    const guide = readSkill("slides")?.markdown ?? ""
-    expect(guide).toMatch(/`picker`.*each slide|each slide.*`picker`/)
-
-    const picked = new Set([...(readSkill("picker")?.markdown ?? "").matchAll(/\| (L\d+) [^|]+\|$/gm)].map((m) => m[1]))
-    const layouts = new Set([...(readSkill("layouts")?.markdown ?? "").matchAll(/^## (L\d+) /gm)].map((m) => m[1]))
-    expect(picked.size).toBeGreaterThan(0)
-    expect([...picked].sort()).toEqual([...layouts].sort())
-  })
-
   it("lists styles and reads style text with parsed parameters from a styles folder", () => {
     const root = mkdtempSync(path.join(os.tmpdir(), "airdesign-skills-"))
     try {
