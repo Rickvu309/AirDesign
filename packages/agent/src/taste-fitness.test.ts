@@ -10,7 +10,14 @@ import { memoryDecks } from "./testing/memory-decks.js"
 const start = () => doom.doomFromTree({ theme: testTheme, slides: [{ name: "Title", children: [] }] }).doom
 const estimate = doom.measureWith({})
 
-async function drawn(style: string, draw: (slide: string) => string) {
+type Look = { readonly label: string; readonly style: string; readonly variant?: string }
+
+const looks: readonly Look[] = styles.flatMap((style) => [
+  { label: style.id, style: style.id },
+  ...style.variants.map(({ name }) => ({ label: `${style.id} ${name}`, style: style.id, variant: name })),
+])
+
+async function drawn(look: Look, draw: (slide: string) => string) {
   const decks = memoryDecks(start)
   const host: DeckHost = { ...decks, measure: async () => ({ measure: estimate, missing: new Map() }) }
   let minted = 0
@@ -27,7 +34,9 @@ async function drawn(style: string, draw: (slide: string) => string) {
     expect(result.ok, JSON.stringify(result.fields)).toBe(true)
     return result.fields as { deck: string; slides: string[] }
   }
-  const { deck } = await call(`createDeck({ style: "${style}" })`)
+  const { deck } = await call(`createDeck({ style: "${look.style}" })`)
+  if (look.variant !== undefined)
+    await call(`variables(${JSON.stringify({ style: look.style, variant: look.variant })})`, deck)
   const { result } = (await call(`insert({ kind: "slide" })`, deck)) as unknown as { result: string }
   await call(draw(result), deck)
   const fold = decks.decks.get(deck as never)!
@@ -39,27 +48,27 @@ const scriptOf = (markdown: string) => [...markdown.matchAll(/```js\n([\s\S]*?)`
 
 const recipes = guides().filter((guide) => /^(charts|diagrams)\//.test(guide.name))
 
-describe("every kit piece and recipe draws clean in every style", () => {
+describe("every kit piece and recipe draws clean in every style and variant", () => {
   it("finds pieces and recipes to judge", () => {
     expect(pieces().length).toBeGreaterThan(0)
     expect(recipes.length).toBeGreaterThan(0)
     for (const recipe of recipes) expect(scriptOf(recipe.markdown).length, recipe.name).toBeGreaterThan(0)
   })
 
-  for (const { id } of styles) {
+  for (const look of looks) {
     for (const { name } of pieces())
-      it(`kit/${name} in ${id}`, async () => {
+      it(`kit/${name} in ${look.label}`, async () => {
         const problems = await drawn(
-          id,
+          look,
           (slide) => `copy({ from: "kit/${name}", parent: "${slide}", box: { x: 120, y: 120 } })`,
         )
         expect(problems).toEqual([])
       })
 
     for (const recipe of recipes)
-      it(`${recipe.name} in ${id}`, async () => {
+      it(`${recipe.name} in ${look.label}`, async () => {
         const script = scriptOf(recipe.markdown).join("\n")
-        const problems = await drawn(id, (slide) => script.replace('"<slide id>"', JSON.stringify(slide)))
+        const problems = await drawn(look, (slide) => script.replace('"<slide id>"', JSON.stringify(slide)))
         expect(problems).toEqual([])
       })
   }
