@@ -10,7 +10,7 @@ import { textArea } from "./preset-geometry.js"
 import { resolveSlide } from "./resolve-slide.js"
 import type { Resolved, ResolvedLine } from "./resolved.js"
 import { strokeDash } from "./stroke-dash.js"
-import type { Text } from "./text.js"
+import type { Text, TextStyleName } from "./text.js"
 import type { Theme } from "./theme.js"
 
 export type Rect = { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
@@ -24,11 +24,14 @@ export type LayoutProblem = { readonly node: NodeId } & (
   | { readonly code: "lone-word"; readonly extra: number }
 )
 
+export type ProblemRules = {
+  readonly loneWord: readonly TextStyleName[]
+  readonly readable: { readonly size: number; readonly onHeight: number }
+}
+
 const spill = 1
 const pastEdge = 1
 const crossing = 3
-const readableAt1080 = 20
-const referenceHeight = 1080
 
 type Placed = {
   readonly node: Resolved
@@ -42,6 +45,7 @@ type Slide = {
   readonly doom: Doom
   readonly theme: Theme
   readonly measure: Measure
+  readonly rules: ProblemRules
   readonly size: { readonly w: number; readonly h: number }
   readonly found: LayoutProblem[]
   readonly missing: MissingGlyphs
@@ -205,7 +209,7 @@ const unread = (slide: Slide, id: string) => missingGlyphsIn(slide.doom, id as N
 const words = new Intl.Segmenter(undefined, { granularity: "word" })
 
 function judgeLastLine(slide: Slide, id: NodeId, text: Text, lines: readonly ResolvedLine[], width: number): void {
-  if (text.style !== "title" && text.style !== "heading" && text.style !== "bigNumber") return
+  if (!slide.rules.loneWord.includes(text.style)) return
   const last = lines.at(-1)
   const previous = lines.at(-2)
   if (last === undefined || previous === undefined || text.chars.slice(previous.start, last.start).includes("\n"))
@@ -244,7 +248,7 @@ function judgeOwn(slide: Slide, node: Resolved, box: Rect, measured: boolean): v
   const sizes = node.text.lines.flatMap((line) =>
     line.runs.filter((run) => run.text.trim() !== "").map((run) => run.size),
   )
-  const min = Math.round((readableAt1080 * slide.size.h) / referenceHeight)
+  const min = Math.round((slide.rules.readable.size * slide.size.h) / slide.rules.readable.onHeight)
   const size = Math.min(...sizes)
   if (sizes.length > 0 && size < min) slide.found.push({ code: "small-text", node: stored.id, size, min })
 }
@@ -309,13 +313,14 @@ export function layoutProblems(
   doom: Doom,
   slides: readonly NodeId[],
   measure: Measure,
+  rules: ProblemRules,
   missing: MissingGlyphs = new Map(),
 ): readonly LayoutProblem[] {
   const { theme, size } = deckOf(doom)
   const found: LayoutProblem[] = []
   for (const id of slides) {
     if (doom.nodes.get(id)?.type !== "slide") continue
-    const slide: Slide = { doom, theme, measure, size, found, missing, letters: [], strokes: [] }
+    const slide: Slide = { doom, theme, measure, rules, size, found, missing, letters: [], strokes: [] }
     const tops = resolveSlide(doom, id, measure).map((node) => place(slide, node, 0, 0, []))
     judgeKids(slide, tops)
     judgeStrokes(slide)

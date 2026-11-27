@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
-import { guides, piece, pieces, style } from "./index.js"
+import { guides, piece, pieces, problemRules, style } from "./index.js"
 
 type Text = { readonly chars: string; readonly spans: readonly { readonly end: number }[] }
 type Spot = { readonly x: number; readonly y: number }
@@ -129,7 +129,7 @@ describe("every piece in every library theme", () => {
           })
           const slide = grown.slides[0]!
           const where = `${each.name} in ${theme}`
-          const problems = doom.layoutProblems(grown.doom, [slide], estimate)
+          const problems = doom.layoutProblems(grown.doom, [slide], estimate, problemRules)
           expect(
             problems.filter((problem) => words === "sample" || problem.code !== "lone-word"),
             where,

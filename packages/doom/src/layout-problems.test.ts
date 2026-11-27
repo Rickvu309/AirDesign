@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { rules } from "./testing/problem-rules.js"
 import { block, label, measure, plainTheme, spot } from "./testing/doom-fixtures-art.js"
 import { type TreeNode, doomFromTree } from "./doom-tree.js"
 import { layoutProblems, touchedSlides, unmeasuredTexts } from "./layout-problems.js"
@@ -8,7 +9,7 @@ const fixed = { resize: "fixed" } as const
 
 function found(children: readonly TreeNode[]) {
   const grown = doomFromTree({ theme: plainTheme, slides: [{ children }] })
-  return { ids: grown.ids, problems: layoutProblems(grown.doom, grown.slides, measure) }
+  return { ids: grown.ids, problems: layoutProblems(grown.doom, grown.slides, measure, rules) }
 }
 
 describe("layout problems: what a slide paints wrong, measured with the deck's fonts", () => {
@@ -335,7 +336,7 @@ describe("layout problems: what a slide paints wrong, measured with the deck's f
       ],
     })
     expect(
-      layoutProblems(grown.doom, grown.slides, measure, new Map([[plainTheme.fonts.body, new Set(["🚀"])]])),
+      layoutProblems(grown.doom, grown.slides, measure, rules, new Map([[plainTheme.fonts.body, new Set(["🚀"])]])),
     ).toEqual([
       {
         code: "off-slide",
@@ -399,7 +400,7 @@ describe("layout problems: what a slide paints wrong, measured with the deck's f
         },
       ],
     })
-    expect(layoutProblems(grown.doom, grown.slides, measure)).toEqual([
+    expect(layoutProblems(grown.doom, grown.slides, measure, rules)).toEqual([
       {
         code: "off-slide",
         node: grown.ids.diagonal,
@@ -428,17 +429,19 @@ describe("layout problems: what a slide paints wrong, measured with the deck's f
     ])
   })
 
-  it("names text under the smallest size a room can read on this slide", () => {
-    const { ids, problems } = found([
-      label("note", "fine print", { box: spot(100, 900, 400, 40) }, { spans: [{ end: 10, size: 14 }] }),
-    ])
-    expect(problems).toEqual([
-      {
-        code: "small-text",
-        node: ids.note,
-        size: 14,
-        min: 20,
-      },
+  it.each([
+    [{ size: 20, onHeight: 1080 }, 14, 20],
+    [{ size: 30, onHeight: 1080 }, 24, 30],
+    [{ size: 10, onHeight: 540 }, 14, 20],
+  ])("names text under the readable size %j scaled to this slide", (readable, size, min) => {
+    const grown = doomFromTree({
+      theme: plainTheme,
+      slides: [
+        { children: [label("note", "fine print", { box: spot(100, 900, 400, 40) }, { spans: [{ end: 10, size }] })] },
+      ],
+    })
+    expect(layoutProblems(grown.doom, grown.slides, measure, { ...rules, readable })).toEqual([
+      { code: "small-text", node: grown.ids.note, size, min },
     ])
   })
 
@@ -478,6 +481,7 @@ describe("layout problems: what a slide paints wrong, measured with the deck's f
       grown.doom,
       grown.slides,
       measure,
+      rules,
       new Map([[plainTheme.fonts.body, new Set(["🚀"])]]),
     )
     expect(problems.map((found) => [found.code, found.node])).toEqual([

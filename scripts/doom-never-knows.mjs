@@ -44,6 +44,15 @@ const isProse = (text) => {
   return words.length >= 3 && words.some((word) => word.length >= 4)
 }
 const isTitleWord = (text) => /^[A-Z][a-z]+(?: [a-z]+)*$/.test(text) && !weightNames.has(text) && !(text in globalThis)
+const styleRule = (node) => {
+  if (node.type !== "BinaryExpression" || !/^[!=]==?$/.test(node.operator)) return undefined
+  const sides = [node.left, node.right]
+  const named = sides.some(
+    (side) => side.type === "MemberExpression" && !side.computed && side.property.name === "style",
+  )
+  const style = sides.find((side) => side.type === "Literal" && typeof side.value === "string")
+  return named ? style?.value : undefined
+}
 const thrown = (node) =>
   node?.type === "NewExpression" && node.callee.type === "Identifier" && /Error$/.test(node.callee.name)
 
@@ -74,6 +83,8 @@ export function offences(file, source) {
     )
       if (node.init && (node.init.type === "Literal" || node.init.type === "BinaryExpression"))
         add("taste", node.start, `${node.id.name}, a share of the slide`)
+    const style = styleRule(node)
+    if (style !== undefined) add("taste", node.start, `a rule for "${style}" text`)
     const text = textOf(node)
     if (text === undefined || formulaFiles.test(path.basename(file)) || thrown(parent)) return
     if (/^#[0-9a-fA-F]{6}$/.test(text)) add("taste", node.start, `colour ${text}`)

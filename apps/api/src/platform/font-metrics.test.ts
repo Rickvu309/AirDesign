@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { fallbackFont } from "@airdesign/fonts"
+import { problemRules } from "@airdesign/taste"
 import { expect, it } from "vitest"
 import { FontMetrics, servedFontMetrics } from "./font-metrics.js"
 import { FontSource } from "./font-source.js"
@@ -72,7 +73,7 @@ it("finds both overflow and a lone last word using the deck's theme fonts", asyn
   const grown = deckIn({ heading: family, body: family })
   const measured = await new FontMetrics(new FontSource(undefined)).measure([grown.doom])
   if (typeof measured === "string") throw new Error(measured)
-  expect(doom.layoutProblems(grown.doom, grown.slides, measured.measure)).toMatchObject([
+  expect(doom.layoutProblems(grown.doom, grown.slides, measured.measure, problemRules)).toMatchObject([
     { code: "overflow", node: grown.ids.title, room: 100 },
     { code: "lone-word", node: grown.ids.title, extra: 13 },
   ])

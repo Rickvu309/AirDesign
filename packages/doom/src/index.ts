@@ -19,6 +19,7 @@ export type { ThemeProblem } from "./theme-problems.js"
 export {
   type LayoutProblem,
   type MissingGlyphs,
+  type ProblemRules,
   layoutProblems,
   missingGlyphsIn,
   touchedSlides,
