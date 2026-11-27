@@ -5,7 +5,7 @@ description: "Before you draw a table for readers to look up exact numbers, read
 
 # Table
 
-Exact numbers the reader looks up or compares across rows and columns. `insert` draws the whole table from a list of rows; `kit/table` is the same table on sample data, to copy and look at.
+Exact numbers the reader looks up or compares across rows and columns. `insert` draws the whole table from a list of rows.
 
 ## When
 

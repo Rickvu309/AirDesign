@@ -5,7 +5,7 @@ description: "Before you draw a line chart to show a trend over many periods, re
 
 # Line chart
 
-One or a few series over many periods: a trend, a share over time, our number against the market's. Draw it yourself from a path, rectangles and text; this guide gives the arithmetic. `kit/line-chart` is the same chart drawn on sample data, to copy and look at.
+One or a few series over many periods: a trend, a share over time, our number against the market's. Draw it yourself from a path, rectangles and text; this guide gives the arithmetic.
 
 ## When
 

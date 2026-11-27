@@ -3,17 +3,10 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import type { Guide, Piece, Style, StyleText } from "./index.js"
 
-const beforeTheMerge = [
-  { name: "architecture", size: { w: 1680, h: 640 } },
-  { name: "bar-chart", size: { w: 1680, h: 620 } },
-  { name: "column-chart", size: { w: 1680, h: 620 } },
+const structuralPieces = [
   { name: "comparison", size: { w: 1680, h: 254 } },
-  { name: "donut-chart", size: { w: 1080, h: 620 } },
   { name: "kpi", size: { w: 480, h: 213 } },
-  { name: "line-chart", size: { w: 1680, h: 620 } },
-  { name: "process-flow", size: { w: 1680, h: 295 } },
   { name: "source-line", size: { w: 1680, h: 31 } },
-  { name: "table", size: { w: 1680, h: 544 } },
   { name: "timeline-step", size: { w: 420, h: 216 } },
   { name: "title-block", size: { w: 1680, h: 121 } },
 ]
@@ -77,9 +70,9 @@ describe("the taste entry", () => {
     expect(builtin).not.toHaveBeenCalled()
   })
 
-  it("reads every kit piece with the name and size it had in the kit package", async () => {
+  it("reads only the structural kit pieces, each with its size, and no copy of a chart or diagram recipe", async () => {
     const { pieces, piece } = await import("./index.js")
-    expect(pieces().map(({ name, size }) => ({ name, size }))).toEqual(beforeTheMerge)
-    for (const { name, size } of beforeTheMerge) expect(piece(name)?.size).toEqual(size)
+    expect(pieces().map(({ name, size }) => ({ name, size }))).toEqual(structuralPieces)
+    for (const { name, size } of structuralPieces) expect(piece(name)?.size).toEqual(size)
   })
 })
