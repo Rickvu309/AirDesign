@@ -5,7 +5,7 @@ import { doomRefused, refused, type Answer } from "./answer.js"
 import { imagesPerCall } from "./budget.js"
 import type { DeckHost, Opened } from "./deck-host.js"
 import { deckMeasure } from "./deck-measure.js"
-import { readAnswer } from "./deck-read.js"
+import { readAnswer, themeValues } from "./deck-read.js"
 import { withCatalogFonts } from "./font-names.js"
 import { measuredSteps } from "./land-edit.js"
 import { layoutOf, listed } from "./problems-answer.js"
@@ -115,7 +115,7 @@ export const verbFields: Readonly<Record<Verb, readonly string[]>> = {
   remove: ["target", "targets"],
   group: ["target", "targets", ...lookFields],
   ungroup: ["target"],
-  variables: ["theme", "colors", "fonts", "name", "nameFollows", "language"],
+  variables: ["style", "colors", "fonts", "name", "nameFollows", "language"],
   get: ["target", "find", "cursor"],
   screenshot: ["target"],
 }
@@ -336,36 +336,21 @@ async function group(plan: Plan, op: number, verb: Verb, fields: Readonly<Record
   return [frame]
 }
 
-function theme(view: doom.Doom) {
-  const { colors, fonts, textStyles } = doom.deckOf(view).theme
-  const sizes = Object.fromEntries(Object.entries(textStyles).map(([name, style]) => [name, style.size]))
-  return { colors, fonts, sizes }
-}
-
 async function variables(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<string, unknown>>) {
-  const { theme: requested, ...changes } = fields
-  let replacement = requested
-  if (typeof requested === "string") {
-    const chosen = style(requested)
-    if (chosen === undefined) {
-      const ids = styles.map(({ id }) => id).join(", ")
-      stop(
-        plan,
-        op,
-        verb,
-        doomRefused({ refused: "shape", change: verb, field: "theme", fault: "form", form: `One of ${ids}.` }),
-      )
-    }
-    replacement = chosen.theme
+  const { style: requested, ...changes } = fields
+  const chosen = style(requested)
+  if (requested !== undefined && chosen === undefined) {
+    const ids = styles.map(({ id }) => id).join(", ")
+    stop(plan, op, verb, refused("field", { field: "style", fault: "form", form: `One of ${ids}.` }))
   }
   if (hasLook(fields)) {
     await compileOne(plan, op, verb, {
       op: "deck",
       ...changes,
-      ...(replacement === undefined ? {} : { theme: replacement }),
+      ...(chosen === undefined ? {} : { theme: chosen.theme }),
     })
   }
-  return theme(plan.view)
+  return themeValues(doom.deckOf(plan.view).theme)
 }
 
 function viewed(plan: Plan): Opened {

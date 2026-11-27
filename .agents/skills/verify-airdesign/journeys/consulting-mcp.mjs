@@ -16,7 +16,24 @@ export default async function drive({ signIn, post, mcpRoutes, expect, note }) {
     expect(answer, JSON.stringify(response)).toMatchObject({ ok: true })
     return answer
   }
-  const { deck } = await call("execute", { script: 'createDeck({ name: "Regional revenue" })' })
+  const created = await call("execute", { script: 'createDeck({ name: "Regional revenue", style: "consulting" })' })
+  const { deck, theme } = created
+  const style = await call("get_style", { name: "consulting" })
+  const opened = await call("execute", { deck, script: "get()" })
+  expect(opened.result).toMatchObject({ style: style.name, theme })
+  expect(theme).toMatchObject({
+    colors: { accent1: expect.stringMatching(/^#[a-f0-9]{6}$/i) },
+    fonts: { heading: expect.any(String), body: expect.any(String) },
+    sizes: { title: expect.any(Number) },
+  })
+  const variables = await call("execute", { deck, script: 'variables({ style: "neutral" })' })
+  const neutral = await call("execute", { deck, script: "get()" })
+  expect(neutral.result).toMatchObject({ style: "neutral", theme: variables.result })
+  expect(neutral.result.theme).not.toEqual(theme)
+  await call("stop_run", { deck, runId: variables.runId })
+  note(
+    "Creating with consulting, reading its style text, and reading the saved deck agree on consulting. Switching to neutral saves the new theme values and style name.",
+  )
   const labels = ["Revenue by region", "Market overview", "Q3 results", "Profit by year", "Volume by segment"]
   const conclusions = [
     "Rework pricing strategy",

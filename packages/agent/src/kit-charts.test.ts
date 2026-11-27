@@ -43,9 +43,9 @@ const given = (script: string, name: string, value: unknown) => {
 const withData = (kind: string, data: Readonly<Record<string, unknown>>) =>
   Object.entries(data).reduce((script, [name, value]) => given(script, name, value), recipe(kind))
 
-async function drawn(theme: string, script: string) {
+async function drawn(style: string, script: string) {
   const by = agent()
-  const created = await by.call("execute", { script: `createDeck({ theme: "${theme}" })` })
+  const created = await by.call("execute", { script: `createDeck({ style: "${style}" })` })
   expect(created.ok, JSON.stringify(created.fields)).toBe(true)
   const { deck, slides } = created.fields as { deck: string; slides: string[] }
   const answer = await by.call("execute", { deck, script: given(script, "slide", slides[0]) })
