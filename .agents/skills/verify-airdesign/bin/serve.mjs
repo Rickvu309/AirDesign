@@ -45,18 +45,13 @@ function forward(req, res, apiPort, countryHeader, origins) {
   req.pipe(outgoing)
 }
 
-function servedFile(wanted, webDist) {
-  for (const each of [wanted, `${wanted}.html`])
-    if (each.startsWith(webDist) && existsSync(each) && statSync(each).isFile()) return each
-  return path.join(webDist, "index.html")
-}
-
 function serveFile(pathname, res, webDist) {
-  const file = servedFile(path.join(webDist, path.normalize(decodeURIComponent(pathname))), webDist)
-  res.writeHead(200, {
-    "content-type": types[path.extname(file)] ?? "application/octet-stream",
-    "access-control-allow-origin": "*",
-  })
+  const wanted = path.join(webDist, path.normalize(decodeURIComponent(pathname)))
+  const file =
+    wanted.startsWith(webDist) && existsSync(wanted) && statSync(wanted).isFile()
+      ? wanted
+      : path.join(webDist, "index.html")
+  res.writeHead(200, { "content-type": types[path.extname(file)] ?? "application/octet-stream" })
   createReadStream(file).pipe(res)
 }
 

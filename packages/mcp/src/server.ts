@@ -3,7 +3,6 @@ import { McpServer } from "@modelcontextprotocol/server"
 
 import { callTool, type DeckHost, instructions, refused, type Session } from "@airdesign/agent"
 
-import { deckView, shownInView, type ViewHost } from "./deck-view.js"
 import { encode } from "./encode.js"
 import { skills } from "./skill-source.js"
 
@@ -28,7 +27,6 @@ type RegisteredTool = {
     readonly idempotentHint: boolean
     readonly openWorldHint: boolean
   }
-  readonly view: boolean
 }
 
 function listedTools(): readonly RegisteredTool[] {
@@ -42,11 +40,10 @@ function listedTools(): readonly RegisteredTool[] {
       idempotentHint: tool.idempotentHint,
       openWorldHint: tool.openWorldHint,
     },
-    view: tool.view,
   }))
 }
 
-export function createServer(session: Session, host: DeckHost, view?: ViewHost): McpServer {
+export function createServer(session: Session, host: DeckHost): McpServer {
   const server = new McpServer({ name: "airdesign", version: "0.0.0" }, { instructions })
   for (const tool of listedTools()) {
     server.registerTool(
@@ -55,7 +52,6 @@ export function createServer(session: Session, host: DeckHost, view?: ViewHost):
         description: tool.description,
         inputSchema: inputSchema(tool.inputSchema),
         annotations: tool.annotations,
-        ...(view !== undefined && tool.view ? { _meta: shownInView } : {}),
       },
       async (args, ctx) => {
         const named = readOnce(ctx.mcpReq._meta)
@@ -71,6 +67,6 @@ export function createServer(session: Session, host: DeckHost, view?: ViewHost):
       },
     )
   }
-  for (const extension of view === undefined ? [skills] : [skills, deckView(view)]) extension.attach(server)
+  skills.attach(server)
   return server
 }

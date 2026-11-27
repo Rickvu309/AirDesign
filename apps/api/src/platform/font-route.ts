@@ -2,8 +2,6 @@ import { fontRevision, fontRoutes } from "@airdesign/fonts"
 import type { IncomingMessage, ServerResponse } from "node:http"
 import type { FontSource } from "./font-source.js"
 
-const anyOrigin = { "access-control-allow-origin": "*" }
-
 type Visit = {
   readonly fonts: FontSource
   readonly query: URLSearchParams
@@ -20,7 +18,6 @@ async function family({ fonts, query, res }: Visit): Promise<void> {
   res.writeHead(answer.ok ? 200 : 404, {
     "content-type": "application/json",
     "cache-control": answer.ok ? "public, max-age=86400" : "no-store",
-    ...anyOrigin,
   })
   res.end(JSON.stringify(answer))
 }
@@ -48,7 +45,6 @@ async function file({ fonts, query, res }: Visit): Promise<void> {
     "cache-control": "public, max-age=31536000, immutable",
     "content-length": bytes.length,
     "x-content-type-options": "nosniff",
-    ...anyOrigin,
   })
   res.end(bytes)
 }

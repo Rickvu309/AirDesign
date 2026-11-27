@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 
 import type { DeckHost, Session } from "@airdesign/agent"
-import { createServer, type ViewHost } from "@airdesign/mcp"
+import { createServer } from "@airdesign/mcp"
 import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node"
 import { createMcpHandler } from "@modelcontextprotocol/server"
 
@@ -29,11 +29,10 @@ export async function serveMcp(
   req: IncomingMessage,
   res: ServerResponse,
   body: Buffer,
-  view?: ViewHost,
 ): Promise<void> {
   const names = [...mount.hosts]
   if (!hostHeaderValidation(names)(req, res) || !originValidation(names)(req, res)) return
-  const handler = createMcpHandler(() => createServer(session, host, view), { maxRequestBodySize: mount.bodyCap })
+  const handler = createMcpHandler(() => createServer(session, host), { maxRequestBodySize: mount.bodyCap })
   let failed = false
   const onerror = (error: Error): void => {
     failed = true

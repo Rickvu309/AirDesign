@@ -63,29 +63,3 @@ it("the API's font route answers from the fonts its options give and asks no oth
   })
   expect(status).toBe(200)
 })
-
-it("lets a view on another origin read the served fonts", async () => {
-  const store = new LocalOriginalStore()
-  const fonts = new FontSource(store, upstream)
-  const family = await fonts.family("Montserrat")
-  const file = family.ok ? new URL(family.faces[0]!.url, "https://studio.example") : undefined
-  const headersOf = (path: string, query: URLSearchParams) =>
-    new Promise<Record<string, unknown>>((resolve) => {
-      let seen: Record<string, unknown> = {}
-      const route = fontRouteList.find((each) => each.path === path)
-      void route?.serve({
-        options: { fonts },
-        query,
-        res: {
-          writeHead: (_code: number, headers: Record<string, unknown>) => {
-            seen = headers
-          },
-          end: () => resolve(seen),
-        } as unknown as ServerResponse,
-      })
-    })
-  expect(await headersOf("/fonts/family", new URLSearchParams({ family: "Montserrat" }))).toMatchObject({
-    "access-control-allow-origin": "*",
-  })
-  expect(await headersOf("/fonts/file", file!.searchParams)).toMatchObject({ "access-control-allow-origin": "*" })
-})

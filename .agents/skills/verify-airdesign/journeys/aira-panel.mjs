@@ -40,7 +40,7 @@ async function doomAgent(kit, cookie) {
   return { deck, slide }
 }
 
-export async function outsideAgentToken(kit, cookie, name) {
+async function outsideAgentToken(kit, cookie, name) {
   const { origin, post, accountRoutes, oauthRoutes } = kit
   const mcp = (await post(accountRoutes.agents, {}, cookie)).json.mcp
   const redirectUri = "http://127.0.0.1:33418/callback"
