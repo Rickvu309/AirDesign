@@ -1,7 +1,8 @@
+import { createHash } from "node:crypto"
 import type { IncomingMessage, ServerResponse } from "node:http"
 
 import type { DeckHost, Session } from "@airdesign/agent"
-import { createServerHandler, type ViewHost } from "@airdesign/mcp"
+import { createServerHandler, serverCard, type ViewHost } from "@airdesign/mcp"
 import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node"
 
 export type McpMount = {
@@ -45,4 +46,45 @@ export async function serveMcp(
   } finally {
     await handler.close()
   }
+}
+
+const cardReadHeaders = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET",
+  "access-control-allow-headers": "Content-Type, If-None-Match",
+  "access-control-expose-headers": "ETag",
+}
+
+function unchanged(sent: string | undefined, tag: string): boolean {
+  return sent?.split(",").some((one) => one.trim().replace(/^W\//, "") === tag) ?? false
+}
+
+type CardAnswer = {
+  readonly status: number
+  readonly headers: Readonly<Record<string, string>>
+  readonly body?: string
+}
+
+function cardAnswer(
+  method: string | undefined,
+  sent: string | undefined,
+  endpoint: string,
+  website: string,
+): CardAnswer {
+  if (method === "OPTIONS") return { status: 204, headers: cardReadHeaders }
+  if (method !== "GET" && method !== "HEAD") {
+    return { status: 405, headers: { allow: "GET, HEAD, OPTIONS", ...cardReadHeaders } }
+  }
+  const card = JSON.stringify(serverCard(endpoint, website))
+  const tag = `"${createHash("sha256").update(card).digest("base64url")}"`
+  const headers = { ...cardReadHeaders, "cache-control": "public, max-age=3600", etag: tag }
+  if (unchanged(sent, tag)) return { status: 304, headers }
+  return { status: 200, headers: { ...headers, "content-type": "application/mcp-server-card+json" }, body: card }
+}
+
+export function serveServerCard(req: IncomingMessage, res: ServerResponse, endpoint: string, website: string): void {
+  const answer = cardAnswer(req.method, req.headers["if-none-match"], endpoint, website)
+  res.setHeaders(new Map(Object.entries(answer.headers)))
+  res.statusCode = answer.status
+  res.end(answer.body)
 }

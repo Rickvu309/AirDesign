@@ -42,7 +42,7 @@ import { DeckFollowers } from "./doom/deck-followers.js"
 import { DeckListen } from "./platform/listen.js"
 import { answeredDeckRoutes, type DeckAnswers } from "./platform/deck-answer.js"
 import type { Sender } from "./platform/mail.js"
-import { serveMcp } from "./mcp/mcp.js"
+import { serveMcp, serveServerCard } from "./mcp/mcp.js"
 import type { Sql } from "./platform/pool.js"
 import { mediaAnswers } from "./doom/media.js"
 import type { OriginalStore } from "./platform/original-store.js"
@@ -423,6 +423,11 @@ async function mcpRoute(visit: Visit): Promise<void> {
   )
 }
 
+async function serverCardRoute({ options, req, res, body }: Visit): Promise<void> {
+  await body()
+  serveServerCard(req, res, options.resource, options.siteOrigin)
+}
+
 async function healthRoute({ res }: Visit): Promise<void> {
   sendJson(res, 200, { ok: true })
 }
@@ -455,6 +460,7 @@ export const routes: readonly Route[] = [
   { method: "GET", path: "/version", serve: versionRoute },
   { method: "POST", path: "/smoke/session", serve: smokeRoute },
   { method: "any", path: mcpRoutes.mcp.path, serve: mcpRoute },
+  { method: "any", path: mcpRoutes.serverCard.path, serve: serverCardRoute },
   ...airaRouteList({ signedIn, answerSize, parsedJson, sendJson }),
   airaUsageRoute({ signedIn, answerSize, parsedJson, sendJson, clearSessionCookie }),
   ...creditsRouteList({ signedIn, answerSize, parsedJson, sendJson, clearSessionCookie }),
