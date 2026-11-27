@@ -7,7 +7,7 @@ import {
   matching,
   object,
   oneOf,
-  rememberForm,
+  rememberExpectation,
   variant,
   words,
 } from "./read-kit.js"
@@ -76,9 +76,9 @@ export type Effect =
 export const px = (min = -1_000_000, max = 1_000_000): Reader<Px> => finite(min, max)
 export const size: Reader<Px> = px(0)
 
-const hexText = matching(/^#[0-9a-fA-F]{6}$/, 7, "#rrggbb.")
+const hexText = matching(/^#[0-9a-fA-F]{6}$/, 7, { code: "hex" })
 export const readHex: Reader<Hex> = (raw) => hexText(raw).toLowerCase() as Hex
-rememberForm(readHex, "#rrggbb.")
+rememberExpectation(readHex, { code: "hex" })
 
 export const readColor: Reader<Color> = oneOf<Color>(
   readHex,

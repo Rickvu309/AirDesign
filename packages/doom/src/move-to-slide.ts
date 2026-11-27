@@ -14,31 +14,36 @@ type MoveToSlideOptions = {
   readonly after?: NodeId | null
 }
 
-const form = (field: string, form: string, node?: NodeId, refused: Refusal["refused"] = "shape"): Refusal => ({
+const fieldRefusal = (
+  field: string,
+  expect: NonNullable<Refusal["expect"]>,
+  node?: NodeId,
+  refused: Refusal["refused"] = "shape",
+): Refusal => ({
   refused,
   field,
   fault: "form",
-  form,
+  expect,
   ...(node === undefined ? {} : { node }),
 })
 
 const missing = (node: NodeId, field: string): Refusal => ({ refused: "missing", node, field })
 
 function rootsOf(view: Doom, ids: readonly NodeId[]): readonly Node[] | Refusal {
-  if (ids.length === 0) return form("nodes", "Layers to move.")
+  if (ids.length === 0) return fieldRefusal("nodes", { code: "move-nodes" })
   const unique = [...new Set(ids)]
   const nodes: Node[] = []
   for (const id of unique) {
     const node = view.nodes.get(id)
     if (!isLive(node)) return missing(id, "node")
-    if (node.type !== "frame" && node.type !== "shape") return form("node", "A frame or a shape.", id)
+    if (node.type !== "frame" && node.type !== "shape") return fieldRefusal("node", { code: "layer" }, id)
     nodes.push(node)
   }
   const covered = new Set<NodeId>()
   for (const node of nodes) for (const child of descendantsOf(view, node.id)) covered.add(child.id)
   const roots = nodes.filter((node) => !covered.has(node.id))
   for (const node of roots) {
-    if (lockedIn(view, node.id)) return form("node", "This layer is locked. Unlock it or choose another.", node.id)
+    if (lockedIn(view, node.id)) return fieldRefusal("node", { code: "unlocked-layer" }, node.id)
   }
   return roots
 }
@@ -204,7 +209,7 @@ function keysAt(
   ordered: readonly NodeId[],
   after: NodeId | null,
 ): readonly OrderKey[] | Refusal {
-  if (after !== null && ordered.includes(after)) return form("after", "Another sibling on the slide.", after)
+  if (after !== null && ordered.includes(after)) return fieldRefusal("after", { code: "slide-sibling" }, after)
   const leaving = new Set(ordered)
   const siblings = childrenOf(view, slide).filter((node) => !leaving.has(node.id))
   const index = after === null ? -1 : siblings.findIndex((node) => node.id === after)
@@ -244,10 +249,10 @@ export function moveToSlide(
   at: Point,
   options: MoveToSlideOptions = {},
 ): { readonly writes: readonly Write[]; readonly moved: readonly NodeId[] } | Refusal {
-  if (!Number.isFinite(at.x) || !Number.isFinite(at.y)) return form("box", "A place on the slide.")
+  if (!Number.isFinite(at.x) || !Number.isFinite(at.y)) return fieldRefusal("box", { code: "slide-place" })
   const target = view.nodes.get(slide)
   if (!isLive(target)) return missing(slide, "into")
-  if (target.type !== "slide") return form("into", "A slide.", slide)
+  if (target.type !== "slide") return fieldRefusal("into", { code: "slide" }, slide)
   const roots = rootsOf(view, ids)
   if (isRefusal(roots)) return roots
   const boxes = options.boxes

@@ -179,14 +179,15 @@ describe("resizing", () => {
     const kept = transformedBy(input(picture, [id], "right", { x: 300, y: 150 }, { x: 380, y: 190 }))
     expect(boxOf(kept.writes, id)).toEqual(spot(100, 80, 280, 140))
     expect(kept.writes.map((write) => write.prop)).toEqual(["box"])
-    const read = (writes: typeof kept.writes) => doom.readForAgent(landed(picture.view, writes), picture.slides)
-    expect(read(kept.writes)).toContain(`fill=image:${asset}/crop(10,0,30,25)`)
+    const fills = (writes: typeof kept.writes) => doom.propOf(landed(picture.view, writes).nodes.get(id)!, "fills")
+    const paint = [{ kind: "image", asset, fit: "crop", crop }]
+    expect(fills(kept.writes)).toEqual(paint)
 
     const stretched = transformedBy(
       input(picture, [id], "right", { x: 300, y: 150 }, { x: 380, y: 190 }, { breakAspect: true }),
     )
     expect(boxOf(stretched.writes, id)).toEqual(spot(100, 100, 280, 100))
-    expect(read(stretched.writes)).toContain(`fill=image:${asset}/crop(10,0,30,25)`)
+    expect(fills(stretched.writes)).toEqual(paint)
   })
 
   it("still resizes one edge of a picture that is not cropped", () => {

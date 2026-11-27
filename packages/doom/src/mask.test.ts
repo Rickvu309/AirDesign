@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { compileAgentChange } from "./agent-compile.js"
 import { readAgentChange } from "./agent-change.js"
-import { readForAgent } from "./agent-read.js"
 import { propOf } from "./doom-walk.js"
 import {
   applyEdit,
@@ -101,12 +100,6 @@ describe("a mask is a layer that clips every sibling above it", () => {
     if (isRefusal(set)) return
     const masked = landed(plain.doom, set)
     expect(propOf(masked.nodes.get(hole)!, "mask")).toBe(true)
-    expect(
-      readForAgent(masked, plain.slides)
-        .split("\n")
-        .find((line) => line.includes(hole))
-        ?.split(" "),
-    ).toContain("mask")
     const cleared = landed(masked, { op: "set", target: hole, mask: false })
     expect(propOf(cleared.nodes.get(hole)!, "mask")).toBe(false)
     expect(readAgentChange({ op: "set", target: hole, mask: "yes" })).toMatchObject({

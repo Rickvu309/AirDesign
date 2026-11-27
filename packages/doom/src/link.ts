@@ -13,7 +13,7 @@ const readAddress: Reader<string> = (raw) => {
 }
 
 export const readLink: Reader<string> = accepting(
-  "An https or mailto address, or a slide id.",
+  { code: "link" },
   oneOf(readAddress, (raw) => readNodeId(raw) ?? reject()),
 )
 

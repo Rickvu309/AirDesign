@@ -173,11 +173,11 @@ describe("moveToSlide", () => {
     const locked = land(deck, [{ node: ids.card, prop: "locked", value: true }])
     expect(moveToSlide(deck, [ids.slide], more.slide2, { x: 0, y: 0 })).toMatchObject({
       refused: "shape",
-      form: "A frame or a shape.",
+      expect: { code: "layer" },
     })
     expect(moveToSlide(locked, [ids.card], more.slide2, { x: 0, y: 0 })).toMatchObject({
       refused: "shape",
-      form: "This layer is locked. Unlock it or choose another.",
+      expect: { code: "unlocked-layer" },
     })
     expect(moveToSlide(deck, ["z:9" as NodeId], more.slide2, { x: 0, y: 0 })).toMatchObject({
       refused: "missing",
@@ -186,7 +186,7 @@ describe("moveToSlide", () => {
     expect(moveToSlide(deck, [], more.slide2, { x: 0, y: 0 })).toMatchObject({ refused: "shape", field: "nodes" })
     expect(moveToSlide(deck, [ids.card], ids.card, { x: 0, y: 0 })).toMatchObject({
       refused: "shape",
-      form: "A slide.",
+      expect: { code: "slide" },
     })
   })
 })
@@ -233,7 +233,7 @@ describe("an agent move onto a slide", () => {
       refused: "shape",
       field: "into",
       fault: "needs",
-      needs: "a destination slide id",
+      expect: { code: "destination-slide" },
     })
   })
 })

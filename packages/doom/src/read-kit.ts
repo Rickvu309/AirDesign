@@ -1,4 +1,5 @@
 import { bytesOf } from "./limits.js"
+import type { Expectation } from "./refusal.js"
 
 export type Reader<T> = (raw: unknown) => T
 export type FieldFault = "missing" | "unknown" | "form" | "needs"
@@ -7,21 +8,21 @@ export class Reject {
   readonly kind: "shape" | "limit"
   field: string | undefined
   fault: FieldFault | undefined
-  form: string | undefined
-  constructor(kind: "shape" | "limit", field?: string, fault?: FieldFault, form?: string) {
+  expect: Expectation | undefined
+  constructor(kind: "shape" | "limit", field?: string, fault?: FieldFault, expect?: Expectation) {
     this.kind = kind
     this.field = field
     this.fault = fault
-    this.form = form
+    this.expect = expect
   }
 }
 
-export const reject = (kind: "shape" | "limit" = "shape", form?: string): never => {
-  throw new Reject(kind, undefined, form === undefined || kind === "limit" ? undefined : "form", form)
+export const reject = (kind: "shape" | "limit" = "shape", expect?: Expectation): never => {
+  throw new Reject(kind, undefined, expect === undefined || kind === "limit" ? undefined : "form", expect)
 }
 
-const wrong = (form: string): never => {
-  throw new Reject("shape", undefined, "form", form)
+const wrong = (expect: Expectation): never => {
+  throw new Reject("shape", undefined, "form", expect)
 }
 
 export function rejected(thrown: unknown): "shape" | "limit" {
@@ -33,95 +34,83 @@ export function detailOf(thrown: unknown): {
   readonly refused: "shape" | "limit"
   readonly field?: string
   readonly fault?: FieldFault
-  readonly form?: string
+  readonly expect?: Expectation
 } {
   if (!(thrown instanceof Reject)) throw thrown
   return {
     refused: thrown.kind,
     ...(thrown.field === undefined ? {} : { field: thrown.field }),
     ...(thrown.fault === undefined ? {} : { fault: thrown.fault }),
-    ...(thrown.form === undefined ? {} : { form: thrown.form }),
+    ...(thrown.expect === undefined ? {} : { expect: thrown.expect }),
   }
 }
 
-export function formed<T>(read: (raw: unknown) => T | undefined, form: string): Reader<T> {
+export function formed<T>(read: (raw: unknown) => T | undefined, expect: Expectation): Reader<T> {
   const reader: Reader<T> = (raw) => {
     const value = read(raw)
-    if (value === undefined) throw new Reject("shape", undefined, "form", form)
+    if (value === undefined) throw new Reject("shape", undefined, "form", expect)
     return value
   }
-  rememberForm(reader, form)
+  rememberExpectation(reader, expect)
   return reader
 }
 
-export function accepting<T>(form: string, read: Reader<T>): Reader<T> {
+export function accepting<T>(expect: Expectation, read: Reader<T>): Reader<T> {
   const reader: Reader<T> = (raw) => {
     try {
       return read(raw)
     } catch (thrown) {
       if (thrown instanceof Reject && thrown.field === undefined) {
         thrown.fault = "form"
-        thrown.form = form
+        thrown.expect = expect
       }
       throw thrown
     }
   }
-  rememberForm(reader, form)
+  rememberExpectation(reader, expect)
   return reader
 }
 
-export function agentColor(pattern: RegExp, max: number, form: string): Reader<string> {
+export function agentColor(pattern: RegExp, max: number, expect: Expectation): Reader<string> {
   const hex = /^#[0-9a-fA-F]{6}$/
   const read: Reader<string> = (raw) => {
     if (typeof raw === "string" && hex.test(raw)) return raw.toLowerCase()
     if (typeof raw === "string" && raw.length <= max && pattern.test(raw)) return raw
-    return wrong(form)
+    return wrong(expect)
   }
-  rememberForm(read, form)
+  rememberExpectation(read, expect)
   return read
 }
 
-export function mismatch(field: string, form: string): never {
-  throw new Reject("shape", field, "form", form)
+export function mismatch(field: string, expect: Expectation): never {
+  throw new Reject("shape", field, "form", expect)
 }
 
-export function wrongForm(form: string): never {
-  return wrong(form)
+export function wrongForm(expect: Expectation): never {
+  return wrong(expect)
 }
 
-export const forms = {
-  node: "1 to 16 of a-z or 0-9, a colon, then 1 to 12 digits.",
-  after: "A node id, or null.",
-  color: "A theme colour, lighter or darker by a percent, or #rrggbb.",
-  font: "A letter or digit, then up to 99 letters, digits or spaces.",
-  icon: "Letters, digits and dashes, or group/name.",
-  target: "A node id, <slide>.title, or *.title.",
-  hex: "#rrggbb.",
-  stroke: "A theme colour, lighter or darker by a percent, #rrggbb, or none.",
-  fill: "A colour, none, {image} or {gradient}.",
-  series: "One value per category.",
-  points: "At most one colour for each category's place.",
-  pieColor: "A pie colours each slice; set the slice with points or #series:category, not the series.",
-  text: "A non-empty string.",
-} as const
-
-const held = new WeakMap<Reader<unknown>, string>()
-const genericForm = new Set(["An object.", "A list."])
+const held = new WeakMap<Reader<unknown>, Expectation>()
+const genericExpectation = new Set(["object", "list"])
 const requiredOf = new WeakMap<Reader<unknown>, readonly string[]>()
 
-export function rememberForm(read: Reader<unknown>, form: string): void {
-  held.set(read, form)
+export function rememberExpectation(read: Reader<unknown>, expect: Expectation): void {
+  held.set(read, expect)
 }
 
-export function formOf(read: Reader<unknown>): string | undefined {
+export function expectationOf(read: Reader<unknown>): Expectation | undefined {
   return held.get(read)
 }
 
-export function explain(thrown: unknown, form: string | undefined): void {
+export function explain(thrown: unknown, expect: Expectation | undefined): void {
   if (!(thrown instanceof Reject) || thrown.kind !== "shape") return
   if (thrown.fault === undefined) thrown.fault = "form"
-  if (form !== undefined && thrown.field === undefined && (thrown.form === undefined || genericForm.has(thrown.form)))
-    thrown.form = form
+  if (
+    expect !== undefined &&
+    thrown.field === undefined &&
+    (thrown.expect === undefined || genericExpectation.has(thrown.expect.code))
+  )
+    thrown.expect = expect
 }
 
 export function naming<T>(field: string, read: () => T): T {
@@ -142,28 +131,28 @@ const recordOf = (raw: unknown): Record<string, unknown> | undefined =>
 
 const plain = (raw: unknown): Record<string, unknown> => {
   const found = recordOf(raw)
-  if (found === undefined) throw new Reject("shape", undefined, "form", "An object.")
+  if (found === undefined) throw new Reject("shape", undefined, "form", { code: "object" })
   return found
 }
 
-export const boolean: Reader<boolean> = (raw) => (typeof raw === "boolean" ? raw : wrong("true or false."))
-rememberForm(boolean, "true or false.")
+export const boolean: Reader<boolean> = (raw) => (typeof raw === "boolean" ? raw : wrong({ code: "boolean" }))
+rememberExpectation(boolean, { code: "boolean" })
 
 const asJsonStores = (value: number) => (Object.is(value, -0) ? 0 : value)
 
 export const finite = (min: number, max: number): Reader<number> => {
-  const form = `A number from ${min} to ${max}.`
+  const expect: Expectation = { code: "number-range", min, max }
   const read: Reader<number> = (raw) =>
-    typeof raw === "number" && Number.isFinite(raw) && raw >= min && raw <= max ? asJsonStores(raw) : wrong(form)
-  rememberForm(read, form)
+    typeof raw === "number" && Number.isFinite(raw) && raw >= min && raw <= max ? asJsonStores(raw) : wrong(expect)
+  rememberExpectation(read, expect)
   return read
 }
 
 export const integer = (min: number, max: number): Reader<number> => {
-  const form = `A whole number from ${min} to ${max}.`
+  const expect: Expectation = { code: "integer-range", min, max }
   const read: Reader<number> = (raw) =>
-    typeof raw === "number" && Number.isInteger(raw) && raw >= min && raw <= max ? asJsonStores(raw) : wrong(form)
-  rememberForm(read, form)
+    typeof raw === "number" && Number.isInteger(raw) && raw >= min && raw <= max ? asJsonStores(raw) : wrong(expect)
+  rememberExpectation(read, expect)
   return read
 }
 
@@ -171,59 +160,59 @@ const unsafe =
   /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/
 
 export const words = (maxBytes: number, minLength = 0): Reader<string> => {
-  const empty = minLength > 0 ? "A non-empty string." : "A string."
+  const empty: Expectation = minLength > 0 ? { code: "nonempty-string" } : { code: "string" }
   const read: Reader<string> = (raw) => {
     if (typeof raw !== "string" || raw.length < minLength) return wrong(empty)
-    if (unsafe.test(raw)) return wrong("A string with no control characters or lone surrogates.")
+    if (unsafe.test(raw)) return wrong({ code: "safe-string" })
     return bytesOf(raw) > maxBytes ? reject("limit") : raw
   }
-  rememberForm(read, empty)
+  rememberExpectation(read, empty)
   return read
 }
 
-export const matching = (pattern: RegExp, maxLength: number, form?: string): Reader<string> => {
+export const matching = (pattern: RegExp, maxLength: number, expect?: Expectation): Reader<string> => {
   const read: Reader<string> = (raw) =>
     typeof raw === "string" && raw.length <= maxLength && pattern.test(raw)
       ? raw
-      : form === undefined
+      : expect === undefined
         ? reject()
-        : wrong(form)
-  if (form !== undefined) rememberForm(read, form)
+        : wrong(expect)
+  if (expect !== undefined) rememberExpectation(read, expect)
   return read
 }
 
 export const literal = <const V extends string>(values: readonly V[]): Reader<V> => {
-  const form = `One of ${values.join(", ")}.`
+  const expect: Expectation = { code: "one-of", options: values }
   const read: Reader<V> = (raw) =>
-    typeof raw === "string" && (values as readonly string[]).includes(raw) ? (raw as V) : wrong(form)
-  rememberForm(read, form)
+    typeof raw === "string" && (values as readonly string[]).includes(raw) ? (raw as V) : wrong(expect)
+  rememberExpectation(read, expect)
   return read
 }
 
 export const list = <T>(item: Reader<T>, max: number, min = 0): Reader<readonly T[]> => {
-  const form = min <= 1 ? "A list of at least one." : `A list of at least ${min}.`
+  const expect: Expectation = { code: "list-min", min }
   const read: Reader<readonly T[]> = (raw) => {
-    if (!Array.isArray(raw)) return wrong("A list.")
-    if (raw.length < min) return wrong(min === 0 ? "A list." : form)
+    if (!Array.isArray(raw)) return wrong({ code: "list" })
+    if (raw.length < min) return wrong(min === 0 ? { code: "list" } : expect)
     if (raw.length > max) return reject("limit")
     return raw.map((value, index) => naming(String(index), () => item(value)))
   }
-  rememberForm(read, min === 0 ? "A list." : form)
+  rememberExpectation(read, min === 0 ? { code: "list" } : expect)
   return read
 }
 
 export const pair = <T>(item: Reader<T>): Reader<readonly [T, T]> => {
   const read: Reader<readonly [T, T]> = (raw) => {
-    if (!Array.isArray(raw) || raw.length !== 2) return wrong("Two values.")
+    if (!Array.isArray(raw) || raw.length !== 2) return wrong({ code: "pair" })
     return [naming("0", () => item(raw[0])), naming("1", () => item(raw[1]))]
   }
-  rememberForm(read, "Two values.")
+  rememberExpectation(read, { code: "pair" })
   return read
 }
 
 export const quad = <T>(item: Reader<T>): Reader<readonly [T, T, T, T]> => {
   const read: Reader<readonly [T, T, T, T]> = (raw) => {
-    if (!Array.isArray(raw) || raw.length !== 4) return wrong("Four values.")
+    if (!Array.isArray(raw) || raw.length !== 4) return wrong({ code: "quad" })
     return [
       naming("0", () => item(raw[0])),
       naming("1", () => item(raw[1])),
@@ -231,7 +220,7 @@ export const quad = <T>(item: Reader<T>): Reader<readonly [T, T, T, T]> => {
       naming("3", () => item(raw[3])),
     ]
   }
-  rememberForm(read, "Four values.")
+  rememberExpectation(read, { code: "quad" })
   return read
 }
 
@@ -263,16 +252,16 @@ export function oneOf<T>(...readers: readonly Reader<T>[]): Reader<T> {
       }
     }
     if (best !== undefined && best.score > 0) throw best.thrown
-    const form = formOf(read)
-    if (form !== undefined && kind === "shape") throw new Reject("shape", undefined, "form", form)
+    const expect = expectationOf(read)
+    if (expect !== undefined && kind === "shape") throw new Reject("shape", undefined, "form", expect)
     return reject(kind)
   }
   return read
 }
 
-export function union<T>(form: string, readers: readonly Reader<T>[]): Reader<T> {
+export function union<T>(expect: Expectation, readers: readonly Reader<T>[]): Reader<T> {
   const read = oneOf(...readers)
-  rememberForm(read, form)
+  rememberExpectation(read, expect)
   return read
 }
 
@@ -285,13 +274,13 @@ export function object<R extends Shape, O extends Shape = Record<never, never>>(
   optional?: O,
 ): Reader<Required<R> & Optional<O>> {
   const allowed = new Set([...Object.keys(required), ...Object.keys(optional ?? {})])
-  const accepted = `One of ${[...allowed].join(", ")}.`
+  const accepted: Expectation = { code: "one-of", options: [...allowed] }
   const read = (raw: unknown) => {
     const found = plain(raw)
     for (const key of Object.keys(found)) if (!allowed.has(key)) throw new Reject("shape", key, "unknown", accepted)
     const built: Record<string, unknown> = {}
     for (const [key, reader] of Object.entries(required)) {
-      if (!Object.hasOwn(found, key)) throw new Reject("shape", key, "missing", formOf(reader))
+      if (!Object.hasOwn(found, key)) throw new Reject("shape", key, "missing", expectationOf(reader))
       built[key] = naming(key, () => reader(found[key]))
     }
     for (const [key, reader] of Object.entries(optional ?? {}))
@@ -321,10 +310,10 @@ export function variant<const Tag extends string, V extends Variants<Tag>>(
   tag: Tag,
   variants: V,
 ): Reader<{ [N in keyof V & string]: { readonly [T in Tag]: N } & ReturnType<V[N]> }[keyof V & string]> {
-  const accepted = `One of ${Object.keys(variants).join(", ")}.`
+  const accepted: Expectation = { code: "one-of", options: Object.keys(variants) }
   return (raw) => {
     const found = recordOf(raw)
-    if (found === undefined) throw new Reject("shape", tag, "form", "An object.")
+    if (found === undefined) throw new Reject("shape", tag, "form", { code: "object" })
     const name = found[tag]
     if (name === undefined) throw new Reject("shape", tag, "missing", accepted)
     if (typeof name !== "string") throw new Reject("shape", tag, "form", accepted)

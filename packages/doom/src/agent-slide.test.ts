@@ -140,7 +140,7 @@ describe("slide move and delete", () => {
       refused: "shape",
       field: "slide",
       fault: "form",
-      form: "Exactly one of add, move or delete.",
+      expect: { code: "slide-operation" },
       change: "slide",
     })
     expect(refusal(richDeck(), { op: "slide", add: {}, delete: ids.slide })).toMatchObject({

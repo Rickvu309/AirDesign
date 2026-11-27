@@ -1,4 +1,4 @@
-import type { EditRefusal, DoomRefusal } from "@airdesign/catalog"
+import { refusalCopy, type EditRefusal, type DoomRefusal } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import type { DeckHost } from "./deck-host.js"
@@ -135,8 +135,7 @@ export function doomRefused(refusal: doom.AgentRefusal | doom.Refusal, more: Rea
     ...("at" in refusal && refusal.at !== undefined ? { at: refusal.at } : {}),
     ...("field" in refusal && refusal.field !== undefined ? { field: refusal.field } : {}),
     ...("fault" in refusal && refusal.fault !== undefined ? { fault: refusal.fault } : {}),
-    ...("form" in refusal && refusal.form !== undefined ? { form: refusal.form } : {}),
-    ...("needs" in refusal && refusal.needs !== undefined ? { needs: refusal.needs } : {}),
+    ...refusalCopy(refusal),
     ...("grid" in refusal && refusal.grid !== undefined ? { needs: gridNeeds(refusal.grid) } : {}),
     ...(refusal.node === undefined ? {} : { node: refusal.node }),
     ...(refusal.prop === undefined ? {} : { prop: refusal.prop }),

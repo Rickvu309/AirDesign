@@ -41,17 +41,14 @@ export function stop(
   node?: NodeId,
   field?: string,
   fault?: FieldFault,
-  form?: string,
+  expect?: AgentRefusal["expect"],
 ): never {
-  const needs = fault === "needs" ? form : undefined
-  const accepted = fault === "needs" ? undefined : form
   throw new Stop({
     refused,
     ...(node === undefined ? {} : { node }),
     ...(field === undefined ? {} : { field }),
     ...(fault === undefined ? {} : { fault }),
-    ...(accepted === undefined ? {} : { form: accepted }),
-    ...(needs === undefined ? {} : { needs }),
+    ...(expect === undefined ? {} : { expect }),
   })
 }
 

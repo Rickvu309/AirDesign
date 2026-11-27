@@ -2,14 +2,98 @@ import type { NodeId } from "./ids.js"
 import type { WriteKey } from "./props.js"
 import type { TextStyleName } from "./text.js"
 
+type ExpectCode =
+  | "node-id"
+  | "node-id-or-null"
+  | "theme-color"
+  | "font-name"
+  | "icon-name"
+  | "target-role"
+  | "hex"
+  | "stroke"
+  | "fill"
+  | "nonempty-string"
+  | "string"
+  | "safe-string"
+  | "object"
+  | "list"
+  | "boolean"
+  | "pair"
+  | "quad"
+  | "link"
+  | "link-or-none"
+  | "language-tag"
+  | "padding"
+  | "crop-sides"
+  | "single-line"
+  | "end-arrow"
+  | "move-nodes"
+  | "layer"
+  | "unlocked-layer"
+  | "slide-sibling"
+  | "slide-place"
+  | "slide"
+  | "slide-id"
+  | "read-slide-id"
+  | "read-slide-group"
+  | "populated-slide-group"
+  | "group-slide-or-null"
+  | "slide-ids"
+  | "other-slide-group"
+  | "other-slide-or-null"
+  | "slide-operation"
+  | "slide-group-or-new"
+  | "slide-or-group"
+  | "after-slide"
+  | "before-or-after-group"
+  | "before-group-only"
+  | "slide-or-slides"
+  | "new-slide-group"
+  | "first-in-group"
+  | "copyable-node"
+  | "valid-piece"
+  | "slide-or-frame"
+  | "deck-look"
+  | "grid-rows"
+  | "nonempty-grid"
+  | "needs-rows"
+  | "layer-or-layers"
+  | "destination-slide"
+  | "after-sibling"
+  | "same-parent"
+  | "frame"
+  | "target"
+  | "slide-role"
+  | "needs-path"
+  | "needs-icon"
+  | "needs-line"
+  | "needs-text"
+  | "needs-image"
+  | "crop-fit"
+  | "needs-preset"
+  | "insert-or-text"
+  | "needs-layout"
+  | "line-attachment"
+  | "path-data"
+  | "horizontal-align"
+  | "picture-fill"
+  | "named-icon"
+  | "batch"
+
+export type Expectation =
+  | { readonly code: ExpectCode }
+  | { readonly code: "number-range" | "integer-range"; readonly min: number; readonly max: number }
+  | { readonly code: "list-min"; readonly min: number }
+  | { readonly code: "one-of"; readonly options: readonly string[] }
+  | { readonly code: "path-length"; readonly max: number }
+
 export type Refusal = {
   readonly refused: "shape" | "limit" | "cycle" | "person" | "missing" | "stale" | "run-fenced" | "last-slide"
   readonly node?: NodeId
   readonly prop?: WriteKey
   readonly field?: string
   readonly fault?: "missing" | "unknown" | "form" | "needs"
-  readonly form?: string
-  readonly needs?: string
+  readonly expect?: Expectation
   readonly grid?: GridShortfall
 }
 

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { compiled, minter } from "./testing/agent-fixtures.js"
-import { slideForm } from "./agent-slide-fields.js"
 import {
   applyEdit,
   childrenOf,
@@ -239,25 +238,25 @@ describe("an agent places slides and slide groups", () => {
     expect(refuse({ op: "slide", move: { after: null } })).toMatchObject({
       refused: "shape",
       field: "move",
-      form: slideForm.moveWhat,
+      expect: { code: "slide-or-group" },
     })
     expect(refuse({ op: "slide", move: { group: "new", after: null } })).toMatchObject({
       refused: "shape",
-      form: slideForm.newSlides,
+      expect: { code: "new-slide-group" },
     })
     expect(refuse({ op: "slide", move: { group: slides[0], after: null } })).toMatchObject({
       refused: "shape",
       field: "group",
       fault: "needs",
-      needs: "a slide group id from get, where a slide line ends with group=<id>",
+      expect: { code: "read-slide-group" },
     })
     expect(refuse({ op: "slide", move: { slide: slides[1], group: groups[1], after: slides[0] } })).toMatchObject({
       refused: "shape",
       field: "after",
       fault: "needs",
-      needs: "a slide id in that group, or null to put these first",
+      expect: { code: "group-slide-or-null" },
     })
-    expect(refuse({ op: "slide", add: { after: null } })).toMatchObject({ form: slideForm.addFirst })
+    expect(refuse({ op: "slide", add: { after: null } })).toMatchObject({ expect: { code: "first-in-group" } })
     expect(picture(doom)).toEqual(before)
   })
 })

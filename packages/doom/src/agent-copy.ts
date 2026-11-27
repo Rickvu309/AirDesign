@@ -10,7 +10,7 @@ export function compileDuplicate(draft: Draft, change: Extract<AgentChange, { op
   for (const id of change.nodes) {
     const node = living(draft, id, "nodes")
     if (node.type !== "slide" && node.type !== "frame" && node.type !== "shape")
-      stop("shape", id, "nodes", "form", "A slide, a frame or a shape.")
+      stop("shape", id, "nodes", "form", { code: "copyable-node" })
   }
   draft.writes.push(...duplicateWrites(draft.doom, change.nodes, draft.mint).writes)
 }
@@ -19,13 +19,13 @@ function grownPiece(draft: Draft, change: Extract<AgentChange, { op: "paste" }>)
   try {
     return doomFromTree({ theme: deckLookOf(draft.doom).theme, slides: [{ children: [change.piece] }] })
   } catch {
-    return stop("shape", undefined, "piece", "form", "A piece whose layers each hold valid fields.")
+    return stop("shape", undefined, "piece", "form", { code: "valid-piece" })
   }
 }
 
 export function compilePaste(draft: Draft, change: Extract<AgentChange, { op: "paste" }>): void {
   const into = living(draft, change.into, "into")
-  if (into.type !== "slide" && into.type !== "frame") stop("shape", into.id, "into", "form", "A slide or a frame.")
+  if (into.type !== "slide" && into.type !== "frame") stop("shape", into.id, "into", "form", { code: "slide-or-frame" })
   const grown = grownPiece(draft, change)
   const root = childrenOf(grown.doom, grown.slides[0]!)[0]!
   const copies = pasteWrites({ view: grown.doom, roots: [root.id] }, draft.doom, into.id, draft.mint)
@@ -49,7 +49,7 @@ export function compileDeck(draft: Draft, change: Extract<AgentChange, { op: "de
     colors === undefined &&
     fonts === undefined
   )
-    stop("shape", deck.id, "deck", "missing", "A name, nameFollows, language, theme, colors or fonts.")
+    stop("shape", deck.id, "deck", "missing", { code: "deck-look" })
   const theme = newTheme ?? deckLookOf(draft.doom).theme
   put(draft, deck.id, {
     ...(name === undefined ? {} : { name }),

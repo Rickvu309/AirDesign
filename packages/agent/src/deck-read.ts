@@ -1,3 +1,4 @@
+import { readForAgent } from "./agent-read.js"
 import * as doom from "@airdesign/doom"
 import { startRules, styleOf } from "@airdesign/taste"
 
@@ -18,8 +19,7 @@ function foundAnswer(opened: Opened, find: string, detail: doom.NodeId | undefin
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
   const wanted = find.toLowerCase()
   const lines = slides.flatMap((slide) =>
-    doom
-      .readForAgent(opened.fold, [slide], undefined, detail)
+    readForAgent(opened.fold, [slide], undefined, detail)
       .split("\n")
       .slice(1)
       .filter((line) => line.toLowerCase().includes(wanted))
@@ -65,7 +65,7 @@ function chosenSlides(opened: Opened, query: Query): Chosen {
   const chosen: doom.NodeId[] = []
   let bytes = 0
   for (const slide of wanted) {
-    bytes += doom.readForAgent(opened.fold, [slide], undefined, detail).length
+    bytes += readForAgent(opened.fold, [slide], undefined, detail).length
     if (chosen.length > 0 && bytes > readBytes) break
     chosen.push(slide)
   }
@@ -96,6 +96,6 @@ export function readAnswer(opened: Opened, query: Query, laid?: Laid): Answer {
   const note = [lead(opened, slides.length), ...(laid === undefined ? [] : readProblemsNote(laid))].join(" ")
   return answered(note, {
     ...answer,
-    layers: doom.readForAgent(opened.fold, chosen, laid?.boxes, detail),
+    layers: readForAgent(opened.fold, chosen, laid?.boxes, detail),
   })
 }

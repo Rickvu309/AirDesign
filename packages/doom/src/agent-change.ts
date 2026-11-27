@@ -5,7 +5,6 @@ import { arrowField, startArrowField } from "./agent-arrow.js"
 import { weightNames } from "./painted-face.js"
 import { endSchema, readEnd } from "./agent-end.js"
 import { insertField } from "./agent-insert.js"
-import { kindWords } from "./agent-kind-words.js"
 import { linkField } from "./agent-link.js"
 import { limits } from "./limits.js"
 import { type Field, choice, field, flag, number, string } from "./agent-fields.js"
@@ -32,7 +31,6 @@ import {
   boolean,
   detailOf,
   finite,
-  forms,
   list,
   literal,
   matching,
@@ -103,13 +101,13 @@ export type AgentRefusal = Refusal & { readonly change: string; readonly at?: nu
 
 const colorSchema = { $ref: "#/$defs/color" }
 const tintedName = new RegExp(`^(${colorVars.join("|")})([+-](100|[1-9][0-9]?))?$`)
-export const readColor = agentColor(tintedName, 16, forms.color) as Reader<AgentColor>
-const id = (description: string) => field<NodeId>({ ...idSchema, description }, readId)
+export const readColor = agentColor(tintedName, 16, { code: "theme-color" }) as Reader<AgentColor>
+const id = () => field<NodeId>(idSchema, readId)
 
 const readNone = literal(["none"] as const)
 
-const readFontName = matching(/^[A-Za-z0-9][A-Za-z0-9 ]{0,99}$/, 100, forms.font)
-const readIconName = matching(/^([a-z0-9-]+\/)?[a-z0-9-]+$/, 80, forms.icon)
+const readFontName = matching(/^[A-Za-z0-9][A-Za-z0-9 ]{0,99}$/, 100, { code: "font-name" })
+const readIconName = matching(/^([a-z0-9-]+\/)?[a-z0-9-]+$/, 80, { code: "icon-name" })
 
 const boxSides = { x: px(), y: px(), w: size, h: size }
 
@@ -121,15 +119,12 @@ const lookFields: LookFields = {
     {
       type: "string",
       maxLength: pathLimit,
-      description: "Set a path's SVG commands in box-relative coordinates (0 to 1 spans the box).",
     },
     readPathData,
   ),
-  fillStroke: flag("Extend an opaque path fill by one pixel along its edge."),
+  fillStroke: flag(),
   fill: field(
     {
-      description:
-        "Paint inside the layer: a colour, none, {image} for a picture, or {gradient} through two to eight colours. Text takes color instead.",
       anyOf: [
         colorSchema,
         { const: "none" },
@@ -137,7 +132,7 @@ const lookFields: LookFields = {
           type: "object",
           additionalProperties: false,
           required: ["image"],
-          properties: { image: { type: "string", description: "An https address, or an asset read from the deck." } },
+          properties: { image: { type: "string" } },
         },
         {
           type: "object",
@@ -145,54 +140,37 @@ const lookFields: LookFields = {
           required: ["gradient"],
           properties: {
             gradient: { type: "array", items: colorSchema, minItems: 2, maxItems: 8 },
-            angle: { type: "number", description: "Degrees; 0 runs left to right. Wraps past a full turn." },
+            angle: { type: "number" },
             radial: { type: "boolean" },
           },
         },
       ],
     },
-    union<AgentFill>(forms.fill, [
+    union<AgentFill>({ code: "fill" }, [
       readColor,
       readNone,
       object({ image: words(limits.address, 1) }),
       object({ gradient: list(readColor, 8, 2) }, { angle: readAngle, radial: boolean }),
     ]),
   ),
-  stroke: field(
-    { description: "Outline colour, or none.", anyOf: [colorSchema, { const: "none" }] },
-    union(forms.stroke, [readColor, readNone]),
-  ),
-  strokeWidth: number(0, 200, "Outline weight in pixels. A stroke colour alone draws a thin one."),
-  color: field({ ...colorSchema, description: "Text colour." }, readColor),
-  radius: number(0, 10_000, "Corner radius in pixels. Half the shorter side or more makes a pill or a circle."),
-  effect: choice<EffectStyleName | "none">(
-    [...effectStyleNames, "none"],
-    "A shadow or glow style from the deck, or none.",
-  ),
-  effectOpacity: number(0, 1, "Shadow strength, 0 to 1."),
+  stroke: field({ anyOf: [colorSchema, { const: "none" }] }, union({ code: "stroke" }, [readColor, readNone])),
+  strokeWidth: number(0, 200),
+  color: field({ ...colorSchema }, readColor),
+  radius: number(0, 10_000),
+  effect: choice<EffectStyleName | "none">([...effectStyleNames, "none"]),
+  effectOpacity: number(0, 1),
   link: linkField,
-  clip: flag("Clip a frame's children."),
-  mask: flag("This layer masks the layers above it."),
-  opacity: number(0, 1, "0 is clear, 1 is solid."),
-  text: string(
-    limits.valueBytes,
-    "Words as markdown: **bold**, *italic*, ++underline++, ~~strike~~, [label](url), '- ' bullets, '1. ' numbers, two spaces for each level, a blank line between paragraphs. Replaces all the words.",
-  ),
+  clip: flag(),
+  mask: flag(),
+  opacity: number(0, 1),
+  text: string(limits.valueBytes),
   insert: insertField,
-  textStyle: choice(
-    textStyleNames,
-    "A named style from the deck: size, font, weight and spacing together. It clears size, font, lineHeight, letterSpacing and case. The first title text on a slide becomes its title.",
-  ),
-  align: choice(
-    ["left", "center", "right", "justify"],
-    "Text alignment. In a frame with a layout: where its children sit across the layout.",
-  ),
-  layout: choice(["row", "column", "none"], "How a frame places its children. none leaves them where they are."),
-  gap: number(0, 1_000, "Space between the children of a row or column."),
+  textStyle: choice(textStyleNames),
+  align: choice(["left", "center", "right", "justify"]),
+  layout: choice(["row", "column", "none"]),
+  gap: number(0, 1_000),
   padding: field<Px | Sides>(
     {
-      description:
-        "Space in pixels between a text box and its words or a frame and its children. A number sets all sides. Use t, r, b, l to set individual sides.",
       anyOf: [
         { type: "number", minimum: 0, maximum: 1_000 },
         {
@@ -205,28 +183,22 @@ const lookFields: LookFields = {
         },
       ],
     },
-    union<Px | Sides>("A padding number or t, r, b, l in pixels.", [
+    union<Px | Sides>({ code: "padding" }, [
       finite(0, 1_000),
       object({ t: finite(0, 1_000), r: finite(0, 1_000), b: finite(0, 1_000), l: finite(0, 1_000) }),
     ]),
   ),
-  icon: field({ type: "string", description: "An icon name such as star, arrow-right or trending-up." }, readIconName),
+  icon: field({ type: "string" }, readIconName),
   arrow: arrowField,
   startArrow: startArrowField,
-  from: field(endSchema("Where a line starts: a layer's side, which it then follows, or a point."), readEnd),
-  to: field(endSchema("Where a line ends: a layer's side, which it then follows, or a point."), readEnd),
-  route: choice(["straight", "elbow", "curve"], "How a line runs between its ends."),
-  lane: number(
-    -10_000,
-    10_000,
-    "Where an elbow line's middle leg runs: a y when its start leaves a top or bottom side, else an x.",
-  ),
+  from: field(endSchema, readEnd),
+  to: field(endSchema, readEnd),
+  route: choice(["straight", "elbow", "curve"]),
+  lane: number(-10_000, 10_000),
   rows: field(
     {
       type: "array",
       items: { type: "array", items: { type: "string" } },
-      description:
-        "Add with kind frame. Words in a grid, one array for each row, the first row the header. Markdown works in a cell. An empty string leaves the cell empty.",
     },
     list(list(words(limits.valueBytes), 24, 1), 64, 1),
   ),
@@ -235,66 +207,56 @@ const lookFields: LookFields = {
       type: "object",
       additionalProperties: false,
       properties: { x: { type: "number" }, y: { type: "number" }, w: { type: "number" }, h: { type: "number" } },
-      description:
-        "x, y, w, h in pixels on the slide, or inside the frame you add into. set and move keep what you leave out. add takes all four, or none for the largest free area.",
     },
     object({}, boxSides),
   ),
-  name: field<string>(
-    { type: "string", description: "Layer name, or with op deck the deck's name. Never empty." },
-    (raw) => {
-      const name = words(limits.name, 1)(raw)
-      return name.trim() === "" ? wrongForm(forms.text) : name
-    },
-  ),
-  hidden: flag("Hide the layer."),
-  locked: flag("Lock the layer against selection and moves."),
-  size: number(1, 2_000, "Text size in pixels."),
-  font: field({ type: "string", description: "A font family, such as Inter." }, readFontName),
-  weight: choice(weightNames, "Thin, ExtraLight, Light, Regular, Medium, SemiBold, Bold, ExtraBold or Black."),
-  lineHeight: number(0.5, 5, "Line height as a multiple of the size."),
-  letterSpacing: number(-100, 100, "Letter spacing in pixels."),
-  case: choice(["none", "upper", "lower", "title"], "Letter case."),
-  underline: flag("Underline all the words."),
-  strike: flag("Strike through all the words."),
-  dash: choice(["solid", "dash", "dot"], "Outline dash."),
-  fit: choice(["fill", "fit", "crop", "tile"], "How a picture sits in its layer."),
+  name: field<string>({ type: "string" }, (raw) => {
+    const name = words(limits.name, 1)(raw)
+    return name.trim() === "" ? wrongForm({ code: "nonempty-string" }) : name
+  }),
+  hidden: flag(),
+  locked: flag(),
+  size: number(1, 2_000),
+  font: field({ type: "string" }, readFontName),
+  weight: choice(weightNames),
+  lineHeight: number(0.5, 5),
+  letterSpacing: number(-100, 100),
+  case: choice(["none", "upper", "lower", "title"]),
+  underline: flag(),
+  strike: flag(),
+  dash: choice(["solid", "dash", "dot"]),
+  fit: choice(["fill", "fit", "crop", "tile"]),
   crop: cropField,
-  shape: choice(shapeNames, "A shape's outline. Lines and connectors are not shapes: add kind line."),
-  rotation: field<number>({ type: "number", description: "Degrees clockwise. Wraps past a full turn." }, readRotation),
-  flip: choice(["none", "h", "v", "hv"], "Mirror across, down, or both."),
-  notes: field({ type: "string", description: "Presenter notes." }, words(limits.valueBytes)),
+  shape: choice(shapeNames),
+  rotation: field<number>({ type: "number" }, readRotation),
+  flip: choice(["none", "h", "v", "hv"]),
+  notes: field({ type: "string" }, words(limits.valueBytes)),
   ...slideLookFields,
   ...innerShadowFields(readColor),
 }
 
-const readTarget = matching(
-  /^([a-z0-9]{1,16}:[0-9]{1,12}(\.(title|subtitle|body))?|\*\.(title|subtitle|body))$/,
-  440,
-  forms.target,
-)
+const readTarget = matching(/^([a-z0-9]{1,16}:[0-9]{1,12}(\.(title|subtitle|body))?|\*\.(title|subtitle|body))$/, 440, {
+  code: "target-role",
+})
 
 const placeFields = {
-  kind: choice(addKinds, kindWords),
-  slide: id("The slide to add to."),
-  into: id("A frame on that slide to add into."),
+  kind: choice(addKinds),
+  slide: id(),
+  into: id(),
   target: field(
     {
       type: "string",
-      description:
-        "A node id; '<slide>.title', '<slide>.subtitle' or '<slide>.body', the node with that role; '*.title' and the like, that role on every slide.",
     },
     readTarget,
   ),
-  node: id("The node."),
+  node: id(),
   nodes: field(
-    { type: "array", items: idSchema, minItems: 1, maxItems: limits.delete, description: "Node ids." },
+    { type: "array", items: idSchema, minItems: 1, maxItems: limits.delete },
     list(readId, limits.delete, 1),
   ),
   after: field(
     {
       oneOf: [idSchema, { type: "null" }],
-      description: "Place after this sibling. null puts it first. Left out puts it last.",
     },
     readAfter,
   ),
@@ -302,7 +264,7 @@ const placeFields = {
   theme: field(
     {
       type: "object",
-      description: "Replace the deck theme with these colours, fonts, text styles and effect styles.",
+
       required: ["colors", "fonts", "textStyles", "effectStyles"],
       properties: {
         colors: { type: "object" },
@@ -318,7 +280,6 @@ const placeFields = {
     {
       type: "object",
       additionalProperties: { type: "string", pattern: "^#[0-9a-fA-F]{6}$" },
-      description: "Theme colours by name, as #rrggbb. Every layer that names one follows.",
     },
     object({}, Object.fromEntries(colorVars.map((name) => [name, readHex])) as Record<ColorVar, Reader<Hex>>),
   ),
@@ -327,11 +288,10 @@ const placeFields = {
       type: "object",
       additionalProperties: false,
       properties: { heading: { type: "string" }, body: { type: "string" } },
-      description: "The theme's heading and body font families.",
     },
     object({}, { heading: readFontName, body: readFontName }),
   ),
-  nameFollows: flag("true: the deck's name follows slide 1's title. Setting a name stops it."),
+  nameFollows: flag(),
 } as const
 
 const pickFrom = <T extends { readonly [P in keyof T]: Field<unknown> }, K extends keyof T>(
@@ -385,8 +345,6 @@ export const agentChangesSchema = {
       minItems: 1,
       maxItems: limits.batch,
       items: { $ref: "#/$defs/change" },
-      description:
-        "Applied in order, all or none. Sizes are pixels on a 1920 by 1080 slide. Take ids from get. Patterns and frames with a layout place their own children. Colours are theme names, so a new template recolours the deck.",
     },
   },
   $defs: {
@@ -394,8 +352,6 @@ export const agentChangesSchema = {
     color: {
       type: "string",
       pattern: "^((text|background|text2|background2|accent[1-6]|link)([+-][0-9]{1,3})?|#[0-9a-fA-F]{6})$",
-      description:
-        "A theme colour name, lighter or darker by a percent (accent1+40, text-20), or #rrggbb. Prefer names: a template recolours them.",
     },
     change: {
       type: "object",
@@ -404,11 +360,9 @@ export const agentChangesSchema = {
       properties: {
         op: {
           enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck"],
-          description:
-            "add: kind, slide, into?, look. set: target, look. move: node, or nodes. into is required with nodes or box and then names a slide; one node may name a frame. after?. box? places the union by x, y or both; w, h do not resize. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. Group ids are in get as group=<id>. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
         },
         ...schemasOf(placeFields),
-        kind: { enum: addKinds, description: kindWords },
+        kind: { enum: addKinds },
         ...schemasOf(lookFields),
       },
     },

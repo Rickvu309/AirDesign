@@ -1,27 +1,45 @@
-import type { AgentColor } from "./agent-change.js"
-import { uniformAlign, uniformColor } from "./agent-look.js"
-import type { Arrow, End, Geometry } from "./geometry.js"
-import type { NodeId } from "./ids.js"
-import type { Layout } from "./layout.js"
-import type { Color, ImagePaint, Paint, Sides } from "./paint.js"
-import { cropSides } from "./picture-crop.js"
-import type { Node, Doom } from "./doom.js"
-import { type Box, childrenOf, isLaidOut, isLive, parentOf, propOf, slidesOf } from "./doom-walk.js"
-import { textToMarkdown } from "./markdown.js"
-import { paintedFace } from "./painted-face.js"
-import type { Para, Span, Text } from "./text.js"
+import {
+  type Box,
+  type Color,
+  type Doom,
+  type End,
+  type Geometry,
+  type ImagePaint,
+  type Layout,
+  type Node,
+  type NodeId,
+  type Paint,
+  type Para,
+  type Sides,
+  type Span,
+  type Text,
+  agentKind,
+  childrenOf,
+  cropSides,
+  isLaidOut,
+  isLive,
+  paintedFace,
+  parentOf,
+  propOf,
+  slidesOf,
+  textToMarkdown,
+  uniformAlign,
+  uniformColor,
+} from "@airdesign/doom"
+
+type Line = Extract<Geometry, { kind: "line" }>
 
 const quoted = (words: string) => JSON.stringify(words)
 const num = (value: number) => String(Number(value.toPrecision(12)))
 const iconWords = (name: string) => (name.startsWith("lucide/") ? name.slice("lucide/".length) : name)
 
 const tintWords = (tint: number) => `${tint > 0 ? "+" : "-"}${String(Math.round(Math.abs(tint) * 100))}`
-const colorWords = (color: Color): AgentColor =>
+const colorWords = (color: Color): string =>
   typeof color === "string"
     ? color
     : color.tint === undefined || color.tint === 0
       ? color.var
-      : (`${color.var}${tintWords(color.tint)}` as AgentColor)
+      : `${color.var}${tintWords(color.tint)}`
 
 function fitWords(paint: ImagePaint): string {
   if (paint.fit === "fill") return ""
@@ -55,17 +73,6 @@ function layoutWords(layout: Layout): readonly string[] {
     return [`layout=grid`, `cols=${layout.columns.length}`, `rows=${layout.rows.length}`, `gap=${num(layout.gap)}`]
   const padding = sidesWords(layout.padding)
   return [`layout=${layout.mode}`, `gap=${num(layout.gap)}`, ...(padding === "0" ? [] : [`padding=${padding}`])]
-}
-
-export function kindOf(node: Node): string {
-  if (node.type === "slide" || node.type === "slideRow") return node.type
-  if (node.type === "frame") return "frame"
-  const kind = propOf(node, "geometry")?.kind
-  if (kind === "line" || kind === "icon" || kind === "path") return kind
-  const fills = propOf(node, "fills") ?? []
-  if (fills.some((paint) => paint.kind === "image")) return "picture"
-  const painted = fills.length > 0 || (propOf(node, "strokes") ?? []).length > 0
-  return propOf(node, "text") !== undefined && !painted ? "text" : "shape"
 }
 
 function placeWords(doom: Doom, node: Node, boxes: ReadonlyMap<NodeId, Box> | undefined): string | undefined {
@@ -148,13 +155,13 @@ function looksOf(node: Node, detail: boolean): readonly string[] {
 
 const sideWords = { t: "top", r: "right", b: "bottom", l: "left", c: "center" } as const
 
-function shownArrow(name: string, arrow: Arrow): readonly string[] {
+function shownArrow(name: string, arrow: Line["arrows"][number]): readonly string[] {
   if (arrow === "none") return []
   if (name === "arrow" && arrow === "arrow") return ["arrow"]
   return [`${name}=${arrow}`]
 }
 
-function lineWords(line: Extract<Geometry, { kind: "line" }>): readonly string[] {
+function lineWords(line: Line): readonly string[] {
   const end = (name: string, at: End) => {
     if (!("node" in at)) return []
     const along = Number((at.along ?? 0.5).toFixed(2))
@@ -213,7 +220,7 @@ function lineOf(
   detail: NodeId | undefined,
 ): string {
   const role = propOf(node, "role")
-  const kind = `${kindOf(node)}${role === undefined ? "" : `:${role}`}`
+  const kind = `${agentKind(node)}${role === undefined ? "" : `:${role}`}`
   const place = placeWords(doom, node, boxes)
   return `${"  ".repeat(depth)}${[node.id, kind, ...(place === undefined ? [] : [place]), ...looksOf(node, node.id === detail)].join(" ")}`
 }

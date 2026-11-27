@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest"
 import { readAgentChange, type AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { agentDeck, build, minter } from "./testing/agent-fixtures.js"
-import { readForAgent } from "./agent-read.js"
 import { propOf } from "./doom-walk.js"
 import { ids, theme } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
@@ -22,10 +21,8 @@ describe("an inner shadow", () => {
       ...theme().effectStyles.lifted,
       { kind: "innerShadow", color: { var: "accent1" }, x: 0, y: 2, blur: 4, spread: 0 },
     ])
-    expect(readForAgent(doom, "all")).toContain("innerShadow=accent1,0,2,4,0")
     const cleared = build(doom, set(ids.card, { innerShadow: "none" }))
     expect(propOf(cleared.nodes.get(ids.card)!, "effects")).toEqual(theme().effectStyles.lifted)
-    expect(readForAgent(cleared, "all")).not.toContain("innerShadow=")
   })
 
   it("refuses a slide, a bad colour, a negative blur, and a value that is not a shadow", () => {

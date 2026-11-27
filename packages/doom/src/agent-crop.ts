@@ -11,7 +11,7 @@ const readCrop: Reader<CropSides> = (raw) => {
   return sides
 }
 
-const cropForm = "Percents cut from left, top, right and bottom, each from 0 to 99, leaving some of the picture."
+const cropForm = { code: "crop-sides" } as const
 
 export const cropField = field(
   {
@@ -20,8 +20,6 @@ export const cropField = field(
     properties: Object.fromEntries(
       ["left", "top", "right", "bottom"].map((side) => [side, { type: "number", minimum: 0, maximum: 99 }]),
     ),
-    description:
-      "Crop a picture: the percent cut from each side, 0 to 99. The layer keeps its size, so set box too to resize it. Sets fit crop.",
   },
   accepting(cropForm, readCrop),
 )

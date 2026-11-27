@@ -6,6 +6,6 @@ import { type Reader, accepting, literal, oneOf, words } from "./read-kit.js"
 const readLayerLink: Reader<string> = (raw) => readLink(withScheme(words(limits.address, 1)(raw)))
 
 export const linkField = field(
-  { description: "https, mailto, a slide id, or none.", anyOf: [{ type: "string" }, { const: "none" }] },
-  accepting("https, mailto, a slide id, or none.", oneOf<string | "none">(literal(["none"] as const), readLayerLink)),
+  { anyOf: [{ type: "string" }, { const: "none" }] },
+  accepting({ code: "link-or-none" }, oneOf<string | "none">(literal(["none"] as const), readLayerLink)),
 )
