@@ -14,8 +14,11 @@ import { cn } from "@/lib/class-names"
 import { slideNumber } from "@/lib/slide-numbering"
 import { useViewDeck } from "./use-view-deck"
 
-const thumbWidth = 112
-const roomPadding = 24
+const thumbWidth = 64
+
+function paddingOf(room: Room): number {
+  return room.width < 640 ? 16 : 24
+}
 
 type Room = { readonly width: number; readonly height: number }
 
@@ -34,8 +37,9 @@ function useRoom(): [(element: HTMLElement | null) => void, Room | null] {
 }
 
 function fitWidth(room: Room, size: { readonly w: number; readonly h: number }): number {
-  const width = Math.max(0, room.width - roomPadding * 2)
-  const height = Math.max(0, room.height - roomPadding * 2)
+  const padding = paddingOf(room)
+  const width = Math.max(0, room.width - padding * 2)
+  const height = Math.max(0, room.height - padding * 2)
   return Math.floor(Math.min(width, (height * size.w) / size.h))
 }
 
@@ -108,7 +112,7 @@ function ShownDeck({ id, client }: { readonly id: string; readonly client: DoomD
         <nav
           ref={strip}
           aria-label={slideListCopy.listName}
-          className="flex shrink-0 scroll-px-3 gap-1 overflow-x-auto border-t border-line bg-white px-3 py-2"
+          className="flex shrink-0 scroll-px-3 gap-1 overflow-x-auto border-t border-line bg-white px-3 py-1.5 max-[480px]:hidden"
           data-slide-list
           onKeyDown={step}
         >
@@ -124,17 +128,14 @@ function ShownDeck({ id, client }: { readonly id: string; readonly client: DoomD
               data-view-thumb={each}
             >
               <Filmstrip
-                className={cn("block overflow-hidden rounded-xs bg-white", hairlineShadow)}
+                className={cn(
+                  "block overflow-hidden rounded-xs bg-white",
+                  index === at ? "ring-2 ring-index" : hairlineShadow,
+                )}
                 width={thumbWidth}
                 height={thumbHeight}
                 paint={() => <DoomSlide doom={view} slide={each} width={thumbWidth} assetUrl={assets.assetUrl} />}
               />
-              <span
-                aria-hidden
-                className={cn("text-xs tabular-nums", index === at ? "font-medium text-index" : "text-quiet")}
-              >
-                {slideNumber(index)}
-              </span>
             </Button>
           ))}
         </nav>
