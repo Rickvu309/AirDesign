@@ -24,6 +24,7 @@ import { useAssetUrls, type AssetSource } from "@/editing/use-asset-urls"
 import { useSlideScreenshots } from "@/editing/use-slide-screenshots"
 import { cn } from "@/lib/class-names"
 import { slideNumber } from "@/lib/slide-numbering"
+import { appUrl } from "./app-url"
 import type { Viewed } from "./chat-host"
 import { useViewDeck } from "./use-view-deck"
 
@@ -69,8 +70,6 @@ export type Shell = {
   readonly fitHeight?: (height: number) => void
   readonly tellModel?: (viewed: Viewed) => void
 }
-
-const appUrl = (path: string) => new URL(path, document.documentElement.dataset.origin ?? location.origin).href
 
 function opener(shell: Shell) {
   const { openLink } = shell
