@@ -1,5 +1,5 @@
 import { Check, ChevronDown } from "lucide-react"
-import { memo, useRef } from "react"
+import { memo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -58,6 +58,12 @@ export const EditorToolbar = memo(function EditorToolbar(props: {
 }) {
   const { tool, onTool } = props
   const bar = useRef<HTMLDivElement>(null)
+  const [actionsSession, setActionsSession] = useState(0)
+  const [wasActionsOpen, setWasActionsOpen] = useState(props.actionsOpen)
+  if (props.actionsOpen !== wasActionsOpen) {
+    setWasActionsOpen(props.actionsOpen)
+    if (props.actionsOpen) setActionsSession((n) => n + 1)
+  }
   const moving = tool === "move" || tool === "hand"
   const moveIcon = tool === "hand" ? "hand" : "cursor"
   return (
@@ -155,11 +161,7 @@ export const EditorToolbar = memo(function EditorToolbar(props: {
           className="w-75 rounded-2xl p-2"
           data-keeps-format
         >
-          <ActionsPanel
-            key={props.actionsOpen ? "open" : "closed"}
-            run={props.run}
-            finish={() => props.onActionsOpen(false)}
-          />
+          <ActionsPanel key={actionsSession} run={props.run} finish={() => props.onActionsOpen(false)} />
         </PopoverContent>
       </Popover>
       <Divider />

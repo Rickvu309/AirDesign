@@ -1,11 +1,32 @@
 "use client"
 
+import { useLayoutEffect, useRef } from "react"
 import { Menu as MenuPrimitive } from "@base-ui/react/menu"
 import { cn } from "@/lib/class-names"
 import { CheckIcon } from "lucide-react"
 
-function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
-  return <MenuPrimitive.Root data-slot="dropdown-menu" {...props} />
+function DropdownMenu({ actionsRef, onOpenChange, ...props }: MenuPrimitive.Root.Props) {
+  const ownActions = useRef<MenuPrimitive.Root.Actions>(null)
+  const actions = actionsRef ?? ownActions
+  const escapeClose = useRef(false)
+  useLayoutEffect(() => {
+    if (!escapeClose.current) return
+    escapeClose.current = false
+    if (props.open === false) actions.current?.unmount()
+  }, [props.open, actions])
+  return (
+    <MenuPrimitive.Root
+      data-slot="dropdown-menu"
+      {...props}
+      actionsRef={actions}
+      onOpenChange={(open, details) => {
+        onOpenChange?.(open, details)
+        const instantEscape = !open && !details.isCanceled && details.reason === "escape-key"
+        escapeClose.current = instantEscape && props.open !== undefined
+        if (instantEscape && props.open === undefined) actions.current?.unmount()
+      }}
+    />
+  )
 }
 
 function DropdownMenuTrigger({
