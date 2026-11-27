@@ -26,14 +26,16 @@ export function SlidePaint(props: {
   readonly waiting?: string
   readonly host?: NodeHost
   readonly iconsReady?: boolean
+  readonly fontsPending?: boolean
 }) {
-  const { size, width, waiting, host, iconsReady } = props
+  const { size, width, waiting, host, iconsReady, fontsPending } = props
   const assetUrl = props.assetUrl ?? noAssets
   const scale = width / size.w
   return (
     <div
       data-doom-slide=""
       data-slide-paint=""
+      data-fonts-pending={fontsPending ? "" : undefined}
       style={{ position: "relative", width, height: size.h * scale, overflow: "hidden" }}
     >
       <div

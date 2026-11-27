@@ -197,7 +197,7 @@ test("an agent's unwrap frees the connector where the canvas painted it", async 
   const opened = await openEditor(page, context, stack)
   await landNodes(stack, opened, [...hugging(opened.slide), lineFrom(opened.slide, { node: "f:1", site: "r" })])
   await expect(page.locator('[data-slide-box] [data-node="l:1"]')).toBeVisible()
-  await page.evaluate(() => document.fonts.ready)
+  await expect(page.locator("[data-slide-box] [data-fonts-pending]")).toHaveCount(0)
   const seen = await paintedStart(page, "l:1")
   await stack.toolBlocks(
     "airdesign_execute",
@@ -223,7 +223,7 @@ test("an emptied text's connector stays where it painted while typing and after 
     lineFrom(opened.slide, { node: "w:1", site: "r" }),
   ])
   await expect(page.locator('[data-slide-box] [data-node="l:1"]')).toBeVisible()
-  await page.evaluate(() => document.fonts.ready)
+  await expect(page.locator("[data-slide-box] [data-fonts-pending]")).toHaveCount(0)
   const seen = await paintedStart(page, "l:1")
   await clickSlide(page, 350, 275)
   await page.keyboard.press("Enter")
@@ -289,7 +289,7 @@ test("emptying a draft that already reflowed keeps the connector where the draft
     lineFrom(opened.slide, { node: "w:1", site: "r" }),
   ])
   await expect(page.locator('[data-slide-box] [data-node="l:1"]')).toBeVisible()
-  await page.evaluate(() => document.fonts.ready)
+  await expect(page.locator("[data-slide-box] [data-fonts-pending]")).toHaveCount(0)
   const saved = await paintedStart(page, "l:1")
   await clickSlide(page, 350, 275)
   await page.keyboard.press("Enter")
@@ -307,6 +307,7 @@ test("emptying a draft that already reflowed keeps the connector where the draft
   await page.keyboard.press("Escape")
   await expect(page.locator('[data-slide-box] [data-node="w:1"]')).toHaveCount(0)
   expect(await paintedStart(page, "l:1")).toEqual(seen)
+  await expect.poll(async () => (await savedNode(stack, opened, "w:1"))?.parent ?? null).toBeNull()
   const freed = (await savedNode(stack, opened, "l:1"))?.geometry as { start: Point }
   expect(Math.abs(freed.start.x - seen.x)).toBeLessThanOrEqual(1)
 })
@@ -332,7 +333,7 @@ test("emptying a draft beside the connector's frame in an auto layout row keeps 
     lineFrom("g:1", { node: "w:1", site: "r" }, { x: 100, y: 50 }),
   ])
   await expect(page.locator('[data-slide-box] [data-node="l:1"]')).toBeVisible()
-  await page.evaluate(() => document.fonts.ready)
+  await expect(page.locator("[data-slide-box] [data-fonts-pending]")).toHaveCount(0)
   const start = () =>
     page.locator('[data-slide-box] [data-node="l:1"]').evaluate((element) => {
       const path = element.querySelector("path")

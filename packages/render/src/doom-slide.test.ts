@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { act, createElement } from "react"
 import { createRoot } from "react-dom/client"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { deckLocale, DoomSlide } from "./index.js"
+import { deckLocale, DoomSlide, SlidePaint } from "./index.js"
 import { testTheme } from "@airdesign/doom/testing"
 
 const roots: ReturnType<typeof createRoot>[] = []
@@ -52,6 +52,18 @@ describe("DoomSlide", () => {
     expect(host.querySelectorAll("[data-node]")).toHaveLength(2)
     expect(host.querySelector("[data-line]")?.textContent).toBe("Revenue")
     expect(slide?.firstElementChild?.getAttribute("style")).toContain("scale(0.5)")
+  })
+
+  it("marks SlidePaint as pending fonts only while fontsPending is set", async () => {
+    const host = document.createElement("div")
+    document.body.append(host)
+    const root = createRoot(host)
+    roots.push(root)
+    const base = { nodes: [], background: [], size: { w: 1920, h: 1080 }, width: 960 }
+    await act(async () => root.render(createElement(SlidePaint, { ...base, fontsPending: true })))
+    expect(host.querySelectorAll("[data-fonts-pending]")).toHaveLength(1)
+    await act(async () => root.render(createElement(SlidePaint, { ...base, fontsPending: false })))
+    expect(host.querySelectorAll("[data-fonts-pending]")).toHaveLength(0)
   })
 })
 

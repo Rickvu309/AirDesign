@@ -94,7 +94,7 @@ function Editing({
   const slides = doom.slidesOf(view).map((each) => each.id)
   const [slide, showSlide] = useCurrentSlide(slides)
   const measure = useDoomMeasure(view)
-  useEffect(() => {
+  useLayoutEffect(() => {
     measuring.current = measure
   })
   const [selection, setSelection] = useState<Selection>(noSelection)
