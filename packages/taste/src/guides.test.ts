@@ -88,8 +88,32 @@ describe("guides", () => {
   it("sends the agent from picking a style to reading its design text", () => {
     const styleLine = guide("slides")
       ?.markdown.split("\n")
-      .find((line) => line.includes("Pick a style"))
-    expect(styleLine).toContain('variables({ style: "consulting" })')
+      .find((line) => line.includes("variables("))
+    expect(styleLine).toContain("variables({ style, variant })")
     expect(styleLine).toContain("airdesign_get_style {name: <style>}")
+  })
+
+  it.each([
+    ["slides", 45],
+    ["playbooks/", 70],
+    ["principles/", 70],
+  ])("keeps %s within %i lines", (prefix, most) => {
+    const named = guides().filter((each) =>
+      prefix.endsWith("/") ? each.name.startsWith(prefix) : each.name === prefix,
+    )
+    expect(named.length).toBeGreaterThan(0)
+    for (const each of named) {
+      const lines = readFileSync(path.join(filesDir, each.name, "SKILL.md"), "utf8")
+        .trimEnd()
+        .split("\n").length
+      expect(lines, each.name).toBeLessThanOrEqual(most)
+    }
+  })
+
+  it("leads each playbook and principle description with the moment to read it", () => {
+    const triggered = guides().filter((each) => /^(playbooks|principles)\//.test(each.name))
+    expect(triggered.length).toBe(9)
+    for (const each of triggered) expect(each.description, each.name).toMatch(/^Read when /)
+    for (const each of guides()) expect(each.description, each.name).not.toMatch(/before you design/i)
   })
 })
