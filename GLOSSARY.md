@@ -201,8 +201,8 @@ _Avoid_: "Failed to", "Error", "Oops", "Something went wrong"
 See [Doom words](docs/words/doom.md) for the terms used in the core.
 
 **intent**:
-What a person or an agent wants done to a deck, such as adding a layer or moving a slide. Doom turns an [intent](docs/words/doom.md#intent) into writes.
-_Avoid_: agent change, change, command, patch
+One atomic change a person or an agent makes to a deck, such as inserting a layer or moving a slide. Doom turns an [intent](docs/words/doom.md#intent) into writes.
+_Avoid_: agent change, command, patch, verb
 
 ## Taste words
 
