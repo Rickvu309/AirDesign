@@ -18,6 +18,7 @@ type OpDetails = {
 
 export type OpRow = OpDetails & {
   readonly runsOn: "server" | "device"
+  readonly title: string
   readonly description: string
   readonly read: WireReader
   readonly view?: true
@@ -28,6 +29,7 @@ export type AgentOp = keyof typeof catalog & string
 export type AgentTool<Op extends string = AgentOp> = {
   readonly name: string
   readonly op: Op
+  readonly title: string
   readonly description: string
   readonly runsOn: "server" | "device"
   readonly readOnlyHint: boolean
@@ -39,6 +41,7 @@ export type AgentTool<Op extends string = AgentOp> = {
 
 export const catalog = {
   stop_run: {
+    title: "Finish run",
     idempotent: true,
     kind: "command",
     runsOn: "server",
@@ -47,6 +50,7 @@ export const catalog = {
       "Call when your run is finished, with the runId from airdesign_execute, so a person's edits stop closing layers to you.",
   },
   undo_run: {
+    title: "Undo run",
     idempotent: true,
     destructive: true,
     kind: "command",
@@ -56,6 +60,7 @@ export const catalog = {
       "Undo your own run. Send the runId from airdesign_execute. The answer says what came back and what stayed, and why.",
   },
   execute: {
+    title: "Edit deck",
     kind: "command",
     runsOn: "server",
     destructive: true,
@@ -66,6 +71,7 @@ export const catalog = {
       'Create, read or edit a deck with JavaScript. Edits land as one undo step. Read airdesign_read_skill with name "execute" for operations and examples.',
   },
   get_app_state: {
+    title: "List decks",
     kind: "query",
     runsOn: "server",
     view: true,
@@ -73,12 +79,14 @@ export const catalog = {
     description: "List your decks and see the deck and selection in an open tab.",
   },
   get_style: {
+    title: "Read style",
     kind: "query",
     runsOn: "server",
     read: readOptionalName,
     description: "Read an AirDesign visual style and its parameters. Omit name to list available styles.",
   },
   read_skill: {
+    title: "Read guide",
     kind: "query",
     runsOn: "server",
     read: readOptionalName,
@@ -117,6 +125,7 @@ export function projectTools<Ops extends Readonly<Record<string, OpRow>>>(
     tools.push({
       name: `airdesign_${op}`,
       op: op as keyof Ops & string,
+      title: row.title,
       description: row.description,
       runsOn: row.runsOn,
       readOnlyHint: row.kind !== "command",

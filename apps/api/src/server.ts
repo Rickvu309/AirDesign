@@ -376,6 +376,8 @@ async function revokeRoute(visit: Visit): Promise<void> {
   sendJson(res, answer.status, answer.body)
 }
 
+const originsOf = (options: ApiOptions) => ({ app: options.publicOrigin, site: options.siteOrigin })
+
 async function mcpRoute(visit: Visit): Promise<void> {
   const { options, now, mint, req, res, name } = visit
   if (!mcpMethods.includes(req.method ?? "")) {
@@ -415,17 +417,22 @@ async function mcpRoute(visit: Visit): Promise<void> {
       name: called.agentName,
       mint: () => `${called.agentKey}-${mint()}`,
     },
-    { hosts: options.hosts ?? localHosts, bodyCap: limits.body, fail: (error) => answerThrow(visit, name, error) },
+    {
+      hosts: options.hosts ?? localHosts,
+      origins: originsOf(options),
+      bodyCap: limits.body,
+      fail: (error) => answerThrow(visit, name, error),
+    },
     req,
     res,
     body,
-    { origin: options.publicOrigin, ...doomViewHost(options, called.email, options.viewHold) },
+    doomViewHost(options, called.email, options.viewHold),
   )
 }
 
 async function serverCardRoute({ options, req, res, body }: Visit): Promise<void> {
   await body()
-  serveServerCard(req, res, options.resource, options.siteOrigin)
+  serveServerCard(req, res, options.resource, originsOf(options))
 }
 
 async function healthRoute({ res }: Visit): Promise<void> {

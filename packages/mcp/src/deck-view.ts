@@ -2,7 +2,6 @@ import { viewTools } from "@airdesign/catalog"
 import type { McpServer } from "@modelcontextprotocol/server"
 
 export type ViewHost = {
-  readonly origin: string
   readonly open: (body: unknown) => Promise<unknown>
   readonly since: (body: unknown, signal: AbortSignal) => Promise<unknown>
   readonly screenshots: (body: unknown) => Promise<unknown>
@@ -66,13 +65,15 @@ ${loader}
 `
 }
 
-const answered = (answer: unknown) => ({
-  content: [],
-  structuredContent: typeof answer === "object" && answer !== null ? (answer as Record<string, unknown>) : {},
-})
+function answered(answer: unknown) {
+  const fields = typeof answer === "object" && answer !== null ? (answer as Record<string, unknown>) : {}
+  return { content: [], structuredContent: fields, ...(fields.ok === false ? { isError: true } : {}) }
+}
 
-export function deckView(host: ViewHost) {
-  const domains = [host.origin]
+const reads = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+
+export function deckView(host: ViewHost, origin: string) {
+  const domains = [origin]
   return {
     attach(server: McpServer): void {
       server.server.registerCapabilities({ extensions: { [appsExtension]: { mimeTypes: [viewMimeType] } } })
@@ -81,36 +82,54 @@ export function deckView(host: ViewHost) {
           {
             uri: deckViewUri,
             mimeType: viewMimeType,
-            text: deckViewShell(host.origin),
+            text: deckViewShell(origin),
             _meta: {
               ui: {
                 csp: { connectDomains: domains, resourceDomains: domains },
                 prefersBorder: true,
               },
+              "openai/widgetDomain": origin,
             },
           },
         ],
       }))
       const appOnly = { ui: { resourceUri: deckViewUri, visibility: ["app"] } }
       const tools = {
-        [viewTools.open]: { description: "Read the deck the view shows.", answer: (body: unknown) => host.open(body) },
+        [viewTools.open]: {
+          title: "Read deck",
+          description: "Read the deck the view shows.",
+          annotations: reads,
+          answer: (body: unknown) => host.open(body),
+        },
         [viewTools.since]: {
+          title: "Wait for edits",
           description: "Wait for the deck's next edits and hold its painter lease.",
+          annotations: reads,
           answer: (body: unknown, signal: AbortSignal) => host.since(body, signal),
         },
         [viewTools.screenshots]: {
+          title: "Send screenshots",
           description: "Deliver the view's slide screenshots.",
+          annotations: { ...reads, readOnlyHint: false },
           answer: (body: unknown) => host.screenshots(body),
         },
         [viewTools.media]: {
+          title: "Read image",
           description: "Read an image the deck holds.",
+          annotations: reads,
           answer: (body: unknown) => host.media(body),
         },
       }
       for (const [name, tool] of Object.entries(tools))
         server.registerTool(
           name,
-          { description: tool.description, inputSchema: anyBody, _meta: appOnly },
+          {
+            title: tool.title,
+            description: tool.description,
+            inputSchema: anyBody,
+            annotations: tool.annotations,
+            _meta: appOnly,
+          },
           async (body, ctx) => answered(await tool.answer(body, ctx.mcpReq.signal)),
         )
     },

@@ -165,15 +165,15 @@ describe("the deck view's line to the chat that shows it", () => {
     ])
   })
 
-  it("reads the deck's images through the view's media tool as data URLs a chat's CSP allows, leaving out refusals", async () => {
+  it("reads the deck's images through the view's media tool as data URLs a chat's CSP allows, leaving out refusals flagged as errors", async () => {
     const held = "a".repeat(64)
     const gone = "b".repeat(64)
     const host = fakeHost((sent) => {
       if (sent.method !== "tools/call") return {}
       const { sha256 } = (sent.params as { arguments: { sha256: string } }).arguments
-      const answer =
-        sha256 === held ? { ok: true, deck: "d1", sha256, data: btoa("image bytes") } : { ok: false, refusal: "owner" }
-      return { content: [], structuredContent: answer }
+      return sha256 === held
+        ? { content: [], structuredContent: { ok: true, deck: "d1", sha256, data: btoa("image bytes") } }
+        : { content: [], structuredContent: { ok: false, refusal: "owner" }, isError: true }
     })
     const assets = chatAssets(await connectChatHost(host.line))
     const found = await assets.read("d1", [held, gone])

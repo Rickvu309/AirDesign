@@ -9,6 +9,7 @@ import { deckViewShell, shellFailed } from "./deck-view.js"
 import { createServer, createServerHandler, type ViewHost } from "./index.js"
 
 const origin = "https://studio.example"
+const origins = { app: origin, site: "https://site.example" }
 const uri = "ui://airdesign/deck.html"
 const appsHtml = "text/html;profile=mcp-app"
 const image = "a".repeat(64)
@@ -17,7 +18,6 @@ type Seen = { readonly tool: string; readonly body: unknown; readonly held?: boo
 
 function viewHost(seen: Seen[]): ViewHost {
   return {
-    origin,
     open: async (body) => {
       seen.push({ tool: "open", body })
       return { ok: true, deck: "d1", rev: 4, fold: { rev: 4 } }
@@ -42,6 +42,7 @@ async function withClient(view: ViewHost | undefined, use: (client: Client) => P
   const server = createServer(
     { agent: "aira", mint: () => `minted${String((minted += 1))}` },
     memoryDecks(() => doom.doomFromTree({ theme: testTheme, slides: [{ name: "Title", children: [] }] }).doom),
+    origins,
     view,
   )
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
@@ -81,7 +82,7 @@ async function withHttpClient(
         fetch: async (input, init) => {
           const request = new Request(input, init)
           const body = new Uint8Array(await request.clone().arrayBuffer())
-          const handler = createServerHandler({ agent: "aira", mint: () => "minted" }, host, body, {}, view)
+          const handler = createServerHandler({ agent: "aira", mint: () => "minted" }, host, body, {}, origins, view)
           try {
             return await handler.fetch(request)
           } finally {
@@ -149,6 +150,23 @@ describe("the deck view as an MCP App", () => {
     },
   )
 
+  it.each(["2025-11-25", "2026-07-28"] as const)(
+    "names AirDesign and titles every tool for a %s client over HTTP",
+    async (version) => {
+      await withHttpClient(version, [appsHtml], async (client) => {
+        expect(client.getServerVersion()).toMatchObject({
+          name: "app.airdesign/studio",
+          title: "AirDesign",
+          websiteUrl: "https://site.example",
+          icons: [{ src: `${origin}/favicon-art.svg` }, { src: `${origin}/apple-touch-icon.png` }],
+        })
+        const { tools } = await client.listTools()
+        expect(tools).toHaveLength(10)
+        for (const tool of tools) expect(tool.title, tool.name).toMatch(/^[A-Z][a-z]+(?: [a-z]+)+$/)
+      })
+    },
+  )
+
   it("serves the deck view over HTTP to clients that advertise Apps HTML support", async () => {
     await withHttpClient("2026-07-28", [appsHtml], async (client) => {
       expect(client.getServerCapabilities()?.extensions?.["io.modelcontextprotocol/ui"]).toEqual({
@@ -194,6 +212,7 @@ describe("the deck view as an MCP App", () => {
         memoryDecks(() => doom.doomFromTree({ theme: testTheme, slides: [{ name: "Title", children: [] }] }).doom),
         new TextEncoder().encode(text),
         {},
+        origins,
         viewHost([]),
       )
       try {
@@ -228,7 +247,16 @@ describe("the deck view as an MCP App", () => {
       expect(html).toContain(`<html lang="en" data-mcp-app data-origin="${origin}">`)
       expect(shell?._meta).toEqual({
         ui: { csp: { connectDomains: [origin], resourceDomains: [origin] }, prefersBorder: true },
+        "openai/widgetDomain": origin,
       })
+    })
+  })
+
+  it("names the web origin as ChatGPT's widget domain and leaves Claude's hashed sandbox domain to Claude", async () => {
+    await withClient(viewHost([]), async (client) => {
+      const [shell] = (await client.readResource({ uri })).contents
+      expect(shell?._meta?.["openai/widgetDomain"]).toBe(origin)
+      expect(shell?._meta?.ui).not.toHaveProperty("domain")
     })
   })
 
@@ -276,6 +304,39 @@ describe("the deck view as an MCP App", () => {
       const appOnly = tools.filter((tool) => uiOf(tool)?.visibility !== undefined)
       expect(appOnly.map((tool) => tool.name).sort()).toEqual(Object.values(viewTools).sort())
       for (const tool of appOnly) expect(uiOf(tool)).toEqual({ resourceUri: uri, visibility: ["app"] })
+    })
+  })
+
+  it("titles the view's tools and marks all but delivering screenshots as reads of AirDesign alone", async () => {
+    await withClient(viewHost([]), async (client) => {
+      const { tools } = await client.listTools()
+      const reads = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+      expect(
+        Object.fromEntries(
+          tools
+            .filter((tool) => uiOf(tool)?.visibility !== undefined)
+            .map((tool) => [tool.name, { title: tool.title, annotations: tool.annotations }]),
+        ),
+      ).toEqual({
+        [viewTools.open]: { title: "Read deck", annotations: reads },
+        [viewTools.since]: { title: "Wait for edits", annotations: reads },
+        [viewTools.screenshots]: {
+          title: "Send screenshots",
+          annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        },
+        [viewTools.media]: { title: "Read image", annotations: reads },
+      })
+    })
+  })
+
+  it("flags a view tool's refusal as an error and still hands the view the refusal", async () => {
+    const refused = async () => ({ ok: false, refusal: "owner" })
+    const view = { open: refused, since: refused, screenshots: refused, media: refused }
+    await withClient(view, async (client) => {
+      for (const name of Object.values(viewTools)) {
+        const answer = await client.callTool({ name, arguments: { deck: "d1" } })
+        expect(answer, name).toEqual({ content: [], structuredContent: { ok: false, refusal: "owner" }, isError: true })
+      }
     })
   })
 

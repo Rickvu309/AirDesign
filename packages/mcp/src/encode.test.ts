@@ -30,7 +30,7 @@ async function replies(): Promise<Record<string, string>> {
     ...memoryDecks(started),
     screenshots: async (_deck, _fold, slides) => new Map(slides.map((slide) => [slide, shot])),
   }
-  const server = createServer(session, host)
+  const server = createServer(session, host, { app: "https://studio.example", site: "https://site.example" })
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   const sent: string[] = []
   const send = serverTransport.send.bind(serverTransport)

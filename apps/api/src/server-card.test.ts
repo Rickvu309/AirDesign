@@ -50,19 +50,19 @@ function headersOf(response: Response, names: readonly string[]): Record<string,
   return Object.fromEntries(names.map((name) => [name, response.headers.get(name)]))
 }
 
-async function connectedVersion(cookie: string): Promise<string> {
+async function connectedInfo(cookie: string) {
   const client = new Client({ name: "airdesign-test", version: "0.0.0" })
   await client.connect(
     new StreamableHTTPClientTransport(new URL(mcpRoutes.mcp.path, base), { requestInit: { headers: { cookie } } }),
   )
   try {
-    return client.getServerVersion()?.version ?? "none"
+    return client.getServerVersion()
   } finally {
     await client.close()
   }
 }
 
-it("shows its server card to anyone before sign-in, with the MCP address and the version it gives once connected", async () => {
+it("shows its server card to anyone before sign-in, with the MCP address and the server info it gives once connected", async () => {
   const stranger = await fetch(card(), { headers: { accept: "application/mcp-server-card+json" } })
   expect(stranger.status).toBe(200)
   expect(headersOf(stranger, ["content-type", "cache-control", ...Object.keys(readHeaders)])).toEqual({
@@ -72,13 +72,17 @@ it("shows its server card to anyone before sign-in, with the MCP address and the
   })
   const shown = await stranger.text()
   const cookie = await signInByCode(base, mails, "card@example.com")
-  expect(JSON.parse(shown)).toEqual({
-    $schema: "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
+  const info = await connectedInfo(cookie)
+  expect(info).toMatchObject({
     name: "app.airdesign/studio",
-    version: await connectedVersion(cookie),
     title: "AirDesign",
     description: "Make and edit slide decks without doing the design work.",
     websiteUrl: siteOrigin,
+    icons: [{ src: "https://app.example/favicon-art.svg" }, { src: "https://app.example/apple-touch-icon.png" }],
+  })
+  expect(JSON.parse(shown)).toEqual({
+    $schema: "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
+    ...info,
     remotes: [{ type: "streamable-http", url: testResource }],
   })
   expect(await (await fetch(card(), { headers: { cookie } })).text()).toBe(shown)

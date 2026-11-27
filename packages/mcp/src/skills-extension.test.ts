@@ -16,7 +16,10 @@ function started(): doom.Doom {
 
 async function withClient(use: (client: Client) => Promise<void>): Promise<void> {
   let minted = 0
-  const server = createServer({ agent: "aira", mint: () => `minted${String((minted += 1))}` }, memoryDecks(started))
+  const server = createServer({ agent: "aira", mint: () => `minted${String((minted += 1))}` }, memoryDecks(started), {
+    app: "https://studio.example",
+    site: "https://site.example",
+  })
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: "airdesign-test", version: "0.0.0" })
   await server.connect(serverTransport)

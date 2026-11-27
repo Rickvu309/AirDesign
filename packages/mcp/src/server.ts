@@ -7,7 +7,21 @@ import { deckView, shownInView, type ViewHost } from "./deck-view.js"
 import { encode } from "./encode.js"
 import { skills } from "./skill-source.js"
 
-export const serverInfo = { name: "airdesign", version: "0.0.0" }
+export type Origins = { readonly app: string; readonly site: string }
+
+export function serverInfo({ app, site }: Origins) {
+  return {
+    name: "app.airdesign/studio",
+    title: "AirDesign",
+    version: "0.0.0",
+    description: "Make and edit slide decks without doing the design work.",
+    websiteUrl: site,
+    icons: [
+      { src: new URL("/favicon-art.svg", app).href, mimeType: "image/svg+xml", sizes: ["any"] },
+      { src: new URL("/apple-touch-icon.png", app).href, mimeType: "image/png", sizes: ["180x180"] },
+    ],
+  }
+}
 
 function inputSchema(json: Readonly<Record<string, unknown>>) {
   return {
@@ -22,6 +36,7 @@ function inputSchema(json: Readonly<Record<string, unknown>>) {
 
 type RegisteredTool = {
   readonly name: string
+  readonly title: string
   readonly description: string
   readonly inputSchema: Readonly<Record<string, unknown>>
   readonly annotations: {
@@ -36,6 +51,7 @@ type RegisteredTool = {
 function listedTools(): readonly RegisteredTool[] {
   return projectTools(catalog).map((tool) => ({
     name: tool.name,
+    title: tool.title,
     description: tool.description,
     inputSchema: toolInputSchema(tool.op),
     annotations: {
@@ -48,12 +64,13 @@ function listedTools(): readonly RegisteredTool[] {
   }))
 }
 
-export function createServer(session: Session, host: DeckHost, view?: ViewHost): McpServer {
-  const server = new McpServer(serverInfo, { instructions })
+export function createServer(session: Session, host: DeckHost, origins: Origins, view?: ViewHost): McpServer {
+  const server = new McpServer(serverInfo(origins), { instructions })
   for (const tool of listedTools()) {
     server.registerTool(
       tool.name,
       {
+        title: tool.title,
         description: tool.description,
         inputSchema: inputSchema(tool.inputSchema),
         annotations: tool.annotations,
@@ -73,6 +90,7 @@ export function createServer(session: Session, host: DeckHost, view?: ViewHost):
       },
     )
   }
-  for (const extension of view === undefined ? [skills] : [skills, deckView(view)]) extension.attach(server)
+  for (const extension of view === undefined ? [skills] : [skills, deckView(view, origins.app)])
+    extension.attach(server)
   return server
 }

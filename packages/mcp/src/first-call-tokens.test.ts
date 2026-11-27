@@ -39,7 +39,6 @@ function firstCallFault(listing: Listing, instructions: string): string | undefi
 
 const unanswered = async () => ({ ok: false, refusal: "deck" })
 const deckView: ViewHost = {
-  origin: "https://studio.example",
   open: unanswered,
   since: unanswered,
   screenshots: unanswered,
@@ -51,6 +50,7 @@ async function firstCall(view: ViewHost | null = deckView): Promise<{ listing: L
   const server = createServer(
     { agent: "aira", mint: () => `minted${String((minted += 1))}` },
     memoryDecks(() => doom.doomFromTree({ theme: testTheme, slides: [{ name: "Title", children: [] }] }).doom),
+    { app: "https://studio.example", site: "https://site.example" },
     view ?? undefined,
   )
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
