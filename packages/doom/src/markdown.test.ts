@@ -55,6 +55,23 @@ describe("textFromMarkdown", () => {
     ])
   })
 
+  it("keeps the number a list starts at on each of its items, as PowerPoint's startAt", () => {
+    expect(read("2. Second risk").paras).toEqual([{ list: "number", startAt: 2 }])
+    expect(read("3. a\n9. b").paras).toEqual([
+      { list: "number", startAt: 3 },
+      { list: "number", startAt: 3 },
+    ])
+    expect(read("1. a\n5. b").paras).toEqual([{ list: "number" }, { list: "number" }])
+    expect(read("1. a\n   4. b").paras).toEqual([{ list: "number" }, { list: "number", level: 1, startAt: 4 }])
+  })
+
+  it("keeps a number PowerPoint cannot start a list at as words", () => {
+    expect(read("0. zero").chars).toBe("0. zero")
+    expect(read("0. zero").paras).toEqual([{}])
+    expect(read("32768. far").paras).toEqual([{}])
+    expect(read("32767. last").paras).toEqual([{ list: "number", startAt: 32767 }])
+  })
+
   it("makes each line a paragraph and keeps a blank line between paragraphs as an empty one", () => {
     const text = read("one\n\ntwo\nthree\n\n\nfour")
     expect(text.chars).toBe("one\n\ntwo\nthree\n\n\nfour")
@@ -87,7 +104,7 @@ describe("textFromMarkdown", () => {
   })
 
   it("reads text a doom reader accepts", () => {
-    for (const markdown of ["", "a", "- a\n- **b**\n\n1. [c](https://d.example)", "**a***b*"]) {
+    for (const markdown of ["", "a", "- a\n- **b**\n\n1. [c](https://d.example)", "**a***b*", "2. b\n3. c"]) {
       expect(() => readText(JSON.parse(JSON.stringify(read(markdown))))).not.toThrow()
     }
   })
@@ -134,8 +151,10 @@ describe("textToMarkdown", () => {
     expect(read("- a\n\n1. b").paras).toEqual([{ list: "bullet" }, {}, { list: "number" }])
   })
 
-  it("numbers a list from one and starts again after a break", () => {
-    expect(textToMarkdown(read("1. a\n1. b\n\nbreak\n\n7. c"))).toBe("1. a\n2. b\n\nbreak\n\n1. c")
+  it("counts a list on from its first item's number and starts again after a break", () => {
+    expect(textToMarkdown(read("1. a\n1. b\n\nbreak\n\n7. c"))).toBe("1. a\n2. b\n\nbreak\n\n7. c")
+    expect(textToMarkdown(read("2. Second risk"))).toBe("2. Second risk")
+    expect(textToMarkdown(read("3. a\n3. b\n  - c\n3. d"))).toBe("3. a\n4. b\n  - c\n5. d")
   })
 
   it("escapes what would read as a marker", () => {
