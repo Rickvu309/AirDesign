@@ -92,8 +92,7 @@ bars.forEach(({ name, from, to, fill, text }, i) => {
   })
   insert({
     parent: chart,
-    kind: "shape",
-    fill: "none",
+    kind: "text",
     name: "Value",
     padding: 0,
     textStyle: "body2",
@@ -104,8 +103,7 @@ bars.forEach(({ name, from, to, fill, text }, i) => {
   })
   insert({
     parent: chart,
-    kind: "shape",
-    fill: "none",
+    kind: "text",
     name: "Name",
     padding: { t: 0, r: 4, b: 0, l: 4 },
     textStyle: "body2",

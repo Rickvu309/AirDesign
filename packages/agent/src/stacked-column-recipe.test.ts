@@ -1,7 +1,9 @@
+import * as doom from "@airdesign/doom"
 import { expect } from "vitest"
 
 import {
   drawsInEveryStyle,
+  type Box,
   type Data,
   bottom,
   boxOf,
@@ -60,30 +62,39 @@ drawsInEveryStyle("stacked-column", variants, (fold, chart, data) => {
     stack.map(([name]) => name),
   )
   const zero = boxOf(named(fold, chart, "Zero line")[0]!)
-  const segments = named(fold, chart, "Segment")
-  expect(segments).toHaveLength(periods.length * stack.length)
-  const scale = Math.max(...totals) / (zero.y - Math.min(...segments.map((segment) => boxOf(segment).y)))
+  const paths = stack.map(([name]) => named(fold, chart, name))
+  for (const path of paths) expect(path).toHaveLength(1)
+  const rects = paths.map(([path]) => {
+    const at = boxOf(path!)
+    const d = (doom.propOf(path!, "geometry") as { d: string }).d
+    return [...d.matchAll(/M(\S+) (\S+) L(\S+) \S+ L\S+ (\S+) L\S+ \S+ Z/g)].map(([, x, y, r, b]) => ({
+      x: at.x + Number(x) * at.w,
+      y: at.y + Number(y) * at.h,
+      w: (Number(r) - Number(x)) * at.w,
+      h: (Number(b) - Number(y)) * at.h,
+    }))
+  })
+  for (const part of rects) expect(part).toHaveLength(periods.length)
+  const values = named(fold, chart, "Segment value")
+  const scale = Math.max(...totals) / (zero.y - Math.min(...rects.flat().map((rect) => rect.y)))
   periods.forEach((period, i) => {
-    const column = segments.slice(i * stack.length, (i + 1) * stack.length)
     let level = zero.y
     let sum = 0
-    column.forEach((segment, k) => {
-      const box = boxOf(segment)
-      const part = `${period} ${stack[k]![0]}`
-      sum += stack[k]![1][i]!
-      expect(level - bottom(box), part).toBe(k === 0 ? 0 : 2)
+    stack.forEach(([name, numbers], k) => {
+      const box = rects[k]![i]!
+      const part = `${period} ${name}`
+      sum += numbers[i]!
+      near(level - bottom(box), k === 0 ? 0 : 2, part)
       near(box.y, zero.y - sum / scale, part)
       level = box.y
-      expect(fillOf(segment) === "accent1", part).toBe(stack[k]![0] === data.accent)
-      const label = charsOf(segment)
-      if (label !== "") expect(label, part).toBe(String(stack[k]![1][i]))
+      const label = values.find((value) => near2(boxOf(value), box))
+      if (label !== undefined) expect(charsOf(label), part).toBe(String(numbers[i]))
     })
     near((zero.y - level) * scale, totals[i]!, `${period} total`)
     const total = boxOf(named(fold, chart, "Total")[i]!)
-    expect(bottom(total), period).toBeLessThanOrEqual(level)
+    expect(bottom(total), period).toBeLessThanOrEqual(level + 1)
   })
-  const fills = segments.map(fillOf)
-  periods.forEach((_, i) =>
-    expect(fills.slice(i * stack.length, (i + 1) * stack.length)).toEqual(fills.slice(0, stack.length)),
-  )
+  expect(paths.map(([path]) => fillOf(path!) === "accent1")).toEqual(stack.map(([name]) => name === data.accent))
 })
+
+const near2 = (a: Box, b: Box) => Math.abs(a.x - b.x) <= 1 && Math.abs(a.y - b.y) <= 1

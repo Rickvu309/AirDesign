@@ -17,6 +17,16 @@ const looks: readonly Look[] = styles.flatMap((style) => [
   ...style.variants.map(({ name }) => ({ label: `${style.id} ${name}`, style: style.id, variant: name })),
 ])
 
+const sizedLooks: readonly Look[] = styles.flatMap((style) => [
+  { label: style.id, style: style.id },
+  ...style.variants
+    .filter(({ theme }) => JSON.stringify(theme.textStyles) !== JSON.stringify(style.theme.textStyles))
+    .map(({ name }) => ({ label: `${style.id} ${name}`, style: style.id, variant: name })),
+])
+
+const lookOf = (look: Look) =>
+  `variables(${JSON.stringify(look.variant === undefined ? { style: look.style } : { style: look.style, variant: look.variant })})`
+
 async function drawn(look: Look, draw: (slide: string) => string) {
   const decks = memoryDecks(start)
   const host: DeckHost = { ...decks, measure: async () => ({ measure: estimate, missing: new Map() }) }
@@ -35,18 +45,37 @@ async function drawn(look: Look, draw: (slide: string) => string) {
     return result.fields as { deck: string; slides: string[] }
   }
   const { deck } = await call(`createDeck({ style: "${look.style}" })`)
-  if (look.variant !== undefined)
-    await call(`variables(${JSON.stringify({ style: look.style, variant: look.variant })})`, deck)
+  if (look.variant !== undefined) await call(lookOf(look), deck)
   const { result } = (await call(`insert({ kind: "slide" })`, deck)) as unknown as { result: string }
   await call(draw(result), deck)
-  const fold = decks.decks.get(deck as never)!
-  const slides = doom.slidesOf(fold).map((slide) => slide.id)
-  return worded(fold, doom.layoutProblems(fold, slides, estimate, problemRules)).map((problem) => problem.note)
+  const problems = () => {
+    const fold = decks.decks.get(deck as never)!
+    const slides = doom.slidesOf(fold).map((slide) => slide.id)
+    return worded(fold, doom.layoutProblems(fold, slides, estimate, problemRules)).map((problem) => problem.note)
+  }
+  const drawnFold = decks.decks.get(deck as never)!
+  const restyled = async (target: Look) => {
+    decks.decks.set(deck as never, drawnFold)
+    await call(lookOf(target), deck)
+    return problems()
+  }
+  return { problems: problems(), restyled }
 }
 
 const scriptOf = (markdown: string) => [...markdown.matchAll(/```js\n([\s\S]*?)```/g)].map((found) => found[1]!)
 
 const recipes = guides().filter((guide) => /^(charts|diagrams)\//.test(guide.name))
+
+const drawings = [
+  ...pieces().map(({ name }) => ({
+    name: `kit/${name}`,
+    draw: (slide: string) => `copy({ from: "kit/${name}", parent: "${slide}", box: { x: 120, y: 120 } })`,
+  })),
+  ...recipes.map((recipe) => ({
+    name: recipe.name,
+    draw: (slide: string) => scriptOf(recipe.markdown).join("\n").replace('"<slide id>"', JSON.stringify(slide)),
+  })),
+]
 
 describe("every kit piece and recipe draws clean in every style and variant", () => {
   it("finds pieces and recipes to judge", () => {
@@ -55,21 +84,27 @@ describe("every kit piece and recipe draws clean in every style and variant", ()
     for (const recipe of recipes) expect(scriptOf(recipe.markdown).length, recipe.name).toBeGreaterThan(0)
   })
 
-  for (const look of looks) {
-    for (const { name } of pieces())
-      it(`kit/${name} in ${look.label}`, async () => {
-        const problems = await drawn(
-          look,
-          (slide) => `copy({ from: "kit/${name}", parent: "${slide}", box: { x: 120, y: 120 } })`,
-        )
-        expect(problems).toEqual([])
+  for (const look of looks)
+    for (const { name, draw } of drawings)
+      it(`${name} in ${look.label}`, async () => {
+        expect((await drawn(look, draw)).problems).toEqual([])
       })
+})
 
-    for (const recipe of recipes)
-      it(`${recipe.name} in ${look.label}`, async () => {
-        const script = scriptOf(recipe.markdown).join("\n")
-        const problems = await drawn(look, (slide) => script.replace('"<slide id>"', JSON.stringify(slide)))
-        expect(problems).toEqual([])
+describe("every kit piece and recipe stays clean when the deck changes style", () => {
+  it("switches between looks whose text sizes differ", () => {
+    expect(sizedLooks.length).toBeGreaterThan(styles.length)
+  })
+
+  for (const from of sizedLooks)
+    for (const { name, draw } of drawings)
+      it(`${name} drawn in ${from.label}`, async () => {
+        const { restyled } = await drawn(from, draw)
+        const found: Record<string, readonly string[]> = {}
+        for (const target of sizedLooks.filter((look) => look !== from)) {
+          const problems = await restyled(target)
+          if (problems.length > 0) found[target.label] = problems
+        }
+        expect(found).toEqual({})
       })
-  }
 })

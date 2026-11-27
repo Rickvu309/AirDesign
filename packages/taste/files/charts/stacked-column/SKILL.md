@@ -5,7 +5,7 @@ description: "Before you draw a stacked column chart to split each period's tota
 
 # Stacked column chart
 
-Columns over periods, each split into the parts that make its total: revenue by product line per year, headcount by function per quarter. It shows two things at once, the total's path and the mix under it. Draw it yourself from rectangles and text; this guide gives the arithmetic.
+Columns over periods, each split into the parts that make its total: revenue by product line per year, headcount by function per quarter. It shows two things at once, the total's path and the mix under it. Draw it yourself from one shape per part and text; this guide gives the arithmetic.
 
 ## When
 
@@ -19,7 +19,7 @@ Columns over periods, each split into the parts that make its total: revenue by 
 - Height = value / largest total × plot height, so each column is exactly as tall as its total and the segments add up to it.
 - Label the data: each segment's value sits inside it when it fits, and each column's total sits above it. No value axis, no gridlines.
 - Name the parts once, beside the latest column, level with their segments. No legend.
-- One part in `accent1`, the one the title talks about, named in bold. The other parts are grey steps of `text`, lighter towards the top, split by a 2 px gap. The script picks words that read on each fill.
+- One part in `accent1`, the one the title talks about, named in bold. The other parts are `text` at falling opacity, lighter towards the top, split by a 2 px gap, so they stay grey in a light or a dark style. Values sit on the part in `text`, or `background` on the accent.
 - The unit lives once, in the header above the chart: "Revenue by product line, $M". Values are bare numbers at one precision, and each total equals the sum of its parts as shown.
 
 ## The script
@@ -40,34 +40,15 @@ const parts = [
 const accent = "Cloud"
 const shown = (value) => `${value}`
 
-const { colors, sizes } = variables({})
+const { sizes } = variables({})
 const wide = (words, size) => Math.ceil(words.replaceAll("*", "").length * size * 0.56)
-const channel = (hex, at) => Number.parseInt(hex.slice(at, at + 2), 16)
-const luminance = (hex) =>
-  [1, 3, 5]
-    .map((at) => channel(hex, at) / 255)
-    .map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
-    .reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0)
-const contrast = (a, b) => {
-  const [hi, lo] = [luminance(a), luminance(b)].toSorted((x, y) => y - x)
-  return (hi + 0.05) / (lo + 0.05)
-}
-const dark = luminance(colors.background) < luminance(colors.text)
-const toward = (share) =>
-  `#${[1, 3, 5]
-    .map((at) => channel(colors.text, at))
-    .map((c) => Math.round(c + ((dark ? 0 : 255) - c) * share))
-    .map((c) => c.toString(16).padStart(2, "0"))
-    .join("")}`
-const inkOn = (hex) => (contrast(hex, colors.text) >= contrast(hex, colors.background) ? "text" : "background")
-const greys = [56, 68, 80, 90]
+const shades = [0.38, 0.28, 0.19, 0.1]
 const stack = parts
   .toSorted((a, b) => (b[0] === accent) - (a[0] === accent))
   .map(([name, values], k, all) => {
-    const grey = greys[all.slice(0, k).filter(([other]) => other !== accent).length]
-    const hex = name === accent ? colors.accent1 : toward(grey / 100)
-    const fill = name === accent ? "accent1" : `text${dark ? "-" : "+"}${grey}`
-    return { name, values, fill, ink: inkOn(hex) }
+    const shade = shades[all.slice(0, k).filter(([other]) => other !== accent).length]
+    const look = name === accent ? { fill: "accent1" } : { fill: "text", opacity: shade }
+    return { name, values, look, ink: name === accent ? "background" : "text" }
   })
 const totals = periods.map((_, i) => stack.reduce((sum, part) => sum + part.values[i], 0))
 const lineH = Math.ceil(sizes.body2 * 1.4)
@@ -83,6 +64,27 @@ const thick = Math.min(140, Math.round(slot * 0.6))
 const fits = (words, w, h) => h >= Math.ceil(sizes.caption * 1.4) && wide(words, sizes.caption) <= w - 8
 
 const chart = insert({ parent: slide, kind: "frame", layout: "none", name: "Stacked column chart", box })
+const lastRight = Math.round((periods.length - 1) * slot) + Math.round((slot + thick) / 2)
+const plot = { x: 0, y: 0, w: lastRight, h: base }
+const corner = (x, y) => `${((x - plot.x) / plot.w).toFixed(5)} ${((y - plot.y) / plot.h).toFixed(5)}`
+const cells = periods.map((_, i) => {
+  const left = Math.round(i * slot)
+  const x = left + Math.round((Math.round((i + 1) * slot) - left - thick) / 2)
+  let sum = 0
+  return stack.map((part, k) => {
+    const below = base - Math.round(sum * scale)
+    sum += part.values[i]
+    const top = base - Math.round(sum * scale)
+    return { x, y: top, w: thick, h: Math.max(1, below - top - (k === 0 ? 0 : 2)), mid: Math.round((top + below) / 2) }
+  })
+})
+stack.forEach((part, k) => {
+  const d = cells
+    .map((column) => column[k])
+    .map(({ x, y, w, h }) => `M${corner(x, y)} L${corner(x + w, y)} L${corner(x + w, y + h)} L${corner(x, y + h)} Z`)
+    .join(" ")
+  insert({ parent: chart, kind: "path", name: part.name, d, ...part.look, box: plot })
+})
 insert({
   parent: chart,
   kind: "text",
@@ -91,47 +93,39 @@ insert({
   text: header,
   box: { x: 0, y: 0, w: box.w, h: 40 },
 })
-const mids = []
 periods.forEach((period, i) => {
   const left = Math.round(i * slot)
   const w = Math.round((i + 1) * slot) - left
-  const x = left + Math.round((w - thick) / 2)
-  let sum = 0
-  let top = base
   stack.forEach((part, k) => {
-    const below = base - Math.round(sum * scale)
-    sum += part.values[i]
-    top = base - Math.round(sum * scale)
-    const h = below - top - (k === 0 ? 0 : 2)
+    const { mid, ...cell } = cells[i][k]
     const words = shown(part.values[i])
-    insert({
-      parent: chart,
-      kind: "shape",
-      shape: "rect",
-      name: "Segment",
-      radius: 0,
-      fill: part.fill,
-      ...(fits(words, thick, h) ? { padding: 0, textStyle: "caption", color: part.ink, text: words } : {}),
-      box: { x, y: top, w: thick, h: Math.max(1, h) },
-    })
-    if (i === periods.length - 1) mids.push(Math.round((top + below) / 2))
+    if (fits(words, thick, cell.h))
+      insert({
+        parent: chart,
+        kind: "shape",
+        fill: "none",
+        name: "Segment value",
+        padding: 0,
+        textStyle: "caption",
+        color: part.ink,
+        text: words,
+        box: cell,
+      })
   })
   insert({
     parent: chart,
-    kind: "shape",
-    fill: "none",
+    kind: "text",
     name: "Total",
     padding: 0,
     textStyle: "body2",
     text: shown(totals[i]),
     align: "center",
     alignV: "bottom",
-    box: { x: left, y: top - 8 - lineH, w, h: lineH },
+    box: { x: left, y: cells[i].at(-1).y - 8 - lineH, w, h: lineH },
   })
   insert({
     parent: chart,
-    kind: "shape",
-    fill: "none",
+    kind: "text",
     name: "Name",
     padding: { t: 0, r: 4, b: 0, l: 4 },
     textStyle: "body2",
@@ -142,7 +136,7 @@ periods.forEach((period, i) => {
     box: { x: left, y: base + 16, w, h: nameH },
   })
 })
-const lastRight = Math.round((periods.length - 1) * slot) + Math.round((slot + thick) / 2)
+const mids = cells.at(-1).map(({ mid }) => mid)
 let below = box.h
 stack
   .map((part, k) => ({ ...part, y: mids[k] - Math.round(lineH / 2) }))
@@ -151,8 +145,7 @@ stack
     below = at
     insert({
       parent: chart,
-      kind: "shape",
-      fill: "none",
+      kind: "text",
       name: "Part",
       padding: 0,
       textStyle: "body2",

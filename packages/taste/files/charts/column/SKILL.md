@@ -49,7 +49,8 @@ const wide = (words, size) => Math.ceil(words.replaceAll("*", "").length * size 
 const largest = Math.max(...rows.map(([, value]) => value))
 const slot = box.w / rows.length
 const lines = rows.some(([name]) => wide(name, sizes.body2) > slot - 8) ? 2 : 1
-const nameH = Math.ceil(lines * sizes.body2 * 1.4)
+const lineH = Math.ceil(sizes.body2 * 1.4)
+const nameH = lines * lineH
 const base = box.h - nameH - 16
 const plotTop = 128
 const thick = Math.min(120, Math.round(slot * 0.6))
@@ -80,20 +81,18 @@ rows.forEach(([name, value], i) => {
   })
   insert({
     parent: chart,
-    kind: "shape",
-    fill: "none",
+    kind: "text",
     name: "Value",
     padding: 0,
     textStyle: "body2",
     text: lit ? `**${shown(value)}**` : shown(value),
     align: "center",
     alignV: "bottom",
-    box: { x, y: base - h - 60, w, h: 48 },
+    box: { x, y: base - h - 12 - lineH, w, h: lineH },
   })
   insert({
     parent: chart,
-    kind: "shape",
-    fill: "none",
+    kind: "text",
     name: "Name",
     padding: { t: 0, r: 4, b: 0, l: 4 },
     textStyle: "body2",

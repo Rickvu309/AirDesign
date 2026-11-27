@@ -16,9 +16,9 @@ Which part of a system calls which, in layers from its users to its data, for bu
 
 - Layers run `down`, or `right` when boxes are few and names long: clients, then the edge or services, then data.
 - Name each box with what it is, in one to three words: "Payments", "Orders DB". No icons or logos.
-- An edge joins neighbouring layers, or neighbours in one layer. One that skips a layer means a box is in the wrong layer.
+- An edge joins neighbouring layers, or neighbours in one layer. One that skips a layer has a box in the wrong layer.
 - `path` lists, in order, the boxes the title names. They and the edges between them take the accent. One path a slide.
-- `callouts` tie up to three boxes to numbered takeaways beside the diagram. Each states a finding about its part, not its name. Leave it empty when the title says it all.
+- `callouts` tie up to three boxes to numbered takeaways beside the diagram. Each states a finding, not a name. Leave it empty when the title says it all.
 
 ## The script
 
@@ -177,6 +177,7 @@ layers.forEach((layer, r) => {
     id[name] = shape(name, {
       textStyle: "body2",
       padding: pad,
+      radius: 0,
       fill: "background2",
       stroke: path.includes(name) ? "accent1" : "none",
       strokeWidth: 3,

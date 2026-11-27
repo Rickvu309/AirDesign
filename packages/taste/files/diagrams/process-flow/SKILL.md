@@ -51,11 +51,12 @@ const flow = insert({ parent: slide, kind: "frame", layout: "none", name: "Proce
 const probe = insert({ parent: flow, kind: "text", text: "-", box: { x: 0, y: 0, w, h: 40 } })
 const tall = (text, textStyle, width) => {
   update({ target: probe, text, textStyle, box: { w: width } })
-  return Math.ceil(get({ target: probe }).box.h)
+  return get({ target: probe }).box.h
 }
 const howStyle = roomy ? "body" : "body2"
-const boxH = Math.max(roomy ? 136 : 104, ...steps.map((step) => tall(nameOf(step), "body", w - 2 * pad) + 2 * pad))
-const howH = Math.max(...steps.map((step) => tall(step.how, howStyle, w)))
+const nameH = steps.map((step) => tall(nameOf(step), "body", w - 2 * pad))
+const boxH = Math.ceil(Math.max(roomy ? 136 : 104, ...nameH.map((h) => h + 2 * pad)))
+const howH = Math.ceil(Math.max(...steps.map((step) => tall(step.how, howStyle, w))))
 remove({ target: probe })
 const below = 24
 const blockH = boxH + below + howH
@@ -66,21 +67,19 @@ const top = Math.round((box.h - blockH) / 2)
 const ids = steps.map((step, i) => {
   const x = i * (w + gap)
   const lit = step.name === focus
+  const extra = boxH - 2 * pad - nameH[i]
   const id = insert({
     parent: flow,
-    kind: "shape",
-    shape: "rect",
+    kind: "text",
     name: step.name,
     text: nameOf(step),
     textStyle: "body",
-    align: "left",
-    alignV: "center",
-    padding: pad,
+    padding: { t: pad + extra / 2, r: pad, b: pad + extra / 2, l: pad },
     fill: lit ? "accent1" : "background2",
     color: lit ? "background" : "text",
     box: { x, y: top, w, h: boxH },
   })
-  insert({
+  const how = insert({
     parent: flow,
     kind: "text",
     name: `${step.name} how`,
@@ -89,6 +88,7 @@ const ids = steps.map((step, i) => {
     color: "text2",
     box: { x, y: top + boxH + below, w, h: howH },
   })
+  group({ targets: [id, how], layout: "column", gap: below })
   return id
 })
 ids.slice(1).forEach((id, i) =>
