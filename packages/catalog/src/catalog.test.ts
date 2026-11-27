@@ -49,6 +49,7 @@ describe("projectTools", () => {
     expect(tools.find((tool) => tool.name === "airdesign_get_app_state")).toEqual({
       name: "airdesign_get_app_state",
       op: "get_app_state",
+      title: "List decks",
       description: "List your decks and see the deck and selection in an open tab.",
       runsOn: "server",
       readOnlyHint: true,
@@ -56,6 +57,17 @@ describe("projectTools", () => {
       idempotentHint: true,
       openWorldHint: false,
       view: true,
+    })
+  })
+
+  it("titles each tool with a short verb a host shows a person", () => {
+    expect(Object.fromEntries(projectTools(catalog).map((tool) => [tool.name, tool.title]))).toEqual({
+      airdesign_execute: "Edit deck",
+      airdesign_get_app_state: "List decks",
+      airdesign_get_style: "Read style",
+      airdesign_read_skill: "Read guide",
+      airdesign_stop_run: "Finish run",
+      airdesign_undo_run: "Undo run",
     })
   })
 

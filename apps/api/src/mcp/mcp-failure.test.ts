@@ -25,6 +25,7 @@ it("SDK failure reaches the boundary", async () => {
       { agent: "", mint: () => "id" },
       {
         hosts: ["127.0.0.1"],
+        origins: { app: "https://app.example", site: "https://site.example" },
         bodyCap: limits.body,
         fail: (error) => {
           failures.push(error)

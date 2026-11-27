@@ -2,11 +2,12 @@ import { createHash } from "node:crypto"
 import type { IncomingMessage, ServerResponse } from "node:http"
 
 import type { DeckHost, Session } from "@airdesign/agent"
-import { createServerHandler, serverCard, type ViewHost } from "@airdesign/mcp"
+import { createServerHandler, type Origins, serverCard, type ViewHost } from "@airdesign/mcp"
 import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node"
 
 export type McpMount = {
   readonly hosts: readonly string[]
+  readonly origins: Origins
   readonly bodyCap: number
   readonly fail: (error: unknown) => void
 }
@@ -33,7 +34,7 @@ export async function serveMcp(
 ): Promise<void> {
   const names = [...mount.hosts]
   if (!hostHeaderValidation(names)(req, res) || !originValidation(names)(req, res)) return
-  const handler = createServerHandler(session, host, body, { maxRequestBodySize: mount.bodyCap }, view)
+  const handler = createServerHandler(session, host, body, { maxRequestBodySize: mount.bodyCap }, mount.origins, view)
   let failed = false
   const onerror = (error: Error): void => {
     failed = true
@@ -69,21 +70,21 @@ function cardAnswer(
   method: string | undefined,
   sent: string | undefined,
   endpoint: string,
-  website: string,
+  origins: Origins,
 ): CardAnswer {
   if (method === "OPTIONS") return { status: 204, headers: cardReadHeaders }
   if (method !== "GET" && method !== "HEAD") {
     return { status: 405, headers: { allow: "GET, HEAD, OPTIONS", ...cardReadHeaders } }
   }
-  const card = JSON.stringify(serverCard(endpoint, website))
+  const card = JSON.stringify(serverCard(endpoint, origins))
   const tag = `"${createHash("sha256").update(card).digest("base64url")}"`
   const headers = { ...cardReadHeaders, "cache-control": "public, max-age=3600", etag: tag }
   if (unchanged(sent, tag)) return { status: 304, headers }
   return { status: 200, headers: { ...headers, "content-type": "application/mcp-server-card+json" }, body: card }
 }
 
-export function serveServerCard(req: IncomingMessage, res: ServerResponse, endpoint: string, website: string): void {
-  const answer = cardAnswer(req.method, req.headers["if-none-match"], endpoint, website)
+export function serveServerCard(req: IncomingMessage, res: ServerResponse, endpoint: string, origins: Origins): void {
+  const answer = cardAnswer(req.method, req.headers["if-none-match"], endpoint, origins)
   res.setHeaders(new Map(Object.entries(answer.headers)))
   res.statusCode = answer.status
   res.end(answer.body)

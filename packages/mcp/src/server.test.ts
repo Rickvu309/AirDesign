@@ -5,8 +5,10 @@ import { memoryDecks, scriptOf } from "@airdesign/agent/testing/evals"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 
-import { createServer } from "./index.js"
+import { createServer, serverCard } from "./index.js"
 import { testTheme } from "@airdesign/doom/testing"
+
+const origins = { app: "https://studio.example", site: "https://site.example" }
 
 function started(): doom.Doom {
   return doom.doomFromTree({
@@ -28,7 +30,7 @@ function sessionFor(): Session {
 }
 
 async function withClient(session: Session, host: DeckHost, use: (client: Client) => Promise<void>): Promise<void> {
-  const server = createServer(session, host)
+  const server = createServer(session, host, origins)
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: "airdesign-test", version: "0.0.0" })
   await server.connect(serverTransport)
@@ -44,13 +46,34 @@ async function withClient(session: Session, host: DeckHost, use: (client: Client
 describe("createServer", () => {
   it("returns a new server on every call", () => {
     const session = sessionFor()
-    expect(createServer(session, memoryDecks(started))).not.toBe(createServer(session, memoryDecks(started)))
+    expect(createServer(session, memoryDecks(started), origins)).not.toBe(
+      createServer(session, memoryDecks(started), origins),
+    )
+  })
+
+  it("names itself as its server card does, with icons the app serves and the site as its website", async () => {
+    const identity = {
+      name: "app.airdesign/studio",
+      title: "AirDesign",
+      version: "0.0.0",
+      description: "Make and edit slide decks without doing the design work.",
+      websiteUrl: "https://site.example",
+      icons: [
+        { src: "https://studio.example/favicon-art.svg", mimeType: "image/svg+xml", sizes: ["any"] },
+        { src: "https://studio.example/apple-touch-icon.png", mimeType: "image/png", sizes: ["180x180"] },
+      ],
+    }
+    await withClient(sessionFor(), memoryDecks(started), async (client) => {
+      expect(client.getServerVersion()).toEqual(identity)
+    })
+    const { $schema: _schema, remotes, ...card } = serverCard("https://studio.example/mcp", origins)
+    expect(card).toEqual(identity)
+    expect(remotes).toEqual([{ type: "streamable-http", url: "https://studio.example/mcp" }])
   })
 
   it("lists six tools", async () => {
     const projected = projectTools(catalog)
     await withClient(sessionFor(), memoryDecks(started), async (client) => {
-      expect(client.getServerVersion()?.name).toBe("airdesign")
       const { tools } = await client.listTools()
       expect(tools.map((tool) => tool.name)).toEqual([
         "airdesign_execute",
@@ -63,6 +86,7 @@ describe("createServer", () => {
       for (const expected of projected) {
         const tool = tools.find((listed) => listed.name === expected.name)!
         expect(tool.description).toBe(expected.description)
+        expect(tool.title).toBe(expected.title)
         expect(tool.annotations).toEqual({
           readOnlyHint: expected.readOnlyHint,
           destructiveHint: expected.destructiveHint,
