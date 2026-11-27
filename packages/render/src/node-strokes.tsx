@@ -2,7 +2,6 @@ import * as doom from "@airdesign/doom"
 import { useId } from "react"
 import { ArrowMarker } from "./arrow-marker.js"
 import { type Outline } from "./node-outline.js"
-import { strokeDash } from "./stroke-dash.js"
 
 type Resolved = doom.Resolved
 type Paint = doom.ResolvedPaint
@@ -34,7 +33,7 @@ export function NodeStrokes({ node, outline }: { readonly node: Resolved; readon
   const open = geometry?.kind === "line" || geometry?.kind === "path"
   const align = open ? "center" : stroke.align
   const weight = align === "center" ? stroke.weight : stroke.weight * 2
-  const dash = strokeDash(stroke)
+  const dash = doom.strokeDash(stroke)
   const round = open || stroke.dash === "dot" ? ({ strokeLinecap: "round", strokeLinejoin: "round" } as const) : {}
   const shape = outline.fill ?? outline.stroke[0] ?? ""
   const arrows = geometry?.kind === "line" ? geometry.arrows : (["none", "none"] as const)

@@ -130,7 +130,7 @@ export function lineRoute(
   return { from: start.at, to: end.at, points }
 }
 
-function routeSpots(points: readonly Point[], curved: boolean): readonly Point[] {
+export function routeSpots(points: readonly Point[], curved: boolean): readonly Point[] {
   const [from, pullFrom, pullTo, to] = points
   return curved && from !== undefined && pullFrom !== undefined && pullTo !== undefined && to !== undefined
     ? Array.from({ length: 17 }, (_, step) => cubicAt(from, pullFrom, pullTo, to, step / 16))

@@ -139,3 +139,5 @@ export { moveToSlide } from "./move-to-slide.js"
 export type { LayerPositions } from "./standing-layers.js"
 
 export { deckTexts } from "./deck-of.js"
+
+export { strokeDash } from "./stroke-dash.js"

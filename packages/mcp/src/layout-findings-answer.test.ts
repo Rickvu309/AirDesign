@@ -103,7 +103,9 @@ describe("layout findings in the answers, measured by the host with the deck's f
       script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box: { x: 160, y: 700, w: 400, h: 100 } }]),
     })
     expect(landed.answer.problems).toEqual([])
-    expect(String(landed.answer.note)).toContain("Layout clear: no overflow, overlap, off-slide or small text.")
+    expect(String(landed.answer.note)).toContain(
+      "Layout clear: no overflow, overlap, line crossings, off-slide or small text.",
+    )
   })
 
   const unchecked = async (measure: DeckHost["measure"]) => {
