@@ -1,0 +1,230 @@
+{
+  "type": "frame",
+  "name": "Timeline step",
+  "props": {
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 420,
+      "h": 216,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    },
+    "sizing": {
+      "w": "fixed",
+      "h": "hug"
+    },
+    "layout": {
+      "mode": "column",
+      "gap": 28,
+      "padding": {
+        "t": 0,
+        "r": 0,
+        "b": 0,
+        "l": 0
+      },
+      "align": "top-left"
+    }
+  },
+  "children": [
+    {
+      "type": "frame",
+      "name": "Track",
+      "props": {
+        "sizing": {
+          "w": "fill",
+          "h": "fixed"
+        },
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 420,
+          "h": 20,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "layout": {
+          "mode": "row",
+          "gap": 0,
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          },
+          "align": "center-left"
+        }
+      },
+      "children": [
+        {
+          "type": "shape",
+          "name": "Marker",
+          "props": {
+            "geometry": {
+              "kind": "ellipse"
+            },
+            "box": {
+              "x": 0,
+              "y": 0,
+              "w": 20,
+              "h": 20,
+              "rotation": 0,
+              "flipH": false,
+              "flipV": false
+            },
+            "sizing": {
+              "w": "fixed",
+              "h": "fixed"
+            },
+            "fills": [
+              {
+                "kind": "solid",
+                "color": {
+                  "var": "text"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "shape",
+          "name": "Line",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "box": {
+              "x": 0,
+              "y": 0,
+              "w": 400,
+              "h": 2,
+              "rotation": 0,
+              "flipH": false,
+              "flipV": false
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "fixed"
+            },
+            "fills": [
+              {
+                "kind": "solid",
+                "color": {
+                  "var": "text"
+                },
+                "opacity": 0.2
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "name": "Words",
+      "props": {
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
+        "layout": {
+          "mode": "column",
+          "gap": 10,
+          "padding": {
+            "t": 0,
+            "r": 48,
+            "b": 0,
+            "l": 0
+          },
+          "align": "top-left"
+        }
+      },
+      "children": [
+        {
+          "type": "shape",
+          "name": "Date",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "Q1 2027",
+              "spans": [
+                {
+                  "end": 7,
+                  "color": {
+                    "var": "text2"
+                  }
+                }
+              ],
+              "paras": [{}],
+              "style": "label",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        },
+        {
+          "type": "shape",
+          "name": "Label",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "Pilot in two regions",
+              "spans": [
+                {
+                  "end": 20,
+                  "bold": true
+                }
+              ],
+              "paras": [{}],
+              "style": "body",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        },
+        {
+          "type": "shape",
+          "name": "Note",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "40 stores in the Nordics",
+              "spans": [
+                {
+                  "end": 24,
+                  "color": {
+                    "var": "text2"
+                  }
+                }
+              ],
+              "paras": [{}],
+              "style": "body2",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

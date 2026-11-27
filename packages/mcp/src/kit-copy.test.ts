@@ -51,7 +51,7 @@ describe("copy from the kit", () => {
       const fold = by.fold(deck)
       const { colors, fonts } = doom.themeLibrary[theme]!.theme
       const painted = flat(doom.resolveSlide(fold, s as doom.NodeId, estimate))
-      expect(doom.propOf(fold.nodes.get(block as doom.NodeId), "box")).toMatchObject({ x: 160, y: 120, w: 1600 })
+      expect(doom.propOf(fold.nodes.get(block as doom.NodeId), "box")).toMatchObject({ x: 160, y: 120, w: 1680 })
       expect(firstRun(painted, lines[0]!)).toMatchObject({ font: fonts.heading, color: colors.text })
       expect(firstRun(painted, lines[1]!)).toMatchObject({ font: fonts.body, color: colors.text2 })
     }
@@ -104,6 +104,23 @@ describe("copy from the kit", () => {
     expect(doom.childrenOf(by.fold(deck), slides[0] as doom.NodeId).map((each) => each.id)).toEqual(
       doom.childrenOf(before, slides[0] as doom.NodeId).map((each) => each.id),
     )
+  })
+
+  it("gives a comparison a third column when the agent copies one, and the three share the width", async () => {
+    const by = agent()
+    const { deck, slides } = await by.made()
+    const answer = await by.call("execute", {
+      deck,
+      script: `
+        const [pair] = copy({ from: "kit/comparison", parent: "${slides[0]}", box: { x: 120, y: 320 } })
+        copy({ targets: [get({ target: pair }).children[1]] })
+        ;({ pair, columns: get({ target: pair }).children.map((column) => get({ target: column }).box) })
+      `,
+    })
+    expect(answer.ok, JSON.stringify(answer.answer)).toBe(true)
+    const { columns } = answer.answer.result as { columns: { x: number; w: number }[] }
+    expect(columns.map((column) => Math.round(column.w))).toEqual([496, 496, 496])
+    expect(answer.answer.problems).toEqual([])
   })
 
   it("refuses a piece the kit does not hold, and points to the kit's list", async () => {
