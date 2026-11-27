@@ -26,6 +26,7 @@ import {
 import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession } from "./account/account.js"
 import { agentKey, airaName } from "./oauth/agent-key.js"
 import { accountRouteList } from "./account/account-route.js"
+import { admitCaller } from "./account/caller-log.js"
 import { accountCookie, clearSessionCookie, keptSeconds, signedInCookies } from "./account/session-cookie.js"
 import { type AiraSettings } from "./aira/aira.js"
 import { Closing } from "./aira/aira-closing.js"
@@ -35,6 +36,7 @@ import { airaUsageRoute } from "./aira/aira-usage-route.js"
 import { deckListAnswers } from "./doom/deck-list.js"
 import { grantAgentName, readRegistration, registerClient } from "./oauth/clients.js"
 import { approve, describeClient } from "./oauth/consent.js"
+import { agentHost } from "./doom/agent-host.js"
 import { DeckPictures } from "./doom/deck-pictures.js"
 import { DeckFollowers } from "./doom/deck-followers.js"
 import { DeckListen } from "./platform/listen.js"
@@ -408,24 +410,26 @@ async function mcpRoute(visit: Visit): Promise<void> {
     answerSize(res)
     return
   }
+  const at = now()
   await serveMcp(
     {
-      deck: options.deck,
-      session: options.session,
-      email: called.email,
-      agentKey: called.agentKey,
-      agentName: called.agentName,
-      now,
-      mint: () => `${called.agentKey}-${mint()}`,
-      hosts: options.hosts ?? localHosts,
-      bodyCap: limits.body,
-      ...(options.originals === undefined ? {} : { originals: options.originals }),
-      fonts: options.fonts,
-      ...(options.imageNet === undefined ? {} : { imageNet: options.imageNet }),
-      pictures: options.pictures,
-      ...(options.pictureWait === undefined ? {} : { pictureWait: options.pictureWait }),
-      fail: (error) => answerThrow(visit, name, error),
+      ...agentHost({
+        deck: options.deck,
+        email: called.email,
+        fonts: options.fonts,
+        ...(options.originals === undefined ? {} : { originals: options.originals }),
+        ...(options.imageNet === undefined ? {} : { imageNet: options.imageNet }),
+        pictures: options.pictures,
+        ...(options.pictureWait === undefined ? {} : { pictureWait: options.pictureWait }),
+      }),
+      admit: (kind) => admitCaller(options.session, called.email, kind, at, called.agentKey),
     },
+    {
+      agent: called.agentKey,
+      name: called.agentName,
+      mint: () => `${called.agentKey}-${mint()}`,
+    },
+    { hosts: options.hosts ?? localHosts, bodyCap: limits.body, fail: (error) => answerThrow(visit, name, error) },
     req,
     res,
     body,

@@ -1,9 +1,8 @@
 import { createServer, request } from "node:http"
 import type { AddressInfo } from "node:net"
+import type { DeckHost } from "@airdesign/agent"
 import { limits } from "@airdesign/doom"
-import type { Pool } from "pg"
 import { expect, it } from "vitest"
-import { FontSource } from "../platform/font-source.js"
 import { serveMcp } from "./mcp.js"
 
 const traced = (port: number) =>
@@ -22,16 +21,11 @@ it("SDK failure reaches the boundary", async () => {
   const failures: unknown[] = []
   const server = createServer((req, res) => {
     void serveMcp(
+      {} as DeckHost,
+      { agent: "", mint: () => "id" },
       {
-        deck: {} as Pool,
-        email: "a@e.co",
-        agentKey: "",
-        session: {} as Pool,
-        now: () => 0,
-        mint: () => "id",
         hosts: ["127.0.0.1"],
         bodyCap: limits.body,
-        fonts: new FontSource(undefined),
         fail: (error) => {
           failures.push(error)
           res.writeHead(500)
