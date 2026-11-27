@@ -1,4 +1,4 @@
-import type { Point } from "./slide-geometry"
+import type { Point } from "@/editing/slide-geometry"
 
 export const sizeLabelHeight = 18
 export const sizeLabelGap = 8

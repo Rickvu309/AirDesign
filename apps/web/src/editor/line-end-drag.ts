@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { propOf } from "@airdesign/doom"
-import { apply, invert, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
+import { apply, invert, type Placed, type Point, type SlideGeometry } from "@/editing/slide-geometry"
 
 export type EndGrip = "line-start" | "line-end"
 export type Aim = { readonly sites: readonly Point[]; readonly site: Point | null }

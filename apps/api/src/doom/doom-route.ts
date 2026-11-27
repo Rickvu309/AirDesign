@@ -106,9 +106,14 @@ async function answerRead<R extends Read<{ readonly ok: boolean }>>(
 
 export function doomViewHost(options: DoomOptions, email: string, hold = viewHold) {
   return {
-    open: (raw: unknown) => answerRead(doomRoutes.open.read, raw, (parsed) => openDoom(options.deck, parsed, email)),
+    open: (raw: unknown) =>
+      answerRead(doomRoutes.open.read, raw, (parsed) => {
+        options.screenshots.sawView(email)
+        return openDoom(options.deck, parsed, email)
+      }),
     since: (raw: unknown, signal: AbortSignal) =>
       answerRead(doomRoutes.since.read, raw, async (parsed) => {
+        options.screenshots.sawView(email)
         const held =
           parsed.wait === true
             ? await heldSince(options, parsed, email, AbortSignal.any([signal, AbortSignal.timeout(hold)]))

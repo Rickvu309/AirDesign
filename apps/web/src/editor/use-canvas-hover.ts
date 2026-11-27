@@ -2,7 +2,7 @@ import type * as doom from "@airdesign/doom"
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type RefObject } from "react"
 import type { CanvasGesture } from "./canvas-gesture"
 import { unitOf } from "./selection"
-import type { Placed, SlideGeometry } from "./slide-geometry"
+import type { Placed, SlideGeometry } from "@/editing/slide-geometry"
 import type { PointerArgs } from "./use-canvas-pointer"
 
 export type HoverPoint = Pick<ReactPointerEvent, "clientX" | "clientY" | "metaKey" | "ctrlKey">

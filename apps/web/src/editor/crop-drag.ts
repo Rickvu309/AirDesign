@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { propOf } from "@airdesign/doom"
-import { invert, linear, type Point, type SlideGeometry } from "./slide-geometry"
+import { invert, linear, type Point, type SlideGeometry } from "@/editing/slide-geometry"
 
 export type CropGrip =
   | "crop-move"

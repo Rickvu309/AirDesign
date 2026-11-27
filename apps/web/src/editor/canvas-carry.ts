@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 import type { Preview } from "./canvas-overlay"
-import { snapMove, type Bounds, type Guide, type SnapTargets } from "./snapping"
-import { aroundPlaced, type Point, type SlideGeometry } from "./slide-geometry"
+import { snapMove, type Guide, type SnapTargets } from "./snapping"
+import { type Bounds, aroundPlaced, type Point, type SlideGeometry } from "@/editing/slide-geometry"
 
 export type CarryOver =
   | { readonly kind: "home" }

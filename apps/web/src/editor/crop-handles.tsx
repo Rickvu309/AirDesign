@@ -2,7 +2,7 @@ import { useId } from "react"
 import * as doom from "@airdesign/doom"
 import { cropShown, imageArea, type CropGrip } from "./crop-drag"
 import { ScreenSized } from "./screen-sized"
-import { apply, type Placed, type Point } from "./slide-geometry"
+import { apply, type Placed, type Point } from "@/editing/slide-geometry"
 import { resizeCursor, type ResizeGrip } from "./transform-math"
 
 export type CropTarget = {

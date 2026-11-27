@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { aroundPlaced, apply, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
+import { aroundPlaced, apply, type Placed, type Point, type SlideGeometry } from "@/editing/slide-geometry"
 
 export type Member = {
   readonly id: doom.NodeId

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { hitChain } from "./hit-test"
+import { hitChain } from "@/editing/hit-test"
 import { grow, paint, spot } from "./testing/doom-fixtures"
 import { allIn, kept, marqueeSelection, noSelection, picked, rectBetween, steppedIn, steppedOut } from "./selection"
 

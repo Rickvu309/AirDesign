@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { useDoomSlide } from "@airdesign/render"
 import { useLayoutEffect, useMemo } from "react"
-import { geometryOf, type SlideGeometry } from "@/editor/slide-geometry"
+import { geometryOf, type SlideGeometry } from "@/editing/slide-geometry"
 
 export function GridTargets({
   view,

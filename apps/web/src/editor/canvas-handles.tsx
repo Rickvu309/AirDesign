@@ -2,7 +2,7 @@ import { resizeCursor, rotateCursor, type ResizeGrip } from "./transform-math"
 import type { Frame } from "./selection-frame"
 import { ScreenSized, screenLine } from "./screen-sized"
 import { sizeLabelCentre, sizeLabelHeight } from "./size-label-place"
-import type { Point } from "./slide-geometry"
+import type { Point } from "@/editing/slide-geometry"
 
 const corners = ["top-left", "top-right", "bottom-right", "bottom-left"] as const
 const edges = [

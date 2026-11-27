@@ -9,7 +9,7 @@ import type { FontSource } from "../platform/font-source.js"
 import { fetchImage, type ImageNet } from "../platform/image-fetch.js"
 import type { OriginalStore } from "../platform/original-store.js"
 import type { Sql } from "../platform/pool.js"
-import type { DeckScreenshots } from "./deck-screenshots.js"
+import { viewOpening, type DeckScreenshots } from "./deck-screenshots.js"
 import {
   createDoom,
   editDoom,
@@ -171,6 +171,7 @@ export function agentHost(deps: AgentHostDeps): Omit<DeckHost, "admit"> {
               deck,
               slides.map((slide) => ({ slide, key: slideKey(fold, slide) })),
               wait,
+              shots.showsViews(email) ? viewOpening : 0,
             ),
         }),
     ...on(db),

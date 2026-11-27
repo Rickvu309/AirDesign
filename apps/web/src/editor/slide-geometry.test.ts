@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { apply } from "./slide-geometry"
+import { apply } from "@/editing/slide-geometry"
 import { grow, paint, spot } from "./testing/doom-fixtures"
 
 const tree = [

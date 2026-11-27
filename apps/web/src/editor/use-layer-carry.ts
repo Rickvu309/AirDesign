@@ -3,7 +3,7 @@ import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type RefObje
 import { carryStep, dropWrites, liftOf, type CarryStep } from "./canvas-carry"
 import type { CanvasGesture, Moving } from "./canvas-gesture"
 import { axisLocked } from "./move-writes"
-import type { Point } from "./slide-geometry"
+import type { Point } from "@/editing/slide-geometry"
 import { reachOf } from "./snapping"
 import type { PointerArgs } from "./use-canvas-pointer"
 

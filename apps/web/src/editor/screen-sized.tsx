@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import type { Point } from "./slide-geometry"
+import type { Point } from "@/editing/slide-geometry"
 
 export function chromeScale(drawn: number): string {
   return `calc(${String(drawn)} / var(--shown-scale, ${String(drawn)}))`

@@ -1,14 +1,16 @@
 import * as doom from "@airdesign/doom"
 import type { DoomDeck, DoomRemote } from "@airdesign/live"
-import { DoomSlide, Filmstrip } from "@airdesign/render"
+import { DoomSlide, Filmstrip, SlidePaint, useDoomSlide } from "@airdesign/render"
 import {
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
   type KeyboardEvent,
   type MouseEvent,
+  type PointerEvent,
 } from "react"
 import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -16,10 +18,13 @@ import { hairlineShadow, surfaceShadow } from "@/components/ui/shadows"
 import { deckViewCopy } from "@/copy/deck-view-copy"
 import { productCopy } from "@/copy/product-copy"
 import { slideListCopy } from "@/copy/slide-list-copy"
+import { hitChain } from "@/editing/hit-test"
+import { geometryOf, type Placed } from "@/editing/slide-geometry"
 import { useAssetUrls } from "@/editing/use-asset-urls"
 import { useSlideScreenshots } from "@/editing/use-slide-screenshots"
 import { cn } from "@/lib/class-names"
 import { slideNumber } from "@/lib/slide-numbering"
+import type { Viewed } from "./chat-host"
 import { useViewDeck } from "./use-view-deck"
 
 const thumbWidth = 64
@@ -62,6 +67,7 @@ function stepOf(key: string, at: number, count: number): number | null {
 export type Shell = {
   readonly openLink?: (url: string) => void
   readonly fitHeight?: (height: number) => void
+  readonly tellModel?: (viewed: Viewed) => void
 }
 
 function opener(shell: Shell) {
@@ -87,6 +93,93 @@ function OpenLink({ href, shell }: { readonly href: string; readonly shell: Shel
   )
 }
 
+type Picked = { readonly slide: doom.NodeId; readonly layers: readonly doom.NodeId[] }
+
+function Outline({
+  placed,
+  scale,
+  width,
+  ...marks
+}: {
+  readonly placed: Placed
+  readonly scale: number
+  readonly width: number
+  readonly "data-view-hover"?: string
+  readonly "data-view-selected"?: string
+}) {
+  const points = placed.corners.map((corner) => `${String(corner.x * scale)},${String(corner.y * scale)}`).join(" ")
+  return <polygon {...marks} points={points} fill="none" stroke="var(--primary-strong)" strokeWidth={width} />
+}
+
+function nextPick(picked: readonly doom.NodeId[], layer: doom.NodeId | null, adding: boolean): readonly doom.NodeId[] {
+  if (!adding) return layer === null ? [] : [layer]
+  if (layer === null) return picked
+  return picked.includes(layer) ? picked.filter((each) => each !== layer) : [...picked, layer]
+}
+
+function ViewSlide({
+  view,
+  slide,
+  width,
+  assetUrl,
+  picked,
+  onPick,
+}: {
+  readonly view: doom.Doom
+  readonly slide: doom.NodeId
+  readonly width: number
+  readonly assetUrl: (name: string) => string | undefined
+  readonly picked: readonly doom.NodeId[]
+  readonly onPick: ((layers: readonly doom.NodeId[]) => void) | undefined
+}) {
+  const painted = useDoomSlide(view, slide)
+  const { size } = doom.deckOf(view)
+  const geometry = useMemo(() => geometryOf(painted.nodes ?? []), [painted.nodes])
+  const [hovered, setHovered] = useState<doom.NodeId | null>(null)
+  const scale = width / size.w
+  const layerAt = (event: PointerEvent<HTMLElement> | MouseEvent<HTMLElement>) => {
+    const box = event.currentTarget.getBoundingClientRect()
+    const at = { x: (event.clientX - box.left) / scale, y: (event.clientY - box.top) / scale }
+    return hitChain(geometry.roots, at, 4.5 / scale, (id) => doom.lockedIn(view, id))?.[0]?.id ?? null
+  }
+  const chosen = picked.flatMap((id) => geometry.byId.get(id) ?? [])
+  const hover = hovered === null || picked.includes(hovered) ? undefined : geometry.byId.get(hovered)
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-xs bg-white",
+        surfaceShadow,
+        onPick !== undefined && "select-none",
+      )}
+      style={{ width, height: Math.round((width * size.h) / size.w) }}
+      data-view-slide={slide}
+      data-fonts-pending={painted.ready && painted.fontsReady ? undefined : ""}
+      {...(onPick === undefined
+        ? {}
+        : {
+            onClick: (event: MouseEvent<HTMLElement>) => onPick(nextPick(picked, layerAt(event), event.shiftKey)),
+            onPointerMove: (event: PointerEvent<HTMLElement>) => setHovered(layerAt(event)),
+            onPointerLeave: () => setHovered(null),
+          })}
+    >
+      <SlidePaint
+        nodes={painted.nodes ?? []}
+        background={painted.background}
+        size={size}
+        width={width}
+        assetUrl={assetUrl}
+        iconsReady={painted.ready}
+      />
+      <svg className="pointer-events-none absolute inset-0 size-full overflow-visible" aria-hidden="true">
+        {hover === undefined ? null : <Outline placed={hover} scale={scale} width={1} data-view-hover="" />}
+        {chosen.map((placed) => (
+          <Outline key={placed.id} placed={placed} scale={scale} width={2} data-view-selected={placed.id} />
+        ))}
+      </svg>
+    </div>
+  )
+}
+
 function ShownDeck({
   id,
   client,
@@ -103,11 +196,27 @@ function ShownDeck({
   useSlideScreenshots(client, assets.assetUrl)
   const slides = doom.slidesOf(view).map((slide) => slide.id)
   const [chosen, setChosen] = useState<doom.NodeId | undefined>(undefined)
+  const [picked, setPicked] = useState<Picked | null>(null)
   useEffect(() => {
     if (named !== undefined) setChosen(named as doom.NodeId)
   }, [named])
   const at = Math.max(0, chosen === undefined ? 0 : slides.indexOf(chosen))
   const slide = slides[at]
+  const { tellModel } = shell
+  const choose = (index: number) => {
+    const next = slides[index]
+    if (next === undefined) return
+    setChosen(next)
+    setPicked(null)
+    tellModel?.({ deck: id, slide: next, slideNumber: slideNumber(index), selected: [] })
+  }
+  const pick =
+    tellModel === undefined || slide === undefined
+      ? undefined
+      : (layers: readonly doom.NodeId[]) => {
+          setPicked({ slide, layers })
+          tellModel({ deck: id, slide, slideNumber: slideNumber(at), selected: layers })
+        }
   const { size } = doom.deckOf(view)
   const [roomRef, room] = useRoom()
   const strip = useRef<HTMLElement>(null)
@@ -137,7 +246,7 @@ function ShownDeck({
     if (next === null) return
     event.preventDefault()
     stepped.current = true
-    setChosen(slides[next])
+    choose(next)
   }
 
   const width = room === null ? 0 : fitWidth(room, size)
@@ -149,15 +258,22 @@ function ShownDeck({
         <h1 className="min-w-0 flex-1 truncate text-sm font-medium">{doom.deckName(view)}</h1>
         <OpenLink href={`/s/${id}`} shell={shell} />
       </header>
-      <main ref={roomRef} className="relative flex min-h-0 flex-1 items-center justify-center">
+      <main
+        ref={roomRef}
+        className="relative flex min-h-0 flex-1 items-center justify-center"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) pick?.([])
+        }}
+      >
         {slide !== undefined && width > 0 && (
-          <div
-            className={cn("overflow-hidden rounded-xs bg-white", surfaceShadow)}
-            style={{ width, height: Math.round((width * size.h) / size.w) }}
-            data-view-slide={slide}
-          >
-            <DoomSlide doom={view} slide={slide} width={width} assetUrl={assets.assetUrl} />
-          </div>
+          <ViewSlide
+            view={view}
+            slide={slide}
+            width={width}
+            assetUrl={assets.assetUrl}
+            picked={picked?.slide === slide ? picked.layers : []}
+            onPick={pick}
+          />
         )}
       </main>
       {slides.length > 1 && (
@@ -176,7 +292,7 @@ function ShownDeck({
               aria-current={index === at ? "true" : undefined}
               tabIndex={index === at ? 0 : -1}
               aria-label={slideListCopy.slideName(slideNumber(index), slides.length)}
-              onClick={() => setChosen(each)}
+              onClick={() => choose(index)}
               data-view-thumb={each}
             >
               <Filmstrip

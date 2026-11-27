@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { carriedTo, dropWrites, liftOf, slideTargets } from "./canvas-carry"
 import { carryOver } from "./grid-carry"
 import { gridLayout } from "./grid-lines"
-import { geometryOf } from "./slide-geometry"
+import { geometryOf } from "@/editing/slide-geometry"
 import { landed, paint, spot } from "./testing/doom-fixtures"
 import { testTheme } from "@airdesign/doom/testing"
 

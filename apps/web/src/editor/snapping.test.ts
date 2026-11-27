@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { nearestLine, reachOf, snapMove, snapReach, type Bounds, type SnapTargets } from "./snapping"
+import { nearestLine, reachOf, snapMove, snapReach, type SnapTargets } from "./snapping"
+import type { Bounds } from "@/editing/slide-geometry"
 
 const slide: Bounds = { left: 0, top: 0, right: 2000, bottom: 1000 }
 

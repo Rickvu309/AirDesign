@@ -27,7 +27,7 @@ import { ThemePicker } from "./design-theme-picker"
 import { resolveColorOf } from "./design-slide-color"
 import type { Selection } from "./selection"
 import { HiddenLockedLayers } from "./hidden-locked"
-import { geometryOf } from "./slide-geometry"
+import { geometryOf } from "@/editing/slide-geometry"
 import type { EditorClient } from "./use-deck"
 import type { CaretWords } from "./canvas"
 

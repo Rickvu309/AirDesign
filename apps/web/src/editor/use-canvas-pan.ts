@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, type RefObject } from "react"
 import type { Size } from "./canvas-view"
-import type { Point } from "./slide-geometry"
+import type { Point } from "@/editing/slide-geometry"
 
 export const unpanned: Point = { x: 0, y: 0 }
 

@@ -8,11 +8,11 @@ import {
   invertMatrix as invert,
 } from "@airdesign/doom"
 import { masksOf, type Silhouette, silhouetteIn } from "@airdesign/render"
-import type { Bounds } from "./snapping"
 
 export { apply, invert }
 export type { Matrix }
 export type Point = doom.Point
+export type Bounds = { readonly left: number; readonly top: number; readonly right: number; readonly bottom: number }
 type Corners = readonly [Point, Point, Point, Point]
 
 export type Placed = {

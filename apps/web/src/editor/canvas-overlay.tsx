@@ -8,7 +8,7 @@ import { LineHandles } from "./line-handles"
 import { attachedEnds, lineEnds, type Aim } from "./line-end-drag"
 import { framed } from "./selection-frame"
 import { chromeScale, ScreenSized, screenLine } from "./screen-sized"
-import { apply, aroundPlaced, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
+import { apply, aroundPlaced, type Placed, type Point, type SlideGeometry } from "@/editing/slide-geometry"
 
 export type Preview = {
   readonly kind: "move" | "transform" | "draw" | "end" | "crop"

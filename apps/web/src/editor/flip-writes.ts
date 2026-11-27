@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { flipSelection } from "./transform-math"
 import { propOf } from "@airdesign/doom"
 import { memberOf } from "./selection-frame"
-import { apply, invert, type SlideGeometry } from "./slide-geometry"
+import { apply, invert, type SlideGeometry } from "@/editing/slide-geometry"
 import { transformable } from "./transform-drag"
 
 export function flipWrites(

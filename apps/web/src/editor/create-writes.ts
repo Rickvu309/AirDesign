@@ -1,6 +1,6 @@
 import { type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import type { Point, SlideGeometry } from "./slide-geometry"
+import type { Point, SlideGeometry } from "@/editing/slide-geometry"
 import { propOf } from "@airdesign/doom"
 import { placementRules } from "@airdesign/taste"
 

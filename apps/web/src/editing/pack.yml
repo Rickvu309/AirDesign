@@ -7,9 +7,11 @@ dependencies:
   - apps/web/src/lib
 public:
   - canvas-zoom.ts
+  - hit-test.ts
   - painted-picture.ts
   - picture-file.ts
   - slide-capture.ts
+  - slide-geometry.ts
   - slide-layout.ts
   - slide-screenshot-report.ts
   - slide-screenshots.ts

@@ -6,7 +6,7 @@ import { optionWord } from "@/copy/option-copy"
 import type { PanelControl, PanelModel } from "@/design/panel"
 import { changeWrites, type ChangeContext } from "./design-changes"
 import { nodeModel } from "./design-model"
-import { geometryOf } from "./slide-geometry"
+import { geometryOf } from "@/editing/slide-geometry"
 import { testTheme } from "@airdesign/doom/testing"
 
 const spot = (x: number, y: number, w: number, h: number) => ({

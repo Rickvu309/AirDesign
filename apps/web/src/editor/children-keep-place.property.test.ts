@@ -3,7 +3,7 @@ import * as doom from "@airdesign/doom"
 import { expect, it } from "vitest"
 import { wrapWrites, ungroupWrites } from "./group-writes"
 import { moveWrites } from "./move-writes"
-import { geometryOf, type Point, type SlideGeometry } from "./slide-geometry"
+import { geometryOf, type Point, type SlideGeometry } from "@/editing/slide-geometry"
 import { grow, landed, paint, spot } from "./testing/doom-fixtures"
 
 type Op =

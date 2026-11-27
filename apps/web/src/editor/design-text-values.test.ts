@@ -5,7 +5,7 @@ import { propOf } from "@airdesign/doom"
 import { changeWrites, type ChangeContext } from "./design-changes"
 import { nodeModel } from "./design-model"
 import { shownText } from "./design-text-values"
-import { geometryOf } from "./slide-geometry"
+import { geometryOf } from "@/editing/slide-geometry"
 import { testTheme } from "@airdesign/doom/testing"
 
 const spot = (x: number, y: number, w: number, h: number) => ({

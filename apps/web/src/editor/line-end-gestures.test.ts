@@ -3,7 +3,7 @@ import { createDoomDeck, memoryDoomRemote, memoryStorage } from "@airdesign/live
 import { describe, expect, it } from "vitest"
 import { deleteWrites } from "./delete-writes"
 import { ungroupWrites } from "./group-writes"
-import { geometryOf } from "./slide-geometry"
+import { geometryOf } from "@/editing/slide-geometry"
 import { deleteSlideWrites } from "./slide-writes"
 import { draftWrites, leaveEmptyWrites, leaveWrites } from "./text-leave"
 import { testTheme } from "@airdesign/doom/testing"

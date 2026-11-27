@@ -7,7 +7,7 @@ import { deleteWrites } from "./delete-writes"
 import { moveWrites } from "./move-writes"
 import { arranged } from "./arrange-keys"
 import { allIn, noSelection, steppedIn, steppedOut, type Selection } from "./selection"
-import type { SlideGeometry } from "./slide-geometry"
+import type { SlideGeometry } from "@/editing/slide-geometry"
 import type { Tool } from "./use-canvas-pointer"
 import type { EditorClient } from "./use-deck"
 
