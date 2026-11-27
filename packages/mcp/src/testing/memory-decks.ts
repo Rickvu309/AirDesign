@@ -36,6 +36,7 @@ export function memoryDecks(start: () => doom.Doom, initial: ReadonlyMap<string,
     return { ok: true, deck, rev: landed.rev }
   }
   const host: MemoryDecks = {
+    account: "test-account",
     decks,
     agentReads: {
       last: async (deck, agent) => reads.get(`${deck}:${agent}`),

@@ -181,6 +181,7 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured, fo
     undoRevs: (deck, agent) => runUndoRevs(client, deck, email, agent),
   })
   return {
+    account: email,
     agentReads: {
       last: (deck, agent) => lastAgentRead(db, deck, agent),
       remember: (deck, agent, rev) => rememberAgentRead(db, deck, agent, rev),
