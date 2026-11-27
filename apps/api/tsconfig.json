@@ -15,7 +15,7 @@
   "exclude": ["src/source-hooks.ts"],
   "references": [
     { "path": "../../packages/agent" },
-    { "path": "../../packages/skills" },
+    { "path": "../../packages/taste" },
     { "path": "../../packages/doom" },
     {
       "path": "../../packages/catalog"

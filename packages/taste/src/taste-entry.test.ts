@@ -27,7 +27,7 @@ afterEach(() => {
   vi.resetModules()
 })
 
-describe("the skills entry", () => {
+describe("the taste entry", () => {
   it("gives the browser its theme presets without loading a node builtin", async () => {
     vi.resetModules()
     vi.doMock("node:fs", refused("node:fs"))

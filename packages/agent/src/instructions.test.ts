@@ -1,4 +1,4 @@
-import { readSkill } from "@airdesign/skills"
+import { readSkill } from "@airdesign/taste"
 import { expect, it } from "vitest"
 
 import { instructions } from "./index.js"

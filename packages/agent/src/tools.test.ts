@@ -1,4 +1,4 @@
-import { themePresets } from "@airdesign/skills"
+import { themePresets } from "@airdesign/taste"
 import { catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"

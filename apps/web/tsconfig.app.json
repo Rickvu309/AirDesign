@@ -27,7 +27,7 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../../packages/skills" },
+    { "path": "../../packages/taste" },
     { "path": "../../packages/catalog" },
     { "path": "../../packages/fonts" },
     { "path": "../../packages/live" },

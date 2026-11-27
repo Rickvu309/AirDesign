@@ -1,4 +1,4 @@
-import { newDeckTheme } from "@airdesign/skills"
+import { newDeckTheme } from "@airdesign/taste"
 import { randomBytes } from "node:crypto"
 import { doomRoutes } from "@airdesign/catalog"
 import { orderKeyBetween } from "@airdesign/doom"

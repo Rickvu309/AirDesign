@@ -1,7 +1,7 @@
 import { bakeFontState } from "@airdesign/render"
 import { toast } from "@/components/ui/toast"
 import * as doom from "@airdesign/doom"
-import { themePresetById } from "@airdesign/skills"
+import { themePresetById } from "@airdesign/taste"
 import { useDoomSlide } from "@airdesign/render"
 import { useMemo } from "react"
 import { designCopy } from "@/copy/design-copy"
