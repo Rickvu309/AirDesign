@@ -1,7 +1,7 @@
-import type { AgentChange } from "../agent-change.js"
+import type { Intent } from "../intent-read.js"
 import type { NodeId } from "../ids.js"
 
-const title = (slide: NodeId, text: string): AgentChange => ({
+const title = (slide: NodeId, text: string): Intent => ({
   op: "add",
   kind: "text",
   slide,
@@ -10,7 +10,7 @@ const title = (slide: NodeId, text: string): AgentChange => ({
   box: { x: 80, y: 60, w: 1760, h: 110 },
 })
 
-export function boardDeckChanges(slides: readonly NodeId[]): readonly (readonly AgentChange[])[] {
+export function boardDeckIntents(slides: readonly NodeId[]): readonly (readonly Intent[])[] {
   const [one, two, three, four, five] = slides as [NodeId, NodeId, NodeId, NodeId, NodeId]
   return [
     [
@@ -42,7 +42,7 @@ export function boardDeckChanges(slides: readonly NodeId[]): readonly (readonly 
     ],
     [
       title(three, "Revenue ran ahead of plan"),
-      ...["Plan", "Actual"].map((text, i): AgentChange => ({
+      ...["Plan", "Actual"].map((text, i): Intent => ({
         op: "add",
         kind: "text",
         slide: three,
@@ -56,10 +56,10 @@ export function boardDeckChanges(slides: readonly NodeId[]): readonly (readonly 
         [3.4, 3.7],
         [3.8, 4.2],
         [4.1, 4.6],
-      ].flatMap((values, quarter): AgentChange[] => {
+      ].flatMap((values, quarter): Intent[] => {
         const x = 180 + quarter * 430
         return [
-          ...values.flatMap((value, series): AgentChange[] => {
+          ...values.flatMap((value, series): Intent[] => {
             const left = x + series * 136
             const height = Math.round(value * 112)
             const name = `Q${quarter + 1} ${series === 0 ? "Plan" : "Actual"}`
@@ -99,7 +99,7 @@ export function boardDeckChanges(slides: readonly NodeId[]): readonly (readonly 
         { text: "Grow\nEnter two markets", icon: "trending-up" },
         { text: "Protect\nRaise retention", icon: "shield" },
         { text: "Build\nShip the platform", icon: "hammer" },
-      ].flatMap(({ text, icon }, at): AgentChange[] => [
+      ].flatMap(({ text, icon }, at): Intent[] => [
         { op: "add", kind: "icon", slide: four, icon, box: { x: 80 + at * 600, y: 260, w: 80, h: 80 } },
         { op: "add", kind: "text", slide: four, text, box: { x: 80 + at * 600, y: 372, w: 520, h: 100 } },
       ]),

@@ -14,5 +14,11 @@ export type PlacementRules = {
   readonly iconStrokeDivisor: number
   readonly lineWeight: number
   readonly strokeWeight: number
-  readonly table: { readonly totalRow: RegExp; readonly headerRule: RuleLook; readonly rowRule: RuleLook }
+  readonly table: {
+    readonly name: string
+    readonly ruleName: string
+    readonly totalRow: RegExp
+    readonly headerRule: RuleLook
+    readonly rowRule: RuleLook
+  }
 }

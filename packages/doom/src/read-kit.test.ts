@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { readAgentChange } from "./agent-change.js"
+import { readIntent } from "./intent-read.js"
 import { readWrite } from "./read-write.js"
 import { ids, sampleDeck, textOf } from "./sample-deck.js"
 
@@ -20,7 +20,7 @@ describe("words a deck holds are words: no control characters or lone surrogates
   })
 
   it("refuses an agent's words with a control character or a lone surrogate", () => {
-    expect(readAgentChange({ op: "set", target: ids.title, text: "a\u0000b" })).toMatchObject({ refused: "shape" })
-    expect(readAgentChange({ op: "set", target: ids.title, name: "a\ud800" })).toMatchObject({ refused: "shape" })
+    expect(readIntent({ op: "set", target: ids.title, text: "a\u0000b" })).toMatchObject({ refused: "shape" })
+    expect(readIntent({ op: "set", target: ids.title, name: "a\ud800" })).toMatchObject({ refused: "shape" })
   })
 })

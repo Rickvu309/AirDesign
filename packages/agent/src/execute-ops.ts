@@ -1,4 +1,4 @@
-import { agentChangesSchema } from "@airdesign/catalog"
+import { intentsSchema } from "@airdesign/catalog"
 import { readForAgent } from "./agent-read.js"
 import * as doom from "@airdesign/doom"
 import { placementRules, startRules, style, styles } from "@airdesign/taste"
@@ -35,14 +35,14 @@ export type Plan = {
   readonly host: DeckHost
   readonly pendingFonts: ReadonlySet<string>
   readonly run: string
-  readonly session: doom.AgentSession
+  readonly session: doom.IntentSession
   readonly pictures: Map<string, { readonly width: number; readonly height: number }>
   images: number
   view: doom.Doom
   ops: number
   read: boolean
-  readonly changes: doom.AgentChange[]
-  readonly changeOps: { readonly op: number; readonly verb: Verb }[]
+  readonly intents: doom.Intent[]
+  readonly intentOps: { readonly op: number; readonly verb: Verb }[]
   readonly names: Map<string, string>
   readonly shots: doom.NodeId[]
   refused?: { readonly op: number; readonly answer: Readonly<Record<string, unknown>> }
@@ -67,7 +67,7 @@ export function newPlan(
   const ids = onceIds(once)
   const run = runId ?? ids.run
   const pictures = new Map<string, { readonly width: number; readonly height: number }>()
-  const session = doom.agentEditSession(opened.fold, {
+  const session = doom.intentSession(opened.fold, {
     author: {
       kind: "agent",
       id: agent.id,
@@ -92,8 +92,8 @@ export function newPlan(
     view: opened.fold,
     ops: 0,
     read: false,
-    changes: [],
-    changeOps: [],
+    intents: [],
+    intentOps: [],
     names: new Map(),
     shots: [],
   }
@@ -102,8 +102,8 @@ export function newPlan(
 const notLook = new Set(
   "op kind slide into target node nodes after add move delete theme colors fonts nameFollows".split(" "),
 )
-const changeFields = agentChangesSchema.$defs.change.properties
-const lookFields = Object.keys(changeFields).filter((key) => !notLook.has(key))
+const intentFields = intentsSchema.$defs.change.properties
+const lookFields = Object.keys(intentFields).filter((key) => !notLook.has(key))
 const textFields = new Set(
   "text insert textStyle color size font weight lineHeight letterSpacing case underline strike alignV spaceBefore spaceAfter language".split(
     " ",
@@ -124,7 +124,7 @@ export const verbFields: Readonly<Record<Verb, readonly string[]>> = {
   screenshot: ["target"],
 }
 
-const kindWords = (node: doom.Node) => (node.type === "slide" ? "slide" : doom.agentKind(node))
+const kindWords = (node: doom.Node) => (node.type === "slide" ? "slide" : doom.layerKind(node))
 
 export function opNote(plan: Plan, verb: Verb, answer: Readonly<Record<string, unknown>>): string {
   const said = String(answer.note).replace(/^Change \d+( \([^)]*\))?[.:] ?/, "")
@@ -146,8 +146,8 @@ function stop(plan: Plan, op: number, verb: Verb, result: Answer): never {
   throw new OpRefused({ ...rest, op, verb, note })
 }
 
-async function withImages(plan: Plan, op: number, verb: Verb, change: doom.AgentChange) {
-  const names = plan.host.images === undefined ? [] : imageNames([change])
+async function withImages(plan: Plan, op: number, verb: Verb, intent: doom.Intent) {
+  const names = plan.host.images === undefined ? [] : imageNames([intent])
   plan.images += names.length
   if (plan.images > imagesPerCall)
     stop(
@@ -160,15 +160,15 @@ async function withImages(plan: Plan, op: number, verb: Verb, change: doom.Agent
       }),
     )
   const found = names.length === 0 ? undefined : await plan.host.images?.(plan.opened.deck, names)
-  const problem = imageProblem([change], found)
+  const problem = imageProblem([intent], found)
   if (problem !== undefined) stop(plan, op, verb, problem)
-  if (found === undefined) return change
+  if (found === undefined) return intent
   for (const [asset, size] of pictureSizes(found)) plan.pictures.set(asset, size)
-  return withAssets([change], found)[0] as doom.AgentChange
+  return withAssets([intent], found)[0] as doom.Intent
 }
 
-const leavesLayers = (change: doom.AgentChange) =>
-  change.op === "delete" || change.op === "unwrap" || (change.op === "slide" && change.delete !== undefined)
+const leavesLayers = (intent: doom.Intent) =>
+  intent.op === "delete" || intent.op === "unwrap" || (intent.op === "slide" && intent.delete !== undefined)
 
 async function compileOne(
   plan: Plan,
@@ -176,15 +176,15 @@ async function compileOne(
   verb: Verb,
   raw: Readonly<Record<string, unknown>>,
 ): Promise<readonly string[]> {
-  const read = doom.readAgentChange(raw)
+  const read = doom.readIntent(raw)
   if ("refused" in read) stop(plan, op, verb, doomRefused({ ...read, change: verb }))
   const fonts = withCatalogFonts([read])
   if (!fonts.ok) stop(plan, op, verb, fonts.result)
-  return stepOne(plan, op, verb, await withImages(plan, op, verb, fonts.changes[0] as doom.AgentChange))
+  return stepOne(plan, op, verb, await withImages(plan, op, verb, fonts.intents[0] as doom.Intent))
 }
 
-async function stepOne(plan: Plan, op: number, verb: Verb, change: doom.AgentChange): Promise<readonly string[]> {
-  if (plan.changes.length >= doom.limits.batch)
+async function stepOne(plan: Plan, op: number, verb: Verb, intent: doom.Intent): Promise<readonly string[]> {
+  if (plan.intents.length >= doom.limits.batch)
     stop(
       plan,
       op,
@@ -193,12 +193,12 @@ async function stepOne(plan: Plan, op: number, verb: Verb, change: doom.AgentCha
         note: `One call makes at most ${String(doom.limits.batch)} changes, and this one reached that before this operation. Send the rest in a second call.`,
       }),
     )
-  const measure = leavesLayers(change) ? (await deckMeasure(plan.host, [plan.view]))?.measure : undefined
-  const stepped = await measuredSteps(plan.session.step(change, true, measure), plan.host, plan.pendingFonts)
+  const measure = leavesLayers(intent) ? (await deckMeasure(plan.host, [plan.view]))?.measure : undefined
+  const stepped = await measuredSteps(plan.session.step(intent, true, measure), plan.host, plan.pendingFonts)
   if ("fields" in stepped) stop(plan, op, verb, stepped)
   if ("refused" in stepped) stop(plan, op, verb, doomRefused({ ...stepped, change: verb }))
-  plan.changes.push(change)
-  plan.changeOps.push({ op, verb })
+  plan.intents.push(intent)
+  plan.intentOps.push({ op, verb })
   plan.view = stepped.view
   const fresh = new Set<string>(stepped.added)
   return stepped.added.filter((id) => !fresh.has(doom.parentOf(plan.view.nodes.get(id))?.id ?? ""))
@@ -245,7 +245,7 @@ function idsOf(fields: Readonly<Record<string, unknown>>): readonly string[] {
 }
 
 function checked(plan: Plan, op: number, verb: Verb, raw: Readonly<Record<string, unknown>>) {
-  const read = doom.readAgentChange({ ...raw, target: "a:1" })
+  const read = doom.readIntent({ ...raw, target: "a:1" })
   if ("refused" in read) stop(plan, op, verb, doomRefused({ ...read, change: verb }))
   const fonts = withCatalogFonts([read])
   if (!fonts.ok) stop(plan, op, verb, fonts.result)
@@ -341,7 +341,7 @@ async function group(plan: Plan, op: number, verb: Verb, fields: Readonly<Record
 }
 
 async function variables(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<string, unknown>>) {
-  const { style: requested, ...changes } = fields
+  const { style: requested, ...fieldsToRead } = fields
   const chosen = style(requested)
   if (requested !== undefined && chosen === undefined) {
     const ids = styles.map(({ id }) => id).join(", ")
@@ -350,7 +350,7 @@ async function variables(plan: Plan, op: number, verb: Verb, fields: Readonly<Re
   if (hasLook(fields)) {
     await compileOne(plan, op, verb, {
       op: "deck",
-      ...changes,
+      ...fieldsToRead,
       ...(chosen === undefined ? {} : { theme: chosen.theme }),
     })
   }

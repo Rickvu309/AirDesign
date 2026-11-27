@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { type AgentChange, bytesOf, descendantsOf } from "@airdesign/doom"
+import { type Intent, bytesOf, descendantsOf } from "@airdesign/doom"
 import { agentReadFixture, board } from "@airdesign/doom/testing"
 import { readForAgent } from "./agent-read.js"
 
 const { apply, build, hex, ids, more, richDeck } = agentReadFixture
-const change = (value: Record<string, unknown>) => value as AgentChange
+const change = (value: Record<string, unknown>) => value as Intent
 const lines = (text: string) => text.split("\n")
 
 describe("readForAgent", () => {

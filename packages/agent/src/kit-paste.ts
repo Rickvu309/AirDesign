@@ -3,7 +3,7 @@ import { piece } from "@airdesign/taste"
 
 import { refused, type Answer } from "./answer.js"
 
-type Paste = Extract<doom.AgentChange, { op: "paste" }>
+type Paste = Extract<doom.Intent, { op: "paste" }>
 type Fields = Readonly<Record<string, unknown>>
 
 const kitPrefix = "kit/"

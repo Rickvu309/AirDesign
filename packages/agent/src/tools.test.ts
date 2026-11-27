@@ -225,7 +225,7 @@ describe("changes in execute", () => {
       ]),
     )
     const fold = by.decks.decks.get(deck as never)!
-    expect(doom.agentKind(fold.nodes.get(landed.fields.result as never)!)).toBe("frame")
+    expect(doom.layerKind(fold.nodes.get(landed.fields.result as never)!)).toBe("frame")
     expect(fold.nodes.size).toBeGreaterThan(8)
   })
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { compileAgentChange } from "./agent-compile.js"
-import { readAgentChange } from "./agent-change.js"
+import { compileIntent } from "./intent-compile.js"
+import { readIntent } from "./intent-read.js"
 import { propOf } from "./doom-walk.js"
 import {
   applyEdit,
@@ -10,7 +10,7 @@ import {
   nodeId,
   resolveSlide,
   rev,
-  type AgentChange,
+  type Intent,
   type Doom,
   type TreeNode,
 } from "./index.js"
@@ -64,10 +64,10 @@ function open(doom: Doom): Doom {
   return started(doom, "mask")
 }
 
-function landed(doom: Doom, change: AgentChange): Doom {
+function landed(doom: Doom, change: Intent): Doom {
   const ready = open(doom)
   let next = 0
-  const writes = compileAgentChange(ready, change, () => nodeId(`m:${String((next += 1))}`), placement, starts)
+  const writes = compileIntent(ready, change, () => nodeId(`m:${String((next += 1))}`), placement, starts)
   if (isRefusal(writes)) throw new Error(JSON.stringify(writes))
   const applied = applyEdit(ready, { once: once(), author: agent("mask"), writes, rev: rev(ready.rev + 1) })
   if (isRefusal(applied)) throw new Error(JSON.stringify(applied))
@@ -95,19 +95,19 @@ describe("a mask is a layer that clips every sibling above it", () => {
       layers[2]!,
     ])
     const hole = plain.ids.hole!
-    const set = readAgentChange({ op: "set", target: hole, mask: true })
+    const set = readIntent({ op: "set", target: hole, mask: true })
     expect(set).toMatchObject({ op: "set", mask: true })
     if (isRefusal(set)) return
     const masked = landed(plain.doom, set)
     expect(propOf(masked.nodes.get(hole)!, "mask")).toBe(true)
     const cleared = landed(masked, { op: "set", target: hole, mask: false })
     expect(propOf(cleared.nodes.get(hole)!, "mask")).toBe(false)
-    expect(readAgentChange({ op: "set", target: hole, mask: "yes" })).toMatchObject({
+    expect(readIntent({ op: "set", target: hole, mask: "yes" })).toMatchObject({
       refused: "shape",
       field: "mask",
     })
-    expect(readAgentChange({ op: "set", target: plain.slides[0], mask: true })).toMatchObject({ op: "set" })
-    const slide = compileAgentChange(
+    expect(readIntent({ op: "set", target: plain.slides[0], mask: true })).toMatchObject({ op: "set" })
+    const slide = compileIntent(
       plain.doom,
       { op: "set", target: plain.slides[0]!, mask: true },
       () => nodeId("m:9"),

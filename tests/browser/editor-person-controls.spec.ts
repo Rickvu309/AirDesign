@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import * as doom from "../../packages/doom/src/index.ts"
-import { compileAgentEdit, placement, starts } from "../../packages/doom/src/testing/index.ts"
+import { compileIntents, placement, starts } from "../../packages/doom/src/testing/index.ts"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { textCopy, textWords } from "../../apps/web/src/copy/text-copy"
@@ -12,13 +12,13 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 
 const catalog = () => import("../../packages/catalog/src/index.ts")
 
-async function agentWrites(stack: Stack, opened: Opened, changes: readonly doom.AgentChange[]) {
+async function agentWrites(stack: Stack, opened: Opened, changes: readonly doom.Intent[]) {
   const { doomRoutes } = await catalog()
   const answer = await stack.post(doomRoutes.open.path, { deck: opened.deck }, opened.cookie)
   const before = doom.readFold(answer.json.fold)
   if (before === undefined) throw new Error("no deck")
   let minted = 0
-  const compiled = compileAgentEdit(before, changes, {
+  const compiled = compileIntents(before, changes, {
     placement,
     starts,
     author: { kind: "agent", id: "aira", run: "run" },

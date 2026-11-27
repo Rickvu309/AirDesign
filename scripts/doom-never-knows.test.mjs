@@ -31,6 +31,9 @@ assert.deepEqual(kinds("layout-problems.ts", 'const judged = text.style !== "tit
   'taste: a rule for "heading" text',
 ])
 assert.deepEqual(kinds("apply-edit.ts", 'if (author.kind === "agent") refuse("run-fenced")'), [])
+assert.deepEqual(kinds("doom.ts", "type Run = { readonly agent: string }; const writer = run.agent"), [])
+assert.deepEqual(kinds("painted-face.ts", 'const family = "Shadows Into Light"'), [])
+assert.deepEqual(kinds("theme.ts", 'const family = "Shadows Into Light"'), ["words: Shadows Into Light"])
 assert.deepEqual(kinds("order-key.ts", 'throw new Error("invalid order key head")'), [])
 assert.deepEqual(kinds("preset-basic.ts", 'const guide = "dx1 cos swd2 1080000 val adj"'), [])
 assert.deepEqual(kinds("painted-face.ts", 'const names = ["Thin", "Regular", "Bold"]'), [])
@@ -79,7 +82,7 @@ assert.deepEqual(ceilingFaults({ found: planted, ceiling: { "theme.ts": 1 }, bas
   exceeded: [],
 })
 
-assert.equal(checkSteps.warns("doom-never-knows", ""), true)
+assert.equal(checkSteps.warns("doom-never-knows", ""), false)
 assert.equal(checkSteps.showsOutput("doom-never-knows"), true)
 
 const scriptPath = fileURLToPath(new URL("./doom-never-knows.mjs", import.meta.url))

@@ -177,6 +177,10 @@ if (stampable(["browser-tests", "unit-tests"], true))
   throw new Error("a failed unit-tests step next to browser-tests must not stamp the commit")
 if (!stampable(["browser-tests"], true)) throw new Error("the browser tests run on ci and must not stop a stamp")
 if (stampable([], false)) throw new Error("a check that stopped early must not stamp the commit")
+if (!namesIn("source").includes("doom-never-knows")) throw new Error("the source part must run doom-never-knows")
+if (!stepsWhen(true).includes("doom-never-knows")) throw new Error("ci must run doom-never-knows")
+if (warns("doom-never-knows")) throw new Error("doom-never-knows blocks from the start")
+
 const warningSteps = [
   "conflict-markers",
   "migration-numbers",
@@ -184,7 +188,6 @@ const warningSteps = [
   "restored-files",
   "spec-drift",
   "spec-coverage",
-  "doom-never-knows",
   "design-findings",
 ]
 for (const name of warningSteps) {

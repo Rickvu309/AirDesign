@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import type { AgentChange } from "./agent-change.js"
-import { compileAgentChange } from "./agent-compile.js"
-import { contentAreaOf } from "./agent-place.js"
+import type { Intent } from "./intent-read.js"
+import { compileIntent } from "./intent-compile.js"
+import { contentAreaOf } from "./intent-place.js"
 import { agentDeck, apply, minter } from "./testing/agent-fixtures.js"
 import { childrenOf, propOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
@@ -11,11 +11,11 @@ import { placement } from "./testing/placement-rules.js"
 import { starts } from "./testing/start-rules.js"
 
 const slide = ids.slide
-const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as AgentChange
+const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as Intent
 
-function built(rules: PlacementRules, change: AgentChange): Doom {
+function built(rules: PlacementRules, change: Intent): Doom {
   const deck = agentDeck()
-  const writes = compileAgentChange(deck, change, minter(), rules, starts)
+  const writes = compileIntent(deck, change, minter(), rules, starts)
   if ("refused" in writes) throw new Error(`refused ${JSON.stringify(writes)}`)
   return apply(deck, writes)
 }

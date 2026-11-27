@@ -128,7 +128,7 @@ export function refused(code: Refused, more: Where & Readonly<Record<string, unk
   })
 }
 
-export function doomRefused(refusal: doom.AgentRefusal | doom.Refusal, more: Readonly<Record<string, unknown>> = {}) {
+export function doomRefused(refusal: doom.IntentRefusal | doom.Refusal, more: Readonly<Record<string, unknown>> = {}) {
   return refused(doomCodes[refusal.refused], {
     refused: refusal.refused,
     ...("change" in refusal ? { change: refusal.change } : {}),

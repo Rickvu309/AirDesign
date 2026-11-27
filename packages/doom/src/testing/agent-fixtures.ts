@@ -1,6 +1,6 @@
-import type { AgentChange } from "../agent-change.js"
-import { compileAgentChange } from "../agent-compile.js"
-import type { Reading } from "../agent-draft.js"
+import type { Intent } from "../intent-read.js"
+import { compileIntent } from "../intent-compile.js"
+import type { Reading } from "../intent-draft.js"
 import { type NodeId, type Doom, type Write, applyEdit, isRefusal, nodeId, rev } from "../index.js"
 import { agent, once, sampleDeck } from "../sample-deck.js"
 import { childrenOf, slidesOf } from "../doom-walk.js"
@@ -40,14 +40,13 @@ export function apply(doom: Doom, writes: readonly Write[], run = runName): Doom
   return result
 }
 
-export function compiled(doom: Doom, change: AgentChange, mint = minter(), reading: Reading = {}): readonly Write[] {
-  const writes = compileAgentChange(doom, change, mint, placement, starts, reading)
+export function compiled(doom: Doom, intent: Intent, mint = minter(), reading: Reading = {}): readonly Write[] {
+  const writes = compileIntent(doom, intent, mint, placement, starts, reading)
   if ("refused" in writes) throw new Error(`refused ${JSON.stringify(writes)}`)
   return writes
 }
 
-export const build = (doom: Doom, change: AgentChange, mint = minter()): Doom =>
-  apply(doom, compiled(doom, change, mint))
+export const build = (doom: Doom, intent: Intent, mint = minter()): Doom => apply(doom, compiled(doom, intent, mint))
 
 export const agentDeck = (): Doom => started(sampleDeck())
 

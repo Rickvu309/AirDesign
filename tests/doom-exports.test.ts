@@ -18,34 +18,32 @@ const exportedNames = (file: string) => {
 
 it("hands other packs only the Doom names they import", () => {
   expect(exportedNames("packages/doom/src/index.ts")).toEqual(
-    `AgentChange AgentEdit AgentRefusal AgentSession Align9 Author Bake Box Clipboard Color ColorVar Copies Doom Edit
-    End Expectation Face FaceNeeds FontFace FontWidths Geometry GridShortfall Grown Hex ImageCrop ImagePaint Keyed LandBy Landed Landing
-    LayerPositions Layout LayoutProblem Matrix Measure MeasureLayout MeasureProbe MediaType MissingGlyphs Node NodeId
-    NodeType OrderKey Paint Para PlacementRules Point Pressed ProblemRules PropName Props Refusal Replaced Resolved
-    ResolvedEffect ResolvedLine ResolvedPaint ResolvedRun Rev RevisionKey RunEdit RunUndo Sides Site SlideGroup
-    SlideStart Span StartRules StrokeStyle Text TextPatch TextStyleName Theme ThemeProblem TreeNode TreeSlide UndoBy Undoable
-    Undoing Undone
-    Write WriteKey adjustDefaults agentChangesSchema agentEditSession agentKind applyEdit applyMatrix artMatrix
-    bakeLayout bakeTextLayers boxMatrix bytesOf charsByFace childrenOf contentAreaOf contentMatrix
-    copiedMove countsOf coverCrop cropSides deckName deckNameFollows deckOf deckTexts descendantsOf doomFaces
-    doomFromTree duplicateWrites emptyDoom familyOf fitShift flows fontFace fontSamples freeLineEnds freedEnds gapFor
-    graphemes hasDeck holdsLineEnd holdsText identityMatrix invertMatrix isLaidOut isLive isRefusal
-    land landEdit layoutProblems leavingRoots limits lineArrowheads liveRuns lockedIn lookWrite lostBy
-    mayLeaveDeck measureWith measureWithLayout mediaSize mediaTypeOf mediaTypes missingGlyphsIn moveToSlide
-    nodeId notesText onDeck onTop orderKeyBetween overPixelLimit paintedFace
-    paletteColorVars paraWrite paragraphAligns parentOf parseTheme pasteWrites pictureFit presetHolds presetOutline
-    propOf props readAgentChange readColor readEdit readFold readLanded readLinkAddress readNodeId readRunEdit
-    readRuns readStoredNode replacedBy resolveColor resolveSlide returningRoots rev revsToJson routeDistance
+    `Align9 Author Bake Box Clipboard Color ColorVar Copies Doom Edit End Expectation Face FaceNeeds FontFace FontWidths
+    Geometry GridShortfall Grown Hex ImageCrop ImagePaint Intent IntentEdit IntentRefusal IntentSession Keyed LandBy
+    Landed Landing LayerPositions Layout LayoutProblem Matrix Measure MeasureLayout MeasureProbe MediaType MissingGlyphs
+    Node NodeId NodeType OrderKey Paint Para PlacementRules Point Pressed ProblemRules PropName Props Refusal Replaced
+    Resolved ResolvedEffect ResolvedLine ResolvedPaint ResolvedRun Rev RevisionKey RunEdit RunUndo Sides Site SlideGroup
+    SlideStart Span StartRules StrokeStyle Text TextPatch TextStyleName Theme ThemeProblem TreeNode TreeSlide UndoBy
+    Undoable Undoing Undone Write WriteKey adjustDefaults applyEdit applyMatrix artMatrix bakeLayout bakeTextLayers
+    boxMatrix bytesOf charsByFace childrenOf contentAreaOf contentMatrix copiedMove countsOf coverCrop cropSides deckName
+    deckNameFollows deckOf deckTexts descendantsOf doomFaces doomFromTree duplicateWrites emptyDoom familyOf fitShift
+    flows fontFace fontSamples freeLineEnds freedEnds gapFor graphemes hasDeck holdsLineEnd holdsText identityMatrix
+    intentSession intentsSchema invertMatrix isLaidOut isLive isRefusal land landEdit layerKind layoutProblems
+    leavingRoots limits lineArrowheads liveRuns lockedIn lookWrite lostBy mayLeaveDeck measureWith measureWithLayout
+    mediaSize mediaTypeOf mediaTypes missingGlyphsIn moveToSlide nodeId notesText onDeck onTop orderKeyBetween
+    overPixelLimit paintedFace paletteColorVars paraWrite paragraphAligns parentOf parseTheme pasteWrites pictureFit
+    presetHolds presetOutline propOf props readColor readEdit readFold readIntent readLanded readLinkAddress readNodeId
+    readRunEdit readRuns readStoredNode replacedBy resolveColor resolveSlide returningRoots rev revsToJson routeDistance
     runsToJson sameColor sameValue shapeNames siblingKeys siteSpot slideBackground slideGroups slideKeyText slideOf
-    slidePlacementWrites slideRowAt slideStartWrites slideStarts slidesOf solveLayout storedFace strokeDash
-    styleWrite textArea textFont textFromMarkdown textLimits textToMarkdown tinted titleSlideWrites touchedSlides
-    undo unfittedBox uniformAlign uniformColor unmeasuredTexts viewOf wrapDegrees wrapRotation`.split(/\s+/),
+    slidePlacementWrites slideRowAt slideStartWrites slideStarts slidesOf solveLayout storedFace strokeDash styleWrite
+    textArea textFont textFromMarkdown textLimits textToMarkdown tinted titleSlideWrites touchedSlides undo unfittedBox
+    uniformAlign uniformColor unmeasuredTexts viewOf wrapDegrees wrapRotation`.split(/\s+/),
   )
 })
 
 it("hands tests and the bench the Doom names only they import, behind @airdesign/doom/testing", () => {
   expect(exportedNames("packages/doom/src/testing/index.ts")).toEqual(
-    `AgentColor Run Tree agentReadFixture board boardDeckChanges colorVars compileAgentChange compileAgentEdit
-    foldToJson invert invertRun placement starts testTheme`.split(/\s+/),
+    `IntentColor Run Tree agentReadFixture board boardDeckIntents colorVars compileIntent compileIntents foldToJson invert
+    invertRun placement starts testTheme`.split(/\s+/),
   )
 })

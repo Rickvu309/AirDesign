@@ -1,4 +1,4 @@
-import type { Natural } from "./agent-draft.js"
+import type { Natural } from "./intent-draft.js"
 
 export type Room = { readonly w: number; readonly h: number }
 

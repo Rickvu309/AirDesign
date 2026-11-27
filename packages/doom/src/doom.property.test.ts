@@ -2,7 +2,7 @@ import fc from "fast-check"
 import { expect, it } from "vitest"
 import { orderKeyBetween } from "./order-key.js"
 import { minter, runName, started, titledSlide } from "./testing/agent-fixtures.js"
-import { agentBatches, resolveRefs } from "./testing/agent-changes.js"
+import { agentBatches, resolveRefs } from "./testing/intents.js"
 import { richDeck } from "./testing/rich-deck.js"
 import {
   applyEdit,
@@ -26,8 +26,8 @@ import {
   type Write,
 } from "./index.js"
 import { invert } from "./invert.js"
-import { type AgentChange, readAgentChange } from "./agent-change.js"
-import { compileAgentEdit } from "./agent-edit.js"
+import { type Intent, readIntent } from "./intent-read.js"
+import { compileIntents } from "./intent-edit.js"
 import { foldToJson } from "./fold-json.js"
 import { agent, box, create, ids, once, person, revOf, sampleDeck, textOf, tryLand } from "./sample-deck.js"
 import { valuesOf } from "./testing/values-of.js"
@@ -428,10 +428,10 @@ function landsAgentEdits(start: Doom, batches: readonly (readonly unknown[])[]):
   let accepted = 0
   const mint = minter("p")
   for (const [index, batch] of batches.entries()) {
-    const read = (JSON.parse(JSON.stringify(resolveRefs(doom, batch))) as readonly unknown[]).map(readAgentChange)
-    const changes = read.filter((each): each is AgentChange => !("refused" in each))
+    const read = (JSON.parse(JSON.stringify(resolveRefs(doom, batch))) as readonly unknown[]).map(readIntent)
+    const changes = read.filter((each): each is Intent => !("refused" in each))
     if (changes.length === 0 || changes.length < read.length) continue
-    const result = compileAgentEdit(doom, changes, {
+    const result = compileIntents(doom, changes, {
       placement,
       starts: startRules,
       author: agent(runName),

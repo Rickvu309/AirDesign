@@ -1,4 +1,4 @@
-import type { Natural } from "./agent-draft.js"
+import type { Natural } from "./intent-draft.js"
 import type { ImagePaint } from "./paint.js"
 
 export type ImageCrop = NonNullable<ImagePaint["crop"]>

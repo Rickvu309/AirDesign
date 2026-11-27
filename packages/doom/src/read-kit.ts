@@ -71,7 +71,7 @@ export function accepting<T>(expect: Expectation, read: Reader<T>): Reader<T> {
   return reader
 }
 
-export function agentColor(pattern: RegExp, max: number, expect: Expectation): Reader<string> {
+export function colorMatching(pattern: RegExp, max: number, expect: Expectation): Reader<string> {
   const hex = /^#[0-9a-fA-F]{6}$/
   const read: Reader<string> = (raw) => {
     if (typeof raw === "string" && hex.test(raw)) return raw.toLowerCase()

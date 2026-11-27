@@ -43,14 +43,14 @@ const storedAsset = /^[0-9a-f]{64}$/
 
 const usable = (name: string) => webImage(name) || storedAsset.test(name)
 
-function imageOf(change: doom.AgentChange): string | undefined {
-  if (!("op" in change) || (change.op !== "add" && change.op !== "set")) return undefined
-  const fill = change.fill
+function imageOf(intent: doom.Intent): string | undefined {
+  if (!("op" in intent) || (intent.op !== "add" && intent.op !== "set")) return undefined
+  const fill = intent.fill
   return typeof fill === "object" && "image" in fill ? fill.image : undefined
 }
 
-export function imageNames(changes: readonly doom.AgentChange[]): readonly string[] {
-  return [...new Set(changes.flatMap((change) => imageOf(change) ?? []).filter(usable))]
+export function imageNames(intents: readonly doom.Intent[]): readonly string[] {
+  return [...new Set(intents.flatMap((intent) => imageOf(intent) ?? []).filter(usable))]
 }
 
 export function pictureSizes(
@@ -65,20 +65,17 @@ export function pictureSizes(
   )
 }
 
-export function withAssets(changes: readonly doom.AgentChange[], images: NamedImages): readonly doom.AgentChange[] {
-  return changes.map((change) => {
-    const address = imageOf(change)
+export function withAssets(intents: readonly doom.Intent[], images: NamedImages): readonly doom.Intent[] {
+  return intents.map((intent) => {
+    const address = imageOf(intent)
     const found = address === undefined ? undefined : images.get(address)
-    return found?.ok === true && "fill" in change ? { ...change, fill: { image: found.asset } } : change
+    return found?.ok === true && "fill" in intent ? { ...intent, fill: { image: found.asset } } : intent
   })
 }
 
-export function imageProblem(
-  changes: readonly doom.AgentChange[],
-  images: NamedImages | undefined,
-): Answer | undefined {
-  const lines = changes.flatMap((change, at) => {
-    const address = imageOf(change)
+export function imageProblem(intents: readonly doom.Intent[], images: NamedImages | undefined): Answer | undefined {
+  const lines = intents.flatMap((intent, at) => {
+    const address = imageOf(intent)
     if (address === undefined) return []
     if (!usable(address))
       return [`Change ${String(at + 1)}: ${JSON.stringify(address)} was not used because ${imageReasons.unknown}`]

@@ -1,5 +1,5 @@
 import { scriptOf } from "../../packages/agent/src/testing/change-script.ts"
-import { readFold, slidesOf, type AgentChange } from "../../packages/doom/src/index.ts"
+import { readFold, slidesOf, type Intent } from "../../packages/doom/src/index.ts"
 import { expect, type Page } from "@playwright/test"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
@@ -344,7 +344,7 @@ test("the filmstrip and canvas use Japanese for a Han-only title when another sl
 }) => {
   const opened = await openEditor(page, context, stack)
   const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
-  const edit = async (changes: readonly AgentChange[]) => {
+  const edit = async (changes: readonly Intent[]) => {
     const tool = (
       await stack.toolBlocks("airdesign_execute", { deck: opened.deck, script: scriptOf(changes) }, opened.cookie)
     ).find(({ type }) => type === "text")

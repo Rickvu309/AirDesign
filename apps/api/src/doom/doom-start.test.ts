@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { compileAgentEdit, starts, testTheme } from "@airdesign/doom/testing"
+import { compileIntents, starts, testTheme } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { startEdit, startIds } from "./doom-start.js"
 import { placement } from "@airdesign/doom/testing"
@@ -46,7 +46,7 @@ describe("an agent's title on a new deck's first slide", () => {
     const started = doom.applyEdit(opened, { once: "begin", author, writes: [], phase: "start", rev: doom.rev(2) })
     if (doom.isRefusal(started)) throw new Error(JSON.stringify(started))
     let count = 0
-    const compiled = compileAgentEdit(
+    const compiled = compileIntents(
       started,
       [{ op: "add", kind: "text", slide: startIds.slide, text: "Q3 board update", textStyle: "title" }],
       { placement, starts, author, once: "fill", mint: () => doom.nodeId(`a:${(count += 1)}`) },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import type { AgentChange } from "./agent-change.js"
-import { compileAgentEdit } from "./agent-edit.js"
+import type { Intent } from "./intent-read.js"
+import { compileIntents } from "./intent-edit.js"
 import { agentDeck, minter, runName } from "./testing/agent-fixtures.js"
 import { paletteColorVars } from "./paint.js"
 import { themeProblems } from "./theme-problems.js"
@@ -12,7 +12,7 @@ const red = hex(0xff0000)
 const nearRed = hex(0xff0001)
 
 const edited = (changes: readonly Record<string, unknown>[]) => {
-  const edit = compileAgentEdit(agentDeck(), changes as readonly AgentChange[], {
+  const edit = compileIntents(agentDeck(), changes as readonly Intent[], {
     placement,
     starts,
     author: agent(runName),

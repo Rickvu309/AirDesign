@@ -9,6 +9,7 @@ export const ceilingFile = "scripts/doom-never-knows.json"
 const formulaFiles = /^preset-[a-z-]+\.ts$/
 const supportFiles = /(?:\.test\.ts|^sample-deck\.ts|^testing\/.*)$/
 const hostWords = /(?:^|[^a-z])(?:agent|mcp|tool|answer|prompt|hint)|(?:Agent|Mcp|MCP|Tool|Answer|Prompt|Hint)/
+const wholeFontFamilies = new Set(["Archivo Black", "Love Light", "Shadows Into Light"])
 const kindOrder = ["taste", "host", "words"]
 const weightNames = new Set([
   "Thin",
@@ -86,7 +87,13 @@ export function offences(file, source) {
     const style = styleRule(node)
     if (style !== undefined) add("taste", node.start, `a rule for "${style}" text`)
     const text = textOf(node)
-    if (text === undefined || formulaFiles.test(path.basename(file)) || thrown(parent)) return
+    if (
+      text === undefined ||
+      formulaFiles.test(path.basename(file)) ||
+      thrown(parent) ||
+      (file === "painted-face.ts" && wholeFontFamilies.has(text))
+    )
+      return
     if (/^#[0-9a-fA-F]{6}$/.test(text)) add("taste", node.start, `colour ${text}`)
     else if (isProse(text))
       add("words", node.start, (text.length > 70 ? `${text.slice(0, 67)}...` : text).replace(/\n/g, "\\n"))
