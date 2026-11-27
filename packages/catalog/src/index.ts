@@ -49,6 +49,7 @@ export {
   screenshotsWantedMilliseconds,
   doomRoutes,
   doomPaths,
+  viewMedia,
   viewTools,
   type DoomCaught,
   type DoomRan,

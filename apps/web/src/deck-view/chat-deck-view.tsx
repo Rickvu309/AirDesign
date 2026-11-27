@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { AirdesignMark } from "@/components/ui/airdesign-mark"
 import { deckViewCopy } from "@/copy/deck-view-copy"
 import { connectChatHost, parentLine, type ChatHost, type Shown } from "./chat-host"
-import { chatDoomRemote } from "./chat-remote"
+import { chatAssets, chatDoomRemote } from "./chat-remote"
 import { DeckView, type Shell } from "./deck-view"
 
 const quietHeight = 96
@@ -41,6 +41,7 @@ export function ChatDeckView() {
   useEffect(() => chat?.onShown(setShown), [chat])
 
   const remote = useMemo(() => (chat === null ? null : chatDoomRemote(chat)), [chat])
+  const source = useMemo(() => (chat === null ? undefined : chatAssets(chat)), [chat])
   const shell = useMemo<Shell>(
     () =>
       chat === null
@@ -60,5 +61,5 @@ export function ChatDeckView() {
 
   if (remote === null || shown === undefined) return <Opening />
   if (shown === null) return <NoDeck />
-  return <DeckView key={shown.deck} id={shown.deck} slide={shown.slide} remote={remote} shell={shell} />
+  return <DeckView key={shown.deck} id={shown.deck} slide={shown.slide} remote={remote} shell={shell} source={source} />
 }

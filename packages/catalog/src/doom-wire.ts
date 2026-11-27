@@ -3,7 +3,16 @@ import * as doom from "@airdesign/doom"
 import * as z from "zod/v4"
 
 import { readSlideScreenshots, type SlideScreenshots } from "./slide-screenshots-wire.js"
-import { type DeckId, deckInput, inputRefusal, readCapture, readInput, recordOf, wholeInput } from "./wire.js"
+import {
+  type DeckId,
+  deckInput,
+  inputRefusal,
+  readCapture,
+  readInput,
+  readMediaRequest,
+  recordOf,
+  wholeInput,
+} from "./wire.js"
 
 export const doomRefusals = [
   "session",
@@ -185,10 +194,19 @@ export const doomRoutes = {
   run: { path: "/doom/run", read: readDoomRun, result: ran },
 } as const
 
+const mediaBytes = decode((body, deck) =>
+  typeof body.sha256 === "string" && /^[0-9a-f]{64}$/.test(body.sha256) && typeof body.data === "string"
+    ? { deck, sha256: body.sha256, data: body.data }
+    : undefined,
+)
+
+export const viewMedia = { read: readMediaRequest, result: mediaBytes } as const
+
 export const viewTools = {
   open: "airdesign_view_open",
   since: "airdesign_view_since",
   screenshots: "airdesign_view_screenshots",
-} as const satisfies Partial<Record<keyof typeof doomRoutes, string>>
+  media: "airdesign_view_media",
+} as const satisfies Partial<Record<keyof typeof doomRoutes | "media", string>>
 
 export const doomPaths: readonly string[] = Object.values(doomRoutes).map((route) => route.path)

@@ -3,7 +3,7 @@ import * as doom from "@airdesign/doom"
 import { testTheme } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { connectChatHost, modelContextOf, type HostLine } from "./chat-host"
-import { chatDoomRemote } from "./chat-remote"
+import { chatAssets, chatDoomRemote } from "./chat-remote"
 
 type Sent = { readonly jsonrpc: "2.0"; readonly id?: number; readonly method?: string; readonly params?: unknown }
 
@@ -162,6 +162,28 @@ describe("the deck view's line to the chat that shows it", () => {
       { name: viewTools.open, arguments: { deck: "d1" } },
       { name: viewTools.since, arguments: { deck: "d1", rev: fold.rev, wait: true } },
       { name: viewTools.screenshots, arguments: { deck: "d1", rev: fold.rev, screenshots: { keys: [], images: [] } } },
+    ])
+  })
+
+  it("reads the deck's images through the view's media tool as data URLs a chat's CSP allows, leaving out refusals", async () => {
+    const held = "a".repeat(64)
+    const gone = "b".repeat(64)
+    const host = fakeHost((sent) => {
+      if (sent.method !== "tools/call") return {}
+      const { sha256 } = (sent.params as { arguments: { sha256: string } }).arguments
+      const answer =
+        sha256 === held ? { ok: true, deck: "d1", sha256, data: btoa("image bytes") } : { ok: false, refusal: "owner" }
+      return { content: [], structuredContent: answer }
+    })
+    const assets = chatAssets(await connectChatHost(host.line))
+    const found = await assets.read("d1", [held, gone])
+    expect([...found.keys()]).toEqual([held])
+    expect(new TextDecoder().decode(found.get(held))).toBe("image bytes")
+    expect(assets.url(found.get(held)!, "image/png")).toBe(`data:image/png;base64,${btoa("image bytes")}`)
+    const calls = host.sent.filter((each) => each.method === "tools/call").map((each) => each.params)
+    expect(calls).toEqual([
+      { name: viewTools.media, arguments: { deck: "d1", sha256: held } },
+      { name: viewTools.media, arguments: { deck: "d1", sha256: gone } },
     ])
   })
 

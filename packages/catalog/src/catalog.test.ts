@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { catalog, doomRoutes, projectTools, toolInputSchema, viewTools } from "./index.js"
+import { catalog, doomRoutes, projectTools, toolInputSchema, viewMedia, viewTools } from "./index.js"
 
 describe("run operations in the catalog", () => {
   it("keeps start_run from agents and offers stop_run and undo_run on the server", () => {
@@ -140,13 +140,14 @@ it("reads an execute call: a deck, a script up to 100,000 characters and an opti
   expect(read({ deck: "bad id!", script: "1" })).toEqual({ ok: false, refusal: "deck" })
 })
 
-it("names a view tool for each doom route the deck view reads", () => {
+it("names a view tool for each doom route the deck view reads and for its images", () => {
   expect(viewTools).toEqual({
     open: "airdesign_view_open",
     since: "airdesign_view_since",
     screenshots: "airdesign_view_screenshots",
+    media: "airdesign_view_media",
   })
-  for (const route of Object.keys(viewTools)) expect(doomRoutes).toHaveProperty(route)
+  for (const route of Object.keys(viewTools)) expect({ ...doomRoutes, media: viewMedia }).toHaveProperty(route)
   const agentNames = new Set(projectTools(catalog).map((tool) => tool.name))
   for (const name of Object.values(viewTools)) expect(agentNames.has(name)).toBe(false)
 })
