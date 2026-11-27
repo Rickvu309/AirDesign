@@ -43,7 +43,7 @@ export type DeckHost = {
     readonly byPerson: (deck: DeckId, revs: readonly doom.Rev[]) => Promise<ReadonlySet<doom.Rev>>
   }
   readonly withUndo: <T>(deck: DeckId, undo: (host: UndoHost) => Promise<T>) => Promise<T | DoomRefusal>
-  readonly list: (cursor: DeckId | undefined) => Promise<Listed | DoomRefusal>
+  readonly list: (cursor: DeckId | undefined, limit: number) => Promise<Listed | DoomRefusal>
   readonly openTab?: () => OpenTab | undefined
   readonly create: (name: string, theme: doom.Theme | undefined, once: string) => Promise<Opened | DoomRefusal>
   readonly open: (deck: DeckId) => Promise<Opened | DoomRefusal>

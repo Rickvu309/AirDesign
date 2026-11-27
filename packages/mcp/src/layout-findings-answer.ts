@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
 
+import { namedIds, shownFindings } from "./budget.js"
 import type { DeckHost, Unmeasured } from "./deck-host.js"
 
 export type Finding = doom.AgentFinding | doom.LayoutFinding
@@ -11,7 +12,6 @@ export type Findings = {
 }
 export type Laid = Findings & { readonly boxes?: ReadonlyMap<doom.NodeId, doom.Box> }
 
-const shownFindings = 10
 const layoutCodes: ReadonlySet<string> = new Set([
   "overflow",
   "overlap",
@@ -20,8 +20,6 @@ const layoutCodes: ReadonlySet<string> = new Set([
   "lone-word",
   "line-crosses-text",
 ])
-
-const namedIds = 5
 
 function namesOf(nodes: readonly doom.NodeId[]): string {
   const shown = nodes.slice(0, namedIds)

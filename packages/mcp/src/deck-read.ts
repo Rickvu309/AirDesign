@@ -1,10 +1,9 @@
 import * as doom from "@airdesign/doom"
 
 import { answered, refused, type Answer } from "./answer.js"
+import { foundLines, readBytes } from "./budget.js"
 import type { Opened } from "./deck-host.js"
 import { type Laid, listed, readFindingsNote } from "./layout-findings-answer.js"
-
-const readBytes = 24_000
 
 function themeOf(fold: doom.Doom) {
   const { colors, fonts, textStyles } = doom.deckOf(fold).theme
@@ -14,8 +13,6 @@ function themeOf(fold: doom.Doom) {
 
 const lead = (opened: Opened, count: number) =>
   `Deck ${opened.deck} "${doom.deckName(opened.fold)}"${doom.deckNameFollows(opened.fold) ? " (nameFollows: named by slide 1's title)" : ""} at rev ${String(opened.rev)}, ${String(count)} slides. Change it with airdesign_execute.`
-
-const foundLimit = 400
 
 function foundAnswer(opened: Opened, find: string, detail: doom.NodeId | undefined): Answer {
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
@@ -28,7 +25,7 @@ function foundAnswer(opened: Opened, find: string, detail: doom.NodeId | undefin
       .filter((line) => line.toLowerCase().includes(wanted))
       .map((line) => `${slide} ${line.trim()}`),
   )
-  const shown = lines.slice(0, foundLimit)
+  const shown = lines.slice(0, foundLines)
   const more = lines.length > shown.length ? ` The first ${String(shown.length)} are listed: narrow the words.` : ""
   const note = `${String(lines.length)} layers in deck ${opened.deck} at rev ${String(opened.rev)} hold "${find}"; each line starts with its slide id.${more}`
   return answered(note, {

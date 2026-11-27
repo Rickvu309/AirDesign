@@ -2,12 +2,13 @@ import { readAppState } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import { answered, hostRefused, refused, type Answer } from "./answer.js"
+import { deckPage } from "./budget.js"
 import type { DeckHost } from "./deck-host.js"
 
 export async function appStateTool(raw: unknown, host: DeckHost): Promise<Answer> {
   const parsed = readAppState(raw)
   if (!parsed.ok) return refused(parsed.refusal)
-  const listed = await host.list(parsed.cursor)
+  const listed = await host.list(parsed.cursor, deckPage)
   if (!listed.ok) return hostRefused(listed)
   const decks = listed.decks.map(({ deck, name, rev }) => ({ deck, name, rev }))
   const tab = host.openTab?.()

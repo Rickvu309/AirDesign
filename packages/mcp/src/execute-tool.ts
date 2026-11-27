@@ -3,6 +3,7 @@ import type { Theme } from "@airdesign/doom"
 import { themePresetById, themePresets } from "@airdesign/skills"
 
 import { answered, doomRefused, hostRefused, refused, told, type Answer } from "./answer.js"
+import { resultChars, scriptLimits, shotsPerCall } from "./budget.js"
 import { readAnswer } from "./deck-read.js"
 import type { DeckHost } from "./deck-host.js"
 import { OpRefused, newPlan, opNote, runOperation, verbs, type Plan, type Verb } from "./execute-ops.js"
@@ -10,11 +11,9 @@ import { landEdit, landedBefore, type Agent, type Landed } from "./land-edit.js"
 import { findingsNote, listed } from "./layout-findings-answer.js"
 import { onceIds } from "./once-ids.js"
 import { withOtherRuns } from "./other-runs.js"
-import { scriptLimits, scriptPool, type OpAnswer, type ScriptEnd } from "./script-pool.js"
+import { scriptPool, type OpAnswer, type ScriptEnd } from "./script-pool.js"
 
 const scripts = scriptPool([...verbs, "createDeck"])
-const resultLimit = 20_000
-const shotsPerCall = 4
 
 async function answerOp(plan: Plan, verb: string, fields: unknown): Promise<OpAnswer> {
   try {
@@ -119,10 +118,10 @@ async function pictures(plan: Plan, host: DeckHost) {
 function resultOf(end: Extract<ScriptEnd, { ok: true }>): { readonly result?: unknown; readonly cut?: string } {
   if (end.result === undefined) return {}
   const text = JSON.stringify(end.result) ?? ""
-  if (text.length <= resultLimit) return { result: end.result }
+  if (text.length <= resultChars) return { result: end.result }
   return {
-    result: `${text.slice(0, resultLimit)}…`,
-    cut: `The result was cut at ${resultLimit.toLocaleString("en")} characters: return less, or read in parts.`,
+    result: `${text.slice(0, resultChars)}…`,
+    cut: `The result was cut at ${resultChars.toLocaleString("en")} characters: return less, or read in parts.`,
   }
 }
 

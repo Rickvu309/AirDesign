@@ -2,6 +2,7 @@ import { webImage } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import { told, type Answer } from "./answer.js"
+import { imagesPerCall } from "./budget.js"
 
 export type ImageRefusal =
   | "address"
@@ -22,8 +23,6 @@ export type NamedImage =
   | { readonly ok: false; readonly refusal: ImageRefusal }
 
 export type NamedImages = ReadonlyMap<string, NamedImage>
-
-export const imagesPerCall = 10
 
 const imageReasons = {
   address: "it is not an https address on the default port with no user name.",

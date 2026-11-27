@@ -3,14 +3,8 @@ import { extname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { MessageChannel, Worker } from "node:worker_threads"
 
+import { scriptLimits } from "./budget.js"
 import type { FromScript, OpReply, ScriptJob, ScriptStart } from "./script-worker.js"
-
-export const scriptLimits = {
-  ms: 20_000,
-  memory: 64 * 1024 * 1024,
-  stack: 1024 * 1024,
-  logs: 50,
-} as const
 
 export type ScriptEnd =
   | { readonly ok: true; readonly result: unknown; readonly logs: readonly string[] }

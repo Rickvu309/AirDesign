@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { scriptLimits, scriptPool, type Operation } from "./script-pool.js"
+import { scriptLimits } from "./budget.js"
+import { scriptPool, type Operation } from "./script-pool.js"
 
 const echo: Operation = async (verb, fields) =>
   verb === "refuse" ? { ok: false, message: "Operation 1 (refuse): no." } : { ok: true, value: { verb, fields } }
