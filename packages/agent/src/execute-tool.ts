@@ -8,6 +8,7 @@ import { readAnswer } from "./deck-read.js"
 import type { DeckHost } from "./deck-host.js"
 import { OpRefused, newPlan, opRefusal, runOperation, verbs, type Plan, type Verb } from "./execute-ops.js"
 import { landEdit, landedBefore, type Agent, type Landed } from "./land-edit.js"
+import { leavingMeasure } from "./leaving-measure.js"
 import { problemsNote, listed } from "./problems-answer.js"
 import { onceIds } from "./once-ids.js"
 import { withOtherRuns } from "./other-runs.js"
@@ -218,7 +219,10 @@ export async function executeTool(
     operation: (verb, fields) => answerOp(plan, verb, fields),
   })
   if (!end.ok) return stopped(plan, end)
-  const compiled = plan.intents.length === 0 ? undefined : plan.session.finish()
+  const compiled =
+    plan.intents.length === 0
+      ? undefined
+      : plan.session.finish(await leavingMeasure(host, [opened.fold, plan.view], plan.intents))
   if (compiled !== undefined && "refused" in compiled)
     return landRefused(plan, doomRefused(compiled, { rev: opened.rev }))
   if (lastRead === undefined || (compiled === undefined && plan.read)) {

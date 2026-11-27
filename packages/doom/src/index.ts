@@ -11,6 +11,7 @@ export {
   invert as invertMatrix,
   unfittedBox,
 } from "./matrix.js"
+export { type Bounds, type Corners, type PlacedBox, placeBox, placeSlide } from "./place-slide.js"
 export { pictureFit } from "./picture-fit.js"
 export { coverCrop, cropSides, type ImageCrop } from "./picture-crop.js"
 export { slideKeyText } from "./slide-key.js"
