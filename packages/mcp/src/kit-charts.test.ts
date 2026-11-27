@@ -1,6 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { readKitPiece } from "@airdesign/kit"
-import { readSkill } from "@airdesign/skills"
+import { readKitPiece, readSkill } from "@airdesign/skills"
 import { describe, expect, it } from "vitest"
 
 import { callTool, emptyLog, type DeckHost, type Session } from "./index.js"

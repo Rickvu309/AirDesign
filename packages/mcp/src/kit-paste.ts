@@ -1,5 +1,5 @@
 import type * as doom from "@airdesign/doom"
-import { readKitPiece } from "@airdesign/kit"
+import { readKitPiece } from "@airdesign/skills"
 
 import { refused, type ToolResult } from "./answer.js"
 

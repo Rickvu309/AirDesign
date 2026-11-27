@@ -1,14 +1,8 @@
+import { filesDir, fs, nodePath } from "./package-files.js"
+
+export { kitPieces, readKitPiece } from "./kit.js"
 export { newDeckTheme, themePresets, themePresetById, themePresetOf } from "./theme-presets.js"
 
-const fs = () => process.getBuiltinModule("node:fs")
-const nodePath = () => process.getBuiltinModule("node:path")
-function defaultDir(): string {
-  const { findPackageJSON } = process.getBuiltinModule("node:module")
-  const manifest = findPackageJSON(import.meta.url)
-  if (manifest === undefined) throw new Error("The skills package has no package.json.")
-  const path = nodePath()
-  return path.join(path.dirname(manifest), "files")
-}
 const skillNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/
 const styleNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const indexEntryPattern = /^- `([a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)`:\s*(.+)$/
@@ -63,7 +57,7 @@ function parseParameters(markdown: string): readonly { readonly name: string; re
   return parameters
 }
 
-export function readSkillIndex(dir: string = defaultDir()): {
+export function readSkillIndex(dir: string = filesDir()): {
   readonly markdown: string
   readonly skills: readonly { readonly name: string; readonly when: string }[]
 } {
@@ -73,7 +67,7 @@ export function readSkillIndex(dir: string = defaultDir()): {
 
 export function readSkill(
   rawName: string,
-  dir: string = defaultDir(),
+  dir: string = filesDir(),
 ): { readonly name: string; readonly markdown: string } | undefined {
   const name = stripMarkdownExtension(rawName.trim())
   if (!skillNamePattern.test(name) || name === "index" || name === "styles" || name.startsWith("styles/")) {
@@ -87,7 +81,7 @@ export function readSkill(
   return { name, markdown: readFileSync(target, "utf8").trimEnd() }
 }
 
-export function listStyles(dir: string = defaultDir()): readonly { readonly name: string; readonly summary: string }[] {
+export function listStyles(dir: string = filesDir()): readonly { readonly name: string; readonly summary: string }[] {
   const path = nodePath()
   const { existsSync, readdirSync, readFileSync, statSync } = fs()
   const stylesDir = path.join(dir, "styles")
@@ -105,7 +99,7 @@ export function listStyles(dir: string = defaultDir()): readonly { readonly name
 
 export function readStyle(
   rawName: string,
-  dir: string = defaultDir(),
+  dir: string = filesDir(),
 ):
   | {
       readonly name: string

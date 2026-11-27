@@ -1,16 +1,14 @@
-import { themePresetById } from "@airdesign/skills"
 import { readdirSync, readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import * as doom from "@airdesign/doom"
-import { readSkill, readSkillIndex } from "@airdesign/skills"
 import { describe, expect, it } from "vitest"
 
-import { kitPieces, readKitPiece } from "./index.js"
+import { kitPieces, readKitPiece, readSkill, readSkillIndex, themePresetById } from "./index.js"
 
 type Text = { readonly chars: string; readonly spans: readonly { readonly end: number }[] }
 type Spot = { readonly x: number; readonly y: number }
 
-const piecesDir = fileURLToPath(new URL("../pieces", import.meta.url))
+const piecesDir = fileURLToPath(new URL("../files/kit", import.meta.url))
 const files = readdirSync(piecesDir)
   .filter((file) => file.endsWith(".json"))
   .map((file) => file.slice(0, -5))

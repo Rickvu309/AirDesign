@@ -42,7 +42,6 @@ flowchart TD
   end
   subgraph p_layer_model["model"]
     p_packages_catalog["packages/catalog"]
-    p_packages_kit["packages/kit"]
     p_packages_render["packages/render"]
     p_packages_skills["packages/skills"]
   end
@@ -176,7 +175,6 @@ flowchart TD
 | `packages/catalog` | model | src/index.ts, src/icon-names.ts, src/undo-copy.ts | none | none |
 | `packages/doom` | core | runtime: packages/doom/src/index.ts | none | none |
 | `packages/fonts` | core | src/index.ts | none | none |
-| `packages/kit` | model | runtime: packages/kit/src/index.ts | none | none |
 | `packages/live` | service | src/index.ts | none | none |
 | `packages/mcp` | service | runtime: packages/mcp/src/index.ts; testing: packages/mcp/src/testing/evals.ts | none | none |
 | `packages/oauth` | core | src/index.ts | none | none |
