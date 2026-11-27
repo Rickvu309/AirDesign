@@ -1,0 +1,379 @@
+{
+  "type": "frame",
+  "name": "Process flow",
+  "props": {
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 1680,
+      "h": 295,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    }
+  },
+  "children": [
+    {
+      "type": "shape",
+      "name": "Take the order",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 496,
+          "h": 176,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Take the order",
+          "spans": [],
+          "paras": [
+            {
+              "align": "left"
+            }
+          ],
+          "style": "heading",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 24,
+            "r": 24,
+            "b": 24,
+            "l": 24
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Take the order points",
+      "props": {
+        "box": {
+          "x": 0,
+          "y": 208,
+          "w": 496,
+          "h": 86.4,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "Web, app and stores\nOne queue for all",
+          "spans": [
+            {
+              "end": 37,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [
+            {
+              "list": "bullet"
+            },
+            {
+              "list": "bullet"
+            }
+          ],
+          "style": "body",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Pick and pack",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "accent1"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 592,
+          "y": 0,
+          "w": 496,
+          "h": 176,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Pick and pack",
+          "spans": [],
+          "paras": [
+            {
+              "align": "left"
+            }
+          ],
+          "style": "heading",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 24,
+            "r": 24,
+            "b": 24,
+            "l": 24
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Pick and pack points",
+      "props": {
+        "box": {
+          "x": 592,
+          "y": 208,
+          "w": 496,
+          "h": 86.4,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "Within two hours\n92% of orders today",
+          "spans": [
+            {
+              "end": 36,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [
+            {
+              "list": "bullet"
+            },
+            {
+              "list": "bullet"
+            }
+          ],
+          "style": "body",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Ship",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 1184,
+          "y": 0,
+          "w": 496,
+          "h": 176,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Ship",
+          "spans": [],
+          "paras": [
+            {
+              "align": "left"
+            }
+          ],
+          "style": "heading",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 24,
+            "r": 24,
+            "b": 24,
+            "l": 24
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Ship points",
+      "props": {
+        "box": {
+          "x": 1184,
+          "y": 208,
+          "w": 496,
+          "h": 86.4,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "Two carriers\nNext day for the rest",
+          "spans": [
+            {
+              "end": 34,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [
+            {
+              "list": "bullet"
+            },
+            {
+              "list": "bullet"
+            }
+          ],
+          "style": "body",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Take the order to Pick and pack",
+      "props": {
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text2"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 3,
+          "align": "center",
+          "dash": "solid"
+        },
+        "box": {
+          "x": 496,
+          "y": 88,
+          "w": 96,
+          "h": 0,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "geometry": {
+          "kind": "line",
+          "start": {
+            "layer": "Take the order",
+            "site": "r"
+          },
+          "end": {
+            "layer": "Pick and pack",
+            "site": "l"
+          },
+          "route": "straight",
+          "arrows": ["none", "triangle"]
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Pick and pack to Ship",
+      "props": {
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text2"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 3,
+          "align": "center",
+          "dash": "solid"
+        },
+        "box": {
+          "x": 1088,
+          "y": 88,
+          "w": 96,
+          "h": 0,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "geometry": {
+          "kind": "line",
+          "start": {
+            "layer": "Pick and pack",
+            "site": "r"
+          },
+          "end": {
+            "layer": "Ship",
+            "site": "l"
+          },
+          "route": "straight",
+          "arrows": ["none", "triangle"]
+        }
+      }
+    }
+  ]
+}

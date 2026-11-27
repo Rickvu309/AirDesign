@@ -1,0 +1,974 @@
+{
+  "type": "frame",
+  "name": "Architecture",
+  "props": {
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 1680,
+      "h": 640,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    }
+  },
+  "children": [
+    {
+      "type": "shape",
+      "name": "Clients",
+      "props": {
+        "fills": [],
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 176,
+          "h": 88,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Clients",
+          "spans": [
+            {
+              "end": 7,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [
+            {
+              "align": "left"
+            }
+          ],
+          "style": "label",
+          "resize": "fixed",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Web app",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 548,
+          "y": 0,
+          "w": 360,
+          "h": 88,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Web app",
+          "spans": [],
+          "paras": [
+            {
+              "align": "center"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Mobile app",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "accent1"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 972,
+          "y": 0,
+          "w": 360,
+          "h": 88,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Mobile app",
+          "spans": [],
+          "paras": [
+            {
+              "align": "center"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Edge",
+      "props": {
+        "fills": [],
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 0,
+          "y": 184,
+          "w": 176,
+          "h": 88,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Edge",
+          "spans": [
+            {
+              "end": 4,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [
+            {
+              "align": "left"
+            }
+          ],
+          "style": "label",
+          "resize": "fixed",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "API gateway",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "accent1"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 760,
+          "y": 184,
+          "w": 360,
+          "h": 88,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "API gateway",
+          "spans": [],
+          "paras": [
+            {
+              "align": "center"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Services",
+      "props": {
+        "fills": [],
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 0,
+          "y": 368,
+          "w": 176,
+          "h": 88,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Services",
+          "spans": [
+            {
+              "end": 8,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [
+            {
+              "align": "left"
+            }
+          ],
+          "style": "label",
+          "resize": "fixed",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Orders",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 336,
+          "y": 368,
+          "w": 360,
+          "h": 88,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Orders",
+          "spans": [],
+          "paras": [
+            {
+              "align": "center"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Payments",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "accent1"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 760,
+          "y": 368,
+          "w": 360,
+          "h": 88,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Payments",
+          "spans": [],
+          "paras": [
+            {
+              "align": "center"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Accounts",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 1184,
+          "y": 368,
+          "w": 360,
+          "h": 88,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Accounts",
+          "spans": [],
+          "paras": [
+            {
+              "align": "center"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Data",
+      "props": {
+        "fills": [],
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 0,
+          "y": 552,
+          "w": 176,
+          "h": 88,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Data",
+          "spans": [
+            {
+              "end": 4,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [
+            {
+              "align": "left"
+            }
+          ],
+          "style": "label",
+          "resize": "fixed",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Orders DB",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 336,
+          "y": 552,
+          "w": 360,
+          "h": 88,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Orders DB",
+          "spans": [],
+          "paras": [
+            {
+              "align": "center"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Ledger",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "accent1"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 760,
+          "y": 552,
+          "w": 360,
+          "h": 88,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Ledger",
+          "spans": [],
+          "paras": [
+            {
+              "align": "center"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Users DB",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 1184,
+          "y": 552,
+          "w": 360,
+          "h": 88,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "text": {
+          "chars": "Users DB",
+          "spans": [],
+          "paras": [
+            {
+              "align": "center"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Web app to API gateway",
+      "props": {
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text2"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 3,
+          "align": "center",
+          "dash": "solid"
+        },
+        "box": {
+          "x": 728,
+          "y": 88,
+          "w": 152,
+          "h": 96,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "geometry": {
+          "kind": "line",
+          "start": {
+            "layer": "Web app",
+            "site": "b",
+            "along": 0.5
+          },
+          "end": {
+            "layer": "API gateway",
+            "site": "t",
+            "along": 0.3333333333333333
+          },
+          "route": "elbow",
+          "arrows": ["none", "triangle"],
+          "channels": [
+            {
+              "axis": "y",
+              "at": 128
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "API gateway to Orders",
+      "props": {
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text2"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 3,
+          "align": "center",
+          "dash": "solid"
+        },
+        "box": {
+          "x": 516,
+          "y": 272,
+          "w": 334,
+          "h": 96,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "geometry": {
+          "kind": "line",
+          "start": {
+            "layer": "API gateway",
+            "site": "b",
+            "along": 0.25
+          },
+          "end": {
+            "layer": "Orders",
+            "site": "t",
+            "along": 0.5
+          },
+          "route": "elbow",
+          "arrows": ["none", "triangle"],
+          "channels": [
+            {
+              "axis": "y",
+              "at": 312
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "API gateway to Accounts",
+      "props": {
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text2"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 3,
+          "align": "center",
+          "dash": "solid"
+        },
+        "box": {
+          "x": 1030,
+          "y": 272,
+          "w": 334,
+          "h": 96,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "geometry": {
+          "kind": "line",
+          "start": {
+            "layer": "API gateway",
+            "site": "b",
+            "along": 0.75
+          },
+          "end": {
+            "layer": "Accounts",
+            "site": "t",
+            "along": 0.5
+          },
+          "route": "elbow",
+          "arrows": ["none", "triangle"],
+          "channels": [
+            {
+              "axis": "y",
+              "at": 328
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Orders to Orders DB",
+      "props": {
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text2"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 3,
+          "align": "center",
+          "dash": "solid"
+        },
+        "box": {
+          "x": 516,
+          "y": 456,
+          "w": 0,
+          "h": 96,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "geometry": {
+          "kind": "line",
+          "start": {
+            "layer": "Orders",
+            "site": "b",
+            "along": 0.5
+          },
+          "end": {
+            "layer": "Orders DB",
+            "site": "t",
+            "along": 0.5
+          },
+          "route": "elbow",
+          "arrows": ["none", "triangle"]
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Accounts to Users DB",
+      "props": {
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text2"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 3,
+          "align": "center",
+          "dash": "solid"
+        },
+        "box": {
+          "x": 1364,
+          "y": 456,
+          "w": 0,
+          "h": 96,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "geometry": {
+          "kind": "line",
+          "start": {
+            "layer": "Accounts",
+            "site": "b",
+            "along": 0.5
+          },
+          "end": {
+            "layer": "Users DB",
+            "site": "t",
+            "along": 0.5
+          },
+          "route": "elbow",
+          "arrows": ["none", "triangle"]
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Mobile app to API gateway",
+      "props": {
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "accent1"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 4,
+          "align": "center",
+          "dash": "solid"
+        },
+        "box": {
+          "x": 1000,
+          "y": 88,
+          "w": 152,
+          "h": 96,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "geometry": {
+          "kind": "line",
+          "start": {
+            "layer": "Mobile app",
+            "site": "b",
+            "along": 0.5
+          },
+          "end": {
+            "layer": "API gateway",
+            "site": "t",
+            "along": 0.6666666666666666
+          },
+          "route": "elbow",
+          "arrows": ["none", "triangle"],
+          "channels": [
+            {
+              "axis": "y",
+              "at": 144
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "API gateway to Payments",
+      "props": {
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "accent1"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 4,
+          "align": "center",
+          "dash": "solid"
+        },
+        "box": {
+          "x": 940,
+          "y": 272,
+          "w": 0,
+          "h": 96,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "geometry": {
+          "kind": "line",
+          "start": {
+            "layer": "API gateway",
+            "site": "b",
+            "along": 0.5
+          },
+          "end": {
+            "layer": "Payments",
+            "site": "t",
+            "along": 0.5
+          },
+          "route": "elbow",
+          "arrows": ["none", "triangle"]
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Payments to Ledger",
+      "props": {
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "accent1"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 4,
+          "align": "center",
+          "dash": "solid"
+        },
+        "box": {
+          "x": 940,
+          "y": 456,
+          "w": 0,
+          "h": 96,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "geometry": {
+          "kind": "line",
+          "start": {
+            "layer": "Payments",
+            "site": "b",
+            "along": 0.5
+          },
+          "end": {
+            "layer": "Ledger",
+            "site": "t",
+            "along": 0.5
+          },
+          "route": "elbow",
+          "arrows": ["none", "triangle"]
+        }
+      }
+    }
+  ]
+}

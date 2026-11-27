@@ -11,4 +11,6 @@ Call `airdesign_read_skill` with a skill name to read its guide.
 - `charts/column`: The arithmetic for a column chart over periods, as a script to run.
 - `charts/line`: The arithmetic for a line chart: nice ticks, series named at their ends.
 - `charts/donut`: The arithmetic for a donut of shares of one whole.
+- `diagrams/process-flow`: A script that lays out 3 to 6 steps left to right with arrows between them. Read it before you draw a process.
+- `diagrams/architecture`: A script that lays out a system's parts in layers, joined by arrows that stay on their boxes. Read it before you draw a system.
 - `review`: The checks to run on every slide before you stop.

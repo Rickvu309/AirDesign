@@ -106,7 +106,7 @@ Sizes are pixels on a 1920 by 1080 slide. Name the deck's own colours and text s
 - Text placement: `align` (`left`, `center`, `right`, `justify`), `alignV` (`top`, `center`, `bottom`), `padding` (a number or `{ t, r, b, l }`), `spaceBefore`, `spaceAfter`.
 - Frames: `layout` (`row`, `column`, `none`), `gap`, `padding`, `align`, `clip`. Text style fields go on the text inside a frame, never on the frame.
 - Geometry: `box: { x, y, w, h }`, `rotation`, `flip` (`none`, `h`, `v`, `hv`), `shape`.
-- Connectors: `from` and `to` take `{ layer, side? }` or `{ x, y }`. `route` is `straight`, `elbow` or `curve`. `arrow` and `startArrow` are `true`, `none`, `arrow`, `triangle` or `circle`.
+- Connectors: `from` and `to` take `{ layer, side?, along? }` or `{ x, y }`. `along` places the end on its side, from 0 at the left or top to 1; left out, the middle. `route` is `straight`, `elbow` or `curve`. `lane` is where an elbow's middle leg runs: a y when the line leaves a top or bottom side, else an x. `arrow` and `startArrow` are `true`, `none`, `arrow`, `triangle` or `circle`.
 - Pictures: `fit` (`fill`, `fit`, `crop`, `tile`) and `crop: { left?, top?, right?, bottom? }` in percent.
 - Slides: `link`, `notes`, `skipped`, `transition: { kind, ms }`.
 

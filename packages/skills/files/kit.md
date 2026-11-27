@@ -34,3 +34,10 @@ A chart is drawn from plain rectangles, paths and text, so its bars carry your n
 - `kit/donut-chart` (1080 by 620): shares of one whole, largest first from 12 o'clock, the total in the hole and the parts in a column beside it. Recipe: `charts/donut`.
 
 Place a chart at `x: 120, y: 300` under the title block, as wide as the body or about 60% of it with two or three takeaways on its right. The header above the chart names what is measured and its unit, and a source line goes at y 990.
+
+## Diagrams
+
+A diagram is boxes joined by connectors attached to them, so an arrow stays on its boxes when one moves. Each diagram has a recipe skill whose script lays out your own boxes and arrows.
+
+- `kit/process-flow` (1680 by 295): three steps left to right, an arrow from each to the next, and one or two points under each. Place it at `x: 120, y: 470`, the middle of the body area. Change each step's name and its points; give the step the title is about `stroke: "accent1"` and the others `stroke: "none"`. Recipe for another number of steps: `diagrams/process-flow`.
+- `kit/architecture` (1680 by 640): a system in four layers, from clients at the top to data at the bottom, joined by arrows attached to the boxes, with one path in the accent. Place it at `x: 120, y: 300`. Change the words in the boxes and the layer names; move a box and its arrows follow. Recipe for another system: `diagrams/architecture`.

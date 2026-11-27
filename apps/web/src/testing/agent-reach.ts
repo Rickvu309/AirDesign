@@ -117,6 +117,7 @@ export const sample: Readonly<Record<string, unknown>> = {
   from: { layer: built.ids.card },
   to: { x: 900, y: 40 },
   route: "elbow",
+  lane: 200,
   box: { x: 10, y: 10, w: 50, h: 50 },
   name: "Renamed",
   hidden: true,
