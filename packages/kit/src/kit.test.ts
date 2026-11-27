@@ -2,6 +2,7 @@ import { themePresetById } from "@airdesign/skills"
 import { readdirSync, readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import * as doom from "@airdesign/doom"
+import { readSkill, readSkillIndex } from "@airdesign/skills"
 import { describe, expect, it } from "vitest"
 
 import { kitPieces, readKitPiece } from "./index.js"
@@ -23,6 +24,14 @@ const keysIn = (value: unknown): readonly string[] =>
       : Object.entries(value).flatMap(([key, inner]) => [key, ...keysIn(inner)])
 
 describe("kit pieces", () => {
+  it("has every piece a skill names", () => {
+    const named = readSkillIndex().skills.flatMap((entry) =>
+      [...(readSkill(entry.name)?.markdown ?? "").matchAll(/kit\/([a-z0-9-]+)/g)].map((m) => m[1]),
+    )
+    expect(named.length).toBeGreaterThan(0)
+    expect([...new Set(named)].filter((name) => readKitPiece(name!) === undefined)).toEqual([])
+  })
+
   it("lists every piece file and opens each one with its size", () => {
     expect(files.length).toBeGreaterThan(0)
     expect(kitPieces().map((piece) => piece.name)).toEqual(files)
