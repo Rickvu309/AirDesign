@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { readAgentChange } from "./agent-change.js"
-import { readWrite } from "./index.js"
+import { readWrite } from "./read-write.js"
 import { ids, sampleDeck, textOf } from "./sample-deck.js"
 
 const doom = sampleDeck()

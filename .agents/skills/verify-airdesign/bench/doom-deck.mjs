@@ -10,9 +10,10 @@ async function readOpen(kit, deck, cookie) {
 
 async function land(kit, deck, cookie, changes, once, counter, phase) {
   const doom = await packageBuild(kit.repo, "@airdesign/doom")
+  const { compileAgentEdit } = await packageBuild(kit.repo, "@airdesign/doom", "testing/index.js")
   const fold = await readOpen(kit, deck, cookie)
   const mint = () => doom.nodeId(`g:${(counter.value += 1)}`)
-  const compiled = doom.compileAgentEdit(fold, changes, {
+  const compiled = compileAgentEdit(fold, changes, {
     author,
     once,
     mint,
@@ -26,6 +27,7 @@ async function land(kit, deck, cookie, changes, once, counter, phase) {
 
 export async function boardDeck(kit, cookie, slideCount, deck) {
   const doom = await packageBuild(kit.repo, "@airdesign/doom")
+  const { boardDeckChanges } = await packageBuild(kit.repo, "@airdesign/doom", "testing/index.js")
   const counter = { value: 0 }
   const first = doom.slidesOf(await readOpen(kit, deck, cookie))[0].id
   const added = await land(
@@ -39,7 +41,7 @@ export async function boardDeck(kit, cookie, slideCount, deck) {
   )
   const slides = [first, ...added]
   for (let at = 0; at < slides.length; at += 5) {
-    const changes = doom.boardDeckChanges(slides.slice(at, at + 5)).flat()
+    const changes = boardDeckChanges(slides.slice(at, at + 5)).flat()
     await land(kit, deck, cookie, changes, `bench-board-${at}`, counter)
   }
   return slides

@@ -42,7 +42,7 @@ import {
   words,
   wrongForm,
 } from "./read-kit.js"
-import { type Refusal, refuse } from "./refusal.js"
+import type { Refusal } from "./refusal.js"
 import { textStyleNames } from "./text.js"
 import { type Theme, readCompleteTheme } from "./theme.js"
 import { pathLimit, readPathData } from "./geometry.js"
@@ -363,18 +363,6 @@ export function readAgentChange(raw: unknown): AgentChange | (Refusal & { readon
   } catch (thrown) {
     return detailOf(thrown)
   }
-}
-
-export function readAgentChanges(raw: unknown): readonly AgentChange[] | Refusal {
-  if (!Array.isArray(raw) || raw.length === 0) return refuse("shape")
-  if (raw.length > limits.batch) return refuse("limit")
-  const changes: AgentChange[] = []
-  for (const each of raw) {
-    const change = readAgentChange(each)
-    if ("refused" in change) return change
-    changes.push(change)
-  }
-  return changes
 }
 
 const schemasOf = (source: Readonly<Record<string, Field<unknown>>>) =>

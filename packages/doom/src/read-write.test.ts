@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { limits } from "./limits.js"
-import { isRefusal, nodeId, props, accepts, readEdit, readWrite, rev, type NodeType, type PropName } from "./index.js"
+import { isRefusal, nodeId, props, readEdit, rev, type NodeType, type PropName } from "./index.js"
+import { accepts } from "./props.js"
+import { readWrite } from "./read-write.js"
 import { box, hex, ids, person, place, sampleDeck, textOf, theme } from "./sample-deck.js"
 
 const doom = sampleDeck()
@@ -136,12 +138,11 @@ describe("the property list", () => {
       expect(Object.values(accepts).some((own) => (own as readonly string[]).includes(name))).toBe(true)
   })
 
-  it("gives each entry its control, agent description and conflict rule", () => {
+  it("gives each entry its reader and conflict rule, and nothing else", () => {
     for (const name of names) {
       const spec = props[name]
+      expect(Object.keys(spec).sort()).toEqual(["conflict", "read"])
       expect(typeof spec.read).toBe("function")
-      expect(["none", "number", "color", "paints", "text", "choice", "toggle", "box", "custom"]).toContain(spec.control)
-      expect(spec.describe === null || (typeof spec.describe === "string" && spec.describe.length > 0)).toBe(true)
       expect(["last", "base"]).toContain(spec.conflict)
     }
   })

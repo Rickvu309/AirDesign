@@ -91,8 +91,6 @@ export type WriteKey = PropName | ThemeKey
 
 export type PropSpec<K extends PropName> = {
   readonly read: (raw: unknown) => Props[K] | Refusal
-  readonly control: "none" | "number" | "color" | "paints" | "text" | "choice" | "toggle" | "box" | "custom"
-  readonly describe: string | null
   readonly conflict: "last" | "base"
 }
 
@@ -166,13 +164,8 @@ const refusing =
     }
   }
 
-function spec<K extends PropName>(
-  reader: Reader<Props[K]>,
-  control: PropSpec<K>["control"],
-  describe: string | null,
-  conflict: PropSpec<K>["conflict"] = "last",
-): PropSpec<K> {
-  return { read: refusing(reader), control, describe, conflict }
+function spec<K extends PropName>(reader: Reader<Props[K]>, conflict: PropSpec<K>["conflict"] = "last"): PropSpec<K> {
+  return { read: refusing(reader), conflict }
 }
 
 const readOrder: Reader<OrderKey> = (raw) => readOrderKey(raw) ?? reject()
@@ -199,54 +192,37 @@ const readOrigin = object({
 })
 
 export const props: { readonly [K in PropName]: PropSpec<K> } = {
-  type: spec(literal(nodeTypes), "none", null),
-  parent: spec(readOptionalParent, "none", null),
-  name: spec(
-    (raw) => {
-      const name = words(limits.name)(raw)
-      return name.trim() === "" ? reject() : name
-    },
-    "text",
-    "The layer's name in the layers panel.",
-  ),
-  hidden: spec(boolean, "toggle", "Whether the layer is hidden."),
-  locked: spec(boolean, "toggle", null),
-  box: spec(readBox, "box", "Position, size, rotation and flips on the slide, in pixels."),
-  sizing: spec(readSizing, "choice", null),
-  cell: spec(readCell, "custom", null),
-  absolute: spec(boolean, "toggle", null),
-  opacity: spec(finite(0, 1), "number", "How see-through the layer is, from 0 to 1."),
-  fills: spec(list(readPaint, 32), "paints", "What paints inside the layer, bottom first.", "base"),
-  strokes: spec(list(readPaint, 32), "paints", "What paints along the layer's outline.", "base"),
-  stroke: spec(readStrokeStyle, "custom", "Outline weight, alignment and dash."),
-  radius: spec(
-    oneOf<Px | readonly [Px, Px, Px, Px]>(corner, quad(corner)),
-    "number",
-    "Corner radius: one number, or four.",
-  ),
-  effects: spec(
-    oneOf<readonly Effect[] | EffectStyleName>(readEffectList, literal(effectStyleNames)),
-    "choice",
-    "An effect style name, or a list of shadows and blurs.",
-    "base",
-  ),
-  geometry: spec(readGeometry, "custom", null),
-  text: spec(readText, "text", "The words in the layer, with their styling.", "base"),
-  layout: spec(readLayout, "custom", "How a frame lays out what is inside it."),
-  clip: spec(boolean, "toggle", null),
-  mask: spec(boolean, "toggle", "Whether this layer masks the layers above it."),
-  link: spec(readLink, "text", null),
-  role: spec(literal(["title", "subtitle", "body", "number", "footer"]), "choice", null),
-  notes: spec(readText, "text", "A slide's presenter notes.", "base"),
-  transition: spec(
-    object({ kind: literal(["none", "fade", "push", "smartMove"]), ms: integer(0, 60_000) }),
-    "choice",
-    null,
-  ),
-  skipped: spec(boolean, "toggle", null),
-  theme: spec(readTheme, "custom", null),
-  size: spec(object({ w: finite(1, 100_000), h: finite(1, 100_000) }), "none", null),
-  nameFollows: spec(boolean, "none", null),
-  language: spec(readLanguage, "none", null),
-  origin: spec(readOrigin, "none", null),
+  type: spec(literal(nodeTypes)),
+  parent: spec(readOptionalParent),
+  name: spec((raw) => {
+    const name = words(limits.name)(raw)
+    return name.trim() === "" ? reject() : name
+  }),
+  hidden: spec(boolean),
+  locked: spec(boolean),
+  box: spec(readBox),
+  sizing: spec(readSizing),
+  cell: spec(readCell),
+  absolute: spec(boolean),
+  opacity: spec(finite(0, 1)),
+  fills: spec(list(readPaint, 32), "base"),
+  strokes: spec(list(readPaint, 32), "base"),
+  stroke: spec(readStrokeStyle),
+  radius: spec(oneOf<Px | readonly [Px, Px, Px, Px]>(corner, quad(corner))),
+  effects: spec(oneOf<readonly Effect[] | EffectStyleName>(readEffectList, literal(effectStyleNames)), "base"),
+  geometry: spec(readGeometry),
+  text: spec(readText, "base"),
+  layout: spec(readLayout),
+  clip: spec(boolean),
+  mask: spec(boolean),
+  link: spec(readLink),
+  role: spec(literal(["title", "subtitle", "body", "number", "footer"])),
+  notes: spec(readText, "base"),
+  transition: spec(object({ kind: literal(["none", "fade", "push", "smartMove"]), ms: integer(0, 60_000) })),
+  skipped: spec(boolean),
+  theme: spec(readTheme),
+  size: spec(object({ w: finite(1, 100_000), h: finite(1, 100_000) })),
+  nameFollows: spec(boolean),
+  language: spec(readLanguage),
+  origin: spec(readOrigin),
 }

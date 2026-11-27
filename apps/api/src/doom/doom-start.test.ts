@@ -1,4 +1,5 @@
 import * as doom from "@airdesign/doom"
+import { compileAgentEdit, placeholderSubtitle } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { startEdit, startIds } from "./doom-start.js"
 
@@ -20,7 +21,7 @@ describe("a new deck's title slide", () => {
     const subtitle = written(startIds.subtitle, "text") as doom.Text
     const under = written(startIds.subtitle, "box") as doom.Box
     expect(written(startIds.subtitle, "role")).toBe("subtitle")
-    expect(subtitle.chars).toBe(doom.placeholderSubtitle)
+    expect(subtitle.chars).toBe(placeholderSubtitle)
     expect(under.y - (box.y + box.h)).toBeGreaterThanOrEqual(32)
     expect(theme.textStyles[subtitle.style].weight).toBeLessThan(theme.textStyles[text.style].weight)
   })
@@ -44,7 +45,7 @@ describe("an agent's title on a new deck's first slide", () => {
     const started = doom.applyEdit(opened, { once: "begin", author, writes: [], phase: "start", rev: doom.rev(2) })
     if (doom.isRefusal(started)) throw new Error(JSON.stringify(started))
     let count = 0
-    const compiled = doom.compileAgentEdit(
+    const compiled = compileAgentEdit(
       started,
       [{ op: "add", kind: "text", slide: startIds.slide, text: "Q3 board update", textStyle: "title" }],
       { author, once: "fill", mint: () => doom.nodeId(`a:${(count += 1)}`) },

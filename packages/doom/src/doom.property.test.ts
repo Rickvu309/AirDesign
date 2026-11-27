@@ -6,12 +6,9 @@ import { agentBatches, resolveRefs } from "./testing/agent-changes.js"
 import { richDeck } from "./testing/rich-deck.js"
 import {
   applyEdit,
-  compileAgentEdit,
   deckOf,
-  foldToJson,
   measureWith,
   measureWithLayout,
-  readAgentChanges,
   readFold,
   readLanded,
   resolveSlide,
@@ -29,6 +26,9 @@ import {
   type Text,
   type Write,
 } from "./index.js"
+import { type AgentChange, readAgentChange } from "./agent-change.js"
+import { compileAgentEdit } from "./agent-edit.js"
+import { foldToJson } from "./fold-json.js"
 import { agent, box, create, ids, once, person, revOf, sampleDeck, textOf, tryLand } from "./sample-deck.js"
 import { valuesOf } from "./testing/values-of.js"
 
@@ -426,8 +426,9 @@ function landsAgentEdits(start: Doom, batches: readonly (readonly unknown[])[]):
   let accepted = 0
   const mint = minter("p")
   for (const [index, batch] of batches.entries()) {
-    const changes = readAgentChanges(JSON.parse(JSON.stringify(resolveRefs(doom, batch))))
-    if (isRefusal(changes)) continue
+    const read = (JSON.parse(JSON.stringify(resolveRefs(doom, batch))) as readonly unknown[]).map(readAgentChange)
+    const changes = read.filter((each): each is AgentChange => !("refused" in each))
+    if (changes.length === 0 || changes.length < read.length) continue
     const result = compileAgentEdit(doom, changes, { author: agent(runName), once: `p-${index}`, mint, read: doom })
     if ("refused" in result) continue
     const replayed = readLanded(JSON.parse(JSON.stringify({ ...result.edit, rev: doom.rev + 1 })), doom)

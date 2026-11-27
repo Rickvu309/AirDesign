@@ -1,1 +1,4 @@
 layer: service
+dependencies:
+  - packages/doom#runtime
+  - packages/doom#testing

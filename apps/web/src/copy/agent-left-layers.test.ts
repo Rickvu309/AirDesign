@@ -1,4 +1,5 @@
 import * as doom from "@airdesign/doom"
+import type { Tree } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { undoStaysNote } from "@airdesign/catalog"
 import { airaKeptLayerName } from "./aira-copy"
@@ -10,7 +11,7 @@ const person: doom.Author = { kind: "person", id: "quan" }
 
 type World = { readonly doom: doom.Doom; readonly log: readonly doom.RunEdit[] }
 
-function open(tree: doom.Tree): { readonly world: World } & Pick<doom.Grown, "ids" | "slides"> {
+function open(tree: Tree): { readonly world: World } & Pick<doom.Grown, "ids" | "slides"> {
   const grown = doom.doomFromTree(tree)
   return { world: { doom: grown.doom, log: [] }, ids: grown.ids, slides: grown.slides }
 }

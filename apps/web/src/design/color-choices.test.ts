@@ -1,4 +1,5 @@
 import * as doom from "@airdesign/doom"
+import { colorVars } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { colorCopy } from "@/copy/color-copy"
 import { colorNameCopy } from "@/copy/color-name-copy"
@@ -83,7 +84,7 @@ describe("the template colors a person picks from", () => {
       doom.defaultTheme,
       { ...doom.defaultTheme, colors: { ...doom.defaultTheme.colors, accent3: `${hash}40edd9` as const } },
     ]) {
-      const swatches = doom.colorVars.map((name) => ({ var: name, css: theme.colors[name], name }))
+      const swatches = colorVars.map((name) => ({ var: name, css: theme.colors[name], name }))
       for (const column of templateColorColumns(swatches))
         for (const choice of [column.swatch, ...column.shades])
           expect(choice.css, choice.name).toBe(doom.resolveColor(choice.color, theme).toUpperCase())

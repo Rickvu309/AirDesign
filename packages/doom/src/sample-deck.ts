@@ -2,7 +2,6 @@ import { defaultTheme } from "./theme.js"
 import { orderKeyBetween, type OrderKey } from "./order-key.js"
 import {
   applyEdit,
-  colorVars,
   emptyDoom,
   isRefusal,
   nodeId,
@@ -16,6 +15,7 @@ import {
   type Theme,
   type Write,
 } from "./index.js"
+import { colorVars } from "./paint.js"
 
 export const ids = {
   deck: nodeId("t:1"),

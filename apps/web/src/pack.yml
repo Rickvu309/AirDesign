@@ -1,6 +1,8 @@
 layer: app
 enforce_privacy: false
 dependencies:
+  - packages/doom#runtime
+  - packages/doom#testing
   - apps/web/src/account
   - apps/web/src/aira
   - apps/web/src/components

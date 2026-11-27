@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { bytesOf, limits } from "./limits.js"
 import { hex } from "./sample-deck.js"
-import { agentChangesSchema, readAgentChange, readAgentChanges, type AgentChange } from "./agent-change.js"
+import { agentChangesSchema, readAgentChange, type AgentChange } from "./agent-change.js"
 
 import { defaultTheme } from "./theme.js"
 
@@ -125,18 +125,6 @@ describe("readAgentChange", () => {
     expect(readAgentChange({ op: "set", target: "t:3", text: "x".repeat(limits.valueBytes + 1) })).toMatchObject({
       refused: "limit",
     })
-  })
-})
-
-describe("readAgentChanges", () => {
-  it("reads a batch and refuses an empty, an oversize or a bad one", () => {
-    expect(readAgentChanges(json(valid))).toHaveLength(valid.length)
-    expect(readAgentChanges([])).toMatchObject({ refused: "shape" })
-    expect(readAgentChanges("x")).toMatchObject({ refused: "shape" })
-    expect(readAgentChanges(Array.from({ length: limits.batch + 1 }, () => valid[0]))).toMatchObject({
-      refused: "limit",
-    })
-    expect(readAgentChanges([valid[0], { op: "nope" }])).toMatchObject({ refused: "shape" })
   })
 })
 

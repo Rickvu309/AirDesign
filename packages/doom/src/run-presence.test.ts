@@ -7,12 +7,12 @@ import {
   readEdit,
   readRuns,
   rev,
-  runsOf,
   runsToJson,
   type Author,
   type Doom,
   type Write,
 } from "./index.js"
+import { runsOf } from "./live-runs.js"
 import { create, ids, land, once, person, sampleDeck } from "./sample-deck.js"
 
 const claude = (run: string, name?: string): Author => ({

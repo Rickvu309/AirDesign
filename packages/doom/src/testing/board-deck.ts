@@ -1,5 +1,5 @@
-import type { AgentChange } from "./agent-change.js"
-import type { NodeId } from "./ids.js"
+import type { AgentChange } from "../agent-change.js"
+import type { NodeId } from "../ids.js"
 
 const title = (slide: NodeId, text: string): AgentChange => ({
   op: "add",

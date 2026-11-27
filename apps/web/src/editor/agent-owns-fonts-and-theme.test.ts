@@ -1,4 +1,5 @@
 import * as doom from "@airdesign/doom"
+import { compileAgentChange } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { nodeModel } from "./design-model"
 import { shownText } from "./design-text-values"
@@ -19,7 +20,7 @@ let minted = 0
 const mint = () => doom.nodeId(`m:${String((minted += 1))}`)
 
 function agentLands(change: doom.AgentChange, view: doom.Doom = built.view): doom.Doom {
-  const writes = doom.compileAgentChange(view, change, mint)
+  const writes = compileAgentChange(view, change, mint)
   if (doom.isRefusal(writes)) throw new Error(`refused ${JSON.stringify(writes)}`)
   return landed(view, writes)
 }
