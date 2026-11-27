@@ -47,7 +47,9 @@ export function paraWrite(text: Text, patch: Para): Text {
 }
 
 export function styleWrite(text: Text, style: TextStyleName): Text {
-  const reset = withSpans(text, (span) => without(span, ["size", "font", "bold", "tracking", "case"]))
+  const { fontRole: _fontRole, ...reset } = withSpans(text, (span) =>
+    without(span, ["size", "font", "bold", "tracking", "case"]),
+  )
   return {
     ...reset,
     style,

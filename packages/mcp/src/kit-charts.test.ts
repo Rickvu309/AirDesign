@@ -71,17 +71,8 @@ function treeOf(fold: doom.Doom, node: doom.Node): doom.TreeNode {
   }
 }
 
-const withoutFonts = (value: unknown): unknown =>
-  Array.isArray(value)
-    ? value.map(withoutFonts)
-    : typeof value === "object" && value !== null
-      ? Object.fromEntries(
-          Object.entries(value).flatMap(([key, inner]) => (key === "font" ? [] : [[key, withoutFonts(inner)]])),
-        )
-      : value
-
 const pieceOf = (fold: doom.Doom, chart: doom.Node): doom.TreeNode => {
-  const tree = withoutFonts(treeOf(fold, chart)) as doom.TreeNode
+  const tree = treeOf(fold, chart)
   const props = tree.props as { box: Record<string, unknown> }
   return { ...tree, props: { ...props, box: { ...props.box, x: 0, y: 0 } } as never }
 }

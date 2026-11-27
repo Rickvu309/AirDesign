@@ -97,6 +97,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "bottom",
+          "fontRole": "body",
           "padding": {
             "t": 0,
             "r": 14,
@@ -139,6 +140,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "bottom",
+          "fontRole": "body",
           "padding": {
             "t": 0,
             "r": 14,
@@ -181,6 +183,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "bottom",
+          "fontRole": "body",
           "padding": {
             "t": 0,
             "r": 14,
@@ -223,6 +226,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "bottom",
+          "fontRole": "body",
           "padding": {
             "t": 0,
             "r": 0,
@@ -296,6 +300,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -339,6 +344,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -382,6 +388,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -425,6 +432,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 0,
@@ -498,6 +506,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -541,6 +550,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -584,6 +594,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -627,6 +638,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 0,
@@ -700,6 +712,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -743,6 +756,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -786,6 +800,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -829,6 +844,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 0,
@@ -902,6 +918,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -945,6 +962,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -988,6 +1006,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -1031,6 +1050,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 0,
@@ -1104,6 +1124,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -1147,6 +1168,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -1190,6 +1212,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -1233,6 +1256,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 0,
@@ -1271,6 +1295,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -1314,6 +1339,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -1357,6 +1383,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -1400,6 +1427,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 0,
@@ -1472,6 +1500,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -1515,6 +1544,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -1558,6 +1588,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 14,
@@ -1601,6 +1632,7 @@
           "style": "body2",
           "resize": "height",
           "alignV": "center",
+          "fontRole": "body",
           "padding": {
             "t": 14,
             "r": 0,

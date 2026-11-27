@@ -2,6 +2,7 @@ import {
   familyOf,
   paintedFace,
   storedFace,
+  textFont,
   type Color,
   type Para,
   type Span,
@@ -38,7 +39,7 @@ function lookFrom(font: string, style: Theme["textStyles"][TextStyleName], span:
 
 export function looksOf(text: Text, theme: Theme): readonly TextLook[] {
   const style = theme.textStyles[text.style]
-  const themeFont = theme.fonts[style.font]
+  const themeFont = textFont(text, theme)
   if (text.spans.length === 0) return [lookFrom(themeFont, style, undefined)]
   return text.spans.map((span) => lookFrom(span.font ?? themeFont, style, span))
 }
@@ -54,8 +55,7 @@ export function textWithWeight(
 ): Text {
   const length = text.chars.length
   if (length === 0) return text
-  const style = theme.textStyles[text.style]
-  const themeFont = theme.fonts[style.font]
+  const themeFont = textFont(text, theme)
   const base = text.spans.length === 0 ? [{ end: length }] : text.spans
   return {
     ...text,

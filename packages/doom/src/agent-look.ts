@@ -17,7 +17,7 @@ import {
   effectStyleNames,
   readHex,
 } from "./paint.js"
-import { type Theme, defaultTheme } from "./theme.js"
+import { type Theme, defaultTheme, textFont } from "./theme.js"
 import type { Box } from "./doom-walk.js"
 import { zeroBox } from "./doom-walk.js"
 import { familyOf, storedFace, type WeightName } from "./painted-face.js"
@@ -335,6 +335,7 @@ export function textOfLook(
             ...made,
             resize: now.resize,
             ...(now.language === undefined ? {} : { language: now.language }),
+            ...(keeping && now.fontRole !== undefined ? { fontRole: now.fontRole } : {}),
             alignV: now.alignV,
             ...(now.wrap === "words" ? { wrap: now.wrap } : {}),
             ...(now.padding === undefined ? {} : { padding: now.padding }),
@@ -363,8 +364,7 @@ export function textOfLook(
 
 function weightOn(text: Text, weight: WeightName, askedFont: string | undefined, theme: Theme | undefined): Text {
   if (text.chars.length === 0) return text
-  const slot = theme?.textStyles[text.style].font
-  const themeFont = slot === undefined || theme === undefined ? undefined : theme.fonts[slot]
+  const themeFont = theme === undefined ? undefined : textFont(text, theme)
   const spans = text.spans.length === 0 ? [{ end: text.chars.length }] : text.spans
   return {
     ...text,

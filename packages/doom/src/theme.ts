@@ -14,7 +14,7 @@ import {
 } from "./paint.js"
 import { type Reader, detailOf, finite, integer, keyed, literal, object, words } from "./read-kit.js"
 import type { Refusal } from "./refusal.js"
-import { type TextStyleName, textStyleNames } from "./text.js"
+import { type Text, type TextStyleName, textStyleNames } from "./text.js"
 
 export type TextStyle = {
   readonly size: Px
@@ -29,6 +29,10 @@ export type Theme = {
   readonly fonts: { readonly heading: string; readonly body: string }
   readonly textStyles: Readonly<Record<TextStyleName, TextStyle>>
   readonly effectStyles: Readonly<Record<EffectStyleName, readonly Effect[]>>
+}
+
+export function textFont(text: Text, theme: Theme): string {
+  return theme.fonts[text.fontRole ?? theme.textStyles[text.style].font]
 }
 
 export type ThemeKey =

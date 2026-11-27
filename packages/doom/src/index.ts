@@ -105,7 +105,7 @@ export { freedEnds, freeLineEnds, lostBy, mayLeaveDeck } from "./freed-line-ends
 export { leavingRoots, returningRoots } from "./lost-ends.js"
 export { lineEndsBack } from "./line-ends-back.js"
 export { holdsLineEnd } from "./line-end-holder.js"
-export { defaultTheme, parseTheme } from "./theme.js"
+export { defaultTheme, parseTheme, textFont } from "./theme.js"
 export { type Grown, type Tree, type TreeNode, type TreeSlide, doomFromTree } from "./doom-tree.js"
 export { deckName, deckOf } from "./deck-of.js"
 export {
