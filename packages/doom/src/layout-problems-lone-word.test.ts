@@ -3,7 +3,7 @@ import { label, measure, plainTheme, spot } from "./testing/doom-fixtures-art.js
 import { doomFromTree, type TreeNode } from "./doom-tree.js"
 import { layoutProblems, type ProblemRules } from "./layout-problems.js"
 
-const headings: ProblemRules = { loneWord: ["title", "heading", "bigNumber"], readable: { size: 20, onHeight: 1080 } }
+const headings: ProblemRules = { onHeight: 1080, loneWord: ["title", "heading", "bigNumber"], readable: 20 }
 
 function found(title: TreeNode, rules = headings) {
   const grown = doomFromTree({ theme: plainTheme, slides: [{ children: [title] }] })

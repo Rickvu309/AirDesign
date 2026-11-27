@@ -61,6 +61,16 @@ describe("the agent words each problem Doom measures", () => {
       `Move Note rule (${rule}) so it no longer crosses t:6.`,
     ],
     [
+      "a thin rule through words",
+      { code: "rule-crosses-text", node: region, with: rule },
+      `Region (${region}): the thin rule Note rule (${rule}) runs through its words; use fewer words or a wider box so they clear the rule.`,
+    ],
+    [
+      "faint words",
+      { code: "low-contrast", node: id, ratio: 1.16, min: 4.5 },
+      "t:6: its words reach 1.16:1 contrast with what lies behind them, under the 4.5:1 a room can read; set them in the theme colour farthest from that fill, or change the fill.",
+    ],
+    [
       "a layer past the edge",
       { code: "off-slide", node: id, past: 40, whole: false },
       "t:6: it runs 40 px past the slide's edge, where the slide cuts it off.",

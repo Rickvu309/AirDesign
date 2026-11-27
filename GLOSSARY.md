@@ -272,12 +272,16 @@ Text that crosses other text, runs under something painted over it, or runs onto
 _Avoid_: collision, intersection
 
 **small text**:
-Type below a readable size. The limit is 10 points on a slide 540 points tall, and it scales with the slide.
+Type below a readable size. Taste sets the limit, 24 px on a slide 1080 px tall, and it scales with the slide.
 _Avoid_: tiny type, fine print
 
 **low contrast**:
-Text too close in colour to the solid colour behind it.
+Text too close in colour to the solid colour behind it, with tints and opacity blended. Taste sets the least ratio, and a lower one for large text.
 _Avoid_: poor contrast, illegible
+
+**rule through text**:
+A thin painted rectangle, such as a table's row rule, that runs through a line of words. Taste sets how thin a rule is.
+_Avoid_: hairline collision
 
 **empty placeholder**:
 A placeholder that shows its prompt while someone edits and nothing in a slide show.

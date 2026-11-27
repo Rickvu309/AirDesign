@@ -20,6 +20,8 @@ const layoutCodes: ReadonlySet<string> = new Set([
   "small-text",
   "lone-word",
   "line-crosses-text",
+  "rule-crosses-text",
+  "low-contrast",
 ])
 
 function namesOf(nodes: readonly doom.NodeId[]): string {

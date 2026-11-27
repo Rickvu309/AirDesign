@@ -106,7 +106,7 @@ A frame added with `rows`, one list of cells per row. The first row is the heade
 A grid too tight for its box is refused `limit` with `grid`: the first cell whose widest word does not fit, as its row, column, word and widths, or the rows and heights when every word fits but the rows do not. The agent pack words it.
 
 **problem**:
-What `layoutProblems` measures on a slide (`overflow`, `overlap`, `line-crosses-text`, `off-slide`, `small-text`, `lone-word`) or `themeProblems` finds in an edit (`off-scale`, `off-palette`, `off-font`): a code, the layer and its numbers, never words. Which text styles may not end on a lone word, and the smallest readable size, come from taste as `ProblemRules`; Doom holds no default. The agent pack writes each note in `problem-words.ts`.
+What `layoutProblems` measures on a slide (`overflow`, `overlap`, `line-crosses-text`, `rule-crosses-text`, `off-slide`, `small-text`, `lone-word`, `low-contrast`) or `themeProblems` finds in an edit (`off-scale`, `off-palette`, `off-font`): a code, the layer and its numbers, never words. Which text styles may not end on a lone word, the smallest readable size, the least contrast and how thin a painted rule is come from taste as `ProblemRules`, in px on a slide `onHeight` tall; Doom holds no default and judges no contrast or rule that taste leaves out. The agent pack writes each note in `problem-words.ts`.
 _Avoid_: finding, note, warning
 
 **slide start**:

@@ -99,12 +99,16 @@ function endsIn(ink: Rect, point: Point | undefined): boolean {
   )
 }
 
-export function strokeCrosses(stroke: StrokeRoute, ink: Rect, inset: number): boolean {
+export function routeCrosses(stroke: StrokeRoute, ink: Rect, inset: number): boolean {
   const core = { x: ink.x + inset, y: ink.y + inset, w: ink.w - inset * 2, h: ink.h - inset * 2 }
   if (core.w <= 0 || core.h <= 0) return false
-  const { box, points, radius, dash, segments } = stroke
+  const { box, radius, dash, segments } = stroke
   if (core.x >= box.x + box.w || core.x + core.w <= box.x || core.y >= box.y + box.h || core.y + core.h <= box.y)
     return false
-  if (endsIn(ink, points[0]) !== endsIn(ink, points.at(-1))) return false
   return segments.some((segment) => crossesInk(segment, core, radius, dash))
+}
+
+export function strokeCrosses(stroke: StrokeRoute, ink: Rect, inset: number): boolean {
+  const { points } = stroke
+  return endsIn(ink, points[0]) === endsIn(ink, points.at(-1)) && routeCrosses(stroke, ink, inset)
 }

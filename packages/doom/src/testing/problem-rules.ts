@@ -1,6 +1,7 @@
 import type { ProblemRules } from "../layout-problems.js"
 
 export const rules: ProblemRules = {
+  onHeight: 1080,
   loneWord: ["title", "heading", "bigNumber"],
-  readable: { size: 20, onHeight: 1080 },
+  readable: 20,
 }

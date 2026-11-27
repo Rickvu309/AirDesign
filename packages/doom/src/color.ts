@@ -2,9 +2,29 @@ import { type Color, type Hex, colorVars, readColor as colorReader } from "./pai
 import { Reject } from "./read-kit.js"
 import type { Theme } from "./theme.js"
 
-function channels(hex: Hex) {
+export type Rgb = readonly [number, number, number]
+
+export function channels(hex: Hex): Rgb {
   const at = (index: number) => Number.parseInt(hex.slice(index, index + 2), 16)
-  return [at(1), at(3), at(5)] as const
+  return [at(1), at(3), at(5)]
+}
+
+export const over = (front: Rgb, alpha: number, back: Rgb): Rgb => [
+  back[0] + (front[0] - back[0]) * alpha,
+  back[1] + (front[1] - back[1]) * alpha,
+  back[2] + (front[2] - back[2]) * alpha,
+]
+
+const linear = (part: number) => {
+  const share = part / 255
+  return share <= 0.03928 ? share / 12.92 : ((share + 0.055) / 1.055) ** 2.4
+}
+
+const luminance = ([r, g, b]: Rgb) => 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+
+export function contrastRatio(one: Rgb, other: Rgb): number {
+  const [light, dark] = [luminance(one), luminance(other)].sort((a, b) => b - a)
+  return (light! + 0.05) / (dark! + 0.05)
 }
 
 const hexOf = (parts: readonly number[]): Hex =>

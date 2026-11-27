@@ -27,6 +27,7 @@ export const plainTheme: Theme = {
 
 export const swatches = {
   black: "#000000",
+  grey: "#888888",
   custom: "#123456",
   halfBlue: "#8080ff",
   recoloured: "#abcdef",
