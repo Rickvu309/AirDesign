@@ -2,7 +2,13 @@ export { newDeckTheme, themePresets, themePresetById, themePresetOf } from "./th
 
 const fs = () => process.getBuiltinModule("node:fs")
 const nodePath = () => process.getBuiltinModule("node:path")
-const defaultDir = () => process.getBuiltinModule("node:url").fileURLToPath(new URL("../files", import.meta.url))
+function defaultDir(): string {
+  const { findPackageJSON } = process.getBuiltinModule("node:module")
+  const manifest = findPackageJSON(import.meta.url)
+  if (manifest === undefined) throw new Error("The skills package has no package.json.")
+  const path = nodePath()
+  return path.join(path.dirname(manifest), "files")
+}
 const skillNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/
 const styleNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const indexEntryPattern = /^- `([a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)`:\s*(.+)$/
