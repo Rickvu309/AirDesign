@@ -1,11 +1,14 @@
 import { once } from "node:events"
 import { writeFileSync } from "node:fs"
 import { createServer } from "node:http"
+import { createRequire } from "node:module"
 import path from "node:path"
 import { expect } from "@playwright/test"
 import { fakeOrigins } from "../bin/site.mjs"
 import { verifyImageHost } from "../bin/verify-images.mjs"
 import { outsideAgentToken } from "./aira-panel.mjs"
+
+const { deckViewCopy } = createRequire(import.meta.url)("../../../../apps/web/src/copy/deck-view-copy.ts")
 
 const appsHtml = "text/html;profile=mcp-app"
 const picture = { x: 1000, y: 240, w: 800, h: 533 }
@@ -139,7 +142,7 @@ export default async function drive(kit) {
   const { signIn, page, context, capture, note, origin } = kit
   const { cookie } = await signIn()
   const chat = mcpCaller(origin, await outsideAgentToken(kit, cookie, "Chat host"))
-  const agent = mcpCaller(origin, await outsideAgentToken(kit, cookie, "Claude Code"))
+  const agent = mcpCaller(origin, await outsideAgentToken(kit, cookie, "Script agent"))
   await context.clearCookies()
   const execute = async (call, args) => {
     const answer = await call("tools/call", { name: "airdesign_execute", arguments: args })
@@ -285,7 +288,7 @@ export default async function drive(kit) {
     await capture("chat-view-selected")
     note(`A click on the Growth bar selected layer ${growth} and sent ui/update-model-context with it.`)
 
-    await view.getByRole("link", { name: "Open in AirDesign" }).click()
+    await view.getByRole("link", { name: deckViewCopy.openInAirDesign }).click()
     await expect.poll(() => page.evaluate(() => window.host.opened)).toEqual([`${origin}/s/${deck}`])
     const sizes = await page.evaluate(() => window.host.sizes)
     expect(sizes.at(-1)?.height).toBeGreaterThan(0)
