@@ -27,10 +27,10 @@ async function draw(script: string) {
   const call = async (name: string, args: unknown) => {
     session.once = `call${String((calls += 1))}`
     const result = await callTool(`airdesign_${name}`, args, session, host)
-    return { ok: result.ok, answer: result.answer as Answer }
+    return { ok: result.ok, fields: result.fields as Answer }
   }
   const made = await call("execute", { script: "createDeck()" })
-  const deck = made.answer.deck as string
+  const deck = made.fields.deck as string
   const drawn = await call("execute", { deck, script })
   return { ...drawn, fold: () => decks.decks.get(deck as never)! }
 }
@@ -98,9 +98,9 @@ const path = ["Browser", "Checkout", "Products DB"]
 describe("the architecture recipe on a new system", () => {
   it("draws 8 boxes in 3 layers and 9 arrows, each attached to its two boxes, none crossing a box or another arrow", async () => {
     const drawn = await draw(`${architecture}\n${layoutOf("diagrams/architecture")}`)
-    expect(drawn.ok, JSON.stringify(drawn.answer)).toBe(true)
-    expect(drawn.answer.problems).toEqual([])
-    const { boxes: ids, problems } = drawn.answer.result as { boxes: Record<string, string>; problems: unknown[] }
+    expect(drawn.ok, JSON.stringify(drawn.fields)).toBe(true)
+    expect(drawn.fields.problems).toEqual([])
+    const { boxes: ids, problems } = drawn.fields.result as { boxes: Record<string, string>; problems: unknown[] }
     expect(problems).toEqual([])
     expect(Object.keys(ids)).toHaveLength(8)
 
@@ -131,7 +131,7 @@ describe("the architecture recipe on a new system", () => {
     const skipping = architecture.replace(`["Checkout","Orders DB"]`, `["Browser","Orders DB"]`)
     const drawn = await draw(`${skipping}\n${layoutOf("diagrams/architecture")}`)
     expect(drawn.ok).toBe(false)
-    expect(JSON.stringify(drawn.answer)).toContain("Browser to Orders DB would cross other boxes")
+    expect(JSON.stringify(drawn.fields)).toContain("Browser to Orders DB would cross other boxes")
   })
 })
 
@@ -149,8 +149,8 @@ describe("the process flow recipe on new steps", () => {
       const focus = "Approve"
       ${layoutOf("diagrams/process-flow")}
     `)
-    expect(drawn.ok, JSON.stringify(drawn.answer)).toBe(true)
-    const { steps, problems } = drawn.answer.result as { steps: string[]; problems: unknown[] }
+    expect(drawn.ok, JSON.stringify(drawn.fields)).toBe(true)
+    const { steps, problems } = drawn.fields.result as { steps: string[]; problems: unknown[] }
     expect(problems).toEqual([])
     const { lines, boxes } = painted(drawn.fold())
     expect(lines.map((line) => [line.from, line.to])).toEqual(steps.slice(1).map((step, at) => [steps[at], step]))

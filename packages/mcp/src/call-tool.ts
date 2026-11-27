@@ -1,7 +1,7 @@
 import { catalog, projectTools, type AgentOp } from "@airdesign/catalog"
 
 import { type CallerLog } from "./admit.js"
-import { type ToolResult, refused } from "./answer.js"
+import { type Answer, refused } from "./answer.js"
 import { appStateTool } from "./app-state-tool.js"
 import type { DeckHost } from "./deck-host.js"
 import { executeTool } from "./execute-tool.js"
@@ -30,7 +30,7 @@ export async function callTool(
   session: Session,
   host: DeckHost,
   pendingFonts: ReadonlySet<string> = new Set(),
-): Promise<ToolResult> {
+): Promise<Answer> {
   const op = opOf(name)
   if (op === undefined) return refused("field")
   const once = session.once ?? session.mint()

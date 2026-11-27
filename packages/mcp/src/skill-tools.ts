@@ -1,11 +1,11 @@
 import { listStyles, readSkill, readSkillIndex, readStyle } from "@airdesign/skills"
 
-import { answered, refused, type ToolResult } from "./answer.js"
+import { answered, refused, type Answer } from "./answer.js"
 
 function readOptionalName(
   raw: unknown,
   form: string,
-): { readonly ok: true; readonly name: string | undefined } | { readonly ok: false; readonly result: ToolResult } {
+): { readonly ok: true; readonly name: string | undefined } | { readonly ok: false; readonly result: Answer } {
   if (raw === undefined) return { ok: true, name: undefined }
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     return { ok: false, result: refused("field") }
@@ -23,7 +23,7 @@ function readOptionalName(
   return { ok: true, name: body.name }
 }
 
-export function readSkillTool(raw: unknown, dir?: string): ToolResult {
+export function readSkillTool(raw: unknown, dir?: string): Answer {
   const parsed = readOptionalName(raw, "A skill name from the index.")
   if (!parsed.ok) return parsed.result
   if (parsed.name === undefined) {
@@ -46,7 +46,7 @@ export function readSkillTool(raw: unknown, dir?: string): ToolResult {
   return answered(`Skill ${skill.name}.`, { ok: true, name: skill.name, text: skill.markdown })
 }
 
-export function getStyleTool(raw: unknown, dir?: string): ToolResult {
+export function getStyleTool(raw: unknown, dir?: string): Answer {
   const parsed = readOptionalName(raw, "A style name from the list.")
   if (!parsed.ok) return parsed.result
   if (parsed.name === undefined) {

@@ -1,19 +1,10 @@
 import type { EditRefusal, DoomRefusal } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
-export type ToolText = { readonly type: "text"; readonly text: string }
-export type ToolImage = {
-  readonly type: "image"
-  readonly data: string
-  readonly mimeType: "image/jpeg"
-  readonly text?: undefined
-}
-export type ToolContent = ToolText | ToolImage
-
-export type ToolResult = {
+export type Answer = {
   readonly ok: boolean
-  readonly content: readonly ToolContent[]
-  readonly answer: Readonly<Record<string, unknown>>
+  readonly fields: Readonly<Record<string, unknown>>
+  readonly pictures: readonly string[]
 }
 
 export const refusalWords = {
@@ -62,15 +53,15 @@ const hostCodes = {
   server: "store",
 } as const satisfies Record<Exclude<DoomRefusal["refusal"], "edit">, Refused>
 
-export function told(ok: boolean, answer: Readonly<Record<string, unknown>>): ToolResult {
-  return { ok, content: [{ type: "text", text: JSON.stringify(answer) }], answer }
+export function told(ok: boolean, fields: Readonly<Record<string, unknown>>): Answer {
+  return { ok, fields, pictures: [] }
 }
 
-export function answered(note: string, answer: Readonly<Record<string, unknown>>): ToolResult {
-  return told(true, { ...answer, note })
+export function answered(note: string, fields: Readonly<Record<string, unknown>>): Answer {
+  return told(true, { ...fields, note })
 }
 
-export function limited(note: string): ToolResult {
+export function limited(note: string): Answer {
   return told(false, { ok: false, refusal: "rate", note })
 }
 
@@ -105,7 +96,7 @@ function fieldNote(fault: unknown, form: unknown, needs: unknown): string | unde
   return typeof form === "string" && form !== "" ? `${sentence} Accepted form: ${form}` : sentence
 }
 
-export function refused(code: Refused, more: Where & Readonly<Record<string, unknown>> = {}): ToolResult {
+export function refused(code: Refused, more: Where & Readonly<Record<string, unknown>> = {}): Answer {
   const where = whereWords(more)
   const specific =
     more.fault !== undefined || more.needs !== undefined
@@ -137,7 +128,7 @@ export function doomRefused(refusal: doom.AgentRefusal | doom.Refusal, more: Rea
   })
 }
 
-export function hostRefused(refusal: DoomRefusal): ToolResult {
+export function hostRefused(refusal: DoomRefusal): Answer {
   if (refusal.refusal !== "edit") return refused(hostCodes[refusal.refusal])
   return doomRefused(refusal)
 }

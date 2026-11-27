@@ -23,8 +23,8 @@ export type ScriptEnd =
       readonly logs: readonly string[]
     }
 
-export type Answer = { readonly ok: true; readonly value: unknown } | { readonly ok: false; readonly message: string }
-export type Operation = (verb: string, fields: unknown) => Promise<Answer>
+export type OpAnswer = { readonly ok: true; readonly value: unknown } | { readonly ok: false; readonly message: string }
+export type Operation = (verb: string, fields: unknown) => Promise<OpAnswer>
 
 type Run = { readonly account: string; readonly script: string; readonly operation: Operation; readonly ms?: number }
 type Borrowed = Worker | "busy" | "crash"
@@ -34,7 +34,7 @@ const cores = availableParallelism()
 const poolSize = Math.max(2, Math.min(4, cores - 1))
 const spinMs = cores >= 4 ? 1 : 0
 
-function replyOf(answer: Answer): OpReply {
+function replyOf(answer: OpAnswer): OpReply {
   if (!answer.ok) return answer
   return typeof answer.value === "string" || answer.value === undefined
     ? { ok: true, value: answer.value }
@@ -130,7 +130,7 @@ export function scriptPool(verbs: readonly string[]) {
           return
         }
         void operation(message.verb, message.json === undefined ? undefined : JSON.parse(message.json))
-          .catch((error: unknown): Answer => ({ ok: false, message: `${message.verb} failed: ${String(error)}` }))
+          .catch((error: unknown): OpAnswer => ({ ok: false, message: `${message.verb} failed: ${String(error)}` }))
           .then((answer) => {
             if (settled) return
             port1.postMessage(replyOf(answer))

@@ -1,10 +1,10 @@
 import { resolveFont } from "@airdesign/catalog"
 import type * as doom from "@airdesign/doom"
-import { told, type ToolResult } from "./answer.js"
+import { told, type Answer } from "./answer.js"
 
 type Fonts =
   | { readonly ok: true; readonly changes: readonly doom.AgentChange[] }
-  | { readonly ok: false; readonly result: ToolResult }
+  | { readonly ok: false; readonly result: Answer }
 
 type Named = { readonly field: string; readonly font: string }
 

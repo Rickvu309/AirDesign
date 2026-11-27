@@ -3,7 +3,7 @@ import { catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
-import { emptyLog, callTool, type Session, type ToolResult } from "./index.js"
+import { emptyLog, callTool, type Session, type Answer } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks, type MemoryDecks } from "./testing/memory-decks.js"
 import { offTheme } from "./testing/suite-art.js"
@@ -38,7 +38,7 @@ function agent(decks: MemoryDecks = memoryDecks(start), id = "aira") {
   let calls = 0
   return {
     decks,
-    call: async (op: string, args: unknown, once?: string): Promise<ToolResult> => {
+    call: async (op: string, args: unknown, once?: string): Promise<Answer> => {
       session.once = once ?? `call${String((calls += 1))}`
       return callTool(names[op] ?? op, args, session, decks)
     },
@@ -47,7 +47,7 @@ function agent(decks: MemoryDecks = memoryDecks(start), id = "aira") {
 
 async function created(by: ReturnType<typeof agent>) {
   const made = await by.call("execute", { script: "createDeck()" })
-  return made.answer as { deck: string; rev: number; slides: string[] }
+  return made.fields as { deck: string; rev: number; slides: string[] }
 }
 
 const edit = (deck: string, changes: unknown[], runId?: string) => ({
@@ -58,7 +58,7 @@ const edit = (deck: string, changes: unknown[], runId?: string) => ({
 
 async function read(by: ReturnType<typeof agent>, deck: string, fields: Readonly<Record<string, unknown>> = {}) {
   const got = await by.call("execute", { deck, script: `get(${JSON.stringify(fields)})` })
-  return got.ok ? { ...got, answer: got.answer.result as Record<string, unknown> } : got
+  return got.ok ? { ...got, fields: got.fields.result as Record<string, unknown> } : got
 }
 
 const person: doom.Author = { kind: "person", id: "quan" }
@@ -68,13 +68,13 @@ describe("createDeck and get_app_state", () => {
     const by = agent()
     const made = await by.call("execute", { script: 'createDeck({ name: "Board" })' })
     expect(made.ok).toBe(true)
-    expect(made.answer).toMatchObject({
+    expect(made.fields).toMatchObject({
       ok: true,
       rev: expect.any(Number),
       name: "Board",
       slides: [expect.any(String)],
     })
-    expect(made.answer.layers).toContain('text="Untitled"')
+    expect(made.fields.layers).toContain('text="Untitled"')
     expect(by.decks.decks.size).toBe(1)
   })
 
@@ -82,7 +82,7 @@ describe("createDeck and get_app_state", () => {
     const by = agent()
     const first = await by.call("execute", { script: "createDeck()" }, "same")
     const again = await by.call("execute", { script: "createDeck()" }, "same")
-    expect(again.answer).toEqual(first.answer)
+    expect(again.fields).toEqual(first.fields)
     expect(by.decks.decks.size).toBe(1)
   })
 
@@ -90,7 +90,7 @@ describe("createDeck and get_app_state", () => {
     const by = agent()
     const made = await created(by)
     const listed = await by.call("get_app_state", {})
-    expect(listed.answer).toEqual({
+    expect(listed.fields).toEqual({
       ok: true,
       decks: [{ deck: made.deck, name: "Blank deck", rev: made.rev }],
       openDeck: null,
@@ -103,10 +103,10 @@ describe("createDeck and get_app_state", () => {
     const theme = themePresets.find(({ id }) => id !== "neutral")!
     const create = `createDeck(${JSON.stringify({ name: "Themed", theme: theme.id })})`
     const interrupted = await by.call("execute", { script: `${create}; throw new Error("stop")` })
-    expect(interrupted.answer).toMatchObject({ ok: false, refusal: "script" })
+    expect(interrupted.fields).toMatchObject({ ok: false, refusal: "script" })
     expect(by.decks.decks.size).toBe(0)
     const made = await by.call("execute", { script: create })
-    expect(made.answer).toMatchObject({ ok: true, name: "Themed", theme: { colors: theme.theme.colors } })
+    expect(made.fields).toMatchObject({ ok: true, name: "Themed", theme: { colors: theme.theme.colors } })
   })
 
   it.each(themePresets)("writes the full $name theme through createDeck and variables", async (preset) => {
@@ -126,21 +126,21 @@ describe("createDeck and get_app_state", () => {
   it("refuses an unknown theme id in createDeck and variables", async () => {
     const by = agent()
     const made = await by.call("execute", { script: 'createDeck({ theme: "constructor" })' })
-    expect(made.answer).toMatchObject({ ok: false, refusal: "field", field: "theme" })
+    expect(made.fields).toMatchObject({ ok: false, refusal: "field", field: "theme" })
     expect(by.decks.decks.size).toBe(0)
     const { deck, rev } = await created(by)
     const changed = await by.call("execute", { deck, script: 'variables({ theme: "constructor" })' })
-    expect(changed.answer).toMatchObject({ ok: false, refusal: "field", field: "theme" })
-    expect((await read(by, deck)).answer).toMatchObject({ rev })
+    expect(changed.fields).toMatchObject({ ok: false, refusal: "field", field: "theme" })
+    expect((await read(by, deck)).fields).toMatchObject({ rev })
   })
 
   it("refuses a field it does not take", async () => {
     const by = agent()
-    expect((await by.call("execute", { script: 'createDeck({ template: "neutral" })' })).answer).toMatchObject({
+    expect((await by.call("execute", { script: 'createDeck({ template: "neutral" })' })).fields).toMatchObject({
       ok: false,
       refusal: "field",
     })
-    expect((await by.call("get_app_state", { deck: "x" })).answer).toMatchObject({ ok: false, refusal: "field" })
+    expect((await by.call("get_app_state", { deck: "x" })).fields).toMatchObject({ ok: false, refusal: "field" })
   })
 })
 
@@ -149,8 +149,8 @@ describe("get in execute", () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
     const got = await read(by, deck)
-    expect(got.answer).toMatchObject({ kind: "deck", deck, rev, slides })
-    const lines = String(got.answer.layers).split("\n")
+    expect(got.fields).toMatchObject({ kind: "deck", deck, rev, slides })
+    const lines = String(got.fields.layers).split("\n")
     expect(lines[0]).toMatch(/^slide /)
     expect(lines[1]).toMatch(/^ {2}\S+ text:title @160,380 1600x160 .*text="Untitled"/)
   })
@@ -161,7 +161,7 @@ describe("get in execute", () => {
     const one = await read(by, deck, { target: slides[0] })
     expect(one.ok).toBe(true)
     const none = await read(by, deck, { target: "z:9" })
-    expect(none.answer).toMatchObject({ ok: false, refusal: "dead", node: "z:9" })
+    expect(none.fields).toMatchObject({ ok: false, refusal: "dead", node: "z:9" })
   })
 
   it("pages a long deck by slide with next, and the next page continues from it", async () => {
@@ -175,7 +175,7 @@ describe("get in execute", () => {
         Array.from({ length: 12 }, () => ({ op: "slide", add: {} })),
       ),
     )
-    const slides = (await read(by, deck)).answer.slides as string[]
+    const slides = (await read(by, deck)).fields.slides as string[]
     const filled = await by.call(
       "execute",
       edit(
@@ -185,16 +185,16 @@ describe("get in execute", () => {
     )
     expect(filled.ok).toBe(true)
     const first = await read(by, deck)
-    const next = (first.answer as { next?: string }).next
+    const next = (first.fields as { next?: string }).next
     expect(next).toBeDefined()
     const rest = await read(by, deck, { cursor: next })
-    expect(String(rest.answer.layers).split("\n")[0]).toContain(next)
-    expect(String(first.answer.layers)).not.toContain(`slide ${next}`)
+    expect(String(rest.fields.layers).split("\n")[0]).toContain(next)
+    expect(String(first.fields.layers)).not.toContain(`slide ${next}`)
   })
 
   it("refuses an unknown deck", async () => {
     const by = agent()
-    expect((await read(by, "nothere")).answer).toMatchObject({ ok: false, refusal: "deck" })
+    expect((await read(by, "nothere")).fields).toMatchObject({ ok: false, refusal: "deck" })
   })
 })
 
@@ -206,7 +206,7 @@ describe("changes in execute", () => {
       "execute",
       edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "Hello **there**", textStyle: "heading" }]),
     )
-    expect(landed.answer).toMatchObject({
+    expect(landed.fields).toMatchObject({
       ok: true,
       deck,
       rev: rev + 1,
@@ -214,8 +214,8 @@ describe("changes in execute", () => {
       made: [{ op: 1, verb: "insert", ids: [expect.stringMatching(/^m\w+:1$/)] }],
     })
     const fold = by.decks.decks.get(deck as never)!
-    expect(fold.runs.get((landed.answer as { runId: string }).runId)?.phase).toBe("running")
-    expect(String((await read(by, deck)).answer.layers)).toContain('text="Hello **there**"')
+    expect(fold.runs.get((landed.fields as { runId: string }).runId)?.phase).toBe("running")
+    expect(String((await read(by, deck)).fields.layers)).toContain('text="Hello **there**"')
   })
 
   it("lands a hex colour and names the nearest theme colour in the answer's JSON, and finds nothing on names", async () => {
@@ -225,7 +225,7 @@ describe("changes in execute", () => {
       "execute",
       edit(deck, [{ op: "set", target: `${slides[0]!}.title`, text: "Sales grew", color: offTheme }]),
     )
-    const answer = landed.answer as { note: string; problems: { code: string; note: string }[] }
+    const answer = landed.fields as { note: string; problems: { code: string; note: string }[] }
     expect(landed.ok).toBe(true)
     expect(answer.note).toContain("fix it unless the person asked for it")
     expect(answer.problems).toMatchObject([{ code: "off-palette", color: offTheme, to: expect.any(String) }])
@@ -237,10 +237,10 @@ describe("changes in execute", () => {
       edit(
         deck,
         [{ op: "set", target: `${slides[0]!}.title`, color: "accent1" }],
-        (landed.answer as { runId: string }).runId,
+        (landed.fields as { runId: string }).runId,
       ),
     )
-    expect(plain.answer.problems).toEqual([])
+    expect(plain.fields.problems).toEqual([])
   })
 
   it("answers only the root of what a grid add created", async () => {
@@ -260,7 +260,7 @@ describe("changes in execute", () => {
         },
       ]),
     )
-    const [made] = (landed.answer as { made: { ids: string[] }[] }).made
+    const [made] = (landed.fields as { made: { ids: string[] }[] }).made
     expect(made!.ids).toHaveLength(1)
     const fold = by.decks.decks.get(deck as never)!
     expect(doom.agentKind(fold.nodes.get(made!.ids[0] as never)!)).toBe("frame")
@@ -271,14 +271,14 @@ describe("changes in execute", () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
     const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
-    const { runId } = first.answer as { runId: string }
+    const { runId } = first.fields as { runId: string }
     const second = await by.call(
       "execute",
       edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "B" }], runId),
     )
-    expect(second.answer).toMatchObject({ ok: true, rev: rev + 2, runId })
+    expect(second.fields).toMatchObject({ ok: true, rev: rev + 2, runId })
     const third = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "C" }]))
-    expect((third.answer as { runId: string }).runId).not.toBe(runId)
+    expect((third.fields as { runId: string }).runId).not.toBe(runId)
   })
 
   it("lands nothing and answers unchanged for a call that sets only values the deck already holds", async () => {
@@ -286,13 +286,13 @@ describe("changes in execute", () => {
     const { deck, rev, slides } = await created(by)
     const set = [{ op: "set", target: `${slides[0]!}.title`, text: "Same" }]
     const first = await by.call("execute", edit(deck, set))
-    const { runId } = first.answer as { runId: string }
+    const { runId } = first.fields as { runId: string }
     const runs = by.decks.decks.get(deck as never)!.runs.size
     const again = await by.call("execute", edit(deck, set, runId))
-    expect(again.answer).toMatchObject({ ok: true, unchanged: true, rev: rev + 1, runId })
+    expect(again.fields).toMatchObject({ ok: true, unchanged: true, rev: rev + 1, runId })
     const fresh = await by.call("execute", edit(deck, set))
-    expect(fresh.answer).toMatchObject({ ok: true, unchanged: true, rev: rev + 1 })
-    expect(fresh.answer).not.toHaveProperty("runId")
+    expect(fresh.fields).toMatchObject({ ok: true, unchanged: true, rev: rev + 1 })
+    expect(fresh.fields).not.toHaveProperty("runId")
     const fold = by.decks.decks.get(deck as never)!
     expect(fold.rev).toBe(rev + 1)
     expect(fold.runs.size).toBe(runs)
@@ -309,7 +309,7 @@ describe("changes in execute", () => {
       ]),
     )
     expect(refused.ok).toBe(false)
-    expect(refused.answer).toMatchObject({
+    expect(refused.fields).toMatchObject({
       ok: false,
       refusal: "dead",
       refused: "missing",
@@ -320,7 +320,7 @@ describe("changes in execute", () => {
       node: "z:9",
     })
     expect(by.decks.decks.get(deck as never)!.rev).toBe(rev)
-    expect(String(refused.answer.note)).toContain("Operation 2 (update) at line 2")
+    expect(String(refused.fields.note)).toContain("Operation 2 (update) at line 2")
   })
 
   it("names the operation that has a field its kind does not take", async () => {
@@ -333,14 +333,14 @@ describe("changes in execute", () => {
         { op: "add", kind: "line", slide: slides[0], text: "no" },
       ]),
     )
-    expect(refused.answer).toMatchObject({ ok: false, refusal: "field", refused: "shape", op: 2, field: "text" })
+    expect(refused.fields).toMatchObject({ ok: false, refusal: "field", refused: "shape", op: 2, field: "text" })
   })
 
   it("names the operation whose form cannot be read", async () => {
     const by = agent()
     const { deck } = await created(by)
     const refused = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: "bad id" }]))
-    expect(refused.answer).toMatchObject({ ok: false, refusal: "dead", op: 1, field: "parent" })
+    expect(refused.fields).toMatchObject({ ok: false, refusal: "dead", op: 1, field: "parent" })
   })
 
   it("refuses a call over 100 changes at the operation that passes it, an empty script and an unknown field", async () => {
@@ -354,10 +354,10 @@ describe("changes in execute", () => {
         Array.from({ length: 101 }, () => change),
       ),
     )
-    expect(many.answer).toMatchObject({ ok: false, refusal: "limit", op: 101 })
-    expect(String(many.answer.note)).toContain("at most 100 changes")
-    expect((await by.call("execute", { deck, script: "" })).answer).toMatchObject({ ok: false, refusal: "field" })
-    expect((await by.call("execute", { ...edit(deck, [change]), actor: "person" })).answer).toMatchObject({
+    expect(many.fields).toMatchObject({ ok: false, refusal: "limit", op: 101 })
+    expect(String(many.fields.note)).toContain("at most 100 changes")
+    expect((await by.call("execute", { deck, script: "" })).fields).toMatchObject({ ok: false, refusal: "field" })
+    expect((await by.call("execute", { ...edit(deck, [change]), actor: "person" })).fields).toMatchObject({
       ok: false,
       refusal: "field",
       field: "actor",
@@ -374,14 +374,14 @@ describe("changes in execute", () => {
       { op: "slide", add: {} },
     ])
     const first = await by.call("execute", args, "again")
-    expect(first.answer.made).toEqual([
+    expect(first.fields.made).toEqual([
       { op: 2, verb: "insert", ids: [expect.any(String)] },
       { op: 3, verb: "insert", ids: [expect.any(String)] },
     ])
     const again = await by.call("execute", args, "again")
-    expect(again.answer).toMatchObject({ ok: true, rev: first.answer.rev, runId: first.answer.runId })
-    expect((again.answer.made as { ids: string[] }[]).flatMap((each) => each.ids).sort()).toEqual(
-      (first.answer.made as { ids: string[] }[]).flatMap((each) => each.ids).sort(),
+    expect(again.fields).toMatchObject({ ok: true, rev: first.fields.rev, runId: first.fields.runId })
+    expect((again.fields.made as { ids: string[] }[]).flatMap((each) => each.ids).sort()).toEqual(
+      (first.fields.made as { ids: string[] }[]).flatMap((each) => each.ids).sort(),
     )
     expect(by.decks.decks.get(deck as never)!.rev).toBe(rev + 1)
   })
@@ -390,14 +390,14 @@ describe("changes in execute", () => {
     const by = agent()
     const { deck } = await created(by)
     const refused = await by.call("execute", edit(deck, [{ op: "slide", add: { layout: "Blank" } }]))
-    expect(refused.answer).toMatchObject({ ok: false, refusal: "field" })
+    expect(refused.fields).toMatchObject({ ok: false, refusal: "field" })
   })
 
   it("closes a layer to the run once a person changes it, and opens it again in a new run", async () => {
     const by = agent()
     const { deck, slides } = await created(by)
     const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
-    const { runId, made } = first.answer as { runId: string; made: { ids: string[] }[] }
+    const { runId, made } = first.fields as { runId: string; made: { ids: string[] }[] }
     const added = made.flatMap((each) => each.ids)
     await by.decks.edit(deck as never, {
       once: "typed",
@@ -405,7 +405,7 @@ describe("changes in execute", () => {
       writes: [{ node: added[0] as never, prop: "name", value: "Mine" }],
     })
     const closed = await by.call("execute", edit(deck, [{ op: "set", target: added[0], name: "Agent" }], runId))
-    expect(closed.answer).toMatchObject({ ok: false, refusal: "person-protected", refused: "person", node: added[0] })
+    expect(closed.fields).toMatchObject({ ok: false, refusal: "person-protected", refused: "person", node: added[0] })
     const reopened = await by.call("execute", edit(deck, [{ op: "set", target: added[0], name: "Agent" }]))
     expect(reopened.ok).toBe(true)
   })
@@ -416,24 +416,24 @@ describe("stop_run", () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
     const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
-    const { runId } = first.answer as { runId: string }
+    const { runId } = first.fields as { runId: string }
     const stopped = await by.call("stop_run", { deck, runId })
-    expect(stopped.answer).toMatchObject({ ok: true, runId, rev: rev + 2 })
+    expect(stopped.fields).toMatchObject({ ok: true, runId, rev: rev + 2 })
     const fenced = await by.call(
       "execute",
       edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "B" }], runId),
     )
-    expect(fenced.answer).toMatchObject({ ok: false, refusal: "run-fenced" })
+    expect(fenced.fields).toMatchObject({ ok: false, refusal: "run-fenced" })
   })
 
   it("answers a second stop ok and lands nothing", async () => {
     const by = agent()
     const { deck, rev, slides } = await created(by)
     const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
-    const { runId } = first.answer as { runId: string }
+    const { runId } = first.fields as { runId: string }
     await by.call("stop_run", { deck, runId })
     const again = await by.call("stop_run", { deck, runId })
-    expect(again.answer).toMatchObject({ ok: true, runId, rev: rev + 2 })
+    expect(again.fields).toMatchObject({ ok: true, runId, rev: rev + 2 })
     expect(by.decks.decks.get(deck as never)!.rev).toBe(rev + 2)
   })
 
@@ -442,8 +442,8 @@ describe("stop_run", () => {
     const other = agent(by.decks, "claude")
     const { deck, slides } = await created(by)
     const first = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "A" }]))
-    const { runId } = first.answer as { runId: string }
-    expect((await other.call("stop_run", { deck, runId }, "other-stop")).answer).toMatchObject({
+    const { runId } = first.fields as { runId: string }
+    expect((await other.call("stop_run", { deck, runId }, "other-stop")).fields).toMatchObject({
       ok: false,
       refusal: "run-fenced",
     })
@@ -452,7 +452,7 @@ describe("stop_run", () => {
       edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "B" }], runId),
       "other-edit",
     )
-    expect(intruded.answer).toMatchObject({ ok: false, refusal: "run-fenced" })
+    expect(intruded.fields).toMatchObject({ ok: false, refusal: "run-fenced" })
     const more = await by.call("execute", edit(deck, [{ op: "add", kind: "text", slide: slides[0], text: "C" }], runId))
     expect(more.ok).toBe(true)
   })
@@ -460,7 +460,7 @@ describe("stop_run", () => {
   it("refuses a run the deck never held", async () => {
     const by = agent()
     const { deck } = await created(by)
-    expect((await by.call("stop_run", { deck, runId: "nothing" })).answer).toMatchObject({
+    expect((await by.call("stop_run", { deck, runId: "nothing" })).fields).toMatchObject({
       ok: false,
       refusal: "run-fenced",
     })

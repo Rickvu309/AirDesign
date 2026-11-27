@@ -2,7 +2,7 @@ import { readCreateDeck, readExecute, readNamedDeck } from "@airdesign/catalog"
 import type { Theme } from "@airdesign/doom"
 import { themePresetById, themePresets } from "@airdesign/skills"
 
-import { answered, doomRefused, hostRefused, refused, told, type ToolContent, type ToolResult } from "./answer.js"
+import { answered, doomRefused, hostRefused, refused, told, type Answer } from "./answer.js"
 import { readAnswer } from "./deck-read.js"
 import type { DeckHost } from "./deck-host.js"
 import { OpRefused, newPlan, opNote, runOperation, verbs, type Plan, type Verb } from "./execute-ops.js"
@@ -10,17 +10,17 @@ import { landEdit, landedBefore, type Agent, type Landed } from "./land-edit.js"
 import { findingsNote, listed } from "./layout-findings-answer.js"
 import { onceIds } from "./once-ids.js"
 import { withOtherRuns } from "./other-runs.js"
-import { scriptLimits, scriptPool, type Answer, type ScriptEnd } from "./script-pool.js"
+import { scriptLimits, scriptPool, type OpAnswer, type ScriptEnd } from "./script-pool.js"
 
 const scripts = scriptPool([...verbs, "createDeck"])
 const resultLimit = 20_000
 const shotsPerCall = 4
 
-async function answerOp(plan: Plan, verb: string, fields: unknown): Promise<Answer> {
+async function answerOp(plan: Plan, verb: string, fields: unknown): Promise<OpAnswer> {
   try {
     if (verb === "createDeck") {
       plan.ops += 1
-      throw new OpRefused(refused("field", { note: "Omit the deck id when calling createDeck." }).answer)
+      throw new OpRefused(refused("field", { note: "Omit the deck id when calling createDeck." }).fields)
     }
     return { ok: true, value: await runOperation(plan, verb as Verb, fields) }
   } catch (thrown) {
@@ -34,7 +34,7 @@ function at(line: number | undefined): string {
   return line === undefined ? "" : ` at line ${String(line)}`
 }
 
-function stopped(plan: Pick<Plan, "ops" | "refused">, end: Extract<ScriptEnd, { ok: false }>): ToolResult {
+function stopped(plan: Pick<Plan, "ops" | "refused">, end: Extract<ScriptEnd, { ok: false }>): Answer {
   if (end.stop === "busy")
     return told(false, {
       ok: false,
@@ -72,16 +72,16 @@ function stopped(plan: Pick<Plan, "ops" | "refused">, end: Extract<ScriptEnd, { 
   })
 }
 
-function landRefused(plan: Plan, result: ToolResult): ToolResult {
-  const change = typeof result.answer.at === "number" ? plan.changeOps[result.answer.at] : undefined
-  const { at: _at, change: _change, note: _note, ...rest } = result.answer
-  if (change === undefined) return told(false, { ...rest, note: `Nothing landed. ${String(result.answer.note)}` })
-  const note = `Operation ${String(change.op)} (${change.verb}): ${opNote(plan, change.verb, result.answer)}`
+function landRefused(plan: Plan, result: Answer): Answer {
+  const change = typeof result.fields.at === "number" ? plan.changeOps[result.fields.at] : undefined
+  const { at: _at, change: _change, note: _note, ...rest } = result.fields
+  if (change === undefined) return told(false, { ...rest, note: `Nothing landed. ${String(result.fields.note)}` })
+  const note = `Operation ${String(change.op)} (${change.verb}): ${opNote(plan, change.verb, result.fields)}`
   return told(false, { ...rest, op: change.op, verb: change.verb, note: `Nothing landed. ${note}` })
 }
 
 async function pictures(plan: Plan, host: DeckHost) {
-  const images: ToolContent[] = []
+  const images: string[] = []
   const shown: string[] = []
   const notes: string[] = []
   if (plan.shots.length === 0) return { images, shown, notes }
@@ -102,7 +102,7 @@ async function pictures(plan: Plan, host: DeckHost) {
   for (const slide of wanted) {
     const shot = shots.get(slide)
     if (typeof shot === "string") {
-      images.push({ type: "image", data: shot, mimeType: "image/jpeg" })
+      images.push(shot)
       shown.push(slide)
     } else if (shot === undefined) waiting.push(slide)
     else notes.push(`A font could not load for ${slide}, so it has no picture.`)
@@ -133,11 +133,11 @@ function leadOf(landed: Landed | undefined, rev: number): string {
   return `Landed at rev ${String(rev)} as one undo step.`
 }
 
-async function createFromScript(script: string, once: string, host: DeckHost): Promise<ToolResult> {
+async function createFromScript(script: string, once: string, host: DeckHost): Promise<Answer> {
   let creation: { readonly name: string; readonly theme: Theme | undefined } | undefined
-  let failure: ToolResult | undefined
+  let failure: Answer | undefined
   let ops = 0
-  const operation = async (verb: string, fields: unknown): Promise<Answer> => {
+  const operation = async (verb: string, fields: unknown): Promise<OpAnswer> => {
     ops += 1
     if (verb !== "createDeck") {
       failure = refused("field", { note: "Send a deck id to read or edit a deck." })
@@ -157,11 +157,11 @@ async function createFromScript(script: string, once: string, host: DeckHost): P
         failure = refused("field", { field: "theme", fault: "form", form: themePresets.map(({ id }) => id).join(", ") })
       }
     }
-    return { ok: false, message: String(failure.answer.note) }
+    return { ok: false, message: String(failure.fields.note) }
   }
   const end = await scripts.run({ account: host.account, script, operation })
   if (!end.ok) {
-    const failed = failure === undefined ? {} : { refused: { op: ops, answer: failure.answer } }
+    const failed = failure === undefined ? {} : { refused: { op: ops, answer: failure.fields } }
     return stopped({ ops, ...failed }, end)
   }
   if (failure !== undefined) return failure
@@ -170,7 +170,7 @@ async function createFromScript(script: string, once: string, host: DeckHost): P
   if (!made.ok) return hostRefused(made)
   const result = readAnswer(made, {})
   return told(result.ok, {
-    ...result.answer,
+    ...result.fields,
     ...resultOf(end),
     ...(end.logs.length === 0 ? {} : { logs: end.logs }),
   })
@@ -182,7 +182,7 @@ export async function executeTool(
   once: string,
   host: DeckHost,
   pendingFonts: ReadonlySet<string>,
-): Promise<ToolResult> {
+): Promise<Answer> {
   const named = readNamedDeck(raw)
   if (!named.ok && named.refusal === "deck") return refused("deck")
   const opened = named.ok ? await host.open(named.deck) : undefined
@@ -259,5 +259,5 @@ export async function executeTool(
     opened.fold,
     agent.id,
   )
-  return { ...result, content: [...shots.images, ...result.content] }
+  return { ...result, pictures: shots.images }
 }

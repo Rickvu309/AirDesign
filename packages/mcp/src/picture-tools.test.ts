@@ -2,7 +2,7 @@ import { catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
-import { callTool, emptyLog, type DeckHost, type Session, type ToolResult } from "./index.js"
+import { callTool, emptyLog, type DeckHost, type Session, type Answer } from "./index.js"
 import { readOf, scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
@@ -28,7 +28,7 @@ function agent(overrides: (decks: ReturnType<typeof memoryDecks>) => Partial<Dec
   let calls = 0
   return {
     decks,
-    call: async (op: string, args: unknown): Promise<ToolResult> => {
+    call: async (op: string, args: unknown): Promise<Answer> => {
       session.once = `call${String((calls += 1))}`
       return callTool(names[op] ?? op, args, session, host)
     },
@@ -37,7 +37,7 @@ function agent(overrides: (decks: ReturnType<typeof memoryDecks>) => Partial<Dec
 
 async function deckOf(by: ReturnType<typeof agent>) {
   const made = await by.call("execute", { script: "createDeck()" })
-  const answer = made.answer as { deck: string; rev: number; slides: string[] }
+  const answer = made.fields as { deck: string; rev: number; slides: string[] }
   return answer
 }
 
@@ -58,8 +58,8 @@ describe("an image an agent names that is no address and no stored asset", () =>
       script: scriptOf([addPicture(made.slides[0]!, "logo.png")]),
     })
     expect(sent.ok).toBe(false)
-    expect(sent.answer.note).toContain('Operation 1 (insert) at line 1: "logo.png" was not used because')
-    expect(sent.answer.note).toContain("https address")
+    expect(sent.fields.note).toContain('Operation 1 (insert) at line 1: "logo.png" was not used because')
+    expect(sent.fields.note).toContain("https address")
     const [{ rev }] = [await by.decks.open(made.deck as never)] as [{ rev: number }]
     expect(rev).toBe(made.rev)
   })
@@ -74,7 +74,7 @@ describe("an image an agent names that is no address and no stored asset", () =>
       script: scriptOf([addPicture(made.slides[0]!, stored)]),
     })
     expect(sent.ok).toBe(false)
-    expect(sent.answer.note).toContain(
+    expect(sent.fields.note).toContain(
       `Operation 1 (insert) at line 1: "${stored}" was not used because this deck holds`,
     )
   })
@@ -105,7 +105,7 @@ describe("a picture an agent adds with no box", () => {
     })
     expect(sent.ok).toBe(true)
     const [{ fold }] = [await by.decks.open(made.deck as never)] as [{ fold: doom.Doom }]
-    const added = (sent.answer.made as { ids: string[] }[])[0]!.ids[0] as doom.NodeId
+    const added = (sent.fields.made as { ids: string[] }[])[0]!.ids[0] as doom.NodeId
     const box = (fold.nodes.get(added) as { box: { w: number; h: number } }).box
     expect(box.w / box.h).toBeCloseTo(4, 1)
   })
@@ -122,9 +122,7 @@ describe("screenshot in execute", () => {
     const made = await deckOf(by)
     const read = await by.call("execute", { deck: made.deck, script: shots(made.slides) })
     expect(read.ok).toBe(true)
-    const images = read.content.filter((block) => block.type === "image")
-    expect(images).toHaveLength(2)
-    expect(images[0]).toMatchObject({ type: "image", data: shot, mimeType: "image/jpeg" })
+    expect(read.pictures).toEqual([shot, shot])
   })
 
   it("says plainly which slides have no current picture yet", async () => {
@@ -133,10 +131,10 @@ describe("screenshot in execute", () => {
     }))
     const made = await deckOf(by)
     const read = await by.call("execute", { deck: made.deck, script: shots(made.slides) })
-    expect(read.content.filter((block) => block.type === "image")).toHaveLength(1)
-    expect(read.answer.pictures).toEqual([made.slides[0]])
-    expect(read.answer.note).toContain(`No picture of ${made.slides[1]!} yet`)
-    expect(read.answer.note).toContain("open AirDesign tab")
+    expect(read.pictures).toEqual([shot])
+    expect(read.fields.pictures).toEqual([made.slides[0]])
+    expect(read.fields.note).toContain(`No picture of ${made.slides[1]!} yet`)
+    expect(read.fields.note).toContain("open AirDesign tab")
   })
 
   it("asks for no picture when the script takes none", async () => {

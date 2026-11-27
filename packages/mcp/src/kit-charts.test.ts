@@ -19,7 +19,7 @@ function agent() {
   const call = async (name: string, args: unknown) => {
     session.once = `call${String((calls += 1))}`
     const result = await callTool(`airdesign_${name}`, args, session, host)
-    return { ...result, answer: result.answer as Answer }
+    return { ...result, fields: result.fields as Answer }
   }
   return { call, fold: (deck: string) => decks.decks.get(deck as never)! }
 }
@@ -46,13 +46,13 @@ const withData = (kind: string, data: Readonly<Record<string, unknown>>) =>
 async function drawn(theme: string, script: string) {
   const by = agent()
   const created = await by.call("execute", { script: `createDeck({ theme: "${theme}" })` })
-  expect(created.ok, JSON.stringify(created.answer)).toBe(true)
-  const { deck, slides } = created.answer as { deck: string; slides: string[] }
+  expect(created.ok, JSON.stringify(created.fields)).toBe(true)
+  const { deck, slides } = created.fields as { deck: string; slides: string[] }
   const answer = await by.call("execute", { deck, script: given(script, "slide", slides[0]) })
-  expect(answer.ok, JSON.stringify(answer.answer)).toBe(true)
+  expect(answer.ok, JSON.stringify(answer.fields)).toBe(true)
   const fold = by.fold(deck)
   const chart = doom.childrenOf(fold, slides[0] as doom.NodeId).at(-1)!
-  return { answer: answer.answer, fold, chart }
+  return { answer: answer.fields, fold, chart }
 }
 
 const layersNamed = (fold: doom.Doom, chart: doom.Node, name: string) =>

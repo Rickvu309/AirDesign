@@ -24,7 +24,7 @@ function agent() {
 describe("a shape's outline through the agent tools", () => {
   it("adds a star, reads it back as shape=star5, and refuses a connector as a shape", async () => {
     const call = agent()
-    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).fields as {
       deck: string
       rev: number
       slides: string[]
@@ -35,13 +35,13 @@ describe("a shape's outline through the agent tools", () => {
       script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box, shape: "star5" }]),
     })
     expect(landed.ok).toBe(true)
-    expect(String((await readOf(call, deck)).answer.layers)).toContain(" shape=star5")
+    expect(String((await readOf(call, deck)).fields.layers)).toContain(" shape=star5")
     const refused = await call("execute", {
       deck,
       script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box, shape: "bentConnector3" }]),
     })
     expect(refused.ok).toBe(false)
-    expect(refused.answer).toMatchObject({ field: "shape" })
+    expect(refused.fields).toMatchObject({ field: "shape" })
     expect(JSON.stringify(doom.agentChangesSchema)).toContain("Lines and connectors are not shapes: add kind line.")
   })
 })

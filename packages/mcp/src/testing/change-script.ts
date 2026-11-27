@@ -51,13 +51,13 @@ export function scriptOf(changes: readonly unknown[]): string {
     .join("\n")
 }
 
-type Answered = { readonly ok: boolean; readonly answer: Readonly<Record<string, unknown>> }
+type Answered = { readonly ok: boolean; readonly fields: Readonly<Record<string, unknown>> }
 
 export async function readOf<Result extends Answered>(
   call: (name: string, args: unknown) => Promise<Result>,
   deck: string,
   fields: Readonly<Record<string, unknown>> = {},
-): Promise<{ readonly ok: boolean; readonly answer: Record<string, any> }> {
+): Promise<{ readonly ok: boolean; readonly fields: Record<string, any> }> {
   const got = await call("execute", { deck, script: `get(${JSON.stringify(fields)})` })
-  return got.ok ? { ok: true, answer: got.answer.result as Record<string, any> } : got
+  return got.ok ? { ok: true, fields: got.fields.result as Record<string, any> } : got
 }

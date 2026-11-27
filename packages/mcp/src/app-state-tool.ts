@@ -1,10 +1,10 @@
 import { readAppState } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
-import { answered, hostRefused, refused, type ToolResult } from "./answer.js"
+import { answered, hostRefused, refused, type Answer } from "./answer.js"
 import type { DeckHost } from "./deck-host.js"
 
-export async function appStateTool(raw: unknown, host: DeckHost): Promise<ToolResult> {
+export async function appStateTool(raw: unknown, host: DeckHost): Promise<Answer> {
   const parsed = readAppState(raw)
   if (!parsed.ok) return refused(parsed.refusal)
   const listed = await host.list(parsed.cursor)
