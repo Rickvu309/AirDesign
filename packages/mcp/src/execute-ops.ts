@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { themePresetById, themePresets } from "@airdesign/skills"
 
-import { doomRefused, refused, type ToolResult } from "./answer.js"
+import { doomRefused, refused, type Answer } from "./answer.js"
 import type { DeckHost, Opened } from "./deck-host.js"
 import { deckMeasure } from "./deck-measure.js"
 import { readAnswer } from "./deck-read.js"
@@ -139,9 +139,9 @@ export function opNote(plan: Plan, verb: Verb, answer: Readonly<Record<string, u
   return `${node.id} is a ${kind}, which takes no ${field}.${inside}`
 }
 
-function stop(plan: Plan, op: number, verb: Verb, result: ToolResult): never {
-  const { change: _change, at: _at, note: _note, ...rest } = result.answer
-  const note = `Operation ${String(op)} (${verb}): ${opNote(plan, verb, result.answer)}`
+function stop(plan: Plan, op: number, verb: Verb, result: Answer): never {
+  const { change: _change, at: _at, note: _note, ...rest } = result.fields
+  const note = `Operation ${String(op)} (${verb}): ${opNote(plan, verb, result.fields)}`
   throw new OpRefused({ ...rest, op, verb, note })
 }
 
@@ -194,7 +194,7 @@ async function stepOne(plan: Plan, op: number, verb: Verb, change: doom.AgentCha
     )
   const measure = leavesLayers(change) ? (await deckMeasure(plan.host, [plan.view]))?.measure : undefined
   const stepped = await measuredSteps(plan.session.step(change, true, measure), plan.host, plan.pendingFonts)
-  if ("content" in stepped) stop(plan, op, verb, stepped)
+  if ("fields" in stepped) stop(plan, op, verb, stepped)
   if ("refused" in stepped) stop(plan, op, verb, doomRefused({ ...stepped, change: verb }))
   plan.changes.push(change)
   plan.changeOps.push({ op, verb })
@@ -272,7 +272,7 @@ async function insert(plan: Plan, op: number, verb: Verb, fields: Readonly<Recor
 async function copy(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<string, unknown>>) {
   const paste = readPaste(fields)
   if (paste === undefined) return compileOne(plan, op, verb, { op: "duplicate", nodes: idsOf(fields) })
-  if ("answer" in paste) stop(plan, op, verb, paste)
+  if ("fields" in paste) stop(plan, op, verb, paste)
   const parent = nodeOf(plan, op, verb, fields.parent, "parent")
   return stepOne(plan, op, verb, { op: "paste", into: parent.id, ...paste })
 }
@@ -385,7 +385,7 @@ async function read(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<
     const laid = query.find === undefined ? await layoutOf(plan.host, plan.view, () => slides) : undefined
     const answered = readAnswer(viewed(plan), query, laid)
     if (!answered.ok) stop(plan, op, verb, answered)
-    const { ok: _ok, findings, ...deck } = answered.answer
+    const { ok: _ok, findings, ...deck } = answered.fields
     return { kind: "deck", ...deck, problems: findings ?? [] }
   }
   const node = nodeOf(plan, op, verb, fields.target, "target")

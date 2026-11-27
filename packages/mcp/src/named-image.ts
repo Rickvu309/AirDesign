@@ -1,7 +1,7 @@
 import { webImage } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
-import { told, type ToolResult } from "./answer.js"
+import { told, type Answer } from "./answer.js"
 
 export type ImageRefusal =
   | "address"
@@ -77,7 +77,7 @@ export function withAssets(changes: readonly doom.AgentChange[], images: NamedIm
 export function imageProblem(
   changes: readonly doom.AgentChange[],
   images: NamedImages | undefined,
-): ToolResult | undefined {
+): Answer | undefined {
   const lines = changes.flatMap((change, at) => {
     const address = imageOf(change)
     if (address === undefined) return []

@@ -80,7 +80,7 @@ export async function score(task: Task, attempt: Attempt): Promise<ScoreResult> 
   for (const step of attempt) {
     try {
       const result = await callTool(step.name, step.raw, session, decks)
-      answers.push({ name: step.name, outcome: result.ok ? "ok" : String(result.answer.refusal) })
+      answers.push({ name: step.name, outcome: result.ok ? "ok" : String(result.fields.refusal) })
     } catch {
       answers.push({ name: step.name, outcome: "thrown" })
     }

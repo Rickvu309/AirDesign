@@ -35,7 +35,7 @@ function agent() {
 describe("get with find, and one change over every slide's title", () => {
   it("restyles every slide's title in one change and finds each by the words of its line", async () => {
     const call = agent()
-    const made = (await call("execute", { script: "createDeck()" })).answer as {
+    const made = (await call("execute", { script: "createDeck()" })).fields as {
       deck: string
       rev: number
       slides: string[]
@@ -43,7 +43,7 @@ describe("get with find, and one change over every slide's title", () => {
     const { deck, rev, slides } = made
     const added = await call("execute", { deck, script: scriptOf([{ op: "duplicate", nodes: [slides[0]] }]) })
     expect(added.ok).toBe(true)
-    const runId = (added.answer as { runId: string }).runId
+    const runId = (added.fields as { runId: string }).runId
     const styled = await call("execute", {
       deck,
       runId,
@@ -51,11 +51,11 @@ describe("get with find, and one change over every slide's title", () => {
     })
     expect(styled.ok).toBe(true)
     const found = await readOf(call, deck, { find: "style=heading" })
-    expect(found.answer).toMatchObject({ found: 2, rev: rev + 2 })
-    const lines = String(found.answer.layers).split("\n")
+    expect(found.fields).toMatchObject({ found: 2, rev: rev + 2 })
+    const lines = String(found.fields.layers).split("\n")
     expect(lines).toHaveLength(2)
     for (const line of lines) expect(line).toMatch(/^\S+ \S+ text:title .*style=heading/)
-    expect((await readOf(call, deck, { find: "nothing like this" })).answer).toMatchObject({
+    expect((await readOf(call, deck, { find: "nothing like this" })).fields).toMatchObject({
       found: 0,
       layers: "",
     })
@@ -65,9 +65,9 @@ describe("get with find, and one change over every slide's title", () => {
 describe("the deck's theme in get", () => {
   it("names each text style's size, so an agent picks a size on the deck's own scale", async () => {
     const call = agent()
-    const { deck } = (await call("execute", { script: "createDeck()" })).answer as { deck: string }
+    const { deck } = (await call("execute", { script: "createDeck()" })).fields as { deck: string }
     const read = await readOf(call, deck)
-    expect(read.answer).toMatchObject({
+    expect(read.fields).toMatchObject({
       theme: {
         sizes: { display: 88, bigNumber: 80, title: 56, heading: 40, body: 32, body2: 28, caption: 24, label: 24 },
       },
@@ -77,19 +77,19 @@ describe("the deck's theme in get", () => {
 
 it("reads a deck without listing templates and refuses template lookup", async () => {
   const call = agent()
-  const { deck } = (await call("execute", { script: "createDeck()" })).answer as { deck: string }
+  const { deck } = (await call("execute", { script: "createDeck()" })).fields as { deck: string }
   const read = await readOf(call, deck)
   expect(read.ok).toBe(true)
-  expect(read.answer).not.toHaveProperty("components")
+  expect(read.fields).not.toHaveProperty("components")
   for (const request of [{ grammar: 1 }, { component: "column" }]) {
     const script = `get(${JSON.stringify(request)})`
-    expect((await call("execute", { deck, script })).answer).toMatchObject({ ok: false, refusal: "field" })
+    expect((await call("execute", { deck, script })).fields).toMatchObject({ ok: false, refusal: "field" })
   }
 })
 
 it("refuses to author or place a template without changing the deck", async () => {
   const call = agent()
-  const { deck, rev, slides } = (await call("execute", { script: "createDeck()" })).answer as {
+  const { deck, rev, slides } = (await call("execute", { script: "createDeck()" })).fields as {
     deck: string
     rev: number
     slides: string[]
@@ -97,16 +97,16 @@ it("refuses to author or place a template without changing the deck", async () =
   const target = JSON.stringify(slides[0])
   for (const verb of ["component", "detach"]) {
     const result = await call("execute", { deck, script: `${verb}({ target: ${target} })` })
-    expect(result.answer).toMatchObject({ ok: false, refusal: "script", line: 1 })
+    expect(result.fields).toMatchObject({ ok: false, refusal: "script", line: 1 })
   }
   const placed = await call("execute", {
     deck,
     script: scriptOf([{ op: "add", kind: "component", slide: slides[0] }]),
   })
-  expect(placed.answer).toMatchObject({ ok: false, refusal: "field", op: 1, field: "kind" })
+  expect(placed.fields).toMatchObject({ ok: false, refusal: "field", op: 1, field: "kind" })
   for (const field of ["component", "spec", "data", "variant", "tokens", "focus"]) {
     const result = await call("execute", { deck, script: `update({ target: ${target}, ${field}: {} })` })
-    expect(result.answer).toMatchObject({ ok: false, refusal: "field", op: 1, field })
+    expect(result.fields).toMatchObject({ ok: false, refusal: "field", op: 1, field })
   }
-  expect((await readOf(call, deck)).answer).toMatchObject({ rev })
+  expect((await readOf(call, deck)).fields).toMatchObject({ rev })
 })

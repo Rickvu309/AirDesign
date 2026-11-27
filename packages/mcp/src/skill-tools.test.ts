@@ -238,7 +238,7 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
 
       const listed = getStyleTool({}, root)
       expect(listed.ok).toBe(true)
-      expect(listed.answer).toEqual({
+      expect(listed.fields).toEqual({
         ok: true,
         styles: [{ name: "editorial", summary: "Calm editorial layout with strong serif headlines." }],
         note: "Call airdesign_get_style with a style name to read its guide and parameters.",
@@ -246,7 +246,7 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
 
       const loaded = getStyleTool({ name: "editorial" }, root)
       expect(loaded.ok).toBe(true)
-      expect(loaded.answer).toMatchObject({
+      expect(loaded.fields).toMatchObject({
         ok: true,
         name: "editorial",
         parameters: [
@@ -255,11 +255,11 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
         ],
         note: "Style editorial. Set its parameters before applying it to a deck.",
       })
-      expect((loaded.answer as { text: string }).text).toContain("# Editorial")
+      expect((loaded.fields as { text: string }).text).toContain("# Editorial")
 
       const missing = getStyleTool({ name: "nope" }, root)
       expect(missing.ok).toBe(false)
-      expect(missing.answer).toMatchObject({
+      expect(missing.fields).toMatchObject({
         ok: false,
         refusal: "field",
         field: "name",

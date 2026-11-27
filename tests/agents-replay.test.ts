@@ -2,7 +2,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { catalog, projectTools, readDeckId, type DeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
-import { callTool, emptyLog, type DeckHost, type ToolResult } from "@airdesign/mcp"
+import { callTool, emptyLog, type DeckHost, type Answer } from "@airdesign/mcp"
 import { describe, expect, it } from "vitest"
 import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import * as view from "../specs/agents/view.mjs"
@@ -99,7 +99,7 @@ function hosted(world: World) {
 async function call(world: World, by: Agent, op: string, args: unknown) {
   const { host, now, reads } = hosted(world)
   const calls = world.calls + 1
-  const result: ToolResult = await callTool(
+  const result: Answer = await callTool(
     toolNames[op] ?? op,
     args,
     {
@@ -111,7 +111,7 @@ async function call(world: World, by: Agent, op: string, args: unknown) {
     },
     host,
   )
-  return { answer: result.answer, server: now(), calls, reads }
+  return { answer: result.fields, server: now(), calls, reads }
 }
 
 function phaseOf(world: World, run: ModelRun): "idle" | "running" | "stopped" {

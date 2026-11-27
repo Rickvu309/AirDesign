@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 
-import { told, type ToolResult } from "./answer.js"
+import { told, type Answer } from "./answer.js"
 
 const nameLimit = 60
 
@@ -18,7 +18,7 @@ function sentence(each: OtherRun): string {
   return `${who} has a run open on this deck, last writing${where} at rev ${String(each.wrote)}.`
 }
 
-export function withOtherRuns(read: ToolResult, fold: doom.Doom, agent: string): ToolResult {
+export function withOtherRuns(read: Answer, fold: doom.Doom, agent: string): Answer {
   if (!read.ok) return read
   const otherRuns: OtherRun[] = doom
     .liveRuns(fold)
@@ -30,9 +30,9 @@ export function withOtherRuns(read: ToolResult, fold: doom.Doom, agent: string):
     }))
   if (otherRuns.length === 0) return read
   const note = [
-    read.answer.note,
+    read.fields.note,
     ...otherRuns.map(sentence),
     "Read again before you change a layer it may be changing.",
   ]
-  return told(true, { ...read.answer, note: note.join(" "), otherRuns })
+  return told(true, { ...read.fields, note: note.join(" "), otherRuns })
 }

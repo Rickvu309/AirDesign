@@ -52,12 +52,12 @@ type Found = { readonly code: string; readonly node: string; readonly with?: str
 describe("layout findings in the answers, measured by the host with the deck's fonts and no open tab", () => {
   it("lands an edit that covers the title's words and names the overlap on the slide it touched", async () => {
     const call = agent()
-    const { deck, rev, slides } = (await call("execute", { script: "createDeck()" })).answer as {
+    const { deck, rev, slides } = (await call("execute", { script: "createDeck()" })).fields as {
       deck: string
       rev: number
       slides: string[]
     }
-    const title = String((await readOf(call, deck)).answer.layers)
+    const title = String((await readOf(call, deck)).fields.layers)
       .split("\n")[1]!
       .trim()
       .split(" ")[0]!
@@ -67,7 +67,7 @@ describe("layout findings in the answers, measured by the host with the deck's f
       script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box, fill: "accent2" }]),
     })
     expect(landed.ok).toBe(true)
-    const answer = landed.answer as { rev: number; note: string; made: { ids: string[] }[]; problems: Found[] }
+    const answer = landed.fields as { rev: number; note: string; made: { ids: string[] }[]; problems: Found[] }
     expect(answer.rev).toBe(rev + 1)
     expect(answer.problems).toMatchObject([{ code: "overlap", node: title }])
     expect(answer.problems[0]!.note).toContain(answer.made[0]!.ids[0]!)
@@ -76,7 +76,7 @@ describe("layout findings in the answers, measured by the host with the deck's f
 
   it("reads each layer at the size it paints and lists the problems of the slides it read", async () => {
     const call = agent()
-    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).fields as {
       deck: string
       rev: number
       slides: string[]
@@ -85,7 +85,7 @@ describe("layout findings in the answers, measured by the host with the deck's f
       deck,
       script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box: { x: 1800, y: 900, w: 300, h: 100 } }]),
     })
-    const read = (await readOf(call, deck)).answer as { layers: string; problems: Found[] }
+    const read = (await readOf(call, deck)).fields as { layers: string; problems: Found[] }
     const title = estimate(doom.textFromMarkdown("Revenue by region", "title"), doom.defaultTheme, 1600).h
     expect(read.layers.split("\n")[1]).toContain(`1600x${String(Number(title.toFixed(1)))}`)
     expect(read.problems.map(({ code }) => code)).toEqual(["off-slide"])
@@ -93,7 +93,7 @@ describe("layout findings in the answers, measured by the host with the deck's f
 
   it("says the layout is clear when the slides it touched paint with nothing off, so the agent need not guess", async () => {
     const call = agent()
-    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).fields as {
       deck: string
       rev: number
       slides: string[]
@@ -102,15 +102,15 @@ describe("layout findings in the answers, measured by the host with the deck's f
       deck,
       script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box: { x: 160, y: 700, w: 400, h: 100 } }]),
     })
-    expect(landed.answer.problems).toEqual([])
-    expect(String(landed.answer.note)).toContain(
+    expect(landed.fields.problems).toEqual([])
+    expect(String(landed.fields.note)).toContain(
       "Layout clear: no overflow, overlap, line crossings, off-slide or small text.",
     )
   })
 
   const unchecked = async (measure: DeckHost["measure"]) => {
     const call = agent(measure)
-    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).fields as {
       deck: string
       rev: number
       slides: string[]
@@ -120,8 +120,8 @@ describe("layout findings in the answers, measured by the host with the deck's f
       script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box: { x: 160, y: 700, w: 400, h: 100 } }]),
     })
     expect(landed.ok).toBe(true)
-    expect(landed.answer.problems).toEqual([])
-    return String(landed.answer.note)
+    expect(landed.fields.problems).toEqual([])
+    return String(landed.fields.note)
   }
 
   it("lands the edit and says why the layout went unchecked: fonts, time or a fault", async () => {
@@ -142,7 +142,7 @@ describe("layout findings in the answers, measured by the host with the deck's f
 
   it("names only the texts whose letters the fonts lack, and still checks the rest of the slide", async () => {
     const call = agent(async () => measured(["🚀"]))
-    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).fields as {
       deck: string
       rev: number
       slides: string[]
@@ -154,7 +154,7 @@ describe("layout findings in the answers, measured by the host with the deck's f
         { op: "add", kind: "shape", slide: slides[0], box: { x: 1850, y: 900, w: 200, h: 100 } },
       ]),
     })
-    const answer = landed.answer as { note: string; made: { ids: string[] }[]; problems: Found[] }
+    const answer = landed.fields as { note: string; made: { ids: string[] }[]; problems: Found[] }
     expect(answer.problems).toMatchObject([{ code: "off-slide", node: answer.made[1]!.ids[0]! }])
     expect(answer.note).toContain(
       `${answer.made[0]!.ids[0]!} has a character the deck's fonts lack, so its overflow and overlap are unknown. Check it by eye, or change the font or the character.`,
@@ -164,7 +164,7 @@ describe("layout findings in the answers, measured by the host with the deck's f
 
   it("lists at most ten problems and says how many more the call holds", async () => {
     const call = agent()
-    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).fields as {
       deck: string
       rev: number
       slides: string[]
@@ -176,7 +176,7 @@ describe("layout findings in the answers, measured by the host with the deck's f
       box: { x: 1850, y: at * 80, w: 200, h: 60 },
     }))
     const landed = await call("execute", { deck, script: scriptOf(off) })
-    const answer = landed.answer as { note: string; problems: Found[] }
+    const answer = landed.fields as { note: string; problems: Found[] }
     expect(answer.problems).toHaveLength(10)
     expect(answer.problems[0]).toEqual({ code: "off-slide", node: expect.any(String), note: expect.any(String) })
     expect(answer.note).toContain("2 more are not listed")
@@ -200,15 +200,15 @@ describe("the note on texts the fonts cannot measure", () => {
   it("names every text up to five, then counts the rest, in the right number", async () => {
     const note = async (count: number) => {
       const call = agent(async () => measured(["🚀"]))
-      const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
+      const { deck, slides } = (await call("execute", { script: "createDeck()" })).fields as {
         deck: string
         rev: number
         slides: string[]
       }
       const changes = texts(count).map((change) => ({ ...change, slide: slides[0] }))
       const landed = await call("execute", { deck, script: scriptOf(changes) })
-      const { made } = landed.answer as { made: { ids: string[] }[] }
-      return { note: String(landed.answer.note), ids: made.flatMap((each) => each.ids) }
+      const { made } = landed.fields as { made: { ids: string[] }[] }
+      return { note: String(landed.fields.note), ids: made.flatMap((each) => each.ids) }
     }
     const two = await note(2)
     expect(two.note).toContain(

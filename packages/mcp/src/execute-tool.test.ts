@@ -19,10 +19,10 @@ function agent(more: Partial<DeckHost> = {}) {
   const call = async (name: string, args: unknown, once?: string) => {
     session.once = once ?? `call${String((calls += 1))}`
     const result = await callTool(`airdesign_${name}`, args, session, host)
-    return { ...result, answer: result.answer as Answer }
+    return { ...result, fields: result.fields as Answer }
   }
   const made = async () =>
-    (await call("execute", { script: "createDeck()" })).answer as { deck: string; slides: string[] }
+    (await call("execute", { script: "createDeck()" })).fields as { deck: string; slides: string[] }
   const fold = (deck: string) => decks.decks.get(deck as never)!
   const live = (deck: string) =>
     new Set([
@@ -47,13 +47,13 @@ describe("execute runs a script as one edit", () => {
         s
       `,
     })
-    expect(answer.ok, JSON.stringify(answer.answer)).toBe(true)
-    expect(answer.answer.made).toHaveLength(30)
-    expect(answer.answer.rev).toBe(before.rev + 1)
-    const slide = answer.answer.result as string
+    expect(answer.ok, JSON.stringify(answer.fields)).toBe(true)
+    expect(answer.fields.made).toHaveLength(30)
+    expect(answer.fields.rev).toBe(before.rev + 1)
+    const slide = answer.fields.result as string
     expect(doom.childrenOf(by.fold(deck), slide as doom.NodeId)).toHaveLength(29)
-    const undone = await by.call("undo_run", { deck, runId: answer.answer.runId })
-    expect(undone.ok, JSON.stringify(undone.answer)).toBe(true)
+    const undone = await by.call("undo_run", { deck, runId: answer.fields.runId })
+    expect(undone.ok, JSON.stringify(undone.fields)).toBe(true)
     expect(doom.slidesOf(by.fold(deck)).map((each) => each.id)).toEqual(doom.slidesOf(before).map((each) => each.id))
     expect(by.live(deck).has(slide)).toBe(false)
   })
@@ -81,13 +81,13 @@ describe("execute runs a script as one edit", () => {
         ids
       `,
     })
-    expect(answer.ok, JSON.stringify(answer.answer)).toBe(true)
+    expect(answer.ok, JSON.stringify(answer.fields)).toBe(true)
     const live = by.live(deck)
-    for (const id of answer.answer.result as string[]) expect(live.has(id), id).toBe(true)
-    for (const made of answer.answer.made as { verb: string; ids: string[] }[])
+    for (const id of answer.fields.result as string[]) expect(live.has(id), id).toBe(true)
+    for (const made of answer.fields.made as { verb: string; ids: string[] }[])
       if (made.verb !== "copy") for (const id of made.ids) expect(live.has(id), id).toBe(true)
-    expect(Object.keys(answer.answer.names)).toEqual(["One card", "Two card", "Three card"])
-    expect(answer.answer.bakedLayouts).toHaveLength(3)
+    expect(Object.keys(answer.fields.names)).toEqual(["One card", "Two card", "Three card"])
+    expect(answer.fields.bakedLayouts).toHaveLength(3)
   })
 
   it("refuses the whole call when an operation is refused, naming it by number, verb and line", async () => {
@@ -99,8 +99,8 @@ describe("execute runs a script as one edit", () => {
       script: `const s = insert({ kind: "slide" })\ninsert({ parent: s, kind: "text", text: "fine" })\ninsert({ parent: s, kind: "text", fill: "accent9" })`,
     })
     expect(answer.ok).toBe(false)
-    expect(answer.answer).toMatchObject({ refusal: "field", op: 3, verb: "insert", line: 3 })
-    expect(String(answer.answer.note)).toMatch(/^Nothing landed\. Operation 3 \(insert\) at line 3: /)
+    expect(answer.fields).toMatchObject({ refusal: "field", op: 3, verb: "insert", line: 3 })
+    expect(String(answer.fields.note)).toMatch(/^Nothing landed\. Operation 3 \(insert\) at line 3: /)
     expect(by.fold(deck).rev).toBe(before)
   })
 
@@ -111,9 +111,9 @@ describe("execute runs a script as one edit", () => {
       deck,
       script: `const s = insert({ kind: "slide" }); try { insert({ parent: "nope:1", kind: "text" }) } catch (e) { print(e.message) }; s`,
     })
-    expect(answer.ok, JSON.stringify(answer.answer)).toBe(true)
-    expect(answer.answer.logs).toEqual([expect.stringMatching(/^Operation 2 \(insert\): /)])
-    expect(by.live(deck).has(answer.answer.result)).toBe(true)
+    expect(answer.ok, JSON.stringify(answer.fields)).toBe(true)
+    expect(answer.fields.logs).toEqual([expect.stringMatching(/^Operation 2 \(insert\): /)])
+    expect(by.live(deck).has(answer.fields.result)).toBe(true)
   })
 
   it("names a thrown error and its line when the script itself fails, and lands nothing", async () => {
@@ -121,8 +121,8 @@ describe("execute runs a script as one edit", () => {
     const { deck } = await by.made()
     const before = by.fold(deck).rev
     const answer = await by.call("execute", { deck, script: `insert({ kind: "slide" })\n\nnotAFunction()` })
-    expect(answer.answer).toMatchObject({ ok: false, refusal: "script", line: 3 })
-    expect(String(answer.answer.note)).toContain("ReferenceError")
+    expect(answer.fields).toMatchObject({ ok: false, refusal: "script", line: 3 })
+    expect(String(answer.fields.note)).toContain("ReferenceError")
     expect(by.fold(deck).rev).toBe(before)
   })
 
@@ -130,7 +130,7 @@ describe("execute runs a script as one edit", () => {
     const by = agent()
     const { deck } = await by.made()
     const answer = await by.call("execute", { deck, script: `// ${"x".repeat(100_000)}` })
-    expect(answer.answer).toMatchObject({ ok: false, refusal: "field", field: "script", fault: "form" })
+    expect(answer.fields).toMatchObject({ ok: false, refusal: "field", field: "script", fault: "form" })
   })
 
   it("answers a read-only script without landing or starting a run", async () => {
@@ -141,9 +141,9 @@ describe("execute runs a script as one edit", () => {
       deck,
       script: `const d = get(); const s = get({ target: d.slides[0] }); [d.kind, d.slides.length, s.kind, typeof s.layers]`,
     })
-    expect(answer.answer).toMatchObject({ ok: true, rev: before, result: ["deck", slides.length, "slide", "string"] })
-    expect(answer.answer.runId).toBeUndefined()
-    expect(String(answer.answer.note)).toContain("only read the deck")
+    expect(answer.fields).toMatchObject({ ok: true, rev: before, result: ["deck", slides.length, "slide", "string"] })
+    expect(answer.fields.runId).toBeUndefined()
+    expect(String(answer.fields.note)).toContain("only read the deck")
   })
 
   it("answers the same call again with what it landed, without running the script twice", async () => {
@@ -152,8 +152,8 @@ describe("execute runs a script as one edit", () => {
     const script = `insert({ kind: "slide" })`
     const first = await by.call("execute", { deck, script }, "same-call")
     const again = await by.call("execute", { deck, script }, "same-call")
-    expect(again.answer).toMatchObject({ ok: true, rev: first.answer.rev, runId: first.answer.runId })
-    expect(String(again.answer.note)).toContain("landed before")
+    expect(again.fields).toMatchObject({ ok: true, rev: first.fields.rev, runId: first.fields.runId })
+    expect(String(again.fields.note)).toContain("landed before")
     expect(doom.slidesOf(by.fold(deck))).toHaveLength(2)
   })
 
@@ -164,10 +164,10 @@ describe("execute runs a script as one edit", () => {
       deck,
       script: `insert({ parent: "${slides[0]}", kind: "text", text: "Original" })`,
     })
-    const lead = first.answer.result as doom.NodeId
+    const lead = first.fields.result as doom.NodeId
     const read = { deck, script: `get({ target: "${lead}" })` }
     const write = { deck, script: `update({ target: "${lead}", text: "Agent's revision" })` }
-    expect((await by.call("execute", read)).answer.result.layers).toContain("Original")
+    expect((await by.call("execute", read)).fields.result.layers).toContain("Original")
     const named = readDeckId(deck)
     if (!named.ok) throw new Error("invalid deck")
     const fold = by.fold(deck)
@@ -179,8 +179,8 @@ describe("execute runs a script as one edit", () => {
     expect(typed.ok).toBe(true)
 
     const refused = await by.call("execute", write)
-    expect(refused.answer).toMatchObject({ ok: false, refusal: "stale", node: lead, prop: "text" })
-    expect(String(refused.answer.note)).toContain("Read")
+    expect(refused.fields).toMatchObject({ ok: false, refusal: "stale", node: lead, prop: "text" })
+    expect(String(refused.fields.note)).toContain("Read")
     expect(by.fold(deck).rev).toBe(typed.ok ? typed.rev : undefined)
     expect(doom.propOf(by.fold(deck).nodes.get(lead), "text")?.chars).toBe("Person's revision")
 
@@ -189,9 +189,9 @@ describe("execute runs a script as one edit", () => {
       script: `insert({ parent: "${slides[0]}", kind: "shape", shape: "rect" })`,
     })
     expect(unrelated.ok).toBe(true)
-    expect((await by.call("execute", write)).answer).toMatchObject({ ok: false, refusal: "stale" })
+    expect((await by.call("execute", write)).fields).toMatchObject({ ok: false, refusal: "stale" })
 
-    expect((await by.call("execute", read)).answer.result.layers).toContain("Person's revision")
+    expect((await by.call("execute", read)).fields.result.layers).toContain("Person's revision")
     expect((await by.call("execute", write)).ok).toBe(true)
     expect(doom.propOf(by.fold(deck).nodes.get(lead), "text")?.chars).toBe("Agent's revision")
   })
@@ -222,11 +222,11 @@ describe("execute runs a script as one edit", () => {
       deck,
       script: `insert({ parent: "${slides[0]}", kind: "text", text: "First" })`,
     })
-    const lead = first.answer.result as doom.NodeId
+    const lead = first.fields.result as doom.NodeId
     racing = true
     const answer = await by.call("execute", { deck, script: `update({ target: "${lead}", text: "Second" })` })
-    expect(answer.answer, JSON.stringify(answer.answer)).toMatchObject({ ok: false, refusal: "stale" })
-    expect(String(answer.answer.note)).toContain("The deck changed while the call ran")
+    expect(answer.fields, JSON.stringify(answer.fields)).toMatchObject({ ok: false, refusal: "stale" })
+    expect(String(answer.fields.note)).toContain("The deck changed while the call ran")
     expect(doom.propOf(by.fold(deck).nodes.get(lead), "text")?.chars).toBe("Fifth")
   })
 })
@@ -245,8 +245,8 @@ describe("what get reads inside a script", () => {
         ;[read.kind, read.box, read.children.length, read.problems.map((p) => p.code)]
       `,
     })
-    expect(answer.ok, JSON.stringify(answer.answer)).toBe(true)
-    expect(answer.answer.result).toEqual(["frame", { x: 1700, y: 900, w: 400, h: 300 }, 1, ["off-slide"]])
+    expect(answer.ok, JSON.stringify(answer.fields)).toBe(true)
+    expect(answer.fields.result).toEqual(["frame", { x: 1700, y: 900, w: 400, h: 300 }, 1, ["off-slide"]])
   })
 
   it("finds layers by their words", async () => {
@@ -256,7 +256,7 @@ describe("what get reads inside a script", () => {
       deck,
       script: `insert({ parent: "${slides[0]!}", kind: "text", text: "Revenue grew" }); get({ find: "revenue" }).found`,
     })
-    expect(answer.answer.result).toBe(1)
+    expect(answer.fields.result).toBe(1)
   })
 })
 
@@ -266,8 +266,8 @@ describe("screenshots in an execute answer", () => {
     const { deck, slides } = await by.made()
     const answer = await by.call("execute", { deck, script: `screenshot({ target: "${slides[0]!}" })` })
     expect(answer.ok).toBe(true)
-    expect(String(answer.answer.note)).toContain("none is open")
-    expect(answer.content.some((block) => block.type === "image")).toBe(false)
+    expect(String(answer.fields.note)).toContain("none is open")
+    expect(answer.pictures).toEqual([])
   })
 
   it("adds the open tab's picture of each slide asked for, once for the call", async () => {
@@ -284,8 +284,8 @@ describe("screenshots in an execute answer", () => {
       script: `const s = insert({ kind: "slide" }); screenshot({ target: s }); screenshot({ target: "${slides[0]!}" }); screenshot({ target: s })`,
     })
     expect(asked).toBe(1)
-    expect(answer.answer.pictures).toHaveLength(2)
-    expect(answer.content.filter((block) => block.type === "image")).toHaveLength(2)
+    expect(answer.fields.pictures).toHaveLength(2)
+    expect(answer.pictures).toEqual(["QUFB", "QUFB"])
   })
 })
 
@@ -297,7 +297,7 @@ describe("refusal notes in the operation's own words", () => {
       deck,
       script: `const s = insert({ kind: "slide" })\nconst f = insert({ parent: s, kind: "frame", layout: "column" })\nupdate({ target: f, textStyle: "title" })`,
     })
-    expect(String(answer.answer.note)).toMatch(
+    expect(String(answer.fields.note)).toMatch(
       /Operation 3 \(update\) at line 3: .* is a frame, which takes no textStyle\. Set it on the text layers inside/,
     )
   })
@@ -309,7 +309,7 @@ describe("refusal notes in the operation's own words", () => {
       deck,
       script: `insert({ parent: "${slides[0]!}", kind: "text", slide: "x" })`,
     })
-    const note = String(answer.answer.note)
+    const note = String(answer.fields.note)
     expect(note).toContain("insert takes no slide. Its fields: parent, kind,")
     expect(note).not.toMatch(/\binto\b|component|tokens/)
   })
@@ -323,7 +323,7 @@ describe("operation names a script can call", () => {
       deck,
       script: `const s = insert({ kind: "slide" }); remove({ target: s }); get().slides.includes(s)`,
     })
-    expect(answer.answer).toMatchObject({ ok: true, result: false, made: [{ op: 1, verb: "insert" }] })
+    expect(answer.fields).toMatchObject({ ok: true, result: false, made: [{ op: 1, verb: "insert" }] })
     expect(doom.slidesOf(by.fold(deck))).toHaveLength(1)
   })
 })
@@ -349,7 +349,7 @@ describe("an insert that fills a slide's title placeholder", () => {
     const decks = memoryDecks(titled)
     const session: Session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0 }
     session.once = "make"
-    const made = (await callTool("airdesign_execute", { script: "createDeck()" }, session, decks)).answer as {
+    const made = (await callTool("airdesign_execute", { script: "createDeck()" }, session, decks)).fields as {
       deck: string
       slides: string[]
     }
@@ -364,6 +364,6 @@ describe("an insert that fills a slide's title placeholder", () => {
       decks,
     )
     const placeholder = doom.childrenOf(decks.decks.get(made.deck as never)!, made.slides[0] as doom.NodeId)[0]!.id
-    expect(answer.answer).toMatchObject({ ok: true, made: [{ op: 1, verb: "insert", ids: [placeholder] }] })
+    expect(answer.fields).toMatchObject({ ok: true, made: [{ op: 1, verb: "insert", ids: [placeholder] }] })
   })
 })

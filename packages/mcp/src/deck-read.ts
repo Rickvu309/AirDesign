@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 
-import { answered, refused, type ToolResult } from "./answer.js"
+import { answered, refused, type Answer } from "./answer.js"
 import type { Opened } from "./deck-host.js"
 import { type Laid, listed, readFindingsNote } from "./layout-findings-answer.js"
 
@@ -17,7 +17,7 @@ const lead = (opened: Opened, count: number) =>
 
 const foundLimit = 400
 
-function foundAnswer(opened: Opened, find: string, detail: doom.NodeId | undefined): ToolResult {
+function foundAnswer(opened: Opened, find: string, detail: doom.NodeId | undefined): Answer {
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
   const wanted = find.toLowerCase()
   const lines = slides.flatMap((slide) =>
@@ -51,7 +51,7 @@ type Query = {
 
 type Chosen =
   | { readonly ok: true; readonly chosen: readonly doom.NodeId[]; readonly next: doom.NodeId | undefined }
-  | { readonly ok: false; readonly result: ToolResult }
+  | { readonly ok: false; readonly result: Answer }
 
 function chosenSlides(opened: Opened, query: Query): Chosen {
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
@@ -75,7 +75,7 @@ function chosenSlides(opened: Opened, query: Query): Chosen {
   return { ok: true, chosen, next: wanted[chosen.length] }
 }
 
-export function readAnswer(opened: Opened, query: Query, laid?: Laid): ToolResult {
+export function readAnswer(opened: Opened, query: Query, laid?: Laid): Answer {
   const detail = doom.readNodeId(query.detail)
   if (query.find !== undefined) return foundAnswer(opened, query.find, detail)
   const picked = chosenSlides(opened, query)

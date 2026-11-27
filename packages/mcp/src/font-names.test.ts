@@ -39,7 +39,7 @@ function agent() {
 describe("a raw size and font over the protocol", () => {
   it("lands a font the catalog serves under its own name, and names a size off the scale", async () => {
     const call = agent()
-    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).fields as {
       deck: string
       rev: number
       slides: string[]
@@ -50,19 +50,19 @@ describe("a raw size and font over the protocol", () => {
       script: scriptOf([{ op: "set", target: title, font: "montserrat", size: 72 }]),
     })
     expect(landed.ok).toBe(true)
-    expect(landed.answer).toMatchObject({
+    expect(landed.fields).toMatchObject({
       problems: [
         { code: "off-scale", size: 72, style: expect.any(String), to: expect.any(Number) },
         { code: "off-font", font: "Montserrat" },
       ],
     })
     const read = await readOf(call, deck)
-    expect(String(read.answer.layers)).toContain('size=72 font="Montserrat"')
+    expect(String(read.fields.layers)).toContain('size=72 font="Montserrat"')
   })
 
   it("sets a weight the panel names, and reads the family and that weight", async () => {
     const call = agent()
-    const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
+    const { deck, slides } = (await call("execute", { script: "createDeck()" })).fields as {
       deck: string
       rev: number
       slides: string[]
@@ -74,14 +74,14 @@ describe("a raw size and font over the protocol", () => {
     })
     expect(landed.ok).toBe(true)
     const read = await readOf(call, deck)
-    expect(String(read.answer.layers)).toContain('font="Inter"')
-    expect(String(read.answer.layers)).toContain("weight=ExtraBold")
-    expect(String(read.answer.layers)).not.toContain("Inter ExtraBold")
+    expect(String(read.fields.layers)).toContain('font="Inter"')
+    expect(String(read.fields.layers)).toContain("weight=ExtraBold")
+    expect(String(read.fields.layers)).not.toContain("Inter ExtraBold")
   })
 
   it("names no off-font finding for a weight set on the deck's own family", async () => {
     const call = agent()
-    const { deck, rev, slides } = (await call("execute", { script: "createDeck()" })).answer as {
+    const { deck, rev, slides } = (await call("execute", { script: "createDeck()" })).fields as {
       deck: string
       rev: number
       slides: string[]
@@ -93,14 +93,14 @@ describe("a raw size and font over the protocol", () => {
         script: scriptOf([{ op: "set", target: `${slides[0]!}.title`, weight }]),
       })
       expect(landed.ok).toBe(true)
-      expect(JSON.stringify(landed.answer)).not.toContain("off-font")
+      expect(JSON.stringify(landed.fields)).not.toContain("off-font")
       base += 1
     }
   })
 
   it("refuses a font the catalog does not serve, and lands nothing", async () => {
     const call = agent()
-    const { deck, rev, slides } = (await call("execute", { script: "createDeck()" })).answer as {
+    const { deck, rev, slides } = (await call("execute", { script: "createDeck()" })).fields as {
       deck: string
       rev: number
       slides: string[]
@@ -109,27 +109,27 @@ describe("a raw size and font over the protocol", () => {
       deck,
       script: scriptOf([{ op: "set", target: `${slides[0]!}.title`, font: "Nowhere Grotesk" }]),
     })
-    expect(unknown.answer).toMatchObject({ ok: false, refusal: "field", field: "font", op: 1 })
-    expect(String(unknown.answer.note)).toContain(
+    expect(unknown.fields).toMatchObject({ ok: false, refusal: "field", field: "font", op: 1 })
+    expect(String(unknown.fields.note)).toContain(
       "Nowhere Grotesk is not in AirDesign's font catalog, so nothing landed.",
     )
-    expect((await readOf(call, deck)).answer.rev).toBe(rev)
+    expect((await readOf(call, deck)).fields.rev).toBe(rev)
   })
   it("sets the theme's fonts under the catalog's own names, and refuses a family it does not serve", async () => {
     const call = agent()
-    const { deck } = (await call("execute", { script: "createDeck()" })).answer as { deck: string; rev: number }
+    const { deck } = (await call("execute", { script: "createDeck()" })).fields as { deck: string; rev: number }
     const themed = await call("execute", {
       deck,
       script: scriptOf([{ op: "deck", name: "Board", fonts: { heading: "lora" } }]),
     })
     expect(themed.ok).toBe(true)
-    expect((await readOf(call, deck)).answer).toMatchObject({ theme: { fonts: { heading: "Lora" } } })
+    expect((await readOf(call, deck)).fields).toMatchObject({ theme: { fonts: { heading: "Lora" } } })
     const unknown = await call("execute", {
       deck,
-      runId: (themed.answer as { runId: string }).runId,
+      runId: (themed.fields as { runId: string }).runId,
       script: scriptOf([{ op: "deck", fonts: { body: "Nowhere Grotesk" } }]),
     })
-    expect(unknown.answer).toMatchObject({ ok: false, refusal: "field", field: "fonts.body", op: 1 })
-    expect((await call("get_app_state", {})).answer).toMatchObject({ decks: [{ deck, name: "Board" }] })
+    expect(unknown.fields).toMatchObject({ ok: false, refusal: "field", field: "fonts.body", op: 1 })
+    expect((await call("get_app_state", {})).fields).toMatchObject({ decks: [{ deck, name: "Board" }] })
   })
 })

@@ -1,7 +1,7 @@
 import { readNamedDeck, readRun, runUndoStays, undoStaysNote } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
-import { answered, hostRefused, refused, type ToolResult } from "./answer.js"
+import { answered, hostRefused, refused, type Answer } from "./answer.js"
 import type { DeckHost, RunLog, UndoHost } from "./deck-host.js"
 import { deckMeasure } from "./deck-measure.js"
 
@@ -64,13 +64,13 @@ function positionNodes(fold: doom.Doom, edits: readonly doom.RunEdit[]): readonl
   return [...nodes]
 }
 
-export async function undoRunTool(raw: unknown, agent: string, once: string, host: DeckHost): Promise<ToolResult> {
+export async function undoRunTool(raw: unknown, agent: string, once: string, host: DeckHost): Promise<Answer> {
   const named = readNamedDeck(raw)
   if (!named.ok) return refused(named.refusal)
   const parsed = readRun(raw)
   if (!parsed.ok) return refused(parsed.refusal)
   const result = await host.withUndo(named.deck, (locked) => turnRun(named.deck, parsed.runId, agent, once, locked))
-  return "answer" in result ? result : hostRefused(result)
+  return "fields" in result ? result : hostRefused(result)
 }
 
 async function turnRun(
@@ -79,7 +79,7 @@ async function turnRun(
   agent: string,
   once: string,
   host: UndoHost,
-): Promise<ToolResult> {
+): Promise<Answer> {
   const opened = await host.open(deck)
   if (!opened.ok) return hostRefused(opened)
   const run = opened.fold.runs.get(runId)
@@ -135,7 +135,7 @@ async function turnRun(
   const writes = doom.freeLineEnds(opened.fold, edit.writes, lineMeasure?.measure ?? doom.measureWith({}))
   const landed = await host.edit(opened.deck, { ...edit, writes })
   if (!landed.ok) {
-    return answered(undoRefused, { ok: false, reason: "refused", refusal: hostRefused(landed).answer.refusal, ...body })
+    return answered(undoRefused, { ok: false, reason: "refused", refusal: hostRefused(landed).fields.refusal, ...body })
   }
   return answered(note === "" ? undoneWord : `${undoneWord}. ${note}`, {
     ok: true,

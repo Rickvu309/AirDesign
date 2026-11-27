@@ -169,7 +169,7 @@ export async function bakeParity(business = false) {
             measure: (folds, layers) => metrics.measure(folds, Infinity, layers),
           }
           const session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0, once: "bake" }
-          const { answer } = await callTool(
+          const { fields: answer } = await callTool(
             "airdesign_execute",
             { deck: id, script: `update({ target: "${ids.row}", layout: "none" })` },
             session,

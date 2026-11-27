@@ -2,7 +2,7 @@ import { catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it, vi } from "vitest"
 
-import { emptyLog, callTool, type Session, type ToolResult } from "./index.js"
+import { emptyLog, callTool, type Session, type Answer } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks, type MemoryDecks } from "./testing/memory-decks.js"
 
@@ -36,7 +36,7 @@ function agent(decks: MemoryDecks = memoryDecks(start), id = "aira", name = "Air
   let calls = 0
   return {
     decks,
-    call: async (op: string, args: unknown, once?: string): Promise<ToolResult> => {
+    call: async (op: string, args: unknown, once?: string): Promise<Answer> => {
       session.once = once ?? `call${String((calls += 1))}`
       return callTool(names[op] ?? op, args, session, decks)
     },
@@ -46,22 +46,22 @@ function agent(decks: MemoryDecks = memoryDecks(start), id = "aira", name = "Air
 async function renamed() {
   const by = agent()
   const made = await by.call("execute", { script: 'createDeck({ name: "Board" })' })
-  const deck = made.answer.deck as string
+  const deck = made.fields.deck as string
   const fold = by.decks.decks.get(deck as never)!
   const title = [...fold.nodes.values()].find((node) => node.type === "shape")!
   const landed = await by.call("execute", {
     deck,
     script: scriptOf([{ op: "set", target: title.id, name: "Renamed" }]),
   })
-  const runId = landed.answer.runId as string
-  return { by, deck, rev: landed.answer.rev as number, runId, title: title.id }
+  const runId = landed.fields.runId as string
+  return { by, deck, rev: landed.fields.rev as number, runId, title: title.id }
 }
 
 describe("undo_run", () => {
   it("takes the agent's own run back and says so, then says when there is nothing left", async () => {
     const { by, deck, runId, title } = await renamed()
     const undone = await by.call("undo_run", { deck, runId })
-    expect(undone.answer).toMatchObject({
+    expect(undone.fields).toMatchObject({
       ok: true,
       deck,
       runId,
@@ -70,11 +70,10 @@ describe("undo_run", () => {
       waiting: [],
       note: "Undone",
     })
-    expect(undone.content).toEqual([{ type: "text", text: JSON.stringify(undone.answer) }])
     expect(doom.propOf(by.decks.decks.get(deck as never)!.nodes.get(title), "name")).toBe("Title")
     expect(by.decks.decks.get(deck as never)!.runs.get(runId)?.undone).toBe(true)
     const again = await by.call("undo_run", { deck, runId })
-    expect(again.answer).toMatchObject({
+    expect(again.fields).toMatchObject({
       ok: false,
       reason: "nothing",
       note: "Unable to undo. Everything it changed was changed or deleted since.",
@@ -85,20 +84,20 @@ describe("undo_run", () => {
   it("leaves a layer a person changed since, says why, and takes the rest back", async () => {
     const by = agent()
     const made = await by.call("execute", { script: 'createDeck({ name: "Board" })' })
-    const deck = made.answer.deck as string
-    const slides = made.answer.slides as string[]
+    const deck = made.fields.deck as string
+    const slides = made.fields.slides as string[]
     const first = await by.call("execute", {
       deck,
       script: scriptOf([{ op: "add", kind: "text", slide: slides[0], text: "Hello" }]),
     })
-    const runId = first.answer.runId as string
-    const hello = (first.answer.made as { ids: string[] }[])[0]!.ids[0]!
+    const runId = first.fields.runId as string
+    const hello = (first.fields.made as { ids: string[] }[])[0]!.ids[0]!
     const second = await by.call("execute", {
       deck,
       script: scriptOf([{ op: "add", kind: "text", slide: slides[0], text: "Note" }]),
       runId,
     })
-    const note = (second.answer.made as { ids: string[] }[])[0]!.ids[0]!
+    const note = (second.fields.made as { ids: string[] }[])[0]!.ids[0]!
     const person = await by.decks.edit(deck as never, {
       once: "person",
       author: { kind: "person", id: "quan" },
@@ -106,7 +105,7 @@ describe("undo_run", () => {
     })
     expect(person.ok).toBe(true)
     const undone = await by.call("undo_run", { deck, runId })
-    expect(undone.answer).toMatchObject({
+    expect(undone.fields).toMatchObject({
       ok: true,
       kept: [hello],
       left: [],
@@ -122,8 +121,8 @@ describe("undo_run", () => {
   it("takes the agent's own turn off a layer it leaves where the agent put it, and keeps the turn the person saw", async () => {
     const by = agent()
     const made = await by.call("execute", { script: 'createDeck({ name: "Board" })' })
-    const deck = made.answer.deck as string
-    const slide = (made.answer.slides as string[])[0] as doom.NodeId
+    const deck = made.fields.deck as string
+    const slide = (made.fields.slides as string[])[0] as doom.NodeId
     const [outer, group, card] = [doom.nodeId("g:101"), doom.nodeId("g:102"), doom.nodeId("g:103")]
     const at = (parent: doom.NodeId) => ({ id: parent, at: doom.orderKeyBetween(null, null) })
     const turned = (x: number, rotation: number) => ({ x, y: x, w: 100, h: 50, rotation, flipH: false, flipV: false })
@@ -159,7 +158,7 @@ describe("undo_run", () => {
     ]
     for (const edit of edits) expect((await by.decks.edit(deck as never, edit as never)).ok).toBe(true)
     const undone = await by.call("undo_run", { deck, runId: "run-1" })
-    expect(undone.answer).toMatchObject({ ok: true, kept: [], left: [card], waiting: [] })
+    expect(undone.fields).toMatchObject({ ok: true, kept: [], left: [card], waiting: [] })
     const fold = by.decks.decks.get(deck as never)!
     expect(doom.parentOf(fold.nodes.get(card)!)?.id).toBe(slide)
     expect(doom.propOf(fold.nodes.get(card), "box")).toEqual(turned(190, 30))
@@ -169,11 +168,11 @@ describe("undo_run", () => {
     const { by, deck, runId, title } = await renamed()
     const other = agent(by.decks, "other", "Other")
     const refused = await other.call("undo_run", { deck, runId })
-    expect(refused.answer).toMatchObject({ ok: false, refusal: "run-fenced" })
+    expect(refused.fields).toMatchObject({ ok: false, refusal: "run-fenced" })
     const stopped = await by.call("stop_run", { deck, runId })
-    expect(stopped.answer.ok).toBe(true)
+    expect(stopped.fields.ok).toBe(true)
     const undone = await by.call("undo_run", { deck, runId })
-    expect(undone.answer).toMatchObject({ ok: true, note: "Undone" })
+    expect(undone.fields).toMatchObject({ ok: true, note: "Undone" })
     expect(doom.propOf(by.decks.decks.get(deck as never)!.nodes.get(title), "name")).toBe("Title")
   })
 })
@@ -204,7 +203,7 @@ describe("design details an agent sets", () => {
       ),
     )
     const made = await by.call("execute", { script: 'createDeck({ name: "Design details" })' })
-    const deck = made.answer.deck
+    const deck = made.fields.deck
     const key = [...by.decks.decks.keys()].find((id) => id === deck)
     if (key === undefined) throw new Error("No deck was created")
     const before = by.decks.decks.get(key)!
@@ -226,7 +225,7 @@ describe("design details an agent sets", () => {
         { op: "set", target: star, strokeWidth: 8 },
       ]),
     })
-    expect(edited.answer).toMatchObject({ ok: true })
+    expect(edited.fields).toMatchObject({ ok: true })
     const written = by.decks.decks.get(key)!
     expect(doom.propOf(written.nodes.get(words), "text")).toMatchObject({
       paras: [{ lineHeight: 1.5 }],
@@ -241,16 +240,16 @@ describe("design details an agent sets", () => {
 
     const strength = await by.call("execute", {
       deck,
-      runId: edited.answer.runId,
+      runId: edited.fields.runId,
       script: scriptOf([{ op: "set", target: card, effectOpacity: 0.4 }]),
     })
-    expect(strength.answer).toMatchObject({ ok: true })
+    expect(strength.fields).toMatchObject({ ok: true })
     expect(doom.propOf(by.decks.decks.get(key)?.nodes.get(card), "effects")).toEqual(
       doom.defaultTheme.effectStyles.glow.map((effect) => ({ ...effect, opacity: 0.4 })),
     )
 
-    const undone = await by.call("undo_run", { deck, runId: edited.answer.runId })
-    expect(undone.answer).toMatchObject({ ok: true, kept: [], left: [], waiting: [] })
+    const undone = await by.call("undo_run", { deck, runId: edited.fields.runId })
+    expect(undone.fields).toMatchObject({ ok: true, kept: [], left: [], waiting: [] })
     const restored = by.decks.decks.get(key)!
     for (const [id, fields] of [
       [words, ["text"]],
@@ -271,10 +270,10 @@ it("undoes consecutive runs that both renamed the same layer", async () => {
     deck,
     script: scriptOf([{ op: "set", target: title, name: "Newer" }]),
   })
-  expect(newer.answer.ok).toBe(true)
-  expect((await by.call("undo_run", { deck, runId: newer.answer.runId })).answer.ok).toBe(true)
+  expect(newer.fields.ok).toBe(true)
+  expect((await by.call("undo_run", { deck, runId: newer.fields.runId })).fields.ok).toBe(true)
   expect(doom.propOf(by.decks.decks.get(deck as never)?.nodes.get(title), "name")).toBe("Renamed")
-  expect((await by.call("undo_run", { deck, runId })).answer.ok).toBe(true)
+  expect((await by.call("undo_run", { deck, runId })).fields.ok).toBe(true)
   expect(doom.propOf(by.decks.decks.get(deck as never)?.nodes.get(title), "name")).toBe("Title")
 })
 
@@ -284,7 +283,7 @@ it("explains a run undo that exceeds the size limit", async () => {
   vi.spyOn(by.decks, "withUndo").mockImplementation((deck, turn) =>
     withUndo(deck, (locked) => turn({ ...locked, run: async () => ({ ok: false, refusal: "size" }) })),
   )
-  expect((await by.call("undo_run", { deck, runId })).answer).toMatchObject({
+  expect((await by.call("undo_run", { deck, runId })).fields).toMatchObject({
     ok: false,
     refusal: "size",
     note: "Unable to undo. This run made too many changes.",

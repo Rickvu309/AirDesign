@@ -1,7 +1,7 @@
 import type * as doom from "@airdesign/doom"
 import { readKitPiece } from "@airdesign/kit"
 
-import { refused, type ToolResult } from "./answer.js"
+import { refused, type Answer } from "./answer.js"
 
 type Paste = Extract<doom.AgentChange, { op: "paste" }>
 type Fields = Readonly<Record<string, unknown>>
@@ -9,7 +9,7 @@ type Fields = Readonly<Record<string, unknown>>
 const kitPrefix = "kit/"
 const coordinate = (value: unknown) => typeof value === "number" && Number.isFinite(value)
 
-function boxOf(box: unknown): Pick<Paste, "box"> | ToolResult {
+function boxOf(box: unknown): Pick<Paste, "box"> | Answer {
   if (box === undefined) return {}
   const given = typeof box === "object" && box !== null ? (box as Fields) : {}
   const sides = ["x", "y", "w", "h"].filter((key) => given[key] !== undefined)
@@ -21,7 +21,7 @@ function boxOf(box: unknown): Pick<Paste, "box"> | ToolResult {
   return { box: Object.fromEntries(sides.map((key) => [key, given[key]])) as NonNullable<Paste["box"]> }
 }
 
-export function readPaste(fields: Fields): Pick<Paste, "piece" | "box"> | ToolResult | undefined {
+export function readPaste(fields: Fields): Pick<Paste, "piece" | "box"> | Answer | undefined {
   if (fields.from === undefined) {
     const placed = ["parent", "box"].find((key) => fields[key] !== undefined)
     return placed === undefined
@@ -42,5 +42,5 @@ export function readPaste(fields: Fields): Pick<Paste, "piece" | "box"> | ToolRe
       note: `The kit has no ${JSON.stringify(from)}. Its pieces are listed by airdesign_read_skill({ name: "kit" }).`,
     })
   const box = boxOf(fields.box)
-  return "answer" in box ? box : { piece: piece.tree, ...box }
+  return "fields" in box ? box : { piece: piece.tree, ...box }
 }

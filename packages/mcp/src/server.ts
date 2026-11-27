@@ -2,9 +2,10 @@ import { catalog, pendingFontsMeta, projectTools, readOnce, toolInputSchema } fr
 import { McpServer } from "@modelcontextprotocol/server"
 
 import { type Admission, admit } from "./admit.js"
-import { limited, refused, type ToolResult } from "./answer.js"
+import { limited, refused } from "./answer.js"
 import { callTool, knownTool, type Session } from "./call-tool.js"
 import type { DeckHost } from "./deck-host.js"
+import { encode } from "./encode.js"
 import { kindInstructions } from "./instructions.js"
 
 function inputSchema(json: Readonly<Record<string, unknown>>) {
@@ -16,15 +17,6 @@ function inputSchema(json: Readonly<Record<string, unknown>>) {
       jsonSchema: { input: () => json, output: () => json },
     },
   }
-}
-
-function mcpResult(result: ToolResult) {
-  const content = result.content.map((block) =>
-    block.type === "text" ? { type: "text" as const, text: block.text } : block,
-  )
-  return result.ok
-    ? { content, structuredContent: result.answer }
-    : { content, isError: true as const, structuredContent: result.answer }
 }
 
 type RegisteredTool = {
@@ -67,15 +59,15 @@ export function createServer(session: Session, host: Host): McpServer {
       },
       async (args, ctx) => {
         const named = readOnce(ctx.mcpReq._meta)
-        if (!named.ok || !knownTool(tool.name)) return mcpResult(refused("field"))
+        if (!named.ok || !knownTool(tool.name)) return encode(refused("field"))
         session.once = named.once
         let admitted: Admission
         try {
           admitted = host.admit ? await host.admit(session) : admit(session.log, "tool", session.now)
         } catch {
-          return mcpResult(refused("store"))
+          return encode(refused("store"))
         }
-        if (!admitted.ok) return mcpResult(limited(admitted.text))
+        if (!admitted.ok) return encode(limited(admitted.text))
         session.log = admitted.log
         const claimed = ctx.mcpReq._meta?.[pendingFontsMeta]
         const pendingFonts = new Set<string>(
@@ -83,7 +75,7 @@ export function createServer(session: Session, host: Host): McpServer {
             ? claimed.filter((name): name is string => typeof name === "string").map((name) => name.toLowerCase())
             : [],
         )
-        return mcpResult(await callTool(tool.name, args, session, host, pendingFonts))
+        return encode(await callTool(tool.name, args, session, host, pendingFonts))
       },
     )
   }

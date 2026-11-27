@@ -90,13 +90,13 @@ async function agentBakes(
     session.once = `call-${op}`
     return callTool(names[op]!, args, session, host, pendingFonts)
   }
-  const { deck } = (await call("execute", { script: "createDeck()" })).answer as { deck: string }
+  const { deck } = (await call("execute", { script: "createDeck()" })).fields as { deck: string }
   const before = decks.decks.get(deck as never)!
   const landed = await call("execute", {
     deck,
     script: scriptOf(changes),
   })
-  return { answer: landed.answer, before, saved: decks.decks.get(deck as never)! }
+  return { answer: landed.fields, before, saved: decks.decks.get(deck as never)! }
 }
 
 const kids = ["outer", "headline", "inner", "left", "right"]

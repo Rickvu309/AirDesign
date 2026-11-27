@@ -1,7 +1,7 @@
 import { fallbackFont, servedFontName } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
-import { hostRefused, refused, type ToolResult } from "./answer.js"
+import { hostRefused, refused, type Answer } from "./answer.js"
 import { type Findings, layoutOf } from "./layout-findings-answer.js"
 import type { DeckHost, Opened } from "./deck-host.js"
 import { deckMeasure } from "./deck-measure.js"
@@ -107,7 +107,7 @@ function bakeRefusal(
     | { readonly reason: "pending" }
     | { readonly reason: "coverage"; readonly characters: string }
     | { readonly reason: "shaping"; readonly shaping: readonly string[] },
-): ToolResult {
+): Answer {
   const layerNames = layers.map((layer) => doom.propOf(bake.fold.nodes.get(layer), "name") ?? "")
   const named = layerNames.every((name) => name !== "")
     ? new Intl.ListFormat("en", { style: "long", type: "conjunction" }).format(layerNames.map((name) => `“${name}”`))
@@ -138,7 +138,7 @@ export async function measuredSteps<Done>(
   steps: Generator<doom.Bake, Done, doom.Measure>,
   host: DeckHost,
   pendingFonts: ReadonlySet<string>,
-): Promise<Done | ToolResult> {
+): Promise<Done | Answer> {
   let step = steps.next()
   while (!step.done) {
     const bake = step.value
@@ -255,7 +255,7 @@ export async function landEdit(
   compiled: doom.AgentEdit,
   host: DeckHost,
   lastRead: doom.Rev,
-): Promise<Landed | ToolResult> {
+): Promise<Landed | Answer> {
   if (compiled.edit.writes.length === 0)
     return {
       landed: true,

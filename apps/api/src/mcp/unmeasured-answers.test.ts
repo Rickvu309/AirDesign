@@ -25,7 +25,7 @@ it("keeps naming a text its font cannot measure on every read and edit after the
     session.once = `call${String((calls += 1))}`
     return callTool(names[op]!, args, session, host)
   }
-  const { deck, slides } = (await call("execute", { script: "createDeck()" })).answer as {
+  const { deck, slides } = (await call("execute", { script: "createDeck()" })).fields as {
     deck: string
     rev: number
     slides: string[]
@@ -36,17 +36,17 @@ it("keeps naming a text its font cannot measure on every read and edit after the
       { op: "add", kind: "text", slide: slides[0], text: "Launch 🚀", box: { x: 160, y: 300, w: 800, h: 80 } },
     ]),
   })
-  const { made, runId } = landed.answer as { made: { ids: string[] }[]; runId: string }
+  const { made, runId } = landed.fields as { made: { ids: string[] }[]; runId: string }
   const id = made[0]!.ids[0]!
   const unread = `${id} has a character the deck's fonts lack`
-  expect(String(landed.answer.note)).toContain(unread)
+  expect(String(landed.fields.note)).toContain(unread)
   const read = await call("execute", { deck, script: "get().note" })
-  expect(String(read.answer.result)).toContain(unread)
+  expect(String(read.fields.result)).toContain(unread)
   const again = await call("execute", {
     deck,
     runId,
     script: scriptOf([{ op: "set", target: id, name: "Launch line" }]),
   })
-  expect(String(again.answer.note)).toContain(unread)
-  expect(String(again.answer.note)).not.toContain("Layout clear")
+  expect(String(again.fields.note)).toContain(unread)
+  expect(String(again.fields.note)).not.toContain("Layout clear")
 })

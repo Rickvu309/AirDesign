@@ -21,12 +21,12 @@ function agent() {
   const call = async (name: string, args: unknown) => {
     session.once = `call${String((calls += 1))}`
     const result = await callTool(`airdesign_${name}`, args, session, host)
-    return { ...result, answer: result.answer as Answer }
+    return { ...result, fields: result.fields as Answer }
   }
   const made = async () => {
-    const { ok, answer } = await call("execute", { script: "createDeck()" })
-    expect(ok, JSON.stringify(answer)).toBe(true)
-    return answer as { deck: string; slides: string[] }
+    const { ok, fields } = await call("execute", { script: "createDeck()" })
+    expect(ok, JSON.stringify(fields)).toBe(true)
+    return fields as { deck: string; slides: string[] }
   }
   const fold = (deck: string) => decks.decks.get(deck as never)!
   return { call, made, fold }
@@ -51,8 +51,8 @@ describe("copy from the kit", () => {
           ;({ s, block, lines: get({ target: block }).children })
         `,
       })
-      expect(answer.ok, JSON.stringify(answer.answer)).toBe(true)
-      const { s, block, lines } = answer.answer.result as { s: string; block: string; lines: string[] }
+      expect(answer.ok, JSON.stringify(answer.fields)).toBe(true)
+      const { s, block, lines } = answer.fields.result as { s: string; block: string; lines: string[] }
       const fold = by.fold(deck)
       const { colors, fonts } = themePresetById(theme)!.theme
       const painted = flat(doom.resolveSlide(fold, s as doom.NodeId, estimate))
@@ -76,8 +76,8 @@ describe("copy from the kit", () => {
         ;[block, title]
       `,
     })
-    expect(answer.ok, JSON.stringify(answer.answer)).toBe(true)
-    const [block, title] = answer.answer.result as [string, string]
+    expect(answer.ok, JSON.stringify(answer.fields)).toBe(true)
+    const [block, title] = answer.fields.result as [string, string]
     const fold = by.fold(deck)
     for (const id of [block, ...doom.childrenOf(fold, block as doom.NodeId).map((each) => each.id)])
       expect(fold.nodes.get(id as doom.NodeId)).not.toHaveProperty("instance")
@@ -99,13 +99,13 @@ describe("copy from the kit", () => {
         ;[top, low]
       `,
     })
-    expect(answer.ok, JSON.stringify(answer.answer)).toBe(true)
-    expect(answer.answer.rev).toBe(before.rev + 1)
-    expect(answer.answer.made.map((each: { verb: string }) => each.verb)).toEqual(["copy", "copy"])
-    const [, low] = answer.answer.result as [string, string]
+    expect(answer.ok, JSON.stringify(answer.fields)).toBe(true)
+    expect(answer.fields.rev).toBe(before.rev + 1)
+    expect(answer.fields.made.map((each: { verb: string }) => each.verb)).toEqual(["copy", "copy"])
+    const [, low] = answer.fields.result as [string, string]
     expect(doom.propOf(by.fold(deck).nodes.get(low as doom.NodeId), "box")).toMatchObject({ w: 1200 })
-    const undone = await by.call("undo_run", { deck, runId: answer.answer.runId })
-    expect(undone.ok, JSON.stringify(undone.answer)).toBe(true)
+    const undone = await by.call("undo_run", { deck, runId: answer.fields.runId })
+    expect(undone.ok, JSON.stringify(undone.fields)).toBe(true)
     expect(doom.childrenOf(by.fold(deck), slides[0] as doom.NodeId).map((each) => each.id)).toEqual(
       doom.childrenOf(before, slides[0] as doom.NodeId).map((each) => each.id),
     )
@@ -122,10 +122,10 @@ describe("copy from the kit", () => {
         ;({ pair, columns: get({ target: pair }).children.map((column) => get({ target: column }).box) })
       `,
     })
-    expect(answer.ok, JSON.stringify(answer.answer)).toBe(true)
-    const { columns } = answer.answer.result as { columns: { x: number; w: number }[] }
+    expect(answer.ok, JSON.stringify(answer.fields)).toBe(true)
+    const { columns } = answer.fields.result as { columns: { x: number; w: number }[] }
     expect(columns.map((column) => Math.round(column.w))).toEqual([496, 496, 496])
-    expect(answer.answer.problems).toEqual([])
+    expect(answer.fields.problems).toEqual([])
   })
 
   it("refuses a piece the kit does not hold, and points to the kit's list", async () => {
@@ -136,8 +136,8 @@ describe("copy from the kit", () => {
       script: `copy({ from: "kit/no-such-piece", parent: "${slides[0]}" })`,
     })
     expect(answer.ok).toBe(false)
-    expect(answer.answer).toMatchObject({ op: 1, verb: "copy", field: "from" })
-    expect(answer.answer.note).toContain('airdesign_read_skill({ name: "kit" })')
+    expect(answer.fields).toMatchObject({ op: 1, verb: "copy", field: "from" })
+    expect(answer.fields.note).toContain('airdesign_read_skill({ name: "kit" })')
   })
 
   it("refuses from together with targets, and parent or box without from", async () => {
@@ -147,12 +147,12 @@ describe("copy from the kit", () => {
       deck,
       script: `copy({ from: "kit/title-block", targets: ["${slides[0]}"], parent: "${slides[0]}" })`,
     })
-    expect(both.answer).toMatchObject({ verb: "copy", field: "targets" })
+    expect(both.fields).toMatchObject({ verb: "copy", field: "targets" })
     const placed = await by.call("execute", {
       deck,
       script: `copy({ targets: ["${slides[0]}"], box: { x: 0, y: 0 } })`,
     })
-    expect(placed.answer).toMatchObject({ verb: "copy", field: "box" })
+    expect(placed.fields).toMatchObject({ verb: "copy", field: "box" })
   })
 
   it("lists every piece in the kit skill, with its size", () => {
