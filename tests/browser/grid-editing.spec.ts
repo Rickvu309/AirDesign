@@ -3,7 +3,7 @@ import { designCopy } from "../../apps/web/src/copy/design-copy"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { test } from "./api-stack"
-import { clickSlide, landNodes, landProps, openEditor, savedNode, type Opened } from "./editor-deck"
+import { clickSlide, landNodes, landProps, openEditor, savedNode, savedSlides, type Opened } from "./editor-deck"
 import { covers } from "./gesture"
 import { card, entry, openGrid, percent, said, zoomTo } from "./grid-deck"
 import { layer, textOf, type Stack } from "./text-layer"
@@ -177,15 +177,18 @@ test("the text tool places a layer on the current slide and the edit survives a 
     .locator("[data-selection-outline]")
     .evaluateAll((all) => all.flatMap((each) => each.getAttribute("data-selection-outline") ?? []))
   expect(id).toBeTruthy()
+  await expect.poll(async () => (await savedSlides(stack, opened)).length).toBe(2)
+  const [, second] = await savedSlides(stack, opened)
+  expect(second).toBeTruthy()
   await expect
-    .poll(async () => (await savedNode(stack, opened, id ?? ""))?.text)
-    .toMatchObject({ chars: "Placed in Grid" })
+    .poll(async () => await savedNode(stack, opened, id ?? ""))
+    .toMatchObject({ parent: { id: second }, text: { chars: "Placed in Grid" } })
   await page.keyboard.press("ControlOrMeta+z")
   await expect.poll(async () => (await savedNode(stack, opened, id ?? ""))?.parent ?? null).toBeNull()
   await page.keyboard.press("ControlOrMeta+Shift+z")
   await expect
-    .poll(async () => (await savedNode(stack, opened, id ?? ""))?.text)
-    .toMatchObject({ chars: "Placed in Grid" })
+    .poll(async () => await savedNode(stack, opened, id ?? ""))
+    .toMatchObject({ parent: { id: second }, text: { chars: "Placed in Grid" } })
   await page.reload()
   await page.locator("[data-editor-ready]").waitFor()
   await openGrid(page)
