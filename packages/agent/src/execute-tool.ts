@@ -8,7 +8,7 @@ import { readAnswer } from "./deck-read.js"
 import type { DeckHost } from "./deck-host.js"
 import { OpRefused, newPlan, opNote, runOperation, verbs, type Plan, type Verb } from "./execute-ops.js"
 import { landEdit, landedBefore, type Agent, type Landed } from "./land-edit.js"
-import { findingsNote, listed } from "./layout-findings-answer.js"
+import { problemsNote, listed } from "./problems-answer.js"
 import { onceIds } from "./once-ids.js"
 import { withOtherRuns } from "./other-runs.js"
 import { scriptPool, type OpAnswer, type ScriptEnd } from "./script-pool.js"
@@ -205,7 +205,7 @@ export async function executeTool(
       rev: again.rev,
       runId: input.runId ?? onceIds(once).run,
       made: again.roots.map((each) => ({ ids: [each.id] })),
-      problems: listed(again.findings.findings),
+      problems: listed(again.problems.problems),
     })
   const lastRead = await host.agentReads.last(opened.deck, agent.id).catch(() => null)
   if (lastRead === null) return refused("store")
@@ -235,7 +235,7 @@ export async function executeTool(
   const kept = resultOf(end)
   const note = [
     leadOf(landed, rev),
-    ...(landed === undefined ? [] : findingsNote(landed.findings)),
+    ...(landed === undefined ? [] : problemsNote(landed.problems)),
     ...(runId === undefined
       ? []
       : [`Send runId ${runId} with your next call, and to airdesign_stop_run when you are done.`]),
@@ -250,7 +250,7 @@ export async function executeTool(
       ...(runId === undefined ? {} : { runId }),
       ...(plan.names.size === 0 ? {} : { names: Object.fromEntries(plan.names) }),
       made: plan.made,
-      problems: landed === undefined ? [] : listed(landed.findings.findings),
+      problems: landed === undefined ? [] : listed(landed.problems.problems),
       ...(landed?.unchanged === true ? { unchanged: true } : {}),
       ...(landed === undefined || landed.bakedLayouts.length === 0 ? {} : { bakedLayouts: landed.bakedLayouts }),
       ...(kept.result === undefined ? {} : { result: kept.result }),

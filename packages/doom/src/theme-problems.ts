@@ -6,7 +6,7 @@ import { type Text, type TextStyleName, textStyleNames } from "./text.js"
 import { familyOf } from "./painted-face.js"
 import type { Theme } from "./theme.js"
 
-export type AgentFinding = { readonly node: NodeId; readonly note: string } & (
+export type ThemeProblem = { readonly node: NodeId } & (
   | { readonly code: "off-scale"; readonly size: number; readonly style: TextStyleName; readonly to: number }
   | { readonly code: "off-palette"; readonly color: Hex; readonly to: ColorVar }
   | { readonly code: "off-font"; readonly font: string; readonly to: readonly string[] }
@@ -50,14 +50,7 @@ function colorsOf(write: Write): readonly Color[] {
   return []
 }
 
-const sizeNote = (node: NodeId, size: number, style: TextStyleName, to: number) =>
-  `${node}: size ${String(size)} is off the deck's type scale; the nearest text style is ${style} (${String(to)}).`
-const colorNote = (node: NodeId, color: Hex, to: ColorVar, theme: Theme) =>
-  `${node}: ${color} is not a theme colour, so a new template will not recolour it; the nearest is ${to} (${theme.colors[to]}).`
-const fontNote = (node: NodeId, font: string, families: readonly string[]) =>
-  `${node}: ${font} is not the deck's heading or body font (${families.join(", ")}).`
-
-export function agentFindings(after: Doom, writes: readonly Write[]): readonly AgentFinding[] {
+export function themeProblems(after: Doom, writes: readonly Write[]): readonly ThemeProblem[] {
   const deck = deckOf(after)
   const theme = deck === undefined ? undefined : propOf(deck, "theme")
   if (theme === undefined) return []
@@ -65,41 +58,27 @@ export function agentFindings(after: Doom, writes: readonly Write[]): readonly A
   const palette = new Set(colorVars.map((name) => theme.colors[name].toLowerCase()))
   const families = new Set([theme.fonts.heading, theme.fonts.body])
   const ownFamilies = new Set([...families].map(familyOf))
-  const found = new Map<string, AgentFinding>()
-  const note = (key: string, finding: AgentFinding) => {
-    if (after.nodes.has(finding.node) && !found.has(key)) found.set(key, finding)
+  const found = new Map<string, ThemeProblem>()
+  const keep = (key: string, problem: ThemeProblem) => {
+    if (after.nodes.has(problem.node) && !found.has(key)) found.set(key, problem)
   }
   const checkSize = (node: NodeId, size: number) => {
     if (scale.has(size)) return
     const style = nearestStyle(theme, size)
     const to = theme.textStyles[style].size
-    note(`${node}|size|${String(size)}`, {
-      code: "off-scale",
-      node,
-      size,
-      style,
-      to,
-      note: sizeNote(node, size, style, to),
-    })
+    keep(`${node}|size|${String(size)}`, { code: "off-scale", node, size, style, to })
   }
   for (const write of writes) {
     const { node, prop, value } = write
     for (const color of colorsOf(write))
       if (typeof color === "string" && !palette.has(color.toLowerCase())) {
-        const to = nearestColor(theme, color)
-        note(`${node}|${color}`, { code: "off-palette", node, color, to, note: colorNote(node, color, to, theme) })
+        keep(`${node}|${color}`, { code: "off-palette", node, color, to: nearestColor(theme, color) })
       }
     if (prop !== "text" || value === null) continue
     for (const span of (value as Text).spans) {
       if (span.size !== undefined) checkSize(node, span.size)
       if (span.font !== undefined && !ownFamilies.has(familyOf(span.font)))
-        note(`${node}|font|${span.font}`, {
-          code: "off-font",
-          node,
-          font: span.font,
-          to: [...families],
-          note: fontNote(node, span.font, [...families]),
-        })
+        keep(`${node}|font|${span.font}`, { code: "off-font", node, font: span.font, to: [...families] })
     }
   }
   return [...found.values()]

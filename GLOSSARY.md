@@ -247,13 +247,13 @@ A part of the design panel that holds related controls, such as those for opacit
 A key press or pointer move in the editor. Ctrl+G groups. The Keyboard shortcuts panel, Ctrl+Shift+?, lists key presses.
 _Avoid_: shortcut (in code), hotkey, command
 
-## Findings
+## Problems
 
-What the editor can measure about a slide's layout and its use of the deck's style.
+What can be measured about a slide's layout and its use of the deck's style.
 
-**finding**:
-A measured layout problem or a departure from the deck's style, with a suggested fix.
-_Avoid_: issue, warning, lint, diagnostic
+**problem**:
+A measured layout fault or a departure from the deck's style. Doom gives it as a code and its numbers; the agent pack puts it into words with the fix.
+_Avoid_: finding, issue, warning, lint, diagnostic
 
 **overflow**:
 Text that does not fit its box.

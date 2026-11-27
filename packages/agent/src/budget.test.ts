@@ -12,6 +12,6 @@ it("holds every cap on what one call answers in one place", () => {
     resultChars: 20_000,
     scriptLimits: { ms: 20_000, memory: 64 * 1024 * 1024, stack: 1024 * 1024, logs: 50 },
     shotsPerCall: 4,
-    shownFindings: 10,
+    shownProblems: 10,
   })
 })
