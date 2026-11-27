@@ -2,20 +2,20 @@
   "id": "consulting",
   "name": "Consulting",
   "colors": {
-    "text": "#14293a",
+    "text": "#051c2c",
     "background": "#ffffff",
-    "text2": "#495d69",
-    "background2": "#f0f5f4",
-    "accent1": "#155d94",
-    "accent2": "#00665e",
-    "accent3": "#396578",
-    "accent4": "#456d67",
-    "accent5": "#596777",
-    "accent6": "#994226",
-    "link": "#00665e",
-    "positive": "#007c70",
-    "negative": "#642516",
-    "total": "#14334b"
+    "text2": "#656565",
+    "background2": "#f0f0f0",
+    "accent1": "#2251ff",
+    "accent2": "#061f79",
+    "accent3": "#0863aa",
+    "accent4": "#2b5580",
+    "accent5": "#4d4d4d",
+    "accent6": "#d51f31",
+    "link": "#2251ff",
+    "positive": "#0863aa",
+    "negative": "#680f18",
+    "total": "#051c2c"
   },
   "fonts": {
     "heading": "Source Serif 4",
@@ -81,6 +81,6 @@
   },
   "powerPoint": {
     "map": "light",
-    "followedLink": "#994226"
+    "followedLink": "#061f79"
   }
 }
