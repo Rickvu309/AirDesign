@@ -481,6 +481,7 @@ export function DoomCanvas(props: CanvasProps) {
       zoom={zoom}
       deck={props.deck}
       ready={painted.ready}
+      fontsReady={painted.fontsReady}
       panning={panning}
       scale={scale}
       size={size}

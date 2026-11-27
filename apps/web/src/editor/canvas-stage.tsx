@@ -32,6 +32,7 @@ export function CanvasStage({
   zoom,
   deck,
   ready,
+  fontsReady,
   panning,
   scale,
   size,
@@ -89,6 +90,7 @@ export function CanvasStage({
   readonly zoom: Zoom
   readonly deck: string
   readonly ready: boolean
+  readonly fontsReady: boolean
   readonly panning: boolean
   readonly scale: number
   readonly size: { readonly w: number; readonly h: number }
@@ -218,6 +220,7 @@ export function CanvasStage({
                   assetUrl={assetUrl}
                   waiting={pictureCopy.uploading}
                   iconsReady={ready}
+                  fontsPending={!ready || !fontsReady}
                   {...(session === null
                     ? {}
                     : {
