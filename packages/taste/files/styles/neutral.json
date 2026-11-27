@@ -4,17 +4,17 @@
   "colors": {
     "text": "#16191d",
     "background": "#ffffff",
-    "text2": "#1b2a4a",
+    "text2": "#5f646b",
     "background2": "#f2f4f7",
     "accent1": "#2f5bd3",
     "accent2": "#0e9384",
-    "accent3": "#e08a1e",
+    "accent3": "#c57919",
     "accent4": "#7a5af8",
     "accent5": "#d92d20",
     "accent6": "#4e8b2f",
     "link": "#2f5bd3",
-    "positive": "#087b67",
-    "negative": "#711f27",
+    "positive": "#03483c",
+    "negative": "#d7221a",
     "total": "#2f5bd3"
   },
   "fonts": {
@@ -119,6 +119,28 @@
         "spread": 0
       }
     ]
+  },
+  "variants": {
+    "calm": {
+      "colors": {
+        "accent1": "#0a7c70",
+        "accent2": "#2f5bd3",
+        "link": "#0a7c70"
+      }
+    },
+    "dense": {
+      "textStyles": {
+        "heading": {
+          "size": 36
+        },
+        "body": {
+          "size": 28
+        },
+        "body2": {
+          "size": 26
+        }
+      }
+    }
   },
   "powerPoint": {
     "map": "light",

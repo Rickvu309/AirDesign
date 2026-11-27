@@ -18,7 +18,7 @@ A long-form magazine feature. Warm paper, serif headlines, room to breathe. The 
 
 - `background`: warm paper on every slide.
 - `text`: headlines and body.
-- `text+35`: secondary words: captions, notes, the source line. This theme's `text2` is nearly as dark as body text.
+- `text2`: secondary words: captions, notes, the source line.
 - `accent1`: terracotta, the one point: a bar, a figure, a phrase. One per slide.
 - `text+70`: every other bar or series.
 - `text+80`: hairline rules between columns and above the source line.
@@ -47,6 +47,8 @@ A long-form magazine feature. Warm paper, serif headlines, room to breathe. The 
 
 ## Parameters
 
-- `accent`: the colour for the point that matters. Default `accent1`, terracotta. Use `accent5`, steel blue, for a cooler research tone.
+- `accent`: the colour for the point that matters. Default `accent1`, terracotta.
 - `kicker`: `on` puts a short section label above each title in `label`, upper case, in the accent: "FINDING 2". `off` (default) leaves titles alone.
 - `density`: `airy` (default): one passage or one piece of evidence per slide. `standard`: up to four points, for a read-ahead deck.
+- `variant`: a change to the whole deck's theme, set with `variables({ style: "editorial", variant })`. Without one, the point is terracotta.
+  - `research`: steel blue for the point and links instead of terracotta, for a cooler research tone.

@@ -51,4 +51,5 @@ Precise documentation. A cool off-white page, Geist throughout, everything on a 
 
 - `accent`: the colour for the point that matters. Default `accent1`, blue. Use `accent2`, teal, when the point is a new or healthy part; `accent5`, rose, for a failure.
 - `flow`: `across` (default): diagrams run left to right. `down`: top to bottom, for layered stacks.
-- `density`: `standard` (default): `body`, up to four points. `dense`: `body2`, tables up to ten rows, for spec slides.
+- `variant`: a change to the whole deck's theme, set with `variables({ style: "technical", variant })`. Without one, slides hold up to four points in `body`.
+  - `dense`: `body` at 27, `body2` at 25 and `heading` at 32, for a spec or review deck read on its own: tables up to ten rows.

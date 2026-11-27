@@ -81,6 +81,7 @@ export function readAnswer(opened: Opened, query: Query, laid?: Laid): Answer {
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
   const found = laid === undefined || laid.problems.length === 0 ? {} : { problems: listed(laid.problems) }
   const { theme, language } = doom.deckOf(opened.fold)
+  const named = styleOf(theme)
   const answer = {
     ok: true,
     deck: opened.deck,
@@ -88,7 +89,8 @@ export function readAnswer(opened: Opened, query: Query, laid?: Laid): Answer {
     name: doom.deckName(opened.fold),
     slides,
     ...(next === undefined ? {} : { next }),
-    style: styleOf(theme)?.id ?? null,
+    style: named?.style.id ?? null,
+    ...(named?.variant === undefined ? {} : { variant: named.variant }),
     theme: themeValues(theme),
     ...(language === undefined ? {} : { language }),
     ...found,

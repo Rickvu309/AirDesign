@@ -17,7 +17,7 @@ Plain and modern, like a well-made internal document turned into slides. No mood
 
 - `background`: every slide.
 - `text`: titles and body.
-- `text+35`: secondary words: notes, labels, the source line. This theme's `text2` is a dark navy that reads as body text, so do not use it for secondary words.
+- `text2`: secondary words: notes, labels, the source line.
 - `accent1`: the one point: the bar, the figure or the word that matters. One per slide.
 - `text+75`: every other bar or series.
 - `text+85`: hairlines and table rules.
@@ -47,5 +47,7 @@ Plain and modern, like a well-made internal document turned into slides. No mood
 
 ## Parameters
 
-- `accent`: the colour for the point that matters. Default `accent1`, blue. Use `accent2`, teal, for a calmer deck about health, money or operations.
-- `density`: `standard` (default): `body`, up to four points. `dense`: `body2`, tables up to ten rows.
+- `accent`: the colour for the point that matters. Default `accent1`, blue.
+- `variant`: a change to the whole deck's theme, set with `variables({ style: "neutral", variant })`. Without one, slides hold up to four points in `body`.
+  - `calm`: teal for the point and links instead of blue, for a calmer deck about health, money or operations.
+  - `dense`: `body` at 28, `body2` at 26 and `heading` at 36, for a deck read on its own: tables up to ten rows.

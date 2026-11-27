@@ -50,4 +50,5 @@ Someone who reads only the title and the coloured element gets the point.
 ## Parameters
 
 - `accent`: the colour for the point that matters. Default `accent1`, blue. Use `accent6`, red, when the point is a problem or a risk.
-- `density`: `standard` (default): `body` text and up to four points. `dense`: `body2`, tables up to ten rows, for detail and appendix slides.
+- `variant`: a change to the whole deck's theme, set with `variables({ style: "consulting", variant })`. Without one, slides hold up to four points in `body`.
+  - `dense`: `body` at 30, `body2` at 26 and `heading` at 36, for an appendix or a deck read on its own: tables up to ten rows.

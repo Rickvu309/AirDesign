@@ -8,7 +8,18 @@ import midnight from "../files/styles/midnight.json" with { type: "json" }
 import neutral from "../files/styles/neutral.json" with { type: "json" }
 import technical from "../files/styles/technical.json" with { type: "json" }
 
-export type Style = { readonly id: string; readonly name: string; readonly theme: Theme }
+type ThemePatch = {
+  readonly colors?: Readonly<Record<string, string>>
+  readonly textStyles?: Readonly<Record<string, object>>
+}
+
+export type StyleVariant = { readonly name: string; readonly theme: Theme }
+export type Style = {
+  readonly id: string
+  readonly name: string
+  readonly theme: Theme
+  readonly variants: readonly StyleVariant[]
+}
 
 type StyleFile = {
   readonly id: string
@@ -16,14 +27,43 @@ type StyleFile = {
   readonly powerPoint: { readonly map: string; readonly followedLink: string }
   readonly colors: unknown
   readonly fonts: unknown
-  readonly textStyles?: unknown
-  readonly effectStyles?: unknown
+  readonly textStyles: unknown
+  readonly effectStyles: unknown
+  readonly variants: Readonly<Record<string, ThemePatch>>
 }
 
-function readStyle({ id, name, powerPoint: _powerPoint, ...values }: StyleFile): Style {
-  const theme = parseTheme({ textStyles: neutral.textStyles, effectStyles: neutral.effectStyles, ...values })
-  if (isRefusal(theme)) throw new Error(`Invalid style ${id}.json: ${JSON.stringify(theme)}`)
-  return { id, name, theme }
+function parsed(raw: unknown, where: string): Theme {
+  const theme = parseTheme(raw)
+  if (isRefusal(theme)) throw new Error(`Invalid style ${where}: ${JSON.stringify(theme)}`)
+  return theme
+}
+
+function patched(theme: Theme, { colors, textStyles = {}, ...rest }: ThemePatch, where: string): Theme {
+  if (Object.keys(rest).length > 0)
+    throw new Error(`Invalid style ${where}: a variant holds only colors and textStyles`)
+  const base: Readonly<Record<string, object>> = theme.textStyles
+  const changed = Object.entries(textStyles).map(([name, value]) => [name, { ...base[name], ...value }])
+  return parsed(
+    {
+      ...theme,
+      colors: { ...theme.colors, ...colors },
+      textStyles: { ...theme.textStyles, ...Object.fromEntries(changed) },
+    },
+    where,
+  )
+}
+
+function readStyle({ id, name, powerPoint: _powerPoint, variants, ...values }: StyleFile): Style {
+  const theme = parsed(values, `${id}.json`)
+  return {
+    id,
+    name,
+    theme,
+    variants: Object.entries(variants).map(([variant, patch]) => ({
+      name: variant,
+      theme: patched(theme, patch, `${id}.json variant ${variant}`),
+    })),
+  }
 }
 
 const neutralStyle = readStyle(neutral)
@@ -38,8 +78,13 @@ export function style(id: unknown): Style | undefined {
   return styles.find((each) => each.id === id)
 }
 
-export function styleOf(theme: Theme): Style | undefined {
-  return styles.find((each) => sameValue(each.theme, theme))
+export function styleOf(theme: Theme): { readonly style: Style; readonly variant?: string } | undefined {
+  for (const each of styles) {
+    if (sameValue(each.theme, theme)) return { style: each }
+    const variant = each.variants.find((candidate) => sameValue(candidate.theme, theme))
+    if (variant !== undefined) return { style: each, variant: variant.name }
+  }
+  return undefined
 }
 
 export type StyleText = {
@@ -70,7 +115,7 @@ function parametersOf(markdown: string): StyleText["parameters"] {
       continue
     }
     if (!inParameters) continue
-    const matched = parameterPattern.exec(trimmed)
+    const matched = parameterPattern.exec(line)
     if (matched !== null) parameters.push({ name: matched[1]!, description: matched[2]!.trim() })
   }
   return parameters
