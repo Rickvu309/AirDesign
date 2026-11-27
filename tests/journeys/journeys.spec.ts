@@ -52,6 +52,7 @@ for (const name of [
   "connected-agents",
   "consulting-mcp",
   "deck-view",
+  "chat-deck-view",
   "path-paint",
   "path-seams",
   "usage-page",
