@@ -14,12 +14,132 @@
     "accent6": "#8ad167",
     "link": "#7aa6ff",
     "positive": "#6de3bb",
-    "negative": "#c25360",
+    "negative": "#f05a68",
     "total": "#6b9bff"
   },
   "fonts": {
     "heading": "Inter SemiBold",
     "body": "Inter"
+  },
+  "textStyles": {
+    "display": {
+      "size": 96,
+      "font": "heading",
+      "weight": 600,
+      "lineHeight": 1.04,
+      "tracking": -2
+    },
+    "bigNumber": {
+      "size": 96,
+      "font": "heading",
+      "weight": 600,
+      "lineHeight": 1,
+      "tracking": -2
+    },
+    "title": {
+      "size": 56,
+      "font": "heading",
+      "weight": 600,
+      "lineHeight": 1.1,
+      "tracking": -1
+    },
+    "heading": {
+      "size": 40,
+      "font": "heading",
+      "weight": 600,
+      "lineHeight": 1.2,
+      "tracking": -0.5
+    },
+    "body": {
+      "size": 32,
+      "font": "body",
+      "weight": 400,
+      "lineHeight": 1.4,
+      "tracking": 0
+    },
+    "body2": {
+      "size": 28,
+      "font": "body",
+      "weight": 400,
+      "lineHeight": 1.4,
+      "tracking": 0
+    },
+    "caption": {
+      "size": 24,
+      "font": "body",
+      "weight": 400,
+      "lineHeight": 1.35,
+      "tracking": 0.2
+    },
+    "label": {
+      "size": 24,
+      "font": "body",
+      "weight": 600,
+      "lineHeight": 1.2,
+      "tracking": 0.5
+    }
+  },
+  "effectStyles": {
+    "soft": [
+      {
+        "kind": "dropShadow",
+        "color": {
+          "var": "background"
+        },
+        "opacity": 0.4,
+        "x": 0,
+        "y": 2,
+        "blur": 8,
+        "spread": 0
+      }
+    ],
+    "lifted": [
+      {
+        "kind": "dropShadow",
+        "color": {
+          "var": "background"
+        },
+        "opacity": 0.6,
+        "x": 0,
+        "y": 12,
+        "blur": 32,
+        "spread": 0
+      }
+    ],
+    "glow": [
+      {
+        "kind": "dropShadow",
+        "color": {
+          "var": "accent1"
+        },
+        "opacity": 0.5,
+        "x": 0,
+        "y": 0,
+        "blur": 28,
+        "spread": 0
+      }
+    ]
+  },
+  "variants": {
+    "briefing": {
+      "textStyles": {
+        "heading": {
+          "size": 36
+        },
+        "body": {
+          "size": 28
+        },
+        "body2": {
+          "size": 26
+        }
+      }
+    },
+    "growth": {
+      "colors": {
+        "accent1": "#34c3a6",
+        "accent2": "#6b9bff"
+      }
+    }
   },
   "powerPoint": {
     "map": "dark",

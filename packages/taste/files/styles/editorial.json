@@ -4,22 +4,130 @@
   "colors": {
     "text": "#231f1c",
     "background": "#fbf8f3",
-    "text2": "#3a2e26",
+    "text2": "#6b5d52",
     "background2": "#efe8dd",
-    "accent1": "#b4532a",
+    "accent1": "#a74d26",
     "accent2": "#5f7a4a",
-    "accent3": "#c8962e",
+    "accent3": "#a77c25",
     "accent4": "#7b4b6e",
     "accent5": "#2f6f8f",
     "accent6": "#8c6239",
-    "link": "#b4532a",
-    "positive": "#57733c",
-    "negative": "#67281a",
+    "link": "#a74d26",
+    "positive": "#264011",
+    "negative": "#c91f3b",
     "total": "#2f6f8f"
   },
   "fonts": {
     "heading": "Source Serif 4 SemiBold",
     "body": "Inter"
+  },
+  "textStyles": {
+    "display": {
+      "size": 96,
+      "font": "heading",
+      "weight": 600,
+      "lineHeight": 1.06,
+      "tracking": -1.5
+    },
+    "bigNumber": {
+      "size": 88,
+      "font": "heading",
+      "weight": 600,
+      "lineHeight": 1,
+      "tracking": -1.5
+    },
+    "title": {
+      "size": 56,
+      "font": "heading",
+      "weight": 600,
+      "lineHeight": 1.12,
+      "tracking": -0.5
+    },
+    "heading": {
+      "size": 40,
+      "font": "heading",
+      "weight": 600,
+      "lineHeight": 1.2,
+      "tracking": -0.25
+    },
+    "body": {
+      "size": 32,
+      "font": "body",
+      "weight": 400,
+      "lineHeight": 1.45,
+      "tracking": 0
+    },
+    "body2": {
+      "size": 28,
+      "font": "body",
+      "weight": 400,
+      "lineHeight": 1.45,
+      "tracking": 0
+    },
+    "caption": {
+      "size": 24,
+      "font": "body",
+      "weight": 400,
+      "lineHeight": 1.35,
+      "tracking": 0
+    },
+    "label": {
+      "size": 24,
+      "font": "body",
+      "weight": 600,
+      "lineHeight": 1.2,
+      "tracking": 1.2
+    }
+  },
+  "effectStyles": {
+    "soft": [
+      {
+        "kind": "dropShadow",
+        "color": {
+          "var": "text"
+        },
+        "opacity": 0.08,
+        "x": 0,
+        "y": 2,
+        "blur": 8,
+        "spread": 0
+      }
+    ],
+    "lifted": [
+      {
+        "kind": "dropShadow",
+        "color": {
+          "var": "text"
+        },
+        "opacity": 0.16,
+        "x": 0,
+        "y": 12,
+        "blur": 32,
+        "spread": 0
+      }
+    ],
+    "glow": [
+      {
+        "kind": "dropShadow",
+        "color": {
+          "var": "accent2"
+        },
+        "opacity": 0.5,
+        "x": 0,
+        "y": 0,
+        "blur": 28,
+        "spread": 0
+      }
+    ]
+  },
+  "variants": {
+    "research": {
+      "colors": {
+        "accent1": "#2f6f8f",
+        "accent5": "#a74d26",
+        "link": "#2f6f8f"
+      }
+    }
   },
   "powerPoint": {
     "map": "light",

@@ -1,6 +1,6 @@
 import { readForAgent } from "./agent-read.js"
 import * as doom from "@airdesign/doom"
-import { placementRules, startRules, style, styles } from "@airdesign/taste"
+import { placementRules, startRules } from "@airdesign/taste"
 
 import { doomRefused, refused, type Answer } from "./answer.js"
 import { imagesPerCall } from "./budget.js"
@@ -14,6 +14,7 @@ import { readPaste } from "./kit-paste.js"
 import { laidOnce, readNodes } from "./read-nodes.js"
 import { imageName, imageProblem, pictureSizes, withAsset } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
+import { styleChoice } from "./style-choice.js"
 
 export const verbs = [
   "insert",
@@ -115,7 +116,7 @@ export const verbFields: Readonly<Record<Verb, readonly string[]>> = {
   remove: ["target", "targets"],
   group: ["target", "targets", ...looks],
   ungroup: ["target"],
-  variables: ["style", "colors", "fonts", "name", "nameFollows", "language"],
+  variables: ["style", "variant", "colors", "fonts", "name", "nameFollows", "language"],
   get: ["target", "find", "cursor"],
   screenshot: ["target"],
 }
@@ -294,14 +295,11 @@ async function copy(plan: Plan, op: number, fields: Readonly<Record<string, unkn
 }
 
 async function variables(plan: Plan, op: number, fields: Readonly<Record<string, unknown>>) {
-  const { style: requested, ...look } = fields
-  const chosen = style(requested)
-  if (requested !== undefined && chosen === undefined) {
-    const ids = styles.map(({ id }) => id).join(", ")
-    stop(plan, op, "variables", refused("field", { field: "style", fault: "form", form: `One of ${ids}.` }))
-  }
+  const { style: requested, variant, ...look } = fields
+  const chosen = styleChoice(requested, variant)
+  if ("refusal" in chosen) stop(plan, op, "variables", chosen.refusal)
   if (Object.keys(fields).length > 0)
-    await compile(plan, op, "variables", { ...look, ...(chosen === undefined ? {} : { theme: chosen.theme }) })
+    await compile(plan, op, "variables", { ...look, ...(chosen.theme === undefined ? {} : { theme: chosen.theme }) })
   return themeValues(doom.deckOf(plan.view).theme)
 }
 

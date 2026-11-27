@@ -13,8 +13,8 @@
     "accent5": "#4d4d4d",
     "accent6": "#d51f31",
     "link": "#2251ff",
-    "positive": "#0863aa",
-    "negative": "#680f18",
+    "positive": "#1230a3",
+    "negative": "#d51f31",
     "total": "#051c2c"
   },
   "fonts": {
@@ -77,6 +77,64 @@
       "weight": 600,
       "lineHeight": 1.2,
       "tracking": 0.45
+    }
+  },
+  "effectStyles": {
+    "soft": [
+      {
+        "kind": "dropShadow",
+        "color": {
+          "var": "text"
+        },
+        "opacity": 0.08,
+        "x": 0,
+        "y": 2,
+        "blur": 8,
+        "spread": 0
+      }
+    ],
+    "lifted": [
+      {
+        "kind": "dropShadow",
+        "color": {
+          "var": "text"
+        },
+        "opacity": 0.16,
+        "x": 0,
+        "y": 12,
+        "blur": 32,
+        "spread": 0
+      }
+    ],
+    "glow": [
+      {
+        "kind": "dropShadow",
+        "color": {
+          "var": "accent2"
+        },
+        "opacity": 0.5,
+        "x": 0,
+        "y": 0,
+        "blur": 28,
+        "spread": 0
+      }
+    ]
+  },
+  "variants": {
+    "dense": {
+      "textStyles": {
+        "heading": {
+          "size": 36
+        },
+        "body": {
+          "size": 30,
+          "lineHeight": 1.35
+        },
+        "body2": {
+          "size": 26,
+          "lineHeight": 1.35
+        }
+      }
     }
   },
   "powerPoint": {

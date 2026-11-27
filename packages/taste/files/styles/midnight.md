@@ -24,7 +24,7 @@ A stage. Dark navy, light type, and colour that shines only because everything a
 - `background2+12`: panel borders and hairlines.
 - `text2-45`: every other bar or series.
 - `accent2`, `accent3`: a second and third series only.
-- `positive`, `negative`: change and status. `negative` is dim on this background: use it for bars and large figures, not small text.
+- `positive`, `negative`: change and status.
 - Type: `display` for statements, `bigNumber` for figures, `title`, `heading` for panel heads, `body`, `caption` for labels and the source.
 
 ## Decoration
@@ -48,5 +48,7 @@ A stage. Dark navy, light type, and colour that shines only because everything a
 
 ## Parameters
 
-- `accent`: the colour for the point that matters. Default `accent1`, blue. Use `accent2`, green, for growth or health; `accent3`, amber, for energy or a warning.
-- `density`: `stage` (default): one beat, three points at most. `briefing`: up to four points and `body2`, for a deck people read on their own.
+- `accent`: the colour for the point that matters. Default `accent1`, blue. Use `accent3`, amber, for energy or a warning.
+- `variant`: a change to the whole deck's theme, set with `variables({ style: "midnight", variant })`. Without one, each slide is one beat with three points at most.
+  - `growth`: green for the point and blue for the second series, for a deck about growth or health.
+  - `briefing`: `body` at 28, `body2` at 26 and `heading` at 36, for a deck people read on their own: up to four points.

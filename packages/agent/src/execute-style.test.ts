@@ -81,3 +81,33 @@ it("reports custom theme values with no named style", async () => {
     theme: { colors: { accent1 } },
   })
 })
+
+const variants = styles.flatMap((style) => style.variants.map((variant) => ({ style, variant })))
+
+it.each(variants)("applies the $variant.name variant of $style.name through variables", async ({ style, variant }) => {
+  const by = agent()
+  const { deck } = (await by.execute("createDeck()")).fields
+  const changed = await by.execute(
+    `variables({ style: "${style.id}", variant: "${variant.name}" }); const read = get(); [read.style, read.variant]`,
+    deck,
+  )
+  expect(changed.fields).toMatchObject({ ok: true, result: [style.id, variant.name] })
+  const [saved] = [...by.decks.values()]
+  expect(doom.deckOf(saved!).theme).toEqual(variant.theme)
+})
+
+it("refuses an unknown variant with the style's variants", async () => {
+  const by = agent()
+  const { deck, rev } = (await by.execute("createDeck()")).fields
+  const changed = await by.execute('variables({ style: "neutral", variant: "loud" })', deck)
+  expect(changed.fields).toMatchObject({ ok: false, refusal: "field", field: "variant", form: "One of calm, dense." })
+  expect((await by.execute("get()", deck)).fields).toMatchObject({ rev })
+})
+
+it("refuses a variant sent without its style", async () => {
+  const by = agent()
+  const { deck, rev } = (await by.execute("createDeck()")).fields
+  const changed = await by.execute('variables({ variant: "calm" })', deck)
+  expect(changed.fields).toMatchObject({ ok: false, refusal: "field", field: "style", fault: "missing" })
+  expect((await by.execute("get()", deck)).fields).toMatchObject({ rev })
+})

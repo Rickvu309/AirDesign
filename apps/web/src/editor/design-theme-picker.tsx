@@ -61,7 +61,7 @@ export function ThemePicker({
   readonly onChoose: (id: string) => void
 }) {
   useServedFaces()
-  const current = styleOf(theme)
+  const current = styleOf(theme)?.style
   const name = current?.name ?? designCopy.customTheme
   return (
     <DesignSection title={designCopy.theme}>

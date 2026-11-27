@@ -3,7 +3,7 @@ import type * as doom from "@airdesign/doom"
 export const neutralColorNames: Readonly<Record<(typeof doom.paletteColorVars)[number], string>> = {
   text: "Black",
   background: "White",
-  text2: "Dark blue",
+  text2: "Dark grey",
   background2: "White 2",
   accent1: "Blue",
   accent2: "Teal",
