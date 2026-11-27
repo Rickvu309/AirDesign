@@ -75,6 +75,10 @@ export function fakeStack(repo) {
     path.join(catalog, "dist", "index.js"),
     `export const countryHeader = "x-country", signInPaths = [], signOutPaths = []`,
   )
+  put(
+    path.join(repo, "apps/site/worker/sign-in-forward.ts"),
+    "export const signInPagePaths = []\nexport default { fetch: () => new Response() }\n",
+  )
   put(path.join(repo, "apps/web/dist/index.html"), "<title>AirDesign</title>")
   const git = (...args) =>
     execFileSync("git", ["-C", repo, "-c", "user.name=t", "-c", "user.email=t@example.com", ...args])
