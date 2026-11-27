@@ -18,7 +18,7 @@ You design this deck for a busy reader. They read the titles first and look at t
 
 - Write the titles first, in order. Read alone, they tell the whole argument and end with the ask or the recommendation.
 - Most material makes 5 to 8 slides. Merge two slides that make the same point.
-- Pick the theme that suits the subject with the `deck` op before you add slides: `consulting` for business and finance material. Then read that theme's style with `airdesign_get_style {name: <theme>}`, fill its parameters, and follow it on every slide: it says which colour does which job.
+- Pick the theme that suits the subject before you add slides. Use `variables({ theme: "consulting" })` for business and finance material. Then read that theme's style with `airdesign_get_style {name: <theme>}`, fill its parameters, and follow it on every slide: it says which colour does which job.
 - Keep the title in the same place and style on every content slide.
 
 ## One slide
