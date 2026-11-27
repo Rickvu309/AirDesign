@@ -312,6 +312,19 @@ describe("refusal notes in the operation's own words", () => {
     expect(note).toContain("insert takes no slide. Its fields: parent, kind,")
     expect(note).not.toMatch(/\binto\b|component|tokens/)
   })
+
+  it("lists only the fields a line takes when it is given text", async () => {
+    const by = agent()
+    const { deck, slides } = await by.made()
+    const answer = await by.call("execute", {
+      deck,
+      script: `insert({ parent: "${slides[0]!}", kind: "line", text: "Go" })`,
+    })
+    const note = String(answer.fields.note)
+    expect(note).toContain("A line takes no text. Its fields: parent, kind, after, group, stroke,")
+    expect(note).not.toMatch(/\b(text|fill|slide|into)\b,/)
+    expect(answer.fields).not.toHaveProperty("form")
+  })
 })
 
 describe("operation names a script can call", () => {

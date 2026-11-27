@@ -126,7 +126,19 @@ export const verbFields: Readonly<Record<Verb, readonly string[]>> = {
 
 const kindWords = (node: doom.Node) => (node.type === "slide" ? "slide" : doom.layerKind(node))
 
-export function opNote(plan: Plan, verb: Verb, answer: Readonly<Record<string, unknown>>): string {
+const oneOf = (form: unknown): ReadonlySet<string> | undefined =>
+  typeof form === "string" && form.startsWith("One of ")
+    ? new Set(form.slice("One of ".length, -1).split(", "))
+    : undefined
+
+function kindTakes(verb: Verb, kind: string | undefined, field: string, form: unknown): string | undefined {
+  const taken = oneOf(form)
+  if (kind === undefined || taken === undefined || !verbFields[verb].includes(field)) return undefined
+  const fields = verbFields[verb].filter((key) => !lookFields.includes(key) || taken.has(key))
+  return `A ${kind} takes no ${field}. Its fields: ${fields.join(", ")}.`
+}
+
+function opNote(plan: Plan, verb: Verb, answer: Readonly<Record<string, unknown>>): string {
   const said = String(answer.note).replace(/^Change \d+( \([^)]*\))?[.:] ?/, "")
   const field = typeof answer.field === "string" ? answer.field : undefined
   if (answer.fault !== "unknown" || field === undefined) return said
@@ -140,10 +152,24 @@ export function opNote(plan: Plan, verb: Verb, answer: Readonly<Record<string, u
   return `${node.id} is a ${kind}, which takes no ${field}.${inside}`
 }
 
-function stop(plan: Plan, op: number, verb: Verb, result: Answer): never {
-  const { change: _change, at: _at, note: _note, ...rest } = result.fields
-  const note = `Operation ${String(op)} (${verb}): ${opNote(plan, verb, result.fields)}`
-  throw new OpRefused({ ...rest, op, verb, note })
+export function opRefusal(
+  plan: Plan,
+  op: number,
+  verb: Verb,
+  answer: Readonly<Record<string, unknown>>,
+  kind?: string,
+): Readonly<Record<string, unknown>> {
+  const { change: _change, at: _at, note: _note, form, ...rest } = answer
+  const listed =
+    answer.fault === "unknown" && answer.node === undefined && typeof answer.field === "string"
+      ? kindTakes(verb, kind, answer.field, form)
+      : undefined
+  const note = `Operation ${String(op)} (${verb}): ${listed ?? opNote(plan, verb, answer)}`
+  return { ...rest, ...(listed !== undefined || form === undefined ? {} : { form }), op, verb, note }
+}
+
+function stop(plan: Plan, op: number, verb: Verb, result: Answer, kind?: string): never {
+  throw new OpRefused(opRefusal(plan, op, verb, result.fields, kind))
 }
 
 async function withImages(plan: Plan, op: number, verb: Verb, intent: doom.Intent) {
@@ -177,7 +203,8 @@ async function compileOne(
   raw: Readonly<Record<string, unknown>>,
 ): Promise<readonly string[]> {
   const read = doom.readIntent(raw)
-  if ("refused" in read) stop(plan, op, verb, doomRefused({ ...read, change: verb }))
+  const kind = typeof raw.kind === "string" ? raw.kind : undefined
+  if ("refused" in read) stop(plan, op, verb, doomRefused({ ...read, change: verb }), kind)
   const fonts = withCatalogFonts([read])
   if (!fonts.ok) stop(plan, op, verb, fonts.result)
   return stepOne(plan, op, verb, await withImages(plan, op, verb, fonts.intents[0] as doom.Intent))
@@ -196,7 +223,8 @@ async function stepOne(plan: Plan, op: number, verb: Verb, intent: doom.Intent):
   const measure = leavesLayers(intent) ? (await deckMeasure(plan.host, [plan.view]))?.measure : undefined
   const stepped = await measuredSteps(plan.session.step(intent, true, measure), plan.host, plan.pendingFonts)
   if ("fields" in stepped) stop(plan, op, verb, stepped)
-  if ("refused" in stepped) stop(plan, op, verb, doomRefused({ ...stepped, change: verb }))
+  if ("refused" in stepped)
+    stop(plan, op, verb, doomRefused({ ...stepped, change: verb }), "kind" in intent ? String(intent.kind) : undefined)
   plan.intents.push(intent)
   plan.intentOps.push({ op, verb })
   plan.view = stepped.view

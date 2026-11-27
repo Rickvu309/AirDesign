@@ -71,7 +71,7 @@ const read = {
   rev: 2,
   problems: [],
   result: 'slide n:3 "Title" group=n:2\n  n:4 text:title name="Title" style=title resize=height text="Untitled"',
-  note: "Nothing changed: the script only read the deck, which stays at rev 2.",
+  note: "Nothing changed: the script only read the deck.",
 }
 
 const pictured = {
@@ -81,7 +81,7 @@ const pictured = {
   runId: "r0dofbxn90nh",
   problems: [],
   screenshots: ["n:3"],
-  note: "Landed at rev 3 as one undo step. Send runId r0dofbxn90nh with your next call, and to airdesign_stop_run when you are done.",
+  note: "Landed as one undo step. Send runId with your next call, and to airdesign_stop_run when you are done.",
 }
 
 const refusal = {

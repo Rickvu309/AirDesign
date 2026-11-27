@@ -303,7 +303,7 @@ describe("an answer read from structuredContent alone", () => {
       expect(seen.screenshots).toEqual([first])
       expect(read.content).toContainEqual({ type: "image", data: shot, mimeType: "image/jpeg" })
       expect((made.structuredContent as { layers: string }).layers).toContain('text="Untitled"')
-      expect((edited.structuredContent as { note: string }).note).toMatch(/^Landed at rev \d+ as one undo step\./)
+      expect((edited.structuredContent as { note: string }).note).toMatch(/^Landed as one undo step\./)
       expect((answers.stopped.structuredContent as { note: string }).note).toBe("The run has stopped.")
       expect(answers.unknown.structuredContent).toEqual({
         ok: false,

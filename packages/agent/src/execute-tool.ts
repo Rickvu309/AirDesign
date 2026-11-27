@@ -6,7 +6,7 @@ import { answered, doomRefused, hostRefused, refused, told, unadmitted, type Ans
 import { resultChars, scriptLimits, shotsPerCall } from "./budget.js"
 import { readAnswer } from "./deck-read.js"
 import type { DeckHost } from "./deck-host.js"
-import { OpRefused, newPlan, opNote, runOperation, verbs, type Plan, type Verb } from "./execute-ops.js"
+import { OpRefused, newPlan, opRefusal, runOperation, verbs, type Plan, type Verb } from "./execute-ops.js"
 import { landEdit, landedBefore, type Agent, type Landed } from "./land-edit.js"
 import { problemsNote, listed } from "./problems-answer.js"
 import { onceIds } from "./once-ids.js"
@@ -73,10 +73,12 @@ function stopped(plan: Pick<Plan, "ops" | "refused">, end: Extract<ScriptEnd, { 
 
 function landRefused(plan: Plan, result: Answer): Answer {
   const operation = typeof result.fields.at === "number" ? plan.intentOps[result.fields.at] : undefined
-  const { at: _at, change: _change, note: _note, ...rest } = result.fields
-  if (operation === undefined) return told(false, { ...rest, note: `Nothing landed. ${String(result.fields.note)}` })
-  const note = `Operation ${String(operation.op)} (${operation.verb}): ${opNote(plan, operation.verb, result.fields)}`
-  return told(false, { ...rest, op: operation.op, verb: operation.verb, note: `Nothing landed. ${note}` })
+  if (operation === undefined) {
+    const { at: _at, change: _change, note: _note, ...rest } = result.fields
+    return told(false, { ...rest, note: `Nothing landed. ${String(result.fields.note)}` })
+  }
+  const answer = opRefusal(plan, operation.op, operation.verb, result.fields)
+  return told(false, { ...answer, note: `Nothing landed. ${String(answer.note)}` })
 }
 
 async function screenshots(plan: Plan, host: DeckHost) {
@@ -127,11 +129,10 @@ function resultOf(end: Extract<ScriptEnd, { ok: true }>): { readonly result?: un
   }
 }
 
-function leadOf(landed: Landed | undefined, rev: number): string {
-  if (landed === undefined) return `Nothing changed: the script only read the deck, which stays at rev ${String(rev)}.`
-  if (landed.unchanged === true)
-    return `Nothing changed: the deck already holds every value the script set, so it stays at rev ${String(rev)}.`
-  return `Landed at rev ${String(rev)} as one undo step.`
+function leadOf(landed: Landed | undefined): string {
+  if (landed === undefined) return "Nothing changed: the script only read the deck."
+  if (landed.unchanged === true) return "Nothing changed: the deck already holds every value the script set."
+  return "Landed as one undo step."
 }
 
 async function createFromScript(script: string, once: string, host: DeckHost): Promise<Answer> {
@@ -235,11 +236,9 @@ export async function executeTool(
   const runId = landed === undefined || landed.unchanged === true ? input.runId : plan.run
   const kept = resultOf(end)
   const note = [
-    leadOf(landed, rev),
+    leadOf(landed),
     ...(landed === undefined ? [] : problemsNote(landed.problems)),
-    ...(runId === undefined
-      ? []
-      : [`Send runId ${runId} with your next call, and to airdesign_stop_run when you are done.`]),
+    ...(runId === undefined ? [] : ["Send runId with your next call, and to airdesign_stop_run when you are done."]),
     ...shots.notes,
     ...(kept.cut === undefined ? [] : [kept.cut]),
   ].join(" ")
