@@ -1,8 +1,11 @@
 layer: feature
 dependencies:
+  - packages/doom#runtime
+  - packages/doom#testing
   - apps/web/src/components
   - apps/web/src/copy
   - apps/web/src/editing
   - apps/web/src/lib
 public:
+  - chat-deck-view.tsx
   - deck-view.tsx

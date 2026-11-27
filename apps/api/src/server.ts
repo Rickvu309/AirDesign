@@ -51,7 +51,8 @@ import { sameSecret } from "./platform/secrets.js"
 import { checkedResource, readUrl } from "./platform/resource.js"
 import { requireDomain, requireOrigin } from "./platform/start-origins.js"
 import { authorizationMetadata, resourceChallenge, resourceMetadata } from "./oauth/discovery.js"
-import { doomRouteList } from "./doom/doom-route.js"
+import { doomRouteList, doomViewHost } from "./doom/doom-route.js"
+import { bodyOnce } from "./request-body.js"
 import { bearerPrincipal, revokeToken, tokenAnswer } from "./oauth/tokens.js"
 
 export type ApiOptions = {
@@ -73,6 +74,7 @@ export type ApiOptions = {
   readonly recordFontComparison?: (result: LayoutComparison) => void
   readonly imageNet?: ImageNet
   readonly screenshotWait?: number
+  readonly viewHold?: number
   readonly aira?: AiraSettings
   readonly closing?: Closing
   readonly forwardSecret?: string
@@ -134,22 +136,6 @@ function redirect(res: ServerResponse, location: string, cookie?: Cookie): void 
   if (cookie !== undefined) res.setHeader("set-cookie", cookie)
   res.writeHead(302, { location })
   res.end()
-}
-
-async function readBody(req: IncomingMessage, cap: number): Promise<Buffer | undefined> {
-  const chunks: Buffer[] = []
-  let size = 0
-  for await (const chunk of req) {
-    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
-    size += buffer.length
-    if (size <= cap) chunks.push(buffer)
-  }
-  return size > cap ? undefined : Buffer.concat(chunks)
-}
-
-function bodyOnce(req: IncomingMessage, cap: number): () => Promise<Buffer | undefined> {
-  let read: Promise<Buffer | undefined> | undefined
-  return () => (read ??= readBody(req, cap))
 }
 
 function parsedJson(body: Buffer): unknown {
@@ -433,6 +419,7 @@ async function mcpRoute(visit: Visit): Promise<void> {
     req,
     res,
     body,
+    { origin: options.publicOrigin, ...doomViewHost(options, called.email, options.viewHold) },
   )
 }
 

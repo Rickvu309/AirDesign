@@ -72,6 +72,54 @@ async function heldSince(
   }
 }
 
+type DoomOptions = DoomVisit["options"]
+type Read<Parsed> = (raw: unknown) => Parsed
+type Parsed<R extends Read<{ readonly ok: boolean }>> = Extract<ReturnType<R>, { readonly ok: true }>
+
+async function unheldSince(options: DoomOptions, parsed: Parsed<typeof doomRoutes.since.read>, email: string) {
+  const caught = await sinceDoom(options.deck, parsed, email)
+  return caught.ok ? withScreenshots(options, parsed, caught) : caught
+}
+
+async function keptScreenshots(
+  options: DoomOptions,
+  parsed: Parsed<typeof doomRoutes.screenshots.read>,
+  email: string,
+) {
+  const known = await doomRev(options.deck, parsed.deck, email)
+  if (!known.ok) return known
+  if (parsed.rev > known.rev) return { ok: false, refusal: "stale" }
+  const missing = options.screenshots.keep(parsed.deck, parsed.rev, parsed.screenshots)
+  return { ok: true, deck: parsed.deck, missing: options.screenshots.wantedAmong(parsed.deck, missing) }
+}
+
+export const viewHold = 25_000
+
+async function answerRead<R extends Read<{ readonly ok: boolean }>>(
+  read: R,
+  raw: unknown,
+  answer: (parsed: Parsed<R>) => Promise<unknown>,
+): Promise<unknown> {
+  const parsed = read(raw)
+  return parsed.ok ? answer(parsed as Parsed<R>) : parsed
+}
+
+export function doomViewHost(options: DoomOptions, email: string, hold = viewHold) {
+  return {
+    open: (raw: unknown) => answerRead(doomRoutes.open.read, raw, (parsed) => openDoom(options.deck, parsed, email)),
+    since: (raw: unknown, signal: AbortSignal) =>
+      answerRead(doomRoutes.since.read, raw, async (parsed) => {
+        const held =
+          parsed.wait === true
+            ? await heldSince(options, parsed, email, AbortSignal.any([signal, AbortSignal.timeout(hold)]))
+            : undefined
+        return held ?? unheldSince(options, parsed, email)
+      }),
+    screenshots: (raw: unknown) =>
+      answerRead(doomRoutes.screenshots.read, raw, (parsed) => keptScreenshots(options, parsed, email)),
+  }
+}
+
 export function doomRouteList<Visit extends DoomVisit>(http: DoomHttp<Visit>): readonly Route<Visit>[] {
   function route<Read extends (raw: unknown) => { readonly ok: boolean }>(
     path: string,
@@ -109,21 +157,14 @@ export function doomRouteList<Visit extends DoomVisit>(http: DoomHttp<Visit>): r
     route(doomRoutes.edit.path, doomRoutes.edit.read, (visit, parsed, email) =>
       editDoom(visit.options.deck, parsed, email),
     ),
-    route(doomRoutes.screenshots.path, doomRoutes.screenshots.read, async (visit, parsed, email) => {
-      const known = await doomRev(visit.options.deck, parsed.deck, email)
-      if (!known.ok) return known
-      if (parsed.rev > known.rev) return { ok: false, refusal: "stale" }
-      const missing = visit.options.screenshots.keep(parsed.deck, parsed.rev, parsed.screenshots)
-      return { ok: true, deck: parsed.deck, missing: visit.options.screenshots.wantedAmong(parsed.deck, missing) }
-    }),
+    route(doomRoutes.screenshots.path, doomRoutes.screenshots.read, (visit, parsed, email) =>
+      keptScreenshots(visit.options, parsed, email),
+    ),
     route(doomRoutes.run.path, doomRoutes.run.read, (visit, parsed, email) =>
       runDoom(visit.options.deck, parsed, email),
     ),
     route(doomRoutes.since.path, doomRoutes.since.read, async (visit, parsed, email) => {
-      if (parsed.wait !== true) {
-        const caught = await sinceDoom(visit.options.deck, parsed, email)
-        return caught.ok ? withScreenshots(visit.options, parsed, caught) : caught
-      }
+      if (parsed.wait !== true) return unheldSince(visit.options, parsed, email)
       const signal = http.gone(visit.res)
       const caught = await heldSince(visit.options, parsed, email, signal)
       return signal.aborted || visit.res.writableEnded || visit.res.destroyed ? undefined : caught

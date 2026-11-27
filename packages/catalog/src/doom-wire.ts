@@ -185,4 +185,10 @@ export const doomRoutes = {
   run: { path: "/doom/run", read: readDoomRun, result: ran },
 } as const
 
+export const viewTools = {
+  open: "airdesign_view_open",
+  since: "airdesign_view_since",
+  screenshots: "airdesign_view_screenshots",
+} as const satisfies Partial<Record<keyof typeof doomRoutes, string>>
+
 export const doomPaths: readonly string[] = Object.values(doomRoutes).map((route) => route.path)

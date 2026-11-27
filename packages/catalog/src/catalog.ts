@@ -28,6 +28,7 @@ export type OpRow = OpDetails &
         readonly runsOn: "server" | "device"
         readonly description: string
         readonly read: WireReader
+        readonly view?: true
       }
   )
 
@@ -47,6 +48,7 @@ export type AgentTool<Op extends string = AgentOp> = {
   readonly destructiveHint: boolean
   readonly idempotentHint: boolean
   readonly openWorldHint: boolean
+  readonly view: boolean
 }
 
 export const catalog = {
@@ -79,6 +81,7 @@ export const catalog = {
     runsOn: "server",
     destructive: true,
     openWorld: true,
+    view: true,
     read: readExecute,
     description:
       'Create, read or edit a deck with JavaScript. Edits land as one undo step. Read airdesign_read_skill with name "execute" for operations and examples.',
@@ -87,6 +90,7 @@ export const catalog = {
     kind: "query",
     exposure: "agent",
     runsOn: "server",
+    view: true,
     read: readAppState,
     description: "List your decks and see the deck and selection in an open tab.",
   },
@@ -144,6 +148,7 @@ export function projectTools<Ops extends Readonly<Record<string, OpRow>>>(
       destructiveHint: row.destructive === true,
       idempotentHint: row.kind !== "command" || row.idempotent === true,
       openWorldHint: row.openWorld === true,
+      view: "view" in row && row.view === true,
     })
   }
   tools.sort(toolOrder)
