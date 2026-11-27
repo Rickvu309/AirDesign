@@ -31,7 +31,7 @@ Options, chosen by what the slide must prove. Copy them from `kit`; each recipe 
 ## Pause 1: Setup
 
 - [ ] Slide 1 or 2 says what kind of session this is (inform, or solve a problem) and what the reader must do, if anything.
-- [ ] Presented slides fit the meeting: 5 to 6 for 30 minutes, 8 to 10 for 60. Background sits in a pre-read section, detail after an appendix divider.
+- [ ] Presented slides fit the meeting: 5 to 6 for 30 minutes, 8 to 10 for 60, and 30 minutes when the length is unknown. Background sits in a pre-read section, detail after an appendix divider.
 - [ ] A reader new to the topic gets one context slide, and every acronym is spelled out once.
 - [ ] Every point reads alone: a subject and a claim, never a teaser.
 

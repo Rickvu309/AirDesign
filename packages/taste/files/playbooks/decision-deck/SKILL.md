@@ -32,7 +32,7 @@ Options, chosen by what the slide must prove. Copy them from `kit`; each recipe 
 ## Pause 1: Setup
 
 - [ ] The ask is one sentence, and slide 1 or 2 says a decision is needed today.
-- [ ] Presented slides fit the meeting: 5 to 6 for 30 minutes, 8 to 10 for 60. The model and detail sit after an appendix divider.
+- [ ] Presented slides fit the meeting: 5 to 6 for 30 minutes, 8 to 10 for 60, and 30 minutes when the length is unknown. The model and detail sit after an appendix divider.
 - [ ] The lead argument fits the decider's function: return for finance, market and customers for product, risk for operations.
 - [ ] The first content slide alone carries the answer and the ask.
 
