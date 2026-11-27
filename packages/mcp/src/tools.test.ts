@@ -3,7 +3,7 @@ import { catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
-import { emptyLog, callTool, type Session, type Answer } from "./index.js"
+import { callTool, type Session, type Answer } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks, type MemoryDecks } from "./testing/memory-decks.js"
 import { offTheme } from "./testing/suite-art.js"
@@ -34,7 +34,7 @@ function start(): doom.Doom {
 
 function agent(decks: MemoryDecks = memoryDecks(start), id = "aira") {
   let minted = 0
-  const session: Session = { agent: id, mint: () => `minted${String((minted += 1))}`, log: emptyLog(), now: 0 }
+  const session: Session = { agent: id, mint: () => `minted${String((minted += 1))}` }
   let calls = 0
   return {
     decks,

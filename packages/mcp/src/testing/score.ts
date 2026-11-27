@@ -1,7 +1,6 @@
 import { catalog, projectTools, type AgentOp } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
-import { emptyLog } from "../admit.js"
 import { callTool, type Session } from "../call-tool.js"
 import { scriptOf } from "./change-script.js"
 import { memoryDecks } from "./memory-decks.js"
@@ -76,7 +75,7 @@ export async function score(task: Task, attempt: Attempt): Promise<ScoreResult> 
   const failed = (reason: Reason): ScoreResult => ({ pass: false, reason, answers, deck: end(), start })
   if (attempt.length > task.want.calls) return failed("calls")
   let calls = 0
-  const session: Session = { agent: "eval", mint: () => `call${String((calls += 1))}`, log: emptyLog(), now: 0 }
+  const session: Session = { agent: "eval", mint: () => `call${String((calls += 1))}` }
   for (const step of attempt) {
     try {
       const result = await callTool(step.name, step.raw, session, decks)

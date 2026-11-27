@@ -1,7 +1,7 @@
 import { scriptOf } from "@airdesign/mcp/testing/evals"
 import { catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
-import { callTool, emptyLog, type Session } from "@airdesign/mcp"
+import { callTool, type Session } from "@airdesign/mcp"
 import { memoryDecks } from "@airdesign/mcp/testing/evals"
 import { expect, it } from "vitest"
 import { FontMetrics } from "../platform/font-metrics.js"
@@ -20,7 +20,7 @@ it("keeps naming a text its font cannot measure on every read and edit after the
   const metrics = new FontMetrics(new FontSource(undefined))
   const host = { ...memoryDecks(start), measure: (folds: readonly doom.Doom[]) => metrics.measure(folds) }
   let calls = 0
-  const session: Session = { agent: "aira", mint: () => `m${String((calls += 1))}`, log: emptyLog(), now: 0 }
+  const session: Session = { agent: "aira", mint: () => `m${String((calls += 1))}` }
   const call = (op: string, args: unknown) => {
     session.once = `call${String((calls += 1))}`
     return callTool(names[op]!, args, session, host)

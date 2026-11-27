@@ -2,7 +2,7 @@ import { catalog, projectTools, readDeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
-import { emptyLog, callTool, type Session } from "./index.js"
+import { callTool, type Session } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
@@ -14,7 +14,7 @@ function agent() {
   const decks = memoryDecks(start)
   let minted = 0
   let calls = 0
-  const session: Session = { agent: "aira", mint: () => `minted${String((minted += 1))}`, log: emptyLog(), now: 0 }
+  const session: Session = { agent: "aira", mint: () => `minted${String((minted += 1))}` }
   const call = (op: string, args: unknown) => {
     session.once = `call${String((calls += 1))}`
     return callTool(names[op] ?? op, args, session, decks)
@@ -134,7 +134,7 @@ function connected(grown: ReturnType<typeof drifted>, measureOf: (folds: readonl
     measure: async (folds: readonly doom.Doom[]) => ({ measure: measureOf(folds), missing: new Map() }),
   }
   let calls = 0
-  const session: Session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0 }
+  const session: Session = { agent: "aira", mint: () => "m" }
   const call = (op: string, args: unknown) => {
     session.once = `call${String((calls += 1))}`
     return callTool(names[op] ?? op, args, session, host)
@@ -274,7 +274,7 @@ describe("a script frees a connector end whose shape leaves the slide", () => {
     const grown = pointed()
     const decks = memoryDecks(() => grown.doom)
     let calls = 0
-    const session: Session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0 }
+    const session: Session = { agent: "aira", mint: () => "m" }
     const call = (op: string, args: unknown) => {
       session.once = `call${String((calls += 1))}`
       return callTool(names[op] ?? op, args, session, decks)

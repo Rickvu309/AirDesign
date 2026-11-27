@@ -1,6 +1,8 @@
 import type { EditRefusal, DoomRefusal } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
+import type { DeckHost } from "./deck-host.js"
+
 export type Answer = {
   readonly ok: boolean
   readonly fields: Readonly<Record<string, unknown>>
@@ -61,8 +63,13 @@ export function answered(note: string, fields: Readonly<Record<string, unknown>>
   return told(true, { ...fields, note })
 }
 
-export function limited(note: string): Answer {
-  return told(false, { ok: false, refusal: "rate", note })
+export async function unadmitted(host: DeckHost, kind: "tool" | "deck"): Promise<Answer | undefined> {
+  try {
+    const admission = await host.admit(kind)
+    return admission.ok ? undefined : told(false, { ok: false, refusal: "rate", note: admission.text })
+  } catch {
+    return refused("store")
+  }
 }
 
 type Where = {

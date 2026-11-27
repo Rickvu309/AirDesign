@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
-import { emptyLog, callTool, type Session } from "./index.js"
+import { callTool, type Session } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 import { catalog, projectTools } from "@airdesign/catalog"
@@ -9,7 +9,7 @@ import { catalog, projectTools } from "@airdesign/catalog"
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 
 function agent() {
-  const session: Session = { agent: "aira", mint: () => "m1", log: emptyLog(), now: 0 }
+  const session: Session = { agent: "aira", mint: () => "m1" }
   const decks = memoryDecks(
     () => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ name: "Title", children: [] }] }).doom,
   )

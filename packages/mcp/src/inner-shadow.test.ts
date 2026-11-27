@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 
-import { createServer, emptyLog, type Host, type Session } from "./index.js"
+import { createServer, type DeckHost, type Session } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
@@ -15,10 +15,10 @@ function started(): doom.Doom {
 
 function sessionFor(): Session {
   let minted = 0
-  return { agent: "aira", mint: () => `minted${String((minted += 1))}`, log: emptyLog(), now: 0 }
+  return { agent: "aira", mint: () => `minted${String((minted += 1))}` }
 }
 
-async function withClient(session: Session, host: Host, use: (client: Client) => Promise<void>): Promise<void> {
+async function withClient(session: Session, host: DeckHost, use: (client: Client) => Promise<void>): Promise<void> {
   const server = createServer(session, host)
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: "airdesign-test", version: "0.0.0" })

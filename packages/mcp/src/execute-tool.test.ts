@@ -2,7 +2,7 @@ import { readDeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
-import { callTool, emptyLog, type DeckHost, type Session } from "./index.js"
+import { callTool, type DeckHost, type Session } from "./index.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
 const start = () => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ name: "Title", children: [] }] }).doom
@@ -15,7 +15,7 @@ function agent(more: Partial<DeckHost> = {}) {
   const host: DeckHost = { ...decks, measure: async () => ({ measure: estimate, missing: new Map() }), ...more }
   let minted = 0
   let calls = 0
-  const session: Session = { agent: "aira", mint: () => `minted${String((minted += 1))}`, log: emptyLog(), now: 0 }
+  const session: Session = { agent: "aira", mint: () => `minted${String((minted += 1))}` }
   const call = async (name: string, args: unknown, once?: string) => {
     session.once = once ?? `call${String((calls += 1))}`
     const result = await callTool(`airdesign_${name}`, args, session, host)
@@ -347,7 +347,7 @@ describe("an insert that fills a slide's title placeholder", () => {
         ],
       }).doom
     const decks = memoryDecks(titled)
-    const session: Session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0 }
+    const session: Session = { agent: "aira", mint: () => "m" }
     session.once = "make"
     const made = (await callTool("airdesign_execute", { script: "createDeck()" }, session, decks)).fields as {
       deck: string

@@ -35,8 +35,11 @@ export type UndoHost = Pick<DeckHost, "open" | "edit" | "run" | "positionsAt" | 
   readonly undoRevs: (deck: DeckId, agent: string) => Promise<ReadonlySet<doom.Rev>>
 }
 
+export type Admitted = { readonly ok: true } | { readonly ok: false; readonly text: string }
+
 export type DeckHost = {
   readonly account: string
+  readonly admit: (kind: "tool" | "deck") => Promise<Admitted>
   readonly agentReads: {
     readonly last: (deck: DeckId, agent: string) => Promise<doom.Rev | undefined>
     readonly remember: (deck: DeckId, agent: string, rev: doom.Rev) => Promise<void>

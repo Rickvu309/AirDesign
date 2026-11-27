@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { expect, it } from "vitest"
 
-import { createServer, emptyLog, type Host } from "./index.js"
+import { createServer, type DeckHost } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
@@ -24,8 +24,8 @@ function started(): doom.Doom {
 
 async function replies(): Promise<Record<string, string>> {
   let minted = 0
-  const session = { agent: "aira", mint: () => `minted${String((minted += 1))}`, log: emptyLog(), now: 0 }
-  const host: Host = {
+  const session = { agent: "aira", mint: () => `minted${String((minted += 1))}` }
+  const host: DeckHost = {
     ...memoryDecks(started),
     pictures: async (_deck, _fold, slides) => new Map(slides.map((slide) => [slide, shot])),
   }

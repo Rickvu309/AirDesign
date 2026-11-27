@@ -32,7 +32,7 @@
       "blob": "c7c15fea3b669c067a4a663e78bee1f750f0f0ae"
     },
     {
-      "file": "packages/mcp/src/admit.ts",
+      "file": "apps/api/src/account/admit.ts",
       "names": ["admit"],
       "digest": "377d192d10b0",
       "blob": "9e4cc56271432749269ba3080292c8abd51a62d2"

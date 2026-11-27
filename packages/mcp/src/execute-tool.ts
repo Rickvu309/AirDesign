@@ -2,7 +2,7 @@ import { readCreateDeck, readExecute, readNamedDeck } from "@airdesign/catalog"
 import type { Theme } from "@airdesign/doom"
 import { themePresetById, themePresets } from "@airdesign/skills"
 
-import { answered, doomRefused, hostRefused, refused, told, type Answer } from "./answer.js"
+import { answered, doomRefused, hostRefused, refused, told, unadmitted, type Answer } from "./answer.js"
 import { resultChars, scriptLimits, shotsPerCall } from "./budget.js"
 import { readAnswer } from "./deck-read.js"
 import type { DeckHost } from "./deck-host.js"
@@ -165,6 +165,8 @@ async function createFromScript(script: string, once: string, host: DeckHost): P
   }
   if (failure !== undefined) return failure
   if (creation === undefined) return refused("field", { note: "Use createDeck({ name, theme }) or send a deck id." })
+  const refusal = await unadmitted(host, "deck")
+  if (refusal !== undefined) return refusal
   const made = await host.create(creation.name, creation.theme, once)
   if (!made.ok) return hostRefused(made)
   const result = readAnswer(made, {})

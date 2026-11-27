@@ -1,7 +1,7 @@
 import { scriptOf } from "@airdesign/mcp/testing/evals"
 import { catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
-import { callTool, emptyLog, type DeckHost, type Session } from "@airdesign/mcp"
+import { callTool, type DeckHost, type Session } from "@airdesign/mcp"
 import { memoryDecks } from "@airdesign/mcp/testing/evals"
 import { expect, it } from "vitest"
 import { FontMetrics } from "../platform/font-metrics.js"
@@ -85,7 +85,7 @@ async function agentBakes(
 ) {
   const decks = memoryDecks(() => made.doom)
   const host = { ...decks, ...(measure === undefined ? {} : { measure }) }
-  const session: Session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0 }
+  const session: Session = { agent: "aira", mint: () => "m" }
   const call = (op: string, args: unknown) => {
     session.once = `call-${op}`
     return callTool(names[op]!, args, session, host, pendingFonts)

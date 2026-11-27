@@ -60,7 +60,6 @@ flowchart TD
   p_apps_api_src --> p_apps_api_src_platform
   p_apps_api_src --> p_apps_api_src_usage
   p_apps_api_src --> p_packages_mcp
-  p_apps_api_src_account --> p_packages_mcp
   p_apps_api_src_account --> p_apps_api_src_doom
   p_apps_api_src_account --> p_apps_api_src_oauth
   p_apps_api_src_account --> p_apps_api_src_platform
@@ -149,7 +148,7 @@ flowchart TD
 | Pack | Layer | Public | Dependencies | Tables |
 | --- | --- | --- | --- | --- |
 | `apps/api/src` | app | none | apps/api/src/account, apps/api/src/aira, apps/api/src/doom, apps/api/src/mcp, apps/api/src/oauth, apps/api/src/platform, apps/api/src/usage, packages/mcp | none |
-| `apps/api/src/account` | feature | runtime: apps/api/src/account/account-route.ts, apps/api/src/account/account.ts, apps/api/src/account/caller-log.ts, apps/api/src/account/session-cookie.ts; testing: apps/api/src/account/testing/read-sign-in-mail.ts | packages/mcp, apps/api/src/doom, apps/api/src/oauth, apps/api/src/platform | session.account, session.access, session.code, session.sent, session.caller_log |
+| `apps/api/src/account` | feature | runtime: apps/api/src/account/account-route.ts, apps/api/src/account/account.ts, apps/api/src/account/admit.ts, apps/api/src/account/caller-log.ts, apps/api/src/account/session-cookie.ts; testing: apps/api/src/account/testing/read-sign-in-mail.ts | apps/api/src/doom, apps/api/src/oauth, apps/api/src/platform | session.account, session.access, session.code, session.sent, session.caller_log |
 | `apps/api/src/aira` | feature | aira-closing.ts, aira-route.ts, aira-usage-route.ts, aira.ts, anthropic-transport.ts | packages/mcp, apps/api/src/account, apps/api/src/doom, apps/api/src/platform, apps/api/src/usage | session.aira_turn, session.aira_ask |
 | `apps/api/src/doom` | feature | deck-followers.ts, deck-list.ts, deck-pictures.ts, doom-deck.ts, doom-route.ts, doom-start.ts, doom-write.ts, idle-runs.ts, media.ts, original.ts | apps/api/src/platform | deck.doom, deck.doom_agent_read, deck.doom_edit, deck.doom_node, deck.media, deck.original_delete |
 | `apps/api/src/mcp` | feature | mcp.ts | packages/mcp, apps/api/src/account, apps/api/src/doom, apps/api/src/platform | none |

@@ -1,6 +1,5 @@
-import { admit, type Admission, type CallerLog, type LimitKind } from "@airdesign/mcp"
-
 import { withAddress } from "./account.js"
+import { admit, type Admission, type CallerLog, type LimitKind } from "./admit.js"
 import type { Sql } from "../platform/pool.js"
 
 export async function lockedLog(client: Sql, email: string): Promise<CallerLog> {

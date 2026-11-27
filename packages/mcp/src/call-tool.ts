@@ -1,7 +1,6 @@
 import { catalog, projectTools, type AgentOp } from "@airdesign/catalog"
 
-import { type CallerLog } from "./admit.js"
-import { type Answer, refused } from "./answer.js"
+import { type Answer, refused, unadmitted } from "./answer.js"
 import { appStateTool } from "./app-state-tool.js"
 import type { DeckHost } from "./deck-host.js"
 import { executeTool } from "./execute-tool.js"
@@ -13,8 +12,6 @@ export type Session = {
   readonly agent: string
   readonly name?: string
   readonly mint: () => string
-  log: CallerLog
-  now: number
   once?: string | undefined
 }
 
@@ -33,6 +30,8 @@ export async function callTool(
 ): Promise<Answer> {
   const op = opOf(name)
   if (op === undefined) return refused("field")
+  const refusal = await unadmitted(host, "tool")
+  if (refusal !== undefined) return refusal
   const once = session.once ?? session.mint()
   switch (op) {
     case "get_app_state":

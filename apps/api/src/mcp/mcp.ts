@@ -4,10 +4,8 @@ import type { IncomingMessage, ServerResponse } from "node:http"
 import { type DeckId, type DoomRefusal, readDeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import {
-  emptyLog,
   createServer,
   type DeckHost,
-  type Host,
   type NamedImage,
   type UndoHost,
   type Session,
@@ -147,7 +145,13 @@ async function slidePictures(
   return shots
 }
 
-function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured, fonts: FontSource): DeckHost {
+function doomHost(
+  db: Sql,
+  email: string,
+  images: ImageStore,
+  seen: Pictured,
+  fonts: FontSource,
+): Omit<DeckHost, "admit"> {
   const shots = seen.pictures
   const guarded =
     <Args extends unknown[], Result>(run: (...args: Args) => Promise<Result>) =>
@@ -236,10 +240,9 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
     agent: host.agentKey,
     ...(host.agentName === undefined ? {} : { name: host.agentName }),
     mint: host.mint,
-    log: emptyLog(),
-    now: host.now(),
   }
-  const bridge: Host = {
+  const now = host.now()
+  const bridge: DeckHost = {
     ...doomHost(
       host.deck,
       host.email,
@@ -247,7 +250,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       { pictures: host.pictures, wait: host.pictureWait ?? 15_000 },
       host.fonts,
     ),
-    admit: (called) => admitCaller(host.session, host.email, "tool", called.now, host.agentKey),
+    admit: (kind) => admitCaller(host.session, host.email, kind, now, host.agentKey),
   }
   const handler = createMcpHandler(() => createServer(session, bridge), { maxRequestBodySize: host.bodyCap })
   let failed = false
