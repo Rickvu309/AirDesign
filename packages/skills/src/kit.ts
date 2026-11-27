@@ -1,9 +1,8 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs"
-import path from "node:path"
-import { fileURLToPath } from "node:url"
 import type { NodeId, TreeNode } from "@airdesign/doom"
 
-const piecesDir = fileURLToPath(new URL("../pieces", import.meta.url))
+import { filesDir, fs, nodePath } from "./package-files.js"
+
+const piecesDir = () => nodePath().join(filesDir(), "kit")
 const pieceName = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 type KitPiece = {
@@ -46,14 +45,16 @@ function attached(node: TreeNode): TreeNode {
 
 export function readKitPiece(name: string): KitPiece | undefined {
   if (!pieceName.test(name)) return undefined
-  const file = path.join(piecesDir, `${name}.json`)
+  const { existsSync, readFileSync } = fs()
+  const file = nodePath().join(piecesDir(), `${name}.json`)
   if (!existsSync(file)) return undefined
   const tree = JSON.parse(readFileSync(file, "utf8")) as TreeNode
   return { name, size: sizeOf(tree), tree: attached(tree) }
 }
 
 export function kitPieces(): readonly KitPiece[] {
-  return readdirSync(piecesDir)
+  return fs()
+    .readdirSync(piecesDir())
     .filter((file) => file.endsWith(".json"))
     .map((file) => file.slice(0, -5))
     .sort()

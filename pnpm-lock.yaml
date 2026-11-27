@@ -480,22 +480,6 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
 
-  packages/kit:
-    dependencies:
-      '@airdesign/doom':
-        specifier: workspace:*
-        version: link:../doom
-    devDependencies:
-      '@airdesign/skills':
-        specifier: workspace:*
-        version: link:../skills
-      oxlint:
-        specifier: ^1.90.0
-        version: 1.92.0
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-
   packages/live:
     dependencies:
       '@airdesign/catalog':
@@ -520,9 +504,6 @@ importers:
       '@airdesign/doom':
         specifier: workspace:*
         version: link:../doom
-      '@airdesign/kit':
-        specifier: workspace:*
-        version: link:../kit
       '@airdesign/skills':
         specifier: workspace:*
         version: link:../skills
