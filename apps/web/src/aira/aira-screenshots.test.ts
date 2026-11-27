@@ -15,7 +15,7 @@ const seen = {
   ],
 }
 
-it("hands Aira the picture the read answered, in the next turn only, and keeps it out of the history after", async () => {
+it("hands Aira the screenshot the read answered, in the next turn only, and keeps it out of the history after", async () => {
   const look = call("call_1", edit, { deck, script: 'screenshot({ target: "s:256" })' })
   const again = call("call_2", read, {})
   const link = scripted(

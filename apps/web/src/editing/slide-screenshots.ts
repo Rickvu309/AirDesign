@@ -1,8 +1,8 @@
-import { pictureBytes as pictureLimit } from "@airdesign/catalog"
+import { screenshotBytes as screenshotLimit } from "@airdesign/catalog"
 
-export const pictureFit = { width: 1280, height: 720 } as const
+export const screenshotFit = { width: 1280, height: 720 } as const
 
-export const pictureQualities = [0.85, 0.6] as const
+export const screenshotQualities = [0.85, 0.6] as const
 
 function base64(bytes: Uint8Array): string {
   let text = ""
@@ -11,10 +11,10 @@ function base64(bytes: Uint8Array): string {
 }
 
 async function encoded(canvas: OffscreenCanvas): Promise<string | null> {
-  for (const quality of pictureQualities) {
+  for (const quality of screenshotQualities) {
     const blob = await canvas.convertToBlob({ type: "image/jpeg", quality })
     const data = base64(new Uint8Array(await blob.arrayBuffer()))
-    if (data.length <= pictureLimit) return data
+    if (data.length <= screenshotLimit) return data
   }
   return null
 }

@@ -9,7 +9,7 @@ public:
   - agent-host.ts
   - deck-followers.ts
   - deck-list.ts
-  - deck-pictures.ts
+  - deck-screenshots.ts
   - doom-deck.ts
   - doom-route.ts
   - doom-start.ts

@@ -23,7 +23,7 @@ import type { ActionRun } from "./actions-popover"
 import { EditorToolbar } from "./editor-toolbar"
 import { EditorToaster } from "./editor-toast"
 import { ThinNoticeView, type ThinNotice } from "./thin-notice"
-import { SlidePictures } from "./use-slide-pictures"
+import { SlideScreenshots } from "./use-slide-screenshots"
 import { PresentButton } from "@/present/present-button"
 import { usePresentKeys } from "@/present/present-keys"
 import { PresentLayer } from "@/present/present-layer"
@@ -349,7 +349,7 @@ function Editing({
             )}
             start={{ ...(start.grid ?? {}), editing: returnLive.current }}
           />
-          <SlidePictures client={client} assetUrl={assets.assetUrl} />
+          <SlideScreenshots client={client} assetUrl={assets.assetUrl} />
           <ThinNoticeView notice={notice} onTryAgain={tryAgain} />
         </>
       ) : (

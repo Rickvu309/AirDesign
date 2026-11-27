@@ -141,7 +141,7 @@ $V api <run> list '{}' --cookie 'airdesign.session=...'
 $V api <run> open '{"deck":"<id>"}' --cookie '...'
 ```
 
-`api` takes a `deckRoutes` key (`list`, `rename`, `star`, `trash`, `restore`, `delete`, `mediaUpload`, `media`) and saves the answer under the evidence dir. A deck's content is read and written through `doomRoutes` (`create`, `open`, `edit`, `since`, `pictures`, `run`); post those from a journey with `post`.
+`api` takes a `deckRoutes` key (`list`, `rename`, `star`, `trash`, `restore`, `delete`, `mediaUpload`, `media`) and saves the answer under the evidence dir. A deck's content is read and written through `doomRoutes` (`create`, `open`, `edit`, `since`, `screenshots`, `run`); post those from a journey with `post`.
 
 #### Saved proof
 

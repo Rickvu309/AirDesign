@@ -1,4 +1,4 @@
-import type { DeckId, DoomPictured, DoomRefusal, SlidePictures } from "@airdesign/catalog"
+import type { DeckId, DoomScreenshotsKept, DoomRefusal, SlideScreenshots } from "@airdesign/catalog"
 import type * as doom from "@airdesign/doom"
 import type { DeckStatus } from "./doom-status.js"
 import type { DoomStorage } from "./doom-storage.js"
@@ -65,8 +65,8 @@ export type DoomDeck = {
   catchUp(): Promise<{ readonly ok: boolean }>
   reportSelection(selection: { readonly slide: doom.NodeId; readonly ids: readonly doom.NodeId[] } | undefined): void
   follow(signal: AbortSignal): Promise<Followed>
-  reportPictures(rev: number, pictures: SlidePictures): Promise<DoomPictured>
-  picturesWanted(): boolean
+  reportScreenshots(rev: number, screenshots: SlideScreenshots): Promise<DoomScreenshotsKept>
+  screenshotsWanted(): boolean
   subscribe(listener: () => void): () => void
 }
 

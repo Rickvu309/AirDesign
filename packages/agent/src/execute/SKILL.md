@@ -97,7 +97,7 @@ get({ target: s }).problems
   - `get()` returns the deck as `{ name, slides, style, theme, layers, problems }`, with `next` when more slides are left. Continue with `get({ cursor: next })`. `style` is the name matching the theme values, or `null` for a custom theme. `theme` holds `{ colors, fonts, sizes }`.
   - `get({ find: "words" })` returns every layer whose line holds the words.
   - `layers` has one line per layer: its id, kind, `@x,y` and size, then its look.
-- `screenshot({ target })` adds a picture of the slide that holds `target`, taken after the edit lands by the person's open AirDesign tab, up to 4 slides a call. With no tab open the answer says so at once: do not ask again.
+- `screenshot({ target })` adds a screenshot of the slide that holds `target`, taken after the edit lands by the person's open AirDesign tab, up to 4 slides a call. With no tab open the answer says so at once: do not ask again.
 
 ## Look fields
 
@@ -119,7 +119,7 @@ Sizes are pixels on a 1920 by 1080 slide. Name the deck's own colours and text s
 
 - `names` gives the id of each layer the script named with `name`. Every other new id is what its operation returned to the script.
 - `problems` lists what is off on the slides the call touched, such as overflow, overlap, off-slide, small text, or a colour, size or font off the deck's own choices. Each says how to fix it. Fix each one unless the person asked for it.
-- `result`, `logs` and `pictures` hold what the script returned, printed and asked to see.
+- `result`, `logs` and `screenshots` hold what the script returned, printed and asked to see.
 - Send `runId` with every later call in your turn, and to `airdesign_stop_run` when you are done.
 
 ## Refusals

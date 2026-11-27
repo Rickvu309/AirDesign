@@ -1,12 +1,12 @@
 import { act, createElement } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest"
-import { quietFor, useSlidePictures } from "./use-slide-pictures"
+import { quietFor, useSlideScreenshots } from "./use-slide-screenshots"
 
 const world = vi.hoisted(() => ({ reported: 0 }))
 
-vi.mock("@/editing/slide-picture-report", () => ({
-  reportSlidePictures: async () => {
+vi.mock("@/editing/slide-screenshot-report", () => ({
+  reportSlideScreenshots: async () => {
     world.reported += 1
     return true
   },
@@ -54,8 +54,8 @@ function fakeClient() {
     client: {
       server: () => fold,
       pending: () => [],
-      reportPictures: async () => ({ ok: true as const, missing: [] }),
-      picturesWanted: () => state.wanted,
+      reportScreenshots: async () => ({ ok: true as const, missing: [] }),
+      screenshotsWanted: () => state.wanted,
       subscribe: (listener: () => void) => {
         listeners.add(listener)
         return () => listeners.delete(listener)
@@ -66,7 +66,7 @@ function fakeClient() {
 
 async function mount(client: ReturnType<typeof fakeClient>["client"]): Promise<void> {
   function Host() {
-    useSlidePictures(client as never, () => undefined)
+    useSlideScreenshots(client as never, () => undefined)
     return null
   }
   root = createRoot(document.createElement("div"))
@@ -80,7 +80,7 @@ const pass = (ms: number) =>
     await vi.advanceTimersByTimeAsync(ms)
   })
 
-it("paints and reports no slide picture while no agent has asked for one", async () => {
+it("paints and reports no slide screenshot while no agent has asked for one", async () => {
   const held = fakeClient()
   await mount(held.client)
   await pass(quietFor * 10)

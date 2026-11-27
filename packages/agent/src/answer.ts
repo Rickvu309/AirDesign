@@ -6,7 +6,7 @@ import type { DeckHost } from "./deck-host.js"
 export type Answer = {
   readonly ok: boolean
   readonly fields: Readonly<Record<string, unknown>>
-  readonly pictures: readonly string[]
+  readonly screenshots: readonly string[]
 }
 
 export const refusalWords = {
@@ -56,7 +56,7 @@ const hostCodes = {
 } as const satisfies Record<Exclude<DoomRefusal["refusal"], "edit">, Refused>
 
 export function told(ok: boolean, fields: Readonly<Record<string, unknown>>): Answer {
-  return { ok, fields, pictures: [] }
+  return { ok, fields, screenshots: [] }
 }
 
 export function answered(note: string, fields: Readonly<Record<string, unknown>>): Answer {

@@ -85,6 +85,14 @@ _Avoid_: program, macro, batch
 One function a script calls: `insert`, `update`, `replace`, `copy`, `move`, `remove`, `group`, `ungroup`, `variables`, `get` or `screenshot`. Each answers at once, so a script uses the new id or the measured box in its next line.
 _Avoid_: tool call, command
 
+**screenshot**:
+A JPEG of one slide that a device painter took after the edit landed, which `screenshot({ target })` adds to the answer as `screenshots`. A picture is an image layer, never a slide image.
+_Avoid_: picture, slide picture, capture
+
+**painter lease**:
+A device painter's hold on a deck: the open editor tab today, any view that paints the deck later. It lasts while the painter waits for screenshot jobs and a few seconds after (`DeckScreenshots.lease`). With no lease, a screenshot answers at once that no painter is open.
+_Avoid_: watcher, open tab
+
 **agent change**:
 What an operation becomes: `add`, `set`, `move`, `wrap`, `unwrap`, `delete`, `duplicate`, `deck` or `slide`. `compileAgentChange` turns it into writes, or refuses it by name; `agentEditSession` compiles a script's changes one at a time and finishes them as one edit of the agent's run. Nothing else turns agent words into writes.
 _Avoid_: command, patch, tool call

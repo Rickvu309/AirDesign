@@ -2,14 +2,14 @@ import {
   airaRoutes,
   catalog,
   projectTools,
-  sentWithoutPictures,
+  sentWithoutScreenshots,
   type AgentOp,
   type ModelMessage,
   type ReplyBlock,
   type ToolAnswer,
   type ToolCall,
 } from "@airdesign/catalog"
-import { cappedPictures, readFontIssue, stringList, toolAnswer, type FontIssue } from "@/aira/aira-answers"
+import { cappedScreenshots, readFontIssue, stringList, toolAnswer, type FontIssue } from "@/aira/aira-answers"
 import { airaLine, bodyLines, sendTool, weekUsage, type WeekUsage } from "@/aira/aira-wire"
 import type { UndoStays } from "@airdesign/catalog"
 import { fieldsOf } from "@/lib/fields-of"
@@ -207,7 +207,7 @@ export function airaStep(chat: AiraChat, event: AiraEvent): AiraChat {
     case "replied": {
       const next: AiraChat = {
         ...chat,
-        history: [...chat.history, sentWithoutPictures(event.sent), { role: "assistant", content: event.content }],
+        history: [...chat.history, sentWithoutScreenshots(event.sent), { role: "assistant", content: event.content }],
         answers: [],
         usage: event.usage,
       }
@@ -254,7 +254,7 @@ export function airaStep(chat: AiraChat, event: AiraEvent): AiraChat {
 }
 
 function userMessage(given: readonly ToolAnswer[], text: string | undefined): ModelMessage {
-  const answers = cappedPictures(given)
+  const answers = cappedScreenshots(given)
   if (answers.length === 0) return { role: "user", content: text ?? "" }
   return { role: "user", content: text === undefined ? answers : [...answers, { type: "text", text }] }
 }
@@ -345,7 +345,7 @@ async function callTool(
     )
     const run = outcome.fields?.runId
     const edited = outcome.ok && changes(call) && typeof run === "string"
-    const answer = toolAnswer(call.id, outcome.text, outcome.ok, outcome.pictures)
+    const answer = toolAnswer(call.id, outcome.text, outcome.ok, outcome.screenshots)
     const refusal = outcome.fields?.refusal
     if (outcome.ok || typeof refusal !== "string") {
       const bakedLayouts = stringList(outcome.fields?.bakedLayouts)

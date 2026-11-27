@@ -85,7 +85,7 @@ async function reportDrag(feel: Feel): Promise<void> {
   }
 }
 
-test("a 40-slide Doom deck does no picture work while no agent reads it and keeps a drag inside one frame", async ({
+test("a 40-slide Doom deck does no screenshot work while no agent reads it and keeps a drag inside one frame", async ({
   page,
   context,
   stack,
@@ -94,7 +94,7 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
   const measure = <T>(phase: string, run: () => Promise<T>) => measureOnQuietMachine(speedTasks, phase, run, testInfo)
   const requested: string[] = []
   page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/doom/pictures") requested.push(request.url())
+    if (new URL(request.url()).pathname === "/doom/screenshots") requested.push(request.url())
   })
   const opened = await openEditor(page, context, stack)
   const { doomRoutes } = await import("../../packages/catalog/src/index.ts")
@@ -282,5 +282,5 @@ test("a 40-slide Doom deck does no picture work while no agent reads it and keep
       budget.agentEditPaintMilliseconds,
     )
   })
-  expect(requested, "no slide picture is painted or sent while no agent has asked for one").toEqual([])
+  expect(requested, "no slide screenshot is painted or sent while no agent has asked for one").toEqual([])
 })

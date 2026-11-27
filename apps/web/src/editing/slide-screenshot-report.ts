@@ -1,4 +1,4 @@
-import { pictureType, type SlidePictures } from "@airdesign/catalog"
+import { screenshotType, type SlideScreenshots } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 const assetPattern = /^[0-9a-f]{64}$/
@@ -28,9 +28,9 @@ export function unresolvedAssets(
 
 export type SlideCapture = string | { readonly failure: "fonts" } | null
 
-export async function reportSlidePictures(args: {
+export async function reportSlideScreenshots(args: {
   readonly view: doom.Doom
-  readonly send: (pictures: SlidePictures) => Promise<readonly doom.NodeId[] | null>
+  readonly send: (screenshots: SlideScreenshots) => Promise<readonly doom.NodeId[] | null>
   readonly capture: (slide: doom.NodeId) => Promise<SlideCapture>
   readonly ready: (slide: doom.NodeId) => boolean
   readonly current: () => boolean
@@ -49,7 +49,7 @@ export async function reportSlidePictures(args: {
     if (data === null || !current()) continue
     const key = keys.find((each) => each.slide === slide)?.key
     if (key === undefined) continue
-    if (typeof data === "string") missing = await send({ keys, images: [{ slide, key, type: pictureType, data }] })
+    if (typeof data === "string") missing = await send({ keys, images: [{ slide, key, type: screenshotType, data }] })
     else {
       fontFailed = true
       missing = await send({ keys, images: [], fontFailures: [{ slide, key }] })

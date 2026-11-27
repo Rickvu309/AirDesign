@@ -1,14 +1,14 @@
 export {
-  airaPictureBytes,
-  airaPictureCap,
-  pictureNotFitted,
+  airaScreenshotBytes,
+  airaScreenshotCap,
+  screenshotNotFitted,
   airaTools,
-  pictureTokenCeiling,
-  picturesIn,
+  screenshotTokenCeiling,
+  screenshotsIn,
   readStop,
   readTurn,
-  sentWithoutPictures,
-  withoutPictures,
+  sentWithoutScreenshots,
+  withoutScreenshots,
   type ModelMessage,
   type ResultBlock,
   type ModelTool,
@@ -44,14 +44,14 @@ export {
   type WireRefusal,
 } from "./deck-routes.js"
 export {
-  picturesWantedMilliseconds,
+  screenshotsWantedMilliseconds,
   doomRoutes,
   doomPaths,
   type DoomCaught,
   type DoomRan,
   type DoomLanded,
   type DoomOpened,
-  type DoomPictured,
+  type DoomScreenshotsKept,
   type DoomRefusal,
   type TabSelection,
 } from "./doom-wire.js"
@@ -85,7 +85,7 @@ export {
 
 export { readExecute } from "./execute-wire.js"
 export { readAppState } from "./read-wire.js"
-export { pictureBytes, pictureType, type SlidePictures } from "./slide-pictures-wire.js"
+export { screenshotBytes, screenshotType, type SlideScreenshots } from "./slide-screenshots-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath, onceMeta, pendingFontsMeta, readOnce } from "./mcp-routes.js"
 

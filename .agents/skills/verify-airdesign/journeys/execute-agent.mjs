@@ -51,13 +51,13 @@ export default async function drive(kit) {
   expect(widths).toEqual([1100, 881, 467])
   expect(title.h).toBeGreaterThan(60)
   expect(agent).not.toHaveProperty("made")
-  expect(agent.pictures).toEqual([slide])
+  expect(agent.screenshots).toEqual([slide])
   const elapsed = Date.now() - started
   const saved = (await readDoom(kit, opened)).fold
   const layers = Object.values(saved.nodes).filter((node) => node.parent?.id === slide)
   expect(layers).toHaveLength(11)
   note(
-    `An agent over OAuth built a slide of ${String(layers.length)} layers in one execute call in ${String(elapsed)} ms, bars ${widths.join("/")} px from the values, the title measured at ${String(Math.round(title.w))}x${String(Math.round(title.h))} with the served fonts, 0 problems, and a picture from this tab.`,
+    `An agent over OAuth built a slide of ${String(layers.length)} layers in one execute call in ${String(elapsed)} ms, bars ${widths.join("/")} px from the values, the title measured at ${String(Math.round(title.w))}x${String(Math.round(title.h))} with the served fonts, 0 problems, and a screenshot from this tab.`,
   )
   const bars = Object.values(saved.nodes).filter(
     (node) =>

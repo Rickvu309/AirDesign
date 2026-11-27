@@ -1,11 +1,11 @@
 import { createHmac } from "node:crypto"
 
 import {
-  airaPictureBytes,
-  airaPictureCap,
+  airaScreenshotBytes,
+  airaScreenshotCap,
   airaTools,
-  pictureTokenCeiling,
-  picturesIn,
+  screenshotTokenCeiling,
+  screenshotsIn,
   readTurn,
   type ModelMessage,
   type ModelTool,
@@ -38,7 +38,7 @@ export type AiraEffort = (typeof airaEfforts)[number]
 export const airaEffort: AiraEffort = "low"
 export const airaMaxTokens = 8192
 export const airaBodyCap = 262_144
-export const airaTurnCap = airaBodyCap + airaPictureBytes + airaPictureCap * 128
+export const airaTurnCap = airaBodyCap + airaScreenshotBytes + airaScreenshotCap * 128
 export const staleTurn = 900_000
 
 const framing = 64
@@ -139,13 +139,13 @@ export function accountId(secret: string, account: string): string {
 }
 
 function wordBytes(messages: readonly ModelMessage[]): number {
-  const pictures = picturesIn(messages)
-  return bytesOf(JSON.stringify(messages)) - pictures.reduce((total, { source }) => total + source.data.length, 0)
+  const screenshots = screenshotsIn(messages)
+  return bytesOf(JSON.stringify(messages)) - screenshots.reduce((total, { source }) => total + source.data.length, 0)
 }
 
 function inputCeiling(system: string, messages: readonly ModelMessage[]): number {
-  const pictures = picturesIn(messages).length * pictureTokenCeiling
-  return bytesOf(system) + bytesOf(JSON.stringify(airaTools)) + wordBytes(messages) + pictures + framing
+  const screenshots = screenshotsIn(messages).length * screenshotTokenCeiling
+  return bytesOf(system) + bytesOf(JSON.stringify(airaTools)) + wordBytes(messages) + screenshots + framing
 }
 
 function refuse(status: number, refusal: string, extra: Record<string, unknown> = {}): AiraAnswer {

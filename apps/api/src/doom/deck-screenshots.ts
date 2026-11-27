@@ -1,8 +1,18 @@
-import { picturesWantedMilliseconds, type DeckId, type SlidePictures, type TabSelection } from "@airdesign/catalog"
+import {
+  screenshotsWantedMilliseconds,
+  type DeckId,
+  type SlideScreenshots,
+  type TabSelection,
+} from "@airdesign/catalog"
+import type { SlideShot } from "@airdesign/agent"
 import type { NodeId } from "@airdesign/doom"
 
-export const picturesCap = 200_000_000
-export const watchGrace = 5_000
+export const screenshotsCap = 200_000_000
+export const leaseGrace = 5_000
+
+export type ScreenshotKey = { readonly slide: NodeId; readonly key: string }
+
+export type Taken = ReadonlyMap<NodeId, SlideShot>
 
 type Held = { readonly key: string; readonly data: string }
 
@@ -10,7 +20,7 @@ type Shots = {
   readonly revision: number
   readonly keys: ReadonlyMap<NodeId, string>
   readonly held: Map<NodeId, Held>
-  readonly fontFailures: ReadonlyMap<NodeId, SlidePictures["keys"][number]>
+  readonly fontFailures: ReadonlyMap<NodeId, SlideScreenshots["keys"][number]>
 }
 
 function heldBytes(shots: Shots): number {
@@ -27,18 +37,18 @@ type OpenTab = { readonly deck: DeckId; readonly selection: TabSelection | undef
 
 type Wanted = { readonly until: number; readonly slides: ReadonlySet<NodeId> }
 
-export class DeckPictures {
+export class DeckScreenshots {
   private readonly decks = new Map<DeckId, Shots>()
   private readonly waiting = new Map<DeckId, Set<() => void>>()
   private readonly wanting = new Map<DeckId, Wanted>()
-  private readonly asking = new Map<DeckId, Set<() => void>>()
+  private readonly painters = new Map<DeckId, Set<() => void>>()
   private readonly tabs = new Map<string, Set<OpenTab>>()
-  private readonly seen = new Map<DeckId, number>()
+  private readonly renewed = new Map<DeckId, number>()
   private bytes = 0
   private readonly cap: number
   private readonly now: () => number
 
-  constructor(cap = picturesCap, now: () => number = Date.now) {
+  constructor(cap = screenshotsCap, now: () => number = Date.now) {
     this.cap = cap
     this.now = now
   }
@@ -46,9 +56,9 @@ export class DeckPictures {
   want(deck: DeckId, slides: readonly NodeId[]): void {
     const held = this.wanting.get(deck)
     const kept = held !== undefined && held.until > this.now() ? held.slides : []
-    this.wanting.set(deck, { until: this.now() + picturesWantedMilliseconds, slides: new Set([...kept, ...slides]) })
-    const woken = this.asking.get(deck) ?? new Set()
-    this.asking.delete(deck)
+    this.wanting.set(deck, { until: this.now() + screenshotsWantedMilliseconds, slides: new Set([...kept, ...slides]) })
+    const woken = this.painters.get(deck) ?? new Set()
+    this.painters.delete(deck)
     for (const each of woken) each()
   }
 
@@ -82,52 +92,77 @@ export class DeckPictures {
     )
   }
 
-  watched(deck: DeckId): boolean {
-    if ((this.asking.get(deck)?.size ?? 0) > 0) return true
-    const seen = this.seen.get(deck)
-    if (seen !== undefined && this.now() - seen < watchGrace) return true
-    this.seen.delete(deck)
+  leased(deck: DeckId): boolean {
+    if ((this.painters.get(deck)?.size ?? 0) > 0) return true
+    const renewed = this.renewed.get(deck)
+    if (renewed !== undefined && this.now() - renewed < leaseGrace) return true
+    this.renewed.delete(deck)
     return false
   }
 
-  asked(deck: DeckId, signal: AbortSignal): Promise<boolean> {
-    this.seen.set(deck, this.now())
+  lease(deck: DeckId, signal: AbortSignal): Promise<boolean> {
+    this.renewed.set(deck, this.now())
     return new Promise((resolve) => {
       if (signal.aborted) {
         resolve(false)
         return
       }
-      const held = this.asking.get(deck) ?? new Set()
+      const held = this.painters.get(deck) ?? new Set()
       const wake = () => {
-        this.seen.set(deck, this.now())
+        this.renewed.set(deck, this.now())
         signal.removeEventListener("abort", stop)
         resolve(true)
       }
       const stop = () => {
-        this.seen.set(deck, this.now())
-        const left = this.asking.get(deck)
+        this.renewed.set(deck, this.now())
+        const left = this.painters.get(deck)
         left?.delete(wake)
-        if (left?.size === 0) this.asking.delete(deck)
+        if (left?.size === 0) this.painters.delete(deck)
         resolve(false)
       }
       held.add(wake)
-      this.asking.set(deck, held)
+      this.painters.set(deck, held)
       signal.addEventListener("abort", stop, { once: true })
     })
   }
 
-  keep(deck: DeckId, revision: number, pictures: SlidePictures): readonly NodeId[] {
-    this.seen.set(deck, this.now())
+  async take(deck: DeckId, slides: readonly ScreenshotKey[], wait: number): Promise<Taken | "no painter"> {
+    if (!this.leased(deck)) return "no painter"
+    const before = slides.map(({ slide, key }) => this.fontFailure(deck, slide, key))
+    this.want(
+      deck,
+      slides.map(({ slide }) => slide),
+    )
+    const current = (): Taken =>
+      new Map(
+        slides.flatMap(({ slide, key }, at): (readonly [NodeId, SlideShot])[] => {
+          const data = this.fresh(deck, slide, key)
+          if (data !== undefined) return [[slide, data]]
+          const failure = this.fontFailure(deck, slide, key)
+          return failure !== undefined && failure !== before[at] ? [[slide, { failure: "fonts" }]] : []
+        }),
+      )
+    let taken = current()
+    const until = AbortSignal.timeout(wait)
+    while (taken.size < slides.length && !until.aborted) {
+      await this.wait(deck, until)
+      taken = current()
+    }
+    return taken
+  }
+
+  keep(deck: DeckId, revision: number, screenshots: SlideScreenshots): readonly NodeId[] {
+    this.renewed.set(deck, this.now())
     const was = this.decks.get(deck)
     if (was !== undefined && was.revision > revision) return missingOf(was)
-    const keys = new Map(pictures.keys.map(({ slide, key }) => [slide, key]))
+    const keys = new Map(screenshots.keys.map(({ slide, key }) => [slide, key]))
     const held = new Map<NodeId, Held>()
     for (const [slide, each] of was?.held ?? []) if (keys.get(slide) === each.key) held.set(slide, each)
-    for (const { slide, key, data } of pictures.images) held.set(slide, { key, data })
+    for (const { slide, key, data } of screenshots.images) held.set(slide, { key, data })
     const fontFailures = new Map(
       [...(was?.fontFailures ?? [])].filter(([slide, failure]) => keys.get(slide) === failure.key && !held.has(slide)),
     )
-    for (const failure of pictures.fontFailures ?? [])
+    for (const failure of screenshots.fontFailures ?? [])
       if (!held.has(failure.slide)) fontFailures.set(failure.slide, failure)
     const next: Shots = { revision, keys, held, fontFailures }
     if (was !== undefined) this.bytes -= heldBytes(was)
@@ -148,7 +183,7 @@ export class DeckPictures {
     return held.data
   }
 
-  fontFailure(deck: DeckId, slide: NodeId, key: string): SlidePictures["keys"][number] | undefined {
+  fontFailure(deck: DeckId, slide: NodeId, key: string): SlideScreenshots["keys"][number] | undefined {
     const failure = this.decks.get(deck)?.fontFailures.get(slide)
     return failure?.key === key ? failure : undefined
   }

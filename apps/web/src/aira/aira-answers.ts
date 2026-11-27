@@ -1,19 +1,20 @@
 import { fieldsOf } from "@/lib/fields-of"
 import {
-  airaPictureBytes,
-  airaPictureCap,
-  pictureNotFitted,
+  airaScreenshotBytes,
+  airaScreenshotCap,
+  screenshotNotFitted,
   type ResultBlock,
   type ToolAnswer,
 } from "@airdesign/catalog"
 
-export function cappedPictures(answers: readonly ToolAnswer[]): readonly ToolAnswer[] {
+export function cappedScreenshots(answers: readonly ToolAnswer[]): readonly ToolAnswer[] {
   let shown = 0
   let bytes = 0
   const fitted = (block: ResultBlock): ResultBlock => {
     if (block.type !== "image") return block
     const size = block.source.data.length
-    if (shown >= airaPictureCap || bytes + size > airaPictureBytes) return { type: "text", text: pictureNotFitted }
+    if (shown >= airaScreenshotCap || bytes + size > airaScreenshotBytes)
+      return { type: "text", text: screenshotNotFitted }
     shown += 1
     bytes += size
     return block
@@ -23,8 +24,8 @@ export function cappedPictures(answers: readonly ToolAnswer[]): readonly ToolAns
   )
 }
 
-export function toolAnswer(id: string, text: string, ok: boolean, pictures?: readonly ResultBlock[]): ToolAnswer {
-  const content = pictures ?? text
+export function toolAnswer(id: string, text: string, ok: boolean, screenshots?: readonly ResultBlock[]): ToolAnswer {
+  const content = screenshots ?? text
   return ok
     ? { type: "tool_result", tool_use_id: id, content }
     : { type: "tool_result", tool_use_id: id, content, is_error: true }

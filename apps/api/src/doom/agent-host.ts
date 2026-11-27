@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto"
 
-import type { DeckHost, NamedImage, SlideShot, UndoHost } from "@airdesign/agent"
+import type { DeckHost, NamedImage, UndoHost } from "@airdesign/agent"
 import { type DeckId, type DoomRefusal, readDeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
@@ -9,7 +9,7 @@ import type { FontSource } from "../platform/font-source.js"
 import { fetchImage, type ImageNet } from "../platform/image-fetch.js"
 import type { OriginalStore } from "../platform/original-store.js"
 import type { Sql } from "../platform/pool.js"
-import type { DeckPictures } from "./deck-pictures.js"
+import type { DeckScreenshots } from "./deck-screenshots.js"
 import {
   createDoom,
   editDoom,
@@ -47,7 +47,6 @@ function opened(deck: DeckId, answer: Awaited<ReturnType<typeof openDoom>>) {
 }
 
 type ImageStore = { readonly originals: OriginalStore | undefined; readonly net: ImageNet | undefined }
-type Pictured = { readonly pictures: DeckPictures | undefined; readonly wait: number }
 
 const sizeOf = (bytes: Uint8Array) => {
   const size = doom.mediaSize(bytes)
@@ -87,50 +86,21 @@ async function storedImages(
 const slideKey = (fold: doom.Doom, slide: doom.NodeId) =>
   createHash("sha256").update(doom.slideKeyText(fold, slide)).digest("hex")
 
-async function slidePictures(
-  pictures: DeckPictures,
-  wait: number,
-  deck: DeckId,
-  fold: doom.Doom,
-  slides: readonly doom.NodeId[],
-): Promise<ReadonlyMap<doom.NodeId, SlideShot> | "unwatched"> {
-  if (!pictures.watched(deck)) return "unwatched"
-  const keys = slides.map((slide) => [slide, slideKey(fold, slide)] as const)
-  const previousFailures = keys.map(([slide, key]) => pictures.fontFailure(deck, slide, key))
-  pictures.want(deck, slides)
-  const current = () =>
-    new Map<doom.NodeId, SlideShot>(
-      keys.flatMap(([slide, key], at): (readonly [doom.NodeId, SlideShot])[] => {
-        const data = pictures.fresh(deck, slide, key)
-        if (data !== undefined) return [[slide, data]]
-        const failure = pictures.fontFailure(deck, slide, key)
-        return failure !== undefined && failure !== previousFailures[at] ? [[slide, { failure: "fonts" }]] : []
-      }),
-    )
-  let shots = current()
-  const until = AbortSignal.timeout(wait)
-  while (shots.size < keys.length && !until.aborted) {
-    await pictures.wait(deck, until)
-    shots = current()
-  }
-  return shots
-}
-
 export type AgentHostDeps = {
   readonly deck: Sql
   readonly email: string
   readonly fonts: FontSource
   readonly originals?: OriginalStore
   readonly imageNet?: ImageNet
-  readonly pictures?: DeckPictures
-  readonly pictureWait?: number
+  readonly screenshots?: DeckScreenshots
+  readonly screenshotWait?: number | undefined
 }
 
 export function agentHost(deps: AgentHostDeps): Omit<DeckHost, "admit"> {
   const { deck: db, email, fonts } = deps
   const images: ImageStore = { originals: deps.originals, net: deps.imageNet }
-  const seen: Pictured = { pictures: deps.pictures, wait: deps.pictureWait ?? 15_000 }
-  const shots = seen.pictures
+  const shots = deps.screenshots
+  const wait = deps.screenshotWait ?? 15_000
   const guarded =
     <Args extends unknown[], Result>(run: (...args: Args) => Promise<Result>) =>
     async (...args: Args): Promise<Result | DoomRefusal> => {
@@ -193,7 +163,12 @@ export function agentHost(deps: AgentHostDeps): Omit<DeckHost, "admit"> {
       ? {}
       : {
           openTab: () => shots.openTab(email),
-          pictures: (deck, fold, slides) => slidePictures(shots, seen.wait, deck, fold, slides),
+          screenshots: async (deck, fold, slides) =>
+            shots.take(
+              deck,
+              slides.map((slide) => ({ slide, key: slideKey(fold, slide) })),
+              wait,
+            ),
         }),
     ...on(db),
     withUndo: (deck, undo) => guarded(() => withDoomWrite(db, deck, email, (client) => undo(on(client, true))))(),

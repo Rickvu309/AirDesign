@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import { captureSlide } from "@/editing/slide-capture"
-import { reportSlidePictures, unresolvedAssets } from "@/editing/slide-picture-report"
+import { reportSlideScreenshots, unresolvedAssets } from "@/editing/slide-screenshot-report"
 import type { EditorClient } from "./use-deck"
 
 export const quietFor = 1_000
@@ -14,16 +14,16 @@ function idle(): Promise<void> {
   })
 }
 
-export function SlidePictures(props: {
-  readonly client: Parameters<typeof useSlidePictures>[0]
+export function SlideScreenshots(props: {
+  readonly client: Parameters<typeof useSlideScreenshots>[0]
   readonly assetUrl: (asset: string) => string | undefined
 }): null {
-  useSlidePictures(props.client, props.assetUrl)
+  useSlideScreenshots(props.client, props.assetUrl)
   return null
 }
 
-export function useSlidePictures(
-  client: Pick<EditorClient, "server" | "pending" | "reportPictures" | "subscribe" | "picturesWanted">,
+export function useSlideScreenshots(
+  client: Pick<EditorClient, "server" | "pending" | "reportScreenshots" | "subscribe" | "screenshotsWanted">,
   assetUrl: (asset: string) => string | undefined,
 ): void {
   const urls = useRef(assetUrl)
@@ -38,15 +38,15 @@ export function useSlidePictures(
     let running = false
     let timer: ReturnType<typeof setTimeout> | undefined
     const run = async () => {
-      if (running || client.pending().length > 0 || !client.picturesWanted()) return
+      if (running || client.pending().length > 0 || !client.screenshotsWanted()) return
       running = true
       const fold = client.server()
       let reached = false
       try {
-        reached = await reportSlidePictures({
+        reached = await reportSlideScreenshots({
           view: fold,
-          send: async (pictures) => {
-            const answer = await client.reportPictures(fold.rev, pictures)
+          send: async (screenshots) => {
+            const answer = await client.reportScreenshots(fold.rev, screenshots)
             return answer.ok ? answer.missing : null
           },
           capture: async (slide) => {
@@ -63,13 +63,13 @@ export function useSlidePictures(
       }
       if (!live) return
       clearTimeout(timer)
-      if (!client.picturesWanted()) return
+      if (!client.screenshotsWanted()) return
       if (client.server() !== fold) timer = setTimeout(() => void run(), quietFor)
       else if (!reached) timer = setTimeout(() => void run(), retryAfter)
     }
     let asked = false
     const later = () => {
-      if (!client.picturesWanted()) {
+      if (!client.screenshotsWanted()) {
         asked = false
         clearTimeout(timer)
         return

@@ -260,18 +260,18 @@ describe("what get reads inside a script", () => {
 
 describe("screenshots in an execute answer", () => {
   it("says at once that no tab is open when none watches the deck", async () => {
-    const by = agent({ pictures: async () => "unwatched" })
+    const by = agent({ screenshots: async () => "no painter" })
     const { deck, slides } = await by.made()
     const answer = await by.call("execute", { deck, script: `screenshot({ target: "${slides[0]!}" })` })
     expect(answer.ok).toBe(true)
     expect(String(answer.fields.note)).toContain("none is open")
-    expect(answer.pictures).toEqual([])
+    expect(answer.screenshots).toEqual([])
   })
 
-  it("adds the open tab's picture of each slide asked for, once for the call", async () => {
+  it("adds the open tab's screenshot of each slide asked for, once for the call", async () => {
     let asked = 0
     const by = agent({
-      pictures: async (_deck, _fold, slides) => {
+      screenshots: async (_deck, _fold, slides) => {
         asked += 1
         return new Map(slides.map((slide) => [slide, "QUFB"]))
       },
@@ -282,8 +282,8 @@ describe("screenshots in an execute answer", () => {
       script: `const s = insert({ kind: "slide" }); screenshot({ target: s }); screenshot({ target: "${slides[0]!}" }); screenshot({ target: s })`,
     })
     expect(asked).toBe(1)
-    expect(answer.fields.pictures).toHaveLength(2)
-    expect(answer.pictures).toEqual(["QUFB", "QUFB"])
+    expect(answer.fields.screenshots).toHaveLength(2)
+    expect(answer.screenshots).toEqual(["QUFB", "QUFB"])
   })
 })
 

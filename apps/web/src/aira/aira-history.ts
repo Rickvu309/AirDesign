@@ -1,6 +1,12 @@
 import { readFontIssue, stringList } from "@/aira/aira-answers"
 import { bytesOf } from "@airdesign/doom"
-import { readTurn, sentWithoutPictures, withoutPictures, type ModelMessage, type ToolAnswer } from "@airdesign/catalog"
+import {
+  readTurn,
+  sentWithoutScreenshots,
+  withoutScreenshots,
+  type ModelMessage,
+  type ToolAnswer,
+} from "@airdesign/catalog"
 import { fieldsOf } from "@/lib/fields-of"
 import {
   airaChat,
@@ -97,8 +103,8 @@ export function savedChat(
     asked,
     started: at.started,
     updated: at.updated,
-    history: chat.history.map(sentWithoutPictures),
-    answers: chat.answers.map(withoutPictures),
+    history: chat.history.map(sentWithoutScreenshots),
+    answers: chat.answers.map(withoutScreenshots),
     exchanges: chat.exchanges,
   })
 }

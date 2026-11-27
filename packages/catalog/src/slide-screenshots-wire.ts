@@ -1,20 +1,20 @@
 import { limits, readNodeId, type NodeId } from "@airdesign/doom"
 import { knownKeys, recordOf } from "./wire.js"
 
-export const pictureBytes = 600_000
+export const screenshotBytes = 600_000
 
-export const pictureType = "image/jpeg"
+export const screenshotType = "image/jpeg"
 
 export type SlideKey = { readonly slide: NodeId; readonly key: string }
 
-export type SlidePicture = SlideKey & {
-  readonly type: typeof pictureType
+export type SlideScreenshot = SlideKey & {
+  readonly type: typeof screenshotType
   readonly data: string
 }
 
-export type SlidePictures = {
+export type SlideScreenshots = {
   readonly keys: readonly SlideKey[]
-  readonly images: readonly SlidePicture[]
+  readonly images: readonly SlideScreenshot[]
   readonly fontFailures?: readonly SlideKey[]
 }
 
@@ -29,17 +29,17 @@ function readKey(raw: unknown): SlideKey | undefined {
   return slide === undefined || key === undefined ? undefined : { slide, key }
 }
 
-function readImage(raw: unknown, keys: ReadonlyMap<NodeId, string>): SlidePicture | undefined {
+function readImage(raw: unknown, keys: ReadonlyMap<NodeId, string>): SlideScreenshot | undefined {
   const body = recordOf(raw)
   if (body === undefined || !knownKeys(body, ["slide", "key", "type", "data"])) return undefined
   const read = readKey({ slide: body.slide, key: body.key })
-  if (read === undefined || keys.get(read.slide) !== read.key || body.type !== pictureType) return undefined
+  if (read === undefined || keys.get(read.slide) !== read.key || body.type !== screenshotType) return undefined
   const { data } = body
-  if (typeof data !== "string" || data.length > pictureBytes || !base64.test(data)) return undefined
-  return { ...read, type: pictureType, data }
+  if (typeof data !== "string" || data.length > screenshotBytes || !base64.test(data)) return undefined
+  return { ...read, type: screenshotType, data }
 }
 
-export function readSlidePictures(raw: unknown): SlidePictures | undefined {
+export function readSlideScreenshots(raw: unknown): SlideScreenshots | undefined {
   const body = recordOf(raw)
   if (body === undefined || !knownKeys(body, ["keys", "images", "fontFailures"])) return undefined
   const { keys: rawKeys, images: rawImages } = body
@@ -50,7 +50,7 @@ export function readSlidePictures(raw: unknown): SlidePictures | undefined {
     if (read === undefined || keyed.has(read.slide)) return undefined
     keyed.set(read.slide, read.key)
   }
-  const images: SlidePicture[] = []
+  const images: SlideScreenshot[] = []
   for (const row of rawImages as unknown[]) {
     const read = readImage(row, keyed)
     if (read === undefined || images.some((each) => each.slide === read.slide)) return undefined

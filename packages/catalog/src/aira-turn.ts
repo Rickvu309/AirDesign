@@ -1,16 +1,16 @@
 import { catalog, projectTools, toolInputSchema } from "./catalog.js"
 import { inlinedSchema } from "./shared-schema.js"
-import { pictureBytes, pictureType } from "./slide-pictures-wire.js"
+import { screenshotBytes, screenshotType } from "./slide-screenshots-wire.js"
 import { deckPattern, readDeckId, type DeckId } from "./wire.js"
 
 export const airaTextCap = 8000
 export const airaMessageCap = 199
-export const airaPictureCap = 10
-export const airaPictureBytes = 730_000
-export const pictureNotFitted =
-  "This slide's picture did not fit in one turn. Read with slide and picture to see it alone."
-export const pictureTokenCeiling = 1_600
-export const pictureLeftOut = "A picture was here. Read with picture again to see the slide now."
+export const airaScreenshotCap = 10
+export const airaScreenshotBytes = 730_000
+export const screenshotNotFitted =
+  "This slide's screenshot did not fit in one turn. Ask for a screenshot of this slide alone to see it."
+export const screenshotTokenCeiling = 1_600
+export const screenshotLeftOut = "A screenshot was here. Ask for a screenshot again to see the slide now."
 
 export type TextBlock = { readonly type: "text"; readonly text: string }
 
@@ -29,7 +29,7 @@ export type ReplyBlock =
 
 export type ImageBlock = {
   readonly type: "image"
-  readonly source: { readonly type: "base64"; readonly media_type: typeof pictureType; readonly data: string }
+  readonly source: { readonly type: "base64"; readonly media_type: typeof screenshotType; readonly data: string }
 }
 
 export type ResultBlock = TextBlock | ImageBlock
@@ -117,60 +117,60 @@ function imageBlock(raw: Record<string, unknown>): ImageBlock | undefined {
     return undefined
   }
   const { data } = source
-  if (source.type !== "base64" || source.media_type !== pictureType) return undefined
-  if (typeof data !== "string" || data.length === 0 || data.length > pictureBytes || !base64.test(data))
+  if (source.type !== "base64" || source.media_type !== screenshotType) return undefined
+  if (typeof data !== "string" || data.length === 0 || data.length > screenshotBytes || !base64.test(data))
     return undefined
-  return { type: "image", source: { type: "base64", media_type: pictureType, data } }
+  return { type: "image", source: { type: "base64", media_type: screenshotType, data } }
 }
 
-function resultBlock(raw: unknown, pictures: boolean): ResultBlock | undefined {
+function resultBlock(raw: unknown, screenshots: boolean): ResultBlock | undefined {
   const block = fieldsOf(raw)
   if (block?.type === "text" && named(block, ["type", "text"]))
     return typeof block.text === "string" && block.text.length > 0 ? { type: "text", text: block.text } : undefined
-  return block?.type === "image" && pictures ? imageBlock(block) : undefined
+  return block?.type === "image" && screenshots ? imageBlock(block) : undefined
 }
 
-function resultContent(raw: unknown, pictures: boolean): ToolAnswer["content"] | undefined {
+function resultContent(raw: unknown, screenshots: boolean): ToolAnswer["content"] | undefined {
   if (typeof raw === "string") return raw
   if (!Array.isArray(raw) || raw.length === 0) return undefined
-  const blocks = raw.map((block) => resultBlock(block, pictures))
+  const blocks = raw.map((block) => resultBlock(block, screenshots))
   return blocks.every((block) => block !== undefined) ? blocks : undefined
 }
 
-function toolAnswer(raw: unknown, id: string, pictures: boolean): ToolAnswer | undefined {
+function toolAnswer(raw: unknown, id: string, screenshots: boolean): ToolAnswer | undefined {
   const block = fieldsOf(raw)
   if (block?.type !== "tool_result" || !named(block, ["type", "tool_use_id", "content"], ["is_error"])) return undefined
-  const content = resultContent(block.content, pictures)
+  const content = resultContent(block.content, screenshots)
   if (block.tool_use_id !== id || content === undefined) return undefined
   if (block.is_error === undefined) return { type: "tool_result", tool_use_id: id, content }
   if (typeof block.is_error !== "boolean") return undefined
   return { type: "tool_result", tool_use_id: id, content, is_error: block.is_error }
 }
 
-function picturesOf(answer: ToolAnswer): readonly ImageBlock[] {
+function screenshotsOf(answer: ToolAnswer): readonly ImageBlock[] {
   return typeof answer.content === "string" ? [] : answer.content.filter((block) => block.type === "image")
 }
 
-export function picturesIn(messages: readonly ModelMessage[]): readonly ImageBlock[] {
+export function screenshotsIn(messages: readonly ModelMessage[]): readonly ImageBlock[] {
   return messages.flatMap((message) =>
     message.role === "user" && Array.isArray(message.content)
-      ? message.content.flatMap((block) => (block.type === "tool_result" ? picturesOf(block) : []))
+      ? message.content.flatMap((block) => (block.type === "tool_result" ? screenshotsOf(block) : []))
       : [],
   )
 }
 
-export function sentWithoutPictures(message: ModelMessage): ModelMessage {
+export function sentWithoutScreenshots(message: ModelMessage): ModelMessage {
   if (message.role !== "user" || typeof message.content === "string") return message
   return {
     ...message,
-    content: message.content.map((block) => (block.type === "tool_result" ? withoutPictures(block) : block)),
+    content: message.content.map((block) => (block.type === "tool_result" ? withoutScreenshots(block) : block)),
   }
 }
 
-export function withoutPictures(answer: ToolAnswer): ToolAnswer {
-  if (picturesOf(answer).length === 0 || typeof answer.content === "string") return answer
+export function withoutScreenshots(answer: ToolAnswer): ToolAnswer {
+  if (screenshotsOf(answer).length === 0 || typeof answer.content === "string") return answer
   const content = answer.content.map((block): ResultBlock =>
-    block.type === "image" ? { type: "text", text: pictureLeftOut } : block,
+    block.type === "image" ? { type: "text", text: screenshotLeftOut } : block,
   )
   return { ...answer, content }
 }
@@ -181,19 +181,19 @@ function added(raw: unknown): TextBlock | undefined {
   return { type: "text", text: block.text }
 }
 
-function asked(raw: unknown, calls: readonly string[], pictures: boolean): ModelMessage | undefined {
+function asked(raw: unknown, calls: readonly string[], screenshots: boolean): ModelMessage | undefined {
   const message = fieldsOf(raw)
   if (message?.role !== "user" || !named(message, ["role", "content"])) return undefined
   const content = message.content
   if (calls.length === 0) return personText(content) ? { role: "user", content } : undefined
   if (!Array.isArray(content) || content.length < calls.length || content.length > calls.length + 1) return undefined
-  const answers = calls.map((id, index) => toolAnswer(content[index], id, pictures))
+  const answers = calls.map((id, index) => toolAnswer(content[index], id, screenshots))
   const more = content.length > calls.length ? added(content[calls.length]) : null
   if (more === undefined || answers.some((answer) => answer === undefined)) return undefined
   const blocks = answers.filter((answer) => answer !== undefined)
-  const shown = blocks.flatMap(picturesOf)
+  const shown = blocks.flatMap(screenshotsOf)
   const bytes = shown.reduce((total, { source }) => total + source.data.length, 0)
-  if (shown.length > airaPictureCap || bytes > airaPictureBytes) return undefined
+  if (shown.length > airaScreenshotCap || bytes > airaScreenshotBytes) return undefined
   return { role: "user", content: more === null ? blocks : [...blocks, more] }
 }
 

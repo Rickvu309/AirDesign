@@ -15,6 +15,6 @@ export function doomFuzzGood(deck: string) {
     "POST /doom/edit": landed({ deck, edit }),
     "POST /doom/since": landed({ deck, rev: 0 }),
     "POST /doom/run": landed({ deck, run: "fuzz-run" }),
-    "POST /doom/pictures": landed({ deck, rev: 0, pictures: { keys: [], images: [] } }),
+    "POST /doom/screenshots": landed({ deck, rev: 0, screenshots: { keys: [], images: [] } }),
   }
 }
