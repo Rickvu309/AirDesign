@@ -87,7 +87,6 @@ rows.forEach(([name, value], i) => {
     textStyle: "body2",
     text: lit ? `**${shown(value)}**` : shown(value),
     align: "center",
-    alignV: "bottom",
     box: { x, y: base - h - 12 - lineH, w, h: lineH },
   })
   insert({

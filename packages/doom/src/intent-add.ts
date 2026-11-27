@@ -112,13 +112,11 @@ function addWords(
   }
   const area =
     kind === "text" && intent.box === undefined ? areaFor(draft, parent, undefined) : areaFor(draft, parent, intent.box)
-  const grows = !labelled && made !== undefined
+  const hugs = !labelled && made !== undefined
   const wordsHigh = (w: number) => Math.max(1, Math.round(textHeight(made!, themeOf(draft), w)))
-  const high = !grows
-    ? area.h
-    : intent.box === undefined
-      ? Math.min(area.h, wordsHigh(area.w))
-      : wordsHigh(intent.box.w)
+  const high = !hugs ? area.h : intent.box === undefined ? Math.min(area.h, wordsHigh(area.w)) : wordsHigh(intent.box.w)
+  const held = intent.box !== undefined && (intent.alignV ?? "top") !== "top" && high <= intent.box.h
+  const grows = hugs && !held
   const filled = labelled && intent.fill === undefined && intent.stroke === undefined
   const titled =
     kind === "text" &&
@@ -139,7 +137,7 @@ function addWords(
       : {
           text: {
             ...made,
-            resize: labelled ? "fixed" : "height",
+            resize: grows ? "height" : "fixed",
             ...(labelled ? { alignV: intent.alignV ?? "center" } : {}),
           },
         }),

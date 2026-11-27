@@ -98,7 +98,6 @@ bars.forEach(({ name, from, to, fill, text }, i) => {
     textStyle: "body2",
     text,
     align: "center",
-    alignV: "bottom",
     box: { x: left, y: top - 8 - lineH, w, h: lineH },
   })
   insert({
