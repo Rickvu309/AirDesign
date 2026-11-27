@@ -45,7 +45,7 @@ describe("the taste entry", () => {
       "styles",
     ])
     const named: readonly [Guide | undefined, Piece | undefined, Style | undefined, StyleText | undefined] = [
-      taste.guide("execute"),
+      taste.guide("slides"),
       taste.piece("kpi"),
       taste.style("neutral"),
       taste.styleText("neutral"),

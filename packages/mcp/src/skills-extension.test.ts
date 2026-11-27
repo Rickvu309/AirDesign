@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto"
 
 import * as doom from "@airdesign/doom"
+import { guide, guides } from "@airdesign/agent"
 import { memoryDecks } from "@airdesign/agent/testing/evals"
-import { guide, guides } from "@airdesign/taste"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { SKILLS_EXTENSION_ID, SkillsClient } from "@modelcontextprotocol/client/ext/skills"
 import { expect, it } from "vitest"

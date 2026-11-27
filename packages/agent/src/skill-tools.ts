@@ -1,6 +1,7 @@
-import { guide, guides, styles, styleText } from "@airdesign/taste"
+import { styles, styleText } from "@airdesign/taste"
 
 import { answered, refused, type Answer } from "./answer.js"
+import { guide, guides } from "./guides.js"
 
 function readOptionalName(
   raw: unknown,

@@ -1,4 +1,4 @@
-import { guides } from "@airdesign/taste"
+import { guides } from "@airdesign/agent"
 import { type Skill, SkillsExtension, type SkillSource } from "@modelcontextprotocol/server/ext/skills"
 
 type Catalog = {

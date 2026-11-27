@@ -1,7 +1,8 @@
 import * as doom from "@airdesign/doom"
-import { guide, guides, style, styles, styleText } from "@airdesign/taste"
+import { style, styles, styleText } from "@airdesign/taste"
 import { describe, expect, it } from "vitest"
 
+import { guide, guides } from "./guides.js"
 import { callTool, type DeckHost, type Session } from "./index.js"
 import { getStyleTool, readSkillTool } from "./skill-tools.js"
 import { memoryDecks } from "./testing/memory-decks.js"

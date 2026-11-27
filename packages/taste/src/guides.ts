@@ -54,8 +54,7 @@ function readFolder(root: string, name: string): Guide {
   }
 }
 
-export function guides(): readonly Guide[] {
-  const root = filesDir()
+export function guides(root = filesDir()): readonly Guide[] {
   return filesUnder(root)
     .filter((path) => path.endsWith(`/${manifest}`))
     .map((path) => path.slice(0, -manifest.length - 1))
