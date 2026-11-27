@@ -23,7 +23,7 @@ screenshot({ target: s })
 ;({ slide: s, widths, title: measured, problems: get({ target: s }).problems.length })`
 
 export default async function drive(kit) {
-  const { signIn, page, context, post, capture, note, doomRoutes, mcpRoutes, aira, holdReply } = kit
+  const { signIn, page, context, capture, note, doomRoutes, airaRoutes, aira } = kit
   const { cookie } = await signIn()
   await page.goto("/s")
   await page.locator("[data-editor-ready]").waitFor()
@@ -67,6 +67,7 @@ export default async function drive(kit) {
   await expect(canvas.getByText("Enterprise drove most of the growth", { exact: true })).toBeVisible()
   await capture("agent-built-slide")
 
+  expect((await call("stop_run", { deck, runId: agent.runId })).ok).toBe(true)
   const undone = await call("undo_run", { deck, runId: agent.runId })
   expect(undone, JSON.stringify(undone)).toMatchObject({ ok: true })
   await expect(entries(page)).toHaveCount(1)
@@ -74,24 +75,46 @@ export default async function drive(kit) {
   await capture("agent-run-undone")
   note("undo_run took the whole script back as one step: the slide left the canvas and the filmstrip.")
 
-  aira([{ name: "build-slide.sse", fill: { deck } }, { name: "built-slide.sse" }])
+  aira([{ name: "read-slide-guides.sse" }, { name: "build-slide.sse", fill: { deck } }, { name: "built-slide.sse" }])
   const side = page.locator("[data-editor-panel]")
   const log = side.getByRole("log")
   const composer = side.getByRole("textbox", { name: airaCopy.askAira })
-  await composer.fill("Add a slide on where revenue came from")
+  const guides = page.waitForRequest((request) => {
+    if (new URL(request.url()).pathname !== airaRoutes.turn.path) return false
+    const answers = request.postDataJSON().messages.at(-1)?.content
+    return Array.isArray(answers) && answers.some((answer) => answer.tool_use_id === "toolu_fixture_slides")
+  })
+  await composer.fill("Add a slide on Q3 revenue: renewals $61M, new logos $37M, expansion $22M.")
   await page.keyboard.press("Enter")
-  await expect(log.locator('[data-tool-state="done"]')).toHaveText(airaStepWords.execute.done)
+  const answers = (await guides).postDataJSON().messages.at(-1).content
+  const answer = (name) => JSON.parse(answers.find((block) => block.tool_use_id === `toolu_fixture_${name}`).content)
+  expect(answer("state")).toMatchObject({ ok: true, openDeck: { deck } })
+  expect(answer("slides")).toMatchObject({
+    ok: true,
+    name: "slides",
+    text: expect.stringContaining("# Designing slides"),
+  })
+  expect(answer("execute")).toMatchObject({ ok: true, name: "execute" })
+  expect(answer("kit")).toMatchObject({ ok: true, name: "kit", text: expect.stringContaining("kit/title-block") })
+  await expect(log.locator('[data-tool-state="done"]').getByText(airaStepWords.execute.done)).toBeVisible()
   await expect(
     log.getByText("The new slide shows renewals ahead of new logos and expansion.", { exact: true }),
   ).toBeVisible()
   await expect(entries(page)).toHaveCount(2)
   await entries(page).nth(1).click()
   await expect(canvas.getByText("Renewals carried the quarter", { exact: true })).toBeVisible()
+  const airaSaved = (await readDoom(kit, opened)).fold
+  const airaTitle = Object.values(airaSaved.nodes).find((node) => node.text?.chars === "Renewals carried the quarter")
+  expect(airaSaved.nodes[airaTitle?.parent?.id]?.name).toBe("Title block")
   await capture("aira-built-slide")
   await log.getByRole("button", { name: undoCopy.undo }).click()
   await expect(entries(page)).toHaveCount(1)
+  await expect(canvas.getByText("Renewals carried the quarter", { exact: true })).toHaveCount(0)
+  await expect.poll(async () => (await readDoom(kit, opened)).fold.nodes[airaTitle.id]?.parent).toBeNull()
   await capture("aira-run-undone")
-  note("Aira built a slide with one execute call; Undo in the editor's Aira chat took the slide back.")
+  note(
+    "Aira read the shared guides over MCP and copied the kit title block in execute. Chat Undo removed the slide from the filmstrip and the saved deck.",
+  )
 
   const paths = new Set([doomRoutes.edit.path, doomRoutes.since.path])
   const offline = (url) => paths.has(url.pathname)
@@ -132,7 +155,4 @@ export default async function drive(kit) {
       openDeck: null,
     })
   note("Closing the newer tab returned the other deck. Leaving the editor then returned no open deck.")
-  void post
-  void mcpRoutes
-  void holdReply
 }

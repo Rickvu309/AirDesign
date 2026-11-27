@@ -1,8 +1,8 @@
 import { createHmac, randomBytes } from "node:crypto"
 
-import { airaTools, countryHeader, signInRoutes } from "@airdesign/catalog"
+import { airaTools, countryHeader, mcpRoutes, signInRoutes } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/doom"
-import { kindInstructions } from "@airdesign/mcp"
+import { Client as McpClient, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
@@ -420,6 +420,30 @@ describe("POST /aira/turn meters each turn of a run the browser drives", () => {
   })
 })
 
+it("gives Aira the MCP tool list and server instructions", async () => {
+  const account = await signIn()
+  const client = new McpClient({ name: "parity", version: "0" })
+  await client.connect(
+    new StreamableHTTPClientTransport(new URL(mcpRoutes.mcp.path, main), {
+      requestInit: { headers: { cookie: account.cookie } },
+    }),
+  )
+  try {
+    const { tools } = await client.listTools()
+    const instructions = client.getInstructions()
+    expect(instructions).toContain("read the `slides` skill with airdesign_read_skill")
+    expect((await turn(account)).status).toBe(200)
+    const call = replay.calls.at(-1)?.call
+    expect(call?.tools).toEqual(
+      tools.map(({ name, description, inputSchema }) => ({ name, description, input_schema: inputSchema })),
+    )
+    expect(call?.system).toContain(`${deck}.\n\n${instructions}`)
+    expect(call?.system).not.toContain("Read the open deck before editing.")
+  } finally {
+    await client.close()
+  }
+})
+
 describe("POST /aira/turn pins the call and logs no person data", () => {
   it("sends the HMAC of the account as metadata.user_id and logs request, account and turn only", async () => {
     const account = await signIn()
@@ -479,9 +503,4 @@ describe("POST /aira/turn resets the week on the recorded Monday", () => {
       monday: new Date(Date.UTC(2026, 10, 16)),
     })
   })
-})
-
-it("names the conversation deck and gives Aira the same tool instructions as MCP", () => {
-  expect(airaSystem(deck)).toContain(`The deck for this conversation is ${deck}.`)
-  expect(airaSystem(deck)).toContain(kindInstructions())
 })
