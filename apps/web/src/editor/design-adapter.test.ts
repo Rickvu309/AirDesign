@@ -152,6 +152,21 @@ describe("text layer", () => {
     expect(prop(tinted, "words", "text")?.spans[0]?.color).toBe(hexes.red)
   })
 
+  it("keeps a numbered list's start number until the list changes", () => {
+    const ranked = grow([
+      { type: "shape", name: "risk", props: { box: spot(0, 0, 300, 60), text: doom.textFromMarkdown("2. b", "body") } },
+    ])
+    const risk = ranked.ids["risk"]!
+    const listTo = (value: string) => {
+      const control = find(nodeModel({ view: ranked.view, id: risk, theme, slides }), "text", "list")
+      const context: ChangeContext = { view: ranked.view, ids: [risk], geometry: ranked.geometry, size, slides }
+      return propOf(landed(ranked.view, changeWrites(context, control, value)).nodes.get(risk), "text")?.paras
+    }
+    expect(listTo("numbers")).toEqual([{ list: "number", startAt: 2 }])
+    expect(listTo("bullets")).toEqual([{ list: "bullet" }])
+    expect(listTo("none")).toEqual([{}])
+  })
+
   it("takes every text number range from Doom, so the panel offers nothing Doom refuses", () => {
     const range = (field: string) => {
       const desc = find(model, "text", field).desc

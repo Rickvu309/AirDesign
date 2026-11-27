@@ -1,6 +1,7 @@
 import { graphemes } from "./graphemes.js"
 import { type FontWidths, type Glyph, fontFace, isCjk, spansOf, wordBoundary } from "./line-breaks.js"
 import { paintedFace } from "./painted-face.js"
+import { listNumbers } from "./list-numbers.js"
 import { resolveColor } from "./color.js"
 import type { Px } from "./paint.js"
 import type { ResolvedFace, ResolvedLine, ResolvedRun } from "./resolved.js"
@@ -260,7 +261,7 @@ function measureOnce(widths: FontWidths, probe: MeasureProbe | undefined, layout
     const inner =
       width === null || text.wrap === "none" ? Number.POSITIVE_INFINITY : Math.max(0, width - padding.l - padding.r)
     const lines: ResolvedLine[] = []
-    const numbers: number[] = []
+    const numbers = listNumbers(text.paras)
     let y = padding.t
     let widest = 0
     let paragraphStart = 0
@@ -268,10 +269,6 @@ function measureOnce(widths: FontWidths, probe: MeasureProbe | undefined, layout
     for (const [index, chars] of paragraphsOf(text).entries()) {
       const para = text.paras[index]
       const level = para?.list === undefined ? 0 : (para.level ?? 0)
-      if (para?.list === "number") {
-        numbers.length = level + 1
-        numbers[level] = (numbers[level] ?? 0) + 1
-      } else numbers.length = 0
       const step = base.size * listStep
       const indent = para?.list === undefined ? 0 : (level + 1) * step
       const room = para?.wrap === "none" ? Infinity : inner - indent
@@ -349,7 +346,7 @@ function measureOnce(widths: FontWidths, probe: MeasureProbe | undefined, layout
       const paragraphEnd = chars.at(-1)?.end ?? paragraphStart
       const firstLine = lines.length
       const { case: _case, lineHeight: _lineHeight, styleWeight: _styleWeight, ...labelLook } = base
-      const label = para?.list === undefined ? undefined : para.list === "bullet" ? "•" : `${String(numbers[level])}.`
+      const label = para?.list === undefined ? undefined : para.list === "bullet" ? "•" : `${String(numbers[index])}.`
       const labelLayout =
         label === undefined
           ? undefined

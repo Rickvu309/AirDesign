@@ -27,6 +27,7 @@ export type Para = {
   readonly align?: (typeof paragraphAligns)[number]
   readonly list?: "bullet" | "number"
   readonly level?: number
+  readonly startAt?: number
   readonly lineHeight?: number
   readonly spaceBefore?: Px
   readonly spaceAfter?: Px
@@ -34,6 +35,7 @@ export type Para = {
   readonly maxLines?: number
 }
 import { readLanguage } from "./language.js"
+import { listStart } from "./list-numbers.js"
 
 export type Text = {
   readonly chars: string
@@ -78,6 +80,7 @@ const readPara = object(
     align: literal(paragraphAligns),
     list: literal(["bullet", "number"]),
     level: integer(0, 8),
+    startAt: integer(listStart.min, listStart.max),
     lineHeight: finite(textLimits.lineHeight.min, textLimits.lineHeight.max),
     spaceBefore: size,
     spaceAfter: size,

@@ -260,7 +260,7 @@ export function toggledList(text: doom.Text, from: number, to: number, kind: "bu
   const touched = paragraphsTouching(text, from, to)
   const on = touched.every((at) => text.paras[at]?.list === kind)
   return withParagraphs(text, from, to, (para) => {
-    const { list: _list, level: _level, ...rest } = para
+    const { list: _list, level: _level, startAt: _startAt, ...rest } = para
     return on ? rest : { ...rest, list: kind }
   })
 }

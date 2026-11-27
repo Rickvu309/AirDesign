@@ -1,3 +1,4 @@
+import { listNumbers, listStart } from "./list-numbers.js"
 import type { Para, Span, Text, TextStyleName } from "./text.js"
 
 type Look = {
@@ -139,9 +140,16 @@ function inline(source: string, base: Look): readonly Piece[] {
 
 type Item = { readonly kind: "bullet" | "number"; readonly level: number }
 
-function itemOf(line: string): Item | undefined {
+function listMarkOf(line: string): RegExpExecArray | undefined {
   const found = listLine.exec(line)
   if (found === null) return undefined
+  const number = Number.parseInt(found[2] as string, 10)
+  return Number.isNaN(number) || (number >= listStart.min && number <= listStart.max) ? found : undefined
+}
+
+function itemOf(line: string): Item | undefined {
+  const found = listMarkOf(line)
+  if (found === undefined) return undefined
   const level = Math.min(maxLevel, Math.floor((found[1]?.length ?? 0) / 2))
   return { kind: (found[2] as string).endsWith(".") ? "number" : "bullet", level }
 }
@@ -165,24 +173,35 @@ export function textFromMarkdown(markdown: string, style: TextStyleName): Text {
   const first = lines.findIndex((line) => !blank(line))
   const last = lines.findLastIndex((line) => !blank(line))
   const kept = first < 0 ? [] : lines.slice(first, last + 1)
-  const paras: Para[] = []
+  const lists: Para[] = []
+  const written: number[] = []
   const pieces: Piece[] = []
   for (const [at, line] of kept.entries()) {
     if (blank(line) && inLooseList(kept, at, blank)) continue
-    const found = listLine.exec(line)
-    const body = found === null ? line.trimStart() : (found[3] as string)
+    const found = listMarkOf(line)
+    const body = found === undefined ? line.trimStart() : (found[3] as string)
     const parsed = blank(line) ? [] : inline(body, plain)
-    if (paras.length > 0) pieces.push({ text: "\n", look: plain })
+    if (lists.length > 0) pieces.push({ text: "\n", look: plain })
     pieces.push(...parsed)
     const marker = found?.[2]
     const level = Math.min(maxLevel, Math.floor((found?.[1]?.length ?? 0) / 2))
-    paras.push(
+    written.push(Number.parseInt(marker ?? "", 10))
+    lists.push(
       marker === undefined
         ? {}
         : { list: marker.endsWith(".") ? "number" : "bullet", ...(level === 0 ? {} : { level }) },
     )
   }
-  if (paras.length === 0) paras.push({})
+  if (lists.length === 0) lists.push({})
+  const counted = listNumbers(lists)
+  const starts: number[] = []
+  const paras = lists.map((para, at): Para => {
+    if (counted[at] === undefined) return para
+    const level = para.level ?? 0
+    if (counted[at] === listStart.min) starts[level] = written[at] as number
+    const startAt = starts[level] as number
+    return startAt === listStart.min ? para : { ...para, startAt }
+  })
   const spans: { end: number; bold?: true; italic?: true; underline?: true; strike?: true; link?: string }[] = []
   let end = 0
   for (const { text, look } of pieces) {
@@ -293,7 +312,7 @@ const asWords = (line: string) =>
     .replace(/^(\d+)\. /, "$1\\. ")
 
 export function textToMarkdown(text: Text): string {
-  const counters: number[] = []
+  const numbers = listNumbers(text.paras)
   const lines: string[] = []
   let from = 0
   text.chars.split("\n").forEach((chars, at) => {
@@ -301,9 +320,8 @@ export function textToMarkdown(text: Text): string {
     const body = lineOf(text, from, from + chars.length)
     from += chars.length + 1
     const level = para.level ?? 0
-    counters.splice(para.list === undefined ? 0 : para.list === "number" ? level + 1 : level)
-    const number = para.list === "number" ? (counters[level] = (counters[level] ?? 0) + 1) : 0
-    const marker = para.list === undefined ? "" : `${"  ".repeat(level)}${para.list === "bullet" ? "-" : `${number}.`} `
+    const marker =
+      para.list === undefined ? "" : `${"  ".repeat(level)}${para.list === "bullet" ? "-" : `${numbers[at]}.`} `
     lines.push(body === "" ? "" : `${marker}${asWords(body)}`)
   })
   return lines.join("\n").trim() === "" ? "" : lines.join("\n")
