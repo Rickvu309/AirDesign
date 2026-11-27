@@ -1,8 +1,9 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto"
 import { expect } from "@playwright/test"
-import { airaCopy, airaStepWords, undoCopy } from "../bin/product-copy.mjs"
+import { airaCopy, undoCopy } from "../bin/product-copy.mjs"
 
 const asked = "Add a results grid to this slide"
+const summary = "Add the results grid"
 
 async function doomAgent(kit, cookie) {
   const { page, post, capture, note, doomRoutes, mcpRoutes, aira, holdReply } = kit
@@ -25,15 +26,15 @@ async function doomAgent(kit, cookie) {
   await page.keyboard.press("Enter")
   await expect(log.getByText(asked, { exact: true })).toBeVisible()
   await expect(log.getByText("I will add a results grid to the slide.", { exact: true })).toBeVisible()
-  await expect(log.locator('[data-tool-state="working"]')).toHaveText(airaStepWords.execute.working)
+  await expect(log.locator('[data-tool-state="working"]')).toHaveText(summary)
   await expect(side.getByRole("button", { name: "Stop" })).toBeVisible()
   await capture("working")
-  note("the reply streamed and the Editing slides step waits on /mcp with Stop showing")
+  note("the reply streamed and the step, named by Aira's summary, waits on /mcp with Stop showing")
 
   await release()
   await expect(canvas.getByText("$4.2M", { exact: true })).toBeVisible()
   await expect(log.getByText("The slide now shows revenue, customers and churn.", { exact: true })).toBeVisible()
-  await expect(log.locator('[data-tool-state="done"]')).toHaveText(airaStepWords.execute.done)
+  await expect(log.locator('[data-tool-state="done"]')).toHaveText(summary)
   await expect(log.getByRole("button", { name: undoCopy.undo })).toBeVisible()
   await capture("done")
   note("the call went through /mcp and the canvas painted the results grid without a reload")

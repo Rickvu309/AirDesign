@@ -115,6 +115,25 @@ describe("a saved chat", () => {
     expect(readSavedChat(JSON.parse(JSON.stringify(kept)), deck)?.exchanges).toEqual([exchange])
   })
 
+  it("keeps the summary Aira gave a step and drops one that does not read", () => {
+    const chat = doneChat()
+    const exchange: AiraExchange = {
+      asked,
+      steps: [{ kind: "tool", id: "t1", name: edit, state: "done", summary: "Add the pricing slide" }],
+      end: "done",
+      runs: ["run1"],
+    }
+    const kept = JSON.parse(JSON.stringify(saved({ ...chat, exchanges: [exchange] }))) as SavedChat
+    expect(readSavedChat(kept, deck)?.exchanges).toEqual([exchange])
+    const blank = { ...kept, exchanges: [{ ...exchange, steps: [{ ...exchange.steps[0], summary: " " }] }] }
+    expect(readSavedChat(blank, deck)?.exchanges[0]?.steps[0]).toEqual({
+      kind: "tool",
+      id: "t1",
+      name: edit,
+      state: "done",
+    })
+  })
+
   it("reads the whole first sentence as the title of a chat saved with a shorter one", () => {
     const kept = saved(doneChat())
     const older = {

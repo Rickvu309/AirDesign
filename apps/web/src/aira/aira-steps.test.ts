@@ -52,6 +52,18 @@ describe("stepLine", () => {
     expect(stepLine("airdesign_stop_run", "done")).toBeNull()
   })
 
+  it("says a working or finished step by the summary Aira gave it, with a capital first letter", () => {
+    expect(stepLine("airdesign_execute", "working", "Add the pricing slide")).toBe("Add the pricing slide")
+    expect(stepLine("airdesign_execute", "done", "add the pricing slide")).toBe("Add the pricing slide")
+    expect(stepLine("airdesign_execute", "done", " ")).toBe("Worked on slides")
+  })
+
+  it("keeps plain refused and stopped words when the step has a summary", () => {
+    expect(stepLine("airdesign_execute", "refused", "Add the pricing slide")).toBe("Couldn't change slides")
+    expect(stepLine("airdesign_execute", "stopped", "Add the pricing slide")).toBe("Stopped working on slides")
+    expect(stepLine("airdesign_stop_run", "done", "Stop")).toBeNull()
+  })
+
   it("names a tool it does not know by what it touched, not by its id", () => {
     expect(stepLine("airdesign_future_tool", "done")).toBe("Worked on the deck")
     expect(stepLine("airdesign_future_tool", "working")).toBe("Working on the deck")
@@ -98,6 +110,25 @@ describe("replyPieces", () => {
         { id: "airdesign_execute", text: "Worked on slides", state: "done" },
       ],
       reasons: [],
+    })
+  })
+
+  it("joins the summaries of several calls into one title, keeping a leading acronym", () => {
+    const summed = (id: string, summary: string): AiraStep => ({
+      kind: "tool",
+      id,
+      name: "airdesign_execute",
+      state: "done",
+      summary,
+    })
+    const [row] = replyPieces([
+      summed("a", "Add the pricing slide"),
+      summed("b", "Align the title"),
+      summed("c", "KPI row on slide 2"),
+    ])
+    expect(row).toMatchObject({
+      title: "Add the pricing slide, align the title, and KPI row on slide 2",
+      lines: [{ text: "Add the pricing slide" }, { text: "Align the title" }, { text: "KPI row on slide 2" }],
     })
   })
 

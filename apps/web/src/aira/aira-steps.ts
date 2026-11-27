@@ -21,10 +21,15 @@ export type ReplyPiece =
 
 const opOf: ReadonlyMap<string, AgentOp> = new Map(projectTools(catalog).map((tool) => [tool.name, tool.op]))
 
-export function stepLine(name: string, state: ToolState): string | null {
+const toldBySummary: ReadonlySet<ToolState> = new Set(["working", "done"])
+
+export function stepLine(name: string, state: ToolState, summary?: string): string | null {
   const op = opOf.get(name)
   const words = op === undefined ? airaOtherStepWords : airaStepWords[op]
-  return words === null ? null : words[state]
+  if (words === null) return null
+  const told = summary?.trim() ?? ""
+  if (told === "" || !toldBySummary.has(state)) return words[state]
+  return `${told.charAt(0).toUpperCase()}${told.slice(1)}`
 }
 
 const reasonOf: Readonly<Record<string, string>> = airaRefusalWords
@@ -63,7 +68,7 @@ export function replyPieces(steps: readonly AiraStep[]): readonly ReplyPiece[] {
   let group: StepLine[] = []
   for (const step of steps) {
     if (step.kind === "tool") {
-      const text = stepLine(step.name, step.state)
+      const text = stepLine(step.name, step.state, step.summary)
       const reason = reasonFor(step)
       if (text !== null)
         group.push({ id: step.id, text, state: step.state, ...(reason === undefined ? {} : { reason }) })
