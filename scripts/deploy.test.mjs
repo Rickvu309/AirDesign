@@ -179,11 +179,11 @@ same(
   [alarm?.if, alarm?.env?.RED_TITLE, journey.permissions.issues],
   ["failure() && github.event_name == 'workflow_run'", "production journey failed", "write"],
 )
-const productionSpec = /testMatch: "([^"]+)"/.exec(
-  fs.readFileSync(path.join(root, "playwright.production.config.ts"), "utf8"),
-)?.[1]
 same(
-  "the production journey runs a browser spec that exists",
-  productionSpec !== undefined && fs.existsSync(path.join(root, "tests/browser", productionSpec)),
-  true,
+  "the production journey runs the Doom editor spec, and that spec exists",
+  [
+    /testMatch: "([^"]+)"/.exec(fs.readFileSync(path.join(root, "playwright.production.config.ts"), "utf8"))?.[1],
+    fs.existsSync(path.join(root, "tests/browser/editor.spec.ts")),
+  ],
+  ["editor.spec.ts", true],
 )
