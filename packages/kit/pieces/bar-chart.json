@@ -1,0 +1,710 @@
+{
+  "type": "frame",
+  "name": "Bar chart",
+  "props": {
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 1680,
+      "h": 620,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    },
+    "layout": {
+      "mode": "none"
+    }
+  },
+  "children": [
+    {
+      "type": "shape",
+      "name": "Header",
+      "props": {
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 1680,
+          "h": 38,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "Revenue by market, $M",
+          "spans": [
+            {
+              "end": 17,
+              "bold": true
+            },
+            {
+              "end": 21
+            }
+          ],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Name",
+      "props": {
+        "fills": [],
+        "box": {
+          "x": 0,
+          "y": 72,
+          "w": 370,
+          "h": 91,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "Germany",
+          "spans": [],
+          "paras": [
+            {
+              "align": "right"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Bar",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "accent1"
+            }
+          }
+        ],
+        "geometry": {
+          "kind": "rect"
+        },
+        "radius": 0,
+        "box": {
+          "x": 402,
+          "y": 90,
+          "w": 1102,
+          "h": 55,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Value",
+      "props": {
+        "fills": [],
+        "box": {
+          "x": 1520,
+          "y": 72,
+          "w": 160,
+          "h": 91,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "$412M",
+          "spans": [
+            {
+              "end": 5,
+              "bold": true
+            }
+          ],
+          "paras": [
+            {
+              "align": "left"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Name",
+      "props": {
+        "fills": [],
+        "box": {
+          "x": 0,
+          "y": 163,
+          "w": 370,
+          "h": 92,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "France",
+          "spans": [],
+          "paras": [
+            {
+              "align": "right"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Bar",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text"
+            }
+          }
+        ],
+        "geometry": {
+          "kind": "rect"
+        },
+        "radius": 0,
+        "opacity": 0.2,
+        "box": {
+          "x": 402,
+          "y": 182,
+          "w": 717,
+          "h": 55,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Value",
+      "props": {
+        "fills": [],
+        "box": {
+          "x": 1135,
+          "y": 163,
+          "w": 160,
+          "h": 92,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "$268M",
+          "spans": [],
+          "paras": [
+            {
+              "align": "left"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Name",
+      "props": {
+        "fills": [],
+        "box": {
+          "x": 0,
+          "y": 255,
+          "w": 370,
+          "h": 91,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "United Kingdom",
+          "spans": [],
+          "paras": [
+            {
+              "align": "right"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Bar",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text"
+            }
+          }
+        ],
+        "geometry": {
+          "kind": "rect"
+        },
+        "radius": 0,
+        "opacity": 0.2,
+        "box": {
+          "x": 402,
+          "y": 273,
+          "w": 618,
+          "h": 55,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Value",
+      "props": {
+        "fills": [],
+        "box": {
+          "x": 1036,
+          "y": 255,
+          "w": 160,
+          "h": 91,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "$231M",
+          "spans": [],
+          "paras": [
+            {
+              "align": "left"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Name",
+      "props": {
+        "fills": [],
+        "box": {
+          "x": 0,
+          "y": 346,
+          "w": 370,
+          "h": 91,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "Spain",
+          "spans": [],
+          "paras": [
+            {
+              "align": "right"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Bar",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text"
+            }
+          }
+        ],
+        "geometry": {
+          "kind": "rect"
+        },
+        "radius": 0,
+        "opacity": 0.2,
+        "box": {
+          "x": 402,
+          "y": 364,
+          "w": 439,
+          "h": 55,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Value",
+      "props": {
+        "fills": [],
+        "box": {
+          "x": 857,
+          "y": 346,
+          "w": 160,
+          "h": 91,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "$164M",
+          "spans": [],
+          "paras": [
+            {
+              "align": "left"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Name",
+      "props": {
+        "fills": [],
+        "box": {
+          "x": 0,
+          "y": 437,
+          "w": 370,
+          "h": 92,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "Italy",
+          "spans": [],
+          "paras": [
+            {
+              "align": "right"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Bar",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text"
+            }
+          }
+        ],
+        "geometry": {
+          "kind": "rect"
+        },
+        "radius": 0,
+        "opacity": 0.2,
+        "box": {
+          "x": 402,
+          "y": 456,
+          "w": 321,
+          "h": 55,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Value",
+      "props": {
+        "fills": [],
+        "box": {
+          "x": 739,
+          "y": 437,
+          "w": 160,
+          "h": 92,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "$120M",
+          "spans": [],
+          "paras": [
+            {
+              "align": "left"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Name",
+      "props": {
+        "fills": [],
+        "box": {
+          "x": 0,
+          "y": 529,
+          "w": 370,
+          "h": 91,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "Other",
+          "spans": [],
+          "paras": [
+            {
+              "align": "right"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Bar",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text"
+            }
+          }
+        ],
+        "geometry": {
+          "kind": "rect"
+        },
+        "radius": 0,
+        "opacity": 0.2,
+        "box": {
+          "x": 402,
+          "y": 547,
+          "w": 257,
+          "h": 55,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Value",
+      "props": {
+        "fills": [],
+        "box": {
+          "x": 675,
+          "y": 529,
+          "w": 160,
+          "h": 91,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "radius": 19,
+        "geometry": {
+          "kind": "rect"
+        },
+        "text": {
+          "chars": "$96M",
+          "spans": [],
+          "paras": [
+            {
+              "align": "left"
+            }
+          ],
+          "style": "body2",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Zero line",
+      "props": {
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text"
+            }
+          }
+        ],
+        "geometry": {
+          "kind": "rect"
+        },
+        "radius": 0,
+        "opacity": 0.4,
+        "box": {
+          "x": 400,
+          "y": 72,
+          "w": 2,
+          "h": 548,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        }
+      }
+    }
+  ]
+}

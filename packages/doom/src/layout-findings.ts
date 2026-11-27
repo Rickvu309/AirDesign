@@ -103,7 +103,20 @@ function inkOf(line: ResolvedLine, x: number, y: number): Rect {
   return { x: left, y: y + line.y + (line.h - em) / 2, w: x + line.x + shift + line.ink - left, h: em }
 }
 
-const painted = (node: Resolved) => node.fills.some((paint) => paint.opacity > 0) || node.strokes.length > 0
+const filled = (node: Resolved) => node.fills.some((paint) => paint.opacity > 0)
+const painted = (node: Resolved) => filled(node) || node.strokes.length > 0
+
+function paintedArea(node: Resolved, box: Rect): readonly Rect[] {
+  const sides = node.stroke?.sides
+  if (filled(node) || sides === undefined) return [box]
+  const { t = 0, r = 0, b = 0, l = 0 } = sides
+  return [
+    { x: box.x, y: box.y, w: box.w, h: t },
+    { x: right(box) - r, y: box.y, w: r, h: box.h },
+    { x: box.x, y: bottom(box) - b, w: box.w, h: b },
+    { x: box.x, y: box.y, w: l, h: box.h },
+  ].filter((strip) => strip.w > 0 && strip.h > 0)
+}
 
 function place(slide: Slide, node: Resolved, x: number, y: number, ancestors: readonly Spin[]): Placed {
   const box = { x: x + node.box.x, y: y + node.box.y, w: node.box.w, h: node.box.h }
@@ -120,7 +133,7 @@ function place(slide: Slide, node: Resolved, x: number, y: number, ancestors: re
   const content = line
     ? null
     : painted(node)
-      ? frame
+      ? union(paintedArea(node, box).map((area) => mapRect(chain, area)))
       : union(laid.flatMap((kid) => (kid.content === null ? kid.inks : [kid.content])))
   const bounds = union([frame, ...inks, ...laid.map((kid) => kid.bounds)]) ?? frame
   judgeOwn(slide, node, box)
