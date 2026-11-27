@@ -12,7 +12,6 @@ Precise documentation. A cool off-white page, Geist throughout, everything on a 
 - Diagrams flow in one direction (see parameters): boxes joined by `line` connectors with `route: "elbow"` and arrows, labels inside the boxes, eight boxes at most per slide.
 - Name a group of boxes with a `label` above it and an outline frame around it.
 - Put specs, limits and comparisons in tables.
-- Code, commands and ids use Geist Mono (`font: "Geist Mono"`) at `body2` or `caption` size.
 
 ## Token map
 

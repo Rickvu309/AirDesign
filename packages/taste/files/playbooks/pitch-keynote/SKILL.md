@@ -46,7 +46,7 @@ Options, chosen by the moment in the talk. Copy them from `kit`; each recipe is 
 
 - [ ] Each title is a short hook the room gets at a glance: one sentence of 12 words or fewer, two lines at most, its figure on the same slide.
 - [ ] Titles state the story, not the metric: "Customers stay twice as long", not "Retention by cohort".
-- [ ] Every number, date and name in a title matches the material exactly: £4.8M stays £4.8M, and a date or deadline appears only when the material gives it or one step of arithmetic on it does.
+- [ ] Every number, date and name in a title matches the material exactly (£4.8M stays £4.8M) or, for a total you re-added, your figure with the material's named on the slide, and a date or deadline appears only when the material gives it or one step of arithmetic on it does.
 - [ ] The closing slide is the ask, with a date or a next step.
 
 ## Pause 4: Visuals

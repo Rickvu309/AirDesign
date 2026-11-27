@@ -43,7 +43,7 @@ Then read the one playbook your intent names and follow it. Read a principle onl
 - Fill the body area, from under the title to above the source line, about y 280 to 960. The main chart, table or diagram is as tall as that space, not its natural height. A row of cards gets the exhibit that explains it below. An empty band over a quarter of the slide, or a slide with a few words, is unfinished: add the proof or merge it.
 - One accent per slide, on the thing the title names.
 - One figure, one value: a number reads the same in the title, the chart and the table, with the same rounding.
-- Bars, columns and waterfall totals stand on a zero baseline.
+- Bars and columns stand on a zero baseline. A bridge whose steps are thin against its total may start its axis at a labelled value above zero, with any target drawn as a line.
 - A gap or correction in the material sits beside the exhibit it changes, under the chart or as a row note, with both figures named.
 - After each slide, read it with `get({ target: slide })` in `airdesign_execute` and fix every problem before the next slide.
 - When the deck is done, call `screenshot({ target: slide })` on each slide and look at it as the reader will. If the answer says no tab is open, carry on without pictures.

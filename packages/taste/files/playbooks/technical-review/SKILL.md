@@ -50,7 +50,7 @@ Options, chosen by what the slide must explain. Copy them from `kit`; each recip
 - [ ] Each title asserts the choice made or the finding: "A queue between ingest and render keeps p99 under 200 ms".
 - [ ] Precision wins over punch: units, versions and conditions are named.
 - [ ] Read alone, the titles go: problem, constraints, design, evidence, plan.
-- [ ] Every number, date and name in a title matches the material exactly: 4.8 ms stays 4.8 ms, and a date or deadline appears only when the material gives it or one step of arithmetic on it does.
+- [ ] Every number, date and name in a title matches the material exactly (4.8 ms stays 4.8 ms) or, for a total you re-added, your figure with the material's named on the slide, and a date or deadline appears only when the material gives it or one step of arithmetic on it does.
 - [ ] The last slide is the decision asked for or the plan, with owners and dates.
 
 ## Pause 4: Visuals

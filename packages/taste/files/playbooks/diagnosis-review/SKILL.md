@@ -43,7 +43,7 @@ Options, chosen by what the slide must prove. Copy them from `kit`; each recipe 
 - [ ] A causal claim has a matched group that held flat, and a lift bigger than the metric's normal swing (1 to 1.5 standard deviations). Otherwise it reads as directional.
 - [ ] Each result sits beside a like-for-like benchmark, the market's rate or its own history.
 - [ ] Credit for a lagging metric goes to the work that drove it, not to a new initiative.
-- [ ] The material's own model is tested before the deck relies on it: rebuild each modeled figure from its stated inputs, and a factor left over is an effect already inside it. Divide totals by counts to find averages the plan must respect. Does a cap, limit or segment size in the material bound the claimed effect? Do the parts behave as the plan assumes? Each answer, with its arithmetic, sits on the slide beside the figure it tests.
+- [ ] The material's own model is tested before the deck relies on it. Does an input already include the effect it is said to add? Divide totals by counts to find averages and caps the plan must respect. A gap you print must reproduce from the material's own numbers; when your rebuild disagrees, look for the factor you left out before you claim a gap. Does a cap, limit or segment size in the material bound the claimed effect? Do the parts behave as the plan assumes? Each answer, with its arithmetic, sits on the slide beside the figure it tests.
 - [ ] Every total is re-added from its parts, and every percentage and difference recomputed, before it goes on a slide. Where the material's own figure disagrees, the slide shows the recomputed one, and the gap, both figures named, sits under the exhibit it changes.
 
 ## Pause 3: Headlines
@@ -52,7 +52,7 @@ Options, chosen by what the slide must prove. Copy them from `kit`; each recipe 
 - [ ] Read alone, the titles tell the story: result, break, cause, next step.
 - [ ] Misses appear in titles as plainly as wins, in one tone across the deck.
 - [ ] Each title passes the obviousness test: a reader could disagree with it.
-- [ ] Every number, date and name in a title matches the material exactly: £4.8M stays £4.8M, and a date or deadline appears only when the material gives it or one step of arithmetic on it does.
+- [ ] Every number, date and name in a title matches the material exactly (£4.8M stays £4.8M) or, for a total you re-added, your figure with the material's named on the slide, and a date or deadline appears only when the material gives it or one step of arithmetic on it does.
 - [ ] The last slide is the next steps, with owners and dates.
 
 ## Pause 4: Visuals
