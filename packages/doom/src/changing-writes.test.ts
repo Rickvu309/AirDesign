@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { changingWrites, nodeId, type Write } from "./index.js"
+import { changingWrites } from "./changing-writes.js"
+import { nodeId, type Write } from "./index.js"
 import { box, create, ids, place, sampleDeck, textOf, theme } from "./sample-deck.js"
 
 describe("changingWrites", () => {

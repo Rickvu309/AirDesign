@@ -278,36 +278,16 @@ function connected(
     return run
   }
 
-  function pushEdit(
-    asked: readonly doom.Write[],
-    by: doom.Author,
-    {
-      runUndo,
-      follows,
-      readBase,
-      seen,
-      last,
-    }: {
-      runUndo?: doom.RunUndo
-      follows?: string
-      readBase?: doom.Rev
-      seen?: doom.Doom | undefined
-      last?: doom.Doom
-    } = {},
+  function enqueue(
+    before: doom.Doom,
+    edit: doom.Edit,
+    trial: (made: Queued) => doom.Doom | doom.Refusal,
+    follows?: string,
   ): (Sent & { readonly before: doom.Doom; readonly writes: readonly doom.Write[] }) | Refused {
-    const { view: before, provisional } = projection.read(server, queue)
-    const writes = doom.freeLineEnds(before, asked, measure(), seen, last)
-    const edit: doom.Edit = {
-      once: nextOnce(),
-      author: by,
-      writes,
-      ...(runUndo === undefined ? {} : { runUndo }),
-      ...(readBase === undefined ? {} : { readBase }),
-    }
-    const made = queueEditOn(server, before, provisional, edit)
+    const made = queueEditOn(server, before, projection.read(server, queue).provisional, edit)
     if (doom.isRefusal(made)) return { ok: false, refused: made }
-    const trial = appliedOn(before, followedEdit(before, made))
-    if (doom.isRefusal(trial)) return { ok: false, refused: trial }
+    const after = trial(made)
+    if (doom.isRefusal(after)) return { ok: false, refused: after }
     queue = [
       ...queue,
       {
@@ -315,11 +295,37 @@ function connected(
         ...(follows === undefined ? {} : { follows }),
       },
     ]
-    projection.append(server, queue, trial, edit.once)
+    projection.append(server, queue, after, edit.once)
     const saved = save({ queue })
     tell()
     void sync()
-    return { ok: true, once: edit.once, saved, before, writes }
+    return { ok: true, once: edit.once, saved, before, writes: edit.writes }
+  }
+
+  function pushEdit(
+    asked: readonly doom.Write[],
+    by: doom.Author,
+    {
+      runUndo,
+      follows,
+      readBase,
+      last,
+    }: {
+      runUndo?: doom.RunUndo
+      follows?: string
+      readBase?: doom.Rev
+      last?: doom.Doom
+    } = {},
+  ): (Sent & { readonly before: doom.Doom; readonly writes: readonly doom.Write[] }) | Refused {
+    const before = view()
+    const edit: doom.Edit = {
+      once: nextOnce(),
+      author: by,
+      writes: doom.freeLineEnds(before, asked, measure(), before, last),
+      ...(runUndo === undefined ? {} : { runUndo }),
+      ...(readBase === undefined ? {} : { readBase }),
+    }
+    return enqueue(before, edit, (made) => appliedOn(before, followedEdit(before, made)), follows)
   }
 
   function turn(from: Step[], to: Step[]): Turned {
@@ -394,18 +400,27 @@ function connected(
     const now = view()
     const read = pushing?.read
     if (read !== undefined && read !== now) return { ok: false, refused: { refused: "stale" } }
-    const given = doom.changingWrites(now, asked)
-    if (given.length === 0) return { ok: true, unchanged: true }
-    const derived = doom.nameFromTitleWrites(now, given, startRules)
-    const fromTitle = read === undefined && derived.some((write) => write.prop === "name")
-    const own = fromTitle ? given : [...given, ...derived]
-    const named = fromTitle ? derived : []
-    const pushed = pushEdit(own, pushing?.author ?? author, {
-      seen: pushing?.seen,
+    const by = pushing?.author ?? author
+    const landing = doom.land(now, asked, {
+      author: by,
+      once: nextOnce(),
+      measure: measure(),
+      starts: startRules,
       ...(read === undefined ? {} : { readBase: read.rev }),
+      ...(pushing?.seen === undefined ? {} : { seen: pushing.seen }),
     })
+    if (doom.isRefusal(landing)) return { ok: false, refused: landing }
+    if (landing.edit.writes.length === 0) return { ok: true, unchanged: true }
+    const fromTitle = read === undefined && landing.named.some((write) => write.prop === "name")
+    const named = fromTitle ? landing.named : []
+    const own = { ...landing.edit, writes: landing.edit.writes.filter((write) => !named.includes(write)) }
+    const pushed = enqueue(
+      now,
+      own,
+      fromTitle ? (made) => appliedOn(now, followedEdit(now, made)) : () => landing.after,
+    )
     if (!pushed.ok) return pushed
-    const follow = named.length === 0 ? undefined : pushEdit(named, pushing?.author ?? author, { follows: pushed.once })
+    const follow = named.length === 0 ? undefined : pushEdit(named, by, { follows: pushed.once })
     const writes = follow?.ok === true ? [...pushed.writes, ...follow.writes] : pushed.writes
     const onces = follow?.ok === true ? [pushed.once, follow.once] : [pushed.once]
     const sent = { ok: true, once: pushed.once, saved: pushed.saved } as const

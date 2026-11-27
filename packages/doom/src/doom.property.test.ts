@@ -440,13 +440,17 @@ function landsAgentEdits(start: Doom, batches: readonly (readonly unknown[])[]):
       read: doom,
     })
     if ("refused" in result) continue
+    accepted += 1
+    if (result.edit.writes.length === 0 && result.edit.phase === undefined) {
+      expect(result.after).toBe(doom)
+      continue
+    }
     const replayed = readLanded(JSON.parse(JSON.stringify({ ...result.edit, rev: doom.rev + 1 })), doom)
     if (isRefusal(replayed)) throw new Error(`the tab refuses what the server took: ${JSON.stringify(replayed)}`)
     const next = applyEdit(doom, replayed)
     if (isRefusal(next)) throw new Error(`the tab refuses what the server took: ${JSON.stringify(next)}`)
     expect(foldToJson(next)).toEqual(foldToJson(result.after))
     opens(next)
-    accepted += 1
     doom = next
   }
   return accepted
