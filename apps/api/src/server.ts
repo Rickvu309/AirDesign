@@ -35,6 +35,7 @@ import { creditsRouteList } from "./usage/credits-route.js"
 import { airaUsageRoute } from "./aira/aira-usage-route.js"
 import { deckListAnswers } from "./doom/deck-list.js"
 import { grantAgentName, readRegistration, registerClient } from "./oauth/clients.js"
+import { ClientDocuments } from "./oauth/cimd.js"
 import { approve, describeClient } from "./oauth/consent.js"
 import { agentHost } from "./doom/agent-host.js"
 import { DeckScreenshots } from "./doom/deck-screenshots.js"
@@ -73,6 +74,7 @@ export type ApiOptions = {
   readonly fonts?: FontSource
   readonly recordFontComparison?: (result: LayoutComparison) => void
   readonly imageNet?: PinnedNet
+  readonly clientNet?: PinnedNet
   readonly screenshotWait?: number
   readonly viewHold?: number
   readonly aira?: AiraSettings
@@ -81,6 +83,7 @@ export type ApiOptions = {
 }
 
 type ServedOptions = ApiOptions & {
+  readonly clients: ClientDocuments
   readonly fonts: FontSource
   readonly closing: Closing
   readonly followers: DeckFollowers
@@ -327,7 +330,7 @@ async function registerRoute(visit: Visit): Promise<void> {
 }
 
 async function clientRoute(visit: Visit): Promise<void> {
-  const { options, res } = visit
+  const { options, now, res } = visit
   const email = await signedIn(visit)
   if (email === undefined) return
   const parsed = await readJson(visit, readClientRequest)
@@ -336,7 +339,10 @@ async function clientRoute(visit: Visit): Promise<void> {
     sendJson(res, 400, parsed)
     return
   }
-  const answer = await describeClient(options.session, parsed, options.resource)
+  const answer = await describeClient(
+    { db: options.session, clients: options.clients, own: options.resource, now: now() },
+    parsed,
+  )
   sendJson(res, answer.status, answer.body)
 }
 
@@ -350,7 +356,11 @@ async function approveRoute(visit: Visit): Promise<void> {
     sendJson(res, 400, parsed)
     return
   }
-  const answer = await approve(options.session, parsed, email, options.resource, now())
+  const answer = await approve(
+    { db: options.session, clients: options.clients, own: options.resource, now: now() },
+    parsed,
+    email,
+  )
   sendJson(res, answer.status, answer.body)
 }
 
@@ -540,6 +550,7 @@ async function handle(context: Context): Promise<void> {
 export function createApi(given: ApiOptions): Server {
   const options: ServedOptions = {
     ...given,
+    clients: new ClientDocuments(given.clientNet),
     fonts: given.fonts ?? new FontSource(given.originals),
     closing: given.closing ?? new Closing({ db: given.session, listen: given.listen }),
     followers: new DeckFollowers(given.now ?? Date.now),

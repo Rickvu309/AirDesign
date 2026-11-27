@@ -2,7 +2,8 @@ import type { readApprovalRequest, readClientRequest } from "@airdesign/catalog"
 import { openGrant } from "@airdesign/oauth"
 
 import type { Answer } from "../platform/answer.js"
-import { readClient, screenFor, type Client } from "./clients.js"
+import type { ClientDocuments } from "./cimd.js"
+import { registeredRedirect, screenFor, type Client } from "./clients.js"
 import { newApprovalId, storeApproval } from "./grants.js"
 import type { Sql } from "../platform/pool.js"
 import { ownResource, readUrl } from "../platform/resource.js"
@@ -14,21 +15,27 @@ type ClientRequest = Extract<ReturnType<typeof readClientRequest>, { ok: true }>
 type ApprovalRequest = Extract<ReturnType<typeof readApprovalRequest>, { ok: true }>
 type Refusal = "client" | "redirect" | "resource"
 
+export type ConsentHost = {
+  readonly db: Sql
+  readonly clients: ClientDocuments
+  readonly own: string
+  readonly now: number
+}
+
 function refusal(refused: Refusal): Answer {
   return { status: 400, body: { ok: false, refusal: refused } }
 }
 
 async function checkedClient(
-  db: Sql,
+  host: ConsentHost,
   request: ClientRequest,
-  own: string,
 ): Promise<{ readonly client: Client; readonly redirectUri: string; readonly target: URL } | Answer> {
-  const client = await readClient(db, request.clientId)
+  const client = await host.clients.client(host.db, request.clientId, host.now)
   if (client === undefined) return refusal("client")
-  if (!client.redirectUris.includes(request.redirectUri)) return refusal("redirect")
+  if (!registeredRedirect(client.redirectUris, request.redirectUri)) return refusal("redirect")
   const target = readUrl(request.redirectUri)
   if (target === undefined) return refusal("redirect")
-  if (!ownResource(request.resource, own)) return refusal("resource")
+  if (!ownResource(request.resource, host.own)) return refusal("resource")
   return { client, redirectUri: request.redirectUri, target }
 }
 
@@ -36,8 +43,8 @@ function isAnswer(value: { readonly client: Client } | Answer): value is Answer 
   return "status" in value
 }
 
-export async function describeClient(db: Sql, request: ClientRequest, own: string): Promise<Answer> {
-  const checked = await checkedClient(db, request, own)
+export async function describeClient(host: ConsentHost, request: ClientRequest): Promise<Answer> {
+  const checked = await checkedClient(host, request)
   if (isAnswer(checked)) return checked
   return {
     status: 200,
@@ -50,25 +57,19 @@ export async function describeClient(db: Sql, request: ClientRequest, own: strin
   }
 }
 
-export async function approve(
-  db: Sql,
-  request: ApprovalRequest,
-  email: string,
-  own: string,
-  now: number,
-): Promise<Answer> {
-  const checked = await checkedClient(db, request, own)
+export async function approve(host: ConsentHost, request: ApprovalRequest, email: string): Promise<Answer> {
+  const checked = await checkedClient(host, request)
   if (isAnswer(checked)) return checked
   const code = newSecret()
   await storeApproval(
-    db,
+    host.db,
     {
       id: newApprovalId(),
       grant: openGrant(email),
       clientId: checked.client.id,
       redirectUri: checked.redirectUri,
       challenge: request.challenge,
-      codeExpires: now + codeLifetime,
+      codeExpires: host.now + codeLifetime,
     },
     code,
   )

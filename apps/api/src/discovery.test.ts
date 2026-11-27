@@ -109,6 +109,7 @@ it("discovers authorization from only the MCP address and calls a tool with its 
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code", "refresh_token"],
     token_endpoint_auth_methods_supported: ["none"],
+    client_id_metadata_document_supported: true,
   })
   if (!metadata?.registration_endpoint || !metadata.token_endpoint) throw new Error("endpoints")
   const callback = "http://127.0.0.1:8124/callback"

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { readRegistration, screenFor, type Screen } from "./clients.js"
+import { readRegistration, registeredRedirect, screenFor, type Screen } from "./clients.js"
 import { checkedResource, ownResource } from "../platform/resource.js"
 import { geminiCallback, geminiRegistration } from "./testing/gemini-registration.js"
 
@@ -119,5 +119,28 @@ describe("a registration", () => {
     const uris = Array.from({ length: 11 }, (_, index) => `https://example.com/${String(index)}`)
     expect(readRegistration({ redirect_uris: uris })).toEqual({ ok: false, refusal: "invalid_client_metadata" })
     expect(readRegistration({ redirect_uris: uris.slice(1) })).toMatchObject({ ok: true })
+  })
+})
+
+describe("a redirect a client registered", () => {
+  it.each([
+    ["the same address", ["https://agent.example.com/cb"], "https://agent.example.com/cb", true],
+    ["another path", ["https://agent.example.com/cb"], "https://agent.example.com/other", false],
+    ["an https address on another port", ["https://agent.example.com/cb"], "https://agent.example.com:8443/cb", false],
+    ["a portless localhost on any port", ["http://localhost/callback"], "http://localhost:54321/callback", true],
+    ["a portless 127.0.0.1 on any port", ["http://127.0.0.1/callback"], "http://127.0.0.1:33418/callback", true],
+    ["a portless [::1] on any port", ["http://[::1]/callback"], "http://[::1]:5000/callback", true],
+    ["a portless localhost with its query", ["http://localhost/cb?x=1"], "http://localhost:5000/cb?x=1", true],
+    ["a portless localhost with another query", ["http://localhost/cb?x=1"], "http://localhost:5000/cb?x=2", false],
+    ["a portless localhost on another path", ["http://localhost/callback"], "http://localhost:54321/other", false],
+    ["a portless localhost as 127.0.0.1", ["http://localhost/callback"], "http://127.0.0.1:54321/callback", false],
+    ["a portless localhost over https", ["http://localhost/callback"], "https://localhost:54321/callback", false],
+    ["a loopback port registered as another", ["http://127.0.0.1:8123/cb"], "http://127.0.0.1:9999/cb", false],
+    ["a loopback port with none in use", ["http://127.0.0.1:8123/cb"], "http://127.0.0.1/cb", false],
+    ["a loopback lookalike host", ["http://localhost.evil.example/cb"], "http://localhost.evil.example:5/cb", false],
+    ["a portless public http host", ["http://agent.example.com/cb"], "http://agent.example.com:5000/cb", false],
+    ["an address that is not a url", ["http://localhost/cb"], "localhost:5000/cb", false],
+  ] as const)("%s: %s", (_label, registered, used, taken) => {
+    expect(registeredRedirect(registered, used)).toBe(taken)
   })
 })
