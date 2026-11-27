@@ -47,7 +47,6 @@ export {
   type Edit,
   type Landed,
   type Node,
-  type RunUndo,
   type Doom,
   type RevisionKey,
   type Write,

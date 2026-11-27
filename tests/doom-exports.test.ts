@@ -22,7 +22,7 @@ it("hands other packs only the Doom names they import", () => {
     Geometry GridShortfall Grown Hex ImageCrop ImagePaint Intent IntentEdit IntentRefusal IntentSession Keyed LandBy
     Landed Landing LayerPositions Layout LayoutProblem Matrix Measure MeasureLayout MeasureProbe MediaType MissingGlyphs
     Node NodeId NodeType OrderKey Paint Para PlacementRules Point Pressed ProblemRules PropName Props Refusal Replaced
-    Resolved ResolvedEffect ResolvedLine ResolvedPaint ResolvedRun Rev RevisionKey RunEdit RunUndo Sides Site SlideGroup
+    Resolved ResolvedEffect ResolvedLine ResolvedPaint ResolvedRun Rev RevisionKey RunEdit Sides Site SlideGroup
     SlideStart Span StartRules StrokeStyle Text TextPatch TextStyleName Theme ThemeProblem TreeNode TreeSlide UndoBy
     Undoable Undoing Undone Write WriteKey adjustDefaults applyEdit applyMatrix artMatrix bakeLayout bakeTextLayers
     boxMatrix bytesOf charsByFace childrenOf contentAreaOf contentMatrix copiedMove countsOf coverCrop cropSides deckName
