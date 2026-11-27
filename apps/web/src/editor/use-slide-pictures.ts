@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
-import { captureSlide } from "./slide-capture"
-import { reportSlidePictures, unresolvedAssets } from "./slide-picture-report"
+import { captureSlide } from "@/editing/slide-capture"
+import { reportSlidePictures, unresolvedAssets } from "@/editing/slide-picture-report"
 import type { EditorClient } from "./use-deck"
 
 export const quietFor = 1_000

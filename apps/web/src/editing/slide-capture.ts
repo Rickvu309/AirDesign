@@ -1,8 +1,8 @@
 import * as doom from "@airdesign/doom"
 import { DoomSlide, waitForDoomFonts } from "@airdesign/render"
 import { createElement } from "react"
-import { paintedElement, PictureFontError } from "@/editing/painted-picture"
-import { jpegOf, pictureFit } from "@/editing/slide-pictures"
+import { paintedElement, PictureFontError } from "./painted-picture"
+import { jpegOf, pictureFit } from "./slide-pictures"
 import type { SlideCapture } from "./slide-picture-report"
 
 export async function captureSlide(
