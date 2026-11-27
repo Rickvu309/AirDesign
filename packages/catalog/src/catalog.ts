@@ -60,7 +60,7 @@ export const catalog = {
     runsOn: "server",
     read: readRun,
     description:
-      "Call when your turn is finished, with the runId from airdesign_execute, so a person's changes stop closing layers to you.",
+      "Call when your run is finished, with the runId from airdesign_execute, so a person's edits stop closing layers to you.",
   },
   undo_run: {
     idempotent: true,
@@ -102,7 +102,7 @@ export const catalog = {
     exposure: "agent",
     runsOn: "server",
     read: readOptionalName,
-    description: "Read an AirDesign skill guide. Omit name for the index.",
+    description: "Read an AirDesign guide. Omit name for the index.",
   },
 } as const satisfies Readonly<Record<string, OpRow>>
 

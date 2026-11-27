@@ -1,6 +1,6 @@
 ---
 name: column
-description: "The arithmetic for a column chart over periods, as a script to run."
+description: "Before you draw a column chart to compare periods, read the script for vertical columns."
 ---
 
 # Column chart

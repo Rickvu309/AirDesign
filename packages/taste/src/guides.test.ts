@@ -42,6 +42,16 @@ describe("guides", () => {
     }
   })
 
+  it.each([
+    ["bar", "Before you draw a bar chart"],
+    ["column", "Before you draw a column chart"],
+    ["donut", "Before you draw a donut chart"],
+    ["line", "Before you draw a line chart"],
+    ["table", "Before you draw a table"],
+  ])("leads the charts/%s description with when to read it", (name, trigger) => {
+    expect(guide(`charts/${name}`)?.description.startsWith(trigger)).toBe(true)
+  })
+
   it("lists every file of a guide with the digest and size of its bytes", () => {
     for (const each of guides()) {
       expect(each.files[0]?.path).toBe("SKILL.md")
