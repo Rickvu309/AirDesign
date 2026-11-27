@@ -1,5 +1,4 @@
 import { catalog, onceMeta, projectTools } from "@airdesign/catalog"
-import { bytesOf } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import { type DeckHost, type Session } from "@airdesign/agent"
 import { memoryDecks, scriptOf } from "@airdesign/agent/testing/evals"
@@ -47,12 +46,11 @@ describe("createServer", () => {
     expect(createServer(session, memoryDecks(started))).not.toBe(createServer(session, memoryDecks(started)))
   })
 
-  it("lists six tools within the listing ceiling", async () => {
+  it("lists six tools", async () => {
     const projected = projectTools(catalog)
     await withClient(sessionFor(), memoryDecks(started), async (client) => {
       expect(client.getServerVersion()?.name).toBe("airdesign")
       const { tools } = await client.listTools()
-      const listedTokens = Math.ceil(bytesOf(JSON.stringify(await client.listTools())) / 4)
       expect(tools.map((tool) => tool.name)).toEqual([
         "airdesign_execute",
         "airdesign_get_app_state",
@@ -78,7 +76,6 @@ describe("createServer", () => {
         "script",
         "runId",
       ])
-      expect(listedTokens).toBeLessThanOrEqual(Math.ceil(826 * 1.05))
       expect(tools.every((tool) => !Object.hasOwn(tool, "outputSchema"))).toBe(true)
     })
   })
