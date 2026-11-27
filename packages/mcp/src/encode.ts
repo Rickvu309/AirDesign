@@ -1,4 +1,4 @@
-import type { Answer } from "./answer.js"
+import type { Answer } from "@airdesign/agent"
 
 export function encode(answer: Answer) {
   const content = [

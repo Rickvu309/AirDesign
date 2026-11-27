@@ -243,6 +243,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@airdesign/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
       '@airdesign/catalog':
         specifier: workspace:*
         version: link:../../packages/catalog
@@ -436,6 +439,31 @@ importers:
         specifier: 4.148.0
         version: 4.148.0(@types/node@24.19.2)
 
+  packages/agent:
+    dependencies:
+      '@airdesign/catalog':
+        specifier: workspace:*
+        version: link:../catalog
+      '@airdesign/doom':
+        specifier: workspace:*
+        version: link:../doom
+      '@airdesign/skills':
+        specifier: workspace:*
+        version: link:../skills
+      '@jitl/quickjs-wasmfile-release-sync':
+        specifier: 0.32.0
+        version: 0.32.0
+      quickjs-emscripten-core:
+        specifier: 0.32.0
+        version: 0.32.0
+    devDependencies:
+      oxlint:
+        specifier: ^1.90.0
+        version: 1.92.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
   packages/catalog:
     dependencies:
       '@airdesign/doom':
@@ -498,28 +526,25 @@ importers:
 
   packages/mcp:
     dependencies:
+      '@airdesign/agent':
+        specifier: workspace:*
+        version: link:../agent
       '@airdesign/catalog':
         specifier: workspace:*
         version: link:../catalog
       '@airdesign/doom':
         specifier: workspace:*
         version: link:../doom
-      '@airdesign/skills':
-        specifier: workspace:*
-        version: link:../skills
-      '@jitl/quickjs-wasmfile-release-sync':
-        specifier: 0.32.0
-        version: 0.32.0
       '@modelcontextprotocol/server':
         specifier: ^2.4.0
         version: 2.4.0
-      quickjs-emscripten-core:
-        specifier: 0.32.0
-        version: 0.32.0
       zod:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
+      '@airdesign/skills':
+        specifier: workspace:*
+        version: link:../skills
       '@modelcontextprotocol/client':
         specifier: ^2.4.0
         version: 2.4.0

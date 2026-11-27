@@ -11,6 +11,5 @@ dependencies:
   - apps/api/src/platform
   - apps/api/src/platform#testing
   - apps/api/src/usage
-  - packages/mcp#runtime
-  - packages/mcp#testing
+  - packages/agent#testing
 enforce_privacy: false

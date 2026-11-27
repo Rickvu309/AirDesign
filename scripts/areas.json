@@ -29,6 +29,7 @@
       "apps/web/src/settings/usage-",
       "apps/api/src/aira",
       "apps/api/src/mcp",
+      "packages/agent/",
       "packages/mcp/",
       "packages/usage/",
       "tests/browser/aira-",

@@ -1,11 +1,9 @@
 import { catalog, pendingFontsMeta, projectTools, readOnce, toolInputSchema } from "@airdesign/catalog"
 import { McpServer } from "@modelcontextprotocol/server"
 
-import { refused } from "./answer.js"
-import { callTool, knownTool, type Session } from "./call-tool.js"
-import type { DeckHost } from "./deck-host.js"
+import { callTool, type DeckHost, instructions, refused, type Session } from "@airdesign/agent"
+
 import { encode } from "./encode.js"
-import { kindInstructions } from "./instructions.js"
 
 function inputSchema(json: Readonly<Record<string, unknown>>) {
   return {
@@ -45,7 +43,7 @@ function listedTools(): readonly RegisteredTool[] {
 }
 
 export function createServer(session: Session, host: DeckHost): McpServer {
-  const server = new McpServer({ name: "airdesign", version: "0.0.0" }, { instructions: kindInstructions() })
+  const server = new McpServer({ name: "airdesign", version: "0.0.0" }, { instructions })
   for (const tool of listedTools()) {
     server.registerTool(
       tool.name,
@@ -56,7 +54,7 @@ export function createServer(session: Session, host: DeckHost): McpServer {
       },
       async (args, ctx) => {
         const named = readOnce(ctx.mcpReq._meta)
-        if (!named.ok || !knownTool(tool.name)) return encode(refused("field"))
+        if (!named.ok) return encode(refused("field"))
         session.once = named.once
         const claimed = ctx.mcpReq._meta?.[pendingFontsMeta]
         const pendingFonts = new Set<string>(

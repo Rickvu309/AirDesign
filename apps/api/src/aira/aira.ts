@@ -12,7 +12,7 @@ import {
   type ReplyBlock,
 } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/doom"
-import { kindInstructions } from "@airdesign/mcp"
+import { instructions } from "@airdesign/agent"
 import { usage } from "@airdesign/usage"
 import {
   readLedger,
@@ -43,11 +43,11 @@ export const staleTurn = 900_000
 
 const framing = 64
 
-const instructions =
+const airaRole =
   "You are Aira, the AI agent inside AirDesign. The person watches the deck change as you edit it. Answer plainly and briefly. Say when a fact should be checked."
 
 export function airaSystem(deck: string): string {
-  return `${instructions} The deck for this conversation is ${deck}.\n\n${kindInstructions()}`
+  return `${airaRole} The deck for this conversation is ${deck}.\n\n${instructions}`
 }
 
 export const supportedCountries: ReadonlySet<string> = new Set(

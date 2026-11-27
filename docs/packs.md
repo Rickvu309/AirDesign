@@ -37,6 +37,7 @@ flowchart TD
     p_apps_web_src_lib["apps/web/src/lib"]
   end
   subgraph p_layer_service["service"]
+    p_packages_agent["packages/agent"]
     p_packages_live["packages/live"]
     p_packages_mcp["packages/mcp"]
   end
@@ -59,16 +60,17 @@ flowchart TD
   p_apps_api_src --> p_apps_api_src_oauth
   p_apps_api_src --> p_apps_api_src_platform
   p_apps_api_src --> p_apps_api_src_usage
-  p_apps_api_src --> p_packages_mcp
+  p_apps_api_src --> p_packages_agent
   p_apps_api_src_account --> p_apps_api_src_doom
   p_apps_api_src_account --> p_apps_api_src_oauth
   p_apps_api_src_account --> p_apps_api_src_platform
-  p_apps_api_src_aira --> p_packages_mcp
+  p_apps_api_src_aira --> p_packages_agent
   p_apps_api_src_aira --> p_apps_api_src_account
   p_apps_api_src_aira --> p_apps_api_src_doom
   p_apps_api_src_aira --> p_apps_api_src_platform
   p_apps_api_src_aira --> p_apps_api_src_usage
   p_apps_api_src_doom --> p_apps_api_src_platform
+  p_apps_api_src_mcp --> p_packages_agent
   p_apps_api_src_mcp --> p_packages_mcp
   p_apps_api_src_mcp --> p_apps_api_src_account
   p_apps_api_src_mcp --> p_apps_api_src_doom
@@ -143,15 +145,16 @@ flowchart TD
   p_apps_web_src_settings --> p_apps_web_src_credits
   p_apps_web_src_settings --> p_apps_web_src_decks
   p_apps_web_src_settings --> p_apps_web_src_lib
+  p_packages_mcp --> p_packages_agent
 ```
 
 | Pack | Layer | Public | Dependencies | Tables |
 | --- | --- | --- | --- | --- |
-| `apps/api/src` | app | none | apps/api/src/account, apps/api/src/aira, apps/api/src/doom, apps/api/src/mcp, apps/api/src/oauth, apps/api/src/platform, apps/api/src/usage, packages/mcp | none |
+| `apps/api/src` | app | none | apps/api/src/account, apps/api/src/aira, apps/api/src/doom, apps/api/src/mcp, apps/api/src/oauth, apps/api/src/platform, apps/api/src/usage, packages/agent | none |
 | `apps/api/src/account` | feature | runtime: apps/api/src/account/account-route.ts, apps/api/src/account/account.ts, apps/api/src/account/admit.ts, apps/api/src/account/caller-log.ts, apps/api/src/account/session-cookie.ts; testing: apps/api/src/account/testing/read-sign-in-mail.ts | apps/api/src/doom, apps/api/src/oauth, apps/api/src/platform | session.account, session.access, session.code, session.sent, session.caller_log |
-| `apps/api/src/aira` | feature | aira-closing.ts, aira-route.ts, aira-usage-route.ts, aira.ts, anthropic-transport.ts | packages/mcp, apps/api/src/account, apps/api/src/doom, apps/api/src/platform, apps/api/src/usage | session.aira_turn, session.aira_ask |
+| `apps/api/src/aira` | feature | aira-closing.ts, aira-route.ts, aira-usage-route.ts, aira.ts, anthropic-transport.ts | packages/agent, apps/api/src/account, apps/api/src/doom, apps/api/src/platform, apps/api/src/usage | session.aira_turn, session.aira_ask |
 | `apps/api/src/doom` | feature | deck-followers.ts, deck-list.ts, deck-pictures.ts, doom-deck.ts, doom-route.ts, doom-start.ts, doom-write.ts, idle-runs.ts, media.ts, original.ts | apps/api/src/platform | deck.doom, deck.doom_agent_read, deck.doom_edit, deck.doom_node, deck.media, deck.original_delete |
-| `apps/api/src/mcp` | feature | mcp.ts | packages/mcp, apps/api/src/account, apps/api/src/doom, apps/api/src/platform | none |
+| `apps/api/src/mcp` | feature | mcp.ts | packages/agent, packages/mcp, apps/api/src/account, apps/api/src/doom, apps/api/src/platform | none |
 | `apps/api/src/oauth` | feature | runtime: apps/api/src/oauth/agent-key.ts, apps/api/src/oauth/clients.ts, apps/api/src/oauth/consent.ts, apps/api/src/oauth/discovery.ts, apps/api/src/oauth/grants.ts, apps/api/src/oauth/tokens.ts; testing: apps/api/src/oauth/testing/gemini-registration.ts | apps/api/src/platform | session.oauth_client, session.oauth_grant, session.oauth_token |
 | `apps/api/src/platform` | platform | runtime: apps/api/src/platform/answer.ts, apps/api/src/platform/deck-answer.ts, apps/api/src/platform/font-metrics.ts, apps/api/src/platform/font-route.ts, apps/api/src/platform/font-source.ts, apps/api/src/platform/forward-secret.ts, apps/api/src/platform/image-fetch.ts, apps/api/src/platform/listen.ts, apps/api/src/platform/local-original-store.ts, apps/api/src/platform/mail.ts, apps/api/src/platform/original-store.ts, apps/api/src/platform/pool.ts, apps/api/src/platform/provision.ts, apps/api/src/platform/r2-original-store.ts, apps/api/src/platform/resource.ts, apps/api/src/platform/schema.ts, apps/api/src/platform/secrets.ts, apps/api/src/platform/start-origins.ts, apps/api/src/platform/start-settings.ts; testing: apps/api/src/platform/testing/migrations.ts | none | none |
 | `apps/api/src/usage` | feature | aira-ledger.ts, credits-route.ts, credits.ts | apps/api/src/account, apps/api/src/platform | session.aira_ledger, session.credits, session.credit_history |
@@ -171,11 +174,12 @@ flowchart TD
 | `apps/web/src/present` | feature | morph-pairs.ts, present-button.tsx, present-keys.ts, present-layer.tsx, present-screens.tsx, slide-arrival.ts, use-present.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
 | `apps/web/src/samples` | feature | sample-screens.tsx, sample-slides.ts | none | none |
 | `apps/web/src/settings` | feature | account-page.tsx, agents-page.tsx, settings-screens.tsx, usage-page.tsx | apps/web/src/account, apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/credits, apps/web/src/decks, apps/web/src/lib | none |
+| `packages/agent` | service | runtime: packages/agent/src/index.ts; testing: packages/agent/src/testing/evals.ts | none | none |
 | `packages/catalog` | model | src/index.ts, src/icon-names.ts, src/undo-copy.ts | none | none |
 | `packages/doom` | core | runtime: packages/doom/src/index.ts | none | none |
 | `packages/fonts` | core | src/index.ts | none | none |
 | `packages/live` | service | src/index.ts | none | none |
-| `packages/mcp` | service | runtime: packages/mcp/src/index.ts; testing: packages/mcp/src/testing/evals.ts | none | none |
+| `packages/mcp` | service | runtime: packages/mcp/src/index.ts | packages/agent | none |
 | `packages/oauth` | core | src/index.ts | none | none |
 | `packages/render` | model | src/index.ts | none | none |
 | `packages/skills` | model | runtime: packages/skills/src/index.ts | none | none |

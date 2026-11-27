@@ -2,7 +2,7 @@
   "check": "checks-server.md#turn",
   "covers": [
     {
-      "file": "packages/mcp/src/execute-tool.ts",
+      "file": "packages/agent/src/execute-tool.ts",
       "names": ["executeTool"],
       "digest": "3bca6f3094aa",
       "blob": "a8a176c2d2422680365cf19b726de242ca9c1ac3"

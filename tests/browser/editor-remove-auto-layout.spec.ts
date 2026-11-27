@@ -1,4 +1,4 @@
-import { scriptOf } from "../../packages/mcp/src/testing/change-script.ts"
+import { scriptOf } from "../../packages/agent/src/testing/change-script.ts"
 import { fontRoutes } from "../../packages/fonts/src/index.ts"
 import { expect, type Page } from "@playwright/test"
 import { designCopy } from "../../apps/web/src/copy/design-copy"

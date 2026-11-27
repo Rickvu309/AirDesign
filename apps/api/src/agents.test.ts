@@ -1,4 +1,4 @@
-import { scriptOf } from "@airdesign/mcp/testing/evals"
+import { scriptOf } from "@airdesign/agent/testing/evals"
 import { doomRoutes } from "@airdesign/catalog"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 

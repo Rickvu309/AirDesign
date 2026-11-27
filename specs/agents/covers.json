@@ -14,13 +14,13 @@
       "blob": "d7f01b67c9b137ffe41b6a4d0f90a987a167722c"
     },
     {
-      "file": "packages/mcp/src/execute-tool.ts",
+      "file": "packages/agent/src/execute-tool.ts",
       "names": ["executeTool"],
       "digest": "3bca6f3094aa",
       "blob": "a8a176c2d2422680365cf19b726de242ca9c1ac3"
     },
     {
-      "file": "packages/mcp/src/stop-tool.ts",
+      "file": "packages/agent/src/stop-tool.ts",
       "names": ["stopRunTool"],
       "digest": "ecaf7b33d9f9",
       "blob": "3ec1ac6828bbead572b9c41443b6873e1a7896bc"
@@ -38,13 +38,13 @@
       "blob": "9e4cc56271432749269ba3080292c8abd51a62d2"
     },
     {
-      "file": "packages/mcp/src/land-edit.ts",
+      "file": "packages/agent/src/land-edit.ts",
       "names": ["landEdit"],
       "digest": "03918698d856",
       "blob": "fefd098e19e25e59ab3fc58b5afab719f0f4b419"
     },
     {
-      "file": "packages/mcp/src/execute-ops.ts",
+      "file": "packages/agent/src/execute-ops.ts",
       "names": ["runOperation"],
       "digest": "1614da98bf31",
       "blob": "cb56fed90830ae37917a7848deb9a62ebdd6da5b"

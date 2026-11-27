@@ -1,4 +1,4 @@
-import { scriptOf } from "../../packages/mcp/src/testing/change-script.ts"
+import { scriptOf } from "../../packages/agent/src/testing/change-script.ts"
 import { expect, type Page } from "@playwright/test"
 import { borderWords } from "../../apps/web/src/copy/border-copy"
 import { designCopy } from "../../apps/web/src/copy/design-copy"
