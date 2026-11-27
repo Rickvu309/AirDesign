@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { kitPieces, readKitPiece, readSkill, readSkillIndex, themePresetById } from "@airdesign/skills"
+import { kitPieces, readKitPiece, readSkill, skills, themePresetById } from "@airdesign/skills"
 import { describe, expect, it } from "vitest"
 
 import { callTool, type DeckHost, type Session } from "./index.js"
@@ -154,7 +154,7 @@ describe("copy from the kit", () => {
   })
 
   it("lists every piece in the kit skill, with its size", () => {
-    expect(readSkillIndex().skills.map((skill) => skill.name)).toContain("kit")
+    expect(skills().map((skill) => skill.name)).toContain("kit")
     const kit = readSkill("kit")?.markdown ?? ""
     for (const piece of kitPieces())
       expect(kit).toContain(`\`kit/${piece.name}\` (${String(piece.size.w)} by ${String(piece.size.h)})`)

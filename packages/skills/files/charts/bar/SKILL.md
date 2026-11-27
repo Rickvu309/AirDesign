@@ -1,3 +1,8 @@
+---
+name: bar
+description: "The arithmetic for a ranked horizontal bar chart, as a script to run."
+---
+
 # Bar chart
 
 Horizontal bars ranked from largest to smallest: a ranking, market shares, a comparison of items that are not time. Draw it yourself from rectangles and text; this guide gives the arithmetic. `kit/bar-chart` is the same chart drawn on sample data, to copy and look at.

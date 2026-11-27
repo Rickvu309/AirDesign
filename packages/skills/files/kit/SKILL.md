@@ -1,3 +1,8 @@
+---
+name: kit
+description: "Ready slide pieces drawn from plain layers that you copy into a slide and own. Read it before you draw a piece from scratch."
+---
+
 # Kit
 
 Pieces of slide design drawn from plain layers. Copy one into a slide with `airdesign_execute`, then change its words and layers as your own. The copy has no link back to the kit.

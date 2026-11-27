@@ -1,3 +1,8 @@
+---
+name: avoid
+description: "Habits that make slides look machine-made. Read before you design."
+---
+
 # What to avoid on slides
 
 These are the marks of a slide an AI made without looking. Each one costs the reader's trust.

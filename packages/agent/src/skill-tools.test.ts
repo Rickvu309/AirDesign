@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import * as doom from "@airdesign/doom"
-import { readSkillIndex } from "@airdesign/skills"
+import { skills } from "@airdesign/skills"
 import { describe, expect, it } from "vitest"
 
 import { callTool, type DeckHost, type Session } from "./index.js"
@@ -88,7 +88,7 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
       ok: false,
       refusal: "field",
       field: "name",
-      available: readSkillIndex().skills.map((entry) => entry.name),
+      available: skills().map((entry) => entry.name),
     })
 
     const traversal = await callTool("airdesign_read_skill", { name: "../package.json" }, session, host)

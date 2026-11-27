@@ -1,3 +1,8 @@
+---
+name: execute
+description: "How to read and change a deck with `airdesign_execute`: the script, every operation, layer kinds, colours, text and layout. Read it before your first call."
+---
+
 # Creating, reading and changing a deck with `airdesign_execute`
 
 `airdesign_execute` runs one JavaScript script against one deck. Send `{ deck, script, runId? }`. When the script ends, everything it changed lands as one edit and one undo step. If it throws, nothing lands.

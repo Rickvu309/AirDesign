@@ -1,3 +1,8 @@
+---
+name: table
+description: "A table of exact numbers: header, rows, total, numbers right-aligned."
+---
+
 # Table
 
 Exact numbers the reader looks up or compares across rows and columns. `insert` draws the whole table from a list of rows; `kit/table` is the same table on sample data, to copy and look at.

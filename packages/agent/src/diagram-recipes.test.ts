@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { readSkill, readSkillIndex } from "@airdesign/skills"
+import { readSkill, skills } from "@airdesign/skills"
 import { describe, expect, it } from "vitest"
 
 import { callTool, type DeckHost, type Session } from "./index.js"
@@ -164,7 +164,7 @@ describe("the process flow recipe on new steps", () => {
 
 describe("the diagram skills", () => {
   it("are listed in the index and named in the kit guide", () => {
-    const names = readSkillIndex().skills.map((skill) => skill.name)
+    const names = skills().map((skill) => skill.name)
     const kit = readSkill("kit")?.markdown ?? ""
     for (const name of ["diagrams/architecture", "diagrams/process-flow"]) {
       expect(names).toContain(name)

@@ -1,3 +1,8 @@
+---
+name: column
+description: "The arithmetic for a column chart over periods, as a script to run."
+---
+
 # Column chart
 
 Vertical columns over periods: quarters, months, years. Draw it yourself from rectangles and text; this guide gives the arithmetic. `kit/column-chart` is the same chart drawn on sample data, to copy and look at.
