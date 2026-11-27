@@ -79,7 +79,7 @@ describe("copy from the kit", () => {
     const [block, title] = answer.answer.result as [string, string]
     const fold = by.fold(deck)
     for (const id of [block, ...doom.childrenOf(fold, block as doom.NodeId).map((each) => each.id)])
-      expect(doom.propOf(fold.nodes.get(id as doom.NodeId), "instance")).toBeUndefined()
+      expect(fold.nodes.get(id as doom.NodeId)).not.toHaveProperty("instance")
     expect(doom.propOf(fold.nodes.get(title as doom.NodeId), "text")?.chars).toBe("Revenue grew 18% on two new markets")
     expect(readKitPiece("title-block")).toEqual(before)
   })

@@ -9,7 +9,6 @@ export type Notice = {
   readonly node?: doom.NodeId
   readonly prop?: doom.WriteKey
   readonly because?: string
-  readonly turn?: "undo" | "redo"
 }
 
 export type Sent = { readonly ok: true; readonly once: string; readonly saved: Promise<void> }

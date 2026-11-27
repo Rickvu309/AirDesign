@@ -4,7 +4,6 @@ import { compileAgentChange, nameOf } from "./agent-compile.js"
 import type { Reading } from "./agent-draft.js"
 import type { Measure } from "./measure.js"
 import type { NodeId, Rev } from "./ids.js"
-import { linkedOwner } from "./component/instance-ownership.js"
 import { rev } from "./ids.js"
 import { kindOf } from "./agent-read.js"
 import { applyEdit, applyStep, countsOf } from "./apply-edit.js"
@@ -14,11 +13,6 @@ import { isRefusal } from "./refusal.js"
 import type { Author, Edit, Doom, Write } from "./doom.js"
 import { onTop } from "./view-of.js"
 import { type AgentFinding, agentFindings } from "./agent-findings.js"
-import { recordingMeasure } from "./component/component-edit.js"
-import { rebuildStaleInstances } from "./component/component-write.js"
-import { measureWith } from "./measure.js"
-
-const estimate = measureWith({})
 
 export type AddedNode = { readonly id: NodeId; readonly change: number; readonly kind: string }
 export type AgentEdit = {
@@ -36,7 +30,6 @@ export type EditBy = {
   readonly boxes?: Reading["boxes"]
   readonly pictures?: Reading["pictures"]
   readonly measure?: Measure
-  readonly componentSample?: Reading["componentSample"]
 }
 
 export function readingOf(doom: Doom, base: number): Doom {
@@ -70,19 +63,15 @@ export type AgentSession = {
 export function agentEditSession(doom: Doom, by: EditBy): AgentSession {
   const reading: Reading = {
     read: by.read ?? doom,
-    batchStart: doom.rev,
     ...(by.boxes === undefined ? {} : { boxes: by.boxes }),
     ...(by.pictures === undefined ? {} : { pictures: by.pictures }),
     ...(by.measure === undefined ? {} : { measure: by.measure }),
-    ...(by.componentSample === undefined ? {} : { componentSample: by.componentSample }),
   }
   const changes: AgentChange[] = []
   const writes: Write[] = []
   const ends: number[] = []
   let view = doom
   let emptied = 0
-  let guarded = false
-  const templates = new Map<NodeId, number>()
   function* step(
     change: AgentChange,
     pauseForBake = true,
@@ -106,28 +95,15 @@ export function agentEditSession(doom: Doom, by: EditBy): AgentSession {
       compiled = compileAgentChange(view, change, by.mint, { ...stepReading, measure: baked })
     }
     if ("refused" in compiled) return { ...compiled, at }
-    const template = change.op === "component" ? compiled.find(({ prop }) => prop === "spec")?.node : undefined
-    if (template !== undefined) templates.set(template, at)
-    const strict = compiled.some(
-      ({ node, prop }) =>
-        prop === "instance" || (prop === "spec" && view.nodes.has(node)) || linkedOwner(view.nodes, node) !== undefined,
-    )
-    guarded ||= strict
-    const next = applyStep(
-      view,
-      {
-        ...onTop(view, {
-          once: `${by.once}#${at}`,
-          author: by.author,
-          writes: compiled,
-          ...(strict ? { readBase: view.rev } : {}),
-          ...(by.phase !== undefined && at === 0 ? { phase: by.phase } : {}),
-        }),
-        rev: rev(view.rev + 1),
-      },
-      template !== undefined,
-      true,
-    )
+    const next = applyStep(view, {
+      ...onTop(view, {
+        once: `${by.once}#${at}`,
+        author: by.author,
+        writes: compiled,
+        ...(by.phase !== undefined && at === 0 ? { phase: by.phase } : {}),
+      }),
+      rev: rev(view.rev + 1),
+    })
     if (isRefusal(next)) return { ...next, change: nameOf(change), at }
     if (countsOf(next).slides === 0 && countsOf(view).slides > 0) emptied = at
     const before = view
@@ -151,30 +127,13 @@ export function agentEditSession(doom: Doom, by: EditBy): AgentSession {
         form: "One to one hundred changes.",
       }
     const all = [...writes]
-    if (templates.size > 0) {
-      const recorder = by.componentSample === undefined ? undefined : recordingMeasure()
-      const rebuilt = rebuildStaleInstances(
-        view,
-        [...templates.keys()],
-        recorder?.measure ?? reading.measure ?? estimate,
-      )
-      if (recorder !== undefined) by.componentSample?.(recorder.sample(view))
-      if ("refused" in rebuilt) {
-        const { component, ...refusal } = rebuilt
-        const at = templates.get(component) ?? 0
-        return { ...refusal, change: nameOf(changes[at] as AgentChange), at }
-      }
-      guarded ||= rebuilt.writes.length > 0
-      all.push(...rebuilt.writes)
-    }
-    const named = nameFromTitleWrites(doom, all, templates.size === 0 ? view : undefined)
+    const named = nameFromTitleWrites(doom, all, view)
     all.push(...named)
     const changing = changingWrites(doom, all)
     const edit: Edit = {
       once: by.once,
       author: by.author,
       writes: changing,
-      ...(guarded ? { readBase: (by.read ?? doom).rev } : {}),
       ...(by.phase === undefined ? {} : { phase: by.phase }),
     }
     const landed = applyEdit(doom, { ...edit, rev: rev(doom.rev + 1) })

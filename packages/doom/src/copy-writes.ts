@@ -9,7 +9,7 @@ import { type Keyed, siblingKeys } from "./sibling-keys.js"
 type Slot = NonNullable<Props["parent"]>
 type Mint = () => NodeId
 
-const skipped = new Set(["id", "rev", "type", "parent", "origin", "instance"])
+const skipped = new Set(["id", "rev", "type", "parent", "origin"])
 
 export type Copies = {
   readonly writes: readonly Write[]

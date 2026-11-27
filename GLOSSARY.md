@@ -2,6 +2,8 @@
 
 Use one word per idea: the bold term, never its Avoid terms.
 
+The words for the deck model and its edits are in [doom.md](docs/words/doom.md).
+
 The words for how a change is checked, measured, proven and named are in [check-words.md](docs/words/check-words.md).
 
 ## Product words

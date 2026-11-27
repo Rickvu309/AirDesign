@@ -53,8 +53,8 @@ describe("set by node id", () => {
     expect(propOf(linked.nodes.get(ids.title)!, "link")).toBe("https://example.com/plan")
     const cleared = build(linked, set(ids.title, { link: "none" }))
     expect(propOf(cleared.nodes.get(ids.title)!, "link")).toBeUndefined()
-    const clipped = build(richDeck(), set(more.column, { clip: true }))
-    expect(propOf(clipped.nodes.get(more.column)!, "clip")).toBe(true)
+    const clipped = build(richDeck(), set(more.frame, { clip: true }))
+    expect(propOf(clipped.nodes.get(more.frame)!, "clip")).toBe(true)
   })
 
   it("writes paint, outline, radius, effect, opacity, name, hidden and box", () => {

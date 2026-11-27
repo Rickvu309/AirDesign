@@ -7,7 +7,6 @@ import { sidesOf } from "./agent-look.js"
 import { gapFor, slideSize } from "./agent-place.js"
 import type { NodeId } from "./ids.js"
 import type { Layout } from "./layout.js"
-import { linkedOwner } from "./component/instance-ownership.js"
 import type { Node } from "./doom.js"
 import { boxOf, childrenOf, descendantsOf, parentOf, propOf, slideOf, zeroBox } from "./doom-walk.js"
 import { measureWith } from "./measure.js"
@@ -92,8 +91,6 @@ export function compileMove(draft: Draft, change: Op<"move">): void {
   const target = change.into === undefined ? living(draft, from, "into") : living(draft, change.into, "into")
   if (target.type !== "slide" && target.type !== "frame")
     stop("shape", target.id, "into", "form", "A slide or a frame.")
-  if (linkedOwner(draft.doom.nodes, target.id) !== undefined)
-    stop("shape", target.id, "into", "form", "This layer is linked. Use detach to make it a plain layer.")
   if (target.id === node.id || descendantsOf(draft.doom, node.id).some((inside) => inside.id === target.id))
     stop("cycle", node.id, "into")
   const previous =
@@ -153,8 +150,6 @@ export function compileWrap(draft: Draft, change: Op<"wrap">): void {
 export function compileUnwrap(draft: Draft, change: Op<"unwrap">): void {
   const frame = living(draft, change.node, "node")
   if (frame.type !== "frame") stop("shape", frame.id, "node", "form", "A frame.")
-  if (linkedOwner(draft.doom.nodes, frame.id) !== undefined)
-    stop("shape", frame.id, "node", "form", "This layer is linked. Use detach to make it a plain layer.")
   const parent = parentIdOf(frame)
   const kids = childrenOf(draft.doom, frame.id)
   const keys = keysAfter(draft, parent, frame.id, kids.length)

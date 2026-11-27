@@ -83,7 +83,6 @@ export {
   type TokenRequest,
 } from "./wire.js"
 
-export { deckChangeWords, readDeckChange } from "./deck-edit-wire.js"
 export { readExecute } from "./execute-wire.js"
 export { readAppState } from "./read-wire.js"
 export { pictureBytes, pictureType, type SlidePictures } from "./slide-pictures-wire.js"

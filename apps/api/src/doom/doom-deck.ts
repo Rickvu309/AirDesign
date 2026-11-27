@@ -145,7 +145,7 @@ export async function editDoom(
   email: string,
   still: (part: doom.Doom) => boolean = () => true,
 ) {
-  const { seeds, regrouped, removed: nulled, linked } = seedsOf(parsed.edit)
+  const { seeds, regrouped, removed: nulled } = seedsOf(parsed.edit)
   let removed = nulled
   let back: string[] = []
   const once = typeof parsed.edit.once === "string" ? parsed.edit.once : ""
@@ -155,7 +155,6 @@ export async function editDoom(
     if (stored.owner !== email) return refusal("owner")
     if (stored.trashed) return refusal("deck")
     if (stored.landed !== null) return { ok: true, deck: parsed.deck, rev: stored.landed } as const
-    if (linked !== undefined) return editRefusal({ refused: "shape", ...linked })
     const part = partOf(stored)
     if (part === undefined) return refusal("payload")
     if (!still(part)) return refusal("stale")

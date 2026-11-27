@@ -7,12 +7,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./grammar/1.md": "./src/component/grammar/1.md"
+    }
   },
   "files": [
-    "dist",
-    "src/component/grammar"
+    "dist"
   ],
   "scripts": {
     "build": "tsc -b",

@@ -52,7 +52,5 @@ export function changingWrites(doom: Doom, writes: readonly Write[]): readonly W
     const was = doom.nodes.get(write.node) as Values
     return !sameValue(valueAt(was, property), valueAt(now.get(write.node)!, property))
   })
-  if (changed.length === 0) return changed
-  const changedSet = new Set(changed)
-  return writes.filter((write) => changedSet.has(write) || write.prop === "instance")
+  return changed
 }

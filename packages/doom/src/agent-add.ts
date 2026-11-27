@@ -1,21 +1,11 @@
 import type { AgentAdd, AgentChange, AgentLook } from "./agent-change.js"
 import { shapeGeometry } from "./preset-geometry.js"
-import { type Draft, Stop, create, living, nextKey, put, stop } from "./agent-draft.js"
+import { type Draft, create, living, put, stop } from "./agent-draft.js"
 import { askedArrow, iconName, layoutOf, solid, surfaceOf, textOfLook, turnOf, type Now } from "./agent-look.js"
 import { addGrid } from "./agent-grid.js"
 import { placeholderTitle } from "./placeholder-title.js"
 import { placeholderSubtitle } from "./slide-placeholders.js"
-import {
-  type Area,
-  alignedWithTitle,
-  areaFor,
-  cardRadiusFor,
-  fitScale,
-  freeArea,
-  gapFor,
-  slideSize,
-  themeOf,
-} from "./agent-place.js"
+import { type Area, areaFor, cardRadiusFor, gapFor, slideSize, themeOf } from "./agent-place.js"
 import { lineEnds } from "./agent-line-ends.js"
 import { pictureFit } from "./picture-fit.js"
 import type { StrokeStyle } from "./paint.js"
@@ -23,13 +13,6 @@ import type { Box } from "./doom-walk.js"
 import { descendantsOf, isLaidOut, propOf, slideOf, zeroBox } from "./doom-walk.js"
 import type { Node } from "./doom.js"
 import type { Text } from "./text.js"
-import { componentLibrary } from "./component/library.js"
-import { linkedOwner } from "./component/instance-ownership.js"
-import { placeComponent } from "./component/join-instance.js"
-import { deckComponent } from "./component/deck-component.js"
-import { readNodeId } from "./ids.js"
-import { isRefusal } from "./refusal.js"
-import { measureWith } from "./measure.js"
 import { textHeight } from "./text-estimate.js"
 
 type Add = Extract<AgentChange, { op: "add" }>
@@ -76,7 +59,6 @@ const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
   frame: [...common, ...painted, "layout", "gap", "padding", "align", "rows", "clip"],
   picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit", "crop"],
   icon: [...common, "icon", "stroke", "strokeWidth"],
-  component: ["component", "box", "data", "variant", "tokens", "rotation", "flip"],
 }
 
 const titleStyles: ReadonlySet<Text["style"]> = new Set(["display", "title"])
@@ -279,50 +261,12 @@ function addIcon(draft: Draft, parent: Node, change: Add): void {
   })
 }
 
-const estimate = measureWith({})
-
-const maxComponentScale = 2
-
-function addComponent(draft: Draft, parent: Node, change: Add): void {
-  const id = change.component ?? stop("shape", undefined, "component", "missing", "A template id.")
-  const node = readNodeId(id)
-  const definition = componentLibrary.get(id) ?? (node === undefined ? undefined : deckComponent(draft.doom, node))
-  if (definition === undefined) stop("shape", undefined, "component", "form", "A template id.")
-  const { sample } = definition.spec
-  const data = change.data ?? sample?.data ?? stop("shape", undefined, "data", "missing", "Rows by collection.")
-  const natural = sample === undefined ? undefined : { width: sample.w, height: sample.h }
-  let box = change.box ?? freeArea(draft, parent, natural) ?? stop("limit", parent.id, "box")
-  if (change.box === undefined && natural !== undefined) {
-    const aligned = parent.type === "slide" ? alignedWithTitle(draft, parent, box) : box
-    const scale = Math.min(maxComponentScale, fitScale(natural, aligned))
-    const fitted = centred(aligned, { w: Math.round(natural.width * scale), h: Math.round(natural.height * scale) })
-    box =
-      aligned === box
-        ? fitted
-        : { ...fitted, x: aligned.x, w: definition.spec.chart === undefined ? fitted.w : aligned.w }
-  }
-  const source = "id" in definition ? definition : { node: definition.node, revision: definition.revision }
-  const placed = placeComponent(draft.doom, source, {
-    frame: draft.mint(),
-    parent: { id: parent.id, at: nextKey(draft, parent.id) },
-    box: givenBox(change, box),
-    data,
-    ...(change.variant === undefined ? {} : { variant: change.variant }),
-    ...(change.tokens === undefined ? {} : { tokens: change.tokens }),
-    measure: draft.reading.measure ?? estimate,
-  })
-  if (isRefusal(placed)) throw new Stop(placed)
-  draft.writes.push(...placed)
-}
-
 export function compileAdd(draft: Draft, change: Add): void {
   const slide = living(draft, change.slide, "slide")
   if (slide.type !== "slide") stop("shape", slide.id, "slide", "form", "A slide id.")
   const parent = change.into === undefined ? slide : living(draft, change.into, "into")
   if (change.into !== undefined && (parent.type !== "frame" || slideOf(draft.doom, parent.id) !== slide.id))
     stop("missing", parent.id, "into")
-  if (linkedOwner(draft.doom.nodes, parent.id) !== undefined)
-    stop("shape", parent.id, "into", "form", "This layer is linked. Use detach to make it a plain layer.")
   checkFields(change)
   compileKind(draft, parent, slide, change)
 }
@@ -341,7 +285,5 @@ function compileKind(draft: Draft, parent: Node, slide: Node, change: Add): void
       return addPicture(draft, parent, change)
     case "icon":
       return addIcon(draft, parent, change)
-    case "component":
-      return addComponent(draft, parent, change)
   }
 }

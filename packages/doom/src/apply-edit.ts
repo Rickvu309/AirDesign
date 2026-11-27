@@ -1,15 +1,4 @@
-import { guardComponents, guardDeckLinks } from "./component/deck-component.js"
-import { sameValue } from "./changing-writes.js"
-import { instanceFieldKey, instanceFields } from "./component/instance.js"
 import type { RevisionKey } from "./doom.js"
-import {
-  guardInstances,
-  linkedOwner,
-  instanceRoots,
-  linkedOverride,
-  suppressionChanges,
-  withPartDeletes,
-} from "./component/instance-ownership.js"
 import { limits } from "./limits.js"
 import type { NodeId, Rev } from "./ids.js"
 import { rev } from "./ids.js"
@@ -205,7 +194,7 @@ function write(work: Working, doom: Doom, landed: Landed, raw: Write, known: Kno
     if (!work.created.has(id) && run?.guarded.has(id)) return refuse("person", id, key)
   }
   const was = doom.revs.get(id)?.get(key)
-  if (was !== undefined && !(landed.readBase === undefined && linkedOverride(doom.nodes, read))) {
+  if (was !== undefined) {
     const spec = key.startsWith("theme.") ? undefined : props[key as PropName]
     if (read.base === undefined ? spec?.conflict === "base" : read.base < was) return refuse("stale", id, key)
   }
@@ -225,9 +214,6 @@ function write(work: Working, doom: Doom, landed: Landed, raw: Write, known: Kno
     }
     place(work, node, parent, landed.rev)
     stamp(work, id, ["parent"], landed.rev)
-    const exited = doom.revs.get(id)?.get("partExit")
-    if (parent === null && (linkedOwner(doom.nodes, id) !== undefined || (exited !== undefined && exited === was)))
-      stamp(work, id, ["partExit"], landed.rev)
     return undefined
   }
   if (key.startsWith("theme.")) {
@@ -264,7 +250,6 @@ export type Known = {
   readonly deck: () => boolean
   readonly partial?: true
   readonly freeing?: true
-  readonly rebuilding?: true
   readonly layered?: true
 }
 export type Landing = { readonly doom: Doom; readonly delta: Counts }
@@ -348,32 +333,10 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
     landed.runUndo === undefined
   )
     return { doom, delta: noChange }
-  const writes = withPartDeletes(doom, landed.writes)
-  if (isRefusal(writes)) return writes
-  const expanded = writes === landed.writes ? landed : { ...landed, writes }
-  for (const id of staysDeleted(doom, expanded.writes)) work.keptDeleted.add(id)
-  for (const each of expanded.writes) {
-    const refusal = write(work, doom, expanded, each, known)
+  for (const id of staysDeleted(doom, landed.writes)) work.keptDeleted.add(id)
+  for (const each of landed.writes) {
+    const refusal = write(work, doom, landed, each, known)
     if (refusal !== undefined) return refusal
-  }
-  const ownership = guardInstances(
-    doom,
-    work,
-    expanded,
-    writes !== landed.writes && instanceRoots(landed.writes).length === 0,
-  )
-  if (ownership !== undefined) return ownership
-  const components =
-    guardComponents(doom, work, expanded.writes) ??
-    (known.rebuilding === true ? undefined : guardDeckLinks(doom, work, expanded.writes))
-  if (components !== undefined) return components
-  for (const root of instanceRoots(expanded.writes)) {
-    const before = propOf(doom.nodes.get(root), "instance")
-    const after = propOf(work.nodes.get(root), "instance")
-    for (const field of instanceFields)
-      if (!sameValue(before?.[field], after?.[field])) stamp(work, root, [instanceFieldKey(field)], landed.rev)
-    for (const node of suppressionChanges(root, before, after))
-      if (work.nodes.get(node) !== doom.nodes.get(node)) stamp(work, node, ["suppression"], landed.rev)
   }
   keepLiveEnds(work, doom, landed)
   if (known.freeing !== true) {
@@ -411,7 +374,7 @@ export function landEdit(doom: Doom, landed: Landed, known: Known): Landing | Re
       ...(landed.phase === "stop" ? { phase: "stopped" as const } : {}),
     })
   }
-  protect(work, landed, new Set(expanded.writes.map((each) => each.node)))
+  protect(work, landed, new Set(landed.writes.map((each) => each.node)))
   const landedDoom: Doom = {
     nodes: work.nodes,
     revs: work.revs,
@@ -436,23 +399,12 @@ export function applyBeforeFreeing(doom: Doom, landed: Landed): Doom | Refusal {
   return isRefusal(landing) ? landing : landing.doom
 }
 
-export function applyBeforeRebuild(doom: Doom, landed: Landed): Doom | Refusal {
-  const landing = landEdit(doom, landed, {
-    counts: () => countsOf(doom),
-    deck: () => hasDeck(doom),
-    freeing: true,
-    rebuilding: true,
-  })
-  return isRefusal(landing) ? landing : landing.doom
-}
-
-export function applyStep(doom: Doom, landed: Landed, rebuilding = false, layered = false): Doom | Refusal {
+export function applyStep(doom: Doom, landed: Landed): Doom | Refusal {
   const landing = landEdit(doom, landed, {
     counts: () => countsOf(doom),
     deck: () => hasDeck(doom),
     partial: true,
-    ...(rebuilding ? { rebuilding } : {}),
-    ...(layered ? { layered } : {}),
+    layered: true,
   })
   return isRefusal(landing) ? landing : landing.doom
 }

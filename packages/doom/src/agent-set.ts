@@ -1,15 +1,11 @@
 import type { AgentChange, AgentLook } from "./agent-change.js"
-import { type Draft, type Values, Stop, living, put, stop } from "./agent-draft.js"
+import { type Draft, type Values, living, put, stop } from "./agent-draft.js"
 import { insertLinkedRun } from "./agent-insert.js"
 import { askedArrow, iconName, layoutOf, surfaceOf, textOfLook } from "./agent-look.js"
-import { linkedOwner, linkedSetField } from "./component/instance-ownership.js"
 import { lineEnds } from "./agent-line-ends.js"
 import { gapFor, slideSize, themeOf } from "./agent-place.js"
 import { notesText } from "./notes-text.js"
 import { resizedBy } from "./agent-resize.js"
-import { resolveComponentInFold } from "./component/deck-component.js"
-import { regenerateComponent } from "./component/join-instance.js"
-import { isRefusal } from "./refusal.js"
 import { bakeLayout } from "./bake-layout.js"
 import { measureWith } from "./measure.js"
 import { type NodeId, readNodeId } from "./ids.js"
@@ -151,45 +147,7 @@ function geometryOf(draft: Draft, node: Node, change: SetChange): Geometry | und
   }
 }
 
-const componentFields = ["data", "variant", "tokens"] as const
-
-function setComponent(draft: Draft, change: SetChange, field: (typeof componentFields)[number]): void {
-  const { target, data, variant, tokens, focus, op: _op, ...other } = change
-  const extra = Object.entries(other).find(([, value]) => value !== undefined)
-  if (extra !== undefined)
-    stop(
-      "shape",
-      undefined,
-      extra[0],
-      "form",
-      "Set data, variant and tokens together. Use another change for layer styling.",
-    )
-  const id = readNodeId(target) ?? stop("shape", undefined, "target", "form", "A linked component instance id.")
-  const node = living(draft, id, "target")
-  const instance = propOf(node, "instance") ?? stop("shape", id, field, "needs", "a linked component instance")
-  const definition = resolveComponentInFold(draft.doom, instance.component)
-  if (definition === undefined) stop("shape", id, "target", "form", "A component available in this build.")
-  const updated = regenerateComponent(
-    draft.doom,
-    id,
-    {
-      ...(data === undefined ? {} : { data }),
-      ...(variant === undefined ? {} : { variant }),
-      ...(tokens === undefined ? {} : { tokens }),
-      ...(focus === undefined ? {} : { focus }),
-    },
-    draft.reading.measure ?? estimate,
-    definition,
-  )
-  if (isRefusal(updated)) throw new Stop(updated)
-  draft.writes.push(...updated.writes)
-}
-
 export function compileSet(draft: Draft, change: SetChange): void {
-  if (change.component !== undefined)
-    stop("shape", undefined, "component", "unknown", "Set data, variant or tokens on an instance.")
-  const componentField = componentFields.find((field) => change[field] !== undefined)
-  if (componentField !== undefined) return setComponent(draft, change, componentField)
   if (change.insert !== undefined && change.target.startsWith("*."))
     stop("shape", undefined, "insert", "needs", "a text layer")
   if (change.target.startsWith("*.")) return setEverySlide(draft, change, change.target.slice(2))
@@ -198,16 +156,6 @@ export function compileSet(draft: Draft, change: SetChange): void {
     stop("shape", node.id, "target", "form", "A slide, a frame or a shape.")
   for (const field of [...neverOnSet, ...unfit[node.type]])
     if (change[field] !== undefined) stop("shape", node.id, field, "unknown")
-  const refusedField = linkedSetField(draft.doom.nodes, node, change)
-  const template = linkedOwner(draft.doom.nodes, node.id)
-  if (refusedField !== undefined && template !== undefined)
-    stop(
-      "shape",
-      node.id,
-      refusedField,
-      "form",
-      `This layer belongs to linked template ${template}. Set tokens on ${template}, or detach ${template} to edit its layers.`,
-    )
   const fitting = change.fit !== undefined || change.crop !== undefined
   if (fitting && !(propOf(node, "fills") ?? []).some((paint) => paint.kind === "image"))
     stop("shape", node.id, change.crop === undefined ? "fit" : "crop", "needs", "an image fill")

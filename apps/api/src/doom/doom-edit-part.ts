@@ -83,23 +83,17 @@ type Seeds = {
   readonly seeds: string[]
   readonly regrouped: string[]
   readonly removed: string[]
-  readonly linked?: { readonly node: doom.NodeId; readonly prop: "type" | "instance" }
 }
 
 export function seedsOf(edit: Readonly<Record<string, unknown>>): Seeds {
   const seeds = new Set<string>()
   const regrouped = new Set<string>()
   const removed = new Set<string>()
-  let linked: Seeds["linked"]
   if (!Array.isArray(edit.writes)) return { seeds: [], regrouped: [], removed: [] }
   for (const each of edit.writes as unknown[]) {
     if (typeof each !== "object" || each === null) continue
     const { node, prop, value } = each as { node?: unknown; prop?: unknown; value?: unknown }
     if (typeof node === "string") seeds.add(node)
-    if (prop === "instance" || (prop === "type" && value === "component")) {
-      const id = doom.readNodeId(node)
-      if (id !== undefined) linked ??= { node: id, prop }
-    }
     if (typeof node === "string" && (prop === "parent" || prop === "hidden")) regrouped.add(node)
     if (typeof node === "string" && prop === "parent" && value === null) removed.add(node)
     const parent = typeof value === "object" && value !== null ? (value as { id?: unknown }).id : undefined
@@ -110,7 +104,6 @@ export function seedsOf(edit: Readonly<Record<string, unknown>>): Seeds {
     seeds: [...seeds],
     regrouped: [...regrouped],
     removed: [...removed],
-    ...(linked === undefined ? {} : { linked }),
   }
 }
 

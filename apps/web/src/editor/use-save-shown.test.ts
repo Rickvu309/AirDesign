@@ -26,21 +26,6 @@ describe("what the editor shows for a deck's status", () => {
     })
   })
 
-  it("shows a refused undo while keeping the saved status", () => {
-    expect(
-      saveShown({ status: { kind: "turn-refused", turn: "undo", save: { kind: "saved" } }, online: true }),
-    ).toEqual({ notice: "undo-refused", save: "saved" })
-  })
-
-  it("names a skipped component update while keeping the saved status", () => {
-    expect(
-      saveShown({ status: { kind: "turn-skipped", turn: "undo", save: { kind: "saved" } }, online: true }),
-    ).toEqual({ notice: "undo-skipped", save: "saved" })
-    expect(
-      saveShown({ status: { kind: "turn-skipped", turn: "redo", save: { kind: "saving" } }, online: true }),
-    ).toEqual({ notice: "redo-skipped", save: "saving" })
-  })
-
   it("says one edit, several edits or a too large edit was set aside", () => {
     const aside = (edits: number, tooLarge: boolean) =>
       saveShown({ status: { kind: "set-aside", edits, tooLarge }, online: true })
@@ -62,7 +47,7 @@ describe("which notice the editor shows when an export fails too", () => {
   })
 
   it("shows the save notice when no export failed", () => {
-    expect(noticeShown("undo-refused", false)).toBe("undo-refused")
+    expect(noticeShown("set-aside", false)).toBe("set-aside")
     expect(noticeShown(null, false)).toBeNull()
   })
 })

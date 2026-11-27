@@ -1,4 +1,3 @@
-import { instanceFieldKeys } from "./component/instance.js"
 import type { RevisionKey } from "./doom.js"
 import { type NodeId, type Rev, readNodeId, readRev } from "./ids.js"
 import { type NodeType, type PropName, accepts, nodeTypes, props } from "./props.js"
@@ -68,10 +67,7 @@ function readNodeRevs(raw: unknown): Map<RevisionKey, Rev> | undefined {
   if (list === undefined) return undefined
   const own = new Map<RevisionKey, Rev>()
   for (const [name, at] of Object.entries(list)) {
-    const write =
-      name === "suppression" || name === "partExit"
-        ? name
-        : (instanceFieldKeys.find((key) => key === name) ?? readWriteKey(name))
+    const write = readWriteKey(name)
     const read = readRev(at)
     if (write === undefined || read === undefined) return undefined
     own.set(write, read)

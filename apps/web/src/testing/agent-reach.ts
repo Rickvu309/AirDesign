@@ -1,4 +1,3 @@
-import { deckChangeWords } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 const spot = (x: number, y: number, w: number, h: number, rotation = 0) => ({
@@ -280,6 +279,7 @@ export const writesOf = (probe: Probe, look: Readonly<Record<string, unknown>>):
   return doom.isRefusal(writes) ? [] : writes.filter((write) => write.node === idOf(probe))
 }
 
-export const agentFields = new Set(deckChangeWords.fields)
-export const agentOps = new Set<string>(deckChangeWords.ops)
-export const agentKinds = new Set<string>(deckChangeWords.kinds)
+const changeFields = doom.agentChangesSchema.$defs.change.properties
+export const agentFields = new Set(Object.keys(changeFields))
+export const agentOps = new Set<string>(changeFields.op.enum)
+export const agentKinds = new Set<string>(changeFields.kind.enum)

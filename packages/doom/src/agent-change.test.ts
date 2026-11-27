@@ -17,12 +17,6 @@ const valid: readonly AgentChange[] = [
   { op: "add", kind: "frame", slide: "t:3" as never, rows: [["Revenue", "$4.2M"]] },
   {
     op: "add",
-    kind: "component",
-    slide: "t:3" as never,
-    component: "column",
-  },
-  {
-    op: "add",
     kind: "frame",
     slide: "t:3" as never,
     rows: [
@@ -34,7 +28,6 @@ const valid: readonly AgentChange[] = [
   { op: "set", target: "t:3.title", text: "x", fill: "none", stroke: hex(0xaabbcc), effect: "lifted" },
   { op: "set", target: "t:6", insert: { at: 2, text: "linked", link: "https://example.com" } },
   { op: "set", target: "t:6", d: "M0 0L1 1" },
-  { op: "set", target: "t:9", focus: ["q1"] },
   { op: "move", node: "t:4" as never, into: "t:5" as never, after: null },
   {
     op: "move",
@@ -91,6 +84,14 @@ describe("readAgentChange", () => {
     refused({ op: "set", target: "t:3", layout: "grid" })
     refused({ op: "slide", add: { layout: "Blank" } })
     refused({ op: "paint" })
+    expect(readAgentChange({ op: "detach", target: "t:3" })).toMatchObject({ refused: "shape", field: "op" })
+    for (const field of ["component", "spec", "data", "variant", "tokens", "focus"]) {
+      expect(readAgentChange({ op: "set", target: "t:3", [field]: {} })).toMatchObject({
+        refused: "shape",
+        field,
+        fault: "unknown",
+      })
+    }
     refused({ op: "set", target: "t:3", chart: {} })
     refused({ op: "set", target: "t:3#Plan:Q1", fill: "accent1" })
     refused("add")
@@ -216,12 +217,6 @@ describe("the advertised schema", () => {
       "colors",
       "fonts",
       "nameFollows",
-      "component",
-      "data",
-      "variant",
-      "tokens",
-      "focus",
-      "spec",
     ]
     expect(Object.keys(change).sort()).toEqual([...named].sort())
     const used = new Set(valid.flatMap((each) => Object.keys(each)))
@@ -241,26 +236,8 @@ describe("the advertised schema", () => {
     }
   })
 
-  it("reads focus on linked templates", () => {
-    const focus = { op: "set", target: "t:3", focus: ["category"] }
-    expect(readAgentChange(focus)).toMatchObject(focus)
-    expect(Object.keys(change).includes("focus")).toBe(true)
-  })
-
-  it("advertises detach on linked templates and authoring a template", () => {
-    expect(change.op?.enum).toEqual([
-      "add",
-      "set",
-      "move",
-      "wrap",
-      "unwrap",
-      "delete",
-      "slide",
-      "duplicate",
-      "deck",
-      "detach",
-      "component",
-    ])
+  it("advertises the change operations", () => {
+    expect(change.op?.enum).toEqual(["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck"])
   })
 
   it("describes a move as the parser accepts it", () => {
