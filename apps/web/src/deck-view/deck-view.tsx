@@ -20,7 +20,7 @@ import { productCopy } from "@/copy/product-copy"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { hitChain } from "@/editing/hit-test"
 import { geometryOf, type Placed } from "@/editing/slide-geometry"
-import { useAssetUrls } from "@/editing/use-asset-urls"
+import { useAssetUrls, type AssetSource } from "@/editing/use-asset-urls"
 import { useSlideScreenshots } from "@/editing/use-slide-screenshots"
 import { cn } from "@/lib/class-names"
 import { slideNumber } from "@/lib/slide-numbering"
@@ -185,14 +185,16 @@ function ShownDeck({
   client,
   slide: named,
   shell,
+  source,
 }: {
   readonly id: string
   readonly client: DoomDeck
   readonly slide: string | undefined
   readonly shell: Shell
+  readonly source: AssetSource | undefined
 }) {
   const view = useSyncExternalStore(client.subscribe, client.view)
-  const assets = useAssetUrls(id, view)
+  const assets = useAssetUrls(id, view, source)
   useSlideScreenshots(client, assets.assetUrl)
   const slides = doom.slidesOf(view).map((slide) => slide.id)
   const [chosen, setChosen] = useState<doom.NodeId | undefined>(undefined)
@@ -339,11 +341,13 @@ export function DeckView({
   slide,
   remote,
   shell = {},
+  source,
 }: {
   readonly id: string
   readonly slide?: string | undefined
   readonly remote: DoomRemote
   readonly shell?: Shell
+  readonly source?: AssetSource
 }) {
   const opening = useViewDeck(id, remote)
   if (opening.status === "missing") return <Missing shell={shell} />
@@ -353,5 +357,5 @@ export function DeckView({
         <span className="sr-only">{deckViewCopy.opening}</span>
       </div>
     )
-  return <ShownDeck id={id} client={opening.deck} slide={slide} shell={shell} />
+  return <ShownDeck id={id} client={opening.deck} slide={slide} shell={shell} source={source} />
 }

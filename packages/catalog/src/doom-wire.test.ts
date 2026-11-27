@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { expect, it } from "vitest"
-import { doomRoutes, doomPaths } from "./index.js"
+import { doomRoutes, doomPaths, viewMedia } from "./index.js"
 
 const field = { ok: false, refusal: "field" }
 const payload = { ok: false, refusal: "payload" }
@@ -141,4 +141,17 @@ it("reads a run's id for a deck, and answers the run's edits with the values eac
   expect(doomRoutes.run.result({ ...answer, replaced: [] })).toEqual(payload)
   expect(doomRoutes.run.result({ ...answer, edits: "none" })).toEqual(payload)
   expect(doomRoutes.run.result({ ok: false, refusal: "size" })).toEqual({ ok: false, refusal: "size" })
+})
+
+it("reads an image the view asks for by its deck and hash, and decodes its bytes or a refusal", () => {
+  const sha256 = "a".repeat(64)
+  expect(viewMedia.read({ deck, sha256: sha256.toUpperCase() })).toEqual({ ok: true, deck, sha256 })
+  expect(viewMedia.read({ deck, sha256: "short" })).toMatchObject(field)
+  expect(viewMedia.read({ deck, sha256, url: "x" })).toMatchObject(field)
+  const answer = { ok: true, deck, sha256, data: "cGljdHVyZQ==" }
+  expect(viewMedia.result(answer)).toEqual(answer)
+  expect(viewMedia.result({ ...answer, data: 4 })).toEqual(payload)
+  expect(viewMedia.result({ ...answer, sha256: "short" })).toEqual(payload)
+  expect(viewMedia.result({ ok: false, refusal: "owner" })).toEqual({ ok: false, refusal: "owner" })
+  expect(viewMedia.result({ ok: false, refusal: "missing" })).toMatchObject({ ok: false })
 })

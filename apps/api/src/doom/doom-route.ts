@@ -1,11 +1,13 @@
 import type { ServerResponse } from "node:http"
 
-import { doomRoutes, type TabSelection } from "@airdesign/catalog"
+import { doomRoutes, viewMedia, type TabSelection } from "@airdesign/catalog"
 
 import type { DeckScreenshots } from "./deck-screenshots.js"
 import type { DeckListen } from "../platform/listen.js"
+import type { OriginalStore } from "../platform/original-store.js"
 import type { Sql } from "../platform/pool.js"
 import { createDoom, editDoom, openDoom, runDoom, doomRev, sinceDoom } from "./doom-deck.js"
+import { mediaBytes } from "./media.js"
 
 type DoomVisit = {
   readonly options: { readonly deck: Sql; readonly listen: DeckListen; readonly screenshots: DeckScreenshots }
@@ -104,7 +106,11 @@ async function answerRead<R extends Read<{ readonly ok: boolean }>>(
   return parsed.ok ? answer(parsed as Parsed<R>) : parsed
 }
 
-export function doomViewHost(options: DoomOptions, email: string, hold = viewHold) {
+export function doomViewHost(
+  options: DoomOptions & { readonly originals?: OriginalStore | undefined },
+  email: string,
+  hold = viewHold,
+) {
   return {
     open: (raw: unknown) =>
       answerRead(doomRoutes.open.read, raw, (parsed) => {
@@ -122,6 +128,8 @@ export function doomViewHost(options: DoomOptions, email: string, hold = viewHol
       }),
     screenshots: (raw: unknown) =>
       answerRead(doomRoutes.screenshots.read, raw, (parsed) => keptScreenshots(options, parsed, email)),
+    media: (raw: unknown) =>
+      answerRead(viewMedia.read, raw, (parsed) => mediaBytes(options.deck, parsed, email, options.originals)),
   }
 }
 

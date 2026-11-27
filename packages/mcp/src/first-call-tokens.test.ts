@@ -43,6 +43,7 @@ const deckView: ViewHost = {
   open: unanswered,
   since: unanswered,
   screenshots: unanswered,
+  media: unanswered,
 }
 
 async function firstCall(view: ViewHost | null = deckView): Promise<{ listing: Listing; instructions: string }> {

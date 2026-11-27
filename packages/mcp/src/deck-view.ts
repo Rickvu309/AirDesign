@@ -6,6 +6,7 @@ export type ViewHost = {
   readonly open: (body: unknown) => Promise<unknown>
   readonly since: (body: unknown, signal: AbortSignal) => Promise<unknown>
   readonly screenshots: (body: unknown) => Promise<unknown>
+  readonly media: (body: unknown) => Promise<unknown>
 }
 
 export const deckViewUri = "ui://airdesign/deck.html"
@@ -85,6 +86,10 @@ export function deckView(host: ViewHost) {
         [viewTools.screenshots]: {
           description: "Deliver the view's slide screenshots.",
           answer: (body: unknown) => host.screenshots(body),
+        },
+        [viewTools.media]: {
+          description: "Read an image the deck holds.",
+          answer: (body: unknown) => host.media(body),
         },
       }
       for (const [name, tool] of Object.entries(tools))

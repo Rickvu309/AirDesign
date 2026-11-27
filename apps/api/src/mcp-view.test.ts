@@ -5,11 +5,15 @@ import * as doom from "@airdesign/doom"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { postgresInfo, serve, signInByCode } from "./testing/harness.js"
-import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
+import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
+import { DeckListen, openPool, type Mail, type OriginalUpload, type Sql } from "./index.js"
+import { LocalOriginalStore } from "./platform/local-original-store.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 const shot = Buffer.from("a slide painted in the chat").toString("base64")
+const image = Buffer.from("an image placed on the slide")
+const imageHash = createHash("sha256").update(image).digest("hex")
+const store = new LocalOriginalStore()
 
 type Opened = { readonly ok: true; readonly deck: string; readonly rev: number; readonly fold: unknown }
 type Block = { readonly type: string; readonly data?: string }
@@ -31,6 +35,7 @@ describe("the deck view in a chat holds the painter lease and answers an agent's
       listen,
       screenshotWait: 5_000,
       viewHold: 300,
+      originals: store,
       send: async (mail) => void mails.push(mail),
     })
     base = api.base
@@ -63,7 +68,7 @@ describe("the deck view in a chat holds the painter lease and answers an agent's
       arguments: { script: 'createDeck({ name: "Seen" })' },
     })
     const { deck } = made.structuredContent as { deck: string }
-    return { agent, app, deck }
+    return { agent, app, deck, cookie }
   }
 
   it("serves the view's shell from the API's public origin", async () => {
@@ -159,6 +164,37 @@ describe("the deck view in a chat holds the painter lease and answers an agent's
       expect(followed.structuredContent).toMatchObject({ ok: false })
     } finally {
       await agent.close()
+      await stranger.close()
+    }
+  })
+
+  it("hands the view the bytes of an image its account's deck holds, and nothing to another account", async () => {
+    const { agent, app, deck, cookie } = await started()
+    const stranger = await connected(
+      await signInByCode(base, mails, `other${randomBytes(4).toString("hex")}@example.com`),
+    )
+    try {
+      const asked = { deck, sha256: imageHash }
+      expect((await app.callTool({ name: viewTools.media, arguments: asked })).structuredContent).toEqual({
+        ok: false,
+        refusal: "missing",
+      })
+      const placed = await ask(base, "POST", "/decks/media/upload", { ...asked, bytes: image.length }, cookie)
+      const signed = placed.json as OriginalUpload
+      store.put(signed.url, image, signed.headers)
+      expect((await app.callTool({ name: viewTools.media, arguments: asked })).structuredContent).toEqual({
+        ok: true,
+        deck,
+        sha256: imageHash,
+        data: image.toString("base64"),
+      })
+      expect((await stranger.callTool({ name: viewTools.media, arguments: asked })).structuredContent).toEqual({
+        ok: false,
+        refusal: "owner",
+      })
+    } finally {
+      await agent.close()
+      await app.close()
       await stranger.close()
     }
   })

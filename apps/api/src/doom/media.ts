@@ -110,6 +110,20 @@ export async function downloadMedia(
   return { ok: true, ...(await store.download(row.key)), bytes: row.bytes, sha256: parsed.sha256 }
 }
 
+export async function mediaBytes(
+  db: Sql,
+  parsed: { readonly deck: DeckId; readonly sha256: string },
+  email: string,
+  store: OriginalStore | undefined,
+): Promise<unknown> {
+  const missing = await unowned(db, parsed.deck, email)
+  if (missing !== undefined) return missing
+  if (store === undefined) return refused("storage")
+  const bytes = await storedMedia(db, parsed.deck, parsed.sha256, store)
+  if (bytes === undefined) return refused("missing")
+  return { ok: true, deck: parsed.deck, sha256: parsed.sha256, data: Buffer.from(bytes).toString("base64") }
+}
+
 export const mediaAnswers = {
   mediaUpload: uploadMedia,
   media: downloadMedia,

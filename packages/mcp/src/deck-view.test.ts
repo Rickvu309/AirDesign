@@ -9,6 +9,7 @@ import { createServer, createServerHandler, type ViewHost } from "./index.js"
 
 const origin = "https://studio.example"
 const uri = "ui://airdesign/deck.html"
+const image = "a".repeat(64)
 
 type Seen = { readonly tool: string; readonly body: unknown; readonly held?: boolean }
 
@@ -26,6 +27,10 @@ function viewHost(seen: Seen[]): ViewHost {
     screenshots: async (body) => {
       seen.push({ tool: "screenshots", body })
       return { ok: true, deck: "d1", missing: [] }
+    },
+    media: async (body) => {
+      seen.push({ tool: "media", body })
+      return { ok: true, deck: "d1", sha256: image, data: "cGljdHVyZQ==" }
     },
   }
 }
@@ -109,7 +114,7 @@ describe("the deck view as an MCP App", () => {
         mimeTypes: ["text/html;profile=mcp-app"],
       })
       const { tools } = await client.listTools()
-      expect(tools).toHaveLength(9)
+      expect(tools).toHaveLength(10)
       expect(
         tools
           .filter((tool) => uiOf(tool)?.visibility?.includes("app"))
@@ -170,11 +175,14 @@ describe("the deck view as an MCP App", () => {
         arguments: { deck: "d1", rev: 4, screenshots: shots },
       })
       expect(kept.structuredContent).toEqual({ ok: true, deck: "d1", missing: [] })
+      const read = await client.callTool({ name: viewTools.media, arguments: { deck: "d1", sha256: image } })
+      expect(read.structuredContent).toEqual({ ok: true, deck: "d1", sha256: image, data: "cGljdHVyZQ==" })
     })
     expect(seen).toEqual([
       { tool: "open", body: { deck: "d1" } },
       { tool: "since", body: { deck: "d1", rev: 4, wait: true }, held: true },
       { tool: "screenshots", body: { deck: "d1", rev: 4, screenshots: { keys: [], images: [] } } },
+      { tool: "media", body: { deck: "d1", sha256: image } },
     ])
   })
 
