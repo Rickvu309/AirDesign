@@ -176,8 +176,20 @@ const relatedTests = async (base, folder) => {
   return [...new Set(JSON.parse(fs.readFileSync(listed, "utf8")).map((entry) => path.relative(root, entry.file)))]
 }
 
+export function refuseUndefinedFolder(folder) {
+  if (fs.statSync(path.join(folder, "undefined"), { throwIfNoEntry: false })?.isDirectory()) {
+    throw new Error("Remove the top-level undefined/ folder and write evidence to a run directory.")
+  }
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   requirePinnedNode()
+  try {
+    refuseUndefinedFolder(root)
+  } catch (error) {
+    console.error(error.message)
+    process.exit(1)
+  }
   const token = `AIRDESIGN_GATE_RUN_${randomUUID().replaceAll("-", "")}`
   process.env[token] = "1"
   const started = Date.now()

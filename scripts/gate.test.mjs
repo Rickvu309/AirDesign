@@ -1,6 +1,18 @@
+import { throws } from "node:assert/strict"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import { stepsOf } from "./check.mjs"
 import { checkSteps } from "./check-steps.mjs"
-import { ciAlsoRuns, packagesFor, recordedSeconds, runGate, testsFor, unitSecondsBudget } from "./gate.mjs"
+import {
+  ciAlsoRuns,
+  refuseUndefinedFolder,
+  packagesFor,
+  recordedSeconds,
+  runGate,
+  testsFor,
+  unitSecondsBudget,
+} from "./gate.mjs"
 
 const same = (what, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -372,3 +384,16 @@ await runGate({
 })
 same("even a crashed report changes no chosen step", reported, unreported)
 same("a crashed report cannot change push eligibility", reportStamp, 1)
+
+const worktree = mkdtempSync(join(tmpdir(), "gate-root-"))
+try {
+  const stray = join(worktree, "undefined")
+  refuseUndefinedFolder(worktree)
+  writeFileSync(stray, "")
+  refuseUndefinedFolder(worktree)
+  rmSync(stray)
+  mkdirSync(stray)
+  throws(() => refuseUndefinedFolder(worktree), /Remove the top-level undefined\/ folder/)
+} finally {
+  rmSync(worktree, { recursive: true, force: true })
+}
