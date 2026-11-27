@@ -13,7 +13,8 @@
     "paths": {
       "@/*": ["./apps/web/src/*"],
       "@airdesign/*": ["./packages/*/src/index.ts"],
-      "@airdesign/agent/*": ["./packages/agent/src/*.ts"]
+      "@airdesign/agent/*": ["./packages/agent/src/*.ts"],
+      "@airdesign/doom/testing": ["./packages/doom/src/testing/index.ts"]
     }
   },
   "include": [
