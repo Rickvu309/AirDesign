@@ -17,7 +17,7 @@ One thing in Doom: a deck, slide row, slide, frame or shape, named by its `type`
 _Avoid_: element, object, layer (a layer is what a person sees on the slide)
 
 **frame**:
-The one container. It holds nodes and may carry paint, radius, clip, or a layout. A frame with no paint is what a person calls a group.
+The one container. It holds nodes and may carry paint, radius, clip, or a layout. A frame that hugs its children and does not clip is what a person calls a group, and the `group` intent makes one.
 _Avoid_: group (in code), container, artboard
 
 **shape**:
@@ -59,6 +59,10 @@ The deck revision an edit read. An edit with a `readBase` is refused `stale` if 
 How a frame places its children: none, row, column or grid. Laid-out boxes are computed from Doom's nodes, never written.
 _Avoid_: flow, auto layout (in code)
 
+**placement**:
+The position, size, rotation and corners of every layer on a slide, in both slide coordinates and its parent frame's local coordinates. Doom derives it from the nodes and their layout.
+_Avoid_: slide geometry, world box, transform tree
+
 **measure**:
 The function that gives a text its width and height. The canvas and PDF export build it from the fonts on the page (`useDoomSlide`). The agent tools use a measure built from the same font files for layout problems (`servedFontMetrics`, handed in as `host.measure`). A delete that frees a connector end uses that measure, so the stored point is the one that was painted. `measureWith({})` is only an estimate, and a freed end that used it is exact only when the shape's place does not depend on text width.
 _Avoid_: font metrics, text measurement, fallback width
@@ -82,8 +86,8 @@ The JavaScript an agent sends to `airdesign_execute`. It runs in a sandbox on a 
 _Avoid_: program, macro, batch
 
 **operation**:
-One function a script calls: `insert`, `update`, `replace`, `copy`, `move`, `remove`, `group`, `ungroup`, `variables`, `get` or `screenshot`. Each answers at once, so a script uses the new id or the measured box in its next line.
-_Avoid_: tool call, command
+One function a script calls inside `airdesign_execute`: any intent, plus `get` and `screenshot`. Each answers at once, so a script uses the new id or the measured box in its next line.
+_Avoid_: verb, action, helper, tool call
 
 **screenshot**:
 A JPEG of one slide that a device painter took after the edit landed, which `screenshot({ target })` adds to the answer as `screenshots`. A picture is an image layer, never a slide image.
@@ -94,11 +98,11 @@ A device painter's hold on a deck: an open editor tab, or the deck view, in a br
 _Avoid_: watcher, open tab
 
 **intent**:
-What a person or an agent wants done to a deck, such as `add`, `set`, `move` or `delete`. Doom compiles each intent into writes or refuses it. An agent's operation becomes intents, and a person's slide start is built from intents. An `intentSession` compiles intents one at a time and groups the writes into one edit.
-_Avoid_: agent change, change, command, patch
+One atomic change to a deck: `insert`, `update`, `replace`, `copy`, `paste`, `move`, `reorder`, `remove`, `group`, `ungroup` or `variables`. Both the editor and an agent express structural changes as intents, and Doom compiles each into writes or refuses it whole.
+_Avoid_: agent change, command, patch, verb
 
 **look**:
-The choices an intent names for a layer: a theme colour, a text style name, an effect style name, a radius, words as markdown. It never names a gradient, a filter, a preset or a size.
+The visual and layout choices an intent names for a slide or layer, such as its fills, text style, radius or box. Which choices each kind takes is its entry in `kindFields`.
 _Avoid_: style, traits, fields
 
 **grid of words**:
@@ -120,6 +124,10 @@ _Avoid_: empty space, gap
 **reading**:
 What a script saw when its call opened the deck. Its text and list writes carry that revision as their `base`, so a change another writer lands before the call does refuses them as stale.
 _Avoid_: snapshot, readAt
+
+**draft view**:
+The deck state inside an open script after its earlier operations, before the script finishes and lands as one edit. A script's `get` reads the draft view, so it sees its own changes.
+_Avoid_: reading, pending view, working fold
 
 **run**:
 One agent turn on a deck, and that agent's alone. Its first edit opens it (`phase: start`), and `stop_run` or the same agent's next start closes it, so an agent has one open run per deck. Another agent's write into it or stop of it is refused `run-fenced`. A person's write to a layer while it is open closes that layer to the run: the agent's next write to it is refused `person`.
