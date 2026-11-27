@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { contentAreaOf } from "./agent-place.js"
+import { contentAreaOf } from "./intent-place.js"
 import { minter } from "./testing/agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
 import { childrenOf, propOf } from "./doom-walk.js"

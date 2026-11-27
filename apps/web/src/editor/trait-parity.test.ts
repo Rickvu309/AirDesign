@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { compileAgentChange, invert, starts, testTheme } from "@airdesign/doom/testing"
+import { compileIntent, invert, starts, testTheme } from "@airdesign/doom/testing"
 import type { Desc } from "../design/control-desc"
 import { describe, expect, it } from "vitest"
 import { optionCopy } from "../copy/option-copy"
@@ -168,13 +168,7 @@ function agentProps(name: string): ReadonlySet<string> {
   const mint = () => doom.nodeId(`m:${String((next += 1))}`)
   const found = new Set<string>()
   for (const look of looks) {
-    const writes = compileAgentChange(
-      view,
-      { op: "set", target: id(name), ...look } as doom.AgentChange,
-      mint,
-      placement,
-      starts,
-    )
+    const writes = compileIntent(view, { op: "set", target: id(name), ...look } as doom.Intent, mint, placement, starts)
     if (!doom.isRefusal(writes)) for (const write of writes) if (write.node === id(name)) found.add(write.prop)
   }
   return found
@@ -293,7 +287,7 @@ describe("every control of Doom's design panel reaches every layer", () => {
     expect(painting).toEqual([])
   })
 
-  it("names a property as the person's alone only while no agent change writes it", () => {
+  it("names a property as the person's alone only while no intent writes it", () => {
     const open = layers.flatMap((name) => [...agentProps(name)].filter((prop) => personOnlyOnDoom.includes(prop)))
     expect(open).toEqual([])
   })

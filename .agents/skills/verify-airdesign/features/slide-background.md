@@ -9,7 +9,7 @@ On an open deck with no layer selected, the Design panel shows the current slide
 - `background-picture` an image fill picked from a file fills the slide background (`tests/browser/editor-design.spec.ts`).
 - `background-undo` Ctrl/Cmd+Z on the canvas takes the background back to what it was, and a reload keeps the result.
 - `theme` opens the library picker and applies a theme to the whole deck. States `design-template` and `design-theme-options`.
-- `agent-background` `airdesign_execute` with a `set` whose target is the slide's id and a `fill` paints the slide's background (`packages/doom/src/agent-set.test.ts`, "paints a slide's background"), through the same run as every other agent change. The person's Undo for the run takes it back.
+- `agent-background` `airdesign_execute` with a `set` whose target is the slide's id and a `fill` paints the slide's background (`packages/doom/src/intent-set.test.ts`, "paints a slide's background"), through the same run as other intents from the agent. The person's Undo for the run takes it back.
 
 ## How to get to it (user POV)
 

@@ -1,4 +1,4 @@
-import { agentChangesSchema, catalog, projectTools } from "@airdesign/catalog"
+import { intentsSchema, catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
@@ -43,6 +43,6 @@ describe("a shape's outline through the agent tools", () => {
     })
     expect(refused.ok).toBe(false)
     expect(refused.fields).toMatchObject({ field: "shape" })
-    expect(JSON.stringify(agentChangesSchema)).toContain("Lines and connectors are not shapes: add kind line.")
+    expect(JSON.stringify(intentsSchema)).toContain("Lines and connectors are not shapes: add kind line.")
   })
 })

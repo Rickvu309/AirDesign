@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest"
-import type { AgentChange } from "./agent-change.js"
-import { compileAgentChange } from "./agent-compile.js"
+import type { Intent } from "./intent-read.js"
+import { compileIntent } from "./intent-compile.js"
 import { build, compiled, minter } from "./testing/agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
 import { boxOf, childrenOf, parentOf, propOf } from "./doom-walk.js"
 import { isRefusal, moveToSlide, type Doom, type NodeId } from "./index.js"
 import { invert } from "./invert.js"
-import { compileAgentEdit } from "./agent-edit.js"
+import { compileIntents } from "./intent-edit.js"
 import { apply, boxMatrix, identity } from "./matrix.js"
 import { ids, land, person } from "./sample-deck.js"
 import { column, measure, padding, plainTheme, spot } from "./testing/doom-fixtures-art.js"
@@ -17,9 +17,9 @@ import type { Point } from "./resolved.js"
 import { placement } from "./testing/placement-rules.js"
 import { starts } from "./testing/start-rules.js"
 
-const change = (value: Record<string, unknown>) => value as AgentChange
+const change = (value: Record<string, unknown>) => value as Intent
 const refusal = (doom: Doom, value: Record<string, unknown>) =>
-  compileAgentChange(doom, change(value), minter(), placement, starts)
+  compileIntent(doom, change(value), minter(), placement, starts)
 
 function across(view: Doom, moved: readonly NodeId[], slide: NodeId, at: Point) {
   const result = moveToSlide(view, moved, slide, at)
@@ -381,7 +381,7 @@ describe("a move composes the transforms it crosses", () => {
     const boxes = solveLayout(view, from, measure)
     const child = boxes.get(named.flowChild!)!
     const frame = boxes.get(named.flow!)!
-    const result = compileAgentEdit(view, [change({ op: "move", nodes: [named.flowChild!], into: to })], {
+    const result = compileIntents(view, [change({ op: "move", nodes: [named.flowChild!], into: to })], {
       placement,
       starts,
       author: person,

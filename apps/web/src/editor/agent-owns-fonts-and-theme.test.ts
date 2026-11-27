@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { compileAgentChange, starts, testTheme } from "@airdesign/doom/testing"
+import { compileIntent, starts, testTheme } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { nodeModel } from "./design-model"
 import { shownText } from "./design-text-values"
@@ -20,8 +20,8 @@ const title = built.ids.words!
 let minted = 0
 const mint = () => doom.nodeId(`m:${String((minted += 1))}`)
 
-function agentLands(change: doom.AgentChange, view: doom.Doom = built.view): doom.Doom {
-  const writes = compileAgentChange(view, change, mint, placement, starts)
+function agentLands(change: doom.Intent, view: doom.Doom = built.view): doom.Doom {
+  const writes = compileIntent(view, change, mint, placement, starts)
   if (doom.isRefusal(writes)) throw new Error(`refused ${JSON.stringify(writes)}`)
   return landed(view, writes)
 }
@@ -36,7 +36,7 @@ describe("a person keeps no font or theme field, and an agent keeps all of them"
   })
 
   it("lets an agent set a font on a layer, and the panel and painter read it back", () => {
-    const after = agentLands({ op: "set", target: title, font: "Georgia" } as doom.AgentChange)
+    const after = agentLands({ op: "set", target: title, font: "Georgia" } as doom.Intent)
     const text = doom.propOf(after.nodes.get(title), "text")!
     expect(text.spans.map((span) => span.font)).toEqual(["Georgia"])
     expect(shownText(text, doom.deckOf(after).theme).look.font).toEqual({ value: "Georgia", mixed: false })
@@ -49,7 +49,7 @@ describe("a person keeps no font or theme field, and an agent keeps all of them"
         op: "deck",
         colors: { accent1: hexes.red, text2: hexes.navy },
         fonts: { heading: "Lora", body: "Inter" },
-      } as doom.AgentChange),
+      } as doom.Intent),
     ).theme
     expect(after.colors).toEqual({ ...before.colors, accent1: hexes.red, text2: hexes.navy })
     expect(after.fonts).toEqual({ heading: "Lora", body: "Inter" })

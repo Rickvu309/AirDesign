@@ -93,16 +93,16 @@ _Avoid_: picture, slide picture, capture
 A device painter's hold on a deck: an open editor tab, or the deck view, in a browser tab or in a chat as an MCP App. It lasts while the painter waits for screenshot jobs and a few seconds after (`DeckScreenshots.lease`). With no lease, a screenshot answers at once that no painter is open.
 _Avoid_: watcher, open tab
 
-**agent change**:
-What an operation becomes: `add`, `set`, `move`, `wrap`, `unwrap`, `delete`, `duplicate`, `deck` or `slide`. `compileAgentChange` turns it into writes, or refuses it by name; `agentEditSession` compiles a script's changes one at a time and finishes them as one edit of the agent's run. Nothing else turns agent words into writes.
-_Avoid_: command, patch, tool call
+**intent**:
+What a person or an agent wants done to a deck, such as `add`, `set`, `move` or `delete`. Doom compiles each intent into writes or refuses it. An agent's operation becomes intents, and a person's slide start is built from intents. An `intentSession` compiles intents one at a time and groups the writes into one edit.
+_Avoid_: agent change, change, command, patch
 
 **look**:
-The choices an agent names for a layer: a theme colour, a text style name, an effect style name, a radius, words as markdown. It never names a gradient, a filter, a preset or a size.
+The choices an intent names for a layer: a theme colour, a text style name, an effect style name, a radius, words as markdown. It never names a gradient, a filter, a preset or a size.
 _Avoid_: style, traits, fields
 
 **grid of words**:
-A frame added with `rows`, one list of cells per row. The first row is the header, number columns align right, and a final total row is bold. Which label makes a total row, and the weight and ink of the header and row rules, come from taste in `PlacementRules`.
+A frame added with `rows`, one list of cells per row. The first row is the header, number columns align right, and a final total row is bold. Taste supplies the grid and rule names, the pattern for total rows, and the weight and ink of the header and row rules in `PlacementRules`.
 A grid too tight for its box is refused `limit` with `grid`: the first cell whose widest word does not fit, as its row, column, word and widths, or the rows and heights when every word fits but the rows do not. The agent pack words it.
 
 **problem**:

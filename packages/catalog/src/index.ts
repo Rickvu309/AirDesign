@@ -1,4 +1,4 @@
-export { agentChangesSchema } from "./agent-schema.js"
+export { intentsSchema } from "./intent-schema.js"
 export { refusalCopy } from "./refusal-words.js"
 export {
   airaScreenshotBytes,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import type { AgentChange } from "./agent-change.js"
+import type { Intent } from "./intent-read.js"
 import { agentDeck, apply, build, compiled, minter } from "./testing/agent-fixtures.js"
 import { measureWith } from "./measure.js"
 import { solveLayout } from "./solve-layout.js"
@@ -78,12 +78,12 @@ describe("a title that hugs its lines", () => {
     const read = solveLayout(doom, ids.slide, estimate).get(title.id)!
     expect(read.y + read.h).toBe(540)
     const long = "Quarterly review for the board and every team that reports to it"
-    const wrapped = build(doom, { op: "set", target: title.id, text: long } as unknown as AgentChange)
+    const wrapped = build(doom, { op: "set", target: title.id, text: long } as unknown as Intent)
     const boxes = solveLayout(wrapped, ids.slide, estimate)
     const tall = boxes.get(title.id)!
     expect(tall.h).toBeGreaterThan(read.h)
     expect(tall.y + tall.h).toBe(540)
-    const change = { op: "set", target: title.id, box: { y: 100 } } as unknown as AgentChange
+    const change = { op: "set", target: title.id, box: { y: 100 } } as unknown as Intent
     const moved = apply(wrapped, compiled(wrapped, change, minter("m"), { boxes }))
     expect(solveLayout(moved, ids.slide, estimate).get(title.id)).toMatchObject({ y: 100, h: tall.h })
     expect(propOf(byRole(moved, "title"), "text")!.resize).toBe("height")

@@ -1,7 +1,7 @@
 import type { Expectation } from "./refusal.js"
 import { describe, expect, it } from "vitest"
-import { type AgentChange, readAgentChange } from "./agent-change.js"
-import { compileAgentChange } from "./agent-compile.js"
+import { type Intent, readIntent } from "./intent-read.js"
+import { compileIntent } from "./intent-compile.js"
 import { minter } from "./testing/agent-fixtures.js"
 import { richDeck } from "./testing/rich-deck.js"
 import { hex, ids, land } from "./sample-deck.js"
@@ -20,7 +20,7 @@ const hiddenCaption = {
 
 describe("a field refusal names the path, fault and expected value", () => {
   it("refuses the empty hidden caption from the audit as the wrong form of text", () => {
-    expect(readAgentChange(hiddenCaption)).toMatchObject({
+    expect(readIntent(hiddenCaption)).toMatchObject({
       refused: "shape",
       field: "text",
       fault: "form",
@@ -29,33 +29,33 @@ describe("a field refusal names the path, fault and expected value", () => {
   })
 
   it("names a missing field, an unknown field and a value in the wrong form", () => {
-    expect(readAgentChange({ op: "add", kind: "text" })).toMatchObject({
+    expect(readIntent({ op: "add", kind: "text" })).toMatchObject({
       refused: "shape",
       field: "slide",
       fault: "missing",
     })
-    expect(readAgentChange({ op: "set", target: "t:3", nope: true })).toMatchObject({
+    expect(readIntent({ op: "set", target: "t:3", nope: true })).toMatchObject({
       refused: "shape",
       field: "nope",
       fault: "unknown",
     })
-    expect(readAgentChange({ op: "set", target: "t:3", opacity: 2 })).toMatchObject({
+    expect(readIntent({ op: "set", target: "t:3", opacity: 2 })).toMatchObject({
       refused: "shape",
       field: "opacity",
       fault: "form",
       expect: { code: "number-range", min: 0, max: 1 },
     })
-    expect(readAgentChange({ op: "paint" })).toMatchObject({
+    expect(readIntent({ op: "paint" })).toMatchObject({
       refused: "shape",
       field: "op",
       fault: "unknown",
     })
-    expect(readAgentChange("add")).toMatchObject({
+    expect(readIntent("add")).toMatchObject({
       refused: "shape",
       field: "op",
       fault: "form",
     })
-    const nested = readAgentChange({ op: "set", target: "t:3", box: { x: 0, y: 0, w: "wide", h: 10 } })
+    const nested = readIntent({ op: "set", target: "t:3", box: { x: 0, y: 0, w: "wide", h: 10 } })
     expect(nested).toMatchObject({ refused: "shape", field: "box.w", fault: "form" })
   })
 })
@@ -225,7 +225,7 @@ const readRows: {
 describe("each refused edit names its own path", () => {
   it("keeps the field, fault and expectation code", () => {
     for (const row of readRows) {
-      expect(readAgentChange(row.raw), JSON.stringify(row.raw)).toMatchObject({
+      expect(readIntent(row.raw), JSON.stringify(row.raw)).toMatchObject({
         refused: "shape",
         field: row.field,
         fault: row.fault,
@@ -235,9 +235,9 @@ describe("each refused edit names its own path", () => {
   })
 
   it("states a layer-kind condition as needs, and leaves a form off an unknown field", () => {
-    const set = (target: string, look: Record<string, unknown>) => ({ op: "set", target, ...look }) as AgentChange
-    const needs = (change: AgentChange, field: string, condition: Expectation) => {
-      const refused = compileAgentChange(richDeck(), change, minter(), placement, starts)
+    const set = (target: string, look: Record<string, unknown>) => ({ op: "set", target, ...look }) as Intent
+    const needs = (change: Intent, field: string, condition: Expectation) => {
+      const refused = compileIntent(richDeck(), change, minter(), placement, starts)
       expect(refused, field).toMatchObject({ refused: "shape", field, fault: "needs", expect: condition })
     }
     needs(set(ids.title, { icon: "star" }), "icon", { code: "needs-icon" })
@@ -257,7 +257,7 @@ describe("each refused edit names its own path", () => {
     const pictured = land(richDeck(), [
       { node: ids.title, prop: "fills", value: [{ kind: "image", asset: "a".repeat(64), fit: "tile" }] },
     ])
-    const fought = compileAgentChange(
+    const fought = compileIntent(
       pictured,
       set(ids.title, { fit: "tile", crop: { left: 10 } }),
       minter(),
@@ -265,26 +265,20 @@ describe("each refused edit names its own path", () => {
       starts,
     )
     expect(fought).toMatchObject({ refused: "shape", field: "crop", fault: "form", expect: { code: "crop-fit" } })
-    const both = compileAgentChange(
-      richDeck(),
-      set(ids.title, { text: "A", insert: linked }),
-      minter(),
-      placement,
-      starts,
-    )
+    const both = compileIntent(richDeck(), set(ids.title, { text: "A", insert: linked }), minter(), placement, starts)
     expect(both).toMatchObject({
       refused: "shape",
       field: "insert",
       fault: "form",
       expect: { code: "insert-or-text" },
     })
-    const text = compileAgentChange(richDeck(), set(ids.card, { text: "Hi" }), minter(), placement, starts)
+    const text = compileIntent(richDeck(), set(ids.card, { text: "Hi" }), minter(), placement, starts)
     expect(text).toMatchObject({ refused: "shape", field: "text", fault: "unknown" })
     expect(text).not.toHaveProperty("expect")
-    const clip = compileAgentChange(richDeck(), set(ids.title, { clip: true }), minter(), placement, starts)
+    const clip = compileIntent(richDeck(), set(ids.title, { clip: true }), minter(), placement, starts)
     expect(clip).toMatchObject({ refused: "shape", field: "clip", fault: "unknown" })
     expect(clip).not.toHaveProperty("expect")
-    const strength = compileAgentChange(richDeck(), set(ids.slide, { effectOpacity: 0.4 }), minter(), placement, starts)
+    const strength = compileIntent(richDeck(), set(ids.slide, { effectOpacity: 0.4 }), minter(), placement, starts)
     expect(strength).toMatchObject({ refused: "shape", field: "effectOpacity", fault: "unknown" })
     expect(strength).not.toHaveProperty("expect")
   })

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { deckNameFollows, nameFromTitleWrites as derivedWrites } from "./deck-name-from-title.js"
 import { agentDeck, apply, build, minter, runName } from "./testing/agent-fixtures.js"
-import { compileAgentEdit } from "./agent-edit.js"
-import { readAgentChange } from "./agent-change.js"
+import { compileIntents } from "./intent-edit.js"
+import { readIntent } from "./intent-read.js"
 import { agent, ids } from "./sample-deck.js"
 import { titleSlideWrites } from "./slide-placeholders.js"
 import { applyEdit, isRefusal, orderKeyBetween, rev, type Doom, type NodeId, type Write } from "./index.js"
@@ -115,7 +115,7 @@ describe("a deck whose name follows its first title", () => {
 
   it("names the deck for the next slide's title when an agent deletes slide 1, as a person's delete does", () => {
     const { doom } = twoSlides("Alpha", "Beta")
-    const edit = compileAgentEdit(doom, [{ op: "slide", delete: ids.slide }], {
+    const edit = compileIntents(doom, [{ op: "slide", delete: ids.slide }], {
       placement,
       starts,
       author: agent(runName),
@@ -161,7 +161,7 @@ describe("a deck whose name follows its first title", () => {
 
   it("keeps an agent's name when the same edit retitles slide 1", () => {
     const doom = titled(starts.deckName, true)
-    const edit = compileAgentEdit(
+    const edit = compileIntents(
       doom,
       [
         { op: "deck", name: "Board pack" },
@@ -199,7 +199,7 @@ describe("a deck whose name follows its first title", () => {
         rev: rev(doom.rev + 1),
       })
       expect(isRefusal(landed)).toBe(true)
-      expect(readAgentChange({ op: "deck", name: value })).toHaveProperty("refused")
+      expect(readIntent({ op: "deck", name: value })).toHaveProperty("refused")
     }
   })
 
@@ -246,7 +246,7 @@ describe("a deck whose name follows its first title", () => {
 
   it("names the deck in the same agent edit that fills the title", () => {
     const doom = titled(starts.deckName, true)
-    const edit = compileAgentEdit(
+    const edit = compileIntents(
       doom,
       [{ op: "add", kind: "text", slide: ids.slide, text: "Q3 board update", textStyle: "title" }],
       { placement, starts, author: agent(runName), once: "fill", mint: minter("m") },

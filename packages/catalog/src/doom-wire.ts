@@ -47,7 +47,7 @@ export type DoomRan = DoomResult<{
 
 export const screenshotsWantedMilliseconds = 120_000
 
-export const nodeIdPattern = new RegExp(doom.agentChangesSchema.$defs.id.pattern)
+export const nodeIdPattern = new RegExp(doom.intentsSchema.$defs.id.pattern)
 
 const payload: DoomRefusal = { ok: false, refusal: "payload" }
 const refusedKinds: readonly string[] = [

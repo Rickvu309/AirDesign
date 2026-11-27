@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { UnionControl } from "../design/controls/union"
 import { ColorControl } from "../design/controls/color"
 import * as doom from "@airdesign/doom"
-import { type AgentColor, colorVars, compileAgentChange, starts, testTheme } from "@airdesign/doom/testing"
+import { type IntentColor, colorVars, compileIntent, starts, testTheme } from "@airdesign/doom/testing"
 import type { Desc } from "../design/control-desc"
 import { describe, expect, it } from "vitest"
 import type { PanelControl } from "../design/panel"
@@ -91,7 +91,7 @@ const propOfField: Readonly<Record<Field, "fills" | "strokes" | "text">> = {
   color: "text",
 }
 const displayOnly = ["positive", "negative", "total"] as const
-const agentColors: readonly AgentColor[] = [...doom.paletteColorVars, `${hash}1f4e79`]
+const agentColors: readonly IntentColor[] = [...doom.paletteColorVars, `${hash}1f4e79`]
 
 function colored(desc: Desc): boolean {
   switch (desc.kind) {
@@ -132,7 +132,7 @@ function colorsIn(value: unknown): readonly string[] {
   return [...own, ...Object.values(value).flatMap(colorsIn)]
 }
 
-const doomColor = (color: AgentColor): doom.Color =>
+const doomColor = (color: IntentColor): doom.Color =>
   color.startsWith(hash) ? (color.toLowerCase() as doom.Hex) : { var: color as doom.ColorVar }
 
 function shows(after: doom.Doom, name: string, prop: string, color: doom.Color): boolean {
@@ -167,13 +167,7 @@ describe("colour controls and agent colours", () => {
     for (const [name, fields] of Object.entries(sends))
       for (const field of fields)
         for (const color of agentColors) {
-          const writes = compileAgentChange(
-            view,
-            { op: "set", target: id(name), [field]: color },
-            mint,
-            placement,
-            starts,
-          )
+          const writes = compileIntent(view, { op: "set", target: id(name), [field]: color }, mint, placement, starts)
           const prop = propOfField[field]
           const wanted = doomColor(color)
           if (doom.isRefusal(writes) || !shows(landed(view, writes), name, prop, wanted)) {
@@ -205,7 +199,7 @@ describe("colour controls and agent colours", () => {
     const theme = newDeckTheme
     for (const tint of [undefined, 0.2]) {
       const color = tint === undefined ? { var: role } : { var: role, tint }
-      const writes = compileAgentChange(
+      const writes = compileIntent(
         view,
         { op: "set", target: id("card"), fill: tint === undefined ? role : `${role}+20` },
         () => doom.nodeId("m:1"),

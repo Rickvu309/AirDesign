@@ -13,6 +13,8 @@ export const placementRules: PlacementRules = {
   lineWeight: 3,
   strokeWeight: 2,
   table: {
+    name: "Grid",
+    ruleName: "Rule",
     totalRow: /^(?:grand\s+)?total\b/iu,
     headerRule: { weight: 2, ink: { kind: "solid", color: { var: "text" } } },
     rowRule: { weight: 1, ink: { kind: "solid", color: { var: "text", tint: 0.8 } } },

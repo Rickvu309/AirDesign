@@ -250,7 +250,7 @@ export async function measuredSteps<Done>(
 
 export async function landEdit(
   opened: Opened,
-  compiled: doom.AgentEdit,
+  compiled: doom.IntentEdit,
   host: DeckHost,
   lastRead: doom.Rev,
 ): Promise<Landed | Answer> {

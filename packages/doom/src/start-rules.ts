@@ -1,8 +1,8 @@
-import type { AgentChange } from "./agent-change.js"
+import type { Intent } from "./intent-read.js"
 
 type Unplaced<C> = C extends { readonly slide: unknown } ? Omit<C, "slide"> : never
 
-export type StartContent = Unplaced<Extract<AgentChange, { readonly op: "add" }>>
+export type StartContent = Unplaced<Extract<Intent, { readonly op: "add" }>>
 export type Placeholder = { readonly name: string; readonly chars: string }
 
 export type StartRules = {

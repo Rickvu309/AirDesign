@@ -1,6 +1,6 @@
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { compileAgentChange, starts, testTheme } from "@airdesign/doom/testing"
+import { compileIntent, starts, testTheme } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { dropped, landed, queueEdit, sendable, shown, releaseBases, releasedBases, type Queued } from "./doom-queue.js"
 import { placement } from "@airdesign/doom/testing"
@@ -320,13 +320,7 @@ describe("a move queued before another tab deletes a layer", () => {
     const start = grown.doom
     const first = grown.ids.first!
     const into = grown.slides[1]!
-    const writes = compileAgentChange(
-      start,
-      { op: "move", node: first, into },
-      () => doom.nodeId("n:55"),
-      placement,
-      starts,
-    )
+    const writes = compileIntent(start, { op: "move", node: first, into }, () => doom.nodeId("n:55"), placement, starts)
     if ("refused" in writes) throw new Error(JSON.stringify(writes))
     const pending = queueEdit(start, [], { once: "old-move", author: person, writes })
     if (doom.isRefusal(pending)) throw new Error(JSON.stringify(pending))

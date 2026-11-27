@@ -1,5 +1,5 @@
-import type { AgentChange } from "./agent-change.js"
-import { compileAgentEdit } from "./agent-edit.js"
+import type { Intent } from "./intent-read.js"
+import { compileIntents } from "./intent-edit.js"
 import { applyEdit } from "./apply-edit.js"
 import { deckOf } from "./deck-of.js"
 import type { Author, Doom, Write } from "./doom.js"
@@ -15,9 +15,9 @@ export type SlideStart = (typeof slideStarts)[number] | "titleOnly"
 
 const author: Author = { kind: "person", id: "slide-start" }
 
-function contentOf(start: SlideStart, slide: NodeId, starts: StartRules): readonly AgentChange[] {
+function contentOf(start: SlideStart, slide: NodeId, starts: StartRules): readonly Intent[] {
   const content = start === "text" || start === "grid" ? starts.content[start] : []
-  return content.map((change) => ({ ...change, slide }))
+  return content.map((intent) => ({ ...intent, slide }))
 }
 
 function placeholdersOf(
@@ -43,9 +43,9 @@ export function slideStartWrites(
   const placeholders = placeholdersOf(start, slide, mint, deckOf(doom).size, starts)
   const placed = applyEdit(doom, { once: "slide-start", author, writes: placeholders, rev: rev(doom.rev + 1) })
   if (isRefusal(placed)) return placeholders
-  const changes = contentOf(start, slide, starts)
-  if (changes.length === 0) return placeholders
-  const compiled = compileAgentEdit(placed, changes, {
+  const intents = contentOf(start, slide, starts)
+  if (intents.length === 0) return placeholders
+  const compiled = compileIntents(placed, intents, {
     author,
     once: "slide-start-content",
     mint,

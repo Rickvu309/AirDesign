@@ -13,7 +13,7 @@ import {
   type Sides,
   type Span,
   type Text,
-  agentKind,
+  layerKind,
   childrenOf,
   cropSides,
   isLaidOut,
@@ -220,7 +220,7 @@ function lineOf(
   detail: NodeId | undefined,
 ): string {
   const role = propOf(node, "role")
-  const kind = `${agentKind(node)}${role === undefined ? "" : `:${role}`}`
+  const kind = `${layerKind(node)}${role === undefined ? "" : `:${role}`}`
   const place = placeWords(doom, node, boxes)
   return `${"  ".repeat(depth)}${[node.id, kind, ...(place === undefined ? [] : [place]), ...looksOf(node, node.id === detail)].join(" ")}`
 }

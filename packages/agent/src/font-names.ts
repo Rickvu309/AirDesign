@@ -3,42 +3,42 @@ import type * as doom from "@airdesign/doom"
 import { told, type Answer } from "./answer.js"
 
 type Fonts =
-  | { readonly ok: true; readonly changes: readonly doom.AgentChange[] }
+  | { readonly ok: true; readonly intents: readonly doom.Intent[] }
   | { readonly ok: false; readonly result: Answer }
 
 type Named = { readonly field: string; readonly font: string }
 
-function fontsOf(change: doom.AgentChange): readonly Named[] {
-  if ((change.op === "add" || change.op === "set") && change.font !== undefined)
-    return [{ field: "font", font: change.font }]
-  if (change.op !== "deck" || change.fonts === undefined) return []
-  return Object.entries(change.fonts).map(([slot, font]) => ({ field: `fonts.${slot}`, font }))
+function fontsOf(intent: doom.Intent): readonly Named[] {
+  if ((intent.op === "add" || intent.op === "set") && intent.font !== undefined)
+    return [{ field: "font", font: intent.font }]
+  if (intent.op !== "deck" || intent.fonts === undefined) return []
+  return Object.entries(intent.fonts).map(([slot, font]) => ({ field: `fonts.${slot}`, font }))
 }
 
-function served(change: doom.AgentChange): doom.AgentChange {
+function served(intent: doom.Intent): doom.Intent {
   const family = (font: string) => resolveFont(font)?.family ?? font
-  if ((change.op === "add" || change.op === "set") && change.font !== undefined)
-    return { ...change, font: family(change.font) }
-  if (change.op !== "deck" || change.fonts === undefined) return change
-  const fonts = Object.fromEntries(Object.entries(change.fonts).map(([slot, font]) => [slot, family(font)]))
-  return { ...change, fonts }
+  if ((intent.op === "add" || intent.op === "set") && intent.font !== undefined)
+    return { ...intent, font: family(intent.font) }
+  if (intent.op !== "deck" || intent.fonts === undefined) return intent
+  const fonts = Object.fromEntries(Object.entries(intent.fonts).map(([slot, font]) => [slot, family(font)]))
+  return { ...intent, fonts }
 }
 
-export function withCatalogFonts(changes: readonly doom.AgentChange[]): Fonts {
-  for (const [at, change] of changes.entries()) {
-    const unknown = fontsOf(change).find(({ font }) => resolveFont(font) === undefined)
+export function withCatalogFonts(intents: readonly doom.Intent[]): Fonts {
+  for (const [at, intent] of intents.entries()) {
+    const unknown = fontsOf(intent).find(({ font }) => resolveFont(font) === undefined)
     if (unknown !== undefined)
       return {
         ok: false,
         result: told(false, {
           ok: false,
           refusal: "field",
-          change: change.op,
+          change: intent.op,
           at,
           field: unknown.field,
-          note: `Change ${String(at + 1)} (${change.op}): field ${unknown.field}. ${unknown.font} is not in AirDesign's font catalog, so nothing landed. Name a family the catalog holds, such as Inter, Montserrat, Lora or Playfair Display.`,
+          note: `Change ${String(at + 1)} (${intent.op}): field ${unknown.field}. ${unknown.font} is not in AirDesign's font catalog, so nothing landed. Name a family the catalog holds, such as Inter, Montserrat, Lora or Playfair Display.`,
         }),
       }
   }
-  return { ok: true, changes: changes.map(served) }
+  return { ok: true, intents: intents.map(served) }
 }

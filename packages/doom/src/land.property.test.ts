@@ -1,7 +1,7 @@
 import fc from "fast-check"
 import { expect, it } from "vitest"
-import { type AgentChange, readAgentChange } from "./agent-change.js"
-import { compileAgentChange } from "./agent-compile.js"
+import { type Intent, readIntent } from "./intent-read.js"
+import { compileIntent } from "./intent-compile.js"
 import { applyEdit, applyStep } from "./apply-edit.js"
 import { changingWrites } from "./changing-writes.js"
 import { nameFromTitleWrites } from "./deck-name-from-title.js"
@@ -13,8 +13,8 @@ import { type NodeId, rev } from "./ids.js"
 import { type Landing, land } from "./land.js"
 import { type OrderKey, orderKeyBetween } from "./order-key.js"
 import { type Refusal, isRefusal } from "./refusal.js"
-import { sampleDeck } from "./sample-deck.js"
-import { agentBatches, resolveRefs } from "./testing/agent-changes.js"
+import { ids, sampleDeck } from "./sample-deck.js"
+import { agentBatches, resolveRefs } from "./testing/intents.js"
 import { minter, runName, titledSlide } from "./testing/agent-fixtures.js"
 import { measure, plainTheme, spot, words } from "./testing/doom-fixtures-art.js"
 import { attached } from "./testing/line-end-fixtures.js"
@@ -162,7 +162,7 @@ it("lands a person's writes as the editor composed them: what changes, the name 
 
 function agentWrites(
   fold: Doom,
-  changes: readonly AgentChange[],
+  changes: readonly Intent[],
   mint: () => NodeId,
   once: string,
   phase: "start" | undefined,
@@ -170,7 +170,7 @@ function agentWrites(
   const all: Write[] = []
   let view = fold
   for (const [at, change] of changes.entries()) {
-    const compiled = compileAgentChange(view, change, mint, placement, starts, { read: fold })
+    const compiled = compileIntent(view, change, mint, placement, starts, { read: fold })
     if ("refused" in compiled) return undefined
     const edit: Edit = {
       once: `${once}#${at}`,
@@ -187,15 +187,18 @@ function agentWrites(
 }
 
 it("lands an agent's compiled writes as its session composed them", () => {
-  const decks = [sampleDeck(), richDeck(), titledSlide().doom]
+  const titled = titledSlide()
+  const linked = lineDeck(starts.deckName)
+  const decks = [sampleDeck(), richDeck(), titled.doom, linked.doom]
+  const rawBatches: fc.Arbitrary<readonly (readonly unknown[])[]> = agentBatches
   const seen = { compared: 0, named: 0, freed: 0, refused: 0 }
   fc.assert(
-    fc.property(fc.nat(decks.length - 1), agentBatches, (start, batches) => {
+    fc.property(fc.nat(decks.length - 1), rawBatches, (start, batches) => {
       let fold = decks[start]!
       const mint = minter("p")
       for (const [index, batch] of batches.entries()) {
-        const read = (JSON.parse(JSON.stringify(resolveRefs(fold, batch))) as readonly unknown[]).map(readAgentChange)
-        const changes = read.filter((each): each is AgentChange => !("refused" in each))
+        const read = (JSON.parse(JSON.stringify(resolveRefs(fold, batch))) as readonly unknown[]).map(readIntent)
+        const changes = read.filter((each): each is Intent => !("refused" in each))
         if (changes.length === 0 || changes.length < read.length) continue
         const once = `p-${index}`
         const phase = fold.runs.has(runName) ? undefined : ("start" as const)
@@ -213,7 +216,14 @@ it("lands an agent's compiled writes as its session composed them", () => {
         }
       }
     }),
-    { numRuns: 300 },
+    {
+      numRuns: 300,
+      examples: [
+        [2, [[{ op: "set", target: `${titled.on}.title`, text: "Board update" }]]],
+        [3, [[{ op: "delete", nodes: [linked.ids.t] }]]],
+        [0, [[{ op: "slide", delete: ids.slide }]]],
+      ],
+    },
   )
   expect(seen.compared).toBeGreaterThan(0)
   expect(seen.named).toBeGreaterThan(0)

@@ -1,4 +1,4 @@
-export { type AgentChange, type AgentRefusal, agentChangesSchema, readAgentChange } from "./agent-change.js"
+export { type Intent, type IntentRefusal, intentsSchema, readIntent } from "./intent-read.js"
 export { wrapDegrees, wrapRotation } from "./angle.js"
 export {
   type Matrix,
@@ -14,7 +14,7 @@ export {
 export { pictureFit } from "./picture-fit.js"
 export { coverCrop, cropSides, type ImageCrop } from "./picture-crop.js"
 export { slideKeyText } from "./slide-key.js"
-export { type AgentEdit, type AgentSession, type Bake, agentEditSession } from "./agent-edit.js"
+export { type IntentEdit, type IntentSession, type Bake, intentSession } from "./intent-edit.js"
 export type { ThemeProblem } from "./theme-problems.js"
 export {
   type LayoutProblem,
@@ -25,8 +25,8 @@ export {
   touchedSlides,
   unmeasuredTexts,
 } from "./layout-problems.js"
-export { kindOf as agentKind } from "./layer-kind.js"
-export { uniformAlign, uniformColor } from "./agent-look.js"
+export { kindOf as layerKind } from "./layer-kind.js"
+export { uniformAlign, uniformColor } from "./intent-look.js"
 export { applyEdit, countsOf, hasDeck, landEdit } from "./apply-edit.js"
 export { readFold, readLanded, readRuns, readStoredNode, revsToJson, runsToJson } from "./fold-json.js"
 export { type End, type Geometry, lineArrowheads } from "./geometry.js"
@@ -107,7 +107,7 @@ export {
 } from "./doom-walk.js"
 export { liveRuns } from "./live-runs.js"
 export { type Face, type FaceNeeds, doomFaces } from "./text-faces.js"
-export { contentAreaOf, gapFor } from "./agent-place.js"
+export { contentAreaOf, gapFor } from "./intent-place.js"
 export type { PlacementRules } from "./placement-rules.js"
 export type { StartRules } from "./start-rules.js"
 export { titleSlideWrites } from "./slide-placeholders.js"

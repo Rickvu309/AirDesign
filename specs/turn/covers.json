@@ -4,8 +4,8 @@
     {
       "file": "packages/agent/src/execute-tool.ts",
       "names": ["executeTool"],
-      "digest": "3bca6f3094aa",
-      "blob": "a8a176c2d2422680365cf19b726de242ca9c1ac3"
+      "digest": "76ede65e8a23",
+      "blob": "a3b648bf316b63cd92312cd6ca29a4b38a1185d9"
     },
     {
       "file": "packages/doom/src/apply-edit.ts",

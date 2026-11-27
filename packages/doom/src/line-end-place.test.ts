@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { compileAgentEdit } from "./agent-edit.js"
+import { compileIntents } from "./intent-edit.js"
 import { compiled, minter, runName, started } from "./testing/agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
 import type { NodeId } from "./ids.js"
@@ -148,7 +148,7 @@ describe("a connector whose place depends on text width", () => {
     const gone = detach([grown.ids.t!])
     const person = step(grown.doom, "person", freeLineEnds(grown.doom, gone, wide)).after
     const agentWrites = compiled(grown.doom, { op: "delete", nodes: [grown.ids.t!] }, minter(), { measure: wide })
-    const edited = compileAgentEdit(started(grown.doom), [{ op: "delete", nodes: [grown.ids.t!] }], {
+    const edited = compileIntents(started(grown.doom), [{ op: "delete", nodes: [grown.ids.t!] }], {
       placement,
       starts,
       author: agent(runName),

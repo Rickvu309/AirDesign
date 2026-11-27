@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { compileAgentChange, starts, testTheme } from "@airdesign/doom/testing"
+import { compileIntent, starts, testTheme } from "@airdesign/doom/testing"
 import { gestures } from "@/lib/gestures"
 import { describe, expect, it } from "vitest"
 import { nodeModel } from "./editor/design-model"
@@ -149,7 +149,7 @@ describe("every capability a person has names its agent word, or says why it is 
 
   it("keeps a capability owed only while an agent cannot say it", () => {
     const said = entries.flatMap(([key, entry]) =>
-      "owed" in entry && entry.probe !== undefined && !doom.isRefusal(doom.readAgentChange(entry.probe)) ? [key] : [],
+      "owed" in entry && entry.probe !== undefined && !doom.isRefusal(doom.readIntent(entry.probe)) ? [key] : [],
     )
     expect(said).toEqual([])
   })
@@ -190,11 +190,11 @@ describe("every capability a person has names its agent word, or says why it is 
       { node: first!.id, prop: "parent", value: null },
     ])
     const entry = reach[capability]
-    if (entry === undefined || !("agent" in entry)) throw new Error(`${capability} needs an agent change`)
-    const change = doom.readAgentChange(entry.probe)
+    if (entry === undefined || !("agent" in entry)) throw new Error(`${capability} needs an intent`)
+    const change = doom.readIntent(entry.probe)
     if (doom.isRefusal(change)) throw new Error(JSON.stringify(change))
     let minted = 0
-    const writes = compileAgentChange(view, change, () => doom.nodeId(`new:${++minted}`), placement, starts)
+    const writes = compileIntent(view, change, () => doom.nodeId(`new:${++minted}`), placement, starts)
     if ("refused" in writes) throw new Error(JSON.stringify(writes))
     const after = land(view, { kind: "person", id: "parity" }, writes)
     expect(doom.slideGroups(after).map((group) => group.slides)).toEqual(groups)

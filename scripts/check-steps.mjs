@@ -300,7 +300,7 @@ const rows = [
     kind: "rule",
     command: "node",
     args: ["scripts/doom-never-knows.mjs"],
-    verdict: "warn",
+    verdict: "block",
     showOnSuccess: true,
   },
   {

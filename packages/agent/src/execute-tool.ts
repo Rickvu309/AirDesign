@@ -72,11 +72,11 @@ function stopped(plan: Pick<Plan, "ops" | "refused">, end: Extract<ScriptEnd, { 
 }
 
 function landRefused(plan: Plan, result: Answer): Answer {
-  const change = typeof result.fields.at === "number" ? plan.changeOps[result.fields.at] : undefined
+  const operation = typeof result.fields.at === "number" ? plan.intentOps[result.fields.at] : undefined
   const { at: _at, change: _change, note: _note, ...rest } = result.fields
-  if (change === undefined) return told(false, { ...rest, note: `Nothing landed. ${String(result.fields.note)}` })
-  const note = `Operation ${String(change.op)} (${change.verb}): ${opNote(plan, change.verb, result.fields)}`
-  return told(false, { ...rest, op: change.op, verb: change.verb, note: `Nothing landed. ${note}` })
+  if (operation === undefined) return told(false, { ...rest, note: `Nothing landed. ${String(result.fields.note)}` })
+  const note = `Operation ${String(operation.op)} (${operation.verb}): ${opNote(plan, operation.verb, result.fields)}`
+  return told(false, { ...rest, op: operation.op, verb: operation.verb, note: `Nothing landed. ${note}` })
 }
 
 async function screenshots(plan: Plan, host: DeckHost) {
@@ -217,7 +217,7 @@ export async function executeTool(
     operation: (verb, fields) => answerOp(plan, verb, fields),
   })
   if (!end.ok) return stopped(plan, end)
-  const compiled = plan.changes.length === 0 ? undefined : plan.session.finish()
+  const compiled = plan.intents.length === 0 ? undefined : plan.session.finish()
   if (compiled !== undefined && "refused" in compiled)
     return landRefused(plan, doomRefused(compiled, { rev: opened.rev }))
   if (lastRead === undefined || (compiled === undefined && plan.read)) {
