@@ -210,6 +210,22 @@ describe("a script removes a layer", () => {
     expect(by.freeEnd(deck)).toEqual(seen)
   })
 
+  it("lands the batch with the host's fonts for the deck it leaves behind", async () => {
+    const grown = drifted()
+    const asked: (readonly doom.Doom[])[] = []
+    const by = connected(grown, (folds) => {
+      asked.push(folds)
+      return wide
+    })
+    const deck = await by.made()
+    asked.length = 0
+    const deleted = await by.edit(deck, [{ op: "delete", nodes: [grown.ids.t] }])
+    expect(deleted.fields).toMatchObject({ ok: true })
+    const gone = (fold: doom.Doom) => doom.parentOf(fold.nodes.get(grown.ids.t!)) === null
+    expect(asked.some((folds) => folds.some(gone) && folds.some((fold) => !gone(fold)))).toBe(true)
+    expect(by.freeEnd(deck)).toEqual(painted(grown.doom, grown.slides[0]!, grown.ids.l!, wide))
+  })
+
   it("frees a connector with the widths of text an earlier change in the same batch wrote", async () => {
     const grown = drifted()
     const knowsCapital = (folds: readonly doom.Doom[]) =>

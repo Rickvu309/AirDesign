@@ -6,10 +6,10 @@ import { placementRules, startRules, style, styles } from "@airdesign/taste"
 import { doomRefused, refused, type Answer } from "./answer.js"
 import { imagesPerCall } from "./budget.js"
 import type { DeckHost, Opened } from "./deck-host.js"
-import { deckMeasure } from "./deck-measure.js"
 import { readAnswer, themeValues } from "./deck-read.js"
 import { withCatalogFonts } from "./font-names.js"
 import { measuredSteps } from "./land-edit.js"
+import { leavingMeasure } from "./leaving-measure.js"
 import { layoutOf, listed } from "./problems-answer.js"
 import { readPaste } from "./kit-paste.js"
 import { imageNames, imageProblem, pictureSizes, withAssets } from "./named-image.js"
@@ -193,9 +193,6 @@ async function withImages(plan: Plan, op: number, verb: Verb, intent: doom.Inten
   return withAssets([intent], found)[0] as doom.Intent
 }
 
-const leavesLayers = (intent: doom.Intent) =>
-  intent.op === "delete" || intent.op === "unwrap" || (intent.op === "slide" && intent.delete !== undefined)
-
 async function compileOne(
   plan: Plan,
   op: number,
@@ -220,7 +217,7 @@ async function stepOne(plan: Plan, op: number, verb: Verb, intent: doom.Intent):
         note: `One call makes at most ${String(doom.limits.batch)} changes, and this one reached that before this operation. Send the rest in a second call.`,
       }),
     )
-  const measure = leavesLayers(intent) ? (await deckMeasure(plan.host, [plan.view]))?.measure : undefined
+  const measure = await leavingMeasure(plan.host, [plan.view], [intent])
   const stepped = await measuredSteps(plan.session.step(intent, true, measure), plan.host, plan.pendingFonts)
   if ("fields" in stepped) stop(plan, op, verb, stepped)
   if ("refused" in stepped)

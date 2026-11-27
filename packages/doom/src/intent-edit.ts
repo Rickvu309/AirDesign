@@ -55,7 +55,7 @@ export type IntentSession = {
     pauseForBake?: boolean,
     measure?: Measure,
   ) => Generator<Bake, IntentStep | IntentRefusal, Measure>
-  readonly finish: () => IntentEdit | IntentRefusal
+  readonly finish: (measure?: Measure) => IntentEdit | IntentRefusal
 }
 
 export function intentSession(doom: Doom, by: EditBy): IntentSession {
@@ -115,7 +115,7 @@ export function intentSession(doom: Doom, by: EditBy): IntentSession {
     const filled = intent.op === "add" && added.length === 0 ? compiled[0]?.node : undefined
     return { view, added: filled === undefined ? [...new Set(added)] : [filled] }
   }
-  function finish(): IntentEdit | IntentRefusal {
+  function finish(measure: Measure = by.measure ?? estimate): IntentEdit | IntentRefusal {
     if (intents.length === 0)
       return {
         refused: "shape",
@@ -127,7 +127,7 @@ export function intentSession(doom: Doom, by: EditBy): IntentSession {
     const landing = land(doom, writes, {
       author: by.author,
       once: by.once,
-      measure: by.measure ?? estimate,
+      measure,
       starts: by.starts,
       ...(by.phase === undefined ? {} : { phase: by.phase }),
     })

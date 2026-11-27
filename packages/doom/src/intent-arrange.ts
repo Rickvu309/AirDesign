@@ -8,37 +8,70 @@ import { gapFor, slideSize } from "./intent-place.js"
 import type { NodeId } from "./ids.js"
 import type { Layout } from "./layout.js"
 import type { Node } from "./doom.js"
-import { boxOf, childrenOf, descendantsOf, parentOf, propOf, slideOf, zeroBox } from "./doom-walk.js"
+import { boxOf, childrenOf, descendantsOf, isLaidOut, parentOf, propOf, slideOf, zeroBox } from "./doom-walk.js"
+import type { End } from "./geometry.js"
 import { measureWith } from "./measure.js"
-import { unfittedBox } from "./matrix.js"
-import type { Box } from "./resolved.js"
+import {
+  type Matrix,
+  apply,
+  boxMatrix,
+  contentMatrix,
+  fitShift,
+  identity,
+  invert,
+  multiply,
+  unfittedBox,
+} from "./matrix.js"
+import { wrapRotation } from "./angle.js"
+import { boundsOf, cornersOf, placeBoxes } from "./place-slide.js"
+import type { Box, LayoutBox, Point } from "./resolved.js"
 import { solveLayout } from "./solve-layout.js"
 
 type Op<K extends Intent["op"]> = Extract<Intent, { op: K }>
+type Boxes = ReadonlyMap<NodeId, LayoutBox> | undefined
 
 const arrangeable = (node: Node) => node.type === "frame" || node.type === "shape"
 
-const hasBox = (draft: Draft, node: Node) =>
-  propOf(node, "box") !== undefined || draft.reading.boxes?.has(node.id) === true
+const solvedOf = (node: Node, boxes: Boxes): LayoutBox | undefined => boxes?.get(node.id) ?? propOf(node, "box")
 
-function shift(draft: Draft, node: Node, dx: number, dy: number): void {
-  if (!hasBox(draft, node) || (dx === 0 && dy === 0)) return
-  const box = unfittedBox(boxOf(node, draft.reading.boxes))
-  put(draft, node.id, { box: { ...box, x: box.x + dx, y: box.y + dy } })
+const keptBox = (node: Node, solved: LayoutBox, baked: boolean): Box =>
+  (baked ? undefined : propOf(node, "box")) ?? unfittedBox(solved)
+
+function freeEnds(draft: Draft, node: Node, move: (end: Point) => Point): boolean {
+  const line = propOf(node, "geometry")
+  if (line?.kind !== "line") return false
+  const carry = (end: End): End => ("node" in end ? end : move(end))
+  put(draft, node.id, { geometry: { ...line, start: carry(line.start), end: carry(line.end) } })
+  return true
 }
 
-function originIn(draft: Draft, parent: NodeId): { readonly x: number; readonly y: number } {
-  let x = 0
-  let y = 0
-  let at: Node | undefined = draft.doom.nodes.get(parent)
-  for (let hops = 0; at?.type === "frame" && hops <= draft.doom.nodes.size; hops += 1) {
-    const box = unfittedBox(boxOf(at, draft.reading.boxes))
-    x += box.x
-    y += box.y
-    const above = parentOf(at)
-    at = above == null ? undefined : draft.doom.nodes.get(above.id)
+function carry(draft: Draft, node: Node, boxes: Boxes, across: Matrix, turn: number, baked: boolean): void {
+  const rounded = (at: Point) => {
+    const spot = apply(across, at)
+    return { x: Math.round(spot.x), y: Math.round(spot.y) }
   }
-  return { x, y }
+  if (freeEnds(draft, node, rounded)) return
+  const solved = solvedOf(node, boxes)
+  if (solved === undefined) return
+  const { w, h, fit } = solved
+  const centre = apply(across, { x: solved.x + w / 2, y: solved.y + h / 2 })
+  const rotation = wrapRotation(solved.rotation + turn)
+  const shift = fitShift({ w, h, rotation }, fit)
+  put(draft, node.id, {
+    box: {
+      ...keptBox(node, solved, baked),
+      x: Math.round(centre.x - w / 2 - shift.x),
+      y: Math.round(centre.y - h / 2 - shift.y),
+      rotation,
+    },
+  })
+}
+
+function holderOf(draft: Draft, boxes: Boxes, id: NodeId): { readonly content: Matrix; readonly rotation: number } {
+  const node = draft.doom.nodes.get(id)
+  const slide = slideOf(draft.doom, id)
+  if (node?.type === "slide" || slide === undefined) return { content: identity, rotation: 0 }
+  return placeBoxes(draft.doom, slide, boxes ?? new Map()).get(id) ?? { content: identity, rotation: 0 }
 }
 
 function parentIdOf(node: Node): NodeId {
@@ -104,9 +137,12 @@ export function compileMove(draft: Draft, intent: Op<"move">): void {
   const [key] = keysAfter(draft, target.id, previous, 1, new Set([node.id]))
   draft.writes.push({ node: node.id, prop: "parent", value: { id: target.id, at: key as OrderKey } })
   if (target.id === from) return
-  const before = originIn(draft, from)
-  const after = originIn(draft, target.id)
-  shift(draft, node, before.x - after.x, before.y - after.y)
+  const boxes = sourceBoxes(draft, [node.id, target.id])
+  const was = holderOf(draft, boxes, from)
+  const now = holderOf(draft, boxes, target.id)
+  const leaving = draft.doom.nodes.get(from)
+  const baked = leaving !== undefined && isLaidOut(leaving)
+  carry(draft, node, boxes, multiply(invert(now.content), was.content), was.rotation - now.rotation, baked)
 }
 
 export function compileWrap(draft: Draft, intent: Op<"wrap">): void {
@@ -116,11 +152,19 @@ export function compileWrap(draft: Draft, intent: Op<"wrap">): void {
     if (parentIdOf(node) !== parent) stop("shape", node.id, "nodes", "form", { code: "same-parent" })
   const position = new Map(childrenOf(draft.doom, parent).map((child, at) => [child.id, at]))
   const ordered = [...nodes].sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0))
-  const boxes = ordered.map((node) => boxOf(node, draft.reading.boxes))
-  const left = Math.min(...boxes.map((box) => box.x))
-  const top = Math.min(...boxes.map((box) => box.y))
-  const right = Math.max(...boxes.map((box) => box.x + box.w))
-  const bottom = Math.max(...boxes.map((box) => box.y + box.h))
+  const boxes = sourceBoxes(draft, [parent])
+  const points = ordered.flatMap((node) => {
+    const line = propOf(node, "geometry")
+    const ends = line?.kind === "line" ? [line.start, line.end].flatMap((end) => ("node" in end ? [] : [end])) : []
+    const solved = line?.kind === "line" && ends.length > 0 ? boxes?.get(node.id) : solvedOf(node, boxes)
+    return [...ends, ...(solved === undefined ? [] : cornersOf(boxMatrix(identity, solved), solved))]
+  })
+  const bounds = boundsOf(points)
+  const origin = { x: Math.round(bounds.left), y: Math.round(bounds.top) }
+  const size = {
+    w: Math.max(1, Math.round(bounds.right - bounds.left)),
+    h: Math.max(1, Math.round(bounds.bottom - bounds.top)),
+  }
   const layout: Layout | undefined =
     intent.layout === "row" || intent.layout === "column"
       ? {
@@ -137,18 +181,26 @@ export function compileWrap(draft: Draft, intent: Op<"wrap">): void {
     "frame",
     parent,
     {
-      box: { ...zeroBox, x: left, y: top, w: right - left, h: bottom - top },
+      box: { ...zeroBox, ...origin, ...size },
       ...(intent.clip === true && layout === undefined ? {} : { sizing: { w: "hug" as const, h: "hug" as const } }),
       ...(layout === undefined ? {} : { layout }),
       ...(intent.clip === true ? { clip: true } : {}),
     },
-    parentOf(ordered[0] as Node)?.at as OrderKey,
+    parentOf(ordered.at(-1) as Node)?.at as OrderKey,
   )
+  const holder = draft.doom.nodes.get(parent)
+  const baked = holder !== undefined && isLaidOut(holder)
   let before: OrderKey | null = null
   for (const node of ordered) {
     before = orderKeyBetween(before, null)
     draft.writes.push({ node: node.id, prop: "parent", value: { id: frame, at: before } })
-    shift(draft, node, -left, -top)
+    if (freeEnds(draft, node, (end) => ({ x: end.x - origin.x, y: end.y - origin.y }))) continue
+    const solved = solvedOf(node, boxes)
+    if (solved === undefined) continue
+    const spot = unfittedBox(solved)
+    put(draft, node.id, {
+      box: { ...keptBox(node, solved, baked), x: Math.round(spot.x - origin.x), y: Math.round(spot.y - origin.y) },
+    })
   }
 }
 
@@ -158,10 +210,12 @@ export function compileUnwrap(draft: Draft, intent: Op<"unwrap">): void {
   const parent = parentIdOf(frame)
   const kids = childrenOf(draft.doom, frame.id)
   const keys = keysAfter(draft, parent, frame.id, kids.length)
-  const origin = unfittedBox(boxOf(frame, draft.reading.boxes))
+  const boxes = sourceBoxes(draft, [frame.id])
+  const placed = boxOf(frame, boxes)
+  const across = contentMatrix(boxMatrix(identity, placed), placed)
   kids.forEach((kid, at) => {
     draft.writes.push({ node: kid.id, prop: "parent", value: { id: parent, at: keys[at] as OrderKey } })
-    shift(draft, kid, origin.x, origin.y)
+    carry(draft, kid, boxes, across, placed.rotation, isLaidOut(frame))
   })
   draft.writes.push({ node: frame.id, prop: "parent", value: null })
 }

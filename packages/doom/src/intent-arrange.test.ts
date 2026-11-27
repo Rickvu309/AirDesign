@@ -96,7 +96,7 @@ describe("wrap and unwrap", () => {
   const wrapped = (more2: Record<string, unknown> = {}) =>
     build(richDeck(), change({ op: "wrap", nodes: [ids.side, ids.card], ...more2 }))
 
-  it("wraps siblings into one frame that covers them, where the first of them was, in their order", () => {
+  it("wraps siblings into one frame that covers them, where the frontmost of them was, in their order", () => {
     const doom = wrapped()
     const frame = childrenOf(doom, ids.slide)[0]!
     expect(frame.type).toBe("frame")
