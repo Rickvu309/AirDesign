@@ -57,3 +57,4 @@ A chart, table or diagram has a recipe skill instead of a piece: a script that d
 - Exact numbers across rows and columns: `charts/table`.
 - Steps in order: `diagrams/process-flow`.
 - A system's parts and how they connect: `diagrams/architecture`.
+- A question broken into causes or options, each proven, disproven or open: `diagrams/issue-tree`.

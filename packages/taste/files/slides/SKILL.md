@@ -26,7 +26,7 @@ You design this deck for a busy reader. They read the titles first and look at t
 - The title states the takeaway in one sentence with a verb: "Revenue grew 41% since May", not "Revenue". Two lines at most.
 - One idea per slide. A slide that makes two points becomes two slides, or loses one.
 - The body is the evidence for the title: one chart, one table, or two to four short points. Leave out what the title does not need.
-- A process or a system is a diagram: draw it with the script in `diagrams/process-flow` or `diagrams/architecture`, so its arrows stay on their boxes. The `kit` skill holds ready pieces for covers, titles, statements, numbers, shares, driver equations, 2x2s, numbered callouts, work plans, comparisons, timelines, section trackers and sources, and names the recipe for each chart and table.
+- A process, a system or a diagnosis is a diagram: draw it with the script in `diagrams/process-flow`, `diagrams/architecture` or `diagrams/issue-tree`, so its lines stay on their boxes. The `kit` skill holds ready pieces for covers, titles, statements, numbers, shares, driver equations, 2x2s, numbered callouts, work plans, comparisons, timelines, section trackers and sources, and names the recipe for each chart and table.
 - Every slide with a number has a source line at the bottom left, in `caption`: "Source: Finance Q3 close pack".
 
 ## Sizes on 1920 by 1080
