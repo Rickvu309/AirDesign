@@ -55,7 +55,6 @@ export type McpHost = {
   readonly fail: (error: unknown) => void
 }
 
-const listPage = 50
 const measureBudget = 2_500
 
 const refusal = (kind: Exclude<DoomRefusal["refusal"], "edit">): DoomRefusal => ({ ok: false, refusal: kind })
@@ -186,9 +185,9 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured, fo
       remember: (deck, agent, rev) => rememberAgentRead(db, deck, agent, rev),
       byPerson: (deck, revs) => personRevs(db, deck, revs),
     },
-    list: guarded(async (cursor) => {
-      const found = await listDoom(db, email, cursor, listPage + 1)
-      const decks = found.slice(0, listPage).flatMap((row) => {
+    list: guarded(async (cursor, limit) => {
+      const found = await listDoom(db, email, cursor, limit + 1)
+      const decks = found.slice(0, limit).flatMap((row) => {
         const id = readDeckId(row.id)
         return id.ok ? [{ deck: id.deck, name: row.name, rev: row.rev }] : []
       })
@@ -196,7 +195,7 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured, fo
       return {
         ok: true,
         decks,
-        ...(found.length > listPage && last !== undefined ? { next: last.deck } : {}),
+        ...(found.length > limit && last !== undefined ? { next: last.deck } : {}),
       } as const
     }),
     create: guarded(async (name, theme, once) => {

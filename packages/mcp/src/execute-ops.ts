@@ -2,6 +2,7 @@ import * as doom from "@airdesign/doom"
 import { themePresetById, themePresets } from "@airdesign/skills"
 
 import { doomRefused, refused, type Answer } from "./answer.js"
+import { imagesPerCall } from "./budget.js"
 import type { DeckHost, Opened } from "./deck-host.js"
 import { deckMeasure } from "./deck-measure.js"
 import { readAnswer } from "./deck-read.js"
@@ -9,7 +10,7 @@ import { withCatalogFonts } from "./font-names.js"
 import { measuredSteps } from "./land-edit.js"
 import { layoutOf, listed } from "./layout-findings-answer.js"
 import { readPaste } from "./kit-paste.js"
-import { imageNames, imageProblem, imagesPerCall, pictureSizes, withAssets } from "./named-image.js"
+import { imageNames, imageProblem, pictureSizes, withAssets } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
 
 export const verbs = [
