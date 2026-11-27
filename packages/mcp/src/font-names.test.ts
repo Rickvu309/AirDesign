@@ -2,7 +2,7 @@ import { catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
-import { emptyLog, callTool, type Session } from "./index.js"
+import { callTool, type Session } from "./index.js"
 import { readOf, scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
@@ -29,7 +29,7 @@ function agent() {
   const decks = memoryDecks(titled)
   let minted = 0
   let calls = 0
-  const session: Session = { agent: "aira", mint: () => `minted${String((minted += 1))}`, log: emptyLog(), now: 0 }
+  const session: Session = { agent: "aira", mint: () => `minted${String((minted += 1))}` }
   return (op: string, args: unknown) => {
     session.once = `call${String((calls += 1))}`
     return callTool(names[op] ?? op, args, session, decks)

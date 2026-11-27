@@ -2,7 +2,7 @@ import { catalog, projectTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
-import { callTool, emptyLog, type DeckHost, type Session, type Answer } from "./index.js"
+import { callTool, type DeckHost, type Session, type Answer } from "./index.js"
 import { readOf, scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
@@ -24,7 +24,7 @@ function agent(overrides: (decks: ReturnType<typeof memoryDecks>) => Partial<Dec
   const decks = memoryDecks(start)
   const host: DeckHost = { ...decks, ...overrides(decks) }
   let minted = 0
-  const session: Session = { agent: "aira", mint: () => `m${String((minted += 1))}`, log: emptyLog(), now: 0 }
+  const session: Session = { agent: "aira", mint: () => `m${String((minted += 1))}` }
   let calls = 0
   return {
     decks,

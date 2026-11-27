@@ -1,8 +1,7 @@
 import { catalog, pendingFontsMeta, projectTools, readOnce, toolInputSchema } from "@airdesign/catalog"
 import { McpServer } from "@modelcontextprotocol/server"
 
-import { type Admission, admit } from "./admit.js"
-import { limited, refused } from "./answer.js"
+import { refused } from "./answer.js"
 import { callTool, knownTool, type Session } from "./call-tool.js"
 import type { DeckHost } from "./deck-host.js"
 import { encode } from "./encode.js"
@@ -45,9 +44,7 @@ function listedTools(): readonly RegisteredTool[] {
   }))
 }
 
-export type Host = DeckHost & { readonly admit?: (session: Session) => Promise<Admission> }
-
-export function createServer(session: Session, host: Host): McpServer {
+export function createServer(session: Session, host: DeckHost): McpServer {
   const server = new McpServer({ name: "airdesign", version: "0.0.0" }, { instructions: kindInstructions() })
   for (const tool of listedTools()) {
     server.registerTool(
@@ -61,14 +58,6 @@ export function createServer(session: Session, host: Host): McpServer {
         const named = readOnce(ctx.mcpReq._meta)
         if (!named.ok || !knownTool(tool.name)) return encode(refused("field"))
         session.once = named.once
-        let admitted: Admission
-        try {
-          admitted = host.admit ? await host.admit(session) : admit(session.log, "tool", session.now)
-        } catch {
-          return encode(refused("store"))
-        }
-        if (!admitted.ok) return encode(limited(admitted.text))
-        session.log = admitted.log
         const claimed = ctx.mcpReq._meta?.[pendingFontsMeta]
         const pendingFonts = new Set<string>(
           Array.isArray(claimed)

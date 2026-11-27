@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { admit, emptyLog, type CallerLog, type LimitKind } from "./index.js"
+import { admit, emptyLog, type CallerLog, type LimitKind } from "./admit.js"
 
 function take(log: CallerLog, kind: LimitKind, count: number, at: (index: number) => number): CallerLog {
   let current = log

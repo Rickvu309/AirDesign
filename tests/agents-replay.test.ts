@@ -2,7 +2,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { catalog, projectTools, readDeckId, type DeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
-import { callTool, emptyLog, type DeckHost, type Answer } from "@airdesign/mcp"
+import { callTool, type DeckHost, type Answer } from "@airdesign/mcp"
 import { describe, expect, it } from "vitest"
 import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import * as view from "../specs/agents/view.mjs"
@@ -71,6 +71,7 @@ function hosted(world: World) {
   const personRev = world.person ? fold.revs.get(start.x)?.get("text") : undefined
   const host: DeckHost = {
     account: "replay-account",
+    admit: async () => ({ ok: true }),
     agentReads: {
       last: async (_deck, agent) => reads.get(agent),
       remember: async (_deck, agent, rev) => {
@@ -105,8 +106,6 @@ async function call(world: World, by: Agent, op: string, args: unknown) {
     {
       agent: agentKeys[by],
       mint: () => `mint${String(calls)}`,
-      log: emptyLog(),
-      now: 0,
       once: `${by}-${String(calls)}`,
     },
     host,

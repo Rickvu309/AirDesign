@@ -12,7 +12,7 @@ import {
   type ReplyBlock,
 } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/doom"
-import { admit, kindInstructions } from "@airdesign/mcp"
+import { kindInstructions } from "@airdesign/mcp"
 import { usage } from "@airdesign/usage"
 import {
   readLedger,
@@ -27,6 +27,7 @@ import { autoResetCredits } from "../usage/credits.js"
 
 import { withAddress } from "../account/account.js"
 import type { Closing, Followed } from "./aira-closing.js"
+import { admit } from "../account/admit.js"
 import { lockedLog, writeLog } from "../account/caller-log.js"
 import { play, type AiraEvent, type Counts, type Played, type Reported } from "./aira-stream.js"
 import type { Sql } from "../platform/pool.js"

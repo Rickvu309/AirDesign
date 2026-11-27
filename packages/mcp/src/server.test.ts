@@ -4,7 +4,7 @@ import * as doom from "@airdesign/doom"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 
-import { createServer, emptyLog, type Host, type Session } from "./index.js"
+import { createServer, type DeckHost, type Session } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
@@ -24,10 +24,10 @@ function started(): doom.Doom {
 
 function sessionFor(): Session {
   let minted = 0
-  return { agent: "aira", mint: () => `minted${String((minted += 1))}`, log: emptyLog(), now: 0 }
+  return { agent: "aira", mint: () => `minted${String((minted += 1))}` }
 }
 
-async function withClient(session: Session, host: Host, use: (client: Client) => Promise<void>): Promise<void> {
+async function withClient(session: Session, host: DeckHost, use: (client: Client) => Promise<void>): Promise<void> {
   const server = createServer(session, host)
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: "airdesign-test", version: "0.0.0" })
@@ -203,7 +203,7 @@ describe("link addresses over the protocol", () => {
   it("accepts mailto addresses with or without a query and refuses bare mailto queries and over-limit URLs", async () => {
     const betweenLimits = `https://example.com/${"a".repeat(2_000)}`
     let minted = 0
-    const session: Session = { agent: "aira", mint: () => `link${String((minted += 1))}`, log: emptyLog(), now: 0 }
+    const session: Session = { agent: "aira", mint: () => `link${String((minted += 1))}` }
     await withClient(session, memoryDecks(started), async (client) => {
       const call = async (name: string, args: Record<string, unknown>) =>
         client.callTool({ name: `airdesign_${name}`, arguments: args })
@@ -270,7 +270,7 @@ describe("an answer read from structuredContent alone", () => {
     (result.content as { type: string; text?: string }[]).filter((block) => block.type === "text")
 
   it("carries every word the tool says, as a client that reads only structuredContent needs", async () => {
-    const host: Host = {
+    const host: DeckHost = {
       ...memoryDecks(started),
       pictures: async (_deck, _fold, slides) => new Map(slides.map((slide) => [slide, shot])),
     }
@@ -319,7 +319,7 @@ describe("an answer read from structuredContent alone", () => {
   })
 
   it("says in structuredContent that no tab is open to paint a picture", async () => {
-    const host: Host = { ...memoryDecks(started), pictures: async () => "unwatched" }
+    const host: DeckHost = { ...memoryDecks(started), pictures: async () => "unwatched" }
     await withClient(sessionFor(), host, async (client) => {
       const made = await client.callTool({ name: "airdesign_execute", arguments: { script: "createDeck()" } })
       const { deck, slides } = made.structuredContent as { deck: string; slides: string[] }
@@ -335,18 +335,16 @@ describe("an answer read from structuredContent alone", () => {
   })
 })
 
-describe("a host that admits each tool call", () => {
-  it("is asked for every call, and a refusal answers the host's text and changes nothing", async () => {
+describe("a host that admits each tool call and each deck", () => {
+  it("is asked for every call and every deck, and a refusal answers the host's text and changes nothing", async () => {
     const decks = memoryDecks(started)
-    const asked: number[] = []
-    const text = "Ninety tool calls in five minutes. The next tool call can run in 12 seconds." as const
-    const host: Host = {
+    const asked: string[] = []
+    const text = "Ninety tool calls in five minutes. The next tool call can run in 12 seconds."
+    const host: DeckHost = {
       ...decks,
-      admit: async (seen) => {
-        asked.push(seen.now)
-        return asked.length === 1
-          ? { ok: true, log: emptyLog() }
-          : { ok: false, log: emptyLog(), text, resetsAt: 12_000 }
+      admit: async (kind) => {
+        asked.push(kind)
+        return asked.length <= 2 ? { ok: true } : { ok: false, text }
       },
     }
     await withClient(sessionFor(), host, async (client) => {
@@ -356,34 +354,30 @@ describe("a host that admits each tool call", () => {
       expect(refused.isError).toBe(true)
       expect(refused.structuredContent).toEqual({ ok: false, refusal: "rate", note: text })
     })
-    expect(asked).toEqual([0, 0])
+    expect(asked).toEqual(["tool", "deck", "tool"])
     expect(decks.decks.size).toBe(1)
+  })
+
+  it("makes no deck when the host refuses the deck", async () => {
+    const decks = memoryDecks(started)
+    const text = "Five decks in one minute. The next deck can open in 20 seconds."
+    const host: DeckHost = { ...decks, admit: async (kind) => (kind === "deck" ? { ok: false, text } : { ok: true }) }
+    await withClient(sessionFor(), host, async (client) => {
+      const refused = await client.callTool({ name: "airdesign_execute", arguments: { script: "createDeck()" } })
+      expect(refused.isError).toBe(true)
+      expect(refused.structuredContent).toEqual({ ok: false, refusal: "rate", note: text })
+    })
+    expect(decks.decks.size).toBe(0)
   })
 
   it("answers a store refusal when the host cannot admit a call", async () => {
     const decks = memoryDecks(started)
-    const host: Host = { ...decks, admit: () => Promise.reject(new Error("connect ECONNREFUSED")) }
+    const host: DeckHost = { ...decks, admit: () => Promise.reject(new Error("connect ECONNREFUSED")) }
     await withClient(sessionFor(), host, async (client) => {
       const refused = await client.callTool({ name: "airdesign_execute", arguments: { script: "createDeck()" } })
       expect(refused.isError).toBe(true)
       expect(refused.structuredContent).toMatchObject({ ok: false, refusal: "store" })
     })
     expect(decks.decks.size).toBe(0)
-  })
-
-  it("counts calls in the session's own log when the host does not admit", async () => {
-    const session = sessionFor()
-    await withClient(session, memoryDecks(started), async (client) => {
-      for (let call = 0; call < 90; call += 1) {
-        const listed = await client.callTool({ name: "airdesign_get_app_state", arguments: {} })
-        expect(listed.isError).not.toBe(true)
-      }
-      const refused = await client.callTool({ name: "airdesign_get_app_state", arguments: {} })
-      expect(refused.isError).toBe(true)
-      expect(refused.structuredContent).toMatchObject({
-        refusal: "rate",
-        note: "Ninety tool calls in five minutes. The next tool call can run in 300 seconds.",
-      })
-    })
   })
 })

@@ -128,7 +128,7 @@ export async function bakeParity(business = false) {
   const { themePresets } = await packageBuild(root, "@airdesign/skills")
   const { measureDoom } = await packageBuild(root, "@airdesign/render")
   const { FontMetrics } = await packageBuild(root, "@airdesign/api", "platform/font-metrics.js")
-  const { callTool, emptyLog } = await packageBuild(root, "@airdesign/mcp")
+  const { callTool } = await packageBuild(root, "@airdesign/mcp")
   const { memoryDecks } = await packageBuild(root, "@airdesign/mcp", "testing/evals.js")
   const source = business ? await servedSource(root) : await fixtureSource()
   const jp = { ...doom.defaultTheme, fonts: { heading: "Noto Sans JP", body: "Noto Sans JP" } }
@@ -168,7 +168,7 @@ export async function bakeParity(business = false) {
             ...memoryDecks(() => fold, new Map([[id, fold]])),
             measure: (folds, layers) => metrics.measure(folds, Infinity, layers),
           }
-          const session = { agent: "aira", mint: () => "m", log: emptyLog(), now: 0, once: "bake" }
+          const session = { agent: "aira", mint: () => "m", once: "bake" }
           const { fields: answer } = await callTool(
             "airdesign_execute",
             { deck: id, script: `update({ target: "${ids.row}", layout: "none" })` },

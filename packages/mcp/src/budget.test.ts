@@ -1,7 +1,6 @@
 import { listStyles, readSkillIndex } from "@airdesign/skills"
 import { expect, it } from "vitest"
 
-import { emptyLog } from "./admit.js"
 import type { Answer } from "./answer.js"
 import * as budget from "./budget.js"
 import { callTool, type Session } from "./call-tool.js"
@@ -15,7 +14,7 @@ const sizeOf = (answer: Answer) => Buffer.byteLength(JSON.stringify(encode(answe
 async function largestAnswers(): Promise<Readonly<Record<string, number>>> {
   const largest: Record<string, number> = {}
   let calls = 0
-  const session: Session = { agent: "eval", mint: () => `call${String((calls += 1))}`, log: emptyLog(), now: 0 }
+  const session: Session = { agent: "eval", mint: () => `call${String((calls += 1))}` }
   const call = async (decks: ReturnType<typeof memoryDecks>, name: string, raw: unknown) => {
     const answer = await callTool(name, raw, session, decks)
     largest[name] = Math.max(largest[name] ?? 0, sizeOf(answer))

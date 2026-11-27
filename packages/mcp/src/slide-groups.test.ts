@@ -1,7 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { expect, it } from "vitest"
-import { createServer, emptyLog } from "./index.js"
+import { createServer } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
@@ -23,7 +23,7 @@ it("saves and refuses slide group edits through the existing tool, using structu
     () => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ name: "Title", children: [] }] }).doom,
   )
   let minted = 0
-  const server = createServer({ agent: "aira", mint: () => `minted${String(++minted)}`, log: emptyLog(), now: 0 }, host)
+  const server = createServer({ agent: "aira", mint: () => `minted${String(++minted)}` }, host)
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: "airdesign-test", version: "0.0.0" })
   await server.connect(serverTransport)

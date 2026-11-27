@@ -2,7 +2,7 @@ import * as doom from "@airdesign/doom"
 import { readSkill, readSkillIndex } from "@airdesign/skills"
 import { describe, expect, it } from "vitest"
 
-import { callTool, emptyLog, type DeckHost, type Session } from "./index.js"
+import { callTool, type DeckHost, type Session } from "./index.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
 type Point = { readonly x: number; readonly y: number }
@@ -23,7 +23,7 @@ async function draw(script: string) {
   const host: DeckHost = { ...decks, measure: async () => ({ measure: estimate, missing: new Map() }) }
   let minted = 0
   let calls = 0
-  const session: Session = { agent: "aira", mint: () => `minted${String((minted += 1))}`, log: emptyLog(), now: 0 }
+  const session: Session = { agent: "aira", mint: () => `minted${String((minted += 1))}` }
   const call = async (name: string, args: unknown) => {
     session.once = `call${String((calls += 1))}`
     const result = await callTool(`airdesign_${name}`, args, session, host)

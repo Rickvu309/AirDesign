@@ -8,7 +8,7 @@ import { readSkillIndex } from "@airdesign/skills"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 
-import { createServer, emptyLog, type Host, type Session } from "./index.js"
+import { createServer, type DeckHost, type Session } from "./index.js"
 import { getStyleTool } from "./skill-tools.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 
@@ -28,10 +28,10 @@ function started(): doom.Doom {
 
 function sessionFor(): Session {
   let minted = 0
-  return { agent: "aira", mint: () => `minted${String((minted += 1))}`, log: emptyLog(), now: 0 }
+  return { agent: "aira", mint: () => `minted${String((minted += 1))}` }
 }
 
-async function withClient(session: Session, host: Host, use: (client: Client) => Promise<void>): Promise<void> {
+async function withClient(session: Session, host: DeckHost, use: (client: Client) => Promise<void>): Promise<void> {
   const server = createServer(session, host)
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: "airdesign-test", version: "0.0.0" })
@@ -195,13 +195,13 @@ describe("airdesign_read_skill and airdesign_get_style", () => {
   })
 
   it("checks host admission on skill and style tool calls", async () => {
-    const text = "Ninety tool calls in five minutes. The next tool call can run in 12 seconds." as const
+    const text = "Ninety tool calls in five minutes. The next tool call can run in 12 seconds."
     let calls = 0
-    const host: Host = {
+    const host: DeckHost = {
       ...memoryDecks(started),
       admit: async () => {
         calls += 1
-        return { ok: false, log: emptyLog(), text, resetsAt: 5_000 }
+        return { ok: false, text }
       },
     }
     await withClient(sessionFor(), host, async (client) => {
