@@ -2,13 +2,12 @@ import { describe, expect, it } from "vitest"
 import { catalog, doomRoutes, projectTools, toolInputSchema, viewMedia, viewTools } from "./index.js"
 
 describe("run operations in the catalog", () => {
-  it("keeps start_run from agents and offers stop_run and undo_run on the server", () => {
-    expect(catalog.start_run).toEqual({ kind: "command", exposure: "web" })
-    expect(catalog.stop_run).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
-    expect(catalog.undo_run).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
-    expect(catalog.get_app_state).toMatchObject({ kind: "query", exposure: "agent", runsOn: "server" })
-    expect(catalog.execute).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
-    expect(projectTools(catalog).map((tool) => tool.op)).toEqual([
+  it("offers every catalog row to agents as a tool on the server", () => {
+    expect(catalog.stop_run).toMatchObject({ kind: "command", runsOn: "server" })
+    expect(catalog.undo_run).toMatchObject({ kind: "command", runsOn: "server" })
+    expect(catalog.get_app_state).toMatchObject({ kind: "query", runsOn: "server" })
+    expect(catalog.execute).toMatchObject({ kind: "command", runsOn: "server" })
+    expect(Object.keys(catalog).sort()).toEqual([
       "execute",
       "get_app_state",
       "get_style",
@@ -91,14 +90,8 @@ describe("projectTools", () => {
     for (const tool of projectTools(catalog)) expect(toolInputSchema(tool.op)).toBe(toolInputSchema(tool.op))
   })
 
-  it("omits a web row", () => {
-    expect(
-      projectTools({ commit_edits: { kind: "command", exposure: "web", runsOn: "server", description: "x" } }),
-    ).toEqual([])
-  })
-
   it("throws when an agent row omits where it runs", () => {
-    expect(() => projectTools({ bad: { kind: "command", exposure: "agent", description: "x" } as never })).toThrow(
+    expect(() => projectTools({ bad: { kind: "command", description: "x" } as never })).toThrow(
       "agent tool bad must say where it runs",
     )
   })

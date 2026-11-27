@@ -10,34 +10,20 @@ import { readRun, type WireReader } from "./wire.js"
 const readOptionalName = readInput(z.strictObject({ name: z.string().exactOptional() }), inputRefusal)
 
 type OpDetails = {
-  readonly kind: "query" | "command" | "action" | "stream"
+  readonly kind: "query" | "command"
   readonly destructive?: true
   readonly idempotent?: true
   readonly openWorld?: true
 }
 
-export type OpRow = OpDetails &
-  (
-    | {
-        readonly exposure: "web"
-        readonly runsOn?: "server" | "device"
-        readonly description?: string
-      }
-    | {
-        readonly exposure: "agent"
-        readonly runsOn: "server" | "device"
-        readonly description: string
-        readonly read: WireReader
-        readonly view?: true
-      }
-  )
+export type OpRow = OpDetails & {
+  readonly runsOn: "server" | "device"
+  readonly description: string
+  readonly read: WireReader
+  readonly view?: true
+}
 
-type AgentKeys<Ops> = {
-  [Op in keyof Ops]: Ops[Op] extends { readonly exposure: "agent" } ? Op : never
-}[keyof Ops] &
-  string
-
-export type AgentOp = AgentKeys<typeof catalog>
+export type AgentOp = keyof typeof catalog & string
 
 export type AgentTool<Op extends string = AgentOp> = {
   readonly name: string
@@ -52,13 +38,9 @@ export type AgentTool<Op extends string = AgentOp> = {
 }
 
 export const catalog = {
-  commit_edits: { kind: "command", exposure: "web" },
-  index_deck: { kind: "action", exposure: "web", runsOn: "server" },
-  start_run: { kind: "command", exposure: "web" },
   stop_run: {
     idempotent: true,
     kind: "command",
-    exposure: "agent",
     runsOn: "server",
     read: readRun,
     description:
@@ -68,16 +50,13 @@ export const catalog = {
     idempotent: true,
     destructive: true,
     kind: "command",
-    exposure: "agent",
     runsOn: "server",
     read: readRun,
     description:
       "Undo your own run. Send the runId from airdesign_execute. The answer says what came back and what stayed, and why.",
   },
-  watch_deck: { kind: "stream", exposure: "web" },
   execute: {
     kind: "command",
-    exposure: "agent",
     runsOn: "server",
     destructive: true,
     openWorld: true,
@@ -88,7 +67,6 @@ export const catalog = {
   },
   get_app_state: {
     kind: "query",
-    exposure: "agent",
     runsOn: "server",
     view: true,
     read: readAppState,
@@ -96,14 +74,12 @@ export const catalog = {
   },
   get_style: {
     kind: "query",
-    exposure: "agent",
     runsOn: "server",
     read: readOptionalName,
     description: "Read an AirDesign visual style and its parameters. Omit name to list available styles.",
   },
   read_skill: {
     kind: "query",
-    exposure: "agent",
     runsOn: "server",
     read: readOptionalName,
     description: "Read an AirDesign guide. Omit name for the index.",
@@ -132,23 +108,22 @@ function toolOrder(left: AgentTool<string>, right: AgentTool<string>): number {
 
 export function projectTools<Ops extends Readonly<Record<string, OpRow>>>(
   ops: Ops,
-): readonly AgentTool<AgentKeys<Ops>>[] {
-  const tools: AgentTool<AgentKeys<Ops>>[] = []
+): readonly AgentTool<keyof Ops & string>[] {
+  const tools: AgentTool<keyof Ops & string>[] = []
   for (const [op, row] of Object.entries(ops)) {
-    if (row.exposure !== "agent") continue
     if (row.runsOn !== "server" && row.runsOn !== "device") {
       throw new Error(`agent tool ${op} must say where it runs`)
     }
     tools.push({
       name: `airdesign_${op}`,
-      op: op as AgentKeys<Ops>,
+      op: op as keyof Ops & string,
       description: row.description,
       runsOn: row.runsOn,
       readOnlyHint: row.kind !== "command",
       destructiveHint: row.destructive === true,
       idempotentHint: row.kind !== "command" || row.idempotent === true,
       openWorldHint: row.openWorld === true,
-      view: "view" in row && row.view === true,
+      view: row.view === true,
     })
   }
   tools.sort(toolOrder)
