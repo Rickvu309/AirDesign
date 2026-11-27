@@ -87,67 +87,69 @@ widths.forEach((w, d) => colX.push(colX[d] + w + gap))
 const leafRight = box.w - statusW - 24
 const widthOf = (node) => (node.kids.length === 0 ? leafRight - colX[node.depth] : widths[node.depth])
 const lit = (node) => (node.kids.length === 0 ? node.status === "proven" : node.kids.some(lit))
+const space = (node) => (node.depth === 0 ? 24 : node.kids.every((kid) => kid.kids.length === 0) ? 8 : 16)
+const inner = nodes.filter((node) => node.kids.length > 0)
 
 const frame = insert({ parent: slide, kind: "frame", layout: "none", name: "Issue tree", box })
-const probe = insert({ parent: frame, kind: "text", text: "-", box: { x: 0, y: 0, w: 100, h: 40 } })
-const padOf = (node) => (node.kids.length === 0 ? { t: 5, r: 12, b: 5, l: 12 } : { t: 14, r: 14, b: 14, l: 14 })
-const measure = (node, textStyle) => {
-  const pad = padOf(node)
-  node.style = textStyle
-  node.words = node.kids.length > 0 || node.status === "proven" ? `**${node.text}**` : node.text
-  update({ target: probe, text: node.words, textStyle, box: { w: widthOf(node) - pad.l - pad.r } })
-  node.h = Math.ceil(get({ target: probe }).box.h) + pad.t + pad.b
-}
-const space = (node) => (node.depth === 0 ? 24 : node.kids.every((kid) => kid.kids.length === 0) ? 8 : 16)
-const sized = (node) =>
-  node.kids.length === 0
-    ? (node.size = node.h)
-    : (node.size = Math.max(
-        node.h,
-        node.kids.reduce((sum, kid) => sum + sized(kid), 0) + space(node) * (node.kids.length - 1),
-      ))
-for (const node of nodes) measure(node, node.kids.length > 0 || leaves.length <= 8 ? "body2" : "caption")
-if (sized(root) > box.h && leaves.length <= 8) for (const leaf of leaves) measure(leaf, "caption")
-remove({ target: probe })
-if (sized(root) > box.h)
-  throw new Error(
-    `The tree needs ${root.size} px of height and its box holds ${box.h}: shorten the longest leaves, or give each branch its own slide.`,
-  )
-
-const place = (node, top) => {
-  if (node.kids.length === 0) return (node.y = top)
-  const span = node.kids.reduce((sum, kid) => sum + kid.size, 0) + space(node) * (node.kids.length - 1)
-  let at = top + (node.size - span) / 2
-  for (const kid of node.kids) {
-    place(kid, at)
-    at += kid.size + space(node)
-  }
-  const first = node.kids[0]
-  const last = node.kids.at(-1)
-  const middle = (first.y + first.h / 2 + last.y + last.h / 2) / 2
-  node.y = Math.min(Math.max(middle - node.h / 2, top), top + node.size - node.h)
-}
-place(root, (box.h - root.size) / 2)
-
-for (const node of nodes)
-  node.id = insert({
+const tall = (id) => get({ target: id }).box.h
+const draw = (node, textStyle) =>
+  (node.id = insert({
     parent: frame,
-    kind: "shape",
-    shape: "rect",
+    kind: "text",
     name: node.text,
-    text: node.words,
-    textStyle: node.style,
-    align: "left",
-    alignV: "center",
-    padding: padOf(node),
+    text: node.kids.length > 0 || node.status === "proven" ? `**${node.text}**` : node.text,
+    textStyle,
+    alignV: "top",
+    padding: node.kids.length === 0 ? { t: 5, r: 12, b: 5, l: 12 } : 14,
     fill: node.kids.length > 0 ? "background2" : "none",
     color: node.status === "disproven" ? "text2" : "text",
     stroke: node.kids.length > 0 && lit(node) ? "accent1" : "none",
     strokeWidth: 3,
-    box: { x: colX[node.depth], y: Math.round(node.y), w: widthOf(node), h: node.h },
-  })
-const joined = nodes.filter((node) => node.parent !== null)
-for (const node of joined.toSorted((p, q) => lit(p) - lit(q)))
+    box: { x: colX[node.depth], y: 0, w: widthOf(node), h: 40 },
+  }))
+for (const leaf of leaves) draw(leaf, leaves.length <= 8 ? "body2" : "caption")
+const least = () =>
+  leaves.reduce((sum, leaf) => sum + tall(leaf.id), 0) +
+  inner.reduce((sum, node) => sum + space(node) * (node.kids.length - 1), 0)
+if (least() > box.h && leaves.length <= 8) for (const leaf of leaves) update({ target: leaf.id, textStyle: "caption" })
+
+const build = (node) => {
+  if (node.kids.length === 0) {
+    const status = insert({
+      parent: frame,
+      kind: "shape",
+      shape: "rect",
+      fill: "none",
+      name: `${node.text} status`,
+      text: words[node.status],
+      textStyle: "label",
+      color: node.status === "proven" ? "accent1" : node.status === "disproven" ? "text2" : "text",
+      align: "left",
+      alignV: "center",
+      padding: 0,
+      box: { x: leafRight + 24, y: 0, w: statusW, h: tall(node.id) },
+    })
+    return (node.group = group({ targets: [node.id, status] }))
+  }
+  const column = group({ targets: node.kids.map(build), layout: "column", gap: space(node) })
+  draw(node, "body2")
+  const [span, h] = [tall(column), tall(node.id)]
+  const mid = (kid) => get({ target: kid.group }).box.y + get({ target: kid.id }).box.y + tall(kid.id) / 2
+  const middle = (mid(node.kids[0]) + mid(node.kids.at(-1))) / 2
+  if (h > span) update({ target: column, box: { y: Math.round((h - span) / 2) } })
+  else update({ target: node.id, box: { y: Math.round(Math.min(Math.max(middle - h / 2, 0), span - h)) } })
+  node.column = column
+  return (node.group = node.depth === 0 ? column : group({ targets: [node.id, column] }))
+}
+build(root)
+const height = Math.max(tall(root.id), tall(root.column))
+if (height > box.h)
+  throw new Error(
+    `The tree needs ${height} px of height and its box holds ${box.h}: shorten the longest leaves, or give each branch its own slide.`,
+  )
+update({ target: frame, box: { y: box.y + Math.round((box.h - height) / 2), h: height } })
+
+for (const node of nodes.filter((node) => node.parent !== null).toSorted((p, q) => lit(p) - lit(q)))
   insert({
     parent: frame,
     kind: "line",
@@ -158,21 +160,6 @@ for (const node of joined.toSorted((p, q) => lit(p) - lit(q)))
     lane: colX[node.parent.depth] + widths[node.parent.depth] + gap / 2,
     stroke: lit(node) ? "accent1" : "text2",
     strokeWidth: lit(node) ? 3 : 2,
-  })
-for (const leaf of leaves)
-  insert({
-    parent: frame,
-    kind: "shape",
-    shape: "rect",
-    fill: "none",
-    name: `${leaf.text} status`,
-    text: words[leaf.status],
-    textStyle: "label",
-    color: leaf.status === "proven" ? "accent1" : leaf.status === "disproven" ? "text2" : "text",
-    align: "left",
-    alignV: "center",
-    padding: 0,
-    box: { x: leafRight + 24, y: Math.round(leaf.y), w: statusW, h: leaf.h },
   })
 get({ target: frame }).problems
 ```
@@ -187,5 +174,5 @@ get({ target: frame }).problems
 ## How the layout works
 
 - Columns: the question, then one column a level, joined by elbow lines that leave a parent's right side and meet each child's left side. A leaf above the last level stretches to the leaves' right edge, so every status lines up in one column.
-- Rows: each leaf is as tall as its words. A parent sits level with the middle of its children, and branches of the question sit 32 px apart.
+- Rows: each node is as tall as its words and grows with them when the deck changes style. Each parent's children stack in a column that pushes the rows below down, so nothing overlaps. A parent sits level with the middle of its children, and branches of the question sit 24 px apart.
 - Type: nodes in `body2`, the question and branches in bold. With more than 8 leaves, or when the tree runs out of height, leaves drop to `caption`.

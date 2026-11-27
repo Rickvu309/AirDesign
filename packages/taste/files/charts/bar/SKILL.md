@@ -48,7 +48,7 @@ const ranked = rows.toSorted((a, b) => (a[0] === "Other") - (b[0] === "Other") |
 const largest = Math.max(...ranked.map(([, value]) => value))
 const top = 72
 const nameW = Math.min(Math.round(box.w * 0.4), Math.max(...ranked.map(([name]) => wide(name, sizes.body2))))
-const valueW = Math.max(...ranked.map(([, value]) => wide(`**${shown(value)}**`, sizes.body2))) + 8
+const valueW = Math.ceil(Math.max(...ranked.map(([, value]) => wide(`**${shown(value)}**`, sizes.body2))) * 1.4) + 8
 const barX = nameW + 24
 const track = box.w - barX - 16 - valueW
 const row = (box.h - top) / ranked.length
@@ -100,7 +100,7 @@ ranked.forEach(([name, value], i) => {
     text: lit ? `**${shown(value)}**` : shown(value),
     align: "left",
     alignV: "center",
-    box: { x: barX + w + 16, y, w: valueW, h },
+    box: { x: barX + w + 16, y, w: box.w - barX - w - 16, h },
   })
 })
 insert({

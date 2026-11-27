@@ -191,9 +191,14 @@ if (series.length === 2) {
   const [upper, lower] = labels.toSorted((a, b) => a.y - b.y)
   const upperH = tall(upper.text)
   placed.push(
-    { ...upper, top: Math.min(upper.y - Math.round(upperH / 2), middle - 4 - upperH), h: upperH },
+    { ...upper, top: Math.min(upper.y - Math.round(upperH / 2), middle - 4 - upperH), h: upperH, alignV: "bottom" },
     { ...gap, top: middle, h: lineH },
-    { ...lower, top: Math.max(lower.y - Math.round(tall(lower.text) / 2), middle + lineH + 4), h: tall(lower.text) },
+    {
+      ...lower,
+      top: Math.max(lower.y - Math.round(tall(lower.text) / 2), middle + lineH + 4),
+      h: tall(lower.text),
+      alignV: "top",
+    },
   )
 } else {
   let below = -Infinity
@@ -203,21 +208,20 @@ if (series.length === 2) {
       const h = tall(label.text)
       const top = Math.max(label.y - Math.round(h / 2), below + 4)
       below = top + h
-      placed.push({ ...label, top, h })
+      placed.push({ ...label, top, h, alignV: "top" })
     })
 }
-placed.forEach(({ name, text, color, top, h }) =>
+placed.forEach(({ name, text, color, top, h, alignV = "center" }) =>
   insert({
     parent: chart,
-    kind: "shape",
-    fill: "none",
+    kind: "text",
     name,
     padding: 0,
     textStyle: "body2",
     ...(color === undefined ? {} : { color }),
     text,
     align: "left",
-    alignV: "center",
+    alignV,
     box: { x: box.w - endW, y: top, w: endW, h },
   }),
 )

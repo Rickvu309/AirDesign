@@ -72,32 +72,39 @@ const paintOf = (paints: readonly doom.Paint[] | undefined) =>
   paints?.map((paint) => (paint.kind === "solid" ? JSON.stringify(paint.color) : paint.kind)).join(" ") ?? ""
 
 export function picture(fold: doom.Doom, frame: doom.NodeId) {
-  const at = doom.propOf(fold.nodes.get(frame), "box")!
-  const layers = doom.childrenOf(fold, frame).map((node): Layer => {
-    const own = doom.propOf(node, "box")!
-    const text = doom.propOf(node, "text")
-    return {
-      id: node.id,
-      name: doom.propOf(node, "name") ?? "",
-      box: { x: at.x + own.x, y: at.y + own.y, w: own.w, h: own.h },
-      fill: paintOf(doom.propOf(node, "fills")),
-      stroke: paintOf(doom.propOf(node, "strokes")),
-      color: JSON.stringify(text?.spans[0]?.color ?? ""),
-      text: text?.chars ?? "",
-    }
-  })
   const slide = doom.slideOf(fold, frame)!
-  const resolved = new Map(flat(doom.resolveSlide(fold, slide, estimate)).map((each) => [each.id, each]))
+  const placed: { readonly node: doom.Resolved; readonly x: number; readonly y: number }[] = []
+  const walk = (node: doom.Resolved, x: number, y: number): void => {
+    if (node.id !== frame) placed.push({ node, x, y })
+    for (const kid of node.children) walk(kid, x + node.box.x, y + node.box.y)
+  }
+  const top = flat(doom.resolveSlide(fold, slide, estimate)).find((each) => each.id === frame)!
+  walk(top, 0, 0)
+  const layers = placed.flatMap(({ node, x, y }): Layer[] => {
+    const stored = fold.nodes.get(node.id as doom.NodeId)!
+    if (stored.type === "frame") return []
+    const text = doom.propOf(stored, "text")
+    return [
+      {
+        id: node.id,
+        name: doom.propOf(stored, "name") ?? "",
+        box: { x: x + node.box.x, y: y + node.box.y, w: node.box.w, h: node.box.h },
+        fill: paintOf(doom.propOf(stored, "fills")),
+        stroke: paintOf(doom.propOf(stored, "strokes")),
+        color: JSON.stringify(text?.spans[0]?.color ?? ""),
+        text: text?.chars ?? "",
+      },
+    ]
+  })
   const lines = layers.flatMap((layer): Line[] => {
     const geometry = doom.propOf(fold.nodes.get(layer.id as doom.NodeId), "geometry")
     if (geometry?.kind !== "line") return []
-    const drawn = resolved.get(layer.id)!
-    const points = (drawn.geometry as { points: readonly Point[] }).points
+    const { node, x, y } = placed.find((each) => each.node.id === layer.id)!
+    const points = (node.geometry as { points: readonly Point[] }).points
     const from = "node" in geometry.start ? geometry.start.node : ""
     const to = "node" in geometry.end ? geometry.end.node : ""
-    const x = at.x + drawn.box.x
-    const y = at.y + drawn.box.y
-    return [{ ...layer, from, to, points: points.map((p) => ({ x: x + p.x, y: y + p.y })) }]
+    const at = { x: x + node.box.x, y: y + node.box.y }
+    return [{ ...layer, from, to, points: points.map((p) => ({ x: at.x + p.x, y: at.y + p.y })) }]
   })
   const named = (name: string) => {
     const found = layers.filter((layer) => layer.name === name)
