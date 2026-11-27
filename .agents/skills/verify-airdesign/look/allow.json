@@ -28,5 +28,11 @@
     "detector": "empty-region",
     "selector": "[data-editor-panel]",
     "reason": "The icon panel has alignment and one color swatch. The shared panel leaves the space below them open so the controls stay at the top."
+  },
+  {
+    "page": "grid-under-chrome",
+    "detector": "overflowing-text",
+    "selector": "[data-grid-view] header",
+    "reason": "Grid slides scroll on under the floating header, as in Figma Slides, so a slide number can pass beneath a header island, which paints above it."
   }
 ]
