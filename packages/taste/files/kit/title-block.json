@@ -2,19 +2,45 @@
   "type": "frame",
   "name": "Title block",
   "props": {
-    "box": { "x": 0, "y": 0, "w": 1680, "h": 121, "rotation": 0, "flipH": false, "flipV": false },
-    "sizing": { "w": "fixed", "h": "hug" },
-    "layout": { "mode": "column", "gap": 16, "padding": { "t": 0, "r": 0, "b": 0, "l": 0 }, "align": "top-left" }
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 1680,
+      "h": 105,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    },
+    "sizing": {
+      "w": "fixed",
+      "h": "hug"
+    },
+    "layout": {
+      "mode": "column",
+      "gap": 12,
+      "padding": {
+        "t": 0,
+        "r": 0,
+        "b": 0,
+        "l": 0
+      },
+      "align": "top-left"
+    }
   },
   "children": [
     {
       "type": "shape",
       "name": "Title",
       "props": {
-        "geometry": { "kind": "rect" },
-        "sizing": { "w": "fill", "h": "hug" },
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
         "text": {
-          "chars": "Revenue grew 18% on two new markets",
+          "chars": "Two new markets lifted revenue 18% in FY26",
           "spans": [],
           "paras": [{}],
           "style": "title",
@@ -25,15 +51,27 @@
     },
     {
       "type": "shape",
-      "name": "Subtitle",
+      "name": "Caption",
       "props": {
-        "geometry": { "kind": "rect" },
-        "sizing": { "w": "fill", "h": "hug" },
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
         "text": {
-          "chars": "FY26 against FY25, all regions",
-          "spans": [{ "end": 30, "color": { "var": "text2" } }],
+          "chars": "Revenue by region, FY25 and FY26, $M",
+          "spans": [
+            {
+              "end": 36,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
           "paras": [{}],
-          "style": "body",
+          "style": "caption",
           "resize": "height",
           "alignV": "top"
         }

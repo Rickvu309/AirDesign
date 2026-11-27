@@ -1,0 +1,109 @@
+{
+  "type": "frame",
+  "name": "Numbered callout",
+  "props": {
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 720,
+      "h": 86,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    },
+    "sizing": {
+      "w": "fixed",
+      "h": "hug"
+    },
+    "layout": {
+      "mode": "row",
+      "gap": 20,
+      "padding": {
+        "t": 0,
+        "r": 0,
+        "b": 0,
+        "l": 0
+      },
+      "align": "top-left"
+    }
+  },
+  "children": [
+    {
+      "type": "shape",
+      "name": "Marker",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 44,
+          "h": 44,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "sizing": {
+          "w": "fixed",
+          "h": "fixed"
+        },
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text"
+            }
+          }
+        ],
+        "radius": 22,
+        "text": {
+          "chars": "1",
+          "spans": [
+            {
+              "end": 1,
+              "color": {
+                "var": "background"
+              }
+            }
+          ],
+          "paras": [
+            {
+              "align": "center"
+            }
+          ],
+          "style": "label",
+          "resize": "fixed",
+          "alignV": "center",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Claim",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
+        "text": {
+          "chars": "Benelux pays back in 26 months, the fastest of the four markets",
+          "spans": [],
+          "paras": [{}],
+          "style": "body",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,155 @@
+{
+  "type": "frame",
+  "name": "Cover",
+  "props": {
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 368,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    },
+    "sizing": {
+      "w": "fixed",
+      "h": "hug"
+    },
+    "layout": {
+      "mode": "column",
+      "gap": 40,
+      "padding": {
+        "t": 0,
+        "r": 0,
+        "b": 0,
+        "l": 0
+      },
+      "align": "top-left"
+    }
+  },
+  "children": [
+    {
+      "type": "shape",
+      "name": "Mark",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 96,
+          "h": 8,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "sizing": {
+          "w": "fixed",
+          "h": "fixed"
+        },
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "accent1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Title",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
+        "text": {
+          "chars": "Enter Benelux in 2027 to reach $120M in revenue",
+          "spans": [],
+          "paras": [{}],
+          "style": "display",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    },
+    {
+      "type": "frame",
+      "name": "Meta",
+      "props": {
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
+        "layout": {
+          "mode": "column",
+          "gap": 4,
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          },
+          "align": "top-left"
+        }
+      },
+      "children": [
+        {
+          "type": "shape",
+          "name": "Audience",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "For the board of directors",
+              "spans": [],
+              "paras": [{}],
+              "style": "body",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        },
+        {
+          "type": "shape",
+          "name": "Date",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "March 2027",
+              "spans": [
+                {
+                  "end": 10,
+                  "color": {
+                    "var": "text2"
+                  }
+                }
+              ],
+              "paras": [{}],
+              "style": "body",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

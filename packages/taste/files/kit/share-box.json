@@ -1,0 +1,202 @@
+{
+  "type": "frame",
+  "name": "Share box",
+  "props": {
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 1680,
+      "h": 131,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    },
+    "sizing": {
+      "w": "fixed",
+      "h": "hug"
+    },
+    "layout": {
+      "mode": "column",
+      "gap": 16,
+      "padding": {
+        "t": 0,
+        "r": 0,
+        "b": 0,
+        "l": 0
+      },
+      "align": "top-left"
+    }
+  },
+  "children": [
+    {
+      "type": "frame",
+      "name": "Bar",
+      "props": {
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
+        "layout": {
+          "mode": "row",
+          "gap": 0,
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          },
+          "align": "top-left"
+        }
+      },
+      "children": [
+        {
+          "type": "shape",
+          "name": "Share",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "box": {
+              "x": 0,
+              "y": 0,
+              "w": 420,
+              "h": 72,
+              "rotation": 0,
+              "flipH": false,
+              "flipV": false
+            },
+            "sizing": {
+              "w": "fixed",
+              "h": "fixed"
+            },
+            "fills": [
+              {
+                "kind": "solid",
+                "color": {
+                  "var": "accent1"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "shape",
+          "name": "Rest",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "box": {
+              "x": 0,
+              "y": 0,
+              "w": 1260,
+              "h": 72,
+              "rotation": 0,
+              "flipH": false,
+              "flipV": false
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "fixed"
+            },
+            "fills": [
+              {
+                "kind": "solid",
+                "color": {
+                  "var": "background2"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "name": "Labels",
+      "props": {
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
+        "layout": {
+          "mode": "row",
+          "gap": 24,
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          },
+          "align": "top-left"
+        }
+      },
+      "children": [
+        {
+          "type": "shape",
+          "name": "Share label",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "Our share: 25%, $5M",
+              "spans": [
+                {
+                  "end": 11
+                },
+                {
+                  "end": 14,
+                  "bold": true
+                },
+                {
+                  "end": 19
+                }
+              ],
+              "paras": [{}],
+              "style": "body",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        },
+        {
+          "type": "shape",
+          "name": "Whole label",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "Addressable market: $20M",
+              "spans": [
+                {
+                  "end": 24,
+                  "color": {
+                    "var": "text2"
+                  }
+                }
+              ],
+              "paras": [
+                {
+                  "align": "right"
+                }
+              ],
+              "style": "body",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

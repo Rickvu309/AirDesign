@@ -1,0 +1,828 @@
+{
+  "type": "frame",
+  "name": "QA plan",
+  "props": {
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 1680,
+      "h": 368,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    },
+    "sizing": {
+      "w": "fixed",
+      "h": "hug"
+    },
+    "layout": {
+      "mode": "grid",
+      "columns": [
+        {
+          "fr": 3
+        },
+        {
+          "fr": 3
+        },
+        {
+          "fr": 3
+        },
+        {
+          "fr": 2.4
+        },
+        {
+          "fr": 1.2
+        }
+      ],
+      "rows": ["hug", "hug", "hug", "hug"],
+      "gap": 0,
+      "padding": {
+        "t": 0,
+        "r": 0,
+        "b": 0,
+        "l": 0
+      }
+    }
+  },
+  "children": [
+    {
+      "type": "shape",
+      "name": "Header rule",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 0,
+          "col": 0,
+          "colSpan": 5
+        },
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 2,
+          "align": "inside",
+          "dash": "solid",
+          "sides": {
+            "b": 2
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Question",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 0,
+          "col": 0
+        },
+        "text": {
+          "chars": "Question",
+          "spans": [
+            {
+              "end": 8,
+              "color": {
+                "var": "text2"
+              },
+              "case": "upper"
+            }
+          ],
+          "paras": [{}],
+          "style": "label",
+          "resize": "height",
+          "alignV": "bottom",
+          "padding": {
+            "t": 0,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Hypothesis",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 0,
+          "col": 1
+        },
+        "text": {
+          "chars": "Hypothesis",
+          "spans": [
+            {
+              "end": 10,
+              "color": {
+                "var": "text2"
+              },
+              "case": "upper"
+            }
+          ],
+          "paras": [{}],
+          "style": "label",
+          "resize": "height",
+          "alignV": "bottom",
+          "padding": {
+            "t": 0,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Analysis",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 0,
+          "col": 2
+        },
+        "text": {
+          "chars": "Analysis",
+          "spans": [
+            {
+              "end": 8,
+              "color": {
+                "var": "text2"
+              },
+              "case": "upper"
+            }
+          ],
+          "paras": [{}],
+          "style": "label",
+          "resize": "height",
+          "alignV": "bottom",
+          "padding": {
+            "t": 0,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Source",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 0,
+          "col": 3
+        },
+        "text": {
+          "chars": "Source",
+          "spans": [
+            {
+              "end": 6,
+              "color": {
+                "var": "text2"
+              },
+              "case": "upper"
+            }
+          ],
+          "paras": [{}],
+          "style": "label",
+          "resize": "height",
+          "alignV": "bottom",
+          "padding": {
+            "t": 0,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Owner",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 0,
+          "col": 4
+        },
+        "text": {
+          "chars": "Owner",
+          "spans": [
+            {
+              "end": 5,
+              "color": {
+                "var": "text2"
+              },
+              "case": "upper"
+            }
+          ],
+          "paras": [{}],
+          "style": "label",
+          "resize": "height",
+          "alignV": "bottom",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Rule 1",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 1,
+          "col": 0,
+          "colSpan": 5
+        },
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text"
+            },
+            "opacity": 0.2
+          }
+        ],
+        "stroke": {
+          "weight": 1,
+          "align": "inside",
+          "dash": "solid",
+          "sides": {
+            "b": 1
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Question 1",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 1,
+          "col": 0
+        },
+        "text": {
+          "chars": "Is Benelux demand big enough?",
+          "spans": [
+            {
+              "end": 29,
+              "bold": true
+            }
+          ],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Hypothesis 1",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 1,
+          "col": 1
+        },
+        "text": {
+          "chars": "Yes: 40 stores reach $2M each by year two",
+          "spans": [],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Analysis 1",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 1,
+          "col": 2
+        },
+        "text": {
+          "chars": "Size demand by city and income band",
+          "spans": [],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Source 1",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 1,
+          "col": 3
+        },
+        "text": {
+          "chars": "Eurostat, Nordic store data",
+          "spans": [],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Owner 1",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 1,
+          "col": 4
+        },
+        "text": {
+          "chars": "Ana",
+          "spans": [],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 0,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Rule 2",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 2,
+          "col": 0,
+          "colSpan": 5
+        },
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text"
+            },
+            "opacity": 0.2
+          }
+        ],
+        "stroke": {
+          "weight": 1,
+          "align": "inside",
+          "dash": "solid",
+          "sides": {
+            "b": 1
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Question 2",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 2,
+          "col": 0
+        },
+        "text": {
+          "chars": "Can we staff 40 stores by Q3?",
+          "spans": [
+            {
+              "end": 29,
+              "bold": true
+            }
+          ],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Hypothesis 2",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 2,
+          "col": 1
+        },
+        "text": {
+          "chars": "Yes, if two agencies hire for us",
+          "spans": [],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Analysis 2",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 2,
+          "col": 2
+        },
+        "text": {
+          "chars": "Hiring funnel from the Nordic launch",
+          "spans": [],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Source 2",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 2,
+          "col": 3
+        },
+        "text": {
+          "chars": "HR data, agency quotes",
+          "spans": [],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Owner 2",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 2,
+          "col": 4
+        },
+        "text": {
+          "chars": "Jonas",
+          "spans": [],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 0,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Question 3",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 3,
+          "col": 0
+        },
+        "text": {
+          "chars": "Will margins hold at Benelux rents?",
+          "spans": [
+            {
+              "end": 35,
+              "bold": true
+            }
+          ],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Hypothesis 3",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 3,
+          "col": 1
+        },
+        "text": {
+          "chars": "No: rents cost 3 points until year three",
+          "spans": [],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Analysis 3",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 3,
+          "col": 2
+        },
+        "text": {
+          "chars": "Rent per m² against Nordic stores",
+          "spans": [],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Source 3",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 3,
+          "col": 3
+        },
+        "text": {
+          "chars": "Broker reports",
+          "spans": [],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 24,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Owner 3",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "cell": {
+          "row": 3,
+          "col": 4
+        },
+        "text": {
+          "chars": "Lea",
+          "spans": [],
+          "paras": [{}],
+          "style": "body2",
+          "resize": "height",
+          "alignV": "top",
+          "padding": {
+            "t": 16,
+            "r": 0,
+            "b": 16,
+            "l": 0
+          }
+        }
+      }
+    }
+  ]
+}
