@@ -3,14 +3,8 @@ import type { IncomingMessage, ServerResponse } from "node:http"
 
 import { type DeckId, type DoomRefusal, readDeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
-import {
-  createServer,
-  type DeckHost,
-  type NamedImage,
-  type UndoHost,
-  type Session,
-  type SlideShot,
-} from "@airdesign/mcp"
+import { type DeckHost, type NamedImage, type UndoHost, type Session, type SlideShot } from "@airdesign/agent"
+import { createServer } from "@airdesign/mcp"
 import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node"
 import { createMcpHandler } from "@modelcontextprotocol/server"
 

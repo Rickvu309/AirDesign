@@ -1,12 +1,12 @@
 import { catalog, onceMeta, projectTools } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
+import { type DeckHost, type Session } from "@airdesign/agent"
+import { memoryDecks, scriptOf } from "@airdesign/agent/testing/evals"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 
-import { createServer, type DeckHost, type Session } from "./index.js"
-import { scriptOf } from "./testing/change-script.js"
-import { memoryDecks } from "./testing/memory-decks.js"
+import { createServer } from "./index.js"
 
 function started(): doom.Doom {
   return doom.doomFromTree({

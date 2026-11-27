@@ -35,7 +35,7 @@ Under both sit the private app (Run the app) and `prove`, which picks the checks
 - `apps/web`, the product UI. Primary. Home `/`, Trash `/trash`, a deck `/s/<id>` (`/s` makes a new one). Designed screens at `/screens/<id>-<name>` are static sample pages, not the app.
 - `apps/api`, the server. Reached through the same origin for every path in its own route table (`routes` in `apps/api/src/server.ts`), so the browser sends its session cookie the way production does.
 - `apps/site`, marketing and the sign-in pages. Served on a second origin of the same stack (`siteOrigin` in the launch line, `kit.siteOrigin`): its sign-in paths go to the API the way the site's Worker sends them, and its pages come from a build made with a placeholder app address that the front server swaps for the stack's app origin. The app's signed-out redirect goes to `https://airdesign.app/sign-in`, built into `apps/web`; the journey kit answers every `airdesign.app` address with a stand-in page so no journey reaches production, and `kit.useSite()` sends `https://airdesign.app/sign-in` to the site origin instead. See `features/sign-in.md`.
-- `packages/mcp`, the agent tools, mounted by the API at `/mcp`. Secondary. Its tests in `apps/api/src/mcp.test.ts` are the driver today.
+- `packages/agent`, the agent tools, served by `packages/mcp` and mounted by the API at `/mcp`. Secondary. Its tests in `apps/api/src/mcp.test.ts` are the driver today.
 
 ### Launch
 

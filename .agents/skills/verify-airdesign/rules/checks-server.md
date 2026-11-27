@@ -4,7 +4,7 @@ Same fields as [checks-doom.md](checks-doom.md). The `apps/api` tests start the 
 
 ## agents
 
-Two agents of one account edit one deck. The server names the agent from the credential, never from the call: `caller` in `apps/api/src/server.ts` keys a bearer token by its grant and the cookie, which is Aira's, by the account, through `agentKey` in `apps/api/src/oauth/agent-key.ts` (`bearerPrincipal` in `apps/api/src/oauth/tokens.ts` answers the grant). `mcpRoute` mints each call's once as `<agent key>-<uuid>`. `executeTool` in `packages/mcp/src/execute-tool.ts` writes with the agent key as the edit's author and, for a call without `runId`, starts a run named from its once (`onceIds` in `packages/mcp/src/once-ids.ts`).
+Two agents of one account edit one deck. The server names the agent from the credential, never from the call: `caller` in `apps/api/src/server.ts` keys a bearer token by its grant and the cookie, which is Aira's, by the account, through `agentKey` in `apps/api/src/oauth/agent-key.ts` (`bearerPrincipal` in `apps/api/src/oauth/tokens.ts` answers the grant). `mcpRoute` mints each call's once as `<agent key>-<uuid>`. `executeTool` in `packages/agent/src/execute-tool.ts` writes with the agent key as the edit's author and, for a call without `runId`, starts a run named from its once (`onceIds` in `packages/agent/src/once-ids.ts`).
 
 A run is its agent's: `guardRun` in `packages/doom/src/apply-edit.ts` records the agent of a start edit as the run's `agent` and takes a write or a stop into the run only from that agent, and `stopRunTool` answers `run-fenced` for another agent's run before it lands anything.
 
@@ -27,7 +27,7 @@ Sync: `specs/agents/covers.json`.
 
 A turn is one agent's time on a deck: it starts with the agent's first edit or slide call there and ends with a stop of its run or the idle window. A person's edit on an element the turn holds closes that element to the turn's writes until the turn ends.
 
-- `ClosedUntilTurnEnds`, `RefusalKeepsTurn`, `TurnKeepsItsRuns`: no code holds these on a Doom deck. `executeTool` in `packages/mcp/src/execute-tool.ts` starts a run for a call that lands writes without `runId`, and `protect` in `packages/doom/src/apply-edit.ts` guards a node for the runs running when the person writes, not for the agent's turn. A start stops the same agent's running run (`guardRun`), so two calls of one agent sent without `runId` at the same time end the first call's run, and its next write is fenced: the opposite of `TurnKeepsItsRuns`. On a Doom deck the run is the agent's turn, and specs/agents holds it.
+- `ClosedUntilTurnEnds`, `RefusalKeepsTurn`, `TurnKeepsItsRuns`: no code holds these on a Doom deck. `executeTool` in `packages/agent/src/execute-tool.ts` starts a run for a call that lands writes without `runId`, and `protect` in `packages/doom/src/apply-edit.ts` guards a node for the runs running when the person writes, not for the agent's turn. A start stops the same agent's running run (`guardRun`), so two calls of one agent sent without `runId` at the same time end the first call's run, and its next write is fenced: the opposite of `TurnKeepsItsRuns`. On a Doom deck the run is the agent's turn, and specs/agents holds it.
 
 Bounds: one agent, two elements. 160 states. Run: `pnpm check:specs turn`. Replay: none, and `unreplayed` in `scripts/spec-replays.mjs` says why.
 

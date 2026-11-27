@@ -1,10 +1,10 @@
 import * as doom from "@airdesign/doom"
+import { type DeckHost } from "@airdesign/agent"
+import { memoryDecks, scriptOf } from "@airdesign/agent/testing/evals"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { expect, it } from "vitest"
 
-import { createServer, type DeckHost } from "./index.js"
-import { scriptOf } from "./testing/change-script.js"
-import { memoryDecks } from "./testing/memory-decks.js"
+import { createServer } from "./index.js"
 
 const shot = "/9j/AAAA"
 

@@ -17,9 +17,7 @@ export type Session = {
 
 const tools = projectTools(catalog)
 
-export const opOf = (name: string): AgentOp | undefined => tools.find((tool) => tool.name === name)?.op
-
-export const knownTool = (name: string): boolean => opOf(name) !== undefined
+const opOf = (name: string): AgentOp | undefined => tools.find((tool) => tool.name === name)?.op
 
 export async function callTool(
   name: string,

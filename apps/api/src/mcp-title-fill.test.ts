@@ -1,4 +1,4 @@
-import { scriptOf } from "@airdesign/mcp/testing/evals"
+import { scriptOf } from "@airdesign/agent/testing/evals"
 import { randomBytes } from "node:crypto"
 
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"

@@ -1,4 +1,6 @@
 layer: service
+dependencies:
+  - packages/agent#runtime
+  - packages/agent#testing
 public:
   runtime: [src/index.ts]
-  testing: [src/testing/evals.ts]

@@ -1,4 +1,4 @@
-import { scriptOf } from "../../packages/mcp/src/testing/change-script.ts"
+import { scriptOf } from "../../packages/agent/src/testing/change-script.ts"
 import { expect, type Page } from "@playwright/test"
 import { airaCopy } from "../../apps/web/src/copy/aira-copy.ts"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy.ts"

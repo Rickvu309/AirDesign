@@ -149,6 +149,7 @@ try {
         "apps/api/",
         "apps/site/",
         "apps/web/",
+        "packages/agent/",
         "packages/catalog/",
         "packages/live/",
         "packages/mcp/",

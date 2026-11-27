@@ -1,13 +1,9 @@
+import { callTool, type Answer, type Session } from "@airdesign/agent"
+import { evalDeckId, memoryDecks, suite } from "@airdesign/agent/testing/evals"
 import { listStyles, readSkillIndex } from "@airdesign/skills"
 import { expect, it } from "vitest"
 
-import type { Answer } from "./answer.js"
-import * as budget from "./budget.js"
-import { callTool, type Session } from "./call-tool.js"
 import { encode } from "./encode.js"
-import { memoryDecks } from "./testing/memory-decks.js"
-import { evalDeckId } from "./testing/score.js"
-import { suite } from "./testing/suite.js"
 
 const sizeOf = (answer: Answer) => Buffer.byteLength(JSON.stringify(encode(answer)))
 
@@ -56,18 +52,4 @@ it("keeps the largest answer of each tool on the eval decks under its stated siz
   const largest = await largestAnswers()
   expect(Object.keys(largest).sort()).toEqual(Object.keys(statedBytes))
   for (const [tool, stated] of Object.entries(statedBytes)) expect(largest[tool], tool).toBeLessThanOrEqual(stated)
-})
-
-it("holds every cap on what one call answers in one place", () => {
-  expect({ ...budget }).toEqual({
-    deckPage: 50,
-    foundLines: 400,
-    imagesPerCall: 10,
-    namedIds: 5,
-    readBytes: 24_000,
-    resultChars: 20_000,
-    scriptLimits: { ms: 20_000, memory: 64 * 1024 * 1024, stack: 1024 * 1024, logs: 50 },
-    shotsPerCall: 4,
-    shownFindings: 10,
-  })
 })

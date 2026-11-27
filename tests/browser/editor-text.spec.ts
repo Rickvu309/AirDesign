@@ -1,4 +1,4 @@
-import { scriptOf } from "../../packages/mcp/src/testing/change-script.ts"
+import { scriptOf } from "../../packages/agent/src/testing/change-script.ts"
 import { readFold, slidesOf, type AgentChange } from "../../packages/doom/src/index.ts"
 import { expect, type Page } from "@playwright/test"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"

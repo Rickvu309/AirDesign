@@ -7,10 +7,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./testing/evals": {
-      "types": "./dist/testing/evals.d.ts",
-      "import": "./dist/testing/evals.js"
     }
   },
   "files": [
@@ -22,18 +18,17 @@
     "typecheck": "tsc -b"
   },
   "devDependencies": {
+    "@airdesign/skills": "workspace:*",
     "@modelcontextprotocol/client": "^2.4.0",
     "ajv": "8.20.0",
     "oxlint": "^1.90.0",
     "typescript": "catalog:"
   },
   "dependencies": {
+    "@airdesign/agent": "workspace:*",
     "@airdesign/catalog": "workspace:*",
     "@airdesign/doom": "workspace:*",
-    "@airdesign/skills": "workspace:*",
-    "@jitl/quickjs-wasmfile-release-sync": "0.32.0",
     "@modelcontextprotocol/server": "^2.4.0",
-    "quickjs-emscripten-core": "0.32.0",
     "zod": "^4.6.7"
   }
 }
