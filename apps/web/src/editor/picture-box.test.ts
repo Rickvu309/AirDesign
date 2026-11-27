@@ -1,6 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { pictureBox, pictureWrites } from "./picture-writes"
+import { intentWrites } from "./editor-intents"
+import { pictureBox } from "./picture-box"
 import { grow, landed } from "./testing/doom-fixtures"
 
 const slideSize = { w: 1920, h: 1080 }
@@ -26,11 +27,16 @@ describe("where a dropped picture lands", () => {
   })
 })
 
-describe("the writes that add a picture", () => {
+describe("adding a picture", () => {
   it("add a shape on top of the slide whose only fill is the image", () => {
     const { view, slides } = grow([{ type: "shape", name: "under", props: {} }])
-    const writes = pictureWrites(view, slides[0]!, doom.nodeId("m:1"), asset, { width: 400, height: 200 }, null)
-    const after = landed(view, writes)
+    const box = pictureBox({ width: 400, height: 200 }, slideSize, null)
+    const made = intentWrites(
+      view,
+      [{ op: "insert", kind: "picture", parent: slides[0]!, fill: { image: asset }, box }],
+      { mint: () => doom.nodeId("m:1") },
+    )
+    const after = landed(view, made!.writes)
     const order = after.children.get(slides[0]!) ?? []
     expect(order.at(-1)).toBe("m:1")
     expect(after.nodes.get(doom.nodeId("m:1"))).toMatchObject({

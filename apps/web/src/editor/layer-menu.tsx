@@ -4,7 +4,8 @@ import { useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode, t
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { editorCopy } from "@/copy/editor-copy"
 import { hitChain } from "@/editing/hit-test"
-import { maskable, maskWrites } from "./mask-writes"
+import { intentWrites } from "./editor-intents"
+import { togglable, toggleIntents } from "./toggle-intents"
 import { picked, unitOf, type Selection } from "./selection"
 import type { SlideGeometry } from "@/editing/slide-geometry"
 import type { EditorClient } from "./use-deck"
@@ -55,7 +56,7 @@ export function LayerMenu(props: {
     const deep = event.metaKey || event.ctrlKey
     const unit = unitOf(chain, selection.inside, deep)
     const next = selection.ids.includes(unit.id) ? selection : picked(chain, selection, { shift: false, deep })
-    const layers = maskable(view, next.ids)
+    const layers = togglable(view, next.ids)
     if (layers.length === 0) {
       chosen.current = []
       setOpen(false)
@@ -73,7 +74,8 @@ export function LayerMenu(props: {
   function apply() {
     if (applied.current) return
     applied.current = true
-    client.push(maskWrites(view, chosen.current))
+    const made = intentWrites(view, toggleIntents(view, chosen.current, "mask"))
+    if (made !== null) client.push(made.writes)
     setOpen(false)
   }
 

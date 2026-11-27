@@ -94,10 +94,6 @@ function sourceWrites(): ReadonlySet<string> {
   for (const text of Object.values(editorSources)) {
     for (const match of text.matchAll(/prop: "([a-zA-Z]+)"|setEach\(context, "([a-zA-Z]+)"/g))
       found.add(match[1] ?? match[2]!)
-    for (const match of text.matchAll(/toggleWrites\([^)]*"([a-z]+)" : "([a-z]+)"/g)) {
-      found.add(match[1]!)
-      found.add(match[2]!)
-    }
   }
   return found
 }

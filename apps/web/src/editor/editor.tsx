@@ -32,7 +32,7 @@ import { showsOf } from "@/present/slide-arrival"
 import { usePresent } from "@/present/use-present"
 import { cn } from "@/lib/class-names"
 import { percentOf, scaleOf, type Zoom } from "./canvas-view"
-import { renameWrites } from "./deck-writes"
+import { intentWrites } from "./editor-intents"
 import { AgentPanel } from "./agent-panel"
 import { DesignPanel } from "./design-panel"
 import { DoomCanvas, type CanvasCommands, type CaretWords } from "./canvas"
@@ -97,6 +97,10 @@ function Editing({
   useLayoutEffect(() => {
     measuring.current = measure
   })
+  const rename = (name: string) => {
+    const made = intentWrites(view, [{ op: "variables", name }])
+    if (made !== null) client.push(made.writes)
+  }
   const [selection, setSelection] = useState<Selection>(noSelection)
   const [cropping, setCropping] = useState<doom.NodeId | null>(null)
   const [tool, setTool] = useState<Tool>(start.tool ?? "move")
@@ -307,7 +311,7 @@ function Editing({
               canAdd: slides.length > 0,
               onAdd: () => strip.onAdd?.(),
               onSlides: closeGrid,
-              onRename: (name) => client.push(renameWrites(view, name)),
+              onRename: rename,
             }}
             right={
               panelHidden ? (
@@ -359,7 +363,7 @@ function Editing({
               title={title}
               strip={strip}
               save={saved.save}
-              onRename={(name) => client.push(renameWrites(view, name))}
+              onRename={rename}
               arrived={leftGrid}
               arrival={{ view, caught: client.caught, still: `${slide ?? ""} ${String(scale)}` }}
               onGrid={() => {

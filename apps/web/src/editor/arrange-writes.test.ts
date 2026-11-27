@@ -1,14 +1,21 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
-import { flipWrites, toggleWrites } from "./flip-writes"
 import { moveWrites } from "./move-writes"
-import { wrapWrites, ungroupWrites } from "./group-writes"
+import { flipIntents, ungrouped, wrapped } from "./arrange-intents"
+import { intentWrites } from "./editor-intents"
+import { toggleIntents } from "./toggle-intents"
 import { geometryOf } from "@/editing/slide-geometry"
 import { grow, landed, paint, spot } from "./testing/doom-fixtures"
 
 function minter() {
   let next = 0
   return () => doom.nodeId(`m:${String((next += 1))}`)
+}
+
+function compiled(view: doom.Doom, intents: readonly doom.Intent[]): readonly doom.Write[] {
+  const made = intentWrites(view, intents)
+  if (made === null) throw new Error("Doom refused the change")
+  return made.writes
 }
 
 const childrenOf = (view: doom.Doom, parent: doom.NodeId) => view.children.get(parent) ?? []
@@ -90,7 +97,7 @@ describe("group, frame and ungroup", () => {
   it("wraps layers in a hugging group whose box is their bounds, and keeps them where they were", () => {
     const built = grow(tree)
     const { ids, view, slides, geometry } = built
-    const made = wrapWrites(view, geometry, [ids.a!, ids.b!], "group", minter())!
+    const made = wrapped(view, geometry, [ids.a!, ids.b!], "group", minter())!
     const after = landed(view, made.writes)
     const group = made.selected[0]!
     expect(after.nodes.get(group)).toMatchObject({
@@ -109,7 +116,7 @@ describe("group, frame and ungroup", () => {
 
   it("wraps in a clipping frame with no hug when asked for a frame", () => {
     const built = grow(tree)
-    const made = wrapWrites(built.view, built.geometry, [built.ids.c!], "frame", minter())!
+    const made = wrapped(built.view, built.geometry, [built.ids.c!], "frame", minter())!
     const after = landed(built.view, made.writes)
     expect(after.nodes.get(made.selected[0]!)).toMatchObject({ name: "Frame", clip: true })
     expect(after.nodes.get(made.selected[0]!)).not.toHaveProperty("sizing")
@@ -125,15 +132,15 @@ describe("group, frame and ungroup", () => {
       },
       { type: "shape", name: "y", props: { box: spot(600, 0, 10, 10), fills: paint } },
     ])
-    expect(wrapWrites(built.view, built.geometry, [built.ids.x!, built.ids.y!], "group", minter())).toBeNull()
+    expect(wrapped(built.view, built.geometry, [built.ids.x!, built.ids.y!], "group", minter())).toBeNull()
   })
 
   it("ungroup puts the layers back in the parent at the group's place, where they showed", () => {
     const built = grow(tree)
     const { ids, view, slides, geometry } = built
-    const made = wrapWrites(view, geometry, [ids.a!, ids.b!], "group", minter())!
+    const made = wrapped(view, geometry, [ids.a!, ids.b!], "group", minter())!
     const grouped = landed(view, made.writes)
-    const again = ungroupWrites(grouped, regeometry(grouped, slides[0]!), made.selected)!
+    const again = ungrouped(grouped, regeometry(grouped, slides[0]!), made.selected)!
     const after = landed(grouped, again.writes)
     expect(again.selected).toEqual([ids.a!, ids.b!])
     expect(childrenOf(after, slides[0]!)).toEqual([ids.a!, ids.b!, ids.c!])
@@ -152,7 +159,7 @@ describe("group, frame and ungroup", () => {
       },
     ])
     const before = built.geometry.byId.get(built.ids.k!)!.bounds
-    const made = ungroupWrites(built.view, built.geometry, [built.ids.g!])!
+    const made = ungrouped(built.view, built.geometry, [built.ids.g!])!
     const after = landed(built.view, made.writes)
     const now = regeometry(after, built.slides[0]!).byId.get(built.ids.k!)!.bounds
     expect(now.left).toBeCloseTo(before.left, 0)
@@ -164,13 +171,13 @@ describe("group, frame and ungroup", () => {
     const built = grow([{ type: "shape", name: "k", props: { box: spot(320, 280, 160, 90), fills: paint } }])
     const { ids, slides } = built
     const mint = minter()
-    const inner = wrapWrites(built.view, built.geometry, [ids.k!], "group", mint)!
+    const inner = wrapped(built.view, built.geometry, [ids.k!], "group", mint)!
     let view = landed(built.view, inner.writes)
-    const outer = wrapWrites(view, regeometry(view, slides[0]!), inner.selected, "group", mint)!
+    const outer = wrapped(view, regeometry(view, slides[0]!), inner.selected, "group", mint)!
     view = landed(view, outer.writes)
     view = landed(view, moveWrites(view, regeometry(view, slides[0]!), [ids.k!], { x: 0, y: 30 }))
     const shown = regeometry(view, slides[0]!).byId.get(ids.k!)!.bounds
-    const made = ungroupWrites(view, regeometry(view, slides[0]!), outer.selected)!
+    const made = ungrouped(view, regeometry(view, slides[0]!), outer.selected)!
     const after = regeometry(landed(view, made.writes), slides[0]!).byId.get(ids.k!)!.bounds
     expect(after).toEqual(shown)
   })
@@ -179,12 +186,12 @@ describe("group, frame and ungroup", () => {
     const built = grow([{ type: "shape", name: "k", props: { box: spot(540, 120, 160, 90, 30), fills: paint } }])
     const { ids, slides } = built
     const mint = minter()
-    const inner = wrapWrites(built.view, built.geometry, [ids.k!], "group", mint)!
+    const inner = wrapped(built.view, built.geometry, [ids.k!], "group", mint)!
     let view = landed(built.view, inner.writes)
-    const outer = wrapWrites(view, regeometry(view, slides[0]!), inner.selected, "group", mint)!
+    const outer = wrapped(view, regeometry(view, slides[0]!), inner.selected, "group", mint)!
     view = landed(view, outer.writes)
     const shown = regeometry(view, slides[0]!).byId.get(ids.k!)!.bounds
-    const made = ungroupWrites(view, regeometry(view, slides[0]!), outer.selected)!
+    const made = ungrouped(view, regeometry(view, slides[0]!), outer.selected)!
     const after = regeometry(landed(view, made.writes), slides[0]!).byId.get(ids.k!)!.bounds
     expect(after.left).toBeCloseTo(shown.left, 6)
     expect(after.top).toBeCloseTo(shown.top, 6)
@@ -192,7 +199,7 @@ describe("group, frame and ungroup", () => {
 
   it("does nothing to a layer that is not a frame", () => {
     const built = grow(tree)
-    expect(ungroupWrites(built.view, built.geometry, [built.ids.a!])).toBeNull()
+    expect(ungrouped(built.view, built.geometry, [built.ids.a!])).toBeNull()
   })
 })
 
@@ -245,14 +252,20 @@ describe("layer order", () => {
 describe("flip, hide and lock", () => {
   it("flips a layer in place and turns a rotated one the other way", () => {
     const built = grow([{ type: "shape", name: "s", props: { box: spot(100, 100, 200, 100, 30), fills: paint } }])
-    const after = landed(built.view, flipWrites(built.view, built.geometry, [built.ids.s!], "horizontal"))
+    const after = landed(
+      built.view,
+      compiled(built.view, flipIntents(built.view, built.geometry, [built.ids.s!], "horizontal")),
+    )
     expect(boxOf(after, built.ids.s!)).toMatchObject({ x: 100, y: 100, flipH: true, flipV: false, rotation: 330 })
   })
 
   it("mirrors several layers about the middle of the selection", () => {
     const built = grow(tree)
     const { a, b } = built.ids
-    const after = landed(built.view, flipWrites(built.view, built.geometry, [a!, b!], "horizontal"))
+    const after = landed(
+      built.view,
+      compiled(built.view, flipIntents(built.view, built.geometry, [a!, b!], "horizontal")),
+    )
     expect(boxOf(after, a!)).toMatchObject({ x: 300, flipH: true })
     expect(boxOf(after, b!)).toMatchObject({ x: 100, flipH: true })
   })
@@ -260,9 +273,9 @@ describe("flip, hide and lock", () => {
   it("hides all, and shows all again once every one is hidden", () => {
     const built = grow(tree)
     const ids = [built.ids.a!, built.ids.b!]
-    const hidden = landed(built.view, toggleWrites(built.view, ids, "hidden"))
+    const hidden = landed(built.view, compiled(built.view, toggleIntents(built.view, ids, "hidden")))
     expect(hidden.nodes.get(ids[0]!)).toMatchObject({ hidden: true })
-    const shown = landed(hidden, toggleWrites(hidden, ids, "hidden"))
+    const shown = landed(hidden, compiled(hidden, toggleIntents(hidden, ids, "hidden")))
     expect(shown.nodes.get(ids[0]!)).toMatchObject({ hidden: false })
   })
 })

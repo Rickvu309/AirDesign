@@ -31,7 +31,8 @@ import { useCanvasKeys } from "./use-canvas-keys"
 import { unpanned, useCanvasPan } from "./use-canvas-pan"
 import { useCanvasPointer, type DrawRequest, type Tool } from "./use-canvas-pointer"
 import type { ActionRun } from "./actions-popover"
-import { insertionTarget, drawWrites, iconSwapWrites, iconWrites } from "./create-writes"
+import { drawIntent, iconIntent, iconSwapIntents, insertionTarget } from "./create-intents"
+import { intentWrites } from "./editor-intents"
 import type { RightPanel } from "./editor-toolbar"
 import type { ShapesShown } from "@/editor/shape-tool"
 import type { EditorClient } from "./use-deck"
@@ -291,24 +292,13 @@ export function DoomCanvas(props: CanvasProps) {
     }
     if (tool === "move" || tool === "hand") return null
     const id = (drawn.current ??= client.mint())
-    const writes = drawWrites({
-      id,
-      parent: slotIn(parent),
-      kind: tool,
-      from,
-      to,
-      square: request.shift,
-      center: request.alt,
-    })
+    const intent = drawIntent({ parent, kind: tool, from, to, square: request.shift, center: request.alt })
+    const writes = intentWrites(view, [intent], { mint: () => id })?.writes ?? null
     if (!request.commit) return writes
     drawn.current = null
     onTool("move")
-    if (client.push(writes).ok) onSelection({ ids: [id], inside: null })
+    if (writes !== null && client.push(writes).ok) onSelection({ ids: [id], inside: null })
     return null
-  }
-
-  function inserted(id: doom.NodeId, writes: readonly doom.Write[]) {
-    if (client.push(writes).ok) onSelection({ ids: [id], inside: null })
   }
 
   const pictures = useDoomPictures({
@@ -323,14 +313,16 @@ export function DoomCanvas(props: CanvasProps) {
 
   const inserts = {
     icon(name: string) {
-      const swapped = iconSwapWrites(view, current.ids, name)
+      const swapped = iconSwapIntents(view, current.ids, name)
       if (swapped !== null) {
-        client.push(swapped)
+        const made = intentWrites(view, swapped)
+        if (made !== null) client.push(made.writes)
         return
       }
       const { parent, inside, anchor } = insertionTarget(view, { slide, size, geometry, selected: current.ids })
       const id = client.mint()
-      inserted(id, iconWrites(view, id, slotIn(parent), name, inside, anchor))
+      const made = intentWrites(view, [iconIntent(view, parent, name, inside, anchor)], { mint: () => id })
+      if (made !== null && client.push(made.writes).ok) onSelection({ ids: [id], inside: null })
     },
     picture(file: File) {
       pictures.add(file)
@@ -450,6 +442,7 @@ export function DoomCanvas(props: CanvasProps) {
     client,
     view,
     geometry,
+    measure: props.measure,
     selection: current,
     slide,
     onSelection,

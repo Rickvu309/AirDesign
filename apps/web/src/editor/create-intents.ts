@@ -1,11 +1,9 @@
-import { type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import type { Point, SlideGeometry } from "@/editing/slide-geometry"
 import { propOf } from "@airdesign/doom"
 import { placementRules } from "@airdesign/taste"
 
 export type Drawn = "frame" | "rectangle" | "ellipse" | "line" | "arrow" | `preset:${string}`
-type Slot = { readonly id: doom.NodeId; readonly at: OrderKey }
 type Size = { readonly w: number; readonly h: number }
 
 export const drawnNames: Readonly<Record<string, string>> = {
@@ -26,16 +24,11 @@ const squareSize: Size = { w: 100, h: 100 }
 const sizeOf = (kind: Drawn): Size => clickSizes[kind] ?? squareSize
 const isLine = (kind: Drawn) => kind === "line" || kind === "arrow"
 
-const solid = (color: doom.Color): doom.Paint => ({ kind: "solid", color })
-const themed = (color: doom.ColorVar): doom.Paint => solid({ var: color })
-const quiet = solid({ var: "background2", tint: -0.06 })
-const ink = themed("text")
-const upright = { rotation: 0, flipH: false, flipV: false } as const
-const plainStroke: doom.StrokeStyle = { weight: 4, align: "center", dash: "solid" }
+const quiet = "background2-6"
+const lineWeight = 4
 
 export type Drawing = {
-  readonly id: doom.NodeId
-  readonly parent: Slot
+  readonly parent: doom.NodeId
   readonly kind: Drawn
   readonly from: Point
   readonly to: Point | null
@@ -78,55 +71,27 @@ function endsOf(drawing: Drawing): readonly [Point, Point] {
     : [round(from), round({ x: from.x + dx, y: from.y + dy })]
 }
 
-export function drawWrites(drawing: Drawing): readonly doom.Write[] {
-  const { id, parent, kind } = drawing
-  const head: doom.Write[] = [
-    { node: id, prop: "type", value: kind === "frame" ? "frame" : "shape" },
-    { node: id, prop: "parent", value: parent },
-    { node: id, prop: "name", value: drawnNames[kind] ?? "Shape" },
-  ]
+export function drawIntent(drawing: Drawing): doom.Intent {
+  const { parent, kind } = drawing
+  const name = drawnNames[kind] ?? "Shape"
   if (isLine(kind)) {
-    const [start, end] = endsOf(drawing)
-    return [
-      ...head,
-      {
-        node: id,
-        prop: "geometry",
-        value: {
-          kind: "line",
-          start,
-          end,
-          route: "straight",
-          arrows: kind === "arrow" ? ["none", "arrow"] : ["none", "none"],
-        },
-      },
-      { node: id, prop: "strokes", value: [ink] },
-      { node: id, prop: "stroke", value: plainStroke },
-    ]
+    const [from, to] = endsOf(drawing)
+    return {
+      op: "insert",
+      kind: "line",
+      parent,
+      name,
+      from,
+      to,
+      arrow: kind === "arrow",
+      stroke: "text",
+      strokeWidth: lineWeight,
+    }
   }
-  const box = { ...boxOf(drawing), ...upright }
-  if (kind === "frame")
-    return [
-      ...head,
-      { node: id, prop: "box", value: box },
-      { node: id, prop: "fills", value: [themed("background2")] },
-      { node: id, prop: "clip", value: true },
-    ]
-  return [
-    ...head,
-    { node: id, prop: "box", value: box },
-    {
-      node: id,
-      prop: "geometry",
-      value:
-        kind === "ellipse"
-          ? { kind: "ellipse" }
-          : kind.startsWith("preset:")
-            ? { kind: "preset", name: kind.slice("preset:".length) }
-            : { kind: "rect" },
-    },
-    { node: id, prop: "fills", value: [quiet] },
-  ]
+  const box = boxOf(drawing)
+  if (kind === "frame") return { op: "insert", kind: "frame", parent, name, box, fill: "background2", clip: true }
+  const shape = kind === "rectangle" ? "rect" : kind.startsWith("preset:") ? kind.slice("preset:".length) : kind
+  return { op: "insert", kind: "shape", parent, name, box, shape, fill: quiet, radius: 0 }
 }
 
 export function centeredIn(inside: Size, size: Size): { readonly x: number; readonly y: number } {
@@ -163,38 +128,35 @@ function iconAt(view: doom.Doom, parent: doom.NodeId, inside: Size, anchor: Box 
   return { x: area.x + at.x, y: area.y + at.y, ...least }
 }
 
-export function iconWrites(
+export function iconIntent(
   view: doom.Doom,
-  id: doom.NodeId,
-  parent: Slot,
+  parent: doom.NodeId,
   name: string,
   inside: Size,
   anchor?: Box,
-): readonly doom.Write[] {
-  const at = iconAt(view, parent.id, inside, anchor)
-  return [
-    { node: id, prop: "type", value: "shape" },
-    { node: id, prop: "parent", value: parent },
-    { node: id, prop: "name", value: "Icon" },
-    { node: id, prop: "box", value: { x: at.x, y: at.y, w: at.w, h: at.h, ...upright } },
-    { node: id, prop: "geometry", value: { kind: "icon", name: `lucide/${name}` } },
-    { node: id, prop: "strokes", value: [themed("text")] },
-    { node: id, prop: "stroke", value: { weight: iconSide / 12, align: "center", dash: "solid" } },
-  ]
+): doom.Intent {
+  const box = iconAt(view, parent, inside, anchor)
+  return {
+    op: "insert",
+    kind: "icon",
+    parent,
+    name: "Icon",
+    icon: name,
+    box,
+    stroke: "text",
+    strokeWidth: iconSide / 12,
+  }
 }
 
-export function iconSwapWrites(
+export function iconSwapIntents(
   view: doom.Doom,
   ids: readonly doom.NodeId[],
   name: string,
-): readonly doom.Write[] | null {
-  const swaps = ids.flatMap((id) => {
-    const geometry = propOf(view.nodes.get(id), "geometry")
-    return geometry?.kind === "icon"
-      ? [{ node: id, prop: "geometry" as const, value: { ...geometry, name: `lucide/${name}` } }]
-      : []
-  })
-  return ids.length === 0 || swaps.length !== ids.length ? null : swaps
+): readonly doom.Intent[] | null {
+  const icons = ids.filter((id) => propOf(view.nodes.get(id), "geometry")?.kind === "icon")
+  return ids.length === 0 || icons.length !== ids.length
+    ? null
+    : icons.map((target) => ({ op: "update", target, icon: name }))
 }
 
 export function insertionTarget(

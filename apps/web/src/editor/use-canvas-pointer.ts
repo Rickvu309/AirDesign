@@ -33,7 +33,7 @@ import type { CanvasGesture, Moving } from "./canvas-gesture"
 import { transformedBy } from "./transform-drag"
 import type { EditorClient } from "./use-deck"
 
-import type { Drawn } from "./create-writes"
+import type { Drawn } from "./create-intents"
 
 export type Tool = "move" | "hand" | "text" | Drawn
 

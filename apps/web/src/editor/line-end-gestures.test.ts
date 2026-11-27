@@ -1,10 +1,10 @@
 import * as doom from "@airdesign/doom"
 import { createDoomDeck, memoryDoomRemote, memoryStorage } from "@airdesign/live"
 import { describe, expect, it } from "vitest"
-import { deleteWrites } from "./delete-writes"
-import { ungroupWrites } from "./group-writes"
+import { ungrouped } from "./arrange-intents"
+import { intentWrites, removeIntents } from "./editor-intents"
 import { geometryOf } from "@/editing/slide-geometry"
-import { deleteSlideWrites } from "./slide-writes"
+import { deleteSlides } from "./slide-intents"
 import { draftWrites, leaveEmptyWrites, leaveWrites } from "./text-leave"
 import { testTheme } from "@airdesign/doom/testing"
 
@@ -174,17 +174,23 @@ const emptied = (view: doom.Doom) =>
     pushed: JSON.stringify(doom.propOf(view.nodes.get(text), "text")),
   })
 
-const ungrouped = (view: doom.Doom) => {
-  const made = ungroupWrites(view, geometryOf(doom.resolveSlide(view, first, estimate)), [group])
+function removed(view: doom.Doom, ids: readonly doom.NodeId[], measure: doom.Measure = estimate) {
+  const made = intentWrites(view, removeIntents(view, ids), { measure })
+  if (made === null) throw new Error("nothing to remove")
+  return made.writes
+}
+
+const unwrapped = (view: doom.Doom) => {
+  const made = ungrouped(view, geometryOf(doom.resolveSlide(view, first, estimate)), [group], estimate)
   if (made === null) throw new Error("nothing to ungroup")
   return made.writes
 }
 
 const cases = [
   { name: "emptying a text", line: toText, writes: emptied },
-  { name: "deleting a shape", line: toText, writes: (view: doom.Doom) => deleteWrites(view, [text]) },
-  { name: "ungrouping a frame", line: toGroup, writes: ungrouped },
-  { name: "deleting a slide", line: toOther, writes: (view: doom.Doom) => deleteSlideWrites(view, [second]) },
+  { name: "deleting a shape", line: toText, writes: (view: doom.Doom) => removed(view, [text]) },
+  { name: "ungrouping a frame", line: toGroup, writes: unwrapped },
+  { name: "deleting a slide", line: toOther, writes: (view: doom.Doom) => deleteSlides(view, [second]) },
 ]
 
 describe("the editor's gestures free a connector end the moment its shape leaves the slide", () => {
@@ -210,7 +216,7 @@ describe("the editor's gestures free a connector end the moment its shape leaves
     const { client } = await opened()
     const onChild = connector(id("d:13"), child)
     client.push(onChild)
-    client.push(ungrouped(client.view()))
+    client.push(unwrapped(client.view()))
     expect("node" in endOf(client.view(), id("d:13"))).toBe(true)
   })
 
@@ -222,7 +228,7 @@ describe("the editor's gestures free a connector end the moment its shape leaves
     const { client } = await opened(wide, drifting)
     const seen = startOf(client.view(), toText, wide)
     expect(seen.x).not.toBe(startOf(client.view(), toText).x)
-    client.push(deleteWrites(client.view(), [child]))
+    client.push(removed(client.view(), [child], wide))
     expect("node" in endOf(client.view(), toText)).toBe(false)
     expect(startOf(client.view(), toText, wide)).toEqual(seen)
   })

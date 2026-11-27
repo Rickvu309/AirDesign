@@ -4,7 +4,7 @@ In an open deck a PNG, JPEG or GIF file dropped on the canvas lands at the drop 
 
 ## Sub-features
 
-- `picture-drop` a dropped file lands as one edit (`pictureWrites` in `apps/web/src/editor/picture-writes.ts`), selected, painted from a `blob:` address. One undo takes it away and redo brings it back; a reload and a fresh device paint it.
+- `picture-drop` a dropped file lands as one edit (Doom's `insert` intent of a `picture`, placed by `pictureBox` in `apps/web/src/editor/picture-box.ts`), selected, painted from a `blob:` address. One undo takes it away and redo brings it back; a reload and a fresh device paint it.
 - `picture-paste` a picture file pasted outside a text lands centred on the slide.
 - `picture-refuse` a file that is not a PNG, JPEG or GIF, a file at or over the media limit or past the pixel limit, or one the browser cannot decode lands nothing and shows what to choose instead (`pictureCopy` in `apps/web/src/copy/picture-copy.ts`).
 - `picture-upload` the picture paints and lands in the deck while its upload fails; the upload goes through when the device is back online (`flushMedia` in `packages/live/src/media.ts`).

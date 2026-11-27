@@ -1,0 +1,13 @@
+import * as doom from "@airdesign/doom"
+
+type Point = { readonly x: number; readonly y: number }
+type Natural = { readonly width: number; readonly height: number }
+type Size = { readonly w: number; readonly h: number }
+
+export function pictureBox(natural: Natural, slide: Size, at: Point | null): doom.Box {
+  const { w, h } = doom.pictureFit(natural, slide)
+  const centre = at ?? { x: slide.w / 2, y: slide.h / 2 }
+  const x = Math.min(Math.max(0, Math.round(centre.x - w / 2)), Math.max(0, slide.w - w))
+  const y = Math.min(Math.max(0, Math.round(centre.y - h / 2)), Math.max(0, slide.h - h))
+  return { x, y, w, h, rotation: 0, flipH: false, flipV: false }
+}
