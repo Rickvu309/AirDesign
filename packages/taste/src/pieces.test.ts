@@ -15,6 +15,11 @@ const files = readdirSync(piecesDir)
   .map((file) => file.slice(0, -5))
   .sort()
 
+const layerNames = (node: doom.TreeNode): readonly string[] => [
+  ...(node.name === undefined ? [] : [node.name]),
+  ...(node.children ?? []).flatMap(layerNames),
+]
+
 const keysIn = (value: unknown): readonly string[] =>
   typeof value !== "object" || value === null
     ? []
@@ -52,6 +57,37 @@ describe("kit pieces", () => {
     }
   })
 
+  it("lists the structural pieces in the kit guide, and each names only layers its piece holds", () => {
+    const lines = (guides().find((entry) => entry.name === "kit")?.markdown ?? "").split("\n").flatMap((line) => {
+      const named = /^- `kit\/([a-z0-9-]+)`/.exec(line)
+      return named === null ? [] : [{ name: named[1]!, line }]
+    })
+    expect(lines.map((each) => each.name).sort()).toEqual([
+      "comparison",
+      "cover",
+      "driver-equation",
+      "kpi",
+      "numbered-callout",
+      "qa-plan-table",
+      "section-tracker",
+      "share-box",
+      "source-line",
+      "statement",
+      "timeline-step",
+      "title-block",
+      "two-by-two",
+    ])
+    expect(files).toEqual(lines.map((each) => each.name).sort())
+    for (const { name, line } of lines) {
+      const layers = [...line.matchAll(/`([A-Z][A-Za-z0-9 ]*)`/g)].map((m) => m[1]!)
+      expect(layers.length, name).toBeGreaterThan(0)
+      expect(
+        layers.filter((layer) => !layerNames(piece(name)!.tree).includes(layer)),
+        name,
+      ).toEqual([])
+    }
+  })
+
   it("opens nothing outside the pieces", () => {
     expect(piece("missing")).toBeUndefined()
     expect(piece("../package")).toBeUndefined()
@@ -66,6 +102,14 @@ const placed: Readonly<Record<string, readonly Spot[]>> = {
   comparison: [{ x: 120, y: 320 }],
   "timeline-step": [0, 1, 2, 3].map((at) => ({ x: 120 + at * 420, y: 360 })),
   "source-line": [{ x: 120, y: 990 }],
+  cover: [{ x: 120, y: 320 }],
+  statement: [{ x: 120, y: 320 }],
+  "two-by-two": [{ x: 120, y: 260 }],
+  "driver-equation": [{ x: 120, y: 420 }],
+  "numbered-callout": [0, 1, 2].map((at) => ({ x: 1080, y: 300 + at * 200 })),
+  "qa-plan-table": [{ x: 120, y: 280 }],
+  "share-box": [{ x: 120, y: 470 }],
+  "section-tracker": [{ x: 1320, y: 80 }],
 }
 
 const doubled = (text: Text): Text => {

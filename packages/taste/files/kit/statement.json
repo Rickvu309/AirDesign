@@ -1,0 +1,109 @@
+{
+  "type": "frame",
+  "name": "Statement",
+  "props": {
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 318,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    },
+    "sizing": {
+      "w": "fixed",
+      "h": "hug"
+    },
+    "layout": {
+      "mode": "column",
+      "gap": 28,
+      "padding": {
+        "t": 0,
+        "r": 0,
+        "b": 0,
+        "l": 0
+      },
+      "align": "top-left"
+    }
+  },
+  "children": [
+    {
+      "type": "shape",
+      "name": "Kicker",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
+        "text": {
+          "chars": "The ask",
+          "spans": [
+            {
+              "end": 7,
+              "color": {
+                "var": "accent1"
+              }
+            }
+          ],
+          "paras": [{}],
+          "style": "label",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Statement",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
+        "text": {
+          "chars": "Approve $14M to open 40 Benelux stores by Q3 2027",
+          "spans": [],
+          "paras": [{}],
+          "style": "display",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Support",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
+        "text": {
+          "chars": "Payback in 26 months at today's Nordic store margins",
+          "spans": [
+            {
+              "end": 52,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [{}],
+          "style": "body",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,492 @@
+{
+  "type": "frame",
+  "name": "Driver equation",
+  "props": {
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 1680,
+      "h": 188,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    },
+    "sizing": {
+      "w": "fixed",
+      "h": "hug"
+    },
+    "layout": {
+      "mode": "row",
+      "gap": 16,
+      "padding": {
+        "t": 0,
+        "r": 0,
+        "b": 0,
+        "l": 0
+      },
+      "align": "top-left"
+    }
+  },
+  "children": [
+    {
+      "type": "frame",
+      "name": "Result",
+      "props": {
+        "sizing": {
+          "w": "hug",
+          "h": "fill"
+        },
+        "layout": {
+          "mode": "column",
+          "gap": 8,
+          "padding": {
+            "t": 28,
+            "r": 0,
+            "b": 28,
+            "l": 0
+          },
+          "align": "top-left"
+        }
+      },
+      "children": [
+        {
+          "type": "shape",
+          "name": "Name",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "hug",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "Revenue",
+              "spans": [],
+              "paras": [{}],
+              "style": "heading",
+              "resize": "widthAndHeight",
+              "alignV": "top"
+            }
+          }
+        },
+        {
+          "type": "shape",
+          "name": "Note",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "hug",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "$98M, up 18%",
+              "spans": [
+                {
+                  "end": 12,
+                  "color": {
+                    "var": "text2"
+                  }
+                }
+              ],
+              "paras": [{}],
+              "style": "body2",
+              "resize": "widthAndHeight",
+              "alignV": "top"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "shape",
+      "name": "Equals",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 48,
+          "h": 60,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "sizing": {
+          "w": "fixed",
+          "h": "fill"
+        },
+        "text": {
+          "chars": "=",
+          "spans": [
+            {
+              "end": 1,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [
+            {
+              "align": "center"
+            }
+          ],
+          "style": "title",
+          "resize": "height",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "frame",
+      "name": "Driver 1",
+      "props": {
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "layout": {
+          "mode": "column",
+          "gap": 8,
+          "padding": {
+            "t": 28,
+            "r": 28,
+            "b": 28,
+            "l": 28
+          },
+          "align": "top-left"
+        },
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        }
+      },
+      "children": [
+        {
+          "type": "shape",
+          "name": "Name",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "Stores",
+              "spans": [],
+              "paras": [{}],
+              "style": "heading",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        },
+        {
+          "type": "shape",
+          "name": "Note",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "112, nine opened this year",
+              "spans": [
+                {
+                  "end": 26,
+                  "color": {
+                    "var": "text2"
+                  }
+                }
+              ],
+              "paras": [{}],
+              "style": "body2",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "shape",
+      "name": "Times 1",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 48,
+          "h": 60,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "sizing": {
+          "w": "fixed",
+          "h": "fill"
+        },
+        "text": {
+          "chars": "×",
+          "spans": [
+            {
+              "end": 1,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [
+            {
+              "align": "center"
+            }
+          ],
+          "style": "title",
+          "resize": "height",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "frame",
+      "name": "Driver 2",
+      "props": {
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "layout": {
+          "mode": "column",
+          "gap": 8,
+          "padding": {
+            "t": 28,
+            "r": 28,
+            "b": 28,
+            "l": 28
+          },
+          "align": "top-left"
+        },
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "accent1"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        }
+      },
+      "children": [
+        {
+          "type": "shape",
+          "name": "Name",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "Visits per store",
+              "spans": [],
+              "paras": [{}],
+              "style": "heading",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        },
+        {
+          "type": "shape",
+          "name": "Note",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "41K a year, flat since FY24",
+              "spans": [
+                {
+                  "end": 27,
+                  "color": {
+                    "var": "text2"
+                  }
+                }
+              ],
+              "paras": [{}],
+              "style": "body2",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "shape",
+      "name": "Times 2",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 48,
+          "h": 60,
+          "rotation": 0,
+          "flipH": false,
+          "flipV": false
+        },
+        "sizing": {
+          "w": "fixed",
+          "h": "fill"
+        },
+        "text": {
+          "chars": "×",
+          "spans": [
+            {
+              "end": 1,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [
+            {
+              "align": "center"
+            }
+          ],
+          "style": "title",
+          "resize": "height",
+          "alignV": "center"
+        }
+      }
+    },
+    {
+      "type": "frame",
+      "name": "Driver 3",
+      "props": {
+        "sizing": {
+          "w": "fill",
+          "h": "fill"
+        },
+        "layout": {
+          "mode": "column",
+          "gap": 8,
+          "padding": {
+            "t": 28,
+            "r": 28,
+            "b": 28,
+            "l": 28
+          },
+          "align": "top-left"
+        },
+        "fills": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "background2"
+            }
+          }
+        ],
+        "strokes": [],
+        "stroke": {
+          "weight": 3,
+          "align": "inside",
+          "dash": "solid"
+        }
+      },
+      "children": [
+        {
+          "type": "shape",
+          "name": "Name",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "Spend per visit",
+              "spans": [],
+              "paras": [{}],
+              "style": "heading",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        },
+        {
+          "type": "shape",
+          "name": "Note",
+          "props": {
+            "geometry": {
+              "kind": "rect"
+            },
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "text": {
+              "chars": "$21, up 6%",
+              "spans": [
+                {
+                  "end": 10,
+                  "color": {
+                    "var": "text2"
+                  }
+                }
+              ],
+              "paras": [{}],
+              "style": "body2",
+              "resize": "height",
+              "alignV": "top"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

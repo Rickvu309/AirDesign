@@ -1,0 +1,169 @@
+{
+  "type": "frame",
+  "name": "Section tracker",
+  "props": {
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 480,
+      "h": 41,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    },
+    "sizing": {
+      "w": "fixed",
+      "h": "hug"
+    },
+    "layout": {
+      "mode": "row",
+      "gap": 32,
+      "padding": {
+        "t": 0,
+        "r": 0,
+        "b": 0,
+        "l": 0
+      },
+      "align": "top-right",
+      "wrap": true
+    }
+  },
+  "children": [
+    {
+      "type": "shape",
+      "name": "Section 1",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "hug",
+          "h": "hug"
+        },
+        "strokes": [],
+        "stroke": {
+          "weight": 4,
+          "align": "inside",
+          "dash": "solid",
+          "sides": {
+            "b": 4
+          }
+        },
+        "text": {
+          "chars": "Market",
+          "spans": [
+            {
+              "end": 6,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [{}],
+          "style": "label",
+          "resize": "widthAndHeight",
+          "alignV": "top",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 12,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Section 2",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "hug",
+          "h": "hug"
+        },
+        "strokes": [
+          {
+            "kind": "solid",
+            "color": {
+              "var": "text"
+            }
+          }
+        ],
+        "stroke": {
+          "weight": 4,
+          "align": "inside",
+          "dash": "solid",
+          "sides": {
+            "b": 4
+          }
+        },
+        "text": {
+          "chars": "Options",
+          "spans": [
+            {
+              "end": 7,
+              "color": {
+                "var": "text"
+              }
+            }
+          ],
+          "paras": [{}],
+          "style": "label",
+          "resize": "widthAndHeight",
+          "alignV": "top",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 12,
+            "l": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "shape",
+      "name": "Section 3",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "hug",
+          "h": "hug"
+        },
+        "strokes": [],
+        "stroke": {
+          "weight": 4,
+          "align": "inside",
+          "dash": "solid",
+          "sides": {
+            "b": 4
+          }
+        },
+        "text": {
+          "chars": "Ask",
+          "spans": [
+            {
+              "end": 3,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [{}],
+          "style": "label",
+          "resize": "widthAndHeight",
+          "alignV": "top",
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 12,
+            "l": 0
+          }
+        }
+      }
+    }
+  ]
+}

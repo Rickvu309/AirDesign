@@ -5,10 +5,18 @@ import type { Guide, Piece, Style, StyleText } from "./index.js"
 
 const structuralPieces = [
   { name: "comparison", size: { w: 1680, h: 254 } },
-  { name: "kpi", size: { w: 480, h: 213 } },
+  { name: "cover", size: { w: 1440, h: 368 } },
+  { name: "driver-equation", size: { w: 1680, h: 188 } },
+  { name: "kpi", size: { w: 480, h: 205 } },
+  { name: "numbered-callout", size: { w: 720, h: 86 } },
+  { name: "qa-plan-table", size: { w: 1680, h: 368 } },
+  { name: "section-tracker", size: { w: 480, h: 41 } },
+  { name: "share-box", size: { w: 1680, h: 131 } },
   { name: "source-line", size: { w: 1680, h: 31 } },
+  { name: "statement", size: { w: 1440, h: 318 } },
   { name: "timeline-step", size: { w: 420, h: 216 } },
-  { name: "title-block", size: { w: 1680, h: 121 } },
+  { name: "title-block", size: { w: 1680, h: 105 } },
+  { name: "two-by-two", size: { w: 1680, h: 499 } },
 ]
 
 const refused = (name: string) => () => {

@@ -1,0 +1,767 @@
+{
+  "type": "frame",
+  "name": "Two by two",
+  "props": {
+    "box": {
+      "x": 0,
+      "y": 0,
+      "w": 1680,
+      "h": 499,
+      "rotation": 0,
+      "flipH": false,
+      "flipV": false
+    },
+    "sizing": {
+      "w": "fixed",
+      "h": "hug"
+    },
+    "layout": {
+      "mode": "column",
+      "gap": 12,
+      "padding": {
+        "t": 0,
+        "r": 0,
+        "b": 0,
+        "l": 0
+      },
+      "align": "top-left"
+    }
+  },
+  "children": [
+    {
+      "type": "shape",
+      "name": "Y name",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
+        "text": {
+          "chars": "Market growth",
+          "spans": [
+            {
+              "end": 13,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [{}],
+          "style": "label",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    },
+    {
+      "type": "frame",
+      "name": "Chart",
+      "props": {
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
+        "layout": {
+          "mode": "column",
+          "gap": 0,
+          "padding": {
+            "t": 0,
+            "r": 0,
+            "b": 0,
+            "l": 0
+          },
+          "align": "top-left"
+        }
+      },
+      "children": [
+        {
+          "type": "frame",
+          "name": "Upper",
+          "props": {
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "layout": {
+              "mode": "row",
+              "gap": 0,
+              "padding": {
+                "t": 0,
+                "r": 0,
+                "b": 0,
+                "l": 0
+              },
+              "align": "top-left"
+            }
+          },
+          "children": [
+            {
+              "type": "frame",
+              "name": "Y axis",
+              "props": {
+                "box": {
+                  "x": 0,
+                  "y": 0,
+                  "w": 16,
+                  "h": 100,
+                  "rotation": 0,
+                  "flipH": false,
+                  "flipV": false
+                },
+                "sizing": {
+                  "w": "fixed",
+                  "h": "fill"
+                },
+                "layout": {
+                  "mode": "column",
+                  "gap": 0,
+                  "padding": {
+                    "t": 0,
+                    "r": 0,
+                    "b": 0,
+                    "l": 0
+                  },
+                  "align": "top-center"
+                }
+              },
+              "children": [
+                {
+                  "type": "shape",
+                  "name": "Y head",
+                  "props": {
+                    "geometry": {
+                      "kind": "path",
+                      "d": "M0 1 L0.5 0 L1 1 Z"
+                    },
+                    "box": {
+                      "x": 0,
+                      "y": 0,
+                      "w": 16,
+                      "h": 14,
+                      "rotation": 0,
+                      "flipH": false,
+                      "flipV": false
+                    },
+                    "sizing": {
+                      "w": "fixed",
+                      "h": "fixed"
+                    },
+                    "fills": [
+                      {
+                        "kind": "solid",
+                        "color": {
+                          "var": "text2"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "shape",
+                  "name": "Y line",
+                  "props": {
+                    "geometry": {
+                      "kind": "rect"
+                    },
+                    "box": {
+                      "x": 0,
+                      "y": 0,
+                      "w": 2,
+                      "h": 100,
+                      "rotation": 0,
+                      "flipH": false,
+                      "flipV": false
+                    },
+                    "sizing": {
+                      "w": "fixed",
+                      "h": "fill"
+                    },
+                    "fills": [
+                      {
+                        "kind": "solid",
+                        "color": {
+                          "var": "text2"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "name": "Quadrants",
+              "props": {
+                "sizing": {
+                  "w": "fill",
+                  "h": "hug"
+                },
+                "layout": {
+                  "mode": "grid",
+                  "columns": [
+                    {
+                      "fr": 1
+                    },
+                    {
+                      "fr": 1
+                    }
+                  ],
+                  "rows": ["hug", "hug"],
+                  "gap": 16,
+                  "padding": {
+                    "t": 8,
+                    "r": 0,
+                    "b": 16,
+                    "l": 16
+                  }
+                }
+              },
+              "children": [
+                {
+                  "type": "frame",
+                  "name": "Top left",
+                  "props": {
+                    "sizing": {
+                      "w": "fill",
+                      "h": "fill"
+                    },
+                    "cell": {
+                      "row": 0,
+                      "col": 0
+                    },
+                    "layout": {
+                      "mode": "column",
+                      "gap": 12,
+                      "padding": {
+                        "t": 32,
+                        "r": 32,
+                        "b": 32,
+                        "l": 32
+                      },
+                      "align": "top-left"
+                    },
+                    "fills": [
+                      {
+                        "kind": "solid",
+                        "color": {
+                          "var": "background2"
+                        }
+                      }
+                    ],
+                    "strokes": [
+                      {
+                        "kind": "solid",
+                        "color": {
+                          "var": "accent1"
+                        }
+                      }
+                    ],
+                    "stroke": {
+                      "weight": 3,
+                      "align": "inside",
+                      "dash": "solid"
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "shape",
+                      "name": "Action",
+                      "props": {
+                        "geometry": {
+                          "kind": "rect"
+                        },
+                        "sizing": {
+                          "w": "fill",
+                          "h": "hug"
+                        },
+                        "text": {
+                          "chars": "Invest to win",
+                          "spans": [],
+                          "paras": [{}],
+                          "style": "heading",
+                          "resize": "height",
+                          "alignV": "top"
+                        }
+                      }
+                    },
+                    {
+                      "type": "shape",
+                      "name": "Members",
+                      "props": {
+                        "geometry": {
+                          "kind": "rect"
+                        },
+                        "sizing": {
+                          "w": "fill",
+                          "h": "hug"
+                        },
+                        "text": {
+                          "chars": "Benelux\nPoland",
+                          "spans": [
+                            {
+                              "end": 14,
+                              "color": {
+                                "var": "text2"
+                              }
+                            }
+                          ],
+                          "paras": [{}, {}],
+                          "style": "body2",
+                          "resize": "height",
+                          "alignV": "top"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "name": "Top right",
+                  "props": {
+                    "sizing": {
+                      "w": "fill",
+                      "h": "fill"
+                    },
+                    "cell": {
+                      "row": 0,
+                      "col": 1
+                    },
+                    "layout": {
+                      "mode": "column",
+                      "gap": 12,
+                      "padding": {
+                        "t": 32,
+                        "r": 32,
+                        "b": 32,
+                        "l": 32
+                      },
+                      "align": "top-left"
+                    },
+                    "fills": [
+                      {
+                        "kind": "solid",
+                        "color": {
+                          "var": "background2"
+                        }
+                      }
+                    ],
+                    "strokes": [],
+                    "stroke": {
+                      "weight": 3,
+                      "align": "inside",
+                      "dash": "solid"
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "shape",
+                      "name": "Action",
+                      "props": {
+                        "geometry": {
+                          "kind": "rect"
+                        },
+                        "sizing": {
+                          "w": "fill",
+                          "h": "hug"
+                        },
+                        "text": {
+                          "chars": "Defend and grow",
+                          "spans": [],
+                          "paras": [{}],
+                          "style": "heading",
+                          "resize": "height",
+                          "alignV": "top"
+                        }
+                      }
+                    },
+                    {
+                      "type": "shape",
+                      "name": "Members",
+                      "props": {
+                        "geometry": {
+                          "kind": "rect"
+                        },
+                        "sizing": {
+                          "w": "fill",
+                          "h": "hug"
+                        },
+                        "text": {
+                          "chars": "Nordics",
+                          "spans": [
+                            {
+                              "end": 7,
+                              "color": {
+                                "var": "text2"
+                              }
+                            }
+                          ],
+                          "paras": [{}],
+                          "style": "body2",
+                          "resize": "height",
+                          "alignV": "top"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "name": "Bottom left",
+                  "props": {
+                    "sizing": {
+                      "w": "fill",
+                      "h": "fill"
+                    },
+                    "cell": {
+                      "row": 1,
+                      "col": 0
+                    },
+                    "layout": {
+                      "mode": "column",
+                      "gap": 12,
+                      "padding": {
+                        "t": 32,
+                        "r": 32,
+                        "b": 32,
+                        "l": 32
+                      },
+                      "align": "top-left"
+                    },
+                    "fills": [
+                      {
+                        "kind": "solid",
+                        "color": {
+                          "var": "background2"
+                        }
+                      }
+                    ],
+                    "strokes": [],
+                    "stroke": {
+                      "weight": 3,
+                      "align": "inside",
+                      "dash": "solid"
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "shape",
+                      "name": "Action",
+                      "props": {
+                        "geometry": {
+                          "kind": "rect"
+                        },
+                        "sizing": {
+                          "w": "fill",
+                          "h": "hug"
+                        },
+                        "text": {
+                          "chars": "Exit",
+                          "spans": [],
+                          "paras": [{}],
+                          "style": "heading",
+                          "resize": "height",
+                          "alignV": "top"
+                        }
+                      }
+                    },
+                    {
+                      "type": "shape",
+                      "name": "Members",
+                      "props": {
+                        "geometry": {
+                          "kind": "rect"
+                        },
+                        "sizing": {
+                          "w": "fill",
+                          "h": "hug"
+                        },
+                        "text": {
+                          "chars": "Baltics",
+                          "spans": [
+                            {
+                              "end": 7,
+                              "color": {
+                                "var": "text2"
+                              }
+                            }
+                          ],
+                          "paras": [{}],
+                          "style": "body2",
+                          "resize": "height",
+                          "alignV": "top"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "name": "Bottom right",
+                  "props": {
+                    "sizing": {
+                      "w": "fill",
+                      "h": "fill"
+                    },
+                    "cell": {
+                      "row": 1,
+                      "col": 1
+                    },
+                    "layout": {
+                      "mode": "column",
+                      "gap": 12,
+                      "padding": {
+                        "t": 32,
+                        "r": 32,
+                        "b": 32,
+                        "l": 32
+                      },
+                      "align": "top-left"
+                    },
+                    "fills": [
+                      {
+                        "kind": "solid",
+                        "color": {
+                          "var": "background2"
+                        }
+                      }
+                    ],
+                    "strokes": [],
+                    "stroke": {
+                      "weight": 3,
+                      "align": "inside",
+                      "dash": "solid"
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "shape",
+                      "name": "Action",
+                      "props": {
+                        "geometry": {
+                          "kind": "rect"
+                        },
+                        "sizing": {
+                          "w": "fill",
+                          "h": "hug"
+                        },
+                        "text": {
+                          "chars": "Harvest cash",
+                          "spans": [],
+                          "paras": [{}],
+                          "style": "heading",
+                          "resize": "height",
+                          "alignV": "top"
+                        }
+                      }
+                    },
+                    {
+                      "type": "shape",
+                      "name": "Members",
+                      "props": {
+                        "geometry": {
+                          "kind": "rect"
+                        },
+                        "sizing": {
+                          "w": "fill",
+                          "h": "hug"
+                        },
+                        "text": {
+                          "chars": "Germany",
+                          "spans": [
+                            {
+                              "end": 7,
+                              "color": {
+                                "var": "text2"
+                              }
+                            }
+                          ],
+                          "paras": [{}],
+                          "style": "body2",
+                          "resize": "height",
+                          "alignV": "top"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "name": "X axis",
+          "props": {
+            "sizing": {
+              "w": "fill",
+              "h": "hug"
+            },
+            "layout": {
+              "mode": "row",
+              "gap": 0,
+              "padding": {
+                "t": 0,
+                "r": 0,
+                "b": 0,
+                "l": 0
+              },
+              "align": "top-left"
+            }
+          },
+          "children": [
+            {
+              "type": "shape",
+              "name": "Corner",
+              "props": {
+                "geometry": {
+                  "kind": "path",
+                  "d": "M0.4375 0 L0.5625 0 L0.5625 0.7778 L1 0.7778 L1 1 L0.4375 1 Z"
+                },
+                "box": {
+                  "x": 0,
+                  "y": 0,
+                  "w": 16,
+                  "h": 9,
+                  "rotation": 0,
+                  "flipH": false,
+                  "flipV": false
+                },
+                "sizing": {
+                  "w": "fixed",
+                  "h": "fixed"
+                },
+                "fills": [
+                  {
+                    "kind": "solid",
+                    "color": {
+                      "var": "text2"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "frame",
+              "name": "X track",
+              "props": {
+                "sizing": {
+                  "w": "fill",
+                  "h": "hug"
+                },
+                "layout": {
+                  "mode": "column",
+                  "gap": 0,
+                  "padding": {
+                    "t": 7,
+                    "r": 0,
+                    "b": 0,
+                    "l": 0
+                  },
+                  "align": "top-left"
+                }
+              },
+              "children": [
+                {
+                  "type": "shape",
+                  "name": "X line",
+                  "props": {
+                    "geometry": {
+                      "kind": "rect"
+                    },
+                    "box": {
+                      "x": 0,
+                      "y": 0,
+                      "w": 100,
+                      "h": 2,
+                      "rotation": 0,
+                      "flipH": false,
+                      "flipV": false
+                    },
+                    "sizing": {
+                      "w": "fill",
+                      "h": "fixed"
+                    },
+                    "fills": [
+                      {
+                        "kind": "solid",
+                        "color": {
+                          "var": "text2"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "type": "shape",
+              "name": "X head",
+              "props": {
+                "geometry": {
+                  "kind": "path",
+                  "d": "M0 0 L1 0.5 L0 1 Z"
+                },
+                "box": {
+                  "x": 0,
+                  "y": 0,
+                  "w": 14,
+                  "h": 16,
+                  "rotation": 0,
+                  "flipH": false,
+                  "flipV": false
+                },
+                "sizing": {
+                  "w": "fixed",
+                  "h": "fixed"
+                },
+                "fills": [
+                  {
+                    "kind": "solid",
+                    "color": {
+                      "var": "text2"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "shape",
+      "name": "X name",
+      "props": {
+        "geometry": {
+          "kind": "rect"
+        },
+        "sizing": {
+          "w": "fill",
+          "h": "hug"
+        },
+        "text": {
+          "chars": "Our share today",
+          "spans": [
+            {
+              "end": 15,
+              "color": {
+                "var": "text2"
+              }
+            }
+          ],
+          "paras": [
+            {
+              "align": "right"
+            }
+          ],
+          "style": "label",
+          "resize": "height",
+          "alignV": "top"
+        }
+      }
+    }
+  ]
+}
