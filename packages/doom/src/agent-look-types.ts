@@ -46,7 +46,7 @@ export type AgentLook = {
   readonly route?: "straight" | "elbow" | "curve"
   readonly lane?: Px
   readonly rows?: readonly (readonly string[])[]
-  readonly box?: AgentBox
+  readonly box?: Partial<AgentBox>
   readonly name?: string
   readonly hidden?: boolean
   readonly locked?: boolean

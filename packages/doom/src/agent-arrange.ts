@@ -70,8 +70,9 @@ function placeOnSlide(draft: Draft, change: Op<"move">): void {
   if (ids === undefined) stop("shape", undefined, "node", "needs", "A frame or a shape.")
   if (change.into === undefined) stop("shape", undefined, "into", "needs", "a destination slide id")
   const boxes = sourceBoxes(draft, ids)
-  const place = change.box === undefined ? slidePlace(draft.doom, ids, boxes) : { x: change.box.x, y: change.box.y }
-  if (isRefusal(place)) throw new Stop(place)
+  const kept = slidePlace(draft.doom, ids, boxes)
+  if (isRefusal(kept)) throw new Stop(kept)
+  const place = { x: change.box?.x ?? kept.x, y: change.box?.y ?? kept.y }
   const moved = moveToSlide(draft.doom, ids, change.into, place, {
     ...(boxes === undefined ? {} : { boxes }),
     ...(change.after === undefined ? {} : { after: change.after }),

@@ -1,4 +1,4 @@
-import type { AgentColor, AgentFill, AgentLook } from "./agent-look-types.js"
+import type { AgentBox, AgentColor, AgentFill, AgentLook } from "./agent-look-types.js"
 import { languageField } from "./language.js"
 import { readAngle, readRotation } from "./angle.js"
 import { arrowField, startArrowField } from "./agent-arrow.js"
@@ -63,7 +63,10 @@ export type DeckLook = {
   readonly fonts?: { readonly heading?: string; readonly body?: string }
 }
 export type AgentChange =
-  | ({ readonly op: "add"; readonly kind: AgentAdd; readonly slide: NodeId; readonly into?: NodeId } & AgentLook)
+  | ({ readonly op: "add"; readonly kind: AgentAdd; readonly slide: NodeId; readonly into?: NodeId } & Omit<
+      AgentLook,
+      "box"
+    > & { readonly box?: AgentBox })
   | ({ readonly op: "set"; readonly target: string } & AgentLook)
   | {
       readonly op: "move"
@@ -107,6 +110,8 @@ const readNone = literal(["none"] as const)
 
 const readFontName = matching(/^[A-Za-z0-9][A-Za-z0-9 ]{0,99}$/, 100, forms.font)
 const readIconName = matching(/^([a-z0-9-]+\/)?[a-z0-9-]+$/, 80, forms.icon)
+
+const boxSides = { x: px(), y: px(), w: size, h: size }
 
 type LookFields = { readonly [K in keyof AgentLook]-?: Field<Exclude<AgentLook[K], undefined>> }
 
@@ -229,12 +234,11 @@ const lookFields: LookFields = {
     {
       type: "object",
       additionalProperties: false,
-      required: ["x", "y", "w", "h"],
       properties: { x: { type: "number" }, y: { type: "number" }, w: { type: "number" }, h: { type: "number" } },
       description:
-        "x, y, w, h in pixels on the slide, or inside the frame you add into. Left out: the largest free area.",
+        "x, y, w, h in pixels on the slide, or inside the frame you add into. set and move keep what you leave out. add takes all four, or none for the largest free area.",
     },
-    object({ x: px(), y: px(), w: size, h: size }),
+    object({}, boxSides),
   ),
   name: field<string>(
     { type: "string", description: "Layer name, or with op deck the deck's name. Never empty." },
@@ -340,7 +344,10 @@ const pickFrom = <T extends { readonly [P in keyof T]: Field<unknown> }, K exten
 
 const lookReaders = pickFrom(lookFields, Object.keys(lookFields) as (keyof typeof lookFields)[])
 const readChange = variant("op", {
-  add: object({ kind: literal(addKinds), slide: readId }, { ...pickFrom(placeFields, ["into"]), ...lookReaders }),
+  add: object(
+    { kind: literal(addKinds), slide: readId },
+    { ...pickFrom(placeFields, ["into"]), ...lookReaders, box: object(boxSides) },
+  ),
   set: object(pickFrom(placeFields, ["target"]), lookReaders),
   move: object({}, { ...pickFrom(placeFields, ["node", "nodes", "into", "after"]), box: lookFields.box.read }),
   wrap: object(pickFrom(placeFields, ["nodes"]), pickFrom(lookFields, ["layout", "clip"])),
@@ -398,7 +405,7 @@ export const agentChangesSchema = {
         op: {
           enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck"],
           description:
-            "add: kind, slide, into?, look. set: target, look. move: node, or nodes. into is required with nodes or box and then names a slide; one node may name a frame. after?. box? needs x, y, w, h; x, y place the union and w, h do not resize. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. Group ids are in get as group=<id>. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
+            "add: kind, slide, into?, look. set: target, look. move: node, or nodes. into is required with nodes or box and then names a slide; one node may name a frame. after?. box? places the union by x, y or both; w, h do not resize. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. Group ids are in get as group=<id>. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
         },
         ...schemasOf(placeFields),
         kind: { enum: addKinds, description: kindWords },
