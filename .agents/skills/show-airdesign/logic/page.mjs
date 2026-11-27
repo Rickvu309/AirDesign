@@ -142,8 +142,8 @@ main{width:max-content;min-width:560px;padding:26px 32px 28px}
 .kicker{font-size:13px;line-height:18px;color:#6b6b6b}
 .heads{display:flex;margin-top:20px;font-size:11px;font-weight:650;letter-spacing:.12em;text-transform:uppercase;color:#6b6b6b}
 .head{flex:none}
-.tree{display:flex;margin-top:8px}
-.node{display:flex;align-items:center}
+.tree{display:flex;margin-top:8px;--branch-padding:8px;--connector-top:22px}
+.node{display:flex;align-items:flex-start}
 .box{position:relative;flex:none;width:var(--width);padding:12px 14px}
 .box::before{content:"";position:absolute;inset:0;border:2.4px solid ${ink};border-radius:5px;filter:url(#rough);pointer-events:none}
 .d0{--width:${String(widths[0])}px}.d0::before{border-width:3.4px}
@@ -160,12 +160,12 @@ main{width:max-content;min-width:560px;padding:26px 32px 28px}
 .thumb{display:block;width:100%;max-width:100%;height:auto;margin-top:10px}
 .with-photo,.step.with-photo{--width:${String(photoWidth)}px}
 .kids{display:flex;flex-direction:column;position:relative;padding-left:${String(gap)}px}
-.kids::before{content:"";position:absolute;left:0;top:50%;width:${String(gap / 2)}px;border-top:2px solid ${ink};filter:url(#rough)}
-.kids>.node{position:relative;padding:8px 0}
-.kids>.node::before{content:"";position:absolute;left:-${String(gap / 2)}px;top:50%;width:${String(gap / 2)}px;border-top:2px solid ${ink};filter:url(#rough)}
+.kids::before{content:"";position:absolute;left:0;top:var(--connector-top);width:${String(gap / 2)}px;border-top:2px solid ${ink};filter:url(#rough)}
+.kids>.node{position:relative;padding:var(--branch-padding) 0}
+.kids>.node::before{content:"";position:absolute;left:-${String(gap / 2)}px;top:calc(var(--branch-padding) + var(--connector-top));width:${String(gap / 2)}px;border-top:2px solid ${ink};filter:url(#rough)}
 .kids>.node::after{content:"";position:absolute;left:-${String(gap / 2)}px;top:0;bottom:0;border-left:2px solid ${ink};filter:url(#rough)}
-.kids>.node:first-child::after{top:50%}
-.kids>.node:last-child::after{bottom:50%}
+.kids>.node:first-child::after{top:var(--connector-top)}
+.kids>.node:last-child::after{bottom:auto;height:calc(var(--branch-padding) + var(--connector-top))}
 .answer{margin:14px 0 0;font-size:19px;line-height:25px;font-weight:720}
 .flow{position:relative;display:flex;align-items:stretch;margin-top:30px}
 .flow.loops{margin-top:76px;margin-right:30px}
