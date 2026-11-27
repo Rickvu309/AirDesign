@@ -1,5 +1,6 @@
 import fc from "fast-check"
 import * as doom from "@airdesign/doom"
+import { invert } from "@airdesign/doom/testing"
 import { expect, it } from "vitest"
 import { wrapWrites, ungroupWrites } from "./group-writes"
 import { moveWrites } from "./move-writes"
@@ -149,7 +150,7 @@ it("keeps every layer where it showed through wrap, ungroup and their undo and r
           const last = from.pop()
           if (last === undefined) continue
           const edit = { once: `step-${String(last.before.rev)}`, author: { kind: "person" as const, id: "test" } }
-          const writes = doom.invert(
+          const writes = invert(
             last.before,
             view,
             { ...edit, writes: last.writes, rev: doom.rev(last.before.rev + 1) },
@@ -193,7 +194,7 @@ it("takes back a group an agent's run made and leaves its layers where they show
   view = land(view, edit(view, [], "stop"))
   const shown = shownOf(geometryIn(view, slide), shapes)
   const last = run.at(-1)!
-  const writes = doom.invert(
+  const writes = invert(
     started,
     view,
     {

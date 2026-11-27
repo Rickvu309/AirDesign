@@ -21,7 +21,7 @@ export type LandBy = {
 
 export type Landing = { readonly after: Doom; readonly edit: Edit; readonly named: readonly Write[] }
 
-function landOn(fold: Doom, edit: Edit): Doom | Refusal {
+export function landOn(fold: Doom, edit: Edit): Doom | Refusal {
   const made = onTop(fold, edit).writes
   const writes = edit.writes.map((write, at) => (write.base === undefined ? made[at]! : write))
   return applyEdit(fold, { ...edit, writes, rev: rev(fold.rev + 1) })

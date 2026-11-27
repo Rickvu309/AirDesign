@@ -2,7 +2,6 @@ import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import {
   applyEdit,
-  invert,
   isRefusal,
   nodeId,
   onDeck,
@@ -13,6 +12,7 @@ import {
   type Edit,
   type Write,
 } from "./index.js"
+import { invert } from "./invert.js"
 import { parentLanding, type ParentFate } from "./parent-landing.js"
 import { box, create, ids, land, once, person, place, revOf, sampleDeck } from "./sample-deck.js"
 

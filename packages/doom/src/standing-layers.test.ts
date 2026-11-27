@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { applyEdit, invert, isRefusal, nodeId, rev, type Landed, type Doom, type NodeId, type Write } from "./index.js"
+import { applyEdit, isRefusal, nodeId, rev, type Landed, type Doom, type NodeId, type Write } from "./index.js"
+import { invert } from "./invert.js"
 import { box, create, ids, land, once, person, place, sampleDeck } from "./sample-deck.js"
 
 function step(doom: Doom, writes: readonly Write[]) {

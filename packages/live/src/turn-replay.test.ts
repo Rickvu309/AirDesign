@@ -2,6 +2,9 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import {
   deckNode,
+  id,
+  row,
+  slide,
   title,
   card,
   frame,
@@ -267,5 +270,20 @@ describe("an undo made offline over a layer another tab deletes before it reconn
         expect(xOf(mine.server())).toBe(20)
       },
     )
+  })
+})
+
+describe("a turn the deck still refuses once it is rebuilt on the caught-up deck", () => {
+  it("sets the undo aside with the deck's refusal, and keeps the other tab's words", async () => {
+    const added = id("q:7")
+    const mine = await offline(
+      [[{ node: added, prop: "type", value: "slide" }, { node: added, prop: "parent", value: at(row) }, ...typed]],
+      1,
+      [retyped, { node: slide, prop: "parent", value: null }],
+    )
+    expect(mine.notices()).toMatchObject([{ refused: "last-slide" }])
+    expect(parentOf(mine.server(), added)).toBe(row)
+    expect((mine.server().nodes.get(title) as { text: doom.Text }).text.chars).toBe("Theirs")
+    expect(mine.redo()).toEqual({ ok: false, reason: "nothing" })
   })
 })

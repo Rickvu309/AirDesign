@@ -173,6 +173,11 @@ function connected(
     if (kept === undefined) return false
     queue = kept.queue
     forget(kept.gone)
+    for (const [name, { refused, node, prop }] of kept.refused)
+      notices = [
+        ...notices,
+        { once: name, refused, ...(node === undefined ? {} : { node }), ...(prop === undefined ? {} : { prop }) },
+      ]
     const changed = new Set([...kept.gone, ...kept.steps.keys()])
     for (const each of queue) {
       const because = each.afterRead?.find((name) => changed.has(name))
@@ -302,29 +307,9 @@ function connected(
     return { ok: true, once: edit.once, saved, before, writes: edit.writes }
   }
 
-  function pushEdit(
-    asked: readonly doom.Write[],
-    by: doom.Author,
-    {
-      runUndo,
-      follows,
-      readBase,
-      last,
-    }: {
-      runUndo?: doom.RunUndo
-      follows?: string
-      readBase?: doom.Rev
-      last?: doom.Doom
-    } = {},
-  ): (Sent & { readonly before: doom.Doom; readonly writes: readonly doom.Write[] }) | Refused {
+  function followName(named: readonly doom.Write[], by: doom.Author, follows: string) {
     const before = view()
-    const edit: doom.Edit = {
-      once: nextOnce(),
-      author: by,
-      writes: doom.freeLineEnds(before, asked, measure(), before, last),
-      ...(runUndo === undefined ? {} : { runUndo }),
-      ...(readBase === undefined ? {} : { readBase }),
-    }
+    const edit: doom.Edit = { once: nextOnce(), author: by, writes: named }
     return enqueue(before, edit, (made) => appliedOn(before, followedEdit(before, made)), follows)
   }
 
@@ -338,19 +323,25 @@ function connected(
       from.pop()
       return { ok: false, reason: "nothing" }
     }
-    const owned = ownedRevs([...turned.keys(), ...step.onces])
-    const source = { once: last, author, writes: step.writes, rev: at }
-    const writes = doom.invert(step.before, now, source, owned)
-    if (writes.length === 0) {
+    const guarded = step.guarded === true
+    const undone = doom.undo(
+      now,
+      { step: { once: last, author, writes: step.writes, rev: at }, before: step.before },
+      {
+        author,
+        once: nextOnce(),
+        measure: measure(),
+        owned: ownedRevs([...turned.keys(), ...step.onces]),
+        ...(step.run === undefined ? {} : { runUndo: { run: step.run, undone: to === redoSteps } }),
+        ...(guarded ? { readBase: now.rev } : {}),
+      },
+    )
+    if (doom.isRefusal(undone)) return { ok: false, reason: "refused", refused: undone }
+    if (undone.edit.writes.length === 0) {
       from.pop()
       return { ok: false, reason: "nothing" }
     }
-    const guarded = step.guarded === true
-    const pushed = pushEdit(writes, author, {
-      ...(step.run === undefined ? {} : { runUndo: { run: step.run, undone: to === redoSteps } }),
-      ...(guarded ? { readBase: now.rev } : {}),
-      last: step.before,
-    })
+    const pushed = enqueue(now, undone.edit, () => undone.after)
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
     from.pop()
     to.push({
@@ -378,13 +369,18 @@ function connected(
     if (edits === undefined || edits.length === 0 || view().runs.get(run)?.undone === true)
       return { ok: false, reason: "nothing" }
     const now = view()
-    const { writes, ...turnedRun } = doom.invertRun(now, edits, ownedRevs(turned.keys()), started)
-    const stays = runUndoStays(edits, turnedRun)
-    if (writes.length === 0)
+    const undone = doom.undo(
+      now,
+      { run: edits, started },
+      { author, once: nextOnce(), measure: measure(), owned: ownedRevs(turned.keys()), runUndo: { run, undone: true } },
+    )
+    if (doom.isRefusal(undone)) return { ok: false, reason: "refused", refused: undone }
+    const stays = runUndoStays(edits, undone)
+    if (undone.edit.writes.length === 0)
       return [...stays.kept, ...stays.left, ...stays.waiting].length === 0
         ? { ok: false, reason: "nothing" }
         : { ok: false, reason: "left", ...stays }
-    const pushed = pushEdit(writes, author, { runUndo: { run, undone: true } })
+    const pushed = enqueue(now, undone.edit, () => undone.after)
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
     redoSteps.push({
       onces: [pushed.once],
@@ -420,7 +416,7 @@ function connected(
       fromTitle ? (made) => appliedOn(now, followedEdit(now, made)) : () => landing.after,
     )
     if (!pushed.ok) return pushed
-    const follow = named.length === 0 ? undefined : pushEdit(named, by, { follows: pushed.once })
+    const follow = named.length === 0 ? undefined : followName(named, by, pushed.once)
     const writes = follow?.ok === true ? [...pushed.writes, ...follow.writes] : pushed.writes
     const onces = follow?.ok === true ? [pushed.once, follow.once] : [pushed.once]
     const sent = { ok: true, once: pushed.once, saved: pushed.saved } as const

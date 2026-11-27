@@ -2,6 +2,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
+import { invert } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import * as view from "../specs/doom/view.mjs"
@@ -216,7 +217,7 @@ type Outcome = { readonly world: World; readonly named?: readonly doom.Write[]; 
 function turn(world: World, name: "u" | "r", target: Spec): Outcome | null {
   const source = name === "u" ? "s" : "u"
   const shown = viewNow(world)
-  const writes = doom.invert(world.viewBefore[source] as doom.Doom, shown, invertedEdit(world, source, shown))
+  const writes = invert(world.viewBefore[source] as doom.Doom, shown, invertedEdit(world, source, shown))
   const kept = mask(writes)
   const wanted = (name === "u" ? target.uK : target.rK) as number
   if (kept !== wanted) return null
@@ -332,7 +333,7 @@ function judgeView(world: World, spec: Spec, failures: string[], where: string) 
   }
   const stepWrites = world.drafts.s
   if (world.phases.u === "landed" && world.phases.s === "landed" && stepWrites !== undefined) {
-    const second = doom.invert(world.viewBefore.s as doom.Doom, world.server, invertedEdit(world, "s", shown))
+    const second = invert(world.viewBefore.s as doom.Doom, world.server, invertedEdit(world, "s", shown))
     if (second.length > 0)
       failures.push(`${where}\n  a second undo of the step would still put back ${second.length} properties`)
   }

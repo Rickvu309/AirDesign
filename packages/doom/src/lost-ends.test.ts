@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { doomFromTree } from "./doom-tree.js"
-import { freeLineEnds, invert, nodeId, type Doom, type Write } from "./index.js"
+import { freeLineEnds, nodeId, type Doom, type Write } from "./index.js"
+import { invert } from "./invert.js"
 import { measure, plainTheme, spot } from "./testing/doom-fixtures-art.js"
 import { attached, deck, detach, freePoint, lineOf, startOf, step } from "./testing/line-end-fixtures.js"
 

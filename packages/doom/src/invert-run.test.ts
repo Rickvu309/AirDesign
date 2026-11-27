@@ -9,12 +9,12 @@ import {
   type Undone,
   type Write,
   applyEdit,
-  invertRun,
   isRefusal,
   nodeId,
   replacedBy,
   rev,
 } from "./index.js"
+import { invertRun } from "./invert-run.js"
 import { box, create, hex, ids, once, person, place, revOf, sampleDeck, textOf, theme, tryLand } from "./sample-deck.js"
 import { valuesOf } from "./testing/values-of.js"
 

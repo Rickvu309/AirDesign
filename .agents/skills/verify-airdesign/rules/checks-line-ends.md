@@ -12,7 +12,7 @@ The rule (`packages/doom/src/line-ends.rule.md`) in three parts:
 
 - The device frees each end that still names the same shape after the batch takes that shape off the deck. It writes the point it painted in a line write with no base, so it wins over what landed before it (`freeLineEnds` in `packages/doom/src/freed-line-ends.ts`).
 - The deck frees any end still on a shape off the deck after the batch where the shape's stored box paints (`freedInFold` in `packages/doom/src/lost-ends.ts`, run by `landEdit`), so the delete lands even from a tab that never saw the attach.
-- A refused undo or redo is sent again with each end the other tab left as the tab read it at the press, the other tab's end for the rest (`lineEndsBack`, the ownership rule of an undo online), and its ends freed again against the caught-up deck (`onStandingOnly` in `packages/live/src/turn-replay.ts`).
+- A refused undo or redo is sent again with each end the other tab left as the tab read it at the press, the other tab's end for the rest (`lineEndsBack`, the ownership rule of an undo online), and its ends freed again against the caught-up deck (`undo` in `packages/doom/src/undo.ts`).
 
 Properties:
 

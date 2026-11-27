@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { landed } from "./testing/doom-fixtures"
 import { skipSaid, skipWrites } from "./slide-skip"
-import { testTheme } from "@airdesign/doom/testing"
+import { invert, testTheme } from "@airdesign/doom/testing"
 
 function twoSlides() {
   const grown = doom.doomFromTree({
@@ -42,7 +42,7 @@ describe("skip slide", () => {
     const undone = doom.applyEdit(after, {
       once: "undo",
       author: { kind: "person", id: "test" },
-      writes: doom.invert(view, after, edit),
+      writes: invert(view, after, edit),
       rev: doom.rev(after.rev + 1),
     })
     if (doom.isRefusal(undone)) throw new Error("undo refused")
