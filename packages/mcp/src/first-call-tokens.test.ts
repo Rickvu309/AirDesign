@@ -5,6 +5,7 @@ import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { expect, it } from "vitest"
 
 import { createServer } from "./index.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 type Listing = Awaited<ReturnType<Client["listTools"]>>
 type Tool = Listing["tools"][number]
@@ -32,7 +33,7 @@ async function firstCall(): Promise<{ listing: Listing; instructions: string }> 
   let minted = 0
   const server = createServer(
     { agent: "aira", mint: () => `minted${String((minted += 1))}` },
-    memoryDecks(() => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ name: "Title", children: [] }] }).doom),
+    memoryDecks(() => doom.doomFromTree({ theme: testTheme, slides: [{ name: "Title", children: [] }] }).doom),
   )
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: "airdesign-test", version: "0.0.0" })

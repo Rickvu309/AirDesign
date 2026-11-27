@@ -4,13 +4,14 @@ import type { AgentChange } from "./agent-change.js"
 import { compileAgentEdit } from "./agent-edit.js"
 import { boardDeckChanges } from "./testing/board-deck.js"
 import { agentDeck, apply, minter, runName } from "./testing/agent-fixtures.js"
-import { defaultTheme } from "./theme.js"
 import { readForAgent } from "./agent-read.js"
 import { type NodeId, applyEdit, isRefusal, rev } from "./index.js"
 import { agent, ids } from "./sample-deck.js"
 import { childrenOf, descendantsOf, propOf, slidesOf } from "./doom-walk.js"
 import { textStyleNames } from "./text.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
+import { testTheme } from "./testing/theme.js"
 
 function board(mode: "together" | "per-slide") {
   const mint = minter("b")
@@ -20,6 +21,7 @@ function board(mode: "together" | "per-slide") {
     batches.push(changes)
     const result = compileAgentEdit(doom, changes, {
       placement,
+      starts,
       author: agent(runName),
       once: `board-${batches.length}`,
       mint,
@@ -94,7 +96,7 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
         expect(textStyleNames).toContain(text.style)
         for (const span of text.spans) {
           expect(Object.keys(span).filter((key) => ["size", "tracking", "case"].includes(key))).toEqual([])
-          if (span.font !== undefined) expect(span.font).toBe(defaultTheme.fonts.body)
+          if (span.font !== undefined) expect(span.font).toBe(testTheme.fonts.body)
         }
       }
   })
@@ -108,7 +110,7 @@ describe.each(["together", "per-slide"] as const)("the board deck brief, sent %s
 })
 
 const onTheScale = () => {
-  const withScale = apply(agentDeck(), [{ node: ids.deck, prop: "theme", value: defaultTheme }])
+  const withScale = apply(agentDeck(), [{ node: ids.deck, prop: "theme", value: testTheme }])
   return withScale
 }
 
@@ -118,6 +120,7 @@ describe("the board deck on the slide type scale", () => {
   const send = (changes: readonly AgentChange[]): readonly NodeId[] => {
     const result = compileAgentEdit(doom, changes, {
       placement,
+      starts,
       author: agent(runName),
       once: `scale-${doom.rev}`,
       mint,
@@ -133,7 +136,7 @@ describe("the board deck on the slide type scale", () => {
 
   const sizeOf = (node: ReturnType<typeof childrenOf>[number]) => {
     const text = propOf(node, "text")
-    return text === undefined ? undefined : defaultTheme.textStyles[text.style].size
+    return text === undefined ? undefined : testTheme.textStyles[text.style].size
   }
   const sizesOn = (slide: NodeId) => descendantsOf(doom, slide).flatMap((node) => sizeOf(node) ?? [])
 

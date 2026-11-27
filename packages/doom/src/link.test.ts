@@ -5,6 +5,7 @@ import { readLinkAddress } from "./index.js"
 import { readWrite } from "./read-write.js"
 import { agent, ids, sampleDeck, textOf } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
 
 const doom = sampleDeck()
 const linked = (link: string) => ({ ...textOf("Revenue"), spans: [{ end: 7, link }] })
@@ -57,6 +58,7 @@ describe("a link goes to a web or mail address or a slide", () => {
     ] as const) {
       const edit = compileAgentEdit(agentDeck(), [{ op: "set", target: ids.title, text: `[x](${link})` }], {
         placement,
+        starts,
         author: agent("run-1"),
         once: "safe-1",
         mint: minter(),
@@ -66,6 +68,7 @@ describe("a link goes to a web or mail address or a slide", () => {
     for (const link of ["mailto:a@b.c", "mailto:a@b.c?subject=x", atLimit]) {
       const edit = compileAgentEdit(agentDeck(), [{ op: "set", target: ids.title, text: `[x](${link})` }], {
         placement,
+        starts,
         author: agent("run-1"),
         once: "safe-1",
         mint: minter(),

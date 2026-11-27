@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client"
 import { afterEach, expect, it } from "vitest"
 import { loadIcon } from "./icon-nodes.js"
 import { SlidePaint } from "./index.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const hosts: { host: HTMLDivElement; root: Root }[] = []
 
@@ -27,7 +28,7 @@ const picture = (name: string, x: number): doom.TreeNode => ({
 
 const board = () =>
   doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [{ children: [picture("one", 0), picture("two", 400), picture("three", 800)] }],
   })
 
@@ -102,7 +103,7 @@ it("shows the text editor inside the node it is given for, and redraws that node
 
 it("draws an icon once its art has loaded, though the node itself did not change", async () => {
   const grown = doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         children: [

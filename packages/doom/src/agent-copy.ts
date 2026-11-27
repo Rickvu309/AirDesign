@@ -4,7 +4,7 @@ import { duplicateWrites, pasteWrites } from "./copy-writes.js"
 import { childrenOf, deckOf, propOf } from "./doom-walk.js"
 import { type Grown, doomFromTree } from "./doom-tree.js"
 import type { Write } from "./doom.js"
-import { defaultTheme } from "./theme.js"
+import { deckOf as deckLookOf } from "./deck-of.js"
 
 export function compileDuplicate(draft: Draft, change: Extract<AgentChange, { op: "duplicate" }>): void {
   for (const id of change.nodes) {
@@ -15,9 +15,9 @@ export function compileDuplicate(draft: Draft, change: Extract<AgentChange, { op
   draft.writes.push(...duplicateWrites(draft.doom, change.nodes, draft.mint).writes)
 }
 
-function grownPiece(change: Extract<AgentChange, { op: "paste" }>): Grown {
+function grownPiece(draft: Draft, change: Extract<AgentChange, { op: "paste" }>): Grown {
   try {
-    return doomFromTree({ theme: defaultTheme, slides: [{ children: [change.piece] }] })
+    return doomFromTree({ theme: deckLookOf(draft.doom).theme, slides: [{ children: [change.piece] }] })
   } catch {
     return stop("shape", undefined, "piece", "form", "A piece whose layers each hold valid fields.")
   }
@@ -26,7 +26,7 @@ function grownPiece(change: Extract<AgentChange, { op: "paste" }>): Grown {
 export function compilePaste(draft: Draft, change: Extract<AgentChange, { op: "paste" }>): void {
   const into = living(draft, change.into, "into")
   if (into.type !== "slide" && into.type !== "frame") stop("shape", into.id, "into", "form", "A slide or a frame.")
-  const grown = grownPiece(change)
+  const grown = grownPiece(draft, change)
   const root = childrenOf(grown.doom, grown.slides[0]!)[0]!
   const copies = pasteWrites({ view: grown.doom, roots: [root.id] }, draft.doom, into.id, draft.mint)
   const copy = copies.made.get(root.id)
@@ -50,7 +50,7 @@ export function compileDeck(draft: Draft, change: Extract<AgentChange, { op: "de
     fonts === undefined
   )
     stop("shape", deck.id, "deck", "missing", "A name, nameFollows, language, theme, colors or fonts.")
-  const theme = newTheme ?? propOf(deck, "theme") ?? defaultTheme
+  const theme = newTheme ?? deckLookOf(draft.doom).theme
   put(draft, deck.id, {
     ...(name === undefined ? {} : { name }),
     ...(language === undefined ? {} : { language }),

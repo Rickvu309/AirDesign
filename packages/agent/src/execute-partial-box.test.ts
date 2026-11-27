@@ -3,8 +3,9 @@ import { expect, it } from "vitest"
 
 import { callTool, type DeckHost, type Session } from "./index.js"
 import { memoryDecks } from "./testing/memory-decks.js"
+import { testTheme } from "@airdesign/doom/testing"
 
-const start = () => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ name: "Title", children: [] }] }).doom
+const start = () => doom.doomFromTree({ theme: testTheme, slides: [{ name: "Title", children: [] }] }).doom
 
 it("update and move take only the box fields that change and keep the rest", async () => {
   const decks = memoryDecks(start)

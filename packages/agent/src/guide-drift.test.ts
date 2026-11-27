@@ -7,6 +7,7 @@ import { verbFields } from "./execute-ops.js"
 import { guides } from "./guides.js"
 import { callTool, type DeckHost } from "./index.js"
 import { memoryDecks } from "./testing/memory-decks.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const operations = new Map(Object.entries(verbFields))
 operations.set("createDeck", Object.keys(readCreateDeck.input.shape))
@@ -58,7 +59,7 @@ function checkCalls(code: string, guide: string, getFields: (targeted: boolean) 
 it("keeps every guide's tool, operation, input and answer references on the agent contract", async () => {
   const fold = () =>
     doom.doomFromTree({
-      theme: doom.defaultTheme,
+      theme: testTheme,
       slides: Array.from({ length: 12 }, () => ({
         children: [{ type: "shape", props: { text: doom.textFromMarkdown("word ".repeat(1_200).trim(), "body") } }],
       })),

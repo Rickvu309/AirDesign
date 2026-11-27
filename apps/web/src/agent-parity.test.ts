@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { compileAgentChange } from "@airdesign/doom/testing"
+import { compileAgentChange, starts, testTheme } from "@airdesign/doom/testing"
 import { gestures } from "@/lib/gestures"
 import { describe, expect, it } from "vitest"
 import { nodeModel } from "./editor/design-model"
@@ -70,7 +70,7 @@ const manualPanel = new Set([
 
 function panelKeys(): ReadonlySet<string> {
   const keys = layers.flatMap((name) =>
-    nodeModel({ view: built.view, id: idOf(name), theme: doom.defaultTheme, slides: [slide] })
+    nodeModel({ view: built.view, id: idOf(name), theme: testTheme, slides: [slide] })
       .sections.flatMap((section) => section.strips.flat())
       .map((control) => `panel:${control.trait}.${control.field}`),
   )
@@ -164,7 +164,7 @@ describe("every capability a person has names its agent word, or says why it is 
     ["drag:slide-group-start", [["a:3", "a:4"]]],
     ["menu:new-slide-group", [["a:3"], ["new:1"], ["a:4"]]],
   ] as const)("%s lands the same slide groups through the agent", (capability, groups) => {
-    const initial = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ name: "Slides", children: [] }] }).doom
+    const initial = doom.doomFromTree({ theme: testTheme, slides: [{ name: "Slides", children: [] }] }).doom
     const deck = [...initial.nodes.values()].find((node) => node.type === "deck")!
     const [first] = doom.slidesOf(initial)
     const previous = doom.parentOf(initial.nodes.get(doom.parentOf(first)!.id))!.at
@@ -194,7 +194,7 @@ describe("every capability a person has names its agent word, or says why it is 
     const change = doom.readAgentChange(entry.probe)
     if (doom.isRefusal(change)) throw new Error(JSON.stringify(change))
     let minted = 0
-    const writes = compileAgentChange(view, change, () => doom.nodeId(`new:${++minted}`), placement)
+    const writes = compileAgentChange(view, change, () => doom.nodeId(`new:${++minted}`), placement, starts)
     if ("refused" in writes) throw new Error(JSON.stringify(writes))
     const after = land(view, { kind: "person", id: "parity" }, writes)
     expect(doom.slideGroups(after).map((group) => group.slides)).toEqual(groups)

@@ -6,6 +6,7 @@ import { changeWrites, type ChangeContext } from "./design-changes"
 import { nodeModel } from "./design-model"
 import { shownText } from "./design-text-values"
 import { geometryOf } from "./slide-geometry"
+import { testTheme } from "@airdesign/doom/testing"
 
 const spot = (x: number, y: number, w: number, h: number) => ({
   x,
@@ -18,7 +19,7 @@ const spot = (x: number, y: number, w: number, h: number) => ({
 })
 
 function grow(children: readonly doom.TreeNode[]) {
-  const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children }] })
+  const grown = doom.doomFromTree({ theme: testTheme, slides: [{ children }] })
   const measure = doom.measureWith({})
   const geometry = geometryOf(doom.resolveSlide(grown.doom, grown.slides[0]!, measure))
   return { ...grown, view: grown.doom, geometry }
@@ -38,7 +39,7 @@ function landed(view: doom.Doom, writes: readonly doom.Write[]): doom.Doom {
   return next
 }
 
-const theme = doom.defaultTheme
+const theme = testTheme
 const words = (chars: string): doom.Text => ({
   chars,
   spans: [],

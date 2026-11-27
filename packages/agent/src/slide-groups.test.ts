@@ -4,6 +4,7 @@ import { expect, it } from "vitest"
 import { callTool } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 function slideGroupsIn(layers: string): { group: string; slides: string[] }[] {
   const groups: { group: string; slides: string[] }[] = []
@@ -20,7 +21,7 @@ function slideGroupsIn(layers: string): { group: string; slides: string[] }[] {
 
 it("saves and refuses slide group edits through the existing tool, using its answer fields alone", async () => {
   const host = memoryDecks(
-    () => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ name: "Title", children: [] }] }).doom,
+    () => doom.doomFromTree({ theme: testTheme, slides: [{ name: "Title", children: [] }] }).doom,
   )
   let minted = 0
   const session = { agent: "aira", mint: () => `minted${String(++minted)}` }

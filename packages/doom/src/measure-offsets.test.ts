@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { defaultTheme, measureWith, type Text } from "./index.js"
+import { measureWith, type Text } from "./index.js"
+import { testTheme } from "./testing/theme.js"
 
 const measure = measureWith({})
 
@@ -12,7 +13,7 @@ function linesOf(chars: string) {
     resize: "height",
     alignV: "top",
   }
-  return measure(text, defaultTheme, 500).lines.map((line) => [line.start, line.end])
+  return measure(text, testTheme, 500).lines.map((line) => [line.start, line.end])
 }
 
 describe("the character range of each line", () => {

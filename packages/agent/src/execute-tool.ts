@@ -135,7 +135,7 @@ function leadOf(landed: Landed | undefined, rev: number): string {
 }
 
 async function createFromScript(script: string, once: string, host: DeckHost): Promise<Answer> {
-  let creation: { readonly name: string; readonly theme: Theme | undefined } | undefined
+  let creation: { readonly name: string | undefined; readonly theme: Theme | undefined } | undefined
   let failure: Answer | undefined
   let ops = 0
   const operation = async (verb: string, fields: unknown): Promise<OpAnswer> => {

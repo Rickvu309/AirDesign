@@ -4,6 +4,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
 import { guides, piece, pieces, problemRules, style } from "./index.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 type Text = { readonly chars: string; readonly spans: readonly { readonly end: number }[] }
 type Spot = { readonly x: number; readonly y: number }
@@ -40,7 +41,7 @@ describe("kit pieces", () => {
 
   it("grows each piece into layers Doom accepts", () => {
     for (const each of pieces())
-      expect(() => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [each.tree] }] })).not.toThrow()
+      expect(() => doom.doomFromTree({ theme: testTheme, slides: [{ children: [each.tree] }] })).not.toThrow()
   })
 
   it("names only theme colours and text styles, so a piece follows any deck's theme", () => {
@@ -159,7 +160,7 @@ describe("diagram pieces", () => {
         const ends = (child.props as { geometry?: { start?: { layer?: string }; end?: { layer?: string } } })?.geometry
         return ends?.start?.layer === undefined ? [] : [[ends.start.layer, ends.end?.layer]]
       })
-      const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [piece(name)!.tree] }] })
+      const grown = doom.doomFromTree({ theme: testTheme, slides: [{ children: [piece(name)!.tree] }] })
       const lines = linesOf(grown)
       expect(lines.length, name).toBeGreaterThan(1)
       expect(
@@ -175,8 +176,7 @@ describe("diagram pieces", () => {
 
   it("keep a connector on its box when the box moves", () => {
     const tree = piece("architecture")!.tree
-    const grow = (node: doom.TreeNode) =>
-      doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [node] }] })
+    const grow = (node: doom.TreeNode) => doom.doomFromTree({ theme: testTheme, slides: [{ children: [node] }] })
     const estimate = doom.measureWith({})
     const ends = (grown: doom.Grown) => {
       const flat = (all: readonly doom.Resolved[]): readonly doom.Resolved[] =>

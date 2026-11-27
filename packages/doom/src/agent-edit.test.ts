@@ -7,6 +7,7 @@ import { type Doom, type NodeId, type Rev, type RevisionKey, applyEdit, isRefusa
 import { agent, create, ids, land, person, revOf, sampleDeck, textOf } from "./sample-deck.js"
 import { propOf } from "./doom-walk.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
 
@@ -22,6 +23,7 @@ const by = (more: Record<string, unknown> = {}) => ({
   once: "agent-1",
   mint: minter(),
   placement,
+  starts,
   ...more,
 })
 const landEdit = (doom: Doom, edit: { once: string; author: ReturnType<typeof agent>; writes: readonly never[] }) =>

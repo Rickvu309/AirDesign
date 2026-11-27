@@ -6,13 +6,14 @@ import { memoryDecks } from "@airdesign/agent/testing/evals"
 import { expect, it } from "vitest"
 import { FontMetrics } from "../platform/font-metrics.js"
 import { FontSource } from "../platform/font-source.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 const family = "Liberation Sans Narrow"
 
 const start = () =>
   doom.doomFromTree({
-    theme: { ...doom.defaultTheme, fonts: { heading: family, body: family } },
+    theme: { ...testTheme, fonts: { heading: family, body: family } },
     slides: [{ children: [] }],
   }).doom
 

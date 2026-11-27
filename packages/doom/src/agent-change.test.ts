@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest"
 import { bytesOf, limits } from "./limits.js"
 import { hex } from "./sample-deck.js"
 import { agentChangesSchema, readAgentChange, type AgentChange } from "./agent-change.js"
-
-import { defaultTheme } from "./theme.js"
+import { testTheme } from "./testing/theme.js"
 
 const json = (value: unknown) => JSON.parse(JSON.stringify(value))
 
@@ -43,7 +42,7 @@ const valid: readonly AgentChange[] = [
   { op: "slide", add: { after: "t:3" as never } },
   { op: "slide", move: { slide: "t:3" as never, after: null } },
   { op: "slide", delete: "t:3" as never },
-  { op: "deck", theme: defaultTheme },
+  { op: "deck", theme: testTheme },
 ]
 
 describe("readAgentChange", () => {

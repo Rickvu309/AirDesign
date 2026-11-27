@@ -1,5 +1,7 @@
 layer: shared
 dependencies:
+  - packages/doom#runtime
+  - packages/doom#testing
   - apps/web/src/components
   - apps/web/src/copy
   - apps/web/src/lib

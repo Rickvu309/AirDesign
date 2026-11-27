@@ -18,6 +18,7 @@ import {
   wordAfter,
   wordBefore,
 } from "./text-edit"
+import { testTheme } from "@airdesign/doom/testing"
 
 const regular = { font: "Inter", weight: 400 }
 const plain = (chars: string): doom.Text => doom.textFromMarkdown(chars, "body")
@@ -250,7 +251,7 @@ describe("moving over characters", () => {
 
 describe("bold as the canvas paints it", () => {
   const theme = (weight: number, fonts = { heading: "Inter", body: "Inter" }): doom.Theme => {
-    const base = doom.defaultTheme
+    const base = testTheme
     const label = { ...base.textStyles.label, weight }
     return { ...base, fonts, textStyles: { ...base.textStyles, label } }
   }

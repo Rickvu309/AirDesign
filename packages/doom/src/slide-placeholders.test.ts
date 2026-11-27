@@ -3,21 +3,21 @@ import type { AgentChange } from "./agent-change.js"
 import { agentDeck, apply, build, compiled, minter } from "./testing/agent-fixtures.js"
 import { measureWith } from "./measure.js"
 import { solveLayout } from "./solve-layout.js"
-import { placeholderSubtitle, titleOnlyWrites, titleSlideWrites } from "./slide-placeholders.js"
-import { placeholderTitle } from "./placeholder-title.js"
-import { defaultTheme } from "./theme.js"
+import { titleOnlyWrites, titleSlideWrites } from "./slide-placeholders.js"
 import { textHeight } from "./text-estimate.js"
 import { childrenOf, propOf } from "./doom-walk.js"
 import { ids } from "./sample-deck.js"
 import type { Doom } from "./doom.js"
+import { testTheme } from "./testing/theme.js"
+import { starts } from "./testing/start-rules.js"
 
 const size = { w: 1920, h: 1080 }
-const theme = defaultTheme
+const theme = testTheme
 const estimate = measureWith({})
 
 function withTitleSlide(): Doom {
   const mint = minter("p")
-  return apply(agentDeck(), titleSlideWrites(ids.slide, mint, size))
+  return apply(agentDeck(), titleSlideWrites(ids.slide, mint, size, starts))
 }
 
 const byRole = (doom: Doom, role: string) => childrenOf(doom, ids.slide).find((node) => propOf(node, "role") === role)!
@@ -29,7 +29,7 @@ describe("a title slide's placeholders", () => {
     const text = propOf(title, "text")!
     const box = propOf(title, "box")!
     expect(propOf(title, "role")).toBe("title")
-    expect(text).toMatchObject({ chars: placeholderTitle, style: "display", resize: "height", alignV: "bottom" })
+    expect(text).toMatchObject({ chars: starts.title.chars, style: "display", resize: "height", alignV: "bottom" })
     const typical = { ...text, chars: "Q3 board update" }
     expect(textHeight(typical, theme, box.w)).toBe(theme.textStyles.display.size * theme.textStyles.display.lineHeight)
     expect(box.y + box.h).toBe(540)
@@ -41,14 +41,14 @@ describe("a title slide's placeholders", () => {
     const below = propOf(subtitle, "box")!
     const text = propOf(subtitle, "text")!
     expect(propOf(subtitle, "role")).toBe("subtitle")
-    expect(text.chars).toBe(placeholderSubtitle)
+    expect(text.chars).toBe(starts.subtitle.chars)
     expect(below.y - (above.y + above.h)).toBeGreaterThanOrEqual(32)
     expect(below.x).toBe(above.x)
     expect(below.w).toBe(above.w)
-    expect(defaultTheme.textStyles[text.style].weight).toBeLessThan(
-      defaultTheme.textStyles[propOf(title, "text")!.style].weight,
+    expect(testTheme.textStyles[text.style].weight).toBeLessThan(
+      testTheme.textStyles[propOf(title, "text")!.style].weight,
     )
-    expect(text.spans).toEqual([{ end: placeholderSubtitle.length, color: { var: "text2" } }])
+    expect(text.spans).toEqual([{ end: starts.subtitle.chars.length, color: { var: "text2" } }])
   })
 
   it("keeps both inside the slide margins", () => {
@@ -63,10 +63,10 @@ describe("a title slide's placeholders", () => {
 
 describe("a title-only slide's placeholder", () => {
   it("sets the title in the title style, a step under the cover's display, at the top left of the content margins", () => {
-    const doom = apply(agentDeck(), titleOnlyWrites(ids.slide, minter("q"), size))
+    const doom = apply(agentDeck(), titleOnlyWrites(ids.slide, minter("q"), size, starts))
     const title = byRole(doom, "title")
     expect(propOf(title, "role")).toBe("title")
-    expect(propOf(title, "text")).toMatchObject({ chars: placeholderTitle, style: "title", resize: "height" })
+    expect(propOf(title, "text")).toMatchObject({ chars: starts.title.chars, style: "title", resize: "height" })
     expect(propOf(title, "box")).toMatchObject({ x: 160, y: 80, w: 1600 })
   })
 })
@@ -120,7 +120,7 @@ describe("an agent's words on a title slide", () => {
     const doom = build(before, word({ text: "Q3 board update", textStyle: "display" }), minter("d"))
     expect(childrenOf(doom, ids.slide)).toHaveLength(childrenOf(before, ids.slide).length)
     expect(propOf(titleAndSubtitle(doom).title, "text")).toMatchObject({ chars: "Q3 board update", style: "display" })
-    expect(propOf(titleAndSubtitle(doom).subtitle, "text")!.chars).toBe(placeholderSubtitle)
+    expect(propOf(titleAndSubtitle(doom).subtitle, "text")!.chars).toBe(starts.subtitle.chars)
   })
 
   it("add a second text once the subtitle is filled", () => {
@@ -137,6 +137,6 @@ describe("an agent's words on a title slide", () => {
       minter("j"),
     )
     expect(childrenOf(doom, ids.slide)).toHaveLength(childrenOf(before, ids.slide).length + 1)
-    expect(propOf(titleAndSubtitle(before).subtitle, "text")!.chars).toBe(placeholderSubtitle)
+    expect(propOf(titleAndSubtitle(before).subtitle, "text")!.chars).toBe(starts.subtitle.chars)
   })
 })

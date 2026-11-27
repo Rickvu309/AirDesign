@@ -14,10 +14,11 @@ import { more, richDeck } from "./testing/rich-deck.js"
 import { solveLayout } from "./solve-layout.js"
 import type { Point } from "./resolved.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
 const refusal = (doom: Doom, value: Record<string, unknown>) =>
-  compileAgentChange(doom, change(value), minter(), placement)
+  compileAgentChange(doom, change(value), minter(), placement, starts)
 
 function across(view: Doom, moved: readonly NodeId[], slide: NodeId, at: Point) {
   const result = moveToSlide(view, moved, slide, at)
@@ -381,6 +382,7 @@ describe("a move composes the transforms it crosses", () => {
     const frame = boxes.get(named.flow!)!
     const result = compileAgentEdit(view, [change({ op: "move", nodes: [named.flowChild!], into: to })], {
       placement,
+      starts,
       author: person,
       once: "agent",
       mint: minter(),

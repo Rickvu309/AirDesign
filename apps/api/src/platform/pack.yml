@@ -1,4 +1,7 @@
 layer: platform
+dependencies:
+  - packages/doom#runtime
+  - packages/doom#testing
 public:
   runtime:
     [

@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { UnionControl } from "../design/controls/union"
 import { ColorControl } from "../design/controls/color"
 import * as doom from "@airdesign/doom"
-import { type AgentColor, colorVars, compileAgentChange } from "@airdesign/doom/testing"
+import { type AgentColor, colorVars, compileAgentChange, starts, testTheme } from "@airdesign/doom/testing"
 import type { Desc } from "../design/control-desc"
 import { describe, expect, it } from "vitest"
 import type { PanelControl } from "../design/panel"
@@ -18,7 +18,7 @@ import { grow, landed, spot } from "./testing/doom-fixtures"
 import { placement } from "@airdesign/doom/testing"
 
 const hash = "#"
-const theme = doom.defaultTheme
+const theme = testTheme
 
 const built = grow([
   {
@@ -167,7 +167,13 @@ describe("colour controls and agent colours", () => {
     for (const [name, fields] of Object.entries(sends))
       for (const field of fields)
         for (const color of agentColors) {
-          const writes = compileAgentChange(view, { op: "set", target: id(name), [field]: color }, mint, placement)
+          const writes = compileAgentChange(
+            view,
+            { op: "set", target: id(name), [field]: color },
+            mint,
+            placement,
+            starts,
+          )
           const prop = propOfField[field]
           const wanted = doomColor(color)
           if (doom.isRefusal(writes) || !shows(landed(view, writes), name, prop, wanted)) {
@@ -204,6 +210,7 @@ describe("colour controls and agent colours", () => {
         { op: "set", target: id("card"), fill: tint === undefined ? role : `${role}+20` },
         () => doom.nodeId("m:1"),
         placement,
+        starts,
       )
       if (doom.isRefusal(writes)) throw new Error(writes.refused)
       const after = landed(view, writes)

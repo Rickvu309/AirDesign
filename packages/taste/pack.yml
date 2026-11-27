@@ -1,3 +1,6 @@
 layer: model
+dependencies:
+  - packages/doom#runtime
+  - packages/doom#testing
 public:
   runtime: [src/index.ts]

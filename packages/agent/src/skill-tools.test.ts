@@ -6,10 +6,11 @@ import { guide, guides } from "./guides.js"
 import { callTool, type DeckHost, type Session } from "./index.js"
 import { getStyleTool, readSkillTool } from "./skill-tools.js"
 import { memoryDecks } from "./testing/memory-decks.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 function started(): doom.Doom {
   return doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         name: "Title",

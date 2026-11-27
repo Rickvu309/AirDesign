@@ -3,6 +3,7 @@ import type { Tree } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { undoStaysNote } from "@airdesign/catalog"
 import { airaKeptLayerName } from "./aira-copy"
+import { testTheme } from "@airdesign/doom/testing"
 
 const stays = "“Title” stays where it is, because the place it came from has changed."
 const runA: doom.Author = { kind: "agent", id: "aira", run: "a" }
@@ -59,7 +60,7 @@ function said(world: World, run: string): string {
   })
 }
 
-const theme = doom.defaultTheme
+const theme = testTheme
 
 describe("the note when Undo leaves a layer", () => {
   it("says the same thing when the frame it came from was deleted", () => {

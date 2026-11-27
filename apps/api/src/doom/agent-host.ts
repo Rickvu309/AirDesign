@@ -155,7 +155,10 @@ export function agentHost(deps: AgentHostDeps): Omit<DeckHost, "admit"> {
       if (!id.ok) return refusal("deck")
       return opened(
         id.deck,
-        await createDoom(db, { deck: id.deck }, email, { name, ...(theme === undefined ? {} : { theme }) }),
+        await createDoom(db, { deck: id.deck }, email, {
+          ...(name === undefined ? {} : { name }),
+          ...(theme === undefined ? {} : { theme }),
+        }),
       )
     }),
     images: async (deck, names) => storedImages(db, deck, email, names, images),

@@ -5,13 +5,14 @@ import { callTool, type Session } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
 import { catalog, projectTools } from "@airdesign/catalog"
+import { testTheme } from "@airdesign/doom/testing"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 
 function agent() {
   const session: Session = { agent: "aira", mint: () => "m1" }
   const decks = memoryDecks(
-    () => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ name: "Title", children: [] }] }).doom,
+    () => doom.doomFromTree({ theme: testTheme, slides: [{ name: "Title", children: [] }] }).doom,
   )
   let calls = 0
   return {

@@ -3,6 +3,7 @@ import { act, createElement } from "react"
 import { createRoot } from "react-dom/client"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { deckLocale, DoomSlide } from "./index.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const roots: ReturnType<typeof createRoot>[] = []
 
@@ -16,7 +17,7 @@ const spot = (x: number, y: number, w: number, h: number) => ({ x, y, w, h, rota
 describe("DoomSlide", () => {
   it("paints the slide at the width it is given, scaled from the deck's size, once its text is measured", async () => {
     const grown = doom.doomFromTree({
-      theme: doom.defaultTheme,
+      theme: testTheme,
       slides: [
         {
           children: [
@@ -56,7 +57,7 @@ describe("DoomSlide", () => {
 
 it("keeps the deck locale while typing and rechecks it when a draft changes the deck's language evidence", () => {
   const base = doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         children: [

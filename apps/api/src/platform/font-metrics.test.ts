@@ -4,6 +4,7 @@ import { problemRules } from "@airdesign/taste"
 import { expect, it } from "vitest"
 import { FontMetrics, servedFontMetrics } from "./font-metrics.js"
 import { FontSource } from "./font-source.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const family = "Liberation Sans Narrow"
 const line = "Revenue grew 12% to $48.2M"
@@ -17,7 +18,7 @@ const widthOf = (face: doom.FontFace, words: string) =>
 
 const deckIn = (fonts: { heading: string; body: string }, words = line) =>
   doom.doomFromTree({
-    theme: { ...doom.defaultTheme, fonts },
+    theme: { ...testTheme, fonts },
     slides: [
       {
         children: [
@@ -108,7 +109,7 @@ it("names the characters a deck's font has no letters for, and only those", asyn
 
 it("names a letter only when the face that paints it lacks it, not when another face on the deck does", async () => {
   const made = doom.doomFromTree({
-    theme: { ...doom.defaultTheme, fonts: { heading: family, body: family } },
+    theme: { ...testTheme, fonts: { heading: family, body: family } },
     slides: [
       {
         children: [
@@ -237,7 +238,7 @@ it("measures with the fonts the API serves, one measurer for each", async () => 
 
 it("keeps missing glyphs on the face that lacks them even when another face covers them", async () => {
   const deck = doom.doomFromTree({
-    theme: { ...doom.defaultTheme, fonts: { heading: family, body: family } },
+    theme: { ...testTheme, fonts: { heading: family, body: family } },
     slides: [
       {
         children: [

@@ -44,7 +44,7 @@ import {
 } from "./read-kit.js"
 import type { Refusal } from "./refusal.js"
 import { textStyleNames } from "./text.js"
-import { type Theme, readCompleteTheme } from "./theme.js"
+import { type Theme, readTheme } from "./theme.js"
 import { pathLimit, readPathData } from "./geometry.js"
 import { shapeNames } from "./preset-geometry.js"
 import { cropField } from "./agent-crop.js"
@@ -312,7 +312,7 @@ const placeFields = {
       },
       additionalProperties: false,
     },
-    readCompleteTheme,
+    readTheme,
   ),
   colors: field(
     {

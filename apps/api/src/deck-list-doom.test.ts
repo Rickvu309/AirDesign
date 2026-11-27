@@ -1,10 +1,11 @@
 import { randomBytes } from "node:crypto"
-import { blankDeckName, doomRoutes } from "@airdesign/catalog"
+import { doomRoutes } from "@airdesign/catalog"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, postgresInfo, serve, signInByCode } from "./testing/harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
+import { starts } from "@airdesign/doom/testing"
 
 type Row = { deck: string; name: string; edited: string; created: string; trashed?: string; starred?: boolean }
 type Listed = {
@@ -77,7 +78,7 @@ describe("a doom deck in the deck list", () => {
   it("is listed with its name, its times and a mark that it is a doom deck", async () => {
     const deck = await made()
     const { live } = await found(deck)
-    expect(live).toMatchObject({ deck, name: blankDeckName, doom: { rev: 1 }, starred: false })
+    expect(live).toMatchObject({ deck, name: starts.deckName, doom: { rev: 1 }, starred: false })
     expect(new Date(live?.created ?? "").toISOString()).toBe(live?.created)
     expect(new Date(live?.edited ?? "").toISOString()).toBe(live?.edited)
   })

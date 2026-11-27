@@ -8,6 +8,7 @@ import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import * as view from "../specs/agents/view.mjs"
 import { dumpTopics } from "./spec-dump.js"
 import { parseDot, type Graph } from "./spec-graph.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 type Spec = Graph["states"] extends Map<string, infer State> ? State : never
 type Agent = "a" | "b"
@@ -41,7 +42,7 @@ const deck: DeckId = readDeck.deck
 
 function opened(): { readonly server: doom.Doom; readonly x: doom.NodeId } {
   const server = doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         name: "Slide",

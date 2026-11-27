@@ -4,9 +4,10 @@ import { expect, it } from "vitest"
 
 import { callTool } from "./index.js"
 import { memoryDecks } from "./testing/memory-decks.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 function agent() {
-  const host = memoryDecks(() => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [] }] }).doom)
+  const host = memoryDecks(() => doom.doomFromTree({ theme: testTheme, slides: [{ children: [] }] }).doom)
   let calls = 0
   const session = { agent: "aira", mint: () => `style-${String(++calls)}` }
   return {

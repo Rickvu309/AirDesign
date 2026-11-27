@@ -6,10 +6,11 @@ import { readForAgent } from "./agent-read.js"
 import { propOf } from "./doom-walk.js"
 import { ids, theme } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
 
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
   ({ op: "set", target, ...look }) as AgentChange
-const refusal = (change: AgentChange) => compileAgentChange(agentDeck(), change, minter(), placement)
+const refusal = (change: AgentChange) => compileAgentChange(agentDeck(), change, minter(), placement, starts)
 
 describe("skip, transition, paragraph spacing, vertical align and blur", () => {
   it("skips a slide and reads the skip back, and refuses a skip on a layer", () => {

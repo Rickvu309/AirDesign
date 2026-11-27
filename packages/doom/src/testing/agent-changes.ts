@@ -8,7 +8,7 @@ import { colorVars, effectStyleNames } from "../paint.js"
 import { weightNames } from "../painted-face.js"
 import { shapeNames } from "../preset-geometry.js"
 import { textStyleNames } from "../text.js"
-import { defaultTheme } from "../theme.js"
+import { testTheme } from "./theme.js"
 
 type Pool = "slide" | "group" | "layer" | "frame" | "any"
 
@@ -431,7 +431,7 @@ const deck = fc
       nameFollows: fc.boolean(),
       language: look.language,
       theme: rare(
-        fc.constant({ ...defaultTheme, fonts: { heading: "Lora", body: "Inter" } }),
+        fc.constant({ ...testTheme, fonts: { heading: "Lora", body: "Inter" } }),
         fc.constant("no-such-theme"),
       ),
       colors: fc.dictionary(fc.constantFrom(...colorVars), fc.constantFrom(...themeHexes), {

@@ -7,6 +7,7 @@ import { readForAgent } from "./agent-read.js"
 import { propOf } from "./doom-walk.js"
 import { ids, theme } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
 
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
   ({ op: "set", target, ...look }) as AgentChange
@@ -29,7 +30,9 @@ describe("an inner shadow", () => {
 
   it("refuses a slide, a bad colour, a negative blur, and a value that is not a shadow", () => {
     const deck = agentDeck()
-    expect(compileAgentChange(deck, set(ids.slide, { innerShadow: shadow }), minter(), placement)).toMatchObject({
+    expect(
+      compileAgentChange(deck, set(ids.slide, { innerShadow: shadow }), minter(), placement, starts),
+    ).toMatchObject({
       field: "innerShadow",
     })
     expect(readAgentChange({ op: "set", target: ids.card, innerShadow: { ...shadow, color: "nope" } })).toMatchObject({

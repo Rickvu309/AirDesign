@@ -4,6 +4,7 @@ import type { PanelControl } from "@/design/panel"
 import { changeWrites } from "./design-changes"
 import { nodeModel } from "./design-model"
 import { grow, spot } from "./testing/doom-fixtures"
+import { testTheme } from "@airdesign/doom/testing"
 
 function textBox(
   chars: string,
@@ -19,7 +20,7 @@ function controlOf(built: ReturnType<typeof textBox>, field: string): PanelContr
   return nodeModel({
     view: built.view,
     id: built.ids.words!,
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: built.slides,
   })
     .sections.flatMap((section) => section.strips.flat())

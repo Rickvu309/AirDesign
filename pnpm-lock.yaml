@@ -516,6 +516,9 @@ importers:
       '@airdesign/doom':
         specifier: workspace:*
         version: link:../doom
+      '@airdesign/taste':
+        specifier: workspace:*
+        version: link:../taste
     devDependencies:
       oxlint:
         specifier: ^1.90.0

@@ -2,12 +2,13 @@ import type { SlideScreenshots } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { reportSlideScreenshots, slideKey, unresolvedAssets } from "./slide-screenshot-report"
+import { testTheme } from "@airdesign/doom/testing"
 
 const asset = "a".repeat(64)
 
 function twoSlides() {
   const grown = doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [{ children: [] }, { children: [] }],
   })
   return { view: grown.doom, slides: grown.slides }
@@ -138,7 +139,7 @@ describe("reporting the screenshots of a deck's slides", () => {
 describe("the pictures a slide waits for", () => {
   it("names each stored picture the slide uses that this device does not hold", () => {
     const { doom: view, slides } = doom.doomFromTree({
-      theme: doom.defaultTheme,
+      theme: testTheme,
       slides: [
         {
           children: [

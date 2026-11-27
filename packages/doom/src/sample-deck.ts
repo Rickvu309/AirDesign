@@ -1,4 +1,3 @@
-import { defaultTheme } from "./theme.js"
 import { orderKeyBetween, type OrderKey } from "./order-key.js"
 import {
   applyEdit,
@@ -15,7 +14,7 @@ import {
   type Theme,
   type Write,
 } from "./index.js"
-import { colorVars } from "./paint.js"
+import { type ColorVar, colorVars } from "./paint.js"
 
 export const ids = {
   deck: nodeId("t:1"),
@@ -31,6 +30,9 @@ export const hex = (seed: number): Hex => `#${seed.toString(16).padStart(6, "0")
 
 export const person: Author = { kind: "person", id: "quan" }
 export const agent = (run: string): Author => ({ kind: "agent", id: "aira", run })
+
+const shadow = (color: ColorVar, opacity: number, y: number, blur: number) =>
+  ({ kind: "dropShadow", color: { var: color }, opacity, x: 0, y, blur, spread: 0 }) as const
 
 export function theme(): Theme {
   const style = { size: 32, font: "body", weight: 400, lineHeight: 1.2, tracking: 0 } as const
@@ -49,7 +51,11 @@ export function theme(): Theme {
       caption: { ...style, size: 22 },
       label: { ...style, size: 20 },
     },
-    effectStyles: defaultTheme.effectStyles,
+    effectStyles: {
+      soft: [shadow("text", 0.08, 2, 8)],
+      lifted: [shadow("text", 0.16, 12, 32)],
+      glow: [shadow("accent2", 0.5, 0, 28)],
+    },
   }
 }
 

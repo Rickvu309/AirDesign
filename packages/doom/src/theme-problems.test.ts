@@ -6,6 +6,7 @@ import { paletteColorVars } from "./paint.js"
 import { themeProblems } from "./theme-problems.js"
 import { agent, hex, ids, land, sampleDeck, textOf, theme } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
 
 const red = hex(0xff0000)
 const nearRed = hex(0xff0001)
@@ -13,6 +14,7 @@ const nearRed = hex(0xff0001)
 const edited = (changes: readonly Record<string, unknown>[]) => {
   const edit = compileAgentEdit(agentDeck(), changes as readonly AgentChange[], {
     placement,
+    starts,
     author: agent(runName),
     once: "problems-1",
     mint: minter(),

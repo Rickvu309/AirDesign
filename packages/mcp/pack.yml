@@ -1,5 +1,7 @@
 layer: service
 dependencies:
+  - packages/doom#runtime
+  - packages/doom#testing
   - packages/agent#runtime
   - packages/agent#testing
 public:

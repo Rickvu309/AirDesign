@@ -100,7 +100,7 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
   const gap = gapFor(slideSize(draft).w, draft.placement)
   const columns = Math.max(...rows.map((row) => row.length))
   const last = rows.length - 1
-  const plain = rows.map((row) => row.map((cell) => (cell === "" ? "" : partOf(cell, "body").text.chars)))
+  const plain = rows.map((row) => row.map((cell) => (cell === "" ? "" : partOf(cell, "body", theme).text.chars)))
   const total = last > 1 && draft.placement.table.totalRow.test(plain[last]![0]?.trim() ?? "")
   const numbers = Array.from({ length: columns }, (_, col) => numberColumn(plain, col))
   const width = area.w / columns
@@ -127,7 +127,7 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
         const cell = row[col] ?? ""
         return cell === ""
           ? undefined
-          : cellText(partOf(cell, style, at === 0 ? "text2" : "text"), {
+          : cellText(partOf(cell, style, theme, at === 0 ? "text2" : "text"), {
               bold: bold(at, col),
               right: numbers[col] === true,
               tabular: numbers[col] === true && at > 0 && numberValue(plain[at]?.[col] ?? "") !== undefined,
@@ -194,7 +194,7 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
             cell === ""
               ? 0
               : heightIn(
-                  cellText(partOf(cell, style), {
+                  cellText(partOf(cell, style, theme), {
                     bold: bold(at, col),
                     right: false,
                     tabular: false,

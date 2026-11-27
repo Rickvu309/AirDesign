@@ -1,6 +1,7 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { arrivalOf, showsOf } from "./slide-arrival"
+import { testTheme } from "@airdesign/doom/testing"
 
 function landed(view: doom.Doom, writes: readonly doom.Write[]): doom.Doom {
   const next = doom.applyEdit(view, {
@@ -28,7 +29,7 @@ describe("how a slide arrives in Present", () => {
 
   it("hides a skipped slide and plays the next slide's transition", () => {
     const grown = doom.doomFromTree({
-      theme: doom.defaultTheme,
+      theme: testTheme,
       slides: [{ children: [] }, { children: [] }],
     })
     const slides = grown.slides

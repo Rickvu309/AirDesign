@@ -2,9 +2,10 @@ import * as doom from "@airdesign/doom"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { AgentAtWork } from "./agent-at-work"
+import { testTheme } from "@airdesign/doom/testing"
 
 const grown = doom.doomFromTree({
-  theme: doom.defaultTheme,
+  theme: testTheme,
   slides: [{ children: [{ type: "shape", name: "Title" }] }, { children: [{ type: "shape", name: "Chart" }] }],
 })
 const [first, second] = grown.slides as [doom.NodeId, doom.NodeId]

@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { compileAgentChange } from "@airdesign/doom/testing"
+import { compileAgentChange, starts, testTheme } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { nodeModel } from "./design-model"
 import { shownText } from "./design-text-values"
@@ -21,14 +21,14 @@ let minted = 0
 const mint = () => doom.nodeId(`m:${String((minted += 1))}`)
 
 function agentLands(change: doom.AgentChange, view: doom.Doom = built.view): doom.Doom {
-  const writes = compileAgentChange(view, change, mint, placement)
+  const writes = compileAgentChange(view, change, mint, placement, starts)
   if (doom.isRefusal(writes)) throw new Error(`refused ${JSON.stringify(writes)}`)
   return landed(view, writes)
 }
 
 describe("a person keeps no font or theme field, and an agent keeps all of them", () => {
   it("shows the text section with a style and a weight, and no font control", () => {
-    const model = nodeModel({ view: built.view, id: title, theme: doom.defaultTheme, slides: [built.slides[0]!] })
+    const model = nodeModel({ view: built.view, id: title, theme: testTheme, slides: [built.slides[0]!] })
     const fields = model.sections.flatMap((section) => section.strips.flat()).map((control) => control.field)
     expect(fields).toContain("style")
     expect(fields).toContain("weight")
@@ -65,6 +65,6 @@ describe("a person keeps no font or theme field, and an agent keeps all of them"
       },
     ])
     const text = doom.propOf(saved.view.nodes.get(saved.ids.words!), "text")!
-    expect(shownText(text, doom.defaultTheme).look.font.value).toBe("Georgia")
+    expect(shownText(text, testTheme).look.font.value).toBe("Georgia")
   })
 })

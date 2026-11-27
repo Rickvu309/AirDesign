@@ -1,4 +1,3 @@
-import fallback from "./fallback-theme.json" with { type: "json" }
 import {
   type ColorVar,
   type Effect,
@@ -10,7 +9,6 @@ import {
   px,
   readEffectList,
   readHex,
-  signedColorVars,
 } from "./paint.js"
 import { type Reader, detailOf, finite, integer, keyed, literal, object, words } from "./read-kit.js"
 import type { Refusal } from "./refusal.js"
@@ -64,33 +62,11 @@ const themeStyleFields = {
   effectStyles: readEffectStyles,
 }
 
-export const readCompleteTheme: Reader<Theme> = object({ ...themeFields, ...themeStyleFields })
-export const defaultTheme: Theme = readCompleteTheme(fallback)
-
-const readTextStyles: Reader<Theme["textStyles"]> = (raw) =>
-  readEveryTextStyle(typeof raw === "object" && raw !== null ? { ...defaultTheme.textStyles, ...raw } : raw)
-
-const readStoredColors: Reader<Theme["colors"]> = (raw) => {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return themeFields.colors(raw)
-  if (signedColorVars.every((role) => Object.hasOwn(raw, role))) return themeFields.colors(raw)
-  return themeFields.colors({
-    positive: defaultTheme.colors.positive,
-    negative: defaultTheme.colors.negative,
-    total: defaultTheme.colors.total,
-    ...raw,
-  })
-}
-
-export const readTheme: Reader<Theme> = object({
-  ...themeFields,
-  ...themeStyleFields,
-  textStyles: readTextStyles,
-  colors: readStoredColors,
-})
+export const readTheme: Reader<Theme> = object({ ...themeFields, ...themeStyleFields })
 
 export function parseTheme(raw: unknown): Theme | Refusal {
   try {
-    return readCompleteTheme(raw)
+    return readTheme(raw)
   } catch (thrown) {
     return detailOf(thrown)
   }

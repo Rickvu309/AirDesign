@@ -1,16 +1,17 @@
 import { describe, expect, it } from "vitest"
-import { blankDeckName, deckNameFollows, nameFromTitleWrites as derivedWrites } from "./deck-name-from-title.js"
+import { deckNameFollows, nameFromTitleWrites as derivedWrites } from "./deck-name-from-title.js"
 import { agentDeck, apply, build, minter, runName } from "./testing/agent-fixtures.js"
 import { compileAgentEdit } from "./agent-edit.js"
 import { readAgentChange } from "./agent-change.js"
 import { agent, ids } from "./sample-deck.js"
-import { placeholderTitle } from "./placeholder-title.js"
 import { titleSlideWrites } from "./slide-placeholders.js"
 import { applyEdit, invert, isRefusal, orderKeyBetween, rev, type Doom, type NodeId, type Write } from "./index.js"
 import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import { deckName } from "./deck-of.js"
 import { limits } from "./limits.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
+import type { StartRules } from "./start-rules.js"
 
 const named = (name: string): Write => ({ node: ids.deck, prop: "name", value: name })
 const follows = (on: boolean): Write => ({ node: ids.deck, prop: "nameFollows", value: on })
@@ -19,7 +20,7 @@ function titled(name: string, following?: boolean): Doom {
   return apply(agentDeck(), [
     named(name),
     ...(following === undefined ? [] : [follows(following)]),
-    ...titleSlideWrites(ids.slide, minter("p"), { w: 1920, h: 1080 }),
+    ...titleSlideWrites(ids.slide, minter("p"), { w: 1920, h: 1080 }, starts),
   ])
 }
 
@@ -38,17 +39,17 @@ const typed = (doom: Doom, title: NodeId, chars: string): Write => ({
 })
 
 function twoSlides(first: string, second: string): { readonly doom: Doom; readonly second: NodeId } {
-  const start = titled(blankDeckName, true)
+  const start = titled(starts.deckName, true)
   const one = apply(start, [based(start, retitle(start, first)), named(first)])
   const added = build(one, { op: "slide", add: {} }, minter("n"))
   const slide = slidesOf(added)[1]!.id
-  const withTitle = apply(added, titleSlideWrites(slide, minter("u"), { w: 1920, h: 1080 }))
+  const withTitle = apply(added, titleSlideWrites(slide, minter("u"), { w: 1920, h: 1080 }, starts))
   const doom = apply(withTitle, [based(withTitle, typed(withTitle, titleOn(withTitle, slide), second))])
   return { doom, second: slide }
 }
 
-const nameFromTitleWrites = (doom: Doom, writes: readonly Write[]): readonly Write[] =>
-  derivedWrites(doom, writes).map(({ base: _base, ...write }) => write)
+const nameFromTitleWrites = (doom: Doom, writes: readonly Write[], rules: StartRules): readonly Write[] =>
+  derivedWrites(doom, writes, rules).map(({ base: _base, ...write }) => write)
 
 const deckWrites = (writes: readonly Write[]) => writes.filter((write) => write.node === ids.deck)
 
@@ -62,59 +63,60 @@ const retitle = (doom: Doom, chars: string): Write => ({
 
 describe("a deck whose name follows its first title", () => {
   it("takes slide 1's title while the name follows, and writes nothing else", () => {
-    const doom = titled(blankDeckName, true)
-    expect(nameFromTitleWrites(doom, [retitle(doom, "Q3 board update")])).toEqual([named("Q3 board update")])
+    const doom = titled(starts.deckName, true)
+    expect(nameFromTitleWrites(doom, [retitle(doom, "Q3 board update")], starts)).toEqual([named("Q3 board update")])
   })
 
   it("bases the name it writes on the deck's name and flag as they stood, so a stale replay is refused", () => {
-    const doom = titled(blankDeckName, true)
-    const [name, ...rest] = derivedWrites(doom, [retitle(doom, "Q3")])
+    const doom = titled(starts.deckName, true)
+    const [name, ...rest] = derivedWrites(doom, [retitle(doom, "Q3")], starts)
     expect(name).toEqual({ ...named("Q3"), base: doom.revs.get(ids.deck)?.get("name") })
     expect(rest).toEqual([])
   })
 
   it("follows on an old deck with no flag only while it has the default name, and says so", () => {
-    const blank = titled(blankDeckName)
-    expect(nameFromTitleWrites(blank, [retitle(blank, "Q3")])).toEqual([named("Q3"), follows(true)])
+    const blank = titled(starts.deckName)
+    expect(nameFromTitleWrites(blank, [retitle(blank, "Q3")], starts)).toEqual([named("Q3"), follows(true)])
     const chosen = titled("Board pack")
-    expect(nameFromTitleWrites(chosen, [retitle(chosen, "Q3")])).toEqual([])
+    expect(nameFromTitleWrites(chosen, [retitle(chosen, "Q3")], starts)).toEqual([])
   })
 
   it("stops following once a person or an agent names the deck, even with a slide's own title", () => {
     const { doom } = twoSlides("Intro", "Roadmap")
-    expect(nameFromTitleWrites(doom, [named("Roadmap")])).toEqual([follows(false)])
+    expect(nameFromTitleWrites(doom, [named("Roadmap")], starts)).toEqual([follows(false)])
     const renamed = apply(doom, [named("Roadmap"), follows(false)])
-    expect(nameFromTitleWrites(renamed, [based(renamed, retitle(renamed, "Intro two"))])).toEqual([])
+    expect(nameFromTitleWrites(renamed, [based(renamed, retitle(renamed, "Intro two"))], starts)).toEqual([])
   })
 
   it("stops following on a name equal to both slides' title too", () => {
     const { doom } = twoSlides("Zed", "Zed")
     const renamed = apply(doom, [named("Zed"), follows(false)])
-    expect(nameFromTitleWrites(renamed, [based(renamed, retitle(renamed, "Alpha"))])).toEqual([])
+    expect(nameFromTitleWrites(renamed, [based(renamed, retitle(renamed, "Alpha"))], starts)).toEqual([])
   })
 
   it("follows the title of whichever slide is first after a delete or a reorder, and goes blank when it has none", () => {
     const { doom, second } = twoSlides("Alpha", "Beta")
     const row = propOf(slidesOf(doom)[0]!, "parent")!
     const moved = { node: second, prop: "parent", value: { id: row.id, at: orderKeyBetween(null, row.at) } } as Write
-    expect(deckWrites(nameFromTitleWrites(doom, [moved]))).toEqual([named("Beta")])
+    expect(deckWrites(nameFromTitleWrites(doom, [moved], starts))).toEqual([named("Beta")])
     const firstGone: Write = { node: ids.slide, prop: "parent", value: null }
-    expect(deckWrites(nameFromTitleWrites(doom, [firstGone]))).toEqual([named("Beta")])
+    expect(deckWrites(nameFromTitleWrites(doom, [firstGone], starts))).toEqual([named("Beta")])
     const titleGone: Write = { node: titleOn(doom, second), prop: "parent", value: null }
-    expect(deckWrites(nameFromTitleWrites(doom, [moved, titleGone]))).toEqual([named(blankDeckName)])
-    const untitled = apply(doom, [based(doom, typed(doom, titleOn(doom, second), placeholderTitle))])
-    expect(deckWrites(nameFromTitleWrites(untitled, [firstGone]))).toEqual([named(blankDeckName)])
+    expect(deckWrites(nameFromTitleWrites(doom, [moved, titleGone], starts))).toEqual([named(starts.deckName)])
+    const untitled = apply(doom, [based(doom, typed(doom, titleOn(doom, second), starts.title.chars))])
+    expect(deckWrites(nameFromTitleWrites(untitled, [firstGone], starts))).toEqual([named(starts.deckName)])
     const betaFirst = apply(doom, [moved, named("Beta")])
     expect(
-      nameFromTitleWrites(betaFirst, [based(betaFirst, typed(betaFirst, titleOn(betaFirst, second), "Gamma"))]),
+      nameFromTitleWrites(betaFirst, [based(betaFirst, typed(betaFirst, titleOn(betaFirst, second), "Gamma"))], starts),
     ).toEqual([named("Gamma")])
-    expect(nameFromTitleWrites(betaFirst, [firstGone])).toEqual([])
+    expect(nameFromTitleWrites(betaFirst, [firstGone], starts)).toEqual([])
   })
 
   it("names the deck for the next slide's title when an agent deletes slide 1, as a person's delete does", () => {
     const { doom } = twoSlides("Alpha", "Beta")
     const edit = compileAgentEdit(doom, [{ op: "slide", delete: ids.slide }], {
       placement,
+      starts,
       author: agent(runName),
       once: "gone",
       mint: minter("m"),
@@ -130,41 +132,41 @@ describe("a deck whose name follows its first title", () => {
     const chosen = apply(doom, [named("Board pack"), follows(false)])
     const row = propOf(slidesOf(chosen)[0]!, "parent")!
     const moved = { node: second, prop: "parent", value: { id: row.id, at: orderKeyBetween(null, row.at) } } as Write
-    expect(nameFromTitleWrites(chosen, [moved])).toEqual([])
-    expect(nameFromTitleWrites(chosen, [{ node: ids.slide, prop: "parent", value: null }])).toEqual([])
+    expect(nameFromTitleWrites(chosen, [moved], starts)).toEqual([])
+    expect(nameFromTitleWrites(chosen, [{ node: ids.slide, prop: "parent", value: null }], starts)).toEqual([])
   })
 
   it("keeps following when the title is cleared and typed again", () => {
-    const doom = titled(blankDeckName, true)
+    const doom = titled(starts.deckName, true)
     const cleared = apply(doom, [based(doom, retitle(doom, ""))])
-    expect(nameFromTitleWrites(doom, [retitle(doom, "")])).toEqual([])
-    expect(nameFromTitleWrites(cleared, [based(cleared, retitle(cleared, "Again"))])).toEqual([named("Again")])
+    expect(nameFromTitleWrites(doom, [retitle(doom, "")], starts)).toEqual([])
+    expect(nameFromTitleWrites(cleared, [based(cleared, retitle(cleared, "Again"))], starts)).toEqual([named("Again")])
   })
 
   it("goes back to the default name when the title it follows is deleted or emptied, and stays following", () => {
     const doom = titled("Draft", true)
     const gone: Write = { node: titleOf(doom), prop: "parent", value: null }
-    expect(nameFromTitleWrites(doom, [gone])).toEqual([named(blankDeckName)])
-    expect(nameFromTitleWrites(doom, [retitle(doom, "")])).toEqual([named(blankDeckName)])
-    const reset = apply(doom, [gone, named(blankDeckName)])
-    expect(deckNameFollows(reset)).toBe(true)
-    expect(nameFromTitleWrites(reset, [gone])).toEqual([])
+    expect(nameFromTitleWrites(doom, [gone], starts)).toEqual([named(starts.deckName)])
+    expect(nameFromTitleWrites(doom, [retitle(doom, "")], starts)).toEqual([named(starts.deckName)])
+    const reset = apply(doom, [gone, named(starts.deckName)])
+    expect(deckNameFollows(reset, starts)).toBe(true)
+    expect(nameFromTitleWrites(reset, [gone], starts)).toEqual([])
   })
 
   it("keeps a name that was chosen when the title is deleted", () => {
     const doom = titled("Board pack", false)
-    expect(nameFromTitleWrites(doom, [{ node: titleOf(doom), prop: "parent", value: null }])).toEqual([])
+    expect(nameFromTitleWrites(doom, [{ node: titleOf(doom), prop: "parent", value: null }], starts)).toEqual([])
   })
 
   it("keeps an agent's name when the same edit retitles slide 1", () => {
-    const doom = titled(blankDeckName, true)
+    const doom = titled(starts.deckName, true)
     const edit = compileAgentEdit(
       doom,
       [
         { op: "deck", name: "Board pack" },
         { op: "add", kind: "text", slide: ids.slide, text: "Q3 board update", textStyle: "title" },
       ],
-      { placement, author: agent(runName), once: "both", mint: minter("m") },
+      { placement, starts, author: agent(runName), once: "both", mint: minter("m") },
     )
     if ("refused" in edit) throw new Error(JSON.stringify(edit))
     const landed = applyEdit(doom, { ...edit.edit, rev: rev(doom.rev + 1) })
@@ -180,14 +182,14 @@ describe("a deck whose name follows its first title", () => {
 
   it("lets an agent read and set whether the name follows, as a person's rename does", () => {
     const chosen = apply(titled("Board pack", false), [])
-    expect(deckNameFollows(chosen)).toBe(false)
+    expect(deckNameFollows(chosen, starts)).toBe(false)
     const turned = build(chosen, { op: "deck", nameFollows: true })
-    expect(deckNameFollows(turned)).toBe(true)
-    expect(nameFromTitleWrites(turned, [retitle(turned, "Q4 plan")])).toEqual([named("Q4 plan")])
+    expect(deckNameFollows(turned, starts)).toBe(true)
+    expect(nameFromTitleWrites(turned, [retitle(turned, "Q4 plan")], starts)).toEqual([named("Q4 plan")])
   })
 
   it("refuses an empty or blank name from a person or an agent", () => {
-    const doom = titled(blankDeckName, true)
+    const doom = titled(starts.deckName, true)
     for (const value of ["", "   "]) {
       const landed = applyEdit(doom, {
         once: "blank",
@@ -201,52 +203,52 @@ describe("a deck whose name follows its first title", () => {
   })
 
   it("puts back the name and the flag together when a rename is undone", () => {
-    const doom = titled(blankDeckName, true)
-    const writes = [named("Board pack"), ...nameFromTitleWrites(doom, [named("Board pack")])]
+    const doom = titled(starts.deckName, true)
+    const writes = [named("Board pack"), ...nameFromTitleWrites(doom, [named("Board pack")], starts)]
     const landed = applyEdit(doom, { once: "rename", author: agent(runName), writes, rev: rev(doom.rev + 1) })
     if (isRefusal(landed)) throw new Error(JSON.stringify(landed))
     const back = invert(doom, landed, { once: "rename", author: agent(runName), writes, rev: rev(doom.rev + 1) })
     const undone = applyEdit(landed, { once: "undo", author: agent(runName), writes: back, rev: rev(landed.rev + 1) })
     if (isRefusal(undone)) throw new Error(JSON.stringify(undone))
-    expect(deckName(undone)).toBe(blankDeckName)
-    expect(nameFromTitleWrites(undone, [retitle(undone, "Again")])).toEqual([named("Again")])
+    expect(deckName(undone)).toBe(starts.deckName)
+    expect(nameFromTitleWrites(undone, [retitle(undone, "Again")], starts)).toEqual([named("Again")])
   })
 
   it("waits while the title is still the placeholder or empty", () => {
-    const doom = titled(blankDeckName, true)
-    expect(nameFromTitleWrites(doom, [retitle(doom, placeholderTitle)])).toEqual([])
-    expect(nameFromTitleWrites(doom, [retitle(doom, "")])).toEqual([])
+    const doom = titled(starts.deckName, true)
+    expect(nameFromTitleWrites(doom, [retitle(doom, starts.title.chars)], starts)).toEqual([])
+    expect(nameFromTitleWrites(doom, [retitle(doom, "")], starts)).toEqual([])
   })
 
   it("writes only when the edit changes the title", () => {
-    const doom = titled(blankDeckName, true)
-    expect(nameFromTitleWrites(doom, [{ node: ids.slide, prop: "name", value: "Intro" }])).toEqual([])
+    const doom = titled(starts.deckName, true)
+    expect(nameFromTitleWrites(doom, [{ node: ids.slide, prop: "name", value: "Intro" }], starts)).toEqual([])
   })
 
   it("takes the first line, trimmed and cut to the name limit", () => {
-    const doom = titled(blankDeckName, true)
-    expect(nameFromTitleWrites(doom, [retitle(doom, "  Q3 board update  \nRevenue grew")])).toEqual([
+    const doom = titled(starts.deckName, true)
+    expect(nameFromTitleWrites(doom, [retitle(doom, "  Q3 board update  \nRevenue grew")], starts)).toEqual([
       named("Q3 board update"),
     ])
     const long = "x".repeat(limits.name + 20)
-    const [write] = nameFromTitleWrites(doom, [retitle(doom, long)])
+    const [write] = nameFromTitleWrites(doom, [retitle(doom, long)], starts)
     expect([...(write!.value as string)]).toHaveLength(limits.name)
   })
 
   it("ignores a title on any slide but the first", () => {
-    const doom = titled(blankDeckName, true)
+    const doom = titled(starts.deckName, true)
     const added = build(doom, { op: "slide", add: {} }, minter("n"))
     const slide = slidesOf(added)[1]!.id
-    const writes = titleSlideWrites(slide, minter("u"), { w: 1920, h: 1080 })
-    expect(nameFromTitleWrites(added, writes)).toEqual([])
+    const writes = titleSlideWrites(slide, minter("u"), { w: 1920, h: 1080 }, starts)
+    expect(nameFromTitleWrites(added, writes, starts)).toEqual([])
   })
 
   it("names the deck in the same agent edit that fills the title", () => {
-    const doom = titled(blankDeckName, true)
+    const doom = titled(starts.deckName, true)
     const edit = compileAgentEdit(
       doom,
       [{ op: "add", kind: "text", slide: ids.slide, text: "Q3 board update", textStyle: "title" }],
-      { placement, author: agent(runName), once: "fill", mint: minter("m") },
+      { placement, starts, author: agent(runName), once: "fill", mint: minter("m") },
     )
     if ("refused" in edit) throw new Error(JSON.stringify(edit))
     const landed = applyEdit(doom, { ...edit.edit, rev: rev(doom.rev + 1) })

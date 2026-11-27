@@ -1,6 +1,7 @@
 import * as doom from "@airdesign/doom"
+import { testTheme } from "@airdesign/doom/testing"
 
 export const darkTheme: doom.Theme = {
-  ...doom.defaultTheme,
-  colors: { ...doom.defaultTheme.colors, text: "#f4f6fa", background2: "#1a2438" },
+  ...testTheme,
+  colors: { ...testTheme.colors, text: "#f4f6fa", background2: "#1a2438" },
 }

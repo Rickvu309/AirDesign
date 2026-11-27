@@ -6,12 +6,13 @@ import { callTool, type Session, type Answer } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks, type MemoryDecks } from "./testing/memory-decks.js"
 import { offTheme } from "./testing/suite-art.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 
 function start(): doom.Doom {
   return doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         name: "Title",

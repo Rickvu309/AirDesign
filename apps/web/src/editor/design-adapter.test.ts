@@ -15,8 +15,9 @@ import { designCopy } from "@/copy/design-copy"
 import { panelTitle } from "@/editor/panel-title"
 import { hexes } from "./testing/design-adapter-art"
 import { grow, landed, spot } from "./testing/doom-fixtures"
+import { testTheme } from "@airdesign/doom/testing"
 
-const theme = doom.defaultTheme
+const theme = testTheme
 const words = (chars: string, extra: Partial<doom.Text> = {}): doom.Text => ({
   chars,
   spans: [],

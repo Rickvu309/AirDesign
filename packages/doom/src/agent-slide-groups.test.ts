@@ -6,7 +6,6 @@ import { slideForm } from "./agent-slide-fields.js"
 import {
   applyEdit,
   childrenOf,
-  defaultTheme,
   doomFromTree,
   invert,
   isRefusal,
@@ -23,6 +22,8 @@ import {
 } from "./index.js"
 import { agent, once } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
+import { testTheme } from "./testing/theme.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
 
@@ -44,7 +45,7 @@ function placed(doom: Doom, value: Record<string, unknown>, mint = minter()): Do
 function grouped(sizes: readonly number[]) {
   const total = sizes.reduce((sum, size) => sum + size, 0)
   const grown = doomFromTree({
-    theme: defaultTheme,
+    theme: testTheme,
     slides: Array.from({ length: total }, (_, at) => ({ name: `S${String(at + 1)}`, children: [] })),
   })
   const first = parentOf(grown.doom.nodes.get(grown.slides[0]!))!
@@ -233,7 +234,8 @@ describe("an agent places slides and slide groups", () => {
   it("refuses without a change, and names the id to send", () => {
     const { doom, slides, groups } = grouped([1, 1])
     const before = picture(doom)
-    const refuse = (value: Record<string, unknown>) => compileAgentChange(doom, change(value), minter(), placement)
+    const refuse = (value: Record<string, unknown>) =>
+      compileAgentChange(doom, change(value), minter(), placement, starts)
     expect(refuse({ op: "slide", move: { after: null } })).toMatchObject({
       refused: "shape",
       field: "move",

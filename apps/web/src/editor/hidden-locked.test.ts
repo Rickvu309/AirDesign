@@ -2,10 +2,11 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { landed, spot } from "./testing/doom-fixtures"
 import { heldBack, showWrites } from "./hidden-locked"
+import { testTheme } from "@airdesign/doom/testing"
 
 function slideWithHeldLayers() {
   const grown = doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         name: "One",

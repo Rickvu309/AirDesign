@@ -5,6 +5,7 @@ import { carryOver } from "./grid-carry"
 import { gridLayout } from "./grid-lines"
 import { geometryOf } from "./slide-geometry"
 import { landed, paint, spot } from "./testing/doom-fixtures"
+import { testTheme } from "@airdesign/doom/testing"
 
 const size = { w: 1920, h: 1080 }
 const line = (named: Readonly<Record<string, doom.NodeId>>) => ({
@@ -20,7 +21,7 @@ const line = (named: Readonly<Record<string, doom.NodeId>>) => ({
 
 function twoSlides() {
   const grown = doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         children: [

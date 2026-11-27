@@ -5,8 +5,9 @@ import { describe, expect, it } from "vitest"
 import { loadIcon } from "./icon-nodes.js"
 import { NodeArt } from "./node-art.js"
 import { swatches } from "./testing/swatches-art.js"
+import { testTheme } from "@airdesign/doom/testing"
 
-const navy = doom.defaultTheme.colors.accent1
+const navy = testTheme.colors.accent1
 
 const spot = (x: number, y: number, w: number, h: number, extra: object = {}) => ({
   x,
@@ -26,7 +27,7 @@ function painted(
   assetUrl: (asset: string) => string | undefined = () => undefined,
   waiting?: string,
 ) {
-  const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: nodes }] })
+  const grown = doom.doomFromTree({ theme: testTheme, slides: [{ children: nodes }] })
   const resolved = doom.resolveSlide(grown.doom, grown.slides[0]!, doom.measureWith({}))
   return renderToStaticMarkup(
     createElement(
@@ -338,7 +339,7 @@ describe("NodeArt", () => {
     const inner = { kind: "innerShadow", color: swatches.black, opacity: 0.3, x: 0, y: 2, blur: 4, spread: 0 }
     const words = { chars: "Edit", spans: [], paras: [{}], style: "body", resize: "fixed", alignV: "top" }
     const grown = doom.doomFromTree({
-      theme: doom.defaultTheme,
+      theme: testTheme,
       slides: [{ children: [shape("t", { box: spot(0, 0, 300, 80), effects: [shadow, inner], text: words })] }],
     })
     const [node] = doom.resolveSlide(grown.doom, grown.slides[0]!, doom.measureWith({}))

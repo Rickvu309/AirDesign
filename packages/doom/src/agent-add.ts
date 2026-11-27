@@ -3,8 +3,7 @@ import { shapeGeometry } from "./preset-geometry.js"
 import { type Draft, create, living, put, stop } from "./agent-draft.js"
 import { askedArrow, iconName, layoutOf, solid, surfaceOf, textOfLook, turnOf, type Now } from "./agent-look.js"
 import { addGrid } from "./agent-grid.js"
-import { placeholderTitle } from "./placeholder-title.js"
-import { placeholderSubtitle } from "./slide-placeholders.js"
+import type { StartRules } from "./start-rules.js"
 import { type Area, areaFor, cardRadiusFor, gapFor, slideSize, themeOf } from "./agent-place.js"
 import { laneOf, lineEnds, spanOfEnds } from "./agent-line-ends.js"
 import { pictureFit } from "./picture-fit.js"
@@ -81,22 +80,40 @@ function checkFields(change: Add): void {
       stop("shape", undefined, key, "unknown", `One of ${[...allowed].join(", ")}.`)
 }
 
-function emptyPlaceholderOf(draft: Draft, slide: Node, role: "title" | "subtitle", prompt: string): Node | undefined {
+function emptyPlaceholderOf(
+  draft: Draft,
+  slide: Node,
+  role: "title" | "subtitle",
+  starts: StartRules,
+): Node | undefined {
   return descendantsOf(draft.doom, slide.id).find((node) => {
     const chars = propOf(node, "text")?.chars
-    return propOf(node, "role") === role && (chars === "" || chars === prompt)
+    return propOf(node, "role") === role && (chars === "" || chars === starts[role].chars)
   })
 }
 
-function emptyPlaceholderFor(draft: Draft, slide: Node, style: Text["style"], boxed: boolean): Node | undefined {
-  if (titleStyles.has(style)) return emptyPlaceholderOf(draft, slide, "title", placeholderTitle)
-  return boxed ? undefined : emptyPlaceholderOf(draft, slide, "subtitle", placeholderSubtitle)
+function emptyPlaceholderFor(
+  draft: Draft,
+  slide: Node,
+  style: Text["style"],
+  boxed: boolean,
+  starts: StartRules,
+): Node | undefined {
+  if (titleStyles.has(style)) return emptyPlaceholderOf(draft, slide, "title", starts)
+  return boxed ? undefined : emptyPlaceholderOf(draft, slide, "subtitle", starts)
 }
 
 const inkOn = (fill: AgentLook["fill"]) =>
   fill === undefined || (typeof fill === "string" && fill.startsWith("accent")) ? "background" : undefined
 
-function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "text" | "shape" | "path"): void {
+function addWords(
+  draft: Draft,
+  parent: Node,
+  slide: Node,
+  change: Add,
+  kind: "text" | "shape" | "path",
+  starts: StartRules,
+): void {
   if (kind === "text" && change.text === undefined) stop("shape", undefined, "text", "missing", "A non-empty string.")
   const labelled = kind !== "text"
   const geometry =
@@ -126,7 +143,7 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
   }
   const empty =
     kind === "text" && made !== undefined
-      ? emptyPlaceholderFor(draft, slide, made.style, change.box !== undefined)
+      ? emptyPlaceholderFor(draft, slide, made.style, change.box !== undefined, starts)
       : undefined
   if (empty !== undefined) {
     const held = propOf(empty, "text") as Text
@@ -267,22 +284,22 @@ function addIcon(draft: Draft, parent: Node, change: Add): void {
   })
 }
 
-export function compileAdd(draft: Draft, change: Add): void {
+export function compileAdd(draft: Draft, change: Add, starts: StartRules): void {
   const slide = living(draft, change.slide, "slide")
   if (slide.type !== "slide") stop("shape", slide.id, "slide", "form", "A slide id.")
   const parent = change.into === undefined ? slide : living(draft, change.into, "into")
   if (change.into !== undefined && (parent.type !== "frame" || slideOf(draft.doom, parent.id) !== slide.id))
     stop("missing", parent.id, "into")
   checkFields(change)
-  compileKind(draft, parent, slide, change)
+  compileKind(draft, parent, slide, change, starts)
 }
 
-function compileKind(draft: Draft, parent: Node, slide: Node, change: Add): void {
+function compileKind(draft: Draft, parent: Node, slide: Node, change: Add, starts: StartRules): void {
   switch (change.kind) {
     case "text":
     case "shape":
     case "path":
-      return addWords(draft, parent, slide, change, change.kind)
+      return addWords(draft, parent, slide, change, change.kind, starts)
     case "line":
       return addLine(draft, parent, change)
     case "frame":

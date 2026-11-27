@@ -4,10 +4,11 @@ import type { Reading } from "../agent-draft.js"
 import { type NodeId, type Doom, type Write, applyEdit, isRefusal, nodeId, rev } from "../index.js"
 import { agent, once, sampleDeck } from "../sample-deck.js"
 import { childrenOf, slidesOf } from "../doom-walk.js"
-import { defaultTheme } from "../theme.js"
 import { doomFromTree } from "../doom-tree.js"
 import { titleOnlyWrites } from "../slide-placeholders.js"
 import { placement } from "./placement-rules.js"
+import { starts } from "./start-rules.js"
+import { testTheme } from "./theme.js"
 
 export const runName = "run-1"
 
@@ -40,7 +41,7 @@ export function apply(doom: Doom, writes: readonly Write[], run = runName): Doom
 }
 
 export function compiled(doom: Doom, change: AgentChange, mint = minter(), reading: Reading = {}): readonly Write[] {
-  const writes = compileAgentChange(doom, change, mint, placement, reading)
+  const writes = compileAgentChange(doom, change, mint, placement, starts, reading)
   if ("refused" in writes) throw new Error(`refused ${JSON.stringify(writes)}`)
   return writes
 }
@@ -55,12 +56,12 @@ export const firstSlide = (doom: Doom): NodeId => slidesOf(doom)[0]!.id
 export const lastChild = (doom: Doom, parent: NodeId) => childrenOf(doom, parent).at(-1)!
 
 export function titledSlide(size: { readonly w: number; readonly h: number } = { w: 1920, h: 1080 }) {
-  const grown = doomFromTree({ theme: defaultTheme, size, slides: [{ children: [] }] })
+  const grown = doomFromTree({ theme: testTheme, size, slides: [{ children: [] }] })
   const on = grown.slides[0]!
   const next = applyEdit(grown.doom, {
     once: "title",
     author: { kind: "person", id: "test" },
-    writes: titleOnlyWrites(on, minter("t"), size),
+    writes: titleOnlyWrites(on, minter("t"), size, starts),
     rev: rev(grown.doom.rev + 1),
   })
   if (isRefusal(next)) throw new Error(JSON.stringify(next))

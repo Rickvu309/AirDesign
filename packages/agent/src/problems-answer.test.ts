@@ -6,12 +6,13 @@ import { callTool, type DeckHost, type Session } from "./index.js"
 import { layoutOf } from "./problems-answer.js"
 import { readOf, scriptOf, scriptOfEach } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 
 const titled = () =>
   doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         name: "Title",
@@ -33,7 +34,7 @@ const titled = () =>
 const estimate = doom.measureWith({})
 const measured = (missing: readonly string[] = []) => ({
   measure: estimate,
-  missing: new Map([[doom.defaultTheme.fonts.body, new Set(missing)]]),
+  missing: new Map([[testTheme.fonts.body, new Set(missing)]]),
 })
 
 function agent(measure: DeckHost["measure"] = async () => measured()) {
@@ -86,7 +87,7 @@ describe("layout problems in the answers, measured by the host with the deck's f
       script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box: { x: 1800, y: 900, w: 300, h: 100 } }]),
     })
     const read = (await readOf(call, deck)).fields as { layers: string; problems: Found[] }
-    const title = estimate(doom.textFromMarkdown("Revenue by region", "title"), doom.defaultTheme, 1600).h
+    const title = estimate(doom.textFromMarkdown("Revenue by region", "title"), testTheme, 1600).h
     expect(read.layers.split("\n")[1]).toContain(`1600x${String(Number(title.toFixed(1)))}`)
     expect(read.problems.map(({ code }) => code)).toEqual(["off-slide"])
   })

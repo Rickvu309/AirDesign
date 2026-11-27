@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest"
 import { callTool, type Session } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 function started(): doom.Doom {
   return doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         name: "Title",

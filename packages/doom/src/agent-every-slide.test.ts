@@ -7,6 +7,7 @@ import { propOf, slidesOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { ids, land, sampleDeck } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
 
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
   ({ op: "set", target, ...look }) as AgentChange
@@ -25,7 +26,7 @@ describe("one change over every slide: '*.title' sets the title on each slide th
 
   it("refuses when no slide has that role, and a target that is not a role", () => {
     expect(
-      compileAgentChange(agentDeck(), set("*.subtitle", { textStyle: "body" }), minter(), placement),
+      compileAgentChange(agentDeck(), set("*.subtitle", { textStyle: "body" }), minter(), placement, starts),
     ).toMatchObject({
       refused: "missing",
       field: "target",

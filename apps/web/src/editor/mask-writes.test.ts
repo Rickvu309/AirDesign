@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { doomFromTree, defaultTheme, type NodeId } from "@airdesign/doom"
+import { doomFromTree, type NodeId } from "@airdesign/doom"
 import { maskWrites } from "./mask-writes"
+import { testTheme } from "@airdesign/doom/testing"
 
 const spot = (x: number, y: number, w: number, h: number) => ({
   x,
@@ -14,7 +15,7 @@ const spot = (x: number, y: number, w: number, h: number) => ({
 
 function deck() {
   return doomFromTree({
-    theme: defaultTheme,
+    theme: testTheme,
     slides: [
       {
         children: [

@@ -5,10 +5,11 @@ import { describe, expect, it } from "vitest"
 import { callTool, type Session } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 
-const start = () => doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ name: "Title", children: [] }] }).doom
+const start = () => doom.doomFromTree({ theme: testTheme, slides: [{ name: "Title", children: [] }] }).doom
 
 function agent() {
   const decks = memoryDecks(start)
@@ -68,7 +69,7 @@ const wide: doom.Measure = (text, theme, width) => {
 
 function drifted() {
   return doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         children: [
@@ -231,7 +232,7 @@ describe("a script removes a layer", () => {
 
 function pointed() {
   const grown = doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         children: [

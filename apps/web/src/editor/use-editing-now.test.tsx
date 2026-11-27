@@ -2,6 +2,7 @@ import * as doom from "@airdesign/doom"
 import { act, createElement } from "react"
 import { afterAll, beforeAll, expect, it, vi } from "vitest"
 import { useEditingNow } from "./use-editing-now"
+import { testTheme } from "@airdesign/doom/testing"
 
 let window: Window & typeof globalThis
 
@@ -27,7 +28,7 @@ afterAll(() => {
 })
 
 const grown = doom.doomFromTree({
-  theme: doom.defaultTheme,
+  theme: testTheme,
   slides: [{ children: [{ type: "shape", name: "Title" }] }],
 })
 const layer = grown.doom.children.get(grown.slides[0]!)![0]!

@@ -6,6 +6,7 @@ import { choiceLayout, controlKinds, controlOf } from "../design/panel-arrangeme
 import { controlViews } from "../design/control-views"
 import { nodeModel } from "./design-model"
 import { grow, spot } from "./testing/doom-fixtures"
+import { testTheme } from "@airdesign/doom/testing"
 
 const specs = Object.keys(import.meta.glob("../../../../tests/browser/control-*.spec.ts")).map(
   (path) => /control-([a-z]+)\.spec\.ts$/.exec(path)?.[1] ?? path,
@@ -68,7 +69,7 @@ function inside(desc: Desc): readonly Desc[] {
 }
 
 const controls = Object.values(built.ids)
-  .flatMap((id) => nodeModel({ view: built.view, id, theme: doom.defaultTheme, slides: [built.slides[0]!] }).sections)
+  .flatMap((id) => nodeModel({ view: built.view, id, theme: testTheme, slides: [built.slides[0]!] }).sections)
   .flatMap((section) => section.strips.flat())
 
 function kindsInUse(): readonly string[] {

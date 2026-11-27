@@ -41,6 +41,7 @@ describe("the taste entry", () => {
       "pieces",
       "placementRules",
       "problemRules",
+      "startRules",
       "style",
       "styleOf",
       "styleText",

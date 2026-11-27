@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest"
 import { createDoomDeck, openDoomDeck } from "./doom-deck.js"
 import { memoryDoomRemote } from "./doom-remote.js"
 import { memoryStorage } from "./doom-storage.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const id = doom.nodeId
 const [deckNode, row, slide, later, shape, joint, home, line, group, knot, frameTwo] = [
@@ -50,6 +51,8 @@ const origin = (shapeIn: Holder, extra: readonly doom.Write[]): doom.Edit => ({
   author: { kind: "person", id: "start" },
   writes: [
     { node: deckNode, prop: "type", value: "deck" },
+    { node: deckNode, prop: "theme", value: testTheme },
+    { node: deckNode, prop: "size", value: { w: 1920, h: 1080 } },
     { node: row, prop: "type", value: "slideRow" },
     { node: row, prop: "parent", value: at(deckNode) },
     { node: slide, prop: "type", value: "slide" },

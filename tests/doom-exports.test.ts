@@ -22,10 +22,10 @@ it("hands other packs only the Doom names they import", () => {
     Doom Edit End Face FaceNeeds FontFace FontWidths Geometry GridShortfall Grown Hex ImageCrop ImagePaint Keyed Landed LayerPositions
     Layout LayoutProblem Matrix Measure MeasureLayout MeasureProbe MediaType MissingGlyphs Node NodeId NodeType OrderKey
     Paint Para PlacementRules Point ProblemRules PropName Props Refusal Replaced Resolved ResolvedEffect ResolvedLine ResolvedPaint ResolvedRun Rev
-    RevisionKey RunEdit RunUndo Site SlideGroup SlideStart Span StrokeStyle Text TextPatch TextStyleName Theme ThemeProblem TreeNode
+    RevisionKey RunEdit RunUndo Site SlideGroup SlideStart Span StartRules StrokeStyle Text TextPatch TextStyleName Theme ThemeProblem TreeNode
     TreeSlide Undone Write WriteKey adjustDefaults agentChangesSchema agentEditSession agentKind applyEdit applyMatrix
-    artMatrix bakeLayout bakeTextLayers blankDeckName boxMatrix bytesOf changingWrites charsByFace childrenOf
-    contentAreaOf contentMatrix copiedMove countsOf coverCrop deckName deckNameFollows deckOf deckTexts defaultTheme
+    artMatrix bakeLayout bakeTextLayers boxMatrix bytesOf changingWrites charsByFace childrenOf
+    contentAreaOf contentMatrix copiedMove countsOf coverCrop deckName deckNameFollows deckOf deckTexts
     descendantsOf doomFaces doomFromTree duplicateWrites emptyDoom familyOf fitShift flows fontFace fontSamples
     freeLineEnds freedEnds gapFor graphemes hasDeck holdsLineEnd holdsText identityMatrix invert invertMatrix invertRun
     isRefusal landEdit layoutProblems leavingRoots limits lineArrowheads lineEndsBack liveRuns lockedIn lookWrite lostBy
@@ -43,7 +43,7 @@ it("hands other packs only the Doom names they import", () => {
 
 it("hands tests and the bench the Doom names only they import, behind @airdesign/doom/testing", () => {
   expect(exportedNames("packages/doom/src/testing/index.ts")).toEqual(
-    `AgentColor Run Tree boardDeckChanges colorVars compileAgentChange compileAgentEdit foldToJson placeholderSubtitle
-    placeholderTitle placement textToMarkdown`.split(/\s+/),
+    `AgentColor Run Tree boardDeckChanges colorVars compileAgentChange compileAgentEdit foldToJson placement starts
+    testTheme textToMarkdown`.split(/\s+/),
   )
 })

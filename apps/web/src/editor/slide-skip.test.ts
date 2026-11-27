@@ -3,10 +3,11 @@ import { describe, expect, it } from "vitest"
 import { slideListCopy } from "@/copy/slide-list-copy"
 import { landed } from "./testing/doom-fixtures"
 import { skipSaid, skipWrites } from "./slide-skip"
+import { testTheme } from "@airdesign/doom/testing"
 
 function twoSlides() {
   const grown = doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [{ children: [] }, { children: [] }],
   })
   return { view: grown.doom, slides: grown.slides }

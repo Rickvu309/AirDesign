@@ -5,6 +5,7 @@ import { minter } from "./testing/agent-fixtures.js"
 import { richDeck } from "./testing/rich-deck.js"
 import { hex, ids, land } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
 
 const hiddenCaption = {
   op: "add",
@@ -219,7 +220,7 @@ describe("each refused edit names its own path", () => {
   it("states a layer-kind condition as needs, and leaves a form off an unknown field", () => {
     const set = (target: string, look: Record<string, unknown>) => ({ op: "set", target, ...look }) as AgentChange
     const needs = (change: AgentChange, field: string, condition: string) => {
-      const refused = compileAgentChange(richDeck(), change, minter(), placement)
+      const refused = compileAgentChange(richDeck(), change, minter(), placement, starts)
       expect(refused, field).toMatchObject({ refused: "shape", field, fault: "needs", needs: condition })
       expect(refused, field).not.toHaveProperty("form")
     }
@@ -247,10 +248,17 @@ describe("each refused edit names its own path", () => {
       set(ids.title, { fit: "tile", crop: { left: 10 } }),
       minter(),
       placement,
+      starts,
     )
     expect(fought).toMatchObject({ refused: "shape", field: "crop", fault: "form", form: "fit crop, or no fit." })
     expect(fought).not.toHaveProperty("needs")
-    const both = compileAgentChange(richDeck(), set(ids.title, { text: "A", insert: linked }), minter(), placement)
+    const both = compileAgentChange(
+      richDeck(),
+      set(ids.title, { text: "A", insert: linked }),
+      minter(),
+      placement,
+      starts,
+    )
     expect(both).toMatchObject({
       refused: "shape",
       field: "insert",
@@ -258,14 +266,14 @@ describe("each refused edit names its own path", () => {
       form: "Insert or text, not both.",
     })
     expect(both).not.toHaveProperty("needs")
-    const text = compileAgentChange(richDeck(), set(ids.card, { text: "Hi" }), minter(), placement)
+    const text = compileAgentChange(richDeck(), set(ids.card, { text: "Hi" }), minter(), placement, starts)
     expect(text).toMatchObject({ refused: "shape", field: "text", fault: "unknown" })
     expect(text).not.toHaveProperty("form")
     expect(text).not.toHaveProperty("needs")
-    const clip = compileAgentChange(richDeck(), set(ids.title, { clip: true }), minter(), placement)
+    const clip = compileAgentChange(richDeck(), set(ids.title, { clip: true }), minter(), placement, starts)
     expect(clip).toMatchObject({ refused: "shape", field: "clip", fault: "unknown" })
     expect(clip).not.toHaveProperty("form")
-    const strength = compileAgentChange(richDeck(), set(ids.slide, { effectOpacity: 0.4 }), minter(), placement)
+    const strength = compileAgentChange(richDeck(), set(ids.slide, { effectOpacity: 0.4 }), minter(), placement, starts)
     expect(strength).toMatchObject({ refused: "shape", field: "effectOpacity", fault: "unknown" })
     expect(strength).not.toHaveProperty("form")
   })

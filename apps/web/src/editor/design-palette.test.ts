@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest"
 import { pickerSwatches } from "@/design/color-choices"
 import { paletteOf } from "./design-palette"
 import { neutralColorNames } from "./testing/neutral-color-names"
+import { testTheme } from "@airdesign/doom/testing"
 
 const swatchesOf = (theme: doom.Theme) => pickerSwatches(paletteOf(doom.emptyDoom, theme).templateColors)
 
@@ -17,12 +18,10 @@ describe("the design palette", () => {
   })
 
   it("names each theme colour with the colour word a person would say, never its hex", () => {
-    const swatches = swatchesOf(doom.defaultTheme)
+    const swatches = swatchesOf(testTheme)
     for (const swatch of swatches) expect(swatch.name).toMatch(/^[A-Z][a-z]+( [a-z]+)*( \d)?$/)
     expect(new Set(swatches.map((swatch) => swatch.name)).size).toBe(swatches.length)
-    expect(swatches.find((swatch) => swatch.css === doom.defaultTheme.colors.background.toUpperCase())?.name).toBe(
-      "White",
-    )
+    expect(swatches.find((swatch) => swatch.css === testTheme.colors.background.toUpperCase())?.name).toBe("White")
   })
 })
 

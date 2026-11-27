@@ -17,7 +17,7 @@ import {
   effectStyleNames,
   readHex,
 } from "./paint.js"
-import { type Theme, defaultTheme, textFont } from "./theme.js"
+import { type Theme, textFont } from "./theme.js"
 import type { Box } from "./doom-walk.js"
 import { zeroBox } from "./doom-walk.js"
 import { familyOf, storedFace, type WeightName } from "./painted-face.js"
@@ -315,7 +315,7 @@ export function textOfLook(
   look: AgentLook,
   now: Text | undefined,
   fallback: TextStyleName,
-  theme?: Theme,
+  theme: Theme,
 ): Text | undefined {
   if (look.padding === undefined && textKeys.every((key) => look[key] === undefined)) return undefined
   const style = look.textStyle ?? now?.style ?? fallback
@@ -361,14 +361,14 @@ export function textOfLook(
   return look.alignV === undefined ? text : { ...text, alignV: look.alignV }
 }
 
-function weightOn(text: Text, weight: WeightName, askedFont: string | undefined, theme: Theme | undefined): Text {
+function weightOn(text: Text, weight: WeightName, askedFont: string | undefined, theme: Theme): Text {
   if (text.chars.length === 0) return text
-  const themeFont = theme === undefined ? undefined : textFont(text, theme)
+  const themeFont = textFont(text, theme)
   const spans = text.spans.length === 0 ? [{ end: text.chars.length }] : text.spans
   return {
     ...text,
     spans: spans.map((span) => {
-      const family = familyOf(askedFont ?? span.font ?? themeFont ?? theme?.fonts.body ?? defaultTheme.fonts.body)
+      const family = familyOf(askedFont ?? span.font ?? themeFont)
       const stored = storedFace(family, weight)
       const next = { ...span, bold: stored.bold }
       if (stored.font === themeFont) {

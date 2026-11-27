@@ -3,12 +3,12 @@ import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
 import { compileAgentEdit } from "./agent-edit.js"
 import { agentDeck, apply, build, compiled, firstSlide, lastChild, minter, runName } from "./testing/agent-fixtures.js"
-import { placeholderTitle } from "./placeholder-title.js"
 import { agent, create, ids } from "./sample-deck.js"
 import { childrenOf, propOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { nodeId } from "./ids.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
 
 const slide = ids.slide
 const text = (more: Record<string, unknown> = {}): AgentChange =>
@@ -77,7 +77,7 @@ describe("add text", () => {
   })
 
   it("makes no node when the words are missing, naming the field", () => {
-    expect(compileAgentChange(agentDeck(), { op: "add", kind: "text", slide }, minter(), placement)).toEqual({
+    expect(compileAgentChange(agentDeck(), { op: "add", kind: "text", slide }, minter(), placement, starts)).toEqual({
       refused: "shape",
       field: "text",
       fault: "missing",
@@ -88,7 +88,7 @@ describe("add text", () => {
 })
 
 const startTitle = nodeId("t:50")
-const withPlaceholder = (chars: string = placeholderTitle): Doom =>
+const withPlaceholder = (chars: string = starts.title.chars): Doom =>
   apply(agentDeck(), [
     ...create(startTitle, "shape", ids.slide),
     { node: startTitle, prop: "role", value: "title" },
@@ -123,6 +123,7 @@ describe("add text on a slide holding the new deck's title placeholder", () => {
   it("names the filled placeholder as the layer the add made, so the agent has its id", () => {
     const edit = compileAgentEdit(withPlaceholder(), [text({ textStyle: "title", text: "Q3 board update" })], {
       placement,
+      starts,
       author: agent(runName),
       once: "fill-1",
       mint: minter(),
@@ -163,7 +164,7 @@ describe("add text on a slide holding the new deck's title placeholder", () => {
   it("adds a body text beside the placeholder", () => {
     const before = withPlaceholder()
     const doom = build(before, text())
-    expect(propOf(doom.nodes.get(startTitle)!, "text")!.chars).toBe(placeholderTitle)
+    expect(propOf(doom.nodes.get(startTitle)!, "text")!.chars).toBe(starts.title.chars)
     expect(childrenOf(doom, slide)).toHaveLength(childrenOf(before, slide).length + 1)
   })
 })
@@ -239,7 +240,13 @@ describe("add line", () => {
     )
     expect(propOf(made, "geometry")).toMatchObject({ arrows: ["circle", "triangle"] })
     expect(
-      compileAgentChange(agentDeck(), { op: "add", kind: "shape", slide, startArrow: "circle" }, minter(), placement),
+      compileAgentChange(
+        agentDeck(),
+        { op: "add", kind: "shape", slide, startArrow: "circle" },
+        minter(),
+        placement,
+        starts,
+      ),
     ).toMatchObject({ field: "startArrow" })
   })
 
@@ -282,7 +289,7 @@ describe("add frame", () => {
 
   it("refuses words on a frame, naming the field", () => {
     expect(
-      compileAgentChange(agentDeck(), { op: "add", kind: "frame", slide, text: "x" }, minter(), placement),
+      compileAgentChange(agentDeck(), { op: "add", kind: "frame", slide, text: "x" }, minter(), placement, starts),
     ).toMatchObject({
       refused: "shape",
       field: "text",
@@ -339,7 +346,9 @@ describe("add picture and icon", () => {
   })
 
   it("refuses a picture with no image", () => {
-    expect(compileAgentChange(agentDeck(), { op: "add", kind: "picture", slide }, minter(), placement)).toMatchObject({
+    expect(
+      compileAgentChange(agentDeck(), { op: "add", kind: "picture", slide }, minter(), placement, starts),
+    ).toMatchObject({
       refused: "shape",
       field: "fill",
     })
@@ -365,7 +374,9 @@ describe("add picture and icon", () => {
   })
 
   it("refuses an icon with no name", () => {
-    expect(compileAgentChange(agentDeck(), { op: "add", kind: "icon", slide }, minter(), placement)).toMatchObject({
+    expect(
+      compileAgentChange(agentDeck(), { op: "add", kind: "icon", slide }, minter(), placement, starts),
+    ).toMatchObject({
       field: "icon",
     })
   })
@@ -408,7 +419,7 @@ describe("where an add lands", () => {
     const doom = apply(initial, [{ node: parent.id, prop: "box", value: null }])
     const card = doom.nodes.get(parent.id)!
     expect(
-      compileAgentChange(doom, { op: "add", kind: "shape", slide, into: card.id }, minter("b"), placement),
+      compileAgentChange(doom, { op: "add", kind: "shape", slide, into: card.id }, minter("b"), placement, starts),
     ).toMatchObject({
       refused: "limit",
       field: "box",
@@ -418,26 +429,26 @@ describe("where an add lands", () => {
   })
 
   it("refuses a slide that is not there and a frame on another slide, naming the change", () => {
-    expect(compileAgentChange(agentDeck(), text({ slide: "z:9" }), minter(), placement)).toEqual({
+    expect(compileAgentChange(agentDeck(), text({ slide: "z:9" }), minter(), placement, starts)).toEqual({
       refused: "missing",
       node: "z:9",
       field: "slide",
       change: "add text",
     })
-    expect(compileAgentChange(agentDeck(), text({ into: ids.title }), minter(), placement)).toMatchObject({
+    expect(compileAgentChange(agentDeck(), text({ into: ids.title }), minter(), placement, starts)).toMatchObject({
       refused: "missing",
       field: "into",
     })
   })
 
   it("refuses a field the kind does not take, naming it", () => {
-    expect(compileAgentChange(agentDeck(), text({ rows: [["a"]] }), minter(), placement)).toMatchObject({
+    expect(compileAgentChange(agentDeck(), text({ rows: [["a"]] }), minter(), placement, starts)).toMatchObject({
       refused: "shape",
       field: "rows",
       change: "add text",
     })
     expect(
-      compileAgentChange(agentDeck(), { op: "add", kind: "line", slide, text: "x" }, minter(), placement),
+      compileAgentChange(agentDeck(), { op: "add", kind: "line", slide, text: "x" }, minter(), placement, starts),
     ).toMatchObject({
       field: "text",
     })
@@ -446,7 +457,10 @@ describe("where an add lands", () => {
   it("says limit, naming the box, when nothing is free", () => {
     const full: AgentChange = { op: "add", kind: "shape", slide, box: { x: 0, y: 0, w: 1920, h: 1080 } }
     const doom = build(agentDeck(), full)
-    expect(compileAgentChange(doom, text(), minter("b"), placement)).toMatchObject({ refused: "limit", field: "box" })
+    expect(compileAgentChange(doom, text(), minter("b"), placement, starts)).toMatchObject({
+      refused: "limit",
+      field: "box",
+    })
     expect(compiled(doom, text({ box: { x: 0, y: 0, w: 10, h: 10 } }), minter("c"))).toBeTruthy()
   })
 
