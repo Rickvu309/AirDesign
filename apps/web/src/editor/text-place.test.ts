@@ -4,7 +4,7 @@ import type { PanelControl } from "@/design/panel"
 import { changeWrites } from "./design-changes"
 import { nodeModel } from "./design-model"
 import { grow, spot } from "./testing/doom-fixtures"
-import { testTheme } from "@airdesign/doom/testing"
+import { invert, testTheme } from "@airdesign/doom/testing"
 
 function textBox(
   chars: string,
@@ -67,7 +67,7 @@ it("sets vertical align to the bottom of a fixed box and undoes in one edit", ()
   const undone = doom.applyEdit(after, {
     once: "undo",
     author: { kind: "person", id: "test" },
-    writes: doom.invert(built.view, after, edit),
+    writes: invert(built.view, after, edit),
     rev: doom.rev(after.rev + 1),
   })
   if (doom.isRefusal(undone)) throw new Error("undo refused")

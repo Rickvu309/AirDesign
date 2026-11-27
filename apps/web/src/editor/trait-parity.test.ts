@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { compileAgentChange, starts, testTheme } from "@airdesign/doom/testing"
+import { compileAgentChange, invert, starts, testTheme } from "@airdesign/doom/testing"
 import type { Desc } from "../design/control-desc"
 import { describe, expect, it } from "vitest"
 import { optionCopy } from "../copy/option-copy"
@@ -219,7 +219,7 @@ function controlProblems(name: string, control: PanelControl, agent: ReadonlySet
   const { writes } = landing
   if (!paintsNothing.includes(key) && painted(landing.after) === painted(view))
     problems.push({ control: named, missing: "paint" })
-  const back = doom.invert(view, landing.after, landing.landed)
+  const back = invert(view, landing.after, landing.landed)
   const undone = doom.applyEdit(landing.after, {
     once: "undo",
     author: { kind: "person", id: "quan" },

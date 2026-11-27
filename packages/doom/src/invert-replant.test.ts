@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { applyMatrix, invert, nodeId, type Box, type Doom, type NodeId } from "./index.js"
+import { applyMatrix, nodeId, type Box, type Doom, type NodeId } from "./index.js"
+import { invert } from "./invert.js"
 import { worldMatrix } from "./replant.js"
 import { box, create, ids, land, place, revOf, sampleDeck, tryLand } from "./sample-deck.js"
 import { step } from "./testing/invert-edit.js"

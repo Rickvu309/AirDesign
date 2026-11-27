@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { landed } from "./doom-fixtures"
-import { testTheme } from "@airdesign/doom/testing"
+import { invert, testTheme } from "@airdesign/doom/testing"
 
 export function minter(tab = "m") {
   let next = 0
@@ -41,5 +41,5 @@ export function grouped(sizes: readonly number[], ties: readonly boolean[] = [])
 export function undone(view: doom.Doom, writes: readonly doom.Write[]): doom.Doom {
   const after = landed(view, writes)
   const asked = { once: "asked", author: { kind: "person" as const, id: "test" }, writes, rev: doom.rev(view.rev + 1) }
-  return landed(after, doom.invert(view, after, asked))
+  return landed(after, invert(view, after, asked))
 }

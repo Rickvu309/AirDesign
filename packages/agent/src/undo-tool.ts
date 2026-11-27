@@ -1,7 +1,7 @@
 import { readNamedDeck, readRun, runUndoStays, undoStaysNote } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
-import { answered, hostRefused, refused, type Answer } from "./answer.js"
+import { answered, doomRefused, hostRefused, refused, type Answer } from "./answer.js"
 import type { DeckHost, RunLog, UndoHost } from "./deck-host.js"
 import { deckMeasure } from "./deck-measure.js"
 
@@ -11,6 +11,7 @@ const undoFailed = "Unable to undo. Check your connection and try again."
 const undoTooLarge = "Unable to undo. This run made too many changes."
 const undoneWord = "Undone"
 const wordsShown = 40
+const estimate = doom.measureWith({})
 
 function shown(name: string): string {
   const trimmed = name.trim()
@@ -100,7 +101,28 @@ async function turnRun(
   const nodes = positionNodes(opened.fold, edits)
   const started = nodes.length === 0 ? undefined : await host.positionsAt?.(opened.deck, edits[0]!.rev - 1, nodes)
   const owned = await host.undoRevs(opened.deck, agent)
-  const turned = doom.invertRun(opened.fold, edits, owned, started)
+  const undoable = { run: edits, started }
+  const by: doom.UndoBy = {
+    author: { kind: "agent", id: agent, run: runId, ...(run.name === "" ? {} : { name: run.name }) },
+    once,
+    measure: estimate,
+    owned,
+    runUndo: { run: runId, undone: true },
+  }
+  const estimated = doom.undo(opened.fold, undoable, by)
+  const measured =
+    !doom.isRefusal(estimated) && doom.mayLeaveDeck(opened.fold, estimated.edit.writes)
+      ? await deckMeasure(host, [opened.fold, estimated.after])
+      : undefined
+  const turned =
+    measured === undefined ? estimated : doom.undo(opened.fold, undoable, { ...by, measure: measured.measure })
+  if (doom.isRefusal(turned))
+    return answered(undoRefused, {
+      ok: false,
+      reason: "refused",
+      refusal: doomRefused(turned).fields.refusal,
+      ...empty,
+    })
   const who = run.name === "" ? "An agent" : run.name
   const names = (ids: readonly doom.NodeId[]) => ids.map((id) => layerName(opened.fold, id))
   const { later = [] } = runUndoStays(edits, turned)
@@ -119,21 +141,11 @@ async function turnRun(
     left: turned.left,
     waiting: turned.waiting,
   }
-  if (turned.writes.length === 0)
+  if (turned.edit.writes.length === 0)
     return [...turned.kept, ...turned.left, ...turned.waiting].length === 0
       ? answered(nothingLeft, { ok: false, reason: "nothing", ...empty })
       : answered(note, { ok: false, reason: "left", ...body })
-  const edit: doom.Edit = {
-    once,
-    author: { kind: "agent", id: agent, run: runId, ...(run.name === "" ? {} : { name: run.name }) },
-    writes: turned.writes,
-    runUndo: { run: runId, undone: true },
-  }
-  const lineMeasure = doom.mayLeaveDeck(opened.fold, edit.writes)
-    ? await deckMeasure(host, [opened.fold, doom.viewOf(opened.fold, [edit])])
-    : undefined
-  const writes = doom.freeLineEnds(opened.fold, edit.writes, lineMeasure?.measure ?? doom.measureWith({}))
-  const landed = await host.edit(opened.deck, { ...edit, writes })
+  const landed = await host.edit(opened.deck, turned.edit)
   if (!landed.ok) {
     return answered(undoRefused, { ok: false, reason: "refused", refusal: hostRefused(landed).fields.refusal, ...body })
   }

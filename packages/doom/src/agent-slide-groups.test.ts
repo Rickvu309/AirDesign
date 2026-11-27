@@ -6,7 +6,6 @@ import {
   applyEdit,
   childrenOf,
   doomFromTree,
-  invert,
   isRefusal,
   nodeId,
   orderKeyBetween,
@@ -19,6 +18,7 @@ import {
   type OrderKey,
   type Write,
 } from "./index.js"
+import { invert } from "./invert.js"
 import { agent, once } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
 import { starts } from "./testing/start-rules.js"

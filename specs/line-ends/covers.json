@@ -21,9 +21,15 @@
     },
     {
       "file": "packages/live/src/turn-replay.ts",
-      "names": ["endsOnly", "onStandingOnly", "pressedOn"],
-      "digest": "d8bb2adb0c8f",
-      "blob": "041e65af742ac2de9f87170c6123cd10de825637"
+      "names": ["pressedOn"],
+      "digest": "d81afd430935",
+      "blob": "8d79774e2e70d5a65e6aac94833fc70d88feea32"
+    },
+    {
+      "file": "packages/doom/src/undo.ts",
+      "names": ["endsOnly", "onStandingOnly", "undo"],
+      "digest": "63bb9ff43fa3",
+      "blob": "6d54956dd0563df624814e71eda6c2d54dc2ad96"
     }
   ]
 }

@@ -2,6 +2,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
+import { invertRun } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import * as view from "../specs/doom-runs/view.mjs"
@@ -205,7 +206,7 @@ function undoWrites(world: World): readonly doom.Write[] {
   const owned = new Set<doom.Rev>()
   const undo = world.tagRev.get(3)
   if (undo !== undefined) owned.add(undo)
-  return doom.invertRun(world.server, world.logA, owned).writes
+  return invertRun(world.server, world.logA, owned).writes
 }
 
 function undoA(world: World): Outcome {

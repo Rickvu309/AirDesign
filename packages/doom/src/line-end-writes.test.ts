@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import type { NodeId } from "./ids.js"
-import { freeLineEnds, invert, invertRun, orderKeyBetween, replacedBy, type Doom, type Write } from "./index.js"
+import { freeLineEnds, orderKeyBetween, replacedBy, type Doom, type Write } from "./index.js"
+import { invert } from "./invert.js"
+import { invertRun } from "./invert-run.js"
 import { measure } from "./testing/doom-fixtures-art.js"
 import { attached, deck, deletedUnfreed, detach, lineOf, startOf, step } from "./testing/line-end-fixtures.js"
 

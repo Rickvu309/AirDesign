@@ -13,7 +13,6 @@ import {
   readLanded,
   resolveSlide,
   slideBackground,
-  invert,
   isRefusal,
   nodeId,
   rev,
@@ -26,6 +25,7 @@ import {
   type Text,
   type Write,
 } from "./index.js"
+import { invert } from "./invert.js"
 import { type AgentChange, readAgentChange } from "./agent-change.js"
 import { compileAgentEdit } from "./agent-edit.js"
 import { foldToJson } from "./fold-json.js"

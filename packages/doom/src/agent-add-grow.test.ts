@@ -3,7 +3,8 @@ import type { AgentChange } from "./agent-change.js"
 import { agentDeck, build, compiled, lastChild, minter } from "./testing/agent-fixtures.js"
 import { agent, ids, tryLand } from "./sample-deck.js"
 import { propOf } from "./doom-walk.js"
-import { applyEdit, deckOf, invert, isRefusal, measureWith, rev, solveLayout, type Doom, type Landed } from "./index.js"
+import { applyEdit, deckOf, isRefusal, measureWith, rev, solveLayout, type Doom, type Landed } from "./index.js"
+import { invert } from "./invert.js"
 
 const slide = ids.slide
 const text = (more: Record<string, unknown> = {}): AgentChange =>

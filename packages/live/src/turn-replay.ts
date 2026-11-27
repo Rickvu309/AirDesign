@@ -5,12 +5,7 @@ const setAside: ReadonlySet<doom.Refusal["refused"]> = new Set(["shape", "limit"
 
 export const catchingUpResolves = (refused: doom.Refusal["refused"]): boolean => !setAside.has(refused)
 
-export type Pressed = {
-  readonly since: doom.Rev
-  readonly measuredIn: ReadonlyMap<doom.NodeId, doom.NodeId | null>
-  readonly lines: ReadonlyMap<doom.NodeId, unknown>
-  readonly owned: readonly string[]
-}
+export type Pressed = Omit<doom.Pressed, "writes"> & { readonly owned: readonly string[] }
 
 export const pressedOn = (
   server: doom.Doom,
@@ -34,35 +29,6 @@ export function remember<T>(turned: Map<string, T>, once: string, pressed: T) {
   if (turned.size > 500 && oldest !== undefined) turned.delete(oldest)
 }
 
-function endsOnly(server: doom.Doom, write: doom.Write, pressed: Pressed, at: doom.Rev): doom.Write | undefined {
-  if (write.prop !== "geometry") return undefined
-  const now = doom.propOf(server.nodes.get(write.node), "geometry")
-  const ends = doom.lineEndsBack(write.value, now, pressed.lines.get(write.node))
-  return ends === undefined ? undefined : { ...write, value: ends, base: at }
-}
-
-function onStandingOnly(
-  server: doom.Doom,
-  head: Queued,
-  pressed: Pressed,
-  mine: ReadonlySet<doom.Rev>,
-  measure: doom.Measure,
-): readonly doom.Write[] | undefined {
-  const kept = head.edit.writes.flatMap((write) => {
-    const at = server.revs.get(write.node)?.get(write.prop)
-    const theirs = at !== undefined && at > pressed.since && !mine.has(at) && (write.base ?? 0) < at
-    if (!theirs) return [write]
-    const ends = endsOnly(server, write, pressed, at)
-    return ends === undefined ? [] : [ends]
-  })
-  const writes = doom.freeLineEnds(
-    server,
-    doom.onStandingLayers(server, kept, pressed.since, pressed.since, pressed.measuredIn),
-    measure,
-  )
-  return JSON.stringify(writes) === JSON.stringify(head.edit.writes) ? undefined : writes
-}
-
 export type Replayed = {
   readonly queue: readonly Queued[]
   readonly view: doom.Doom
@@ -70,6 +36,7 @@ export type Replayed = {
   readonly gone: readonly string[]
   readonly steps: ReadonlyMap<string, { readonly before: doom.Doom; readonly writes: readonly doom.Write[] }>
   readonly pressed: ReadonlyMap<string, Pressed>
+  readonly refused: ReadonlyMap<string, doom.Refusal>
 }
 
 const sliceMilliseconds = 8
@@ -99,9 +66,21 @@ export async function onStanding(
     const rev = server.onces.get(name)
     if (rev !== undefined) headOwned.add(rev)
   }
-  const kept = onStandingOnly(server, head, pressed, headOwned, measure)
-  if (kept === undefined) return undefined
+  const rebuilt = doom.undo(
+    server,
+    { pressed: { ...pressed, writes: head.edit.writes } },
+    { ...head.edit, measure, owned: headOwned },
+  )
+  if (!doom.isRefusal(rebuilt) && JSON.stringify(rebuilt.edit.writes) === JSON.stringify(head.edit.writes))
+    return undefined
 
+  const refused = new Map<string, doom.Refusal>()
+  const landing = (name: string, undone: doom.Undoing | doom.Refusal): readonly doom.Write[] => {
+    if (!doom.isRefusal(undone)) return undone.edit.writes
+    refused.set(name, undone)
+    return []
+  }
+  const kept = landing(head.edit.once, rebuilt)
   const next: Queued[] = []
   const gone: string[] = []
   const steps = new Map<string, { before: doom.Doom; writes: readonly doom.Write[] }>()
@@ -143,14 +122,13 @@ export async function onStanding(
           mine.add(at)
           extra.push(at)
         }
-        const writes = doom.freeLineEnds(
+        const undone = doom.undo(
           view,
-          doom.invert(prior.before, view, { ...prior.edit, author: each.edit.author, rev }, mine),
-          measure,
-          view,
-          prior.before,
+          { step: { ...prior.edit, author: each.edit.author, rev }, before: prior.before },
+          { ...each.edit, measure, owned: mine },
         )
         for (const at of extra) mine.delete(at)
+        const writes = landing(name, undone)
         const built = writes.length === 0 ? undefined : queueEditOn(server, view, provisional, { ...each.edit, writes })
         made = built === undefined || doom.isRefusal(built) ? undefined : built
         if (made !== undefined) again.set(name, pressedOn(server, view, writes, over.owned))
@@ -172,5 +150,5 @@ export async function onStanding(
       view = folded
     }
   }
-  return { queue: next, view, provisional, gone, steps, pressed: again }
+  return { queue: next, view, provisional, gone, steps, pressed: again, refused }
 }
