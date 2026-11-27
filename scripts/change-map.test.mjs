@@ -363,10 +363,8 @@ same(
   [true, true, true],
 )
 same(
-  "in the repo, a new built-in theme selects the test that indexes the theme folder",
-  real(["packages/doom/src/library/themes/new-theme.json"]).unitTests.includes(
-    "packages/doom/src/theme-library.test.ts",
-  ),
+  "in the repo, a new theme preset selects the test that indexes the styles folder",
+  real(["packages/skills/files/styles/new-theme.json"]).unitTests.includes("packages/skills/src/theme-presets.test.ts"),
   true,
 )
 same(

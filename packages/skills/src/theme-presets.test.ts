@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto"
+import { readdirSync } from "node:fs"
 import { paletteColorVars, type ColorVar, type Hex } from "@airdesign/doom"
 import { describe, expect, it, vi } from "vitest"
 import midnight from "../files/styles/midnight.json" with { type: "json" }
@@ -18,7 +19,10 @@ const luminance = (color: Hex) =>
 
 describe("built-in themes", () => {
   it("ships one preset for every style", () => {
-    expect(themePresets.map(({ id }) => id).sort()).toEqual(listStyles().map(({ name }) => name))
+    const ids = themePresets.map(({ id }) => id).sort()
+    const files = readdirSync("packages/skills/files/styles").filter((file) => file.endsWith(".json"))
+    expect(files.sort()).toEqual(ids.map((id) => `${id}.json`))
+    expect(ids).toEqual(listStyles().map(({ name }) => name))
   })
 
   it("keeps every preset value apart from the Consulting accent and Technical title size", () => {

@@ -10,10 +10,11 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "files"
   ],
   "scripts": {
-    "build": "tsc -b && cp -R files dist/",
+    "build": "tsc -b",
     "lint": "oxlint",
     "typecheck": "tsc -b"
   },
