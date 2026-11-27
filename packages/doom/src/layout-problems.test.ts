@@ -430,9 +430,9 @@ describe("layout problems: what a slide paints wrong, measured with the deck's f
   })
 
   it.each([
-    [{ size: 20, onHeight: 1080 }, 14, 20],
-    [{ size: 30, onHeight: 1080 }, 24, 30],
-    [{ size: 10, onHeight: 540 }, 14, 20],
+    [{ readable: 20, onHeight: 1080 }, 14, 20],
+    [{ readable: 30, onHeight: 1080 }, 24, 30],
+    [{ readable: 10, onHeight: 540 }, 14, 20],
   ])("names text under the readable size %j scaled to this slide", (readable, size, min) => {
     const grown = doomFromTree({
       theme: plainTheme,
@@ -440,7 +440,7 @@ describe("layout problems: what a slide paints wrong, measured with the deck's f
         { children: [label("note", "fine print", { box: spot(100, 900, 400, 40) }, { spans: [{ end: 10, size }] })] },
       ],
     })
-    expect(layoutProblems(grown.doom, grown.slides, measure, { ...rules, readable })).toEqual([
+    expect(layoutProblems(grown.doom, grown.slides, measure, { ...rules, ...readable })).toEqual([
       { code: "small-text", node: grown.ids.note, size, min },
     ])
   })

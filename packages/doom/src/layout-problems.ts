@@ -3,11 +3,13 @@ import { deckOf } from "./deck-of.js"
 import type { Doom, Write } from "./doom.js"
 import { descendantsOf, propOf, slideOf, slidesOf } from "./doom-walk.js"
 import { readNodeId, type NodeId } from "./ids.js"
-import { strokeCrosses, strokeRoute, type StrokeRoute } from "./layout-line-crossing.js"
+import { type Backing, type Contrast, lowContrast, slideBase } from "./layout-contrast.js"
+import { routeCrosses, strokeCrosses, strokeRoute, type StrokeRoute } from "./layout-line-crossing.js"
 import { routeSpots } from "./line-ends.js"
 import type { Measure } from "./measure.js"
 import { textArea } from "./preset-geometry.js"
-import { resolveSlide } from "./resolve-slide.js"
+import { resolveSlide, slideBackground } from "./resolve-slide.js"
+import type { Rgb } from "./color.js"
 import type { Resolved, ResolvedLine } from "./resolved.js"
 import { strokeDash } from "./stroke-dash.js"
 import type { Text, TextStyleName } from "./text.js"
@@ -19,14 +21,19 @@ export type LayoutProblem = { readonly node: NodeId } & (
   | { readonly code: "overflow"; readonly need: number; readonly room: number; readonly ellipsis?: "w" | "h" }
   | { readonly code: "overlap"; readonly with: NodeId; readonly area: Rect }
   | { readonly code: "line-crosses-text"; readonly with: NodeId }
+  | { readonly code: "rule-crosses-text"; readonly with: NodeId }
   | { readonly code: "off-slide"; readonly past: number; readonly whole: boolean }
   | { readonly code: "small-text"; readonly size: number; readonly min: number }
   | { readonly code: "lone-word"; readonly extra: number }
+  | { readonly code: "low-contrast"; readonly ratio: number; readonly min: number }
 )
 
 export type ProblemRules = {
+  readonly onHeight: number
   readonly loneWord: readonly TextStyleName[]
-  readonly readable: { readonly size: number; readonly onHeight: number }
+  readonly readable: number
+  readonly contrast?: Contrast
+  readonly thinRule?: number
 }
 
 const spill = 1
@@ -49,9 +56,18 @@ type Slide = {
   readonly size: { readonly w: number; readonly h: number }
   readonly found: LayoutProblem[]
   readonly missing: MissingGlyphs
+  readonly base: Rgb | null
+  readonly backings: Backing[]
   readonly letters: { readonly id: NodeId; readonly inks: readonly Rect[] }[]
-  readonly strokes: { readonly id: NodeId; readonly route: StrokeRoute; readonly attached: ReadonlySet<NodeId> }[]
+  readonly strokes: {
+    readonly id: NodeId
+    readonly code: "line-crosses-text" | "rule-crosses-text"
+    readonly route: StrokeRoute
+    readonly attached: ReadonlySet<NodeId>
+  }[]
 }
+
+const onSlide = (slide: Slide, size: number) => (size * slide.size.h) / slide.rules.onHeight
 
 const right = (rect: Rect) => rect.x + rect.w
 const bottom = (rect: Rect) => rect.y + rect.h
@@ -130,23 +146,37 @@ function paintedArea(node: Resolved, box: Rect): readonly Rect[] {
   ].filter((strip) => strip.w > 0 && strip.h > 0)
 }
 
-function place(slide: Slide, node: Resolved, x: number, y: number, ancestors: readonly Spin[], visible = true): Placed {
+function place(slide: Slide, node: Resolved, x: number, y: number, ancestors: readonly Spin[], faded = 1): Placed {
   const box = { x: x + node.box.x, y: y + node.box.y, w: node.box.w, h: node.box.h }
   const chain = [...ancestors, { rotation: node.box.rotation, cx: box.x + box.w / 2, cy: box.y + box.h / 2 }]
-  const shown = visible && node.opacity > 0
+  const alpha = faded * node.opacity
+  const shown = alpha > 0
+  if (shown && filled(node) && !node.mask) {
+    const upright = chain.every((spin) => spin.rotation % 90 === 0)
+    const exact = upright && (node.geometry === null || node.geometry.kind === "rect")
+    slide.backings.push({ id: node.id, area: mapRect(chain, box), exact, paints: node.fills, alpha })
+  }
+  const below = slide.backings.length
   const origin = node.box.fit?.origin
   const laid = node.children.map((kid) =>
-    place(slide, kid, box.x - (origin?.x ?? 0), box.y - (origin?.y ?? 0), chain, shown),
+    place(slide, kid, box.x - (origin?.x ?? 0), box.y - (origin?.y ?? 0), chain, alpha),
   )
   judgeKids(slide, laid)
   const measured = node.text !== null && !unread(slide, node.id)
-  const lines =
-    node.text === null || !measured ? [] : node.text.lines.filter(written).map((line) => inkOf(line, box.x, box.y))
-  const ownInk = lines.map((ink) => mapRect(chain, ink))
+  const lines = node.text === null || !measured ? [] : node.text.lines.filter(written)
+  const inked = lines.map((line) => ({ ink: mapRect(chain, inkOf(line, box.x, box.y)), runs: line.runs }))
+  const ownInk = inked.map((line) => line.ink)
   const id = readNodeId(node.id)
   if (shown && id !== undefined) {
     if (ownInk.length > 0) slide.letters.push({ id, inks: ownInk })
+    if (slide.rules.contrast !== undefined) {
+      const { contrast } = slide.rules
+      const large = onSlide(slide, contrast.large.size)
+      const low = lowContrast(contrast, large, slide.base, slide.backings.slice(0, below), node.id, inked, alpha)
+      if (low !== null) slide.found.push({ code: "low-contrast", node: id, ...low })
+    }
     placeStroke(slide, id, node, box, chain)
+    placeRule(slide, id, node, box, chain)
   }
   const inks = [...ownInk, ...laid.flatMap((kid) => kid.inks)]
   const frame = mapRect(chain, box)
@@ -180,15 +210,38 @@ function placeStroke(slide: Slide, id: NodeId, node: Resolved, box: Rect, chain:
         attached.add(end.node)
         for (const layer of descendantsOf(slide.doom, end.node)) attached.add(layer.id)
       }
-  slide.strokes.push({ id, route: strokeRoute(points, stroke.weight / 2, strokeDash(stroke)), attached })
+  const route = strokeRoute(points, stroke.weight / 2, strokeDash(stroke))
+  slide.strokes.push({ id, code: "line-crosses-text", route, attached })
+}
+
+function placeRule(slide: Slide, id: NodeId, node: Resolved, box: Rect, chain: readonly Spin[]): void {
+  const { thinRule } = slide.rules
+  if (thinRule === undefined || !filled(node) || node.mask || node.children.length > 0 || !wordless(node)) return
+  if (node.geometry !== null && node.geometry.kind !== "rect") return
+  const across = box.w >= box.h
+  const weight = across ? box.h : box.w
+  if (weight <= 0 || weight >= onSlide(slide, thinRule)) return
+  const ends = across
+    ? [
+        { x: box.x, y: box.y + weight / 2 },
+        { x: right(box), y: box.y + weight / 2 },
+      ]
+    : [
+        { x: box.x + weight / 2, y: box.y },
+        { x: box.x + weight / 2, y: bottom(box) },
+      ]
+  const points = ends.map((end) => chain.reduceRight((at, spin) => turn(at.x, at.y, spin), end))
+  slide.strokes.push({ id, code: "rule-crosses-text", route: strokeRoute(points, weight / 2, []), attached: new Set() })
 }
 
 function judgeStrokes(slide: Slide): void {
-  for (const { id: line, route, attached } of slide.strokes)
+  for (const { id: line, code, route, attached } of slide.strokes) {
+    const crosses = code === "rule-crosses-text" ? routeCrosses : strokeCrosses
     for (const { id: text, inks } of slide.letters) {
-      if (line === text || attached.has(text) || !inks.some((ink) => strokeCrosses(route, ink, crossing))) continue
-      slide.found.push({ code: "line-crosses-text", node: text, with: line })
+      if (line === text || attached.has(text) || !inks.some((ink) => crosses(route, ink, crossing))) continue
+      slide.found.push({ code, node: text, with: line })
     }
+  }
 }
 
 export type MissingGlyphs = ReadonlyMap<string, ReadonlySet<string>>
@@ -248,7 +301,7 @@ function judgeOwn(slide: Slide, node: Resolved, box: Rect, measured: boolean): v
   const sizes = node.text.lines.flatMap((line) =>
     line.runs.filter((run) => run.text.trim() !== "").map((run) => run.size),
   )
-  const min = Math.round((slide.rules.readable.size * slide.size.h) / slide.rules.readable.onHeight)
+  const min = Math.round(onSlide(slide, slide.rules.readable))
   const size = Math.min(...sizes)
   if (sizes.length > 0 && size < min) slide.found.push({ code: "small-text", node: stored.id, size, min })
 }
@@ -320,7 +373,20 @@ export function layoutProblems(
   const found: LayoutProblem[] = []
   for (const id of slides) {
     if (doom.nodes.get(id)?.type !== "slide") continue
-    const slide: Slide = { doom, theme, measure, rules, size, found, missing, letters: [], strokes: [] }
+    const base = slideBase(slideBackground(doom, id))
+    const slide: Slide = {
+      doom,
+      theme,
+      measure,
+      rules,
+      size,
+      found,
+      missing,
+      base,
+      backings: [],
+      letters: [],
+      strokes: [],
+    }
     const tops = resolveSlide(doom, id, measure).map((node) => place(slide, node, 0, 0, []))
     judgeKids(slide, tops)
     judgeStrokes(slide)

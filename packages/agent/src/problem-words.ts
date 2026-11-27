@@ -27,6 +27,10 @@ export function problemNote(fold: doom.Doom, problem: Measured): string {
     }
     case "line-crosses-text":
       return `Move ${named(fold, problem.with)} so it no longer crosses ${named(fold, node)}.`
+    case "rule-crosses-text":
+      return `${named(fold, node)}: the thin rule ${named(fold, problem.with)} runs through its words; use fewer words or a wider box so they clear the rule.`
+    case "low-contrast":
+      return `${node}: its words reach ${String(problem.ratio)}:1 contrast with what lies behind them, under the ${String(problem.min)}:1 a room can read; set them in the theme colour farthest from that fill, or change the fill.`
     case "off-slide":
       return problem.whole
         ? `${node}: it lies wholly off the slide, where no one sees it.`
