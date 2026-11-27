@@ -22,7 +22,7 @@ Options, chosen by the moment in the talk. Copy them from `kit`; each recipe is 
 
 - The opening and section breaks: `kit/cover`, `kit/statement`.
 - One number the room remembers: `kit/kpi` or a lone `bigNumber`, with what it compares to.
-- A market and your part of it: `kit/share-box`, a rectangle inside a rectangle.
+- A share of a market or a whole: `kit/share-box`, one bar in place of a pie.
 - Growth over time: `charts/column` or `charts/line`. Ranked items: `charts/bar`.
 - What comes next: `kit/timeline-step`. Where the talk is: `kit/section-tracker`.
 - Two ways compared, ours and theirs: `kit/comparison`.
@@ -50,6 +50,6 @@ Options, chosen by the moment in the talk. Copy them from `kit`; each recipe is 
 ## Pause 4: Visuals
 
 - [ ] One focal element per slide, in the accent; everything else steps back.
-- [ ] Shares show as sorted bars or a rectangle inside a rectangle. Every shape is flat and two-dimensional.
+- [ ] Shares show as sorted bars or a share bar. Every shape is flat and two-dimensional.
 - [ ] A picture or icon earns its place by saying what a word cannot.
 - [ ] Text reads from the back of the room: the body at `body` or larger.

@@ -26,7 +26,7 @@ Options, chosen by what the slide must prove. Copy them from `kit`; each recipe 
 - Options side by side: `kit/comparison` for two or three, `charts/table` with the recommended row boxed for more attributes.
 - Money from a start to an end: `charts/waterfall`. Ranked items: `charts/bar`. Periods: `charts/column` or `charts/stacked-column`.
 - Proof that an action caused a result: `charts/line`, the treated group in the accent against a matched control in gray, the start marked.
-- The questions the decider will ask, each with its answer and evidence: `kit/qa-plan-table`, in the appendix.
+- The open questions behind the recommendation, each with its hypothesis, the analysis that tests it and its owner: `kit/qa-plan-table`.
 - Headline figures: `kit/kpi`. Takeaways tied to one exhibit: `kit/numbered-callout`. Sources: `kit/source-line`.
 
 ## Pause 1: Setup

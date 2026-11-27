@@ -12,7 +12,7 @@ const claims = [
     claim: "the readable floor",
     says: /\b(?:nothing|no text) (?:under|below|smaller than) (\d+) ?px/gi,
     in: guideText,
-    code: () => [problemRules.readable.size],
+    code: () => [problemRules.readable],
   },
   {
     claim: "the slide size",

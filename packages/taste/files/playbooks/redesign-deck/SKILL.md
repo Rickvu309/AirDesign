@@ -20,7 +20,7 @@ Work freely. At each pause point, stop and confirm every item. Fix what fails be
 Options, chosen by the form each old slide should take. Copy them from `kit`; each recipe is a script you run.
 
 - Titles in one place on every slide: `kit/title-block`.
-- A pie, a donut or nested circles becomes sorted bars: `charts/bar`. Shares of a market: `kit/share-box`.
+- A pie, a donut or nested circles becomes sorted bars: `charts/bar`, or one share bar: `kit/share-box`.
 - A gridded or banded table becomes a minimal one: `charts/table`.
 - Periods: `charts/column` or `charts/line`.
 - A run of highlight slides over one exhibit becomes one slide: `kit/numbered-callout`.
@@ -30,7 +30,7 @@ Options, chosen by the form each old slide should take. Copy them from `kit`; ea
 ## Pause 1: Setup
 
 - [ ] The ask and the mode are recovered from the old deck or the brief, and the ask is one sentence.
-- [ ] The style fits the audience, chosen anew rather than kept out of habit.
+- [ ] The deck keeps its style unless that style is broken; a broken one is replaced by the style its job calls for.
 - [ ] Every number in the old deck is listed, so none changes or goes missing by accident.
 
 ## Pause 2: Content

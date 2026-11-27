@@ -24,7 +24,7 @@ Options, chosen by what the slide must prove. Copy them from `kit`; each recipe 
 - A result over periods: `charts/column`. A change in mix under a flat total: `charts/stacked-column`, the breaking period boxed and annotated.
 - What moved a number from one period to the next: `charts/waterfall`.
 - Cause and effect: `charts/line`, the treated group in the accent against a matched control in gray, the intervention marked.
-- Causes laid out: `diagrams/issue-tree`, left to right, the path pursued in the accent and the rest in gray.
+- Causes laid out: `diagrams/issue-tree`, left to right, the path pursued in the accent and the rest in gray. Causes still open, with the analysis that will test each and its owner: `kit/qa-plan-table`.
 - Segments ranked: `charts/bar`. Entities with their metrics: `charts/table`, grouped by segment, the focus rows marked.
 - Takeaways tied to one exhibit: `kit/numbered-callout`. Sections: `kit/section-tracker`. Sources: `kit/source-line`.
 
@@ -52,6 +52,7 @@ Options, chosen by what the slide must prove. Copy them from `kit`; each recipe 
 
 ## Pause 4: Visuals
 
+- [ ] A test-versus-control result is a `charts/line` with the intervention marked. A table of the same numbers goes to the appendix.
 - [ ] Every colored hit or miss shows its target beside it. Green means progress, amber short of goal, red risk.
 - [ ] One element per exhibit carries the accent, and it is the one the title names.
 - [ ] Each exhibit proves its own title, and each slide with outside or derived numbers has a source line.

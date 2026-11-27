@@ -21,7 +21,15 @@ Settle these four before the first slide, and write them down as one line: inten
    When the material reports and also asks for an approval, the approval wins: `playbooks/decision-deck`.
 
 2. **Mode.** `live` when a speaker presents it, `read-alone` when it is sent, forwarded or read before the meeting. Unsure means `read-alone`. A read-alone deck carries full-claim titles and points that stand without a speaker. A live deck carries short titles, fewer words and one thing to look at per slide.
-3. **Style.** Choose by audience and subject: `consulting` for executive business material, `technical` for systems, `editorial` for ideas and narrative, `midnight` for a stage, `neutral` when none fits. Set it with `variables({ style, variant })` in `airdesign_execute`, then read it with `airdesign_get_style {name: <style>}` and follow its text on every slide. The variant comes from the style's parameters.
+3. **Style.** Pick it from the job and the audience, never by habit:
+   - A decision or review for executives: `consulting`.
+   - A technical review: `technical`.
+   - A pitch or talk presented live: `midnight` for a product or tech launch, `editorial` for a story, a brand or people.
+   - A readout for a team, such as a survey, a hiring plan or operations: `neutral`.
+   - A redesign: keep the deck's style unless it is broken; otherwise pick by its job.
+
+   Set it with `variables({ style, variant })` in `airdesign_execute`, then read it with `airdesign_get_style {name: <style>}` and follow its text on every slide. The variant comes from the style's parameters.
+
 4. **Ask.** One sentence: what the reader does or believes at the end.
 
 Then read the one playbook your intent names and follow it. It says which principles, pieces and recipes to read, and when.

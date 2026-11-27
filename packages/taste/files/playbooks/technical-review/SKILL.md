@@ -23,6 +23,7 @@ Options, chosen by what the slide must explain. Copy them from `kit`; each recip
 - A system's parts and how they connect: `diagrams/architecture`.
 - Steps in order, a request path, a pipeline: `diagrams/process-flow`.
 - Options against criteria: `charts/table`, the chosen row marked, or `kit/comparison` for two or three.
+- A canary, rollout or experiment: `charts/line`, the changed group in the accent against the unchanged baseline in gray, the change marked.
 - A measurement over versions or time: `charts/line` or `charts/column`. Ranked costs or latencies: `charts/bar`.
 - Labels that tie a diagram to its explanation: `kit/numbered-callout`.
 - Milestones: `kit/timeline-step`. Sources and benchmark setups: `kit/source-line`.
@@ -51,5 +52,6 @@ Options, chosen by what the slide must explain. Copy them from `kit`; each recip
 
 - [ ] Diagrams run left to right or top to bottom, the path under discussion in the accent and the rest in neutral.
 - [ ] Every arrow is attached to its boxes, and every box name matches the words in the body.
+- [ ] A canary or experiment result is a `charts/line` with the change marked. A table of the same numbers goes to the appendix.
 - [ ] Tables carry horizontal rules only, numbers right-aligned.
 - [ ] Every measurement names its setup and its source.
