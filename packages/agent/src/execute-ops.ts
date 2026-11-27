@@ -1,4 +1,3 @@
-import { intentsSchema } from "@airdesign/catalog"
 import { readForAgent } from "./agent-read.js"
 import * as doom from "@airdesign/doom"
 import { placementRules, startRules, style, styles } from "@airdesign/taste"
@@ -12,7 +11,7 @@ import { measuredSteps } from "./land-edit.js"
 import { leavingMeasure } from "./leaving-measure.js"
 import { layoutOf, listed } from "./problems-answer.js"
 import { readPaste } from "./kit-paste.js"
-import { imageNames, imageProblem, pictureSizes, withAssets } from "./named-image.js"
+import { imageName, imageProblem, pictureSizes, withAsset } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
 
 export const verbs = [
@@ -45,14 +44,18 @@ export type Plan = {
   readonly intentOps: { readonly op: number; readonly verb: Verb }[]
   readonly names: Map<string, string>
   readonly shots: doom.NodeId[]
-  refused?: { readonly op: number; readonly answer: Readonly<Record<string, unknown>> }
+  refused?: { readonly op: number; readonly said: string; readonly answer: Readonly<Record<string, unknown>> }
 }
 
+export type OpAnswer = { readonly said: string; readonly fields: Readonly<Record<string, unknown>> }
+
 export class OpRefused extends Error {
+  readonly said: string
   readonly answer: Readonly<Record<string, unknown>>
-  constructor(answer: Readonly<Record<string, unknown>>) {
-    super(String(answer.note))
-    this.answer = answer
+  constructor({ said, fields }: OpAnswer) {
+    super(String(fields.note))
+    this.said = said
+    this.answer = fields
   }
 }
 
@@ -99,25 +102,17 @@ export function newPlan(
   }
 }
 
-const notLook = new Set(
-  "op kind slide into target node nodes after add move delete theme colors fonts nameFollows".split(" "),
-)
-const intentFields = intentsSchema.$defs.change.properties
-const lookFields = Object.keys(intentFields).filter((key) => !notLook.has(key))
-const textFields = new Set(
-  "text insert textStyle color size font weight lineHeight letterSpacing case underline strike alignV spaceBefore spaceAfter language".split(
-    " ",
-  ),
-)
+const looks = doom.lookNames
+const lookSet: ReadonlySet<string> = new Set(looks)
 
 export const verbFields: Readonly<Record<Verb, readonly string[]>> = {
-  insert: ["parent", "kind", "after", "group", ...lookFields],
-  update: ["target", ...lookFields],
-  replace: ["target", "kind", ...lookFields],
+  insert: ["parent", "kind", "after", "group", ...looks],
+  update: ["target", ...looks],
+  replace: ["target", "kind", ...looks],
   copy: ["target", "targets", "from", "parent", "box"],
   move: ["target", "targets", "parent", "after", "before", "group", "box"],
   remove: ["target", "targets"],
-  group: ["target", "targets", ...lookFields],
+  group: ["target", "targets", ...looks],
   ungroup: ["target"],
   variables: ["style", "colors", "fonts", "name", "nameFollows", "language"],
   get: ["target", "find", "cursor"],
@@ -125,31 +120,37 @@ export const verbFields: Readonly<Record<Verb, readonly string[]>> = {
 }
 
 const kindWords = (node: doom.Node) => (node.type === "slide" ? "slide" : doom.layerKind(node))
+const isKind = (kind: unknown): kind is doom.NodeKind => doom.nodeKinds.includes(kind as doom.NodeKind)
+const framed = new Set(doom.lookFieldsOf("update", "frame"))
+const wordsInside: ReadonlySet<string> = new Set(
+  doom.lookFieldsOf("update", "text").filter((field) => !framed.has(field)),
+)
 
-const oneOf = (form: unknown): ReadonlySet<string> | undefined =>
-  typeof form === "string" && form.startsWith("One of ")
-    ? new Set(form.slice("One of ".length, -1).split(", "))
-    : undefined
-
-function kindTakes(verb: Verb, kind: string | undefined, field: string, form: unknown): string | undefined {
-  const taken = oneOf(form)
-  if (kind === undefined || taken === undefined || !verbFields[verb].includes(field)) return undefined
-  const fields = verbFields[verb].filter((key) => !lookFields.includes(key) || taken.has(key))
-  return `A ${kind} takes no ${field}. Its fields: ${fields.join(", ")}.`
+function kindFieldsOf(verb: Verb, kind: doom.NodeKind): readonly string[] {
+  const place =
+    verb === "insert"
+      ? kind === "slide"
+        ? ["kind", "after", "group"]
+        : ["parent", "kind"]
+      : verbFields[verb].filter((field) => !lookSet.has(field))
+  return [...place, ...doom.lookFieldsOf(verb === "insert" || verb === "replace" ? "insert" : "update", kind)]
 }
 
-function opNote(plan: Plan, verb: Verb, answer: Readonly<Record<string, unknown>>): string {
-  const said = String(answer.note).replace(/^Change \d+( \([^)]*\))?[.:] ?/, "")
-  const field = typeof answer.field === "string" ? answer.field : undefined
-  if (answer.fault !== "unknown" || field === undefined) return said
-  const node = typeof answer.node === "string" ? plan.view.nodes.get(answer.node as doom.NodeId) : undefined
-  if (node === undefined) return `${verb} takes no ${field}. Its fields: ${verbFields[verb].join(", ")}.`
-  const kind = kindWords(node)
-  const inside =
-    textFields.has(field) && kind === "frame"
-      ? " Set it on the text layers inside: get({ target }).children lists them."
-      : ""
-  return `${node.id} is a ${kind}, which takes no ${field}.${inside}`
+function unknownNote(plan: Plan, verb: Verb, fields: Readonly<Record<string, unknown>>, asked: unknown) {
+  const field = fields.field
+  if (fields.fault !== "unknown" || typeof field !== "string") return undefined
+  const node = typeof fields.node === "string" ? plan.view.nodes.get(fields.node as doom.NodeId) : undefined
+  const kind = isKind(fields.kind) ? fields.kind : isKind(asked) ? asked : undefined
+  if (node !== undefined) {
+    const named = kind ?? kindWords(node)
+    const inside =
+      named === "frame" && wordsInside.has(field)
+        ? " Set it on the text layers inside: get({ target }).children lists them."
+        : ""
+    return `${node.id} is a ${named}, which takes no ${field}.${inside}`
+  }
+  if (kind !== undefined) return `A ${kind} takes no ${field}. Its fields: ${kindFieldsOf(verb, kind).join(", ")}.`
+  return `${verb} takes no ${field}. Its fields: ${verbFields[verb].join(", ")}.`
 }
 
 export function opRefusal(
@@ -157,24 +158,41 @@ export function opRefusal(
   op: number,
   verb: Verb,
   answer: Readonly<Record<string, unknown>>,
-  kind?: string,
-): Readonly<Record<string, unknown>> {
-  const { change: _change, at: _at, note: _note, form, ...rest } = answer
-  const listed =
-    answer.fault === "unknown" && answer.node === undefined && typeof answer.field === "string"
-      ? kindTakes(verb, kind, answer.field, form)
-      : undefined
-  const note = `Operation ${String(op)} (${verb}): ${listed ?? opNote(plan, verb, answer)}`
-  return { ...rest, ...(listed !== undefined || form === undefined ? {} : { form }), op, verb, note }
+  asked?: unknown,
+): OpAnswer {
+  const { note, form, ...rest } = answer
+  const listed = unknownNote(plan, verb, answer, asked)
+  const said = listed ?? String(note)
+  return {
+    said,
+    fields: {
+      ...rest,
+      ...(listed !== undefined || form === undefined ? {} : { form }),
+      op,
+      verb,
+      note: `Operation ${String(op)} (${verb}): ${said}`,
+    },
+  }
 }
 
-function stop(plan: Plan, op: number, verb: Verb, result: Answer, kind?: string): never {
-  throw new OpRefused(opRefusal(plan, op, verb, result.fields, kind))
+function stop(plan: Plan, op: number, verb: Verb, result: Answer, asked?: unknown): never {
+  throw new OpRefused(opRefusal(plan, op, verb, result.fields, asked))
+}
+
+function stopDoom(
+  plan: Plan,
+  op: number,
+  verb: Verb,
+  refusal: doom.IntentRefusal | doom.Refusal,
+  asked?: unknown,
+): never {
+  const { at: _at, change: _change, ...rest } = refusal as doom.IntentRefusal
+  return stop(plan, op, verb, doomRefused(rest), asked)
 }
 
 async function withImages(plan: Plan, op: number, verb: Verb, intent: doom.Intent) {
-  const names = plan.host.images === undefined ? [] : imageNames([intent])
-  plan.images += names.length
+  const name = plan.host.images === undefined ? undefined : imageName(intent)
+  plan.images += name === undefined ? 0 : 1
   if (plan.images > imagesPerCall)
     stop(
       plan,
@@ -185,29 +203,15 @@ async function withImages(plan: Plan, op: number, verb: Verb, intent: doom.Inten
         note: `One call fetches at most ${String(imagesPerCall)} images. Add the rest in another call.`,
       }),
     )
-  const found = names.length === 0 ? undefined : await plan.host.images?.(plan.opened.deck, names)
-  const problem = imageProblem([intent], found)
+  const found = name === undefined ? undefined : await plan.host.images?.(plan.opened.deck, [name])
+  const problem = imageProblem(intent, found)
   if (problem !== undefined) stop(plan, op, verb, problem)
   if (found === undefined) return intent
   for (const [asset, size] of pictureSizes(found)) plan.pictures.set(asset, size)
-  return withAssets([intent], found)[0] as doom.Intent
+  return withAsset(intent, found)
 }
 
-async function compileOne(
-  plan: Plan,
-  op: number,
-  verb: Verb,
-  raw: Readonly<Record<string, unknown>>,
-): Promise<readonly string[]> {
-  const read = doom.readIntent(raw)
-  const kind = typeof raw.kind === "string" ? raw.kind : undefined
-  if ("refused" in read) stop(plan, op, verb, doomRefused({ ...read, change: verb }), kind)
-  const fonts = withCatalogFonts([read])
-  if (!fonts.ok) stop(plan, op, verb, fonts.result)
-  return stepOne(plan, op, verb, await withImages(plan, op, verb, fonts.intents[0] as doom.Intent))
-}
-
-async function stepOne(plan: Plan, op: number, verb: Verb, intent: doom.Intent): Promise<readonly string[]> {
+async function step(plan: Plan, op: number, verb: Verb, intent: doom.Intent, asked?: unknown) {
   if (plan.intents.length >= doom.limits.batch)
     stop(
       plan,
@@ -220,13 +224,24 @@ async function stepOne(plan: Plan, op: number, verb: Verb, intent: doom.Intent):
   const measure = await leavingMeasure(plan.host, [plan.view], [intent])
   const stepped = await measuredSteps(plan.session.step(intent, true, measure), plan.host, plan.pendingFonts)
   if ("fields" in stepped) stop(plan, op, verb, stepped)
-  if ("refused" in stepped)
-    stop(plan, op, verb, doomRefused({ ...stepped, change: verb }), "kind" in intent ? String(intent.kind) : undefined)
+  if ("refused" in stepped) stopDoom(plan, op, verb, stepped, asked)
   plan.intents.push(intent)
   plan.intentOps.push({ op, verb })
   plan.view = stepped.view
-  const fresh = new Set<string>(stepped.added)
-  return stepped.added.filter((id) => !fresh.has(doom.parentOf(plan.view.nodes.get(id))?.id ?? ""))
+  return stepped.added
+}
+
+async function compile(plan: Plan, op: number, verb: Verb, raw: Readonly<Record<string, unknown>>) {
+  const read = doom.readIntent({ ...raw, op: verb })
+  if ("refused" in read) stopDoom(plan, op, verb, read, raw.kind)
+  const fonts = withCatalogFonts(read)
+  if ("fields" in fonts) stop(plan, op, verb, fonts)
+  return step(plan, op, verb, await withImages(plan, op, verb, fonts), raw.kind)
+}
+
+function roots(plan: Plan, added: readonly doom.NodeId[]): readonly doom.NodeId[] {
+  const fresh = new Set<string>(added)
+  return added.filter((id) => !fresh.has(doom.parentOf(plan.view.nodes.get(id))?.id ?? ""))
 }
 
 const fieldsOf = (raw: unknown): Readonly<Record<string, unknown>> =>
@@ -235,13 +250,6 @@ const fieldsOf = (raw: unknown): Readonly<Record<string, unknown>> =>
     : raw === undefined
       ? {}
       : { target: raw }
-
-function without(fields: Readonly<Record<string, unknown>>, ...skip: readonly string[]) {
-  const dropped = new Set(skip)
-  return Object.fromEntries(Object.entries(fields).filter(([key]) => !dropped.has(key)))
-}
-
-const hasLook = (fields: Readonly<Record<string, unknown>>) => Object.keys(fields).length > 0
 
 function known(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<string, unknown>>) {
   const allowed = new Set(verbFields[verb])
@@ -263,122 +271,36 @@ function nodeOf(plan: Plan, op: number, verb: Verb, id: unknown, field: string):
   return node
 }
 
-function idsOf(fields: Readonly<Record<string, unknown>>): readonly string[] {
-  const one = fields.target === undefined ? [] : [fields.target]
-  const many = Array.isArray(fields.targets) ? fields.targets : fields.targets === undefined ? [] : [fields.targets]
-  return [...one, ...many].map((each) => (typeof each === "string" ? each : JSON.stringify(each)))
+function targeted(fields: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {
+  const { target, targets, ...rest } = fields
+  const one = target === undefined ? [] : [target]
+  const many = Array.isArray(targets) ? targets : targets === undefined ? [] : [targets]
+  return { ...rest, targets: [...one, ...many] }
 }
 
-function checked(plan: Plan, op: number, verb: Verb, raw: Readonly<Record<string, unknown>>) {
-  const read = doom.readIntent({ ...raw, target: "a:1" })
-  if ("refused" in read) stop(plan, op, verb, doomRefused({ ...read, change: verb }))
-  const fonts = withCatalogFonts([read])
-  if (!fonts.ok) stop(plan, op, verb, fonts.result)
+async function insert(plan: Plan, op: number, fields: Readonly<Record<string, unknown>>) {
+  const added = await compile(plan, op, "insert", fields)
+  if (fields.kind !== "slide") return roots(plan, added)
+  return added.filter((id) => plan.view.nodes.get(id)?.type === "slide")
 }
 
-async function insert(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<string, unknown>>) {
-  if (fields.kind === "slide") {
-    const add = Object.fromEntries(
-      (["after", "group"] as const).flatMap((key) => (fields[key] === undefined ? [] : [[key, fields[key]]])),
-    )
-    const look = without(fields, "kind", "after", "group", "parent")
-    if (hasLook(look)) checked(plan, op, verb, { op: "set", ...look })
-    const [slide] = await compileOne(plan, op, verb, { op: "slide", add })
-    if (slide === undefined) stop(plan, op, verb, refused("field", { note: "The slide was not added." }))
-    if (hasLook(look)) await compileOne(plan, op, verb, { op: "set", target: slide, ...look })
-    return [slide]
-  }
-  const parent = nodeOf(plan, op, verb, fields.parent, "parent")
-  const slide = doom.slideOf(plan.view, parent.id)
-  if (slide === undefined) stop(plan, op, verb, refused("dead", { field: "parent", node: parent.id }))
-  const place = parent.type === "slide" ? { slide } : { slide, into: parent.id }
-  return compileOne(plan, op, verb, { op: "add", ...without(fields, "parent"), ...place })
-}
-
-async function copy(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<string, unknown>>) {
+async function copy(plan: Plan, op: number, fields: Readonly<Record<string, unknown>>) {
   const paste = readPaste(fields)
-  if (paste === undefined) return compileOne(plan, op, verb, { op: "duplicate", nodes: idsOf(fields) })
-  if ("fields" in paste) stop(plan, op, verb, paste)
-  const parent = nodeOf(plan, op, verb, fields.parent, "parent")
-  return stepOne(plan, op, verb, { op: "paste", into: parent.id, ...paste })
+  if (paste === undefined) return roots(plan, await compile(plan, op, "copy", targeted(fields)))
+  if ("fields" in paste) stop(plan, op, "copy", paste)
+  const parent = nodeOf(plan, op, "copy", fields.parent, "parent")
+  return roots(plan, await step(plan, op, "copy", { op: "paste", parent: parent.id, ...paste }))
 }
 
-async function replace(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<string, unknown>>) {
-  const old = nodeOf(plan, op, verb, fields.target, "target")
-  const parent = doom.parentOf(old)
-  if (parent == null || old.type === "slide")
-    stop(plan, op, verb, refused("field", { field: "target", note: "replace takes a layer, not a slide." }))
-  const held = doom.propOf(old, "box")
-  const look = without(fields, "target")
-  const [made] = await insert(plan, op, verb, {
-    ...(look.box === undefined && held !== undefined ? { box: { x: held.x, y: held.y, w: held.w, h: held.h } } : {}),
-    ...look,
-    parent: parent.id,
-  })
-  if (made === undefined) stop(plan, op, verb, refused("field", { note: "The new layer was not added." }))
-  await compileOne(plan, op, verb, { op: "move", node: made, into: parent.id, after: old.id })
-  await compileOne(plan, op, verb, { op: "delete", nodes: [old.id] })
-  return [made]
-}
-
-async function move(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<string, unknown>>) {
-  const ids = idsOf(fields)
-  const first = nodeOf(plan, op, verb, ids[0], "target")
-  if (first.type === "slide" || first.type === "slideRow") {
-    const where = Object.fromEntries(
-      (["after", "before", "group"] as const).flatMap((key) => (fields[key] === undefined ? [] : [[key, fields[key]]])),
-    )
-    const moved =
-      first.type === "slideRow" ? { group: first.id } : ids.length === 1 ? { slide: ids[0] } : { slides: ids }
-    await compileOne(plan, op, verb, { op: "slide", move: { ...moved, ...where } })
-    return
-  }
-  const into =
-    fields.parent ?? (fields.box === undefined && ids.length === 1 ? undefined : doom.slideOf(plan.view, first.id))
-  await compileOne(plan, op, verb, {
-    op: "move",
-    ...(ids.length === 1 ? { node: ids[0] } : { nodes: ids }),
-    ...(into === undefined ? {} : { into }),
-    ...(fields.after === undefined ? {} : { after: fields.after }),
-    ...(fields.box === undefined ? {} : { box: fields.box }),
-  })
-}
-
-async function remove(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<string, unknown>>) {
-  const ids = idsOf(fields)
-  if (ids.length === 0) stop(plan, op, verb, refused("field", { field: "target", fault: "missing" }))
-  const slides = ids.filter((id) => nodeOf(plan, op, verb, id, "target").type === "slide")
-  const layers = ids.filter((id) => !slides.includes(id))
-  if (layers.length > 0) await compileOne(plan, op, verb, { op: "delete", nodes: layers })
-  for (const slide of slides) await compileOne(plan, op, verb, { op: "slide", delete: slide })
-}
-
-async function group(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<string, unknown>>) {
-  const wrap = Object.fromEntries(
-    (["layout", "clip"] as const).flatMap((key) => (fields[key] === undefined ? [] : [[key, fields[key]]])),
-  )
-  const look = without(fields, "target", "targets", "layout", "clip")
-  if (hasLook(look)) checked(plan, op, verb, { op: "set", ...look })
-  const [frame] = await compileOne(plan, op, verb, { op: "wrap", nodes: idsOf(fields), ...wrap })
-  if (frame === undefined) stop(plan, op, verb, refused("field", { note: "The group was not made." }))
-  if (hasLook(look)) await compileOne(plan, op, verb, { op: "set", target: frame, ...look })
-  return [frame]
-}
-
-async function variables(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<string, unknown>>) {
-  const { style: requested, ...fieldsToRead } = fields
+async function variables(plan: Plan, op: number, fields: Readonly<Record<string, unknown>>) {
+  const { style: requested, ...look } = fields
   const chosen = style(requested)
   if (requested !== undefined && chosen === undefined) {
     const ids = styles.map(({ id }) => id).join(", ")
-    stop(plan, op, verb, refused("field", { field: "style", fault: "form", form: `One of ${ids}.` }))
+    stop(plan, op, "variables", refused("field", { field: "style", fault: "form", form: `One of ${ids}.` }))
   }
-  if (hasLook(fields)) {
-    await compileOne(plan, op, verb, {
-      op: "deck",
-      ...fieldsToRead,
-      ...(chosen === undefined ? {} : { theme: chosen.theme }),
-    })
-  }
+  if (Object.keys(fields).length > 0)
+    await compile(plan, op, "variables", { ...look, ...(chosen === undefined ? {} : { theme: chosen.theme }) })
   return themeValues(doom.deckOf(plan.view).theme)
 }
 
@@ -434,27 +356,23 @@ export async function runOperation(plan: Plan, verb: Verb, raw: unknown): Promis
   }
   switch (verb) {
     case "insert":
-      return named(await insert(plan, op, verb, fields))[0]
+      return named(await insert(plan, op, fields))[0]
     case "copy":
-      return named(await copy(plan, op, verb, fields))
+      return named(await copy(plan, op, fields))
     case "replace":
-      return named(await replace(plan, op, verb, fields))[0]
-    case "group":
-      return named(await group(plan, op, verb, fields))[0]
     case "update":
-      await compileOne(plan, op, verb, { op: "set", ...fields })
-      return undefined
+    case "ungroup": {
+      const made = roots(plan, await compile(plan, op, verb, fields))
+      return verb === "replace" ? named(made)[0] : undefined
+    }
+    case "group":
+      return named(roots(plan, await compile(plan, op, verb, targeted(fields))))[0]
     case "move":
-      await move(plan, op, verb, fields)
-      return undefined
     case "remove":
-      await remove(plan, op, verb, fields)
-      return undefined
-    case "ungroup":
-      await compileOne(plan, op, verb, { op: "unwrap", node: fields.target })
+      await compile(plan, op, verb, targeted(fields))
       return undefined
     case "variables":
-      return variables(plan, op, verb, fields)
+      return variables(plan, op, fields)
     case "get": {
       const value = await read(plan, op, verb, fields)
       plan.read = true

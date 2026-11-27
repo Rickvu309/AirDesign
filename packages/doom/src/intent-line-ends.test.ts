@@ -9,16 +9,16 @@ import { placement } from "./testing/placement-rules.js"
 import { starts } from "./testing/start-rules.js"
 
 const slide = ids.slide
-const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "set", target, ...look }) as Intent
+const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "update", target, ...look }) as Intent
 const refusal = (doom = richDeck(), change: Intent) => compileIntent(doom, change, minter(), placement, starts)
 
 describe("a line's ends and route from an agent", () => {
   it("connects two layers with an elbow, each end on the side facing the other", () => {
     const made = lastChild(
       build(agentDeck(), {
-        op: "add",
+        op: "insert",
         kind: "line",
-        slide,
+        parent: slide,
         from: { layer: ids.card },
         to: { layer: ids.side },
         route: "elbow",
@@ -72,15 +72,28 @@ describe("a line's ends and route from an agent", () => {
 
 describe("a connector's ends", () => {
   it("joins two shapes on a full slide with no box, spanning the centres of its ends", () => {
-    const full = build(agentDeck(), { op: "add", kind: "shape", slide, box: { x: 0, y: 0, w: 1920, h: 1080 } })
-    const one = build(full, { op: "add", kind: "shape", slide, box: { x: 100, y: 100, w: 200, h: 100 } }, minter("b"))
+    const full = build(agentDeck(), {
+      op: "insert",
+      kind: "shape",
+      parent: slide,
+      box: { x: 0, y: 0, w: 1920, h: 1080 },
+    })
+    const one = build(
+      full,
+      { op: "insert", kind: "shape", parent: slide, box: { x: 100, y: 100, w: 200, h: 100 } },
+      minter("b"),
+    )
     const left = lastChild(one, slide).id
-    const two = build(one, { op: "add", kind: "shape", slide, box: { x: 700, y: 400, w: 200, h: 100 } }, minter("c"))
+    const two = build(
+      one,
+      { op: "insert", kind: "shape", parent: slide, box: { x: 700, y: 400, w: 200, h: 100 } },
+      minter("c"),
+    )
     const right = lastChild(two, slide).id
     const made = lastChild(
       build(
         two,
-        { op: "add", kind: "line", slide, from: { layer: left }, to: { layer: right, side: "left" } },
+        { op: "insert", kind: "line", parent: slide, from: { layer: left }, to: { layer: right, side: "left" } },
         minter("d"),
       ),
       slide,
@@ -90,16 +103,25 @@ describe("a connector's ends", () => {
   })
 
   it("leaves a side at a point along it and runs an elbow's middle leg in its lane", () => {
-    const one = build(agentDeck(), { op: "add", kind: "shape", slide, box: { x: 100, y: 100, w: 400, h: 100 } })
+    const one = build(agentDeck(), {
+      op: "insert",
+      kind: "shape",
+      parent: slide,
+      box: { x: 100, y: 100, w: 400, h: 100 },
+    })
     const top = lastChild(one, slide).id
-    const two = build(one, { op: "add", kind: "shape", slide, box: { x: 700, y: 500, w: 200, h: 100 } }, minter("b"))
+    const two = build(
+      one,
+      { op: "insert", kind: "shape", parent: slide, box: { x: 700, y: 500, w: 200, h: 100 } },
+      minter("b"),
+    )
     const low = lastChild(two, slide).id
     const lined = build(
       two,
       {
-        op: "add",
+        op: "insert",
         kind: "line",
-        slide,
+        parent: slide,
         route: "elbow",
         lane: 420,
         from: { layer: top, side: "bottom", along: 0.75 },
@@ -116,7 +138,7 @@ describe("a connector's ends", () => {
     })
     const moved = build(
       lined,
-      { op: "set", target: line.id, lane: 380, from: { layer: top, side: "right" } },
+      { op: "update", target: line.id, lane: 380, from: { layer: top, side: "right" } },
       minter("d"),
     )
     expect(propOf(lastChild(moved, slide), "geometry")).toMatchObject({
@@ -124,7 +146,7 @@ describe("a connector's ends", () => {
       channels: [{ axis: "x", at: 380 }],
     })
     expect(
-      compileIntent(agentDeck(), { op: "add", kind: "shape", slide, lane: 10 }, minter(), placement, starts),
+      compileIntent(agentDeck(), { op: "insert", kind: "shape", parent: slide, lane: 10 }, minter(), placement, starts),
     ).toMatchObject({
       field: "lane",
     })

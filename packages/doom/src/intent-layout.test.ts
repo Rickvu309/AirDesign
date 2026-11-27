@@ -8,12 +8,12 @@ import { measureWith, solveLayout } from "./index.js"
 import { placement } from "./testing/placement-rules.js"
 
 const slide = ids.slide
-const add = (more: Record<string, unknown>): Intent => ({ op: "add", slide, ...more }) as Intent
+const add = (more: Record<string, unknown>): Intent => ({ op: "insert", parent: slide, ...more }) as Intent
 const box = { x: 80, y: 200, w: 1760, h: 420 }
 const title = (on: typeof slide) =>
-  add({ kind: "text", slide: on, text: "Results", textStyle: "title", box: { x: 80, y: 60, w: 1760, h: 90 } })
+  add({ kind: "text", parent: on, text: "Results", textStyle: "title", box: { x: 80, y: 60, w: 1760, h: 90 } })
 const blank = () => {
-  const doom = build(agentDeck(), { op: "slide", add: {} }, minter("s"))
+  const doom = build(agentDeck(), { op: "insert", kind: "slide" }, minter("s"))
   return { doom, on: slidesOf(doom).at(-1)!.id }
 }
 
@@ -54,7 +54,7 @@ describe("content with no box uses the slide well", () => {
     const { doom: start, on } = blank()
     const grid = add({
       kind: "frame",
-      slide: on,
+      parent: on,
       rows: [
         ["Q1", "Q2"],
         ["Beta", "Launch"],
@@ -78,10 +78,10 @@ describe("layout none keeps the frame as it looked", () => {
     const mint = minter("a")
     const initial = build(agentDeck(), add({ kind: "frame", layout: "row", box }), mint)
     const row = lastChild(initial, slide)
-    const first = build(initial, add({ kind: "text", into: row.id, text: "Plan" }), mint)
-    const doom = build(first, add({ kind: "text", into: row.id, text: "Build" }), mint)
+    const first = build(initial, add({ kind: "text", parent: row.id, text: "Plan" }), mint)
+    const doom = build(first, add({ kind: "text", parent: row.id, text: "Build" }), mint)
     const laid = solveLayout(doom, slide, measureWith({}))
-    const off = build(doom, { op: "set", target: row.id, layout: "none" } as Intent)
+    const off = build(doom, { op: "update", target: row.id, layout: "none" } as Intent)
     expect(propOf(off.nodes.get(row.id)!, "layout")).toEqual({ mode: "none" })
     const kept = solveLayout(off, slide, measureWith({}))
     for (const layer of childrenOf(doom, row.id)) {

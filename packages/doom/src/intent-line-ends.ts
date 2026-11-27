@@ -31,7 +31,7 @@ function centerOf(draft: Draft, id: NodeId): Point {
 export function spanOfEnds(
   draft: Draft,
   parent: Node,
-  intent: Pick<Extract<Intent, { op: "set" }>, "from" | "to">,
+  intent: Pick<Extract<Intent, { op: "update" }>, "from" | "to">,
 ): { readonly x: number; readonly y: number; readonly w: number; readonly h: number } | undefined {
   if (intent.from === undefined || intent.to === undefined) return undefined
   const inside = parent.type === "slide" ? { x: 0, y: 0 } : centerOf(draft, parent.id)
@@ -80,7 +80,7 @@ export function lineEnds(
   draft: Draft,
   owner: Owner,
   geometry: Line,
-  intent: Pick<Extract<Intent, { op: "set" }>, "from" | "to">,
+  intent: Pick<Extract<Intent, { op: "update" }>, "from" | "to">,
 ): Pick<Line, "start" | "end"> {
   const toward: End =
     intent.to === undefined ? geometry.end : "x" in intent.to ? intent.to : { node: intent.to.layer, site: "c" }

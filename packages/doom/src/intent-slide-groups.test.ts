@@ -101,14 +101,14 @@ function bothWays(before: Doom, left: readonly Write[], right: readonly Write[])
 describe("an agent places slides and slide groups", () => {
   it("puts slides first in a group, or after a slide in that group", () => {
     const { doom, slides, groups } = grouped([2, 2, 1])
-    const first = placed(doom, change({ op: "slide", move: { slide: slides[4], group: groups[0], after: null } }))
+    const first = placed(doom, change({ op: "move", targets: [slides[4]], group: groups[0], after: null }))
     expect(shown(first)).toEqual([
       [slides[4], slides[0], slides[1]],
       [slides[2], slides[3]],
     ])
     const after = placed(
       doom,
-      change({ op: "slide", move: { slides: [slides[4]!, slides[0]!], group: groups[1], after: slides[2] } }),
+      change({ op: "move", targets: [slides[4]!, slides[0]!], group: groups[1], after: slides[2] }),
     )
     expect(shown(after)).toEqual([[slides[1]], [slides[2], slides[4], slides[0], slides[3]]])
     expect(slideGroups(after).map((group) => group.group)).toEqual([groups[0], groups[1]])
@@ -117,14 +117,11 @@ describe("an agent places slides and slide groups", () => {
 
   it("starts a group after a group, with a new slide or with slides it already has", () => {
     const { doom, slides, groups } = grouped([1, 1, 1])
-    const added = placed(doom, change({ op: "slide", add: { group: "new", after: groups[0] } }), minter("x"))
+    const added = placed(doom, change({ op: "insert", kind: "slide", group: "new", after: groups[0] }), minter("x"))
     const made = slidesOf(added).find((slide) => !slides.includes(slide.id))!
     expect(shown(added)).toEqual([[slides[0]], [made.id], [slides[1]], [slides[2]]])
     expect(parentOf(added.nodes.get(made.id))?.id).not.toBe(groups[0])
-    const moved = placed(
-      doom,
-      change({ op: "slide", move: { slides: [slides[2], slides[0]], group: "new", after: null } }),
-    )
+    const moved = placed(doom, change({ op: "move", targets: [slides[2], slides[0]], group: "new", after: null }))
     expect(shown(moved)).toEqual([[slides[2], slides[0]], [slides[1]]])
     const emptied = [...moved.nodes.values()].find(
       (node) => node.type === "slideRow" && childrenOf(moved, node.id).length === 0,
@@ -136,26 +133,26 @@ describe("an agent places slides and slide groups", () => {
 
   it("moves a whole slide group before or after another", () => {
     const { doom, slides, groups } = grouped([1, 2, 1])
-    expect(shown(placed(doom, change({ op: "slide", move: { group: groups[2], before: groups[1] } })))).toEqual([
+    expect(shown(placed(doom, change({ op: "move", targets: [groups[2]], before: groups[1] })))).toEqual([
       [slides[0]],
       [slides[3]],
       [slides[1], slides[2]],
     ])
-    expect(shown(placed(doom, change({ op: "slide", move: { group: groups[0], after: groups[1] } })))).toEqual([
+    expect(shown(placed(doom, change({ op: "move", targets: [groups[0]], after: groups[1] })))).toEqual([
       [slides[1], slides[2]],
       [slides[0]],
       [slides[3]],
     ])
-    const same = compiled(doom, change({ op: "slide", move: { group: groups[1], after: groups[0] } }))
+    const same = compiled(doom, change({ op: "move", targets: [groups[1]], after: groups[0] }))
     expect(same).toEqual([])
   })
 
   it("undoes creating a group or moving a whole group in one edit", () => {
     const { doom, slides, groups } = grouped([1, 2, 1])
     for (const ask of [
-      { op: "slide", add: { group: "new", after: groups[0] } },
-      { op: "slide", move: { slide: slides[3], group: "new", after: groups[0] } },
-      { op: "slide", move: { group: groups[2], before: groups[1] } },
+      { op: "insert", kind: "slide", group: "new", after: groups[0] },
+      { op: "move", targets: [slides[3]], group: "new", after: groups[0] },
+      { op: "move", targets: [groups[2]], before: groups[1] },
     ]) {
       expect(picture(restored(doom, compiled(doom, change(ask))))).toEqual(picture(doom))
     }
@@ -163,8 +160,8 @@ describe("an agent places slides and slide groups", () => {
 
   it("keeps a concurrently deleted slide deleted when a new group receives it in either order", () => {
     const { doom, slides, groups } = grouped([1, 1, 1])
-    const make = compiled(doom, change({ op: "slide", move: { slide: slides[2], group: "new", after: groups[0] } }))
-    const remove = compiled(doom, change({ op: "slide", delete: slides[2] }))
+    const make = compiled(doom, change({ op: "move", targets: [slides[2]], group: "new", after: groups[0] }))
+    const remove = compiled(doom, change({ op: "remove", targets: [slides[2]] }))
     const [one, other] = bothWays(doom, make, remove)
     expect(shown(one)).toEqual([[slides[0]], [slides[1]]])
     expect(picture(one)).toEqual(picture(other))
@@ -173,7 +170,7 @@ describe("an agent places slides and slide groups", () => {
 
   it("can put a slide first in an empty saved group", () => {
     const { doom, slides, groups } = grouped([1, 0, 1])
-    const moved = placed(doom, { op: "slide", move: { slide: slides[1], group: groups[1], after: null } })
+    const moved = placed(doom, { op: "move", targets: [slides[1]], group: groups[1], after: null })
     expect(slideGroups(moved)).toEqual([
       { group: groups[0], slides: [slides[0]] },
       { group: groups[1], slides: [slides[1]] },
@@ -182,7 +179,7 @@ describe("an agent places slides and slide groups", () => {
 
   it("restores slides and groups, including an emptied group, with one undo", () => {
     const { doom, slides, groups } = grouped([1, 1, 1])
-    const ask = change({ op: "slide", move: { slide: slides[1], group: groups[2], after: null } })
+    const ask = change({ op: "move", targets: [slides[1]], group: groups[2], after: null })
     const writes = compiled(doom, ask)
     const moved = land(doom, writes)
     expect(shown(moved)).toEqual([[slides[0]], [slides[1], slides[2]]])
@@ -201,10 +198,10 @@ describe("an agent places slides and slide groups", () => {
       { node: slides[1]!, prop: "parent", value: { id: row, at: tied } },
       { node: slides[2]!, prop: "parent", value: { id: row, at: tied } },
     ])
-    const left = compiled(base, change({ op: "slide", add: { group: row, after: slides[0] } }), minter("a"))
+    const left = compiled(base, change({ op: "insert", kind: "slide", group: row, after: slides[0] }), minter("a"))
     const right = compiled(
       base,
-      change({ op: "slide", move: { slide: slides[3], group: row, after: slides[1] } }),
+      change({ op: "move", targets: [slides[3]], group: row, after: slides[1] }),
       minter("b"),
     )
     const [one, other] = bothWays(base, left, right)
@@ -219,12 +216,20 @@ describe("an agent places slides and slide groups", () => {
 
   it("converges when two clients move two groups to the front, or start a group at one spot", () => {
     const { doom, groups } = grouped([1, 1, 1])
-    const frontA = compiled(doom, change({ op: "slide", move: { group: groups[1], after: null } }), minter("a"))
-    const frontB = compiled(doom, change({ op: "slide", move: { group: groups[2], after: null } }), minter("b"))
+    const frontA = compiled(doom, change({ op: "move", targets: [groups[1]], after: null }), minter("a"))
+    const frontB = compiled(doom, change({ op: "move", targets: [groups[2]], after: null }), minter("b"))
     const [one, other] = bothWays(doom, frontA, frontB)
     expect(picture(one)).toEqual(picture(other))
-    const startedA = compiled(doom, change({ op: "slide", add: { group: "new", after: groups[0] } }), minter("a"))
-    const startedB = compiled(doom, change({ op: "slide", add: { group: "new", after: groups[0] } }), minter("b"))
+    const startedA = compiled(
+      doom,
+      change({ op: "insert", kind: "slide", group: "new", after: groups[0] }),
+      minter("a"),
+    )
+    const startedB = compiled(
+      doom,
+      change({ op: "insert", kind: "slide", group: "new", after: groups[0] }),
+      minter("b"),
+    )
     const [first, second] = bothWays(doom, startedA, startedB)
     expect(picture(first)).toEqual(picture(second))
     expect(slideGroups(first)).toHaveLength(5)
@@ -234,28 +239,24 @@ describe("an agent places slides and slide groups", () => {
     const { doom, slides, groups } = grouped([1, 1])
     const before = picture(doom)
     const refuse = (value: Record<string, unknown>) => compileIntent(doom, change(value), minter(), placement, starts)
-    expect(refuse({ op: "slide", move: { after: null } })).toMatchObject({
+    expect(refuse({ op: "move", targets: [slides[0], groups[1]], after: null })).toMatchObject({
       refused: "shape",
-      field: "move",
+      field: "targets",
       expect: { code: "slide-or-group" },
     })
-    expect(refuse({ op: "slide", move: { group: "new", after: null } })).toMatchObject({
-      refused: "shape",
-      expect: { code: "new-slide-group" },
-    })
-    expect(refuse({ op: "slide", move: { group: slides[0], after: null } })).toMatchObject({
+    expect(refuse({ op: "move", targets: [slides[1]], group: slides[0], after: null })).toMatchObject({
       refused: "shape",
       field: "group",
       fault: "needs",
       expect: { code: "read-slide-group" },
     })
-    expect(refuse({ op: "slide", move: { slide: slides[1], group: groups[1], after: slides[0] } })).toMatchObject({
+    expect(refuse({ op: "move", targets: [slides[1]], group: groups[1], after: slides[0] })).toMatchObject({
       refused: "shape",
       field: "after",
       fault: "needs",
       expect: { code: "group-slide-or-null" },
     })
-    expect(refuse({ op: "slide", add: { after: null } })).toMatchObject({ expect: { code: "first-in-group" } })
+    expect(refuse({ op: "insert", kind: "slide", after: null })).toMatchObject({ expect: { code: "first-in-group" } })
     expect(picture(doom)).toEqual(before)
   })
 })

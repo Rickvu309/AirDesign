@@ -12,23 +12,13 @@ type Seen =
 const seen: Readonly<Record<string, Seen>> = {
   op: { person: ["gesture:tool-text", "gesture:delete", "gesture:group", "gesture:ungroup", "gesture:forward"] },
   kind: { person: ["gesture:tool-text", "gesture:tool-rectangle", "gesture:tool-line", "gesture:tool-frame"] },
-  slide: { address: "the slide to add to" },
-  into: { address: "the frame to add into" },
-  target: { address: "the layer or role a set changes" },
-  node: { address: "the layer moved or unwrapped" },
-  nodes: { address: "the layers wrapped, deleted or duplicated" },
+  parent: { address: "the slide or frame a layer goes into" },
+  target: { address: "the layer or role an update changes" },
+  targets: { address: "the layers or slides moved, reordered, grouped, removed or copied" },
   after: { address: "the place among siblings" },
-  add: { person: ["gesture:slide-add", "menu:new-slide-group"] },
-  move: {
-    person: [
-      "gesture:slide-up",
-      "gesture:slide-down",
-      "gesture:slide-group-up",
-      "gesture:slide-group-down",
-      "drag:slide-group-start",
-    ],
-  },
-  delete: { person: ["gesture:slide-delete"] },
+  before: { address: "the slide group a group goes before" },
+  group: { person: ["menu:new-slide-group", "drag:slide-group-start"] },
+  direction: { person: ["gesture:forward", "gesture:backward", "gesture:front", "gesture:back"] },
   fill: { person: ["panel:fills.paint", "panel:slide-background"] },
   stroke: { person: ["panel:border.color", "panel:image.color"] },
   strokeWidth: { declined: "Layer styling belongs to the deck design and its agent." },
@@ -120,9 +110,8 @@ const owedToPerson = [
 const structural = new Set([
   "op",
   "kind",
-  "add",
-  "move",
-  "delete",
+  "group",
+  "direction",
   "rows",
   "items",
   "axes",
@@ -138,7 +127,7 @@ describe("every value an agent sets names where a person sees it and changes it"
     expect(
       [...agentOps].filter(
         (op) =>
-          !["set", "add", "slide"].includes(op) &&
+          !["update", "insert", "replace"].includes(op) &&
           !entries.some(([, entry]) => "agent" in entry && entry.agent === `op.${op}`),
       ),
     ).toEqual([])

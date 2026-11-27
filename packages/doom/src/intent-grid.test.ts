@@ -14,7 +14,7 @@ import { starts } from "./testing/start-rules.js"
 import { testTheme } from "./testing/theme.js"
 
 const slide = ids.slide
-const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as Intent
+const add = (value: Record<string, unknown>) => ({ op: "insert", parent: slide, ...value }) as Intent
 const made = (doom: Doom) => lastChild(doom, slide)
 describe("a grid of words fills the band with its text size", () => {
   const rows = (count: number) =>
@@ -117,7 +117,7 @@ describe("a grid sets its values in the body face and keeps every word whole", (
   ]
   const narrow = () => {
     const resized = land(agentDeck(), [{ node: ids.deck, prop: "size", value: { w: 1440, h: 1080 } }])
-    return build(resized, { op: "slide", add: {} }, minter("s"))
+    return build(resized, { op: "insert", kind: "slide" }, minter("s"))
   }
   const splitCells = (doom: Doom, root: NodeId) => {
     const layout = propOf(doom.nodes.get(root)!, "layout")!
@@ -142,7 +142,7 @@ describe("a grid sets its values in the body face and keeps every word whole", (
   it("steps a four-column 4:3 grid down until its widest word fits a column", () => {
     const deck = narrow()
     const on = slidesOf(deck).at(-1)!.id
-    const doom = build(deck, { op: "add", slide: on, kind: "frame", rows: longWords } as Intent)
+    const doom = build(deck, { op: "insert", parent: on, kind: "frame", rows: longWords } as Intent)
     expect(splitCells(doom, lastChild(doom, on).id)).toEqual([])
   })
 
@@ -156,7 +156,7 @@ describe("a grid sets its values in the body face and keeps every word whole", (
       refused: "limit",
       field: "rows",
       fault: "needs",
-      change: "add frame",
+      change: "insert frame",
       grid: {
         cell: { row: 0, col: 1, word: rows[0]![1], needs: expect.any(Number), room: expect.any(Number) },
         more: 0,
@@ -174,7 +174,7 @@ describe("a grid sets its values in the body face and keeps every word whole", (
       refused: "limit",
       field: "rows",
       fault: "needs",
-      change: "add frame",
+      change: "insert frame",
       grid: {
         rows: 30,
         needs: expect.toSatisfy((needs: number) => Number.isInteger(needs) && needs > 400),
@@ -300,7 +300,7 @@ describe("a grid of words is set as a consulting table", () => {
     const edited = (row: number, col: number, change: Record<string, unknown>) => {
       const { doom, at } = tableOf(segments)
       const target = at(row, col)!.id
-      return propOf(build(doom, { op: "set", target, ...change } as Intent).nodes.get(target), "text")!
+      return propOf(build(doom, { op: "update", target, ...change } as Intent).nodes.get(target), "text")!
     }
     const look = (text: ReturnType<typeof edited>) => ({
       bold: text.spans.every((span) => span.bold === true),

@@ -3,7 +3,6 @@ import type { GestureId } from "@/lib/gestures"
 import { deleteWrites } from "./delete-writes"
 import { flipWrites, toggleWrites } from "./flip-writes"
 import { wrapWrites, ungroupWrites } from "./group-writes"
-import { orderWrites } from "./order-writes"
 import { noSelection, type Selection } from "./selection"
 import type { SlideGeometry } from "@/editing/slide-geometry"
 import type { EditorClient } from "./use-deck"
@@ -71,7 +70,7 @@ export function arranged(gesture: GestureId | null, context: ArrangeContext): bo
     case "backward":
     case "front":
     case "back":
-      landed(context, orderWrites(view, ids, gesture))
+      landed(context, doom.reorderWrites(view, ids, gesture))
       return true
     case "flip-horizontal":
     case "flip-vertical":

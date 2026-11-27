@@ -9,6 +9,11 @@ import type { Node, Doom, Write } from "./doom.js"
 import { type Box, childrenOf, isLive, parentOf } from "./doom-walk.js"
 import type { Props } from "./props.js"
 import type { PlacementRules } from "./placement-rules.js"
+import { type LookVerb, type NodeKind, unfitField } from "./kind-fields.js"
+import { applyStep } from "./apply-edit.js"
+import { rev } from "./ids.js"
+import { isRefusal } from "./refusal.js"
+import { onTop } from "./view-of.js"
 
 export type Values = { readonly [K in PropName]?: Props[K] }
 export type Natural = { readonly width: number; readonly height: number }
@@ -50,6 +55,26 @@ export function stop(
     ...(fault === undefined ? {} : { fault }),
     ...(expect === undefined ? {} : { expect }),
   })
+}
+
+export function fitKind(verb: LookVerb, kind: NodeKind, look: object, node?: NodeId): void {
+  const field = unfitField(verb, kind, look)
+  if (field !== undefined)
+    throw new Stop({ refused: "shape", ...(node === undefined ? {} : { node }), field, fault: "unknown", kind })
+}
+
+export function onwards(draft: Draft): Draft {
+  const applied = applyStep(draft.doom, {
+    ...onTop(draft.doom, { once: "draft", author: { kind: "person", id: "draft" }, writes: draft.writes }),
+    rev: rev(draft.doom.rev + 1),
+  })
+  if (isRefusal(applied)) throw new Stop(applied)
+  return {
+    ...draft,
+    doom: applied,
+    reading: { ...draft.reading, read: draft.reading.read ?? draft.doom },
+    tails: new Map(),
+  }
 }
 
 export const draftOf = (doom: Doom, mint: () => NodeId, placement: PlacementRules, reading: Reading = {}): Draft => ({

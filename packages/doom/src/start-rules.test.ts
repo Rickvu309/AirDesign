@@ -20,10 +20,10 @@ const french: StartRules = {
   subtitle: { name: "Sous-titre", chars: "Sous-titre" },
   marginShare: 1 / 10,
   content: {
-    text: [{ op: "add", kind: "text", textStyle: "body", text: "- Premier point" }],
+    text: [{ op: "insert", kind: "text", textStyle: "body", text: "- Premier point" }],
     grid: [
       {
-        op: "add",
+        op: "insert",
         kind: "frame",
         rows: [
           ["", "Colonne"],

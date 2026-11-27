@@ -58,8 +58,8 @@ describe("an agent's title on a deck made over MCP", () => {
       const landed = await tool(client, "execute", {
         deck: first.deck,
         script: scriptOfEach([
-          { op: "add", kind: "text", slide: first.slides[0], text: "Q3 board update", textStyle: "title" },
-          { op: "add", kind: "text", slide: first.slides[0], text: "Revenue grew", textStyle: "heading" },
+          { op: "insert", kind: "text", parent: first.slides[0], text: "Q3 board update", textStyle: "title" },
+          { op: "insert", kind: "text", parent: first.slides[0], text: "Revenue grew", textStyle: "heading" },
         ]),
       })
       const lines = await read()

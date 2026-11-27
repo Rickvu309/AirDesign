@@ -28,7 +28,7 @@ function deleted(by: { readonly measure?: Measure } = {}) {
     starts,
     ...by,
   })
-  const step = session.step({ op: "delete", nodes: [ids.card] } as Intent, false)
+  const step = session.step({ op: "remove", targets: [ids.card] } as Intent, false)
   let next = step.next()
   while (!next.done) next = step.next(estimate)
   return session

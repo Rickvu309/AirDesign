@@ -48,7 +48,7 @@ describe("an agent's title on a new deck's first slide", () => {
     let count = 0
     const compiled = compileIntents(
       started,
-      [{ op: "add", kind: "text", slide: startIds.slide, text: "Q3 board update", textStyle: "title" }],
+      [{ op: "insert", kind: "text", parent: startIds.slide, text: "Q3 board update", textStyle: "title" }],
       { placement, starts, author, once: "fill", mint: () => doom.nodeId(`a:${(count += 1)}`) },
     )
     if ("refused" in compiled) throw new Error(JSON.stringify(compiled))

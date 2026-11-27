@@ -75,7 +75,7 @@ describe("wrap and unwrap keep turned layers and free lines where they painted",
     const grown = turnedDeck()
     const slide = grown.slides[0]!
     const { holder, a, b, wire, inner, c } = grown.ids as Record<string, NodeId>
-    const wrapped = build(grown.doom, change({ op: "wrap", nodes: [a, wire] }))
+    const wrapped = build(grown.doom, change({ op: "group", targets: [a, wire] }))
     const frame = kids(wrapped, holder!).find((id) => !Object.values(grown.ids).includes(id))!
     expect(kids(wrapped, holder!)).toEqual([b, frame, inner, c])
     expect(kids(wrapped, frame)).toEqual([a, wire])
@@ -88,7 +88,7 @@ describe("wrap and unwrap keep turned layers and free lines where they painted",
     const grown = turnedDeck()
     const slide = grown.slides[0]!
     const { holder, b, wire, inner, a, c, k, tie } = grown.ids as Record<string, NodeId>
-    const unwrapped = build(grown.doom, change({ op: "unwrap", node: inner }))
+    const unwrapped = build(grown.doom, change({ op: "ungroup", target: inner }))
     expect(kids(unwrapped, holder!)).toEqual([a, b, wire, k, tie, c])
     expect(propOf(unwrapped.nodes.get(k!), "box")?.rotation).toBe(355)
     expectStill(painted(grown.doom, slide, k!), painted(unwrapped, slide, k!))
@@ -99,9 +99,9 @@ describe("wrap and unwrap keep turned layers and free lines where they painted",
     const grown = turnedDeck()
     const slide = grown.slides[0]!
     const { holder, a, b, wire, inner, c } = grown.ids as Record<string, NodeId>
-    const wrapped = build(grown.doom, change({ op: "wrap", nodes: [a, wire] }))
+    const wrapped = build(grown.doom, change({ op: "group", targets: [a, wire] }))
     const frame = kids(wrapped, holder!)[1]!
-    const back = built(wrapped, change({ op: "unwrap", node: frame }))
+    const back = built(wrapped, change({ op: "ungroup", target: frame }))
     expect(kids(back, holder!)).toEqual([b, a, wire, inner, c])
     for (const id of [a, wire]) expectStill(painted(grown.doom, slide, id!), painted(back, slide, id!))
   })
@@ -131,7 +131,7 @@ describe("wrap and unwrap keep turned layers and free lines where they painted",
     })
     const slide = grown.slides[0]!
     const { one, two } = grown.ids as Record<string, NodeId>
-    const unwrapped = build(grown.doom, change({ op: "unwrap", node: grown.ids["line-up"] }))
+    const unwrapped = build(grown.doom, change({ op: "ungroup", target: grown.ids["line-up"] }))
     expect(kids(unwrapped, slide)).toEqual([one, two])
     expect(propOf(unwrapped.nodes.get(one!), "box")).toMatchObject({ x: 100, y: 100, w: 40, h: 30 })
     expect(propOf(unwrapped.nodes.get(two!), "box")).toMatchObject({ x: 150, y: 100, w: 250, h: 30 })
@@ -144,7 +144,7 @@ describe("move keeps a layer where it painted across turned frames", () => {
     const grown = turnedDeck()
     const slide = grown.slides[0]!
     const { a, inner } = grown.ids as Record<string, NodeId>
-    const moved = build(grown.doom, change({ op: "move", node: a, into: inner }))
+    const moved = build(grown.doom, change({ op: "move", targets: [a], parent: inner }))
     expect(parentOf(moved.nodes.get(a!))?.id).toBe(inner)
     expectStill(painted(grown.doom, slide, a!), painted(moved, slide, a!))
   })
@@ -153,7 +153,7 @@ describe("move keeps a layer where it painted across turned frames", () => {
     const grown = turnedDeck()
     const slide = grown.slides[0]!
     const { tie } = grown.ids as Record<string, NodeId>
-    const moved = build(grown.doom, change({ op: "move", node: tie, into: slide }))
+    const moved = build(grown.doom, change({ op: "move", targets: [tie], parent: slide }))
     expect(parentOf(moved.nodes.get(tie!))?.id).toBe(slide)
     expectStill(painted(grown.doom, slide, tie!), painted(moved, slide, tie!))
   })
@@ -183,7 +183,7 @@ describe("move keeps a layer where it painted across turned frames", () => {
     })
     const slide = grown.slides[0]!
     const { room, post, tether } = grown.ids as Record<string, NodeId>
-    const moved = build(grown.doom, change({ op: "move", node: tether, into: room }))
+    const moved = build(grown.doom, change({ op: "move", targets: [tether], parent: room }))
     const line = propOf(moved.nodes.get(tether!), "geometry")
     expect(line).toMatchObject({ start: { node: post, site: "r" } })
     expectStill(painted(grown.doom, slide, tether!).slice(1), painted(moved, slide, tether!).slice(1))

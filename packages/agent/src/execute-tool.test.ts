@@ -321,7 +321,8 @@ describe("refusal notes in the operation's own words", () => {
       script: `insert({ parent: "${slides[0]!}", kind: "line", text: "Go" })`,
     })
     const note = String(answer.fields.note)
-    expect(note).toContain("A line takes no text. Its fields: parent, kind, after, group, stroke,")
+    expect(note).toContain("A line takes no text. Its fields: parent, kind, box, name,")
+    expect(note).toContain("stroke, strokeWidth, dash, arrow")
     expect(note).not.toMatch(/\b(text|fill|slide|into)\b,/)
     expect(answer.fields).not.toHaveProperty("form")
   })

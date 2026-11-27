@@ -35,9 +35,9 @@ describe("compileIntents", () => {
     const result = compileIntents(
       doom,
       [
-        change({ op: "add", kind: "text", slide: ids.slide, text: "Board update", textStyle: "title" }),
-        change({ op: "set", target: `${ids.slide}.title`, text: "Board update **Q3**" }),
-        change({ op: "add", kind: "shape", slide: ids.slide, box: { x: 0, y: 0, w: 10, h: 10 } }),
+        change({ op: "insert", kind: "text", parent: ids.slide, text: "Board update", textStyle: "title" }),
+        change({ op: "update", target: `${ids.slide}.title`, text: "Board update **Q3**" }),
+        change({ op: "insert", kind: "shape", parent: ids.slide, box: { x: 0, y: 0, w: 10, h: 10 } }),
       ],
       by(),
     )
@@ -55,16 +55,16 @@ describe("compileIntents", () => {
   it("names the delete that left no slide when it is not the first change", () => {
     const result = compileIntents(
       agentDeck(),
-      [change({ op: "set", target: ids.title, text: "A" }), change({ op: "slide", delete: ids.slide })],
+      [change({ op: "update", target: ids.title, text: "A" }), change({ op: "remove", targets: [ids.slide] })],
       by(),
     )
-    expect(result).toMatchObject({ refused: "last-slide", change: "slide delete", at: 1 })
+    expect(result).toMatchObject({ refused: "last-slide", change: `remove ${ids.slide}`, at: 1 })
   })
 
   it("labels a slide added with its change and the kind slide", () => {
     const result = compileIntents(
       agentDeck(),
-      [change({ op: "set", target: ids.title, text: "A" }), change({ op: "slide", add: {} })],
+      [change({ op: "update", target: ids.title, text: "A" }), change({ op: "insert", kind: "slide" })],
       by(),
     )
     if ("refused" in result) throw new Error(JSON.stringify(result))
@@ -75,8 +75,8 @@ describe("compileIntents", () => {
     const result = compileIntents(
       agentDeck(),
       [
-        change({ op: "add", kind: "text", slide: ids.slide, text: "A", textStyle: "title" }),
-        change({ op: "set", target: `${ids.slide}.title`, text: "B" }),
+        change({ op: "insert", kind: "text", parent: ids.slide, text: "A", textStyle: "title" }),
+        change({ op: "update", target: `${ids.slide}.title`, text: "B" }),
       ],
       by(),
     )
@@ -87,13 +87,13 @@ describe("compileIntents", () => {
     const result = compileIntents(
       agentDeck(),
       [
-        change({ op: "add", kind: "text", slide: ids.slide, text: "A" }),
-        change({ op: "set", target: "z:9", text: "B" }),
-        change({ op: "add", kind: "text", slide: ids.slide, text: "C" }),
+        change({ op: "insert", kind: "text", parent: ids.slide, text: "A" }),
+        change({ op: "update", target: "z:9", text: "B" }),
+        change({ op: "insert", kind: "text", parent: ids.slide, text: "C" }),
       ],
       by(),
     )
-    expect(result).toEqual({ refused: "missing", node: "z:9", field: "target", change: "set z:9", at: 1 })
+    expect(result).toEqual({ refused: "missing", node: "z:9", field: "target", change: "update z:9", at: 1 })
   })
 
   it("refuses a move into a layer under a frame an earlier change of the same edit deleted", () => {
@@ -103,7 +103,7 @@ describe("compileIntents", () => {
     )
     const result = compileIntents(
       nested,
-      [change({ op: "delete", nodes: [inner] }), change({ op: "move", node: ids.card, into: innermost })],
+      [change({ op: "remove", targets: [inner] }), change({ op: "move", targets: [ids.card], parent: innermost })],
       by(),
     )
     expect(result).toEqual({ refused: "missing", node: ids.card, prop: "parent", change: `move ${ids.card}`, at: 1 })
@@ -112,10 +112,10 @@ describe("compileIntents", () => {
   it("is refused run-fenced for a run that has not started, naming the first change", () => {
     const result = compileIntents(
       sampleDeck(),
-      [change({ op: "add", kind: "text", slide: ids.slide, text: "A" })],
+      [change({ op: "insert", kind: "text", parent: ids.slide, text: "A" })],
       by(),
     )
-    expect(result).toMatchObject({ refused: "run-fenced", change: "add text", at: 0 })
+    expect(result).toMatchObject({ refused: "run-fenced", change: "insert text", at: 0 })
   })
 
   it("is refused person for a node a person changed during the run", () => {
@@ -125,8 +125,8 @@ describe("compileIntents", () => {
       [{ node: ids.title, prop: "text", value: textOf("Typed"), base: revOf(open, ids.title, "text")! }],
       person,
     )
-    const result = compileIntents(during, [change({ op: "set", target: ids.title, text: "A" })], by())
-    expect(result).toMatchObject({ refused: "person", node: ids.title, change: `set ${ids.title}`, at: 0 })
+    const result = compileIntents(during, [change({ op: "update", target: ids.title, text: "A" })], by())
+    expect(result).toMatchObject({ refused: "person", node: ids.title, change: `update ${ids.title}`, at: 0 })
   })
 
   it("is refused stale for text the agent read before a person changed it, and lands after a fresh read", () => {
@@ -139,14 +139,14 @@ describe("compileIntents", () => {
       ),
     )
     const ask = [
-      change({ op: "set", target: ids.title, text: "Agent" }),
-      change({ op: "set", target: ids.card, name: "Card" }),
+      change({ op: "update", target: ids.title, text: "Agent" }),
+      change({ op: "update", target: ids.card, name: "Card" }),
     ]
     expect(compileIntents(typed, ask, by({ read }))).toMatchObject({
       refused: "stale",
       node: ids.title,
       prop: "text",
-      change: `set ${ids.title}`,
+      change: `update ${ids.title}`,
       at: 0,
     })
     expect("refused" in compileIntents(typed, ask, by({ read: typed }))).toBe(false)
@@ -155,7 +155,10 @@ describe("compileIntents", () => {
   it("does not refuse its own two writes to one text, though both rest on what the agent read", () => {
     const result = compileIntents(
       richDeck(),
-      [change({ op: "set", target: ids.title, text: "One" }), change({ op: "set", target: ids.title, text: "Two" })],
+      [
+        change({ op: "update", target: ids.title, text: "One" }),
+        change({ op: "update", target: ids.title, text: "Two" }),
+      ],
       by(),
     )
     if ("refused" in result) throw new Error(JSON.stringify(result))
@@ -164,19 +167,19 @@ describe("compileIntents", () => {
 
   it("leaves out each value the node already holds, so a run never lands or undoes a write that changes nothing", () => {
     const ask = [
-      change({ op: "set", target: ids.card, name: "Card", opacity: 0.5 }),
-      change({ op: "set", target: ids.title, text: "Revenue" }),
+      change({ op: "update", target: ids.card, name: "Card", opacity: 0.5 }),
+      change({ op: "update", target: ids.title, text: "Revenue" }),
     ]
     const first = compileIntents(agentDeck(), ask, by())
     if ("refused" in first) throw new Error(JSON.stringify(first))
     const after = landEdit(agentDeck(), first.edit as never) as Doom
-    const again = compileIntents(after, [...ask, change({ op: "set", target: ids.card, name: "Kept" })], by())
+    const again = compileIntents(after, [...ask, change({ op: "update", target: ids.card, name: "Kept" })], by())
     if ("refused" in again) throw new Error(JSON.stringify(again))
     expect(again.edit.writes).toEqual([{ node: ids.card, prop: "name", value: "Kept" }])
   })
 
   it("compiles to no writes when the deck already holds every value the agent sets", () => {
-    const ask = [change({ op: "set", target: ids.card, name: "Card", opacity: 0.5 })]
+    const ask = [change({ op: "update", target: ids.card, name: "Card", opacity: 0.5 })]
     const first = compileIntents(agentDeck(), ask, by())
     if ("refused" in first) throw new Error(JSON.stringify(first))
     const after = landEdit(agentDeck(), first.edit as never) as Doom
@@ -194,7 +197,10 @@ describe("compileIntents", () => {
     )
     const result = compileIntents(
       during,
-      [change({ op: "set", target: ids.title, text: "Typed" }), change({ op: "set", target: ids.card, name: "Kept" })],
+      [
+        change({ op: "update", target: ids.title, text: "Typed" }),
+        change({ op: "update", target: ids.card, name: "Kept" }),
+      ],
       by(),
     )
     expect(result).toMatchObject({ refused: "person", node: ids.title, prop: "text", at: 0 })
@@ -210,8 +216,8 @@ describe("compileIntents", () => {
       ),
     )
     const ask = [
-      change({ op: "set", target: ids.title, text: "Typed" }),
-      change({ op: "set", target: ids.title, text: "Agent" }),
+      change({ op: "update", target: ids.title, text: "Typed" }),
+      change({ op: "update", target: ids.title, text: "Agent" }),
     ]
     expect(compileIntents(typed, ask, by({ read }))).toMatchObject({
       refused: "stale",
@@ -238,8 +244,8 @@ describe("compileIntents starting a run", () => {
     const result = compileIntents(
       doom,
       [
-        change({ op: "add", kind: "text", slide: ids.slide, text: "A" }),
-        change({ op: "set", target: ids.title, text: "B" }),
+        change({ op: "insert", kind: "text", parent: ids.slide, text: "A" }),
+        change({ op: "update", target: ids.title, text: "B" }),
       ],
       by({ phase: "start" }),
     )
@@ -254,7 +260,7 @@ describe("compileIntents starting a run", () => {
     expect(
       compileIntents(
         agentDeck(),
-        [change({ op: "add", kind: "text", slide: ids.slide, text: "A" })],
+        [change({ op: "insert", kind: "text", parent: ids.slide, text: "A" })],
         by({ phase: "start" }),
       ),
     ).toMatchObject({ refused: "run-fenced", at: 0 })
@@ -284,7 +290,7 @@ describe("readingOf", () => {
     )
     const result = compileIntents(
       typed,
-      [change({ op: "set", target: ids.title, text: "A" })],
+      [change({ op: "update", target: ids.title, text: "A" })],
       by({ phase: "start", read: readingOf(typed, read.rev) }),
     )
     expect(result).toMatchObject({ refused: "stale", node: ids.title, prop: "text" })

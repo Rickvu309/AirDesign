@@ -11,7 +11,7 @@ import { starts } from "./testing/start-rules.js"
 
 const ink = hex(0x102030)
 
-const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "set", target, ...look }) as Intent
+const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "update", target, ...look }) as Intent
 const at = (doom: Doom, id: string) => doom.nodes.get(id as never)!
 const photo = (fit: "fill" | "fit" | "tile" = "fill") => [{ kind: "image" as const, asset: "a".repeat(64), fit }]
 

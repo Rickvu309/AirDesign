@@ -51,8 +51,8 @@ const customTheme: Theme = {
 }
 
 function pasted(theme: Theme): { readonly doom: Doom; readonly root: string } {
-  const themed = build(agentDeck(), { op: "deck", theme })
-  const doom = build(themed, { op: "paste", piece, into: ids.slide, box: { x: 300, y: 200 } })
+  const themed = build(agentDeck(), { op: "variables", theme })
+  const doom = build(themed, { op: "paste", piece, parent: ids.slide, box: { x: 300, y: 200 } })
   return { doom, root: lastChild(doom, ids.slide).id }
 }
 
@@ -79,7 +79,7 @@ describe("paste copies a kit piece onto a slide as plain layers bound to the dec
     const { doom, root } = pasted(customTheme)
     expect(propOf(doom.nodes.get(root as never), "box")).toMatchObject({ x: 300, y: 200, w: 800, h: 240 })
     expect(childrenOf(doom, root as never).map((child) => propOf(child, "name"))).toEqual(["Title", "Subtitle"])
-    const wide = build(agentDeck(), { op: "paste", piece, into: ids.slide, box: { x: 0, y: 0, w: 1200, h: 300 } })
+    const wide = build(agentDeck(), { op: "paste", piece, parent: ids.slide, box: { x: 0, y: 0, w: 1200, h: 300 } })
     expect(propOf(lastChild(wide, ids.slide), "box")).toMatchObject({ w: 1200, h: 300 })
   })
 
@@ -91,20 +91,20 @@ describe("paste copies a kit piece onto a slide as plain layers bound to the dec
       expect(Object.keys(node)).not.toContain("origin")
     }
     const title = childrenOf(doom, root as never)[0]!
-    build(doom, { op: "set", target: title.id, text: "Changed" })
+    build(doom, { op: "update", target: title.id, text: "Changed" })
     expect(JSON.stringify(piece)).toBe(before)
   })
 
   it("refuses a parent that is not a slide or a frame, and a piece that does not grow", () => {
     expect(
-      compileIntent(agentDeck(), { op: "paste", piece, into: ids.deck }, minter(), placement, starts),
+      compileIntent(agentDeck(), { op: "paste", piece, parent: ids.deck }, minter(), placement, starts),
     ).toMatchObject({
       refused: "shape",
-      field: "into",
+      field: "parent",
     })
     const broken = { ...piece, props: { box: "wide" } } as unknown as TreeNode
     expect(
-      compileIntent(agentDeck(), { op: "paste", piece: broken, into: ids.slide }, minter(), placement, starts),
+      compileIntent(agentDeck(), { op: "paste", piece: broken, parent: ids.slide }, minter(), placement, starts),
     ).toMatchObject({
       refused: "shape",
       field: "piece",

@@ -9,7 +9,7 @@ import { ids, land, revOf, sampleDeck, textOf } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
 import { starts } from "./testing/start-rules.js"
 
-const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "set", target, ...look }) as Intent
+const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "update", target, ...look }) as Intent
 const textAt = (doom: Doom) => propOf(doom.nodes.get(ids.title)!, "text")!
 
 describe("raw text values: an agent sets what the panel's text controls set", () => {

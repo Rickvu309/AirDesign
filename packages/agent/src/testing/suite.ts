@@ -24,9 +24,9 @@ const bars = [
 
 const chart = (slide: string) =>
   bars.map(({ name, value, fill }, index) => ({
-    op: "add",
+    op: "insert",
     kind: "shape",
-    slide,
+    parent: slide,
     name,
     fill,
     box: { x: 300, y: 260 + 124 * index, w: 260 * value, h: 88 },
@@ -82,9 +82,9 @@ function row(
 }
 
 const one = (change: Record<string, unknown>): Attempt => [edit([change])]
-const setTitle = (text: string) => one({ op: "set", target: aim, text })
-const setOn = (target: string, look: Record<string, unknown>) => one({ op: "set", target, ...look })
-const addTo = (slide: string, look: Record<string, unknown>) => one({ op: "add", slide, ...look })
+const setTitle = (text: string) => one({ op: "update", target: aim, text })
+const setOn = (target: string, look: Record<string, unknown>) => one({ op: "update", target, ...look })
+const addTo = (slide: string, look: Record<string, unknown>) => one({ op: "insert", parent: slide, ...look })
 
 function words(id: string, task: string, text: string, other: string, markdown = text): SuiteRow {
   return row(
@@ -175,8 +175,8 @@ export const suite: readonly SuiteRow[] = [
     "delete-every-slide",
     "Delete every slide in the deck.",
     { steps: [refused("last-slide")], landed: unchanged },
-    [edit(Object.values(slides).map((slide) => ({ op: "slide", delete: slide })))],
-    one({ op: "slide", delete: slides.roadmap }),
+    [edit(Object.values(slides).map((slide) => ({ op: "remove", targets: [slide] })))],
+    one({ op: "remove", targets: [slides.roadmap] }),
     "tool",
   ),
   row(
@@ -326,16 +326,16 @@ export const suite: readonly SuiteRow[] = [
     "move-into-card",
     "Move the note into the card.",
     { touches: [named.note], landed: (end) => childrenOf(end, named.card).includes(named.note) },
-    one({ op: "move", node: named.note, into: named.card }),
-    one({ op: "move", node: named.note }),
+    one({ op: "move", targets: [named.note], parent: named.card }),
+    one({ op: "move", targets: [named.note] }),
     "landed",
   ),
   row(
     "delete-note",
     "Delete the note.",
     { touches: [named.note], landed: (end) => !childrenOf(end, slides.numbers).includes(named.note) },
-    one({ op: "delete", nodes: [named.note] }),
-    one({ op: "delete", nodes: [named.card] }),
+    one({ op: "remove", targets: [named.note] }),
+    one({ op: "remove", targets: [named.card] }),
     "touched",
   ),
   row(
@@ -354,16 +354,16 @@ export const suite: readonly SuiteRow[] = [
     "add-slide",
     "Add a slide at the end.",
     { landed: (end) => slideIds(end).length === slideCount + 1 },
-    one({ op: "slide", add: {} }),
-    one({ op: "slide", delete: slides.roadmap }),
+    one({ op: "insert", kind: "slide" }),
+    one({ op: "remove", targets: [slides.roadmap] }),
     "touched",
   ),
   row(
     "move-slide",
     "Move the roadmap slide to the front.",
     { touches: [slides.roadmap], landed: (end) => slideIds(end)[0] === slides.roadmap },
-    one({ op: "slide", move: { slide: slides.roadmap, after: null } }),
-    one({ op: "slide", move: { slide: slides.numbers, after: null } }),
+    one({ op: "move", targets: [slides.roadmap], after: null }),
+    one({ op: "move", targets: [slides.numbers], after: null }),
     "touched",
   ),
 
@@ -390,7 +390,7 @@ export const suite: readonly SuiteRow[] = [
     "unknown-deck",
     "Set the title of the deck that has the id missing to North star.",
     { steps: [refused("deck")], landed: unchanged },
-    [edit([{ op: "set", target: aim, text: "North star" }], undefined, "missing")],
+    [edit([{ op: "update", target: aim, text: "North star" }], undefined, "missing")],
     setTitle("North star"),
     "tool",
   ),
@@ -398,7 +398,7 @@ export const suite: readonly SuiteRow[] = [
     "unknown-layer",
     "Set the words of the layer z:9 to North star.",
     { steps: [refused("dead")], landed: unchanged },
-    one({ op: "set", target: "z:9", text: "North star" }),
+    one({ op: "update", target: "z:9", text: "North star" }),
     setTitle("North star"),
     "tool",
   ),
@@ -427,8 +427,8 @@ export const suite: readonly SuiteRow[] = [
       touches: [named.note],
       landed: (end) => textOf(end, named.note) === "Plan was $3.9M",
     },
-    [read(), edit([{ op: "set", target: named.note, text: "Plan was $3.9M" }])],
-    [edit([{ op: "set", target: named.note, text: "Plan was $3.9M" }])],
+    [read(), edit([{ op: "update", target: named.note, text: "Plan was $3.9M" }])],
+    [edit([{ op: "update", target: named.note, text: "Plan was $3.9M" }])],
     "tool",
   ),
   row(
@@ -463,16 +463,16 @@ export const suite: readonly SuiteRow[] = [
       touches: [named.note],
       landed: (end) => lineOf(end, named.note).includes('name="Mine"'),
     },
-    [edit([{ op: "set", target: named.note, name: "Agent" }], heldRun)],
-    [edit([{ op: "set", target: named.note, name: "Agent" }])],
+    [edit([{ op: "update", target: named.note, name: "Agent" }], heldRun)],
+    [edit([{ op: "update", target: named.note, name: "Agent" }])],
     "tool",
   ),
   row(
     "stopped-run",
     "Add the words Late to the roadmap slide in the run that has stopped.",
     { deck: stoppedRun, steps: [refused("run-fenced")] },
-    [edit([{ op: "add", kind: "text", slide: slides.roadmap, text: "Late" }], heldRun)],
-    [edit([{ op: "add", kind: "text", slide: slides.roadmap, text: "Late" }])],
+    [edit([{ op: "insert", kind: "text", parent: slides.roadmap, text: "Late" }], heldRun)],
+    [edit([{ op: "insert", kind: "text", parent: slides.roadmap, text: "Late" }])],
     "tool",
   ),
   row(
@@ -495,8 +495,8 @@ export const suite: readonly SuiteRow[] = [
     "batch-limit",
     "Send a hundred and one changes in one call.",
     { steps: [refused("limit")], landed: unchanged },
-    [edit(Array.from({ length: 101 }, (_, at) => ({ op: "set", target: named.note, name: `Note ${String(at)}` })))],
-    one({ op: "set", target: named.note, name: "Note" }),
+    [edit(Array.from({ length: 101 }, (_, at) => ({ op: "update", target: named.note, name: `Note ${String(at)}` })))],
+    one({ op: "update", target: named.note, name: "Note" }),
     "tool",
   ),
   {
@@ -532,31 +532,31 @@ export const suite: readonly SuiteRow[] = [
 function boardAttempt(withChart: boolean): Attempt {
   const [one, two, three, four, five] = boardSlides() as [string, string, string, string, string]
   const title = (slide: string, text: string) => ({
-    op: "add",
+    op: "insert",
     kind: "text",
-    slide,
+    parent: slide,
     text,
     textStyle: "title",
     box: { x: 80, y: 60, w: 1760, h: 90 },
   })
   return [
     read(),
-    edit(Array.from({ length: 4 }, () => ({ op: "slide", add: {} }))),
+    edit(Array.from({ length: 4 }, () => ({ op: "insert", kind: "slide" }))),
     edit(
       [
-        { op: "set", target: `${one}`, text: "Q3 board update" },
+        { op: "update", target: `${one}`, text: "Q3 board update" },
         title(two, "Results at a glance"),
-        { op: "add", kind: "text", slide: two, name: "Results", text: "Revenue $4.2M · Margin 31%" },
-        { op: "add", kind: "shape", slide: two, name: "Decision", text: "Approve the budget" },
+        { op: "insert", kind: "text", parent: two, name: "Results", text: "Revenue $4.2M · Margin 31%" },
+        { op: "insert", kind: "shape", parent: two, name: "Decision", text: "Approve the budget" },
         title(three, "Revenue ran ahead of plan"),
         ...(withChart ? chart(three) : []),
         title(four, "Three priorities"),
-        ...["trending-up", "shield", "hammer"].map((icon) => ({ op: "add", kind: "icon", slide: four, icon })),
+        ...["trending-up", "shield", "hammer"].map((icon) => ({ op: "insert", kind: "icon", parent: four, icon })),
         title(five, "Roadmap"),
         {
-          op: "add",
+          op: "insert",
           kind: "frame",
-          slide: five,
+          parent: five,
           rows: [
             ["", "Q1", "Q2"],
             ["Product", "Beta", "Launch"],

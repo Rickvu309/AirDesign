@@ -4,7 +4,7 @@ import type { DeckHost } from "./deck-host.js"
 import { deckMeasure } from "./deck-measure.js"
 
 const leavesLayers = (intent: doom.Intent) =>
-  intent.op === "delete" || intent.op === "unwrap" || (intent.op === "slide" && intent.delete !== undefined)
+  intent.op === "remove" || intent.op === "ungroup" || intent.op === "replace"
 
 export async function leavingMeasure(
   host: Pick<DeckHost, "measure">,

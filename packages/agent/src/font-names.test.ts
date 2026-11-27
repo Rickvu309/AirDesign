@@ -48,7 +48,7 @@ describe("a raw size and font over the protocol", () => {
     const title = `${slides[0]!}.title`
     const landed = await call("execute", {
       deck,
-      script: scriptOf([{ op: "set", target: title, font: "montserrat", size: 72 }]),
+      script: scriptOf([{ op: "update", target: title, font: "montserrat", size: 72 }]),
     })
     expect(landed.ok).toBe(true)
     expect(landed.fields).toMatchObject({
@@ -71,7 +71,7 @@ describe("a raw size and font over the protocol", () => {
     const title = `${slides[0]!}.title`
     const landed = await call("execute", {
       deck,
-      script: scriptOf([{ op: "set", target: title, weight: "ExtraBold" }]),
+      script: scriptOf([{ op: "update", target: title, weight: "ExtraBold" }]),
     })
     expect(landed.ok).toBe(true)
     const read = await readOf(call, deck)
@@ -91,7 +91,7 @@ describe("a raw size and font over the protocol", () => {
     for (const weight of ["Medium", "ExtraBold", "Regular", "Bold"]) {
       const landed = await call("execute", {
         deck,
-        script: scriptOf([{ op: "set", target: `${slides[0]!}.title`, weight }]),
+        script: scriptOf([{ op: "update", target: `${slides[0]!}.title`, weight }]),
       })
       expect(landed.ok).toBe(true)
       expect(JSON.stringify(landed.fields)).not.toContain("off-font")
@@ -108,7 +108,7 @@ describe("a raw size and font over the protocol", () => {
     }
     const unknown = await call("execute", {
       deck,
-      script: scriptOf([{ op: "set", target: `${slides[0]!}.title`, font: "Nowhere Grotesk" }]),
+      script: scriptOf([{ op: "update", target: `${slides[0]!}.title`, font: "Nowhere Grotesk" }]),
     })
     expect(unknown.fields).toMatchObject({ ok: false, refusal: "field", field: "font", op: 1 })
     expect(String(unknown.fields.note)).toContain(
@@ -121,14 +121,14 @@ describe("a raw size and font over the protocol", () => {
     const { deck } = (await call("execute", { script: "createDeck()" })).fields as { deck: string; rev: number }
     const themed = await call("execute", {
       deck,
-      script: scriptOf([{ op: "deck", name: "Board", fonts: { heading: "lora" } }]),
+      script: scriptOf([{ op: "variables", name: "Board", fonts: { heading: "lora" } }]),
     })
     expect(themed.ok).toBe(true)
     expect((await readOf(call, deck)).fields).toMatchObject({ theme: { fonts: { heading: "Lora" } } })
     const unknown = await call("execute", {
       deck,
       runId: (themed.fields as { runId: string }).runId,
-      script: scriptOf([{ op: "deck", fonts: { body: "Nowhere Grotesk" } }]),
+      script: scriptOf([{ op: "variables", fonts: { body: "Nowhere Grotesk" } }]),
     })
     expect(unknown.fields).toMatchObject({ ok: false, refusal: "field", field: "fonts.body", op: 1 })
     expect((await call("get_app_state", {})).fields).toMatchObject({ decks: [{ deck, name: "Board" }] })

@@ -235,7 +235,7 @@ describe("an agent's run on a deck", () => {
       const opened = await called(client, "execute", {
         deck,
         script: scriptOf([
-          { op: "add", kind: "text", slide: made.slides[0], text: "a", box: { x: 160, y: 800, w: 600, h: 80 } },
+          { op: "insert", kind: "text", parent: made.slides[0], text: "a", box: { x: 160, y: 800, w: 600, h: 80 } },
         ]),
       })
       run = opened.runId
@@ -254,7 +254,7 @@ describe("an agent's run on a deck", () => {
       const closed = await called(client, "execute", {
         deck,
         runId: run,
-        script: scriptOf([{ op: "set", target: added, name: "b" }]),
+        script: scriptOf([{ op: "update", target: added, name: "b" }]),
       })
       expect(closed).toMatchObject({ ok: false, refusal: "person-protected" })
       const joined = await called(client, "execute", {
@@ -262,9 +262,9 @@ describe("an agent's run on a deck", () => {
         runId: run,
         script: scriptOf([
           {
-            op: "add",
+            op: "insert",
             kind: "text",
-            slide: (await called(client, "execute", { deck, script: "get().slides" })).result[0],
+            parent: (await called(client, "execute", { deck, script: "get().slides" })).result[0],
             text: "c",
           },
         ]),

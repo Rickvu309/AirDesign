@@ -22,7 +22,7 @@ describe("a box with only the fields that change", () => {
   for (const keys of subsets(["x", "y", "w", "h"] as const)) {
     it(`set with ${keys.join(", ")} keeps the rest of the box`, () => {
       const box = Object.fromEntries(keys.map((key) => [key, asked[key]]))
-      const doom = build(richDeck(), read({ op: "set", target: more.frame, box }))
+      const doom = build(richDeck(), read({ op: "update", target: more.frame, box }))
       expect(boxOf(doom, more.frame)).toMatchObject({ ...was, ...box })
     })
   }
@@ -30,13 +30,13 @@ describe("a box with only the fields that change", () => {
   for (const keys of subsets(["x", "y"] as const)) {
     it(`move with ${keys.join(", ")} keeps the other place and the size`, () => {
       const box = Object.fromEntries(keys.map((key) => [key, asked[key]]))
-      const doom = build(richDeck(), read({ op: "move", node: more.frame, into: ids.slide, box }))
+      const doom = build(richDeck(), read({ op: "move", targets: [more.frame], parent: ids.slide, box }))
       expect(boxOf(doom, more.frame)).toMatchObject({ ...was, ...box })
     })
   }
 
   it("moves a line's ends by the box it keeps", () => {
-    const doom = build(richDeck(), read({ op: "set", target: more.line, box: { y: 260 } }))
+    const doom = build(richDeck(), read({ op: "update", target: more.line, box: { y: 260 } }))
     expect(propOf(doom.nodes.get(more.line)!, "geometry")).toMatchObject({
       start: { x: 100, y: 260 },
       end: { x: 400, y: 260 },
@@ -44,7 +44,7 @@ describe("a box with only the fields that change", () => {
   })
 
   it("add still needs the whole box, or none for the largest free area", () => {
-    expect(readIntent({ op: "add", kind: "shape", slide: ids.slide, box: { x: 1, y: 2 } })).toMatchObject({
+    expect(readIntent({ op: "insert", kind: "shape", parent: ids.slide, box: { x: 1, y: 2 } })).toMatchObject({
       field: "box.w",
       fault: "missing",
     })

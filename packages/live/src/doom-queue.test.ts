@@ -320,7 +320,13 @@ describe("a move queued before another tab deletes a layer", () => {
     const start = grown.doom
     const first = grown.ids.first!
     const into = grown.slides[1]!
-    const writes = compileIntent(start, { op: "move", node: first, into }, () => doom.nodeId("n:55"), placement, starts)
+    const writes = compileIntent(
+      start,
+      { op: "move", targets: [first], parent: into },
+      () => doom.nodeId("n:55"),
+      placement,
+      starts,
+    )
     if ("refused" in writes) throw new Error(JSON.stringify(writes))
     const pending = queueEdit(start, [], { once: "old-move", author: person, writes })
     if (doom.isRefusal(pending)) throw new Error(JSON.stringify(pending))

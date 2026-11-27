@@ -12,7 +12,7 @@ describe("readForAgent", () => {
     build(
       richDeck(),
       change({
-        op: "set",
+        op: "update",
         target: ids.card,
         fill: "accent2",
         stroke: hex(0xaabbcc).toUpperCase(),
@@ -26,7 +26,7 @@ describe("readForAgent", () => {
       }),
     ),
     change({
-      op: "set",
+      op: "update",
       target: ids.title,
       text: "Revenue **up**\n\n- a\n- b",
       textStyle: "heading",
@@ -69,11 +69,11 @@ describe("readForAgent", () => {
   })
 
   it("names a shape's outline in the word the agent sets, and says nothing for a rectangle", () => {
-    const starred = build(doom, change({ op: "set", target: ids.caption, shape: "star5" }))
+    const starred = build(doom, change({ op: "update", target: ids.caption, shape: "star5" }))
     expect(readForAgent(starred, "all")).toContain(" shape=star5")
-    expect(readForAgent(build(doom, change({ op: "set", target: ids.caption, shape: "rect" })), "all")).not.toContain(
-      "shape=",
-    )
+    expect(
+      readForAgent(build(doom, change({ op: "update", target: ids.caption, shape: "rect" })), "all"),
+    ).not.toContain("shape=")
   })
 
   it("summarizes a path and shows its commands on request", () => {
@@ -90,7 +90,7 @@ describe("readForAgent", () => {
 
   it("leaves out what is the default: the plain ink colour and a padding of nothing", () => {
     const plain = readForAgent(
-      build(richDeck(), change({ op: "add", kind: "frame", slide: more.slide2, layout: "row" })),
+      build(richDeck(), change({ op: "insert", kind: "frame", parent: more.slide2, layout: "row" })),
       [more.slide2],
     )
     expect(plain).not.toContain("color=text ")
@@ -125,7 +125,13 @@ describe("readForAgent of a line", () => {
   it("names the layer and side each attached end follows, and a route that is not straight", () => {
     const doom = build(
       richDeck(),
-      change({ op: "set", target: more.line, from: { layer: ids.card, side: "bottom" }, route: "curve", arrow: true }),
+      change({
+        op: "update",
+        target: more.line,
+        from: { layer: ids.card, side: "bottom" },
+        route: "curve",
+        arrow: true,
+      }),
     )
     const line = lines(readForAgent(doom, "all")).find((each) => each.includes(more.line))
     expect(line).toContain(`from=${ids.card}:bottom route=curve arrow`)
@@ -134,7 +140,7 @@ describe("readForAgent of a line", () => {
   it("reads an elbow's lane back as the field that set it", () => {
     const doom = build(
       richDeck(),
-      change({ op: "set", target: more.line, from: { layer: ids.card, side: "bottom" }, route: "elbow", lane: 300 }),
+      change({ op: "update", target: more.line, from: { layer: ids.card, side: "bottom" }, route: "elbow", lane: 300 }),
     )
     const line = lines(readForAgent(doom, "all")).find((each) => each.includes(more.line))
     expect(line).toContain(`from=${ids.card}:bottom route=elbow lane=300`)
@@ -160,7 +166,7 @@ describe("readForAgent of a line", () => {
   })
 
   it("reads a start arrowhead and a named end arrowhead back as the fields that set them", () => {
-    const doom = build(richDeck(), change({ op: "set", target: more.line, startArrow: "circle", arrow: "triangle" }))
+    const doom = build(richDeck(), change({ op: "update", target: more.line, startArrow: "circle", arrow: "triangle" }))
     const line = lines(readForAgent(doom, "all")).find((each) => each.includes(more.line))
     expect(line).toContain("startArrow=circle")
     expect(line).toContain("arrow=triangle")
@@ -183,7 +189,7 @@ describe("readForAgent reports the saved look", () => {
     const picture = build(
       apply(richDeck(), [{ node: ids.caption, prop: "fills", value: [{ kind: "image", asset, fit: "fill" }] }]),
       change({
-        op: "set",
+        op: "update",
         target: ids.caption,
         crop: { left: 10, top: 0, right: 30, bottom: 25 },
         stroke: "text-25",
@@ -206,12 +212,12 @@ describe("readForAgent reports the saved look", () => {
 
     const tinted = build(
       picture,
-      change({ op: "set", target: ids.caption, fill: { gradient: ["accent1", "accent2+40"], angle: 90 } }),
+      change({ op: "update", target: ids.caption, fill: { gradient: ["accent1", "accent2+40"], angle: 90 } }),
     )
     expect(readForAgent(tinted, [ids.slide])).toContain("fill=gradient(accent1>accent2+40@90)")
     const radial = build(
       picture,
-      change({ op: "set", target: ids.caption, fill: { gradient: ["accent1", "background"], radial: true } }),
+      change({ op: "update", target: ids.caption, fill: { gradient: ["accent1", "background"], radial: true } }),
     )
     expect(readForAgent(radial, [ids.slide])).toContain("fill=radial(accent1>background)")
   })
@@ -220,7 +226,7 @@ describe("readForAgent reports the saved look", () => {
     const deck = build(
       richDeck(),
       change({
-        op: "set",
+        op: "update",
         target: ids.slide,
         skipped: true,
         transition: { kind: "fade", ms: 400 },
@@ -230,7 +236,7 @@ describe("readForAgent reports the saved look", () => {
     expect(lines(readForAgent(deck, [ids.slide]))[0]).toContain(
       'skipped transition=fade/400 notes="Open with the number.\\nThen the why."',
     )
-    const shown = build(deck, change({ op: "set", target: ids.slide, skipped: false }))
+    const shown = build(deck, change({ op: "update", target: ids.slide, skipped: false }))
     expect(lines(readForAgent(shown, [ids.slide]))[0]).not.toContain("skipped")
   })
 
@@ -238,7 +244,7 @@ describe("readForAgent reports the saved look", () => {
     const deck = build(
       richDeck(),
       change({
-        op: "set",
+        op: "update",
         target: ids.title,
         align: "justify",
         alignV: "bottom",
@@ -263,9 +269,9 @@ describe("readForAgent reports the saved look", () => {
     expect(line).toContain(
       "letterSpacing=-0.25 case=upper underline strike lineHeight=1.15 alignV=bottom spaceBefore=0.3 spaceAfter=0.125",
     )
-    const bold = build(deck, change({ op: "set", target: ids.title, weight: "Bold" }))
+    const bold = build(deck, change({ op: "update", target: ids.title, weight: "Bold" }))
     expect(readForAgent(bold, [ids.slide])).toContain("weight=Bold")
-    const regular = build(deck, change({ op: "set", target: ids.title, weight: "Regular" }))
+    const regular = build(deck, change({ op: "update", target: ids.title, weight: "Regular" }))
     expect(readForAgent(regular, [ids.slide])).toContain("weight=Regular")
   })
 })

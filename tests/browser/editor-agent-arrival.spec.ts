@@ -9,9 +9,9 @@ import { openEditor, type Opened } from "./editor-deck"
 test.use({ viewport: { width: 1440, height: 900 } })
 
 const note = (slide: string, text: string, y: number) => ({
-  op: "add",
+  op: "insert",
   kind: "text",
-  slide,
+  parent: slide,
   text,
   box: { x: 160, y, w: 1200, h: 80 },
 })
@@ -213,7 +213,7 @@ test("the canvas goes to a slide an agent makes and traces what the agent writes
     const made = await call("execute", {
       deck: opened.deck,
       ...(runId === undefined ? {} : { runId }),
-      script: scriptOf([{ op: "slide", add: {} }]),
+      script: scriptOf([{ op: "insert", kind: "slide" }]),
     })
     expect(made.ok, JSON.stringify(made)).toBe(true)
     const slide = made.result as string
@@ -283,7 +283,7 @@ test("a slide an agent makes draws its canvas surface and filmstrip thumbnail, t
   const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
   const made = await call("execute", {
     deck: opened.deck,
-    script: scriptOf([{ op: "slide", add: {} }]),
+    script: scriptOf([{ op: "insert", kind: "slide" }]),
   })
   expect(made.ok, JSON.stringify(made)).toBe(true)
   await expect(layer.locator("svg")).toHaveCount(1)
@@ -306,7 +306,7 @@ test("a slide an agent makes draws its canvas surface and filmstrip thumbnail, t
   const another = await call("execute", {
     deck: opened.deck,
     runId: made.runId,
-    script: scriptOf([{ op: "slide", add: {} }]),
+    script: scriptOf([{ op: "insert", kind: "slide" }]),
   })
   expect(another.ok, JSON.stringify(another)).toBe(true)
   const thirdThumbLayer = page.locator('[data-slide-entry="3"] [data-thumb-arrival]')
@@ -349,7 +349,7 @@ test("a person's own new slide and an agent-made slide under reduced motion play
   const call = agentCall(stack, await connectClaudeCode(stack, opened.cookie))
   const made = await call("execute", {
     deck: opened.deck,
-    script: scriptOf([{ op: "slide", add: {} }]),
+    script: scriptOf([{ op: "insert", kind: "slide" }]),
   })
   expect(made.ok, JSON.stringify(made)).toBe(true)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(3)
@@ -376,7 +376,7 @@ test("a press on the canvas shows an arriving slide's surface at once", async ({
   })
   const made = await call("execute", {
     deck: opened.deck,
-    script: scriptOf([{ op: "slide", add: {} }]),
+    script: scriptOf([{ op: "insert", kind: "slide" }]),
   })
   expect(made.ok, JSON.stringify(made)).toBe(true)
   await expect.poll(() => surface.evaluate((element) => element.getAnimations().length)).toBe(1)

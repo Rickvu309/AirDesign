@@ -1,11 +1,12 @@
-import type { Intent } from "./intent-read.js"
-import { type SlideAdd, type SlideMove } from "./intent-slide-fields.js"
-import { type Draft, living, put, stop } from "./intent-draft.js"
+import type { Intent, SlideGroup } from "./intent-read.js"
+import { type Draft, fitKind, living, onwards, put, stop } from "./intent-draft.js"
+import { compileSet } from "./intent-set.js"
 import type { NodeId } from "./ids.js"
 import type { Node } from "./doom.js"
 import { childrenOf, deckOf, isLive, parentOf, rowsOf, slideRowAt, slidesOf } from "./doom-walk.js"
 import { slideGroups, slidePlacementWrites } from "./slide-placement.js"
 
+type InsertSlide = Extract<Intent, { op: "insert"; kind: "slide" }>
 const groupNeeds = { code: "read-slide-group" } as const
 const inGroupNeeds = { code: "group-slide-or-null" } as const
 
@@ -30,7 +31,7 @@ function groupAnchor(draft: Draft, id: NodeId | null, field: string): NodeId | n
     : stop("shape", id, field, "needs", { code: "populated-slide-group" })
 }
 
-function addSlide(draft: Draft, { group, after }: SlideAdd): void {
+function addSlide(draft: Draft, { group, after }: InsertSlide): NodeId {
   const { doom } = draft
   if (group === undefined && after === null) stop("shape", undefined, "after", "form", { code: "first-in-group" })
   if (deckOf(doom) === undefined) stop("missing")
@@ -71,28 +72,31 @@ function addSlide(draft: Draft, { group, after }: SlideAdd): void {
     }
   }
   put(draft, slide, { name: `Slide ${slidesOf(doom).length + 1}` }, true)
+  return slide
 }
 
-function moveSlide(draft: Draft, { slide, slides, group, after, before }: SlideMove): void {
+export type SlideWhere = { readonly group?: SlideGroup; readonly after?: NodeId | null; readonly before?: NodeId }
+
+function moveGroup(draft: Draft, group: NodeId, { after, before, group: asked }: SlideWhere): void {
+  if (asked !== undefined) stop("shape", group, "group", "unknown")
+  if (before === undefined ? after === undefined : after !== undefined)
+    stop("shape", undefined, "after", "form", { code: "before-or-after-group" })
+  const source = requireGroup(draft, group, "targets")
+  const field = before === undefined ? "after" : "before"
+  const anchor = groupAnchor(draft, before ?? after ?? null, field)
+  if (anchor === source) stop("shape", source, field, "form", { code: "other-slide-group" })
+  draft.writes.push(...slidePlacementWrites(draft.doom, { kind: "moveGroup", group: source, anchor, side: field }))
+}
+
+export function moveSlides(draft: Draft, targets: readonly Node[], where: SlideWhere): void {
   const { doom } = draft
-  if (slide !== undefined && slides !== undefined) stop("shape", undefined, "move", "form", { code: "slide-or-slides" })
-  if (slides?.length === 0) stop("shape", undefined, "slides", "needs", { code: "slide-ids" })
-  const ids = [...new Set(slides ?? (slide === undefined ? [] : [slide]))]
-  if (ids.length === 0) {
-    if (group === "new") stop("shape", undefined, "group", "form", { code: "new-slide-group" })
-    if (group === undefined) stop("shape", undefined, "move", "form", { code: "slide-or-group" })
-    if (before === undefined ? after === undefined : after !== undefined)
-      stop("shape", undefined, "after", "form", { code: "before-or-after-group" })
-    const source = requireGroup(draft, group, "group")
-    const field = before === undefined ? "after" : "before"
-    const anchor = groupAnchor(draft, before ?? after ?? null, field)
-    if (anchor === source) stop("shape", source, field, "form", { code: "other-slide-group" })
-    draft.writes.push(...slidePlacementWrites(doom, { kind: "moveGroup", group: source, anchor, side: field }))
-    return
-  }
+  const rows = targets.filter((node) => node.type === "slideRow")
+  if (rows.length > 0 && targets.length > 1) stop("shape", rows[0]!.id, "targets", "form", { code: "slide-or-group" })
+  if (rows.length > 0) return moveGroup(draft, rows[0]!.id, where)
+  const { group, after, before } = where
   if (before !== undefined) stop("shape", undefined, "before", "form", { code: "before-group-only" })
   if (after === undefined) stop("shape", undefined, "after", "missing", { code: "after-slide" })
-  for (const id of ids) deckSlide(draft, id, slides === undefined ? "move" : "slides")
+  const ids = [...new Set(targets.map((node) => deckSlide(draft, node.id, "targets").id))]
   if (group === "new") {
     const anchor = groupAnchor(draft, after, "after")
     draft.writes.push(
@@ -110,11 +114,14 @@ function moveSlide(draft: Draft, { slide, slides, group, after, before }: SlideM
   draft.writes.push(...slidePlacementWrites(doom, { kind: "slides", group: row, slides: ids, after }))
 }
 
-export function compileSlide(draft: Draft, intent: Extract<Intent, { op: "slide" }>): void {
-  const given = [intent.add, intent.move, intent.delete].filter((part) => part !== undefined)
-  if (given.length !== 1) stop("shape", undefined, "slide", "form", { code: "slide-operation" })
-  if (intent.add !== undefined) return addSlide(draft, intent.add)
-  if (intent.move !== undefined) return moveSlide(draft, intent.move)
-  if (intent.delete !== undefined)
-    draft.writes.push({ node: deckSlide(draft, intent.delete, "delete").id, prop: "parent", value: null })
+export function compileInsertSlide(draft: Draft, intent: InsertSlide): void {
+  fitKind("insert", "slide", intent)
+  const slide = addSlide(draft, intent)
+  const { op: _op, kind: _kind, after: _after, group: _group, ...look } = intent
+  if (Object.values(look).some((value) => value !== undefined))
+    compileSet(onwards(draft), { ...look, op: "update", target: slide })
+}
+
+export function removeSlide(draft: Draft, id: NodeId): void {
+  draft.writes.push({ node: deckSlide(draft, id, "targets").id, prop: "parent", value: null })
 }

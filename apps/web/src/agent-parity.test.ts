@@ -17,8 +17,6 @@ import {
 } from "@/testing/agent-reach"
 import { placement } from "@airdesign/doom/testing"
 
-const slideOps = new Set(["add", "move", "delete"])
-
 const owedToAgent: readonly string[] = []
 
 const viewOnly = new Set([
@@ -79,11 +77,10 @@ function panelKeys(): ReadonlySet<string> {
 
 function wordExists(word: string): boolean {
   const [where, name = ""] = word.split(".")
-  if (where === "set") return agentFields.has(name)
+  if (where === "update") return agentFields.has(name)
   if (where === "op") return agentOps.has(name)
-  if (where === "add") return agentKinds.has(name)
-  if (where === "slide") return slideOps.has(name) && agentFields.has(name)
-  if (where === "deck") return name === "theme" && agentFields.has(name)
+  if (where === "insert") return agentKinds.has(name)
+  if (where === "variables") return name === "theme" && agentFields.has(name)
   return false
 }
 

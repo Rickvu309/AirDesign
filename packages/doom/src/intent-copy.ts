@@ -6,13 +6,13 @@ import { type Grown, doomFromTree } from "./doom-tree.js"
 import type { Write } from "./doom.js"
 import { deckOf as deckLookOf } from "./deck-of.js"
 
-export function compileDuplicate(draft: Draft, intent: Extract<Intent, { op: "duplicate" }>): void {
-  for (const id of intent.nodes) {
-    const node = living(draft, id, "nodes")
+export function compileCopy(draft: Draft, intent: Extract<Intent, { op: "copy" }>): void {
+  for (const id of intent.targets) {
+    const node = living(draft, id, "targets")
     if (node.type !== "slide" && node.type !== "frame" && node.type !== "shape")
-      stop("shape", id, "nodes", "form", { code: "copyable-node" })
+      stop("shape", id, "targets", "form", { code: "copyable-node" })
   }
-  draft.writes.push(...duplicateWrites(draft.doom, intent.nodes, draft.mint).writes)
+  draft.writes.push(...duplicateWrites(draft.doom, intent.targets, draft.mint).writes)
 }
 
 function grownPiece(draft: Draft, intent: Extract<Intent, { op: "paste" }>): Grown {
@@ -24,8 +24,9 @@ function grownPiece(draft: Draft, intent: Extract<Intent, { op: "paste" }>): Gro
 }
 
 export function compilePaste(draft: Draft, intent: Extract<Intent, { op: "paste" }>): void {
-  const into = living(draft, intent.into, "into")
-  if (into.type !== "slide" && into.type !== "frame") stop("shape", into.id, "into", "form", { code: "slide-or-frame" })
+  const into = living(draft, intent.parent, "parent")
+  if (into.type !== "slide" && into.type !== "frame")
+    stop("shape", into.id, "parent", "form", { code: "slide-or-frame" })
   const grown = grownPiece(draft, intent)
   const root = childrenOf(grown.doom, grown.slides[0]!)[0]!
   const copies = pasteWrites({ view: grown.doom, roots: [root.id] }, draft.doom, into.id, draft.mint)
@@ -38,7 +39,7 @@ export function compilePaste(draft: Draft, intent: Extract<Intent, { op: "paste"
   draft.writes.push(...copies.writes.map(placed))
 }
 
-export function compileDeck(draft: Draft, intent: Extract<Intent, { op: "deck" }>): void {
+export function compileVariables(draft: Draft, intent: Extract<Intent, { op: "variables" }>): void {
   const deck = deckOf(draft.doom) ?? stop("missing")
   const { name, nameFollows, language, theme: newTheme, colors, fonts } = intent
   if (

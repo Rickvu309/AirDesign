@@ -109,7 +109,7 @@ describe("ungrouping the frame a line is attached to", () => {
     const grown = grouped()
     const slide = grown.slides[0]!
     const seen = startOf(grown.doom, slide, grown.ids.l!)
-    const writes = compiled(grown.doom, { op: "unwrap", node: grown.ids.grp! })
+    const writes = compiled(grown.doom, { op: "ungroup", target: grown.ids.grp! })
     const after = step(grown.doom, "agent", writes).after
     expect(startOf(after, slide, grown.ids.l!)).toEqual(seen)
     expect("node" in lineOf(after, grown.ids.l!).start).toBe(false)
@@ -123,7 +123,7 @@ describe("ungrouping the frame a line is attached to", () => {
     const grown = grouped()
     const slide = grown.slides[0]!
     const seen = startOf(grown.doom, slide, grown.ids.in!)
-    const after = step(grown.doom, "agent", compiled(grown.doom, { op: "unwrap", node: grown.ids.grp! })).after
+    const after = step(grown.doom, "agent", compiled(grown.doom, { op: "ungroup", target: grown.ids.grp! })).after
     expect(startOf(after, slide, grown.ids.in!)).toEqual(seen)
     expect("node" in lineOf(after, grown.ids.in!).start).toBe(false)
   })
@@ -174,7 +174,7 @@ describe("deleting the slide a line points into", () => {
       y: 225,
     })
     expect(startOf(deleted.after, first, grown.ids.l!)).toEqual(seen)
-    const byAgent = step(grown.doom, "agent", compiled(grown.doom, { op: "slide", delete: grown.slides[1]! })).after
+    const byAgent = step(grown.doom, "agent", compiled(grown.doom, { op: "remove", targets: [grown.slides[1]!] })).after
     expect(freePoint(lineOf(byAgent, grown.ids.l!).start)).toEqual({
       x: 300,
       y: 225,

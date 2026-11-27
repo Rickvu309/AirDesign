@@ -32,7 +32,7 @@ describe("refusals in execute", () => {
     }
     const rev = () => by.decks.decks.get(deck as never)!.rev
     const frameIn = async (into?: string) => {
-      const change = { op: "add", kind: "frame", slide: slides[0], ...(into === undefined ? {} : { into }) }
+      const change = { op: "insert", kind: "frame", parent: into ?? slides[0] }
       const made = await by.call("execute", { deck, script: scriptOf([change]) })
       return made.fields.result as string
     }
@@ -41,8 +41,8 @@ describe("refusals in execute", () => {
     const inner = await frameIn(middle)
     const base = rev()
     const changes = [
-      { op: "delete", nodes: [middle] },
-      { op: "move", node: outer, into: inner },
+      { op: "remove", targets: [middle] },
+      { op: "move", targets: [outer], parent: inner },
     ]
     const refused = await by.call("execute", { deck, script: scriptOf(changes) })
     expect(refused.fields).toMatchObject({ ok: false, refusal: "dead", refused: "missing", op: 2, node: outer })
@@ -163,7 +163,7 @@ describe("a script takes a shape off the deck", () => {
     const deck = await by.made()
     const seen = painted(grown.doom, grown.slides[0]!, grown.ids.lf!, wide)
     expect(seen.x).not.toBe(painted(grown.doom, grown.slides[0]!, grown.ids.lf!, estimate).x)
-    expect((await by.edit(deck, [{ op: "unwrap", node: grown.ids.f }])).fields).toMatchObject({ ok: true })
+    expect((await by.edit(deck, [{ op: "ungroup", target: grown.ids.f }])).fields).toMatchObject({ ok: true })
     expect(by.freeEnd(deck, grown.ids.lf!)).toEqual(seen)
   })
 
@@ -171,12 +171,12 @@ describe("a script takes a shape off the deck", () => {
     const grown = drifted()
     const by = connected(grown, knowsLora)
     const deck = await by.made()
-    const lora = await by.edit(deck, [{ op: "set", target: grown.ids.words, font: "Lora" }])
+    const lora = await by.edit(deck, [{ op: "update", target: grown.ids.words, font: "Lora" }])
     expect(lora.fields).toMatchObject({ ok: true })
     const seen = painted(by.decks.decks.get(deck as never)!, grown.slides[0]!, grown.ids.l!, wide)
     const batch = await by.edit(deck, [
-      { op: "delete", nodes: [grown.ids.t] },
-      { op: "set", target: grown.ids.words, font: "Inter" },
+      { op: "remove", targets: [grown.ids.t] },
+      { op: "update", target: grown.ids.words, font: "Inter" },
     ])
     expect(batch.fields).toMatchObject({ ok: true })
     expect(by.freeEnd(deck)).toEqual(seen)
@@ -190,7 +190,7 @@ describe("a script sets layout none", () => {
     const deck = await by.made()
     const seen = doom.solveLayout(grown.doom, grown.slides[0]!, wide).get(grown.ids.t!)
     expect(seen?.x).not.toBe(doom.solveLayout(grown.doom, grown.slides[0]!, estimate).get(grown.ids.t!)?.x)
-    expect((await by.edit(deck, [{ op: "set", target: grown.ids.f, layout: "none" }])).fields).toMatchObject({
+    expect((await by.edit(deck, [{ op: "update", target: grown.ids.f, layout: "none" }])).fields).toMatchObject({
       ok: true,
     })
     const saved = by.decks.decks.get(deck as never)!
@@ -205,7 +205,7 @@ describe("a script removes a layer", () => {
     const deck = await by.made()
     const seen = painted(grown.doom, grown.slides[0]!, grown.ids.l!, wide)
     expect(seen.x).not.toBe(painted(grown.doom, grown.slides[0]!, grown.ids.l!, estimate).x)
-    const deleted = await by.edit(deck, [{ op: "delete", nodes: [grown.ids.t] }])
+    const deleted = await by.edit(deck, [{ op: "remove", targets: [grown.ids.t] }])
     expect(deleted.fields).toMatchObject({ ok: true })
     expect(by.freeEnd(deck)).toEqual(seen)
   })
@@ -219,7 +219,7 @@ describe("a script removes a layer", () => {
     })
     const deck = await by.made()
     asked.length = 0
-    const deleted = await by.edit(deck, [{ op: "delete", nodes: [grown.ids.t] }])
+    const deleted = await by.edit(deck, [{ op: "remove", targets: [grown.ids.t] }])
     expect(deleted.fields).toMatchObject({ ok: true })
     const gone = (fold: doom.Doom) => doom.parentOf(fold.nodes.get(grown.ids.t!)) === null
     expect(asked.some((folds) => folds.some(gone) && folds.some((fold) => !gone(fold)))).toBe(true)
@@ -235,11 +235,11 @@ describe("a script removes a layer", () => {
         ? wide
         : estimate
     const by = connected(grown, knowsCapital)
-    const rewrite = { op: "set", target: grown.ids.words, text: "Hello World hello" }
+    const rewrite = { op: "update", target: grown.ids.words, text: "Hello World hello" }
     const apart = await by.made()
     expect((await by.edit(apart, [rewrite])).fields).toMatchObject({ ok: true })
     const together = await by.made()
-    const batch = await by.edit(together, [rewrite, { op: "delete", nodes: [grown.ids.t] }])
+    const batch = await by.edit(together, [rewrite, { op: "remove", targets: [grown.ids.t] }])
     expect(batch.fields).toMatchObject({ ok: true })
     const seen = painted(by.decks.decks.get(apart as never)!, grown.slides[0]!, grown.ids.l!, wide)
     expect(by.freeEnd(together)).toEqual(seen)
@@ -313,7 +313,7 @@ describe("a script frees a connector end whose shape leaves the slide", () => {
   it("keeps a connector on an unwrapped frame where it painted, and undo_run attaches it again", async () => {
     const { grown, lineStart, paintedAt, edit, undo } = await opened()
     const seen = paintedAt(grown.ids.toGroup!)
-    const landed = await edit({ op: "unwrap", node: grown.ids.grp })
+    const landed = await edit({ op: "ungroup", target: grown.ids.grp })
     expect(landed.fields).toMatchObject({ ok: true })
     expect("node" in lineStart(grown.ids.toGroup!)).toBe(false)
     expect(paintedAt(grown.ids.toGroup!)).toEqual(seen)
@@ -325,9 +325,9 @@ describe("a script frees a connector end whose shape leaves the slide", () => {
 
   it("keeps a connector on a deleted slide's shape where it painted, and undo_run attaches it again", async () => {
     const { grown, lineStart, paintedAt, edit, undo } = await opened()
-    await edit({ op: "move", node: grown.ids.grp, into: grown.slides[1] })
+    await edit({ op: "move", targets: [grown.ids.grp], parent: grown.slides[1] })
     const seen = paintedAt(grown.ids.toGroup!)
-    const deleted = await edit({ op: "slide", delete: grown.slides[1] })
+    const deleted = await edit({ op: "remove", targets: [grown.slides[1]] })
     expect(deleted.fields).toMatchObject({ ok: true })
     expect("node" in lineStart(grown.ids.toGroup!)).toBe(false)
     expect(paintedAt(grown.ids.toGroup!)).toEqual(seen)
@@ -337,10 +337,10 @@ describe("a script frees a connector end whose shape leaves the slide", () => {
 
   it("frees an end another run attached when undo_run takes away the shape it added", async () => {
     const { grown, lineStart, paintedAt, edit, undo } = await opened()
-    const added = await edit({ op: "add", kind: "frame", slide: grown.slides[0] })
+    const added = await edit({ op: "insert", kind: "frame", parent: grown.slides[0] })
     expect(added.fields).toMatchObject({ ok: true })
     const shape = added.fields.result as string
-    const attached = await edit({ op: "set", target: grown.ids.toChild, from: { layer: shape, side: "right" } })
+    const attached = await edit({ op: "update", target: grown.ids.toChild, from: { layer: shape, side: "right" } })
     expect(attached.fields).toMatchObject({ ok: true })
     const seen = paintedAt(grown.ids.toChild!)
     expect(await undo(added.fields)).toMatchObject({ ok: true })
@@ -358,7 +358,7 @@ it("reads and sets an ordinary text card's padding, fill, outline and radius", a
   const added = (
     await by.call("execute", {
       deck,
-      script: scriptOf([{ op: "add", kind: "shape", slide: made.slides[0], text: "Gateway" }]),
+      script: scriptOf([{ op: "insert", kind: "shape", parent: made.slides[0], text: "Gateway" }]),
     })
   ).fields
   const target = added.result
@@ -366,7 +366,7 @@ it("reads and sets an ordinary text card's padding, fill, outline and radius", a
     const edited = await by.call("execute", {
       deck,
       script: scriptOf([
-        { op: "set", target, padding, fill: "background2", stroke: "accent1", strokeWidth: 3, radius: 12 },
+        { op: "update", target, padding, fill: "background2", stroke: "accent1", strokeWidth: 3, radius: 12 },
       ]),
     })
     expect(edited.fields).toMatchObject({ ok: true })

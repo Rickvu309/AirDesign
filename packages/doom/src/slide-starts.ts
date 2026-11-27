@@ -17,7 +17,7 @@ const author: Author = { kind: "person", id: "slide-start" }
 
 function contentOf(start: SlideStart, slide: NodeId, starts: StartRules): readonly Intent[] {
   const content = start === "text" || start === "grid" ? starts.content[start] : []
-  return content.map((intent) => ({ ...intent, slide }))
+  return content.map((intent) => ({ ...intent, parent: slide }))
 }
 
 function placeholdersOf(

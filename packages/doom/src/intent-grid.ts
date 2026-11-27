@@ -1,4 +1,5 @@
 import type { Intent } from "./intent-read.js"
+import type { LayerKind } from "./kind-fields.js"
 import {
   type Block,
   type Part,
@@ -22,7 +23,7 @@ import type { GridShortfall } from "./refusal.js"
 import type { Text, TextStyleName } from "./text.js"
 import { widestWord } from "./text-estimate.js"
 
-type Add = Extract<Intent, { op: "add" }>
+type Add = Extract<Intent, { op: "insert"; kind: LayerKind }>
 
 type CellLook = {
   readonly bold: boolean

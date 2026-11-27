@@ -52,7 +52,7 @@ async function renamed() {
   const title = [...fold.nodes.values()].find((node) => node.type === "shape")!
   const landed = await by.call("execute", {
     deck,
-    script: scriptOf([{ op: "set", target: title.id, name: "Renamed" }]),
+    script: scriptOf([{ op: "update", target: title.id, name: "Renamed" }]),
   })
   const runId = landed.fields.runId as string
   return { by, deck, rev: landed.fields.rev as number, runId, title: title.id }
@@ -89,13 +89,13 @@ describe("undo_run", () => {
     const slides = made.fields.slides as string[]
     const first = await by.call("execute", {
       deck,
-      script: scriptOf([{ op: "add", kind: "text", slide: slides[0], text: "Hello" }]),
+      script: scriptOf([{ op: "insert", kind: "text", parent: slides[0], text: "Hello" }]),
     })
     const runId = first.fields.runId as string
     const hello = first.fields.result as string
     const second = await by.call("execute", {
       deck,
-      script: scriptOf([{ op: "add", kind: "text", slide: slides[0], text: "Note" }]),
+      script: scriptOf([{ op: "insert", kind: "text", parent: slides[0], text: "Note" }]),
       runId,
     })
     const note = second.fields.result as string
@@ -220,10 +220,10 @@ describe("design details an agent sets", () => {
     const edited = await by.call("execute", {
       deck,
       script: scriptOf([
-        { op: "set", target: words, lineHeight: 1.5, letterSpacing: 2.5, case: "upper" },
-        { op: "set", target: card, opacity: 0.6, radius: 18, stroke: "accent2", strokeWidth: 6, effect: "glow" },
-        { op: "set", target: photo, fit: "tile" },
-        { op: "set", target: star, strokeWidth: 8 },
+        { op: "update", target: words, lineHeight: 1.5, letterSpacing: 2.5, case: "upper" },
+        { op: "update", target: card, opacity: 0.6, radius: 18, stroke: "accent2", strokeWidth: 6, effect: "glow" },
+        { op: "update", target: photo, fit: "tile" },
+        { op: "update", target: star, strokeWidth: 8 },
       ]),
     })
     expect(edited.fields).toMatchObject({ ok: true })
@@ -242,7 +242,7 @@ describe("design details an agent sets", () => {
     const strength = await by.call("execute", {
       deck,
       runId: edited.fields.runId,
-      script: scriptOf([{ op: "set", target: card, effectOpacity: 0.4 }]),
+      script: scriptOf([{ op: "update", target: card, effectOpacity: 0.4 }]),
     })
     expect(strength.fields).toMatchObject({ ok: true })
     expect(doom.propOf(by.decks.decks.get(key)?.nodes.get(card), "effects")).toEqual(
@@ -269,7 +269,7 @@ it("undoes consecutive runs that both renamed the same layer", async () => {
   const { by, deck, runId, title } = await renamed()
   const newer = await by.call("execute", {
     deck,
-    script: scriptOf([{ op: "set", target: title, name: "Newer" }]),
+    script: scriptOf([{ op: "update", target: title, name: "Newer" }]),
   })
   expect(newer.fields.ok).toBe(true)
   expect((await by.call("undo_run", { deck, runId: newer.fields.runId })).fields.ok).toBe(true)

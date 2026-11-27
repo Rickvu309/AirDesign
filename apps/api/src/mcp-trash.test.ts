@@ -61,7 +61,7 @@ describe("a trashed deck through mcp", () => {
         ok: false,
         refusal: "deck",
       })
-      const changes = [{ op: "add", kind: "text", slide: thrown.slides[0], text: "in the trash" }]
+      const changes = [{ op: "insert", kind: "text", parent: thrown.slides[0], text: "in the trash" }]
       expect(await tool("execute", { deck: thrown.deck, script: scriptOf(changes) })).toMatchObject({
         ok: false,
         refusal: "deck",

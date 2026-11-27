@@ -9,7 +9,7 @@ import { propOf } from "./doom-walk.js"
 import { placement } from "./testing/placement-rules.js"
 import { starts } from "./testing/start-rules.js"
 
-const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "set", target, ...look }) as Intent
+const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "update", target, ...look }) as Intent
 const applyAs = (doom: Doom, writes: readonly Write[]) =>
   applyEdit(doom, { once: once(), author: agent("run-1"), writes, rev: rev(doom.rev + 1) })
 const refusal = (doom = richDeck(), change: Intent) => compileIntent(doom, change, minter(), placement, starts)
@@ -121,10 +121,10 @@ describe("set by node id", () => {
       field: "insert",
     })
     expect(
-      readIntent({ op: "set", target: ids.title, insert: { at: 0, text: "a\nb", link: "https://example.com" } }),
+      readIntent({ op: "update", target: ids.title, insert: { at: 0, text: "a\nb", link: "https://example.com" } }),
     ).toMatchObject({ refused: "shape" })
     expect(
-      refusal(agentDeck(), { op: "add", kind: "text", slide: ids.slide, text: "Hi", insert: linked }),
+      refusal(agentDeck(), { op: "insert", kind: "text", parent: ids.slide, text: "Hi", insert: linked }),
     ).toMatchObject({ refused: "shape", field: "insert" })
   })
 
@@ -144,14 +144,14 @@ describe("set by node id", () => {
     expect(propOf(build(round, set(ids.caption, { shape: "rect" })).nodes.get(ids.caption)!, "geometry")).toEqual({
       kind: "rect",
     })
-    expect(readIntent({ op: "set", target: ids.caption, shape: "blob" })).toHaveProperty("refused")
+    expect(readIntent({ op: "update", target: ids.caption, shape: "blob" })).toHaveProperty("refused")
     expect(() => build(agentDeck(), set(ids.card, { shape: "ellipse" }))).toThrow(/"field":"shape"/)
   })
 
   it("adds a shape with any outline Doom draws, as the toolbar does", () => {
-    const writes = compiled(agentDeck(), { op: "add", kind: "shape", slide: ids.slide, shape: "star5" })
+    const writes = compiled(agentDeck(), { op: "insert", kind: "shape", parent: ids.slide, shape: "star5" })
     expect(writes.find((write) => write.prop === "geometry")?.value).toEqual({ kind: "preset", name: "star5" })
-    expect(readIntent({ op: "add", kind: "shape", slide: ids.slide, shape: "bentConnector3" })).toHaveProperty(
+    expect(readIntent({ op: "insert", kind: "shape", parent: ids.slide, shape: "bentConnector3" })).toHaveProperty(
       "refused",
     )
   })
@@ -217,7 +217,8 @@ describe("set by node id", () => {
       node: ids.card,
       field: "text",
       fault: "unknown",
-      change: `set ${ids.card}`,
+      kind: "frame",
+      change: `update ${ids.card}`,
     })
     expect(refusal(richDeck(), set(ids.title, { icon: "x" }))).toMatchObject({ field: "icon" })
     expect(refusal(richDeck(), set(ids.title, { layout: "row" }))).toMatchObject({ field: "layout" })
@@ -235,7 +236,7 @@ describe("set by node id", () => {
       refused: "missing",
       node: "z:9",
       field: "target",
-      change: "set z:9",
+      change: "update z:9",
     })
     const gone = land(richDeck(), [{ node: ids.card, prop: "parent", value: null }])
     expect(refusal(gone, set(ids.card, { name: "x" }))).toMatchObject({ refused: "missing" })
@@ -253,7 +254,7 @@ describe("set by role", () => {
       refused: "missing",
       node: more.slide2,
       field: "target",
-      change: `set ${more.slide2}.body`,
+      change: `update ${more.slide2}.body`,
     })
     expect(refusal(richDeck(), set(`${ids.card}.title`, { text: "x" }))).toMatchObject({
       refused: "shape",

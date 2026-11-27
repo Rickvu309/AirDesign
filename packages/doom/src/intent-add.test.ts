@@ -12,7 +12,7 @@ import { starts } from "./testing/start-rules.js"
 
 const slide = ids.slide
 const text = (more: Record<string, unknown> = {}): Intent =>
-  ({ op: "add", kind: "text", slide, text: "Margin held", ...more }) as Intent
+  ({ op: "insert", kind: "text", parent: slide, text: "Margin held", ...more }) as Intent
 
 describe("add text", () => {
   it("writes a rect shape holding the words, in the largest free area of the slide and clear of what is there", () => {
@@ -77,12 +77,14 @@ describe("add text", () => {
   })
 
   it("makes no node when the words are missing, naming the field", () => {
-    expect(compileIntent(agentDeck(), { op: "add", kind: "text", slide }, minter(), placement, starts)).toEqual({
+    expect(
+      compileIntent(agentDeck(), { op: "insert", kind: "text", parent: slide }, minter(), placement, starts),
+    ).toEqual({
       refused: "shape",
       field: "text",
       fault: "missing",
       expect: { code: "nonempty-string" },
-      change: "add text",
+      change: "insert text",
     })
   })
 })
@@ -172,7 +174,7 @@ describe("add text on a slide holding the new deck's title placeholder", () => {
 describe("add shape", () => {
   it("fills with the first accent unless told otherwise, and carries no text", () => {
     const made = lastChild(
-      build(agentDeck(), { op: "add", kind: "shape", slide, box: { x: 0, y: 0, w: 100, h: 100 } }),
+      build(agentDeck(), { op: "insert", kind: "shape", parent: slide, box: { x: 0, y: 0, w: 100, h: 100 } }),
       slide,
     )
     expect(propOf(made, "fills")).toEqual([{ kind: "solid", color: { var: "accent1" } }])
@@ -182,9 +184,9 @@ describe("add shape", () => {
   it("keeps a stroke-only shape unfilled and writes the outline weight", () => {
     const made = lastChild(
       build(agentDeck(), {
-        op: "add",
+        op: "insert",
         kind: "shape",
-        slide,
+        parent: slide,
         stroke: "text2",
         strokeWidth: 4,
         radius: 12,
@@ -200,7 +202,13 @@ describe("add shape", () => {
 
   it("centres words inside it and picks a colour that reads on an accent fill", () => {
     const made = lastChild(
-      build(agentDeck(), { op: "add", kind: "shape", slide, text: "Decision", box: { x: 0, y: 0, w: 300, h: 80 } }),
+      build(agentDeck(), {
+        op: "insert",
+        kind: "shape",
+        parent: slide,
+        text: "Decision",
+        box: { x: 0, y: 0, w: 300, h: 80 },
+      }),
       slide,
     )
     expect(propOf(made, "text")).toMatchObject({ resize: "fixed", alignV: "center" })
@@ -212,7 +220,13 @@ describe("add shape", () => {
 describe("add line", () => {
   it("writes a straight line between the corners of its box, with an arrowhead on request", () => {
     const made = lastChild(
-      build(agentDeck(), { op: "add", kind: "line", slide, arrow: true, box: { x: 10, y: 20, w: 300, h: 0 } }),
+      build(agentDeck(), {
+        op: "insert",
+        kind: "line",
+        parent: slide,
+        arrow: true,
+        box: { x: 10, y: 20, w: 300, h: 0 },
+      }),
       slide,
     )
     expect(propOf(made, "geometry")).toEqual({
@@ -229,9 +243,9 @@ describe("add line", () => {
   it("sets the start arrowhead and a named end, and refuses the start on a shape", () => {
     const made = lastChild(
       build(agentDeck(), {
-        op: "add",
+        op: "insert",
         kind: "line",
-        slide,
+        parent: slide,
         startArrow: "circle",
         arrow: "triangle",
         box: { x: 10, y: 20, w: 300, h: 0 },
@@ -242,7 +256,7 @@ describe("add line", () => {
     expect(
       compileIntent(
         agentDeck(),
-        { op: "add", kind: "shape", slide, startArrow: "circle" },
+        { op: "insert", kind: "shape", parent: slide, startArrow: "circle" },
         minter(),
         placement,
         starts,
@@ -251,7 +265,7 @@ describe("add line", () => {
   })
 
   it("runs across the free area, level, when it has no box", () => {
-    const made = lastChild(build(agentDeck(), { op: "add", kind: "line", slide }), slide)
+    const made = lastChild(build(agentDeck(), { op: "insert", kind: "line", parent: slide }), slide)
     const box = propOf(made, "box")!
     expect(box.h).toBe(0)
     expect(box.w).toBeGreaterThan(1000)
@@ -262,9 +276,9 @@ describe("add frame", () => {
   it("lays out what is inside it in a row or column, with gap, padding, paint and radius", () => {
     const made = lastChild(
       build(agentDeck(), {
-        op: "add",
+        op: "insert",
         kind: "frame",
-        slide,
+        parent: slide,
         layout: "row",
         gap: 24,
         padding: 16,
@@ -289,7 +303,13 @@ describe("add frame", () => {
 
   it("refuses words on a frame, naming the field", () => {
     expect(
-      compileIntent(agentDeck(), { op: "add", kind: "frame", slide, text: "x" }, minter(), placement, starts),
+      compileIntent(
+        agentDeck(),
+        { op: "insert", kind: "frame", parent: slide, text: "x" },
+        minter(),
+        placement,
+        starts,
+      ),
     ).toMatchObject({
       refused: "shape",
       field: "text",
@@ -301,9 +321,9 @@ describe("add picture and icon", () => {
   it("makes a picture as a rect shape filled by an image paint", () => {
     const made = lastChild(
       build(agentDeck(), {
-        op: "add",
+        op: "insert",
         kind: "picture",
-        slide,
+        parent: slide,
         fill: { image: "https://x.test/a.png" },
         box: { x: 0, y: 0, w: 400, h: 300 },
       }),
@@ -315,7 +335,7 @@ describe("add picture and icon", () => {
 
   it("sizes a picture with no box to its own shape, centred in the free area and no larger than it is", () => {
     const reading = { pictures: new Map([["a".repeat(64), { width: 4000, height: 1000 }]]) }
-    const change: Intent = { op: "add", kind: "picture", slide, fill: { image: "a".repeat(64) } }
+    const change: Intent = { op: "insert", kind: "picture", parent: slide, fill: { image: "a".repeat(64) } }
     const writes = compiled(agentDeck(), change, minter(), reading)
     const box = writes.find((write) => write.prop === "box")?.value as { x: number; y: number; w: number; h: number }
     const free = compiled(agentDeck(), change, minter()).find((write) => write.prop === "box")?.value as {
@@ -333,13 +353,13 @@ describe("add picture and icon", () => {
 
   it("keeps a small picture with no box at its own size", () => {
     const reading = { pictures: new Map([["a".repeat(64), { width: 300, height: 200 }]]) }
-    const change: Intent = { op: "add", kind: "picture", slide, fill: { image: "a".repeat(64) } }
+    const change: Intent = { op: "insert", kind: "picture", parent: slide, fill: { image: "a".repeat(64) } }
     const writes = compiled(agentDeck(), change, minter(), reading)
     expect(writes.find((write) => write.prop === "box")?.value).toMatchObject({ w: 300, h: 200 })
   })
 
   it("fills the free area when the picture's size is not known", () => {
-    const change: Intent = { op: "add", kind: "picture", slide, fill: { image: "a".repeat(64) } }
+    const change: Intent = { op: "insert", kind: "picture", parent: slide, fill: { image: "a".repeat(64) } }
     const writes = compiled(agentDeck(), change, minter())
     const box = writes.find((write) => write.prop === "box")?.value as { w: number; h: number }
     expect(box.w).toBeGreaterThan(1000)
@@ -347,7 +367,7 @@ describe("add picture and icon", () => {
 
   it("refuses a picture with no image", () => {
     expect(
-      compileIntent(agentDeck(), { op: "add", kind: "picture", slide }, minter(), placement, starts),
+      compileIntent(agentDeck(), { op: "insert", kind: "picture", parent: slide }, minter(), placement, starts),
     ).toMatchObject({
       refused: "shape",
       field: "fill",
@@ -356,7 +376,13 @@ describe("add picture and icon", () => {
 
   it("makes an icon as a stroked vector, adding the library name and a weight that follows its size", () => {
     const made = lastChild(
-      build(agentDeck(), { op: "add", kind: "icon", slide, icon: "arrow-right", box: { x: 0, y: 0, w: 96, h: 96 } }),
+      build(agentDeck(), {
+        op: "insert",
+        kind: "icon",
+        parent: slide,
+        icon: "arrow-right",
+        box: { x: 0, y: 0, w: 96, h: 96 },
+      }),
       slide,
     )
     expect(propOf(made, "geometry")).toEqual({ kind: "icon", name: "lucide/arrow-right" })
@@ -366,7 +392,7 @@ describe("add picture and icon", () => {
 
   it("sizes an icon on its own when it has no box", () => {
     const box = propOf(
-      lastChild(build(agentDeck(), { op: "add", kind: "icon", slide, icon: "lucide/star" }), slide),
+      lastChild(build(agentDeck(), { op: "insert", kind: "icon", parent: slide, icon: "lucide/star" }), slide),
       "box",
     )!
     expect(box.w).toBe(96)
@@ -374,7 +400,9 @@ describe("add picture and icon", () => {
   })
 
   it("refuses an icon with no name", () => {
-    expect(compileIntent(agentDeck(), { op: "add", kind: "icon", slide }, minter(), placement, starts)).toMatchObject({
+    expect(
+      compileIntent(agentDeck(), { op: "insert", kind: "icon", parent: slide }, minter(), placement, starts),
+    ).toMatchObject({
       field: "icon",
     })
   })
@@ -382,9 +410,9 @@ describe("add picture and icon", () => {
 
 describe("where an add lands", () => {
   const frame: Intent = {
-    op: "add",
+    op: "insert",
     kind: "frame",
-    slide,
+    parent: slide,
     name: "Card",
     box: { x: 700, y: 200, w: 400, h: 300 },
   }
@@ -393,7 +421,7 @@ describe("where an add lands", () => {
     const mint = minter("a")
     let doom = build(agentDeck(), frame, mint)
     const card = lastChild(doom, slide).id
-    doom = build(doom, { op: "add", kind: "text", slide, into: card, text: "Inside" }, mint)
+    doom = build(doom, { op: "insert", kind: "text", parent: card, text: "Inside" }, mint)
     const inside = lastChild(doom, card)
     expect(propOf(inside, "parent")?.id).toBe(card)
     const box = propOf(inside, "box")!
@@ -405,7 +433,7 @@ describe("where an add lands", () => {
     const mint = minter("a")
     let doom = build(agentDeck(), { ...frame, layout: "column", gap: 10 } as Intent, mint)
     const column = lastChild(doom, slide).id
-    doom = build(doom, { op: "add", kind: "text", slide, into: column, text: "Row one" }, mint)
+    doom = build(doom, { op: "insert", kind: "text", parent: column, text: "Row one" }, mint)
     const inside = lastChild(doom, column)
     expect(propOf(inside, "box")).toBeUndefined()
     expect(propOf(inside, "sizing")).toEqual({ w: "fill", h: "hug" })
@@ -417,25 +445,25 @@ describe("where an add lands", () => {
     const doom = apply(initial, [{ node: parent.id, prop: "box", value: null }])
     const card = doom.nodes.get(parent.id)!
     expect(
-      compileIntent(doom, { op: "add", kind: "shape", slide, into: card.id }, minter("b"), placement, starts),
+      compileIntent(doom, { op: "insert", kind: "shape", parent: card.id }, minter("b"), placement, starts),
     ).toMatchObject({
       refused: "limit",
       field: "box",
     })
-    const words = build(doom, { op: "add", kind: "text", slide, into: card.id, text: "Extra" }, minter("c"))
+    const words = build(doom, { op: "insert", kind: "text", parent: card.id, text: "Extra" }, minter("c"))
     expect(propOf(lastChild(words, card.id), "text")?.chars).toBe("Extra")
   })
 
-  it("refuses a slide that is not there and a frame on another slide, naming the change", () => {
-    expect(compileIntent(agentDeck(), text({ slide: "z:9" }), minter(), placement, starts)).toEqual({
+  it("refuses a parent that is not there and one that holds no layers, naming the change", () => {
+    expect(compileIntent(agentDeck(), text({ parent: "z:9" }), minter(), placement, starts)).toEqual({
       refused: "missing",
       node: "z:9",
-      field: "slide",
-      change: "add text",
+      field: "parent",
+      change: "insert text",
     })
-    expect(compileIntent(agentDeck(), text({ into: ids.title }), minter(), placement, starts)).toMatchObject({
-      refused: "missing",
-      field: "into",
+    expect(compileIntent(agentDeck(), text({ parent: ids.title }), minter(), placement, starts)).toMatchObject({
+      refused: "shape",
+      field: "parent",
     })
   })
 
@@ -443,17 +471,17 @@ describe("where an add lands", () => {
     expect(compileIntent(agentDeck(), text({ rows: [["a"]] }), minter(), placement, starts)).toMatchObject({
       refused: "shape",
       field: "rows",
-      change: "add text",
+      change: "insert text",
     })
     expect(
-      compileIntent(agentDeck(), { op: "add", kind: "line", slide, text: "x" }, minter(), placement, starts),
+      compileIntent(agentDeck(), { op: "insert", kind: "line", parent: slide, text: "x" }, minter(), placement, starts),
     ).toMatchObject({
       field: "text",
     })
   })
 
   it("says limit, naming the box, when nothing is free", () => {
-    const full: Intent = { op: "add", kind: "shape", slide, box: { x: 0, y: 0, w: 1920, h: 1080 } }
+    const full: Intent = { op: "insert", kind: "shape", parent: slide, box: { x: 0, y: 0, w: 1920, h: 1080 } }
     const doom = build(agentDeck(), full)
     expect(compileIntent(doom, text(), minter("b"), placement, starts)).toMatchObject({
       refused: "limit",

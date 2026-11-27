@@ -96,7 +96,7 @@ describe("the board deck on the slide type scale", () => {
     doom = landed
     return result.added.map((each) => each.id)
   }
-  const slides = [ids.slide, ...send(Array.from({ length: 4 }, () => ({ op: "slide", add: {} })))]
+  const slides = [ids.slide, ...send(Array.from({ length: 4 }, () => ({ op: "insert", kind: "slide" })))]
   for (const part of boardDeckIntents(slides)) send(part)
 
   const sizeOf = (node: ReturnType<typeof childrenOf>[number]) => {

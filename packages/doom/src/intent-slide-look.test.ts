@@ -7,7 +7,7 @@ import { ids, theme } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
 import { starts } from "./testing/start-rules.js"
 
-const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "set", target, ...look }) as Intent
+const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "update", target, ...look }) as Intent
 const refusal = (change: Intent) => compileIntent(agentDeck(), change, minter(), placement, starts)
 
 describe("skip, transition, paragraph spacing, vertical align and blur", () => {
@@ -17,7 +17,7 @@ describe("skip, transition, paragraph spacing, vertical align and blur", () => {
     const shown = build(doom, set(ids.slide, { skipped: false }))
     expect(propOf(shown.nodes.get(ids.slide)!, "skipped")).toBe(false)
     expect(refusal(set(ids.card, { skipped: true }))).toMatchObject({ refused: "shape", field: "skipped" })
-    expect(readIntent({ op: "set", target: ids.slide, skipped: "yes" })).toMatchObject({
+    expect(readIntent({ op: "update", target: ids.slide, skipped: "yes" })).toMatchObject({
       refused: "shape",
       field: "skipped",
     })
@@ -30,15 +30,15 @@ describe("skip, transition, paragraph spacing, vertical align and blur", () => {
       refused: "shape",
       field: "transition",
     })
-    expect(readIntent({ op: "set", target: ids.slide, transition: { kind: "wipe", ms: 200 } })).toMatchObject({
+    expect(readIntent({ op: "update", target: ids.slide, transition: { kind: "wipe", ms: 200 } })).toMatchObject({
       refused: "shape",
       field: "transition.kind",
     })
-    expect(readIntent({ op: "set", target: ids.slide, transition: { kind: "fade", ms: 1.5 } })).toMatchObject({
+    expect(readIntent({ op: "update", target: ids.slide, transition: { kind: "fade", ms: 1.5 } })).toMatchObject({
       refused: "shape",
       field: "transition.ms",
     })
-    expect(readIntent({ op: "set", target: ids.slide, transition: "fade" })).toMatchObject({
+    expect(readIntent({ op: "update", target: ids.slide, transition: "fade" })).toMatchObject({
       refused: "shape",
       field: "transition",
     })
@@ -52,18 +52,18 @@ describe("skip, transition, paragraph spacing, vertical align and blur", () => {
     })
     expect(refusal(set(ids.slide, { alignV: "center" }))).toMatchObject({ refused: "shape", field: "alignV" })
     expect(refusal(set(ids.card, { spaceBefore: 4 }))).toMatchObject({ refused: "shape", field: "spaceBefore" })
-    expect(readIntent({ op: "set", target: ids.title, alignV: "middle" })).toMatchObject({
+    expect(readIntent({ op: "update", target: ids.title, alignV: "middle" })).toMatchObject({
       refused: "shape",
       field: "alignV",
     })
-    expect(readIntent({ op: "set", target: ids.title, spaceAfter: -1 })).toMatchObject({
+    expect(readIntent({ op: "update", target: ids.title, spaceAfter: -1 })).toMatchObject({
       refused: "shape",
       field: "spaceAfter",
     })
   })
 
   it("keeps fractions of a pixel in paragraph spacing, so a deck holding 2.5 can be set to it again", () => {
-    expect(readIntent({ op: "set", target: ids.title, spaceBefore: 2.5, spaceAfter: 0.25 })).not.toHaveProperty(
+    expect(readIntent({ op: "update", target: ids.title, spaceBefore: 2.5, spaceAfter: 0.25 })).not.toHaveProperty(
       "refused",
     )
     const doom = build(agentDeck(), set(ids.title, { spaceBefore: 2.5, spaceAfter: 0.25 }))
@@ -82,7 +82,7 @@ describe("skip, transition, paragraph spacing, vertical align and blur", () => {
     const clear = build(doom, set(ids.card, { blur: 0 }))
     expect(propOf(clear.nodes.get(ids.card)!, "effects")).toEqual([...theme().effectStyles.lifted])
     expect(refusal(set(ids.slide, { blur: 4 }))).toMatchObject({ refused: "shape", field: "blur" })
-    expect(readIntent({ op: "set", target: ids.card, blur: -1 })).toMatchObject({
+    expect(readIntent({ op: "update", target: ids.card, blur: -1 })).toMatchObject({
       refused: "shape",
       field: "blur",
     })

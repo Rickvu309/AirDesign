@@ -10,7 +10,7 @@ import { titleSlideWrites } from "./slide-placeholders.js"
 import { placement } from "./testing/placement-rules.js"
 import { starts } from "./testing/start-rules.js"
 
-const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "set", target, ...look }) as Intent
+const set = (target: string, look: Record<string, unknown>): Intent => ({ op: "update", target, ...look }) as Intent
 const at = (doom: Doom, id: string) => doom.nodes.get(id as never)!
 
 describe("rotation and flips land on the box the canvas's rotate and flip write", () => {
@@ -52,7 +52,7 @@ describe("rotation and flips land on the box the canvas's rotate and flip write"
       { kind: "picture", fill: { image: "https://x.test/a.png" } },
     ]
     for (const made of kinds) {
-      const read = readIntent({ op: "add", slide: ids.slide, rotation: -90, flip: "v", ...made })
+      const read = readIntent({ op: "insert", parent: ids.slide, rotation: -90, flip: "v", ...made })
       if ("refused" in read) throw new Error(JSON.stringify(read))
       const doom = build(agentDeck(), read)
       expect(propOf(lastChild(doom, ids.slide), "box"), made.kind).toMatchObject({
@@ -71,9 +71,9 @@ describe("rotation and flips land on the box the canvas's rotate and flip write"
     const subtitleBefore = propOf(byRole(before, "subtitle"), "box")!
 
     const titleRead = readIntent({
-      op: "add",
+      op: "insert",
       kind: "text",
-      slide: ids.slide,
+      parent: ids.slide,
       text: "Q3 board update",
       textStyle: "title",
       rotation: -90,
@@ -89,9 +89,9 @@ describe("rotation and flips land on the box the canvas's rotate and flip write"
     })
 
     const subRead = readIntent({
-      op: "add",
+      op: "insert",
       kind: "text",
-      slide: ids.slide,
+      parent: ids.slide,
       text: "Revenue grew",
       rotation: 400,
       flip: "hv",
@@ -115,18 +115,16 @@ describe("rotation and flips land on the box the canvas's rotate and flip write"
 
 describe("duplicate copies a layer or a slide the way the canvas's duplicate does", () => {
   it("puts a copy of a layer and its children right after it", () => {
-    const doom = build(agentDeck(), { op: "duplicate", nodes: [ids.side] })
+    const doom = build(agentDeck(), { op: "copy", targets: [ids.side] })
     const [, , copy] = childrenOf(doom, ids.slide)
     expect(childrenOf(doom, ids.slide).map((node) => node.id)).toEqual([ids.card, ids.side, copy!.id])
     expect(childrenOf(doom, copy!.id)).toHaveLength(1)
   })
 
   it("copies a whole slide after it, and refuses the deck", () => {
-    const doom = build(agentDeck(), { op: "duplicate", nodes: [ids.slide] })
+    const doom = build(agentDeck(), { op: "copy", targets: [ids.slide] })
     expect(slidesOf(doom)).toHaveLength(2)
-    expect(
-      compileIntent(agentDeck(), { op: "duplicate", nodes: [ids.deck] }, minter(), placement, starts),
-    ).toMatchObject({
+    expect(compileIntent(agentDeck(), { op: "copy", targets: [ids.deck] }, minter(), placement, starts)).toMatchObject({
       refused: "shape",
     })
   })
@@ -144,7 +142,7 @@ describe("presenter notes and the deck's name and theme", () => {
   it("renames the deck and changes the theme's colours and fonts, keeping the rest of the theme", () => {
     const blue = theme().colors.accent3
     const doom = build(agentDeck(), {
-      op: "deck",
+      op: "variables",
       name: "Board",
       colors: { accent1: blue },
       fonts: { heading: "Lora" },
@@ -164,7 +162,7 @@ describe("presenter notes and the deck's name and theme", () => {
       fonts: { heading: "Lora", body: "Inter" },
       textStyles: { ...source.textStyles, title: { ...source.textStyles.title, size: 93 } },
     }
-    const change = readIntent({ op: "deck", theme: custom })
+    const change = readIntent({ op: "variables", theme: custom })
     if ("refused" in change) throw new Error(JSON.stringify(change))
     expect(compileIntent(agentDeck(), change, minter(), placement, starts)).toEqual([
       { node: ids.deck, prop: "theme", value: custom },
@@ -172,15 +170,15 @@ describe("presenter notes and the deck's name and theme", () => {
   })
 
   it("refuses a theme name where an edit needs a theme value", () => {
-    expect(readIntent({ op: "deck", theme: "toString" })).toMatchObject({ refused: "shape", field: "theme" })
+    expect(readIntent({ op: "variables", theme: "toString" })).toMatchObject({ refused: "shape", field: "theme" })
   })
 
   it("refuses a deck change that names nothing, and a colour that is not a hex", () => {
-    expect(compileIntent(agentDeck(), { op: "deck" }, minter(), placement, starts)).toMatchObject({
+    expect(compileIntent(agentDeck(), { op: "variables" }, minter(), placement, starts)).toMatchObject({
       refused: "shape",
     })
-    expect(readIntent({ op: "deck", colors: { accent1: "accent2" } })).toMatchObject({ refused: "shape" })
-    expect(readIntent({ op: "deck", colors: { brand: theme().colors.accent1 } })).toMatchObject({
+    expect(readIntent({ op: "variables", colors: { accent1: "accent2" } })).toMatchObject({ refused: "shape" })
+    expect(readIntent({ op: "variables", colors: { brand: theme().colors.accent1 } })).toMatchObject({
       refused: "shape",
     })
   })

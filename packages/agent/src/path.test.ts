@@ -39,7 +39,7 @@ describe("paths through execute", () => {
     const slide = slides[0]
     const box = { x: 15, y: 20, w: 100, h: 100 }
     const d = "M0 0L1 1".padEnd(4000)
-    const path = { op: "add", kind: "path", slide, d, box, fillStroke: true }
+    const path = { op: "insert", kind: "path", parent: slide, d, box, fillStroke: true }
     const edit = (...changes: readonly object[]) => call("execute", { deck, script: scriptOfEach(changes) })
     const read = async (target: unknown) =>
       (await call("execute", { deck, script: `get({ target: ${JSON.stringify(target)} })` })).result as {
@@ -57,7 +57,7 @@ describe("paths through execute", () => {
     const detail = await read(target)
     expect(detail.layers).toContain(`d="${d}"`)
     expect(detail.layers).not.toContain('d="M0 1L1 0"')
-    const set = await edit({ op: "set", target, fillStroke: false, d: "M0 0L1 0L1 1Z" })
+    const set = await edit({ op: "update", target, fillStroke: false, d: "M0 0L1 0L1 1Z" })
     expect(set?.ok).toBe(true)
     expect((await read(target)).layers).toContain('fillStroke=false d="M0 0L1 0L1 1Z"')
   })

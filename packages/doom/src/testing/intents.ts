@@ -8,6 +8,7 @@ import { colorVars, effectStyleNames } from "../paint.js"
 import { weightNames } from "../painted-face.js"
 import { shapeNames } from "../preset-geometry.js"
 import { textStyleNames } from "../text.js"
+import { layerKinds, lookFieldsOf } from "../kind-fields.js"
 import { testTheme } from "./theme.js"
 
 type Pool = "slide" | "group" | "layer" | "frame" | "any"
@@ -70,7 +71,7 @@ export function resolveRefs(doom: Doom, raw: unknown): unknown {
   const placeOf = ({ pick, inFrame }: Place) => {
     const frame = inFrame ? pools.frame[pick % Math.max(1, pools.frame.length)] : undefined
     const slide = frame === undefined ? undefined : slideOf(doom, frame)
-    return frame === undefined || slide === undefined ? { slide: pickFrom(pools.slide, pick) } : { slide, into: frame }
+    return frame === undefined || slide === undefined ? { parent: pickFrom(pools.slide, pick) } : { parent: frame }
   }
   const walk = (value: unknown): unknown => {
     if (value instanceof Ref) return pickFrom(pools[value.pool], value.pick)
@@ -253,49 +254,9 @@ const look = {
 
 type LookKey = keyof typeof look
 
-const common = [
-  "box",
-  "name",
-  "hidden",
-  "opacity",
-  "effect",
-  "effectOpacity",
-  "blur",
-  "innerShadow",
-  "rotation",
-  "flip",
-  "mask",
-] as const
-const painted = ["fill", "stroke", "strokeWidth", "radius", "dash"] as const
-const words = [
-  "text",
-  "textStyle",
-  "language",
-  "align",
-  "color",
-  "size",
-  "font",
-  "weight",
-  "lineHeight",
-  "letterSpacing",
-  "case",
-  "underline",
-  "strike",
-  "alignV",
-  "spaceBefore",
-  "spaceAfter",
-  "padding",
-] as const
-
-const kindKeys: Readonly<Record<string, readonly LookKey[]>> = {
-  text: [...common, ...painted, ...words, "link"],
-  shape: [...common, ...painted, ...words, "shape", "link"],
-  path: [...common, ...painted, ...words, "d", "fillStroke", "link"],
-  line: [...common, "stroke", "strokeWidth", "arrow", "startArrow", "dash", "from", "to", "route"],
-  frame: [...common, ...painted, "layout", "gap", "padding", "align", "rows", "clip"],
-  picture: [...common, "fill", "stroke", "strokeWidth", "radius", "dash", "fit", "crop"],
-  icon: [...common, "icon", "stroke", "strokeWidth"],
-}
+const kindKeys: Readonly<Record<string, readonly LookKey[]>> = Object.fromEntries(
+  layerKinds.map((kind) => [kind, lookFieldsOf("insert", kind).filter((key): key is LookKey => key in look)]),
+)
 
 const needs: Readonly<Record<string, readonly LookKey[]>> = {
   text: ["text"],
@@ -328,7 +289,7 @@ const add = fc
     }),
   )
   .map(({ kind, place, look: chosen }) => ({
-    op: "add",
+    op: "insert",
     kind,
     place,
     ...chosen,
@@ -341,7 +302,7 @@ const table = fc
     rows: agentRows,
     look: lookOf(["box", "fill", "gap", "padding"], 2),
   })
-  .map(({ place, rows, look: chosen }) => ({ op: "add", kind: "frame", place, rows, ...chosen }))
+  .map(({ place, rows, look: chosen }) => ({ op: "insert", kind: "frame", place, rows, ...chosen }))
 
 const target = fc.oneof(
   { weight: 6, arbitrary: ref("layer") },
@@ -363,36 +324,41 @@ const set = fc
       3,
     ),
   })
-  .map(({ target: on, look: chosen }) => ({ op: "set", target: on, ...chosen }))
+  .map(({ target: on, look: chosen }) => ({ op: "update", target: on, ...chosen }))
 
 const move = fc.oneof(
   fc
     .record({ node: ref("layer"), after: fc.oneof(ref("layer"), fc.constant(null)) }, { requiredKeys: ["node"] })
+    .map(({ node, ...where }) => ({ op: "move", targets: [node], ...where })),
+  fc
+    .record({ node: ref("layer"), parent: ref("frame") }, { requiredKeys: ["node", "parent"] })
+    .map(({ node, ...where }) => ({ op: "move", targets: [node], ...where })),
+  fc
+    .record({ targets: refs("layer", 3), parent: ref("slide"), box }, { requiredKeys: ["targets", "parent"] })
     .map((fields) => ({ op: "move", ...fields })),
   fc
-    .record({ node: ref("layer"), into: ref("frame") }, { requiredKeys: ["node", "into"] })
-    .map((fields) => ({ op: "move", ...fields })),
-  fc
-    .record({ nodes: refs("layer", 3), into: ref("slide"), box }, { requiredKeys: ["nodes", "into"] })
-    .map((fields) => ({ op: "move", ...fields })),
+    .record({ targets: refs("layer", 3), direction: fc.constantFrom("front", "back", "forward", "backward") })
+    .map((fields) => ({ op: "reorder", ...fields })),
 )
 
 const structure = fc.oneof(
   fc
     .record(
-      { nodes: refs("layer", 4), layout: fc.constantFrom("row", "column", "none"), clip: fc.boolean() },
-      { requiredKeys: ["nodes"] },
+      { targets: refs("layer", 4), layout: fc.constantFrom("row", "column", "none"), clip: fc.boolean() },
+      { requiredKeys: ["targets"] },
     )
-    .map((fields) => ({ op: "wrap", ...fields })),
-  ref("frame").map((node) => ({ op: "unwrap", node })),
-  fc.oneof(refs("layer", 3), refs("slide", 1), refs("any", 2)).map((nodes) => ({ op: "delete", nodes })),
-  fc.oneof(refs("layer", 3), refs("slide", 2)).map((nodes) => ({ op: "duplicate", nodes })),
+    .map((fields) => ({ op: "group", ...fields })),
+  ref("frame").map((node) => ({ op: "ungroup", target: node })),
+  fc.oneof(refs("layer", 3), refs("slide", 1), refs("any", 2)).map((nodes) => ({ op: "remove", targets: nodes })),
+  fc.oneof(refs("layer", 3), refs("slide", 2)).map((nodes) => ({ op: "copy", targets: nodes })),
 )
 
 const slide = fc.oneof(
   {
     weight: 3,
-    arbitrary: fc.record({ after: ref("slide") }, { requiredKeys: [] }).map((fields) => ({ op: "slide", add: fields })),
+    arbitrary: fc
+      .record({ after: ref("slide") }, { requiredKeys: [] })
+      .map((fields) => ({ op: "insert", kind: "slide", ...fields })),
   },
   {
     weight: 1,
@@ -401,27 +367,31 @@ const slide = fc.oneof(
         { group: fc.constant("new"), after: fc.oneof(ref("group"), fc.constant(null)) },
         { requiredKeys: ["group"] },
       )
-      .map((fields) => ({ op: "slide", add: fields })),
+      .map((fields) => ({ op: "insert", kind: "slide", ...fields })),
   },
   {
     weight: 1,
     arbitrary: fc
       .record({ slide: ref("slide"), after: fc.oneof(ref("slide"), fc.constant(null)) })
-      .map((fields) => ({ op: "slide", move: fields })),
+      .map(({ slide: moved, after }) => ({ op: "move", targets: [moved], after })),
   },
   {
     weight: 1,
     arbitrary: fc
-      .record({ slides: refs("slide", 2), group: fc.constant("new"), after: fc.oneof(ref("group"), fc.constant(null)) })
-      .map((fields) => ({ op: "slide", move: fields })),
+      .record({
+        targets: refs("slide", 2),
+        group: fc.constant("new"),
+        after: fc.oneof(ref("group"), fc.constant(null)),
+      })
+      .map((fields) => ({ op: "move", ...fields })),
   },
   {
     weight: 1,
     arbitrary: fc
       .record({ group: ref("group"), before: ref("group") })
-      .map((fields) => ({ op: "slide", move: fields })),
+      .map(({ group, before }) => ({ op: "move", targets: [group], before })),
   },
-  { weight: 1, arbitrary: ref("slide").map((each) => ({ op: "slide", delete: each })) },
+  { weight: 1, arbitrary: ref("slide").map((each) => ({ op: "remove", targets: [each] })) },
 )
 
 const deck = fc
@@ -441,7 +411,7 @@ const deck = fc
     },
     { requiredKeys: [] },
   )
-  .map((fields) => ({ op: "deck", ...fields }))
+  .map((fields) => ({ op: "variables", ...fields }))
 
 export const intent = fc.oneof(
   { weight: 6, arbitrary: add },

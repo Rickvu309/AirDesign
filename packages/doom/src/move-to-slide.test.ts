@@ -197,8 +197,8 @@ describe("an agent move onto a slide", () => {
     const before = richDeck()
     const asked = change({
       op: "move",
-      nodes: [ids.side, ids.card],
-      into: more.slide2,
+      targets: [ids.side, ids.card],
+      parent: more.slide2,
       box: { x: 40, y: 60, w: 200, h: 100 },
     })
     const writes = compiled(before, asked)
@@ -216,25 +216,15 @@ describe("an agent move onto a slide", () => {
   })
 
   it("keeps the place when the box is left out", () => {
-    const doom = build(richDeck(), change({ op: "move", nodes: [ids.card], into: more.slide2 }))
+    const doom = build(richDeck(), change({ op: "move", targets: [ids.card], parent: more.slide2 }))
     expect(parentOf(doom.nodes.get(ids.card)!)?.id).toBe(more.slide2)
     expect(propOf(doom.nodes.get(ids.card)!, "box")).toMatchObject({ x: 100, y: 0 })
   })
 
-  it("refuses a slide, both node and nodes, and a move with no target", () => {
-    expect(refusal(richDeck(), { op: "move", nodes: [ids.slide], into: more.slide2 })).toMatchObject({
+  it("refuses a parent for a slide", () => {
+    expect(refusal(richDeck(), { op: "move", targets: [ids.slide], parent: more.slide2 })).toMatchObject({
       refused: "shape",
-      field: "node",
-    })
-    expect(refusal(richDeck(), { op: "move", node: ids.card, nodes: [ids.side], into: more.slide2 })).toMatchObject({
-      refused: "shape",
-      field: "nodes",
-    })
-    expect(refusal(richDeck(), { op: "move", nodes: [ids.card] })).toMatchObject({
-      refused: "shape",
-      field: "into",
-      fault: "needs",
-      expect: { code: "destination-slide" },
+      field: "parent",
     })
   })
 })
@@ -381,7 +371,7 @@ describe("a move composes the transforms it crosses", () => {
     const boxes = solveLayout(view, from, measure)
     const child = boxes.get(named.flowChild!)!
     const frame = boxes.get(named.flow!)!
-    const result = compileIntents(view, [change({ op: "move", nodes: [named.flowChild!], into: to })], {
+    const result = compileIntents(view, [change({ op: "move", targets: [named.flowChild!], parent: to })], {
       placement,
       starts,
       author: person,

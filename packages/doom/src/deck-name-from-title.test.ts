@@ -42,7 +42,7 @@ const typed = (doom: Doom, title: NodeId, chars: string): Write => ({
 function twoSlides(first: string, second: string): { readonly doom: Doom; readonly second: NodeId } {
   const start = titled(starts.deckName, true)
   const one = apply(start, [based(start, retitle(start, first)), named(first)])
-  const added = build(one, { op: "slide", add: {} }, minter("n"))
+  const added = build(one, { op: "insert", kind: "slide" }, minter("n"))
   const slide = slidesOf(added)[1]!.id
   const withTitle = apply(added, titleSlideWrites(slide, minter("u"), { w: 1920, h: 1080 }, starts))
   const doom = apply(withTitle, [based(withTitle, typed(withTitle, titleOn(withTitle, slide), second))])
@@ -115,7 +115,7 @@ describe("a deck whose name follows its first title", () => {
 
   it("names the deck for the next slide's title when an agent deletes slide 1, as a person's delete does", () => {
     const { doom } = twoSlides("Alpha", "Beta")
-    const edit = compileIntents(doom, [{ op: "slide", delete: ids.slide }], {
+    const edit = compileIntents(doom, [{ op: "remove", targets: [ids.slide] }], {
       placement,
       starts,
       author: agent(runName),
@@ -164,8 +164,8 @@ describe("a deck whose name follows its first title", () => {
     const edit = compileIntents(
       doom,
       [
-        { op: "deck", name: "Board pack" },
-        { op: "add", kind: "text", slide: ids.slide, text: "Q3 board update", textStyle: "title" },
+        { op: "variables", name: "Board pack" },
+        { op: "insert", kind: "text", parent: ids.slide, text: "Q3 board update", textStyle: "title" },
       ],
       { placement, starts, author: agent(runName), once: "both", mint: minter("m") },
     )
@@ -184,7 +184,7 @@ describe("a deck whose name follows its first title", () => {
   it("lets an agent read and set whether the name follows, as a person's rename does", () => {
     const chosen = apply(titled("Board pack", false), [])
     expect(deckNameFollows(chosen, starts)).toBe(false)
-    const turned = build(chosen, { op: "deck", nameFollows: true })
+    const turned = build(chosen, { op: "variables", nameFollows: true })
     expect(deckNameFollows(turned, starts)).toBe(true)
     expect(nameFromTitleWrites(turned, [retitle(turned, "Q4 plan")], starts)).toEqual([named("Q4 plan")])
   })
@@ -199,7 +199,7 @@ describe("a deck whose name follows its first title", () => {
         rev: rev(doom.rev + 1),
       })
       expect(isRefusal(landed)).toBe(true)
-      expect(readIntent({ op: "deck", name: value })).toHaveProperty("refused")
+      expect(readIntent({ op: "variables", name: value })).toHaveProperty("refused")
     }
   })
 
@@ -238,7 +238,7 @@ describe("a deck whose name follows its first title", () => {
 
   it("ignores a title on any slide but the first", () => {
     const doom = titled(starts.deckName, true)
-    const added = build(doom, { op: "slide", add: {} }, minter("n"))
+    const added = build(doom, { op: "insert", kind: "slide" }, minter("n"))
     const slide = slidesOf(added)[1]!.id
     const writes = titleSlideWrites(slide, minter("u"), { w: 1920, h: 1080 }, starts)
     expect(nameFromTitleWrites(added, writes, starts)).toEqual([])
@@ -248,7 +248,7 @@ describe("a deck whose name follows its first title", () => {
     const doom = titled(starts.deckName, true)
     const edit = compileIntents(
       doom,
-      [{ op: "add", kind: "text", slide: ids.slide, text: "Q3 board update", textStyle: "title" }],
+      [{ op: "insert", kind: "text", parent: ids.slide, text: "Q3 board update", textStyle: "title" }],
       { placement, starts, author: agent(runName), once: "fill", mint: minter("m") },
     )
     if ("refused" in edit) throw new Error(JSON.stringify(edit))

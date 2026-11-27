@@ -81,7 +81,7 @@ async function agentBakes(
   made: ReturnType<typeof grown>,
   frame: string,
   measure: DeckHost["measure"],
-  changes: readonly unknown[] = [{ op: "set", target: made.ids[frame], layout: "none" }],
+  changes: readonly unknown[] = [{ op: "update", target: made.ids[frame], layout: "none" }],
   pendingFonts?: ReadonlySet<string>,
 ) {
   const decks = memoryDecks(() => made.doom)
@@ -183,9 +183,9 @@ it("refuses text that is only present at the bake, without landing any of the ba
     "inner",
     (folds, layers) => metrics.measure(folds, undefined, layers),
     [
-      { op: "set", target: made.ids.left, text: "収益" },
-      { op: "set", target: made.ids.inner, layout: "none" },
-      { op: "set", target: made.ids.left, text: "Revenue" },
+      { op: "update", target: made.ids.left, text: "収益" },
+      { op: "update", target: made.ids.inner, layout: "none" },
+      { op: "update", target: made.ids.left, text: "Revenue" },
     ],
   )
   expect(answer).toMatchObject({ ok: false, refusal: "fonts", layers: [made.ids.left], characters: "収益" })
@@ -199,8 +199,8 @@ it("bakes when an earlier change fixes the text and an unrelated layer still lac
     "inner",
     (folds, layers) => metrics.measure(folds, undefined, layers),
     [
-      { op: "set", target: made.ids.left, text: "Revenue" },
-      { op: "set", target: made.ids.inner, layout: "none" },
+      { op: "update", target: made.ids.left, text: "Revenue" },
+      { op: "update", target: made.ids.inner, layout: "none" },
     ],
   )
   expect(answer).toMatchObject({ ok: true })
@@ -285,8 +285,8 @@ it.each([
     "inner",
     (folds, layers) => metrics.measure(folds, undefined, layers),
     [
-      { op: "set", target: made.ids.headline, text: "Revenue" },
-      { op: "set", target: made.ids.inner, layout: "none" },
+      { op: "update", target: made.ids.headline, text: "Revenue" },
+      { op: "update", target: made.ids.inner, layout: "none" },
     ],
   )
   expect(answer).toMatchObject({

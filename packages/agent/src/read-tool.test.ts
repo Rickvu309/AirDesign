@@ -42,13 +42,13 @@ describe("get with find, and one change over every slide's title", () => {
       slides: string[]
     }
     const { deck, rev, slides } = made
-    const added = await call("execute", { deck, script: scriptOf([{ op: "duplicate", nodes: [slides[0]] }]) })
+    const added = await call("execute", { deck, script: scriptOf([{ op: "copy", targets: [slides[0]] }]) })
     expect(added.ok).toBe(true)
     const runId = (added.fields as { runId: string }).runId
     const styled = await call("execute", {
       deck,
       runId,
-      script: scriptOf([{ op: "set", target: "*.title", textStyle: "heading" }]),
+      script: scriptOf([{ op: "update", target: "*.title", textStyle: "heading" }]),
     })
     expect(styled.ok).toBe(true)
     const found = await readOf(call, deck, { find: "style=heading" })
@@ -102,7 +102,7 @@ it("refuses to author or place a template without changing the deck", async () =
   }
   const placed = await call("execute", {
     deck,
-    script: scriptOf([{ op: "add", kind: "component", slide: slides[0] }]),
+    script: scriptOf([{ op: "insert", kind: "component", parent: slides[0] }]),
   })
   expect(placed.fields).toMatchObject({ ok: false, refusal: "field", op: 1, field: "kind" })
   for (const field of ["component", "spec", "data", "variant", "tokens", "focus"]) {

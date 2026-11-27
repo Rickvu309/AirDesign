@@ -8,7 +8,7 @@ import { invert } from "./invert.js"
 
 const slide = ids.slide
 const text = (more: Record<string, unknown> = {}): Intent =>
-  ({ op: "add", kind: "text", slide, text: "Margin held", ...more }) as Intent
+  ({ op: "insert", kind: "text", parent: slide, text: "Margin held", ...more }) as Intent
 
 describe("an agent's text grows with its words, as Figma's auto height", () => {
   it("keeps an explicit box's place and width, and lets its height follow the words, as Figma's auto height", () => {
@@ -27,9 +27,9 @@ describe("an agent's text grows with its words, as Figma's auto height", () => {
 
   it("keeps a shape's label fixed to the shape, as Figma does", () => {
     const doom = build(agentDeck(), {
-      op: "add",
+      op: "insert",
       kind: "shape",
-      slide,
+      parent: slide,
       text: "Label",
       box: { x: 10, y: 20, w: 300, h: 80 },
     } as unknown as Intent)
@@ -46,7 +46,7 @@ describe("an agent's text grows with its words, as Figma's auto height", () => {
   it("fixes the box once the agent sets its height, as a height dragged by hand does in Figma", () => {
     const before = grown()
     const made = lastChild(before, slide)
-    const after = build(before, { op: "set", target: made.id, box: { h: 400 } } as unknown as Intent)
+    const after = build(before, { op: "update", target: made.id, box: { h: 400 } } as unknown as Intent)
     const set = after.nodes.get(made.id)!
     expect(propOf(set, "text")?.resize).toBe("fixed")
     expect(propOf(set, "box")?.h).toBe(400)
@@ -58,7 +58,7 @@ describe("an agent's text grows with its words, as Figma's auto height", () => {
     const made = lastChild(before, slide)
     const { h } = propOf(made, "box")!
     const after = build(before, {
-      op: "set",
+      op: "update",
       target: made.id,
       box: { x: 200, y: 80, w: 900, h },
     } as unknown as Intent)
@@ -68,7 +68,7 @@ describe("an agent's text grows with its words, as Figma's auto height", () => {
   it("keeps auto height when the agent sets only the width", () => {
     const before = grown()
     const made = lastChild(before, slide)
-    const after = build(before, { op: "set", target: made.id, box: { w: 1600 } } as unknown as Intent)
+    const after = build(before, { op: "update", target: made.id, box: { w: 1600 } } as unknown as Intent)
     expect(propOf(after.nodes.get(made.id)!, "text")?.resize).toBe("height")
   })
 
@@ -88,7 +88,7 @@ describe("an agent's text grows with its words, as Figma's auto height", () => {
     const made = lastChild(added.after, slide)
     const gone = (tryLand(added.after, invert(added.before, added.after, added.edit)) as Doom).nodes.get(made.id)
     expect(gone === undefined || propOf(gone, "parent") == null).toBe(true)
-    const sized = step(added.after, { op: "set", target: made.id, box: { h: 400 } } as unknown as Intent)
+    const sized = step(added.after, { op: "update", target: made.id, box: { h: 400 } } as unknown as Intent)
     expect(propOf(sized.after.nodes.get(made.id)!, "text")?.resize).toBe("fixed")
     const undone = tryLand(sized.after, invert(sized.before, sized.after, sized.edit)) as Doom
     expect(propOf(undone.nodes.get(made.id)!, "text")?.resize).toBe("height")
@@ -96,14 +96,14 @@ describe("an agent's text grows with its words, as Figma's auto height", () => {
 
   it("hugs its words in an auto layout frame, whatever height the agent named", () => {
     const framed = build(agentDeck(), {
-      op: "add",
+      op: "insert",
       kind: "frame",
-      slide,
+      parent: slide,
       layout: "column",
       box: { x: 100, y: 100, w: 800, h: 600 },
     } as unknown as Intent)
     const frame = lastChild(framed, slide)
-    const doom = build(framed, text({ into: frame.id, box: { x: 0, y: 0, w: 800, h: 20 } }), minter("b"))
+    const doom = build(framed, text({ parent: frame.id, box: { x: 0, y: 0, w: 800, h: 20 } }), minter("b"))
     const made = lastChild(doom, frame.id)
     expect(propOf(made, "text")?.resize).toBe("height")
     expect(solveLayout(doom, slide, estimate).get(made.id)?.h).toBe(

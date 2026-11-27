@@ -36,7 +36,7 @@ describe("a person keeps no font or theme field, and an agent keeps all of them"
   })
 
   it("lets an agent set a font on a layer, and the panel and painter read it back", () => {
-    const after = agentLands({ op: "set", target: title, font: "Georgia" } as doom.Intent)
+    const after = agentLands({ op: "update", target: title, font: "Georgia" } as doom.Intent)
     const text = doom.propOf(after.nodes.get(title), "text")!
     expect(text.spans.map((span) => span.font)).toEqual(["Georgia"])
     expect(shownText(text, doom.deckOf(after).theme).look.font).toEqual({ value: "Georgia", mixed: false })
@@ -46,7 +46,7 @@ describe("a person keeps no font or theme field, and an agent keeps all of them"
     const before = doom.deckOf(built.view).theme
     const after = doom.deckOf(
       agentLands({
-        op: "deck",
+        op: "variables",
         colors: { accent1: hexes.red, text2: hexes.navy },
         fonts: { heading: "Lora", body: "Inter" },
       } as doom.Intent),

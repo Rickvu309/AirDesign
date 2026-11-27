@@ -1,5 +1,7 @@
-import type { Intent, IntentLook } from "./intent-read.js"
-import { type Draft, type Values, living, put, stop } from "./intent-draft.js"
+import type { Intent } from "./intent-read.js"
+import { type Draft, type Values, fitKind, living, put, stop } from "./intent-draft.js"
+import { kindOf } from "./layer-kind.js"
+import type { NodeKind } from "./kind-fields.js"
 import { insertLinkedRun } from "./intent-insert.js"
 import { askedArrow, iconName, layoutOf, surfaceOf, textOfLook } from "./intent-look.js"
 import { laneOf, lineEnds } from "./intent-line-ends.js"
@@ -13,82 +15,10 @@ import type { Geometry } from "./geometry.js"
 import type { Node } from "./doom.js"
 import { boxOf, descendantsOf, propOf, slideOf, slidesOf } from "./doom-walk.js"
 
-type SetIntent = Extract<Intent, { op: "set" }>
+type SetIntent = Extract<Intent, { op: "update" }>
 
 const estimate = measureWith({})
 
-const neverOnSet = ["rows"] as const
-const wordsOnly = [
-  "language",
-  "size",
-  "font",
-  "weight",
-  "lineHeight",
-  "letterSpacing",
-  "case",
-  "underline",
-  "strike",
-  "alignV",
-  "spaceBefore",
-  "spaceAfter",
-] as const
-const unfit: Readonly<Record<"slide" | "frame" | "shape", readonly (keyof IntentLook)[]>> = {
-  slide: [
-    ...wordsOnly,
-    "blur",
-    "locked",
-    "shape",
-    "dash",
-    "fit",
-    "crop",
-    "rotation",
-    "flip",
-    "stroke",
-    "strokeWidth",
-    "color",
-    "radius",
-    "effect",
-    "effectOpacity",
-    "innerShadow",
-    "clip",
-    "mask",
-    "opacity",
-    "text",
-    "insert",
-    "textStyle",
-    "align",
-    "layout",
-    "gap",
-    "padding",
-    "icon",
-    "arrow",
-    "startArrow",
-    "from",
-    "to",
-    "route",
-    "lane",
-    "box",
-  ],
-  frame: [
-    "color",
-    "text",
-    "insert",
-    "textStyle",
-    "icon",
-    "arrow",
-    "startArrow",
-    "from",
-    "to",
-    "route",
-    "lane",
-    "notes",
-    "shape",
-    "skipped",
-    "transition",
-    ...wordsOnly,
-  ],
-  shape: ["layout", "gap", "notes", "clip", "skipped", "transition"],
-}
 const roleTarget = /^([a-z0-9]{1,16}:[0-9]{1,12})\.(title|subtitle|body)$/
 
 function targetNode(draft: Draft, target: string): Node {
@@ -113,18 +43,8 @@ function setEverySlide(draft: Draft, intent: SetIntent, role: string): void {
 
 function geometryOf(draft: Draft, node: Node, intent: SetIntent): Geometry | undefined {
   const geometry = propOf(node, "geometry")
-  const pathField = intent.d !== undefined ? "d" : intent.fillStroke !== undefined ? "fillStroke" : undefined
-  if (pathField !== undefined && geometry?.kind !== "path")
-    stop("shape", node.id, pathField, "needs", { code: "needs-path" })
-  if (intent.icon !== undefined) {
-    if (geometry?.kind !== "icon") stop("shape", node.id, "icon", "needs", { code: "needs-icon" })
-    return { kind: "icon", name: iconName(intent.icon) }
-  }
-  const lined = (["startArrow", "arrow", "from", "to", "route", "lane"] as const).find(
-    (field) => intent[field] !== undefined,
-  )
-  if (lined !== undefined && geometry?.kind !== "line") stop("shape", node.id, lined, "needs", { code: "needs-line" })
-  if (pathField !== undefined && geometry?.kind === "path") {
+  if (intent.icon !== undefined && geometry?.kind === "icon") return { kind: "icon", name: iconName(intent.icon) }
+  if (geometry?.kind === "path" && (intent.d !== undefined || intent.fillStroke !== undefined)) {
     return {
       ...geometry,
       ...(intent.d === undefined ? {} : { d: intent.d }),
@@ -132,9 +52,12 @@ function geometryOf(draft: Draft, node: Node, intent: SetIntent): Geometry | und
     }
   }
   if (geometry?.kind !== "line") return undefined
+  const lined = (["startArrow", "arrow", "from", "to", "route", "lane"] as const).some(
+    (field) => intent[field] !== undefined,
+  )
   const box = intent.box === undefined ? undefined : { ...boxOf(node, draft.reading.boxes), ...intent.box }
   const pointed = "x" in geometry.start && "x" in geometry.end
-  if (lined === undefined && !(box !== undefined && pointed)) return undefined
+  if (!lined && !(box !== undefined && pointed)) return undefined
   const placed =
     box !== undefined && pointed
       ? { ...geometry, start: { x: box.x, y: box.y }, end: { x: box.x + box.w, y: box.y + box.h } }
@@ -156,16 +79,9 @@ export function compileSet(draft: Draft, intent: SetIntent): void {
   const node = targetNode(draft, intent.target)
   if (node.type !== "slide" && node.type !== "frame" && node.type !== "shape")
     stop("shape", node.id, "target", "form", { code: "copyable-node" })
-  for (const field of [...neverOnSet, ...unfit[node.type]])
-    if (intent[field] !== undefined) stop("shape", node.id, field, "unknown")
-  const fitting = intent.fit !== undefined || intent.crop !== undefined
-  if (fitting && !(propOf(node, "fills") ?? []).some((paint) => paint.kind === "image"))
-    stop("shape", node.id, intent.crop === undefined ? "fit" : "crop", "needs", { code: "needs-image" })
+  fitKind("update", kindOf(node) as NodeKind, intent, node.id)
   if (intent.crop !== undefined && intent.fit !== undefined && intent.fit !== "crop")
     stop("shape", node.id, "crop", "form", { code: "crop-fit" })
-  const outline = propOf(node, "geometry")?.kind
-  if (intent.shape !== undefined && (outline === "line" || outline === "icon" || outline === "path"))
-    stop("shape", node.id, "shape", "needs", { code: "needs-preset" })
   if (intent.link !== undefined && propOf(node, "text") === undefined)
     stop("shape", node.id, "link", "needs", { code: "needs-text" })
   const now = {

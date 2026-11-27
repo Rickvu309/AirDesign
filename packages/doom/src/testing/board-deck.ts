@@ -2,9 +2,9 @@ import type { Intent } from "../intent-read.js"
 import type { NodeId } from "../ids.js"
 
 const title = (slide: NodeId, text: string): Intent => ({
-  op: "add",
+  op: "insert",
   kind: "text",
-  slide,
+  parent: slide,
   text,
   textStyle: "title",
   box: { x: 80, y: 60, w: 1760, h: 110 },
@@ -14,11 +14,11 @@ export function boardDeckIntents(slides: readonly NodeId[]): readonly (readonly 
   const [one, two, three, four, five] = slides as [NodeId, NodeId, NodeId, NodeId, NodeId]
   return [
     [
-      { op: "add", kind: "text", slide: one, text: "Q3 board update", textStyle: "title" },
+      { op: "insert", kind: "text", parent: one, text: "Q3 board update", textStyle: "title" },
       {
-        op: "add",
+        op: "insert",
         kind: "text",
-        slide: one,
+        parent: one,
         text: "Revenue grew while margin held",
         textStyle: "heading",
         color: "text2",
@@ -27,9 +27,9 @@ export function boardDeckIntents(slides: readonly NodeId[]): readonly (readonly 
     [
       title(two, "Results at a glance"),
       {
-        op: "add",
+        op: "insert",
         kind: "frame",
-        slide: two,
+        parent: two,
         name: "Results",
         rows: [
           ["Metric", "Result", "Change"],
@@ -38,14 +38,14 @@ export function boardDeckIntents(slides: readonly NodeId[]): readonly (readonly 
           ["Net retention", "118%", "Best in two years"],
         ],
       },
-      { op: "add", kind: "shape", slide: two, name: "Decision", text: "Approve the expansion budget by Friday" },
+      { op: "insert", kind: "shape", parent: two, name: "Decision", text: "Approve the expansion budget by Friday" },
     ],
     [
       title(three, "Revenue ran ahead of plan"),
       ...["Plan", "Actual"].map((text, i): Intent => ({
-        op: "add",
+        op: "insert",
         kind: "text",
-        slide: three,
+        parent: three,
         text,
         textStyle: "caption",
         color: i === 0 ? "accent2" : "accent1",
@@ -65,17 +65,17 @@ export function boardDeckIntents(slides: readonly NodeId[]): readonly (readonly 
             const name = `Q${quarter + 1} ${series === 0 ? "Plan" : "Actual"}`
             return [
               {
-                op: "add",
+                op: "insert",
                 kind: "shape",
-                slide: three,
+                parent: three,
                 name,
                 fill: series === 0 ? "accent2" : "accent1",
                 box: { x: left, y: 910 - height, w: 120, h: height },
               },
               {
-                op: "add",
+                op: "insert",
                 kind: "text",
-                slide: three,
+                parent: three,
                 text: String(value),
                 textStyle: "caption",
                 box: { x: left, y: 862 - height, w: 120, h: 42 },
@@ -83,9 +83,9 @@ export function boardDeckIntents(slides: readonly NodeId[]): readonly (readonly 
             ]
           }),
           {
-            op: "add",
+            op: "insert",
             kind: "text",
-            slide: three,
+            parent: three,
             text: `Q${quarter + 1}`,
             textStyle: "caption",
             box: { x, y: 928, w: 256, h: 40 },
@@ -100,16 +100,16 @@ export function boardDeckIntents(slides: readonly NodeId[]): readonly (readonly 
         { text: "Protect\nRaise retention", icon: "shield" },
         { text: "Build\nShip the platform", icon: "hammer" },
       ].flatMap(({ text, icon }, at): Intent[] => [
-        { op: "add", kind: "icon", slide: four, icon, box: { x: 80 + at * 600, y: 260, w: 80, h: 80 } },
-        { op: "add", kind: "text", slide: four, text, box: { x: 80 + at * 600, y: 372, w: 520, h: 100 } },
+        { op: "insert", kind: "icon", parent: four, icon, box: { x: 80 + at * 600, y: 260, w: 80, h: 80 } },
+        { op: "insert", kind: "text", parent: four, text, box: { x: 80 + at * 600, y: 372, w: 520, h: 100 } },
       ]),
     ],
     [
       title(five, "Roadmap"),
       {
-        op: "add",
+        op: "insert",
         kind: "frame",
-        slide: five,
+        parent: five,
         name: "Roadmap",
         rows: [
           ["", "Q1", "Q2", "Q3", "Q4"],

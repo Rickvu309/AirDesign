@@ -43,9 +43,9 @@ async function deckOf(by: ReturnType<typeof agent>) {
 }
 
 const addPicture = (slide: string, image: string, more: Record<string, unknown> = {}) => ({
-  op: "add",
+  op: "insert",
   kind: "picture",
-  slide,
+  parent: slide,
   fill: { image },
   ...more,
 })

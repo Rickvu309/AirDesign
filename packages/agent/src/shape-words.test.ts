@@ -33,16 +33,16 @@ describe("a shape's outline through the agent tools", () => {
     const box = { x: 200, y: 200, w: 300, h: 300 }
     const landed = await call("execute", {
       deck,
-      script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box, shape: "star5" }]),
+      script: scriptOf([{ op: "insert", kind: "shape", parent: slides[0], box, shape: "star5" }]),
     })
     expect(landed.ok).toBe(true)
     expect(String((await readOf(call, deck)).fields.layers)).toContain(" shape=star5")
     const refused = await call("execute", {
       deck,
-      script: scriptOf([{ op: "add", kind: "shape", slide: slides[0], box, shape: "bentConnector3" }]),
+      script: scriptOf([{ op: "insert", kind: "shape", parent: slides[0], box, shape: "bentConnector3" }]),
     })
     expect(refused.ok).toBe(false)
     expect(refused.fields).toMatchObject({ field: "shape" })
-    expect(JSON.stringify(intentsSchema)).toContain("Lines and connectors are not shapes: add kind line.")
+    expect(JSON.stringify(intentsSchema)).toContain("Lines and connectors are not shapes: insert kind line.")
   })
 })

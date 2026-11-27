@@ -73,7 +73,7 @@ describe("an agent's wrap and unwrap land the editor's arrangement", () => {
   it("wraps a turned shape and a free line inside a turned frame", () => {
     const { grown, person, agent } = both(
       ({ view, geometry, ids }) => wrapWrites(view, geometry, [ids.a!, ids.wire!], "group", minter())?.writes,
-      (ids) => ({ op: "wrap", nodes: [ids.a, ids.wire] }),
+      (ids) => ({ op: "group", targets: [ids.a, ids.wire] }),
     )
     sameArrangement(person, agent, grown.slides[0]!)
   })
@@ -81,7 +81,7 @@ describe("an agent's wrap and unwrap land the editor's arrangement", () => {
   it("wraps a turned shape and a free line inside a frame nested in a turned frame", () => {
     const { grown, person, agent } = both(
       ({ view, geometry, ids }) => wrapWrites(view, geometry, [ids.k!, ids.tie!], "group", minter())?.writes,
-      (ids) => ({ op: "wrap", nodes: [ids.k, ids.tie] }),
+      (ids) => ({ op: "group", targets: [ids.k, ids.tie] }),
     )
     sameArrangement(person, agent, grown.slides[0]!)
   })
@@ -89,7 +89,7 @@ describe("an agent's wrap and unwrap land the editor's arrangement", () => {
   it("unwraps a turned frame nested in a turned frame", () => {
     const { grown, person, agent } = both(
       ({ view, geometry, ids }) => ungroupWrites(view, geometry, [ids.inner!])?.writes,
-      (ids) => ({ op: "unwrap", node: ids.inner }),
+      (ids) => ({ op: "ungroup", target: ids.inner }),
     )
     sameArrangement(person, agent, grown.slides[0]!)
   })
@@ -97,7 +97,7 @@ describe("an agent's wrap and unwrap land the editor's arrangement", () => {
   it("unwraps a turned frame onto the slide", () => {
     const { grown, person, agent } = both(
       ({ view, geometry, ids }) => ungroupWrites(view, geometry, [ids.holder!])?.writes,
-      (ids) => ({ op: "unwrap", node: ids.holder }),
+      (ids) => ({ op: "ungroup", target: ids.holder }),
     )
     sameArrangement(person, agent, grown.slides[0]!)
   })

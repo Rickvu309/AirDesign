@@ -50,7 +50,7 @@ test("a person skips a slide, the saved value is the agent's, and one undo rever
   await page.locator('[data-slide-entry="1"]').click()
   const saved = () => savedNode(stack, opened, opened.slide)
 
-  const skip = await agentWrites(stack, opened, [{ op: "set", target: opened.slide, skipped: true }])
+  const skip = await agentWrites(stack, opened, [{ op: "update", target: opened.slide, skipped: true }])
   await page.locator('[data-slide-entry="1"]').click({ button: "right" })
   await page.getByRole("menuitem", { name: slideListCopy.skip }).click()
   await expect(page.locator('[data-slide-entry="1"]')).toHaveAttribute("data-slide-skipped", "true")
@@ -85,7 +85,7 @@ test("a person sets vertical align, the saved text is the agent's, and one undo 
   await openDesign(page)
   const panel = panelOf(page)
 
-  const align = await agentWrites(stack, opened, [{ op: "set", target: "t:1", alignV: "bottom" }])
+  const align = await agentWrites(stack, opened, [{ op: "update", target: "t:1", alignV: "bottom" }])
   await panel
     .getByLabel(textCopy.alignV, { exact: true })
     .getByRole("button", { name: textWords["alignV.bottom"] })

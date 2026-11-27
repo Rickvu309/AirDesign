@@ -18,21 +18,21 @@ describe("move", () => {
   it("puts a node first, after a sibling, or last among its parent's children", () => {
     const base = richDeck()
     expect(kids(base, ids.slide)).toEqual([ids.card, ids.side, more.frame, more.line, more.icon])
-    expect(kids(build(base, change({ op: "move", node: more.icon, after: null })), ids.slide)).toEqual([
+    expect(kids(build(base, change({ op: "move", targets: [more.icon], after: null })), ids.slide)).toEqual([
       more.icon,
       ids.card,
       ids.side,
       more.frame,
       more.line,
     ])
-    expect(kids(build(base, change({ op: "move", node: more.icon, after: ids.card })), ids.slide)).toEqual([
+    expect(kids(build(base, change({ op: "move", targets: [more.icon], after: ids.card })), ids.slide)).toEqual([
       ids.card,
       more.icon,
       ids.side,
       more.frame,
       more.line,
     ])
-    expect(kids(build(base, change({ op: "move", node: ids.card })), ids.slide)).toEqual([
+    expect(kids(build(base, change({ op: "move", targets: [ids.card] })), ids.slide)).toEqual([
       ids.side,
       more.frame,
       more.line,
@@ -42,50 +42,53 @@ describe("move", () => {
   })
 
   it("puts a node into another frame and keeps it where it was on the slide", () => {
-    const doom = build(richDeck(), change({ op: "move", node: ids.title, into: ids.side }))
+    const doom = build(richDeck(), change({ op: "move", targets: [ids.title], parent: ids.side }))
     expect(parentOf(doom.nodes.get(ids.title)!)?.id).toBe(ids.side)
     expect(propOf(doom.nodes.get(ids.title)!, "box")).toMatchObject({ x: -300, y: 0, w: 200, h: 100 })
   })
 
   it("moves a node to the slide from a frame, adding the frame's offset", () => {
-    const doom = build(richDeck(), change({ op: "move", node: ids.title, into: ids.slide }))
+    const doom = build(richDeck(), change({ op: "move", targets: [ids.title], parent: ids.slide }))
     expect(propOf(doom.nodes.get(ids.title)!, "box")).toMatchObject({ x: 100, y: 0 })
   })
 
   it("moves to another slide", () => {
-    const doom = build(richDeck(), change({ op: "move", node: ids.card, into: more.slide2 }))
+    const doom = build(richDeck(), change({ op: "move", targets: [ids.card], parent: more.slide2 }))
     expect(parentOf(doom.nodes.get(ids.card)!)?.id).toBe(more.slide2)
   })
 
-  it("refuses a cycle, a slide as a node, a shape as a parent, an unknown sibling and itself", () => {
-    expect(refusal(richDeck(), { op: "move", node: ids.card, into: ids.title })).toMatchObject({
+  it("refuses a cycle, a slide with no place, a shape as a parent, an unknown sibling and itself", () => {
+    expect(refusal(richDeck(), { op: "move", targets: [ids.card], parent: ids.title })).toMatchObject({
       refused: "shape",
-      field: "into",
+      field: "parent",
     })
-    expect(refusal(richDeck(), { op: "move", node: ids.card, into: ids.card })).toMatchObject({
+    expect(refusal(richDeck(), { op: "move", targets: [ids.card], parent: ids.card })).toMatchObject({
       refused: "cycle",
       node: ids.card,
     })
-    expect(refusal(richDeck(), { op: "move", node: ids.slide })).toMatchObject({ refused: "shape", field: "node" })
-    expect(refusal(richDeck(), { op: "move", node: ids.card, after: "z:9" })).toMatchObject({
-      refused: "missing",
-      field: "after",
-    })
-    expect(refusal(richDeck(), { op: "move", node: ids.card, after: ids.card })).toMatchObject({
+    expect(refusal(richDeck(), { op: "move", targets: [ids.slide] })).toMatchObject({
       refused: "shape",
       field: "after",
     })
-    expect(refusal(richDeck(), { op: "move", node: "z:9" })).toEqual({
+    expect(refusal(richDeck(), { op: "move", targets: [ids.card], after: "z:9" })).toMatchObject({
+      refused: "missing",
+      field: "after",
+    })
+    expect(refusal(richDeck(), { op: "move", targets: [ids.card], after: ids.card })).toMatchObject({
+      refused: "shape",
+      field: "after",
+    })
+    expect(refusal(richDeck(), { op: "move", targets: ["z:9"] })).toEqual({
       refused: "missing",
       node: "z:9",
-      field: "node",
+      field: "targets",
       change: "move z:9",
     })
   })
 
   it("refuses a move of a frame into one of its own descendants", () => {
-    const nested = build(richDeck(), change({ op: "move", node: ids.side, into: ids.card }))
-    expect(refusal(nested, { op: "move", node: ids.card, into: ids.side })).toMatchObject({
+    const nested = build(richDeck(), change({ op: "move", targets: [ids.side], parent: ids.card }))
+    expect(refusal(nested, { op: "move", targets: [ids.card], parent: ids.side })).toMatchObject({
       refused: "cycle",
       node: ids.card,
     })
@@ -93,8 +96,28 @@ describe("move", () => {
 })
 
 describe("wrap and unwrap", () => {
+  it("styles the group it makes in the same change", () => {
+    const doom = build(
+      richDeck(),
+      change({ op: "group", targets: [ids.side, more.frame], fill: "background2", radius: 12, name: "Card" }),
+    )
+    const frame = kids(doom, ids.slide).find((id) => kids(doom, id).includes(ids.side))!
+    expect(kids(doom, frame)).toEqual([ids.side, more.frame])
+    expect(propOf(doom.nodes.get(frame)!, "fills")).toEqual([{ kind: "solid", color: { var: "background2" } }])
+    expect(propOf(doom.nodes.get(frame)!, "radius")).toBe(12)
+    expect(propOf(doom.nodes.get(frame)!, "name")).toBe("Card")
+  })
+
+  it("makes no group when its style is refused", () => {
+    expect(refusal(richDeck(), { op: "group", targets: [ids.side, more.frame], textStyle: "title" })).toMatchObject({
+      refused: "shape",
+      field: "textStyle",
+      kind: "frame",
+    })
+  })
+
   const wrapped = (more2: Record<string, unknown> = {}) =>
-    build(richDeck(), change({ op: "wrap", nodes: [ids.side, ids.card], ...more2 }))
+    build(richDeck(), change({ op: "group", targets: [ids.side, ids.card], ...more2 }))
 
   it("wraps siblings into one frame that covers them, where the frontmost of them was, in their order", () => {
     const doom = wrapped()
@@ -125,7 +148,7 @@ describe("wrap and unwrap", () => {
   })
 
   it("unwraps a frame: its children take its place and position, and the frame goes", () => {
-    const doom = build(wrapped(), change({ op: "unwrap", node: childrenOf(wrapped(), ids.slide)[0]!.id }))
+    const doom = build(wrapped(), change({ op: "ungroup", target: childrenOf(wrapped(), ids.slide)[0]!.id }))
     expect(kids(doom, ids.slide)).toEqual([ids.card, ids.side, more.frame, more.line, more.icon])
     expect(propOf(doom.nodes.get(ids.card)!, "box")).toMatchObject({ x: 100, y: 0 })
     expect(propOf(doom.nodes.get(ids.side)!, "box")).toMatchObject({ x: 400, y: 0 })
@@ -133,7 +156,7 @@ describe("wrap and unwrap", () => {
 
   it("unwraps a laid-out frame by the boxes it was solved to", () => {
     const boxes = new Map([[ids.title, { x: 7, y: 8, w: 9, h: 10, rotation: 0, flipH: false, flipV: false }]])
-    const writes = compileIntent(richDeck(), change({ op: "unwrap", node: ids.card }), minter(), placement, starts, {
+    const writes = compileIntent(richDeck(), change({ op: "ungroup", target: ids.card }), minter(), placement, starts, {
       boxes,
     })
     expect(writes).toContainEqual(
@@ -142,34 +165,46 @@ describe("wrap and unwrap", () => {
   })
 
   it("refuses nodes from different parents, an empty list, a slide and an unwrapped shape", () => {
-    expect(refusal(richDeck(), { op: "wrap", nodes: [ids.card, ids.title] })).toMatchObject({
+    expect(refusal(richDeck(), { op: "group", targets: [ids.card, ids.title] })).toMatchObject({
       refused: "shape",
-      field: "nodes",
+      field: "targets",
     })
-    expect(refusal(richDeck(), { op: "wrap", nodes: [ids.slide] })).toMatchObject({ refused: "shape", field: "nodes" })
-    expect(refusal(richDeck(), { op: "unwrap", node: ids.title })).toMatchObject({ refused: "shape", field: "node" })
-    expect(refusal(richDeck(), { op: "wrap", nodes: ["z:9"] })).toMatchObject({
+    expect(refusal(richDeck(), { op: "group", targets: [ids.slide] })).toMatchObject({
+      refused: "shape",
+      field: "targets",
+    })
+    expect(refusal(richDeck(), { op: "ungroup", target: ids.title })).toMatchObject({
+      refused: "shape",
+      field: "target",
+    })
+    expect(refusal(richDeck(), { op: "group", targets: ["z:9"] })).toMatchObject({
       refused: "missing",
-      field: "nodes",
-      change: "wrap z:9",
+      field: "targets",
+      change: "group z:9",
     })
   })
 })
 
 describe("delete", () => {
   it("removes nodes by clearing their parent, which undo can put back", () => {
-    const doom = build(richDeck(), change({ op: "delete", nodes: [ids.card, more.line] }))
+    const doom = build(richDeck(), change({ op: "remove", targets: [ids.card, more.line] }))
     expect(kids(doom, ids.slide)).toEqual([ids.side, more.frame, more.icon])
     expect(parentOf(doom.nodes.get(ids.card)!)).toBeNull()
   })
 
-  it("refuses a slide, a missing node and a node already deleted", () => {
-    expect(refusal(richDeck(), { op: "delete", nodes: [ids.slide] })).toMatchObject({
-      refused: "shape",
-      field: "nodes",
+  it("removes layers and slides together in one change", () => {
+    const doom = build(richDeck(), change({ op: "remove", targets: [ids.card, more.slide2] }))
+    expect(parentOf(doom.nodes.get(ids.card)!)).toBeNull()
+    expect(parentOf(doom.nodes.get(more.slide2)!)).toBeNull()
+    expect(kids(doom, ids.slide)).not.toContain(ids.card)
+  })
+
+  it("refuses a missing node and a node already deleted", () => {
+    expect(refusal(richDeck(), { op: "remove", targets: ["z:9"] })).toMatchObject({
+      refused: "missing",
+      field: "targets",
     })
-    expect(refusal(richDeck(), { op: "delete", nodes: ["z:9"] })).toMatchObject({ refused: "missing", field: "nodes" })
     const gone = land(richDeck(), [{ node: ids.card, prop: "parent", value: null }])
-    expect(refusal(gone, { op: "delete", nodes: [ids.card] })).toMatchObject({ refused: "missing" })
+    expect(refusal(gone, { op: "remove", targets: [ids.card] })).toMatchObject({ refused: "missing" })
   })
 })

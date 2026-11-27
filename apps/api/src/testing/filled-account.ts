@@ -182,7 +182,7 @@ async function agentEdit(served: Served, access: string): Promise<string> {
   const made = await agentCall(served, access, "airdesign_execute", { script: "createDeck()" })
   await agentCall(served, access, "airdesign_execute", {
     deck: made.deck,
-    script: scriptOf([{ op: "add", kind: "text", slide: made.slides[0], text: "agent" }]),
+    script: scriptOf([{ op: "insert", kind: "text", parent: made.slides[0], text: "agent" }]),
   })
   return made.deck
 }

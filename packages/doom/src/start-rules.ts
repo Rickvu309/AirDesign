@@ -1,8 +1,7 @@
 import type { Intent } from "./intent-read.js"
+import type { LayerKind } from "./kind-fields.js"
 
-type Unplaced<C> = C extends { readonly slide: unknown } ? Omit<C, "slide"> : never
-
-export type StartContent = Unplaced<Extract<Intent, { readonly op: "add" }>>
+export type StartContent = Omit<Extract<Intent, { readonly op: "insert"; readonly kind: LayerKind }>, "parent">
 export type Placeholder = { readonly name: string; readonly chars: string }
 
 export type StartRules = {

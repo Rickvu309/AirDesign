@@ -95,21 +95,21 @@ describe("a mask is a layer that clips every sibling above it", () => {
       layers[2]!,
     ])
     const hole = plain.ids.hole!
-    const set = readIntent({ op: "set", target: hole, mask: true })
-    expect(set).toMatchObject({ op: "set", mask: true })
+    const set = readIntent({ op: "update", target: hole, mask: true })
+    expect(set).toMatchObject({ op: "update", mask: true })
     if (isRefusal(set)) return
     const masked = landed(plain.doom, set)
     expect(propOf(masked.nodes.get(hole)!, "mask")).toBe(true)
-    const cleared = landed(masked, { op: "set", target: hole, mask: false })
+    const cleared = landed(masked, { op: "update", target: hole, mask: false })
     expect(propOf(cleared.nodes.get(hole)!, "mask")).toBe(false)
-    expect(readIntent({ op: "set", target: hole, mask: "yes" })).toMatchObject({
+    expect(readIntent({ op: "update", target: hole, mask: "yes" })).toMatchObject({
       refused: "shape",
       field: "mask",
     })
-    expect(readIntent({ op: "set", target: plain.slides[0], mask: true })).toMatchObject({ op: "set" })
+    expect(readIntent({ op: "update", target: plain.slides[0], mask: true })).toMatchObject({ op: "update" })
     const slide = compileIntent(
       plain.doom,
-      { op: "set", target: plain.slides[0]!, mask: true },
+      { op: "update", target: plain.slides[0]!, mask: true },
       () => nodeId("m:9"),
       placement,
       starts,
