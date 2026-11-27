@@ -1,8 +1,29 @@
+import { useLayoutEffect, useRef } from "react"
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
 import { cn } from "@/lib/class-names"
 
-function Popover({ ...props }: PopoverPrimitive.Root.Props) {
-  return <PopoverPrimitive.Root data-slot="popover" {...props} />
+function Popover({ actionsRef, onOpenChange, ...props }: PopoverPrimitive.Root.Props) {
+  const ownActions = useRef<PopoverPrimitive.Root.Actions>(null)
+  const actions = actionsRef ?? ownActions
+  const escapeClose = useRef(false)
+  useLayoutEffect(() => {
+    if (!escapeClose.current) return
+    escapeClose.current = false
+    if (props.open === false) actions.current?.unmount()
+  }, [props.open, actions])
+  return (
+    <PopoverPrimitive.Root
+      data-slot="popover"
+      {...props}
+      actionsRef={actions}
+      onOpenChange={(open, details) => {
+        onOpenChange?.(open, details)
+        const instantEscape = !open && !details.isCanceled && details.reason === "escape-key"
+        escapeClose.current = instantEscape && props.open !== undefined
+        if (instantEscape && props.open === undefined) actions.current?.unmount()
+      }}
+    />
+  )
 }
 
 function PopoverTrigger({ ...props }: PopoverPrimitive.Trigger.Props) {
