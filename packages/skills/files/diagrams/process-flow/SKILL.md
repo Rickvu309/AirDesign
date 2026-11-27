@@ -1,3 +1,8 @@
+---
+name: process-flow
+description: "A script that lays out 3 to 6 steps left to right with arrows between them. Read it before you draw a process."
+---
+
 # Process flow
 
 Shows 3 to 6 steps in order, left to right, with an arrow from each step to the next. Under each step sit one or two short points: who does it, how long it takes, how much. The step the title is about takes the accent.

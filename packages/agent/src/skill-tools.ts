@@ -1,4 +1,4 @@
-import { listStyles, readSkill, readSkillIndex, readStyle } from "@airdesign/skills"
+import { listStyles, readSkill, readStyle, skills } from "@airdesign/skills"
 
 import { answered, refused, type Answer } from "./answer.js"
 
@@ -23,11 +23,23 @@ function readOptionalName(
   return { ok: true, name: body.name }
 }
 
+function skillIndex(dir: string | undefined) {
+  const entries = skills(dir).map(({ name, description }) => ({ name, when: description }))
+  const markdown = [
+    "# AirDesign skills",
+    "",
+    "Call `airdesign_read_skill` with a skill name to read its guide.",
+    "",
+    ...entries.map((entry) => `- \`${entry.name}\`: ${entry.when}`),
+  ].join("\n")
+  return { markdown, skills: entries }
+}
+
 export function readSkillTool(raw: unknown, dir?: string): Answer {
   const parsed = readOptionalName(raw, "A skill name from the index.")
   if (!parsed.ok) return parsed.result
   if (parsed.name === undefined) {
-    const index = readSkillIndex(dir)
+    const index = skillIndex(dir)
     return answered("Call airdesign_read_skill with a skill name to read its guide.", {
       ok: true,
       skills: index.skills,
@@ -36,7 +48,7 @@ export function readSkillTool(raw: unknown, dir?: string): Answer {
   }
   const skill = readSkill(parsed.name, dir)
   if (skill === undefined) {
-    const available = readSkillIndex(dir).skills.map((entry) => entry.name)
+    const available = skills(dir).map((entry) => entry.name)
     const note =
       available.length === 0
         ? "No skills are available."

@@ -1,11 +1,10 @@
 import { filesDir, fs, nodePath } from "./package-files.js"
 
 export { kitPieces, readKitPiece } from "./kit.js"
+export { readSkill, type Skill, skills } from "./skill-folders.js"
 export { newDeckTheme, themePresets, themePresetById, themePresetOf } from "./theme-presets.js"
 
-const skillNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/
 const styleNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-const indexEntryPattern = /^- `([a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)`:\s*(.+)$/
 const parameterPattern = /^- `([^`]+)`:\s*(.+)$/
 
 function stripMarkdownExtension(raw: string): string {
@@ -16,17 +15,6 @@ function inside(root: string, candidate: string): boolean {
   const path = nodePath()
   const relative = path.relative(root, candidate)
   return relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative)
-}
-
-function parseSkillIndex(markdown: string): readonly { readonly name: string; readonly when: string }[] {
-  const entries: { readonly name: string; readonly when: string }[] = []
-  for (const line of markdown.split(/\r?\n/)) {
-    const matched = indexEntryPattern.exec(line.trim())
-    if (matched !== null) {
-      entries.push({ name: matched[1]!, when: matched[2]!.trim() })
-    }
-  }
-  return entries
 }
 
 function summaryOf(markdown: string): string {
@@ -55,30 +43,6 @@ function parseParameters(markdown: string): readonly { readonly name: string; re
     }
   }
   return parameters
-}
-
-export function readSkillIndex(dir: string = filesDir()): {
-  readonly markdown: string
-  readonly skills: readonly { readonly name: string; readonly when: string }[]
-} {
-  const markdown = fs().readFileSync(nodePath().join(dir, "index.md"), "utf8").trimEnd()
-  return { markdown, skills: parseSkillIndex(markdown) }
-}
-
-export function readSkill(
-  rawName: string,
-  dir: string = filesDir(),
-): { readonly name: string; readonly markdown: string } | undefined {
-  const name = stripMarkdownExtension(rawName.trim())
-  if (!skillNamePattern.test(name) || name === "index" || name === "styles" || name.startsWith("styles/")) {
-    return undefined
-  }
-  const path = nodePath()
-  const { existsSync, readFileSync, statSync } = fs()
-  const root = path.resolve(dir)
-  const target = path.resolve(root, `${name}.md`)
-  if (!inside(root, target) || !existsSync(target) || !statSync(target).isFile()) return undefined
-  return { name, markdown: readFileSync(target, "utf8").trimEnd() }
 }
 
 export function listStyles(dir: string = filesDir()): readonly { readonly name: string; readonly summary: string }[] {

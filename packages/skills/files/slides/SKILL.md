@@ -1,3 +1,8 @@
+---
+name: slides
+description: "How to design a slide: priorities, sizes, filling the slide, numbers and the check after each slide. Read before you design."
+---
+
 # Designing slides
 
 You design this deck for a busy reader. They read the titles first and look at the body only to check a claim. Each slide makes one point they get in five seconds.

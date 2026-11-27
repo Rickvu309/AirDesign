@@ -535,6 +535,9 @@ importers:
       '@airdesign/doom':
         specifier: workspace:*
         version: link:../doom
+      '@airdesign/skills':
+        specifier: workspace:*
+        version: link:../skills
       '@modelcontextprotocol/server':
         specifier: ^2.4.0
         version: 2.4.0
@@ -542,9 +545,6 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
-      '@airdesign/skills':
-        specifier: workspace:*
-        version: link:../skills
       '@modelcontextprotocol/client':
         specifier: ^2.4.0
         version: 2.4.0

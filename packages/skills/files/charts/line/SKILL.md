@@ -1,3 +1,8 @@
+---
+name: line
+description: "The arithmetic for a line chart: nice ticks, series named at their ends."
+---
+
 # Line chart
 
 One or a few series over many periods: a trend, a share over time, our number against the market's. Draw it yourself from a path, rectangles and text; this guide gives the arithmetic. `kit/line-chart` is the same chart drawn on sample data, to copy and look at.

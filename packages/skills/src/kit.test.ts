@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url"
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 
-import { kitPieces, readKitPiece, readSkill, readSkillIndex, themePresetById } from "./index.js"
+import { kitPieces, readKitPiece, readSkill, skills, themePresetById } from "./index.js"
 
 type Text = { readonly chars: string; readonly spans: readonly { readonly end: number }[] }
 type Spot = { readonly x: number; readonly y: number }
@@ -23,7 +23,7 @@ const keysIn = (value: unknown): readonly string[] =>
 
 describe("kit pieces", () => {
   it("has every piece a skill names", () => {
-    const named = readSkillIndex().skills.flatMap((entry) =>
+    const named = skills().flatMap((entry) =>
       [...(readSkill(entry.name)?.markdown ?? "").matchAll(/kit\/([a-z0-9-]+)/g)].map((m) => m[1]),
     )
     expect(named.length).toBeGreaterThan(0)

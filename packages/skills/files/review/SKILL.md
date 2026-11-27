@@ -1,3 +1,8 @@
+---
+name: review
+description: "The checks to run on every slide before you stop."
+---
+
 # Review a deck before you stop
 
 Run this list on every slide when the deck is done. Fix what you find, then read the slide again. The flaw groups follow SlideAudit's taxonomy of slide design flaws (arXiv 2508.03630); each line says how to see the flaw in AirDesign.

@@ -1,3 +1,8 @@
+---
+name: donut
+description: "The arithmetic for a donut of shares of one whole."
+---
+
 # Donut chart
 
 Shares of one whole: revenue by segment, a budget by team. Draw it yourself from paths, rectangles and text; this guide gives the arithmetic. `kit/donut-chart` is the same chart drawn on sample data, to copy and look at.

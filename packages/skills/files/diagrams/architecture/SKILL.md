@@ -1,3 +1,8 @@
+---
+name: architecture
+description: "A script that lays out a system's parts in layers, joined by arrows that stay on their boxes. Read it before you draw a system."
+---
+
 # Architecture diagram
 
 Shows how the parts of a system call each other, in layers from the people who use it at the top to where its data rests at the bottom. One path in the accent carries the point the title makes, such as the route a payment takes.

@@ -1,6 +1,6 @@
 import { callTool, type Answer, type Session } from "@airdesign/agent"
 import { evalDeckId, memoryDecks, suite } from "@airdesign/agent/testing/evals"
-import { listStyles, readSkillIndex } from "@airdesign/skills"
+import { listStyles, skills } from "@airdesign/skills"
 import { expect, it } from "vitest"
 
 import { encode } from "./encode.js"
@@ -33,7 +33,7 @@ async function largestAnswers(): Promise<Readonly<Record<string, number>>> {
   }
   const decks = memoryDecks(() => suite[0]!.task.deck())
   await call(decks, "airdesign_read_skill", {})
-  for (const { name } of readSkillIndex().skills) await call(decks, "airdesign_read_skill", { name })
+  for (const { name } of skills()) await call(decks, "airdesign_read_skill", { name })
   await call(decks, "airdesign_get_style", {})
   for (const { name } of listStyles()) await call(decks, "airdesign_get_style", { name })
   return largest

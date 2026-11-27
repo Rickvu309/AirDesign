@@ -1,10 +1,11 @@
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs"
+import { createHash } from "node:crypto"
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
 
-import { listStyles, readSkill, readSkillIndex, readStyle } from "./index.js"
+import { listStyles, readSkill, readStyle, skills } from "./index.js"
 
 const filesDir = fileURLToPath(new URL("../files", import.meta.url))
 
@@ -12,32 +13,51 @@ function skillFilesIn(dir: string, prefix = ""): string[] {
   const found: string[] = []
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const relative = prefix === "" ? entry.name : `${prefix}/${entry.name}`
-    if (entry.isDirectory()) {
-      if (relative === "styles") continue
-      found.push(...skillFilesIn(path.join(dir, entry.name), relative))
-      continue
-    }
-    if (!entry.name.endsWith(".md") || relative === "index.md") continue
-    found.push(relative.slice(0, -3))
+    if (entry.isDirectory()) found.push(...skillFilesIn(path.join(dir, entry.name), relative))
+    else if (entry.name === "SKILL.md") found.push(prefix)
   }
   return found.sort()
 }
 
+const sha256 = (bytes: Uint8Array) => `sha256:${createHash("sha256").update(bytes).digest("hex")}`
+
 describe("skills pack", () => {
-  it("opens every skill named in the index and indexes every skill file", () => {
-    const index = readSkillIndex()
-    expect(index.skills.length).toBeGreaterThan(0)
-    expect(index.markdown).toContain("execute")
-
-    for (const entry of index.skills) {
-      expect(entry.when.length).toBeGreaterThan(0)
-      const opened = readSkill(entry.name)
-      expect(opened).toBeDefined()
-      expect(opened?.name).toBe(entry.name)
-      expect(opened?.markdown.length).toBeGreaterThan(0)
+  it("reads every SKILL.md folder as a skill named by its last folder", () => {
+    const guides = skills()
+    expect(guides.map((guide) => guide.name)).toEqual(skillFilesIn(filesDir))
+    expect(guides.map((guide) => guide.name)).toContain("execute")
+    for (const guide of guides) {
+      const raw = readFileSync(path.join(filesDir, guide.name, "SKILL.md"), "utf8")
+      expect(raw.startsWith(`---\nname: ${guide.name.split("/").at(-1)!}\n`)).toBe(true)
+      expect(guide.description.length).toBeGreaterThan(0)
+      expect(guide.description.length).toBeLessThanOrEqual(1024)
     }
+  })
 
-    expect(index.skills.map((entry) => entry.name).sort()).toEqual(skillFilesIn(filesDir))
+  it("gives read_skill each SKILL.md's text after its frontmatter, byte for byte", () => {
+    for (const guide of skills()) {
+      const raw = readFileSync(path.join(filesDir, guide.name, "SKILL.md"), "utf8")
+      const body = raw.slice(raw.indexOf("\n---\n", 4) + 5).trim()
+      expect(readSkill(guide.name)).toEqual({ name: guide.name, markdown: body })
+      expect(guide.markdown).toBe(body)
+    }
+  })
+
+  it("lists every file of a skill with the digest and size of its bytes", () => {
+    for (const guide of skills()) {
+      expect(guide.files[0]?.path).toBe("SKILL.md")
+      for (const file of guide.files) {
+        const bytes = readFileSync(path.join(filesDir, guide.name, file.path))
+        expect(file.bytes).toEqual(new Uint8Array(bytes))
+        expect(file.size).toBe(bytes.byteLength)
+        expect(file.digest).toBe(sha256(bytes))
+      }
+    }
+    expect(
+      skills()
+        .find((guide) => guide.name === "kit")
+        ?.files.map((file) => file.path),
+    ).toContain("kpi.json")
   })
 
   it("accepts an optional .md suffix and rejects index, styles and traversal paths", () => {
@@ -47,6 +67,7 @@ describe("skills pack", () => {
 
     expect(readSkill("")).toBeUndefined()
     expect(readSkill("index")).toBeUndefined()
+    expect(readSkill("charts")).toBeUndefined()
     expect(readSkill("styles")).toBeUndefined()
     expect(readSkill("styles/editorial")).toBeUndefined()
     expect(readSkill("../package.json")).toBeUndefined()
