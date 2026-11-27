@@ -99,7 +99,6 @@ describe("copy from the kit", () => {
     })
     expect(answer.ok, JSON.stringify(answer.fields)).toBe(true)
     expect(answer.fields.rev).toBe(before.rev + 1)
-    expect(answer.fields.made.map((each: { verb: string }) => each.verb)).toEqual(["copy", "copy"])
     const [, low] = answer.fields.result as [string, string]
     expect(doom.propOf(by.fold(deck).nodes.get(low as doom.NodeId), "box")).toMatchObject({ w: 1200 })
     const undone = await by.call("undo_run", { deck, runId: answer.fields.runId })

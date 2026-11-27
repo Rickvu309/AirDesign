@@ -123,7 +123,7 @@ for (const pairing of ["two agents", "Aira and an agent"] as const) {
         deck: start.deck,
         script: scriptOf([text(start.slide, "two")]),
       })
-      const added = (a.body.made as { ids: string[] }[])[0]!.ids[0]!
+      const added = a.body.result as string
       const typed = await ask(
         address.base,
         "POST",

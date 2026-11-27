@@ -86,7 +86,7 @@ describe("an agent reads the field a refusal names", () => {
       deck,
       script: scriptOf([{ op: "add", kind: "text", slide: slides[0], text: "Hi" }]),
     })
-    const id = (added.fields as { made: { ids: string[] }[] }).made[0]!.ids[0]!
+    const id = added.fields.result as string
     const arrow = await by.call("execute", { deck, script: scriptOf([{ op: "set", target: id, arrow: true }]) })
     expect(arrow.fields).toMatchObject({ field: "arrow", fault: "needs", needs: "a line" })
     expect(arrow.fields).not.toHaveProperty("form")

@@ -117,7 +117,7 @@ Sizes are pixels on a 1920 by 1080 slide. Name the deck's own colours and text s
 
 ## The answer
 
-- `made` lists the new ids by operation, as `{ op, verb, ids }`. `names` gives the id of each layer the script named with `name`.
+- `names` gives the id of each layer the script named with `name`. Every other new id is what its operation returned to the script.
 - `problems` lists what is off on the slides the call touched, such as overflow, overlap, off-slide, small text, or a colour, size or font off the deck's own choices. Each says how to fix it. Fix each one unless the person asked for it.
 - `result`, `logs` and `pictures` hold what the script returned, printed and asked to see.
 - Send `runId` with every later call in your turn, and to `airdesign_stop_run` when you are done.

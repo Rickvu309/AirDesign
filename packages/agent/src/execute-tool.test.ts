@@ -48,7 +48,7 @@ describe("execute runs a script as one edit", () => {
       `,
     })
     expect(answer.ok, JSON.stringify(answer.fields)).toBe(true)
-    expect(answer.fields.made).toHaveLength(30)
+    expect(answer.fields).not.toHaveProperty("made")
     expect(answer.fields.rev).toBe(before.rev + 1)
     const slide = answer.fields.result as string
     expect(doom.childrenOf(by.fold(deck), slide as doom.NodeId)).toHaveLength(29)
@@ -84,8 +84,6 @@ describe("execute runs a script as one edit", () => {
     expect(answer.ok, JSON.stringify(answer.fields)).toBe(true)
     const live = by.live(deck)
     for (const id of answer.fields.result as string[]) expect(live.has(id), id).toBe(true)
-    for (const made of answer.fields.made as { verb: string; ids: string[] }[])
-      if (made.verb !== "copy") for (const id of made.ids) expect(live.has(id), id).toBe(true)
     expect(Object.keys(answer.fields.names)).toEqual(["One card", "Two card", "Three card"])
     expect(answer.fields.bakedLayouts).toHaveLength(3)
   })
@@ -323,7 +321,7 @@ describe("operation names a script can call", () => {
       deck,
       script: `const s = insert({ kind: "slide" }); remove({ target: s }); get().slides.includes(s)`,
     })
-    expect(answer.fields).toMatchObject({ ok: true, result: false, made: [{ op: 1, verb: "insert" }] })
+    expect(answer.fields).toMatchObject({ ok: true, result: false })
     expect(doom.slidesOf(by.fold(deck))).toHaveLength(1)
   })
 })
@@ -364,6 +362,6 @@ describe("an insert that fills a slide's title placeholder", () => {
       decks,
     )
     const placeholder = doom.childrenOf(decks.decks.get(made.deck as never)!, made.slides[0] as doom.NodeId)[0]!.id
-    expect(answer.fields).toMatchObject({ ok: true, made: [{ op: 1, verb: "insert", ids: [placeholder] }] })
+    expect(answer.fields).toMatchObject({ ok: true, result: placeholder })
   })
 })

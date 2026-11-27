@@ -36,8 +36,7 @@ it("keeps naming a text its font cannot measure on every read and edit after the
       { op: "add", kind: "text", slide: slides[0], text: "Launch 🚀", box: { x: 160, y: 300, w: 800, h: 80 } },
     ]),
   })
-  const { made, runId } = landed.fields as { made: { ids: string[] }[]; runId: string }
-  const id = made[0]!.ids[0]!
+  const { result: id, runId } = landed.fields as { result: string; runId: string }
   const unread = `${id} has a character the deck's fonts lack`
   expect(String(landed.fields.note)).toContain(unread)
   const read = await call("execute", { deck, script: "get().note" })

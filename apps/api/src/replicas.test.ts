@@ -239,7 +239,7 @@ describe("an agent's run on a deck", () => {
         ]),
       })
       run = opened.runId
-      added = opened.made[0].ids[0]
+      added = opened.result
     })
     const typed = {
       deck,

@@ -1,4 +1,4 @@
-import { scriptOf } from "@airdesign/agent/testing/evals"
+import { scriptOfEach } from "@airdesign/agent/testing/evals"
 import { randomBytes } from "node:crypto"
 
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
@@ -57,21 +57,15 @@ describe("an agent's title on a deck made over MCP", () => {
       expect(await read()).toContain("Untitled")
       const landed = await tool(client, "execute", {
         deck: first.deck,
-        script: scriptOf([
+        script: scriptOfEach([
           { op: "add", kind: "text", slide: first.slides[0], text: "Q3 board update", textStyle: "title" },
           { op: "add", kind: "text", slide: first.slides[0], text: "Revenue grew", textStyle: "heading" },
         ]),
       })
       const lines = await read()
-      const filled = (landed.answer.made as { op: number; verb: string; ids: string[] }[]).map(({ op, verb }) => ({
-        op,
-        verb,
-      }))
-      expect(filled).toEqual([
-        { op: 1, verb: "insert" },
-        { op: 2, verb: "insert" },
-      ])
-      for (const { ids } of landed.answer.made as { ids: string[] }[]) expect(lines).toContain(`  ${ids[0]!} text`)
+      const filled = landed.answer.result as string[]
+      expect(filled).toHaveLength(2)
+      for (const id of filled) expect(lines).toContain(`  ${id} text`)
       expect(lines).not.toContain("Untitled")
       expect(lines).toContain("Q3 board update")
       expect(lines.split("\n").filter((line) => line.includes("text="))).toHaveLength(2)
