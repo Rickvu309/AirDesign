@@ -1,7 +1,6 @@
 import * as doom from "@airdesign/doom"
-import type { Bounds } from "./snapping"
+import type { Bounds, Point, SlideGeometry } from "@/editing/slide-geometry"
 import { moveWrites } from "./move-writes"
-import type { Point, SlideGeometry } from "./slide-geometry"
 
 export type AlignTo = "left" | "center" | "right" | "top" | "middle" | "bottom"
 export type DistributeAcross = "horizontal" | "vertical"

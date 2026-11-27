@@ -1,6 +1,6 @@
 import { orderKeyBetween, type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { apply, invert, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
+import { apply, invert, type Placed, type Point, type SlideGeometry } from "@/editing/slide-geometry"
 
 type Made = { readonly writes: readonly doom.Write[]; readonly selected: readonly doom.NodeId[] }
 

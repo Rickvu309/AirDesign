@@ -2,7 +2,7 @@ import { doomRoutes, viewTools } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 import { testTheme } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
-import { connectChatHost, type HostLine } from "./chat-host"
+import { connectChatHost, modelContextOf, type HostLine } from "./chat-host"
 import { chatDoomRemote } from "./chat-remote"
 
 type Sent = { readonly jsonrpc: "2.0"; readonly id?: number; readonly method?: string; readonly params?: unknown }
@@ -84,6 +84,48 @@ describe("the deck view's line to the chat that shows it", () => {
       structuredContent: { ok: true, deck: "d1", rev: 4, screenshots: ["s2", "s3"] },
     })
     expect(shown).toEqual([{ deck: "d1" }, { deck: "d1", slide: "s2" }])
+  })
+
+  it("words the slide in view and the person's selection for the model", () => {
+    expect(modelContextOf({ deck: "d1", slide: "s2", slideNumber: 3, selected: [] })).toEqual({
+      content: [{ type: "text", text: "In the AirDesign deck view the person is on slide 3 (s2) of deck d1." }],
+      structuredContent: { deck: "d1", slide: "s2", slideNumber: 3, selected: [] },
+    })
+    expect(modelContextOf({ deck: "d1", slide: "s2", slideNumber: 3, selected: ["n5"] }).content).toEqual([
+      {
+        type: "text",
+        text: "In the AirDesign deck view the person is on slide 3 (s2) of deck d1 and has selected layer n5.",
+      },
+    ])
+    expect(modelContextOf({ deck: "d1", slide: "s2", slideNumber: 3, selected: ["n5", "n7"] }).content).toEqual([
+      {
+        type: "text",
+        text: "In the AirDesign deck view the person is on slide 3 (s2) of deck d1 and has selected layers n5, n7.",
+      },
+    ])
+  })
+
+  it("tells the model what the person picked, once per change, when the chat takes context", async () => {
+    const host = fakeHost((sent) =>
+      sent.method === "ui/initialize" ? { hostCapabilities: { updateModelContext: { text: {} } } } : {},
+    )
+    const chat = await connectChatHost(host.line)
+    chat.tellModel({ deck: "d1", slide: "s1", slideNumber: 1, selected: [] })
+    chat.tellModel({ deck: "d1", slide: "s1", slideNumber: 1, selected: [] })
+    chat.tellModel({ deck: "d1", slide: "s1", slideNumber: 1, selected: ["n5"] })
+    const told = host.sent.filter((each) => each.method === "ui/update-model-context")
+    expect(told.map((each) => each.params)).toEqual([
+      modelContextOf({ deck: "d1", slide: "s1", slideNumber: 1, selected: [] }),
+      modelContextOf({ deck: "d1", slide: "s1", slideNumber: 1, selected: ["n5"] }),
+    ])
+    expect(told.every((each) => typeof each.id === "number")).toBe(true)
+  })
+
+  it("keeps the selection to itself when the chat takes no model context", async () => {
+    const host = fakeHost(() => ({ hostCapabilities: {} }))
+    const chat = await connectChatHost(host.line)
+    chat.tellModel({ deck: "d1", slide: "s1", slideNumber: 1, selected: ["n5"] })
+    expect(host.sent.map((each) => each.method)).toEqual(["ui/initialize", "ui/notifications/initialized"])
   })
 
   it("answers the chat's requests so it can tear the view down", async () => {

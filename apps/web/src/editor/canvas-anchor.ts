@@ -1,4 +1,4 @@
-import type { Point } from "./slide-geometry"
+import type { Point } from "@/editing/slide-geometry"
 
 export type ZoomAnchor = { readonly point: Point; readonly at: Point }
 

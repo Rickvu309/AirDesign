@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
-import { hitChain } from "@/editor/hit-test"
-import type { Point, SlideGeometry } from "@/editor/slide-geometry"
+import { hitChain } from "@/editing/hit-test"
+import type { Point, SlideGeometry } from "@/editing/slide-geometry"
 
 export type GridPart = "number" | "live" | "picture"
 

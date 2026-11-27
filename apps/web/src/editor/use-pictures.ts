@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type DragEvent, type RefObjec
 import { readPicture } from "@/editing/picture-file"
 import type { ThinNotice } from "./thin-notice"
 import { pictureWrites } from "./picture-writes"
-import type { Point } from "./slide-geometry"
+import type { Point } from "@/editing/slide-geometry"
 import type { EditorClient } from "./use-deck"
 
 function typing(target: EventTarget | null): boolean {

@@ -47,6 +47,7 @@ export function ChatDeckView() {
         ? {}
         : {
             openLink: chat.openLink,
+            tellModel: chat.tellModel,
             fitHeight: (height) => chat.sizeTo({ width: Math.ceil(window.innerWidth), height }),
           },
     [chat],

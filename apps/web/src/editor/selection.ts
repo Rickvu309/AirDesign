@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
-import { ancestorsOf, type Placed, type SlideGeometry } from "./slide-geometry"
-import { intersects } from "./hit-test"
+import { ancestorsOf, type Placed, type SlideGeometry } from "@/editing/slide-geometry"
+import { intersects } from "@/editing/hit-test"
 
 export type Selection = { readonly ids: readonly doom.NodeId[]; readonly inside: doom.NodeId | null }
 

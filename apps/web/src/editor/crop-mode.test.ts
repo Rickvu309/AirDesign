@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import type { PanelControl } from "@/design/panel"
 import { changeWrites } from "./design-changes"
 import { nodeModel } from "./design-model"
-import { geometryOf } from "./slide-geometry"
+import { geometryOf } from "@/editing/slide-geometry"
 import { testTheme } from "@airdesign/doom/testing"
 
 const spot = (x: number, y: number, w: number, h: number, rotation = 0) => ({

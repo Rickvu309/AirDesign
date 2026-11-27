@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { geometryOf } from "../slide-geometry"
+import { geometryOf } from "@/editing/slide-geometry"
 import { testTheme } from "@airdesign/doom/testing"
 
 export const spot = (x: number, y: number, w: number, h: number, rotation = 0) => ({

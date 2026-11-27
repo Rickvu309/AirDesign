@@ -1,6 +1,6 @@
 import type { Aim } from "./line-end-drag"
 import { ScreenSized } from "./screen-sized"
-import type { Point } from "./slide-geometry"
+import type { Point } from "@/editing/slide-geometry"
 
 const edge = "var(--primary-strong)"
 const radius = 5

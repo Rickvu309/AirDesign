@@ -9,7 +9,7 @@ import {
   type RefObject,
 } from "react"
 import type { Preview } from "./canvas-overlay"
-import { hitChain } from "./hit-test"
+import { hitChain } from "@/editing/hit-test"
 import { cropDrag, isCropGrip, type CropGrip } from "./crop-drag"
 import type { CropTarget } from "./crop-handles"
 import { isEndGrip, lineEndDrag, type EndGrip } from "./line-end-drag"
@@ -28,7 +28,7 @@ import {
   type Rect,
   type Selection,
 } from "./selection"
-import type { Placed, Point, SlideGeometry } from "./slide-geometry"
+import type { Placed, Point, SlideGeometry } from "@/editing/slide-geometry"
 import type { CanvasGesture, Moving } from "./canvas-gesture"
 import { transformedBy } from "./transform-drag"
 import type { EditorClient } from "./use-deck"

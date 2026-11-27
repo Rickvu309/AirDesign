@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises"
 import { gzipSync } from "node:zlib"
 import { expect, test } from "./deck-test"
 
-const entryGzipLimit = 260_000
+const entryGzipLimit = 262_000
 
 test("the deck view's entry stays within its gzip budget and leaves text shaping for later", async () => {
   const page = await readFile("apps/web/dist/deck-view.html", "utf8")

@@ -6,7 +6,7 @@ import { alignWrites, distributeWrites, type AlignTo, type DistributeAcross } fr
 import { defaultStroke, fillWrite, strokePaintWrite } from "./design-paint-values"
 import { sizeFromHundredths, textWithWeight } from "./design-text-values"
 import { propOf } from "@airdesign/doom"
-import type { SlideGeometry } from "./slide-geometry"
+import type { SlideGeometry } from "@/editing/slide-geometry"
 import { shapeWrite, shownShape } from "./design-shape-values"
 
 export type ChangeContext = {

@@ -1,14 +1,5 @@
 import * as doom from "@airdesign/doom"
-import {
-  guidesAt,
-  lineAt,
-  nearestLine,
-  reachOf,
-  type Bounds,
-  type Guide,
-  type Line,
-  type SnapTargets,
-} from "./snapping"
+import { guidesAt, lineAt, nearestLine, reachOf, type Guide, type Line, type SnapTargets } from "./snapping"
 import {
   normalizeDegrees,
   resizeBox,
@@ -21,7 +12,7 @@ import {
 import { croppedPaint } from "./crop-drag"
 import { isGroup, scaledChildren } from "./group-scale"
 import { memberOf, type Member } from "./selection-frame"
-import { apply, invert, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
+import { apply, invert, type Bounds, type Placed, type Point, type SlideGeometry } from "@/editing/slide-geometry"
 
 type Tilted = { readonly center: Point; readonly w: number; readonly h: number; readonly rotation: number }
 

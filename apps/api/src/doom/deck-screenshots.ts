@@ -9,6 +9,8 @@ import type { NodeId } from "@airdesign/doom"
 
 export const screenshotsCap = 200_000_000
 export const leaseGrace = 5_000
+export const viewMemory = 30 * 60_000
+export const viewOpening = 5_000
 
 export type ScreenshotKey = { readonly slide: NodeId; readonly key: string }
 
@@ -44,6 +46,7 @@ export class DeckScreenshots {
   private readonly painters = new Map<DeckId, Set<() => void>>()
   private readonly tabs = new Map<string, Set<OpenTab>>()
   private readonly renewed = new Map<DeckId, number>()
+  private readonly views = new Map<string, number>()
   private bytes = 0
   private readonly cap: number
   private readonly now: () => number
@@ -100,8 +103,23 @@ export class DeckScreenshots {
     return false
   }
 
+  sawView(email: string): void {
+    this.views.delete(email)
+    this.views.set(email, this.now())
+    for (const [each, seen] of this.views) {
+      if (this.now() - seen < viewMemory) break
+      this.views.delete(each)
+    }
+  }
+
+  showsViews(email: string): boolean {
+    const seen = this.views.get(email)
+    return seen !== undefined && this.now() - seen < viewMemory
+  }
+
   lease(deck: DeckId, signal: AbortSignal): Promise<boolean> {
     this.renewed.set(deck, this.now())
+    this.wake(deck)
     return new Promise((resolve) => {
       if (signal.aborted) {
         resolve(false)
@@ -126,7 +144,11 @@ export class DeckScreenshots {
     })
   }
 
-  async take(deck: DeckId, slides: readonly ScreenshotKey[], wait: number): Promise<Taken | "no painter"> {
+  async take(deck: DeckId, slides: readonly ScreenshotKey[], wait: number, opening = 0): Promise<Taken | "no painter"> {
+    if (!this.leased(deck) && opening > 0) {
+      const opened = AbortSignal.timeout(opening)
+      while (!this.leased(deck) && !opened.aborted) await this.wait(deck, opened)
+    }
     if (!this.leased(deck)) return "no painter"
     const before = slides.map(({ slide, key }) => this.fontFailure(deck, slide, key))
     this.want(

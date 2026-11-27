@@ -8,7 +8,7 @@ import { gridEditing, gridStep, type GridInteraction, type GridStep } from "@/ed
 import type { GridLayout, GridRect } from "@/editor/grid-lines"
 import { gridElementPresses } from "@/editor/grid-number"
 import { noSelection, type Selection } from "@/editor/selection"
-import { aroundPlaced, type SlideGeometry } from "@/editor/slide-geometry"
+import { aroundPlaced, type SlideGeometry } from "@/editing/slide-geometry"
 import { gestureFor } from "@/lib/gestures"
 import type { CanvasHandoff } from "./canvas"
 import { typing } from "./use-canvas-keys"

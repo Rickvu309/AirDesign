@@ -10,7 +10,7 @@ import { GridGroupFrame, type GridGroupHover } from "@/editor/grid-group-frame"
 import type { GridCard as Card, GridLayout } from "@/editor/grid-lines"
 import type { GridNumberPlacement } from "@/editor/grid-number"
 import { GridTargets } from "@/editor/grid-targets"
-import type { SlideGeometry } from "@/editor/slide-geometry"
+import type { SlideGeometry } from "@/editing/slide-geometry"
 import type { GridDropBar as DropBar } from "@/editor/use-grid-drag"
 
 type Point = { readonly x: number; readonly y: number }

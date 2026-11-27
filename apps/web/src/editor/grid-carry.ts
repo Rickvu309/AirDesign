@@ -1,7 +1,7 @@
 import type * as doom from "@airdesign/doom"
 import type { CarryOver } from "@/editor/canvas-carry"
 import type { GridCard } from "@/editor/grid-lines"
-import type { Point, SlideGeometry } from "@/editor/slide-geometry"
+import type { Point, SlideGeometry } from "@/editing/slide-geometry"
 
 export function carryOver(
   cards: readonly GridCard[],

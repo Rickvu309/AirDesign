@@ -3,10 +3,10 @@ import { propOf } from "@airdesign/doom"
 import { useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode, type RefObject } from "react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { editorCopy } from "@/copy/editor-copy"
-import { hitChain } from "./hit-test"
+import { hitChain } from "@/editing/hit-test"
 import { maskable, maskWrites } from "./mask-writes"
 import { picked, unitOf, type Selection } from "./selection"
-import type { SlideGeometry } from "./slide-geometry"
+import type { SlideGeometry } from "@/editing/slide-geometry"
 import type { EditorClient } from "./use-deck"
 
 function editingText(target: EventTarget | null): boolean {

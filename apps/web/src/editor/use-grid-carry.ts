@@ -4,7 +4,7 @@ import type { GridCarry } from "@/editor/canvas-carry"
 import { carryOver } from "@/editor/grid-carry"
 import type { GridLayout } from "@/editor/grid-lines"
 import { edgePan } from "@/editor/grid-marquee"
-import type { SlideGeometry } from "@/editor/slide-geometry"
+import type { SlideGeometry } from "@/editing/slide-geometry"
 import type { useGridCamera } from "@/editor/use-grid-camera"
 
 export type GridCarried = { readonly over: doom.NodeId | null }

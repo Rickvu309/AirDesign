@@ -1,4 +1,4 @@
-export type Bounds = { readonly left: number; readonly top: number; readonly right: number; readonly bottom: number }
+import type { Bounds } from "@/editing/slide-geometry"
 
 type Axis = "x" | "y"
 

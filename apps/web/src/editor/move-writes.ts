@@ -1,6 +1,14 @@
 import * as doom from "@airdesign/doom"
-import { reachOf, snapMove, type Bounds, type Guide, type SnapTargets } from "./snapping"
-import { aroundPlaced, invert, linear, type Placed, type Point, type SlideGeometry } from "./slide-geometry"
+import { reachOf, snapMove, type Guide, type SnapTargets } from "./snapping"
+import {
+  type Bounds,
+  aroundPlaced,
+  invert,
+  linear,
+  type Placed,
+  type Point,
+  type SlideGeometry,
+} from "@/editing/slide-geometry"
 
 const zero: Point = { x: 0, y: 0 }
 

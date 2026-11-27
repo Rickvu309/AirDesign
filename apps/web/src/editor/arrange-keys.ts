@@ -5,7 +5,7 @@ import { flipWrites, toggleWrites } from "./flip-writes"
 import { wrapWrites, ungroupWrites } from "./group-writes"
 import { orderWrites } from "./order-writes"
 import { noSelection, type Selection } from "./selection"
-import type { SlideGeometry } from "./slide-geometry"
+import type { SlideGeometry } from "@/editing/slide-geometry"
 import type { EditorClient } from "./use-deck"
 
 export type ArrangeContext = {

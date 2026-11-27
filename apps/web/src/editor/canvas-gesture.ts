@@ -4,7 +4,7 @@ import type { CropGrip } from "./crop-drag"
 import type { CropTarget } from "./crop-handles"
 import type { EndGrip } from "./line-end-drag"
 import type { Selection } from "./selection"
-import type { Placed, Point, SlideGeometry } from "./slide-geometry"
+import type { Placed, Point, SlideGeometry } from "@/editing/slide-geometry"
 import type { TransformGrip } from "./transform-math"
 
 export type CanvasGesture =

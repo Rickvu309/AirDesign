@@ -117,6 +117,36 @@ describe("the deck view in a chat holds the painter lease and answers an agent's
     }
   })
 
+  it("waits for a view that is still opening before it says no painter holds the deck", async () => {
+    const { agent, app, deck } = await started()
+    try {
+      const opened = (await app.callTool({ name: viewTools.open, arguments: { deck } })).structuredContent as Opened
+      const fold = doom.readFold(opened.fold)!
+      const [slide] = doom.slidesOf(fold).map((each) => each.id)
+      const key = createHash("sha256").update(doom.slideKeyText(fold, slide!)).digest("hex")
+      const asked = agent.callTool({
+        name: "airdesign_execute",
+        arguments: { deck, script: `screenshot({ target: ${JSON.stringify(slide)} })` },
+      })
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      const held = await app.callTool({ name: viewTools.since, arguments: { deck, rev: opened.rev, wait: true } })
+      expect(held.structuredContent).toMatchObject({ ok: true, deck, screenshots: true })
+      await app.callTool({
+        name: viewTools.screenshots,
+        arguments: {
+          deck,
+          rev: opened.rev,
+          screenshots: { keys: [{ slide, key }], images: [{ slide, key, type: "image/jpeg", data: shot }] },
+        },
+      })
+      const answer = await asked
+      expect(answer.structuredContent).toMatchObject({ ok: true, screenshots: [slide] })
+    } finally {
+      await agent.close()
+      await app.close()
+    }
+  })
+
   it("answers the view only for the decks its account owns", async () => {
     const { agent, deck } = await started()
     const stranger = await connected(
