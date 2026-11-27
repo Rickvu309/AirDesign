@@ -28,21 +28,12 @@ Sizes are pixels on a 1920 by 1080 slide, in the neutral theme. Each frame grows
 - `kit/timeline-step` (420 by 216): one step of a timeline: a marker on a line, a date, what happens and a note. Copies placed side by side, 420 apart, make one continuous line: four at `x: 120, 540, 960, 1380`. Change `Date`, `Label` and `Note` in `Words`. Give the step the title is about `fill: "accent1"` on its `Marker`, and remove the last step's `Line`.
 - `kit/source-line` (1680 by 31): where the numbers come from, at `x: 120, y: 990`. Every slide with a number has one. Change its text: "Source: " and the document, team or date.
 
-## Charts and tables
+## Charts, tables and diagrams
 
-A chart is drawn from plain rectangles, paths and text, so its bars carry your numbers only when you compute them. Each chart below has a recipe skill with the arithmetic as a script: read it, change its first lines to your data and run it in one `airdesign_execute` call. Copy the piece itself only to look at it or to start from its sample.
+A chart, table or diagram has a recipe skill instead of a piece: a script that draws it from your data, with the arithmetic done and every arrow attached to its boxes. Read the recipe, change its first lines to your data and run it in one `airdesign_execute` call.
 
-- `kit/table` (1680 by 544): a header row, body rows and a total row, with numbers right-aligned and hairlines between rows. Recipe: `charts/table`.
-- `kit/bar-chart` (1680 by 620): bars ranked from largest to smallest, names on the left, values at the bar ends, one bar in the accent. For items that are not time. Recipe: `charts/bar`.
-- `kit/column-chart` (1680 by 620): columns over periods, oldest first, values above the columns, one period in the accent. Recipe: `charts/column`.
-- `kit/line-chart` (1680 by 620): one to three series over many periods on nice ticks, each named at its end, ours in the accent. Recipe: `charts/line`.
-- `kit/donut-chart` (1080 by 620): shares of one whole, largest first from 12 o'clock, the total in the hole and the parts in a column beside it. Recipe: `charts/donut`.
-
-Place a chart at `x: 120, y: 300` under the title block, as wide as the body or about 60% of it with two or three takeaways on its right. The header above the chart names what is measured and its unit, and a source line goes at y 990.
-
-## Diagrams
-
-A diagram is boxes joined by connectors attached to them, so an arrow stays on its boxes when one moves. Each diagram has a recipe skill whose script lays out your own boxes and arrows.
-
-- `kit/process-flow` (1680 by 295): three steps left to right, an arrow from each to the next, and one or two points under each. Place it at `x: 120, y: 470`, the middle of the body area. Change each step's name and its points; give the step the title is about `stroke: "accent1"` and the others `stroke: "none"`. Recipe for another number of steps: `diagrams/process-flow`.
-- `kit/architecture` (1680 by 640): a system in four layers, from clients at the top to data at the bottom, joined by arrows attached to the boxes, with one path in the accent. Place it at `x: 120, y: 300`. Change the words in the boxes and the layer names; move a box and its arrows follow. Recipe for another system: `diagrams/architecture`.
+- Ranked items that are not time: `charts/bar`.
+- One number over periods: `charts/column`, or `charts/line` for many periods or a few series.
+- Exact numbers across rows and columns: `charts/table`.
+- Steps in order: `diagrams/process-flow`.
+- A system's parts and how they connect: `diagrams/architecture`.

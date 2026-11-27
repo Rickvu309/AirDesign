@@ -26,7 +26,7 @@ You design this deck for a busy reader. They read the titles first and look at t
 - The title states the takeaway in one sentence with a verb: "Revenue grew 41% since May", not "Revenue". Two lines at most.
 - One idea per slide. A slide that makes two points becomes two slides, or loses one.
 - The body is the evidence for the title: one chart, one table, or two to four short points. Leave out what the title does not need.
-- A process or a system is a diagram: draw it with the script in `diagrams/process-flow` or `diagrams/architecture`, so its arrows stay on their boxes. The `kit` skill holds ready pieces for titles, numbers, comparisons, tables and charts.
+- A process or a system is a diagram: draw it with the script in `diagrams/process-flow` or `diagrams/architecture`, so its arrows stay on their boxes. The `kit` skill holds ready pieces for titles, numbers, comparisons, timelines and sources, and names the recipe for each chart and table.
 - Every slide with a number has a source line at the bottom left, in `caption`: "Source: Finance Q3 close pack".
 
 ## Sizes on 1920 by 1080
@@ -59,4 +59,3 @@ The body area runs from under the title to above the source line, about y 280 to
 1. After you fill a slide, read it with `get({ target: slide })` in `airdesign_execute` and fix every problem before the next slide.
 2. Read the boxes in that answer: nothing outside 1920 by 1080, and the lowest layer near the bottom of the body area.
 3. When the deck is done, call `screenshot({ target: slide })` for each slide and look at it as the reader will. If the answer says no tab is open, do not ask again.
-4. Read the `avoid` and `review` skills and run the review before you stop.

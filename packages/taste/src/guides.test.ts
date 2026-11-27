@@ -44,7 +44,6 @@ describe("guides", () => {
   it.each([
     ["bar", "Before you draw a bar chart"],
     ["column", "Before you draw a column chart"],
-    ["donut", "Before you draw a donut chart"],
     ["line", "Before you draw a line chart"],
     ["table", "Before you draw a table"],
   ])("leads the charts/%s description with when to read it", (name, trigger) => {
@@ -62,6 +61,11 @@ describe("guides", () => {
       }
     }
     expect(guide("kit")?.files.map((file) => file.path)).toContain("kpi.json")
+  })
+
+  it("holds no share circle and no standalone avoid or review guide", () => {
+    const names = guides().map((each) => each.name)
+    for (const gone of ["avoid", "review", "charts/donut"]) expect(names, gone).not.toContain(gone)
   })
 
   it("reads a guide only by its exact name", () => {

@@ -5,7 +5,7 @@ description: "Before you draw a column chart to compare periods, read the script
 
 # Column chart
 
-Vertical columns over periods: quarters, months, years. Draw it yourself from rectangles and text; this guide gives the arithmetic. `kit/column-chart` is the same chart drawn on sample data, to copy and look at.
+Vertical columns over periods: quarters, months, years. Draw it yourself from rectangles and text; this guide gives the arithmetic.
 
 ## When
 

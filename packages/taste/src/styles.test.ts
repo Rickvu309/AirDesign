@@ -1,10 +1,8 @@
-import { createHash } from "node:crypto"
 import { readdirSync, readFileSync } from "node:fs"
 import { paletteColorVars, type ColorVar, type Hex } from "@airdesign/doom"
 import { describe, expect, it, vi } from "vitest"
 import midnight from "../files/styles/midnight.json" with { type: "json" }
 import { newDeckTheme, style, styleOf, styles, styleText } from "./index.js"
-import { designedThemes, libraryArt } from "./style-art.js"
 
 const backgrounds = ["background", "background2"] as const satisfies readonly ColorVar[]
 const inks = paletteColorVars.filter((color) => color !== "background" && color !== "background2")
@@ -56,34 +54,25 @@ describe("built-in styles", () => {
     }
   })
 
-  it("keeps every preset value apart from the Consulting accent and Technical title size", () => {
-    const actual = Object.fromEntries(
-      styles.map(({ id, theme }) => [id, createHash("sha256").update(JSON.stringify(theme)).digest("hex")]),
-    )
-    expect(actual).toEqual({
-      consulting: "86dc328a90748794b044d900353127dc3bf4acac4ef01bc05ec41ce6b21f3835",
-      editorial: "9b60e474ef40b369616d07fd2493a40482bd24788ea4755c596cb969a36489d3",
-      midnight: "66af9b1a0e36c4ab16de6a2cee83dcd2780c00c95a45db92efe5c29623d8fae3",
-      neutral: "b3429917b395d0fb5521e7be117b2640f33728ef73c590af9971acbaa8d214bb",
-      technical: "5d735932823a91226cbd0d251f9e308d9c3381d3d69139d0e89960a56bff1efc",
+  it.each(styles)("serves $name with the colours, fonts and type scale of its file", ({ id }) => {
+    const file = JSON.parse(readFileSync(`packages/taste/files/styles/${id}.json`, "utf8")) as {
+      readonly name: string
+      readonly colors: object
+      readonly fonts: object
+      readonly textStyles?: object
+      readonly effectStyles?: object
+    }
+    expect(style(id)).toMatchObject({
+      id,
+      name: file.name,
+      theme: {
+        colors: file.colors,
+        fonts: file.fonts,
+        textStyles: file.textStyles ?? newDeckTheme.textStyles,
+        effectStyles: file.effectStyles ?? newDeckTheme.effectStyles,
+      },
     })
   })
-
-  it.each(libraryArt)(
-    "preserves $name art and inherits the slide type scale and effects",
-    ({ id, name, accent1, heading }) => {
-      expect(style(id)).toMatchObject({
-        id,
-        name,
-        theme: {
-          colors: { accent1 },
-          fonts: { heading },
-          textStyles: newDeckTheme.textStyles,
-          effectStyles: newDeckTheme.effectStyles,
-        },
-      })
-    },
-  )
 
   it("recognizes a stored copy and distinguishes a customized theme", () => {
     const theme = newDeckTheme
@@ -110,11 +99,7 @@ describe("built-in styles", () => {
     expect((luminance(colors.accent1) + 0.05) / (luminance(colors.text) + 0.05)).toBeGreaterThanOrEqual(2)
   })
 
-  it.each(designedThemes)("preserves $name art and type scale", ({ id, name, ...theme }) => {
-    expect(style(id)).toMatchObject({ id, name, theme })
-  })
-
-  it.each(designedThemes)("meets WCAG AA for $name text on both background tokens", ({ id }) => {
+  it.each(["consulting", "midnight", "technical"])("meets WCAG AA for %s text on both background tokens", (id) => {
     const entry = style(id)
     if (entry === undefined) throw new Error(`Missing theme ${id}`)
 

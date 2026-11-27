@@ -79,7 +79,7 @@ get({ target: s }).problems
 
 - `insert({ parent, kind, ...look })` adds a layer to a slide or a frame and returns its id. Leave `box` out and the layer takes the largest free area of the slide, or its place in a frame with a layout. `kind`:
   - `text`: words in markdown. A slide's first layer with `textStyle: "title"` becomes its title.
-  - `shape`: a preset `shape` that can hold text: `rect`, `roundRect`, `ellipse`, `triangle`, `diamond`, `chevron`, `homePlate`, `rightArrow`, `star5`, `donut` and more.
+  - `shape`: a preset `shape` that can hold text: `rect`, `roundRect`, `ellipse`, `triangle`, `diamond`, `chevron`, `homePlate`, `rightArrow`, `star5` and more.
   - `line`: a line or connector with `from`, `to`, `route`, `arrow`. `path`: SVG commands in `d`, from 0 to 1 across the box.
   - `frame`: holds layers (`layout`, `gap`, `padding`, `clip`). Given `rows`, a list of rows of cell strings with the header first, it is a grid of words.
   - `picture`: `fill: { image }` with an https address or an asset hash from this deck. `icon`: a Lucide name in `icon`, such as `trending-up`.

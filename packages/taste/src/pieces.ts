@@ -1,4 +1,4 @@
-import type { NodeId, TreeNode } from "@airdesign/doom"
+import type { TreeNode } from "@airdesign/doom"
 
 import { filesDir, fs, nodePath } from "./package-files.js"
 
@@ -11,36 +11,9 @@ export type Piece = {
   readonly tree: TreeNode
 }
 
-type Fields = Readonly<Record<string, unknown>>
-type NamedEnd = { readonly layer: string } & Fields
-
 function sizeOf(tree: TreeNode): Piece["size"] {
   const box = (tree.props as { readonly box?: { readonly w: number; readonly h: number } } | undefined)?.box
   return { w: box?.w ?? 0, h: box?.h ?? 0 }
-}
-
-const named = (end: unknown): end is NamedEnd =>
-  typeof end === "object" && end !== null && typeof (end as Fields).layer === "string"
-
-function attached(node: TreeNode): TreeNode {
-  const children = node.children?.map(attached)
-  const props = node.props as Fields | undefined
-  const geometry = props?.geometry as Fields | undefined
-  if (props === undefined || geometry?.kind !== "line" || !(named(geometry.start) || named(geometry.end)))
-    return children === undefined ? node : { ...node, children }
-  const end = (at: unknown, ids: Readonly<Record<string, NodeId>>) => {
-    if (!named(at)) return at
-    const { layer, ...site } = at
-    return { node: ids[layer], ...site }
-  }
-  return {
-    ...node,
-    ...(children === undefined ? {} : { children }),
-    props: ((ids: Readonly<Record<string, NodeId>>) => ({
-      ...props,
-      geometry: { ...geometry, start: end(geometry.start, ids), end: end(geometry.end, ids) },
-    })) as NonNullable<TreeNode["props"]>,
-  }
 }
 
 export function piece(name: string): Piece | undefined {
@@ -49,7 +22,7 @@ export function piece(name: string): Piece | undefined {
   const file = nodePath().join(piecesDir(), `${name}.json`)
   if (!existsSync(file)) return undefined
   const tree = JSON.parse(readFileSync(file, "utf8")) as TreeNode
-  return { name, size: sizeOf(tree), tree: attached(tree) }
+  return { name, size: sizeOf(tree), tree }
 }
 
 export function pieces(): readonly Piece[] {
