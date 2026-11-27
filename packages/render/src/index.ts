@@ -12,4 +12,4 @@ export {
   waitForDoomFonts,
 } from "./doom-layout.js"
 export { useIcons } from "./icon-nodes.js"
-export { fontsFor, installedFaces } from "./font-load.js"
+export { fetchServed, fontsFor, installedFaces } from "./font-load.js"

@@ -7,10 +7,9 @@ import { z } from "zod"
 
 import type { DeckHost, Session } from "@airdesign/agent"
 
-import { type ViewHost, viewMimeType } from "./deck-view.js"
+import { appsExtension, type ViewHost, viewMimeType } from "./deck-view.js"
 import { createServer } from "./server.js"
 
-const appsExtension = "io.modelcontextprotocol/ui"
 const clientApps = z.object({
   params: z.object({
     _meta: z.object({
@@ -36,11 +35,8 @@ export function createServerHandler(
   options: CreateMcpHandlerOptions,
   view?: ViewHost,
 ) {
-  return createMcpHandler(({ era }) => {
-    if (era === "legacy") return createServer(session, host, view)
-    const withView = view !== undefined && supportsDeckView(body)
-    const server = createServer(session, host, withView ? view : undefined)
-    if (withView) server.server.registerCapabilities({ extensions: { [appsExtension]: { mimeTypes: [viewMimeType] } } })
-    return server
-  }, options)
+  return createMcpHandler(
+    ({ era }) => createServer(session, host, era === "legacy" || supportsDeckView(body) ? view : undefined),
+    options,
+  )
 }

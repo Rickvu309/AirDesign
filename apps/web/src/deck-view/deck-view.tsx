@@ -70,6 +70,8 @@ export type Shell = {
   readonly tellModel?: (viewed: Viewed) => void
 }
 
+const appUrl = (path: string) => new URL(path, document.documentElement.dataset.origin ?? location.origin).href
+
 function opener(shell: Shell) {
   const { openLink } = shell
   if (openLink === undefined) return undefined
@@ -258,7 +260,7 @@ function ShownDeck({
       <header ref={header} className="flex h-12 shrink-0 items-center gap-2.5 border-b border-line bg-white pr-2 pl-4">
         <AirdesignMark size={20} />
         <h1 className="min-w-0 flex-1 truncate text-sm font-medium">{doom.deckName(view)}</h1>
-        <OpenLink href={`/s/${id}`} shell={shell} />
+        <OpenLink href={appUrl(`/s/${id}`)} shell={shell} />
       </header>
       <main
         ref={roomRef}
@@ -324,7 +326,7 @@ function Missing({ shell }: { readonly shell: Shell }) {
         {productCopy.deckNotFoundBody}
       </p>
       <a
-        href="/"
+        href={appUrl("/")}
         target="_blank"
         rel="noreferrer"
         onClick={opener(shell)}

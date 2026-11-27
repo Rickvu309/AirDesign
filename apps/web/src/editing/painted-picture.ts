@@ -1,4 +1,4 @@
-import { installedFaces } from "@airdesign/render"
+import { fetchServed, installedFaces } from "@airdesign/render"
 import { type ReactElement } from "react"
 import { createRoot } from "react-dom/client"
 
@@ -21,7 +21,7 @@ function blobDataUrl(blob: Blob): Promise<string> {
 
 async function dataUrl(url: string): Promise<string> {
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+    const response = await fetchServed(url, { signal: AbortSignal.timeout(10_000) })
     if (!response.ok) throw new Error("Font file unavailable")
     return await blobDataUrl(await response.blob())
   } catch (cause) {

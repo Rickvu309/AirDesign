@@ -61,10 +61,13 @@ const installed = new WeakMap<Document, InstalledFace[]>()
 const exact = new WeakMap<Document, Map<string, FontFace>>()
 const reads = new Map<string, Promise<Uint8Array<ArrayBuffer>>>()
 
+export const fetchServed = (path: string, init?: RequestInit): Promise<Response> =>
+  fetch(new URL(path, import.meta.url), init)
+
 export function readServedFile(url: string): Promise<Uint8Array<ArrayBuffer>> {
   let pending = reads.get(url)
   if (pending === undefined) {
-    pending = fetch(url, { cache: "force-cache", signal: AbortSignal.timeout(30_000) })
+    pending = fetchServed(url, { cache: "force-cache", signal: AbortSignal.timeout(30_000) })
       .then(async (response) => {
         if (!response.ok) throw new Error("Served face unavailable")
         return new Uint8Array(await response.arrayBuffer())
@@ -131,12 +134,12 @@ export class FontLoader {
   private readonly watchers = new Set<() => void>()
   private readonly served = new Map<string, { readonly family: string; readonly faces: readonly ServedFace[] }>()
   private readonly doc: Document
-  private readonly network: typeof fetch
+  private readonly network: typeof fetchServed
   private readonly install: (family: Manifest) => Promise<void>
 
   constructor(
     doc: Document,
-    network: typeof fetch = (...args) => fetch(...args),
+    network: typeof fetchServed = fetchServed,
     install = (family: Manifest) => installFonts(doc, family),
   ) {
     this.doc = doc

@@ -1,5 +1,33 @@
-import { expect, it } from "vitest"
-import { FontLoader } from "./font-load.js"
+import { expect, it, vi } from "vitest"
+import { FontLoader, readServedFile } from "./font-load.js"
+
+it("asks for a family and its files where this code was served from, not at the page's address", async () => {
+  const asked: string[] = []
+  vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+    asked.push(String(input))
+    return String(input).includes("/fonts/family")
+      ? new Response(
+          JSON.stringify({
+            ok: true,
+            family: "Montserrat",
+            faces: [{ url: "/fonts/file?montserrat", style: "normal", weight: "400" }],
+          }),
+        )
+      : new Response(new Uint8Array([1, 2, 3]))
+  })
+  try {
+    expect(await new FontLoader(document, undefined, async () => undefined).load("Montserrat")).toBeNull()
+    expect(await readServedFile("/fonts/file?montserrat")).toEqual(new Uint8Array([1, 2, 3]))
+    const servedFrom = import.meta.url
+    expect(asked).toEqual([
+      new URL("/fonts/family?family=Montserrat", servedFrom).href,
+      new URL("/fonts/file?montserrat", servedFrom).href,
+    ])
+    expect(asked.every((url) => !url.startsWith(location.origin))).toBe(true)
+  } finally {
+    vi.unstubAllGlobals()
+  }
+})
 
 it("waits for the requested face and shares one load across case variants", async () => {
   let finish = () => {}
