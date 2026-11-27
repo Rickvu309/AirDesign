@@ -1,7 +1,10 @@
 layer: feature
 dependencies:
+  - packages/agent#runtime
+  - packages/agent#testing
   - apps/api/src/platform
 public:
+  - agent-host.ts
   - deck-followers.ts
   - deck-list.ts
   - deck-pictures.ts
