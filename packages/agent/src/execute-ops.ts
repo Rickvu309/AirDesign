@@ -9,8 +9,9 @@ import { readAnswer, themeValues } from "./deck-read.js"
 import { withCatalogFonts } from "./font-names.js"
 import { measuredSteps } from "./land-edit.js"
 import { leavingMeasure } from "./leaving-measure.js"
-import { layoutOf, listed } from "./problems-answer.js"
+import { listed } from "./problems-answer.js"
 import { readPaste } from "./kit-paste.js"
+import { laidOnce, readNodes } from "./read-nodes.js"
 import { imageName, imageProblem, pictureSizes, withAsset } from "./named-image.js"
 import { onceIds } from "./once-ids.js"
 
@@ -315,7 +316,7 @@ async function read(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<
       ...(typeof fields.cursor === "string" ? { cursor: fields.cursor } : {}),
     }
     const slides = doom.slidesOf(plan.view).map((slide) => slide.id)
-    const laid = query.find === undefined ? await layoutOf(plan.host, plan.view, () => slides) : undefined
+    const laid = query.find === undefined ? await laidOnce(plan, plan.host, plan.view, slides) : undefined
     const answered = readAnswer(viewed(plan), query, laid)
     if (!answered.ok) stop(plan, op, verb, answered)
     const { ok: _ok, problems, ...deck } = answered.fields
@@ -324,7 +325,7 @@ async function read(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<
   const node = nodeOf(plan, op, verb, fields.target, "target")
   const slide = node.type === "slide" ? node.id : doom.slideOf(plan.view, node.id)
   if (slide === undefined) stop(plan, op, verb, refused("dead", { field: "target", node: node.id }))
-  const laid = await layoutOf(plan.host, plan.view, () => [slide])
+  const laid = await laidOnce(plan, plan.host, plan.view, [slide])
   const inside = new Set([node.id, ...doom.descendantsOf(plan.view, node.id).map((each) => each.id)])
   const lines = readForAgent(plan.view, [slide], laid.boxes, node.type === "slide" ? undefined : node.id).split("\n")
   const box = laid.boxes?.get(node.id) ?? doom.propOf(node, "box")
@@ -334,6 +335,7 @@ async function read(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<
     ...(box === undefined ? {} : { box: { x: box.x, y: box.y, w: box.w, h: box.h } }),
     ...(node.type === "slide" ? {} : { parent: doom.parentOf(node)?.id }),
     children: doom.childrenOf(plan.view, node.id).map((child) => child.id),
+    nodes: readNodes(plan.view, node, laid.boxes),
     layers: (node.type === "slide"
       ? lines
       : lines.filter((line) => inside.has(line.trim().split(" ")[0] as doom.NodeId))

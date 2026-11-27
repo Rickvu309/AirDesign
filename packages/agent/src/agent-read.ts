@@ -34,7 +34,7 @@ const num = (value: number) => String(Number(value.toPrecision(12)))
 const iconWords = (name: string) => (name.startsWith("lucide/") ? name.slice("lucide/".length) : name)
 
 const tintWords = (tint: number) => `${tint > 0 ? "+" : "-"}${String(Math.round(Math.abs(tint) * 100))}`
-const colorWords = (color: Color): string =>
+export const colorWords = (color: Color): string =>
   typeof color === "string"
     ? color
     : color.tint === undefined || color.tint === 0
@@ -55,7 +55,7 @@ function oneWords(paint: Paint): string {
   return paint.shape === "radial" ? `radial(${stops})` : `gradient(${stops}@${num(paint.angle)})`
 }
 
-function paintWords(paints: readonly Paint[]): string {
+export function paintWords(paints: readonly Paint[]): string {
   return paints
     .filter((paint) => paint.visible !== false)
     .map(oneWords)
