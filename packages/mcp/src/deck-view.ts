@@ -10,7 +10,7 @@ export type ViewHost = {
 
 export const deckViewUri = "ui://airdesign/deck.html"
 
-const appHtml = "text/html;profile=mcp-app"
+export const viewMimeType = "text/html;profile=mcp-app"
 
 export const shownInView = { ui: { resourceUri: deckViewUri }, "ui/resourceUri": deckViewUri } as const
 
@@ -60,11 +60,11 @@ export function deckView(host: ViewHost) {
   const domains = [host.origin]
   return {
     attach(server: McpServer): void {
-      server.registerResource("deck", deckViewUri, { title: "AirDesign deck", mimeType: appHtml }, async () => ({
+      server.registerResource("deck", deckViewUri, { title: "AirDesign deck", mimeType: viewMimeType }, async () => ({
         contents: [
           {
             uri: deckViewUri,
-            mimeType: appHtml,
+            mimeType: viewMimeType,
             text: deckViewShell(host.origin),
             _meta: {
               ui: {
