@@ -148,12 +148,12 @@ async function createFromScript(script: string, once: string, host: DeckHost): P
         const { ok: _ok, refusal, ...detail } = parsed
         failure = refused(refusal, detail)
       } else {
-        const chosen = style(parsed.theme)
-        if (parsed.theme === undefined || chosen !== undefined) {
+        const chosen = style(parsed.style)
+        if (parsed.style === undefined || chosen !== undefined) {
           creation = { name: parsed.name, theme: chosen?.theme }
           return { ok: true, value: undefined }
         }
-        failure = refused("field", { field: "theme", fault: "form", form: styles.map(({ id }) => id).join(", ") })
+        failure = refused("field", { field: "style", fault: "form", form: styles.map(({ id }) => id).join(", ") })
       }
     }
     return { ok: false, message: String(failure.fields.note) }
@@ -164,7 +164,7 @@ async function createFromScript(script: string, once: string, host: DeckHost): P
     return stopped({ ops, ...failed }, end)
   }
   if (failure !== undefined) return failure
-  if (creation === undefined) return refused("field", { note: "Use createDeck({ name, theme }) or send a deck id." })
+  if (creation === undefined) return refused("field", { note: "Use createDeck({ name, style }) or send a deck id." })
   const refusal = await unadmitted(host, "deck")
   if (refusal !== undefined) return refusal
   const made = await host.create(creation.name, creation.theme, once)

@@ -81,10 +81,11 @@ describe("guides", () => {
       expect(guide(name), name).toBeUndefined()
   })
 
-  it("sends the agent from picking a theme to that theme's style", () => {
-    const themeLine = guide("slides")
+  it("sends the agent from picking a style to reading its design text", () => {
+    const styleLine = guide("slides")
       ?.markdown.split("\n")
-      .find((line) => line.includes("Pick the theme"))
-    expect(themeLine).toContain("airdesign_get_style {name: <theme>}")
+      .find((line) => line.includes("Pick a style"))
+    expect(styleLine).toContain('variables({ style: "consulting" })')
+    expect(styleLine).toContain("airdesign_get_style {name: <style>}")
   })
 })

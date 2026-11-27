@@ -11,7 +11,7 @@ description: "How to read and change a deck with `airdesign_execute`: the script
 
 Start with `airdesign_get_app_state` to find your decks, an open deck and its selection when available. Use `cursor: next` to see more decks.
 
-To start a new deck, omit `deck` and `runId` and send the script `createDeck({ name: "Quarterly review", theme: "neutral" })`. Both fields are optional. Use one `createDeck` call per script. The answer gives you the new deck id and its first slide id. Use that deck id in later calls to fill the deck. Read the `slides` skill before designing.
+To start a new deck, omit `deck` and `runId` and send the script `createDeck({ name: "Quarterly review", style: "neutral" })`. Both fields are optional. Use one `createDeck` call per script. The answer gives you the new deck id and its first slide id. Use that deck id in later calls to fill the deck. Read the `slides` guide before designing.
 
 ## The script
 
@@ -91,10 +91,10 @@ get({ target: s }).problems
 - `move({ target or targets, parent?, after?, box? })` moves layers. `parent` is a frame or a slide, `after` a sibling id or `null` for first, and `box` places them: `x`, `y` or both move the group, and `w` and `h` do not resize. A slide moves with `after` or `before` a slide (`after: null` puts it first) or into a `group`.
 - `remove({ target or targets })` deletes layers or slides. A deck keeps one slide.
 - `group({ targets, layout?, clip?, ...look })` wraps layers in a new frame and returns its id. `ungroup({ target })` dissolves one.
-- `variables({ theme?, colors?, fonts?, name?, nameFollows?, language? })` changes the deck's theme and returns its colours, fonts and text sizes. `theme` is `neutral`, `consulting`, `editorial`, `midnight` or `technical`; after you pick one, read its style with `airdesign_get_style {name: <theme>}`. `colors` maps a theme colour name to `#rrggbb`. `fonts` is `{ heading?, body? }`.
+- `variables({ style?, colors?, fonts?, name?, nameFollows?, language? })` returns the deck's theme values after applying the edits. Choose `neutral`, `consulting`, `editorial`, `midnight` or `technical` with `style`. Read its design text with `airdesign_get_style {name: <style>}`. `colors` maps a theme colour name to `#rrggbb`. `fonts` is `{ heading?, body? }`.
 - `get(...)` reads the deck as the script has left it so far:
   - `get({ target })` returns `{ id, kind, box, parent, children, layers, problems }` for a slide or a layer. `box` is measured with the deck's own fonts, so it is the size the words really take.
-  - `get()` returns the deck: `{ name, slides, theme, layers, problems }`, with `next` when more slides are left: `get({ cursor: next })`.
+  - `get()` returns the deck as `{ name, slides, style, theme, layers, problems }`, with `next` when more slides are left. Continue with `get({ cursor: next })`. `style` is the name matching the theme values, or `null` for a custom theme. `theme` holds `{ colors, fonts, sizes }`.
   - `get({ find: "words" })` returns every layer whose line holds the words.
   - `layers` has one line per layer: its id, kind, `@x,y` and size, then its look.
 - `screenshot({ target })` adds a picture of the slide that holds `target`, taken after the edit lands by the person's open AirDesign tab, up to 4 slides a call. With no tab open the answer says so at once: do not ask again.

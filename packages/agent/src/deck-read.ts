@@ -1,12 +1,12 @@
 import * as doom from "@airdesign/doom"
+import { styleOf } from "@airdesign/taste"
 
 import { answered, refused, type Answer } from "./answer.js"
 import { foundLines, readBytes } from "./budget.js"
 import type { Opened } from "./deck-host.js"
 import { type Laid, listed, readProblemsNote } from "./problems-answer.js"
 
-function themeOf(fold: doom.Doom) {
-  const { colors, fonts, textStyles } = doom.deckOf(fold).theme
+export function themeValues({ colors, fonts, textStyles }: doom.Theme) {
   const sizes = Object.fromEntries(Object.entries(textStyles).map(([name, style]) => [name, style.size]))
   return { colors, fonts, sizes }
 }
@@ -80,6 +80,7 @@ export function readAnswer(opened: Opened, query: Query, laid?: Laid): Answer {
   const { chosen, next } = picked
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)
   const found = laid === undefined || laid.problems.length === 0 ? {} : { problems: listed(laid.problems) }
+  const { theme, language } = doom.deckOf(opened.fold)
   const answer = {
     ok: true,
     deck: opened.deck,
@@ -87,8 +88,9 @@ export function readAnswer(opened: Opened, query: Query, laid?: Laid): Answer {
     name: doom.deckName(opened.fold),
     slides,
     ...(next === undefined ? {} : { next }),
-    theme: themeOf(opened.fold),
-    ...(doom.deckOf(opened.fold).language === undefined ? {} : { language: doom.deckOf(opened.fold).language }),
+    style: styleOf(theme)?.id ?? null,
+    theme: themeValues(theme),
+    ...(language === undefined ? {} : { language }),
     ...found,
   }
   const note = [lead(opened, slides.length), ...(laid === undefined ? [] : readProblemsNote(laid))].join(" ")

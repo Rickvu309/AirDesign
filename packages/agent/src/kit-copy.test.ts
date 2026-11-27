@@ -37,13 +37,13 @@ const firstRun = (painted: readonly doom.Resolved[], id: string) =>
 
 describe("copy from the kit", () => {
   it("copies a piece into decks with two themes, and each copy takes its deck's colours and fonts", async () => {
-    for (const theme of ["midnight", "consulting"] as const) {
+    for (const styleName of ["midnight", "consulting"] as const) {
       const by = agent()
       const { deck } = await by.made()
       const answer = await by.call("execute", {
         deck,
         script: `
-          variables({ theme: "${theme}" })
+          variables({ style: "${styleName}" })
           const s = insert({ kind: "slide" })
           const [block] = copy({ from: "kit/title-block", parent: s, box: { x: 160, y: 120 } })
           ;({ s, block, lines: get({ target: block }).children })
@@ -52,7 +52,7 @@ describe("copy from the kit", () => {
       expect(answer.ok, JSON.stringify(answer.fields)).toBe(true)
       const { s, block, lines } = answer.fields.result as { s: string; block: string; lines: string[] }
       const fold = by.fold(deck)
-      const { colors, fonts } = style(theme)!.theme
+      const { colors, fonts } = style(styleName)!.theme
       const painted = flat(doom.resolveSlide(fold, s as doom.NodeId, estimate))
       expect(doom.propOf(fold.nodes.get(block as doom.NodeId), "box")).toMatchObject({ x: 160, y: 120, w: 1680 })
       expect(firstRun(painted, lines[0]!)).toMatchObject({ font: fonts.heading, color: colors.text })
