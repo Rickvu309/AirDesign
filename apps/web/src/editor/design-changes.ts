@@ -81,7 +81,8 @@ function textChange(context: ChangeContext, control: PanelControl, value: unknow
       return eachText(context, (text) => ({
         ...text,
         paras: text.paras.map((para) => {
-          const { list: _list, ...rest } = para
+          if (value === "numbers" && para.list === "number") return para
+          const { list: _list, startAt: _startAt, ...rest } = para
           return value === "bullets"
             ? { ...rest, list: "bullet" }
             : value === "numbers"

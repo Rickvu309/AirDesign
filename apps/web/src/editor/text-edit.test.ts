@@ -228,6 +228,17 @@ describe("paragraphs", () => {
     expect(toggledList(on, 0, 3, "bullet").paras).toEqual([{}, {}])
     expect(toggledList(on, 0, 3, "number").paras).toEqual([{ list: "number" }, { list: "number" }])
   })
+
+  it("keeps counting from a list's start number when Return adds an item", () => {
+    const text = valid(replaceRange(plain("2. Second risk"), 13, 13, "\nNext"))
+    expect(doom.textToMarkdown(text)).toBe("2. Second risk\n3. Next")
+  })
+
+  it("forgets a list's start number when the list is turned off or changed", () => {
+    const second = plain("2. Second risk")
+    expect(toggledList(second, 0, 1, "number").paras).toEqual([{}])
+    expect(toggledList(second, 0, 1, "bullet").paras).toEqual([{ list: "bullet" }])
+  })
 })
 
 describe("moving over characters", () => {

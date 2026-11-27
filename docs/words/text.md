@@ -16,6 +16,10 @@ _Avoid_: portable face
 How deep a list item sits, from the first level to the fifth as Figma allows. Tab or Ctrl ] (Command ] on a Mac) indents the item under the caret and Shift Tab or Ctrl [ outdents it; Return on an empty indented item outdents it. A run stores it as its paragraph's `level`. In a text box, bullets stay • at every level; numbers turn to letters, then roman numerals. In a placeholder whose template sets that level's indent, the item takes the template's indent instead; an item with no bullet of its own shows the template level's bullet, as PowerPoint does.
 _Avoid_: indent level, outline level, nesting
 
+**list start**:
+The number a numbered list counts from, as PowerPoint's `startAt`. Each item of the list stores it as its paragraph's `startAt`, left out when it is 1; the first item of a run at one level sets the count. Markdown reads it from the first item's number, so "2. Second risk" alone paints "2.", and writes it back the same way. Turning the list off or to bullets forgets it. PowerPoint allows 1 to 32767, so a line starting "0." stays as words.
+_Avoid_: start number, first number, offset
+
 **Auto** (line height):
 The font's default line spacing at 100%. The Line height field displays Auto and accepts it as input. Line height and Letter spacing also read a typed `%` or `pt`. In Letter spacing, points turn into the field's percent of the type size; in Line height they make a fixed line height.
 
