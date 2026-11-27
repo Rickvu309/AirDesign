@@ -5,10 +5,12 @@ import { memoryDecks } from "@airdesign/agent/testing/evals"
 import { Client, InMemoryTransport, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 
+import { deckViewShell, shellFailed } from "./deck-view.js"
 import { createServer, createServerHandler, type ViewHost } from "./index.js"
 
 const origin = "https://studio.example"
 const uri = "ui://airdesign/deck.html"
+const appsHtml = "text/html;profile=mcp-app"
 const image = "a".repeat(64)
 
 type Seen = { readonly tool: string; readonly body: unknown; readonly held?: boolean }
@@ -57,7 +59,11 @@ async function withClient(view: ViewHost | undefined, use: (client: Client) => P
 type UiMeta = { readonly resourceUri?: string; readonly visibility?: readonly string[] }
 const uiOf = (tool: { readonly _meta?: Record<string, unknown> | undefined }) => tool._meta?.ui as UiMeta | undefined
 
-async function withHttpClient(mimeTypes: string[] | undefined, use: (client: Client) => Promise<void>): Promise<void> {
+async function withHttpClient(
+  version: "2025-11-25" | "2026-07-28",
+  mimeTypes: string[] | undefined,
+  use: (client: Client) => Promise<void>,
+): Promise<void> {
   const host = memoryDecks(
     () => doom.doomFromTree({ theme: testTheme, slides: [{ name: "Title", children: [] }] }).doom,
   )
@@ -65,7 +71,7 @@ async function withHttpClient(mimeTypes: string[] | undefined, use: (client: Cli
   const client = new Client(
     { name: "airdesign-test", version: "0.0.0" },
     {
-      versionNegotiation: { mode: { pin: "2026-07-28" } },
+      versionNegotiation: { mode: version === "2025-11-25" ? "legacy" : { pin: version } },
       capabilities: mimeTypes === undefined ? {} : { extensions: { "io.modelcontextprotocol/ui": { mimeTypes } } },
     },
   )
@@ -90,11 +96,46 @@ async function withHttpClient(mimeTypes: string[] | undefined, use: (client: Cli
   }
 }
 
+type Tag = {
+  readonly localName: string
+  getAttribute(name: string): string | null
+  hasAttribute(name: string): boolean
+}
+type ShellDocument = {
+  readonly head: { querySelectorAll(selector: string): Iterable<Tag> & { readonly length: number } }
+  getElementById(id: string): { readonly textContent: string | null } | null
+}
+type Shelled = { readonly document: ShellDocument; readonly fetched: readonly string[] }
+
+async function runShell(answer: (url: string) => Promise<Response>): Promise<Shelled> {
+  const module = "jsdom"
+  const { JSDOM } = (await import(module)) as {
+    JSDOM: new (html: string, options: { url: string }) => { window: { document: ShellDocument; DOMParser: unknown } }
+  }
+  const html = deckViewShell(origin)
+  const { window } = new JSDOM(html, { url: "https://sandbox.example/view" })
+  const script = /<script type="module">([\s\S]*?)<\/script>/.exec(html)?.[1] ?? ""
+  const fetched: string[] = []
+  const AsyncFunction = (async () => undefined).constructor as new (
+    ...names: string[]
+  ) => (...values: unknown[]) => Promise<void>
+  await new AsyncFunction("document", "fetch", "DOMParser", script)(
+    window.document,
+    async (url: URL | string) => {
+      fetched.push(String(url))
+      return answer(String(url))
+    },
+    window.DOMParser,
+  )
+  return { document: window.document, fetched }
+}
+
 describe("the deck view as an MCP App", () => {
   it.each([{ mimeTypes: undefined }, { mimeTypes: ["text/plain"] }])(
     "serves only core tools over HTTP without Apps HTML support (%j)",
     async ({ mimeTypes }) => {
-      await withHttpClient(mimeTypes, async (client) => {
+      await withHttpClient("2026-07-28", mimeTypes, async (client) => {
+        expect(client.getServerCapabilities()?.extensions?.["io.modelcontextprotocol/ui"]).toBeUndefined()
         const { tools } = await client.listTools()
         expect(tools).toHaveLength(6)
         for (const tool of tools) {
@@ -109,7 +150,7 @@ describe("the deck view as an MCP App", () => {
   )
 
   it("serves the deck view over HTTP to clients that advertise Apps HTML support", async () => {
-    await withHttpClient(["text/html;profile=mcp-app"], async (client) => {
+    await withHttpClient("2026-07-28", [appsHtml], async (client) => {
       expect(client.getServerCapabilities()?.extensions?.["io.modelcontextprotocol/ui"]).toEqual({
         mimeTypes: ["text/html;profile=mcp-app"],
       })
@@ -129,28 +170,105 @@ describe("the deck view as an MCP App", () => {
     })
   })
 
-  it("serves a shell that loads the deck view from the web origin, allowed by its CSP", async () => {
+  it.each([{ mimeTypes: undefined }, { mimeTypes: [appsHtml] }])(
+    "serves the deck view and its capability to every 2025-11-25 client over HTTP (%j)",
+    async ({ mimeTypes }) => {
+      await withHttpClient("2025-11-25", mimeTypes, async (client) => {
+        expect(client.getNegotiatedProtocolVersion()).toBe("2025-11-25")
+        expect(client.getServerCapabilities()?.extensions?.["io.modelcontextprotocol/ui"]).toEqual({
+          mimeTypes: [appsHtml],
+        })
+        const { tools } = await client.listTools()
+        expect(tools).toHaveLength(10)
+        expect(uiOf(tools.find((tool) => tool.name === "airdesign_execute") ?? {})).toEqual({ resourceUri: uri })
+        expect((await client.readResource({ uri })).contents[0]).toMatchObject({ uri })
+      })
+    },
+  )
+
+  it.each(["", "{", "[1,"])(
+    "answers a body that is not JSON with a parse error, not a server fault (%j)",
+    async (text) => {
+      const handler = createServerHandler(
+        { agent: "aira", mint: () => "minted" },
+        memoryDecks(() => doom.doomFromTree({ theme: testTheme, slides: [{ name: "Title", children: [] }] }).doom),
+        new TextEncoder().encode(text),
+        {},
+        viewHost([]),
+      )
+      try {
+        const answer = await handler.fetch(
+          new Request("https://studio.example/mcp", {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              accept: "application/json, text/event-stream",
+              "mcp-protocol-version": "2026-07-28",
+            },
+            body: text,
+          }),
+        )
+        expect(answer.status).toBe(400)
+        expect(await answer.json()).toMatchObject({ error: { code: -32700 } })
+      } finally {
+        await handler.close()
+      }
+    },
+  )
+
+  it("serves a shell that names the web origin without a base URL, allowed by its CSP", async () => {
     await withClient(viewHost([]), async (client) => {
       const { contents } = await client.readResource({ uri })
       expect(contents).toHaveLength(1)
       const [shell] = contents
-      expect(shell).toMatchObject({ uri, mimeType: "text/html;profile=mcp-app" })
+      expect(shell).toMatchObject({ uri, mimeType: appsHtml })
       const html = (shell as { text: string }).text
       expect(html).toMatch(/^<!doctype html>/)
-      expect(html).toContain(`<base href="${origin}/">`)
-      expect(html).toContain("data-mcp-app")
-      expect(html).toContain('fetch("deck-view")')
+      expect(html).not.toContain("<base")
+      expect(html).toContain(`<html lang="en" data-mcp-app data-origin="${origin}">`)
       expect(shell?._meta).toEqual({
-        ui: {
-          csp: { connectDomains: [origin], resourceDomains: [origin], baseUriDomains: [origin] },
-          prefersBorder: true,
-        },
+        ui: { csp: { connectDomains: [origin], resourceDomains: [origin] }, prefersBorder: true },
       })
     })
   })
 
+  it("loads the deck view's tags from the web origin by absolute URLs, under a document from another origin", async () => {
+    const built = `<!doctype html><html><head>
+      <link rel="icon" href="/favicon-32.png" />
+      <script type="module" crossorigin src="/assets/deck-view.js"></script>
+      <link rel="modulepreload" crossorigin href="/assets/dist.js">
+      <link rel="stylesheet" crossorigin href="/assets/dist.css">
+      </head><body><div id="root"></div></body></html>`
+    const { document, fetched } = await runShell(async () => new Response(built))
+    expect(fetched).toEqual([`${origin}/deck-view`])
+    expect(
+      [...document.head.querySelectorAll("script[src], link")].map((tag) => [
+        tag.localName,
+        tag.getAttribute("src") ?? tag.getAttribute("href"),
+        tag.hasAttribute("crossorigin"),
+      ]),
+    ).toEqual([
+      ["script", `${origin}/assets/deck-view.js`, true],
+      ["link", `${origin}/assets/dist.js`, true],
+      ["link", `${origin}/assets/dist.css`, true],
+    ])
+    expect(document.getElementById("root")?.textContent).toBe("")
+  })
+
+  it.each([
+    { failure: "a refused fetch", answer: async () => Promise.reject(new TypeError("Failed to fetch")) },
+    { failure: "a server error", answer: async () => new Response("down", { status: 502 }) },
+  ])("says the deck could not load after $failure instead of a blank box", async ({ answer }) => {
+    const { document } = await runShell(answer)
+    expect(document.getElementById("root")?.textContent).toBe(shellFailed)
+    expect(document.head.querySelectorAll("script[src], link")).toHaveLength(0)
+  })
+
   it("shows the view for execute and get_app_state and lists the view's tools for the app only", async () => {
     await withClient(viewHost([]), async (client) => {
+      expect(client.getServerCapabilities()?.extensions?.["io.modelcontextprotocol/ui"]).toEqual({
+        mimeTypes: [appsHtml],
+      })
       const { tools } = await client.listTools()
       const shown = tools.filter((tool) => uiOf(tool)?.resourceUri === uri && uiOf(tool)?.visibility === undefined)
       expect(shown.map((tool) => tool.name)).toEqual(["airdesign_execute", "airdesign_get_app_state"])
@@ -188,6 +306,7 @@ describe("the deck view as an MCP App", () => {
 
   it("serves no view, no view tools and no view links without a view host", async () => {
     await withClient(undefined, async (client) => {
+      expect(client.getServerCapabilities()?.extensions?.["io.modelcontextprotocol/ui"]).toBeUndefined()
       const { tools } = await client.listTools()
       expect(tools.map((tool) => tool.name)).not.toContain(viewTools.open)
       for (const tool of tools) expect(tool._meta?.ui).toBeUndefined()

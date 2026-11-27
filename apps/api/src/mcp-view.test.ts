@@ -75,7 +75,7 @@ describe("the deck view in a chat holds the painter lease and answers an agent's
     const { agent, app } = await started()
     try {
       const { contents } = await app.readResource({ uri: "ui://airdesign/deck.html" })
-      expect((contents[0] as { text: string }).text).toContain('<base href="https://app.example/">')
+      expect((contents[0] as { text: string }).text).toContain('data-origin="https://app.example"')
       const { tools } = await agent.listTools()
       const execute = tools.find((tool) => tool.name === "airdesign_execute")
       expect(execute?._meta?.ui).toEqual({ resourceUri: "ui://airdesign/deck.html" })
