@@ -7,9 +7,10 @@ import type { StartRules } from "./start-rules.js"
 import type { NodeId } from "./ids.js"
 import { rev } from "./ids.js"
 import { kindOf } from "./agent-read.js"
-import { applyEdit, applyStep, countsOf } from "./apply-edit.js"
+import { applyStep, countsOf } from "./apply-edit.js"
 import { changingWrites } from "./changing-writes.js"
-import { nameFromTitleWrites } from "./deck-name-from-title.js"
+import { land } from "./land.js"
+import { measureWith } from "./measure.js"
 import { isRefusal } from "./refusal.js"
 import type { Author, Edit, Doom, Write } from "./doom.js"
 import { onTop } from "./view-of.js"
@@ -36,6 +37,8 @@ export type EditBy = {
 }
 
 export type Bake = { readonly fold: Doom; readonly frame: NodeId }
+
+const estimate = measureWith({})
 
 export function compileAgentEdit(doom: Doom, changes: readonly AgentChange[], by: EditBy): AgentEdit | AgentRefusal {
   const compiled = agentEditSteps(doom, changes, by, false).next()
@@ -121,30 +124,28 @@ export function agentEditSession(doom: Doom, by: EditBy): AgentSession {
         fault: "missing",
         form: "One to one hundred changes.",
       }
-    const all = [...writes]
-    const named = nameFromTitleWrites(doom, all, by.starts, view)
-    all.push(...named)
-    const changing = changingWrites(doom, all)
-    const edit: Edit = {
-      once: by.once,
+    const landing = land(doom, writes, {
       author: by.author,
-      writes: changing,
+      once: by.once,
+      measure: by.measure ?? estimate,
+      starts: by.starts,
       ...(by.phase === undefined ? {} : { phase: by.phase }),
-    }
-    const landed = applyEdit(doom, { ...edit, rev: rev(doom.rev + 1) })
-    if (isRefusal(landed) && landed.refused === "last-slide")
-      return { ...landed, change: nameOf(changes[emptied] as AgentChange), at: emptied }
-    if (isRefusal(landed)) {
-      const refused = changing.find(
-        (write) => write.node === landed.node && (landed.prop === undefined || write.prop === landed.prop),
+    })
+    if (isRefusal(landing) && landing.refused === "last-slide")
+      return { ...landing, change: nameOf(changes[emptied] as AgentChange), at: emptied }
+    if (isRefusal(landing)) {
+      const refused = changingWrites(doom, writes).find(
+        (write) => write.node === landing.node && (landing.prop === undefined || write.prop === landing.prop),
       )
-      const index = refused === undefined ? -1 : all.indexOf(refused)
+      const index = refused === undefined ? -1 : writes.indexOf(refused)
       const at = Math.max(
         0,
         ends.findIndex((end) => end > index),
       )
-      return { ...landed, change: nameOf(changes[at] as AgentChange), at }
+      return { ...landing, change: nameOf(changes[at] as AgentChange), at }
     }
+    const { edit, after: landed } = landing
+    const all = [...writes, ...landing.named]
     const made = all.flatMap((write, index): AddedNode[] => {
       const node = landed.nodes.get(write.node)
       if (write.prop !== "type" || doom.nodes.has(write.node) || node === undefined) return []
