@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { build, compiled, minter } from "./agent-fixtures.js"
+import { build, compiled, minter } from "./testing/agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
 import { boxOf, childrenOf, parentOf, propOf } from "./doom-walk.js"
 import { invert, isRefusal, moveToSlide, type Doom, type NodeId } from "./index.js"
@@ -13,9 +13,11 @@ import { step } from "./testing/invert-edit.js"
 import { more, richDeck } from "./testing/rich-deck.js"
 import { solveLayout } from "./solve-layout.js"
 import type { Point } from "./resolved.js"
+import { placement } from "./testing/placement-rules.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
-const refusal = (doom: Doom, value: Record<string, unknown>) => compileAgentChange(doom, change(value), minter())
+const refusal = (doom: Doom, value: Record<string, unknown>) =>
+  compileAgentChange(doom, change(value), minter(), placement)
 
 function across(view: Doom, moved: readonly NodeId[], slide: NodeId, at: Point) {
   const result = moveToSlide(view, moved, slide, at)
@@ -378,6 +380,7 @@ describe("a move composes the transforms it crosses", () => {
     const child = boxes.get(named.flowChild!)!
     const frame = boxes.get(named.flow!)!
     const result = compileAgentEdit(view, [change({ op: "move", nodes: [named.flowChild!], into: to })], {
+      placement,
       author: person,
       once: "agent",
       mint: minter(),

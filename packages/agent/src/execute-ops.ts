@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { style, styles } from "@airdesign/taste"
+import { placementRules, style, styles } from "@airdesign/taste"
 
 import { doomRefused, refused, type Answer } from "./answer.js"
 import { imagesPerCall } from "./budget.js"
@@ -74,6 +74,7 @@ export function newPlan(
     },
     once,
     mint: ids.mint,
+    placement: placementRules,
     pictures,
     ...(runId === undefined ? { phase: "start" as const } : {}),
   })

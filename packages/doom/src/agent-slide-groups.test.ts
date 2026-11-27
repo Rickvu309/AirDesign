@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { compiled, minter } from "./agent-fixtures.js"
+import { compiled, minter } from "./testing/agent-fixtures.js"
 import { slideForm } from "./agent-slide-fields.js"
 import {
   applyEdit,
@@ -22,6 +22,7 @@ import {
   type Write,
 } from "./index.js"
 import { agent, once } from "./sample-deck.js"
+import { placement } from "./testing/placement-rules.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
 
@@ -232,7 +233,7 @@ describe("an agent places slides and slide groups", () => {
   it("refuses without a change, and names the id to send", () => {
     const { doom, slides, groups } = grouped([1, 1])
     const before = picture(doom)
-    const refuse = (value: Record<string, unknown>) => compileAgentChange(doom, change(value), minter())
+    const refuse = (value: Record<string, unknown>) => compileAgentChange(doom, change(value), minter(), placement)
     expect(refuse({ op: "slide", move: { after: null } })).toMatchObject({
       refused: "shape",
       field: "move",

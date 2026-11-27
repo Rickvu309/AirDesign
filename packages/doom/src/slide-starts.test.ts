@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { contentAreaOf } from "./agent-place.js"
-import { minter } from "./agent-fixtures.js"
+import { minter } from "./testing/agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
 import { defaultTheme } from "./theme.js"
 import { childrenOf, propOf } from "./doom-walk.js"
@@ -8,13 +8,14 @@ import { placeholderTitle } from "./placeholder-title.js"
 import { type SlideStart, slideStartWrites, slideStarts } from "./slide-starts.js"
 import { titleOnlyWrites } from "./slide-placeholders.js"
 import { applyEdit, isRefusal, rev, type Doom, type NodeId } from "./index.js"
+import { placement } from "./testing/placement-rules.js"
 
 const person = { kind: "person", id: "test" } as const
 
 function started(start: SlideStart): { doom: Doom; slide: NodeId } {
   const grown = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
   const slide = grown.slides[0]!
-  const writes = slideStartWrites(grown.doom, slide, minter("s"), start)
+  const writes = slideStartWrites(grown.doom, slide, minter("s"), start, placement)
   const next = applyEdit(grown.doom, {
     once: "start",
     author: person,
@@ -99,10 +100,10 @@ describe("the content area of a slide", () => {
       rev: rev(grown.doom.rev + 1),
     })
     if (isRefusal(titled)) throw new Error(JSON.stringify(titled))
-    const area = contentAreaOf(titled, grown.slides[0]!)!
+    const area = contentAreaOf(titled, grown.slides[0]!, placement)!
     expect(area).toMatchObject({ x: 160, w: 1600 })
     expect(area.y).toBeGreaterThan(200)
     expect(area.y + area.h).toBeLessThanOrEqual(1000)
-    expect(contentAreaOf(doom, slide)).toEqual({ x: 160, y: 80, w: 1600, h: 920 })
+    expect(contentAreaOf(doom, slide, placement)).toEqual({ x: 160, y: 80, w: 1600, h: 920 })
   })
 })

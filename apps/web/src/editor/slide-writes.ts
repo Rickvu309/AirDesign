@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { gridAnchor, gridMovePlacement, sameGroups, type GridMoveSide } from "./grid-move"
+import { placementRules } from "@airdesign/taste"
 
 type Mint = () => doom.NodeId
 
@@ -44,7 +45,8 @@ export function addSlideWrites(
     writes,
     rev: doom.rev(view.rev + 1),
   })
-  if (!doom.isRefusal(withSlide)) writes.push(...doom.slideStartWrites(withSlide, slide, mint, start, measure))
+  if (!doom.isRefusal(withSlide))
+    writes.push(...doom.slideStartWrites(withSlide, slide, mint, start, placementRules, measure))
   return { slide, writes }
 }
 

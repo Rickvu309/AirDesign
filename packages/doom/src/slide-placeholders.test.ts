@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
-import { agentDeck, apply, build, compiled, minter } from "./agent-fixtures.js"
+import { agentDeck, apply, build, compiled, minter } from "./testing/agent-fixtures.js"
 import { measureWith } from "./measure.js"
 import { solveLayout } from "./solve-layout.js"
 import { placeholderSubtitle, titleOnlyWrites, titleSlideWrites } from "./slide-placeholders.js"

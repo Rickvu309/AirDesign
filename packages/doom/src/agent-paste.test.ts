@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { compileAgentChange } from "./agent-compile.js"
-import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
+import { agentDeck, build, lastChild, minter } from "./testing/agent-fixtures.js"
 import { childrenOf, propOf } from "./doom-walk.js"
 import type { TreeNode } from "./doom-tree.js"
 import type { Doom } from "./doom.js"
@@ -9,6 +9,7 @@ import type { Resolved } from "./resolved.js"
 import { resolveSlide } from "./resolve-slide.js"
 import { hex, ids } from "./sample-deck.js"
 import { defaultTheme, type Theme } from "./theme.js"
+import { placement } from "./testing/placement-rules.js"
 
 const upright = { rotation: 0, flipH: false, flipV: false }
 const words = (chars: string, style: "title" | "body", color: "text" | "text2") => ({
@@ -93,12 +94,14 @@ describe("paste copies a kit piece onto a slide as plain layers bound to the dec
   })
 
   it("refuses a parent that is not a slide or a frame, and a piece that does not grow", () => {
-    expect(compileAgentChange(agentDeck(), { op: "paste", piece, into: ids.deck }, minter())).toMatchObject({
+    expect(compileAgentChange(agentDeck(), { op: "paste", piece, into: ids.deck }, minter(), placement)).toMatchObject({
       refused: "shape",
       field: "into",
     })
     const broken = { ...piece, props: { box: "wide" } } as unknown as TreeNode
-    expect(compileAgentChange(agentDeck(), { op: "paste", piece: broken, into: ids.slide }, minter())).toMatchObject({
+    expect(
+      compileAgentChange(agentDeck(), { op: "paste", piece: broken, into: ids.slide }, minter(), placement),
+    ).toMatchObject({
       refused: "shape",
       field: "piece",
     })

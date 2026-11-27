@@ -8,6 +8,7 @@ import type { Refusal } from "./refusal.js"
 import type { Node, Doom, Write } from "./doom.js"
 import { type Box, childrenOf, isLive, parentOf } from "./doom-walk.js"
 import type { Props } from "./props.js"
+import type { PlacementRules } from "./placement-rules.js"
 
 export type Values = { readonly [K in PropName]?: Props[K] }
 export type Natural = { readonly width: number; readonly height: number }
@@ -21,6 +22,7 @@ export type Reading = {
 export type Draft = {
   readonly doom: Doom
   readonly mint: () => NodeId
+  readonly placement: PlacementRules
   readonly reading: Reading
   readonly writes: Write[]
   readonly tails: Map<NodeId, OrderKey | null>
@@ -53,9 +55,10 @@ export function stop(
   })
 }
 
-export const draftOf = (doom: Doom, mint: () => NodeId, reading: Reading = {}): Draft => ({
+export const draftOf = (doom: Doom, mint: () => NodeId, placement: PlacementRules, reading: Reading = {}): Draft => ({
   doom,
   mint,
+  placement,
   reading,
   writes: [],
   tails: new Map(),

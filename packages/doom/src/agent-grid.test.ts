@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { bottomLimitOf, gapFor } from "./agent-place.js"
-import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
+import { agentDeck, build, lastChild, minter } from "./testing/agent-fixtures.js"
 import { defaultTheme } from "./theme.js"
 import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import { ladderOf } from "./agent-block.js"
@@ -10,6 +10,7 @@ import { type Doom, type NodeId } from "./index.js"
 import { measureWith } from "./measure.js"
 import { widestWord } from "./text-estimate.js"
 import { ids, land } from "./sample-deck.js"
+import { placement } from "./testing/placement-rules.js"
 
 const slide = ids.slide
 const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as AgentChange
@@ -36,8 +37,8 @@ describe("a grid of words fills the band with its text size", () => {
     const tallStyles = [...styleOf(tall.doom, tall.root.id)]
     expect(tallStyles).toHaveLength(1)
     expect(sizeOfStyle(tallStyles[0]!)).toBeGreaterThan(sizeOfStyle("heading"))
-    expect(tall.box.y + tall.box.h).toBeLessThanOrEqual(bottomLimitOf(1080))
-    expect(small.box.y + small.box.h).toBeLessThan(bottomLimitOf(1080))
+    expect(tall.box.y + tall.box.h).toBeLessThanOrEqual(bottomLimitOf(1080, placement))
+    expect(small.box.y + small.box.h).toBeLessThan(bottomLimitOf(1080, placement))
   })
 
   const boldOf = (doom: Doom, cell: NodeId) => {
@@ -149,7 +150,7 @@ describe("a grid sets its values in the body face and keeps every word whole", (
       ["", "Pneumonoultramicroscopicsilicovolcanoconiosis", "B", "C", "D"],
       ["A", "1", "2", "3", "4"],
     ]
-    const refusal = compileAgentChange(agentDeck(), add({ kind: "frame", rows }), minter())
+    const refusal = compileAgentChange(agentDeck(), add({ kind: "frame", rows }), minter(), placement)
     expect(refusal).toEqual({
       refused: "limit",
       field: "rows",
@@ -168,7 +169,7 @@ describe("a grid sets its values in the body face and keeps every word whole", (
   it("refuses a grid too tall for its box, naming the height it needs and the height it has", () => {
     const rows = Array.from({ length: 30 }, (_, at) => [`Row ${String(at + 1)}`, String(at)])
     const box = { x: 120, y: 200, w: 1200, h: 400 }
-    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows, box }), minter())).toEqual({
+    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows, box }), minter(), placement)).toEqual({
       refused: "limit",
       field: "rows",
       fault: "needs",
@@ -248,7 +249,7 @@ describe("a grid of words is set as a consulting table", () => {
 
   it("keeps each row's words one theme gap from the next, the rules halfway between", () => {
     const { at } = tableOf(segments.slice(0, 4))
-    const gap = gapFor(1920)
+    const gap = gapFor(1920, placement)
     const padding = (row: number, col: number) => propOf(at(row, col), "text")!.padding
     expect(padding(0, 1)).toEqual({ t: 0, r: Math.floor(gap / 2), b: gap - Math.floor(gap / 2), l: Math.ceil(gap / 2) })
     expect(padding(1, 0)).toMatchObject({ t: Math.floor(gap / 2), b: gap - Math.floor(gap / 2), l: 0 })
@@ -375,17 +376,20 @@ describe("a grid of words", () => {
         agentDeck(),
         add({ kind: "frame", box: { x: 0, y: 0, w: 500, h: 200 }, rows: long }),
         minter(),
+        placement,
       ),
     ).toMatchObject({ refused: "limit", field: "rows" })
-    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows, layout: "row" }), minter())).toMatchObject({
+    expect(
+      compileAgentChange(agentDeck(), add({ kind: "frame", rows, layout: "row" }), minter(), placement),
+    ).toMatchObject({
       refused: "shape",
       field: "layout",
     })
-    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows: [] }), minter())).toMatchObject({
+    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows: [] }), minter(), placement)).toMatchObject({
       refused: "shape",
       field: "rows",
     })
-    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows: [[]] }), minter())).toMatchObject({
+    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows: [[]] }), minter(), placement)).toMatchObject({
       refused: "shape",
       field: "rows",
     })

@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest"
 import { compileAgentEdit } from "./agent-edit.js"
-import { agentDeck, minter } from "./agent-fixtures.js"
+import { agentDeck, minter } from "./testing/agent-fixtures.js"
 import { readLinkAddress } from "./index.js"
 import { readWrite } from "./read-write.js"
 import { agent, ids, sampleDeck, textOf } from "./sample-deck.js"
+import { placement } from "./testing/placement-rules.js"
 
 const doom = sampleDeck()
 const linked = (link: string) => ({ ...textOf("Revenue"), spans: [{ end: 7, link }] })
@@ -55,6 +56,7 @@ describe("a link goes to a web or mail address or a slide", () => {
       [betweenLimits, "limit"],
     ] as const) {
       const edit = compileAgentEdit(agentDeck(), [{ op: "set", target: ids.title, text: `[x](${link})` }], {
+        placement,
         author: agent("run-1"),
         once: "safe-1",
         mint: minter(),
@@ -63,6 +65,7 @@ describe("a link goes to a web or mail address or a slide", () => {
     }
     for (const link of ["mailto:a@b.c", "mailto:a@b.c?subject=x", atLimit]) {
       const edit = compileAgentEdit(agentDeck(), [{ op: "set", target: ids.title, text: `[x](${link})` }], {
+        placement,
         author: agent("run-1"),
         once: "safe-1",
         mint: minter(),

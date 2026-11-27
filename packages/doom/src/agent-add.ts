@@ -63,13 +63,9 @@ const takes: Readonly<Record<AgentAdd, readonly (keyof AgentLook)[]>> = {
 }
 
 const titleStyles: ReadonlySet<Text["style"]> = new Set(["display", "title"])
-const iconSide = 96
-const lineWeight = 3
-const iconWeightShare = 12
-
 function surfaced(draft: Draft, look: AgentLook, now: Now = {}, align: StrokeStyle["align"] = "inside") {
   const themed = look.effectOpacity !== undefined || look.blur !== undefined || look.innerShadow !== undefined
-  return surfaceOf(look, now, align, themed ? themeOf(draft) : undefined)
+  return surfaceOf(look, draft.placement.strokeWeight, now, align, themed ? themeOf(draft) : undefined)
 }
 
 const givenBox = (look: AgentLook, area: Area, h: number = area.h, grows = false): Box => ({
@@ -163,7 +159,9 @@ function addWords(draft: Draft, parent: Node, slide: Node, change: Add, kind: "t
     !descendantsOf(draft.doom, slide.id).some((node) => propOf(node, "role") === "title")
   create(draft, "shape", parent.id, {
     ...surfaced(draft, change, {}, kind === "path" ? "center" : "inside"),
-    ...(kind === "shape" && change.radius === undefined ? { radius: cardRadiusFor(slideSize(draft).w) } : {}),
+    ...(kind === "shape" && change.radius === undefined
+      ? { radius: cardRadiusFor(slideSize(draft).w, draft.placement) }
+      : {}),
     ...(filled ? { fills: [solid("accent1")] } : {}),
     box: givenBox(change, area, high, grows),
     geometry,
@@ -209,7 +207,7 @@ function addLine(draft: Draft, parent: Node, change: Add): void {
   create(draft, "shape", parent.id, {
     ...surfaced(
       draft,
-      { ...change, stroke: change.stroke ?? "text2", strokeWidth: change.strokeWidth ?? lineWeight },
+      { ...change, stroke: change.stroke ?? "text2", strokeWidth: change.strokeWidth ?? draft.placement.lineWeight },
       {},
       "center",
     ),
@@ -222,7 +220,7 @@ function addFrame(draft: Draft, parent: Node, change: Add): void {
   if (change.rows !== undefined) return addGrid(draft, parent, change)
   if (change.align === "justify") stop("shape", undefined, "align", "form", "left, center or right.")
   const area = areaFor(draft, parent, change.box)
-  const layout = layoutOf(change, undefined, gapFor(slideSize(draft).w))
+  const layout = layoutOf(change, undefined, gapFor(slideSize(draft).w, draft.placement))
   create(draft, "frame", parent.id, {
     ...surfaced(draft, change),
     box: givenBox(change, area),
@@ -254,9 +252,9 @@ function addIcon(draft: Draft, parent: Node, change: Add): void {
   if (change.icon === undefined)
     stop("shape", undefined, "icon", "missing", "An icon name such as star, arrow-right or trending-up.")
   const area = areaFor(draft, parent, change.box)
-  const side = Math.min(iconSide, area.w, area.h)
+  const side = Math.min(draft.placement.iconSide, area.w, area.h)
   const box = givenBox(change, { ...area, w: side }, side)
-  const weight = Math.max(2, Math.round(Math.min(box.w, box.h) / iconWeightShare))
+  const weight = Math.max(2, Math.round(Math.min(box.w, box.h) / draft.placement.iconStrokeDivisor))
   create(draft, "shape", parent.id, {
     ...surfaced(
       draft,

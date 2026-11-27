@@ -16,8 +16,9 @@ import {
   type Doom,
   type TreeNode,
 } from "./index.js"
-import { started } from "./agent-fixtures.js"
+import { started } from "./testing/agent-fixtures.js"
 import { agent, once } from "./sample-deck.js"
+import { placement } from "./testing/placement-rules.js"
 
 const spot = (x: number, y: number, w: number, h: number) => ({
   x,
@@ -66,7 +67,7 @@ function open(doom: Doom): Doom {
 function landed(doom: Doom, change: AgentChange): Doom {
   const ready = open(doom)
   let next = 0
-  const writes = compileAgentChange(ready, change, () => nodeId(`m:${String((next += 1))}`))
+  const writes = compileAgentChange(ready, change, () => nodeId(`m:${String((next += 1))}`), placement)
   if (isRefusal(writes)) throw new Error(JSON.stringify(writes))
   const applied = applyEdit(ready, { once: once(), author: agent("mask"), writes, rev: rev(ready.rev + 1) })
   if (isRefusal(applied)) throw new Error(JSON.stringify(applied))
@@ -112,8 +113,11 @@ describe("a mask is a layer that clips every sibling above it", () => {
       field: "mask",
     })
     expect(readAgentChange({ op: "set", target: plain.slides[0], mask: true })).toMatchObject({ op: "set" })
-    const slide = compileAgentChange(plain.doom, { op: "set", target: plain.slides[0]!, mask: true }, () =>
-      nodeId("m:9"),
+    const slide = compileAgentChange(
+      plain.doom,
+      { op: "set", target: plain.slides[0]!, mask: true },
+      () => nodeId("m:9"),
+      placement,
     )
     expect(slide).toMatchObject({ refused: "shape", field: "mask" })
   })

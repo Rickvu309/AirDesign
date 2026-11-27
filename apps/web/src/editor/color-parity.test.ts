@@ -15,6 +15,7 @@ import { nodeModel } from "./design-model"
 import { paletteOf } from "./design-palette"
 import { neutralColorNames } from "./testing/neutral-color-names"
 import { grow, landed, spot } from "./testing/doom-fixtures"
+import { placement } from "@airdesign/doom/testing"
 
 const hash = "#"
 const theme = doom.defaultTheme
@@ -166,7 +167,7 @@ describe("colour controls and agent colours", () => {
     for (const [name, fields] of Object.entries(sends))
       for (const field of fields)
         for (const color of agentColors) {
-          const writes = compileAgentChange(view, { op: "set", target: id(name), [field]: color }, mint)
+          const writes = compileAgentChange(view, { op: "set", target: id(name), [field]: color }, mint, placement)
           const prop = propOfField[field]
           const wanted = doomColor(color)
           if (doom.isRefusal(writes) || !shows(landed(view, writes), name, prop, wanted)) {
@@ -202,6 +203,7 @@ describe("colour controls and agent colours", () => {
         view,
         { op: "set", target: id("card"), fill: tint === undefined ? role : `${role}+20` },
         () => doom.nodeId("m:1"),
+        placement,
       )
       if (doom.isRefusal(writes)) throw new Error(writes.refused)
       const after = landed(view, writes)

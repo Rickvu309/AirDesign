@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest"
 
 import { readAgentChange, type AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { agentDeck, build, minter } from "./agent-fixtures.js"
+import { agentDeck, build, minter } from "./testing/agent-fixtures.js"
 import { readForAgent } from "./agent-read.js"
 import { propOf } from "./doom-walk.js"
 import { ids, theme } from "./sample-deck.js"
+import { placement } from "./testing/placement-rules.js"
 
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
   ({ op: "set", target, ...look }) as AgentChange
@@ -28,7 +29,7 @@ describe("an inner shadow", () => {
 
   it("refuses a slide, a bad colour, a negative blur, and a value that is not a shadow", () => {
     const deck = agentDeck()
-    expect(compileAgentChange(deck, set(ids.slide, { innerShadow: shadow }), minter())).toMatchObject({
+    expect(compileAgentChange(deck, set(ids.slide, { innerShadow: shadow }), minter(), placement)).toMatchObject({
       field: "innerShadow",
     })
     expect(readAgentChange({ op: "set", target: ids.card, innerShadow: { ...shadow, color: "nope" } })).toMatchObject({

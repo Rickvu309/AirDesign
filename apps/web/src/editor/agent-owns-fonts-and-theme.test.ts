@@ -5,6 +5,7 @@ import { nodeModel } from "./design-model"
 import { shownText } from "./design-text-values"
 import { hexes } from "./testing/design-adapter-art"
 import { grow, landed, spot } from "./testing/doom-fixtures"
+import { placement } from "@airdesign/doom/testing"
 
 const words: doom.Text = {
   chars: "Quarterly review",
@@ -20,7 +21,7 @@ let minted = 0
 const mint = () => doom.nodeId(`m:${String((minted += 1))}`)
 
 function agentLands(change: doom.AgentChange, view: doom.Doom = built.view): doom.Doom {
-  const writes = compileAgentChange(view, change, mint)
+  const writes = compileAgentChange(view, change, mint, placement)
   if (doom.isRefusal(writes)) throw new Error(`refused ${JSON.stringify(writes)}`)
   return landed(view, writes)
 }

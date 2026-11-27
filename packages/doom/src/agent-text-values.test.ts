@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { agentDeck, build, minter, started } from "./agent-fixtures.js"
+import { agentDeck, build, minter, started } from "./testing/agent-fixtures.js"
 import { readForAgent } from "./agent-read.js"
 import { propOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { ids, land, revOf, sampleDeck, textOf } from "./sample-deck.js"
+import { placement } from "./testing/placement-rules.js"
 
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
   ({ op: "set", target, ...look }) as AgentChange
@@ -94,7 +95,9 @@ describe("raw text values: an agent sets what the panel's text controls set", ()
 
   it("refuses text values on a frame, and justify as where a frame places its children", () => {
     for (const look of [{ size: 40 }, { font: "Inter" }, { align: "justify" }])
-      expect(compileAgentChange(agentDeck(), set(ids.card, look), minter())).toMatchObject({ refused: "shape" })
+      expect(compileAgentChange(agentDeck(), set(ids.card, look), minter(), placement)).toMatchObject({
+        refused: "shape",
+      })
   })
 })
 

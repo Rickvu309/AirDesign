@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { compileAgentEdit } from "./agent-edit.js"
-import { compiled, minter, runName, started } from "./agent-fixtures.js"
+import { compiled, minter, runName, started } from "./testing/agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
 import type { NodeId } from "./ids.js"
 import { freeLineEnds, invert, orderKeyBetween, type Doom, type Measure } from "./index.js"
@@ -16,6 +16,7 @@ import {
   startOf,
   step,
 } from "./testing/line-end-fixtures.js"
+import { placement } from "./testing/placement-rules.js"
 
 function nested() {
   return doomFromTree({
@@ -146,6 +147,7 @@ describe("a connector whose place depends on text width", () => {
     const person = step(grown.doom, "person", freeLineEnds(grown.doom, gone, wide)).after
     const agentWrites = compiled(grown.doom, { op: "delete", nodes: [grown.ids.t!] }, minter(), { measure: wide })
     const edited = compileAgentEdit(started(grown.doom), [{ op: "delete", nodes: [grown.ids.t!] }], {
+      placement,
       author: agent(runName),
       once: once(),
       mint: minter(),

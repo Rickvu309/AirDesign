@@ -39,6 +39,7 @@ describe("the taste entry", () => {
       "newDeckTheme",
       "piece",
       "pieces",
+      "placementRules",
       "problemRules",
       "style",
       "styleOf",

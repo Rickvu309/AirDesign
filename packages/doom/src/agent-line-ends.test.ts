@@ -1,15 +1,16 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
+import { agentDeck, build, lastChild, minter } from "./testing/agent-fixtures.js"
 import { more, richDeck } from "./testing/rich-deck.js"
 import { propOf } from "./doom-walk.js"
 import { ids, land } from "./sample-deck.js"
+import { placement } from "./testing/placement-rules.js"
 
 const slide = ids.slide
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
   ({ op: "set", target, ...look }) as AgentChange
-const refusal = (doom = richDeck(), change: AgentChange) => compileAgentChange(doom, change, minter())
+const refusal = (doom = richDeck(), change: AgentChange) => compileAgentChange(doom, change, minter(), placement)
 
 describe("a line's ends and route from an agent", () => {
   it("connects two layers with an elbow, each end on the side facing the other", () => {
@@ -122,7 +123,9 @@ describe("a connector's ends", () => {
       start: { node: top, site: "r" },
       channels: [{ axis: "x", at: 380 }],
     })
-    expect(compileAgentChange(agentDeck(), { op: "add", kind: "shape", slide, lane: 10 }, minter())).toMatchObject({
+    expect(
+      compileAgentChange(agentDeck(), { op: "add", kind: "shape", slide, lane: 10 }, minter(), placement),
+    ).toMatchObject({
       field: "lane",
     })
   })

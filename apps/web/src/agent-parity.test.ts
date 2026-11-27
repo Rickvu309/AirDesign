@@ -15,6 +15,7 @@ import {
   slide,
   writesOf,
 } from "@/testing/agent-reach"
+import { placement } from "@airdesign/doom/testing"
 
 const slideOps = new Set(["add", "move", "delete"])
 
@@ -193,7 +194,7 @@ describe("every capability a person has names its agent word, or says why it is 
     const change = doom.readAgentChange(entry.probe)
     if (doom.isRefusal(change)) throw new Error(JSON.stringify(change))
     let minted = 0
-    const writes = compileAgentChange(view, change, () => doom.nodeId(`new:${++minted}`))
+    const writes = compileAgentChange(view, change, () => doom.nodeId(`new:${++minted}`), placement)
     if ("refused" in writes) throw new Error(JSON.stringify(writes))
     const after = land(view, { kind: "person", id: "parity" }, writes)
     expect(doom.slideGroups(after).map((group) => group.slides)).toEqual(groups)

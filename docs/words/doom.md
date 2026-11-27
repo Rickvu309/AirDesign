@@ -94,7 +94,7 @@ The choices an agent names for a layer: a theme colour, a text style name, an ef
 _Avoid_: style, traits, fields
 
 **grid of words**:
-A frame added with `rows`, one list of cells per row. The first row is the header, number columns align right, and a final Total row is bold.
+A frame added with `rows`, one list of cells per row. The first row is the header, number columns align right, and a final total row is bold. Which label makes a total row, and the weight and ink of the header and row rules, come from taste in `PlacementRules`.
 A grid too tight for its box is refused `limit` with `grid`: the first cell whose widest word does not fit, as its row, column, word and widths, or the rows and heights when every word fits but the rows do not. The agent pack words it.
 
 **problem**:
@@ -106,7 +106,7 @@ A designed first state for a new slide, chosen in the New slide menu: title, tit
 _Avoid_: layout, template slide
 
 **free area**:
-The largest clear rectangle of a slide or frame, with a gap round what is already there. An add with no `box` takes it.
+The largest clear rectangle of a slide or frame, with a gap round what is already there. An add with no `box` takes it. Its gap and margins, a slide's side margin and edge, an icon's side and a line's weight come from taste as `PlacementRules`; Doom holds no default.
 _Avoid_: empty space, gap
 
 **reading**:

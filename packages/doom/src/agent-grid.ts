@@ -16,7 +16,8 @@ import { sidesOf, surfaceOf, turnOf } from "./agent-look.js"
 import { gapFor, gridArea, slideSize, themeOf } from "./agent-place.js"
 import type { Node } from "./doom.js"
 import { isBlankValue, isDataValue, numberValue } from "./number-values.js"
-import type { Paint, Sides } from "./paint.js"
+import type { Sides } from "./paint.js"
+import type { PlacementRules } from "./placement-rules.js"
 import type { GridShortfall } from "./refusal.js"
 import type { Text, TextStyleName } from "./text.js"
 import { widestWord } from "./text-estimate.js"
@@ -48,21 +49,16 @@ function cellText(part: Part, look: CellLook): Part {
   return { ...part, text, block: { ...part.block, values: { ...values, text } } }
 }
 
-const totalLabel = /^(?:grand\s+)?total\b/iu
-const headerRule = 2
-const rowRule = 1
-const rowRuleInk: Paint = { kind: "solid", color: { var: "text", tint: 0.8 } }
-const headerRuleInk: Paint = { kind: "solid", color: { var: "text" } }
-
-function ruleOf(row: number, last: number, total: boolean, columns: number): Block[] {
+function ruleOf(row: number, last: number, total: boolean, columns: number, table: PlacementRules["table"]): Block[] {
+  const { headerRule, rowRule } = table
   const side =
     row === 0 && last > 0
-      ? { sides: { b: headerRule }, weight: headerRule, ink: headerRuleInk }
+      ? { sides: { b: headerRule.weight }, rule: headerRule }
       : total && row === last
-        ? { sides: { t: headerRule }, weight: headerRule, ink: headerRuleInk }
+        ? { sides: { t: headerRule.weight }, rule: headerRule }
         : row === last || (total && row === last - 1)
           ? undefined
-          : { sides: { b: rowRule }, weight: rowRule, ink: rowRuleInk }
+          : { sides: { b: rowRule.weight }, rule: rowRule }
   if (side === undefined) return []
   return [
     {
@@ -72,8 +68,8 @@ function ruleOf(row: number, last: number, total: boolean, columns: number): Blo
         geometry: { kind: "rect" },
         sizing: { w: "fill", h: "fill" },
         cell: { row, col: 0, colSpan: columns },
-        strokes: [side.ink],
-        stroke: { ...strokeOf(side.weight), align: "inside", sides: side.sides },
+        strokes: [side.rule.ink],
+        stroke: { ...strokeOf(side.rule.weight), align: "inside", sides: side.sides },
       },
     },
   ]
@@ -101,11 +97,11 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
   if (change.layout !== undefined) stop("shape", undefined, "layout", "needs", "rows to place the grid")
   const area = gridArea(draft, parent, change.box)
   const theme = themeOf(draft)
-  const gap = gapFor(slideSize(draft).w)
+  const gap = gapFor(slideSize(draft).w, draft.placement)
   const columns = Math.max(...rows.map((row) => row.length))
   const last = rows.length - 1
   const plain = rows.map((row) => row.map((cell) => (cell === "" ? "" : partOf(cell, "body").text.chars)))
-  const total = last > 1 && totalLabel.test(plain[last]![0]?.trim() ?? "")
+  const total = last > 1 && draft.placement.table.totalRow.test(plain[last]![0]?.trim() ?? "")
   const numbers = Array.from({ length: columns }, (_, col) => numberColumn(plain, col))
   const width = area.w / columns
   const paddingAt = (row: number, col: number): Sides => ({
@@ -146,7 +142,7 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
     if (tall > area.h) return undefined
     return frameOf(
       {
-        ...surfaceOf(change),
+        ...surfaceOf(change, draft.placement.strokeWeight),
         name: change.name ?? "Grid",
         box: { ...boxIn(area, change.box !== undefined ? area.h : tall), ...turnOf(change) },
         layout: {
@@ -158,7 +154,7 @@ export function addGrid(draft: Draft, parent: Node, change: Add): void {
         },
       },
       cells.flatMap((row, r) => [
-        ...ruleOf(r, last, total, columns),
+        ...ruleOf(r, last, total, columns, draft.placement.table),
         ...row.flatMap((part, c): Block[] => {
           if (part === undefined) return []
           const values = part.block.values

@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { agentDeck, build, minter, started } from "./agent-fixtures.js"
+import { agentDeck, build, minter, started } from "./testing/agent-fixtures.js"
 import { propOf, slidesOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { ids, land, sampleDeck } from "./sample-deck.js"
+import { placement } from "./testing/placement-rules.js"
 
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
   ({ op: "set", target, ...look }) as AgentChange
@@ -23,7 +24,9 @@ describe("one change over every slide: '*.title' sets the title on each slide th
   })
 
   it("refuses when no slide has that role, and a target that is not a role", () => {
-    expect(compileAgentChange(agentDeck(), set("*.subtitle", { textStyle: "body" }), minter())).toMatchObject({
+    expect(
+      compileAgentChange(agentDeck(), set("*.subtitle", { textStyle: "body" }), minter(), placement),
+    ).toMatchObject({
       refused: "missing",
       field: "target",
     })

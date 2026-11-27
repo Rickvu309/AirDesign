@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { build, compiled, minter, started } from "./agent-fixtures.js"
+import { build, compiled, minter, started } from "./testing/agent-fixtures.js"
 import { more, richDeck } from "./testing/rich-deck.js"
 import {
   applyEdit,
@@ -20,10 +20,12 @@ import {
 } from "./index.js"
 import { agent, create, ids, land, once, theme } from "./sample-deck.js"
 import { parentOf, propOf, slidesOf } from "./doom-walk.js"
+import { placement } from "./testing/placement-rules.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
 const order = (doom: Doom) => slidesOf(doom).map((slide) => slide.id)
-const refusal = (doom: Doom, value: Record<string, unknown>) => compileAgentChange(doom, change(value), minter())
+const refusal = (doom: Doom, value: Record<string, unknown>) =>
+  compileAgentChange(doom, change(value), minter(), placement)
 
 describe("slide add", () => {
   it("adds a slide in the last group that has a slide, leaving empty groups empty", () => {

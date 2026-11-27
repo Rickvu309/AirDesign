@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest"
 import { readAgentChange, type AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { agentDeck, build, minter } from "./agent-fixtures.js"
+import { agentDeck, build, minter } from "./testing/agent-fixtures.js"
 import { readForAgent } from "./agent-read.js"
 import { propOf } from "./doom-walk.js"
 import { ids, theme } from "./sample-deck.js"
+import { placement } from "./testing/placement-rules.js"
 
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
   ({ op: "set", target, ...look }) as AgentChange
-const refusal = (change: AgentChange) => compileAgentChange(agentDeck(), change, minter())
+const refusal = (change: AgentChange) => compileAgentChange(agentDeck(), change, minter(), placement)
 
 describe("skip, transition, paragraph spacing, vertical align and blur", () => {
   it("skips a slide and reads the skip back, and refuses a skip on a layer", () => {

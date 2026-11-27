@@ -2,6 +2,7 @@ import { type OrderKey } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
 import type { Point, SlideGeometry } from "./slide-geometry"
 import { propOf } from "@airdesign/doom"
+import { placementRules } from "@airdesign/taste"
 
 export type Drawn = "frame" | "rectangle" | "ellipse" | "line" | "arrow" | `preset:${string}`
 type Slot = { readonly id: doom.NodeId; readonly at: OrderKey }
@@ -145,12 +146,12 @@ function placed(inside: Size, size: Size, at: { readonly x: number; readonly y: 
 
 function onTop(inside: Size, size: Size, anchor: Box | undefined): Box {
   if (anchor === undefined) return placed(inside, size, centeredIn(inside, size))
-  const nudge = doom.gapFor(inside.w)
+  const nudge = doom.gapFor(inside.w, placementRules)
   return placed(inside, size, { x: anchor.x + nudge, y: anchor.y + nudge })
 }
 
 function openArea(view: doom.Doom, parent: doom.NodeId, inside: Size, least: Size, anchor: Box | undefined): Box {
-  const content = doom.contentAreaOf(view, parent)
+  const content = doom.contentAreaOf(view, parent, placementRules)
   if (content !== undefined && fits(content, least)) return content
   return onTop(inside, least, anchor)
 }

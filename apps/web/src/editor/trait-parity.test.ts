@@ -7,6 +7,7 @@ import type { PanelControl } from "../design/panel"
 import { changeWrites } from "./design-changes"
 import { nodeModel } from "./design-model"
 import { grow, spot } from "./testing/doom-fixtures"
+import { placement } from "@airdesign/doom/testing"
 
 type Problem = { readonly control: string; readonly missing: "label" | "copy" | "write" | "paint" | "undo" | "agent" }
 
@@ -167,7 +168,12 @@ function agentProps(name: string): ReadonlySet<string> {
   const mint = () => doom.nodeId(`m:${String((next += 1))}`)
   const found = new Set<string>()
   for (const look of looks) {
-    const writes = compileAgentChange(view, { op: "set", target: id(name), ...look } as doom.AgentChange, mint)
+    const writes = compileAgentChange(
+      view,
+      { op: "set", target: id(name), ...look } as doom.AgentChange,
+      mint,
+      placement,
+    )
     if (!doom.isRefusal(writes)) for (const write of writes) if (write.node === id(name)) found.add(write.prop)
   }
   return found

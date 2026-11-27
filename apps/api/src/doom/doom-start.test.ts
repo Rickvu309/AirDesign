@@ -2,6 +2,7 @@ import * as doom from "@airdesign/doom"
 import { compileAgentEdit, placeholderSubtitle } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { startEdit, startIds } from "./doom-start.js"
+import { placement } from "@airdesign/doom/testing"
 
 const written = (node: doom.NodeId, prop: string) =>
   startEdit().writes.find((write) => write.node === node && write.prop === prop)?.value as never
@@ -48,7 +49,7 @@ describe("an agent's title on a new deck's first slide", () => {
     const compiled = compileAgentEdit(
       started,
       [{ op: "add", kind: "text", slide: startIds.slide, text: "Q3 board update", textStyle: "title" }],
-      { author, once: "fill", mint: () => doom.nodeId(`a:${(count += 1)}`) },
+      { placement, author, once: "fill", mint: () => doom.nodeId(`a:${(count += 1)}`) },
     )
     if ("refused" in compiled) throw new Error(JSON.stringify(compiled))
     const landed = doom.applyEdit(started, { ...compiled.edit, rev: doom.rev(3) })
