@@ -24,6 +24,11 @@ test("each theme picked by keyboard saves in one undo step and repaints both tab
   context,
   stack,
 }) => {
+  const { packageBuild } = await import("../../scripts/package-build.mjs")
+  const { themePresetById, themePresets }: typeof import("../../packages/skills/src/index.ts") = await packageBuild(
+    process.cwd(),
+    "@airdesign/skills",
+  )
   const opened = await designing(page, context, stack)
   await landNodes(stack, opened, [
     {
@@ -45,21 +50,21 @@ test("each theme picked by keyboard saves in one undo step and repaints both tab
   }
   const savedTheme = async () => doom.deckOf(await readFold()).theme
   const picker = page.getByRole("combobox", { name: /^Change theme/ })
-  const { neutral } = doom.themeLibrary
+  const neutral = themePresetById("neutral")!
   let current = neutral
   await expect(picker.getByText(current.name, { exact: true })).toBeVisible()
   await expect(picker.locator("[data-slot=select-value] > [aria-hidden]")).toHaveText(designCopy.themeSample)
   await picker.press("Enter")
   const options = page.getByRole("option")
-  await expect(options).toHaveCount(Object.keys(doom.themeLibrary).length)
+  await expect(options).toHaveCount(themePresets.length)
   await expect(options.locator(":scope > :first-child > [aria-hidden=true]")).toHaveText(
-    Object.values(doom.themeLibrary).map(() => designCopy.themeSample),
+    themePresets.map(() => designCopy.themeSample),
   )
   await expect(page.getByRole("dialog")).toHaveCount(0)
   await page.keyboard.press("Escape")
   await expect(picker).toBeFocused()
 
-  for (const entry of [...Object.values(doom.themeLibrary).filter(({ id }) => id !== neutral.id), neutral]) {
+  for (const entry of [...themePresets.filter(({ id }) => id !== neutral.id), neutral]) {
     await picker.press("Enter")
     await page.keyboard.type(entry.name)
     await expect(page.getByRole("option", { name: entry.name, exact: true })).toBeFocused()
@@ -95,7 +100,20 @@ test("a custom theme opens with no selection and keeps keyboard navigation", asy
 
   const picker = page.getByRole("combobox", { name: /^Change theme/ })
   const ink = await picker.evaluate((element) => getComputedStyle(element).color)
+  await landNodes(stack, opened, [
+    {
+      id: "t:2",
+      type: "shape",
+      parent: opened.slide,
+      props: { box: spot(1100, 220, 520, 320), geometry: { kind: "rect" }, fills: accent },
+    },
+  ])
   await landProps(stack, opened, deck.id, { "theme.colors.accent1": hexes.navy })
+  await expect(picker).toHaveAccessibleName(designCopy.chooseTheme(designCopy.customTheme))
+  await page.reload()
+  await page.locator("[data-editor-ready]").waitFor()
+  await page.getByRole("button", { name: editorCopy.panelDesign, exact: true }).click()
+  await expect(node(page, "t:2").locator('[data-paint="solid"]')).toHaveCSS("background-color", "rgb(31, 78, 121)")
   await expect(picker).toHaveAccessibleName(designCopy.chooseTheme(designCopy.customTheme))
   await expect(picker).toHaveCSS("color", ink)
   await picker.click()

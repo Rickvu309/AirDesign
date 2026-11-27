@@ -1,6 +1,7 @@
 import { blankDeckName } from "@airdesign/catalog"
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
+import { newDeckTheme } from "@airdesign/skills"
 
 export const startIds = {
   deck: doom.nodeId("s:1"),
@@ -14,11 +15,9 @@ export const startAuthor: doom.Author = { kind: "person", id: "airdesign" }
 
 const slide = { w: 1920, h: 1080 } as const
 
-export type DeckStart = { readonly name: string; readonly theme: doom.Theme }
+export type DeckStart = { readonly name: string; readonly theme?: doom.Theme }
 
-export function startEdit(
-  { name, theme }: DeckStart = { name: blankDeckName, theme: doom.themeLibrary.neutral.theme },
-): doom.Edit {
+export function startEdit({ name, theme = newDeckTheme }: DeckStart = { name: blankDeckName }): doom.Edit {
   const first = orderKeyBetween(null, null)
   const create = (node: doom.NodeId, type: string, parent: doom.NodeId | undefined) => [
     { node, prop: "type" as const, value: type },

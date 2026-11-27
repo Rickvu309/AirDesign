@@ -125,6 +125,7 @@ const delta = (left, right) => Math.max(...["x", "y", "w", "h"].map((edge) => Ma
 export async function bakeParity(business = false) {
   const root = process.cwd()
   const doom = await packageBuild(root, "@airdesign/doom")
+  const { themePresets } = await packageBuild(root, "@airdesign/skills")
   const { measureDoom } = await packageBuild(root, "@airdesign/render")
   const { FontMetrics } = await packageBuild(root, "@airdesign/api", "platform/font-metrics.js")
   const { callTool, emptyLog } = await packageBuild(root, "@airdesign/mcp")
@@ -133,7 +134,7 @@ export async function bakeParity(business = false) {
   const jp = { ...doom.defaultTheme, fonts: { heading: "Noto Sans JP", body: "Noto Sans JP" } }
   const groups = business
     ? [
-        ...Object.entries(doom.themeLibrary).map(([name, { theme }]) => ({ name, theme, items: english })),
+        ...themePresets.map(({ id: name, theme }) => ({ name, theme, items: english })),
         { name: "japanese-inter", theme: doom.defaultTheme, items: japanese },
         { name: "japanese-noto", theme: jp, items: japanese },
       ]

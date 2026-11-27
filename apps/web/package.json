@@ -11,6 +11,7 @@
     "deploy": "pnpm build && wrangler deploy --keep-vars --var COMMIT:$(git rev-parse HEAD)"
   },
   "dependencies": {
+    "@airdesign/skills": "workspace:*",
     "@airdesign/catalog": "workspace:*",
     "@airdesign/doom": "workspace:*",
     "@airdesign/fonts": "workspace:*",

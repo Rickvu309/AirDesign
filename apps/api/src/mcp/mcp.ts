@@ -204,7 +204,7 @@ function doomHost(db: Sql, email: string, images: ImageStore, seen: Pictured, fo
       if (!id.ok) return refusal("deck")
       return opened(
         id.deck,
-        await createDoom(db, { deck: id.deck }, email, { name, theme: theme ?? doom.themeLibrary.neutral.theme }),
+        await createDoom(db, { deck: id.deck }, email, { name, ...(theme === undefined ? {} : { theme }) }),
       )
     }),
     images: async (deck, names) => storedImages(db, deck, email, names, images),

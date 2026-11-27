@@ -1,4 +1,4 @@
-import { themeFiles } from "./library/theme-index.js"
+import fallback from "./fallback-theme.json" with { type: "json" }
 import {
   type ColorVar,
   type Effect,
@@ -11,9 +11,9 @@ import {
   readEffectList,
   readHex,
   signedColorVars,
-  paletteColorVars,
 } from "./paint.js"
 import { type Reader, detailOf, finite, integer, keyed, literal, object, words } from "./read-kit.js"
+import type { Refusal } from "./refusal.js"
 import { type TextStyleName, textStyleNames } from "./text.js"
 
 export type TextStyle = {
@@ -60,51 +60,8 @@ const themeStyleFields = {
   effectStyles: readEffectStyles,
 }
 
-function readBuiltIn<T>(file: string, raw: unknown, read: Reader<T>): T {
-  try {
-    return read(raw)
-  } catch (thrown) {
-    const { field, fault, form, refused } = detailOf(thrown)
-    const reason = `${field ?? "entry"} (${fault ?? refused})`
-    throw new Error(`Built-in theme ${file}: ${reason}${form === undefined ? "" : `. Expected ${form}`}`, {
-      cause: thrown,
-    })
-  }
-}
-
-const { "fallback.json": fallback, ...libraryFiles } = themeFiles
-export const defaultTheme: Theme = readBuiltIn(
-  "fallback.json",
-  fallback,
-  object({ ...themeFields, ...themeStyleFields }),
-)
-
-const readEntry = object(
-  {
-    id: words(100, 1),
-    name: words(100, 1),
-    powerPoint: object({ map: literal(["light", "dark"]), followedLink: readHex }),
-    ...themeFields,
-  },
-  themeStyleFields,
-)
-
-export type LibraryTheme = { readonly id: string; readonly name: string; readonly theme: Theme }
-
-function readLibrary(files: Readonly<Record<string, unknown>>) {
-  const entries = new Map<string, LibraryTheme>()
-  for (const [file, raw] of Object.entries(files)) {
-    const { id, name, powerPoint: _powerPoint, ...art } = readBuiltIn(file, raw, readEntry)
-    if (entries.has(id)) throw new Error(`Built-in theme ${file}: duplicate id "${id}"`)
-    entries.set(id, { id, name, theme: { ...defaultTheme, ...art } })
-  }
-  const neutral = entries.get("neutral")
-  if (neutral === undefined) throw new Error('Built-in theme library is missing id "neutral"')
-  return { ...Object.fromEntries(entries), neutral }
-}
-
-export const themeLibrary: Readonly<Record<string, LibraryTheme> & { neutral: LibraryTheme }> =
-  readLibrary(libraryFiles)
+export const readCompleteTheme: Reader<Theme> = object({ ...themeFields, ...themeStyleFields })
+export const defaultTheme: Theme = readCompleteTheme(fallback)
 
 const readTextStyles: Reader<Theme["textStyles"]> = (raw) =>
   readEveryTextStyle(typeof raw === "object" && raw !== null ? { ...defaultTheme.textStyles, ...raw } : raw)
@@ -112,14 +69,10 @@ const readTextStyles: Reader<Theme["textStyles"]> = (raw) =>
 const readStoredColors: Reader<Theme["colors"]> = (raw) => {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return themeFields.colors(raw)
   if (signedColorVars.every((role) => Object.hasOwn(raw, role))) return themeFields.colors(raw)
-  const builtIn = Object.values(themeLibrary).find(({ theme }) =>
-    paletteColorVars.every((name) => Object.hasOwn(raw, name) && Reflect.get(raw, name) === theme.colors[name]),
-  )
-  const base = builtIn?.theme ?? defaultTheme
   return themeFields.colors({
-    positive: base.colors.positive,
-    negative: base.colors.negative,
-    total: base.colors.total,
+    positive: defaultTheme.colors.positive,
+    negative: defaultTheme.colors.negative,
+    total: defaultTheme.colors.total,
     ...raw,
   })
 }
@@ -130,6 +83,14 @@ export const readTheme: Reader<Theme> = object({
   textStyles: readTextStyles,
   colors: readStoredColors,
 })
+
+export function parseTheme(raw: unknown): Theme | Refusal {
+  try {
+    return readCompleteTheme(raw)
+  } catch (thrown) {
+    return detailOf(thrown)
+  }
+}
 
 const entries = <const N extends string>(group: string, names: readonly N[]) =>
   names.map((name) => `theme.${group}.${name}` as ThemeKey)

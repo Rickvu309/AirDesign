@@ -1,8 +1,8 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
-import path from "node:path"
-import { fileURLToPath } from "node:url"
+export { newDeckTheme, themePresets, themePresetById, themePresetOf } from "./theme-presets.js"
 
-const defaultDir = fileURLToPath(new URL("../files", import.meta.url))
+const fs = () => process.getBuiltinModule("node:fs")
+const nodePath = () => process.getBuiltinModule("node:path")
+const defaultDir = () => process.getBuiltinModule("node:url").fileURLToPath(new URL("../files", import.meta.url))
 const skillNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/
 const styleNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const indexEntryPattern = /^- `([a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*)`:\s*(.+)$/
@@ -13,6 +13,7 @@ function stripMarkdownExtension(raw: string): string {
 }
 
 function inside(root: string, candidate: string): boolean {
+  const path = nodePath()
   const relative = path.relative(root, candidate)
   return relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative)
 }
@@ -56,29 +57,33 @@ function parseParameters(markdown: string): readonly { readonly name: string; re
   return parameters
 }
 
-export function readSkillIndex(dir: string = defaultDir): {
+export function readSkillIndex(dir: string = defaultDir()): {
   readonly markdown: string
   readonly skills: readonly { readonly name: string; readonly when: string }[]
 } {
-  const markdown = readFileSync(path.join(dir, "index.md"), "utf8").trimEnd()
+  const markdown = fs().readFileSync(nodePath().join(dir, "index.md"), "utf8").trimEnd()
   return { markdown, skills: parseSkillIndex(markdown) }
 }
 
 export function readSkill(
   rawName: string,
-  dir: string = defaultDir,
+  dir: string = defaultDir(),
 ): { readonly name: string; readonly markdown: string } | undefined {
   const name = stripMarkdownExtension(rawName.trim())
   if (!skillNamePattern.test(name) || name === "index" || name === "styles" || name.startsWith("styles/")) {
     return undefined
   }
+  const path = nodePath()
+  const { existsSync, readFileSync, statSync } = fs()
   const root = path.resolve(dir)
   const target = path.resolve(root, `${name}.md`)
   if (!inside(root, target) || !existsSync(target) || !statSync(target).isFile()) return undefined
   return { name, markdown: readFileSync(target, "utf8").trimEnd() }
 }
 
-export function listStyles(dir: string = defaultDir): readonly { readonly name: string; readonly summary: string }[] {
+export function listStyles(dir: string = defaultDir()): readonly { readonly name: string; readonly summary: string }[] {
+  const path = nodePath()
+  const { existsSync, readdirSync, readFileSync, statSync } = fs()
   const stylesDir = path.join(dir, "styles")
   if (!existsSync(stylesDir) || !statSync(stylesDir).isDirectory()) return []
   const names = readdirSync(stylesDir)
@@ -94,7 +99,7 @@ export function listStyles(dir: string = defaultDir): readonly { readonly name: 
 
 export function readStyle(
   rawName: string,
-  dir: string = defaultDir,
+  dir: string = defaultDir(),
 ):
   | {
       readonly name: string
@@ -104,6 +109,8 @@ export function readStyle(
   | undefined {
   const name = stripMarkdownExtension(rawName.trim())
   if (!styleNamePattern.test(name)) return undefined
+  const path = nodePath()
+  const { existsSync, readFileSync, statSync } = fs()
   const stylesDir = path.resolve(dir, "styles")
   const target = path.resolve(stylesDir, `${name}.md`)
   if (!inside(stylesDir, target) || !existsSync(target) || !statSync(target).isFile()) return undefined

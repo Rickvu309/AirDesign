@@ -8,7 +8,7 @@ import { colorVars, effectStyleNames } from "../paint.js"
 import { weightNames } from "../painted-face.js"
 import { shapeNames } from "../preset-geometry.js"
 import { textStyleNames } from "../text.js"
-import { themeLibrary } from "../theme.js"
+import { defaultTheme } from "../theme.js"
 
 type Pool = "slide" | "group" | "layer" | "frame" | "any"
 
@@ -430,7 +430,10 @@ const deck = fc
       name: agentText,
       nameFollows: fc.boolean(),
       language: look.language,
-      theme: rare(fc.constantFrom(...Object.keys(themeLibrary)), fc.constant("no-such-theme")),
+      theme: rare(
+        fc.constant({ ...defaultTheme, fonts: { heading: "Lora", body: "Inter" } }),
+        fc.constant("no-such-theme"),
+      ),
       colors: fc.dictionary(fc.constantFrom(...colorVars), fc.constantFrom(...themeHexes), {
         maxKeys: 3,
       }),

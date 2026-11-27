@@ -4,14 +4,12 @@ export const libraryArt = [
   { id: "editorial", name: "Editorial", accent1: "#b4532a", heading: "Source Serif 4 SemiBold" },
 ]
 
-export const fallbackArt = { colors: { accent1: "#0b3a6f" }, fonts: { heading: "Inter" } }
-
 export const designedThemes = [
   {
     id: "consulting",
     name: "Consulting",
     fonts: { heading: "Source Serif 4", body: "Source Sans 3" },
-    colors: { accent1: "#14334b", accent2: "#00665e", accent6: "#994226" },
+    colors: { accent1: "#155d94", accent2: "#00665e", accent6: "#994226" },
     textStyles: { title: { size: 60 }, caption: { size: 24, lineHeight: 1.3 } },
   },
   {
@@ -19,6 +17,6 @@ export const designedThemes = [
     name: "Technical",
     fonts: { heading: "Geist", body: "Geist" },
     colors: { accent1: "#244f9f", accent2: "#006661", accent3: "#633ca0", accent4: "#7d4c1b" },
-    textStyles: { title: { size: 52 }, body: { size: 30, lineHeight: 1.28 }, caption: { size: 24 } },
+    textStyles: { title: { size: 56 }, body: { size: 30, lineHeight: 1.28 }, caption: { size: 24 } },
   },
 ]

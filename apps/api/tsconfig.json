@@ -14,6 +14,7 @@
   "include": ["src"],
   "exclude": ["src/source-hooks.ts"],
   "references": [
+    { "path": "../../packages/skills" },
     { "path": "../../packages/doom" },
     {
       "path": "../../packages/catalog"

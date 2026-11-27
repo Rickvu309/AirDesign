@@ -5,18 +5,20 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
     }
   },
   "files": [
-    "dist",
-    "files"
+    "dist"
   ],
   "scripts": {
-    "build": "tsc -b",
+    "build": "tsc -b && cp -R files dist/",
     "lint": "oxlint",
     "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@airdesign/doom": "workspace:*"
   },
   "devDependencies": {
     "oxlint": "^1.90.0",

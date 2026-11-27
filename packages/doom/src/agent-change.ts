@@ -44,7 +44,7 @@ import {
 } from "./read-kit.js"
 import { type Refusal, refuse } from "./refusal.js"
 import { textStyleNames } from "./text.js"
-import { themeLibrary } from "./theme.js"
+import { type Theme, readCompleteTheme } from "./theme.js"
 import { pathLimit, readPathData } from "./geometry.js"
 import { shapeNames } from "./preset-geometry.js"
 import { cropField } from "./agent-crop.js"
@@ -58,7 +58,7 @@ export type DeckLook = {
   readonly name?: string
   readonly nameFollows?: boolean
   readonly language?: string
-  readonly theme?: string
+  readonly theme?: Theme
   readonly colors?: { readonly [K in ColorVar]?: Hex }
   readonly fonts?: { readonly heading?: string; readonly body?: string }
 }
@@ -290,7 +290,21 @@ const placeFields = {
     readAfter,
   ),
   ...slideFields,
-  theme: choice(Object.keys(themeLibrary), "Replace the deck theme with this library theme by id."),
+  theme: field(
+    {
+      type: "object",
+      description: "Replace the deck theme with these colours, fonts, text styles and effect styles.",
+      required: ["colors", "fonts", "textStyles", "effectStyles"],
+      properties: {
+        colors: { type: "object" },
+        fonts: { type: "object" },
+        textStyles: { type: "object" },
+        effectStyles: { type: "object" },
+      },
+      additionalProperties: false,
+    },
+    readCompleteTheme,
+  ),
   colors: field(
     {
       type: "object",

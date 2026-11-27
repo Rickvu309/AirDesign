@@ -1,6 +1,7 @@
 import { bakeFontState } from "@airdesign/render"
 import { toast } from "@/components/ui/toast"
 import * as doom from "@airdesign/doom"
+import { themePresetById } from "@airdesign/skills"
 import { useDoomSlide } from "@airdesign/render"
 import { useMemo } from "react"
 import { designCopy } from "@/copy/design-copy"
@@ -106,7 +107,7 @@ export function DesignPanel(props: Props) {
                 onChoose={(id) => {
                   const read = client.view()
                   const deck = [...read.nodes.values()].find(({ type }) => type === "deck")
-                  const next = doom.themeLibrary[id]?.theme
+                  const next = themePresetById(id)?.theme
                   if (deck !== undefined && next !== undefined)
                     client.push([{ node: deck.id, prop: "theme", value: next }])
                 }}

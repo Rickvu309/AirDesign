@@ -16,16 +16,8 @@ export const readCreateDeck = Object.assign(
     const fields = readFields(raw)
     if (!fields.ok) return fields
     const name = fields.name === undefined ? blankDeckName : readDeckName(fields.name)
-    const themeId = fields.theme
     if (name === undefined) return { ...fieldRefusal, field: "name", fault: "form" as const }
-    if (themeId !== undefined && !Object.hasOwn(doom.themeLibrary, themeId))
-      return {
-        ...fieldRefusal,
-        field: "theme",
-        fault: "form" as const,
-        form: Object.keys(doom.themeLibrary).join(", "),
-      }
-    return { ok: true as const, name, theme: themeId === undefined ? undefined : doom.themeLibrary[themeId]?.theme }
+    return { ok: true as const, name, theme: fields.theme }
   },
   { input: readFields.input },
 )

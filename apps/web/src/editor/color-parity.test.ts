@@ -1,3 +1,4 @@
+import { newDeckTheme, themePresets } from "@airdesign/skills"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { UnionControl } from "../design/controls/union"
@@ -193,7 +194,7 @@ describe("colour controls and agent colours", () => {
   })
 
   it.each(doom.colorVars)("shows an agent's %s fill by name and renders its actual colour", (role) => {
-    const theme = doom.themeLibrary.neutral.theme
+    const theme = newDeckTheme
     for (const tint of [undefined, 0.2]) {
       const color = tint === undefined ? { var: role } : { var: role, tint }
       const writes = doom.compileAgentChange(
@@ -230,7 +231,7 @@ describe("colour controls and agent colours", () => {
   })
 })
 
-it.each(Object.entries(doom.themeLibrary))("gives different colours different names in %s", (_id, { theme }) => {
+it.each(themePresets)("gives different colours different names in $name", ({ theme }) => {
   const colors = paletteOf(view, theme).templateColors
   expect(colors).toHaveLength(14)
   expect(pickerSwatches(colors)).toEqual(

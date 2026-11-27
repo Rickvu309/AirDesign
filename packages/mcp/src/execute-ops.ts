@@ -1,4 +1,5 @@
 import * as doom from "@airdesign/doom"
+import { themePresetById, themePresets } from "@airdesign/skills"
 
 import { doomRefused, refused, type ToolResult } from "./answer.js"
 import type { DeckHost, Opened } from "./deck-host.js"
@@ -345,7 +346,28 @@ function theme(view: doom.Doom) {
 }
 
 async function variables(plan: Plan, op: number, verb: Verb, fields: Readonly<Record<string, unknown>>) {
-  if (hasLook(fields)) await compileOne(plan, op, verb, { op: "deck", ...fields })
+  const { theme: requested, ...changes } = fields
+  let replacement = requested
+  if (typeof requested === "string") {
+    const preset = themePresetById(requested)
+    if (preset === undefined) {
+      const ids = themePresets.map(({ id }) => id).join(", ")
+      stop(
+        plan,
+        op,
+        verb,
+        doomRefused({ refused: "shape", change: verb, field: "theme", fault: "form", form: `One of ${ids}.` }),
+      )
+    }
+    replacement = preset.theme
+  }
+  if (hasLook(fields)) {
+    await compileOne(plan, op, verb, {
+      op: "deck",
+      ...changes,
+      ...(replacement === undefined ? {} : { theme: replacement }),
+    })
+  }
   return theme(plan.view)
 }
 
