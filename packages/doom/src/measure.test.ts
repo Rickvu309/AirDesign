@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { FontWidths } from "./line-breaks.js"
-import { type Text, type Theme, measureWith } from "./index.js"
+import { type Text, type Theme, measureWith, textFromMarkdown } from "./index.js"
 import { textOf, theme } from "./sample-deck.js"
 
 const plain: Theme = {
@@ -109,6 +109,29 @@ describe("measureWith", () => {
     expect(labels).toEqual(["•", "1.", "2.", "1."])
     const [first, , , nested] = measure(text, plain, 400).lines
     expect((nested?.x ?? 0) > (first?.x ?? 0)).toBe(true)
+  })
+
+  it("counts a numbered list on from the number its first item starts at", () => {
+    const labels = (paras: Text["paras"]) =>
+      measure(words("a\nb\nc", { paras }), plain, 400).lines.map((line) => line.label?.run.text)
+    expect(labels([{ list: "number", startAt: 2 }, { list: "number", startAt: 2 }, {}])).toEqual([
+      "2.",
+      "3.",
+      undefined,
+    ])
+    expect(labels([{ list: "number" }, { list: "bullet", level: 1 }, { list: "number" }])).toEqual(["1.", "•", "2."])
+    expect(labels([{ list: "number", startAt: 5 }, { list: "bullet" }, { list: "number", startAt: 5 }])).toEqual([
+      "5.",
+      "•",
+      "5.",
+    ])
+  })
+
+  it("paints the number an agent writes on a one-item list", () => {
+    const labels = ["1. First risk", "2. Second risk", "3. Third risk"].map(
+      (markdown) => measure(textFromMarkdown(markdown, "body"), plain, 400).lines[0]?.label?.run.text,
+    )
+    expect(labels).toEqual(["1.", "2.", "3."])
   })
 
   it("is the same on every call: no state carries between measurements", () => {
