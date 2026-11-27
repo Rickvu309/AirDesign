@@ -1,94 +1,112 @@
 ---
 name: process-flow
-description: "A script that lays out 3 to 6 steps left to right with arrows between them. Read it before you draw a process."
+description: "Before you draw a process, read the script that lays out 3 to 6 steps left to right with attached arrows."
 ---
 
 # Process flow
 
-Shows 3 to 6 steps in order, left to right, with an arrow from each step to the next. Under each step sit one or two short points: who does it, how long it takes, how much. The step the title is about takes the accent.
+Steps in order, left to right, an arrow from each step to the next. Under each step, one line says who does it and how. The step the title is about is filled with the accent.
 
-## Plan it
+## When
 
-- 3 to 6 steps, each named in one to three words: "Pick and pack".
-- One or two points a step, a few words each. With 5 or 6 steps, one point each.
-- More than 6 steps: merge steps, or split the flow over two slides, one per phase.
-- A step that loops back or splits in two is not a flow. Draw it as an architecture diagram, or as two flows.
+- A sequence a reader follows once, start to end: how an order ships, how a refund gets approved.
+- 3 to 6 steps. With more, merge steps, or split the flow over two slides, one per phase.
+- A step that loops back or splits in two is a system: draw it with `diagrams/architecture`.
 
-## Draw it
+## The rules
 
-Fill in the first block with your steps, then send it and the second block, unchanged, as one `airdesign_execute` script. Here `slide` is a new slide; give an existing slide's id to draw on it. In the same script, copy `kit/title-block` and `kit/source-line` onto the slide.
+- Name each step with a verb and its object, in one to four words: "Pick and pack", not "Fulfilment".
+- `how` is the mechanism: who does the step and how, with a number when you have one. "Warehouse team, within two hours", not "Efficient handling". A step with no mechanism is a theme, not a step.
+- One step in the accent: the one the title names. The others stay neutral.
+- Arrows only join a step to the next one, attached at both ends, so they follow when a step moves.
+
+## The script
+
+Change the values at the top: the slide, the flow's box on the slide, the steps and the step to accent. The rest measures the words and places every layer.
 
 ```js
-const slide = insert({ kind: "slide" })
+const slide = "<slide id>"
+const box = { x: 120, y: 280, w: 1680, h: 680 }
 const steps = [
-  { name: "Take the order", points: ["Web, app and stores", "One queue for all"] },
-  { name: "Pick and pack", points: ["Within two hours", "92% of orders today"] },
-  { name: "Ship", points: ["Two carriers", "Next day for the rest"] },
+  { name: "Take the order", how: "Stores, web and app feed one queue" },
+  { name: "Pick and pack", how: "Warehouse team, within two hours" },
+  { name: "Hand to carrier", how: "Two carriers, one pickup a day" },
+  { name: "Deliver", how: "Next day for 94% of parcels" },
 ]
 const focus = "Pick and pack"
-```
 
-```js
-const area = { x: 120, y: 300, w: 1680, h: 640 }
 if (steps.length < 3 || steps.length > 6)
-  throw new Error("A flow takes 3 to 6 steps: merge steps, or split the flow over two slides.")
-const gap = 96
-const w = Math.floor((area.w - gap * (steps.length - 1)) / steps.length)
+  throw new Error(
+    `A flow takes 3 to 6 steps and this one has ${steps.length}: merge steps, or split the flow over two slides, one per phase.`,
+  )
+if (!steps.some((step) => step.name === focus))
+  throw new Error(`focus names no step: set it to one of ${steps.map((step) => step.name).join(", ")}.`)
 const roomy = steps.length <= 4
-const boxH = roomy ? 176 : 144
-const placed = []
-const boxes = steps.map((step, i) => {
-  const x = area.x + i * (w + gap)
-  const box = insert({
-    parent: slide,
+const gap = roomy ? 112 : 72
+const w = Math.floor((box.w - gap * (steps.length - 1)) / steps.length)
+const pad = roomy ? 28 : 20
+const nameOf = (step) => `**${step.name}**`
+
+const flow = insert({ parent: slide, kind: "frame", layout: "none", name: "Process flow", box })
+const probe = insert({ parent: flow, kind: "text", text: "-", box: { x: 0, y: 0, w, h: 40 } })
+const tall = (text, textStyle, width) => {
+  update({ target: probe, text, textStyle, box: { w: width } })
+  return Math.ceil(get({ target: probe }).box.h)
+}
+const howStyle = roomy ? "body" : "body2"
+const boxH = Math.max(roomy ? 136 : 104, ...steps.map((step) => tall(nameOf(step), "body", w - 2 * pad) + 2 * pad))
+const howH = Math.max(...steps.map((step) => tall(step.how, howStyle, w)))
+remove({ target: probe })
+const below = 24
+const blockH = boxH + below + howH
+if (blockH > box.h)
+  throw new Error(`The flow needs ${blockH} px of height and its box holds ${box.h}: shorten the longest step.`)
+const top = Math.round((box.h - blockH) / 2)
+
+const ids = steps.map((step, i) => {
+  const x = i * (w + gap)
+  const lit = step.name === focus
+  const id = insert({
+    parent: flow,
     kind: "shape",
     shape: "rect",
     name: step.name,
-    text: roomy ? step.name : `**${step.name}**`,
-    textStyle: roomy ? "heading" : "body",
+    text: nameOf(step),
+    textStyle: "body",
     align: "left",
     alignV: "center",
-    padding: 24,
-    fill: "background2",
-    stroke: step.name === focus ? "accent1" : "none",
-    strokeWidth: 3,
-    box: { x, y: area.y, w, h: boxH },
+    padding: pad,
+    fill: lit ? "accent1" : "background2",
+    color: lit ? "background" : "text",
+    box: { x, y: top, w, h: boxH },
   })
-  const points = insert({
-    parent: slide,
-    kind: "text",
-    name: `${step.name} points`,
-    text: step.points.map((point) => `- ${point}`).join("\n"),
-    textStyle: roomy ? "body" : "body2",
-    color: "text2",
-    box: { x, y: area.y + boxH + 32, w, h: 64 },
-  })
-  placed.push(box, points)
-  return box
-})
-boxes.slice(1).forEach((box, i) =>
   insert({
-    parent: slide,
+    parent: flow,
+    kind: "text",
+    name: `${step.name} how`,
+    text: step.how,
+    textStyle: howStyle,
+    color: "text2",
+    box: { x, y: top + boxH + below, w, h: howH },
+  })
+  return id
+})
+ids.slice(1).forEach((id, i) =>
+  insert({
+    parent: flow,
     kind: "line",
     name: `${steps[i].name} to ${steps[i + 1].name}`,
-    from: { layer: boxes[i], side: "right" },
-    to: { layer: box, side: "left" },
+    from: { layer: ids[i], side: "right" },
+    to: { layer: id, side: "left" },
     arrow: "triangle",
   }),
 )
-const tallest = Math.max(...placed.map((each) => get({ target: each }).box).map((box) => box.y + box.h)) - area.y
-const shift = Math.round(Math.max(0, (area.h - tallest) / 2))
-for (const each of placed) {
-  const box = get({ target: each }).box
-  update({ target: each, box: { ...box, y: box.y + shift } })
-}
-;({ steps: boxes, problems: get({ target: slide }).problems })
+get({ target: flow }).problems
 ```
 
-The answer gives each step's box id in order, and the slide's problems. Fix every problem it lists.
+## After the script
 
-## How the layout works
-
-- Columns: the steps share 1680 px with 96 between for the arrows. Up to 4 steps, names take `heading` and points `body`. With 5 or 6, names take bold `body` and points `body2`.
-- Arrows: each one joins a step's right side to the next step's left side, so it stays on both when you move a step.
-- Height: the block sits in the middle of the body area, from y 300 to 940, measured after the points are set. Points that run long push it up, never past y 300.
+- `problems` is empty, or a step needs fewer words.
+- Read the title again: the filled step is the one it names.
+- Copy `kit/title-block` above the flow and, when a step carries a number, `kit/source-line` below it.
+- Each step is its own layer, named after the step. Move one and its arrows follow. To change the steps, remove the `Process flow` frame and run the script again.
