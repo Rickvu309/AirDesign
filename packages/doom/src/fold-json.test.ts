@@ -68,6 +68,11 @@ describe("the fold's JSON form", () => {
     sameDoom(right, left)
   })
 
+  it("refuses a stored linked node", () => {
+    const node = { id: "t:1", rev: 1, type: "component" }
+    expect(readFold({ rev: 1, nodes: { [node.id]: node }, revs: {}, onces: {}, runs: {} })).toBeUndefined()
+  })
+
   it.each([
     ["not an object", 7],
     ["no nodes", { rev: 1, revs: {}, onces: {}, runs: {} }],
@@ -118,6 +123,14 @@ describe("a landed edit's JSON form", () => {
     author: person,
     writes: [{ node: ids.card, prop: "name", value: "Card" }],
     rev: rev(doom.rev + 1),
+  })
+
+  it.each([
+    { node: "t:90", prop: "type", value: "component" },
+    { node: ids.card, prop: "instance", value: null },
+  ])("refuses an edit that writes a linked node or property", (write) => {
+    const doom = sampleDeck()
+    expect(isRefusal(readLanded({ ...landed(doom), writes: [write] }, doom))).toBe(true)
   })
 
   it("reads an edit and its rev against the doom it lands on", () => {

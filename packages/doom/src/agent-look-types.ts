@@ -44,10 +44,6 @@ export type AgentLook = {
   readonly from?: AgentEnd
   readonly to?: AgentEnd
   readonly route?: "straight" | "elbow" | "curve"
-  readonly component?: string
-  readonly data?: ReturnType<typeof import("./component/values.js").record>
-  readonly variant?: ReturnType<typeof import("./component/spec.js").variantRecord>
-  readonly tokens?: ReturnType<typeof import("./component/spec.js").tokenRecord>
   readonly rows?: readonly (readonly string[])[]
   readonly box?: AgentBox
   readonly name?: string

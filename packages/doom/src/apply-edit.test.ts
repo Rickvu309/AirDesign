@@ -45,7 +45,7 @@ describe("creating and ordering nodes", () => {
     )
   })
 
-  it("lets a parent grammar hold: shapes hold nothing, slides sit in rows", () => {
+  it("only lets the right nodes be children: shapes hold nothing, slides sit in rows", () => {
     refusedWith(tryLand(sampleDeck(), create(nodeId("t:92"), "frame", ids.title)), "shape")
     refusedWith(tryLand(sampleDeck(), create(nodeId("t:93"), "slide", ids.card)), "shape")
     refusedWith(tryLand(sampleDeck(), create(nodeId("t:94"), "frame", ids.deck)), "shape")

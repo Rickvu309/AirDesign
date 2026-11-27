@@ -146,16 +146,18 @@ describe("an edit with a read base", () => {
 it("refuses legacy component writes from a tab that still has them queued", async () => {
   const deck = await made()
   const component = doom.nodeId("component:1")
+  const renameEdit = edit(rename("Legacy"))
   for (const write of [
     { node: component, prop: "type", value: "component" },
     { node: component, prop: "instance", value: null },
-  ] satisfies readonly doom.Write[]) {
-    expect((await send(deck, [...rename("Legacy"), write])).json).toMatchObject({
+  ]) {
+    expect(
+      (await post("edit", { deck, edit: { ...renameEdit, writes: [...renameEdit.writes, write] } })).json,
+    ).toMatchObject({
       ok: false,
       refusal: "edit",
       refused: "shape",
       node: component,
-      prop: write.prop,
     })
   }
   expect((await logOf(deck)).edits).toEqual([])

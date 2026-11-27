@@ -29,7 +29,6 @@ export function landed(view: doom.Doom, writes: readonly doom.Write[]): doom.Doo
       return was === undefined ? write : { ...write, base: was }
     }),
     rev: doom.rev(view.rev + 1),
-    ...(writes.some(({ prop }) => prop === "instance") ? { readBase: view.rev } : {}),
   })
   if (doom.isRefusal(next)) throw new Error(`refused ${JSON.stringify(next)}`)
   return next

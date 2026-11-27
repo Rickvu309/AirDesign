@@ -9,7 +9,7 @@ AirDesign's core: a deck as a tree of nodes, each a flat map of properties, chan
 _Avoid_: scene, document model, element tree
 
 **Doom v0.1**:
-The first end-to-end core. A person in the editor at `/s` and an agent over MCP each make a deck of frames, shapes, text, pictures, icons, lines and charts, with undo and reload, stored as Doom decks. Out of v0.1: components and instances, variables with modes, and a style library (next). PowerPoint import and export on Doom are planned.
+The first end-to-end core. A person in the editor at `/s` and an agent over MCP each make a deck of frames, shapes, text, pictures, icons and lines, with undo and reload, stored as Doom decks. Charts built from ordinary layers use the same edits as other content. PowerPoint import and export on Doom are planned.
 _Avoid_: the new editor, the rewrite
 
 **node**:
@@ -17,7 +17,7 @@ One thing in Doom: a deck, slide row, slide, frame or shape, named by its `type`
 _Avoid_: element, object, layer (a layer is what a person sees on the slide)
 
 **frame**:
-The one container. It holds nodes and may carry paint, radius, clip, a layout or a component instance. A frame with no paint is what a person calls a group.
+The one container. It holds nodes and may carry paint, radius, clip, or a layout. A frame with no paint is what a person calls a group.
 _Avoid_: group (in code), container, artboard
 
 **shape**:

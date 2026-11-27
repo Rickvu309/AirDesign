@@ -1,4 +1,3 @@
-import { deckChangeWords, readDeckChange } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
 
 import { doomRefused, refused, type ToolResult } from "./answer.js"
@@ -101,7 +100,8 @@ export function newPlan(
 const notLook = new Set(
   "op kind slide into target node nodes after add move delete theme colors fonts nameFollows".split(" "),
 )
-const lookFields = deckChangeWords.fields.filter((key) => !notLook.has(key))
+const changeFields = doom.agentChangesSchema.$defs.change.properties
+const lookFields = Object.keys(changeFields).filter((key) => !notLook.has(key))
 const textFields = new Set(
   "text insert textStyle color size font weight lineHeight letterSpacing case underline strike alignV spaceBefore spaceAfter language".split(
     " ",
@@ -174,7 +174,7 @@ async function compileOne(
   verb: Verb,
   raw: Readonly<Record<string, unknown>>,
 ): Promise<readonly string[]> {
-  const read = readDeckChange(raw)
+  const read = doom.readAgentChange(raw)
   if ("refused" in read) stop(plan, op, verb, doomRefused({ ...read, change: verb }))
   const fonts = withCatalogFonts([read])
   if (!fonts.ok) stop(plan, op, verb, fonts.result)
@@ -243,7 +243,7 @@ function idsOf(fields: Readonly<Record<string, unknown>>): readonly string[] {
 }
 
 function checked(plan: Plan, op: number, verb: Verb, raw: Readonly<Record<string, unknown>>) {
-  const read = readDeckChange({ ...raw, target: "a:1" })
+  const read = doom.readAgentChange({ ...raw, target: "a:1" })
   if ("refused" in read) stop(plan, op, verb, doomRefused({ ...read, change: verb }))
   const fonts = withCatalogFonts([read])
   if (!fonts.ok) stop(plan, op, verb, fonts.result)

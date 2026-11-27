@@ -79,7 +79,6 @@ describe("paste copies a kit piece onto a slide as plain layers bound to the dec
     const { doom, root } = pasted("midnight")
     const copied = [doom.nodes.get(root as never)!, ...childrenOf(doom, root as never)]
     for (const node of copied) {
-      expect(propOf(node, "instance")).toBeUndefined()
       expect(Object.keys(node)).not.toContain("origin")
     }
     const title = childrenOf(doom, root as never)[0]!

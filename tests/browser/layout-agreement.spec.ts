@@ -17,7 +17,6 @@ const styles = ["title", "heading", "body", "caption"] as const
 const boxWidths = [480, 900, 1600]
 const notWords = new Set([
   "id",
-  "component",
   "orientation",
   "op",
   "kind",

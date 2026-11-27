@@ -164,7 +164,6 @@ function leftBy(before: Doom, writes: readonly Write[]): { readonly after: Doom;
     once: "free-line-ends",
     author: sweeper,
     writes,
-    ...(writes.some(({ prop }) => prop === "instance") ? { readBase: before.rev } : {}),
   })
   const after = applyBeforeFreeing(before, { ...edit, rev: rev(before.rev + 1) })
   return isRefusal(after) ? { after: before, lost: [] } : { after, lost: lostEnds(before.nodes, after.nodes, writes) }

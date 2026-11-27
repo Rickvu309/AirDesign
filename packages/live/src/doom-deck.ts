@@ -333,16 +333,7 @@ function connected(
     }
     const owned = ownedRevs([...turned.keys(), ...step.onces])
     const source = { once: last, author, writes: step.writes, rev: at }
-    const writes = doom.invertStep(step.before, now, source, owned, measure())
-    const turn = to === redoSteps ? "undo" : "redo"
-    if (doom.isRefusal(writes)) {
-      notices = [
-        ...notices.filter((notice) => notice.once !== last || notice.turn !== turn),
-        { ...writes, once: last, turn },
-      ]
-      tell()
-      return { ok: false, reason: "refused", refused: writes }
-    }
+    const writes = doom.invert(step.before, now, source, owned)
     if (writes.length === 0) {
       from.pop()
       return { ok: false, reason: "nothing" }
@@ -354,7 +345,6 @@ function connected(
       last: step.before,
     })
     if (!pushed.ok) return { ok: false, reason: "refused", refused: pushed.refused }
-    notices = notices.filter((notice) => notice.once !== last || notice.turn === undefined)
     from.pop()
     to.push({
       onces: [pushed.once],
@@ -381,8 +371,7 @@ function connected(
     if (edits === undefined || edits.length === 0 || view().runs.get(run)?.undone === true)
       return { ok: false, reason: "nothing" }
     const now = view()
-    const { writes, refused, ...turnedRun } = doom.invertRun(now, edits, ownedRevs(turned.keys()), started, measure())
-    if (refused !== undefined) return { ok: false, reason: "refused", refused }
+    const { writes, ...turnedRun } = doom.invertRun(now, edits, ownedRevs(turned.keys()), started)
     const stays = runUndoStays(edits, turnedRun)
     if (writes.length === 0)
       return [...stays.kept, ...stays.left, ...stays.waiting].length === 0

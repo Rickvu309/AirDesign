@@ -47,17 +47,9 @@ export { foldToJson, readFold, readLanded, readRuns, readStoredNode, revsToJson,
 export { type Arrow, type End, type Geometry, lineArrowheads } from "./geometry.js"
 export { type NodeId, type Rev, nodeId, readNodeId, rev } from "./ids.js"
 export { changingWrites, sameValue } from "./changing-writes.js"
-export { invert, invertStep } from "./invert.js"
+export { invert } from "./invert.js"
 export { onStandingLayers } from "./standing-layers.js"
-export {
-  type Replaced,
-  type RunEdit,
-  type Undone,
-  invertRun,
-  readRunEdit,
-  replacedBy,
-  undoSourceOf,
-} from "./invert-run.js"
+export { type Replaced, type RunEdit, type Undone, invertRun, readRunEdit, replacedBy } from "./invert-run.js"
 export type { Align9, Cell, Layout, Sizing, Track } from "./layout.js"
 export type { Color, ColorVar, Effect, Hex, ImagePaint, Paint, StrokeStyle } from "./paint.js"
 export { colorVars, paletteColorVars } from "./paint.js"

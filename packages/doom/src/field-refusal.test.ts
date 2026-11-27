@@ -57,7 +57,7 @@ describe("a field refusal names the path, the fault and the accepted form", () =
   })
 })
 
-const kindForm = "One of text, shape, line, path, frame, picture, icon, component."
+const kindForm = "One of text, shape, line, path, frame, picture, icon."
 const colorForm = "A theme colour, lighter or darker by a percent, or #rrggbb."
 const nodeForm = "1 to 16 of a-z or 0-9, a colon, then 1 to 12 digits."
 

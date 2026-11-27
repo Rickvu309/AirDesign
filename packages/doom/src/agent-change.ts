@@ -1,6 +1,4 @@
 import type { AgentColor, AgentFill, AgentLook } from "./agent-look-types.js"
-import { tokenRecord, variantRecord } from "./component/spec.js"
-import { record, readFocus } from "./component/values.js"
 import { languageField } from "./language.js"
 import { readAngle, readRotation } from "./angle.js"
 import { arrowField, startArrowField } from "./agent-arrow.js"
@@ -51,7 +49,7 @@ import { pathLimit, readPathData } from "./geometry.js"
 import { shapeNames } from "./preset-geometry.js"
 import { cropField } from "./agent-crop.js"
 
-export const addKinds = ["text", "shape", "line", "path", "frame", "picture", "icon", "component"] as const
+export const addKinds = ["text", "shape", "line", "path", "frame", "picture", "icon"] as const
 export type AgentAdd = (typeof addKinds)[number]
 
 export type { AgentBox, AgentColor, AgentFill, AgentGradient, AgentLook } from "./agent-look-types.js"
@@ -66,7 +64,7 @@ export type DeckLook = {
 }
 export type AgentChange =
   | ({ readonly op: "add"; readonly kind: AgentAdd; readonly slide: NodeId; readonly into?: NodeId } & AgentLook)
-  | ({ readonly op: "set"; readonly target: string; readonly focus?: readonly string[] } & AgentLook)
+  | ({ readonly op: "set"; readonly target: string } & AgentLook)
   | {
       readonly op: "move"
       readonly node?: NodeId
@@ -82,8 +80,6 @@ export type AgentChange =
       readonly clip?: boolean
     }
   | { readonly op: "unwrap"; readonly node: NodeId }
-  | { readonly op: "detach"; readonly target: NodeId }
-  | { readonly op: "component"; readonly spec: Readonly<Record<string, unknown>>; readonly target?: NodeId }
   | { readonly op: "delete"; readonly nodes: readonly NodeId[] }
   | { readonly op: "duplicate"; readonly nodes: readonly NodeId[] }
   | {
@@ -215,13 +211,6 @@ const lookFields: LookFields = {
   from: field(endSchema("Where a line starts: a layer's side, which it then follows, or a point."), readEnd),
   to: field(endSchema("Where a line ends: a layer's side, which it then follows, or a point."), readEnd),
   route: choice(["straight", "elbow", "curve"], "How a line runs between its ends."),
-  component: field(
-    { type: "string", description: "Template id." },
-    matching(/^([\w-]{1,32}|[a-z0-9]{1,16}:[0-9]{1,12})$/, 32, "A template id."),
-  ),
-  data: field({ type: "object", description: "Rows by collection." }, record),
-  variant: field({ type: "object", description: "Template variant choices." }, variantRecord),
-  tokens: field({ type: "object", description: "Template token overrides." }, tokenRecord),
   rows: field(
     {
       type: "array",
@@ -330,33 +319,13 @@ const pickFrom = <T extends { readonly [P in keyof T]: Field<unknown> }, K exten
     [P in K]: T[P] extends Field<infer V> ? Reader<V> : never
   }
 
-const focus = field(
-  {
-    type: "array",
-    items: { type: "string" },
-    maxItems: 100,
-    description: "Set on a linked component. Category or series IDs to accent. [] clears focus.",
-  },
-  readFocus,
-)
-
-const spec = field(
-  {
-    type: "object",
-    description: "A component spec, grammar 1. A target updates that component; its instances follow.",
-  },
-  record,
-)
-
 const lookReaders = pickFrom(lookFields, Object.keys(lookFields) as (keyof typeof lookFields)[])
 const readChange = variant("op", {
   add: object({ kind: literal(addKinds), slide: readId }, { ...pickFrom(placeFields, ["into"]), ...lookReaders }),
-  set: object(pickFrom(placeFields, ["target"]), { ...lookReaders, focus: focus.read }),
+  set: object(pickFrom(placeFields, ["target"]), lookReaders),
   move: object({}, { ...pickFrom(placeFields, ["node", "nodes", "into", "after"]), box: lookFields.box.read }),
   wrap: object(pickFrom(placeFields, ["nodes"]), pickFrom(lookFields, ["layout", "clip"])),
   unwrap: object(pickFrom(placeFields, ["node"])),
-  detach: object({ target: readId }),
-  component: object({ spec: spec.read }, { target: readId }),
   delete: object(pickFrom(placeFields, ["nodes"])),
   slide: object({}, pickFrom(placeFields, ["add", "move", "delete"])),
   duplicate: object(pickFrom(placeFields, ["nodes"])),
@@ -420,15 +389,13 @@ export const agentChangesSchema = {
       required: ["op"],
       properties: {
         op: {
-          enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck", "detach", "component"],
+          enum: ["add", "set", "move", "wrap", "unwrap", "delete", "slide", "duplicate", "deck"],
           description:
-            "detach: target. add: kind, slide, into?, look. set: target, look. move: node, or nodes. into is required with nodes or box and then names a slide; one node may name a frame. after?. box? needs x, y, w, h; x, y place the union and w, h do not resize. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. Group ids are in get as group=<id>. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
+            "add: kind, slide, into?, look. set: target, look. move: node, or nodes. into is required with nodes or box and then names a slide; one node may name a frame. after?. box? needs x, y, w, h; x, y place the union and w, h do not resize. wrap: nodes, layout?. unwrap: node. delete: nodes. slide: one of add, move, delete. Group ids are in get as group=<id>. duplicate: nodes, layers or slides, each copied right after itself. deck: name?, nameFollows?, language?, theme?, colors?, fonts?. Colors and fonts override the selected theme when provided.",
         },
         ...schemasOf(placeFields),
         kind: { enum: addKinds, description: kindWords },
         ...schemasOf(lookFields),
-        focus: focus.schema,
-        spec: spec.schema,
       },
     },
   },

@@ -1,25 +1,22 @@
 import type { Measure } from "./measure.js"
 import { type OrderKey, orderKeyBetween } from "./order-key.js"
 import type { AgentRefusal } from "./agent-change.js"
-import type { NodeId, Rev } from "./ids.js"
+import type { NodeId } from "./ids.js"
 import { type PropName, props } from "./props.js"
 import type { FieldFault } from "./read-kit.js"
 import type { Refusal } from "./refusal.js"
 import type { Node, Doom, Write } from "./doom.js"
 import { type Box, childrenOf, isLive, parentOf } from "./doom-walk.js"
 import type { Props } from "./props.js"
-import type { ComponentEditSample } from "./component/component-edit.js"
 
 export type Values = { readonly [K in PropName]?: Props[K] }
 export type Natural = { readonly width: number; readonly height: number }
 export type Reading = {
   readonly read?: Doom
-  readonly batchStart?: Rev
   readonly boxes?: ReadonlyMap<NodeId, Box>
   readonly pictures?: ReadonlyMap<string, Natural>
   readonly measure?: Measure
   readonly bake?: (frame: NodeId) => readonly Write[]
-  readonly componentSample?: (sample: ComponentEditSample) => void
 }
 export type Draft = {
   readonly doom: Doom

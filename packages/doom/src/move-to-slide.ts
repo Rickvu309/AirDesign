@@ -1,5 +1,4 @@
 import { wrapRotation } from "./angle.js"
-import { linkedOwner } from "./component/instance-ownership.js"
 import type { Node, Doom, Write } from "./doom.js"
 import { boxOf, childrenOf, deckOf, descendantsOf, isLive, lockedIn, parentOf, propOf } from "./doom-walk.js"
 import type { End, Geometry } from "./geometry.js"
@@ -40,9 +39,6 @@ function rootsOf(view: Doom, ids: readonly NodeId[]): readonly Node[] | Refusal 
   const roots = nodes.filter((node) => !covered.has(node.id))
   for (const node of roots) {
     if (lockedIn(view, node.id)) return form("node", "This layer is locked. Unlock it or choose another.", node.id)
-    const owner = linkedOwner(view.nodes, node.id)
-    if (owner !== undefined && !unique.includes(owner))
-      return form("node", "This layer is linked. Move the template with it.", node.id)
   }
   return roots
 }

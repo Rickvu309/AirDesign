@@ -1,5 +1,4 @@
 import { charsByFace } from "./measure.js"
-import { linkedOwner } from "./component/instance-ownership.js"
 import { deckOf } from "./deck-of.js"
 import type { Doom, Write } from "./doom.js"
 import { descendantsOf, propOf, slideOf, slidesOf } from "./doom-walk.js"
@@ -217,8 +216,6 @@ const rounded = (rect: Rect): Rect => ({
 function judgeKids(slide: Slide, kids: readonly Placed[]): void {
   for (const [at, back] of kids.entries())
     for (const front of kids.slice(at + 1)) {
-      const owner = linkedOwner(slide.doom.nodes, back.node.id as NodeId)
-      if (owner !== undefined && owner === linkedOwner(slide.doom.nodes, front.node.id as NodeId)) continue
       const area = crossed(back, front)
       if (area === null) continue
       const [node, other] = back.inks.length > 0 ? [back.node.id, front.node.id] : [front.node.id, back.node.id]

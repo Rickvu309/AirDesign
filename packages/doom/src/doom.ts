@@ -1,4 +1,3 @@
-import type { InstanceFieldKey } from "./component/instance.js"
 import type { NodeId, Rev } from "./ids.js"
 import { rev } from "./ids.js"
 import type { NodeType, Props, WriteKey, accepts } from "./props.js"
@@ -41,7 +40,7 @@ export type Run = {
   readonly undone: boolean
 }
 
-export type RevisionKey = WriteKey | InstanceFieldKey | "suppression" | "partExit"
+export type RevisionKey = WriteKey
 
 export type Doom = {
   readonly nodes: ReadonlyMap<NodeId, Node>

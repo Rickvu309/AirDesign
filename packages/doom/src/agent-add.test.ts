@@ -411,28 +411,6 @@ describe("where an add lands", () => {
     expect(propOf(lastChild(words, card.id), "text")?.chars).toBe("Extra")
   })
 
-  it("allows a manual chart child and refuses add into the generated frame", () => {
-    const doom = build(
-      agentDeck(),
-      {
-        op: "add",
-        kind: "component",
-        slide,
-        component: "column",
-      },
-      minter("a"),
-    )
-    const chart = lastChild(doom, slide)
-    const generated = propOf(chart, "instance")!.generated
-    expect(compiled(doom, text({ into: chart.id, box: { x: 0, y: 0, w: 300, h: 60 } }), minter("b"))).toContainEqual(
-      expect.objectContaining({ prop: "parent", value: expect.objectContaining({ id: chart.id }) }),
-    )
-    expect(compileAgentChange(doom, text({ into: generated }), minter("b"))).toMatchObject({
-      refused: "shape",
-      field: "into",
-    })
-  })
-
   it("refuses a slide that is not there and a frame on another slide, naming the change", () => {
     expect(compileAgentChange(agentDeck(), text({ slide: "z:9" }), minter())).toEqual({
       refused: "missing",

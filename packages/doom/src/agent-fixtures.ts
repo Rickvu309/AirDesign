@@ -32,7 +32,6 @@ export function apply(doom: Doom, writes: readonly Write[], run = runName): Doom
     once: once(),
     author: agent(run),
     writes,
-    ...(writes.some(({ prop }) => prop === "instance") ? { readBase: doom.rev } : {}),
     rev: rev(doom.rev + 1),
   })
   if (isRefusal(result)) throw new Error(`refused ${JSON.stringify(result)}`)

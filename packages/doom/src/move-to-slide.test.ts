@@ -9,7 +9,7 @@ import { apply, boxMatrix, identity } from "./matrix.js"
 import { ids, land, person } from "./sample-deck.js"
 import { column, measure, padding, plainTheme, spot } from "./testing/doom-fixtures-art.js"
 import { step } from "./testing/invert-edit.js"
-import { generatedColumn, more, richDeck } from "./testing/rich-deck.js"
+import { more, richDeck } from "./testing/rich-deck.js"
 import { solveLayout } from "./solve-layout.js"
 import type { Point } from "./resolved.js"
 
@@ -151,14 +151,6 @@ describe("moveToSlide", () => {
     expect(propOf(frame.landed.after.nodes.get(grown.ids.flow!)!, "layout")).toMatchObject({ mode: "column" })
   })
 
-  it("moves a linked template and leaves its generated part parented to it", () => {
-    const deck = richDeck()
-    const { landed } = across(deck, [more.column], more.slide2, { x: 10, y: 20 })
-    expect(parentOf(landed.after.nodes.get(more.column)!)?.id).toBe(more.slide2)
-    expect(parentOf(landed.after.nodes.get(generatedColumn)!)?.id).toBe(more.column)
-    expect(propOf(landed.after.nodes.get(more.column)!, "instance")).toBeDefined()
-  })
-
   it("one undo puts parents, boxes, order and a connector back", () => {
     const grown = joined()
     const { landed } = across(grown.doom, [grown.ids.a!, grown.ids.b!], grown.slides[1]!, { x: 10, y: 20 })
@@ -172,7 +164,7 @@ describe("moveToSlide", () => {
     )
   })
 
-  it("refuses a slide, a locked layer, a linked part, a missing layer and an empty list", () => {
+  it("refuses a slide, a locked layer, a missing layer and an empty list", () => {
     const deck = richDeck()
     const locked = land(deck, [{ node: ids.card, prop: "locked", value: true }])
     expect(moveToSlide(deck, [ids.slide], more.slide2, { x: 0, y: 0 })).toMatchObject({
@@ -182,10 +174,6 @@ describe("moveToSlide", () => {
     expect(moveToSlide(locked, [ids.card], more.slide2, { x: 0, y: 0 })).toMatchObject({
       refused: "shape",
       form: "This layer is locked. Unlock it or choose another.",
-    })
-    expect(moveToSlide(deck, [generatedColumn], more.slide2, { x: 0, y: 0 })).toMatchObject({
-      refused: "shape",
-      form: "This layer is linked. Move the template with it.",
     })
     expect(moveToSlide(deck, ["z:9" as NodeId], more.slide2, { x: 0, y: 0 })).toMatchObject({
       refused: "missing",

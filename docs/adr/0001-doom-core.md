@@ -4,7 +4,7 @@ AirDesign's truth becomes its own core, Doom: a tree of nodes, each a flat map o
 
 This ADR is the model of Doom v0.1.
 
-Doom has five node types (deck, slide row, slide, frame, shape), and a new one is added only when its behaviour cannot be a property. There is no opaque or kept type: on import, a table becomes a grid frame of text shapes, and content Doom cannot hold becomes a picture of its own fallback image or is dropped. A group is a frame with no paint, a picture is an image paint, an icon and a line are shape geometry, a chart is a frame whose bars are derived from its data, and there is no table. One property list drives the boundary reader, the design panel, the agent schema and the PowerPoint writer.
+Doom has five node types (deck, slide row, slide, frame, shape), and a new one is added only when its behaviour cannot be a property. There is no opaque or kept type: on import, a table becomes a grid frame of text shapes, and content Doom cannot hold becomes a picture of its own fallback image or is dropped. A group is a frame with no paint, a picture is an image paint, an icon and a line are shape geometry, and charts and tables are made of ordinary layers. One property list drives the boundary reader, the design panel, the agent schema and the PowerPoint writer.
 
 ## Considered options
 
@@ -14,6 +14,6 @@ Doom has five node types (deck, slide row, slide, frame, shape), and a new one i
 
 ## Consequences
 
-- An untouched imported node still exports byte for byte (node-level passthrough by `origin`); an edited node exports from Doom and may lose PowerPoint features Doom does not model, and an edited chart exports as a picture.
+- An untouched imported node still exports byte for byte (node-level passthrough by `origin`); an edited node exports from Doom and may lose PowerPoint features Doom does not model.
 - Old stored decks are dropped at cut-over; a person reimports the .pptx.
 - Two people typing in one text box resolve by compare-and-set on the text property, not by character merge.

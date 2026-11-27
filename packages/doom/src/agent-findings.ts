@@ -1,5 +1,3 @@
-import { instanceRoots, linkedOwner } from "./component/instance-ownership.js"
-import { resolveComponent } from "./component/library.js"
 import { deckOf, propOf } from "./doom-walk.js"
 import type { Doom, Write } from "./doom.js"
 import type { NodeId } from "./ids.js"
@@ -84,33 +82,16 @@ export function agentFindings(after: Doom, writes: readonly Write[]): readonly A
       note: sizeNote(node, size, style, to),
     })
   }
-  const regenerating = new Set(instanceRoots(writes))
   for (const write of writes) {
     const { node, prop, value } = write
-    const owner = linkedOwner(after.nodes, node)
     for (const color of colorsOf(write))
-      if (
-        typeof color === "string" &&
-        !palette.has(color.toLowerCase()) &&
-        (owner === undefined || !regenerating.has(owner))
-      ) {
+      if (typeof color === "string" && !palette.has(color.toLowerCase())) {
         const to = nearestColor(theme, color)
         note(`${node}|${color}`, { code: "off-palette", node, color, to, note: colorNote(node, color, to, theme) })
       }
-    if (prop === "instance" && value !== null) {
-      const instance = propOf(after.nodes.get(node), "instance")
-      if (instance !== undefined) {
-        const sizes =
-          instance.component.id === undefined ? [] : (resolveComponent(instance.component)?.sizeTokens ?? [])
-        for (const name of sizes) {
-          const size = instance.tokens[name]
-          if (typeof size === "number") checkSize(node, size)
-        }
-      }
-    }
     if (prop !== "text" || value === null) continue
     for (const span of (value as Text).spans) {
-      if (span.size !== undefined && owner === undefined) checkSize(node, span.size)
+      if (span.size !== undefined) checkSize(node, span.size)
       if (span.font !== undefined && !ownFamilies.has(familyOf(span.font)))
         note(`${node}|font|${span.font}`, {
           code: "off-font",

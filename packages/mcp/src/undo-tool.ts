@@ -101,13 +101,6 @@ async function turnRun(
   const started = nodes.length === 0 ? undefined : await host.positionsAt?.(opened.deck, edits[0]!.rev - 1, nodes)
   const owned = await host.undoRevs(opened.deck, agent)
   const turned = doom.invertRun(opened.fold, edits, owned, started)
-  if (turned.refused !== undefined)
-    return answered(undoRefused, {
-      ok: false,
-      reason: "refused",
-      refusal: turned.refused.refused,
-      ...empty,
-    })
   const who = run.name === "" ? "An agent" : run.name
   const names = (ids: readonly doom.NodeId[]) => ids.map((id) => layerName(opened.fold, id))
   const { later = [] } = runUndoStays(edits, turned)

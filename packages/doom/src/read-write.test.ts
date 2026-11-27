@@ -146,13 +146,11 @@ describe("the property list", () => {
     }
   })
 
-  it("requires a base for text, notes, paint, effects and component specs and revisions", () => {
+  it("requires a base for text, notes, paint and effects", () => {
     expect(names.filter((name) => props[name].conflict === "base").sort()).toEqual([
       "effects",
       "fills",
       "notes",
-      "revision",
-      "spec",
       "strokes",
       "text",
     ])

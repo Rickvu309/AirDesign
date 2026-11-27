@@ -2,7 +2,6 @@ import { fontLoadFailed } from "@/copy/design-copy"
 import { productCopy } from "@/copy/product-copy"
 import { EditorToast } from "@/editor/editor-toast"
 import { pictureCopy } from "@/copy/picture-copy"
-import { undoCopy } from "@/copy/undo-copy"
 import { exportCopy } from "@/copy/export-copy"
 
 type Shown = { readonly text: string; readonly action?: string }
@@ -14,10 +13,6 @@ const notices = {
   "picture-type": { text: pictureCopy["picture-type"] },
   "picture-size": { text: pictureCopy["picture-size"] },
   "picture-unread": { text: pictureCopy["picture-unread"] },
-  "undo-refused": { text: undoCopy.undoRefused },
-  "redo-refused": { text: undoCopy.redoRefused },
-  "undo-skipped": { text: undoCopy.undoSkipped },
-  "redo-skipped": { text: undoCopy.redoSkipped },
   "storage-failed": { text: productCopy.storageFailed },
   "set-aside": { text: productCopy.editsSetAside },
   "set-aside-one": { text: productCopy.editSetAside },
