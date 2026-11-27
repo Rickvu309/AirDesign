@@ -6,4 +6,9 @@ Call `airdesign_read_skill` with a skill name to read its guide.
 - `slides`: How to design a slide: priorities, sizes, filling the slide, numbers and the check after each slide. Read before you design.
 - `avoid`: Habits that make slides look machine-made. Read before you design.
 - `kit`: Ready slide pieces drawn from plain layers that you copy into a slide and own. Read it before you draw a piece from scratch.
+- `charts/table`: A table of exact numbers: header, rows, total, numbers right-aligned.
+- `charts/bar`: The arithmetic for a ranked horizontal bar chart, as a script to run.
+- `charts/column`: The arithmetic for a column chart over periods, as a script to run.
+- `charts/line`: The arithmetic for a line chart: nice ticks, series named at their ends.
+- `charts/donut`: The arithmetic for a donut of shares of one whole.
 - `review`: The checks to run on every slide before you stop.

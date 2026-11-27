@@ -59,12 +59,20 @@ const placed: Readonly<Record<string, readonly Spot[]>> = {
   comparison: [{ x: 120, y: 320 }],
   "timeline-step": [0, 1, 2, 3].map((at) => ({ x: 120 + at * 420, y: 360 })),
   "source-line": [{ x: 120, y: 990 }],
+  table: [{ x: 120, y: 300 }],
+  "bar-chart": [{ x: 120, y: 300 }],
+  "column-chart": [{ x: 120, y: 300 }],
+  "line-chart": [{ x: 120, y: 300 }],
+  "donut-chart": [{ x: 120, y: 300 }],
 }
 
-const doubled = (text: Text): Text => {
+const holdsData = new Set(["table", "bar-chart", "column-chart", "line-chart", "donut-chart"])
+const aNumber = /^[-−+$€£]?[\d.,]+[%MBKkx]?$/
+
+const doubled = (text: Text, numbersHold: boolean): Text => {
   const chars = text.chars
     .split("\n")
-    .map((line) => `${line} ${line}`)
+    .map((line) => (numbersHold && aNumber.test(line.replaceAll("**", "").trim()) ? line : `${line} ${line}`))
     .join("\n")
   return {
     ...text,
@@ -73,12 +81,12 @@ const doubled = (text: Text): Text => {
   }
 }
 
-const longer = (node: doom.TreeNode): doom.TreeNode => {
+const longer = (node: doom.TreeNode, numbersHold: boolean): doom.TreeNode => {
   const props = node.props as { text?: Text } | undefined
   return {
     ...node,
-    ...(props?.text === undefined ? {} : { props: { ...props, text: doubled(props.text) } as never }),
-    children: node.children?.map(longer) ?? [],
+    ...(props?.text === undefined ? {} : { props: { ...props, text: doubled(props.text, numbersHold) } as never }),
+    children: node.children?.map((child) => longer(child, numbersHold)) ?? [],
   }
 }
 
@@ -106,7 +114,7 @@ describe("every piece in every library theme", () => {
     it(`lays out with ${words} words: nothing spills, overlaps, leaves the slide or reads under 24 px`, () => {
       for (const theme of themes)
         for (const piece of kitPieces()) {
-          const tree = words === "sample" ? piece.tree : longer(piece.tree)
+          const tree = words === "sample" ? piece.tree : longer(piece.tree, holdsData.has(piece.name))
           const grown = doom.doomFromTree({
             theme: doom.themeLibrary[theme]!.theme,
             slides: [{ children: placed[piece.name]!.map((spot) => at(tree, spot)) }],
