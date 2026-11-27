@@ -318,3 +318,47 @@ test("slide numbers stay shown and the pick ring keeps its width while a pinch i
   expect(await ringOnScreen()).toBe(before)
   await page.keyboard.up("Control")
 })
+
+test("slides run on under the header and the toolbar, the wheel pans beside them, and focus never scrolls the pane", async ({
+  page,
+  context,
+  stack,
+}) => {
+  await openGroups(page, context, stack, [4, 3])
+  await zoomTo(page, 40)
+  const room = await boxOf(viewport(page))
+  const bottom = page.viewportSize()?.height ?? 0
+  const underHeader = { x: Math.round(room.x + room.width / 2), y: Math.round(room.y / 2) }
+  const underToolbar = { x: Math.round(room.x + 150), y: Math.round((room.y + room.height + bottom) / 2) }
+  const slideAt = (point: { x: number; y: number }) =>
+    page.evaluate(
+      ({ x, y }) => document.elementFromPoint(x, y)?.closest("[data-slide-entry]")?.getAttribute("data-slide-entry"),
+      point,
+    )
+  async function wheelSlideTo(number: number, point: { x: number; y: number }) {
+    const box = await boxOf(entry(page, number))
+    await page.mouse.move(point.x, point.y)
+    await page.mouse.wheel(box.x + box.width / 2 - point.x, box.y + box.height / 2 - point.y)
+  }
+
+  await wheelSlideTo(1, underHeader)
+  await expect.poll(() => slideAt(underHeader)).toBe("1")
+  await wheelSlideTo(5, underToolbar)
+  await expect.poll(() => slideAt(underToolbar)).toBe("5")
+  const scrolledByFocus = await page.evaluate(() => {
+    const grid = document.querySelector("[data-grid-view]")
+    const pane = grid?.getBoundingClientRect()
+    if (grid === null || pane === undefined) return null
+    const away = [...grid.querySelectorAll<HTMLElement>("[data-slide-list] button")].filter(
+      (control) => control.getBoundingClientRect().bottom > pane.bottom,
+    )
+    let scrolled = 0
+    for (const control of away) {
+      control.focus()
+      for (let at: HTMLElement | null = control; at !== null; at = at.parentElement) scrolled += at.scrollTop
+    }
+    return { away: away.length, scrolled }
+  })
+  expect(scrolledByFocus?.away).toBeGreaterThan(0)
+  expect(scrolledByFocus?.scrolled).toBe(0)
+})

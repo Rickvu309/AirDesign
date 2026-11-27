@@ -445,7 +445,7 @@ export function EditorGrid({
   return (
     <div
       ref={root}
-      className="flex h-full min-w-0 flex-1 flex-col bg-canvas"
+      className="flex h-full min-w-0 flex-1 flex-col overflow-clip bg-canvas"
       data-editor-grid
       data-grid-view
       onPointerDownCapture={(event) => setTouch(event.pointerType === "touch")}
@@ -454,7 +454,7 @@ export function EditorGrid({
       }}
       onKeyDown={edit.escape}
     >
-      <header className="flex h-24 shrink-0 items-start justify-between gap-3 px-3 pt-3">
+      <header className="pointer-events-none relative z-10 flex h-24 shrink-0 items-start justify-between gap-3 px-3 pt-3 *:pointer-events-auto">
         <GridHead {...head} selected={picked === null ? null : picked.slides.size} />
         {right === undefined ? null : <Island>{right}</Island>}
       </header>
@@ -463,7 +463,7 @@ export function EditorGrid({
         {...camera.handlers}
         tabIndex={-1}
         className={cn(
-          "relative min-h-0 flex-1 touch-none overflow-hidden outline-none select-none",
+          "relative min-h-0 flex-1 touch-none outline-none select-none",
           (hand || camera.space) && "cursor-grab active:cursor-grabbing [&_*]:cursor-[inherit]",
         )}
         onPointerDown={marquee.press}
@@ -480,6 +480,7 @@ export function EditorGrid({
         data-dragging={lifting ? "" : undefined}
         data-focus-edge
       >
+        <div aria-hidden="true" className="absolute inset-x-0 -inset-y-24" />
         <div
           ref={list}
           tabIndex={-1}
@@ -558,7 +559,9 @@ export function EditorGrid({
       {menu === null ? null : (
         <GridSlideMenu menu={menu} actions={actions} strip={strip} count={count} onOpen={onOpen} />
       )}
-      <div className="flex shrink-0 justify-center pt-2 pb-6">{bar}</div>
+      <div className="pointer-events-none relative z-10 flex shrink-0 justify-center pt-2 pb-6 *:pointer-events-auto">
+        {bar}
+      </div>
     </div>
   )
 }
