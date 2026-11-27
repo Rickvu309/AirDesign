@@ -164,6 +164,7 @@ function lineWords(line: Extract<Geometry, { kind: "line" }>): readonly string[]
     ...end("from", line.start),
     ...end("to", line.end),
     ...(line.route === "straight" ? [] : [`route=${line.route}`]),
+    ...(line.route === "elbow" && line.channels?.length === 1 ? [`lane=${String(line.channels[0]!.at)}`] : []),
     ...shownArrow("startArrow", line.arrows[0]),
     ...shownArrow("arrow", line.arrows[1]),
   ]

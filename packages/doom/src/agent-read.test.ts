@@ -132,6 +132,15 @@ describe("readForAgent of a line", () => {
     expect(line).toContain(`from=${ids.card}:bottom route=curve arrow`)
   })
 
+  it("reads an elbow's lane back as the field that set it", () => {
+    const doom = build(
+      richDeck(),
+      change({ op: "set", target: more.line, from: { layer: ids.card, side: "bottom" }, route: "elbow", lane: 300 }),
+    )
+    const line = lines(readForAgent(doom, "all")).find((each) => each.includes(more.line))
+    expect(line).toContain(`from=${ids.card}:bottom route=elbow lane=300`)
+  })
+
   it("rounds fractional attachments and omits a centered attachment", () => {
     const doom = apply(richDeck(), [
       {

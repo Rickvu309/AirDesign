@@ -187,6 +187,7 @@ describe("the advertised schema", () => {
       "from",
       "to",
       "route",
+      "lane",
       "rows",
       "box",
       "name",
