@@ -4,14 +4,10 @@ import type { NodeId } from "./ids.js"
 import type { Px } from "./paint.js"
 import type { Doom, Node } from "./doom.js"
 import { boxOf, childrenOf, deckOf, descendantsOf, isLaidOut, propOf } from "./doom-walk.js"
+import type { PlacementRules } from "./placement-rules.js"
 import type { Theme } from "./theme.js"
 
 export type Area = { readonly x: Px; readonly y: Px; readonly w: Px; readonly h: Px }
-
-const gapShare = 0.015
-const padShare = 0.02
-const smallestWidthShare = 0.1
-const smallestHeightShare = 0.05
 
 export function themeOf(draft: Draft): Theme {
   const deck = deckOf(draft.doom)
@@ -23,9 +19,9 @@ export function slideSize(draft: Draft): { readonly w: Px; readonly h: Px } {
   return (deck === undefined ? undefined : propOf(deck, "size")) ?? stop("missing")
 }
 
-export const gapFor = (width: Px): Px => Math.round(width * gapShare)
-export const padFor = (width: Px): Px => Math.round(width * padShare)
-export const cardRadiusFor = (width: Px): Px => Math.round(padFor(width) / 2)
+export const gapFor = (width: Px, rules: PlacementRules): Px => Math.round(width * rules.gapShare)
+export const padFor = (width: Px, rules: PlacementRules): Px => Math.round(width * rules.padShare)
+export const cardRadiusFor = (width: Px, rules: PlacementRules): Px => Math.round(padFor(width, rules) / 2)
 
 export function sizeOf(draft: Draft, parent: Node): { readonly w: Px; readonly h: Px } {
   if (parent.type === "slide") return slideSize(draft)
@@ -40,7 +36,8 @@ export function freeArea(draft: Draft, parent: Node, natural?: Natural): Area | 
   const { w, h } = sizeOf(draft, parent)
   if (w <= 0 || h <= 0) return undefined
   if (isLaidOut(parent)) return { x: 0, y: 0, w, h }
-  const clear = gapFor(slideSize(draft).w)
+  const rules = draft.placement
+  const clear = gapFor(slideSize(draft).w, rules)
   const children = childrenOf(draft.doom, parent.id).filter((child) => propOf(child, "hidden") !== true)
   const free = (underTitles: boolean): Area | undefined => {
     const taken = children
@@ -52,9 +49,11 @@ export function freeArea(draft: Draft, parent: Node, natural?: Natural): Area | 
     const best = largestFreeBox(
       { width: w, height: h },
       taken,
+      rules,
       natural === undefined ? undefined : ({ cx, cy }) => fitScale(natural, { w: cx, h: cy }),
     )
-    if (best === undefined || best.cx < w * smallestWidthShare || best.cy < h * smallestHeightShare) return undefined
+    if (best === undefined || best.cx < w * rules.smallestFreeShare.w || best.cy < h * rules.smallestFreeShare.h)
+      return undefined
     return { x: best.x, y: best.y, w: best.cx, h: best.cy }
   }
   return free(true) ?? free(false)
@@ -79,8 +78,9 @@ function underTitle(draft: Draft, slide: Node, area: Area): Area {
   const size = slideSize(draft)
   const title = descendantsOf(draft.doom, slide.id).find((node) => propOf(node, "role") === "title")
   const titleBox = title === undefined ? undefined : boxOf(title, draft.reading.boxes)
-  const top = titleBox === undefined ? area.y : Math.max(area.y, titleBox.y + titleBox.h + gapFor(size.w))
-  const bottom = Math.min(area.y + area.h, bottomLimitOf(size.h))
+  const top =
+    titleBox === undefined ? area.y : Math.max(area.y, titleBox.y + titleBox.h + gapFor(size.w, draft.placement))
+  const bottom = Math.min(area.y + area.h, bottomLimitOf(size.h, draft.placement))
   return bottom > top ? { x: area.x, y: top, w: area.w, h: bottom - top } : area
 }
 
@@ -90,21 +90,18 @@ export function gridArea(draft: Draft, parent: Node, box: Area | undefined): Are
   return parent.type === "slide" ? underTitle(draft, parent, free) : free
 }
 
-const slideMarginShare = 1 / 12
-const slideEdgeShare = 1 / 13.5
+export const bottomLimitOf = (height: Px, rules: PlacementRules): Px => height - Math.round(height * rules.edgeShare)
 
-export const bottomLimitOf = (height: Px): Px => height - Math.round(height * slideEdgeShare)
-
-export function contentAreaOf(doom: Doom, parent: NodeId): Area | undefined {
+export function contentAreaOf(doom: Doom, parent: NodeId, rules: PlacementRules): Area | undefined {
   const node = doom.nodes.get(parent)
   if (node === undefined) return undefined
-  const draft = draftOf(doom, () => parent)
+  const draft = draftOf(doom, () => parent, rules)
   try {
     const area = areaFor(draft, node, undefined)
     if (node.type !== "slide") return area
     const { w, h } = slideSize(draft)
-    const side = Math.round(w * slideMarginShare)
-    const edge = Math.round(h * slideEdgeShare)
+    const side = Math.round(w * rules.marginShare)
+    const edge = Math.round(h * rules.edgeShare)
     const left = Math.max(area.x, side)
     const top = Math.max(area.y, edge)
     return {

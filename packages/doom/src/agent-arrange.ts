@@ -124,7 +124,12 @@ export function compileWrap(draft: Draft, change: Op<"wrap">): void {
   const bottom = Math.max(...boxes.map((box) => box.y + box.h))
   const layout: Layout | undefined =
     change.layout === "row" || change.layout === "column"
-      ? { mode: change.layout, gap: gapFor(slideSize(draft).w), padding: sidesOf(0), align: "top-left" }
+      ? {
+          mode: change.layout,
+          gap: gapFor(slideSize(draft).w, draft.placement),
+          padding: sidesOf(0),
+          align: "top-left",
+        }
       : undefined
   const frame = draft.mint()
   add(

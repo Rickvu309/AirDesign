@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test"
 import * as doom from "../../packages/doom/src/index.ts"
-import { compileAgentEdit } from "../../packages/doom/src/testing/index.ts"
+import { compileAgentEdit, placement } from "../../packages/doom/src/testing/index.ts"
 import { editorCopy } from "../../apps/web/src/copy/editor-copy"
 import { slideListCopy } from "../../apps/web/src/copy/slide-list-copy"
 import { textCopy, textWords } from "../../apps/web/src/copy/text-copy"
@@ -19,6 +19,7 @@ async function agentWrites(stack: Stack, opened: Opened, changes: readonly doom.
   if (before === undefined) throw new Error("no deck")
   let minted = 0
   const compiled = compileAgentEdit(before, changes, {
+    placement,
     author: { kind: "agent", id: "aira", run: "run" },
     once: "agent",
     phase: "start",

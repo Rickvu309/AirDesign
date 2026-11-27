@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentEdit } from "./agent-edit.js"
-import { agentDeck, minter, runName, started } from "./agent-fixtures.js"
+import { agentDeck, minter, runName, started } from "./testing/agent-fixtures.js"
 import { richDeck } from "./testing/rich-deck.js"
 import { type Doom, type NodeId, type Rev, type RevisionKey, applyEdit, isRefusal, nodeId, rev } from "./index.js"
 import { agent, create, ids, land, person, revOf, sampleDeck, textOf } from "./sample-deck.js"
 import { propOf } from "./doom-walk.js"
+import { placement } from "./testing/placement-rules.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
 
@@ -20,6 +21,7 @@ const by = (more: Record<string, unknown> = {}) => ({
   author: agent(runName),
   once: "agent-1",
   mint: minter(),
+  placement,
   ...more,
 })
 const landEdit = (doom: Doom, edit: { once: string; author: ReturnType<typeof agent>; writes: readonly never[] }) =>

@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { agentDeck, build, minter, started } from "./agent-fixtures.js"
+import { agentDeck, build, minter, started } from "./testing/agent-fixtures.js"
 import { readForAgent } from "./agent-read.js"
 import { propOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { hex, ids, land, sampleDeck } from "./sample-deck.js"
+import { placement } from "./testing/placement-rules.js"
 
 const ink = hex(0x102030)
 
@@ -49,7 +50,7 @@ describe("paint an agent sets the way the panel's colour, fill, picture and bord
     const doom = build(pictured, set(ids.title, { fit: "tile" }))
     expect(propOf(at(doom, ids.title), "fills")).toEqual(photo("tile"))
     expect(readForAgent(doom, [ids.slide])).toContain(`fill=image:${"a".repeat(64)}/tile`)
-    expect(compileAgentChange(agentDeck(), set(ids.card, { fit: "fit" }), minter())).toMatchObject({
+    expect(compileAgentChange(agentDeck(), set(ids.card, { fit: "fit" }), minter(), placement)).toMatchObject({
       refused: "shape",
       field: "fit",
     })
@@ -76,12 +77,14 @@ describe("paint an agent sets the way the panel's colour, fill, picture and bord
   })
 
   it("refuses a crop on a layer with no picture, one that cuts a whole axis, and one that is not sides", () => {
-    expect(compileAgentChange(agentDeck(), set(ids.card, { crop: { left: 10 } }), minter())).toMatchObject({
+    expect(compileAgentChange(agentDeck(), set(ids.card, { crop: { left: 10 } }), minter(), placement)).toMatchObject({
       refused: "shape",
       field: "crop",
     })
     const pictured = started(land(sampleDeck(), [{ node: ids.title, prop: "fills", value: photo() }]))
-    expect(compileAgentChange(pictured, set(ids.title, { fit: "tile", crop: { left: 10 } }), minter())).toMatchObject({
+    expect(
+      compileAgentChange(pictured, set(ids.title, { fit: "tile", crop: { left: 10 } }), minter(), placement),
+    ).toMatchObject({
       refused: "shape",
       field: "crop",
     })

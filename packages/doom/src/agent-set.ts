@@ -196,7 +196,8 @@ export function compileSet(draft: Draft, change: SetChange): void {
   const worded = node.type === "shape" ? textOfLook(change, held, "body", themeOf(draft)) : undefined
   const written = worded ?? (change.insert === undefined ? undefined : held)
   const text = resizedBy(written ?? now.text, change.box, now.box) ?? written
-  const layout = node.type === "frame" ? layoutOf(change, now.layout, gapFor(slideSize(draft).w)) : undefined
+  const layout =
+    node.type === "frame" ? layoutOf(change, now.layout, gapFor(slideSize(draft).w, draft.placement)) : undefined
   const asked = (["layout", "gap", "padding", "align"] as const).find(
     (field) => node.type === "frame" && change[field] !== undefined,
   )
@@ -205,6 +206,7 @@ export function compileSet(draft: Draft, change: SetChange): void {
   const values: Values = {
     ...surfaceOf(
       change,
+      draft.placement.strokeWeight,
       now,
       stroked,
       change.effectOpacity === undefined && change.blur === undefined && change.innerShadow === undefined

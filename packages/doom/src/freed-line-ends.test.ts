@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { compiled } from "./agent-fixtures.js"
+import { compiled } from "./testing/agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
 import { parentOf, propOf } from "./doom-walk.js"
 import type { NodeId } from "./ids.js"

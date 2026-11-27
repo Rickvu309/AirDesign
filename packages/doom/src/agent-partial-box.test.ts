@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { type AgentChange, readAgentChange } from "./agent-change.js"
-import { build } from "./agent-fixtures.js"
+import { build } from "./testing/agent-fixtures.js"
 import { more, richDeck } from "./testing/rich-deck.js"
 import { ids } from "./sample-deck.js"
 import { propOf } from "./doom-walk.js"

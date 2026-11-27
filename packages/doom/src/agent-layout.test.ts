@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
-import { agentDeck, build, lastChild, minter } from "./agent-fixtures.js"
+import { agentDeck, build, lastChild, minter } from "./testing/agent-fixtures.js"
 import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import { bottomLimitOf } from "./agent-place.js"
 import { ids } from "./sample-deck.js"
 import { measureWith, solveLayout } from "./index.js"
+import { placement } from "./testing/placement-rules.js"
 
 const slide = ids.slide
 const add = (more: Record<string, unknown>): AgentChange => ({ op: "add", slide, ...more }) as AgentChange
@@ -62,7 +63,7 @@ describe("content with no box uses the slide well", () => {
     const doom = build(build(start, title(on), minter("a")), grid, minter("b"))
     const node = lastChild(doom, on)
     const box = propOf(node, "box")!
-    expect(box.y + box.h).toBeLessThan(bottomLimitOf(1080))
+    expect(box.y + box.h).toBeLessThan(bottomLimitOf(1080, placement))
     expect(propOf(node, "layout")).toMatchObject({ rows: ["hug", "hug"], gap: 0 })
   })
 })

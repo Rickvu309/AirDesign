@@ -6,6 +6,7 @@ import type { Author, Doom, Write } from "./doom.js"
 import { type NodeId, rev } from "./ids.js"
 import { isRefusal } from "./refusal.js"
 import type { Measure } from "./measure.js"
+import type { PlacementRules } from "./placement-rules.js"
 import { titleOnlyWrites, titleSlideWrites } from "./slide-placeholders.js"
 
 export const slideStarts = ["title", "text", "grid", "blank"] as const
@@ -52,6 +53,7 @@ export function slideStartWrites(
   slide: NodeId,
   mint: () => NodeId,
   start: SlideStart,
+  placement: PlacementRules,
   measure?: Measure,
 ): readonly Write[] {
   const placeholders = placeholdersOf(start, slide, mint, deckOf(doom).size)
@@ -63,6 +65,7 @@ export function slideStartWrites(
     author,
     once: "slide-start-content",
     mint,
+    placement,
     ...(measure === undefined ? {} : { measure }),
   })
   return "refused" in compiled ? placeholders : [...placeholders, ...compiled.edit.writes]

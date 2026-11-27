@@ -2,7 +2,7 @@ import { type NodeId, type Doom, type Write, nodeId } from "../index.js"
 import { type OrderKey, orderKeyBetween } from "../order-key.js"
 import { box, ids, land, sampleDeck, textOf } from "../sample-deck.js"
 import { parentOf } from "../doom-walk.js"
-import { started } from "../agent-fixtures.js"
+import { started } from "./agent-fixtures.js"
 
 export const more = {
   slide2: nodeId("t:10"),

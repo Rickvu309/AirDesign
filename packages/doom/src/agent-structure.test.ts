@@ -2,12 +2,13 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { readAgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { agentDeck, apply, build, lastChild, minter } from "./agent-fixtures.js"
+import { agentDeck, apply, build, lastChild, minter } from "./testing/agent-fixtures.js"
 import { readForAgent } from "./agent-read.js"
 import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { ids, theme } from "./sample-deck.js"
 import { titleSlideWrites } from "./slide-placeholders.js"
+import { placement } from "./testing/placement-rules.js"
 
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
   ({ op: "set", target, ...look }) as AgentChange
@@ -108,7 +109,7 @@ describe("rotation and flips land on the box the canvas's rotate and flip write"
   })
 
   it("refuses a rotation on a slide", () => {
-    expect(compileAgentChange(agentDeck(), set(ids.slide, { rotation: 10 }), minter())).toMatchObject({
+    expect(compileAgentChange(agentDeck(), set(ids.slide, { rotation: 10 }), minter(), placement)).toMatchObject({
       refused: "shape",
     })
   })
@@ -125,7 +126,7 @@ describe("duplicate copies a layer or a slide the way the canvas's duplicate doe
   it("copies a whole slide after it, and refuses the deck", () => {
     const doom = build(agentDeck(), { op: "duplicate", nodes: [ids.slide] })
     expect(slidesOf(doom)).toHaveLength(2)
-    expect(compileAgentChange(agentDeck(), { op: "duplicate", nodes: [ids.deck] }, minter())).toMatchObject({
+    expect(compileAgentChange(agentDeck(), { op: "duplicate", nodes: [ids.deck] }, minter(), placement)).toMatchObject({
       refused: "shape",
     })
   })
@@ -136,7 +137,9 @@ describe("presenter notes and the deck's name and theme", () => {
     const doom = build(agentDeck(), set(ids.slide, { notes: "Open with the number.\nThen the why." }))
     expect(propOf(at(doom, ids.slide), "notes")).toMatchObject({ chars: "Open with the number.\nThen the why." })
     expect(readForAgent(doom, [ids.slide])).toContain('notes="Open with the number.\\nThen the why."')
-    expect(compileAgentChange(agentDeck(), set(ids.card, { notes: "x" }), minter())).toMatchObject({ refused: "shape" })
+    expect(compileAgentChange(agentDeck(), set(ids.card, { notes: "x" }), minter(), placement)).toMatchObject({
+      refused: "shape",
+    })
   })
 
   it("renames the deck and changes the theme's colours and fonts, keeping the rest of the theme", () => {
@@ -164,7 +167,7 @@ describe("presenter notes and the deck's name and theme", () => {
     }
     const change = readAgentChange({ op: "deck", theme: custom })
     if ("refused" in change) throw new Error(JSON.stringify(change))
-    expect(compileAgentChange(agentDeck(), change, minter())).toEqual([
+    expect(compileAgentChange(agentDeck(), change, minter(), placement)).toEqual([
       { node: ids.deck, prop: "theme", value: custom },
     ])
   })
@@ -174,7 +177,7 @@ describe("presenter notes and the deck's name and theme", () => {
   })
 
   it("refuses a deck change that names nothing, and a colour that is not a hex", () => {
-    expect(compileAgentChange(agentDeck(), { op: "deck" }, minter())).toMatchObject({ refused: "shape" })
+    expect(compileAgentChange(agentDeck(), { op: "deck" }, minter(), placement)).toMatchObject({ refused: "shape" })
     expect(readAgentChange({ op: "deck", colors: { accent1: "accent2" } })).toMatchObject({ refused: "shape" })
     expect(readAgentChange({ op: "deck", colors: { brand: theme().colors.accent1 } })).toMatchObject({
       refused: "shape",

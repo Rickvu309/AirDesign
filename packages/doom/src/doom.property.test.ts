@@ -1,7 +1,7 @@
 import fc from "fast-check"
 import { expect, it } from "vitest"
 import { orderKeyBetween } from "./order-key.js"
-import { minter, runName, started, titledSlide } from "./agent-fixtures.js"
+import { minter, runName, started, titledSlide } from "./testing/agent-fixtures.js"
 import { agentBatches, resolveRefs } from "./testing/agent-changes.js"
 import { richDeck } from "./testing/rich-deck.js"
 import {
@@ -31,6 +31,7 @@ import { compileAgentEdit } from "./agent-edit.js"
 import { foldToJson } from "./fold-json.js"
 import { agent, box, create, ids, once, person, revOf, sampleDeck, textOf, tryLand } from "./sample-deck.js"
 import { valuesOf } from "./testing/values-of.js"
+import { placement } from "./testing/placement-rules.js"
 
 type Pick = {
   readonly node: NodeId
@@ -429,7 +430,13 @@ function landsAgentEdits(start: Doom, batches: readonly (readonly unknown[])[]):
     const read = (JSON.parse(JSON.stringify(resolveRefs(doom, batch))) as readonly unknown[]).map(readAgentChange)
     const changes = read.filter((each): each is AgentChange => !("refused" in each))
     if (changes.length === 0 || changes.length < read.length) continue
-    const result = compileAgentEdit(doom, changes, { author: agent(runName), once: `p-${index}`, mint, read: doom })
+    const result = compileAgentEdit(doom, changes, {
+      placement,
+      author: agent(runName),
+      once: `p-${index}`,
+      mint,
+      read: doom,
+    })
     if ("refused" in result) continue
     const replayed = readLanded(JSON.parse(JSON.stringify({ ...result.edit, rev: doom.rev + 1 })), doom)
     if (isRefusal(replayed)) throw new Error(`the tab refuses what the server took: ${JSON.stringify(replayed)}`)

@@ -10,13 +10,14 @@ async function readOpen(kit, deck, cookie) {
 
 async function land(kit, deck, cookie, changes, once, counter, phase) {
   const doom = await packageBuild(kit.repo, "@airdesign/doom")
-  const { compileAgentEdit } = await packageBuild(kit.repo, "@airdesign/doom", "testing/index.js")
+  const { compileAgentEdit, placement } = await packageBuild(kit.repo, "@airdesign/doom", "testing/index.js")
   const fold = await readOpen(kit, deck, cookie)
   const mint = () => doom.nodeId(`g:${(counter.value += 1)}`)
   const compiled = compileAgentEdit(fold, changes, {
     author,
     once,
     mint,
+    placement,
     ...(phase === undefined ? {} : { phase }),
   })
   if ("refused" in compiled) throw new Error(`bench deck refused ${JSON.stringify(compiled)}`)

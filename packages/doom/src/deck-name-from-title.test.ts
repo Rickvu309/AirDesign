@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { blankDeckName, deckNameFollows, nameFromTitleWrites as derivedWrites } from "./deck-name-from-title.js"
-import { agentDeck, apply, build, minter, runName } from "./agent-fixtures.js"
+import { agentDeck, apply, build, minter, runName } from "./testing/agent-fixtures.js"
 import { compileAgentEdit } from "./agent-edit.js"
 import { readAgentChange } from "./agent-change.js"
 import { agent, ids } from "./sample-deck.js"
@@ -10,6 +10,7 @@ import { applyEdit, invert, isRefusal, orderKeyBetween, rev, type Doom, type Nod
 import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import { deckName } from "./deck-of.js"
 import { limits } from "./limits.js"
+import { placement } from "./testing/placement-rules.js"
 
 const named = (name: string): Write => ({ node: ids.deck, prop: "name", value: name })
 const follows = (on: boolean): Write => ({ node: ids.deck, prop: "nameFollows", value: on })
@@ -113,6 +114,7 @@ describe("a deck whose name follows its first title", () => {
   it("names the deck for the next slide's title when an agent deletes slide 1, as a person's delete does", () => {
     const { doom } = twoSlides("Alpha", "Beta")
     const edit = compileAgentEdit(doom, [{ op: "slide", delete: ids.slide }], {
+      placement,
       author: agent(runName),
       once: "gone",
       mint: minter("m"),
@@ -162,7 +164,7 @@ describe("a deck whose name follows its first title", () => {
         { op: "deck", name: "Board pack" },
         { op: "add", kind: "text", slide: ids.slide, text: "Q3 board update", textStyle: "title" },
       ],
-      { author: agent(runName), once: "both", mint: minter("m") },
+      { placement, author: agent(runName), once: "both", mint: minter("m") },
     )
     if ("refused" in edit) throw new Error(JSON.stringify(edit))
     const landed = applyEdit(doom, { ...edit.edit, rev: rev(doom.rev + 1) })
@@ -244,7 +246,7 @@ describe("a deck whose name follows its first title", () => {
     const edit = compileAgentEdit(
       doom,
       [{ op: "add", kind: "text", slide: ids.slide, text: "Q3 board update", textStyle: "title" }],
-      { author: agent(runName), once: "fill", mint: minter("m") },
+      { placement, author: agent(runName), once: "fill", mint: minter("m") },
     )
     if ("refused" in edit) throw new Error(JSON.stringify(edit))
     const landed = applyEdit(doom, { ...edit.edit, rev: rev(doom.rev + 1) })

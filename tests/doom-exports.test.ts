@@ -21,7 +21,7 @@ it("hands other packs only the Doom names they import", () => {
     `AgentChange AgentEdit AgentRefusal AgentSession Align9 Author Bake Box Clipboard Color ColorVar Copies
     Doom Edit End Face FaceNeeds FontFace FontWidths Geometry GridShortfall Grown Hex ImageCrop ImagePaint Keyed Landed LayerPositions
     Layout LayoutProblem Matrix Measure MeasureLayout MeasureProbe MediaType MissingGlyphs Node NodeId NodeType OrderKey
-    Paint Para Point ProblemRules PropName Props Refusal Replaced Resolved ResolvedEffect ResolvedLine ResolvedPaint ResolvedRun Rev
+    Paint Para PlacementRules Point ProblemRules PropName Props Refusal Replaced Resolved ResolvedEffect ResolvedLine ResolvedPaint ResolvedRun Rev
     RevisionKey RunEdit RunUndo Site SlideGroup SlideStart Span StrokeStyle Text TextPatch TextStyleName Theme ThemeProblem TreeNode
     TreeSlide Undone Write WriteKey adjustDefaults agentChangesSchema agentEditSession agentKind applyEdit applyMatrix
     artMatrix bakeLayout bakeTextLayers blankDeckName boxMatrix bytesOf changingWrites charsByFace childrenOf
@@ -44,6 +44,6 @@ it("hands other packs only the Doom names they import", () => {
 it("hands tests and the bench the Doom names only they import, behind @airdesign/doom/testing", () => {
   expect(exportedNames("packages/doom/src/testing/index.ts")).toEqual(
     `AgentColor Run Tree boardDeckChanges colorVars compileAgentChange compileAgentEdit foldToJson placeholderSubtitle
-    placeholderTitle textToMarkdown`.split(/\s+/),
+    placeholderTitle placement textToMarkdown`.split(/\s+/),
   )
 })

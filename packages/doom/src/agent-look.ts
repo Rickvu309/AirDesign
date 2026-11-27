@@ -33,8 +33,6 @@ export type Now = {
   readonly effects?: readonly Effect[] | EffectStyleName | undefined
 }
 
-const defaultWeight = 2
-
 export function askedArrow(asked: boolean | Arrow | undefined, kept: Arrow): Arrow {
   if (asked === undefined) return kept
   if (typeof asked === "boolean") return asked ? "arrow" : "none"
@@ -157,6 +155,7 @@ export function effectsOf(
 
 export function surfaceOf(
   look: AgentLook,
+  drawnWeight: number,
   now: Now = {},
   align: StrokeStyle["align"] = "inside",
   theme?: Theme,
@@ -164,7 +163,7 @@ export function surfaceOf(
   const drawn = (look.stroke !== undefined && look.stroke !== "none") || look.dash !== undefined
   const weight =
     look.strokeWidth ??
-    (drawn && now.stroke === undefined ? defaultWeight : look.dash === undefined ? undefined : now.stroke?.weight)
+    (drawn && now.stroke === undefined ? drawnWeight : look.dash === undefined ? undefined : now.stroke?.weight)
   const fills = look.fill === undefined ? now.fills : paintsOf(look.fill)
   const fitting = look.fit !== undefined || look.crop !== undefined
   const painted = !fitting || fills === undefined ? fills : fitted(fills, look)

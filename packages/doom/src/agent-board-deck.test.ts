@@ -3,13 +3,14 @@ import { bytesOf } from "./limits.js"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentEdit } from "./agent-edit.js"
 import { boardDeckChanges } from "./testing/board-deck.js"
-import { agentDeck, apply, minter, runName } from "./agent-fixtures.js"
+import { agentDeck, apply, minter, runName } from "./testing/agent-fixtures.js"
 import { defaultTheme } from "./theme.js"
 import { readForAgent } from "./agent-read.js"
 import { type NodeId, applyEdit, isRefusal, rev } from "./index.js"
 import { agent, ids } from "./sample-deck.js"
 import { childrenOf, descendantsOf, propOf, slidesOf } from "./doom-walk.js"
 import { textStyleNames } from "./text.js"
+import { placement } from "./testing/placement-rules.js"
 
 function board(mode: "together" | "per-slide") {
   const mint = minter("b")
@@ -17,7 +18,12 @@ function board(mode: "together" | "per-slide") {
   const batches: (readonly AgentChange[])[] = []
   const send = (changes: readonly AgentChange[]): readonly NodeId[] => {
     batches.push(changes)
-    const result = compileAgentEdit(doom, changes, { author: agent(runName), once: `board-${batches.length}`, mint })
+    const result = compileAgentEdit(doom, changes, {
+      placement,
+      author: agent(runName),
+      once: `board-${batches.length}`,
+      mint,
+    })
     if ("refused" in result) throw new Error(`batch ${batches.length}: ${JSON.stringify(result)}`)
     const landed = applyEdit(doom, { ...result.edit, rev: rev(doom.rev + 1) })
     if (isRefusal(landed)) throw new Error(JSON.stringify(landed))
@@ -110,7 +116,12 @@ describe("the board deck on the slide type scale", () => {
   const mint = minter("sc")
   let doom = onTheScale()
   const send = (changes: readonly AgentChange[]): readonly NodeId[] => {
-    const result = compileAgentEdit(doom, changes, { author: agent(runName), once: `scale-${doom.rev}`, mint })
+    const result = compileAgentEdit(doom, changes, {
+      placement,
+      author: agent(runName),
+      once: `scale-${doom.rev}`,
+      mint,
+    })
     if ("refused" in result) throw new Error(JSON.stringify(result))
     const landed = applyEdit(doom, { ...result.edit, rev: rev(doom.rev + 1) })
     if (isRefusal(landed)) throw new Error(JSON.stringify(landed))

@@ -1,9 +1,9 @@
+import type { PlacementRules } from "./placement-rules.js"
+
 type Box = { readonly x: number; readonly y: number; readonly cx: number; readonly cy: number }
 
 export type PlacementArea = { readonly width: number; readonly height: number }
-
-const marginShare = 0.04
-const strokeReachShare = 0.02
+type Clearance = Pick<PlacementRules, "freeMarginShare" | "strokeReachShare">
 
 function ascending(left: number, right: number): number {
   return left - right
@@ -46,26 +46,27 @@ function reaching(box: Box, reach: number): Box {
   return { x: box.x - Math.round((cx - box.cx) / 2), y: box.y - Math.round((cy - box.cy) / 2), cx, cy }
 }
 
-function present(area: PlacementArea, taken: readonly Box[]): readonly Box[] {
-  const reach = Math.round(area.height * strokeReachShare)
+function present(area: PlacementArea, taken: readonly Box[], rules: Clearance): readonly Box[] {
+  const reach = Math.round(area.height * rules.strokeReachShare)
   return taken.filter((box) => box.cx > 0 || box.cy > 0).map((box) => reaching(box, reach))
 }
 
-function clearAreas(area: PlacementArea, taken: readonly Box[]): readonly Box[] {
-  const marginX = Math.round(area.width * marginShare)
-  const marginY = Math.round(area.height * marginShare)
+function clearAreas(area: PlacementArea, taken: readonly Box[], rules: Clearance): readonly Box[] {
+  const marginX = Math.round(area.width * rules.freeMarginShare)
+  const marginY = Math.round(area.height * rules.freeMarginShare)
   const usable = { x: marginX, y: marginY, cx: area.width - 2 * marginX, cy: area.height - 2 * marginY }
-  return freeAreas(usable, present(area, taken))
+  return freeAreas(usable, present(area, taken, rules))
 }
 
 export function largestFreeBox(
   area: PlacementArea,
   taken: readonly Box[],
+  rules: Clearance,
   score: (box: Box) => number = ({ cx, cy }) => cx * cy,
 ): Box | undefined {
   let best: Box | undefined
   let high = -Infinity
-  for (const box of clearAreas(area, taken)) {
+  for (const box of clearAreas(area, taken, rules)) {
     const next = score(box)
     if (
       next > high ||

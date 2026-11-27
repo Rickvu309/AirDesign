@@ -106,6 +106,7 @@ export {
 export { liveRuns } from "./live-runs.js"
 export { type Face, type FaceNeeds, doomFaces } from "./text-faces.js"
 export { contentAreaOf, gapFor } from "./agent-place.js"
+export type { PlacementRules } from "./placement-rules.js"
 export { titleSlideWrites } from "./slide-placeholders.js"
 export { type SlideStart, slideStartWrites, slideStarts } from "./slide-starts.js"
 export { blankDeckName, deckNameFollows, nameFromTitleWrites } from "./deck-name-from-title.js"

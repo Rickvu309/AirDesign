@@ -1,17 +1,18 @@
 import { describe, expect, it } from "vitest"
 import { readAgentChange, type AgentChange } from "./agent-change.js"
 import { compileAgentChange } from "./agent-compile.js"
-import { agentDeck, build, compiled, minter, started } from "./agent-fixtures.js"
+import { agentDeck, build, compiled, minter, started } from "./testing/agent-fixtures.js"
 import { more, richDeck } from "./testing/rich-deck.js"
 import { type Doom, type Write, applyEdit, isRefusal, rev } from "./index.js"
 import { agent, ids, land, once, person, revOf, sampleDeck, textOf } from "./sample-deck.js"
 import { propOf } from "./doom-walk.js"
+import { placement } from "./testing/placement-rules.js"
 
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
   ({ op: "set", target, ...look }) as AgentChange
 const applyAs = (doom: Doom, writes: readonly Write[]) =>
   applyEdit(doom, { once: once(), author: agent("run-1"), writes, rev: rev(doom.rev + 1) })
-const refusal = (doom = richDeck(), change: AgentChange) => compileAgentChange(doom, change, minter())
+const refusal = (doom = richDeck(), change: AgentChange) => compileAgentChange(doom, change, minter(), placement)
 
 describe("set by node id", () => {
   it("replaces the words with markdown and keeps the box's resizing, the style and the colour", () => {

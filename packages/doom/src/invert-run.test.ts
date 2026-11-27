@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { compiled, minter } from "./agent-fixtures.js"
+import { compiled, minter } from "./testing/agent-fixtures.js"
 import {
   type Author,
   type Doom,

@@ -1,16 +1,18 @@
 import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { compileAgentEdit } from "./agent-edit.js"
-import { agentDeck, minter, runName } from "./agent-fixtures.js"
+import { agentDeck, minter, runName } from "./testing/agent-fixtures.js"
 import { paletteColorVars } from "./paint.js"
 import { themeProblems } from "./theme-problems.js"
 import { agent, hex, ids, land, sampleDeck, textOf, theme } from "./sample-deck.js"
+import { placement } from "./testing/placement-rules.js"
 
 const red = hex(0xff0000)
 const nearRed = hex(0xff0001)
 
 const edited = (changes: readonly Record<string, unknown>[]) => {
   const edit = compileAgentEdit(agentDeck(), changes as readonly AgentChange[], {
+    placement,
     author: agent(runName),
     once: "problems-1",
     mint: minter(),
