@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { sampleRoutes } from "@/samples/sample-routes"
+import { sampleTheme } from "@/samples/sample-theme-art"
 import { barCharts } from "@/samples/slides/bar-charts"
 import { cardGrid } from "@/samples/slides/card-grid"
 import { iconSet } from "@/samples/slides/icon-set"
@@ -10,7 +11,7 @@ import { pictureCrop } from "@/samples/slides/picture-crop"
 import { titleSlide } from "@/samples/slides/title-slide"
 
 function grow(slides: readonly doom.TreeSlide[], name?: string) {
-  return doom.doomFromTree({ theme: doom.defaultTheme, slides, ...(name === undefined ? {} : { name }) })
+  return doom.doomFromTree({ theme: sampleTheme, slides, ...(name === undefined ? {} : { name }) })
 }
 
 export const sampleSlides = {

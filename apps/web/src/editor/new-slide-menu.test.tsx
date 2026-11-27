@@ -1,8 +1,9 @@
 import type { Root } from "react-dom/client"
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest"
-import { defaultTheme, measureWith, slideStarts } from "@airdesign/doom"
+import { measureWith, slideStarts } from "@airdesign/doom"
 import { editorCopy } from "@/copy/editor-copy"
 import { layoutPictures } from "@/editor/layout-pictures"
+import { testTheme } from "@airdesign/doom/testing"
 
 let act: typeof import("react").act
 let NewSlideMenu: typeof import("@/editor/new-slide-menu").NewSlideMenu
@@ -73,7 +74,7 @@ function flushFrames() {
 
 const layouts = slideStarts.map((part) => ({ part, name: editorCopy.slideStarts[part] }))
 const wide = { w: 1920, h: 1080 }
-const pictures = layoutPictures(defaultTheme, wide, undefined, measureWith({}))
+const pictures = layoutPictures(testTheme, wide, undefined, measureWith({}))
 let warmed = 0
 const source = (held: typeof pictures | null) => ({
   pictures: held,

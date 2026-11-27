@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { placeholderTitle } from "@airdesign/doom/testing"
+import { starts, testTheme } from "@airdesign/doom/testing"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import type { GridMoveSide } from "./grid-move"
@@ -19,7 +19,7 @@ const slideIds = (view: doom.Doom) => doom.slidesOf(view).map((slide) => slide.i
 
 function three() {
   const grown = doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         name: "One",
@@ -55,7 +55,7 @@ describe("add slide", () => {
       type: "shape",
       role: "title",
       box: { x: 160, y: 80, w: 1600, h: 120 },
-      text: { chars: placeholderTitle, style: "title" },
+      text: { chars: starts.title.chars, style: "title" },
     })
   })
 
@@ -96,7 +96,7 @@ describe("add slide", () => {
   })
 
   it("makes a first slide when the deck has none", () => {
-    const withoutSlides = doom.doomFromTree({ theme: doom.defaultTheme, slides: [] }).doom
+    const withoutSlides = doom.doomFromTree({ theme: testTheme, slides: [] }).doom
     expect(slideIds(withoutSlides)).toEqual([])
     const row = [...withoutSlides.nodes.values()].find((node) => node.type === "slideRow")!
     const writes = addSlideWrites(withoutSlides, null, minter())
@@ -106,7 +106,7 @@ describe("add slide", () => {
   })
 
   it("ignores non-slideRow deck children when choosing a row for a first slide", () => {
-    const withoutSlides = doom.doomFromTree({ theme: doom.defaultTheme, slides: [] }).doom
+    const withoutSlides = doom.doomFromTree({ theme: testTheme, slides: [] }).doom
     const deck = [...withoutSlides.nodes.values()].find((node) => node.type === "deck")!
     const stray = doom.nodeId("f:91")
     const nodes = new Map(withoutSlides.nodes).set(stray, {
@@ -128,7 +128,7 @@ describe("add slide", () => {
 
 function four() {
   const grown = doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: ["One", "Two", "Three", "Four"].map((name) => ({ name, children: [] })),
   })
   return { view: grown.doom, slides: grown.slides }

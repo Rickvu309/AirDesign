@@ -11,6 +11,7 @@ import type { Doom } from "./doom.js"
 import { freeLineEnds } from "./freed-line-ends.js"
 import { measureWith } from "./measure.js"
 import type { PlacementRules } from "./placement-rules.js"
+import type { StartRules } from "./start-rules.js"
 
 const estimate = measureWith({})
 
@@ -44,11 +45,12 @@ export function compileAgentChange(
   change: AgentChange,
   mint: () => NodeId,
   placement: PlacementRules,
+  starts: StartRules,
   reading: Reading = {},
 ): readonly Write[] | AgentRefusal {
   const draft = draftOf(doom, mint, placement, reading)
   try {
-    if (change.op === "add") compileAdd(draft, change)
+    if (change.op === "add") compileAdd(draft, change, starts)
     if (change.op === "set") compileSet(draft, change)
     if (change.op === "move") compileMove(draft, change)
     if (change.op === "wrap") compileWrap(draft, change)

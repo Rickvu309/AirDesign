@@ -1,9 +1,10 @@
 import * as doom from "@airdesign/doom"
 import { expect, it } from "vitest"
 import { barCharts } from "./slides/bar-charts"
+import { sampleTheme } from "./sample-theme-art"
 
 it("shows quarterly stacked revenue in thousands while retaining millions for the ranking", () => {
-  const { doom: deck, ids } = doom.doomFromTree({ theme: doom.defaultTheme, slides: [barCharts()] })
+  const { doom: deck, ids } = doom.doomFromTree({ theme: sampleTheme, slides: [barCharts()] })
   const words = (name: string) =>
     doom.descendantsOf(deck, ids[name]!).flatMap((node) => doom.propOf(node, "text")?.chars ?? [])
   expect(words("ranking")).toEqual([

@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { compileAgentEdit, placeholderSubtitle } from "@airdesign/doom/testing"
+import { compileAgentEdit, starts, testTheme } from "@airdesign/doom/testing"
 import { describe, expect, it } from "vitest"
 import { startEdit, startIds } from "./doom-start.js"
 import { placement } from "@airdesign/doom/testing"
@@ -22,19 +22,19 @@ describe("a new deck's title slide", () => {
     const subtitle = written(startIds.subtitle, "text") as doom.Text
     const under = written(startIds.subtitle, "box") as doom.Box
     expect(written(startIds.subtitle, "role")).toBe("subtitle")
-    expect(subtitle.chars).toBe(placeholderSubtitle)
+    expect(subtitle.chars).toBe(starts.subtitle.chars)
     expect(under.y - (box.y + box.h)).toBeGreaterThanOrEqual(32)
     expect(theme.textStyles[subtitle.style].weight).toBeLessThan(theme.textStyles[text.style].weight)
   })
 
   it("takes the slide type scale for its text styles, so a person's Text tool and agent edits share it", () => {
-    expect(theme.textStyles).toEqual(doom.defaultTheme.textStyles)
+    expect(theme.textStyles).toEqual(testTheme.textStyles)
     for (const style of Object.values(theme.textStyles)) expect(style.size).toBeGreaterThanOrEqual(24)
     expect(theme.textStyles.title.size).toBe(56)
   })
 
   it("takes the default theme's effect styles, so glow is a drop shadow with no offset, never a blur of the layer", () => {
-    expect(theme.effectStyles).toEqual(doom.defaultTheme.effectStyles)
+    expect(theme.effectStyles).toEqual(testTheme.effectStyles)
   })
 })
 
@@ -49,7 +49,7 @@ describe("an agent's title on a new deck's first slide", () => {
     const compiled = compileAgentEdit(
       started,
       [{ op: "add", kind: "text", slide: startIds.slide, text: "Q3 board update", textStyle: "title" }],
-      { placement, author, once: "fill", mint: () => doom.nodeId(`a:${(count += 1)}`) },
+      { placement, starts, author, once: "fill", mint: () => doom.nodeId(`a:${(count += 1)}`) },
     )
     if ("refused" in compiled) throw new Error(JSON.stringify(compiled))
     const landed = doom.applyEdit(started, { ...compiled.edit, rev: doom.rev(3) })

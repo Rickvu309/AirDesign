@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it, vi } from "vitest"
+import { testTheme } from "@airdesign/doom/testing"
 
 const read = vi.hoisted(() => ({ texts: 0 }))
 
@@ -21,7 +22,7 @@ const spot = (x: number) => ({ x, y: 100, w: 600, h: 100, rotation: 0, flipH: fa
 
 function deckOf(slides: number) {
   return doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: Array.from({ length: slides }, (_, slide) => ({
       children: Array.from({ length: 6 }, (_, shape) => ({
         type: "shape" as const,

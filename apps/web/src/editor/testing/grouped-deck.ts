@@ -1,5 +1,6 @@
 import * as doom from "@airdesign/doom"
 import { landed } from "./doom-fixtures"
+import { testTheme } from "@airdesign/doom/testing"
 
 export function minter(tab = "m") {
   let next = 0
@@ -9,7 +10,7 @@ export function minter(tab = "m") {
 export function grouped(sizes: readonly number[], ties: readonly boolean[] = []) {
   const total = sizes.reduce((sum, size) => sum + size, 0)
   const grown = doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: Array.from({ length: total }, (_, at) => ({ name: `S${String(at + 1)}`, children: [] })),
   })
   const first = doom.parentOf(grown.doom.nodes.get(grown.slides[0]!))!

@@ -26,8 +26,8 @@ export function emit(draft: Draft, parent: NodeId, block: Block): void {
 export const ladderOf = (theme: Theme): readonly TextStyleName[] =>
   [...textStyleNames].sort((a, b) => theme.textStyles[b].size - theme.textStyles[a].size)
 
-export function partOf(markdown: string, style: TextStyleName, color: AgentColor = "text"): Part {
-  const text = textOfLook({ text: markdown, textStyle: style, color }, undefined, style) as Text
+export function partOf(markdown: string, style: TextStyleName, theme: Theme, color: AgentColor = "text"): Part {
+  const text = textOfLook({ text: markdown, textStyle: style, color }, undefined, style, theme) as Text
   const block: Block = {
     type: "shape",
     values: { geometry: { kind: "rect" }, sizing: { w: "fill", h: "hug" }, text },

@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { compileAgentChange } from "@airdesign/doom/testing"
+import { compileAgentChange, starts, testTheme } from "@airdesign/doom/testing"
 import { placement } from "@airdesign/doom/testing"
 
 const spot = (x: number, y: number, w: number, h: number, rotation = 0) => ({
@@ -13,7 +13,7 @@ const spot = (x: number, y: number, w: number, h: number, rotation = 0) => ({
 })
 
 function deckOf(children: readonly doom.TreeNode[]) {
-  const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children }] })
+  const grown = doom.doomFromTree({ theme: testTheme, slides: [{ children }] })
   return { ...grown, view: grown.doom }
 }
 
@@ -278,7 +278,7 @@ export const writesOf = (probe: Probe, look: Readonly<Record<string, unknown>>):
   let next = 0
   const mint = () => doom.nodeId(`m:${String((next += 1))}`)
   const change = { op: "set", target: idOf(probe), ...look } as doom.AgentChange
-  const writes = compileAgentChange(built.view, change, mint, placement)
+  const writes = compileAgentChange(built.view, change, mint, placement, starts)
   return doom.isRefusal(writes) ? [] : writes.filter((write) => write.node === idOf(probe))
 }
 

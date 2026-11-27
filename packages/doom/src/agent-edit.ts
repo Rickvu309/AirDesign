@@ -3,6 +3,7 @@ import { compileAgentChange, nameOf } from "./agent-compile.js"
 import type { Reading } from "./agent-draft.js"
 import type { Measure } from "./measure.js"
 import type { PlacementRules } from "./placement-rules.js"
+import type { StartRules } from "./start-rules.js"
 import type { NodeId } from "./ids.js"
 import { rev } from "./ids.js"
 import { kindOf } from "./agent-read.js"
@@ -26,6 +27,7 @@ export type EditBy = {
   readonly once: string
   readonly mint: () => NodeId
   readonly placement: PlacementRules
+  readonly starts: StartRules
   readonly phase?: "start"
   readonly read?: Doom
   readonly boxes?: Reading["boxes"]
@@ -82,10 +84,10 @@ export function agentEditSession(doom: Doom, by: EditBy): AgentSession {
           },
         }
       : stepReading
-    let compiled = compileAgentChange(view, change, by.mint, by.placement, beforeBake)
+    let compiled = compileAgentChange(view, change, by.mint, by.placement, by.starts, beforeBake)
     if (frame !== undefined && !("refused" in compiled)) {
       const baked = yield { fold: view, frame }
-      compiled = compileAgentChange(view, change, by.mint, by.placement, { ...stepReading, measure: baked })
+      compiled = compileAgentChange(view, change, by.mint, by.placement, by.starts, { ...stepReading, measure: baked })
     }
     if ("refused" in compiled) return { ...compiled, at }
     const next = applyStep(view, {
@@ -120,7 +122,7 @@ export function agentEditSession(doom: Doom, by: EditBy): AgentSession {
         form: "One to one hundred changes.",
       }
     const all = [...writes]
-    const named = nameFromTitleWrites(doom, all, view)
+    const named = nameFromTitleWrites(doom, all, by.starts, view)
     all.push(...named)
     const changing = changingWrites(doom, all)
     const edit: Edit = {

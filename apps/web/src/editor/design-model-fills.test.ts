@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest"
 import type { PanelControl } from "@/design/panel"
 import { pictureCopy } from "@/copy/picture-copy"
 import { nodeModel } from "./design-model"
+import { testTheme } from "@airdesign/doom/testing"
 
 const photo = doom.doomFromTree({
-  theme: doom.defaultTheme,
+  theme: testTheme,
   slides: [
     {
       children: [
@@ -26,7 +27,7 @@ const photo = doom.doomFromTree({
 const model = nodeModel({
   view: photo.doom,
   id: photo.ids.photo!,
-  theme: doom.defaultTheme,
+  theme: testTheme,
   slides: photo.slides,
 })
 

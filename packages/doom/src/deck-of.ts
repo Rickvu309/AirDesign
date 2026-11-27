@@ -1,4 +1,3 @@
-import { defaultTheme } from "./theme.js"
 import { childrenOf, deckOf as deckNodeOf } from "./doom-walk.js"
 import type { NodeId } from "./ids.js"
 import type { Doom } from "./doom.js"
@@ -12,13 +11,13 @@ export type DeckLook = {
 
 export function deckOf(doom: Doom): DeckLook {
   for (const node of doom.nodes.values())
-    if (node.type === "deck")
+    if (node.type === "deck" && node.theme !== undefined && node.size !== undefined)
       return {
-        theme: node.theme ?? defaultTheme,
-        size: node.size ?? { w: 1920, h: 1080 },
+        theme: node.theme,
+        size: node.size,
         ...(node.language === undefined ? {} : { language: node.language }),
       }
-  return { theme: defaultTheme, size: { w: 1920, h: 1080 } }
+  throw new Error("no deck with a theme and a size")
 }
 
 export function deckName(doom: Doom): string {

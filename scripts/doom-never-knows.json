@@ -26,16 +26,11 @@
   "agent-slide-fields.ts": 13,
   "agent-slide-look.ts": 7,
   "agent-slide.ts": 9,
-  "deck-name-from-title.ts": 1,
-  "fallback-theme.json": 1,
   "geometry.ts": 1,
   "index.ts": 9,
   "language.ts": 2,
   "link.ts": 1,
   "move-to-slide.ts": 5,
   "painted-face.ts": 1,
-  "placeholder-title.ts": 1,
-  "read-kit.ts": 19,
-  "slide-placeholders.ts": 11,
-  "slide-starts.ts": 12
+  "read-kit.ts": 19
 }

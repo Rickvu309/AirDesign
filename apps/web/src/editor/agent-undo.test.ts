@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import { airaChat, type AiraChat } from "@/aira/aira-loop"
 import { undoExchange } from "@/aira/aira-undo"
 import { undoAgentRun } from "./agent-undo"
+import { testTheme } from "@airdesign/doom/testing"
 
 const deck = "deck"
 const done: AiraChat = {
@@ -11,7 +12,7 @@ const done: AiraChat = {
 }
 const saved = Promise.resolve()
 const grown = doom.doomFromTree({
-  theme: doom.defaultTheme,
+  theme: testTheme,
   slides: [
     {
       children: [

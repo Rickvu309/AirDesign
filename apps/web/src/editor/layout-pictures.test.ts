@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { defaultTheme, measureWith, slideStarts, type Resolved, type Theme } from "@airdesign/doom"
+import { measureWith, slideStarts, type Resolved, type Theme } from "@airdesign/doom"
 import { layoutPictures, readLayoutPictures, warmLayoutPictures, type LayoutPicture } from "@/editor/layout-pictures"
+import { testTheme } from "@airdesign/doom/testing"
 
 const measure = measureWith({})
 const wide = { w: 1920, h: 1080 }
@@ -8,8 +9,8 @@ const color = (seed: number): `#${string}` => `#${seed.toString(16).padStart(6, 
 const roseGround = color(0x111827)
 const roseText = color(0xf8fafc)
 const rose: Theme = {
-  ...defaultTheme,
-  colors: { ...defaultTheme.colors, background: roseGround, text: roseText },
+  ...testTheme,
+  colors: { ...testTheme.colors, background: roseGround, text: roseText },
 }
 
 function solids(picture: LayoutPicture): string[] {
@@ -34,26 +35,26 @@ function widest(picture: LayoutPicture): number {
 
 describe("layout pictures", () => {
   it("paints each listed layout from the deck theme, size and slide background, and reuses that picture", async () => {
-    const plain = layoutPictures(defaultTheme, wide, undefined, measure)
+    const plain = layoutPictures(testTheme, wide, undefined, measure)
     const themed = layoutPictures(rose, wide, undefined, measure)
     expect(Object.keys(plain)).toEqual([...slideStarts])
-    expect(plain.blank.background).toEqual([{ kind: "solid", color: defaultTheme.colors.background, opacity: 1 }])
+    expect(plain.blank.background).toEqual([{ kind: "solid", color: testTheme.colors.background, opacity: 1 }])
     expect(themed.blank.background).toEqual([{ kind: "solid", color: roseGround, opacity: 1 }])
-    expect(solids(plain.title)).toContain(defaultTheme.colors.text)
+    expect(solids(plain.title)).toContain(testTheme.colors.text)
     expect(solids(themed.title)).toContain(roseText)
-    expect(solids(themed.title)).not.toContain(defaultTheme.colors.text)
+    expect(solids(themed.title)).not.toContain(testTheme.colors.text)
     expect(plain.title.size).toEqual(wide)
     expect(widest(plain.title)).toBe(1600)
-    const narrow = layoutPictures(defaultTheme, { w: 1280, h: 720 }, undefined, measure)
+    const narrow = layoutPictures(testTheme, { w: 1280, h: 720 }, undefined, measure)
     expect(narrow.title.size).toEqual({ w: 1280, h: 720 })
     expect(widest(narrow.title)).toBe(1066)
     const fills = [{ kind: "solid" as const, color: roseGround }]
-    const filled = layoutPictures(defaultTheme, wide, fills, measure)
+    const filled = layoutPictures(testTheme, wide, fills, measure)
     expect(filled.blank.background).toEqual([{ kind: "solid", color: roseGround, opacity: 1 }])
-    expect(layoutPictures(defaultTheme, { w: wide.w, h: wide.h }, undefined, measure)).toBe(plain)
+    expect(layoutPictures(testTheme, { w: wide.w, h: wide.h }, undefined, measure)).toBe(plain)
     let measured = 0
     await expect(
-      warmLayoutPictures(defaultTheme, wide, undefined, () => {
+      warmLayoutPictures(testTheme, wide, undefined, () => {
         measured += 1
         return Promise.resolve(measure)
       }),

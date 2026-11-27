@@ -2,20 +2,20 @@ import { describe, expect, it } from "vitest"
 import { contentAreaOf } from "./agent-place.js"
 import { minter } from "./testing/agent-fixtures.js"
 import { doomFromTree } from "./doom-tree.js"
-import { defaultTheme } from "./theme.js"
 import { childrenOf, propOf } from "./doom-walk.js"
-import { placeholderTitle } from "./placeholder-title.js"
 import { type SlideStart, slideStartWrites, slideStarts } from "./slide-starts.js"
 import { titleOnlyWrites } from "./slide-placeholders.js"
 import { applyEdit, isRefusal, rev, type Doom, type NodeId } from "./index.js"
 import { placement } from "./testing/placement-rules.js"
+import { testTheme } from "./testing/theme.js"
+import { starts } from "./testing/start-rules.js"
 
 const person = { kind: "person", id: "test" } as const
 
 function started(start: SlideStart): { doom: Doom; slide: NodeId } {
-  const grown = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
+  const grown = doomFromTree({ theme: testTheme, slides: [{ children: [] }] })
   const slide = grown.slides[0]!
-  const writes = slideStartWrites(grown.doom, slide, minter("s"), start, placement)
+  const writes = slideStartWrites(grown.doom, slide, minter("s"), start, placement, starts)
   const next = applyEdit(grown.doom, {
     once: "start",
     author: person,
@@ -42,7 +42,7 @@ describe("a designed starting slide", () => {
       const top = childrenOf(doom, slide)
       const titles = top.filter((node) => propOf(node, "role") === "title")
       expect(titles).toHaveLength(1)
-      expect(propOf(titles[0]!, "text")).toMatchObject({ chars: placeholderTitle, style: "title" })
+      expect(propOf(titles[0]!, "text")).toMatchObject({ chars: starts.title.chars, style: "title" })
       expect(propOf(titles[0]!, "box")).toMatchObject({ x: 160, y: 80, w: 1600 })
       const boxes = top.map((node) => propOf(node, "box")!)
       for (const box of boxes) {
@@ -92,11 +92,11 @@ describe("a designed starting slide", () => {
 describe("the content area of a slide", () => {
   it("starts at the title's left edge, under it, as wide as the title", () => {
     const { doom, slide } = started("blank")
-    const grown = doomFromTree({ theme: defaultTheme, slides: [{ children: [] }] })
+    const grown = doomFromTree({ theme: testTheme, slides: [{ children: [] }] })
     const titled = applyEdit(grown.doom, {
       once: "title",
       author: person,
-      writes: titleOnlyWrites(grown.slides[0]!, minter("t"), { w: 1920, h: 1080 }),
+      writes: titleOnlyWrites(grown.slides[0]!, minter("t"), { w: 1920, h: 1080 }, starts),
       rev: rev(grown.doom.rev + 1),
     })
     if (isRefusal(titled)) throw new Error(JSON.stringify(titled))

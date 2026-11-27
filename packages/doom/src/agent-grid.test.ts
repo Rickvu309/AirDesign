@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest"
 import type { AgentChange } from "./agent-change.js"
 import { bottomLimitOf, gapFor } from "./agent-place.js"
 import { agentDeck, build, lastChild, minter } from "./testing/agent-fixtures.js"
-import { defaultTheme } from "./theme.js"
 import { childrenOf, propOf, slidesOf } from "./doom-walk.js"
 import { ladderOf } from "./agent-block.js"
 import { compileAgentChange } from "./agent-compile.js"
@@ -11,6 +10,8 @@ import { measureWith } from "./measure.js"
 import { widestWord } from "./text-estimate.js"
 import { ids, land } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
+import { testTheme } from "./testing/theme.js"
 
 const slide = ids.slide
 const add = (value: Record<string, unknown>) => ({ op: "add", slide, ...value }) as AgentChange
@@ -24,7 +25,7 @@ describe("a grid of words fills the band with its text size", () => {
   }
   const styleOf = (doom: Doom, root: NodeId) =>
     new Set(childrenOf(doom, root).flatMap((cell) => propOf(cell, "text")?.style ?? []))
-  const sizeOfStyle = (name: string) => ladderOf(defaultTheme).indexOf(name as never)
+  const sizeOfStyle = (name: string) => ladderOf(testTheme).indexOf(name as never)
 
   it("sets header and body in one style, the largest the heading allows when the rows are few", () => {
     const { doom, root } = gridOf(4)
@@ -43,7 +44,7 @@ describe("a grid of words fills the band with its text size", () => {
 
   const boldOf = (doom: Doom, cell: NodeId) => {
     const text = propOf(doom.nodes.get(cell)!, "text")!
-    const style = defaultTheme.textStyles[text.style]
+    const style = testTheme.textStyles[text.style]
     return text.spans.length === 0 ? style.weight >= 600 : text.spans.every((span) => span.bold ?? style.weight >= 600)
   }
   const weights = (count: number) => {
@@ -74,7 +75,7 @@ describe("a grid of words fills the band with its text size", () => {
 })
 
 describe("a grid sets its values in the body face and keeps every word whole", () => {
-  const namedWeight = { ...defaultTheme, fonts: { heading: "Inter SemiBold", body: "Inter" } }
+  const namedWeight = { ...testTheme, fonts: { heading: "Inter SemiBold", body: "Inter" } }
   const rows = [
     ["", "Q1", "Q2"],
     ["Revenue", "3.0", "3.4"],
@@ -129,7 +130,7 @@ describe("a grid sets its values in the body face and keeps every word whole", (
         (text) =>
           widestWord(
             [text.chars],
-            defaultTheme,
+            testTheme,
             text.style,
             text.spans.some((span) => span.bold),
           ) >
@@ -150,7 +151,7 @@ describe("a grid sets its values in the body face and keeps every word whole", (
       ["", "Pneumonoultramicroscopicsilicovolcanoconiosis", "B", "C", "D"],
       ["A", "1", "2", "3", "4"],
     ]
-    const refusal = compileAgentChange(agentDeck(), add({ kind: "frame", rows }), minter(), placement)
+    const refusal = compileAgentChange(agentDeck(), add({ kind: "frame", rows }), minter(), placement, starts)
     expect(refusal).toEqual({
       refused: "limit",
       field: "rows",
@@ -169,7 +170,7 @@ describe("a grid sets its values in the body face and keeps every word whole", (
   it("refuses a grid too tall for its box, naming the height it needs and the height it has", () => {
     const rows = Array.from({ length: 30 }, (_, at) => [`Row ${String(at + 1)}`, String(at)])
     const box = { x: 120, y: 200, w: 1200, h: 400 }
-    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows, box }), minter(), placement)).toEqual({
+    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows, box }), minter(), placement, starts)).toEqual({
       refused: "limit",
       field: "rows",
       fault: "needs",
@@ -377,19 +378,24 @@ describe("a grid of words", () => {
         add({ kind: "frame", box: { x: 0, y: 0, w: 500, h: 200 }, rows: long }),
         minter(),
         placement,
+        starts,
       ),
     ).toMatchObject({ refused: "limit", field: "rows" })
     expect(
-      compileAgentChange(agentDeck(), add({ kind: "frame", rows, layout: "row" }), minter(), placement),
+      compileAgentChange(agentDeck(), add({ kind: "frame", rows, layout: "row" }), minter(), placement, starts),
     ).toMatchObject({
       refused: "shape",
       field: "layout",
     })
-    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows: [] }), minter(), placement)).toMatchObject({
+    expect(
+      compileAgentChange(agentDeck(), add({ kind: "frame", rows: [] }), minter(), placement, starts),
+    ).toMatchObject({
       refused: "shape",
       field: "rows",
     })
-    expect(compileAgentChange(agentDeck(), add({ kind: "frame", rows: [[]] }), minter(), placement)).toMatchObject({
+    expect(
+      compileAgentChange(agentDeck(), add({ kind: "frame", rows: [[]] }), minter(), placement, starts),
+    ).toMatchObject({
       refused: "shape",
       field: "rows",
     })

@@ -2,6 +2,7 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { roundedRectPath } from "./node-outline.js"
 import { masksOf, silhouetteIn } from "./silhouette.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 type Matrix = doom.Matrix
 const identity = doom.identityMatrix
@@ -19,7 +20,7 @@ const spot = (x: number, y: number, w: number, h: number, extra: object = {}) =>
 const paint = [{ kind: "solid", color: { var: "accent1" } }] as const
 
 function resolved(children: readonly doom.TreeNode[]) {
-  const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children }] })
+  const grown = doom.doomFromTree({ theme: testTheme, slides: [{ children }] })
   const nodes = doom.resolveSlide(grown.doom, grown.slides[0]!, doom.measureWith({}))
   return (name: string) => nodes.find((node) => node.id === grown.ids[name])!
 }

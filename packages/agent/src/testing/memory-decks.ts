@@ -1,5 +1,6 @@
 import { readDeckId, type DeckId, type DoomRefusal } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
+import { starts } from "@airdesign/doom/testing"
 
 import type { DeckHost, Landed } from "../deck-host.js"
 import { shortHash } from "../once-ids.js"
@@ -70,7 +71,8 @@ export function memoryDecks(start: () => doom.Doom, initial: ReadonlyMap<string,
       ok: true,
       decks: [...decks].map(([deck, fold]) => ({ deck, name: doom.deckName(fold), rev: fold.rev })),
     }),
-    create: async (name, theme, once) => {
+    create: async (asked, theme, once) => {
+      const name = asked ?? starts.deckName
       const read = readDeckId(`d${shortHash(once)}`)
       if (!read.ok) return refusal("deck")
       if (!decks.has(read.deck)) {

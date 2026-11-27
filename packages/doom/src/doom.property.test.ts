@@ -32,6 +32,7 @@ import { foldToJson } from "./fold-json.js"
 import { agent, box, create, ids, once, person, revOf, sampleDeck, textOf, tryLand } from "./sample-deck.js"
 import { valuesOf } from "./testing/values-of.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts as startRules } from "./testing/start-rules.js"
 
 type Pick = {
   readonly node: NodeId
@@ -432,6 +433,7 @@ function landsAgentEdits(start: Doom, batches: readonly (readonly unknown[])[]):
     if (changes.length === 0 || changes.length < read.length) continue
     const result = compileAgentEdit(doom, changes, {
       placement,
+      starts: startRules,
       author: agent(runName),
       once: `p-${index}`,
       mint,

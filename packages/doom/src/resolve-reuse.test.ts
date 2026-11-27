@@ -1,15 +1,7 @@
 import { expect, it } from "vitest"
-import {
-  defaultTheme,
-  measureWith,
-  resolveSlide,
-  doomFromTree,
-  viewOf,
-  type Resolved,
-  type Doom,
-  type TreeNode,
-} from "./index.js"
+import { measureWith, resolveSlide, doomFromTree, viewOf, type Resolved, type Doom, type TreeNode } from "./index.js"
 import type { Text } from "./text.js"
+import { testTheme } from "./testing/theme.js"
 
 const spot = (x: number, y: number, w = 300, h = 100) => ({ x, y, w, h, rotation: 0, flipH: false, flipV: false })
 const words = (chars: string) =>
@@ -22,7 +14,7 @@ const label = (name: string, x: number, chars: string): TreeNode => ({
 
 function board() {
   const grown = doomFromTree({
-    theme: defaultTheme,
+    theme: testTheme,
     slides: [
       {
         children: [
@@ -81,7 +73,7 @@ it("resolves again when the measure changes, and when the theme changes", () => 
     {
       once: "theme",
       author: { kind: "person", id: "t" },
-      writes: [{ node: deck.id, prop: "theme.colors.text", value: defaultTheme.colors.accent2 }],
+      writes: [{ node: deck.id, prop: "theme.colors.text", value: testTheme.colors.accent2 }],
     },
   ])
   const measure = measureWith({})
@@ -96,6 +88,6 @@ it("measures the same text at the same width once", () => {
   const text = [...doom.nodes.values()].flatMap((node) =>
     "text" in node && node.text !== undefined ? [node.text] : [],
   )[0]!
-  expect(measure(text, defaultTheme, 300)).toBe(measure(text, defaultTheme, 300))
-  expect(measure(text, defaultTheme, 300)).not.toBe(measure(text, defaultTheme, 310))
+  expect(measure(text, testTheme, 300)).toBe(measure(text, testTheme, 300))
+  expect(measure(text, testTheme, 300)).not.toBe(measure(text, testTheme, 310))
 })

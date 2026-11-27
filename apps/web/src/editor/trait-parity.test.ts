@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { compileAgentChange } from "@airdesign/doom/testing"
+import { compileAgentChange, starts, testTheme } from "@airdesign/doom/testing"
 import type { Desc } from "../design/control-desc"
 import { describe, expect, it } from "vitest"
 import { optionCopy } from "../copy/option-copy"
@@ -11,7 +11,7 @@ import { placement } from "@airdesign/doom/testing"
 
 type Problem = { readonly control: string; readonly missing: "label" | "copy" | "write" | "paint" | "undo" | "agent" }
 
-const theme = doom.defaultTheme
+const theme = testTheme
 const words: doom.Text = {
   chars: "Hello",
   spans: [],
@@ -173,6 +173,7 @@ function agentProps(name: string): ReadonlySet<string> {
       { op: "set", target: id(name), ...look } as doom.AgentChange,
       mint,
       placement,
+      starts,
     )
     if (!doom.isRefusal(writes)) for (const write of writes) if (write.node === id(name)) found.add(write.prop)
   }

@@ -6,6 +6,7 @@ import { SlidePaint } from "./doom-slide.js"
 import { NodeArt } from "./node-art.js"
 import { roundedRectPath } from "./node-outline.js"
 import { swatches } from "./testing/swatches-art.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const spot = (x: number, y: number, w: number, h: number, extra: object = {}) => ({
   x,
@@ -22,7 +23,7 @@ const shape = (name: string, props: object): doom.TreeNode => ({ type: "shape", 
 
 function painted(children: readonly doom.TreeNode[]) {
   const grown = doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         children: [
@@ -48,7 +49,7 @@ function painted(children: readonly doom.TreeNode[]) {
 }
 
 function slide(children: readonly doom.TreeNode[]) {
-  const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children }] })
+  const grown = doom.doomFromTree({ theme: testTheme, slides: [{ children }] })
   const resolved = doom.resolveSlide(grown.doom, grown.slides[0]!, doom.measureWith({}))
   const html = renderToStaticMarkup(
     createElement(SlidePaint, {

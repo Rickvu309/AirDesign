@@ -6,7 +6,6 @@ import { more, richDeck } from "./testing/rich-deck.js"
 import {
   applyEdit,
   childrenOf,
-  defaultTheme,
   doomFromTree,
   emptyDoom,
   isRefusal,
@@ -21,11 +20,13 @@ import {
 import { agent, create, ids, land, once, theme } from "./sample-deck.js"
 import { parentOf, propOf, slidesOf } from "./doom-walk.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
+import { testTheme } from "./testing/theme.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
 const order = (doom: Doom) => slidesOf(doom).map((slide) => slide.id)
 const refusal = (doom: Doom, value: Record<string, unknown>) =>
-  compileAgentChange(doom, change(value), minter(), placement)
+  compileAgentChange(doom, change(value), minter(), placement, starts)
 
 describe("slide add", () => {
   it("adds a slide in the last group that has a slide, leaving empty groups empty", () => {
@@ -37,7 +38,7 @@ describe("slide add", () => {
   })
 
   it("adds the first slide on the deck's only empty row", () => {
-    const bare = doomFromTree({ theme: defaultTheme, slides: [] }).doom
+    const bare = doomFromTree({ theme: testTheme, slides: [] }).doom
     const row = [...bare.nodes.values()].find((node) => node.type === "slideRow")!
     const added = build(started(bare), change({ op: "slide", add: {} }))
     expect(parentOf(slidesOf(added)[0])?.id).toBe(row.id)
@@ -165,7 +166,7 @@ function groups(doom: Doom): NodeId[][] {
 
 function deckWithEmptyGroups() {
   const grown = doomFromTree({
-    theme: defaultTheme,
+    theme: testTheme,
     slides: ["One", "Two", "Three", "Four"].map((name) => ({ name, children: [] })),
   })
   const slides = grown.slides

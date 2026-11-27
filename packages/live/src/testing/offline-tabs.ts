@@ -4,6 +4,7 @@ import { expect } from "vitest"
 import { createDoomDeck, openDoomDeck } from "../doom-deck.js"
 import { type DoomRemote, memoryDoomRemote } from "../doom-remote.js"
 import { memoryStorage } from "../doom-storage.js"
+import { starts } from "@airdesign/doom/testing"
 
 export const id = doom.nodeId
 export const [deckNode, row, slide, title, card, frame] = [
@@ -50,7 +51,7 @@ export const titled: doom.Edit = {
   writes: [
     ...start.writes,
     { node: title, prop: "role", value: "title" },
-    { node: deckNode, prop: "name", value: doom.blankDeckName },
+    { node: deckNode, prop: "name", value: starts.deckName },
     { node: deckNode, prop: "nameFollows", value: true },
   ],
 }

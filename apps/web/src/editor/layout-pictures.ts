@@ -1,6 +1,6 @@
 import * as doom from "@airdesign/doom"
 import type { ListedStart } from "@/editing/slide-layout"
-import { placementRules } from "@airdesign/taste"
+import { placementRules, startRules } from "@airdesign/taste"
 
 type Size = { readonly w: number; readonly h: number }
 type Fills = doom.Props["fills"] | undefined
@@ -75,7 +75,7 @@ function planted(
   const landed = doom.applyEdit(view, {
     once: `layout-${part}`,
     author: person,
-    writes: doom.slideStartWrites(view, slide, mint, part, placementRules, measure),
+    writes: doom.slideStartWrites(view, slide, mint, part, placementRules, startRules, measure),
     rev: doom.rev(view.rev + 1),
   })
   return doom.isRefusal(landed) ? view : landed

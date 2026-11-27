@@ -8,6 +8,7 @@ import { propOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { ids, land, revOf, sampleDeck, textOf } from "./sample-deck.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
 
 const set = (target: string, look: Record<string, unknown>): AgentChange =>
   ({ op: "set", target, ...look }) as AgentChange
@@ -95,7 +96,7 @@ describe("raw text values: an agent sets what the panel's text controls set", ()
 
   it("refuses text values on a frame, and justify as where a frame places its children", () => {
     for (const look of [{ size: 40 }, { font: "Inter" }, { align: "justify" }])
-      expect(compileAgentChange(agentDeck(), set(ids.card, look), minter(), placement)).toMatchObject({
+      expect(compileAgentChange(agentDeck(), set(ids.card, look), minter(), placement, starts)).toMatchObject({
         refused: "shape",
       })
   })

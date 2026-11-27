@@ -1,5 +1,5 @@
 import * as doom from "@airdesign/doom"
-import { styleOf } from "@airdesign/taste"
+import { startRules, styleOf } from "@airdesign/taste"
 
 import { answered, refused, type Answer } from "./answer.js"
 import { foundLines, readBytes } from "./budget.js"
@@ -12,7 +12,7 @@ export function themeValues({ colors, fonts, textStyles }: doom.Theme) {
 }
 
 const lead = (opened: Opened, count: number) =>
-  `Deck ${opened.deck} "${doom.deckName(opened.fold)}"${doom.deckNameFollows(opened.fold) ? " (nameFollows: named by slide 1's title)" : ""} at rev ${String(opened.rev)}, ${String(count)} slides. Change it with airdesign_execute.`
+  `Deck ${opened.deck} "${doom.deckName(opened.fold)}"${doom.deckNameFollows(opened.fold, startRules) ? " (nameFollows: named by slide 1's title)" : ""} at rev ${String(opened.rev)}, ${String(count)} slides. Change it with airdesign_execute.`
 
 function foundAnswer(opened: Opened, find: string, detail: doom.NodeId | undefined): Answer {
   const slides = doom.slidesOf(opened.fold).map((slide) => slide.id)

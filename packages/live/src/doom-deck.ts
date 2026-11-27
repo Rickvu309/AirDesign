@@ -1,5 +1,6 @@
 import { readDeckId, runUndoStays, type DeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
+import { startRules } from "@airdesign/taste"
 import {
   acceptedWithoutRow,
   appliedOn,
@@ -395,7 +396,7 @@ function connected(
     if (read !== undefined && read !== now) return { ok: false, refused: { refused: "stale" } }
     const given = doom.changingWrites(now, asked)
     if (given.length === 0) return { ok: true, unchanged: true }
-    const derived = doom.nameFromTitleWrites(now, given)
+    const derived = doom.nameFromTitleWrites(now, given, startRules)
     const fromTitle = read === undefined && derived.some((write) => write.prop === "name")
     const own = fromTitle ? given : [...given, ...derived]
     const named = fromTitle ? derived : []

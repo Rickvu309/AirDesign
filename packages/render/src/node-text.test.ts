@@ -3,6 +3,7 @@ import { act, createElement } from "react"
 import { createRoot } from "react-dom/client"
 import { expect, it } from "vitest"
 import { TextLines } from "./node-text.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const run = (figures?: "tabular"): doom.ResolvedRun => ({
   text: "11.1",
@@ -12,7 +13,7 @@ const run = (figures?: "tabular"): doom.ResolvedRun => ({
   italic: false,
   underline: false,
   strike: false,
-  color: doom.defaultTheme.colors.text,
+  color: testTheme.colors.text,
   tracking: 0,
   ...(figures === undefined ? {} : { figures }),
 })

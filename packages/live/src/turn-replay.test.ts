@@ -19,6 +19,7 @@ import {
   retyped,
   offline,
 } from "./testing/offline-tabs.js"
+import { starts } from "@airdesign/doom/testing"
 
 describe("an undo made offline over a layer another tab deletes before it reconnects", () => {
   it("lands the rest of the undo, as it would online, and keeps both steps", async () => {
@@ -68,10 +69,10 @@ describe("an undo made offline over a layer another tab deletes before it reconn
 
     it("lands the card and leaves the name the other tab wrote, instead of setting the whole undo aside", async () => {
       const mine = await offline([nudge(10), [...nudge(20), ...typed]], 1, [deleted], titled)
-      expect(nameOf(mine.server())).toBe(doom.blankDeckName)
+      expect(nameOf(mine.server())).toBe(starts.deckName)
       expect(mine.notices()).toEqual([])
       expect([xOf(mine.view()), xOf(mine.server())]).toEqual([10, 10])
-      expect(nameOf(mine.view())).toBe(doom.blankDeckName)
+      expect(nameOf(mine.view())).toBe(starts.deckName)
       expect(mine.undo().ok).toBe(true)
       expect(await mine.sync()).toEqual({ ok: true })
       expect(xOf(mine.server())).toBe(0)
@@ -101,7 +102,7 @@ describe("an undo made offline over a layer another tab deletes before it reconn
       expect(mine.undo().ok).toBe(true)
       expect(await mine.sync()).toEqual({ ok: true })
       expect(mine.notices()).toEqual([])
-      expect([xOf(mine.server()), nameOf(mine.server())]).toEqual([10, doom.blankDeckName])
+      expect([xOf(mine.server()), nameOf(mine.server())]).toEqual([10, starts.deckName])
     })
 
     const textOf = (view: doom.Doom) => (view.nodes.get(title) as { text: doom.Text }).text.chars
@@ -247,7 +248,7 @@ describe("an undo made offline over a layer another tab deletes before it reconn
         const mine = await ranAndUndone(deleted)
         expect(mine.notices()).toEqual([])
         expect([xOf(mine.view()), xOf(mine.server())]).toEqual([0, 0])
-        expect(nameOf(mine.server())).toBe(doom.blankDeckName)
+        expect(nameOf(mine.server())).toBe(starts.deckName)
       })
     })
   })

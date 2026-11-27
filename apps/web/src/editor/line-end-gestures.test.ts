@@ -6,6 +6,7 @@ import { ungroupWrites } from "./group-writes"
 import { geometryOf } from "./slide-geometry"
 import { deleteSlideWrites } from "./slide-writes"
 import { draftWrites, leaveEmptyWrites, leaveWrites } from "./text-leave"
+import { testTheme } from "@airdesign/doom/testing"
 
 const id = doom.nodeId
 const [deckId, row, first, second, text, group, child, holder, toText, toGroup, toOther, other] = [
@@ -72,6 +73,8 @@ const start: doom.Edit = {
   author: { kind: "person", id: "start" },
   writes: [
     { node: deckId, prop: "type", value: "deck" },
+    { node: deckId, prop: "theme", value: testTheme },
+    { node: deckId, prop: "size", value: { w: 1920, h: 1080 } },
     ...joined(row, "slideRow", deckId),
     ...joined(first, "slide", row),
     ...joined(second, "slide", row),
@@ -94,6 +97,8 @@ const drifting: doom.Edit = {
   author: { kind: "person", id: "start" },
   writes: [
     { node: deckId, prop: "type", value: "deck" },
+    { node: deckId, prop: "theme", value: testTheme },
+    { node: deckId, prop: "size", value: { w: 1920, h: 1080 } },
     ...joined(row, "slideRow", deckId),
     ...joined(first, "slide", row),
     ...joined(group, "frame", first, [

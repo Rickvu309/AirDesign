@@ -1,6 +1,6 @@
 import type { DeckId } from "@airdesign/catalog"
 import * as doom from "@airdesign/doom"
-import { foldToJson } from "@airdesign/doom/testing"
+import { foldToJson, testTheme } from "@airdesign/doom/testing"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { installIndexedDb, traffic } from "./browser-fixtures.js"
 import { deleteDatabase, finished, scoped, storeName, transaction } from "./device.js"
@@ -15,7 +15,7 @@ const box = (x: number) => ({ x, y: 20, w: 300, h: 100, rotation: 0, flipH: fals
 
 function boardOf(slides: number) {
   return doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: Array.from({ length: slides }, (_, slide) => ({
       children: Array.from({ length: 10 }, (_, shape) => ({
         type: "shape" as const,

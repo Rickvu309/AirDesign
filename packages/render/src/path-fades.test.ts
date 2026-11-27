@@ -3,6 +3,7 @@ import { createElement, Fragment } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { paintPathFades } from "./path-fades.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 function paint(alphas: readonly number[], paths = ["M0 0L1 0L1 1Z", "M0 0L1 1L0 1Z"]) {
   const children = alphas.map((opacity, i): doom.TreeNode => ({
@@ -15,7 +16,7 @@ function paint(alphas: readonly number[], paths = ["M0 0L1 0L1 1Z", "M0 0L1 1L0 
       fills: [{ kind: "solid", color: { var: "accent1" }, opacity: 1 }],
     },
   }))
-  const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children }] })
+  const grown = doom.doomFromTree({ theme: testTheme, slides: [{ children }] })
   const nodes = doom.resolveSlide(grown.doom, grown.slides[0]!, doom.measureWith({}))
   return renderToStaticMarkup(
     createElement(

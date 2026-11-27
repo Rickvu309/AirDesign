@@ -1,7 +1,6 @@
-import { blankDeckName } from "@airdesign/catalog"
 import { orderKeyBetween } from "@airdesign/doom"
 import * as doom from "@airdesign/doom"
-import { newDeckTheme } from "@airdesign/taste"
+import { newDeckTheme, startRules } from "@airdesign/taste"
 
 export const startIds = {
   deck: doom.nodeId("s:1"),
@@ -15,9 +14,9 @@ export const startAuthor: doom.Author = { kind: "person", id: "airdesign" }
 
 const slide = { w: 1920, h: 1080 } as const
 
-export type DeckStart = { readonly name: string; readonly theme?: doom.Theme }
+export type DeckStart = { readonly name?: string; readonly theme?: doom.Theme }
 
-export function startEdit({ name, theme = newDeckTheme }: DeckStart = { name: blankDeckName }): doom.Edit {
+export function startEdit({ name = startRules.deckName, theme = newDeckTheme }: DeckStart = {}): doom.Edit {
   const first = orderKeyBetween(null, null)
   const create = (node: doom.NodeId, type: string, parent: doom.NodeId | undefined) => [
     { node, prop: "type" as const, value: type },
@@ -32,13 +31,13 @@ export function startEdit({ name, theme = newDeckTheme }: DeckStart = { name: bl
     writes: [
       ...create(deck, "deck", undefined),
       { node: deck, prop: "name", value: name },
-      { node: deck, prop: "nameFollows", value: name === blankDeckName },
+      { node: deck, prop: "nameFollows", value: name === startRules.deckName },
       { node: deck, prop: "theme", value: theme },
       { node: deck, prop: "size", value: slide },
       ...create(row, "slideRow", deck),
       ...create(first_, "slide", row),
       { node: first_, prop: "name", value: "Title" },
-      ...doom.titleSlideWrites(first_, minter, slide),
+      ...doom.titleSlideWrites(first_, minter, slide, startRules),
     ],
   }
 }

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import { createDoomDeck, openDoomDeck, type DoomDeck } from "./doom-deck.js"
 import { memoryDoomRemote } from "./doom-remote.js"
 import { memoryStorage } from "./doom-storage.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const id = doom.nodeId
 const [deckNode, row, slide, target, holder, line] = ["t:1", "t:2", "t:3", "t:4", "t:5", "t:6"].map(id) as [
@@ -37,6 +38,8 @@ const seed = (targetToo: boolean): doom.Edit => ({
   author: { kind: "person", id: "start" },
   writes: [
     { node: deckNode, prop: "type", value: "deck" },
+    { node: deckNode, prop: "theme", value: testTheme },
+    { node: deckNode, prop: "size", value: { w: 1920, h: 1080 } },
     { node: row, prop: "type", value: "slideRow" },
     { node: row, prop: "parent", value: at(deckNode) },
     { node: slide, prop: "type", value: "slide" },

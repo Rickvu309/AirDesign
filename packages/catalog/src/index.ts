@@ -18,7 +18,7 @@ export {
 } from "./aira-turn.js"
 export { catalog, projectTools, toolInputSchema, type AgentOp } from "./catalog.js"
 export { readAccountName, accountNameLimit } from "./account-name.js"
-export { blankDeckName, readCreateDeck } from "./create-wire.js"
+export { readCreateDeck } from "./create-wire.js"
 export { readDeckName } from "./deck-name.js"
 
 export { iconNames } from "./icon-names.js"

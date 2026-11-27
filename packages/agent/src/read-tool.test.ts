@@ -5,12 +5,13 @@ import { describe, expect, it } from "vitest"
 import { callTool, type Session } from "./index.js"
 import { readOf, scriptOf } from "./testing/change-script.js"
 import { memoryDecks } from "./testing/memory-decks.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 
 const titled = () =>
   doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         name: "Title",

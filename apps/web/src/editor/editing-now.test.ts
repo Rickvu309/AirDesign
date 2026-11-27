@@ -1,9 +1,10 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { editingNow, editingWindow, heardWrites, quietIn } from "./editing-now"
+import { testTheme } from "@airdesign/doom/testing"
 
 const grown = doom.doomFromTree({
-  theme: doom.defaultTheme,
+  theme: testTheme,
   slides: [{ children: [{ type: "shape", name: "Title" }] }],
 })
 const layer = grown.doom.children.get(grown.slides[0]!)![0]!

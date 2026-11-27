@@ -6,10 +6,11 @@ import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 
 import { createServer } from "./index.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 function started(): doom.Doom {
   return doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         name: "Title",

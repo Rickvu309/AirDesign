@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { readColor, resolveColor, sameColor, tinted } from "./color.js"
-import { defaultTheme } from "./theme.js"
 import type { Hex } from "./paint.js"
+import { testTheme } from "./testing/theme.js"
 
 const hex = (digits: string): Hex => `#${digits}`
 
@@ -36,7 +36,7 @@ describe("two colours that paint the same way", () => {
   it("keeps apart another theme colour, another tint and a hex that happens to look the same", () => {
     expect(sameColor({ var: "accent1" }, { var: "accent2" })).toBe(false)
     expect(sameColor({ var: "accent1", tint: 0.4 }, { var: "accent1", tint: -0.4 })).toBe(false)
-    expect(sameColor({ var: "accent1" }, resolveColor({ var: "accent1" }, defaultTheme))).toBe(false)
+    expect(sameColor({ var: "accent1" }, resolveColor({ var: "accent1" }, testTheme))).toBe(false)
   })
 })
 
@@ -44,6 +44,6 @@ describe("a tinted theme colour", () => {
   it("moves each channel towards white for a positive tint and towards black for a negative one", () => {
     expect(tinted(hex("4472c4"), 0.4)).toBe(hex("8faadc"))
     expect(tinted(hex("4472c4"), -0.25)).toBe(hex("335693"))
-    expect(resolveColor({ var: "accent1", tint: 0 }, defaultTheme)).toBe(defaultTheme.colors.accent1)
+    expect(resolveColor({ var: "accent1", tint: 0 }, testTheme)).toBe(testTheme.colors.accent1)
   })
 })

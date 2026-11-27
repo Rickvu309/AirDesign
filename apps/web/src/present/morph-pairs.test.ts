@@ -1,12 +1,13 @@
 import * as doom from "@airdesign/doom"
 import { expect, it } from "vitest"
 import { morphPairs } from "./morph-pairs"
+import { testTheme } from "@airdesign/doom/testing"
 
 const box = { box: { x: 0, y: 0, w: 10, h: 10, rotation: 0, flipH: false, flipV: false } }
 
 it("pairs layers that share a name, in order, and skips a layer with no name", () => {
   const grown = doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         children: [

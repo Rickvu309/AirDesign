@@ -7,11 +7,12 @@ import { ids, land } from "./sample-deck.js"
 import { childrenOf, parentOf, propOf } from "./doom-walk.js"
 import type { Doom } from "./doom.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
 
 const change = (value: Record<string, unknown>) => value as AgentChange
 const kids = (doom: Doom, id: string) => childrenOf(doom, id as never).map((node) => node.id)
 const refusal = (doom: Doom, value: Record<string, unknown>) =>
-  compileAgentChange(doom, change(value), minter(), placement)
+  compileAgentChange(doom, change(value), minter(), placement, starts)
 
 describe("move", () => {
   it("puts a node first, after a sibling, or last among its parent's children", () => {
@@ -132,9 +133,16 @@ describe("wrap and unwrap", () => {
 
   it("unwraps a laid-out frame by the boxes it was solved to", () => {
     const boxes = new Map([[ids.title, { x: 7, y: 8, w: 9, h: 10, rotation: 0, flipH: false, flipV: false }]])
-    const writes = compileAgentChange(richDeck(), change({ op: "unwrap", node: ids.card }), minter(), placement, {
-      boxes,
-    })
+    const writes = compileAgentChange(
+      richDeck(),
+      change({ op: "unwrap", node: ids.card }),
+      minter(),
+      placement,
+      starts,
+      {
+        boxes,
+      },
+    )
     expect(writes).toContainEqual(
       expect.objectContaining({ node: ids.title, prop: "box", value: expect.objectContaining({ x: 107, y: 8 }) }),
     )

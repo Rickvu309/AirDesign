@@ -5,12 +5,13 @@ import { describe, expect, it, vi } from "vitest"
 import { callTool, type Session, type Answer } from "./index.js"
 import { scriptOf } from "./testing/change-script.js"
 import { memoryDecks, type MemoryDecks } from "./testing/memory-decks.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const names = Object.fromEntries(projectTools(catalog).map((tool) => [tool.op, tool.name])) as Record<string, string>
 
 function start(): doom.Doom {
   return doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       {
         name: "Title",
@@ -184,7 +185,7 @@ describe("design details an agent sets", () => {
       memoryDecks(
         () =>
           doom.doomFromTree({
-            theme: doom.defaultTheme,
+            theme: testTheme,
             slides: [
               {
                 children: [
@@ -245,7 +246,7 @@ describe("design details an agent sets", () => {
     })
     expect(strength.fields).toMatchObject({ ok: true })
     expect(doom.propOf(by.decks.decks.get(key)?.nodes.get(card), "effects")).toEqual(
-      doom.defaultTheme.effectStyles.glow.map((effect) => ({ ...effect, opacity: 0.4 })),
+      testTheme.effectStyles.glow.map((effect) => ({ ...effect, opacity: 0.4 })),
     )
 
     const undone = await by.call("undo_run", { deck, runId: edited.fields.runId })

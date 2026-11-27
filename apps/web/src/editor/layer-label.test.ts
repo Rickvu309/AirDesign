@@ -1,9 +1,10 @@
 import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { layerLabel } from "./layer-label"
+import { testTheme } from "@airdesign/doom/testing"
 
 const grown = doom.doomFromTree({
-  theme: doom.defaultTheme,
+  theme: testTheme,
   slides: [
     {
       children: [

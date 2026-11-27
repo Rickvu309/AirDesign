@@ -1,11 +1,12 @@
 import * as doom from "@airdesign/doom"
+import { testTheme } from "@airdesign/doom/testing"
 
 const box = (x: number, y: number, w: number, h: number) => ({ x, y, w, h, rotation: 0, flipH: false, flipV: false })
 const words = (markdown: string, style: doom.TextStyleName = "body") => doom.textFromMarkdown(markdown, style)
 const padding = { t: 16, r: 16, b: 16, l: 16 }
 
 const grown = doom.doomFromTree({
-  theme: doom.defaultTheme,
+  theme: testTheme,
   slides: [
     {
       name: "Opening",
@@ -87,7 +88,7 @@ export const named = {
 }
 
 const opened = doom.doomFromTree({
-  theme: doom.defaultTheme,
+  theme: testTheme,
   slides: [
     {
       name: "Opening",

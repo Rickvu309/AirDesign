@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import { drawWrites, iconSwapWrites, iconWrites, type Drawing } from "./create-writes"
 import { darkTheme } from "./testing/create-writes-art"
 import { grow, landed } from "./testing/doom-fixtures"
+import { starts, testTheme } from "@airdesign/doom/testing"
 
 const quiet = { var: "background2", tint: -0.06 }
 const ink = { var: "text" }
@@ -73,7 +74,7 @@ describe("drawing a shape", () => {
   })
 
   it("keeps the theme's text readable on a new shape, in a light and in a dark theme", () => {
-    for (const theme of [doom.defaultTheme, darkTheme])
+    for (const theme of [testTheme, darkTheme])
       expect(contrast(doom.resolveColor(quiet as doom.Color, theme), theme.colors.text)).toBeGreaterThanOrEqual(4.5)
   })
 
@@ -171,7 +172,7 @@ describe("inserting", () => {
     let next = 0
     const titled = landed(
       built.view,
-      doom.titleSlideWrites(slide, () => doom.nodeId(`s:${String((next += 1))}`), inside),
+      doom.titleSlideWrites(slide, () => doom.nodeId(`s:${String((next += 1))}`), inside, starts),
     )
     const after = landed(titled, iconWrites(titled, id, slot, "rocket", inside))
     expect(after.nodes.get(id)).toMatchObject({ box: { x: 900, y: 808, w: 120, h: 120 } })
@@ -181,7 +182,7 @@ describe("inserting", () => {
     let next = 0
     const titled = landed(
       built.view,
-      doom.titleSlideWrites(slide, () => doom.nodeId(`b:${String((next += 1))}`), inside),
+      doom.titleSlideWrites(slide, () => doom.nodeId(`b:${String((next += 1))}`), inside, starts),
     )
     const block = doom.nodeId("m:7")
     const occupied = landed(titled, [

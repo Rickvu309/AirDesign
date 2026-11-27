@@ -8,8 +8,10 @@ import { measureWith } from "./measure.js"
 import type { Resolved } from "./resolved.js"
 import { resolveSlide } from "./resolve-slide.js"
 import { hex, ids } from "./sample-deck.js"
-import { defaultTheme, type Theme } from "./theme.js"
+import { type Theme } from "./theme.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
+import { testTheme } from "./testing/theme.js"
 
 const upright = { rotation: 0, flipH: false, flipV: false }
 const words = (chars: string, style: "title" | "body", color: "text" | "text2") => ({
@@ -43,8 +45,8 @@ const piece: TreeNode = {
 }
 
 const customTheme: Theme = {
-  ...defaultTheme,
-  colors: { ...defaultTheme.colors, accent1: hex(0x155d94), text: hex(0x14293a), text2: hex(0x495d69) },
+  ...testTheme,
+  colors: { ...testTheme.colors, accent1: hex(0x155d94), text: hex(0x14293a), text2: hex(0x495d69) },
   fonts: { heading: "Lora", body: "Source Sans 3" },
 }
 
@@ -59,7 +61,7 @@ const runsOf = (each: Resolved | undefined) => each?.text?.lines.flatMap((line) 
 
 describe("paste copies a kit piece onto a slide as plain layers bound to the deck's theme", () => {
   it("takes each theme's colours and fonts", () => {
-    for (const theme of [defaultTheme, customTheme]) {
+    for (const theme of [testTheme, customTheme]) {
       const { doom, root } = pasted(theme)
       const { colors, fonts } = theme
       const painted = flat(resolveSlide(doom, ids.slide, measureWith({})))
@@ -94,13 +96,15 @@ describe("paste copies a kit piece onto a slide as plain layers bound to the dec
   })
 
   it("refuses a parent that is not a slide or a frame, and a piece that does not grow", () => {
-    expect(compileAgentChange(agentDeck(), { op: "paste", piece, into: ids.deck }, minter(), placement)).toMatchObject({
+    expect(
+      compileAgentChange(agentDeck(), { op: "paste", piece, into: ids.deck }, minter(), placement, starts),
+    ).toMatchObject({
       refused: "shape",
       field: "into",
     })
     const broken = { ...piece, props: { box: "wide" } } as unknown as TreeNode
     expect(
-      compileAgentChange(agentDeck(), { op: "paste", piece: broken, into: ids.slide }, minter(), placement),
+      compileAgentChange(agentDeck(), { op: "paste", piece: broken, into: ids.slide }, minter(), placement, starts),
     ).toMatchObject({
       refused: "shape",
       field: "piece",

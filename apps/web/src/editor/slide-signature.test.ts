@@ -2,10 +2,11 @@ import * as doom from "@airdesign/doom"
 import { describe, expect, it } from "vitest"
 import { landed, paint, spot } from "./testing/doom-fixtures"
 import { sameSignature, slideSignature } from "./slide-signature"
+import { testTheme } from "@airdesign/doom/testing"
 
 function deck() {
   const grown = doom.doomFromTree({
-    theme: doom.defaultTheme,
+    theme: testTheme,
     slides: [
       { children: [{ type: "shape", name: "a", props: { box: spot(0, 0, 10, 10), fills: paint } }] },
       { children: [{ type: "shape", name: "b", props: { box: spot(0, 0, 10, 10), fills: paint } }] },

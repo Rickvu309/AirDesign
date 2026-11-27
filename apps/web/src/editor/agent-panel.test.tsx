@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { airaCopy } from "@/copy/aira-copy"
 import { AgentPanel } from "./agent-panel"
+import { testTheme } from "@airdesign/doom/testing"
 
 const named = readDeckId("deck-1")
 if (!named.ok) throw new Error("deck id")
@@ -23,7 +24,7 @@ describe("the Agent side of the Doom editor", () => {
   })
 
   it("shows no list of the agents that edited the deck, only Aira's chat", () => {
-    const grown = doom.doomFromTree({ theme: doom.defaultTheme, slides: [{ children: [{ type: "shape" }] }] })
+    const grown = doom.doomFromTree({ theme: testTheme, slides: [{ children: [{ type: "shape" }] }] })
     const [slide] = grown.slides as [doom.NodeId]
     const edited = doom.applyEdit(grown.doom, {
       once: "c1",

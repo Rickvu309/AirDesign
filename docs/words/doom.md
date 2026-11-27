@@ -35,7 +35,7 @@ One entry of `fills` or `strokes`: solid, gradient or image. A picture is a shap
 _Avoid_: fill kind, image node
 
 **theme**:
-The deck's colour variables, heading and body fonts, named text styles and effect styles. A property bound to a colour variable follows the theme; applying a template writes the theme. A new deck's text styles are the consulting type scale for 1920 by 1080, 2 px a point: big number 80, title 56, heading 40, body 32, body 2 28, caption 24 and label 24, none under 24.
+The deck's colour variables, heading and body fonts, named text styles and effect styles. Doom reads a deck's theme and size whole, with no look of its own. A property bound to a colour variable follows the theme; applying a template writes the theme. A new deck's text styles are the consulting type scale for 1920 by 1080, 2 px a point: big number 80, title 56, heading 40, body 32, body 2 28, caption 24 and label 24, none under 24.
 _Avoid_: template style, palette
 
 ## Changing a deck
@@ -110,7 +110,7 @@ What `layoutProblems` measures on a slide (`overflow`, `overlap`, `line-crosses-
 _Avoid_: finding, note, warning
 
 **slide start**:
-A designed first state for a new slide, chosen in the New slide menu: title, title and text, grid or blank. The plain plus button adds the title-only slide start. A new deck's first slide is the title start: a title and a subtitle placeholder that an agent's first title and first heading fill.
+A designed first state for a new slide, chosen in the New slide menu: title, title and text, grid or blank. The plain plus button adds the title-only slide start. A new deck's first slide is the title start: a title and a subtitle placeholder that an agent's first title and first heading fill. The placeholders' names, words and shares, each start's content and a blank deck's name come from taste as `StartRules`; Doom holds no default.
 _Avoid_: layout, template slide
 
 **free area**:

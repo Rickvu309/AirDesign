@@ -77,6 +77,7 @@ flowchart TD
   p_apps_api_src_mcp --> p_packages_agent
   p_apps_api_src_mcp --> p_packages_mcp
   p_apps_api_src_oauth --> p_apps_api_src_platform
+  p_apps_api_src_platform --> p_packages_doom
   p_apps_api_src_usage --> p_apps_api_src_account
   p_apps_api_src_usage --> p_apps_api_src_platform
   p_apps_web_src --> p_packages_doom
@@ -127,6 +128,7 @@ flowchart TD
   p_apps_web_src_design --> p_apps_web_src_copy
   p_apps_web_src_design --> p_apps_web_src_editing
   p_apps_web_src_design --> p_apps_web_src_lib
+  p_apps_web_src_editing --> p_packages_doom
   p_apps_web_src_editing --> p_apps_web_src_components
   p_apps_web_src_editing --> p_apps_web_src_copy
   p_apps_web_src_editing --> p_apps_web_src_lib
@@ -144,6 +146,7 @@ flowchart TD
   p_apps_web_src_export --> p_apps_web_src_components
   p_apps_web_src_export --> p_apps_web_src_copy
   p_apps_web_src_export --> p_apps_web_src_lib
+  p_apps_web_src_present --> p_packages_doom
   p_apps_web_src_present --> p_apps_web_src_components
   p_apps_web_src_present --> p_apps_web_src_copy
   p_apps_web_src_present --> p_apps_web_src_editing
@@ -157,7 +160,10 @@ flowchart TD
   p_apps_web_src_settings --> p_apps_web_src_lib
   p_packages_agent --> p_packages_doom
   p_packages_live --> p_packages_doom
+  p_packages_mcp --> p_packages_doom
   p_packages_mcp --> p_packages_agent
+  p_packages_render --> p_packages_doom
+  p_packages_taste --> p_packages_doom
 ```
 
 | Pack | Layer | Public | Dependencies | Tables |
@@ -168,7 +174,7 @@ flowchart TD
 | `apps/api/src/doom` | feature | agent-host.ts, deck-followers.ts, deck-list.ts, deck-screenshots.ts, doom-deck.ts, doom-route.ts, doom-start.ts, doom-write.ts, idle-runs.ts, media.ts, original.ts | packages/doom, packages/agent, apps/api/src/platform | deck.doom, deck.doom_agent_read, deck.doom_edit, deck.doom_node, deck.media, deck.original_delete |
 | `apps/api/src/mcp` | feature | mcp.ts | packages/agent, packages/mcp | none |
 | `apps/api/src/oauth` | feature | runtime: apps/api/src/oauth/agent-key.ts, apps/api/src/oauth/clients.ts, apps/api/src/oauth/consent.ts, apps/api/src/oauth/discovery.ts, apps/api/src/oauth/grants.ts, apps/api/src/oauth/tokens.ts; testing: apps/api/src/oauth/testing/gemini-registration.ts | apps/api/src/platform | session.oauth_client, session.oauth_grant, session.oauth_token |
-| `apps/api/src/platform` | platform | runtime: apps/api/src/platform/answer.ts, apps/api/src/platform/deck-answer.ts, apps/api/src/platform/font-metrics.ts, apps/api/src/platform/font-route.ts, apps/api/src/platform/font-source.ts, apps/api/src/platform/forward-secret.ts, apps/api/src/platform/image-fetch.ts, apps/api/src/platform/listen.ts, apps/api/src/platform/local-original-store.ts, apps/api/src/platform/mail.ts, apps/api/src/platform/original-store.ts, apps/api/src/platform/pool.ts, apps/api/src/platform/provision.ts, apps/api/src/platform/r2-original-store.ts, apps/api/src/platform/resource.ts, apps/api/src/platform/schema.ts, apps/api/src/platform/secrets.ts, apps/api/src/platform/start-origins.ts, apps/api/src/platform/start-settings.ts; testing: apps/api/src/platform/testing/migrations.ts | none | none |
+| `apps/api/src/platform` | platform | runtime: apps/api/src/platform/answer.ts, apps/api/src/platform/deck-answer.ts, apps/api/src/platform/font-metrics.ts, apps/api/src/platform/font-route.ts, apps/api/src/platform/font-source.ts, apps/api/src/platform/forward-secret.ts, apps/api/src/platform/image-fetch.ts, apps/api/src/platform/listen.ts, apps/api/src/platform/local-original-store.ts, apps/api/src/platform/mail.ts, apps/api/src/platform/original-store.ts, apps/api/src/platform/pool.ts, apps/api/src/platform/provision.ts, apps/api/src/platform/r2-original-store.ts, apps/api/src/platform/resource.ts, apps/api/src/platform/schema.ts, apps/api/src/platform/secrets.ts, apps/api/src/platform/start-origins.ts, apps/api/src/platform/start-settings.ts; testing: apps/api/src/platform/testing/migrations.ts | packages/doom | none |
 | `apps/api/src/usage` | feature | aira-ledger.ts, credits-route.ts, credits.ts | apps/api/src/account, apps/api/src/platform | session.aira_ledger, session.credits, session.credit_history |
 | `apps/web/src` | app | none | packages/doom, apps/web/src/account, apps/web/src/aira, apps/web/src/components, apps/web/src/connect, apps/web/src/copy, apps/web/src/credits, apps/web/src/deck-view, apps/web/src/decks, apps/web/src/design, apps/web/src/editing, apps/web/src/editor, apps/web/src/export, apps/web/src/lib, apps/web/src/present, apps/web/src/samples, apps/web/src/settings | none |
 | `apps/web/src/account` | shared | account-load.ts, account-name-page.tsx, account-profile.tsx, name-form.tsx, settings-paths.ts, sign-in-address.ts, sign-out.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |
@@ -180,11 +186,11 @@ flowchart TD
 | `apps/web/src/deck-view` | feature | deck-view.tsx | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
 | `apps/web/src/decks` | feature | agent-logos.ts, agent-mark.tsx, aira-page.tsx, connect-agent.tsx, connected-agent.ts, danger-dialog.tsx, deck-glyph.tsx, discard-opening.ts, decks-screens.tsx, decks-shell.tsx, delete-account.tsx, home.tsx, not-found-page.tsx | apps/web/src/account, apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |
 | `apps/web/src/design` | shared | color-choices.ts, color-names.ts, color-picker.tsx, control-desc.ts, control-views.ts, controls/color.tsx, controls/union.tsx, design-shown.ts, icon-search.tsx, panel-arrangement.ts, panel-folds.ts, panel-order.ts, panel.ts, preset-icons.ts, shape-grid.tsx, served-faces.ts, shape-marks.tsx | packages/doom, apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
-| `apps/web/src/editing` | shared | canvas-zoom.ts, painted-picture.ts, picture-file.ts, slide-capture.ts, slide-layout.ts, slide-screenshot-report.ts, slide-screenshots.ts, use-asset-urls.ts, use-slide-screenshots.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |
+| `apps/web/src/editing` | shared | canvas-zoom.ts, painted-picture.ts, picture-file.ts, slide-capture.ts, slide-layout.ts, slide-screenshot-report.ts, slide-screenshots.ts, use-asset-urls.ts, use-slide-screenshots.ts | packages/doom, apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |
 | `apps/web/src/editor` | feature | editor.tsx, editor-sample.tsx, editor-screens.tsx | packages/doom, apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/decks, apps/web/src/design, apps/web/src/editing, apps/web/src/export, apps/web/src/lib, apps/web/src/present, apps/web/src/samples | none |
 | `apps/web/src/export` | feature | export-control.tsx, export-flow.ts, export-routes.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/lib | none |
 | `apps/web/src/lib` | platform | class-names.ts, composing.ts, first-request.ts, fields-of.ts, gestures.ts, quiet-focus.ts, slide-numbering.ts | none | none |
-| `apps/web/src/present` | feature | morph-pairs.ts, present-button.tsx, present-keys.ts, present-layer.tsx, present-screens.tsx, slide-arrival.ts, use-present.ts | apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
+| `apps/web/src/present` | feature | morph-pairs.ts, present-button.tsx, present-keys.ts, present-layer.tsx, present-screens.tsx, slide-arrival.ts, use-present.ts | packages/doom, apps/web/src/components, apps/web/src/copy, apps/web/src/editing, apps/web/src/lib | none |
 | `apps/web/src/samples` | feature | sample-screens.tsx, sample-slides.ts | none | none |
 | `apps/web/src/settings` | feature | account-page.tsx, agents-page.tsx, settings-screens.tsx, usage-page.tsx | apps/web/src/account, apps/web/src/aira, apps/web/src/components, apps/web/src/copy, apps/web/src/credits, apps/web/src/decks, apps/web/src/lib | none |
 | `packages/agent` | service | runtime: packages/agent/src/index.ts; testing: packages/agent/src/testing/evals.ts | packages/doom | none |
@@ -192,9 +198,9 @@ flowchart TD
 | `packages/doom` | core | runtime: packages/doom/src/index.ts; testing: packages/doom/src/testing/index.ts | none | none |
 | `packages/fonts` | core | src/index.ts | none | none |
 | `packages/live` | service | src/index.ts | packages/doom | none |
-| `packages/mcp` | service | runtime: packages/mcp/src/index.ts | packages/agent | none |
+| `packages/mcp` | service | runtime: packages/mcp/src/index.ts | packages/doom, packages/agent | none |
 | `packages/oauth` | core | src/index.ts | none | none |
-| `packages/render` | model | src/index.ts | none | none |
-| `packages/taste` | model | runtime: packages/taste/src/index.ts | none | none |
+| `packages/render` | model | src/index.ts | packages/doom | none |
+| `packages/taste` | model | runtime: packages/taste/src/index.ts | packages/doom | none |
 | `packages/theme` | core | none | none | none |
 | `packages/usage` | core | src/index.ts | none | none |

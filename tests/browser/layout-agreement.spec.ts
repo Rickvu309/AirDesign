@@ -44,7 +44,7 @@ test("the server breaks and stacks every line where the canvas paints it, in eac
   const root = process.cwd()
   const { packageBuild } = await import("../../scripts/package-build.mjs")
   const doom = await packageBuild(root, "@airdesign/doom")
-  const { boardDeckChanges } = await packageBuild(root, "@airdesign/doom", "testing/index.js")
+  const { boardDeckChanges, testTheme } = await packageBuild(root, "@airdesign/doom", "testing/index.js")
   const { servedFontMetrics, FontSource } = await packageBuild(root, "@airdesign/api")
   const { fontShelf, offShelf, shelfFolder } = await import("../../scripts/font-shelf.mjs")
   const metrics = servedFontMetrics(new FontSource(fontShelf(shelfFolder), offShelf))
@@ -102,7 +102,7 @@ test("the server breaks and stacks every line where the canvas paints it, in eac
         keys: faces.map((face) => doom.fontFace(face.font, face.bold, face.italic)),
       },
     )
-    const theme = { ...doom.defaultTheme, fonts: { heading: family, body: family } }
+    const theme = { ...testTheme, fonts: { heading: family, body: family } }
     const canvas = doom.measureWith(painted)
     const server = doom.measureWith(served.widths)
     for (const chars of words)
@@ -120,7 +120,7 @@ test("the server breaks and stacks every line where the canvas paints it, in eac
           )
         }
   }
-  const missing = { ...doom.defaultTheme, fonts: { heading: "Liberation Sans Narrow", body: "Liberation Sans Narrow" } }
+  const missing = { ...testTheme, fonts: { heading: "Liberation Sans Narrow", body: "Liberation Sans Narrow" } }
   const deck = doom.doomFromTree({
     theme: missing,
     slides: [{ children: [{ type: "shape", props: { text: doom.textFromMarkdown(`${vietnamese} 収益`, "body") } }] }],

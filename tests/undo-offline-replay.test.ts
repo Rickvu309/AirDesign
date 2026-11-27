@@ -8,6 +8,7 @@ import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import * as view from "../specs/undo-offline/view.mjs"
 import { dumpTopics } from "./spec-dump.js"
 import { parseDot, type Graph } from "./spec-graph.js"
+import { starts } from "@airdesign/doom/testing"
 
 type Spec = Graph["states"] extends Map<string, infer State> ? State : never
 type Seen = {
@@ -56,7 +57,7 @@ const start: doom.Edit = {
     { node: title, prop: "parent", value: at(slide) },
     { node: title, prop: "text", value: words(0) },
     { node: title, prop: "role", value: "title" },
-    { node: deckNode, prop: "name", value: doom.blankDeckName },
+    { node: deckNode, prop: "name", value: starts.deckName },
     { node: deckNode, prop: "nameFollows", value: true },
     { node: card, prop: "type", value: "shape" },
     { node: card, prop: "parent", value: at(slide) },
@@ -68,7 +69,7 @@ const textOf = (now: doom.Doom) => Number((now.nodes.get(title) as { text: doom.
 const boxOf = (now: doom.Doom) => (now.nodes.get(card) as { box: { x: number } }).box.x
 const nameOf = (now: doom.Doom) => {
   const name = (now.nodes.get(deckNode) as { name?: string | null }).name
-  return name === undefined || name === null || name === doom.blankDeckName ? 0 : Number(name)
+  return name === undefined || name === null || name === starts.deckName ? 0 : Number(name)
 }
 const standing = (now: doom.Doom) => (now.nodes.get(title) as { parent: unknown }).parent !== null
 

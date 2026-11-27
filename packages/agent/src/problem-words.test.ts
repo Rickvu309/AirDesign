@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest"
 
 import { gridNeeds } from "./answer.js"
 import { problemNote } from "./problem-words.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 const grown = doom.doomFromTree({
-  theme: doom.defaultTheme,
+  theme: testTheme,
   slides: [
     {
       children: [

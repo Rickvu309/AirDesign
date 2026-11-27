@@ -7,6 +7,7 @@ import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import * as view from "../specs/line-ends/view.mjs"
 import { dumpTopics } from "./spec-dump.js"
 import { parseDot, type Graph } from "./spec-graph.js"
+import { testTheme } from "@airdesign/doom/testing"
 
 type Spec = Graph["states"] extends Map<string, infer State> ? State : never
 type Seen = {
@@ -65,6 +66,8 @@ const seed = (free: boolean, withoutShape: boolean): doom.Edit => ({
   author: { kind: "person", id: "start" },
   writes: [
     { node: deckNode, prop: "type", value: "deck" },
+    { node: deckNode, prop: "theme", value: testTheme },
+    { node: deckNode, prop: "size", value: { w: 1920, h: 1080 } },
     { node: row, prop: "type", value: "slideRow" },
     { node: row, prop: "parent", value: at(deckNode) },
     { node: slide, prop: "type", value: "slide" },

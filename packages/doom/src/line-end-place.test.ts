@@ -17,6 +17,7 @@ import {
   step,
 } from "./testing/line-end-fixtures.js"
 import { placement } from "./testing/placement-rules.js"
+import { starts } from "./testing/start-rules.js"
 
 function nested() {
   return doomFromTree({
@@ -148,6 +149,7 @@ describe("a connector whose place depends on text width", () => {
     const agentWrites = compiled(grown.doom, { op: "delete", nodes: [grown.ids.t!] }, minter(), { measure: wide })
     const edited = compileAgentEdit(started(grown.doom), [{ op: "delete", nodes: [grown.ids.t!] }], {
       placement,
+      starts,
       author: agent(runName),
       once: once(),
       mint: minter(),
