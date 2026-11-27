@@ -2,10 +2,10 @@ import * as doom from "@airdesign/doom"
 import { testTheme } from "@airdesign/doom/testing"
 import { viewTools } from "@airdesign/catalog"
 import { memoryDecks } from "@airdesign/agent/testing/evals"
-import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
+import { Client, InMemoryTransport, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { describe, expect, it } from "vitest"
 
-import { createServer, type ViewHost } from "./index.js"
+import { createServer, createServerHandler, type ViewHost } from "./index.js"
 
 const origin = "https://studio.example"
 const uri = "ui://airdesign/deck.html"
@@ -52,7 +52,78 @@ async function withClient(view: ViewHost | undefined, use: (client: Client) => P
 type UiMeta = { readonly resourceUri?: string; readonly visibility?: readonly string[] }
 const uiOf = (tool: { readonly _meta?: Record<string, unknown> | undefined }) => tool._meta?.ui as UiMeta | undefined
 
+async function withHttpClient(mimeTypes: string[] | undefined, use: (client: Client) => Promise<void>): Promise<void> {
+  const host = memoryDecks(
+    () => doom.doomFromTree({ theme: testTheme, slides: [{ name: "Title", children: [] }] }).doom,
+  )
+  const view = viewHost([])
+  const client = new Client(
+    { name: "airdesign-test", version: "0.0.0" },
+    {
+      versionNegotiation: { mode: { pin: "2026-07-28" } },
+      capabilities: mimeTypes === undefined ? {} : { extensions: { "io.modelcontextprotocol/ui": { mimeTypes } } },
+    },
+  )
+  try {
+    await client.connect(
+      new StreamableHTTPClientTransport(new URL("https://studio.example/mcp"), {
+        fetch: async (input, init) => {
+          const request = new Request(input, init)
+          const body = new Uint8Array(await request.clone().arrayBuffer())
+          const handler = createServerHandler({ agent: "aira", mint: () => "minted" }, host, body, {}, view)
+          try {
+            return await handler.fetch(request)
+          } finally {
+            await handler.close()
+          }
+        },
+      }),
+    )
+    await use(client)
+  } finally {
+    await client.close()
+  }
+}
+
 describe("the deck view as an MCP App", () => {
+  it.each([{ mimeTypes: undefined }, { mimeTypes: ["text/plain"] }])(
+    "serves only core tools over HTTP without Apps HTML support (%j)",
+    async ({ mimeTypes }) => {
+      await withHttpClient(mimeTypes, async (client) => {
+        const { tools } = await client.listTools()
+        expect(tools).toHaveLength(6)
+        for (const tool of tools) {
+          expect(tool._meta?.ui).toBeUndefined()
+          expect(tool._meta?.["ui/resourceUri"]).toBeUndefined()
+        }
+        expect((await client.listResources()).resources.map((resource) => resource.uri)).not.toContain(uri)
+        await expect(client.readResource({ uri })).rejects.toThrow()
+        await expect(client.callTool({ name: viewTools.open, arguments: { deck: "d1" } })).rejects.toThrow()
+      })
+    },
+  )
+
+  it("serves the deck view over HTTP to clients that advertise Apps HTML support", async () => {
+    await withHttpClient(["text/html;profile=mcp-app"], async (client) => {
+      expect(client.getServerCapabilities()?.extensions?.["io.modelcontextprotocol/ui"]).toEqual({
+        mimeTypes: ["text/html;profile=mcp-app"],
+      })
+      const { tools } = await client.listTools()
+      expect(tools).toHaveLength(9)
+      expect(
+        tools
+          .filter((tool) => uiOf(tool)?.visibility?.includes("app"))
+          .map((tool) => tool.name)
+          .sort(),
+      ).toEqual(Object.values(viewTools).sort())
+      expect(uiOf(tools.find((tool) => tool.name === "airdesign_execute") ?? {})).toEqual({ resourceUri: uri })
+      expect((await client.listResources()).resources.map((resource) => resource.uri)).toContain(uri)
+      expect((await client.readResource({ uri })).contents[0]).toMatchObject({ uri })
+      const opened = await client.callTool({ name: viewTools.open, arguments: { deck: "d1" } })
+      expect(opened.structuredContent).toMatchObject({ ok: true, deck: "d1" })
+    })
+  })
+
   it("serves a shell that loads the deck view from the web origin, allowed by its CSP", async () => {
     await withClient(viewHost([]), async (client) => {
       const { contents } = await client.readResource({ uri })
